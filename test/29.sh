@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # tests simple cpl_c script operations with postgres
 
 # Copyright (C) 2008 1&1 Internet AG
