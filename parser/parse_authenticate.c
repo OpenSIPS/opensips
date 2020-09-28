@@ -85,13 +85,13 @@
 
 int parse_qop_value(str *val, struct authenticate_body *auth)
 {
-	char *q = val->s;
+	char *q = val->s, *end = val->s + val->len;
 
 	/* parse first token */
 	if (val->len<4 || LOWER4B(GET4B(q))!=0x61757468) /* "auth" */
 		return -1;
 	q += 4;
-	if (q==val->s+val->len) {
+	if (q==end) {
 		auth->flags |= QOP_AUTH;
 		return 0;
 	}
@@ -102,7 +102,7 @@ int parse_qop_value(str *val, struct authenticate_body *auth)
 			break;
 		case '-':
 			q++;
-			if (LOWER4B(GET3B(q))==0x696e74ff) {
+			if (q+3 <= end && LOWER4B(GET3B(q))==0x696e74ff) {
 				auth->flags |= QOP_AUTH_INT;
 				q+=3;
 			} else
@@ -115,23 +115,23 @@ int parse_qop_value(str *val, struct authenticate_body *auth)
 			return -1;
 	}
 
-	if (q==val->s+val->len) return 0;
-	while (q<val->s+val->len && isspace((int)*q)) q++;
-	if (q==val->s+val->len) return 0;
+	if (q==end) return 0;
+	while (q<end && is_ws((int)*q)) q++;
+	if (q==end) return 0;
 	if (*q!=',')
 		return -1;
 	q++;
-	while (q<val->s+val->len && isspace((int)*q)) q++;
+	while (q<end && is_ws((int)*q)) q++;
 
 	/* parse second token */
-	if (val->len-(q-val->s)<4 || LOWER4B(GET4B(q))!=0x61757468)  /* "auth" */
+	if (q+4 > end || LOWER4B(GET4B(q))!=0x61757468)  /* "auth" */
 		return -1;
 	q += 4;
-	if (q==val->s+val->len) {
+	if (q==end) {
 		auth->flags |= QOP_AUTH;
 		return 0;
 	}
-	if (*q == '-' && LOWER4B(GET3B(q+1))==0x696e74ff) {
+	if (q+4 <= end && *q == '-' && LOWER4B(GET3B(q+1))==0x696e74ff) {
 		auth->flags |= QOP_AUTH_INT;
 		return 0;
 	} else
