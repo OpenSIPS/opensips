@@ -205,7 +205,7 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 	return 0;
 }
 
-void build_dummy_msg(struct receive_info* rcv) {
+static void build_dummy_msg(struct receive_info* rcv) {
 	memset(&dummy_req, 0, sizeof(struct sip_msg));
 	dummy_req.first_line.type = SIP_REQUEST;
 	dummy_req.first_line.u.request.method.s= "DUMMY";

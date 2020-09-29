@@ -430,10 +430,6 @@ static str hep_app_protos[]= {
 #define MAX_PAYLOAD 32767
 static char payload_buf[MAX_PAYLOAD];
 
-/* dummy request for the hep route */
-struct sip_msg dummy_req;
-
-
 /* values to be set from script for hep pvar */
 
 
@@ -730,18 +726,6 @@ static int parse_hep_route(char *val)
 
 	return 0;
 }
-
-void build_dummy_msg(void) {
-	memset(&dummy_req, 0, sizeof(struct sip_msg));
-	dummy_req.first_line.type = SIP_REQUEST;
-	dummy_req.first_line.u.request.method.s= "DUMMY";
-	dummy_req.first_line.u.request.method.len= 5;
-	dummy_req.first_line.u.request.uri.s= "sip:user@domain.com";
-	dummy_req.first_line.u.request.uri.len= 19;
-	dummy_req.rcv.src_ip.af = AF_INET;
-	dummy_req.rcv.dst_ip.af = AF_INET;
-}
-
 
 void parse_table_str(str* table_s, tz_table_t* tz_table)
 {
@@ -2443,18 +2427,25 @@ int hep_msg_received(void)
 	} else if (hep_route_id > HEP_SIP_ROUTE) {
 
 		/* builds a dummy message */
-		build_dummy_msg();
+		memset(&msg, 0, sizeof(struct sip_msg));
+		msg.first_line.type = SIP_REQUEST;
+		msg.first_line.u.request.method.s= "DUMMY";
+		msg.first_line.u.request.method.len= 5;
+		msg.first_line.u.request.uri.s= "sip:user@domain.com";
+		msg.first_line.u.request.uri.len= 19;
+		msg.rcv.src_ip.af = AF_INET;
+		msg.rcv.dst_ip.af = AF_INET;
 
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route( sroutes->request[hep_route_id].a, &dummy_req);
+		run_top_route( sroutes->request[hep_route_id].a, &msg);
 
 		/* free possible loaded avps */
 		reset_avps();
 
-		free_sip_msg( &dummy_req );
+		free_sip_msg( &msg );
 
 		/* requested to go through the main sip route */
 		if (ctx->resume_with_sip) {
