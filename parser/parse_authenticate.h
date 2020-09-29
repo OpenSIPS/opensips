@@ -28,14 +28,14 @@
 
 
 #include "msg_parser.h"
+#include "digest/digest_parser.h"
 
-#define AUTHENTICATE_MD5	(1<<0)
-#define AUTHENTICATE_MD5SESS	(1<<1)
-#define AUTHENTICATE_STALE	(1<<2)
-#define QOP_AUTH		(1<<3)
-#define QOP_AUTH_INT		(1<<4)
+#define AUTHENTICATE_STALE	(1<<0)
+#define QOP_AUTH		(1<<1)
+#define QOP_AUTH_INT		(1<<2)
 
 struct authenticate_body {
+	alg_t algorithm;
 	int flags;
 	str realm;
 	str domain;
