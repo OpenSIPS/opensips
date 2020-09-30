@@ -12,24 +12,7 @@ tls_configs=$(patsubst $(ETC_DIR)/%, %, $(wildcard $(ETC_DIR)/tls/*) \
 		$(wildcard $(ETC_DIR)/tls/rootCA/private/*) $(wildcard $(ETC_DIR)/tls/user/*))
 
 
-ifeq ($(CROSS_COMPILE),)
-SSL_BUILDER=$(shell \
-	if pkg-config --exists libssl; then \
-		echo 'pkg-config libssl'; \
-	fi)
-endif
-
-ifneq ($(SSL_BUILDER),)
-	DEFS += $(shell $(SSL_BUILDER) --cflags)
-	LIBS += $(shell $(SSL_BUILDER) --libs)
-else
-	DEFS += -I$(LOCALBASE)/ssl/include \
-			-I$(LOCALBASE)/include
-	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib \
-			-L$(LOCALBASE)/lib64 -L$(LOCALBASE)/ssl/lib64 \
-			-lssl -lcrypto
-endif
-
+include ../../Makefile.openssl
 include ../../Makefile.modules
 
 install_module_custom: 

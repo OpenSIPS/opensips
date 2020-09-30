@@ -7,23 +7,7 @@ include ../../Makefile.defs
 auto_gen=
 NAME=osp.so
 
-ifeq ($(CROSS_COMPILE),)
-SSL_BUILDER=$(shell \
-	if pkg-config --exists libssl; then \
-		echo 'pkg-config libssl'; \
-	fi)
-endif
-
-ifneq ($(SSL_BUILDER),)
-	DEFS += $(shell $(SSL_BUILDER) --cflags)
-	LIBS += $(shell $(SSL_BUILDER) --libs)
-else
-	DEFS += -I$(LOCALBASE)/ssl/include \
-			-I$(LOCALBASE)/include
-	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/ssl/lib \
-			-L$(LOCALBASE)/lib64 -L$(LOCALBASE)/ssl/lib64 \
-			-lssl -lcrypto
-endif
+include ../../Makefile.openssl
 
 DEFS+=-D_POSIX_THREADS -I$(LOCALBASE)/include
 LIBS+=-L$(LOCALBASE)/lib -losptk -lutf8proc -lpthread -lm
