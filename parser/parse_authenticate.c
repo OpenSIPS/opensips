@@ -33,10 +33,6 @@
 #include "parse_authenticate.h"
 
 
-#define AUTHENTICATE_MD5         (1<<0)
-#define AUTHENTICATE_MD5SESS     (1<<1)
-#define AUTHENTICATE_STALE       (1<<2)
-
 #define AUTHENTICATE_DIGEST_S    "Digest"
 #define AUTHENTICATE_DIGEST_LEN  (sizeof(AUTHENTICATE_DIGEST_S)-1)
 
@@ -290,7 +286,7 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 				if (val.len==3)
 				{
 					if ( LOWER4B(GET3B(val.s))==0x6d6435ff) /*MD5*/
-						auth->flags |= AUTHENTICATE_MD5;
+						auth->algorithm = ALG_MD5;
 				} else {
 					LM_ERR("unsupported algorithm \"%.*s\"\n",val.len,val.s);
 					goto error;

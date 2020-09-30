@@ -285,7 +285,7 @@ void uac_calc_HA1( struct uac_credential *crd,
 	MD5Update(&Md5Ctx, crd->passwd.s, crd->passwd.len);
 	MD5Final(HA1, &Md5Ctx);
 
-	if ( auth->flags& AUTHENTICATE_MD5SESS )
+	if ( auth->algorithm == ALG_MD5SESS )
 	{
 		MD5Init(&Md5Ctx);
 		MD5Update(&Md5Ctx, HA1, HASHLEN);

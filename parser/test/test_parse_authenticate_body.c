@@ -37,6 +37,7 @@ static const struct tts {
 	const char *anonce;
 	const char *aopaque;
 	const char *arealm;
+	alg_t aalg;
 } tset[] = {
 	{
 	/* Case #1 */
@@ -53,14 +54,14 @@ static const struct tts {
 		.ts = str_init("Digest stale=false,realm=\"[::1]\",nonce=\"esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk\","
                                "qop=auth,algorithm=MD5"),
 		.tres = 0,
-		.aflags = QOP_AUTH | AUTHENTICATE_MD5, .anonce = "esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk",
+		.aflags = QOP_AUTH, .aalg = ALG_MD5, .anonce = "esWk1wFa4bUBKzkmfKId++Y83eWzD9edBCGTwLV4Juk",
 		.arealm = "[::1]"
 	}, {
 	/* Case #4 */
 		.ts = str_init("Digest realm=\"sip.test.com\",qop=\"auth\",opaque=\"1234567890abcedef\","
 		               "nonce=\"145f5ca9aac6f0b9f93433188d446ae0d9f91a6ff80\",algorithm=MD5,stale=true"),
 		.tres = 0,
-		.aflags = QOP_AUTH | AUTHENTICATE_MD5 | AUTHENTICATE_STALE,
+		.aflags = QOP_AUTH | AUTHENTICATE_STALE, .aalg = ALG_MD5,
 		.anonce = "145f5ca9aac6f0b9f93433188d446ae0d9f91a6ff80", .aopaque = "1234567890abcedef",
 		.arealm = "sip.test.com"
 	}, {
@@ -68,7 +69,7 @@ static const struct tts {
 		.ts = str_init("DiGeSt\r\n\trealm=\"a\",\r\n\tqop=\"auth-int, auth\",\r\n\tnonce=\"n\",\r\n\topaque=\"0\",\r\n\t"
                                "algoriTHm=md5"),
 		.tres = 0,
-		.aflags = QOP_AUTH | AUTHENTICATE_MD5 | QOP_AUTH_INT,
+		.aflags = QOP_AUTH | QOP_AUTH_INT, .aalg = ALG_MD5,
 		.anonce = "n", .aopaque = "0", .arealm = "a"
 	}, {
 		.ts = STR_NULL
@@ -88,6 +89,7 @@ void test_parse_authenticate_body(void)
 		if (tset[i].tres == 0) {
 			printf("auth.flags = %d\n", auth.flags);
 			ok(auth.flags == tset[i].aflags, "auth.flags == %d", tset[i].aflags);
+			ok(auth.algorithm == tset[i].aalg, "auth.algorithm == %d", tset[i].aalg);
 			ok(auth.nonce.len == strlen(tset[i].anonce) &&
 			    memcmp(auth.nonce.s, tset[i].anonce, auth.nonce.len) == 0,
 			    "verify nonce");
