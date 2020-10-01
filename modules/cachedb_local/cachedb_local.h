@@ -64,6 +64,10 @@ typedef struct url_lst {
 	struct url_lst* next;
 } url_lst_t;
 
+int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
+	int expires, int isrepl);
+int _lcache_htable_remove(lcache_col_t *cache_col ,str* attr, int isrepl);
+
 extern lcache_col_t* lcache_collection;
 extern url_lst_t* url_list;
 
