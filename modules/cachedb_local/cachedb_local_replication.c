@@ -188,7 +188,7 @@ int receive_sync_request(int node_id)
         bin_packet_t *sync_packet;
 
         for ( col=lcache_collection; col; col=col->next ) {
-                LM_ERR("Found collection %.*s\n", col->col_name.len, col->col_name.s);
+                LM_DBG("Found collection %.*s\n", col->col_name.len, col->col_name.s);
 
                 for (i =0; i < col->size; i++) {
                         lock_get(&col->col_htable[i].lock);
