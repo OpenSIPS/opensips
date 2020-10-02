@@ -108,8 +108,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
-int check_multi_tmrec(struct sip_msg *msg, char *time_rec, str *tz,
-                      unsigned int *ptime);
+int check_multi_tmrec(struct sip_msg *_, char *time_rec, unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
@@ -192,7 +191,6 @@ static cmd_export_t cmds[]={
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"check_time_rec", (cmd_function)check_multi_tmrec, {
 		{CMD_PARAM_STR, fixup_time_rec, fixup_free_time_rec},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
 		ALL_ROUTES},
 	{"release_static_lock",(cmd_function)release_static_lock, {
@@ -843,7 +841,7 @@ static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 
 	NOTICE: @time_str must be write-able memory, otherwise I will segfault!
  */
-int check_single_tmrec(char *time_str, const str *tz, const unsigned int *ptime)
+int check_single_tmrec(char *time_str, const unsigned int *ptime)
 {
 	tmrec_p time_rec;
 	char *p, *s;
@@ -866,8 +864,11 @@ int check_single_tmrec(char *time_str, const str *tz, const unsigned int *ptime)
 	else
 		check_time = *ptime;
 
-	if (tz)
-		tz_set(tz);
+	load_TR_value( p, s, time_rec, tr_parse_tz, parse_error, done);
+
+	/* Important: make sure to set the tz NOW, before more parsing... */
+	if (time_rec->tz)
+		_tz_set(time_rec->tz);
 
 	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
 	load_TR_value( p, s, time_rec, tr_parse_dtend, parse_error, done);
@@ -881,7 +882,7 @@ int check_single_tmrec(char *time_str, const str *tz, const unsigned int *ptime)
 	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
 	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
 
-	LM_DBG("Time rec created\n");
+	LM_DBG("Time rec created, tz: %s\n", time_rec->tz);
 
 done:
 	/* shortcut: if there is no dstart, timerec is valid */
@@ -896,11 +897,10 @@ done:
 		goto no_match;
 
 match:
-	tmrec_free(time_rec);
-
-	if (tz)
+	if (time_rec->tz)
 		tz_reset();
 
+	tmrec_free(time_rec);
 	return 1;
 
 parse_error:
@@ -908,12 +908,10 @@ parse_error:
 	rc = -2;
 
 no_match:
-	if (time_rec)
-		tmrec_free( time_rec );
-
-	if (tz)
+	if (time_rec->tz)
 		tz_reset();
 
+	tmrec_free(time_rec);
 	return rc;
 }
 
@@ -927,8 +925,7 @@ no_match:
  *    -2: parse error (bad input)
  *    -3: internal error
  */
-int check_multi_tmrec(struct sip_msg *_, char *time_rec, str *tz,
-                      unsigned int *ptime)
+int check_multi_tmrec(struct sip_msg *_, char *time_rec, unsigned int *ptime)
 {
 	char *p, *q, bkp, tmp = 77, need_close, invert_next = 0, op = 0;
 	str aux;
@@ -992,7 +989,7 @@ int check_multi_tmrec(struct sip_msg *_, char *time_rec, str *tz,
 
 				bkp = aux.s[aux.len];
 				aux.s[aux.len] = '\0';
-				_rc = check_multi_tmrec(_, aux.s, tz, ptime) + 1;
+				_rc = check_multi_tmrec(_, aux.s, ptime) + 1;
 				aux.s[aux.len] = bkp;
 
 				if (_rc < 0)
@@ -1037,7 +1034,7 @@ int check_multi_tmrec(struct sip_msg *_, char *time_rec, str *tz,
 
 				bkp = aux.s[aux.len];
 				aux.s[aux.len] = '\0';
-				_rc = check_single_tmrec(aux.s, tz, ptime) + 1;
+				_rc = check_single_tmrec(aux.s, ptime) + 1;
 				aux.s[aux.len] = bkp;
 
 				if (_rc < 0) {

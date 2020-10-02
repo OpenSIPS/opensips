@@ -5,6 +5,7 @@
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 #include "time_rec.h"
+#include "ut.h"
 
 #ifndef USE_YWEEK_U
 #ifndef USE_YWEEK_V
@@ -80,16 +81,22 @@ void tz_set(const str *tz)
 	if (tz->len >= TZBUF_SZ)
 		return;
 
-	LM_DBG("setting timezone to: '%.*s'\n", tz->len, tz->s);
-
 	memcpy(tzbuf, tz->s, tz->len);
 	tzbuf[tz->len] = '\0';
 
+	_tz_set(tzbuf);
+#undef TZBUF_SZ
+}
+
+
+void _tz_set(const char *tz)
+{
+	LM_DBG("setting timezone to: '%s'\n", tz);
+
 	old_tz = getenv("TZ");
 
-	setenv("TZ", tzbuf, 1);
+	setenv("TZ", tz, 1);
 	tzset();
-#undef TZBUF_SZ
 }
 
 
@@ -383,10 +390,35 @@ int tmrec_free(tmrec_p _trp)
 	tr_byxxx_free(_trp->bymonth);
 	tr_byxxx_free(_trp->byweekno);
 
-	if (_trp->flags & PKG_ALLOC)
+	if (_trp->flags & PKG_ALLOC) {
+		pkg_free(_trp->tz);
 		pkg_free(_trp);
-	else
+	} else {
+		shm_free(_trp->tz);
 		shm_free(_trp);
+	}
+
+	return 0;
+}
+
+int tr_parse_tz(tmrec_p _trp, char *_in)
+{
+	if (!_trp || !_in)
+		return -1;
+
+	if (*_in < 'A' || *_in > 'Z')
+		return 1;
+
+	if (_trp->flags & PKG_ALLOC)
+		_trp->tz = pkg_strdup(_in);
+	else
+		_trp->tz = shm_strdup(_in);
+
+	if (!_trp->tz) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	return 0;
 }
 

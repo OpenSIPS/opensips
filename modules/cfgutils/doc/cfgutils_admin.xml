@@ -474,7 +474,7 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 	</section>
 	<section id="func_check_time_rec" xreflabel="check_time_rec()">
 		<title>
-			<function moreinfo="none">check_time_rec(time_string, [timezone], [timestamp])</function>
+			<function moreinfo="none">check_time_rec(time_string, [timestamp])</function>
 		</title>
 		<para>
 		The function returns a positive value if the specified time recurrence string
@@ -497,16 +497,15 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 		<listitem>
 			<para><emphasis>time_string (string)</emphasis> - Time recurrence string which
 			will be matched against the current time. Its fields are separated by "|" and
-			the order in which they are given is: "dtstart | dtend | duration | freq
-			| until | interval | byday | bymday | byyday | byweekno | bymonth". None
-			of the fields following "freq" is used unless "freq" is defined. If the
-			string ends in multiple null fields, they can all be ommited.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>timezone (string, optional)</emphasis> - The
-			timezone that the time recurrence stamps are specified in.  By
-			default, the system time zone is used.
+			the order in which they are given is: "timezone | dtstart | dtend | duration | freq
+			| until | interval | byday | bymday | byyday | byweekno | bymonth".
+			</para><para>None of the fields following "freq" is used unless
+			"freq" is defined.  If the string ends in multiple null fields,
+			they can all be ommited.
+			</para><para>
+			The "timezone" field is optional.  It represents the timezone in
+			which to interpret the time recurrence elements (e.g. dtstart,
+			dtend, until).  By default, the system time zone is used.
 			</para>
 		</listitem>
 		<listitem>
@@ -526,27 +525,30 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 		<itemizedlist>
 		<listitem>
 			<para>
-				20210104T090000|20210104T170000||WEEKLY|||MO,TU,WE,TH,FR
-					&amp;
-				!(20210405T000000|20210406T000000 / 20211227T000000|20211228T000000)
-			</para>
-			<para>
-				This example multi-recurrence expresses the working days schedule for
-				company X during 2021:  workdays from 9-17, except bank holidays
-				such as Easter Monday (April 5th) or Christmas Day (December 27th -
-				substitute day).
-			</para>
-		</listitem>
-		<listitem>
-			<para>
 				20210104T080000|20211231T180000||WEEKLY|||MO,TU,WE,TH,FR
 					&amp;
 				!20210104T120000|20211231T140000||WEEKLY|||MO,TU,WE,TH,FR
 			</para>
 			<para>
 				This example multi-recurrence expresses the working days schedule for
-				company Y during 2021:  workdays from 8-18, except the 12-14 interval,
+				company X during 2021:  workdays from 8-18, except the 12-14 interval,
 				when everyone is out for lunch break and the business is closed.
+				Since the timezone is omitted from each schedule, the operating
+				system timezone will be used instead.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				America/New_York|20210104T090000|20210104T170000||WEEKLY|||MO,TU,WE,TH,FR
+					&amp;
+				!(Europe/Amsterdam|20210427T000000|20210428T000000 / Europe/London|20211227T000000|20211228T000000)
+			</para>
+			<para>
+				This example multi-recurrence expresses the working days schedule for
+				US-based company Y during 2021:  workdays from 9-17 (NY timezone),
+				except european holidays such as King's Day (April 27th, NL) or
+				the Spring Bank Holiday (May 31st, UK), when most of its
+				workforce will have flown back to Europe.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -554,11 +556,11 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 			<title><function>check_time_rec</function> usage</title>
 			<programlisting format="linespecific">
 ...
-# Only passing if still in 2012
-if (check_time_rec("20120101T000000|20130101T000000", "Europe/Bucharest"))
+# Only passing if still in 2012 and on a Bucharest-compatible timezone
+if (check_time_rec("Europe/Bucharest|20120101T000000|20130101T000000"))
 	xlog("Current system time matches the given Romanian time interval\n");
 ...
-# Only passing if less than 30 days have passed from "dtstart"
+# Only passing if less than 30 days have passed from "dtstart", system timezone
 if (check_time_rec("20121101T000000||p30d"))
 	xlog("Current time matches the given interval\n");
 ...

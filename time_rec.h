@@ -75,12 +75,14 @@
 
 #define load_TR_value( _p,_s, _tr, _func, _err, _done) \
 	do{ \
+		int _rc = 0; \
 		_s = strchr(_p, (int)TR_SEPARATOR); \
 		if (_s) \
 			*_s = 0; \
 		/* LM_DBG("----parsing tr param <%s>\n",_p); \ */\
 		if(_s != _p) {\
-			if( _func( _tr, _p)) {\
+			_rc = _func( _tr, _p); \
+			if (_rc < 0) {\
 				LM_DBG("func error\n"); \
 				if (_s) *_s = TR_SEPARATOR; \
 				goto _err; \
@@ -88,10 +90,11 @@
 		} \
 		if (_s) { \
 			*_s = TR_SEPARATOR; \
-			_p = _s+1;\
+			if (_rc == 0) \
+				_p = _s+1; /* rc > 1 means: "input not consumed" */ \
 			if ( *(_p)==0 ) \
 				goto _done; \
-		} else {\
+		} else if (_rc == 0) { /* if all "input is consumed" */ \
 			goto _done; \
 		}\
 	} while(0)
@@ -141,6 +144,7 @@ typedef struct _tmrec
 	tr_byxxx_p byweekno;
 	int wkst;
 	char flags;
+	char *tz;
 } tmrec_t, *tmrec_p;
 
 
@@ -161,6 +165,7 @@ int tr_byxxx_free(tr_byxxx_p);
 tmrec_p tmrec_new(char);
 int tmrec_free(tmrec_p);
 
+int tr_parse_tz(tmrec_p, char*);
 int tr_parse_dtstart(tmrec_p, char*);
 int tr_parse_dtend(tmrec_p, char*);
 int tr_parse_duration(tmrec_p, char*);
@@ -208,6 +213,7 @@ int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
  * If @tz is an invalid timezone, no change will be made.
  */
 void tz_set(const str *tz);
+void _tz_set(const char *tz);
 
 
 /**
