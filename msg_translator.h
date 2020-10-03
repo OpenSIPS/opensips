@@ -143,7 +143,7 @@ char * build_res_buf_from_sip_res(	struct sip_msg* msg,
 
 
 char * build_res_buf_from_sip_req( unsigned int code,
-				str *text,
+				const str *text,
 				str *new_tag,
 				struct sip_msg* msg,
 				unsigned int *returned_len,

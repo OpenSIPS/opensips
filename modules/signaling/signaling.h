@@ -30,7 +30,7 @@
 #include "../../sr_module.h"
 #include "../../parser/msg_parser.h"
 
-typedef int (*sig_send_reply_f)(struct sip_msg *msg, int code, str *reason,
+typedef int (*sig_send_reply_f)(struct sip_msg *msg, int code, const str *reason,
 		str *tag);
 typedef int (*sig_gen_totag_f)(struct sip_msg *msg, str *tag);
 
