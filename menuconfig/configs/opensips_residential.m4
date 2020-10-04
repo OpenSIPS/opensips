@@ -411,6 +411,7 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 	ifelse(HAVE_OUTBOUND_PSTN,`yes',`
 	if ($rU=~"^\+[1-9][0-9]+$") {
 		ifelse(USE_DR_MODULE,`yes',`
+		strip(1);
 		if (!do_routing(0)) {
 			send_reply(500,"No PSTN Route found");
 			exit;
