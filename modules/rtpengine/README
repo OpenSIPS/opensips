@@ -471,7 +471,10 @@ rtpengine_offer();
             trusted. Without this flag, the RTP proxy ignores
             address in the SDP and uses source address of the SIP
             message as media address which is passed to the RTP
-            proxy.
+            proxy. From rtpengine 3.8 this is the default behaviour.
+	  + SIP-source-address - the opposite of trust-address. 
+	    Restores the old default behaviour of ignoring endpoint
+            addresses in the SDP body. 
           + replace-origin - flags that IP from the origin
             description (o=) should be also changed.
           + replace-session-connection - flags to change the
