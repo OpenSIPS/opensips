@@ -25,7 +25,6 @@
 
 #include "../../str.h"
 #include "../../mem/shm_mem.h"
-#include "../../time_rec.h"
 
 #include "prefix_tree.h"
 #include "dr_partitions.h"
@@ -80,28 +79,6 @@ int init_prefix_tree( char *extra_prefix_chars )
 }
 
 
-static inline int
-check_time(
-		tmrec_t *time_rec
-		)
-{
-	ac_tm_t att;
-
-	/* shortcut: if there is no dstart, timerec is valid */
-	if (time_rec->dtstart==0)
-		return 1;
-
-	/* set current time */
-	ac_tm_set_time(&att, time(0));
-
-	/* does the recv_time match the specified interval?  */
-	if (check_tmrec( time_rec, &att)!=0)
-		return 0;
-
-	return 1;
-}
-
-
 static inline rt_info_t*
 internal_check_rt(
 		ptree_node_t *ptn,
@@ -126,7 +103,7 @@ internal_check_rt(
 		j = 0;
 		while(rtlw!=NULL) {
 			if ( j++ >= *rgidx) {
-				if(rtlw->rtl->time_rec == NULL || check_time(rtlw->rtl->time_rec))
+				if (!rtlw->rtl->time_rec || tmrec_expr_check(rtlw->rtl->time_rec))
 					goto ok_exit;
 			}
 			rtlw=rtlw->next;
@@ -380,7 +357,7 @@ free_rt_info(
 	if(NULL!=rl->pgwl)
 		func_free(f, rl->pgwl);
 	if(NULL!=rl->time_rec)
-		tmrec_free(rl->time_rec);
+		tmrec_expr_free(rl->time_rec);
 	func_free(f, rl);
 	return;
 }

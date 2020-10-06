@@ -24,10 +24,10 @@
 
 #include "../../str.h"
 #include "../../usr_avp.h"
-#include "../../time_rec.h"
 #include "../../mem/mem.h"
-#include "prefix_tree.h"
 #include "../../map.h"
+
+#include "prefix_tree.h"
 
 #define RG_HASH_SIZE
 #define RG_INIT_LEN 4
@@ -132,7 +132,7 @@ rt_info_t*
 build_rt_info(
 	int id,
 	int priority,
-	tmrec_t* time,
+	tmrec_expr *time,
 	/* name of the script route */
 	char* route_idx,
 	/* list of destinations indexes */

@@ -32,51 +32,69 @@
 #define RO  "Europe/Bucharest"  /* UTC+2, DST is ON at TEST_TIME (+3) */
 #define AUS "Pacific/Auckland"  /* UTC+12, DST is OFF at TEST_TIME (+12) */
 
-extern int check_single_tmrec(char *time_str, const unsigned int *ptime);
-extern int check_multi_tmrec(struct sip_msg *_, char *time_rec,
-                             unsigned int *ptime);
+extern int check_time_rec(struct sip_msg *_, char *time_rec,
+                          unsigned int *ptime);
 
 
-int ctr(const char *_rec, unsigned int *ts)
+int ctr(const char *_rec, time_t *ts)
 {
 	char *rec;
 	int rc, len;
+	time_t _ts;
 
-	/* it seems check_single_tmrec() writes to the input buffer, so dup it! */
+	if (!ts) {
+		_ts = time(NULL);
+		ts = &_ts;
+	}
+
+	/* it seems _tmrec_check_str() writes to the input buffer, so dup it! */
 	len = strlen(_rec);
 	rec = shm_malloc(len + 1);
 	memcpy(rec, _rec, len);
 	rec[len] = '\0';
 
-	rc = check_single_tmrec(rec, ts);
+	rc = _tmrec_check_str(rec, *ts);
 	shm_free(rec);
 
 	return rc;
 }
 
 
-int cmtr(const char *_rec, unsigned int *ts)
+int cmtr(const char *_rec, unsigned int ts)
 {
 	char *rec;
-	int rc, len;
+	int rc1, rc2, len;
+	tmrec *tr;
 
-	/* it seems check_single_tmrec() writes to the input buffer, so dup it! */
+	/* it seems _tmrec_check_str() writes to the input buffer, so dup it! */
 	len = strlen(_rec);
 	rec = shm_malloc(len + 1);
 	memcpy(rec, _rec, len);
 	rec[len] = '\0';
 
-	rc = check_multi_tmrec(NULL, rec, ts);
+	/* rc1: quick string parsing & evaluation */
+	rc1 = check_time_rec(NULL, rec, &ts);
+
+	/* rc2: parse -> eval -> free */
+	tr = tmrec_expr_parse(rec, SHM_ALLOC);
+	if (!tr) {
+		rc2 = -2;
+	} else {
+		rc2 = _tmrec_expr_check(tr, (time_t)ts);
+		tmrec_expr_free(tr);
+	}
+
+	ok(rc1 == rc2);
 	shm_free(rec);
 
-	return rc;
+	return rc1;
 }
 
 
 void test_check_single_tmrec(void)
 {
 	int rc1, rc2;
-	unsigned int now = TEST_TIME;
+	time_t now = TEST_TIME;
 
 	_tz_set(US);
 	/* no timezone, DTSTART is inclusive, local time */
@@ -273,11 +291,11 @@ void test_check_single_tmrec(void)
 }
 
 
-void test_check_multi_tmrec(void)
+void test_check_tmrec_expr(void)
 {
 	#define _1 UTC"|20200605T115135|20200605T115136"
 	#define _0 UTC"|20200605T115135|20200605T115135"
-	#define _ctr(_tr) cmtr(_tr, &now)
+	#define _ctr(_tr) cmtr(_tr, now)
 
 	unsigned int now = TEST_TIME;
 
@@ -434,5 +452,5 @@ void test_check_multi_tmrec(void)
 void mod_tests(void)
 {
 	test_check_single_tmrec();
-	test_check_multi_tmrec();
+	test_check_tmrec_expr();
 }

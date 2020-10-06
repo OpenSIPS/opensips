@@ -1,19 +1,61 @@
+/*
+ * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2020 OpenSIPS Solutions
+ *
+ * This file is part of opensips, a free SIP server.
+ *
+ * opensips is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version
+ *
+ * opensips is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
+#include "lib/osips_malloc.h"
 #include "time_rec.h"
 #include "ut.h"
+
+/*
+ * USE_YWEEK_U	-- Sunday system - see strftime %U
+ * USE_YWEEK_V	-- ISO 8601 - see strftime %V
+ * USE_YWEEK_W	-- Monday system - see strftime %W
+ */
 
 #ifndef USE_YWEEK_U
 #ifndef USE_YWEEK_V
 #ifndef USE_YWEEK_W
-#define USE_YWEEK_W		/* Monday system */
+  #define USE_YWEEK_W		/* Monday system */
 #endif
 #endif
 #endif
+
+#define WDAY_SU 0
+#define WDAY_MO 1
+#define WDAY_TU 2
+#define WDAY_WE 3
+#define WDAY_TH 4
+#define WDAY_FR 5
+#define WDAY_SA 6
+#define WDAY_NU 7
+
+#define SEC_DAILY        (60 * 60 * 24)
+#define SEC_WEEKLY       (7 * SEC_DAILY)
+#define SEC_MONTHLY_MAX  (31 * SEC_DAILY)
+#define SEC_YEARLY_MAX   (366 * SEC_DAILY)
 
 #ifdef USE_YWEEK_U
 #define SUN_WEEK(t)	(int)(((t)->tm_yday + 7 - \
@@ -26,6 +68,8 @@
 #define ac_get_wday_yr(t) (int)((t)->tm_yday/7)
 #define ac_get_wday_mr(t) (int)(((t)->tm_mday-1)/7)
 
+#define is_leap_year(yyyy) ((((yyyy)%400))?(((yyyy)%100)?(((yyyy)%4)?0:1):0):1)
+
 #define REC_ERR    -1
 #define REC_MATCH   0
 #define REC_NOMATCH 1
@@ -33,14 +77,81 @@
 #define _IS_SET(x) ((x) > 0)
 #define _D(c) ((c) -'0')
 
+#define TR_SEPARATOR '|'
+
+#define load_TR_value( _p,_s, _tr, _func, _err, _done) \
+	do{ \
+		int _rc = 0; \
+		_s = strchr(_p, (int)TR_SEPARATOR); \
+		if (_s) \
+			*_s = 0; \
+		/* LM_DBG("----parsing tr param <%s>\n",_p); \ */\
+		if(_s != _p) {\
+			_rc = _func( _tr, _p); \
+			if (_rc < 0) {\
+				LM_DBG("func error\n"); \
+				if (_s) *_s = TR_SEPARATOR; \
+				goto _err; \
+			} \
+		} \
+		if (_s) { \
+			*_s = TR_SEPARATOR; \
+			if (_rc == 0) \
+				_p = _s+1; /* rc > 1 means: "input not consumed" */ \
+			if ( *(_p)==0 ) \
+				goto _done; \
+		} else if (_rc == 0) { /* if all "input is consumed" */ \
+			goto _done; \
+		}\
+	} while(0)
+
+
+typedef struct _ac_maxval
+{
+	int yweek;
+	int yday;
+	int ywday;
+	int mweek;
+	int mday;
+	int mwday;
+} ac_maxval_t, *ac_maxval_p;
+
+typedef struct _ac_tm
+{
+	time_t time;
+	struct tm t;
+	int mweek;
+	int yweek;
+	int ywday;
+	int mwday;
+	char flags;
+} ac_tm_t, *ac_tm_p;
+
+#define TR_OP_NUL 0
+#define TR_OP_AND 1
+#define TR_OP_OR  2
+
+int ac_tm_reset(ac_tm_p);
+
+int ac_get_mweek(struct tm*);
+int ac_get_yweek(struct tm*);
+int ac_get_wkst();
+
+int ac_print(ac_tm_p);
+
+time_t ic_parse_datetime(char*,struct tm*);
+time_t ic_parse_duration(char*);
+
+tr_byxxx_p ic_parse_byday(char*, char);
+tr_byxxx_p ic_parse_byxxx(char*, char);
+int ic_parse_wkst(char*);
 
 
 static inline int strz2int(char *_bp)
 {
 	int _v;
 	char *_p;
-	if(!_bp)
-		return 0;
+
 	_v = 0;
 	_p = _bp;
 	while(*_p && *_p>='0' && *_p<='9')
@@ -50,6 +161,23 @@ static inline int strz2int(char *_bp)
 	}
 	return _v;
 }
+
+
+/**
+ * Check if @x falls within the recurring [@bgn, @end) time interval,
+ * according to @freq.
+ *
+ * @x: value to check
+ * @bgn: interval start
+ * @end: interval end
+ * @dur: duration of the interval (effectively: @end - @bgn)
+ * @freq: FREQ_WEEKLY / FREQ_MONTHLY / FREQ_YEARLY
+ *
+ * Return: REC_MATCH or REC_NOMATCH
+ */
+int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
+                    time_t dur, int freq);
+
 
 static inline void ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 {
@@ -145,8 +273,7 @@ time_t tz_adjust_ts(time_t unix_time, const str *tz)
 }
 
 
-
-void ac_tm_set_time(ac_tm_p _atp, time_t _t)
+static inline void ac_tm_set_time(ac_tm_p _atp, time_t _t)
 {
 	struct tm ltime;
 
@@ -379,10 +506,12 @@ tmrec_p tmrec_new(char alloc)
 	return _trp;
 }
 
-int tmrec_free(tmrec_p _trp)
+void tmrec_free(tmrec *tr)
 {
+	tmrec_p _trp = (tmrec_p)tr;
+
 	if(!_trp)
-		return -1;
+		return;
 
 	tr_byxxx_free(_trp->byday);
 	tr_byxxx_free(_trp->bymday);
@@ -397,8 +526,6 @@ int tmrec_free(tmrec_p _trp)
 		shm_free(_trp->tz);
 		shm_free(_trp);
 	}
-
-	return 0;
 }
 
 int tr_parse_tz(tmrec_p _trp, char *_in)
@@ -547,9 +674,10 @@ int tr_parse_wkst(tmrec_p _trp, char *_in)
 	return 0;
 }
 
-int tr_print(tmrec_p _trp)
+int tmrec_print(const tmrec *tr)
 {
 	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"};
+	tmrec_p _trp = (tmrec_p)tr;
 	int i;
 
 	if(!_trp)
@@ -1009,7 +1137,7 @@ int check_byxxx(tmrec_p, ac_tm_p);
  *       -1/REC_ERR - error
  *        1/REC_NOMATCH - the time falls out
  */
-int check_tmrec(tmrec_p _trp, ac_tm_p _atp)
+int check_tmrec(const tmrec_p _trp, ac_tm_p _atp)
 {
 	/* it is before start date */
 	if(_atp->time < _trp->dtstart)
@@ -1361,3 +1489,590 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 }
 
 
+static inline int _tmrec_parse(const char *tr, tmrec_t *time_rec)
+{
+	char *p, *s;
+	osips_free_t free_f = (time_rec->flags & PKG_ALLOC ?
+	                           osips_pkg_free : osips_shm_free);
+
+	/* empty definition? */
+	if (!tr || *tr == '\0')
+		return 0;
+
+	p = (char *)tr;
+
+	load_TR_value(p, s, time_rec, tr_parse_tz, parse_error, done);
+
+	/* Important: make sure to set the tz NOW, before more parsing... */
+	if (time_rec->tz)
+		_tz_set(time_rec->tz);
+
+	load_TR_value(p, s, time_rec, tr_parse_dtstart, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_dtend, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_duration, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_freq, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_until, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_interval, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_byday, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_bymday, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_byyday, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_byweekno, parse_error, done);
+	load_TR_value(p, s, time_rec, tr_parse_bymonth, parse_error, done);
+
+done:
+	if (time_rec->tz)
+		tz_reset();
+
+	return 0;
+
+parse_error:
+	LM_ERR("parse error in <%s> around position %i\n",
+	       tr, (int)(long)(p-tr));
+	if (time_rec->tz) {
+		free_f(time_rec->tz);
+		tz_reset();
+		time_rec->tz = NULL;
+	}
+
+	return -1;
+}
+
+
+tmrec *tmrec_parse(const char *tr, char alloc)
+{
+	tmrec_p time_rec;
+
+	time_rec = tmrec_new(alloc);
+	if (!time_rec) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	if (_tmrec_parse(tr, time_rec) < 0) {
+		tmrec_free(time_rec);
+		return NULL;
+	}
+
+	return (tmrec *)time_rec;
+}
+
+
+int _tmrec_check(const tmrec *_tr, time_t time)
+{
+	tmrec_t *tr = (tmrec_p)_tr;
+	ac_tm_t att;
+
+	/* shortcut: if there is no dstart, timerec is valid */
+	if (tr->dtstart == 0)
+		return 1;
+
+	/* set current time */
+	ac_tm_set_time(&att, time);
+
+	/* does the recv_time match the specified interval?  */
+	return !check_tmrec(tr, &att);
+}
+
+
+int _tmrec_check_str(const char *tr, time_t check_time)
+{
+	tmrec_t time_rec;
+	int rc;
+
+	LM_DBG("checking: '%s'\n", tr);
+	memset(&time_rec, 0, sizeof time_rec);
+	time_rec.flags = PKG_ALLOC;
+
+	if (_tmrec_parse(tr, &time_rec) < 0) {
+		LM_ERR("failed to parse time rec\n");
+		return -2;
+	}
+
+	rc = _tmrec_check(&time_rec, check_time) ? 1 : -1;
+
+	if (time_rec.tz)
+		pkg_free(time_rec.tz);
+
+	return rc;
+}
+
+
+int _tmrec_expr_check_str(const char *trx, time_t check_time)
+{
+	char *p, *q, bkp, tmp = 77, need_close, invert_next = 0, op = 0;
+	str aux;
+	enum {
+		NEED_OPERAND,
+		NEED_OPERATOR,
+	} state = NEED_OPERAND;
+
+	int rc = 0, _rc;
+
+	LM_DBG("checking: %s\n", trx);
+
+	/* NULL input -> nothing to match against -> no match! */
+	if (!trx)
+		return -1;
+
+	for (p = (char *)trx; *p != '\0'; p++) {
+		if (is_ws(*p))
+			continue;
+
+		switch (state) {
+		case NEED_OPERAND:
+			switch (*p) {
+			case ')':
+			case '&':
+			case '/':
+				LM_ERR("failed to parse time rec (unexpected '%c')\n", *p);
+				goto parse_err;
+
+			case '!':
+				invert_next = !invert_next;
+				continue;
+
+			case '(':
+				for (need_close = 1, q = p + 1; *q != '\0'; q++) {
+					switch (*q) {
+					case '(':
+						need_close++;
+						break;
+
+					case ')':
+						need_close--;
+						break;
+
+					default:
+						continue;
+					}
+
+					if (!need_close)
+						break;
+				}
+
+				if (need_close) {
+					LM_ERR("failed to parse time rec (bad parentheses)\n");
+					goto parse_err;
+				}
+
+				aux.s = p + 1;
+				aux.len = q - aux.s;
+				trim(&aux);
+
+				bkp = aux.s[aux.len];
+				aux.s[aux.len] = '\0';
+				_rc = _tmrec_expr_check_str(aux.s, check_time) + 1;
+				aux.s[aux.len] = bkp;
+
+				if (_rc < 0)
+					goto parse_err;
+
+				p = q;
+
+				if (invert_next) {
+					invert_next = 0;
+					_rc = (_rc + 2) % 4;
+				}
+
+				if (op == 1)
+					rc &= _rc;
+				else if (op == 2)
+					rc |= _rc;
+				else
+					rc = tmp = _rc;
+
+				state = NEED_OPERATOR;
+				break;
+
+			default:
+				for (q = p + 1; *q != '\0'; q++) {
+					if (*q == '!' || *q == '(' || *q == ')') {
+						LM_ERR("failed to parse multi time rec at '%c' "
+						       "(unexpected character)\n", *q);
+						goto parse_err;
+					}
+
+					if (is_ws(*q)) {
+						state = NEED_OPERATOR;
+						break;
+					} else if (*q == '&' || *q == '/') {
+						break;
+					}
+				}
+
+				aux.s = p;
+				aux.len = q - aux.s;
+				trim(&aux);
+
+				bkp = aux.s[aux.len];
+				aux.s[aux.len] = '\0';
+				_rc = _tmrec_check_str(aux.s, check_time) + 1;
+				aux.s[aux.len] = bkp;
+
+				if (_rc < 0) {
+					LM_ERR("failed to parse single time rec: '%.*s'\n",
+					       aux.len, aux.s);
+					return _rc - 1;
+				}
+
+				if (invert_next) {
+					invert_next = 0;
+					_rc = (_rc + 2) % 4;
+				}
+
+				if (*q == '&') {
+					if (op == 2) {
+						LM_ERR("failed to parse rec at '&' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					if (op == 0)
+						rc = _rc;
+					op = 1;
+				} else if (*q == '/') {
+					if (op == 1) {
+						LM_ERR("failed to parse rec at '/' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					op = 2;
+				}
+
+				if (op == 1)
+					rc &= _rc;
+				else if (op == 2)
+					rc |= _rc;
+				else
+					rc = tmp = _rc;
+
+				if (*q == '\0')
+					return rc - 1;
+
+				p = q;
+			}
+			break;
+
+		case NEED_OPERATOR:
+			switch (*p) {
+				case '&':
+					if (op == 2) {
+						LM_ERR("failed to parse rec at '&' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					} else if (op == 0) {
+						rc = tmp;
+					}
+
+					op = 1;
+					state = NEED_OPERAND;
+					break;
+
+				case '/':
+					if (op == 1) {
+						LM_ERR("failed to parse rec at '/' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					op = 2;
+					state = NEED_OPERAND;
+					break;
+
+				default:
+					LM_ERR("failed to parse the rec string (bad char: '%c', "
+					       "expected operator)\n", *p);
+					goto parse_err;
+			}
+		}
+	}
+
+	if (state == NEED_OPERAND && op != 0) {
+		LM_ERR("failed to parse the rec string (missing operand)\n");
+		LM_ERR("input given: '%s'\n", trx);
+		return -2;
+	}
+
+	if (invert_next)
+		return (rc + 2) % 4 - 1;
+	else
+		return rc - 1;
+
+	return rc;
+
+parse_err:
+	LM_ERR("input given: '%s'\n", trx);
+	return -2;
+}
+
+
+tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type)
+{
+	enum {
+		NEED_OPERAND,
+		NEED_OPERATOR,
+	} state = NEED_OPERAND;
+
+	tmrec_expr_t *exp, *e;
+	osips_malloc_t malloc_f;
+	char *p, *q, bkp, need_close, invert_next = 0;
+	str aux;
+	int rc;
+
+	LM_DBG("checking: %s\n", trx);
+
+	if (!trx)
+		return NULL;
+
+	malloc_f = (alloc_type & PKG_ALLOC ?
+	                osips_pkg_malloc : osips_shm_malloc);
+	exp = malloc_f(sizeof *exp);
+	if (!exp) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	memset(exp, 0, sizeof *exp);
+	INIT_LIST_HEAD(&exp->operands);
+	exp->flags = alloc_type;
+
+	for (p = (char *)trx; *p != '\0'; p++) {
+		if (is_ws(*p))
+			continue;
+
+		switch (state) {
+		case NEED_OPERAND:
+			switch (*p) {
+			case ')':
+			case '&':
+			case '/':
+				LM_ERR("failed to parse time rec (unexpected '%c')\n", *p);
+				goto parse_err;
+
+			case '!':
+				invert_next = !invert_next;
+				continue;
+
+			case '(':
+				for (need_close = 1, q = p + 1; *q != '\0'; q++) {
+					switch (*q) {
+					case '(':
+						need_close++;
+						break;
+
+					case ')':
+						need_close--;
+						break;
+
+					default:
+						continue;
+					}
+
+					if (!need_close)
+						break;
+				}
+
+				if (need_close) {
+					LM_ERR("failed to parse time rec (bad parentheses)\n");
+					goto parse_err;
+				}
+
+				aux.s = p + 1;
+				aux.len = q - aux.s;
+				trim(&aux);
+
+				bkp = aux.s[aux.len];
+				aux.s[aux.len] = '\0';
+				e = tmrec_expr_parse(aux.s, alloc_type);
+				aux.s[aux.len] = bkp;
+
+				if (!e)
+					goto parse_err;
+
+				if (invert_next) {
+					invert_next = 0;
+					e->inverted = 1;
+				}
+
+				list_add_tail(&e->list, &exp->operands);
+				p = q;
+				state = NEED_OPERATOR;
+				break;
+
+			default:
+				for (q = p + 1; *q != '\0'; q++) {
+					if (*q == '!' || *q == '(' || *q == ')') {
+						LM_ERR("failed to parse multi time rec at '%c' "
+						       "(unexpected character)\n", *q);
+						goto parse_err;
+					}
+
+					if (is_ws(*q)) {
+						state = NEED_OPERATOR;
+						break;
+					} else if (*q == '&' || *q == '/') {
+						break;
+					}
+				}
+
+				e = malloc_f(sizeof *e);
+				if (!e) {
+					LM_ERR("oom\n");
+					goto parse_err;
+				}
+
+				memset(e, 0, sizeof *e);
+				INIT_LIST_HEAD(&e->operands);
+				e->flags = e->tr.flags = alloc_type;
+				e->is_leaf = 1;
+
+				list_add_tail(&e->list, &exp->operands);
+
+				aux.s = p;
+				aux.len = q - aux.s;
+				trim(&aux);
+
+				bkp = aux.s[aux.len];
+				aux.s[aux.len] = '\0';
+				rc = _tmrec_parse(aux.s, &e->tr);
+				aux.s[aux.len] = bkp;
+
+				if (rc < 0)
+					goto parse_err;
+
+				if (invert_next) {
+					invert_next = 0;
+					e->inverted = 1;
+				}
+
+				if (*q == '&') {
+					if (exp->op == TR_OP_OR) {
+						LM_ERR("failed to parse rec at '&' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					exp->op = TR_OP_AND;
+				} else if (*q == '/') {
+					if (exp->op == TR_OP_AND) {
+						LM_ERR("failed to parse rec at '/' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					exp->op = TR_OP_OR;
+				}
+
+				if (*q == '\0')
+					return exp;
+
+				p = q;
+			}
+			break;
+
+		case NEED_OPERATOR:
+			switch (*p) {
+				case '&':
+					if (exp->op == TR_OP_OR) {
+						LM_ERR("failed to parse rec at '&' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					exp->op = TR_OP_AND;
+					state = NEED_OPERAND;
+					break;
+
+				case '/':
+					if (exp->op == TR_OP_AND) {
+						LM_ERR("failed to parse rec at '/' (only 1 operator "
+						       "type is allowed within an expression)\n");
+						goto parse_err;
+					}
+
+					exp->op = TR_OP_OR;
+					state = NEED_OPERAND;
+					break;
+
+				default:
+					LM_ERR("failed to parse the rec string (bad char: '%c', "
+					       "expected operator)\n", *p);
+					goto parse_err;
+			}
+		}
+	}
+
+	if (state == NEED_OPERAND && exp->op != TR_OP_NUL) {
+		LM_ERR("failed to parse the rec string (missing operand)\n");
+		goto parse_err;
+	}
+
+	if (invert_next)
+		exp->inverted = 1;
+
+	return exp;
+
+parse_err:
+	tmrec_expr_free(exp);
+	LM_ERR("parsing failed, input given: '%s'\n", trx);
+	return NULL;
+}
+
+
+int _tmrec_expr_check(const tmrec_expr *_trx, time_t check_time)
+{
+	struct list_head *el;
+	const tmrec_expr_t *exp, *trx = (const tmrec_expr_t *)_trx;
+	int rc = 0;
+
+	if (!trx)
+		return -1;
+
+	if (trx->is_leaf) {
+		rc = _tmrec_check(&trx->tr, check_time) ? 2 : 0;
+		goto out;
+	}
+
+	if (list_empty(&trx->operands))
+		goto out;
+
+	rc = (trx->op == TR_OP_AND ? 2 : 0);
+
+	list_for_each (el, &trx->operands) {
+		exp = list_entry(el, tmrec_expr_t, list);
+
+		if (trx->op == TR_OP_AND)
+			rc = rc & (_tmrec_expr_check(exp, check_time) + 1);
+		else
+			rc = rc | (_tmrec_expr_check(exp, check_time) + 1);
+	}
+
+out:
+	if (trx->inverted)
+		return (rc + 2) % 4 - 1;
+
+	return rc - 1;
+}
+
+
+void tmrec_expr_free(tmrec_expr *_trx)
+{
+	struct list_head *el, *next;
+	tmrec_expr_t *exp, *trx = (tmrec_expr_t *)_trx;
+	osips_free_t free_f;
+
+	if (!trx)
+		return;
+
+	free_f = (trx->flags & PKG_ALLOC ?
+	              osips_pkg_free : osips_shm_free);
+
+	list_for_each_safe (el, next, &trx->operands) {
+		exp = list_entry(el, tmrec_expr_t, list);
+		tmrec_expr_free(exp);
+	}
+
+	free_f(trx->tr.tz);
+	free_f(trx);
+}

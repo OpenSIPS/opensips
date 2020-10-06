@@ -127,7 +127,7 @@ typedef struct rt_info_ {
 	/* priority of the rule */
 	unsigned int priority;
 	/* timerec says when the rule is on */
-	tmrec_t *time_rec;
+	tmrec_expr *time_rec;
 	/* script route to be executed */
 	char* route_idx;
 	/* opaque string with rule attributes */

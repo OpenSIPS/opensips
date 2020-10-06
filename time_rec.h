@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
- * This file is part of ser, a free SIP server.
+ * This file is part of opensips, a free SIP server.
  *
  * opensips is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,195 +16,81 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- *
- * History:
- * -------
- * 2003-06-24: file imported from tmrec (bogdan)
- * 2003-xx-xx: file Created (daniel)
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
 #ifndef _TIME_REC_H_
 #define _TIME_REC_H_
 
-
-/************************ imported from "ac_tm.h"  ***************************/
-
 #include <time.h>
 
+#include "mem/common.h"
+#include "lib/list.h"
 
-/* USE_YWEEK_U	-- Sunday system - see strftime %U
- * USE_YWEEK_V	-- ISO 8601 - see strftime %V
- * USE_YWEEK_W	-- Monday system - see strftime %W
-*/
+typedef void tmrec;
+typedef void tmrec_expr;
 
-#ifndef USE_YWEEK_U
-# ifndef USE_YWEEK_V
-#  ifndef USE_YWEEK_W
-#   define USE_YWEEK_W
-#  endif
-# endif
-#endif
+#define SHM_ALLOC    0
+#define PKG_ALLOC    1
 
-#define FREQ_NOFREQ  0
-#define FREQ_YEARLY  1
-#define FREQ_MONTHLY 2
-#define FREQ_WEEKLY  3
-#define FREQ_DAILY   4
 
-#define WDAY_SU 0
-#define WDAY_MO 1
-#define WDAY_TU 2
-#define WDAY_WE 3
-#define WDAY_TH 4
-#define WDAY_FR 5
-#define WDAY_SA 6
-#define WDAY_NU 7
+tmrec *tmrec_parse(const char *tr, char alloc_type);
 
-#define SEC_DAILY        (60 * 60 * 24)
-#define SEC_WEEKLY       (7 * SEC_DAILY)
-#define SEC_MONTHLY_MAX  (31 * SEC_DAILY)
-#define SEC_YEARLY_MAX   (366 * SEC_DAILY)
-
-#define SHM_ALLOC	0
-#define PKG_ALLOC	1
-
-#define is_leap_year(yyyy) ((((yyyy)%400))?(((yyyy)%100)?(((yyyy)%4)?0:1):0):1)
-
-#define TR_SEPARATOR '|'
-
-#define load_TR_value( _p,_s, _tr, _func, _err, _done) \
-	do{ \
-		int _rc = 0; \
-		_s = strchr(_p, (int)TR_SEPARATOR); \
-		if (_s) \
-			*_s = 0; \
-		/* LM_DBG("----parsing tr param <%s>\n",_p); \ */\
-		if(_s != _p) {\
-			_rc = _func( _tr, _p); \
-			if (_rc < 0) {\
-				LM_DBG("func error\n"); \
-				if (_s) *_s = TR_SEPARATOR; \
-				goto _err; \
-			} \
-		} \
-		if (_s) { \
-			*_s = TR_SEPARATOR; \
-			if (_rc == 0) \
-				_p = _s+1; /* rc > 1 means: "input not consumed" */ \
-			if ( *(_p)==0 ) \
-				goto _done; \
-		} else if (_rc == 0) { /* if all "input is consumed" */ \
-			goto _done; \
-		}\
-	} while(0)
-
-typedef struct _ac_maxval
+int _tmrec_check(const tmrec *tr, time_t check_time);
+static inline int tmrec_check(const tmrec *tr)
 {
-	int yweek;
-	int yday;
-	int ywday;
-	int mweek;
-	int mday;
-	int mwday;
-} ac_maxval_t, *ac_maxval_p;
+	return _tmrec_check(tr, time(NULL));
+}
 
-typedef struct _ac_tm
-{
-	time_t time;
-	struct tm t;
-	int mweek;
-	int yweek;
-	int ywday;
-	int mwday;
-	char flags;
-} ac_tm_t, *ac_tm_p;
+void tmrec_free(tmrec *tr);
 
-typedef struct _tr_byxxx
-{
-	int nr;
-	int *xxx;
-	int *req;
-	char flags;
-} tr_byxxx_t, *tr_byxxx_p;
-
-typedef struct _tmrec
-{
-	time_t dtstart;
-	struct tm ts;
-	time_t dtend;
-	time_t duration;
-	time_t until;
-	int freq;
-	int interval;
-	tr_byxxx_p byday;
-	tr_byxxx_p bymday;
-	tr_byxxx_p byyday;
-	tr_byxxx_p bymonth;
-	tr_byxxx_p byweekno;
-	int wkst;
-	char flags;
-	char *tz;
-} tmrec_t, *tmrec_p;
-
-
-void ac_tm_set_time(ac_tm_p _atp, time_t _t);
-
-int ac_tm_reset(ac_tm_p);
-
-int ac_get_mweek(struct tm*);
-int ac_get_yweek(struct tm*);
-int ac_get_wkst();
-
-int ac_print(ac_tm_p);
-
-tr_byxxx_p tr_byxxx_new(char);
-int tr_byxxx_init(tr_byxxx_p, int);
-int tr_byxxx_free(tr_byxxx_p);
-
-tmrec_p tmrec_new(char);
-int tmrec_free(tmrec_p);
-
-int tr_parse_tz(tmrec_p, char*);
-int tr_parse_dtstart(tmrec_p, char*);
-int tr_parse_dtend(tmrec_p, char*);
-int tr_parse_duration(tmrec_p, char*);
-int tr_parse_until(tmrec_p, char*);
-int tr_parse_freq(tmrec_p, char*);
-int tr_parse_interval(tmrec_p, char*);
-int tr_parse_byday(tmrec_p, char*);
-int tr_parse_bymday(tmrec_p, char*);
-int tr_parse_byyday(tmrec_p, char*);
-int tr_parse_bymonth(tmrec_p, char*);
-int tr_parse_byweekno(tmrec_p, char*);
-int tr_parse_wkst(tmrec_p, char*);
-
-int tr_print(tmrec_p);
-time_t ic_parse_datetime(char*,struct tm*);
-time_t ic_parse_duration(char*);
-
-tr_byxxx_p ic_parse_byday(char*, char);
-tr_byxxx_p ic_parse_byxxx(char*, char);
-int ic_parse_wkst(char*);
-
-int check_tmrec(tmrec_p _trp, ac_tm_p _atp);
-
+int tmrec_print(const tmrec *tr);
 
 /**
- * Check if @x falls within the recurring [@bgn, @end) time interval,
- * according to @freq.
+ * _tmrec_check_str() - verify that a time recurrence string matches, at the
+ *                      given point in time
  *
- * @x: value to check
- * @bgn: interval start
- * @end: interval end
- * @dur: duration of the interval (effectively: @end - @bgn)
- * @freq: FREQ_WEEKLY / FREQ_MONTHLY / FREQ_YEARLY
+ * Return:
+ *    1 - match
+ *   -1 - no match
+ *   -2 - parse error (bad input)
+ *   -3 - internal error
  *
- * Return: REC_MATCH or REC_NOMATCH
+ * FIXME: @tr must be write-able memory, otherwise I will segfault!
  */
-int check_recur_itv(struct tm *x, struct tm *bgn, struct tm *end,
-                    time_t dur, int freq);
+int _tmrec_check_str(const char *tr, time_t check_time);
+static inline int tmrec_check_str(const char *tr)
+{
+	return _tmrec_check_str(tr, time(NULL));
+}
+
+
+tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type);
+
+int _tmrec_expr_check(const tmrec_expr *trx, time_t check_time);
+static inline int tmrec_expr_check(const tmrec_expr *trx)
+{
+	return _tmrec_expr_check(trx, time(NULL));
+}
+
+void tmrec_expr_free(tmrec_expr *trx);
+
+int tmrec_expr_print(const tmrec_expr *trx);
+
+/**
+ * This function expects the @trx string to be trim()'ed beforehand.
+ *
+ * Return:
+ *     1: match
+ *    -1: no match
+ *    -2: parse error (bad input)
+ *    -3: internal error
+ */
+int _tmrec_expr_check_str(const char *trx, time_t check_time);
+static inline int tmrec_expr_check_str(const char *trx)
+{
+	return _tmrec_expr_check_str(trx, time(NULL));
+}
 
 
 /**
@@ -231,6 +118,75 @@ void tz_reset(void);
  * Note: If @tz == NULL, @unix_time will be ajusted to local time
  */
 time_t tz_adjust_ts(time_t unix_time, const str *tz);
+
+
+/*************** RFC 2445/5545 low-level abstractions ****************/
+
+#define FREQ_NOFREQ  0
+#define FREQ_YEARLY  1
+#define FREQ_MONTHLY 2
+#define FREQ_WEEKLY  3
+#define FREQ_DAILY   4
+
+typedef struct _tr_byxxx
+{
+	int nr;
+	int *xxx;
+	int *req;
+	char flags;
+} tr_byxxx_t, *tr_byxxx_p;
+
+tr_byxxx_p tr_byxxx_new(char);
+int tr_byxxx_init(tr_byxxx_p, int);
+int tr_byxxx_free(tr_byxxx_p);
+
+typedef struct _tmrec
+{
+	time_t dtstart;
+	struct tm ts;
+	time_t dtend;
+	time_t duration;
+	time_t until;
+	int freq;
+	int interval;
+	tr_byxxx_p byday;
+	tr_byxxx_p bymday;
+	tr_byxxx_p byyday;
+	tr_byxxx_p bymonth;
+	tr_byxxx_p byweekno;
+	int wkst;
+	char flags;
+	char *tz;
+} tmrec_t, *tmrec_p;
+
+typedef struct _tmrec_expr
+{
+	char is_leaf;
+	char flags;
+
+	char op;
+	struct list_head operands;
+	char inverted;
+
+	tmrec_t tr;
+	struct list_head list;
+} tmrec_expr_t;
+
+tmrec_p tmrec_new(char);
+
+int tr_parse_tz(tmrec_p, char*);
+int tr_parse_dtstart(tmrec_p, char*);
+int tr_parse_dtend(tmrec_p, char*);
+int tr_parse_duration(tmrec_p, char*);
+int tr_parse_until(tmrec_p, char*);
+int tr_parse_freq(tmrec_p, char*);
+int tr_parse_interval(tmrec_p, char*);
+int tr_parse_byday(tmrec_p, char*);
+int tr_parse_bymday(tmrec_p, char*);
+int tr_parse_byyday(tmrec_p, char*);
+int tr_parse_bymonth(tmrec_p, char*);
+int tr_parse_byweekno(tmrec_p, char*);
+int tr_parse_wkst(tmrec_p, char*);
 
 
 #endif

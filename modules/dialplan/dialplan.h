@@ -50,7 +50,7 @@ typedef struct dpl_node{
 	struct subst_expr * repl_comp;
 	str attrs;
 	str timerec;
-	tmrec_t *parsed_timerec;
+	tmrec_expr *parsed_timerec;
 
 	struct dpl_node * next; /*next rule*/
 }dpl_node_t, *dpl_node_p;

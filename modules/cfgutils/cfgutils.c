@@ -108,7 +108,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
-int check_multi_tmrec(struct sip_msg *_, char *time_rec, unsigned int *ptime);
+int check_time_rec(struct sip_msg *_, char *time_rec, unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
@@ -189,7 +189,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, fixup_static_lock, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-	{"check_time_rec", (cmd_function)check_multi_tmrec, {
+	{"check_time_rec", (cmd_function)check_time_rec, {
 		{CMD_PARAM_STR, fixup_time_rec, fixup_free_time_rec},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
 		ALL_ROUTES},
@@ -321,8 +321,10 @@ static int fixup_time_rec(void **param)
 	tmr = *(str *)*param;
 	trim(&tmr);
 
-	if (pkg_nt_str_dup(&aux, &tmr) < 0)
+	if (pkg_nt_str_dup(&aux, &tmr) < 0) {
+		LM_ERR("oom\n");
 		return E_OUT_OF_MEM;
+	}
 
 	*param = aux.s;
 	return 0;
@@ -832,304 +834,8 @@ static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 	return 1;
 }
 
-/**
- * return values:
-			1 - match
-			-1 - no match
-			-2 - parse error (bad input)
-			-3 - internal error
 
-	NOTICE: @time_str must be write-able memory, otherwise I will segfault!
- */
-int check_single_tmrec(char *time_str, const unsigned int *ptime)
+int check_time_rec(struct sip_msg *_, char *time_rec, unsigned int *ptime)
 {
-	tmrec_p time_rec;
-	char *p, *s;
-	ac_tm_t att;
-	time_t check_time;
-	int rc = -1;
-
-	p = time_str;
-
-	LM_DBG("checking: '%s'\n", p);
-
-	time_rec = tmrec_new(PKG_ALLOC);
-	if (time_rec==0) {
-		LM_ERR("no more shm mem\n");
-		return -3;
-	}
-
-	if (!ptime)
-		check_time = time(NULL);
-	else
-		check_time = *ptime;
-
-	load_TR_value( p, s, time_rec, tr_parse_tz, parse_error, done);
-
-	/* Important: make sure to set the tz NOW, before more parsing... */
-	if (time_rec->tz)
-		_tz_set(time_rec->tz);
-
-	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_dtend, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
-
-	LM_DBG("Time rec created, tz: %s\n", time_rec->tz);
-
-done:
-	/* shortcut: if there is no dstart, timerec is valid */
-	if (time_rec->dtstart==0)
-		goto match;
-
-	/* set current time */
-	ac_tm_set_time(&att, check_time);
-
-	/* does the recv_time match the specified interval?  */
-	if (check_tmrec( time_rec, &att)!=0)
-		goto no_match;
-
-match:
-	if (time_rec->tz)
-		tz_reset();
-
-	tmrec_free(time_rec);
-	return 1;
-
-parse_error:
-	LM_ERR("parse error in <%s> around position %ld\n", time_str, p - time_str);
-	rc = -2;
-
-no_match:
-	if (time_rec->tz)
-		tz_reset();
-
-	tmrec_free(time_rec);
-	return rc;
-}
-
-
-/**
- * This function expects the @time_rec to be trim()'ed beforehand.
- *
- * Return:
- *     1: match
- *    -1: no match
- *    -2: parse error (bad input)
- *    -3: internal error
- */
-int check_multi_tmrec(struct sip_msg *_, char *time_rec, unsigned int *ptime)
-{
-	char *p, *q, bkp, tmp = 77, need_close, invert_next = 0, op = 0;
-	str aux;
-	enum {
-		NEED_OPERAND,
-		NEED_OPERATOR,
-	} state = NEED_OPERAND;
-
-	int rc = 0, _rc;
-
-	LM_DBG("checking: %s\n", time_rec);
-
-	/* NULL input -> nothing to match against -> no match! */
-	if (!time_rec)
-		return -1;
-
-	for (p = time_rec; *p != '\0'; p++) {
-		if (is_ws(*p))
-			continue;
-
-		switch (state) {
-		case NEED_OPERAND:
-			switch (*p) {
-			case ')':
-			case '&':
-			case '/':
-				LM_ERR("failed to parse time rec (unexpected '%c')\n", *p);
-				goto parse_err;
-
-			case '!':
-				invert_next = !invert_next;
-				continue;
-
-			case '(':
-				for (need_close = 1, q = p + 1; *q != '\0'; q++) {
-					switch (*q) {
-					case '(':
-						need_close++;
-						break;
-
-					case ')':
-						need_close--;
-						break;
-
-					default:
-						continue;
-					}
-
-					if (!need_close)
-						break;
-				}
-
-				if (need_close) {
-					LM_ERR("failed to parse time rec (bad parentheses)\n");
-					goto parse_err;
-				}
-
-				aux.s = p + 1;
-				aux.len = q - aux.s;
-				trim(&aux);
-
-				bkp = aux.s[aux.len];
-				aux.s[aux.len] = '\0';
-				_rc = check_multi_tmrec(_, aux.s, ptime) + 1;
-				aux.s[aux.len] = bkp;
-
-				if (_rc < 0)
-					goto parse_err;
-
-				p = q;
-
-				if (invert_next) {
-					invert_next = 0;
-					_rc = (_rc + 2) % 4;
-				}
-
-				if (op == 1)
-					rc &= _rc;
-				else if (op == 2)
-					rc |= _rc;
-				else
-					rc = tmp = _rc;
-
-				state = NEED_OPERATOR;
-				break;
-
-			default:
-				for (q = p + 1; *q != '\0'; q++) {
-					if (*q == '!' || *q == '(' || *q == ')') {
-						LM_ERR("failed to parse multi time rec at '%c' "
-						       "(unexpected character)\n", *q);
-						goto parse_err;
-					}
-
-					if (is_ws(*q)) {
-						state = NEED_OPERATOR;
-						break;
-					} else if (*q == '&' || *q == '/') {
-						break;
-					}
-				}
-
-				aux.s = p;
-				aux.len = q - aux.s;
-				trim(&aux);
-
-				bkp = aux.s[aux.len];
-				aux.s[aux.len] = '\0';
-				_rc = check_single_tmrec(aux.s, ptime) + 1;
-				aux.s[aux.len] = bkp;
-
-				if (_rc < 0) {
-					LM_ERR("failed to parse single time rec: '%.*s'\n",
-					       aux.len, aux.s);
-					return _rc - 1;
-				}
-
-				if (invert_next) {
-					invert_next = 0;
-					_rc = (_rc + 2) % 4;
-				}
-
-				if (*q == '&') {
-					if (op == 2) {
-						LM_ERR("failed to parse rec at '&' (only 1 operator "
-						       "type is allowed within an expression)\n");
-						goto parse_err;
-					}
-
-					if (op == 0)
-						rc = _rc;
-					op = 1;
-				} else if (*q == '/') {
-					if (op == 1) {
-						LM_ERR("failed to parse rec at '/' (only 1 operator "
-						       "type is allowed within an expression)\n");
-						goto parse_err;
-					}
-
-					op = 2;
-				}
-
-				if (op == 1)
-					rc &= _rc;
-				else if (op == 2)
-					rc |= _rc;
-				else
-					rc = tmp = _rc;
-
-				if (*q == '\0')
-					return rc - 1;
-
-				p = q;
-			}
-			break;
-
-		case NEED_OPERATOR:
-			switch (*p) {
-				case '&':
-					if (op == 2) {
-						LM_ERR("failed to parse rec at '&' (only 1 operator "
-						       "type is allowed within an expression)\n");
-						goto parse_err;
-					} else if (op == 0) {
-						rc = tmp;
-					}
-
-					op = 1;
-					state = NEED_OPERAND;
-					break;
-
-				case '/':
-					if (op == 1) {
-						LM_ERR("failed to parse rec at '/' (only 1 operator "
-						       "type is allowed within an expression)\n");
-						goto parse_err;
-					}
-
-					op = 2;
-					state = NEED_OPERAND;
-					break;
-
-				default:
-					LM_ERR("failed to parse the rec string (bad char: '%c', "
-					       "expected operator)\n", *p);
-					goto parse_err;
-			}
-		}
-	}
-
-	if (state == NEED_OPERAND && op != 0) {
-		LM_ERR("failed to parse the rec string (missing operand)\n");
-		LM_ERR("input given: '%s'\n", time_rec);
-		return -2;
-	}
-
-	if (invert_next)
-		return (rc + 2) % 4 - 1;
-	else
-		return rc - 1;
-
-	return rc;
-
-parse_err:
-	LM_ERR("input given: '%s'\n", time_rec);
-	return -2;
+	return _tmrec_expr_check_str(time_rec, ptime ? *ptime : time(NULL));
 }

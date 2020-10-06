@@ -34,7 +34,7 @@ static dr_head_p create_dr_head(void);
 static void free_dr_head(dr_head_p partition);
 static int add_rule_api(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
-		tmrec_t *time_rec, void *attr);
+		tmrec_expr *time_rec, void *attr);
 
 
 static str * get_gw_name(pgw_t * gw);
@@ -185,7 +185,7 @@ static void free_dr_head(dr_head_p partition)
 
 static int add_rule_api(dr_head_p partition,unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
-		tmrec_t *time_rec, void *attr)
+		tmrec_expr *time_rec, void *attr)
 {
 	rt_info_t * rule = shm_malloc(sizeof(rt_info_t));
 	if (rule == NULL){

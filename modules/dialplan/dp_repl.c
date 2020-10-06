@@ -274,90 +274,6 @@ error:
 	return -1;
 }
 
-int timerec_print(tmrec_p _trp)
-{
-	static char *_wdays[] = {"SU", "MO", "TU", "WE", "TH", "FR", "SA"}; 
-	int i;
-	UNUSED(_wdays);
-	
-	if(!_trp)
-	{
-		LM_DBG("\n(null)\n");
-		return -1;
-	}
-	LM_DBG("Recurrence definition\n-- start time ---\n");
-	LM_DBG("Sys time: %d\n", (int)_trp->dtstart);
-	LM_DBG("Time: %02d:%02d:%02d\n", _trp->ts.tm_hour, 
-				_trp->ts.tm_min, _trp->ts.tm_sec);
-	LM_DBG("Date: %s, %04d-%02d-%02d\n", _wdays[_trp->ts.tm_wday],
-				_trp->ts.tm_year+1900, _trp->ts.tm_mon+1, _trp->ts.tm_mday);
-	LM_DBG("---\n");
-	LM_DBG("End time: %d\n", (int)_trp->dtend);
-	LM_DBG("Duration: %d\n", (int)_trp->duration);
-	LM_DBG("Until: %d\n", (int)_trp->until);
-	LM_DBG("Freq: %d\n", (int)_trp->freq);
-	LM_DBG("Interval: %d\n", (int)_trp->interval);
-	if(_trp->byday)
-	{
-		LM_DBG("Byday: \n");
-		for(i=0; i<_trp->byday->nr; i++)
-			LM_DBG(" %d%s", _trp->byday->req[i], _wdays[_trp->byday->xxx[i]]);
-		LM_DBG("\n");
-	}
-	if(_trp->bymday)
-	{
-		LM_DBG("Bymday: %d:", _trp->bymday->nr);
-		for(i=0; i<_trp->bymday->nr; i++)
-			LM_DBG(" %d", _trp->bymday->xxx[i]*_trp->bymday->req[i]);
-		LM_DBG("\n");
-	}
-	if(_trp->byyday)
-	{
-		LM_DBG("Byyday:\n");
-		for(i=0; i<_trp->byyday->nr; i++)
-			LM_DBG(" %d", _trp->byyday->xxx[i]*_trp->byyday->req[i]);
-		LM_DBG("\n");
-	}
-	if(_trp->bymonth)
-	{
-		LM_DBG("Bymonth: %d:", _trp->bymonth->nr);
-		for(i=0; i< _trp->bymonth->nr; i++)
-			LM_DBG(" %d", _trp->bymonth->xxx[i]*_trp->bymonth->req[i]);
-		LM_DBG("\n");
-	}
-	if(_trp->byweekno)
-	{
-		LM_DBG("Byweekno: \n");
-		for(i=0; i<_trp->byweekno->nr; i++)
-			LM_DBG(" %d", _trp->byweekno->xxx[i]*_trp->byweekno->req[i]);
-		LM_DBG("\n");
-	}
-	LM_DBG("Weekstart: %d\n", _trp->wkst);
-	return 0;
-}
-
-// Validate Passed Time Recurrence Instance
-static inline int check_time(tmrec_t *time_rec) {
-	ac_tm_t att;
-
-	// No TimeRec: Rule is Valid
-	if(time_rec->dtstart == 0)
-		return 1;
-
-	// Uncomment to enable Debug
-	// timerec_print(time_rec);
-
-	// Set Current Time
-	ac_tm_set_time(&att, time(0));
-
-	// Check_Tmrec will return 0 on successfully time recurrence match
-	if(check_tmrec(time_rec, &att) != 0)
-		return 0;
-
-	// Recurrence Matched -- Validating Rule
-	return 1;
-}
-
 #define DP_MAX_ATTRS_LEN	256
 static char dp_attrs_buf[DP_MAX_ATTRS_LEN+1];
 int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * attrs) {
@@ -388,7 +304,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 		if(rulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rulep->timerec.len, rulep->timerec.s);
 			// Doesn't matches time period continue with next rule
-			if(!check_time(rulep->parsed_timerec)) {
+			if(!tmrec_expr_check(rulep->parsed_timerec)) {
 				LM_DBG("Time rule doesn't match: skip next!\n");
 				continue;
 			}
@@ -412,7 +328,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 		if(rrulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rrulep->timerec.len, rrulep->timerec.s);
 			// Doesn't matches time period continue with next rule
-			if(!check_time(rrulep->parsed_timerec)) {
+			if(!tmrec_expr_check(rrulep->parsed_timerec)) {
 				LM_DBG("Time rule doesn't match: skip next!\n");
 				continue;
 			}
