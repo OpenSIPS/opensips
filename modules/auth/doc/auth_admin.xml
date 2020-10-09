@@ -184,12 +184,12 @@ modparam("auth", "realm_prefix", "sip.")
 			runtime.
 		</para>
 		<para>
-		Default value is <quote>$var(rpid)</quote>.
+		Default value is <quote>$avp(rpid)</quote>.
 		</para>
 		<example>
 		<title>rpid_avp parameter example</title>
 		<programlisting format="linespecific">
-modparam("auth", "rpid_avp", "$var(13)")
+modparam("auth", "rpid_avp", "$avp(caller_rpid)")
 		</programlisting>
 		</example>
 	</section>
