@@ -479,7 +479,7 @@ error:
  * returns 1 if everything was OK or -1 for error
  */
 static int _reply( struct cell *trans, struct sip_msg* p_msg,
-									unsigned int code, str *text, int lock )
+    unsigned int code, const str *text, int lock )
 {
 	unsigned int len;
 	char * buf, *dset;
@@ -1112,7 +1112,7 @@ error:
 
 
 int t_reply( struct cell *t, struct sip_msg* p_msg, unsigned int code,
-	str * text )
+	const str * text )
 {
 	return _reply( t, p_msg, code, text, 1 /* lock replies */ );
 }

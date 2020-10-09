@@ -141,7 +141,7 @@ static inline void update_sl_reply_stat(int code)
 }
 
 
-int sl_send_reply_helper(struct sip_msg *msg ,int code, str *text)
+int sl_send_reply_helper(struct sip_msg *msg ,int code, const str *text)
 {
 	str buf;
 	union sockaddr_union to;
@@ -209,7 +209,7 @@ error:
 	return -1;
 }
 
-int sl_send_reply(struct sip_msg *msg ,int code, str *text, str *totag)
+int sl_send_reply(struct sip_msg *msg ,int code, const str *text, str *totag)
 {
 	int ret;
 

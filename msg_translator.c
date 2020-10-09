@@ -2436,7 +2436,7 @@ error:
 }
 
 
-char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
+char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_tag,
 		struct sip_msg* msg, unsigned int *returned_len, struct bookmark *bmark)
 {
 	char *buf, *p, *received_buf, *rport_buf, *warning_buf;

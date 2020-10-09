@@ -45,8 +45,9 @@ struct sl_binds slb;
 int sl_loaded = 0;
 int tm_loaded = 0;
 
-int sig_send_reply(struct sip_msg* msg, int* code_i, str* code_s);
-int sig_send_reply_mod(struct sip_msg* msg, int code, str* reason, str* to_tag);
+int sig_send_reply(struct sip_msg* msg, int* code_i, const str* code_s);
+int sig_send_reply_mod(struct sip_msg* msg, int code, const str* reason,
+    str* to_tag);
 static int fixup_sig_send_reply(void** param);
 static int mod_init(void);
 
@@ -151,7 +152,7 @@ static int mod_init(void)
  * sig_send_reply - function to be called from script to send appropiate
  * replies (statefull or stateless)
  * */
-int sig_send_reply(struct sip_msg* msg, int* code_i, str* code_s)
+int sig_send_reply(struct sip_msg* msg, int* code_i, const str* code_s)
 {
 	return sig_send_reply_mod(msg, *code_i, code_s, 0);
 }
@@ -160,7 +161,8 @@ int sig_send_reply(struct sip_msg* msg, int* code_i, str* code_s)
  * sig_send_reply_mod function - sends stateless or staefull reply depending on
  * whether a transaction was created and on which modules are loaded( tm, sl).
  * */
-int sig_send_reply_mod(struct sip_msg* msg, int code, str* reason, str* to_tag)
+int sig_send_reply_mod(struct sip_msg* msg, int code,
+    const str* reason, str* to_tag)
 {
 	struct cell * t;
 
