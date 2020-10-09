@@ -57,6 +57,9 @@ else
 makefile_defs=1
 export makefile_defs
 
+_makefile_defs_path := $(lastword $(MAKEFILE_LIST))
+TOP_SRCDIR?=    $(shell realpath `dirname $(_makefile_defs_path)`)
+
 # main binary name
 MAIN_NAME=opensips
 
@@ -1675,7 +1678,7 @@ endif
 
 
 ## Unit Testing - required extensions
-ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' Makefile.conf))
+ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' $(TOP_SRCDIR)/Makefile.conf))
 DEFS := $(DEFS) -DUNIT_TESTS
 LIBS := $(LIBS) -ltap
 test_src := $(shell find . -wholename "*/test/*\.c" | grep -v "^./modules/")

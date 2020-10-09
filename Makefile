@@ -193,6 +193,12 @@ $(modules):
 
 .PHONY: modules
 modules: $(deps_gen)
+	@set -e; \
+	for r in $(all_misclibs); do \
+		echo  "" ; \
+		echo  "" ; \
+		$(MAKE) -j -C $$r ; \
+	done
 ifeq (,$(FASTER))
 	@set -e; \
 	for r in $(modules) "" ; do \

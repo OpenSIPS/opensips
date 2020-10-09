@@ -1,6 +1,7 @@
 *.o
 *.d
 *.so
+*.a
 *.sw?
 tags
 cscope*
