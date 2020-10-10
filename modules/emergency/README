@@ -366,12 +366,13 @@ Chapter 2. Contributors
    1. Evandro Villaron (@evillaron) 149 9 10947 3011
    2. Robison Tesini (@rtesini) 63 1 3116 2038
    3. Razvan Crainea (@razvancrainea) 23 14 314 321
-   4. Liviu Chircu (@liviuchircu) 14 9 121 173
+   4. Liviu Chircu (@liviuchircu) 15 10 122 174
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 47 50
    6. Peter Lemenkov (@lemenkov) 4 2 37 16
    7. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
    8. Julián Moreno Patiño 3 1 1 1
    9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   10. Zero King (@l2dy) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -392,16 +393,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Jun 2020
-   2. Liviu Chircu (@liviuchircu)         Mar 2015 - Feb 2020
-   3. Peter Lemenkov (@lemenkov)          Sep 2018 - Feb 2020
-   4. Razvan Crainea (@razvancrainea)     Jul 2015 - Sep 2019
-   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7. Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
-   8. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Mar 2015
-   9. Robison Tesini (@rtesini)           Feb 2015 - Feb 2015
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Mar 2015 - Oct 2020
+   2.  Zero King (@l2dy)                   Aug 2020 - Aug 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Jun 2020
+   4.  Peter Lemenkov (@lemenkov)          Sep 2018 - Feb 2020
+   5.  Razvan Crainea (@razvancrainea)     Jul 2015 - Sep 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
+   9.  Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Mar 2015
+   10. Robison Tesini (@rtesini)           Feb 2015 - Feb 2015
 
    (1) including any documentation-related commits, excluding
    merge commits
