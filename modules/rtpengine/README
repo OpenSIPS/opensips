@@ -419,10 +419,11 @@ rtpengine_offer();
             trusted. Without this flag, the RTP proxy ignores
             address in the SDP and uses source address of the SIP
             message as media address which is passed to the RTP
-            proxy. From rtpengine 3.8 this is the default behaviour.
-	  + SIP-source-address - the opposite of trust-address. 
-	    Restores the old default behaviour of ignoring endpoint
-            addresses in the SDP body. 
+            proxy. From rtpengine 3.8 this is the default
+            behaviour.
+          + SIP-source-address - the opposite of trust-address.
+            Restores the old default behaviour of ignoring
+            endppoint of the addresses in the SDP body.
           + replace-origin - flags that IP from the origin
             description (o=) should be also changed.
           + replace-session-connection - flags to change the
@@ -895,7 +896,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 133 54 4077 2607
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 15 421 593
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 16 426 594
    3. Richard Fuchs 21 2 640 723
    4. Liviu Chircu (@liviuchircu) 16 12 70 135
    5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
@@ -928,13 +929,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                          Name                     Commit Activity
-   1.  Zero King (@l2dy)                        Mar 2020 - Sep 2020
-   2.  Liviu Chircu (@liviuchircu)              Jul 2014 - Aug 2020
-   3.  Razvan Crainea (@razvancrainea)          Jun 2014 - Aug 2020
-   4.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jul 2020
-   5.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2019
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Jul 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - Oct 2020
+   2.  Zero King (@l2dy)                        Mar 2020 - Sep 2020
+   3.  Liviu Chircu (@liviuchircu)              Jul 2014 - Aug 2020
+   4.  Razvan Crainea (@razvancrainea)          Jun 2014 - Aug 2020
+   5.  Peter Lemenkov (@lemenkov)               Jun 2018 - Jul 2020
+   6.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2019
    8.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
    9.  Oliver Severin Mulelid-Tynes (@olivermt) May 2015 - May 2015
    10. Rob Gagnon (@rgagnon24)                  Mar 2015 - Mar 2015
@@ -949,10 +950,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Richard Fuchs.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Richard
+   Fuchs.
 
    Documentation Copyrights:
 
