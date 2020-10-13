@@ -89,9 +89,6 @@ extern stat_var *failed_dlgs;
 int  ctx_lastdstleg_idx = -1;
 int  ctx_timeout_idx = -1;
 
-static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int leg);
-
 static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg, int tmp);
 
@@ -103,9 +100,6 @@ void init_dlg_handlers(int default_timeout_p)
 {
 	default_timeout = default_timeout_p;
 }
-
-static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
-		unsigned int leg);
 
 void destroy_dlg_handlers(void)
 {
@@ -804,8 +798,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 			goto clear;
 		}
 
-		dlg_update_contact(dlg, msg, callee_idx(dlg));
-		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
+		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 0);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -864,8 +857,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 			goto clear;
 		}
 
-		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
-		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg);
+		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg, 0);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
@@ -1106,8 +1098,7 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
-	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg);
+	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg, 1);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1138,8 +1129,7 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
-	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg);
+	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 1);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
