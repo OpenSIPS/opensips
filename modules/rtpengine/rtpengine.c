@@ -226,8 +226,8 @@ static const char *command_strings[] = {
 	[OP_UNBLOCK_MEDIA] = "unblock media",
 	[OP_BLOCK_DTMF]= "block DTMF",
 	[OP_UNBLOCK_DTMF] = "unblock DTMF",
-	[OP_START_FORWARD]= "start forward",
-	[OP_STOP_FORWARD] = "stop forward",
+	[OP_START_FORWARD]= "start forwarding",
+	[OP_STOP_FORWARD] = "stop forwarding",
 	[OP_PLAY_DTMF]    = "play DTMF",
 };
 
