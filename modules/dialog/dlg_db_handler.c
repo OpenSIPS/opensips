@@ -745,17 +745,16 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 
+			if (restore_reinvite_pinging(dlg) != 0)
+				LM_ERR("failed to fetch some Re-INVITE pinging data\n");
 			if (dlg_has_reinvite_pinging(dlg)) {
 				/* re-populate Re-INVITE pinging fields */
-				if (restore_reinvite_pinging(dlg) != 0)
-					LM_ERR("failed to fetch some Re-INVITE pinging data\n");
-				else if (0 != insert_reinvite_ping_timer(dlg))
+				if (0 != insert_reinvite_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into reinvite"
 					        "ping timer\n", dlg);
-				else {
+				else
 					/* reference dialog as kept in reinvite ping timer list */
 					ref_dlg(dlg, 1);
-				}
 			}
 
 			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
