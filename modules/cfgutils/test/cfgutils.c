@@ -398,6 +398,11 @@ void test_check_tmrec_expr(void)
 	ok(_ctr("!(" _1") / !(" _1")") == -1);
 	ok(_ctr("!(" _0") & !(" _0")") == 1);
 
+	ok(cmtr("Europe/Bucharest|20190723T070000||PT8H|WEEKLY|||MO,TU,WE,TH,FR", now) == 1);
+	ok(cmtr("Europe/Bucharest|20190723T070000||PT7H|WEEKLY|||MO,TU,WE,TH,FR", now) == -1);
+	ok(cmtr("!Europe/Bucharest|20190723T070000||PT8H|WEEKLY|||MO,TU,WE,TH,FR", now) == -1);
+	ok(cmtr("!Europe/Bucharest|20190723T070000||PT7H|WEEKLY|||MO,TU,WE,TH,FR", now) == 1);
+
 
 	/* buggy, but still somewhat _reasonable_ corner-cases */
 	ok(_ctr("") == -1);

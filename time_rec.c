@@ -1607,6 +1607,7 @@ int _tmrec_expr_check_str(const char *trx, time_t check_time)
 	} state = NEED_OPERAND;
 
 	int rc = 0, _rc;
+	char is_valid;
 
 	LM_DBG("checking: %s\n", trx);
 
@@ -1685,17 +1686,19 @@ int _tmrec_expr_check_str(const char *trx, time_t check_time)
 				break;
 
 			default:
-				for (q = p + 1; *q != '\0'; q++) {
+				for (is_valid = 0, q = p + 1; *q != '\0'; q++) {
 					if (*q == '!' || *q == '(' || *q == ')') {
 						LM_ERR("failed to parse multi time rec at '%c' "
 						       "(unexpected character)\n", *q);
 						goto parse_err;
+					} else if (*q == TR_SEPARATOR) {
+						is_valid = 1;
 					}
 
 					if (is_ws(*q)) {
 						state = NEED_OPERATOR;
 						break;
-					} else if (*q == '&' || *q == '/') {
+					} else if (*q == '&' || (*q == '/' && is_valid)) {
 						break;
 					}
 				}
@@ -1816,7 +1819,7 @@ tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type)
 
 	tmrec_expr_t *exp, *e;
 	osips_malloc_t malloc_f;
-	char *p, *q, bkp, need_close, invert_next = 0;
+	char *p, *q, bkp, need_close, invert_next = 0, is_valid;
 	str aux;
 	int rc;
 
@@ -1901,17 +1904,19 @@ tmrec_expr *tmrec_expr_parse(const char *trx, char alloc_type)
 				break;
 
 			default:
-				for (q = p + 1; *q != '\0'; q++) {
+				for (is_valid = 0, q = p + 1; *q != '\0'; q++) {
 					if (*q == '!' || *q == '(' || *q == ')') {
 						LM_ERR("failed to parse multi time rec at '%c' "
 						       "(unexpected character)\n", *q);
 						goto parse_err;
+					} else if (*q == TR_SEPARATOR) {
+						is_valid = 1;
 					}
 
 					if (is_ws(*q)) {
 						state = NEED_OPERATOR;
 						break;
-					} else if (*q == '&' || *q == '/') {
+					} else if (*q == '&' || (*q == '/' && is_valid)) {
 						break;
 					}
 				}
