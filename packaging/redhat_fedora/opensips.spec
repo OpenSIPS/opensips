@@ -289,7 +289,7 @@ translations based on matching and replacement rules. It can be used to
 manipulate R-URI or a PV and to translated to a new format/value.
 
 %package  emergency-module
-Summary:  Emerrgency call module for OpenSIPS
+Summary:  Emergency call module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
