@@ -518,7 +518,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
           /* in */    char *url, str *body, str *ctype,
           /* out */   pv_spec_p body_pv, pv_spec_p ctype_pv, pv_spec_p code_pv)
 {
-	char ret;
+	int ret;
 	CURLcode rc;
 	long http_rc;
 	pv_value_t pv_val;
