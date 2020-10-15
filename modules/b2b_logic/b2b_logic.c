@@ -1853,7 +1853,7 @@ int pv_parse_entity_index(pv_spec_p sp, str* in)
 		LM_ERR("Bad index! not a number! <%.*s>!\n", in->len, in->s);
 		return -1;
 	}
-	if (idx < 0 && idx > 1) {
+	if (idx < 0 || idx > 1) {
 		LM_ERR("Bad index! should be 0 or 1!\n");
 		return -1;
 	}
