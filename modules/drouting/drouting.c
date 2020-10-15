@@ -2625,7 +2625,7 @@ static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 		}
 		if (weight_sum) {
 			/* randomly select number */
-			rand_no = (unsigned int)(weight_sum*((double)rand()/((double)RAND_MAX)));
+			rand_no = (unsigned int)(weight_sum*((float)rand()/(float)RAND_MAX));
 			LM_DBG("random number is %d\n",rand_no);
 			/* select the element */
 			for( i=first ; i<size ; i++ )

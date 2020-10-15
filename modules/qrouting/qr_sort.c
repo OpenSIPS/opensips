@@ -416,7 +416,7 @@ static inline void qr_weight_based_sort(unsigned short *dsts,
 		}
 
 		if (sum) {
-			rnd = sum * ((float)rand() / RAND_MAX);
+			rnd = sum * ((float)rand() / (float)RAND_MAX);
 
 			for (i = first; i < n; i++)
 				if (running_sum[i] > rnd)
