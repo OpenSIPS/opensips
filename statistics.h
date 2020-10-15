@@ -34,8 +34,9 @@
 #ifndef _STATISTICS_H_
 #define _STATISTICS_H_
 
+#include <stdatomic.h>
+
 #include "hash_func.h"
-#include "atomic.h"
 
 #define STATS_HASH_POWER   8
 #define STATS_HASH_SIZE    (1<<(STATS_HASH_POWER))
@@ -52,7 +53,7 @@
 #ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;
 #else
-typedef atomic_t stat_val;
+typedef _Atomic(unsigned long) stat_val;
 #endif
 
 typedef unsigned long (*stat_function)(void *);
@@ -209,20 +210,17 @@ extern gen_lock_t *stat_lock;
 		#define update_stat( _var, _n) \
 			do { \
 				if ( !((_var)->flags&STAT_IS_FUNC) ) {\
-					if ((long)(_n) >= 0L) \
-						atomic_add( _n, (_var)->u.val);\
-					else \
-						atomic_sub( -(_n), (_var)->u.val);\
+					atomic_fetch_add((_var)->u.val, _n); \
 				}\
 			}while(0)
 		#define reset_stat( _var) \
 			do { \
 				if ( ((_var)->flags&(STAT_NO_RESET|STAT_IS_FUNC))==0 ) {\
-					atomic_set( (_var)->u.val, 0);\
+					atomic_store((_var)->u.val, 0); \
 				}\
 			}while(0)
 		#define get_stat_val( _var ) ((unsigned long)\
-			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f((_var)->context):(_var)->u.val->counter)
+			((_var)->flags&STAT_IS_FUNC)?(_var)->u.f((_var)->context):atomic_load((_var)->u.val))
 	#endif /* NO_ATOMIC_OPS */
 
 	#define if_update_stat(_c, _var, _n) \
