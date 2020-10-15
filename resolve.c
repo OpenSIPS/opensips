@@ -1451,7 +1451,7 @@ static inline void sort_srvs(struct rdata **head)
 				/* order the elements between rd and crt */
 				while (rd->next) {
 					rand_no = (unsigned int)
-						(weight_sum*((float)rand()/RAND_MAX));
+						(weight_sum*((float)rand()/(float)RAND_MAX));
 					for( crt=rd,crt2=NULL ; crt ; crt2=crt,crt=crt->next) {
 						if (rd2srv(crt)->running_sum>=rand_no) break;
 					}
