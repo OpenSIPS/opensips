@@ -1,8 +1,6 @@
 language: c
-compiler:
-  - gcc
-  - clang
-sudo: false
+os: linux
+dist: bionic
 addons:
   apt:
     packages:
@@ -31,11 +29,13 @@ addons:
       - librabbitmq-dev
       - liblua5.1-0-dev
       - libncurses5-dev
-      - libjson0-dev
+      - libjson-c-dev
       - uuid-dev
+      - python-dev
 #      - libjwt-dev
-script: CC_EXTRA_OPTS=-Werror FASTER=1 NICER=0 make \
-  exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb auth_jwt" all
+script: CC_EXTRA_OPTS=${CC_EXTRA_OPTS:-"-Werror"} FASTER=1 NICER=0 make \
+  exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase \
+  cachedb_mongodb auth_jwt" ${MAKE_TGT:-"all"}
 notifications:
   irc:
     channels:
@@ -46,3 +46,67 @@ notifications:
     secure: MnRvw68QpJHUSZ/IRGUlAjQ62xs3LtEZ0g3pG7Bms0XotuK+YxmSZh7BgV61utuya295LTvdWZQYiutJ4+iPKdF7Mb1KCzaUbY6nrGaIbqif10CKwfIFRsENMhYUKOXdvg52103GNq3/V3/6PGX7Jtiaox9lHcfRhvljs+cUgSk=
     on_success: change
     on_failure: always
+jobs:
+  include:
+    - name: "Build with GCC 7 @ Ubuntu 16"
+      dist: xenial
+      compiler: gcc
+    - name: "Build with Clang 7 @ Ubuntu 16"
+      dist: xenial
+      compiler: clang
+    - name: "Build with GCC 7 @ Ubuntu 18"
+      compiler: gcc
+    - name: "Build with GCC 9 @ Ubuntu 18"
+      compiler: gcc
+      env:
+        - CC=gcc-9 AR=gcc-ar-9 RANLIB=gcc-ranlib-9
+        - GCOV_CMD="gcov-9"
+      before_install:
+        - sudo apt install software-properties-common
+        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        - sudo apt-get -y install gcc-9 g++-9
+    - name: "Build with GCC 10 @ Ubuntu 18"
+      compiler: gcc
+      env:
+        - CC=gcc-10 AR=gcc-ar-10 RANLIB=gcc-ranlib-10
+        - GCOV_CMD="gcov-10"
+      before_install:
+        - sudo apt install software-properties-common
+        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+        - sudo apt-get -y install gcc-10 g++-10
+    - name: "Build with Clang 7 @ Ubuntu 18"
+      compiler: clang
+    - name: "Build with Clang 9 @ Ubuntu 18"
+      compiler: clang
+      env:
+        - CC=clang-9 AR=llvm-ar-9 RANLIB=llvm-ranlib-9
+        - GCOV_CMD="llvm-cov-9 gcov"
+      before_install:
+        - sudo apt-get -y install clang-9 llvm-9-dev libc++-9-dev libc++abi-9-dev
+    - name: "Build with Clang 10 @ Ubuntu 18"
+      compiler: clang
+      env:
+        - CC=clang-10 AR=llvm-ar-10 RANLIB=llvm-ranlib-10
+        - GCOV_CMD="llvm-cov-10 gcov"
+      before_install:
+        - sudo apt-get -y install clang-10 llvm-10-dev libc++-10-dev libc++abi-10-dev
+    - name: "Build with GCC 7 @ Ubuntu 18 (ARM)"
+      compiler: gcc
+      arch: arm64
+    - name: "Build with Clang 7 @ Ubuntu 18 (ARM)"
+      compiler: clang
+      arch: arm64
+    - name: "Build Core with GCC 7 @ Ubuntu 18 (i386)"
+      compiler: gcc
+      env:
+        - CC_EXTRA_OPTS="-Werror -m32"
+        - MAKE_TGT="opensips"
+      before_install:
+        - sudo apt-get -y install libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev
+    - name: "Build Core with Clang 7 @ Ubuntu 18 (i386)"
+      compiler: clang
+      env:
+        - CC_EXTRA_OPTS="-Werror -m32"
+        - MAKE_TGT="opensips"
+      before_install:
+        - sudo apt-get -y install libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev
