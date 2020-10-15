@@ -676,7 +676,7 @@ int mi_http_build_content(str *page, int max_page_len,
 			MI_HTTP_Response_Title_Table_1);
 	if ((int)((p)-buf)+SERVER_HDR_LEN-8>max_page_len)
 		goto error;
-	memcpy(p, SERVER_HDR+8, SERVER_HDR_LEN-8);
+	memcpy(p, ((const char *)SERVER_HDR)+8, SERVER_HDR_LEN-8);
 	p += SERVER_HDR_LEN-8;
 	MI_HTTP_COPY_3(p,MI_HTTP_Response_Title_Table_2,
 			upSinceCTime,
