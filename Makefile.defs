@@ -238,7 +238,7 @@ mips64_macros= _MIPS_ISA_MIPS64 _MIPS_ARCH_MIPS64
 
 alpha_macros= __alpha__ __alpha _M_ALPHA_
 
-ifeq ($(CC_NAME),gcc)
+ifeq ($(CC_NAME:clang=gcc),gcc)
 #if gcc use gcc arch
 predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
 					$(CFLAGS) /dev/null)
@@ -886,7 +886,8 @@ ifeq		($(CC_NAME), suncc)
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 ifeq		($(CC_NAME), clang)
-			CFLAGS+=$(CC_OPTIMIZE_FLAG) -Wall -funroll-loops -fno-common
+			CFLAGS+=-m32 $(CC_OPTIMIZE_FLAG) -Wall -funroll-loops -fno-common
+			LDFLAGS+=-m32
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
