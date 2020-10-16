@@ -507,7 +507,7 @@ int init_rpm_mallocs(void)
 		if (fst.st_size != rpm_mem_size) {
 			LM_WARN("restart persistency cache (%s) size %ld is different than "
 					"the size we are running with %ld: creating a new cache!\n",
-					rpm_mem_file, fst.st_size, rpm_mem_size);
+					rpm_mem_file, (long)fst.st_size, rpm_mem_size);
 		} else if (load_rpm_file() == 0)
 			return 0; /* memblock loaded just fine */
 		LM_INFO("restart persistent cache is invalid: creating a new one!\n");

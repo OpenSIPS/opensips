@@ -108,7 +108,7 @@ static inline void db_print_val(db_val_t *v)
 			LM_GEN1(L_DBG, "\t'%.*s'\n", v->val.str_val.len, v->val.str_val.s);
 			break;
 		case DB_DATETIME:
-			LM_GEN1(L_DBG, "\t'%ld'\n", v->val.time_val);
+			LM_GEN1(L_DBG, "\t'%ld'\n", (long)v->val.time_val);
 			break;
 		case DB_BLOB:
 			LM_GEN1(L_DBG, "\t'%.*s'\n", v->val.blob_val.len, v->val.blob_val.s);
