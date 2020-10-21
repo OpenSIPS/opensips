@@ -458,7 +458,7 @@ static int flatten_opensips_cfg(FILE *cfg, const char *cfg_path, str *out)
 
 	if (strlen(out->s) != out->len) {
 		LM_BUG("preprocessed buffer check failed (%lu vs. %d)",
-		       strlen(out->s), out->len);
+		       (unsigned long)strlen(out->s), out->len);
 		LM_ERR("either this is a bug or your script contains '\\0' chars, "
 		        "which are obviously NOT allowed!\n");
 		return -1;

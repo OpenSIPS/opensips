@@ -264,9 +264,9 @@ time_t tz_adjust_ts(time_t unix_time, const str *tz)
 	if (local_tm.tm_isdst > 0)
 		adj_ts -= 3600;
 
-	LM_DBG("UNIX ts: %ld, local-adjusted ts: %ld (tz: '%.*s', DST: %s)\n", unix_time,
-	       adj_ts, tz ? tz->len : 4, tz ? tz->s : "null",
-	       local_tm.tm_isdst == 1 ? "on" :
+	LM_DBG("UNIX ts: %ld, local-adjusted ts: %ld (tz: '%.*s', DST: %s)\n",
+	       (long int)unix_time, (long int)adj_ts, tz ? tz->len : 4,
+	       tz ? tz->s : "null", local_tm.tm_isdst == 1 ? "on" :
 	       local_tm.tm_isdst == 0 ? "off" : "unavail");
 
 	return adj_ts;

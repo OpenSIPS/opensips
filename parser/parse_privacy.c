@@ -149,15 +149,15 @@ unsigned int parse_priv_value(char* start, unsigned int max_len,
  */
 int parse_privacy(struct sip_msg *msg)
 {
-    unsigned int val_len, value, values, len;
-    str next;
-    char *p, *beyond;
+	unsigned int val_len, value, values, len;
+	str next;
+	char *p, *beyond;
 
-    /* maybe the header is already parsed! */
-    if (msg->privacy && msg->privacy->parsed)
-	return 0;
+	/* maybe the header is already parsed! */
+	if (msg->privacy && msg->privacy->parsed)
+		return 0;
 
-    /* parse Privacy HF (there should be only one) */
+	/* parse Privacy HF (there should be only one) */
 	if (!msg->privacy &&
 		(parse_headers(msg, HDR_PRIVACY_F, 0) == -1 || !msg->privacy)) {
 		goto error;

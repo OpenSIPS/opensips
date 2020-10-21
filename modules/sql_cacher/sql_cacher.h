@@ -107,7 +107,7 @@ typedef struct _pv_name_fix
 	pv_elem_t *pv_elem_list;
 	int col_offset;
 	int col_nr;
-	char last_str;
+	int last_str;
 } pv_name_fix_t;
 
 #endif

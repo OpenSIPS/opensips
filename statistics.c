@@ -34,7 +34,7 @@
  * \brief Statistics support
  */
 
-
+#include <stdatomic.h>
 #include <string.h>
 
 #include "mem/shm_mem.h"
@@ -46,7 +46,6 @@
 #include "core_stats.h"
 #include "statistics.h"
 #include "pt.h"
-#include "atomic.h"
 #include "globals.h"
 #include "rw_locking.h"
 
@@ -424,7 +423,7 @@ static int __register_stat(str *module, str *name, stat_var **pvar,
 #ifdef NO_ATOMIC_OPS
 		*(stat->u.val) = 0;
 #else
-		atomic_set(stat->u.val,0);
+		atomic_init(stat->u.val, 0);
 #endif
 		*pvar = stat;
 	} else {

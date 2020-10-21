@@ -403,7 +403,7 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 	if (*v1p == '\r' || *v1p == '\n')
 		v1p++;
 	if (v1p + 1 >= bodylimit) {
-		LM_ERR("body too short %ld!\n", bodylimit - v1p);
+		LM_ERR("body too short %ld!\n", (long)(bodylimit - v1p));
 		return -1;
 	}
 	if (*v1p != 'v' || *(v1p+1) != '=') {
