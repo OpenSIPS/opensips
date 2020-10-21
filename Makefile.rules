@@ -18,6 +18,8 @@ all_nostatic_modules=$(filter-out $(addprefix modules/, $(static_modules)), \
 all_modules:=$(addprefix modules/, $(all_modules))
 all_modules:=$(addprefix net/, $(builtin_modules)) $(all_modules)
 all_utils:=$(addprefix utils/, $(all_utils))
+all_misclibs=reg
+all_misclibs:=$(addprefix lib/, $(all_misclibs))
 
 #implicit rules
 %.o: %.c $(ALLDEP)
@@ -147,12 +149,7 @@ dbschema-docbook-clean:
 .PHONY: clean
 clean: docbook-clean dbschema-docbook-clean
 	-@rm -f $(objs) $(NAME) $(objs:.o=.il) 2>/dev/null
-	-@for r in $(all_modules) "" ; do \
-		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
-			$(MAKE) -C $$r clean ; \
-		fi ; \
-	done
-	-@for r in $(all_utils) "" ; do \
+	-@for r in $(all_modules) $(all_utils) $(all_misclibs); do \
 		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
 			$(MAKE) -C $$r clean ; \
 		fi ; \
@@ -164,7 +161,7 @@ clean: docbook-clean dbschema-docbook-clean
 proper realclean distclean: clean
 	-@rm -f $(depends) $(deps_gen) $(auto_gen) 2>/dev/null
 	-@rm -f cfg.tab.h 2>/dev/null
-	-@for r in $(all_nostatic_modules) "" ; do \
+	-@for r in $(all_nostatic_modules) $(all_misclibs) ; do \
 		if [ -d "$$r" -a -f "$$r/Makefile" ]; then \
 			 $(MAKE) -C $$r proper ; \
 		fi ; \

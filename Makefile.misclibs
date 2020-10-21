@@ -1,0 +1,22 @@
+#
+# Miscelanious library Makefile
+#(to be included from each library)
+#
+
+_makefile_misclibs_path := $(lastword $(MAKEFILE_LIST))
+TOP_SRCDIR?=    $(shell realpath `dirname $(_makefile_misclibs_path)`)
+
+include $(TOP_SRCDIR)/Makefile.defs
+
+NAME=	lib${LIBNAME}.a
+LD=	$(TOP_SRCDIR)/scripts/build/linkstatic.sh
+
+include $(TOP_SRCDIR)/Makefile.conf
+
+LIBS=
+TWEAK_LIBS=
+LDFLAGS=
+CFLAGS:=$(MOD_CFLAGS)
+
+include $(TOP_SRCDIR)/Makefile.sources
+include $(TOP_SRCDIR)/Makefile.rules
