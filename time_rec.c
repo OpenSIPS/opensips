@@ -1561,16 +1561,25 @@ int _tmrec_check(const tmrec *_tr, time_t time)
 {
 	tmrec_t *tr = (tmrec_p)_tr;
 	ac_tm_t att;
+	int rc;
 
 	/* shortcut: if there is no dstart, timerec is valid */
 	if (tr->dtstart == 0)
 		return 1;
 
+	if (tr->tz)
+		_tz_set(tr->tz);
+
 	/* set current time */
 	ac_tm_set_time(&att, time);
 
 	/* does the recv_time match the specified interval?  */
-	return !check_tmrec(tr, &att);
+	rc = check_tmrec(tr, &att);
+
+	if (tr->tz)
+		tz_reset();
+
+	return rc == 0;
 }
 
 
@@ -2080,4 +2089,16 @@ void tmrec_expr_free(tmrec_expr *_trx)
 
 	free_f(trx->tr.tz);
 	free_f(trx);
+}
+
+
+int _tz_offset(const char *tz, time_t t)
+{
+	struct tm lt = {0};
+
+	_tz_set(tz);
+	localtime_r(&t, &lt);
+	tz_reset();
+
+	return lt.tm_gmtoff;
 }

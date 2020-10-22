@@ -120,6 +120,17 @@ void tz_reset(void);
 time_t tz_adjust_ts(time_t unix_time, const str *tz);
 
 
+/**
+ * tz_offset() - fetch the GMT offset of the given @tz timezone at the
+ *               current point in time or at the @t UNIX timestamp
+ */
+int _tz_offset(const char *tz, time_t t);
+static inline int tz_offset(const char *tz)
+{
+	return _tz_offset(tz, time(NULL));
+}
+
+
 /*************** RFC 2445/5545 low-level abstractions ****************/
 
 #define FREQ_NOFREQ  0

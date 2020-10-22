@@ -30,7 +30,7 @@
 #define UTC "UTC"
 #define US  "America/Chihuahua" /* UTC-7, DST is ON at TEST_TIME (-6) */
 #define RO  "Europe/Bucharest"  /* UTC+2, DST is ON at TEST_TIME (+3) */
-#define AUS "Pacific/Auckland"  /* UTC+12, DST is OFF at TEST_TIME (+12) */
+#define NZ  "Pacific/Auckland"  /* UTC+12, DST is OFF at TEST_TIME (+12) */
 
 extern int check_time_rec(struct sip_msg *_, char *time_rec,
                           unsigned int *ptime);
@@ -91,6 +91,60 @@ int cmtr(const char *_rec, unsigned int ts)
 }
 
 
+void test_tz_dynamic(time_t t)
+{
+	int utc_h, ro_h, aus_h;
+	char trb[100];
+
+	_tz_set("UTC");
+	utc_h = localtime(&t)->tm_hour;
+	tz_reset();
+	ro_h = (utc_h + _tz_offset(RO, t) / 3600 + 24) % 24;
+	aus_h = (utc_h + _tz_offset(NZ, t) / 3600 + 24) % 24;
+
+	sprintf(trb, "%s%02d%s%s%02d%s", UTC
+			"|20200101T", (utc_h - 1 + 24) % 24, "0000",
+			"|20200101T", utc_h, "0000||DAILY");
+	ok(ctr(trb, &t) == -1);
+	sprintf(trb, "%s%02d%s%s%02d%s", UTC
+			"|20200101T", utc_h, "0000",
+			"|20200101T", utc_h + 1, "0000||DAILY");
+	ok(ctr(trb, &t) == 1);
+	sprintf(trb, "%s%02d%s%s%02d%s", UTC
+			"|20200101T", utc_h + 1, "0000",
+			"|20200101T", utc_h + 2, "0000||DAILY");
+	ok(ctr(trb, &t) == -1);
+
+
+	sprintf(trb, "%s%02d%s%s%02d%s", RO
+			"|20200101T", (ro_h - 1 + 24) % 24, "0000",
+			"|20200101T", ro_h, "0000||DAILY");
+	ok(ctr(trb, &t) == -1);
+	sprintf(trb, "%s%02d%s%s%02d%s", RO
+			"|20200101T", ro_h, "0000",
+			"|20200101T", ro_h + 1, "0000||DAILY");
+	ok(ctr(trb, &t) == 1);
+	sprintf(trb, "%s%02d%s%s%02d%s", RO
+			"|20200101T", ro_h + 1, "0000",
+			"|20200101T", ro_h + 2, "0000||DAILY");
+	ok(ctr(trb, &t) == -1);
+
+
+	sprintf(trb, "%s%02d%s%s%02d%s", NZ
+			"|20200101T", (aus_h - 1 + 24) % 24, "0000",
+			"|20200101T", aus_h, "0000||DAILY");
+	ok(ctr(trb, &t) == -1);
+	sprintf(trb, "%s%02d%s%s%02d%s", NZ
+			"|20200101T", aus_h, "0000",
+			"|20200101T", aus_h + 1, "0000||DAILY");
+	ok(ctr(trb, &t) == 1);
+	sprintf(trb, "%s%02d%s%s%02d%s", NZ
+			"|20200101T", aus_h + 1, "0000",
+			"|20200101T", aus_h + 2, "0000||DAILY");
+	ok(ctr(trb, &t) == -1);
+}
+
+
 void test_check_single_tmrec(void)
 {
 	int rc1, rc2;
@@ -126,16 +180,16 @@ void test_check_single_tmrec(void)
 
 
 	/* DTSTART is inclusive, AU timezone */
-	ok(ctr(AUS"|20200605T235135|20200605T235959", &now) == 1);
-	ok(ctr(AUS"|20200605T235136|20200605T235959", &now) == -1);
-	ok(ctr(AUS"|20200605T235135|20200605T235960", &now) == 1);
-	ok(ctr(AUS"|20200605T235136|20200605T235960", &now) == -1);
-	ok(ctr(AUS"|20200605T235135|20200606T000000", &now) == 1);
-	ok(ctr(AUS"|20200605T235136|20200606T000000", &now) == -1);
+	ok(ctr(NZ"|20200605T235135|20200605T235959", &now) == 1);
+	ok(ctr(NZ"|20200605T235136|20200605T235959", &now) == -1);
+	ok(ctr(NZ"|20200605T235135|20200605T235960", &now) == 1);
+	ok(ctr(NZ"|20200605T235136|20200605T235960", &now) == -1);
+	ok(ctr(NZ"|20200605T235135|20200606T000000", &now) == 1);
+	ok(ctr(NZ"|20200605T235136|20200606T000000", &now) == -1);
 
 	/* DTEND is non-inclusive, AU timezone */
-	ok(ctr(AUS"|20200101T000000|20200605T235135", &now) == -1);
-	ok(ctr(AUS"|20200101T000000|20200605T235136", &now) == 1);
+	ok(ctr(NZ"|20200101T000000|20200605T235135", &now) == -1);
+	ok(ctr(NZ"|20200101T000000|20200605T235136", &now) == 1);
 
 	              /* time recurrence checks */
 
@@ -210,10 +264,10 @@ void test_check_single_tmrec(void)
 	rc2 = ctr(US"|20200101T120000|20200101T235959||DAILY", NULL);
 	ok(rc1 != rc2);
 
-	rc1 = ctr(AUS"|20200101T000000|20200101T120000||DAILY", NULL);
-	rc2 = ctr(AUS"|20200101T120000|20200102T000000||DAILY", NULL);
+	rc1 = ctr(NZ"|20200101T000000|20200101T120000||DAILY", NULL);
+	rc2 = ctr(NZ"|20200101T120000|20200102T000000||DAILY", NULL);
 	ok(rc1 != rc2);
-	rc2 = ctr(AUS"|20200101T120000|20200101T235959||DAILY", NULL);
+	rc2 = ctr(NZ"|20200101T120000|20200101T235959||DAILY", NULL);
 	ok(rc1 != rc2);
 
 	rc1 = ctr(UTC"|20200101T000000|20200101T120000||DAILY", NULL);
@@ -222,22 +276,30 @@ void test_check_single_tmrec(void)
 	rc2 = ctr(UTC"|20200101T120000|20200101T235959||DAILY", NULL);
 	ok(rc1 != rc2);
 
-	                      /* timezone checks */
+	                      /* timezone checks (fixed time) */
 
 	ok(ctr(UTC"|20200605T100000|20200605T110000||DAILY", &now) == -1);
 	ok(ctr(RO"|20200605T130000|20200605T140000||DAILY", &now) == -1);
 	ok(ctr(US"|20200605T040000|20200605T050000||DAILY", &now) == -1);
-	ok(ctr(AUS"|20200605T220000|20200605T230000||DAILY", &now) == -1);
+	ok(ctr(NZ"|20200605T220000|20200605T230000||DAILY", &now) == -1);
 
 	ok(ctr(UTC"|20200605T110000|20200605T120000||DAILY", &now) == 1);
 	ok(ctr(RO"|20200605T140000|20200605T150000||DAILY", &now) == 1);
 	ok(ctr(US"|20200605T050000|20200605T060000||DAILY", &now) == 1);
-	ok(ctr(AUS"|20200605T230000|20200606T000000||DAILY", &now) == 1);
+	ok(ctr(NZ"|20200605T230000|20200606T000000||DAILY", &now) == 1);
 
 	ok(ctr(UTC"|20200605T120000|20200605T130000||DAILY", &now) == -1);
 	ok(ctr(RO"|20200605T150000|20200605T160000||DAILY", &now) == -1);
 	ok(ctr(US"|20200605T060000|20200605T070000||DAILY", &now) == -1);
-	ok(ctr(AUS"|20200606T000000|20200606T010000||DAILY", &now) == -1);
+	ok(ctr(NZ"|20200606T000000|20200606T010000||DAILY", &now) == -1);
+
+	                      /* timezone checks (dynamic time) */
+
+	test_tz_dynamic(1585559602); /* 2020, Mar 31: RO DST: ON, NZ DST: ON */
+	test_tz_dynamic(1602359602); /* 2020, Oct 10: RO DST: ON, NZ DST: ON */
+	test_tz_dynamic(1579559602); /* 2020, Jan 21: RO DST: OFF, NZ DST: ON */
+	test_tz_dynamic(1593559602); /* 2020, Jul 1: RO DST: ON, NZ DST: OFF */
+	test_tz_dynamic(time(NULL)); /* random test (just use current time) */
 
 
 	/* OpenSIPS 3.2 time rec syntax vs. OpenSIPS 3.1 and below */
@@ -261,7 +323,7 @@ void test_check_single_tmrec(void)
 	tz_reset();
 
 
-	_tz_set(AUS);
+	_tz_set(NZ);
 	/* missing dtstart always matches (3.2 syntax) + explicit tz */
 	ok(ctr(UTC"||20200605T115136", &now) == 1);
 	ok(ctr(UTC"||20200605T115136", &now) == 1);
