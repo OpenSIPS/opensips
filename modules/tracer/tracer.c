@@ -102,9 +102,9 @@ static str toport_column      = str_init("to_port");     /* 11 */
 static str fromtag_column     = str_init("fromtag");     /* 12 */
 static str direction_column   = str_init("direction");   /* 13 */
 
-int trace_on   = 1;
+static int trace_on   = 1;
 
-int *trace_on_flag = NULL;
+static int *trace_on_flag = NULL;
 
 static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
@@ -1058,11 +1058,6 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		return -1;
 	}
 
-	if (!(*trace_on_flag)) {
-		LM_DBG("trace is off!\n");
-		return 0;
-	}
-
 	/* makes sense only if trace protocol loaded */
 	if ( tprot.send_message && !is_id_traced(sip_trace_id, info)) {
 		return 1;
@@ -1071,8 +1066,10 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 	hash = info->trace_list->hash;
 	/* check where the hash matches and take the proper action */
 	for (it=info->trace_list; it && (it->hash == hash); it=it->next) {
-		if (it->traceable && !(*it->traceable))
-			continue;
+		if (!it->dynamic) {
+			if (!(*trace_on_flag) || !it->traceable || !(*it->traceable))
+				continue;
+		}
 
 		switch (it->type) {
 		case TYPE_HEP:
@@ -3181,10 +3178,11 @@ static int is_id_traced(int id, trace_instance_p info)
 	if (info==NULL || (trace_types=info->trace_types)==-1)
 		return 0;
 
-	if (!(*trace_on_flag)) {
-		LM_DBG("trace is off!\n");
+	LM_DBG("trace=%s dyn=%s\n", (*trace_on_flag?"on":"off"),
+		(dyn_trace_list?((*dyn_trace_list)?"on":"off"):"bug"));
+	/* quick shortcut to avoid looping if no global is off and no dynamic is present */
+	if (!(*trace_on_flag) && (!dyn_trace_list || *dyn_trace_list == NULL))
 		return 0;
-	}
 
 	/* find the corresponding position for this id */
 	for (pos=0; pos < traced_protos_no; pos++)
@@ -3233,11 +3231,6 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		return 0;
 	}
 
-	if (!(*trace_on_flag)) {
-		LM_DBG("trace is off!\n");
-		return 0;
-	}
-
 	if (info==NULL) {
 		LM_DBG("no id to trace! aborting...\n");
 		return 0;
@@ -3262,9 +3255,11 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		}
 
 		for(it=instance->trace_list; it; it=it->next)
-			LM_DBG("name %.*s, hash %d, type %d, traceable %d\n",
+			LM_DBG("name %.*s, hash %d, type %d, traceable %s\n",
 					it->name.len,it->name.s,
-					it->hash, it->type, (it->traceable?(*it->traceable):-1));
+					it->hash, it->type,
+					(it->dynamic?"dynamic":
+						(it->traceable && (*it->traceable)?"on":"off")));
 
 		/* iterate through the list of trace URIs but use only those
 		 * with the same name (given by same hash) - keep in midn that
@@ -3272,8 +3267,13 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		 * name will be grouped */
 		hash = instance->trace_list->hash;
 		for (it=instance->trace_list; it && (it->hash==hash); it=it->next) {
-			if (it->type != TYPE_HEP || (it->traceable && !(*it->traceable)))
+			if (it->type != TYPE_HEP)
 				continue;
+
+			if (!it->dynamic) {
+				if (!(*trace_on_flag) || !it->traceable || !(*it->traceable))
+					continue;
+			}
 
 			trace_msg = tprot.create_trace_message(from_su, to_su,
 					net_proto, payload, id, it->el.hep.hep_id);
