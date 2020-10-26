@@ -1021,6 +1021,7 @@ int filter_contacts(urecord_t *r, struct sip_msg *by_msg)
 	int i;
 
 	/* back up the original list using a static array */
+	contacts_bak_no = 0;
 	for (i = 0, uc = r->contacts; uc; uc = uc->next, i++) {
 		if (i >= contacts_bak_sz) {
 			contacts_bak = pkg_realloc(contacts_bak,
@@ -1066,6 +1067,10 @@ void restore_contacts(urecord_t *r)
 {
 	int i;
 
+	if (contacts_bak_no == 0)
+		return;
+
+	/* restore in-between links */
 	for (i = 0; i < contacts_bak_no - 1; i++)
 		contacts_bak[i]->next = contacts_bak[i + 1];
 
