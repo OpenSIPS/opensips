@@ -118,46 +118,32 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 		LM_DBG("looking up TLS server "
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = api->find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
-		if (dom) {
-			c->extra_data = SSL_new(dom->ctx[process_no]);
-
-			/* put pointers to the tcp_connection and tls_domain structs
-			 * in the SSL struct as extra data */
-			if (!SSL_set_ex_data(c->extra_data, SSL_EX_CONN_IDX, c)) {
-				LM_ERR("Failed to store tcp_connection pointer in SSL struct\n");
-				return -1;
-			}
-			if (!SSL_set_ex_data(c->extra_data, SSL_EX_DOM_IDX, dom)) {
-				LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
-				return -1;
-			}
-		} else {
-			LM_ERR("no TLS server domain found\n");
-			return -1;
-		}
 	} else {
 		/* connection created as a result of a connect -> client */
 		c->proto_flags = F_TLS_DO_CONNECT;
 		dom = api->find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
-		if (dom) {
-			c->extra_data = SSL_new(dom->ctx[process_no]);
-
-			if (!SSL_set_ex_data(c->extra_data, SSL_EX_CONN_IDX, c)) {
-				LM_ERR("Failed to store tcp_connection pointer in SSL struct\n");
-				return -1;
-			}
-			if (!SSL_set_ex_data(c->extra_data, SSL_EX_DOM_IDX, dom)) {
-				LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
-				return -1;
-			}
-		} else {
-			LM_ERR("no TLS client domain found\n");
-			return -1;
-		}
+	}
+	if (!dom) {
+		LM_ERR("no TLS %s domain found\n",
+				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		return -1;
 	}
 
+	c->extra_data = SSL_new(dom->ctx[process_no]);
 	if (!c->extra_data) {
-		LM_ERR("failed to create SSL structure\n");
+		LM_ERR("failed to create SSL structure (%d:%s)\n", errno, strerror(errno));
+		tls_print_errstack();
+		return -1;
+	}
+
+	/* put pointers to the tcp_connection and tls_domain structs
+	 * in the SSL struct as extra data */
+	if (!SSL_set_ex_data(c->extra_data, SSL_EX_CONN_IDX, c)) {
+		LM_ERR("Failed to store tcp_connection pointer in SSL struct\n");
+		return -1;
+	}
+	if (!SSL_set_ex_data(c->extra_data, SSL_EX_DOM_IDX, dom)) {
+		LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
 		return -1;
 	}
 
