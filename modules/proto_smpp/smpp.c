@@ -37,6 +37,7 @@
 #include "../../resolve.h"
 #include "../../forward.h"
 #include "../../receive.h"
+#include "../../strcommon.h"
 #include "../tm/tm_load.h"
 #include "../../parser/parse_from.h"
 
@@ -1211,49 +1212,96 @@ static void send_enquire_link_request(smpp_session_t *session)
 	pkg_free(req);
 }
 
+static int smpp_build_uri(char *user, struct ip_addr *ip, int port, str *uri)
+{
+	str sip;
+	str sport;
+	str suser;
+	str euser;
+	int len;
+	char *p;
+
+	init_str(&suser, user);
+	sip.s = ip_addr2a(ip);
+	sip.len = strlen(sip.s);
+	sport.s = int2str(port, &sport.len);
+
+	len = 4 /* 'sip:' */ + suser.len * 3 + 1 /* user encoded */ + 1 /* '@' */ +
+		sip.len + /* ':' */ + sport.len;
+	p = pkg_malloc(len);
+	if (!p) {
+		LM_ERR("cannot allocate %d bytes for URI sip:%s@%s:%d bytes\n",
+				len, user, sip.s, port);
+		return -1;
+	}
+	uri->s = p;
+	memcpy(p, "sip:", 4);
+	p += 4;
+
+	euser.s = p;
+	euser.len = len - 4;
+	escape_user(&suser, &euser);
+	p += euser.len;
+
+	memcpy(p, "@", 1);
+	p += 1;
+
+	memcpy(p, sip.s, sip.len);
+	p += sip.len;
+
+	memcpy(p, ":", 1);
+	p += 1;
+
+	memcpy(p, sport.s, sport.len);
+	p += sport.len;
+
+	uri->len = p - uri->s;
+
+	return 0;
+}
+
 static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 		smpp_session_t *session, struct receive_info *rcv)
 {
 	static str msg_type = str_init("MESSAGE");
 
 	char sms_body[4 * MAX_SMS_CHARACTERS]; /* 4 bytes for each char in UTF-8 */
-	char hdrs[1024];
-	char *p = hdrs;
-	char src[128];
-	sprintf(src, "sip:%s@%s:%d", body->source_addr, ip_addr2a(&rcv->src_ip), rcv->src_port);
-	char dst[128];
-	sprintf(dst, "sip:%s@%s:%d", body->destination_addr, ip_addr2a(&rcv->dst_ip), rcv->dst_port);
-	p += sprintf(p, "Content-Type:text/plain\r\n");
-
-	str hdr_str;
-	hdr_str.s = hdrs;
-	hdr_str.len = p - hdrs;
-
-	str src_str;
-	src_str.s = src;
-	src_str.len = strlen(src);
-
-	str dst_str;
-	dst_str.s = dst;
-	dst_str.len = strlen(dst);
-
+	str hdr;
+	str src;
+	str dst;
 	str body_str;
+
+	if (smpp_build_uri(body->source_addr, &rcv->src_ip, rcv->src_port, &src) < 0) {
+		LM_ERR("could not build received info for sip!\n");
+		return -1;
+	}
+
+	if (smpp_build_uri(body->destination_addr, &rcv->dst_ip, rcv->dst_port, &dst) < 0) {
+		LM_ERR("could not build destination info for sip!\n");
+		pkg_free(src.s);
+		return -1;
+	}
+
+	init_str(&hdr, "Content-Type:text/plain\r\n");
+
 	body_str.len = convert_gsm7_to_utf8((unsigned char *)body->short_message,
 			body->sm_length,sms_body);
 	body_str.s = sms_body;
 
 	tmb.t_request(&msg_type, /* Type of the message */
-		      &dst_str,            /* Request-URI */
-		      &dst_str,            /* To */
-		      &src_str,     /* From */
-		      &hdr_str,         /* Optional headers including CRLF */
-		      &body_str, /* Message body */
+		      &dst,          /* Request-URI */
+		      &dst,          /* To */
+		      &src,          /* From */
+		      &hdr,          /* Optional headers including CRLF */
+		      &body_str,     /* Message body */
 		      &smpp_outbound_uri,
 		      /* outbound uri */
 		      NULL,
 		      NULL,
 		      NULL
 		     );
+	pkg_free(src.s);
+	pkg_free(dst.s);
 	return 0;
 }
 
