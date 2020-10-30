@@ -437,57 +437,50 @@ tr_byxxx_p tr_byxxx_new(char alloc)
 
 int tr_byxxx_init(tr_byxxx_p _bxp, int _nr)
 {
-	if(!_bxp)
-		return -1;
 	_bxp->nr = _nr;
-	if (_bxp->flags & PKG_ALLOC)
+	if (_bxp->flags & PKG_ALLOC) {
 		_bxp->xxx = (int*)pkg_malloc(_nr*sizeof(int));
-	else
-		_bxp->xxx = (int*)shm_malloc(_nr*sizeof(int));
-	if(!_bxp->xxx)
-		return -1;
-	if (_bxp->flags & PKG_ALLOC)
 		_bxp->req = (int*)pkg_malloc(_nr*sizeof(int));
-	else
+	} else {
+		_bxp->xxx = (int*)shm_malloc(_nr*sizeof(int));
 		_bxp->req = (int*)shm_malloc(_nr*sizeof(int));
-	if(!_bxp->req)
-	{
-		if (_bxp->flags & PKG_ALLOC)
-			pkg_free(_bxp->xxx);
-		else
-			shm_free(_bxp->xxx);
-		return -1;
 	}
+
+	if (!_bxp->xxx || !_bxp->req)
+		goto oom;
 
 	memset(_bxp->xxx, 0, _nr*sizeof(int));
 	memset(_bxp->req, 0, _nr*sizeof(int));
 
 	return 0;
+oom:
+	LM_ERR("oom\n");
+	if (_bxp->flags & PKG_ALLOC) {
+		pkg_free(_bxp->xxx);
+		pkg_free(_bxp->req);
+	} else {
+		shm_free(_bxp->xxx);
+		shm_free(_bxp->req);
+	}
+	return -1;
 }
 
 
 int tr_byxxx_free(tr_byxxx_p _bxp)
 {
-	char type;
-	if(!_bxp)
+	if (!_bxp)
 		return -1;
-	type = _bxp->flags & PKG_ALLOC;
-	if(_bxp->xxx) {
-		if (type)
-			pkg_free(_bxp->xxx);
-		else
-			shm_free(_bxp->xxx);
-	}
-	if(_bxp->req) {
-		if (type)
-			pkg_free(_bxp->req);
-		else
-			shm_free(_bxp->req);
-	}
-	if (type)
+
+	if (_bxp->flags & PKG_ALLOC) {
+		pkg_free(_bxp->xxx);
+		pkg_free(_bxp->req);
 		pkg_free(_bxp);
-	else
+	} else {
+		shm_free(_bxp->xxx);
+		shm_free(_bxp->req);
 		shm_free(_bxp);
+	}
+
 	return 0;
 }
 
@@ -551,7 +544,7 @@ int tr_parse_tz(tmrec_p _trp, char *_in)
 
 int tr_parse_dtstart(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->dtstart = ic_parse_datetime(_in, &(_trp->ts));
 	return (_trp->dtstart==0)?-1:0;
@@ -560,7 +553,7 @@ int tr_parse_dtstart(tmrec_p _trp, char *_in)
 int tr_parse_dtend(tmrec_p _trp, char *_in)
 {
 	struct tm _tm;
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->dtend = ic_parse_datetime(_in,&_tm);
 	return (_trp->dtend==0)?-1:0;
@@ -568,7 +561,7 @@ int tr_parse_dtend(tmrec_p _trp, char *_in)
 
 int tr_parse_duration(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->duration = ic_parse_duration(_in);
 	return 0;
@@ -577,7 +570,7 @@ int tr_parse_duration(tmrec_p _trp, char *_in)
 int tr_parse_until(tmrec_p _trp, char *_in)
 {
 	struct tm _tm;
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->until = ic_parse_datetime(_in, &_tm);
 	return 0;
@@ -585,7 +578,7 @@ int tr_parse_until(tmrec_p _trp, char *_in)
 
 int tr_parse_freq(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 
 	if(strlen(_in)<5)
@@ -620,7 +613,7 @@ int tr_parse_freq(tmrec_p _trp, char *_in)
 
 int tr_parse_interval(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->interval = strz2int(_in);
 	return 0;
@@ -628,15 +621,16 @@ int tr_parse_interval(tmrec_p _trp, char *_in)
 
 int tr_parse_byday(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
+
 	_trp->byday = ic_parse_byday(_in, _trp->flags);
 	return 0;
 }
 
 int tr_parse_bymday(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->bymday = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
@@ -644,7 +638,7 @@ int tr_parse_bymday(tmrec_p _trp, char *_in)
 
 int tr_parse_byyday(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->byyday = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
@@ -652,7 +646,7 @@ int tr_parse_byyday(tmrec_p _trp, char *_in)
 
 int tr_parse_bymonth(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->bymonth = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
@@ -660,7 +654,7 @@ int tr_parse_bymonth(tmrec_p _trp, char *_in)
 
 int tr_parse_byweekno(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->byweekno = ic_parse_byxxx(_in, _trp->flags);
 	return 0;
@@ -668,7 +662,7 @@ int tr_parse_byweekno(tmrec_p _trp, char *_in)
 
 int tr_parse_wkst(tmrec_p _trp, char *_in)
 {
-	if(!_trp || !_in)
+	if (!_in)
 		return -1;
 	_trp->wkst = ic_parse_wkst(_in);
 	return 0;
@@ -738,7 +732,7 @@ int tmrec_print(const tmrec *tr)
 
 time_t ic_parse_datetime(char *_in, struct tm *_tm)
 {
-	if(!_in || !_tm || strlen(_in)!=15)
+	if (!_in || strlen(_in)!=15)
 		return 0;
 
 	memset(_tm, 0, sizeof(struct tm));
@@ -1017,44 +1011,44 @@ tr_byxxx_p ic_parse_byxxx(char *_in, char type)
 		tr_byxxx_free(_bxp);
 		return NULL;
 	}
-	_p = _in;
+
 	_nr = _v = 0;
 	_s = 1;
-	while(*_p && _nr < _bxp->nr)
-	{
-		switch(*_p)
-		{
-			case '0': case '1': case '2':
-			case '3': case '4': case '5':
-			case '6': case '7': case '8':
-			case '9':
-				_v = _v*10 + *_p - '0';
+
+	for (_p = _in; *_p; _p++) {
+		switch (*_p) {
+		case '0': case '1': case '2':
+		case '3': case '4': case '5':
+		case '6': case '7': case '8':
+		case '9':
+			_v = _v*10 + *_p - '0';
 			break;
 
-			case '-':
-				_s = -1;
+		case '-':
+			_s = -1;
 			break;
-			case '+':
-			case ' ':
-			case '\t':
+		case '+':
+		case ' ':
+		case '\t':
 			break;
-			case ',':
-				_bxp->xxx[_nr] = _v;
-				_bxp->req[_nr] = _s;
-				_s = 1;
-				_v = 0;
-				_nr++;
+
+		case ',':
+			_bxp->xxx[_nr] = _v;
+			_bxp->req[_nr] = _s;
+			_s = 1;
+			_v = 0;
+			_nr++;
 			break;
-			default:
-				goto error;
+
+		default:
+			goto error;
 		}
-		_p++;
 	}
-	if(_nr < _bxp->nr)
-	{
-		_bxp->xxx[_nr] = _v;
-		_bxp->req[_nr] = _s;
-	}
+
+	/* store the last item of the list */
+	_bxp->xxx[_nr] = _v;
+	_bxp->req[_nr] = _s;
+
 	return _bxp;
 
 error:
