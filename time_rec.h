@@ -30,8 +30,9 @@
 typedef void tmrec;
 typedef void tmrec_expr;
 
-#define SHM_ALLOC    0
-#define PKG_ALLOC    1
+#define SHM_ALLOC    1
+#define PKG_ALLOC    2
+#define TR_BYXXX     4
 
 
 tmrec *tmrec_parse(const char *tr, char alloc_type);

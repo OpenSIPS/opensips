@@ -109,11 +109,11 @@
 typedef struct _ac_maxval
 {
 	int yweek;
-	int yday;
+	int yday;  /* current year's max days (365-366) */
 	int ywday;
-	int mweek;
-	int mday;
-	int mwday;
+	int mweek; /* current month's max number of weeks (4-5) */
+	int mday;  /* current month's max days (28-31) */
+	int mwday; /* current month's max occurrences of current day (4-5) */
 } ac_maxval_t, *ac_maxval_p;
 
 typedef struct _ac_tm
@@ -123,7 +123,7 @@ typedef struct _ac_tm
 	int mweek;
 	int yweek;
 	int ywday;
-	int mwday;
+	int wom; /* current day's week of the month (0-4) */
 	char flags;
 } ac_tm_t, *ac_tm_p;
 
@@ -191,10 +191,12 @@ static inline void ac_tm_fill(ac_tm_p _atp, struct tm* _tm)
 	_atp->t.tm_yday = _tm->tm_yday;     /* day in the year */
 	_atp->t.tm_isdst = _tm->tm_isdst;   /* daylight saving time */
 
+#if 0
 	_atp->mweek = ac_get_mweek(_tm);
+#endif
 	_atp->yweek = ac_get_yweek(_tm);
 	_atp->ywday = ac_get_wday_yr(_tm);
-	_atp->mwday = ac_get_wday_mr(_tm);
+	_atp->wom = ac_get_wday_mr(_tm);
 }
 
 
@@ -385,12 +387,14 @@ static ac_maxval_p ac_get_maxval(ac_tm_p _atp)
 	/* maximum number of the week day in the month */
 	_amp.mwday=(int)((_amp.mday-1-(_amp.mday-_atp->t.tm_mday)%7)/7)+1;
 
+#if 0
 	/* maximum number of weeks in the month */
 	_v = (_atp->t.tm_wday + (_amp.mday - _atp->t.tm_mday)%7)%7;
 #ifdef USE_YWEEK_U
 	_amp.mweek = (int)((_amp.mday-1)/7+(7-_v+(_amp.mday-1)%7)/7)+1;
 #else
 	_amp.mweek = (int)((_amp.mday-1)/7+(7-(6+_v)%7+(_amp.mday-1)%7)/7)+1;
+#endif
 #endif
 
 	return &_amp;
@@ -412,7 +416,7 @@ int ac_print(ac_tm_p _atp)
 				_atp->t.tm_year+1900, _atp->t.tm_mon+1, _atp->t.tm_mday);
 	printf("Year day: %d\nYear week-day: %d\nYear week: %d\n", _atp->t.tm_yday,
 			_atp->ywday, _atp->yweek);
-	printf("Month week: %d\nMonth week-day: %d\n", _atp->mweek, _atp->mwday);
+	printf("Month week: %d\nMonth week-day: %d\n", _atp->mweek, _atp->wom);
 	return 0;
 }
 
@@ -625,6 +629,7 @@ int tr_parse_byday(tmrec_p _trp, char *_in)
 		return -1;
 
 	_trp->byday = ic_parse_byday(_in, _trp->flags);
+	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
@@ -632,7 +637,9 @@ int tr_parse_bymday(tmrec_p _trp, char *_in)
 {
 	if (!_in)
 		return -1;
+
 	_trp->bymday = ic_parse_byxxx(_in, _trp->flags);
+	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
@@ -640,7 +647,9 @@ int tr_parse_byyday(tmrec_p _trp, char *_in)
 {
 	if (!_in)
 		return -1;
+
 	_trp->byyday = ic_parse_byxxx(_in, _trp->flags);
+	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
@@ -648,7 +657,9 @@ int tr_parse_bymonth(tmrec_p _trp, char *_in)
 {
 	if (!_in)
 		return -1;
+
 	_trp->bymonth = ic_parse_byxxx(_in, _trp->flags);
+	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
@@ -656,7 +667,9 @@ int tr_parse_byweekno(tmrec_p _trp, char *_in)
 {
 	if (!_in)
 		return -1;
+
 	_trp->byweekno = ic_parse_byxxx(_in, _trp->flags);
+	_trp->flags |= TR_BYXXX;
 	return 0;
 }
 
@@ -664,6 +677,7 @@ int tr_parse_wkst(tmrec_p _trp, char *_in)
 {
 	if (!_in)
 		return -1;
+
 	_trp->wkst = ic_parse_wkst(_in);
 	return 0;
 }
@@ -900,29 +914,34 @@ tr_byxxx_p ic_parse_byday(char *_in, char type)
 					case 'a':
 					case 'A':
 						_bxp->xxx[_nr] = WDAY_SA;
-						_bxp->req[_nr] = _s*_v;
 					break;
 					case 'u':
 					case 'U':
 						_bxp->xxx[_nr] = WDAY_SU;
-						_bxp->req[_nr] = _s*_v;
 					break;
 					default:
 						goto error;
 				}
+
+				_bxp->req[_nr] = _s * _v;
+				if (_bxp->req[_nr] > 0)
+					_bxp->req[_nr]--;
 				_s = 1;
 				_v = 0;
-			break;
+				break;
 			case 'm':
 			case 'M':
 				_p++;
 				if(*_p!='o' && *_p!='O')
 					goto error;
 				_bxp->xxx[_nr] = WDAY_MO;
-				_bxp->req[_nr] = _s*_v;
+
+				_bxp->req[_nr] = _s * _v;
+				if (_bxp->req[_nr] > 0)
+					_bxp->req[_nr]--;
 				_s = 1;
 				_v = 0;
-			break;
+				break;
 			case 't':
 			case 'T':
 				_p++;
@@ -931,39 +950,47 @@ tr_byxxx_p ic_parse_byday(char *_in, char type)
 					case 'h':
 					case 'H':
 						_bxp->xxx[_nr] = WDAY_TH;
-						_bxp->req[_nr] = _s*_v;
 					break;
 					case 'u':
 					case 'U':
 						_bxp->xxx[_nr] = WDAY_TU;
-						_bxp->req[_nr] = _s*_v;
 					break;
 					default:
 						goto error;
 				}
+
+				_bxp->req[_nr] = _s * _v;
+				if (_bxp->req[_nr] > 0)
+					_bxp->req[_nr]--;
 				_s = 1;
 				_v = 0;
-			break;
+				break;
 			case 'w':
 			case 'W':
 				_p++;
 				if(*_p!='e' && *_p!='E')
 					goto error;
 				_bxp->xxx[_nr] = WDAY_WE;
-				_bxp->req[_nr] = _s*_v;
 				_s = 1;
 				_v = 0;
-			break;
+
+				_bxp->req[_nr] = _s * _v;
+				if (_bxp->req[_nr] > 0)
+					_bxp->req[_nr]--;
+				break;
 			case 'f':
 			case 'F':
 				_p++;
 				if(*_p!='r' && *_p!='R')
 					goto error;
 				_bxp->xxx[_nr] = WDAY_FR;
-				_bxp->req[_nr] = _s*_v;
+
+				_bxp->req[_nr] = _s * _v;
+				if (_bxp->req[_nr] > 0)
+					_bxp->req[_nr]--;
 				_s = 1;
 				_v = 0;
-			break;
+				break;
 			case '-':
 				_s = -1;
 			break;
@@ -1134,32 +1161,33 @@ int check_byxxx(tmrec_p, ac_tm_p);
 int check_tmrec(const tmrec_p _trp, ac_tm_p _atp)
 {
 	/* it is before start date */
-	if(_atp->time < _trp->dtstart)
+	if (_atp->time < _trp->dtstart)
 		return REC_NOMATCH;
 
-	/* no duration or end -> for ever */
-	if (!_IS_SET(_trp->duration) && !_IS_SET(_trp->dtend))
-		return REC_MATCH;
-
 	/* compute the duration of the recurrence interval */
-	if(!_IS_SET(_trp->duration))
+	if (!_IS_SET(_trp->duration)) {
+		/* no duration, end or "byxxx" limitations -> for ever */
+		if (!_IS_SET(_trp->dtend) && !(_trp->flags & TR_BYXXX))
+			return REC_MATCH;
+
 		_trp->duration = _trp->dtend - _trp->dtstart;
+	}
 
 	if (_atp->time < _trp->dtstart+_trp->duration)
 		return REC_MATCH;
 
 	/* after the bound of recurrence */
-	if(_IS_SET(_trp->until) && _atp->time >= _trp->until + _trp->duration)
+	if (_IS_SET(_trp->until) && _atp->time >= _trp->until + _trp->duration)
 		return REC_NOMATCH;
 
 	/* check if the instance of recurrence matches the 'interval' */
-	if(check_freq_interval(_trp, _atp)!=REC_MATCH)
+	if (check_freq_interval(_trp, _atp)!=REC_MATCH)
 		return REC_NOMATCH;
 
-	if(check_min_unit(_trp, _atp)!=REC_MATCH)
+	if (check_min_unit(_trp, _atp)!=REC_MATCH)
 		return REC_NOMATCH;
 
-	if(check_byxxx(_trp, _atp)!=REC_MATCH)
+	if (check_byxxx(_trp, _atp)!=REC_MATCH)
 		return REC_NOMATCH;
 
 	return REC_MATCH;
@@ -1379,12 +1407,9 @@ int check_min_unit(tmrec_p _trp, ac_tm_p _atp)
 int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 {
 	int i;
-	ac_maxval_p _amp = NULL;
+	ac_maxval_p _amp;
 
-	if(!_trp || !_atp)
-		return REC_ERR;
-	if(!_trp->byday && !_trp->bymday && !_trp->byyday && !_trp->bymonth
-			&& !_trp->byweekno)
+	if (!(_trp->flags & TR_BYXXX))
 		return REC_MATCH;
 
 	_amp = ac_get_maxval(_atp);
@@ -1394,7 +1419,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 		for(i=0; i<_trp->bymonth->nr; i++)
 		{
 			if(_atp->t.tm_mon ==
-					(_trp->bymonth->xxx[i]*_trp->bymonth->req[i]+12)%12)
+					((_trp->bymonth->xxx[i] - 1)*_trp->bymonth->req[i]+12)%12)
 				break;
 		}
 		if(i>=_trp->bymonth->nr)
@@ -1404,7 +1429,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 	{
 		for(i=0; i<_trp->byweekno->nr; i++)
 		{
-			if(_atp->yweek == (_trp->byweekno->xxx[i]*_trp->byweekno->req[i]+
+			if(_atp->yweek == ((_trp->byweekno->xxx[i] - 1) *_trp->byweekno->req[i]+
 							_amp->yweek)%_amp->yweek)
 				break;
 		}
@@ -1415,7 +1440,7 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 	{
 		for(i=0; i<_trp->byyday->nr; i++)
 		{
-			if(_atp->t.tm_yday == (_trp->byyday->xxx[i]*_trp->byyday->req[i]+
+			if(_atp->t.tm_yday == ((_trp->byyday->xxx[i] - 1)*_trp->byyday->req[i]+
 						_amp->yday)%_amp->yday)
 				break;
 		}
@@ -1459,12 +1484,13 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 				if(_trp->freq==FREQ_MONTHLY)
 				{
 #ifdef EXTRA_DEBUG
-					LM_DBG("%d==%d && %d==%d\n", _atp->t.tm_wday,
-						_trp->byday->xxx[i], _atp->mwday+1,
-						(_trp->byday->req[i]+_amp->mwday)%_amp->mwday);
+					LM_DBG("%d==%d && %d==%d [%d]\n", _atp->t.tm_wday,
+						_trp->byday->xxx[i], _atp->wom,
+						(_trp->byday->req[i]+_amp->mwday)%_amp->mwday,
+						_amp->mwday);
 #endif
 					if(_atp->t.tm_wday == _trp->byday->xxx[i] &&
-							_atp->mwday+1==(_trp->byday->req[i]+
+							_atp->wom==(_trp->byday->req[i]+
 							_amp->mwday)%_amp->mwday)
 						break;
 				}
