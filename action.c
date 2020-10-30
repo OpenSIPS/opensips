@@ -68,7 +68,7 @@
 
 int action_flags = 0;
 int return_code  = 0;
-int max_while_loops = 100;
+int max_while_loops = 10000;
 
 /* script tracing options  */
 int use_script_trace = 0;
@@ -774,7 +774,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				{
 					if(len++ >= max_while_loops)
 					{
-						LM_INFO("max while loops are encountered\n");
+						LM_ERR("max while loops reached (%d), increase the "
+						       "'max_while_loops' global!\n", max_while_loops);
 						break;
 					}
 					v=eval_expr((struct expr*)a->elem[0].u.data, msg, 0);
