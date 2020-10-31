@@ -36,19 +36,19 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">11</entry>
+		<entry align="center">9</entry>
+		<entry align="center">19</entry>
+		<entry align="center">13</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">9</entry>
 		<entry align="center">7</entry>
 		<entry align="center">13</entry>
 		<entry align="center">13</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">9</entry>
-		<entry align="center">7</entry>
-		<entry align="center">13</entry>
-		<entry align="center">10</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -60,7 +60,7 @@
 	</row>
 	<row>
 		<entry>6. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
@@ -104,13 +104,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">May 2014 - Mar 2020</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2015 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2015 - Sep 2019</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">May 2014 - Mar 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -134,7 +134,7 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">Oct 2014 - Oct 2014</entry>
 	</row>
 	</tbody>

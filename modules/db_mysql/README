@@ -212,7 +212,7 @@ Chapter 2. Contributors
    7. Andrei Pelinescu-Onciul 16 14 52 49
    8. Vlad Paiu (@vladpaiu) 13 10 139 25
    9. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
-   10. Vlad Patrascu (@rvlad-patrascu) 8 5 120 73
+   10. Vlad Patrascu (@rvlad-patrascu) 10 6 174 73
 
    All remaining contributors: Nils Ohlmeier, Norman Brandinger
    (@NormB), Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
@@ -241,18 +241,18 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                         Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Mar 2014 - Mar 2020
-   2.  Vlad Paiu (@vladpaiu)                    Feb 2011 - Dec 2019
-   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Aug 2002 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2018
-   6.  Peter Lemenkov (@lemenkov)               Nov 2017 - Jun 2018
-   7.  Augusto Caringi                          Jul 2017 - Jul 2017
-   8.  Ovidiu Sas (@ovidiusas)                  Mar 2017 - Mar 2017
-   9.  Ionut Ionita (@ionutrazvanionita)        Feb 2016 - Feb 2016
-   10. Eseanu Marius Cristian (@eseanucristian)   Jul 2015 - Jul
-                                                2015
+     Name Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Jul 2020
+   2. Liviu Chircu (@liviuchircu) Mar 2014 - Mar 2020
+   3. Vlad Paiu (@vladpaiu) Feb 2011 - Dec 2019
+   4. Razvan Crainea (@razvancrainea) Oct 2011 - Sep 2019
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
+   6. Peter Lemenkov (@lemenkov) Nov 2017 - Jun 2018
+   7. Augusto Caringi Jul 2017 - Jul 2017
+   8. Ovidiu Sas (@ovidiusas) Mar 2017 - Mar 2017
+   9. Ionut Ionita (@ionutrazvanionita) Feb 2016 - Feb 2016
+   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul
+   2015
 
    All remaining contributors: Saúl Ibarra Corretgé (@saghul),
    Razvan Pistolea, Norman Brandinger (@NormB), Sergio Gutierrez,

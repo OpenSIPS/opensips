@@ -52,19 +52,19 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">22</entry>
+		<entry align="center">19</entry>
+		<entry align="center">108</entry>
+		<entry align="center">107</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">22</entry>
 		<entry align="center">5</entry>
 		<entry align="center">384</entry>
 		<entry align="center">764</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">20</entry>
-		<entry align="center">17</entry>
-		<entry align="center">95</entry>
-		<entry align="center">103</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Julián Moreno Patiño, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Iouri Kharon, UnixDev, Zero King, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Julián Moreno Patiño, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Iouri Kharon, UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Zero King</entry>
-		<entry align="center">Mar 2020 - Mar 2020</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Sep 2019</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
+		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>

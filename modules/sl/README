@@ -206,10 +206,10 @@ Chapter 2. Contributors
    9. Vlad Patrascu (@rvlad-patrascu) 7 4 30 83
    10. Elena-Ramona Modroiu 3 2 65 0
 
-   All remaining contributors: Jeffrey Magder, Andreas Heise,
-   Konstantin Bokarius, Anca Vamanu, Ionut Ionita
-   (@ionutrazvanionita), Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert.
+   All remaining contributors: Jeffrey Magder, Maksym Sobolyev
+   (@sobomax), Andreas Heise, Konstantin Bokarius, Anca Vamanu,
+   Ionut Ionita (@ionutrazvanionita), Peter Lemenkov (@lemenkov),
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -231,20 +231,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Nov 2019
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
-   7.  Anca Vamanu                         Nov 2010 - Nov 2010
-   8.  Henning Westerholt (@henningw)      Aug 2007 - Jun 2008
-   9.  Daniel-Constantin Mierla (@miconda) Apr 2006 - Mar 2008
-   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Nov 2019
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2014
+   8.  Anca Vamanu                         Nov 2010 - Nov 2010
+   9.  Henning Westerholt (@henningw)      Aug 2007 - Jun 2008
+   10. Daniel-Constantin Mierla (@miconda) Apr 2006 - Mar 2008
 
-   All remaining contributors: Edson Gellert Schubert, Andreas
-   Heise, Elena-Ramona Modroiu, Jeffrey Magder, Jiri Kuthan
-   (@jiriatipteldotorg), Jan Janak (@janakj), Andrei
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Andreas Heise, Elena-Ramona Modroiu, Jeffrey Magder,
+   Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj), Andrei
    Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding

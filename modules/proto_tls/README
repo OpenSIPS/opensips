@@ -437,78 +437,78 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Where can I post a question about TLS?
+   Where can I post a question about TLS?
 
-       Use one (the most appropriate) of the OpenSIPS mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   Use one (the most appropriate) of the OpenSIPS mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       Remember: first at all, check if your question wasn't already
-       answered.
+   Remember: first at all, check if your question wasn't already
+   answered.
 
    2.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Accumulate as much as possible information (OpenSIPS version,
-       opensips -V output, your OS (uname -a), OpenSIPS logs, network
-       dumps, core dump files, configuration file) and send a mail to
-       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   Accumulate as much as possible information (OpenSIPS version,
+   opensips -V output, your OS (uname -a), OpenSIPS logs, network
+   dumps, core dump files, configuration file) and send a mail to
+   http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       Also you may try OpenSIPS's bug report web page:
-       https://opensips.org/pmwiki.php?n=Development.Tracker
+   Also you may try OpenSIPS's bug report web page:
+   https://opensips.org/pmwiki.php?n=Development.Tracker
 
    2.3.
 
-       How can I debug ssl/tls problems?
+   How can I debug ssl/tls problems?
 
-       Increase the log level in opensips.cfg (log_level=4) and watch
-       the log statements in syslog.
+   Increase the log level in opensips.cfg (log_level=4) and watch
+   the log statements in syslog.
 
-       Install the ssldump utility and start it. This will give you a
-       trace of the ssl/tls connections.
+   Install the ssldump utility and start it. This will give you a
+   trace of the ssl/tls connections.
 
    2.4.
 
-       What is the difference between the TLS directory and the TLSOPS
-       module directory?
+   What is the difference between the TLS directory and the TLSOPS
+   module directory?
 
-       The code in the TLS directory implements the TLS transport
-       layer. The TLSOPS module implements TLS related functions which
-       can be used in the routing script.
+   The code in the TLS directory implements the TLS transport
+   layer. The TLSOPS module implements TLS related functions which
+   can be used in the routing script.
 
    2.5.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.6.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.7.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -518,18 +518,18 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 29 1543 809
-   2. Razvan Crainea (@razvancrainea) 43 26 626 641
+   2. Razvan Crainea (@razvancrainea) 44 27 630 641
    3. Eseanu Marius Cristian (@eseanucristian) 41 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
    5. Liviu Chircu (@liviuchircu) 10 7 30 105
    6. Vlad Patrascu (@rvlad-patrascu) 8 5 53 63
    7. Bogdan Chifor 5 2 141 1
    8. Vlad Paiu (@vladpaiu) 4 2 84 3
-   9. Dan Pascu (@danpascu) 3 1 2 4
-   10. Julián Moreno Patiño 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 4 2 3 18
+   10. Dan Pascu (@danpascu) 3 1 2 4
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Zero
-   King, Maksym Sobolyev (@sobomax).
+   All remaining contributors: Julián Moreno Patiño, Peter
+   Lemenkov (@lemenkov), Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -551,14 +551,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   4.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2020
-   5.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Maksym Sobolyev (@sobomax)          Jul 2017 - Jul 2017
+   1.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
+   2.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jul 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2020
+   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   5.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
+   6.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2018
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Apr 2017
    10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
@@ -572,11 +572,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Zero King,
-   Razvan Crainea (@razvancrainea), Liviu Chircu (@liviuchircu),
-   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
-   Ionut Ionita (@ionutrazvanionita), Eseanu Marius Cristian
-   (@eseanucristian), Vlad Paiu (@vladpaiu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Zero King
+   (@l2dy), Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita), Eseanu
+   Marius Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

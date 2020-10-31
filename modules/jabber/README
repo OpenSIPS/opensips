@@ -504,7 +504,7 @@ Chapter 2. Contributors
    1. Daniel-Constantin Mierla (@miconda) 374 80 19649 8172
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 55 33 1383 558
    3. Jan Janak (@janakj) 33 15 1007 498
-   4. Razvan Crainea (@razvancrainea) 20 18 68 49
+   4. Razvan Crainea (@razvancrainea) 22 20 70 50
    5. Andrei Pelinescu-Onciul 19 12 101 336
    6. Liviu Chircu (@liviuchircu) 11 8 44 106
    7. Jiri Kuthan (@jiriatipteldotorg) 6 3 313 0
@@ -514,8 +514,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Elena-Ramona Modroiu, Jamey Hicks,
    Konstantin Bokarius, John Riordan, Vlad Paiu (@vladpaiu),
-   Julián Moreno Patiño, Klaus Darilion, Zero King, Edson Gellert
-   Schubert.
+   Julián Moreno Patiño, Klaus Darilion, Zero King (@l2dy), Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -537,9 +537,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Apr 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Apr 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          May 2007 - Jun 2018
    6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018

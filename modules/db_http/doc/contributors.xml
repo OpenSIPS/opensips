@@ -76,7 +76,7 @@
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">50</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ezequiel Lovelle, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Stephane Alnet.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Stephane Alnet.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -163,12 +163,12 @@
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">Oct 2014 - Oct 2014</entry>
 	</row>
 	<row>

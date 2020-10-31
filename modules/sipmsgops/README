@@ -1041,7 +1041,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 58 31 1904 671
    2. Liviu Chircu (@liviuchircu) 49 20 765 1315
-   3. Razvan Crainea (@razvancrainea) 41 16 2890 36
+   3. Razvan Crainea (@razvancrainea) 42 17 2891 37
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
@@ -1052,8 +1052,9 @@ Chapter 2. Contributors
 
    All remaining contributors: Fabian Gast (@fgast), Alexey
    Vasilyev (@vasilevalex), Jarrod Baumann (@jarrodb), Ezequiel
-   Lovelle, Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
-   Ionut Ionita (@ionutrazvanionita), Dan Pascu (@danpascu).
+   Lovelle (@lovelle), Walter Doekes (@wdoekes), Nick Altmann
+   (@nikbyte), Ionut Ionita (@ionutrazvanionita), Dan Pascu
+   (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1075,9 +1076,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jan 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Nov 2019
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jan 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Nov 2019
    4.  Dan Pascu (@danpascu)               May 2019 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
@@ -1087,9 +1088,9 @@ Chapter 2. Contributors
    10. Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
 
    All remaining contributors: Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ezequiel Lovelle, Vlad Paiu (@vladpaiu),
-   Mihai Tiganus (@tallicamike), Boris Ratner, Nick Altmann
-   (@nikbyte), Walter Doekes (@wdoekes).
+   (@ionutrazvanionita), Ezequiel Lovelle (@lovelle), Vlad Paiu
+   (@vladpaiu), Mihai Tiganus (@tallicamike), Boris Ratner, Nick
+   Altmann (@nikbyte), Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits

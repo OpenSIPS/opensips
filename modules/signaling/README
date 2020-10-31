@@ -161,8 +161,9 @@ Chapter 2. Contributors
    3. Anca Vamanu 9 3 524 2
    4. Razvan Crainea (@razvancrainea) 6 4 5 3
    5. Vlad Patrascu (@rvlad-patrascu) 6 3 23 76
-   6. Peter Lemenkov (@lemenkov) 3 1 1 1
-   7. zhangst 3 1 1 1
+   6. Maksym Sobolyev (@sobomax) 3 1 7 5
+   7. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. zhangst 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -184,13 +185,14 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2008 - May 2020
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6. zhangst                             Jul 2014 - Jul 2014
-   7. Anca Vamanu                         Nov 2008 - Mar 2010
+   1. Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2008 - May 2020
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6. Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7. zhangst                             Jul 2014 - Jul 2014
+   8. Anca Vamanu                         Nov 2008 - Mar 2010
 
    (1) including any documentation-related commits, excluding
    merge commits

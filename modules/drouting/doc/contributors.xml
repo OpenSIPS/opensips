@@ -21,26 +21,26 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">371</entry>
-		<entry align="center">174</entry>
-		<entry align="center">12924</entry>
-		<entry align="center">5548</entry>
+		<entry align="center">373</entry>
+		<entry align="center">176</entry>
+		<entry align="center">12928</entry>
+		<entry align="center">5555</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">119</entry>
-		<entry align="center">63</entry>
-		<entry align="center">2081</entry>
-		<entry align="center">2374</entry>
+		<entry align="center">127</entry>
+		<entry align="center">68</entry>
+		<entry align="center">2116</entry>
+		<entry align="center">2479</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">91</entry>
-		<entry align="center">45</entry>
-		<entry align="center">1133</entry>
-		<entry align="center">2164</entry>
+		<entry align="center">94</entry>
+		<entry align="center">48</entry>
+		<entry align="center">1144</entry>
+		<entry align="center">2185</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Jeremy Martinez, Dusan Klinec, Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez, Le Roy Christophe, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Ozzyboshi, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Jeremy Martinez (<ulink url="https://github.com/JeremyMartinez51">@JeremyMartinez51</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez, Le Roy Christophe, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Ozzyboshi, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,57 +129,57 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2010 - Jun 2020</entry>
+		<entry align="center">Sep 2010 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Nov 2012 - Jun 2020</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Oct 2020 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Oct 2008 - May 2020</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Nov 2012 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Oct 2008 - Jul 2020</entry>
+	</row>
+	<row>
+		<entry>5. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Mar 2017 - Jan 2020</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Aug 2011 - Nov 2018</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
 		<entry align="center">Oct 2018 - Oct 2018</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
 		<entry align="center">May 2012 - Mar 2017</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
-		<entry>Jeremy Martinez</entry>
-		<entry align="center">Feb 2017 - Feb 2017</entry>
-	</row>
-	<row>
 		<entry>10. </entry>
-		<entry>Le Roy Christophe</entry>
+		<entry>Jeremy Martinez (<ulink url="https://github.com/JeremyMartinez51">@JeremyMartinez51</ulink>)</entry>
 		<entry align="center">Feb 2017 - Feb 2017</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ozzyboshi, Julián Moreno Patiño, Dusan Klinec, Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Le Roy Christophe, Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Ozzyboshi, Julián Moreno Patiño, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

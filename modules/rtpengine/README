@@ -280,11 +280,13 @@ modparam("rtpengine", "notification_sock", "127.0.0.1:9999")
 
 1.4.6. extra_id_pv (string)
 
-   The parameter sets the PV defination to use when the “b”
-   parameter is used on rtpengine_delete(), rtpengine_offer(),
-   rtpengine_answer() or rtpengine_manage() command.
+   The parameter sets the PV definition to use when the
+   “via-branch=extra” option is used on the rtpengine_delete(),
+   rtpengine_offer(), rtpengine_answer() or rtpengine_manage()
+   commands.
 
-   Default is empty, the “b” parameter may not be used then.
+   Default is empty, the “via-branch=extra” option may not be used
+   then.
 
    Example 1.6. Set extra_id_pv parameter
 ...
@@ -471,10 +473,11 @@ rtpengine_offer();
             trusted. Without this flag, the RTP proxy ignores
             address in the SDP and uses source address of the SIP
             message as media address which is passed to the RTP
-            proxy. From rtpengine 3.8 this is the default behaviour.
-	  + SIP-source-address - the opposite of trust-address. 
-	    Restores the old default behaviour of ignoring endpoint
-            addresses in the SDP body. 
+            proxy. From rtpengine 3.8 this is the default
+            behaviour.
+          + SIP-source-address - the opposite of trust-address.
+            Restores the old default behaviour of ignoring
+            endppoint of the addresses in the SDP body.
           + replace-origin - flags that IP from the origin
             description (o=) should be also changed.
           + replace-session-connection - flags to change the
@@ -709,9 +712,6 @@ rtpengine_delete();
 
    Functionality:
      * If INVITE with SDP, then do rtpengine_offer()
-     * If INVITE with SDP, when the tm module is loaded, mark
-       transaction with internal flag FL_SDP_BODY to know that the
-       1xx and 2xx are for rtpengine_answer()
      * If ACK with SDP, then do rtpengine_answer()
      * If BYE or CANCEL, or called within a FAILURE_ROUTE[], then
        do rtpengine_delete()
@@ -1193,19 +1193,20 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 146 62 4896 2652
+   1. Razvan Crainea (@razvancrainea) 153 68 4947 2684
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 16 422 594
    3. Richard Fuchs 20 2 640 723
-   4. Liviu Chircu (@liviuchircu) 15 11 66 131
+   4. Liviu Chircu (@liviuchircu) 16 12 70 135
    5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
-   6. Eric Tamme (@etamme) 7 5 42 19
-   7. Peter Lemenkov (@lemenkov) 7 5 27 32
+   6. Peter Lemenkov (@lemenkov) 8 6 27 34
+   7. Eric Tamme (@etamme) 7 5 42 19
    8. Ovidiu Sas (@ovidiusas) 5 3 37 7
-   9. John Burke 4 1 172 31
-   10. Rob Gagnon (@rgagnon24) 3 1 22 22
+   9. Zero King (@l2dy) 4 2 5 4
+   10. John Burke 4 1 172 31
 
-   All remaining contributors: Zero King, Dan Pascu (@danpascu),
-   Oliver Severin Mulelid-Tynes (@olivermt).
+   All remaining contributors: Rob Gagnon (@rgagnon24), Flavio E.
+   Goncalves, Dan Pascu (@danpascu), Oliver Severin Mulelid-Tynes
+   (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1226,21 +1227,21 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                         Name                     Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)                  Jun 2020 - Jun 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Jun 2014 - May 2020
-   3.  Razvan Crainea (@razvancrainea)          Jun 2014 - May 2020
-   4.  Zero King                                Mar 2020 - Mar 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)          May 2017 - Nov 2019
-   6.  Peter Lemenkov (@lemenkov)               Jun 2018 - Sep 2019
-   7.  John Burke                               Jun 2019 - Jun 2019
-   8.  Liviu Chircu (@liviuchircu)              Jul 2014 - Nov 2018
-   9.  Dan Pascu (@danpascu)                    Mar 2018 - Mar 2018
-   10. Oliver Severin Mulelid-Tynes (@olivermt)   May 2015 - May
-                                                2015
+                      Name                   Commit Activity
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Oct 2020
+   2.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
+   4.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
+   6.  Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - May 2020
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   9.  John Burke                          Jun 2019 - Jun 2019
+   10. Dan Pascu (@danpascu)               Mar 2018 - Mar 2018
 
-   All remaining contributors: Rob Gagnon (@rgagnon24), Eric Tamme
-   (@etamme), Richard Fuchs.
+   All remaining contributors: Oliver Severin Mulelid-Tynes
+   (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme (@etamme),
+   Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1249,10 +1250,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
-   Fuchs.
+   Last edited by: Flavio E. Goncalves, Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Richard Fuchs.
 
    Documentation Copyrights:
 

@@ -1373,8 +1373,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 175 103 2747 2977
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 166 112 2380 2031
+   1. Liviu Chircu (@liviuchircu) 179 107 2773 2988
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 167 113 2382 2031
    3. Jan Janak (@janakj) 120 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Razvan Crainea (@razvancrainea) 19 14 265 73
@@ -1386,13 +1386,13 @@ Chapter 3. Contributors
 
    All remaining contributors: Henning Westerholt (@henningw),
    Andrei Pelinescu-Onciul, Ovidiu Sas (@ovidiusas), Juha Heinanen
-   (@juha-h), Nick Altmann (@nikbyte), Ancuta Onofrei,
-   Elena-Ramona Modroiu, Maksym Sobolyev (@sobomax), Peter
-   Lemenkov (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez,
-   Carsten Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus
-   Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion,
-   Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius,
-   Jesus Rodrigues, Dusan Klinec, Ruslan Bukin, Saúl Ibarra
+   (@juha-h), Maksym Sobolyev (@sobomax), Nick Altmann (@nikbyte),
+   Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov
+   (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez, Carsten
+   Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus Hunger,
+   Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria
+   Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus
+   Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl Ibarra
    Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
    Schubert.
 
@@ -1416,27 +1416,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2020
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Nov 2019
-   4.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  @jalung                             Aug 2017 - Aug 2017
-   7.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
-   8.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec                        Dec 2015 - Dec 2015
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Oct 2020
+   2.  Maksym Sobolyev (@sobomax)          Jul 2004 - Oct 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jul 2020
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   5.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  @jalung                             Aug 2017 - Aug 2017
+   8.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
+   9.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Nick Altmann (@nikbyte), Vlad Paiu
-   (@vladpaiu), Tolga Tarhan, Saúl Ibarra Corretgé (@saghul),
-   Ruslan Bukin, Irina-Maria Stanescu, Kobi Eshun (@ekobi), Phil
-   D'Amore, Sergio Gutierrez, Klaus Darilion, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Dan Pascu
-   (@danpascu), Ancuta Onofrei, Marcus Hunger, Juha Heinanen
-   (@juha-h), Elena-Ramona Modroiu, Jeffrey Magder, Carsten Bock,
-   Andreas Granig, Dmitry Semyonov, Maksym Sobolyev (@sobomax),
-   Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
+   All remaining contributors: Dusan Klinec (@ph4r05), Nick
+   Altmann (@nikbyte), Vlad Paiu (@vladpaiu), Tolga Tarhan, Saúl
+   Ibarra Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu,
+   Kobi Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus
+   Darilion, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jesus Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
+   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Jeffrey
+   Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan
+   Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
    (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding

@@ -453,8 +453,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. William Quan 40 1 4682 0
-   2. Henning Westerholt (@henningw) 26 10 381 688
-   3. Razvan Crainea (@razvancrainea) 24 20 140 115
+   2. Razvan Crainea (@razvancrainea) 28 23 153 154
+   3. Henning Westerholt (@henningw) 26 10 381 688
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 19 149 170
    5. Anonymous 16 4 681 341
    6. Liviu Chircu (@liviuchircu) 12 9 19 77
@@ -487,7 +487,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jul 2020
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019

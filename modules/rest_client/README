@@ -638,7 +638,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 122 67 3458 1585
+   1. Liviu Chircu (@liviuchircu) 123 68 3459 1585
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 16 7 332 341
    4. Razvan Crainea (@razvancrainea) 15 13 41 17
@@ -647,9 +647,10 @@ Chapter 2. Contributors
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
    8. Callum Guy (@spacetourist) 6 2 281 8
    9. Ryan Bullock (@rrb3942) 5 2 91 77
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Maksym Sobolyev (@sobomax) 3 1 1 1
 
-   All remaining contributors: Andrey Vorobiev (@andrey-vorobiev).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Andrey
+   Vorobiev (@andrey-vorobiev).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -671,18 +672,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2020
-   3.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
-   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
-   8.  Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
-   9.  Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
-   10. Agalya Ramachandran (@AgalyaR)      Oct 2016 - Oct 2016
+   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jul 2020
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2020
+   4.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
+   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Feb 2017 - Mar 2017
+   9.  Andrey Vorobiev (@andrey-vorobiev)  Feb 2017 - Feb 2017
+   10. Ryan Bullock (@rrb3942)             Jan 2017 - Jan 2017
 
-   All remaining contributors: Jarrod Baumann (@jarrodb).
+   All remaining contributors: Agalya Ramachandran (@AgalyaR),
+   Jarrod Baumann (@jarrodb).
 
    (1) including any documentation-related commits, excluding
    merge commits

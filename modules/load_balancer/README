@@ -731,34 +731,34 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    3.2.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    3.3.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -767,19 +767,20 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 116 69 4265 735
-   2. Liviu Chircu (@liviuchircu) 40 31 682 169
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 119 71 4268 738
+   2. Liviu Chircu (@liviuchircu) 41 32 683 170
    3. Vlad Patrascu (@rvlad-patrascu) 36 17 619 759
-   4. Razvan Crainea (@razvancrainea) 25 19 260 142
-   5. Sergey Khripchenko 18 6 649 366
-   6. shripchenko 11 4 409 150
-   7. Vlad Paiu (@vladpaiu) 5 3 7 5
-   8. Walter Doekes (@wdoekes) 5 3 3 3
-   9. Jeremy Martinez 5 2 193 1
-   10. Ezequiel Lovelle 4 2 3 3
+   4. Sergey Khripchenko (@shripchenko) 28 10 1058 516
+   5. Razvan Crainea (@razvancrainea) 25 19 260 142
+   6. Vlad Paiu (@vladpaiu) 5 3 7 5
+   7. Walter Doekes (@wdoekes) 5 3 3 3
+   8. Jeremy Martinez (@JeremyMartinez51) 5 2 193 1
+   9. Ezequiel Lovelle (@lovelle) 4 2 3 3
+   10. Anca Vamanu 3 1 20 9
 
-   All remaining contributors: Anca Vamanu, Andrei Dragus, James
-   Van Vleet, Dusan Klinec, Peter Lemenkov (@lemenkov), Zero King.
+   All remaining contributors: Andrei Dragus, James Van Vleet,
+   Dusan Klinec (@ph4r05), Peter Lemenkov (@lemenkov), Zero King
+   (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -801,20 +802,19 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
-   4.  Liviu Chircu (@liviuchircu)         Sep 2012 - Nov 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Sep 2020
+   2.  Liviu Chircu (@liviuchircu)         Sep 2012 - Sep 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
    5.  Razvan Crainea (@razvancrainea)     Oct 2010 - Sep 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Jeremy Martinez                     Feb 2017 - Feb 2017
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
-   9.  Sergey Khripchenko                  Nov 2014 - Oct 2015
-   10. Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   7.  Jeremy Martinez (@JeremyMartinez51) Feb 2017 - Feb 2017
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Sergey Khripchenko (@shripchenko)   Oct 2014 - Oct 2015
+   10. Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
 
-   All remaining contributors: shripchenko, Walter Doekes
-   (@wdoekes), Vlad Paiu (@vladpaiu), Andrei Dragus, James Van
-   Vleet, Anca Vamanu.
+   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
+   (@vladpaiu), Andrei Dragus, James Van Vleet, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -823,11 +823,12 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Zero King, Vlad Patrascu (@rvlad-patrascu),
-   Liviu Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
-   (@lemenkov), Sergey Khripchenko, Ezequiel Lovelle, Walter
-   Doekes (@wdoekes), Vlad Paiu (@vladpaiu).
+   Last edited by: Zero King (@l2dy), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Sergey Khripchenko (@shripchenko),
+   Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes), Vlad
+   Paiu (@vladpaiu).
 
    Documentation Copyrights:
 

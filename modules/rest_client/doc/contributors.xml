@@ -21,9 +21,9 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">122</entry>
-		<entry align="center">67</entry>
-		<entry align="center">3458</entry>
+		<entry align="center">123</entry>
+		<entry align="center">68</entry>
+		<entry align="center">3459</entry>
 		<entry align="center">1585</entry>
 	</row>
 	<row>
@@ -92,7 +92,7 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrey Vorobiev (<ulink url="https://github.com/andrey-vorobiev">@andrey-vorobiev</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Andrey Vorobiev (<ulink url="https://github.com/andrey-vorobiev">@andrey-vorobiev</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Jun 2020</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Oct 2020 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2013 - Apr 2020</entry>
+		<entry align="center">Mar 2013 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Jun 2020</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Callum Guy (<ulink url="https://github.com/spacetourist">@spacetourist</ulink>)</entry>
 		<entry align="center">Jan 2020 - Jan 2020</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Aug 2015 - Nov 2019</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Oct 2014 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">Feb 2017 - Mar 2017</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Andrey Vorobiev (<ulink url="https://github.com/andrey-vorobiev">@andrey-vorobiev</ulink>)</entry>
 		<entry align="center">Feb 2017 - Feb 2017</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>)</entry>
 		<entry align="center">Jan 2017 - Jan 2017</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Agalya Ramachandran (<ulink url="https://github.com/AgalyaR">@AgalyaR</ulink>)</entry>
-		<entry align="center">Oct 2016 - Oct 2016</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Agalya Ramachandran (<ulink url="https://github.com/AgalyaR">@AgalyaR</ulink>), Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

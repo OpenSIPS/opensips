@@ -231,46 +231,46 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with auth_username_avp, auth_realm_avp and
-       auth_password_avp parameters
+   What happened with auth_username_avp, auth_realm_avp and
+   auth_password_avp parameters
 
-       Due some restructuring of the UAC auth modules, these
-       parameters were moved into the "uac_auth" module. This module
-       is now responsible for handling all the credentials (static
-       defined or dynamically defined via AVPs). The UAC module will
-       still see the credentials defined via the AVPs.
-       $
+   Due some restructuring of the UAC auth modules, these
+   parameters were moved into the "uac_auth" module. This module
+   is now responsible for handling all the credentials (static
+   defined or dynamically defined via AVPs). The UAC module will
+   still see the credentials defined via the AVPs.
+   $
 
    2.2.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.3.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.4.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -292,7 +292,8 @@ Chapter 3. Contributors
 
    All remaining contributors: Henning Westerholt (@henningw),
    Konstantin Bokarius, Peter Lemenkov (@lemenkov), Dan Pascu
-   (@danpascu), Dusan Klinec, Jesus Rodrigues, Sergio Gutierrez.
+   (@danpascu), Dusan Klinec (@ph4r05), Jesus Rodrigues, Sergio
+   Gutierrez.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -319,7 +320,7 @@ Chapter 3. Contributors
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Dusan Klinec                        Dec 2015 - Dec 2015
+   6.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    7.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
    8.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Oct 2013
    9.  Sergio Gutierrez                    Nov 2008 - Nov 2008

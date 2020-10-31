@@ -608,34 +608,34 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.2.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.3.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -644,9 +644,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 151 119 2036 862
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
    2. Maksym Sobolyev (@sobomax) 146 39 3533 4766
-   3. Liviu Chircu (@liviuchircu) 42 33 397 274
+   3. Liviu Chircu (@liviuchircu) 43 34 399 275
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 32 26 149 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
@@ -661,9 +661,10 @@ Chapter 3. Contributors
    Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
    Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu,
    Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq,
-   Laurent Schweizer, Jasper Hafkenscheid, Konstantin Bokarius,
-   John Riordan, Peter Lemenkov (@lemenkov), Walter Doekes
-   (@wdoekes), Elena-Ramona Modroiu, Edson Gellert Schubert.
+   Laurent Schweizer, Jasper Hafkenscheid (@hafkensite),
+   Konstantin Bokarius, John Riordan, Peter Lemenkov (@lemenkov),
+   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -685,9 +686,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - May 2020
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2020
-   3.  Jasper Hafkenscheid                 Mar 2020 - Mar 2020
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
+   3.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
    5.  Dan Pascu (@danpascu)               May 2019 - May 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -714,7 +715,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Jasper Hafkenscheid, Liviu Chircu
+   Last edited by: Jasper Hafkenscheid (@hafkensite), Liviu Chircu
    (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
    (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
    Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita

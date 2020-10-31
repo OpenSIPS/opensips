@@ -881,41 +881,41 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with “rtpproxy_disable” parameter?
+   What happened with “rtpproxy_disable” parameter?
 
-       It was removed as it became obsolete - now “rtpproxy_sock” can
-       take empty value to disable the rtpproxy functionality.
+   It was removed as it became obsolete - now “rtpproxy_sock” can
+   take empty value to disable the rtpproxy functionality.
 
    2.2.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.3.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.4.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -924,21 +924,22 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 176 117 3777 1657
+   1. Razvan Crainea (@razvancrainea) 178 119 3801 1667
    2. Maksym Sobolyev (@sobomax) 41 3 4527 3
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Vlad Patrascu (@rvlad-patrascu) 23 8 362 699
    5. Liviu Chircu (@liviuchircu) 20 16 91 183
    6. Ovidiu Sas (@ovidiusas) 7 5 31 22
-   7. Vlad Paiu (@vladpaiu) 6 4 15 9
-   8. Peter Lemenkov (@lemenkov) 5 3 60 9
+   7. Peter Lemenkov (@lemenkov) 6 4 60 11
+   8. Vlad Paiu (@vladpaiu) 6 4 15 9
    9. Ryan Bullock (@rrb3942) 4 2 68 9
    10. robdyck 4 2 8 4
 
    All remaining contributors: Dave Sidwell (@davesidwell),
-   Ezequiel Lovelle, Christophe Sollet (@csollet), Anca Vamanu,
-   Mikko Lehto, Dan Pascu (@danpascu), Walter Doekes (@wdoekes),
-   Dusan Klinec, Julián Moreno Patiño, Zero King.
+   Ezequiel Lovelle (@lovelle), Christophe Sollet (@csollet), Anca
+   Vamanu, Mikko Lehto, Dan Pascu (@danpascu), Walter Doekes
+   (@wdoekes), Dusan Klinec (@ph4r05), Julián Moreno Patiño, Zero
+   King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -960,21 +961,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
-   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
-   4.  robdyck                             Apr 2020 - Apr 2020
-   5.  Zero King                           Mar 2020 - Mar 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   8.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
-   9.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
-   10. Peter Lemenkov (@lemenkov)          Dec 2011 - Jun 2018
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Jul 2020
+   2.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jul 2020
+   3.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
+   5.  robdyck                             Apr 2020 - Apr 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   9.  Ryan Bullock (@rrb3942)             Mar 2013 - Jan 2019
+   10. Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Julián
-   Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan Klinec, Dave
-   Sidwell (@davesidwell), Ezequiel Lovelle, Mikko Lehto, Walter
-   Doekes (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu.
+   Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan Klinec (@ph4r05),
+   Dave Sidwell (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko
+   Lehto, Walter Doekes (@wdoekes), Christophe Sollet (@csollet),
+   Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -983,11 +985,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Zero King,
-   Vlad Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu),
-   Peter Lemenkov (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei
-   Iancu (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942),
-   Maksym Sobolyev (@sobomax), Ovidiu Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Julián Moreno
+   Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Mikko Lehto, Ryan
+   Bullock (@rrb3942), Maksym Sobolyev (@sobomax), Ovidiu Sas
+   (@ovidiusas).
 
    Documentation Copyrights:
 

@@ -1277,13 +1277,21 @@ modparam("usrloc", "contact_refresh_timer", true)
 
 1.9.6.  E_UL_CONTACT_REFRESH
 
-   Set contact_refresh_timer to 1 in order to enable this event.
-   The event is raised within reasonable time before a contact
-   binding will expire, such that the script writer can take
-   action, possibly force a registration refresh from the
+   Set contact_refresh_timer to true in order to enable this
+   event. The event is raised within reasonable time before a
+   contact binding will expire, such that the script writer can
+   take action, possibly force a registration refresh from the
    endpoint.
 
-   Parameters: same as the E_UL_CONTACT_INSERT event
+   Parameters:
+     * all E_UL_CONTACT_INSERT event parameters
+     * reason - the reason why the binding refresh event was
+       triggered. Possible values:
+          + "reg-refresh" - periodic refresh triggered by OpenSIPS
+          + "ini-INVITE", "ini-SUBSCRIBE", etc. - a refresh
+            triggered by an incoming initial SIP request
+          + "mid-INVITE", "mid-BYE", etc. - a refresh triggered by
+            an incoming mid-dialog SIP request
 
 1.9.7.  E_UL_LATENCY_UPDATE
 
@@ -1534,7 +1542,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 295 177 7920 3232
+   2. Liviu Chircu (@liviuchircu) 300 180 8050 3276
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 242 148 4208 3614
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
@@ -1547,16 +1555,16 @@ Chapter 3. Contributors
    All remaining contributors: Vlad Paiu (@vladpaiu), Nils
    Ohlmeier, Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
    (@ovidiusas), Maksym Sobolyev (@sobomax), Ionel Cerghit
-   (@ionel-cerghit), Andrei Dragus, Anca Vamanu, Alessio Garzi
-   (@Ozzyboshi), Zero King, Dusan Klinec, Andrei Datcu
-   (@andrei-datcu), Juha Heinanen (@juha-h), Marcus Hunger, Jamey
-   Hicks, Peter Lemenkov (@lemenkov), Andreas Granig, Shlomi
-   Gutman, @jalung, Jeffrey Magder, Phil D'Amore, Norman
-   Brandinger (@NormB), David Sanders, Konstantin Bokarius, Walter
-   Doekes (@wdoekes), Klaus Darilion, Iouri Kharon, Aron Podrigal
-   (@ar45), Dan Pascu (@danpascu), Matthew M. Boedicker, UnixDev,
-   Edson Gellert Schubert, Alexey Vasilyev (@vasilevalex),
-   Elena-Ramona Modroiu, Stephane Alnet.
+   (@ionel-cerghit), Andrei Dragus, Walter Doekes (@wdoekes), Anca
+   Vamanu, Alessio Garzi (@Ozzyboshi), Zero King (@l2dy), Dusan
+   Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Juha Heinanen
+   (@juha-h), Marcus Hunger, Jamey Hicks, Peter Lemenkov
+   (@lemenkov), Andreas Granig, Shlomi Gutman, @jalung, Jeffrey
+   Magder, Phil D'Amore, Norman Brandinger (@NormB), David
+   Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon,
+   Aron Podrigal (@ar45), Dan Pascu (@danpascu), Matthew M.
+   Boedicker, UnixDev, Edson Gellert Schubert, Alexey Vasilyev
+   (@vasilevalex), Elena-Ramona Modroiu, Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1578,31 +1586,31 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2020
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020
-   4.  Zero King                           Mar 2020 - Mar 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   6.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
-   7.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
-   8.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
-   9.  Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
-   10. Dan Pascu (@danpascu)               May 2019 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
+   2.  Walter Doekes (@wdoekes)            Apr 2019 - Sep 2020
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   7.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
+   8.  Razvan Crainea (@razvancrainea)     Jul 2011 - Sep 2019
+   9.  Aron Podrigal (@ar45)               Aug 2019 - Aug 2019
+   10. Alessio Garzi (@Ozzyboshi)          Aug 2019 - Aug 2019
 
-   All remaining contributors: Walter Doekes (@wdoekes), Shlomi
+   All remaining contributors: Dan Pascu (@danpascu), Shlomi
    Gutman, @jalung, Vlad Paiu (@vladpaiu), Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Ovidiu
-   Sas (@ovidiusas), Dusan Klinec, Eseanu Marius Cristian
-   (@eseanucristian), David Sanders, Andrei Datcu (@andrei-datcu),
-   Stephane Alnet, Andrei Dragus, Phil D'Amore, UnixDev,
-   Daniel-Constantin Mierla (@miconda), Henning Westerholt
-   (@henningw), Iouri Kharon, Konstantin Bokarius, Edson Gellert
-   Schubert, Anca Vamanu, Matthew M. Boedicker, Marcus Hunger,
-   Elena-Ramona Modroiu, Jeffrey Magder, Norman Brandinger
-   (@NormB), Andreas Granig, Juha Heinanen (@juha-h), Klaus
-   Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri
-   Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax), Jamey
-   Hicks, Nils Ohlmeier.
+   Sas (@ovidiusas), Dusan Klinec (@ph4r05), Eseanu Marius
+   Cristian (@eseanucristian), David Sanders, Andrei Datcu
+   (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
+   UnixDev, Daniel-Constantin Mierla (@miconda), Henning
+   Westerholt (@henningw), Iouri Kharon, Konstantin Bokarius,
+   Edson Gellert Schubert, Anca Vamanu, Matthew M. Boedicker,
+   Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman
+   Brandinger (@NormB), Andreas Granig, Juha Heinanen (@juha-h),
+   Klaus Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
+   Jiri Kuthan (@jiriatipteldotorg), Maksym Sobolyev (@sobomax),
+   Jamey Hicks, Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1611,16 +1619,17 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Zero King, Alexey
-   Vasilyev (@vasilevalex), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Razvan Crainea (@razvancrainea), Ionut Ionita
-   (@ionutrazvanionita), Eseanu Marius Cristian (@eseanucristian),
-   Ovidiu Sas (@ovidiusas), Andrei Datcu (@andrei-datcu),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Marcus
-   Hunger, Elena-Ramona Modroiu, Juha Heinanen (@juha-h), Jan
-   Janak (@janakj), Maksym Sobolyev (@sobomax), Nils Ohlmeier.
+   Last edited by: Liviu Chircu (@liviuchircu), Zero King (@l2dy),
+   Alexey Vasilyev (@vasilevalex), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
+   Ionita (@ionutrazvanionita), Eseanu Marius Cristian
+   (@eseanucristian), Ovidiu Sas (@ovidiusas), Andrei Datcu
+   (@andrei-datcu), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Marcus Hunger, Elena-Ramona Modroiu, Juha Heinanen
+   (@juha-h), Jan Janak (@janakj), Maksym Sobolyev (@sobomax),
+   Nils Ohlmeier.
 
    Documentation Copyrights:
 

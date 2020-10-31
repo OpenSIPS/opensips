@@ -183,8 +183,8 @@ Chapter 2. Contributors
    10. Konstantin Bokarius 3 1 2 5
 
    All remaining contributors: Juha Heinanen (@juha-h), Ezequiel
-   Lovelle, Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
-   Stanislaw Pitucha.
+   Lovelle (@lovelle), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert, Stanislaw Pitucha.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -211,7 +211,7 @@ Chapter 2. Contributors
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   6.  Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
    7.  Ovidiu Sas (@ovidiusas)             Dec 2010 - Jan 2013
    8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Aug 2011
    9.  Anca Vamanu                         Apr 2007 - Apr 2011

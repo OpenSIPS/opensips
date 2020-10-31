@@ -406,7 +406,7 @@ Chapter 3. Contributors
 
    All remaining contributors: Alex Massover, Julián Moreno
    Patiño, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
-   Zero King, Dan Pascu (@danpascu).
+   Zero King (@l2dy), Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -428,7 +428,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
+   1.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Sep 2019
    3.  Dan Pascu (@danpascu)               May 2019 - May 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -450,11 +450,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Zero King, Vlad Patrascu (@rvlad-patrascu),
-   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
-   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
-   Walter Doekes (@wdoekes), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Boris Ratner, Irina-Maria Stanescu.
+   Last edited by: Zero King (@l2dy), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Ionut Ionita
+   (@ionutrazvanionita), Walter Doekes (@wdoekes), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Boris Ratner, Irina-Maria Stanescu.
 
    Documentation Copyrights:
 

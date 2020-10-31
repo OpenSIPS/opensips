@@ -1531,17 +1531,17 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       What happened with old cancel_call() function
+   What happened with old cancel_call() function
 
-       The function was replace (as functionality) by
-       cancel_branch("a") - cancel all braches.
+   The function was replace (as functionality) by
+   cancel_branch("a") - cancel all braches.
 
    3.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -1550,30 +1550,31 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1049 607 21291 16370
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1050 608 21292 16372
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 114 86 1748 754
+   5. Razvan Crainea (@razvancrainea) 117 89 1755 755
    6. Liviu Chircu (@liviuchircu) 97 73 1206 856
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 37 19 778 651
-   9. Vlad Patrascu (@rvlad-patrascu) 29 9 810 779
+   9. Vlad Patrascu (@rvlad-patrascu) 30 10 811 780
    10. Vlad Paiu (@vladpaiu) 26 23 170 57
 
    All remaining contributors: Dan Pascu (@danpascu), Henning
    Westerholt (@henningw), Ovidiu Sas (@ovidiusas), Juha Heinanen
-   (@juha-h), Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev
-   (@sobomax), Raphael Coeffic, Nils Ohlmeier, Klaus Darilion,
-   Andreas Granig, Elias Baixas, Marcus Hunger, Christophe Sollet
-   (@csollet), Jeffrey Magder, Ezequiel Lovelle, Saúl Ibarra
-   Corretgé (@saghul), Elena-Ramona Modroiu, John Riordan, Julián
-   Moreno Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin
-   Bokarius, Aron Podrigal (@ar45), Anonymous, Dusan Klinec, Mark
-   Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev
-   (@vasilevalex), Fabian Gast (@fgast), Nick Altmann (@nikbyte),
-   Peter Lemenkov (@lemenkov), Zero King, Edson Gellert Schubert,
-   Ingo Wolfsberger, Daniel Hsueh.
+   (@juha-h), Maksym Sobolyev (@sobomax), Ionut Ionita
+   (@ionutrazvanionita), Raphael Coeffic, Nils Ohlmeier, Klaus
+   Darilion, Andreas Granig, Elias Baixas, Marcus Hunger,
+   Christophe Sollet (@csollet), Jeffrey Magder, Ezequiel Lovelle
+   (@lovelle), Saúl Ibarra Corretgé (@saghul), Elena-Ramona
+   Modroiu, John Riordan, Julián Moreno Patiño, Andrei Dragus,
+   Jesus Rodrigues, Konstantin Bokarius, Aron Podrigal (@ar45),
+   Anonymous, Dusan Klinec (@ph4r05), Mark Dalby, Walter Doekes
+   (@wdoekes), Alexey Vasilyev (@vasilevalex), Fabian Gast
+   (@fgast), Nick Altmann (@nikbyte), Peter Lemenkov (@lemenkov),
+   Zero King (@l2dy), Edson Gellert Schubert, Ingo Wolfsberger,
+   Daniel Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1595,28 +1596,29 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2020
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2020
-   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - Apr 2020
-   4.  Zero King                           Mar 2020 - Mar 2020
-   5.  Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
-   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
-   9.  Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
-   10. Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
+   1.  Maksym Sobolyev (@sobomax)          Mar 2004 - Oct 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Aug 2020
+   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jul 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
+   5.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
+   9.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
+   10. Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Dusan Klinec, Ezequiel
-   Lovelle, Walter Doekes (@wdoekes), Christophe Sollet
-   (@csollet), Maksym Sobolyev (@sobomax), Saúl Ibarra Corretgé
-   (@saghul), Anonymous, Mark Dalby, Anca Vamanu, Andrei Dragus,
-   John Riordan, Henning Westerholt (@henningw), Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen
-   (@juha-h), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas
-   Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
+   All remaining contributors: Alexey Vasilyev (@vasilevalex),
+   Peter Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Nick Altmann (@nikbyte), Ovidiu Sas
+   (@ovidiusas), Dusan Klinec (@ph4r05), Ezequiel Lovelle
+   (@lovelle), Walter Doekes (@wdoekes), Christophe Sollet
+   (@csollet), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
+   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning
+   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jesus Rodrigues, Marcus Hunger, Juha Heinanen (@juha-h),
+   Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig,
+   Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
    Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
    (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
 

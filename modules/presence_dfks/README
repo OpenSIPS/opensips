@@ -150,8 +150,9 @@ modparam("presence_dfks", "set_route", "dfks_set")
           + ringCount - for CallForwardingNoAnswer
 
    MI FIFO Command Format:
-opensips-cli -x mi dfks_set_feature 0 sip:alice@10.0.0.11 CallForwarding
-NoAnswer 1 ringCount/4 forwardTo/sip:bob@10.0.0.11
+opensips-cli -x mi dfks_set_feature sip:alice@10.0.0.11 CallForwardingNo
+Answer 1 1 \
+ringCount/4 forwardTo/sip:bob@10.0.0.11
 
 1.6. Exported Pseudo-Variables
 
@@ -187,20 +188,23 @@ NoAnswer 1 ringCount/4 forwardTo/sip:bob@10.0.0.11
    Example 1.3. dfks usage
 ...
 route[dfks_set] {
+    # CallForwardingAlways is not allowed
+    if ($dfks(feature) == "CallForwardingAlways")
+        $dfks(status) = 0;
+
     xlog("New status: $dfks(status) for feature '$dfks(feature)' of user
  '$dfks(presentity)'\n");
-    ...
 }
-...
 route[dfks_get] {
-    ...
     if ($dfks(feature) == "CallForwardingNoAnswer") {
         $dfks(status) = 1;
         $dfks(value/forwardTo) = "sip:bob@10.0.0.11";
         $dfks(value/ringCount) = "3";
-} else
-   $dfks(assigned) = 0;
-....
+    } else if ($dfks(feature) == "CallForwardingAlways")
+        $dfks(assigned) = 0;
+    } else {
+        ...
+    }
 }
 ...
 
@@ -211,7 +215,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    22       6      1631      86
+   1. Vlad Patrascu (@rvlad-patrascu)    23       7      1641      92
    2. Razvan Crainea (@razvancrainea)    3        1       67       21
 
    (1) DevScore = author_commits + author_lines_added /
@@ -234,8 +238,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2020 - Feb 2020
-   2. Vlad Patrascu (@rvlad-patrascu) Dec 2019 - Jan 2020
+   1. Vlad Patrascu (@rvlad-patrascu) Dec 2019 - Sep 2020
+   2. Razvan Crainea (@razvancrainea) Feb 2020 - Feb 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -244,8 +248,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 

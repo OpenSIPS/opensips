@@ -1659,9 +1659,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 371 174 12924 5548
-   2. Liviu Chircu (@liviuchircu) 119 63 2081 2374
-   3. Razvan Crainea (@razvancrainea) 91 45 1133 2164
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 373 176 12928 5555
+   2. Liviu Chircu (@liviuchircu) 127 68 2116 2479
+   3. Razvan Crainea (@razvancrainea) 94 48 1144 2185
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1670,9 +1670,10 @@ Chapter 3. Contributors
    9. Ionut Ionita (@ionutrazvanionita) 15 9 370 108
    10. Andrei Dragus 10 3 657 40
 
-   All remaining contributors: Anca Vamanu, Jeremy Martinez, Dusan
-   Klinec, Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez, Le
-   Roy Christophe, Nick Altmann (@nikbyte), Peter Lemenkov
+   All remaining contributors: Anca Vamanu, Jeremy Martinez
+   (@JeremyMartinez51), Maksym Sobolyev (@sobomax), Dusan Klinec
+   (@ph4r05), Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez,
+   Le Roy Christophe, Nick Altmann (@nikbyte), Peter Lemenkov
    (@lemenkov), Alexey Vasilyev (@vasilevalex), Ozzyboshi, Walter
    Doekes (@wdoekes).
 
@@ -1696,22 +1697,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2020
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
-   5.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
-   6.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
-   9.  Jeremy Martinez                     Feb 2017 - Feb 2017
-   10. Le Roy Christophe                   Feb 2017 - Feb 2017
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
+   2.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2020
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jul 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
+   6.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
+   7.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
+   10. Jeremy Martinez (@JeremyMartinez51) Feb 2017 - Feb 2017
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Ozzyboshi, Julián Moreno Patiño, Dusan Klinec, Mihai Tiganus
-   (@tallicamike), Andrei Datcu (@andrei-datcu), Walter Doekes
-   (@wdoekes), Nick Altmann (@nikbyte), Matt Lehner, Anca Vamanu,
-   Andrei Dragus, Sergio Gutierrez.
+   All remaining contributors: Le Roy Christophe, Ionut Ionita
+   (@ionutrazvanionita), Ozzyboshi, Julián Moreno Patiño, Dusan
+   Klinec (@ph4r05), Mihai Tiganus (@tallicamike), Andrei Datcu
+   (@andrei-datcu), Walter Doekes (@wdoekes), Nick Altmann
+   (@nikbyte), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio
+   Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits

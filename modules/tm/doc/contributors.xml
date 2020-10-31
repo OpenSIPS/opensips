@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">1049</entry>
-		<entry align="center">607</entry>
-		<entry align="center">21291</entry>
-		<entry align="center">16370</entry>
+		<entry align="center">1050</entry>
+		<entry align="center">608</entry>
+		<entry align="center">21292</entry>
+		<entry align="center">16372</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -53,10 +53,10 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">114</entry>
-		<entry align="center">86</entry>
-		<entry align="center">1748</entry>
-		<entry align="center">754</entry>
+		<entry align="center">117</entry>
+		<entry align="center">89</entry>
+		<entry align="center">1755</entry>
+		<entry align="center">755</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -85,10 +85,10 @@
 	<row>
 		<entry>9. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">29</entry>
-		<entry align="center">9</entry>
-		<entry align="center">810</entry>
-		<entry align="center">779</entry>
+		<entry align="center">30</entry>
+		<entry align="center">10</entry>
+		<entry align="center">811</entry>
+		<entry align="center">780</entry>
 	</row>
 	<row>
 		<entry>10. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Raphael Coeffic, Nils Ohlmeier, Klaus Darilion, Andreas Granig, Elias Baixas, Marcus Hunger, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Jeffrey Magder, Ezequiel Lovelle, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Elena-Ramona Modroiu, John Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Anonymous, Dusan Klinec, Mark Dalby, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King, Edson Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Raphael Coeffic, Nils Ohlmeier, Klaus Darilion, Andreas Granig, Elias Baixas, Marcus Hunger, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Jeffrey Magder, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Elena-Ramona Modroiu, John Riordan, Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Anonymous, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Mark Dalby, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Nov 2001 - May 2020</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Mar 2004 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jan 2013 - May 2020</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Nov 2001 - Aug 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jul 2010 - Apr 2020</entry>
+		<entry align="center">Jul 2010 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Zero King</entry>
-		<entry align="center">Mar 2020 - Mar 2020</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jan 2013 - May 2020</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
+		<entry align="center">Mar 2020 - Mar 2020</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">Feb 2006 - Feb 2020</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>8. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Jun 2011 - May 2019</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Apr 2019</entry>
-	</row>
-	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>)</entry>
 		<entry align="center">Apr 2019 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>)</entry>
 		<entry align="center">Nov 2018 - Nov 2018</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
-		<entry align="center">Sep 2018 - Sep 2018</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Julián Moreno Patiño, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Dusan Klinec, Ezequiel Lovelle, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Anonymous, Mark Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Klaus Darilion, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Raphael Coeffic, Nils Ohlmeier.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Julián Moreno Patiño, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), Anonymous, Mark Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Klaus Darilion, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus Hunger, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig, Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Raphael Coeffic, Nils Ohlmeier.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

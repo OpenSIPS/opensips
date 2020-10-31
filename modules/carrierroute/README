@@ -1224,8 +1224,8 @@ Chapter 2. Contributors
    2. Jonas Appel 52 1 6240 0
    3. Hardy Kahl 49 3 2713 1360
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 154
-   5. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
-   6. Razvan Crainea (@razvancrainea) 20 17 95 103
+   5. Razvan Crainea (@razvancrainea) 22 19 108 107
+   6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
    7. Liviu Chircu (@liviuchircu) 17 11 132 206
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
    9. Carsten Bock 3 1 64 15
@@ -1233,8 +1233,8 @@ Chapter 2. Contributors
 
    All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
    (@ovidiusas), Sergio Gutierrez, Iouri Kharon, UnixDev, Zero
-   King, Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes),
-   Edson Gellert Schubert.
+   King (@l2dy), Peter Lemenkov (@lemenkov), Walter Doekes
+   (@wdoekes), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1256,8 +1256,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Zero King                           Mar 2020 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
+   2.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019

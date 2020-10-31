@@ -183,10 +183,10 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with the old “db_url” module parameter?
+   What happened with the old “db_url” module parameter?
 
-       It was replaced with the “cachedb_url” parameter. See the
-       documentation for the usage of the “cachedb_url” parameter.
+   It was replaced with the “cachedb_url” parameter. See the
+   documentation for the usage of the “cachedb_url” parameter.
 
 Chapter 3. Contributors
 
@@ -199,7 +199,7 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 10 8 41 58
    3. Razvan Crainea (@razvancrainea) 7 5 4 2
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 5 2
-   5. Dusan Klinec 3 1 2 2
+   5. Dusan Klinec (@ph4r05) 3 1 2 2
    6. Julián Moreno Patiño 3 1 2 2
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
    8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
@@ -230,7 +230,7 @@ Chapter 3. Contributors
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    6. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7. Dusan Klinec                        Dec 2015 - Dec 2015
+   7. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    8. Vlad Paiu (@vladpaiu)               Jan 2013 - May 2014
 
    (1) including any documentation-related commits, excluding

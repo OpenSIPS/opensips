@@ -424,7 +424,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 276 106 11549 4540
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 57 45 439 474
-   3. Liviu Chircu (@liviuchircu) 18 10 243 364
+   3. Liviu Chircu (@liviuchircu) 21 11 256 383
    4. Ovidiu Sas (@ovidiusas) 17 13 230 109
    5. Daniel-Constantin Mierla (@miconda) 12 8 144 97
    6. Edson Gellert Schubert 10 1 0 501
@@ -437,9 +437,9 @@ Chapter 3. Contributors
    Heinanen (@juha-h), Walter Doekes (@wdoekes), Denis Bilenko,
    Vallimamod Abdullah, Alex Hermann, Damien Sandras (@dsandras),
    Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu,
-   John Riordan, Peter Lemenkov (@lemenkov), Dusan Klinec,
-   UnixDev, Zero King, Stanislaw Pitucha, Dan Pascu (@danpascu),
-   Julien Blache.
+   John Riordan, Peter Lemenkov (@lemenkov), Dusan Klinec
+   (@ph4r05), UnixDev, Zero King (@l2dy), Stanislaw Pitucha, Dan
+   Pascu (@danpascu), Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -461,14 +461,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Mar 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Mar 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    9.  Damien Sandras (@dsandras)          Sep 2013 - Sep 2013
    10. Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Aug 2013
 

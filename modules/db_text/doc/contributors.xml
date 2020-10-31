@@ -44,19 +44,19 @@
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">19</entry>
 		<entry align="center">16</entry>
-		<entry align="center">13</entry>
-		<entry align="center">39</entry>
-		<entry align="center">90</entry>
+		<entry align="center">120</entry>
+		<entry align="center">95</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">14</entry>
-		<entry align="center">12</entry>
-		<entry align="center">106</entry>
-		<entry align="center">38</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">18</entry>
+		<entry align="center">15</entry>
+		<entry align="center">68</entry>
+		<entry align="center">104</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -84,7 +84,7 @@
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Sergey Khripchenko</entry>
+		<entry>Sergey Khripchenko (<ulink url="https://github.com/shripchenko">@shripchenko</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">2</entry>
 		<entry align="center">185</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Dusan Klinec, Andrei Pelinescu-Onciul.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Andrei Pelinescu-Onciul.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Nov 2003 - Apr 2020</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Mar 2014 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Oct 2011 - Sep 2019</entry>
+		<entry align="center">Oct 2011 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - May 2019</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Nov 2003 - Apr 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -158,12 +158,12 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Sergey Khripchenko</entry>
+		<entry>Sergey Khripchenko (<ulink url="https://github.com/shripchenko">@shripchenko</ulink>)</entry>
 		<entry align="center">Aug 2015 - Aug 2015</entry>
 	</row>
 	<row>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Sergey Khripchenko, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Sergey Khripchenko (<ulink url="https://github.com/shripchenko">@shripchenko</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>).</para>
 </section>
 
 </chapter>

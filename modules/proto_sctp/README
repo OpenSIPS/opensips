@@ -85,13 +85,13 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       After switching to OpenSIPS 2.1, I'm getting this error:
-       "listeners found for protocol sctp, but no module can handle
-       it"
+   After switching to OpenSIPS 2.1, I'm getting this error:
+   "listeners found for protocol sctp, but no module can handle
+   it"
 
-       You need to load the "proto_sctp" module. In your script, make
-       sure you do a loadmodule "proto_sctp.so" after setting the
-       mpath.
+   You need to load the "proto_sctp" module. In your script, make
+   sure you do a loadmodule "proto_sctp.so" after setting the
+   mpath.
 
 Chapter 3. Contributors
 
@@ -105,7 +105,7 @@ Chapter 3. Contributors
    3. Liviu Chircu (@liviuchircu) 7 4 153 25
    4. Ionut Ionita (@ionutrazvanionita) 3 1 1 1
    5. Peter Lemenkov (@lemenkov) 3 1 1 1
-   6. Zero King 3 1 1 1
+   6. Zero King (@l2dy) 3 1 1 1
    7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
@@ -128,7 +128,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Zero King                           Mar 2020 - Mar 2020
+   1. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    2. Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2019
    4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -143,8 +143,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Zero King, Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Zero King (@l2dy), Peter Lemenkov (@lemenkov),
+   Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu).
 
    Documentation Copyrights:
 

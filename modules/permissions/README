@@ -305,12 +305,12 @@ modparam("permissions", "deny_suffix", ".deny")
 
 1.3.6. db_url (string)
 
-   This is URL of the database to be used for loading the date
-   related to IP-based checking (“address” table).
+   The URL of the database to be used for loading the data related
+   to IP-based checking (“address” table).
 
    This parameter is optional and it is needed only if you use
    functions related to IP-based checking. If you do so, you need
-   to explicitly set this parameter (it is not covered by
+   to explicitly set this parameter (it will not inherit from
    “db_default_url”)
 
    Since version 2.2, this URL represents the db_url for the
@@ -328,7 +328,8 @@ bname")
 
    Name of database table containing matching rules used by
    allow_register function. Since version 2.2, this table name
-   represents the table name for the “default” partition.
+   also represents the default table name for partitions without a
+   'table_name' setting.
 
    Default value is “address”.
 
@@ -339,20 +340,20 @@ modparam("permissions", "address_table", "pbx")
 
 1.3.8. partition (string)
 
-   Create a partition containg an url and a table name. Partitions
-   allow you to use different databases or different tables from
-   the same database. It is IMPORTANT that you split the
-   paramteres by ";". Also, it is very IMPORTANT to put ";" after
-   the last parameter, elseway it will not be taken into
-   consideration.
-
-   The db_url for a partition is mandatory. The table name,
-   instead, has a default value 'address'.
+   Specify a new IP-based checking partition (data source). This
+   parameter may be set multiple times. Each partition may have a
+   specific "db_url" and "table_name". If not specified, these
+   values will be inherited from db_url, db_default_url or
+   address_table, respectively. The name of the default partition
+   is 'default'.
 
    Example 1.8. Set partition parameter
 ...
-modparam("permissions", "partition", "my_part: db_url=“some_url”; table_
-name=“some_table”;")
+modparam("permissions", "partition", "
+        inbound:
+                db_url = postgres://opensips:opensipsrw@127.0.0.1/opensi
+ps;
+                table_name = address")
 ...
 
 
@@ -747,12 +748,12 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 118 74 1053 2105
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 119 75 1055 2105
    2. Juha Heinanen (@juha-h) 61 21 3406 729
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 51 9 1218 1908
-   5. Razvan Crainea (@razvancrainea) 24 20 172 114
-   6. Liviu Chircu (@liviuchircu) 20 15 219 148
+   5. Liviu Chircu (@liviuchircu) 27 17 385 334
+   6. Razvan Crainea (@razvancrainea) 25 21 176 114
    7. Daniel-Constantin Mierla (@miconda) 17 11 126 221
    8. Henning Westerholt (@henningw) 15 10 136 148
    9. Ionut Ionita (@ionutrazvanionita) 15 4 970 175
@@ -761,10 +762,10 @@ Chapter 2. Contributors
    All remaining contributors: Andrei Pelinescu-Onciul, Dan Pascu
    (@danpascu), Miklos Tirpak, Ancuta Onofrei, Saúl Ibarra
    Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg),
-   Elena-Ramona Modroiu, Peter Lemenkov (@lemenkov), Dusan Klinec,
-   Anca Vamanu, wuhanck, Konstantin Bokarius, Norman Brandinger
-   (@NormB), UnixDev, Andreas Granig, Baptiste Cholley, Julián
-   Moreno Patiño, Edson Gellert Schubert.
+   Elena-Ramona Modroiu, Peter Lemenkov (@lemenkov), Dusan Klinec
+   (@ph4r05), Anca Vamanu, wuhanck, Konstantin Bokarius, Norman
+   Brandinger (@NormB), UnixDev, Andreas Granig, Baptiste Cholley,
+   Julián Moreno Patiño, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -786,15 +787,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Apr 2020
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2020
-   4.  Razvan Crainea (@razvancrainea)     Jan 2011 - Sep 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Sep 2020
+   2.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jul 2020
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    5.  Dan Pascu (@danpascu)               Nov 2006 - May 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    7.  wuhanck                             Apr 2018 - Apr 2018
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    10. Ionut Ionita (@ionutrazvanionita)   May 2015 - Nov 2015
 
    All remaining contributors: Baptiste Cholley, Saúl Ibarra
@@ -813,8 +814,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
    Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
    Crainea (@razvancrainea), Irina-Maria Stanescu, Henning
    Westerholt (@henningw), Juha Heinanen (@juha-h),

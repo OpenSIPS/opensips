@@ -473,12 +473,12 @@ Chapter 2. Contributors
    5. Vlad Paiu (@vladpaiu) 6 4 65 7
    6. Ryan Bullock (@rrb3942) 5 3 42 1
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
-   8. Dusan Klinec 3 1 50 26
+   8. Dusan Klinec (@ph4r05) 3 1 50 26
    9. Ovidiu Sas (@ovidiusas) 3 1 11 5
    10. Anca Vamanu 3 1 1 1
 
-   All remaining contributors: Ezequiel Lovelle, Peter Lemenkov
-   (@lemenkov), Stephane Alnet.
+   All remaining contributors: Ezequiel Lovelle (@lovelle), Peter
+   Lemenkov (@lemenkov), Stephane Alnet.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -507,8 +507,8 @@ Chapter 2. Contributors
    5.  Ryan Bullock (@rrb3942)             Jan 2019 - Feb 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
-   9.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
    10. Stephane Alnet                      Nov 2013 - Nov 2013
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,

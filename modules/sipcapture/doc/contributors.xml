@@ -53,10 +53,10 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">20</entry>
-		<entry align="center">18</entry>
-		<entry align="center">49</entry>
-		<entry align="center">36</entry>
+		<entry align="center">21</entry>
+		<entry align="center">19</entry>
+		<entry align="center">59</entry>
+		<entry align="center">55</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -68,7 +68,7 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Zero King</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">2</entry>
@@ -84,7 +84,7 @@
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
@@ -92,7 +92,7 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2015 - Sep 2020</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Aug 2012 - Apr 2020</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
-		<entry>Zero King</entry>
-		<entry align="center">Mar 2020 - Mar 2020</entry>
-	</row>
-	<row>
 		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2015 - Oct 2019</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
+		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -168,12 +168,12 @@
 	</row>
 	<row>
 		<entry>9. </entry>
-		<entry>Dusan Klinec</entry>
+		<entry>Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>)</entry>
 		<entry align="center">Dec 2015 - Dec 2015</entry>
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Ezequiel Lovelle</entry>
+		<entry>Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>)</entry>
 		<entry align="center">Oct 2014 - Oct 2014</entry>
 	</row>
 	</tbody>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Alexandr Dubovikov (<ulink url="https://github.com/adubovikov">@adubovikov</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Alexandr Dubovikov (<ulink url="https://github.com/adubovikov">@adubovikov</ulink>).</para>
 </section>
 
 </chapter>

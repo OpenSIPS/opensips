@@ -31,9 +31,7 @@ cfgutils Module
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
                       t2_usec, delta)
 
-              1.4.13. check_time_rec(time_string, [timezone],
-                      [timestamp])
-
+              1.4.13. check_time_rec(time_string, [timestamp])
               1.4.14. get_static_lock(key)
               1.4.15. release_static_lock(key)
               1.4.16. get_dynamic_lock(key)
@@ -426,7 +424,7 @@ $var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 ...
 
-1.4.13.  check_time_rec(time_string, [timezone], [timestamp])
+1.4.13.  check_time_rec(time_string, [timestamp])
 
    The function returns a positive value if the specified time
    recurrence string matches the current time, or a negative value
@@ -438,35 +436,60 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
    The syntax of each field is identical to the corresponding
    field from RFC 2445.
 
-   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-   FAILURE_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE, STARTUP_ROUTE,
-   TIMER_ROUTE, EVENT_ROUTE.
+   This function may be used from any route. It returns 1 on
+   success and -1, -2 or -3 on failure, parsing or internal
+   errors, respectively.
 
    Meaning of the parameters is as follows:
      * time_string (string) - Time recurrence string which will be
        matched against the current time. Its fields are separated
-       by "|" and the order in which they are given is: "dtstart |
-       dtend | duration | freq | until | interval | byday | bymday
-       | byyday | byweekno | bymonth". None of the fields
-       following "freq" is used unless "freq" is defined. If the
-       string ends in multiple null fields, they can all be
-       ommited.
-     * timezone (string, optional) - The timezone that the time
-       recurrence stamps are specified in. By default, the system
-       time zone is used.
+       by "|" and the order in which they are given is: "timezone
+       | dtstart | dtend | duration | freq | until | interval |
+       byday | bymday | byyday | byweekno | bymonth".
+       None of the fields following "freq" is used unless "freq"
+       is defined. If the string ends in multiple null fields,
+       they can all be ommited.
+       The "timezone" field is optional. It represents the
+       timezone in which to interpret the time recurrence elements
+       (e.g. dtstart, dtend, until). By default, the system time
+       zone is used.
      * timestamp (string, optional) - A specific UNIX time to
        check. The function simply expects the actual UNIX time
        here, there is no need to perform any timezone adjustments.
 
+   Additionally, more complex time recurrence strings may be built
+   by connecting multiple time recurrence strings (described
+   above) using the logical AND ("&"), OR ("/") and NEG ("!")
+   operators. Furthermore, the expressions may be paranthesized.
+   Some examples:
+     * 20210104T080000|20211231T180000||WEEKLY|||MO,TU,WE,TH,FR &
+       !20210104T120000|20211231T140000||WEEKLY|||MO,TU,WE,TH,FR
+       This example multi-recurrence expresses the working days
+       schedule for company X during 2021: workdays from 8-18,
+       except the 12-14 interval, when everyone is out for lunch
+       break and the business is closed. Since the timezone is
+       omitted from each schedule, the operating system timezone
+       will be used instead.
+     * America/New_York|20210104T090000|20210104T170000||WEEKLY|||
+       MO,TU,WE,TH,FR &
+       !(Europe/Amsterdam|20210427T000000|20210428T000000 /
+       Europe/London|20211227T000000|20211228T000000)
+       This example multi-recurrence expresses the working days
+       schedule for US-based company Y during 2021: workdays from
+       9-17 (NY timezone), except european holidays such as King's
+       Day (April 27th, NL) or the Spring Bank Holiday (May 31st,
+       UK), when most of its workforce will have flown back to
+       Europe.
+
    Example 1.18. check_time_rec usage
 ...
-# Only passing if still in 2012
-if (check_time_rec("20120101T000000|20130101T000000", "Europe/Bucharest"
-))
+# Only passing if still in 2012 and on a Bucharest-compatible timezone
+if (check_time_rec("Europe/Bucharest|20120101T000000|20130101T000000"))
         xlog("Current system time matches the given Romanian time interv
 al\n");
 ...
-# Only passing if less than 30 days have passed from "dtstart"
+# Only passing if less than 30 days have passed from "dtstart", system t
+imezone
 if (check_time_rec("20121101T000000||p30d"))
         xlog("Current time matches the given interval\n");
 ...
@@ -871,7 +894,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 45 24 1456 508
+   1. Liviu Chircu (@liviuchircu) 72 34 2450 1056
    2. Henning Westerholt (@henningw) 29 18 1088 86
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 367 109
    4. Razvan Crainea (@razvancrainea) 20 15 289 79
@@ -906,7 +929,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Jun 2020
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Oct 2020
    2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
