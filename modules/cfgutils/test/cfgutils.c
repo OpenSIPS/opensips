@@ -319,6 +319,41 @@ void test_single_tmrec_byxxx(void)
 	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-4TH", &last_week_of_mo) == -1);
 	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-4FR", &last_week_of_mo) == -1);
 	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-4SA", &last_week_of_mo) == -1);
+
+
+	/* byday ... YEARLY (minimal syntax) */
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||FR", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||SA", &now) == -1);
+
+	/* byday ... YEARLY (complex syntax) */
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+1TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+1FR", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+1SA", &now) == -1);
+
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+22TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+22FR", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+22SA", &now) == -1);
+
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+23TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+23FR", &now) == 1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+23SA", &now) == -1);
+
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+24TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+24FR", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||+24SA", &now) == -1);
+
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-29TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-29FR", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-29SA", &now) == -1);
+
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-30TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-30FR", &now) == 1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-30SA", &now) == -1);
+
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-31TH", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-31FR", &now) == -1);
+	ok(ctr(UTC"|19700000T000000|||YEARLY|||-31SA", &now) == -1);
 }
 
 

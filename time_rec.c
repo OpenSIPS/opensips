@@ -1471,11 +1471,11 @@ int check_byxxx(tmrec_p _trp, ac_tm_p _atp)
 			{
 #ifdef EXTRA_DEBUG
 				LM_DBG("%d==%d && %d==%d\n", _atp->t.tm_wday,
-					_trp->byday->xxx[i], _atp->ywday+1,
+					_trp->byday->xxx[i], _atp->ywday,
 					(_trp->byday->req[i]+_amp->ywday)%_amp->ywday);
 #endif
 				if(_atp->t.tm_wday == _trp->byday->xxx[i] &&
-						_atp->ywday+1 == (_trp->byday->req[i]+_amp->ywday)%
+						_atp->ywday == (_trp->byday->req[i]+_amp->ywday)%
 						_amp->ywday)
 					break;
 			}
