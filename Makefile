@@ -200,6 +200,9 @@ ifeq (,$(FASTER))
 			if [ -d "$$r" ]; then \
 				echo  "" ; \
 				echo  "" ; \
+				if [ "$$r" = "modules/registrar" -o \
+					 "$$r" = "modules/mid_registrar" ]; then touch lib/reg/*.c; \
+				fi; \
 				$(MAKE) -j -C $$r ; \
 			fi ; \
 		fi ; \
