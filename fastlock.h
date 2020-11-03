@@ -176,7 +176,9 @@ inline static int tsl(volatile int* lock)
 		"    sync \n\t"
 #endif
 		".set pop\n\t"
-		: "=&r" (tmp), "=&r" (val), "=m" (*lock) : "m" (*lock) : "memory"
+		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
+		: "m" (*lock)
+		: "memory"
 	);
 #elif defined __CPU_alpha
 	long tmp;
@@ -192,7 +194,9 @@ inline static int tsl(volatile int* lock)
 		"    beq %2, 1b   \n\t"
 		"    mb           \n\t"
 		"2:               \n\t"
-		:"=&r" (val), "=m"(*lock), "=&r"(tmp) :"m"(*lock) : "memory"
+		:"=&r" (val), "=m"(*lock), "=&r"(tmp)
+		:"m"(*lock)
+		: "memory"
 	);
 #else
 #error "unknown architecture"
@@ -280,10 +284,8 @@ inline static void release_lock(fl_lock_t* lock_struct)
 	#ifndef NOSMP
 				"membar #LoadStore | #StoreStore \n\t" /*is this really needed?*/
 	#endif
-			"stb %%g0, [%0] \n\t"
-			: /*no output*/
-			: "r" (lock)
-			: "memory"
+			"stb %%g0, [%1] \n\t"
+			: "=m"(*lock) : "r" (lock) : "memory"
 	);
 #elif defined(__CPU_arm) || defined(__CPU_arm6) || defined(__CPU_arm7)
 	asm volatile(
@@ -294,10 +296,8 @@ inline static void release_lock(fl_lock_t* lock_struct)
 		"mcr p15, #0, r1, c7, c10, #5\n\t"
 #endif
 #endif
-		" str %0, [%1] \n\r"
-		: /*no outputs*/
-		: "r"(0), "r"(lock)
-		: "memory"
+		" str %1, [%2] \n\r"
+		: "=m"(*lock) : "r"(0), "r"(lock) : "memory"
 	);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
@@ -324,7 +324,9 @@ inline static void release_lock(fl_lock_t* lock_struct)
 	);
 #elif defined __CPU_alpha
 	asm volatile(
+#ifndef  NOSMP
 		"    mb          \n\t"
+#endif
 		"    stl $31, %0 \n\t"
 		: "=m"(*lock) :/* no input*/ : "memory"  /* because of the mb */
 	);
