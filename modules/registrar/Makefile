@@ -4,6 +4,6 @@ include ../../Makefile.defs
 auto_gen=
 NAME=registrar.so
 # link in common registrar code
-LIBS=../../lib/reg/libreg.a
+misclibs=../../lib/reg/libreg.a
 
 include ../../Makefile.modules

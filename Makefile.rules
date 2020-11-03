@@ -5,7 +5,7 @@
 
 #
 # Uses: NAME, ALLDEP, CC, CFLAGS, DEFS, LIBS, MKDEP, auto_gen, depends, objs,
-# extra_objs, static_modules, static_modules_path
+# extra_objs, misclibs, static_modules, static_modules_path
 # (all this must  be defined previously!,  see Makefile.defs & Makefile)
 #
 
@@ -35,11 +35,11 @@ endif
 
 
 # normal rules
-$(NAME): $(objs) $(extra_objs) $(ALLDEP)
+$(NAME): $(objs) $(extra_objs) $(misclibs) $(ALLDEP)
 ifeq (,$(FASTER))
 	@echo "Linking $(NAME)"
 endif
-	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(LIBS) $(TWEAK_LIBS) -o $(NAME)
+	$(Q)$(LD) $(LDFLAGS) $(objs) $(extra_objs) $(misclibs) $(LIBS) $(TWEAK_LIBS) -o $(NAME)
 
 
 main.o: main.c $(ALLDEP) $(NEWREVISION)
