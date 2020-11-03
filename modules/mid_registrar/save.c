@@ -2517,8 +2517,8 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 	}
 
 	if (pn_enable && pn_inspect_request(msg, &c->uri, &sctx) != 0) {
-		LM_DBG("SIP PN processing failed\n");
-		goto quick_reply;
+		LM_DBG("SIP PN processing failed (%d)\n", rerrno);
+		goto out_error;
 	}
 
 	/* mid-registrar always rewrites the Contact, so any Path hf must go! */

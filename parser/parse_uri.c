@@ -543,6 +543,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_PARAM_P; \
 				} \
 				break
+#define param_xswitch1(old_state, c1, new_state) \
+			case old_state: \
+				switch(*p){ \
+					case c1: \
+						state=(new_state); \
+						break; \
+					default: \
+						goto error_bad_char; \
+				} \
+				break
 #define param_switch_big(old_state, c1, c2, d1, d2, new_state_c, new_state_d) \
 			case old_state : \
 				switch(*p){ \
@@ -1239,7 +1249,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 
 			/* pn-prid */
 			param_switch(PN2_I, 'd', 'D', PN2_D);
-			param_switch1(PN2_D, '=', PN2_eq);
+			param_xswitch1(PN2_D, '=', PN2_eq);
 			case PN2_eq:
 				param=&uri->pn_prid;
 				param_val=&uri->pn_prid_val;
@@ -1255,7 +1265,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			param_switch(PN3_A, 'r', 'R', PN3_R);
 			param_switch(PN3_R, 'a', 'A', PN3_A2);
 			param_switch(PN3_A2, 'm', 'M', PN3_M);
-			param_switch1(PN3_M, '=', PN3_eq);
+			param_xswitch1(PN3_M, '=', PN3_eq);
 			case PN3_eq:
 				param=&uri->pn_param;
 				param_val=&uri->pn_param_val;
@@ -1270,7 +1280,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 			/* pn-purr */
 			param_switch(PN4_U, 'r', 'R', PN4_R);
 			param_switch(PN4_R, 'r', 'R', PN4_R2);
-			param_switch1(PN4_R2, '=', PN4_eq);
+			param_xswitch1(PN4_R2, '=', PN4_eq);
 			case PN4_eq:
 				param=&uri->pn_purr;
 				param_val=&uri->pn_purr_val;

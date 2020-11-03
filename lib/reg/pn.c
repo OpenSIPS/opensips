@@ -278,7 +278,7 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	int i, is_cap_query = 1, is_handled_upstream = 0;
 
 	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
-		LM_ERR("failed to parse URI: '%.*s'\n", ct_uri->len, ct_uri->s);
+		LM_ERR("failed to parse Contact URI '%.*s'\n", ct_uri->len, ct_uri->s);
 		return -1;
 	}
 
@@ -357,12 +357,21 @@ next_param:;
 int pn_inspect_request(struct sip_msg *req, const str *ct_uri,
                        struct save_ctx *sctx)
 {
+	int rc;
+
 	if (sctx->cmatch.mode != CT_MATCH_NONE) {
 		LM_DBG("skip PN processing, matching mode already enforced\n");
 		return 0;
 	}
 
-	switch (pn_inspect_ct_params(req, ct_uri)) {
+	rc = pn_inspect_ct_params(req, ct_uri);
+	if (rc < 0) {
+		rerrno = R_PARSE_CONT;
+		LM_DBG("failed to parse Contact URI\n");
+		return -1;
+	}
+
+	switch (rc) {
 	case PN_NONE:
 		LM_DBG("Contact URI has no PN params\n");
 		break;
