@@ -90,10 +90,10 @@ jobs:
         - GCOV_CMD="llvm-cov-10 gcov"
       before_install:
         - sudo apt-get -y install clang-10 llvm-10-dev libc++-10-dev libc++abi-10-dev
-    - name: "Build with GCC 7 @ Ubuntu 18 (ARM)"
+    - name: "Build with GCC 7 @ Ubuntu 18 (ARM64)"
       compiler: gcc
       arch: arm64
-    - name: "Build with Clang 7 @ Ubuntu 18 (ARM)"
+    - name: "Build with Clang 7 @ Ubuntu 18 (ARM64)"
       compiler: clang
       arch: arm64
     - name: "Build Core with GCC 7 @ Ubuntu 18 (i386)"
@@ -110,3 +110,14 @@ jobs:
         - MAKE_TGT="opensips"
       before_install:
         - sudo apt-get -y install libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev
+    - name: "Build Core with GCC 7 @ Ubuntu 18 (MIPS64)"
+      compiler: gcc
+      env:
+        - CC=mips64-linux-gnuabi64-gcc AR=mips64-linux-gnuabi64-ar RANLIB=mips64-linux-gnuabi64-ranlib
+        - MAKE_TGT="opensips"
+      before_install:
+        - sudo apt-get -y install gcc-mips64-linux-gnuabi64 libc-dev-mips64-cross qemu-user-static
+        - sudo mkdir "/usr/mips64-linux-gnuabi64/etc"
+        - sudo touch "/usr/mips64-linux-gnuabi64/etc/ld.so.cache"
+        - sudo mkdir "/etc/qemu-binfmt"
+        - sudo ln -sf "/usr/mips64-linux-gnuabi64" "/etc/qemu-binfmt/mips64"
