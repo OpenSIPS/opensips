@@ -147,30 +147,29 @@
 
 #include "ssl_tweaks.h"
 
-/*
- * when enabled ("-T <module>" cmdline param), OpenSIPS will behave as follows:
- *   - enable debug mode
- *   - fork workers normally
- *   - run all currently enabled unit tests
- *     (if module != "core", the modules/<module>/test/ suite is ran,
- *      otherwise the core's ./test/ suite)
- *   - print the unit test summary
- *   - exit with 0 on success, non-zero otherwise
- */
-int testing_framework;
-char *testing_module = "core";
+/* global vars */
+
+#ifdef VERSION_NODATE
+static char compiled[] =  "" ;
+#else
+#ifdef VERSION_DATE
+static const char compiled[] =  VERSION_DATE ;
+#else
+static const char compiled[] =  __TIME__ " " __DATE__ ;
+#endif
+#endif
+
+static int own_pgid = 0; /* whether or not we have our own pgid (and it's ok
+			    to use kill(0, sig) */
 
 static char* version=OPENSIPS_FULL_VERSION;
 static char* flags=OPENSIPS_COMPILE_FLAGS;
-#ifdef VERSION_NODATE
-char compiled[] =  "" ;
-#else
-#ifdef VERSION_DATE
-const char compiled[] =  VERSION_DATE ;
-#else
-const char compiled[] =  __TIME__ " " __DATE__ ;
-#endif
-#endif
+
+/* last signal received */
+static int sig_flag = 0;
+
+static int user_id = 0;
+static int group_id = 0;
 
 /**
  * Print compile-time constants
@@ -189,137 +188,6 @@ void print_ct_constants(void)
 	printf("%s revision: %s\n", VERSIONTYPE, THISREVISION);
 #endif
 }
-
-/* global vars */
-
-int own_pgid = 0; /* whether or not we have our own pgid (and it's ok
-					 to use kill(0, sig) */
-char* cfg_file = 0;
-char *preproc = NULL;
-unsigned int maxbuffer = MAX_RECV_BUFFER_SIZE; /* maximum buffer size we do
-												  not want to exceed during the
-												  auto-probing procedure; may
-												  be re-configured */
-/* number of UDP workers processing requests */
-int udp_workers_no = UDP_WORKERS_NO;
-/* the global UDP auto scaling profile */
-char *udp_auto_scaling_profile = NULL;
-/* if the auto-scaling engine is enabled or not - this is autodetected */
-int auto_scaling_enabled = 0;
-/* auto-scaling sampling and checking time cycle is 1 sec by default */
-int auto_scaling_cycle = 1;
-/*!< by default choose the best method */
-enum poll_types io_poll_method=0;
-/* last signal received */
-int sig_flag = 0;
-
-/* activate debug mode */
-int debug_mode = 0;
-/* do not become daemon, stay attached to the console */
-int no_daemon_mode = 0;
-/* assertion statements in script. disabled by default */
-int enable_asserts = 0;
-/* abort process on failed assertion. disabled by default */
-int abort_on_assert = 0;
-/* start by logging to stderr */
-int log_stderr = 1;
-/* log facility (see syslog(3)) */
-int log_facility = LOG_DAEMON;
-/* the id to be printed in syslog */
-char *log_name = 0;
-int config_check = 0;
-/* check if reply first via host==us */
-int check_via =  0;
-/* debugging level for memory stats */
-int memlog = L_DBG + 11;
-int memdump = L_DBG + 10;
-/* debugging in case msg processing takes. too long disabled by default */
-int execmsgthreshold = 0;
-/* debugging in case dns takes too long. disabled by default */
-int execdnsthreshold = 0;
-/* debugging in case tcp stuff take too long. disabled by default */
-int tcpthreshold = 0;
-/* should replies include extensive warnings? by default yes,
-   good for trouble-shooting
-*/
-int sip_warning = 0;
-/* should localy-generated messages include server's signature? */
-int server_signature=1;
-/* Server header to be used when proxy generates a reply as UAS.
-   Default is to use SERVER_HDR CRLF (assigned later).
-*/
-str server_header = {SERVER_HDR,sizeof(SERVER_HDR)-1};
-/* User-Agent header to be used when proxy generates request as UAC.
-   Default is to use USER_AGENT CRLF (assigned later).
-*/
-str user_agent_header = {USER_AGENT,sizeof(USER_AGENT)-1};
-/* should opensips try to locate outbound interface on multihomed
- * host? by default not -- too expensive
- */
-int mhomed=0;
-/* use dns and/or rdns or to see if we need to add
-   a ;received=x.x.x.x to via: */
-int received_dns = 0;
-char* working_dir = 0;
-char* chroot_dir = 0;
-char* user=0;
-char* group=0;
-int user_id = 0;
-int group_id = 0;
-
-/* more config stuff */
-int disable_core_dump=0; /* by default enabled */
-int open_files_limit=-1; /* don't touch it by default */
-
-#ifdef USE_MCAST
-int mcast_loopback = 0;
-int mcast_ttl = -1; /* if -1, don't touch it, use the default (usually 1) */
-#endif /* USE_MCAST */
-
-int tos = IPTOS_LOWDELAY; // lgtm [cpp/short-global-name]
-
-struct socket_info* bind_address=0; /* pointer to the crt. proc.
-									 listening address*/
-
-
-/* if aliases should be automatically discovered and added
- * during fixing listening sockets */
-int auto_aliases=0;
-
-/* if the stateless forwarding support in core should be
- * disabled or not */
-int sl_fwd_disabled=-1;
-
-/* process number - 0 is the main process */
-int process_no = 0;
-
-/* cfg parsing */
-int cfg_errors=0;
-
-/* start-up time */
-time_t startup_time = 0;
-
-/* shared memory (in MB) */
-unsigned long shm_mem_size=SHM_MEM_SIZE * 1024 * 1024;
-unsigned int shm_hash_split_percentage = DEFAULT_SHM_HASH_SPLIT_PERCENTAGE;
-unsigned int shm_secondary_hash_size = DEFAULT_SHM_SECONDARY_HASH_SIZE;
-
-/* packaged memory (in MB) */
-unsigned long pkg_mem_size=PKG_MEM_SIZE * 1024 * 1024;
-
-
-/* export command-line to anywhere else */
-int my_argc;
-char **my_argv;
-
-int is_main = 1; /* flag = is this the  "main" process? */
-
-/* flag = is this an initial, pre-daemon process ? */
-int is_pre_daemon = 1;
-
-char* pid_file = 0; /* filename as asked by user */
-char* pgid_file = 0;
-
 
 /**
  * Clean up on exit. This should be called before exiting.
