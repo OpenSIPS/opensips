@@ -151,4 +151,6 @@ extern int disable_503_translation;
 
 extern int enable_asserts;
 extern int abort_on_assert;
+
+extern int process_no;
 #endif
