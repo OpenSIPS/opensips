@@ -671,7 +671,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		}
 	} else {
 		if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
-			LM_DBG("SIP PN processing failed\n");
+			LM_DBG("SIP PN processing failed (%d)\n", rerrno);
 			goto error;
 		}
 
