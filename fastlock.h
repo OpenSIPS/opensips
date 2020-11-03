@@ -134,9 +134,8 @@ inline static int tsl(volatile int* lock)
 
 #elif defined __CPU_arm
 	asm volatile(
-			"# here \n\t"
-			"swpb %0, %1, [%2] \n\t"
-			: "=&r" (val) : "r"(1), "r" (lock) : "memory"
+			"swp %0, %2, [%3] \n\t"
+			: "=&r" (val), "=m"(*lock) : "r"(1), "r" (lock) : "memory"
 	);
 
 #elif defined(__CPU_arm6) || defined(__CPU_arm7)
