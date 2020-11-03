@@ -103,11 +103,11 @@ int server_signature=1;
 /* Server header to be used when proxy generates a reply as UAS.
    Default is to use SERVER_HDR CRLF (assigned later).
 */
-str server_header = str_init(SERVER_HDR);
+str * const server_header = &str_init(SERVER_HDR);
 /* User-Agent header to be used when proxy generates request as UAC.
    Default is to use USER_AGENT CRLF (assigned later).
 */
-str user_agent_header = str_init(USER_AGENT);
+str * const user_agent_header = &str_init(USER_AGENT);
 /* should opensips try to locate outbound interface on multihomed
  * host? by default not -- too expensive
  */

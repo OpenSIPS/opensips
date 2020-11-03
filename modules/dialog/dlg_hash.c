@@ -415,14 +415,14 @@ static inline int translate_contact_ipport( str *ct, struct socket_info *sock,
 	/* init send_address_str & send_port_str */
 	if(sock->adv_name_str.len)
 		send_address_str=&(sock->adv_name_str);
-	else if (default_global_address.s)
-		send_address_str=&default_global_address;
+	else if (default_global_address->s)
+		send_address_str=default_global_address;
 	else
 		send_address_str=&(sock->address_str);
 	if(sock->adv_port_str.len)
 		send_port_str=&(sock->adv_port_str);
-	else if (default_global_port.s)
-		send_port_str=&default_global_port;
+	else if (default_global_port->s)
+		send_port_str=default_global_port;
 	else
 		send_port_str=&(sock->port_no_str);
 

@@ -110,6 +110,7 @@
 #include "net/trans.h"
 #include "config.h"
 #include "mem/rpm_mem.h"
+#include "poll_types.h"
 
 #ifdef SHM_EXTRA_STATS
 #include "mem/module_info.h"
@@ -1035,12 +1036,12 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 							server_signature=$3; }
 		| SERVER_SIGNATURE EQUAL error { yyerror("boolean value expected"); }
 		| SERVER_HEADER EQUAL STRING { IFOR();
-							server_header.s=$3;
-							server_header.len=strlen($3);
+							server_header->s=$3;
+							server_header->len=strlen($3);
 							}
 		| SERVER_HEADER EQUAL error { yyerror("string value expected"); }
-		| USER_AGENT_HEADER EQUAL STRING { user_agent_header.s=$3;
-									user_agent_header.len=strlen($3);
+		| USER_AGENT_HEADER EQUAL STRING { user_agent_header->s=$3;
+			user_agent_header->len=strlen($3);
 									}
 		| USER_AGENT_HEADER EQUAL error { yyerror("string value expected"); }
 		| PV_PRINT_BUF_SIZE EQUAL NUMBER { IFOR();
@@ -1136,24 +1137,24 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| AUTO_ALIASES EQUAL error  { yyerror("number  expected"); }
 		| ADVERTISED_ADDRESS EQUAL listen_id { IFOR();
 								if ($3) {
-									default_global_address.s=$3;
-									default_global_address.len=strlen($3);
+									default_global_address->s=$3;
+									default_global_address->len=strlen($3);
 								}
 								}
 		| ADVERTISED_ADDRESS EQUAL error {yyerror("ip address or hostname "
 												"expected"); }
 		| ADVERTISED_PORT EQUAL NUMBER { IFOR();
 								tmp = int2str($3, &i_tmp);
-								if (i_tmp > default_global_port.len)
-									default_global_port.s =
-									pkg_realloc(default_global_port.s, i_tmp);
-								if (!default_global_port.s) {
+								if (i_tmp > default_global_port->len)
+									default_global_port->s =
+									pkg_realloc(default_global_port->s, i_tmp);
+								if (!default_global_port->s) {
 									LM_CRIT("cfg. parser: out of memory.\n");
 									YYABORT;
 								} else {
-									default_global_port.len = i_tmp;
-									memcpy(default_global_port.s, tmp,
-											default_global_port.len);
+									default_global_port->len = i_tmp;
+									memcpy(default_global_port->s, tmp,
+											default_global_port->len);
 								}
 								}
 		|ADVERTISED_PORT EQUAL error {yyerror("ip address or hostname "
