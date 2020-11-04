@@ -259,7 +259,7 @@ cdb_pair_t *cdb_dict_fetch(const cdb_key_t *key, const cdb_dict_t *dict)
 		pair = list_entry(_, cdb_pair_t, list);
 
 		if ((key->is_pk && pair->key.is_pk)
-		    || !str_strcmp(&pair->key.name, &key->name))
+		    || str_match(&pair->key.name, &key->name))
 			return pair;
 	}
 

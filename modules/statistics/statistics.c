@@ -296,7 +296,7 @@ static int _fixup_iter_param(void **param)
 
 		name.s = *param;
 		name.len = strlen(name.s);
-		if (str_strcmp(&name, &iter->name) == 0) {
+		if (str_match(&name, &iter->name)) {
 			*param = &iter->cur;
 			return 0;
 		}
