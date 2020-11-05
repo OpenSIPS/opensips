@@ -660,7 +660,7 @@ static mi_response_t *mi_show_partition(const mi_params_t *params,
 		return 0;
 
 	parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
-	if (parts_arr)
+	if (!parts_arr)
 		goto error;
 
 	el = dp_get_connections();
@@ -673,14 +673,14 @@ static mi_response_t *mi_show_partition(const mi_params_t *params,
 			el->partition.s, el->partition.len) < 0)
 			goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("Table"),
+		if (add_mi_string(part_item, MI_SSTR("table"),
 				el->table_name.s, el->table_name.len) < 0)
 				goto error;
 
 		db_get_url(&el->db_url);
 		if(database_url.len == 0) goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("db_url"),
+		if (add_mi_string(part_item, MI_SSTR("db_url"),
 			database_url.s, database_url.len) < 0)
 			goto error;
 
