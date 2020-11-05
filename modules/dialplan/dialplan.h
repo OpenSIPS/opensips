@@ -36,6 +36,8 @@
 #define REGEX_OP	1
 #define EQUAL_OP	0
 
+#define DEFAULT_PARTITION  "default"
+
 #define DP_CASE_INSENSITIVE		1
 #define DP_INDEX_HASH_SIZE		16
 
