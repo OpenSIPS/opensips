@@ -364,7 +364,24 @@ int dlg_replicated_update(bin_packet_t *packet)
 		goto error;
 	}
 
-	bin_skip_str(packet, 8);
+	/* route set */
+	bin_skip_str(packet, 2);
+
+	/* sync caller and callee contact */
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].contact, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[callee_idx(dlg)].contact, &st);
+
+	/* from & to URIs set */
+	bin_skip_str(packet, 2);
+	bin_pop_str(packet, &st);
+
+	/* sync SDPs */
+	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_sdp, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[callee_idx(dlg)].adv_sdp, &st);
+
 	bin_pop_str(packet, &vars);
 	bin_pop_str(packet, &profiles);
 	bin_pop_int(packet, &dlg->user_flags);
