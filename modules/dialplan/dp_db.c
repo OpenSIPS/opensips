@@ -169,20 +169,44 @@ void dp_disconnect_db(dp_connection_list_p dp_conn)
 int init_data(void)
 {
 	dp_head_p start, tmp;
-	int found_df_part = 0;
 
-	start = dp_hlist;
-	if (!start) {
+	if (!dp_hlist) {
 		LM_ERR("no partition defined, not even the default one!\n");
 		return -1;
 	}
 
+	/* was the default partition re-pointed? */
+	if (!str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
+		int found = 0;
+
+		for (start = dp_hlist; start; start = start->next) {
+			if (str_match(&dp_df_part, &start->partition)) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			LM_ERR("partition not found: '%.*s'\n",
+			       dp_df_part.len, dp_df_part.s);
+			return -1;
+		}
+	}
+
+	if (!dp_df_head) {
+		if (pkg_str_dup(&dp_df_part, &dp_hlist->partition) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		LM_INFO("no 'default' partition set, assuming '%.*s'\n",
+		        dp_df_part.len, dp_df_part.s);
+	}
+
+	start = dp_hlist;
 	while (start) {
 		LM_DBG("Adding partition with name [%.*s]\n",
 				start->partition.len, start->partition.s);
-
-		if (str_match(&start->partition, &dp_df_part))
-			found_df_part = 1;
 
 		if (!dp_add_connection(start)) {
 			LM_ERR("failed to initialize partition '%.*s'\n",
@@ -195,13 +219,8 @@ int init_data(void)
 		pkg_free(tmp);
 	}
 
-	if (!found_df_part) {
-		LM_ERR("partition '%.*s' is not defined\n",
-		       dp_df_part.len, dp_df_part.s);
-		return -1;
-	}
-
 	dp_hlist = NULL;
+	dp_df_head = NULL;
 	return 0;
 }
 
