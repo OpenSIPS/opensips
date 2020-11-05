@@ -16,6 +16,7 @@
 ####### Global Parameters #########
 
 log_level=3
+xlog_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
