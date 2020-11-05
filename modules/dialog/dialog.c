@@ -1204,15 +1204,17 @@ static int w_unset_dlg_profile(struct sip_msg *msg, str *prof_name, str *value)
 	if (profile->has_value) {
 		if (!value) {
 			LM_WARN("missing value\n");
-			return -1;	
+			return -1;
 		}
 		if ( unset_dlg_profile( dlg, value, profile) < 0 ) {
-			LM_ERR("failed to unset profile\n");
+			LM_WARN("dialog not found in profile %.*s with value %.*s\n",
+					prof_name->len, prof_name->s, value->len, value->s);
 			return -1;
 		}
 	} else {
 		if ( unset_dlg_profile( dlg, NULL, profile) < 0 ) {
-			LM_ERR("failed to unset profile\n");
+			LM_WARN("dialog not found in profile %.*s\n",
+					prof_name->len, prof_name->s);
 			return -1;
 		}
 	}
