@@ -1093,7 +1093,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values,
 								DIALOG_TABLE_TOTAL_COL_NO)) !=0){
-			LM_ERR("could not add another dialog to db\n");
+			LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
+					cell->state, cell->callid.len, cell->callid.s);
 			goto error;
 		}
 
@@ -1635,7 +1636,8 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
-					LM_ERR("could not add another dialog to db\n");
+					LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
+							cell->state, cell->callid.len, cell->callid.s);
 					cell = cell->next;
 					continue;
 				}
@@ -2325,7 +2327,8 @@ static int restore_dlg_db(void)
 
 			if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 			values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
-				LM_ERR("could not add another dialog to db\n");
+				LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
+						cell->state, cell->callid.len, cell->callid.s);
 				continue;
 			}
 
