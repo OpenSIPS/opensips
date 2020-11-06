@@ -136,7 +136,7 @@ void trigger_ct_refreshes(unsigned int ticks, void *param)
 
 		LM_DBG("raising refresh event for aor: '%.*s', ct: '%.*s'\n",
 		       ct->aor->len, ct->aor->s, ct->c.len, ct->c.s);
-		ul_raise_ct_refresh_event(ct, &reg_refresh_reason);
+		ul_raise_ct_refresh_event(ct, &reg_refresh_reason, NULL);
 		list_del(&ct->refresh_list);
 		INIT_LIST_HEAD(&ct->refresh_list);
 	}

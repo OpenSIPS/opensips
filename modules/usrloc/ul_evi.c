@@ -75,6 +75,7 @@ static struct {
 	evi_param_p attr;
 	evi_param_p shtag;
 	evi_param_p reason;
+	evi_param_p req_callid;
 } ul_ct_pn_event;
 
 /*! \brief
@@ -356,6 +357,13 @@ int ul_event_init(void)
 		return -1;
 	}
 
+	ul_ct_pn_event.req_callid = evi_param_create(ul_contact_pn_event_params,
+	                          _str(UL_EV_PARAM_CT_RCLID));
+	if (!ul_ct_pn_event.req_callid) {
+		LM_ERR("cannot create req_callid parameter\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -491,7 +499,7 @@ void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c)
 
 
 static inline void _ul_raise_ct_refresh_event(
-                       const ucontact_t *_c, const str *reason)
+                const ucontact_t *_c, const str *reason, const str *req_callid)
 {
 	if (ei_c_refresh_id == EVI_ERROR) {
 		LM_ERR("event not yet registered ("UL_EV_CT_REFRESH")\n");
@@ -573,7 +581,14 @@ static inline void _ul_raise_ct_refresh_event(
 		return;
 	}
 
-	if (evi_raise_event(ei_c_refresh_id, ul_contact_event_params) < 0)
+	/* the Call-ID of the pending request */
+	if (req_callid &&
+	        evi_param_set_str(ul_ct_pn_event.req_callid, req_callid) < 0) {
+		LM_ERR("cannot set the req_callid parameter\n");
+		return;
+	}
+
+	if (evi_raise_event(ei_c_refresh_id, ul_contact_pn_event_params) < 0)
 		LM_ERR("cannot raise event\n");
 }
 
@@ -582,15 +597,16 @@ static void ul_rpc_raise_ct_refresh(int _, void *_ev)
 {
 	struct ct_refresh_event_data *ev = (struct ct_refresh_event_data *)_ev;
 
-	_ul_raise_ct_refresh_event(ev->ct, &ev->reason);
+	_ul_raise_ct_refresh_event(ev->ct, &ev->reason, &ev->req_callid);
 	shm_free(ev);
 }
 
 
-void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason)
+void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
+                               const str *req_callid)
 {
 #if !UL_ASYNC_CT_REFRESH
-	_ul_raise_ct_refresh_event(c, reason);
+	_ul_raise_ct_refresh_event(c, reason, req_callid);
 #else
 	struct ct_refresh_event_data *ev;
 	ucontact_t *ct;
@@ -601,17 +617,28 @@ void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason)
 	            c->domain->len + sizeof *c->aor + c->aor->len + c->c.len +
 	            c->received.len + c->path.len + c->user_agent.len +
 	            (c->sock ? (sizeof *c->sock + c->sock->sock_str.len) : 0) +
-	            c->callid.len + c->attr.len + c->shtag.len + reason->len);
+	            c->callid.len + c->attr.len + c->shtag.len + reason->len +
+	            (req_callid ? req_callid->len : 0));
 	if (!ev) {
 		LM_ERR("oom\n");
 		return;
 	}
 
 	p = (char *)(ev + 1);
+
 	ev->reason.s = p;
 	ev->reason.len = reason->len;
 	memcpy(p, reason->s, reason->len);
 	p += reason->len;
+
+	if (!req_callid) {
+		memset(&ev->req_callid, 0, sizeof ev->req_callid);
+	} else {
+		ev->req_callid.s = p;
+		ev->req_callid.len = req_callid->len;
+		memcpy(p, req_callid->s, req_callid->len);
+		p += req_callid->len;
+	}
 
 	ct = ev->ct = (ucontact_t *)p;
 	p = (char *)(ct + 1);
