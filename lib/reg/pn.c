@@ -566,7 +566,8 @@ static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
 			val.n = p->val.n;
 			avp = new_avp(0, avp_id, val);
 		} else {
-			LM_BUG("EVI param no STR, nor INT, ignoring...\n");
+			LM_DBG("EVI param '%.*s' not STR, nor INT (%d), ignoring...\n",
+			       p->name.len, p->name.s, p->flags);
 			continue;
 		}
 
