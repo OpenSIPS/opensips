@@ -1858,9 +1858,9 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 		<title><function>load_dialog_ctx</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if ( load_dialog_ctx("$var(callid)") ) {
-	xlog("The dialog $var(callid) has an already duration"
-		" of $DLG_lifetime seconds \n);
+if (load_dialog_ctx("$var(callid)")) {
+	xlog("The dialog '$var(callid)' already has a duration "
+	     "of $DLG_lifetime seconds\n");
 	if (is_in_profile("inbound_call"))
 		xlog("this dialog is an inbound call\n");
 	unload_dialog_ctx();
