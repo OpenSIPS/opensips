@@ -65,6 +65,12 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *aor_uri,
 	str sip_instance = STR_NULL, call_id = STR_NULL;
 	regex_t ua_re;
 
+	if (!req->callid) {
+		LM_ERR("bad %.*s request (missing Call-ID header)\n",
+		       req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
+		return -1;
+	}
+
 	if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
 	                       &max_latency) != 0) {
 		LM_ERR("failed to parse flags: %.*s\n", sflags->len, sflags->s);

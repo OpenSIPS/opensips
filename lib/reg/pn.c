@@ -676,7 +676,7 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 	sprintf(reason.s, "ini-%.*s", met.len, met.s);
 	reason.len = 4 + met.len;
 
-	ul.raise_ev_ct_refresh(ct, &reason);
+	ul.raise_ev_ct_refresh(ct, &reason, &req->callid->body);
 	return 0;
 }
 
@@ -780,6 +780,12 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 		return -1;
 	}
 
+	if (!req->callid) {
+		LM_ERR("bad %.*s request (missing Call-ID header)\n",
+		       req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
+		return -1;
+	}
+
 	/* locate "pn-purr" in the R-URI */
 	if (parse_sip_msg_uri(req) < 0) {
 		LM_ERR("failed to parse R-URI: '%.*s'\n",
@@ -864,7 +870,7 @@ have_purr:
 	reason.len = 4 + met.len;
 
 	/* trigger the Push Notification */
-	ul.raise_ev_ct_refresh(c, &reason);
+	ul.raise_ev_ct_refresh(c, &reason, &req->callid->body);
 
 	ul.unlock_udomain(d, &r->aor);
 	return 1;

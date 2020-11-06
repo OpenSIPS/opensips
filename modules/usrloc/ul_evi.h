@@ -49,10 +49,12 @@
 #define UL_EV_PARAM_CT_LTCY   "latency"
 #define UL_EV_PARAM_CT_SHTAG  "shtag"
 #define UL_EV_PARAM_CT_REASON "reason"
+#define UL_EV_PARAM_CT_RCLID  "req_callid"
 
 struct ct_refresh_event_data {
 	ucontact_t *ct;
 	str reason;
+	str req_callid;
 };
 
 /* AoR event IDs */
@@ -69,6 +71,7 @@ extern event_id_t ei_c_refresh_id;
 int ul_event_init(void);
 void ul_raise_aor_event(event_id_t _e, struct urecord *_r);
 void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c);
-void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason);
+void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
+                               const str *req_callid);
 
 #endif /* __UL_EVI_H__ */

@@ -1776,8 +1776,8 @@ modparam("usrloc", "contact_refresh_timer", true)
 				contact.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>received</emphasis> - IP, port and protocol the 
-				registration message was received from. If these have the 
+				<emphasis>received</emphasis> - IP, port and protocol the
+				registration message was received from. If these have the
 				same value as the contact's address (see the address parameter)
 				then the received parameter will be an empty string.
 			</para></listitem>
@@ -1817,9 +1817,9 @@ modparam("usrloc", "contact_refresh_timer", true)
 			</para></listitem>
 			<listitem><para>
 				<emphasis>attr</emphasis> - The attributes string attached
-				to the contact (the custom attributes attached from the 
+				to the contact (the custom attributes attached from the
 				script level). As this string is options, if missing in the
-				contact, the event will push the empty string for this event 
+				contact, the event will push the empty string for this event
 				field.
 			</para></listitem>
 			<listitem><para>
@@ -1871,7 +1871,8 @@ modparam("usrloc", "contact_refresh_timer", true)
 		<function moreinfo="none">E_UL_CONTACT_REFRESH</function>
 		</title>
 		<para>
-			Only relevant for RFC 8599 (Push Notification) enabled contacts.
+			This event may only be raised for RFC 8599 (Push Notification)
+			enabled contacts.
 		</para>
 		<para>
 		Set <xref linkend="param_contact_refresh_timer"/> to
@@ -1883,8 +1884,57 @@ modparam("usrloc", "contact_refresh_timer", true)
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				all <xref linkend="event_E_UL_CONTACT_INSERT"/> event parameters
+				<emphasis>domain</emphasis> - The name of the table.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>aor</emphasis> - The AOR of the inserted contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>uri</emphasis> - The contact URI of the inserted
+				contact.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>received</emphasis> - IP, port and protocol the
+				registration message was received from. If these have the
+				same value as the contact's address (see the address parameter)
+				then the received parameter will be an empty string.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>user_agent</emphasis> - The User-Agent header
+				value.
+			</para>
+			<para><emphasis>NOTICE: </emphasis>Can contain spaces.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>socket</emphasis> - The SIP socket/listener
+				(as string) used by OpenSIPS to receive the contact
+				registations.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>bflags</emphasis> - The branch flags (bflags) of the
+				contact (in integer value of the bitmask)
+			</para></listitem>
+			<listitem><para>
+				<emphasis>expires</emphasis> - The expires value of the
+				contact (as UNIX timestamp integer).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>callid</emphasis> - The Call-ID header of the
+				registration message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>attr</emphasis> - The attributes string attached
+				to the contact (the custom attributes attached from the
+				script level). As this string is options, if missing in the
+				contact, the event will push the empty string for this event
+				field.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>shtag</emphasis> - The shared tag of the contact,
+				which helps determine if the current node owns the contact
+				(e.g. possibly using the <emphasis role='bold'>$cluster.sh_tag
+				</emphasis> pseudo-variable in order to perform the check).
+		</para></listitem>
 			<listitem><para>
 				<emphasis>reason</emphasis> - the reason why the binding refresh
 				event was triggered.  Possible values:
@@ -1904,6 +1954,22 @@ modparam("usrloc", "contact_refresh_timer", true)
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
+			<listitem><para>
+				<emphasis>req_callid</emphasis> - the Call-ID of the SIP request
+				which triggered this event, if any.  This gives the ability to
+				logically link the pending request with the current event and
+				access useful data from that request (e.g. caller identity,
+				dialed number, etc.).
+				</para>
+				<para>
+				Using the <emphasis>req_callid</emphasis>, if a dialog has been
+				created for the pending request, this dialog may be temporarily
+				loaded inside the event_route using the
+				<ulink url='dialog#func_load_dialog_ctx'>load_dialog_ctx()</ulink> and
+				<ulink url='dialog#func_unload_dialog_ctx'>unload_dialog_ctx()</ulink>
+				functions of the dialog module.
+				</para>
+			</listitem>
 		</itemizedlist>
 	</section>
 
