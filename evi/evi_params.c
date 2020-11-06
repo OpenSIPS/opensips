@@ -66,7 +66,8 @@ int evi_param_set(evi_param_p el, const void *param, int flags)
 		LM_ERR("no parameter specified\n");
 		return 1;
 	}
-	if (!(EVI_INT_VAL & flags) && !(EVI_STR_VAL & flags)) {
+
+	if (!(flags & (EVI_INT_VAL|EVI_STR_VAL))) {
 		LM_ERR("params should be int or str [%x]\n", flags);
 		return -1;
 	}
