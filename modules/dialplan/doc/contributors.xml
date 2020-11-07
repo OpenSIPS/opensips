@@ -20,19 +20,19 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">56</entry>
+		<entry align="center">34</entry>
+		<entry align="center">947</entry>
+		<entry align="center">764</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">50</entry>
 		<entry align="center">38</entry>
 		<entry align="center">491</entry>
 		<entry align="center">413</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">45</entry>
-		<entry align="center">29</entry>
-		<entry align="center">729</entry>
-		<entry align="center">513</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
-		<entry align="center">Mar 2020 - Mar 2020</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jul 2012 - Nov 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jul 2012 - Dec 2019</entry>
+		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
+		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Andrei Dragus, Anca Vamanu.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Andrei Dragus, Anca Vamanu.</para>
 </section>
 
 </chapter>
