@@ -442,7 +442,8 @@ Chapter 2. Contributors
    2. Razvan Crainea (@razvancrainea) 59 31 1812 708
    3. Vlad Paiu (@vladpaiu) 4 2 17 8
    4. Vlad Patrascu (@rvlad-patrascu) 4 2 10 13
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
+   5. Liviu Chircu (@liviuchircu) 4 2 7 1
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -465,10 +466,11 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
    1. Razvan Crainea (@razvancrainea)     Jan 2019 - Oct 2020
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - May 2019
-   3. Vlad Paiu (@vladpaiu)               May 2019 - May 2019
-   4. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
-   5. Victor Ciurel (@victor-ciurel)      Sep 2017 - Jan 2019
+   2. Liviu Chircu (@liviuchircu)         Jul 2020 - Jul 2020
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - May 2019
+   4. Vlad Paiu (@vladpaiu)               May 2019 - May 2019
+   5. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
+   6. Victor Ciurel (@victor-ciurel)      Sep 2017 - Jan 2019
 
    (1) including any documentation-related commits, excluding
    merge commits
