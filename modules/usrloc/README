@@ -1277,14 +1277,40 @@ modparam("usrloc", "contact_refresh_timer", true)
 
 1.9.6.  E_UL_CONTACT_REFRESH
 
+   This event may only be raised for RFC 8599 (Push Notification)
+   enabled contacts.
+
    Set contact_refresh_timer to true in order to enable this
-   event. The event is raised within reasonable time before a
-   contact binding will expire, such that the script writer can
-   take action, possibly force a registration refresh from the
+   event. The event is raised within reasonable time before an RFC
+   8599 enabled contact will expire, such that the script writer
+   can take action, possibly force a registration refresh from the
    endpoint.
 
    Parameters:
-     * all E_UL_CONTACT_INSERT event parameters
+     * domain - The name of the table.
+     * aor - The AOR of the inserted contact.
+     * uri - The contact URI of the inserted contact.
+     * received - IP, port and protocol the registration message
+       was received from. If these have the same value as the
+       contact's address (see the address parameter) then the
+       received parameter will be an empty string.
+     * user_agent - The User-Agent header value.
+       NOTICE: Can contain spaces.
+     * socket - The SIP socket/listener (as string) used by
+       OpenSIPS to receive the contact registations.
+     * bflags - The branch flags (bflags) of the contact (in
+       integer value of the bitmask)
+     * expires - The expires value of the contact (as UNIX
+       timestamp integer).
+     * callid - The Call-ID header of the registration message.
+     * attr - The attributes string attached to the contact (the
+       custom attributes attached from the script level). As this
+       string is options, if missing in the contact, the event
+       will push the empty string for this event field.
+     * shtag - The shared tag of the contact, which helps
+       determine if the current node owns the contact (e.g.
+       possibly using the $cluster.sh_tag pseudo-variable in order
+       to perform the check).
      * reason - the reason why the binding refresh event was
        triggered. Possible values:
           + "reg-refresh" - periodic refresh triggered by OpenSIPS
@@ -1292,6 +1318,15 @@ modparam("usrloc", "contact_refresh_timer", true)
             triggered by an incoming initial SIP request
           + "mid-INVITE", "mid-BYE", etc. - a refresh triggered by
             an incoming mid-dialog SIP request
+     * req_callid - the Call-ID of the SIP request which triggered
+       this event, if any. This gives the ability to logically
+       link the pending request with the current event and access
+       useful data from that request (e.g. caller identity, dialed
+       number, etc.).
+       Using the req_callid, if a dialog has been created for the
+       pending request, this dialog may be temporarily loaded
+       inside the event_route using the load_dialog_ctx() and
+       unload_dialog_ctx() functions of the dialog module.
 
 1.9.7.  E_UL_LATENCY_UPDATE
 
@@ -1542,7 +1577,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 300 180 8050 3276
+   2. Liviu Chircu (@liviuchircu) 309 183 8468 3449
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 242 148 4208 3614
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
@@ -1586,7 +1621,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2020
    2.  Walter Doekes (@wdoekes)            Apr 2019 - Sep 2020
    3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020

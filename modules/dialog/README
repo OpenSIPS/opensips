@@ -1418,9 +1418,9 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 
    Example 1.60. load_dialog_ctx usage
 ...
-if ( load_dialog_ctx("$var(callid)") ) {
-        xlog("The dialog $var(callid) has an already duration"
-                " of $DLG_lifetime seconds \n);
+if (load_dialog_ctx("$var(callid)")) {
+        xlog("The dialog '$var(callid)' already has a duration "
+             "of $DLG_lifetime seconds\n");
         if (is_in_profile("inbound_call"))
                 xlog("this dialog is an inbound call\n");
         unload_dialog_ctx();
@@ -2474,9 +2474,9 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 434 273 12803 3381
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
-   3. Razvan Crainea (@razvancrainea) 239 177 4677 1391
+   3. Razvan Crainea (@razvancrainea) 242 180 4715 1397
    4. Vlad Patrascu (@rvlad-patrascu) 160 81 3401 3114
-   5. Liviu Chircu (@liviuchircu) 144 103 2744 1091
+   5. Liviu Chircu (@liviuchircu) 145 104 2747 1094
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 28 22 486 110
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
@@ -2516,9 +2516,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2020
-   2.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Sep 2020
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2020
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2020
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2020
+   3.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Sep 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2020
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2020
    6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
@@ -2547,18 +2547,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Paiu (@vladpaiu), Zero King (@l2dy), Dan Pascu (@danpascu),
-   Liviu Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Julián
-   Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
-   (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu Marius
-   Cristian (@eseanucristian), Norman Brandinger (@NormB), Anca
-   Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
-   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
-   Modroiu.
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
+   Zero King (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
+   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
+   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
+   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
+   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
+   Andy Pyles, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
