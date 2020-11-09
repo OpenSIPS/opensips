@@ -236,19 +236,18 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index, int src,
 		return NULL;
 	}
 
-	if(src == B2B_SERVER)
+	if(src == B2B_SERVER && !reload)
 	{
 		dlg->tag[CALLEE_LEG].s = (char*)shm_malloc(b2b_key->len);
 		if(dlg->tag[CALLEE_LEG].s == NULL)
 		{
 			LM_ERR("No more shared memory\n");
-			if(!reload)
-				lock_release(&table[hash_index].lock);
+			lock_release(&table[hash_index].lock);
 			return 0;
 		}
 		memcpy(dlg->tag[CALLEE_LEG].s, b2b_key->s, b2b_key->len);
 		dlg->tag[CALLEE_LEG].len = b2b_key->len;
-		if(!reload && b2be_db_mode == WRITE_THROUGH)
+		if(b2be_db_mode == WRITE_THROUGH)
 			b2be_db_insert(dlg, src);
 	}
 
