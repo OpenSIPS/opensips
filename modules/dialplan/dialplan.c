@@ -111,7 +111,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "dp_translate", 0, 0, 0, {
 		{mi_translate2, {"dpid", "input", 0}},
-		{mi_translate3, {"partition", "dpid", "input", 0}},
+		{mi_translate3, {"dpid", "input", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dp_show_partition", 0, 0, mi_child_init, {
