@@ -153,6 +153,9 @@ struct cell;
  *  to any other piece of code except the transaction cleanup routine. All
  *  registered callbacks of this type will be invoked by the cleanup routine,
  *  after which the transaction object will be freed.
+ *    Note: if you schedule data for deletion using this callback, then you may
+ *          have to ensure a transaction always exists beforehand, using
+ *          tmb.t_newtran()
  *
  * TMCB_MSG_MATCHED_IN -- triggered whenever there is an
  *  incoming SIP message matching the transaction. It may be

@@ -54,7 +54,7 @@ struct tm_binds {
 	 *		1 (success)
 	 *		0 (retransmission)
 	 *	  < 0 (error)
-	 *			* E_SCRIPT (T already exists)
+	 *			* E_SCRIPT (the current transaction (@T) is already populated)
 	 *			* (others)
 	 */
 	tnewtran_f       t_newtran;
