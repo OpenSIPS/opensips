@@ -62,6 +62,7 @@
 /* convenience short-cut macros */
 #define REQ_LINE(_msg) ((_msg)->first_line.u.request)
 #define REQ_METHOD first_line.u.request.method_value
+#define REQ_METHOD_S first_line.u.request.method
 #define REPLY_STATUS first_line.u.reply.statuscode
 #define REPLY_CLASS(_reply) ((_reply)->REPLY_STATUS/100)
 
