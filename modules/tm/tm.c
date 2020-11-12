@@ -532,6 +532,7 @@ static int fixup_phostport2proxy(void** param)
 static int fixup_free_proxy(void **param)
 {
 	free_proxy(*param);
+	pkg_free(*param);
 	return 0;
 }
 
