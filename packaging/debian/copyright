@@ -31,10 +31,6 @@ Files: async.c
 Copyright: 2011-2015, OpenSIPS Solutions
 License: GPL-2+
 
-Files: atomic.h
-Copyright: 2006, kernel.org
-License: GPL-2+
-
 Files: blacklists.c
   blacklists.h
   core_stats.c
