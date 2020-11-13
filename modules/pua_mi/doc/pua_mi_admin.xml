@@ -79,9 +79,9 @@ modparam("pua_mi", "presence_server", "sip:pa@opensips.org:5075")
 		<para>The module does not export functions to be used
 		in configuration script.</para>
 	</section>	
-	<section>
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI functions</title>
-		<section>
+		<section id="mi_pua_publish" xreflabel="pua_publish">
 				<title>
 				<function moreinfo="none">pua_publish</function>
 				</title>
@@ -153,8 +153,7 @@ opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application
 		</example>
 		</section>
 
-	</section>		
-	<section>
+	<section id="mi_pua_subscribe" xreflabel="pua_subscribe">
 		<title>
 			<function moreinfo="none">pua_subscribe</function>
 		</title>
@@ -177,7 +176,7 @@ opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application
 
 			<listitem>
 				<para>
-					<emphasis>event package</emphasis>
+					<emphasis>event_package</emphasis>
 				</para>	
 			</listitem>
 			<listitem>
@@ -187,6 +186,16 @@ opensips-cli -x mi pua_publish sip:system@opensips.org 3600 presence application
 				    </para> 
 			</listitem>	
 			</itemizedlist>
+		<example>
+		<title><function>pua_subscribe</function> FIFO example</title>
+	<programlisting format="linespecific">
+...
+<![CDATA[
+opensips-cli -x mi pua_subscribe sip:system@opensips.org sip:400@opensips.org presence 3600
+]]>
+</programlisting>
+		</example>
 	</section>
+</section>
 </chapter>
 
