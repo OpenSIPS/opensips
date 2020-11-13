@@ -434,7 +434,7 @@ mi_response_t *mi_pua_subscribe(const mi_params_t *params,
 		return init_mi_error(400, MI_SSTR("Bad uri"));
 	}
 
-	if (get_mi_string_param(params, "event",
+	if (get_mi_string_param(params, "event_package",
 		&event.s, &event.len) < 0)
 		return init_mi_param_error();
 
