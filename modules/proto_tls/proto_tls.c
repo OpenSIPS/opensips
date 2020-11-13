@@ -455,7 +455,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 		port=su_getport(to);
 		dom = (cert_check_on_conn_reusage==0)?
 			NULL : tls_mgm_api.find_client_domain( &ip, port);
-		n = tcp_conn_get(id, &ip, port, PROTO_TLS, dom?dom->ctx:NULL, &c, &fd);
+		n = tcp_conn_get(id, &ip, port, PROTO_TLS, dom, &c, &fd);
 		if (dom)
 			tls_mgm_api.release_domain(dom);
 	}else if (id){
