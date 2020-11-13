@@ -116,6 +116,11 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 		return -1;
 	}
 
+	if (!SSL_set_ex_data(c->extra_data, SSL_EX_DOM_IDX, dom)) {
+		LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
+		return -1;
+	}
+
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 #ifndef OPENSSL_NO_KRB5
 	if ( ((SSL *)c->extra_data)->kssl_ctx ) {
@@ -245,7 +250,7 @@ static int tls_read(struct tcp_connection * c,struct tcp_req *r)
 static int tls_conn_extra_match(struct tcp_connection *c, void *id)
 {
 	if ( (c->flags&F_CONN_ACCEPTED) ||
-	(SSL_get_SSL_CTX((SSL*)c->extra_data) == id) )
+	(SSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX) == id) )
 		return 1; /*true*/
 
 	return 0; /*false*/

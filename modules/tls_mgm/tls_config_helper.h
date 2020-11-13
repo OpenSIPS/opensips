@@ -52,5 +52,8 @@ enum tls_method {
 	TLS_USE_TLSv1_2
 };
 
+/* SSL extra data indexes */
+#define SSL_EX_DOM_IDX 1
+
 #endif	/* TLS_CONFIG_HELPER_H */
 
