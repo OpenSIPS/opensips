@@ -1656,6 +1656,8 @@ static mi_response_t *mi_match_print_dlg(int with_context,
 
 	dlg_unlock(d_table, d_entry);
 
+	return resp;
+
 error:
 	dlg_unlock(d_table, d_entry);
 	free_mi_response(resp);
