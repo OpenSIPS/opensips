@@ -2187,7 +2187,7 @@ early_check:
  */
 void dlg_ontimeout(struct dlg_tl *tl)
 {
-	struct sip_msg *fake_msg;
+	struct sip_msg *fake_msg = NULL;
 	context_p old_ctx;
 	context_p *new_ctx;
 	struct dlg_cell *dlg;
