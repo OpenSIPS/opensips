@@ -1,5 +1,11 @@
 =========================== Release 2.4.9 ==============================
 
+2020-11-17  Nick Altmann  <nick.altmann at gmail dot com>
+	* [697dd121d] :
+
+	APT repository: ubuntu 20
+
+
 2020-11-17  Razvan Crainea  <razvan at opensips dot org>
 	* [8d4296a4b] :
 
