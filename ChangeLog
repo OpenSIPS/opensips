@@ -1,3 +1,1399 @@
+=========================== Release 2.4.9 ==============================
+
+2020-11-17  Razvan Crainea  <razvan at opensips dot org>
+	* [8d4296a4b] :
+
+	Bump version to 2.4.9
+
+
+2020-11-14  OpenSIPS  <github at opensips dot org>
+	* [f0ad9e054] :
+
+	Rebuild documentation
+
+
+2020-11-11  Liviu Chircu  <liviu at opensips dot org>
+	* [c6f35e550] :
+
+	tm: Fix transaction leakage with global onreply_route
+	Given that the opensips.cfg execution order for replies is:
+	    1) onreply_route (global)
+	    2) reply_received(), i.e. "tm" module scope
+	      2.1) onreply_route (branch)
+	      2.2) onreply_route (transaction)
+
+	... this patch fixes some transaction leaks where if the script developer
+	matches the current transaction within global onreply_route, e.g. with a
+	random statement such as xlog("$T_reply_code\n"), it would cause an
+	extra ref after a transaction matching operation would be performed yet
+	again (??) within reply_received(), as the "tm" scope begins executing.
+
+	The fix is to simply avoid transaction lookups when evaluating tm
+	variables within the non-transactional, global SIP reply route.
+
+	Credits to Bogdan-Andrei Iancu for suggesting this solution
+	(cherry picked from commit 3a25c0b28f9bffc5e6942a7a3f5484ef903e28f6)
+
+
+2020-11-11  Liviu Chircu  <liviu at opensips dot org>
+	* [0e94a1b6e] :
+
+	mid_registrar_save(): Fix shm memleak with no t_relay()
+	Since mid_registrar_save() is stateful by definition, it needs the SIP
+	transaction to properly function, so always forcing its creation if the
+	REGISTER is about to be forwarded is not that significant of a change,
+	if any at all.
+
+	Thus, this patch fixes a SHM memleak on the following type of logic:
+
+	    mid_registrar_save();
+
+	    # script terminates without having created the transaction,
+	    # so mid_registrar's "prepped" data does not get freed on T deletion
+	    exit;
+
+	(cherry picked from commit b14a7eaff60b719c8b80af4f8bfdffe2bc7e995b)
+	(cherry picked from commit e2141a3b66b4ffe2e01fb9ed27412c8532b09fb8)
+
+
+2020-11-09  Vlad Patrascu  <vladp at opensips dot org>
+	* [15b401ed2] :
+
+	b2b_entities: fix restoring of DB persisted server entities
+	Server entities restored from DB would not use the original To tag due to
+	regenerating the timestamp part of the entity key.
+	(cherry picked from commit dd237c001791be0b3b071d07b36057221f6ed3f6)
+
+
+2020-11-07  OpenSIPS  <github at opensips dot org>
+	* [47125eb95] :
+
+	Rebuild documentation
+
+
+2020-11-05  Razvan Crainea  <razvan at opensips dot org>
+	* [c5711b9aa] :
+
+	dialog: update contact & SDPs for replicated update
+
+
+2020-11-05  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [214907526] :
+
+	Use body->len as the only authoritative way to check if the provided body is empty or not.
+	(cherry picked from commit b0997b1fb56d6f518a26b9fe32e45cb16b9a0284)
+	(cherry picked from commit bd5a1d027b238892d798e5c3fc0d0633387192fe)
+
+
+2020-11-05  Liviu Chircu  <liviu at opensips dot org>
+	* [c25411a1f] :
+
+	Merge pull request #2253 from sippy/master_2020
+	Fix a rather obscure copy-n-paste bug in the digest parser
+
+	(cherry picked from commit baddd32e2fd6cb43dd8b55f8a9f494fbd506d403)
+	(cherry picked from commit 74558d8957f57b73427d50dd7b7908f989537a12)
+
+
+2020-11-05  Liviu Chircu  <liviu at opensips dot org>
+	* [fced368a2] :
+
+	SIP digest auth: Improve handling for multiple digest challenges
+	Before this patch, OpenSIPS would always work with the digest
+	credentials of the 1st WWW/Proxy-Authenticate header field.
+
+	While RFC 3261 does not define the behavior with multiple
+	WWW/Proxy-Authenticate headers, in § 22.3 it is stated that:
+
+	   Note that if an authentication scheme that does not support realms is
+	   used in the Proxy-Authorization header field, a proxy server MUST
+	   attempt to parse all Proxy-Authorization header field values to
+	   determine whether one of them has what the proxy server considers to
+	   be valid credentials.
+
+	... so a proxy must _walk_ through unacceptable headers until it finds
+	one with "valid" credentials.  In the context of the upcoming RFC 8760,
+	this would also mean: finding an auth header field with an MD5 digest
+	algorithm, which is the only one currently supported.
+
+	TL;DR: this patch improves the "uac", "uac_registrant" and
+	"b2b_entities" modules so they correctly process 3 WWW-Authenticate
+	headers with the following algorithm preference:
+	    algorithm=SHA-512-256
+	    algorithm=SHA-256
+	    algorithm=MD5
+
+	... and correctly build an MD5-based response for the 3rd header field.
+
+	Issue discovered during OpenSIPIt 2020
+	(cherry picked from commit 27d5862fb834e2c71f2fefb89a27430e30814647)
+
+	SIP digest auth: Complete 27d5862fb8
+
+	The b2b_entities was not patched well, as some weird switch
+	fallthrough-on-error behavior was introduced.
+
+	(cherry picked from commit 5942d53f7aeec8eadcafd394fd1ee51ede2e5ab1)
+	(cherry picked from commit 3274fc2b076bc8d2395ef1b68244a43c66463106)
+
+
+2020-11-05  Liviu Chircu  <liviu at opensips dot org>
+	* [f721cc01b] :
+
+	b2b entities/logic: Inherit `db_default_url` if possible
+	If there is still no DB URL, simply start without DB support (just as
+	before)
+
+	(cherry picked from commit ff7b5849751d11537d989afe2b17ef35ebd2a133)
+	(cherry picked from commit a54424be0c0ff2cd42adf6a0d748ac2a866dc319)
+	(cherry picked from commit 0684e98376a841b6b7351b23e23de1d9a804ba41)
+
+
+2020-11-05  Razvan Crainea  <razvan at opensips dot org>
+	* [7c251f545] :
+
+	dispatcher: prevent possibl uninitialized access
+	(cherry picked from commit 58804282fe53b25a2d18f8bed35b8f6fc8f8a1a8)
+
+
+2020-11-05  Liviu Chircu  <liviu at opensips dot org>
+	* [aa8a43dc7] :
+
+	dialplan: Fix startup with a single, non-default partition
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [e64845a3f] :
+
+	dialplan: Allow re-pointing the default partition
+	This is useful in situations where script writers do not intend to cache
+	the default 'dialplan' table, rather only the named partitions.
+
+	Example syntax:
+	    db_default_url = "mysql://opensips:opensipsrw@127.0.0.1/opensips"
+	    ...
+	    modparam("dialplan", "partition", "
+		pstn:
+		    table_name = dialplan_pstn")
+	    modparam("dialplan", "partition", "default: pstn")
+
+	(cherry picked from commit efee3438773a83c1a05edc8b05ba45f53a83c5a6)
+	(cherry picked from commit 4abd2617f970b2505534ee8dfd68fdd11ddcc716)
+	(cherry picked from commit 03bf0ae1b0ce1931377ae131235413bbc5f01df1)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [bff98ff4e] :
+
+	dispatcher docs: Update partition, db_url and table_name
+	(cherry picked from commit 89a618be1f005d1bc80d528bc41de73fff24533a)
+	(cherry picked from commit dd0245e98087e07fb2182ae4e21f06ce034c9b4b)
+	(cherry picked from commit 02df9b8fdb2bdb2521481b9d1b466466689c38e1)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [a61d9417a] :
+
+	dispatcher: Integrate with 'db_default_url'
+	    * both 'db_url' and a partition DB URL will inherit their starting
+	      value from the 'db_default_url' global
+	    * add the option to point the default partition to a known one, in
+	      order to avoid unwanted loading of the default table.  Example:
+
+		modparam("dispatcher", "partition", "default: trunks")
+		modparam("dispatcher", "partition", "trunks:  db_url = ...")
+
+	(cherry picked from commit c7d668bad5b2b41a9c9065e1539914f0629ccf64)
+	(cherry picked from commit ba7a4e33a6e2141aa7300f4e5db268c39f5e9520)
+	(cherry picked from commit c0b2a0ae4117e395e1c4724b7b91270d83a0d269)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [23f987886] :
+
+	dispatcher: Add useful debug log
+	(cherry picked from commit 198687e17d13a06b0868676252292643c6d549c4)
+	(cherry picked from commit 654f1e9ba552ab96e1b3b31b3199f5464b41bd9d)
+	(cherry picked from commit 5c154e2cec728014993dd980309225b47e6af514)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [53bec0c3d] :
+
+	dispatcher: Fix a bug with the 'default' partition
+	This commit allows the "default" partition to be populated just like the
+	other ones:
+
+	modparam("dispatcher", "partition",
+	    "default:
+	            db_url = mysql://opensips:opensipsrw@127.0.0.1/opensips_3_2;
+	            table_name = v1_dispatcher")
+
+	(cherry picked from commit cc2f4a8c49402f99502a58940d2fbb51daed6e47)
+	(cherry picked from commit 419f0119400229ac54df2b8ce1943d88c31c4b5a)
+	(cherry picked from commit 1f14390a4b7147a3ba7434b5dc19c6aa98184a44)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [37abcc3d6] :
+
+	permissions docs: Update partition, db_url and address_table
+	(cherry picked from commit 180674b833ef9e82cb3f97105add2ada6843ddc1)
+	(cherry picked from commit 67c06628eae20cca4fc3e5509435b775a425d17e)
+	(cherry picked from commit 8ad9847f0b010b5344c1d9fdf4b4f65f347efae8)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [baf00b5d7] :
+
+	dialplan docs: Update partition, db_url and table_name
+	(cherry picked from commit 6443ad5829c15f8ae7dad8bb9f0e4f418702b1ad)
+	(cherry picked from commit 5185859a5776b6cb6ed49938eeba80c2017c5087)
+	(cherry picked from commit dbd3e9eace04e0b54a16bfff4b9c78d9a5c51732)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [674c611f2] :
+
+	dialplan: Integrate with 'db_default_url'
+	    * DB partitions now inherit their DB URL (if not given explicitly)
+	        from 'db_url' -> 'db_default_url'
+	    * the above is similar for the 'table_name' property
+	       (inherit from the 'address_table' modparam)
+	    * rewrite the 'partitions' parser: no more coding style limitations
+	    * backwards-compatible: at least one partition must be specified
+	      (even through simply defining a global 'db_default_url') before
+	      the module can start
+
+	Part of a series of patches for #2117
+
+	(cherry picked from commit 2e8164368b31da9292f08623eac6934ef2057e22)
+	(cherry picked from commit f061ad31d39538de59da05e8a98018cc42c4c336)
+	(cherry picked from commit 000df2ba61e91142ce3c8f09562e5867519a94b5)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [4eccc44cf] :
+
+	permissions: Integrate with 'db_default_url'
+	    * DB partitions now inherit their DB URL (if not given explicitly)
+	        from 'db_url' -> 'db_default_url'
+	    * the above is similar for the 'table_name' property
+	       (inherit from the 'address_table' modparam)
+	    * rewrite the 'partitions' parser: no more coding style limitations
+	    * backwards-compatible: the 'db_url' is still mandatory if you are
+	      not specifying a partition definition!  This is due to the fact
+	      that the module has a non-DB based usage mode
+
+	Part of a series of patches for #2117
+
+	(cherry picked from commit bb57cc1c375b9325138154eb415cebc2fa971ec0)
+	(cherry picked from commit e663ee6a905f64c1d26954fa896bbc1461001163)
+	(cherry picked from commit 8cb6048949cc0440d87b205bbaed88fa16d1fc93)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [1525893e2] :
+
+	Code quality: Use str_match() instead of !str_strcmp()
+	Reasons behind this change:
+	    - better performance: str_strcmp() includes lots of redundant checks
+	      and performs worse than the simplistic str_match()
+
+	    - safer code: although by making this change we increase the chance
+	      of a segfault (if either "a" or "b" strings are NULL), the crash
+	      will immediately indicate the coding bug and will be easy to
+	      troubleshoot.  By the same argument, nobody complains that
+	      memset() or strcmp() include zero NULL checks: they don't have to!
+
+	    - more meaningful code: logically speaking, in most cases, the
+	      programmer simply intends to _match_ two strings, rather than to
+	      order them lexicographically...
+
+	    (cherry picked from commit 765a84b293db8ec3da960c0ae61f725f3519bfd9)
+	(cherry picked from commit d004a6c5e35b7dac783b52dd95fa11d6ad2d13c2)
+
+
+2020-11-04  Liviu Chircu  <liviu at opensips dot org>
+	* [8c207e953] :
+
+	acc: Remove redundant code
+	(cherry picked from commit fcbe480f2eeb9b0933bb5a3fb1d15379fb79c493)
+
+
+2020-11-02  Liviu Chircu  <liviu at opensips dot org>
+	* [8066c39f7] :
+
+	registrars: Rebuild lib/reg on each build
+	This fixes an issue where registrar would log lines resembling:
+	    INFO:mid_registrar:...
+
+	due to the lib/reg/*.o files having been built beforehand with the
+	mid_registrar source code and simply linked into the .so afterwards.
+
+	This issue is fixed in 3.2+ using a different mechanism (separate build
+	of the lib/reg/reg.a library).
+
+	Reported by Vlad Paiu
+	(cherry picked from commit 74a180d2a88546b0ae14a6a91c669ddb63b29f61)
+
+
+2020-10-31  OpenSIPS  <github at opensips dot org>
+	* [e356a168f] :
+
+	Rebuild documentation
+
+
+2020-10-29  Razvan Crainea  <razvan at opensips dot org>
+	* [7f6f75900] :
+
+	topo_hiding: always allocate space for DID in user
+	When contact could not be parsed, the new Contact's prefix was not
+	allocating bytes in buffer for storing for the dialog ID in the user
+	part. However, the DID was appended to the prefix without any error
+	checks, resulting in a memory corruption. This commit always allocates
+	spaces for storing the Dialog ID, even if the contact could not be
+	parsed.
+	This fixes all uses of the topology_hiding() function with the `D` flag.
+
+	Thanks a lot Sergei Lavrov (@ccppprogrammer) for reporting this in
+	ticket #2285 and for offering information for figure it out. Close #2285
+	(cherry picked from commit 2ea8f86813bfbf87b4b0ab61c9f3e852ce777f4c)
+
+
+2020-10-28  Razvan Crainea  <razvan at opensips dot org>
+	* [476c6f9ec] :
+
+	event_rabbitmq: cleanup connection after creating the socket
+	Reported by @ycxwoo in ticket #2230
+	(cherry picked from commit 87e17276a79cc01ddef9334f0bf21256a6c21606)
+
+
+2020-10-24  OpenSIPS  <github at opensips dot org>
+	* [28b784332] :
+
+	Rebuild documentation
+
+
+2020-10-21  rance  <rance at ytel dot com>
+	* [7e9ff3b42] :
+
+	Fix Memory leak in Freeswitch ESL module.
+	(cherry picked from commit 294e8c489c22fce345450e0441dfbc5a79205d94)
+
+
+2020-10-13  Razvan Crainea  <razvan at opensips dot org>
+	* [5d0e69c63] :
+
+	packaging: fix typo in emergency module description
+	Thank you @SB-JohnK for reporting it! Close #2263
+	(cherry picked from commit 25e55f10c7d690230e3e1060958d8b5f0621b540)
+
+
+2020-10-10  OpenSIPS  <github at opensips dot org>
+	* [05db385ba] :
+
+	Rebuild documentation
+
+
+2020-10-09  Liviu Chircu  <liviu at opensips dot org>
+	* [22051fd4d] :
+
+	auth: Fix doc regression in d9574358d :)
+	Although $var() variables are awesome, some module params (e.g. the
+	"rpid_avp") really mandate an AVP and won't settle on anything else.
+	(cherry picked from commit 8ce9eb22e1ead5b0afeff367b01d0b510650cdc5)
+
+
+2020-10-09  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [1c73aee67] :
+
+	Improve auth module examples:
+	o Use $var(xyz) consistently. $avp's take shared resources and
+	  aren't really justified in this use case;
+
+	o fix www_challenge / proxy_challenge second argument to match
+	  reality.
+
+	(cherry picked from commit d9574358d1670391c2b1cbe1d7ccbe37eb4defca)
+	(cherry picked from commit 008b5154a6007ad6c223fc4dad38bdaf8e0a2077)
+
+
+2020-10-09  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [39dd04d1b] :
+
+	Extend STR_NULL and str_init() to set a type explicitly. This allows those macros to be used elsewhere in the function body, not only in variable declaration(s), i.e.:
+	void foobar(int baz)
+	{
+	    str localstr;
+
+	    if (random() == 42) {
+	       localstr = str_init(I_STR LUCKY_STR FIN_STR);
+	    } else {
+	        localstr = str_init(I_STR UNLUCKY_STR FIN_STR);
+	    }
+	    some_api(&localstr);
+	}
+
+	(cherry picked from commit 36e0281b7309e2be39e478c96575cadf9a35260b)
+	(cherry picked from commit 62b1b5320fc4e9b7e9d71ae8f069e7ea839f0b60)
+
+
+2020-10-08  Liviu Chircu  <liviu at opensips dot org>
+	* [7daf0a04d] :
+
+	emergency: Remove bogus curl_global_cleanup() at runtime
+	Suggested by Walter Doekes (@wdoekes)
+	(cherry picked from commit f91c13af1fa9ee55071bd99b249902360c8def65)
+
+
+2020-10-08  Zero King  <l2dy at icloud dot com>
+	* [71694607c] :
+
+	emergency: fix memory leak on error
+	(cherry picked from commit 18f9f7873330b7e5d7c1e31828062d80a6268402)
+
+
+2020-10-07  Liviu Chircu  <liviu at opensips dot org>
+	* [0ced3fa1f] :
+
+	usrloc is_contact_registered(): Add useful debug logs
+	(cherry picked from commit 64c3724faa3b90918bda4c95ee716d487a3f0f1f)
+
+
+2020-10-03  OpenSIPS  <github at opensips dot org>
+	* [3db1e6436] :
+
+	Rebuild documentation
+
+
+2020-09-29  Razvan Crainea  <razvan at opensips dot org>
+	* [7135c0cc0] :
+
+	sipcapture: fix overlapping function name
+	the build_dummy_msg() function being used without the static identifier
+	causes confusion for some compilers. An example is the AL2 compiler,
+	which instead of using the module's implementation, it uses the core's
+	one, hence resulting in broken behavior.
+
+	Credit goes to @ghmj2417 (GitHub) for reporting this in ticket #2255
+	Close #2255
+	(cherry picked from commit 7ba72d434aee3db949c351a46970122f41a7c50a)
+
+
+2020-09-28  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [12350193c] :
+
+	o Don't assume bash lives in /bin;
+	o fix arguments ordering while calling head to work correctly
+	on non-GNU systems.
+	(cherry picked from commit b0612c10fe610a76499e9d8170ad392f63d4396f)
+
+
+2020-09-26  OpenSIPS  <github at opensips dot org>
+	* [21edbeaec] :
+
+	Rebuild documentation
+
+
+2020-09-25  Eric Green  <eric.green at onsip dot com>
+	* [a429eddff] :
+
+	sqlite - fix upsert in db_insert_update
+	(cherry picked from commit 6f71f3f065fa78a65ee021931207aded5903c909)
+
+
+2020-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [32bef0519] :
+
+	[core] fixed bogus paste from 2736d6
+
+
+2020-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2736d6e47] :
+
+	[core] convert space identation to tabs
+
+
+2020-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a88a57479] :
+
+	[core] fix missing check on DNS threshold
+	For the DNS A record lookups the DNS threshold was not properly checked and reported.
+	Reported by @bcnewlin / Ben Newlin
+	Many thanks to Ben for helpin to troubleshoot this issue.
+
+
+2020-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [72e4b9d4f] :
+
+	[core] missing file from e1347ebe4
+
+
+2020-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e1347ebe4] :
+
+	[core] fix limited support for transport vals in PATH
+	The transport of the received parameter was limited to TPC/TLS/SCTP (no WS or WSS)
+
+
+2020-09-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [58bead888] :
+
+	[core] fix building path hdr for IPv6
+	IPv6 addresses in path received parameter are not enclosed in brackes
+
+	Credits go to @hafkensite / Jasper Hafkenscheid
+	Closes #2247
+
+
+2020-09-12  OpenSIPS  <github at opensips dot org>
+	* [2e8224cc7] :
+
+	Rebuild documentation
+
+
+2020-09-10  Vlad Patrascu  <vladp at opensips dot org>
+	* [bfbe1dd6c] :
+
+	cJSON lib: fix double free in case of string parsing error
+	Fixes #1977
+	(cherry picked from commit a53f3bd689a01c495809214823d07bfc3cab512a)
+
+
+2020-09-08  Ovidiu Sas  <osas at voipembedded dot com>
+	* [83d0ca9a7] :
+
+	dialog: fix/reformat some logs
+	(cherry picked from commit 2efaeee24c69841e9776e360960bc8d644081ff9)
+
+
+2020-09-07  Liviu Chircu  <liviu at opensips dot org>
+	* [fb34cbc51] :
+
+	nathelper: Do not crash on bad ping reply
+	Credits to Alexey Vasilyev for the report!
+	Fixes #2242
+
+
+2020-09-05  OpenSIPS  <github at opensips dot org>
+	* [97cd08fb3] :
+
+	Rebuild documentation
+
+
+2020-09-04  Zero King  <l2dy at icloud dot com>
+	* [4e4c9c6e8] :
+
+	rtpengine: fix single-bit field type
+	(cherry picked from commit 9c4f6c1c7f7ac88e19ff78b5169c33b17b1d8d38)
+
+
+2020-09-04  Liviu Chircu  <liviu at opensips dot org>
+	* [75c49e642] :
+
+	List new / missing contributors
+	(cherry picked from commit ef7a6801c483ece3ea8ab07275fcec7aa051a3f8)
+
+
+2020-09-03  Liviu Chircu  <liviu at opensips dot org>
+	* [f4d5d31e9] :
+
+	load_balancer: Fix AB/BA deadlock in lb_start()
+	Assuming we have resources A, B, before this patch we would have the
+	following lock grab order on the corresponding resource locks:
+	   (see lb_data.c +743):
+
+	    lb_start(): A, B
+	    lb_next(): B, A
+
+	This patch fixes this type of deadlock by inverting the resource AVP
+	elements, such that both functions grab the array locks identically:
+
+	    lb_start(): A, B
+	    lb_next(): A, B
+
+
+2020-09-02  Zero King  <l2dy at icloud dot com>
+	* [e78b27026] :
+
+	Accept single \r as EOH in multipart
+	This completes commit 3ec9d1b25430715f2b800c455c8518104a243f49.
+	(cherry picked from commit f5d1b55aa213e448f2716751227234e073277855)
+
+
+2020-09-02  Walter Doekes  <walter+github at wjd dot nu>
+	* [dd3db539b] :
+
+	usrloc: Update doxygen comment about packing get_all_ucontacts
+	(cherry picked from commit fc1c3ec32fa285e90cea457096f557e1088b1031)
+
+
+2020-09-02  Walter Doekes  <walter+github at wjd dot nu>
+	* [b261b675b] :
+
+	Fix next_hop crash (seen in nathelper nh_timer) due to reading reused mem
+	Problem:
+
+	- get_domain_db_ucontacts (through get_domain_ucontacts) was handing out
+	  (next_hop) pointers to memory that was unused. This resulted in a
+	  crash when this memory was reused before the invalid pointer was
+	  reused.
+
+	Relevant issues and commits:
+
+	- #1652 [OpenSIPS crashes since of child that serves rtpproxy]
+	- e162f5f10 [fix 1652: usrloc: make next_hop point within the shared buffer]
+	- #1710 [nathelper next_hop off by one for usrloc path]
+	- 0300eb1d5 [fix 1710 / revert 1652: usrloc: fix next hop compute for ...]
+
+	That is: e162f5f10 fixes this exact problem in get_domain_db_ucontacts, in
+	get_domain_mem_ucontacts and in get_domain_cdb_ucontacts (cdb_pack_ping_data).
+
+	But in 0300eb1d5 it is reverted for only get_domain_db_ucontacts.
+
+	This fix:
+
+	- Rewrites the fix for get_domain_db_ucontacts and
+	  get_domain_cdb_ucontacts, making it less fragile/bug-prone.
+	- Adds comments about fragility to get_domain_mem_ucontacts
+	- Fixed unaligned memcpy that might affect non-intel CPUs:
+	  `((struct proxy_l *)cp)->name.s = next_hop_host`
+
+	Bug reported and fix tested by Jasper Hafkenscheid @hafkensite (VoIPGRID).
+	(cherry picked from commit 5a6b3abe41a2eaed961a530675f6441a692e8640)
+
+
+2020-09-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e41ca7596] :
+
+	[permissions] Fixed mem leak on pattern field
+	Closes #2197
+	(cherry picked from commit d6f3424d1fe71de94a545a36d0e14fbd9ecd3b3f)
+
+
+2020-08-29  OpenSIPS  <github at opensips dot org>
+	* [ce6c2c125] :
+
+	Rebuild documentation
+
+
+2020-08-27  Fabian Gast  <fabian.gast at nfon dot com>
+	* [8d3f75283] :
+
+	Fix command in documentation for clusterer_list_cap
+	(cherry picked from commit 7a0f5991de5387b2496b1229f949353b568ad10c)
+
+
+2020-08-27  Liviu Chircu  <liviu at opensips dot org>
+	* [bbddec52d] :
+
+	rtpengine: Fix docs for `extra_id_pv`
+	Suggested by Nick Altmann
+	(cherry picked from commit 968063d9f3d652e94c2895d9dee46b7843c875b5)
+
+
+2020-08-26  Razvan Crainea  <razvan at opensips dot org>
+	* [03791eaf2] :
+
+	rtpengine: fix order of specified interface flags
+	When both 'external' and 'internal' flags were specified, 'internal' was
+	always assigned as iniface, and 'external' as outiface. This commit
+	makes sure that the order they are specified in is respected.
+	(cherry picked from commit 68f8f9d5c7f43af0a6fb914883ad700a93048835)
+
+
+2020-08-26  Razvan Crainea  <razvan at opensips dot org>
+	* [df68e3b19] :
+
+	dialog: parse contact in separate structure
+	This avoids concurrent access to the contact header's parsed structure
+	in request messages saved in shm - addresses ticket #2095
+
+
+2020-08-22  OpenSIPS  <github at opensips dot org>
+	* [4a1c21261] :
+
+	Rebuild documentation
+
+
+2020-08-20  Liviu Chircu  <liviu at opensips dot org>
+	* [846807da0] :
+
+	tls_mgm: Avoid creating a shared DB conn at mod_init()
+	Many thanks to Adrien Martin (@adrien-martin) for the immense help in
+	reporting, troubleshooting and helping close this one out.
+
+	Fixes #2161
+	(cherry picked from commit 2c008cd9225dc9a60df2fbf2e37d032ce6f27db0)
+
+
+2020-08-18  Liviu Chircu  <liviu at opensips dot org>
+	* [7f5480ceb] :
+
+	Rework previous commit
+	Although the protocols listed in the @proto array "seem" to be
+	initialized, they are still missing some essential data, which is only
+	later provided by trans_load(), during the startup phase.
+
+
+2020-08-18  Liviu Chircu  <liviu at opensips dot org>
+	* [2801fae6f] :
+
+	hep_udp listener: Fix "use_children" regression
+	Commit 899f65c8f4 introduced a regression where "use_children" would be
+	ignored for the HEP UDP protocol, possibly leading to extra forked
+	workers after an OpenSIPS upgrade, failed restarts due to exceeded MySQL
+	max connections, etc.
+
+
+2020-08-18  Razvan Crainea  <razvan at opensips dot org>
+	* [eb050e27c] :
+
+	rtpengine: handle PRACK for answer
+	Thanks go to @nikbyte for the report. Close #2208
+	(cherry picked from commit 1f9b433fd68889c3e692e249d54ea8dbb2d576d3)
+
+
+2020-08-18  Liviu Chircu  <liviu at opensips dot org>
+	* [a8dd90588] :
+
+	fraud_detection: Fix a bug causing negative CC/CPM
+	Following a reset of the statistics for a (user, dialed_number) pair,
+	skip any pending subtraction operations scheduled during a previous
+	interval (e.g. a dialog which started during fraud detection interval A
+	and ended in interval B should not decrement CC anymore if it has
+	already been reset to 0 in the meantime during a more recent
+	check_fraud() call).
+
+	Many thanks to Inderjeet Sharma (@inderjeetsharma) for reporting and
+	helping track down this bug.
+
+	Fixes #2079
+	(cherry picked from commit 4f414366ee0fcc52fa2d18c59be0c5d753047934)
+
+
+2020-08-08  OpenSIPS  <github at opensips dot org>
+	* [311ee9b78] :
+
+	Rebuild documentation
+
+
+2020-08-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [88c6162b0] :
+
+	tls_mgm: fix crashes with db_text and null string values
+	Closes #2192
+	(cherry picked from commit 3d26747cc309d7f5c461e3be49fb30db78bc3591)
+
+
+2020-08-04  Liviu Chircu  <liviu at opensips dot org>
+	* [8a9a396d4] :
+
+	drouting: Do not start with NULL DB connections
+	Force all DB connection objects to be created right from the start,
+	otherwise strange, hard to diagnose errors may _occasionally_ pop up
+	during runtime:
+
+	 ERROR:core:db_use_table: invalid parameter value (nil), 0x7ff31329a108
+	 ERROR:drouting:dr_state_flusher: cannot select table "dr_gateways"
+
+	    ... or:
+
+	 INFO:drouting:dr_reload_cmd: dr_reload MI command received!
+	 CRITICAL:core:db_table_version: invalid parameter value
+	 ERROR:core:db_check_table_version: querying version for table dr_gateways
+	 CRITICAL:drouting:dr_reload_data_head: failed to load routing info
+	 CRITICAL:drouting:dr_reload_cmd: Failed to load data head
+
+
+2020-08-03  Liviu Chircu  <liviu at opensips dot org>
+	* [5c8586d89] :
+
+	fraud_detection: Fix misleading 'show_fraud_stats' docs
+	    * the 'fraud_profile' MI command parameter is both invalid and not
+	      at all required by the current code
+	    * document the "stale statistics" limitation of this function
+	(cherry picked from commit 4dba112130651ca6013c7ebc931fc744b3776774)
+
+
+2020-08-03  Liviu Chircu  <liviu at opensips dot org>
+	* [a0fcf857d] :
+
+	fraud_detection: Improve accuracy for 'concurrent calls'
+	Avoid using the DLGCB_FAILED callback, since it has no protection
+	against the "408 Request Timeout / 200 OK" race condition, and simply
+	use DLGCB_DESTROY in order to decrement the concurrent calls counter.
+
+	This fixes a bug where a "408 Timeout / 200 OK" call would cause a
+	concurrent calls value of 4294967295, due to an extra decrement.
+
+	Fixes #2079
+	(cherry picked from commit 2404b96c87982387071cea63f5fc42d9169d8798)
+
+
+2020-08-03  Razvan Crainea  <razvan at opensips dot org>
+	* [2535d70f6] :
+
+	presence: reset delete prepare statement when delete not performed
+
+
+2020-08-03  Razvan Crainea  <razvan at opensips dot org>
+	* [dba53d859] :
+
+	rtpproxy: ignore unknown payload type media streams
+	Thanks go to @wangduanduan for reporting and providing troubleshoot info
+
+
+2020-08-01  OpenSIPS  <github at opensips dot org>
+	* [d99262e7c] :
+
+	Rebuild documentation
+
+
+2020-07-31  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d17d0ed6c] :
+
+	Supply a processing context to error route.
+	When the error is triggered outside the context of another route, be sure it also have a processing context
+
+	Closes #2187
+
+
+2020-07-30  Liviu Chircu  <liviu at opensips dot org>
+	* [214f105ae] :
+
+	fraud_detection: Add the possibility to disable stats
+	A (0) value for any of the fraud detection thresholds now means: "ignore
+	this threshold", instead of: "raise an event on each call for this
+	threshold?!".  Although (0) values could, in theory, have been useful
+	for event generation testing purposes before this patch, this is a small
+	price to pay in order to gain the ability to disable a stat.  Developers
+	can now add 1 more CPS and still keep testing with a new (1) value :)
+
+	Although the DB schema changes slightly, due to the added "DEFAULT 0",
+	it is fully backwards-compatible with the previous one, except
+	fraud_detection row INSERTs will now be more quiet, generating no more
+	warnings from the backend (e.g. "Column does not have a default
+	value..." -> but still defaults to 0, thanks to non-strict mode, leading
+	to strange warnings from the module).
+
+	Fixes #890
+
+
+2020-07-30  Liviu Chircu  <liviu at opensips dot org>
+	* [533d7e6f2] :
+
+	userblacklist:  Be compatible with db_cachedb over MongoDB
+	Issue reported by Ryan Embgrets
+	(cherry picked from commit f9fd982beec461cf15bd3001df744066e42af625)
+
+
+2020-07-25  OpenSIPS  <github at opensips dot org>
+	* [3d9d13b02] :
+
+	Rebuild documentation
+
+
+2020-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [8f98bc0ab] :
+
+	ut.h: Fix str_casematch() implementation
+	Since str's have a known length, we should not stop the iteration at
+	'\0'.
+
+	(cherry picked from commit 7d0df27a40d9bd0207637ec08e5deb662c45bbf6)
+	(cherry picked from commit 4b29d8dc30065c2d92f686e870f9bfc771dd4954)
+
+
+2020-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [2ee3ea790] :
+
+	tls_mgm: set the TLS session id context with the proper length
+	Fixes Coverity CID #207904
+	(cherry picked from commit 4a18ce89c89b4f9831ff748bfa75e2aa5db1b303)
+
+
+2020-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [774ffa75a] :
+
+	event_flatstore: prevent NULL deref in case of bogus param
+	Fixes Coverity CID #207918
+	(cherry picked from commit 596c572da62169d453fface97d13ec557d200561)
+
+
+2020-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [2ef39a40d] :
+
+	tm: use msg_flags to indicate message is replicated
+	(cherry picked from commit 804c9a0492940fe779e3dd1d4b4fe9f8cba57cf4)
+
+
+2020-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [d0d6d7c14] :
+
+	rtpengine: fix late negociation detection of rtpengine_manage()
+	When a reply is received, do not look into the request if it has body,
+	since that could lead to headers parsing in pkg - that might leak.
+	Thanks go to @bogdan-iancu for spotting the issue
+	(cherry picked from commit 06f7297065f079ebd4201055079a02e69dde2cc5)
+
+
+2020-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [d3445e189] :
+
+	rtpengine: fix offer vs answer detection for replies
+	When late negociation is not used, rtpengine_manage() should send an
+	answer command, not an offer one.
+	(cherry picked from commit d0641318ff238b01506e18bd4aa7422fb3cfeab7)
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [377e526c1] :
+
+	pua_xmpp: release memory in case of error
+	Fixes Coverity CID #199967
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [34202913b] :
+
+	db: merge db_is_neq_type() in db_ut
+	Fix coverity CID #40717, #40718, #40719, #40720, #40721, #40722
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [ea4990228] :
+
+	db_text: complete coverity CID #200093
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [7c629860f] :
+
+	proto_tls: make sure we have destination to connect to
+	Fixes Coverity CID #58361
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [b92c2005a] :
+
+	proto_wss: add fall through indication
+	Fixes Coverity CID #58373
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [78f804e28] :
+
+	proto_hep: remove useless NULL check
+	Fixes Coverity CID #163991
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [9c7bed5bd] :
+
+	proto_ws: make sure we have destination to connect to
+	Fixes Coverity CID #58340
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [b045360db] :
+
+	fix coverity detected false positives
+	CID #40557, #211391
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [39bfc3073] :
+
+	db_text: fix no-op code
+	fixes Coverity CID #200004
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [539310252] :
+
+	tm: cleanup replicated cancel msg
+	Fixes Coverity CID #200031
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [62919e291] :
+
+	parse_to: add fallthrough comments/indications for coverity CID #200094
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [9588548c9] :
+
+	qos: fix getting SDP
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [3b0cc6256] :
+
+	db_text: prevent buffer overflow
+	Fixes Coverity CID #200093
+
+
+2020-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [c460787b6] :
+
+	evi: annotate evi_param_set_int to fix Coverity
+	Fixes several Coverity alarms
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ad653180f] :
+
+	[load_balancer] Spelling over log messages
+	(cherry picked from commit 3b6d0de16d68815b571cebca6bf4c9124f59f06b)
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [33b60d672] :
+
+	[nathelper] Proper testing upon extracting hash value
+	Be sure it is valid hexa and it it within the correct range. The lack of these tests may open the gate for some nasty exploits.
+
+	Reported by coverity CID 199958
+	(cherry picked from commit b1d796344aa674e25fc4408bda5d336bce2bc605)
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b00f93651] :
+
+	[nathelper] Fix bad test on resolving flag name
+	get_flag_id_by_name() may also return other negative codes than -1
+
+	Reported by coverity CID 200026, 200005, 199906
+	(cherry picked from commit 249b80741ddbb0952c7f737af2a7c2473f05eacf)
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f80ce5438] :
+
+	[drouting] removed useless code
+	Makes no sense to select the table at db_con init time, as various queries (from various modules) may set and use different tables.
+
+	Related to coverity report CID 58405
+	(cherry picked from commit ab7d4430941263d20acd1f45bbbbf09c80a5040f)
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [038128cdb] :
+
+	[pua_dialoginfo] Fix bad test on resolving flag name
+	get_flag_id_by_name() may also return other negative codes than -1
+
+	Reported by coverity CID 207914
+	(cherry picked from commit f3530c10adc1d2a5b01340a9823f84db61c98e72)
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [acc3d039c] :
+
+	[core] proper checking on return code for getsockname()
+	Reported by coverity CID 200064
+	(cherry picked from commit c489f462d236fddb883e64a6cde7b04929a76191)
+
+
+2020-07-20  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cd2e430bb] :
+
+	[registrar] Proper init of delete_nh_he variable
+	The logic may end up to free_hostent(delete_nh_he) without actually using the delete_nh_he, leading to freeing so random pointers.
+
+	Reported by coverity CID 199942
+	(cherry picked from commit 3b20c9db07ea88bd84609676f2657011588b8b41)
+
+
+2020-07-18  OpenSIPS  <github at opensips dot org>
+	* [d76e0b256] :
+
+	Rebuild documentation
+
+
+2020-07-18  Vlad Patrascu  <vladp at opensips dot org>
+	* [45f0fd41a] :
+
+	dialog: don't allow RE-INVITE and OPTIONS pinging at the same time
+	Enabling both RE-INVITE and OPTIONS pinging for the same endpoint causes
+	issues with the CSEQ value in:
+	* ACK (incremented value compared to the corresponding INVITE)
+	* INVITE and OPTIONS (decreasing values between the requests), in case
+	  races occur between computing the new CSEQ values and sending the messages.
+	(cherry picked from commit 182ceb0ca6126251ca9e872844925c3bf60b1c90)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [2c10e899d] :
+
+	db_text: Complete 65b18091
+	(cherry picked from commit 673cf7f9eb3e5bd3a8da805483885e049bddc873)
+	(cherry picked from commit 11205ebef3ec4f207f33f01afe209518a0ed4453)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [3cc066769] :
+
+	mi_datagram: Minor improvements
+	    * always NULL-terminate the read buffer (CID #200029).  Doesn't fix
+	      any known bug, just a good practice
+	    * avoid redundant memset(65535) on each read
+	    * improve startup error log
+
+	(cherry picked from commit 0eee2119991270bd23a6279e6b1a825586f2d227)
+	(cherry picked from commit a2ae1349a19b2fc79d1893bef96d7f01434020cf)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [8e004981a] :
+
+	exec: Always NULL-terminate the read buffer
+	CID #200052
+
+	(cherry picked from commit 0230f9c9032bd01661c6c7c197965528507e3f2c)
+	(cherry picked from commit 5ff4861e836cd97889c831c5f3533a985fb19d5e)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [e719be7ef] :
+
+	drouting: Always NULL-terminate the GW buffer
+	While this doesn't immediately fix any bug, it should make Coverity
+	happy.
+
+	CID #200062
+
+	(cherry picked from commit df2ce6d826587f1130c5928b0815bd10ed2957f1)
+	(cherry picked from commit 2a8008ac6280059b9ba5548e7d856db7e0953ffb)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [c753e447c] :
+
+	mpath: Fix possible buffer underrun
+	Also attempt to mask the false positive in CID #200070.
+
+	CID #211377
+
+	(cherry picked from commit 7f244f17a54833c6bb3f9ea58aa4afd855774ce1)
+	(cherry picked from commit 0108f2e7cba7e596b8f2ab20e0e176cbc9720744)
+
+
+2020-07-17  Razvan Crainea  <razvan at opensips dot org>
+	* [1a0f6ce13] :
+
+	sanitize mpath length
+	Fix Coverity #199897
+
+	(cherry picked from commit 587316afc6032142c96077e3efac8029d7fa8355)
+	(cherry picked from commit 4f3ed1239338e0c647bb387dcf5acdb51a6f3162)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [16a048a2f] :
+
+	mid_registrar: Add paranoid safety check
+	This extra check doesn't fix anything right now, but at least it makes
+	Coverity happy.
+
+	CID #200020
+
+	(cherry picked from commit 2e60b50228a80c1e9629e43670a8cbcc5f71839c)
+	(cherry picked from commit 85464ef2a96f9a3b4665f8ddbeea3292149eac79)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [a0d885d83] :
+
+	usrloc: Remove unnecessary NULL check
+	CID #200086
+
+	(cherry picked from commit f305fa88f9341f37eb95bf88980e974723b57e94)
+	(cherry picked from commit 42b71cf855efa610c1c408caea7c3e54c039aa3f)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [d4751c61f] :
+
+	mid_registrar: Remove unnecessary check
+	CID #199954
+
+	(cherry picked from commit 7a638403ee648ba629fd1f6f4a17bdea091da16d)
+	(cherry picked from commit c34e15660de83681a16c84ec61b96a85ec460e5d)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [ec827ab0e] :
+
+	statistics macros: Avoid unsigned integer comparisons against 0
+	CID #199900, #199913, #199923, #199934, #199941, #199964, #199998,
+	 #200032, #200049, #200074, #200096.
+
+	(cherry picked from commit 39fc05ec0ff2122dd79ec5582ac020c999c11c30)
+	(cherry picked from commit b497af00652cac0421f9e316bec4d5d12bb9ede3)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [bd2b1510d] :
+
+	HP_MALLOC status logging: Fix incorrect bitwise shift
+	CID #200101
+	(cherry picked from commit fcdd224a5c8638a28e3be10e4028c27aa404a637)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [e6a86b622] :
+
+	freeswitch: Fix a rare memleak
+	CID #164007
+
+	(cherry picked from commit 2a9824cdc955eb783e08f88906b70d337dbdebe9)
+	(cherry picked from commit 2aa619c00666e85631cd687f243d05585ac1478f)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [59e1c65d6] :
+
+	usrloc: Fix unitialized variable
+	CID #199971
+
+	(cherry picked from commit 5f03b8556bf241336795ba8ca517c982d732dd4a)
+	(cherry picked from commit 96428bcf3e5f849486862f6f4a481674e1d6fed3)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [b593fd726] :
+
+	mid_registrar: Fix uninitialized variable
+	Although the severity is low, this code path could be triggered by a
+	bogus downstream registrar which returns a 200 OK without the Contact
+	advertised by the mid-registrar in its REGISTER request.
+
+	Fixes CID #200051
+
+	(cherry picked from commit a4684d54f1d32088936a345afa36cb66bbf53727)
+	(cherry picked from commit df197a285b7b6d3c751dce42a65f69a7d5abe68b)
+
+
+2020-07-17  Liviu Chircu  <liviu at opensips dot org>
+	* [9fa878561] :
+
+	db_text: Fix Coverity warning (bad 'switch' fallthrough)
+	Thanks to Răzvan Crainea for the help!
+
+	(cherry picked from commit 6b56ca5fa1163bc290a4c01f554e07cae860fa8c)
+	(cherry picked from commit 8b9307f2ec54a0f1551599254d1afbc6e0f7799b)
+
+
+2020-07-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [3b93b691d] :
+
+	xml: properly handle oom when extending $xml result buffer
+	Fixes Coverity CID #200068
+	(cherry picked from commit 3112b5942636ad281783a5ba0ec13992e0c78693)
+
+
+2020-07-15  Liviu Chircu  <liviu at opensips dot org>
+	* [3340eae1e] :
+
+	pua: Fix some list management bugs; Improve code
+	    * do not use strncmp() to compare "str" structs, since it may lead
+	      to false positives (e.g. strncmp("foobar", "foo", 3) == 0).  Use
+	      str_match() or str_strcmp() instead.
+
+	    * do not read memory after pkg_free() (severity: low, since it's PKG
+	      memory, so reading "invalid" heap memory works anyway...)
+
+	    * simplify list_pop() and list_free() code
+	(cherry picked from commit 5df8b636a15a799b5f1ab7a58ebe1c208ce49d2d)
+
+
+2020-07-13  Liviu Chircu  <liviu at opensips dot org>
+	* [2aa0f807e] :
+
+	HP_MALLOC: Fix bad merge conflict solve
+	It seems the 25eec9f5f backport was not properly done, as the
+	re-scanning logic ended up _inside_ the main loop, rather than
+	_outside_ it.
+
+	Also improve the default unit test settings, so the HP_MALLOC stress
+	tests can be more easily launched.
+
+	Credits to Ryan Bullock for the report
+	Fixes #2168
+
+
+2020-07-11  OpenSIPS  <github at opensips dot org>
+	* [ab5d8b3ba] :
+
+	Rebuild documentation
+
+
+2020-07-09  Vlad Patrascu  <vladp at opensips dot org>
+	* [9f9954ba7] :
+
+	db_mysql: fix crashes when loading module along with tls_mgm
+	(cherry picked from commit 9459f5d3acb5efa9a4a0e5c8d60c18733062bc04)
+
+
+2020-07-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6415d9363] :
+
+	Revert "rtpengine: Remove unused defines"
+	This reverts commit 27e758dfc0fd6ae40b2157c3535928b721c4b26f.
+
+	(backport was not needed on 2.4)
+
+
+2020-07-06  Peter Lemenkov  <lemenkov at gmail dot com>
+	* [27e758dfc] :
+
+	rtpengine: Remove unused defines
+	(cherry picked from commit 463e815cfa1835f1ef97f9b8f16a943fce0b8762)
+
+
+2020-07-04  OpenSIPS  <github at opensips dot org>
+	* [0e68df7b0] :
+
+	Rebuild documentation
+
+
+2020-07-02  Liviu Chircu  <liviu at opensips dot org>
+	* [57e8a60b2] :
+
+	clusterer: Fix some startup corner-cases (crashes)
+	The first extra check fixes a crash in 'db_mode = 0', if only
+	'neighbor_node_info' is given, so cl->current_node will be NULL.
+
+	The second extra check prevents:
+
+	(gdb) bt full
+	0  check_seed_flag (cl_list=<optimized out>) at node_info.c:307
+	1  load_db_info (dr_dbf=dr_dbf@entry=0x7f2e65996300 <dr_dbf>,
+	     db_hdl=<optimized out>, db_table=db_table@entry=0x7f2e65993370
+	     <db_table>, cl_list=<optimized out>) at node_info.c:485
+	2  mod_init () at clusterer_mod.c:408
+
+	Fixes #2086
+	(cherry picked from commit 0b609f03165ee80f525795f278128162f6418817)
+
+
+2020-07-01  Liviu Chircu  <liviu at opensips dot org>
+	* [051cff400] :
+
+	tls_mgm docs: Fix example
+	Reported by JP Hindin
+
+
+2020-07-01  Liviu Chircu  <liviu at opensips dot org>
+	* [892c2ee47] :
+
+	cluster sync logging: Fix incomplete "if" condition
+	Reported by William Jin
+
 =========================== Release 2.4.8 ==============================
 
 2020-06-30  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
