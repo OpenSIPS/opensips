@@ -1,0 +1,796 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<note><para>This module is <emphasis role='bold'>deprecated</emphasis> and will be
+		removed in the next major OpenSIPS version! The module is a duplicate of the legacy
+		<emphasis>b2b_logic</emphasis> module and offers the possiblity to use XML scenario
+		files in order to implement B2BUA logic. Since OpenSIPS version 3.2, the
+		<emphasis>b2b_logic</emphasis> module only uses OpenSIPS scripting for controlling
+		its behavior.
+	</para></note>
+	<para>
+		The B2BUA implementation in OpenSIPS is separated in two layers:
+			<itemizedlist>
+			<listitem>
+		a lower one(coded in b2b_entities module)- which implements the basic functions of a UAS and UAC
+			</listitem>
+			<listitem>
+		an upper one - which represents the logic engine of B2BUA, responsible of actually
+			implementing the B2BUA services using the functions offered by the low level.
+			</listitem>
+	</itemizedlist>
+	This module is a B2BUA upper level implementation that can be used with b2b_entities
+	module to have B2BUA that can be configured to provide some PBX services.
+	The B2B services are coded in an XML scenario document. The b2b_logic_xml module
+	examines this document and uses the functions provided by the b2b_entities
+	module to achieve the actions specified in the document and enable the service.
+	</para>
+	<para>
+		A scenario can be instantiated in two ways:
+		<itemizedlist>
+			<listitem>
+				from the script - at the receipt of a initial message
+			</listitem>
+			<listitem>
+				with a extern command (MI) command - the server will connect two 
+				end points in a session(Third Party Call Control).
+			</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+	High Availability for B2B sessions can be achieved by enabling the clustering support
+	offered by the the lower <emphasis>b2b_entities</emphasis> module (by setting the
+	<ulink url="https://opensips.org/docs/modules/3.1.x/b2b_entities.html#param_cluster_id">
+	cluster_id</ulink> modparam from <emphasis>b2b_entities</emphasis>).
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>b2b_entities, a db module</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+		</para>
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libxml2-dev</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+	<section id="param_hash_size" xreflabel="hash_size">
+		<title><varname>hash_size</varname> (int)</title>
+		<para>
+			The size of the hash table that stores the scenario instatiation entities.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>9</quote>
+		</emphasis>
+		 (512 records).
+		</para>
+		<example>
+		<title>Set <varname>server_hsize</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "hash_size", 10)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_script_scenario" xreflabel="script_scenario">
+		<title><varname>script_scenario</varname> (str)</title>
+		<para>
+			This parameter should be set with the path of a document
+			that contains a scenario that can be instantiated from the
+			script at the receipt of an initial message.
+		</para>
+		<para>
+		This parameter can be set more than once.
+		</para>
+		<example>
+		<title>Set <varname>script_scenario</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "script_scenario", "/usr/local/opensips/scripts/b2b_prepaid.xml")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_extern_scenario" xreflabel="extern_scenario">
+		<title><varname>extern_scenario</varname> (str)</title>
+		<para>
+			This parameter should be set with the path of a document
+			that contains a scenario that can be instantiated with an MI command.
+		</para>
+		<para>
+		This parameter can be set more than once.
+		</para>
+		<example>
+		<title>Set <varname>script_scenario</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "extern_scenario", "/usr/local/opensips/scripts/b2b_marketing.xml")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cleanup_period" xreflabel="cleanup_period">
+		<title><varname>cleanup_period</varname> (int)</title>
+		<para>
+			The time interval at which to search for an hanged b2b context.
+			A scenario is considered expired if the duration of a session exceeds the
+			lifetime specified in the scenario.
+			At that moment, BYE is sent in all the dialogs from that context and the
+			context is deleted.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cleanup_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "cleanup_period", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_custom_headers_regexp" xreflabel="custom_headers_regexp">
+		<title><varname>custom_headers_regexp</varname> (str)</title>
+		<para>
+		Regexp to search SIP header by names that should be passed
+		from the dialog of one side to the other side. There are a number
+		of headers that are passed by default. They are: 
+		<itemizedlist>
+			<listitem>Content-Type</listitem>
+			<listitem>Supported</listitem>
+			<listitem>Allow</listitem>
+			<listitem>Proxy-Require</listitem>
+			<listitem>Session-Expires</listitem>
+			<listitem>Min-SE</listitem>
+			<listitem>Require</listitem>
+			<listitem>RSeq</listitem>
+		</itemizedlist>
+		If you wish some other headers to be passed also you should define them
+		by setting this parameter.
+		</para>
+		<para>
+		It can be in forms like "regexp", "/regexp/" and "/regexp/flags".
+		</para>
+		<para>Meaning of the flags is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>i</emphasis> - Case insensitive search.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>e</emphasis> - Use extended regexp.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname></varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "custom_headers_regexp", "/^x-/i")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_custom_headers" xreflabel="custom_headers">
+		<title><varname>custom_headers</varname> (str)</title>
+		<para>
+		A list of SIP header names delimited by ';' that should be passed
+		from the dialog of one side to the other side. There are a number
+		of headers that are passed by default. They are: 
+		<itemizedlist>
+			<listitem>Max-Forwards (it is decreased by 1)</listitem>
+			<listitem>Content-Type</listitem>
+			<listitem>Supported</listitem>
+			<listitem>Allow</listitem>
+			<listitem>Proxy-Require</listitem>
+			<listitem>Session-Expires</listitem>
+			<listitem>Min-SE</listitem>
+			<listitem>Require</listitem>
+			<listitem>RSeq</listitem>
+		</itemizedlist>
+		If you wish some other headers to be passed also you should define them
+		by setting this parameter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname></varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "custom_headers", "User-Agent;Date")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_use_init_sdp" xreflabel="use_init_sdp">
+		<title><varname>use_init_sdp</varname> (int)</title>
+		<para>
+		This parameter modifies the behaviour of the B2BUA when bridging
+		and a provisional media uri is set. For playing media while the callee
+		answers (that is connecting the caller to a media server), the bridging
+		with the callee must start by sending an Invite to it. The correct way
+		is to send an Invite without a body in this case, but it has been observed
+		that not many gateways support this. So, the solution is to use the sdp
+		received in the first Invite from the caller and put it as the body for this
+		invite. By setting this parameter, this behavior is enabled.
+		You can also set use_init_sdp per scenario and overwrite this global value.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname></varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "use_init_sdp", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+	<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url</varname> (str)</title>
+		<para>
+			Database URL.
+		</para>
+		<example>
+		<title>Set <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips")
+...
+	</programlisting>
+		</example>
+	</section>
+	<section id="param_update_period" xreflabel="update_period">
+		<title><varname>update_period</varname> (int)</title>
+		<para>
+			The time interval at which to update the info in database.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>100</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>update_period</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "update_period", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+	<section id="param_max_duration" xreflabel="max_duration">
+		<title><varname>max_duration</varname> (int)</title>
+		<para>
+			The maximum duration of a call.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>12 * 3600 (12 hours)</quote>.</emphasis>
+		</para>
+		<para>If you set it to 0, there will be no limitation.</para>
+		<example>
+		<title>Set <varname>max_duration</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "max_duration", 7200)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_b2bl_from_spec_param" xreflabel="b2bl_from_spec_param">
+		<title><varname>b2bl_from_spec_param</varname> (string)</title>
+		<para>
+			The name of the pseudo variable for storing the new
+			<quote>From</quote> header.
+			The PV must be set before calling <quote>b2b_init_request</quote>.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote> (disabled).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_from_spec_param</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "b2bl_from_spec_param", "$var(b2bl_from)")
+...
+route{
+	...
+	# setting the From header
+	$var(b2bl_from) = "\"Call ID\" &lt;sip:user@opensips.org&gt;";
+	...
+	b2b_init_request("top hiding");
+	...
+}
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_server_address" xreflabel="server_address">
+		<title><varname>server_address</varname> (str)</title>
+		<para>
+			The IP address of the machine that will be used as Contact in
+			the generated messages. This is compulsory only when using external
+			scenarios. For the script scenarios, if it is not set, it is constructed
+			dynamically from the socket where the initiating request was received.
+			This socket will be used to send all the requests, replies for that
+			scenario instantiation.
+		</para>
+		<example>
+		<title>Set <varname>server_address</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "server_address", "sip:sa@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_init_callid_hdr" xreflabel="init_callid_hdr">
+		<title><varname>init_callid_hdr</varname> (str)</title>
+		<para>
+			The module offers the possibility to insert the original callid in a header
+			in the generated Invites. If you want this, set this parameter to the name
+			of the header in which to insert the original callid.
+		</para>
+		<example>
+		<title>Set <varname>init_callid_hdr</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "init_callid_hdr", "Init-CallID")
+...
+	</programlisting>
+		</example>
+	</section>
+	<section id="param_db_mode" xreflabel="db_mode">
+		<title><varname>db_mode</varname> (int)</title>
+		<para>
+			The B2B modules have support for the 3 type of database storage
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>NO DB STORAGE - set this parameter to 0</listitem>
+				<listitem>WRITE THROUGH (synchronous write in database) - set this parameter to 1</listitem>
+				<listitem>WRITE BACK (update in db from time to time) - set this parameter to 2</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>Default value is <quote>2</quote> (WRITE BACK).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "db_mode", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_db_table" xreflabel="db_table">
+		<title><varname>db_table</varname> (str)</title>
+		<para>
+			Name of the database table to be used
+		</para>
+		<para>
+		<emphasis>Default value is <quote>b2b_logic</quote> </emphasis>
+		</para>
+		<example>
+		<title>Set <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "db_table", "some_table_name")
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_b2bl_th_init_timeout" xreflabel="b2bl_th_init_timeout">
+		<title><varname>b2bl_th_init_timeout</varname> (int)</title>
+		<para>
+			Call setup timeout for topology hiding scenario.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote> </emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_th_init_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic_xml", "b2bl_th_init_timeout", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+	<section id="func_b2b_init_request" xreflabel="b2b_init_request()">
+		<title>
+		<function moreinfo="none">b2b_init_request(flags, [scenario_param1],
+			[scenario_param2], [scenario_param3], [scenario_param4])</function>
+		</title>
+		<para>
+			This is the function that must be called by the script writer
+			on an initial INVITE for which a B2B scenario must be instantiated.
+			It is up to the script writer to decide which are the criteria to decide
+			for which messages certain scenarios must be instantiated.
+		</para>
+		<para>
+			The first parameter is the identifier for the scenario and possible flags.
+			This is defined in the XML document as an attribute of the root node
+			or "top hiding" for internal topology hiding scenario.
+			It can be passed as "scenario" or "scenario_name/flags".
+			Then it can take at most 4 other parameters that represent the parameters for
+			the xml scenario. The expected number of parameters is also specified as an attribute
+			in the root node of the XML scenario.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>flags (string)</emphasis> - meaning of the flags is as follows:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>t[nn]</emphasis> -  Call setup timeout for topology hiding scenario.
+					Example: t300.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>a</emphasis> -  Transparent authentication. In this mode b2b passes your 401
+					or 407 authentication request to destination server.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>p</emphasis> -  Preserve To: header.
+					</para></listitem>
+				</itemizedlist>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param1 (string, optional)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param2 (string, optional)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param3 (string, optional)</emphasis>
+			</para></listitem>
+			<listitem><para>
+				<emphasis>scenario_param4 (string, optional)</emphasis>
+			</para></listitem>
+		</itemizedlist>
+	<note><para>
+		If you have a multi interface setup and want to chance the outbound interface,
+		it is mandatory to use the "force_send_socket()" core function before passing
+		control to b2b function. If you do not do it, the requests may be correctly routed,
+		but the SIP pacakge may be invalid (as Contact, Via, etc).
+	</para></note>
+		<example>
+			<title><function>b2b_init_request</function> usage</title>
+		<programlisting format="linespecific">
+...
+if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
+   b2b_init_request("prepaid", "sip:320@opensips.org:5070",
+      "sip:321@opensips.org:5070"));
+...
+	</programlisting>
+		</example>
+	</section>
+	<section id="func_b2b_bridge_request" xreflabel="b2b_bridge_request()">
+		<title>
+		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
+		</title>
+		<para>
+			This function will bridge an initial INVITE with one of the
+			particapnts from an existing b2b dialog.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>b2bl_key (string)</emphasis> - a string that
+				contains the b2b_logic key. The key can also be in the form
+				of <emphasis>callid;from-tag;to-tag</emphasis>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>entity_no (int)</emphasis> - an integer that
+				holds the entity of the entity/participant to bridge.
+			</para></listitem>
+		</itemizedlist>
+		<example>
+			<title><function>b2b_bridge_request</function> usage</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_req_route", "b2b_request")
+...
+route[b2b_request]
+{
+   # incoming requests from the B2B entities
+   ...
+   if ($ci~="^B2B") { #keep this aligned with b2b_key_prefix
+      # request coming from the UAC side;
+      # the Call-ID carries the B2B key ID
+      if (is_method("BYE") {
+         $var(entity) = 1;
+         b2b_bridge_request($ci,$var(entity));
+      }
+   }
+   ...
+}
+...
+		</programlisting>
+		</example>
+	</section>
+
+</section>
+
+<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+	<section id="mi_b2b_trigger_scenario" xreflabel="b2b_trigger_scenario">
+		<title>
+		<function moreinfo="none">b2b_trigger_scenario</function>
+		</title>
+		<para>
+		This command instantiates a B2B scenario.
+		</para>
+		<para>
+		Name: <emphasis>b2b_trigger_scenario</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>senario_id</emphasis> : the id of the scenario to be instantiated.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>scenario_params</emphasis> - array of at least 2 scenario parameters</para>
+			</listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi b2b_trigger_scenario marketing sip:bob@opensips.org sip:322@opensips.org:5070 sip:alice@opensips.org
+		</programlisting>
+	</section>
+
+	<section id="mi_b2b_bridge" xreflabel="b2b_bridge">
+		<title>
+		<function moreinfo="none">b2b_bridge</function>
+		</title>
+		<para>
+			This command can be used by an external application to tell B2BUA to bridge a
+			call party from an on going dialog to another destination. By default the caller
+			is bridged to the new uri and BYE is set to the callee. You can instead bridge
+			the callee if you send 1 as the third parameter.
+		</para>
+		<para>
+		Name: <emphasis>b2b_bridge</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>dialog_id</emphasis> : the <emphasis>b2b_logic key</emphasis>, or the
+				<emphasis>callid;from-tag;to-tag</emphasis> of the ongoing dialog.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>new_uri</emphasis> - the uri of the new destination</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>flag</emphasis> (optional) - used to specify that the callee must be bridged to the new destination. If not present the caller will be bridged. Possible values are
+				'0' or '1'.</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>prov_media_uri</emphasis> (optional) - the uri of a media server able to play 
+					provisional media starting from the beginning of the bridging scenario
+					to the end of it. It is optional. If not present, no other entity will be
+					envolved in the bridging scenario</para>
+			</listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
+	</programlisting>
+		<para>opensips-cli Command Format:</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
+	</programlisting>
+	</section>
+
+	<section id="mi_b2b_list" xreflabel="b2b_list">
+		<title>
+		<function moreinfo="none">b2b_list</function>
+		</title>
+		<para>
+			This command can be used to list the internals of b2b_logic entities.
+		</para>
+		<para>
+		Name: <emphasis>b2b_list</emphasis>
+		</para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<itemizedlist>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi b2b_list
+	</programlisting>
+	</section>
+
+</section>
+
+<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+
+	<section id="b2b_logic.key" xreflabel="$b2b_logic.key">
+	<title>
+		<varname>$b2b_logic.key</varname>
+	</title>
+	<para>
+		This is a read-only variable that returns the b2b_logic key of the
+		ongoing B2B session.
+	</para>
+	<para>
+		The variable can be used in request route, local_route
+		and in the custom B2B request and reply routes defined through the
+		<emphasis>b2b_entities</emphasis> module.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.key</varname> usage</title>
+	<programlisting format="linespecific">
+...
+local_route {
+   ...
+   if ($b2b_logic.key) {
+      xlog("request belongs to B2B session: $b2b_logic.key\n");
+      ...
+   }
+   ...
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section id="b2b_logic.entity" xreflabel="$b2b_logic.entity">
+	<title>
+		<varname>$b2b_logic.entity(field)[idx]</varname>
+	</title>
+	<para>
+		This is a read-only variable that returns information about the
+		entities(dialogs) involved in the ongoing B2B session.
+	</para>
+	<para>
+		The available entity information is:
+		<itemizedlist>
+			<listitem><para>
+				the Call-ID of the dialog, accessible by using the
+				<emphasis>callid</emphasis> subname;
+			</para></listitem>
+			<listitem><para>
+				the entity key, accessible by using the
+				<emphasis>key</emphasis> subname or no subname at all.
+			</para></listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		The index is used to select which entity from the B2B session to refer
+		to. The only possible values are <emphasis>0</emphasis> or <emphasis>1
+		</emphasis> and correspond to the positions of the entities
+		in the scenario. Initially, this depends on the order of the entities in
+		the <emphasis>init</emphasis> section of the scenario file. In the case
+		of the internal topology hiding scenario, <emphasis>0</emphasis> is the
+		caller and <emphasis>1</emphasis> is the callee. When a further bridge
+		action happens, the bridged entity is always placed on the <emphasis>0
+		</emphasis> index and the new entity on <emphasis>1</emphasis>.
+	</para>
+	<para>
+		If no index is provided, the variable will refer to the entity(dialog)
+		which the current SIP message belongs to.
+	</para>
+	<para>
+		The variable can be used in request route, local_route
+		and in the custom B2B request and reply routes defined through the
+		<emphasis>b2b_entities</emphasis> module.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.entity</varname> usage</title>
+	<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_request_route", "b2b_request")
+...
+route[b2b_request] {
+   ...
+   xlog("received request for entity: $b2b_logic.entity\n");
+   ...
+   if ($rm == "BYE" &amp;&amp; $b2b_logic.entity == $(b2b_logic.entity[1]))
+      xlog("Disconnecting callee\n")
+   ...
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+	<section id="b2b_logic.ctx" xreflabel="$b2b_logic.ctx">
+	<title>
+		<varname>$b2b_logic.ctx(key)</varname>
+	</title>
+	<para>
+		This is a read-write variable that provides access to a custom
+		Key-Value storage(of string values) in the context of the ongoing
+		B2B session.
+	</para>
+	<para>
+		The variable can be used in request route, local_route
+		and in the custom B2B request and reply routes defined through the
+		<emphasis>b2b_entities</emphasis> module. In the main request route
+		the variable can be used for storing a new context value even before
+		instantiating the scenario with <emphasis>b2b_init_request()</emphasis>.
+	</para>
+	<para>
+		Setting the variable to <emphasis>NULL</emphasis> will delete the value
+		at the given key.
+	</para>
+	<example>
+	<title><varname>$b2b_logic.ctx</varname> usage</title>
+	<programlisting format="linespecific">
+...
+modparam("b2b_entities", "script_reply_route", "b2b_reply")
+...
+route {
+   ...
+   b2b_init_request("prepaid", "sip:alice@127.0.0.1");
+
+   $b2b_logic.ctx(my_extra_info) = "my_value";
+   ...
+}
+...
+route[b2b_reply] {
+   ...
+   xlog("my info: $b2b_logic.ctx(my_extra_info)\n");
+   ...
+}
+...
+	</programlisting>
+	</example>
+	</section>
+
+</section>
+
+</chapter>
+
