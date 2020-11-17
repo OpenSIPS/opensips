@@ -1,5 +1,11 @@
 =========================== Release 3.0.4 ==============================
 
+2020-11-17  Nick Altmann  <nick.altmann at gmail dot com>
+	* [b5e06fb02] :
+
+	APT repository: ubuntu 20
+
+
 2020-11-17  Razvan Crainea  <razvan at opensips dot org>
 	* [fbddd8f82] :
 
