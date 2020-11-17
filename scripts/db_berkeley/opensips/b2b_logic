@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) si_key(str) scenario(str) sstate(int) next_sstate(int) sparam0(str) sparam1(str) sparam2(str) sparam3(str) sparam4(str) sdp(str) lifetime(int) e1_type(int) e1_sid(str) e1_from(str) e1_to(str) e1_key(str) e2_type(int) e2_sid(str) e2_from(str) e2_to(str) e2_key(str) e3_type(int) e3_sid(str) e3_from(str) e3_to(str) e3_key(str)
+id(int) si_key(str) scenario(str) sstate(int) sdp(str) lifetime(int) e1_type(int) e1_sid(str) e1_from(str) e1_to(str) e1_key(str) e2_type(int) e2_sid(str) e2_from(str) e2_to(str) e2_key(str) e3_type(int) e3_sid(str) e3_from(str) e3_to(str) e3_key(str)
 METADATA_KEY
 1 
 METADATA_READONLY
@@ -7,4 +7,4 @@ METADATA_READONLY
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|0|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL
+NIL|NIL|NIL|NIL|NIL|0|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL|NIL

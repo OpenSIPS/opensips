@@ -124,12 +124,6 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>next_sstate</field></col>
-				<col><field>sparam0</field></col>
-				<col><field>sparam1</field></col>
-				<col><field>sparam2</field></col>
-				<col><field>sparam3</field></col>
-				<col><field>sparam4</field></col>
 				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
@@ -156,12 +150,6 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>next_sstate</field></col>
-				<col><field>sparam0</field></col>
-				<col><field>sparam1</field></col>
-				<col><field>sparam2</field></col>
-				<col><field>sparam3</field></col>
-				<col><field>sparam4</field></col>
 				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
@@ -191,12 +179,6 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>next_sstate</field></col>
-				<col><field>sparam0</field></col>
-				<col><field>sparam1</field></col>
-				<col><field>sparam2</field></col>
-				<col><field>sparam3</field></col>
-				<col><field>sparam4</field></col>
 				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>

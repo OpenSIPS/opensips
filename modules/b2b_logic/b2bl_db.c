@@ -35,14 +35,8 @@
 #define B2BL_FETCH_SIZE  128
 static str str_key_col         = str_init("si_key");
 static str str_scenario_col    = str_init("scenario");
-static str str_sparam0_col     = str_init("sparam0");
-static str str_sparam1_col     = str_init("sparam1");
-static str str_sparam2_col     = str_init("sparam2");
-static str str_sparam3_col     = str_init("sparam3");
-static str str_sparam4_col     = str_init("sparam4");
 static str str_sdp_col         = str_init("sdp");
 static str str_sstate_col      = str_init("sstate");
-static str str_next_sstate_col = str_init("next_sstate");
 static str str_lifetime_col    = str_init("lifetime");
 static str str_e1_type_col     = str_init("e1_type");
 static str str_e1_sid_col      = str_init("e1_sid");
@@ -60,7 +54,7 @@ static str str_e3_to_col       = str_init("e3_to");
 static str str_e3_from_col     = str_init("e3_from");
 static str str_e3_key_col      = str_init("e3_key");
 
-#define DB_COLS_NO  26
+#define DB_COLS_NO  20
 static db_key_t qcols[DB_COLS_NO];
 static db_val_t qvals[DB_COLS_NO];
 static int n_query_update;
@@ -74,55 +68,43 @@ void b2bl_db_init(void)
 	qvals[0].type = DB_STR;
 	qcols[1]      = &str_scenario_col;
 	qvals[1].type = DB_STR;
-	qcols[2]      = &str_sparam0_col;
+	qcols[2]      = &str_sdp_col;
 	qvals[2].type = DB_STR;
-	qcols[3]      = &str_sparam1_col;
-	qvals[3].type = DB_STR;
-	qcols[4]      = &str_sparam2_col;
-	qvals[4].type = DB_STR;
-	qcols[5]      = &str_sparam3_col;
-	qvals[5].type = DB_STR;
-	qcols[6]      = &str_sparam4_col;
-	qvals[6].type = DB_STR;
-	qcols[7]      = &str_sdp_col;
-	qvals[7].type = DB_STR;
-	n_query_update= 8;
-	qcols[8]      = &str_sstate_col;
-	qvals[8].type = DB_INT;
-	qcols[9]      = &str_next_sstate_col;
-	qvals[9].type = DB_INT;
-	qcols[10]     = &str_lifetime_col;
+	n_query_update= 3;
+	qcols[3]      = &str_sstate_col;
+	qvals[3].type = DB_INT;
+	qcols[4]     = &str_lifetime_col;
+	qvals[4].type= DB_INT;
+	qcols[5]     = &str_e1_type_col;
+	qvals[5].type= DB_INT;
+	qcols[6]     = &str_e1_sid_col;
+	qvals[6].type= DB_STR;
+	qcols[7]     = &str_e1_to_col;
+	qvals[7].type= DB_STR;
+	qcols[8]     = &str_e1_from_col;
+	qvals[8].type= DB_STR;
+	qcols[9]     = &str_e1_key_col;
+	qvals[9].type= DB_STR;
+	qcols[10]     = &str_e2_type_col;
 	qvals[10].type= DB_INT;
-	qcols[11]     = &str_e1_type_col;
-	qvals[11].type= DB_INT;
-	qcols[12]     = &str_e1_sid_col;
+	qcols[11]     = &str_e2_sid_col;
+	qvals[11].type= DB_STR;
+	qcols[12]     = &str_e2_to_col;
 	qvals[12].type= DB_STR;
-	qcols[13]     = &str_e1_to_col;
+	qcols[13]     = &str_e2_from_col;
 	qvals[13].type= DB_STR;
-	qcols[14]     = &str_e1_from_col;
+	qcols[14]     = &str_e2_key_col;
 	qvals[14].type= DB_STR;
-	qcols[15]     = &str_e1_key_col;
-	qvals[15].type= DB_STR;
-	qcols[16]     = &str_e2_type_col;
-	qvals[16].type= DB_INT;
-	qcols[17]     = &str_e2_sid_col;
+	qcols[15]     = &str_e3_type_col;
+	qvals[15].type= DB_INT;
+	qcols[16]     = &str_e3_sid_col;
+	qvals[16].type= DB_STR;
+	qcols[17]     = &str_e3_to_col;
 	qvals[17].type= DB_STR;
-	qcols[18]     = &str_e2_to_col;
+	qcols[18]     = &str_e3_from_col;
 	qvals[18].type= DB_STR;
-	qcols[19]     = &str_e2_from_col;
+	qcols[19]     = &str_e3_key_col;
 	qvals[19].type= DB_STR;
-	qcols[20]     = &str_e2_key_col;
-	qvals[20].type= DB_STR;
-	qcols[21]     = &str_e3_type_col;
-	qvals[21].type= DB_INT;
-	qcols[22]     = &str_e3_sid_col;
-	qvals[22].type= DB_STR;
-	qcols[23]     = &str_e3_to_col;
-	qvals[23].type= DB_STR;
-	qcols[24]     = &str_e3_from_col;
-	qvals[24].type= DB_STR;
-	qcols[25]     = &str_e3_key_col;
-	qvals[25].type= DB_STR;
 }
 
 void b2bl_db_delete(b2bl_tuple_t* tuple)
@@ -189,45 +171,41 @@ void b2b_logic_dump(int no_lock)
 			qvals[0].val.str_val = *tuple->key;
 			if(tuple->db_flag == INSERTDB_FLAG)
 			{
-				if(tuple->scenario)
-					qvals[1].val.str_val = tuple->scenario->id;
-				else{
+				if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR) {
+					qvals[1].val.str_val.len = B2B_TOP_HIDING_SCENARY_LEN;
+					qvals[1].val.str_val.s = B2B_TOP_HIDING_SCENARY;
+				} else if (tuple->scenario_id == B2B_INTERNAL_ID_PTR) {
 					qvals[1].val.str_val.len = 0;
 					qvals[1].val.str_val.s = "";
+				} else {
+					qvals[1].val.str_val = *tuple->scenario_id;
 				}
 
-				qvals[2].val.str_val = tuple->scenario_params[0];
-				qvals[3].val.str_val = tuple->scenario_params[1];
-				qvals[4].val.str_val = tuple->scenario_params[2];
-				qvals[5].val.str_val = tuple->scenario_params[3];
-				qvals[6].val.str_val = tuple->scenario_params[4];
-				qvals[7].val.str_val = tuple->sdp;
+				qvals[2].val.str_val = tuple->sdp;
 			}
 
+			qvals[3].val.int_val  = tuple->state;
+			qvals[4].val.int_val = tuple->lifetime - get_ticks() + (int)time(NULL);
+			qvals[5].val.int_val = tuple->bridge_entities[0]->type;
+			qvals[6].val.str_val = tuple->bridge_entities[0]->scenario_id;
+			qvals[7].val.str_val = tuple->bridge_entities[0]->to_uri;
+			qvals[8].val.str_val = tuple->bridge_entities[0]->from_uri;
+			qvals[9].val.str_val = tuple->bridge_entities[0]->key;
+			qvals[10].val.int_val = tuple->bridge_entities[1]->type;
+			qvals[11].val.str_val = tuple->bridge_entities[1]->scenario_id;
+			qvals[12].val.str_val = tuple->bridge_entities[1]->to_uri;
+			qvals[13].val.str_val = tuple->bridge_entities[1]->from_uri;
+			qvals[14].val.str_val = tuple->bridge_entities[1]->key;
 
-			qvals[8].val.int_val  = tuple->scenario_state;
-			qvals[9].val.int_val  = tuple->next_scenario_state;
-			qvals[10].val.int_val = tuple->lifetime - get_ticks() + (int)time(NULL);
-			qvals[11].val.int_val = tuple->bridge_entities[0]->type;
-			qvals[12].val.str_val = tuple->bridge_entities[0]->scenario_id;
-			qvals[13].val.str_val = tuple->bridge_entities[0]->to_uri;
-			qvals[14].val.str_val = tuple->bridge_entities[0]->from_uri;
-			qvals[15].val.str_val = tuple->bridge_entities[0]->key;
-			qvals[16].val.int_val = tuple->bridge_entities[1]->type;
-			qvals[17].val.str_val = tuple->bridge_entities[1]->scenario_id;
-			qvals[18].val.str_val = tuple->bridge_entities[1]->to_uri;
-			qvals[19].val.str_val = tuple->bridge_entities[1]->from_uri;
-			qvals[20].val.str_val = tuple->bridge_entities[1]->key;
-
-			n_insert_cols = 21;
+			n_insert_cols = 15;
 
 			if(tuple->bridge_entities[2])
 			{
-				qvals[21].val.int_val = tuple->bridge_entities[2]->type;
-				qvals[22].val.str_val = tuple->bridge_entities[2]->scenario_id;
-				qvals[23].val.str_val = tuple->bridge_entities[2]->to_uri;
-				qvals[24].val.str_val = tuple->bridge_entities[2]->from_uri;
-				qvals[25].val.str_val = tuple->bridge_entities[2]->key;
+				qvals[15].val.int_val = tuple->bridge_entities[2]->type;
+				qvals[16].val.str_val = tuple->bridge_entities[2]->scenario_id;
+				qvals[17].val.str_val = tuple->bridge_entities[2]->to_uri;
+				qvals[18].val.str_val = tuple->bridge_entities[2]->from_uri;
+				qvals[19].val.str_val = tuple->bridge_entities[2]->key;
 			}
 			n_insert_cols = DB_COLS_NO;
 
@@ -263,7 +241,7 @@ next:
 	}
 }
 
-static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
+static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 {
 	b2bl_tuple_t* shm_tuple= NULL;
 	unsigned int hash_index, local_index;
@@ -273,6 +251,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	b2b_notify_t cback;
 	str* client_id = NULL;
 	unsigned int logic_restored = 0;
+	struct b2b_params init_params;
 
 	LM_DBG("Add tuple key [%.*s]\n", tuple->key->len, tuple->key->s);
 	if(b2bl_parse_key(tuple->key, &hash_index, &local_index)< 0)
@@ -280,7 +259,14 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		LM_ERR("Wrong formatted b2b logic key\n");
 		return -1;
 	}
-	shm_tuple = b2bl_insert_new(NULL, hash_index, tuple->scenario, params,
+
+	memset(&init_params, 0, sizeof init_params);
+	init_params.id = tuple->scenario_id;
+	init_params.req_routeid = global_req_rtid;
+	init_params.reply_routeid = global_reply_rtid;
+
+
+	shm_tuple = b2bl_insert_new(NULL, hash_index, &init_params,
 			(tuple->sdp.s?&tuple->sdp:NULL), NULL, local_index,
 			&b2bl_key, UPDATEDB_FLAG, TUPLE_NO_REPL);
 	if(shm_tuple == NULL)
@@ -290,8 +276,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	}
 	shm_tuple->lifetime = tuple->lifetime;
 	lock_release(&b2bl_htable[hash_index].lock);
-	shm_tuple->scenario_state= tuple->scenario_state;
-	shm_tuple->next_scenario_state= tuple->next_scenario_state;
+	shm_tuple->state= tuple->state;
 
 	/* add entities */
 	for(i=0; i< MAX_BRIDGE_ENT; i++)
@@ -371,7 +356,6 @@ int b2b_logic_restore(void)
 	str b2bl_key;
 	str scenario_id;
 	b2bl_entity_id_t bridge_entities[3];
-	str* params[MAX_SCENARIO_PARAMS];
 
 	if(b2bl_db == NULL)
 	{
@@ -429,94 +413,68 @@ int b2b_logic_restore(void)
 			{
 				scenario_id.s = (char*)row_vals[1].val.string_val;
 				scenario_id.len = strlen(scenario_id.s);
-				tuple.scenario = get_scenario_id(&scenario_id);
+
+				if (!str_strcmp(&scenario_id, _str(B2B_TOP_HIDING_SCENARY)))
+					tuple.scenario_id = B2B_TOP_HIDING_ID_PTR;
+				else
+					tuple.scenario_id = &scenario_id;
+			} else {
+				tuple.scenario_id = B2B_INTERNAL_ID_PTR;
 			}
 			memset(bridge_entities, 0, 3*sizeof(b2bl_entity_id_t));
-			memset(params, 0, MAX_SCENARIO_PARAMS* sizeof(str*));
 			if(row_vals[2].val.string_val)
 			{
-				tuple.scenario_params[0].s =(char*)row_vals[2].val.string_val;
-				tuple.scenario_params[0].len = strlen(tuple.scenario_params[0].s);
-				params[0] = &tuple.scenario_params[0];
-			}
-			if(row_vals[3].val.string_val)
-			{
-				tuple.scenario_params[1].s =(char*)row_vals[3].val.string_val;
-				tuple.scenario_params[1].len = strlen(tuple.scenario_params[1].s);
-				params[1] = &tuple.scenario_params[1];
-			}
-			if(row_vals[4].val.string_val)
-			{
-				tuple.scenario_params[2].s =(char*)row_vals[4].val.string_val;
-				tuple.scenario_params[2].len = strlen(tuple.scenario_params[2].s);
-				params[2] = &tuple.scenario_params[2];
-			}
-			if(row_vals[5].val.string_val)
-			{
-				tuple.scenario_params[3].s =(char*)row_vals[5].val.string_val;
-				tuple.scenario_params[3].len = strlen(tuple.scenario_params[3].s);
-				params[3] = &tuple.scenario_params[3];
-			}
-			if(row_vals[6].val.string_val)
-			{
-				tuple.scenario_params[4].s =(char*)row_vals[6].val.string_val;
-				tuple.scenario_params[4].len = strlen(tuple.scenario_params[4].s);
-				params[4] = &tuple.scenario_params[4];
-			}
-			if(row_vals[7].val.string_val)
-			{
-				tuple.sdp.s =(char*)row_vals[7].val.string_val;
+				tuple.sdp.s =(char*)row_vals[2].val.string_val;
 				tuple.sdp.len = strlen(tuple.sdp.s);
 			}
-			tuple.scenario_state     =row_vals[8].val.int_val;
-			tuple.next_scenario_state=row_vals[9].val.int_val;
+			tuple.state     =row_vals[3].val.int_val;
 			_time = (int)time(NULL);
-			if (row_vals[10].val.int_val <= _time)
+			if (row_vals[4].val.int_val <= _time)
 				tuple.lifetime = 1;
 			else
-				tuple.lifetime=row_vals[10].val.int_val - _time + get_ticks();
+				tuple.lifetime=row_vals[4].val.int_val - _time + get_ticks();
 
-			bridge_entities[0].type  = row_vals[11].val.int_val;
-			bridge_entities[0].scenario_id.s =(char*)row_vals[12].val.string_val;
+			bridge_entities[0].type  = row_vals[5].val.int_val;
+			bridge_entities[0].scenario_id.s =(char*)row_vals[6].val.string_val;
 			bridge_entities[0].scenario_id.len=
 				bridge_entities[0].scenario_id.s?strlen(bridge_entities[0].scenario_id.s):0;
-			bridge_entities[0].to_uri.s  =(char*)row_vals[13].val.string_val;
+			bridge_entities[0].to_uri.s  =(char*)row_vals[7].val.string_val;
 			bridge_entities[0].to_uri.len=
 				bridge_entities[0].to_uri.s?strlen(bridge_entities[0].to_uri.s):0;
-			bridge_entities[0].from_uri.s=(char*)row_vals[14].val.string_val;
+			bridge_entities[0].from_uri.s=(char*)row_vals[8].val.string_val;
 			bridge_entities[0].from_uri.len=
 				bridge_entities[0].from_uri.s?strlen(bridge_entities[0].from_uri.s):0;
-			bridge_entities[0].key.s  =(char*)row_vals[15].val.string_val;
+			bridge_entities[0].key.s  =(char*)row_vals[9].val.string_val;
 			bridge_entities[0].key.len=
 				bridge_entities[0].key.s?strlen(bridge_entities[0].key.s):0;
 
-			bridge_entities[1].type = row_vals[16].val.int_val;
-			bridge_entities[1].scenario_id.s  = (char*)row_vals[17].val.string_val;
+			bridge_entities[1].type = row_vals[10].val.int_val;
+			bridge_entities[1].scenario_id.s  = (char*)row_vals[11].val.string_val;
 			bridge_entities[1].scenario_id.len=
 				bridge_entities[1].scenario_id.s?strlen(bridge_entities[1].scenario_id.s):0;
-			bridge_entities[1].to_uri.s  = (char*)row_vals[18].val.string_val;
+			bridge_entities[1].to_uri.s  = (char*)row_vals[12].val.string_val;
 			bridge_entities[1].to_uri.len=
 				bridge_entities[1].to_uri.s?strlen(bridge_entities[1].to_uri.s):0;
-			bridge_entities[1].from_uri.s  = (char*)row_vals[19].val.string_val;
+			bridge_entities[1].from_uri.s  = (char*)row_vals[13].val.string_val;
 			bridge_entities[1].from_uri.len=
 				bridge_entities[1].from_uri.s?strlen(bridge_entities[1].from_uri.s):0;
-			bridge_entities[1].key.s  = (char*)row_vals[20].val.string_val;
+			bridge_entities[1].key.s  = (char*)row_vals[14].val.string_val;
 			bridge_entities[1].key.len=
 				bridge_entities[1].key.s?strlen(bridge_entities[1].key.s):0;
 
-			if(row_vals[21].val.string_val)
+			if(row_vals[15].val.string_val)
 			{
-				bridge_entities[2].type = row_vals[21].val.int_val;
-				bridge_entities[2].scenario_id.s  = (char*)row_vals[22].val.string_val;
+				bridge_entities[2].type = row_vals[15].val.int_val;
+				bridge_entities[2].scenario_id.s  = (char*)row_vals[16].val.string_val;
 				bridge_entities[2].scenario_id.len=
 					bridge_entities[2].scenario_id.s?strlen(bridge_entities[2].scenario_id.s):0;
-				bridge_entities[2].to_uri.s  = (char*)row_vals[23].val.string_val;
+				bridge_entities[2].to_uri.s  = (char*)row_vals[17].val.string_val;
 				bridge_entities[2].to_uri.len=
 					bridge_entities[2].to_uri.s?strlen(bridge_entities[2].to_uri.s):0;
-				bridge_entities[2].from_uri.s  = (char*)row_vals[24].val.string_val;
+				bridge_entities[2].from_uri.s  = (char*)row_vals[18].val.string_val;
 				bridge_entities[2].from_uri.len=
 					bridge_entities[2].from_uri.s?strlen(bridge_entities[2].from_uri.s):0;
-				bridge_entities[2].key.s  = (char*)row_vals[25].val.string_val;
+				bridge_entities[2].key.s  = (char*)row_vals[19].val.string_val;
 				bridge_entities[2].key.len=
 					bridge_entities[2].key.s?strlen(bridge_entities[2].key.s):0;
 			}
@@ -525,7 +483,7 @@ int b2b_logic_restore(void)
 			tuple.bridge_entities[1] = &bridge_entities[1];
 			tuple.bridge_entities[2] = &bridge_entities[2];
 
-			if(b2bl_add_tuple(&tuple, params) < 0)
+			if(b2bl_add_tuple(&tuple) < 0)
 			{
 				LM_ERR("Failed to add new tuple\n");
 				goto error;
@@ -561,23 +519,20 @@ void b2bl_db_insert(b2bl_tuple_t* tuple)
 	int i;
 
 	qvals[0].val.str_val = *tuple->key;
-	if(tuple->scenario)
-		qvals[1].val.str_val = tuple->scenario->id;
-	else{
+	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR) {
+		qvals[1].val.str_val.len = B2B_TOP_HIDING_SCENARY_LEN;
+		qvals[1].val.str_val.s = B2B_TOP_HIDING_SCENARY;
+	} else if (tuple->scenario_id == B2B_INTERNAL_ID_PTR) {
 		qvals[1].val.str_val.len = 0;
 		qvals[1].val.str_val.s = "";
+	} else {
+		qvals[1].val.str_val = *tuple->scenario_id;
 	}
 
-	qvals[2].val.str_val = tuple->scenario_params[0];
-	qvals[3].val.str_val = tuple->scenario_params[1];
-	qvals[4].val.str_val = tuple->scenario_params[2];
-	qvals[5].val.str_val = tuple->scenario_params[3];
-	qvals[6].val.str_val = tuple->scenario_params[4];
-	qvals[7].val.str_val = tuple->sdp;
-	qvals[8].val.int_val = tuple->scenario_state;
-	qvals[9].val.int_val = tuple->next_scenario_state;
-	qvals[10].val.int_val= tuple->lifetime - get_ticks() + (int)time(NULL);
-	ci = 11;
+	qvals[2].val.str_val = tuple->sdp;
+	qvals[3].val.int_val = tuple->state;
+	qvals[4].val.int_val= tuple->lifetime - get_ticks() + (int)time(NULL);
+	ci = 5;
 
 	for(i = 0; i< 3; i++)
 	{
@@ -615,10 +570,9 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 
 	qvals[0].val.str_val = *tuple->key;
 
-	qvals[8].val.int_val  = tuple->scenario_state;
-	qvals[9].val.int_val  = tuple->next_scenario_state;
-	qvals[10].val.int_val = tuple->lifetime -get_ticks() + (int)time(NULL);
-	ci = 11;
+	qvals[3].val.int_val  = tuple->state;
+	qvals[4].val.int_val = tuple->lifetime -get_ticks() + (int)time(NULL);
+	ci = 5;
 
 	for(i = 0; i< 3; i++)
 	{

@@ -9,7 +9,7 @@
 
 <table id="b2b_logic" xmlns:db="http://docbook.org/ns/docbook">
     <name>b2b_logic</name>
-    <version>3</version>
+    <version>4</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Table for the b2b_logic module. More information can be found at: &OPENSIPS_MOD_DOC;b2b_logic.html
@@ -48,53 +48,6 @@
         <type>int</type>
         <size>2</size>
         <description>Scenario State</description>
-    </column>
-
-    <column>
-        <name>next_sstate</name>
-        <type>int</type>
-        <size>2</size>
-        <description>Next Scenario State</description>
-    </column>
-
-    <column>
-        <name>sparam0</name>
-        <type>string</type>
-        <size>&user_len;</size>
-        <null/>
-        <description>Scenario id</description>
-    </column>
-
-    <column>
-        <name>sparam1</name>
-        <type>string</type>
-        <size>&user_len;</size>
-        <null/>
-        <description>Scenario id</description>
-    </column>
-
-    <column>
-        <name>sparam2</name>
-        <type>string</type>
-        <size>&user_len;</size>
-        <null/>
-        <description>Scenario id</description>
-    </column>
-
-    <column>
-        <name>sparam3</name>
-        <type>string</type>
-        <size>&user_len;</size>
-        <null/>
-        <description>Scenario id</description>
-    </column>
-
-    <column>
-        <name>sparam4</name>
-        <type>string</type>
-        <size>&user_len;</size>
-        <null/>
-        <description>Scenario id</description>
     </column>
 
     <column>

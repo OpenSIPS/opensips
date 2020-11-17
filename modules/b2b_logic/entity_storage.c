@@ -90,24 +90,19 @@ static void pack_tuple(b2bl_tuple_t* tuple, bin_packet_t *storage, int repl_new)
 	if (repl_new) {
 		bin_push_int(storage, REPL_TUPLE_NEW);
 
-		if (tuple->scenario)
-			bin_push_str(storage, &tuple->scenario->id);
-		else
+		if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR)
+			bin_push_str(storage, _str(B2B_TOP_HIDING_SCENARY));
+		else if (tuple->scenario_id == B2B_INTERNAL_ID_PTR)
 			bin_push_str(storage, NULL);
-
-		bin_push_str(storage, &tuple->scenario_params[0]);
-		bin_push_str(storage, &tuple->scenario_params[1]);
-		bin_push_str(storage, &tuple->scenario_params[2]);
-		bin_push_str(storage, &tuple->scenario_params[3]);
-		bin_push_str(storage, &tuple->scenario_params[4]);
+		else
+			bin_push_str(storage, tuple->scenario_id);
 
 		bin_push_str(storage, &tuple->sdp);
 		bin_push_str(storage, tuple->extra_headers);
 	} else
 		bin_push_int(storage, REPL_TUPLE_UPDATE);
 
-	bin_push_int(storage, tuple->scenario_state);
-	bin_push_int(storage, tuple->next_scenario_state);
+	bin_push_int(storage, tuple->state);
 
 	bin_push_int(storage, tuple->lifetime > 0 ?
 		(tuple->lifetime - get_ticks()) : 0);
@@ -243,14 +238,13 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	b2bl_tuple_t *tuple = NULL, *old_tuple;
 	int tuple_repl_type;
 	str scenario_id;
-	str params_s[MAX_SCENARIO_PARAMS];
-	str* params_p[MAX_SCENARIO_PARAMS];
 	str tuple_sdp;
 	str extra_headers;
 	int lifetime;
 	b2b_dlginfo_t dlginfo;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
 	str entity_sid, to_uri, from_uri, from_dname, hdrs;
+	struct b2b_params init_params;
 
 	LM_DBG("Received CREATE event for entity [%.*s]\n",
 		entity_key->len, entity_key->s);
@@ -271,29 +265,30 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		if (!old_tuple) {
 			bin_pop_str(storage, &scenario_id);
 
-			bin_pop_str(storage, &params_s[0]);
-			params_p[0] = &params_s[0];
-			bin_pop_str(storage, &params_s[1]);
-			params_p[1] = &params_s[1];
-			bin_pop_str(storage, &params_s[2]);
-			params_p[2] = &params_s[2];
-			bin_pop_str(storage, &params_s[3]);
-			params_p[3] = &params_s[3];
-			bin_pop_str(storage, &params_s[4]);
-			params_p[4] = &params_s[4];
-
 			bin_pop_str(storage, &tuple_sdp);
 			bin_pop_str(storage, &extra_headers);
 		} else {
 			LM_DBG("Tuple [%.*s] already created\n", b2bl_key->len, b2bl_key->s);
-			bin_skip_str(storage, 8);
+			bin_skip_str(storage, 3);
 		}
 
 		if (old_tuple) {
 			tuple = old_tuple;
 		} else {
-			tuple = b2bl_insert_new(NULL, hash_index, get_scenario_id(&scenario_id),
-				params_p, tuple_sdp.s ? &tuple_sdp : NULL, &extra_headers,
+			memset(&init_params, 0, sizeof init_params);
+
+			if (!scenario_id.s)
+				init_params.id = B2B_INTERNAL_ID_PTR;
+			else if (!str_strcmp(&scenario_id, _str(B2B_TOP_HIDING_SCENARY)))
+				init_params.id = B2B_TOP_HIDING_ID_PTR;
+			else
+				init_params.id = &scenario_id;
+
+			init_params.req_routeid = global_req_rtid;
+			init_params.reply_routeid = global_reply_rtid;
+
+			tuple = b2bl_insert_new(NULL, hash_index, &init_params,
+				tuple_sdp.s ? &tuple_sdp : NULL, &extra_headers,
 				local_index, &b2bl_key, INSERTDB_FLAG, TUPLE_REPL_RECV);
 			if (!tuple) {
 				LM_ERR("Failed to insert new tuple\n");
@@ -301,8 +296,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 			}
 		}
 
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->next_scenario_state);
+		bin_pop_int(storage, &tuple->state);
 
 		bin_pop_int(storage, &lifetime);
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -319,8 +313,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		}
 		tuple = old_tuple;
 
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->next_scenario_state);
+		bin_pop_int(storage, &tuple->state);
 
 		bin_pop_int(storage, &lifetime);
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -460,8 +453,7 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 		goto error;
 	}
 
-	bin_pop_int(storage, &tuple->scenario_state);
-	bin_pop_int(storage, &tuple->next_scenario_state);
+	bin_pop_int(storage, &tuple->state);
 	bin_pop_int(storage, &lifetime);
 
 	tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -543,8 +535,7 @@ static void receive_entity_ack(enum b2b_entity_type entity_type,
 		return;
 	}
 
-	bin_pop_int(storage, &tuple->scenario_state);
-	bin_pop_int(storage, &tuple->next_scenario_state);
+	bin_pop_int(storage, &tuple->state);
 	bin_pop_int(storage, &lifetime);
 
 	tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -588,8 +579,7 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 
 	switch (tuple_repl_type) {
 	case REPL_TUPLE_UPDATE:
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->next_scenario_state);
+		bin_pop_int(storage, &tuple->state);
 		bin_pop_int(storage, &lifetime);
 
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
