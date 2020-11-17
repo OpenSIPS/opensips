@@ -1547,7 +1547,10 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 	mi_item_t *calls_arr, *call_item;
 	static str call_state[12]= {{"none", 4},
 			{"welcome", 7},
+			{"dissuading1", 11},                                                                                                                                             
+            		{"dissuading2", 11},                                                                                                                                             
 			{"queued", 6},
+		        {"pre_toagent", 11},                                                                                                                                             
 			{"toagent", 7},
 			{"ended", 5}};
 
