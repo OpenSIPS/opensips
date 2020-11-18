@@ -498,7 +498,7 @@ int tm_anycast_replicate(struct sip_msg *msg)
  */
 int tm_anycast_cancel(struct sip_msg *msg)
 {
-	if (!tm_repl_auto_cancel)
+	if (!tm_repl_auto_cancel || !tm_repl_cluster)
 		return -1;
 
 	if (!tm_existing_trans(msg))
