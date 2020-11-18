@@ -4088,7 +4088,7 @@ static inline int rtpp_build_stats(struct sip_msg *msg, struct rtpproxy_vcmd **v
 {
 	static struct rtpproxy_vcmd vstat;
 
-	RTPP_VCMD_INIT_STATIC(vstat, 4 + 4 + 2, {"Q", 1}, {" ", 1},
+	RTPP_VCMD_INIT_STATIC(vstat, 4 + 4 + 1, {"Q", 1}, {" ", 1},
             {NULL, 0}, {" ", 1}, {NULL, 0}, {";1 ", 3}, {NULL, 0}, {";1", 2},
             /* reserved for extra stats */
             {NULL, 0});
@@ -4124,7 +4124,7 @@ static inline int rtpp_build_stats(struct sip_msg *msg, struct rtpproxy_vcmd **v
 	}
 
 	*vret = &vstat;
-	*nret = vstat.useritems - 2;
+	*nret = vstat.useritems - 1;
 
 	return 0;
 }
