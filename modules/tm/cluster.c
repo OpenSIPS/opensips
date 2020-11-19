@@ -144,7 +144,7 @@ static void receive_tm_repl(bin_packet_t *packet)
 	TM_BIN_POP(str, &tmp, "dst host");
 	TM_BIN_POP(int, &port, "dst port");
 
-	ri.bind_address = grep_sock_info(&tmp, port, proto);
+	ri.bind_address = grep_internal_sock_info(&tmp, port, proto);
 	if (!ri.bind_address) {
 		LM_WARN("received replicated message for an interface"
 				" we don't know %s:%.*s:%d; discarding...\n",
@@ -247,6 +247,7 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 {
 	static bin_packet_t packet;
 	str tmp;
+	int port;
 
 	/* XXX: could estimate better here, but let's assume we need msg->len */
 	if (bin_init(&packet, &tm_repl_cap, type, TM_CLUSTER_VERSION,
@@ -256,8 +257,16 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 	}
 
 	TM_BIN_PUSH(int, msg->rcv.proto, "proto");
-	TM_BIN_PUSH(str, &msg->rcv.bind_address->name, "dst host");
-	TM_BIN_PUSH(int, msg->rcv.bind_address->port_no, "dst port");
+	if (msg->rcv.bind_address->tag.len) {
+		/* send interface tag if it exists, instead of hostname and port */
+		tmp = msg->rcv.bind_address->tag;
+		port = 0;
+	} else {
+		tmp = msg->rcv.bind_address->name;
+		port = msg->rcv.bind_address->port_no;
+	}
+	TM_BIN_PUSH(str, &tmp, "dst host");
+	TM_BIN_PUSH(int, port, "dst port");
 	tmp.s = (char *)&msg->rcv.src_ip;
 	tmp.len = sizeof(struct ip_addr);
 	TM_BIN_PUSH(str, &tmp, "src host");
