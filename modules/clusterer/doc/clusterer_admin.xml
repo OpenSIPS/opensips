@@ -707,14 +707,14 @@ cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 
 			<section id="func_cluster_check_addr" xreflabel="cluster_check_addr()">
 				<title>
-				<function moreinfo="none">cluster_check_addr(cluster_id, ip, addr_type)</function>
+				<function moreinfo="none">cluster_check_addr(cluster_id, ip[, addr_type])</function>
 				</title>
 				<para>
 					This function checks whether the given IP address belongs
 					to one of the nodes in the cluster.
 				</para>
 				<para>The <emphasis>addr_type</emphasis> parameter can be set
-				to in order to select the address of the node that the comparison
+				in order to select the address of the node that the comparison
 				is made against, with the possible values of:</para>
 				<itemizedlist>
 					<listitem>
