@@ -58,30 +58,61 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 	/* cleanup the structure */
 	memset(&msg, 0, sizeof(msg));
 
-	msg.REQ_METHOD = METHOD_CANCEL;
-
-	msg.via1 = &via;
+	branch.value.s = NULL;
+	branch.value.len = 0;
 
 	TM_BIN_POP(int, &itmp, "via branch offset");
 	if (itmp != 0) {
+		TM_BIN_POP(int, &branch.value.len, "via branch length");
+
+		if (branch.value.len > MCOOKIE_LEN &&
+			!memcmp(buf->s + itmp, MCOOKIE,MCOOKIE_LEN))
+			branch.value.s = buf->s + itmp;
+	}
+
+	if (!branch.value.s) {
+		/* if there is no RFC3261 magic cookie in the branch param, we do the message
+		 * parsing here, as we will need several headers for matching anyway */
+		msg.buf = buf->s;
+		msg.len = buf->len;
+		msg.rcv=*ri;
+		msg.ruri_q = Q_UNSPECIFIED;
+		msg.id=get_next_msg_no();
+
+		if (parse_msg(buf->s, buf->len, &msg) != 0) {
+			tmp = ip_addr2a(&(ri->src_ip));
+			LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
+				tmp, ri->src_port);
+			return;
+		}
+
+		TM_BIN_POP(int, &itmp, "via host offset");
+		if (itmp != 0)
+			TM_BIN_POP(int, &itmp, "via host length");
+		TM_BIN_POP(int, &itmp, "via transport offset");
+		if (itmp != 0)
+			TM_BIN_POP(int, &msg.via1->transport.len, "via transport length");
+		TM_BIN_POP(int, &itmp, "via port");
+	} else {
+		msg.REQ_METHOD = METHOD_CANCEL;
+		msg.via1 = &via;
 		msg.via1->branch = &branch;
-		msg.via1->branch->value.s = buf->s + itmp;
-		TM_BIN_POP(int, &msg.via1->branch->value.len, "via branch length");
-	} else
-		msg.via1->branch = 0;
-	TM_BIN_POP(int, &itmp, "via host offset");
-	if (itmp != 0) {
-		msg.via1->host.s = buf->s + itmp;
-		TM_BIN_POP(int, &msg.via1->host.len, "via host length");
-	} else
-		memset(&msg.via1->host, 0, sizeof(str));
-	TM_BIN_POP(int, &itmp, "via transport offset");
-	if (itmp != 0) {
-		msg.via1->transport.s = buf->s + itmp;
-		TM_BIN_POP(int, &msg.via1->transport.len, "via transport length");
-	} else
-		memset(&msg.via1->transport, 0, sizeof(str));
-	TM_BIN_POP(int, &msg.via1->port, "via port");
+
+		TM_BIN_POP(int, &itmp, "via host offset");
+		if (itmp != 0) {
+			msg.via1->host.s = buf->s + itmp;
+			TM_BIN_POP(int, &msg.via1->host.len, "via host length");
+		} else
+			memset(&msg.via1->host, 0, sizeof(str));
+		TM_BIN_POP(int, &itmp, "via transport offset");
+		if (itmp != 0) {
+			msg.via1->transport.s = buf->s + itmp;
+			TM_BIN_POP(int, &msg.via1->transport.len, "via transport length");
+		} else
+			memset(&msg.via1->transport, 0, sizeof(str));
+		TM_BIN_POP(int, &msg.via1->port, "via port");
+	}
+
 	TM_BIN_POP(str, &stmp, "cancel reason");
 	TM_BIN_POP(int, &msg.hash_index, "hash index");
 
@@ -97,26 +128,29 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 		return;
 	}
 
-	/* cleanup new message */
-	memset(&msg, 0, sizeof(msg));
-	msg.buf = buf->s;
-	msg.len = buf->len;
-	msg.rcv=*ri;
-	msg.ruri_q = Q_UNSPECIFIED;
-	msg.id=get_next_msg_no();
+	/* transaction is located here - do a proper parsing if not done already */
+	if (branch.value.s) {
+		/* cleanup new message */
+		memset(&msg, 0, sizeof(msg));
+		msg.buf = buf->s;
+		msg.len = buf->len;
+		msg.rcv=*ri;
+		msg.ruri_q = Q_UNSPECIFIED;
+		msg.id=get_next_msg_no();
 
-	/* transaction is located here - do a proper parsing */
-	if (parse_msg(buf->s, buf->len, &msg) != 0) {
-		tmp = ip_addr2a(&(ri->src_ip));
-		LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
-			tmp, ri->src_port);
-	} else {
-		t_set_reason(&msg, &stmp);
-		if (t_relay_to(&msg, NULL, 0) >= 0)
-			LM_DBG("successfully handled auto-CANCEL for %p\n", t);
-		else
-			LM_ERR("cannot handle auto-CANCEL for %p!\n", t);
+		if (parse_msg(buf->s, buf->len, &msg) != 0) {
+			tmp = ip_addr2a(&(ri->src_ip));
+			LM_ERR("Unable to parse replicated CANCEL received from [%s:%d]\n",
+				tmp, ri->src_port);
+			return;
+		}
 	}
+
+	t_set_reason(&msg, &stmp);
+	if (t_relay_to(&msg, NULL, 0) >= 0)
+		LM_DBG("successfully handled auto-CANCEL for %p\n", t);
+	else
+		LM_ERR("cannot handle auto-CANCEL for %p!\n", t);
 
 	free_sip_msg(&msg);
 }
