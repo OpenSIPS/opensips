@@ -113,10 +113,19 @@
 		</para></listitem>
 		<listitem><para>
 		<emphasis>getHeader()</emphasis> - returns the header of a message
-		the destination address (&osips; address) of the message
 		</para></listitem>
 		<listitem><para>
-		<emphasis>call_function()</emphasis> - calls a function from the script
+		<emphasis>call_function()</emphasis> - calls built-in script function
+		or function exported by other module
+		</para></listitem>
+		<listitem><para>
+		<emphasis>get_pseudoVar(name)</emphasis> - returns the value of the
+		the pseudo-variable specified by the <emphasis>name</emphasis> as
+		Unicode string.
+		</para></listitem>
+		<listitem><para>
+		<emphasis>set_pseudoVar(name, value)</emphasis> - sets pseudo-variable
+		using Unicode string <emphasis>value</emphasis>.
 		</para></listitem>
 		</itemizedlist>
 	</para>
@@ -218,36 +227,35 @@ modparam("python", "child_init_method", "child_initializer")
 
 </section>
 
-
 	<section id="exported_functions" xreflabel="exported_functions">
-	<title>Exported Functions</title>
-	<section id="func_python_exec" xreflabel="python_exec()">
+		<title>Exported Functions</title>
+		<section id="func_python_exec" xreflabel="python_exec()">
 			<title>
 				<function moreinfo="none">python_exec(method_name [, extra_args])</function>
 			</title>
-	<para>
-		Thhis function is used to execute a method from the Python module
-		loaded.
-	</para>
-	<para>
-	    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
-	</para>
-	<para>Meaning of the parameters is as follows:</para>
-	<itemizedlist>
-	    <listitem>
-		<para>
-		    <emphasis>method_name</emphasis> (string) - name of the method called
-		</para>
-	    </listitem>
-	    <listitem>
-		<para>
-		    <emphasis>extra_args</emphasis> (string, optional) - extra arguments that can
-			be passed from the script to the python function.
-		</para>
-	    </listitem>
-	</itemizedlist>
-	</section>
+			<para>
+				This function is used to execute a method from the Python module
+				loaded.
+			</para>
+			<para>
+				This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+				FAILURE_ROUTE and BRANCH_ROUTE.
+			</para>
+			<para>Meaning of the parameters is as follows:</para>
+			<itemizedlist>
+				<listitem>
+				<para>
+					<emphasis>method_name</emphasis> (string) - name of the method called
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+					<emphasis>extra_args</emphasis> (string, optional) - extra arguments that can
+					be passed from the script to the python function.
+				</para>
+				</listitem>
+			</itemizedlist>
+		</section>
 	</section>
 
 </chapter>

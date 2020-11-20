@@ -365,6 +365,94 @@ msg_call_function(msgobject *self, PyObject *args)
     return PyLong_FromLong(rval);
 }
 
+static PyObject *
+msg_get_pseudoVar(msgobject *self, PyObject *args)
+{
+    str hmodel,rval;
+    pv_elem_t *model;
+    int buf_size = 4096;
+    char *out;
+    PyObject * res;
+
+    if (self->msg == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    if(!PyArg_ParseTuple(args, "s", &hmodel.s)){
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    hmodel.len = strlen(hmodel.s);
+    if (pv_parse_format(&hmodel, &model) < 0)
+    {
+      Py_INCREF(Py_None);
+      return Py_None;
+    }
+
+    out = pkg_malloc(buf_size);
+    if (!out)
+    {
+        PyErr_SetString(PyExc_RuntimeError, "Not enough memor");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    rval.len = pv_printf(self->msg, model, out, &buf_size) ;
+    rval.s = out;
+    rval.len = strlen(rval.s);
+    res = PyUnicode_FromStringAndSize(rval.s, rval.len);
+    pkg_free(out);
+    pv_elem_free_all(model);
+    return res;
+}
+
+static PyObject *
+msg_set_pseudoVar(msgobject *self, PyObject *args)
+{
+    str hmodel;
+    pv_spec_t model;
+    int retval;
+    pv_value_t val;
+ 
+    if (self->msg == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "self->msg is NULL");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    if(!PyArg_ParseTuple(args, "ss", &hmodel.s,&val.rs.s)){
+        PyErr_SetString(PyExc_RuntimeError, "args is not valid");
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    hmodel.len = strlen(hmodel.s);
+    val.rs.len = strlen(val.rs.s);
+    if (pv_parse_spec(&hmodel, &model) < 0)
+    {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    if(!pv_is_w(&model)){
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    val.flags = PV_VAL_STR;
+    retval = pv_set_value(self->msg, &model, EQ_T, &val);
+    if (retval >= 0){
+        Py_INCREF(Py_None);
+        return Py_None;
+    }else{
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    Py_INCREF(Py_None);
+    return Py_None;
+
+}
+
 PyDoc_STRVAR(copy_doc,
 "copy() -> msg object\n\
 \n\
@@ -380,6 +468,10 @@ static PyMethodDef msg_methods[] = {
       "Get SIP header field by name."},
     {"call_function", (PyCFunction)msg_call_function, METH_VARARGS,
       "Invoke function exported by the other module."},
+    {"get_pseudoVar", (PyCFunction)msg_get_pseudoVar, METH_VARARGS,
+      "calc variable "},
+    {"set_pseudoVar", (PyCFunction)msg_set_pseudoVar, METH_VARARGS,
+      "set variable "},
     {NULL, NULL, 0, NULL}                              /* sentinel */
 };
 
