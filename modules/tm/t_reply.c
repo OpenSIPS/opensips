@@ -603,7 +603,7 @@ static inline int run_failure_handlers(struct cell *t)
 		t->on_negative=0;
 		/* run a reply_route action if some was marked */
 		swap_route_type(old_route_type, FAILURE_ROUTE);
-		run_top_route(sroutes->failure[on_failure].a, &faked_req);
+		run_top_route(sroutes->failure[on_failure], &faked_req);
 		set_route_type(old_route_type);
 	}
 
@@ -1585,7 +1585,7 @@ int reply_received( struct sip_msg  *p_msg )
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
-		(run_top_route(sroutes->onreply[t->uac[branch].on_reply].a,p_msg)
+		(run_top_route(sroutes->onreply[t->uac[branch].on_reply],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
@@ -1595,7 +1595,7 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
-		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply].a,p_msg)
+		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {

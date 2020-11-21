@@ -140,7 +140,7 @@ static void route_received(int sender, void *param)
 	req->rcv.src_ip.af = AF_INET;
 	req->rcv.dst_ip.af = AF_INET;
 
-	route_run(sroutes->event[route_s->ev_route_id].a, req,
+	route_run(sroutes->event[route_s->ev_route_id], req,
 		&route_s->params, &route_s->event);
 
 	/* clean whatever extra structures were added by script functions */

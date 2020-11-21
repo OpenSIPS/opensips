@@ -1513,6 +1513,7 @@ timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actio
 							yyerror("Too many timer routes defined\n");
 							YYABORT;
 						}
+						sroutes->timer[i_tmp].name = $3;
 						sroutes->timer[i_tmp].interval = $5;
 						push($8, &sroutes->timer[i_tmp].a);
 					}

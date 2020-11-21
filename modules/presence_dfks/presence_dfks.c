@@ -439,7 +439,7 @@ static int run_dfks_route(int route_idx)
 		route_idx == dfks_get_route_idx ? "GET" : "SET",
 		feature_names[feature_ctx.idx].len, feature_names[feature_ctx.idx].s,
 		feature_ctx.pres_uri.len, feature_ctx.pres_uri.s);
-	run_top_route(sroutes->request[route_idx].a, &req);
+	run_top_route(sroutes->request[route_idx], &req);
 
 	free_sip_msg(&req);
 

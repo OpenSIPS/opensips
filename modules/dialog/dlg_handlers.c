@@ -134,7 +134,7 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 	swap_route_type(old_route_type, REQUEST_ROUTE);
 
 	/************* actual run sequance ****************/
-	run_top_route( sroutes->request[rt_idx].a, fake_msg);
+	run_top_route( sroutes->request[rt_idx], fake_msg);
 
 	/************* post-run sequance ****************/
 

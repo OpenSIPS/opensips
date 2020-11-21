@@ -28,6 +28,7 @@
 #define action_h
 
 #include "parser/msg_parser.h"
+#include "route.h"
 #include "route_struct.h"
 
 #define ACT_FL_EXIT     (1<<0)
@@ -52,10 +53,17 @@ typedef struct {
 extern action_time longest_action[LONGEST_ACTION_SIZE];
 extern int min_action_time;
 
+/* the current route call stack, containing route names */
+extern char *route_stack[];
+extern int route_stack_size;
+
 int do_action(struct action* a, struct sip_msg* msg);
-int run_top_route(struct action* a, struct sip_msg* msg);
-int run_top_route_get_code(struct action* a, struct sip_msg* msg, int *code_ret);
+int run_top_route(struct script_route sr, struct sip_msg* msg);
 int run_action_list(struct action* a, struct sip_msg* msg);
+int _run_actions(struct action *a, struct sip_msg *msg);
+
+/* run the error route with correct handling */
+extern int inside_error_route;
 void run_error_route(struct sip_msg* msg, int force_reset);
 
 #define script_trace(class, action, msg, file, line) \
@@ -68,7 +76,18 @@ void __script_trace(char *class, char *action, struct sip_msg *msg,
 		char *file, int line);
 
 typedef int (*param_getf_t)(struct sip_msg*, pv_param_t*, pv_value_t*, void *, void *);
-void route_params_push_level(void *params, void *extra, param_getf_t getf);
+
+/**
+ * Increase the recursion level of route parameters and/or the route call stack
+ *
+ * @rt_name: if not NULL, a new route name will be pushed to the route stack.
+ *           A leading '!' may be provided in order to force that exact name
+ *             (e.g. avoid "route[error_route]", rather just "error_route")
+ * @params: data to push (the values of each parameter)
+ * @extra: optional, extra data
+ * @getf: the function to be invoked when extracting each parameter
+ */
+void route_params_push_level(char *rt_name, void *params, void *extra, param_getf_t getf);
 void route_params_pop_level(void);
 int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 

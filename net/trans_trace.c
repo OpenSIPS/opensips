@@ -228,7 +228,7 @@ int check_trace_route( int route_id, struct tcp_connection* conn)
 	build_dummy_msg( &conn->rcv );
 
 	/* run given hep route */
-	if (run_top_route(sroutes->request[route_id].a, &dummy_req) & ACT_FL_DROP){
+	if (run_top_route(sroutes->request[route_id], &dummy_req) & ACT_FL_DROP){
 		conn->flags |= F_CONN_TRACE_DROPPED;
 		free_sip_msg( &dummy_req );
 		return 0;

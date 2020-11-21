@@ -36,7 +36,7 @@ int route_build_buffer(str *event_name, evi_reply_sock *sock,
 		evi_params_t *params, route_send_t **msg);
 
 int route_send(route_send_t *route_s);
-void route_run(struct action* a, struct sip_msg* msg,
+void route_run(struct script_route route, struct sip_msg* msg,
 		evi_params_t *params, str *event);
 
 #endif

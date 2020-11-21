@@ -215,7 +215,7 @@ int run_helper_logic(struct sip_msg *msg, void *param)
 	if (seq_request) {
 		if (seq_route_id > 0) {
 			LM_DBG("running seq route '%s'\n", seq_route);
-			if (run_top_route(sroutes->request[seq_route_id].a, msg) & ACT_FL_DROP) {
+			if (run_top_route(sroutes->request[seq_route_id], msg) & ACT_FL_DROP) {
 				LM_DBG("script exited in the seq route\n");
 
 				return SCB_RUN_POST_CBS;

@@ -231,12 +231,14 @@ int register_utimer(char *label, utimer_function f, void* param,
 
 void route_timer_f(unsigned int ticks, void* param)
 {
-	struct action* a = (struct action*)param;
-	static struct sip_msg* req= NULL;
+	static struct sip_msg *req;
+
+	struct script_timer_route *tr = (struct script_timer_route *)param;
+	struct script_route sr = {tr->name, tr->a};
 	int old_route_type;
 
-	if(a == NULL) {
-		LM_ERR("NULL action\n");
+	if(sr.a == NULL) {
+		LM_ERR("NULL actions for timer_route '%s'\n", sr.name);
 		return;
 	}
 
@@ -260,7 +262,7 @@ void route_timer_f(unsigned int ticks, void* param)
 	req->rcv.dst_ip.af = AF_INET;
 
 	swap_route_type(old_route_type, TIMER_ROUTE);
-	run_top_route(a, req);
+	run_top_route(sr, req);
 	set_route_type(old_route_type);
 
 	/* clean whatever extra structures were added by script functions */
@@ -283,7 +285,7 @@ int register_route_timers(void)
 	{
 		if(sroutes->timer[i].a == NULL)
 			return 0;
-		t = new_os_timer( "timer_route", 0, route_timer_f, sroutes->timer[i].a,
+		t = new_os_timer( "timer_route", 0, route_timer_f, &sroutes->timer[i],
 				sroutes->timer[i].interval);
 		if (t==NULL)
 			return E_OUT_OF_MEM;

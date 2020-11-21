@@ -61,6 +61,7 @@ typedef struct __str str;
 /* str initialization */
 #define STR_NULL (str){NULL, 0}
 #define str_init(_string)  (str){_string, sizeof(_string) - 1}
+
 static inline void init_str(str *dest, const char *src)
 {
 	dest->s = (char *)src;

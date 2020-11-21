@@ -688,8 +688,8 @@ int run_route_algo(struct sip_msg *msg, int rt_idx,ds_dest_p entry)
 {
 	int fret;
 
-	route_params_push_level(entry, NULL, ds_route_param_get);
-	run_top_route_get_code(sroutes->request[rt_idx].a, msg, &fret);
+	route_params_push_level(sroutes->request[rt_idx].name, entry, NULL, ds_route_param_get);
+	fret = _run_actions(sroutes->request[rt_idx].a, msg);
 	route_params_pop_level();
 
 	return fret;

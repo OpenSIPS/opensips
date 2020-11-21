@@ -2440,7 +2440,7 @@ int hep_msg_received(void)
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route( sroutes->request[hep_route_id].a, &msg);
+		run_top_route( sroutes->request[hep_route_id], &msg);
 
 		/* free possible loaded avps */
 		reset_avps();
