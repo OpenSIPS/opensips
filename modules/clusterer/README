@@ -46,7 +46,8 @@ CLUSTERER Module
 
               1.5.3. cluster_broadcast_req(cluster_id, msg[, tag])
 
-              1.5.4. cluster_check_addr(cluster_id, ip, addr_type)
+              1.5.4. cluster_check_addr(cluster_id, ip[,
+                      addr_type])
 
         1.6. Exported MI Functions
 
@@ -619,12 +620,12 @@ p(rcv_tag)");
 cluster_broadcast_req("$var(cl_id)", "$var(share_data)");
 ...
 
-1.5.4.  cluster_check_addr(cluster_id, ip, addr_type)
+1.5.4.  cluster_check_addr(cluster_id, ip[, addr_type])
 
    This function checks whether the given IP address belongs to
    one of the nodes in the cluster.
 
-   The addr_type parameter can be set to in order to select the
+   The addr_type parameter can be set in order to select the
    address of the node that the comparison is made against, with
    the possible values of:
      * bin - node's BIN interface listener;
@@ -1081,7 +1082,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 225 71 9118 4567
+   1. Vlad Patrascu (@rvlad-patrascu) 226 72 9120 4569
    2. Liviu Chircu (@liviuchircu) 45 32 614 434
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 20 14 308 132
@@ -1110,10 +1111,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Fabian Gast (@fgast)                     Nov 2018 - Jul 2020
-   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Jul 2020
-   3. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Jun 2020
-   4. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2019
+   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Nov 2020
+   2. Fabian Gast (@fgast)                     Nov 2018 - Jul 2020
+   3. Liviu Chircu (@liviuchircu)              Mar 2016 - Jul 2020
+   4. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Jun 2020
    5. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
    6. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
    7. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016
@@ -1126,10 +1127,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Eseanu
-   Marius Cristian (@eseanucristian).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Fabian Gast
+   (@fgast), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Eseanu Marius
+   Cristian (@eseanucristian).
 
    doc copyrights:
 
