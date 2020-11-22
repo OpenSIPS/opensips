@@ -118,7 +118,7 @@ void free_urecord(urecord_t* _r)
 	store_destroy(_r->kv_storage);
 
 	if (have_mem_storage() && !_r->is_static) {
-		if (_r->aor.s) shm_free(_r->aor.s);
+		shm_free(_r->aor.s);
 		shm_free(_r);
 	} else {
 		_r->contacts = NULL;

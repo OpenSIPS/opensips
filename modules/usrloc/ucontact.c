@@ -201,15 +201,15 @@ mem_error:
 	LM_ERR("no more shm memory\n");
 
 out_free:
-	if (c->path.s) shm_free(c->path.s);
-	if (c->received.s) shm_free(c->received.s);
-	if (c->user_agent.s) shm_free(c->user_agent.s);
-	if (c->callid.s) shm_free(c->callid.s);
-	if (c->c.s) shm_free(c->c.s);
-	if (c->instance.s) shm_free(c->instance.s);
-	if (c->attr.s) shm_free(c->attr.s);
-	if (c->cdb_key.s) shm_free(c->cdb_key.s);
-	if (c->shtag.s) shm_free(c->shtag.s);
+	shm_free(c->path.s);
+	shm_free(c->received.s);
+	shm_free(c->user_agent.s);
+	shm_free(c->callid.s);
+	shm_free(c->c.s);
+	shm_free(c->instance.s);
+	shm_free(c->attr.s);
+	shm_free(c->cdb_key.s);
+	shm_free(c->shtag.s);
 	if (c->kv_storage) store_destroy(c->kv_storage);
 	shm_free(c);
 	return NULL;
@@ -227,15 +227,15 @@ void free_ucontact(ucontact_t* _c)
 	if (_c->flags & FL_EXTRA_HOP)
 		goto skip_fields;
 
-	if (_c->path.s) shm_free(_c->path.s);
-	if (_c->received.s) shm_free(_c->received.s);
-	if (_c->instance.s) shm_free(_c->instance.s);
-	if (_c->user_agent.s) shm_free(_c->user_agent.s);
-	if (_c->callid.s) shm_free(_c->callid.s);
-	if (_c->c.s) shm_free(_c->c.s);
-	if (_c->attr.s) shm_free(_c->attr.s);
-	if (_c->cdb_key.s) shm_free(_c->cdb_key.s);
-	if (_c->shtag.s) shm_free(_c->shtag.s);
+	shm_free(_c->path.s);
+	shm_free(_c->received.s);
+	shm_free(_c->instance.s);
+	shm_free(_c->user_agent.s);
+	shm_free(_c->callid.s);
+	shm_free(_c->c.s);
+	shm_free(_c->attr.s);
+	shm_free(_c->cdb_key.s);
+	shm_free(_c->shtag.s);
 	if (_c->kv_storage) store_destroy(_c->kv_storage);
 
 skip_fields:
@@ -256,7 +256,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 			if (ptr == 0) \
 				goto out_oom; \
 			memcpy(ptr, (_new)->s, (_new)->len);\
-			if ((_old)->s) shm_free((_old)->s);\
+			shm_free((_old)->s);\
 			(_old)->s = ptr;\
 		} else {\
 			memcpy((_old)->s, (_new)->s, (_new)->len);\
@@ -283,7 +283,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	if (_ci->received.s && _ci->received.len) {
 		update_str( &_c->received, &_ci->received, 0);
 	} else {
-		if (_c->received.s) shm_free(_c->received.s);
+		shm_free(_c->received.s);
 		_c->received.s = NULL;
 		_c->received.len = 0;
 	}
@@ -291,7 +291,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	if (_ci->path) {
 		update_str( &_c->path, _ci->path, 0);
 	} else {
-		if (_c->path.s) shm_free(_c->path.s);
+		shm_free(_c->path.s);
 		_c->path.s = NULL;
 		_c->path.len = 0;
 	}
@@ -299,7 +299,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 	if (_ci->attr && _ci->attr->s && _ci->attr->len) {
 		update_str( &_c->attr, _ci->attr, 0);
 	} else {
-		if (_c->attr.s) shm_free(_c->attr.s);
+		shm_free(_c->attr.s);
 		_c->attr.s = NULL;
 		_c->attr.len = 0;
 	}
@@ -341,9 +341,7 @@ int mem_update_ucontact(ucontact_t* _c, ucontact_info_t* _ci)
 		if (shtagp) {
 			update_str(&_c->shtag, &shtagp->s, 0);
 		} else {
-			if (_c->shtag.s)
-				shm_free(_c->shtag.s);
-
+			shm_free(_c->shtag.s);
 			_c->shtag.s = NULL;
 			_c->shtag.len = 0;
 
