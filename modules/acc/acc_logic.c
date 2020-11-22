@@ -177,8 +177,7 @@ void free_extra_array(extra_value_t* array, int array_len)
 	int i;
 
 	for (i=0; i < array_len; i++) {
-		if (array[i].value.s)
-			shm_free(array[i].value.s);
+		shm_free(array[i].value.s);
 	}
 	shm_free(array);
 }
@@ -197,8 +196,7 @@ static inline void free_acc_ctx(acc_ctx_t* ctx)
 		}
 		shm_free(ctx->leg_values);
 	}
-	if (ctx->acc_table.s)
-		shm_free(ctx->acc_table.s);
+	shm_free(ctx->acc_table.s);
 
 	/* also cleanup dialog */
 	dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;

@@ -139,9 +139,7 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* extra)
 	if (pvt == NULL || pvt->flags&PV_VAL_NULL
 	    || (pvt->flags & PV_VAL_STR && pvt->rs.len == 0)) {
 		/* also treat empty strings as NULL */
-		if (extra->value.s) {
-			shm_free(extra->value.s);
-		}
+		shm_free(extra->value.s);
 		extra->shm_buf_len = ACC_CTX_VAL_DELETED;
 		extra->value.s = NULL;
 		extra->value.len = 0;
