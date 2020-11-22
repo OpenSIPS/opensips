@@ -316,14 +316,10 @@ int xmpp_send_sip_msg(char *from, char *to, char *msg)
 
 void xmpp_free_pipe_cmd(struct xmpp_pipe_cmd *cmd)
 {
-	if (cmd->from)
-		shm_free(cmd->from);
-	if (cmd->to)
-		shm_free(cmd->to);
-	if (cmd->body)
-		shm_free(cmd->body);
-	if (cmd->id)
-		shm_free(cmd->id);
+	shm_free(cmd->from);
+	shm_free(cmd->to);
+	shm_free(cmd->body);
+	shm_free(cmd->id);
 	shm_free(cmd);
 }
 
