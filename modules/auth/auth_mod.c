@@ -358,14 +358,10 @@ static void destroy(void)
 			lock_dealloc(nonce_lock);
 		}
 
-		if(nonce_buf)
-			shm_free(nonce_buf);
-		if(second)
-			shm_free(second);
-		if(sec_monit)
-			shm_free(sec_monit);
-		if(next_index)
-			shm_free(next_index);
+		shm_free(nonce_buf);
+		shm_free(second);
+		shm_free(sec_monit);
+		shm_free(next_index);
 	}
 }
 
