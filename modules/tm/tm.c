@@ -1342,7 +1342,7 @@ static int w_t_add_hdrs(struct sip_msg* msg, str *val)
 		return -1;
 	}
 
-	if (t->extra_hdrs.s) shm_free(t->extra_hdrs.s);
+	shm_free(t->extra_hdrs.s);
 	t->extra_hdrs.s = (char*)shm_malloc(val->len);
 	if (t->extra_hdrs.s==NULL) {
 		LM_ERR("no more shm mem\n");

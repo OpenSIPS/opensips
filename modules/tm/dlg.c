@@ -360,12 +360,12 @@ static inline int response2dlg(struct sip_msg* _m, dlg_t* _d)
 
 	return 0;
  err2:
-	if (_d->id.rem_tag.s) shm_free(_d->id.rem_tag.s);
+	shm_free(_d->id.rem_tag.s);
 	_d->id.rem_tag.s = 0;
 	_d->id.rem_tag.len = 0;
 
  err1:
-	if (_d->rem_target.s) shm_free(_d->rem_target.s);
+	shm_free(_d->rem_target.s);
 	_d->rem_target.s = 0;
 	_d->rem_target.len = 0;
 	return -4;
@@ -520,7 +520,7 @@ static inline int dlg_confirmed_resp_uac(dlg_t* _d, struct sip_msg* _m)
 		/* If there is a contact URI */
 		if (contact.len) {
 			/* Free old remote target if any */
-			if (_d->rem_target.s) shm_free(_d->rem_target.s);
+			shm_free(_d->rem_target.s);
 			/* Duplicate new remote target */
 			if (shm_str_dup(&_d->rem_target, &contact) < 0) return -4;
 		}
@@ -648,16 +648,16 @@ void free_dlg(dlg_t* _d)
 {
 	if (!_d) return;
 
-	if (_d->id.call_id.s) shm_free(_d->id.call_id.s);
-	if (_d->id.rem_tag.s) shm_free(_d->id.rem_tag.s);
-	if (_d->id.loc_tag.s) shm_free(_d->id.loc_tag.s);
+	shm_free(_d->id.call_id.s);
+	shm_free(_d->id.rem_tag.s);
+	shm_free(_d->id.loc_tag.s);
 
-	if (_d->loc_uri.s) shm_free(_d->loc_uri.s);
-	if (_d->rem_uri.s) shm_free(_d->rem_uri.s);
-	if (_d->rem_target.s) shm_free(_d->rem_target.s);
+	shm_free(_d->loc_uri.s);
+	shm_free(_d->rem_uri.s);
+	shm_free(_d->rem_target.s);
 
-	if (_d->loc_dname.s) shm_free(_d->loc_dname.s);
-	if (_d->rem_dname.s) shm_free(_d->rem_dname.s);
+	shm_free(_d->loc_dname.s);
+	shm_free(_d->rem_dname.s);
 
 	/* Free all routes in the route set */
 	shm_free_rr(&_d->route_set);

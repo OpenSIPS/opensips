@@ -341,8 +341,7 @@ static inline int update_uac_dst( struct sip_msg *request,
 			return -1;
 		}
 
-		if (uac->request.buffer.s)
-			shm_free(uac->request.buffer.s);
+		shm_free(uac->request.buffer.s);
 
 		/* things went well, move ahead and install new buffer! */
 		uac->request.dst.send_sock = send_sock;

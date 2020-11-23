@@ -187,7 +187,7 @@ error:
 void lock_cleanup(void)
 {
 	/* must check if someone uses them, for now just leave them allocated*/
-	if (timer_group_lock) shm_free((void*)timer_group_lock);
+	shm_free(timer_group_lock);
 }
 
 #else
@@ -215,7 +215,7 @@ void lock_cleanup(void)
 		lock_set_dealloc(reply_semaphore);
 	};
 	entry_semaphore = timer_semaphore = reply_semaphore = 0;
-	if (timer_group_lock) shm_free(timer_group_lock);
+	shm_free(timer_group_lock);
 
 }
 #endif /*GEN_LOCK_T_PREFERED*/

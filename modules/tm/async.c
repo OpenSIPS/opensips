@@ -368,7 +368,7 @@ failure:
 	return_code = -1;
 resume:
 	/* get rid of the context, useless at this point further */
-	if (ctx) shm_free(ctx);
+	shm_free(ctx);
 	/* run the resume route */
 	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 	/* the triggering route is terminated and whole script ended */

@@ -136,8 +136,7 @@ void free_cell( struct cell* dead_cell )
 	if ( dead_cell->uas.request )
 		free_cloned_msg_unsafe( dead_cell->uas.request );
 
-	if ( dead_cell->uas.response.buffer.s )
-		shm_free_bulk( dead_cell->uas.response.buffer.s );
+	shm_free_bulk( dead_cell->uas.response.buffer.s );
 
 	/* UA Clients */
 	for ( i =0 ; i<dead_cell->nr_of_outgoings;  i++ )
@@ -153,11 +152,9 @@ void free_cell( struct cell* dead_cell )
 			free_cloned_msg_unsafe( rpl );
 		}
 		if ( (p=dead_cell->uac[i].proxy)!=NULL ) {
-			if ( p->host.h_addr_list )
-				shm_free_bulk( p->host.h_addr_list );
+			shm_free_bulk( p->host.h_addr_list );
 			if ( p->dn ) {
-				if ( p->dn->kids )
-					shm_free_bulk( p->dn->kids );
+				shm_free_bulk( p->dn->kids );
 				shm_free_bulk( p->dn );
 			}
 			shm_free_bulk(p);
@@ -181,8 +178,7 @@ void free_cell( struct cell* dead_cell )
 		destroy_avp_list_bulk( &dead_cell->user_avps );
 
 	/* extra hdrs */
-	if ( dead_cell->extra_hdrs.s )
-		shm_free_bulk( dead_cell->extra_hdrs.s );
+	shm_free_bulk( dead_cell->extra_hdrs.s );
 
 	/* the cell's body */
 	shm_free_bulk( dead_cell );
