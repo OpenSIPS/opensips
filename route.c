@@ -1134,8 +1134,8 @@ static int fix_actions(struct action* a)
 						break;
 				}
 				if (ret == -1) {
-					LM_ALERT("BUG in route() type %d\n",
-						t->elem[0].type);
+					LM_ERR("failed to validate a route() statement (type %d)\n",
+					           t->elem[0].type);
 					ret = E_CFG;
 					goto error;
 				}
