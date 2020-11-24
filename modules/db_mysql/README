@@ -161,7 +161,7 @@ modparam("tls_mgm", "private_key", "[dom1]/etc/pki/tls/private/opensips.
 key")
 modparam("tls_mgm", "ca_list",     "[dom1]/etc/pki/tls/certs/ca.pem")
 ...
-modparam("db_mysql", "use_tls", "dom1")
+modparam("db_mysql", "use_tls", 1)
 ...
 modparam("usrloc", "db_url", "mysql://root:1234@localhost/opensips?tls_d
 omain=dom1")
@@ -211,8 +211,8 @@ Chapter 2. Contributors
    6. Razvan Crainea (@razvancrainea) 18 15 225 53
    7. Andrei Pelinescu-Onciul 16 14 52 49
    8. Vlad Paiu (@vladpaiu) 13 10 139 25
-   9. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
-   10. Vlad Patrascu (@rvlad-patrascu) 10 6 174 73
+   9. Vlad Patrascu (@rvlad-patrascu) 11 7 175 74
+   10. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
 
    All remaining contributors: Nils Ohlmeier, Norman Brandinger
    (@NormB), Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
@@ -242,7 +242,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
      Name Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Jul 2020
+   1. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Nov 2020
    2. Liviu Chircu (@liviuchircu) Mar 2014 - Mar 2020
    3. Vlad Paiu (@vladpaiu) Feb 2011 - Dec 2019
    4. Razvan Crainea (@razvancrainea) Oct 2011 - Sep 2019
@@ -269,9 +269,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Jan Janak

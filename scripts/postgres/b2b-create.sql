@@ -35,18 +35,12 @@ CREATE TABLE b2b_entities (
 ALTER SEQUENCE b2b_entities_id_seq MAXVALUE 2147483647 CYCLE;
 CREATE INDEX b2b_entities_b2b_entities_param ON b2b_entities (param);
 
-INSERT INTO version (table_name, table_version) values ('b2b_logic','3');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','4');
 CREATE TABLE b2b_logic (
     id SERIAL PRIMARY KEY NOT NULL,
     si_key VARCHAR(64) NOT NULL,
     scenario VARCHAR(64),
     sstate INTEGER NOT NULL,
-    next_sstate INTEGER NOT NULL,
-    sparam0 VARCHAR(64),
-    sparam1 VARCHAR(64),
-    sparam2 VARCHAR(64),
-    sparam3 VARCHAR(64),
-    sparam4 VARCHAR(64),
     sdp TEXT,
     lifetime INTEGER DEFAULT 0 NOT NULL,
     e1_type INTEGER NOT NULL,

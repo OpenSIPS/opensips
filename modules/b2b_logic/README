@@ -6,49 +6,65 @@ B2B_LOGIC
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Scenario Logic
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. hash_size (int)
-              1.3.2. script_scenario (str)
-              1.3.3. extern_scenario (str)
-              1.3.4. cleanup_period (int)
-              1.3.5. custom_headers_regexp (str)
-              1.3.6. custom_headers (str)
-              1.3.7. use_init_sdp (int)
-              1.3.8. db_url (str)
-              1.3.9. update_period (int)
-              1.3.10. max_duration (int)
-              1.3.11. b2bl_from_spec_param (string)
-              1.3.12. server_address (str)
-              1.3.13. init_callid_hdr (str)
-              1.3.14. db_mode (int)
-              1.3.15. db_table (str)
-              1.3.16. b2bl_th_init_timeout (int)
+              1.4.1. hash_size (int)
+              1.4.2. script_req_route (str)
+              1.4.3. script_reply_route (str)
+              1.4.4. cleanup_period (int)
+              1.4.5. custom_headers_regexp (str)
+              1.4.6. custom_headers (str)
+              1.4.7. use_init_sdp (int)
+              1.4.8. db_url (str)
+              1.4.9. update_period (int)
+              1.4.10. max_duration (int)
+              1.4.11. b2bl_from_spec_param (string)
+              1.4.12. server_address (str)
+              1.4.13. init_callid_hdr (str)
+              1.4.14. db_mode (int)
+              1.4.15. db_table (str)
+              1.4.16. b2bl_th_init_timeout (int)
 
-        1.4. Exported Functions
+        1.5. Exported Functions
 
-              1.4.1. b2b_init_request(flags, [scenario_param1],
-                      [scenario_param2], [scenario_param3],
-                      [scenario_param4])
+              1.5.1. b2b_init_request(id, [flags], [req_route],
+                      [reply_route], [init_sdp_body],
+                      [init_sdp_ctype])
 
-              1.4.2. b2b_bridge_request(b2bl_key,entity_no)
+              1.5.2. b2b_server_new(id, [extra_hdrs],
+                      [extra_hdr_bodies])
 
-        1.5. Exported MI Functions
+              1.5.3. b2b_client_new(id, [extra_hdrs],
+                      [extra_hdr_bodies])
 
-              1.5.1. b2b_trigger_scenario
-              1.5.2. b2b_bridge
-              1.5.3. b2b_list
+              1.5.4. b2b_bridge(entity1, entity2, [provmedia_uri],
+                      [lifetime])
 
-        1.6. Exported Pseudo-Variables
+              1.5.5. b2b_pass_request()
+              1.5.6. b2b_handle_reply()
+              1.5.7. b2b_send_reply(code, reason)
+              1.5.8. b2b_delete_entity()
+              1.5.9. b2b_end_dlg_leg()
+              1.5.10. b2b_bridge_request(b2bl_key,entity_no)
 
-              1.6.1. $b2b_logic.key
-              1.6.2. $b2b_logic.entity(field)[idx]
-              1.6.3. $b2b_logic.ctx(key)
+        1.6. Exported MI Functions
+
+              1.6.1. b2b_trigger_scenario
+              1.6.2. b2b_bridge
+              1.6.3. b2b_list
+
+        1.7. Exported Pseudo-Variables
+
+              1.7.1. $b2b_logic.key
+              1.7.2. $b2b_logic.entity(field)[idx]
+              1.7.3. $b2b_logic.ctx(key)
+              1.7.4. $b2b_logic.scenario(key)
 
    2. Developer Guide
 
@@ -80,8 +96,8 @@ B2B_LOGIC
    List of Examples
 
    1.1. Set server_hsize parameter
-   1.2. Set script_scenario parameter
-   1.3. Set script_scenario parameter
+   1.2. Set script_req_route parameter
+   1.3. Set script_repl_route parameter
    1.4. Set cleanup_period parameter
    1.5. Set parameter
    1.6. Set parameter
@@ -96,10 +112,19 @@ B2B_LOGIC
    1.15. Set db_table parameter
    1.16. Set b2bl_th_init_timeout parameter
    1.17. b2b_init_request usage
-   1.18. b2b_bridge_request usage
-   1.19. $b2b_logic.key usage
-   1.20. $b2b_logic.entity usage
-   1.21. $b2b_logic.ctx usage
+   1.18. b2b_server_new usage
+   1.19. b2b_client_new usage
+   1.20. b2b_bridge usage
+   1.21. b2b_pass_request usage
+   1.22. b2b_handle_reply usage
+   1.23. b2b_send_reply usage
+   1.24. b2b_delete_entity usage
+   1.25. b2b_end_dlg_leg usage
+   1.26. b2b_bridge_request usage
+   1.27. $b2b_logic.key usage
+   1.28. $b2b_logic.entity usage
+   1.29. $b2b_logic.ctx usage
+   1.30. $b2b_logic.scenario usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -108,23 +133,23 @@ Chapter 1. Admin Guide
 
    The B2BUA implementation in OpenSIPS is separated in two
    layers:
-     * a lower one(coded in b2b_entities module)- which implements
-       the basic functions of a UAS and UAC
-     * an upper one - which represents the logic engine of B2BUA,
-       responsible of actually implementing the B2BUA services
-       using the functions offered by the low level.
+     * a lower one (implemented in the b2b_entities module) - the
+       basic functions of a UAS and UAC
+     * an upper one (implemented in b2b_logic module) - which
+       represents the logic engine of B2BUA, responsible of
+       actually implementing the B2BUA services using the
+       functions offered by the low level.
 
    This module is a B2BUA upper level implementation that can be
-   used with b2b_entities module to have B2BUA that can be
-   configured to provide some PBX services. The B2B services are
-   coded in an XML scenario document. The b2b_logic module
-   examines this document and uses the functions provided by the
-   b2b_entities module to achieve the actions specified in the
-   document and enable the service.
+   used along with the b2b_entities module in order to provide
+   various B2BUA services (eg. PBX features). The actual logic of
+   the B2BUA scenarios can be implemented in dedicated script
+   routes.
 
-   A scenario can be instantiated in two ways:
-     * from the script - at the receipt of a initial message
-     * with a extern command (MI) command - the server will
+   A B2B session can be triggered in two ways:
+     * from the script - at the receipt of an initial INVITE
+       message
+     * with an extern command (MI) command - the server will
        connect two end points in a session(Third Party Call
        Control).
 
@@ -132,24 +157,46 @@ Chapter 1. Admin Guide
    the clustering support offered by the the lower b2b_entities
    module (by setting the cluster_id modparam from b2b_entities).
 
-1.2. Dependencies
+1.2. Scenario Logic
 
-1.2.1. OpenSIPS Modules
+   After initializing a B2B session, the call legs will be handled
+   by the b2b_logic module and the first step will be to put the
+   two initial entities in contact. Requests and replies belonging
+   to these dialogs will not enter the script through the standard
+   OpenSIPS routes but instead will be handled in b2b_logic
+   dedicated routes (defined through the script_req_route and
+   script_reply_route modparams or, the custom routes given as
+   parameters to b2b_init_request()). The further steps of the
+   scenario can be implemented in these routes, by calling
+   dedicated b2b_logic script functions in order to perform
+   various actions. Normal "proxy-like" OpenSIPS functions should
+   not be executed in the b2b_logic routes.
+
+   Some messages will be handled automatically by the module and
+   will not enter the b2b_logic routes at all (BYE requests
+   received while in the process of bridging two entities,
+   ACKs/BYEs/replies for disconnected entities). Also, if no
+   dedicated b2b_logic reply route is defined, replies will be
+   handled internally by the module, with the same effects as
+   calling b2b_handle_reply() from such a route if it were
+   defined.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
      * b2b_entities, a db module
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
-   The following libraries or applications must be installed
-   before running OpenSIPS with this module loaded:
-     * libxml2-dev
+   No libraries or applications required before running OpenSIPS
+   with this module.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. hash_size (int)
+1.4.1. hash_size (int)
 
-   The size of the hash table that stores the scenario
-   instatiation entities.
+   The size of the hash table that stores the session entities.
 
    Default value is “9” (512 records).
 
@@ -158,41 +205,32 @@ Chapter 1. Admin Guide
 modparam("b2b_logic", "hash_size", 10)
 ...
 
-1.3.2. script_scenario (str)
+1.4.2. script_req_route (str)
 
-   This parameter should be set with the path of a document that
-   contains a scenario that can be instantiated from the script at
-   the receipt of an initial message.
+   The name of the script route to be called when requests
+   belonging to an ongoing B2B session are received.
 
-   This parameter can be set more than once.
-
-   Example 1.2. Set script_scenario parameter
+   Example 1.2. Set script_req_route parameter
 ...
-modparam("b2b_logic", "script_scenario", "/usr/local/opensips/scripts/b2
-b_prepaid.xml")
+modparam("b2b_logic", "script_req_route", "b2b_request")
 ...
 
-1.3.3. extern_scenario (str)
+1.4.3. script_reply_route (str)
 
-   This parameter should be set with the path of a document that
-   contains a scenario that can be instantiated with an MI
-   command.
+   The name of the script route to be called when replies
+   belonging to an ongoing B2B session are received.
 
-   This parameter can be set more than once.
-
-   Example 1.3. Set script_scenario parameter
+   Example 1.3. Set script_repl_route parameter
 ...
-modparam("b2b_logic", "extern_scenario", "/usr/local/opensips/scripts/b2
-b_marketing.xml")
+modparam("b2b_logic", "script_reply_route", "b2b_reply")
 ...
 
-1.3.4. cleanup_period (int)
+1.4.4. cleanup_period (int)
 
    The time interval at which to search for an hanged b2b context.
-   A scenario is considered expired if the duration of a session
-   exceeds the lifetime specified in the scenario. At that moment,
-   BYE is sent in all the dialogs from that context and the
-   context is deleted.
+   A session is considered expired if the duration of a session
+   exceeds its defined lifetime. At that moment, BYE is sent in
+   all the dialogs from that context and the context is deleted.
 
    Default value is “100”.
 
@@ -201,7 +239,7 @@ b_marketing.xml")
 modparam("b2b_logic", "cleanup_period", 60)
 ...
 
-1.3.5. custom_headers_regexp (str)
+1.4.5. custom_headers_regexp (str)
 
    Regexp to search SIP header by names that should be passed from
    the dialog of one side to the other side. There are a number of
@@ -232,7 +270,7 @@ modparam("b2b_logic", "cleanup_period", 60)
 modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
 ...
 
-1.3.6. custom_headers (str)
+1.4.6. custom_headers (str)
 
    A list of SIP header names delimited by ';' that should be
    passed from the dialog of one side to the other side. There are
@@ -257,7 +295,7 @@ modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
 modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 ...
 
-1.3.7. use_init_sdp (int)
+1.4.7. use_init_sdp (int)
 
    This parameter modifies the behaviour of the B2BUA when
    bridging and a provisional media uri is set. For playing media
@@ -268,7 +306,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
    many gateways support this. So, the solution is to use the sdp
    received in the first Invite from the caller and put it as the
    body for this invite. By setting this parameter, this behavior
-   is enabled. You can also set use_init_sdp per scenario and
+   is enabled. You can also set use_init_sdp per session and
    overwrite this global value.
 
    Default value is “0”.
@@ -278,7 +316,7 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 modparam("b2b_logic", "use_init_sdp", 1)
 ...
 
-1.3.8. db_url (str)
+1.4.8. db_url (str)
 
    Database URL.
 
@@ -288,7 +326,7 @@ modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/o
 pensips")
 ...
 
-1.3.9. update_period (int)
+1.4.9. update_period (int)
 
    The time interval at which to update the info in database.
 
@@ -299,7 +337,7 @@ pensips")
 modparam("b2b_logic", "update_period", 60)
 ...
 
-1.3.10. max_duration (int)
+1.4.10. max_duration (int)
 
    The maximum duration of a call.
 
@@ -312,7 +350,7 @@ modparam("b2b_logic", "update_period", 60)
 modparam("b2b_logic", "max_duration", 7200)
 ...
 
-1.3.11. b2bl_from_spec_param (string)
+1.4.11. b2bl_from_spec_param (string)
 
    The name of the pseudo variable for storing the new “From”
    header. The PV must be set before calling “b2b_init_request”.
@@ -332,21 +370,22 @@ route{
         ...
 }
 
-1.3.12. server_address (str)
+1.4.12. server_address (str)
 
    The IP address of the machine that will be used as Contact in
-   the generated messages. This is compulsory only when using
-   external scenarios. For the script scenarios, if it is not set,
-   it is constructed dynamically from the socket where the
-   initiating request was received. This socket will be used to
-   send all the requests, replies for that scenario instantiation.
+   the generated messages. This is compulsory only when OpenSIPS
+   starts a call from the middle. For scenarios triggered by
+   received calls, if it is not set, it is constructed dynamically
+   from the socket where the initiating request was received. This
+   socket will be used to send all the requests, replies for that
+   session.
 
    Example 1.12. Set server_address parameter
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 
-1.3.13. init_callid_hdr (str)
+1.4.13. init_callid_hdr (str)
 
    The module offers the possibility to insert the original callid
    in a header in the generated Invites. If you want this, set
@@ -358,7 +397,7 @@ modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
-1.3.14. db_mode (int)
+1.4.14. db_mode (int)
 
    The B2B modules have support for the 3 type of database storage
 
@@ -375,7 +414,7 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 modparam("b2b_logic", "db_mode", 1)
 ...
 
-1.3.15. db_table (str)
+1.4.15. db_table (str)
 
    Name of the database table to be used
 
@@ -386,7 +425,7 @@ modparam("b2b_logic", "db_mode", 1)
 modparam("b2b_logic", "db_table", "some_table_name")
 ...
 
-1.3.16. b2bl_th_init_timeout (int)
+1.4.16. b2bl_th_init_timeout (int)
 
    Call setup timeout for topology hiding scenario.
 
@@ -397,38 +436,50 @@ modparam("b2b_logic", "db_table", "some_table_name")
 modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 ...
 
-1.4. Exported Functions
+1.5. Exported Functions
 
-1.4.1.  b2b_init_request(flags, [scenario_param1], [scenario_param2],
-[scenario_param3], [scenario_param4])
+1.5.1.  b2b_init_request(id, [flags], [req_route], [reply_route],
+[init_sdp_body], [init_sdp_ctype])
 
-   This is the function that must be called by the script writer
-   on an initial INVITE for which a B2B scenario must be
-   instantiated. It is up to the script writer to decide which are
-   the criteria to decide for which messages certain scenarios
-   must be instantiated.
-
-   The first parameter is the identifier for the scenario and
-   possible flags. This is defined in the XML document as an
-   attribute of the root node or "top hiding" for internal
-   topology hiding scenario. It can be passed as "scenario" or
-   "scenario_name/flags". Then it can take at most 4 other
-   parameters that represent the parameters for the xml scenario.
-   The expected number of parameters is also specified as an
-   attribute in the root node of the XML scenario.
+   This function initializes a new B2B session based on an initial
+   INVITE. A new server entity and a new client entity must be
+   created before running this function, with b2b_server_new() and
+   b2b_client_new(), respectively. These are the initial entities
+   to be connected and further scenario logic can be implemented
+   in the b2b_logic dedicated routes.
 
    Parameters:
-     * flags (string) - meaning of the flags is as follows:
+     * scenario_id (string) - identifier for the scenario of this
+       B2B session. The special value top hiding initializes an
+       internal topology hiding scenario. This scenario will do a
+       simple pass-through of messages from one side to another,
+       and no additional scripting or dedicated routes are
+       required.
+     * flags (string, optional) - meanings of the flags is as
+       follows:
           + t[nn] - Call setup timeout for topology hiding
             scenario. Example: t300.
           + a - Transparent authentication. In this mode b2b
             passes your 401 or 407 authentication request to
             destination server.
           + p - Preserve To: header.
-     * scenario_param1 (string, optional)
-     * scenario_param2 (string, optional)
-     * scenario_param3 (string, optional)
-     * scenario_param4 (string, optional)
+          + s - Use init SDP (as described in the use_init_sdp
+            modparam) for this session.
+     * req_route (string, optional) - name of the script route to
+       be called when requests belonging to this B2B session are
+       received. This parameter will override the global
+       script_req_route modparam for this particular B2B session.
+     * reply_route (string, optional) - name of the script route
+       to be called when replies belonging to this B2B session are
+       received. This parameter will override the global
+       script_reply_route modparam for this particular B2B
+       session.
+     * init_sdp_body (string, optional) - SDP body to use as init
+       SDP (see the use_init_sdp modparam).
+     * init_sdp_ctype (string, optional) - Content type to use for
+       the init SDP (see the use_init_sdp modparam).
+
+   This function can be used from REQUEST_ROUTE.
 
 Note
 
@@ -441,15 +492,208 @@ Note
 
    Example 1.17. b2b_init_request usage
 ...
-if(is_method("INVITE") && !has_totag() && prepaid_user())
-   b2b_init_request("prepaid", "sip:320@opensips.org:5070",
-      "sip:321@opensips.org:5070"));
+if(is_method("INVITE") && !has_totag() && prepaid_user()) {
+   ...
+   # create initial entities
+   b2b_server_new("server1");
+   b2b_client_new("client1", $var(media_uri));
+
+   # initialize B2B session
+   b2b_init_request("prepaid");
+   exit;
+}
 ...
 
-1.4.2.  b2b_bridge_request(b2bl_key,entity_no)
+1.5.2.  b2b_server_new(id, [extra_hdrs], [extra_hdr_bodies])
+
+   This function creates a new server entity (dialog where
+   OpenSIPS acts as a UAS) to be used for initializing a new B2B
+   session. It should only be used for initial INVITES, before
+   calling b2b_init_request().
+
+   Parameters:
+     * id (string) - ID used to reference this entity in further
+       B2B actions.
+     * extra_hdrs (var, optioanl) - AVP variable holding a list of
+       extra headers (the header names) to be added for any
+       request sent to this entity.
+     * extra_hdr_bodies (var, optional) - AVP variable holding a
+       list of extra header bodies (corresponding to the headers
+       given in the extra_hdrs parameter) to be added for any
+       request sent to this entity.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.18. b2b_server_new usage
+...
+if(is_method("INVITE") && !has_totag()) {
+   b2b_server_new("server1", $avp(b2b_hdrs), $avp(b2b_hdr_bodies));
+   ...
+}
+...
+
+1.5.3.  b2b_client_new(id, [extra_hdrs], [extra_hdr_bodies])
+
+   This function creates a new client entity (dialog where
+   OpenSIPS acts as a UAC) to be used for initializing a new B2B
+   session or for a bridge action. The function can be used before
+   calling b2b_init_request() or b2b_bridge().
+
+   Parameters:
+     * id (string) - ID used to reference this entity in further
+       B2B actions.
+     * dest_uri (string) - URI of the new destination.
+     * from_dname (string, optional) - Display name to use in the
+       From header.
+     * extra_hdrs (var, optional) - AVP variable holding a list of
+       extra headers (the header names) to be added for any
+       request sent to this entity.
+     * extra_hdr_bodies (var, optional) - AVP variable holding a
+       list of extra header bodies (corresponding to the headers
+       given in the extra_hdrs parameter) to be added for any
+       request sent to this entity.
+
+   This function can be used from REQUEST_ROUTE and the b2b_logic
+   request routes.
+
+   Example 1.19. b2b_client_new usage
+...
+b2b_client_new("client1", "sip:alice@opensips.org");
+...
+
+1.5.4.  b2b_bridge(entity1, entity2, [provmedia_uri], [lifetime])
+
+   This function bridges two entities, in the context of an
+   existing B2B session (the initial entities are already
+   connected). At least one of the two entities has to be a new
+   client entity. If an existing entity is provided, the first
+   step will be to send it a reINVITE.
+
+   Parameters:
+     * entity1 (string) - ID of the first entity to bridge; the
+       special values: peer and this can also be used to refer to
+       existing entities.
+     * entity2 (string) - ID of the second entity to bridge; the
+       special values: peer and this can also be used to refer to
+       existing entities.
+     * provmedia_uri (string, optional) - URI of the provisional
+       media server to be connected with the caller while the
+       callee answers.
+     * lifetime (int, optional) - maximum duration of the B2B
+       session. If the lifetime expires, the B2BUA will send BYE
+       messages to both ends and delete the record.
+
+   This function can be used from the b2b_logic request routes.
+
+   Example 1.20. b2b_bridge usage
+...
+route[b2b_logic_request] {
+   ...
+   b2b_client_new("client2", $hdr(Refer-To));
+
+   b2b_bridge("peer", "client2");
+}
+...
+
+1.5.5.  b2b_pass_request()
+
+   This function passes a request belonging to an existing B2B
+   session to the peer entity. The function should be called for
+   all requests unless a different action is required to implement
+   the scenario logic (eg. a bridge action).
+
+   This function can be used from the b2b_logic request routes.
+
+   Example 1.21. b2b_pass_request usage
+...
+route[b2b_logic_request] {
+   if ($rm != "BYE") {
+      b2b_pass_request();
+      exit;
+   } else {
+      # delete the current entity and bridge the peer to a new one
+   }
+...
+
+1.5.6.  b2b_handle_reply()
+
+   This function processes the received reply by taking the
+   appropriate actions for the current state of the ongoing B2B
+   session (pass reply to peer, send INVITE or ACK to comeplete an
+   ongoing bridge action etc.). The function should be called for
+   all replies, if a b2b_logic reply route is defined.
+
+   This function can be used from the b2b_logic reply routes.
+
+   Example 1.22. b2b_handle_reply usage
+...
+route[b2b_logic_reply] {
+    xlog("B2B REPLY: [$rs $rm] from entity: $b2b_logic.entity(id)\n");
+    b2b_handle_reply();
+}
+...
+
+1.5.7.  b2b_send_reply(code, reason)
+
+   This function sends a reply to the entity that sent the current
+   request.
+
+   Parameters:
+     * code (int) - reply code
+     * reason (string) - reply reason string
+
+   This function can be used from the b2b_logic request routes.
+
+   Example 1.23. b2b_send_reply usage
+...
+route[b2b_logic_request] {
+   if ($rm == "REFER") {
+      b2b_send_reply(202, "Accepted");
+      ...
+   }
+}
+...
+
+1.5.8.  b2b_delete_entity()
+
+   This function deletes the entity that sent the current request.
+
+   This function can be used from the b2b_logic request routes.
+
+   Example 1.24. b2b_delete_entity usage
+...
+route[b2b_logic_request] {
+   if ($rm == "BYE") {
+      b2b_send_reply(200, "OK");
+      b2b_delete_entity();
+      ...
+   }
+}
+...
+
+1.5.9.  b2b_end_dlg_leg()
+
+   This function sends a BYE request to the entity that sent the
+   current request. It is not required to also call
+   b2b_delete_entity() in order to delete the current entity.
+
+   This function can be used from the b2b_logic request or reply
+   routes.
+
+   Example 1.25. b2b_end_dlg_leg usage
+...
+route[b2b_logic_request] {
+   if ($rm == "REFER") {
+      b2b_send_reply(202, "Accepted");
+      b2b_end_dlg_leg();
+   }
+}
+...
+
+1.5.10.  b2b_bridge_request(b2bl_key,entity_no)
 
    This function will bridge an initial INVITE with one of the
-   particapnts from an existing b2b dialog.
+   particapnts from an existing b2b session.
 
    Parameters:
      * b2bl_key (string) - a string that contains the b2b_logic
@@ -458,7 +702,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
      * entity_no (int) - an integer that holds the entity of the
        entity/participant to bridge.
 
-   Example 1.18. b2b_bridge_request usage
+   Example 1.26. b2b_bridge_request usage
 ...
 modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
@@ -478,23 +722,38 @@ route[b2b_request]
 }
 ...
 
-1.5. Exported MI Functions
+1.6. Exported MI Functions
 
-1.5.1.  b2b_trigger_scenario
+1.6.1.  b2b_trigger_scenario
 
-   This command instantiates a B2B scenario.
+   This command initializes a new B2B session where OpenSIPS will
+   start a call from the middle. The initial entities to be
+   connected are specified through the command's parameters and
+   further scenario logic can be implemented in the b2b_logic
+   dedicated routes.
 
    Name: b2b_trigger_scenario
 
    Parameters:
-     * senario_id : the id of the scenario to be instantiated.
-     * scenario_params - array of at least 2 scenario parameters
+     * senario_id : ID for the scenario of this B2B session.
+     * entity1 - first entity to be connected; specified in the
+       following format: id,dest_uri[,from_dname] where:
+          + id - ID used to reference this entity in further B2B
+            actions
+          + dest_uri - URI of the new destination
+          + from_dname (optional) - Display name to use in the
+            From header.
+     * entity2 - second entity to be connected; specified in the
+       same format as entity1
+     * context (array, optional) - array of B2B context values, in
+       the format: key=value
 
    MI FIFO Command Format:
-        opensips-cli -x mi b2b_trigger_scenario marketing sip:bob@opensi
-ps.org sip:322@opensips.org:5070 sip:alice@opensips.org
+        opensips-cli -x mi b2b_trigger_scenario marketing client1,sip:bo
+b@opensips.org client2,sip:322@opensips.org:5070 agent_uri=sip:alice@ope
+nsips.org
 
-1.5.2.  b2b_bridge
+1.6.2.  b2b_bridge
 
    This command can be used by an external application to tell
    B2BUA to bridge a call party from an on going dialog to another
@@ -523,7 +782,7 @@ ps.org sip:322@opensips.org:5070 sip:alice@opensips.org
    opensips-cli Command Format:
         opensips-cli -x mi b2b_bridge 1020.30 sip:alice@opensips.org
 
-1.5.3.  b2b_list
+1.6.3.  b2b_list
 
    This command can be used to list the internals of b2b_logic
    entities.
@@ -535,18 +794,18 @@ ps.org sip:322@opensips.org:5070 sip:alice@opensips.org
    MI FIFO Command Format:
         opensips-cli -x mi b2b_list
 
-1.6. Exported Pseudo-Variables
+1.7. Exported Pseudo-Variables
 
-1.6.1.  $b2b_logic.key
+1.7.1.  $b2b_logic.key
 
    This is a read-only variable that returns the b2b_logic key of
    the ongoing B2B session.
 
-   The variable can be used in request route, local_route and in
-   the custom B2B request and reply routes defined through the
-   b2b_entities module.
+   The variable can be used in request route, local_route and the
+   dedicated routes defined through the b2b_entities and b2b_logic
+   modules.
 
-   Example 1.19. $b2b_logic.key usage
+   Example 1.27. $b2b_logic.key usage
 ...
 local_route {
    ...
@@ -558,7 +817,7 @@ local_route {
 }
 ...
 
-1.6.2.  $b2b_logic.entity(field)[idx]
+1.7.2.  $b2b_logic.entity(field)[idx]
 
    This is a read-only variable that returns information about the
    entities(dialogs) involved in the ongoing B2B session.
@@ -568,24 +827,25 @@ local_route {
        subname;
      * the entity key, accessible by using the key subname or no
        subname at all.
+     * the entity ID, accessible by using the id subname.
 
    The index is used to select which entity from the B2B session
    to refer to. The only possible values are 0 or 1 and correspond
    to the positions of the entities in the scenario. Initially,
-   this depends on the order of the entities in the init section
-   of the scenario file. In the case of the internal topology
-   hiding scenario, 0 is the caller and 1 is the callee. When a
-   further bridge action happens, the bridged entity is always
-   placed on the 0 index and the new entity on 1.
+   this depends on the order in which the entities are created. In
+   the case of the internal topology hiding scenario, 0 is the
+   caller and 1 is the callee. When a further bridge action
+   happens, the bridged entity is always placed on the 0 index and
+   the new entity on 1.
 
    If no index is provided, the variable will refer to the
    entity(dialog) which the current SIP message belongs to.
 
-   The variable can be used in request route, local_route and in
-   the custom B2B request and reply routes defined through the
-   b2b_entities module.
+   The variable can be used in request route, local_route and the
+   dedicated routes defined through the b2b_entities and b2b_logic
+   modules.
 
-   Example 1.20. $b2b_logic.entity usage
+   Example 1.28. $b2b_logic.entity usage
 ...
 modparam("b2b_entities", "script_request_route", "b2b_request")
 ...
@@ -599,22 +859,22 @@ route[b2b_request] {
 }
 ...
 
-1.6.3.  $b2b_logic.ctx(key)
+1.7.3.  $b2b_logic.ctx(key)
 
    This is a read-write variable that provides access to a custom
    Key-Value storage(of string values) in the context of the
    ongoing B2B session.
 
-   The variable can be used in request route, local_route and in
-   the custom B2B request and reply routes defined through the
-   b2b_entities module. In the main request route the variable can
-   be used for storing a new context value even before
-   instantiating the scenario with b2b_init_request().
+   The variable can be used in request route, local_route and the
+   dedicated routes defined through the b2b_entities and b2b_logic
+   modules. In the main request route the variable can be used for
+   storing a new context value even before instantiating the
+   scenario with b2b_init_request().
 
    Setting the variable to NULL will delete the value at the given
    key.
 
-   Example 1.21. $b2b_logic.ctx usage
+   Example 1.29. $b2b_logic.ctx usage
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -630,6 +890,26 @@ route[b2b_reply] {
    ...
    xlog("my info: $b2b_logic.ctx(my_extra_info)\n");
    ...
+}
+...
+
+1.7.4.  $b2b_logic.scenario(key)
+
+   This is a read-only variable that returns the scenario ID of
+   the ongoing B2B session
+
+   The variable can be used in request route, local_route and the
+   dedicated routes defined through the b2b_entities and b2b_logic
+   modules.
+
+   Example 1.30. $b2b_logic.scenario usage
+...
+route[b2b_logic_request] {
+   if ($b2b_logic.scenario == "prepaid") {
+      route(prepaid);
+   } else {
+      route(marketing);
+   }
 }
 ...
 
@@ -787,7 +1067,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 52 23 2232 579
+   3. Vlad Patrascu (@rvlad-patrascu) 103 24 4143 2753
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 39 33 218 238
    5. Razvan Crainea (@razvancrainea) 38 28 633 203
    6. Liviu Chircu (@liviuchircu) 15 12 55 100
@@ -820,10 +1100,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
+   2.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
    6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
