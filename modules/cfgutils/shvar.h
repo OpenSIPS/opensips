@@ -23,51 +23,31 @@
 #define _SHVAR_H_
 
 #include "../../sr_module.h"
-#include "../../locking.h"
 #include "../../mi/mi.h"
 #include "../../script_var.h"
+
+extern int shv_hash_size;
 
 typedef struct sh_var {
 	int n;                  /* Index of the variable */
 	str name;               /* Name of the variable */
 	script_val_t v;         /* Value of the variable */
-#ifdef GEN_LOCK_T_PREFERED
-	gen_lock_t *lock;       /* Lock for hash entry - fastlock */
-#else
-	int lockidx;            /* Lock index for hash entry - the rest*/
-#endif
+
+	int hash_entry;         /* pre-computed hash(name) */
 	struct sh_var *next;
 } sh_var_t, *sh_var_p;
 
 int init_shvars(void);
-sh_var_t* set_shvar_value(sh_var_t *shv, int_str *value, int flags);
-sh_var_t* get_shvar_by_name(str *name);
-
-void reset_shvars();
 void destroy_shvars();
-
-#ifndef GEN_LOCK_T_PREFERED
-void shvar_lock_idx(int idx);
-void shvar_release_idx(int idx);
-#endif
-
-void lock_shvar(sh_var_t *shv);
-void unlock_shvar(sh_var_t *shv);
 
 int pv_parse_shvar_name(pv_spec_p sp, str *in);
 int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 int pv_set_shvar(struct sip_msg* msg, pv_param_t *param, int op,
 		pv_value_t *val);
 
-int shvar_init_locks(void);
-void shvar_destroy_locks(void);
-
-mi_response_t *mi_shvar_get(const mi_params_t *params,
-								struct mi_handler *async_hdl);
-mi_response_t *mi_shvar_get_1(const mi_params_t *params,
-								struct mi_handler *async_hdl);
-mi_response_t *mi_shvar_set(const mi_params_t *params,
-								struct mi_handler *async_hdl);
+mi_response_t *mi_shvar_get(const mi_params_t *_, struct mi_handler *__);
+mi_response_t *mi_shvar_get_1(const mi_params_t *params, struct mi_handler *_);
+mi_response_t *mi_shvar_set(const mi_params_t *params, struct mi_handler *_);
 
 int param_set_var( modparam_t type, void* val);
 int param_set_shvar( modparam_t type, void* val);

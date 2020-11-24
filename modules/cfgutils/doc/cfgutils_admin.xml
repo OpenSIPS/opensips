@@ -59,6 +59,7 @@
     </section>
     <section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
+
 	<section id="param_initial_probability" xreflabel="initial_probability">
 		<title><varname>initial_probability</varname> (string)</title>
 		<para>
@@ -78,7 +79,7 @@ modparam("cfgutils", "initial_probability", 15)
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_hash_file" xreflabel="hash_file">
 		<title><varname>hash_file</varname> (string)</title>
 		<para>
 		The config file name for that a hash value should be calculated on startup.
@@ -97,7 +98,25 @@ modparam("cfgutils", "hash_file", "/etc/opensips/opensips.cfg")
 	    </example>
 	</section>
 
-	<section>
+	<section id="param_shv_hash_size" xreflabel="shv_hash_size">
+		<title><varname>shv_hash_size</varname> (integer)</title>
+		<para>
+		The size of the hash table used to store the shared variables ($shv).
+		</para>
+		<para>
+		Default value is <quote>64</quote>.
+		</para>
+		<example>
+		<title><varname>shv_hash_size</varname> parameter usage</title>
+		<programlisting format="linespecific">
+
+modparam("cfgutils", "shv_hash_size", 1024)
+
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_shvset" xreflabel="shvset">
 		<title><varname>shvset</varname> (string)</title>
 		<para>
 		Set the value of a shared variable ($shv(name)). The parameter
@@ -132,7 +151,8 @@ modparam("cfgutils", "shvset", "pstngw=s:sip:10.10.10.10")
 </programlisting>
 	    </example>
 	</section>
-	<section>
+
+	<section id="param_varset" xreflabel="varset">
 		<title><varname>varset</varname> (string)</title>
 		<para>
 		Set the value of a script variable ($var(name)). The parameter
@@ -167,6 +187,7 @@ modparam("cfgutils", "varset", "gw=s:sip:11.11.11.11;transport=tcp")
 </programlisting>
 	    </example>
 	</section>
+
 	<section id="param_lock_pool_size" xreflabel="lock_pool_size">
 		<title><varname>lock_pool_size</varname> (integer)</title>
 		<para>
