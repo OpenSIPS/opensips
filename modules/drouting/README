@@ -1501,22 +1501,23 @@ if ( dr_match( 1, , $var(did) ) )
 
    Example 1.45. dr_gw_status usage when use_partitions is set to
    0
-$ opensips-cli -x mi dr_gw_status 2
+$ opensips-cli -x mi dr_gw_status gw_id=2
 State:: Active
-$ opensips-cli -x mi dr_gw_status 2 0
-$ opensips-cli -x mi dr_gw_status 2
+$ opensips-cli -x mi dr_gw_status gw_id=2 status=0
+$ opensips-cli -x mi dr_gw_status gw_id=2
 Enabled:: Disabled MI
-$ opensips-cli -x mi dr_gw_status 3
+$ opensips-cli -x mi dr_gw_status gw_id=3
 Enabled:: Inactive
 
    Example 1.46. dr_gw_status usage when use_partitionsis set to 1
-$ opensips-cli -x mi dr_gw_status part_1 my_gw
+$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
 State:: Active
-$ opensips-cli -x mi dr_gw_status part_1 my_gw 0
-$ opensips-cli -x mi dr_gw_status part_1 my_gw
-Enabled:: Disabled MI
-$ opensips-cli -x mi dr_gw_status partition8 3
-Enabled:: Inactive
+$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw stat
+us=0
+$ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
+enabled:: disabled mi
+$ opensips-cli -x mi dr_gw_status partition_name=partition8 status=3
+enabled:: inactive
 
 1.5.3. dr_carrier_status
 
@@ -1544,17 +1545,20 @@ Enabled:: Inactive
             carrier_id is provided.
 
    Example 1.47. dr_carrier_status usage when use_partitions is 0
-$ opensips-cli -x mi dr_carrier_status CR1
+$ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: no
-$ opensips-cli -x mi dr_carrier_status CR1 1
-$ opensips-cli -x mi dr_carrier_status CR1
+$ opensips-cli -x mi dr_carrier_status carrier_id=CR1 status=1
+$ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: yes
 
    Example 1.48. dr_carrier_status usage when use_partitions is 1
-$ opensips-cli -x mi dr_carrier_status my_partition CR1
+$ opensips-cli -x mi dr_carrier_status partition_name=my_partition carri
+er_id=CR1
 Enabled:: no
-$ opensips-cli -x mi dr_carrier_status partition_1 CR1 1
-$ opensips-cli -x mi dr_carrier_status partition_3 CR1
+$ opensips-cli -x mi dr_carrier_status partition_name=partition_1 carrie
+r_id=CR1 status=1
+$ opensips-cli -x mi dr_carrier_status partition_name=partition_3 carrie
+r_id=CR1
 Enabled:: yes
 
 1.5.4. dr_reload_status
@@ -1587,18 +1591,19 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
    do_routing function.
      * if use_partition is set to 1 the function will have 3
        parameters:
-          + partition name
-          + group id (optional) - the group id of the rules to
+          + partition_name
+          + group_id (optional) - the group id of the rules to
             check against
           + number - the number to test against
      * if use_partition is set to 0 the function will have 2
        parameters:
-          + group id (optional) - the group id of the rules to
+          + group_id (optional) - the group id of the rules to
             check against
           + number - the number to test against
 
    MI FIFO Command Format:
-                opensips-cli -x mi dr_number_routing part1 3 012340987
+                opensips-cli -x mi dr_number_routing partition_name=part
+1 group_id=3 number=012340987
 
 1.5.6.  dr_enable_probing
 
@@ -1654,9 +1659,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 371 174 12924 5548
-   2. Liviu Chircu (@liviuchircu) 118 62 2080 2373
-   3. Razvan Crainea (@razvancrainea) 89 44 1113 2144
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 373 176 12928 5555
+   2. Liviu Chircu (@liviuchircu) 123 65 2100 2392
+   3. Razvan Crainea (@razvancrainea) 93 47 1144 2182
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1665,11 +1670,11 @@ Chapter 3. Contributors
    9. Ionut Ionita (@ionutrazvanionita) 15 9 370 108
    10. Andrei Dragus 10 3 657 40
 
-   All remaining contributors: Anca Vamanu, Jeremy Martinez, Dusan
-   Klinec, Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez, Le
-   Roy Christophe, Nick Altmann (@nikbyte), Peter Lemenkov
-   (@lemenkov), Alexey Vasilyev (@vasilevalex), Ozzyboshi, Walter
-   Doekes (@wdoekes).
+   All remaining contributors: Anca Vamanu, Jeremy Martinez
+   (@JeremyMartinez51), Dusan Klinec (@ph4r05), Matt Lehner,
+   Julián Moreno Patiño, Sergio Gutierrez, Le Roy Christophe, Nick
+   Altmann (@nikbyte), Peter Lemenkov (@lemenkov), Alexey Vasilyev
+   (@vasilevalex), Ozzyboshi, Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1691,22 +1696,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2020
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2020
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jan 2020
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jul 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
    5.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
    6.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    8.  Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
-   9.  Jeremy Martinez                     Feb 2017 - Feb 2017
+   9.  Jeremy Martinez (@JeremyMartinez51) Feb 2017 - Feb 2017
    10. Le Roy Christophe                   Feb 2017 - Feb 2017
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Ozzyboshi, Julián Moreno Patiño, Dusan Klinec, Mihai Tiganus
-   (@tallicamike), Andrei Datcu (@andrei-datcu), Walter Doekes
-   (@wdoekes), Nick Altmann (@nikbyte), Matt Lehner, Anca Vamanu,
-   Andrei Dragus, Sergio Gutierrez.
+   Ozzyboshi, Julián Moreno Patiño, Dusan Klinec (@ph4r05), Mihai
+   Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Walter
+   Doekes (@wdoekes), Nick Altmann (@nikbyte), Matt Lehner, Anca
+   Vamanu, Andrei Dragus, Sergio Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1715,12 +1720,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Liviu Chircu (@liviuchircu), Alexey Vasilyev (@vasilevalex),
-   Peter Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita),
-   Vlad Paiu (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei
-   Datcu (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Liviu
+   Chircu (@liviuchircu), Alexey Vasilyev (@vasilevalex), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad
+   Paiu (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei Datcu
+   (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
    Sergio Gutierrez.
 
    Documentation Copyrights:

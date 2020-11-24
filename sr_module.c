@@ -91,7 +91,7 @@ struct sr_module* modules=0;
 
 #define MPATH_LEN	256
 static const char *mpath;
-static char mpath_buf[MPATH_LEN];
+static char mpath_buf[MPATH_LEN + 1];
 static int  mpath_len;
 
 /* initializes statically built (compiled in) modules*/
@@ -375,7 +375,7 @@ int load_module(char* name)
 		return 0;
 
 	if(*name!='/' && mpath!=NULL
-		&& strlen(name)+mpath_len<(MPATH_LEN-1))
+		&& strlen(name)+mpath_len<MPATH_LEN)
 	{
 		strcpy(mpath_buf+mpath_len, name);
 		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
@@ -383,7 +383,7 @@ int load_module(char* name)
 			if(strchr(name, '/')==NULL &&
 				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
 			{
-				if(i_tmp+strlen(name)<(MPATH_LEN-1))
+				if(i_tmp+strlen(name)<MPATH_LEN)
 				{
 					strcpy(mpath_buf+i_tmp-3, "/");
 					strcpy(mpath_buf+i_tmp-2, name);

@@ -33,6 +33,7 @@
 #include <sys/types.h>
 
 #include "../../mem/mem.h"
+#include "../../db/db_ut.h"
 
 #include "dbt_res.h"
 
@@ -242,7 +243,7 @@ int dbt_result_extract_fields(dbt_table_p _dtp, dbt_row_p _drp,
 	for(i=0; i<_dres->nrcols; i++)
 	{
 		n = (_lres)?_lres[i]:i;
-		if(dbt_is_neq_type(_dres->colv[i].type, _dtp->colv[n]->type))
+		if(db_is_neq_type(_dres->colv[i].type, _dtp->colv[n]->type))
 		{
 			LM_DBG("wrong types!\n");
 			goto clean;

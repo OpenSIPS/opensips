@@ -187,7 +187,7 @@ qr_rule_t *qr_get_rules(str *part_name)
 		return NULL;
 
 	for (i = 0; i < (*qr_main_list)->n_parts; i++)
-		if (!str_strcmp(part_name, &(*qr_main_list)->part_name[i]))
+		if (str_match(part_name, &(*qr_main_list)->part_name[i]))
 			return (*qr_main_list)->qr_rules_start[i];
 
 	return NULL;
@@ -218,12 +218,12 @@ qr_gw_t *qr_search_gw(qr_rule_t *rule, str *gw_name)
 
 		if (dst->type == QR_DST_GW) {
 			name = drb.get_gw_name(dst->gw->dr_gw);
-			if (!str_strcmp(name, gw_name))
+			if (str_match(name, gw_name))
 				return dst->gw;
 		} else {
 			for (j = 0; j < dst->grp.n; j++) {
 				name = drb.get_gw_name(dst->grp.gw[j]->dr_gw);
-				if (!str_strcmp(name, gw_name))
+				if (str_match(name, gw_name))
 					return dst->grp.gw[j];
 			}
 		}
@@ -450,9 +450,7 @@ error:
 	if (pl->qr_rules_start)
 		shm_free(pl->qr_rules_start);
 
-	if (pl)
-		shm_free(pl);
-
+	shm_free(pl);
 	qr_rld_list = NULL;
 }
 
@@ -479,7 +477,7 @@ void qr_rld_finalize(void *param)
 		*qr_main_list = qr_rld_list;
 	} else {
 		for (i = 0; i < (*qr_main_list)->n_parts; i++) {
-			if (!str_strcmp(&part_name, &(*qr_main_list)->part_name[i])) {
+			if (str_match(&part_name, &(*qr_main_list)->part_name[i])) {
 				old_rules = (*qr_main_list)->qr_rules_start[i];
 				(*qr_main_list)->qr_rules_start[i] = *qr_rld_list->qr_rules_start;
 				*qr_rld_list->qr_rules_start = old_rules;

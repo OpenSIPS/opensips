@@ -242,19 +242,19 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       What happened with old use_domain parameter
+   What happened with old use_domain parameter
 
-       The global parameter (affecting the entire module) was replaced
-       with a per lookup parameter (affecting only current lookup).
-       See the "d" (do not used domain part) flag in the
-       db_alias_lookup() and db_alias_find() functions.
+   The global parameter (affecting the entire module) was replaced
+   with a per lookup parameter (affecting only current lookup).
+   See the "d" (do not used domain part) flag in the
+   db_alias_lookup() and db_alias_find() functions.
 
    2.2.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -271,11 +271,11 @@ Chapter 3. Contributors
    6. Elena-Ramona Modroiu 5 3 92 39
    7. Vlad Patrascu (@rvlad-patrascu) 5 2 38 88
    8. Vladimir Romanov 4 1 227 51
-   9. Sergey Khripchenko 3 1 18 22
+   9. Sergey Khripchenko (@shripchenko) 3 1 18 22
    10. Walter Doekes (@wdoekes) 3 1 5 5
 
    All remaining contributors: Sergio Gutierrez, Konstantin
-   Bokarius, Anca Vamanu, Dusan Klinec, Peter Lemenkov
+   Bokarius, Anca Vamanu, Dusan Klinec (@ph4r05), Peter Lemenkov
    (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -303,8 +303,8 @@ Chapter 3. Contributors
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Dusan Klinec                        Dec 2015 - Dec 2015
-   7.  Sergey Khripchenko                  Sep 2015 - Sep 2015
+   6.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   7.  Sergey Khripchenko (@shripchenko)   Sep 2015 - Sep 2015
    8.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
    9.  Anca Vamanu                         Sep 2009 - Sep 2009
    10. Vladimir Romanov                    May 2009 - May 2009
@@ -321,7 +321,7 @@ Chapter 4. Documentation
 4.1. Contributors
 
    Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Sergey Khripchenko, Razvan Crainea
+   (@lemenkov), Sergey Khripchenko (@shripchenko), Razvan Crainea
    (@razvancrainea), Walter Doekes (@wdoekes), Bogdan-Andrei Iancu
    (@bogdan-iancu), Sergio Gutierrez, Henning Westerholt
    (@henningw), Elena-Ramona Modroiu, Daniel-Constantin Mierla

@@ -905,6 +905,10 @@ static int mod_init(void)
 		if (dlg_hash_size==(1<<n))
 			break;
 		if (dlg_hash_size<(1<<n)) {
+			/* make sure n does not go underflow - this is only possible if
+			 * hash_size is declared to 0, and we "fix" it to 1 */
+			if (n == 0)
+				n = 1;
 			LM_WARN("hash_size is not a power "
 				"of 2 as it should be -> rounding from %d to %d\n",
 				dlg_hash_size, 1<<(n-1));
@@ -1006,6 +1010,14 @@ static int w_create_dialog(struct sip_msg *req, str *flags_str)
 	int flags;
 
 	flags = flags_str? parse_create_dlg_flags(flags_str): 0;
+
+	/* don't allow both Re-INVITE and OPTIONS pinging */
+	if ((flags & (DLG_FLAG_PING_CALLER|DLG_FLAG_REINVITE_PING_CALLER)) ==
+		(DLG_FLAG_PING_CALLER|DLG_FLAG_REINVITE_PING_CALLER))
+		flags &= ~DLG_FLAG_PING_CALLER;
+	if ((flags & (DLG_FLAG_PING_CALLEE|DLG_FLAG_REINVITE_PING_CALLEE)) ==
+		(DLG_FLAG_PING_CALLEE|DLG_FLAG_REINVITE_PING_CALLEE))
+		flags &= ~DLG_FLAG_PING_CALLEE;
 
 	t = d_tmb.t_gett();
 	if (dlg_create_dialog( (t==T_UNDEFINED)?NULL:t, req, flags)!=0)
@@ -1641,7 +1653,7 @@ int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null( msg, param, res);
 
 	did = dlg_get_did(dlg);
-	if (!dlg)
+	if (!did)
 		return pv_get_null( msg, param, res);
 	res->rs = *did;
 	res->flags = PV_VAL_STR;

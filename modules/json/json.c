@@ -892,9 +892,9 @@ int get_value(int state, json_name * id, char *start, char * cur)
 
 			break;
 		case ST_ITER:
-			if (!str_strcmp(&keys_s, &in))
+			if (str_match(&keys_s, &in))
 				id->iter_type = ITER_KEYS;
-			else if (!str_strcmp(&values_s, &in))
+			else if (str_match(&values_s, &in))
 				id->iter_type = ITER_VALUES;
 			else {
 				LM_ERR("Bad iterator type\n");

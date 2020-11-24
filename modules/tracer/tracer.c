@@ -102,9 +102,9 @@ static str toport_column      = str_init("to_port");     /* 11 */
 static str fromtag_column     = str_init("fromtag");     /* 12 */
 static str direction_column   = str_init("direction");   /* 13 */
 
-int trace_on   = 1;
+static int trace_on   = 1;
 
-int *trace_on_flag = NULL;
+static int *trace_on_flag = NULL;
 
 static str trace_local_proto = {NULL, 0};
 static str trace_local_ip = {NULL, 0};
@@ -827,7 +827,8 @@ static int mod_init(void)
 	*trace_on_flag = trace_on;
 
 	/* best effort - try to load any tracing protocol, if possible */
-	trace_prot_bind(TRACE_PROTO, &tprot);
+	if (trace_prot_bind(TRACE_PROTO, &tprot) != 0)
+		LM_DBG("failed to load a tracing protocol API\n");
 
 	/* initialize the trace IDs */
 	for (it=trace_list;it;it=it->next) {
@@ -930,7 +931,9 @@ static int mod_init(void)
 	/* load the module dependencies, best effort for now, as the strict
 	 * dependency will be checked later in fixup function, according to
 	 * the sip_trace() flags */
-	load_dlg_api(&dlgb);
+	if (load_dlg_api(&dlgb) != 0)
+		LM_DBG("failed to load the dialog API (dialog module not loaded?)\n");
+
 	load_tm_api(&tmb);
 
 	/* statelessly forwarded request callbacks */
@@ -1055,11 +1058,6 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		return -1;
 	}
 
-	if (!(*trace_on_flag)) {
-		LM_DBG("trace is off!\n");
-		return 0;
-	}
-
 	/* makes sense only if trace protocol loaded */
 	if ( tprot.send_message && !is_id_traced(sip_trace_id, info)) {
 		return 1;
@@ -1068,8 +1066,10 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 	hash = info->trace_list->hash;
 	/* check where the hash matches and take the proper action */
 	for (it=info->trace_list; it && (it->hash == hash); it=it->next) {
-		if (it->traceable && !(*it->traceable))
-			continue;
+		if (!it->dynamic) {
+			if (!(*trace_on_flag) || !it->traceable || !(*it->traceable))
+				continue;
+		}
 
 		switch (it->type) {
 		case TYPE_HEP:
@@ -1463,6 +1463,10 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		if (extra_len) {
 			instance->trace_attrs = trace_attrs;
 		}
+	} else if (!current_processing_ctx) {
+		LM_BUG("sip_trace() failed due to NULL context");
+		return -1;
+
 	/* for stateful transactions or dialogs
 	 * we need the structure in the shared memory */
 	} else if(trace_flags == TRACE_DIALOG ||
@@ -2696,7 +2700,7 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	struct trace_filter *filters = NULL;
 	tlist_dyn_elem_p elem = NULL;
 	hid_list_t* hep_id = NULL;
-	int traced_scope, traced_type;
+	int traced_scope = 0, traced_type = 0;
 
 	if (get_mi_string_param(params, "id", &name.s, &name.len) < 0)
 		return init_mi_param_error();
@@ -2744,12 +2748,12 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	/* default tracing scope is dialog */
 	if (try_get_mi_string_param(params, "scope", &aux.s, &aux.len) < 0 ||
 			((traced_scope = st_parse_flags(&aux)) == 0))
-		traced_type = TRACE_DIALOG;
+		traced_scope = TRACE_DIALOG;
 
 	/* default tracing scope is everything */
 	if (try_get_mi_string_param(params, "type", &aux.s, &aux.len) < 0 ||
-			((traced_scope = st_parse_types(&aux)) == 0))
-		traced_scope = 0xFFFF;
+			((traced_type = st_parse_types(&aux)) == 0))
+		traced_type = 0xFFFF;
 
 	filters = parse_trace_filters(params);
 
@@ -3090,7 +3094,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 	if (((ip_a = str2ip(&host_uri)) != 0)
 			|| ((ip_a = str2ip6 (&host_uri)) != 0)
 	) {
-		ip_addr2su(tmp_su, ip_a, ntohs(port));
+		ip_addr2su(tmp_su, ip_a, port);
 		return 0;
 	}
 
@@ -3174,10 +3178,11 @@ static int is_id_traced(int id, trace_instance_p info)
 	if (info==NULL || (trace_types=info->trace_types)==-1)
 		return 0;
 
-	if (!(*trace_on_flag)) {
-		LM_DBG("trace is off!\n");
+	LM_DBG("trace=%s dyn=%s\n", (*trace_on_flag?"on":"off"),
+		(dyn_trace_list?((*dyn_trace_list)?"on":"off"):"bug"));
+	/* quick shortcut to avoid looping if no global is off and no dynamic is present */
+	if (!(*trace_on_flag) && (!dyn_trace_list || *dyn_trace_list == NULL))
 		return 0;
-	}
 
 	/* find the corresponding position for this id */
 	for (pos=0; pos < traced_protos_no; pos++)
@@ -3226,11 +3231,6 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		return 0;
 	}
 
-	if (!(*trace_on_flag)) {
-		LM_DBG("trace is off!\n");
-		return 0;
-	}
-
 	if (info==NULL) {
 		LM_DBG("no id to trace! aborting...\n");
 		return 0;
@@ -3255,9 +3255,11 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		}
 
 		for(it=instance->trace_list; it; it=it->next)
-			LM_DBG("name %.*s, hash %d, type %d, traceable %d\n",
+			LM_DBG("name %.*s, hash %d, type %d, traceable %s\n",
 					it->name.len,it->name.s,
-					it->hash, it->type, (it->traceable?(*it->traceable):-1));
+					it->hash, it->type,
+					(it->dynamic?"dynamic":
+						(it->traceable && (*it->traceable)?"on":"off")));
 
 		/* iterate through the list of trace URIs but use only those
 		 * with the same name (given by same hash) - keep in midn that
@@ -3265,8 +3267,13 @@ int sip_context_trace_impl(int id, union sockaddr_union* from_su,
 		 * name will be grouped */
 		hash = instance->trace_list->hash;
 		for (it=instance->trace_list; it && (it->hash==hash); it=it->next) {
-			if (it->type != TYPE_HEP || (it->traceable && !(*it->traceable)))
+			if (it->type != TYPE_HEP)
 				continue;
+
+			if (!it->dynamic) {
+				if (!(*trace_on_flag) || !it->traceable || !(*it->traceable))
+					continue;
+			}
 
 			trace_msg = tprot.create_trace_message(from_su, to_su,
 					net_proto, payload, id, it->el.hep.hep_id);
@@ -3393,7 +3400,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 	for (it=*dyn_trace_list; it; it=it->next) {
 		el = trace_id_dyn(it);
 		/* check if it's worth tracing */
-		if (el->type == TRACE_DIALOG && !initial_invite)
+		if (el->scope == TRACE_DIALOG && !initial_invite)
 			goto skip;
 
 		for (filter = el->filters; filter; filter = filter->next) {
@@ -3425,7 +3432,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 					break;
 			}
 		}
-		if (sip_trace_handle(msg, it, el->scope, el->type, NULL) == 1)
+		if (sip_trace_handle(msg, it, el->type, el->scope, NULL) == 1)
 			trace_id_ref(el);
 skip:
 		continue;

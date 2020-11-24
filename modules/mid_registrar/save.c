@@ -288,7 +288,10 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	adv_port = _get_adv_port(send_sock, req);
 
 	c = get_first_contact(req);
-	list_for_each(_, &mri->ct_mappings) {
+	list_for_each (_, &mri->ct_mappings) {
+		if (!c)
+			break;
+
 		ctmap = list_entry(_, struct ct_mapping, list);
 
 		/* if uri string points outside the original msg buffer, it means
@@ -552,7 +555,7 @@ int dup_req_info(struct sip_msg *req, struct mid_reg_info *mri)
 
 	mri->cflags = getb0flags(req);
 
-	if (req && parse_allow(req) != -1)
+	if (parse_allow(req) != -1)
 		allowed = get_allow_methods(req);
 	else
 		allowed = ALL_METHODS;
@@ -947,11 +950,11 @@ static contact_t *match_contact(ucontact_id ctid, struct sip_msg *msg)
 				continue;
 			}
 
-			if (!str_strcmp(&ctid_str, &puri.u_val[idx]))
+			if (str_match(&ctid_str, &puri.u_val[idx]))
 				return c;
 
 		} else {
-			if (!str_strcmp(&ctid_str, &puri.user))
+			if (str_match(&ctid_str, &puri.user))
 				return c;
 		}
 	}
@@ -1260,7 +1263,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 	urecord_t *r;
 	contact_t *_c = NULL;
 	int_str_t value;
-	int e_out, vct = 0, was_valid;
+	int e_out = 0, vct = 0, was_valid;
 	int e_max = 0;
 	int tcp_check = 0;
 	struct sip_uri uri;
@@ -1747,10 +1750,17 @@ static inline void star(struct mid_reg_info *mri, struct sip_msg *_m)
 	urecord_t* r;
 	ucontact_t* c;
 	udomain_t *_d = mri->dom;
+	static int_str_t star_last_reg = {{UL_EXPIRED_TIME}, 0};
 
 	ul.lock_udomain(_d, &mri->aor);
 
 	if (!ul.get_urecord(_d, &mri->aor, &r)) {
+		LM_DBG("deleting all contacts for aor %.*s\n", mri->aor.len, mri->aor.s);
+		/* When not in SQL_WRITE_THROUGH mode the record will still exist in memory,
+		 * update last_reg_ts so the next REGISTER will forward to main registrar. */
+		if (!ul.put_urecord_key(r, &ul_key_last_reg_ts, &star_last_reg))
+			LM_ERR("failed to update last_reg_ts %.*s\n", mri->aor.len, mri->aor.s);
+
 		c = r->contacts;
 		while(c) {
 			if (mri->reg_flags&REG_SAVE_MEMORY_FLAG) {
@@ -1851,6 +1861,28 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *d,
 {
 	struct mid_reg_info *mri;
 	struct to_body *to, *from;
+	int rc;
+
+	rc = tmb.t_newtran(msg);
+	switch (rc) {
+	case 1:
+		break;
+
+	case E_SCRIPT:
+		LM_DBG("%.*s transaction already exists, continuing...\n",
+		       msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+		break;
+
+	case 0:
+		LM_INFO("absorbing %.*s retransmission, use t_check_trans() "
+		        "earlier\n", msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+		return 0;
+
+	default:
+		LM_ERR("internal error %d while creating %.*s transaction\n",
+		       rc, msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+		return -1;
+	}
 
 	LM_DBG("from: '%.*s'\n", msg->from->body.len, msg->from->body.s);
 	LM_DBG("Call-ID: '%.*s'\n", msg->callid->body.len, msg->callid->body.s);
@@ -2221,6 +2253,10 @@ static int calc_max_ct_diff(urecord_t *urec)
 	int_str_t *valuep;
 
 	for (ct = urec->contacts; ct; ct = ct->next) {
+		/* ignore deleted contacts */
+		if (ct->expires == UL_EXPIRED_TIME)
+			continue;
+
 		valuep = ul.get_ucontact_key(ct, &ul_key_expires);
 		if (!valuep) {
 			LM_DBG("'expires' key not found!\n");
@@ -2307,8 +2343,10 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 		return -1;
 	}
 
-	for (c = urec->contacts; c; c = c->next)
-		ctno++;
+	for (c = urec->contacts; c; c = c->next) {
+		if (VALID_CONTACT(c, get_act_time()))
+			ctno++;
+	}
 
 	if (_sctx->max_contacts) {
 		for (c = urec->contacts, vct = 0; c; c = c->next) {
@@ -2455,11 +2493,6 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 		return -1;
 	}
 
-	if (((int (*)(struct sip_msg *))tmb.t_check_trans)(msg) == 0) {
-		LM_INFO("absorbing retransmission, use t_check_trans() earlier!\n");
-		return 0;
-	}
-
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 
@@ -2501,8 +2534,8 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 	}
 
 	if (pn_enable && pn_inspect_request(msg, &c->uri, &sctx) != 0) {
-		LM_DBG("SIP PN processing failed\n");
-		goto quick_reply;
+		LM_DBG("SIP PN processing failed (%d)\n", rerrno);
+		goto out_error;
 	}
 
 	/* mid-registrar always rewrites the Contact, so any Path hf must go! */

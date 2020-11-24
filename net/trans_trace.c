@@ -192,14 +192,12 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 		return -1;
 	}
 
-	/* set the port in ntohs form because init_su will apply htons on it */
-	if ( init_su( src_su, &c->rcv.src_ip, ntohs(c->rcv.src_port)) < 0 ) {
+	if ( init_su( src_su, &c->rcv.src_ip, c->rcv.src_port) < 0 ) {
 		LM_ERR("failed to create source su!\n");
 		return -1;
 	}
 
-	/* set the port in ntohs form because init_su will apply htons on it */
-	if ( init_su( dst_su, &c->rcv.dst_ip, ntohs(c->rcv.dst_port)) < 0 ) {
+	if ( init_su( dst_su, &c->rcv.dst_ip, c->rcv.dst_port) < 0 ) {
 		LM_ERR("failed to create destination su!\n");
 		return -1;
 	}
@@ -207,7 +205,7 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 	return 0;
 }
 
-void build_dummy_msg(struct receive_info* rcv) {
+static void build_dummy_msg(struct receive_info* rcv) {
 	memset(&dummy_req, 0, sizeof(struct sip_msg));
 	dummy_req.first_line.type = SIP_REQUEST;
 	dummy_req.first_line.u.request.method.s= "DUMMY";

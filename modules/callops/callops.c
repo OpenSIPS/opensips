@@ -75,6 +75,7 @@ static int call_event_init(event_id_t *event, str event_name, evi_params_p param
 		if (!evi_param_create(params, &tmp)) {
 			LM_ERR("could not initialize %s param for event %.*s\n", p,
 					event_name.len, event_name.s);
+			va_end(vl);
 			return -1;
 		}
 	}
@@ -176,25 +177,21 @@ static cmd_export_t cmds[] = {
 
 static int calling_mode_func(modparam_t type, void *val)
 {
-	if (type == STR_PARAM) {
-		if (strcasecmp((char *)val, "param") == 0) {
-			call_match_mode = CALL_MATCH_PARAM;
-		} else if (strcasecmp((char *)val, "manual") == 0) {
-			call_match_mode = CALL_MATCH_MANUAL;
-		} else if (strcasecmp((char *)val, "callid") == 0) {
-			call_match_mode = CALL_MATCH_CALLID;
-		} else {
-			LM_ERR("unknown matching mode type %s\n", (char *)val);
-			return -1;
-		}
+	if (strcasecmp((char *)val, "param") == 0) {
+		call_match_mode = CALL_MATCH_PARAM;
+	} else if (strcasecmp((char *)val, "manual") == 0) {
+		call_match_mode = CALL_MATCH_MANUAL;
+	} else if (strcasecmp((char *)val, "callid") == 0) {
+		call_match_mode = CALL_MATCH_CALLID;
 	} else {
-		call_match_mode = (int)(long)val;
+		LM_ERR("unknown matching mode type %s\n", (char *)val);
+		return -1;
 	}
 	return 0;
 }
 
 static param_export_t params[] = {
-	{"mode", STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)calling_mode_func},
+	{"mode", STR_PARAM|USE_FUNC_PARAM, (void*)calling_mode_func},
 	{"match_param", STR_PARAM, &call_match_param.s},
 	{0, 0, 0}
 };
@@ -223,7 +220,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 struct module_exports exports= {
-	"calling",
+	"callops",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
@@ -281,11 +278,11 @@ static str *call_dlg_get_uri_param(struct sip_msg *msg)
 	int i;
 	struct sip_uri *r_uri;
 
-	if (msg->parsed_uri_ok == 0 && parse_sip_msg_uri(msg) < 0) {
+	if (msg->parsed_orig_ruri_ok == 0 && parse_orig_ruri(msg) < 0) {
 		LM_DBG("could not parse URI!\n");
 		return NULL;
 	}
-	r_uri = &msg->parsed_uri;
+	r_uri = &msg->parsed_orig_ruri;
 
 	for (i = 0; i < r_uri->u_params_no; i++)
 		if (str_match(&r_uri->u_name[i], &call_match_param) && r_uri->u_val[i].len)
@@ -316,7 +313,7 @@ static void call_dlg_rm_uri_param(struct sip_msg *msg, str *param)
 			(param->len?(1 /* = */ + param->len):0);
 
 	if (del.s < uri->s || del.s + del.len > uri->s + uri->len) {
-		LM_BUG("parameter  to delete %.*s(%d) not inside R-URI %.*s(%d) -> "
+		LM_DBG("parameter  to delete %.*s(%d) not inside R-URI %.*s(%d) -> "
 				"del.s=%p<uri.s=%p || del.s + del.len=%p > uri.s + uri.len=%p\n",
 				del.len, del.s, del.len, uri->len, uri->s, uri->len,
 				del.s, uri->s, del.s + del.len, uri->s + uri->len);
@@ -333,6 +330,7 @@ static void call_dlg_rm_uri_param(struct sip_msg *msg, str *param)
 	memcpy(buf.s + buf.len, del.s + del.len, uri->len - buf.len - del.len);
 	buf.len += uri->len - buf.len - del.len;
 
+	/* coverity[check_return: FALSE] - done on purpose CID #211369 */
 	set_ruri(msg, &buf);
 }
 
@@ -519,8 +517,8 @@ unref_rpl:
 
 static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_params *params)
 {
-	str *param;
-	struct dlg_cell *old_dlg;
+	str *param = NULL;
+	struct dlg_cell *old_dlg = NULL;
 
 	if (!params->msg)
 		return;
@@ -535,20 +533,24 @@ static void call_dlg_created_CB(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 		case CALL_MATCH_PARAM:
 		case CALL_MATCH_CALLID:
 			param = call_dlg_get_uri_param(params->msg);
-			if (!param) {
-				LM_DBG("parameter not found - call not handled\n");
-				return;
-			}
+			if (!param)
+				break;
 			if (call_match_mode == CALL_MATCH_CALLID)
 				old_dlg = call_dlg_api.get_dlg_by_callid(param, 1);
 			else
 				old_dlg = call_dlg_api.get_dlg_by_did(param, 1);
-			if (!old_dlg) {
-				LM_DBG("no dialog available with identifier %.*s (mode=%d)\n",
-						param->len, param->s, call_match_mode);
-				return;
-			}
 			break;
+	}
+
+	if (!param) {
+		LM_DBG("parameter not found - call not handled\n");
+		return;
+	}
+
+	if (!old_dlg) {
+		LM_DBG("no dialog available with identifier %.*s (mode=%d)\n",
+				param->len, param->s, call_match_mode);
+		return;
 	}
 
 	call_dlg_rm_uri_param(params->msg, param);
@@ -912,7 +914,6 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 
 	switch (try_get_mi_string_param(params, "transfer_leg", &legB.s, &legB.len)) {
 		case -2:
-		return init_mi_param_error();
 			return init_mi_param_error();
 		case -1:
 			/* we don't have a transfer_leg - we must have from and to tags */

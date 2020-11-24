@@ -213,6 +213,7 @@ int update_sca_info_to_db(b2b_sca_record_t *record, unsigned int appearance_inde
 				call->call_info_apperance_uri.len, call->call_info_apperance_uri.s,
 				call->b2bl_key.len, call->b2bl_key.s);
 			n_q_vals += 3;
+			/* fall through */
 		default:
 			q_vals[app_shared_entity_col[i]].val.int_val = call->shared_entity;
 			q_vals[app_call_state_col[i]].val.int_val = call->call_state;

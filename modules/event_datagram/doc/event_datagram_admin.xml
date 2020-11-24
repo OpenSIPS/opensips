@@ -90,7 +90,6 @@
 		<programlisting format="linespecific">
 <![CDATA[
 {
-  "id": null,
   "jsonrpc": "2.0",
   "method": "E_PIKE_BLOCKED",
   "params": {

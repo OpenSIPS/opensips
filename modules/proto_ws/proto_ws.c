@@ -272,6 +272,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 			break;
 		case WS_ERR_NONE:
 			WS_CODE(c) = WS_ERR_NORMAL;
+			/* fall through */
 		default:
 			ws_close(c);
 			break;
@@ -356,6 +357,10 @@ static int proto_ws_send(struct socket_info* send_sock,
 	/* was connection found ?? */
 	if (c==0) {
 		if (tcp_no_new_conn) {
+			return -1;
+		}
+		if (!to) {
+			LM_ERR("Unknown destination - cannot open new ws connection\n");
 			return -1;
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");

@@ -328,8 +328,8 @@ Chapter 2. Contributors
    All remaining contributors: Anca Vamanu, Christophe Sollet
    (@csollet), Ionut Ionita (@ionutrazvanionita), Damien Sandras
    (@dsandras), Konstantin Bokarius, Dan Pascu (@danpascu),
-   Ezequiel Lovelle, Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Elena-Ramona Modroiu.
+   Ezequiel Lovelle (@lovelle), Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert, Elena-Ramona Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -358,7 +358,7 @@ Chapter 2. Contributors
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
    7.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
-   8.  Ezequiel Lovelle                    Oct 2014 - Oct 2014
+   8.  Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
    9.  Andrei Datcu (@andrei-datcu)        Jul 2014 - Jul 2014
    10. Damien Sandras (@dsandras)          Jul 2013 - Jul 2013
 

@@ -507,6 +507,7 @@ static int fixup_phostport2proxy(void** param)
 static int fixup_free_proxy(void **param)
 {
 	free_proxy(*param);
+	pkg_free(*param);
 	return 0;
 }
 
@@ -666,7 +667,7 @@ int load_tm( struct tm_binds *tmb)
 }
 
 
-static int do_t_cleanup( struct sip_msg *req, void *bar)
+int do_t_cleanup( struct sip_msg *req, void *bar)
 {
 	struct cell *t;
 
@@ -1584,8 +1585,7 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	/* first get the transaction */
-	if (t_check( msg , 0 )==-1) return -1;
-	if ( (t=get_t())==0) {
+	if (!(t = get_t()) || t == T_UNDEFINED) {
 		/* no T */
 		code = 0;
 	} else {
@@ -1632,8 +1632,7 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	/* first get the transaction */
-	if (t_check( msg , 0 )==-1) return -1;
-	if ( (t=get_t())==0) {
+	if (!(t = get_t()) || t == T_UNDEFINED) {
 		/* no T */
 		if (msg!=NULL&&msg!=FAKED_REPLY && msg->first_line.type==SIP_REQUEST){
 			res->rs = *GET_RURI(msg);

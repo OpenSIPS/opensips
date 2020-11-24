@@ -124,7 +124,7 @@ static int w_is_myself(struct sip_msg *msg, str *host, int *port);
 
 static cmd_export_t core_cmds[]={
 	{"forward", (cmd_function)w_forward, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+		{CMD_PARAM_STR|CMD_PARAM_OPT,
 			fixup_forward_dest, fixup_free_destination}, {0,0,0}},
 		ALL_ROUTES},
 	{"send", (cmd_function)w_send, {
@@ -289,7 +289,7 @@ static cmd_export_t core_cmds[]={
 	{"cache_raw_query", (cmd_function)w_cache_raw_query, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_list, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND, fixup_avp_list, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"raise_event", (cmd_function)w_raise_event, {
 		{CMD_PARAM_STR, fixup_event_name, 0},
@@ -782,10 +782,12 @@ static int w_strip_tail(struct sip_msg *msg, int *nchars)
 static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 {
 	int ret;
+	qvalue_t q = (int)(long)qvalue;
 
 	if (!uri) {
 		ret = append_branch(msg, 0, &msg->dst_uri, &msg->path_vec,
-			get_ruri_q(msg), getb0flags(msg), msg->force_send_socket);
+			(q==Q_UNSPECIFIED) ? get_ruri_q(msg) : q,
+			getb0flags(msg), msg->force_send_socket);
 		/* reset all branch info */
 		msg->force_send_socket = 0;
 		setb0flags(msg,0);
@@ -802,7 +804,7 @@ static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 		return ret;
 	} else {
 		return append_branch(msg, uri, &msg->dst_uri,
-			&msg->path_vec, *qvalue, getb0flags(msg),
+			&msg->path_vec, q, getb0flags(msg),
 			msg->force_send_socket);
 	}
 }

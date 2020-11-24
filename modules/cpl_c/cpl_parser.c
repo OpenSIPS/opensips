@@ -217,6 +217,7 @@ static inline char *decode_mail_url(char *p, char *p_end, char *url,
 					case EMAIL_KNOWN_HDR_BODY:
 						if (((*len)&0x0001)==1) p++;
 						*len = htons(*len);
+						/* fall through */
 					case EMAIL_UNKNOWN_HDR_BODY:
 						hdr_len = 0;
 						status = EMAIL_HDR_NAME;
@@ -232,6 +233,7 @@ static inline char *decode_mail_url(char *p, char *p_end, char *url,
 								"address found in MAIL node!\n");
 							goto error;
 						}
+						/* fall through */
 					case EMAIL_KNOWN_HDR_BODY:
 						if (((*len)&0x0001)==1) p++;
 						*len = htons(*len);

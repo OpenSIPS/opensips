@@ -116,6 +116,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin = cfg_stream;
+	cfg_errors = 0;
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
 		fclose(cfg_stream);
@@ -562,6 +563,7 @@ void cfg_dump_context(const char *file, int line, int colstart, int colend)
 		hiline = malloc(colend - colstart);
 		if (!hiline) {
 			LM_ERR("oom\n");
+			free(wsbuf);
 			return;
 		}
 		memset(hiline, '~', colend - colstart);
@@ -778,6 +780,7 @@ out_err_pipes:
 	close(parent_r[0]);
 out_err:
 	fclose(flat_cfg);
+	free(cfgbuf);
 	return -1;
 }
 

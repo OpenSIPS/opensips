@@ -72,6 +72,7 @@ extern struct proto_info protos[];
  * params according to RFC 7118 - razvanc
  */
 
+/* NOTE: make sure trans_load() is called, or you will get false negatives! */
 #define is_udp_based_proto(_p) \
 	(protos[_p].net.flags&PROTO_NET_USE_UDP)
 

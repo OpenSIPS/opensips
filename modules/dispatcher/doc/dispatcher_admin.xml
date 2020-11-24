@@ -99,24 +99,17 @@
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
-		Database where to load the destinations from.
-		Setting this parameter will only change the default partition's
-		db_url. Use the partition parameter to create and alter
-		other partitions.
-		</para>
-		<para>
-		NOTE: if you intend to use the default partition you have to explicity 
-		set this default db_url, otherwise OpenSIPS will not start (he value 
-		of global default db_url is not inherited here! ).
+		The default DB connection of the module, overriding the global
+		'db_default_url' setting.  Once specified, partitions which are missing
+		the 'db_url' property will inherit their URL from this value.
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>NULL</quote>. At least one db_url should
-			be defined for the dispatcher module to work.
+			Default value is <quote>NULL</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set the 'default' partition's<quote>db_url</quote> parameter</title>
+		<title>Setting the default database URL for dispatcher</title>
 <programlisting format="linespecific">
 ...
 modparam("dispatcher", "db_url", "mysql://user:passwb@localhost/database")
@@ -744,27 +737,48 @@ modparam("dispatcher", "cluster_sharing_tag", "vip")
 	<section id="param_partition" xreflabel="partition">
 		<title><varname>partition</varname> (string)</title>
 		<para>
-		Using this parameter the partition specific parameters (db_url, table_name, dst_avp,
-		grp_avp, cnt_avp, sock_avp, attrs_avp, script_attrs, ds_define_blacklist) can be defined.
+		Define a new partition (data source) with the following properties:
+		"db_url", "table_name", "dst_avp", "grp_avp", "cnt_avp", "sock_avp",
+		"attrs_avp", "script_attrs", "ds_define_blacklist".  All these
+		properties are optional, having appropriate default values.
 		</para>
 		<para>
-		The syntax is: "partition_name: param1 = value1; param2 = value2; param3 = value3".
-		Each value format is the same as the one used to define a specific parameter using modparam.
+		The syntax is: "partition_name: param1 = value1; param2 = value2".
+		Each value format is the same as the one used to define a specific
+		parameter using modparam.
 		</para>
 		<para>
-		Whenever a new partition_name is provided, a new partition will be automatically created.
-		The 'default' partition can also be defined using this parameter.
+		This parameter may be set multiple times, thus defining as many
+		partitions as needed.  The 'default' partition may also be defined
+		using this parameter.
 		</para>
+
 		<example>
-		<title> Create a new partition called 'part2' </title>
+		<title> Define a new partition called 'voicemail' </title>
 <programlisting format="linespecific">
 ...
 modparam("dispatcher", "partition",
-                "part2:
+                "voicemail:
                     db_url = mysql://user:passwd@localhost/database;
-                    table_name = ds_table;
-                    attrs_avp = $avp(ds_attr_part2);
-                    ds_define_blacklist = list2 = 4,6;")
+                    table_name = dispatcher;
+                    attrs_avp = $avp(ds_attr_vm);
+                    ds_define_blacklist = list2 = 4,6")
+...
+</programlisting>
+		</example>
+
+		<example>
+			<title> Define the 'trunks' partition and make it the 'default'
+					partition, so we avoid loading the 'dispatcher' table
+			</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "partition",
+                "trunks:
+                    db_url = mysql://user:passwd@localhost/database;
+                    table_name = dispatcher_trunks;
+                    attrs_avp = $avp(ds_attr_trunks)")
+modparam("dispatcher", "partition", "default: trunks")
 ...
 </programlisting>
 		</example>
@@ -773,19 +787,17 @@ modparam("dispatcher", "partition",
 	<section id="param_table_name" xreflabel="table_name">
 		<title><varname>table_name</varname> (string)</title>
 		<para>
-		If you want to load the sets of gateways from the database you must set
-		this parameter as the database name.
-		Setting this parameter will only change the default partition's
-		table_name. Use the partition parameter to create and alter
-		other partitions.
+		The default name of the table from which to load dispatcher
+		destinations.  Partitions which are missing the 'table_name' property
+		will inherit their table name from this value.
 		</para>
 		<para>
 		<emphasis>
-			For every partition the default value is <quote>dispatcher</quote>.
+			Default value is <quote>dispatcher</quote>.
 		</emphasis>
 		</para>
 		<example>
-		<title>Set the 'default' partition's <quote>table_name</quote> parameter</title>
+		<title>Set the default table name</title>
 <programlisting format="linespecific">
 ...
 modparam("dispatcher", "table_name", "my_dispatcher")

@@ -1582,7 +1582,7 @@ int reply_received( struct sip_msg  *p_msg )
 		p_msg->flags = t->uas.request ? t->uas.request->flags : 0;
 		setb0flags( p_msg, t->uac[branch].br_flags);
 
-		swap_route_type(old_route_type, BRANCH_ROUTE);
+		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
 		(run_top_route(sroutes->onreply[t->uac[branch].on_reply].a,p_msg)
@@ -1595,7 +1595,6 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
-		set_route_type(ONREPLY_ROUTE);
 		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply].a,p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);

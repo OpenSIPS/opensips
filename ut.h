@@ -63,8 +63,7 @@ struct sip_msg;
 #define trim_len( _len, _begin, _mystr ) \
 	do{ 	static char _c; \
 		(_len)=(_mystr).len; \
-		while ((_len) && ((_c=(_mystr).s[(_len)-1])==0 || _c=='\r' || \
-					_c=='\n' || _c==' ' || _c=='\t' )) \
+		while ((_len) && ((_c=(_mystr).s[(_len)-1])==0 || is_ws(_c))) \
 			(_len)--; \
 		(_begin)=(_mystr).s; \
 		while ((_len) && ((_c=*(_begin))==' ' || _c=='\t')) { \
@@ -940,7 +939,24 @@ static inline int str_match(const str *a, const str *b)
  */
 static inline int str_casematch(const str *a, const str *b)
 {
-	return a->len == b->len && !strncasecmp(a->s, b->s, a->len);
+	char *p, *q, *end;
+
+	if (a->len != b->len)
+		return 0;
+
+	p = a->s;
+	q = b->s;
+	end = p + a->len;
+
+	if (p == end || p == q)
+		return 1;
+
+	do {
+		if (tolower(*p) != tolower(*q++))
+			return 0;
+	} while (++p < end);
+
+	return 1;
 }
 
 
@@ -1124,12 +1140,14 @@ static inline int str_strcasecmp(const str *stra, const str *strb)
 #define __stop_expire_timer(begin,threshold,func_info, \
                            extra_s,extra_len,tcp,_slow_stat) \
 	do { \
-		int __usdiff__ = get_time_diff(&(begin)); \
-		if ((threshold) && __usdiff__ > (threshold)) { \
-			log_expiry(__usdiff__,(threshold),(func_info), \
-			           (extra_s),(extra_len),tcp); \
-			if (_slow_stat) \
-				inc_stat(_slow_stat); \
+		if (threshold) { \
+			int __usdiff__ = get_time_diff(&(begin)); \
+			if (__usdiff__ > (threshold)) { \
+				log_expiry(__usdiff__,(threshold),(func_info), \
+				           (extra_s),(extra_len),tcp); \
+				if (_slow_stat) \
+					inc_stat(_slow_stat); \
+			} \
 		} \
 	} while(0)
 

@@ -90,6 +90,7 @@ static int tls_conn_shutdown(struct tcp_connection *c)
 
 			default:
 				LM_ERR("something wrong in SSL: %d, %d, %s\n",err,errno,strerror(errno));
+				/* fall through */
 
 			case SSL_ERROR_SYSCALL:
 				c->state = S_CONN_BAD;
@@ -240,6 +241,7 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 
 		case SSL_ERROR_SYSCALL:
 			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
+			/* fall through */
 		default:
 			LM_ERR("TLS connection to %s:%d read failed\n",
 				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
@@ -294,7 +296,7 @@ static int tls_read(struct tcp_connection * c,struct tcp_req *r)
 static int tls_conn_extra_match(struct tcp_connection *c, void *id)
 {
 	if ( (c->flags&F_CONN_ACCEPTED) ||
-	(SSL_get_SSL_CTX((SSL*)c->extra_data) == id) )
+	(SSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX) == id) )
 		return 1; /*true*/
 
 	return 0; /*false*/

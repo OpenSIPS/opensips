@@ -307,7 +307,7 @@ modparam("mi_fifo", "pretty_printing", 1)
 		<title>DATAGRAM request</title>
 		<programlisting format="linespecific">
 
-{"jsonrpc":"2.0","method":"get_statistics","id":"1065","params":["dialog:","tm:"]}
+{"jsonrpc":"2.0","method":"get_statistics","id":"1065","params":[["dialog:","tm:"]]}
 
 </programlisting>
 		</example>

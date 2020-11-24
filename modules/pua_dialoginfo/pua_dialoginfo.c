@@ -203,9 +203,12 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		entity->uri.len, entity->uri.s,
 		peer->uri.len, peer->uri.s, param->flags);
 
+	/* we shall always parse callid */
+	if (get_callid(msg, &callid) < 0)
+		return;
+
 	if (include_tags) {
-		if ( get_callid( msg, &callid)<0
-		|| parse_from_header( msg )<0
+		if(parse_from_header( msg )<0
 		|| parse_to_header( msg )<0 ) {
 			LM_ERR("failed to parse the reply\n");
 			return;
@@ -663,7 +666,7 @@ static int mod_init(void)
 	pua_send_publish= pua.send_publish;
 
 	nopublish_flag = get_flag_id_by_name(FLAG_TYPE_MSG, nopublish_flag_str, 0);
-	nopublish_flag = (nopublish_flag!=-1)?(1<<nopublish_flag):0;
+	nopublish_flag = (nopublish_flag>=0)?(1<<nopublish_flag):0;
 
 	if(!osips_ps)
 		evp = dialoginfo_process_body;
@@ -1054,7 +1057,7 @@ int set_branch_callee(struct sip_msg* msg, str* callee)
 	/* build var name */
 	build_branch_callee_var_names( branch, &name_d, &name_u );
 
-	if (callee->s!=NULL || callee->len!=0) {
+	if (callee->s!=NULL && callee->len!=0) {
 
 		/* parse input as nameaddr */
 		trim( callee );

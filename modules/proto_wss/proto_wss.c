@@ -292,6 +292,7 @@ static int wss_conn_init(struct tcp_connection* c)
 
 	ret = tls_conn_init(c, &tls_mgm_api);
 	if (ret < 0) {
+		c->proto_data = NULL;
 		LM_ERR("Cannot initiate the conn\n");
 		shm_free(d);
 	}
@@ -309,6 +310,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 				break;
 			case WS_ERR_NONE:
 				WS_CODE(c) = WS_ERR_NORMAL;
+				/* fall through */
 			default:
 				ws_close(c);
 				break;
@@ -378,7 +380,7 @@ static int proto_wss_send(struct socket_info* send_sock,
 		port=su_getport(to);
 		dom = (cert_check_on_conn_reusage==0)?
 			NULL : tls_mgm_api.find_client_domain( &ip, port);
-		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom?dom->ctx:NULL, &c, &fd);
+		n = tcp_conn_get(id, &ip, port, PROTO_WSS, dom, &c, &fd);
 		if (dom)
 			tls_mgm_api.release_domain(dom);
 	}else if (id){

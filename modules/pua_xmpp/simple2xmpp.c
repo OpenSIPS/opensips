@@ -502,6 +502,8 @@ done:
 error:
 	if(sip_doc)
 		xmlFreeDoc(sip_doc);
+	if(doc)
+		xmlFreeDoc(doc);
 	if(note)
 		xmlFree(note);
 	if(buffer)

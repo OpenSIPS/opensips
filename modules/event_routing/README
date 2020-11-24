@@ -340,34 +340,34 @@ Chapter 3. Frequently Asked Questions
 
    3.1.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    3.2.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    3.3.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 4. Contributors
 
@@ -381,7 +381,7 @@ Chapter 4. Contributors
    3. Vlad Patrascu (@rvlad-patrascu) 8 4 71 144
    4. Razvan Crainea (@razvancrainea) 6 4 9 5
    5. Fabian Gast (@fgast) 4 2 27 7
-   6. Zero King 3 1 2 2
+   6. Zero King (@l2dy) 3 1 2 2
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -406,7 +406,7 @@ Chapter 4. Contributors
                      Name                   Commit Activity
    1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - May 2020
    2. Liviu Chircu (@liviuchircu)         Sep 2017 - May 2020
-   3. Zero King                           Mar 2020 - Mar 2020
+   3. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4. Razvan Crainea (@razvancrainea)     Apr 2017 - Sep 2019
    5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6. Fabian Gast (@fgast)                Nov 2018 - Dec 2018
@@ -419,9 +419,10 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Zero King, Vlad Patrascu (@rvlad-patrascu),
-   Fabian Gast (@fgast), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Zero King (@l2dy), Vlad Patrascu
+   (@rvlad-patrascu), Fabian Gast (@fgast), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu).
 
    Documentation Copyrights:
 

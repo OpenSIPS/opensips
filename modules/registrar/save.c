@@ -648,11 +648,6 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 		c = get_first_contact(_m);
 	}
 
-	if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
-		LM_DBG("SIP PN processing failed\n");
-		goto error;
-	}
-
 	update_act_time();
 
 	if (!uri)
@@ -668,12 +663,20 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 
 	if (c == 0) {
 		if (st) {
-			if (star((udomain_t*)_d, &sctx,_m) < 0) goto error;
+			if (star((udomain_t*)_d, &sctx,_m) < 0)
+				goto error;
 		} else {
-			if (no_contacts((udomain_t*)_d, &sctx, _m) < 0) goto error;
+			if (no_contacts((udomain_t*)_d, &sctx, _m) < 0)
+				goto error;
 		}
 	} else {
-		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0) goto error;
+		if (pn_enable && pn_inspect_request(_m, &c->uri, &sctx) != 0) {
+			LM_DBG("SIP PN processing failed (%d)\n", rerrno);
+			goto error;
+		}
+
+		if (add_contacts(_m, c, (udomain_t*)_d, &sctx) < 0)
+			goto error;
 	}
 
 	update_stat(accepted_registrations, 1);
@@ -908,6 +911,8 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 		return E_BAD_URI;
 	}
 
+	memset( &delete_nh_he, 0, sizeof(struct hostent));
+
 	ul.lock_udomain((udomain_t *)udomain, &aor_user);
 
 	if (ul.get_urecord((udomain_t *)udomain, &aor_user, &record) != 0) {
@@ -1016,6 +1021,7 @@ int filter_contacts(urecord_t *r, struct sip_msg *by_msg)
 	int i;
 
 	/* back up the original list using a static array */
+	contacts_bak_no = 0;
 	for (i = 0, uc = r->contacts; uc; uc = uc->next, i++) {
 		if (i >= contacts_bak_sz) {
 			contacts_bak = pkg_realloc(contacts_bak,
@@ -1061,6 +1067,10 @@ void restore_contacts(urecord_t *r)
 {
 	int i;
 
+	if (contacts_bak_no == 0)
+		return;
+
+	/* restore in-between links */
 	for (i = 0; i < contacts_bak_no - 1; i++)
 		contacts_bak[i]->next = contacts_bak[i + 1];
 

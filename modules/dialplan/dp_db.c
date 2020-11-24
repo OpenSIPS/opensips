@@ -31,21 +31,22 @@
 
 #include "dp_db.h"
 
-dp_head_p dp_hlist = NULL;
+dp_head_p dp_hlist;
+dp_head_p dp_df_head;
 
-str default_dp_db_url           =   {NULL, 0};
-str default_dp_table		=   {NULL, 0};
-str dp_table_name       	=   str_init(DP_TABLE_NAME);
-str dpid_column         	=   str_init(DPID_COL);
-str pr_column           	=   str_init(PR_COL);
-str match_op_column     	=   str_init(MATCH_OP_COL);
-str match_exp_column    	=   str_init(MATCH_EXP_COL);
-str match_flags_column  	=   str_init(MATCH_FLAGS_COL);
-str subst_exp_column    	=   str_init(SUBST_EXP_COL);
-str repl_exp_column     	=   str_init(REPL_EXP_COL);
-str disabled_column     	=   str_init(DISABLED_COL);
-str attrs_column        	=   str_init(ATTRS_COL);
-str timerec_column              =   str_init(TIMEREC_COL);
+str default_dp_db_url;
+str default_dp_table     =   str_init(DP_TABLE_NAME);
+
+str dpid_column          =   str_init(DPID_COL);
+str pr_column            =   str_init(PR_COL);
+str match_op_column      =   str_init(MATCH_OP_COL);
+str match_exp_column     =   str_init(MATCH_EXP_COL);
+str match_flags_column   =   str_init(MATCH_FLAGS_COL);
+str subst_exp_column     =   str_init(SUBST_EXP_COL);
+str repl_exp_column      =   str_init(REPL_EXP_COL);
+str disabled_column      =   str_init(DISABLED_COL);
+str attrs_column         =   str_init(ATTRS_COL);
+str timerec_column       =   str_init(TIMEREC_COL);
 
 
 #define GET_STR_VALUE(_res, _values, _index, _null)\
@@ -74,23 +75,23 @@ void list_rule(dpl_node_t * );
 void list_hash(dpl_id_t * , rw_lock_t *);
 
 
-dp_connection_list_p dp_conns = NULL;
+dp_connection_list_p dp_conns;
 
-int test_db(dp_connection_list_p dp_connection){
-
-	if (dp_connection->partition.s == 0) {
-		LM_ERR("invalid partition name\n");
+int test_db(dp_connection_list_p dp_connection)
+{
+	if (!dp_connection->partition.s) {
+		LM_ERR("NULL partition name\n");
 		return -1;
 	}
 
-	if (db_bind_mod(&dp_connection->db_url, &dp_connection->dp_dbf) < 0){
-		LM_ERR("unable to bind to a database driver\n");
+	if (db_bind_mod(&dp_connection->db_url, &dp_connection->dp_dbf) < 0) {
+		LM_ERR("failed to find a client driver for DB URL: '%.*s'\n",
+		       dp_connection->db_url.len, dp_connection->db_url.s);
 		return -1;
 	}
 
-	if (dp_connect_db(dp_connection) !=0)
+	if (dp_connect_db(dp_connection) != 0)
 		return -1;
-
 
 	if (db_check_table_version(&dp_connection->dp_dbf,
 		 *dp_connection->dp_db_handle, &dp_connection->table_name,
@@ -100,11 +101,9 @@ int test_db(dp_connection_list_p dp_connection){
 	}
 
 	dp_disconnect_db(dp_connection);
-
 	return 0;
 
 error:
-
 	dp_disconnect_db(dp_connection);
 	return -1;
 }
@@ -162,24 +161,53 @@ void dp_disconnect_db(dp_connection_list_p dp_conn)
 {
 	if (*dp_conn->dp_db_handle) {
 		dp_conn->dp_dbf.close(*dp_conn->dp_db_handle);
-		*dp_conn->dp_db_handle = 0;
+		*dp_conn->dp_db_handle = NULL;
 	}
 }
 
 
 int init_data(void)
 {
-	dp_head_p start, tmp = NULL;
+	dp_head_p start, tmp;
 
-	start = dp_hlist;
-	if (!start) {
+	if (!dp_hlist) {
 		LM_ERR("no partition defined, not even the default one!\n");
 		return -1;
 	}
 
+	/* was the default partition re-pointed? */
+	if (!str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
+		int found = 0;
+
+		for (start = dp_hlist; start; start = start->next) {
+			if (str_match(&dp_df_part, &start->partition)) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			LM_ERR("partition not found: '%.*s'\n",
+			       dp_df_part.len, dp_df_part.s);
+			return -1;
+		}
+	}
+
+	if (!dp_df_head) {
+		if (pkg_str_dup(&dp_df_part, &dp_hlist->partition) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		LM_INFO("no 'default' partition set, assuming '%.*s'\n",
+		        dp_df_part.len, dp_df_part.s);
+	}
+
+	start = dp_hlist;
 	while (start) {
 		LM_DBG("Adding partition with name [%.*s]\n",
 				start->partition.len, start->partition.s);
+
 		if (!dp_add_connection(start)) {
 			LM_ERR("failed to initialize partition '%.*s'\n",
 					start->partition.len, start->partition.s);
@@ -191,6 +219,8 @@ int init_data(void)
 		pkg_free(tmp);
 	}
 
+	dp_hlist = NULL;
+	dp_df_head = NULL;
 	return 0;
 }
 
@@ -205,6 +235,9 @@ void destroy_data(void)
 		destroy_hash(&el->hash[1]);
 		lock_destroy_rw(el->ref_lock);
 
+		shm_free(el->table_name.s);
+		shm_free(el->partition.s);
+		shm_free(el->db_url.s);
 		shm_free(el);
 	}
 }
@@ -804,14 +837,13 @@ void list_rule(dpl_node_t * rule)
 }
 
 /* Retrieves the corresponding entry of the given partition name */
-dp_connection_list_p dp_get_connection(str * partition)
+dp_connection_list_p dp_get_connection(str *partition)
 {
 	dp_connection_list_t *el;
 
 	el = dp_conns;
-	while (el && str_strcmp(partition, &el->partition)) {
+	while (el && str_strcmp(partition, &el->partition))
 		el = el->next;
-	}
 
 	return el;
 }
@@ -846,14 +878,12 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 		return NULL;
 	}
 
-	/*Set table name*/
-	el->table_name = head->dp_table_name;
-
-	/*Set partition*/
-	el->partition = head->partition;
-
-	/*Set db_url*/
-	el->db_url = head->dp_db_url;
+	if (shm_str_dup(&el->table_name, &head->dp_table_name) != 0 ||
+	        shm_str_dup(&el->partition, &head->partition) != 0 ||
+	        shm_str_dup(&el->db_url, &head->dp_db_url) != 0) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
 
 	el->dp_db_handle = pkg_malloc(sizeof(db_con_t*));
 	if (!el->dp_db_handle) {
@@ -877,6 +907,5 @@ dp_connection_list_p dp_add_connection(dp_head_p head)
 	LM_DBG("Added dialplan partition [%.*s] table [%.*s].\n",
 		 head->partition.len, head->partition.s,
 				head->dp_table_name.len, head->dp_table_name.s);
-
 	return el;
 }

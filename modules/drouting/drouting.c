@@ -227,8 +227,7 @@ struct head_cache *get_head_cache(str *part);
 struct head_cache *add_head_cache(str *part);
 void clean_head_cache(struct head_cache *c);
 void init_head_db(struct head_db *new);
-static int db_load_head(struct head_db*); /* used for populating head_db with
-											 db connections and db funcs */
+static int db_connect_head(struct head_db*); /* populate a db connection */
 static char *extra_prefix_chars;
 
 
@@ -1575,18 +1574,13 @@ static int dr_init(void)
 	drg_domain_col.len = strlen(drg_domain_col.s);
 	drg_grpid_col.len = strlen(drg_grpid_col.s);
 
-	db_part = NULL;
 	for (it_head_config = head_start; it_head_config != NULL;
 			it_head_config = it_head_config->next) {
 
+		db_part = shm_malloc(sizeof(struct head_db));
 		if (!db_part) {
-			db_part = shm_malloc(sizeof(struct head_db));
-			if (!db_part) {
-				LM_ERR("could not allocate db part!\n");
-				goto error_cfg;
-			}
-		} else {
-			cleanup_head_db(db_part);
+			LM_ERR("could not allocate db part!\n");
+			goto error_cfg;
 		}
 		init_head_db(db_part);
 
@@ -1750,8 +1744,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drd_table, DRD_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_gateways "
-				"table \'%.*s\', for partition \'%.*s\'>\n",
+			LM_ERR("error during table version check (dr_gateways "
+				"table \'%.*s\', for partition \'%.*s\')\n",
 				db_part->drd_table.len, db_part->drd_table.s,
 				db_part->partition.len, db_part->partition.s);
 			goto error_cfg;
@@ -1759,8 +1753,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drr_table, DRR_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_rules table \'%.*s\',"
-				" for partition \'%.*s\'>\n", db_part->drr_table.len,
+			LM_ERR("error during table version check (dr_rules table \'%.*s\',"
+				" for partition \'%.*s\')\n", db_part->drr_table.len,
 				db_part->drr_table.s, db_part->partition.len,
 				db_part->partition.s);
 			goto error_cfg;
@@ -1768,8 +1762,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drg_table, DRG_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_groups table \'%.*s\',"
-				" for partition \'%.*s\'>\n", db_part->drg_table.len,
+			LM_ERR("error during table version check (dr_groups table \'%.*s\',"
+				" for partition \'%.*s\')\n", db_part->drg_table.len,
 				db_part->drg_table.s, db_part->partition.len,
 				db_part->partition.s);
 			goto error_cfg;
@@ -1777,8 +1771,8 @@ static int dr_init(void)
 
 		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drc_table, DRC_TABLE_VER) < 0) {
-			LM_ERR("error during table version check<dr_carriers "
-				"table \'%.*s\', for partition \'%.*s\'>\n",
+			LM_ERR("error during table version check (dr_carriers "
+				"table \'%.*s\', for partition \'%.*s\')\n",
 				db_part->drc_table.len, db_part->drc_table.s,
 				db_part->partition.len, db_part->partition.s);
 			goto error_cfg;
@@ -1808,17 +1802,9 @@ static int dr_init(void)
 				fix_cache_sockets(cache);
 			}
 		}
-
-		db_part = NULL;
 	}
 	/* all good now - release the config */
 	cleanup_head_config_table();
-
-	/* free last head if left uninitialized */
-	if (db_part) {
-		cleanup_head_db(db_part);
-		shm_free(db_part);
-	}
 
 	if (init_dr_bls(head_db_start)!=0) {
 		LM_ERR("failed to init DR blacklists\n");
@@ -1920,23 +1906,16 @@ error:
 #undef add_partition_to_avp_name
 
 
-static int db_load_head(struct head_db *x) {
+static int db_connect_head(struct head_db *x) {
 
 	if( *(x->db_con) ) {
-		LM_ERR(" db_con already used\n");
-		return -1;
+		LM_INFO("db_con already present\n");
+		return 1;
 	}
 	if( x->db_url.s && (*(x->db_con) = x->db_funcs.init(&(x->db_url)))==0 ) {
 		LM_ERR("cannot initialize database connection"
 				"(partition:%.*s, db_url:%.*s, len:%d)\n", x->partition.len,
 				x->partition.s, x->db_url.len, x->db_url.s, x->db_url.len);
-		return -1;
-	}
-	if( x->db_con && *(x->db_con) &&
-			x->db_funcs.use_table( *(x->db_con), &(x->drg_table)) <0 ) {
-		LM_ERR("cannot select table (partition:%.*s, drg_table:%.*s\n",
-				x->partition.len, x->partition.s, (x->drg_table).len,
-				(x->drg_table).s);
 		return -1;
 	}
 	return 0;
@@ -1953,13 +1932,15 @@ static void rpc_dr_reload_data(int sender_id, void *unused)
 
 static int dr_child_init(int rank)
 {
-	struct head_db *head_db_it = head_db_start;
+	struct head_db *db = head_db_start;
 
 	LM_DBG("Child initialization on rank %d \n",rank);
 
-	while( head_db_it!=NULL ) {
-		db_load_head( head_db_it );
-		head_db_it = head_db_it->next;
+	for (db = head_db_start; db; db = db->next) {
+		if (db_connect_head(db) < 0) {
+			LM_ERR("failed to create DB connection\n");
+			return -1;
+		}
 	}
 
 	/* if child 1, send a job for itself to run the data loading after
@@ -1981,7 +1962,7 @@ static int dr_exit(void)
 		to_clean = it;
 		it = it->next;
 		if (dr_persistent_state && !to_clean->cache && 
-		db_load_head(to_clean)==0 ) {
+		db_connect_head(to_clean)==0 ) {
 			dr_state_flusher(to_clean);
 
 			(to_clean->db_funcs).close(*(to_clean->db_con));
@@ -2704,6 +2685,10 @@ inline static int push_gw_for_usage(struct sip_msg *msg,
 		} else {
 			gw = dst->dst.gw;
 		}
+
+	} else {
+		LM_BUG("invalid function call, no rule, no destination\n");
+		return -1;
 	}
 
 	/* build uri*/
@@ -4832,6 +4817,7 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
+	mi_item_t *arr_obj, *gw_obj;
 	str number;
 	rt_info_t *route;
 	unsigned int matched_len;
@@ -4864,6 +4850,10 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 		number.s, matched_len) < 0)
 		goto error;
 
+	arr_obj = add_mi_array(resp_obj, MI_SSTR("GW List"));
+	if (!arr_obj)
+		goto error;
+
 	for (i = 0; i < route->pgwa_len; ++i){
 		if (route->pgwl[i].is_carrier) {
 			chosen_desc = carrier_str;
@@ -4873,8 +4863,11 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 			chosen_desc = gw_str;
 			chosen_id = route->pgwl[i].dst.gw->id;
 		}
+		gw_obj = add_mi_object(arr_obj, NULL, 0);
+		if (!gw_obj)
+			goto error;
 
-		if (add_mi_string(resp_obj, chosen_desc.s, chosen_desc.len,
+		if (add_mi_string(gw_obj, chosen_desc.s, chosen_desc.len,
 			chosen_id.s, chosen_id.len) < 0)
 			goto error;
 	}

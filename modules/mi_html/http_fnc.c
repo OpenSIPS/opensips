@@ -472,6 +472,9 @@ mi_response_t *mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 	mi_request_t req_item;
 	mi_response_t *resp = NULL;
 
+	/* initialize field to make sure it is not released in case of errors */
+	req_item.req_obj = NULL;
+
 	if (mod<0 && cmd<0) {
 		LM_ERR("Incorect params: mod=[%d], cmd=[%d]\n", mod, cmd);
 		goto error;
@@ -487,12 +490,7 @@ mi_response_t *mi_http_run_mi_cmd(int mod, int cmd, const str* arg,
 		LM_ERR("bad output is_traced param!\n");
 		return 0;
 	} else {
-		if ( f ) {
-			*is_traced = is_mi_cmd_traced( mi_trace_mod_id, f);
-		} else {
-			/* trace all errors */
-			*is_traced = 1;
-		}
+		*is_traced = is_mi_cmd_traced( mi_trace_mod_id, f);
 	}
 
 	if (f->flags&MI_ASYNC_RPL_FLAG) {

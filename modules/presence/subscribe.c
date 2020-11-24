@@ -963,9 +963,7 @@ int extract_sdialog_info(subs_t* subs, struct sip_msg* msg, int mexp, int* init_
 		return -2;
 	}
 
-	get_body(msg, &subs->subs_body);
-
-	return 0;
+	return get_body(msg, &subs->subs_body);
 }
 
 
@@ -1673,6 +1671,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	CON_PS_REFERENCE(db) = &my_ps_delete;
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
+		CON_RESET_CURR_PS(db);
 		return;
 	}
 
@@ -1703,6 +1702,8 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 			i++;
 		}
 
+		if (i == 0)
+			CON_RESET_CURR_PS(db);
 	}
 
 	return;

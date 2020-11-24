@@ -134,49 +134,34 @@ evi_export_t* get_trans_mod(str* tran)
 	return NULL;
 }
 
-char *evi_build_payload(evi_params_t *params, str *method, int id,
+static int payload_add_params(cJSON *ret_obj, evi_params_t *params,
 	str *extra_param_k, str *extra_param_v)
 {
 	evi_param_p param;
 	cJSON *param_obj = NULL, *tmp;
-	cJSON *ret_obj;
-	char *payload = NULL;
 
-	ret_obj = cJSON_CreateObject();
-	if (!ret_obj)
-		return NULL;
-
-	if (id)
-		cJSON_AddNumberToObject(ret_obj, "id", id);
-	else
-		cJSON_AddNullToObject(ret_obj, "id");
-
-	cJSON_AddItemToObject(ret_obj, "jsonrpc",
-		cJSON_CreateString(JSONRPC_VERSION));
-	cJSON_AddItemToObject(ret_obj, "method",
-			cJSON_CreateStr(method->s, method->len));
-
-	if (params->first && !params->first->name.s) {
+	if (!params->first->name.s) {
 		param_obj = cJSON_CreateArray();
 		if (!param_obj) {
-			LM_ERR("Failed to create params array\n");
-			goto end;
+			LM_ERR("Failed to create JSON array\n");
+			return -1;
 		}
 	} else {
 		param_obj = cJSON_CreateObject();
 		if (!param_obj) {
-			LM_ERR("Failed to create params object\n");
-			goto end;
+			LM_ERR("Failed to create JSON object\n");
+			return -1;
 		}
 	}
 
 	if (extra_param_v) {
 		tmp = cJSON_CreateStr(extra_param_v->s, extra_param_v->len);
 		if (!tmp) {
-			LM_ERR("Failed to create extra string param\n");
-			goto end;
+			LM_ERR("Failed to create JSON string\n");
+			cJSON_Delete(param_obj);
+			return -1;
 		}
-		if (params->first && !params->first->name.s)
+		if (!params->first->name.s)
 			cJSON_AddItemToArray(param_obj, tmp);
 		else
 			_cJSON_AddItemToObject(param_obj, extra_param_k, tmp);
@@ -187,21 +172,51 @@ char *evi_build_payload(evi_params_t *params, str *method, int id,
 		if (param->flags & EVI_INT_VAL) {
 			tmp = cJSON_CreateNumber(param->val.n);
 			if (!tmp) {
-				LM_ERR("Failed to create number param\n");
-				goto end;
+				LM_ERR("Failed to create JSON number\n");
+				return -1;
 			}
 		} else {
-			tmp = cJSON_CreateStr(param->val.s.s, param->val.s.len);
+			if (param->val.s.s)
+				tmp = cJSON_CreateStr(param->val.s.s, param->val.s.len);
+			else
+				tmp = cJSON_CreateNull();
 			if (!tmp) {
-				LM_ERR("Failed to create string param\n");
-				goto end;
+				LM_ERR("Failed to create JSON string %.*s\n", param->name.len, param->name.s);
+				return -1;
 			}
 		}
 
-		if (param->name.s)
+		if (params->first->name.s)
 			_cJSON_AddItemToObject(param_obj, &param->name, tmp);
 		else
 			cJSON_AddItemToArray(param_obj, tmp);
+	}
+
+	return 0;
+}
+
+char *evi_build_payload(evi_params_t *params, str *method, int id,
+	str *extra_param_k, str *extra_param_v)
+{
+	cJSON *ret_obj;
+	char *payload = NULL;
+
+	ret_obj = cJSON_CreateObject();
+	if (!ret_obj)
+		return NULL;
+
+	if (id)
+		cJSON_AddNumberToObject(ret_obj, "id", id);
+
+	cJSON_AddItemToObject(ret_obj, "jsonrpc",
+		cJSON_CreateString(JSONRPC_VERSION));
+	cJSON_AddItemToObject(ret_obj, "method",
+		cJSON_CreateStr(method->s, method->len));
+
+	if (params && params->first &&
+		payload_add_params(ret_obj, params, extra_param_k, extra_param_v) < 0) {
+		LM_ERR("Failed to add parameters\n");
+		goto end;
 	}
 
 	payload = cJSON_PrintUnformatted(ret_obj);

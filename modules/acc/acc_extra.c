@@ -197,16 +197,16 @@ static struct acc_extra** extra_str2bkend(str* bkend)
 	str aaa_bkend_s = str_init("aaa");
 	str evi_bkend_s = str_init("evi");
 
-	if (!str_strcmp(bkend, &log_bkend_s))
+	if (str_match(bkend, &log_bkend_s))
 		return &log_extra_tags;
 
-	if (!str_strcmp(bkend, &db_bkend_s))
+	if (str_match(bkend, &db_bkend_s))
 		return &db_extra_tags;
 
-	if (!str_strcmp(bkend, &aaa_bkend_s))
+	if (str_match(bkend, &aaa_bkend_s))
 		return &aaa_extra_tags;
 
-	if (!str_strcmp(bkend, &evi_bkend_s))
+	if (str_match(bkend, &evi_bkend_s))
 		return &evi_extra_tags;
 
 	return NULL;
@@ -219,16 +219,16 @@ static struct acc_extra** leg_str2bkend(str* bkend)
 	str aaa_bkend_s = str_init("aaa");
 	str evi_bkend_s = str_init("evi");
 
-	if (!str_strcmp(bkend, &log_bkend_s))
+	if (str_match(bkend, &log_bkend_s))
 		return &log_leg_tags;
 
-	if (!str_strcmp(bkend, &db_bkend_s))
+	if (str_match(bkend, &db_bkend_s))
 		return &db_leg_tags;
 
-	if (!str_strcmp(bkend, &aaa_bkend_s))
+	if (str_match(bkend, &aaa_bkend_s))
 		return &aaa_leg_tags;
 
-	if (!str_strcmp(bkend, &evi_bkend_s))
+	if (str_match(bkend, &evi_bkend_s))
 		return &evi_leg_tags;
 
 	return NULL;
@@ -362,6 +362,9 @@ static int parse_acc_list_generic(void* val, str2bkend str2bk,
 		} else {
 			token.len = tok_list_s.len;
 		}
+
+		if (token.len <= 0)
+			break;
 
 		/* we reached the end or there are probably some trailing spaces
 		 * after the last ';' */

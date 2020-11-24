@@ -35,6 +35,7 @@
 #include "../../mem/mem.h"
 #include "../../mi/mi.h"
 #include "../../parser/parse_to.h"
+#include "../../lib/csv.h"
 #include "../../mod_fix.h"
 #include "../../ipc.h"
 #include "dialplan.h"
@@ -43,7 +44,6 @@
 
 
 #define DEFAULT_PARAM      "$ruri.user"
-#define DEFAULT_PARTITION  "default"
 #define PARAM_URL	   "db_url"
 #define PARAM_TABLE	   "table_name"
 #define DP_CHAR_COLON      ':'
@@ -80,7 +80,7 @@ static int dp_set_partition(modparam_t type, void* val);
 static void dp_print_list(void);
 
 static str default_param_s = str_init(DEFAULT_PARAM);
-static str default_dp_partition = {NULL, 0};
+str dp_df_part = str_init(DEFAULT_PARTITION);
 dp_param_p default_par2 = NULL;
 static str database_url = {NULL, 0};
 
@@ -111,7 +111,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "dp_translate", 0, 0, 0, {
 		{mi_translate2, {"dpid", "input", 0}},
-		{mi_translate3, {"partition", "dpid", "input", 0}},
+		{mi_translate3, {"dpid", "input", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dp_show_partition", 0, 0, mi_child_init, {
@@ -170,18 +170,6 @@ struct module_exports exports= {
 	0               /* reload confirm function */
 };
 
-static dp_head_p dp_get_head(str part_name){
-
-	dp_head_p start;
-
-	for (start = dp_hlist; start &&
-				str_strcmp(&part_name, &start->partition);
-							  start = start->next);
-
-	return start;
-
-}
-
 
 /*Inserts table_name/db url into the list of heads*/
 static int dp_head_insert(int dp_insert_type, str *content,
@@ -196,127 +184,125 @@ static int dp_head_insert(int dp_insert_type, str *content,
 		}                                               \
 	}while(0);
 
-	dp_head_p start = dp_hlist;
-	dp_head_p tmp = NULL;
+	dp_head_p start = dp_hlist, head;
 
-	if ((!content || (!content->s || !content->len)) ||
-		(!partition || (!partition->s || !partition->len))) {
+	if (ZSTRP(content) || ZSTRP(partition)) {
 		LM_ERR("invalid insert in partition!\n");
 		return -1;
 	}
 
-	/*First Insertion*/
-	if (!dp_hlist) {
-		dp_hlist = pkg_malloc(sizeof *dp_hlist);
-		if (!dp_hlist) {
-			LM_ERR("No more pkg mem\n");
-			return -1;
-		}
-		memset(dp_hlist, 0, sizeof *dp_hlist);
+	if (!start)
+		goto alloc_head;
 
-		dp_hlist->partition = *partition;
-
-		h_insert( dp_insert_type, dp_hlist->dp_db_url,
-				 dp_hlist->dp_table_name, *content);
-		return 0;
-	}
-
-
-	/* start can't be null here, should exit on first IF instruction
-	 * if null*/
+	/* try to match and update an existing head */
 	do {
-		if (!str_strcmp(partition, &start->partition)) {
+		if (str_match(&start->partition, partition)) {
 			h_insert( dp_insert_type, start->dp_db_url,
 					 start->dp_table_name, *content);
 			return 0;
 		}
-	/* always want second condition to be true since only the
-	 * first condition is valid; the second is just an assignment
-	 * in case the first one succeeds */
-	} while (start->next != NULL && (start=start->next,1));
+	} while (start->next && (start = start->next, 1));
 
-	tmp = pkg_malloc(sizeof(dp_head_t));
-
-	if (!tmp) {
-		LM_ERR("No more pkg mem\n");
+alloc_head:
+	head = pkg_malloc(sizeof *head + partition->len);
+	if (!head) {
+		LM_ERR("oom\n");
 		return -1;
 	}
-	memset(tmp, 0, sizeof(dp_head_t));
+	memset(head, 0, sizeof *head);
 
-	tmp->partition = *partition;
+	head->partition.s = (char *)(head + 1);
+	str_cpy(&head->partition, partition);
 
-	h_insert( dp_insert_type, tmp->dp_db_url,
-			 tmp->dp_table_name, *content);
-	start->next = tmp;
+	if (str_match(partition, &dp_df_part))
+		dp_df_head = head;
+
+	h_insert(dp_insert_type, head->dp_db_url,
+			 head->dp_table_name, *content);
+
+	if (!dp_hlist)
+		dp_hlist = head;
+	else
+		start->next = head;
+
 	return 0;
 #undef h_insert
-
 }
 
-static int dp_create_head(str part_desc)
+static int dp_create_head(const str *in)
 {
+	csv_record *name, *props, *params, *it;
+	str partition, rem;
+	int have_db_url = 0, have_db_table = 0;
 
-	str tmp;
-	str partition;
-	str param_type, param_value;
+	name = __parse_csv_record(in, 0, ':');
+	if (!name)
+		goto bad_input;
 
-	char* end, *start;
-	int ulen = strlen(PARAM_URL), tlen = strlen(PARAM_TABLE);
-
-	tmp.s = part_desc.s;
-	end = q_memchr(part_desc.s, DP_CHAR_COLON, part_desc.len);
-	if (end == NULL) {
-		LM_ERR("[[%s]]\n", tmp.s);
-		goto out_err;
+	partition = name->s;
+	if (!name->next) {
+		free_csv_record(name);
+		goto done_parsing;
 	}
 
-	tmp.len = end - tmp.s;
-	str_trim_spaces_lr(tmp);
+	rem.s = name->next->s.s;
+	rem.len = in->len - (rem.s - in->s);
+	props = __parse_csv_record(&rem, 0, ';');
+	if (!props)
+		goto bad_input;
 
-	partition = tmp;
+	free_csv_record(name);
 
-	do {
-		start = ++end;
+	for (it = props; it; it = it->next) {
+		params = __parse_csv_record(&it->s, 0, '=');
+		if (!params)
+			goto bad_input;
 
-		end = q_memchr(start, DP_CHAR_SCOLON,
-				part_desc.s + part_desc.len - start);
-		if (end == NULL)
-			break;
-
-		param_type.s = start;
-		param_value.s = q_memchr(start, DP_CHAR_EQUAL,
-				part_desc.len + part_desc.s - start);
-
-		if (param_value.s == 0) {
-			LM_ERR("failed to locate '%c' separator in 'partition' string\n", DP_CHAR_EQUAL);
-			goto out_err;
+		/* support for the "default: my_part" syntax */
+		if (!props->next && !params->next && !ZSTR(params->s)) {
+			dp_df_part = params->s;
+			LM_DBG("changing the default partition to '%.*s'\n",
+			       dp_df_part.len, dp_df_part.s);
+			return 0;
 		}
 
-		param_type.len = param_value.s - param_type.s;
-		param_value.len = end - (++param_value.s);
+		if (str_match(&params->s, _str(PARAM_URL))) {
+			have_db_url = 1;
+			dp_head_insert(DP_TYPE_URL, &params->next->s, &partition);
+		} else if (str_match(&params->s, _str(PARAM_TABLE))) {
+			have_db_table = 1;
+			dp_head_insert(DP_TYPE_TABLE, &params->next->s, &partition);
+		} else if (!ZSTR(params->s)) {
+			LM_ERR("invalid token '%.*s' in partition '%.*s'\n",
+			       params->s.len, params->s.s, partition.len, partition.s);
+			goto bad_input;
+		}
 
-		str_trim_spaces_lr(param_type);
-		str_trim_spaces_lr(param_value);
+		free_csv_record(params);
+	}
 
-		if (param_type.len == ulen &&
-				!memcmp(param_type.s, PARAM_URL, ulen)) {
-			dp_head_insert( DP_TYPE_URL, &param_value,
-								&partition);
-		} else if ( param_type.len == tlen &&
-				!memcmp( param_type.s, PARAM_TABLE, tlen)) {
-			dp_head_insert( DP_TYPE_TABLE, &param_value,
-								&partition);
+	free_csv_record(props);
+
+done_parsing:
+	if (!have_db_url) {
+		if (default_dp_db_url.s) {
+			dp_head_insert(DP_TYPE_URL, _str(default_dp_db_url.s), &partition);
+		} else if (db_default_url) {
+			dp_head_insert(DP_TYPE_URL, _str(db_default_url), &partition);
 		} else {
-			LM_ERR("Invalid parameter type definition [[%.*s]]\n",
-					param_type.len, param_type.s);
+			LM_ERR("partition '%.*s' has no 'db_url'\n",
+			       partition.len, partition.s);
 			return -1;
 		}
-	} while(1);
+	}
+
+	if (!have_db_table)
+		dp_head_insert(DP_TYPE_TABLE, _str(default_dp_table.s), &partition);
 
 	return 0;
 
-out_err:
-	LM_ERR("invalid partition param definition\n");
+bad_input:
+	LM_ERR("failed to parse partition: '%.*s'\n", in->len, in->s);
 	return -1;
 }
 
@@ -328,7 +314,9 @@ static int dp_set_partition(modparam_t type, void* val)
 	p.s   = (char *)val;
 	p.len = strlen(val);
 
-	if (dp_create_head(p)) {
+	default_dp_table.len = strlen(default_dp_table.s);
+
+	if (dp_create_head(&p)) {
 		LM_ERR("Error creating head!\n");
 		return -1;
 	}
@@ -349,19 +337,17 @@ static void dp_print_list(void)
 			start->partition.len, start->partition.s,
 			start->dp_db_url.len, start->dp_db_url.s,
 			start->dp_table_name.len, start->dp_table_name.s, start->next);
-		start = (dp_head_p)start->next;
+		start = start->next;
 	}
 }
 
 
 static int mod_init(void)
 {
-
-	str def_str = str_init(DEFAULT_PARTITION);
-	dp_head_p el = dp_get_head(def_str);
-
 	LM_INFO("initializing module...\n");
+	init_db_url(default_dp_db_url, 1 /* can be null */);
 
+	default_dp_table.len    = strlen(default_dp_table.s);
 	dpid_column.len     	= strlen(dpid_column.s);
 	pr_column.len       	= strlen(pr_column.s);
 	match_op_column.len 	= strlen(match_op_column.s);
@@ -373,65 +359,10 @@ static int mod_init(void)
 	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if (default_dp_db_url.s) {
-		default_dp_db_url.len = strlen(default_dp_db_url.s);
-
-		if (!el) {
-			default_dp_partition.len = sizeof(DEFAULT_PARTITION) - 1;
-			default_dp_partition.s = pkg_malloc(default_dp_partition.len);
-
-			if (!default_dp_partition.s) {
-				LM_ERR("No more pkg memory\n");
-				return -1;
-			}
-			memcpy(default_dp_partition.s, DEFAULT_PARTITION,
-							 default_dp_partition.len);
-		} else {
-			default_dp_partition.s = el->partition.s;
-			default_dp_partition.len = el->partition.len;
-		}
-
-		dp_head_insert( DP_TYPE_URL, &default_dp_db_url,
-							 &default_dp_partition);
-	}
-
-	if (default_dp_table.s) {
-		if (!default_dp_partition.s) {
-			if (!el) {
-				LM_ERR("DB URL not defined for default partition!\n");
-				return -1;
-			} else {
-				default_dp_partition.s = el->partition.s;
-				default_dp_partition.len = el->partition.len;
-			}
-		}
-
-		default_dp_table.len = strlen(default_dp_table.s);
-		dp_head_insert( DP_TYPE_TABLE, &default_dp_table,
-							 &default_dp_partition);
-	}
-
-	el = dp_hlist;
-
-	for (el = dp_hlist; el ; el = el->next) {
-		//db_url must be set
-		if (!el->dp_db_url.s) {
-			LM_ERR("DB URL is not defined for partition %.*s!\n",
-						el->partition.len,el->partition.s);
-			return -1;
-		}
-
-		if (!el->dp_table_name.s) {
-			el->dp_table_name.len = sizeof(DP_TABLE_NAME) - 1;
-			el->dp_table_name.s = pkg_malloc(el->dp_table_name.len);
-			if(!el->dp_table_name.s){
-				LM_ERR("No more pkg mem\n");
-				return -1;
-			}
-			memcpy(el->dp_table_name.s, DP_TABLE_NAME,
-							 el->dp_table_name.len);
-		}
-
+	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION)) &&
+	        default_dp_db_url.s) {
+		dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
+		dp_head_insert(DP_TYPE_TABLE, &default_dp_table, &dp_df_part);
 	}
 
 	default_par2 = (dp_param_p)shm_malloc(sizeof(dp_param_t));
@@ -460,7 +391,6 @@ static int mod_init(void)
 	}
 
 	return 0;
-#undef init_db_url_part
 }
 
 
@@ -560,13 +490,12 @@ static int dp_update(struct sip_msg * msg, pv_spec_t * src, pv_spec_t * dest,
 
 static int fix_partition(void** param)
 {
-	str def_str = str_init(DEFAULT_PARTITION);
 	str *s=(str*)*param;
 
 	/* handle the special case when the fix is triggered for 
 	   missing parameter */
 	if (s==NULL)
-		s = &def_str;
+		s = &dp_df_part;
 
 	*param = (void*)dp_get_connection( s );
 	if (*param==NULL) {
@@ -731,7 +660,7 @@ static mi_response_t *mi_show_partition(const mi_params_t *params,
 		return 0;
 
 	parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
-	if (parts_arr)
+	if (!parts_arr)
 		goto error;
 
 	el = dp_get_connections();
@@ -744,14 +673,14 @@ static mi_response_t *mi_show_partition(const mi_params_t *params,
 			el->partition.s, el->partition.len) < 0)
 			goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("Table"),
+		if (add_mi_string(part_item, MI_SSTR("table"),
 				el->table_name.s, el->table_name.len) < 0)
 				goto error;
 
 		db_get_url(&el->db_url);
 		if(database_url.len == 0) goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("db_url"),
+		if (add_mi_string(part_item, MI_SSTR("db_url"),
 			database_url.s, database_url.len) < 0)
 			goto error;
 
@@ -778,7 +707,7 @@ static mi_response_t *mi_show_partition_1(const mi_params_t *params,
 
 	el = dp_get_connection(&part);
 	if (!el)
-		return 0;
+		return init_mi_error(404, MI_SSTR("Partition Not Found"));
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -920,13 +849,12 @@ error:
 static mi_response_t *mi_translate2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	str def_str = str_init(DEFAULT_PARTITION);
 	dp_connection_list_t *part;
 
-	part = dp_get_connection(&def_str);
+	part = dp_get_connection(&dp_df_part);
 	if (part==NULL){
 		LM_ERR("translating without partition, but no default defined\n");
-		return init_mi_error(400, MI_SSTR("Default partition not found"));
+		return init_mi_error(404, MI_SSTR("'default' partition not found"));
 	}
 	return mi_translate( params, part);
 }

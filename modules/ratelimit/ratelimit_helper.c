@@ -579,6 +579,14 @@ static int rl_map_print(void *param, str key, void *value)
 	return 0;
 }
 
+static int rl_map_print_array(void *param, str key, void *value)
+{
+	mi_item_t *pipe_item = add_mi_object((mi_item_t *)param, NULL, 0);
+	if (!pipe_item)
+		return -1;
+	return rl_map_print(pipe_item, key, value);
+}
+
 int rl_stats(mi_item_t *resp_obj, str * value)
 {
 	mi_item_t *pipe_item, *pipe_arr;
@@ -611,11 +619,8 @@ int rl_stats(mi_item_t *resp_obj, str * value)
 		for (i = 0; i < rl_htable.size; i++) {
 			if (map_size(rl_htable.maps[i]) == 0)
 				continue;
-			pipe_item = add_mi_object(pipe_arr, NULL, 0);
-			if (!pipe_item)
-				return -1;
 			RL_GET_LOCK(i);
-			if (map_for_each(rl_htable.maps[i], rl_map_print, pipe_item)) {
+			if (map_for_each(rl_htable.maps[i], rl_map_print_array, pipe_arr)) {
 				LM_ERR("cannot print values\n");
 				goto error;
 			}

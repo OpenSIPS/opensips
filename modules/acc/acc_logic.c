@@ -223,13 +223,10 @@ acc_ctx_t* try_fetch_ctx(void)
 	struct cell* t;
 	struct dlg_cell* dlg;
 
-	t = tmb.t_gett ? tmb.t_gett() : NULL;
-	t = t==T_UNDEFINED ? NULL : t;
-
-
 	if ((ret = ACC_GET_CTX()) == NULL) {
-		t = tmb.t_gett ? tmb.t_gett() : NULL;
-		t = (t==T_UNDEFINED) ? NULL : t;
+		if (!tmb.t_gett || (t = tmb.t_gett()) == T_UNDEFINED)
+			t = NULL;
+
 		dlg = dlg_api.get_dlg ? dlg_api.get_dlg() : NULL;
 
 		/* search for the context in transaction context */
@@ -383,13 +380,11 @@ int w_acc_db_request(struct sip_msg *rq, str* comment, str *table)
 	env_set_comment( &accp );
 	env_set_text(table->s, table->len);
 
-	if (str_strcmp(table, &db_table_mc) == 0) {
+	if (str_match(table, &db_table_mc))
 		return acc_db_request(rq, NULL, &mc_ins_list, 0, 1);
-	}
 
-	if (str_strcmp(table, &db_table_acc) == 0) {
+	if (str_match(table, &db_table_acc))
 		return acc_db_request(rq, NULL, &acc_ins_list, 0, 0);
-	}
 
 	return acc_db_request( rq, NULL,NULL, 0, 0);
 }

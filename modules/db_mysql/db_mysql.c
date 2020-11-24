@@ -28,6 +28,8 @@
  *  2003-03-16  flags export parameter added (janakj)
  */
 
+#define _GNU_SOURCE
+
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "../../db/db_cap.h"

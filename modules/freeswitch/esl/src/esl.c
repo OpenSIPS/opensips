@@ -998,6 +998,7 @@ ESL_DECLARE(esl_status_t) esl_connect_timeout(esl_handle_t *handle, const char *
 	}
 
 	memcpy(&handle->sockaddr, result->ai_addr, result->ai_addrlen);	
+	freeaddrinfo(result);
 	switch(handle->sockaddr.ss_family) {
 		case AF_INET:
 			sockaddr_in = (struct sockaddr_in*)&(handle->sockaddr);
@@ -1013,7 +1014,6 @@ ESL_DECLARE(esl_status_t) esl_connect_timeout(esl_handle_t *handle, const char *
 			strncpy(handle->err, "Host resolves to unsupported address family", sizeof(handle->err));
 			goto fail;
 	}
-	freeaddrinfo(result);
 	
 	handle->sock = socket(handle->sockaddr.ss_family, SOCK_STREAM, IPPROTO_TCP);
 	
@@ -1218,10 +1218,7 @@ ESL_DECLARE(esl_status_t) esl_recv_event_timed(esl_handle_t *handle, uint32_t ms
 		return ESL_BREAK;
 	}
 
-	if (activity < 0) { 
-		handle->connected = 0;
-		status = ESL_FAIL;
-	} else if (activity > 0 && (activity & ESL_POLL_READ)) {
+	if (activity & ESL_POLL_READ) {
 		if (esl_recv_event(handle, check_q, save_event)) {
 			status = ESL_FAIL;
 		}
@@ -1241,9 +1238,7 @@ static esl_ssize_t handle_recv(esl_handle_t *handle, void *data, esl_size_t data
 	
 	if (handle->connected) {
 		if ((activity = esl_wait_sock(handle->sock, 1000, ESL_POLL_READ|ESL_POLL_ERROR)) > 0) {
-			if (activity < 0) {
-				activity = -1;
-			} else if ((activity & ESL_POLL_ERROR)) {
+			if ((activity & ESL_POLL_ERROR)) {
 				activity = -1;
 			} else if ((activity & ESL_POLL_READ)) {
 				if (!(activity = recv(handle->sock, data, datalen, 0))) {
@@ -1411,6 +1406,7 @@ ESL_DECLARE(esl_status_t) esl_recv_event(esl_handle_t *handle, int check_q, esl_
 		if (!esl_safe_strcasecmp(hval, "text/disconnect-notice") && revent->body) {
 			const char *dval = esl_event_get_header(revent, "content-disposition");
 			if (esl_strlen_zero(dval) || strcasecmp(dval, "linger")) {
+				free(revent->body);
 				goto fail;
 			}
 		}

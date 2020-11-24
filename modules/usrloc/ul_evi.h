@@ -33,21 +33,29 @@
 #define UL_EV_LATENCY_UPDATE "E_UL_LATENCY_UPDATE"
 
 /* event params */
-#define UL_EV_PARAM_DOMAIN   "domain"
-#define UL_EV_PARAM_AOR      "aor"
-#define UL_EV_PARAM_CT_URI   "uri"
-#define UL_EV_PARAM_CT_RCV   "received"
-#define UL_EV_PARAM_CT_PATH  "path"
-#define UL_EV_PARAM_CT_QVAL  "qval"
-#define UL_EV_PARAM_CT_UA    "user_agent"
-#define UL_EV_PARAM_CT_SOCK  "socket"
-#define UL_EV_PARAM_CT_BFL   "bflags"
-#define UL_EV_PARAM_CT_EXP   "expires"
-#define UL_EV_PARAM_CT_CLID  "callid"
-#define UL_EV_PARAM_CT_CSEQ  "cseq"
-#define UL_EV_PARAM_CT_ATTR  "attr"
-#define UL_EV_PARAM_CT_LTCY  "latency"
-#define UL_EV_PARAM_CT_SHTAG "shtag"
+#define UL_EV_PARAM_DOMAIN    "domain"
+#define UL_EV_PARAM_AOR       "aor"
+#define UL_EV_PARAM_CT_URI    "uri"
+#define UL_EV_PARAM_CT_RCV    "received"
+#define UL_EV_PARAM_CT_PATH   "path"
+#define UL_EV_PARAM_CT_QVAL   "qval"
+#define UL_EV_PARAM_CT_UA     "user_agent"
+#define UL_EV_PARAM_CT_SOCK   "socket"
+#define UL_EV_PARAM_CT_BFL    "bflags"
+#define UL_EV_PARAM_CT_EXP    "expires"
+#define UL_EV_PARAM_CT_CLID   "callid"
+#define UL_EV_PARAM_CT_CSEQ   "cseq"
+#define UL_EV_PARAM_CT_ATTR   "attr"
+#define UL_EV_PARAM_CT_LTCY   "latency"
+#define UL_EV_PARAM_CT_SHTAG  "shtag"
+#define UL_EV_PARAM_CT_REASON "reason"
+#define UL_EV_PARAM_CT_RCLID  "req_callid"
+
+struct ct_refresh_event_data {
+	ucontact_t *ct;
+	str reason;
+	str req_callid;
+};
 
 /* AoR event IDs */
 extern event_id_t ei_ins_id;
@@ -63,6 +71,7 @@ extern event_id_t ei_c_refresh_id;
 int ul_event_init(void);
 void ul_raise_aor_event(event_id_t _e, struct urecord *_r);
 void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c);
-void ul_raise_ct_refresh_event(const ucontact_t *_c, int async);
+void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
+                               const str *req_callid);
 
 #endif /* __UL_EVI_H__ */

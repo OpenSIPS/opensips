@@ -130,15 +130,15 @@ static void route_received(int sender, void *param)
 			LM_ERR("No more memory\n");
 			return;
 		}
-		memset(req, 0, sizeof(struct sip_msg));
-		req->first_line.type = SIP_REQUEST;
-		req->first_line.u.request.method.s= "DUMMY";
-		req->first_line.u.request.method.len= 5;
-		req->first_line.u.request.uri.s= "sip:user@domain.com";
-		req->first_line.u.request.uri.len= 19;
-		req->rcv.src_ip.af = AF_INET;
-		req->rcv.dst_ip.af = AF_INET;
 	}
+	memset(req, 0, sizeof(struct sip_msg));
+	req->first_line.type = SIP_REQUEST;
+	req->first_line.u.request.method.s= "DUMMY";
+	req->first_line.u.request.method.len= 5;
+	req->first_line.u.request.uri.s= "sip:user@domain.com";
+	req->first_line.u.request.uri.len= 19;
+	req->rcv.src_ip.af = AF_INET;
+	req->rcv.dst_ip.af = AF_INET;
 
 	route_run(sroutes->event[route_s->ev_route_id].a, req,
 		&route_s->params, &route_s->event);

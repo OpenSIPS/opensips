@@ -877,7 +877,11 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->rcv.bind_address = si;
 	c->rcv.dst_ip = si->address;
 	su_size = sockaddru_len(local_su);
-	getsockname(sock, (struct sockaddr *)&local_su, &su_size);
+	if (getsockname(sock, (struct sockaddr *)&local_su, &su_size)<0) {
+		LM_ERR("failed to get info on received interface/IP %d/%s\n",
+			errno, strerror(errno));
+		goto error;
+	}
 	c->rcv.dst_port = su_getport(&local_su);
 	print_ip("tcpconn_new: new tcp connection to: ", &c->rcv.src_ip, "\n");
 	LM_DBG("on port %d, proto %d\n", c->rcv.src_port, si->proto);
@@ -902,6 +906,7 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	tcp_connections_no++;
 	return c;
 
+error:
 	lock_destroy(&c->write_lock);
 error0:
 	shm_free(c);
@@ -1046,12 +1051,11 @@ static inline int handle_new_connect(struct socket_info* si)
 {
 	union sockaddr_union su;
 	struct tcp_connection* tcpconn;
-	socklen_t su_len;
+	socklen_t su_len = sizeof(su);
 	int new_sock;
 	int id;
 
-	/* got a connection on r */
-	su_len=sizeof(su);
+	/* coverity[overrun-buffer-arg: FALSE] - union has 28 bytes, CID #200070 */
 	new_sock=accept(si->socket, &(su.s), &su_len);
 	if (new_sock==-1){
 		if ((errno==EAGAIN)||(errno==EWOULDBLOCK))
@@ -1177,8 +1181,10 @@ inline static int handle_tcpconn_ev(struct tcp_connection* tcpconn, int fd_i,
 
 			/* now that we completed the async connection, we also need to
 			 * listen for READ events, otherwise these will get lost */
-			if (tcpconn->flags & F_CONN_REMOVED_READ)
+			if (tcpconn->flags & F_CONN_REMOVED_READ) {
 				reactor_add_reader( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
+				tcpconn->flags&=~F_CONN_REMOVED_READ;
+			}
 
 			goto async_write;
 		} else {

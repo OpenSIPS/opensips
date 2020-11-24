@@ -745,17 +745,16 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 
+			if (restore_reinvite_pinging(dlg) != 0)
+				LM_ERR("failed to fetch some Re-INVITE pinging data\n");
 			if (dlg_has_reinvite_pinging(dlg)) {
 				/* re-populate Re-INVITE pinging fields */
-				if (restore_reinvite_pinging(dlg) != 0)
-					LM_ERR("failed to fetch some Re-INVITE pinging data\n");
-				else if (0 != insert_reinvite_ping_timer(dlg))
+				if (0 != insert_reinvite_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into reinvite"
 					        "ping timer\n", dlg);
-				else {
+				else
 					/* reference dialog as kept in reinvite ping timer list */
 					ref_dlg(dlg, 1);
-				}
 			}
 
 			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
@@ -1790,7 +1789,7 @@ static int sync_dlg_db_mem(void)
 			/*restore the dialog info*/
 			GET_STR_VALUE(callid, values, 1, 1, 0);
 			GET_STR_VALUE(from_tag, values, 3, 1, 0);
-			GET_STR_VALUE(to_tag, values, 5, 1, 1);
+			GET_STR_VALUE(to_tag, values, 5, 1, 0);
 
 			/* TODO - check about hash resize ? maybe hash was lowered & we overflow the hash */
 			known_dlg = 0;
@@ -2084,7 +2083,7 @@ static int sync_dlg_db_mem(void)
 
 					/* skip flags - keep what we have - anyway can't tell which is new */
 
-					dlg->locked_by = process_no;
+					known_dlg->locked_by = process_no;
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
@@ -2092,7 +2091,7 @@ static int sync_dlg_db_mem(void)
 						read_dialog_profiles( VAL_STR(values+18).s,
 							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
-					dlg->locked_by = 0;
+					known_dlg->locked_by = 0;
 					dlg_unlock( d_table, d_entry);
 				} else {
 					/* DB has newer state, just update fields from DB */
@@ -2158,9 +2157,9 @@ static int sync_dlg_db_mem(void)
 						known_dlg->flags |= DLG_FLAG_NEW;
 
 					/* update the routes too */
-					GET_ROUTE_VALUE( dlg->rt_on_answer, values, 26);
-					GET_ROUTE_VALUE( dlg->rt_on_timeout, values, 27);
-					GET_ROUTE_VALUE( dlg->rt_on_hangup, values, 28);
+					GET_ROUTE_VALUE( known_dlg->rt_on_answer, values, 26);
+					GET_ROUTE_VALUE( known_dlg->rt_on_timeout, values, 27);
+					GET_ROUTE_VALUE( known_dlg->rt_on_hangup, values, 28);
 
 					/* update script variables
 					 * if already found, delete the old one
@@ -2174,7 +2173,7 @@ static int sync_dlg_db_mem(void)
 						}
 					}
 
-					dlg->locked_by = process_no;
+					known_dlg->locked_by = process_no;
 
 					/* profiles - do not insert into a profile
 					 * is dlg is already in that profile*/
@@ -2182,7 +2181,7 @@ static int sync_dlg_db_mem(void)
 						read_dialog_profiles( VAL_STR(values+18).s,
 							strlen(VAL_STR(values+18).s), known_dlg, 1, 0);
 
-					dlg->locked_by = 0;
+					known_dlg->locked_by = 0;
 					dlg_unlock( d_table, d_entry);
 				}
 			}

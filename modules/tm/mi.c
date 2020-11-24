@@ -241,7 +241,7 @@ static inline int mi_print_routes(mi_item_t *resp_obj, dlg_t* dlg)
 
 	if (dlg->hooks.last_route)
 		if (add_mi_string_fmt(routes_arr, 0, 0, "<%.*s>",
-			dlg->hooks.last_route->s, dlg->hooks.last_route->len) < 0)
+			dlg->hooks.last_route->len, dlg->hooks.last_route->s) < 0)
 			return -1;
 
 	return 0;

@@ -84,6 +84,7 @@ module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name
 		md = pkg_realloc(md, (ndeps + 1) * sizeof *md);
 		if (!md) {
 			LM_ERR("oom\n");
+			va_end(ap);
 			return NULL;
 		}
 		memset(&md[ndeps], 0, sizeof *md);

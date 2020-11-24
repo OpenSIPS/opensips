@@ -19,6 +19,7 @@
 #debug_mode=yes
 
 log_level=3
+xlog_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
@@ -190,7 +191,7 @@ modparam("tls_mgm","server_domain", "default")
 modparam("tls_mgm","match_ip_address", "[default]*")
 modparam("tls_mgm","verify_cert", "[default]1")
 modparam("tls_mgm","require_cert", "[default]0")
-modparam("tls_mgm","tls_method", "[default]SSLv1")
+modparam("tls_mgm","tls_method", "[default]TLSv1")
 modparam("tls_mgm","certificate", "[default]/etc/opensips/tls/user/user-cert.pem")
 modparam("tls_mgm","private_key", "[default]/etc/opensips/tls/user/user-privkey.pem")
 modparam("tls_mgm","ca_list", "[default]/etc/opensips/tls/user/user-calist.pem")
@@ -411,6 +412,7 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 	ifelse(HAVE_OUTBOUND_PSTN,`yes',`
 	if ($rU=~"^\+[1-9][0-9]+$") {
 		ifelse(USE_DR_MODULE,`yes',`
+		strip(1);
 		if (!do_routing(0)) {
 			send_reply(500,"No PSTN Route found");
 			exit;

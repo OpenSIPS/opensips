@@ -21,18 +21,18 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">56</entry>
-		<entry align="center">35</entry>
-		<entry align="center">1915</entry>
+		<entry align="center">57</entry>
+		<entry align="center">36</entry>
+		<entry align="center">1916</entry>
 		<entry align="center">298</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">11</entry>
-		<entry align="center">6</entry>
+		<entry align="center">14</entry>
+		<entry align="center">8</entry>
 		<entry align="center">207</entry>
-		<entry align="center">162</entry>
+		<entry align="center">184</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -60,6 +60,14 @@
 	</row>
 	<row>
 		<entry>6. </entry>
+		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry align="center">5</entry>
+		<entry align="center">3</entry>
+		<entry align="center">2</entry>
+		<entry align="center">3</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -67,7 +75,7 @@
 		<entry align="center">25</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>franklyfox</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -75,19 +83,11 @@
 		<entry align="center">5</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">1</entry>
 		<entry align="center">2</entry>
 	</row>
 	<row>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Jul 2015 - May 2020</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Sep 2011 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
-		<entry align="center">Jun 2018 - Feb 2020</entry>
+		<entry align="center">Jun 2018 - Aug 2020</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Sep 2011 - Jan 2020</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Jul 2015 - Jul 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

@@ -20,19 +20,19 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">18</entry>
+		<entry align="center">15</entry>
+		<entry align="center">49</entry>
+		<entry align="center">88</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Andrei Dragus</entry>
 		<entry align="center">18</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1556</entry>
 		<entry align="center">12</entry>
-	</row>
-	<row>
-		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">17</entry>
-		<entry align="center">14</entry>
-		<entry align="center">47</entry>
-		<entry align="center">86</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -68,7 +68,7 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Björn Esser</entry>
+		<entry>Björn Esser (<ulink url="https://github.com/besser82">@besser82</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">2</entry>
 		<entry align="center">124</entry>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Feb 2012 - Sep 2019</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Oct 2013 - Jun 2020</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Oct 2013 - Apr 2019</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Feb 2012 - Sep 2019</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -158,7 +158,7 @@
 	</row>
 	<row>
 		<entry>7. </entry>
-		<entry>Björn Esser</entry>
+		<entry>Björn Esser (<ulink url="https://github.com/besser82">@besser82</ulink>)</entry>
 		<entry align="center">Dec 2017 - Dec 2017</entry>
 	</row>
 	<row>

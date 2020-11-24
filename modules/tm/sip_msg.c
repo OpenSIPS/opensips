@@ -1000,6 +1000,8 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		new_msg->reply_lump = 0;
 		CLONE_RPL_LUMP_LIST( p, &(new_msg->reply_lump), org_msg->reply_lump);
 
+		/* fall through */
+
 	case 1: /* updatable and cloning now */
 		new_msg->msg_flags |= FL_SHM_UPDATABLE|FL_SHM_UPDATED;
 		/* msg is updatable -> the fields that can be updated are allocated in 

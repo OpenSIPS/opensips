@@ -175,11 +175,11 @@ get_prefix(
 	if(NULL == prefix)
 		goto err_exit;
 	tmp = prefix->s;
+	if (tmp == NULL)
+		goto err_exit;
 	/* go the tree down to the last digit in the
 	 * prefix string or down to a leaf */
 	while(tmp< (prefix->s+prefix->len)) {
-		if(NULL == tmp)
-			goto err_exit;
 		local=*tmp;
 		if( !IS_VALID_PREFIX_CHAR(local) ) {
 			/* unknown character in the prefix string */
@@ -200,8 +200,6 @@ get_prefix(
 	/* go in the tree up to the root trying to match the
 	 * prefix */
 	while(ptree !=NULL ) {
-		if(NULL == tmp)
-			goto err_exit;
 		/* is it a real node or an intermediate one */
 		idx = IDX_OF_CHAR(*tmp);
 		if(NULL != ptree->ptnode[idx].rg) {

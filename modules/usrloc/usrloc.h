@@ -109,8 +109,13 @@ typedef struct usrloc_api {
 	register_ulcb_t           register_ulcb;
 	update_sipping_latency_t  update_sipping_latency;
 
-	/* @async: set to 1 to raise the refresh event in a non-blocking way */
-	void (*raise_ev_ct_refresh) (const ucontact_t *ct, int async);
+	/* raise an async registration refresh event for an usrloc contact
+	 * @ct: the usrloc contact
+	 * @reason: short text denoting the reason for the refresh
+	 * @req_callid: Call-ID of the pending SIP request or NULL
+	 */
+	void (*raise_ev_ct_refresh) (const ucontact_t *ct, const str *reason,
+	                             const str *req_callid);
 } usrloc_api_t;
 
 

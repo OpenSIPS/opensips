@@ -173,7 +173,6 @@ int build_publish_call_info_header(b2b_sca_record_t *rec, str *publish_hdr)
 	b2b_sca_call_t *call = NULL;
 	char *p;
 
-	rec->expires = 30;
 	size += callinfo_default_uri.len +
 		callinfo_appindex.len + callinfo_hdr_postfix.len;
 
@@ -183,6 +182,7 @@ int build_publish_call_info_header(b2b_sca_record_t *rec, str *publish_hdr)
 		p = &publish_call_info_hdr_buf[sizeof(CALL_INFO_HDR) - 1];
 		goto default_hdr;
 	}
+	rec->expires = 30;
 
 	for (i=0; i<MAX_APPEARANCE_INDEX; i++) {
 		if (rec->call[i]) {
@@ -462,8 +462,8 @@ int sca_logic_notify(b2bl_cb_params_t *params, unsigned int b2b_event)
 	sdp_info_t *sdp;
 	sdp_session_cell_t* sdp_session;
 	sdp_stream_cell_t* sdp_stream;
-	struct sip_msg *msg = params->msg;
-	b2bl_cb_ctx_t *cb_params = params->param;
+	struct sip_msg *msg;
+	b2bl_cb_ctx_t *cb_params;
 	str *shared_line;
 	unsigned int hash_index, appearance;
 	b2b_sca_record_t *record;
@@ -481,6 +481,8 @@ int sca_logic_notify(b2bl_cb_params_t *params, unsigned int b2b_event)
 		LM_ERR("callback event [%d] without cb params\n", b2b_event);
 		return B2B_DROP_MSG_CB_RET;
 	}
+	msg = params->msg;
+	cb_params = params->param;
 
 	shared_line = &cb_params->shared_line;
 	hash_index = cb_params->hash_index;

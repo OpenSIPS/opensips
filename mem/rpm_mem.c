@@ -330,7 +330,7 @@ int rpm_mem_init_allocs(void)
 		LM_CRIT("could not initialize rpm keys lock\n");
 		return -1;
 	}
-#ifdef HP_MALLOC
+#if defined HP_MALLOC && defined INLINE_ALLOC
 	hp_init_rpm_statistics(rpm_block);
 #endif
 

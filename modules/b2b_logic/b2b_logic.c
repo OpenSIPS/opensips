@@ -305,9 +305,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if(b2bl_db_mode)
+		init_db_url(db_url, 1);
+
 	if(b2bl_db_mode && db_url.s)
 	{
-		db_url.len = strlen(db_url.s);
 		b2bl_dbtable.len = strlen(b2bl_dbtable.s);
 		/* binding to database module  */
 		if (db_bind_mod(&db_url, &b2bl_dbf))
@@ -608,6 +610,7 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 		LM_ERR("XML scenario document not well formed. No id attribute found"
 				" for root node\n");
 		pkg_free(scenario);
+		xmlFreeDoc(doc);
 		return -1;
 	}
 	scenario->id.len = strlen(scenario->id.s);
@@ -618,6 +621,8 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	{
 		LM_ERR("XML scenario document not well formed. No id attribute found"
 				" for root node\n");
+		pkg_free(scenario);
+		xmlFreeDoc(doc);
 		return -1;
 	}
 	attr.len = strlen(attr.s);
@@ -625,6 +630,7 @@ static int load_scenario(b2b_scenario_t** scenario_list,char* filename)
 	if( str2int(&attr, &scenario->param_no) < 0)
 	{
 		LM_ERR("Failed to parse id attribute for scenario node. It must be an integer.\n");
+		xmlFreeDoc(doc);
 		xmlFree(attr.s);
 		pkg_free(scenario);
 		return -1;
@@ -2052,7 +2058,7 @@ int get_ctx_vals(struct b2b_ctx_val ***vals, b2bl_tuple_t **tuple)
 			}
 		} else {
 			*tuple = get_entities_ctx_tuple(ctx);
-			if (!tuple) {
+			if (*tuple == NULL) {
 				LM_ERR("Failed to get tuple [%.*s] from b2b context\n",
 					ctx->b2bl_key.len, ctx->b2bl_key.s);
 				return -1;

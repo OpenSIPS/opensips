@@ -421,8 +421,7 @@ int sipstate_call(struct sip_msg *msg, const str *_fnc_s, const str *_mystr_s)
 
   if (lua_auto_reload)
     sipstate_load(NULL);
-  if (!fnc)
-    return -1;
+
   lua_getglobal(L, fnc);
   if (lua_isnil(L, -1))
     {

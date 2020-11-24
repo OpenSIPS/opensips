@@ -382,16 +382,12 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 									ct_username);
 				if (ct_username_len > 0) {
 					prefix_len += 1 + /* @ */ + ct_username_len;
-					if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
-						prefix_len += RR_DLG_PARAM_SIZE;
-				} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
-					prefix_len += RR_DLG_PARAM_SIZE + 1;
 				}
 			}
 		}
-	} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
-		prefix_len += RR_DLG_PARAM_SIZE + 1;
 	}
+	if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
+		prefix_len += RR_DLG_PARAM_SIZE + 1;
 
 	prefix = pkg_malloc(prefix_len);
 	if (!prefix) {

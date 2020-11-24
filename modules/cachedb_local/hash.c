@@ -105,18 +105,7 @@ void lcache_htable_destroy(lcache_t** cache_htable_p, int size)
 
 int lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires)
 {
-	return _lcache_htable_insert(con, attr, value, expires, 0);
-}
-
-int _lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires, int isrepl)
-{
-	lcache_entry_t* me, *it;
-	int hash_code;
-	int size;
-	struct timeval start;
-
-	lcache_t* cache_htable;
-	lcache_col_t* cache_col;
+	lcache_col_t *cache_col;
 
 	cache_col = ((lcache_con*)con->data)->col;
 	if ( !cache_col ) {
@@ -124,6 +113,18 @@ int _lcache_htable_insert(cachedb_con *con,str* attr, str* value, int expires, i
 				con->url.len, con->url.s);
 		return -1;
 	}
+
+	return _lcache_htable_insert(cache_col, attr, value, expires, 0);
+}
+
+int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
+	int expires, int isrepl)
+{
+	lcache_entry_t* me, *it;
+	int hash_code;
+	int size;
+	struct timeval start;
+	lcache_t* cache_htable;
 
 	cache_htable = cache_col->col_htable;
 
@@ -200,16 +201,7 @@ void lcache_htable_remove_safe(str attr, lcache_entry_t** it_p)
 
 int lcache_htable_remove(cachedb_con *con,str* attr)
 {
-	return _lcache_htable_remove(con, attr, 0);
-}
-
-int _lcache_htable_remove(cachedb_con *con,str* attr, int isrepl)
-{
-	int hash_code;
-	struct timeval start;
-
-	lcache_t* cache_htable;
-	lcache_col_t* cache_col;
+	lcache_col_t *cache_col;
 
 	cache_col = ((lcache_con*)con->data)->col;
 	if ( !cache_col ) {
@@ -217,6 +209,15 @@ int _lcache_htable_remove(cachedb_con *con,str* attr, int isrepl)
 				con->url.len, con->url.s);
 		return -1;
 	}
+
+	return _lcache_htable_remove(cache_col, attr, 0);
+}
+
+int _lcache_htable_remove(lcache_col_t *cache_col, str* attr, int isrepl)
+{
+	int hash_code;
+	struct timeval start;
+	lcache_t* cache_htable;
 
 	cache_htable = cache_col->col_htable;
 

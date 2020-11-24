@@ -199,6 +199,10 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].out_sdp.s);
 			if (dlg->legs[i].in_sdp.s)
 				shm_free(dlg->legs[i].in_sdp.s);
+			if (dlg->legs[i].tmp_out_sdp.s)
+				shm_free(dlg->legs[i].tmp_out_sdp.s);
+			if (dlg->legs[i].tmp_in_sdp.s)
+				shm_free(dlg->legs[i].tmp_in_sdp.s);
 		}
 		shm_free(dlg->legs);
 	}
@@ -1108,11 +1112,13 @@ static void raise_state_changed_event(struct dlg_cell *dlg,
 		return;
 	}
 
+	/* coverity[overrun-buffer-val] */
 	if (evi_param_set_int(ostate_p, &ostate) < 0) {
 		LM_ERR("cannot set old state parameter\n");
 		return;
 	}
 
+	/* coverity[overrun-buffer-val] */
 	if (evi_param_set_int(nstate_p, &nstate) < 0) {
 		LM_ERR("cannot set new state parameter\n");
 		return;
@@ -1328,6 +1334,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 		goto error;
 	if (add_mi_string_fmt(dialog_obj, MI_SSTR("db_id"), "%llu",
 			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
+		goto error;
 
 	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
@@ -1648,6 +1655,8 @@ static mi_response_t *mi_match_print_dlg(int with_context,
 		goto error;
 
 	dlg_unlock(d_table, d_entry);
+
+	return resp;
 
 error:
 	dlg_unlock(d_table, d_entry);

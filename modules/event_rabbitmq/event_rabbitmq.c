@@ -44,7 +44,6 @@ static void destroy(void);
  */
 static unsigned int heartbeat = 0;
 extern unsigned rmq_sync_mode;
-static int suppress_event_name = 0;
 static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
 struct timeval conn_timeout_tv;
 
@@ -69,7 +68,6 @@ static param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
 	{"sync_mode",		INT_PARAM, &rmq_sync_mode},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
-	{"suppress_event_name", INT_PARAM, &suppress_event_name},
 	{0,0,0}
 };
 
@@ -478,7 +476,7 @@ static int rmq_raise(struct sip_msg *msg, str* ev_name,
 
 	buf.s = evi_build_payload(params, ev_name, 0, NULL, NULL);
 	if (!buf.s) {
-		LM_ERR("Failed to build event payload\n");
+		LM_ERR("Failed to build event payload %.*s\n", ev_name->len, ev_name->s);
 		return -1;
 	}
 	buf.len = strlen(buf.s);

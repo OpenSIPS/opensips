@@ -163,6 +163,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 	switch(val) {
 
 		FIRST_QUATERNIONS;
+		/* fall through */
 
 		default:
 			switch(LOWER_BYTE(*p)) {

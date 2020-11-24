@@ -19,6 +19,7 @@
 #debug_mode=yes
 
 log_level=3
+xlog_level=3
 log_stderror=no
 log_facility=LOG_LOCAL0
 
@@ -137,7 +138,7 @@ modparam("tls_mgm","server_domain", "default")
 modparam("tls_mgm","match_ip_address", "[default]*")
 modparam("tls_mgm","verify_cert", "[default]1")
 modparam("tls_mgm","require_cert", "[default]0")
-modparam("tls_mgm","tls_method", "[default]SSLv1")
+modparam("tls_mgm","tls_method", "[default]TLSv1")
 modparam("tls_mgm","certificate", "[default]/etc/opensips/tls/user/user-cert.pem")
 modparam("tls_mgm","private_key", "[default]/etc/opensips/tls/user/user-privkey.pem")
 modparam("tls_mgm","ca_list", "[default]/etc/opensips/tls/user/user-calist.pem")

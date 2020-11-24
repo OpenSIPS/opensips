@@ -435,18 +435,18 @@ Chapter 3. Contributors
    1. Daniel-Constantin Mierla (@miconda) 133 59 6126 1441
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 32 310 309
    3. Henning Westerholt (@henningw) 25 15 252 410
-   4. Liviu Chircu (@liviuchircu) 16 13 39 90
-   5. Razvan Crainea (@razvancrainea) 14 12 106 38
+   4. Razvan Crainea (@razvancrainea) 19 16 120 95
+   5. Liviu Chircu (@liviuchircu) 18 15 68 104
    6. Jan Janak (@janakj) 11 7 124 106
    7. Vlad Patrascu (@rvlad-patrascu) 7 5 76 49
    8. Ovidiu Sas (@ovidiusas) 7 5 61 8
-   9. Sergey Khripchenko 5 2 185 2
+   9. Sergey Khripchenko (@shripchenko) 5 2 185 2
    10. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
    Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Dusan Klinec, Andrei Pelinescu-Onciul.
+   Schubert, Dusan Klinec (@ph4r05), Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -468,14 +468,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
-   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jul 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
    4.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec                        Dec 2015 - Dec 2015
-   8.  Sergey Khripchenko                  Aug 2015 - Aug 2015
+   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   8.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
    9.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
    10. Razvan Pistolea                     Jul 2009 - Jul 2009
 
@@ -495,9 +495,9 @@ Chapter 4. Documentation
    Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
    Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
    Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
-   Khripchenko, Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw).
+   Khripchenko (@shripchenko), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw).
 
    Documentation Copyrights:
 

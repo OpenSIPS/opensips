@@ -153,19 +153,20 @@ void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 
 	if (type & (DLGCB_TERMINATED|DLGCB_EXPIRED)) {
 		unsigned int duration = time(NULL) - dlg->start_ts;
-		if (duration >= frdparam->calldur_crit)
+		if (frdparam->calldur_crit && duration >= frdparam->calldur_crit)
 			raise_critical_event(&call_dur_name, &duration,
 					&frdparam->calldur_crit,
 					&frdparam->user, &frdparam->number, &frdparam->ruleid);
 
-		else if (duration >= frdparam->calldur_warn)
+		else if (frdparam->calldur_warn && duration >= frdparam->calldur_warn)
 			raise_warning_event(&call_dur_name, &duration,
 					&frdparam->calldur_warn,
 					&frdparam->user, &frdparam->number, &frdparam->ruleid);
 	}
 
 	lock_get(&frdparam->stats->lock);
-	--frdparam->stats->stats.concurrent_calls;
+	if (frdparam->interval_id == frdparam->stats->interval_id)
+		--frdparam->stats->stats.concurrent_calls;
 	lock_release(&frdparam->stats->lock);
 }
 

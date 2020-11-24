@@ -511,12 +511,20 @@ void acc_db_close(void)
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		query_list_t **ins_list, int cdr_flag, int missed)
 {
+	/**
+	 * The list of people which have bugfixed these PS:
+	 *		d837ed865d - 2016, Bogdan.  Fix crash.
+	 *		a250191728 - 2017, Razvan.  Fix crash.
+	 *		    latest - 2020, Liviu.  Fix crash.
+	 */
 	static db_ps_t my_ps_ins = NULL;
 	static db_ps_t my_ps_ins2 = NULL;
 	static db_ps_t my_ps_ins3 = NULL;
+	static db_ps_t my_ps_ins4 = NULL;
 	static db_ps_t my_ps = NULL;
 	static db_ps_t my_ps2 = NULL;
 	static db_ps_t my_ps3 = NULL;
+	static db_ps_t my_ps4 = NULL;
 	db_ps_t *ps;
 	int m;
 	int n = 0;
@@ -578,10 +586,17 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		else
 			ps = &my_ps2; /* CDR to custom table */
 	} else if (ctx) {
-		if (ins_list)
-			ps = &my_ps_ins; /* normal acc to known table */
-		else
-			ps = &my_ps; /* normal acc to custom table */
+		if (missed) {
+			if (ins_list)
+				ps = &my_ps_ins; /* normal acc to known missed table */
+			else
+				ps = &my_ps; /* normal acc to custom missed table */
+		} else {
+			if (ins_list)
+				ps = &my_ps_ins4; /* normal acc to known table */
+			else
+				ps = &my_ps4; /* normal acc to custom table */
+		}
 	} else {
 		/* no ctx - no extra */
 		if (ins_list)

@@ -558,6 +558,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 					case URI_OR_TOKEN:
 						end_mark = tmp;
 						status = MAYBE_URI_END;
+						/* fall through */
 					case MAYBE_URI_END:
 					case DISPLAY_TOKEN:
 					case DISPLAY_TOKEN2:
@@ -581,6 +582,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 					case URI_OR_TOKEN:
 					case MAYBE_URI_END:
 						to_b->uri.len = tmp - to_b->uri.s;
+						/* fall through */
 					case END:
 						saved_status = status = END;
 						goto endofheader;
@@ -607,6 +609,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 							break;
 					case MAYBE_URI_END:
 						to_b->uri.len = tmp - to_b->uri.s;
+						/* fall through */
 					case END:
 						if (multi==0)
 							goto parse_error;
@@ -651,6 +654,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 					case URI_OR_TOKEN:
 					case DISPLAY_TOKEN:
 						end_mark = tmp;
+						/* fall through */
 					case DISPLAY_TOKEN2:
 					case MAYBE_URI_END:
 						to_b->display.len=end_mark-to_b->display.s;
@@ -672,6 +676,7 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 						break;
 					case URI_ENCLOSED:
 						to_b->uri.len = tmp - to_b->uri.s;
+						/* fall through */
 					case E_URI_ENCLOSED:
 						status = END;
 						break;
@@ -714,8 +719,10 @@ static inline char* _parse_to(char* buffer, char *end, struct to_body *to_b,
 						break;
 					case URI_OR_TOKEN:
 						end_mark = tmp;
+						/* fall through */
 					case MAYBE_URI_END:
 						to_b->uri.len = end_mark - to_b->uri.s;
+						/* fall through */
 					case END:
 						to_b->body.len = tmp-to_b->body.s;
 						tmp = parse_to_param(tmp,end,to_b,&saved_status,multi);

@@ -31,6 +31,7 @@
 #include "sr_module.h"
 #include "dprint.h"
 #include "error.h"
+#include "socket_info.h"
 #include "mem/mem.h"
 #include "xlog.h"
 
@@ -209,10 +210,9 @@ static inline void add_xlog_data(trace_message message, void* param)
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 {
 	struct modify_trace mod_p;
-
 	xl_trace_t xtrace_param;
-
-	const int proto = IPPROTO_TCP;
+	str correlation_str;
+	union sockaddr_union su;
 
 	if (msg == NULL || buf == NULL) {
 		LM_ERR("bad input!\n");
@@ -231,8 +231,24 @@ static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
 
 	mod_p.param = &xtrace_param;
 
-	if (sip_context_trace(xlog_proto_id, 0, 0,
-				0, proto, &msg->callid->body, &mod_p) < 0) {
+	if (msg->callid && msg->callid->body.len) {
+		correlation_str = msg->callid->body;
+	} else {
+		correlation_str.s = "<null>";
+		correlation_str.len = 6;
+	}
+
+	if (msg->rcv.bind_address && msg->rcv.bind_address->port_no)
+		/* coverity[check_return] - CID #211391 */
+		init_su( &su, &msg->rcv.bind_address->address,
+			msg->rcv.bind_address->port_no);
+	else
+		su.s.sa_family = 0;
+
+	if (sip_context_trace(xlog_proto_id,
+	su.s.sa_family ? &su : NULL /*src*/, su.s.sa_family ? &su : NULL /*dst*/,
+	0, IPPROTO_TCP,
+	&correlation_str, &mod_p) < 0) {
 		LM_ERR("failed to trace xlog message!\n");
 		return -1;
 	}

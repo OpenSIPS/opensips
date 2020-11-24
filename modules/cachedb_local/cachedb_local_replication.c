@@ -28,19 +28,15 @@
 #include "cachedb_local_replication.h"
 
 struct clusterer_binds clusterer_api;
-extern cachedb_engine* lookup_cachedb(str *name);
-extern cachedb_con *cachedb_get_connection(cachedb_engine *cde,str *group_name);
 
 int cache_replicated_insert(bin_packet_t *packet)
 {
         int expires;
-        str attr, value, col;
-        str name = str_init("local");
-        cachedb_engine * cde;
-        cachedb_con * con;
+        str attr, value, col_name;
+        lcache_col_t *col;
 
         LM_DBG("Received replicated cache entry\n");
-        if (bin_pop_str(packet, &col) < 0)
+        if (bin_pop_str(packet, &col_name) < 0)
                 goto error;
         if (bin_pop_str(packet, &attr) < 0)
                 goto error;
@@ -50,20 +46,14 @@ int cache_replicated_insert(bin_packet_t *packet)
         if (bin_pop_int(packet, &expires) < 0)
                 expires = 0;
 
-        if ((cde = lookup_cachedb(&name)) == 0) {
-                LM_ERR("Failed to get cache engine\n");
-                return -1;
-        }
-        if (strncasecmp(col.s, DEFAULT_COLLECTION_NAME, col.len) == 0 ){
-                col.s = NULL;
-                col.len = 0;
-        }
-        if ((con = cachedb_get_connection(cde, &col)) == NULL) {
-                LM_ERR("Failed to get cachedb connection\n");
+        for (col = lcache_collection; col && str_strcmp(&col_name, &col->col_name);
+                col = col->next) ;
+        if (!col) {
+                LM_ERR("Collection: %.*s not found\n", col_name.len, col_name.s);
                 return -1;
         }
 
-        if ((_lcache_htable_insert(con, &attr, &value, expires, 1)) < 0) {
+        if ((_lcache_htable_insert(col, &attr, &value, expires, 1)) < 0) {
                 LM_ERR("Can not insert...\n");
                 return -1;
         }
@@ -76,31 +66,23 @@ error:
 
 int cache_replicated_remove(bin_packet_t *packet)
 {
-        str attr, col;
-        str name = str_init("local");
-        cachedb_engine * cde;
-        cachedb_con * con;
+        str attr, col_name;
+        lcache_col_t *col;
 
         LM_DBG("Received replicated cache remove\n");
-        if (bin_pop_str(packet, &col) < 0)
+        if (bin_pop_str(packet, &col_name) < 0)
                 goto error;
         if (bin_pop_str(packet, &attr) < 0)
                 goto error;
 
-        if ((cde = lookup_cachedb(&name)) == 0) {
-                LM_ERR("Failed to get cache engine\n");
-                return -1;
-        }
-        if (strncasecmp(col.s, DEFAULT_COLLECTION_NAME, col.len) == 0 ){
-                col.s = NULL;
-                col.len = 0;
-        }
-        if ((con = cachedb_get_connection(cde, &col)) == NULL) {
-                LM_ERR("Failed to get cachedb connection\n");
+        for (col = lcache_collection; col && str_strcmp(&col_name, &col->col_name);
+                col = col->next) ;
+        if (!col) {
+                LM_ERR("Collection: %.*s not found\n", col_name.len, col_name.s);
                 return -1;
         }
 
-        if ((_lcache_htable_remove(con, &attr, 1)) < 0) {
+        if ((_lcache_htable_remove(col, &attr, 1)) < 0) {
                 LM_ERR("Can not remove from cache\n");
                 return -1;
         }
@@ -188,7 +170,7 @@ int receive_sync_request(int node_id)
         bin_packet_t *sync_packet;
 
         for ( col=lcache_collection; col; col=col->next ) {
-                LM_ERR("Found collection %.*s\n", col->col_name.len, col->col_name.s);
+                LM_DBG("Found collection %.*s\n", col->col_name.len, col->col_name.s);
 
                 for (i =0; i < col->size; i++) {
                         lock_get(&col->col_htable[i].lock);

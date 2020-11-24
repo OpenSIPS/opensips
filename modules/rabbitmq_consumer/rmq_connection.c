@@ -307,6 +307,7 @@ static void rmq_close_conn(struct rmq_connection *conn, int channel_only)
 		}
 	case RMQ_CONN_LOGIN:
 	case RMQ_CONN_SOCK:
+		/* coverity[check_return: FALSE] */
 		rmq_rpc_error(conn, "closing connection",
 			amqp_connection_close(conn->amqp_conn, AMQP_REPLY_SUCCESS));
 		if (amqp_destroy_connection(conn->amqp_conn) < 0)
@@ -356,6 +357,7 @@ static int rmq_connect(struct rmq_connection *conn)
 		}
 
 		conn->state = RMQ_CONN_SOCK;
+		/* fall through */
 	case RMQ_CONN_SOCK:
 		if (rmq_rpc_error(conn, "Logging in", amqp_login(
 			conn->amqp_conn,
@@ -369,6 +371,7 @@ static int rmq_connect(struct rmq_connection *conn)
 			goto err_close_rmq_conn;
 
 		conn->state = RMQ_CONN_LOGIN;
+		/* fall through */
 	case RMQ_CONN_LOGIN:
 		/* use only 1 channel */
 		amqp_channel_open(conn->amqp_conn, 1);
@@ -378,6 +381,7 @@ static int rmq_connect(struct rmq_connection *conn)
 
 		LM_DBG("successfully connected to: %s:%u\n", conn->uri.host, conn->uri.port);
 		conn->state = RMQ_CONN_CHAN;
+		/* fall through */
 	case RMQ_CONN_CHAN:
 		return 0;
 	default:

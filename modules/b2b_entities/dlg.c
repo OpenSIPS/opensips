@@ -573,7 +573,7 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		lock_get(&client_htable[hash_index].lock);
 
 	if (cbs_type == B2BCB_TRIGGER_EVENT && event_type != B2B_EVENT_DELETE &&
-		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) < 0) {
+		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) > 0) {
 		if (b2be_db_mode == WRITE_THROUGH) {
 			dlg->storage = st;
 		} else {
@@ -1621,7 +1621,10 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	UPDATE_DBFLAG(dlg);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (prev_state < B2B_CONFIRMED && dlg->state == B2B_CONFIRMED) {
+		if (prev_state < B2B_CONFIRMED && dlg->state == B2B_CONFIRMED &&
+			/* no DB update happens in this case so calling the serialization
+			 * callbacks is not neccesary unless we have replication */
+			b2be_cluster) {
 			b2b_ev = B2B_EVENT_CREATE;
 			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
@@ -2120,10 +2123,12 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	set_dlg_state(dlg, method_value);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (dlg->state == B2B_ESTABLISHED && dlg->replicated) {
-			b2b_ev = B2B_EVENT_ACK;
-			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+		if (dlg->state == B2B_ESTABLISHED) {
+			if (b2be_db_mode != NO_DB || dlg->replicated) {
+				b2b_ev = B2B_EVENT_ACK;
+				b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
+					serialize_backend);
+			}
 		} else if (dlg->state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
@@ -2139,7 +2144,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster) {
-		if (b2b_ev == B2B_EVENT_ACK)
+		if (b2b_ev == B2B_EVENT_ACK && dlg->replicated)
 			replicate_entity_update(dlg, et, hash_index, NULL, B2B_EVENT_ACK,
 				&storage)	;
 		else if (b2b_ev == B2B_EVENT_DELETE)
@@ -2664,6 +2669,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		LM_DBG("Got unmatching dlg [%p] dlg->uac_tran=[%p] for "
 			"transaction [%p]\n", dlg, dlg->uac_tran, t);
 		if(dlg_based_search)
+			/* coverity[swapped_arguments] */
 			dlg = b2b_search_htable_next_dlg( previous_dlg, htable, hash_index,
 				local_index, &from_tag, &to_tag, &callid);
 		else
@@ -2772,13 +2778,11 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			}
 			switch(statuscode)
 			{
-			case 401:
-				if (0 == parse_www_authenticate_header(msg))
-					auth = get_www_authenticate(msg);
+			case WWW_AUTH_CODE:
+				parse_www_authenticate_header(msg, &auth);
 				break;
-			case 407:
-				if (0 == parse_proxy_authenticate_header(msg))
-					auth = get_proxy_authenticate(msg);
+			case PROXY_AUTH_CODE:
+				parse_proxy_authenticate_header(msg, &auth);
 				break;
 			}
 			if(uac_auth_loaded && auth && dlg->state == B2B_NEW)
@@ -3230,7 +3234,8 @@ b2b_route:
 			return;
 		}
 
-		b2be_db_update(dlg, etype);
+		if (b2be_db_update(dlg, etype) < 0)
+			LM_ERR("Failed to update in database\n");
 		lock_release(&htable[hash_index].lock);
 	} else if (b2b_ev != -1)
 		lock_release(&htable[hash_index].lock);

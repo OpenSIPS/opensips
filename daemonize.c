@@ -268,6 +268,8 @@ int daemonize(char* name, int * own_pgid)
 			/*parent process => exit */
 			exit(0);
 		}
+
+		is_pre_daemon = 0;  /* attendant process at this point */
 	}
 
 #ifdef __OS_linux

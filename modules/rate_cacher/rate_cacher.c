@@ -454,11 +454,11 @@ struct ratesheet_cell_entry* get_rate_price_prefix(ptree_t *ptree,str* in_prefix
 	}
 
 	tmp = prefix.s;
+	if(NULL == tmp)
+		goto err_exit;
 	/* go the tree down to the last digit in the
 	 * prefix string or down to a leaf */
 	while(tmp< (prefix.s+prefix.len)) {
-		if(NULL == tmp)
-			goto err_exit;
 		local=*tmp;
 		if( tmp == (prefix.s+prefix.len-1) || *tmp == 'x' ) {
 			/* last digit in the prefix string */
@@ -478,8 +478,6 @@ struct ratesheet_cell_entry* get_rate_price_prefix(ptree_t *ptree,str* in_prefix
 		tmp--;
 
 	while(ptree !=NULL ) {
-		if(NULL == tmp)
-			goto err_exit;
 		/* is it a real node or an intermediate one */
 		idx = *tmp-'0';
 		if(NULL != ptree->ptnode[idx].re) {
@@ -700,8 +698,10 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 			goto err_carr_free;
 		}
 		no_rows=10000;
+		/*
 		if (no_rows==0)
 			no_rows=10;
+		*/
 		if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
 			LM_ERR("Failed to fetch %d rows\n",no_rows);	
 			goto err_carr_free;
@@ -921,8 +921,10 @@ static int reload_client_rate(str *accountid, int wholesale,int rate_id,int star
 			goto err_account_free;
 		}
 		no_rows=10000;
+		/*
 		if (no_rows==0)
 			no_rows=10;
+		*/
 		if (rates_dbf.fetch_result(rates_db_hdl,&res,no_rows) < 0) {
 			LM_ERR("Failed to fetch %d rows\n",no_rows);	
 			goto err_account_free;
@@ -1995,7 +1997,7 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 		if (ret == NULL) {
 			/* no price found for carrier, do not use it */
 			unlock_bucket_read( carr_entry->lock );
-			result[i] = 0;
+			result[i] = INT_MAX;
 			continue;
 		}
 

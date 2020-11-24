@@ -79,7 +79,10 @@ enum tls_method get_ssl_min_method(void);
 
 enum tls_method get_ssl_max_method(void);
 
-enum tls_method parse_ssl_method(str *name);
+int parse_ssl_method(str *name);
+
+int tls_get_method(str *method_str,
+	enum tls_method *method, enum tls_method *method_max);
 
 #endif
 
