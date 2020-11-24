@@ -759,7 +759,7 @@ int load_tm( struct tm_binds *tmb)
 }
 
 
-int do_t_cleanup( struct sip_msg *req, void *bar)
+static int do_t_cleanup( struct sip_msg *req, void *bar)
 {
 	struct cell *t;
 
