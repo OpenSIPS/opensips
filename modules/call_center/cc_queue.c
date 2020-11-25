@@ -100,6 +100,7 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 				agent->state = CC_AGENT_INCALL;
 				call->agent = agent;
 				call->agent->ref_cnt++;
+				agent_raise_event( agent, call);
 				update_stat( stg_dist_incalls, 1);
 				update_stat( call->flow->st_dist_incalls, 1);
 				call->fst_flags |= FSTAT_DIST;

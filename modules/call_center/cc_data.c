@@ -1131,7 +1131,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 
 	if (agent->state==CC_AGENT_INCALL && call) {
 		if (evi_param_add_str(list, &flow_id_str, &call->flow->id) < 0) {
-			LM_ERR("cannot add wrapup time\n");
+			LM_ERR("cannot add flow_id\n");
 			goto error;
 		}
 	}
