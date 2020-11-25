@@ -771,6 +771,8 @@ static inline int branch_prio( short ret_code, unsigned int is_cancelled)
  */
 static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 {
+	#define PHONY_NO_WAIT(_t,_b) \
+		(_t->uac[_b].br_flags && _t->uac[_b].br_flags<=_t->nr_of_outgoings)
 	int lowest_b, lowest_s, b, prio;
 	unsigned int cancelled;
 
@@ -778,14 +780,19 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 	cancelled = was_cancelled(t);
 	*do_cancel = 0;
 	for ( b=t->first_branch; b<t->nr_of_outgoings ; b++ ) {
+		if ( (t->uac[b].flags & T_UAC_IS_PHONY) && (
 		/* skip PHONY branches if the transaction was canceled by UAC;
 		 * a phony branch is used just to force the transaction to wait for
 		 * more branches, but if canceled, it makes no sense to wait anymore;
 		 * Exception - do not ignore the branch if there is reply pushed
 		 * on that branch, like an internal timeout or so */
-		if ( (t->uac[b].flags & T_UAC_IS_PHONY) &&
-		(t->flags & T_WAS_CANCELLED_FLAG) &&
-		t->uac[b].last_received<299 )
+		(t->flags & T_WAS_CANCELLED_FLAG && t->uac[b].last_received<299)
+		||
+		/* also skip a PHONY branch if it has a true setting about how
+		 * many branches are to be waited. The max branch idx to be waited
+		 * is stored in the 'br_flags' flags of the uac */
+		PHONY_NO_WAIT(t,b)
+		))
 			continue;
 		/* skip 'empty branches' */
 		if (!t->uac[b].request.buffer.s) continue;
