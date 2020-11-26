@@ -62,15 +62,19 @@
 
 inline static gen_lock_set_t* lock_set_alloc(int n)
 {
-	gen_lock_set_t* ls;
-	ls=(gen_lock_set_t*)shm_malloc(sizeof(gen_lock_set_t)+n*sizeof(gen_lock_t));
-	if (ls==0){
+	struct {
+	    gen_lock_set_t set;
+	    gen_lock_t _locks[0];
+	} *ls;
+
+	ls=shm_malloc(sizeof(*ls)+n*sizeof(ls->_locks[0]));
+	if (ls==NULL){
 		LM_CRIT("no more shm memory\n");
 	}else{
-		ls->locks=(gen_lock_t*)((char*)ls+sizeof(gen_lock_set_t));
-		ls->size=n;
+		ls->set.locks=ls->_locks;
+		ls->set.size=n;
 	}
-	return ls;
+	return &(ls->set);
 }
 
 #define lock_set_dealloc(lock_set) shm_free((void*)lock_set)
