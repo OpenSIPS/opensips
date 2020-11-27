@@ -73,7 +73,7 @@ extern stat_var *rpm_frags;
 
 /* get the fragment which corresponds to a pointer */
 #define HP_FRAG(p) \
-	((struct hp_frag *)((char *)(p) - sizeof(struct hp_frag)))
+	((struct hp_frag *)(p) - 1)
 
 #define UN_HASH(h)	(((unsigned long)(h) <= (HP_MALLOC_OPTIMIZE/ROUNDTO)) ?\
 						(unsigned long)(h)*ROUNDTO: \

@@ -373,15 +373,14 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 	memcpy(entry->table.s,con->table->s,con->table->len);
 
 	/* deal with the columns */
-	entry->cols = (db_key_t *)((char *)entry+sizeof(query_list_t)+
+	entry->cols = (db_key_t *)(void *)((char *)entry+sizeof(query_list_t)+
 								con->table->len);
 	entry->col_no = col_no;
 
 	pos = (char *)(entry->cols + col_no) + col_no * sizeof(str);
 	for (i=0;i<col_no;i++)
 	{
-		entry->cols[i] = (str *)((char *)(entry->cols + col_no) +
-							i * sizeof(str));
+		entry->cols[i] = (str *)(entry->cols + col_no) + i;
 		entry->cols[i]->len = cols[i]->len;
 		entry->cols[i]->s = pos;
 		memcpy(pos,cols[i]->s,cols[i]->len);
@@ -389,7 +388,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 	}
 
 	/* deal with the rows */
-	entry->rows = (db_val_t **)((char *)entry + sizeof(query_list_t) +
+	entry->rows = (db_val_t **)(void *)((char *)(entry + 1) +
 					con->table->len + key_size);
 
 	/* save url for later use by timer */
@@ -399,7 +398,7 @@ query_list_t *ql_init(db_con_t *con,db_key_t *cols,int col_no)
 	memcpy(entry->url.s,con->url.s,con->url.len);
 
 	/* build array of connections per process */
-	entry->conn = (db_con_t**)((char *)entry + sizeof(query_list_t) +
+	entry->conn = (db_con_t**)(void *)((char *)(entry + 1) +
 					con->table->len + key_size + row_q_size + con->url.len);
 
 	LM_DBG("initialized query list for table [%.*s]\n",entry->table.len,entry->table.s);

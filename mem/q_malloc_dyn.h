@@ -51,7 +51,7 @@ int qm_split_frag(struct qm_block *qm, struct qm_frag *f,
 		/*split the fragment*/
 		end=FRAG_END(f);
 		end->size=new_size;
-		n=(struct qm_frag*)((char*)end+sizeof(struct qm_frag_end));
+		n=(struct qm_frag*)(end+1);
 		n->size=rest-FRAG_OVERHEAD;
 		FRAG_END(n)->size=n->size;
 		FRAG_CLEAR_USED(n); /* never used */

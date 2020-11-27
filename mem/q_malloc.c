@@ -35,20 +35,19 @@
 
 /*useful macros*/
 #define FRAG_END(f)  \
-	((struct qm_frag_end*)((char*)(f)+sizeof(struct qm_frag)+ \
+	((struct qm_frag_end*)(void *)((char*)(f)+sizeof(struct qm_frag)+ \
 	   (f)->size))
 
 #define FRAG_NEXT(f) \
-	((struct qm_frag*)((char*)(f)+sizeof(struct qm_frag)+(f)->size+ \
+	((struct qm_frag*)(void *)((char*)(f)+sizeof(struct qm_frag)+(f)->size+ \
 	   sizeof(struct qm_frag_end)))
 
 #define FRAG_PREV(f) \
-	( (struct qm_frag*) ( ((char*)(f)-sizeof(struct qm_frag_end))- \
-	((struct qm_frag_end*)((char*)(f)-sizeof(struct qm_frag_end)))->size- \
-	   sizeof(struct qm_frag) ) )
+	({struct qm_frag_end *ep = (struct qm_frag_end*)(f) - 1; \
+	 (struct qm_frag*)(void *)((char*)ep - ep->size) - 1;})
 
 #define PREV_FRAG_END(f) \
-	((struct qm_frag_end*)((char*)(f)-sizeof(struct qm_frag_end)))
+	((struct qm_frag_end*)(f)-1)
 
 #define MIN_FRAG_SIZE	QM_ROUNDTO
 #define FRAG_OVERHEAD	(sizeof(struct qm_frag)+sizeof(struct qm_frag_end))
@@ -205,7 +204,7 @@ struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name)
 		return 0;
 	}
 	end=start+size;
-	qm=(struct qm_block*)start;
+	qm=(struct qm_block*)(void *)start;
 	memset(qm, 0, sizeof(struct qm_block));
 	qm->name=name;
 	qm->size=size;
@@ -216,8 +215,8 @@ struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name)
 	qm->max_real_used = 0;
 	size-=init_overhead;
 
-	qm->first_frag=(struct qm_frag*)(start+ROUNDUP(sizeof(struct qm_block)));
-	qm->last_frag_end=(struct qm_frag_end*)(end-sizeof(struct qm_frag_end));
+	qm->first_frag=(struct qm_frag*)(void *)(start+ROUNDUP(sizeof(struct qm_block)));
+	qm->last_frag_end=(struct qm_frag_end*)(void *)end-1;
 	/* init initial fragment*/
 	qm->first_frag->size=size;
 	qm->last_frag_end->size=size;
