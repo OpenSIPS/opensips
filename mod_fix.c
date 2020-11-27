@@ -162,21 +162,20 @@ int fix_cmd(struct cmd_param *params, action_elem_t *elems)
 			gp = NULL;
 			if (param->flags & CMD_PARAM_OPT) {
 				if (param->fixup && (param->flags & CMD_PARAM_FIX_NULL)) {
-					if ((gp = alloc_gp()) == NULL)
-						return E_OUT_OF_MEM;
-
-					gp->pval = NULL;
-					gp->type = GPARAM_TYPE_VAL;
-
-					h = gp->pval;
-					if (param->fixup(&gp->pval) < 0) {
+					h = NULL;
+					if (param->fixup(&h) < 0) {
 						LM_ERR("Fixup failed for param [%d]\n", i);
 						ret = E_UNSPEC;
 						goto error;
 					}
-					if (h!=gp->pval)
-						gp->type = GPARAM_TYPE_FIXUP;
 
+					if (h != NULL) {
+						if ((gp = alloc_gp()) == NULL)
+							return E_OUT_OF_MEM;
+
+						gp->type = GPARAM_TYPE_FIXUP;
+						gp->pval = h;
+					}
 				}
 
 				goto fill_elems;
