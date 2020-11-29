@@ -4100,7 +4100,6 @@ static int dr_match(struct sip_msg* msg, int *grp, long flags, str *number,
 	rule = find_rule_by_prefix_unsafe(part->rdata->pt,
 			&part->rdata->noprefix, *number, *grp, &matched_len);
 	if (rule == NULL){
-		lock_stop_read( part->ref_lock );
 		goto failure;
 	}
 
