@@ -1143,11 +1143,13 @@ fi
 %files b2bua-module
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
+%{_libdir}/opensips/modules/b2b_logic_xml.so
 %{_libdir}/opensips/modules/b2b_sca.so
 %{_libdir}/opensips/modules/call_center.so
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/scenario_callcenter.xml
 %doc docdir/README.b2b_entities
 %doc docdir/README.b2b_logic
+%doc docdir/README.b2b_logic_xml
 %doc docdir/README.b2b_sca
 %doc docdir/README.call_center
 
@@ -1448,8 +1450,8 @@ fi
 %changelog
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
-- New modules: callops, media_exchange, presence_dfks, qrouting,
-  rabbitmq_consumer, rate_cacher, stir_shaken, uuid
+- New modules: b2b_logic_xml, callops, media_exchange, presence_dfks,
+  qrouting, rabbitmq_consumer, rate_cacher, stir_shaken, uuid
 - New package: stir-shaken-module
 - Obsoleted modules: seas, sms
 - Renamed: event_jsonrpc -> event_stream
