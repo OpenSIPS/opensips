@@ -1152,7 +1152,7 @@ static void cache_init_load(int sender, void *param)
 
 static int mod_init(void)
 {
-	cache_entry_t *c_entry, *c_prev = NULL;
+	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	char use_timer = 0;
 
@@ -1215,7 +1215,6 @@ static int mod_init(void)
 		db_hdls->next = db_hdls_list;
 		db_hdls_list = db_hdls;
 
-		c_prev = c_entry;
 		c_entry = c_entry->next;
 	}
 
