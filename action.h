@@ -72,4 +72,8 @@ void route_params_push_level(void *params, void *extra, param_getf_t getf);
 void route_params_pop_level(void);
 int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 
+
+struct sip_msg* get_dummy_sip_msg(void);
+void release_dummy_sip_msg( struct sip_msg* req);
+
 #endif
