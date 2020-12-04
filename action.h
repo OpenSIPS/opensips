@@ -66,4 +66,8 @@ void run_error_route(struct sip_msg* msg, int force_reset);
 void __script_trace(char *class, char *action, struct sip_msg *msg,
 		char *file, int line);
 
+
+struct sip_msg* get_dummy_sip_msg(void);
+void release_dummy_sip_msg( struct sip_msg* req);
+
 #endif

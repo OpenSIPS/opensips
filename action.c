@@ -2222,3 +2222,81 @@ void __script_trace(char *class, char *action, struct sip_msg *msg,
 			class?class:"", action, val.len, val.s);
 	}
 }
+
+
+static const char *_sip_msg_buf =
+"DUMMY sip:user@dummy.com SIP/2.0\r\n"
+"Via: SIP/2.0/UDP 127.0.0.1;branch=z9hG4bKdummy\r\n"
+"To: <sip:to@dummy.com>\r\n"
+"From: <sip:from@dummy.com>;tag=1\r\n"
+"Call-ID: dummy-1\r\n"
+"CSeq: 1 DUMMY\r\n\r\n";
+static struct sip_msg* dummy_static_req= NULL;
+static int dummy_static_in_used = 0;
+
+struct sip_msg* get_dummy_sip_msg(void)
+{
+	struct sip_msg* req;
+
+	if (dummy_static_req == NULL || dummy_static_in_used) {
+		/* if the static request is not yet allocated, or the static
+		 * request is already in used (nested calls?), we better allocate
+		 * a new structure */
+		LM_DBG("allocating new sip msg\n");
+		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+		if(req == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return NULL;
+		}
+		memset( req, 0, sizeof(struct sip_msg));
+
+		req->buf = (char*)_sip_msg_buf;
+		req->len = strlen(_sip_msg_buf);
+		req->rcv.src_ip.af = AF_INET;
+		req->rcv.dst_ip.af = AF_INET;
+
+		parse_msg((char*)_sip_msg_buf, strlen(_sip_msg_buf), req);
+		parse_headers( req, HDR_EOH_F, 0);
+		if (dummy_static_req==NULL) {
+			dummy_static_req = req;
+			dummy_static_in_used = 1;
+			LM_DBG("setting as static to %p\n",req);
+		}
+	} else {
+		/* reuse the static request */
+		req = dummy_static_req;
+		LM_DBG("reusing the static sip msg %p\n",req);
+	}
+
+	return req;
+}
+
+void release_dummy_sip_msg( struct sip_msg* req)
+{
+	struct hdr_field* hdrs;
+
+	if (req==dummy_static_req) {
+		/* for the static request, just strip out the potential
+		 * changes (lumps, new_uri, dst_uri, etc), but keep the parsed
+		 * list of headers (this never changes) */
+		LM_DBG("cleaning the static sip msg %p\n",req);
+		hdrs = req->headers;
+		req->headers = NULL;
+		free_sip_msg(req);
+		req->headers = hdrs;
+		req->msg_cb = NULL;
+		req->new_uri.s = req->dst_uri.s = req->path_vec.s = NULL;
+		req->new_uri.len = req->dst_uri.len = req->path_vec.len = 0;
+		req->set_global_address.s = req->set_global_port.s = NULL;
+		req->set_global_address.len = req->set_global_port.len = 0;
+		req->add_rm = req->body_lumps = NULL;
+		req->reply_lump = NULL;
+		dummy_static_in_used = 0;
+	} else {
+		LM_DBG("freeing allocated sip msg %p\n",req);
+		/* is was an 100% allocated request */
+		free_sip_msg(req);
+		pkg_free(req);
+	}
+}
