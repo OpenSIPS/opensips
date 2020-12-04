@@ -259,6 +259,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 				else
 					context_destroy(CONTEXT_GLOBAL, *new_ctx);
 				current_processing_ctx = old_ctx;
+				release_dummy_sip_msg(fake_msg);
 			} /* no CB run in case of failure FIXME */
 		} else {
 			/* we should have the msg and context from upper levels */

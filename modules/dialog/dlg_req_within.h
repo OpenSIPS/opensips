@@ -53,7 +53,6 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 								struct sip_msg **fake_msg)
 {
 	static context_p my_ctx = NULL;
-	static struct sip_msg *my_msg = NULL;
 
 	*old_ctx = current_processing_ctx;
 	if (my_ctx==NULL) {
@@ -69,24 +68,11 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 	}
 
 	if (fake_msg) {
-		if (my_msg==NULL) {
-			my_msg = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-			if (my_msg==NULL) {
-				LM_ERR("No more pkg memory for a a fake msg\n");
-				return -1;
-			}
-		} else {
-			free_sip_msg(my_msg);
+		*fake_msg = get_dummy_sip_msg();
+		if (*fake_msg == NULL) {
+			LM_ERR("cannot create new dummy sip request\n");
+			return -1;
 		}
-		memset(my_msg, 0, sizeof(struct sip_msg));
-		my_msg->first_line.type = SIP_REQUEST;
-		my_msg->first_line.u.request.method.s= "DUMMY";
-		my_msg->first_line.u.request.method.len= 5;
-		my_msg->first_line.u.request.uri.s= "sip:user@domain.com";
-		my_msg->first_line.u.request.uri.len= 19;
-		my_msg->rcv.src_ip.af = AF_INET;
-		my_msg->rcv.dst_ip.af = AF_INET;
-		*fake_msg = my_msg;
 	}
 
 	/* reset the new to-be-used CTX */
