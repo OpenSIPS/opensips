@@ -1152,7 +1152,7 @@ static void cache_init_load(int sender, void *param)
 
 static int mod_init(void)
 {
-	cache_entry_t *c_entry, *c_prev = NULL, *c_tmp;
+	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	char use_timer = 0;
 
@@ -1195,14 +1195,7 @@ static int mod_init(void)
 	while (c_entry) {
 		if ((db_hdls = db_init_test_conn(c_entry)) == NULL) {
 			LM_ERR("Failed to validate db conns for cache entry\n");
-			if (c_prev)
-				c_prev->next = c_entry->next;
-			else
-				*entry_list = c_entry->next;
-			c_tmp = c_entry;
-			c_entry = c_entry->next;
-			free_c_entry(c_tmp);
-			continue;
+			return -1;
 		}
 
 		if (!c_entry->on_demand) {
@@ -1222,7 +1215,6 @@ static int mod_init(void)
 		db_hdls->next = db_hdls_list;
 		db_hdls_list = db_hdls;
 
-		c_prev = c_entry;
 		c_entry = c_entry->next;
 	}
 
