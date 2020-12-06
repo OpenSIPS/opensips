@@ -98,6 +98,7 @@ void set_local_xlog_level(int new_level)
 
 	xlog_level_local = new_level;
 	xlog_level = &xlog_level_local;
+	xlog_print_level = &xlog_level_local;
 }
 
 
