@@ -36,8 +36,6 @@ static str tm_repl_cap = str_init("tm-repl");
 
 struct clusterer_binds cluster_api;
 
-int do_t_cleanup( struct sip_msg *req, void *bar);
-
 #define TM_BIN_POP(_t, _f, _d) \
 	do { \
 		if (bin_pop_##_t(packet, _f) < 0) { \
@@ -155,7 +153,11 @@ static void tm_repl_cancel(bin_packet_t *packet, str *buf, struct receive_info *
 		LM_ERR("cannot handle auto-CANCEL for %p!\n", t);
 
 cleanup:
-	do_t_cleanup(&msg, NULL);
+	t_unref_cell(t);
+
+	if ((t=get_t()) != NULL && t != T_UNDEFINED)
+		t_unref_cell(t);
+
 	free_sip_msg(&msg);
 }
 
