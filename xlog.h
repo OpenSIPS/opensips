@@ -45,9 +45,9 @@ extern int xlog_force_color;
 extern int xlog_default_level;
 extern int xlog_level;
 
-int xlog_1(struct sip_msg*, char*, char*);
+int xlog_1(struct sip_msg*, char*);
 int xlog_2(struct sip_msg*, char*, char*);
-int xdbg(struct sip_msg*, char*, char*);
+int xdbg(struct sip_msg*, char*);
 
 int pv_parse_color_name(pv_spec_p sp, str *in);
 int pv_get_color(struct sip_msg *msg, pv_param_t *param,
