@@ -817,7 +817,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			script_trace("core", "xdbg", msg, a->file, a->line) ;
 			if (a->elem[0].type == SCRIPTVAR_ELEM_ST)
 			{
-				ret = xdbg(msg, a->elem[0].u.data, val.rs.s);
+				ret = xdbg(msg, a->elem[0].u.data);
 				if (ret < 0)
 				{
 					LM_ERR("error while printing xdbg message\n");
@@ -861,7 +861,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				ret = xlog_1(msg,a->elem[0].u.data, val.rs.s);
+				ret = xlog_1(msg,a->elem[0].u.data);
 				if (ret < 0)
 				{
 					LM_ERR("error while printing xlog message\n");
