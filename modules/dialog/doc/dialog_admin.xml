@@ -2670,10 +2670,10 @@ event_route[E_RTPPROXY_DTMF] {
 		## list all ongoing dialogs
 		opensips-cli -x mi dlg_list
 		## list the dialog by callid and From TAG
-		opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1 AAdfeEFF33
+		opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.168.1.1 from_tag=AAdfeEFF33
 		## list 10 dialogs, starting from the position 40
 		## (in the list of all ongoing dialogs)
-		opensips-cli -x mi dlg_list 40 10
+		opensips-cli -x mi dlg_list index=40 counter=10
 		</programlisting>
 		</section>
 
