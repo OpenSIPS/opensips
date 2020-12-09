@@ -314,7 +314,7 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 }
 
 
-int xlog_1(struct sip_msg* msg, char* frm, char* str2)
+int xlog_1(struct sip_msg* msg, char* frm)
 {
 	int log_len, ret;
 
@@ -342,7 +342,7 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 
 /**
  */
-int xdbg(struct sip_msg* msg, char* frm, char* str2)
+int xdbg(struct sip_msg* msg, char* frm)
 {
 	int log_len, ret;
 
