@@ -25,6 +25,11 @@
 #ifdef SHM_EXTRA_STATS
 
 #include <dlfcn.h>
+#ifdef HAVE_STDATOMIC
+#include <stdatomic.h>
+#else
+#include "../atomic.h"
+#endif
 #include <string.h>
 
 #include "module_info.h"
@@ -89,7 +94,7 @@ int init_new_stat(stat_var* stat) {
 #ifdef NO_ATOMIC_OPS
 		*(stat->u.val) = 0;
 #else
-		atomic_set(stat->u.val,0);
+		atomic_init(stat->u.val,0);
 #endif
 
 	return 0;

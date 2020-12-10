@@ -32,12 +32,6 @@
  * partial support for C11, so stdatomic.h is not present.  Dropping support
  * for these OS'es would affect a significant number of OpenSIPS deployments,
  * which is undesirable, at least for now.
- *
- * FIXME: When the time is right (??), PLEASE REMOVE THIS FILE and cherry-pick
- * the following commits:
- *	- 18f4c3d9b34
- *	- 4ed5ba188a9
- *	- 9dacffd696e
  * ============================================================================
  */
 
@@ -217,5 +211,15 @@ static __inline__ void atomic_dec(atomic_t *v)
 #define NO_ATOMIC_OPS
 
 #endif
+
+/* C11 stdatomics wrappers */
+#define atomic_init(a, v) atomic_set(a, v)
+#define atomic_store(a, v) atomic_set(a, v)
+#define atomic_load(a) ((a)->counter)
+#define atomic_fetch_add(a, v) \
+	if ((long)(v) >= 0L) \
+		atomic_add(v, a);\
+	else \
+		atomic_sub(-(v), a);
 
 #endif
