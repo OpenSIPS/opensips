@@ -172,7 +172,7 @@ static inline void add_xlog_data(trace_message message, void* param)
 	static str sip_str = str_init("sip");
 
 
-	switch (xlog_print_level) {
+	switch (*xlog_level) {
 		case L_ALERT:
 			str_level.s = DP_ALERT_TEXT; break;
 		case L_CRIT:
