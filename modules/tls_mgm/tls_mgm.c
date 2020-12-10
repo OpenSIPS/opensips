@@ -123,6 +123,10 @@ static mi_response_t *tls_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d);
 
+void tls_ctx_set_cert_store(void *ctx, void *src_ctx);
+int tls_ctx_set_cert_chain(void *ctx, void *src_ctx);
+int tls_ctx_set_pkey_file(void *ctx, char *pkey_file);
+
 /* DB handler */
 static db_con_t *db_hdl = 0;
 /* DB functions */
@@ -2339,7 +2343,8 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->find_client_domain = tls_find_client_domain;
 	binds->find_client_domain_name = tls_find_client_domain_name;
 	binds->release_domain = tls_release_domain;
-	/* everything ok*/
+	binds->ctx_set_cert_store = tls_ctx_set_cert_store;
+	binds->ctx_set_cert_chain = tls_ctx_set_cert_chain;
+	binds->ctx_set_pkey_file = tls_ctx_set_pkey_file;
 	return 1;
 }
-

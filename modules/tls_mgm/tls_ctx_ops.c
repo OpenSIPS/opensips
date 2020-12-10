@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 OpenSIPS Solutions
+ * Copyright (C) 2020 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -33,47 +33,62 @@
  *
  */
 
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 
-#ifndef TLS_API_H
-#define TLS_API_H
+#include "../../dprint.h"
 
-#include "tls_helper.h"
+static void tls_print_errstack(void)
+{
+	int             code;
 
-typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsigned short);
-typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsigned short);
-typedef struct tls_domain * (*tls_find_client_domain_name_f) (str *);
-typedef void (*tls_release_domain_f) (struct tls_domain *);
-
-/* utility functions for operations directly on a SSL_CTX */
-typedef void (*tls_ctx_set_cert_store_f) (void *ctx, void *src_ctx);
-typedef int (*tls_ctx_set_cert_chain_f) (void *ctx, void *src_ctx);
-typedef int (*tls_ctx_set_pkey_file_f) (void *ctx, char *pkey_file);
-
-struct tls_mgm_binds {
-    tls_find_server_domain_f find_server_domain;
-    tls_find_client_domain_f find_client_domain;
-    tls_find_client_domain_name_f find_client_domain_name;
-    tls_release_domain_f release_domain;
-    tls_ctx_set_cert_store_f ctx_set_cert_store;
-    tls_ctx_set_cert_chain_f ctx_set_cert_chain;
-    tls_ctx_set_pkey_file_f ctx_set_pkey_file;
-};
-
-
-typedef int(*load_tls_mgm_f)(struct tls_mgm_binds *binds);
-
-static inline int load_tls_mgm_api(struct tls_mgm_binds *binds) {
-    load_tls_mgm_f load_tls;
-
-    /* import the DLG auto-loading function */
-    if (!(load_tls = (load_tls_mgm_f) find_export("load_tls_mgm", 0)))
-        return -1;
-
-    /* let the auto-loading function load all DLG stuff */
-    if (load_tls(binds) == -1)
-        return -1;
-
-    return 0;
+	while ((code = ERR_get_error())) {
+		LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
+	}
 }
 
-#endif	/* TLS_API_H */
+void tls_ctx_set_cert_store(void *ctx, void *src_ctx)
+{
+	X509_STORE *store;
+
+	if ((store = SSL_CTX_get_cert_store(src_ctx)))
+		SSL_CTX_set_cert_store(ctx, store);
+}
+
+int tls_ctx_set_cert_chain(void *ctx, void *src_ctx)
+{
+	STACK_OF(X509) *sk = NULL;
+	X509 *x509;
+
+	ERR_clear_error();
+
+	x509 = SSL_CTX_get0_certificate(src_ctx);
+	if (x509 && (SSL_CTX_use_certificate(ctx, x509) != 1)) {
+		tls_print_errstack();
+		LM_ERR("Failed to load certificate\n");
+		return -1;
+	}
+
+	if (SSL_CTX_get0_chain_certs(src_ctx, &sk) != 1) {
+		LM_ERR("Failed to get certificate chain from context\n");
+		return -1;
+	}
+	if (sk && SSL_CTX_set0_chain(ctx, sk) != 1) {
+		LM_ERR("Failed to set certificate chain in context\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int tls_ctx_set_pkey_file(void *ctx, char *pkey_file)
+{
+	ERR_clear_error();
+
+	if (SSL_CTX_use_PrivateKey_file(ctx, pkey_file, SSL_FILETYPE_PEM) != 1) {
+		tls_print_errstack();
+		return -1;
+	}
+
+	return 0;
+}
