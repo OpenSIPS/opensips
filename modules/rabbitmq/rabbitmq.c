@@ -41,11 +41,23 @@ static int fixup_check_avp(void** param);
 static int rmq_publish(struct sip_msg *msg, struct rmq_server *srv, str *srkey,
 			str *sbody, str *sctype, pv_spec_t *hnames, pv_spec_t *hvals);
 
+int use_tls;
+struct tls_mgm_binds tls_api;
+
 static param_export_t params[]={
 	{ "server_id",			STR_PARAM|USE_FUNC_PARAM,
 		(void *)rmq_server_add},
+	{"use_tls", INT_PARAM, &use_tls},
 	{0,0,0}
 };
+
+static module_dependency_t *get_deps_use_tls(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
+}
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -53,6 +65,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "use_tls", get_deps_use_tls },
 		{ NULL, NULL },
 	},
 };
@@ -100,6 +113,21 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	LM_NOTICE("initializing RabbitMQ module ...\n");
+
+	if (use_tls) {
+		#ifndef AMQP_VERSION_v04
+		LM_ERR("TLS not supported for librabbitmq version lower than 0.4.0\n");
+		return -1;
+		#endif
+
+		if (load_tls_mgm_api(&tls_api) != 0) {
+			LM_ERR("failed to load tls_mgm API!\n");
+			return -1;
+		}
+
+		amqp_set_initialize_ssl_library(0);
+	}
+
 	return 0;
 }
 

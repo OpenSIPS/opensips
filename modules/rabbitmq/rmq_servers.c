@@ -29,6 +29,7 @@
 #include "../../mod_fix.h"
 #include "../../dprint.h"
 #include "../../ut.h"
+#include "../../pt.h"
 
 #include "rmq_servers.h"
 #include <amqp_framing.h>
@@ -180,6 +181,11 @@ static void rmq_close_server(struct rmq_server *srv)
 		LM_WARN("Unknown rmq server state %d\n", srv->state);
 	}
 	srv->state = RMQS_OFF;
+
+	if (srv->tls_dom) {
+		tls_api.release_domain(srv->tls_dom);
+		srv->tls_dom = NULL;
+	}
 }
 
 #if 0
@@ -199,6 +205,7 @@ int rmq_reconnect(struct rmq_server *srv)
 {
 #if defined AMQP_VERSION_v04
 	amqp_socket_t *amqp_sock;
+	void *ssl_ctx;
 #endif
 	int socket;
 
@@ -210,16 +217,105 @@ int rmq_reconnect(struct rmq_server *srv)
 			return -1;
 		}
 #if defined AMQP_VERSION_v04
-		amqp_sock = amqp_tcp_socket_new(srv->conn);
-		if (!amqp_sock) {
-			LM_ERR("cannot create AMQP socket\n");
-			goto clean_rmq_conn;
+		if (use_tls && srv->uri.ssl) {
+			if (!srv->tls_dom) {
+				srv->tls_dom = tls_api.find_client_domain_name(&srv->tls_dom_name);
+				if (!srv->tls_dom) {
+					LM_ERR("TLS domain: %.*s not found\n",
+						srv->tls_dom_name.len, srv->tls_dom_name.s);
+					goto clean_rmq_conn;
+				}
+			}
+
+			amqp_sock = amqp_ssl_socket_new(srv->conn);
+			if (!amqp_sock) {
+				LM_ERR("cannot create AMQP TLS socket\n");
+				goto clean_rmq_conn;
+			}
+
+			ssl_ctx = amqp_ssl_socket_get_context(amqp_sock);
+
+			/* set CA in AMQP's SSL_CTX  */
+			tls_api.ctx_set_cert_store(ssl_ctx, srv->tls_dom->ctx[process_no]);
+
+			/* set certificate in AMQP's SSL_CTX */
+			if (tls_api.ctx_set_cert_chain(ssl_ctx, srv->tls_dom->ctx[process_no]) < 0) {
+				LM_ERR("Failed to set certificate\n");
+				goto clean_rmq_conn;
+			}
+
+			/* set private key in AMQP's SSL_CTX */
+			if (tls_api.ctx_set_pkey_file(ssl_ctx, srv->tls_dom->pkey.s) < 0) {
+				LM_ERR("Failed to set private key\n");
+				goto clean_rmq_conn;
+			}
+
+			#if AMQP_VERSION >= 0x00080000
+			amqp_ssl_socket_set_verify_peer(amqp_sock, srv->tls_dom->verify_cert);
+			amqp_ssl_socket_set_verify_hostname(amqp_sock, 0);
+			#else
+			amqp_ssl_socket_set_verify(amqp_sock, srv->tls_dom->verify_cert);
+			#endif
+
+			#if AMQP_VERSION >= 0x00080000
+			amqp_tls_version_t method_min, method_max;
+
+			if (srv->tls_dom->method != TLS_METHOD_UNSPEC) {
+				switch (srv->tls_dom->method) {
+				case TLS_USE_TLSv1:
+					method_min = AMQP_TLSv1;
+					break;
+				case TLS_USE_TLSv1_2:
+					method_min = AMQP_TLSv1_2;
+					break;
+				default:
+					LM_NOTICE("Unsupported TLS minimum method for AMQP, using TLSv1\n");
+					method_min = AMQP_TLSv1;
+				}
+			} else {
+				LM_DBG("Minimum TLS method unspecified, using TLSv1\n");
+				method_min = AMQP_TLSv1;
+			}
+
+			if (srv->tls_dom->method_max != TLS_METHOD_UNSPEC) {
+				switch (srv->tls_dom->method_max) {
+				case TLS_USE_TLSv1:
+					method_max = AMQP_TLSv1;
+					break;
+				case TLS_USE_TLSv1_2:
+					method_max = AMQP_TLSv1_2;
+					break;
+				default:
+					LM_NOTICE("Unsupported TLS maximum method for AMQP, using latest"
+						" supported by librabbitmq\n");
+					method_max = AMQP_TLSvLATEST;
+				}
+			} else {
+				method_max = AMQP_TLSvLATEST;
+				LM_DBG("Maximum TLS method unspecified, using latest supported by"
+					" librabbitmq\n");
+			}
+
+			if (amqp_ssl_socket_set_ssl_versions(amqp_sock, method_min, method_max) !=
+				AMQP_STATUS_OK) {
+				LM_ERR("Failed to set TLS method range\n");
+				goto clean_rmq_conn;
+			}
+			#endif
+		} else {
+			amqp_sock = amqp_tcp_socket_new(srv->conn);
+			if (!amqp_sock) {
+				LM_ERR("cannot create AMQP socket\n");
+				goto clean_rmq_conn;
+			}
 		}
+
 		socket = amqp_socket_open(amqp_sock, srv->uri.host, srv->uri.port);
 		if (socket < 0) {
 			LM_ERR("cannot open AMQP socket\n");
 			goto clean_rmq_conn;
 		}
+
 #else
 		socket = amqp_open_socket(srv->uri.host, srv->uri.port);
 		if (socket < 0) {
@@ -264,6 +360,10 @@ clean_rmq_server:
 clean_rmq_conn:
 	if (amqp_destroy_connection(srv->conn) < 0)
 		LM_ERR("cannot destroy connection\n");
+	if (srv->tls_dom) {
+		tls_api.release_domain(srv->tls_dom);
+		srv->tls_dom = NULL;
+	}
 	return -1;
 }
 
@@ -277,6 +377,7 @@ int rmq_server_add(modparam_t type, void * val)
 	struct rmq_server *srv;
 	str param, s, cid;
 	str suri = {0, 0};
+	str tls_dom = {0, 0};
 	char uri_pending = 0;
 	unsigned flags = 0;
 	char *uri;
@@ -284,7 +385,7 @@ int rmq_server_add(modparam_t type, void * val)
 	int max_frames = RMQ_DEFAULT_FRAMES;
 	int heartbeat = RMQ_DEFAULT_HEARTBEAT;
 	str exchange = {0, 0};
-	enum rmq_parse_param { RMQP_NONE, RMQP_URI, RMQP_FRAME, RMQP_HBEAT, RMQP_IMM,
+	enum rmq_parse_param { RMQP_NONE, RMQP_URI, RMQP_TLS, RMQP_FRAME, RMQP_HBEAT, RMQP_IMM,
 		RMQP_MAND, RMQP_EXCH, RMQP_RETRY, RMQP_NOPER } state;
 
 	if (type != STR_PARAM) {
@@ -335,6 +436,7 @@ int rmq_server_add(modparam_t type, void * val)
 		param = s;
 		state = RMQP_NONE;
 		IF_IS_PARAM("uri", RMQP_URI, value);
+		IF_IS_PARAM("tls_domain", RMQP_TLS, value);
 		IF_IS_PARAM("frames", RMQP_FRAME, value);
 		IF_IS_PARAM("retries", RMQP_RETRY, value);
 		IF_IS_PARAM("exchange", RMQP_EXCH, value);
@@ -382,6 +484,9 @@ no_value:
 			/* remember where the uri starts */
 			suri = param;
 			uri_pending = 1;
+			break;
+		case RMQP_TLS:
+			tls_dom = param;
 			break;
 		case RMQP_NONE:
 			/* we eneded up in a place that has ';' - if we haven't found
@@ -463,7 +568,7 @@ no_value:
 		suri.len--;
 	trim_len(suri.len, suri.s, suri);
 
-	if ((srv = pkg_malloc(sizeof *srv + suri.len + 1)) == NULL) {
+	if ((srv = pkg_malloc(sizeof *srv + suri.len + 1 + tls_dom.len)) == NULL) {
 		LM_ERR("cannot alloc memory for rabbitmq server\n");
 		return -1;
 	}
@@ -478,8 +583,27 @@ no_value:
 	}
 
 	if (srv->uri.ssl) {
-		LM_WARN("[%.*s] we currently do not support ssl connections!\n", cid.len, cid.s);
-		goto free;
+		if (!use_tls) {
+			LM_WARN("[%.*s] 'use_tls' modparam required for using amqps URIs!\n",
+				cid.len, cid.s);
+			goto free;
+		}
+
+		if(!tls_dom.s) {
+			LM_WARN("[%.*s] 'tls_domain' URI parameter required for amqps URIs!\n",
+				cid.len, cid.s);
+			goto free;
+		}
+
+		srv->tls_dom_name.s = ((char *)srv) + sizeof *srv + suri.len + 1;
+		memcpy(srv->tls_dom_name.s, tls_dom.s, tls_dom.len);
+		srv->tls_dom_name.len = tls_dom.len;
+	} else {
+		if(tls_dom.s) {
+			LM_WARN("[%.*s] tls_domain can only be defined for amqps URIs!\n",
+				cid.len, cid.s);
+			goto free;
+		}
 	}
 
 	if (exchange.len) {
