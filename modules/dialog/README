@@ -1936,11 +1936,11 @@ event_route[E_RTPPROXY_DTMF] {
                 ## list all ongoing dialogs
                 opensips-cli -x mi dlg_list
                 ## list the dialog by callid and From TAG
-                opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1
- AAdfeEFF33
+                opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.
+168.1.1 from_tag=AAdfeEFF33
                 ## list 10 dialogs, starting from the position 40
                 ## (in the list of all ongoing dialogs)
-                opensips-cli -x mi dlg_list 40 10
+                opensips-cli -x mi dlg_list index=40 counter=10
 
 1.9.2. dlg_list_ctx
 
@@ -2475,7 +2475,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 435 274 12809 3398
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
    3. Razvan Crainea (@razvancrainea) 242 180 4715 1397
-   4. Vlad Patrascu (@rvlad-patrascu) 161 82 3403 3114
+   4. Vlad Patrascu (@rvlad-patrascu) 162 83 3405 3116
    5. Liviu Chircu (@liviuchircu) 146 105 2748 1095
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 29 23 487 111
@@ -2516,9 +2516,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Nov 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2020
    4.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
    5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2020
    6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
@@ -2547,18 +2547,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
-   Zero King (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
-   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
-   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
-   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
-   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
-   Andy Pyles, Elena-Ramona Modroiu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Zero King
+   (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
+   Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel
+   Cerghit (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu
+   Marius Cristian (@eseanucristian), Norman Brandinger (@NormB),
+   Anca Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
+   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 
