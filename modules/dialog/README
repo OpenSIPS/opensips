@@ -1733,11 +1733,11 @@ set_dlg_sharing_tag("vip1");
                 ## list all ongoing dialogs
                 opensips-cli -x mi dlg_list
                 ## list the dialog by callid and From TAG
-                opensips-cli -x mi dlg_list abcdrssfrs122444@192.168.1.1
- AAdfeEFF33
+                opensips-cli -x mi dlg_list callid=abcdrssfrs122444@192.
+168.1.1 from_tag=AAdfeEFF33
                 ## list 10 dialogs, starting from the position 40
                 ## (in the list of all ongoing dialogs)
-                opensips-cli -x mi dlg_list 40 10
+                opensips-cli -x mi dlg_list index=40 counter=10
 
 1.9.2. dlg_list_ctx
 
@@ -2270,7 +2270,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 417 266 12083 3127
    2. Vlad Paiu (@vladpaiu) 250 140 7051 3004
    3. Razvan Crainea (@razvancrainea) 209 154 4215 1138
-   4. Vlad Patrascu (@rvlad-patrascu) 164 81 3398 3110
+   4. Vlad Patrascu (@rvlad-patrascu) 165 82 3400 3112
    5. Liviu Chircu (@liviuchircu) 142 100 2727 1081
    6. Ovidiu Sas (@ovidiusas) 29 23 487 111
    7. Dan Pascu (@danpascu) 27 23 164 110
@@ -2311,7 +2311,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Nov 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
    2.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2020
    4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jun 2020
