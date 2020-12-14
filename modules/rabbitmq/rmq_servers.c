@@ -239,14 +239,14 @@ int rmq_reconnect(struct rmq_server *srv)
 			if (amqp_ssl_socket_set_cacert(amqp_sock, srv->tls_dom->ca.s) !=
 				AMQP_STATUS_OK) {
 				LM_ERR("Failed to set CA certificate\n");
-				lock_release(ssl_lock)
+				lock_release(ssl_lock);
 				goto clean_rmq_conn;
 			}
 
 			if (amqp_ssl_socket_set_key(amqp_sock, srv->tls_dom->cert.s,
 				srv->tls_dom->pkey.s) != AMQP_STATUS_OK) {
 				LM_ERR("Failed to set certificate and private key\n");
-				lock_release(ssl_lock)
+				lock_release(ssl_lock);
 				goto clean_rmq_conn;
 			}
 			lock_release(ssl_lock);
