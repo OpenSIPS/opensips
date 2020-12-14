@@ -59,6 +59,8 @@ static mi_response_t *mi_cc_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_cc_list_flows(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_change_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_agent_login(const mi_params_t *params,
@@ -160,6 +162,10 @@ static mi_export_t mi_cmds[] = {
 	},
 	{"cc_list_flows", 0, 0, 0, {
 		{mi_cc_list_flows, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"cc_change_flow", 0, 0, 0, {
+		{mi_cc_change_flow, {"b2bua_id", "flow", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{"cc_list_agents", 0, 0, 0, {
@@ -1627,6 +1633,68 @@ error:
 	return 0;
 }
 
+/* FORMAT :  b2bua_id  flow */
+static mi_response_t *mi_cc_change_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct cc_flow *old_flow;
+	struct cc_flow *flow;
+	struct cc_call *call;
+	str b2bua_id;
+	str flow_name;
+
+	if (get_mi_string_param(params, "b2bua_id", &b2bua_id.s, &b2bua_id.len) < 0)
+		return init_mi_param_error();
+
+	call = NULL;
+
+	for (call=data->queue.first ; call ; call=call->lower_in_queue) {
+		LM_DBG("call %p with btbua_id %.*s\n", b2bua_id.len, b2bua_id.s);
+		if (call->b2bua_id.len==b2bua_id.len &&
+		memcmp(b2bua_id.s, call->b2bua_id.s, b2bua_id.len)==0) {
+			LM_DBG("call %p in flow %.*s\n",
+				call, call->flow->id.len, call->flow->id.s);
+			break;
+		}
+	}
+
+	if (call==NULL) {
+		LM_ERR("call %p with btbua_id %.*s does not exists\n", call, b2bua_id.len, b2bua_id.s);
+		return NULL;
+	}
+
+	if (get_mi_string_param(params, "flow", &flow_name.s, &flow_name.len) < 0)
+		return init_mi_param_error();
+
+	/* get the flow ID */
+	flow = get_flow_by_name(data, &flow_name);
+	if (flow==NULL) {
+		LM_ERR("new flow <%.*s> does not exists\n", flow_name.len, flow_name.s);
+		return NULL;
+	}
+	LM_DBG("using call flow %p\n", flow);
+
+	/* block access to data */
+	lock_get( data->lock );
+
+	old_flow = call->flow;
+	call->flow = flow;
+
+	old_flow->ref_cnt--;
+	call->flow->ref_cnt++;
+
+	old_flow->ongoing_calls--;
+	call->flow->ongoing_calls++;
+
+	update_stat( call->flow->st_queued_calls, +1 );
+	update_stat( old_flow->st_queued_calls, -1 );
+
+	/* release the readers */
+	lock_release( data->lock );
+
+	return init_mi_result_ok();
+
+}
 
 /* FORMAT :  agent_id  log_state */
 static mi_response_t *mi_agent_login(const mi_params_t *params,
@@ -1774,6 +1842,11 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 		/* flow data */
 		if (add_mi_string(call_item, MI_SSTR("Flow"),
 			call->flow->id.s, call->flow->id.len) < 0)
+			goto error;
+
+		/* B2B key */
+		if (add_mi_string(call_item, MI_SSTR("b2bua_id"),
+			call->b2bua_id.s, call->b2bua_id.len) < 0)
 			goto error;
 
 		if (add_mi_number(call_item, MI_SSTR("Priority"), call->flow->priority) < 0)
