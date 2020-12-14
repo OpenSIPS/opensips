@@ -1436,7 +1436,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
 
-		run_top_route(sroutes->request[tuple->reply_routeid].a, msg);
+		run_top_route(sroutes->request[tuple->reply_routeid], msg);
 
 		pkg_free(cur_route_ctx.entity_key.s);
 	}
@@ -1860,7 +1860,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
 
-		run_top_route(sroutes->request[tuple->req_routeid].a, msg);
+		run_top_route(sroutes->request[tuple->req_routeid], msg);
 
 		pkg_free(cur_route_ctx.entity_key.s);
 		pkg_free(cur_route_ctx.peer_key.s);

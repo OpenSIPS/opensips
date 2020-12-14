@@ -76,8 +76,6 @@ int script_trace_log_level = L_ALERT;
 char *script_trace_info = NULL;
 pv_elem_t script_trace_elem;
 
-static int rec_lev=0;
-
 extern err_info_t _oser_err_info;
 
 action_time longest_action[LONGEST_ACTION_SIZE];
@@ -88,13 +86,18 @@ struct route_params_level {
 	void *extra; /* extra params used */
 	param_getf_t get_param;
 };
-static struct route_params_level route_params[MAX_REC_LEV];
+static struct route_params_level route_params[ROUTE_MAX_REC_LEV];
 static int route_rec_level = -1;
+
+char *route_stack[ROUTE_MAX_REC_LEV + 1];
+int route_stack_size;
 
 int curr_action_line;
 char *curr_action_file;
 
 static int for_each_handler(struct sip_msg *msg, struct action *a);
+static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
+		pv_value_t *res, void *params, void *extra);
 
 
 /* run actions from a route */
@@ -102,19 +105,21 @@ static int for_each_handler(struct sip_msg *msg, struct action *a);
 /* (0 if drop or break encountered, 1 if not ) */
 static inline int run_actions(struct action* a, struct sip_msg* msg)
 {
-	int ret;
+	int ret, has_name;
+	str top_route;
 
-	rec_lev++;
-	if (rec_lev>ROUTE_MAX_REC_LEV){
-		LM_ERR("too many recursive routing table lookups (%d) giving up!\n",
-			rec_lev);
+	if (route_stack_size > ROUTE_MAX_REC_LEV) {
+		get_top_route_type(&top_route, &has_name);
+		LM_ERR("route recursion limit reached, giving up! (nested routes: %d, "
+		           "first: '%.*s', last: '%s')!\n", route_stack_size,
+		        top_route.len, top_route.s, route_stack[ROUTE_MAX_REC_LEV]);
 		ret=E_UNSPEC;
 		goto error;
 	}
 
 	if (a==0){
-		LM_WARN("null action list (rec_level=%d)\n",
-			rec_lev);
+		LM_WARN("null action list (route stack size: %d)\n",
+		        route_stack_size);
 		ret=1;
 		goto error;
 	}
@@ -125,26 +130,44 @@ static inline int run_actions(struct action* a, struct sip_msg* msg)
 	if(action_flags&ACT_FL_RETURN)
 		action_flags &= ~ACT_FL_RETURN;
 
-	rec_lev--;
 	return ret;
 
 error:
-	rec_lev--;
 	return ret;
 }
 
 
-/* run the error route with correct handling - simpler wrapper to
-   allow the usage from other parts of the code */
-void run_error_route(struct sip_msg* msg, int force_reset)
+int _run_actions(struct action *a, struct sip_msg *msg)
+{
+	return run_actions(a, msg);
+}
+
+
+int inside_error_route;
+void run_error_route(struct sip_msg* msg, int init_route_stack)
 {
 	int old_route;
+
 	LM_DBG("triggering\n");
-	swap_route_type(old_route, ERROR_ROUTE);
-	run_actions(sroutes->error.a, msg);
+	inside_error_route = 1;
+
+	if (init_route_stack) {
+		swap_route_type(old_route, ERROR_ROUTE);
+
+		route_stack[0] = NULL;
+		route_stack_size = 1;
+
+		run_actions(sroutes->error.a, msg);
+		set_route_type(old_route);
+	} else {
+		route_params_push_level("!error_route", NULL, 0, route_param_get);
+		run_actions(sroutes->error.a, msg);
+		route_params_pop_level();
+	}
+
 	/* reset error info */
 	init_err_info();
-	set_route_type(old_route);
+	inside_error_route = 0;
 }
 
 
@@ -161,8 +184,8 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 
 		/* check for errors */
 		if (_oser_err_info.eclass!=0 && sroutes->error.a!=NULL &&
-		(route_type&(ERROR_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE))==0 )
-			run_error_route(msg,0);
+		(route_type&(ONREPLY_ROUTE|LOCAL_ROUTE))==0 && !inside_error_route)
+			run_error_route(msg, 0);
 
 		/* continue or not ? */
 		if (action_flags & (ACT_FL_RETURN | ACT_FL_EXIT | ACT_FL_BREAK))
@@ -171,61 +194,16 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 	return ret;
 }
 
-int run_top_route_get_code(struct action*a, struct sip_msg *msg, int *code_ret)
+
+int run_top_route(struct script_route sr, struct sip_msg* msg)
 {
 	int bk_action_flags;
-	int bk_rec_lev;
-	int ret, cret;
-	context_p ctx = NULL;
-
-	bk_action_flags = action_flags;
-	bk_rec_lev = rec_lev;
-
-	action_flags = 0;
-	rec_lev = 0;
-	init_err_info();
-
-	if (current_processing_ctx==NULL) {
-		if ( (ctx=context_alloc(CONTEXT_GLOBAL))==NULL) {
-			LM_ERR("failed to allocated new global context\n");
-			return -1;
-		}
-		memset( ctx, 0, context_size(CONTEXT_GLOBAL));
-		current_processing_ctx = ctx;
-	}
-
-	cret = run_actions(a, msg);
-	if (code_ret)
-		*code_ret = cret;
-
-	ret = action_flags;
-
-	action_flags = bk_action_flags;
-	rec_lev = bk_rec_lev;
-	/* reset script tracing */
-	use_script_trace = 0;
-
-	if (ctx && current_processing_ctx) {
-		context_destroy(CONTEXT_GLOBAL, ctx);
-		context_free(ctx);
-		current_processing_ctx = NULL;
-	}
-
-	return ret;
-}
-
-int run_top_route(struct action* a, struct sip_msg* msg)
-{
-	int bk_action_flags;
-	int bk_rec_lev;
 	int ret;
 	context_p ctx = NULL;
 
 	bk_action_flags = action_flags;
-	bk_rec_lev = rec_lev;
 
 	action_flags = 0;
-	rec_lev = 0;
 	init_err_info();
 
 	if (current_processing_ctx==NULL) {
@@ -237,11 +215,19 @@ int run_top_route(struct action* a, struct sip_msg* msg)
 		current_processing_ctx = ctx;
 	}
 
-	run_actions(a, msg);
+	if (route_type & (ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE) ||
+	     (route_type &
+	        (REQUEST_ROUTE|ONREPLY_ROUTE) && !strcmp(sr.name, "0")))
+		route_stack[0] = NULL;
+	else
+		route_stack[0] = sr.name;
+
+	route_stack_size = 1;
+
+	run_actions(sr.a, msg);
 	ret = action_flags;
 
 	action_flags = bk_action_flags;
-	rec_lev = bk_rec_lev;
 	/* reset script tracing */
 	use_script_trace = 0;
 
@@ -600,7 +586,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 								set_err_info(OSER_EC_ASSERT, OSER_EL_CRITIC, "assertion failed");
 								set_err_reply(500, "server error");
 
-								run_error_route(msg,0);
+								run_error_route(msg, 0);
 							}
 						}
 					}
@@ -719,12 +705,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				route_params_push_level(a->elem[2].u.data,
+				route_params_push_level(sroutes->request[i].name, a->elem[2].u.data,
 						(void*)(unsigned long)a->elem[1].u.number, route_param_get);
 				return_code=run_actions(sroutes->request[i].a, msg);
 				route_params_pop_level();
 			} else {
-				route_params_push_level(NULL, 0, route_param_get);
+				route_params_push_level(sroutes->request[i].name, NULL, 0, route_param_get);
 				return_code=run_actions(sroutes->request[i].a, msg);
 				route_params_pop_level();
 			}
@@ -831,7 +817,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			script_trace("core", "xdbg", msg, a->file, a->line) ;
 			if (a->elem[0].type == SCRIPTVAR_ELEM_ST)
 			{
-				ret = xdbg(msg, a->elem[0].u.data, val.rs.s);
+				ret = xdbg(msg, a->elem[0].u.data);
 				if (ret < 0)
 				{
 					LM_ERR("error while printing xdbg message\n");
@@ -875,7 +861,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				ret = xlog_1(msg,a->elem[0].u.data, val.rs.s);
+				ret = xlog_1(msg,a->elem[0].u.data);
 				if (ret < 0)
 				{
 					LM_ERR("error while printing xlog message\n");
@@ -1173,17 +1159,23 @@ void __script_trace(char *class, char *action, struct sip_msg *msg,
  * functions used to populate $params() vars in the route_param structure
  */
 
-void route_params_push_level(void *params, void *extra, param_getf_t getf)
+void route_params_push_level(char *rt_name, void *params, void *extra, param_getf_t getf)
 {
 	route_rec_level++;
 	route_params[route_rec_level].params = params;
 	route_params[route_rec_level].extra = extra;
 	route_params[route_rec_level].get_param = getf;
+
+	if (rt_name) {
+		route_stack[route_stack_size] = rt_name;
+		route_stack_size++;
+	}
 }
 
 void route_params_pop_level(void)
 {
 	route_rec_level--;
+	route_stack_size--;
 }
 
 int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
@@ -1197,4 +1189,82 @@ int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res)
 	return route_params[route_rec_level].get_param(msg, ip, res,
 			route_params[route_rec_level].params,
 			route_params[route_rec_level].extra);
+}
+
+
+static const char *_sip_msg_buf =
+"DUMMY sip:user@dummy.com SIP/2.0\r\n"
+"Via: SIP/2.0/UDP 127.0.0.1;branch=z9hG4bKdummy\r\n"
+"To: <sip:to@dummy.com>\r\n"
+"From: <sip:from@dummy.com>;tag=1\r\n"
+"Call-ID: dummy-1\r\n"
+"CSeq: 1 DUMMY\r\n\r\n";
+static struct sip_msg* dummy_static_req= NULL;
+static int dummy_static_in_used = 0;
+
+struct sip_msg* get_dummy_sip_msg(void)
+{
+	struct sip_msg* req;
+
+	if (dummy_static_req == NULL || dummy_static_in_used) {
+		/* if the static request is not yet allocated, or the static
+		 * request is already in used (nested calls?), we better allocate
+		 * a new structure */
+		LM_DBG("allocating new sip msg\n");
+		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+		if(req == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return NULL;
+		}
+		memset( req, 0, sizeof(struct sip_msg));
+
+		req->buf = (char*)_sip_msg_buf;
+		req->len = strlen(_sip_msg_buf);
+		req->rcv.src_ip.af = AF_INET;
+		req->rcv.dst_ip.af = AF_INET;
+
+		parse_msg((char*)_sip_msg_buf, strlen(_sip_msg_buf), req);
+		parse_headers( req, HDR_EOH_F, 0);
+		if (dummy_static_req==NULL) {
+			dummy_static_req = req;
+			dummy_static_in_used = 1;
+			LM_DBG("setting as static to %p\n",req);
+		}
+	} else {
+		/* reuse the static request */
+		req = dummy_static_req;
+		LM_DBG("reusing the static sip msg %p\n",req);
+	}
+
+	return req;
+}
+
+void release_dummy_sip_msg( struct sip_msg* req)
+{
+	struct hdr_field* hdrs;
+
+	if (req==dummy_static_req) {
+		/* for the static request, just strip out the potential
+		 * changes (lumps, new_uri, dst_uri, etc), but keep the parsed
+		 * list of headers (this never changes) */
+		LM_DBG("cleaning the static sip msg %p\n",req);
+		hdrs = req->headers;
+		req->headers = NULL;
+		free_sip_msg(req);
+		req->headers = hdrs;
+		req->msg_cb = NULL;
+		req->new_uri.s = req->dst_uri.s = req->path_vec.s = NULL;
+		req->new_uri.len = req->dst_uri.len = req->path_vec.len = 0;
+		req->set_global_address.s = req->set_global_port.s = NULL;
+		req->set_global_address.len = req->set_global_port.len = 0;
+		req->add_rm = req->body_lumps = NULL;
+		req->reply_lump = NULL;
+		dummy_static_in_used = 0;
+	} else {
+		LM_DBG("freeing allocated sip msg %p\n",req);
+		/* is was an 100% allocated request */
+		free_sip_msg(req);
+		pkg_free(req);
+	}
 }

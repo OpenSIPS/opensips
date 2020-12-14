@@ -28,6 +28,13 @@
 
 #include <hiredis/hiredis.h>
 #include "../../cachedb/cachedb.h"
+#include "../tls_mgm/api.h"
+
+#ifdef HAVE_REDIS_SSL
+#include <hiredis/hiredis_ssl.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
 
 typedef struct cluster_nodes {
 	char *ip;							/* ip of this cluster node */
@@ -36,6 +43,8 @@ typedef struct cluster_nodes {
 	unsigned short end_slot;		/* last slot for this server */
 
 	redisContext *context;			/* actual connection to this node */
+	struct tls_domain *tls_dom;
+
 	struct cluster_nodes *next;
 } cluster_node;
 
@@ -45,6 +54,9 @@ typedef struct cluster_nodes {
 extern int redis_query_tout;
 extern int redis_connnection_tout;
 extern int shutdown_on_error;
+extern int use_tls;
+
+extern struct tls_mgm_binds tls_api;
 
 enum redis_flag {
 	REDIS_SINGLE_INSTANCE  = 1 << 0,

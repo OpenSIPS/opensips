@@ -134,11 +134,12 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 	swap_route_type(old_route_type, REQUEST_ROUTE);
 
 	/************* actual run sequance ****************/
-	run_top_route( sroutes->request[rt_idx].a, fake_msg);
+	run_top_route( sroutes->request[rt_idx], fake_msg);
 
 	/************* post-run sequance ****************/
 
 	set_route_type(old_route_type);
+	release_dummy_sip_msg(fake_msg);
 
 	/* reset the processing context */
 	if (current_processing_ctx == NULL)
@@ -2303,6 +2304,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 
 			/* reset the processing context */
 			current_processing_ctx = old_ctx;
+			release_dummy_sip_msg(fake_msg);
 		}
 
 		/* delete the dialog from DB */

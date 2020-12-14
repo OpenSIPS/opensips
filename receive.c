@@ -210,7 +210,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		if (rc & SCB_RUN_TOP_ROUTE)
 			/* run the main request route and skip post_script callbacks
 			 * if the TOBE_CONTINUE flag is returned */
-			if ( run_top_route(sroutes->request[DEFAULT_RT].a, msg) &
+			if ( run_top_route(sroutes->request[DEFAULT_RT], msg) &
 			ACT_FL_TBCONT )
 				goto end;
 
@@ -253,7 +253,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* exec the onreply routing script */
 		if (rc & SCB_RUN_TOP_ROUTE && sroutes->onreply[DEFAULT_RT].a &&
-		    (run_top_route(sroutes->onreply[DEFAULT_RT].a,msg) & ACT_FL_DROP)
+		    (run_top_route(sroutes->onreply[DEFAULT_RT],msg) & ACT_FL_DROP)
 		    && msg->REPLY_STATUS < 200) {
 			set_route_type(old_route_type);
 

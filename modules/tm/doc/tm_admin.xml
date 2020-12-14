@@ -1603,10 +1603,17 @@ branch_route[1] {
 				related to the injection process:
 				<itemizedlist>
 					<listitem>
-					<emphasis>cancel</emphasis> - cancel all the ongoing 
+					<emphasis>cancel</emphasis> or <emphasis>c</emphasis> 
+					- cancel all the ongoing 
 					existing branches from the transaction before injecting
 					the new branches.
 					</listitem>
+					<listitem>
+					<emphasis>l</emphasis> (last) - this is the last injected
+					branch on this transaction, do not wait for any other
+					branches to be injected.
+					</listitem>
+
 				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
@@ -1624,15 +1631,16 @@ route[event_notification] {
 
 	<section id="func_t_wait_for_new_branches" xreflabel="t_wait_for_new_branches()">
 		<title>
-		<function moreinfo="none">t_wait_for_new_branches()</function>
+		<function moreinfo="none">t_wait_for_new_branches([branches])</function>
 		</title>
 		<para>
 		This function instructs the existing SIP transaction to wait for new
 		branches to be injected even after the completion of the existing 
 		branches. This waiting will be done until the Final Response INVITE 
-		timer (fr_inv_timeout) will hit for the transaction; of course, the
-		waiting will be terminated if the transaction gets a 2xx final reply
-		from one of the branches.
+		timer (fr_inv_timeout) will hit for the transaction OR until the 
+		maximum number of branches were injected (see parameter); of course,
+		the waiting will be terminated if the transaction gets a 2xx final
+		reply from one of the branches.
 		</para>
 		<para>
 		Normally if you have a transaction with two branches and 
@@ -1645,6 +1653,13 @@ route[event_notification] {
 		<xref linkend="func_t_inject_branches"/> function) until the fr_inv timer
 		hits.
 		</para>
+		<para>Parameters: </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>branches (integer, options)</emphasis> - what is the
+				maximum number of branches to be waited for.
+			</para></listitem>
+		</itemizedlist>
 		<example>
 		<title><function>t_wait_for_new_branches</function> usage</title>
 		<programlisting format="linespecific">

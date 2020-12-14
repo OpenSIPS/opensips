@@ -28,6 +28,9 @@
 
 #include "../str.h"
 
+#define CACHEDB_TLS_DOM_PARAM "tls_domain="
+#define CACHEDB_TLS_DOM_PARAM_LEN (sizeof(CACHEDB_TLS_DOM_PARAM)-1)
+
 /** Structure representing a database ID */
 struct cachedb_id {
 	char* scheme;        /**< URL scheme */

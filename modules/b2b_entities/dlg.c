@@ -789,7 +789,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 
 		/* No need to apply lumps */
 		if(req_routeid > 0)
-			run_top_route(sroutes->request[req_routeid].a, msg);
+			run_top_route(sroutes->request[req_routeid], msg);
 
 		goto done;
 	}
@@ -1011,7 +1011,7 @@ logic_notify:
 	if(req_routeid > 0)
 	{
 		lock_release(&table[hash_index].lock);
-		run_top_route(sroutes->request[req_routeid].a, msg);
+		run_top_route(sroutes->request[req_routeid], msg);
 		if (b2b_apply_lumps(msg))
 		{
 			if (parse_from_header(msg) < 0)
@@ -2594,7 +2594,30 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		callid = msg->callid->body;
 		from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
 	} else if (ps->req) {
-		from_tag = ((struct to_body*)ps->req->from->parsed)->tag_value;
+		if (!(struct to_body*)ps->req->from->parsed) {
+			if (!parse_to(ps->req->from->body.s,
+					ps->req->from->body.s, &from_hdr_parsed)) {
+				from_tag.s = NULL;
+				from_tag.len = 0;
+			} else {
+				from_tag = from_hdr_parsed.tag_value;
+				free_to_params(&from_hdr_parsed);
+			}
+		} else {
+			from_tag = ((struct to_body*)ps->req->from->parsed)->tag_value;
+		}
+		if (!(struct to_body*)ps->req->to->parsed) {
+			if (!parse_to(ps->req->to->body.s,
+					ps->req->to->body.s, &to_hdr_parsed)) {
+				to_tag.s = NULL;
+				to_tag.len = 0;
+			} else {
+				to_tag = to_hdr_parsed.tag_value;
+				free_to_params(&to_hdr_parsed);
+			}
+		} else {
+			to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
+		}
 		to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
 		callid = ps->req->callid->body;
 	} else {
@@ -2834,7 +2857,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					if(reply_routeid > 0) {
 						msg->flags = t->uac[0].br_flags;
 						swap_route_type(old_route_type, ONREPLY_ROUTE);
-						run_top_route(sroutes->request[reply_routeid].a, msg);
+						run_top_route(sroutes->request[reply_routeid], msg);
 						set_route_type(old_route_type);
 						b2b_apply_lumps(msg);
 					}
@@ -3177,7 +3200,7 @@ done1:
 	if(reply_routeid > 0) {
 		msg->flags = t->uac[0].br_flags;
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
-		run_top_route(sroutes->request[reply_routeid].a, msg);
+		run_top_route(sroutes->request[reply_routeid], msg);
 		set_route_type(old_route_type);
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}

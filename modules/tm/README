@@ -62,7 +62,7 @@ tm Module
               1.4.12. t_on_reply(reply_route)
               1.4.13. t_on_branch(branch_route)
               1.4.14. t_inject_branches(source[,flags])
-              1.4.15. t_wait_for_new_branches()
+              1.4.15. t_wait_for_new_branches([branches])
               1.4.16. t_add_hdrs("sip_hdrs")
               1.4.17. t_add_cancel_reason("Reason_hdr")
               1.4.18. t_replicate(URI,[flags])
@@ -1192,8 +1192,12 @@ branch_route[1] {
             by append_branch() function or similar).
      * flags (string, optional) - some additional flags related to
        the injection process:
-          + cancel - cancel all the ongoing existing branches from
-            the transaction before injecting the new branches.
+          + cancel or c - cancel all the ongoing existing branches
+            from the transaction before injecting the new
+            branches.
+          + l (last) - this is the last injected branch on this
+            transaction, do not wait for any other branches to be
+            injected.
 
    Example 1.36. t_inject_branches usage
 ...
@@ -1202,14 +1206,16 @@ route[event_notification] {
 }
 ...
 
-1.4.15.  t_wait_for_new_branches()
+1.4.15.  t_wait_for_new_branches([branches])
 
    This function instructs the existing SIP transaction to wait
    for new branches to be injected even after the completion of
    the existing branches. This waiting will be done until the
    Final Response INVITE timer (fr_inv_timeout) will hit for the
-   transaction; of course, the waiting will be terminated if the
-   transaction gets a 2xx final reply from one of the branches.
+   transaction OR until the maximum number of branches were
+   injected (see parameter); of course, the waiting will be
+   terminated if the transaction gets a 2xx final reply from one
+   of the branches.
 
    Normally if you have a transaction with two branches and they
    get, let's say, a 404 and 486 replies, the branches will be
@@ -1219,6 +1225,10 @@ route[event_notification] {
    upon the completion of the branches and not send the 404 to the
    caller - it will wait for new branches to be injected (see
    t_inject_branches() function) until the fr_inv timer hits.
+
+   Parameters:
+     * branches (integer, options) - what is the maximum number of
+       branches to be waited for.
 
    Example 1.37. t_wait_for_new_branches usage
 ...
@@ -1550,15 +1560,15 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1051 609 21293 16372
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1053 610 21375 16390
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
    5. Razvan Crainea (@razvancrainea) 117 89 1755 755
-   6. Liviu Chircu (@liviuchircu) 100 75 1212 861
+   6. Liviu Chircu (@liviuchircu) 101 76 1218 867
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Anca Vamanu 37 19 778 651
-   9. Vlad Patrascu (@rvlad-patrascu) 35 14 874 796
+   9. Vlad Patrascu (@rvlad-patrascu) 37 15 880 800
    10. Vlad Paiu (@vladpaiu) 26 23 170 57
 
    All remaining contributors: Dan Pascu (@danpascu), Henning
@@ -1596,8 +1606,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Nov 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Nov 2020
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
    3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2020
    4.  Maksym Sobolyev (@sobomax)          Mar 2004 - Oct 2020
    5.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jul 2020
@@ -1629,16 +1639,16 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Fabian Gast (@fgast), Alexey Vasilyev
-   (@vasilevalex), Peter Lemenkov (@lemenkov), Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
-   Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Dan Pascu (@danpascu), Juha Heinanen
-   (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
-   Kuthan (@jiriatipteldotorg).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Fabian Gast (@fgast), Alexey
+   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
+   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
+   Jiri Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

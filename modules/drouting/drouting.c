@@ -3055,7 +3055,7 @@ search_again:
 
 	if (rt_info->route_idx && (rt_idx=get_script_route_ID_by_name
 	(rt_info->route_idx, sroutes->request, RT_NO))!=-1) {
-		fret = run_top_route( sroutes->request[rt_idx].a, msg );
+		fret = run_top_route( sroutes->request[rt_idx], msg );
 		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
@@ -4100,7 +4100,6 @@ static int dr_match(struct sip_msg* msg, int *grp, long flags, str *number,
 	rule = find_rule_by_prefix_unsafe(part->rdata->pt,
 			&part->rdata->noprefix, *number, *grp, &matched_len);
 	if (rule == NULL){
-		lock_stop_read( part->ref_lock );
 		goto failure;
 	}
 

@@ -46,7 +46,7 @@ int rmq_conn_add(modparam_t mtype, void *val)
 	str params[NO_CONN_PARAMS];
 	str p;
 	enum rmq_conn_param {RMQP_URI, RMQP_QUEUE, RMQP_EV, RMQP_ACK, RMQP_EX,
-		RMQP_HBEAT, RMQP_FRAME} param_type;
+		RMQP_HBEAT, RMQP_FRAME, RMQP_TLS} param_type;
 	char *uri_s;
 	struct rmq_connection *rmq_conn;
 
@@ -95,6 +95,8 @@ int rmq_conn_add(modparam_t mtype, void *val)
 			param_type = RMQP_FRAME;
 		else if (!strncasecmp(p.s, "heartbeat", 9))
 			param_type = RMQP_HBEAT;
+		else if (!strncasecmp(p.s, "tls_domain", 9))
+			param_type = RMQP_TLS;
 		else {
 			LM_ERR("Unknown connection parameter: %.*s\n", p.len, p.s);
 			free_csv_record(p_list);
@@ -149,8 +151,25 @@ int rmq_conn_add(modparam_t mtype, void *val)
 	}
 
 	if (rmq_conn->uri.ssl) {
-		LM_WARN("SSL connections are not currently supported!\n");
-		goto err_free;
+		if (!use_tls) {
+			LM_WARN("'use_tls' modparam required for using amqps URIs!\n");
+			goto err_free;
+		}
+
+		if(!params[RMQP_TLS].s) {
+			LM_ERR("'tls_domain' URI parameter required for amqps URIs!\n");
+			goto err_free;
+		}
+
+		if (shm_str_dup(&rmq_conn->tls_dom_name, &params[RMQP_TLS]) < 0) {
+			LM_ERR("oom\n");
+			goto err_free;
+		}
+	} else {
+		if(params[RMQP_TLS].s) {
+			LM_WARN("'tls_domain' URI param can only be defined for amqps URIs!\n");
+			goto err_free;
+		}
 	}
 
 	if (!params[RMQP_QUEUE].s) {
@@ -322,6 +341,11 @@ static void rmq_close_conn(struct rmq_connection *conn, int channel_only)
 	pfds[conn->pfds_idx].fd = -1;
 
 	conn->state = RMQ_CONN_NONE;
+
+	if (conn->tls_dom) {
+		tls_api.release_domain(conn->tls_dom);
+		conn->tls_dom = NULL;
+	}
 }
 
 static int rmq_connect(struct rmq_connection *conn)
@@ -339,11 +363,94 @@ static int rmq_connect(struct rmq_connection *conn)
 			return -1;
 		}
 
-		amqp_sock = amqp_tcp_socket_new(conn->amqp_conn);
-		if (!amqp_sock) {
-			LM_ERR("cannot create AMQP socket\n");
-			goto err_clean_amqp_conn;
+		if (use_tls && conn->uri.ssl) {
+			if (!conn->tls_dom) {
+				conn->tls_dom = tls_api.find_client_domain_name(&conn->tls_dom_name);
+				if (!conn->tls_dom) {
+					LM_ERR("TLS domain: '%.*s' not found\n",
+						conn->tls_dom_name.len, conn->tls_dom_name.s);
+					goto err_clean_amqp_conn;
+				}
+			}
+
+			amqp_sock = amqp_ssl_socket_new(conn->amqp_conn);
+			if (!amqp_sock) {
+				LM_ERR("cannot create AMQP TLS socket\n");
+				goto err_clean_amqp_conn;
+			}
+
+			if (amqp_ssl_socket_set_cacert(amqp_sock, conn->tls_dom->ca.s) !=
+				AMQP_STATUS_OK) {
+				LM_ERR("Failed to set CA certificate\n");
+				goto err_clean_amqp_conn;
+			}
+
+			if (amqp_ssl_socket_set_key(amqp_sock, conn->tls_dom->cert.s,
+				conn->tls_dom->pkey.s) != AMQP_STATUS_OK) {
+				LM_ERR("Failed to set certificate and private key\n");
+				goto err_clean_amqp_conn;
+			}
+
+			#if AMQP_VERSION >= 0x00080000
+			amqp_ssl_socket_set_verify_peer(amqp_sock, conn->tls_dom->verify_cert);
+			amqp_ssl_socket_set_verify_hostname(amqp_sock, 0);
+			#else
+			amqp_ssl_socket_set_verify(amqp_sock, conn->tls_dom->verify_cert);
+			#endif
+
+			#if AMQP_VERSION >= 0x00080000
+			amqp_tls_version_t method_min, method_max;
+
+			if (conn->tls_dom->method != TLS_METHOD_UNSPEC) {
+				switch (conn->tls_dom->method) {
+				case TLS_USE_TLSv1:
+					method_min = AMQP_TLSv1;
+					break;
+				case TLS_USE_TLSv1_2:
+					method_min = AMQP_TLSv1_2;
+					break;
+				default:
+					LM_NOTICE("Unsupported TLS minimum method for AMQP, using TLSv1\n");
+					method_min = AMQP_TLSv1;
+				}
+			} else {
+				LM_DBG("Minimum TLS method unspecified, using TLSv1\n");
+				method_min = AMQP_TLSv1;
+			}
+
+			if (conn->tls_dom->method_max != TLS_METHOD_UNSPEC) {
+				switch (conn->tls_dom->method_max) {
+				case TLS_USE_TLSv1:
+					method_max = AMQP_TLSv1;
+					break;
+				case TLS_USE_TLSv1_2:
+					method_max = AMQP_TLSv1_2;
+					break;
+				default:
+					LM_NOTICE("Unsupported TLS maximum method for AMQP, using latest"
+						" supported by librabbitmq\n");
+					method_max = AMQP_TLSvLATEST;
+				}
+			} else {
+				method_max = AMQP_TLSvLATEST;
+				LM_DBG("Maximum TLS method unspecified, using latest supported by"
+					" librabbitmq\n");
+			}
+
+			if (amqp_ssl_socket_set_ssl_versions(amqp_sock, method_min, method_max) !=
+				AMQP_STATUS_OK) {
+				LM_ERR("Failed to set TLS method range\n");
+				goto err_clean_amqp_conn;
+			}
+			#endif
+		} else {
+			amqp_sock = amqp_tcp_socket_new(conn->amqp_conn);
+			if (!amqp_sock) {
+				LM_ERR("cannot create AMQP socket\n");
+				goto err_clean_amqp_conn;
+			}
 		}
+
 		if (amqp_socket_open_noblock(amqp_sock,
 			conn->uri.host, conn->uri.port, &timeout) != AMQP_STATUS_OK) {
 			LM_ERR("cannot open AMQP socket\n");
@@ -396,6 +503,10 @@ err_clean_amqp_conn:
 	gettimeofday(&conn->timeout_start, NULL);
 	if (amqp_destroy_connection(conn->amqp_conn) != AMQP_STATUS_OK)
 		LM_ERR("cannot destroy connection\n");
+	if (conn->tls_dom) {
+		tls_api.release_domain(conn->tls_dom);
+		conn->tls_dom = NULL;
+	}
 	return -1;
 }
 

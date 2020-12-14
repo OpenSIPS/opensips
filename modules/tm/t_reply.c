@@ -603,7 +603,7 @@ static inline int run_failure_handlers(struct cell *t)
 		t->on_negative=0;
 		/* run a reply_route action if some was marked */
 		swap_route_type(old_route_type, FAILURE_ROUTE);
-		run_top_route(sroutes->failure[on_failure].a, &faked_req);
+		run_top_route(sroutes->failure[on_failure], &faked_req);
 		set_route_type(old_route_type);
 	}
 
@@ -771,6 +771,8 @@ static inline int branch_prio( short ret_code, unsigned int is_cancelled)
  */
 static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 {
+	#define PHONY_NO_WAIT(_t,_b) \
+		(_t->uac[_b].br_flags && _t->uac[_b].br_flags<=_t->nr_of_outgoings)
 	int lowest_b, lowest_s, b, prio;
 	unsigned int cancelled;
 
@@ -778,14 +780,19 @@ static inline int t_pick_branch( struct cell *t, int *res_code, int *do_cancel)
 	cancelled = was_cancelled(t);
 	*do_cancel = 0;
 	for ( b=t->first_branch; b<t->nr_of_outgoings ; b++ ) {
+		if ( (t->uac[b].flags & T_UAC_IS_PHONY) && (
 		/* skip PHONY branches if the transaction was canceled by UAC;
 		 * a phony branch is used just to force the transaction to wait for
 		 * more branches, but if canceled, it makes no sense to wait anymore;
 		 * Exception - do not ignore the branch if there is reply pushed
 		 * on that branch, like an internal timeout or so */
-		if ( (t->uac[b].flags & T_UAC_IS_PHONY) &&
-		(t->flags & T_WAS_CANCELLED_FLAG) &&
-		t->uac[b].last_received<299 )
+		(t->flags & T_WAS_CANCELLED_FLAG && t->uac[b].last_received<299)
+		||
+		/* also skip a PHONY branch if it has a true setting about how
+		 * many branches are to be waited. The max branch idx to be waited
+		 * is stored in the 'br_flags' flags of the uac */
+		PHONY_NO_WAIT(t,b)
+		))
 			continue;
 		/* skip 'empty branches' */
 		if (!t->uac[b].request.buffer.s) continue;
@@ -1585,7 +1592,7 @@ int reply_received( struct sip_msg  *p_msg )
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
-		(run_top_route(sroutes->onreply[t->uac[branch].on_reply].a,p_msg)
+		(run_top_route(sroutes->onreply[t->uac[branch].on_reply],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
@@ -1595,7 +1602,7 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
-		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply].a,p_msg)
+		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {

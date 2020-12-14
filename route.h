@@ -46,6 +46,7 @@ struct script_route{
 };
 
 struct script_timer_route{
+	char *name;
 	unsigned int interval;
 	struct action* a;
 };
@@ -71,6 +72,7 @@ struct os_script_routes {
 	struct script_route event[EVENT_RT_NO];
 };
 
+extern struct os_script_routes *sroutes;
 
 #define REQUEST_ROUTE 1   /*!< Request route block */
 #define FAILURE_ROUTE 2   /*!< Negative-reply route block */
@@ -85,8 +87,26 @@ struct os_script_routes {
 	(REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE| \
 	 ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE)
 
-extern struct os_script_routes *sroutes;
+extern str str_route;
+extern str str_request_route;
+extern str str_failure_route;
+extern str str_onreply_route;
+extern str str_branch_route;
+extern str str_error_route;
+extern str str_local_route;
+extern str str_startup_route;
+extern str str_timer_route;
+extern str str_event_route;
+
 extern int route_type;
+
+/**
+ * Extract information about the top-level @route_type
+ *
+ * @type: string representation of the route's type
+ * @has_name: whether the top route has a name or not
+ */
+void get_top_route_type(str *type, int *has_name);
 
 #define set_route_type(_new_type) \
 	do{\

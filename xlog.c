@@ -172,7 +172,7 @@ static inline void add_xlog_data(trace_message message, void* param)
 	static str sip_str = str_init("sip");
 
 
-	switch (xlog_print_level) {
+	switch (*xlog_level) {
 		case L_ALERT:
 			str_level.s = DP_ALERT_TEXT; break;
 		case L_CRIT:
@@ -314,7 +314,7 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 }
 
 
-int xlog_1(struct sip_msg* msg, char* frm, char* str2)
+int xlog_1(struct sip_msg* msg, char* frm)
 {
 	int log_len, ret;
 
@@ -342,7 +342,7 @@ int xlog_1(struct sip_msg* msg, char* frm, char* str2)
 
 /**
  */
-int xdbg(struct sip_msg* msg, char* frm, char* str2)
+int xdbg(struct sip_msg* msg, char* frm)
 {
 	int log_len, ret;
 

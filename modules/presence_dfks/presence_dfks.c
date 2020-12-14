@@ -421,17 +421,14 @@ static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 
 static int run_dfks_route(int route_idx)
 {
-	struct sip_msg req;
+	struct sip_msg *req;
 
 	/* prepare a fake/dummy request */
-	memset(&req, 0, sizeof(struct sip_msg));
-	req.first_line.type = SIP_REQUEST;
-	req.first_line.u.request.method.s= "DUMMY";
-	req.first_line.u.request.method.len= 5;
-	req.first_line.u.request.uri.s= "sip:user@domain.com";
-	req.first_line.u.request.uri.len= 19;
-	req.rcv.src_ip.af = AF_INET;
-	req.rcv.dst_ip.af = AF_INET;
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("cannot create new dummy sip request\n");
+		return -1;
+	}
 
 	set_route_type(REQUEST_ROUTE);
 
@@ -439,9 +436,12 @@ static int run_dfks_route(int route_idx)
 		route_idx == dfks_get_route_idx ? "GET" : "SET",
 		feature_names[feature_ctx.idx].len, feature_names[feature_ctx.idx].s,
 		feature_ctx.pres_uri.len, feature_ctx.pres_uri.s);
-	run_top_route(sroutes->request[route_idx].a, &req);
+	run_top_route(sroutes->request[route_idx], req);
 
-	free_sip_msg(&req);
+	release_dummy_sip_msg(req);
+
+	/* remove all added AVP - here we use all the time the default AVP list */
+	reset_avps( );
 
 	return 0;
 }

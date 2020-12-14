@@ -2363,7 +2363,7 @@ static void destroy(void)
  */
 int hep_msg_received(void)
 {
-	struct sip_msg msg;
+	struct sip_msg msg, *p_msg;
 
 	struct hep_desc *h;
 	struct hep_context* ctx;
@@ -2427,25 +2427,22 @@ int hep_msg_received(void)
 	} else if (hep_route_id > HEP_SIP_ROUTE) {
 
 		/* builds a dummy message */
-		memset(&msg, 0, sizeof(struct sip_msg));
-		msg.first_line.type = SIP_REQUEST;
-		msg.first_line.u.request.method.s= "DUMMY";
-		msg.first_line.u.request.method.len= 5;
-		msg.first_line.u.request.uri.s= "sip:user@domain.com";
-		msg.first_line.u.request.uri.len= 19;
-		msg.rcv.src_ip.af = AF_INET;
-		msg.rcv.dst_ip.af = AF_INET;
+		p_msg = get_dummy_sip_msg();
+		if (p_msg == NULL) {
+			LM_ERR("cannot create new dummy sip request\n");
+			return -1;
+		}
 
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route( sroutes->request[hep_route_id].a, &msg);
+		run_top_route( sroutes->request[hep_route_id], p_msg);
 
 		/* free possible loaded avps */
 		reset_avps();
 
-		free_sip_msg( &msg );
+		release_dummy_sip_msg(p_msg);
 
 		/* requested to go through the main sip route */
 		if (ctx->resume_with_sip) {

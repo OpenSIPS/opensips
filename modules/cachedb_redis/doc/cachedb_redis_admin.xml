@@ -87,7 +87,14 @@
 	<section>
 		<title>&osips; Modules</title>
 		<para>
-		None.
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>If a <xref linkend="param_use_tls"/> is defined, the <emphasis role='bold'>tls_mgm</emphasis> module will need to be loaded as well</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
 		</para>
 	</section>
 
@@ -110,6 +117,10 @@
 				Alternatively, if hiredis is not available on your OS repos,
 				hiredis can be downloaded from: https://github.com/antirez/hiredis .
 				Download the archive, extract sources, run make,sudo make install.
+			</para>
+			<para>
+				If TLS connections are enabled via the <xref linkend="param_use_tls"/> modparam,
+				<emphasis>hiredis</emphasis> needs to be compiled with TLS support.
 			</para>
 
 			</listitem>
@@ -222,6 +233,47 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 		</example>
 
 		</section>
+
+		 <section id="param_use_tls" xreflabel="use_tls">
+		<title><varname>use_tls</varname> (integer)</title>
+		<para>
+		Setting this parameter will allow you to use TLS for Redis connections.
+		In order to enable TLS for a specific connection, you can use the
+		"tls_domain=<emphasis>dom_name</emphasis>" URL parameter in the cachedb_url
+		of this module (or other modules that use the CacheDB interface). This should
+		be placed at the end of the URL after the '?' character.
+		</para>
+		<para>
+		When using this parameter, you must also ensure that
+		<emphasis>tls_mgm</emphasis> is loaded and properly configured. Refer to
+		the the module for additional info regarding TLS client domains.
+		</para>
+		<para>
+		Note that TLS is supported by Redis starting with version 6.0. Also, it is
+		an optional feature enabled at compile time and might not be included in the
+		standard Redis packages available for your OS.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> (not enabled)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>use_tls</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_domain", "redis")
+modparam("tls_mgm", "certificate", "[redis]/etc/pki/tls/certs/redis.pem")
+modparam("tls_mgm", "private_key", "[redis]/etc/pki/tls/private/redis.key")
+modparam("tls_mgm", "ca_list",     "[redis]/etc/pki/tls/certs/ca.pem")
+...
+modparam("cachedb_redis", "use_tls", 1)
+modparam("cachedb_redis", "cachedb_url","redis://localhost:6379/?tls_domain=redis")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 

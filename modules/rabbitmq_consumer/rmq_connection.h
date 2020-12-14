@@ -24,13 +24,15 @@
 
 #include <amqp.h>
 #include <amqp_tcp_socket.h>
+#include <amqp_ssl_socket.h>
 
 #include "../../lib/list.h"
 #include "../../evi/evi_params.h"
 #include "../../evi/evi.h"
+#include "../tls_mgm/api.h"
 
 #define CONN_PARAMS_SEP ';'
-#define NO_CONN_PARAMS 7
+#define NO_CONN_PARAMS 8
 
 #define RMQ_DEFAULT_HEARTBEAT		0 /* 0 - disabled */
 #define RMQ_MIN_FRAME_MAX			4096
@@ -56,7 +58,9 @@ struct rmq_connection {
 	int heartbeat;
 	int frame_max;
 	int flags;
+	str tls_dom_name;
 
+	struct tls_domain *tls_dom;
 	enum rmq_conn_state state;
 	int pfds_idx;
 	struct timeval timeout_start;
@@ -70,6 +74,9 @@ struct rmq_connection {
 
 extern int rmq_connect_timeout;
 extern int rmq_retry_timeout;
+extern int use_tls;
+
+extern struct tls_mgm_binds tls_api;
 
 void rmq_cons_process(int proc_no);
 int rmq_conn_add(modparam_t type, void *val);

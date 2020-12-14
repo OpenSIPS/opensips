@@ -62,7 +62,7 @@ static inline void run_resume_route( int resume_route, struct sip_msg *msg,
 {
 	/* run the resume route and if it ends the msg handling (no other aysnc
 	 * started), run the post script callbacks. */
-	if ( (run_top_route(sroutes->request[resume_route].a, msg) & ACT_FL_TBCONT) == 0 )
+	if ( (run_top_route(sroutes->request[resume_route], msg) & ACT_FL_TBCONT) == 0 )
 		if (run_post_cb)
 			exec_post_req_cb(msg);
 }

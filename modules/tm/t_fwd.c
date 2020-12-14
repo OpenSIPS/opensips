@@ -185,7 +185,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		swap_route_type( backup_route_type, BRANCH_ROUTE);
 
 		_tm_branch_index = branch;
-		if(run_top_route(sroutes->branch[t->on_branch].a,request)&ACT_FL_DROP){
+		if(run_top_route(sroutes->branch[t->on_branch],request)&ACT_FL_DROP){
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
 			_tm_branch_index = 0;
@@ -486,7 +486,7 @@ error:
 }
 
 
-int add_phony_uac( struct cell *t)
+int add_phony_uac( struct cell *t, int br_flags)
 {
 	str dummy_buffer = str_init("DUMMY");
 	unsigned short branch;
@@ -519,6 +519,7 @@ int add_phony_uac( struct cell *t)
 	t->uac[branch].request.my_T = t;
 	t->uac[branch].request.branch = branch;
 	t->uac[branch].flags = T_UAC_IS_PHONY;
+	t->uac[branch].br_flags = br_flags;
 
 	/* in invalid proto will prevent adding this retransmission buffer
 	 * to the retransmission timer (there is nothing to retransmit here :P */
@@ -1017,7 +1018,7 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 	static struct sip_msg faked_req;
 	branch_bm_t cancel_bm;
 	str reason = str_init(CANCEL_REASON_200);
-	int rc;
+	int b, rc;
 
 	/* does the transaction state still accept new branches ? */
 	if (t->uas.status >= 200) {
@@ -1063,6 +1064,18 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 	/* do we have to cancel the existing branches before injecting new ones? */
 	if (flags&TM_INJECT_FLAG_CANCEL) {
 		which_cancel( t, &cancel_bm );
+	}
+
+	/* look back (in the set of active branches for a PHONY branch
+	 * that might contoll the EBR waiting. If found, update it
+	 * (the br_flags field), so that this is the lasr allowed injected
+	 * branch (the max number of allowed branches is set to the current
+	 * number of branches) */
+	if (flags&TM_INJECT_FLAG_LAST) {
+		for ( b=t->nr_of_outgoings-1; b>=t->first_branch ; b-- ) {
+			if (t->uac[b].flags & T_UAC_IS_PHONY)
+				t->uac[b].br_flags=t->nr_of_outgoings+1;
+		}
 	}
 
 	/* generated the new branches, without branch counter reset */

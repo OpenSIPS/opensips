@@ -24,176 +24,80 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "../../dprint.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
 #include "../../pvar.h"
+#include "../../lib/hash.h"
 
 #include "shvar.h"
 
-int shvar_locks_no=16;
-gen_lock_set_t* shvar_locks=0;
+static gen_hash_t *sh_vars;
+int shv_hash_size = 64;
 
-static sh_var_t *sh_vars = 0;
-
-/*
- * Initialize locks
- */
-int shvar_init_locks(void)
-{
-	int i;
-	i = shvar_locks_no;
-	do {
-		if ((( shvar_locks=lock_set_alloc(i))!=0)&&
-				(lock_set_init(shvar_locks)!=0))
-		{
-			shvar_locks_no = i;
-			LM_INFO("locks array size %d\n", shvar_locks_no);
-			return 0;
-
-		}
-		if (shvar_locks){
-			lock_set_dealloc(shvar_locks);
-			shvar_locks=0;
-		}
-		i--;
-		if(i==0)
-		{
-			LM_ERR("failed to allocate locks\n");
-			return -1;
-		}
-	} while (1);
-}
-
-void shvar_unlock_locks(void)
-{
-	unsigned int i;
-
-	if (shvar_locks==0)
-		return;
-
-	for (i=0;i<shvar_locks_no;i++) {
-#ifdef GEN_LOCK_T_PREFERED
-		lock_release(&shvar_locks->locks[i]);
-#else
-		shvar_release_idx(i);
-#endif
-	};
-}
-
-
-void shvar_destroy_locks(void)
-{
-	if (shvar_locks !=0){
-		lock_set_destroy(shvar_locks);
-		lock_set_dealloc(shvar_locks);
-	}
-}
-
-#ifndef GEN_LOCK_T_PREFERED
-void shvar_lock_idx(int idx)
-{
-	lock_set_get(shvar_locks, idx);
-}
-
-void shvar_release_idx(int idx)
-{
-	lock_set_release(shvar_locks, idx);
-}
-#endif
 
 /*
  * Get lock
  */
-void lock_shvar(sh_var_t *shv)
+static inline void lock_shvar(sh_var_t *shv)
 {
-	if(shv==NULL)
-		return;
-#ifdef GEN_LOCK_T_PREFERED
-	lock_get(shv->lock);
-#else
-	shvar_lock_idx(shv->lockidx);
-#endif
+	hash_lock(sh_vars, shv->hash_entry);
 }
 
 
 /*
  * Release lock
  */
-void unlock_shvar(sh_var_t *shv)
+static inline void unlock_shvar(sh_var_t *shv)
 {
-	if(shv==NULL)
-		return;
-#ifdef GEN_LOCK_T_PREFERED
-	lock_release(shv->lock);
-#else
-	shvar_release_idx(shv->lockidx);
-#endif
+	hash_unlock(sh_vars, shv->hash_entry);
 }
 
 
 sh_var_t* add_shvar(str *name)
 {
-	sh_var_t *sit;
+	sh_var_t **shv_holder, *shv;
+	unsigned int e;
 
-	if(!shvar_locks){
-		if(shvar_init_locks()){
-			LM_ERR("init shvars locks failed\n");
-			return 0;
-		}
+	if (!sh_vars && init_shvars() != 0) {
+		LM_ERR("failed to initialize shared vars\n");
+		return NULL;
 	}
 
-	if(name==0 || name->s==0 || name->len<=0)
-		return 0;
+	if (!name || !name->s)
+		return NULL;
 
-	for(sit=sh_vars; sit; sit=sit->next)
-	{
-		if(sit->name.len==name->len
-				&& strncmp(name->s, sit->name.s, name->len)==0)
-			return sit;
+	e = hash_entry(sh_vars, *name);
+	hash_lock(sh_vars, e);
+
+	shv_holder = (sh_var_t **)hash_get(sh_vars, e, *name);
+	if (*shv_holder) {
+		hash_unlock(sh_vars, e);
+		return *shv_holder;
 	}
-	sit = (sh_var_t*)shm_malloc(sizeof(sh_var_t));
-	if(sit==0)
-	{
-		LM_ERR("out of shm\n");
-		return 0;
+
+	shv = shm_malloc(sizeof *shv + name->len + 1);
+	if (!shv) {
+		LM_ERR("oom\n");
+		hash_unlock(sh_vars, e);
+		return NULL;
 	}
-	memset(sit, 0, sizeof(sh_var_t));
-	sit->name.s = (char*)shm_malloc((name->len+1)*sizeof(char));
+	memset(shv, 0, sizeof *shv);
 
-	if(sit->name.s==0)
-	{
-		LM_ERR("out of shm!\n");
-		shm_free(sit);
-		return 0;
-	}
-	sit->name.len = name->len;
-	strncpy(sit->name.s, name->s, name->len);
-	sit->name.s[sit->name.len] = '\0';
+	shv->name.s = (char *)(shv + 1);
+	str_cpy(&shv->name, name);
+	shv->name.s[shv->name.len] = '\0';
 
-	if(sh_vars!=0)
-		sit->n = sh_vars->n + 1;
-	else
-		sit->n = 1;
+	shv->hash_entry = e;
 
-#ifdef GEN_LOCK_T_PREFERED
-	sit->lock = &shvar_locks->locks[sit->n%shvar_locks_no];
-#else
-	sit->lockidx = sit->n%shvar_locks_no;
-#endif
+	*shv_holder = shv;
+	hash_unlock(sh_vars, e);
 
-	sit->next = sh_vars;
-
-	sh_vars = sit;
-
-	return sit;
+	return shv;
 }
 
 /* call it with lock set */
-sh_var_t* set_shvar_value(sh_var_t* shv, int_str *value, int flags)
+static inline sh_var_t* set_shvar_value(sh_var_t* shv, int_str *value, int flags)
 {
-	if(shv==NULL)
-		return NULL;
 	if(value==NULL)
 	{
 		if(shv->v.flags&VAR_VAL_STR)
@@ -236,6 +140,7 @@ sh_var_t* set_shvar_value(sh_var_t* shv, int_str *value, int flags)
 		strncpy(shv->v.value.s.s, value->s.s, value->s.len);
 		shv->v.value.s.len = value->s.len;
 		shv->v.value.s.s[value->s.len] = '\0';
+
 	} else {
 		if(shv->v.flags&VAR_VAL_STR)
 		{
@@ -254,63 +159,85 @@ error:
 	return NULL;
 }
 
-sh_var_t* get_shvar_by_name(str *name)
-{
-	sh_var_t *it;
 
-	if(name==0 || name->s==0 || name->len<=0)
+static inline sh_var_t* get_shvar_by_name(str *name)
+{
+	unsigned int e = hash_entry(sh_vars, *name);
+	sh_var_t **shv;
+
+	hash_lock(sh_vars, e);
+	shv = (sh_var_t **)hash_find(sh_vars, e, *name);
+	hash_unlock(sh_vars, e);
+
+	return shv ? *shv : NULL;
+}
+
+
+int init_shvars(void)
+{
+	if (sh_vars)
 		return 0;
 
-	for(it=sh_vars; it; it=it->next)
-	{
-		if(it->name.len==name->len
-				&& strncmp(name->s, it->name.s, name->len)==0)
-			return it;
+	if (!(sh_vars = hash_init(shv_hash_size))) {
+		LM_ERR("oom\n");
+		return -1;
 	}
+
 	return 0;
 }
 
-void reset_shvars(void)
+
+static void destroy_shvars_shv(void *value)
 {
-	sh_var_t *it;
-	for(it=sh_vars; it; it=it->next)
-	{
-		if(it->v.flags&VAR_VAL_STR)
-		{
-			shm_free(it->v.value.s.s);
-			it->v.flags &= ~VAR_VAL_STR;
-		}
-		memset(&it->v.value, 0, sizeof(int_str));
+	sh_var_t *shv = (sh_var_t *)value;
+
+	if (shv->v.flags & VAR_VAL_STR) {
+		shm_free(shv->v.value.s.s);
+		shv->v.value.s.s = NULL;
 	}
+
+	shm_free(shv);
 }
+
 
 void destroy_shvars(void)
 {
-	sh_var_t *it;
-	sh_var_t *it0;
-
-	it = sh_vars;
-	while(it)
-	{
-		it0 = it;
-		it = it->next;
-		shm_free(it0->name.s);
-		if(it0->v.flags&VAR_VAL_STR)
-			shm_free(it0->v.value.s.s);
-		shm_free(it0);
-	}
-
-	sh_vars = 0;
+	hash_destroy(sh_vars, destroy_shvars_shv);
+	sh_vars = NULL;
 }
 
 
 /********* PV functions *********/
 int pv_parse_shvar_name(pv_spec_p sp, str *in)
 {
-	if(in==NULL || in->s==NULL || sp==NULL)
+	pv_spec_p pv_inner;
+
+	if(in==NULL || in->s==NULL || in->len==0 || sp==NULL)
 		return -1;
 
-	sp->pvp.pvn.type = PV_NAME_PVAR;
+	trim(in);
+
+	if (in->s[0] == PV_MARKER) {
+		/* variable as name -> dynamic name */
+		pv_inner = pkg_malloc(sizeof *pv_inner);
+		if (!pv_inner) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		if (!pv_parse_spec(in, pv_inner)) {
+			LM_ERR("oom\n");
+			pv_spec_free(pv_inner);
+			return -1;
+		}
+
+		sp->pvp.pvn.type = PV_NAME_PVAR;
+		sp->pvp.pvn.u.dname = (void *)pv_inner;
+		return 0;
+	}
+
+	sp->pvp.pvn.type = PV_NAME_INTSTR;
+
 	sp->pvp.pvn.u.dname = (void*)add_shvar(in);
 	if(sp->pvp.pvn.u.dname==NULL)
 	{
@@ -321,51 +248,79 @@ int pv_parse_shvar_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
-int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
+static inline int get_shvar_from_pv_name(struct sip_msg *msg,
+                              pv_name_t *pvn, sh_var_t **shv)
+{
+	pv_value_t val;
+	str s;
+
+	if (pvn->type == PV_NAME_PVAR) {
+		if (pv_get_spec_value(msg, (pv_spec_p)pvn->u.dname, &val) != 0) {
+			LM_ERR("failed to get $shv dynamic name\n");
+			return -1;
+		}
+
+		if (val.flags & PV_VAL_NULL) {
+			LM_ERR("scripting error - $shv(NULL) not allowed!\n");
+			return -1;
+		}
+
+		if (!(val.flags & (PV_VAL_STR|PV_VAL_INT))) {
+			LM_ERR("unnaceptable type for $shv dynamic name: %d\n", val.flags);
+			return -1;
+		}
+
+		if (!(val.flags & PV_VAL_STR))
+			s.s = sint2str(val.ri, &s.len);
+		else
+			s = val.rs;
+
+		*shv = add_shvar(&s);
+		if (!*shv) {
+			LM_ERR("failed to get $shv(%.*s)\n", s.len, s.s);
+			return -1;
+		}
+	} else {
+		*shv = (sh_var_t *)pvn->u.dname;
+	}
+
+	return 0;
+}
+
+int pv_get_shvar(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int len = 0;
-	char *sval = NULL;
-	sh_var_t *shv=NULL;
+	sh_var_t *shv;
 
-	if(msg==NULL || res==NULL)
-		return -1;
-
-	if(param==NULL || param->pvn.u.dname==0)
+	if (get_shvar_from_pv_name(msg, &param->pvn, &shv) != 0) {
+		LM_ERR("failed to obtain shared var\n");
 		return pv_get_null(msg, param, res);
-
-	shv= (sh_var_t*)param->pvn.u.dname;
+	}
 
 	lock_shvar(shv);
-	if(shv->v.flags&VAR_VAL_STR)
-	{
-		if(param->pvv.s==NULL || param->pvv.len < shv->v.value.s.len)
-		{
-			if(param->pvv.s!=NULL)
-				pkg_free(param->pvv.s);
-			param->pvv.s = (char*)pkg_malloc(shv->v.value.s.len*sizeof(char));
-			if(param->pvv.s==NULL)
-			{
-				unlock_shvar(shv);
-				LM_ERR("no more pkg mem\n");
-				return pv_get_null(msg, param, res);
-			}
+	if (shv->v.flags & VAR_VAL_STR) {
+		if (shm_str_extend(&param->pvv, shv->v.value.s.len + 1) != 0) {
+			LM_ERR("oom\n");
+			unlock_shvar(shv);
+			return pv_get_null(msg, param, res);
 		}
-		strncpy(param->pvv.s, shv->v.value.s.s, shv->v.value.s.len);
+
+		memcpy(param->pvv.s, shv->v.value.s.s, shv->v.value.s.len);
 		param->pvv.len = shv->v.value.s.len;
+		param->pvv.s[param->pvv.len] = '\0';
 
 		unlock_shvar(shv);
 
 		res->rs = param->pvv;
 		res->flags = PV_VAL_STR;
+		if (res->rs.len == 0)
+			res->flags |= PV_VAL_EMPTY;
 	} else {
 		res->ri = shv->v.value.n;
 
 		unlock_shvar(shv);
 
-		sval = sint2str(res->ri, &len);
-		res->rs.s = sval;
-		res->rs.len = len;
+		res->rs.s = sint2str(res->ri, &res->rs.len);
 		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 	}
 	return 0;
@@ -374,25 +329,20 @@ int pv_get_shvar(struct sip_msg *msg,  pv_param_t *param,
 int pv_set_shvar(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
+	sh_var_t *shv;
 	int_str isv;
 	int flags;
 
-	if(param==NULL)
-	{
-		LM_ERR("bad parameters\n");
+	if (get_shvar_from_pv_name(msg, &param->pvn, &shv) != 0) {
+		LM_ERR("failed to obtain shared var\n");
 		return -1;
 	}
 
-	if(param->pvn.u.dname==0)
-	{
-		LM_ERR("error - cannot find shvar\n");
-		goto error;
-	}
-	lock_shvar((sh_var_t*)param->pvn.u.dname);
+	lock_shvar(shv);
 	if(val == NULL)
 	{
 		isv.n = 0;
-		set_shvar_value((sh_var_t*)param->pvn.u.dname, &isv, 0);
+		set_shvar_value(shv, &isv, 0);
 		goto done;
 	}
 	flags = 0;
@@ -403,23 +353,20 @@ int pv_set_shvar(struct sip_msg* msg, pv_param_t *param,
 		isv.s = val->rs;
 		flags |= VAR_VAL_STR;
 	}
-	if(set_shvar_value((sh_var_t*)param->pvn.u.dname, &isv, flags)==NULL)
+	if(set_shvar_value(shv, &isv, flags)==NULL)
 	{
-		LM_ERR("error - cannot set shvar [%.*s] \n",
-				((sh_var_t*)param->pvn.u.dname)->name.len,
-				((sh_var_t*)param->pvn.u.dname)->name.s);
+		LM_ERR("cannot set shvar [%.*s]\n", shv->name.len, shv->name.s);
 		goto error;
 	}
 done:
-	unlock_shvar((sh_var_t*)param->pvn.u.dname);
+	unlock_shvar(shv);
 	return 0;
 error:
-	unlock_shvar((sh_var_t*)param->pvn.u.dname);
+	unlock_shvar(shv);
 	return -1;
 }
 
-mi_response_t *mi_shvar_set(const mi_params_t *params,
-								struct mi_handler *async_hdl)
+mi_response_t *mi_shvar_set(const mi_params_t *params, struct mi_handler *_)
 {
 	str sp;
 	str name;
@@ -429,15 +376,12 @@ mi_response_t *mi_shvar_set(const mi_params_t *params,
 
 	if (get_mi_string_param(params, "name", &name.s, &name.len) < 0)
 		return init_mi_param_error();
-	if(name.len<=0 || name.s==NULL)
+
+	if (!name.s || name.len < 0)
 	{
-		LM_ERR("bad shv name\n");
+		LM_ERR("bad shv name (ptr: %p, len: %d)\n", name.s, name.len);
 		return init_mi_error( 500, MI_SSTR("bad shv name"));
 	}
-
-	shv = get_shvar_by_name(&name);
-	if(shv==NULL)
-		return init_mi_error(404, MI_SSTR("Not found"));
 
 	if (get_mi_string_param(params, "type", &sp.s, &sp.len) < 0)
 		return init_mi_param_error();
@@ -461,6 +405,10 @@ mi_response_t *mi_shvar_set(const mi_params_t *params,
 		}
 	}
 
+	shv = add_shvar(&name);
+	if (!shv)
+		return init_mi_error(500, MI_SSTR("Internal Server Error"));
+
 	lock_shvar(shv);
 	if(set_shvar_value(shv, &isv, flags)==NULL)
 	{
@@ -474,28 +422,34 @@ mi_response_t *mi_shvar_set(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
-int mi_print_var(sh_var_t *shv, mi_item_t *var_item)
+int mi_print_var(sh_var_t *shv, mi_item_t *var_item, int do_locking)
 {
 	int ival;
 
-	lock_shvar(shv);
+	if (do_locking)
+		lock_shvar(shv);
+
 	if(shv->v.flags&VAR_VAL_STR)
 	{
 		if (add_mi_string(var_item, MI_SSTR("type"), MI_SSTR("string")) < 0) {
-			unlock_shvar(shv);
+			if (do_locking)
+				unlock_shvar(shv);
 			return -1;
 		}
 
 		if (add_mi_string(var_item, MI_SSTR("value"),
 			shv->v.value.s.s, shv->v.value.s.len) < 0) {
-			unlock_shvar(shv);
+			if (do_locking)
+				unlock_shvar(shv);
 			return -1;
 		}
 
 		unlock_shvar(shv);
 	} else {
 		ival = shv->v.value.n;
-		unlock_shvar(shv);
+		if (do_locking)
+			unlock_shvar(shv);
+
 		if (add_mi_string(var_item, MI_SSTR("type"), MI_SSTR("integer")) < 0)
 			return -1;
 
@@ -506,44 +460,63 @@ int mi_print_var(sh_var_t *shv, mi_item_t *var_item)
 	return 0;
 }
 
-mi_response_t *mi_shvar_get(const mi_params_t *params,
-								struct mi_handler *async_hdl)
+struct mi_shvar_params {
+	mi_item_t *var_arr;
+	int rc;
+};
+
+static int mi_shvar_push_shv(void *param, str key, void *value)
+{
+	struct mi_shvar_params *params = (struct mi_shvar_params *)param;
+	mi_item_t *var_item;
+	sh_var_t *shv = (sh_var_t *)value;
+
+	var_item = add_mi_object(params->var_arr, NULL, 0);
+	if (!var_item) {
+		params->rc = 1;
+		return 1;
+	}
+
+	if (add_mi_string(var_item, MI_SSTR("name"),
+	        shv->name.s, shv->name.len) < 0) {
+		params->rc = 1;
+		return 1;
+	}
+
+	if (mi_print_var(shv, var_item, 0) != 0) {
+		params->rc = 1;
+		return 1;
+	}
+
+	return 0;
+}
+
+mi_response_t *mi_shvar_get(const mi_params_t *_, struct mi_handler *__)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
-	mi_item_t *var_arr, *var_item;
-	sh_var_t *shv = NULL;
+	struct mi_shvar_params params = {0};
 
-	resp = init_mi_result_object(&resp_obj);
+	resp = init_mi_result_array(&resp_obj);
 	if (!resp)
-		return 0;
-	var_arr = add_mi_array(resp_obj, MI_SSTR("VARs"));
-	if (!var_arr)
+		return NULL;
+
+	params.var_arr = add_mi_array(resp_obj, MI_SSTR("VARs"));
+	if (!params.var_arr)
 		goto error;
 
-	for(shv=sh_vars; shv; shv=shv->next)
-	{
-		var_item = add_mi_object(var_arr, NULL, 0);
-		if (!var_item)
-			goto error;
-
-		if (add_mi_string(var_item, MI_SSTR("name"),
-			shv->name.s, shv->name.len) < 0)
-			goto error;
-
-		if (mi_print_var(shv, var_item) < 0)
-			goto error;
-	}
+	hash_for_each_locked(sh_vars, mi_shvar_push_shv, &params);
+	if (params.rc != 0)
+		goto error;
 
 	return resp;
 
 error:
 	free_mi_response(resp);
-	return 0;
+	return NULL;
 }
 
-mi_response_t *mi_shvar_get_1(const mi_params_t *params,
-								struct mi_handler *async_hdl)
+mi_response_t *mi_shvar_get_1(const mi_params_t *params, struct mi_handler *_)
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
@@ -554,31 +527,31 @@ mi_response_t *mi_shvar_get_1(const mi_params_t *params,
 	if (get_mi_string_param(params, "name", &name.s, &name.len) < 0)
 		return init_mi_param_error();
 
-	if(name.len==0 || name.s==NULL)
-	{
+	if (!name.s || name.len < 0) {
 		LM_ERR("bad shv name\n");
 		return init_mi_error( 500, MI_SSTR("bad shv name"));
 	}
+
 	shv = get_shvar_by_name(&name);
 	if(shv==NULL)
 		return init_mi_error(404, MI_SSTR("Not found"));
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
-		return 0;
+		return NULL;
 
 	var_obj = add_mi_object(resp_obj, MI_SSTR("VAR"));
 	if (!var_obj)
 		goto error;
 
-	if (mi_print_var(shv, var_obj) < 0)
+	if (mi_print_var(shv, var_obj, 0) < 0)
 		goto error;
 
 	return resp;
 
 error:
 	free_mi_response(resp);
-	return 0;
+	return NULL;
 }
 
 int param_set_xvar( modparam_t type, void* val, int mode)

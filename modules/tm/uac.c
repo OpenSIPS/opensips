@@ -204,7 +204,7 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 
 	/* run the route */
 	swap_route_type( backup_route_type, LOCAL_ROUTE);
-	run_top_route( sroutes->local.a, req);
+	run_top_route( sroutes->local, req);
 	set_route_type( backup_route_type );
 
 	/* transfer current message context back to t */

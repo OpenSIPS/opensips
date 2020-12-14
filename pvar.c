@@ -84,38 +84,11 @@ static str str_marker = { PV_MARKER_STR, 1 };
    be read-write (as they may be changed by the script interpreter), so
    we need to allocated as array and not as pointing to RO data segment
    */
-static char _str_null_hlp[7] = {'<','n','u','l','l','>',0};
-static str str_null   = { _str_null_hlp, 6 };
+static char _str_null_hlp[] = "<null>";
+static str str_null         = str_init(_str_null_hlp);
 
-static char _str_empty_hlp[1]  = { 0 };
-static str str_empty  = { _str_empty_hlp, 0 };
-
-static char _str_request_route_hlp[] = {'r','e','q','u','e','s','t','_','r','o','u','t','e',0};
-static str str_request_route    = { _str_request_route_hlp, 13 };
-
-static char _str_failure_route_hlp[] = {'f','a','i','l','u','r','e','_','r','o','u','t','e',0};
-static str str_failure_route    = { _str_failure_route_hlp, 13 };
-
-static char _str_onreply_route_hlp[] = {'o','n','r','e','p','l','y','_','r','o','u','t','e',0};
-static str str_onreply_route    = { _str_onreply_route_hlp, 13 };
-
-static char _str_branch_route_hlp[] = {'b','r','a','n','c','h','_','r','o','u','t','e',0};
-static str str_branch_route    = { _str_branch_route_hlp, 12 };
-
-static char _str_error_route_hlp[] = {'e','r','r','o','r','_','r','o','u','t','e',0};
-static str str_error_route    = { _str_error_route_hlp, 11 };
-
-static char _str_local_route_hlp[] = {'l','o','c','a','l','_','r','o','u','t','e',0};
-static str str_local_route    = { _str_local_route_hlp, 11 };
-
-static char _str_startup_route_hlp[] = {'s','t','a','r','t','u','p','_','r','o','u','t','e',0};
-static str str_startup_route    = { _str_startup_route_hlp, 13 };
-
-static char _str_timer_route_hlp[] = {'t','i','m','e','r','_','r','o','u','t','e',0};
-static str str_timer_route    = { _str_timer_route_hlp, 11 };
-
-static char _str_event_route_hlp[] = {'e','v','e','n','t','_','r','o','u','t','e',0};
-static str str_event_route    = { _str_event_route_hlp, 11 };
+static char _str_empty_hlp[] = "";
+static str str_empty         = str_init(_str_empty_hlp);
 
 int _pv_pid = 0;
 
@@ -290,6 +263,127 @@ static int pv_get_return_code(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
 	return pv_get_sintval(msg, param, res, return_code);
+}
+
+static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	static str rn_buf;
+
+	str s;
+	int i, idx, idx_flags, len, rlen, has_name;
+
+	if (pv_get_spec_index(msg, param, &idx, &idx_flags) != 0) {
+		LM_ERR("invalid index\n");
+		return -1;
+	}
+
+	if (idx_flags == PV_IDX_ALL) {
+		get_top_route_type(&s, &has_name);
+		if (!has_name)
+			goto unnamed_route;
+
+		len = strlen(route_stack[0]);
+		if (pkg_str_extend(&rn_buf, s.len + 2 + len + 1) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[idx]);
+		goto print_remaining;
+
+	unnamed_route:
+		if (pkg_str_extend(&rn_buf, s.len + 1) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		len = sprintf(rn_buf.s, "%.*s", s.len, s.s);
+
+	print_remaining:
+		s = str_route;
+
+		for (i = 1; i < route_stack_size; i++) {
+			if (!route_stack[i]) {
+				if (pkg_str_extend(&rn_buf, len + 3 + s.len + 1) != 0) {
+					LM_ERR("oom\n");
+					return pv_get_null(msg, param, res);
+				}
+
+				len += sprintf(rn_buf.s + len, " > %.*s", s.len, s.s);
+			} else if (route_stack[i][0] != '!') {
+				rlen = strlen(route_stack[i]);
+
+				if (pkg_str_extend(&rn_buf, len + s.len + 5 + rlen + 1) != 0) {
+					LM_ERR("oom\n");
+					return pv_get_null(msg, param, res);
+				}
+
+				len += sprintf(rn_buf.s + len, " > %.*s[%s]",
+									s.len, s.s, route_stack[i]);
+			} else {
+				rlen = strlen(route_stack[i]);
+
+				/* the "!" marker tells us to print that route name as-is */
+				if (pkg_str_extend(&rn_buf, len + rlen + 3) != 0) {
+					LM_ERR("oom\n");
+					return pv_get_null(msg, param, res);
+				}
+
+				len += sprintf(rn_buf.s + len, " > %s", route_stack[i] + 1);
+			}
+		}
+
+		s.s = rn_buf.s;
+		s.len = len;
+		return pv_get_strval(msg, param, res, &s);
+	}
+
+	if (idx < 0)
+		idx += route_stack_size;
+
+	/* index out of bounds -- play nice and return NULL */
+	if (idx > route_stack_size - 1 || idx < 0)
+		return pv_get_null(msg, param, res);
+
+	/* reverse the index, since we index the route stack backwards */
+	idx = route_stack_size - idx - 1;
+
+	if (idx == 0) {
+		get_top_route_type(&s, &has_name);
+		if (!has_name)
+			goto out_ok;
+
+	} else {
+		s = str_route;
+		if (!route_stack[idx])
+			goto out_ok;
+	}
+
+	len = strlen(route_stack[idx]);
+
+	if (route_stack[idx][0] != '!') {
+		if (pkg_str_extend(&rn_buf, s.len + 2 + len + 1) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		s.len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[idx]);
+		s.s = rn_buf.s;
+	} else {
+		/* the "!" marker tells us to print that route name as-is */
+		if (pkg_str_extend(&rn_buf, len) != 0) {
+			LM_ERR("oom\n");
+			return pv_get_null(msg, param, res);
+		}
+
+		s.len = sprintf(rn_buf.s, "%s", route_stack[idx] + 1);
+		s.s = rn_buf.s;
+	}
+
+
+out_ok:
+	return pv_get_strval(msg, param, res, &s);
 }
 
 static int pv_get_times(struct sip_msg *msg, pv_param_t *param,
@@ -1144,47 +1238,6 @@ static int pv_get_refer_to(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_null(msg, param, res);
 
 	return pv_get_strval(msg, param, res, &(get_refer_to(msg)->uri));
-}
-
-static int pv_get_route_type(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str s;
-
-	switch(route_type)
-	{
-		case REQUEST_ROUTE:
-			s = str_request_route;
-			break;
-		case FAILURE_ROUTE:
-			s = str_failure_route;
-			break;
-		case ONREPLY_ROUTE:
-			s = str_onreply_route;
-			break;
-		case BRANCH_ROUTE:
-			s = str_branch_route;
-			break;
-		case ERROR_ROUTE:
-			s = str_error_route;
-			break;
-		case LOCAL_ROUTE:
-			s = str_local_route;
-			break;
-		case STARTUP_ROUTE:
-			s = str_startup_route;
-			break;
-		case TIMER_ROUTE:
-			s = str_timer_route;
-			break;
-		case EVENT_ROUTE:
-			s = str_event_route;
-			break;
-		default:
-			s = str_null;
-	}
-
-	return pv_get_strval(msg, param, res, &s);
 }
 
 static int pv_get_diversion(struct sip_msg *msg, pv_param_t *param,
@@ -4105,6 +4158,9 @@ static pv_export_t _pv_names_table[] = {
 	{{"rm", (sizeof("rm")-1)}, /* */
 		PVT_METHOD, pv_get_method, 0,
 		0, 0, 0, 0},
+	{{"route", (sizeof("route")-1)}, /* */
+		PVT_ROUTE_NAME, pv_get_route_name, 0,
+		0, pv_parse_index, 0, 0},
 	{{"rp", (sizeof("rp")-1)}, /* */
 		PVT_RURI_PORT, pv_get_ruri_attr, pv_set_ruri_port,
 		0, 0, pv_init_iname, 3},
@@ -4119,9 +4175,6 @@ static pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{{"rt", (sizeof("rt")-1)}, /* */
 		PVT_REFER_TO, pv_get_refer_to, 0,
-		0, 0, 0, 0},
-	{{"rT", (sizeof("rt")-1)}, /* */
-		PVT_ROUTE_TYPE, pv_get_route_type, 0,
 		0, 0, 0, 0},
 	{{"ru", (sizeof("ru")-1)}, /* */
 		PVT_RURI, pv_get_ruri, pv_set_ruri,

@@ -31,7 +31,14 @@
 #define RMQ_MIN_FRAMES				4096
 #define RMQ_DEFAULT_FRAMES			131072
 
+#include "../tls_mgm/api.h"
 #include <amqp.h>
+
+#if AMQP_VERSION < 0x00090000
+#include "../../locking.h"
+
+extern gen_lock_t *ssl_lock;
+#endif
 
 /* AMQP_VERSION was only added in v0.4.0 - there is no way to check the
  * version of the library before this, so we consider everything beyond v0.4.0
@@ -39,6 +46,7 @@
 #if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
   #define AMQP_VERSION_v04
 #include <amqp_tcp_socket.h>
+#include <amqp_ssl_socket.h>
 #define rmq_uri struct amqp_connection_info
 #define RMQ_EMPTY amqp_empty_bytes
 #else
@@ -73,6 +81,8 @@ struct rmq_server {
 	int retries;
 	int heartbeat;
 	int max_frames;
+	str tls_dom_name;
+	struct tls_domain *tls_dom;
 	amqp_bytes_t exchange;
 	amqp_connection_state_t conn;
 };
@@ -85,5 +95,8 @@ void rmq_connect_servers(void);
 
 int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 		int *names, int *values);
+
+extern int use_tls;
+extern struct tls_mgm_binds tls_api;
 
 #endif /* _RMQ_SERVERS_H_ */

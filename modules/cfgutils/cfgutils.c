@@ -225,7 +225,8 @@ static acmd_export_t acmds[] = {
 
 static param_export_t params[]={
 	{"initial_probability", INT_PARAM, &initial},
-	{"hash_file",           STR_PARAM, &hash_file        },
+	{"hash_file",           STR_PARAM, &hash_file},
+	{"shv_hash_size",       INT_PARAM, &shv_hash_size},
 	{"shvset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_shvar },
 	{"varset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_var },
 	{"lock_pool_size",      INT_PARAM, &lock_pool_size},
@@ -609,6 +610,11 @@ static int dbg_shm_status(struct sip_msg* msg)
 
 static int mod_init(void)
 {
+	if (init_shvars() != 0) {
+		LM_ERR("failed to initialize shared vars\n");
+		return -1;
+	}
+
 	if (!hash_file) {
 		LM_INFO("no hash_file given, disable hash functionality\n");
 	} else {
@@ -653,9 +659,8 @@ static void mod_destroy(void)
 {
 	if (probability)
 		shm_free(probability);
-	shvar_destroy_locks();
-	destroy_shvars();
 
+	destroy_shvars();
 	destroy_script_locks();
 }
 
