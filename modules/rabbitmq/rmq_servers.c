@@ -205,7 +205,6 @@ int rmq_reconnect(struct rmq_server *srv)
 {
 #if defined AMQP_VERSION_v04
 	amqp_socket_t *amqp_sock;
-	void *ssl_ctx;
 #endif
 	int socket;
 
@@ -233,6 +232,29 @@ int rmq_reconnect(struct rmq_server *srv)
 				goto clean_rmq_conn;
 			}
 
+			#if AMQP_VERSION < 0x00090000
+			/* if amqp_ssl_socket_get_context() is not available, serialize the CA,
+			 * cert and key loading in order to prevent openssl multiprocess issues */
+			lock_get(ssl_lock);
+			if (amqp_ssl_socket_set_cacert(amqp_sock, srv->tls_dom->ca.s) !=
+				AMQP_STATUS_OK) {
+				LM_ERR("Failed to set CA certificate\n");
+				lock_release(ssl_lock)
+				goto clean_rmq_conn;
+			}
+
+			if (amqp_ssl_socket_set_key(amqp_sock, srv->tls_dom->cert.s,
+				srv->tls_dom->pkey.s) != AMQP_STATUS_OK) {
+				LM_ERR("Failed to set certificate and private key\n");
+				lock_release(ssl_lock)
+				goto clean_rmq_conn;
+			}
+			lock_release(ssl_lock);
+			#else
+			/* point the CA, cert and key from librabbitmq's SSL_CTX to
+			 * the info loaded through the tls_mgm's SSL_CTX, in order to
+			 * prevent openssl multiprocess issues */
+			void *ssl_ctx;
 			ssl_ctx = amqp_ssl_socket_get_context(amqp_sock);
 
 			/* set CA in AMQP's SSL_CTX  */
@@ -249,6 +271,7 @@ int rmq_reconnect(struct rmq_server *srv)
 				LM_ERR("Failed to set private key\n");
 				goto clean_rmq_conn;
 			}
+			#endif
 
 			#if AMQP_VERSION >= 0x00080000
 			amqp_ssl_socket_set_verify_peer(amqp_sock, srv->tls_dom->verify_cert);

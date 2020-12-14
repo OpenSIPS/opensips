@@ -34,6 +34,12 @@
 #include "../tls_mgm/api.h"
 #include <amqp.h>
 
+#if AMQP_VERSION < 0x00090000
+#include "../../locking.h"
+
+extern gen_lock_t *ssl_lock;
+#endif
+
 /* AMQP_VERSION was only added in v0.4.0 - there is no way to check the
  * version of the library before this, so we consider everything beyond v0.4.0
  * as old and inneficient */

@@ -44,6 +44,10 @@ static int rmq_publish(struct sip_msg *msg, struct rmq_server *srv, str *srkey,
 int use_tls;
 struct tls_mgm_binds tls_api;
 
+#if AMQP_VERSION < 0x00090000
+gen_lock_t *ssl_lock;
+#endif
+
 static param_export_t params[]={
 	{ "server_id",			STR_PARAM|USE_FUNC_PARAM,
 		(void *)rmq_server_add},
@@ -125,6 +129,18 @@ static int mod_init(void)
 			return -1;
 		}
 
+		#if AMQP_VERSION < 0x00090000
+		ssl_lock = lock_alloc();
+		if (!ssl_lock) {
+			LM_ERR("No more shm memory\n");
+			return -1;
+		}
+		if (!lock_init(ssl_lock)) {
+			LM_ERR("Failed to init lock\n");
+			return -1;
+		}
+		#endif
+
 		amqp_set_initialize_ssl_library(0);
 	}
 
@@ -146,6 +162,11 @@ static int child_init(int rank)
 static void mod_destroy(void)
 {
 	LM_NOTICE("destroying RabbitMQ module ...\n");
+
+	#if AMQP_VERSION < 0x00090000
+	lock_destroy(ssl_lock);
+	lock_dealloc(ssl_lock);
+	#endif
 }
 
 static int fixup_check_avp(void** param)
