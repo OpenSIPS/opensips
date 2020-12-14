@@ -1649,7 +1649,7 @@ static mi_response_t *mi_cc_change_flow(const mi_params_t *params,
 	call = NULL;
 
 	for (call=data->queue.first ; call ; call=call->lower_in_queue) {
-		LM_DBG("call %p with btbua_id %.*s\n", b2bua_id.len, b2bua_id.s);
+		LM_DBG("call %p with btbua_id %.*s\n", call, b2bua_id.len, b2bua_id.s);
 		if (call->b2bua_id.len==b2bua_id.len &&
 		memcmp(b2bua_id.s, call->b2bua_id.s, b2bua_id.len)==0) {
 			LM_DBG("call %p in flow %.*s\n",
