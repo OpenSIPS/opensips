@@ -43,6 +43,8 @@
 #define TABLE_STR_LEN ((int)(sizeof(TABLE_STR) - 1))
 #define KEY_STR "key"
 #define KEY_STR_LEN ((int)(sizeof(KEY_STR) - 1))
+#define KEY_TYPE_STR "key_type"
+#define KEY_TYPE_STR_LEN ((int)(sizeof(KEY_TYPE_STR) - 1))
 #define COLUMNS_STR "columns"
 #define COLUMNS_STR_LEN ((int)(sizeof(COLUMNS_STR) - 1))
 #define ONDEMAND_STR "on_demand"
@@ -50,11 +52,17 @@
 #define EXPIRE_STR "expire"
 #define EXPIRE_STR_LEN ((int)(sizeof(EXPIRE_STR) - 1))
 
+#define TYPE_STR_STR "string"
+#define TYPE_STR_LEN ((int)(sizeof(TYPE_STR_STR) - 1))
+#define TYPE_INT_STR "int"
+#define TYPE_INT_LEN ((int)(sizeof(TYPE_INT_STR) - 1))
+
 #define DEFAULT_ON_DEMAND_EXPIRE 3600
 #define DEFAULT_FULL_CACHING_EXPIRE 86400 /* 24h */
 #define DEFAULT_RELOAD_INTERVAL 60
 #define DEFAULT_FETCH_NR_ROWS 100
 #define TEST_QUERY_STR "sql_cacher_test_query_key"
+#define TEST_QUERY_INT 555666555
 #define CDB_TEST_KEY_STR "sql_cacher_cdb_test_key"
 #define CDB_TEST_VAL_STR "sql_cacher_cdb_test_val"
 #define INT_B64_ENC_LEN 8
@@ -71,6 +79,7 @@ typedef struct _cache_entry {
 	str table;
 	str key;
 	str **columns;
+	db_type_t key_type;
 	unsigned int nr_columns;
 	unsigned int on_demand;
 	unsigned int expire;
