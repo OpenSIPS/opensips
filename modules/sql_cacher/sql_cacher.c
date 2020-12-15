@@ -136,6 +136,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 	int col_idx;
 	int rc = -1;
 	int i;
+	int len;
 	str parse_str_copy, parse_str;
 
 	if(!entry_list){
@@ -161,6 +162,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 		}
 		new_entry->id.s = NULL;
 		new_entry->columns = NULL;
+		new_entry->key_type = DB_STR;
 		new_entry->nr_columns = 0;
 		new_entry->on_demand = 0;
 		new_entry->expire = DEFAULT_ON_DEMAND_EXPIRE;
@@ -255,13 +257,54 @@ static int parse_cache_entry(unsigned int type, void *val)
 			goto parse_err;
 		}
 
-		/* parse the required column names if present */
+		/* parse the key type if present */
 		p1 = tmp + 1;
 		p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
 		if (!p2) {
 			LM_ERR("expected: '='\n");
 			goto parse_err;
 		}
+		if (!memcmp(p1, KEY_TYPE_STR, KEY_TYPE_STR_LEN)) {
+			if (*(p1+KEY_TYPE_STR_LEN) != '=') { \
+				LM_ERR("expected: '=' after: %.*s\n", KEY_TYPE_STR_LEN, KEY_TYPE_STR);
+				goto parse_err;
+			}
+
+
+			tmp = memchr(p2 + 1, spec_delimiter.s[0],
+						parse_str.len - (p2 - parse_str.s));
+			if (!tmp)
+				len = parse_str.len - (p2 - parse_str.s + 1);
+			else
+				len = tmp - p2 - 1;
+
+			if (len <= 0) {
+				LM_ERR("expected value of: %.*s\n", KEY_TYPE_STR_LEN, KEY_TYPE_STR);
+				goto parse_err;
+			}
+
+			if (len == TYPE_STR_LEN && !memcmp(p2+1, TYPE_STR_STR, len))
+				new_entry->key_type = DB_STR;
+			else if (len == TYPE_INT_LEN && !memcmp(p2+1, TYPE_INT_STR, len))
+				new_entry->key_type = DB_INT;
+			else {
+				LM_ERR("Unsupported key type: %.*s\n", len, p2+1);
+				goto parse_err;
+			}
+
+			if (!tmp) /* delimiter not found, reached the end of the string to parse */
+				goto end_parsing;
+			else {
+				p1 = tmp + 1;
+				p2 = memchr(p1, '=', parse_str.len - (p1 - parse_str.s));
+				if (!p2) {
+					LM_ERR("expected: '='\n");
+					goto parse_err;
+				}
+			}
+		}
+
+		/* parse the required column names if present */
 		if (!memcmp(p1, COLUMNS_STR, COLUMNS_STR_LEN)) {
 			if (*(p1+COLUMNS_STR_LEN) != '=') { \
 				LM_ERR("expected: '=' after: %.*s\n", COLUMNS_STR_LEN, COLUMNS_STR);
@@ -712,8 +755,11 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	}
 
 	VAL_NULL(&query_key_val) = 0;
-	VAL_TYPE(&query_key_val) = DB_STR;
-	VAL_STR(&query_key_val) = test_query_key_str;
+	VAL_TYPE(&query_key_val) = c_entry->key_type;
+	if (c_entry->key_type == DB_STR)
+		VAL_STR(&query_key_val) = test_query_key_str;
+	else
+		VAL_INT(&query_key_val) = TEST_QUERY_INT;
 
 	query_key_col = &c_entry->key;
 
@@ -902,9 +948,15 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 	memcpy(src_key.s + c_entry->id.len, key.s, key.len);
 
 	key_col = &(c_entry->key);
+
 	VAL_NULL(&key_val) = 0;
-	VAL_TYPE(&key_val) = DB_STR;
-	VAL_STR(&key_val) = key;
+	VAL_TYPE(&key_val) = c_entry->key_type;
+	if (c_entry->key_type == DB_STR)
+		VAL_STR(&key_val) = key;
+	else if (str2sint(&key, &VAL_INT(&key_val)) < 0) {
+		LM_ERR("Failed to convert key value to integer\n");
+		goto out_error;
+	}
 
 	if (db_hdls->db_funcs.use_table(db_hdls->db_con, &c_entry->table) < 0) {
 		LM_ERR("Invalid table name: %.*s\n", c_entry->table.len, c_entry->table.s);
