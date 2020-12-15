@@ -34,3 +34,6 @@ out
 log
 *.log
 *.html
+
+# IDEs
+.idea
