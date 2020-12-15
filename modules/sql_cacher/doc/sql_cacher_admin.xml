@@ -87,6 +87,18 @@
 			<emphasis>key</emphasis> : SQL database column name of the <quote>key</quote> column
 			</para></listitem>
 			<listitem><para>
+			<emphasis>key_type</emphasis> : data type for the SQL "key" column:
+			<itemizedlist>
+				<listitem><para>
+					string
+				</para></listitem>
+				<listitem><para>
+					int
+				</para></listitem>
+			</itemizedlist>
+			<para>If not present, default value is <quote>string</quote></para>
+			</para></listitem>
+			<listitem><para>
 			<emphasis>columns</emphasis> : names of the columns to be cached from the
 			SQL database, separated by a delimiter configured by
 			<xref linkend="param_columns_delimiter"/>.
