@@ -315,6 +315,10 @@ static void tcp_conn_clean(struct tcp_connection* c)
 	struct tcp_data *d = (struct tcp_data*)c->proto_data;
 	int r;
 
+	/* was the connection initialized yet ?? */
+	if (d==NULL)
+		return;
+
 	for (r=0;r<d->async_chunks_no;r++) {
 		shm_free(d->async_chunks[r]);
 	}
