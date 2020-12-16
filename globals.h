@@ -23,13 +23,12 @@
  * \brief Global variables
  */
 
-
 #ifndef globals_h
 #define globals_h
 
-#include "ip_addr.h"
-#include "str.h"
-#include "poll_types.h"
+#include <time.h>
+
+typedef struct __str * const strptr_t;
 
 #define DO_DNS     1
 #define DO_REV_DNS 2
@@ -81,8 +80,8 @@ extern int check_via;
 extern int received_dns;
 extern int sip_warning;
 extern int server_signature;
-extern str server_header;
-extern str user_agent_header;
+extern strptr_t server_header;
+extern strptr_t user_agent_header;
 extern char* user;
 extern char* group;
 extern char* sock_user;
@@ -127,8 +126,8 @@ extern int mhomed; /*!< looking up outbound interface ? */
 extern int my_argc; /*!< command-line arguments */
 extern char **my_argv;
 
-extern str default_global_address; /*!< pre-set addresses */
-extern str default_global_port; /*!< pre-ser ports */
+extern strptr_t default_global_address; /*!< pre-set addresses */
+extern strptr_t default_global_port; /*!< pre-ser ports */
 
 extern int disable_core_dump; /*!< core dump limits */
 extern int open_files_limit; /*!< file limits */
@@ -152,4 +151,6 @@ extern int disable_503_translation;
 
 extern int enable_asserts;
 extern int abort_on_assert;
+
+extern int process_no;
 #endif

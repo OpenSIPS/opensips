@@ -93,7 +93,6 @@ struct process_table {
 
 
 extern struct process_table *pt;
-extern int process_no;
 extern unsigned int counted_max_processes;
 extern int _termination_in_progress;
 

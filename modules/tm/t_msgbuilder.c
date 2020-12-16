@@ -197,7 +197,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	/* User Agent */
 	if (server_signature) {
-		*len += user_agent_header.len + CRLF_LEN;
+		*len += user_agent_header->len + CRLF_LEN;
 	}
 	/* Content Length, MaxFwd, EoM */
 	*len+=LOCAL_MAXFWD_HEADER_LEN + CONTENT_LENGTH_LEN+1 + (extra?extra->len:0)
@@ -244,7 +244,7 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	/* User Agent header, Content Length, EoM */
 	if (server_signature) {
-		append_string(p, user_agent_header.s, user_agent_header.len);
+		append_string(p, user_agent_header->s, user_agent_header->len);
 		append_string(p, CRLF CONTENT_LENGTH "0" CRLF CRLF ,
 			CRLF_LEN+CONTENT_LENGTH_LEN+1 + CRLF_LEN + CRLF_LEN);
 	} else {
@@ -517,7 +517,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 
 	/* User Agent */
 	if (server_signature)
-		*len += user_agent_header.len + CRLF_LEN;
+		*len += user_agent_header->len + CRLF_LEN;
 
 	/* Content Length, EoM */
 	*len += CONTENT_LENGTH_LEN + 1 + CRLF_LEN + CRLF_LEN;
@@ -551,7 +551,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 
 	/* User Agent header, Content Length, EoM */
 	if (server_signature) {
-		append_string(p, user_agent_header.s, user_agent_header.len);
+		append_string(p, user_agent_header->s, user_agent_header->len);
 		append_string(p, CRLF CONTENT_LENGTH "0" CRLF CRLF,
 			CRLF_LEN+CONTENT_LENGTH_LEN + 1 + CRLF_LEN + CRLF_LEN);
 	} else {
@@ -845,7 +845,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 	/* Content-Length */
 	*len += CONTENT_LENGTH_LEN + content_length.len + CRLF_LEN;
 	/* Signature */
-	*len += (server_signature ? (user_agent_header.len + CRLF_LEN) : 0);
+	*len += (server_signature ? (user_agent_header->len + CRLF_LEN) : 0);
 	/* Additional headers */
 	*len += (headers ? headers->len : 0);
 	/* Message body */
@@ -885,7 +885,7 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 
 	/* Server signature */
 	if (server_signature) {
-		append_string(w, user_agent_header.s, user_agent_header.len);
+		append_string(w, user_agent_header->s, user_agent_header->len);
 		append_string(w, CRLF, CRLF_LEN);
 	}
 
