@@ -454,7 +454,7 @@ route[relay] {
 	# for INVITEs enable some additional helper routes
 	if (is_method("INVITE")) {
 		
-		ifelse(USE_NAT,`yes',`if (isflagset("NAT")) {
+		ifelse(USE_NAT,`yes',`if (isflagset("NAT") && has_body("application/sdp")) {
 			rtpproxy_offer("ro");
 		}',`')
 
@@ -501,7 +501,7 @@ branch_route[per_branch_ops] {
 onreply_route[handle_nat] {
 	ifelse(USE_NAT,`yes',`if (nat_uac_test(1))
 		fix_nated_contact();
-	if ( isflagset("NAT") )
+	if ( isflagset("NAT") && has_body("application/sdp") )
 		rtpproxy_answer("ro");',`')
 	xlog("incoming reply\n");
 }
