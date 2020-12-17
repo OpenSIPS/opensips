@@ -1356,7 +1356,7 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 	if ((dlg->mod_flags & TOPOH_ONGOING) &&
 			str_strcmp(&dlg->legs[other_leg(dlg, leg)].adv_contact, &contact_hdr) == 0) {
 		LM_DBG("skip updating topo hiding advertised contact\n");
-		return 0;
+		goto end;
 	}
 
 	if (dlg->legs[leg].contact.s) {
