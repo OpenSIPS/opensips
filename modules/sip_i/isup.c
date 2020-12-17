@@ -1027,9 +1027,9 @@ int subsequent_num_writef(int param_idx, int subfield_idx, unsigned char *param_
 	}
 
 	if (subfield_idx == 1)
-		*len = num_len + 2;
+		*len = num_len + 1;
 	else if (*len == 0)
-		*len = 2;
+		*len = 1;
 
 	return 0;
 }
