@@ -35,10 +35,10 @@
 	</para>
 	</section>
 	
-	<section>
+	<section id="socket_syntax" xreflabel="RabbitMQ socket syntax">
 	<title>RabbitMQ socket syntax</title>
 	<para>
-		<para><emphasis>'rabbitmq:' [user[':'password] '@' host [':' port] '/' [exchange '?'] routing_key</emphasis></para>
+		<para><emphasis>'rabbitmq:' [user[':'password] '@' host [':' port] '/' [params '?'] routing_key</emphasis></para>
 	</para>
 	<para>
 		Meanings:
@@ -64,9 +64,21 @@
 					default value is '5672'.
 			</para>	</listitem>
 			<listitem><para>
-					<emphasis>exchange</emphasis> - exchange of the RabbitMQ server. The
-					default value is ''.
-			</para>	</listitem>
+					<emphasis>params</emphasis> - extra parameters specified as
+					<emphasis>key</emphasis>=<emphasis>value</emphasis>, separated by ';':
+					<itemizedlist>
+						<listitem><para>
+						<emphasis>exchange</emphasis> - exchange of the RabbitMQ server.
+						The default value is ''.
+						</para></listitem>
+						<listitem><para>
+						<emphasis>tls_domain</emphasis> - indicates which TLS domain (as
+						defined using the <emphasis>tls_mgm</emphasis> module) to use for
+						this connection. The <xref linkend="param_use_tls"/> module parameter
+						must be enabled.
+						</para></listitem>
+					</itemizedlist>
+			</para></listitem>
 			<listitem><para>
 					<emphasis>routing_key</emphasis> - this is the routing key
 					used by the AMQP protocol and it is used to identify the queue
@@ -84,13 +96,13 @@
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
-			<itemizedlist>
-			<listitem>
-			<para>
-				<emphasis>No dependencies on other &osips; modules</emphasis>.
-			</para>
-			</listitem>
-			</itemizedlist>
+		<itemizedlist>
+		<listitem>
+		<para>
+			<emphasis>tls_mgm</emphasis> if <xref linkend="param_use_tls"/> is enabled.
+		</para>
+		</listitem>
+		</itemizedlist>
 		</para>
 	</section>
 	<section>
@@ -174,6 +186,40 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
 	</programlisting>
 			</example>
 		</section>
+
+		<section id="param_use_tls" xreflabel="use_tls">
+		<title><varname>use_tls</varname> (integer)</title>
+		<para>
+		Setting this parameter will allow you to use TLS for broker connections.
+		In order to enable TLS for a specific connection, you can use the
+		"tls_domain=<emphasis>dom_name</emphasis>" parameter in the configuration
+		specified through the <xref linkend="socket_syntax"/>.
+		</para>
+		<para>
+		When using this parameter, you must also ensure that
+		<emphasis>tls_mgm</emphasis> is loaded and properly configured. Refer to
+		the the module for additional info regarding TLS client domains.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> (not enabled)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>use_tls</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_domain", "rmq")
+modparam("tls_mgm", "certificate", "[rmq]/etc/pki/tls/certs/rmq.pem")
+modparam("tls_mgm", "private_key", "[rmq]/etc/pki/tls/private/rmq.key")
+modparam("tls_mgm", "ca_list",     "[rmq]/etc/pki/tls/certs/ca.pem")
+...
+modparam("event_rabbitmq", "use_tls", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -213,6 +259,8 @@ modparam("event_rabbitmq", "connect_timeout", 1000)
 	# same socket can be written as
 	rabbitmq:127.0.0.1/pike
 
+	# TLS broker connection
+	rabbitmq:127.0.0.1/tls_domain=rmq?pike
 </programlisting>
 		</example>
 

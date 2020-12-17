@@ -1016,7 +1016,7 @@ static int dst_to_msg(struct sip_msg *s_msg, struct sip_msg *d_msg)
 int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 {
 	static struct sip_msg faked_req;
-	branch_bm_t cancel_bm;
+	branch_bm_t cancel_bm = 0;
 	str reason = str_init(CANCEL_REASON_200);
 	int b, rc;
 

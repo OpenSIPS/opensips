@@ -2031,8 +2031,9 @@ send_rtpp_command(struct rtpp_node *node, struct rtpproxy_vcmd *vcmd, int vcnt)
 	cp = buf;
 
 	if (node->rn_umode == CM_UNIX) {
-		int s_errno;
+		int s_errno, nretry;
 
+		nretry = 1;
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_LOCAL;
 		strncpy(addr.sun_path, node->rn_address,
@@ -2040,7 +2041,7 @@ send_rtpp_command(struct rtpp_node *node, struct rtpproxy_vcmd *vcmd, int vcnt)
 #ifdef HAVE_SOCKADDR_SA_LEN
 		addr.sun_len = strlen(addr.sun_path);
 #endif
-
+retry:
 		fd = socket(AF_LOCAL, SOCK_STREAM, 0);
 		if (fd < 0) {
 			LM_ERR("can't create socket\n");
@@ -2066,6 +2067,11 @@ send_rtpp_command(struct rtpp_node *node, struct rtpproxy_vcmd *vcmd, int vcnt)
 		} while (len == -1 && errno == EINTR);
 		s_errno = (len < 0) ? errno : 0;
 		close(fd);
+		if (s_errno == ECONNRESET && nretry > 0) {
+			LM_WARN("RTP proxy reset connection, retrying...\n");
+			nretry--;
+			goto retry;
+		}
 		if (len <= 0) {
 			LM_ERR("can't read reply from a RTP proxy, e = %d\n",
                             s_errno);
@@ -4088,7 +4094,7 @@ static inline int rtpp_build_stats(struct sip_msg *msg, struct rtpproxy_vcmd **v
 {
 	static struct rtpproxy_vcmd vstat;
 
-	RTPP_VCMD_INIT_STATIC(vstat, 4 + 4 + 2, {"Q", 1}, {" ", 1},
+	RTPP_VCMD_INIT_STATIC(vstat, 4 + 4 + 1, {"Q", 1}, {" ", 1},
             {NULL, 0}, {" ", 1}, {NULL, 0}, {";1 ", 3}, {NULL, 0}, {";1", 2},
             /* reserved for extra stats */
             {NULL, 0});
@@ -4124,7 +4130,7 @@ static inline int rtpp_build_stats(struct sip_msg *msg, struct rtpproxy_vcmd **v
 	}
 
 	*vret = &vstat;
-	*nret = vstat.useritems - 2;
+	*nret = vstat.useritems - 1;
 
 	return 0;
 }

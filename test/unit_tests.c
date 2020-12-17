@@ -26,6 +26,7 @@
 #include "../lib/test/test_csv.h"
 #include "../parser/test/test_parser.h"
 #include "../mem/test/test_malloc.h"
+#include "../str.h"
 
 #include "../lib/list.h"
 #include "../globals.h"

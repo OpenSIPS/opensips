@@ -28,6 +28,7 @@
 #include "cachedb_redis_utils.h"
 #include "../../mem/mem.h"
 #include "../../ut.h"
+#include "../../pt.h"
 #include "../../cachedb/cachedb.h"
 
 #include <string.h>
@@ -38,6 +39,9 @@
 int redis_query_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int redis_connnection_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int shutdown_on_error = 0;
+int use_tls = 0;
+
+struct tls_mgm_binds tls_api;
 
 redisContext *redis_get_ctx(char *ip, int port)
 {
@@ -71,6 +75,64 @@ redisContext *redis_get_ctx(char *ip, int port)
 	return ctx;
 }
 
+#ifdef HAVE_REDIS_SSL
+static void tls_print_errstack(void)
+{
+	int code;
+
+	while ((code = ERR_get_error())) {
+		LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
+	}
+}
+
+static int redis_init_ssl(char *url_extra_opts, redisContext *ctx,
+	struct tls_domain **tls_dom)
+{
+	str tls_dom_name;
+	SSL *ssl;
+
+	if (*tls_dom == NULL) {
+		if (strncmp(url_extra_opts, CACHEDB_TLS_DOM_PARAM,
+				CACHEDB_TLS_DOM_PARAM_LEN)) {
+			LM_ERR("Invalid Redis URL parameter: %s\n", url_extra_opts);
+			return -1;
+		}
+
+		tls_dom_name.s = url_extra_opts + CACHEDB_TLS_DOM_PARAM_LEN;
+		tls_dom_name.len = strlen(tls_dom_name.s);
+		if (!tls_dom_name.len) {
+			LM_ERR("Empty TLS domain name in Redis URL\n");
+			return -1;
+		}
+
+		*tls_dom = tls_api.find_client_domain_name(&tls_dom_name);
+		if (*tls_dom == NULL) {
+			LM_ERR("TLS domain: %.*s not found\n",
+				tls_dom_name.len, tls_dom_name.s);
+			return -1;
+		}
+	}
+
+	ssl = SSL_new((*tls_dom)->ctx[process_no]);
+	if (!ssl) {
+		LM_ERR("failed to create SSL structure (%d:%s)\n", errno, strerror(errno));
+		tls_print_errstack();
+		tls_api.release_domain(*tls_dom);
+		return -1;
+	}
+
+	if (redisInitiateSSL(ctx, ssl) != REDIS_OK) {
+		printf("Failed to init Redis SSL: %s\n", ctx->errstr);
+		tls_api.release_domain(*tls_dom);
+		return -1;
+	}
+
+	LM_DBG("TLS enabled for this connection\n");
+
+	return 0;
+}
+#endif
+
 int redis_connect_node(redis_con *con,cluster_node *node)
 {
 	redisReply *rpl;
@@ -79,14 +141,22 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 	if (!node->context)
 		return -1;
 
+#ifdef HAVE_REDIS_SSL
+	if (use_tls && con->id->extra_options &&
+		redis_init_ssl(con->id->extra_options, node->context,
+			&node->tls_dom) < 0) {
+		redisFree(node->context);
+		return -1;
+	}
+#endif
+
 	if (con->id->password) {
 		rpl = redisCommand(node->context,"AUTH %s",con->id->password);
 		if (rpl == NULL || rpl->type == REDIS_REPLY_ERROR) {
 			LM_ERR("failed to auth to redis - %.*s\n",
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
-			redisFree(node->context);
-			return -1;
+			goto error;
 		}
 		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
@@ -98,8 +168,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 			LM_ERR("failed to select database %s - %.*s\n",con->id->database,
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
-			redisFree(node->context);
-			return -1;
+			goto error;
 		}
 
 		LM_DBG("SELECT [%s] - %.*s\n",con->id->database,(unsigned)rpl->len,rpl->str);
@@ -107,6 +176,14 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 	}
 
 	return 0;
+
+error:
+	redisFree(node->context);
+	if (use_tls && node->tls_dom) {
+		tls_api.release_domain(node->tls_dom);
+		node->tls_dom = NULL;
+	}
+	return -1;
 }
 
 int redis_reconnect_node(redis_con *con,cluster_node *node)
@@ -120,18 +197,26 @@ int redis_reconnect_node(redis_con *con,cluster_node *node)
 	return redis_connect_node(con,node);
 }
 
-
 int redis_connect(redis_con *con)
 {
 	redisContext *ctx;
 	redisReply *rpl;
 	cluster_node *it;
 	int len;
+	struct tls_domain *tls_dom = NULL;
 
 	/* connect to redis DB */
 	ctx = redis_get_ctx(con->id->host,con->id->port);
 	if (!ctx)
 		return -1;
+
+#ifdef HAVE_REDIS_SSL
+	if (use_tls && con->id->extra_options &&
+		redis_init_ssl(con->id->extra_options, ctx, &tls_dom) < 0) {
+		redisFree(ctx);
+		return -1;
+	}
+#endif
 
 	/* auth using password, if any */
 	if (con->id->password) {
@@ -141,8 +226,7 @@ int redis_connect(redis_con *con)
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			if (rpl!=NULL)
 				freeReplyObject(rpl);
-			redisFree(ctx);
-			return -1;
+			goto error;
 		}
 		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
@@ -158,8 +242,7 @@ int redis_connect(redis_con *con)
 			LM_ERR("no more pkg\n");
 			if (rpl!=NULL)
 				freeReplyObject(rpl);
-			redisFree(ctx);
-			return -1;
+			goto error;
 		}
 		con->nodes->ip = (char *)(con->nodes + 1);
 
@@ -178,14 +261,16 @@ int redis_connect(redis_con *con)
 		if (build_cluster_nodes(con,rpl->str,rpl->len) < 0) {
 			LM_ERR("failed to parse Redis cluster info\n");
 			freeReplyObject(rpl);
-			redisFree(ctx);
-			return -1;
+			goto error;
 		}
 	}
 
 	if (rpl!=NULL)
 		freeReplyObject(rpl);
 	redisFree(ctx);
+
+	if (use_tls && tls_dom)
+		tls_api.release_domain(tls_dom);
 
 	con->flags |= REDIS_INIT_NODES;
 
@@ -201,6 +286,12 @@ int redis_connect(redis_con *con)
 	}
 
 	return 0;
+
+error:
+	redisFree(ctx);
+	if (use_tls && tls_dom)
+		tls_api.release_domain(tls_dom);
+	return -1;
 }
 
 redis_con* redis_new_connection(struct cachedb_id* id)

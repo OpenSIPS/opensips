@@ -26,6 +26,7 @@
 #include "../../sr_module.h"
 #include "../../evi/evi_transport.h"
 #include "../../ut.h"
+#include "../../lib/csv.h"
 #include "event_rabbitmq.h"
 #include "rabbitmq_send.h"
 #include <string.h>
@@ -46,6 +47,9 @@ static unsigned int heartbeat = 0;
 extern unsigned rmq_sync_mode;
 static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
 struct timeval conn_timeout_tv;
+int use_tls;
+
+struct tls_mgm_binds tls_api;
 
 /**
  * exported functions
@@ -68,7 +72,27 @@ static param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
 	{"sync_mode",		INT_PARAM, &rmq_sync_mode},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
+	{"use_tls", INT_PARAM, &use_tls},
 	{0,0,0}
+};
+
+static module_dependency_t *get_deps_use_tls(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
+}
+
+/* modules dependencies */
+static dep_export_t deps = {
+	{ /* OpenSIPS module dependencies */
+		{ MOD_TYPE_NULL, NULL, 0 },
+	},
+	{ /* modparam dependencies */
+		{ "use_tls", get_deps_use_tls },
+		{ NULL, NULL },
+	},
 };
 
 /**
@@ -80,7 +104,7 @@ struct module_exports exports= {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,			/* dlopen flags */
 	0,							/* load function */
-	NULL,            /* OpenSIPS module dependencies */
+	&deps,            /* OpenSIPS module dependencies */
 	0,							/* exported functions */
 	0,							/* exported async functions */
 	mod_params,							/* exported parameters */
@@ -137,6 +161,20 @@ static int mod_init(void)
 
 	conn_timeout_tv.tv_sec = rmq_connect_timeout/1000;
 	conn_timeout_tv.tv_usec = (rmq_connect_timeout%1000)*1000;
+
+	if (use_tls) {
+		#ifndef AMQP_VERSION_v04
+		LM_ERR("TLS not supported for librabbitmq version lower than 0.4.0\n");
+		return -1;
+		#endif
+
+		if (load_tls_mgm_api(&tls_api) != 0) {
+			LM_ERR("failed to load tls_mgm API!\n");
+			return -1;
+		}
+
+		amqp_set_initialize_ssl_library(0);
+	}
 
 	return 0;
 }
@@ -221,6 +259,8 @@ static evi_reply_sock* rmq_parse(str socket)
 	rmq_params_t *param;
 	unsigned int len, i;
 	const char* begin;
+	str s;
+	csv_record *p_list = NULL, *it;
 	str prev_token;
 
 	enum state {
@@ -228,7 +268,7 @@ static evi_reply_sock* rmq_parse(str socket)
 		ST_PASS_PORT,	/* Password or port part */
 		ST_HOST,		/* Hostname part */
 		ST_PORT,		/* Port part */
-		ST_ROUTE_OR_EXPORT 	/* Routing or export key */
+		ST_ROUTE_OR_PARAMS 	/* Routing key or extra params */
 	} st;
 
 	if (!socket.len || !socket.s) {
@@ -273,7 +313,7 @@ static evi_reply_sock* rmq_parse(str socket)
 				if (dupl_string(&sock->address, begin, socket.s + i) < 0)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
-				st = ST_ROUTE_OR_EXPORT;
+				st = ST_ROUTE_OR_PARAMS;
 				begin = socket.s + i + 1;
 			}
 			break;
@@ -305,7 +345,7 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				}
 				sock->flags |= EVI_PORT;
-				st = ST_ROUTE_OR_EXPORT;
+				st = ST_ROUTE_OR_PARAMS;
 				begin = socket.s + i + 1;
 			}
 			break;
@@ -325,7 +365,7 @@ static evi_reply_sock* rmq_parse(str socket)
 					goto err;
 				sock->flags |= EVI_ADDRESS;
 
-				st = ST_ROUTE_OR_EXPORT;
+				st = ST_ROUTE_OR_PARAMS;
 				begin = socket.s + i + 1;
 			}
 			break;
@@ -341,18 +381,42 @@ static evi_reply_sock* rmq_parse(str socket)
 				}
 				sock->flags |= EVI_PORT;
 
-				st = ST_ROUTE_OR_EXPORT;
+				st = ST_ROUTE_OR_PARAMS;
 				begin = socket.s + i + 1;
 			}
 			break;
 
-		case ST_ROUTE_OR_EXPORT:
+		case ST_ROUTE_OR_PARAMS:
 			switch(socket.s[i]) {
 			case '?':
+				s.s = (char*)begin;
+				s.len = socket.s + i - begin;
 
-				if (dupl_string(&param->exchange, begin, socket.s + i) < 0)
+				p_list = __parse_csv_record(&s, 0, ';');
+				if (!p_list) {
+					LM_ERR("bad extra parameters: %.*s\n", s.len, s.s);
 					goto err;
-				param->flags |= RMQ_PARAM_EKEY;
+				}
+				for (it = p_list; it; it = it->next)
+					if (it->s.len > RMQ_EXCHANGE_LEN &&
+						!memcmp(it->s.s, RMQ_EXCHANGE_S, RMQ_EXCHANGE_LEN)) {
+						if (dupl_string(&param->exchange, it->s.s+RMQ_EXCHANGE_LEN,
+							it->s.s + it->s.len) < 0)
+							goto err;
+						param->flags |= RMQ_PARAM_EKEY;
+					} else if (it->s.len > RMQ_TLS_DOM_LEN &&
+						!memcmp(it->s.s, RMQ_TLS_DOM_S, RMQ_TLS_DOM_LEN)) {
+						if (dupl_string(&param->tls_dom_name,
+							it->s.s+RMQ_TLS_DOM_LEN, it->s.s + it->s.len) < 0)
+							goto err;
+						param->tls_dom_name.len--;
+						param->flags |= RMQ_PARAM_TLS;
+					} else {
+						LM_WARN("unknown extra parameter: '%.*s'\n", it->s.len, it->s.s);
+						goto err;
+					}
+
+				free_csv_record(p_list);
 
 				if (dupl_string(&param->routing_key, socket.s + i + 1, socket.s + len) < 0)
 					goto err;
@@ -376,13 +440,21 @@ static evi_reply_sock* rmq_parse(str socket)
 
 success:
 	if (!(sock->flags & EVI_PORT) || !sock->port) {
-		sock->port = RMQ_DEFAULT_PORT;
+		if (param->flags & RMQ_PARAM_TLS)
+			sock->port = RMQ_DEFAULT_TLS_PORT;
+		else
+			sock->port = RMQ_DEFAULT_PORT;
 		sock->flags |= EVI_PORT;
 	}
 	if (!(param->flags & RMQ_PARAM_USER) || !param->user.s) {
 		param->user.s = param->pass.s = RMQ_DEFAULT_UP;
 		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
 		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
+	}
+
+	if ((param->flags & RMQ_PARAM_TLS) && !use_tls) {
+		LM_ERR("'use_tls' module parameter required for TLS support\n");
+		goto err;
 	}
 
 	param->heartbeat = heartbeat;
@@ -395,6 +467,7 @@ err:
 	if (prev_token.s)
 		shm_free(prev_token.s);
 	rmq_free_param(param);
+	free_csv_record(p_list);
 	if (sock->address.s)
 		shm_free(sock->address.s);
 	shm_free(sock);

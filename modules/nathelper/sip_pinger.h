@@ -343,7 +343,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
 	char *p, proto_str[PROTO_NAME_MAX_SIZE];
-	str address, port;
+	str *address, *port;
 	str st;
 	int len;
 
@@ -367,29 +367,29 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	st.len = p - proto_str;
 
 	if (s->adv_name_str.len)
-		address = s->adv_name_str;
-	else if (default_global_address.len)
+		address = &s->adv_name_str;
+	else if (default_global_address->len)
 		address = default_global_address;
 	else
-		address = s->address_str;
+		address = &s->address_str;
 	if (s->adv_port_str.len)
-		port = s->adv_port_str;
-	else if (default_global_port.len)
+		port = &s->adv_port_str;
+	else if (default_global_port->len)
 		port = default_global_port;
 	else
-		port = s->port_no_str;
+		port = &s->port_no_str;
 
 	/* quick proto uppercase */
 	*((int *)st.s) &= ~((1 << 21) | (1 << 13) | (1 << 5));
 
 	if ( sipping_method.len + 1 + curi->len + s_len(" SIP/2.0"CRLF) +
-		s_len("Via: SIP/2.0/") + st.len + address.len +
-		1 + port.len + strlen(branch) +
+		s_len("Via: SIP/2.0/") + st.len + address->len +
+		1 + port->len + strlen(branch) +
 		(path->len ? (s_len(CRLF"Route: ") + path->len) : 0) +
 		s_len(CRLF"From: ") +  sipping_from.len + s_len(";tag=") + 8 +
 		s_len(CRLF"To: ") + curi->len +
 		s_len(CRLF"Call-ID: ") + sipping_callid.len + 1 + 8 + 1 + 8 + 1 +
-		address.len +
+		address->len +
 		s_len(CRLF"CSeq: 1 ") + sipping_method.len +
 		s_len(CRLF"Max-Forwards: "MAX_FORWARD) +
 		s_len(CRLF"Content-Length: 0" CRLF CRLF)
@@ -405,9 +405,9 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	append_str( p, *curi);
 	append_fix( p, " SIP/2.0"CRLF"Via: SIP/2.0/");
 	append_str( p, st);
-	append_str( p, address);
+	append_str( p, *address);
 	*(p++) = ':';
-	append_str( p, port);
+	append_str( p, *port);
 	append_str( p, sbranch);
 	if (path->len) {
 		append_fix( p, CRLF"Route: ");
@@ -429,7 +429,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	len = 8;
 	int2reverse_hex( &p, &len, get_ticks() );
 	*(p++) = '@';
-	append_str( p, address);
+	append_str( p, *address);
 	append_fix( p, CRLF"CSeq: 1 ");
 	append_str( p, sipping_method);
 	append_fix( p, CRLF"Max-Forwards: "MAX_FORWARD);

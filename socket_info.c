@@ -49,6 +49,7 @@
 #include <sys/sockio.h>
 #endif
 
+#include "str.h"
 #include "globals.h"
 #include "socket_info.h"
 #include "dprint.h"
@@ -290,10 +291,10 @@ struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 				goto found;
 			/* if no advertised is specified on the interface, we should check
 			 * if it is the global address */
-			if (!si->adv_name_str.len && default_global_address.s &&
-				h_len == default_global_address.len &&
-				(strncasecmp(hname, default_global_address.s,
-					default_global_address.len)==0) /*slower*/)
+			if (!si->adv_name_str.len && default_global_address->s &&
+				h_len == default_global_address->len &&
+				(strncasecmp(hname, default_global_address->s,
+					default_global_address->len)==0) /*slower*/)
 				/* this might match sockets that are not supposed to
 				 * match, when using multiple listeners for the same
 				 * protocol; but in that case the default_global_address

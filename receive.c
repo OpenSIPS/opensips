@@ -68,10 +68,10 @@
 
 static unsigned int msg_no=0;
 /* address preset vars */
-str default_global_address={0,0};
-str default_global_port={0,0};
-str default_via_address={0,0};
-str default_via_port={0,0};
+str * const default_global_address=&STR_NULL;
+str * const default_global_port=&STR_NULL;
+str * const default_via_address=&STR_NULL;
+str * const default_via_port=&STR_NULL;
 
 
 unsigned int get_next_msg_no(void)

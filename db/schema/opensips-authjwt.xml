@@ -8,7 +8,7 @@
 ]>
 
 <database xmlns:xi="http://www.w3.org/2001/XInclude">
-	<name>Dynamic Routing</name>
+	<name>JWT authentication</name>
 	<xi:include href="auth_jwt_profiles.xml"/>
 	<xi:include href="auth_jwt_secrets.xml"/>
 </database>

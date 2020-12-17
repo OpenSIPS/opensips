@@ -247,6 +247,9 @@ ifeq ($(CC_NAME:clang=gcc),gcc)
 #if gcc use gcc arch
 predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
 					$(CFLAGS) /dev/null)
+stdatomics_support:=$(shell printf '\43include <stdatomic.h>' | $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
+					$(CFLAGS) /dev/stdin >/dev/null 2>/dev/null && printf '%sDHAVE_STDATOMIC' '-')
+DEFS+=$(stdatomics_support)
 
 ifneq ($(strip $(filter $(i386_macros), $(predef_macros))),)
 CC_ARCH=i386

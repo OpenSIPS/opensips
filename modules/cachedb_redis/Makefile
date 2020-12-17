@@ -9,8 +9,15 @@ include ../../Makefile.defs
 auto_gen=
 NAME=cachedb_redis.so
 
+HAVE_REDIS_SSL=$(shell if [ -n "`ldconfig -p | grep hiredis_ssl`" ]; \
+	then echo "HAVE_REDIS_SSL"; fi)
+ifeq ($(HAVE_REDIS_SSL), HAVE_REDIS_SSL)
+	LIBS+=-lhiredis_ssl -lssl -lcrypto
+	DEFS+= -DHAVE_REDIS_SSL
+endif
+
 ifeq ($(CROSS_COMPILE),)
-LIBS=-lhiredis
+LIBS+=-lhiredis
 else
 DEFS+=-I$(LOCALBASE)/include
 LIBS=-L$(LOCALBASE)/lib -lhiredis
