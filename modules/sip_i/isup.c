@@ -809,7 +809,7 @@ int generic_num_writef(int param_idx, int subfield_idx, unsigned char *param_val
 	}
 
 	if (subfield_idx == 7) {
-		isup_put_number(param_val + 2, num, &num_len, &oddeven);
+		isup_put_number(param_val + 3, num, &num_len, &oddeven);
 		/* also set oddeven, just in case it wasn't already */
 		param_val[1] = SET_BITS(param_val[1], 0x80, 7, oddeven);
 	} else
@@ -817,9 +817,9 @@ int generic_num_writef(int param_idx, int subfield_idx, unsigned char *param_val
 										mask[subfield_idx], shift[subfield_idx], new_val);
 
 	if (subfield_idx == 7)
-		*len = num_len + 2;
+		*len = num_len + 3;
 	else if (*len == 0)
-		*len = 2;
+		*len = 3;
 
 	return 0;
 }
