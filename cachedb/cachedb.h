@@ -61,6 +61,14 @@ typedef struct cachedb_funcs_t {
 	/* NOTE: "val->s" shall be allocated in PKG memory,
 	 * and MUST be freed by the calling layer! */
 	int (*get) (cachedb_con *con, str *attr, str *val);
+
+	/**
+	 * Gets the value of a counter.
+	 * Return values:
+	 *  -2: key does not exist
+	 *  -1: internal error
+	 *   0: key found and value returned in the `val` parameter
+	 */
 	int (*get_counter) (cachedb_con *con, str *attr, int *val);
 	int (*set) (cachedb_con *con, str *attr, str *val, int expires);
 	int (*remove) (cachedb_con *con, str *attr);
