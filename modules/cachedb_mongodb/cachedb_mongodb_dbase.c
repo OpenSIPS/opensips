@@ -1023,7 +1023,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	mongoc_cursor_t *cursor;
 	bson_iter_t iter;
 	struct timeval start;
-	int ret = 0;
+	int ret = -2;
 
 	query = bson_new();
 #if MONGOC_CHECK_VERSION(1, 5, 0)
@@ -1059,6 +1059,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 			value = bson_iter_value(&iter);
 			switch (value->value_type) {
 			case BSON_TYPE_INT32:
+				ret = 0;
 				*val = value->value.v_int32;
 				break;
 			default:
