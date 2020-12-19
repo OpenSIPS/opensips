@@ -120,6 +120,10 @@ Chapter 1. Admin Guide
      * cachedb_url : the URL of the CacheDB database
      * table : SQL database table name
      * key : SQL database column name of the “key” column
+     * key_type : data type for the SQL "key" column:
+          + string
+          + int
+       If not present, default value is “string”
      * columns : names of the columns to be cached from the SQL
        database, separated by a delimiter configured by
        columns_delimiter.
@@ -330,7 +334,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 86 38 3533 1103
+   1. Vlad Patrascu (@rvlad-patrascu) 88 39 3609 1106
    2. Liviu Chircu (@liviuchircu) 23 18 166 115
    3. Razvan Crainea (@razvancrainea) 14 12 22 14
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 12 18
@@ -375,8 +379,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
