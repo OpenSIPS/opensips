@@ -645,7 +645,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
-   2. Maksym Sobolyev (@sobomax) 146 39 3533 4766
+   2. Maksym Sobolyev (@sobomax) 147 40 3546 4779
    3. Liviu Chircu (@liviuchircu) 43 34 399 275
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 32 26 149 240
@@ -686,20 +686,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   3.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
-   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   9.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
-   10. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   1.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2020
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
+   4.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
+   5.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
+   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   10. Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
 
-   All remaining contributors: Walter Doekes (@wdoekes),
-   Christophe Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym
-   Sobolyev (@sobomax), Anca Vamanu, John Riordan, Emmanuel Buu,
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad
+   Paiu (@vladpaiu), Anca Vamanu, John Riordan, Emmanuel Buu,
    Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Ancuta
