@@ -60,6 +60,13 @@ int db_mysql_connect(struct my_con* ptr)
 	mysql_options(ptr->con, MYSQL_OPT_READ_TIMEOUT, (void *)&db_mysql_timeout_interval);
 	mysql_options(ptr->con, MYSQL_OPT_WRITE_TIMEOUT, (void *)&db_mysql_timeout_interval);
 
+	/* force no auto reconnection */
+#if MYSQL_VERSION_ID >= 50013
+	mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
+#else
+	ptr->con->reconnect = 0;
+#endif
+
 	if (ptr->id->port) {
 		LM_DBG("opening connection: mysql://xxxx:xxxx@%s:%d/%s\n",
 			ZSW(ptr->id->host), ptr->id->port, ZSW(ptr->id->database));
@@ -82,12 +89,6 @@ int db_mysql_connect(struct my_con* ptr)
 		mysql_close(ptr->con);
 		return -1;
 	}
-	/* force no auto reconnection */
-#if MYSQL_VERSION_ID >= 50013
-	mysql_options(ptr->con, MYSQL_OPT_RECONNECT, &reconnect);
-#else
-	ptr->con->reconnect = 0;
-#endif
 
 	LM_DBG("connection type is %s\n", mysql_get_host_info(ptr->con));
 	LM_DBG("protocol version is %d\n", mysql_get_proto_info(ptr->con));
