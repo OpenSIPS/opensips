@@ -87,10 +87,20 @@ void handle_shtag_change(str *tag_name, int state, int c_id, void *param);
 
 static mi_response_t *mi_reg_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_list_record(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static mi_response_t *mi_reg_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_reload_record(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_enable(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_disable(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
-int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
+int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
+	unsigned int all_contacts);
 
 
 /** Global variables */
@@ -142,6 +152,7 @@ static param_export_t params[]= {
 	{"expiry_column",	STR_PARAM,		&expiry_column.s},
 	{"forced_socket_column",	STR_PARAM,	&forced_socket_column.s},
 	{"cluster_shtag_column",	STR_PARAM,	&cluster_shtag_column.s},
+	{"state_column",	STR_PARAM,		&state_column.s},
 	{0,0,0}
 };
 
@@ -150,10 +161,20 @@ static param_export_t params[]= {
 static mi_export_t mi_cmds[] = {
 	{ "reg_list", 0, 0, 0, {
 		{mi_reg_list, {0}},
+		{mi_reg_list_record, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "reg_reload", 0, 0, 0, {
 		{mi_reg_reload, {0}},
+		{mi_reg_reload_record, {"aor", "contact", "registrar", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "reg_enable", 0, 0, 0, {
+		{mi_reg_enable, {"aor", "contact", "registrar", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "reg_disable", 0, 0, 0, {
+		{mi_reg_disable, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -249,6 +270,7 @@ static int mod_init(void)
 	expiry_column.len = strlen(expiry_column.s);
 	forced_socket_column.len = strlen(forced_socket_column.s);
 	cluster_shtag_column.len = strlen(cluster_shtag_column.s);
+	state_column.len = strlen(state_column.s);
 	init_db_url(db_url , 0 /*cannot be null*/);
 	if (init_reg_db(&db_url) != 0) {
 		LM_ERR("failed to initialize the DB support\n");
@@ -303,6 +325,28 @@ struct reg_tm_cback_data {
 	reg_tm_cb_t *cb_param;
 };
 
+int get_cur_time_s(str *str_now, time_t now)
+{
+	char *p;
+	int len;
+
+	p = int2str((unsigned long)(now), &len);
+	if (p && len>0) {
+		str_now->s = (char *)pkg_malloc(len);
+		if (str_now->s) {
+			memcpy(str_now->s, p, len);
+			str_now->len = len;
+		} else {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
 int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 {
 	struct sip_msg *msg;
@@ -322,6 +366,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	struct cell *t;
 	struct tmcb_params *ps;
 	time_t now;
+	str str_now = {NULL, 0};
 	reg_tm_cb_t *cb_param;
 
 	cb_param = tm_cback_data->cb_param;
@@ -368,13 +413,27 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			switch(rec->state) {
 			case UNREGISTERING_STATE:
 			case AUTHENTICATING_UNREGISTER_STATE:
-				if(send_register(cb_param->hash_index, rec, NULL)==1) {
-					rec->last_register_sent = now;
-					rec->state = REGISTERING_STATE;
+				if (!(rec->flags&REG_ENABLED)) {
+					/* succesfully unREGISTERED */
+					rec->state = NOT_REGISTERED_STATE;
+					rec->registration_timeout = 0;
 				} else {
-					rec->registration_timeout = now + rec->expires - timer_interval;
-					rec->state = INTERNAL_ERROR_STATE;
+					/* registrant got enabled while waiting for a reply to
+					 * a previous unregister */
+					if (get_cur_time_s(&str_now, now) < 0) {
+						LM_ERR("Failed to get current time string\n");
+						goto done;
+					}
+					new_call_id_ftag_4_record(rec, &str_now);
+					if(send_register(cb_param->hash_index, rec, NULL)==1) {
+						rec->last_register_sent = now;
+						rec->state = REGISTERING_STATE;
+					} else {
+						rec->registration_timeout = now + rec->expires - timer_interval;
+						rec->state = INTERNAL_ERROR_STATE;
+					}
 				}
+
 				break;
 			default:
 				LM_ERR("No contact header in received 200ok in state [%d]\n",
@@ -384,7 +443,9 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			break; /* done with 200ok handling */
 		}
 
-		if (rec->flags&FORCE_SINGLE_REGISTRATION) {
+		if (rec->flags&FORCE_SINGLE_REGISTRATION &&
+			rec->state == REGISTERING_STATE &&
+			rec->state == AUTHENTICATING_STATE) {
 			head_contact = msg->contact;
 			contact = ((contact_body_t*)msg->contact->parsed)->contacts;
 			while (contact) {
@@ -406,7 +467,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			}
 			if (bindings_counter>1) {
 				LM_DBG("got [%d] bindings\n", bindings_counter);
-				if(send_unregister(cb_param->hash_index, rec, NULL)==1) {
+				if(send_unregister(cb_param->hash_index, rec, NULL, 1)==1) {
 					rec->state = UNREGISTERING_STATE;
 				} else {
 					rec->state = INTERNAL_ERROR_STATE;
@@ -449,15 +510,53 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				contact = contact->next;
 			}
 		}
-		rec->state = REGISTERED_STATE;
-		if (exp) rec->expires = exp;
-		if (rec->expires <= timer_interval) {
-			LM_ERR("Please decrease timer_interval=[%u]"
-				" - imposed server expires [%u] to small for AOR=[%.*s]\n",
-				timer_interval, rec->expires,
-				rec->td.rem_uri.len, rec->td.rem_uri.s);
+
+		if (!(rec->flags&REG_ENABLED)) {
+			if (rec->state==REGISTERING_STATE ||
+				rec->state==AUTHENTICATING_STATE) {
+				/* registrant got disabled while waiting for a reply to
+				 * a previous register */
+				if(send_unregister(cb_param->hash_index, rec, NULL, 0)==1) {
+					rec->state = UNREGISTERING_STATE;
+				} else {
+					rec->state = INTERNAL_ERROR_STATE;
+				}
+			} else {
+				/* succesfully unREGISTERED */
+				rec->state = NOT_REGISTERED_STATE;
+				rec->registration_timeout = 0;
+			}
+		} else {
+			if (rec->state == UNREGISTERING_STATE ||
+				rec->state == AUTHENTICATING_UNREGISTER_STATE) {
+				/* registrant got enabled while waiting for a reply to
+				 * a previous unregister */
+				if (get_cur_time_s(&str_now, now) < 0) {
+					LM_ERR("Failed to get current time string\n");
+					goto done;
+				}
+				new_call_id_ftag_4_record(rec, &str_now);
+				if(send_register(cb_param->hash_index, rec, NULL)==1) {
+					rec->last_register_sent = now;
+					rec->state = REGISTERING_STATE;
+				} else {
+					rec->registration_timeout = now + rec->expires - timer_interval;
+					rec->state = INTERNAL_ERROR_STATE;
+				}
+			} else {
+				/* succesfully REGISTERED */
+				rec->state = REGISTERED_STATE;
+				if (exp) rec->expires = exp;
+				if (rec->expires <= timer_interval) {
+					LM_ERR("Please decrease timer_interval=[%u]"
+						" - imposed server expires [%u] to small for AOR=[%.*s]\n",
+						timer_interval, rec->expires,
+						rec->td.rem_uri.len, rec->td.rem_uri.s);
+				}
+				rec->registration_timeout = now + rec->expires - timer_interval;
+			}
 		}
-		rec->registration_timeout = now + rec->expires - timer_interval;
+
 		break;
 
 	case WWW_AUTH_CODE:
@@ -549,7 +648,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			}
 			break;
 		case UNREGISTERING_STATE:
-			if(send_unregister(cb_param->hash_index, rec, new_hdr)==1) {
+			if(send_unregister(cb_param->hash_index, rec, new_hdr, 0)==1) {
 				rec->state = AUTHENTICATING_UNREGISTER_STATE;
 			} else {
 				rec->state = INTERNAL_ERROR_STATE;
@@ -724,7 +823,8 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 	return result;
 }
 
-int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
+int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
+	unsigned int all_contacts)
 {
 	int result;
 	reg_tm_cb_t *cb_param;
@@ -742,14 +842,28 @@ int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 	p = extra_hdrs.s;
 	memcpy(p, contact_hdr.s, contact_hdr.len);
 	p += contact_hdr.len;
-	*p = '*'; p++;
-	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
+	if (all_contacts) {
+		*p = '*'; p++;
+		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
 
-	/* adding exires header */
-	memcpy(p, expires_hdr.s, expires_hdr.len);
-	p += expires_hdr.len;
-	*p = '0'; p++;
-	memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
+		/* adding exires header */
+		memcpy(p, expires_hdr.s, expires_hdr.len);
+		p += expires_hdr.len;
+		*p = '0'; p++;
+		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
+	} else {
+		*p = '<'; p++;
+		memcpy(p, rec->contact_uri.s, rec->contact_uri.len);
+		p += rec->contact_uri.len;
+		*p = '>'; p++;
+		memcpy(p, rec->contact_params.s, rec->contact_params.len);
+		p += rec->contact_params.len;
+		/* adding exiration time as a parameter */
+		memcpy(p, expires_param.s, expires_param.len);
+		p += expires_param.len;
+		*p = '0'; p++;
+		memcpy(p, CRLF, CRLF_LEN); p += CRLF_LEN;
+	}
 
 	if (auth_hdr) {
 		memcpy(p, auth_hdr->s, auth_hdr->len);
@@ -804,13 +918,21 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 	case INTERNAL_ERROR_STATE:
 	case REGISTRAR_ERROR_STATE:
 		reg_print_record(rec);
-		new_call_id_ftag_4_record(rec, s_now);
-		if(send_register(i, rec, NULL)==1) {
-			rec->last_register_sent = now;
-			rec->state = REGISTERING_STATE;
+		if (rec->flags&REG_ENABLED) {
+			new_call_id_ftag_4_record(rec, s_now);
+			if(send_register(i, rec, NULL)==1) {
+				rec->last_register_sent = now;
+				rec->state = REGISTERING_STATE;
+			} else {
+				rec->registration_timeout = now + rec->expires - timer_interval;
+				rec->state = INTERNAL_ERROR_STATE;
+			}
 		} else {
-			rec->registration_timeout = now + rec->expires - timer_interval;
-			rec->state = INTERNAL_ERROR_STATE;
+			if(send_unregister(i, rec, NULL, 0)==1) {
+				rec->state = UNREGISTERING_STATE;
+			} else {
+				rec->state = INTERNAL_ERROR_STATE;
+			}
 		}
 		break;
 	case REGISTERED_STATE:
@@ -819,12 +941,14 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 			break;
 		}
 	case NOT_REGISTERED_STATE:
-		if(send_register(i, rec, NULL)==1) {
-			rec->last_register_sent = now;
-			rec->state = REGISTERING_STATE;
-		} else {
-			rec->registration_timeout = now + rec->expires - timer_interval;
-			rec->state = INTERNAL_ERROR_STATE;
+		if (rec->flags&REG_ENABLED) {
+			if(send_register(i, rec, NULL)==1) {
+				rec->last_register_sent = now;
+				rec->state = REGISTERING_STATE;
+			} else {
+				rec->registration_timeout = now + rec->expires - timer_interval;
+				rec->state = INTERNAL_ERROR_STATE;
+			}
 		}
 		break;
 	default:
@@ -834,29 +958,20 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 	return 0; /* continue list traversal */
 }
 
-
 void timer_check(unsigned int ticks, void* hash_counter)
 {
 	unsigned int i=*(unsigned*)(unsigned long*)hash_counter;
-	char *p;
-	int len, ret;
+	int ret;
 	time_t now;
 	str str_now = {NULL, 0};
 	struct timer_check_data t_check_data;
 
-	now = time(0);
 	*(unsigned*)(unsigned long*)hash_counter = (i+1)%reg_hsize;
 
-	p = int2str((unsigned long)(time(0)), &len);
-	if (p && len>0) {
-		str_now.s = (char *)pkg_malloc(len);
-		if (str_now.s) {
-			memcpy(str_now.s, p, len);
-			str_now.len = len;
-		} else {
-			LM_ERR("oom\n");
-			return;
-		}
+	now = time(0);
+	if (get_cur_time_s(&str_now, now) < 0) {
+		LM_ERR("Failed to get current time string\n");
+		return;
 	}
 
 	/* Initialize slinkedl run traversal data */
@@ -939,12 +1054,15 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 	char* p;
 	char cbuf[26];
 	struct ip_addr addr;
-	mi_item_t *records_arr = (mi_item_t *)data;
+	mi_item_t *arr_obj_item = (mi_item_t *)data;
 	mi_item_t *record_item;
 
-	record_item = add_mi_object(records_arr, NULL, 0);
-	if (!record_item)
-		goto error;
+	if (MI_ITEM_IS_ARRAY(arr_obj_item)) {
+		record_item = add_mi_object(arr_obj_item, NULL, 0);
+		if (!record_item)
+			goto error;
+	} else
+		record_item = arr_obj_item;
 
 	if (add_mi_string(record_item, MI_SSTR("AOR"),
 		rec->td.rem_uri.s, rec->td.rem_uri.len) < 0)
@@ -955,6 +1073,10 @@ int run_mi_reg_list(void *e_data, void *data, void *r_data)
 
 	if (add_mi_string(record_item, MI_SSTR("state"),
 		uac_reg_state[rec->state].s, uac_reg_state[rec->state].len) < 0)
+		goto error;
+
+	if (add_mi_string_fmt(record_item, MI_SSTR("enabled"),
+		"%s", rec->flags&REG_ENABLED ? "yes" : "no") < 0)
 		goto error;
 
 	ctime_r(&rec->last_register_sent, cbuf);
@@ -1066,6 +1188,74 @@ error:
 	return NULL;
 }
 
+int run_mi_reg_list_record(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	record_coords_t *coords = (record_coords_t *)data;
+
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
+		return run_mi_reg_list(rec, coords->extra, NULL) ? -1 : 1;
+	} else
+		return 0;  /* continue search */
+}
+
+static mi_response_t *mi_get_coords(const mi_params_t *params, record_coords_t *coords)
+{
+	if (get_mi_string_param(params, "aor", &coords->aor.s, &coords->aor.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "contact",
+		&coords->contact.s, &coords->contact.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "registrar",
+		&coords->registrar.s, &coords->registrar.len) < 0)
+		return init_mi_param_error();
+
+	return NULL;
+}
+
+static mi_response_t *mi_reg_list_record(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *reg_obj;
+	record_coords_t coords;
+	int rc;
+	unsigned int hash_code;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return NULL;
+
+	reg_obj = add_mi_object(resp_obj, MI_SSTR("Registrant"));
+	if (!reg_obj)
+		goto error;
+
+	coords.extra = reg_obj;
+
+	hash_code = core_hash(&coords.aor, NULL, reg_hsize);
+
+	lock_get(&reg_htable[hash_code].lock);
+	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
+					&run_mi_reg_list_record, &coords, NULL);
+	lock_release(&reg_htable[hash_code].lock);
+
+	if (rc < 0)
+		goto error;
+	else if (rc == 0) {
+		free_mi_response(resp);
+		return init_mi_error(404, MI_SSTR("No such registrant"));
+	}
+
+	return resp;
+error:
+	free_mi_response(resp);
+	return NULL;
+}
+
 int run_compare_rec(void *e_data, void *data, void *r_data)
 {
 	reg_record_t *old_rec = (reg_record_t*)e_data;
@@ -1116,7 +1306,7 @@ static mi_response_t *mi_reg_reload(const mi_params_t *params,
 		if (err) goto error;
 	}
 	/* Load registrants into the secondary list */
-	if(load_reg_info_from_db(1) !=0){
+	if(load_reg_info_from_db(REG_DB_RELOAD, NULL) !=0){
 		LM_ERR("unable to reload the registrant data\n");
 		goto error;
 	}
@@ -1144,3 +1334,139 @@ error:
 	return NULL;
 }
 
+static mi_response_t *mi_reg_reload_record(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	record_coords_t coords;
+	mi_response_t *resp;
+	int rc;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	rc = load_reg_info_from_db(REG_DB_LOAD_RECORD, &coords);
+	if (rc == -2) {
+		return init_mi_error(404, MI_SSTR("No such registrant in database"));
+	} else if (rc < 0) {
+		LM_ERR("unable to reload the registrant data\n");
+		return NULL;
+	}
+
+	return init_mi_result_ok();
+}
+
+int run_mi_reg_enable(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	record_coords_t *coords = (record_coords_t *)data;
+	str str_now = {NULL, 0};
+	time_t now;
+
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
+		if (!(rec->flags&REG_ENABLED)) {
+			if (rec->state == NOT_REGISTERED_STATE) {
+				now = time(0);
+				if (get_cur_time_s(&str_now, now) < 0) {
+					LM_ERR("Failed to get current time string\n");
+					return -1;
+				}
+				new_call_id_ftag_4_record(rec, &str_now);
+
+				if(send_register((unsigned long)coords->extra, rec, NULL)==1) {
+					rec->last_register_sent = now;
+					rec->state = REGISTERING_STATE;
+				} else {
+					rec->registration_timeout = now + rec->expires - timer_interval;
+					rec->state = INTERNAL_ERROR_STATE;
+				}
+			}
+
+			rec->flags |= REG_ENABLED;
+
+			reg_update_db_state(rec);
+		}
+
+		return 1;
+	} else
+		return 0;  /* continue search */
+}
+
+int run_mi_reg_disable(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	record_coords_t *coords = (record_coords_t *)data;
+
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
+		if (rec->flags&REG_ENABLED) {
+			if (rec->state == REGISTERED_STATE) {
+				if(send_unregister((unsigned long)coords->extra, rec, NULL, 0)==1)
+					rec->state = UNREGISTERING_STATE;
+				else
+					rec->state = INTERNAL_ERROR_STATE;
+			}
+
+			rec->flags &= ~REG_ENABLED;
+
+			reg_update_db_state(rec);
+		}
+
+		return 1;
+	} else
+		return 0;  /* continue search */
+}
+
+static mi_response_t *mi_reg_enable(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	record_coords_t coords;
+	int rc;
+	unsigned int hash_code;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	hash_code = core_hash(&coords.aor, NULL, reg_hsize);
+	coords.extra = (void*)(unsigned long)hash_code;
+
+	lock_get(&reg_htable[hash_code].lock);
+	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
+					&run_mi_reg_enable, &coords, NULL);
+	lock_release(&reg_htable[hash_code].lock);
+
+	if (rc < 0)
+		return NULL;
+	else if (rc == 0)
+		return init_mi_error(404, MI_SSTR("No such registrant"));
+
+	return init_mi_result_ok();
+}
+
+static mi_response_t *mi_reg_disable(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	record_coords_t coords;
+	int rc;
+	unsigned int hash_code;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	hash_code = core_hash(&coords.aor, NULL, reg_hsize);
+	coords.extra = (void*)(unsigned long)hash_code;
+
+	lock_get(&reg_htable[hash_code].lock);
+	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
+					&run_mi_reg_disable, &coords, NULL);
+	lock_release(&reg_htable[hash_code].lock);
+
+	if (rc < 0)
+		return NULL;
+	else if (rc == 0)
+		return init_mi_error(404, MI_SSTR("No such registrant"));
+
+	return init_mi_result_ok();
+}

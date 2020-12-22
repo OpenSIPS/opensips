@@ -16,6 +16,7 @@
 				<col><field>expiry</field></col>
 				<col><field>forced_socket</field></col>
 				<col><field>cluster_shtag</field></col>
+				<col><field>state</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -33,6 +34,7 @@
 				<col><field>expiry</field></col>
 				<col><field>forced_socket</field></col>
 				<col><field>cluster_shtag</field></col>
+				<col><field>state</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -53,6 +55,7 @@
 				<col><field>expiry</field></col>
 				<col><field>forced_socket</field></col>
 				<col><field>cluster_shtag</field></col>
+				<col><field>state</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>

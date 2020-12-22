@@ -29,12 +29,15 @@ UAC Registrant Module
               1.3.14. expiry_column (string)
               1.3.15. forced_socket_column (string)
               1.3.16. cluster_shtag_column (string)
+              1.3.17. state_column (string)
 
         1.4. Exported Functions
         1.5. Exported MI Functions
 
               1.5.1. reg_list
               1.5.2. reg_reload
+              1.5.3. reg_enable
+              1.5.4. reg_disable
 
    2. Contributors
 
@@ -70,6 +73,7 @@ UAC Registrant Module
    1.14. Set “expiry_column” parameter
    1.15. Set “forced_socket_column” parameter
    1.16. Set “cluster_shtag_column” parameter
+   1.17. Set “state_column” parameter
 
 Chapter 1. Admin Guide
 
@@ -362,6 +366,20 @@ modparam("uac_registrant", "forced_socket_column", "fs")
 modparam("uac_registrant", "cluster_shtag_column", "sh")
 ...
 
+1.3.17. state_column (string)
+
+   The column's name in the database storing the current state of
+   the registrant. When a registrant is disabled, OpenSIPS will no
+   longer send REGISTERs for it. A value of 0 for this column
+   means enabled and 1 disabled.
+
+   Default value is “state”.
+
+   Example 1.17. Set “state_column” parameter
+...
+modparam("uac_registrant", "state_column", "status")
+...
+
 1.4. Exported Functions
 
    None to be used in configuration file.
@@ -374,10 +392,22 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 
    Name: reg_list
 
-   Parameters: none
+   Parameters:
+     * aor (optional) - URI defining the address of record. If
+       provided, contact and registrar parameters are also
+       required and only a specific record will be listed.
+     * contact (optional) - Contact URI. If provided, aor and
+       registrar parameters are also required and only a specific
+       record will be listed.
+     * registrar (optional) - URI pointing to the remote
+       registrar. If provided, aor and contact parameters are also
+       required and only a specific record will be listed.
 
    MI FIFO Command Format:
 opensips-cli -x mi reg_list
+...
+opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:
+5060 sip:opensips.org
 
 1.5.2. reg_reload
 
@@ -386,9 +416,61 @@ opensips-cli -x mi reg_list
    Name: reg_reload
 
    Parameters: none
+     * aor (optional) - URI defining the address of record. If
+       provided, contact and registrar parameters are also
+       required and only a specific record will be reloaded.
+     * contact (optional) - Contact URI. If provided, aor and
+       registrar parameters are also required and only a specific
+       record will be reloaded.
+     * registrar (optional) - URI pointing to the remote
+       registrar. If provided, aor and contact parameters are also
+       required and only a specific record will be reloaded.
 
    MI FIFO Command Format:
 opensips-cli -x mi reg_reload
+...
+opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.
+1:5060 sip:opensips.org
+
+1.5.3. reg_enable
+
+   Enables a specific registrant. OpenSIPS will immediately send a
+   REGISTER if the registrant was previously disabled and will
+   update the state in the database.
+
+   Name: reg_enable
+
+   Parameters: none
+     * aor - URI defining the address of record.
+     * contact - Contact URI.
+     * registrar - URI pointing to the remote registrar.
+
+   MI FIFO Command Format:
+opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.
+1:5060 sip:opensips.org
+
+1.5.4. reg_disable
+
+   Disables a specific registrant. OpenSIPS will immediately send
+   an unREGISTER if the registrant was previously enabled and will
+   update the state in the database.
+
+   Name: reg_disable
+
+   Parameters: none
+     * aor - URI defining the address of record. If provided,
+       contact and registrar parameters are also required and only
+       a specific record will be reloaded.
+     * contact - Contact URI. If provided, aor and registrar
+       parameters are also required and only a specific record
+       will be reloaded.
+     * registrar - URI pointing to the remote registrar. If
+       provided, aor and contact parameters are also required and
+       only a specific record will be reloaded.
+
+   MI FIFO Command Format:
+opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0
+.1:5060 sip:opensips.org
 
 Chapter 2. Contributors
 

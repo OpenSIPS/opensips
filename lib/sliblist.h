@@ -125,6 +125,8 @@ void *slinkedl_prepend(slinkedl_list_t *list, size_t e_size);
  */
 void *slinkedl_append(slinkedl_list_t *list, size_t e_size);
 
+void slinkedl_append_element(slinkedl_list_t *list, slinkedl_element_t *element);
+
 /**
  * Traverse the list and execute run_data for each element,
  * until run_data returns a non zero value or the extent of the list
@@ -139,6 +141,14 @@ void *slinkedl_append(slinkedl_list_t *list, size_t e_size);
  */
 int slinkedl_traverse(slinkedl_list_t *list,
 		slinkedl_run_data_f run_data, void *data, void *r_data);
+
+slinkedl_element_t *slinkedl_new_element(slinkedl_alloc_f *alloc,
+	size_t e_size, void **e_data);
+
+typedef int (slinkedl_match_f) (void *e_data, void *data, void *n_data);
+
+int slinkedl_replace(slinkedl_list_t *list, slinkedl_match_f match,
+	void *data, slinkedl_element_t *new_element);
 
 /**
  * Retrieve the first element in the list.

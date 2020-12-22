@@ -12,6 +12,7 @@ CREATE TABLE registrant (
     expiry INTEGER DEFAULT NULL,
     forced_socket CHAR(64) DEFAULT NULL,
     cluster_shtag CHAR(64) DEFAULT NULL,
+    state INTEGER DEFAULT 0 NOT NULL,
     CONSTRAINT registrant_registrant_idx  UNIQUE (aor, binding_URI, registrar)
 );
 

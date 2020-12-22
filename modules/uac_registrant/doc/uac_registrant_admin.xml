@@ -475,6 +475,29 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 		</example>
 	</section>
 
+	<section id="param_state_column" xreflabel="state_column">
+		<title><varname>state_column</varname> (string)</title>
+		<para>
+		The column's name in the database storing the current state of the
+		registrant. When a registrant is disabled, OpenSIPS will no longer send
+		REGISTERs for it. A value of <emphasis>0</emphasis> for this column means
+		enabled and <emphasis>1</emphasis> disabled.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>state</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>state_column</quote> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "state_column", "status")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -488,10 +511,31 @@ modparam("uac_registrant", "cluster_shtag_column", "sh")
 	<title><function moreinfo="none">reg_list</function></title>
 		<para>Lists the registrant records and their status.</para>
 		<para>Name: <emphasis>reg_list</emphasis></para>
-		<para>Parameters: <emphasis>none</emphasis></para>
+		<para>Parameters: </para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> (optional) - URI defining the address
+				of record. If provided, <emphasis>contact</emphasis> and
+				<emphasis>registrar</emphasis> parameters are also required and
+				only a specific record will be listed.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> (optional) - Contact URI. If provided,
+				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
+				parameters are also required and only a specific record will be listed.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> (optional) - URI pointing to the remote
+				registrar. If provided, <emphasis>aor</emphasis> and
+				<emphasis>contact</emphasis> parameters are also required and only a
+				specific record will be listed.
+			</para></listitem>
+		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
 opensips-cli -x mi reg_list
+...
+opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
 	<section id="mi_reg_reload" xreflabel="reg_reload">
@@ -499,9 +543,86 @@ opensips-cli -x mi reg_list
 		<para>Reloads the registrant records from the database.</para>
 		<para>Name: <emphasis>reg_reload</emphasis></para>
 		<para>Parameters: <emphasis>none</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> (optional) - URI defining the address
+				of record. If provided, <emphasis>contact</emphasis> and
+				<emphasis>registrar</emphasis> parameters are also required and
+				only a specific record will be reloaded.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> (optional) - Contact URI. If provided,
+				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
+				parameters are also required and only a specific record will be reloaded.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> (optional) - URI pointing to the remote
+				registrar. If provided, <emphasis>aor</emphasis> and
+				<emphasis>contact</emphasis> parameters are also required and only a
+				specific record will be reloaded.
+			</para></listitem>
+		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
 		<programlisting  format="linespecific">
 opensips-cli -x mi reg_reload
+...
+opensips-cli -x mi reg_leload sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+		</programlisting>
+	</section>
+
+	<section id="mi_reg_enable" xreflabel="reg_enable">
+	<title><function moreinfo="none">reg_enable</function></title>
+		<para>Enables a specific registrant. OpenSIPS will immediately send
+		a REGISTER if the registrant was previously disabled and will update
+		the state in the database.</para>
+		<para>Name: <emphasis>reg_enable</emphasis></para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - URI defining the address of record.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> - Contact URI.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> - URI pointing to the remote registrar.
+			</para></listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+		</programlisting>
+	</section>
+
+	<section id="mi_reg_disable" xreflabel="reg_disable">
+	<title><function moreinfo="none">reg_disable</function></title>
+		<para>Disables a specific registrant. OpenSIPS will immediately send
+		an unREGISTER if the registrant was previously enabled and will update
+		the state in the database.</para>
+		<para>Name: <emphasis>reg_disable</emphasis></para>
+		<para>Parameters: <emphasis>none</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - URI defining the address
+				of record. If provided, <emphasis>contact</emphasis> and
+				<emphasis>registrar</emphasis> parameters are also required and
+				only a specific record will be reloaded.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> - Contact URI. If provided,
+				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
+				parameters are also required and only a specific record will be reloaded.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> - URI pointing to the remote
+				registrar. If provided, <emphasis>aor</emphasis> and
+				<emphasis>contact</emphasis> parameters are also required and only a
+				specific record will be reloaded.
+			</para></listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
 	</section>

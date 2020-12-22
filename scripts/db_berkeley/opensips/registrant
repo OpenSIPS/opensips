@@ -1,10 +1,10 @@
 METADATA_COLUMNS
-id(int) registrar(str) proxy(str) aor(str) third_party_registrant(str) username(str) password(str) binding_URI(str) binding_params(str) expiry(int) forced_socket(str) cluster_shtag(str)
+id(int) registrar(str) proxy(str) aor(str) third_party_registrant(str) username(str) password(str) binding_URI(str) binding_params(str) expiry(int) forced_socket(str) cluster_shtag(str) state(int)
 METADATA_KEY
-
+12
 METADATA_READONLY
 0
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|''|NULL|''|NULL|NULL|NULL|''|NULL|NULL|NULL|NULL
+NIL|''|NULL|''|NULL|NULL|NULL|''|NULL|NULL|NULL|NULL|0
