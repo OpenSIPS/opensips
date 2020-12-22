@@ -33,7 +33,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.0.4
+Version:  3.0.5
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons

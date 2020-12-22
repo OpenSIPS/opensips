@@ -10,7 +10,7 @@ COMMENT= "OpenSIPS"
 PORTNAME= opensips
 PORTVERSION= 3.0-beta
 CATEGORIES= net
-MASTER_SITES= https://opensips.org/pub/opensips/3.0.4/src/
+MASTER_SITES= https://opensips.org/pub/opensips/3.0.5/src/
 
 MAINTAINER= bogdan@opensips.org
 
