@@ -1,3 +1,206 @@
+=========================== Release 3.0.5 ==============================
+
+2020-12-22  Razvan Crainea  <razvan at opensips dot org>
+	* [3fa617015] :
+
+	Bump version to 3.0.5
+
+
+2020-12-22  Razvan Crainea  <razvan at opensips dot org>
+	* [ec0092d1d] :
+
+	ratelimit: keep only local values in pipe->counter for SBT
+	Up until this commit, the SBT algorithm would keep in pipe->counter the
+	sum between its local value, as well as the values gathered from the
+	other servers in the cluster. This means that it would replicate the
+	other's counters as well, leading to a broken behavior.
+	This fix makes sure that the SBT algorithm only stores the local counter
+	in the pipe->counter field, therefore it will not replicate other's
+	counters.
+	(cherry picked from commit 9621cac2033308e1d386103a229702750ffb005b)
+
+
+2020-12-19  OpenSIPS  <github at opensips dot org>
+	* [d19b20e2e] :
+
+	Rebuild documentation
+
+
+2020-12-18  Razvan Crainea  <razvan at opensips dot org>
+	* [c5c359a43] :
+
+	cachedb: document return values of get_counter()
+	(cherry picked from commit ef9ab051cf665538e919fa233677b578e694143d)
+
+
+2020-12-18  Razvan Crainea  <razvan at opensips dot org>
+	* [e1a84fead] :
+
+	cachedb_mongodb: treat case when counter is missing
+	(cherry picked from commit dd1446bb002ad7601d61dbb3d9167c2a3741a1f7)
+
+
+2020-12-17  Vlad Patrascu  <vladp at opensips dot org>
+	* [082ea9e56] :
+
+	dialog: fix a memory leak when using topology hiding
+	Credits to Anton Mosin for troubleshooting this.
+	Fixes #2346.
+	(cherry picked from commit fd0e4b7e4ae4853a27b6dcbf4a8b825aeae16b79)
+
+
+2020-12-17  Vlad Patrascu  <vladp at opensips dot org>
+	* [391c57dff] :
+
+	sip_i: fix setting of Subsequent number parameter
+	(cherry picked from commit 82c4f9466fddca4f42e57281a5244fde375e08de)
+
+
+2020-12-16  Razvan Crainea  <razvan at opensips dot org>
+	* [95ec542a2] :
+
+	tm: initiate cancel_bm in t_inject_branch
+	Make sure we're not canceling unwanted branches if there is some garbage
+	in the cancel_bm mask
+
+	Thanks go to Bogdan Iancu for debugging and fixing
+	(cherry picked from commit b8dee70e179e96825e6471a72a1d26501cf44878)
+
+
+2020-12-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [46d0b7524] :
+
+	[proto_tcp] Fix cleaning an un-init'ed conn
+	When handling a TCP accept event, if there is an error on dispatching the conn to the TCP workers, the conn is cleaned and destroied, without ever actually being initialised  So, we need to be sure we can clean conns which were not init'ed.
+
+
+2020-12-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [9b0ae63da] :
+
+	sql_cacher: properly support integer caching keys
+	Add a new parameter "key_type" to the caching entries configuration
+	that specifies an integer or string data type for the caching key.
+
+	Fixes #2335
+	(cherry picked from commit 600cd1c3d881ff8f6f0d35a66780e7ae7db53887)
+
+
+2020-12-12  OpenSIPS  <github at opensips dot org>
+	* [ae5ac48bb] :
+
+	Rebuild documentation
+
+
+2020-12-10  Liviu Chircu  <liviu at opensips dot org>
+	* [e31a7071e] :
+
+	HEP logging: Fix a bug causing all xlog()'s to be L_ERROR
+	Many thanks to Artiom Druz (@Shkiperon) for reporting this issue and
+	helping with testing.
+
+	Fixes #2329
+	Closes #2331
+	(cherry picked from commit b7bcfd310ead33c73d2a64a93f7e3bf092d44e97)
+
+
+2020-12-09  Vlad Patrascu  <vladp at opensips dot org>
+	* [7fd32e38b] :
+
+	dialog docs: fix examples for dlg_list MI function
+	(cherry picked from commit 80eecb92f24a7cd477d050313bdc30ef8ae1d084)
+
+
+2020-12-09  Liviu Chircu  <liviu at opensips dot org>
+	* [69f7b50ed] :
+
+	xlog(): Remove unused function parameter
+	(cherry picked from commit b95c2ed5a3cf0ced2ccb7f5fbe739cbbb2875f29)
+
+
+2020-12-05  OpenSIPS  <github at opensips dot org>
+	* [657888e4f] :
+
+	Rebuild documentation
+
+
+2020-12-03  Vlad Patrascu  <vladp at opensips dot org>
+	* [dfd96813c] :
+
+	sql_cacher: remove unused variable
+	(cherry picked from commit 5f965a68b5f4013e91c2225042dc297db3a7a856)
+
+
+2020-11-28  OpenSIPS  <github at opensips dot org>
+	* [e7c8b121d] :
+
+	Rebuild documentation
+
+
+2020-11-27  Vlad Patrascu  <vladp at opensips dot org>
+	* [787355363] :
+
+	sql_cacher: abort startup if DB connections/queries tests fail
+	(cherry picked from commit 2ad1e1590787c19274c2dfd2893b7fafa1e1a31c)
+
+
+2020-11-24  Vlad Patrascu  <vladp at opensips dot org>
+	* [73fab4128] :
+
+	tm: simplify the fix in commit 82b8d20
+	Just unref the transactions and avoid the extra checks
+	done by do_t_cleanup().
+	(cherry picked from commit e8a7cadd7e265f71d13c11682043814dbdd8caf6)
+
+
+2020-11-21  OpenSIPS  <github at opensips dot org>
+	* [406a1334d] :
+
+	Rebuild documentation
+
+
+2020-11-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [83915cd15] :
+
+	tm: fix transaction leakage when receiving replicated CANCELs
+	(cherry picked from commit 82b8d20f20914654938630e59edd0ca29e4e9e36)
+
+
+2020-11-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [1c4816d40] :
+
+	tm: fix crash when receiving replicated CANCELs
+	This commit fixes a crash on replicated CANCELs when doing pre-RFC3261
+	transaction matching.
+	(cherry picked from commit 15d1d612077b0311aed179972afa199f38e74e00)
+
+
+2020-11-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [b350551ca] :
+
+	db_mysql: fix doc example for use_tls modparam
+	(cherry picked from commit 1ca7ca8c04fa1d0d3c4187cc4e3d6f816f131c9f)
+
+
+2020-11-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [414bbfce7] :
+
+	cachedb_local: fix outdated docs for cache_remove_chunk MI cmd
+	(cherry picked from commit 29db5674f0b811a59dbdbf69cd09121f6f481546)
+
+
+2020-11-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [7da62e249] :
+
+	tm: support interface tags for local socket when replicating
+	(cherry picked from commit 1dbea20409ac1063f62db04873ac5dad193e0638)
+
+
+2020-11-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [15bceea05] :
+
+	tm: fix crash when having an anycast listener and no replication
+	(cherry picked from commit c57d62be4101dfc41d1031ff4e583c8efa50155e)
+
 =========================== Release 3.0.4 ==============================
 
 2020-11-17  Nick Altmann  <nick.altmann at gmail dot com>
