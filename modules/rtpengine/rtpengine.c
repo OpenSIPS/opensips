@@ -3398,6 +3398,11 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 		return -2;
 	}
 	d_code = bencode_dictionary(&bencbuf);
+	if (!d_code) {
+		LM_ERR("could not initialize bencode dictionary\n");
+		return -2;
+	}
+	bencode_dictionary_add_str(d_code, "code", code);
 	ret = rtpe_function_call(&bencbuf, msg, OP_PLAY_DTMF, flags, NULL, spvar, d_code);
 	if (!ret)
 		return -2;

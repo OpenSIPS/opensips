@@ -2475,7 +2475,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 435 274 12809 3398
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
    3. Razvan Crainea (@razvancrainea) 242 180 4715 1397
-   4. Vlad Patrascu (@rvlad-patrascu) 162 83 3405 3116
+   4. Vlad Patrascu (@rvlad-patrascu) 163 84 3406 3117
    5. Liviu Chircu (@liviuchircu) 146 105 2748 1095
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 29 23 487 111
@@ -2490,11 +2490,12 @@ Chapter 4. Contributors
    Baumann (@jarrodb), Zero King (@l2dy), Michel Bensoussan,
    Richard Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei
    Datcu (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy
-   Pyles, Julián Moreno Patiño, Konstantin Bokarius, Alex
-   Massover, Damien Sandras (@dsandras), Alex Hermann, Dusan
-   Klinec (@ph4r05), Norman Brandinger (@NormB), Peter Lemenkov
-   (@lemenkov), UnixDev, Eliot Gable, Ryan Bullock (@rrb3942),
-   Nick Altmann (@nikbyte), Edson Gellert Schubert.
+   Pyles, Julián Moreno Patiño, Maksym Sobolyev (@sobomax),
+   Konstantin Bokarius, Alex Massover, Damien Sandras (@dsandras),
+   Alex Hermann, Dusan Klinec (@ph4r05), Norman Brandinger
+   (@NormB), Peter Lemenkov (@lemenkov), UnixDev, Eliot Gable,
+   Ryan Bullock (@rrb3942), Nick Altmann (@nikbyte), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2521,24 +2522,25 @@ Chapter 4. Contributors
    3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2020
    4.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
    5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2020
-   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
-   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   8.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Dec 2016
+   6.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2020
+   7.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
+   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   9.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Jarrod Baumann (@jarrodb), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
-   (@ph4r05), Walter Doekes (@wdoekes), Eseanu Marius Cristian
-   (@eseanucristian), Andrei Datcu (@andrei-datcu), Nick Altmann
-   (@nikbyte), Norman Brandinger (@NormB), Damien Sandras
-   (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
-   Massover, Andrei Dragus, John Riordan, Hugues Mitonneau,
-   Richard Revels, UnixDev, Alex Hermann, Henning Westerholt
-   (@henningw), Carsten Bock, Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jerome Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable,
-   Andy Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
+   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
+   Jarrod Baumann (@jarrodb), Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Walter Doekes
+   (@wdoekes), Eseanu Marius Cristian (@eseanucristian), Andrei
+   Datcu (@andrei-datcu), Nick Altmann (@nikbyte), Norman
+   Brandinger (@NormB), Damien Sandras (@dsandras), Ryan Bullock
+   (@rrb3942), Anca Vamanu, Alex Massover, Andrei Dragus, John
+   Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Alex
+   Hermann, Henning Westerholt (@henningw), Carsten Bock, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis
+   Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles,
+   Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits
