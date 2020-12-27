@@ -58,7 +58,7 @@
 		(sizeof(long)*8 - Q_MALLOC_OPTIMIZE_FACTOR) + 1))
 
 #define QM_FRAG(p) \
-	((struct qm_frag *)((char *)(p) - sizeof(struct qm_frag)))
+	((struct qm_frag *)(p) - 1)
 
 /* hash structure:
  * 0 .... Q_MALLOC_OPTIMIZE/QM_ROUNDTO  - small buckets, size increases with

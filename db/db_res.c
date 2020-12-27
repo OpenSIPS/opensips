@@ -168,7 +168,7 @@ int db_allocate_rows(db_res_t* _res, const unsigned int rows)
 	for( i=0 ; i<rows ; i++ )
 		/* the values of the row i */
 		ROW_VALUES( &(RES_ROWS(_res)[i]) ) =
-			((db_val_t*)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
+			((db_val_t*)(void *)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
 
 	return 0;
 }
@@ -209,7 +209,7 @@ int db_realloc_rows(db_res_t *_res, const unsigned int old_rows,
 	for( i=0 ; i<rows ; i++ )
 		/* the values of the row i */
 		ROW_VALUES( &(RES_ROWS(_res)[i]) ) =
-			((db_val_t*)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
+			((db_val_t*)(void *)(RES_ROWS(_res)+rows)) + RES_COL_N(_res)*i;
 
 	return 0;
 }

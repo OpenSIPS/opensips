@@ -212,7 +212,7 @@ int is_mcast(struct ip_addr* ip)
 	if (ip->af==AF_INET){
 		return IN_MULTICAST(htonl(ip->u.addr32[0]));
 	} else if (ip->af==AF_INET6){
-		return IN6_IS_ADDR_MULTICAST((struct in6_addr *)ip->u.addr);
+		return IN6_IS_ADDR_MULTICAST((struct in6_addr *)(void *)ip->u.addr);
 	} else {
 		LM_ERR("unsupported protocol family\n");
 		return -1;

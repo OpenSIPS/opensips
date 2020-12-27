@@ -135,8 +135,7 @@ static inline void context_put_str(enum osips_context type, context_p ctx,
 		abort();
 	}
 #endif
-
-	((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos] = *data;
+	((str *)(void *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos] = *data;
 }
 
 static inline void context_put_ptr(enum osips_context type, context_p ctx,
@@ -149,7 +148,7 @@ static inline void context_put_ptr(enum osips_context type, context_p ctx,
 	}
 #endif
 
-	((void **)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos] = data;
+	((void **)(void *)((char *)ctx + type_offsets[type][CONTEXT_PTR_TYPE]))[pos] = data;
 }
 
    /****************************** GETTERS ********************************/
@@ -177,7 +176,7 @@ static inline str *context_get_str(enum osips_context type,
 	}
 #endif
 
-	return &((str *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos];
+	return &((str *)(void *)((char *)ctx + type_offsets[type][CONTEXT_STR_TYPE]))[pos];
 }
 
 static inline void *context_get_ptr(enum osips_context type,
@@ -190,7 +189,7 @@ static inline void *context_get_ptr(enum osips_context type,
 	}
 #endif
 
-	return ((void **)((char *)ctx +
+	return ((void **)(void *)((char *)ctx +
 	                  type_offsets[type][CONTEXT_PTR_TYPE]))[pos];
 }
 

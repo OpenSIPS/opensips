@@ -230,6 +230,8 @@ arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
 arm7_macros= __ARM_ARCH_7__
 
+arm64_macros= __AARCH64EL__
+
 ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
 ppc64_macros= __ppc64__ _ARCH_PPC64
 
@@ -289,6 +291,8 @@ endif # mips64_macros
 
 else ifneq ($(strip $(filter $(alpha_macros), $(predef_macros))),)
 CC_ARCH=alpha
+else ifneq ($(strip $(filter $(arm64_macros), $(predef_macros))),)
+CC_ARCH=aarch64
 else
 
 $(warn "Unknown target compiler architecture")

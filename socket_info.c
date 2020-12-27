@@ -430,7 +430,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 			 * make sure we don't add any "scoped" interface
 			 */
 			if (it->ifa_addr->sa_family == AF_INET6 &&
-					(((struct sockaddr_in6 *)it->ifa_addr)->sin6_scope_id != 0))
+					(((struct sockaddr_in6 *)(void *)it->ifa_addr)->sin6_scope_id != 0))
 
 				continue;
 			sockaddr2ip_addr(&addr, it->ifa_addr);

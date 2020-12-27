@@ -32,10 +32,10 @@ addons:
       - libjson-c-dev
       - uuid-dev
       - python-dev
+      - libmaxminddb-dev
 #      - libjwt-dev
-script: CC_EXTRA_OPTS=${CC_EXTRA_OPTS:-"-Werror"} FASTER=1 NICER=0 make \
-  exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase \
-  cachedb_mongodb auth_jwt" ${MAKE_TGT:-"all"}
+before_install: sh -x scripts/build/install_depends.sh
+script: sh -x scripts/build/do_build.sh
 notifications:
   irc:
     channels:
@@ -51,73 +51,43 @@ jobs:
     - name: "Build with GCC 7 @ Ubuntu 16"
       dist: xenial
       compiler: gcc
+      env: COMPILER=gcc
     - name: "Build with Clang 7 @ Ubuntu 16"
       dist: xenial
       compiler: clang
+      env: COMPILER=clang
     - name: "Build with GCC 7 @ Ubuntu 18"
       compiler: gcc
+      env: COMPILER=gcc
     - name: "Build with GCC 9 @ Ubuntu 18"
       compiler: gcc
-      env:
-        - CC=gcc-9 AR=gcc-ar-9 RANLIB=gcc-ranlib-9
-        - GCOV_CMD="gcov-9"
-      before_install:
-        - sudo apt install software-properties-common
-        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-        - sudo apt-get -y install gcc-9 g++-9
+      env: COMPILER=gcc-9
     - name: "Build with GCC 10 @ Ubuntu 18"
       compiler: gcc
-      env:
-        - CC=gcc-10 AR=gcc-ar-10 RANLIB=gcc-ranlib-10
-        - GCOV_CMD="gcov-10"
-      before_install:
-        - sudo apt install software-properties-common
-        - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-        - sudo apt-get -y install gcc-10 g++-10
+      env: COMPILER=gcc-10
     - name: "Build with Clang 7 @ Ubuntu 18"
       compiler: clang
+      env: COMPILER=clang
     - name: "Build with Clang 9 @ Ubuntu 18"
       compiler: clang
-      env:
-        - CC=clang-9 AR=llvm-ar-9 RANLIB=llvm-ranlib-9
-        - GCOV_CMD="llvm-cov-9 gcov"
-      before_install:
-        - sudo apt-get -y install clang-9 llvm-9-dev libc++-9-dev libc++abi-9-dev
+      env: COMPILER=clang-9
     - name: "Build with Clang 10 @ Ubuntu 18"
       compiler: clang
-      env:
-        - CC=clang-10 AR=llvm-ar-10 RANLIB=llvm-ranlib-10
-        - GCOV_CMD="llvm-cov-10 gcov"
-      before_install:
-        - sudo apt-get -y install clang-10 llvm-10-dev libc++-10-dev libc++abi-10-dev
+      env: COMPILER=clang-10
     - name: "Build with GCC 7 @ Ubuntu 18 (ARM64)"
       compiler: gcc
       arch: arm64
+      env: COMPILER=gcc
     - name: "Build with Clang 7 @ Ubuntu 18 (ARM64)"
       compiler: clang
       arch: arm64
+      env: COMPILER=clang
     - name: "Build Core with GCC 7 @ Ubuntu 18 (i386)"
       compiler: gcc
-      env:
-        - CC_EXTRA_OPTS="-Werror -m32"
-        - MAKE_TGT="opensips"
-      before_install:
-        - sudo apt-get -y install libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev
+      env: COMPILER=gcc-i386-cross
     - name: "Build Core with Clang 7 @ Ubuntu 18 (i386)"
       compiler: clang
-      env:
-        - CC_EXTRA_OPTS="-Werror -m32"
-        - MAKE_TGT="opensips"
-      before_install:
-        - sudo apt-get -y install libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev
+      env: COMPILER=clang-i386-cross
     - name: "Build Core with GCC 7 @ Ubuntu 18 (MIPS64)"
       compiler: gcc
-      env:
-        - CC=mips64-linux-gnuabi64-gcc AR=mips64-linux-gnuabi64-ar RANLIB=mips64-linux-gnuabi64-ranlib
-        - MAKE_TGT="opensips"
-      before_install:
-        - sudo apt-get -y install gcc-mips64-linux-gnuabi64 libc-dev-mips64-cross qemu-user-static
-        - sudo mkdir "/usr/mips64-linux-gnuabi64/etc"
-        - sudo touch "/usr/mips64-linux-gnuabi64/etc/ld.so.cache"
-        - sudo mkdir "/etc/qemu-binfmt"
-        - sudo ln -sf "/usr/mips64-linux-gnuabi64" "/etc/qemu-binfmt/mips64"
+      env: COMPILER=gcc-mips64-cross
