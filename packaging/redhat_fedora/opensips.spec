@@ -37,7 +37,7 @@ Version:  3.1.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
-Source0:  http://download.opensips.org/%{name}-%{version}.tar.gz
+Source0:  http://download.opensips.org/%{version}/%{name}-%{version}.tar.gz
 URL:      https://opensips.org
 
 BuildRequires:  expat-devel
