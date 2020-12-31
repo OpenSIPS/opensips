@@ -1412,7 +1412,7 @@ static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
 	}
 
 	if (n==0) {
-		LM_ERR("No matched dialogs \n");
+		LM_DBG("No matched dialogs\n");
 		return -1;
 	}
 
@@ -2108,7 +2108,7 @@ static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, str *attr_val,
 	}
 
 	if (n==0) {
-		LM_ERR("No matched dialogs \n");
+		LM_DBG("No matched dialogs\n");
 		return -1;
 	}
 
@@ -2198,7 +2198,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 	}
 
 	if (n==0) {
-		LM_ERR("No matched dialogs \n");
+		LM_DBG("No matched dialogs\n");
 		return -1;
 	}
 
