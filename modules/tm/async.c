@@ -354,6 +354,8 @@ sync:
 			( fd, msg, ctx->async.resume_param );
 		if (async_status == ASYNC_CHANGE_FD)
 			fd = return_code;
+		if (async_status == ASYNC_DONE_CLOSE_FD)
+			close(fd);
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* get rid of the context, useless at this point further */
 	shm_free(ctx);
