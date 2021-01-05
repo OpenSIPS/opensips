@@ -70,8 +70,7 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg, int tmp);
 
-static inline void dlg_sync_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
-static inline void dlg_clear_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
+static inline void dlg_merge_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
 
 
 void init_dlg_handlers(int default_timeout_p)
@@ -838,7 +837,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 	if (statuscode == 200) {
-		dlg_sync_tmp_sdp(dlg, DLG_CALLER_LEG);
+		dlg_merge_tmp_sdp(dlg, DLG_CALLER_LEG);
 		dlg_update_sdp(dlg, rpl, callee_idx(dlg), 0);
 
 		buffer.s = ((str*)ps->extra1)->s;
@@ -847,7 +846,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 		msg=pkg_malloc(sizeof(struct sip_msg));
 		if (msg==0) {
 			LM_ERR("no pkg mem left for sip_msg\n");
-			goto clear;
+			return;
 		}
 
 		memset(msg,0, sizeof(struct sip_msg));
@@ -856,7 +855,7 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 
 		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
 			pkg_free(msg);
-			goto clear;
+			return;
 		}
 
 		dlg_update_contact(dlg, msg, callee_idx(dlg));
@@ -865,8 +864,6 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 		free_sip_msg(msg);
 		pkg_free(msg);
 	}
-clear:
-	dlg_clear_tmp_sdp(dlg, DLG_CALLER_LEG);
 }
 
 static void dlg_update_caller_sdp(struct cell* t, int type,
@@ -898,7 +895,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
 	if (statuscode == 200) {
-		dlg_sync_tmp_sdp(dlg, callee_idx(dlg));
+		dlg_merge_tmp_sdp(dlg, callee_idx(dlg));
 		dlg_update_sdp(dlg, rpl, DLG_CALLER_LEG, 0);
 
 		buffer.s = ((str*)ps->extra1)->s;
@@ -907,7 +904,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 		msg=pkg_malloc(sizeof(struct sip_msg));
 		if (msg==0) {
 			LM_ERR("no pkg mem left for sip_msg\n");
-			goto clear;
+			return;
 		}
 
 		memset(msg,0, sizeof(struct sip_msg));
@@ -916,7 +913,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 
 		if (parse_msg(buffer.s,buffer.len, msg)!=0) {
 			pkg_free(msg);
-			goto clear;
+			return;
 		}
 
 		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
@@ -925,8 +922,6 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 		free_sip_msg(msg);
 		pkg_free(msg);
 	}
-clear:
-	dlg_clear_tmp_sdp(dlg, callee_idx(dlg));
 }
 
 static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
@@ -1389,29 +1384,30 @@ end:
 	return ret;
 }
 
-static inline void dlg_clear_tmp_sdp(struct dlg_cell *dlg, unsigned int leg)
+
+static inline void dlg_merge_tmp_sdp(struct dlg_cell *dlg, unsigned int leg)
 {
+	dlg_lock_dlg(dlg);
+
 	if (dlg->legs[leg].tmp_in_sdp.s) {
+		if (shm_str_sync(&dlg->legs[leg].in_sdp, &dlg->legs[leg].tmp_in_sdp))
+			LM_ERR("could not update inbound SDP from temporary SDP!\n");
+
 		shm_free(dlg->legs[leg].tmp_in_sdp.s);
-		dlg->legs[leg].tmp_in_sdp.s = 0;
-		dlg->legs[leg].tmp_in_sdp.len = 0;
+		memset(&dlg->legs[leg].tmp_in_sdp, 0, sizeof(str));
 	}
+
 	if (dlg->legs[leg].tmp_out_sdp.s) {
+		if (shm_str_sync(&dlg->legs[leg].out_sdp, &dlg->legs[leg].tmp_out_sdp))
+			LM_ERR("could not update outbound SDP from temporary SDP!\n");
+
 		shm_free(dlg->legs[leg].tmp_out_sdp.s);
-		dlg->legs[leg].tmp_out_sdp.s = 0;
-		dlg->legs[leg].tmp_out_sdp.len = 0;
+		memset(&dlg->legs[leg].tmp_out_sdp, 0, sizeof(str));
 	}
+
+	dlg_unlock_dlg(dlg);
 }
 
-static inline void dlg_sync_tmp_sdp(struct dlg_cell *dlg, unsigned int leg)
-{
-	if (dlg->legs[leg].tmp_in_sdp.s &&
-		shm_str_sync(&dlg->legs[leg].in_sdp, &dlg->legs[leg].tmp_in_sdp) < 0)
-			LM_ERR("could not update inbound SDP from temporary SDP!\n");
-	if (dlg->legs[leg].tmp_out_sdp.s &&
-		shm_str_sync(&dlg->legs[leg].out_sdp, &dlg->legs[leg].tmp_out_sdp) < 0)
-			LM_ERR("could not update outbound SDP from temporary SDP!\n");
-}
 
 static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg, int tmp)

@@ -93,8 +93,8 @@ struct dlg_leg {
 	str adv_contact;	/* topology hiding advertised contact towards this leg - full header */
 	str in_sdp;			/* latest SDP advertised by the uac ( full body ), after all OpenSIPS changes */
 	str out_sdp;		/* latest SDP advertised towards this leg ( full body ), after all OpenSIPS changes */
-	str tmp_in_sdp;		/* temporary stored in_sdp until confirmation (200 OK) arrives */
-	str tmp_out_sdp;	/* temporary stored out until confirmation (200 OK) arrives */
+	str tmp_in_sdp;		/* temporarily stored in_sdp until confirmation (200 OK) arrives */
+	str tmp_out_sdp;	/* temporarily stored out_sdp until confirmation (200 OK) arrives */
 	str route_uris[64];
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
