@@ -1500,24 +1500,31 @@ static char _is_username_char[128] = {
 	0 /* 127 DEL */
 };
 
-static int check_username(str *username)
+static inline int check_username(const str *username)
 {
-	int i;
+	char *p, *end, c;
 
-	if (!username)
-		return 0;
+	for (p = username->s, end = p + username->len; p < end; p++) {
+		c = *p;
 
-	for( i=0 ; i<username->len ; i++ ) {
-		if (username->s[i]<0 || username->s[i]>127 ||
-		_is_username_char[ (int)username->s[i] ]==0) {
-			LM_DBG("invalid character %c[%d] in username <%.*s> on index %i\n",
-				username->s[i], username->s[i],
-				username->len, username->s, i);
-			return -1;
+		if (c < 0)
+			goto err;
+
+		if (c == '%') {
+			if ((p + 3) > end || !_isxdigit(*(p + 1)) || !_isxdigit(*(p + 2)))
+				goto err;
+			p += 2;
+		} else if (!_is_username_char[(int)c]) {
+			goto err;
 		}
 	}
 
 	return 0;
+
+err:
+	LM_DBG("invalid character %c[%d] in username <%.*s> on index %ld\n",
+	       c, c, username->len, username->s, p - username->s);
+	return -1;
 }
 
 

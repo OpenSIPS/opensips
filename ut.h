@@ -481,6 +481,11 @@ inline static int pathmax(void)
 	return pathmax;
 }
 
+#define _isxdigit(c) \
+	((c >= '0' && c <= '9') || \
+	 (c >= 'a' && c <= 'f') || \
+	 (c >= 'A' && c <= 'F'))
+
 inline static int hex2int(char hex_digit)
 {
 	if (hex_digit>='0' && hex_digit<='9')
