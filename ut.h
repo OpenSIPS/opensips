@@ -824,6 +824,8 @@ static inline int shm_str_extend(str *in, int size)
 {
 	char *p;
 
+	/* do not check for !in->s here, as it's better
+	 * to crash sooner on a corrupt @in string (e.g. {NULL, 172}) */
 	if (in->len < size) {
 		p = shm_realloc(in->s, size);
 		if (!p) {
@@ -910,6 +912,8 @@ static inline int pkg_str_extend(str *in, int size)
 {
 	char *p;
 
+	/* do not check for !in->s here, as it's better
+	 * to crash sooner on a corrupt @in string (e.g. {NULL, 172}) */
 	if (in->len < size) {
 		p = pkg_realloc(in->s, size);
 		if (!p) {
