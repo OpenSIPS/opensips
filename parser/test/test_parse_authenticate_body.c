@@ -71,9 +71,7 @@ static const struct tts {
 		.tres = 0,
 		.aflags = QOP_AUTH | QOP_AUTH_INT, .aalg = ALG_MD5,
 		.anonce = "n", .aopaque = "0", .arealm = "a"
-	}, {
-		.ts = STR_NULL
-	}
+	}, {}
 };
 
 

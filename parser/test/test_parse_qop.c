@@ -52,7 +52,7 @@ void test_parse_qop_val(void)
 		{.ts = str_init("auth-int"), .tres = 0, .aflags = QOP_AUTH_INT},
 		{.ts = str_init("auth, auth-int"), .tres = 0, .aflags = QOP_AUTH | QOP_AUTH_INT},
 		{.ts = str_init("auth-int , auth"), .tres = 0, .aflags = QOP_AUTH | QOP_AUTH_INT},
-		{.ts = STR_NULL}
+		{}
 	};
 
 	for (i = 0; tset[i].ts.s != NULL; i++) {
