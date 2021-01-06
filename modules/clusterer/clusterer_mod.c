@@ -37,6 +37,7 @@
 #include "clusterer.h"
 #include "sync.h"
 #include "sharing_tags.h"
+#include "clusterer_evi.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
