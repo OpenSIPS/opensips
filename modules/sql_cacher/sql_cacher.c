@@ -1529,6 +1529,7 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 		}
 		if (cdb_res.len == 0 || !cdb_res.s) {
 			LM_ERR("Cache fetch result should not be empty\n");
+			pkg_free(cdb_res.s);
 			return -1;
 		}
 
@@ -1808,6 +1809,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_ERR("Cache fetch result should not be empty\n");
 				lock_stop_read(pv_name->c_entry->ref_lock);
+				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);
 			}
 
@@ -1842,6 +1844,7 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
 				LM_DBG("key: %.*s not found in SQL db\n", pv_name->key.len, pv_name->key.s);
+				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);
 			}
 
