@@ -599,10 +599,24 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag,
 			                   &dlg) == 0) {
-				dlg_unlock(d_table, d_entry);
-				LM_DBG("dialog already exists, skipping (ci: %.*s)\n",
-				       callid.len, callid.s);
-				continue;
+				/*
+				 * there are two cases that could lead here:
+				 * 1) a race condition between the loading from DB and events
+				 *    received over a replicated channel - in this case we
+				 *    double check if the dialog has the same callid, and if
+				 *    we do, we drop the loaded dialog, as it has already been
+				 *    learned through replication
+				 * 2) a call looping scenario - a call that passes more than
+				 *    once through the same OpenSIPS instance, basically
+				 *    creating different dialogs with different hash IDs - in
+				 *    this case we shall learn the new dialog (Ticket #2311)
+				 */
+				if (dlg->h_id == hash_id) {
+					dlg_unlock(d_table, d_entry);
+					LM_DBG("dialog already exists, skipping (ci: %.*s, did: %u.%u)\n",
+							callid.len, callid.s, hash_entry, hash_id);
+					continue;
+				}
 			}
 
 			GET_STR_VALUE(from_uri, values, 2, 1, 0);
