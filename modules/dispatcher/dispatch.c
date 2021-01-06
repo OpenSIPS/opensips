@@ -1001,9 +1001,12 @@ int ds_reload_db(ds_partition_t *partition)
 
 	/* destroy old data */
 	if (old_data) {
-		/* copy the state of the destinations from the old set
-		 * (for the matching ids) */
-		ds_inherit_state( old_data, new_data);
+		/* only copy the old states if configured */
+		if (!ds_reload_state) {
+			/* copy the state of the destinations from the old set
+			 * (for the matching ids) */
+			ds_inherit_state( old_data, new_data);
+		}
 		ds_destroy_data_set( old_data );
 	}
 

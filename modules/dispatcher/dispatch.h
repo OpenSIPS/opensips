@@ -74,6 +74,7 @@
 
 
 extern int ds_persistent_state;
+extern int ds_reload_state;
 
 typedef struct _ds_dest
 {

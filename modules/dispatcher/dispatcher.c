@@ -87,6 +87,7 @@ static int ds_ping_interval = 0;
 int ds_ping_maxfwd = -1;
 int ds_probing_mode = 0;
 int ds_persistent_state = 1;
+int ds_reload_state = 0;
 int_list_t *ds_probing_list = NULL;
 
 /* db partiton info */
@@ -276,6 +277,7 @@ static param_export_t params[]={
 	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
+	{"reload_state",          INT_PARAM, &ds_reload_state},
 	{"fetch_freeswitch_stats", INT_PARAM, &fetch_freeswitch_stats},
 	{"max_freeswitch_weight", INT_PARAM, &max_freeswitch_weight},
 	{0,0,0}
