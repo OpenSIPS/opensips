@@ -96,7 +96,10 @@ int bin_init(bin_packet_t *packet, str *capability, int packet_type,
 
 void bin_get_capability(bin_packet_t *packet, str *capability)
 {
-	memcpy(&capability->len, packet->buffer.s + HEADER_SIZE,  sizeof(unsigned short));
+	unsigned short len;
+
+	memcpy(&len, packet->buffer.s + HEADER_SIZE,  sizeof(unsigned short));
+	capability->len = len;
 	capability->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
 }
 
@@ -541,7 +544,7 @@ int bin_get_content_pos(bin_packet_t *packet, str *buf)
 
 int bin_reset_back_pointer(bin_packet_t *packet)
 {
-	int cap_len;
+	unsigned short cap_len;
 	if (!packet->buffer.s  || !packet->size)
 		return -1;
 
