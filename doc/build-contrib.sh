@@ -106,6 +106,7 @@ author_aliases=(
   ["root <root@opensips.org>"]="Bogdan-Andrei Iancu <bogdan@opensips.org>"
   ["rvlad-patrascu <vladp@opensips.org>"]="Vlad Patrascu <vladp@opensips.org>"
   ["rvlad-patrascu <rvlad.patrascu@gmail.com>"]="Vlad Patrascu <vladp@opensips.org>"
+  ["Vlad Pătrașcu <vladp@opensips.org>"]="Vlad Patrascu <vladp@opensips.org>"
   ["tallicamike <mtiganus@gmail.com>"]="Mihai Tiganus <mtiganus@gmail.com>"
 )
 

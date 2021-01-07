@@ -276,7 +276,7 @@ modparam("auth", "disable_nonce_check", 1)
 	<title>Exported Functions</title>
 	<section id="func_www_challenge" xreflabel="www_challenge()">
 		<title>
-			<function moreinfo="none">www_challenge(realm, qop)</function>
+			<function moreinfo="none">www_challenge(realm[, qop])</function>
 		</title>
 		<para>
 		The function challenges a user agent. It will generate a 
@@ -338,7 +338,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 
 	<section id="func_proxy_challenge" xreflabel="proxy_challenge()">
 		<title>
-			<function moreinfo="none">proxy_challenge(realm, qop)</function>
+			<function moreinfo="none">proxy_challenge(realm[, qop])</function>
 		</title>
 		<para>
 		The function challenges a user agent. It will generate a 

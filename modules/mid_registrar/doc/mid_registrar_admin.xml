@@ -205,6 +205,12 @@
 				<emphasis>tm</emphasis>
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>event_routing</emphasis>,
+				if <xref linkend="param_pn_enable"/> is set to <emphasis>true</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 	</section>
