@@ -1312,7 +1312,7 @@ static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
 			NULL,MSG_TRANS_NOVIA_FLAG);
 }
 
-#define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_NOTIFY|METHOD_SUBSCRIBE)
+#define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_SUBSCRIBE)
 static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 {
 	/* do not throw errors from the upcoming parsing operations */
