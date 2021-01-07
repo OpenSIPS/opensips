@@ -279,7 +279,7 @@ int record_route(struct sip_msg* _m, str *params)
 		if (ap->type==HDR_RECORDROUTE_T && ap->op==LUMP_NOP
 		&& ap->before && ap->before->op==LUMP_ADD_OPT
 		&& ap->before->u.cond==COND_FALSE) {
-			/* found our phony anchor lump -> hide it for future searches */
+			/* found our phony anchor lump -> hide it from future searches */
 			ap->type = HDR_ERROR_T;
 
 			/* jump over the anchor and conditional lumps */
@@ -427,7 +427,7 @@ int record_route_preset(struct sip_msg* _m, str* _data)
 		if (ap->type==HDR_RECORDROUTE_T && ap->op==LUMP_NOP
 		&& ap->before && ap->before->op==LUMP_ADD_OPT
 		&& ap->before->u.cond==COND_FALSE) {
-			/* found our phony anchor lump -> hide it for future searches */
+			/* found our phony anchor lump -> hide it from future searches */
 			ap->type = HDR_ERROR_T;
 
 			/* jump over the anchor and conditional lumps */

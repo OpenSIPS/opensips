@@ -3902,7 +3902,7 @@ int pv_is_obsolete(pv_spec_p sp, int param)
 			return -1;
 	}
 
-	LM_WARN("variable '%s' is marked as deprecated and it will be soone "
+	LM_WARN("variable '%s' is marked as deprecated and it will be soon "
 		"removed, please use '%s' instead\n",old,new);
 	return 0;
 }

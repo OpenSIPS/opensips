@@ -12,12 +12,13 @@
 		usrloc contact is located, trigger an <ulink url='usrloc#event_E_UL_CONTACT_REFRESH'>E_UL_CONTACT_REFRESH</ulink>
 		event and place the request on async hold for at most
 		<xref linkend="param_pn_refresh_timeout"/> seconds, until a matching
-		Push Notification arrives.
+		REGISTER request arrives.
 		</para>
 
 		<para>
 		If processing ends before triggering the Push Notification, the request
-		will no longer block and the resume route will be immediately called.
+		will no longer be put on async hold, with the resume route being
+		immediately called.
 		</para>
 
 		<para>Meaning of the parameters is as follows:</para>

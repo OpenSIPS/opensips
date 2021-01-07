@@ -406,7 +406,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 
 	lock_release(&se->lock);
 
-	/* Set dialog callback to check call duration */
+	/* Set dialog callback to check call duration and decrement CC */
 	struct dlg_cell *dlgc = dlgb.get_dlg();
 	if (dlgc == NULL) {
 		if (dlgb.create_dlg(msg, 0) < 0) {

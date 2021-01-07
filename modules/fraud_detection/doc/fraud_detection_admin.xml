@@ -11,7 +11,7 @@
 		Alerts are provided through return codes and events.
 	</para>
 		<section>
-		<title>Monitorized Stats</title>
+		<title>Monitored Stats</title>
 		<para>
 			Basically, this module watches the following parameters:
 			<itemizedlist>
@@ -540,10 +540,15 @@ modparam("fraud_detection", "seqcalls_thresh_crit_col", "seqcalls_crit_thresh")
 		<para>
 			This method should be called each time a given <emphasis>user</emphasis>
 			calls a given <emphasis>number</emphasis>. It will try to match a fraud rule
-			within de given fraud profile and update the stats (see above). Furthermore,
+			within the given fraud profile and update the stats (see above). Furthermore,
 			the stats will be checked against the rule's thresholds. If any of the stats
-			is above it's threshold value the appropriate event will also be raised
+			is above its threshold value, the appropriate event will also be raised
 			(see further details below).
+		</para>
+		<para>
+			Designed to only work with initial INVITE messages!  If a dialog is
+			not already present, one will be created (equivalent of
+			create_dialog()).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>

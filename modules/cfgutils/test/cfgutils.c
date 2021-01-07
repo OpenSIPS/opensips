@@ -40,7 +40,7 @@ extern int check_time_rec(struct sip_msg *_, char *time_rec,
 int ctr(const char *_rec, time_t *ts)
 {
 	char *rec;
-	int rc, len;
+	int rc;
 	time_t _ts;
 
 	if (!ts) {
@@ -49,10 +49,7 @@ int ctr(const char *_rec, time_t *ts)
 	}
 
 	/* it seems _tmrec_check_str() writes to the input buffer, so dup it! */
-	len = strlen(_rec);
-	rec = shm_malloc(len + 1);
-	memcpy(rec, _rec, len);
-	rec[len] = '\0';
+	rec = shm_strdup(_rec);
 
 	rc = _tmrec_check_str(rec, *ts);
 	shm_free(rec);
@@ -64,14 +61,11 @@ int ctr(const char *_rec, time_t *ts)
 int cmtr(const char *_rec, unsigned int ts)
 {
 	char *rec;
-	int rc1, rc2, len;
+	int rc1, rc2;
 	tmrec *tr;
 
 	/* it seems _tmrec_check_str() writes to the input buffer, so dup it! */
-	len = strlen(_rec);
-	rec = shm_malloc(len + 1);
-	memcpy(rec, _rec, len);
-	rec[len] = '\0';
+	rec = shm_strdup(_rec);
 
 	/* rc1: quick string parsing & evaluation */
 	rc1 = check_time_rec(NULL, rec, &ts);
@@ -472,19 +466,19 @@ void test_check_single_tmrec(void)
 	rc1 = ctr(US"|20200101T000000|20200101T120000||DAILY", NULL);
 	rc2 = ctr(US"|20200101T120000|20200102T000000||DAILY", NULL);
 	ok(rc1 != rc2);
-	rc2 = ctr(US"|20200101T120000|20200101T235959||DAILY", NULL);
+	rc2 = ctr(US"|20200101T120000|20200101T235960||DAILY", NULL);
 	ok(rc1 != rc2);
 
 	rc1 = ctr(NZ"|20200101T000000|20200101T120000||DAILY", NULL);
 	rc2 = ctr(NZ"|20200101T120000|20200102T000000||DAILY", NULL);
 	ok(rc1 != rc2);
-	rc2 = ctr(NZ"|20200101T120000|20200101T235959||DAILY", NULL);
+	rc2 = ctr(NZ"|20200101T120000|20200101T235960||DAILY", NULL);
 	ok(rc1 != rc2);
 
 	rc1 = ctr(UTC"|20200101T000000|20200101T120000||DAILY", NULL);
 	rc2 = ctr(UTC"|20200101T120000|20200102T000000||DAILY", NULL);
 	ok(rc1 != rc2);
-	rc2 = ctr(UTC"|20200101T120000|20200101T235959||DAILY", NULL);
+	rc2 = ctr(UTC"|20200101T120000|20200101T235960||DAILY", NULL);
 	ok(rc1 != rc2);
 
 	                      /* timezone checks (fixed time) */
