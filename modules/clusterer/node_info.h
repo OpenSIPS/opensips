@@ -27,6 +27,7 @@
 #define CL_NODE_INFO_H
 
 #include "../../db/db.h"
+#include "../../rw_locking.h"
 #include "api.h"
 #include "clusterer.h"
 
