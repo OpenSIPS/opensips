@@ -167,7 +167,7 @@ static cmd_export_t cmds[]=
 };
 
 /** Exported parameters */
-static param_export_t params[]=
+static param_export_t mod_params[]=
 {
 	{"hash_size",       INT_PARAM,                &b2bl_hsize                },
 	{"cleanup_period",  INT_PARAM,                &b2b_clean_period          },
@@ -245,7 +245,7 @@ struct module_exports exports= {
 	&deps,                          /* OpenSIPS module dependencies */
 	cmds,                           /* exported functions */
 	0,                              /* exported async functions */
-	params,                         /* exported parameters */
+	mod_params,                     /* exported parameters */
 	0,                              /* exported statistics */
 	mi_cmds,                        /* exported MI functions */
 	mod_items,                      /* exported pseudo-variables */

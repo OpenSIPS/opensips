@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef PUBLISH_H
-#define PUBLISH_H
+#ifndef PUA_PUBLISH_H
+#define PUA_PUBLISH_H
 
 #include "../../str.h"
 #include "hash.h"
@@ -43,4 +43,4 @@ extern int default_expires;
 extern db_con_t *pua_db;
 extern db_func_t pua_dbf;
 extern str db_table;
-#endif
+#endif /* PUA_PUBLISH_H */

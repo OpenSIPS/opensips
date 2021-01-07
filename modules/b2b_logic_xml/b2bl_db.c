@@ -328,7 +328,6 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 		}
 		shm_tuple->bridge_entities[i]= entity;
 		/* put the pointer in clients or servers array */
-		// FIXME: check if the restore logic is ok
 		if(tuple->bridge_entities[i]->type == B2B_SERVER)
 		{
 			if (shm_tuple->servers[0])

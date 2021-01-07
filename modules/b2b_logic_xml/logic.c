@@ -1253,7 +1253,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 					b2bl_print_tuple(tuple, L_DBG);
 				}
 				else
-				if(statuscode >= 200 && statuscode < 300)
+				if(statuscode >= 200)
 				{
 					b2bl_print_tuple(tuple, L_DBG);
 					if (entity->prev || entity->next)
@@ -2999,7 +2999,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	if(xmlStrcasecmp(value_type, (unsigned char*)"initial") == 0)
 	{
 		LM_DBG("URI of type initial\n");
-		// FIXME: this may not exist after a transfer that will leave us with two clients
+		// this may not exist after a transfer that will leave us with two clients
 		if (tuple->servers[0])
 			*client_to = tuple->servers[0]->to_uri;
 	}
@@ -3764,7 +3764,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 
 	local_ctx_tuple = tuple;
 
-	// FIXME: we may have no server at some point in time
+	// we may have no server at some point in time
 	if(tuple->servers[0] == NULL)
 	{
 		LM_ERR("Wrong usage - no server entity present\n");
@@ -4071,7 +4071,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		e->peer = NULL;
 	}
 
-	// FIXME: this logic may need to be updated
+	// this logic may need to be updated
 	if(e2->type == B2B_SERVER)
 	{
 		if(e2 == tuple->servers[0])

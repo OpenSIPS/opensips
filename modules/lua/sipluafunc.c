@@ -132,7 +132,7 @@ int siplua_meminfo(struct sip_msg *msg)
   struct mem_info info;
 
   shm_info(&info);
-  siplua_log(L_INFO, "free/%d used/%d real_used/%d max_used/%d min_frag/%d total_frags/%d\n",
+  siplua_log(L_INFO, "free/%lu used/%lu real_used/%lu max_used/%lu min_frag/%lu total_frags/%lu\n",
 	     info.free, info.used, info.real_used, info.max_used, info.min_frag, info.total_frags);
   return -1;
 }

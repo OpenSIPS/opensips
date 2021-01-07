@@ -328,7 +328,7 @@ static inline void strip_esc(str *s)
 	int len = s->len;
 
 	for ( ; len > 0; len--, c++) {
-		if (*c == '\\' && len > 0 &&
+		if (*c == '\\' &&
 				(*(c+1)=='\\' || *(c+1)=='#' || *(c+1)=='|')) {
 			memmove(c, c + 1, len - 1);
 			s->len--;

@@ -1202,7 +1202,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 				b2bl_print_tuple(tuple, L_DBG);
 			}
 			else
-			if(statuscode >= 200 && statuscode < 300)
+			if(statuscode >= 200)
 			{
 				b2bl_print_tuple(tuple, L_DBG);
 				if (entity->prev || entity->next)

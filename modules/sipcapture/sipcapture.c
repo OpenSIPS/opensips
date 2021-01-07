@@ -3008,6 +3008,7 @@ out_safe:
 static inline void build_table_name(tz_table_t* table_format, str* table_s)
 {
 	time_t rawtime;
+	struct tm lgmtm;
 	struct tm* gmtm;
 
 	table_s->s = table_buf;
@@ -3016,7 +3017,7 @@ static inline void build_table_name(tz_table_t* table_format, str* table_s)
 
 	if (table_format->suffix.len && table_format->suffix.s) {
 		time(&rawtime);
-		gmtm = gmtime(&rawtime);
+		gmtm = gmtime_r(&rawtime, &lgmtm);
 		table_s->len += strftime(table_s->s+table_s->len, CAPTURE_TABLE_MAX_LEN-table_s->len,
 				table_format->suffix.s, gmtm);
 	}

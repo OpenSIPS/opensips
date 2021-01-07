@@ -1135,7 +1135,7 @@ logic_notify:
 
 	lock_get(&table[hash_index].lock);
 
-	if(etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
+	if(dlg_state>B2B_CONFIRMED)
 	{
 		/* search the dialog */
 		for(aux_dlg = table[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
@@ -1152,12 +1152,12 @@ logic_notify:
 	}
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (etype != B2B_NONE && dlg_state == B2B_ESTABLISHED) {
+		if (dlg_state == B2B_ESTABLISHED) {
 			b2b_ev = B2B_EVENT_ACK;
 
 			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
 				&storage, serialize_backend);
-		} else if (etype != B2B_NONE && dlg_state == B2B_TERMINATED) {
+		} else if (dlg_state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 
 			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
@@ -1166,7 +1166,7 @@ logic_notify:
 	}
 
 	current_dlg = 0;
-	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
+	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
 		if(b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
@@ -3175,7 +3175,7 @@ dummy_reply:
 		}
 
 		LM_DBG("DLG state = %d\n", dlg->state);
-		if(dlg->state== B2B_MODIFIED && statuscode >= 200 && statuscode <300)
+		if(dlg->state== B2B_MODIFIED && statuscode >= 200)
 		{
 			LM_DBG("switched the state CONFIRMED [%p]\n", dlg);
 			dlg->state = B2B_CONFIRMED;

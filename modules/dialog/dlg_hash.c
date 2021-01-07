@@ -1805,7 +1805,7 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 
 		if (db_update)
 			update_dialog_timeout_info(dlg);
-		if (dialog_repl_cluster && shtag_state != SHTAG_STATE_BACKUP)
+		if (dialog_repl_cluster/* && shtag_state != SHTAG_STATE_BACKUP // already active */)
 			replicate_dialog_updated(dlg);
 
 		unref_dlg(dlg, 1);

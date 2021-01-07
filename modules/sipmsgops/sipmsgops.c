@@ -484,10 +484,11 @@ static int append_time_f(struct sip_msg* msg, char* p1, char *p2)
 	char time_str[MAX_TIME];
 	time_t now;
 	struct tm *bd_time;
+	struct tm bd_time_buff;
 
 	now=time(0);
 
-	bd_time=gmtime(&now);
+	bd_time=gmtime_r(&now, &bd_time_buff);
 	if (bd_time==NULL) {
 		LM_ERR("gmtime failed\n");
 		return -1;

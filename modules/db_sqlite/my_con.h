@@ -22,8 +22,8 @@
  * -------
  *  2015-02-18  initial version (Ionut Ionita)
 */
-#ifndef MY_CON_H_
-#define MY_CON_H_
+#ifndef MY_SQLITE_CON_H
+#define MY_SQLITE_CON_H
 #define PREP_STMT_VAL_LEN	1024
 
 #include <sqlite3.h>
@@ -77,4 +77,4 @@ int db_sqlite_connect(struct my_con* ptr);
 struct my_con* db_sqlite_new_connection(const struct db_id* id);
 void db_sqlite_free_connection(struct pool_con* con);
 
-#endif
+#endif /* MY_SQLITE_CON_H */

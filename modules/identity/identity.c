@@ -505,6 +505,7 @@ static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 	char* buf;
 	size_t len = 0;
 	struct tm * bd_time = NULL;
+	struct tm bd_time_buff;
 
 	if(!dateHF || !dateHFValue || !msg)
 	{
@@ -514,7 +515,7 @@ static int addDate(char * dateHF, time_t * dateHFValue, struct sip_msg * msg)
 
 	*dateHFValue = time(0);
 
-	bd_time = gmtime(dateHFValue);
+	bd_time = gmtime_r(dateHFValue, &bd_time_buff);
 	if(!bd_time)
 	{
 		LM_ERR("gmtime failed\n");

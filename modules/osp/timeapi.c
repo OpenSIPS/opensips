@@ -108,9 +108,10 @@ int ospTimeToStr(
     int bufsize)
 {
     struct tm* tmdate;
+    struct tm tmbubf;
     int result = 0;
 
-    tmdate = gmtime(&timeval);
+    tmdate = gmtime_r(&timeval, &tmbuf);
     if ((tmdate == NULL) || (strftime(timestr, bufsize, OSP_DATEHEADER_FORMAT, tmdate) == 0)) {
         LM_ERR("failed to convert time to string\n");
         result = -1;

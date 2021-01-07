@@ -334,12 +334,13 @@ static int add_date_hf(struct sip_msg *msg, time_t *date_ts)
 	#define DATE_HDR_S  "Date: "
 	#define DATE_HDR_L  (sizeof(DATE_HDR_S)-1)
 
+	struct tm ldate_tm;
 	struct tm *date_tm;
 	char *buf;
 	int len;
 	struct lump* anchor;
 
-	date_tm = gmtime(date_ts);
+	date_tm = gmtime_r(date_ts, &ldate_tm);
 	if (!date_tm) {
 		LM_ERR("Failed to convert timestamp to broken-down time\n");
 		return -1;
