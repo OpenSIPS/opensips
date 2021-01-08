@@ -1845,7 +1845,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 		do { \
 			(_s).len = *(short *)p;\
 			if ((_s).len<0 || (_s).len>_len) {\
-				LM_ERR("bad length %hd in encoded contact\n", (_s).len);\
+				LM_ERR("bad length %d in encoded contact\n", (_s).len);\
 				goto err_free_buf;\
 			}\
 			(_s).s = _p + sizeof(short);\
