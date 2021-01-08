@@ -16,13 +16,24 @@
 		</db:para>
 	</description>
 
-	<column>
+	<column id="id">
+		<name>id</name>
+		<type>unsigned int</type>
+		<size>&table_id_len;</size>
+		<autoincrement/>
+		<natural/>
+		<primary/>
+		<type db="dbtext">int,auto</type>
+		<description>Table primary key, not used by module
+		</description>
+	</column>
+
+	<column id="keyname">
 		<name>keyname</name>
 		<type>string</type>
 		<size>255</size>
 		<primary/>
 		<description>The Key</description>
-		
 	</column>
 
 	<column>
@@ -47,4 +58,11 @@
 		<default>0</default>
 		<description>The unix timestamp when the key will expires</description>
 	</column>
+
+	<index>
+		<name>cachedbsql_keyname_idx</name>
+		<colref linkend="keyname"/>
+		<unique/>
+	</index>
+
 </table>
