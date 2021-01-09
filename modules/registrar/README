@@ -223,9 +223,9 @@ Chapter 1. Admin Guide
        they may be found in the Contact URI ('uri' event
        parameter) and may be extracted using the {uri.param,name}
        transformation. From here onwards, it is up to the script
-       developer to trigger the Push Notification, thus forcing a
-       re-registration from the device (e.g. possibly by sending
-       an HTTP POST with the rest_client module)
+       developer to trigger the Push Notification (e.g. possibly
+       by sending an HTTP POST with the rest_client module), thus
+       forcing a re-registration from the device.
      * REGISTER processing is unchanged -- PN-enabled UAs are
        saved just as regular UAs, with the former ones
        additionally having the 4 bitflag set in the "Flags" field
@@ -259,6 +259,7 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * usrloc - User Location Module.
      * signaling - Signaling module.
+     * event_routing, if pn_enable is set to true.
 
 1.2.2. External Libraries or Applications
 
@@ -620,9 +621,10 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
    The minimally required list of RFC 8599 parameters (custom ones
    are accepted as well) which must be present in a Contact URI
    and identically match an existing binding in order for the
-   binding to be refreshed. If at least one such parameter is
-   missing from a Contact header field URI, the module will fall
-   back to performing regular contact matching.
+   binding to be refreshed during a SIP re-REGISTER. If at least
+   one such parameter is missing from a Contact header field URI,
+   the module will fall back to performing regular contact
+   matching.
 
    Note that if all above PN Contact URI parameters match an
    existing binding, the match is considered to be successful
@@ -727,11 +729,12 @@ modparam("registrar", "pn_refresh_timeout", 10)
    for the registration (PURR - Proxy Unique Registration
    Reference).
 
-   For each initial request for dialog, the UA may include the
-   PURR received from the registrar in its Contact header (using
-   the ";pn-purr" URI parameter) if it expects to be first awoken
-   by a Push Notification before being able to receive mid-dialog
-   request sent by the callee side.
+   During dialog setup, each UA may include, in its Contact
+   header, the PURR value returned by OpenSIPS during
+   registration. By including the PURR (e.g. ";pn-purr=XXX"), an
+   agent indicates that it expects to be first awoken by a PN
+   before being able to receive a mid-dialog request sent by the
+   other party.
 
    When enabling this parameter, make sure to also add logic for
    pn_process_purr().
@@ -1190,12 +1193,12 @@ add_sock_hdr("Sock-Info");
    the OpenSIPS PURR format and corresponds to an usrloc
    registration. Once a usrloc contact is located, trigger an
    E_UL_CONTACT_REFRESH event and place the request on async hold
-   for at most pn_refresh_timeout seconds, until a matching Push
-   Notification arrives.
+   for at most pn_refresh_timeout seconds, until a matching
+   REGISTER request arrives.
 
    If processing ends before triggering the Push Notification, the
-   request will no longer block and the resume route will be
-   immediately called.
+   request will no longer be put on async hold, with the resume
+   route being immediately called.
 
    Meaning of the parameters is as follows:
      * domain (static string) - Logical domain within registrar.
@@ -1373,7 +1376,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 181 109 2775 2990
+   1. Liviu Chircu (@liviuchircu) 182 110 2781 2990
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 167 113 2382 2031
    3. Jan Janak (@janakj) 120 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
@@ -1416,7 +1419,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Nov 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2021
    2.  Maksym Sobolyev (@sobomax)          Jul 2004 - Oct 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jul 2020
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020

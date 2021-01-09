@@ -7,7 +7,7 @@ Fraud Detection Module
 
         1.1. Overview
 
-              1.1.1. Monitorized Stats
+              1.1.1. Monitored Stats
               1.1.2. Fraud rules
 
         1.2. Dependencies
@@ -96,7 +96,7 @@ Chapter 1. Admin Guide
    This module provides a way to prevent some basic fraud attacks.
    Alerts are provided through return codes and events.
 
-1.1.1. Monitorized Stats
+1.1.1. Monitored Stats
 
    Basically, this module watches the following parameters:
      * Total calls
@@ -396,11 +396,16 @@ hresh")
 1.4.1.  check_fraud(user, number, profile_id)
 
    This method should be called each time a given user calls a
-   given number. It will try to match a fraud rule within de given
-   fraud profile and update the stats (see above). Furthermore,
-   the stats will be checked against the rule's thresholds. If any
-   of the stats is above it's threshold value the appropriate
-   event will also be raised (see further details below).
+   given number. It will try to match a fraud rule within the
+   given fraud profile and update the stats (see above).
+   Furthermore, the stats will be checked against the rule's
+   thresholds. If any of the stats is above its threshold value,
+   the appropriate event will also be raised (see further details
+   below).
+
+   Designed to only work with initial INVITE messages! If a dialog
+   is not already present, one will be created (equivalent of
+   create_dialog()).
 
    Meaning of the parameters is as follows:
      * user (string) - the user who is making the call. Please
@@ -487,7 +492,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 42 34 332 266
+   1. Liviu Chircu (@liviuchircu) 43 35 341 270
    2. Andrei Datcu (@andrei-datcu) 37 11 2665 235
    3. Vlad Patrascu (@rvlad-patrascu) 8 5 73 114
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 20 31
@@ -515,7 +520,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Oct 2020
+   1. Liviu Chircu (@liviuchircu)         Mar 2015 - Jan 2021
    2. Razvan Crainea (@razvancrainea)     Feb 2015 - Sep 2019
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019

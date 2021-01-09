@@ -27,8 +27,8 @@ Auth Module
 
         1.5. Exported Functions
 
-              1.5.1. www_challenge(realm, qop)
-              1.5.2. proxy_challenge(realm, qop)
+              1.5.1. www_challenge(realm[, qop])
+              1.5.2. proxy_challenge(realm[, qop])
               1.5.3. consume_credentials()
               1.5.4. is_rpid_user_e164()
               1.5.5. append_rpid_hf()
@@ -261,7 +261,7 @@ modparam("auth", "disable_nonce_check", 1)
 
 1.5. Exported Functions
 
-1.5.1.  www_challenge(realm, qop)
+1.5.1.  www_challenge(realm[, qop])
 
    The function challenges a user agent. It will generate a
    WWW-Authorize header field containing a digest challenge, it
@@ -304,7 +304,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 };
 ...
 
-1.5.2.  proxy_challenge(realm, qop)
+1.5.2.  proxy_challenge(realm[, qop])
 
    The function challenges a user agent. It will generate a
    Proxy-Authorize header field containing a digest challenge, it
@@ -507,7 +507,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 48 32 693 604
    3. Daniel-Constantin Mierla (@miconda) 39 21 1136 476
    4. Jiri Kuthan (@jiriatipteldotorg) 26 19 660 51
-   5. Liviu Chircu (@liviuchircu) 20 13 135 253
+   5. Liviu Chircu (@liviuchircu) 21 14 137 255
    6. Vlad Patrascu (@rvlad-patrascu) 13 7 193 210
    7. Razvan Crainea (@razvancrainea) 12 9 87 102
    8. Anca Vamanu 12 5 497 77
@@ -541,7 +541,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Oct 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
    2.  Maksym Sobolyev (@sobomax)          Jan 2005 - Oct 2020
    3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019

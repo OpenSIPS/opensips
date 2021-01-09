@@ -98,8 +98,9 @@ Chapter 1. Admin Guide
 
 1.2. Monitored Statistics
 
-   The module keeps track of the following statistics, for each
-   drouting gateway:
+   The module keeps track of a series of statistics, for each
+   drouting (prefix, destination) pair, where a "destination" may
+   be either a gateway or a carrier. The statistics are:
      * ASR (Answer Seizure Ratio) - the percentage of telephone
        calls which are answered (200 reply status code).
      * CCR (Call Completion Ratio) - the percentage of telephone
@@ -317,7 +318,7 @@ modparam("qrouting", "min_samples_acd", 30)
 
    The minimally accepted quality of a (prefix, destination)
    combination, given as a quoted floating point number in the [0,
-   1] interval. Whenever a (prefix + destination combination)
+   1] interval. Whenever a (prefix, destination) combination
    receives a score below this threshold, the E_QROUTING_BAD_DST
    event will be triggered.
 
@@ -482,7 +483,8 @@ opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
 1.7.1.  E_QROUTING_BAD_DST
 
    This event may be raised during routing, asynchronously,
-   whenever a gateway's score falls below event_bad_dst_threshold.
+   whenever the score of a (prefix, destination) pair falls below
+   event_bad_dst_threshold.
 
    Parameters:
      * partition - drouting partition name
@@ -496,7 +498,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 140 56 4768 2709
+   1. Liviu Chircu (@liviuchircu) 141 57 4775 2714
    2. Mihai Tiganus (@tallicamike) 49 15 2955 509
    3. Maksym Sobolyev (@sobomax) 3 1 1 1
    4. Zero King (@l2dy) 3 1 1 1
@@ -523,8 +525,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   2. Liviu Chircu (@liviuchircu)         Jan 2020 - Jul 2020
+   1. Liviu Chircu (@liviuchircu)         Jan 2020 - Jan 2021
+   2. Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2020 - Mar 2020
    4. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5. Razvan Crainea (@razvancrainea)     Feb 2020 - Feb 2020

@@ -271,13 +271,14 @@ modparam("rest_client", "enable_expect_100", true)
 
    Parameters:
      * url (string)
-     * body_pv (var) - variable that will hold the body of the
-       HTTP response.
-     * ctype_pv (var, optional) - variable thah will contain the
-       value of the "Content-Type:" header of the response.
-     * retcode_pv (var, optional) - variable that will retain the
-       status code of the HTTP response. A 0 status code value
-       means no HTTP reply arrived at all.
+     * body_pv (var) - output variable which will hold the body of
+       the HTTP response.
+     * ctype_pv (var, optional) - output variable which will
+       contain the value of the "Content-Type:" header of the
+       response.
+     * retcode_pv (var, optional) - output variable which will
+       retain the status code of the HTTP response. A 0 status
+       code value means no HTTP reply arrived at all.
 
    Return Codes
      * 1 - Success
@@ -331,13 +332,14 @@ if ($var(rcode) != 200) {
      * send_ctype (string, optional) - The MIME Content-Type
        header for the request. The default is
        "application/x-www-form-urlencoded"
-     * recv_body_pv (var) - the variable will hold the body of the
-       HTTP response.
-     * recv_ctype_pv (var, optional) - will contain the value of
-       the "Content-Type" header of the response
-     * retcode_pv (var, optional) - variable that will retain the
-       status code of the HTTP response. A 0 status code value
-       means no HTTP reply arrived at all.
+     * recv_body_pv (var) - output variable which will hold the
+       body of the HTTP response.
+     * recv_ctype_pv (var, optional) - output variable which will
+       contain the value of the "Content-Type" header of the
+       response
+     * retcode_pv (var, optional) - output variable which will
+       retain the status code of the HTTP response. A 0 status
+       code value means no HTTP reply arrived at all.
 
    Return Codes
      * 1 - Success
@@ -390,13 +392,14 @@ if ($var(rcode) != 200) {
      * send_ctype (string, optional) - The MIME Content-Type
        header for the request. The default is
        "application/x-www-form-urlencoded"
-     * recv_body_pv (var) - the variable will hold the body of the
-       HTTP response.
-     * recv_ctype_pv (var, optional) - will contain the value of
-       the "Content-Type" header of the response
-     * retcode_pv (var, optional) - variable that will retain the
-       status code of the HTTP response. A 0 status code value
-       means no HTTP reply arrived at all.
+     * recv_body_pv (var) - output variable which will hold the
+       body of the HTTP response.
+     * recv_ctype_pv (var, optional) - output variable which will
+       contain the value of the "Content-Type" header of the
+       response
+     * retcode_pv (var, optional) - output variable which will
+       retain the status code of the HTTP response. A 0 status
+       code value means no HTTP reply arrived at all.
 
    Return Codes
      * 1 - Success
@@ -458,9 +461,9 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 
 1.5.5.  rest_init_client_tls(tls_client_domain)
 
-   Force a specific TLS domain to be eventually used during the
-   next request. Refer to the tls_mgm module for additional info
-   regarding TLS client domains.
+   Force a specific TLS domain to be used at most once, during the
+   next GET/POST/PUT request. Refer to the tls_mgm module for
+   additional info regarding TLS client domains.
 
    If using this function, you must also ensure that tls_mgm is
    loaded and properly configured.
@@ -585,7 +588,7 @@ route [resume] {
 1.7. Exported script transformations
 
    The module also provides a way for encoding and decoding
-   parameters contained in a arbitrary script variable, in
+   parameters contained in an arbitrary script variable, in
    accordance with RFC3986. This is done by applying a
    transformation to a script variable containing the data to be
    encoded. The value of the original variable is not altered and
@@ -638,7 +641,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 123 68 3459 1585
+   1. Liviu Chircu (@liviuchircu) 125 69 3485 1603
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 16 7 332 341
    4. Razvan Crainea (@razvancrainea) 15 13 41 17
@@ -672,8 +675,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jul 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2021
+   2.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2020
    4.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
    5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
