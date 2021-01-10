@@ -1029,7 +1029,9 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		top_node = get_node_by_id(source->cluster, top_node_id[i]);
 
 		if (!skip && !top_node) {
-			if (!top_node_info[i][0]) {
+			if (db_mode) {
+				skip = 1;
+			} else if (!top_node_info[i][0]) {
 				LM_WARN("Unknown node id [%d] in topology update with "
 					"source [%d]\n", top_node_id[i], source->node_id);
 				skip = 1;
@@ -1069,6 +1071,8 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 		for (j = 0; j < top_node_info[i][3]; j++) {
 			top_neigh = get_node_by_id(source->cluster, top_node_info[i][j+4]);
 			if (!top_neigh && top_node_info[i][j+4] != current_id) {
+				if (db_mode)
+					continue;
 				for (n_idx = 0;
 					 n_idx < no_nodes && top_node_info[i][j+4] != top_node_id[n_idx];
 					 n_idx++);
@@ -1208,7 +1212,8 @@ void handle_ls_update(bin_packet_t *received, node_info_t *src_node,
 	bin_pop_int(received, &new_ls);
 	ls_neigh = get_node_by_id(src_node->cluster, neigh_id);
 	if (!ls_neigh && neigh_id != current_id) {
-		LM_WARN("Received link state update about unknown node id [%d]\n", neigh_id);
+		if (!db_mode)
+			LM_WARN("Received link state update about unknown node id [%d]\n", neigh_id);
 		lock_release(src_node->lock);
 		return;
 	}

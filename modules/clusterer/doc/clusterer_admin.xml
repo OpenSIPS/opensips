@@ -17,7 +17,7 @@
 		Note that an &osips; instance can belong to multiple clusters, communicating and establishing the topology separately for each one. In order to provision this in the database or the script, each node has an unique ID at global level, which can be referenced in each cluster.
 	</para>
 	<para>
-		An &osips; instance can dynamically learn all the nodes in the cluster that are not provisioned in the database. For instances that do not load any node info from the DB, it is enough to define at least one neigbour in the script in order to discover all the cluster components. 
+		An &osips; instance can dynamically learn all the nodes in the cluster if database provisioning is not desired. It is enough to define at least one neigbour in the script in order to discover all the cluster components.
 	</para>
 	</section>
 
@@ -114,6 +114,10 @@ modparam("clusterer", "my_node_id", 1)
 				and <xref linkend="param_neighbor_node_info"/>). A value of <quote>0</quote>
 				means that DB is not used and the cluster topology in terms of node
 				information will be discovered dynamically at runtime.
+			</para>
+			<para>
+				If DB mode is enabled, only the nodes defined in the database will be
+				accepted by this instance.
 			</para>
             <para>
 		<emphasis>

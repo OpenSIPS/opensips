@@ -852,7 +852,10 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		return;
 	}
 
-	lock_start_sw_read(cl_list_lock);
+	if (!db_mode)
+		lock_start_sw_read(cl_list_lock);
+	else
+		lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cl_id);
 	if (!cl) {
@@ -872,7 +875,9 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 
 	if (!node) {
 		LM_INFO("Received message with unknown source id [%d]\n", source_id);
-		handle_internal_msg_unknown(packet, cl, packet_type, &ri->src_su, source_id);
+		if (!db_mode)
+			handle_internal_msg_unknown(packet, cl, packet_type, &ri->src_su,
+				source_id);
 	} else {
 		handle_internal_msg(packet, packet_type, node, now,	&ev_actions_required);
 		if (ev_actions_required)
@@ -880,7 +885,10 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	}
 
 exit:
-	lock_stop_sw_read(cl_list_lock);
+	if (!db_mode)
+		lock_stop_sw_read(cl_list_lock);
+	else
+		lock_stop_read(cl_list_lock);
 }
 
 void run_mod_packet_cb(int sender, void *param)
