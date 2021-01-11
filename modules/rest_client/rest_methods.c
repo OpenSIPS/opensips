@@ -860,17 +860,19 @@ cleanup:
 	return ret;
 }
 
-enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_param)
+static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
+										rest_async_param *param, int timed_out)
 {
 	CURLcode rc;
 	CURLMcode mrc;
-	rest_async_param *param = (rest_async_param *)_param;
 	int running = 0, max_fd;
 	long http_rc = 0;
 	fd_set rset, wset, eset;
 	pv_value_t val;
 	int ret = RCL_INTERNAL_ERR, retr;
 	CURLM *multi_handle;
+
+	LM_DBG("resume async processing...\n");
 
 	multi_handle = param->multi_list->multi_handle;
 
@@ -894,15 +896,17 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		goto out;
 	}
 
-	if (running == 1) {
-		LM_DBG("transfer in progress...\n");
-		async_status = ASYNC_CONTINUE;
-		return 1;
-	}
+	if (!timed_out) {
+		if (running == 1) {
+			LM_DBG("transfer in progress...\n");
+			async_status = ASYNC_CONTINUE;
+			return 1;
+		}
 
-	if (running != 0) {
-		LM_BUG("non-zero running handles!! (%d)", running);
-		goto out;
+		if (running != 0) {
+			LM_BUG("non-zero running handles!! (%d)", running);
+			goto out;
+		}
 	}
 
 	FD_ZERO(&rset);
@@ -918,7 +922,7 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 			goto out;
 		}
 
-	} else if (FD_ISSET(fd, &rset)) {
+	} else if (!timed_out && FD_ISSET(fd, &rset)) {
 		LM_DBG("fd %d still transferring...\n", fd);
 		async_status = ASYNC_CONTINUE;
 		return 1;
@@ -937,10 +941,9 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 		http_rc = 0;
 	}
 
-	if (get_easy_status(param->handle, multi_handle, &rc) < 0) {
-		LM_ERR("transfer is done, but no results found!\n");
-		goto out;
-	}
+	if (get_easy_status(param->handle, multi_handle, &rc) < 0)
+		LM_DBG("download finished, but an HTTP status is not available "
+		        "(timed_out: %d)\n", timed_out);
 
 	if (param->code_pv) {
 		val.flags = PV_VAL_INT|PV_TYPE_INT;
@@ -1006,9 +1009,26 @@ out:
 	}
 	pkg_free(param);
 
+	if (timed_out)
+		ret = RCL_TRANSFER_TIMEOUT;
+
 	/* default async status is ASYNC_DONE */
 	return ret;
 }
+
+
+enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_param)
+{
+	return _resume_async_http_req(fd, msg, (rest_async_param *)_param, 0);
+}
+
+
+enum async_ret_code time_out_async_http_req(int fd, struct sip_msg *msg, void *_param)
+{
+	LM_INFO("transfer timed out (async statement timeout)\n");
+	return _resume_async_http_req(fd, msg, (rest_async_param *)_param, 1);
+}
+
 
 /**
  * rest_append_hf - add a custom HTTP header before a rest call

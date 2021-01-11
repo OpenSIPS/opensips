@@ -656,6 +656,7 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	}
 
 	ctx->resume_f = resume_async_http_req;
+	ctx->timeout_f = time_out_async_http_req;
 
 	param->method = method;
 	param->body_pv = (pv_spec_p)body_pv;

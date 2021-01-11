@@ -127,7 +127,10 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
                          char *url, str *req_body, str *req_ctype,
                          rest_async_param *async_parm, str *body, str *ctype,
 						 enum async_ret_code *out_fd);
-enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *param);
+
+enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_param);
+enum async_ret_code time_out_async_http_req(int fd, struct sip_msg *msg, void *_param);
+
 
 int rest_append_hf_method(struct sip_msg *msg, str *hfv);
 int rest_init_client_tls(struct sip_msg *msg, str *tls_client_dom);
