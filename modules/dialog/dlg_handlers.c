@@ -377,6 +377,15 @@ static inline str* extract_mangled_fromuri(str *mangled_from_hdr)
 	return &extracted_from_uri;
 }
 
+static inline void dlg_release_cloned_leg(struct dlg_cell *dlg)
+{
+	struct dlg_leg *leg = &dlg->legs[dlg->legs_no[DLG_LEGS_USED] - 1];
+	shm_free(leg->adv_contact.s);
+	if (leg->out_sdp.s)
+		shm_free(leg->out_sdp.s);
+	dlg->legs_no[DLG_LEGS_USED]--;
+}
+
 static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
 {
@@ -434,6 +443,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 	if (update_leg_info(leg, dlg, rpl, &tag,extract_mangled_fromuri(mangled_from),
 				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
+		dlg_release_cloned_leg(dlg);
 		goto out;
 	}
 
