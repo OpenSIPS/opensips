@@ -99,6 +99,7 @@
 		<type>unsigned int</type>
 		<size>10</size>
 		<null/>
+		<default><null/></default>
 		<description>Whenever the 'Q' (quality-based routing) sorting algorithm
 			is provided, this column must hold a profile id belonging to the
 			"qr_profiles" table.
