@@ -384,6 +384,9 @@ static inline unsigned int count_local_rr(struct sip_msg *req)
 /* introduce a new uac to transaction; returns its branch id (>=0)
    or error (<0); it doesn't send a message yet -- a reply to it
    might interfere with the processes of adding multiple branches
+
+   NOTICE: do NOT provide (str *) buffers pointing to @request itself, as this
+   may break the function logic!
 */
 static int add_uac( struct cell *t, struct sip_msg *request, const str *uri,
 		str* next_hop, unsigned int bflags, str* path, struct proxy_l *proxy)
@@ -693,9 +696,6 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	str path;
 	str bk_path;
 
-	/* make -Wall happy */
-	current_uri.s=0;
-
 	/* before doing enything, update the t flags from msg */
 	t->uas.request->flags = p_msg->flags;
 
@@ -757,8 +757,10 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 			t->first_branch--;
 	}
 
+	current_uri = *GET_RURI(p_msg); /* separate storage required! */
+
 	/* as first branch, use current R-URI, bflags, etc. */
-	branch_ret = add_uac( t, p_msg, GET_RURI(p_msg), &backup_dst,
+	branch_ret = add_uac( t, p_msg, &current_uri, &backup_dst,
 		getb0flags(p_msg), &p_msg->path_vec, proxy);
 	if (branch_ret>=0)
 		added_branches |= 1<<branch_ret;
