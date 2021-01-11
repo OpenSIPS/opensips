@@ -32,7 +32,7 @@ CREATE TABLE dr_rules (
     routeid VARCHAR2(255) DEFAULT NULL,
     gwlist VARCHAR2(255),
     sort_alg VARCHAR2(1) DEFAULT 'N',
-    sort_profile NUMBER(10),
+    sort_profile NUMBER(10) DEFAULT NULL,
     attrs VARCHAR2(255) DEFAULT NULL,
     description VARCHAR2(128) DEFAULT NULL
 );
