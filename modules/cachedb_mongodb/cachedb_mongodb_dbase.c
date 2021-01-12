@@ -1365,12 +1365,14 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						       _c[c]->len, _c[c]->s, VAL_DOUBLE(cur_val));
 						break;
 					case BSON_TYPE_UTF8:
-						VAL_TYPE(cur_val) = DB_STR;
 						st.s = (char *)bson_iter_utf8(&iter, (unsigned int *)&st.len);
-						if (pkg_nt_str_dup(&VAL_STR(cur_val), &st) != 0) {
+						if (pkg_nt_str_dup(&st, &st) != 0) {
 							LM_ERR("oom\n");
 							goto out_err;
 						}
+
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = st.s;
 						VAL_FREE(cur_val) = 1;
 						LM_DBG("Found string [%.*s]=[%.*s]\n",
 						       _c[c]->len, _c[c]->s, st.len, st.s);
