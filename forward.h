@@ -114,7 +114,7 @@ static inline int msg_send( struct socket_info* send_sock, int proto,
 	/* the raw processing callbacks are free to change whatever inside
 	 * the buffer further use out_buff.s and at the end try to free out_buff.s
 	 * if changed by callbacks */
-	if (proto != PROTO_BIN)
+	if ( is_sip_proto(proto) )
 		run_post_raw_processing_cb(POST_RAW_PROCESSING,&out_buff, msg);
 
 	/* update the length for further processing */
