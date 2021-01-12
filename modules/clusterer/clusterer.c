@@ -843,6 +843,11 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 
+	if (!su_ip_cmp(&ri->src_su, &node->addr)) {
+		LM_WARN("Received message from unknown source, addr: %s\n", ip);
+		goto exit;
+	}
+
 	lock_get(node->lock);
 
 	/* if the node was down, restart pinging */
@@ -958,6 +963,11 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 			handle_internal_msg_unknown(packet, cl, packet_type, &ri->src_su,
 				source_id);
 	} else {
+		if (!su_ip_cmp(&ri->src_su, &node->addr)) {
+			LM_WARN("Received message from unknown source, addr: %s\n", ip);
+			goto exit;
+		}
+
 		handle_internal_msg(packet, packet_type, node, now,	&ev_actions_required);
 		if (ev_actions_required)
 			do_actions_node_ev(cl, &ev_actions_required, 1);
@@ -1074,7 +1084,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 
-	if (!su_ip_cmp(&ri->src_su, &node->addr) && !ip_check(cl, &ri->src_su, NULL)) {
+	if (!su_ip_cmp(&ri->src_su, &node->addr)) {
 		LM_WARN("Received message from unknown source, addr: %s\n", ip);
 		goto exit;
 	}
