@@ -59,7 +59,6 @@ extern dlist_t* root;
  * will be returned, otherwise a new domain will be
  * created
  */
-typedef int (*register_udomain_t)(const char* _n, udomain_t** _d);
 int register_udomain(const char* _n, udomain_t** _d);
 
 
@@ -78,17 +77,12 @@ int _synchronize_all_udomains(void);
 /*! \brief
  * Get contacts to all registered users
  */
-typedef int  (*get_all_ucontacts_t) (void* buf, int len, unsigned int flags,
-		unsigned int part_idx, unsigned int part_max, int pack_cid);
 int get_all_ucontacts(void *, int, unsigned int,
 		unsigned int part_idx, unsigned int part_max, int pack_cid);
 
 /*! \brief
  * Get contacts structures to all registered users
  */
-typedef int  (*get_domain_ucontacts_t) (udomain_t *d, void* buf, int len,
-		unsigned int flags, unsigned int part_idx, unsigned int part_max,
-		int pack_cid);
 int get_domain_ucontacts(udomain_t *d,void *buf, int len, unsigned int flags,
 					unsigned int part_idx, unsigned int part_max, int pack_cid);
 
@@ -107,7 +101,6 @@ int find_domain(str* _d, udomain_t** _p);
 /*! \brief
  * Returnes the next udomain, following the given one (as param)
  */
-typedef udomain_t* (*get_next_udomain_t) (udomain_t* _d);
 udomain_t* get_next_udomain(udomain_t *_d);
 
 /* when using various DBs (SQL/NoSQL) in order to store AoR hashes, it's best
@@ -146,16 +139,12 @@ unpack_indexes(uint64_t v,
 	*aorhash = (v >> 46);
 }
 
-typedef int (*delete_ucontact_from_coords_t)(udomain_t *d,
-                   ucontact_coords ct_coords, char is_replicated);
 int delete_ucontact_from_coords(udomain_t *d,
-		ucontact_coords ct_coords, char is_replicated);
+		ucontact_coords ct_coords, char skip_replication);
 
 /*
- * update sipping latancy
+ * update sipping latency
  */
-typedef int (*update_sipping_latency_t)(udomain_t *d,
-                    ucontact_coords ct_coords, int sipping_latency);
 int update_sipping_latency(udomain_t *d, ucontact_coords ct_coords,
                            int sipping_latency);
 

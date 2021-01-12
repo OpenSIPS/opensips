@@ -120,14 +120,12 @@ void mem_delete_urecord(udomain_t* _d, struct urecord* _r);
 /*! \brief
  * Locks the domain hash entrie corresponding to AOR
  */
-typedef void (*lock_udomain_t)(udomain_t* _d, str *_aor);
 void lock_udomain(udomain_t* _d, str *_aor);
 
 
 /*! \brief
  *  Unlocks the domain hash entrie corresponding to AOR
  */
-typedef void (*unlock_udomain_t)(udomain_t* _d, str *_aor);
 void unlock_udomain(udomain_t* _d, str *_aor);
 
 struct ucontact* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, struct urecord **_r);
@@ -135,14 +133,12 @@ struct ucontact* get_ucontact_from_id(udomain_t *d, uint64_t contact_id, struct 
 /*! \brief
  * Locks the specific domain hash entrie
  */
-typedef void (*lock_ulslot_t)(udomain_t* _d, int slot);
 void lock_ulslot(udomain_t* _d, int slot);
 
 
 /*! \brief
  * Unlocks the specific domain hash entrie
  */
-typedef void (*unlock_ulslot_t)(udomain_t* _d, int slot);
 void unlock_ulslot(udomain_t* _d, int slot);
 #define _unlock_ulslot(domain, contact_id) \
 	do { \
@@ -158,23 +154,18 @@ void unlock_ulslot(udomain_t* _d, int slot);
 /*! \brief
  * Create and insert a new record
  */
-typedef int (*insert_urecord_t)(udomain_t* _d, str* _aor, struct urecord** _r,
-                                char is_replicated);
 int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
-                   char is_replicated);
+                   char skip_replication);
 
 /*! \brief
  * Obtain a urecord pointer if the urecord exists in domain
  */
-typedef int  (*get_urecord_t)(udomain_t* _d, str* _a, struct urecord** _r);
 int get_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 
 /*! \brief
  * Only relevant in a federation @cluster_mode.
  * Obtain urecord pointer if AoR exists in at least one location.
  */
-typedef int
-(*get_global_urecord_t)(udomain_t* _d, str* _a, struct urecord** _r);
 int get_global_urecord(udomain_t* _d, str* _aor, struct urecord** _r);
 
 int cdb_update_urecord_metadata(const str *_aor, int unpublish);
@@ -183,9 +174,7 @@ int cdb_update_urecord_metadata(const str *_aor, int unpublish);
 /*! \brief
  * Delete a urecord from domain
  */
-typedef int  (*delete_urecord_t)(udomain_t* _d, str* _a, struct urecord* _r,
-                                 char is_replicated);
 int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
-                   char is_replicated);
+                   char skip_replication);
 
 #endif /* UDOMAIN_H */
