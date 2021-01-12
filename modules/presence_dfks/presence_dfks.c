@@ -966,7 +966,7 @@ void mi_feature_notify(int sender, void *_params)
 	notify_body = build_feature_notify(&params->pres_uri, params->feature_idx,
 		0, &params->param, &ct_type);
 	if (notify_body == (str*)-1) {
-		LM_ERR("Failed to build NOTIFY body");
+		LM_ERR("Failed to build NOTIFY body\n");
 		goto end;
 	}
 

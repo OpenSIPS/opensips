@@ -535,7 +535,7 @@ static int build_unsigned_pport(str *buf, time_t iat_ts, str *attest,
 
 	hdr_json_str.s = build_pport_hdr_json(cr_url);
 	if (!hdr_json_str.s) {
-		LM_ERR("Failed to build PASSporT's json header");
+		LM_ERR("Failed to build PASSporT's json header\n");
 		return -1;
 	}
 	hdr_json_str.len = strlen(hdr_json_str.s);
@@ -545,7 +545,7 @@ static int build_unsigned_pport(str *buf, time_t iat_ts, str *attest,
 	payload_json_str.s = build_pport_payload_json(attest, orig_tn, dest_tn,
 		iat_ts, origid);
 	if (!payload_json_str.s) {
-		LM_ERR("Failed to build PASSporT's json payload");
+		LM_ERR("Failed to build PASSporT's json payload\n");
 		goto error;
 	}
 	payload_json_str.len = strlen(payload_json_str.s);
@@ -939,7 +939,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	}
 
 	if (get_header_by_static_name(msg, "Identity")) {
-		LM_INFO("Identity header already exists");
+		LM_INFO("Identity header already exists\n");
 		return -2;
 	}
 
