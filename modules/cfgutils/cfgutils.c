@@ -405,7 +405,7 @@ mi_response_t *mi_check_hash(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Functionality disabled"));
 	} else {
 		if (MD5File(tmp, hash_file) != 0) {
-			LM_ERR("could not hash the config file");
+			LM_ERR("could not hash the config file\n");
 			return init_mi_error(500, MI_SSTR("Internal error"));
 		}
 

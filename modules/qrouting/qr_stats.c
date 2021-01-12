@@ -412,7 +412,7 @@ void qr_rld_prepare_part(void *param)
 		memset(pl, 0, sizeof *pl);
 
 		if (!(pl->rw_lock = lock_init_rw())) {
-			LM_ERR("failed to init rw lock");
+			LM_ERR("failed to init rw lock\n");
 			goto error;
 		}
 

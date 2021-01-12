@@ -76,7 +76,7 @@ rw_lock_t *smpp_lock;       /* reader-writers lock for reloading the data */
 static uint32_t get_payload_from_header(char *payload, smpp_header_t *header)
 {
 	if (!payload || !header) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		return 0;
 	}
 
@@ -92,7 +92,7 @@ static uint32_t get_payload_from_header(char *payload, smpp_header_t *header)
 static uint32_t get_payload_from_bind_transceiver_body(char *body, smpp_bind_transceiver_t *transceiver)
 {
 	if (!body || !transceiver) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		return 0;
 	}
 
@@ -111,7 +111,7 @@ static uint32_t get_payload_from_bind_transceiver_body(char *body, smpp_bind_tra
 static uint32_t get_payload_from_bind_transceiver_resp_body(char *body, smpp_bind_transceiver_resp_t *transceiver_resp)
 {
 	if (!body || !transceiver_resp) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		return 0;
 	}
 
@@ -124,7 +124,7 @@ static uint32_t get_payload_from_bind_transceiver_resp_body(char *body, smpp_bin
 uint32_t get_payload_from_submit_sm_body(char *body, smpp_submit_sm_t *submit_sm)
 {
 	if (!body || !submit_sm) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		return 0;
 	}
 
@@ -154,7 +154,7 @@ uint32_t get_payload_from_submit_sm_body(char *body, smpp_submit_sm_t *submit_sm
 uint32_t get_payload_from_deliver_sm_resp_body(char *body, smpp_deliver_sm_resp_t *deliver_sm_resp)
 {
 	if (!body || !deliver_sm_resp) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		return 0;
 	}
 
@@ -165,7 +165,7 @@ uint32_t get_payload_from_deliver_sm_resp_body(char *body, smpp_deliver_sm_resp_
 uint32_t get_payload_from_submit_sm_resp_body(char *body, smpp_submit_sm_resp_t *submit_sm_resp)
 {
 	if (!body || !submit_sm_resp) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		return 0;
 	}
 
@@ -176,7 +176,7 @@ uint32_t get_payload_from_submit_sm_resp_body(char *body, smpp_submit_sm_resp_t 
 static int build_bind_transceiver_request(smpp_bind_transceiver_req_t **preq, smpp_session_t *session)
 {
 	if (!preq || !session) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		goto err;
 	}
 
@@ -184,25 +184,25 @@ static int build_bind_transceiver_request(smpp_bind_transceiver_req_t **preq, sm
 	smpp_bind_transceiver_req_t *req = pkg_malloc(sizeof(*req));
 	*preq = req;
 	if (!req) {
-		LM_ERR("malloc error for request");
+		LM_ERR("malloc error for request\n");
 		goto err;
 	}
 
 	smpp_header_t *header = pkg_malloc(sizeof(*header));
 	if (!header) {
-		LM_ERR("malloc error for header");
+		LM_ERR("malloc error for header\n");
 		goto header_err;
 	}
 
 	smpp_bind_transceiver_t *body = pkg_malloc(sizeof(*body));
 	if (!body) {
-		LM_ERR("malloc error for body");
+		LM_ERR("malloc error for body\n");
 		goto body_err;
 	}
 
 	req->payload.s = pkg_malloc(REQ_MAX_SZ(BIND_RECEIVER));
 	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
+		LM_ERR("malloc error for payload\n");
 		goto payload_err;
 	}
 
@@ -245,7 +245,7 @@ static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint
 		uint32_t command_status, uint32_t seq_no, char *system_id)
 {
 	if (!preq) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		goto err;
 	}
 
@@ -253,25 +253,25 @@ static int build_bind_resp_request(smpp_bind_transceiver_resp_req_t **preq, uint
 	smpp_bind_transceiver_resp_req_t *req = pkg_malloc(sizeof(*req));
 	*preq = req;
 	if (!req) {
-		LM_ERR("malloc error for request");
+		LM_ERR("malloc error for request\n");
 		goto err;
 	}
 
 	smpp_header_t *header = pkg_malloc(sizeof(*header));
 	if (!header) {
-		LM_ERR("malloc error for header");
+		LM_ERR("malloc error for header\n");
 		goto header_err;
 	}
 
 	smpp_bind_transceiver_resp_t *body = pkg_malloc(sizeof(*body));
 	if (!body) {
-		LM_ERR("malloc error for body");
+		LM_ERR("malloc error for body\n");
 		goto body_err;
 	}
 
 	req->payload.s = pkg_malloc(REQ_MAX_SZ(BIND_TRANSCEIVER_RESP));
 	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
+		LM_ERR("malloc error for payload\n");
 		goto payload_err;
 	}
 
@@ -307,7 +307,7 @@ err:
 static int build_enquire_link_request(smpp_enquire_link_req_t **preq, smpp_session_t *session)
 {
 	if (!preq || !session) {
-		LM_ERR("NULL param");
+		LM_ERR("NULL param\n");
 		goto err;
 	}
 
@@ -315,19 +315,19 @@ static int build_enquire_link_request(smpp_enquire_link_req_t **preq, smpp_sessi
 	smpp_enquire_link_req_t *req = pkg_malloc(sizeof(*req));
 	*preq = req;
 	if (!req) {
-		LM_ERR("malloc error for request");
+		LM_ERR("malloc error for request\n");
 		goto err;
 	}
 
 	smpp_header_t *header = pkg_malloc(sizeof(*header));
 	if (!header) {
-		LM_ERR("malloc error for header");
+		LM_ERR("malloc error for header\n");
 		goto header_err;
 	}
 
 	req->payload.s = pkg_malloc(REQ_MAX_SZ(ENQUIRE_LINK));
 	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
+		LM_ERR("malloc error for payload\n");
 		goto payload_err;
 	}
 
@@ -599,7 +599,7 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 	char *start;
 
 	if (!preq || !src || !dst || !message) {
-		LM_ERR("NULL params");
+		LM_ERR("NULL params\n");
 		goto err;
 	}
 
@@ -607,25 +607,25 @@ static int build_submit_or_deliver_request(smpp_submit_sm_req_t **preq,
 	smpp_submit_sm_req_t *req = pkg_malloc(sizeof(*req));
 	*preq = req;
 	if (!req) {
-		LM_ERR("malloc error for request");
+		LM_ERR("malloc error for request\n");
 		goto err;
 	}
 
 	smpp_header_t *header = pkg_malloc(sizeof(*header));
 	if (!header) {
-		LM_ERR("malloc error for header");
+		LM_ERR("malloc error for header\n");
 		goto header_err;
 	}
 
 	smpp_submit_sm_t *body = pkg_malloc(sizeof(*body));
 	if (!body) {
-		LM_ERR("malloc error for body");
+		LM_ERR("malloc error for body\n");
 		goto body_err;
 	}
 
 	req->payload.s = pkg_malloc(REQ_MAX_SZ(SUBMIT_SM));
 	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
+		LM_ERR("malloc error for payload\n");
 		goto payload_err;
 	}
 
@@ -703,7 +703,7 @@ err:
 static int build_submit_or_deliver_resp_request(smpp_submit_sm_resp_req_t **preq, uint32_t command_id, uint32_t command_status, uint32_t sequence_number)
 {
 	if (!preq) {
-		LM_ERR("NULL param");
+		LM_ERR("NULL param\n");
 		goto err;
 	}
 
@@ -711,25 +711,25 @@ static int build_submit_or_deliver_resp_request(smpp_submit_sm_resp_req_t **preq
 	smpp_submit_sm_resp_req_t *req = pkg_malloc(sizeof(*req));
 	*preq = req;
 	if (!req) {
-		LM_ERR("malloc error for request");
+		LM_ERR("malloc error for request\n");
 		goto err;
 	}
 
 	smpp_header_t *header = pkg_malloc(sizeof(*header));
 	if (!header) {
-		LM_ERR("malloc error for header");
+		LM_ERR("malloc error for header\n");
 		goto header_err;
 	}
 
 	smpp_submit_sm_resp_t *body = pkg_malloc(sizeof(*body));
 	if (!body) {
-		LM_ERR("malloc error for body");
+		LM_ERR("malloc error for body\n");
 		goto body_err;
 	}
 
 	req->payload.s = pkg_malloc(REQ_MAX_SZ(SUBMIT_SM_RESP));
 	if (!req->payload.s) {
-		LM_ERR("malloc error for payload");
+		LM_ERR("malloc error for payload\n");
 		goto payload_err;
 	}
 
