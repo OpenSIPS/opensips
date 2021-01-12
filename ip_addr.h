@@ -158,6 +158,9 @@ struct socket_id {
 /* check if a socket_info is marked as anycast */
 #define is_anycast(_si) (_si->flags & SI_IS_ANYCAST)
 
+/* checks if the given protocol is a SIP one (versus HEP, BIN, SMPP, etc) 
+ * we rely here on the fact at all the SIP protos are in a sequance */
+#define is_sip_proto(_proto) (PROTO_UDP<=(_proto) && (_proto)<=PROTO_WSS)
 
 struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask);
 struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen);
