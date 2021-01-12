@@ -457,6 +457,32 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 	return rc;
 }
 
+enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node)
+{
+	bin_packet_t packet;
+	int rc;
+
+	if (bin_init(&packet, &cl_extra_cap, CLUSTERER_REMOVE_NODE,
+		BIN_VERSION, 0) < 0) {
+		LM_ERR("Failed to init bin send buffer\n");
+		return CLUSTERER_SEND_ERR;
+	}
+
+	if (bin_push_int(&packet, target_node) < 0)
+		return CLUSTERER_SEND_ERR;
+
+	if (msg_add_trailer(&packet, cluster_id, -1) < 0) {
+		LM_ERR("Failed to add trailer to module's message\n");
+		return CLUSTERER_SEND_ERR;
+	}
+
+	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
+
+	bin_free_packet(&packet);
+
+	return rc;
+}
+
 static inline int su_ip_cmp(union sockaddr_union* s1, union sockaddr_union* s2)
 {
 	if (s1->s.sa_family != s2->s.sa_family)
@@ -723,6 +749,51 @@ static void handle_cl_mi_msg(bin_packet_t *packet)
 		cmd_name.len, cmd_name.s, (rc == 1) ? "error" : "success");
 }
 
+static void handle_remove_node(bin_packet_t *packet, cluster_info_t *cl)
+{
+	int target_node;
+	int lock_old_flag;
+	node_info_t *node;
+	int ev_actions_cl = 1;
+
+	bin_pop_int(packet, &target_node);
+	LM_DBG("Received remove node command for node id: [%d]\n", target_node);
+
+	if (db_mode) {
+		LM_DBG("We are in DB mode, ignoring received remove node command\n");
+		return;
+	}
+
+	if (target_node == current_id) {
+		lock_get(cl->current_node->lock);
+
+		if (cl->current_node->flags & NODE_STATE_ENABLED) {
+			cl->current_node->flags &= ~NODE_STATE_ENABLED;
+			lock_release(cl->current_node->lock);
+
+			for (node = cl->node_list; node; node = node->next) {
+				set_link_w_neigh(LS_DOWN, node);
+
+				do_actions_node_ev(cl, &ev_actions_cl, 1);
+			}
+		} else {
+			lock_release(cl->current_node->lock);
+		}
+
+		return;
+	}
+
+	node = get_node_by_id(cl, target_node);
+	if (!node) {
+		LM_DBG("Unknown node [%d] to remove\n", target_node);
+		return;
+	}
+
+	lock_switch_write(cl_list_lock, lock_old_flag);
+	remove_node(cl, node);
+	lock_switch_read(cl_list_lock, lock_old_flag);
+}
+
 void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att)
 {
@@ -746,7 +817,10 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		return;
 	}
 
-	lock_start_read(cl_list_lock);
+	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
+		lock_start_sw_read(cl_list_lock);
+	else
+		lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
@@ -807,7 +881,9 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 			goto exit;
 		}
 	} else {
-		if (packet_type == CLUSTERER_GENERIC_MSG)
+		if (packet_type == CLUSTERER_REMOVE_NODE)
+			handle_remove_node(packet, cl);
+		else if (packet_type == CLUSTERER_GENERIC_MSG)
 			handle_cl_gen_msg(packet, cluster_id, source_id);
 		else if (packet_type == CLUSTERER_MI_CMD)
 			handle_cl_mi_msg(packet);
@@ -824,7 +900,10 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	}
 
 exit:
-	lock_stop_read(cl_list_lock);
+	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
+		lock_stop_sw_read(cl_list_lock);
+	else
+		lock_stop_read(cl_list_lock);
 }
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
@@ -1388,4 +1467,22 @@ int preserve_reg_caps(cluster_info_t *new_info)
 			}
 
 	return 0;
+}
+
+void remove_node(struct cluster_info *cl, struct node_info *node)
+{
+	node_info_t *it;
+	int ev_actions_cl = 1;
+
+	set_link_w_neigh(LS_DOWN, node);
+
+	do_actions_node_ev(cl, &ev_actions_cl, 1);
+
+	for (it = cl->node_list; it; it = it->next) {
+		lock_get(it->lock);
+		delete_neighbour(it, node);
+		lock_release(it->lock);
+	}
+
+	remove_node_list(cl, node);
 }

@@ -906,6 +906,41 @@ $ opensips-cli -x mi clusterer_list_topology
 		</programlisting>
 	</section>
 
+		<section id="mi_clusterer_remove_node" xreflabel="clusterer_remove_node">
+		<title>
+		<function moreinfo="none">clusterer_remove_node</function>
+		</title>
+		<para>
+			Removes a node from the cluster's topology. It is enough to run the function
+			on a single node in order to remove the target node from all the other
+			nodes in the cluster. If the node to be removed is running when triggering
+			this function, it will be automatically disabled (equivalent to running
+			<xref linkend="mi_clusterer_set_status"/> on that specific node).
+        </para>
+        <para>
+			This function can only be used when <xref linkend="param_db_mode"/> is set to
+			<emphasis>0</emphasis> (disabled).
+        </para>
+		<para>
+		Name: <emphasis>clusterer_remove_node</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>cluster_id</emphasis> - cluster ID
+			</para></listitem>
+            <listitem><para>
+			<emphasis>node_id</emphasis> - ID of the node to be removed.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		opensips-cli -x mi clusterer_remove_node 1 3
+		</programlisting>
+	</section>
+
 		<section id="mi_cluster_send_mi" xreflabel="cluster_send_mi">
 		<title>
 		<function moreinfo="none">cluster_send_mi</function>

@@ -716,7 +716,7 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 	return new_node;
 }
 
-static int delete_neighbour(node_info_t *from_node, node_info_t *to_delete_n)
+int delete_neighbour(node_info_t *from_node, node_info_t *to_delete_n)
 {
 	struct neighbour *neigh, *tmp;
 

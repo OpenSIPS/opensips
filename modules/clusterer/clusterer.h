@@ -60,6 +60,7 @@
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
 				CLUSTERER_UNKNOWN_ID, CLUSTERER_NODE_DESCRIPTION,
+				CLUSTERER_REMOVE_NODE,
 				CLUSTERER_GENERIC_MSG,
 				CLUSTERER_MI_CMD,
 				CLUSTERER_CAP_UPDATE,
@@ -155,11 +156,14 @@ int send_cap_update(struct node_info *dest_node, int require_reply);
 void do_actions_node_ev(struct cluster_info *clusters, int *select_cluster,
 								int no_clusters);
 
+void remove_node(struct cluster_info *cl, struct node_info *node);
+
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
 enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);
 enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 									mi_item_t *cmd_params_arr, int no_params);
+enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node);
 
 int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, str *ip_str,
