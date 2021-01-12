@@ -966,7 +966,7 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
  * Update ucontact with new values
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
-															char is_replicated)
+															char skip_replication)
 {
 	int ret, persist_kv_store = 1;
 
@@ -977,10 +977,10 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		return -1;
 	}
 
-	if (is_replicated && _c->kv_storage)
+	if (skip_replication && _c->kv_storage)
 		restore_urecord_kv_store(_r, _c);
 
-	if (!is_replicated && have_data_replication()) {
+	if (!skip_replication && have_data_replication()) {
 		if (persist_urecord_kv_store(_r) != 0)
 			LM_ERR("failed to persist latest urecord K/V storage\n");
 		else

@@ -808,7 +808,7 @@ use_matching_mode:
  * Release urecord previously obtained
  * through get_urecord
  */
-void release_urecord(urecord_t* _r, char is_replicated)
+void release_urecord(urecord_t* _r, char skip_replication)
 {
 	switch (cluster_mode) {
 	case CM_SQL_ONLY:
@@ -830,7 +830,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
 		if (exists_ulcb_type(UL_AOR_DELETE))
 			run_ul_callbacks(UL_AOR_DELETE, _r);
 
-		if (!is_replicated && location_cluster) {
+		if (!skip_replication && location_cluster) {
 			if (cluster_mode == CM_FEDERATION_CACHEDB &&
 			    cdb_update_urecord_metadata(&_r->aor, 1) != 0)
 				LM_ERR("failed to delete metadata, aor: %.*s\n",
@@ -849,7 +849,7 @@ void release_urecord(urecord_t* _r, char is_replicated)
  * into urecord
  */
 int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
-										ucontact_t** _c, char is_replicated)
+										ucontact_t** _c, char skip_replication)
 {
 	int first_contact = !_r->contacts;
 
@@ -874,7 +874,7 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		return -1;
 	}
 
-	if (!is_replicated && have_data_replication())
+	if (!skip_replication && have_data_replication())
 		replicate_ucontact_insert(_r, _contact, *_c);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT))
@@ -901,9 +901,9 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 /*! \brief
  * Delete ucontact from urecord
  */
-int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated)
+int delete_ucontact(urecord_t* _r, struct ucontact* _c, char skip_replication)
 {
-	if (!is_replicated && have_data_replication())
+	if (!skip_replication && have_data_replication())
 		replicate_ucontact_delete(_r, _c);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE))
