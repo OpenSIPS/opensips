@@ -120,7 +120,9 @@ mod_init(void)
     }
 
     Py_Initialize();
+#if PY_VERSION_HEX < 0x03070000
     PyEval_InitThreads();
+#endif
     mainThreadState = PyThreadState_Get();
 
     if (python_msgobj_init() != 0) {
