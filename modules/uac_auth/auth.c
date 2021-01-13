@@ -471,7 +471,7 @@ str* build_authorization_hdr(int code, str *uri,
 	char *p;
 	int len;
 	int response_len;
-	char *qop_val;
+	char *qop_val = NULL;
 	int qop_val_len = 0;
 
 	response_len = strlen(response);
