@@ -69,7 +69,7 @@ static int l_sipmemcache_server_add(lua_State *L)
   struct sipmemcache *o;
   const char *host;
   const char *port;
-  in_port_t iport;
+  in_port_t iport = 0;
   str s;
 
   o = luaL_checkudata(L, 1, "siplua.memcache");
