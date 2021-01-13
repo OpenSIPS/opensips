@@ -569,7 +569,8 @@ output file pointers.
 			size_t len = strlen(sec);
 			if (len > LONGKEYBUFF - 1)
 				len = LONGKEYBUFF - 1;
-			strncpy(longkey, sec, len + 1);
+			memcpy(longkey, sec, len);
+			longkey[len] = 0;
 		}
 
 		/* Add (key,val) to dictionary */
