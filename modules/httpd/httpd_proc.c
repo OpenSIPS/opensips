@@ -47,6 +47,7 @@
 #include "../../ut.h"
 #include "../../lib/sliblist.h"
 #include "httpd_load.h"
+#include "httpd_proc.h"
 
 
 extern int port;
@@ -191,7 +192,7 @@ skip:
  * Handle regular POST data.
  *
  */
-static int post_iterator (void *cls,
+static MHD_RET post_iterator (void *cls,
 		enum MHD_ValueKind kind,
 		const char *key,
 		const char *filename,
@@ -282,7 +283,7 @@ static int post_iterator (void *cls,
  * @return MHD_YES to continue iterating,
  *         MHD_NO to abort the iteration.
  */
-int getConnectionHeader(void *cls, enum MHD_ValueKind kind,
+MHD_RET getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 					const char *key, const char *value)
 {
 	struct post_request *pr = (struct post_request*)cls;
@@ -398,8 +399,8 @@ union sockaddr_union* httpd_get_server_info(void)
 	return &httpd_server_info;
 }
 
-
-int answer_to_connection (void *cls, struct MHD_Connection *connection,
+/* 0x00097001 changed the returned result */
+MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 		const char *url, const char *method,
 		const char *version, const char *upload_data,
 		size_t *upload_data_size, void **con_cls)
@@ -448,7 +449,7 @@ int answer_to_connection (void *cls, struct MHD_Connection *connection,
 	sv_sockfd = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CONNECTION_FD)->connect_fd;
 	if (getsockname( sv_sockfd, &httpd_server_info.s, &addrlen) < 0) {
 		LM_ERR("cannot resolve server's IP: %s:%d\n", strerror(errno), errno);
-		return -1;
+		return MHD_NO;
 	}
 
 	/* we could do
@@ -641,7 +642,7 @@ send_response:
 							(void*)async_data,
 							NULL);
 	} else {
-		return -1;
+		return MHD_NO;
 	}
 
 	if (cb && cb->type>0) {
