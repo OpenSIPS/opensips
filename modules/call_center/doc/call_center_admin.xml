@@ -246,66 +246,6 @@ modparam("call_center", "rt_db_url",
 		</example>
 	</section>
 
-	<section id="param_b2b_scenario" xreflabel="b2b_scenario">
-		<title><varname>b2b_scenario</varname> (string)</title>
-		<para>
-		The name of the B2B scenario that is used by the module for handling
-		the calls in the queue. This is an advanced options and you should
-		not change it unless you really understand what you are doing.
-		</para>
-		<para>
-		The module provides an B2B scenario file 
-		<emphasis>scenario_callcenter.xml</emphasis> located in the module
-		directory. The name of this scenario from this file (which must be
-		loaded via the b2b_logic module) must match the 
-		<emphasis>b2b_scenario</emphasis> parameter.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>call center</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>b2b_scenario</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("b2b_logic", "script_scenario", "/etc/opensips/scenario_callcenter.xml")
-modparam("call_center", "b2b_scenario", "call center")
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="param_b2b_scenario_agent" xreflabel="b2b_scenario_agent">
-		<title><varname>b2b_scenario_agent</varname> (string)</title>
-		<para>
-		The name of the B2B scenario that is used by the module for handling
-		the calls to agents, to announce the identity of the incoming call
-		(as flow), before getting the actually distributed call. This is an
-		advanced options and you should
-		not change it unless you really understand what you are doing.
-		</para>
-		<para>
-		The module provides an B2B scenario file 
-		<emphasis>scenario_agent.xml</emphasis> located in the 
-		module directory. The name of this scenario from this file (which must
-		be loaded via the b2b_logic module) must match the 
-		<emphasis>b2b_scenario_agent</emphasis> parameter.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>call center agent</quote>.
-		</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>b2b_scenario_agent</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("b2b_logic", "script_scenario", "/etc/opensips/scenario_agent.xml")
-modparam("call_center", "b2b_scenario_agent", "cc agent")
-...
-</programlisting>
-		</example>
-	</section>
-
 	<section id="param_wrapup_time" xreflabel="wrapup_time">
 		<title><varname>wrapup_time</varname> (integer)</title>
 		<para>

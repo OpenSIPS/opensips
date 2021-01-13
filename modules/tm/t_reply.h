@@ -65,7 +65,7 @@ int unmatched_totag(struct cell *t, struct sip_msg *ack);
 typedef unsigned int branch_bm_t;
 
 /* reply export types */
-typedef int (*treply_f)(struct sip_msg * , unsigned int , str * );
+typedef int (*treply_f)(struct sip_msg * , unsigned int , const str * );
 typedef int (*treply_wb_f)( struct cell* trans, unsigned int code, str *text,
 	str *body, str *new_header, str *to_tag);
 typedef int (*tgen_totag_f)(struct sip_msg * , str * );
@@ -99,7 +99,7 @@ int t_reply_with_body( struct cell *trans, unsigned int code,
 /* send a UAS reply
  * returns 1 if everything was OK or -1 for error
  */
-int t_reply( struct cell *t, struct sip_msg * , unsigned int , str * );
+int t_reply( struct cell *t, struct sip_msg * , unsigned int , const str * );
 /* the same as t_reply, except it does not claim
    REPLY_LOCK -- useful to be called within reply
    processing

@@ -33,10 +33,6 @@
 #include "parse_authenticate.h"
 
 
-#define AUTHENTICATE_MD5         (1<<0)
-#define AUTHENTICATE_MD5SESS     (1<<1)
-#define AUTHENTICATE_STALE       (1<<2)
-
 #define AUTHENTICATE_DIGEST_S    "Digest"
 #define AUTHENTICATE_DIGEST_LEN  (sizeof(AUTHENTICATE_DIGEST_S)-1)
 
@@ -51,25 +47,25 @@
 
 #define CASE_5B(_hex4,_c5, _new_state, _quoted) \
 	case _hex4: \
-		if (p+5<end && LOWER1B(*(p+4))==_c5 ) \
+		if (body.len > 5 && LOWER1B(*(body.s+4))==_c5 ) \
 		{ \
-			p+=5; \
+			STR_ADVANCE_BY(&body, 5); \
 			state = _new_state; \
 			quoted_val = _quoted; \
 		} else { \
-			p+=4; \
+			STR_ADVANCE_BY(&body, 4); \
 		} \
 		break;
 
 #define CASE_6B(_hex4,_c5,_c6, _new_state, _quoted) \
 	case _hex4: \
-		if (p+6<end && LOWER1B(*(p+4))==_c5 && LOWER1B(*(p+5))==_c6) \
+		if (body.len > 6 && LOWER1B(*(body.s+4))==_c5 && LOWER1B(*(body.s+5))==_c6) \
 		{ \
-			p+=6; \
+			STR_ADVANCE_BY(&body, 6); \
 			state = _new_state; \
 			quoted_val = _quoted; \
 		} else { \
-			p+=4; \
+			STR_ADVANCE_BY(&body, 4); \
 		} \
 		break;
 
@@ -82,106 +78,109 @@
 #define OPAQUE_STATE     6
 #define ALGORITHM_STATE  7
 
+#define STR_ADVANCE_BY(sptr, incr) {(sptr)->s += (incr); (sptr)->len -= (incr);}
+#define STR_ADVANCE(sptr) STR_ADVANCE_BY(sptr, 1)
 
-int parse_qop_value(str *val, struct authenticate_body *auth)
+int parse_qop_value(str val, struct authenticate_body *auth)
 {
-	char *q = val->s;
 
 	/* parse first token */
-	if (val->len<4 || LOWER4B(GET4B(q))!=0x61757468) /* "auth" */
+	if (val.len < 4 || LOWER4B(GET4B(val.s))!=0x61757468) /* "auth" */
 		return -1;
-	q += 4;
-	if (q==val->s+val->len) {
+	STR_ADVANCE_BY(&val, 4);
+	if (val.len == 0) {
 		auth->flags |= QOP_AUTH;
 		return 0;
 	}
-	switch (*q) {
+	switch (*val.s) {
 		case ' ':
 		case '\t':
+			STR_ADVANCE(&val);
 			auth->flags |= QOP_AUTH;
 			break;
 		case '-':
-			q++;
-			if (LOWER4B(GET3B(q))==0x696e74ff) {
+			STR_ADVANCE(&val);
+			if (val.len >= 3 && LOWER4B(GET3B(val.s))==0x696e74ff) {
 				auth->flags |= QOP_AUTH_INT;
-				q+=3;
+				STR_ADVANCE_BY(&val, 3);
 			} else
 				return -1;
 			break;
 		case ',':
 			auth->flags |= QOP_AUTH;
-			break;
+			goto postcomma;
 		default:
 			return -1;
 	}
 
-	if (q==val->s+val->len) return 0;
-	while (q<val->s+val->len && isspace((int)*q)) q++;
-	if (q==val->s+val->len) return 0;
-	if (*q!=',')
+	if (val.len == 0)
+		return 0;
+
+	trim_leading(&val);
+
+	if (val.len == 0)
+		return 0;
+	if (*val.s != ',')
 		return -1;
-	q++;
-	while (q<val->s+val->len && isspace((int)*q)) q++;
+postcomma:
+	STR_ADVANCE(&val);
+	trim_leading(&val);
 
 	/* parse second token */
-	if (val->len-(q-val->s)<4 || LOWER4B(GET4B(q))!=0x61757468)  /* "auth" */
+	if (val.len < 4 || LOWER4B(GET4B(val.s))!=0x61757468)  /* "auth" */
 		return -1;
-	q += 4;
-	if (q==val->s+val->len) {
+	STR_ADVANCE_BY(&val, 4);
+	if (val.len == 0) {
 		auth->flags |= QOP_AUTH;
 		return 0;
 	}
-	if (*q == '-' && LOWER4B(GET3B(q+1))==0x696e74ff) {
+	if (val.len == 4 && *val.s == '-' && LOWER4B(GET3B(val.s+1))==0x696e74ff) {
 		auth->flags |= QOP_AUTH_INT;
 		return 0;
 	} else
 		return -1;
 }
 
-int parse_authenticate_body( str *body, struct authenticate_body *auth)
+int parse_authenticate_body( str body, struct authenticate_body *auth)
 {
-	char *p;
-	char *end;
 	int  n;
 	int state;
 	str name;
 	str val;
 	int quoted_val;
 
-	if (body->s==0 || *body->s==0 )
+	if (body.len == 0)
 	{
 		LM_ERR("empty body\n");
 		goto error;
 	}
 
 	memset( auth, 0, sizeof(struct authenticate_body));
-	p = body->s;
-	end = body->s + body->len;
 
 	/* parse the "digest" */
-	while (p<end && isspace((int)*p)) p++;
-	if (p+AUTHENTICATE_DIGEST_LEN>=end )
+	trim_leading(&body);
+	if (body.len <= AUTHENTICATE_DIGEST_LEN)
 		goto parse_error;
-	if ( LOWER4B( GET4B(p) ) != 0x64696765 /*dige*/ ||
-	LOWER1B(*(p+4))!=0x73 /*s*/ || LOWER1B(*(p+5))!=0x74 /*t*/)
+	if ( LOWER4B( GET4B(body.s) ) != 0x64696765 /*dige*/ ||
+	LOWER1B(*(body.s+4))!=0x73 /*s*/ || LOWER1B(*(body.s+5))!=0x74 /*t*/)
 		goto parse_error;
-	p += AUTHENTICATE_DIGEST_LEN;
-	if (!isspace((int)*p))
+	STR_ADVANCE_BY(&body, AUTHENTICATE_DIGEST_LEN);
+	if (!is_ws(*body.s))
 		goto parse_error;
-	p++;
-	while (p<end && isspace((int)*p)) p++;
-	if (p==end)
+	STR_ADVANCE(&body);
+	trim_leading(&body);
+	if (body.len == 0)
 		goto parse_error;
 
-	while (p<end)
+	while (body.len > 0)
 	{
 		state = OTHER_STATE;
 		quoted_val = 0;
 		/* get name */
-		name.s = p;
-		if (p+4<end)
+		name.s = body.s;
+		if (body.len > 4)
 		{
-			n = LOWER4B( GET4B(p) );
+			n = LOWER4B( GET4B(body.s) );
 			switch(n)
 			{
 				CASE_5B( 0x7265616c, 'm', REALM_STATE, 1); /*realm*/
@@ -190,71 +189,73 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 				CASE_6B( 0x646f6d62, 'i', 'n', DOMAIN_STATE, 1); /*domain*/
 				CASE_6B( 0x6f706171, 'u', 'e', OPAQUE_STATE, 1); /*opaque*/
 				case 0x616c676f: /*algo*/
-					if (p+9<end && LOWER4B(GET4B(p+4))==0x72697468
-						&& LOWER1B(*(p+8))=='m' )
+					if (body.len > 9 && LOWER4B(GET4B(body.s+4))==0x72697468
+						&& LOWER1B(*(body.s+8))=='m' )
 					{
-						p+=9;
+						STR_ADVANCE_BY(&body, 9);
 						state = ALGORITHM_STATE;
 					} else {
-						p+=4;
+						STR_ADVANCE_BY(&body, 4);
 					}
 					break;
 				default:
 					if ((n|0xff)==0x716f70ff) /*qop*/
 					{
 						state = QOP_STATE;
-						p+=3;
+						STR_ADVANCE_BY(&body, 3);
 					}
 			}
-		} else if (p+3<end) {
-			n = LOWER4B( GET3B(p) );
+		} else if (body.len > 3) {
+			n = LOWER4B( GET3B(body.s) );
 			if (n==0x716f70ff) /*qop*/
 			{
-				p+=3;
+				STR_ADVANCE_BY(&body, 3);
 				state = QOP_STATE;
 			}
 		}
 
 		/* parse to the "=" */
-		for( n=0 ; p<end&&!isspace((int)*p)&&*p!='=' ; n++,p++  );
-		if (p==end)
+		for(n=0 ; body.len > 0 && !is_ws(*body.s) && *body.s != '=' ; n++)
+			STR_ADVANCE(&body);
+		if (body.len == 0)
 			goto parse_error;
 		if (n!=0)
 			state = OTHER_STATE;
-		name.len = p-name.s;
+		name.len = body.s - name.s;
 		/* get the '=' */
-		while (p<end && isspace((int)*p)) p++;
-		if (p==end || *p!='=')
+		trim_leading(&body);
+		if (body.len == 0 || *body.s != '=')
 			goto parse_error;
-		p++;
+		STR_ADVANCE(&body);
 		/* get the value (quoted or not) */
-		while (p<end && isspace((int)*p)) p++;
-		if (p+1>=end || (quoted_val && *p!='\"'))
+		trim_leading(&body);
+		if (body.len <= 1 || (quoted_val && *body.s != '\"'))
 			goto parse_error;
-		if (!quoted_val && *p=='\"')
+		if (!quoted_val && *body.s == '\"')
 			quoted_val = 1;
 		if (quoted_val)
 		{
-			val.s = ++p;
-			while (p<end && *p!='\"')
-				p++;
-			if (p==end)
+			STR_ADVANCE(&body);
+			val.s = body.s;
+			while (body.len > 0 && *body.s != '\"')
+				STR_ADVANCE(&body);
+			if (body.len == 0)
 				goto error;
 		} else {
-			val.s = p;
-			while (p<end && !isspace((int)*p) && *p!=',')
-				p++;
+			val.s = body.s;
+			while (body.len > 0 && !is_ws(*body.s) && *body.s != ',')
+				STR_ADVANCE(&body);
 		}
-		val.len = p - val.s;
+		val.len = body.s - val.s;
 		if (val.len==0)
 			val.s = 0;
 		/* consume the closing '"' if quoted */
-		p += quoted_val;
-		while (p<end && isspace((int)*p)) p++;
-		if (p<end && *p==',')
+		STR_ADVANCE_BY(&body, quoted_val);
+		trim_leading(&body);
+		if (body.len > 0 && *body.s == ',')
 		{
-			p++;
-			while (p<end && isspace((int)*p)) p++;
+			STR_ADVANCE(&body);
+			trim_leading(&body);
 		}
 
 		LM_DBG("<%.*s>=\"%.*s\" state=%d\n",
@@ -265,7 +266,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 		{
 			case QOP_STATE:
 				auth->qop = val;
-				if (parse_qop_value(&val, auth) < 0)
+				if (parse_qop_value(val, auth) < 0)
 					LM_DBG("Unknown token in qop value '%.*s'\n",
 						val.len, val.s);
 				break;
@@ -285,7 +286,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 				if (val.len==3)
 				{
 					if ( LOWER4B(GET3B(val.s))==0x6d6435ff) /*MD5*/
-						auth->flags |= AUTHENTICATE_MD5;
+						auth->algorithm = ALG_MD5;
 				} else {
 					LM_ERR("unsupported algorithm \"%.*s\"\n",val.len,val.s);
 					goto error;
@@ -316,7 +317,7 @@ int parse_authenticate_body( str *body, struct authenticate_body *auth)
 
 	return 0;
 parse_error:
-	LM_ERR("parse error in <%.*s> around %ld\n", body->len, body->s, (long)(p-body->s));
+	LM_ERR("parse error in <%.*s> around %ld\n", body.len, body.s, (long)(body.len));
 error:
 	return -1;
 }
@@ -338,7 +339,7 @@ int parse_authenticate_header(struct hdr_field *authenticate)
 	    return -1;
 	}
 
-	if (0 != parse_authenticate_body(&authenticate->body, auth_body))
+	if (0 != parse_authenticate_body(authenticate->body, auth_body))
 	    return -1;
 	*parsed = auth_body;
 

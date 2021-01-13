@@ -116,14 +116,14 @@ typedef union {
 
 # define DNS_GET16(s, cp) \
 	do { \
-		const uint16_t *t_cp = (const uint16_t *) (cp); \
-		(s) = ntohs (*t_cp); \
+		uint16_t t_cp; memcpy(&t_cp, cp, sizeof(uint16_t)); \
+		(s) = ntohs (t_cp); \
 	} while (0)
 
 # define DNS_GET32(s, cp) \
 	do { \
-		const uint32_t *t_cp = (const uint32_t *) (cp); \
-		(s) = ntohl (*t_cp); \
+		uint32_t t_cp; memcpy(&t_cp, cp, sizeof(uint32_t)); \
+		(s) = ntohl (t_cp); \
 	} while (0)
 
 static inline unsigned int dns_get16(const u_char *src) {
@@ -1451,7 +1451,7 @@ static inline void sort_srvs(struct rdata **head)
 				/* order the elements between rd and crt */
 				while (rd->next) {
 					rand_no = (unsigned int)
-						(weight_sum*((float)rand()/RAND_MAX));
+						(weight_sum*((float)rand()/(float)RAND_MAX));
 					for( crt=rd,crt2=NULL ; crt ; crt2=crt,crt=crt->next) {
 						if (rd2srv(crt)->running_sum>=rand_no) break;
 					}
@@ -2065,7 +2065,7 @@ static inline struct dns_node *dns_node_copy(struct dns_node *s)
 		return 0;
 	}
 	memcpy( d, s, s->size);
-	d->vals = (struct dns_val*)((char*)d + ((char*)s->vals-(char*)s));
+	d->vals = (struct dns_val*)(void *)((char*)d + ((char*)s->vals-(char*)s));
 	for( i=0 ; i<s->no ; i++ )
 		d->vals[i].sval = (char*)d + ((char*)s->vals[i].sval-(char*)s);
 	return d;

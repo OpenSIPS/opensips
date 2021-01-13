@@ -32,6 +32,7 @@
 #define TM_INJECT_SRC_MSG     (1<<0)
 #define TM_INJECT_SRC_EVENT   (1<<1)
 #define TM_INJECT_FLAG_CANCEL (1<<2)
+#define TM_INJECT_FLAG_LAST   (1<<3)
 
 typedef int (*taddblind_f)( /*struct cell *t */ );
 
@@ -42,7 +43,7 @@ int t_replicate(struct sip_msg *p_msg, str *dst, int flags);
 int t_forward_nonack( struct cell *t, struct sip_msg* p_msg,
 		struct proxy_l * p, int reset_bcounter, int locked);
 
-int add_phony_uac( struct cell *t);
+int add_phony_uac( struct cell *t, int br_flags);
 
 int t_add_reason(struct sip_msg *msg, str *reason);
 

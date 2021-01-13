@@ -74,8 +74,8 @@
 #define FIFO_CHECK_HASH "check_config_hash"
 
 static int fixup_check_pv_setf(void **param);
-static int fixup_str(void **param);
-static int fixup_free_str(void **param);
+static int fixup_time_rec(void **param);
+static int fixup_free_time_rec(void **param);
 
 static int set_prob(struct sip_msg *bar, int *percent_par);
 static int reset_prob(struct sip_msg*);
@@ -108,8 +108,7 @@ static int pv_get_random_val(struct sip_msg *msg, pv_param_t *param,
 
 static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 		int *t1u, int *t2s, int *t2u, pv_spec_t *_res);
-int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
-                   unsigned int *ptime);
+int check_time_rec(struct sip_msg *_, char *time_rec, unsigned int *ptime);
 
 #ifdef HAVE_TIMER_FD
 static int async_sleep(struct sip_msg* msg,
@@ -191,11 +190,9 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"check_time_rec", (cmd_function)check_time_rec, {
-		{CMD_PARAM_STR, fixup_str, fixup_free_str},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR, fixup_time_rec, fixup_free_time_rec},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},{0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+		ALL_ROUTES},
 	{"release_static_lock",(cmd_function)release_static_lock, {
 		{CMD_PARAM_STR, fixup_static_lock, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
@@ -228,7 +225,8 @@ static acmd_export_t acmds[] = {
 
 static param_export_t params[]={
 	{"initial_probability", INT_PARAM, &initial},
-	{"hash_file",           STR_PARAM, &hash_file        },
+	{"hash_file",           STR_PARAM, &hash_file},
+	{"shv_hash_size",       INT_PARAM, &shv_hash_size},
 	{"shvset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_shvar },
 	{"varset",              STR_PARAM|USE_FUNC_PARAM, (void*)param_set_var },
 	{"lock_pool_size",      INT_PARAM, &lock_pool_size},
@@ -317,28 +315,25 @@ static int fixup_check_pv_setf(void **param)
 	return 0;
 }
 
-static int fixup_str(void **param)
+static int fixup_time_rec(void **param)
 {
-	str *s;
+	str tmr, aux;
 
-	s = pkg_malloc(sizeof *s);
-	if (!s) {
-		LM_ERR("no more pkg mem\n");
+	tmr = *(str *)*param;
+	trim(&tmr);
+
+	if (pkg_nt_str_dup(&aux, &tmr) < 0) {
+		LM_ERR("oom\n");
 		return E_OUT_OF_MEM;
 	}
 
-	if (pkg_nt_str_dup(s, (str*)*param) < 0)
-		return E_OUT_OF_MEM;
-
-	*param = s;
-
+	*param = aux.s;
 	return 0;
 }
 
-static int fixup_free_str(void **param)
+static int fixup_free_time_rec(void **param)
 {
 	pkg_free(*param);
-
 	return 0;
 }
 
@@ -410,7 +405,7 @@ mi_response_t *mi_check_hash(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Functionality disabled"));
 	} else {
 		if (MD5File(tmp, hash_file) != 0) {
-			LM_ERR("could not hash the config file");
+			LM_ERR("could not hash the config file\n");
 			return init_mi_error(500, MI_SSTR("Internal error"));
 		}
 
@@ -615,6 +610,11 @@ static int dbg_shm_status(struct sip_msg* msg)
 
 static int mod_init(void)
 {
+	if (init_shvars() != 0) {
+		LM_ERR("failed to initialize shared vars\n");
+		return -1;
+	}
+
 	if (!hash_file) {
 		LM_INFO("no hash_file given, disable hash functionality\n");
 	} else {
@@ -659,9 +659,8 @@ static void mod_destroy(void)
 {
 	if (probability)
 		shm_free(probability);
-	shvar_destroy_locks();
-	destroy_shvars();
 
+	destroy_shvars();
 	destroy_script_locks();
 }
 
@@ -840,84 +839,8 @@ static int ts_usec_delta(struct sip_msg *msg, int *t1s,
 	return 1;
 }
 
-/**
- *
- * return values:
-			1 - match
-			-1 - otherwise
- */
-int check_time_rec(struct sip_msg *msg, str *time_str, str *tz,
-                   unsigned int *ptime)
+
+int check_time_rec(struct sip_msg *_, char *time_rec, unsigned int *ptime)
 {
-	tmrec_p time_rec = 0;
-	char *p, *s;
-	ac_tm_t att;
-	time_t check_time;
-
-	p = time_str->s;
-
-	LM_DBG("Parsing : %.*s\n", time_str->len, time_str->s);
-
-	time_rec = tmrec_new(PKG_ALLOC);
-	if (time_rec==0) {
-		LM_ERR("no more shm mem\n");
-		goto error;
-	}
-
-	if (!ptime)
-		check_time = time(NULL);
-	else
-		check_time = *ptime;
-
-	if (tz)
-		tz_set(tz);
-
-	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_dtend, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
-
-	/* success */
-
-	LM_DBG("Time rec created\n");
-
-done:
-	/* shortcut: if there is no dstart, timerec is valid */
-	if (time_rec->dtstart==0)
-		goto success;
-
-	memset( &att, 0, sizeof(att));
-
-	/* set current time */
-	if (ac_tm_set_time(&att, check_time))
-		goto error;
-
-	/* does the recv_time match the specified interval?  */
-	if (check_tmrec( time_rec, &att)!=0)
-		goto error;
-
-success:
-	tmrec_free(time_rec);
-
-	if (tz)
-		tz_reset();
-	return 1;
-
-parse_error:
-	LM_ERR("parse error in <%s> around position %i\n",
-		time_str->s, (int)(long)(p-time_str->s));
-error:
-	if (time_rec)
-		tmrec_free( time_rec );
-
-	if (tz)
-		tz_reset();
-	return -1;
+	return _tmrec_expr_check_str(time_rec, ptime ? *ptime : time(NULL));
 }

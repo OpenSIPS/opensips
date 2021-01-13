@@ -43,8 +43,8 @@ static str rt_db_url = {NULL, 0};;
 
 /* internal data (agents, flows) */
 static struct cc_data *data=NULL;
-static str b2b_scenario = {"call center", 0};
-static str b2b_scenario_agent = {"call center agent", 0};
+static str b2b_scenario = str_init("call center");
+static str b2b_scenario_agent = str_init("call center agent");
 
 /* b2b logic API */
 b2bl_api_t b2b_api;
@@ -113,8 +113,6 @@ static param_export_t mod_params[]={
 	{ "db_url",               STR_PARAM, &db_url.s             },
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
-	{ "b2b_scenario",         STR_PARAM, &b2b_scenario.s       },
-	{ "b2b_scenario_agent",   STR_PARAM, &b2b_scenario_agent.s },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
@@ -334,8 +332,6 @@ static int mod_init(void)
 	ccf_m_dissuading_column.len = strlen(ccf_m_dissuading_column.s);
 	ccf_m_flow_id_column.len = strlen(ccf_m_flow_id_column.s);
 
-	b2b_scenario.len = strlen(b2b_scenario.s);
-	b2b_scenario_agent.len = strlen(b2b_scenario_agent.s);
 	if (queue_pos_param.s)
 		queue_pos_param.len = strlen(queue_pos_param.s);
 
@@ -851,18 +847,23 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 {
 	str* id;
+	b2bl_init_params_t b2b_params;
 
 	LM_DBG("call %p moving to %.*s , state %d\n", call,
 		new_leg->len, new_leg->s, call->state);
 
 	if(call->state==CC_CALL_PRE_TOAGENT) {
-		str* args[4]={&call->agent->location, new_leg, &call->caller_dn,
-			&call->script_param};
-	
 		call->ref_cnt++;
 
-		id = b2b_api.bridge_extern( &b2b_scenario_agent, args, b2bl_callback_agent,
-				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB );
+		memset(&b2b_params, 0, sizeof b2b_params);
+		b2b_params.e1_type = B2B_CLIENT;
+		b2b_params.e1_to = call->agent->location;
+		b2b_params.e1_from_dname = call->caller_dn;
+		b2b_params.e2_type = B2B_CLIENT;
+		b2b_params.e2_to = *new_leg;
+
+		id = b2b_api.init(NULL, &b2b_scenario_agent, &b2b_params, b2bl_callback_agent,
+				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL);
 
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to connect agent to media server "
@@ -878,11 +879,16 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		memcpy(call->b2bua_agent_id.s, id->s, id->len);
 	}
 	else if (call->b2bua_id.len==0) {
-		str* args[2]={new_leg, &call->script_param};
 		/* b2b instance not initialized yet =>
 		 * create new b2bua instance */
 		call->ref_cnt++;
-		id = b2b_api.init( msg, &b2b_scenario, args, b2bl_callback_customer,
+
+		memset(&b2b_params, 0, sizeof b2b_params);
+		b2b_params.e1_type = B2B_SERVER;
+		b2b_params.e2_type = B2B_CLIENT;
+		b2b_params.e2_to = *new_leg;
+
+		id = b2b_api.init(msg, &b2b_scenario, &b2b_params, b2bl_callback_customer,
 				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
 		if (id==NULL || id->len==0 || id->s==NULL) {
 			LM_ERR("failed to init new b2bua call (empty ID received)\n");

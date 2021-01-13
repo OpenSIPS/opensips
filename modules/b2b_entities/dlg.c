@@ -573,7 +573,7 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		lock_get(&client_htable[hash_index].lock);
 
 	if (cbs_type == B2BCB_TRIGGER_EVENT && event_type != B2B_EVENT_DELETE &&
-		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) < 0) {
+		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) > 0) {
 		if (b2be_db_mode == WRITE_THROUGH) {
 			dlg->storage = st;
 		} else {
@@ -789,7 +789,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 
 		/* No need to apply lumps */
 		if(req_routeid > 0)
-			run_top_route(sroutes->request[req_routeid].a, msg);
+			run_top_route(sroutes->request[req_routeid], msg);
 
 		goto done;
 	}
@@ -1011,7 +1011,7 @@ logic_notify:
 	if(req_routeid > 0)
 	{
 		lock_release(&table[hash_index].lock);
-		run_top_route(sroutes->request[req_routeid].a, msg);
+		run_top_route(sroutes->request[req_routeid], msg);
 		if (b2b_apply_lumps(msg))
 		{
 			if (parse_from_header(msg) < 0)
@@ -1135,7 +1135,7 @@ logic_notify:
 
 	lock_get(&table[hash_index].lock);
 
-	if(etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
+	if(dlg_state>B2B_CONFIRMED)
 	{
 		/* search the dialog */
 		for(aux_dlg = table[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
@@ -1152,12 +1152,12 @@ logic_notify:
 	}
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (etype != B2B_NONE && dlg_state == B2B_ESTABLISHED) {
+		if (dlg_state == B2B_ESTABLISHED) {
 			b2b_ev = B2B_EVENT_ACK;
 
 			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
 				&storage, serialize_backend);
-		} else if (etype != B2B_NONE && dlg_state == B2B_TERMINATED) {
+		} else if (dlg_state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 
 			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
@@ -1166,7 +1166,7 @@ logic_notify:
 	}
 
 	current_dlg = 0;
-	if(b2be_db_mode == WRITE_THROUGH && etype!=B2B_NONE && dlg_state>B2B_CONFIRMED)
+	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
 		if(b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
@@ -1621,7 +1621,10 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	UPDATE_DBFLAG(dlg);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (prev_state < B2B_CONFIRMED && dlg->state == B2B_CONFIRMED) {
+		if (prev_state < B2B_CONFIRMED && dlg->state == B2B_CONFIRMED &&
+			/* no DB update happens in this case so calling the serialization
+			 * callbacks is not neccesary unless we have replication */
+			b2be_cluster) {
 			b2b_ev = B2B_EVENT_CREATE;
 			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
 				serialize_backend);
@@ -2120,10 +2123,12 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	set_dlg_state(dlg, method_value);
 
 	if (B2BE_SERIALIZE_STORAGE()) {
-		if (dlg->state == B2B_ESTABLISHED && dlg->replicated) {
-			b2b_ev = B2B_EVENT_ACK;
-			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+		if (dlg->state == B2B_ESTABLISHED) {
+			if (b2be_db_mode != NO_DB || dlg->replicated) {
+				b2b_ev = B2B_EVENT_ACK;
+				b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
+					serialize_backend);
+			}
 		} else if (dlg->state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
@@ -2139,7 +2144,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster) {
-		if (b2b_ev == B2B_EVENT_ACK)
+		if (b2b_ev == B2B_EVENT_ACK && dlg->replicated)
 			replicate_entity_update(dlg, et, hash_index, NULL, B2B_EVENT_ACK,
 				&storage)	;
 		else if (b2b_ev == B2B_EVENT_DELETE)
@@ -2589,7 +2594,30 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		callid = msg->callid->body;
 		from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
 	} else if (ps->req) {
-		from_tag = ((struct to_body*)ps->req->from->parsed)->tag_value;
+		if (!(struct to_body*)ps->req->from->parsed) {
+			if (!parse_to(ps->req->from->body.s,
+					ps->req->from->body.s, &from_hdr_parsed)) {
+				from_tag.s = NULL;
+				from_tag.len = 0;
+			} else {
+				from_tag = from_hdr_parsed.tag_value;
+				free_to_params(&from_hdr_parsed);
+			}
+		} else {
+			from_tag = ((struct to_body*)ps->req->from->parsed)->tag_value;
+		}
+		if (!(struct to_body*)ps->req->to->parsed) {
+			if (!parse_to(ps->req->to->body.s,
+					ps->req->to->body.s, &to_hdr_parsed)) {
+				to_tag.s = NULL;
+				to_tag.len = 0;
+			} else {
+				to_tag = to_hdr_parsed.tag_value;
+				free_to_params(&to_hdr_parsed);
+			}
+		} else {
+			to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
+		}
 		to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
 		callid = ps->req->callid->body;
 	} else {
@@ -2829,7 +2857,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					if(reply_routeid > 0) {
 						msg->flags = t->uac[0].br_flags;
 						swap_route_type(old_route_type, ONREPLY_ROUTE);
-						run_top_route(sroutes->request[reply_routeid].a, msg);
+						run_top_route(sroutes->request[reply_routeid], msg);
 						set_route_type(old_route_type);
 						b2b_apply_lumps(msg);
 					}
@@ -3147,7 +3175,7 @@ dummy_reply:
 		}
 
 		LM_DBG("DLG state = %d\n", dlg->state);
-		if(dlg->state== B2B_MODIFIED && statuscode >= 200 && statuscode <300)
+		if(dlg->state== B2B_MODIFIED && statuscode >= 200)
 		{
 			LM_DBG("switched the state CONFIRMED [%p]\n", dlg);
 			dlg->state = B2B_CONFIRMED;
@@ -3172,7 +3200,7 @@ done1:
 	if(reply_routeid > 0) {
 		msg->flags = t->uac[0].br_flags;
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
-		run_top_route(sroutes->request[reply_routeid].a, msg);
+		run_top_route(sroutes->request[reply_routeid], msg);
 		set_route_type(old_route_type);
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}

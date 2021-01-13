@@ -161,7 +161,7 @@ modparam("tls_mgm", "private_key", "[dom1]/etc/pki/tls/private/opensips.
 key")
 modparam("tls_mgm", "ca_list",     "[dom1]/etc/pki/tls/certs/ca.pem")
 ...
-modparam("db_mysql", "use_tls", "dom1")
+modparam("db_mysql", "use_tls", 1)
 ...
 modparam("usrloc", "db_url", "mysql://root:1234@localhost/opensips?tls_d
 omain=dom1")
@@ -208,11 +208,11 @@ Chapter 2. Contributors
    3. Henning Westerholt (@henningw) 57 30 693 1239
    4. Liviu Chircu (@liviuchircu) 33 26 412 156
    5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
-   6. Razvan Crainea (@razvancrainea) 18 15 225 53
+   6. Razvan Crainea (@razvancrainea) 19 16 231 59
    7. Andrei Pelinescu-Onciul 16 14 52 49
    8. Vlad Paiu (@vladpaiu) 13 10 139 25
-   9. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
-   10. Vlad Patrascu (@rvlad-patrascu) 8 5 120 73
+   9. Vlad Patrascu (@rvlad-patrascu) 11 7 175 74
+   10. Jiri Kuthan (@jiriatipteldotorg) 11 6 393 2
 
    All remaining contributors: Nils Ohlmeier, Norman Brandinger
    (@NormB), Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
@@ -241,18 +241,18 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                         Name                     Commit Activity
-   1.  Liviu Chircu (@liviuchircu)              Mar 2014 - Mar 2020
-   2.  Vlad Paiu (@vladpaiu)                    Feb 2011 - Dec 2019
-   3.  Razvan Crainea (@razvancrainea)          Oct 2011 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu)      Aug 2002 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)          Apr 2017 - Jul 2018
-   6.  Peter Lemenkov (@lemenkov)               Nov 2017 - Jun 2018
-   7.  Augusto Caringi                          Jul 2017 - Jul 2017
-   8.  Ovidiu Sas (@ovidiusas)                  Mar 2017 - Mar 2017
-   9.  Ionut Ionita (@ionutrazvanionita)        Feb 2016 - Feb 2016
-   10. Eseanu Marius Cristian (@eseanucristian)   Jul 2015 - Jul
-                                                2015
+     Name Commit Activity
+   1. Razvan Crainea (@razvancrainea) Oct 2011 - Jan 2021
+   2. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Nov 2020
+   3. Liviu Chircu (@liviuchircu) Mar 2014 - Mar 2020
+   4. Vlad Paiu (@vladpaiu) Feb 2011 - Dec 2019
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
+   6. Peter Lemenkov (@lemenkov) Nov 2017 - Jun 2018
+   7. Augusto Caringi Jul 2017 - Jul 2017
+   8. Ovidiu Sas (@ovidiusas) Mar 2017 - Mar 2017
+   9. Ionut Ionita (@ionutrazvanionita) Feb 2016 - Feb 2016
+   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul
+   2015
 
    All remaining contributors: Saúl Ibarra Corretgé (@saghul),
    Razvan Pistolea, Norman Brandinger (@NormB), Sergio Gutierrez,
@@ -269,9 +269,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Jan Janak

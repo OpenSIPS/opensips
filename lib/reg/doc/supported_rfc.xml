@@ -136,9 +136,10 @@
 				the contact -- they may be found in the Contact URI ('uri'
 				event parameter) and may be extracted using the {uri.param,name}
 				transformation. From here onwards, it is up to the script
-				developer to trigger the Push Notification, thus forcing a
-				re-registration from the device (e.g. possibly by sending an
-				HTTP POST with the rest_client module)
+				developer to trigger the Push Notification (e.g. possibly by
+				sending an HTTP POST with the
+				<ulink url='rest_client'>rest_client</ulink> module), thus forcing
+				a re-registration from the device.
 			</para>
 			</listitem>
 			<listitem>

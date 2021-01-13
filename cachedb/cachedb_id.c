@@ -270,7 +270,8 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		case ST_DB:
 			switch(url->s[i]) {
 			case '?':
-				if (dupl_string(&id->database, begin, url->s + i) < 0) goto err;
+				if (url->s + i > begin &&
+					dupl_string(&id->database, begin, url->s + i) < 0) goto err;
 				if (url->s + i + 1 == url->s + len) {
 					st = ST_OPTIONS;
 					break;

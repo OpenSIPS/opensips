@@ -152,6 +152,27 @@ static struct isup_subfield calling_party_num_subf[] = {
 	{str_init("Address signal"), {0, {{0, 0}}, {0}}},
 	SUBF_INIT_EMPTY};
 
+static struct isup_subfield generic_num_subf[] = {
+	{str_init("Number qualifier indicator"), {3,
+		{str_init("additional called party num"), str_init("additional connected num"),
+		 str_init("additional calling party num")}, {1,5,6}}},
+	{str_init("Odd/even indicator"), {2,
+		{str_init("even"), str_init("odd")}, {0,1}}},
+	{str_init("Nature of address indicator"), {4,
+		{str_init("subscriber"), str_init("unknown"), str_init("national"),
+		 str_init("international")}, {1,2,3,4}}},
+	{str_init("Number Incomplete indicator"), {2,
+		{str_init("complete"), str_init("incomplete")}, {0,1}}},
+	{str_init("Numbering plan indicator"), {3,
+		{str_init("ISDN"), str_init("Data"), str_init("Telex")}, {1,3,4}}},
+	{str_init("Address presentation restricted indicator"), {4,
+		{str_init("allowed"), str_init("restricted"), str_init("not available"),
+		 str_init("reserved")}, {0,1,2,3}}},
+	{str_init("Screening indicator"), {2,
+		{str_init("user"), str_init("network")}, {1,3}}},
+	{str_init("Address signal"), {0, {{0, 0}}, {0}}},
+	SUBF_INIT_EMPTY};
+
 static struct isup_subfield backward_call_ind_subf[] = {
 	{str_init("Charge indicator"), {2,
 		{str_init("no indication"), str_init("no charge")}, {0,1}}},
@@ -745,6 +766,64 @@ int calling_party_num_writef(int param_idx, int subfield_idx, unsigned char *par
 	return 0;
 }
 
+void generic_num_parsef(int subfield_idx, unsigned char *param_val, int len,
+									int *int_res, str *str_res)
+{
+	int idx[] =   {0,1,1,2,2,2,2};
+	int shift[] = {0,7,0,7,4,2,0};
+	int mask[] =  {0xff,1,0x7f,1,7,3,3};
+	int oddeven = (param_val[1] >> 7) & 0x1;
+
+	if (subfield_idx < 0 || subfield_idx > 7) {
+		LM_ERR("BUG - bad subfield\n");
+		return;
+	}
+
+	switch (subfield_idx) {
+	case 1:
+		*int_res = oddeven;
+		break;
+	case 7:
+		isup_get_number(str_res, param_val + 3, len - 3, oddeven);
+		break;
+	default:
+		*int_res = (param_val[idx[subfield_idx]] >> shift[subfield_idx]) & mask[subfield_idx];
+	}
+}
+
+int generic_num_writef(int param_idx, int subfield_idx, unsigned char *param_val, int *len,
+								pv_value_t *val)
+{
+	int new_val;
+	int num_len, oddeven;
+	str num;
+	int idx[] =   {0,1,1,2,2,2,2};
+	int mask[] =  {0xff,0x80,0x7f,0x80,0x70,0xc,0x3};
+	int shift[] = {0,7,0,7,4,2,0};
+
+	NUM_PARAM_GET_VAL_PV(7);
+
+	if (subfield_idx < 0 || subfield_idx > 7) {
+		LM_ERR("BUG - bad subfield\n");
+		return -1;
+	}
+
+	if (subfield_idx == 7) {
+		isup_put_number(param_val + 3, num, &num_len, &oddeven);
+		/* also set oddeven, just in case it wasn't already */
+		param_val[1] = SET_BITS(param_val[1], 0x80, 7, oddeven);
+	} else
+		param_val[idx[subfield_idx]] = SET_BITS(param_val[idx[subfield_idx]],
+										mask[subfield_idx], shift[subfield_idx], new_val);
+
+	if (subfield_idx == 7)
+		*len = num_len + 3;
+	else if (*len == 0)
+		*len = 3;
+
+	return 0;
+}
+
 void backward_call_ind_parsef(int subfield_idx, unsigned char *param_val, int len,
 									int *int_res, str *str_res)
 {
@@ -1027,9 +1106,9 @@ int subsequent_num_writef(int param_idx, int subfield_idx, unsigned char *param_
 	}
 
 	if (subfield_idx == 1)
-		*len = num_len + 2;
+		*len = num_len + 1;
 	else if (*len == 0)
-		*len = 2;
+		*len = 1;
 
 	return 0;
 }
@@ -1171,7 +1250,7 @@ struct isup_param_data isup_params[NO_ISUP_PARAMS] = {
 	{ISUP_PARM_REDIRECT_FORWARD_INFO, str_init("Redirect forward information"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_REDIRECT_BACKWARD_INFO, str_init("Redirect backward information"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_NUM_PORTABILITY_FORWARD_INFO, str_init("Number portability forward information"), NULL, NULL, NULL, NULL, 0},
-	{ISUP_PARM_GENERIC_ADDR, str_init("Generic Number"), NULL, NULL, NULL, NULL, 0},
+	{ISUP_PARM_GENERIC_ADDR, str_init("Generic Number"), generic_num_parsef, generic_num_writef, generic_num_subf, NULL, 0},
 	{ISUP_PARM_GENERIC_DIGITS, str_init("Generic Digits"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_EGRESS_SERV, str_init("Egress Service"), NULL, NULL, NULL, NULL, 0},
 	{ISUP_PARM_JIP, str_init("Jurisdiction Information Parameter"), NULL, NULL, NULL, NULL, 0},

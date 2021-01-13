@@ -683,7 +683,6 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 	int nr_attrs;
 	int i,j;
 	str user_tz = {0,0};
-	ac_tm_t att;
 	tmrec_p trt = 0;
 
 	LM_DBG("checking recv. time stamp <%d>\n",
@@ -735,8 +734,7 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 					LM_ERR("no more pkg error\n");
 					goto script_error;
 				}
-				if(ac_tm_set_time( &att, intr->recv_time))
-					goto runtime_error;
+
 				/* let's see how many attributes we have */
 				nr_attrs = NR_OF_ATTR(kid);
 				/* get the attributes */
@@ -813,7 +811,7 @@ static inline char *run_time_switch( struct cpl_interpreter *intr )
 					goto script_error;
 				}
 				/* does the recv_time match the specified interval?  */
-				j = check_tmrec( trt, &att);
+				j = _tmrec_check(trt, intr->recv_time);
 				/* restore the orig TZ */
 				if ( flags&(1<<7) )
 					set_TZ(cpl_env.orig_tz.s);

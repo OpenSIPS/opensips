@@ -41,7 +41,7 @@
 #define frag_is_free(_f) ((_f)->prev)
 
 #define FRAG_NEXT(f) \
-	((struct fm_frag *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
+	((struct fm_frag *)(void *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
 
 #define max(a,b) ( (a)>(b)?(a):(b))
 
@@ -208,7 +208,7 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 		return 0;
 	}
 	end=start+size;
-	fm=(struct fm_block *)start;
+	fm=(struct fm_block *)(void *)start;
 	memset(fm, 0, sizeof(struct fm_block));
 	fm->name = name;
 	fm->size=size;
@@ -220,8 +220,8 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 	fm->fragments = 0;
 	#endif
 
-	fm->first_frag=(struct fm_frag *)(start+ROUNDUP(sizeof(struct fm_block)));
-	fm->last_frag=(struct fm_frag *)(end-sizeof(struct fm_frag));
+	fm->first_frag=(struct fm_frag *)(void *)(start+ROUNDUP(sizeof(struct fm_block)));
+	fm->last_frag=(struct fm_frag *)(void *)end - 1;
 	/* init initial fragment*/
 	fm->first_frag->size=size-init_overhead;
 	fm->last_frag->size=0;

@@ -27,7 +27,6 @@
 #ifndef _B2BL_RECORDS_H
 #define _B2BL_RECORDS_H
 
-#include <libxml/parser.h>
 #include <stdlib.h>
 #include "../../str.h"
 #include "../../lock_ops.h"
@@ -55,6 +54,15 @@ typedef struct b2bl_entity_id
 	struct b2bl_entity_id* next;
 }b2bl_entity_id_t;
 
+struct b2bl_new_entity {
+	enum b2b_entity_type type;
+	str id;
+	str dest_uri;
+	str from_dname;
+	int avp_hdrs;
+	int avp_hdr_vals;
+};
+
 #define B2BL_SDP_NORMAL     0
 #define B2BL_SDP_LATE       1
 #define B2BL_SDP_RENEW      2
@@ -78,10 +86,11 @@ typedef struct b2bl_tuple
 	unsigned int id;
 	unsigned int hash_index;
 	str* key;
-	b2b_scenario_t* scenario;  /* if scenario is NULL it means that the simple Topology Hiding Scenary must be applied*/
-	str scenario_params[MAX_SCENARIO_PARAMS];
-	int scenario_state;
-	int next_scenario_state;
+	str *scenario_id;
+	str init_sdp;
+	int state;
+	int req_routeid;
+	int reply_routeid;
 	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
 	b2bl_entity_id_t* clients[MAX_B2BL_ENT];
 	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];
@@ -111,6 +120,17 @@ typedef struct b2bl_entry
 
 typedef b2bl_entry_t* b2bl_table_t;
 
+struct b2bl_route_ctx {
+	unsigned int hash_index;
+	unsigned int local_index;
+	str entity_key;
+	int entity_type;
+	str peer_key;
+	int peer_type;
+	str *extra_headers;
+	str *body;
+	int do_update;
+};
 
 #define PREP_REQ_DATA(entity) do{		\
 	req_data.et =(entity)->type;		\
@@ -139,10 +159,9 @@ static inline int bridge_get_entityno(b2bl_tuple_t* tuple, b2bl_entity_id_t* ent
 
 void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level);
 
-b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
-		unsigned int hash_index, b2b_scenario_t* scenario,
-		str* args[], str* body, str* custom_hdrs, int local_index,
-		str** b2bl_key_s, int db_flag, int repl_flag);
+b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
+	struct b2b_params *init_params, str* body, str* custom_hdrs, int local_index,
+	str** b2bl_key_s, int db_flag, int repl_flag);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);
 
@@ -160,8 +179,13 @@ int init_b2bl_htable(void);
 extern b2bl_table_t b2bl_htable;
 extern unsigned int b2bl_hsize;
 
-int process_bridge_action(struct sip_msg* msg, b2bl_entity_id_t* curr_entity,
-		b2bl_tuple_t* tuple, unsigned int hash_index, xmlNodePtr bridge_node);
+int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
+	unsigned hash_index, b2bl_entity_id_t *old_entity,
+	struct b2bl_new_entity *new_br_ent[2], str *provmedia_uri, int lifetime);
+
+str* b2bl_bridge_extern(struct b2b_params *init_params,
+	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
+	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
 
 void destroy_b2bl_htable(void);
 

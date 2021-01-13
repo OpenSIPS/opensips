@@ -87,7 +87,7 @@ int init_reactor_size(void)
 		if (reactor_size < lim.rlim_cur) {
 			LM_WARN("shrinking reactor size from %lu (autodetected via rlimit) "
 					"to %d (limited by memory of %d%% from %luMb)\n",
-					lim.rlim_cur, reactor_size, FD_MEM_PERCENT, mem_size/1024/1024);
+					(unsigned long)lim.rlim_cur, reactor_size, FD_MEM_PERCENT, mem_size/1024/1024);
 			LM_WARN("use 'open_files_limit' to enforce other limit or "
 					"increase %s memory\n", mem_type);
 		} else {

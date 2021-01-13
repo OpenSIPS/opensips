@@ -113,6 +113,7 @@ static char *tls_domain_avp = NULL;
 static char *sip_domain_avp = NULL;
 
 static int  mod_init(void);
+static int  child_init(int rank);
 static int  mod_load(void);
 static void mod_destroy(void);
 static int load_tls_mgm(struct tls_mgm_binds *binds);
@@ -121,6 +122,10 @@ static mi_response_t *tls_reload(const mi_params_t *params,
 static mi_response_t *tls_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static int list_domain(mi_item_t *domains_arr, struct tls_domain *d);
+
+void tls_ctx_set_cert_store(void *ctx, void *src_ctx);
+int tls_ctx_set_cert_chain(void *ctx, void *src_ctx);
+int tls_ctx_set_pkey_file(void *ctx, char *pkey_file);
 
 /* DB handler */
 static db_con_t *db_hdl = 0;
@@ -378,7 +383,7 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	mod_destroy,/* destroy function */
-	0,          /* per-child init function */
+	child_init, /* per-child init function */
 	0           /* reload confirm function */
 };
 
@@ -826,6 +831,7 @@ static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
 static int load_certificate(SSL_CTX * ctx, char *filename)
 {
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
+		tls_print_errstack();
 		LM_ERR("unable to load certificate file '%s'\n",
 				filename);
 		return -1;
@@ -854,6 +860,7 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 	}
 
 	if (! SSL_CTX_use_certificate(ctx, cert)) {
+		tls_print_errstack();
 		LM_ERR("Unable to use certificate\n");
 		X509_free(cert);
 		BIO_free(cbio);
@@ -864,6 +871,7 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 
 	while ((cert = PEM_read_bio_X509(cbio, NULL, 0, NULL)) != NULL) {
 		if (!SSL_CTX_add_extra_chain_cert(ctx, cert)){
+			tls_print_errstack();
 			tls_dump_cert_info("Unable to add chain cert: ", cert);
 			X509_free(cert);
 			BIO_free(cbio);
@@ -977,6 +985,7 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 static int load_ca(SSL_CTX * ctx, char *filename)
 {
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
+		tls_print_errstack();
 		LM_ERR("unable to load ca '%s'\n", filename);
 		return -1;
 	}
@@ -1082,6 +1091,7 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 	}
 
 	if( ! ret_pwd ) {
+		tls_print_errstack();
 		LM_ERR("unable to load private key file '%s'\n",
 				filename);
 		return -1;
@@ -1124,6 +1134,7 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 
 	BIO_free(kbio);
 	if(!key) {
+		tls_print_errstack();
 		LM_ERR("unable to load private key from buffer\n");
 		return -1;
 	}
@@ -1582,13 +1593,67 @@ enum tls_method get_ssl_max_method(void)
 	return ssl_versions_struct[SSL_VERSIONS_SIZE-1].method;
 }
 
-enum tls_method parse_ssl_method(str *name)
+int parse_ssl_method(str *name)
 {
 	int index;
 	for (index = 0; index < SSL_VERSIONS_SIZE; index++)
 		if (MATCH(name, ssl_versions_struct[index].name) || MATCH(name, ssl_versions_struct[index].alias))
 			return ssl_versions_struct[index].method;
 	return -1;
+}
+
+int tls_get_method(str *method_str,
+	enum tls_method *method, enum tls_method *method_max)
+{
+	str val = *method_str;
+	str val_max;
+	int m;
+	char *s;
+
+	/* search for a '-' to denote an interval */
+	s = q_memchr(val.s, '-', val.len);
+	if (s) {
+		val_max.s = s + 1;
+		val_max.len = val.len - (s - val.s) - 1;
+		val.len = s - val.s;
+		trim(&val_max);
+	}
+	trim(&val);
+	if (val.len == 0)
+		m = get_ssl_min_method();
+	else
+		m = parse_ssl_method(&val);
+	if (m < 0) {
+		LM_ERR("unsupported method [%s]\n",val.s);
+		return -1;
+	}
+
+	*method = m;
+
+	if (s) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+		if (m == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23/TLSany as the lower value for the method range makes no sense\n");
+
+		if (val_max.len == 0)
+			m = get_ssl_max_method();
+		else
+			m = parse_ssl_method(&val_max);
+		if (m < 0) {
+			LM_ERR("unsupported method [%s]\n",val_max.s);
+			return -1;
+		}
+
+		if (m == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23/TLSany as the higher value for the method range makes no sense\n");
+#else
+		LM_WARN("TLS method range not supported for versions lower than 1.1.0\n");
+#endif
+	}
+
+	*method_max = m;
+
+	return 0;
 }
 
 /* reloads data from the db */
@@ -1994,6 +2059,9 @@ static int mod_init(void) {
 						*tls_server_domains, *tls_client_domains))
 			return -1;
 
+		dr_dbf.close(db_hdl);
+		db_hdl = NULL;
+
 		/* link the DB domains with the existing script domains */
 
 		if (*tls_server_domains && tls_server_domains_tmp) {
@@ -2077,6 +2145,19 @@ static int mod_init(void) {
 	return 0;
 }
 
+static int child_init(int rank)
+{
+	if (!tls_db_url.s || !(rank >= 1 || rank == PROC_MODULE))
+		return 0;
+
+	/* init DB connection */
+	if (!(db_hdl = dr_dbf.init(&tls_db_url))) {
+		LM_CRIT("failed to initialize database connection\n");
+		return -1;
+	}
+
+	return 0;
+}
 
 static void mod_destroy(void)
 {
@@ -2262,7 +2343,8 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->find_client_domain = tls_find_client_domain;
 	binds->find_client_domain_name = tls_find_client_domain_name;
 	binds->release_domain = tls_release_domain;
-	/* everything ok*/
+	binds->ctx_set_cert_store = tls_ctx_set_cert_store;
+	binds->ctx_set_cert_chain = tls_ctx_set_cert_chain;
+	binds->ctx_set_pkey_file = tls_ctx_set_pkey_file;
 	return 1;
 }
-

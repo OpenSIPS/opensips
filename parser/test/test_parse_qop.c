@@ -25,33 +25,50 @@
 
 #include "../../parser/parse_authenticate.h"
 
+#include "test_oob.h"
+
+void test_parse_qop_oob(const str *, enum oob_position where, void *);
+
 void test_parse_qop_val(void)
 {
 	struct authenticate_body auth;
+	int i;
+	struct tts {
+		const str ts;
+		int tres;
+		int aflags;
+	} tset[] = {
+		{.ts = str_init("aut"), .tres = -1},
+		{.ts = str_init("auth-inti"), .tres = -1},
+		{.ts = str_init("auth,aut"), .tres = -1},
+		{.ts = str_init("auth,auth-inti"), .tres = -1},
+		{.ts = str_init("auth,,auth-int"), .tres = -1},
+		{.ts = str_init("auth-int,"), .tres = -1},
+		{.ts = str_init("auth,auth-int,"), .tres = -1},
+		{.ts = str_init("auth,auth-int,aut"), .tres = -1},
+		{.ts = str_init("auth-int  , \tauth "),  .tres = -1},
+		{.ts = str_init(" auth-int,auth"),  .tres = -1},
+		{.ts = str_init("auth "), .tres = 0, .aflags = QOP_AUTH},
+		{.ts = str_init("auth-int"), .tres = 0, .aflags = QOP_AUTH_INT},
+		{.ts = str_init("auth, auth-int"), .tres = 0, .aflags = QOP_AUTH | QOP_AUTH_INT},
+		{.ts = str_init("auth-int , auth"), .tres = 0, .aflags = QOP_AUTH | QOP_AUTH_INT},
+		{}
+	};
 
-	memset(&auth, 0, sizeof(struct authenticate_body));
-	ok(parse_qop_value(_str("aaa"), &auth));
-	ok(parse_qop_value(_str("auth-init"), &auth));
-	ok(parse_qop_value(_str("auth,aaa"), &auth));
-	ok(parse_qop_value(_str("auth,auth-init"), &auth));
+	for (i = 0; tset[i].ts.s != NULL; i++) {
+		memset(&auth, 0, sizeof(struct authenticate_body));
+		ok(parse_qop_value(tset[i].ts, &auth) == tset[i].tres,
+		    "parse_qop_value(\"%s\") == %d", tset[i].ts.s, tset[i].tres);
+		if (tset[i].tres == 0)
+			ok(auth.flags == tset[i].aflags, "auth.flags == %d", tset[i].aflags);
+		test_oob(&tset[i].ts, test_parse_qop_oob, &auth);
+	}
+}
 
-	memset(&auth, 0, sizeof(struct authenticate_body));
-	ok(!parse_qop_value(_str("auth "), &auth));
-	ok(auth.flags & QOP_AUTH);
-	ok(!(auth.flags & QOP_AUTH_INT));
+void test_parse_qop_oob(const str *tstr, enum oob_position where, void *farg)
+{
+	struct authenticate_body *ap = farg;
 
-	memset(&auth, 0, sizeof(struct authenticate_body));
-	ok(!parse_qop_value(_str("auth-int"), &auth));
-	ok(!(auth.flags & QOP_AUTH));
-	ok(auth.flags & QOP_AUTH_INT);
-
-	memset(&auth, 0, sizeof(struct authenticate_body));
-	ok(!parse_qop_value(_str("auth, auth-int"), &auth));
-	ok(auth.flags & QOP_AUTH);
-	ok(auth.flags & QOP_AUTH_INT);
-
-	memset(&auth, 0, sizeof(struct authenticate_body));
-	ok(!parse_qop_value(_str("auth-int , auth"), &auth));
-	ok(auth.flags & QOP_AUTH);
-	ok(auth.flags & QOP_AUTH_INT);
+	parse_qop_value(*tstr, ap);
+	ok(1, OOB_CHECK_OK_MSG("parse_qop_value", tstr, where));
 }

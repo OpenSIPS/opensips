@@ -3,9 +3,7 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mid_registrar.so
-LIBS=
-
-# include common registrar code
-extra_sources=$(wildcard ../../lib/reg/*.c)
+# link in common registrar code
+misclibs=../../lib/reg/libreg.a
 
 include ../../Makefile.modules

@@ -22,6 +22,7 @@
 
 #include "api.h"
 #include "node_info.h"
+#include "topology.h"
 #include "clusterer.h"
 #include "sync.h"
 

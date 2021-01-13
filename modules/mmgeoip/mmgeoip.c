@@ -60,7 +60,7 @@ int parse_mem_option( unsigned int type, void *val)
 	#ifdef GEOIP
 	return legacy_parse_cache_type((char *)val);
 	#else
-	LM_INFO("Parameter only supported for legacy GeoIP, ignoring...");
+	LM_INFO("Parameter only supported for legacy GeoIP, ignoring...\n");
 	return 0;
 	#endif
 }

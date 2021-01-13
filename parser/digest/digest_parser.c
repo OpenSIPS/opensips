@@ -115,15 +115,10 @@ static inline int parse_token(str* _s, str* _r)
 	      */
 	for(i = 0; i < _s->len; i++) {
 
-		     /* All these characters
+		     /* All LWS characters + ','
 		      * mark end of the token
 		      */
-		switch(_s->s[i]) {
-		case ' ':
-		case '\t':
-		case '\r':
-		case '\n':
-		case ',':
+		if (is_ws(_s->s[i]) || _s->s[i] == ',') {
 			     /* So if you find
 			      * any of them
 			      * stop iterating
@@ -306,16 +301,16 @@ static inline int parse_digest_params(str* _s, dig_cred_t* _c)
 	} while(comma); /* Repeat while there are next parameters */
 
 	     /* Parse QOP body if the parameter was present */
-	if (_c->qop.qop_str.s != 0) {
+	if (_c->qop.qop_str.len > 0) {
 		parse_qop(&_c->qop);
 	}
 
 	     /* Parse algorithm body if the parameter was present */
-	if (_c->alg.alg_str.s != 0) {
+	if (_c->alg.alg_str.len > 0) {
 		parse_algorithm(&_c->alg);
 	}
 
-	if (_c->username.whole.s != 0) {
+	if (_c->username.whole.len > 0) {
 		parse_username(&_c->username);
 	}
 
@@ -351,11 +346,8 @@ int parse_digest_cred(str* _s, dig_cred_t* _c)
 	      * scheme we are able to parse here
 	      */
 	if (!strncasecmp(tmp.s, DIGEST_SCHEME, DIG_LEN) &&
-	    ((tmp.s[DIG_LEN] == ' ') ||     /* Test for one of LWS chars */
-	     (tmp.s[DIG_LEN] == '\r') ||
-	     (tmp.s[DIG_LEN] == 'n') ||
-	     (tmp.s[DIG_LEN] == '\t') ||
-	     (tmp.s[DIG_LEN] == ','))) {
+	    /* Test for one of LWS chars + ',' */
+	    (is_ws(tmp.s[DIG_LEN]) || (tmp.s[DIG_LEN] == ','))) {
 		     /* Scheme is Digest */
 		tmp.s += DIG_LEN + 1;
 		tmp.len -= DIG_LEN + 1;

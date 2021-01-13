@@ -199,6 +199,10 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].out_sdp.s);
 			if (dlg->legs[i].in_sdp.s)
 				shm_free(dlg->legs[i].in_sdp.s);
+			if (dlg->legs[i].tmp_out_sdp.s)
+				shm_free(dlg->legs[i].tmp_out_sdp.s);
+			if (dlg->legs[i].tmp_in_sdp.s)
+				shm_free(dlg->legs[i].tmp_in_sdp.s);
 		}
 		shm_free(dlg->legs);
 	}
@@ -411,14 +415,14 @@ static inline int translate_contact_ipport( str *ct, struct socket_info *sock,
 	/* init send_address_str & send_port_str */
 	if(sock->adv_name_str.len)
 		send_address_str=&(sock->adv_name_str);
-	else if (default_global_address.s)
-		send_address_str=&default_global_address;
+	else if (default_global_address->s)
+		send_address_str=default_global_address;
 	else
 		send_address_str=&(sock->address_str);
 	if(sock->adv_port_str.len)
 		send_port_str=&(sock->adv_port_str);
-	else if (default_global_port.s)
-		send_port_str=&default_global_port;
+	else if (default_global_port->s)
+		send_port_str=default_global_port;
 	else
 		send_port_str=&(sock->port_no_str);
 
@@ -1330,6 +1334,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 		goto error;
 	if (add_mi_string_fmt(dialog_obj, MI_SSTR("db_id"), "%llu",
 			(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id) < 0)
+		goto error;
 
 	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
@@ -1651,6 +1656,8 @@ static mi_response_t *mi_match_print_dlg(int with_context,
 
 	dlg_unlock(d_table, d_entry);
 
+	return resp;
+
 error:
 	dlg_unlock(d_table, d_entry);
 	free_mi_response(resp);
@@ -1798,7 +1805,7 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 
 		if (db_update)
 			update_dialog_timeout_info(dlg);
-		if (dialog_repl_cluster && shtag_state != SHTAG_STATE_BACKUP)
+		if (dialog_repl_cluster/* && shtag_state != SHTAG_STATE_BACKUP // already active */)
 			replicate_dialog_updated(dlg);
 
 		unref_dlg(dlg, 1);

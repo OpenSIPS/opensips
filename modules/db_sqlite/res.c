@@ -310,7 +310,7 @@ int db_sqlite_realloc_rows(db_res_t* res, const unsigned int rows)
 
 	res_rows[0].values =
 		pkg_realloc(res_rows[0].values, rows * sizeof(db_val_t) * RES_COL_N(res));
-	memset( res_rows[0].values + RES_COL_N(res)*sizeof(db_val_t)*RES_ROW_N(res),
+	memset( res_rows[0].values + RES_COL_N(res)*RES_ROW_N(res),
 			0, (rows - RES_ROW_N(res)) * sizeof(db_val_t) * RES_COL_N(res));
 
 	if (! res_rows[0].values) {

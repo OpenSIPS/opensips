@@ -498,7 +498,7 @@ static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
 					init_callid.len, init_callid.s);
 		}
 	} else {
-		LM_ERR("could not find the transfered callid");
+		LM_ERR("could not find the transfered callid\n");
 	}
 
 	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_param, &rpl_leg);

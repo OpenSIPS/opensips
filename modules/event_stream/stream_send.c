@@ -254,7 +254,7 @@ int stream_build_buffer(str *event_name, evi_reply_sock *sock,
 	s = evi_build_payload(params, method, stream_sync_mode ? id : 0,
 		extra_param.s ? &extra_param : NULL, extra_param.s ? event_name : NULL);
 	if (!s) {
-		LM_ERR("Failed to build event payload\n");
+		LM_ERR("Failed to build event payload %.*s\n", event_name->len, event_name->s);
 		return -1;
 	}
 

@@ -93,7 +93,6 @@ Chapter 1. Admin Guide
    Example 1.1. E_PIKE_BLOCKED event
 
 {
-  "id": null,
   "jsonrpc": "2.0",
   "method": "E_PIKE_BLOCKED",
   "params": {
@@ -116,47 +115,47 @@ Chapter 2. Frequently Asked Questions
 
    2.1.
 
-       Both UNIX and UDP type of socket can be used to notify the
-       events?
+   Both UNIX and UDP type of socket can be used to notify the
+   events?
 
-       Yes, you can use the both types.
+   Yes, you can use the both types.
 
    2.2.
 
-       What is the maximum lenght of a datagram event?
+   What is the maximum lenght of a datagram event?
 
-       The maximum length of a datagram event is 65457 bytes.
+   The maximum length of a datagram event is 65457 bytes.
 
    2.3.
 
-       Where can I find more about OpenSIPS?
+   Where can I find more about OpenSIPS?
 
-       Take a look at https://opensips.org/.
+   Take a look at https://opensips.org/.
 
    2.4.
 
-       Where can I post a question about this module?
+   Where can I post a question about this module?
 
-       First at all check if your question was already answered on one
-       of our mailing lists:
-         * User Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/users
-         * Developer Mailing List -
-           http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
+   First at all check if your question was already answered on one
+   of our mailing lists:
+     * User Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/users
+     * Developer Mailing List -
+       http://lists.opensips.org/cgi-bin/mailman/listinfo/devel
 
-       E-mails regarding any stable OpenSIPS release should be sent to
-       <users@lists.opensips.org> and e-mails regarding development
-       versions should be sent to <devel@lists.opensips.org>.
+   E-mails regarding any stable OpenSIPS release should be sent to
+   <users@lists.opensips.org> and e-mails regarding development
+   versions should be sent to <devel@lists.opensips.org>.
 
-       If you want to keep the mail private, send it to
-       <users@lists.opensips.org>.
+   If you want to keep the mail private, send it to
+   <users@lists.opensips.org>.
 
    2.5.
 
-       How can I report a bug?
+   How can I report a bug?
 
-       Please follow the guidelines provided at:
-       https://github.com/OpenSIPS/opensips/issues.
+   Please follow the guidelines provided at:
+   https://github.com/OpenSIPS/opensips/issues.
 
 Chapter 3. Contributors
 
@@ -167,9 +166,9 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 24 16 854 37
    2. Liviu Chircu (@liviuchircu) 8 6 12 29
-   3. Vlad Patrascu (@rvlad-patrascu) 6 2 24 136
+   3. Vlad Patrascu (@rvlad-patrascu) 7 3 24 137
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   5. Peter Lemenkov (@lemenkov) 3 1 1 1
+   5. Peter Lemenkov (@lemenkov) 4 2 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -191,11 +190,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2020
-   2. Razvan Crainea (@razvancrainea)     May 2011 - Sep 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   4. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1. Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2020
+   3. Razvan Crainea (@razvancrainea)     May 2011 - Sep 2019
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
 
    (1) including any documentation-related commits, excluding
    merge commits

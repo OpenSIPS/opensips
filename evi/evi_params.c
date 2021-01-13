@@ -66,19 +66,23 @@ int evi_param_set(evi_param_p el, const void *param, int flags)
 		LM_ERR("no parameter specified\n");
 		return 1;
 	}
-	if (!(EVI_INT_VAL & flags) && !(EVI_STR_VAL & flags)) {
+
+	if (!(flags & (EVI_INT_VAL|EVI_STR_VAL))) {
 		LM_ERR("params should be int or str [%x]\n", flags);
 		return -1;
 	}
 
-	LM_DBG("adding %s param\n", EVI_INT_VAL & flags ? "int" : "string");
-
 	el->flags = flags;
 
-	if (flags & EVI_INT_VAL)
+	if (flags & EVI_INT_VAL) {
 		el->val.n = *((int*)param);
-	else
+		LM_DBG("set int %.*s=%d\n", el->name.len, el->name.s,
+		       el->val.n);
+	} else {
 		memcpy(&el->val, param, sizeof(str));
+		LM_DBG("set str %.*s='%.*s'\n", el->name.len, el->name.s,
+		       el->val.s.len, el->val.s.s);
+	}
 
 	return 0;
 }
@@ -143,7 +147,7 @@ void evi_free_params(evi_params_p list)
 
 evi_params_p evi_dup_shm_params(evi_params_p pkg_params)
 {
-	int shm_size;
+	int parambufs_size, strbufs_size;
 	evi_params_p shm_params;
 	evi_param_p param, prev, sp;
 	char *p;
@@ -151,24 +155,25 @@ evi_params_p evi_dup_shm_params(evi_params_p pkg_params)
 	if(!pkg_params)
 		return NULL;
 
-	shm_size = sizeof(evi_params_t);
+	parambufs_size = sizeof(evi_params_t);
+	strbufs_size = 0;
 	for (param = pkg_params->first; param; param = param->next) {
-		shm_size += sizeof(evi_param_t) + param->name.len;
+		parambufs_size += sizeof(evi_param_t);
+		strbufs_size += param->name.len;
 		if (param->flags & EVI_STR_VAL)
-			shm_size += param->val.s.len;
+			strbufs_size += param->val.s.len;
 	}
 
-	shm_params = shm_malloc(shm_size);
+	shm_params = shm_malloc(parambufs_size + strbufs_size);
 	if (!shm_params) {
 		return NULL;
 	}
 	shm_params->flags = 0;
 
-	p = (char *)(shm_params + 1);
+	sp = (evi_param_p)(shm_params + 1);
+	p = (char *)(shm_params) + parambufs_size;
 	for (param = pkg_params->first, prev = NULL; param;
 			prev = sp, param = param->next) {
-		sp = (evi_param_p)p;
-		p += sizeof(evi_param_t);
 		sp->flags = param->flags;
 		sp->next = NULL;
 		sp->name.len = param->name.len;
@@ -189,6 +194,7 @@ evi_params_p evi_dup_shm_params(evi_params_p pkg_params)
 			shm_params->last = sp;
 		} else
 			shm_params->first = sp;
+		sp++;
 	}
 	return shm_params;
 }

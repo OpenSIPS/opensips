@@ -1204,15 +1204,17 @@ static int w_unset_dlg_profile(struct sip_msg *msg, str *prof_name, str *value)
 	if (profile->has_value) {
 		if (!value) {
 			LM_WARN("missing value\n");
-			return -1;	
+			return -1;
 		}
 		if ( unset_dlg_profile( dlg, value, profile) < 0 ) {
-			LM_ERR("failed to unset profile\n");
+			LM_WARN("dialog not found in profile %.*s with value %.*s\n",
+					prof_name->len, prof_name->s, value->len, value->s);
 			return -1;
 		}
 	} else {
 		if ( unset_dlg_profile( dlg, NULL, profile) < 0 ) {
-			LM_ERR("failed to unset profile\n");
+			LM_WARN("dialog not found in profile %.*s\n",
+					prof_name->len, prof_name->s);
 			return -1;
 		}
 	}
@@ -1410,7 +1412,7 @@ static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
 	}
 
 	if (n==0) {
-		LM_ERR("No matched dialogs \n");
+		LM_DBG("No matched dialogs\n");
 		return -1;
 	}
 
@@ -2106,7 +2108,7 @@ static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, str *attr_val,
 	}
 
 	if (n==0) {
-		LM_ERR("No matched dialogs \n");
+		LM_DBG("No matched dialogs\n");
 		return -1;
 	}
 
@@ -2196,7 +2198,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg, str *attr, str *attr_
 	}
 
 	if (n==0) {
-		LM_ERR("No matched dialogs \n");
+		LM_DBG("No matched dialogs\n");
 		return -1;
 	}
 

@@ -242,7 +242,7 @@ modparam("mi_fifo", "trace_bwlist", "w: sip_trace")
    Example 1.9. FIFO request
 
 :reply_fifo:{"jsonrpc":"2.0","method":"get_statistics","id":"5672","para
-ms":["dialog:","tm:"]}
+ms":[["dialog:","tm:"]]}
 
 
 Chapter 2. Contributors
@@ -253,19 +253,20 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 56 33 2242 234
-   2. Razvan Crainea (@razvancrainea) 36 13 542 1055
-   3. Liviu Chircu (@liviuchircu) 12 10 27 60
+   2. Razvan Crainea (@razvancrainea) 38 15 547 1061
+   3. Liviu Chircu (@liviuchircu) 13 11 28 61
    4. Daniel-Constantin Mierla (@miconda) 12 10 20 22
    5. Ionut Ionita (@ionutrazvanionita) 7 4 211 22
    6. Henning Westerholt (@henningw) 5 2 62 109
-   7. Zero King 3 1 5 3
+   7. Zero King (@l2dy) 3 1 5 3
    8. Jerome Martin 3 1 3 3
    9. Konstantin Bokarius 3 1 2 5
    10. Ovidiu Sas (@ovidiusas) 3 1 2 2
 
    All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan Klinec,
-   Vlad Patrascu (@rvlad-patrascu), Walter Doekes (@wdoekes).
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan Klinec
+   (@ph4r05), Vlad Patrascu (@rvlad-patrascu), Walter Doekes
+   (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -287,15 +288,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2020
-   2.  Zero King                           Mar 2020 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
    7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec                        Dec 2015 - Dec 2015
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    10. Walter Doekes (@wdoekes)            May 2014 - May 2014
 
    All remaining contributors: Daniel-Constantin Mierla

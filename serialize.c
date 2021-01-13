@@ -26,6 +26,8 @@
  * \file
  * \brief Sequential forking implementation
  */
+#define _ISOC11_SOURCE
+#include <assert.h>
 
 #include "str.h"
 #include "qvalue.h"
@@ -64,7 +66,16 @@ int init_serialization(void)
 	return 0;
 }
 
+#define seras(p, var, sertype) { \
+	sertype _tval = 0; \
+	static_assert(sizeof(var) <= sizeof(_tval), "variable " #var " is too big for " #sertype); \
+	memcpy(&_tval, (var), sizeof(*(var))); \
+	memcpy(p, &_tval, sizeof(sertype));}
 
+#define unseras(var, p, sertype) { \
+        sertype _tval; \
+        memcpy(&_tval, (p), sizeof(sertype)); \
+        *(var) = (typeof(*(var)))_tval;}
 
 /*! \brief
  * Loads contacts in destination set into "serial_avp" AVP in reverse
@@ -127,11 +138,11 @@ int serialize_branches(struct sip_msg *msg, int clean_before, int keep_order)
 			msg->path_vec.len, msg->path_vec.s,
 			ruri_q, flags);
 
-	*((long*) p) = (long)msg->force_send_socket;
+	seras(p, &msg->force_send_socket, long);
 	p += sizeof(long);
-	*((long*) p) = (long)flags;
+	seras(p, &flags, long);
 	p += sizeof(long);
-	*((long*) p) = (long)ruri_q;
+	seras(p, &ruri_q, long);
 	p += sizeof(long);
 
 	memcpy(p , ruri->s, ruri->len);
@@ -169,11 +180,11 @@ int serialize_branches(struct sip_msg *msg, int clean_before, int keep_order)
 				path.len, path.s,
 				q, flags);
 
-		*((long*) p) = (long)sock_info;
+		seras(p, &sock_info, long);
 		p += sizeof(long);
-		*((long*) p) = (long)flags;
+		seras(p, &flags, long);
 		p += sizeof(long);
-		*((long*) p) = (long)q;
+		seras(p, &q, long);
 		p += sizeof(long);
 
 		memcpy(p , branch.s, branch.len);
@@ -293,11 +304,11 @@ int next_branches( struct sip_msg *msg)
 	/* *sock_info, flags, q, uri, 0, dst_uri, 0, path, 0,... */
 
 	p = val.s.s;
-	sock_info = (struct socket_info*) *((long*) p);
+	unseras(&sock_info, p, long);
 	p += sizeof(long);
-	flags = (unsigned int) *((long*) p);
+	unseras(&flags, p, long);
 	p += sizeof(long);
-	q = (unsigned int) *((long*) p);
+	unseras(&q, p, long);
 	p += sizeof(long);
 	uri.s = p;
 	uri.len = strlen(p);
@@ -361,11 +372,11 @@ int next_branches( struct sip_msg *msg)
 		}
 
 		p = val.s.s;
-		sock_info = (struct socket_info*) *((long*) p);
+		unseras(&sock_info, p, long);
 		p += sizeof(long);
-		flags = (unsigned int) *((long*) p);
+		unseras(&flags, p, long);
 		p += sizeof(long);
-		q = (unsigned int) *((long*) p);
+		unseras(&q, p, long);
 		p += sizeof(long);
 		uri.s = p;
 		uri.len = strlen(p);

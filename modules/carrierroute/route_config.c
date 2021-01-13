@@ -351,7 +351,7 @@ static int backup_config(void) {
 		LM_ERR("out of private memory\n");
 		return -1;
 	}
-	if(!strcpy(backup_file, config_file)){
+	if(strcpy(backup_file, config_file) == NULL){
 		LM_ERR("can't copy filename\n");
 		goto errout;
 	}

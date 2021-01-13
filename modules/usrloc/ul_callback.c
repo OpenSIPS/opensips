@@ -113,5 +113,5 @@ int register_ulcb(ul_cb_type types, ul_cb f)
 
 	cbp->types = types;
 
-	return 1;
+	return 0;
 }

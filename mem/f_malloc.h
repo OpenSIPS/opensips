@@ -55,7 +55,7 @@
 
 /* get the fragment which corresponds to a pointer */
 #define FM_FRAG(p) \
-	((struct fm_frag *)((char *)(p) - sizeof(struct fm_frag)))
+	((struct fm_frag *)(p) - 1)
 
 /* hash structure:
  * 0 .... F_MALLOC_OPTIMIZE/ROUNDTO  - small buckets, size increases with

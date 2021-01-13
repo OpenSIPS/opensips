@@ -21,6 +21,18 @@
 /*!
  * \file
  * \brief Assembler routines for atomic operations
+ *
+ * ======================== Deprecation Notice (2020) =========================
+ * Although the C11 standard is available for nearly 10 years now and would
+ * help us remove this file in favour of libc's stdatomic.h, some old and
+ * popular OS'es for VoIP unfortunately have extended periods of support.
+ * For example, CentOS 7 has a 10-year lifetime: 2014 - 2024!
+ *
+ * Several of the above-mentioned OS'es use old gcc builds (4.8 or older), with
+ * partial support for C11, so stdatomic.h is not present.  Dropping support
+ * for these OS'es would affect a significant number of OpenSIPS deployments,
+ * which is undesirable, at least for now.
+ * ============================================================================
  */
 
 #ifndef _ATOMIC_OPS_H_
@@ -199,5 +211,15 @@ static __inline__ void atomic_dec(atomic_t *v)
 #define NO_ATOMIC_OPS
 
 #endif
+
+/* C11 stdatomics wrappers */
+#define atomic_init(a, v) atomic_set(a, v)
+#define atomic_store(a, v) atomic_set(a, v)
+#define atomic_load(a) ((a)->counter)
+#define atomic_fetch_add(a, v) \
+	if ((long)(v) >= 0L) \
+		atomic_add(v, a);\
+	else \
+		atomic_sub(-(v), a);
 
 #endif

@@ -1023,7 +1023,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 	mongoc_cursor_t *cursor;
 	bson_iter_t iter;
 	struct timeval start;
-	int ret = 0;
+	int ret = -2;
 
 	query = bson_new();
 #if MONGOC_CHECK_VERSION(1, 5, 0)
@@ -1059,6 +1059,7 @@ int mongo_con_get_counter(cachedb_con *con, str *attr, int *val)
 			value = bson_iter_value(&iter);
 			switch (value->value_type) {
 			case BSON_TYPE_INT32:
+				ret = 0;
 				*val = value->value.v_int32;
 				break;
 			default:
@@ -1364,12 +1365,14 @@ int mongo_db_query_trans(cachedb_con *con, const str *table, const db_key_t *_k,
 						       _c[c]->len, _c[c]->s, VAL_DOUBLE(cur_val));
 						break;
 					case BSON_TYPE_UTF8:
-						VAL_TYPE(cur_val) = DB_STR;
 						st.s = (char *)bson_iter_utf8(&iter, (unsigned int *)&st.len);
-						if (pkg_nt_str_dup(&VAL_STR(cur_val), &st) != 0) {
+						if (pkg_nt_str_dup(&st, &st) != 0) {
 							LM_ERR("oom\n");
 							goto out_err;
 						}
+
+						VAL_TYPE(cur_val) = DB_STRING;
+						VAL_STRING(cur_val) = st.s;
 						VAL_FREE(cur_val) = 1;
 						LM_DBG("Found string [%.*s]=[%.*s]\n",
 						       _c[c]->len, _c[c]->s, st.len, st.s);

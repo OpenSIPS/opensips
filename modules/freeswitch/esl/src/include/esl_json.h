@@ -20,6 +20,7 @@
   THE SOFTWARE.
 */
 #include "esl.h"
+#ifndef OS_cJSON__h
 #ifndef cJSON__h
 #define cJSON__h
 
@@ -125,6 +126,7 @@ ESL_DECLARE(void) cJSON_ReplaceItemInObject(cJSON *object,const char *string,cJS
 #endif
 
 #endif
+#endif /* OS_cJSON__h */
 
 /* For Emacs:
  * Local Variables:

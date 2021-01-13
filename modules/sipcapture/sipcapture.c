@@ -430,10 +430,6 @@ static str hep_app_protos[]= {
 #define MAX_PAYLOAD 32767
 static char payload_buf[MAX_PAYLOAD];
 
-/* dummy request for the hep route */
-struct sip_msg dummy_req;
-
-
 /* values to be set from script for hep pvar */
 
 
@@ -730,18 +726,6 @@ static int parse_hep_route(char *val)
 
 	return 0;
 }
-
-void build_dummy_msg(void) {
-	memset(&dummy_req, 0, sizeof(struct sip_msg));
-	dummy_req.first_line.type = SIP_REQUEST;
-	dummy_req.first_line.u.request.method.s= "DUMMY";
-	dummy_req.first_line.u.request.method.len= 5;
-	dummy_req.first_line.u.request.uri.s= "sip:user@domain.com";
-	dummy_req.first_line.u.request.uri.len= 19;
-	dummy_req.rcv.src_ip.af = AF_INET;
-	dummy_req.rcv.dst_ip.af = AF_INET;
-}
-
 
 void parse_table_str(str* table_s, tz_table_t* tz_table)
 {
@@ -2379,7 +2363,7 @@ static void destroy(void)
  */
 int hep_msg_received(void)
 {
-	struct sip_msg msg;
+	struct sip_msg msg, *p_msg;
 
 	struct hep_desc *h;
 	struct hep_context* ctx;
@@ -2443,18 +2427,22 @@ int hep_msg_received(void)
 	} else if (hep_route_id > HEP_SIP_ROUTE) {
 
 		/* builds a dummy message */
-		build_dummy_msg();
+		p_msg = get_dummy_sip_msg();
+		if (p_msg == NULL) {
+			LM_ERR("cannot create new dummy sip request\n");
+			return -1;
+		}
 
 		/* set request route type */
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route( sroutes->request[hep_route_id].a, &dummy_req);
+		run_top_route( sroutes->request[hep_route_id], p_msg);
 
 		/* free possible loaded avps */
 		reset_avps();
 
-		free_sip_msg( &dummy_req );
+		release_dummy_sip_msg(p_msg);
 
 		/* requested to go through the main sip route */
 		if (ctx->resume_with_sip) {
@@ -3020,6 +3008,7 @@ out_safe:
 static inline void build_table_name(tz_table_t* table_format, str* table_s)
 {
 	time_t rawtime;
+	struct tm lgmtm;
 	struct tm* gmtm;
 
 	table_s->s = table_buf;
@@ -3028,7 +3017,7 @@ static inline void build_table_name(tz_table_t* table_format, str* table_s)
 
 	if (table_format->suffix.len && table_format->suffix.s) {
 		time(&rawtime);
-		gmtm = gmtime(&rawtime);
+		gmtm = gmtime_r(&rawtime, &lgmtm);
 		table_s->len += strftime(table_s->s+table_s->len, CAPTURE_TABLE_MAX_LEN-table_s->len,
 				table_format->suffix.s, gmtm);
 	}

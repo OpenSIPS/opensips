@@ -6,24 +6,28 @@ httpd Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Overview
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. ip(string)
-              1.3.2. port(integer)
-              1.3.3. buf_size (integer)
-              1.3.4. post_buf_size (integer)
+              1.4.1. ip(string)
+              1.4.2. port(integer)
+              1.4.3. buf_size (integer)
+              1.4.4. post_buf_size (integer)
+              1.4.5. tls_cert_file (string)
+              1.4.6. tls_key_file (string)
+              1.4.7. tls_ciphers (string)
 
-        1.4. Exported MI Functions
+        1.5. Exported MI Functions
 
-              1.4.1. httpd_list_root_path
+              1.5.1. httpd_list_root_path
 
-        1.5. Exported Functions
-        1.6. Known issues
+        1.6. Exported Functions
+        1.7. Known issues
 
    2. Developer Guide
 
@@ -55,6 +59,9 @@ httpd Module
    1.2. Set port parameter
    1.3. Set buf_size parameter
    1.4. Set post_buf_size parameter
+   1.5. Set tls_cert_file parameter
+   1.6. Set tls_key_file parameter
+   1.7. Set tls_key_file parameter
 
 Chapter 1. Admin Guide
 
@@ -65,22 +72,28 @@ Chapter 1. Admin Guide
    Implementation of httpd module's http server is based on
    libmicrohttpd library.
 
-1.2. Dependencies
+1.2. Overview
 
-1.2.1. OpenSIPS Modules
+   TLS for the http server is enabled by setting the tls_cert_file
+   and tls_key_file parameters. If this is enabled, support for
+   plain http is disabled.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * No dependencies on other OpenSIPS modules.
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libmicrohttpd.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. ip(string)
+1.4.1. ip(string)
 
    The IP address used by the HTTP server to listen for incoming
    requests.
@@ -93,7 +106,7 @@ Chapter 1. Admin Guide
 modparam("httpd", "ip", "127.0.0.1")
 ...
 
-1.3.2. port(integer)
+1.4.2. port(integer)
 
    The port number used by the HTTP server to listen for incoming
    requests.
@@ -106,7 +119,7 @@ modparam("httpd", "ip", "127.0.0.1")
 modparam("httpd", "port", 8000)
 ...
 
-1.3.3. buf_size (integer)
+1.4.3. buf_size (integer)
 
    It specifies the maximum length (in bytes) of the buffer used
    to write in the html response.
@@ -121,7 +134,7 @@ modparam("httpd", "port", 8000)
 modparam("httpd", "buf_size", 524288)
 ...
 
-1.3.4. post_buf_size (integer)
+1.4.4. post_buf_size (integer)
 
    It specifies the length (in bytes) of the POST HTTP requests
    processing buffer. For large POST request, the default value
@@ -134,9 +147,53 @@ modparam("httpd", "buf_size", 524288)
 modparam("httpd", "post_buf_size", 4096)
 ...
 
-1.4. Exported MI Functions
+1.4.5. tls_cert_file (string)
 
-1.4.1. httpd_list_root_path
+   Public certificate file for httpd. It will be used as
+   server-side certificate for incoming TLS connections.
+
+   The default value is ""
+
+   Example 1.5. Set tls_cert_file parameter
+...
+modparam("httpd", "tls_cert_file", "/etc/opensips/tls/server.pem")
+...
+
+1.4.6. tls_key_file (string)
+
+   Private key of the above certificate. I must be kept in a safe
+   place with tight permissions!
+
+   The default value is ""
+
+   Example 1.6. Set tls_key_file parameter
+...
+modparam("httpd", "tls_key_file", "/etc/opensips/tls/server.key")
+...
+
+1.4.7. tls_ciphers (string)
+
+   You can specify the list of algorithms for authentication and
+   encryption that you allow. To obtain a list of ciphers and then
+   choose, use the gnutls-cli application:
+     * gnutls-cli -l
+
+Warning
+
+   Do not use the NULL algorithms (no encryption) ... never!!!
+
+   The default value is
+   "SECURE256:+SECURE192:-VERS-ALL:+VERS-TLS1.2"
+
+   Example 1.7. Set tls_key_file parameter
+...
+modparam("httpd", "tls_ciphers", "SECURE256:+SECURE192:-VERS-ALL:+VERS-T
+LS1.2")
+...
+
+1.5. Exported MI Functions
+
+1.5.1. httpd_list_root_path
 
    Lists all the registered http root paths into the httpd module.
    When a request comes in, if the root parth is in the list, the
@@ -149,11 +206,11 @@ modparam("httpd", "post_buf_size", 4096)
    MI FIFO Command Format:
 opensips-cli -x mi httpd_list_root_path
 
-1.5. Exported Functions
+1.6. Exported Functions
 
    No function exported to be used from configuration file.
 
-1.6. Known issues
+1.7. Known issues
 
    Due to the fact that OpenSIPS is a multiprocess application,
    the microhttpd library is used in "external select" mode. This
@@ -205,10 +262,12 @@ Chapter 3. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 10 8 37 19
    5. Vlad Patrascu (@rvlad-patrascu) 10 7 52 89
    6. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
-   7. Stephane Alnet 3 1 39 3
-   8. Stas Kobzar 3 1 2 2
-   9. Dusan Klinec 3 1 1 1
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Fabian Gast (@fgast) 4 1 150 3
+   8. Stephane Alnet 3 1 39 3
+   9. Stas Kobzar 3 1 2 2
+   10. Dusan Klinec (@ph4r05) 3 1 1 1
+
+   All remaining contributors: Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -230,16 +289,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   8.  Dusan Klinec                        Dec 2015 - Dec 2015
-   9.  Stas Kobzar                         Feb 2015 - Feb 2015
-   10. Stephane Alnet                      Nov 2013 - Nov 2013
+   1.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
+   2.  Razvan Crainea (@razvancrainea)     Mar 2015 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   10. Stas Kobzar                         Feb 2015 - Feb 2015
+
+   All remaining contributors: Stephane Alnet.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -248,10 +309,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
-   (@bogdan-iancu).
+   Last edited by: Fabian Gast (@fgast), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
+   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
 
    Documentation Copyrights:
 

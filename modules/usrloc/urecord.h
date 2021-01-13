@@ -119,32 +119,25 @@ int cdb_delete_urecord(urecord_t* _r);
  * Release urecord previously obtained
  * through get_urecord
  */
-typedef void (*release_urecord_t)(urecord_t* _r, char is_replicated);
-void release_urecord(urecord_t* _r, char is_replicated);
+void release_urecord(urecord_t* _r, char skip_replication);
 
 
 /*
  * Insert new contact
  */
-typedef int (*insert_ucontact_t)(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c, char is_replicated);
 int insert_ucontact(urecord_t* _r, str* _contact,
-		ucontact_info_t* _ci, ucontact_t** _c, char is_replicated);
+		ucontact_info_t* _ci, ucontact_t** _c, char skip_replication);
 
 
 /*
  * Delete ucontact from urecord
  */
-typedef int (*delete_ucontact_t)(urecord_t* _r, struct ucontact* _c,
-                                 char is_replicated);
-int delete_ucontact(urecord_t* _r, struct ucontact* _c, char is_replicated);
+int delete_ucontact(urecord_t* _r, struct ucontact* _c, char skip_replication);
 
 
 /*
  * Get pointer to ucontact with given contact
  */
-typedef int (*get_ucontact_t)(urecord_t* _r, str* _c, str* _callid, int _cseq,
-		struct ct_match *match, struct ucontact** _co);
 int get_ucontact(urecord_t* _r, str* _c, str* _callid, int _cseq,
 		struct ct_match *match, struct ucontact** _co);
 int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
@@ -154,7 +147,6 @@ int get_simple_ucontact(urecord_t* _r, str* _c, struct ucontact** _co);
  * Returns the next contact_id key for the given record and advances
  * the internal counter
  */
-typedef uint64_t (*next_contact_id_t) (urecord_t* _r);
 uint64_t next_contact_id(urecord_t* _r);
 
 /*
@@ -175,21 +167,16 @@ void restore_urecord_kv_store(urecord_t *_r, ucontact_t *_c);
  *
  * Returns: NULL on error/key not found, value pointer otherwise
  */
-typedef int_str_t *(*get_urecord_key_t)(urecord_t* _rec, const str* _key);
-
 int_str_t *get_urecord_key(urecord_t* _rec, const str* _key);
 
 /*! \brief
  * Create or re-assign a key-value pair within record-level storage.
- *   ("_key" and "_val" are fully duplicated in shared memory)
+ *   ("_key" and "_val" will be fully duplicated in shared memory)
  *
  * NOTE: assumes the corresponding udomain lock is properly acquired
  *
  * Returns: NULL on error, new value pointer otherwise
  */
-typedef int_str_t *(*put_urecord_key_t)(urecord_t* _rec,
-                                    const str* _key, const int_str_t* _val);
-
 int_str_t *put_urecord_key(urecord_t* _rec, const str* _key,
                            const int_str_t* _val);
 

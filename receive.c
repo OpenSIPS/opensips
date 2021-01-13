@@ -68,10 +68,10 @@
 
 static unsigned int msg_no=0;
 /* address preset vars */
-str default_global_address={0,0};
-str default_global_port={0,0};
-str default_via_address={0,0};
-str default_via_port={0,0};
+str * const default_global_address=&STR_NULL;
+str * const default_global_port=&STR_NULL;
+str * const default_via_address=&STR_NULL;
+str * const default_via_port=&STR_NULL;
 
 
 unsigned int get_next_msg_no(void)
@@ -148,8 +148,12 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			tmp, rcv_info->src_port);
 		/* if a REQUEST msg was detected (first line was successfully parsed)
 		   we should trigger the error route */
-		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL )
+		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL ) {
+			if (existing_context == NULL)
+				prepare_context( ctx, parse_error );
+			current_processing_ctx = ctx;
 			run_error_route(msg, 1);
+		}
 		goto parse_error;
 	}
 	LM_DBG("After parse_msg...\n");
@@ -206,7 +210,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		if (rc & SCB_RUN_TOP_ROUTE)
 			/* run the main request route and skip post_script callbacks
 			 * if the TOBE_CONTINUE flag is returned */
-			if ( run_top_route(sroutes->request[DEFAULT_RT].a, msg) &
+			if ( run_top_route(sroutes->request[DEFAULT_RT], msg) &
 			ACT_FL_TBCONT )
 				goto end;
 
@@ -249,7 +253,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* exec the onreply routing script */
 		if (rc & SCB_RUN_TOP_ROUTE && sroutes->onreply[DEFAULT_RT].a &&
-		    (run_top_route(sroutes->onreply[DEFAULT_RT].a,msg) & ACT_FL_DROP)
+		    (run_top_route(sroutes->onreply[DEFAULT_RT],msg) & ACT_FL_DROP)
 		    && msg->REPLY_STATUS < 200) {
 			set_route_type(old_route_type);
 

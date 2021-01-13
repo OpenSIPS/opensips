@@ -40,12 +40,6 @@
 		<column><field>si_key</field><type>DB_STR</type></column>
 		<column><field>scenario</field><type>DB_STR</type></column>
 		<column><field>sstate</field><type>DB_INT</type></column>
-		<column><field>next_sstate</field><type>DB_INT</type></column>
-		<column><field>sparam0</field><type>DB_STR</type></column>
-		<column><field>sparam1</field><type>DB_STR</type></column>
-		<column><field>sparam2</field><type>DB_STR</type></column>
-		<column><field>sparam3</field><type>DB_STR</type></column>
-		<column><field>sparam4</field><type>DB_STR</type></column>
 		<column><field>sdp</field><type>DB_BLOB</type></column>
 		<column><field>lifetime</field><type>DB_INT</type></column>
 		<column><field>e1_type</field><type>DB_INT</type></column>

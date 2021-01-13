@@ -1352,11 +1352,9 @@ out_err:
 
 /*! \brief
  * Create and insert a new record
- * after inserting and urecord one must populate the
- * label field outside this function
  */
 int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
-                   char is_replicated)
+                   char skip_replication)
 {
 	if (have_mem_storage()) {
 		if (mem_insert_urecord(_d, _aor, _r) < 0) {
@@ -1364,7 +1362,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 			return -1;
 		}
 
-		if (!is_replicated) {
+		if (!skip_replication) {
 			init_urecord_labels(*_r, _d);
 
 			if (cluster_mode == CM_FEDERATION_CACHEDB
@@ -1481,7 +1479,7 @@ out:
  * Delete a urecord from domain
  */
 int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
-                   char is_replicated)
+                   char skip_replication)
 {
 	struct ucontact* c, *t;
 
@@ -1507,7 +1505,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 		return 0;
 
 	case CM_FEDERATION_CACHEDB:
-		if (!is_replicated && cdb_update_urecord_metadata(_aor, 1) != 0)
+		if (!skip_replication && cdb_update_urecord_metadata(_aor, 1) != 0)
 			LM_ERR("failed to delete metadata, aor: %.*s\n",
 			       _aor->len, _aor->s);
 		break;
@@ -1526,7 +1524,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 	while(c) {
 		t = c;
 		c = c->next;
-		if (delete_ucontact(_r, t, is_replicated) < 0) {
+		if (delete_ucontact(_r, t, skip_replication) < 0) {
 			LM_ERR("deleting contact failed\n");
 			return -1;
 		}
@@ -1535,10 +1533,10 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 	if (_r->no_clear_ref > 0)
 		return 0;
 
-	if (!is_replicated && location_cluster)
+	if (!skip_replication && location_cluster)
 		replicate_urecord_delete(_r);
 
-	release_urecord(_r, is_replicated);
+	release_urecord(_r, skip_replication);
 	return 0;
 }
 

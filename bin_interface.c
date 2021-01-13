@@ -33,7 +33,7 @@ static int bin_extend(bin_packet_t *packet, int size);
 static struct packet_cb_list *reg_cbs;
 
 void set_len(bin_packet_t *packet) {
-	*(unsigned int *)(packet->buffer.s + BIN_PACKET_MARKER_SIZE) = packet->buffer.len;
+	memcpy(packet->buffer.s + BIN_PACKET_MARKER_SIZE, &packet->buffer.len, sizeof(unsigned int));
 }
 
 /**
@@ -96,7 +96,10 @@ int bin_init(bin_packet_t *packet, str *capability, int packet_type,
 
 void bin_get_capability(bin_packet_t *packet, str *capability)
 {
-	capability->len = *(unsigned short *)(packet->buffer.s + HEADER_SIZE);
+	unsigned short len;
+
+	memcpy(&len, packet->buffer.s + HEADER_SIZE,  sizeof(unsigned short));
+	capability->len = len;
 	capability->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE;
 }
 
@@ -115,7 +118,7 @@ void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 
 	bin_get_capability(packet, &capability);
 
-	packet->type = *(int *)(capability.s + capability.len);
+	memcpy(&packet->type, capability.s + capability.len, sizeof(int));
 	packet->front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
 	LM_DBG("init buffer length %d\n", length);
 }
@@ -431,7 +434,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	bin_packet_t packet;
 	str capability;
 
-	pkg_len = *(unsigned int*)(buffer + BIN_PACKET_MARKER_SIZE);
+	memcpy(&pkg_len, buffer + BIN_PACKET_MARKER_SIZE, sizeof(unsigned int));
 	//add extra size so a realloc wont trigger after small altering of the packet 
 	packet.buffer.s = pkg_malloc(pkg_len + 50);
 	if (!packet.buffer.s) {
@@ -446,7 +449,7 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 	bin_get_capability(&packet, &capability);
 
 	packet.front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
-	packet.type = *(int *)(capability.s + capability.len);
+	memcpy(&packet.type, capability.s + capability.len, sizeof(int));
 	packet.next = NULL;
 
 	/* packet will be now processed for a specific capability */
@@ -514,11 +517,14 @@ int bin_get_buffer(bin_packet_t *packet, str *buffer)
 
 int bin_get_content_start(bin_packet_t *packet, str *buf)
 {
+	unsigned short clen;
+
 	if (!buf)
 		return -1;
 
+	memcpy(&clen, packet->buffer.s + HEADER_SIZE, sizeof(clen));
 	buf->s = packet->buffer.s + HEADER_SIZE + LEN_FIELD_SIZE +
-		*(unsigned short *)(packet->buffer.s + HEADER_SIZE) + sizeof(int);
+		clen + sizeof(int);
 	buf->len = packet->buffer.len - (buf->s - packet->buffer.s);
 
 	return buf->len;
@@ -538,11 +544,11 @@ int bin_get_content_pos(bin_packet_t *packet, str *buf)
 
 int bin_reset_back_pointer(bin_packet_t *packet)
 {
-	int cap_len;
+	unsigned short cap_len;
 	if (!packet->buffer.s  || !packet->size)
 		return -1;
 
-	cap_len = *(unsigned short*)(packet->buffer.s + HEADER_SIZE);
+	memcpy(&cap_len, packet->buffer.s + HEADER_SIZE, sizeof(unsigned short));
 
 	packet->buffer.len = HEADER_SIZE + LEN_FIELD_SIZE + CMD_FIELD_SIZE + cap_len;
 

@@ -92,11 +92,12 @@ int m_apo_escape(char* src, int slen, char* dst, int dlen)
 int timetToSipDateStr(time_t date, char* buf, int bufLen)
 {
 	struct tm *gmt;
+	struct tm gmt_buf;
 	char* dayArray[7] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 	char* monthArray[12] = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 	int len = 0;
 
-	gmt = gmtime(&date);
+	gmt = gmtime_r(&date, &gmt_buf);
 	/* In RFC 3261 the format is always GMT and in the string form like
 	 * "Wkday, Day Month Year HOUR:MIN:SEC GMT"
 	 * "Mon, 19 Feb 2007 18:42:27 GMT"

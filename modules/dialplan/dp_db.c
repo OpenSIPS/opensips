@@ -169,20 +169,44 @@ void dp_disconnect_db(dp_connection_list_p dp_conn)
 int init_data(void)
 {
 	dp_head_p start, tmp;
-	int found_df_part = 0;
 
-	start = dp_hlist;
-	if (!start) {
+	if (!dp_hlist) {
 		LM_ERR("no partition defined, not even the default one!\n");
 		return -1;
 	}
 
+	/* was the default partition re-pointed? */
+	if (!str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
+		int found = 0;
+
+		for (start = dp_hlist; start; start = start->next) {
+			if (str_match(&dp_df_part, &start->partition)) {
+				found = 1;
+				break;
+			}
+		}
+
+		if (!found) {
+			LM_ERR("partition not found: '%.*s'\n",
+			       dp_df_part.len, dp_df_part.s);
+			return -1;
+		}
+	}
+
+	if (!dp_df_head) {
+		if (pkg_str_dup(&dp_df_part, &dp_hlist->partition) < 0) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+
+		LM_INFO("no 'default' partition set, assuming '%.*s'\n",
+		        dp_df_part.len, dp_df_part.s);
+	}
+
+	start = dp_hlist;
 	while (start) {
 		LM_DBG("Adding partition with name [%.*s]\n",
 				start->partition.len, start->partition.s);
-
-		if (str_match(&start->partition, &dp_df_part))
-			found_df_part = 1;
 
 		if (!dp_add_connection(start)) {
 			LM_ERR("failed to initialize partition '%.*s'\n",
@@ -195,13 +219,8 @@ int init_data(void)
 		pkg_free(tmp);
 	}
 
-	if (!found_df_part) {
-		LM_ERR("partition '%.*s' is not defined\n",
-		       dp_df_part.len, dp_df_part.s);
-		return -1;
-	}
-
 	dp_hlist = NULL;
+	dp_df_head = NULL;
 	return 0;
 }
 
@@ -418,51 +437,11 @@ int str_to_shm(str src, str * dest)
 	return 0;
 }
 
-static inline tmrec_t* parse_time_def(char *time_str) {
-
-	tmrec_p time_rec;
-	char *p,*s;
-
-	p = time_str;
-	time_rec = 0;
-
-	time_rec = tmrec_new(SHM_ALLOC);
-	if (time_rec==0) {
-		LM_ERR("no more shm mem\n");
-		goto error;
-	}
-
-	/* empty definition? */
-	if ( time_str==0 || *time_str==0 )
-		goto done;
-
-	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
-
-	/* success */
-done:
-	return time_rec;
-parse_error:
-	LM_ERR("parse error in <%s> around position %i\n",
-		time_str, (int)(long)(p-time_str));
-error:
-	if (time_rec)
-		tmrec_free( time_rec );
-	return 0;
-}
 
 /*compile the expressions, and if ok, build the rule */
 dpl_node_t * build_rule(db_val_t * values)
 {
-	tmrec_t *parsed_timerec;
+	tmrec_expr *parsed_timerec;
 	pcre * match_comp, *subst_comp;
 	struct subst_expr * repl_comp;
 	dpl_node_t * new_rule;
@@ -570,7 +549,7 @@ dpl_node_t * build_rule(db_val_t * values)
 	/* Retrieve and Parse Timerec Matching Pattern */
 	GET_STR_VALUE(timerec, values, 8, 1);
 	if( !VAL_NULL(values+8) && timerec.len && timerec.s) {
-		parsed_timerec = parse_time_def(timerec.s);
+		parsed_timerec = tmrec_expr_parse(timerec.s, SHM_ALLOC);
 		if(!parsed_timerec) {
 			LM_ERR("failed to parse timerec pattern %.*s\n",
 				timerec.len, timerec.s);
@@ -753,7 +732,7 @@ void destroy_rule(dpl_node_t * rule){
 		shm_free(rule->timerec.s);
 
 	if(rule->parsed_timerec)
-		shm_free(rule->parsed_timerec);
+		tmrec_expr_free(rule->parsed_timerec);
 }
 
 

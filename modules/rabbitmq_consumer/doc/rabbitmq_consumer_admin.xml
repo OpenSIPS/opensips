@@ -25,7 +25,14 @@
 	<section>
 		<title>&osips; Modules</title>
 		<para>
-			None.
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_mgm</emphasis> if <xref linkend="param_use_tls"/> is enabled.
+			</para>
+			</listitem>
+			</itemizedlist>
 		</para>
 	</section>
 	
@@ -80,9 +87,8 @@
 				<emphasis>password: guest</emphasis>,
 				<emphasis>host: localhost</emphasis>,
 				<emphasis>vhost: /</emphasis>,
-				<emphasis>port: 5672</emphasis>. SSL connections are
-				currently not available: <emphasis>amqps</emphasis>
-				URIs will be declined.
+				<emphasis>port: 5672</emphasis>. TLS connections are specified
+				using an <emphasis>amqps</emphasis> URI.
 			</para>
 			</listitem>
 			<listitem>
@@ -124,6 +130,14 @@
 				to send heartbeat messages. Default is disabled.
 			</para>
 			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tls_domain</emphasis> - indicates which TLS domain (as
+				defined using the <emphasis>tls_mgm</emphasis> module) to use for
+				this connection. This must be an <emphasis>amqps</emphasis> URI and
+				the <xref linkend="param_use_tls"/> module parameter must be enabled.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 		<example>
@@ -138,6 +152,10 @@ modparam("rabbitmq_consumer", "connection_id",
 # consumer that acknowledges messages
 modparam("rabbitmq_consumer", "connection_id",
     "uri = amqp://127.0.0.1; queue = myqueue2; event = E_Q2_MSG; ack;")
+...
+# TLS connection
+modparam("rabbitmq_consumer", "connection_id",
+    "uri = amqps://127.0.0.1; queue = myqueue3; event = E_Q3_MSG; tls_domain=rmq;")
 ...
 		</programlisting>
 		</example>
@@ -180,6 +198,39 @@ modparam("rabbitmq_consumer", "connect_timeout", 1000)
 		<programlisting format="linespecific">
 ...
 modparam("rabbitmq_consumer", "retry_timeout", 10000)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_use_tls" xreflabel="use_tls">
+		<title><varname>use_tls</varname> (integer)</title>
+		<para>
+		Setting this parameter will allow you to use TLS for broker connections.
+		In order to enable TLS for a specific connection, you can use the
+		"tls_domain=<emphasis>dom_name</emphasis>" parameter in the configuration
+		specified through the <xref linkend="param_connection_id"/> module parameter.
+		</para>
+		<para>
+		When using this parameter, you must also ensure that
+		<emphasis>tls_mgm</emphasis> is loaded and properly configured. Refer to
+		the the module for additional info regarding TLS client domains.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> (not enabled)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>use_tls</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_domain", "rmq")
+modparam("tls_mgm", "certificate", "[rmq]/etc/pki/tls/certs/rmq.pem")
+modparam("tls_mgm", "private_key", "[rmq]/etc/pki/tls/private/rmq.key")
+modparam("tls_mgm", "ca_list",     "[rmq]/etc/pki/tls/certs/ca.pem")
+...
+modparam("rabbitmq_consumer", "use_tls", 1)
 ...
 </programlisting>
 		</example>

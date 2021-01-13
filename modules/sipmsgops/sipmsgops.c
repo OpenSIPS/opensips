@@ -484,10 +484,11 @@ static int append_time_f(struct sip_msg* msg, char* p1, char *p2)
 	char time_str[MAX_TIME];
 	time_t now;
 	struct tm *bd_time;
+	struct tm bd_time_buff;
 
 	now=time(0);
 
-	bd_time=gmtime(&now);
+	bd_time=gmtime_r(&now, &bd_time_buff);
 	if (bd_time==NULL) {
 		LM_ERR("gmtime failed\n");
 		return -1;
@@ -1410,8 +1411,8 @@ static char _is_username_char[128] = {
 	0 /* 37 % */,
 	1 /* 38 & */,
 	1 /* 39 ' */,
-	0 /* 40 ( */,
-	0 /* 41 ) */,
+	1 /* 40 ( */,
+	1 /* 41 ) */,
 	1 /* 42 * */,
 	1 /* 43 + */,
 	1 /* 44 , */,
@@ -1500,24 +1501,31 @@ static char _is_username_char[128] = {
 	0 /* 127 DEL */
 };
 
-static int check_username(str *username)
+static inline int check_username(const str *username)
 {
-	int i;
+	char *p, *end, c;
 
-	if (!username)
-		return 0;
+	for (p = username->s, end = p + username->len; p < end; p++) {
+		c = *p;
 
-	for( i=0 ; i<username->len ; i++ ) {
-		if (username->s[i]<0 || username->s[i]>127 ||
-		_is_username_char[ (int)username->s[i] ]==0) {
-			LM_DBG("invalid character %c[%d] in username <%.*s> on index %i\n",
-				username->s[i], username->s[i],
-				username->len, username->s, i);
-			return -1;
+		if (c < 0)
+			goto err;
+
+		if (c == '%') {
+			if ((p + 3) > end || !_isxdigit(*(p + 1)) || !_isxdigit(*(p + 2)))
+				goto err;
+			p += 2;
+		} else if (!_is_username_char[(int)c]) {
+			goto err;
 		}
 	}
 
 	return 0;
+
+err:
+	LM_DBG("invalid character %c[%d] in username <%.*s> on index %ld\n",
+	       c, c, username->len, username->s, p - username->s);
+	return -1;
 }
 
 

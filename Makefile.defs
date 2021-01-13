@@ -57,6 +57,9 @@ else
 makefile_defs=1
 export makefile_defs
 
+_makefile_defs_path := $(lastword $(MAKEFILE_LIST))
+TOP_SRCDIR?=    $(shell realpath `dirname $(_makefile_defs_path)`)
+
 # main binary name
 MAIN_NAME=opensips
 
@@ -227,6 +230,8 @@ arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
 arm7_macros= __ARM_ARCH_7__
 
+arm64_macros= __AARCH64EL__
+
 ppc_macros= __powerpc __powerpc__ __POWERPC__ __ppc__ _ARCH_PPC
 ppc64_macros= __ppc64__ _ARCH_PPC64
 
@@ -238,10 +243,13 @@ mips64_macros= _MIPS_ISA_MIPS64 _MIPS_ARCH_MIPS64
 
 alpha_macros= __alpha__ __alpha _M_ALPHA_
 
-ifeq ($(CC_NAME),gcc)
+ifeq ($(CC_NAME:clang=gcc),gcc)
 #if gcc use gcc arch
 predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
 					$(CFLAGS) /dev/null)
+stdatomics_support:=$(shell printf '\43include <stdatomic.h>' | $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
+					$(CFLAGS) /dev/stdin >/dev/null 2>/dev/null && printf '%sDHAVE_STDATOMIC' '-')
+DEFS+=$(stdatomics_support)
 
 ifneq ($(strip $(filter $(i386_macros), $(predef_macros))),)
 CC_ARCH=i386
@@ -283,6 +291,8 @@ endif # mips64_macros
 
 else ifneq ($(strip $(filter $(alpha_macros), $(predef_macros))),)
 CC_ARCH=alpha
+else ifneq ($(strip $(filter $(arm64_macros), $(predef_macros))),)
+CC_ARCH=aarch64
 else
 
 $(warn "Unknown target compiler architecture")
@@ -886,7 +896,8 @@ ifeq		($(CC_NAME), suncc)
 			# -Dinline="" # add this if cc < 5.3 (define inline as null)
 else
 ifeq		($(CC_NAME), clang)
-			CFLAGS+=$(CC_OPTIMIZE_FLAG) -Wall -funroll-loops -fno-common
+			CFLAGS+=-m32 $(CC_OPTIMIZE_FLAG) -Wall -funroll-loops -fno-common
+			LDFLAGS+=-m32
 else
 				#other compilers
 $(error 			Unsupported compiler ($(CC):$(CC_NAME)), try gcc)
@@ -1675,7 +1686,7 @@ endif
 
 
 ## Unit Testing - required extensions
-ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' Makefile.conf))
+ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' $(TOP_SRCDIR)/Makefile.conf))
 DEFS := $(DEFS) -DUNIT_TESTS
 LIBS := $(LIBS) -ltap
 test_src := $(shell find . -wholename "*/test/*\.c" | grep -v "^./modules/")

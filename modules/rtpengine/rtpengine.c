@@ -226,8 +226,8 @@ static const char *command_strings[] = {
 	[OP_UNBLOCK_MEDIA] = "unblock media",
 	[OP_BLOCK_DTMF]= "block DTMF",
 	[OP_UNBLOCK_DTMF] = "unblock DTMF",
-	[OP_START_FORWARD]= "start forward",
-	[OP_STOP_FORWARD] = "stop forward",
+	[OP_START_FORWARD]= "start forwarding",
+	[OP_STOP_FORWARD] = "stop forwarding",
 	[OP_PLAY_DTMF]    = "play DTMF",
 };
 
@@ -1704,10 +1704,17 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				continue;
 
 			case 8:
-				if (str_eq(&key, "internal"))
-					iniface = key;
-				else if (str_eq(&key, "external"))
-					outiface = key;
+				if (str_eq(&key, "internal")) {
+					if (iniface.s)
+						outiface = key;
+					else
+						iniface = key;
+				} else if (str_eq(&key, "external")) {
+					if (iniface.s)
+						outiface = key;
+					else
+						iniface = key;
+				}
 				else if (str_eq(&key, "RTP/AVPF"))
 					ng_flags->transport = 0x102;
 				else if (str_eq(&key, "RTP/SAVP"))
@@ -2586,7 +2593,7 @@ rtpengine_manage(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 	method = get_cseq(msg)->method_id;
 
 	if(!(method==METHOD_INVITE || method==METHOD_ACK || method==METHOD_CANCEL
-				|| method==METHOD_BYE || method==METHOD_UPDATE))
+				|| method==METHOD_BYE || method==METHOD_UPDATE || method==METHOD_PRACK))
 		return -1;
 
 	if(method==METHOD_CANCEL || method==METHOD_BYE)
@@ -2603,6 +2610,7 @@ rtpengine_manage(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 		if(nosdp==0) {
 			switch (method) {
 				case METHOD_ACK:
+				case METHOD_PRACK:
 					op = OP_ANSWER;
 					break;
 				case METHOD_INVITE:
@@ -2665,7 +2673,8 @@ rtpengine_answer_f(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 	    return -1;
 
 	if (msg->first_line.type == SIP_REQUEST)
-		if (msg->first_line.u.request.method_value != METHOD_ACK)
+		if (msg->first_line.u.request.method_value != METHOD_ACK &&
+				msg->first_line.u.request.method_value != METHOD_PRACK)
 			return -1;
 
 	return rtpengine_offer_answer(msg, flags, spvar, bpvar, body, OP_ANSWER);
@@ -3389,6 +3398,11 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 		return -2;
 	}
 	d_code = bencode_dictionary(&bencbuf);
+	if (!d_code) {
+		LM_ERR("could not initialize bencode dictionary\n");
+		return -2;
+	}
+	bencode_dictionary_add_str(d_code, "code", code);
 	ret = rtpe_function_call(&bencbuf, msg, OP_PLAY_DTMF, flags, NULL, spvar, d_code);
 	if (!ret)
 		return -2;

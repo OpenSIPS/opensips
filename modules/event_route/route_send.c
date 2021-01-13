@@ -119,32 +119,20 @@ int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 
 static void route_received(int sender, void *param)
 {
-	static struct sip_msg* req= NULL;
+	struct sip_msg* req;
 	route_send_t *route_s = (route_send_t *)param;
 
-	if(req == NULL)
-	{
-		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-		if(req == NULL)
-		{
-			LM_ERR("No more memory\n");
-			return;
-		}
-		memset(req, 0, sizeof(struct sip_msg));
-		req->first_line.type = SIP_REQUEST;
-		req->first_line.u.request.method.s= "DUMMY";
-		req->first_line.u.request.method.len= 5;
-		req->first_line.u.request.uri.s= "sip:user@domain.com";
-		req->first_line.u.request.uri.len= 19;
-		req->rcv.src_ip.af = AF_INET;
-		req->rcv.dst_ip.af = AF_INET;
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("cannot create new dummy sip request\n");
+		return;
 	}
 
-	route_run(sroutes->event[route_s->ev_route_id].a, req,
+	route_run(sroutes->event[route_s->ev_route_id], req,
 		&route_s->params, &route_s->event);
 
-	/* clean whatever extra structures were added by script functions */
-	free_sip_msg(req);
+	release_dummy_sip_msg(req);
+
 	/* remove all added AVP - here we use all the time the default AVP list */
 	reset_avps( );
 

@@ -62,7 +62,7 @@ static inline void run_resume_route( int resume_route, struct sip_msg *msg,
 {
 	/* run the resume route and if it ends the msg handling (no other aysnc
 	 * started), run the post script callbacks. */
-	if ( (run_top_route(sroutes->request[resume_route].a, msg) & ACT_FL_TBCONT) == 0 )
+	if ( (run_top_route(sroutes->request[resume_route], msg) & ACT_FL_TBCONT) == 0 )
 		if (run_post_cb)
 			exec_post_req_cb(msg);
 }
@@ -326,8 +326,12 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 
 	if (async_status!=ASYNC_NO_FD) {
 		/* check if timeout should be used */
-		if (timeout && ctx->async.timeout_f==NULL)
+		if (timeout && ctx->async.timeout_f==NULL) {
 			timeout = 0;
+			LM_ERR("this async function has no support for timeouts -- "
+			       "still using an infinite timeout!\n");
+		}
+
 		LM_DBG("placing async job into reactor with timeout %d\n", timeout);
 		/* place the FD + resume function (as param) into reactor */
 		if (reactor_add_reader_with_timeout( fd, F_SCRIPT_ASYNC,
@@ -354,6 +358,8 @@ sync:
 			( fd, msg, ctx->async.resume_param );
 		if (async_status == ASYNC_CHANGE_FD)
 			fd = return_code;
+		if (async_status == ASYNC_DONE_CLOSE_FD)
+			close(fd);
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* get rid of the context, useless at this point further */
 	shm_free(ctx);

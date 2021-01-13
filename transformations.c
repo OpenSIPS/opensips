@@ -256,6 +256,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	char *p, *s, *_tr_buffer = get_tr_buffer();
 	str st;
 	pv_value_t v;
+	pv_elem_p el=NULL;
 
 	if (!val)
 		return -1;
@@ -958,6 +959,31 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			/*Save Result*/
 			val->rs.s = _tr_buffer;
 			val->flags = PV_VAL_STR;
+			break;
+		case TR_S_EVAL:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+
+			if (pv_parse_format(&val->rs,&el) != 0) {
+				LM_ERR("Failed to parse input \n");
+				goto error;
+			}
+
+			if (pv_printf_s(msg,el,&st) != 0) {
+				LM_ERR("Failed to print input \n");
+				pv_elem_free_all(el);
+				goto error;
+			}
+
+			memcpy(_tr_buffer,st.s,st.len);
+			_tr_buffer[st.len] = '\0';
+
+			val->flags = PV_VAL_STR;
+			val->ri = 0;
+			val->rs.s = _tr_buffer;
+			val->rs.len = st.len;
+
+			pv_elem_free_all(el);
 			break;
 		default:
 			LM_ERR("unknown subtype %d\n",
@@ -3025,8 +3051,10 @@ int tr_parse_string(str* in, trans_t *t)
 	} else if(name.len==7 && strncasecmp(name.s, "reverse", 7)==0) {
 		t->subtype = TR_S_REVERSE;
 		return 0;
+	} else if(name.len==4 && strncasecmp(name.s, "eval", 4)==0) {
+		t->subtype = TR_S_EVAL;
+		return 0;
 	}
-
 
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);

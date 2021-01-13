@@ -14,7 +14,7 @@
 		It allows the OpenSIPS script writer to subscribe
 		to generic FreeSWITCH ESL events as well as to run arbitrary
 		FreeSWITCH ESL commands and interpret their results.
-		It makes use of the <emphasis>freeswitch</emphasis>
+		It makes use of the <ulink url='freeswitch'>freeswitch</ulink>
 		module for the management of ESL connections and event subscriptions.
 	</para>
 	<para>

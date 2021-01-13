@@ -176,10 +176,12 @@ int b2be_db_insert(b2b_dlg_t* dlg, int type)
 	}
 	qvals[13].val.str_val= dlg->mod_name;
 
-	if (!dlg->storage.len)
+	if (!dlg->storage.len) {
 		VAL_NULL(qvals+14) = 1;
-	else
+	} else {
+		VAL_NULL(qvals+14) = 0;
 		VAL_BLOB(qvals+14) = dlg->storage;
+	}
 
 	qvals[15].val.int_val = dlg->state;
 	qvals[16].val.int_val = dlg->cseq[0];
@@ -240,10 +242,12 @@ int b2be_db_update(b2b_dlg_t* dlg, int type)
 		return 0;
 	}
 
-	if (!dlg->storage.len)
+	if (!dlg->storage.len) {
 		VAL_NULL(qvals+14) = 1;
-	else
+	} else {
+		VAL_NULL(qvals+14) = 0;
 		VAL_BLOB(qvals+14) = dlg->storage;
+	}
 
 	qvals[15].val.int_val = dlg->state;
 	qvals[16].val.int_val = dlg->cseq[0];
@@ -330,8 +334,10 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 
 			if (!dlg->storage.len)
 				VAL_NULL(qvals+14) = 1;
-			else
+			else {
+				VAL_NULL(qvals+14) = 0;
 				VAL_BLOB(qvals+14) = dlg->storage;
+			}
 
 			qvals[15].val.int_val = dlg->state;
 			qvals[16].val.int_val = dlg->cseq[0];
@@ -406,6 +412,7 @@ int b2b_entities_restore(void)
 	b2b_table htable;
 	int type;
 	int no_rows = 10;
+	uint64_t ts = 0;
 
 	if(b2be_db == NULL)
 	{
@@ -465,7 +472,7 @@ int b2b_entities_restore(void)
 			if(type == B2B_SERVER)/* extract hash and local index */
 			{
 				htable = server_htable;
-				if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index, NULL) < 0)
+				if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index, &ts) < 0)
 				{
 					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len, dlg.tag[1].s);
 					goto error;
@@ -538,7 +545,7 @@ int b2b_entities_restore(void)
 				LM_ERR("Failed to create new dialog structure\n");
 				goto error;
 			}
-			b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index, 0, type, 1, 0);
+			b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index, ts, type, 1, 0);
 			if(b2b_key == NULL)
 			{
 				LM_ERR("Failed to insert new record\n");

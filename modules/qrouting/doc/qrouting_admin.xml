@@ -31,8 +31,9 @@
 <section id="monitored_statistics" xreflabel="Monitored Statistics">
 	<title>Monitored Statistics</title>
 	<para>
-	The module keeps track of the following statistics, <emphasis role='bold'>
-	for each drouting gateway</emphasis>:
+	The module keeps track of a series of statistics, for each drouting
+	<emphasis role='bold'>(prefix, destination)</emphasis> pair, where a
+	"destination" may be either a gateway or a carrier.  The statistics are:
 	<itemizedlist>
 		<listitem>
 			<para>ASR (Answer Seizure Ratio) - the percentage of telephone
@@ -404,7 +405,7 @@ modparam("qrouting", "min_samples_acd", 30)
 		<para>
 		The minimally accepted quality of a (prefix, destination) combination,
 		given as a quoted floating point number in the [0, 1] interval.
-		Whenever a (prefix + destination combination) receives a score below
+		Whenever a (prefix, destination) combination receives a score below
 		this threshold, the <xref linkend="event_E_QROUTING_BAD_DST"/> event
 		will be triggered.
 		</para>
@@ -710,8 +711,9 @@ opensips-cli -x mi qr_enable_dst pstn 81 MY-GW-3
 		<function moreinfo="none">E_QROUTING_BAD_DST</function>
 		</title>
 		<para>
-		This event may be raised during routing, asynchronously, whenever a
-		gateway's score falls below <xref linkend="param_event_bad_dst_threshold"/>.
+		This event may be raised during routing, asynchronously, whenever the
+		score of a (prefix, destination) pair falls below
+		<xref linkend="param_event_bad_dst_threshold"/>.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>

@@ -1861,6 +1861,28 @@ static int prepare_forward(struct sip_msg *msg, udomain_t *d,
 {
 	struct mid_reg_info *mri;
 	struct to_body *to, *from;
+	int rc;
+
+	rc = tmb.t_newtran(msg);
+	switch (rc) {
+	case 1:
+		break;
+
+	case E_SCRIPT:
+		LM_DBG("%.*s transaction already exists, continuing...\n",
+		       msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+		break;
+
+	case 0:
+		LM_INFO("absorbing %.*s retransmission, use t_check_trans() "
+		        "earlier\n", msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+		return 0;
+
+	default:
+		LM_ERR("internal error %d while creating %.*s transaction\n",
+		       rc, msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+		return -1;
+	}
 
 	LM_DBG("from: '%.*s'\n", msg->from->body.len, msg->from->body.s);
 	LM_DBG("Call-ID: '%.*s'\n", msg->callid->body.len, msg->callid->body.s);
@@ -2471,11 +2493,6 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 		return -1;
 	}
 
-	if (((int (*)(struct sip_msg *))tmb.t_check_trans)(msg) == 0) {
-		LM_INFO("absorbing retransmission, use t_check_trans() earlier!\n");
-		return 0;
-	}
-
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 
@@ -2517,8 +2534,8 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 	}
 
 	if (pn_enable && pn_inspect_request(msg, &c->uri, &sctx) != 0) {
-		LM_DBG("SIP PN processing failed\n");
-		goto quick_reply;
+		LM_DBG("SIP PN processing failed (%d)\n", rerrno);
+		goto out_error;
 	}
 
 	/* mid-registrar always rewrites the Contact, so any Path hf must go! */

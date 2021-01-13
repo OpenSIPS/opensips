@@ -233,7 +233,6 @@ int src_add_participant(struct src_sess *sess, str *aor, str *name,
 		if (bin_pop_##_type(&packet, _value) < 0) { \
 			LM_ERR("cannot pop '" #_value "' from bin packet!\n"); \
 			goto error; \
-			return; \
 		} \
 	} while (0)
 

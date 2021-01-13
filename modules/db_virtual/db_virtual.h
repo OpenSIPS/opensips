@@ -24,8 +24,8 @@
  */
 
 
-#ifndef DB_MOD_H
-#define DB_MOD_H
+#ifndef DB_VIRT_MOD_H
+#define DB_VIRT_MOD_H
 
 #include "../../db/db_val.h"
 #include "../../str.h"
@@ -102,4 +102,4 @@ typedef struct info_global{
 int virtual_mod_init(void);
 int init_private_handles(void);
 
-#endif /* DB_MOD_H */
+#endif /* DB_VIRT_MOD_H */

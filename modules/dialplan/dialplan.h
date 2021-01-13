@@ -36,6 +36,8 @@
 #define REGEX_OP	1
 #define EQUAL_OP	0
 
+#define DEFAULT_PARTITION  "default"
+
 #define DP_CASE_INSENSITIVE		1
 #define DP_INDEX_HASH_SIZE		16
 
@@ -50,7 +52,7 @@ typedef struct dpl_node{
 	struct subst_expr * repl_comp;
 	str attrs;
 	str timerec;
-	tmrec_t *parsed_timerec;
+	tmrec_expr *parsed_timerec;
 
 	struct dpl_node * next; /*next rule*/
 }dpl_node_t, *dpl_node_p;

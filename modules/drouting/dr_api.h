@@ -42,7 +42,7 @@ typedef dr_head_p (*create_head_f) (void);
 typedef void (*free_head_f)(dr_head_p partition);
 typedef int (*add_rule_f)(dr_head_p partition, unsigned int rid,
 		str *prefix, unsigned int gr_id, unsigned int priority,
-		tmrec_t *time_rec, void *attr);
+		tmrec_expr *time_rec, void *attr);
 typedef str * (*get_gw_name_f) (pgw_t *gw);
 typedef int (*get_cr_n_gw_f) (pcr_t *cr);
 typedef str * (*get_cr_name_f) (pcr_t *cr);

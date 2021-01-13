@@ -27,6 +27,7 @@
 #define CL_NODE_INFO_H
 
 #include "../../db/db.h"
+#include "../../rw_locking.h"
 #include "api.h"
 #include "clusterer.h"
 
@@ -130,6 +131,7 @@ void free_info(cluster_info_t *cl_list);
 
 int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_vals,
 					str *str_vals);
+void remove_node_list(cluster_info_t *cl, node_info_t *node);
 
 int provision_neighbor(modparam_t type, void* val);
 int provision_current(modparam_t type, void *val);

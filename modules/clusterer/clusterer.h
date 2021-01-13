@@ -57,10 +57,10 @@
 #define CAP_SYNC_PENDING	(1<<1)
 #define CAP_PKT_BUFFERING	(1<<2)
 
-
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
 				CLUSTERER_UNKNOWN_ID, CLUSTERER_NODE_DESCRIPTION,
+				CLUSTERER_REMOVE_NODE,
 				CLUSTERER_GENERIC_MSG,
 				CLUSTERER_MI_CMD,
 				CLUSTERER_CAP_UPDATE,
@@ -131,12 +131,15 @@ struct node_search_info {
 	struct node_search_info *next;      /* linker in queue */
 };
 
+#define TIME_DIFF(_start, _now) \
+	((_now).tv_sec*1000000 + (_now).tv_usec \
+	- (_start).tv_sec*1000000 - (_start).tv_usec)
+
 extern enum sip_protos clusterer_proto;
 
 extern str cl_internal_cap;
 extern str cl_extra_cap;
 
-void heartbeats_timer(void);
 void seed_fb_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
@@ -144,23 +147,23 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
 
-int get_next_hop(struct node_info *dest);
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 												int cluster_id, int dst_id);
 int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
 							int cap_state);
+int send_cap_update(struct node_info *dest_node, int require_reply);
+void do_actions_node_ev(struct cluster_info *clusters, int *select_cluster,
+								int no_clusters);
+
+void remove_node(struct cluster_info *cl, struct node_info *node);
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
 enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);
 enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 									mi_item_t *cmd_params_arr, int no_params);
-
-int gen_rcv_evs_init(void);
-int node_state_ev_init(void);
-void gen_rcv_evs_destroy(void);
-void node_state_ev_destroy(void);
+enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node);
 
 int cl_set_state(int cluster_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, str *ip_str,

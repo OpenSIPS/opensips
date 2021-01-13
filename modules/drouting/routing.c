@@ -308,7 +308,7 @@ rt_info_t*
 build_rt_info(
 	int id,
 	int priority,
-	tmrec_t *trec,
+	tmrec_expr *trec,
 	/* script routing table index */
 	char *route_idx,
 	/* list of destinations indexes */

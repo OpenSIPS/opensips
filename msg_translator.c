@@ -607,8 +607,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 		send_address_str=&(send_sock->adv_name_str);
 	else if (msg->set_global_address.s)
 		send_address_str=&(msg->set_global_address);
-	else if (default_global_address.s)
-		send_address_str=&default_global_address;
+	else if (default_global_address->s)
+		send_address_str=default_global_address;
 	else
 		send_address_str=&(send_sock->address_str);
 
@@ -616,8 +616,8 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 		send_port_str=&(send_sock->adv_port_str);
 	else if (msg->set_global_port.s)
 		send_port_str=&(msg->set_global_port);
-	else if (default_global_port.s)
-		send_port_str=&default_global_port;
+	else if (default_global_port->s)
+		send_port_str=default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
 
@@ -625,14 +625,14 @@ int lumps_len(struct sip_msg* msg, struct lump* lumps,
 	if(msg->rcv.bind_address) {
 		if(msg->rcv.bind_address->adv_name_str.len)
 			rcv_address_str=&(msg->rcv.bind_address->adv_name_str);
-		else if (default_global_address.s)
-			rcv_address_str=&default_global_address;
+		else if (default_global_address->s)
+			rcv_address_str=default_global_address;
 		else
 			rcv_address_str=&(msg->rcv.bind_address->address_str);
 		if(msg->rcv.bind_address->adv_port_str.len)
 			rcv_port_str=&(msg->rcv.bind_address->adv_port_str);
-		else if (default_global_port.s)
-			rcv_port_str=&default_global_port;
+		else if (default_global_port->s)
+			rcv_port_str=default_global_port;
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
@@ -1017,16 +1017,16 @@ void process_lumps(	struct sip_msg* msg,
 		send_address_str=&(send_sock->adv_name_str);
 	else if (msg->set_global_address.len)
 		send_address_str=&(msg->set_global_address);
-	else if (default_global_address.s)
-		send_address_str=&default_global_address;
+	else if (default_global_address->s)
+		send_address_str=default_global_address;
 	else
 		send_address_str=&(send_sock->address_str);
 	if(send_sock && send_sock->adv_port_str.len)
 		send_port_str=&(send_sock->adv_port_str);
 	else if (msg->set_global_port.len)
 		send_port_str=&(msg->set_global_port);
-	else if (default_global_port.s)
-		send_port_str=&default_global_port;
+	else if (default_global_port->s)
+		send_port_str=default_global_port;
 	else
 		send_port_str=&(send_sock->port_no_str);
 
@@ -1034,14 +1034,14 @@ void process_lumps(	struct sip_msg* msg,
 	if(msg->rcv.bind_address) {
 		if(msg->rcv.bind_address->adv_name_str.len)
 			rcv_address_str=&(msg->rcv.bind_address->adv_name_str);
-		else if (default_global_address.s)
-			rcv_address_str=&default_global_address;
+		else if (default_global_address->s)
+			rcv_address_str=default_global_address;
 		else
 			rcv_address_str=&(msg->rcv.bind_address->address_str);
 		if(msg->rcv.bind_address->adv_port_str.len)
 			rcv_port_str=&(msg->rcv.bind_address->adv_port_str);
-		else if (default_global_port.s)
-			rcv_port_str=&default_global_port;
+		else if (default_global_port->s)
+			rcv_port_str=default_global_port;
 		else
 			rcv_port_str=&(msg->rcv.bind_address->port_no_str);
 	}
@@ -2436,7 +2436,7 @@ error:
 }
 
 
-char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
+char * build_res_buf_from_sip_req( unsigned int code, const str *text ,str *new_tag,
 		struct sip_msg* msg, unsigned int *returned_len, struct bookmark *bmark)
 {
 	char *buf, *p, *received_buf, *rport_buf, *warning_buf;
@@ -2530,7 +2530,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 	}
 	/* server header */
 	if (server_signature)
-		len += server_header.len + CRLF_LEN;
+		len += server_header->len + CRLF_LEN;
 	/* warning hdr */
 	if (sip_warning) {
 		warning_buf = warning_builder(msg,&warning_len);
@@ -2672,7 +2672,7 @@ char * build_res_buf_from_sip_req( unsigned int code, str *text ,str *new_tag,
 		}
 	/* server header */
 	if (server_signature) {
-		append_str( p, server_header.s, server_header.len);
+		append_str( p, server_header->s, server_header->len);
 		append_str( p, CRLF, CRLF_LEN );
 	}
 	/* content_length hdr */

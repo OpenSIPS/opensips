@@ -26,8 +26,8 @@
 #include "../../dprint.h"
 #include "../../str.h"
 
-typedef int (*sl_send_reply_f)(struct sip_msg *msg, int code, str *reason,
-		str *tag);
+typedef int (*sl_send_reply_f)(struct sip_msg *msg, int code,
+    const str *reason, str *tag);
 typedef int (*sl_gen_totag_f)(struct sip_msg *msg, str *totag);
 
 struct sl_binds {

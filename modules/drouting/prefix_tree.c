@@ -25,7 +25,6 @@
 
 #include "../../str.h"
 #include "../../mem/shm_mem.h"
-#include "../../time_rec.h"
 
 #include "prefix_tree.h"
 #include "dr_partitions.h"
@@ -35,22 +34,23 @@ extern int inode;
 extern int unode;
 
 #define DR_PREFIX_ARRAY_SIZE 128
-static unsigned char *dr_char2idx = NULL;
+static signed char *dr_char2idx = NULL;
 
 /* number of children under a prefix node */
 int ptree_children = 0;
 
 #define IDX_OF_CHAR(_c) \
 	dr_char2idx[ (unsigned char)(_c) ]
+#define UIDX_OF_CHAR(_c) (unsigned char)IDX_OF_CHAR(_c)
 
 #define IS_VALID_PREFIX_CHAR(_c) \
-	((((unsigned char)(_c))<DR_PREFIX_ARRAY_SIZE) && (char)IDX_OF_CHAR(_c)!=-1 )
+	((((unsigned char)(_c))<DR_PREFIX_ARRAY_SIZE) && IDX_OF_CHAR(_c)!=-1 )
 
 int init_prefix_tree( char *extra_prefix_chars )
 {
 	int i;
 
-	dr_char2idx = (unsigned char *)pkg_malloc
+	dr_char2idx = (signed char *)pkg_malloc
 		( DR_PREFIX_ARRAY_SIZE * sizeof(unsigned char) );
 	if (dr_char2idx==NULL) {
 		LM_ERR("not enought pkg mem for the prefix array\n");
@@ -80,31 +80,6 @@ int init_prefix_tree( char *extra_prefix_chars )
 }
 
 
-static inline int
-check_time(
-		tmrec_t *time_rec
-		)
-{
-	ac_tm_t att;
-
-	/* shortcut: if there is no dstart, timerec is valid */
-	if (time_rec->dtstart==0)
-		return 1;
-
-	memset( &att, 0, sizeof(att));
-
-	/* set current time */
-	if ( ac_tm_set_time( &att, time(0) ) )
-		return 0;
-
-	/* does the recv_time match the specified interval?  */
-	if (check_tmrec( time_rec, &att)!=0)
-		return 0;
-
-	return 1;
-}
-
-
 static inline rt_info_t*
 internal_check_rt(
 		ptree_node_t *ptn,
@@ -129,7 +104,7 @@ internal_check_rt(
 		j = 0;
 		while(rtlw!=NULL) {
 			if ( j++ >= *rgidx) {
-				if(rtlw->rtl->time_rec == NULL || check_time(rtlw->rtl->time_rec))
+				if (!rtlw->rtl->time_rec || tmrec_expr_check(rtlw->rtl->time_rec))
 					goto ok_exit;
 			}
 			rtlw=rtlw->next;
@@ -297,9 +272,9 @@ add_prefix(
 		if( tmp == (prefix->s+prefix->len-1) ) {
 			/* last digit in the prefix string */
 			LM_DBG("adding info %p, %d at: "
-				"%p (%d)\n", r, rg, &(ptree->ptnode[IDX_OF_CHAR(*tmp)]),
+				"%p (%d)\n", r, rg, &(ptree->ptnode[UIDX_OF_CHAR(*tmp)]),
 				IDX_OF_CHAR(*tmp));
-			res = add_rt_info(&(ptree->ptnode[IDX_OF_CHAR(*tmp)]),
+			res = add_rt_info(&(ptree->ptnode[UIDX_OF_CHAR(*tmp)]),
 					r,rg, malloc_f, free_f);
 			if(res < 0 ) {
                 LM_ERR("adding rt info doesn't work\n");
@@ -310,13 +285,13 @@ add_prefix(
 			goto ok_exit;
 		}
 		/* process the current digit in the prefix */
-		if(NULL == ptree->ptnode[IDX_OF_CHAR(*tmp)].next) {
+		if(NULL == ptree->ptnode[UIDX_OF_CHAR(*tmp)].next) {
 			/* allocate new node */
 			INIT_PTREE_NODE(malloc_f, ptree,
-				ptree->ptnode[IDX_OF_CHAR(*tmp)].next);
+				ptree->ptnode[UIDX_OF_CHAR(*tmp)].next);
 			inode+=10;
 		}
-		ptree = ptree->ptnode[IDX_OF_CHAR(*tmp)].next;
+		ptree = ptree->ptnode[UIDX_OF_CHAR(*tmp)].next;
 		tmp++;
 	}
 
@@ -383,7 +358,7 @@ free_rt_info(
 	if(NULL!=rl->pgwl)
 		func_free(f, rl->pgwl);
 	if(NULL!=rl->time_rec)
-		tmrec_free(rl->time_rec);
+		tmrec_expr_free(rl->time_rec);
 	func_free(f, rl);
 	return;
 }

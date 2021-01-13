@@ -587,7 +587,7 @@ void handle_ebr_ipc(int sender, void *payload)
 {
 	ebr_ipc_job *job = (ebr_ipc_job*)payload;
 	struct usr_avp **old_avps;
-	struct sip_msg req;
+	struct sip_msg *req;
 
 	LM_DBG("EBR notification received via IPC for event %.*s\n",
 		job->ev->event_name.len, job->ev->event_name.s);
@@ -596,18 +596,15 @@ void handle_ebr_ipc(int sender, void *payload)
 
 		/* this is a job for notifiying on an event */
 
+		/* prepare a fake/dummy request */
+		req = get_dummy_sip_msg();
+		if(req == NULL) {
+			LM_ERR("cannot create new dummy sip request\n");
+			goto cleanup;
+		}
+
 		/* push our list of AVPs */
 		old_avps = set_avp_list( &job->avps );
-
-		/* prepare a fake/dummy request */
-		memset( &req, 0, sizeof(struct sip_msg));
-		req.first_line.type = SIP_REQUEST;
-		req.first_line.u.request.method.s= "DUMMY";
-		req.first_line.u.request.method.len= 5;
-		req.first_line.u.request.uri.s= "sip:user@domain.com";
-		req.first_line.u.request.uri.len= 19;
-		req.rcv.src_ip.af = AF_INET;
-		req.rcv.dst_ip.af = AF_INET;
 
 		LM_DBG("using transaction reference %X:%X\n",
 			job->tm.hash, job->tm.label);
@@ -619,7 +616,7 @@ void handle_ebr_ipc(int sender, void *payload)
 		} else {
 			/* run the notification route */
 			set_route_type( REQUEST_ROUTE );
-			run_top_route( sroutes->request[(int)(long)job->data].a, &req);
+			run_top_route( sroutes->request[(int)(long)job->data], req);
 		}
 
 		if (ebr_tmb.t_set_remote_t)
@@ -627,8 +624,9 @@ void handle_ebr_ipc(int sender, void *payload)
 
 		/* cleanup over route execution */
 		set_avp_list( old_avps );
-		free_sip_msg( &req );
+		release_dummy_sip_msg(req);
 
+		cleanup:
 		/* destroy everything */
 		destroy_avp_list( &job->avps );
 		shm_free(job);

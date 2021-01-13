@@ -328,7 +328,7 @@ static inline void strip_esc(str *s)
 	int len = s->len;
 
 	for ( ; len > 0; len--, c++) {
-		if (*c == '\\' && len > 0 &&
+		if (*c == '\\' &&
 				(*(c+1)=='\\' || *(c+1)=='#' || *(c+1)=='|')) {
 			memmove(c, c + 1, len - 1);
 			s->len--;
@@ -599,10 +599,24 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			if (get_dlg_unsafe(d_entry, &callid, &from_tag, &to_tag,
 			                   &dlg) == 0) {
-				dlg_unlock(d_table, d_entry);
-				LM_DBG("dialog already exists, skipping (ci: %.*s)\n",
-				       callid.len, callid.s);
-				continue;
+				/*
+				 * there are two cases that could lead here:
+				 * 1) a race condition between the loading from DB and events
+				 *    received over a replicated channel - in this case we
+				 *    double check if the dialog has the same callid, and if
+				 *    we do, we drop the loaded dialog, as it has already been
+				 *    learned through replication
+				 * 2) a call looping scenario - a call that passes more than
+				 *    once through the same OpenSIPS instance, basically
+				 *    creating different dialogs with different hash IDs - in
+				 *    this case we shall learn the new dialog (Ticket #2311)
+				 */
+				if (dlg->h_id == hash_id) {
+					dlg_unlock(d_table, d_entry);
+					LM_DBG("dialog already exists, skipping (ci: %.*s, did: %u.%u)\n",
+							callid.len, callid.s, hash_entry, hash_id);
+					continue;
+				}
 			}
 
 			GET_STR_VALUE(from_uri, values, 2, 1, 0);
@@ -745,17 +759,16 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 
+			if (restore_reinvite_pinging(dlg) != 0)
+				LM_ERR("failed to fetch some Re-INVITE pinging data\n");
 			if (dlg_has_reinvite_pinging(dlg)) {
 				/* re-populate Re-INVITE pinging fields */
-				if (restore_reinvite_pinging(dlg) != 0)
-					LM_ERR("failed to fetch some Re-INVITE pinging data\n");
-				else if (0 != insert_reinvite_ping_timer(dlg))
+				if (0 != insert_reinvite_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into reinvite"
 					        "ping timer\n", dlg);
-				else {
+				else
 					/* reference dialog as kept in reinvite ping timer list */
 					ref_dlg(dlg, 1);
-				}
 			}
 
 			if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
@@ -1094,7 +1107,8 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values,
 								DIALOG_TABLE_TOTAL_COL_NO)) !=0){
-			LM_ERR("could not add another dialog to db\n");
+			LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
+					cell->state, cell->callid.len, cell->callid.s);
 			goto error;
 		}
 
@@ -1636,7 +1650,8 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 				if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 				values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
-					LM_ERR("could not add another dialog to db\n");
+					LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
+							cell->state, cell->callid.len, cell->callid.s);
 					cell = cell->next;
 					continue;
 				}
@@ -2326,7 +2341,8 @@ static int restore_dlg_db(void)
 
 			if((dialog_dbf.insert(dialog_db_handle, insert_keys,
 			values, DIALOG_TABLE_TOTAL_COL_NO)) !=0){
-				LM_ERR("could not add another dialog to db\n");
+				LM_ERR("could not add another dialog to db - state=%d callid=%.*s\n",
+						cell->state, cell->callid.len, cell->callid.s);
 				continue;
 			}
 

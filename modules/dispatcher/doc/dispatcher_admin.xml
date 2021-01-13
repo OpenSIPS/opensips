@@ -1407,7 +1407,7 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
 			<para><emphasis>pattern (string, optional)</emphasis> - a glob
 			pattern used to match destination attributes. If the destination
 			ip and port matches but the pattern does not match the destination's
-			attribute, the function will fail.
+			attribute, the function will fail.</para>
 		</listitem>
 		</itemizedlist>
 		<para>

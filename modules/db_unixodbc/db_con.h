@@ -27,8 +27,8 @@
  */
 
 
-#ifndef MY_CON_H
-#define MY_CON_H
+#ifndef MY_UNIX_CON_H
+#define MY_UNIX_CON_H
 
 #include "../../db/db_pool.h"
 #include "../../db/db_id.h"
@@ -92,4 +92,4 @@ char *db_unixodbc_build_conn_str(const struct db_id* id, char *buf);
 
 void db_unixodbc_extract_error(const char *fn, const SQLHANDLE handle, const SQLSMALLINT type, char* stret);
 
-#endif  /* MY_CON_H */
+#endif  /* MY_UNIX_CON_H */

@@ -47,18 +47,24 @@ typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);
  **/
 
 
-typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5],
-		b2bl_cback_f, void* param, unsigned int cb_mask, str* custom_hdrs);
+typedef struct b2bl_init_params {
+	enum b2b_entity_type e1_type;
+	enum b2b_entity_type e2_type;
+	str e1_to;
+	str e2_to;
+	str e1_from_dname;
+	str e2_from_dname;
+} b2bl_init_params_t;
+
+typedef str* (*b2bl_init_f)(struct sip_msg* msg, str *scenario_name,
+	b2bl_init_params_t *scenario_params, b2bl_cback_f, void* param,
+	unsigned int cb_mask, str* custom_hdrs);
 
 typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int entity_type);
 /* key - the string returned by b2bl_init_f
  * entity_type - 0, the server entity
  *               1, the client entity
  */
-typedef int (*b2bl_set_state_f)(str* key, int state);
-
-typedef str* (*b2bl_bridge_extern_f)(str* scenario_name, str* args[5],
-		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
 
 int b2bl_terminate_call(str* key);
 typedef int (*b2bl_terminate_call_t)(str* key);
@@ -87,24 +93,20 @@ typedef struct b2bl_api
 {
 	b2bl_init_f init;
 	b2bl_bridge_f bridge;
-	b2bl_bridge_extern_f bridge_extern;
 	b2bl_bridge_2calls_t bridge_2calls;
 	b2bl_terminate_call_t terminate_call;
-	b2bl_set_state_f set_state;
 	b2bl_bridge_msg_t bridge_msg;
 	b2bl_get_stats_f get_stats;
 	b2bl_register_cb_f register_cb;
 	b2bl_restore_upper_info_f restore_upper_info;
 }b2bl_api_t;
 
-str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
-		b2bl_cback_f, void* param, unsigned int cb_mask, str* custom_hdrs);
+str* internal_init_scenario(struct sip_msg* msg, str *scen_name,
+	b2bl_init_params_t *scen_params, b2bl_cback_f cbf, void* param,
+	unsigned int cb_mask, str* custom_hdrs);
 
 typedef int(*load_b2bl_f)( b2bl_api_t *api );
 int b2b_logic_bind(b2bl_api_t* api);
-
-str* b2bl_bridge_extern(str* scenario_name, str* args[5], b2bl_cback_f cbf,
-		void* cb_param, unsigned int cb_mask);
 
 static inline int load_b2b_logic_api( b2bl_api_t *api)
 {

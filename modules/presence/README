@@ -17,7 +17,7 @@ Presence Module
               1.4.1. db_url(str)
               1.4.2. fallback2db (int)
               1.4.3. cluster_id (int)
-              1.4.4. cluster_federation_mode (int)
+              1.4.4. cluster_federation_mode (str)
               1.4.5. cluster_pres_events (str)
               1.4.6. expires_offset (int)
               1.4.7. max_expires_subscribe (int)
@@ -234,7 +234,7 @@ modparam("presence", "fallback2db", 1)
 modparam("presence", "cluster_id", 2)
 ...
 
-1.4.4. cluster_federation_mode (int)
+1.4.4. cluster_federation_mode (str)
 
    When enabling the federation mode, nodes inside the presence
    cluster will start broadcasting the data to other nodes via the
@@ -251,9 +251,10 @@ modparam("presence", "cluster_id", 2)
 
    If you don't want to use a shared database (via fallback2db),
    but still want a complete data set everywhere, you may choose
-   mode 2. This mode allows you to switch PUBLISH endpoints, even
-   for already published Event States, thus allowing you to add
-   and remove presence servers without losing state.
+   mode full-sharing. This mode allows you to switch PUBLISH
+   endpoints, even for already published Event States, thus
+   allowing you to add and remove presence servers without losing
+   state.
 
    For more on presence clustering see the Section 1.2, “Presence
    clustering” chapter.
@@ -262,7 +263,7 @@ modparam("presence", "cluster_id", 2)
 
    Example 1.4. Set cluster_federation_mode parameter
 ...
-modparam("presence", "cluster_federation_mode", 1)
+modparam("presence", "cluster_federation_mode", "full-sharing")
 ...
 
 1.4.5. cluster_pres_events (str)
@@ -1032,11 +1033,11 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 651 247 24146 12623
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 143 87 3084 1810
-   3. Razvan Crainea (@razvancrainea) 32 25 397 142
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 146 90 3088 1815
+   3. Razvan Crainea (@razvancrainea) 34 27 420 162
    4. Vlad Patrascu (@rvlad-patrascu) 31 17 629 476
-   5. Liviu Chircu (@liviuchircu) 29 19 253 375
-   6. Ovidiu Sas (@ovidiusas) 28 19 615 167
+   5. Ovidiu Sas (@ovidiusas) 29 20 618 170
+   6. Liviu Chircu (@liviuchircu) 29 19 253 375
    7. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    8. Dan Pascu (@danpascu) 20 14 162 201
    9. Henning Westerholt (@henningw) 14 6 340 302
@@ -1045,11 +1046,11 @@ Chapter 3. Contributors
    All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
    (@vladpaiu), Juha Heinanen (@juha-h), Edson Gellert Schubert,
    Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi Eshun
-   (@ekobi), Dusan Klinec, Angel Marin, Klaus Darilion, Carlos
-   Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona Modroiu,
-   Vasil Kolev, Benny Prijono, James Criscuolo, Peter Lemenkov
-   (@lemenkov), Vallimamod Abdullah, UnixDev, Denis Bilenko,
-   Julián Moreno Patiño, John Riordan, Julien Blache.
+   (@ekobi), Dusan Klinec (@ph4r05), Angel Marin, Klaus Darilion,
+   Carlos Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona
+   Modroiu, Vasil Kolev, Benny Prijono, James Criscuolo, Peter
+   Lemenkov (@lemenkov), Vallimamod Abdullah, UnixDev, Denis
+   Bilenko, Julián Moreno Patiño, John Riordan, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1071,26 +1072,26 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Mar 2020
-   3.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
-   5.  Walter Doekes (@wdoekes)            Apr 2010 - Nov 2019
-   6.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  James Criscuolo                     Mar 2016 - Mar 2016
-   9.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Mar 2016
+   1.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jul 2020
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
+   5.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
+   7.  Walter Doekes (@wdoekes)            Apr 2010 - Nov 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  James Criscuolo                     Mar 2016 - Mar 2016
    10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Dusan Klinec, Carlos Oliva, Damien
-   Sandras (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra
-   Corretgé (@saghul), Anca Vamanu, Vallimamod Abdullah, Kennard
-   White, Stanislaw Pitucha, Angel Marin, John Riordan, Vasil
-   Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi), Klaus
-   Darilion, Denis Bilenko, Henning Westerholt (@henningw), Juha
-   Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda), Edson
-   Gellert Schubert, Julien Blache, Benny Prijono, Elena-Ramona
-   Modroiu.
+   All remaining contributors: Dusan Klinec (@ph4r05), Carlos
+   Oliva, Damien Sandras (@dsandras), Vlad Paiu (@vladpaiu), Saúl
+   Ibarra Corretgé (@saghul), Anca Vamanu, Vallimamod Abdullah,
+   Kennard White, Stanislaw Pitucha, Angel Marin, John Riordan,
+   Vasil Kolev, UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi),
+   Klaus Darilion, Denis Bilenko, Henning Westerholt (@henningw),
+   Juha Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda),
+   Edson Gellert Schubert, Julien Blache, Benny Prijono,
+   Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1099,12 +1100,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Walter Doekes
-   (@wdoekes), Dan Pascu (@danpascu), Liviu Chircu (@liviuchircu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Saúl Ibarra
-   Corretgé (@saghul), Ovidiu Sas (@ovidiusas), Anca Vamanu,
-   Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
+   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Walter Doekes (@wdoekes), Dan Pascu
+   (@danpascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Anca
+   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
    Darilion, Henning Westerholt (@henningw), Daniel-Constantin
    Mierla (@miconda), Edson Gellert Schubert, Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu.

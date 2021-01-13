@@ -239,25 +239,33 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
 
 	ul.lock_udomain(ud, &aor);
 	if (ul.get_urecord(ud, &aor, &r) == 1) {
-		LM_DBG("%.*s not found in usrloc!\n", aor.len, aor.s);
+		LM_DBG("AoR '%.*s' not found in usrloc!\n", aor.len, aor.s);
 		ul.unlock_udomain(ud, &aor);
 		return NOT_FOUND;
 	}
 
 	/* callid not defined; contact might be defined or not */
 	if (!_cid) {
+		LM_DBG("found AoR, searching for ct: '%.*s'\n", curi.len, curi.s);
+
 		for (c=r->contacts; c; c=c->next) {
 			if (str_match(&curi, &c->c))
 				goto out_found_unlock;
 		}
 	/* contact not defined; callid defined */
 	} else if (!_c && _cid) {
+		LM_DBG("found AoR, searching for Call-ID: '%.*s'\n",
+		       callid.len, callid.s);
+
 		for (c=r->contacts; c; c=c->next) {
 			if (str_match(&callid, &c->callid))
 				goto out_found_unlock;
 		}
 	/* both callid and contact defined */
 	} else {
+		LM_DBG("found AoR, searching for ct: '%.*s' and Call-ID: '%.*s'\n",
+		       curi.len, curi.s, callid.len, callid.s);
+
 		for (c=r->contacts; c; c=c->next) {
 			if (str_match(&curi, &c->c) && str_match(&callid, &c->callid))
 				goto out_found_unlock;
@@ -265,7 +273,6 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
 	}
 
 	ul.unlock_udomain(ud, &aor);
-
 	return NOT_FOUND;
 
 out_no_contact:

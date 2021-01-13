@@ -60,6 +60,7 @@ static str pn_param_str = str_init("pn-param");
 	(sizeof("Feature-Caps: +sip.pns=\"\";" \
 			"+sip.pnsreg=\"\";+sip.pnspurr=\"\"") + \
 			MAX_PROVIDER_LEN + INT2STR_MAX_LEN + MAX_PNSPURR_LEN + CRLF_LEN)
+#define PN_REASON_BUFSZ 32
 
 static ebr_api_t ebr;
 static ebr_event *ev_ct_update;
@@ -197,10 +198,11 @@ int pn_cfg_validate(void)
 {
 	if (pn_enable_purr &&
 	        !is_script_func_used("record_route", -1) &&
-	        !is_script_func_used("record_route_preset", -1)) {
+	        !is_script_func_used("record_route_preset", -1) &&
+	        !is_script_func_used("topology_hiding", -1)) {
 		LM_ERR("you have enabled modparam 'pn_enable_purr' without "
-		       "'record_route()'ing yourself in the mid-dialog SIP flow, "
-		       "config not valid\n");
+		       "inserting yourself in the mid-dialog SIP flow "
+		       "(e.g. using record_route()), config not valid\n");
 		return 0;
 	}
 
@@ -276,7 +278,7 @@ enum pn_action pn_inspect_ct_params(struct sip_msg *req, const str *ct_uri)
 	int i, is_cap_query = 1, is_handled_upstream = 0;
 
 	if (parse_uri(ct_uri->s, ct_uri->len, &puri) != 0) {
-		LM_ERR("failed to parse URI: '%.*s'\n", ct_uri->len, ct_uri->s);
+		LM_ERR("failed to parse Contact URI '%.*s'\n", ct_uri->len, ct_uri->s);
 		return -1;
 	}
 
@@ -355,12 +357,21 @@ next_param:;
 int pn_inspect_request(struct sip_msg *req, const str *ct_uri,
                        struct save_ctx *sctx)
 {
+	int rc;
+
 	if (sctx->cmatch.mode != CT_MATCH_NONE) {
 		LM_DBG("skip PN processing, matching mode already enforced\n");
 		return 0;
 	}
 
-	switch (pn_inspect_ct_params(req, ct_uri)) {
+	rc = pn_inspect_ct_params(req, ct_uri);
+	if (rc < 0) {
+		rerrno = R_PARSE_CONT;
+		LM_DBG("failed to parse Contact URI\n");
+		return -1;
+	}
+
+	switch (rc) {
 	case PN_NONE:
 		LM_DBG("Contact URI has no PN params\n");
 		break;
@@ -555,7 +566,8 @@ static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
 			val.n = p->val.n;
 			avp = new_avp(0, avp_id, val);
 		} else {
-			LM_BUG("EVI param no STR, nor INT, ignoring...\n");
+			LM_DBG("EVI param '%.*s' not STR, nor INT (%d), ignoring...\n",
+			       p->name.len, p->name.s, p->flags);
 			continue;
 		}
 
@@ -638,6 +650,8 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
                   const struct sip_uri *ct_uri)
 {
 	ebr_filter *f;
+	char _reason[PN_REASON_BUFSZ + 1];
+	str reason = {_reason, 0}, met;
 
 	/* fill in the EBR filters, so we can match the future reg event */
 	for (f = pn_ebr_filters; f; f = f->next) {
@@ -656,8 +670,13 @@ int pn_trigger_pn(struct sip_msg *req, const ucontact_t *ct,
 		return -1;
 	}
 
-	ul.raise_ev_ct_refresh(ct, 1);
+	met = req->REQ_METHOD_S;
+	if (met.len > PN_REASON_BUFSZ - 4)
+		met.len = PN_REASON_BUFSZ - 4;
+	sprintf(reason.s, "ini-%.*s", met.len, met.s);
+	reason.len = 4 + met.len;
 
+	ul.raise_ev_ct_refresh(ct, &reason, &req->callid->body);
 	return 0;
 }
 
@@ -748,15 +767,22 @@ int pn_remove_uri_params(struct sip_uri *puri, int uri_len, str *out_uri)
 
 int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 {
+	char _reason[PN_REASON_BUFSZ + 1];
 	ebr_filter *f;
 	struct sip_uri puri;
-	str *purr, *rt_uri;
+	str *purr, *rt_uri, reason = {_reason, 0}, met;
 	ucontact_id id;
 	urecord_t *r;
 	ucontact_t *c;
 
 	if (req->first_line.type != SIP_REQUEST) {
 		LM_ERR("pn_process_purr() cannot be called on SIP replies\n");
+		return -1;
+	}
+
+	if (!req->callid) {
+		LM_ERR("bad %.*s request (missing Call-ID header)\n",
+		       req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
 		return -1;
 	}
 
@@ -837,8 +863,14 @@ have_purr:
 		goto err_unlock;
 	}
 
+	met = req->REQ_METHOD_S;
+	if (met.len > PN_REASON_BUFSZ - 4)
+		met.len = PN_REASON_BUFSZ - 4;
+	sprintf(reason.s, "mid-%.*s", met.len, met.s);
+	reason.len = 4 + met.len;
+
 	/* trigger the Push Notification */
-	ul.raise_ev_ct_refresh(c, 1);
+	ul.raise_ev_ct_refresh(c, &reason, &req->callid->body);
 
 	ul.unlock_udomain(d, &r->aor);
 	return 1;

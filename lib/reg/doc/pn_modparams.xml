@@ -59,9 +59,9 @@ modparam("&reg_module;", "pn_providers", "apns, fcm, webpush")
 			The minimally required list of RFC 8599 parameters (custom ones are
 			accepted as well) which must be present in a Contact URI and
 			identically match an existing binding in order for the binding
-			to be refreshed.  If at least one such parameter is missing from a
-			Contact header field URI, the module will fall back to performing
-			regular contact matching.
+			to be refreshed during a SIP re-REGISTER.  If at least one such
+			parameter is missing from a Contact header field URI, the module
+			will fall back to performing regular contact matching.
 		</para>
 		<para>
 			Note that if all above PN Contact URI parameters match an existing
@@ -235,11 +235,11 @@ modparam("&reg_module;", "pn_refresh_timeout", 10)
 			registration (PURR - Proxy Unique Registration Reference).
 		</para>
 		<para>
-			For each initial request for dialog, the UA may include the PURR
-			received from the &reg_module; in its Contact header (using the
-			<emphasis>";pn-purr"</emphasis> URI parameter) if it expects to be
-			first awoken by a Push Notification before being able to receive
-			mid-dialog request sent by the callee side.
+			During dialog setup, each UA may include, in its Contact header,
+			the PURR value returned by OpenSIPS during registration.  By
+			including the PURR (e.g. ";pn-purr=XXX"), an agent indicates that
+			it expects to be first awoken by a PN before being able to receive
+			a mid-dialog request sent by the other party.
 		</para>
 		<para>
 			When enabling this parameter, make sure to also add logic for

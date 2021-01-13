@@ -34,9 +34,11 @@
 
 #include "api.h"
 #include "node_info.h"
+#include "topology.h"
 #include "clusterer.h"
 #include "sync.h"
 #include "sharing_tags.h"
+#include "clusterer_evi.h"
 
 int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
@@ -80,6 +82,8 @@ static mi_response_t *cluster_send_mi(const mi_params_t *params,
 static mi_response_t *cluster_bcast_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *clusterer_list_cap(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *cluster_remove_node(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param);
@@ -198,6 +202,10 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "clusterer_shtag_set_active", "switch the status of the give sharing tag to active", 0,0,{
 		{shtag_mi_set_active, {"tag", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "clusterer_remove_node", "removes a node from the cluster", 0,0,{
+		{cluster_remove_node, {"cluster_id", "node_id", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -1011,6 +1019,94 @@ static mi_response_t *cluster_bcast_mi(const mi_params_t *params,
 	}
 
 	return run_mi_cmd_local(&cmd_name, cmd_params_arr, no_params);
+}
+
+static mi_response_t *cluster_remove_node(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int cluster_id, node_id;
+	int rc;
+	cluster_info_t *cl;
+	node_info_t *node;
+	mi_response_t *resp;
+
+	if (db_mode)
+		return init_mi_error(400, MI_SSTR("Running in DB mode"));
+
+	if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0)
+		return init_mi_param_error();
+	if (cluster_id < 1)
+		return init_mi_error(400, MI_SSTR("Bad value for 'cluster_id'"));
+
+	lock_start_read(cl_list_lock);
+
+	cl = get_cluster_by_id(cluster_id);
+	if (!cl) {
+		LM_ERR("Unknown cluster id [%d]\n", cluster_id);
+		resp = init_mi_error(400, MI_SSTR("Unknown cluster id"));
+		goto error;
+	}
+
+	if (get_mi_int_param(params, "node_id", &node_id) < 0) {
+		resp = init_mi_param_error();
+		goto error;
+	}
+	if (node_id < 1) {
+		resp = init_mi_error(400, MI_SSTR("Bad value for 'node_id'"));
+		goto error;
+	}
+
+	node = get_node_by_id(cl, node_id);
+	if (!node) {
+		LM_ERR("Unknown node id [%d]\n", node_id);
+		resp = init_mi_error(400, MI_SSTR("Unknown node id"));
+		goto error;
+	}
+
+	lock_stop_read(cl_list_lock);
+
+	rc = bcast_remove_node(cluster_id, node_id);
+	switch (rc) {
+		case CLUSTERER_SEND_SUCCESS:
+			LM_DBG("Remove node <%d> command sent\n", node_id);
+			break;
+		case CLUSTERER_CURR_DISABLED:
+			LM_INFO("Local node disabled, remove node <%d> command not sent\n",
+				node_id);
+			break;
+		case CLUSTERER_DEST_DOWN:
+			LM_ERR("All nodes down, remove node <%d> command not sent\n",
+				node_id);
+			break;
+		case CLUSTERER_SEND_ERR:
+			LM_ERR("Error sending remove node <%d> command\n", node_id);
+			break;
+	}
+
+	lock_start_write(cl_list_lock);
+
+	cl = get_cluster_by_id(cluster_id);
+	if (!cl) {
+		LM_ERR("Unknown cluster id [%d]\n", cluster_id);
+		lock_stop_write(cl_list_lock);
+		return init_mi_error(400, MI_SSTR("Unknown cluster id"));
+	}
+
+	node = get_node_by_id(cl, node_id);
+	if (!node) {
+		LM_ERR("Unknown node id [%d]\n", node_id);
+		lock_stop_write(cl_list_lock);
+		return init_mi_error(400, MI_SSTR("Unknown node id"));
+	}
+
+	remove_node(cl, node);
+
+	lock_stop_write(cl_list_lock);
+
+	return init_mi_result_ok();
+error:
+	lock_stop_read(cl_list_lock);
+	return resp;
 }
 
 static void heartbeats_timer_handler(unsigned int ticks, void *param)

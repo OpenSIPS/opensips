@@ -44,7 +44,6 @@
 
 
 #define DEFAULT_PARAM      "$ruri.user"
-#define DEFAULT_PARTITION  "default"
 #define PARAM_URL	   "db_url"
 #define PARAM_TABLE	   "table_name"
 #define DP_CHAR_COLON      ':'
@@ -112,7 +111,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "dp_translate", 0, 0, 0, {
 		{mi_translate2, {"dpid", "input", 0}},
-		{mi_translate3, {"partition", "dpid", "input", 0}},
+		{mi_translate3, {"dpid", "input", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dp_show_partition", 0, 0, mi_child_init, {
@@ -315,6 +314,8 @@ static int dp_set_partition(modparam_t type, void* val)
 	p.s   = (char *)val;
 	p.len = strlen(val);
 
+	default_dp_table.len = strlen(default_dp_table.s);
+
 	if (dp_create_head(&p)) {
 		LM_ERR("Error creating head!\n");
 		return -1;
@@ -346,6 +347,7 @@ static int mod_init(void)
 	LM_INFO("initializing module...\n");
 	init_db_url(default_dp_db_url, 1 /* can be null */);
 
+	default_dp_table.len    = strlen(default_dp_table.s);
 	dpid_column.len     	= strlen(dpid_column.s);
 	pr_column.len       	= strlen(pr_column.s);
 	match_op_column.len 	= strlen(match_op_column.s);
@@ -357,11 +359,9 @@ static int mod_init(void)
 	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
-		if (default_dp_db_url.s)
-			dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
-
-		default_dp_table.len = strlen(default_dp_table.s);
+	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION)) &&
+	        default_dp_db_url.s) {
+		dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
 		dp_head_insert(DP_TYPE_TABLE, &default_dp_table, &dp_df_part);
 	}
 
@@ -660,7 +660,7 @@ static mi_response_t *mi_show_partition(const mi_params_t *params,
 		return 0;
 
 	parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
-	if (parts_arr)
+	if (!parts_arr)
 		goto error;
 
 	el = dp_get_connections();
@@ -673,14 +673,14 @@ static mi_response_t *mi_show_partition(const mi_params_t *params,
 			el->partition.s, el->partition.len) < 0)
 			goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("Table"),
+		if (add_mi_string(part_item, MI_SSTR("table"),
 				el->table_name.s, el->table_name.len) < 0)
 				goto error;
 
 		db_get_url(&el->db_url);
 		if(database_url.len == 0) goto error;
 
-		if (add_mi_string(resp_obj, MI_SSTR("db_url"),
+		if (add_mi_string(part_item, MI_SSTR("db_url"),
 			database_url.s, database_url.len) < 0)
 			goto error;
 

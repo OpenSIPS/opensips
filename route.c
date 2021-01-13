@@ -82,6 +82,16 @@ static int fix_actions(struct action* a); /*fwd declaration*/
 
 extern int return_code;
 
+str str_route = str_init("route");
+str str_request_route = str_init("request_route");
+str str_failure_route = str_init("failure_route");
+str str_onreply_route = str_init("onreply_route");
+str str_branch_route  = str_init("branch_route");
+str str_error_route   = str_init("error_route");
+str str_local_route   = str_init("local_route");
+str str_startup_route = str_init("startup_route");
+str str_timer_route   = str_init("timer_route");
+str str_event_route   = str_init("event_route");
 
 
 /*!
@@ -230,13 +240,12 @@ inline static int comp_s2s(int op, str *s1, str *s2)
 
 	switch(op) {
 		case EQUAL_OP:
-			if ( s2->s==NULL || s1->len != s2->len) return 0;
-			ret=(str_strcasecmp(s1, s2)==0);
+			if ( s2->s==NULL) return 0;
+			ret = str_casematch(s1, s2);
 		break;
 		case DIFF_OP:
 			if ( s2->s==NULL ) return 0;
-			if(s1->len != s2->len) return 1;
-			ret=(str_strcasecmp(s1, s2)!=0);
+			ret = !str_casematch(s1, s2);
 			break;
 		case GT_OP:
 			if ( s2->s==NULL ) return 0;
@@ -505,14 +514,14 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 				return comp_s2s(NOTMATCHD_OP, &lstr, &rvalue.rs);
 		}
 
-		if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
-			/* comparing int */
-			rn = rvalue.ri;
-			type =2;
-		} else if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
+		if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
 			/* comparing string */
 			rstr = rvalue.rs;
-			type =1;
+			type = 1;
+		} else if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
+			/* comparing int */
+			rn = rvalue.ri;
+			type = 2;
 		} else
 			goto error_op;
 	} else {
@@ -520,24 +529,24 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		if(lvalue.flags&PV_VAL_NULL)
 			return (op==DIFF_OP || op==NOTMATCH_OP || op==NOTMATCHD_OP)?1:0;
 
-		if (right->type == NET_ST) {
+		if(right->type == STR_ST) {
 			if(!(lvalue.flags&PV_VAL_STR))
 				goto error_op;
-			/* comparing IP */
-			type = 3;
-			rnet =  (struct net*)right->v.data;
+			/* comparing string */
+			type = 1;
+			rstr = right->v.s;
 		} else if(right->type == NUMBER_ST) {
 			if(!(lvalue.flags&PV_VAL_INT))
 				goto error_op;
 			/* comparing int */
-			type =2;
+			type = 2;
 			rn = right->v.n;
-		} else if(right->type == STR_ST) {
+		} else if (right->type == NET_ST) {
 			if(!(lvalue.flags&PV_VAL_STR))
 				goto error_op;
-			/* comparing string */
-			type =1;
-			rstr = right->v.s;
+			/* comparing IP */
+			type = 3;
+			rnet = (struct net*)right->v.data;
 		} else {
 			if(op==MATCH_OP || op==NOTMATCH_OP)
 			{
@@ -550,16 +559,18 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 		}
 	}
 
-	if(type==1) { /* compare str */
-		LM_DBG("str %d : %.*s\n", op, lstr.len, ZSW(lstr.s));
+	switch (type) {
+	case 1: /* compare str */
+		LM_DBG("str %d: %.*s\n", op, lstr.len, lstr.s);
 		return comp_s2s(op, &lstr, &rstr);
-	} else if(type==2) {
-		LM_DBG("int %d : %d / %d\n", op, ln, rn);
+	case 2:
+		LM_DBG("int %d: %d / %d\n", op, ln, rn);
 		return comp_n2n(op, ln, rn);
-	} else if (type==3) {
-		LM_DBG("ip %d : %.*s\n", op, lstr.len, ZSW(lstr.s));
+	case 3:
+		LM_DBG("ip %d: %.*s\n", op, lstr.len, lstr.s);
 		return comp_ip(op, &lstr, rnet);
 	}
+
 	/* default is error */
 
 error_op:
@@ -978,7 +989,7 @@ int run_startup_route(void)
 
 	swap_route_type(old_route_type, STARTUP_ROUTE);
 	/* run the route */
-	ret = run_top_route( sroutes->startup.a, &req);
+	ret = run_top_route( sroutes->startup, &req);
 	free_sip_msg( &req );
 	set_route_type(old_route_type);
 
@@ -1008,7 +1019,7 @@ int get_script_route_idx( char* name,struct script_route *sr, int size,int set)
 			return i;
 		}
 	}
-	LM_ERR("Too many routes - no socket left for <%s>\n",name);
+	LM_ERR("Too many routes - no slot left for <%s>\n",name);
 	return -1;
 }
 
@@ -1134,8 +1145,8 @@ static int fix_actions(struct action* a)
 						break;
 				}
 				if (ret == -1) {
-					LM_ALERT("BUG in route() type %d\n",
-						t->elem[0].type);
+					LM_ERR("failed to validate a route() statement (type %d)\n",
+					           t->elem[0].type);
 					ret = E_CFG;
 					goto error;
 				}
@@ -1719,6 +1730,65 @@ void print_rl(struct os_script_routes *srs)
 	dump_script_routes(&srs->startup, 1,             "startup");
 	dump_script_routes(srs->timer,    TIMER_RT_NO,   "timer");
 	dump_script_routes(srs->event,    EVENT_RT_NO,   "event");
+}
+
+
+void get_top_route_type(str *type, int *has_name)
+{
+	switch (route_type) {
+	case REQUEST_ROUTE:
+		*type = str_route;
+		if (!route_stack[0])
+			goto out_noname;
+		break;
+
+	case ONREPLY_ROUTE:
+		*type = str_onreply_route;
+		if (!route_stack[0])
+			goto out_noname;
+		break;
+
+	case FAILURE_ROUTE:
+		*type = str_failure_route;
+		break;
+
+	case BRANCH_ROUTE:
+		*type = str_branch_route;
+		break;
+
+	case ERROR_ROUTE:
+		*type = str_error_route;
+		goto out_noname;
+		break;
+
+	case LOCAL_ROUTE:
+		*type = str_local_route;
+		goto out_noname;
+		break;
+
+	case STARTUP_ROUTE:
+		*type = str_startup_route;
+		goto out_noname;
+		break;
+
+	case TIMER_ROUTE:
+		*type = str_timer_route;
+		break;
+
+	case EVENT_ROUTE:
+		*type = str_event_route;
+		break;
+
+	default:
+		*type = str_init("");
+		goto out_noname;
+	}
+
+	*has_name = 1;
+	return;
+
+out_noname:
+	*has_name = 0;
 }
 
 

@@ -34,6 +34,7 @@
 
 #include "api.h"
 #include "node_info.h"
+#include "topology.h"
 #include "clusterer.h"
 
 /* DB */
@@ -648,12 +649,34 @@ int update_db_state(int state) {
 	return 0;
 }
 
+void free_node_info(node_info_t *info)
+{
+	struct remote_cap *cap, *tmp_cap;
+
+	if (info->url.s)
+		shm_free(info->url.s);
+	if (info->sip_addr.s)
+		shm_free(info->sip_addr.s);
+	if (info->description.s)
+		shm_free(info->description.s);
+	if (info->lock) {
+		lock_destroy(info->lock);
+		lock_dealloc(info->lock);
+	}
+
+	cap = info->capabilities;
+	while (cap != NULL) {
+		tmp_cap = cap;
+		cap = cap->next;
+		shm_free(tmp_cap);
+	}
+}
+
 void free_info(cluster_info_t *cl_list)
 {
 	cluster_info_t *tmp_cl;
 	node_info_t *info, *tmp_info;
 	struct local_cap *cl_cap, *tmp_cl_cap;
-	struct remote_cap *cap, *tmp_cap;
 
 	while (cl_list != NULL) {
 		tmp_cl = cl_list;
@@ -661,23 +684,7 @@ void free_info(cluster_info_t *cl_list)
 
 		info = tmp_cl->node_list;
 		while (info != NULL) {
-			if (info->url.s)
-				shm_free(info->url.s);
-			if (info->sip_addr.s)
-				shm_free(info->sip_addr.s);
-			if (info->description.s)
-				shm_free(info->description.s);
-			if (info->lock) {
-				lock_destroy(info->lock);
-				lock_dealloc(info->lock);
-			}
-
-			cap = info->capabilities;
-			while (cap != NULL) {
-				tmp_cap = cap;
-				cap = cap->next;
-				shm_free(tmp_cap);
-			}
+			free_node_info(info);
 
 			tmp_info = info;
 			info = info->next;
@@ -698,6 +705,28 @@ void free_info(cluster_info_t *cl_list)
 
 		shm_free(tmp_cl);
 	}
+}
+
+void remove_node_list(cluster_info_t *cl, node_info_t *node)
+{
+	node_info_t *it;
+
+	if (node == cl->node_list) {
+		cl->node_list = cl->node_list->next;
+		free_node_info(node);
+		shm_free(node);
+		cl->no_nodes--;
+		return;
+	}
+
+	for (it=cl->node_list; it->next; it = it->next)
+		if (it->next == node) {
+			it->next = it->next->next;
+			free_node_info(node);
+			shm_free(node);
+			cl->no_nodes--;
+			return;
+		}
 }
 
 static inline void free_clusterer_node(clusterer_node_t *node)

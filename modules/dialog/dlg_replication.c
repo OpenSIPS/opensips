@@ -383,7 +383,34 @@ int dlg_replicated_update(bin_packet_t *packet)
 		goto error;
 	}
 
-	bin_skip_str(packet, 12);
+	/* route set */
+	bin_skip_str(packet, 2);
+
+	/* sync caller and callee contact */
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].contact, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[callee_idx(dlg)].contact, &st);
+
+	/* from & to URIs set */
+	bin_skip_str(packet, 2);
+
+	/* sync SDPs */
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].in_sdp, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].out_sdp, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[callee_idx(dlg)].in_sdp, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[callee_idx(dlg)].out_sdp, &st);
+
+	/* sync advertised caller and callee contacts */
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_contact, &st);
+	bin_pop_str(packet, &st);
+	shm_str_sync(&dlg->legs[callee_idx(dlg)].adv_contact, &st);
+
 	bin_pop_str(packet, &vars);
 	bin_pop_str(packet, &profiles);
 	bin_pop_int(packet, &dlg->user_flags);

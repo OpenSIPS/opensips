@@ -77,51 +77,6 @@
 	}while(0)
 
 
-
-static inline tmrec_t* parse_time_def(char *time_str)
-{
-	tmrec_p time_rec;
-	char *p,*s;
-
-	p = time_str;
-	time_rec = 0;
-
-	/*	time_rec = (tmrec_t*)shm_malloc(sizeof(tmrec_t)); */
-	time_rec = tmrec_new(SHM_ALLOC);
-	if (time_rec==0) {
-		LM_ERR("no more shm mem\n");
-		goto error;
-	}
-	/*	memset( time_rec, 0, sizeof(tmrec_t)); */
-
-	/* empty definition? */
-	if ( time_str==0 || *time_str==0 )
-		goto done;
-
-	load_TR_value( p, s, time_rec, tr_parse_dtstart, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_duration, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_freq, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_until, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_interval, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byyday, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_byweekno, parse_error, done);
-	load_TR_value( p, s, time_rec, tr_parse_bymonth, parse_error, done);
-
-	/* success */
-done:
-	return time_rec;
-parse_error:
-	LM_ERR("parse error in <%s> around position %i\n",
-			time_str, (int)(long)(p-time_str));
-error:
-	if (time_rec)
-		tmrec_free( time_rec );
-	return 0;
-}
-
-
 static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
 		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f)
 {
@@ -312,7 +267,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 	db_row_t* row;
 	rt_info_t *ri;
 	rt_data_t *rdata;
-	tmrec_t   *time_rec;
+	tmrec_expr *time_rec;
 	int i,n;
 	int no_rows = 10;
 	int db_cols;
@@ -698,8 +653,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 				(char*)VAL_STRING(ROW_VALUES(row)+3))==NULL ) ||
 			*(str_vals[STR_VALS_TIME_DRR_COL]) == 0)
 				time_rec = NULL;
-			else if ((time_rec=
-			parse_time_def(str_vals[STR_VALS_TIME_DRR_COL]))==0) {
+			else if ((time_rec = tmrec_expr_parse(
+			              str_vals[STR_VALS_TIME_DRR_COL], SHM_ALLOC))==0) {
 				LM_ERR("bad time definition <%s> for rule id %d -> skipping\n",
 					str_vals[STR_VALS_TIME_DRR_COL],
 					int_vals[INT_VALS_RULE_ID_DRR_COL]);
@@ -724,7 +679,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 							current_partition->free))== 0 ) {
 				LM_ERR("failed to add routing info for rule id %d -> "
 						"skipping\n", int_vals[INT_VALS_RULE_ID_DRR_COL]);
-				tmrec_free( time_rec );
+				tmrec_expr_free( time_rec );
 				continue;
 			}
 			/* add the rule */

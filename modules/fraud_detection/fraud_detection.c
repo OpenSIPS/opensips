@@ -268,7 +268,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 	static const int rc_error = -3, rc_critical_thr = -2, rc_warning_thr = -1,
 				 rc_ok_thr = 1, rc_no_rule = 2;
 	frd_dlg_param *param;
-	int rc = rc_ok_thr;
+	int rc = rc_ok_thr, itv_reset = 0;
 
 	if (*dr_head == NULL) {
 		/* No data, probably still loading */
@@ -322,6 +322,8 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		se->stats.total_calls = 0;
 		se->stats.concurrent_calls = 0;
 		se->stats.seq_calls = 0;
+		se->interval_id++;
+		itv_reset = 1;
 	}
 
 	/* Update the stats */
@@ -346,13 +348,12 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 	++se->stats.total_calls;
 
 	/* Calls per FRD_SECS_PER_WINDOW */
-	if (nowt - se->stats.last_matched_time >= 2 * FRD_SECS_PER_WINDOW) {
+	if (nowt - se->stats.last_matched_time >= 2 * FRD_SECS_PER_WINDOW || itv_reset) {
 		/* outside the range of t0 + 2*WINDOW_SIZE; we can't use any of the
 		 * data since they are too old */
 		se->stats.cpm = 0;
 		memset(se->stats.calls_window, 0,
 				sizeof(unsigned short) * FRD_SECS_PER_WINDOW);
-		se->stats.calls_window[nowt % FRD_SECS_PER_WINDOW] = 1;
 		se->stats.last_matched_time = nowt;
 	}
 	else if (nowt - se->stats.last_matched_time >= FRD_SECS_PER_WINDOW) {
@@ -371,14 +372,14 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 			se->stats.cpm -= se->stats.calls_window[i];
 			se->stats.calls_window[i] = 0;
 		}
-		se->stats.calls_window[nowt%FRD_SECS_PER_WINDOW]++;
 	} else {
 		/* less than t0 + WINDOW_SIZE; all we need to do is to increase
 		 * the number of calls for nowt */
-		se->stats.calls_window[nowt%FRD_SECS_PER_WINDOW]++;
 	}
 
 	++se->stats.cpm;
+	se->stats.calls_window[nowt % FRD_SECS_PER_WINDOW]++;
+
 	++se->stats.concurrent_calls;
 
 	/* Check the thresholds */
@@ -386,7 +387,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 	frd_thresholds_t *thr = (frd_thresholds_t*)rule->attrs.s;
 
 #define CHECK_AND_RAISE(pname, type) \
-	(se->stats.pname >= thr->pname ## _thr.type) { \
+	(thr->pname ## _thr.type && se->stats.pname >= thr->pname ## _thr.type) { \
 		raise_ ## type ## _event(&pname ## _name, &se->stats.pname,\
 				&thr->pname ## _thr.type, user, number, &rule->id);\
 		rc = rc_ ## type ## _thr;\
@@ -405,7 +406,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 
 	lock_release(&se->lock);
 
-	/* Set dialog callback to check call duration */
+	/* Set dialog callback to check call duration and decrement CC */
 	struct dlg_cell *dlgc = dlgb.get_dlg();
 	if (dlgc == NULL) {
 		if (dlgb.create_dlg(msg, 0) < 0) {
@@ -430,8 +431,9 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 
 		param->calldur_warn = thr->call_duration_thr.warning;
 		param->calldur_crit = thr->call_duration_thr.critical;
+		param->interval_id = se->interval_id;
 
-		if (dlgb.register_dlgcb(dlgc, DLGCB_TERMINATED|DLGCB_FAILED|DLGCB_EXPIRED,
+		if (dlgb.register_dlgcb(dlgc, DLGCB_DESTROY,
 					dialog_terminate_CB, param, free_dialog_CB_param) != 0) {
 			LM_ERR("failed to register dialog terminated callback\n");
 			shm_free(param->number.s);

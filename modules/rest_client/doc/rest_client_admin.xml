@@ -299,15 +299,15 @@ modparam("rest_client", "enable_expect_100", true)
 				<emphasis>url</emphasis> (string)
 			</para></listitem>
 			<listitem><para>
-				<emphasis>body_pv</emphasis> (var) - variable that will hold the
+				<emphasis>body_pv</emphasis> (var) - output variable which will hold the
 				body of the HTTP response.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>ctype_pv</emphasis> (var, optional) - variable thah will
+				<emphasis>ctype_pv</emphasis> (var, optional) - output variable which will
 				contain the value of the "Content-Type:" header of the response.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>retcode_pv</emphasis> (var, optional) - variable that will
+				<emphasis>retcode_pv</emphasis> (var, optional) - output variable which will
 				retain the status code of the HTTP response.
 				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
 				reply arrived at all.
@@ -372,16 +372,17 @@ if ($var(rcode) != 200) {
 				<emphasis>"application/x-www-form-urlencoded"</emphasis>
 			</para></listitem>
 			<listitem><para>
-				<emphasis>recv_body_pv</emphasis> (var) - the variable will hold
-				the body of the HTTP response.
+				<emphasis>recv_body_pv</emphasis> (var) - output variable which
+				will hold the body of the HTTP response.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>recv_ctype_pv</emphasis> (var, optional) - will contain
-				the value of the "Content-Type" header of the response
+				<emphasis>recv_ctype_pv</emphasis> (var, optional) - output
+				variable which will contain the value of the "Content-Type"
+				header of the response
 			</para></listitem>
 			<listitem><para>
-				<emphasis>retcode_pv</emphasis> (var, optional) - variable that will
-				retain the status code of the HTTP response.
+				<emphasis>retcode_pv</emphasis> (var, optional) - output variable
+				which will retain the status code of the HTTP response.
 				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
 				reply arrived at all.
 			</para></listitem>
@@ -444,16 +445,16 @@ if ($var(rcode) != 200) {
 				<emphasis>"application/x-www-form-urlencoded"</emphasis>
 			</para></listitem>
 			<listitem><para>
-				<emphasis>recv_body_pv</emphasis> (var) - the variable will hold
-				the body of the HTTP response.
+				<emphasis>recv_body_pv</emphasis> (var) - output variable which
+				will hold the body of the HTTP response.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>recv_ctype_pv</emphasis> (var, optional) - will contain
-				the value of the "Content-Type" header of the response
+				<emphasis>recv_ctype_pv</emphasis> (var, optional) - output variable
+				which will contain the value of the "Content-Type" header of the response
 			</para></listitem>
 			<listitem><para>
-				<emphasis>retcode_pv</emphasis> (var, optional) - variable that will
-				retain the status code of the HTTP response.
+				<emphasis>retcode_pv</emphasis> (var, optional) - output variable
+				which will retain the status code of the HTTP response.
 				A <emphasis role='bold'>0</emphasis> status code value means no HTTP
 				reply arrived at all.
 			</para></listitem>
@@ -525,8 +526,9 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 		<function moreinfo="none">rest_init_client_tls(tls_client_domain)</function>
 		</title>
 		<para>
-		Force a specific TLS domain to be eventually used during the next request.
-		Refer to the tls_mgm module for additional info regarding TLS client domains.
+		Force a specific TLS domain to be used at most once, during the next
+		GET/POST/PUT request.  Refer to the tls_mgm module for additional info
+		regarding TLS client domains.
 		</para>
 		<para>
 		If using this function, you must also ensure that tls_mgm is loaded
@@ -685,7 +687,13 @@ route [resume] {
     <section id="exported_transformations">
         <title>Exported script transformations</title>
         <para>
-            The module also provides a way for encoding and decoding parameters contained in a arbitrary script variable, in accordance with RFC3986. This is done by applying a transformation to a script variable containing the data to be encoded. The value of the original variable is not altered and a corresponding string value is returned. The transformation is performed through libcurl API method curl_easy_escape (or curl_escape for libcurl &lt; 7.15.4).
+			The module also provides a way for encoding and decoding parameters
+			contained in an arbitrary script variable, in accordance with
+			RFC3986. This is done by applying a transformation to a script
+			variable containing the data to be encoded. The value of the
+			original variable is not altered and a corresponding string value
+			is returned. The transformation is performed through libcurl API
+			method curl_easy_escape (or curl_escape for libcurl &lt; 7.15.4).
         </para>
 
         <section id="tran_rest.escape" xreflabel="rest.escape">

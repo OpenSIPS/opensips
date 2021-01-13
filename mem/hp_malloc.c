@@ -46,7 +46,7 @@
 #define MIN_SHM_SPLIT_SIZE	4096
 #define MIN_PKG_SPLIT_SIZE	 256
 
-#define FRAG_NEXT(f) ((struct hp_frag *)((char *)((f) + 1) + (f)->size))
+#define FRAG_NEXT(f) ((struct hp_frag *)(void *)((char *)((f) + 1) + (f)->size))
 
 #define FRAG_OVERHEAD	   HP_FRAG_OVERHEAD
 #define frag_is_free(_f)   ((_f)->prev)
@@ -552,7 +552,7 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 	}
 
 	end = start + size;
-	hpb = (struct hp_block *)start;
+	hpb = (struct hp_block *)(void *)start;
 	memset(hpb, 0, sizeof(struct hp_block));
 	hpb->name = name;
 	hpb->size = size;
@@ -563,8 +563,8 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 	hpb->total_fragments = 2;
 	gettimeofday(&hpb->last_updated, NULL);
 
-	hpb->first_frag = (struct hp_frag *)(start + ROUNDUP(sizeof(struct hp_block)));
-	hpb->last_frag = (struct hp_frag *)(end - sizeof *hpb->last_frag);
+	hpb->first_frag = (struct hp_frag *)(void *)(start + ROUNDUP(sizeof(struct hp_block)));
+	hpb->last_frag = (struct hp_frag *)(void *)end - 1;
 	hpb->last_frag->size = 0;
 
 	/* init initial fragment */

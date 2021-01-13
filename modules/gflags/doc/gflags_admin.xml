@@ -74,8 +74,7 @@ modparam("gflags", "initial", 15)
 		The <quote>flag</quote> (int) parameter can have a value in the range of 0..31.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		This function may be used from any route.
 		</para>
 		<example>
 		<title><function moreinfo="none">set_gflag()</function> usage</title>
@@ -96,8 +95,7 @@ set_gflag(4);
 		The <quote>flag</quote> (int) parameter can have a value in the range of 0..31.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		This function may be used from any route.
 		</para>
 		<example>
 		<title><function moreinfo="none">reset_gflag()</function> usage</title>
@@ -119,8 +117,7 @@ reset_gflag(4);
 		The <quote>flag</quote> (int) parameter can have a value in the range of 0..31.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		This function may be used from any route.
 		</para>
 		<example>
 		<title><function moreinfo="none">is_gflag()</function> usage</title>

@@ -49,6 +49,7 @@
 #include <sys/sockio.h>
 #endif
 
+#include "str.h"
 #include "globals.h"
 #include "socket_info.h"
 #include "dprint.h"
@@ -161,7 +162,8 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 		memcpy(si->tag.s, sid->tag, si->tag.len+1);
 	}
 
-	if ( si->proto!=PROTO_UDP && si->proto!=PROTO_SCTP ) {
+	if (si->proto!=PROTO_UDP && si->proto!=PROTO_SCTP &&
+	        si->proto!=PROTO_HEP_UDP) {
 		if (sid->workers)
 			LM_WARN("number of workers per non UDP-based <%.*s> listener not "
 				"supported -> ignoring...\n", si->name.len, si->name.s);
@@ -289,10 +291,10 @@ struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 				goto found;
 			/* if no advertised is specified on the interface, we should check
 			 * if it is the global address */
-			if (!si->adv_name_str.len && default_global_address.s &&
-				h_len == default_global_address.len &&
-				(strncasecmp(hname, default_global_address.s,
-					default_global_address.len)==0) /*slower*/)
+			if (!si->adv_name_str.len && default_global_address->s &&
+				h_len == default_global_address->len &&
+				(strncasecmp(hname, default_global_address->s,
+					default_global_address->len)==0) /*slower*/)
 				/* this might match sockets that are not supposed to
 				 * match, when using multiple listeners for the same
 				 * protocol; but in that case the default_global_address
@@ -428,7 +430,7 @@ int expand_interface(struct socket_info *si, struct socket_info** list)
 			 * make sure we don't add any "scoped" interface
 			 */
 			if (it->ifa_addr->sa_family == AF_INET6 &&
-					(((struct sockaddr_in6 *)it->ifa_addr)->sin6_scope_id != 0))
+					(((struct sockaddr_in6 *)(void *)it->ifa_addr)->sin6_scope_id != 0))
 
 				continue;
 			sockaddr2ip_addr(&addr, it->ifa_addr);

@@ -116,6 +116,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin = cfg_stream;
+	cfg_errors = 0;
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
 		fclose(cfg_stream);
@@ -457,7 +458,7 @@ static int flatten_opensips_cfg(FILE *cfg, const char *cfg_path, str *out)
 
 	if (strlen(out->s) != out->len) {
 		LM_BUG("preprocessed buffer check failed (%lu vs. %d)",
-		       strlen(out->s), out->len);
+		       (unsigned long)strlen(out->s), out->len);
 		LM_ERR("either this is a bug or your script contains '\\0' chars, "
 		        "which are obviously NOT allowed!\n");
 		return -1;

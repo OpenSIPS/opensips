@@ -44,11 +44,19 @@ typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsig
 typedef struct tls_domain * (*tls_find_client_domain_name_f) (str *);
 typedef void (*tls_release_domain_f) (struct tls_domain *);
 
+/* utility functions for operations directly on a SSL_CTX */
+typedef void (*tls_ctx_set_cert_store_f) (void *ctx, void *src_ctx);
+typedef int (*tls_ctx_set_cert_chain_f) (void *ctx, void *src_ctx);
+typedef int (*tls_ctx_set_pkey_file_f) (void *ctx, char *pkey_file);
+
 struct tls_mgm_binds {
     tls_find_server_domain_f find_server_domain;
     tls_find_client_domain_f find_client_domain;
     tls_find_client_domain_name_f find_client_domain_name;
     tls_release_domain_f release_domain;
+    tls_ctx_set_cert_store_f ctx_set_cert_store;
+    tls_ctx_set_cert_chain_f ctx_set_cert_chain;
+    tls_ctx_set_pkey_file_f ctx_set_pkey_file;
 };
 
 

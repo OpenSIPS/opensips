@@ -171,12 +171,17 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	size_t len;
 	char *p;
 	struct tls_domain *d = *dom;
-	size_t cadir_len = strlen(str_vals[STR_VALS_CADIR_COL]);
-	size_t cplist_len = strlen(str_vals[STR_VALS_CPLIST_COL]);
-	size_t crl_dir_len = strlen(str_vals[STR_VALS_CRL_DIR_COL]);
-	size_t eccurve_len = strlen(str_vals[STR_VALS_ECCURVE_COL]);
+	size_t cadir_len = str_vals[STR_VALS_CADIR_COL] ?
+		strlen(str_vals[STR_VALS_CADIR_COL]) : 0;
+	size_t cplist_len = str_vals[STR_VALS_CPLIST_COL] ?
+		strlen(str_vals[STR_VALS_CPLIST_COL]) : 0;
+	size_t crl_dir_len = str_vals[STR_VALS_CRL_DIR_COL] ?
+		strlen(str_vals[STR_VALS_CRL_DIR_COL]) : 0;
+	size_t eccurve_len = str_vals[STR_VALS_ECCURVE_COL] ?
+		strlen(str_vals[STR_VALS_ECCURVE_COL]) : 0;
 	char name_buf[255];
 	int name_len;
+	str method_str;
 
 	len = sizeof(struct tls_domain) + d->name.len;
 
@@ -217,14 +222,14 @@ int set_all_domain_attr(struct tls_domain **dom, char **str_vals, int *int_vals,
 	}
 
 	*dom = d;
-	if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "SSLV23") == 0 || strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSany") == 0)
-		d->method = TLS_USE_SSLv23;
-	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1") == 0)
-		d->method = TLS_USE_TLSv1;
-	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_2") == 0)
-		d->method = TLS_USE_TLSv1_2;
-	else if (strcasecmp(str_vals[STR_VALS_METHOD_COL], "TLSV1_3") == 0)
-		d->method = TLS_USE_TLSv1_3;
+
+	method_str.s = str_vals[STR_VALS_METHOD_COL];
+	method_str.len = method_str.s ? strlen(method_str.s) : 0;
+
+	if (tls_get_method(&method_str, &d->method, &d->method_max) < 0) {
+		shm_free(d);
+		return -1;
+	}
 
 	if (int_vals[INT_VALS_VERIFY_CERT_COL] != -1) {
 		d->verify_cert = int_vals[INT_VALS_VERIFY_CERT_COL];

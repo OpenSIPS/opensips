@@ -895,7 +895,7 @@ str value_to_string(const db_val_t * v)
 			rez = v ->val.str_val;
 			break;
 		case(DB_DATETIME):
-			sprintf(buff,"%s",ctime(&v->val.time_val));
+			ctime_r(&v->val.time_val, buff);
 			rez.s = buff;
 			rez.len = strlen(rez.s);
 			break;

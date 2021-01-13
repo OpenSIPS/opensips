@@ -382,16 +382,12 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg)
 									ct_username);
 				if (ct_username_len > 0) {
 					prefix_len += 1 + /* @ */ + ct_username_len;
-					if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
-						prefix_len += RR_DLG_PARAM_SIZE;
-				} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
-					prefix_len += RR_DLG_PARAM_SIZE + 1;
 				}
 			}
 		}
-	} else if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER)) {
-		prefix_len += RR_DLG_PARAM_SIZE + 1;
 	}
+	if (dlg_api.is_mod_flag_set(dlg,TOPOH_DID_IN_USER))
+		prefix_len += RR_DLG_PARAM_SIZE + 1;
 
 	prefix = pkg_malloc(prefix_len);
 	if (!prefix) {
@@ -1312,7 +1308,7 @@ static inline char *dlg_th_rebuild_rpl(struct sip_msg *msg,int *len)
 			NULL,MSG_TRANS_NOVIA_FLAG);
 }
 
-#define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_NOTIFY|METHOD_SUBSCRIBE)
+#define MSG_SKIP_BITMASK	(METHOD_REGISTER|METHOD_PUBLISH|METHOD_SUBSCRIBE)
 static int dlg_th_callid_pre_parse(struct sip_msg *msg,int want_from)
 {
 	/* do not throw errors from the upcoming parsing operations */
@@ -1845,14 +1841,23 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	for (i=0;i<dec_len;i++)
 		dec_buf[i] ^= topo_hiding_ct_encode_pw.s[i%topo_hiding_ct_encode_pw.len]; 
 
-	rr_buf.len=*(short *)dec_buf;
-	rr_buf.s = dec_buf + sizeof(short);
-	p = rr_buf.s + rr_buf.len;
-	ct_buf.len = *(short *)p;
-	ct_buf.s = p + sizeof(short);
-	p = ct_buf.s + ct_buf.len;
-	bind_buf.len = *(short *)p;
-	bind_buf.s = p + sizeof(short);
+	#define __extract_len_and_buf(_p, _len, _s) \
+		do { \
+			(_s).len = *(short *)p;\
+			if ((_s).len<0 || (_s).len>_len) {\
+				LM_ERR("bad length %d in encoded contact\n", (_s).len);\
+				goto err_free_buf;\
+			}\
+			(_s).s = _p + sizeof(short);\
+			_p += sizeof(short) + (_s).len;\
+			_len -= sizeof(short) + (_s).len;\
+		} while(0)
+
+	p = dec_buf;
+	size = dec_len;
+	__extract_len_and_buf(p, size, rr_buf);
+	__extract_len_and_buf(p, size, ct_buf);
+	__extract_len_and_buf(p, size, bind_buf);
 
 	LM_DBG("extracted routes [%.*s] , ct [%.*s] and bind [%.*s]\n",
 		rr_buf.len,rr_buf.s,ct_buf.len,ct_buf.s,bind_buf.len,bind_buf.s);

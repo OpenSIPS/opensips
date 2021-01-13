@@ -20,8 +20,8 @@
   THE SOFTWARE.
 */
 
-#ifndef cJSON__h
-#define cJSON__h
+#ifndef OS_cJSON__h
+#define OS_cJSON__h
 
 #include "../str.h"
 
@@ -196,4 +196,4 @@ int cJSON_NumberIsInt(cJSON *item);
 }
 #endif
 
-#endif
+#endif /* OS_cJSON__h */

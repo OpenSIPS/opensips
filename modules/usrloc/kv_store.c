@@ -60,8 +60,8 @@ int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val)
 			LM_ERR("oom\n");
 			return NULL;
 		}
-		memset(*cur, 0, sizeof **cur);
 
+		memset(*cur, 0, sizeof **cur);
 	}
 
 	new_val = *cur;

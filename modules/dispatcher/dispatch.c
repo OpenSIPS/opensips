@@ -393,8 +393,8 @@ static inline void re_calculate_active_dsts(ds_set_p sp)
 			oldw = dst->weight;
 			dst->weight = round(max_freeswitch_weight *
 			(1 - dst->fs_sock->stats.sess /
-			     (float)dst->fs_sock->stats.max_sess) *
-			(dst->fs_sock->stats.id_cpu / (float)100));
+			     (double)dst->fs_sock->stats.max_sess) *
+			(dst->fs_sock->stats.id_cpu / (double)100));
 
 			LM_DBG("weight update for %.*s: %d -> %d (%d %d %.3f)\n",
 			       dst->uri.len, dst->uri.s, oldw, dst->weight,
@@ -688,8 +688,8 @@ int run_route_algo(struct sip_msg *msg, int rt_idx,ds_dest_p entry)
 {
 	int fret;
 
-	route_params_push_level(entry, NULL, ds_route_param_get);
-	run_top_route_get_code(sroutes->request[rt_idx].a, msg, &fret);
+	route_params_push_level(sroutes->request[rt_idx].name, entry, NULL, ds_route_param_get);
+	fret = _run_actions(sroutes->request[rt_idx].a, msg);
 	route_params_pop_level();
 
 	return fret;

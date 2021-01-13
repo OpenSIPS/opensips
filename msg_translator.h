@@ -76,7 +76,7 @@ struct hostport {
 			if (((struct sip_msg *)(msg))->set_global_address.s) \
 				(hp)->host = &(((struct sip_msg *)(msg))->set_global_address); \
 			else \
-				(hp)->host = &default_global_address; \
+				(hp)->host = default_global_address; \
 		} \
 		if (!(msg)) \
 			(hp)->port = NULL; \
@@ -84,7 +84,7 @@ struct hostport {
 			if (((struct sip_msg *)(msg))->set_global_port.s) \
 				(hp)->port = &(((struct sip_msg *)(msg))->set_global_port); \
 			else \
-				(hp)->port = &default_global_port; \
+				(hp)->port = default_global_port; \
 		} \
 	} while (0)
 
@@ -92,8 +92,8 @@ static inline str *get_adv_host(struct socket_info *send_sock)
 {
 	if(send_sock->adv_name_str.len)
 		return &(send_sock->adv_name_str);
-	else if (default_global_address.s)
-		return &default_global_address;
+	else if (default_global_address->s)
+		return default_global_address;
 	else
 		return &(send_sock->address_str);
 }
@@ -102,8 +102,8 @@ static inline str *get_adv_port(struct socket_info *send_sock)
 {
 	if(send_sock->adv_port_str.len)
 		return &(send_sock->adv_port_str);
-	else if (default_global_port.s)
-		return &default_global_port;
+	else if (default_global_port->s)
+		return default_global_port;
 	else
 		return &(send_sock->port_no_str);
 }
@@ -115,8 +115,8 @@ static inline str *_get_adv_host(struct socket_info *send_sock,
 		return &send_sock->adv_name_str;
 	else if (msg->set_global_address.s)
 		return &msg->set_global_address;
-	else if (default_global_address.s)
-		return &default_global_address;
+	else if (default_global_address->s)
+		return default_global_address;
 	else
 		return &send_sock->address_str;
 }
@@ -128,8 +128,8 @@ static inline str *_get_adv_port(struct socket_info *send_sock,
 		return &send_sock->adv_port_str;
 	else if (msg->set_global_port.s)
 		return &msg->set_global_port;
-	else if (default_global_port.s)
-		return &default_global_port;
+	else if (default_global_port->s)
+		return default_global_port;
 	else
 		return &send_sock->port_no_str;
 }
@@ -143,7 +143,7 @@ char * build_res_buf_from_sip_res(	struct sip_msg* msg,
 
 
 char * build_res_buf_from_sip_req( unsigned int code,
-				str *text,
+				const str *text,
 				str *new_tag,
 				struct sip_msg* msg,
 				unsigned int *returned_len,

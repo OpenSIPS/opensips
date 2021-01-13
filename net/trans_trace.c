@@ -205,7 +205,7 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 	return 0;
 }
 
-void build_dummy_msg(struct receive_info* rcv) {
+static void build_dummy_msg(struct receive_info* rcv) {
 	memset(&dummy_req, 0, sizeof(struct sip_msg));
 	dummy_req.first_line.type = SIP_REQUEST;
 	dummy_req.first_line.u.request.method.s= "DUMMY";
@@ -228,7 +228,7 @@ int check_trace_route( int route_id, struct tcp_connection* conn)
 	build_dummy_msg( &conn->rcv );
 
 	/* run given hep route */
-	if (run_top_route(sroutes->request[route_id].a, &dummy_req) & ACT_FL_DROP){
+	if (run_top_route(sroutes->request[route_id], &dummy_req) & ACT_FL_DROP){
 		conn->flags |= F_CONN_TRACE_DROPPED;
 		free_sip_msg( &dummy_req );
 		return 0;

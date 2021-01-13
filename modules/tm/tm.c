@@ -125,6 +125,8 @@ static int w_t_add_hdrs(struct sip_msg* msg, str *val);
 static int t_cancel_trans(struct cell *t, str *hdrs);
 static int w_t_new_request(struct sip_msg* msg, str *method,
 			str *ruri, str *from, str *to, str *body, str *p_ctx);
+static int t_wait_for_new_branches(struct sip_msg* msg,
+			unsigned int* br_to_wait);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -254,8 +256,9 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, fixup_inject_source, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_inject_flags, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
-	{"t_wait_for_new_branches", (cmd_function)w_t_wait_for_new_branches,
-		{{0,0,0}},REQUEST_ROUTE},
+	{"t_wait_for_new_branches", (cmd_function)t_wait_for_new_branches, {
+		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		REQUEST_ROUTE},
 	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"load_tm", (cmd_function)load_tm, {{0,0,0}}, 0},
@@ -507,6 +510,7 @@ static int fixup_phostport2proxy(void** param)
 static int fixup_free_proxy(void **param)
 {
 	free_proxy(*param);
+	pkg_free(*param);
 	return 0;
 }
 
@@ -589,16 +593,27 @@ static int fixup_inject_source(void **param)
 
 static int fixup_inject_flags(void **param)
 {
-	unsigned int flags = 0;
+	unsigned int i, flags = 0;
 	str *s = (str *)*param;
 
-	if ( strncasecmp(s->s, "cancel", 6)==0 ) {
+	if ( s->len==6 && strncasecmp(s->s, "cancel", 6)==0 ) {
 		flags |= TM_INJECT_FLAG_CANCEL;
 	} else {
-		LM_ERR("unsupported injection flag '%.*s'\n", s->len, s->s);
-		return -1;
+		for( i=0 ; i<s->len ; i++ )
+			switch (s->s[i]) {
+				case 'c':
+					flags |= TM_INJECT_FLAG_CANCEL;
+					break;
+				case 'l':
+					flags |= TM_INJECT_FLAG_LAST;
+					break;
+				default:
+					LM_ERR("unknown injection flag '%c', ignoring\n",
+						s->s[i]);
+			}
 	}
 
+	LM_DBG("injection flags '%X' detected\n", flags);
 	*param = (void*)(unsigned long)flags;
 	return 0;
 }
@@ -1523,7 +1538,15 @@ int w_t_inject_branches(struct sip_msg* msg, void *source, void *extra_flags)
 
 int w_t_wait_for_new_branches(struct sip_msg* msg)
 {
+	return t_wait_for_new_branches(msg, 0);
+}
+
+
+static int t_wait_for_new_branches(struct sip_msg* msg,
+													unsigned int* br_to_wait)
+{
 	struct cell *t;
+	int last_branch;
 
 	t=get_t();
 
@@ -1537,7 +1560,13 @@ int w_t_wait_for_new_branches(struct sip_msg* msg)
 		return -1;
 	}
 
-	if (add_phony_uac(t)<0) {
+	/* if we have a branch limit (how many branches to wait for), push into
+	 * the br_flags (WARN, this is a reused field) the idx of the last allowed
+	 * branch - after that this phony brnach will NOT act anymore as a
+	 * delayer for further more branches.
+	 */
+	last_branch = br_to_wait ? (t->nr_of_outgoings+*br_to_wait+1) : 0;
+	if (add_phony_uac(t, last_branch)<0) {
 		LM_ERR("failed to add phony UAC\n");
 		return -1;
 	}
@@ -1584,8 +1613,7 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	/* first get the transaction */
-	if (t_check( msg , 0 )==-1) return -1;
-	if ( (t=get_t())==0) {
+	if (!(t = get_t()) || t == T_UNDEFINED) {
 		/* no T */
 		code = 0;
 	} else {
@@ -1632,8 +1660,7 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 
 	/* first get the transaction */
-	if (t_check( msg , 0 )==-1) return -1;
-	if ( (t=get_t())==0) {
+	if (!(t = get_t()) || t == T_UNDEFINED) {
 		/* no T */
 		if (msg!=NULL&&msg!=FAKED_REPLY && msg->first_line.type==SIP_REQUEST){
 			res->rs = *GET_RURI(msg);

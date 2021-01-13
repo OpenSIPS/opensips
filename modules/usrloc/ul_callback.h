@@ -61,8 +61,6 @@ typedef enum ul_cb_types {
  * @type:    type of the callback
  */
 typedef void (ul_cb) (void *binding, ul_cb_type type);
-/*! \brief register callback function prototype */
-typedef int (*register_ulcb_t)(ul_cb_type types, ul_cb f);
 
 
 struct ul_callback {

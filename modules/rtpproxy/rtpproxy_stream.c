@@ -35,7 +35,7 @@
 #include "../../ut.h"
 #include "rtpproxy.h"
 #include "nhelpr_funcs.h"
-
+#include "rtpproxy_vcmd.h"
 
 static int
 rtpproxy_stream(struct sip_msg* msg, str *pname, int count,
@@ -46,19 +46,20 @@ rtpproxy_stream(struct sip_msg* msg, str *pname, int count,
     struct rtpp_node *node;
     struct rtpp_set *set;
     char cbuf[16];
-    struct iovec v[] = {
-        {NULL,        0},
-        {cbuf,        0}, /* 1 P<count> */
+    struct rtpproxy_vcmd vstream;
+
+    RTPP_VCMD_INIT(vstream, 10,
+        {cbuf,        0}, /*.vu[0] P<count> */
         {" ",         1},
-        {NULL,        0}, /* 3 callid */
+        {NULL,        0}, /*.vu[2] callid */
         {" ",         1},
-        {NULL,        0}, /* 5 pname */
+        {NULL,        0}, /*.vu[4] pname */
         {" session ", 9},
-        {NULL,        0}, /* 7 from tag */
+        {NULL,        0}, /*.vu[6] from tag */
         {";1 ",       3},
-        {NULL,        0}, /* 9 to tag */
+        {NULL,        0}, /*.vu[8] to tag */
         {";1",        2}
-    };
+    );
 
     if (get_callid(msg, &callid) == -1 || callid.len == 0) {
         LM_ERR("can't get Call-Id field\n");
@@ -72,19 +73,19 @@ rtpproxy_stream(struct sip_msg* msg, str *pname, int count,
         LM_ERR("can't get From tag\n");
         return -1;
     }
-    v[1].iov_len = sprintf(cbuf, "P%d", count);
-    STR2IOVEC(callid, v[3]);
-    STR2IOVEC(*pname, v[5]);
+    vstream.vu[0].iov_len = sprintf(cbuf, "P%d", count);
+    STR2IOVEC(callid, vstream.vu[2]);
+    STR2IOVEC(*pname, vstream.vu[4]);
 
-    nitems = 11;
+    nitems = vstream.useritems;
     if (stream2uac == 0) {
         if (to_tag.len == 0)
             return -1;
-        STR2IOVEC(to_tag, v[7]);
-        STR2IOVEC(from_tag, v[9]);
+        STR2IOVEC(to_tag, vstream.vu[6]);
+        STR2IOVEC(from_tag, vstream.vu[8]);
     } else {
-        STR2IOVEC(from_tag, v[7]);
-        STR2IOVEC(to_tag, v[9]);
+        STR2IOVEC(from_tag, vstream.vu[6]);
+        STR2IOVEC(to_tag, vstream.vu[8]);
         if (to_tag.len <= 0)
             nitems -= 2;
     }
@@ -110,7 +111,7 @@ rtpproxy_stream(struct sip_msg* msg, str *pname, int count,
           "node.  Please upgrade the RTPproxy and try again.\n");
         goto end;
     }
-    send_rtpp_command(node, v, nitems);
+    send_rtpp_command(node, &vstream, nitems);
 
 	ret = 1;
 end:
@@ -152,17 +153,18 @@ rtpproxy_stop_stream(struct sip_msg* msg, nh_set_param_t *setid, pv_spec_t *var,
     str callid, from_tag, to_tag;
     struct rtpp_node *node;
     struct rtpp_set *set;
-    struct iovec v[] = {
-        {NULL,        0},
-        {"S",         1}, /* 1 */
+    struct rtpproxy_vcmd vststrm;
+
+    RTPP_VCMD_INIT(vststrm, 8,
+        {"S",         1}, /*.vu[0] */
         {" ",         1},
-        {NULL,        0}, /* 3 callid */
+        {NULL,        0}, /*.vu[2] callid */
         {" ",         1},
-        {NULL,        0}, /* 5 from tag */
+        {NULL,        0}, /*.vu[4] from tag */
         {";1 ",       3},
-        {NULL,        0}, /* 7 to tag */
+        {NULL,        0}, /*.vu[6] to tag */
         {";1",        2}
-    };
+    );
 
     if (get_callid(msg, &callid) == -1 || callid.len == 0) {
         LM_ERR("can't get Call-Id field\n");
@@ -176,16 +178,16 @@ rtpproxy_stop_stream(struct sip_msg* msg, nh_set_param_t *setid, pv_spec_t *var,
         LM_ERR("can't get From tag\n");
         return -1;
     }
-    STR2IOVEC(callid, v[3]);
-    nitems = 9;
+    STR2IOVEC(callid, vststrm.vu[2]);
+    nitems = vststrm.useritems;
     if (stream2uac == 0) {
         if (to_tag.len == 0)
             return -1;
-        STR2IOVEC(to_tag, v[5]);
-        STR2IOVEC(from_tag, v[7]);
+        STR2IOVEC(to_tag, vststrm.vu[4]);
+        STR2IOVEC(from_tag, vststrm.vu[6]);
     } else {
-        STR2IOVEC(from_tag, v[5]);
-        STR2IOVEC(to_tag, v[7]);
+        STR2IOVEC(from_tag, vststrm.vu[4]);
+        STR2IOVEC(to_tag, vststrm.vu[6]);
         if (to_tag.len <= 0)
             nitems -= 2;
     }
@@ -212,7 +214,7 @@ rtpproxy_stop_stream(struct sip_msg* msg, nh_set_param_t *setid, pv_spec_t *var,
           "node.  Please upgrade the RTPproxy and try again.\n");
         goto end;
     }
-    send_rtpp_command(node, v, nitems);
+    send_rtpp_command(node, &vststrm, nitems);
 
 	ret = 1;
 end:

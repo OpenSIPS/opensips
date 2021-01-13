@@ -153,7 +153,7 @@ struct socket_id {
 		struct ip_addr __ip; \
 		sockaddr2ip_addr( &__ip, (struct sockaddr*)_su ); \
 		_ip_char = ip_addr2a(&__ip); \
-		_port_no = su_getport( (union sockaddr_union*)_su); \
+		_port_no = su_getport( (union sockaddr_union*)(void *)_su); \
 	} while(0)
 
 
@@ -166,6 +166,9 @@ struct socket_id {
 /* check if a socket_info is marked as anycast */
 #define is_anycast(_si) (_si->flags & SI_IS_ANYCAST)
 
+/* checks if the given protocol is a SIP one (versus HEP, BIN, SMPP, etc) 
+ * we rely here on the fact at all the SIP protos are in a sequance */
+#define is_sip_proto(_proto) (PROTO_UDP<=(_proto) && (_proto)<=PROTO_WSS)
 
 struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask);
 struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen);
@@ -208,22 +211,26 @@ inline static int matchnet(struct ip_addr* ip, struct net* net)
 /*! \brief inits an ip_addr pointer from a sockaddr structure*/
 static inline void sockaddr2ip_addr(struct ip_addr* ip, struct sockaddr* sa)
 {
+	void *copyfrom;
+
 	switch(sa->sa_family){
 	case AF_INET:
 			ip->af=AF_INET;
 			ip->len=4;
-			memcpy(ip->u.addr, &((struct sockaddr_in*)sa)->sin_addr, 4);
+			copyfrom = &((struct sockaddr_in*)(void *)sa)->sin_addr;
 			break;
 	case AF_INET6:
 			ip->af=AF_INET6;
 			ip->len=16;
-			memcpy(ip->u.addr, &((struct sockaddr_in6*)sa)->sin6_addr, 16);
+			copyfrom = &((struct sockaddr_in6*)(void *)sa)->sin6_addr;
 			break;
 	default:
 			LM_CRIT("unknown address family %d\n", sa->sa_family);
 			/* clear the structure to prevent uninitialized warnings */
 			ip->af=sa->sa_family;
+			return;
 	}
+	memcpy(ip->u.addr, copyfrom, ip->len);
 }
 
 

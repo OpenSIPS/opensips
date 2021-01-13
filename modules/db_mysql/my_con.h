@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef MY_CON_H
-#define MY_CON_H
+#ifndef MY_MYSQL_CON_H
+#define MY_MYSQL_CON_H
 
 #include "../../db/db_pool.h"
 #include "../../db/db_id.h"
@@ -126,4 +126,4 @@ struct my_con* db_mysql_new_connection(const struct db_id* id);
  */
 void db_mysql_free_connection(struct pool_con* con);
 
-#endif /* MY_CON_H */
+#endif /* MY_MYSQL_CON_H */

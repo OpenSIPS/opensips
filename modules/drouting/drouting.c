@@ -227,8 +227,7 @@ struct head_cache *get_head_cache(str *part);
 struct head_cache *add_head_cache(str *part);
 void clean_head_cache(struct head_cache *c);
 void init_head_db(struct head_db *new);
-static int db_load_head(struct head_db*); /* used for populating head_db with
-											 db connections and db funcs */
+static int db_connect_head(struct head_db*); /* populate a db connection */
 static char *extra_prefix_chars;
 
 
@@ -1904,11 +1903,11 @@ error:
 #undef add_partition_to_avp_name
 
 
-static int db_load_head(struct head_db *x) {
+static int db_connect_head(struct head_db *x) {
 
 	if( *(x->db_con) ) {
-		LM_ERR(" db_con already used\n");
-		return -1;
+		LM_INFO("db_con already present\n");
+		return 1;
 	}
 	if( x->db_url.s && (*(x->db_con) = x->db_funcs.init(&(x->db_url)))==0 ) {
 		LM_ERR("cannot initialize database connection"
@@ -1930,13 +1929,15 @@ static void rpc_dr_reload_data(int sender_id, void *unused)
 
 static int dr_child_init(int rank)
 {
-	struct head_db *head_db_it = head_db_start;
+	struct head_db *db = head_db_start;
 
 	LM_DBG("Child initialization on rank %d \n",rank);
 
-	while( head_db_it!=NULL ) {
-		db_load_head( head_db_it );
-		head_db_it = head_db_it->next;
+	for (db = head_db_start; db; db = db->next) {
+		if (db_connect_head(db) < 0) {
+			LM_ERR("failed to create DB connection\n");
+			return -1;
+		}
 	}
 
 	/* if child 1, send a job for itself to run the data loading after
@@ -1958,7 +1959,7 @@ static int dr_exit(void)
 		to_clean = it;
 		it = it->next;
 		if (dr_persistent_state && !to_clean->cache && 
-		db_load_head(to_clean)==0 ) {
+		db_connect_head(to_clean)==0 ) {
 			dr_state_flusher(to_clean);
 
 			(to_clean->db_funcs).close(*(to_clean->db_con));
@@ -2616,7 +2617,7 @@ static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 		}
 		if (weight_sum) {
 			/* randomly select number */
-			rand_no = (unsigned int)(weight_sum*((float)rand()/RAND_MAX));
+			rand_no = (unsigned int)(weight_sum*((float)rand()/(float)RAND_MAX));
 			LM_DBG("random number is %d\n",rand_no);
 			/* select the element */
 			for( i=first ; i<size ; i++ )
@@ -3054,7 +3055,7 @@ search_again:
 
 	if (rt_info->route_idx && (rt_idx=get_script_route_ID_by_name
 	(rt_info->route_idx, sroutes->request, RT_NO))!=-1) {
-		fret = run_top_route( sroutes->request[rt_idx].a, msg );
+		fret = run_top_route( sroutes->request[rt_idx], msg );
 		if (fret&ACT_FL_DROP) {
 			/* drop the action */
 			LM_DBG("script route %s drops routing "
@@ -4099,7 +4100,6 @@ static int dr_match(struct sip_msg* msg, int *grp, long flags, str *number,
 	rule = find_rule_by_prefix_unsafe(part->rdata->pt,
 			&part->rdata->noprefix, *number, *grp, &matched_len);
 	if (rule == NULL){
-		lock_stop_read( part->ref_lock );
 		goto failure;
 	}
 
@@ -4813,6 +4813,7 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 {
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
+	mi_item_t *arr_obj, *gw_obj;
 	str number;
 	rt_info_t *route;
 	unsigned int matched_len;
@@ -4845,6 +4846,10 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 		number.s, matched_len) < 0)
 		goto error;
 
+	arr_obj = add_mi_array(resp_obj, MI_SSTR("GW List"));
+	if (!arr_obj)
+		goto error;
+
 	for (i = 0; i < route->pgwa_len; ++i){
 		if (route->pgwl[i].is_carrier) {
 			chosen_desc = carrier_str;
@@ -4854,8 +4859,11 @@ mi_response_t *mi_dr_number_routing(const mi_params_t *params,
 			chosen_desc = gw_str;
 			chosen_id = route->pgwl[i].dst.gw->id;
 		}
+		gw_obj = add_mi_object(arr_obj, NULL, 0);
+		if (!gw_obj)
+			goto error;
 
-		if (add_mi_string(resp_obj, chosen_desc.s, chosen_desc.len,
+		if (add_mi_string(gw_obj, chosen_desc.s, chosen_desc.len,
 			chosen_id.s, chosen_id.len) < 0)
 			goto error;
 	}

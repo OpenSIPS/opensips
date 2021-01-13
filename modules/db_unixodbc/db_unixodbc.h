@@ -26,10 +26,10 @@
  *  2005-12-01  initial commit (chgen)
  */
 
-#ifndef DB_MOD_H
-#define DB_MOD_H
+#ifndef DB_UNIX_MOD_H
+#define DB_UNIX_MOD_H
 
 extern int auto_reconnect;
 extern int use_escape_common;
 
-#endif /* DB_MOD_H */
+#endif /* DB_UNIX_MOD_H */

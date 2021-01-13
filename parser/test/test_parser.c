@@ -25,6 +25,7 @@
 #include "test_parse_qop.h"
 #include "test_parse_fcaps.h"
 #include "test_parser.h"
+#include "test_parse_authenticate_body.h"
 
 void test_parse_uri(void)
 {
@@ -82,19 +83,25 @@ void test_parse_uri(void)
 	in = *_str("sip:alice@atlanta.org;pn-prid=");
 	ok(parse_uri(in.s, in.len, &u) != 0, "puri-29");
 	in = *_str("sip:alice@atlanta.org;pn-prid");
-	ok(parse_uri(in.s, in.len, &u) != 0, "puri-30");
+	ok(parse_uri(in.s, in.len, &u) != 0, "puri-30-1");
+	in = *_str("sip:alice@atlanta.org;pn-prid;foo=bar");
+	ok(parse_uri(in.s, in.len, &u) != 0, "puri-30-2");
 
 	/* pn-param value is mandatory */
 	in = *_str("sip:alice@atlanta.org;pn-param=");
 	ok(parse_uri(in.s, in.len, &u) != 0, "puri-31");
 	in = *_str("sip:alice@atlanta.org;pn-param");
-	ok(parse_uri(in.s, in.len, &u) != 0, "puri-32");
+	ok(parse_uri(in.s, in.len, &u) != 0, "puri-32-1");
+	in = *_str("sip:alice@atlanta.org;pn-param;foo=bar");
+	ok(parse_uri(in.s, in.len, &u) != 0, "puri-32-2");
 
 	/* pn-purr value is mandatory */
 	in = *_str("sip:alice@atlanta.org;pn-purr=");
 	ok(parse_uri(in.s, in.len, &u) != 0, "puri-33");
 	in = *_str("sip:alice@atlanta.org;pn-purr");
-	ok(parse_uri(in.s, in.len, &u) != 0, "puri-34");
+	ok(parse_uri(in.s, in.len, &u) != 0, "puri-34-1");
+	in = *_str("sip:alice@atlanta.org;pn-purr;foo=bar");
+	ok(parse_uri(in.s, in.len, &u) != 0, "puri-34-2");
 
 	in = *_str("sip:alice@atlanta.org;pn-provider=x;pn-prid=y;"
 	                                 "pn-param=z;pn-purr=t");
@@ -114,4 +121,5 @@ void test_parser(void)
 	test_parse_qop_val();
 	test_parse_fcaps();
 	test_parse_uri();
+	test_parse_authenticate_body();
 }

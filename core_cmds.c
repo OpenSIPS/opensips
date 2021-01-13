@@ -289,7 +289,7 @@ static cmd_export_t core_cmds[]={
 	{"cache_raw_query", (cmd_function)w_cache_raw_query, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_list, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND, fixup_avp_list, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"raise_event", (cmd_function)w_raise_event, {
 		{CMD_PARAM_STR, fixup_event_name, 0},

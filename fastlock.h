@@ -48,13 +48,13 @@
 #ifndef fastlock_h
 #define fastlock_h
 
-#ifdef HAVE_SCHED_YIELD
-#include <sched.h>
-#else
-#include <unistd.h>
-/** Fake sched_yield if no unistd.h include is available */
-	#define sched_yield()	sleep(0)
-#endif
+#include "sched_yield.h"
+
+
+#define SPIN_OPTIMIZE /* if defined optimize spining on the lock:
+                         try first the lock with non-atomic/non memory locking
+                         operations, and only if the lock appears to be free
+                         switch to the more expensive version */
 
 /*! The actual lock */
 #ifndef DBG_LOCK
@@ -94,16 +94,27 @@ inline static int tsl(volatile int* lock)
 #if defined(__CPU_i386) || defined(__CPU_x86_64)
 
 #ifdef NOSMP
-	val=0;
 	asm volatile(
-		" btsl $0, %1 \n\t"
-		" adcl $0, %0 \n\t"
-		: "=q" (val), "=m" (*lock) : "0"(val) : "memory", "cc" /* "cc" */
+		" xor %0, %0 \n\t"
+		" btsl $0, %2 \n\t"
+		" setc %b0 \n\t"
+		: "=&q" (val), "=m" (*lock) : "m"(*lock) : "memory", "cc"
 	);
 #else
-	val=1;
 	asm volatile(
-		" xchg %1, %0" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"
+#ifdef SPIN_OPTIMIZE
+		" cmpb $0, %2 \n\t"
+		" mov $1, %0 \n\t"
+		" jnz 1f \n\t"
+#else
+		" mov $1, %0 \n\t"
+#endif
+		" xchgb %2, %b0 \n\t"
+		"1: \n\t"
+		: "=&q" (val), "=m" (*lock) : "m"(*lock) : "memory"
+#ifdef SPIN_OPTIMIZE
+			, "cc"
+#endif
 	);
 #endif /*NOSMP*/
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
@@ -112,15 +123,13 @@ inline static int tsl(volatile int* lock)
 #ifndef NOSMP
 			"membar #StoreStore | #StoreLoad \n\t"
 #endif
-			: "=r"(val) : "r"(lock):"memory"
+			: "=&r"(val) : "r"(lock):"memory"
 	);
 
 #elif defined __CPU_arm
 	asm volatile(
-			"# here \n\t"
-			"swpb %0, %1, [%2] \n\t"
-			: "=&r" (val)
-			: "r"(1), "r" (lock) : "memory"
+			"swp %0, %2, [%3] \n\t"
+			: "=&r" (val), "=m"(*lock) : "r"(1), "r" (lock) : "memory"
 	);
 
 #elif defined(__CPU_arm6) || defined(__CPU_arm7)
@@ -135,8 +144,7 @@ inline static int tsl(volatile int* lock)
 			"mcr p15, #0, r1, c7, c10, #5\n\t"
 #endif
 #endif
-			: "=&r" (val)
-			: "r"(1), "r" (lock) : "memory"
+			: "=&r" (val) : "r"(1), "r" (lock) : "memory"
 	);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
@@ -150,25 +158,27 @@ inline static int tsl(volatile int* lock)
 							   [ IBM Programming environments Manual, D.4.1.1]
 							 */
 			"0:\n\t"
-			: "=r" (val)
-			: "r"(1), "b" (lock) :
-			"memory", "cc"
+			: "=&r" (val) : "r"(1), "b" (lock) : "memory", "cc"
         );
 #elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
 	long tmp;
-	tmp=1; /* just to kill a gcc 2.95 warning */
-
+	
 	asm volatile(
+		".set push \n\t"
 		".set noreorder\n\t"
+		".set mips2 \n\t"
 		"1:  ll %1, %2   \n\t"
 		"    li %0, 1 \n\t"
 		"    sc %0, %2  \n\t"
 		"    beqz %0, 1b \n\t"
 		"    nop \n\t"
-		".set reorder\n\t"
+#ifndef NOSMP
+		"    sync \n\t"
+#endif
+		".set pop\n\t"
 		: "=&r" (tmp), "=&r" (val), "=m" (*lock)
-		: "0" (tmp), "2" (*lock)
-		: "cc"
+		: "m" (*lock)
+		: "memory"
 	);
 #elif defined __CPU_alpha
 	long tmp;
@@ -184,9 +194,8 @@ inline static int tsl(volatile int* lock)
 		"    beq %2, 1b   \n\t"
 		"    mb           \n\t"
 		"2:               \n\t"
-		:"=&r" (val), "=m"(*lock), "=r"(tmp)
-		:"1"(*lock)  /* warning on gcc 3.4: replace it with m or remove
-						it and use +m in the input line ? */
+		:"=&r" (val), "=m"(*lock), "=&r"(tmp)
+		:"m"(*lock)
 		: "memory"
 	);
 #else
@@ -249,22 +258,34 @@ inline static void release_lock(fl_lock_t* lock_struct)
 	lock_struct->line = 0;
 #endif
 
-#if defined(__CPU_i386) || defined(__CPU_x86_64)
-/*	char val;
-	val=0; */
+#if defined(__CPU_i386) 
+#ifdef NOSMP
 	asm volatile(
-		" movb $0, (%0)" : /*no output*/ : "r"(lock): "memory"
-		/*" xchg %b0, %1" : "=q" (val), "=m" (*lock) : "0" (val) : "memory"*/
+		" movb $0, %0 \n\t" 
+		: "=m"(*lock) : : "memory"
+	); 
+#else /* ! NOSMP */
+	int val;
+	/* a simple mov $0, (lock) does not force StoreStore ordering on all
+	   x86 versions and it doesn't seem to force LoadStore either */
+	asm volatile(
+		" xchgb %b0, %1 \n\t"
+		: "=q" (val), "=m" (*lock) : "0" (0) : "memory"
+	);
+#endif /* NOSMP */
+#elif defined(__CPU_x86_64)
+	asm volatile(
+		" movb $0, %0 \n\t" /* on amd64 membar StoreStore | LoadStore is 
+							   implicit (at least on the same mem. type) */
+		: "=m"(*lock) : : "memory"
 	);
 #elif defined(__CPU_sparc64) || defined(__CPU_sparc)
 	asm volatile(
 	#ifndef NOSMP
 				"membar #LoadStore | #StoreStore \n\t" /*is this really needed?*/
 	#endif
-			"stb %%g0, [%0] \n\t"
-			: /*no output*/
-			: "r" (lock)
-			: "memory"
+			"stb %%g0, [%1] \n\t"
+			: "=m"(*lock) : "r" (lock) : "memory"
 	);
 #elif defined(__CPU_arm) || defined(__CPU_arm6) || defined(__CPU_arm7)
 	asm volatile(
@@ -275,10 +296,8 @@ inline static void release_lock(fl_lock_t* lock_struct)
 		"mcr p15, #0, r1, c7, c10, #5\n\t"
 #endif
 #endif
-		" str %0, [%1] \n\r"
-		: /*no outputs*/
-		: "r"(0), "r"(lock)
-		: "memory"
+		" str %1, [%2] \n\r"
+		: "=m"(*lock) : "r"(0), "r"(lock) : "memory"
 	);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
@@ -287,23 +306,27 @@ inline static void release_lock(fl_lock_t* lock_struct)
 			 *             [IBM Programming Environments Manual, D.4.2.2]
 			 */
 			"lwsync\n\t"
-			"stw %0, 0(%1)\n\t"
-			: /* no output */
-			: "r"(0), "b" (lock)
-			: "memory"
+			"stwx %1, 0, %2\n\t"
+			: "=m"(*lock) : "r"(0), "r"(lock) : "memory"
     );
 	*lock = 0;
 #elif defined(__CPU_mips2) || defined(__CPU_mips32) || defined(__CPU_mips64)
 	asm volatile(
+		".set push \n\t"
 		".set noreorder \n\t"
+		".set mips2 \n\t"
+#ifndef NOSMP
 		"    sync \n\t"
+#endif
 		"    sw $0, %0 \n\t"
-		".set reorder \n\t"
-		: /*no output*/  : "m" (*lock) : "memory"
+		".set pop \n\t"
+		: "=m" (*lock)  : /* no input */ : "memory"
 	);
 #elif defined __CPU_alpha
 	asm volatile(
+#ifndef  NOSMP
 		"    mb          \n\t"
+#endif
 		"    stl $31, %0 \n\t"
 		: "=m"(*lock) :/* no input*/ : "memory"  /* because of the mb */
 	);

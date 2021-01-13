@@ -1,0 +1,252 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+    <title>&develguide;</title>
+	<para>
+   The module provides an API that can be used from other &osips;
+   modules. The API offers the functions for instantiating b2b
+   scenarios from other modules (this comes as an addition to the
+   other two means of instantiating b2b scenarios - from script
+   and with an MI command). Also the instantiations can be
+   dynamically controlled, by commanding the bridging of an entity
+   involved in a call to another entity or the termination of the
+   call or even bridging two existing calls.
+   </para>
+ 		<section>
+				<title>
+				<function moreinfo="none">b2b_logic_bind(b2bl_api_t* api)</function>
+				</title>
+			<para>
+   This function binds the b2b_entities modules and fills the
+   structure the exported functions that will be described in
+   detail.
+			</para>
+		<example>
+		<title><function>b2bl_api_t</function> structure</title>
+	<programlisting format="linespecific">
+...
+typedef struct b2bl_api
+{
+	b2bl_init_f init;
+	b2bl_bridge_f bridge;
+	b2bl_bridge_extern_f bridge_extern;
+	b2bl_bridge_2calls_t bridge_2calls;
+	b2bl_terminate_call_t terminate_call;
+	b2bl_set_state_f set_state;
+	b2bl_bridge_msg_t bridge_msg;
+}b2bl_api_t;
+...
+</programlisting>
+		</example>
+
+		</section>
+	
+	<section>
+		<title>
+		<function moreinfo="none">init</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef str* (*b2bl_init_f)(struct sip_msg* msg, str* name, str* args[5],
+		b2bl_cback_f, void* param);
+...
+</programlisting>
+	<para>
+   Initializing a b2b scenario. The last two parameters are the
+   callback function and the parameter to be called in 3
+   situations that will be listed below. The callback function has
+   the following definition:
+	</para>
+	<programlisting format="linespecific">
+...
+typedef int (*b2b_notify_t)(struct sip_msg* msg, str* id, int type, void* param);
+...
+</programlisting>
+	<para>
+   The first argument is the callback given in the init function.
+	</para>
+	<para>
+   The second argument is a structure with some statistics about
+   the call -start time, setup time, call time.
+	</para>
+	<para>
+   The third argument is the current state of the scenario
+   instantiation.
+	</para>
+	<para>
+   The last argument is the event that triggered the callback.
+   There are 3 events when the callback is called:
+   </para>
+   <itemizedlist>
+	<listitem>
+		<para>
+			<emphasis>when a BYE is received from either side- event parameter
+	will also show from which side the BYE is received, so it
+	can be B2B_BYE_E1 or B2B_BYE_E2</emphasis>
+		</para>
+	</listitem>
+	<listitem>
+     <para>
+		<emphasis>If while bridging, a negative reply is received from the
+     second entity - the event is B2B_REJECT_E2.</emphasis>
+		</para>
+	</listitem>
+	<listitem>
+     <para>
+		<emphasis>When the b2b logic entity is deleted- the evnet is
+     B2B_DESTROY</emphasis>
+		</para>
+	</listitem>
+	</itemizedlist>
+	<para>
+	The return code controls what will happen with the
+   request/reply that caused the event (except for the last event,
+   when the return code does not matter)
+   </para>
+	<itemizedlist>
+	<listitem>
+		<para>
+			<emphasis>-1 - error</emphasis>
+		</para>
+	</listitem>
+	<listitem>
+		<para>
+		<emphasis>0 - drop the BYE or reply</emphasis>
+		</para>
+	</listitem>
+	<listitem>
+		<para>
+			<emphasis>   1 - send the BYE or reply on the other side</emphasis>
+		</para>
+	</listitem>
+	<listitem>
+		<para>
+			<emphasis>2 - do what the scenario tells, if no rule defined send the
+       BYE or reply on the other side</emphasis>
+		</para>
+	</listitem>
+</itemizedlist>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">bridge</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int entity_type);
+...
+</programlisting>
+		<para>
+   This function allows bridging an entity that is in a call
+   handled by b2b_logic to another entity.
+		</para>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">bridge_extern</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef str* (*b2bl_bridge_extern_f)(str* scenario_name, str* args[5],
+                b2bl_cback_f cbf, void* cb_param);
+...
+</programlisting>
+		<para>
+   This function allows initiating an extern scenario, when the
+   B2BUA starts a call from the middle.
+		</para>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">bridge_2calls</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef int (*b2bl_bridge_2calls_t)(str* key1, str* key2);
+...
+</programlisting>
+	<para>
+   With this function it is possible to bridge two existing calls.
+   The first entity from the two calls will be connected and BYE
+   will be sent to their peers.
+	</para>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">terminate_call</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef int (*b2bl_terminate_call_t)(str* key);
+...
+</programlisting>
+	<para>
+	Terminate a call.
+	</para>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">set_state</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef int (*b2bl_set_state_f)(str* key, int state);
+...
+</programlisting>
+	<para>
+   Set the scenario state.
+	</para>
+</section>
+
+<section>
+		<title>
+		<function moreinfo="none">bridge_msg</function>
+		</title>
+		<para>
+			Field type:
+		</para>
+			<programlisting format="linespecific">
+...
+typedef int (*b2bl_bridge_msg_t)(struct sip_msg* msg, str* key, int entity_no);
+...
+</programlisting>
+	<para>
+   This function allows bridging an incoming call to an entity from an
+   existing call.
+	</para>
+	<para>
+   The first argument is the INVITE message of the current incoming call.
+	</para>
+	<para>
+   The second argument is the b2bl_key of an existing call.
+	</para>
+	<para>
+   The third argument is the entity identifier.
+	</para>
+</section>
+
+</chapter>
+

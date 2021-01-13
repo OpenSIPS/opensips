@@ -119,6 +119,7 @@ int post(char*  url, char* xml, char** response){
 		LM_DBG("CURL DEPOIS DO FREE...\n");
 		return resp;
 	}
-	curl_global_cleanup();
+
+	free(data.data);
 	return  -1;
 }
