@@ -300,14 +300,19 @@ build_branch(char *branch, int *size,
 	memcpy( branch, BMAGIC, BMAGIC_LEN);
 
 	branch += BMAGIC_LEN;
+	*size -= BMAGIC_LEN;
 
 	if (reply_matching) {
 		ret=int2reverse_hex(&branch, size, hash_id);
 		if (ret < 0)
 			goto out_nospace;
 
+		if (*size <= 0)
+			goto out_nospace;
+
 		*branch = '.';
 		branch++;
+		*size -= 1;
 
 		ret=int64_2reverse_hex(&branch, size, ct_coords);
 		if (ret < 0)
@@ -321,7 +326,11 @@ build_branch(char *branch, int *size,
 	if (dangling_coords)
 		ul.free_ucontact_coords(ct_coords);
 
+	if (*size <= 0)
+		goto out_nospace;
+
 	*branch = '\0';
+	*size -= 1;
 
 	return 0;
 
