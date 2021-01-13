@@ -104,6 +104,7 @@ static int mod_init(void);
 static int cfg_validate(void);
 
 static int domain_fixup(void** param);
+static int fix_out_expires(void **out_exp);
 
 int solve_avp_defs(void);
 
@@ -127,7 +128,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fix_out_expires, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"mid_registrar_lookup", (cmd_function)mid_reg_lookup, {
@@ -231,6 +232,19 @@ static int domain_fixup(void** param)
 	return 0;
 }
 
+
+static int fix_out_expires(void **out_exp)
+{
+	if (*(int *)*out_exp <= 0) {
+		LM_ERR("bad 'outgoing_expires' value: %d, falling back to default\n",
+		       *(int *)*out_exp);
+		*(int *)*out_exp = outgoing_expires;
+	}
+
+	return 0;
+}
+
+
 static int mid_reg_pre_script(struct sip_msg *foo, void *bar)
 {
 	set_ct(NULL);
@@ -245,27 +259,9 @@ static int mid_reg_post_script(struct sip_msg *foo, void *bar)
 }
 
 
-static int mod_init(void)
+static int mid_reg_init_globals(void)
 {
-	if (load_ul_api(&ul) < 0) {
-		LM_ERR("failed to load user location API\n");
-		return -1;
-	}
-
-	if (!ul.have_mem_storage()) {
-		LM_ERR("no support for external-storage usrloc!\n");
-		return -1;
-	}
-
-	if (load_tm_api(&tmb) < 0) {
-		LM_ERR("failed to load user location API\n");
-		return -1;
-	}
-
-	if(load_sig_api(&sig_api)< 0) {
-		LM_ERR("can't load signaling functions\n");
-		return -1;
-	}
+	ctid_param.len = strlen(ctid_param.s);
 
 	if (is_script_func_used("mid_registrar_save", 5) && !ul.tags_in_use()) {
 		LM_ERR("as per your current usrloc module configuration, "
@@ -285,8 +281,50 @@ static int mod_init(void)
 		ctid_insertion = MR_APPEND_PARAM;
 	}
 
+	if (outgoing_expires <= 0) {
+		LM_ERR("bad 'outgoing_expires' value: %d\n", outgoing_expires);
+		return -1;
+	}
+
+	tm_retrans_lk = lock_init_rw();
+	if (!tm_retrans_lk) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int mod_init(void)
+{
+	if (load_ul_api(&ul) < 0) {
+		LM_ERR("failed to load user location API\n");
+		return -1;
+	}
+
+	if (!ul.have_mem_storage()) {
+		LM_ERR("cannot work with a non-caching usrloc!\n");
+		return -1;
+	}
+
+	if (load_tm_api(&tmb) < 0) {
+		LM_ERR("failed to load user location API\n");
+		return -1;
+	}
+
+	if (load_sig_api(&sig_api) < 0) {
+		LM_ERR("can't load signaling functions\n");
+		return -1;
+	}
+
 	if (reg_init_globals() != 0) {
-		LM_ERR("failed to init globals\n");
+		LM_ERR("failed to initialize reg globals\n");
+		return -1;
+	}
+
+	if (mid_reg_init_globals() != 0) {
+		LM_ERR("failed to initialize mid-reg configuration\n");
 		return -1;
 	}
 
@@ -299,8 +337,6 @@ static int mod_init(void)
 		LM_ERR("failed to parse one or more module AVPs\n");
 		return -1;
 	}
-
-	ctid_param.len = strlen(ctid_param.s);
 
 	if (reg_mode != MID_REG_MIRROR) {
 		if (ul.register_ulcb(
@@ -328,12 +364,6 @@ static int mod_init(void)
 	if (register_script_cb(mid_reg_post_script,
 	                       POST_SCRIPT_CB|REQ_TYPE_CB, NULL) < 0) {
 		LM_ERR("failed to register post script cb\n");
-		return -1;
-	}
-
-	tm_retrans_lk = lock_init_rw();
-	if (!tm_retrans_lk) {
-		LM_ERR("oom\n");
 		return -1;
 	}
 
@@ -485,11 +515,10 @@ int get_expires_hf(struct sip_msg* _m)
 
 	if (_m->expires) {
 		p = (exp_body_t*)_m->expires->parsed;
-		if (p != NULL && p->valid) {
-			if (p->val != 0) {
-				return p->val;
-			} else return 0;
-		} else return default_expires;
+		if (p && p->valid)
+			return p->val;
+		else
+			return default_expires;
 	} else {
 		return default_expires;
 	}
