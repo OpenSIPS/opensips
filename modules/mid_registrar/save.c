@@ -93,10 +93,12 @@ void calc_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 /* with the optionally added outgoing timeout extension
  *
  * @_e: output param (UNIX timestamp) - expiration time on the main registrar
- * @egress: if true, the "outgoing_expires" modparam will be applied as a
- *			minimal value (useful when forcing egress expirations)
+ * @out_expires: the preferred (forced) outgoing expiration, as long as the
+ *      contact has a lower expiration value.
+ *    Use 0 or lower to simply fetch the contact expiration UNIX timestamp.
  */
-void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int egress)
+void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
+                             int out_expires)
 {
 	if (!_ep || !_ep->body.len) {
 		*_e = get_expires_hf(_m);
@@ -106,10 +108,10 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e, int egre
 		}
 	}
 
-	/* extend outgoing timeout, thus throttling heavy incoming traffic */
-	if (reg_mode != MID_REG_MIRROR && egress &&
-			*_e > 0 && *_e < outgoing_expires)
-		*_e = outgoing_expires;
+	/* attempt to extend the outgoing timeout, thus throttling registrations */
+	if (out_expires > 0 && reg_mode != MID_REG_MIRROR &&
+	        *_e > 0 && *_e < out_expires)
+		*_e = out_expires;
 
 	/* Convert to absolute value */
 	if (*_e > 0) *_e += get_act_time();
@@ -322,7 +324,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 			new_username = ctid_str;
 		}
 
-		calc_ob_contact_expires(req, c->expires, &expiry_tick, 1);
+		calc_ob_contact_expires(req, c->expires, &expiry_tick, mri->expires_out);
 		expires = expiry_tick == 0 ? 0 : expiry_tick - get_act_time();
 		ctmap->ctid = ctid;
 
@@ -513,7 +515,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, 1);
-		calc_ob_contact_expires(req, c->expires, &expiry_tick, 1);
+		calc_ob_contact_expires(req, c->expires, &expiry_tick, mri->expires_out);
 		if (expiry_tick == 0)
 			new_expires = 0;
 		else
@@ -521,9 +523,6 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 
 		LM_DBG("....... contact: '%.*s' Calculated TIMEOUT = %d (%d)\n",
 		       c->len, c->uri.s, expiry_tick, new_expires);
-
-		mri->expires = e;
-		mri->expires_out = new_expires;
 
 		if (e != new_expires &&
 		    replace_expires(c, req, new_expires, &skip_exp_header) != 0) {
@@ -706,7 +705,7 @@ out:
 			LM_ERR("failed to register Feature-Caps on-reply callback\n");
 	}
 
-	LM_DBG("REQ FORWARDED TO '%.*s' (obp: %.*s), expires=%d\n",
+	LM_DBG("REQ FORWARDED TO '%.*s' (obp: %.*s), expires_out=%d\n",
 	       mri->main_reg_uri.len, mri->main_reg_uri.s,
 	       mri->main_reg_next_hop.len, mri->main_reg_next_hop.s,
 	       mri->expires_out);
