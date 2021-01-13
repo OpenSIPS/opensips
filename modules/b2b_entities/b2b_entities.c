@@ -537,9 +537,12 @@ static inline int mi_print_b2be_dlg(struct mi_node *rpl, b2b_table htable, unsig
 			p = int2str((unsigned long)(dlg->id), &len);
 			node = add_mi_node_child(rpl, MI_DUP_VALUE, "dlg", 3, p, len);
 			if(node == NULL) goto error;
-			attr = add_mi_attr(node, MI_DUP_VALUE, "param", 5,
-					dlg->param.s, dlg->param.len);
-			if(attr == NULL) goto error;
+			/* check if param is printable */
+			if (str_check_token(&dlg->param)) {
+				attr = add_mi_attr(node, MI_DUP_VALUE, "param", 5,
+						dlg->param.s, dlg->param.len);
+				if(attr == NULL) goto error;
+			}
 			p = int2str((unsigned long)(dlg->state), &len);
 			attr = add_mi_attr(node, MI_DUP_VALUE, "state", 5, p, len);
 			if(attr == NULL) goto error;
