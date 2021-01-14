@@ -389,8 +389,9 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 			setbflag("SIP_PING_FLAG");
 		}',`')dnl
 
+		# store the registration and generate a SIP reply
 		if (!save("location"))
-			sl_reply_error();
+			xlog("failed to register AoR $tu\n");
 
 		exit;
 	}
