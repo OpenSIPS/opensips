@@ -276,9 +276,8 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 	long level;
 	xl_level_p xlp;
 	pv_value_t value;
-	pv_elem_t _frm;
 
-	memcpy(&xlp, lev, sizeof(xl_level_p));
+	xlp = (xl_level_t*)(void*)lev;
 	if(xlp->type==1)
 	{
 		if(pv_get_spec_value(msg, &xlp->v.sp, &value)!=0
@@ -297,8 +296,7 @@ int xlog_2(struct sip_msg* msg, char* lev, char* frm)
 
 	log_len = xlog_buf_size;
 
-	memcpy(&_frm, frm, sizeof(pv_elem_t));
-	ret = xl_print_log(msg, &_frm, &log_len);
+	ret = xl_print_log(msg, (pv_elem_t*)(void*)frm, &log_len);
 	if (ret == -1) {
 		LM_ERR("global print buffer too small, increase 'xlog_buf_size'\n");
 		return -1;
