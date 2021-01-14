@@ -384,11 +384,14 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 			pv_value_destroy(&sval);
 			return -1;
 		}
-		if(sval.rs.len!= _username->whole.len
-				|| strncasecmp(sval.rs.s, _username->whole.s, sval.rs.len))
+		/* The PV will carry only a username, so we have to compare it
+		 * only against the "user" part of the _username struct.
+		 */
+		if(sval.rs.len!= _username->user.len
+				|| strncasecmp(sval.rs.s, _username->user.s, sval.rs.len))
 		{
-			LM_DBG("username mismatch [%.*s] [%.*s]\n",
-				_username->whole.len, _username->whole.s, sval.rs.len, sval.rs.s);
+			LM_DBG("username mismatch msg=[%.*s] var=[%.*s]\n",
+				_username->user.len,_username->user.s,sval.rs.len,sval.rs.s);
 			pv_value_destroy(&sval);
 			return 1;
 		}
