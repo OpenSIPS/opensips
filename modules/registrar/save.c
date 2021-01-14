@@ -237,10 +237,12 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 				if (r==NULL || r->contacts==NULL) {
 					LM_CRIT("BUG - overflow detected with r=%p and "
 						"contacts=%p\n",r,r->contacts);
+					rerrno = R_INTERNAL;
 					goto error;
 				}
 				if (ul.delete_ucontact( r, r->contacts, 0)!=0) {
 					LM_ERR("failed to remove contact\n");
+					rerrno = R_INTERNAL;
 					goto error;
 				}
 			} else {
@@ -649,6 +651,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 		if (parse_contacts(forced_binding, &forced_c) < 0) {
 			LM_ERR("Unable to parse forced binding [%.*s]\n",
 				forced_binding->len, forced_binding->s);
+			rerrno = R_INTERNAL;
 			goto error;
 		}
 		/* prevent processing all the headers from the message */

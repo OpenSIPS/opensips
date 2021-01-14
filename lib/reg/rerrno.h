@@ -25,6 +25,8 @@
 #define __LIB_REG_RERRNO_H__
 
 #define EI_R_FINE       "No problem"                                /* R_FINE */
+#define EI_R_INTERNAL   "Server Internal Error"                     /* R_INTERNAL */
+#define EI_R_NOT_IMPL   "Method Not Implemented"                    /* R_NOT_IMPL */
 #define EI_R_UL_DEL_R   "usrloc_record_delete failed"               /* R_UL_DEL_R */
 #define EI_R_UL_GET_R   "usrloc_record_get failed"                  /* R_UL_GET */
 #define EI_R_UL_NEW_R   "usrloc_record_new failed"                  /* R_UL_NEW_R */
@@ -42,21 +44,23 @@
 #define EI_R_TO_MISS    "To header not found"                       /* R_TO_MISS */
 #define EI_R_CID_MISS   "Call-ID header not found"                  /* R_CID_MISS */
 #define EI_R_CS_MISS    "CSeq header not found"                     /* R_CS_MISS */
-#define EI_R_PARSE_EXP	"Expires parse error"                       /* R_PARSE_EXP */
+#define EI_R_PARSE_EXP  "Expires parse error"                       /* R_PARSE_EXP */
 #define EI_R_PARSE_CONT "Contact parse error"                       /* R_PARSE_CONT */
-#define EI_R_STAR_EXP	"* used in contact and expires is not zero" /* R_STAR__EXP */
-#define EI_R_STAR_CONT	"* used in contact and more than 1 contact" /* R_STAR_CONT */
-#define EI_R_OOO	"Out of order request"                      /* R_OOO */
-#define EI_R_RETRANS	"Retransmission"                            /* R_RETRANS */
+#define EI_R_STAR_EXP   "* used in contact and expires is not zero" /* R_STAR__EXP */
+#define EI_R_STAR_CONT  "* used in contact and more than 1 contact" /* R_STAR_CONT */
+#define EI_R_OOO        "Out of order request"                      /* R_OOO */
+#define EI_R_RETRANS    "Retransmission"                            /* R_RETRANS */
 #define EI_R_UNESCAPE   "Error while unescaping username"           /* R_UNESCAPE */
 #define EI_R_TOO_MANY   "Too many registered contacts"              /* R_TOO_MANY */
-#define EI_R_CONTACT_LEN  "Contact/received too long"               /* R_CONTACT_LEN */
+#define EI_R_CONTACT_LEN "Contact/received too long"                /* R_CONTACT_LEN */
 #define EI_R_CALLID_LEN  "Callid too long"                          /* R_CALLID_LEN */
 #define EI_R_PARSE_PATH  "Path parse error"                         /* R_PARSE_PATH */
 #define EI_R_PATH_UNSUP  "No support for found Path indicated"      /* R_PATH_UNSUP */
 
 typedef enum rerr {
 	R_FINE = 0,   /*!< Everything went OK */
+	R_INTERNAL,   /*!< Internal Error */
+	R_NOT_IMPL,   /*!< Not Implemented */
 	R_UL_DEL_R,   /*!< Usrloc record delete failed */
 	R_UL_GET_R,   /*!< Usrloc record get failed */
 	R_UL_NEW_R,   /*!< Usrloc new record failed */

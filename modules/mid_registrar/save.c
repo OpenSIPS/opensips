@@ -2323,8 +2323,9 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 	int rc = -1, st, unlock_udomain = 0;
 
 	if (msg->REQ_METHOD != METHOD_REGISTER) {
-		LM_ERR("ignoring non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
-		return -1;
+		LM_ERR("rejecting non-REGISTER SIP request (%d)\n", msg->REQ_METHOD);
+		rerrno = R_NOT_IMPL;
+		goto out_error;
 	}
 
 	rerrno = R_FINE;
@@ -2343,7 +2344,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	if (parse_reg_headers(msg) != 0) {
 		LM_ERR("failed to parse req headers\n");
-		return -1;
+		goto out_error;
 	}
 
 	if (!to_uri_gp) {
@@ -2362,7 +2363,7 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 
 	if (extract_aor(&to_uri, &sctx.aor, 0, 0) < 0) {
 		LM_ERR("failed to extract Address Of Record\n");
-		return -1;
+		goto out_error;
 	}
 
 	if (check_contacts(msg, &st) > 0) {
@@ -2383,7 +2384,8 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 			if (!del_lump(msg, path->name.s - msg->buf,
 			              path->len, HDR_PATH_T)) {
 				LM_ERR("failed to remove Path HF\n");
-				return -1;
+				rerrno = R_INTERNAL;
+				goto out_error;
 			}
 		}
 	}
