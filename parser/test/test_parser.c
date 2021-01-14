@@ -33,13 +33,19 @@ void test_parse_uri(void)
 	str in;
 
 	/* Basic URI parsing tests */
-	in = *_str("sip:@atlanta.org");
-	ok(parse_uri(in.s, in.len, &u) < 0, "puri-0");
 
-	in = *_str("sip:atlanta.org");
-	ok(parse_uri(in.s, in.len, &u) == 0, "puri-0.1");
-	ok(!u.user.s, "puri-0.2");
-	ok(u.user.len == 0, "puri-0.3");
+	ok(parse_uri(STR_L("sip:@atlanta.org"), &u) < 0, "puri-0");
+
+	/* Notice how illegal user chars are allowed in these two tests!
+	 * This is by design, since "quick parsing" != "full RFC syntax validation"
+	 */
+	ok(parse_uri(STR_L("sip:%@atlanta.org"), &u) == 0, "puri-0.1");
+	ok(parse_uri(STR_L("sip:%4`@atlanta.org"), &u) == 0, "puri-0.2");
+
+	ok(parse_uri(STR_L("sip:%40@atlanta.org"), &u) == 0, "puri-0.3");
+	ok(parse_uri(STR_L("sip:atlanta.org"), &u) == 0, "puri-0.4");
+	ok(!u.user.s, "puri-0.5");
+	ok(u.user.len == 0, "puri-0.6");
 
 	in = *_str("sip:alice@atlanta.org;user=phone");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-1");
