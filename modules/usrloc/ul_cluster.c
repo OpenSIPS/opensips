@@ -366,6 +366,10 @@ static int receive_urecord_insert(bin_packet_t *packet)
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
+	if (aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		goto out_err;
+	}
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -407,6 +411,10 @@ static int receive_urecord_delete(bin_packet_t *packet)
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
+	if (aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		goto out_err;
+	}
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -447,6 +455,10 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
+	if (aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		goto error;
+	}
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -588,6 +600,10 @@ static int receive_ucontact_update(bin_packet_t *packet)
 
 	bin_pop_str(packet, &d);
 	bin_pop_str(packet, &aor);
+	if (aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		goto error;
+	}
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
@@ -724,10 +740,15 @@ static int receive_ucontact_delete(bin_packet_t *packet)
 	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
 
 	bin_pop_str(packet, &d);
-	bin_pop_str(packet,&aor);
-	bin_pop_str(packet,&contact_str);
-	bin_pop_str(packet,&callid);
-	bin_pop_int(packet,&cseq);
+	bin_pop_str(packet, &aor);
+	if (aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		goto error;
+	}
+
+	bin_pop_str(packet, &contact_str);
+	bin_pop_str(packet, &callid);
+	bin_pop_int(packet, &cseq);
 
 	if (find_domain(&d, &domain) != 0) {
 		LM_ERR("domain '%.*s' is not local\n", d.len, d.s);
