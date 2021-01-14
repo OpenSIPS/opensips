@@ -2366,6 +2366,12 @@ int mid_reg_save(struct sip_msg *msg, char *dom, char *flags_gp,
 		goto out_error;
 	}
 
+	if (sctx.aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		rerrno = R_AOR_PARSE;
+		goto out_error;
+	}
+
 	if (check_contacts(msg, &st) > 0) {
 		goto out_error;
 	}

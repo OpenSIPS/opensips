@@ -681,6 +681,12 @@ int save_aux(struct sip_msg* _m, str* forced_binding, char* _d, char* _f, char* 
 		goto error;
 	}
 
+	if (sctx.aor.len == 0) {
+		LM_ERR("the AoR URI is missing the 'username' part!\n");
+		rerrno = R_AOR_PARSE;
+		goto error;
+	}
+
 	if (c == 0) {
 		if (st) {
 			if (star((udomain_t*)_d, &sctx,_m) < 0) goto error;
