@@ -32,6 +32,13 @@ void test_parse_uri(void)
 	str in;
 
 	/* Basic URI parsing tests */
+	in = *_str("sip:@atlanta.org");
+	ok(parse_uri(in.s, in.len, &u) < 0, "puri-0");
+
+	in = *_str("sip:atlanta.org");
+	ok(parse_uri(in.s, in.len, &u) == 0, "puri-0.1");
+	ok(!u.user.s, "puri-0.2");
+	ok(u.user.len == 0, "puri-0.3");
 
 	in = *_str("sip:alice@atlanta.org;user=phone");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-1");
