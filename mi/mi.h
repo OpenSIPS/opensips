@@ -56,6 +56,8 @@
 
 #define ERR_DET_POS_PARAMS_S "Command only supports named parameters"
 #define ERR_DET_AMBIG_CALL_S "Ambiguous call"
+#define ERR_DET_NO_PARAMS_S  "Too few or too many parameters"
+#define ERR_DET_MATCH_PARAMS_S "Named parameters do not match"
 
 
 struct mi_handler;

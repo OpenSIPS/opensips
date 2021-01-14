@@ -392,8 +392,13 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 					&is_ambiguous);
 	if (!cmd_recipe) {
 		LM_ERR("Invalid parameters\n");
-		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
-				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), NULL, 0);
+		if (pos_params)
+			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), MI_SSTR(ERR_DET_NO_PARAMS_S));
+		else
+			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+				MI_SSTR(ERR_DET_MATCH_PARAMS_S));
 	} else if (is_ambiguous) {
 		LM_ERR("Ambigous call\n");
 		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
