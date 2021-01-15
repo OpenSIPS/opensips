@@ -474,6 +474,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 	struct ip_addr ip;
 	int port;
 	int fd, n;
+	int rlen;
 
 	if (to){
 		su2ip_addr(&ip, to);
@@ -518,11 +519,12 @@ static int proto_tls_send(struct socket_info* send_sock,
 				ip_addr2a( &c->rcv.src_ip ), c->rcv.src_port,
 				ip_addr2a( &c->rcv.dst_ip ), c->rcv.dst_port );
 
+			rlen = len;
 			if (n==0) {
 				/* attach the write buffer to it */
 				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
 					LM_ERR("Failed to add the initial write chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
+					rlen = -1; /* report an error - let the caller decide what to do */
 				}
 
 				LM_DBG("Successfully started async connection \n");
@@ -539,7 +541,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 			lock_release(&c->write_lock);
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
-				len = -1;
+				rlen = -1;
 				goto con_release;
 			}
 			if (n==0) {
@@ -579,12 +581,12 @@ static int proto_tls_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
-	n = tls_write_on_socket(c, fd, buf, len);
+	rlen = tls_write_on_socket(c, fd, buf, len);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
-	LM_DBG("after write: c= %p n=%d fd=%d\n",c, n, fd);
+	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);
-	if (n<0){
+	if (rlen<0){
 		LM_ERR("failed to send\n");
 		c->state=S_CONN_BAD;
 		if (c->proc_id != process_no)
@@ -604,11 +606,11 @@ send_it:
 	send_sock->last_remote_real_port = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
-	return n;
+	return rlen;
 con_release:
 	sh_log(c->hist, TCP_SEND2MAIN, "send 1, (%d)", c->refcnt);
-	tcp_conn_release(c, (len < 0)?0:1);
-	return len;
+	tcp_conn_release(c, (rlen < 0)?0:1);
+	return rlen;
 }
 
 static int tls_read_req(struct tcp_connection* con, int* bytes_read)
