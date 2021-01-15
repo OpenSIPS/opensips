@@ -645,12 +645,12 @@ mi_response_t *init_mi_param_error(void)
 					MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), param_err_buf, len);
 			break;
 		case MI_PARAM_ERR_MISSING:
-			/* the function call has already been matched with one
-			 * of the MI recipes so treat a missing parameter as an
-			 * unexpected server error */
+			/* the call has already been matched with one of the MI recipes so
+			 * treat a missing parameter as an unexpected server error (possibly
+			 * a bad param name was used by the handler when getting a param) */
 			break;
 	}
 
-	return init_mi_error(JSONRPC_SERVER_ERR_CODE,
-		MI_SSTR(JSONRPC_SERVER_ERR_MSG));
+	return init_mi_error_extra(JSONRPC_SERVER_ERR_CODE,
+		MI_SSTR(JSONRPC_SERVER_ERR_MSG), MI_SSTR(ERR_DET_PARAM_HANDLE_S));
 }
