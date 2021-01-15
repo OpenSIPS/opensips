@@ -2961,7 +2961,6 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	str value= {value_content, strlen(value_content)};
 	unsigned char* value_type= NULL;
 	unsigned int param_no;
-	str check_uri;
 
 	value_type = xmlNodeGetAttrContentByName(value_node, "type");
 	if(value_type == NULL)
@@ -3009,6 +3008,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 		struct hdr_field* sip_hdr, hdr;
 		char buf[BUF_LEN];
 		struct sip_uri sip_uri;
+		struct to_body to;
 
 		LM_DBG("URI of type header value\n");
 		if(msg == NULL)
@@ -3056,20 +3056,25 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 				goto error;
 			}
 		}
-		check_uri = sip_hdr->body;
-		trim(&check_uri);
 
-		if(check_uri.s[0] == '<')
-		{
-			check_uri.s++;
-			check_uri.len-=2;
-		}
-		if(parse_uri(check_uri.s, check_uri.len, &sip_uri)< 0)
-		{
-			LM_ERR("Not a valid sip uri [%.*s]\n", check_uri.len, check_uri.s);
+		/* as the hdr body is part of a SIP msg, we can to a +1 in len
+		 * without the risk of overlowing the buffer. */
+		if ( parse_to(sip_hdr->body.s, sip_hdr->body.s+sip_hdr->body.len+1,
+		&to)<0 || to.error == PARSE_ERROR) {
+			LM_ERR("hdr '%.*s' does not follow a name_addr SIP format\n",
+					sip_hdr->name.len, sip_hdr->name.s);
 			goto error;
 		}
-		*client_to = check_uri;
+		/* we can safely free the to-hdr params now, as we do not need them,
+		 * we need only the URI. */
+		free_to_params(&to);
+
+		if(parse_uri(to.uri.s, to.uri.len, &sip_uri)< 0)
+		{
+			LM_ERR("Not a valid sip uri [%.*s]\n", to.uri.len, to.uri.s);
+			goto error;
+		}
+		*client_to = to.uri;
 	}
 	else
 	{
