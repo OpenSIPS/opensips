@@ -590,6 +590,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.client_headers= hdrs;
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
+	ci.dst_uri       = msg->dst_uri;
 	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
 	if (ci.send_sock) get_local_contact(ci.send_sock, NULL, &ci.local_contact);
 	else ci.local_contact = server_address;
@@ -2962,6 +2963,7 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 	unsigned char* value_type= NULL;
 	unsigned int param_no;
 	str check_uri;
+	struct to_body *to;
 
 	value_type = xmlNodeGetAttrContentByName(value_node, "type");
 	if(value_type == NULL)
@@ -3056,14 +3058,22 @@ int b2b_scenario_parse_uri(xmlNodePtr value_node, char* value_content,
 				goto error;
 			}
 		}
-		check_uri = sip_hdr->body;
-		trim(&check_uri);
 
-		if(check_uri.s[0] == '<')
-		{
-			check_uri.s++;
-			check_uri.len-=2;
+		if (!(to = pkg_malloc(sizeof(struct to_body)))) {
+			LM_ERR("out of pkg_memory\n");
+			goto error;
 		}
+		parse_to(sip_hdr->body.s,  sip_hdr->body.s + sip_hdr->body.len + 1, to);
+		if (to->error == PARSE_ERROR) {
+			LM_DBG("bad '%.*s' header\n",
+					sip_hdr->name.len, sip_hdr->name.s);
+			pkg_free(to);
+			goto error;
+		}
+		sip_hdr->parsed = to;
+
+		check_uri = to->uri;
+
 		if(parse_uri(check_uri.s, check_uri.len, &sip_uri)< 0)
 		{
 			LM_ERR("Not a valid sip uri [%.*s]\n", check_uri.len, check_uri.s);
