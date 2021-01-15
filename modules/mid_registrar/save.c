@@ -504,12 +504,12 @@ static void remove_expires_hf(struct sip_msg *msg)
 }
 
 static int replace_expires(contact_t *c, struct sip_msg *msg, int new_expires,
-                           int *skip_exp_header)
+                           int *exp_header_done)
 {
-	if (!c->expires || c->expires->body.len <= 0) {
-		if (*skip_exp_header == 0 && replace_expires_hf(msg, new_expires) == 0)
-			*skip_exp_header = 1;
-	} else {
+	if (!*exp_header_done && replace_expires_hf(msg, new_expires) >= 0)
+		*exp_header_done = 1;
+
+	if (c->expires && c->expires->body.len > 0) {
 		if (replace_expires_ct_param(msg, c, new_expires) != 0) {
 			LM_ERR("failed to replace contact hf param expires, ci=%.*s\n",
 			       msg->callid->body.len, msg->callid->body.s);
@@ -524,7 +524,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 {
 	contact_t *c;
 	int e, expiry_tick, new_expires;
-	int skip_exp_header = 0;
+	int exp_header_done = 0;
 
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, 1);
@@ -538,7 +538,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 		       c->len, c->uri.s, expiry_tick, new_expires);
 
 		if (e != new_expires &&
-		    replace_expires(c, req, new_expires, &skip_exp_header) != 0) {
+		    replace_expires(c, req, new_expires, &exp_header_done) != 0) {
 			LM_ERR("failed to replace expires for ct '%.*s'\n",
 			       c->uri.len, c->uri.s);
 		}
