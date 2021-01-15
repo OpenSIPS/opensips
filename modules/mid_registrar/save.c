@@ -123,8 +123,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 	}
 
 	/* attempt to extend the outgoing timeout, thus throttling registrations */
-	if (out_expires > 0 && reg_mode != MID_REG_MIRROR &&
-	        *_e > 0 && *_e < out_expires)
+	if (out_expires > 0 && reg_mode != MID_REG_MIRROR && *_e > 0)
 		*_e = out_expires;
 
 	/* Convert to absolute value */
@@ -133,7 +132,7 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 	LM_DBG("outgoing expires: %d\n", *_e);
 }
 
-static int trim_to_single_contact(struct sip_msg *msg, str *aor)
+static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires)
 {
 	static str escape_buf;
 	contact_t *c = NULL;
@@ -218,7 +217,7 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor)
 
 	if (!msg->expires || msg->expires->body.len == 0) {
 		len1 += sprintf(buf + len1, ";expires=%d",
-		                is_dereg ? 0 : outgoing_expires);
+		                is_dereg ? 0 : expires);
 	}
 
 	if (len1 >= len) {
@@ -674,7 +673,7 @@ void mid_reg_req_fwded(struct cell *t, int type, struct tmcb_params *params)
 
 	if (reg_mode == MID_REG_THROTTLE_AOR) {
 		LM_DBG("trimming all Contact URIs into one...\n");
-		if (trim_to_single_contact(req, &mri->aor)) {
+		if (trim_to_single_contact(req, &mri->aor, mri->expires_out)) {
 			LM_ERR("failed to overwrite Contact URI\n");
 			goto out;
 		}
