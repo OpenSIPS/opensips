@@ -262,8 +262,7 @@ char *mi_get_req_method(mi_request_t *req)
 	return req->method->valuestring;
 }
 
-static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params,
-							int *max_params)
+static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params)
 {
 	mi_item_t *param;
 	int i;
@@ -277,16 +276,10 @@ static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params,
 			return 0;
 	}
 
-	if (i > *max_params) {
-		*max_params = i;
-		return 1;
-	} else if (i == *max_params)
-		return -1;
-	else
-		return 0;
+	return 1;
 }
 
-static int match_pos_params(mi_recipe_t *recipe, mi_item_t *req_params)
+static int match_no_params(mi_recipe_t *recipe, mi_item_t *req_params)
 {
 	mi_item_t *param;
 	int i, j;
@@ -299,11 +292,10 @@ static int match_pos_params(mi_recipe_t *recipe, mi_item_t *req_params)
 }
 
 static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
-								int pos_params, int *is_ambiguous)
+								int pos_params, int *params_err)
 {
 	mi_recipe_t *match = NULL;
-	int i, max_params = 0;
-	int rc;
+	int i;
 
 	for (i = 0; recipes[i].cmd; i++) {
 		if (!req_params) {
@@ -317,22 +309,22 @@ static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
 		}
 
 		if (pos_params) {
-			if (match_pos_params(&recipes[i], req_params)) {
+			if (match_no_params(&recipes[i], req_params)) {
 				if (match) {
-					*is_ambiguous = 1;
-					return match;
-				}
-				else
+					*params_err = -2;
+					return NULL;
+				} else {
 					match = &recipes[i];
+				}
 			}
 		} else {
-			rc = match_named_params(&recipes[i], req_params, &max_params);
-			if (rc == -1)
-				*is_ambiguous = 1;
-			else if (rc == 1) {
-				*is_ambiguous = 0;
-				match = &recipes[i];
-			}
+			if (match_no_params(&recipes[i], req_params))
+				*params_err = -3;
+			else
+				continue;
+
+			if (match_named_params(&recipes[i], req_params))
+				return &recipes[i];
 		}
 	}
 
@@ -357,7 +349,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 	mi_response_t *resp;
 	mi_recipe_t *cmd_recipe;
 	mi_params_t cmd_params;
-	int is_ambiguous = 0;
+	int params_err = -1;
 	int pos_params;
 
 	if (!req->req_obj) {  /* error parsing the request JSON text */
@@ -389,21 +381,20 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 	/* use the correct 'recipe' of the command based
 	 * on the received parameters */
 	cmd_recipe = get_cmd_recipe(cmd->recipes, req->params, pos_params,
-					&is_ambiguous);
+					&params_err);
 	if (!cmd_recipe) {
 		LM_ERR("Invalid parameters\n");
-		if (pos_params)
+		if (params_err == -1)
 			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG), MI_SSTR(ERR_DET_NO_PARAMS_S));
+		else if (params_err == -2)
+			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
+				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
+				MI_SSTR(ERR_DET_AMBIG_CALL_S));
 		else
 			return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
 				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
 				MI_SSTR(ERR_DET_MATCH_PARAMS_S));
-	} else if (is_ambiguous) {
-		LM_ERR("Ambigous call\n");
-		return build_err_resp(JSONRPC_INVAL_PARAMS_CODE,
-				MI_SSTR(JSONRPC_INVAL_PARAMS_MSG),
-				MI_SSTR(ERR_DET_AMBIG_CALL_S));
 	}
 
 	cmd_params.item = req->params;
