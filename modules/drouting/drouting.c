@@ -3344,6 +3344,9 @@ no_gws:
 			LM_DBG("updating to %d, prefix %.*s \n",rule_idx,
 					prefix_len-(rule_idx?1:0),username.s);
 		}
+	} else if ( (flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
+		/* triggered via failover, but failover dropped at this iteration */
+		destroy_avps( 0, current_partition->avpID_store_flags, 1);
 	}
 
 	if (wl_list) pkg_free(wl_list);
