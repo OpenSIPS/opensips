@@ -405,7 +405,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 	if (resp == NULL) {
 		LM_ERR("Command failed\n");
 		return build_err_resp(JSONRPC_SERVER_ERR_CODE,
-				MI_SSTR(JSONRPC_SERVER_ERR_MSG), NULL, 0);
+				MI_SSTR(JSONRPC_SERVER_ERR_MSG), MI_SSTR(ERR_DET_CMD_NULL_S));
 	} else
 		return resp;
 }
