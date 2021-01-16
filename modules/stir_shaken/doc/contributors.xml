@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
+		<entry align="center">6</entry>
 		<entry align="center">4</entry>
-		<entry align="center">1</entry>
+		<entry align="center">7</entry>
+		<entry align="center">4</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -80,23 +80,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Nov 2019 - Jan 2021</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jan 2021 - Jan 2021</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Oct 2019 - Sep 2020</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Andriy Pylypenko (<ulink url="https://github.com/bambyster">@bambyster</ulink>)</entry>
 		<entry align="center">Aug 2020 - Aug 2020</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Nov 2019 - May 2020</entry>
 	</row>
 	</tbody>
 	</tgroup>

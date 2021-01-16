@@ -55,11 +55,12 @@ CLUSTERER Module
               1.6.2. clusterer_list
               1.6.3. clusterer_list_topology
               1.6.4. clusterer_set_status
-              1.6.5. cluster_send_mi
-              1.6.6. cluster_broadcast_mi
-              1.6.7. clusterer_list_cap
-              1.6.8. clusterer_shtag_set_active
-              1.6.9. clusterer_list_shtags
+              1.6.5. clusterer_remove_node
+              1.6.6. cluster_send_mi
+              1.6.7. cluster_broadcast_mi
+              1.6.8. clusterer_list_cap
+              1.6.9. clusterer_shtag_set_active
+              1.6.10. clusterer_list_shtags
 
         1.7. Exported Script Variables
 
@@ -179,10 +180,9 @@ Chapter 1. Admin Guide
    referenced in each cluster.
 
    An OpenSIPS instance can dynamically learn all the nodes in the
-   cluster that are not provisioned in the database. For instances
-   that do not load any node info from the DB, it is enough to
-   define at least one neigbour in the script in order to discover
-   all the cluster components.
+   cluster if database provisioning is not desired. It is enough
+   to define at least one neigbour in the script in order to
+   discover all the cluster components.
 
 1.2. Capabilities layer
 
@@ -249,6 +249,9 @@ modparam("clusterer", "my_node_id", 1)
    and neighbor_node_info). A value of “0” means that DB is not
    used and the cluster topology in terms of node information will
    be discovered dynamically at runtime.
+
+   If DB mode is enabled, only the nodes defined in the database
+   will be accepted by this instance.
 
    Default value is “1”
 
@@ -765,7 +768,28 @@ $ opensips-cli -x mi clusterer_list_topology
    MI FIFO Command Format:
                 opensips-cli -x mi clusterer_set_status 1 0
 
-1.6.5.  cluster_send_mi
+1.6.5.  clusterer_remove_node
+
+   Removes a node from the cluster's topology. It is enough to run
+   the function on a single node in order to remove the target
+   node from all the other nodes in the cluster. If the node to be
+   removed is running when triggering this function, it will be
+   automatically disabled (equivalent to running
+   clusterer_set_status on that specific node).
+
+   This function can only be used when db_mode is set to 0
+   (disabled).
+
+   Name: clusterer_remove_node
+
+   Parameters:
+     * cluster_id - cluster ID
+     * node_id - ID of the node to be removed.
+
+   MI FIFO Command Format:
+                opensips-cli -x mi clusterer_remove_node 1 3
+
+1.6.6.  cluster_send_mi
 
    Dispatches a given MI command to be run on a specific node in
    the cluster.
@@ -785,7 +809,7 @@ $ opensips-cli -x mi clusterer_list_topology
    MI FIFO Command Format:
 opensips-cli -x mi cluster_send_mi 1 3 lb_reload
 
-1.6.6.  cluster_broadcast_mi
+1.6.7.  cluster_broadcast_mi
 
    Dispatches a given MI command to be run on all the nodes in a
    cluster. The command is also executed locally.
@@ -804,7 +828,7 @@ opensips-cli -x mi cluster_send_mi 1 3 lb_reload
    MI FIFO Command Format:
 opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 
-1.6.7.  clusterer_list_cap
+1.6.8.  clusterer_list_cap
 
    Lists the registered capabilities and their states.
 
@@ -832,7 +856,7 @@ $ opensips-cli -x mi clusterer_list_cap
     ]
 }
 
-1.6.8. clusterer_shtag_set_active
+1.6.9. clusterer_shtag_set_active
 
    Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
@@ -847,7 +871,7 @@ $ opensips-cli -x mi clusterer_list_cap
    MI FIFO Command Format:
                 opensips-cli -x mi clusterer_shtag_set_active vip1/3
 
-1.6.9. clusterer_list_shtags
+1.6.10. clusterer_list_shtags
 
    Lists all known sharing tags and their states.
 
@@ -1180,7 +1204,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 260 92 10026 5239
+   1. Vlad Patrascu (@rvlad-patrascu) 308 99 12012 6794
    2. Liviu Chircu (@liviuchircu) 50 36 625 440
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 23 17 319 143
@@ -1210,10 +1234,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Fabian Gast (@fgast)                     Nov 2018 - Jul 2020
-   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Jul 2020
-   3. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2020
-   4. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Sep 2019
+   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Jan 2021
+   2. Fabian Gast (@fgast)                     Nov 2018 - Jul 2020
+   3. Liviu Chircu (@liviuchircu)              Mar 2016 - Jul 2020
+   4. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2020
    5. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
    6. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
    7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
@@ -1227,10 +1251,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Fabian Gast
+   (@fgast), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 
