@@ -12,7 +12,7 @@ CREATE TABLE registrant (
     expiry NUMBER(10) DEFAULT NULL,
     forced_socket VARCHAR2(64) DEFAULT NULL,
     cluster_shtag VARCHAR2(64) DEFAULT NULL,
-    CONSTRAINT registrant_aor_idx  UNIQUE (aor)
+    CONSTRAINT registrant_registrant_idx  UNIQUE (aor, binding_URI, registrar)
 );
 
 CREATE OR REPLACE TRIGGER registrant_tr

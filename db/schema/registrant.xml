@@ -27,7 +27,7 @@
 		<description>unique ID</description>
 	</column>
 
-	<column>
+	<column id="registrar">
 		<name>registrar</name>
 		<type>string</type>
 		<size>&uri_len;</size>
@@ -82,7 +82,7 @@
 		Otherwise, it is considered to be plain text.</description>
 	</column>
 
-	<column>
+	<column id="binding_URI">
 		<name>binding_URI</name>
 		<type>string</type>
 		<size>&uri_len;</size>
@@ -127,8 +127,10 @@
 	</column>
 
 	<index>
-		<name>aor_idx</name>
+		<name>registrant_idx</name>
 		<colref linkend="aor"/>
+		<colref linkend="binding_URI"/>
+		<colref linkend="registrar"/>
 		<unique/>
 	</index>
 </table>

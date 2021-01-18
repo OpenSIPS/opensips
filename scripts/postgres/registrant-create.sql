@@ -12,7 +12,7 @@ CREATE TABLE registrant (
     expiry INTEGER DEFAULT NULL,
     forced_socket VARCHAR(64) DEFAULT NULL,
     cluster_shtag VARCHAR(64) DEFAULT NULL,
-    CONSTRAINT registrant_aor_idx UNIQUE (aor)
+    CONSTRAINT registrant_registrant_idx UNIQUE (aor, binding_URI, registrar)
 );
 
 ALTER SEQUENCE registrant_id_seq MAXVALUE 2147483647 CYCLE;
