@@ -75,14 +75,28 @@ void reg_print_record(reg_record_t *rec) {
 static void gen_call_id_ftag(str *aor, str *now, str *call_id_ftag)
 {
 	int i = 0;
-	str src[2];
+	str src[3];
+	int n;
+        int l = 0;
+        char *ch;
+	str random_string;
+
+       
+        n = rand();
+	ch = int2str(n , &l);
+
 
 	call_id_ftag->len = MD5_LEN;
 	call_id_ftag->s = call_id_ftag_buf;
+	random_string.len = l;
+	random_string.s= ch;
 
 	src[i++] = *aor;
+	src[i++]= random_string;
 	if(now->s && now->len)
 		src[i++] = *now;
+	
+	
 
 	MD5StringArray(call_id_ftag->s, src, i);
 	return;
