@@ -368,7 +368,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 		port=su_getport(to);
 		n = tcp_conn_get(id, &ip, port, PROTO_TCP, NULL, &c, &fd);
 	}else if (id){
-		n = tcp_conn_get(id, 0, 0, PROTO_NONE, &c, NULL, &fd);
+		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd);
 	}else{
 		LM_CRIT("tcp_send called with null id & to\n");
 		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
