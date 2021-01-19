@@ -1205,6 +1205,23 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 	pkg_free(msg);
 }
 
+static void dlg_set_tm_dialog_ctx(struct dlg_cell *dlg, struct cell *t)
+{
+	/* dialog already stored */
+	if (t->dialog_ctx)
+		return;
+
+	if ( d_tmb.register_tmcb( NULL, t, TMCB_TRANS_DELETED,
+			tmcb_unreference_dialog, (void*)dlg, NULL)<0){
+		LM_ERR("failed to register TMCB\n");
+		return;
+	}
+	/* and attached the dialog to the transaction */
+	t->dialog_ctx = (void*)dlg;
+	/* and keep a reference on it */
+	ref_dlg( dlg , 1);
+}
+
 
 void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 {
@@ -1215,19 +1232,7 @@ void dlg_onreq(struct cell* t, int type, struct tmcb_params *param)
 		/* new, un-initialized dialog ? */
 		if ( dlg->flags & DLG_FLAG_ISINIT ) {
 			/* fully init dialog -> check if attached to the transaction */
-			if (t->dialog_ctx==NULL) {
-				/* set a callback to remove the ref when transaction
-				 * is destroied */
-				if ( d_tmb.register_tmcb( NULL, t, TMCB_TRANS_DELETED,
-				tmcb_unreference_dialog, (void*)dlg, NULL)<0){
-					LM_ERR("failed to register TMCB\n");
-					return;
-				}
-				/* and attached the dialog to the transaction */
-				t->dialog_ctx = (void*)dlg;
-				/* and keep a reference on it */
-				ref_dlg( dlg , 1);
-			}
+			dlg_set_tm_dialog_ctx(dlg, t);
 			return;
 		}
 
@@ -1717,6 +1722,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	str *msg_cseq;
 	char *final_cseq;
 	int is_active = 1;
+	struct cell *t;
 
 	/* as this callback is triggered from loose_route, which can be
 	   accidentaly called more than once from script, we need to be sure
@@ -1843,6 +1849,11 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	ctx_lastdstleg_set(dst_leg);
 	log_bogus_dst_leg(dlg);
 	d_entry = &(d_table->entries[dlg->h_entry]);
+
+	/* if there was a transaction created before, store the dialog in it */
+	t = d_tmb.t_gett();
+	if (t && t != T_UNDEFINED)
+		dlg_set_tm_dialog_ctx(dlg, t);
 
 	/* run actions for the transition */
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
