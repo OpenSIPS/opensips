@@ -653,7 +653,7 @@ int pv_set_json (struct sip_msg* msg,  pv_param_t* pvp, int flag ,
 	}
 	else
 	{
-		if( val->flags & PV_VAL_INT )
+		if( pvv_is_int(val))
 		{
 			obj = json_object_new_int(val->ri);
 		}
