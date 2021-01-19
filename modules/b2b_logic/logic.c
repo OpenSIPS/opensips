@@ -4234,8 +4234,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	}
 
 	/* destroy the old_entity */
+	b2bl_htable[hash_index].locked_by = process_no;
 	b2b_api.entity_delete(old_entity->type, &old_entity->key,
 		old_entity->dlginfo, 1, 1);
+	b2bl_htable[hash_index].locked_by = -1;
 	if(old_entity->dlginfo)
 		shm_free(old_entity->dlginfo);
 	shm_free(old_entity);
