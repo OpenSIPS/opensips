@@ -94,7 +94,7 @@ static int fixup_attest(void **param);
 static int fixup_check_wrvar(void **param);
 
 int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_parse_identity_name(pv_spec_p sp, str *in);
+int pv_parse_identity_name(pv_spec_p sp, const str *in);
 
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
@@ -1847,7 +1847,7 @@ static int w_stir_check_cert(struct sip_msg *msg, str *cert_buf)
 	return 1;
 }
 
-int pv_parse_identity_name(pv_spec_p sp, str *in)
+int pv_parse_identity_name(pv_spec_p sp, const str *in)
 {
 	if (!in || !in->s || !in->len) {
 		LM_ERR("Bad subname for $identity\n");

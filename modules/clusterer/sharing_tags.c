@@ -741,7 +741,7 @@ int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 }
 
 
-int var_parse_sh_tag_name(pv_spec_p sp, str *in)
+int var_parse_sh_tag_name(pv_spec_p sp, const str *in)
 {
 	struct shtag_var_name *v_name;
 	str s;

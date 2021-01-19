@@ -372,7 +372,7 @@ int xdbg(struct sip_msg* msg, char* frm)
 	return ret;
 }
 
-int pv_parse_color_name(pv_spec_p sp, str *in)
+int pv_parse_color_name(pv_spec_p sp, const str *in)
 {
 
 	if(in==NULL || in->s==NULL || sp==NULL)

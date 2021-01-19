@@ -199,8 +199,8 @@ typedef struct _pv_spec {
 	void            *trans; /*!< transformations */
 } pv_spec_t, *pv_spec_p;
 
-typedef int (*pv_parse_name_f)(pv_spec_p sp, str *in);
-typedef int (*pv_parse_index_f)(pv_spec_p sp, str *in);
+typedef int (*pv_parse_name_f)(pv_spec_p sp, const str *in);
+typedef int (*pv_parse_index_f)(pv_spec_p sp, const str *in);
 typedef int (*pv_init_param_f)(pv_spec_p sp, int param);
 
 /*! \brief
@@ -215,7 +215,7 @@ typedef int (*pv_init_param_f)(pv_spec_p sp, int param);
  * - $(class_name(inner_name)[index]{transformation})
  */
 typedef struct _pv_export {
-	str name;                      /*!< class name of PV */
+	const str name;                /*!< class name of PV */
 	pv_type_t type;                /*!< type of PV */
 	pv_getf_t  getf;               /*!< function to get the value */
 	pv_setf_t  setf;               /*!< function to set the value */
@@ -235,23 +235,21 @@ typedef struct _pv_elem
 extern int pv_print_buf_size;
 int init_pvar_support(void);
 
-char* pv_parse_spec(str *in, pv_spec_p sp);
-int pv_get_spec_value(struct sip_msg* msg, pv_spec_p sp, pv_value_t *value);
-int pv_print_spec(struct sip_msg* msg, pv_spec_p sp, char *buf, int *len);
+int pv_print_spec(struct sip_msg* msg, const pv_spec_p sp, char *buf, int *len);
+char* pv_parse_spec(const str *in, const pv_spec_p sp);
+int pv_get_spec_value(struct sip_msg* msg, const pv_spec_p sp, pv_value_t *value);
 int pv_printf(struct sip_msg* msg, pv_elem_p list, char *buf, int *len);
 int pv_elem_free_all(pv_elem_p log);
 
-/* always obtain a printable version of the given (pv_value_t *) */
-str pv_value_print(pv_value_t *val);
 void pv_value_destroy(pv_value_t *val);
 
 void pv_spec_free(pv_spec_t *spec);
-int pv_spec_dbg(pv_spec_p sp);
+int pv_spec_dbg(const pv_spec_p sp);
 int pv_get_spec_index(struct sip_msg* msg, pv_param_p ip, int *idx, int *flags);
 int pv_get_avp_name(struct sip_msg* msg, pv_param_p ip, int *avp_name,
 		unsigned short *name_type);
 int pv_get_spec_name(struct sip_msg* msg, pv_param_p ip, pv_value_t *name);
-int pv_parse_format(str *in, pv_elem_p *el);
+int pv_parse_format(const str *in, pv_elem_p *el);
 int pv_init_iname(pv_spec_p sp, int param);
 int pv_printf_s(struct sip_msg* msg, pv_elem_p list, str *s);
 
@@ -274,8 +272,8 @@ int register_pvars_mod(char *mod_name, pv_export_t *items);
 int pv_free_extra_list(void);
 
 /*! \brief PV helper functions */
-int pv_parse_index(pv_spec_p sp, str *in);
-int pv_parse_avp_name(pv_spec_p sp, str *in);
+int pv_parse_index(pv_spec_p sp, const str *in);
+int pv_parse_avp_name(pv_spec_p sp, const str *in);
 
 int pv_get_null(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
@@ -285,13 +283,8 @@ int pv_get_sintval(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res, int sival);
 int pv_get_strval(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res, str *sval);
-int pv_get_strintval(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res, str *sval, int ival);
-int pv_get_intstrval(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res, int ival, str *sval);
 
 int register_pv_context(char* name, pv_contextf_t get_context);
-int pv_contextlist_check(void);
 
 /* command line arguments specified with '-o' */
 typedef struct argv {
@@ -301,8 +294,6 @@ typedef struct argv {
 } argv_t, *argv_p;
 
 int add_arg_var(char *opt);
-int pv_parse_argv_name(pv_spec_p sp, str *in);
-int pv_get_argv(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 void destroy_argv_list(void);
 
 #endif

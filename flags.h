@@ -82,7 +82,7 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask);
  */
 int flag_list_to_bitmask(str *flags, enum flag_type type, char delim);
 
-unsigned int fixup_flag(int flag_type, str *flag_name);
+unsigned int fixup_flag(int flag_type, const str *flag_name);
 int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len);
 
 #endif

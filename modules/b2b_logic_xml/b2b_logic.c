@@ -81,10 +81,10 @@ int  b2b_init_request(struct sip_msg* msg, str* arg1, str* arg2, str* arg3,
 int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no);
 
 int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_parse_entity_name(pv_spec_p sp, str *in);
-int pv_parse_entity_index(pv_spec_p sp, str* in);
+int pv_parse_entity_name(pv_spec_p sp, const str *in);
+int pv_parse_entity_index(pv_spec_p sp, const str* in);
 int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_parse_ctx_name(pv_spec_p sp, str *in);
+int pv_parse_ctx_name(pv_spec_p sp, const str *in);
 int pv_get_ctx(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 int pv_set_ctx(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val);
 
@@ -1752,7 +1752,7 @@ int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
-int pv_parse_entity_name(pv_spec_p sp, str *in)
+int pv_parse_entity_name(pv_spec_p sp, const str *in)
 {
 	if (!in || !in->s || !in->len) {
 		sp->pvp.pvn.u.isname.name.n = PV_ENTITY_KEY;
@@ -1771,7 +1771,7 @@ int pv_parse_entity_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
-int pv_parse_entity_index(pv_spec_p sp, str* in)
+int pv_parse_entity_index(pv_spec_p sp, const str* in)
 {
 	int idx;
 
@@ -2028,7 +2028,7 @@ int store_ctx_value(struct b2b_ctx_val **vals, str *name, str *new_val)
 	return 0;
 }
 
-int pv_parse_ctx_name(pv_spec_p sp, str *in)
+int pv_parse_ctx_name(pv_spec_p sp, const str *in)
 {
 	if (!in || !in->s || !sp)
 		return -1;

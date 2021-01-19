@@ -39,7 +39,7 @@ static int mod_init(void);
 static void destroy(void);
 static int child_init(int rank);
 
-int pv_parse_name(pv_spec_p sp, str *in);
+int pv_parse_name(pv_spec_p sp, const str *in);
 int pv_init_param(pv_spec_p sp, int param);
 int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 static int parse_cache_entry(unsigned int type, void *val);
@@ -1701,7 +1701,7 @@ static int parse_pv_name_s(pv_name_fix_t *pv_name, str *name_s)
 	return 0;
 }
 
-int pv_parse_name(pv_spec_p sp, str *in)
+int pv_parse_name(pv_spec_p sp, const str *in)
 {
 	pv_elem_t *model = NULL, *it;
 	pv_name_fix_t *pv_name;

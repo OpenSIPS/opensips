@@ -45,8 +45,8 @@ static void mod_destroy(void);
 /* $isup_msg_type */
 int pv_get_isup_msg_type(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 /* $isup_param */
-int pv_parse_isup_param_name(pv_spec_p sp, str *in);
-int pv_parse_isup_param_index(pv_spec_p sp, str* in);
+int pv_parse_isup_param_name(pv_spec_p sp, const str *in);
+int pv_parse_isup_param_index(pv_spec_p sp, const str *in);
 int pv_get_isup_param(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_isup_param_str(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_isup_param(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val);
@@ -165,7 +165,7 @@ static inline int get_msg_idx_by_type(int msg_type)
 	return -1;
 }
 
-int pv_parse_isup_param_name(pv_spec_p sp, str *in)
+int pv_parse_isup_param_name(pv_spec_p sp, const str *in)
 {
 	str param_s = {0, 0}, subfield_s = {0, 0};
 	int i, j;
@@ -256,7 +256,7 @@ int pv_parse_isup_param_name(pv_spec_p sp, str *in)
 	return 0;
 }
 
-int pv_parse_isup_param_index(pv_spec_p sp, str* in)
+int pv_parse_isup_param_index(pv_spec_p sp, const str* in)
 {
 	int idx;
 

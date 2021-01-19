@@ -55,7 +55,7 @@ static int mod_init(void);
 static int pv_set_dfks(struct sip_msg *msg, pv_param_t *param, int op,
 	pv_value_t *val);
 static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-static int pv_parse_dfks_name(pv_spec_p sp, str *in);
+static int pv_parse_dfks_name(pv_spec_p sp, const str *in);
 
 static str *dfks_handle_subscribe(str *pres_uri, str *subs_body,
 	str *ct_type, int *suppress_notify);
@@ -231,7 +231,7 @@ static int mod_init(void)
 	return 0;
 }
 
-static int pv_parse_dfks_name(pv_spec_p sp, str *in)
+static int pv_parse_dfks_name(pv_spec_p sp, const str *in)
 {
 	struct dfks_pv_name *name;
 	str val_node;

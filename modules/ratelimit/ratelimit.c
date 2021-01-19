@@ -114,7 +114,7 @@ mi_response_t *mi_get_pid(const mi_params_t *params,
 
 static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
-static int pv_parse_rl_count(pv_spec_p sp, str *in);
+static int pv_parse_rl_count(pv_spec_p sp, const str *in);
 
 static cmd_export_t cmds[] = {
 	{"rl_check", (cmd_function)w_rl_check, {
@@ -793,7 +793,7 @@ static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_uintval(msg, param, res, counter);
 }
 
-static int pv_parse_rl_count(pv_spec_p sp, str *in)
+static int pv_parse_rl_count(pv_spec_p sp, const str *in)
 {
 	char *p;
 	char *s;

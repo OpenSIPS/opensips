@@ -112,8 +112,8 @@ static int pv_get_json_ext(struct sip_msg*,  pv_param_t*, pv_value_t* , int flag
 static int json_bind(struct sip_msg* , pv_spec_t* , pv_spec_t* );
 static void print_tag_list( json_tag *, json_tag *, int);
 static json_t *get_object(pv_json_t *, pv_param_t *, json_tag **, int, int);
-static int pv_parse_json_name (pv_spec_p , str *);
-static int pv_parse_json_index(pv_spec_p sp, str *in);
+static int pv_parse_json_name (pv_spec_p, const str *);
+static int pv_parse_json_index(pv_spec_p sp, const str *in);
 static pv_json_t * get_pv_json (pv_param_t* );
 static int pv_add_json ( pv_param_t* , json_t * );
 static int expand_tag_list( struct sip_msg*, json_tag *);
@@ -956,7 +956,7 @@ void init_matrix(void)
 
 
 
-int pv_parse_json_name (pv_spec_p sp, str *in)
+int pv_parse_json_name (pv_spec_p sp, const str *in)
 {
 	json_name * id;
 	char * cur,* start;
@@ -1025,7 +1025,7 @@ int pv_parse_json_name (pv_spec_p sp, str *in)
 	return 0;
 }
 
-static int pv_parse_json_index(pv_spec_p sp, str *in)
+static int pv_parse_json_index(pv_spec_p sp, const str *in)
 {
 	if (in == NULL || in->s == NULL || sp == NULL)
 		return -1;

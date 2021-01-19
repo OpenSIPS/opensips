@@ -645,7 +645,7 @@ static inline int str2short(str* _s, unsigned short *_r)
 /*
  * Convert a str into integer
  */
-static inline int str2int(str* _s, unsigned int* _r)
+static inline int str2int(const str* _s, unsigned int* _r)
 {
 	int i;
 
@@ -668,7 +668,7 @@ static inline int str2int(str* _s, unsigned int* _r)
 /*
  * Convert a str into a big integer
  */
-static inline int str2int64(str* _s, uint64_t *_r)
+static inline int str2int64(const str* _s, uint64_t *_r)
 {
 	int i;
 
@@ -692,7 +692,7 @@ static inline int str2int64(str* _s, uint64_t *_r)
 /*
  * Convert a str into signed integer
  */
-static inline int str2sint(str* _s, int* _r)
+static inline int str2sint(const str* _s, int* _r)
 {
 	int i;
 	int s;
@@ -727,7 +727,7 @@ static inline int str2sint(str* _s, int* _r)
 /*
  * Convert a str (base 10 or 16) into integer
  */
-static inline int strno2int( str *val, unsigned int *mask )
+static inline int strno2int(const str *val, unsigned int *mask )
 {
 	/* hexa or decimal*/
 	if (val->len>2 && val->s[0]=='0' && val->s[1]=='x') {

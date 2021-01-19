@@ -53,7 +53,7 @@ static inline void unlock_shvar(sh_var_t *shv)
 }
 
 
-sh_var_t* add_shvar(str *name)
+sh_var_t* add_shvar(const str *name)
 {
 	sh_var_t **shv_holder, *shv;
 	unsigned int e;
@@ -208,14 +208,17 @@ void destroy_shvars(void)
 
 
 /********* PV functions *********/
-int pv_parse_shvar_name(pv_spec_p sp, str *in)
+int pv_parse_shvar_name(pv_spec_p sp, const str *in)
 {
 	pv_spec_p pv_inner;
+	str _in;
 
 	if(in==NULL || in->s==NULL || in->len==0 || sp==NULL)
 		return -1;
 
-	trim(in);
+	_in = *in;
+	trim(&_in);
+	in = &_in;
 
 	if (in->s[0] == PV_MARKER) {
 		/* variable as name -> dynamic name */
@@ -630,7 +633,7 @@ int param_set_shvar( modparam_t type, void* val)
 
 /*** $time(name) PV class */
 
-int pv_parse_time_name(pv_spec_p sp, str *in)
+int pv_parse_time_name(pv_spec_p sp, const str *in)
 {
 	if(sp==NULL || in==NULL || in->len<=0)
 		return -1;

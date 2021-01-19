@@ -67,7 +67,7 @@ static int fixup_free_stat(void** param);
 static int fixup_iter_param(void **param);
 static int fixup_check_stat_group(void **param);
 
-int pv_parse_name(pv_spec_p sp, str *in);
+int pv_parse_name(pv_spec_p sp, const str *in);
 int pv_set_stat(struct sip_msg* msg, pv_param_t *param, int op,
 													pv_value_t *val);
 int pv_get_stat(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
@@ -404,7 +404,7 @@ static int w_reset_stat(struct sip_msg *msg, struct stat_param* sp)
 }
 
 
-int pv_parse_name(pv_spec_p sp, str *in)
+int pv_parse_name(pv_spec_p sp, const str *in)
 {
 	stat_var *stat;
 	pv_elem_t *format;

@@ -77,7 +77,7 @@ static void mod_destroy(void);
 /* PV functions */
 static int pv_set_xml(struct sip_msg*,  pv_param_t*, int, pv_value_t*);
 static int pv_get_xml(struct sip_msg*,  pv_param_t*, pv_value_t*);
-static int pv_parse_xml_name(pv_spec_p , str *);
+static int pv_parse_xml_name(pv_spec_p , const str *);
 
 
 static pv_export_t mod_items[] = {
@@ -173,7 +173,7 @@ enum {
 	ST_ACCESS = 3,
 };
 
-int pv_parse_xml_name(pv_spec_p sp, str *in)
+int pv_parse_xml_name(pv_spec_p sp, const str *in)
 {
 	xml_path_t *path = NULL;
 	char *cur, *start;

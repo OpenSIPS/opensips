@@ -118,7 +118,7 @@ int replace_avp(unsigned short flags, int name, int_str val, int index);
 
 /* global alias functions (manipulation and parsing)*/
 int get_avp_id(str *alias);
-int parse_avp_spec( str *name, int *avp_name);
+int parse_avp_spec(const str *name, int *avp_name);
 
 #endif
 

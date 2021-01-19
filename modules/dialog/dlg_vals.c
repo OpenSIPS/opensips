@@ -236,7 +236,7 @@ int check_dlg_value_unsafe(struct dlg_cell *dlg, str *name, str *val)
 }
 
 
-int pv_parse_name(pv_spec_p sp, str *in)
+int pv_parse_name(pv_spec_p sp, const str *in)
 {
 	if(in==NULL || in->s==NULL || sp==NULL)
 		return -1;

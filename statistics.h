@@ -133,7 +133,7 @@ int __register_dynamic_stat( str *group, str *name, stat_var **pvar);
 
 int __register_module_stats(char *module, stat_export_t *stats, int unsafe);
 
-int clone_pv_stat_name(str *name, str *clone);
+int clone_pv_stat_name(const str *name, str *clone);
 
 /* returns the first matching statistic (regardless of module index) */
 stat_var* get_stat( str *name );

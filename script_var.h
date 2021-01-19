@@ -43,7 +43,7 @@ typedef struct script_var {
 	struct script_var *next;
 } script_var_t, *script_var_p;
 
-script_var_t* add_var(str *name);
+script_var_t* add_var(const str *name);
 script_var_t* set_var_value(script_var_t *var, int_str *value, int flags);
 script_var_t* get_var_by_name(str *name);
 

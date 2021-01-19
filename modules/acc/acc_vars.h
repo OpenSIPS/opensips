@@ -27,7 +27,7 @@
 #define _ACC_VARS_H
 
 /* $acc_extra */
-int pv_parse_acc_extra_name(pv_spec_p sp, str *in);
+int pv_parse_acc_extra_name(pv_spec_p sp, const str *in);
 int pv_get_acc_extra(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 int pv_set_acc_extra(struct sip_msg *msg, pv_param_t *param, int flag,
@@ -37,8 +37,8 @@ int set_value_shm(pv_value_t* pvt, extra_value_t* values);
 int pv_get_acc_current_leg(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 /* $acc_leg */
-int pv_parse_acc_leg_index(pv_spec_p sp, str* in);
-int pv_parse_acc_leg_name(pv_spec_p sp, str *in);
+int pv_parse_acc_leg_index(pv_spec_p sp, const str* in);
+int pv_parse_acc_leg_name(pv_spec_p sp, const str *in);
 int pv_get_acc_leg(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 

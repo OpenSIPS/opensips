@@ -185,7 +185,7 @@ static void mod_destroy(void);
 static int  preprocess_request(struct sip_msg *msg, void *param);
 static int  reply_filter(struct sip_msg *reply);
 
-static int pv_parse_nat_contact_name(pv_spec_p sp, str *in);
+static int pv_parse_nat_contact_name(pv_spec_p sp, const str *in);
 static int pv_get_keepalive_socket(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 static int pv_get_source_uri(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 static int pv_get_track_dialog(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
@@ -1974,7 +1974,7 @@ reply_filter(struct sip_msg *reply)
 //
 
 static int
-pv_parse_nat_contact_name(pv_spec_p sp, str *in)
+pv_parse_nat_contact_name(pv_spec_p sp, const str *in)
 {
     char *p;
     char *s;

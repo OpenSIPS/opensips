@@ -36,7 +36,7 @@
 
 static script_var_t *script_vars = 0;
 
-script_var_t* add_var(str *name)
+script_var_t* add_var(const str *name)
 {
 	script_var_t *it;
 

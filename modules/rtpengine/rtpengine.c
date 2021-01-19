@@ -450,7 +450,7 @@ static int pv_rtpengine_stats_used(pv_spec_p sp, int param)
 	return 0;
 }
 
-static inline enum rtpe_stat rtpe_get_stat_by_name(str *name)
+static inline enum rtpe_stat rtpe_get_stat_by_name(const str *name)
 {
 	enum rtpe_stat s;
 	for (s = 0; s < STAT_UNKNOWN; s++) {
@@ -553,7 +553,7 @@ static inline enum rtpe_stat_dict rtpe_get_stat_by_dict(enum rtpe_stat s)
 #define PVE_NAME_INTSTR		1
 #define PVE_NAME_PVAR		2
 
-static int pv_parse_rtpstat(pv_spec_p sp, str *in)
+static int pv_parse_rtpstat(pv_spec_p sp, const str *in)
 {
 	enum rtpe_stat s;
 	pv_elem_t *format;
@@ -584,7 +584,7 @@ static int pv_parse_rtpstat(pv_spec_p sp, str *in)
 	return 0;
 }
 
-static int pv_rtpengine_index(pv_spec_p sp, str *in)
+static int pv_rtpengine_index(pv_spec_p sp, const str *in)
 {
 	pv_elem_t *format;
 	if (!in || in->s == NULL || in->len == 0 || sp == NULL)

@@ -217,7 +217,7 @@ int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len)
 	return it->bit;
 }
 
-unsigned int fixup_flag(int flag_type, str *flag_name)
+unsigned int fixup_flag(int flag_type, const str *flag_name)
 {
 	int ret;
 
