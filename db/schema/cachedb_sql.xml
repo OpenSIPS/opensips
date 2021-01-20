@@ -32,7 +32,6 @@
 		<name>keyname</name>
 		<type>string</type>
 		<size>255</size>
-		<primary/>
 		<description>The Key</description>
 	</column>
 
