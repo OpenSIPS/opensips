@@ -225,10 +225,20 @@ parse_error:
 }
 
 static int create_time_rec(const str *time_start, const str *time_end,
-		const str *week_days, tmrec_expr_t *trx)
+		const str *week_days, tmrec_expr_t *trx, tmrec_expr_t **out_rec)
 {
 	int end_h, end_m;
 	tmrec_p trec = &trx->tr;
+
+	/* the default, "catch-all" time rec - using NULL is optimal */
+	if (str_match(time_start, _str("00:00")) &&
+	        str_match(time_end, _str("23:59")) &&
+	        str_match(week_days, _str("Mon-Sun"))) {
+		*out_rec = NULL;
+		return 0;
+	} else {
+		*out_rec = trx;
+	}
 
 	if (strtime(time_start, &trec->ts.tm_hour, &trec->ts.tm_min) != 0
 			|| strtime(time_end, &end_h, &end_m) != 0)
@@ -346,6 +356,8 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 		fl_it->n = row_count;
 
 		for (i = 0; i < row_count; ++i) {
+			tmrec_expr_t *trec;
+
 			values = ROW_VALUES(rows + i);
 			fl_it->trec[i].tr.byday = NULL;
 
@@ -368,7 +380,8 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 			get_str_from_dbval(end_h_col.s, values + 4, 1, 1, end_time, null_val);
 			get_str_from_dbval(days_col.s, values + 5, 1, 1, days, null_val);
 
-			if (create_time_rec(&start_time, &end_time, &days, fl_it->trec + i) != 0)
+			if (create_time_rec(&start_time, &end_time, &days, fl_it->trec + i,
+			        &trec) != 0)
 				goto null_val;
 
 			/* Now load the thresholds */
@@ -381,7 +394,7 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 			}
 
 			/* Rule OK, time to put it in DR */
-			if (drb.add_rule(drp, rid, &prefix, pid, 0, fl_it->trec + i,
+			if (drb.add_rule(drp, rid, &prefix, pid, 0, trec,
 						(void*)(&fl_it->thr[i])) != 0) {
 
 				LM_ERR("Cannot add rule in dr <%u>. Skipping...\n", rid);
