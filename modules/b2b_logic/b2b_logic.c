@@ -954,6 +954,12 @@ end:
 
 int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no)
 {
+	if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
+		LM_ERR("The 'b2b_bridge_request' function cannot be used from the "
+			"b2b_logic dedicated routes\n");
+		return -1;
+	}
+
 	return b2bl_bridge_msg(msg, key, *entity_no);
 }
 

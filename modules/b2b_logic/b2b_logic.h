@@ -110,6 +110,8 @@ extern int global_reply_rtid;
 extern str top_hiding_scen_s;
 extern str internal_scen_s;
 
+extern struct b2bl_route_ctx cur_route_ctx;
+
 #define B2B_TOP_HIDING_ID_PTR &top_hiding_scen_s
 #define B2B_INTERNAL_ID_PTR &internal_scen_s
 

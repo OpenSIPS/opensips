@@ -74,6 +74,10 @@ struct b2bl_new_entity {
 #define MAX_B2BL_ENT		3
 #define MAX_BRIDGE_ENT		3
 
+#define B2BL_RT_REQ_CTX 1
+#define B2BL_RT_RPL_CTX 2
+#define B2BL_RT_DO_UPDATE 4
+
 struct b2b_ctx_val {
 	unsigned int id;
 	str name;
@@ -129,7 +133,7 @@ struct b2bl_route_ctx {
 	int peer_type;
 	str *extra_headers;
 	str *body;
-	int do_update;
+	int flags;
 };
 
 #define PREP_REQ_DATA(entity) do{		\

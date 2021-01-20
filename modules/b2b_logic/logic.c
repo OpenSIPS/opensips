@@ -1337,7 +1337,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 done:
 	if (tuple)
-		cur_route_ctx.do_update = 1;
+		cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 done1:
 	if (do_unlock)
 		lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
@@ -1421,7 +1421,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	cur_route_ctx.local_index = local_index;
 	cur_route_ctx.body = body;
 	cur_route_ctx.extra_headers = extra_headers;
-	cur_route_ctx.do_update = 0;
+	cur_route_ctx.flags = 0;
 
 	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR || tuple->reply_routeid <= 0) {
 		if (_b2b_handle_reply(msg, tuple, entity) < 0)
@@ -1436,13 +1436,15 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
 
+		cur_route_ctx.flags = B2BL_RT_RPL_CTX;
 		run_top_route(sroutes->request[tuple->reply_routeid], msg);
+		cur_route_ctx.flags &= ~B2BL_RT_RPL_CTX;
 
 		pkg_free(cur_route_ctx.entity_key.s);
 	}
 
 done:
-	if (tuple && cur_route_ctx.do_update) {
+	if (tuple && cur_route_ctx.flags & B2BL_RT_DO_UPDATE) {
 		if (!locked) {
 			lock_get(&b2bl_htable[hash_index].lock);
 			locked = 1;
@@ -1549,7 +1551,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 done:
 	if (tuple)
-		cur_route_ctx.do_update = 1;
+		cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 	if (do_unlock)
 		lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	return 0;
@@ -1832,7 +1834,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	cur_route_ctx.local_index = local_index;
 	cur_route_ctx.extra_headers = extra_headers;
 	cur_route_ctx.body = body;
-	cur_route_ctx.do_update = 0;
+	cur_route_ctx.flags = 0;
 
 	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR || tuple->req_routeid <= 0) {
 		if(request_id == B2B_BYE)
@@ -1860,7 +1862,9 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
 
+		cur_route_ctx.flags = B2BL_RT_REQ_CTX;
 		run_top_route(sroutes->request[tuple->req_routeid], msg);
+		cur_route_ctx.flags &= ~B2BL_RT_REQ_CTX;
 
 		pkg_free(cur_route_ctx.entity_key.s);
 		pkg_free(cur_route_ctx.peer_key.s);
@@ -1873,7 +1877,7 @@ send_usual_request:
 		goto error;
 
 done:
-	if(tuple && cur_route_ctx.do_update)
+	if(tuple && cur_route_ctx.flags & B2BL_RT_DO_UPDATE)
 	{
 		if (!locked) {
 			lock_get(&b2bl_htable[hash_index].lock);
@@ -1895,11 +1899,23 @@ error:
 
 int b2b_handle_reply(struct sip_msg *msg)
 {
+	if (!(cur_route_ctx.flags & B2BL_RT_RPL_CTX)) {
+		LM_ERR("The 'b2b_handle_reply' function can only be used from the "
+			"b2b_logic dedicated reply routes\n");
+		return -1;
+	}
+
 	return _b2b_handle_reply(msg, NULL, NULL) ? -1 : 1;
 }
 
 int b2b_pass_request(struct sip_msg *msg)
 {
+	if (!(cur_route_ctx.flags & B2BL_RT_REQ_CTX)) {
+		LM_ERR("The 'b2b_pass_request' function can only be used from the "
+			"b2b_logic dedicated request routes\n");
+		return -1;
+	}
+
 	return _b2b_pass_request(msg, NULL, NULL) ? -1 : 1;
 }
 
@@ -1975,6 +1991,12 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	struct b2bl_new_entity *new_br_ent[2];
 	int rc = -1;
 
+	if (!(cur_route_ctx.flags & B2BL_RT_REQ_CTX)) {
+		LM_ERR("The 'b2b_bridge' function can only be used from the "
+			"b2b_logic dedicated request routes\n");
+		return -1;
+	}
+
 	lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
 		cur_route_ctx.local_index);
@@ -2028,7 +2050,7 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 		goto done;
 	}
 
-	cur_route_ctx.do_update = 1;
+	cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 
 	rc = 1;
 
@@ -2055,6 +2077,12 @@ int b2b_send_reply(struct sip_msg *msg, int *code, str *reason)
 	b2bl_entity_id_t** entity_head = NULL;
 	b2b_rpl_data_t rpl_data;
 	unsigned int method_value;
+
+	if (!(cur_route_ctx.flags & B2BL_RT_REQ_CTX)) {
+		LM_ERR("The 'b2b_send_reply' function can only be used from the "
+			"b2b_logic dedicated request routes\n");
+		return -1;
+	}
 
 	lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
@@ -2106,6 +2134,12 @@ int b2b_delete_entity(struct sip_msg *msg)
 	b2bl_entity_id_t *entity;
 	b2bl_entity_id_t** entity_head = NULL;
 
+	if (!(cur_route_ctx.flags & B2BL_RT_REQ_CTX)) {
+		LM_ERR("The 'b2b_delete_entity' function can only be used from the "
+			"b2b_logic dedicated request routes\n");
+		return -1;
+	}
+
 	lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
 		cur_route_ctx.local_index);
@@ -2133,7 +2167,7 @@ int b2b_delete_entity(struct sip_msg *msg)
 		entity->peer->peer = 0;
 	b2bl_delete_entity(entity, tuple, cur_route_ctx.hash_index, 1);
 
-	cur_route_ctx.do_update = 1;
+	cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 
 	lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	return 1;
@@ -2148,6 +2182,12 @@ int b2b_end_dlg_leg(struct sip_msg *msg)
 	b2bl_entity_id_t *entity;
 	b2b_req_data_t req_data;
 	b2bl_entity_id_t** entity_head = NULL;
+
+	if (!(cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX))) {
+		LM_ERR("The 'b2b_end_dlg_leg' function can only be used from the "
+			"b2b_logic dedicated request or reply routes\n");
+		return -1;
+	}
 
 	lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
@@ -2185,7 +2225,7 @@ int b2b_end_dlg_leg(struct sip_msg *msg)
 		entity->peer->peer = NULL;
 	entity->peer = NULL;
 
-	cur_route_ctx.do_update = 1;
+	cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 
 	lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
 	return 1;
@@ -3450,6 +3490,12 @@ int b2b_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_param
 	str* cust_headers;
 	int ret = -1;
 
+	if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
+		LM_ERR("The 'b2b_init_request' function cannot be used from the "
+			"b2b_logic dedicated routes\n");
+		return -1;
+	}
+
 	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
 
@@ -3578,12 +3624,24 @@ error:
 int b2bl_server_new(struct sip_msg *msg, str *id,
 	pv_spec_t *hnames, pv_spec_t *hvals)
 {
+	if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
+		LM_ERR("The 'b2b_server_new' function cannot be used from the "
+			"b2b_logic dedicated routes\n");
+		return -1;
+	}
+
 	return b2bl_entity_new(msg, id, NULL, B2B_SERVER, hnames, hvals, NULL);
 }
 
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri,
 	str *from_dname, pv_spec_t *hnames, pv_spec_t *hvals)
 {
+	if (cur_route_ctx.flags & B2BL_RT_RPL_CTX) {
+		LM_ERR("The 'b2b_client_new' function cannot be used from the "
+			"b2b_logic dedicated reply routes\n");
+		return -1;
+	}
+
 	return b2bl_entity_new(msg, id, dest_uri, B2B_CLIENT, hnames, hvals, from_dname);
 }
 
