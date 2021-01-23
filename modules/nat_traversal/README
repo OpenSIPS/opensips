@@ -872,8 +872,8 @@ Chapter 2. Contributors
    9. David Sanders 3 1 8 6
    10. Stéphane Alnet (@shimaore) 3 1 6 1
 
-   All remaining contributors: Sergio Gutierrez, Peter Lemenkov
-   (@lemenkov).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Sergio
+   Gutierrez, Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -895,19 +895,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
-   8.  David Sanders                       Oct 2014 - Oct 2014
-   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2012
-   10. Anca Vamanu                         Feb 2010 - Nov 2011
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   4.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
+   9.  David Sanders                       Oct 2014 - Oct 2014
+   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2012
 
-   All remaining contributors: Stéphane Alnet (@shimaore), Sergio
-   Gutierrez.
+   All remaining contributors: Anca Vamanu, Stéphane Alnet
+   (@shimaore), Sergio Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits

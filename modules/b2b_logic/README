@@ -1067,17 +1067,17 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 103 24 4143 2753
+   3. Vlad Patrascu (@rvlad-patrascu) 104 25 4145 2753
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 39 33 218 238
    5. Razvan Crainea (@razvancrainea) 39 29 640 211
    6. Liviu Chircu (@liviuchircu) 16 13 57 102
    7. Nick Altmann (@nikbyte) 14 6 461 199
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
-   9. Peter Lemenkov (@lemenkov) 4 2 2 2
-   10. Zero King (@l2dy) 4 2 2 2
+   9. Maksym Sobolyev (@sobomax) 4 2 13 13
+   10. Peter Lemenkov (@lemenkov) 4 2 2 2
 
-   All remaining contributors: Dan Pascu (@danpascu), Ezequiel
-   Lovelle (@lovelle), Maksym Sobolyev (@sobomax), Walter Doekes
+   All remaining contributors: Zero King (@l2dy), Dan Pascu
+   (@danpascu), Ezequiel Lovelle (@lovelle), Walter Doekes
    (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1100,11 +1100,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   2.  Zero King (@l2dy)                   Mar 2020 - Dec 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   5.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
+   2.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   4.  Zero King (@l2dy)                   Mar 2020 - Dec 2020
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    8.  Dan Pascu (@danpascu)               Jul 2019 - Jul 2019

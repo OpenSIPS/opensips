@@ -52,6 +52,14 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">3</entry>
+		<entry align="center">3</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
@@ -59,16 +67,8 @@
 		<entry align="center">92</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-	</row>
-	<row>
 		<entry>7. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
@@ -120,18 +120,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Oct 2020 - Jan 2021</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Feb 2016 - Jan 2021</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">Aug 2015 - Dec 2020</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Oct 2020 - Oct 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

@@ -219,6 +219,7 @@ Chapter 2. Contributors
    2. Liviu Chircu (@liviuchircu) 4 2 2 2
    3. Razvan Crainea (@razvancrainea) 3 1 67 21
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 11 11
+   5. Maksym Sobolyev (@sobomax) 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -240,10 +241,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Nov 2020 - Jan 2021
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2020 - Dec 2020
-   3. Vlad Patrascu (@rvlad-patrascu)     Dec 2019 - Sep 2020
-   4. Razvan Crainea (@razvancrainea)     Feb 2020 - Feb 2020
+   1. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   2. Liviu Chircu (@liviuchircu)         Nov 2020 - Jan 2021
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2020 - Dec 2020
+   4. Vlad Patrascu (@rvlad-patrascu)     Dec 2019 - Sep 2020
+   5. Razvan Crainea (@razvancrainea)     Feb 2020 - Feb 2020
 
    (1) including any documentation-related commits, excluding
    merge commits

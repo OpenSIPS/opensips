@@ -355,8 +355,9 @@ Chapter 2. Contributors
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    52      23      2883     270
    2. Liviu Chircu (@liviuchircu)        6        4       7        4
-   3. Razvan Crainea (@razvancrainea)    3        1       2        1
-   4. Andriy Pylypenko (@bambyster)      2        1       1        0
+   3. Maksym Sobolyev (@sobomax)         3        1       2        2
+   4. Razvan Crainea (@razvancrainea)    3        1       2        1
+   5. Andriy Pylypenko (@bambyster)      2        1       1        0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -378,10 +379,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Liviu Chircu (@liviuchircu)     Nov 2019 - Jan 2021
-   2. Razvan Crainea (@razvancrainea) Jan 2021 - Jan 2021
-   3. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Sep 2020
-   4. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
+   1. Maksym Sobolyev (@sobomax)      Jan 2021 - Jan 2021
+   2. Liviu Chircu (@liviuchircu)     Nov 2019 - Jan 2021
+   3. Razvan Crainea (@razvancrainea) Jan 2021 - Jan 2021
+   4. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Sep 2020
+   5. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
 
    (1) including any documentation-related commits, excluding
    merge commits

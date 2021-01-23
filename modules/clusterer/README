@@ -1212,7 +1212,8 @@ Chapter 3. Contributors
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Fabian Gast (@fgast) 4 2 3 3
    8. Gohar Ahmed (@goharahmed) 3 1 6 5
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 3 1 2 2
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1233,16 +1234,18 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                        Name                     Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Jan 2021
-   2. Fabian Gast (@fgast)                     Nov 2018 - Jul 2020
-   3. Liviu Chircu (@liviuchircu)              Mar 2016 - Jul 2020
-   4. Bogdan-Andrei Iancu (@bogdan-iancu)      Apr 2016 - Apr 2020
-   5. Razvan Crainea (@razvancrainea)          Nov 2015 - Sep 2019
-   6. Gohar Ahmed (@goharahmed)                Mar 2019 - Mar 2019
-   7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   8. Ionel Cerghit (@ionel-cerghit)           Dec 2016 - Dec 2016
-   9. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Sep 2015
+     Name Commit Activity
+   1. Maksym Sobolyev (@sobomax) Jan 2021 - Jan 2021
+   2. Vlad Patrascu (@rvlad-patrascu) Jul 2016 - Jan 2021
+   3. Fabian Gast (@fgast) Nov 2018 - Jul 2020
+   4. Liviu Chircu (@liviuchircu) Mar 2016 - Jul 2020
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Apr 2020
+   6. Razvan Crainea (@razvancrainea) Nov 2015 - Sep 2019
+   7. Gohar Ahmed (@goharahmed) Mar 2019 - Mar 2019
+   8. Peter Lemenkov (@lemenkov) Jun 2018 - Jun 2018
+   9. Ionel Cerghit (@ionel-cerghit) Dec 2016 - Dec 2016
+   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Sep
+   2015
 
    (1) including any documentation-related commits, excluding
    merge commits

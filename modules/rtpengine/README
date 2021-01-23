@@ -1205,8 +1205,8 @@ Chapter 3. Contributors
    10. John Burke 4 1 172 31
 
    All remaining contributors: Rob Gagnon (@rgagnon24), Flavio E.
-   Goncalves, Dan Pascu (@danpascu), Oliver Severin Mulelid-Tynes
-   (@olivermt).
+   Goncalves, Dan Pascu (@danpascu), Maksym Sobolyev (@sobomax),
+   Oliver Severin Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1228,20 +1228,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Dec 2020
-   2.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
-   3.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
-   4.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
-   6.  Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - May 2020
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   9.  John Burke                          Jun 2019 - Jun 2019
-   10. Dan Pascu (@danpascu)               Mar 2018 - Mar 2018
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Dec 2020
+   3.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   4.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
+   5.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
+   7.  Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - May 2020
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   10. John Burke                          Jun 2019 - Jun 2019
 
-   All remaining contributors: Oliver Severin Mulelid-Tynes
-   (@olivermt), Rob Gagnon (@rgagnon24), Eric Tamme (@etamme),
-   Richard Fuchs.
+   All remaining contributors: Dan Pascu (@danpascu), Oliver
+   Severin Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24),
+   Eric Tamme (@etamme), Richard Fuchs.
 
    (1) including any documentation-related commits, excluding
    merge commits

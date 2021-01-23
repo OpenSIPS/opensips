@@ -1075,8 +1075,8 @@ Chapter 3. Contributors
    9. Henning Westerholt (@henningw) 20 15 184 131
    10. Vlad Patrascu (@rvlad-patrascu) 20 10 292 427
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Irina-Maria
-   Stanescu, Maksym Sobolyev (@sobomax), Karel Kozlik, Andrei
+   All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
+   Sobolyev (@sobomax), Irina-Maria Stanescu, Karel Kozlik, Andrei
    Pelinescu-Onciul, Dan Pascu (@danpascu), Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu, Ryan Bullock (@rrb3942),
    Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter Nixon, Alex
@@ -1104,26 +1104,26 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   5.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Oct 2015
+   1.  Maksym Sobolyev (@sobomax)          Dec 2003 - Jan 2021
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2020
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   6.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Feb 2015 - May 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Ryan Bullock (@rrb3942),
-   Irina-Maria Stanescu, Alex Massover, Sergio Gutierrez, Ovidiu
-   Sas (@ovidiusas), Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Jesus Rodrigues, Julien
-   Blache, Peter Nixon, Maksym Sobolyev (@sobomax), Juha Heinanen
-   (@juha-h), Jan Janak (@janakj), Jiri Kuthan
-   (@jiriatipteldotorg), Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu, Nils Ohlmeier, Karel Kozlik.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Ryan Bullock
+   (@rrb3942), Irina-Maria Stanescu, Alex Massover, Sergio
+   Gutierrez, Ovidiu Sas (@ovidiusas), Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jesus
+   Rodrigues, Julien Blache, Peter Nixon, Juha Heinanen (@juha-h),
+   Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel
+   Kozlik.
 
    (1) including any documentation-related commits, excluding
    merge commits

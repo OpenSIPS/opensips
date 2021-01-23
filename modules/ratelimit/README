@@ -628,8 +628,9 @@ Chapter 2. Contributors
 
    All remaining contributors: Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Arnaud Boussus, Sergio Gutierrez,
-   Stanislaw Pitucha, Bill Hau, Konstantin Bokarius, Vlad Paiu
-   (@vladpaiu), Julián Moreno Patiño, Edson Gellert Schubert.
+   Stanislaw Pitucha, Bill Hau, Konstantin Bokarius, Maksym
+   Sobolyev (@sobomax), Vlad Paiu (@vladpaiu), Julián Moreno
+   Patiño, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -650,23 +651,24 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                         Name                     Commit Activity
-   1.  Razvan Crainea (@razvancrainea)          Sep 2011 - Dec 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu)      Feb 2008 - Mar 2020
-   3.  Peter Lemenkov (@lemenkov)               Jun 2018 - Feb 2020
-   4.  Liviu Chircu (@liviuchircu)              Mar 2014 - Jan 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)          Jul 2016 - Apr 2019
-   6.  Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Dec 2016
-   7.  Julián Moreno Patiño                     Feb 2016 - Feb 2016
-   8.  Ionut Ionita (@ionutrazvanionita)        Dec 2015 - Dec 2015
-   9.  Eseanu Marius Cristian (@eseanucristian) Aug 2015 - Sep 2015
-   10. Bill Hau                                 Jul 2014 - Jul 2014
+     Name Commit Activity
+   1. Maksym Sobolyev (@sobomax) Jan 2021 - Jan 2021
+   2. Razvan Crainea (@razvancrainea) Sep 2011 - Dec 2020
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Mar 2020
+   4. Peter Lemenkov (@lemenkov) Jun 2018 - Feb 2020
+   5. Liviu Chircu (@liviuchircu) Mar 2014 - Jan 2020
+   6. Vlad Patrascu (@rvlad-patrascu) Jul 2016 - Apr 2019
+   7. Ionel Cerghit (@ionel-cerghit) Jul 2015 - Dec 2016
+   8. Julián Moreno Patiño Feb 2016 - Feb 2016
+   9. Ionut Ionita (@ionutrazvanionita) Dec 2015 - Dec 2015
+   10. Eseanu Marius Cristian (@eseanucristian) Aug 2015 - Sep
+   2015
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Ovidiu Sas (@ovidiusas), Stanislaw Pitucha, Arnaud
-   Boussus, Sergio Gutierrez, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert.
+   All remaining contributors: Bill Hau, Walter Doekes (@wdoekes),
+   Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas), Stanislaw
+   Pitucha, Arnaud Boussus, Sergio Gutierrez, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits

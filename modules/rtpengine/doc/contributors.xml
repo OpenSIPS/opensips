@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Jan 2021 - Jan 2021</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jun 2014 - Dec 2020</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Flavio E. Goncalves</entry>
 		<entry align="center">Oct 2020 - Oct 2020</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Sep 2020</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jul 2014 - Aug 2020</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jul 2020</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
 		<entry align="center">Jun 2020 - Jun 2020</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Jun 2014 - May 2020</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Nov 2019</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>John Burke</entry>
 		<entry align="center">Jun 2019 - Jun 2019</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
-		<entry align="center">Mar 2018 - Mar 2018</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Richard Fuchs.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Richard Fuchs.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

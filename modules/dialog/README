@@ -2474,7 +2474,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 435 274 12809 3398
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
-   3. Razvan Crainea (@razvancrainea) 245 183 4743 1401
+   3. Razvan Crainea (@razvancrainea) 247 184 4766 1413
    4. Vlad Patrascu (@rvlad-patrascu) 163 84 3406 3117
    5. Liviu Chircu (@liviuchircu) 148 106 2772 1123
    6. Dan Pascu (@danpascu) 30 25 233 179
@@ -2486,11 +2486,11 @@ Chapter 4. Contributors
    All remaining contributors: Anca Vamanu, Ionut Ionita
    (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Andrei
    Dragus, Walter Doekes (@wdoekes), John Riordan, Hugues
-   Mitonneau, Carsten Bock, Jerome Martin, Klaus Darilion, Jarrod
-   Baumann (@jarrodb), Zero King (@l2dy), Michel Bensoussan,
-   Richard Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei
-   Datcu (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy
-   Pyles, Julián Moreno Patiño, Maksym Sobolyev (@sobomax),
+   Mitonneau, Carsten Bock, Jerome Martin, Maksym Sobolyev
+   (@sobomax), Klaus Darilion, Jarrod Baumann (@jarrodb), Zero
+   King (@l2dy), Michel Bensoussan, Richard Revels, Elena-Ramona
+   Modroiu, Tavis Paquette, Andrei Datcu (@andrei-datcu), Jeffrey
+   Magder, Ron Winacott, Andy Pyles, Julián Moreno Patiño,
    Konstantin Bokarius, sergei lavrov, Alex Massover, Damien
    Sandras (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05),
    Norman Brandinger (@NormB), Peter Lemenkov (@lemenkov),
@@ -2518,12 +2518,12 @@ Chapter 4. Contributors
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2021
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2021
-   3.  sergei lavrov                       Dec 2020 - Dec 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
-   6.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
-   7.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2020
+   2.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2021
+   4.  sergei lavrov                       Dec 2020 - Dec 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
+   7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
    8.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
    9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    10. Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
