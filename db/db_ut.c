@@ -27,16 +27,18 @@
  * values and print SQL queries from the internal API representation.
  */
 
-#include "db_ut.h"
-
-#include "../mem/mem.h"
-#include "../dprint.h"
+#define _XOPEN_SOURCE /* See feature_test_macros(7), strptime(3) */
+#include <time.h>
 #include <limits.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "../mem/mem.h"
+#include "../dprint.h"
+
+#include "db_ut.h"
 
 inline int db_str2int(const char* _s, int* _v)
 {

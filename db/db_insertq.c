@@ -23,10 +23,11 @@
  *  2011-06-07  created (vlad)
  */
 
-#include "db_insertq.h"
-#include "db_cap.h"
 #include "../timer.h"
 #include "../pt.h"
+
+#include "db_insertq.h"
+#include "db_cap.h"
 
 int query_buffer_size = 0;
 int query_flush_time = 0;
