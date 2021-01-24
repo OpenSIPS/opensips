@@ -135,6 +135,7 @@ static void pack_entity(b2bl_tuple_t* tuple, enum b2b_entity_type entity_type,
 		bin_push_str(storage, &entity->scenario_id);
 
 		bin_push_str(storage, &entity->to_uri);
+		bin_push_str(storage, &entity->proxy);
 		bin_push_str(storage, &entity->from_uri);
 		bin_push_str(storage, &entity->from_dname);
 		bin_push_str(storage, &entity->hdrs);
@@ -243,7 +244,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	int lifetime;
 	b2b_dlginfo_t dlginfo;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
-	str entity_sid, to_uri, from_uri, from_dname, hdrs;
+	str entity_sid, to_uri, proxy, from_uri, from_dname, hdrs;
 	struct b2b_params init_params;
 
 	LM_DBG("Received CREATE event for entity [%.*s]\n",
@@ -343,12 +344,13 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 
 	bin_pop_str(storage, &entity_sid);
 	bin_pop_str(storage, &to_uri);
+	bin_pop_str(storage, &proxy);
 	bin_pop_str(storage, &from_uri);
 	bin_pop_str(storage, &from_dname);
 	bin_pop_str(storage, &hdrs);
 
-	entity = b2bl_create_new_entity(entity_type, entity_key, &to_uri, &from_uri,
-		&from_dname, &entity_sid, &hdrs, NULL);
+	entity = b2bl_create_new_entity(entity_type, entity_key, &to_uri, &proxy,
+		&from_uri, &from_dname, &entity_sid, &hdrs, NULL);
 	if (!entity) {
 		LM_ERR("Failed to create entity\n");
 		goto error;

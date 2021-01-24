@@ -582,7 +582,8 @@ if(is_method("INVITE") &amp;&amp; !has_totag()) {
 
 	<section id="func_b2b_client_new" xreflabel="b2b_client_new()">
 		<title>
-		<function moreinfo="none">b2b_client_new(id, [extra_hdrs], [extra_hdr_bodies])</function>
+		<function moreinfo="none">b2b_client_new(id, dest_uri, [proxy], [from_dname],
+			[extra_hdrs], [extra_hdr_bodies])</function>
 		</title>
 		<para>
 			This function creates a new client entity (dialog where OpenSIPS acts as a UAC)
@@ -598,6 +599,10 @@ if(is_method("INVITE") &amp;&amp; !has_totag()) {
 			</para></listitem>
 			<listitem><para>
 				<emphasis>dest_uri (string)</emphasis> - URI of the new destination.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>proxy (string, optional)</emphasis> - URI of the outbound proxy
+				to send the INVITE to.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>from_dname (string, optional)</emphasis> - Display name to

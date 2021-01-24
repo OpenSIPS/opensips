@@ -60,7 +60,8 @@ typedef str* (*b2bl_init_f)(struct sip_msg* msg, str *scenario_name,
 	b2bl_init_params_t *scenario_params, b2bl_cback_f, void* param,
 	unsigned int cb_mask, str* custom_hdrs);
 
-typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int entity_type);
+typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str *new_proxy,
+	str* new_from_dname,int entity_type);
 /* key - the string returned by b2bl_init_f
  * entity_type - 0, the server entity
  *               1, the client entity
@@ -69,7 +70,8 @@ typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str* new_from_dname,int ent
 int b2bl_terminate_call(str* key);
 typedef int (*b2bl_terminate_call_t)(str* key);
 
-int b2bl_bridge(str* key,str* new_uri,str* new_from_dname,int entity_no);
+int b2bl_bridge(str* key,str* new_uri, str *new_proxy, str* new_from_dname,
+	int entity_no);
 int b2bl_set_state(str* key, int state);
 
 int b2bl_bridge_2calls(str* key1, str* key2);

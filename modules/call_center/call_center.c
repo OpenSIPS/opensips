@@ -848,6 +848,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 {
 	str* id;
 	b2bl_init_params_t b2b_params;
+	str proxy = {0,0};
 
 	LM_DBG("call %p moving to %.*s , state %d\n", call,
 		new_leg->len, new_leg->s, call->state);
@@ -906,7 +907,8 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		call->b2bua_id.len = id->len;
 	} else {
 		/* call already ongoing */
-		if(b2b_api.bridge( &call->b2bua_id, new_leg, &call->caller_dn, 0) < 0) {
+		if(b2b_api.bridge( &call->b2bua_id, new_leg, &proxy,
+			&call->caller_dn, 0) < 0) {
 			LM_ERR("bridging failed\n");
 			b2b_api.terminate_call(&call->b2bua_id);
 			return -1;
