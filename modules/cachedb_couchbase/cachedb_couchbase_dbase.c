@@ -47,7 +47,7 @@ static void couchbase_get_cb(lcb_INSTANCE* instance,
 	op_error = error;
 
 	if (error != LCB_SUCCESS) {
-		if (error != LCB_KEY_ENOENT) {
+		if (error != LCB_ERR_DOCUMENT_NOT_FOUND) {
 			LM_ERR("Failure to get %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, error));
 		}
 
@@ -85,7 +85,7 @@ static void couchbase_remove_cb(lcb_INSTANCE* instance,
 	op_error = err;
 
 	if (err != LCB_SUCCESS) {
-		if (err != LCB_KEY_ENOENT) {
+		if (err != LCB_ERR_DOCUMENT_NOT_FOUND) {
 			LM_ERR("Failure to remove %.*s - %s\n",(int)item->v.v0.nkey,(char*)item->v.v0.key,lcb_strerror(instance, err));
 		}
 	}
@@ -444,7 +444,7 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 	oprc = cb_remove(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase remove",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -463,7 +463,7 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 		oprc = cb_remove(instance, NULL, 1, commands);
 
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Remove command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase remove",attr->s,attr->len,0,
@@ -505,7 +505,7 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase get",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -524,7 +524,7 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 		instance = COUCHBASE_CON(connection);
 		oprc = cb_get(instance, NULL, 1, commands);
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Get command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase get",attr->s,attr->len,0,
@@ -577,7 +577,7 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 	oprc = cb_arithmetic(instance, NULL, 1, commands);
 
 	if (oprc != LCB_SUCCESS) {
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			return -1;
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase add",attr->s,attr->len,0,
@@ -598,7 +598,7 @@ int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new
 		oprc = cb_arithmetic(instance, NULL, 1, commands);
 
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Arithmetic command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase add",attr->s,attr->len,0,
@@ -647,7 +647,7 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 
 	if (oprc != LCB_SUCCESS) {
 		/* Key not present, record does not exist */
-		if (oprc == LCB_KEY_ENOENT) {
+		if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 			_stop_expire_timer(start,couch_exec_threshold,
 				"cachedb_couchbase get counter",attr->s,attr->len,0,
 				cdb_slow_queries, cdb_total_queries);
@@ -666,7 +666,7 @@ int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 		instance = COUCHBASE_CON(connection);
 		oprc = cb_get(instance, NULL, 1, commands);
 		if (oprc != LCB_SUCCESS) {
-			if (oprc == LCB_KEY_ENOENT) {
+			if (oprc == LCB_ERR_DOCUMENT_NOT_FOUND) {
 				LM_ERR("Get counter command successfully retried\n");
 				_stop_expire_timer(start,couch_exec_threshold,
 					"cachedb_couchbase get counter",attr->s,attr->len,0,
