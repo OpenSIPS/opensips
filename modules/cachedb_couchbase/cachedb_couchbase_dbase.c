@@ -40,7 +40,7 @@ volatile str get_res = {0,0};
 volatile int arithmetic_res = 0;
 volatile lcb_error_t op_error  = LCB_SUCCESS;
 
-static void couchbase_get_cb(lcb_t instance,
+static void couchbase_get_cb(lcb_INSTANCE* instance,
 		const void *cookie, lcb_error_t error,
 		const lcb_get_resp_t *item)
 {
@@ -64,7 +64,7 @@ static void couchbase_get_cb(lcb_t instance,
 	get_res.len = item->v.v0.nbytes;
 }
 
-static void couchbase_store_cb(lcb_t instance, const void *cookie,
+static void couchbase_store_cb(lcb_INSTANCE* instance, const void *cookie,
 							lcb_storage_t operation,
 							lcb_error_t err,
 							const lcb_store_resp_t *item)
@@ -77,7 +77,7 @@ static void couchbase_store_cb(lcb_t instance, const void *cookie,
 	}
 }
 
-static void couchbase_remove_cb(lcb_t instance,
+static void couchbase_remove_cb(lcb_INSTANCE* instance,
 							const void *cookie,
 							lcb_error_t err,
 							const lcb_remove_resp_t *item)
@@ -91,7 +91,7 @@ static void couchbase_remove_cb(lcb_t instance,
 	}
 }
 
-static void couchbase_arithmetic_cb(lcb_t instance,
+static void couchbase_arithmetic_cb(lcb_INSTANCE* instance,
 								const void *cookie,
 								lcb_error_t error,
 								const lcb_arithmetic_resp_t *item)
@@ -106,7 +106,7 @@ static void couchbase_arithmetic_cb(lcb_t instance,
 	arithmetic_res = item->v.v0.value;
 }
 
-lcb_error_t cb_connect(lcb_t instance) {
+lcb_error_t cb_connect(lcb_INSTANCE* instance) {
 	lcb_error_t rc;
 
 	rc = lcb_connect(instance);
@@ -126,7 +126,7 @@ lcb_error_t cb_connect(lcb_t instance) {
 	return rc;
 }
 
-lcb_error_t cb_get(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_get_cmd_t *const *commands) {
+lcb_error_t cb_get(lcb_INSTANCE* instance, const void *command_cookie, lcb_size_t num, const lcb_get_cmd_t *const *commands) {
 	lcb_error_t rc;
 
 	rc = lcb_get(instance, command_cookie, num, commands);
@@ -144,7 +144,7 @@ lcb_error_t cb_get(lcb_t instance, const void *command_cookie, lcb_size_t num, c
 	return op_error;
 }
 
-lcb_error_t cb_store(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_store_cmd_t *const *commands) {
+lcb_error_t cb_store(lcb_INSTANCE* instance, const void *command_cookie, lcb_size_t num, const lcb_store_cmd_t *const *commands) {
 	lcb_error_t rc;
 
 	rc = lcb_store(instance, command_cookie, num, commands);
@@ -162,7 +162,7 @@ lcb_error_t cb_store(lcb_t instance, const void *command_cookie, lcb_size_t num,
 	return op_error;
 }
 
-lcb_error_t cb_arithmetic(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_arithmetic_cmd_t *const *commands) {
+lcb_error_t cb_arithmetic(lcb_INSTANCE* instance, const void *command_cookie, lcb_size_t num, const lcb_arithmetic_cmd_t *const *commands) {
 	lcb_error_t rc;
 
 	rc = lcb_arithmetic(instance, command_cookie, num, commands);
@@ -180,7 +180,7 @@ lcb_error_t cb_arithmetic(lcb_t instance, const void *command_cookie, lcb_size_t
 	return op_error;
 }
 
-lcb_error_t cb_remove(lcb_t instance, const void *command_cookie, lcb_size_t num, const lcb_remove_cmd_t *const *commands) {
+lcb_error_t cb_remove(lcb_INSTANCE* instance, const void *command_cookie, lcb_size_t num, const lcb_remove_cmd_t *const *commands) {
 	lcb_error_t rc;
 
 	rc = lcb_remove(instance, command_cookie, num, commands);
@@ -241,7 +241,7 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 	couchbase_con *con;
 	struct lcb_create_st options;
 	lcb_uint32_t tmo = 0;
-	lcb_t instance;
+	lcb_INSTANCE* instance;
 	lcb_error_t rc;
 
 	if (id == NULL) {
@@ -377,7 +377,7 @@ int couchbase_conditional_reconnect(cachedb_con *con, lcb_error_t err) {
 int couchbase_set(cachedb_con *connection,str *attr,
 		str *val,int expires)
 {
-	lcb_t instance;
+	lcb_INSTANCE* instance;
 	lcb_error_t oprc;
 	lcb_store_cmd_t cmd;
 	const lcb_store_cmd_t *commands[1];
@@ -429,7 +429,7 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 int couchbase_remove(cachedb_con *connection,str *attr)
 {
-	lcb_t instance;
+	lcb_INSTANCE* instance;
 	lcb_error_t oprc;
 	lcb_remove_cmd_t cmd;
 	const lcb_remove_cmd_t *commands[1];
@@ -488,7 +488,7 @@ int couchbase_remove(cachedb_con *connection,str *attr)
 
 int couchbase_get(cachedb_con *connection,str *attr,str *val)
 {
-	lcb_t instance;
+	lcb_INSTANCE* instance;
 	lcb_error_t oprc;
 	lcb_get_cmd_t cmd;
 	const lcb_get_cmd_t *commands[1];
@@ -557,7 +557,7 @@ int couchbase_get(cachedb_con *connection,str *attr,str *val)
 
 int couchbase_add(cachedb_con *connection,str *attr,int val,int expires,int *new_val)
 {
-	lcb_t instance;
+	lcb_INSTANCE* instance;
 	lcb_error_t oprc;
 	lcb_arithmetic_cmd_t cmd;
 	const lcb_arithmetic_cmd_t *commands[1];
@@ -630,7 +630,7 @@ int couchbase_sub(cachedb_con *connection,str *attr,int val,int expires,int *new
 
 int couchbase_get_counter(cachedb_con *connection,str *attr,int *val)
 {
-	lcb_t instance;
+	lcb_INSTANCE* instance;
 	lcb_error_t oprc;
 	lcb_get_cmd_t cmd;
 	const lcb_get_cmd_t *commands[1];
