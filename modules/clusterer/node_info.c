@@ -621,7 +621,7 @@ int provision_current(modparam_t type, void *val)
 }
 
 int update_db_state(int state) {
-	db_key_t node_id_key = &id_col;
+	db_key_t node_id_key = &node_id_col;
 	db_val_t node_id_val;
 	db_key_t update_key;
 	db_val_t update_val;
