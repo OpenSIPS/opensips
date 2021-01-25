@@ -271,13 +271,10 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 		return 0;
 	}
 
-	(void)lcb_set_get_callback(instance,
-			couchbase_get_cb);
-	(void)lcb_set_store_callback(instance,
-			couchbase_store_cb);
-	(void)lcb_set_remove_callback(instance,
-			couchbase_remove_cb);
-	(void)lcb_set_arithmetic_callback(instance,couchbase_arithmetic_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_GET, (lcb_RESPCALLBACK)couchbase_get_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_STORE, (lcb_RESPCALLBACK)couchbase_store_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_REMOVE, (lcb_RESPCALLBACK)couchbase_remove_cb);
+	(void)lcb_install_callback(instance, LCB_CALLBACK_COUNTER, (lcb_RESPCALLBACK)couchbase_arithmetic_cb);
 
 	//Set Timeout
 	tmo = (lcb_uint32_t)couch_timeout_usec;
