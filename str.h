@@ -21,7 +21,6 @@
 #ifndef str_h
 #define str_h
 
-#include <assert.h>
 #include <string.h>
 
 /**
@@ -72,11 +71,12 @@ typedef struct __str_const str_const;
 #define str_init(_string)  (str){_string, sizeof(_string) - 1}
 #define str_const_init(_string)  (str_const){_string, sizeof(_string) - 1}
 
-#define OBJ_IS_OF_TYPE(Type, Obj) _Generic((Obj), Type: 1, const Type: 1, default: 0)
-#define str2const(_sp) ({ \
-    static_assert(OBJ_IS_OF_TYPE(str *, _sp), "str * expected"); \
-    /*return*/ (str_const *)(void *)(_sp); \
-})
+static inline const str_const *_cs2cc(const str *_sp) {return (const str_const *)(const void *)(_sp);}
+static inline str_const *_s2c(str *_sp) {return (str_const *)(void *)(_sp);}
+
+#define str2const(_sp) ( \
+    _Generic((_sp), str *: _s2c, const str *: _cs2cc)(_sp) \
+)
 
 static inline void init_str(str *dest, const char *src)
 {
