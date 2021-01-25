@@ -622,7 +622,7 @@ int provision_current(modparam_t type, void *val)
 }
 
 int update_db_state(int cluster_id, int node_id, int state) {
-	db_key_t node_id_key = &id_col;
+	db_key_t node_id_key = &node_id_col;
 	db_val_t node_id_val;
 	db_key_t cl_node_id_keys[2] = {&node_id_col, &cluster_id_col};
 	db_val_t cl_node_id_vals[2];
