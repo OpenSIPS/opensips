@@ -115,7 +115,7 @@ lcb_STATUS cb_connect(lcb_INSTANCE* instance) {
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -135,7 +135,7 @@ lcb_STATUS cb_get(lcb_INSTANCE* instance, const void *command_cookie, lcb_size_t
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -153,7 +153,7 @@ lcb_STATUS cb_store(lcb_INSTANCE* instance, const void *command_cookie, lcb_size
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -171,7 +171,7 @@ lcb_STATUS cb_arithmetic(lcb_INSTANCE* instance, const void *command_cookie, lcb
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
@@ -189,7 +189,7 @@ lcb_STATUS cb_remove(lcb_INSTANCE* instance, const void *command_cookie, lcb_siz
 		return rc;
 	}
 
-	rc = lcb_wait(instance);
+	rc = lcb_wait(instance, LCB_WAIT_DEFAULT);
 
 	if (rc != LCB_SUCCESS) {
 		return rc;
