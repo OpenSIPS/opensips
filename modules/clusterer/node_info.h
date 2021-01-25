@@ -125,7 +125,7 @@ extern int db_mode;
 extern rw_lock_t *cl_list_lock;
 extern cluster_info_t **cluster_list;
 
-int update_db_state(int state);
+int update_db_state(int cluster_id, int node_id, int state);
 int load_db_info(db_func_t *dr_dbf, db_con_t* db_hdl, str *db_table, cluster_info_t **cl_list);
 void free_info(cluster_info_t *cl_list);
 

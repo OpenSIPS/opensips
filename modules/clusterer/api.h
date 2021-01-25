@@ -90,7 +90,7 @@ typedef void (*free_nodes_f)(clusterer_node_t *list);
 /*
  * Set the state (enabled or disabled) of the current node in the cluster.
  */
-typedef int (*set_state_f)(int cluster_id, enum cl_node_state state);
+typedef int (*set_state_f)(int cluster_id, int node_id, enum cl_node_state state);
 
 /*
  * Check if the given address belongs to one of the nodes in the cluster.

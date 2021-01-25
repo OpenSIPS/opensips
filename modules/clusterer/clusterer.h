@@ -165,7 +165,7 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 									mi_item_t *cmd_params_arr, int no_params);
 enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node);
 
-int cl_set_state(int cluster_id, enum cl_node_state state);
+int cl_set_state(int cluster_id, int node_id, enum cl_node_state state);
 int clusterer_check_addr(int cluster_id, str *ip_str,
 							enum node_addr_type check_type);
 enum clusterer_send_ret cl_send_to(bin_packet_t *, int cluster_id, int node_id);

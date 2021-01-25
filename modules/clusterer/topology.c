@@ -204,6 +204,11 @@ void heartbeats_timer(void)
 		for(node = clusters_it->node_list; node; node = node->next) {
 			lock_get(node->lock);
 
+			if (!(node->flags & NODE_STATE_ENABLED)) {
+				lock_release(node->lock);
+				continue;
+			}
+
 			gettimeofday(&now, NULL);
 			ping_reply_int = PING_REPLY_INTERVAL(node);
 			last_ping_int = TIME_DIFF(node->last_ping, now);
@@ -1097,7 +1102,8 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 
 			if (top_node_info[i][j+4] == current_id) {
 				lock_get(top_node->lock);
-				if (top_node->link_state == LS_DOWN) {
+				if (top_node->link_state == LS_DOWN &&
+					top_node->flags & NODE_STATE_ENABLED) {
 					lock_release(top_node->lock);
 
 					set_link_w_neigh(LS_RESTART_PINGING, top_node);

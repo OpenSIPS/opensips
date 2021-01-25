@@ -91,7 +91,7 @@ void seed_fb_check_timer(utime_t ticks, void *param)
 	lock_stop_read(cl_list_lock);
 }
 
-int cl_set_state(int cluster_id, enum cl_node_state state)
+int cl_set_state(int cluster_id, int node_id, enum cl_node_state state)
 {
 	cluster_info_t *cluster = NULL;
 	node_info_t *node;
@@ -105,6 +105,48 @@ int cl_set_state(int cluster_id, enum cl_node_state state)
 		lock_stop_read(cl_list_lock);
 		LM_ERR("Cluster id [%d] not found\n", cluster_id);
 		return -1;
+	}
+
+	if (node_id != current_id) {
+		node = get_node_by_id(cluster, node_id);
+		if (!node) {
+			lock_stop_read(cl_list_lock);
+			LM_ERR("Node id [%d] not found\n", node_id);
+			return 1;
+		}
+
+		lock_get(node->lock);
+
+		if (state == STATE_DISABLED && node->flags & NODE_STATE_ENABLED)
+			new_link_states = LS_DOWN;
+		else if (state == STATE_ENABLED && !(node->flags & NODE_STATE_ENABLED))
+			new_link_states = LS_RESTART_PINGING;
+
+		if (state == STATE_DISABLED)
+			node->flags &= ~NODE_STATE_ENABLED;
+		else
+			node->flags |= NODE_STATE_ENABLED;
+
+		lock_release(node->lock);
+
+		if (new_link_states == LS_DOWN) {
+			set_link_w_neigh_adv(-1, LS_DOWN, node);
+
+			do_actions_node_ev(cluster, &ev_actions_required, 1);
+		} else if (new_link_states == LS_RESTART_PINGING) {
+			set_link_w_neigh(LS_RESTART_PINGING, node);
+		}
+
+		lock_stop_read(cl_list_lock);
+
+		LM_INFO("Set state: %s for node: %d in cluster: %d\n",
+				state ? "enabled" : "disabled", node_id, cluster_id);
+
+		if (db_mode && update_db_state(cluster_id, node_id, state) < 0)
+			LM_ERR("Failed to update state in clusterer DB for node [%d] cluster [%d]\n",
+				node_id, cluster_id);
+
+		return 0;
 	}
 
 	lock_get(cluster->current_node->lock);
@@ -136,7 +178,7 @@ int cl_set_state(int cluster_id, enum cl_node_state state)
 	LM_INFO("Set state: %s for local node in cluster: %d\n",
 			state ? "enabled" : "disabled", cluster_id);
 
-	if (db_mode && update_db_state(state) < 0)
+	if (db_mode && update_db_state(cluster_id, current_id, state) < 0)
 		LM_ERR("Failed to update state in clusterer DB for cluster [%d]\n", cluster->cluster_id);
 
 	return 0;
@@ -231,6 +273,15 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		return CLUSTERER_SEND_ERR;
 	}
 
+	lock_get(node->lock);
+	if (!(node->flags & NODE_STATE_ENABLED)) {
+		lock_release(node->lock);
+		lock_stop_read(cl_list_lock);
+		LM_DBG("node disabled, skip message sending\n");
+		return CLUSTERER_SEND_SUCCESS;
+	}
+	lock_release(node->lock);
+
 	rc = msg_send_retry(packet, node, 0, &ev_actions_required);
 
 	bin_remove_int_buffer_end(packet, 3);
@@ -285,6 +336,14 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 	for (node = dst_cl->node_list; node; node = node->next) {
 		if (!match_node(dst_cl->current_node, node, match_op))
 			continue;
+
+		lock_get(node->lock);
+		if (!(node->flags & NODE_STATE_ENABLED)) {
+			lock_release(node->lock);
+			LM_DBG("node disabled, skip message sending\n");
+			continue;
+		}
+		lock_release(node->lock);
 
 		matched_once = 1;
 
@@ -850,6 +909,12 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 	lock_get(node->lock);
 
+	if (!(node->flags & NODE_STATE_ENABLED)) {
+		lock_release(node->lock);
+		LM_DBG("node disabled, ignoring received clusterer bin packet\n");
+		goto exit;
+	}
+
 	/* if the node was down, restart pinging */
 	if (node->link_state == LS_DOWN) {
 		lock_release(node->lock);
@@ -967,6 +1032,14 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 			LM_WARN("Received message from unknown source, addr: %s\n", ip);
 			goto exit;
 		}
+
+		lock_get(node->lock);
+		if (!(node->flags & NODE_STATE_ENABLED)) {
+			lock_release(node->lock);
+			LM_DBG("node disabled, ignoring received clusterer bin packet\n");
+			goto exit;
+		}
+		lock_release(node->lock);
 
 		handle_internal_msg(packet, packet_type, node, now,	&ev_actions_required);
 		if (ev_actions_required)
@@ -1090,6 +1163,12 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	lock_get(node->lock);
+
+	if (!(node->flags & NODE_STATE_ENABLED)) {
+		lock_release(node->lock);
+		LM_DBG("node disabled, ignoring received bin packet\n");
+		goto exit;
+	}
 
 	/* if the node was down, restart pinging */
 	if (node->link_state == LS_DOWN) {

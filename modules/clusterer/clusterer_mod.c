@@ -172,6 +172,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "clusterer_set_status", "sets the status for a specified connection", 0,0,{
 		{clusterer_set_status, {"cluster_id", "status", 0}},
+		{clusterer_set_status, {"cluster_id", "node_id", "status", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "clusterer_list", "lists the available connections for the specified server", 0,0,{
@@ -546,7 +547,7 @@ mi_response_t *clusterer_reload(const mi_params_t *params,
 static mi_response_t *clusterer_set_status(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	int cluster_id;
+	int cluster_id, node_id;
 	int state;
 	int rc;
 
@@ -555,12 +556,23 @@ static mi_response_t *clusterer_set_status(const mi_params_t *params,
 	if (cluster_id < 1)
 		return init_mi_error(400, MI_SSTR("Bad value for 'cluster_id'"));
 
+	switch (try_get_mi_int_param(params, "node_id", &node_id)) {
+		case -1:
+			node_id = current_id;
+		case 0:
+			if (node_id < 1)
+				return init_mi_error(400, MI_SSTR("Bad value for 'node_id'"));
+			break;
+		default:
+			return init_mi_param_error();
+	}
+
 	if (get_mi_int_param(params, "status", &state) < 0)
 		return init_mi_param_error();
 	if (state != STATE_DISABLED && state != STATE_ENABLED)
 		return init_mi_error(400, MI_SSTR("Bad value for 'status'"));
 
-	rc = cl_set_state(cluster_id, state);
+	rc = cl_set_state(cluster_id, node_id, state);
 	if (rc == -1)
 		return init_mi_error(404, MI_SSTR("Cluster id not found"));
 	if (rc == 1)
@@ -636,6 +648,12 @@ static mi_response_t *clusterer_list(const mi_params_t *params,
 
 			if (add_mi_string(node_item, MI_SSTR("link_state"),
 				val.s, val.len) < 0) {
+				lock_release(n_info->lock);
+				goto error;
+			}
+
+			if (add_mi_string_fmt(node_item, MI_SSTR("state"), "%s",
+				n_info->flags&NODE_STATE_ENABLED ? "enabled" : "disabled") < 0) {
 				lock_release(n_info->lock);
 				goto error;
 			}

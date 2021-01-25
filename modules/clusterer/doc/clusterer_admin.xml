@@ -884,8 +884,8 @@ $ opensips-cli -x mi clusterer_list_topology
 		<function moreinfo="none">clusterer_set_status</function>
 		</title>
 		<para>
-                Sets the status(Enabled/Disabled) of the local node in a specified cluster. A disabled node does not send any messages and ignores received ones thus appearing as a failed node in the topology.
-                </para>
+            Sets the status(Enabled/Disabled) of a node. If the local instance is disabled, the node will not send any messages and ignore received ones thus appearing as a failed node in the topology (from the other node's perspective). If a different node is disabled, the specified node will simply be ignored by the local instance in terms of sending/receiving any messages, as if no longer part of the topology.
+        </para>
 		<para>
 		Name: <emphasis>clusterer_set_status</emphasis>
 		</para>
@@ -893,6 +893,10 @@ $ opensips-cli -x mi clusterer_list_topology
 		<itemizedlist>
 			<listitem><para>
 			<emphasis>cluster_id</emphasis> - indicates the id of the cluster.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>node_id</emphasis> (optional) - indicates the id of the node to be disabled.
+			If missing, the local instance will be disalbed.
 			</para></listitem>
             <listitem><para>
 			<emphasis>status</emphasis> - indicates the new status(0 - Disabled, 1 - Enabled).
@@ -902,7 +906,10 @@ $ opensips-cli -x mi clusterer_list_topology
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
+		#disable the local instance
 		opensips-cli -x mi clusterer_set_status 1 0
+		#disable node ID 3
+		opensips-cli -x mi clusterer_set_status 1 3 0
 		</programlisting>
 	</section>
 

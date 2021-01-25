@@ -621,16 +621,13 @@ int provision_current(modparam_t type, void *val)
 	return 0;
 }
 
-int update_db_state(int state) {
+int update_db_state(int cluster_id, int node_id, int state) {
 	db_key_t node_id_key = &id_col;
 	db_val_t node_id_val;
+	db_key_t cl_node_id_keys[2] = {&node_id_col, &cluster_id_col};
+	db_val_t cl_node_id_vals[2];
 	db_key_t update_key;
 	db_val_t update_val;
-
-	VAL_TYPE(&node_id_val) = DB_INT;
-	VAL_NULL(&node_id_val) = 0;
-	VAL_INT(&node_id_val) = current_id;
-	update_key = &state_col;
 
 	CON_OR_RESET(db_hdl);
 	if (dr_dbf.use_table(db_hdl, &db_table) < 0) {
@@ -638,13 +635,31 @@ int update_db_state(int state) {
 		return -1;
 	}
 
+	update_key = &state_col;
 	VAL_TYPE(&update_val) = DB_INT;
 	VAL_NULL(&update_val) = 0;
 	VAL_INT(&update_val) = state;
 
-	if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
-		&update_val, 1, 1) < 0)
-		return -1;
+	if (node_id == current_id) {
+		VAL_TYPE(&node_id_val) = DB_INT;
+		VAL_NULL(&node_id_val) = 0;
+		VAL_INT(&node_id_val) = current_id;
+
+		if (dr_dbf.update(db_hdl, &node_id_key, 0, &node_id_val, &update_key,
+			&update_val, 1, 1) < 0)
+			return -1;
+	} else {
+		VAL_TYPE(&cl_node_id_vals[0]) = DB_INT;
+		VAL_NULL(&cl_node_id_vals[0]) = 0;
+		VAL_INT(&cl_node_id_vals[0]) = node_id;
+		VAL_TYPE(&cl_node_id_vals[1]) = DB_INT;
+		VAL_NULL(&cl_node_id_vals[1]) = 0;
+		VAL_INT(&cl_node_id_vals[1]) = cluster_id;
+
+		if (dr_dbf.update(db_hdl, cl_node_id_keys, 0, cl_node_id_vals, &update_key,
+			&update_val, 2, 1) < 0)
+			return -1;
+	}
 
 	return 0;
 }
