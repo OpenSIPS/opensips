@@ -95,9 +95,8 @@ cache_store("local:group2", ...)
 			used in at least one URL, else you'll receive a WARNING.
 		</para>
 		<para>
-			<emphasis><quote>If no collection is defined, the collection with name "default" will be
-				created.</quote>.
-		</emphasis>
+			The <emphasis>"default"</emphasis> collection always gets created, even when
+				not included in this list of collections.
 		</para>
 		<example>
 		<title>Set <varname>cache_collections</varname> parameter</title>
