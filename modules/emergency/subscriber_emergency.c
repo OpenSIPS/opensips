@@ -175,7 +175,7 @@ int create_subscriber_cell(struct sip_msg* reply, struct parms_cb* params_cb){
 
 	subs_cell->dlg_id->status = NOTIFY_WAIT;
 
-	hash_code= core_hash(&subs_cell->dlg_id->callid, 0, subst_size);
+	hash_code= core_hash(&subs_cell->dlg_id->callid, NULL, subst_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 
@@ -802,7 +802,7 @@ struct sm_subscriber* get_subs_cell(struct sip_msg *msg, str callid_event) {
 	LM_DBG("PTO: %.*s \n ", pto->uri.len, pto->uri.s );
 	LM_DBG("PTO_TAG: %.*s \n ", pto->tag_value.len, pto->tag_value.s );
 	LM_DBG("********************************************CALLID_STR%.*s\n", callid_event.len, callid_event.s);
-	hash_code= core_hash(&callid_event, 0, subst_size);
+	hash_code= core_hash(&callid_event, NULL, subst_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 
@@ -911,7 +911,7 @@ int treat_notify(struct sip_msg *msg) {
 					LM_ERR("error in send to esct\n");
 				}
 
-				hash_code= core_hash(&callid_event, 0, subst_size);
+				hash_code= core_hash(&callid_event, NULL, subst_size);
 				LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 				delete_shtable(subs_htable, hash_code, cell_subs);

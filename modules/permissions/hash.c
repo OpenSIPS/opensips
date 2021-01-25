@@ -36,7 +36,7 @@
 #include <fnmatch.h>
 //#include <regex.h>
 
-#define perm_hash(_s)  core_hash( &(_s), 0, PERM_HASH_SIZE)
+#define perm_hash(_s)  core_hash( &(_s), NULL, PERM_HASH_SIZE)
 
 struct address_list** hash_create(void) {
 	struct address_list** ptr;

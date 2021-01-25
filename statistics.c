@@ -96,7 +96,7 @@ static mi_export_t mi_stat_cmds[] = {
 gen_lock_t *stat_lock = 0;
 #endif
 
-#define stat_hash(_s) core_hash( _s, 0, STATS_HASH_SIZE)
+#define stat_hash(_s) core_hash( _s, NULL, STATS_HASH_SIZE)
 
 #define stat_is_hidden(_s)  ((_s)->flags&STAT_HIDDEN)
 

@@ -150,7 +150,7 @@ int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
 	if( expires != 0)
 		me->expires = get_ticks() + expires;
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -224,7 +224,7 @@ int _lcache_htable_remove(lcache_col_t *cache_col, str* attr, int isrepl)
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	lcache_htable_remove_safe( *attr, &cache_htable[hash_code].entries);
@@ -265,7 +265,7 @@ int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_va
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code = core_hash(attr,0,cache_col->size);
+	hash_code = core_hash(attr, NULL,cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -400,7 +400,7 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* res)
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;
@@ -478,7 +478,7 @@ int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val)
 
 	start_expire_timer(start,local_exec_threshold);
 
-	hash_code= core_hash( attr, 0, cache_col->size);
+	hash_code= core_hash( attr, NULL, cache_col->size);
 	lock_get(&cache_htable[hash_code].lock);
 
 	it = cache_htable[hash_code].entries;

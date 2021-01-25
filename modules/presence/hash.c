@@ -581,7 +581,7 @@ int delete_phtable_query(str *pres_uri, int event, str* etag)
 	pres_entry_t* p;
 	unsigned int hash_code;
 
-	hash_code = core_hash(pres_uri, 0, phtable_size);
+	hash_code = core_hash(pres_uri, NULL, phtable_size);
 	lock_get(&pres_htable[hash_code].lock);
 	p = search_phtable_etag(pres_uri, event, etag, hash_code);
 	if(p == NULL)

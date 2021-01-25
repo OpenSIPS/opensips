@@ -243,7 +243,7 @@ build_branch(char *branch, int *size,
 	int reply_matching;
 
 	/* we want all contact pings from a contact in one bucket*/
-	hash_id = core_hash(curi, 0, 0) & (NH_TABLE_ENTRIES-1);
+	hash_id = core_hash(curi, NULL, 0) & (NH_TABLE_ENTRIES-1);
 
 	/* do we need to track and match the replies for this ping?
 	 * We do if latency or remove on timeout flags are set for the contact */

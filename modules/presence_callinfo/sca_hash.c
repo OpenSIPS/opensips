@@ -43,7 +43,7 @@ static struct sca_hash *sca_table = NULL;
 #define sca_unlock(_entry) \
 		lock_set_release( sca_table->locks, sca_table->entries[_entry].lock_idx)
 
-#define sca_hash(_line) core_hash(_line, 0, sca_table->size)
+#define sca_hash(_line) core_hash(_line, NULL, sca_table->size)
 
 int init_sca_hash(int size)
 {

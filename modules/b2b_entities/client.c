@@ -161,7 +161,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	random_info.s = int2str(rand(), &random_info.len);
 
 	dlg->send_sock = ci->send_sock;
-	dlg->id = core_hash(&from_tag, random_info.s?&random_info:0, HASH_SIZE);
+	dlg->id = core_hash(&from_tag, random_info.s?&random_info:NULL, HASH_SIZE);
 
 	/* callid must have the special format */
 	dlg->db_flag = NO_UPDATEDB_FLAG;

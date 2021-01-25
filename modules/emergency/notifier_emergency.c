@@ -118,7 +118,7 @@ struct sm_subscriber* build_notify_cell(struct sip_msg *msg, int expires){
 	fromtag_event.s = subs_fromtag;
 	fromtag_event.len = strlen(subs_fromtag);
 
-	hash_code= core_hash(&callid_event, 0, emet_size);
+	hash_code= core_hash(&callid_event, NULL, emet_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 	// search call hash with hash_code, callidHeader and from/to_tag params
@@ -318,7 +318,7 @@ int treat_subscribe(struct sip_msg *msg) {
 		memcpy(notify_cell->dlg_id->local_tag.s, t->uas.local_totag.s, t->uas.local_totag.len);
 		LM_DBG("SUBS_FROM_TAG: %.*s \n ", notify_cell->dlg_id->local_tag.len, notify_cell->dlg_id->local_tag.s );
 
-		hash_code= core_hash(&notify_cell->call_dlg_id->callid, 0, subst_size);
+		hash_code= core_hash(&notify_cell->call_dlg_id->callid, NULL, subst_size);
 		LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 		LM_DBG("********************************************CALLID_STR%.*s\n", notify_cell->call_dlg_id->callid.len, notify_cell->call_dlg_id->callid.s);
 
@@ -431,7 +431,7 @@ void notif_cback_func(struct cell *t, int cb_type, struct tmcb_params *params){
 		if (params_notify->dlg_id->status == TERMINATED){
 
 			// delete subs_htable
-			hash_code= core_hash(&params_notify->call_dlg_id->callid, 0, subst_size);
+			hash_code= core_hash(&params_notify->call_dlg_id->callid, NULL, subst_size);
 			LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 			LM_DBG("********************************************CALLID_STR%.*s\n", params_notify->call_dlg_id->callid.len, params_notify->call_dlg_id->callid.s);
 

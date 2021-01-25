@@ -150,7 +150,7 @@ get_static_urecord(const udomain_t* _d, const str* _aor, struct urecord** _r)
 
 	r.aor = *_aor;
 	r.domain = _d->name;
-	r.aorhash = core_hash(_aor, 0, DB_AOR_HASH_MASK);
+	r.aorhash = core_hash(_aor, NULL, DB_AOR_HASH_MASK);
 	r.is_static = 1;
 
 	*_r = &r;
@@ -1221,7 +1221,7 @@ void lock_udomain(udomain_t* _d, str* _aor)
 	unsigned int sl;
 	if (have_mem_storage())
 	{
-		sl = core_hash(_aor, 0, _d->size);
+		sl = core_hash(_aor, NULL, _d->size);
 
 #ifdef GEN_LOCK_T_PREFERED
 		lock_get(_d->table[sl].lock);
@@ -1240,7 +1240,7 @@ void unlock_udomain(udomain_t* _d, str* _aor)
 	unsigned int sl;
 	if (have_mem_storage())
 	{
-		sl = core_hash(_aor, 0, _d->size);
+		sl = core_hash(_aor, NULL, _d->size);
 #ifdef GEN_LOCK_T_PREFERED
 		lock_release(_d->table[sl].lock);
 #else
@@ -1389,7 +1389,7 @@ static inline urecord_t *find_mem_urecord(udomain_t *_d, const str *_aor)
 	unsigned int sl, aorhash;
 	urecord_t **r;
 
-	aorhash = core_hash(_aor, 0, 0);
+	aorhash = core_hash(_aor, NULL, 0);
 	sl = aorhash & (_d->size - 1);
 
 	r = (urecord_t **)map_find(_d->table[sl].records, *_aor);

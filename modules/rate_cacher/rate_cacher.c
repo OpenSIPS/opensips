@@ -602,7 +602,7 @@ static int reload_carrier_rate(str *carrierid, int rate_id)
 	currency.s = NULL;
 	rate_table.s = NULL;
 
-	bucket = core_hash(carrierid,0,carr_table->size);
+	bucket = core_hash(carrierid, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
 
 	/* quickly lookup the carrier to see if it exists */
@@ -802,7 +802,7 @@ static int reload_client_rate(str *accountid, int wholesale,int rate_id,int star
 	rate_table.s = NULL;
 	currency.s = NULL;
 
-	bucket = core_hash(accountid,0,acc_table->size);
+	bucket = core_hash(accountid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	lock_bucket_write( entry->lock );
@@ -1164,7 +1164,7 @@ static mi_response_t * mi_get_carrier_price(const mi_params_t *params,struct mi_
 		&prefix.s, &prefix.len) < 0)
 		return init_mi_param_error();
 
-	bucket = core_hash(&carrier,0,carr_table->size);
+	bucket = core_hash(&carrier, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
 
 	lock_bucket_read( entry->lock );
@@ -1253,7 +1253,7 @@ static int add_client(str *accountid, int safe)
 	struct account_entry *entry;
 	struct account_cell *it;
 
-	bucket = core_hash(accountid,0,acc_table->size);
+	bucket = core_hash(accountid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	if (safe)
@@ -1307,7 +1307,7 @@ static int add_carrier(str *carrier,int safe)
 	struct carrier_entry *entry;
 	struct carrier_cell *carr_cell,*it=NULL;
 
-	bucket = core_hash(carrier,0,carr_table->size);
+	bucket = core_hash(carrier, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
 
 	if (safe)
@@ -1389,7 +1389,7 @@ static mi_response_t * mi_delete_carrier_rate(const mi_params_t *params,struct m
 
 	LM_INFO("XXX - deleteCarrierRate %.*s\n",carrier.len,carrier.s);
 
-	bucket = core_hash(&carrier,0,carr_table->size);
+	bucket = core_hash(&carrier, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
 	
 	lock_bucket_write( entry->lock );
@@ -1435,7 +1435,7 @@ static mi_response_t * mi_delete_carrier(const mi_params_t *params,struct mi_han
 
 	LM_INFO("XXX - deleteCarrier %.*s\n",carrier.len,carrier.s);
 
-	bucket = core_hash(&carrier,0,carr_table->size);
+	bucket = core_hash(&carrier, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
 	
 	lock_bucket_write( entry->lock );
@@ -1489,7 +1489,7 @@ static mi_response_t * mi_get_client_price(const mi_params_t *params,struct mi_h
 		&prefix.s, &prefix.len) < 0)
 		return init_mi_param_error();
 
-	bucket = core_hash(&accountid,0,acc_table->size);
+	bucket = core_hash(&accountid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	lock_bucket_read( entry->lock );
@@ -1620,7 +1620,7 @@ static mi_response_t * mi_delete_client(const mi_params_t *params,struct mi_hand
 
 	LM_INFO("XXX - deleteClient %.*s\n",accountid.len,accountid.s);
 
-	bucket = core_hash(&accountid,0,acc_table->size);
+	bucket = core_hash(&accountid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	lock_bucket_write( entry->lock );
@@ -1683,7 +1683,7 @@ static mi_response_t * mi_delete_client_rate(const mi_params_t *params,struct mi
 
 	LM_INFO("XXX - deleteClientRate %.*s %d\n",accountid.len,accountid.s,wholesale);
 
-	bucket = core_hash(&accountid,0,acc_table->size);
+	bucket = core_hash(&accountid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	lock_bucket_write( entry->lock );
@@ -1761,7 +1761,7 @@ static int script_get_client_price(struct sip_msg *msg, str *clientid, int *isws
 	unsigned int matched_len;
 	pv_value_t pv_val;
 
-	bucket = core_hash(clientid,0,acc_table->size);
+	bucket = core_hash(clientid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	lock_bucket_read( entry->lock );
@@ -1847,7 +1847,7 @@ static int script_get_vendor_price(struct sip_msg *msg, str *vendorid,
 	struct ratesheet_cell_entry *ret;
 	pv_value_t pv_val;
 
-	bucket = core_hash(vendorid,0,carr_table->size);
+	bucket = core_hash(vendorid, NULL, carr_table->size);
 	entry = &(carr_table->entries[bucket]);
 
 	lock_bucket_read( entry->lock );
@@ -1932,7 +1932,7 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 	if (client_price == NULL)
 		return NULL;
 
-	bucket = core_hash(clientid,0,acc_table->size);
+	bucket = core_hash(clientid, NULL, acc_table->size);
 	entry = &(acc_table->entries[bucket]);
 
 	lock_bucket_read( entry->lock );
@@ -1975,7 +1975,7 @@ static double* bulk_cost_based_fetching(str *clientid,int isws, str *carrierlist
 	for (i=0;i<carr_no;i++) {
 		carrier = carrierlist[i];
 
-		bucket = core_hash(&carrier,0,carr_table->size);
+		bucket = core_hash(&carrier, NULL, carr_table->size);
 		carr_entry = &(carr_table->entries[bucket]);
 
 		lock_bucket_read( carr_entry->lock );

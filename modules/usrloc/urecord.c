@@ -93,7 +93,7 @@ int new_urecord(str* _dom, str* _aor, urecord_t** _r)
 	memcpy((*_r)->aor.s, _aor->s, _aor->len);
 	(*_r)->aor.len = _aor->len;
 	(*_r)->domain = _dom;
-	(*_r)->aorhash = core_hash(_aor, 0, 0);
+	(*_r)->aorhash = core_hash(_aor, NULL, 0);
 
 	return 0;
 }

@@ -740,7 +740,7 @@ void reply_in_redirect( struct cell* t, int type, struct tmcb_params *params){
 		}
 	}
 
-	hash_code= core_hash(&reply->callid->body, 0, emet_size);
+	hash_code= core_hash(&reply->callid->body, NULL, emet_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 	if(insert_ehtable(call_htable,hash_code,call_cell)< 0){
@@ -902,7 +902,7 @@ static int failure(struct sip_msg *msg) {
 	memset(from_tag, 0, pfrom->tag_value.len + 1);
 	strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
 
-	hash_code= core_hash(&msg->callid->body, 0, emet_size);
+	hash_code= core_hash(&msg->callid->body, NULL, emet_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 	// find the cell with the callid from the list calls_cell
@@ -1367,7 +1367,7 @@ int create_call_cell(PARSED *parsed,struct sip_msg* msg, char* callidHeader, str
 
 		// insert calls_eme in call_htable hash with key source ip address
 
-		hash_code= core_hash(&msg->callid->body, 0, emet_size);
+		hash_code= core_hash(&msg->callid->body, NULL, emet_size);
 		LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 		if(insert_ehtable(call_htable, hash_code,call_cell)< 0){
@@ -1674,7 +1674,7 @@ int routing_ack(struct sip_msg *msg) {
 	strncpy(from_tag, pfrom->tag_value.s, pfrom->tag_value.len);
 	LM_DBG("PFROM_TAGIII: %s \n ", from_tag );
 
-	hash_code= core_hash(&msg->callid->body, 0, emet_size);
+	hash_code= core_hash(&msg->callid->body, NULL, emet_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 	LM_DBG(" ---TREATMENT ACK  callid=%s \n", callidHeader);
@@ -1842,7 +1842,7 @@ int bye(struct sip_msg *msg, int dir) {
 
 	}
 
-	hash_code= core_hash(&msg->callid->body, 0, emet_size);
+	hash_code= core_hash(&msg->callid->body, NULL, emet_size);
 	LM_DBG("********************************************HASH_CODE%d\n", hash_code);
 
 	// search call hash with hash_code, callidHeader and from/to_tag params
