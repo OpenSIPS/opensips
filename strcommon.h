@@ -33,23 +33,38 @@
 /*
  * add backslashes to special characters
  */
-int escape_common(char *dst, char *src, int src_len);
+int escape_common(char *dst, const char *src, int src_len);
 /*
  * remove backslashes to special characters
  */
-int unescape_common(char *dst, char *src, int src_len);
+int unescape_common(char *dst, const char *src, int src_len);
 
-int unescape_xml(char *dst, char *src, int src_len);
+int unescape_xml(char *dst, const char *src, int src_len);
 
-void compute_md5(char *dst, char *src, int src_len);
+void compute_md5(char *dst, const char *src, int src_len);
 
-int escape_user(str *sin, str *sout);
+int _escape_user(const str_const *sin, str *sout);
+static inline int _escape_userSS(const str *sin, str *sout){return _escape_user(str2const(sin), sout);}
+#define escape_user(sin, sout) ( \
+    _Generic(*(sin), str: _escape_userSS, str_const: _escape_user)(sin, sout) \
+)
 
-int unescape_user(str *sin, str *sout);
+int _unescape_user(const str_const *sin, str *sout);
+static inline int _unescape_userSS(const str *sin, str *sout){return _unescape_user(str2const(sin), sout);}
+#define unescape_user(sin, sout) ( \
+    _Generic(*(sin), str: _unescape_userSS, str_const: _unescape_user)(sin, sout) \
+)
 
-int escape_param(str *sin, str *sout);
+int _escape_param(const str_const *sin, str *sout);
+static inline int _escape_paramSS(const str *sin, str *sout){return _escape_param(str2const(sin), sout);}
+#define escape_param(sin, sout) ( \
+    _Generic(*(sin), str: _escape_paramSS, str_const: _escape_param)(sin, sout) \
+)
 
-int unescape_param(str *sin, str *sout);
+int _unescape_param(const str_const *sin, str *sout);
+static inline int _unescape_paramSS(const str *sin, str *sout){return _unescape_param(str2const(sin), sout);}
+#define unescape_param(sin, sout) ( \
+    _Generic(*(sin), str: _unescape_paramSS, str_const: _unescape_param)(sin, sout) \
+)
 
 #endif
-
