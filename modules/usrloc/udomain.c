@@ -190,7 +190,7 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 				ci.callid = &callid;
 				break;
 			case 'f':
-				ci.cflags = flag_list_to_bitmask(&pair->val.val.st,
+				ci.cflags = flag_list_to_bitmask(str2const(&pair->val.val.st),
 				                                 FLAG_TYPE_BRANCH, FLAG_DELIM);
 				break;
 			case 'o':
@@ -271,7 +271,7 @@ static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 {
 	static ucontact_info_t ci;
 	static str callid, ua, received, host, path, instance;
-	static str attr, packed_kv, flags;
+	static str attr, packed_kv;
 	int port, proto;
 	char *p;
 
@@ -323,7 +323,8 @@ static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 	ci.flags  = VAL_BITMAP(vals+6);
 
 	if (!VAL_NULL(vals+7)) {
-		flags.s   = (char *)VAL_STRING(vals+7);
+		str_const flags;
+		flags.s   = VAL_STRING(vals+7);
 		flags.len = strlen(flags.s);
 		LM_DBG("flag str: '%.*s'\n", flags.len, flags.s);
 

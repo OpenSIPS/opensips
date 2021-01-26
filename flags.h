@@ -80,7 +80,7 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask);
  * Note: flags which are not used at script level and are not instantiated with
  * get_flag_id_by_name will be ignored
  */
-int flag_list_to_bitmask(str *flags, enum flag_type type, char delim);
+int flag_list_to_bitmask(const str_const *flags, enum flag_type type, char delim);
 
 unsigned int fixup_flag(int flag_type, const str *flag_name);
 int get_flag_id_by_name(int flag_type, char *flag_name, int flag_name_len);

@@ -122,7 +122,6 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	db_res_t *res = NULL;
 	db_row_t *row;
 	db_val_t *val;
-	str flag_list;
 	int i, no_rows = 10;
 	time_t now;
 	char *p, *p1;
@@ -199,9 +198,10 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 
 	do {
 		for (i = 0; i < RES_ROW_N(res); i++) {
+			str_const flag_list;
 			row = RES_ROWS(res) + i;
 			val = ROW_VALUES(row) + 3; /* cflags */
-			flag_list.s   = (char *)VAL_STRING(val);
+			flag_list.s   = VAL_STRING(val);
 			flag_list.len = flag_list.s ? strlen(flag_list.s) : 0;
 
 			LM_DBG("contact cflags: '%.*s'\n", flag_list.len, flag_list.s);
@@ -427,7 +427,7 @@ skip_coords:
 				break;
 
 			case 'f':
-				cflags = flag_list_to_bitmask(&pair->val.val.st,
+				cflags = flag_list_to_bitmask(str2const(&pair->val.val.st),
 				                              FLAG_TYPE_BRANCH, FLAG_DELIM);
 				cols_needed &= ~COL_CFLAGS;
 				break;

@@ -119,11 +119,11 @@ str bitmask_to_flag_list(enum flag_type type, int bitmask)
 	return ret;
 }
 
-int flag_list_to_bitmask(str *flags, enum flag_type type, char delim)
+int flag_list_to_bitmask(const str_const *flags, enum flag_type type, char delim)
 {
-	char *p, *lim;
-	char *crt_flag;
-	str name;
+	const char *p, *lim;
+	const char *crt_flag;
+	str_const name;
 	struct flag_entry *e;
 	int ret = 0;
 
