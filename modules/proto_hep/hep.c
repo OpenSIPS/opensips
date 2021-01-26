@@ -201,7 +201,7 @@ int unpack_hepv12(char *buf, int len, struct hep_desc* h)
 	if(heph->hp_v == 2) {
 		offset+=sizeof(struct hep_timehdr);
 		heptime_tmp = (struct hep_timehdr*) hep_payload;
-
+		hep_payload += sizeof(struct hep_timehdr);
 
 		heptime.tv_sec = heptime_tmp->tv_sec;
 		heptime.tv_usec = heptime_tmp->tv_usec;
