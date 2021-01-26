@@ -985,7 +985,7 @@ static inline int str_casematch(const str *a, const str *b)
 /*
  * compare two str's
  */
-static inline int str_strcmp(const str *stra, const str *strb)
+static inline int _str_strcmpCC(const str_const *stra, const str_const *strb)
 {
 	int i;
 	int alen;
@@ -1021,6 +1021,26 @@ static inline int str_strcmp(const str *stra, const str *strb)
 	else
 		return 0;
 }
+static inline int _str_strcmpSS(const str *a, const str *b)
+{
+	return _str_strcmpCC(str2const(a), str2const(b));
+}
+static inline int _str_strcmpSC(const str *a, const str_const *b)
+{
+	return _str_strcmpCC(str2const(a), b);
+}
+static inline int _str_strcmpCS(const str_const *a, const str *b)
+{
+	return _str_strcmpCC(a, str2const(b));
+}
+#define str_strcmp(_a, _b) _Generic(*(_a), \
+        str: _Generic(*(_b), \
+            str: _str_strcmpSS, \
+            str_const: _str_strcmpSC), \
+        str_const: _Generic(*(_b), \
+            str: _str_strcmpCS, \
+            str_const: _str_strcmpCC) \
+    )(_a, _b)
 
 /*
  * compares a str with a const null terminated string
