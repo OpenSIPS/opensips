@@ -27,7 +27,7 @@
  * values and print SQL queries from the internal API representation.
  */
 
-#define _XOPEN_SOURCE /* See feature_test_macros(7), strptime(3) */
+#define _XOPEN_SOURCE 700 /* See strptime(3), snprintf(3) */
 #include <time.h>
 #include <limits.h>
 #include <errno.h>
