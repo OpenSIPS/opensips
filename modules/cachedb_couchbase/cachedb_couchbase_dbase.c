@@ -286,7 +286,7 @@ couchbase_con* couchbase_connect(struct cachedb_id* id, int is_reconnect)
 		/*Check connection*/
 		if (rc != LCB_SUCCESS) {
 			/*Consider these connect failurs as fatal*/
-			if(rc == LCB_AUTH_ERROR || rc == LCB_INVALID_HOST_FORMAT || rc == LCB_INVALID_CHAR) {
+			if(rc == LCB_ERR_AUTHENTICATION_FAILURE || rc == LCB_ERR_INVALID_HOST_FORMAT || rc == LCB_ERR_INVALID_CHAR) {
 				LM_ERR("Fatal connection error to Couchbase. Host: %s Bucket: %s Error: %s",
 					id->host, id->database, lcb_strerror_short(rc));
 				lcb_destroy(instance);
@@ -340,11 +340,10 @@ int couchbase_conditional_reconnect(cachedb_con *con, lcb_STATUS err) {
 
 	switch (err) {
 		/* Error codes to attempt reconnects on */
-		case LCB_EINTERNAL:
-		case LCB_CLIENT_ETMPFAIL:
-		case LCB_EBADHANDLE:
-		case LCB_NETWORK_ERROR:
-                case LCB_ETIMEDOUT:
+		case LCB_ERR_SDK_INTERNAL:
+		case LCB_ERR_NO_CONFIGURATION:
+		case LCB_ERR_NETWORK:
+		case LCB_ERR_TIMEOUT:
 		break;
 		default:
 			/*nothing to do*/
