@@ -385,7 +385,7 @@ int couchbase_set(cachedb_con *connection,str *attr,
 
 	commands[0] = &cmd;
 	memset(&cmd, 0, sizeof(cmd));
-	cmd.v.v0.operation = LCB_SET;
+	cmd.v.v0.operation = LCB_STORE_UPSERT;
 	cmd.v.v0.key = attr->s;
 	cmd.v.v0.nkey = attr->len;
 	cmd.v.v0.bytes = val->s;
