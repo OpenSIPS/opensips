@@ -983,9 +983,9 @@ static inline int str_casematch(const str *a, const str *b)
 
 
 /*
- * compare two str's
+ * compare str to str_const
  */
-static inline int str_strcmp(const str *stra, const str *strb)
+static inline int strSC_strcmp(const str *stra, const str_const *strb)
 {
 	int i;
 	int alen;
@@ -1020,6 +1020,14 @@ static inline int str_strcmp(const str *stra, const str *strb)
 		return 1;
 	else
 		return 0;
+}
+
+/*
+ * compare two str_const's
+ */
+static inline int str_strcmp(const str *stra, const str *strb)
+{
+	return strSC_strcmp(stra, str2const(strb));
 }
 
 /*

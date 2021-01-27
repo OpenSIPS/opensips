@@ -143,7 +143,7 @@ int flag_list_to_bitmask(const str_const *flags, enum flag_type type, char delim
 			name.len = p - crt_flag;
 			for (e = flag_lists[type]; e; e = e->next) {
 				if (e->name.len == p - crt_flag &&
-				    str_strcmp(&e->name, &name) == 0) {
+				    strSC_strcmp(&e->name, &name) == 0) {
 
 					ret |= 1 << e->bit;
 					break;
