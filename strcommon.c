@@ -32,7 +32,7 @@
 /*! \brief
  * add backslashes to special characters
  */
-int escape_common(char *dst, char *src, int src_len)
+int escape_common(char *dst, const char *src, int src_len)
 {
 	int i, j;
 
@@ -69,7 +69,7 @@ int escape_common(char *dst, char *src, int src_len)
 /*! \brief
  * remove backslashes to special characters
  */
-int unescape_common(char *dst, char *src, int src_len)
+int unescape_common(char *dst, const char *src, int src_len)
 {
 	int i, j;
 
@@ -113,7 +113,7 @@ int unescape_common(char *dst, char *src, int src_len)
 /*! \brief
  * replace &#xx; with ascii character
  */
-int unescape_xml(char *dst, char *src, int src_len)
+int unescape_xml(char *dst, const char *src, int src_len)
 {
 	int i, j;
 
@@ -135,7 +135,7 @@ int unescape_xml(char *dst, char *src, int src_len)
 }
 
 /*! \brief Compute MD5 checksum */
-void compute_md5(char *dst, char *src, int src_len)
+void compute_md5(char *dst, const char *src, int src_len)
 {
 	MD5_CTX context;
 	unsigned char digest[16];
@@ -146,9 +146,10 @@ void compute_md5(char *dst, char *src, int src_len)
 }
 
 /*! \brief Unscape all printable ASCII characters */
-int unescape_user(str *sin, str *sout)
+int _unescape_user(const str_const *sin, str *sout)
 {
-	char *at, *p, c;
+	char *at, c;
+	const char *p;
 
 	if(sin==NULL || sout==NULL || sout->s==NULL
 			|| sin->len<0 || sout->len < sin->len+1) {
@@ -263,10 +264,11 @@ done:
  * mark = - | _ | . | ! | ~ | * | ' | ( | )
  * user-unreserved = & | = | + | $ | , | ; | ? | /
  */
-int escape_user(str *sin, str *sout)
+int _escape_user(const str_const *sin, str *sout)
 {
 
-	char *at, *p;
+	char *at;
+	const char *p;
 	unsigned char x;
 
 	if(sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL
@@ -312,7 +314,7 @@ int escape_user(str *sin, str *sout)
 }
 
 
-int unescape_param(str *sin, str *sout)
+int _unescape_param(const str_const *sin, str *sout)
 {
 	return unescape_user(sin, sout);
 }
@@ -326,9 +328,10 @@ int unescape_param(str *sin, str *sout)
  * mark = - | _ | . | ! | ~ | * | ' | ( | )
  * param-unreserved = [ | ] | / | : | & | + | $
  */
-int escape_param(str *sin, str *sout)
+int _escape_param(const str_const *sin, str *sout)
 {
-	char *at, *p;
+	char *at;
+	const char *p;
 	unsigned char x;
 
 	if (sin==NULL || sout==NULL || sin->s==NULL || sout->s==NULL ||
