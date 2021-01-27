@@ -43,6 +43,8 @@
 #include "mem/mem.h"
 #include "mem/shm_mem.h"
 
+#include "lib/str2const.h"
+
 typedef struct _int_str_t {
 	union {
 		int i;
@@ -1033,14 +1035,6 @@ static inline int _str_strcmpCS(const str_const *a, const str *b)
 {
 	return _str_strcmpCC(a, str2const(b));
 }
-#define str_strcmp(_a, _b) _Generic(*(_a), \
-        str: _Generic(*(_b), \
-            str: _str_strcmpSS, \
-            str_const: _str_strcmpSC), \
-        str_const: _Generic(*(_b), \
-            str: _str_strcmpCS, \
-            str_const: _str_strcmpCC) \
-    )(_a, _b)
 
 /*
  * compares a str with a const null terminated string

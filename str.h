@@ -22,6 +22,7 @@
 #define str_h
 
 #include <string.h>
+#include "lib/str2const.h"
 
 /**
  * \file
@@ -73,10 +74,6 @@ typedef struct __str_const str_const;
 
 static inline const str_const *_cs2cc(const str *_sp) {return (const str_const *)(const void *)(_sp);}
 static inline str_const *_s2c(str *_sp) {return (str_const *)(void *)(_sp);}
-
-#define str2const(_sp) ( \
-    _Generic((_sp), str *: _s2c, const str *: _cs2cc)(_sp) \
-)
 
 static inline void init_str(str *dest, const char *src)
 {
