@@ -1940,9 +1940,9 @@ static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 	b2bl_entity_id_t *e;
 	int i;
 
-	if (cur_entity && !str_strcmp(ent_str, _str("this"))) {
+	if (cur_entity && !str_strcmp(ent_str, const_str("this"))) {
 		*old_ent = cur_entity;
-	} else if (cur_entity && !str_strcmp(ent_str, _str("peer"))) {
+	} else if (cur_entity && !str_strcmp(ent_str, const_str("peer"))) {
 		*old_ent = b2bl_search_entity(tuple, &cur_route_ctx.peer_key,
 			cur_route_ctx.peer_type, &entity_head);
 		if(*old_ent == NULL)

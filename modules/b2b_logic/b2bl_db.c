@@ -414,7 +414,7 @@ int b2b_logic_restore(void)
 				scenario_id.s = (char*)row_vals[1].val.string_val;
 				scenario_id.len = strlen(scenario_id.s);
 
-				if (!str_strcmp(&scenario_id, _str(B2B_TOP_HIDING_SCENARY)))
+				if (!str_strcmp(&scenario_id, const_str(B2B_TOP_HIDING_SCENARY)))
 					tuple.scenario_id = B2B_TOP_HIDING_ID_PTR;
 				else
 					tuple.scenario_id = &scenario_id;

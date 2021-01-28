@@ -1759,9 +1759,9 @@ int pv_parse_entity_name(pv_spec_p sp, const str *in)
 		return 0;
 	}
 
-	if (!str_strcmp(in, _str("key")))
+	if (!str_strcmp(in, const_str("key")))
 		sp->pvp.pvn.u.isname.name.n = PV_ENTITY_KEY;
-	else if (!str_strcmp(in, _str("callid")))
+	else if (!str_strcmp(in, const_str("callid")))
 		sp->pvp.pvn.u.isname.name.n = PV_ENTITY_CALLID;
 	else {
 		LM_ERR("Bad subname for $b2b_logic.entity\n");

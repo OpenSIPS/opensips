@@ -252,17 +252,17 @@ static int pv_parse_dfks_name(pv_spec_p sp, const str *in)
 			return -1;
 		}
 		name->type = PV_TYPE_VALUE;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_ASSIGN))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_ASSIGN))) {
 		name->type = PV_TYPE_ASSIGN;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_STATUS))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_STATUS))) {
 		name->type = PV_TYPE_STATUS;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_FEATURE))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_FEATURE))) {
 		name->type = PV_TYPE_FEATURE;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_PRESENTITY))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_PRESENTITY))) {
 		name->type = PV_TYPE_PRESENTITY;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_NOTIFY))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_NOTIFY))) {
 		name->type = PV_TYPE_NOTIFY;
-	} else if (!str_strcmp(in, _str(PV_SUBNAME_PARAM))) {
+	} else if (!str_strcmp(in, const_str(PV_SUBNAME_PARAM))) {
 		name->type = PV_TYPE_PARAM;
 	} else {
 		LM_ERR("Bad subname for $dfks\n");
@@ -757,9 +757,9 @@ static int parse_subscribe_xml(str *subs_body, int *feature_idx)
 		rc = -1;
 		goto end;
 	}
-	if (!str_strcmp(&ct, _str(STATUS_VAL_TRUE)))
+	if (!str_strcmp(&ct, const_str(STATUS_VAL_TRUE)))
 		feature_ctx.status = 1;
-	else if (!str_strcmp(&ct, _str(STATUS_VAL_FALSE)))
+	else if (!str_strcmp(&ct, const_str(STATUS_VAL_FALSE)))
 		feature_ctx.status = 0;
 	else {
 		LM_ERR("Bad value for '%s' node\n", req_status_nodes[*feature_idx]);

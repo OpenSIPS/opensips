@@ -280,7 +280,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 
 			if (!scenario_id.s)
 				init_params.id = B2B_INTERNAL_ID_PTR;
-			else if (!str_strcmp(&scenario_id, _str(B2B_TOP_HIDING_SCENARY)))
+			else if (!str_strcmp(&scenario_id, const_str(B2B_TOP_HIDING_SCENARY)))
 				init_params.id = B2B_TOP_HIDING_ID_PTR;
 			else
 				init_params.id = &scenario_id;

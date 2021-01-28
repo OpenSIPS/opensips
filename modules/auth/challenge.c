@@ -210,12 +210,12 @@ int fixup_qop(void** param)
 		return -1;
 	}
 	for (q = q_csv; q; q = q->next) {
-		if (!str_strcmp(&q->s, _str("auth")))  {
+		if (!str_strcmp(&q->s, const_str("auth")))  {
 			if (qop_type == QOP_TYPE_AUTH_INT)
 				qop_type = QOP_TYPE_BOTH;
 			else
 				qop_type = QOP_TYPE_AUTH;
-		} else if (!str_strcmp(&q->s, _str("auth-int"))) {
+		} else if (!str_strcmp(&q->s, const_str("auth-int"))) {
 			if (qop_type == QOP_TYPE_AUTH)
 				qop_type = QOP_TYPE_BOTH;
 			else

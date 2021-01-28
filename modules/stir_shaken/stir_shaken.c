@@ -623,7 +623,7 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T &&
 		body->parsed_uri.type != SIPS_URI_T && body->parsed_uri.type != TELS_URI_T) ||
 		((body->parsed_uri.type == SIP_URI_T || body->parsed_uri.type == SIPS_URI_T) &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
+		str_strcmp(&body->parsed_uri.user_param, const_str("user=phone")))) {
 		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
 		return -3;
 	}
@@ -656,7 +656,7 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 	}
 	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T) ||
 		(body->parsed_uri.type == SIP_URI_T &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
+		str_strcmp(&body->parsed_uri.user_param, const_str("user=phone")))) {
 		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
 		return -3;
 	}
@@ -1176,9 +1176,9 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		goto invalid_hdr;
 	}
 	while (params) {
-		if (!str_strcmp(_str("alg"), &params->name))
+		if (!str_strcmp(const_str("alg"), &params->name))
 			parsed->alg_hdr_param = params->body;
-		if (!str_strcmp(_str("ppt"), &params->name))
+		if (!str_strcmp(const_str("ppt"), &params->name))
 			parsed->ppt_hdr_param = params->body;
 
 		params = params->next;
@@ -1653,13 +1653,13 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		return rc;
 	}
 
-	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
+	if (str_strcmp(&parsed->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
 		LM_INFO("Unsupported 'ppt' extension\n");
 		rc = -5;
 		goto error;
 	}
 	if (parsed->alg_hdr_param.s &&
-		str_strcmp(&parsed->alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
+		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
 		LM_INFO("Unsupported 'alg'\n");
 		rc = -5;
 		goto error;
@@ -1802,12 +1802,12 @@ static int w_stir_check(struct sip_msg *msg)
 		}
 	}
 
-	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
+	if (str_strcmp(&parsed->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
 		LM_INFO("Unsupported 'ppt' extension\n");
 		return -4;
 	}
 	if (parsed->alg_hdr_param.s &&
-		str_strcmp(&parsed->alg_hdr_param, _str(PPORT_HDR_ALG_VAL))) {
+		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
 		LM_INFO("Unsupported 'alg'\n");
 		return -4;
 	}
@@ -1854,21 +1854,21 @@ int pv_parse_identity_name(pv_spec_p sp, const str *in)
 		return -1;
 	}
 
-	if (!str_strcmp(in, _str("header")))
+	if (!str_strcmp(in, const_str("header")))
 		sp->pvp.pvn.u.isname.name.n = PV_HEADER;
-	else if (!str_strcmp(in, _str(PPORT_HDR_X5U)))
+	else if (!str_strcmp(in, const_str(PPORT_HDR_X5U)))
 		sp->pvp.pvn.u.isname.name.n = PV_HEADER_X5U;
-	else if (!str_strcmp(in, _str("payload")))
+	else if (!str_strcmp(in, const_str("payload")))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ATTEST)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ATTEST)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ATTEST;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_DEST)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_DEST)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_DEST;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_IAT)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_IAT)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_IAT;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ORIG)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ORIG)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIG;
-	else if (!str_strcmp(in, _str(PPORT_PAYLOAD_ORIGID)))
+	else if (!str_strcmp(in, const_str(PPORT_PAYLOAD_ORIGID)))
 		sp->pvp.pvn.u.isname.name.n = PV_PAYLOAD_ORIGID;
 	else {
 		LM_ERR("Bad subname for $identity\n");

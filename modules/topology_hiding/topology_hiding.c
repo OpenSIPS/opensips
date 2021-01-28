@@ -143,9 +143,9 @@ static int mod_init(void)
 		topo_parse_passed_hdr_ct_params(&topo_hiding_ct_hdr_params);
 	}
 	th_contact_encode_scheme.len = strlen(th_contact_encode_scheme.s);
-	if (!str_strcmp(&th_contact_encode_scheme, _str("base64")))
+	if (!str_strcmp(&th_contact_encode_scheme, const_str("base64")))
 		th_ct_enc_scheme = ENC_BASE64;
-	else if (!str_strcmp(&th_contact_encode_scheme, _str("base32")))
+	else if (!str_strcmp(&th_contact_encode_scheme, const_str("base32")))
 		th_ct_enc_scheme = ENC_BASE32;
 	else {
 		LM_ERR("Unsupported value for 'th_contact_encode_scheme' modparam!"
