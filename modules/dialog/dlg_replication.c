@@ -369,6 +369,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 	bin_skip_int(packet, 2);
 	bin_pop_int(packet, &dlg->state);
 
+	/* sockets */
 	bin_skip_str(packet, 2);
 
 	bin_pop_str(packet, &st);
@@ -405,11 +406,13 @@ int dlg_replicated_update(bin_packet_t *packet)
 	bin_pop_str(packet, &st);
 	shm_str_sync(&dlg->legs[callee_idx(dlg)].out_sdp, &st);
 
-	/* sync advertised caller and callee contacts */
-	bin_pop_str(packet, &st);
-	shm_str_sync(&dlg->legs[DLG_CALLER_LEG].adv_contact, &st);
-	bin_pop_str(packet, &st);
-	shm_str_sync(&dlg->legs[callee_idx(dlg)].adv_contact, &st);
+	/*
+	 * advertised caller and callee contacts
+	 * we shall skip these, as we're currently not re-learning sockets either,
+	 * so we can't figure out the advertised contact to be used by this
+	 * instance, in case it is different than the other one
+	 */
+	bin_skip_str(packet, 2);
 
 	bin_pop_str(packet, &vars);
 	bin_pop_str(packet, &profiles);
