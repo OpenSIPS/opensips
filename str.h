@@ -108,4 +108,10 @@ static inline str *_str(const char *s)
 	return &st;
 }
 
+/**
+ * Initialize private static str_const given the static buffer
+ * and return const pointer to it.
+ */
+#define const_str(sbuf) ({static const str_const _stc = str_const_init(sbuf); &_stc;})
+
 #endif
