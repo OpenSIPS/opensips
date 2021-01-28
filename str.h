@@ -97,16 +97,17 @@ static inline str *str_cpy(str *dest, const str *src)
 /**
  * Handy function for writing unit tests which compare str's
  *
- * WARNING: _only_ use when passing (str *) to _basic_ functions,
- *          since it is not re-entrant and may cause ugly bugs!
+ * WARNING: _only_ use when passing (const str *) to _basic_
+ *          functions, since while poiter is stable for the
+ *          lifetime of the application its value is mutable
+ *          and bad code messing it around may cause ugly bugs!
  */
-static inline str *_str(const char *s)
-{
-	static str st;
-
-	init_str(&st, s);
-	return &st;
-}
+#define _str(s) ( \
+{ \
+	static str _st; \
+	init_str(&_st, s); \
+	/* return */ (const str *)&_st; \
+})
 
 /**
  * Initialize private static str_const given the static buffer

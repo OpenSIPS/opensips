@@ -2707,8 +2707,8 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg)
 	return 0;
 }
 
-int terminate_dlg(str *callid, unsigned int h_entry, unsigned int h_id,
-	str *reason)
+int terminate_dlg(const str *callid, unsigned int h_entry, unsigned int h_id,
+	const str *reason)
 {
 	struct dlg_cell * dlg = NULL;
 	int ret = 0;

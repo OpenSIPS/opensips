@@ -172,7 +172,7 @@ struct module_exports exports= {
 
 
 /*Inserts table_name/db url into the list of heads*/
-static int dp_head_insert(int dp_insert_type, str *content,
+static int dp_head_insert(int dp_insert_type, const str *content,
 				 str *partition)
 {
 #define h_insert(type, url_str, table_str, ins_str )    \

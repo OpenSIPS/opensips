@@ -867,7 +867,7 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val)
 }
 
 
-struct dlg_cell* get_dlg_by_callid( str *callid, int active_only)
+struct dlg_cell* get_dlg_by_callid(const str *callid, int active_only)
 {
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;

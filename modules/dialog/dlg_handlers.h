@@ -101,8 +101,8 @@ typedef int (*validate_dialog_f) (struct sip_msg* req, struct dlg_cell *dlg);
 typedef int (*fix_route_dialog_f) (struct sip_msg *req,struct dlg_cell *dlg);
 /* the dialog is identified by callid if provided,
  * otherwise by h_entry and h_id */
-typedef int (*terminate_dlg_f)(str *callid, unsigned int h_entry,
-		unsigned int h_id, str *reason);
+typedef int (*terminate_dlg_f)(const str *callid, unsigned int h_entry,
+		unsigned int h_id, const str *reason);
 typedef int (*indialog_reply_f) (struct sip_msg *msg, int statuscode,
 		void *param);
 typedef int (*send_indialog_req_f)(struct dlg_cell *dlg, str *method,
@@ -128,8 +128,8 @@ int dlg_validate_dialog( struct sip_msg* req, struct dlg_cell *dlg);
 
 int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg);
 
-int terminate_dlg(str *callid, unsigned int h_entry, unsigned int h_id,
-		str *reason);
+int terminate_dlg(const str *callid, unsigned int h_entry, unsigned int h_id,
+		const str *reason);
 
 int send_indialog_request(struct dlg_cell *dlg, str *method,
 		int leg, str *body, str *ct, str *hdrs, indialog_reply_f func,

@@ -31,7 +31,7 @@
 
 typedef struct dlg_cell *(*get_dlg_f) (void);
 typedef str *(*get_dlg_did_f) (struct dlg_cell *dlg);
-typedef struct dlg_cell *(*get_dlg_by_callid_f) (str *, int);
+typedef struct dlg_cell *(*get_dlg_by_callid_f) (const str *, int);
 typedef struct dlg_cell *(*get_dlg_by_did_f) (str *, int);
 typedef int (*match_dialog_f) (struct sip_msg *msg, int _seq_match_mode);
 typedef int (*get_direction_f) (void);
