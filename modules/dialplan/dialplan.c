@@ -266,10 +266,10 @@ static int dp_create_head(const str *in)
 			return 0;
 		}
 
-		if (str_match(&params->s, _str(PARAM_URL))) {
+		if (str_match(&params->s, const_str(PARAM_URL))) {
 			have_db_url = 1;
 			dp_head_insert(DP_TYPE_URL, &params->next->s, &partition);
-		} else if (str_match(&params->s, _str(PARAM_TABLE))) {
+		} else if (str_match(&params->s, const_str(PARAM_TABLE))) {
 			have_db_table = 1;
 			dp_head_insert(DP_TYPE_TABLE, &params->next->s, &partition);
 		} else if (!ZSTR(params->s)) {
@@ -359,7 +359,7 @@ static int mod_init(void)
 	timerec_column.len      = strlen(timerec_column.s);
 	disabled_column.len 	= strlen(disabled_column.s);
 
-	if (!dp_df_head && str_match(&dp_df_part, _str(DEFAULT_PARTITION)) &&
+	if (!dp_df_head && str_match(&dp_df_part, const_str(DEFAULT_PARTITION)) &&
 	        default_dp_db_url.s) {
 		dp_head_insert(DP_TYPE_URL, &default_dp_db_url, &dp_df_part);
 		dp_head_insert(DP_TYPE_TABLE, &default_dp_table, &dp_df_part);

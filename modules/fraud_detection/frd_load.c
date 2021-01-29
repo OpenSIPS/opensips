@@ -231,9 +231,9 @@ static int create_time_rec(const str *time_start, const str *time_end,
 	tmrec_p trec = &trx->tr;
 
 	/* the default, "catch-all" time rec - using NULL is optimal */
-	if (str_match(time_start, _str("00:00")) &&
-	        str_match(time_end, _str("23:59")) &&
-	        str_match(week_days, _str("Mon-Sun"))) {
+	if (str_match(time_start, const_str("00:00")) &&
+	        str_match(time_end, const_str("23:59")) &&
+	        str_match(week_days, const_str("Mon-Sun"))) {
 		*out_rec = NULL;
 		return 0;
 	} else {

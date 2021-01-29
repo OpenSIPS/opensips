@@ -545,7 +545,7 @@ static struct usr_avp *pn_trim_pn_params(evi_params_t *params)
 		}
 
 		/* the Contact URI is the only EVI param we're interested in */
-		if (str_match(&p->name, _str(UL_EV_PARAM_CT_URI)) &&
+		if (str_match(&p->name, const_str(UL_EV_PARAM_CT_URI)) &&
               pn_has_uri_params(&p->val.s, &puri)) {
 			if (pn_remove_uri_params(&puri, p->val.s.len, &_sval) != 0) {
 				LM_ERR("failed to remove PN params from Contact '%.*s'\n",

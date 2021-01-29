@@ -127,22 +127,22 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 	switch (param->s[0]) {
 	case 'p':
 	case 'P':
-		if (str_casematch(param, _str("pn-provider"))) {
+		if (str_casematch(param, const_str("pn-provider"))) {
 			*val = uri->pn_provider_val;
 			return 0;
 		}
 
-		if (str_casematch(param, _str("pn-prid"))) {
+		if (str_casematch(param, const_str("pn-prid"))) {
 			*val = uri->pn_prid_val;
 			return 0;
 		}
 
-		if (str_casematch(param, _str("pn-param"))) {
+		if (str_casematch(param, const_str("pn-param"))) {
 			*val = uri->pn_param_val;
 			return 0;
 		}
 
-		if (str_casematch(param, _str("pn-purr"))) {
+		if (str_casematch(param, const_str("pn-purr"))) {
 			*val = uri->pn_purr_val;
 			return 0;
 		}
@@ -150,12 +150,12 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 
 	case 't':
 	case 'T':
-		if (str_casematch(param, _str("transport"))) {
+		if (str_casematch(param, const_str("transport"))) {
 			*val = uri->transport_val;
 			return 0;
 		}
 
-		if (str_casematch(param, _str("ttl"))) {
+		if (str_casematch(param, const_str("ttl"))) {
 			*val = uri->ttl_val;
 			return 0;
 		}
@@ -163,7 +163,7 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 
 	case 'u':
 	case 'U':
-		if (str_casematch(param, _str("user"))) {
+		if (str_casematch(param, const_str("user"))) {
 			*val = uri->user_param_val;
 			return 0;
 		}
@@ -171,12 +171,12 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 
 	case 'm':
 	case 'M':
-		if (str_casematch(param, _str("maddr"))) {
+		if (str_casematch(param, const_str("maddr"))) {
 			*val = uri->maddr_val;
 			return 0;
 		}
 
-		if (str_casematch(param, _str("method"))) {
+		if (str_casematch(param, const_str("method"))) {
 			*val = uri->method_val;
 			return 0;
 		}
@@ -184,7 +184,7 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 
 	case 'l':
 	case 'L':
-		if (str_casematch(param, _str("lr"))) {
+		if (str_casematch(param, const_str("lr"))) {
 			*val = uri->lr_val;
 			return 0;
 		}
@@ -192,7 +192,7 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 
 	case 'r':
 	case 'R':
-		if (str_casematch(param, _str("r2"))) {
+		if (str_casematch(param, const_str("r2"))) {
 			*val = uri->r2_val;
 			return 0;
 		}
@@ -200,7 +200,7 @@ static inline int get_uri_param_val(const struct sip_uri *uri,
 
 	case 'g':
 	case 'G':
-		if (str_casematch(param, _str("gr"))) {
+		if (str_casematch(param, const_str("gr"))) {
 			*val = uri->gr_val;
 			return 0;
 		}

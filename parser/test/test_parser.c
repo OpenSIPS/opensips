@@ -49,48 +49,48 @@ void test_parse_uri(void)
 
 	in = *_str("sip:alice@atlanta.org;user=phone");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-1");
-	ok(str_match(&u.user_param, _str("user=phone")), "puri-2");
-	ok(str_match(&u.user_param_val, _str("phone")), "puri-3");
+	ok(str_match(&u.user_param, const_str("user=phone")), "puri-2");
+	ok(str_match(&u.user_param_val, const_str("phone")), "puri-3");
 
 	in = *_str("sip:alice@atlanta.org;user=phone;gr=x");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-4");
-	ok(str_match(&u.user_param, _str("user=phone")), "puri-5");
-	ok(str_match(&u.user_param_val, _str("phone")), "puri-6");
-	ok(str_match(&u.gr, _str("gr=x")), "puri-7");
-	ok(str_match(&u.gr_val, _str("x")), "puri-8");
+	ok(str_match(&u.user_param, const_str("user=phone")), "puri-5");
+	ok(str_match(&u.user_param_val, const_str("phone")), "puri-6");
+	ok(str_match(&u.gr, const_str("gr=x")), "puri-7");
+	ok(str_match(&u.gr_val, const_str("x")), "puri-8");
 
 	in = *_str("sip:alice@atlanta.org;transport=udp;user=phone;maddr=1.2.3.4;gr");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-9");
-	ok(str_match(&u.user, _str("alice")), "puri-10");
-	ok(str_match(&u.host, _str("atlanta.org")), "puri-11");
-	ok(str_match(&u.transport, _str("transport=udp")), "puri-12");
-	ok(str_match(&u.transport_val, _str("udp")), "puri-13");
-	ok(str_match(&u.user_param, _str("user=phone")), "puri-14");
-	ok(str_match(&u.user_param_val, _str("phone")), "puri-15");
-	ok(str_match(&u.maddr, _str("maddr=1.2.3.4")), "puri-16");
-	ok(str_match(&u.maddr_val, _str("1.2.3.4")), "puri-17");
-	ok(str_match(&u.gr, _str("gr")), "puri-18");
-	ok(str_match(&u.gr_val, _str("")), "puri-19");
+	ok(str_match(&u.user, const_str("alice")), "puri-10");
+	ok(str_match(&u.host, const_str("atlanta.org")), "puri-11");
+	ok(str_match(&u.transport, const_str("transport=udp")), "puri-12");
+	ok(str_match(&u.transport_val, const_str("udp")), "puri-13");
+	ok(str_match(&u.user_param, const_str("user=phone")), "puri-14");
+	ok(str_match(&u.user_param_val, const_str("phone")), "puri-15");
+	ok(str_match(&u.maddr, const_str("maddr=1.2.3.4")), "puri-16");
+	ok(str_match(&u.maddr_val, const_str("1.2.3.4")), "puri-17");
+	ok(str_match(&u.gr, const_str("gr")), "puri-18");
+	ok(str_match(&u.gr_val, const_str("")), "puri-19");
 
 	/* SIP PN (RFC 8599) URI param parsing tests */
 
 	/* pn-provider value is optional */
 	in = *_str("sip:alice@atlanta.org;pn-provider");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-20");
-	ok(str_match(&u.pn_provider, _str("pn-provider")), "puri-21");
-	ok(str_match(&u.pn_provider_val, _str("")), "puri-22");
+	ok(str_match(&u.pn_provider, const_str("pn-provider")), "puri-21");
+	ok(str_match(&u.pn_provider_val, const_str("")), "puri-22");
 	ok(!u.pn_provider_val.s, "puri-22-NULL");
 
 	in = *_str("sip:alice@atlanta.org;pn-provider=");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-23");
-	ok(str_match(&u.pn_provider, _str("pn-provider=")), "puri-24");
-	ok(str_match(&u.pn_provider_val, _str("")), "puri-25");
+	ok(str_match(&u.pn_provider, const_str("pn-provider=")), "puri-24");
+	ok(str_match(&u.pn_provider_val, const_str("")), "puri-25");
 	ok(!u.pn_provider_val.s, "puri-25-NULL");
 
 	in = *_str("sip:alice@atlanta.org;pn-provider=x");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-26");
-	ok(str_match(&u.pn_provider, _str("pn-provider=x")), "puri-27");
-	ok(str_match(&u.pn_provider_val, _str("x")), "puri-28");
+	ok(str_match(&u.pn_provider, const_str("pn-provider=x")), "puri-27");
+	ok(str_match(&u.pn_provider_val, const_str("x")), "puri-28");
 
 	/* pn-prid value is mandatory */
 	in = *_str("sip:alice@atlanta.org;pn-prid=");
@@ -119,14 +119,14 @@ void test_parse_uri(void)
 	in = *_str("sip:alice@atlanta.org;pn-provider=x;pn-prid=y;"
 	                                 "pn-param=z;pn-purr=t");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-35");
-	ok(str_match(&u.pn_provider, _str("pn-provider=x")), "puri-36");
-	ok(str_match(&u.pn_provider_val, _str("x")), "puri-37");
-	ok(str_match(&u.pn_prid, _str("pn-prid=y")), "puri-38");
-	ok(str_match(&u.pn_prid_val, _str("y")), "puri-39");
-	ok(str_match(&u.pn_param, _str("pn-param=z")), "puri-40");
-	ok(str_match(&u.pn_param_val, _str("z")), "puri-41");
-	ok(str_match(&u.pn_purr, _str("pn-purr=t")), "puri-42");
-	ok(str_match(&u.pn_purr_val, _str("t")), "puri-43");
+	ok(str_match(&u.pn_provider, const_str("pn-provider=x")), "puri-36");
+	ok(str_match(&u.pn_provider_val, const_str("x")), "puri-37");
+	ok(str_match(&u.pn_prid, const_str("pn-prid=y")), "puri-38");
+	ok(str_match(&u.pn_prid_val, const_str("y")), "puri-39");
+	ok(str_match(&u.pn_param, const_str("pn-param=z")), "puri-40");
+	ok(str_match(&u.pn_param_val, const_str("z")), "puri-41");
+	ok(str_match(&u.pn_purr, const_str("pn-purr=t")), "puri-42");
+	ok(str_match(&u.pn_purr_val, const_str("t")), "puri-43");
 }
 
 void test_parser(void)

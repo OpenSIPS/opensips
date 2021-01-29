@@ -176,7 +176,7 @@ int init_data(void)
 	}
 
 	/* was the default partition re-pointed? */
-	if (!str_match(&dp_df_part, _str(DEFAULT_PARTITION))) {
+	if (!str_match(&dp_df_part, const_str(DEFAULT_PARTITION))) {
 		int found = 0;
 
 		for (start = dp_hlist; start; start = start->next) {
