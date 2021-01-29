@@ -580,7 +580,7 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition
 			/* ROUTE_ID column */
 			check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
 			/* DSTLIST column */
-			check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 1, 1);
+			check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 0, 1);
 			str_vals[STR_VALS_DSTLIST_DRR_COL] =
 				(char*)VAL_STRING(ROW_VALUES(row)+6);
 			/* ATTRS column */
