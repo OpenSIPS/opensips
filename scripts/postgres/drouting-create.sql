@@ -23,7 +23,7 @@ CREATE TABLE dr_rules (
     timerec VARCHAR(255) DEFAULT NULL,
     priority INTEGER DEFAULT 0 NOT NULL,
     routeid VARCHAR(255) DEFAULT NULL,
-    gwlist VARCHAR(255) NOT NULL,
+    gwlist VARCHAR(255),
     sort_alg VARCHAR(1) DEFAULT 'N' NOT NULL,
     sort_profile INTEGER DEFAULT NULL,
     attrs VARCHAR(255) DEFAULT NULL,

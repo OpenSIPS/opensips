@@ -41,7 +41,7 @@
 		<name>gwlist</name>
 		<type>string</type>
 		<size>255</size>
-		<description>Reference to the GWs/destinations from the list.
+		<description>A comma-separated list of GW unique IDs (e.g. GW-5).
 		</description>
 	</column>
 
