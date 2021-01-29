@@ -29,7 +29,7 @@ void test_parse_fcaps(void)
 {
 	struct hdr_field hf;
 	fcaps_body_t *fcaps;
-	str *hdr;
+	const str *hdr;
 
 	hdr = _str("Feature-Caps: +sip.pns=\"apns\"\r\n");
 	memset(&hf, 0, sizeof hf);
