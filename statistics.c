@@ -593,7 +593,7 @@ int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
 }
 
 
-stat_var* __get_stat( str *name, int mod_idx )
+stat_var* __get_stat( const str *name, int mod_idx )
 {
 	stat_var *stat;
 	int hash;
@@ -626,7 +626,7 @@ stat_var* __get_stat( str *name, int mod_idx )
 	return 0;
 }
 
-stat_var* get_stat( str *name )
+stat_var* get_stat( const str *name )
 {
 	return __get_stat(name, -1);
 }

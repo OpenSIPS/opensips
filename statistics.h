@@ -136,12 +136,12 @@ int __register_module_stats(char *module, stat_export_t *stats, int unsafe);
 int clone_pv_stat_name(const str *name, str *clone);
 
 /* returns the first matching statistic (regardless of module index) */
-stat_var* get_stat( str *name );
+stat_var* get_stat( const str *name );
 /*
  * same as above, but only at stat module level
  * mod_idx == -1 makes __get_stat() behave like get_stat()
  */
-stat_var* __get_stat( str *name, int mod_idx );
+stat_var* __get_stat( const str *name, int mod_idx );
 
 module_stats *add_stat_module(char *module);
 module_stats *get_stat_module( str *module);
