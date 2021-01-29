@@ -43,6 +43,24 @@
     _Generic(*(sin), str: _unescape_paramSS, str_const: _unescape_param)(sin, sout) \
 )
 
+#define str_match(_a, _b) _Generic(*(_a), \
+	str: _Generic(*(_b), \
+	    str: _str_matchSS, \
+	    str_const: _str_matchSC), \
+	str_const: _Generic(*(_b), \
+	    str: _str_matchCS, \
+	    str_const: _str_matchCC) \
+    )(_a, _b)
+
+#define str_casematch(_a, _b) _Generic(*(_a), \
+	str: _Generic(*(_b), \
+	    str: _str_casematchSS, \
+	    str_const: _str_casematchSC), \
+	str_const: _Generic(*(_b), \
+	    str: _str_casematchCS, \
+	    str_const: _str_casematchCC) \
+    )(_a, _b)
+
 #define str_strcmp(_a, _b) _Generic(*(_a), \
         str: _Generic(*(_b), \
             str: _str_strcmpSS, \
@@ -57,6 +75,8 @@
 #define unescape_user(sin, sout) _unescape_user(str2const(sin), sout)
 #define escape_param(sin, sout) _escape_param(str2const(sin), sout)
 #define unescape_param(sin, sout) _unescape_param(str2const(sin), sout)
+#define str_match(_a, _b) _str_matchCC(str2const(_a), str2const(_b))
+#define str_casematch(_a, _b) _str_casematchCC(str2const(_a), str2const(_b))
 #define str_strcmp(_a, _b) _str_strcmpCC(str2const(_a), str2const(_b))
 #endif /* HAVE_GENERICS */
 

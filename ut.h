@@ -951,18 +951,29 @@ static inline int pkg_str_extend(str *in, int size)
 /*
  * test if two str's are equal
  */
-static inline int str_match(const str *a, const str *b)
+static inline int _str_matchCC(const str_const *a, const str_const *b)
 {
 	return a->len == b->len && !memcmp(a->s, b->s, a->len);
 }
-
+static inline int _str_matchSS(const str *a, const str *b)
+{
+        return _str_matchCC(str2const(a), str2const(b));
+}
+static inline int _str_matchSC(const str *a, const str_const *b)
+{
+        return _str_matchCC(str2const(a), b);
+}
+static inline int _str_matchCS(const str_const *a, const str *b)
+{
+        return _str_matchCC(a, str2const(b));
+}
 
 /*
  * test if two str's are equal, case-insensitive
  */
-static inline int str_casematch(const str *a, const str *b)
+static inline int _str_casematchCC(const str_const *a, const str_const *b)
 {
-	char *p, *q, *end;
+	const char *p, *q, *end;
 
 	if (a->len != b->len)
 		return 0;
@@ -982,7 +993,18 @@ static inline int str_casematch(const str *a, const str *b)
 
 	return 1;
 }
-
+static inline int _str_casematchSS(const str *a, const str *b)
+{
+        return _str_casematchCC(str2const(a), str2const(b));
+}
+static inline int _str_casematchSC(const str *a, const str_const *b)
+{
+        return _str_casematchCC(str2const(a), b);
+}
+static inline int _str_casematchCS(const str_const *a, const str *b)
+{
+        return _str_casematchCC(a, str2const(b));
+}
 
 /*
  * compare two str's
