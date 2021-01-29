@@ -39,7 +39,7 @@
  *
  * Return: see lookup_rc
  */
-int reg_lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri);
+int reg_lookup(struct sip_msg* _m, void* _t, const str* flags_s, str* uri);
 
 /*! \brief the is_registered() function
  * Return 1 if the AOR is registered, -1 otherwise

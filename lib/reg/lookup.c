@@ -46,7 +46,7 @@ int reg_init_lookup(void)
 }
 
 
-lookup_rc lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *aor_uri,
+lookup_rc lookup(struct sip_msg *req, udomain_t *d, const str *sflags, str *aor_uri,
                  int use_domain, int unescape_aor)
 {
 	static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];

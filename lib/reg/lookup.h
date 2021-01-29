@@ -59,7 +59,7 @@ int reg_init_lookup(void);
  * @use_domain: how to extract the AoR from the R-URI (include '@host' part)
  * @unescape_aor: after extracting the AoR, do 1 round of unescape_param()
  */
-lookup_rc lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *aor_uri,
+lookup_rc lookup(struct sip_msg *req, udomain_t *d, const str *sflags, str *aor_uri,
                  int use_domain, int unescape_aor);
 
 

@@ -47,7 +47,7 @@
 #define GR_A_PART_SIZE	14
 
 
-int reg_lookup(struct sip_msg* _m, void* _t, str* flags_s, str* uri)
+int reg_lookup(struct sip_msg* _m, void* _t, const str* flags_s, str* uri)
 {
 	return lookup(_m, _t, flags_s, uri, reg_use_domain, 0);
 }
