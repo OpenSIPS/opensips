@@ -765,7 +765,8 @@ Chapter 2. Contributors
    Elena-Ramona Modroiu, Peter Lemenkov (@lemenkov), Dusan Klinec
    (@ph4r05), Anca Vamanu, wuhanck, Konstantin Bokarius, Norman
    Brandinger (@NormB), UnixDev, Andreas Granig, Baptiste Cholley,
-   Julián Moreno Patiño, Edson Gellert Schubert.
+   Julián Moreno Patiño, Maksym Sobolyev (@sobomax), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -787,25 +788,25 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Sep 2020
-   2.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jul 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   5.  Dan Pascu (@danpascu)               Nov 2006 - May 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  wuhanck                             Apr 2018 - Apr 2018
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Ionut Ionita (@ionutrazvanionita)   May 2015 - Nov 2015
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Sep 2020
+   3.  Razvan Crainea (@razvancrainea)     Jan 2011 - Jul 2020
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   6.  Dan Pascu (@danpascu)               Nov 2006 - May 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  wuhanck                             Apr 2018 - Apr 2018
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Baptiste Cholley, Saúl Ibarra
-   Corretgé (@saghul), Irina-Maria Stanescu, Anca Vamanu, UnixDev,
-   Henning Westerholt (@henningw), Juha Heinanen (@juha-h),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Ancuta Onofrei, Elena-Ramona Modroiu, Norman
-   Brandinger (@NormB), Andreas Granig, Andrei Pelinescu-Onciul,
-   Jan Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Miklos
-   Tirpak.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Baptiste Cholley, Saúl Ibarra Corretgé (@saghul), Irina-Maria
+   Stanescu, Anca Vamanu, UnixDev, Henning Westerholt (@henningw),
+   Juha Heinanen (@juha-h), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei,
+   Elena-Ramona Modroiu, Norman Brandinger (@NormB), Andreas
+   Granig, Andrei Pelinescu-Onciul, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg), Miklos Tirpak.
 
    (1) including any documentation-related commits, excluding
    merge commits

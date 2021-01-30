@@ -1388,15 +1388,15 @@ Chapter 3. Contributors
    10. Vlad Patrascu (@rvlad-patrascu) 13 4 163 373
 
    All remaining contributors: Henning Westerholt (@henningw),
-   Andrei Pelinescu-Onciul, Ovidiu Sas (@ovidiusas), Juha Heinanen
-   (@juha-h), Maksym Sobolyev (@sobomax), Nick Altmann (@nikbyte),
-   Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov
-   (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez, Carsten
-   Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus Hunger,
-   Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria
-   Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus
-   Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl Ibarra
-   Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
+   Andrei Pelinescu-Onciul, Ovidiu Sas (@ovidiusas), Maksym
+   Sobolyev (@sobomax), Juha Heinanen (@juha-h), Nick Altmann
+   (@nikbyte), Ancuta Onofrei, Elena-Ramona Modroiu, Peter
+   Lemenkov (@lemenkov), Dan Pascu (@danpascu), Sergio Gutierrez,
+   Carsten Bock, Jeffrey Magder, Kobi Eshun (@ekobi), Marcus
+   Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion,
+   Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius,
+   Jesus Rodrigues, Dusan Klinec (@ph4r05), Ruslan Bukin, Saúl
+   Ibarra Corretgé (@saghul), @jalung, Tolga Tarhan, Edson Gellert
    Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -1419,8 +1419,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2021
-   2.  Maksym Sobolyev (@sobomax)          Jul 2004 - Oct 2020
+   1.  Maksym Sobolyev (@sobomax)          Jul 2004 - Jan 2021
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jan 2021
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jul 2020
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    5.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019

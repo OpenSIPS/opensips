@@ -155,8 +155,8 @@ cache_store("local:group2", ...)
    '='. Every collection that is defined in this parameter SHOULD
    be used in at least one URL, else you'll receive a WARNING.
 
-   “If no collection is defined, the collection with name
-   "default" will be created.”.
+   The "default" collection always gets created, even when not
+   included in this list of collections.
 
    Example 1.2. Set cache_collections parameter
 ...
@@ -275,7 +275,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 32 10 1155 693
-   2. Liviu Chircu (@liviuchircu) 19 13 123 187
+   2. Liviu Chircu (@liviuchircu) 20 14 125 190
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
    4. Vlad Patrascu (@rvlad-patrascu) 13 9 99 125
    5. Anca Vamanu 13 5 739 54
@@ -285,8 +285,9 @@ Chapter 3. Contributors
    9. Razvan Crainea (@razvancrainea) 7 5 8 6
    10. Peter Lemenkov (@lemenkov) 4 2 3 3
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Ryan
-   Bullock (@rrb3942), Julián Moreno Patiño, Zero King (@l2dy).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Dusan
+   Klinec (@ph4r05), Ryan Bullock (@rrb3942), Julián Moreno
+   Patiño, Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -308,19 +309,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Nov 2020
-   2.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
-   7.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Nov 2020
+   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   8.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ryan Bullock (@rrb3942), Vlad Paiu
-   (@vladpaiu), Andrei Dragus, Anca Vamanu.
+   All remaining contributors: Dusan Klinec (@ph4r05), Ryan
+   Bullock (@rrb3942), Vlad Paiu (@vladpaiu), Andrei Dragus, Anca
+   Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -329,8 +331,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Zero King
-   (@l2dy), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Zero King (@l2dy), Bogdan-Andrei Iancu
    (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
    (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Andrei Dragus, Anca Vamanu.

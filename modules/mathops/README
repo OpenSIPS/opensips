@@ -345,6 +345,7 @@ Chapter 2. Contributors
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
    7. Julián Moreno Patiño 3 1 3 3
    8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 1 1 0 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -366,14 +367,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2019
-   2. Liviu Chircu (@liviuchircu)         Feb 2013 - Jun 2019
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6. Ryan Bullock (@rrb3942)             Feb 2016 - Feb 2016
-   7. Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8. Stephane Alnet                      Nov 2013 - Nov 2013
+   1. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2019
+   3. Liviu Chircu (@liviuchircu)         Feb 2013 - Jun 2019
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7. Ryan Bullock (@rrb3942)             Feb 2016 - Feb 2016
+   8. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9. Stephane Alnet                      Nov 2013 - Nov 2013
 
    (1) including any documentation-related commits, excluding
    merge commits
