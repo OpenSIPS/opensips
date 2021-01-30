@@ -119,8 +119,8 @@ cache_store("local:group2", ...)
    '='. Every collection that is defined in this parameter SHOULD
    be used in at least one URL, else you'll receive a WARNING.
 
-   “If no collection is defined, the collection with name
-   "default" will be created.”.
+   The "default" collection always gets created, even when not
+   included in this list of collections.
 
    Example 1.2. Set cache_collections parameter
 ...
@@ -204,7 +204,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 33 10 1155 693
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 41 47
-   3. Liviu Chircu (@liviuchircu) 14 10 64 148
+   3. Liviu Chircu (@liviuchircu) 15 11 66 151
    4. Anca Vamanu 12 5 739 54
    5. Andrei Dragus 10 4 182 181
    6. Ionut Ionita (@ionutrazvanionita) 9 3 513 55
@@ -235,8 +235,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Aug 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - May 2017
    5.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
