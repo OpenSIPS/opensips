@@ -2168,7 +2168,7 @@ static void _ds_set_state(ds_set_p set, int idx, str *address, int state,
 				evi_free_params(list);
 				return;
 			}
-			if (evi_param_add_int(list, &group_str, &group)) {
+			if (evi_param_add_int(list, &group_str, &set->id)) {
 				LM_ERR("unable to add group parameter\n");
 				evi_free_params(list);
 				return;
