@@ -248,10 +248,10 @@ ifeq ($(CC_NAME:clang=gcc),gcc)
 predef_macros:=$(shell $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
 					$(CFLAGS) /dev/null)
 stdatomics_support:=$(shell printf '\43include <stdatomic.h>' | $(CC) -dM -E -x c $(CC_EXTRA_OPTS) $(extra_defs) \
-					$(CFLAGS) /dev/stdin >/dev/null 2>/dev/null && printf '\55DHAVE_STDATOMIC')
+					$(CFLAGS) - >/dev/null 2>/dev/null && printf '\55DHAVE_STDATOMIC')
 generics_support:=$(shell printf '\43include <unistd.h>\n\43define m(x) _Generic((x),default:sleep)(x)\nint main(void){(int)m(0);}\n' | \
 	$(CC) -dM -c -x c $(CC_EXTRA_OPTS) $(extra_defs) \
-					$(CFLAGS) /dev/stdin >/dev/null 2>/dev/null && printf '\55DHAVE_GENERICS')
+					$(CFLAGS) -o /dev/null - >/dev/null 2>/dev/null && printf '\55DHAVE_GENERICS')
 DEFS+=$(stdatomics_support) $(generics_support)
 
 ifneq ($(strip $(filter $(i386_macros), $(predef_macros))),)
