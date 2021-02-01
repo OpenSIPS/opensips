@@ -84,6 +84,7 @@ static str method_invite= {INVITE, INVITE_LEN};
 static str method_ack   = {ACK, ACK_LEN};
 static str method_bye   = {BYE, BYE_LEN};
 static str method_cancel= {CANCEL, CANCEL_LEN};
+static str method_notify= {NOTIFY, NOTIFY_LEN};
 
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
@@ -473,9 +474,25 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 		}
 		else
 		{
-			/* the entity to connect replied with negative reply */
-			b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
-			b2b_mark_todel(tuple);
+			if(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE)
+			{
+				/* Delete failed entity */
+				b2bl_delete_entity(bentity, tuple, hash_index, 1);
+
+				/* Restore initial bridge */
+				tuple->bridge_entities[1] = tuple->bridge_entities[0];
+				tuple->bridge_entities[0] = tuple->servers[0];
+
+				tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
+				tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
+
+				/* Disable bridging state */
+				tuple->state = B2B_NOTDEF_STATE;
+			} else {
+				/* the entity to connect replied with negative reply */
+				b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
+				b2b_mark_todel(tuple);
+			}
 		}
 	}
 	else
@@ -512,6 +529,45 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 	return process_bridge_dialog_end(tuple, hash_index, entity_no, entity);
 }
 
+int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index, struct sip_msg* msg)
+{
+	b2b_req_data_t req_data;
+	static char def_hdrs[] = "Event: refer\r\nContent-Type: message/sipfrag\r\nSubscription-State: ";
+	static char buf[BUF_LEN];
+	static str body = str_init("SIP/2.0 100 Trying");
+	static str hdrs = {buf, 0};
+
+	memset(&req_data, 0, sizeof(b2b_req_data_t));
+	PREP_REQ_DATA(entity);
+	req_data.method = &method_notify;
+	req_data.client_headers = &entity->hdrs;
+	req_data.body = 0;
+	if (!msg) {
+		hdrs.len = snprintf(buf, BUF_LEN, "%sactive;expires=%d\r\n", def_hdrs, 60);
+	} else {
+		body.s = msg->first_line.u.reply.version.s;
+		body.len = msg->first_line.u.reply.version.len +
+				msg->first_line.u.reply.status.len +
+				msg->first_line.u.reply.reason.len + 2;
+		hdrs.len = snprintf(buf, BUF_LEN, "%sterminated;reason=noresource\r\n", def_hdrs);
+	}
+	LM_DBG("Sending notify [%.*s]\n", body.len, body.s);
+	if ((unsigned)hdrs.len >= BUF_LEN) {
+		LM_ERR("Buffer is too small\n");
+		return -1;
+	}
+	req_data.extra_headers = &hdrs;
+	req_data.body = &body;
+	b2bl_htable[hash_index].locked_by = process_no;
+	if (b2b_api.send_request(&req_data) < 0) {
+		LM_ERR("Failed to send NOTIFY\n");
+		b2bl_htable[hash_index].locked_by = -1;
+		return -1;
+	}
+	b2bl_htable[hash_index].locked_by = -1;
+
+	return 0;
+}
 
 int process_bridge_negreply(b2bl_tuple_t* tuple,
 		unsigned int hash_index, b2bl_entity_id_t* entity, struct sip_msg* msg)
@@ -643,6 +699,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 
 	return entity;
 }
+
 int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		str* body, b2bl_tuple_t* tuple, unsigned int hash_index,
 		b2bl_entity_id_t* entity)
@@ -1123,8 +1180,11 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	if (tuple->state == B2B_BRIDGING_STATE) {
 		LM_DBG("Received a reply [%d] while in BRIDGING scenario\n",
 			statuscode);
+
 		/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
 		/* extract the method from Cseq header */
+
+		if(method_value == METHOD_NOTIFY) goto done1; /* Silently ignore reply on NOTIFY */
 
 		if(method_value != METHOD_INVITE)
 		{
@@ -1132,6 +1192,14 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 				" reply(for method %d)\n", method_value);
 			goto error;
 		}
+
+		if(statuscode >= 200 && entity == tuple->bridge_entities[1]) /* Reply from new bridge entity */
+		{
+			process_bridge_notify(tuple->servers[0], cur_route_ctx.hash_index, msg);
+			if(statuscode == 200 || !(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE))
+				b2bl_delete_entity(tuple->servers[0], tuple, tuple->hash_index, 1);
+		}
+
 		/* if a negative reply */
 		if(statuscode >= 300)
 		{
@@ -1996,7 +2064,7 @@ static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 }
 
 int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
-	str *provmedia_uri, int *lifetime)
+	str *provmedia_uri, struct b2b_bridge_params *params)
 {
 	b2bl_tuple_t *tuple;
 	b2bl_entity_id_t *entity, *e = NULL, *old_entity = NULL;
@@ -2018,6 +2086,8 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 		LM_ERR("B2B logic record not found\n");
 		goto done;
 	}
+
+	tuple->bridge_flags = params->flags;
 
 	entity = b2bl_search_entity(tuple, &cur_route_ctx.entity_key,
 		cur_route_ctx.entity_type, &entity_head);
@@ -2057,8 +2127,11 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	} else if (!new_br_ent[1])
 		goto done;
 
+	if (params->flags & B2BL_BR_FLAG_NOTIFY)
+		process_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
+
 	if (process_bridge_action(msg, tuple, cur_route_ctx.hash_index,
-		old_entity, new_br_ent, provmedia_uri, lifetime ? *lifetime : 0) < 0) {
+		old_entity, new_br_ent, provmedia_uri, params->lifetime) < 0) {
 		LM_ERR("Failed to process bridge action\n");
 		goto done;
 	}
@@ -2744,7 +2817,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	else
 		tuple->lifetime = -1;
 
-	LM_DBG("be[0]= %p, be1=[%p]\n", tuple->bridge_entities[0], tuple->bridge_entities[1]);
+	LM_DBG("be[0] = [%p], be[1] = [%p]\n", tuple->bridge_entities[0], tuple->bridge_entities[1]);
 	return 0;
 
 error1:

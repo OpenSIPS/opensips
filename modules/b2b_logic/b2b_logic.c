@@ -57,6 +57,7 @@ static void mod_destroy(void);
 static int child_init(int rank);
 static int fixup_init_flags(void** param);
 static int fixup_free_init_flags(void** param);
+static int fixup_bridge_flags(void** param);
 static int fixup_init_id(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_route(void** param);
@@ -208,7 +209,8 @@ static cmd_export_t cmds[]=
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_bridge_flags, fixup_free_init_flags}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_bridge_request", (cmd_function)b2b_bridge_request,
 		{{CMD_PARAM_STR,0,0}, {CMD_PARAM_INT,0,0}, {0,0,0}},
@@ -723,6 +725,50 @@ static int fixup_free_init_flags(void** param)
 {
 	if (*param)
 		pkg_free(*param);
+
+	return 0;
+}
+
+static int fixup_bridge_flags(void** param)
+{
+	str *s = (str*)*param;
+	int st;
+	struct b2b_bridge_params *bridge_params;
+
+	bridge_params = pkg_malloc(sizeof *bridge_params);
+	if (!bridge_params) {
+		LM_ERR("out of pkg memory\n");
+		return -1;
+	}
+	memset(bridge_params, 0, sizeof *bridge_params);
+
+	bridge_params->lifetime = 0;
+
+	*param = (void*)bridge_params;
+
+	if (!s)
+		return 0;
+
+	for( st=0 ; st< s->len ; st++ ) {
+		switch (s->s[st])
+		{
+			case 't':
+				while (st<s->len-1 && isdigit(s->s[st+1])) {
+					bridge_params->lifetime =
+						bridge_params->lifetime*10 + s->s[st+1] - '0';
+					st++;
+				}
+				break;
+			case 'n':
+				bridge_params->flags |= B2BL_BR_FLAG_NOTIFY;
+				break;
+			case 'f':
+				bridge_params->flags |= B2BL_BR_FLAG_RETURN_AFTER_FAILURE;
+				break;
+			default:
+				LM_WARN("unknown option `%c'\n", s->s[st]);
+		}
+	}
 
 	return 0;
 }

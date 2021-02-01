@@ -635,7 +635,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 
 	<section id="func_b2b_bridge" xreflabel="b2b_bridge()">
 		<title>
-		<function moreinfo="none">b2b_bridge(entity1, entity2, [provmedia_uri], [lifetime])</function>
+		<function moreinfo="none">b2b_bridge(entity1, entity2, [provmedia_uri], [flags])</function>
 		</title>
 		<para>
 			This function bridges two entities, in the context of an existing B2B session
@@ -660,9 +660,23 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 				media server to be connected with the caller while the callee answers.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>lifetime (int, optional)</emphasis> - maximum duration of the B2B
-				session. If the lifetime expires, the B2BUA will send BYE messages to both
-				ends and delete the record.
+				<emphasis>flags (string, optional)</emphasis> - meanings of the flags is as follows:
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>t[nn]</emphasis> - Maximum duration of the B2B
+					session. If the lifetime expires, the B2BUA will send BYE messages to both
+					ends and delete the record.
+					Example: t300.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>n</emphasis> - Enable rfc3515 NOTIFY to inform the agent sending the
+					REFER of the status of the reference.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>f</emphasis> - Rollback call to state before bridging in case of transfer
+					failed, don't hangup the call (default behaviour).
+					</para></listitem>
+				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
 		<para>
