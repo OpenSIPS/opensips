@@ -51,7 +51,7 @@
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
 #define		B2BL_FLAG_TRANSPARENT_TO	0x02
-#define		B2BL_FLAG_USE_INIT_SDP		0x03
+#define		B2BL_FLAG_USE_INIT_SDP		0x04
 
 /* modes to write in db */
 #define NO_DB         0
