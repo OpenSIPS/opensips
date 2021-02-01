@@ -479,6 +479,12 @@ int b2b_entities_restore(void)
 				}
 				dlg.tag[1].s = NULL;
 				dlg.tag[1].len = 0;
+
+				if (hash_index >= server_hsize) {
+					LM_ERR("Hash Index [%d] too large! Increase the 'server_hsize'"
+						"parameter!\n", hash_index);
+					goto error;
+				}
 			}
 			else
 			{
@@ -487,6 +493,12 @@ int b2b_entities_restore(void)
 				if(b2b_parse_key(&dlg.callid, &hash_index, &local_index, NULL) < 0)
 				{
 					LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.callid.len, dlg.callid.s);
+					goto error;
+				}
+
+				if (hash_index >= client_hsize) {
+					LM_DBG("Hash Index [%d] too large! Increase the 'client_hsize'"
+						"parameter!\n", hash_index);
 					goto error;
 				}
 			}
