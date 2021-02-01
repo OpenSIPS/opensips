@@ -771,9 +771,11 @@ static void dlg_sequential_reply(struct cell* t, int type, struct tmcb_params* p
 	/* if we have to negotiate, let's do it! */
 	p->ref++;
 	p->state = DLG_CHL_PENDING;
+	/* swap the leg */
+	p->leg = other_leg(dlg, p->leg);
 
 	ref_dlg(dlg, 1);
-	if (send_leg_msg(dlg, &p->method, other_leg(dlg, p->leg), p->leg,
+	if (send_leg_msg(dlg, &p->method, p->leg, other_leg(dlg, p->leg),
 			&extra_headers, &body,
 			dlg_sequential_reply, p, dlg_sequential_free,
 			&dlg->legs[p->leg].reply_received) < 0) {
