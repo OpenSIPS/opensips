@@ -957,8 +957,10 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 			goto out_unlock;
 		}
 
+		struct sockaddr_in daddr;
+		memcpy(&daddr.sin_addr, he->h_addr_list[0], sizeof(daddr.sin_addr));
 		LM_DBG("Delete by host: '%s'\n",
-		        inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])));
+		        inet_ntoa(daddr.sin_addr));
 
 		if (hostent_cpy(&delete_nh_he, he) != 0) {
 			LM_ERR("no more pkg mem\n");
@@ -984,9 +986,11 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 			continue;
 		}
 
+		struct sockaddr_in daddr;
+		memcpy(&daddr.sin_addr, he->h_addr_list[0], sizeof(daddr.sin_addr));
 		LM_DBG("next hop is [%.*s] resolving to [%s]\n",
 			contact->next_hop.name.len, contact->next_hop.name.s,
-			inet_ntoa(*(struct in_addr *)(he->h_addr_list[0])));
+			inet_ntoa(daddr.sin_addr));
 
 		if (match_next_hop) {
 			if (memcmp(delete_nh_he.h_addr_list[0],
