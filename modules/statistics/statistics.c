@@ -285,6 +285,7 @@ static int reg_stat_series_profile( modparam_t type, void* val)
 	str params, name, k, v;
 	char *p;
 	unsigned int tmp, factor;
+	int alg;
 
 	init_str(&params, val);
 
@@ -351,14 +352,14 @@ static int reg_stat_series_profile( modparam_t type, void* val)
 		} else if (!str_strcasecmp(&k, &param_group)) {
 			sp->group = v;
 		} else if (!str_strcasecmp(&k, &param_algorithm)) {
-			for (tmp = sizeof(stat_alg_map)/sizeof(stat_alg_map[0]) - 1; tmp >= 0; tmp--)
-				if (!str_strcasecmp(&stat_alg_map[tmp].name, &v))
+			for (alg = sizeof(stat_alg_map)/sizeof(stat_alg_map[0]) - 1; alg >= 0; alg--)
+				if (!str_strcasecmp(&stat_alg_map[alg].name, &v))
 					break;
-			if (tmp < 0) {
+			if (alg < 0) {
 				LM_ERR("stat series unknown algorithm %.*s for %.*s! using previous/default: %s\n",
 						v.len, v.s, name.len, name.s, stat_series_alg_name(sp->algorithm));
 			} else {
-				sp->algorithm = stat_alg_map[tmp].alg;
+				sp->algorithm = stat_alg_map[alg].alg;
 			}
 		} else if (!str_strcasecmp(&k, &param_window)) {
 			if (str2int(&v, &tmp) < 0) {
