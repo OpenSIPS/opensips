@@ -66,7 +66,7 @@
 
 #define lump_clone( _new,_old,_ptr) \
 	{\
-		(_new) = (struct lump*)(_ptr);\
+		(_new) = (struct lump*)(void *)(_ptr);\
 		memcpy( (_new), (_old), sizeof(struct lump) );\
 		(_new)->flags|=LUMPFLAG_SHMEM; \
 		(_ptr)+=ROUND4(sizeof(struct lump));\
@@ -92,7 +92,7 @@ inline static struct via_body* via_body_cloner( char* new_buf,
 	do
 	{
 		/* clones the via_body structure */
-		new_via = (struct via_body*)(*p);
+		new_via = (struct via_body*)(void *)(*p);
 		memcpy( new_via , org_via , sizeof( struct via_body) );
 		(*p) += ROUND4(sizeof( struct via_body ));
 
@@ -125,7 +125,7 @@ inline static struct via_body* via_body_cloner( char* new_buf,
 			struct via_param *vp, *new_vp, *last_new_vp;
 			for( vp=org_via->param_lst, last_new_vp=0 ; vp ; vp=vp->next )
 			{
-				new_vp = (struct via_param*)(*p);
+				new_vp = (struct via_param*)(void *)(*p);
 				memcpy( new_vp , vp , sizeof(struct via_param));
 				(*p) += ROUND4(sizeof(struct via_param));
 				new_vp->name.s=translate_pointer(new_buf,org_buf,vp->name.s);
@@ -217,7 +217,7 @@ static inline struct auth_body* auth_body_cloner(char* new_buf, char *org_buf, s
 {
 	struct auth_body* new_auth;
 
-	new_auth = (struct auth_body*)(*p);
+	new_auth = (struct auth_body*)(void *)(*p);
 	memcpy(new_auth , auth , sizeof(struct auth_body));
 	(*p) += ROUND4(sizeof(struct auth_body));
 
@@ -378,7 +378,7 @@ do { \
 		struct lump_rpl   *_rpl_lump, **_rpl_lump_anchor; \
 		_rpl_lump_anchor = (_anchor); \
 		for(_rpl_lump=(_list);_rpl_lump;_rpl_lump=_rpl_lump->next) { \
-			*(_rpl_lump_anchor)=(struct lump_rpl*)(_p); \
+			*(_rpl_lump_anchor)=(struct lump_rpl*)(void *)(_p); \
 			(_p) += ROUND4(sizeof( struct lump_rpl )); \
 			(*_rpl_lump_anchor)->flags = LUMP_RPL_SHMEM | \
 				(_rpl_lump->flags&(~(LUMP_RPL_NODUP|LUMP_RPL_NOFREE))); \
@@ -541,7 +541,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 		*sip_msg_len = len;
 
 	/* filling up the new structure */
-	new_msg = (struct sip_msg*)p;
+	new_msg = (struct sip_msg*)(void *)p;
 	/* sip msg structure */
 	memcpy( new_msg , org_msg , sizeof(struct sip_msg));
 
@@ -600,7 +600,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 	new_msg->via2=0;
 	for( hdr=org_msg->headers,last_hdr=0 ; hdr ; hdr=hdr->next )
 	{
-		new_hdr = (struct hdr_field*)p;
+		new_hdr = (struct hdr_field*)(void *)p;
 		memcpy(new_hdr, hdr, sizeof(struct hdr_field) );
 		p += ROUND4(sizeof( struct hdr_field));
 		new_hdr->name.s = translate_pointer(new_msg->buf, org_msg->buf,
@@ -697,7 +697,7 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 				for(;to_prm;to_prm=to_prm->next)
 				{
 					/*alloc*/
-					new_to_prm = (struct to_param*)p;
+					new_to_prm = (struct to_param*)(void *)p;
 					p +=ROUND4(sizeof(struct to_param ));
 					/*coping*/
 					memcpy( new_to_prm, to_prm, sizeof(struct to_param ));

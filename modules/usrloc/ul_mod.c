@@ -922,7 +922,7 @@ int ul_check_db(void)
 				return -1;
 			}
 
-			cid_vals = (db_val_t *)(cid_keys + max_contact_delete);
+			cid_vals = (db_val_t *)(void *)(cid_keys + max_contact_delete);
 			for (i = 0; i < max_contact_delete; i++) {
 				VAL_TYPE(cid_vals + i) = DB_BIGINT;
 				VAL_NULL(cid_vals + i) = 0;
