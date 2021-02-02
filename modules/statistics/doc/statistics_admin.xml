@@ -149,7 +149,7 @@ modparam("statistics", "stat_groups", "method, packet, response")
 		</example>
 	</section>
 	<section id="param_stat_series_profile" xreflabel="stat_series_profile">
-		<title><varname>stat_groups</varname> (string)</title>
+		<title><varname>stat_series_profile</varname> (string)</title>
 		<para>
 		Used to define a statistic series profile. Has the following format:
 		<emphasis>name: [attr=value]*</emphasis>, where <emphasis>name</emphasis>
@@ -159,7 +159,7 @@ modparam("statistics", "stat_groups", "method, packet, response")
 		<itemizedlist>
 		<listitem>
 		<para>
-			<emphasis>algorightm</emphasis> - indicates the way data should be
+			<emphasis>algorithm</emphasis> - indicates the way data should be
 			stored and accumulated over the specified timeframe. Possible values are:
 			<emphasis>accumulate</emphasis>, <emphasis>average</emphasis> and
 			<emphasis>percentage</emphasis>, as described in the
