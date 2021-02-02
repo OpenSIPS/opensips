@@ -622,27 +622,26 @@ free_request:
 
 static inline struct mi_handler* build_async_handler(char *name, int len, mi_item_t *id)
 {
-	struct mi_handler *hdl;
-	struct mi_async_param *p;
-	char *file;
+	struct {
+		struct mi_handler hdl;
+		struct mi_async_param p;
+		char file[0];
+	} *buf;
 
-	hdl = (struct mi_handler*)shm_malloc(sizeof(struct mi_handler) +
-			sizeof(struct mi_async_param) + len + 1);
-	if (hdl==0) {
+	buf = shm_malloc(sizeof(*buf) + len + 1);
+	if (buf == NULL) {
 		LM_ERR("no more shared memory\n");
 		return 0;
 	}
-	p = (struct mi_async_param*)((char *)hdl + sizeof(struct mi_handler));
-	file = (char *)(p + 1);
-	p->file = file;
-	p->id = shm_clone_mi_item(id);
+	buf->p.file = buf->file;
+	buf->p.id = shm_clone_mi_item(id);
 
-	memcpy(file, name, len+1 );
+	memcpy(buf->file, name, len+1 );
 
-	hdl->handler_f = fifo_close_async;
-	hdl->param = (void*)p;
+	buf->hdl.handler_f = fifo_close_async;
+	buf->hdl.param = &buf->p;
 
-	return hdl;
+	return &buf->hdl;
 }
 
 
