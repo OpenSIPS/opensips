@@ -2105,7 +2105,7 @@ static inline int get_socket_field( struct socket_info *si,
 		case SOCK_PORT_ID: /* return PORT */
 			res->rs = si->port_no_str;
 			res->ri = si->port_no;
-			res->flags = PV_VAL_STR|PV_VAL_INT;
+			res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 			break;
 		case SOCK_PROTO_ID: /* return PROTOCOL */
 			if ( si->proto>=PROTO_FIRST && si->proto<PROTO_LAST &&
@@ -2129,7 +2129,7 @@ static inline int get_socket_field( struct socket_info *si,
 			if (si->adv_port_str.s) {
 				res->rs = si->adv_port_str;
 				res->ri = si->adv_port;
-				res->flags = PV_VAL_STR|PV_VAL_INT;
+				res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
 			} else {
 				return pv_get_null( NULL, NULL, res);
 			}
@@ -2147,7 +2147,7 @@ static inline int get_socket_field( struct socket_info *si,
 				res->ri = 1;
 			else
 				res->ri = 0;
-			res->flags = PV_VAL_INT;
+			res->flags = PV_VAL_INT|PV_TYPE_INT;
 			break;
 		case SOCK_AF_ID:  /* returns Address Family */
 			if (si->address.af == AF_INET) {
