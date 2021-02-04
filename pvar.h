@@ -61,7 +61,7 @@
 
 /* @v: a (pv_value_t *) */
 #define pvv_is_int(v) \
-	((v)->flags & PV_VAL_INT && \
+	((v)->flags & (PV_VAL_INT|PV_TYPE_INT) && \
 		((v)->flags & PV_TYPE_INT || !((v)->flags & PV_VAL_STR)))
 #define pvv_is_str(v) \
 	((v)->flags & PV_VAL_STR && !((v)->flags & PV_TYPE_INT))
