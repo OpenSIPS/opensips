@@ -474,20 +474,22 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 		}
 		else
 		{
-			if(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE)
+			if(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE &&
+				tuple->bridge_initiator != 0)
 			{
 				/* Delete failed entity */
 				b2bl_delete_entity(bentity, tuple, hash_index, 1);
 
 				/* Restore initial bridge */
 				tuple->bridge_entities[1] = tuple->bridge_entities[0];
-				tuple->bridge_entities[0] = tuple->servers[0];
+				tuple->bridge_entities[0] = tuple->bridge_initiator;
 
 				tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 				tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 
 				/* Disable bridging state */
 				tuple->state = B2B_NOTDEF_STATE;
+				tuple->bridge_initiator = 0;
 			} else {
 				/* the entity to connect replied with negative reply */
 				b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
@@ -1193,11 +1195,16 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			goto error;
 		}
 
-		if(statuscode >= 200 && entity == tuple->bridge_entities[1]) /* Reply from new bridge entity */
+		/* Reply from new bridge entity */
+		if(statuscode >= 200 && entity == tuple->bridge_entities[1] &&
+			tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY && tuple->bridge_initiator != 0)
 		{
-			process_bridge_notify(tuple->servers[0], cur_route_ctx.hash_index, msg);
+			process_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
 			if(statuscode == 200 || !(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE))
-				b2bl_delete_entity(tuple->servers[0], tuple, tuple->hash_index, 1);
+			{
+				b2bl_delete_entity(tuple->bridge_initiator, tuple, tuple->hash_index, 1);
+				tuple->bridge_initiator = 0;
+			}
 		}
 
 		/* if a negative reply */
@@ -2135,6 +2142,9 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 		LM_ERR("Failed to process bridge action\n");
 		goto done;
 	}
+
+	if (params->flags & B2BL_BR_FLAG_NOTIFY || params->flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE)
+		tuple->bridge_initiator = entity;
 
 	cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 
