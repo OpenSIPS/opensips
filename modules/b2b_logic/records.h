@@ -100,6 +100,8 @@ typedef struct b2bl_tuple
 	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
 	b2bl_entity_id_t* clients[MAX_B2BL_ENT];
 	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];
+	b2bl_entity_id_t* bridge_initiator;
+	int bridge_flags;
 	int to_del;
 	str* extra_headers;
 	struct b2bl_tuple* next;

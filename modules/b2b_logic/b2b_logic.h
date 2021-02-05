@@ -51,7 +51,11 @@
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
 #define		B2BL_FLAG_TRANSPARENT_TO	0x02
-#define		B2BL_FLAG_USE_INIT_SDP		0x03
+#define		B2BL_FLAG_USE_INIT_SDP		0x04
+
+/* B2BL_BR_FLAGS constants */
+#define B2BL_BR_FLAG_NOTIFY			0x01
+#define B2BL_BR_FLAG_RETURN_AFTER_FAILURE	0x02
 
 /* modes to write in db */
 #define NO_DB         0
@@ -82,6 +86,12 @@ struct b2b_params
 	str *id;
 	str *init_body;
 	str *init_body_type;
+};
+
+struct b2b_bridge_params
+{
+	unsigned int flags;
+	unsigned int lifetime;
 };
 
 enum pv_entity_field {
