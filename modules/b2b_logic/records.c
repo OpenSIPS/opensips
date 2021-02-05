@@ -495,6 +495,9 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 		if(tuple->bridge_entities[i] == entity)
 			tuple->bridge_entities[i] = NULL;
 
+	if (tuple->bridge_initiator == entity)
+		tuple->bridge_initiator = NULL;
+
 /*	if(entity->peer && entity->peer->peer==entity)
 		entity->peer->peer = NULL;
 */

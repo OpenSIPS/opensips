@@ -475,7 +475,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 		else
 		{
 			if(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE &&
-				tuple->bridge_initiator != 0)
+				tuple->bridge_initiator != 0 && tuple->bridge_initiator->peer)
 			{
 				/* Delete failed entity */
 				b2bl_delete_entity(bentity, tuple, hash_index, 1);
