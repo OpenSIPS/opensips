@@ -605,13 +605,13 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 
 	for (i = 0; i < hsize; i++)
 		for (dlg = htable[i].first; dlg; dlg = dlg->next) {
-			if (bin_init(&storage, &storage_cap, B2BE_STORAGE_BIN_TYPE,
-				B2BE_STORAGE_BIN_VERS, 0) < 0) {
-				LM_ERR("Failed to init entity storage buffer\n");
-				return;
-			}
-
 			if (dlg->storage.len > 0) {
+				if (bin_init(&storage, &storage_cap, B2BE_STORAGE_BIN_TYPE,
+					B2BE_STORAGE_BIN_VERS, 0) < 0) {
+					LM_ERR("Failed to init entity storage buffer\n");
+					return;
+				}
+
 				if (bin_append_buffer(&storage, &dlg->storage) < 0) {
 					LM_ERR("Failed to build entity storage buffer\n");
 					return;
@@ -622,12 +622,15 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 			}
 
 			cb->cbf(etype, etype == B2B_CLIENT ? &dlg->callid : &dlg->tag[1],
-				&dlg->param, B2B_EVENT_CREATE, &storage, B2BCB_BACKEND_DB);
+				&dlg->param, B2B_EVENT_CREATE, dlg->storage.len ? &storage : NULL,
+				B2BCB_BACKEND_DB);
 
-			bin_free_packet(&storage);
-			shm_free(dlg->storage.s);
-			dlg->storage.s = NULL;
-			dlg->storage.len = 0;
+			if (dlg->storage.len) {
+				bin_free_packet(&storage);
+				shm_free(dlg->storage.s);
+				dlg->storage.s = NULL;
+				dlg->storage.len = 0;
+			}
 		}
 }
 
