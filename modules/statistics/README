@@ -7,26 +7,29 @@ Statistics Module
 
         1.1. Overview
         1.2. Statistic Groups
-        1.3. Dependencies
+        1.3. Statistic Series
+        1.4. Dependencies
 
-              1.3.1. OpenSIPS Modules
-              1.3.2. External Libraries or Applications
+              1.4.1. OpenSIPS Modules
+              1.4.2. External Libraries or Applications
 
-        1.4. Exported Parameters
+        1.5. Exported Parameters
 
-              1.4.1. variable (string)
-              1.4.2. stat_groups (string)
+              1.5.1. variable (string)
+              1.5.2. stat_groups (string)
+              1.5.3. stat_series_profile (string)
 
-        1.5. Exported Functions
+        1.6. Exported Functions
 
-              1.5.1. update_stat(variable, value)
-              1.5.2. reset_stat(variable)
-              1.5.3. stat_iter_init(group, iter)
-              1.5.4. stat_iter_next(name, val, iter)
+              1.6.1. update_stat(variable, value)
+              1.6.2. reset_stat(variable)
+              1.6.3. stat_iter_init(group, iter)
+              1.6.4. stat_iter_next(name, val, iter)
+              1.6.5. update_stat_series(profile, variable, value)
 
-        1.6. Exported Pseudo-Variables
+        1.7. Exported Pseudo-Variables
 
-              1.6.1. $stat
+              1.7.1. $stat
 
    2. Contributors
 
@@ -48,11 +51,13 @@ Statistics Module
 
    1.1. variable example
    1.2. setting the stat_groups parameter
-   1.3. update_stat usage
-   1.4. reset_stat usage
-   1.5. stat_iter_init usage
-   1.6. stat_iter_next usage
-   1.7. $stat usage
+   1.3. setting the stat_series_profile parameter
+   1.4. update_stat usage
+   1.5. reset_stat usage
+   1.6. stat_iter_init usage
+   1.7. stat_iter_next usage
+   1.8. update_stat_series usage
+   1.9. $stat usage
 
 Chapter 1. Admin Guide
 
@@ -80,22 +85,46 @@ Chapter 1. Admin Guide
 
    By default, all statistics belong to the "dynamic" group.
 
-1.3. Dependencies
+1.3. Statistic Series
 
-1.3.1. OpenSIPS Modules
+   Statistic series provide the ability to accumulate statistical
+   data over a pre-defined time window. Data is stored in a
+   circular buffer, pushing new data on top, and removing stale
+   values (values outside the timeframe) from the bottom. These
+   statistics can be used to provide per-time stats, such as ACD,
+   ASR, AST, etc, that can be read using the classic statistics
+   interface, through the $stat() variable.
+
+   Statistic series profile describe the timeframe used to store
+   the data, as well as how the data is be accumulated and
+   interpreted. There are several types a statistic series can be
+   used, depending on the provisioned algorithm:
+     * accumulate - accumulates the specified values in a counter;
+       works similar to clasical statistics, except that they
+       reset after the specified timeframe
+     * average - returns an average of all the data fed within the
+       timeframe; can be useful when computing PDD, AST, ACD
+       stats.
+     * percentage - indicates the percentage of a set of values
+       out of the total amount of values fed; can be useful when
+       computing ASR, NER, CCR stats.
+
+1.4. Dependencies
+
+1.4.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * No dependencies on other OpenSIPS modules.
 
-1.3.2. External Libraries or Applications
+1.4.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.4. Exported Parameters
+1.5. Exported Parameters
 
-1.4.1. variable (string)
+1.5.1. variable (string)
 
    Name of a new statistic variable. The name may be followed by
    additional flag which describe the variable behavior:
@@ -105,7 +134,7 @@ Chapter 1. Admin Guide
 modparam("statistics", "variable", "register_counter")
 modparam("statistics", "variable", "active_calls/no_reset")
 
-1.4.2. stat_groups (string)
+1.5.2. stat_groups (string)
 
    A comma-separated values string, specifying the statistic
    groups that may be used throughout the OpenSIPS script. Groups
@@ -114,9 +143,57 @@ modparam("statistics", "variable", "active_calls/no_reset")
    Example 1.2. setting the stat_groups parameter
 modparam("statistics", "stat_groups", "method, packet, response")
 
-1.5. Exported Functions
+1.5.3. stat_series_profile (string)
 
-1.5.1.  update_stat(variable, value)
+   Used to define a statistic series profile. Has the following
+   format: name: [attr=value]*, where name represents the name of
+   the profile, and attr=value contains multiple settings of the
+   defined profile. Possible attributes and their values are:
+     * algorithm - indicates the way data should be stored and
+       accumulated over the specified timeframe. Possible values
+       are: accumulate, average and percentage, as described in
+       the Section 1.3, “Statistic Series” paragraph (default is
+       accumulate)
+     * hash_size - each statistic defined/used is stored in a hash
+       map attached to the profile; this setting tunes the size of
+       the hash (default is: 8)
+     * group - indicates the group where the statistics beloging
+       to this profile are grouped (as described in stat_groups
+       (default is to use the same group as the profile)
+     * window - the number of seconds a timeframe has; all older
+       values (out of the specified window) are discarded (default
+       is 60 seconds)
+     * slots - the number of slots per window; used to tune the
+       granularity of the circular buffer; the higher the number
+       of slots is, the more accurate the resulted statistic;
+       (default is the same value of the window parameter)
+     * percentage_factor - used for percentage algorithm profiles
+       to specify the percentage factor to be used (defaults to
+       100)
+
+   This parameter can be set multiple times, for each profile
+   needed.
+
+   Example 1.3. setting the stat_series_profile parameter
+...
+# define a statistic that accumulates average values in the last minute
+modparam("statistics", "stat_series_profile", "avg: algorithm=average")
+...
+# define a statistic that accumulates average values in the 10 minutes
+# with 1 minute granularity (10 slots out of the 600s window)
+modparam("statistics", "stat_series_profile", "avg_10m: algorithm=averag
+e window=600 slots=10")
+...
+# define a statistic that computes the percentage of values in the last
+hour
+# with 10 minutes granularity (6 slots out of the 3600s window)
+modparam("statistics", "stat_series_profile", "perc_1h: algorithm=percen
+tage window=3600 slots=6")
+...
+
+1.6. Exported Functions
+
+1.6.1.  update_stat(variable, value)
 
    Updates the value of the statistic variable with the new value.
 
@@ -128,7 +205,7 @@ modparam("statistics", "stat_groups", "method, packet, response")
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.3. update_stat usage
+   Example 1.4. update_stat usage
 ...
 update_stat("register_counter", 1);
 ...
@@ -136,7 +213,7 @@ $var(a_calls) = "active_calls";
 update_stat($var(a_calls), -1);
 ...
 
-1.5.2.  reset_stat(variable)
+1.6.2.  reset_stat(variable)
 
    Resets to zero the value of the statistic variable.
 
@@ -146,7 +223,7 @@ update_stat($var(a_calls), -1);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.4. reset_stat usage
+   Example 1.5. reset_stat usage
 ...
 reset_stat("register_counter");
 ...
@@ -154,7 +231,7 @@ $var(reg_counter) = "register_counter";
 update_stat($var(reg_counter));
 ...
 
-1.5.3.  stat_iter_init(group, iter)
+1.6.3.  stat_iter_init(group, iter)
 
    Re-initializes "iter" in order to begin iterating through all
    statistics belonging to the given "group".
@@ -167,12 +244,12 @@ update_stat($var(reg_counter));
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.5. stat_iter_init usage
+   Example 1.6. stat_iter_init usage
 ...
 stat_iter_init("packet", "iter");
 ...
 
-1.5.4.  stat_iter_next(name, val, iter)
+1.6.4.  stat_iter_next(name, val, iter)
 
    Attempts to fetch the current statistic to which "iter" points.
    If successful, the relevant data will be written to "name" and
@@ -188,7 +265,7 @@ stat_iter_init("packet", "iter");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    FAILURE_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.6. stat_iter_next usage
+   Example 1.7. stat_iter_next usage
 ...
 # periodically clear packet-related data
 timer_route [clear_packet_stats, 7200] {
@@ -198,9 +275,36 @@ timer_route [clear_packet_stats, 7200] {
 }
 ...
 
-1.6. Exported Pseudo-Variables
+1.6.5.  update_stat_series(profile, variable, value)
 
-1.6.1. $stat
+   Updates the value of a series statistic.
+
+   Meaning of the parameters is as follows:
+     * profile (string) - the profile as defined in
+       stat_series_profile
+     * variable (string) - variable to be updated;
+     * value (int) - value to update with; it may be also
+       negative; when using percentage algorithm, the resulted
+       value represents the percentage of positive values out of
+       the total number of values (positive + negative)
+
+   This function can be used from any route.
+
+   Example 1.8. update_stat_series usage
+...
+# account failed calls
+update_stat_series("perc_1h", "ASR_1h", "-1");
+
+# account successful calls
+update_stat_series("perc_1h", "ASR_1h", "1");
+
+# compute average PDD
+update_stat_series("avg", "PDD", "$var(pdd_ms)");
+...
+
+1.7. Exported Pseudo-Variables
+
+1.7.1. $stat
 
    Allows "get" or "reset" operations on the given statistics.
 
@@ -213,7 +317,7 @@ timer_route [clear_packet_stats, 7200] {
    non-explicitly grouped statistics which are not exported by the
    OpenSIPS core.
 
-   Example 1.7. $stat usage
+   Example 1.9. $stat usage
 ...
 xlog("SHM used size = $stat(used_size), no_invites = $stat(method:invite
 )\n");
@@ -230,8 +334,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 33 20 1037 227
    2. Liviu Chircu (@liviuchircu) 25 17 514 158
-   3. Daniel-Constantin Mierla (@miconda) 11 9 22 18
-   4. Razvan Crainea (@razvancrainea) 11 9 17 11
+   3. Razvan Crainea (@razvancrainea) 19 12 680 18
+   4. Daniel-Constantin Mierla (@miconda) 11 9 22 18
    5. Vlad Patrascu (@rvlad-patrascu) 9 4 97 201
    6. Vlad Paiu (@vladpaiu) 5 2 144 1
    7. Anca Vamanu 4 2 14 16
@@ -263,9 +367,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Feb 2021
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2006 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -285,11 +389,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Vlad
-   Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu), Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

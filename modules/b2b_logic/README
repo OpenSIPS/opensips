@@ -45,7 +45,7 @@ B2B_LOGIC
                       [extra_hdr_bodies])
 
               1.5.4. b2b_bridge(entity1, entity2, [provmedia_uri],
-                      [lifetime])
+                      [flags])
 
               1.5.5. b2b_pass_request()
               1.5.6. b2b_handle_reply()
@@ -565,7 +565,7 @@ if(is_method("INVITE") && !has_totag()) {
 b2b_client_new("client1", "sip:alice@opensips.org");
 ...
 
-1.5.4.  b2b_bridge(entity1, entity2, [provmedia_uri], [lifetime])
+1.5.4.  b2b_bridge(entity1, entity2, [provmedia_uri], [flags])
 
    This function bridges two entities, in the context of an
    existing B2B session (the initial entities are already
@@ -583,9 +583,16 @@ b2b_client_new("client1", "sip:alice@opensips.org");
      * provmedia_uri (string, optional) - URI of the provisional
        media server to be connected with the caller while the
        callee answers.
-     * lifetime (int, optional) - maximum duration of the B2B
-       session. If the lifetime expires, the B2BUA will send BYE
-       messages to both ends and delete the record.
+     * flags (string, optional) - meanings of the flags is as
+       follows:
+          + t[nn] - Maximum duration of the B2B session. If the
+            lifetime expires, the B2BUA will send BYE messages to
+            both ends and delete the record. Example: t300.
+          + n - Enable rfc3515 NOTIFY to inform the agent sending
+            the REFER of the status of the reference.
+          + f - Rollback call to state before bridging in case of
+            transfer failed, don't hangup the call (default
+            behaviour).
 
    This function can be used from the b2b_logic request routes.
 
@@ -1071,11 +1078,11 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 109 27 4322 2807
+   3. Vlad Patrascu (@rvlad-patrascu) 110 28 4326 2808
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 39 33 218 238
    5. Razvan Crainea (@razvancrainea) 39 29 640 211
-   6. Liviu Chircu (@liviuchircu) 16 13 57 102
-   7. Nick Altmann (@nikbyte) 14 6 461 199
+   6. Nick Altmann (@nikbyte) 20 10 629 212
+   7. Liviu Chircu (@liviuchircu) 16 13 57 102
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
    9. Maksym Sobolyev (@sobomax) 5 3 22 22
    10. Peter Lemenkov (@lemenkov) 4 2 2 2
@@ -1104,19 +1111,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   4.  Zero King (@l2dy)                   Mar 2020 - Dec 2020
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   8.  Dan Pascu (@danpascu)               Jul 2019 - Jul 2019
-   9.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
-   10. Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
+   1.  Nick Altmann (@nikbyte)             Oct 2012 - Feb 2021
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2021
+   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   5.  Zero King (@l2dy)                   Mar 2020 - Dec 2020
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  Dan Pascu (@danpascu)               Jul 2019 - Jul 2019
+   10. Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
 
-   All remaining contributors: Ezequiel Lovelle (@lovelle), Nick
-   Altmann (@nikbyte), Anca Vamanu, Vlad Paiu (@vladpaiu).
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Ezequiel
+   Lovelle (@lovelle), Anca Vamanu, Vlad Paiu (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1125,11 +1132,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
-   Anca Vamanu.
+   Last edited by: Nick Altmann (@nikbyte), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas),
+   Vlad Paiu (@vladpaiu), Anca Vamanu.
 
    Documentation Copyrights:
 
