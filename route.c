@@ -514,14 +514,14 @@ inline static int comp_scriptvar(struct sip_msg *msg, int op, operand_t *left,
 				return comp_s2s(NOTMATCHD_OP, &lstr, &rvalue.rs);
 		}
 
-		if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
-			/* comparing string */
-			rstr = rvalue.rs;
-			type = 1;
-		} else if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
+		if((rvalue.flags&PV_VAL_INT) && (lvalue.flags&PV_VAL_INT)) {
 			/* comparing int */
 			rn = rvalue.ri;
 			type = 2;
+		} else if((rvalue.flags&PV_VAL_STR) && (lvalue.flags&PV_VAL_STR)) {
+			/* comparing string */
+			rstr = rvalue.rs;
+			type = 1;
 		} else
 			goto error_op;
 	} else {
