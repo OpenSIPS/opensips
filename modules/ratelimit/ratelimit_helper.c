@@ -306,7 +306,7 @@ static str * get_rl_algo_name(rl_algo_t algo)
 	return NULL;
 }
 
-rl_pipe_t *rl_create_pipe(int limit, rl_algo_t algo)
+rl_pipe_t *rl_create_pipe(int limit, rl_algo_t algo, str *name)
 {
 	rl_pipe_t *pipe;
 	int size = sizeof(rl_pipe_t);
@@ -316,6 +316,10 @@ rl_pipe_t *rl_create_pipe(int limit, rl_algo_t algo)
 
 	if (algo == PIPE_ALGO_HISTORY)
 		size += (rl_window_size * 1000) / rl_slot_period * sizeof(long int);
+
+#ifdef RL_DEBUG_PIPES
+	size += name->len;
+#endif
 
 	pipe = shm_malloc(size);
 	if (!pipe) {
@@ -332,6 +336,12 @@ rl_pipe_t *rl_create_pipe(int limit, rl_algo_t algo)
 		pipe->rwin.window_size = (rl_window_size * 1000) / rl_slot_period;
 		/* everything else is already cleared */
 	}
+
+#ifdef RL_DEBUG_PIPES
+	pipe->name.s = ((char *)pipe) + size - name->len;
+	memcpy(pipe->name.s, name->s, name->len);
+	pipe->name.len = name->len;
+#endif
 	return pipe;
 }
 
@@ -382,7 +392,7 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 
 	if (!*pipe) {
 		/* allocate new pipe */
-		if (!(*pipe = rl_create_pipe(*limit, algo)))
+		if (!(*pipe = rl_create_pipe(*limit, algo, name)))
 			goto release;
 
 		LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
@@ -394,7 +404,7 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 			name->len, name->s, *pipe, (*pipe)->last_used);
 		if (algo != PIPE_ALGO_NOP && (*pipe)->algo != algo) {
 			LM_WARN("algorithm %d different from the initial one %d for pipe "
-				"%.*s", algo, (*pipe)->algo, name->len, name->s);
+				"%.*s\n", algo, (*pipe)->algo, name->len, name->s);
 		}
 		/* update the limit */
 		(*pipe)->limit = *limit;
@@ -774,11 +784,10 @@ void rl_rcv_bin(bin_packet_t *packet)
 
 		if (!*pipe) {
 			/* if the pipe does not exist, allocate it in case we need it later */
-			if (!(*pipe = rl_create_pipe(limit, algo)))
+			if (!(*pipe = rl_create_pipe(limit, algo, &name)))
 				goto release;
 			LM_DBG("Pipe %.*s doesn't exist, but was created %p\n",
 				name.len, name.s, *pipe);
-
 		} else {
 			LM_DBG("Pipe %.*s found: %p - last used %lu\n",
 				name.len, name.s, *pipe, (*pipe)->last_used);
@@ -801,6 +810,7 @@ void rl_rcv_bin(bin_packet_t *packet)
 			goto release;
 		destination->counter = counter;
 		destination->update = now;
+		RL_DBG(*pipe, "counter=%d id=%d", counter, packet->src_id);
 		RL_RELEASE_LOCK(hash_idx);
 	}
 	return;
@@ -953,6 +963,8 @@ void rl_timer_repl(utime_t ticks, void *param)
 			 * for the SBT algorithm it is safe to replicate the current
 			 * counter, since it is always updating according to the window
 			 */
+			RL_DBG(*pipe, "replicate=%d", ((*pipe)->algo == PIPE_ALGO_HISTORY ?
+						 (*pipe)->counter : (*pipe)->my_last_counter));
 			if ((ret = bin_push_int(&packet,
 						((*pipe)->algo == PIPE_ALGO_HISTORY ?
 						 (*pipe)->counter : (*pipe)->my_last_counter))) < 0)

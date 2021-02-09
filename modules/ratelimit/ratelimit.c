@@ -495,6 +495,7 @@ static inline unsigned hist_update(rl_pipe_t *pipe, int update)
 	int now_index;
 	int rl_win_ms = rl_window_size * 1000;
 	unsigned long long now_time, start_time;
+	int all_counters;
 
 	struct timeval tv;
 
@@ -549,7 +550,11 @@ static inline unsigned hist_update(rl_pipe_t *pipe, int update)
 	for (i=0; i < pipe->rwin.window_size; i++)
 		pipe->counter += pipe->rwin.window[i];
 
-	return rl_get_all_counters(pipe);
+	all_counters = rl_get_all_counters(pipe);
+	RL_DBG(pipe, "update=%d local_counter=%d all_counters=%d",
+			update, pipe->counter, all_counters);
+
+	return all_counters;
 
 	#undef U2MILI
 	#undef S2MILI
