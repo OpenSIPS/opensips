@@ -547,7 +547,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		       callid.len, callid.s);
 
 	if (record->next_clabel <= clabel)
-		record->next_clabel = clabel + 1;
+		record->next_clabel = CLABEL_INC_AND_TEST(clabel);
 
 	rc = get_ucontact(record, &contact_str, &callid, ci.cseq, &cmatch,
 		&contact);
@@ -693,6 +693,9 @@ static int receive_ucontact_update(bin_packet_t *packet)
 			unlock_udomain(domain, &aor);
 			goto error;
 		}
+
+		if (record->next_clabel <= clabel)
+			record->next_clabel = CLABEL_INC_AND_TEST(clabel);
 	} else {
 		rc = get_ucontact(record, &contact_str, &callid, ci.cseq + 1, &cmatch,
 			&contact);
@@ -706,6 +709,10 @@ static int receive_ucontact_update(bin_packet_t *packet)
 				unlock_udomain(domain, &aor);
 				goto error;
 			}
+
+			if (record->next_clabel <= clabel)
+				record->next_clabel = CLABEL_INC_AND_TEST(clabel);
+
 		} else if (rc == 0) {
 			if (update_ucontact(record, contact, &ci, 1) != 0) {
 				LM_ERR("failed to update ucontact '%.*s' (ci: '%.*s')\n",
@@ -716,9 +723,6 @@ static int receive_ucontact_update(bin_packet_t *packet)
 		} /* XXX: for -2 and -1, the master should have already handled
 			 these errors - so we can skip them - razvanc */
 	}
-
-	if (record->next_clabel <= clabel)
-		record->next_clabel = clabel + 1;
 
 	unlock_udomain(domain, &aor);
 

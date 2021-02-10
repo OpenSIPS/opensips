@@ -439,7 +439,6 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	unsigned int   rlabel;
 	UNUSED(n);
 
-	time_t old_expires=0;
 	char suggest_regen=0;
 
 	urecord_t* r;
@@ -507,6 +506,7 @@ int preload_udomain(db_con_t* _c, udomain_t* _d)
 	do {
 		LM_DBG("loading records - cycle [%d]\n", ++n);
 		for(i = 0; i < RES_ROW_N(res); i++) {
+			time_t old_expires = 0;
 			row = RES_ROWS(res) + i;
 
 			user.s = (char*)VAL_STRING(ROW_VALUES(row));

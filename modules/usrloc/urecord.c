@@ -853,8 +853,8 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 {
 	int first_contact = !_r->contacts;
 
-	/* not used in db only mode */
 	if (_ci->contact_id == 0) {
+		/* in CM_SQL_ONLY, this contact_id will be fully ignored */
 		_ci->contact_id =
 		        pack_indexes((unsigned short)_r->aorhash,
 		                                     _r->label,
