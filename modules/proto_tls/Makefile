@@ -25,4 +25,8 @@ else
 			-lssl -lcrypto
 endif
 
+# enable this flag to increase performance by not serializing openssl
+# connect/accept/read/write operations, at the cost of possible crashes
+#DEFS+= -DNO_SSL_GLOBAL_LOCK
+
 include ../../Makefile.modules

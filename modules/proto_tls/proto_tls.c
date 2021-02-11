@@ -120,13 +120,19 @@ static struct mi_root* tls_trace_mi(struct mi_root* cmd, void* param );
 
 trace_dest t_dst;
 
+#ifndef NO_SSL_GLOBAL_LOCK
+gen_lock_t *ssl_global_lock;
+#else
+#define ssl_global_lock NULL
+#endif
+
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
 {
 	int ret;
 
 	lock_get(&c->write_lock);
-	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst);
+	ret = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst, ssl_global_lock);
 	lock_release(&c->write_lock);
 	return ret;
 }
@@ -255,6 +261,14 @@ static int mod_init(void)
 			get_script_route_ID_by_name( trace_filter_route, rlist, RT_NO);
 	}
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	ssl_global_lock = lock_alloc();
+	if (!ssl_global_lock || !lock_init(ssl_global_lock)) {
+		LM_ERR("could not initialize openssl lock!\n");
+		return -1;
+	}
+	#endif
+
 	return 0;
 }
 
@@ -264,6 +278,11 @@ static int mod_init(void)
  */
 static void mod_destroy(void)
 {
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_destroy(ssl_global_lock);
+	lock_dealloc(ssl_global_lock);
+	#endif
+
 	/* library destroy */
 	ERR_free_strings();
 	/*SSL_free_comp_methods(); - this function is not on std. openssl*/
@@ -359,7 +378,7 @@ static void proto_tls_conn_clean(struct tcp_connection* c)
 		c->proto_data = NULL;
 	}
 
-	tls_conn_clean(c);
+	tls_conn_clean(c, ssl_global_lock);
 }
 
 
@@ -490,7 +509,7 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst);
+	n = tls_blocking_write(c, fd, buf, len, &tls_mgm_api, t_dst, ssl_global_lock);
 	lock_release(&c->write_lock);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
@@ -541,7 +560,7 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	}
 
 	/* do this trick in order to trace whether if it's an error or not */
-	ret=tls_fix_read_conn(con, t_dst);
+	ret=tls_fix_read_conn(con, t_dst, ssl_global_lock);
 
 	/* if there is pending tracing data on an accepted connection, flush it
 	 * As this is a read op, we look only for accepted conns, not to conflict
@@ -576,7 +595,7 @@ again:
 		if (req->parsed<req->pos){
 			bytes=0;
 		}else{
-			bytes=tls_read(con,req);
+			bytes=tls_read(con,req, ssl_global_lock);
 			if (bytes<0) {
 				LM_ERR("failed to read \n");
 				goto error;
