@@ -45,7 +45,7 @@
 /*
  * wrapper around SSL_shutdown, returns -1 on error, 0 on success
  */
-static int tls_conn_shutdown(struct tcp_connection *c)
+static int tls_conn_shutdown(struct tcp_connection *c, gen_lock_t *ssl_global_lock)
 {
 	int             ret,
 					err;
@@ -66,25 +66,43 @@ static int tls_conn_shutdown(struct tcp_connection *c)
 		return -1;
 	}
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_get(ssl_global_lock);
+	#endif
+
 	ERR_clear_error();
 
 	ret = SSL_shutdown(ssl);
 	if (ret == 1) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		lock_release(ssl_global_lock);
+		#endif
 		LM_DBG("shutdown successful\n");
 		return 0;
 	} else if (ret == 0) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		lock_release(ssl_global_lock);
+		#endif
 		LM_DBG("first phase of 2-way handshake completed succesfuly\n");
 		return 0;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(ssl_global_lock);
+				#endif
+
 				c->state = S_CONN_EOF;
 
 				return 0;
 
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(ssl_global_lock);
+				#endif
+
 				c->state = S_CONN_EOF;
 				return 0;
 
@@ -95,6 +113,11 @@ static int tls_conn_shutdown(struct tcp_connection *c)
 			case SSL_ERROR_SYSCALL:
 				c->state = S_CONN_BAD;
 				tls_print_errstack();
+
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(ssl_global_lock);
+				#endif
+
 				return -1;
 		}
 	}
@@ -172,7 +195,8 @@ static int tls_conn_init(struct tcp_connection* c, struct tls_mgm_binds *api)
 }
 
 
-static void tls_conn_clean(struct tcp_connection* c, struct tls_mgm_binds *api)
+static void tls_conn_clean(struct tcp_connection* c, gen_lock_t *ssl_global_lock,
+	struct tls_mgm_binds *api)
 {
 	struct tls_domain *dom;
 
@@ -180,7 +204,7 @@ static void tls_conn_clean(struct tcp_connection* c, struct tls_mgm_binds *api)
 		dom = (struct tls_domain *)SSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX);
 
 		tls_update_fd(c,c->s);
-		tls_conn_shutdown(c);
+		tls_conn_shutdown(c, ssl_global_lock);
 		SSL_free((SSL *) c->extra_data);
 		c->extra_data = 0;
 
@@ -197,20 +221,33 @@ static void tls_conn_clean(struct tcp_connection* c, struct tls_mgm_binds *api)
  * returns number of bytes read, 0 on eof and transits into S_CONN_EOF, -1
  * on error
  */
-static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
+static int _tls_read(struct tcp_connection *c, void *buf, size_t len,
+	gen_lock_t *ssl_global_lock)
 {
 	int ret, err;
 	SSL *ssl;
 
 	ssl = c->extra_data;
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_get(ssl_global_lock);
+	#endif
+
 	ERR_clear_error();
 
 	ret = SSL_read(ssl, buf, len);
 	if (ret > 0) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		lock_release(ssl_global_lock);
+		#endif
+
 		LM_DBG("%d bytes read\n", ret);
 		return ret;
 	} else if (ret == 0) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		lock_release(ssl_global_lock);
+		#endif
+
 		/* unclean shutdown of the other peer */
 		c->state = S_CONN_EOF;
 		return 0;
@@ -218,6 +255,10 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 		case SSL_ERROR_ZERO_RETURN:
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(ssl_global_lock);
+			#endif
+
 			LM_DBG("TLS connection to %s:%d closed cleanly\n",
 				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 			/*
@@ -228,6 +269,10 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(ssl_global_lock);
+			#endif
+
 			return 0;
 
 		case SSL_ERROR_SYSCALL:
@@ -239,6 +284,11 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
 			LM_ERR("TLS read error: %d\n",err);
 			c->state = S_CONN_BAD;
 			tls_print_errstack();
+
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(ssl_global_lock);
+			#endif
+
 			return -1;
 		}
 	}
@@ -256,7 +306,8 @@ static int _tls_read(struct tcp_connection *c, void *buf, size_t len)
  * connection and attempt write to it which would result in updating the
  * ssl structures
  */
-static int tls_read(struct tcp_connection * c,struct tcp_req *r)
+static int tls_read(struct tcp_connection * c,struct tcp_req *r,
+	gen_lock_t *ssl_global_lock)
 {
 	int             bytes_free;
 	int             fd, read;
@@ -276,7 +327,7 @@ static int tls_read(struct tcp_connection * c,struct tcp_req *r)
 	*/
 	lock_get(&c->write_lock);
 	tls_update_fd(c, fd);
-	read = _tls_read(c, r->pos, bytes_free);
+	read = _tls_read(c, r->pos, bytes_free, ssl_global_lock);
 	lock_release(&c->write_lock);
 	if (read > 0)
 		r->pos += read;

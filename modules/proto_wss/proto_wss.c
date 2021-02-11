@@ -73,11 +73,17 @@ static str wss_resource = str_init("/");
 static int wss_raw_writev(struct tcp_connection *c, int fd,
 		const struct iovec *iov, int iovcnt, int tout);
 
+#ifndef NO_SSL_GLOBAL_LOCK
+gen_lock_t *ssl_global_lock;
+#else
+#define ssl_global_lock NULL
+#endif
+
 #define _ws_common_module "wss"
 #define _ws_common_tcp_current_req tcp_current_req
 #define _ws_common_current_req wss_current_req
 #define _ws_common_max_msg_chunks wss_max_msg_chunks
-#define _ws_common_read tls_read
+#define _ws_common_read(c, r) tls_read((c), (r), ssl_global_lock)
 #define _ws_common_writev wss_raw_writev
 #define _ws_common_read_tout wss_hs_read_tout
 /*
@@ -105,6 +111,7 @@ static int trace_filter_route_id = -1;
 /**/
 
 static int mod_init(void);
+static void mod_destroy(void);
 static int proto_wss_init(struct proto_info *pi);
 static int proto_wss_init_listener(struct socket_info *si);
 static int proto_wss_send(struct socket_info* send_sock,
@@ -180,7 +187,7 @@ struct module_exports exports = {
 	0,          /* module pre-initialization function */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
-	0,          /* destroy function */
+	mod_destroy,/* destroy function */
 	0,          /* per-child init function */
 	0           /* reload confirm function */
 };
@@ -255,11 +262,24 @@ static int mod_init(void)
 				sroutes->request, RT_NO);
 	}
 
-
+	#ifndef NO_SSL_GLOBAL_LOCK
+	ssl_global_lock = lock_alloc();
+	if (!ssl_global_lock || !lock_init(ssl_global_lock)) {
+		LM_ERR("could not initialize openssl lock!\n");
+		return -1;
+	}
+	#endif
 
 	return 0;
 }
 
+static void mod_destroy(void)
+{
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_destroy(ssl_global_lock);
+	lock_dealloc(ssl_global_lock);
+	#endif
+}
 
 static int wss_conn_init(struct tcp_connection* c)
 {
@@ -323,7 +343,7 @@ static void ws_conn_clean(struct tcp_connection* c)
 
 	}
 
-	tls_conn_clean(c, &tls_mgm_api);
+	tls_conn_clean(c, ssl_global_lock, &tls_mgm_api);
 }
 
 
@@ -491,7 +511,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	struct ws_data* d;
 
 	/* we need to fix the SSL connection before doing anything */
-	if (tls_fix_read_conn(con, 0, t_dst) < 0) {
+	if (tls_fix_read_conn(con, 0, t_dst, ssl_global_lock) < 0) {
 		LM_ERR("cannot fix read connection\n");
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
@@ -561,7 +581,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
 		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
-				wss_hs_tls_tout, wss_send_tout, t_dst);
+				wss_hs_tls_tout, wss_send_tout, t_dst, ssl_global_lock);
 		if (n < 0) {
 			ret = -1;
 			goto end;
@@ -584,7 +604,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 	}
 	lock_get(&c->write_lock);
 	n = tls_blocking_write(c, fd, buf, n,
-				wss_hs_tls_tout, wss_send_tout, t_dst);
+				wss_hs_tls_tout, wss_send_tout, t_dst, ssl_global_lock);
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:
