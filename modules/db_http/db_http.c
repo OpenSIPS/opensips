@@ -26,11 +26,13 @@
 
 
 
+#define _GNU_SOURCE
+
 #include "../../sr_module.h"
 #include "../../db/db.h"
 #include "http_dbase.h"
-
-
+#include "../../ssl_init_tweaks.h"
+#include "../../pt.h"
 
 
 static int http_mod_init(void);

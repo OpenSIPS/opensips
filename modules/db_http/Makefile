@@ -26,4 +26,6 @@ else
 	LIBS =-L$(LOCALBASE)/lib -lcurl
 endif 
 
+LIBS += -dl -Bsymbolic
+
 include ../../Makefile.modules
