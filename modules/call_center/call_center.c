@@ -1553,11 +1553,7 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	mi_item_t *calls_arr, *call_item;
-	static str call_state[12]= {{"none", 4},
-			{"welcome", 7},
-			{"queued", 6},
-			{"toagent", 7},
-			{"ended", 5}};
+	str *state;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -1589,10 +1585,12 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 			if (add_mi_string(call_item, MI_SSTR("State"),
 				MI_SSTR("ignored")) < 0)
 				goto error;
-		} else
+		} else {
+			state = call_state_str(call->state);
 			if (add_mi_string(call_item, MI_SSTR("State"),
-				call_state[call->state].s, call_state[call->state].len) < 0)
+				state->s, state->len) < 0)
 				goto error;
+		}
 
 		LM_DBG("call->recv_time= %d, ticks= %d\n", call->recv_time, get_ticks());
 		if(call->state != CC_CALL_ENDED)
