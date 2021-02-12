@@ -1853,8 +1853,16 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					ng_flags->transport = 0x105;
 				else
 					break;
-				continue;
-
+				continue;\
+            case 20:
+                if (str_eq(&key, "replace-zero-address")) {
+                    if (!ng_flags->replace)
+                        LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
+                    else
+                        BCHECK(bencode_list_add_string(ng_flags->replace, "zero address"));
+                } else
+                    break;
+                continue;
 			case 26:
 				if (str_eq(&key, "replace-session-connection")) {
 					if (!ng_flags->replace)
