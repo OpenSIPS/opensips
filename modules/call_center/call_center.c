@@ -1239,13 +1239,9 @@ static struct mi_root* mi_cc_list_calls(struct mi_root *cmd_tree, void *param)
 	struct mi_node *node;
 	struct mi_node *rpl;
 	struct mi_attr *attr;
+	str *state;
 	char *p;
 	int len;
-	static str call_state[12]= {{"none", 4},
-			{"welcome", 7},
-			{"queued", 6},
-			{"toagent", 7},
-			{"ended", 5}};
 
 	rpl_tree = init_mi_tree( 200, MI_SSTR("OK") );
 	if ( rpl_tree==NULL)
@@ -1269,10 +1265,10 @@ static struct mi_root* mi_cc_list_calls(struct mi_root *cmd_tree, void *param)
 				goto error;
 		if(call->ign_cback)
 			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("State"), MI_SSTR("ignored"));
-		else
-			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("State"), call_state[call->state].s, call_state[call->state].len);
-		if (attr==NULL)
-				goto error;
+		else {
+			state = call_state_str(call->state);
+			attr = add_mi_attr( node, MI_DUP_VALUE, MI_SSTR("State"), state->s, state->len);
+		}
 
 		LM_DBG("call->recv_time= %d, ticks= %d\n", call->recv_time, get_ticks());
 		if(call->state != CC_CALL_ENDED)

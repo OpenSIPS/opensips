@@ -155,6 +155,24 @@ typedef enum {
 	CC_CALL_ENDED
 } call_state;
 
+static inline str *call_state_str(call_state state)
+{
+	static str call_state_s[] = {
+		str_init("none"),
+		str_init("welcome"),
+		str_init("dissuading1"),
+		str_init("dissuading2"),
+		str_init("queued"),
+		str_init("preagent"),
+		str_init("toagent"),
+		str_init("ended"),
+		/* unused */
+		str_init("unknown"),
+	};
+	int size = (sizeof(call_state_s)/sizeof(call_state_s[0]));
+	return &call_state_s[(state < size - 1)?state:size - 1];
+}
+
 #define FSTAT_INCALL  (1<<0)
 #define FSTAT_DIST    (1<<1)
 #define FSTAT_ANSW    (1<<2)
