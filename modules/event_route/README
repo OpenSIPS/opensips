@@ -182,11 +182,13 @@ Chapter 3. Contributors
    3. Liviu Chircu (@liviuchircu) 12 10 26 46
    4. Ionut Ionita (@ionutrazvanionita) 8 5 138 51
    5. Ovidiu Sas (@ovidiusas) 7 2 384 9
-   6. Ionel Cerghit (@ionel-cerghit) 3 1 5 6
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Vlad Paiu (@vladpaiu) 2 1 1 0
-   9. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
-   10. Walter Doekes (@wdoekes) 1 1 0 0
+   6. Maksym Sobolyev (@sobomax) 3 1 15 12
+   7. Ionel Cerghit (@ionel-cerghit) 3 1 5 6
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Vlad Paiu (@vladpaiu) 2 1 1 0
+   10. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+
+   All remaining contributors: Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -208,16 +210,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Dec 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   3.  Razvan Crainea (@razvancrainea)     Dec 2012 - Oct 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  Vlad Paiu (@vladpaiu)               Jun 2016 - Jun 2016
-   7.  Ionel Cerghit (@ionel-cerghit)      Jun 2015 - Jun 2015
-   8.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Oct 2014
-   9.  Ovidiu Sas (@ovidiusas)             Jul 2014 - Jul 2014
-   10. Walter Doekes (@wdoekes)            May 2014 - May 2014
+   1.  Maksym Sobolyev (@sobomax)          Feb 2021 - Feb 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Dec 2020
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
+   4.  Razvan Crainea (@razvancrainea)     Dec 2012 - Oct 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7.  Vlad Paiu (@vladpaiu)               Jun 2016 - Jun 2016
+   8.  Ionel Cerghit (@ionel-cerghit)      Jun 2015 - Jun 2015
+   9.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Oct 2014
+   10. Ovidiu Sas (@ovidiusas)             Jul 2014 - Jul 2014
+
+   All remaining contributors: Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits
