@@ -113,8 +113,7 @@ static int gen_uuid(enum uuid_gen_vers vers, pv_value_t *res)
 static int pv_get_uuid(struct sip_msg *msg, pv_param_t *param,
 						pv_value_t *res)
 {
-	if (gen_uuid(UUID_VERS_0, res) == RET_UNSAFE)
-		LM_DBG("Version 2 UUID generated unsafely\n");
+	gen_uuid(UUID_VERS_0, NULL, NULL, res);
 
 	return 0;
 }
