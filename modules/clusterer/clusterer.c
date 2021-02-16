@@ -2449,7 +2449,7 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					if (cap_it->reg.event_cb)
 						cap_it->reg.event_cb(CLUSTER_NODE_DOWN, node->node_id);
 
-				if (raise_node_state_ev(cl->cluster_id, CLUSTER_NODE_DOWN,
+				if (raise_node_state_ev(CLUSTER_NODE_DOWN, cl->cluster_id,
 					node->node_id) < 0)
 					LM_ERR("Failed to raise node state changed event for: "
 						"cluster_id=%d node_id=%d, new_state=node down\n",
@@ -2514,7 +2514,7 @@ static void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 						cap_it->reg.event_cb(CLUSTER_NODE_UP, node->node_id);
 				}
 
-				if (raise_node_state_ev(cl->cluster_id, CLUSTER_NODE_UP,
+				if (raise_node_state_ev(CLUSTER_NODE_UP, cl->cluster_id,
 					node->node_id) < 0)
 					LM_ERR("Failed to raise node state changed event for: "
 						"cluster_id=%d node_id=%d, new_state=node up\n",
