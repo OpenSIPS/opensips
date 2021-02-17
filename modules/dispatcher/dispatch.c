@@ -2356,10 +2356,10 @@ error:
 
 int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full)
 {
-	int len, j;
+	int len, i, j;
 	char* p;
 	ds_set_p list;
-	mi_item_t *sets_arr, *set_item, *dests_arr, *dest_item;
+	mi_item_t *sets_arr, *set_item, *dests_arr, *dest_item, *addr_arr;
 
 	if ( (*partition->data)->sets==NULL ) {
 		LM_DBG("empty destination sets\n");
@@ -2444,6 +2444,17 @@ int ds_print_mi_list(mi_item_t *part_item, ds_partition_t *partition, int full)
 						list->dlist[j].description.s,
 						list->dlist[j].description.len) < 0)
 						goto error;
+			}
+
+			addr_arr = add_mi_array(dest_item, MI_SSTR("resolved_addresses"));
+			if (!addr_arr)
+				goto error;
+
+			for (i = 0; i < list->dlist[j].ips_cnt; i++) {
+				if (add_mi_string_fmt(addr_arr, NULL, 0, "%s:%d",
+				        ip_addr2a(&list->dlist[j].ips[i]),
+				        list->dlist[j].ports[i]) != 0)
+				    goto error;
 			}
 		}
 	}
