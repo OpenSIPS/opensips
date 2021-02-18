@@ -169,7 +169,7 @@ static inline int init_sock_keepalive(int s)
 				strerror(errno));
 			return -1;
 		}
-		LM_INFO("TCP keepalive enabled on socket %d\n",s);
+		LM_DBG("TCP keepalive enabled on socket %d\n",s);
 	}
 #endif
 #ifdef HAVE_TCP_KEEPINTVL
