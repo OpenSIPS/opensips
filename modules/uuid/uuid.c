@@ -98,8 +98,13 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 	case UUID_VERS_1:
 		rc = uuid_generate_time_safe(uuid) ? RET_UNSAFE : RET_OK;
 		break;
+	#if defined (UUID_TYPE_DCE_MD5) || defined (UUID_TYPE_DCE_SHA1)
+	#ifdef UUID_TYPE_DCE_MD5
 	case UUID_VERS_3:
+	#endif
+	#ifdef UUID_TYPE_DCE_SHA1
 	case UUID_VERS_5:
+	#endif
 		if (!ns) {
 			LM_ERR("Namespace required for UUID version: %d\n", vers);
 			return RET_ERR;
@@ -112,11 +117,17 @@ static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 			LM_ERR("Invalid UUID for namespace: %s\n", ns->s);
 			return RET_ERR;
 		}
-		if (vers == UUID_VERS_3)
+		if (vers == UUID_VERS_3) {
+			#ifdef UUID_TYPE_DCE_MD5
 			uuid_generate_md5(uuid, ns_uuid, n->s, n->len);
-		else
+			#endif
+		} else {
+			#ifdef UUID_TYPE_DCE_SHA1
 			uuid_generate_sha1(uuid, ns_uuid, n->s, n->len);
+			#endif
+		}
 		break;
+	#endif
 	case UUID_VERS_4:
 		uuid_generate_random(uuid);
 		break;
@@ -164,15 +175,25 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 
 	switch (vers) {
 	case 2:
+	#ifndef UUID_TYPE_DCE_MD5
+	case UUID_VERS_3:
+	#endif
+	#ifndef	UUID_TYPE_DCE_SHA1
+	case UUID_VERS_5:
+	#endif
 		LM_WARN("UUID version: %d not supported! Using default algorithm\n",
 			vers);
 		vers = UUID_VERS_0;
 		break;
 	case UUID_VERS_0:
 	case UUID_VERS_1:
+	#ifdef UUID_TYPE_DCE_MD5
 	case UUID_VERS_3:
+	#endif
 	case UUID_VERS_4:
+	#ifndef	UUID_TYPE_DCE_SHA1
 	case UUID_VERS_5:
+	#endif
 		break;
 	default:
 		LM_ERR("Bad UUID version: %d\n", vers);
