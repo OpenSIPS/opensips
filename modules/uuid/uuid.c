@@ -89,7 +89,9 @@ struct module_exports exports= {
 static int gen_uuid(enum uuid_gen_vers vers, str *ns, str *n, pv_value_t *res)
 {
 	int rc = RET_OK;
+	#if defined (UUID_TYPE_DCE_MD5) || defined (UUID_TYPE_DCE_SHA1)
 	uuid_t ns_uuid;
+	#endif
 
 	switch (vers) {
 	case UUID_VERS_0:
@@ -191,7 +193,7 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 	case UUID_VERS_3:
 	#endif
 	case UUID_VERS_4:
-	#ifndef	UUID_TYPE_DCE_SHA1
+	#ifdef UUID_TYPE_DCE_SHA1
 	case UUID_VERS_5:
 	#endif
 		break;
