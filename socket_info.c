@@ -1297,7 +1297,7 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 		LM_ERR("getsockopt: %s\n", strerror(errno));
 		return -1;
 	}
-	LM_INFO("using %s buffer of %d kb\n",info, (foptval/1024));
+	LM_DBG("using %s buffer of %d kb\n",info, (foptval/1024));
 
 	return 0;
 }
