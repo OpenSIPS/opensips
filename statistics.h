@@ -145,6 +145,7 @@ stat_var* __get_stat( const str *name, int mod_idx );
 
 module_stats *add_stat_module(char *module);
 module_stats *get_stat_module( str *module);
+str *get_stat_module_name(stat_var *stat);
 
 unsigned int get_stat_val( stat_var *var );
 

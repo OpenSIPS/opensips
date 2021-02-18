@@ -677,6 +677,11 @@ int mi_print_stat(mi_item_t *resp_obj, str *mod, str *stat, unsigned long val)
 }
 
 
+str *get_stat_module_name(stat_var *stat)
+{
+	return &collector->amodules[stat->mod_idx].name;
+}
+
 
 /***************************** MI STUFF ********************************/
 
