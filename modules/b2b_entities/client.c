@@ -78,7 +78,8 @@ static void generate_tag(str* tag, str* src, str* callid)
  *	*/
 #define HASH_SIZE 1<<23
 str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param)
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param,
+		b2b_tracer_cback_t tracer_cback, void* tracer_param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -144,6 +145,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	dlg->b2b_cback = b2b_cback;
 	dlg->add_dlginfo = add_dlginfo;
+	dlg->tracer_cback = tracer_cback;
+	dlg->tracer_param = tracer_param;
 
 	CONT_COPY(dlg, dlg->mod_name, (*mod_name));
 
@@ -254,6 +257,10 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 			dlg, callid->len, callid->s,
 			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
 			dlg->param.len, dlg->param.s, dlg->last_method, dlg->uac_tran);
+
+	// Tracer callback: catch outgoing INVITE and its transaction
+	if (dlg && dlg->tracer_param)
+		dlg->tracer_cback(NULL, dlg->uac_tran, dlg->tracer_param, B2B_CLIENT);
 
 	return callid;
 

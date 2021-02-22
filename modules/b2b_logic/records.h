@@ -116,6 +116,8 @@ typedef struct b2bl_tuple
 	b2bl_cback_f cbf;
 	unsigned int cb_mask;
 	void* cb_param;
+	b2b_tracer_cback_t tracer_cback;
+	void *tracer_params;
 }b2bl_tuple_t;
 
 typedef struct b2bl_entry

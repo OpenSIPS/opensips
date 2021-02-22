@@ -48,7 +48,8 @@
  *	*/
 
 str* server_new(struct sip_msg* msg, str* local_contact,
-		b2b_notify_t b2b_cback, str *mod_name, str* param)
+		b2b_notify_t b2b_cback, str *mod_name, str* param,
+		b2b_tracer_cback_t tracer_cback, void* tracer_param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
@@ -74,6 +75,8 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	dlg->state = B2B_NEW;
 	dlg->b2b_cback = b2b_cback;
+	dlg->tracer_cback = tracer_cback;
+	dlg->tracer_param = tracer_param;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
 	dlg->uas_tran = tmb.t_gett();
@@ -92,13 +95,13 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 		}
 		dlg->uas_tran = tmb.t_gett();
 	}
+
+	// Tracer callback: incoming INVITE and its transaction
+	if (dlg && dlg->tracer_param)
+		dlg->tracer_cback(NULL, dlg->uas_tran, dlg->tracer_param, B2B_NONE);
+
 	tmb.ref_cell(dlg->uas_tran);
 	tmb.t_setkr(REQ_FWDED);
-
-	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s] dlg->uas_tran=[%p]\n",
-		dlg, dlg->callid.len, dlg->callid.s,
-		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-		dlg->param.len, dlg->param.s, dlg->uas_tran);
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;

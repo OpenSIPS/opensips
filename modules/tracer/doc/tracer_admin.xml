@@ -61,6 +61,11 @@
 			</listitem>
 			<listitem>
 			<para>
+				<emphasis>b2b_logic</emphasis> - only if you want to trace b2b.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
 				<emphasis>dialog</emphasis> - only if you want to trace dialogs.
 			</para>
 			</listitem>
@@ -219,7 +224,7 @@ modparam("tracer", "trace_id",
 		</title>
 		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
-			Store or replocate current processed SIP message,transaction or dialogin database.
+			Store or replocate current processed SIP message,transaction, dialog or b2b in database.
 			It is stored in the form prior applying chages made to it. The traced_user_avp
 			parameter is now an argument to trace() function. Since version 2.2, this function
 			also catches internally generated replies in stateless mode(sl_send_reply(...)).
@@ -237,7 +242,7 @@ modparam("tracer", "trace_id",
 		</listitem>
 		<listitem>
 			<para><emphasis>scope (string, optional)</emphasis> what do you want to trace:
-		dialog, transaction or only the message. If not specified, will try
+		b2b, dialog, transaction or only the message. If not specified, will try
 		the topmost trace that can be done: if dialog module loaded will trace
 		dialogs, else if tm module loaded will trace transaction and if none
 		of these loaded will trace messages.</para>
@@ -256,6 +261,9 @@ modparam("tracer", "trace_id",
 			<listitem>
 				<para><emphasis>'d'/'D'</emphasis> trace dialog</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>'b'/'B'</emphasis> trace b2b</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
@@ -271,7 +279,7 @@ modparam("tracer", "trace_id",
 				</listitem>
 				<listitem>
 					<para><emphasis>xlog</emphasis> - enable xlog messages tracing in current
-						scope(dialog, transaction or message);</para>
+						scope(b2b, dialog, transaction or message);</para>
 				</listitem>
 				<listitem>
 					<para><emphasis>rest</emphasis> - enable rest messages tracing;</para>
@@ -296,7 +304,19 @@ modparam("tracer", "trace_id",
 	$var(user) = "osip_user@opensips.org";
 
 ...
-/* Example 1: how to trace a dialog sip and xlog */
+/* Example 1: how to trace b2b sip */
+	# create initial entities
+	b2b_server_new("server1");
+	b2b_client_new("client1", $var(media_uri));
+
+	# enable trace for current b2b instance
+	trace($var(trace_id), "b", "sip");
+
+	# initialize B2B session
+	b2b_init_request("prepaid");
+	exit;
+...
+/* Example 2: how to trace a dialog sip and xlog */
 	if (has_totag()) {
 		match_dialog();
 	} else {
@@ -305,7 +325,7 @@ modparam("tracer", "trace_id",
 		}
 	}
 ...
-/* Example 2: how to trace initial INVITE and BYE, sip and rest */
+/* Example 3: how to trace initial INVITE and BYE, sip and rest */
 	if (has_totag()) {
 		if (is_method("BYE")) {
 			trace($var(trace_id), "m", "sip|rest", $var(user));
@@ -317,14 +337,14 @@ modparam("tracer", "trace_id",
 	}
 
 ...
-/* Example 3: trace initial INVITE transaction's only xlog and rest, no sip */
+/* Example 4: trace initial INVITE transaction's only xlog and rest, no sip */
 	if (!has_totag()) {
 		if (is_method("INVITE")) {
 			trace($var(trace_id), "t", "xlog|rest", $var(user));
 		}
 	}
 ...
-/* Example 4: stateless transaction aware mode!*/
+/* Example 5: stateless transaction aware mode!*/
 /* tm module must not be loaded */
 	if (is_method("REGISTER")) {
 		trace($var(trace_id), "t", "xlog|rest", $var(user));

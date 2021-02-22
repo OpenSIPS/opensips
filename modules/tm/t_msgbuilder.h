@@ -113,11 +113,14 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 		goto error1;
 	}
 
-	/* populate some special fields in sip_msg */
-	req->force_send_socket = dialog->send_sock;
-	if (set_dst_uri(req, dialog->hooks.next_hop)) {
-		LM_ERR("failed to set dst_uri\n");
-		goto error1;
+	if (req->first_line.type == SIP_REQUEST)
+	{
+		/* populate some special fields in sip_msg */
+		req->force_send_socket = dialog->send_sock;
+		if (set_dst_uri(req, dialog->hooks.next_hop)) {
+			LM_ERR("failed to set dst_uri\n");
+			goto error1;
+		}
 	}
 	req->rcv.proto = dialog->send_sock->proto;
 	req->rcv.src_ip = req->rcv.dst_ip = dialog->send_sock->address;

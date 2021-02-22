@@ -113,6 +113,8 @@ typedef struct b2b_dlg
 	unsigned int         last_reply_code;
 	int                  db_flag;
 	int                  replicated;
+	b2b_tracer_cback_t   tracer_cback;
+	void*                tracer_param;
 }b2b_dlg_t;
 
 typedef struct b2b_entry

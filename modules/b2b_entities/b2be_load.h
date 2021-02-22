@@ -37,6 +37,7 @@
 #define _B2BE_LOAD_H_
 
 #include "../../bin_interface.h"
+#include "../tm/h_table.h"
 
 #define B2BCB_TRIGGER_EVENT    (1<<0)
 #define B2BCB_RECV_EVENT       (1<<1)
@@ -110,11 +111,14 @@ typedef int (*b2b_notify_t)(struct sip_msg* , str* , int , void* );
 typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
 	 b2b_dlginfo_t* info);
 
+typedef int (*b2b_tracer_cback_t)(struct sip_msg* msg, struct cell* t, void* cb_param, enum b2b_entity_type type);
 
 typedef str* (*b2b_server_new_t) (struct sip_msg* , str* local_contact,
-		b2b_notify_t , str *mod_name, str* param);
+		b2b_notify_t , str *mod_name, str* param,
+		b2b_tracer_cback_t tracer_cback, void* tracer_param);
 typedef str* (*b2b_client_new_t) (client_info_t* , b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo_f, str *mod_name, str* param);
+		b2b_add_dlginfo_t add_dlginfo_f, str *mod_name, str* param,
+		b2b_tracer_cback_t tracer_cback, void* tracer_param);
 
 typedef int (*b2b_send_request_t)(b2b_req_data_t*);
 typedef int (*b2b_send_reply_t)(b2b_rpl_data_t*);

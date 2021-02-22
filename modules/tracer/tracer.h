@@ -42,7 +42,8 @@
 
 enum trace_flags {TRACE_MESSAGE=(1<<0),
 				  TRACE_TRANSACTION=(1<<1),
-				  TRACE_DIALOG=(1<<2) };
+				  TRACE_DIALOG=(1<<2),
+				  TRACE_B2B=(1<<3) };
 
 
 typedef struct st_db_struct {
@@ -114,6 +115,10 @@ typedef struct trace_instance {
 #define TRACE_INFO_STAT		(1<<0)		/* request already traced */
 #define TRACE_INFO_TRAN		(1<<1)		/* registred tm callbacks */
 #define TRACE_INFO_DIALOG	(1<<2)		/* registred dialog callbacks */
+#define TRACE_INFO_B2B		(1<<3)		/* registred b2b callbacks */
+
+#define TRACE_DIR_FILTER_IN_ONLY	(1<<0)
+#define TRACE_DIR_FILTER_OUT_ONLY	(1<<1)
 
 #define TRACE_FLAG_SET(_ti, _f) ((_ti)->flags |= (_f))
 #define TRACE_FLAG_UNSET(_ti, _f) ((_ti)->flags &= ~(_f))

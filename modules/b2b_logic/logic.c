@@ -71,11 +71,16 @@ extern int reply_routeid;
 struct b2bl_new_entity *new_entities[MAX_BRIDGE_ENT-1];
 int new_entities_no;
 
+b2b_tracer_cback_t init_tracer_cback;
+void *init_tracer_params;
+
 struct b2bl_route_ctx cur_route_ctx;
 
 struct to_body* get_b2bl_from(struct sip_msg* msg);
 
 str *b2b_scenario_hdrs(struct b2bl_new_entity *entity);
+
+void b2bl_req_send_cb(struct cell *tran, b2bl_entity_id_t *entity);
 
 int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned int local_index,
 			b2bl_entity_id_t **entity, int etype, str *ekey);
@@ -679,7 +684,8 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 	b2bl_htable[tuple->hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+			b2b_add_dlginfo, &b2bl_mod_name, tuple->key,
+			tuple->tracer_cback, tuple->tracer_params);
 
 	b2bl_htable[tuple->hash_index].locked_by = -1;
 
@@ -688,6 +694,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 		LM_ERR("Failed to create client id\n");
 		return NULL;
 	}
+
 	/* save the client_id in the structure */
 	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri, 0,
 		&ci.from_uri, 0, ssid, hdrs, 0);
@@ -804,7 +811,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			b2bl_htable[hash_index].locked_by = process_no;
 
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+					b2b_add_dlginfo, &b2bl_mod_name, tuple->key,
+					tuple->tracer_cback, tuple->tracer_params);
 
 			b2bl_htable[hash_index].locked_by = -1;
 
@@ -2117,7 +2125,6 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 
 	new_br_ent[0] = get_ent_to_bridge(tuple, entity, br_ent1_str, &e);
 
-
 	if (e)
 		old_entity = e;
 	else if (!new_br_ent[0])
@@ -2782,7 +2789,8 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+				b2b_add_dlginfo, &b2bl_mod_name, tuple->key,
+				tuple->tracer_cback, tuple->tracer_params);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -2944,9 +2952,14 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	/* if it will not be confirmed -> delete */
 	tuple->lifetime = params->init_timeout + get_ticks();
 
+	tuple->tracer_cback = init_tracer_cback;
+	tuple->tracer_params = init_tracer_params;
+	init_tracer_params = NULL;
+
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, b2bl_key);
+			b2b_server_notify, &b2bl_mod_name, b2bl_key,
+			tuple->tracer_cback, tuple->tracer_params);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -2996,7 +3009,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	b2bl_htable[hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key,
+			tuple->tracer_cback, tuple->tracer_params);
 
 	b2bl_htable[hash_index].locked_by = -1;
 
@@ -3038,7 +3052,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key,
+			tuple->tracer_cback, tuple->tracer_params);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -3240,6 +3255,10 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 	tuple->lifetime = 60 + get_ticks();
 
+	tuple->tracer_cback = init_tracer_cback;
+	tuple->tracer_params = init_tracer_params;
+	init_tracer_params = NULL;
+
 	/* save tuple in global variable for accesss from local routes */
 	local_ctx_tuple = tuple;
 
@@ -3271,12 +3290,14 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	/* create new server entity */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, b2bl_key);
+			b2b_server_notify, &b2bl_mod_name, b2bl_key,
+			tuple->tracer_cback, tuple->tracer_params);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
 		goto error;
 	}
+
 	hdrs = b2b_scenario_hdrs(new_entity);
 	tuple->servers[0] = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, 0,
 		&from_uri, 0, new_entity->id.s ? &new_entity->id : NULL, hdrs, msg);
@@ -3329,7 +3350,8 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	b2bl_htable[hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key,
+			tuple->tracer_cback, tuple->tracer_params);
 
 	b2bl_htable[hash_index].locked_by = -1;
 
@@ -3870,7 +3892,8 @@ int b2bl_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+				b2b_add_dlginfo, &b2bl_mod_name, tuple->key,
+				tuple->tracer_cback, tuple->tracer_params);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -4436,7 +4459,8 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, tuple->key);
+			b2b_server_notify, &b2bl_mod_name, tuple->key,
+			tuple->tracer_cback, tuple->tracer_params);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -4517,4 +4541,12 @@ error:
 		pkg_free(new_body.s);
 	local_ctx_tuple = NULL;
 	return -1;
+}
+
+int b2bl_register_tracer_cb(void* cbf, void* cb_param)
+{
+	init_tracer_cback = cbf;
+	init_tracer_params = cb_param;
+
+	return 0;
 }

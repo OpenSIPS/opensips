@@ -2013,6 +2013,7 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->terminate_call= b2bl_terminate_call;
 	api->get_stats     = b2bl_get_stats;
 	api->register_cb   = b2bl_register_cb;
+	api->register_tracer_cb = b2bl_register_tracer_cb;
 	api->restore_upper_info = b2bl_restore_upper_info;
 
 	return 0;

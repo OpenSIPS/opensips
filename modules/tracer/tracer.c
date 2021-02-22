@@ -43,7 +43,10 @@
 #include "../../str.h"
 #include "../../script_cb.h"
 #include "../tm/tm_load.h"
+#include "../tm/t_msgbuilder.h"
 #include "../dialog/dlg_load.h"
+#include "../b2b_logic/b2b_load.h"
+#include "../b2b_logic/records.h"
 #include "../../mod_fix.h"
 #include "tracer.h"
 
@@ -75,6 +78,7 @@ static db_ps_t siptrace_ps = NULL;
 
 struct tm_binds tmb;
 struct dlg_binds dlgb;
+b2bl_api_t b2bl_api;
 
 static trace_proto_t tprot;
 
@@ -130,11 +134,14 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 					void *scope_p, str *trace_types_s, str *trace_attrs);
 static int sip_trace(struct sip_msg*, trace_info_p);
 static int sip_trace_instance(struct sip_msg*, trace_instance_p, int);
+static int sip_trace_cell(struct cell *t, trace_info_p info, int type);
 
+static int trace_b2b(struct sip_msg*, trace_info_p);
 static int trace_dialog(struct sip_msg*, trace_info_p);
 static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 								char dlg_tran);
-
+static int trace_transaction_cell(struct cell* t, trace_info_p info,
+								char dlg_tran);
 
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps);
@@ -931,6 +938,9 @@ static int mod_init(void)
 	/* load the module dependencies, best effort for now, as the strict
 	 * dependency will be checked later in fixup function, according to
 	 * the sip_trace() flags */
+	if(load_b2b_logic_api(&b2bl_api)< 0)
+		LM_DBG("Failed to load b2b_logic API (module not loaded)\n");
+
 	if (load_dlg_api(&dlgb) != 0)
 		LM_DBG("failed to load the dialog API (dialog module not loaded?)\n");
 
@@ -1111,6 +1121,91 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 	return 0;
 }
 
+int trace_b2b_cb(struct sip_msg* msg, struct cell* t, void* cb_param, enum b2b_entity_type type)
+{
+	trace_info_p info = (trace_info_p)cb_param;
+
+	LM_DBG("Got b2b callback info=[%p] msg=[%p] tran=[%p]\n", info, msg, t);
+
+	if (!msg && !t)
+	{
+		LM_DBG("release tracer info memory\n");
+		free_trace_info_shm(cb_param);
+		return 0;
+	}
+
+	if (msg)
+	{
+		if (trace_transaction(msg, info, 1)<0)
+		{
+			LM_ERR("trace transaction failed!\n");
+			return -1;
+		}
+		if (msg != FAKED_REPLY)
+		{
+			info->conn_id = msg->rcv.proto_reserved1;
+			sip_trace(msg, info);
+		}
+	}
+
+	if (t != T_UNDEFINED)
+	{
+		if (trace_transaction_cell(t, info, 1)<0)
+		{
+			LM_ERR("trace transaction failed!\n");
+			return -1;
+		}
+
+		if (type == B2B_CLIENT || type == B2B_SERVER)
+		{
+			if (sip_trace_cell(t, info, type) < 0) {
+				LM_ERR("sip trace failed!\n");
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
+
+static int sip_trace_cell(struct cell *t, trace_info_p info, int type)
+{
+	struct sip_msg *msg;
+	dlg_t dialog;
+	struct retr_buf rbuf;
+
+	struct ua_client *uac = &t->uac[0];
+	struct ua_server *uas = &t->uas;
+
+	memset(&dialog, 0, sizeof(dialog));
+	if (type == B2B_CLIENT)
+	{
+		dialog.send_sock = uac->request.dst.send_sock;
+		dialog.hooks.next_hop = &uac->uri;
+		if (uac->local_cancel.activ_type == TYPE_LOCAL_CANCEL)
+			rbuf = uac->local_cancel;
+		else
+			rbuf = uac->request;
+	} else {
+		dialog.send_sock = uas->response.dst.send_sock;
+		rbuf = uas->response;
+	}
+
+	msg = buf_to_sip_msg(rbuf.buffer.s, rbuf.buffer.len, &dialog);
+	if (msg==NULL) {
+		LM_ERR("failed to build sip_msg from buffer\n");
+		return -1;
+	}
+
+	su2ip_addr(&msg->rcv.dst_ip, &rbuf.dst.to);
+	msg->rcv.dst_port = su_getport(&rbuf.dst.to);
+
+	sip_trace(msg, info);
+	free_sip_msg(msg);
+	pkg_free(msg);
+
+	return 0;
+}
+
 static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 		struct dlg_cb_params * params)
 {
@@ -1188,6 +1283,60 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 	return 0;
 }
 
+static int trace_transaction_cell(struct cell* t, trace_info_p info, char dlg_tran)
+{
+	if (t==NULL)
+		return 0;
+
+	struct ua_client *uac = &t->uac[0];
+	if (uac && uac->local_cancel.activ_type == TYPE_LOCAL_CANCEL)
+		return 0;
+
+	/* context for the request message */
+	SET_TRACER_CONTEXT(info);
+
+	if (TRACE_FLAG_ISSET(info, TRACE_INFO_TRAN)) {
+		LM_DBG("transaction callbacks already registered!\n");
+		return 0;
+	}
+
+	if(tmb.register_tmcb( 0, t, TMCB_MSG_MATCHED_IN, trace_tm_in, info, 0) <=0) {
+		LM_ERR("can't register TM MATCH IN callback\n");
+		return -1;
+	}
+
+//	if(tmb.register_tmcb( 0, t, TMCB_MSG_SENT_OUT, trace_tm_out,
+//			info, dlg_tran?0:free_trace_info_shm) <=0) {
+//		LM_ERR("can't register TM SEND OUT callback\n");
+//		return -1;
+//	}
+
+	TRACE_FLAG_SET(info, TRACE_INFO_TRAN);
+	return 0;
+}
+
+static int trace_b2b(struct sip_msg *msg, trace_info_p info)
+{
+	if (b2bl_api.register_tracer_cb==NULL) {
+		LM_ERR("Can't trace b2b! Api not loaded!\n");
+		return -1;
+	}
+
+	/* only register if callback was not previously registered */
+	if (TRACE_FLAG_ISSET(info, TRACE_INFO_B2B)) {
+		LM_DBG("b2b callback already registered!\n");
+		return 0;
+	}
+
+	if(b2bl_api.register_tracer_cb(&trace_b2b_cb, info) != 0){
+		LM_ERR("Unable register b2b cb\n");
+		return -1;
+	}
+
+	TRACE_FLAG_SET(info, TRACE_INFO_B2B);
+	return 0;
+}
+
 static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 {
 	struct dlg_cell* dlg;
@@ -1199,7 +1348,7 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 	}
 
 	if (!dlgb.create_dlg || ! dlgb.get_dlg) {
-		LM_ERR("Can't trace dialog!Api not loaded!\n");
+		LM_ERR("Can't trace dialog! Api not loaded!\n");
 		return -1;
 	}
 
@@ -1303,6 +1452,10 @@ static int st_parse_flags(str *sflags)
 			case 'D':
 				flags = TRACE_DIALOG;
 				break;
+			case 'b':
+			case 'B':
+				flags = TRACE_B2B;
+				break;
 			case ' ':
 				continue;
 			default:
@@ -1401,13 +1554,20 @@ static int fixup_sflags(void **param)
 		return -1;
 	}
 
+	if (_flags==TRACE_B2B) {
+		if (b2bl_api.register_tracer_cb==NULL) {
+			LM_ERR("B2B tracing explicitly required, but"
+				"b2b_entities module not loaded\n");
+			return -1;
+		}
+	} else
 	if (_flags==TRACE_DIALOG) {
 		if (dlgb.create_dlg==NULL) {
 			LM_ERR("Dialog tracing explicitly required, but"
 				"dialog module not loaded\n");
 			return -1;
 		}
-	}else
+	} else
 	if (_flags==TRACE_TRANSACTION) {
 		if (tmb.t_gett==NULL) {
 			LM_INFO("Will do stateless transaction aware tracing!\n");
@@ -1469,7 +1629,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 
 	/* for stateful transactions or dialogs
 	 * we need the structure in the shared memory */
-	} else if(trace_flags == TRACE_DIALOG ||
+	} else if(trace_flags == TRACE_DIALOG || trace_flags == TRACE_B2B ||
 	(trace_flags == TRACE_TRANSACTION && tmb.t_gett)) {
 		instance=shm_malloc(sizeof(trace_instance_t) + extra_len);
 		if (instance==NULL) {
@@ -1540,7 +1700,12 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		info->instances = instance;
 	}
 
-	if (trace_flags==TRACE_DIALOG) {
+	if (trace_flags==TRACE_B2B) {
+		if (trace_b2b(msg, info) < 0) {
+			LM_ERR("trace b2b failed!\n");
+			return -1;
+		}
+	} else if (trace_flags==TRACE_DIALOG) {
 		if (trace_dialog(msg, info) < 0) {
 			LM_ERR("trace dialog failed!\n");
 			return -1;
@@ -1551,7 +1716,6 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 			return -1;
 		}
 	}
-
 
 	/* we're safe; nobody will be in conflict with this conn id since evrybody else
 	 * will have a local copy of this structure */
@@ -1605,7 +1769,11 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 		}
 	}
 
-	if (trace_flags == TRACE_DIALOG &&
+	if (trace_flags == TRACE_B2B && msg->first_line.type == SIP_REQUEST &&
+			b2bl_api.register_tracer_cb != NULL &&
+			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
+		LM_DBG("tracing b2b!\n");
+	} else if (trace_flags == TRACE_DIALOG &&
 			dlgb.get_dlg && msg->first_line.type == SIP_REQUEST &&
 			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
 		LM_DBG("tracing dialog!\n");
@@ -2198,9 +2366,18 @@ error:
 static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps)
 {
 	LM_DBG("TM in triggered req=%p, rpl=%p\n",ps->req,ps->rpl);
+
+	trace_info_p info = (trace_info_p)(*ps->param);
+
 	if (ps->req) {
 		/* an incoming request: a retransmission or hop-by-hop ACK */
-		sip_trace( ps->req,  (trace_info_p)(*ps->param) );
+		if (info->flags & TRACE_INFO_B2B)
+		{
+			// We don't need to trace ACK for B2B because we'll catch it in b2b prescript
+			if (str_strcmp(&ps->req->first_line.u.request.method, const_str("ACK")))
+				sip_trace(ps->req, info);
+		} else
+			sip_trace(ps->req, info);
 	} else if (ps->rpl) {
 		/* an incoming reply for us or for a CANCEL */
 		trace_onreply_in( t, type, ps);
