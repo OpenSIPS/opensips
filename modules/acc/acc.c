@@ -304,7 +304,7 @@ end:
 }
 
 
-int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
+int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
@@ -317,7 +317,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 	struct acc_extra* extra;
 	acc_ctx_t* ctx = try_fetch_ctx();
 
-	if (ctx && cdr_flag) {
+	if (ctx) {
 		/* get created value from context */
 		_created = ctx->created;
 		_setup_time = time(NULL) - _created;
@@ -379,7 +379,7 @@ int acc_log_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag)
 	*(p++) = 0;
 
 
-	if (ctx && cdr_flag) {
+	if (ctx) {
 		LM_GEN2(acc_log_facility, acc_log_level, "%.*stimestamp=%lu;created=%lu;setuptime=%lu%s",
 			acc_env.text.len, acc_env.text.s,
 			(unsigned long) acc_env.ts.tv_sec,
@@ -509,7 +509,7 @@ void acc_db_close(void)
 
 
 int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
-		query_list_t **ins_list, int cdr_flag, int missed)
+		query_list_t **ins_list, int missed)
 {
 	/**
 	 * The list of people which have bugfixed these PS:
@@ -520,11 +520,9 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	static db_ps_t my_ps_ins = NULL;
 	static db_ps_t my_ps_ins2 = NULL;
 	static db_ps_t my_ps_ins3 = NULL;
-	static db_ps_t my_ps_ins4 = NULL;
 	static db_ps_t my_ps = NULL;
 	static db_ps_t my_ps2 = NULL;
 	static db_ps_t my_ps3 = NULL;
-	static db_ps_t my_ps4 = NULL;
 	db_ps_t *ps;
 	int m;
 	int n = 0;
@@ -540,11 +538,6 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 		return -1;
 	}
 
-	if (ctx && cdr_flag) {
-		/* get created value from context */
-		_setup_time = time(NULL) - ctx->created;
-	}
-
 	/* formatted database columns */
 	m = core2strar( rq, val_arr );
 
@@ -556,18 +549,16 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 
 	/* just count the values to do other ops inside lock */
 	if (ctx) {
+		_setup_time = time(NULL) - ctx->created;
+
 		extra_start=m;
 		for (extra=db_extra_tags; extra; extra=extra->next, ++m);
 		for( extra=db_leg_tags, n=m; extra; extra=extra->next, n++);
 
 		VAL_INT(db_vals+n) = _setup_time;
 
-		if (cdr_flag) {
-			VAL_NULL(db_vals+n+1) = 0;
-			VAL_TIME(db_vals+n+1) = ctx->created;
-		}
-		else
-			VAL_NULL(db_vals+n+1) = 1;
+		VAL_NULL(db_vals+n+1) = 0;
+		VAL_TIME(db_vals+n+1) = ctx->created;
 
 		n+=2;
 
@@ -580,12 +571,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 	}
 
 	acc_dbf.use_table(db_handle, &acc_env.text/*table*/);
-	if (ctx && cdr_flag) {
-		if (ins_list)
-			ps = &my_ps_ins2; /* CDR to known table */
-		else
-			ps = &my_ps2; /* CDR to custom table */
-	} else if (ctx) {
+	if (ctx) {
 		if (missed) {
 			if (ins_list)
 				ps = &my_ps_ins; /* normal acc to known missed table */
@@ -593,9 +579,9 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 				ps = &my_ps; /* normal acc to custom missed table */
 		} else {
 			if (ins_list)
-				ps = &my_ps_ins4; /* normal acc to known table */
+				ps = &my_ps_ins2; /* normal acc to known table */
 			else
-				ps = &my_ps4; /* normal acc to custom table */
+				ps = &my_ps2; /* normal acc to custom table */
 		}
 	} else {
 		/* no ctx - no extra */
@@ -842,7 +828,7 @@ static inline aaa_map *aaa_status( struct sip_msg *req, int code )
 		} \
 	}while(0)
 
-int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
+int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 {
 	int attr_cnt, extra_len = 0;
 	aaa_message *send;
@@ -861,7 +847,7 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 		return -1;
 	}
 
-	if (ctx &&cdr_flag) {
+	if (ctx) {
 		_created = ctx->created;
 		_setup_time = time(NULL) - _created;
 	}
@@ -895,12 +881,10 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl, int cdr_flag)
 	for (i = 1; i < attr_cnt; i++)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
 
-	if (cdr_flag) {
-		av_type = (uint32_t)_setup_time;
-		ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 1, &av_type, -1);
-		av_type = (uint32_t)_created;
-		ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 2, &av_type, -1);
-	}
+	av_type = (uint32_t)_setup_time;
+	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 1, &av_type, -1);
+	av_type = (uint32_t)_created;
+	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 2, &av_type, -1);
 
 	/* call-legs attributes also get inserted */
 	if (ctx) {
@@ -1190,8 +1174,7 @@ error:
 #undef EVI_CREATE_PARAM
 
 
-int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag,
-	int missed_flag)
+int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int missed_flag)
 {
 	int m;
 	int n;
@@ -1218,7 +1201,7 @@ int acc_evi_request( struct sip_msg *rq, struct sip_msg *rpl, int cdr_flag,
 	if (!evi_probe_event(acc_env.event))
 		return 1;
 
-	if (ctx && cdr_flag) {
+	if (ctx) {
 		_created = ctx->created;
 		_setup_time = time(NULL) - _created;
 	}

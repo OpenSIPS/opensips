@@ -337,7 +337,7 @@ int w_acc_log_request(struct sip_msg *rq, str* comment)
 	env_set_comment( &accp );
 	env_set_text( ACC_REQUEST, ACC_REQUEST_LEN);
 
-	return acc_log_request( rq, NULL, 0);
+	return acc_log_request( rq, NULL);
 }
 
 
@@ -358,7 +358,7 @@ int w_acc_aaa_request(struct sip_msg *rq, str* comment)
 	env_set_to( rq->to );
 	env_set_comment( &accp );
 
-	return acc_aaa_request( rq, NULL, 0);
+	return acc_aaa_request( rq, NULL);
 }
 
 
@@ -381,12 +381,12 @@ int w_acc_db_request(struct sip_msg *rq, str* comment, str *table)
 	env_set_text(table->s, table->len);
 
 	if (str_match(table, &db_table_mc))
-		return acc_db_request(rq, NULL, &mc_ins_list, 0, 1);
+		return acc_db_request(rq, NULL, &mc_ins_list, 1);
 
 	if (str_match(table, &db_table_acc))
-		return acc_db_request(rq, NULL, &acc_ins_list, 0, 0);
+		return acc_db_request(rq, NULL, &acc_ins_list, 0);
 
-	return acc_db_request( rq, NULL,NULL, 0, 0);
+	return acc_db_request( rq, NULL,NULL, 0);
 }
 
 int w_acc_evi_request(struct sip_msg *rq, str* comment)
@@ -415,11 +415,11 @@ int w_acc_evi_request(struct sip_msg *rq, str* comment)
 #endif
 	if (acc_env.code < 300) {
 		env_set_event(acc_event, acc_event_params, evi_params);
-		return acc_evi_request( rq, NULL, 0, 0);
+		return acc_evi_request( rq, NULL, 0);
 	} else {
 		env_set_event(acc_missed_event, acc_missed_event_params,
 			evi_missed_params);
-		return acc_evi_request( rq, NULL, 0, 1);
+		return acc_evi_request( rq, NULL, 1);
 	}
 }
 
@@ -536,24 +536,24 @@ static inline void on_missed(struct cell *t, struct sip_msg *req,
 	if (is_evi_mc_on(*flags)) {
 		env_set_event(acc_missed_event, acc_missed_event_params,
 			evi_missed_params);
-		acc_evi_request( req, reply, is_evi_cdr_on(*flags) ? 1 : 0, 1 );
+		acc_evi_request( req, reply, 1 );
 		flags_to_reset |= DO_ACC_EVI * DO_ACC_MISSED;
 	}
 
 	if (is_log_mc_on(*flags)) {
 		env_set_text( ACC_MISSED, ACC_MISSED_LEN);
-		acc_log_request( req, reply, is_log_cdr_on(*flags) );
+		acc_log_request( req, reply );
 		flags_to_reset |= DO_ACC_LOG * DO_ACC_MISSED;
 	}
 
 	if (is_aaa_mc_on(*flags)) {
-		acc_aaa_request( req, reply, is_aaa_cdr_on(*flags) );
+		acc_aaa_request( req, reply );
 		flags_to_reset |= DO_ACC_AAA * DO_ACC_MISSED;
 	}
 
 	if (is_db_mc_on(*flags)) {
 		env_set_text(db_table_mc.s, db_table_mc.len);
-		acc_db_request( req, reply,&mc_ins_list, is_db_cdr_on(*flags), 1);
+		acc_db_request( req, reply,&mc_ins_list, 1);
 		flags_to_reset |= DO_ACC_DB * DO_ACC_MISSED;
 	}
 
@@ -798,20 +798,20 @@ static inline void acc_onreply( struct cell* t, struct sip_msg *req,
 		/* do old accounting */
 		if ( is_evi_acc_on(*flags) ) {
 			env_set_event(acc_event, acc_event_params, evi_params);
-			acc_evi_request( req, reply, 0, 0 );
+			acc_evi_request( req, reply, 0 );
 		}
 
 		if ( is_log_acc_on(*flags) ) {
 			env_set_text( ACC_ANSWERED, ACC_ANSWERED_LEN);
-			acc_log_request( req, reply, 0 );
+			acc_log_request( req, reply );
 		}
 
 		if (is_aaa_acc_on(*flags))
-			acc_aaa_request( req, reply, 0 );
+			acc_aaa_request( req, reply );
 
 		if (is_db_acc_on(*flags)) {
 			env_set_text( table.s, table.len);
-			acc_db_request( req, reply, &acc_ins_list, 0, 0);
+			acc_db_request( req, reply, &acc_ins_list, 0);
 		}
 	}
 
