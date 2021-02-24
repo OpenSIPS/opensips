@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 OpenSIPS Solutions
+ * Copyright (C) 2018-2021 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,13 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#ifndef __CACHEDB_TEST_BACKENDS_H__
-#define __CACHEDB_TEST_BACKENDS_H__
+#ifndef __TEST_CACHEDB_H__
+#define __TEST_CACHEDB_H__
 
-/* module requirements */
+/* test initialization & execution */
 void init_cachedb_tests(void);
+void test_cachedb(void);
 
-/* test suites */
-void test_cachedb_backends(void);
-
-#endif /* __CACHEDB_TEST_BACKENDS_H__ */
+#endif /* __TEST_CACHEDB_H__ */
