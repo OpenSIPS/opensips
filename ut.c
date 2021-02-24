@@ -735,3 +735,45 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 
 	return out_len;
 }
+
+char *db_url_escape(const str *url)
+{
+	static str buf;
+	char *at, *slash, *scn;
+	str upw;
+
+	if (!url)
+		return NULL;
+
+	if (pkg_str_extend(&buf, url->len + 6 + 1) < 0) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	/* if there's no '@' sign, the URL has no password */
+	at = q_memchr(url->s, '@', url->len);
+	if (!at)
+		goto url_is_safe;
+
+	/* locate the end of the scheme (typical start for the user:password) */
+	slash = q_memchr(url->s, '/', url->len);
+	if (!slash || slash >= at)
+		goto url_is_safe;
+
+	upw.s = slash;
+	upw.len = at - slash;
+
+	/* if the semicolon is missing, the URL has no password (only username) */
+	scn = q_memchr(upw.s, ':', upw.len);
+	if (!scn)
+		goto url_is_safe;
+
+	sprintf(buf.s, "%.*s:xxxxxx@%.*s", (int)(scn - url->s), url->s,
+			(int)(url->len - (at - url->s) - 1), at + 1);
+
+	return buf.s;
+
+url_is_safe:
+	sprintf(buf.s, "%.*s", url->len, url->s);
+	return buf.s;
+}

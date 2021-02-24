@@ -1417,6 +1417,15 @@ static inline void * l_memmem(const void *b1, const void *b2,
 	return NULL;
 }
 
+/**
+ * Make any database URL log-friendly by masking its password, if any
+ * Note: makes use of a single, static buffer -- use accordingly!
+ */
+char *db_url_escape(const str *url);
+static inline char *_db_url_escape(char *url)
+{
+	return db_url_escape(_str(url));
+}
 
 int user2uid(int* uid, int* gid, char* user);
 

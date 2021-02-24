@@ -531,11 +531,11 @@ static void test_cachedb_url(void)
 	db = new_cachedb_id(_str("redis:group1://:devxxxxxx@172.31.180.127:6379"));
 	if (!ok(db != NULL))
 	        return;
-	ok(str_match(_str(db->scheme), &str_init("redis")));
-	ok(str_match(_str(db->group_name), &str_init("group1")));
-	ok(str_match(_str(db->username), &str_init("")));
-	ok(str_match(_str(db->password), &str_init("devxxxxxx")));
-	ok(str_match(_str(db->host), &str_init("172.31.180.127")));
+	ok(!strcmp(db->scheme, "redis"));
+	ok(!strcmp(db->group_name, "group1"));
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "devxxxxxx"));
+	ok(!strcmp(db->host, "172.31.180.127"));
 	ok(db->port == 6379);
 	ok(!db->database);
 	ok(!db->extra_options);
@@ -550,6 +550,6 @@ static void test_cachedb_url(void)
 	db = new_cachedb_id(_str("redis:group1://:devxxxxxx@172.31.180.127:6379/d?x=1&q=2"));
 	if (!ok(db != NULL))
 	        return;
-	ok(str_match(_str(db->database), &str_init("d")));
-	ok(str_match(_str(db->extra_options), &str_init("x=1&q=2")));
+	ok(!strcmp(db->database, "d"));
+	ok(!strcmp(db->extra_options, "x=1&q=2"));
 }
