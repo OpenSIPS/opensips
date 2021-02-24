@@ -22,7 +22,7 @@
 
 #include <tap.h>
 
-#include "../cachedb/test/test_backends.h"
+#include "../cachedb/test/test_cachedb.h"
 #include "../lib/test/test_csv.h"
 #include "../parser/test/test_parser.h"
 #include "../mem/test/test_malloc.h"
@@ -42,7 +42,7 @@ void init_unit_tests(void)
 	if (!strcmp(testing_module, "core")) {
 		set_mpath("modules/");
 		solve_module_dependencies(modules);
-		//init_cachedb_tests();
+		init_cachedb_tests();
 		//init_malloc_tests();
 	}
 
@@ -57,8 +57,8 @@ int run_unit_tests(void)
 
 	/* core tests */
 	if (!strcmp(testing_module, "core")) {
-		//test_cachedb_backends();
 		//test_malloc();
+		test_cachedb();
 		test_lib_csv();
 		test_parser();
 
