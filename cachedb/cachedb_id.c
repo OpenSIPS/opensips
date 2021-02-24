@@ -347,7 +347,8 @@ struct cachedb_id* new_cachedb_id(const str* url)
 	memset(ptr, 0, sizeof(struct cachedb_id));
 
 	if (parse_cachedb_url(ptr, url) < 0) {
-		LM_ERR("error while parsing database URL: '%.*s' \n", url->len, url->s);
+		LM_ERR("error while parsing database URL: '%s'\n",
+				db_url_escape(url));
 		goto err;
 	}
 

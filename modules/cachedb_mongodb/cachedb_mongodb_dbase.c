@@ -126,12 +126,12 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 
 	snprintf(osips_appname, MONGOC_HANDSHAKE_APPNAME_MAX, "opensips-%d", my_pid());
 
-	LM_DBG("MongoDB conn for [%s]: %s:%s %s:%s |%s|:%u\n", osips_appname,
-	       id->scheme, id->group_name, id->username, id->password, id->host, id->port);
+	LM_DBG("MongoDB conn for [%s]: %s:%s://%s:xxxxxx@%s:%u\n", osips_appname,
+	       id->scheme, id->group_name, id->username, id->host, id->port);
 
 	conn_str = build_mongodb_connect_string(id);
 
-	LM_DBG("cstr: %s\n", conn_str);
+	LM_DBG("cstr: %s\n", _db_url_escape(conn_str));
 
 	con = pkg_malloc(sizeof *con);
 	if (!con) {
@@ -144,7 +144,7 @@ mongo_con* mongo_new_connection(struct cachedb_id* id)
 
 	con->client = mongoc_client_new(conn_str);
 	if (!con->client) {
-		LM_ERR("failed to connect to Mongo (%s)\n", conn_str);
+		LM_ERR("failed to connect to Mongo (%s)\n", _db_url_escape(conn_str));
 		return NULL;
 	}
 
@@ -1673,7 +1673,7 @@ int mongo_truncate(cachedb_con *con)
 	start_expire_timer(start, mongo_exec_threshold);
 	if (!mongoc_collection_remove(MONGO_COLLECTION(con),
 	                         MONGOC_REMOVE_NONE, &empty_doc, NULL, &error)) {
-		LM_ERR("failed to truncate con %.*s!\n", con->url.len, con->url.s);
+		LM_ERR("failed to truncate collection '%s'!\n", MONGO_COL_STR(con));
 		ret = -1;
 	}
 	_stop_expire_timer(start, mongo_exec_threshold, "MongoDB truncate",
