@@ -650,7 +650,7 @@ cachedb_con* cachedb_do_init(str *url,void* (*new_connection)(struct cachedb_id 
 
 	id = new_cachedb_id(url);
 	if (!id) {
-		LM_ERR("cannot parse url [%.*s]\n",url->len,url->s);
+		LM_ERR("cannot parse url [%s]\n", db_url_escape(url));
 		pkg_free(res);
 		return 0;
 	}
