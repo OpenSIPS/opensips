@@ -1527,7 +1527,7 @@ event_route_stm: ROUTE_EVENT LBRACK route_name RBRACK LBRACE actions RBRACE {
 						if (i_tmp==-1) YYABORT;
 						push($6, &sroutes->event[i_tmp].a);
 					}
-		| ROUTE_EVENT error { yyerror("invalid timer_route statement"); }
+		| ROUTE_EVENT error { yyerror("invalid event_route statement"); }
 	;
 
 
