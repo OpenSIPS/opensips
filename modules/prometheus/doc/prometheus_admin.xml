@@ -1,0 +1,131 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides a HTTP interface for the
+		<ulink url='https://prometheus.io/'>Prometheus</ulink>
+		monitoring system, allowing it to fetch different
+		statistics from OpenSIPS.
+	</para>
+	<para>
+		In order to use it, you have to explicitely define the
+		statistics you want to provide by listing them in the
+		<xref linkend="statistics"/> parameter.
+	</para>
+	<para>
+		Currently only <emphasis>counter</emphasis> and <emphasis>gauge</emphasis>
+		metrics types are supported by the module, and whether to choose
+		one or the other for a specific statistic is dictated by the way that
+		statistic was defined either internally, or explicitely through the
+		<emphasis>variable</emphasis> parameter of the <emphasis>statistics</emphasis>
+		module.
+	</para>
+	<para>
+		Each exported statistic comes with a <emphasis>group</emphasis> label that
+		indicates the group it belongs to.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>None
+		</para>
+	</section>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>httpd</emphasis> module.</para>
+		</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_root" xreflabel="root">
+		<title><varname>root</varname>(string)</title>
+		<para>
+		Specifies the root metrics path Promethus uses to query the stats:
+		http://[opensips_IP]:[opensips_httpd_port]/[root]
+		</para>
+		<para>
+		<emphasis>The default value is "metrics".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>root</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("prometheus", "root", "prometheus")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_statistics" xreflabel="statistics">
+		<title><varname>statistics</varname>(string)</title>
+		<para>
+			The statistics that are being exported by OpenSIPS, separated by space.
+			The list can also contain statistics groups's names - to do that, you shall
+			add a colon (<emphasis>:</emphasis>) at the end of the groups's name.
+		</para>
+		<para>
+			This parameter can be defined multiple times.
+		</para>
+		<para>
+		<emphasis>The default value is empty: no metric is exported.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>statistics</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# export the number of active dialogs and the load statistics class
+modparam("prometheus", "statistics", "active_dialogs load:")
+...
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+		<para>
+		No function exported to be used from configuration file.
+		</para>
+	</section>
+
+	<section>
+	<title>Examples</title>
+		<para>
+			In order to have Prometheus query &osips; for statistics, you need to
+			tell him where to get statistics from. To do that, you should define
+			a scarpe job in Prometheus's <emphasis>scrape_configs</emhasis> config,
+			indicating the IP and port you've configured the <emphasis>httpd</emphasis>
+			module to listen on (default: <emphasis>0.0.0.0:8888</emphasis>).
+		</para>
+		<example>
+		<title>Prometheus Scarpe Config</title>
+		<programlisting format="linespecific">
+<![CDATA[
+scrape_configs:
+  - job_name: opensips
+
+    static_configs:
+    - targets: ['localhost:8888']
+]]>
+</programlisting>
+	</example>
+	</section>
+
+</chapter>
+

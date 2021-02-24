@@ -329,6 +329,8 @@ MHD_RET getConnectionHeader(void *cls, enum MHD_ValueKind kind,
 			pr->content_type = HTTPD_APPLICATION_JSON_CNT_TYPE;
 		else if (strncasecmp("text/html", value, 9) == 0)
 			pr->content_type = HTTPD_TEXT_HTML_TYPE;
+		else if (strncasecmp("text/plain", value, 10) == 0)
+			pr->content_type = HTTPD_TEXT_PLAIN_TYPE;
 		else {
 			pr->content_type = HTTPD_UNKNOWN_CNT_TYPE;
 			LM_ERR("Unexpected Content-Type=[%s]\n", value);
@@ -660,6 +662,12 @@ send_response:
 		else if (cb->type==HTTPD_TEXT_HTML_TYPE)
 			MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
 				"text/html");
+		else if (cb->type==HTTPD_TEXT_PLAIN_TYPE)
+			MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+				"text/plain");
+		else if (cb->type==HTTPD_TEXT_PLAIN_PROMETHEUS_TYPE)
+			MHD_add_response_header(response, MHD_HTTP_HEADER_CONTENT_TYPE,
+				"text/plain; version=0.0.4");
 		else
 			LM_BUG("unhandled content type %d\n",cb->type);
 	} else {
