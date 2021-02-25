@@ -109,7 +109,7 @@ modparam("prometheus", "statistics", "active_dialogs load:")
 		<para>
 			In order to have Prometheus query &osips; for statistics, you need to
 			tell him where to get statistics from. To do that, you should define
-			a scarpe job in Prometheus's <emphasis>scrape_configs</emhasis> config,
+			a scarpe job in Prometheus's <emphasis>scrape_configs</emphasis> config,
 			indicating the IP and port you've configured the <emphasis>httpd</emphasis>
 			module to listen on (default: <emphasis>0.0.0.0:8888</emphasis>).
 		</para>
