@@ -92,7 +92,8 @@ struct module_exports exports = {
 	mod_init,					/* module initialization function */
 	0,							/* response handling function */
 	mod_destroy,				/* destroy function */
-	child_init					/* per-child init function */
+	child_init,					/* per-child init function */
+	0						    /* reload confirm function */
 };
 
 /* exported functions for core event interface */
