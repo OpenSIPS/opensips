@@ -1,0 +1,142 @@
+wolfssl Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. ca_list (string)
+              1.3.2. certificate (string)
+              1.3.3. private_key (string)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set ca_list variable
+   1.2. Set certificate variable
+   1.3. Set private_key variable
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements TLS operations using the wolfssl
+   libarary and provides an interface for the proto_bins module.
+   The wolfssl library is statically-linked and bundled with this
+   module so no installation or external dependency is required.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * None.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. ca_list (string)
+
+   List of trusted CAs. The file contains the certificates
+   accepted, one after the other. It MUST be a file, not a folder.
+
+   Default value is "".
+
+   Example 1.1. Set ca_list variable
+...
+modparam("wolfssl", "ca_list", "/mycerts/certs/ca_list.pem")
+...
+
+1.3.2. certificate (string)
+
+   Public certificate file for OpenSIPS. It will be used as
+   server-side certificate for incoming TLS connections, and as a
+   client-side certificate for outgoing TLS connections.
+
+   Default value is "".
+
+   Example 1.2. Set certificate variable
+...
+modparam("wolfssl", "certificate", "/mycerts/certs/opensips_server_cert.
+pem")
+...
+
+1.3.3. private_key (string)
+
+   Private key of the above certificate. I must be kept in a safe
+   place with tight permissions!
+
+   Default value is "".
+
+   Example 1.3. Set private_key variable
+...
+modparam("wolfssl", "private_key", "/mycerts/private/prik.pem")
+...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+     Name Commit Activity
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Documentation Copyrights:
+
+   Copyright © 2021 www.opensips-solutions.com

@@ -232,7 +232,8 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "proto_bin", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "proto_bin",  DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "proto_bins", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */

@@ -57,7 +57,7 @@ static int send_ping(node_info_t *node, int req_node_list)
 	set_proc_log_level(L_INFO);
 	#endif
 
-	rc = msg_send(node->cluster->send_sock, clusterer_proto, &node->addr, 0,
+	rc = msg_send(node->cluster->send_sock, node->proto, &node->addr, 0,
 		send_buffer.s, send_buffer.len, 0);
 
 	#ifndef CLUSTERER_EXTRA_BIN_DBG
@@ -487,8 +487,8 @@ int flood_message(bin_packet_t *packet, cluster_info_t *cluster,
 	lock_release(cluster->current_node->lock);
 
 	for (i = 0; i < no_dests; i++) {
-		if (msg_send(cluster->send_sock, clusterer_proto, &destinations[i]->addr,
-			0, bin_buffer.s, bin_buffer.len, 0) < 0) {
+		if (msg_send(cluster->send_sock, destinations[i]->proto,
+			&destinations[i]->addr, 0, bin_buffer.s, bin_buffer.len, 0) < 0) {
 			LM_ERR("Failed to flood message to node [%d]\n",
 				destinations[i]->node_id);
 
@@ -601,7 +601,7 @@ static int send_full_top_update(node_info_t *dest_node, int nr_nodes, int *node_
 	bin_push_int(&packet, current_id);
 	bin_get_buffer(&packet, &bin_buffer);
 
-	if (msg_send(dest_node->cluster->send_sock, clusterer_proto, &dest_node->addr,
+	if (msg_send(dest_node->cluster->send_sock, dest_node->proto, &dest_node->addr,
 		0, bin_buffer.s, bin_buffer.len, 0) < 0) {
 		LM_ERR("Failed to send topology update to node [%d]\n", dest_node->node_id);
 		set_link_w_neigh_adv(-1, LS_RESTART_PINGING, dest_node);
@@ -662,7 +662,7 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 
 	bin_get_buffer(&packet, &send_buffer);
 	for (i = 0; i < no_dests; i++) {
-		if (msg_send(destinations[i]->cluster->send_sock, clusterer_proto,
+		if (msg_send(destinations[i]->cluster->send_sock, destinations[i]->proto,
 			&destinations[i]->addr, 0, send_buffer.s, send_buffer.len, 0) < 0) {
 			LM_ERR("Failed to send link state update to node [%d]\n",
 				destinations[i]->node_id);
@@ -1144,7 +1144,7 @@ void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 }
 
 void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
-					int packet_type, union sockaddr_union *src_su, int src_node_id)
+	int packet_type, union sockaddr_union *src_su, int proto, int src_node_id)
 {
 	str bin_buffer;
 	int req_list;
@@ -1166,7 +1166,7 @@ void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
 		bin_push_int(&packet, current_id);
 		bin_get_buffer(&packet, &bin_buffer);
 
-		if (msg_send(cl->send_sock, clusterer_proto, src_su, 0, bin_buffer.s,
+		if (msg_send(cl->send_sock, proto, src_su, 0, bin_buffer.s,
 			bin_buffer.len, 0) < 0)
 			LM_ERR("Failed to reply to ping from unknown node, id [%d]\n", src_node_id);
 		else
@@ -1269,7 +1269,7 @@ void handle_unknown_id(node_info_t *src_node)
 	bin_push_int(&packet, current_id);
 
 	bin_get_buffer(&packet, &bin_buffer);
-	if (msg_send(src_node->cluster->send_sock, clusterer_proto, &src_node->addr,
+	if (msg_send(src_node->cluster->send_sock, src_node->proto, &src_node->addr,
 		0, bin_buffer.s, bin_buffer.len, 0) < 0)
 		LM_ERR("Failed to send node description to node [%d]\n", src_node->node_id);
 	else
@@ -1316,7 +1316,7 @@ void handle_ping(bin_packet_t *received, node_info_t *src_node,
 	set_proc_log_level(L_INFO);
 	#endif
 
-	send_rc = msg_send(src_node->cluster->send_sock, clusterer_proto,
+	send_rc = msg_send(src_node->cluster->send_sock, src_node->proto,
 		&src_node->addr, 0, bin_buffer.s, bin_buffer.len, 0);
 
 	#ifndef CLUSTERER_EXTRA_BIN_DBG

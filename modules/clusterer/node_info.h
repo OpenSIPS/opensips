@@ -70,6 +70,7 @@ struct node_info {
 	str description;
 	str url;
 	union sockaddr_union addr;
+	enum sip_protos proto;
 	str sip_addr;
 	int priority;                   /* priority to be chosen as next hop for same length paths */
 	int no_ping_retries;            /* maximum number of ping retries */

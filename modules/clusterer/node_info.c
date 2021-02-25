@@ -188,12 +188,14 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 	st.len = hlen;
 
 	if (proto == PROTO_NONE)
-		proto = clusterer_proto;
-	if (proto != clusterer_proto) {
-		LM_ERR("Clusterer currently supports only BIN protocol, but node: %d "
-			"has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
+		proto = PROTO_BIN;
+	else if (proto != PROTO_BIN && proto != PROTO_BINS) {
+		LM_ERR("Clusterer currently supports only BIN/BINS protocols, but node: "
+			"%d has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
 		return 1;
 	}
+
+	(*new_info)->proto = proto;
 
 	if (int_vals[INT_VALS_NODE_ID_COL] != current_id) {
 		he = sip_resolvehost(&st, (unsigned short *) &port,

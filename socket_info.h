@@ -226,6 +226,9 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			break;
 		case PROTO2UINT('b', 'i', 'n'):
 			if(len==3) { *proto=PROTO_BIN; return 0; }
+			else if(len==4 && (s[3]=='s' || s[3]=='S')) {
+				*proto=PROTO_BINS; return 0;
+			}
 			break;
 
 		case PROTO2UINT('h', 'e', 'p'):
@@ -389,6 +392,12 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'b';
 			*(p++) = 'i';
 			*(p++) = 'n';
+			break;
+		case PROTO_BINS:
+			*(p++) = 'b';
+			*(p++) = 'i';
+			*(p++) = 'n';
+			*(p++) = 's';
 			break;
 		case PROTO_HEP_UDP:
 			*(p++) = 'h';

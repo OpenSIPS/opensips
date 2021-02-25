@@ -1,0 +1,115 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements TLS operations using the <emphasis>wolfssl</emphasis>
+		libarary and provides an interface for the <emphasis>proto_bins</emphasis> module.
+		The <emphasis>wolfssl</emphasis> library is statically-linked and bundled with this
+		module so no installation or external dependency is required.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	
+		<section id="param_ca_list" xreflabel="ca_list">
+			<title><varname>ca_list</varname> (string)</title>
+			<para>
+			List of trusted CAs. The file contains the certificates
+			accepted, one after the other. It MUST be a file, not
+			a folder.
+			</para>
+			<para><emphasis>
+				Default value is "".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>ca_list</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("wolfssl", "ca_list", "/mycerts/certs/ca_list.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_certificate" xreflabel="certificate">
+			<title><varname>certificate</varname> (string)</title>
+			<para>
+			Public certificate file for &osips;. It will be used as
+			server-side certificate for incoming TLS connections, and as
+			a client-side certificate for outgoing TLS connections.
+			</para>
+			<para><emphasis>
+				Default value is "".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>certificate</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+modparam("wolfssl", "certificate", "/mycerts/certs/opensips_server_cert.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_private_key" xreflabel="private_key">
+			<title><varname>private_key</varname> (string)</title>
+			<para>
+			Private key of the above certificate. I must be kept in a
+			safe place with tight permissions!
+			</para>
+			<para><emphasis>
+				Default value is "".
+			</emphasis></para>
+			<example>
+				<title>Set <varname>private_key</varname> variable
+					</title>
+				<programlisting format="linespecific">
+...
+modparam("wolfssl", "private_key", "/mycerts/private/prik.pem")
+...
+				</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+</chapter>

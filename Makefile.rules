@@ -22,7 +22,7 @@ all_misclibs=reg
 all_misclibs:=$(addprefix lib/, $(all_misclibs))
 
 #implicit rules
-%.o: %.c $(ALLDEP)
+%.o: %.c $(ALLDEP) $(DEPS)
 ifeq (,$(FASTER))
 	@echo "Compiling $<"
 endif

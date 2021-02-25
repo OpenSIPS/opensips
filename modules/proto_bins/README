@@ -1,0 +1,246 @@
+proto_bins Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. bins_port (integer)
+              1.3.2. bins_handshake_timeout (integer)
+              1.3.3. bins_send_timeout (integer)
+              1.3.4. bins_max_msg_chunks (integer)
+              1.3.5. bins_async (integer)
+              1.3.6. bins_async_max_postponed_chunks (integer)
+              1.3.7. bins_async_local_connect_timeout (integer)
+              1.3.8. bins_async_handshake_timeout (integer)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set bins_port parameter
+   1.2. Set bins_handshake_timeout variable
+   1.3. Set bins_send_timeout parameter
+   1.4. Set bins_max_msg_chunks parameter
+   1.5. Set bins_async parameter
+   1.6. Set bins_async_max_postponed_chunks parameter
+   1.7. Set bins_async_local_connect_timeout parameter
+   1.8. Set bins_async_handshake_timeout parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements a secure Binary communication protocol
+   over TLS, to be used by the OpenSIPS clustering engine provided
+   by the clusterer module.
+
+   Once loaded, you will be able to define BINS listeners in your
+   configuration file by adding their IP and, optionally, a
+   listening port, similar to this example:
+
+...
+socket= bins:127.0.0.1          # change the listening IP
+socket= bins:127.0.0.1:5557     # change the listening IP and port
+...
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * wolfssl.
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. bins_port (integer)
+
+   The default port to be used by all BINS listeners.
+
+   Default value is 5556.
+
+   Example 1.1. Set bins_port parameter
+...
+modparam("proto_bins", "bins_port", 5557)
+...
+
+1.3.2. bins_handshake_timeout (integer)
+
+   Sets the timeout (in milliseconds) for the SSL/TLS handshake
+   sequence to complete. It may be necessary to increase this
+   value when using a CPU intensive cipher for the connection to
+   allow time for keys to be generated and processed.
+
+   The timeout is invoked during acceptance of a new connection
+   (inbound) and during the wait period when a new session is
+   being initiated (outbound).
+
+   Default value is 100.
+
+   Example 1.2. Set bins_handshake_timeout variable
+
+param("proto_bins", "bins_handshake_timeout", 200) # number of milliseco
+nds
+
+
+1.3.3. bins_send_timeout (integer)
+
+   Sets the timeout (in milliseconds) for blocking send operations
+   to complete.
+
+   The send timeout is invoked for all TLS write operations,
+   excluding the handshake process (see: bins_handshake_timeout)
+
+   Default value is 100 ms.
+
+   Example 1.3. Set bins_send_timeout parameter
+...
+modparam("proto_bins", "bins_send_timeout", 200)
+...
+
+1.3.4. bins_max_msg_chunks (integer)
+
+   The maximum number of chunks in which a BINS message is
+   expected to arrive via TCP. If a received packet is more
+   fragmented than this, the connection is dropped (either the
+   connection is very overloaded and this leads to high
+   fragmentation - or we are the victim of an ongoing attack where
+   the attacker is sending very fragmented traffic in order to
+   decrease server performance).
+
+   Default value is 32.
+
+   Example 1.4. Set bins_max_msg_chunks parameter
+...
+modparam("proto_bins", "bins_max_msg_chunks", 8)
+...
+
+1.3.5. bins_async (integer)
+
+   Specifies whether the TCP/TLS connect and write operations
+   should be done in an asynchronous mode (non-blocking connect
+   and write) or not. If disabled, OpenSIPS will block and wait
+   for TCP/TLS operations like connect and write.
+
+   Default value is 1 (enabled).
+
+   Example 1.5. Set bins_async parameter
+...
+modparam("proto_bin", "bins_async", 0)
+...
+
+1.3.6. bins_async_max_postponed_chunks (integer)
+
+   If bins_async is enabled, this specifies the maximum number of
+   BINS messages that can be stashed for later/async writing. If
+   the connection pending writes exceed this number, the
+   connection will be marked as broken and dropped.
+
+   Default value is 32.
+
+   Example 1.6. Set bins_async_max_postponed_chunks parameter
+...
+modparam("proto_bin", "bins_async_max_postponed_chunks", 16)
+...
+
+1.3.7. bins_async_local_connect_timeout (integer)
+
+   If bin_async is enabled, this specifies the number of
+   milliseconds that a connect will be tried in blocking mode
+   (optimization). If the connect operation lasts more than this,
+   the connect will go to async mode and will be passed to TCP
+   MAIN for polling.
+
+   Default value is 100 ms.
+
+   Example 1.7. Set bins_async_local_connect_timeout parameter
+...
+modparam("proto_bin", "bins_async_local_connect_timeout", 200)
+...
+
+1.3.8. bins_async_handshake_timeout (integer)
+
+   If tls_async is enabled, this specifies the number of
+   milliseconds that a TLS handshake should be tried in blocking
+   mode (optimization). If the handshake operation lasts more than
+   this, the write will go to async mode and will be passed to tls
+   MAIN for polling.
+
+   Default value is 10 ms.
+
+   Example 1.8. Set bins_async_handshake_timeout parameter
+...
+modparam("proto_tls", "bins_async_handshake_timeout", 100)
+...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu)    14       1      1584      0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu) Feb 2021 - Feb 2021
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
+
+   Documentation Copyrights:
+
+   Copyright © 2021 www.opensips-solutions.com

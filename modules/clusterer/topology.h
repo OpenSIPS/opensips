@@ -29,7 +29,7 @@ int flood_message(bin_packet_t *packet, cluster_info_t *cluster,
 void handle_full_top_update(bin_packet_t *packet, node_info_t *source,
 									int *ev_actions_required);
 void handle_internal_msg_unknown(bin_packet_t *received, cluster_info_t *cl,
-	int packet_type, union sockaddr_union *src_su, int src_node_id);
+	int packet_type, union sockaddr_union *src_su, int proto, int src_node_id);
 void handle_ls_update(bin_packet_t *received, node_info_t *src_node,
 								int *ev_actions_required);
 void handle_unknown_id(node_info_t *src_node);
