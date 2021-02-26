@@ -1,0 +1,170 @@
+Prometheus Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. External Libraries or Applications
+              1.2.2. OpenSIPS Modules
+
+        1.3. Exported Parameters
+
+              1.3.1. root(string)
+              1.3.2. statistics(string)
+
+        1.4. Exported Functions
+        1.5. Examples
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set root parameter
+   1.2. Set statistics parameter
+   1.3. Prometheus Scarpe Config
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides a HTTP interface for the Prometheus
+   monitoring system, allowing it to fetch different statistics
+   from OpenSIPS.
+
+   In order to use it, you have to explicitely define the
+   statistics you want to provide by listing them in the
+   statistics parameter.
+
+   Currently only counter and gauge metrics types are supported by
+   the module, and whether to choose one or the other for a
+   specific statistic is dictated by the way that statistic was
+   defined either internally, or explicitely through the variable
+   parameter of the statistics module.
+
+   Each exported statistic comes with a group label that indicates
+   the group it belongs to.
+
+1.2. Dependencies
+
+1.2.1. External Libraries or Applications
+
+   None
+
+1.2.2. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * httpd module.
+
+1.3. Exported Parameters
+
+1.3.1. root(string)
+
+   Specifies the root metrics path Promethus uses to query the
+   stats: http://[opensips_IP]:[opensips_httpd_port]/[root]
+
+   The default value is "metrics".
+
+   Example 1.1. Set root parameter
+...
+modparam("prometheus", "root", "prometheus")
+...
+
+1.3.2. statistics(string)
+
+   The statistics that are being exported by OpenSIPS, separated
+   by space. The list can also contain statistics groups's names -
+   to do that, you shall add a colon (:) at the end of the
+   groups's name.
+
+   This parameter can be defined multiple times.
+
+   The default value is empty: no metric is exported.
+
+   Example 1.2. Set statistics parameter
+...
+# export the number of active dialogs and the load statistics class
+modparam("prometheus", "statistics", "active_dialogs load:")
+...
+
+1.4. Exported Functions
+
+   No function exported to be used from configuration file.
+
+1.5. Examples
+
+   In order to have Prometheus query OpenSIPS for statistics, you
+   need to tell him where to get statistics from. To do that, you
+   should define a scarpe job in Prometheus's scrape_configs
+   config, indicating the IP and port you've configured the httpd
+   module to listen on (default: 0.0.0.0:8888).
+
+   Example 1.3. Prometheus Scarpe Config
+
+scrape_configs:
+  - job_name: opensips
+
+    static_configs:
+    - targets: ['localhost:8888']
+
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea)    7        2      469       1
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) Feb 2021 - Feb 2021
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Razvan Crainea (@razvancrainea).
+
+   Documentation Copyrights:
+
+   Copyright © 2021 www.opensips-solutions.com

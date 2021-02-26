@@ -15,7 +15,7 @@
 	<para>
 		In order to use it, you have to explicitely define the
 		statistics you want to provide by listing them in the
-		<xref linkend="statistics"/> parameter.
+		<xref linkend="param_statistics"/> parameter.
 	</para>
 	<para>
 		Currently only <emphasis>counter</emphasis> and <emphasis>gauge</emphasis>
