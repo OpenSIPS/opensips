@@ -15,6 +15,7 @@ Build-Depends: bison,
                libmaxminddb-dev | libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
                libjson-c-dev,
+               librdkafka1-dev,
                libldap2-dev,
                liblua5.1-0-dev,
                libmemcached-dev,
@@ -667,3 +668,17 @@ Description: Prometheus Monitoring support for OpenSIPS
  .
  This module provides support in OpenSIPS for the Prometheus
  (https://prometheus.io/) monitoring tool.
+
+Package: opensips-kafka-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Implementation of an Apache Kafka producer
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module is an implementation of an Apache Kafka producer.
+ It serves as a transport backend for the Event Interface and
+ also provides a stand-alone connector to be used from the
+ OpenSIPS script in order to publish messages to Kafka brokers.
