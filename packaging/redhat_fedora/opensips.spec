@@ -538,6 +538,20 @@ per second even on low-budget hardware.
 .
 This module provides a Python interface to implement your scripting logic.
 
+%package  prometheus-module
+Summary:  Prometheus Monitoring support for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-http-modules
+
+%description  python-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module provides support in OpenSIPS for the Prometheus
+(https://prometheus.io/) monitoring tool.
+
 %package  rabbitmq-modules
 Summary:  Interface module to interact with a RabbitMQ server
 Group:    System Environment/Daemons
@@ -1347,6 +1361,10 @@ fi
 %files python-module
 %{_libdir}/opensips/modules/python.so
 
+%files prometheus-module
+%{_libdir}/opensips/modules/prometheus.so
+%doc docdir/README.prometheus
+
 %files rabbitmq-modules
 %{_libdir}/opensips/modules/event_rabbitmq.so
 %doc docdir/README.event_rabbitmq
@@ -1448,6 +1466,9 @@ fi
 
 
 %changelog
+* Fri Feb 26 2021 Razvan Crainea <razvan@opensips.org> - 3.2.0-1
+- New modules: prometheus
+
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
 - New modules: b2b_logic_xml, callops, media_exchange, presence_dfks,

@@ -653,3 +653,17 @@ Description: STIR/SHAKEN support for OpenSIPS
  .
  This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
  Authentication and Verification services in OpenSIPS.
+
+Package: opensips-prometheus-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-http-modules (= ${binary:Version}),
+         ${shlibs:Depends}, ${misc:Depends}
+Description: Prometheus Monitoring support for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module provides support in OpenSIPS for the Prometheus
+ (https://prometheus.io/) monitoring tool.
