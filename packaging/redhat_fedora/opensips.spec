@@ -542,6 +542,20 @@ This package provides several OpenSIPS modules for implementing presence
 server and presence user agent for RICH presence, registrar-based presence,
 external triggered presence and XCAP support.
 
+%package  prometheus-module
+Summary:  Prometheus Monitoring support for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-http-modules
+
+%description  prometheus-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This module provides support in OpenSIPS for the Prometheus
+(https://prometheus.io/) monitoring tool.
+
 %package  python-module
 Summary:  Python scripting support
 Group:    System Environment/Daemons
@@ -553,20 +567,6 @@ server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This module provides a Python interface to implement your scripting logic.
-
-%package  prometheus-module
-Summary:  Prometheus Monitoring support for OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-http-modules
-
-%description  python-module
-OpenSIPS is a very fast and flexible SIP (RFC3261)
-server. Written entirely in C, OpenSIPS can handle thousands calls
-per second even on low-budget hardware.
-.
-This module provides support in OpenSIPS for the Prometheus
-(https://prometheus.io/) monitoring tool.
 
 %package  rabbitmq-modules
 Summary:  Interface module to interact with a RabbitMQ server
@@ -1378,12 +1378,13 @@ fi
 %{_libdir}/opensips/modules/xcap_client.so
 %doc docdir/README.xcap_client
 
-%files python-module
-%{_libdir}/opensips/modules/python.so
-
 %files prometheus-module
 %{_libdir}/opensips/modules/prometheus.so
 %doc docdir/README.prometheus
+
+%files python-module
+%{_libdir}/opensips/modules/python.so
+%doc docdir/README.python
 
 %files rabbitmq-modules
 %{_libdir}/opensips/modules/event_rabbitmq.so
