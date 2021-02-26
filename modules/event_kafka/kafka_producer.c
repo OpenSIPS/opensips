@@ -276,10 +276,12 @@ static int kafka_enq_msg(kafka_job_t *job)
 {
 	kafka_producer_t *prod;
 	kafka_broker_t *broker;
+	#if (RD_KAFKA_VERSION >= 0x010001ff)
 	rd_kafka_resp_err_t err;
 	char errstr[512];
+	#endif
 	int rc;
-	unsigned int retries = 0;
+	unsigned int retries = KAFKA_ENQ_RETRIES;
 
 	broker = (job->type == KAFKA_JOB_EVI) ?
 		((evi_job_data_t *)job->data)->evi_sock->params :
@@ -294,16 +296,20 @@ static int kafka_enq_msg(kafka_job_t *job)
 				prod->conf_strings->next->s, rd_kafka_err2str(rd_kafka_last_error()));
 
 			if (rd_kafka_last_error() == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
-				retries = KAFKA_ENQ_RETRIES;
-
 				/* wait for some messages to be delivered from the queue */
 				rd_kafka_poll(prod->rk, KAFKA_ENQ_RETRY_TIMEOUT);
-			} else if (rd_kafka_last_error() == RD_KAFKA_RESP_ERR__FATAL) {
+			}
+			#if (RD_KAFKA_VERSION >= 0x010001ff)
+			else if (rd_kafka_last_error() == RD_KAFKA_RESP_ERR__FATAL) {
 				err = rd_kafka_fatal_error(prod->rk, errstr, sizeof(errstr));
 				LM_ERR("librdkafka fatal error: %s: %s\n",
 					rd_kafka_err2name(err), errstr);
 				rc = -2;  /* terminate producer instance */
+				retries = 0;
+			} else {
+				retries = 0;
 			}
+			#endif
 		} else {
 			LM_DBG("Enqueued message for topic: %s\n", prod->conf_strings->next->s);
 		}
