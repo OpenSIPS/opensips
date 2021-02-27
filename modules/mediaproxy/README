@@ -352,7 +352,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Dan Pascu (@danpascu) 126 49 4218 2380
+   1. Dan Pascu (@danpascu) 127 50 4221 2383
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 39 31 687 88
    3. Saúl Ibarra Corretgé (@saghul) 20 14 504 71
    4. Liviu Chircu (@liviuchircu) 13 11 41 47
@@ -391,13 +391,13 @@ Chapter 2. Contributors
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   5.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   6.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
-   7.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
-   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
-   9.  Dan Pascu (@danpascu)               Mar 2004 - Apr 2009
+   3.  Dan Pascu (@danpascu)               Mar 2004 - May 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Jun 2018
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   7.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
+   8.  Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
+   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Aug 2011
    10. Sergio Gutierrez                    Nov 2008 - Nov 2008
 
    All remaining contributors: Sergio Gutierrez, Daniel-Constantin

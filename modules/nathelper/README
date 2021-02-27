@@ -611,13 +611,13 @@ Chapter 3. Contributors
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
    Ancuta Onofrei, Andrei Dragus, Vlad Paiu (@vladpaiu), Henning
-   Westerholt (@henningw), Christophe Sollet (@csollet), Marcus
-   Hunger, Vlad Patrascu (@rvlad-patrascu), Klaus Darilion, Sergio
-   Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi
-   Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Jasper
-   Hafkenscheid (@hafkensite), Konstantin Bokarius, John Riordan,
-   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
-   Schubert.
+   Westerholt (@henningw), Dan Pascu (@danpascu), Christophe
+   Sollet (@csollet), Marcus Hunger, Vlad Patrascu
+   (@rvlad-patrascu), Klaus Darilion, Sergio Gutierrez, Nils
+   Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le
+   Hen, Bayan Towfiq, Laurent Schweizer, Jasper Hafkenscheid
+   (@hafkensite), Konstantin Bokarius, John Riordan, Walter Doekes
+   (@wdoekes), Elena-Ramona Modroiu, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -643,22 +643,22 @@ Chapter 3. Contributors
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
    3.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
-   5.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   6.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   8.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   9.  Walter Doekes (@wdoekes)            May 2014 - May 2014
-   10. Christophe Sollet (@csollet)        Dec 2009 - Oct 2013
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Shlomi Gutman                       Mar 2018 - Mar 2018
+   7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   9.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   10. Walter Doekes (@wdoekes)            May 2014 - May 2014
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
-   Sobolyev (@sobomax), Anca Vamanu, John Riordan, Emmanuel Buu,
-   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
-   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
-   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
-   Nils Ohlmeier.
+   All remaining contributors: Christophe Sollet (@csollet), Vlad
+   Paiu (@vladpaiu), Maksym Sobolyev (@sobomax), Anca Vamanu, John
+   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
+   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Ancuta Onofrei, Andrei Dragus, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Marcus Hunger, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Jasper Hafkenscheid (<ulink url="https://github.com/hafkensite">@hafkensite</ulink>), Konstantin Bokarius, John Riordan, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Elena-Ramona Modroiu, Edson Gellert Schubert.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Ancuta Onofrei, Andrei Dragus, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Marcus Hunger, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Jasper Hafkenscheid (<ulink url="https://github.com/hafkensite">@hafkensite</ulink>), Konstantin Bokarius, John Riordan, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Elena-Ramona Modroiu, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -148,38 +148,38 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>)</entry>
+		<entry align="center">May 2019 - May 2019</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Shlomi Gutman</entry>
 		<entry align="center">Mar 2018 - Mar 2018</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
 		<entry align="center">Sep 2010 - Feb 2018</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Aug 2017</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">Nov 2014 - Nov 2016</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
 		<entry align="center">May 2014 - May 2014</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>)</entry>
-		<entry align="center">Dec 2009 - Oct 2013</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Anca Vamanu, John Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ancuta Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Nils Ohlmeier.</para>
+	<para><emphasis role='bold'>All remaining contributors</emphasis>: Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Anca Vamanu, John Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ancuta Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Nils Ohlmeier.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

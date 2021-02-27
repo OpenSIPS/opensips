@@ -757,10 +757,11 @@ Chapter 2. Contributors
    1. Liviu Chircu (@liviuchircu) 412 137 14797 8848
    2. Razvan Crainea (@razvancrainea) 8 6 19 14
    3. Chad Attermann (@attermann) 7 5 19 5
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 3
-   5. Aron Podrigal (@ar45) 3 1 14 1
-   6. Italo Rossi 2 1 6 0
-   7. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
+   4. Dan Pascu (@danpascu) 4 2 4 4
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 3
+   6. Aron Podrigal (@ar45) 3 1 14 1
+   7. Italo Rossi 2 1 6 0
+   8. Vlad Patrascu (@rvlad-patrascu) 2 1 1 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -785,10 +786,11 @@ Chapter 2. Contributors
    1. Liviu Chircu (@liviuchircu)         Jul 2016 - Jan 2021
    2. Aron Podrigal (@ar45)               Jun 2020 - Jun 2020
    3. Razvan Crainea (@razvancrainea)     Mar 2017 - Sep 2019
-   4. Italo Rossi                         Jul 2018 - Jul 2018
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Jun 2018
-   6. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
-   7. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   4. Dan Pascu (@danpascu)               May 2019 - May 2019
+   5. Italo Rossi                         Jul 2018 - Jul 2018
+   6. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Jun 2018
+   7. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
+   8. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -897,9 +897,9 @@ Chapter 3. Contributors
    10. Ezequiel Lovelle (@lovelle) 4 2 6 6
 
    All remaining contributors: Ryan Bullock (@rrb3942), Christophe
-   Sollet (@csollet), Anca Vamanu, Mikko Lehto, Walter Doekes
-   (@wdoekes), Dusan Klinec (@ph4r05), Julián Moreno Patiño, Zero
-   King (@l2dy).
+   Sollet (@csollet), Anca Vamanu, Mikko Lehto, Dan Pascu
+   (@danpascu), Walter Doekes (@wdoekes), Dusan Klinec (@ph4r05),
+   Julián Moreno Patiño, Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -925,17 +925,18 @@ Chapter 3. Contributors
    2.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Jun 2020
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
-   7.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2016
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2018
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Aug 2017
+   8.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jul 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2016
 
-   All remaining contributors: Dave Sidwell (@davesidwell),
-   Ezequiel Lovelle (@lovelle), Mikko Lehto, Ryan Bullock
-   (@rrb3942), Peter Lemenkov (@lemenkov), Walter Doekes
-   (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu.
+   All remaining contributors: Dusan Klinec (@ph4r05), Dave
+   Sidwell (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko
+   Lehto, Ryan Bullock (@rrb3942), Peter Lemenkov (@lemenkov),
+   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Anca
+   Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
