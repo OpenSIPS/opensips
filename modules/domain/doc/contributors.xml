@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Elena-Ramona Modroiu, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), <ulink url="https://github.com/coxx">@coxx</ulink>, Konstantin Bokarius, Klaus Darilion, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, Andreas Granig.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Elena-Ramona Modroiu, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), <ulink url="https://github.com/coxx">@coxx</ulink>, Konstantin Bokarius, Klaus Darilion, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, Andreas Granig.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Klaus Darilion, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Klaus Darilion, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

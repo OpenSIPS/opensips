@@ -45,10 +45,10 @@
 	<row>
 		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">93</entry>
-		<entry align="center">61</entry>
-		<entry align="center">2646</entry>
-		<entry align="center">566</entry>
+		<entry align="center">95</entry>
+		<entry align="center">62</entry>
+		<entry align="center">2678</entry>
+		<entry align="center">616</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Irina-Maria Stanescu, Karel Kozlik, Andrei Pelinescu-Onciul, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Irina-Maria Stanescu, Karel Kozlik, Andrei Pelinescu-Onciul, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Elena-Ramona Modroiu, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier, Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Aug 2010 - Feb 2021</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Dec 2003 - Jan 2021</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jan 2013 - Sep 2020</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Aug 2010 - Jun 2020</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Irina-Maria Stanescu, Alex Massover, Sergio Gutierrez, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jesus Rodrigues, Julien Blache, Peter Nixon, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Andrei Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel Kozlik.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Irina-Maria Stanescu, Alex Massover, Sergio Gutierrez, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jesus Rodrigues, Julien Blache, Peter Nixon, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Andrei Pelinescu-Onciul, Elena-Ramona Modroiu, Nils Ohlmeier, Karel Kozlik.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

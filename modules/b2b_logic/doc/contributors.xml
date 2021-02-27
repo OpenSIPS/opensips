@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Anca Vamanu, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Anca Vamanu, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Konstantin Bokarius, Jesus Rodrigues, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Konstantin Bokarius, Jesus Rodrigues, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), UnixDev, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona Modroiu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), UnixDev, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona Modroiu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Andreas Granig, Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

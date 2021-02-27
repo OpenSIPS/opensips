@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Konstantin Bokarius, Alex Massover, Razvan Pistolea, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Carsten Bock.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Konstantin Bokarius, Alex Massover, Razvan Pistolea, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Carsten Bock.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Anca Vamanu, Elena-Ramona Modroiu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Anonymous, Marco Lorrai.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Anca Vamanu, Elena-Ramona Modroiu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Anonymous, Marco Lorrai.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

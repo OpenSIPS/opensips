@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Julián Moreno Patiño, Razvan Pistolea.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Julián Moreno Patiño, Razvan Pistolea.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Iouri Kharon.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Iouri Kharon.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

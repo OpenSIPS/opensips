@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Anca Vamanu, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Elena-Ramona Modroiu, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andreas Granig, Julián Moreno Patiño, Octavian Cerna, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Dror Wald.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Anca Vamanu, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Elena-Ramona Modroiu, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andreas Granig, Julián Moreno Patiño, Octavian Cerna, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Dror Wald.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Dror Wald, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Elena-Ramona Modroiu, Andreas Granig, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Dror Wald, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Elena-Ramona Modroiu, Andreas Granig, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

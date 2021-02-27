@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Sergio Gutierrez, Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Sergio Gutierrez, Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Anca Vamanu, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Anatoly Pidruchny, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Andrei Pelinescu-Onciul, Nils Ohlmeier.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Sergio Gutierrez, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Anca Vamanu, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Anatoly Pidruchny, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), Andrei Pelinescu-Onciul, Nils Ohlmeier.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

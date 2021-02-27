@@ -28,19 +28,19 @@
 	</row>
 	<row>
 		<entry>2. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">7</entry>
+		<entry align="center">3</entry>
+		<entry align="center">90</entry>
+		<entry align="center">134</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">6</entry>
 		<entry align="center">4</entry>
 		<entry align="center">13</entry>
 		<entry align="center">33</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">12</entry>
-		<entry align="center">58</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -61,7 +61,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -114,7 +114,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Denis Bilenko, Vallimamod Abdullah, Alex Hermann, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu, John Riordan, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Stanislaw Pitucha, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Julien Blache.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Denis Bilenko, Vallimamod Abdullah, Alex Hermann, Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu, John Riordan, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Stanislaw Pitucha, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Julien Blache.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Vallimamod Abdullah, Alex Hermann, Stanislaw Pitucha, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), John Riordan, UnixDev, Sergio Gutierrez, Denis Bilenko, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Julien Blache, Elena-Ramona Modroiu.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Vallimamod Abdullah, Alex Hermann, Stanislaw Pitucha, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), John Riordan, UnixDev, Sergio Gutierrez, Denis Bilenko, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Julien Blache, Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

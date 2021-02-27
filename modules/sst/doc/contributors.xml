@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Damien Sandras (<ulink url="https://github.com/dsandras">@dsandras</ulink>), Konstantin Bokarius, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Anca Vamanu, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Elena-Ramona Modroiu, Ron Winacott.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Christophe Sollet (<ulink url="https://github.com/csollet">@csollet</ulink>), Anca Vamanu, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Elena-Ramona Modroiu, Ron Winacott.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

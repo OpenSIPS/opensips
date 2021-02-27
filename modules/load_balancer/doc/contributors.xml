@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Dragus, James Van Vleet, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Dragus, James Van Vleet, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andrei Dragus, James Van Vleet, Anca Vamanu.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Andrei Dragus, James Van Vleet, Anca Vamanu.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

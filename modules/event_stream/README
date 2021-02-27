@@ -14,7 +14,7 @@ event_stream Module
 
         1.4. Exported Parameters
 
-              1.4.1. sync_mode (integer)
+              1.4.1. reliable_mode (integer)
               1.4.2. timeout (integer)
               1.4.3. event_param (string)
 
@@ -45,12 +45,12 @@ event_stream Module
 
    List of Examples
 
-   1.1. Set sync_mode parameter
+   1.1. Set reliable_mode parameter
    1.2. Set timeout parameter
    1.3. Set event_param parameter
    1.4. Stream socket
    1.5. E_PIKE_BLOCKED JSON-RPC notification
-   1.6. E_PIKE_BLOCKED JSON-RPC request (sync_mode)
+   1.6. E_PIKE_BLOCKED JSON-RPC request (reliable_mode)
    1.7. E_PIKE_BLOCKED notification with event name
    1.8. E_PIKE_BLOCKED event
 
@@ -61,7 +61,7 @@ Chapter 1. Admin Guide
    This module provides a TCP transport layer implementation for
    the Event Interface. The module can either send a JSON-RPC
    notification or a standard request and wait for the response
-   (when used in sync_mode).
+   (when used in reliable_mode).
 
    As the JSON-RPC is sent directly over TCP, avoiding any
    application transport layer (such as HTTP), this module offers
@@ -91,8 +91,8 @@ Chapter 1. Admin Guide
        RPC call will use the E_PIKE_BLOCKED method.
 
    The JSON-RPC command is built as it follows:
-     * id - uniquly generated if sync_mode is used, otherwise (for
-       notifications) null.
+     * id - uniquly generated if reliable_mode is used, otherwise
+       (for notifications) null.
      * method - if no method is specified in the socket, the name
        of the event is set as method, otherwise the token
        specified is used.
@@ -116,34 +116,35 @@ Chapter 1. Admin Guide
 
 1.4. Exported Parameters
 
-1.4.1. sync_mode (integer)
+1.4.1. reliable_mode (integer)
 
    This parameter controls the way the event_stream module
-   communicates with the JSON-RPC server. If enabled, (set to
-   yes), each event is translated to a JSON-RPC request. If
-   disabled, each event will be sent as a JSON-RPC notification -
-   there will be no reply expected by our client.
+   communicates with the JSON-RPC server. If enabled, (set to 1),
+   each event is translated to a JSON-RPC request. If disabled,
+   each event will be sent as a JSON-RPC notification - there will
+   be no reply expected by our client.
 
    Note that if you need a reliable communication with the
-   JSON-RPC server, where each event sent needs to be confirmed,
-   you must set this parameter to 1/yes. Also, if you are using
-   this module in a failover setup (using the event_virtual
-   module), you should also set this parameter to 1/yes.
+   JSON-RPC server, where each event sent needs to be confirmed
+   (by a JSON-RPC response), you must set this parameter to 1/yes.
+   If you are using this module in a failover setup (using the
+   event_virtual module), it is recommended to set this parameter
+   to 1/yes.
 
    Default value is “0 (disabled)”.
 
-   Example 1.1. Set sync_mode parameter
+   Example 1.1. Set reliable_mode parameter
 ...
-modparam("event_stream", "sync_mode", yes)
+modparam("event_stream", "reliable_mode", yes)
 ...
 
 1.4.2. timeout (integer)
 
    Specified the amount of milliseconds the module waits for a
-   command to complete. In sync_mode, it specifies the time module
-   waits the request to be sent and a reply received. In
-   non-sync_mode, it represents only the time opensips takes to
-   send the JSON-RPC notification.
+   command to complete. In reliable_mode, it specifies the time
+   module waits the request to be sent and a reply received. In
+   non-reliable_mode, it represents only the time opensips takes
+   to send the JSON-RPC notification.
 
    NOTE that if the event is not using names for its parameters,
    the event will be the first parameter in the JSON-RPC command.
@@ -190,7 +191,7 @@ _BLOCKED event
 
 1.6.2. JSON-RPC notification
 
-   This is an example of an event raised when sync_mode is
+   This is an example of an event raised when reliable_mode is
    disabled by the pike module when it decides an ip should be
    blocked:
 
@@ -207,10 +208,10 @@ _BLOCKED event
 
 1.6.3. JSON-RPC Request
 
-   This is an example of an event raised in sync_mode by the pike
-   module when it decides an ip should be blocked:
+   This is an example of an event raised in reliable_mode by the
+   pike module when it decides an ip should be blocked:
 
-   Example 1.6. E_PIKE_BLOCKED JSON-RPC request (sync_mode)
+   Example 1.6. E_PIKE_BLOCKED JSON-RPC request (reliable_mode)
 
 # request
 {
@@ -292,8 +293,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 31 14 1802 100
-   2. Liviu Chircu (@liviuchircu) 6 4 13 33
-   3. Vlad Patrascu (@rvlad-patrascu) 4 2 12 58
+   2. Vlad Patrascu (@rvlad-patrascu) 7 3 90 134
+   3. Liviu Chircu (@liviuchircu) 6 4 13 33
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 7 9
    5. Peter Lemenkov (@lemenkov) 4 2 2 2
 

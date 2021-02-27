@@ -15,7 +15,6 @@ event_xmlrpc Module
         1.4. Exported Parameters
 
               1.4.1. use_struct_param (integer)
-              1.4.2. sync_mode (integer)
 
         1.5. Exported Functions
         1.6. Example
@@ -39,9 +38,8 @@ event_xmlrpc Module
    List of Examples
 
    1.1. Set use_struct_param parameter
-   1.2. Set sync_mode parameter
-   1.3. E_PIKE_BLOCKED event
-   1.4. XMLRPC socket
+   1.2. E_PIKE_BLOCKED event
+   1.3. XMLRPC socket
 
 Chapter 1. Admin Guide
 
@@ -105,22 +103,6 @@ Chapter 1. Admin Guide
 modparam("event_xmlrpc", "use_struct_param", 1)
 ...
 
-1.4.2. sync_mode (integer)
-
-   Specifies whether an event raise operates synchronous or
-   asynchronous relative to the process where the raise is
-   triggered.In synchronous mode the process waits for the status
-   of the raise from the actual worker process.In asynchronous
-   mode the process continues its operation without receiving any
-   confirmation.
-
-   Default value is “0 (asynchronous)”.
-
-   Example 1.2. Set sync_mode parameter
-...
-modparam("event_xmlrpc", "sync_mode", 1)
-...
-
 1.5. Exported Functions
 
    No function exported to be used from configuration file.
@@ -130,7 +112,7 @@ modparam("event_xmlrpc", "sync_mode", 1)
    This is an example of an event raised by the pike module when
    it decides an ip should be blocked:
 
-   Example 1.3. E_PIKE_BLOCKED event
+   Example 1.2. E_PIKE_BLOCKED event
 
 
 POST /RPC2 HTTP/1.1.
@@ -155,7 +137,7 @@ Content-length: 240.
 </methodCall>
 
 
-   Example 1.4. XMLRPC socket
+   Example 1.3. XMLRPC socket
 
         # calls the 'block_ip' function
         xmlrpc:127.0.0.1:8080:block_ip
@@ -170,7 +152,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 37 23 1239 131
    2. Liviu Chircu (@liviuchircu) 9 7 63 31
-   3. Vlad Patrascu (@rvlad-patrascu) 6 3 153 10
+   3. Vlad Patrascu (@rvlad-patrascu) 8 4 199 62
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 8 9
    5. Ionut Ionita (@ionutrazvanionita) 3 1 103 28
    6. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -197,11 +179,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     May 2012 - Jan 2020
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   3. Liviu Chircu (@liviuchircu)         Oct 2013 - Nov 2018
-   4. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - May 2017
+   1. Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2020
+   2. Razvan Crainea (@razvancrainea)     May 2012 - Jan 2020
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   4. Liviu Chircu (@liviuchircu)         Oct 2013 - Nov 2018
+   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6. Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
    7. Ionut Ionita (@ionutrazvanionita)   Jan 2016 - Jan 2016
    8. Ryan Bullock (@rrb3942)             Jan 2013 - Jan 2013
@@ -213,8 +195,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
    (@razvancrainea).
 
    Documentation Copyrights:

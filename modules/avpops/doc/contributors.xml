@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Klaus Darilion, Andrey Vorobiev, Olle E. Johansson, Kennard White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Andreas Granig, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, Edson Gellert Schubert, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Andrei Pelinescu-Onciul, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Klaus Darilion, Andrey Vorobiev, Olle E. Johansson, Kennard White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Andreas Granig, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, Edson Gellert Schubert, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Kennard White, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Sergio Gutierrez, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Olle E. Johansson, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Klaus Darilion, Andreas Granig, Andrei Pelinescu-Onciul, Elena-Ramona Modroiu.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Anca Vamanu, Kennard White, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Sergio Gutierrez, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Olle E. Johansson, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Klaus Darilion, Andreas Granig, Andrei Pelinescu-Onciul, Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

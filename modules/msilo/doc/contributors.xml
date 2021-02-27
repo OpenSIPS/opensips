@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Andrea Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Aron Rosenberg, John Riordan, Konstantin Bokarius, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert, Stanislaw Pitucha.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Andrea Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Aron Rosenberg, John Riordan, Konstantin Bokarius, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert, Stanislaw Pitucha.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: UnixDev, Sergio Gutierrez, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei, Aron Rosenberg, Elena-Ramona Modroiu, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Andrea Giordana, Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: UnixDev, Sergio Gutierrez, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei, Aron Rosenberg, Elena-Ramona Modroiu, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Andrea Giordana, Andrei Pelinescu-Onciul, Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

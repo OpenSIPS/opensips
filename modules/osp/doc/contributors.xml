@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Konstantin Bokarius, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), fabriziopicconi, Andreas Granig, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ralf Zerres, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Konstantin Bokarius, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), fabriziopicconi, Andreas Granig, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ralf Zerres, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Di-Shi Sun (<ulink url="https://github.com/di-shi">@di-shi</ulink>), Julián Moreno Patiño, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), fabriziopicconi, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei, Dmitry Isakbayev, Andreas Granig.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Di-Shi Sun (<ulink url="https://github.com/di-shi">@di-shi</ulink>), Julián Moreno Patiño, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), fabriziopicconi, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei, Dmitry Isakbayev, Andreas Granig.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

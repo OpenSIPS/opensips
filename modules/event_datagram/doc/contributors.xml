@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">7</entry>
-		<entry align="center">3</entry>
-		<entry align="center">24</entry>
-		<entry align="center">137</entry>
+		<entry align="center">8</entry>
+		<entry align="center">4</entry>
+		<entry align="center">27</entry>
+		<entry align="center">140</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -61,7 +61,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -114,7 +114,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

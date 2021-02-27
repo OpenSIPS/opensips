@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Richard Fuchs.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>), Richard Fuchs.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

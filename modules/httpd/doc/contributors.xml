@@ -29,10 +29,10 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">19</entry>
-		<entry align="center">17</entry>
-		<entry align="center">60</entry>
-		<entry align="center">56</entry>
+		<entry align="center">20</entry>
+		<entry align="center">18</entry>
+		<entry align="center">71</entry>
+		<entry align="center">57</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Mar 2015 - Jan 2021</entry>
+		<entry align="center">Mar 2015 - Feb 2021</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Stephane Alnet.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Stephane Alnet.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

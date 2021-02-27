@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">4</entry>
-		<entry align="center">71</entry>
-		<entry align="center">144</entry>
+		<entry align="center">9</entry>
+		<entry align="center">5</entry>
+		<entry align="center">75</entry>
+		<entry align="center">148</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -77,7 +77,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -114,18 +114,18 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Jul 2020</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Apr 2017 - Sep 2019</entry>
-	</row>
-	<row>
-		<entry>5. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -140,7 +140,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

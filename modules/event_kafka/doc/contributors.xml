@@ -21,15 +21,15 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">17</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1888</entry>
-		<entry align="center">0</entry>
+		<entry align="center">20</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1900</entry>
+		<entry align="center">5</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -57,12 +57,12 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Aug 2020 - Aug 2020</entry>
+		<entry align="center">Aug 2020 - Feb 2021</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-	
+
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

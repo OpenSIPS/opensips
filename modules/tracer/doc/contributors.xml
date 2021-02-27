@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Andreas Heise, Sergio Gutierrez, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Andreas Heise, Sergio Gutierrez, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Alexandr Dubovikov (<ulink url="https://github.com/adubovikov">@adubovikov</ulink>), Sergio Gutierrez, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Iouri Kharon, Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Andreas Heise, Elena-Ramona Modroiu.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Andrei Datcu (<ulink url="https://github.com/andrei-datcu">@andrei-datcu</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Alexandr Dubovikov (<ulink url="https://github.com/adubovikov">@adubovikov</ulink>), Sergio Gutierrez, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Iouri Kharon, Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Andreas Heise, Elena-Ramona Modroiu.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

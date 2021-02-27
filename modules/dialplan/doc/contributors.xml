@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Parantido Julius De Rica (<ulink url="https://github.com/Parantido">@Parantido</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Paul Wise, Sergio Gutierrez, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Rudy Pedraza, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, David Sanders.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Parantido Julius De Rica (<ulink url="https://github.com/Parantido">@Parantido</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Paul Wise, Sergio Gutierrez, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Rudy Pedraza, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, David Sanders.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -179,7 +179,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-	<para><emphasis role='bold'>All remaining contributors</emphasis>: Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Parantido Julius De Rica (<ulink url="https://github.com/Parantido">@Parantido</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Rudy Pedraza, Sergio Gutierrez, Paul Wise, Anca Vamanu, Andrei Dragus, UnixDev, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Eseanu Marius Cristian (<ulink url="https://github.com/eseanucristian">@eseanucristian</ulink>), Parantido Julius De Rica (<ulink url="https://github.com/Parantido">@Parantido</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Rudy Pedraza, Sergio Gutierrez, Paul Wise, Anca Vamanu, Andrei Dragus, UnixDev, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>).</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>
