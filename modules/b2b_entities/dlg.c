@@ -1733,6 +1733,7 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 		shm_free(dlg->ack_sdp.s);
 
 	shm_free(dlg);
+	dlg = 0;
 }
 
 void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
