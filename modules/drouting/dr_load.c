@@ -513,10 +513,12 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 							ROW_VALUES(row)+3);
 				}
 				/* GWLIST column */
-				check_val( gwlist_drc_col, ROW_VALUES(row)+4, DB_STRING, 1, 1);
+				check_val( gwlist_drc_col, ROW_VALUES(row)+4,
+					ROW_VALUES(row)[4].type == DB_BLOB ? DB_BLOB : DB_STRING, 1, 1);
 				str_vals[STR_VALS_GWLIST_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+4);
 				/* ATTRS column */
-				check_val( attrs_drc_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
+				check_val( attrs_drc_col, ROW_VALUES(row)+5,
+					ROW_VALUES(row)[5].type == DB_BLOB ? DB_BLOB : DB_STRING, 0, 0);
 				str_vals[STR_VALS_ATTRS_DRC_COL] = (char*)VAL_STRING(ROW_VALUES(row)+5);
 				/* STATE column */
 				if (persistent_state) {
