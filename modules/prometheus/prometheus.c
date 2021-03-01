@@ -99,7 +99,7 @@ struct prom_stat {
 
 static int mod_init(void)
 {
-	struct list_head *it, *safe;
+	struct list_head *it;
 	struct prom_stat *s;
 
 	prom_http_root.len = strlen(prom_http_root.s);
@@ -110,19 +110,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* fix statistics */
-	list_for_each_safe(it, safe, &prom_stat_mods) {
-		s = list_entry(it, struct prom_stat, list);
-		s->mod = get_stat_module(&s->name);
-		if (!s->mod) {
-			LM_WARN("statistics module [%.*s] does not exist!\n", s->name.len, s->name.s);
-			list_del(&s->list);
-			continue;
-		}
-		/* we check the mod here just to make sure it exists */
-		s->mod = NULL;
-	}
-
+	/* try to resolve as many stats as possible now */
 	list_for_each(it, &prom_stats) {
 		s = list_entry(it, struct prom_stat, list);
 		s->stat = shm_malloc(sizeof *s->stat);
@@ -228,8 +216,13 @@ int prom_answer_to_connection (void *cls, void *connection,
 
 	list_for_each(it, &prom_stat_mods) {
 		s = list_entry(it, struct prom_stat, list);
-		if (!s->mod)
+		if (!s->mod) {
 			s->mod = get_stat_module(&s->name);
+			if (!s->mod) {
+				LM_DBG("stat module %.*s not found\n", s->name.len, s->name.s);
+				continue;
+			}
+		}
 		/* TODO: should we lock here? */
 		for (stat = s->mod->head; stat; stat = stat->lnext)
 			PROM_PUSH_STAT(stat);
