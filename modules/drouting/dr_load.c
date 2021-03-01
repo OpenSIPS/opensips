@@ -44,7 +44,7 @@
 
 #define check_val2( _col, _val, _type1, _type2, _not_null, _is_empty_str) \
 	do{\
-		if ((_val)->type!=_type1 && (_val)->type!=_type2) { \
+		if ((_val)->type!=(_type1) && (_val)->type!=(_type2)) { \
 			LM_ERR("column %.*s has a bad type [%d], accepting only [%d,%d]\n",\
 				_col.len, _col.s, (_val)->type, _type1, _type2); \
 			goto error;\
@@ -61,7 +61,7 @@
 
 #define check_val( _col, _val, _type, _not_null, _is_empty_str) \
 	do{\
-		if ((_val)->type!=_type) { \
+		if ((_val)->type!=(_type)) { \
 			LM_ERR("column %.*s has a bad type [%d], accepting only [%d]\n",\
 				_col.len, _col.s, (_val)->type, _type); \
 			goto error;\
@@ -620,7 +620,8 @@ rt_data_t* dr_load_routing_info(struct head_db *current_partition,
 				tmp.len = strlen(str_vals[STR_VALS_PREFIX_DRR_COL]);
 			}
 			/* TIME column */
-			check_val( time_drr_col, ROW_VALUES(row)+3, DB_STRING, 0, 0);
+			check_val( time_drr_col, ROW_VALUES(row)+3,
+				ROW_VALUES(row)[3].type == DB_BLOB ? DB_BLOB : DB_STRING, 0, 0);
 			/* PRIORITY column */
 			check_val2( priority_drr_col, ROW_VALUES(row)+4, DB_INT, DB_BIGINT, 1, 0);
 			int_vals[INT_VALS_PRIORITY_DRR_COL] = VAL_INT(ROW_VALUES(row)+4);
