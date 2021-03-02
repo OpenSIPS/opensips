@@ -232,7 +232,7 @@ int register_utimer(char *label, utimer_function f, void* param,
 void route_timer_f(unsigned int ticks, void* param)
 {
 	struct action* a = (struct action*)param;
-	static struct sip_msg* req= NULL;
+	struct sip_msg* req= NULL;
 	int old_route_type;
 
 	if(a == NULL) {
@@ -240,31 +240,19 @@ void route_timer_f(unsigned int ticks, void* param)
 		return;
 	}
 
-	if(req == NULL)
-	{
-		req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
-		if(req == NULL)
-		{
-			LM_ERR("No more memory\n");
-			return;
-		}
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return;
 	}
-
-	memset(req, 0, sizeof(struct sip_msg));
-	req->first_line.type = SIP_REQUEST;
-	req->first_line.u.request.method.s= "DUMMY";
-	req->first_line.u.request.method.len= 5;
-	req->first_line.u.request.uri.s= "sip:user@domain.com";
-	req->first_line.u.request.uri.len= 19;
-	req->rcv.src_ip.af = AF_INET;
-	req->rcv.dst_ip.af = AF_INET;
 
 	swap_route_type(old_route_type, TIMER_ROUTE);
 	run_top_route(a, req);
 	set_route_type(old_route_type);
 
 	/* clean whatever extra structures were added by script functions */
-	free_sip_msg(req);
+	release_dummy_sip_msg(req);
+
 	/* remove all added AVP - here we use all the time the default AVP list */
 	reset_avps( );
 }
