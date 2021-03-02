@@ -603,7 +603,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		/* get a new context */
 		ctx = get_new_stmt_ctx(conn, query);
 		if (ctx==NULL) {
-			LM_ERR("failed to create new context\n");
+			LM_ERR("failed to create new context for query=|%.*s|\n",
+					query->len, query->s);
 			pkg_free(pq_ptr);
 			return -1;
 		}
@@ -628,7 +629,8 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 			/* get a new context */
 			ctx = get_new_stmt_ctx(conn, query);
 			if (ctx==NULL) {
-				LM_ERR("failed to create new context\n");
+				LM_ERR("failed to create new context for query=|%.*s|\n",
+						query->len, query->s);
 				return -1;
 			}
 			/* link it */
