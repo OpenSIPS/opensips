@@ -385,18 +385,15 @@ void kafka_report_status(int sender, void *param)
 			p->status);
 	} else {
 		script_job_data_t *job_data = (script_job_data_t *)p->job->data;
-		struct sip_msg req;
+		struct sip_msg *req;
 		struct usr_avp **old_avps;
 		struct usr_avp *report_avps;
 
-		memset( &req, 0, sizeof(struct sip_msg));
-		req.first_line.type = SIP_REQUEST;
-		req.first_line.u.request.method.s= "DUMMY";
-		req.first_line.u.request.method.len= 5;
-		req.first_line.u.request.uri.s= "sip:user@domain.com";
-		req.first_line.u.request.uri.len= 19;
-		req.rcv.src_ip.af = AF_INET;
-		req.rcv.dst_ip.af = AF_INET;
+		req = get_dummy_sip_msg();
+		if (!req) {
+			LM_ERR("Failed to get DUMMY SIP msg\n");
+			goto free;
+		}
 
 		report_avps = get_report_rt_avps(p->job, job_data, p->status);
 		if (!report_avps) {
@@ -406,12 +403,12 @@ void kafka_report_status(int sender, void *param)
 		old_avps = set_avp_list(&report_avps);
 
 		set_route_type(REQUEST_ROUTE);
-		run_top_route(sroutes->request[job_data->report_rt_idx], &req);
+		run_top_route(sroutes->request[job_data->report_rt_idx], req);
 
 		set_avp_list(old_avps);
 		destroy_avp_list(&report_avps);
 
-		free_sip_msg(&req);
+		release_dummy_sip_msg(req);
 	}
 
 free:
