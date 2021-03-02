@@ -53,7 +53,7 @@ inline int db_str2int(const char* _s, int* _v)
 	tmp = strtol(_s, &p, 10);
 	if (((tmp == LONG_MAX || tmp == LONG_MIN) && errno == ERANGE) ||
 	    (tmp < INT_MIN) || (tmp > INT_MAX)) {
-		LM_ERR("Value out of range\n");
+		LM_ERR("Value out of range: [%s]\n", _s);
 		return -1;
 	}
 	if (p && *p != '\0') {
@@ -77,7 +77,7 @@ inline int db_str2bigint(const char* _s, long long* _v)
 
 	tmp = strtoll(_s, &p, 10);
 	if ((tmp == LLONG_MIN || tmp == LLONG_MAX) && errno == ERANGE) {
-		LM_ERR("Value out of range\n");
+		LM_ERR("Value out of range: [%s]\n", _s);
 		return -1;
 	}
 	if (p && *p != '\0') {
