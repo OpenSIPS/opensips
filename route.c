@@ -2124,22 +2124,22 @@ int is_script_async_func_used( char *name, int param_no)
 
 int run_startup_route(void)
 {
-	struct sip_msg req;
-	int ret;
+	struct sip_msg *req;
+	int ret, old_route_type;
 
-	memset(&req, 0, sizeof(struct sip_msg));
-	req.first_line.type = SIP_REQUEST;
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
 
-	req.first_line.u.request.method.s= "DUMMY";
-	req.first_line.u.request.method.len= 5;
-	req.first_line.u.request.uri.s= "sip:user@domain.com";
-	req.first_line.u.request.uri.len= 19;
-	req.rcv.src_ip.af = AF_INET;
-	req.rcv.dst_ip.af = AF_INET;
-
+	swap_route_type(old_route_type, STARTUP_ROUTE);
 	/* run the route */
-	ret = run_top_route( startup_rlist.a, &req);
-	free_sip_msg( &req );
+	ret = run_top_route( startup_rlist.a, req);
+	set_route_type(old_route_type);
+
+	/* clean whatever extra structures were added by script functions */
+	release_dummy_sip_msg(req);
 
 	return ret;
 }
