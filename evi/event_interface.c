@@ -103,30 +103,19 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 	 * because these might be nested, a different message has
 	 * to be generated each time
 	 */
-	req = (struct sip_msg*)pkg_malloc(sizeof(struct sip_msg));
+	req = get_dummy_sip_msg();
 	if(req == NULL)
 	{
 		LM_ERR("No more memory\n");
 		return -1;
 	}
-	memset(req, 0, sizeof(struct sip_msg));
-
-	req->first_line.type = SIP_REQUEST;
-	req->first_line.u.request.method.s= "DUMMY";
-	req->first_line.u.request.method.len= 5;
-	req->first_line.u.request.uri.s= "sip:user@domain.com";
-	req->first_line.u.request.uri.len= 19;
-	req->rcv.src_ip.af = AF_INET;
-	req->rcv.dst_ip.af = AF_INET;
-
 
 	bak_avps = set_avp_list(&event_avps);
 
 	status = evi_raise_event_msg(req, id, params);
 
 	/* clean whatever extra structures were added by script functions */
-	free_sip_msg(req);
-	pkg_free(req);
+	release_dummy_sip_msg(req);
 
 	/* remove all avps added */
 	destroy_avp_list(&event_avps);
