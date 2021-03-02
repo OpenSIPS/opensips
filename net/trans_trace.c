@@ -38,8 +38,6 @@ static str TLS_PROTO_ID = str_init("TLS");
 static str WS_PROTO_ID = str_init("WS");
 static str WSS_PROTO_ID = str_init("WSS");
 
-static struct sip_msg dummy_req;
-
 /* error reasons */
 str AS_CONNECT_INIT = str_init("Async connect in progress...");
 str CONNECT_OK = str_init("Successfully connected...");
@@ -205,35 +203,33 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 	return 0;
 }
 
-static void build_dummy_msg(struct receive_info* rcv) {
-	memset(&dummy_req, 0, sizeof(struct sip_msg));
-	dummy_req.first_line.type = SIP_REQUEST;
-	dummy_req.first_line.u.request.method.s= "DUMMY";
-	dummy_req.first_line.u.request.method.len= 5;
-	dummy_req.first_line.u.request.uri.s= "sip:user@domain.com";
-	dummy_req.first_line.u.request.uri.len= 19;
-	memcpy( &dummy_req.rcv, rcv, sizeof( struct receive_info ));
-}
-
 
 int check_trace_route( int route_id, struct tcp_connection* conn)
 {
+	struct sip_msg *req;
+
 	/* route not set */
 	if ( route_id == -1 )
 		return 1;
 
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
+
 	/* set request route type */
 	set_route_type( REQUEST_ROUTE );
 
-	build_dummy_msg( &conn->rcv );
+	memcpy( &req->rcv, &conn->rcv, sizeof( struct receive_info ));
 
 	/* run given hep route */
-	if (run_top_route(sroutes->request[route_id], &dummy_req) & ACT_FL_DROP){
+	if (run_top_route(sroutes->request[route_id], req) & ACT_FL_DROP){
 		conn->flags |= F_CONN_TRACE_DROPPED;
-		free_sip_msg( &dummy_req );
+		release_dummy_sip_msg(req);
 		return 0;
 	}
 
-	free_sip_msg( &dummy_req );
+	release_dummy_sip_msg(req);
 	return 1;
 }

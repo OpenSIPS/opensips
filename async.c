@@ -151,31 +151,24 @@ done:
 
 /************* Functions related to ASYNC Launch support ***************/
 
-#define init_dummy_request( _req ) \
-	do { \
-		memset( &(_req), 0, sizeof(struct sip_msg));\
-		(_req).first_line.type = SIP_REQUEST;\
-		(_req).first_line.u.request.method.s= "DUMMY";\
-		(_req).first_line.u.request.method.len= 5;\
-		(_req).first_line.u.request.uri.s= "sip:user@domain.com";\
-		(_req).first_line.u.request.uri.len= 19;\
-		(_req).rcv.src_ip.af = AF_INET;\
-		(_req).rcv.dst_ip.af = AF_INET;\
-	} while(0)
-
 int async_launch_resume(int fd, void *param)
 {
-	struct sip_msg req;
+	struct sip_msg *req;
 	async_launch_ctx *ctx = (async_launch_ctx *)param;
 
 	LM_DBG("resume for a launch job\n");
-	init_dummy_request( req );
+
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
 
 	async_status = ASYNC_DONE; /* assume default status as done */
 
 	/* call the resume function in order to read and handle data */
 	return_code = ((async_resume_module*)(ctx->async.resume_f))
-		( fd, &req, ctx->async.resume_param );
+		( fd, req, ctx->async.resume_param );
 
 	if (async_status==ASYNC_CONTINUE) {
 		/* do not run the report route, leave the fd into the reactor*/
@@ -208,7 +201,7 @@ int async_launch_resume(int fd, void *param)
 			do {
 				async_status = ASYNC_DONE;
 				return_code = ((async_resume_module*)(ctx->async.resume_f))
-					(fd, &req, ctx->async.resume_param );
+					(fd, req, ctx->async.resume_param );
 				if (async_status == ASYNC_CHANGE_FD)
 					fd=return_code;
 			} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
@@ -230,7 +223,7 @@ run_route:
 	if (ctx->report_route!=-1) {
 		LM_DBG("runinng report route for a launch job\n");
 		set_route_type( REQUEST_ROUTE );
-		run_top_route( sroutes->request[ctx->report_route], &req);
+		run_top_route( sroutes->request[ctx->report_route], req);
 
 		/* remove all added AVP */
 		reset_avps( );
@@ -242,7 +235,7 @@ run_route:
 
 restore:
 	/* clean whatever extra structures were added by script functions */
-	free_sip_msg(&req);
+	release_dummy_sip_msg(req);
 
 	return 0;
 }
@@ -251,7 +244,7 @@ restore:
 int async_script_launch(struct sip_msg *msg, struct action* a,
 					int report_route, void **params)
 {
-	struct sip_msg req;
+	struct sip_msg *req;
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
 	async_launch_ctx *ctx;
 	int fd;
@@ -336,14 +329,22 @@ report:
 		return 1;
 
 	/* run the report route inline */
-	init_dummy_request( req );
+	req = get_dummy_sip_msg();
+	if(req == NULL) {
+		LM_ERR("No more memory\n");
+		return -1;
+	}
+
 	set_route_type( REQUEST_ROUTE );
 	bak_avps = set_avp_list(&report_avps);
 
-	run_top_route( sroutes->request[report_route], &req);
+	run_top_route( sroutes->request[report_route], req);
 
 	destroy_avp_list(&report_avps);
 	set_avp_list(bak_avps);
+
+	release_dummy_sip_msg(req);
+
 	return 1;
 }
 
