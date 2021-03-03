@@ -68,15 +68,15 @@
 #define QP_CRIT_AST_COL "crit_threshold_ast"
 #define QP_CRIT_ACD_COL "crit_threshold_acd"
 #define QP_WPTY_ASR_COL "warn_penalty_asr"
-#define QP_WPTY_CCR_COL "warn_penalty_asr"
-#define QP_WPTY_PDD_COL "warn_penalty_asr"
-#define QP_WPTY_AST_COL "warn_penalty_asr"
-#define QP_WPTY_ACD_COL "warn_penalty_asr"
+#define QP_WPTY_CCR_COL "warn_penalty_ccr"
+#define QP_WPTY_PDD_COL "warn_penalty_pdd"
+#define QP_WPTY_AST_COL "warn_penalty_ast"
+#define QP_WPTY_ACD_COL "warn_penalty_acd"
 #define QP_CPTY_ASR_COL "crit_penalty_asr"
-#define QP_CPTY_CCR_COL "crit_penalty_asr"
-#define QP_CPTY_PDD_COL "crit_penalty_asr"
-#define QP_CPTY_AST_COL "crit_penalty_asr"
-#define QP_CPTY_ACD_COL "crit_penalty_asr"
+#define QP_CPTY_CCR_COL "crit_penalty_ccr"
+#define QP_CPTY_PDD_COL "crit_penalty_pdd"
+#define QP_CPTY_AST_COL "crit_penalty_ast"
+#define QP_CPTY_ACD_COL "crit_penalty_acd"
 
 #define QR_NAME_COL_SZ 64
 #define QR_MAX_STAT_NAME_LEN (QR_NAME_COL_SZ - strlen("warn_threshold_"))
