@@ -132,7 +132,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    7        2      469       1
+   1. Razvan Crainea (@razvancrainea)    8        3      477       16
    2. OpenSIPS                           3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -155,8 +155,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. OpenSIPS                        Feb 2021 - Feb 2021
-   2. Razvan Crainea (@razvancrainea) Feb 2021 - Feb 2021
+   1. Razvan Crainea (@razvancrainea) Feb 2021 - Mar 2021
+   2. OpenSIPS                        Feb 2021 - Feb 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
