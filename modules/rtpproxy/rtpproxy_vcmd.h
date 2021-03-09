@@ -34,17 +34,15 @@ struct rtpproxy_vcmd {
 	static struct iovec var[nitems + 2] = \
 	    {{.iov_base = NULL /* cookie */}, __VA_ARGS__, {.iov_base = NULL /* terminator */}};
 
-#define RTPP_VCMD_INIT(vcmd, nitems, ...) { \
+#define RTPP_VCMD_INIT(vcmd, nitems, ...) \
 	(vcmd).vs = RTPP_CMD_IOVEC(nitems, __VA_ARGS__); \
 	(vcmd).vu = (vcmd).vs + 1; \
 	(vcmd).useritems = nitems; \
-}
 
-#define RTPP_VCMD_INIT_STATIC(vcmd, nitems, ...) { \
+#define RTPP_VCMD_INIT_STATIC(vcmd, nitems, ...) \
 	RTPP_CMD_IOVEC_STATIC(_var, nitems, __VA_ARGS__); \
 	(vcmd).vs = _var; \
 	(vcmd).vu = (vcmd).vs + 1; \
 	(vcmd).useritems = nitems; \
-}
 
 #endif
