@@ -310,7 +310,6 @@ static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
 
 void free_rtpp_nodes(struct rtpp_set *);
 void free_rtpp_sets();
-int msg_has_sdp(struct sip_msg *msg);
 
 struct dlg_binds dlg_api;
 /* TM support for saving parameters */
@@ -2679,7 +2678,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	/* check to see if this is a late negotiation */
 	if (dlg_api.fetch_dlg_value(dlg, &late_name, &value, 0) < 0)
 		offer = 0;
-	has_sdp = msg_has_sdp(msg);
+	has_sdp = has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 
 	method_id = get_cseq(msg)->method_id;
 	LM_DBG("method id is %d SDP: %d\n", method_id, has_sdp);
@@ -2795,34 +2794,6 @@ void engage_tm_reply_callback(struct cell* t, int type, struct tmcb_params *p)
 }
 
 
-int msg_has_sdp(struct sip_msg *msg)
-{
-	str body;
-	struct body_part *p;
-
-	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
-		LM_ERR("cannot parse cseq header\n");
-		return 0;
-	}
-
-	body.len = get_content_length(msg);
-	if (!body.len)
-		return 0;
-
-	if (parse_sip_body(msg)<0 || msg->body==NULL) {
-		LM_DBG("cannot parse body\n");
-		return 0;
-	}
-
-	for (p = &msg->body->first; p; p = p->next) {
-		if ( is_body_part_received(p) &&
-		p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) )
-			return 1;
-	}
-
-	return 0;
-}
-
 static int
 engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5)
@@ -2877,7 +2848,7 @@ engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 		rtpp_get_nt_str_param(param2, &param2_val, 1);
 
 	/* is this a late negotiation scenario? */
-	if (msg_has_sdp(msg)) {
+	if (has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP)) {
 		LM_DBG("message has sdp body -> forcing rtp proxy\n");
 		if(force_rtp_proxy(msg,param1_val.s,param2_val.s,param3,param4, param5,1) < 0) {
 			LM_ERR("error forcing rtp proxy\n");

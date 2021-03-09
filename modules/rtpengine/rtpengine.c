@@ -697,34 +697,6 @@ struct module_exports exports = {
 	0            /* reload confirm function */
 };
 
-int msg_has_sdp(struct sip_msg *msg)
-{
-	str body;
-	struct body_part *p;
-
-	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
-		LM_ERR("cannot parse cseq header\n");
-		return 0;
-	}
-
-	body.len = get_content_length(msg);
-	if (!body.len)
-		return 0;
-
-	if (parse_sip_body(msg)<0 || msg->body==NULL) {
-		LM_DBG("no body found\n");
-		return 0;
-	}
-
-	for (p = &msg->body->first; p; p = p->next) {
-		if ( is_body_part_received(p) &&
-		p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) )
-			return 1;
-	}
-
-	return 0;
-}
-
 static void rtpe_stats_free(struct rtpe_stats *stats)
 {
 	if (stats->json.s)
@@ -2601,7 +2573,7 @@ rtpengine_manage(struct sip_msg *msg, str *flags, pv_spec_t *spvar,
 
 	if (body)
 		nosdp = body->len != 0;
-	else if(msg_has_sdp(msg))
+	else if(has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP))
 		nosdp = 0;
 	else
 		nosdp = parse_sdp(msg)?0:1;
