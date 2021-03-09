@@ -146,6 +146,9 @@ void evs_free(fs_evs *sock)
 	shm_free(sock->host.s);
 	shm_free(sock->user.s);
 	shm_free(sock->pass.s);
+	if (sock->handle) {
+	  pkg_free(sock->handle);
+	}
 
 	lock_destroy_rw(sock->stats_lk);
 	lock_destroy_rw(sock->lists_lk);
