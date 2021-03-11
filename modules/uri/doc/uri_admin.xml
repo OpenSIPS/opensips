@@ -582,7 +582,7 @@ add_uri_param("nat=yes");
 		This function can be used from REQUEST_ROUTE.
 		</para>
 		<example>
-		<title><function>add_uri_param</function> usage</title>
+		<title><function>del_uri_param</function> usage</title>
 		<programlisting format="linespecific">
 ...
 del_uri_param("name");
