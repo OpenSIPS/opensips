@@ -1690,7 +1690,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 				<para>
 				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
+				parameter or specifying the special value <emphasis>-1</emphasis>, matching will 
 				be done against all types. 
 				</para>
 			</listitem>
@@ -1798,7 +1798,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 				<para>
 				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
+				parameter or specifying the special value <emphasis>-1</emphasis>, matching will 
 				be done against all types. 
 				</para>
 			</listitem>
@@ -1912,7 +1912,7 @@ if (is_from_gw(3, "c", , "outbound")) {
 				<para>
 				<emphasis role='bold'>type</emphasis> (int, optional) - number for
 				the GW/destination type to be checked; when omitting this 
-				parameter or specifying the special value "-1", matching will 
+				parameter or specifying the special value <emphasis>-1</emphasis>, matching will 
 				be done against all types. 
 				</para>
 			</listitem>
