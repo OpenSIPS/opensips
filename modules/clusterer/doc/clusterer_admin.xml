@@ -754,13 +754,12 @@ cluster_broadcast_req($var(cl_id), $var(share_data));
 						is made against, with the possible values of:
 						<itemizedlist>
 							<listitem>
-								<para><emphasis>bin</emphasis> - node's BIN interface listener;</para>
+								<para><emphasis>"sip"</emphasis> (default) - a node's DB provisioned SIP address</para>
 							</listitem>
 							<listitem>
-								<para><emphasis>sip</emphasis> - node's DB provisioned SIP address.</para>
+								<para><emphasis>"bin"</emphasis> - a node's BIN interface listener</para>
 							</listitem>
 						</itemizedlist>
-						<para>The default behaviour is to compare against the SIP address.</para>
 					</para></listitem>
 				</itemizedlist>
 				<para>
