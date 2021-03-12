@@ -507,7 +507,7 @@ int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, s
 		LM_ERR("Wrong from_tag param\n");
 		return -1;
 	}
-	if(!to_tag || !to_tag->s || !to_tag->len){
+	if(!to_tag){
 		LM_ERR("Wrong to_tag param\n");
 		return -1;
 	}
