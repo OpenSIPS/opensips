@@ -80,7 +80,7 @@ uri Module
    1.19. uri_param usage
    1.20. uri_param usage
    1.21. add_uri_param usage
-   1.22. add_uri_param usage
+   1.22. del_uri_param usage
    1.23. tel2sip usage
    1.24. is_uri_user_e164 usage
 
@@ -428,7 +428,7 @@ add_uri_param("nat=yes");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.22. add_uri_param usage
+   Example 1.22. del_uri_param usage
 ...
 del_uri_param("name");
 ...
@@ -475,7 +475,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 113
    3. Irina-Maria Stanescu 21 4 1845 111
    4. Daniel-Constantin Mierla (@miconda) 16 12 167 109
-   5. Liviu Chircu (@liviuchircu) 14 11 76 109
+   5. Liviu Chircu (@liviuchircu) 15 12 77 110
    6. Juha Heinanen (@juha-h) 13 7 446 71
    7. Razvan Crainea (@razvancrainea) 11 9 18 16
    8. Edson Gellert Schubert 7 1 0 309
@@ -507,7 +507,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - May 2020
+   1.  Liviu Chircu (@liviuchircu)         Oct 2013 - Mar 2021
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Nov 2018
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
@@ -530,8 +530,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Ionut Ionita (@ionutrazvanionita),
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Irina-Maria Stanescu,
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Juha Heinanen (@juha-h), Elena-Ramona
