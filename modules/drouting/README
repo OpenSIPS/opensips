@@ -1242,7 +1242,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
    It may take the following optional parameters:
      * type (int, optional) - number for the GW/destination type
        to be checked; when omitting this parameter or specifying
-       the special value "-1", matching will be done against all
+       the special value -1, matching will be done against all
        types.
      * flags (string, optional) - letter like flags for
        controlling what operations should be performed when a GW
@@ -1297,7 +1297,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
    It may take the following optional parameters:
      * type (int, optional) - number for the GW/destination type
        to be checked; when omitting this parameter or specifying
-       the special value "-1", matching will be done against all
+       the special value -1, matching will be done against all
        types.
      * flags (string, optional) - letter like flags for
        controlling what operations should be performed when a GW
@@ -1355,7 +1355,7 @@ if (is_from_gw(3, "c", , "outbound")) {
        FQDN, it will be resolved prior to matching.
      * type (int, optional) - number for the GW/destination type
        to be checked; when omitting this parameter or specifying
-       the special value "-1", matching will be done against all
+       the special value -1, matching will be done against all
        types.
      * flags (string, optional) - letter like flags for
        controlling what operations should be performed when a GW
@@ -1664,7 +1664,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 374 177 12931 5555
-   2. Liviu Chircu (@liviuchircu) 125 67 2115 2400
+   2. Liviu Chircu (@liviuchircu) 126 68 2118 2403
    3. Razvan Crainea (@razvancrainea) 93 47 1144 2182
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
@@ -1701,7 +1701,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jan 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2021
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2021
    3.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
    4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
