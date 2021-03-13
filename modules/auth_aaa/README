@@ -216,9 +216,8 @@ modparam("auth_aaa", "use_ruri_flag", "USE_RURI_FLAG")
    Example 1.6. aaa_www_authorize usage
 
 ...
-if (!aaa_www_authorize("siphub.net")) {
-        www_challenge("siphub.net", "1");
-};
+if (!aaa_www_authorize("siphub.net"))
+        www_challenge("siphub.net", "auth");
 ...
 
 
@@ -257,14 +256,13 @@ if (!aaa_www_authorize("siphub.net")) {
    Example 1.7. proxy_authorize usage
 
 ...
-if (!aaa_proxy_authorize("")) {   # Realm and URI user will be autogener
-ated
-        proxy_challenge("", "1");
-};
+if (!aaa_proxy_authorize(""))    # Realm and URI user will be autogenera
+ted
+        proxy_challenge("", "auth");
 ...
-if (!aaa_proxy_authorize($pd, $pU)) { # Realm and URI user are taken
-        proxy_challenge($pd, "1");         # from P-Preferred-Identity
-};                                           # header field
+if (!aaa_proxy_authorize($pd, $pU))    # Realm and URI user are taken
+        proxy_challenge($pd, "auth");  # from P-Preferred-Identity
+                                       # header field
 ...
 
 
@@ -317,7 +315,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 87 24 3294 2182
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 44 31 892 255
-   3. Liviu Chircu (@liviuchircu) 17 14 73 119
+   3. Liviu Chircu (@liviuchircu) 19 15 80 128
    4. Daniel-Constantin Mierla (@miconda) 15 13 67 55
    5. Irina-Maria Stanescu 15 8 185 299
    6. Maksym Sobolyev (@sobomax) 11 6 167 171
@@ -351,8 +349,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - May 2020
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2020
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - May 2020
    3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
