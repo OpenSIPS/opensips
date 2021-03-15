@@ -43,6 +43,10 @@ typedef struct tls_domain * (*tls_find_server_domain_f) (struct ip_addr *, unsig
 typedef struct tls_domain * (*tls_find_client_domain_f) (struct ip_addr *, unsigned short);
 typedef struct tls_domain * (*tls_find_client_domain_name_f) (str *);
 typedef void (*tls_release_domain_f) (struct tls_domain *);
+#ifndef NO_SSL_GLOBAL_LOCK
+typedef void (*tls_global_lock_get_f) (void);
+typedef void (*tls_global_lock_release_f) (void);
+#endif
 
 /* utility functions for operations directly on a SSL_CTX */
 typedef void (*tls_ctx_set_cert_store_f) (void *ctx, void *src_ctx);
@@ -57,6 +61,10 @@ struct tls_mgm_binds {
     tls_ctx_set_cert_store_f ctx_set_cert_store;
     tls_ctx_set_cert_chain_f ctx_set_cert_chain;
     tls_ctx_set_pkey_file_f ctx_set_pkey_file;
+    #ifndef NO_SSL_GLOBAL_LOCK
+    tls_global_lock_get_f global_lock_get;
+    tls_global_lock_release_f global_lock_release;
+    #endif
 };
 
 

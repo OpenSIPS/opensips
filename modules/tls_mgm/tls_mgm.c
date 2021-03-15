@@ -112,6 +112,10 @@
 static char *tls_domain_avp = NULL;
 static char *sip_domain_avp = NULL;
 
+#ifndef NO_SSL_GLOBAL_LOCK
+gen_lock_t *tls_global_lock;
+#endif
+
 static int  mod_init(void);
 static int  child_init(int rank);
 static int  mod_load(void);
@@ -387,6 +391,17 @@ struct module_exports exports = {
 	0           /* reload confirm function */
 };
 
+#ifndef NO_SSL_GLOBAL_LOCK
+void tls_global_lock_get(void)
+{
+	lock_get(tls_global_lock);
+}
+
+void tls_global_lock_release(void)
+{
+	lock_release(tls_global_lock);
+}
+#endif
 
 #if (OPENSSL_VERSION_NUMBER > 0x10001000L)
 /*
@@ -408,10 +423,19 @@ set_dh_params(SSL_CTX * ctx, char *filename)
 		return -1;
 	}
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("unable to set dh params\n");
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	DH_free(dh);
 	LM_DBG("DH params from '%s' successfully set\n", filename);
@@ -436,10 +460,19 @@ static int set_dh_params_db(SSL_CTX * ctx, str *blob)
 		return -1;
 	}
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	if (!SSL_CTX_set_tmp_dh(ctx, dh)) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("unable to set dh params\n");
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	DH_free(dh);
 	LM_DBG("DH params from successfully set\n");
@@ -461,10 +494,19 @@ static int set_ec_params(SSL_CTX * ctx, const char* curve_name)
 			LM_ERR("unable to create EC curve\n");
 			return -1;
 		}
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_get();
+		#endif
 		if (1 != SSL_CTX_set_tmp_ecdh (ctx, ecdh)) {
+			#ifndef NO_SSL_GLOBAL_LOCK
+			tls_global_lock_release();
+			#endif
 			LM_ERR("unable to set tmp_ecdh\n");
 			return -1;
 		}
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		EC_KEY_free (ecdh);
 	}
 	else {
@@ -830,12 +872,21 @@ static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
  */
 static int load_certificate(SSL_CTX * ctx, char *filename)
 {
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		tls_print_errstack();
 		LM_ERR("unable to load certificate file '%s'\n",
 				filename);
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	LM_DBG("'%s' successfully loaded\n", filename);
 	return 0;
@@ -859,24 +910,42 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 		return -1;
 	}
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	if (! SSL_CTX_use_certificate(ctx, cert)) {
 		tls_print_errstack();
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("Unable to use certificate\n");
 		X509_free(cert);
 		BIO_free(cbio);
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 	tls_dump_cert_info("Certificate loaded: ", cert);
 	X509_free(cert);
 
 	while ((cert = PEM_read_bio_X509(cbio, NULL, 0, NULL)) != NULL) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_get();
+		#endif
 		if (!SSL_CTX_add_extra_chain_cert(ctx, cert)){
 			tls_print_errstack();
+			#ifndef NO_SSL_GLOBAL_LOCK
+			tls_global_lock_release();
+			#endif
 			tls_dump_cert_info("Unable to add chain cert: ", cert);
 			X509_free(cert);
 			BIO_free(cbio);
 			return -1;
 		}
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		/* The x509 certificate provided to SSL_CTX_add_extra_chain_cert()
 		*	will be freed by the library when the SSL_CTX is destroyed.
 		*	An application should not free the x509 object.a*/
@@ -984,11 +1053,20 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
  */
 static int load_ca(SSL_CTX * ctx, char *filename)
 {
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
 		tls_print_errstack();
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("unable to load ca '%s'\n", filename);
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	LM_DBG("CA '%s' successfully loaded\n", filename);
 	return 0;
@@ -1035,10 +1113,19 @@ static int load_ca_db(SSL_CTX * ctx, str *blob)
  */
 static int load_ca_dir(SSL_CTX * ctx, char *directory)
 {
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	if (!SSL_CTX_load_verify_locations(ctx, 0 , directory)) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("unable to load ca directory '%s'\n", directory);
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	LM_DBG("CA '%s' successfully loaded from directory\n", directory);
 	return 0;
@@ -1078,6 +1165,9 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 	SSL_CTX_set_default_passwd_cb(ctx, passwd_cb);
 	SSL_CTX_set_default_passwd_cb_userdata(ctx, filename);
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	for(idx = 0, ret_pwd = 0; idx < NUM_RETRIES; idx++ ) {
 		ret_pwd = SSL_CTX_use_PrivateKey_file(ctx, filename, SSL_FILETYPE_PEM);
 		if ( ret_pwd ) {
@@ -1092,16 +1182,25 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 
 	if( ! ret_pwd ) {
 		tls_print_errstack();
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("unable to load private key file '%s'\n",
 				filename);
 		return -1;
 	}
 
 	if (!SSL_CTX_check_private_key(ctx)) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("key '%s' does not match the public key of the certificate\n",
 				filename);
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	LM_DBG("key '%s' successfully loaded\n", filename);
 	return 0;
@@ -1121,6 +1220,9 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 		return -1;
 	}
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_get();
+	#endif
 	for(idx = 0; idx < NUM_RETRIES; idx++ ) {
 		key = PEM_read_bio_PrivateKey(kbio,NULL, passwd_cb, "database");
 		if ( key ) {
@@ -1135,15 +1237,24 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 	BIO_free(kbio);
 	if(!key) {
 		tls_print_errstack();
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		LM_ERR("unable to load private key from buffer\n");
 		return -1;
 	}
 
 	if (!SSL_CTX_use_PrivateKey(ctx, key)) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		EVP_PKEY_free(key);
 		LM_ERR("key does not match the public key of the certificate\n");
 		return -1;
 	}
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock_release();
+	#endif
 
 	EVP_PKEY_free(key);
 	LM_DBG("key successfully loaded\n");
@@ -1262,11 +1373,17 @@ static int init_tls_dom(struct tls_domain *d)
 		/*
 		 * create context
 		 */
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_get();
+		#endif
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 		d->ctx[i] = SSL_CTX_new(TLS_method());
 #else
 		d->ctx[i] = SSL_CTX_new(ssl_methods[d->method - 1]);
 #endif
+		#ifndef NO_SSL_GLOBAL_LOCK
+		tls_global_lock_release();
+		#endif
 		if (d->ctx[i] == NULL) {
 			LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
 				d->name.len, ZSW(d->name.s));
@@ -2017,6 +2134,14 @@ static int mod_init(void) {
 			, NULL);
 #endif
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	tls_global_lock = lock_alloc();
+	if (!tls_global_lock || !lock_init(tls_global_lock)) {
+		LM_ERR("could not initialize global openssl lock!\n");
+		return -1;
+	}
+	#endif
+
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
 	ssl_lock = lock_alloc();
 	if (!ssl_lock || !lock_init(ssl_lock)) {
@@ -2185,6 +2310,11 @@ static void mod_destroy(void)
 	map_destroy(server_dom_matching, map_free_node);
 	map_destroy(client_dom_matching, map_free_node);
 
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_destroy(tls_global_lock);
+	lock_dealloc(tls_global_lock);
+	#endif
+
 	/* TODO - destroy static locks */
 
 	/* library destroy */
@@ -2343,6 +2473,10 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->find_client_domain = tls_find_client_domain;
 	binds->find_client_domain_name = tls_find_client_domain_name;
 	binds->release_domain = tls_release_domain;
+	#ifndef NO_SSL_GLOBAL_LOCK
+	binds->global_lock_get = tls_global_lock_get;
+	binds->global_lock_release = tls_global_lock_release;
+	#endif
 	binds->ctx_set_cert_store = tls_ctx_set_cert_store;
 	binds->ctx_set_cert_chain = tls_ctx_set_cert_chain;
 	binds->ctx_set_pkey_file = tls_ctx_set_pkey_file;

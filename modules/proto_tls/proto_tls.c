@@ -139,12 +139,6 @@ static mi_response_t *tls_trace_mi_1(const mi_params_t *params,
 
 trace_dest t_dst;
 
-#ifndef NO_SSL_GLOBAL_LOCK
-gen_lock_t *ssl_global_lock;
-#else
-#define ssl_global_lock NULL
-#endif
-
 static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
 																	size_t len)
 {
@@ -152,13 +146,13 @@ static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *bu
 
 	lock_get(&c->write_lock);
 	ret = tls_blocking_write(c, fd, buf, len,
-			tls_handshake_tout, tls_send_tout, t_dst, ssl_global_lock);
+			tls_handshake_tout, tls_send_tout, t_dst, &tls_mgm_api);
 	lock_release(&c->write_lock);
 	return ret;
 }
 
 static int tls_write_on_socket(struct tcp_connection* c, int fd,
-		char *buf, int len, gen_lock_t *ssl_global_lock)
+		char *buf, int len)
 {
 	int n;
 
@@ -174,7 +168,7 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 				goto release;
 			}
 
-			n = tls_write(c, fd, buf, len, NULL, ssl_global_lock);
+			n = tls_write(c, fd, buf, len, NULL, &tls_mgm_api);
 			if (n >= 0 && len - n) {
 				/* if could not write entire buffer, delay it */
 				n = tcp_async_add_chunk(c, buf + n, len - n, 0);
@@ -184,7 +178,7 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 		}
 	} else {
 		n = tls_blocking_write(c, fd, buf, len,
-				tls_handshake_tout, tls_send_tout, t_dst, ssl_global_lock);
+				tls_handshake_tout, tls_send_tout, t_dst, &tls_mgm_api);
 	}
 release:
 	lock_release(&c->write_lock);
@@ -334,14 +328,6 @@ static int mod_init(void)
 				sroutes->request, RT_NO);
 	}
 
-	#ifndef NO_SSL_GLOBAL_LOCK
-	ssl_global_lock = lock_alloc();
-	if (!ssl_global_lock || !lock_init(ssl_global_lock)) {
-		LM_ERR("could not initialize openssl lock!\n");
-		return -1;
-	}
-	#endif
-
 	return 0;
 }
 
@@ -351,11 +337,6 @@ static int mod_init(void)
  */
 static void mod_destroy(void)
 {
-	#ifndef NO_SSL_GLOBAL_LOCK
-	lock_destroy(ssl_global_lock);
-	lock_dealloc(ssl_global_lock);
-	#endif
-
 	/* library destroy */
 	ERR_free_strings();
 	/*SSL_free_comp_methods(); - this function is not on std. openssl*/
@@ -459,7 +440,7 @@ static void proto_tls_conn_clean(struct tcp_connection* c)
 		c->proto_data = NULL;
 	}
 
-	tls_conn_clean(c, ssl_global_lock, &tls_mgm_api);
+	tls_conn_clean(c, &tls_mgm_api);
 }
 
 
@@ -557,7 +538,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 			 * connect status */
 			tls_update_fd(c, fd);
 			n = tls_async_connect(c, fd, tls_async_handshake_connect_timeout, t_dst,
-				ssl_global_lock);
+				&tls_mgm_api);
 			lock_release(&c->write_lock);
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
@@ -601,7 +582,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
-	rlen = tls_write_on_socket(c, fd, buf, len, ssl_global_lock);
+	rlen = tls_write_on_socket(c, fd, buf, len);
 	tcp_conn_set_lifetime( c, tcp_con_lifetime);
 
 	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);
@@ -655,7 +636,7 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	}
 
 	/* do this trick in order to trace whether if it's an error or not */
-	ret=tls_fix_read_conn(con, tls_handshake_tout, t_dst, ssl_global_lock);
+	ret=tls_fix_read_conn(con, tls_handshake_tout, t_dst, &tls_mgm_api);
 	if (ret < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -697,7 +678,7 @@ again:
 		if (req->parsed<req->pos){
 			bytes=0;
 		}else{
-			bytes=tls_read(con,req, ssl_global_lock);
+			bytes=tls_read(con,req, &tls_mgm_api);
 			if (bytes<0) {
 				LM_ERR("failed to read \n");
 				goto error;
@@ -761,7 +742,7 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 	SSL *ssl = (SSL *)con->extra_data;
 
 	err = tls_fix_read_conn_unlocked(con, fd, tls_handshake_tout, t_dst,
-		ssl_global_lock);
+		&tls_mgm_api);
 	if (err < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -776,7 +757,7 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 				chunk->len, chunk, con, chunk->ticks, get_ticks());
 
 		#ifndef NO_SSL_GLOBAL_LOCK
-		lock_get(ssl_global_lock);
+		tls_mgm_api.global_lock_get();
 		#endif
 
 		n=SSL_write(con->extra_data, chunk->buf, chunk->len);
@@ -785,7 +766,7 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 			switch (err) {
 				case SSL_ERROR_ZERO_RETURN:
 					#ifndef NO_SSL_GLOBAL_LOCK
-					lock_release(ssl_global_lock);
+					tls_mgm_api.global_lock_release();
 					#endif
 
 					LM_DBG("connection closed cleanly\n");
@@ -793,7 +774,7 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 				case SSL_ERROR_WANT_READ:
 				case SSL_ERROR_WANT_WRITE:
 					#ifndef NO_SSL_GLOBAL_LOCK
-					lock_release(ssl_global_lock);
+					tls_mgm_api.global_lock_release();
 					#endif
 
 					LM_DBG("Can't finish to write chunk %p on conn %p\n",
@@ -806,7 +787,7 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 					tls_print_errstack();
 
 					#ifndef NO_SSL_GLOBAL_LOCK
-					lock_release(ssl_global_lock);
+					tls_mgm_api.global_lock_release();
 					#endif
 
 					/* report the conn as broken */
