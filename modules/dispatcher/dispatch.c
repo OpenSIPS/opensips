@@ -1750,6 +1750,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 			}
 			selected = sorted_set[0];
 			ds_id = 0;
+		break;
 		case 10:
 			if (algo_route_param.s == NULL || algo_route_param.len == 0) {
 				LM_ERR("No hash_route param provided \n");
