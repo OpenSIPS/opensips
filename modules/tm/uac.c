@@ -170,9 +170,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	struct cell *new_cell;
 	struct cell *backup_cell;
 	struct retr_buf *request;
-	struct sip_msg *req;
+	struct sip_msg *req = NULL;
 	struct usr_avp **backup;
-	char *buf, *buf1;
+	char *buf, *buf1 = NULL, *sipmsg_buf;
 	int buf_len, buf_len1;
 	int ret, flags;
 	int backup_route_type;
@@ -291,6 +291,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 
 	if (local_rlist.a) {
 		LM_DBG("building sip_msg from buffer\n");
+		sipmsg_buf = buf; /* remember the buffer used to get the sip_msg */
 		req = buf_to_sip_msg(buf, buf_len, dialog);
 		if (req==NULL) {
 			LM_ERR("failed to build sip_msg from buffer\n");
@@ -425,7 +426,13 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 				if (new_send_sock)
 					request->dst.to = new_to_su;
 
-				shm_free(buf);
+				/* the `buf` buffer is the same as `sipmsg_buf`, so we
+				 * do not loose the original msg buffer; later, if we 
+				 * see a non zero `buf1` (as a marker that we visited this
+				 * part of the code), we know that we have to release the
+				 * `sipmsg_buf` also; if we do not visit this part of the
+				 * code, the `buf` == `sipmsg_buf` and  `buf1` is NULL, so
+				 * nothing to free later */
 				buf = buf1;
 				buf_len = buf_len1;
 				/* use new buffer */
@@ -447,8 +454,6 @@ abort_update:
 			}
 			/* no parallel support in UAC transactions */
 			new_cell->on_branch = 0;
-			free_sip_msg(req);
-			pkg_free(req);
 		}
 	}
 
@@ -481,6 +486,22 @@ abort_update:
 		t_release_transaction(new_cell);
 	} else {
 		start_retr(request);
+	}
+
+	/* successfully sent out */
+	if ( req ) {
+		/* run callbacks */
+		if ( has_tran_tmcbs( new_cell, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &request->buffer,
+				&request->dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, new_cell,
+				req, 0, 0);
+		}
+		free_sip_msg(req);
+		pkg_free(req);
+		/* if the buffer was rebuilt, free the originl one */
+		if (buf1)
+			shm_free(sipmsg_buf);
 	}
 
 	set_avp_list( backup );
