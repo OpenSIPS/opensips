@@ -63,7 +63,7 @@
 #xmpp= Gateway between OpenSIPS and a jabber server. It enables the exchange of IMs between SIP clients and XMPP(jabber) clients. | parsing/building XML files, typically libexpat1-devel
 #uuid= UUID generator | uuid-dev
 
-exclude_modules?= aaa_radius auth_jwt b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq h350 httpd identity jabber json ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_xml presence_dfks proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python regex rabbitmq rabbitmq_consumer rest_client rls siprec sngtc snmpstats stir_shaken tls_mgm uuid xcap xcap_client xml xmpp
+exclude_modules?= aaa_radius auth_jwt b2b_logic cachedb_cassandra cachedb_couchbase cachedb_memcached cachedb_mongodb cachedb_redis carrierroute cgrates compression cpl_c db_berkeley db_http db_mysql db_oracle db_perlvdb db_postgres db_sqlite db_unixodbc dialplan emergency event_rabbitmq event_kafka h350 httpd identity jabber json ldap lua mi_xmlrpc_ng mmgeoip osp perl pi_http presence presence_dialoginfo presence_mwi presence_xml presence_dfks proto_sctp proto_tls proto_wss pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp python regex rabbitmq rabbitmq_consumer rest_client rls siprec sngtc snmpstats stir_shaken tls_mgm uuid xcap xcap_client xml xmpp
 
 include_modules?=
 
