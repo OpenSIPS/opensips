@@ -175,9 +175,9 @@ static inline unsigned int dlg2hash( dlg_t* dlg )
 
 
 static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
-																dlg_t *dialog)
+				dlg_t *dialog, struct sip_msg **ret_req, char **ret_req_buf)
 {
-	struct sip_msg *req;
+	struct sip_msg *req = NULL;
 	struct cell *backup_cell;
 	int backup_route_type;
 	struct retr_buf *request;
@@ -185,11 +185,12 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	union sockaddr_union new_to_su;
 	struct socket_info *new_send_sock;
 	unsigned short dst_changed;
-	char *buf1;
+	char *buf1=NULL, *sipmsg_buf;
 	int buf_len1, sip_msg_len;
 	str h_to, h_from, h_cseq, h_callid;
 
 	LM_DBG("building sip_msg from buffer\n");
+	sipmsg_buf = *buf; /* remember the buffer used to get the sip_msg */
 	req = buf_to_sip_msg( *buf, *buf_len, dialog);
 	if (req==NULL) {
 		LM_ERR("failed to build sip_msg from buffer\n");
@@ -334,7 +335,13 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 			}
 		}
 
-		shm_free(*buf);
+		/* the `buf` buffer is the same as `sipmsg_buf`, so we
+		 * do not loose the original msg buffer; later, if we 
+		 * see a non zero `buf1` (as a marker that we visited this
+		 * part of the code), we know that we have to release the
+		 * `sipmsg_buf` also; if we did not visit this part of the
+		 * code, the `buf` == `sipmsg_buf` and  `buf1` is NULL, so
+		 * nothing to free later */
 		*buf = buf1;
 		*buf_len = buf_len1;
 		/* use new buffer */
@@ -367,8 +374,18 @@ skip_update:
 		free_proxy( new_proxy );
 		pkg_free( new_proxy );
 	}
-	free_sip_msg(req);
-	pkg_free(req);
+
+	if (ret_req) {
+		*ret_req = req;
+		/* if the buffer was rebuilt, return also the original buffer */
+		*ret_req_buf = buf1 ? sipmsg_buf : NULL;
+	} else {
+		free_sip_msg(req);
+		pkg_free(req);
+		/* if the buffer was rebuilt, free the original one */
+		if (buf1)
+			shm_free(sipmsg_buf);
+	}
 
 	return 0;
 }
@@ -394,7 +411,7 @@ static void rpc_run_local_route(int sender, void *v_param)
 		backup = set_avp_list( &new_cell->user_avps);
 
 		ret = run_local_route( new_cell, &param->buf, &param->buf_len,
-			&param->dlg);
+			&param->dlg, NULL, NULL);
 
 		set_avp_list( backup );
 
@@ -485,6 +502,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	union sockaddr_union to_su;
 	struct cell *new_cell;
 	struct retr_buf *request;
+	struct sip_msg *req = NULL;
+	char *buf_req = NULL;
 	struct usr_avp **backup;
 	char *buf;
 	int buf_len;
@@ -602,7 +621,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		/* do IPC to run the local route */
 		rpc_trigger_local_route( new_cell, buf, buf_len, dialog);
 	} else if (sroutes->local.a) {
-		run_local_route( new_cell, &buf, &buf_len, dialog);
+		run_local_route( new_cell, &buf, &buf_len, dialog, &req, &buf_req);
 	}
 
 	if (request->buffer.s==NULL) {
@@ -646,6 +665,24 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		t_release_transaction(new_cell);
 	} else {
 		start_retr(request);
+	}
+
+	/* successfully sent out */
+	if ( req ) {
+		/* run callbacks 
+		 * NOTE: this callback will be executed ONLY the local route
+		 * was executed IN THIS process (so we have the msg); if the local
+		 * route was executed via IPC in other proc, we cannot run the 
+		 * callback */
+		if ( has_tran_tmcbs( new_cell, TMCB_MSG_SENT_OUT) ) {
+			set_extra_tmcb_params( &request->buffer,
+				&request->dst);
+			run_trans_callbacks( TMCB_MSG_SENT_OUT, new_cell,
+				req, 0, 0);
+		}
+		free_sip_msg(req);
+		pkg_free(req);
+		if (buf_req) shm_free(buf_req);
 	}
 
 	set_avp_list( backup );
