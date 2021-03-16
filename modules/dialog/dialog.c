@@ -505,9 +505,8 @@ struct module_exports exports= {
 
 static int fixup_check_var(void** param)
 {
-	if (((pv_spec_t *)*param)->type!=PVT_AVP &&
-		((pv_spec_t *)*param)->type!=PVT_SCRIPTVAR) {
-		LM_ERR("return parameter must be an AVP or SCRIPT VAR!\n");
+	if (!pv_is_w((pv_spec_t *)*param)) {
+		LM_ERR("the return parameter must be a writable pseudo-variable\n");
 		return E_SCRIPT;
 	}
 
@@ -517,7 +516,7 @@ static int fixup_check_var(void** param)
 static int fixup_check_avp(void** param)
 {
 	if (((pv_spec_t *)*param)->type!=PVT_AVP) {
-		LM_ERR("return parameter must be an AVP\n");
+		LM_ERR("the return parameter must be an AVP\n");
 		return E_SCRIPT;
 	}
 
