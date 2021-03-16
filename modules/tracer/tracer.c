@@ -1553,17 +1553,23 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	}
 
 
-	/* we're safe; nobody will be in conflict with this conn id since evrybody else
-	 * will have a local copy of this structure */
+	/* we're safe; nobody will be in conflict with this conn id
+	 * since everybody else will have a local copy of this structure */
 	if ( msg->rcv.proto != PROTO_UDP ) {
 		info->conn_id = msg->rcv.proto_reserved1;
 	} else {
 		info->conn_id = 0;
 	}
 
-	if (sip_trace_instance(msg, instance, info->conn_id) < 0) {
-		LM_ERR("sip trace failed!\n");
-		return -1;
+	/* trace the current message only if:
+	 *  (a) per-message tracing was requests
+	 *  or
+	 *  (b) we are not in LOCAL route (UAC trans do not have IN msg) */
+	if (trace_flags == TRACE_MESSAGE || route_type != LOCAL_ROUTE) {
+		if (sip_trace_instance(msg, instance, info->conn_id) < 0) {
+			LM_ERR("sip trace failed!\n");
+			return -1;
+		}
 	}
 
 #ifdef STATISTICS

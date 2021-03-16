@@ -127,6 +127,7 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 			str *ruri, str *from, str *to, str *body, str *p_ctx);
 static int t_wait_for_new_branches(struct sip_msg* msg,
 			unsigned int* br_to_wait);
+static int w_t_wait_no_more_branches(struct sip_msg* msg);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -259,6 +260,9 @@ static cmd_export_t cmds[]={
 	{"t_wait_for_new_branches", (cmd_function)t_wait_for_new_branches, {
 		{CMD_PARAM_INT | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"t_wait_no_more_branches", (cmd_function)w_t_wait_no_more_branches,
+		{{0,0,0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"load_tm", (cmd_function)load_tm, {{0,0,0}}, 0},
@@ -1574,6 +1578,23 @@ static int t_wait_for_new_branches(struct sip_msg* msg,
 	return 1;
 }
 
+
+static int w_t_wait_no_more_branches(struct sip_msg* msg)
+{
+	struct cell *t;
+
+	t=get_t();
+
+	if (t==NULL || t==T_UNDEFINED) {
+		/* no transaction */
+		return -1;
+	}
+
+	if (t_wait_no_more_branches(t)<0)
+		return -1;
+
+	return 1;
+}
 
 /******************** pseudo-variable functions *************************/
 
