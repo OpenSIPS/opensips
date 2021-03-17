@@ -126,7 +126,7 @@ int uri_param_2(struct sip_msg* _msg, char* _param, char* _value)
 	str *param, *value, t;
 
 	param_hooks_t hooks;
-	param_t* params;
+	param_t *params, *p;
 
 	param = (str*)_param;
 	value = (str*)_value;
@@ -143,25 +143,26 @@ int uri_param_2(struct sip_msg* _msg, char* _param, char* _value)
 	        return -1;
 	}
 
-	while (params) {
-		if ((params->name.len == param->len) &&
-		    (strncmp(params->name.s, param->s, param->len) == 0)) {
+	p = params;
+	while (p) {
+		if ((p->name.len == param->len) &&
+		    (strncmp(p->name.s, param->s, param->len) == 0)) {
 			if (value) {
-				if ((value->len == params->body.len) &&
-				    strncmp(value->s, params->body.s, value->len) == 0) {
+				if ((value->len == p->body.len) &&
+				    strncmp(value->s, p->body.s, value->len) == 0) {
 					goto ok;
 				} else {
 					goto nok;
 				}
 			} else {
-				if (params->body.len > 0) {
+				if (p->body.len > 0) {
 					goto nok;
 				} else {
 					goto ok;
 				}
 			}
 		} else {
-			params = params->next;
+			p = p->next;
 		}
 	}
 
