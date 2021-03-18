@@ -178,7 +178,7 @@ static inline int core2strar( struct sip_msg *req, str *c_vals)
 
 	c_vals[5] = acc_env.reason;
 
-	gettimeofday(&acc_env.ts, NULL);
+	acc_env.ts = *get_msg_time(req);
 
 	return ACC_CORE_LEN;
 }

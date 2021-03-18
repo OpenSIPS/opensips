@@ -851,7 +851,7 @@ static void acc_dlg_ended(struct dlg_cell *dlg, int type,
 	set_dlg_cb_used(ctx->flags);
 
 	/* this time will be used to set */
-	gettimeofday(&ctx->bye_time, NULL);
+	ctx->bye_time = *get_msg_time(_params->msg);
 
 	/* if it's not a local transaction we do the accounting on the tm callbacks */
 	if (((t=tmb.t_gett()) == T_UNDEFINED) || !t ||
