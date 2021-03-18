@@ -233,7 +233,7 @@ mi_response_t *mi_qr_status_1(const mi_params_t *params, struct mi_handler *_)
 	}
 
 	if (!qr_part) {
-		err_resp = init_mi_error(404, MI_SSTR("Partition Not Found\n"));
+		err_resp = init_mi_error(404, MI_SSTR("Partition Not Found"));
 		goto error;
 	}
 
@@ -247,7 +247,7 @@ error:
 
 	free_mi_response(resp);
 	if (!err_resp)
-		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
+		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error"));
 	return err_resp;
 }
 
@@ -281,7 +281,7 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 	}
 
 	if (!qr_part) {
-		err_resp = init_mi_error(404, MI_SSTR("Partition Not Found\n"));
+		err_resp = init_mi_error(404, MI_SSTR("Partition Not Found"));
 		goto error;
 	}
 
@@ -292,7 +292,7 @@ mi_response_t *mi_qr_status_2(const mi_params_t *params, struct mi_handler *_)
 
 	rule = qr_search_rule(qr_part, rule_id);
 	if (!rule) {
-		err_resp = init_mi_error(404, MI_SSTR("Rule Not Found\n"));
+		err_resp = init_mi_error(404, MI_SSTR("Rule Not Found"));
 		goto error;
 	}
 
@@ -317,7 +317,7 @@ error:
 
 	free_mi_response(resp);
 	if (!err_resp)
-		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
+		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error"));
 	return err_resp;
 }
 
@@ -352,7 +352,7 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 	}
 
 	if (!qr_part) {
-		err_resp = init_mi_error(404, MI_SSTR("Partition Not Found\n"));
+		err_resp = init_mi_error(404, MI_SSTR("Partition Not Found"));
 		goto error;
 	}
 
@@ -363,7 +363,7 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 
 	rule = qr_search_rule(qr_part, rule_id);
 	if (!rule) {
-		err_resp = init_mi_error(404, MI_SSTR("Rule Not Found\n"));
+		err_resp = init_mi_error(404, MI_SSTR("Rule Not Found"));
 		goto error;
 	}
 
@@ -375,7 +375,7 @@ mi_response_t *mi_qr_status_3(const mi_params_t *params, struct mi_handler *_)
 
 	dst = qr_search_dst(rule, &dst_name);
 	if (!dst) {
-		err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found\n"));
+		err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found"));
 		goto error;
 	}
 
@@ -389,7 +389,7 @@ error:
 
 	free_mi_response(resp);
 	if (!err_resp)
-		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error\n"));
+		err_resp = init_mi_error(500, MI_SSTR("Server Internal Error"));
 	return err_resp;
 }
 
@@ -410,14 +410,14 @@ int qr_set_dst_state(qr_rule_t *rules, int rule_id, str *dst_name,
 	rule = qr_search_rule(rules, rule_id);
 	if (!rule) {
 		if (err_resp)
-			*err_resp = init_mi_error(404, MI_SSTR("Rule Not Found\n"));
+			*err_resp = init_mi_error(404, MI_SSTR("Rule Not Found"));
 		return -1;
 	}
 
 	dst = qr_search_dst(rule, dst_name);
 	if (!dst) {
 		if (err_resp)
-			*err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found\n"));
+			*err_resp = init_mi_error(404, MI_SSTR("GW/Carrier Not Found"));
 		return -1;
 	}
 
@@ -499,7 +499,7 @@ static mi_response_t *mi_qr_set_dst_state_3(const mi_params_t *params, int activ
 	if (!rules) {
 		LM_DBG("partition not found: %.*s\n", part_name.len, part_name.s);
 		lock_stop_read(qr_main_list_rwl);
-		return init_mi_error(404, MI_SSTR("Partition Not Found\n"));
+		return init_mi_error(404, MI_SSTR("Partition Not Found"));
 	}
 
 	rc = qr_set_dst_state(rules, rule_id, &dst_name, active, &err_resp);

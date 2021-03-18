@@ -2027,7 +2027,7 @@ static mi_response_t *mi_dr_get_partition(const mi_params_t *params,
 
 	if((*partition = get_partition(&part_name)) == NULL) {
 		LM_ERR("Partition not found\n");
-		return init_mi_error(404, MI_SSTR("Partition not found\n"));
+		return init_mi_error(404, MI_SSTR("Partition not found"));
 	}
 
 	return NULL;
