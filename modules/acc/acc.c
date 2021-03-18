@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 
 #include "../../dprint.h"
 #include "../../error.h"
@@ -221,6 +222,8 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 {
 	static char log_msg[MAX_SYSLOG_SIZE];
 	static char *log_msg_end=log_msg+MAX_SYSLOG_SIZE-2;
+	unsigned long ms_duration;
+	unsigned long duration;
 	char *p;
 	int i, j, ret, res = -1, n;
 	struct timeval start_time;
@@ -284,12 +287,13 @@ int acc_log_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	*(p++) = '\n';
 	*(p++) = 0;
 
+	ms_duration = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
+	duration = ceil((double)ms_duration/1000);
+
 	LM_GEN2(acc_log_facility, acc_log_level,
 		"%.*screated=%lu;call_start_time=%lu;duration=%lu;ms_duration=%lu;setuptime=%lu%s",
 		acc_env.text.len, acc_env.text.s,(unsigned long)ctx->created,
-		(unsigned long)start_time.tv_sec,
-		(unsigned long)(ctx->bye_time.tv_sec-start_time.tv_sec),
-		(unsigned long)TIMEVAL_MS_DIFF(start_time, ctx->bye_time),
+		(unsigned long)start_time.tv_sec, duration, ms_duration,
 		(unsigned long)(start_time.tv_sec - ctx->created), log_msg);
 
 	res = 1;
@@ -680,10 +684,10 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		start_time.tv_sec - ctx->created;
 	VAL_NULL(db_vals+ret+nr_leg_vals+2) = 0;
 	VAL_TIME(db_vals+ret+nr_leg_vals+2) = ctx->created;
-	VAL_INT(db_vals+ret+nr_leg_vals+3) =
-		ctx->bye_time.tv_sec - start_time.tv_sec;
 	VAL_INT(db_vals+ret+nr_leg_vals+4) =
 		TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
+	VAL_INT(db_vals+ret+nr_leg_vals+3) =
+		ceil((double)VAL_INT(db_vals+ret+nr_leg_vals+4)/1000);
 
 	total = ret + 5;
 	acc_dbf.use_table(db_handle, &table);
@@ -937,6 +941,7 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	int offset, av_type;
 	aaa_map *r_stat;
 	int locked = 0;
+	uint32_t duration, ms_duration;
 
 	struct acc_extra* extra;
 
@@ -980,11 +985,11 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
 	offset = ret + 2;
 
+	ms_duration = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
+	duration = ceil((double)ms_duration/1000);
 	/* add duration and setup values */
-	av_type = (uint32_t)(ctx->bye_time.tv_sec - start_time.tv_sec);
-	ADD_AAA_AVPAIR( offset + nr_leg_vals, &av_type, -1);
-	av_type = (uint32_t)TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
-	ADD_AAA_AVPAIR( offset + nr_leg_vals + 1, &av_type, -1);
+	ADD_AAA_AVPAIR( offset + nr_leg_vals, &duration, -1);
+	ADD_AAA_AVPAIR( offset + nr_leg_vals + 1, &ms_duration, -1);
 	av_type = (uint32_t)(start_time.tv_sec - ctx->created);
 	ADD_AAA_AVPAIR( offset + nr_leg_vals + 2, &av_type, -1);
 
@@ -1295,9 +1300,9 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 {
 	int  i, ret, res = -1, j;
 	int nr_leg_vals;
-	int aux_time;
 	struct timeval start_time;
 	str core_s, leg_s, extra_s;
+	unsigned long duration, ms_duration, setup_duration;
 
 	struct acc_extra* extra;
 
@@ -1335,19 +1340,19 @@ int acc_evi_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 		goto end;
 	}
 
-	aux_time = ctx->bye_time.tv_sec - start_time.tv_sec;
-	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+1], &aux_time) < 0) {
+	ms_duration = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
+	duration = ceil((double)ms_duration/1000);
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+1], &duration) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
 
-	aux_time = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
-	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+2], &aux_time) < 0) {
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+2], &ms_duration) < 0) {
 		LM_ERR("cannot set duration parameter\n");
 		goto end;
 	}
-	aux_time = start_time.tv_sec - ctx->created;
-	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+3], &aux_time) < 0) {
+	setup_duration = start_time.tv_sec - ctx->created;
+	if (evi_param_set_int(evi_cdr_params[ret+nr_leg_vals+3], &setup_duration) < 0) {
 		LM_ERR("cannot set setuptime parameter\n");
 		goto end;
 	}
