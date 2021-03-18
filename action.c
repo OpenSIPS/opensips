@@ -2292,6 +2292,14 @@ void release_dummy_sip_msg( struct sip_msg* req)
 		req->set_global_address.len = req->set_global_port.len = 0;
 		req->add_rm = req->body_lumps = NULL;
 		req->reply_lump = NULL;
+		req->ruri_q = Q_UNSPECIFIED;
+		req->ruri_bflags = 0;
+		req->force_send_socket = NULL;
+		req->parsed_uri_ok = 0;
+		req->parsed_orig_ruri_ok = 0;
+		req->add_to_branch_len = 0;
+		req->flags = 0;
+		req->msg_flags = 0;
 		dummy_static_in_used = 0;
 	} else {
 		LM_DBG("freeing allocated sip msg %p\n",req);
