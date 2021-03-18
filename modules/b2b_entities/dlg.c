@@ -1759,8 +1759,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	lock_get(&table[hash_index].lock);
 	if(dlginfo)
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-		dlginfo->totag.s?&dlginfo->totag:NULL,
-		dlginfo->fromtag.s?&dlginfo->fromtag:NULL, &dlginfo->callid);
+		&dlginfo->totag, &dlginfo->fromtag, &dlginfo->callid);
 	else
 		dlg = b2b_search_htable(table, hash_index, local_index);
 
@@ -2017,7 +2016,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	else
 	{
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-		totag.s?&totag:NULL, fromtag.s?&fromtag:NULL, &dlginfo->callid);
+				&totag, &fromtag, &dlginfo->callid);
 	}
 	if(dlg== NULL)
 	{
