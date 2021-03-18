@@ -1268,6 +1268,7 @@ void release_dummy_sip_msg( struct sip_msg* req)
 		req->add_to_branch_len = 0;
 		req->flags = 0;
 		req->msg_flags = 0;
+		memset( &req->time, 0, sizeof(struct timeval));
 		dummy_static_in_used = 0;
 	} else {
 		LM_DBG("freeing allocated sip msg %p\n",req);
