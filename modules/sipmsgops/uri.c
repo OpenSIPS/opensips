@@ -67,7 +67,7 @@ int ruri_has_param(struct sip_msg* _msg, str* param, str* value)
 {
 	str t;
 	param_hooks_t hooks;
-	param_t* params;
+	param_t *params, *p;
 
 	if (parse_sip_msg_uri(_msg) < 0) {
 	        LM_ERR("ruri parsing failed\n");
@@ -81,25 +81,26 @@ int ruri_has_param(struct sip_msg* _msg, str* param, str* value)
 	        return -1;
 	}
 
-	while (params) {
-		if ((params->name.len == param->len) &&
-		    (strncmp(params->name.s, param->s, param->len) == 0)) {
+	p = params;
+	while (p) {
+		if ((p->name.len == param->len) &&
+		    (strncmp(p->name.s, param->s, param->len) == 0)) {
 			if (value) {
-				if ((value->len == params->body.len) &&
-				    strncmp(value->s, params->body.s, value->len) == 0) {
+				if ((value->len == p->body.len) &&
+				    strncmp(value->s, p->body.s, value->len) == 0) {
 					goto ok;
 				} else {
 					goto nok;
 				}
 			} else {
-				if (params->body.len > 0) {
+				if (p->body.len > 0) {
 					goto nok;
 				} else {
 					goto ok;
 				}
 			}
 		} else {
-			params = params->next;
+			p = p->next;
 		}
 	}
 
