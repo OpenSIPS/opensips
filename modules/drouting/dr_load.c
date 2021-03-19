@@ -595,7 +595,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 		}
 
 		LM_DBG("initial %d records found in %.*s\n", RES_ROW_N(res),
-		       rules_tables->len, rules_tables->s);
+		       rules_tables[j].len, rules_tables[j].s);
 
 		n = 0;
 		do {
@@ -700,7 +700,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 					goto error;
 				}
 				LM_DBG("additional %d records found in %.*s\n", RES_ROW_N(res),
-				       rules_tables->len, rules_tables->s);
+				       rules_tables[j].len, rules_tables[j].s);
 			} else {
 				break;
 			}
@@ -711,7 +711,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 
 		if (custom_rule_tables)
 			LM_NOTICE("loaded %d rules from table '%.*s'\n", n,
-			          rules_tables->len, rules_tables->s);
+			          rules_tables[j].len, rules_tables[j].s);
 		tot_rl += n;
 	}
 

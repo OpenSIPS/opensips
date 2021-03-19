@@ -1106,7 +1106,7 @@ static inline int dr_reload_data_head(struct head_db *hd,
 			}
 
 			rules_tables[rules_no].len = strlen(p);
-			LM_INFO("Found new table [%.*s]\n",rules_tables[rules_no].len,p);
+			LM_DBG("found new table [%.*s]\n", rules_tables[rules_no].len, p);
 			rules_tables[rules_no].s = pkg_malloc(rules_tables[rules_no].len);
 			if (!rules_tables[rules_no].s) {
 				LM_ERR("No more pkg to allocate table name\n");
