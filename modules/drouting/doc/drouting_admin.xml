@@ -1863,14 +1863,14 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 		<programlisting format="linespecific">
 # use_partitions is not set
 # match the source IP (only) against all gateways
-if (is_from_gw(3, "n")) {
+if (is_from_gw(-1, "n")) {
 	...
 }
 
 # use_partitions is enabled
-# match the source IP and port against all gws from "outbound" partition and
-# return its carrier
-if (is_from_gw(3, "c", , "outbound")) {
+# match the source IP and port against all gateways from the "outbound"
+# partition and return the matched gateway's carrier
+if (is_from_gw(, "c", , "outbound")) {
 	...
 }
 </programlisting>
