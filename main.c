@@ -1356,11 +1356,13 @@ try_again:
 	LM_NOTICE("version: %s\n", version);
 
 	/* print some data about the configuration */
-	LM_INFO("using %ld Mb of shared memory\n", shm_mem_size/1024/1024);
+	LM_NOTICE("using %ld MB of shared memory, allocator: %s\n",
+	          shm_mem_size/1024/1024, mm_str(mem_allocator_shm));
 #if defined(PKG_MALLOC)
-	LM_INFO("using %ld Mb of private process memory\n", pkg_mem_size/1024/1024);
+	LM_NOTICE("using %ld MB of private process memory, allocator: %s\n",
+	          pkg_mem_size/1024/1024, mm_str(mem_allocator_pkg));
 #else
-	LM_INFO("using system memory for private process memory\n");
+	LM_NOTICE("using system memory for private process memory\n");
 #endif
 
 	/* init async reactor */

@@ -1455,6 +1455,9 @@ static int dr_init(void)
 			LM_INFO("starting drouting with empty cache\n");
 		else
 			LM_INFO("starting drouting with cache head=%p\n", dr_cache);
+
+		LM_NOTICE("using %ld MB of restart-persistent memory, allocator: %s\n",
+		          rpm_mem_size/1024/1024, mm_str(mem_allocator_rpm));
 	}
 
 	/* register dr callbacks for sorting */
