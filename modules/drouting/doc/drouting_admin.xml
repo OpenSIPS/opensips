@@ -1227,7 +1227,7 @@ modparam("drouting", "enable_restart_persistency", yes)
 	</section>
 
 	<section id="param_extra_prefix_chars" xreflabel="extra_prefix_chars">
-		<title><varname>extra_prefix_chars</varname> (srt)</title>
+		<title><varname>extra_prefix_chars</varname> (str)</title>
 		<para>
 			List of ASCII (0-127) characters to be additionally accepted in
 			the prefixes. By default only '0' - '9' chars (digits) are
@@ -1247,7 +1247,41 @@ modparam("drouting", "extra_prefix_chars", "#-%")
 		</example>
 	</section>
 
+	<section id="param_rule_tables_query" xreflabel="rule_tables_query">
+		<title><varname>rule_tables_query</varname> (str)</title>
+		<para>
+			This parameter offers a dynamic, SQL-based way of building a set of
+			<emphasis>dr_rules</emphasis>-compatible table names, to be
+			each loaded and then merged into a single "dr_rules" table,
+			for any given partition.
+		</para>
+		<para>
+			The syntax of the parameter is:
+			"<emphasis role='bold'>token</emphasis> : <emphasis role='bold'>query</emphasis>",
+			where <emphasis role='bold'>token</emphasis> is a special name
+			given to a "dr_rules" table, so OpenSIPS can match it against
+			the custom queries defined using this parameter.
+		</para>
+		<para>
+			This parameter may be set multiple times (each definition creates
+			a new mapping).
+		</para>
+		<example>
+		<title>Set the <varname>rule_tables_query</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# first, set the "dr_rules" table name to the name of your query
+modparam("drouting", "drr_table", "MY_RULES_QUERY")
 
+# next, instruct drouting to load both 'dr_rules_a' and 'dr_rules_b',
+# then merge all of their rules
+modparam("drouting", "rule_tables_query", "
+	MY_RULES_QUERY:
+		SELECT 'dr_rules_a' UNION SELECT 'dr_rules_b'")
+...
+</programlisting>
+		</example>
+	</section>
 
 </section>
 

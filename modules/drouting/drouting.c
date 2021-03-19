@@ -28,6 +28,8 @@
 #include "../../evi/evi.h"
 #include "../../map.h"
 #include "../../ipc.h"
+#include "../../ut.h"
+#include "../../lib/csv.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
@@ -75,6 +77,13 @@ static char *dr_probe_sock_s = NULL;
 struct socket_info *dr_probe_sock = NULL;
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
+
+struct custom_rule_table {
+	str id;
+	str query;
+	struct custom_rule_table *next;
+};
+struct custom_rule_table *custom_rule_tables;
 
 /* reload controll parametere */
 static int no_concurrent_reload = 0;
@@ -280,6 +289,7 @@ static int dr_disable(struct sip_msg *req, struct head_db *current_partition);
 
 static int dr_match(struct sip_msg* msg, int *grp, long flags, str *number,
 		pv_spec_t* rule_att, struct head_db *part);
+int set_rule_tables_query(modparam_t type, void *val);
 
 
 mi_response_t *dr_reload_cmd(const mi_params_t *params,
@@ -477,6 +487,7 @@ static param_export_t params[] = {
 	{"probing_socket",   STR_PARAM, &dr_probe_sock_s          },
 	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
+	{"rule_tables_query",STR_PARAM|USE_FUNC_PARAM, (void *)set_rule_tables_query },
 	{"no_concurrent_reload",INT_PARAM, &no_concurrent_reload  },
 	{"partition_id_pvar", STR_PARAM, &partition_pvar.s        },
 	{"cluster_id",        INT_PARAM, &dr_cluster_id           },
@@ -987,6 +998,24 @@ static void dr_state_timer(unsigned int ticks, void* param)
 	}
 }
 
+static inline int uses_rule_table_query(const struct head_db *dbh, str *query)
+{
+	struct custom_rule_table *it;
+
+	for (it = custom_rule_tables; it; it = it->next) {
+		if (!str_strcmp(&dbh->drr_table, &it->id)) {
+			if (query)
+				*query = it->query;
+			return 1;
+		}
+	}
+
+	if (query)
+		memset(query, 0, sizeof *query);
+
+	return 0;
+}
+
 /*
  * if none is successfully loaded return
  * -1, else return 0
@@ -995,6 +1024,8 @@ static void dr_state_timer(unsigned int ticks, void* param)
 static inline int dr_reload_data_head(struct head_db *hd,
                            str *part_name, int initial)
 {
+	db_con_t* db_hdl = *hd->db_con;
+	db_func_t *dr_dbf = &hd->db_funcs;
 	rt_data_t *new_data;
 	rt_data_t *old_data;
 	pgw_t *gw, *old_gw;
@@ -1004,6 +1035,13 @@ static inline int dr_reload_data_head(struct head_db *hd,
 
 	void **dest;
 	map_iterator_t it;
+
+	db_res_t* res = NULL;
+	db_row_t *row = NULL;
+	str *rules_tables=NULL;
+	int rules_no,i;
+	char *p;
+	str rule_table_query;
 
 	if (no_concurrent_reload) {
 		lock_get( hd->ref_lock->lock );
@@ -1026,10 +1064,70 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	run_dr_cbs(DRCB_RLD_PREPARE_PART, &pp);
 
 	LM_INFO("loading drouting data!\n");
-	new_data = dr_load_routing_info(hd, dr_persistent_state);
-	if ( new_data==0 ) {
-		LM_CRIT("failed to load routing info\n");
-		goto error;
+
+	if (!uses_rule_table_query(hd, &rule_table_query)) {
+		new_data = dr_load_routing_info(hd, dr_persistent_state, &hd->drr_table, 1);
+		if (!new_data) {
+			LM_CRIT("failed to load routing info\n");
+			goto error;
+		}
+	} else {
+		rules_no=0;
+
+		if (dr_dbf->raw_query(db_hdl, &rule_table_query, &res) < 0) {
+			LM_ERR("Failed to run raw query to fetch rules tables\n");
+			return -1;
+		}
+
+		if (RES_ROW_N(res) == 0) {
+			LM_ERR("No rows returned by raw query\n");
+			goto multi_err1;
+		}
+
+		if (RES_COL_N(res) != 1) {
+			LM_ERR("Multiple columns returned by raw query = %d\n",RES_COL_N(res));
+			goto multi_err1;
+		}
+
+		rules_tables = pkg_malloc(RES_ROW_N(res)*sizeof(str));
+		if (!rules_tables) {
+			LM_ERR("No more pkg for storing raw query table names\n");
+			goto multi_err1;
+		}
+
+		memset(rules_tables, 0, RES_ROW_N(res)*sizeof(str));
+
+		for (i=0; i<RES_ROW_N(res); i++) {
+			row = RES_ROWS(res) + i;
+			p = (char*)VAL_STRING(ROW_VALUES(row));
+			if (VAL_NULL(ROW_VALUES(row)) || p==0 || p[0]==0) {
+				LM_WARN("Empty table - Skipping\n");
+				continue;
+			}
+
+			rules_tables[rules_no].len = strlen(p);
+			LM_INFO("Found new table [%.*s]\n",rules_tables[rules_no].len,p);
+			rules_tables[rules_no].s = pkg_malloc(rules_tables[rules_no].len);
+			if (!rules_tables[rules_no].s) {
+				LM_ERR("No more pkg to allocate table name\n");
+				goto multi_err2;
+			}
+			memcpy(rules_tables[rules_no].s,p,rules_tables[rules_no].len);
+			rules_no++;
+		}
+
+		dr_dbf->free_result(db_hdl, res);
+
+		new_data = dr_load_routing_info(hd, dr_persistent_state, rules_tables,
+		                                rules_no);
+		if (!new_data) {
+			LM_CRIT("failed to load routing info\n");
+			goto error;
+		}
+
+		for (i=0; i<rules_no; i++)
+			pkg_free(rules_tables[i].s);
+		pkg_free(rules_tables);
 	}
 
 	lock_start_write( hd->ref_lock );
@@ -1094,6 +1192,12 @@ success:
 		hd->ongoing_reload = 0;
 	return 0;
 
+multi_err2:
+	for (i=0; i<rules_no; i++)
+		pkg_free(rules_tables[i].s);
+	pkg_free(rules_tables);
+multi_err1:
+	dr_dbf->free_result(db_hdl, res);
 error:
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
@@ -1751,7 +1855,8 @@ static int dr_init(void)
 			goto error_cfg;
 		}
 
-		if(db_check_table_version(&db_part->db_funcs, *db_part->db_con,
+		if(!uses_rule_table_query(db_part, NULL) &&
+				db_check_table_version(&db_part->db_funcs, *db_part->db_con,
 					&db_part->drr_table, DRR_TABLE_VER) < 0) {
 			LM_ERR("error during table version check (dr_rules table \'%.*s\',"
 				" for partition \'%.*s\')\n", db_part->drr_table.len,
@@ -5072,4 +5177,46 @@ mi_response_t *mi_dr_reload_status_1(const mi_params_t *params,
 	}
 
 	return resp;
+}
+
+int set_rule_tables_query(modparam_t type, void *_mapping)
+{
+	str_list *tokens;
+	struct custom_rule_table *crt;
+	str input;
+	char *mapping;
+
+	mapping = pkg_strdup((char *)_mapping);
+	if (!mapping) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	init_str(&input, mapping);
+
+	if (!q_memchr(mapping, ':', input.len)) {
+		LM_ERR("invalid format, must be '<name> : <query>'\n");
+		return -1;
+	}
+
+	tokens = __parse_csv_record(&input, 0, ':');
+	if (!tokens) {
+		LM_ERR("failed to parse input: %.*s\n", input.len, input.s);
+		return -1;
+	}
+
+	crt = pkg_malloc(sizeof *crt);
+	if (!crt) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	memset(crt, 0, sizeof *crt);
+
+	crt->id = tokens->s;
+	crt->query = tokens->next->s;
+
+	add_last(crt, custom_rule_tables);
+	free_csv_record(tokens);
+
+	return 0;
 }
