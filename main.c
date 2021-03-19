@@ -935,15 +935,17 @@ int main(int argc, char** argv)
 					if (tmp &&(*tmp)){
 						LM_ERR("bad pkgmem size number: -m %s\n", optarg);
 						goto error00;
-					};
-
+					}
 					break;
 			case 'm':
 					shm_mem_size=strtol(optarg, &tmp, 10) * 1024 * 1024;
 					if (tmp &&(*tmp)){
 						LM_ERR("bad shmem size number: -m %s\n", optarg);
 						goto error00;
-					};
+					}
+					break;
+			case 'd':
+					*log_level = *log_level + 1;
 					break;
 			case 'u':
 					user=optarg;
@@ -1026,6 +1028,7 @@ int main(int argc, char** argv)
 					break;
 			case 'm':
 			case 'M':
+			case 'd':
 			case 'a':
 			case 'k':
 			case 's':
@@ -1068,9 +1071,6 @@ int main(int argc, char** argv)
 			case 'R':
 					received_dns|=DO_REV_DNS;
 				    break;
-			case 'd':
-					*log_level = debug_mode ? L_DBG : (*log_level)+1;
-					break;
 			case 'D':
 					debug_mode=1;
 					*log_level = L_DBG;
