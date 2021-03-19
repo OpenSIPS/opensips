@@ -39,14 +39,18 @@ static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 		size_t max);
 
 str prom_http_root = str_init("metrics");
+str prom_prefix = str_init("opensips_");
+str prom_grp_prefix = str_init("");
 httpd_api_t prom_httpd_api;
 
 static int prom_stats_param( modparam_t type, void* val);
 
 /* module parameters */
 static param_export_t mi_params[] = {
-	{"root",       STR_PARAM, &prom_http_root.s},
-	{"statistics", STR_PARAM|USE_FUNC_PARAM, &prom_stats_param},
+	{"root",        STR_PARAM, &prom_http_root.s},
+	{"prefix",      STR_PARAM, &prom_prefix.s},
+	{"group_prefix",STR_PARAM, &prom_grp_prefix.s},
+	{"statistics",  STR_PARAM|USE_FUNC_PARAM, &prom_stats_param},
 	{0,0,0}
 };
 
@@ -103,6 +107,8 @@ static int mod_init(void)
 	struct prom_stat *s;
 
 	prom_http_root.len = strlen(prom_http_root.s);
+	prom_prefix.len = strlen(prom_prefix.s);
+	prom_grp_prefix.len = strlen(prom_grp_prefix.s);
 
 	/* Load httpd api */
 	if(load_httpd_api(&prom_httpd_api)<0) {
@@ -151,10 +157,13 @@ static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 		__v.s = int2str(get_stat_val((_s)), &__v.len); \
 		if (page->len + \
 				7 /* '# TYPE ' */ + \
+				prom_prefix.len + \
 				(_s)->name.len + \
 				9 /* ' counter\n' */ + \
+				prom_prefix.len + \
 				(_s)->name.len + \
 				8 /* '{group="' */ + \
+				prom_grp_prefix.len + \
 				__m->len + \
 				3 /* '"} */ + \
 				__v.len + \
@@ -164,6 +173,8 @@ static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 		} \
 		memcpy(page->s + page->len, "# TYPE ", 7); \
 		page->len += 7; \
+		memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len); \
+		page->len += prom_prefix.len; \
 		memcpy(page->s + page->len, (_s)->name.s, (_s)->name.len); \
 		page->len += (_s)->name.len; \
 		if ((_s)->flags & (STAT_IS_FUNC|STAT_NO_RESET)) { \
@@ -173,10 +184,14 @@ static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 			memcpy(page->s + page->len, " counter\n", 9); \
 			page->len += 9; \
 		} \
+		memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len); \
+		page->len += prom_prefix.len; \
 		memcpy(page->s + page->len, (_s)->name.s, (_s)->name.len); \
 		page->len += (_s)->name.len; \
 		memcpy(page->s + page->len, "{group=\"", 8); \
 		page->len += 8; \
+		memcpy(page->s + page->len, prom_grp_prefix.s, prom_grp_prefix.len); \
+		page->len += prom_grp_prefix.len; \
 		memcpy(page->s + page->len, (__m)->s, (__m)->len); \
 		page->len += (__m)->len; \
 		memcpy(page->s + page->len, "\"} ", 3); \
