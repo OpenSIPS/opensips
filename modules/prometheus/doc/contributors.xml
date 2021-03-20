@@ -21,9 +21,9 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">3</entry>
-		<entry align="center">477</entry>
+		<entry align="center">10</entry>
+		<entry align="center">4</entry>
+		<entry align="center">528</entry>
 		<entry align="center">16</entry>
 	</row>
 	<row>
@@ -86,7 +86,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> OpenSIPS, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), OpenSIPS.</para>
 </section>
 
 </chapter>
