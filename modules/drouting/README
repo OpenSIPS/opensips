@@ -1250,14 +1250,14 @@ if (goes_to_gw("my_partition", "1", , "$var(gw_attrs)")) {
 
    Example 1.42. is_from_gw usage when use_partitions is 0
 # match the source IP (only) against all gateways
-if (is_from_gw("3", "n")) {
+if (is_from_gw("-1", "n")) {
         ...
 }
 
    Example 1.43. is_from_gw usage when use_partitions is 1
 # match the source IP and port against all "outbound" gateways and retur
 n its carrier
-if (is_from_gw("outbound", "3", "c")) {
+if (is_from_gw("outbound", "-1", "c")) {
         ...
 }
 
@@ -1546,7 +1546,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 324 162 11630 3893
    2. Razvan Crainea (@razvancrainea) 66 35 283 1525
-   3. Liviu Chircu (@liviuchircu) 57 39 884 563
+   3. Liviu Chircu (@liviuchircu) 58 40 886 565
    4. Mihai Tiganus (@tallicamike) 48 10 3130 710
    5. Vlad Paiu (@vladpaiu) 22 19 231 46
    6. Andrei Datcu (@andrei-datcu) 20 12 551 134
@@ -1581,7 +1581,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jan 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2021
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2021
    3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Nov 2019
    4.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
@@ -1605,8 +1605,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Alexey Vasilyev (@vasilevalex), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Alexey Vasilyev (@vasilevalex), Vlad
    Patrascu (@rvlad-patrascu), Ionut Ionita (@ionutrazvanionita),
    Razvan Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Mihai
    Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
