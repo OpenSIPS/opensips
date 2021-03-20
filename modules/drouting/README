@@ -1301,15 +1301,14 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
    Example 1.40. is_from_gw usage
 # use_partitions is not set
 # match the source IP (only) against all gateways
-if (is_from_gw(3, "n")) {
+if (is_from_gw(-1, "n")) {
         ...
 }
 
 # use_partitions is enabled
-# match the source IP and port against all gws from "outbound" partition
- and
-# return its carrier
-if (is_from_gw(3, "c", , "outbound")) {
+# match the source IP and port against all gateways from the "outbound"
+# partition and return the matched gateway's carrier
+if (is_from_gw(, "c", , "outbound")) {
         ...
 }
 
@@ -1605,7 +1604,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 372 173 12677 5532
    2. Razvan Crainea (@razvancrainea) 91 43 1135 2158
-   3. Liviu Chircu (@liviuchircu) 56 38 878 560
+   3. Liviu Chircu (@liviuchircu) 57 39 882 564
    4. Mihai Tiganus (@tallicamike) 48 10 3130 710
    5. Vlad Patrascu (@rvlad-patrascu) 35 14 904 677
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1640,8 +1639,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2020
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2021
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jul 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Apr 2019
    5.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
@@ -1664,13 +1663,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Alexey Vasilyev (@vasilevalex), Peter
-   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad
-   Paiu (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei Datcu
-   (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
-   Sergio Gutierrez.
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Alexey Vasilyev
+   (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai Tiganus
+   (@tallicamike), Andrei Datcu (@andrei-datcu), Matt Lehner, Anca
+   Vamanu, Andrei Dragus, Sergio Gutierrez.
 
    Documentation Copyrights:
 
