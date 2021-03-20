@@ -1323,15 +1323,14 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
    Example 1.41. is_from_gw usage
 # use_partitions is not set
 # match the source IP (only) against all gateways
-if (is_from_gw(3, "n")) {
+if (is_from_gw(-1, "n")) {
         ...
 }
 
 # use_partitions is enabled
-# match the source IP and port against all gws from "outbound" partition
- and
-# return its carrier
-if (is_from_gw(3, "c", , "outbound")) {
+# match the source IP and port against all gateways from the "outbound"
+# partition and return the matched gateway's carrier
+if (is_from_gw(, "c", , "outbound")) {
         ...
 }
 
@@ -1664,7 +1663,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 374 177 12931 5555
-   2. Liviu Chircu (@liviuchircu) 126 68 2118 2403
+   2. Liviu Chircu (@liviuchircu) 129 71 2126 2408
    3. Razvan Crainea (@razvancrainea) 93 47 1144 2182
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728

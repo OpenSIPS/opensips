@@ -1550,7 +1550,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1052 610 21295 16372
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1053 611 21338 16378
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
@@ -1566,14 +1566,15 @@ Chapter 4. Contributors
    (@juha-h), Ionut Ionita (@ionutrazvanionita), Maksym Sobolyev
    (@sobomax), Raphael Coeffic, Nils Ohlmeier, Klaus Darilion,
    Andreas Granig, Elias Baixas, Marcus Hunger, Christophe Sollet
-   (@csollet), Jeffrey Magder, Ezequiel Lovelle (@lovelle), Saúl
-   Ibarra Corretgé (@saghul), Elena-Ramona Modroiu, John Riordan,
-   Julián Moreno Patiño, Andrei Dragus, Jesus Rodrigues,
-   Konstantin Bokarius, Aron Podrigal (@ar45), Anonymous, Dusan
-   Klinec (@ph4r05), Mark Dalby, Walter Doekes (@wdoekes), Alexey
-   Vasilyev (@vasilevalex), Fabian Gast (@fgast), Nick Altmann
-   (@nikbyte), Peter Lemenkov (@lemenkov), Zero King (@l2dy),
-   Edson Gellert Schubert, Ingo Wolfsberger, Daniel Hsueh.
+   (@csollet), Jeffrey Magder, Ezequiel Lovelle (@lovelle), Peter
+   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul),
+   Elena-Ramona Modroiu, John Riordan, Julián Moreno Patiño,
+   Andrei Dragus, Jesus Rodrigues, Konstantin Bokarius, Aron
+   Podrigal (@ar45), Anonymous, Dusan Klinec (@ph4r05), Mark
+   Dalby, Walter Doekes (@wdoekes), Alexey Vasilyev
+   (@vasilevalex), Fabian Gast (@fgast), Nick Altmann (@nikbyte),
+   Zero King (@l2dy), Edson Gellert Schubert, Ingo Wolfsberger,
+   Daniel Hsueh.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1595,30 +1596,31 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jan 2021
-   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - Dec 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
-   7.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
-   8.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
-   9.  Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
-   10. Alexey Vasilyev (@vasilevalex)      Sep 2018 - Sep 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Mar 2021
+   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2021
+   4.  Razvan Crainea (@razvancrainea)     Jul 2010 - Dec 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
+   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
+   9.  Fabian Gast (@fgast)                Apr 2019 - Apr 2019
+   10. Aron Podrigal (@ar45)               Nov 2018 - Nov 2018
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Dusan Klinec (@ph4r05),
-   Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes),
-   Christophe Sollet (@csollet), Maksym Sobolyev (@sobomax), Saúl
-   Ibarra Corretgé (@saghul), Anonymous, Mark Dalby, Anca Vamanu,
-   Andrei Dragus, John Riordan, Henning Westerholt (@henningw),
-   Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus
-   Hunger, Juha Heinanen (@juha-h), Jeffrey Magder, Elias Baixas,
-   Daniel Hsueh, Andreas Granig, Elena-Ramona Modroiu, Ingo
-   Wolfsberger, Andrei Pelinescu-Onciul, Jan Janak (@janakj), Jiri
-   Kuthan (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
+   All remaining contributors: Alexey Vasilyev (@vasilevalex),
+   Ionut Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick
+   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Dusan Klinec
+   (@ph4r05), Ezequiel Lovelle (@lovelle), Walter Doekes
+   (@wdoekes), Christophe Sollet (@csollet), Maksym Sobolyev
+   (@sobomax), Saúl Ibarra Corretgé (@saghul), Anonymous, Mark
+   Dalby, Anca Vamanu, Andrei Dragus, John Riordan, Henning
+   Westerholt (@henningw), Klaus Darilion, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Jesus Rodrigues, Marcus Hunger, Juha Heinanen (@juha-h),
+   Jeffrey Magder, Elias Baixas, Daniel Hsueh, Andreas Granig,
+   Elena-Ramona Modroiu, Ingo Wolfsberger, Andrei
+   Pelinescu-Onciul, Jan Janak (@janakj), Jiri Kuthan
+   (@jiriatipteldotorg), Raphael Coeffic, Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
