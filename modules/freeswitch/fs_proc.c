@@ -218,6 +218,8 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			}
 			lock_stop_write(sockets_lock);
 
+			esl_event_safe_destroy(&sock->handle->last_sr_event);
+
 			rc = esl_recv_event(sock->handle, 0, &sock->handle->last_sr_event);
 			if (rc != ESL_SUCCESS) {
 				LM_ERR("read error %d on FS sock %.*s:%d. Reconnecting...\n",
