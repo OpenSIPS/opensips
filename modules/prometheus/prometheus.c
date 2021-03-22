@@ -38,9 +38,19 @@ int prom_answer_to_connection (void *cls, void *connection,
 static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 		size_t max);
 
+enum prom_group_mode {
+	PROM_GROUP_MODE_NONE=0,
+	PROM_GROUP_MODE_NAME=1,
+	PROM_GROUP_MODE_LABEL=2,
+	PROM_GROUP_MODE_INVALID
+};
+
+int prom_grp_mode = PROM_GROUP_MODE_NONE;
 str prom_http_root = str_init("metrics");
-str prom_prefix = str_init("opensips_");
+str prom_prefix = str_init("opensips");
 str prom_grp_prefix = str_init("");
+str prom_delimiter = str_init("_");
+str prom_grp_label = str_init("group");
 httpd_api_t prom_httpd_api;
 
 static int prom_stats_param( modparam_t type, void* val);
@@ -49,7 +59,10 @@ static int prom_stats_param( modparam_t type, void* val);
 static param_export_t mi_params[] = {
 	{"root",        STR_PARAM, &prom_http_root.s},
 	{"prefix",      STR_PARAM, &prom_prefix.s},
+	{"delimiter",   STR_PARAM, &prom_delimiter.s},
 	{"group_prefix",STR_PARAM, &prom_grp_prefix.s},
+	{"group_label", STR_PARAM, &prom_grp_label.s},
+	{"group_mode",  INT_PARAM, &prom_grp_mode},
 	{"statistics",  STR_PARAM|USE_FUNC_PARAM, &prom_stats_param},
 	{0,0,0}
 };
@@ -108,7 +121,14 @@ static int mod_init(void)
 
 	prom_http_root.len = strlen(prom_http_root.s);
 	prom_prefix.len = strlen(prom_prefix.s);
+	prom_delimiter.len = strlen(prom_delimiter.s);
 	prom_grp_prefix.len = strlen(prom_grp_prefix.s);
+	prom_grp_label.len = strlen(prom_grp_label.s);
+
+	if (prom_grp_mode < PROM_GROUP_MODE_NONE || prom_grp_mode >= PROM_GROUP_MODE_INVALID) {
+		LM_ERR("invalid group mode %d\n", prom_grp_mode);
+		return -1;
+	}
 
 	/* Load httpd api */
 	if(load_httpd_api(&prom_httpd_api)<0) {
@@ -150,56 +170,113 @@ static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 #define MI_HTTP_METHOD_ERR_CODE		405
 #define MI_HTTP_INTERNAL_ERR_CODE	500
 
+static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
+{
+	str v;
+	str *m = get_stat_module_name(stat);
+	v.s = int2str(get_stat_val(stat), &v.len);
+	int grp_len = 0;
+	int name_len = prom_prefix.len + prom_delimiter.len + stat->name.len;
+
+	switch (prom_grp_mode) {
+	case PROM_GROUP_MODE_NONE:
+		break;
+	case PROM_GROUP_MODE_NAME:
+		name_len += prom_grp_prefix.len + m->len + prom_delimiter.len;
+		break;
+	case PROM_GROUP_MODE_LABEL:
+		grp_len = 1 /* '{' */ + prom_grp_label.len + 2 /* '="' */ +
+			prom_grp_prefix.len +  m->len + 2 /* '"}' */;
+		break;
+	}
+	if (page->len +
+			7 /* '# TYPE ' */ +
+			name_len +
+			9 /* ' counter\n' */ +
+			name_len +
+			grp_len +
+			1 /* ' ' */ +
+			v.len +
+			1 /* '\n' */ >= max_len)
+		return -1;
+	memcpy(page->s + page->len, "# TYPE ", 7);
+	page->len += 7;
+	memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len);
+	page->len += prom_prefix.len;
+	memcpy(page->s + page->len, prom_delimiter.s, prom_delimiter.len);
+	page->len += prom_delimiter.len;
+
+	if (prom_grp_mode == PROM_GROUP_MODE_NAME) {
+		memcpy(page->s + page->len, prom_grp_prefix.s, prom_grp_prefix.len);
+		page->len += prom_grp_prefix.len;
+		memcpy(page->s + page->len, m->s, m->len);
+		page->len += m->len;
+		memcpy(page->s + page->len, prom_delimiter.s, prom_delimiter.len);
+		page->len += prom_delimiter.len;
+	}
+
+	memcpy(page->s + page->len, stat->name.s, stat->name.len);
+	page->len += stat->name.len;
+
+	if (stat->flags & (STAT_IS_FUNC|STAT_NO_RESET)) {
+		memcpy(page->s + page->len, " gauge\n", 7);
+		page->len += 7;
+	} else {
+		memcpy(page->s + page->len, " counter\n", 9);
+		page->len += 9;
+	}
+	memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len);
+	page->len += prom_prefix.len;
+	memcpy(page->s + page->len, prom_delimiter.s, prom_delimiter.len);
+	page->len += prom_delimiter.len;
+
+	if (prom_grp_mode == PROM_GROUP_MODE_NAME) {
+		memcpy(page->s + page->len, prom_grp_prefix.s, prom_grp_prefix.len);
+		page->len += prom_grp_prefix.len;
+		memcpy(page->s + page->len, m->s, m->len);
+		page->len += m->len;
+		memcpy(page->s + page->len, prom_delimiter.s, prom_delimiter.len);
+		page->len += prom_delimiter.len;
+	}
+
+	memcpy(page->s + page->len, stat->name.s, stat->name.len);
+	page->len += stat->name.len;
+
+	if (prom_grp_mode == PROM_GROUP_MODE_LABEL) {
+		memcpy(page->s + page->len, "{", 1);
+		page->len += 1;
+		memcpy(page->s + page->len, prom_grp_label.s, prom_grp_label.len);
+		page->len += prom_grp_label.len;
+
+		memcpy(page->s + page->len, "=\"", 2);
+		page->len += 2;
+
+		memcpy(page->s + page->len, prom_grp_prefix.s, prom_grp_prefix.len);
+		page->len += prom_grp_prefix.len;
+
+		memcpy(page->s + page->len, m->s, m->len);
+		page->len += m->len;
+
+		memcpy(page->s + page->len, "\"} ", 3);
+		page->len += 3;
+	} else {
+		memcpy(page->s + page->len, " ", 1);
+		page->len += 1;
+	}
+
+	memcpy(page->s + page->len, v.s, v.len);
+	page->len += v.len;
+	memcpy(page->s + page->len, "\n", 1);
+	page->len += 1;
+	return 0;
+}
+
 #define PROM_PUSH_STAT(_s) \
 	do { \
-		str *__m = get_stat_module_name((_s)); \
-		str __v; \
-		__v.s = int2str(get_stat_val((_s)), &__v.len); \
-		if (page->len + \
-				7 /* '# TYPE ' */ + \
-				prom_prefix.len + \
-				(_s)->name.len + \
-				9 /* ' counter\n' */ + \
-				prom_prefix.len + \
-				(_s)->name.len + \
-				8 /* '{group="' */ + \
-				prom_grp_prefix.len + \
-				__m->len + \
-				3 /* '"} */ + \
-				__v.len + \
-				1 /* '\n' */ >= buffer->len) { \
+		if (prom_push_stat(_s, page, buffer->len) < 0) { \
 			LM_ERR("out of memory for stats\n"); \
 			return MI_HTTP_INTERNAL_ERR_CODE; \
 		} \
-		memcpy(page->s + page->len, "# TYPE ", 7); \
-		page->len += 7; \
-		memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len); \
-		page->len += prom_prefix.len; \
-		memcpy(page->s + page->len, (_s)->name.s, (_s)->name.len); \
-		page->len += (_s)->name.len; \
-		if ((_s)->flags & (STAT_IS_FUNC|STAT_NO_RESET)) { \
-			memcpy(page->s + page->len, " gauge\n", 7); \
-			page->len += 7; \
-		} else { \
-			memcpy(page->s + page->len, " counter\n", 9); \
-			page->len += 9; \
-		} \
-		memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len); \
-		page->len += prom_prefix.len; \
-		memcpy(page->s + page->len, (_s)->name.s, (_s)->name.len); \
-		page->len += (_s)->name.len; \
-		memcpy(page->s + page->len, "{group=\"", 8); \
-		page->len += 8; \
-		memcpy(page->s + page->len, prom_grp_prefix.s, prom_grp_prefix.len); \
-		page->len += prom_grp_prefix.len; \
-		memcpy(page->s + page->len, (__m)->s, (__m)->len); \
-		page->len += (__m)->len; \
-		memcpy(page->s + page->len, "\"} ", 3); \
-		page->len += 3; \
-		memcpy(page->s + page->len, __v.s, __v.len); \
-		page->len += __v.len; \
-		memcpy(page->s + page->len, "\n", 1); \
-		page->len += 1; \
 	} while(0)
 
 int prom_answer_to_connection (void *cls, void *connection,

@@ -78,13 +78,13 @@ modparam("prometheus", "root", "prometheus")
 		Appends a prefix to each statistic exported.
 		</para>
 		<para>
-		<emphasis>The default value is "opensips_".</emphasis>
+		<emphasis>The default value is "opensips".</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>prefix</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("prometheus", "prefix", "opensips_1_")
+modparam("prometheus", "prefix", "opensips_1")
 ...
 </programlisting>
 		</example>
@@ -102,7 +102,78 @@ modparam("prometheus", "prefix", "opensips_1_")
 		<title>Set <varname>group_prefix</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("prometheus", "group_prefix", "opensips_")
+modparam("prometheus", "group_prefix", "opensips")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_delimiter" xreflabel="delimiter">
+		<title><varname>delimiter</varname>(string)</title>
+		<para>
+		Specifies the delimiter to be used to separate <emphasis>prefix</emphasis>
+		and <emphasis>group_prefix</emphasis>.
+		</para>
+		<para>
+		<emphasis>The default value is "_".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>delimiter</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("prometheus", "delimiter", "-")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_group_label" xreflabel="group_label">
+		<title><varname>group_label</varname>(string)</title>
+		<para>
+		Specifies the label used to store the group when <emphasis>group_mode</emphasis> is 2.
+		</para>
+		<para>
+		<emphasis>The default value is "group".</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>group_label</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("prometheus", "group_label", "grp")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_group_mode" xreflabel="group_mode">
+		<title><varname>group_mode</varname>(int)</title>
+		<para>
+		Specifies how the group of the statistic should be provisioned to
+		Prometheus. Available modes are:
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>0</emphasis> - do not send the statistics groups.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>1</emphasis> - send the group in the name of the statstic.</para>
+			For example, <emphasis>timestamp</emphasis> statistic from the <emphasis>core</emphasis>
+			group would be exported as <emphasis>opensips_core_timestamp</emphasis>. Note that the
+			<emphasis>group_prefix</emphasis> is still attached to the group's name.
+		</listitem>
+		<listitem>
+			<para><emphasis>2</emphasis> - send the group as a label of the statstic.</para>
+			The name of the label is specified by the <emphasis>group_label</emphasis> parameter.
+		</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>The default value is 0 (do not specify the group).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>group_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("prometheus", "group_mode", 1)
 ...
 </programlisting>
 		</example>
