@@ -902,7 +902,8 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 
-	if (!su_ip_cmp(&ri->src_su, &node->addr)) {
+	if (!su_ip_cmp(&ri->src_su, &node->addr) &&
+		!ip_check(cl, &ri->src_su, NULL)) {
 		LM_WARN("Received message from unknown source, addr: %s\n", ip);
 		goto exit;
 	}
@@ -1028,7 +1029,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 			handle_internal_msg_unknown(packet, cl, packet_type, &ri->src_su,
 				ri->proto, source_id);
 	} else {
-		if (!su_ip_cmp(&ri->src_su, &node->addr)) {
+		if (!su_ip_cmp(&ri->src_su, &node->addr) &&
+			!ip_check(cl, &ri->src_su, NULL)) {
 			LM_WARN("Received message from unknown source, addr: %s\n", ip);
 			goto exit;
 		}
@@ -1157,7 +1159,8 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		goto exit;
 	}
 
-	if (!su_ip_cmp(&ri->src_su, &node->addr)) {
+	if (!su_ip_cmp(&ri->src_su, &node->addr) &&
+		!ip_check(cl, &ri->src_su, NULL)) {
 		LM_WARN("Received message from unknown source, addr: %s\n", ip);
 		goto exit;
 	}
