@@ -1507,6 +1507,7 @@ static inline void __tcpconn_lifetime(int force)
 							c->flags|=F_CONN_REMOVED;
 						}
 						close(fd);
+						c->s = -1;
 					}
 					_tcpconn_rm(c);
 					tcp_connections_no--;
