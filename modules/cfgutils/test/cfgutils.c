@@ -147,207 +147,226 @@ void test_single_tmrec_byxxx(void)
 		   last_week_of_mo = now + 604800 * 3;
 	time_t next_day = now + 86400, prev_day = now - 86400;
 
-	/* byyearday */
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||156", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||157", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||158", &now) == -1);
-
-	ok(ctr("UTC+12|19700000T000000|||YEARLY|||||155", &now) == -1);
-	ok(ctr("UTC+12|19700000T000000|||YEARLY|||||156", &now) == 1);
-	ok(ctr("UTC+12|19700000T000000|||YEARLY|||||157", &now) == -1);
-
-	ok(ctr("UTC-13|19700000T000000|||YEARLY|||||157", &now) == -1);
-	ok(ctr("UTC-13|19700000T000000|||YEARLY|||||158", &now) == 1);
-	ok(ctr("UTC-13|19700000T000000|||YEARLY|||||159", &now) == -1);
-
 
 	/* bymonth */
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||5", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||6", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||7", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||5", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||6", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||7", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||4", &prev_month) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||5", &prev_month) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||6", &prev_month) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||4", &prev_month) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||5", &prev_month) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||6", &prev_month) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||6", &next_month) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||7", &next_month) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||||||8", &next_month) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||6", &next_month) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||7", &next_month) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||||8", &next_month) == -1);
 
 
 	/* byweekno */
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||22", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||23", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||24", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||22", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||23", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||24", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||21", &prev_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||22", &prev_week) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||23", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||21", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||22", &prev_week) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||23", &prev_week) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||23", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||24", &next_week) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY||||||25", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||23", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||24", &next_week) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY||||||25", &next_week) == -1);
+
+
+	/* byyearday */
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||156", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||157", &now) == 1);
+	ok(ctr(UTC"|19700101T115135|||YEARLY|||||157", &now) == 1);
+	ok(ctr(UTC"|19700101T115136|||YEARLY|||||157", &now) == -1);
+	ok(ctr(UTC"|20200101T115135|||YEARLY|||||157", &now) == 1);
+	ok(ctr(UTC"|20200101T115136|||YEARLY|||||157", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||||158", &now) == -1);
+
+	ok(ctr("UTC+12|19700101T000000|||YEARLY|||||155", &now) == -1);
+	ok(ctr("UTC+12|19700101T000000|||YEARLY|||||156", &now) == 1);
+	ok(ctr("UTC+12|19700101T000000|||YEARLY|||||157", &now) == -1);
+
+	ok(ctr("UTC-13|19700101T000000|||YEARLY|||||157", &now) == -1);
+	ok(ctr("UTC-13|19700101T000000|||YEARLY|||||158", &now) == 1);
+	ok(ctr("UTC-13|19700101T000000|||YEARLY|||||159", &now) == -1);
+
+	ok(ctr(UTC"|20200201T000000|||YEARLY|20201201T235959||||32,336", &now) == -1);
+	ok(ctr(UTC"|20200101T000000|||YEARLY|20201201T235959||||156", &now) == -1);
+
+	/* the UNTIL component is inclusive */
+	ok(ctr(UTC"|20200101T000000|||YEARLY|20200605T115134||||157", &now) == -1);
+	ok(ctr(UTC"|20200101T000000|||YEARLY|20200605T115135||||157", &now) == 1);
+
+	ok(ctr(UTC"|20200101T000000|20200101T115135||YEARLY|20201201T235959||||156", &now) == -1);
+	ok(ctr(UTC"|20200101T000000|20200101T115136||YEARLY|20201201T235959||||156", &now) == -1);
+	ok(ctr(UTC"|20200101T000000|20200101T115135||YEARLY|20201201T235959||||157", &now) == -1);
+	ok(ctr(UTC"|20200101T000000|20200101T115136||YEARLY|20201201T235959||||157", &now) == 1);
+	ok(ctr(UTC"|20200101T000000|20200101T115135||YEARLY|20201201T235959||||158", &now) == -1);
+	ok(ctr(UTC"|20200101T000000|20200101T115136||YEARLY|20201201T235959||||158", &now) == -1);
 
 
 	/* bymonthday */
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||4", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||5", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||6", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||4", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||5", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||6", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||3", &prev_day) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||4", &prev_day) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||5", &prev_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||3", &prev_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||4", &prev_day) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||5", &prev_day) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||5", &next_day) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||6", &next_day) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY||||7", &next_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||5", &next_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||6", &next_day) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY||||7", &next_day) == -1);
 
 
 	/* byday ... WEEKLY */
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||FR", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||FR", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||WE", &prev_day) == -1);
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||TH", &prev_day) == 1);
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||FR", &prev_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||WE", &prev_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||TH", &prev_day) == 1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||FR", &prev_day) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||FR", &next_day) == -1);
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||SA", &next_day) == 1);
-	ok(ctr(UTC"|19700000T000000|||WEEKLY|||SU", &next_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||FR", &next_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||SA", &next_day) == 1);
+	ok(ctr(UTC"|19700101T000000|||WEEKLY|||SU", &next_day) == -1);
 
 
 	/* byday ... MONTHLY (minimal syntax) */
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||FR", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||FR", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||WE", &prev_day) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||TH", &prev_day) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||FR", &prev_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||WE", &prev_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||TH", &prev_day) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||FR", &prev_day) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||FR", &next_day) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||SA", &next_day) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||SU", &next_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||FR", &next_day) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||SA", &next_day) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||SU", &next_day) == -1);
 
 
 	/* byday ... MONTHLY (complex syntax) */
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1FR", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1FR", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1SA", &now) == -1);
 
 
 	/* in the previous week, Friday was the last of May */
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2TH", &prev_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2FR", &prev_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2SA", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2TH", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2FR", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2SA", &prev_week) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1TH", &prev_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1FR", &prev_week) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1SA", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1TH", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1FR", &prev_week) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1SA", &prev_week) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1TH", &prev_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1FR", &prev_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1SA", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1TH", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1FR", &prev_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1SA", &prev_week) == -1);
 
 
 	/* in the next week, Friday will be the 2nd one of June */
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1TH", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1FR", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1SA", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1TH", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1FR", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1SA", &next_week) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2TH", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2FR", &next_week) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2SA", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2TH", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2FR", &next_week) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2SA", &next_week) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1TH", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1FR", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1SA", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1TH", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1FR", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1SA", &next_week) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2TH", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2FR", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2SA", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2TH", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2FR", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2SA", &next_week) == -1);
 
 	/* 2nd Friday of June is also the next-next-to-last one */
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-3TH", &next_week) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-3FR", &next_week) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-3SA", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-3TH", &next_week) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-3FR", &next_week) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-3SA", &next_week) == -1);
 
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1FR", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+1SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1FR", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+1SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2FR", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+2SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2FR", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+2SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+3TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+3FR", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+3SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+3TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+3FR", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+3SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+4TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+4FR", &last_week_of_mo) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||+4SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+4TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+4FR", &last_week_of_mo) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||+4SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1FR", &last_week_of_mo) == 1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-1SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1FR", &last_week_of_mo) == 1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-1SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2FR", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-2SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2FR", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-2SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-3TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-3FR", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-3SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-3TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-3FR", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-3SA", &last_week_of_mo) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-4TH", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-4FR", &last_week_of_mo) == -1);
-	ok(ctr(UTC"|19700000T000000|||MONTHLY|||-4SA", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-4TH", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-4FR", &last_week_of_mo) == -1);
+	ok(ctr(UTC"|19700101T000000|||MONTHLY|||-4SA", &last_week_of_mo) == -1);
 
 
 	/* byday ... YEARLY (minimal syntax) */
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||SA", &now) == -1);
 
 	/* byday ... YEARLY (complex syntax) */
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+1TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+1FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+1SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+1TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+1FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+1SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+22TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+22FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+22SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+22TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+22FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+22SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+23TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+23FR", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+23SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+23TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+23FR", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+23SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+24TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+24FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||+24SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+24TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+24FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||+24SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-29TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-29FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-29SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-29TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-29FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-29SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-30TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-30FR", &now) == 1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-30SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-30TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-30FR", &now) == 1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-30SA", &now) == -1);
 
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-31TH", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-31FR", &now) == -1);
-	ok(ctr(UTC"|19700000T000000|||YEARLY|||-31SA", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-31TH", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-31FR", &now) == -1);
+	ok(ctr(UTC"|19700101T000000|||YEARLY|||-31SA", &now) == -1);
 }
 
 
