@@ -1617,7 +1617,7 @@ done:
 				     + time_rec->ts.tm_sec); /* until the end of the year */
 				break;
 			default:
-				time_rec->dtend = 126227808000UL; /* auto-fix to +4000 years */
+				time_rec->dtend = 4294967295UL; /* auto-fix to +136 years */
 			}
 		}
 
