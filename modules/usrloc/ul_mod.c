@@ -908,7 +908,7 @@ int ul_check_db(void)
 			return -1;
 		}
 
-		if (rr_persist == RRP_LOAD_FROM_SQL) {
+		if (cluster_mode != CM_NONE || rr_persist == RRP_LOAD_FROM_SQL) {
 			if (!(sync_lock = lock_init_rw())) {
 				LM_ERR("cannot init rw lock\n");
 				return -1;
