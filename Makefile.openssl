@@ -10,7 +10,7 @@ endif
 
 ifneq ($(SSL_BUILDER),)
 	DEFS += $(shell $(SSL_BUILDER) --cflags)
-	LIBS += $(shell $(SSL_BUILDER) --libs)
+	LIBS += $(shell $(SSL_BUILDER) --libs) -lcrypto
 else
 	DEFS += -I$(LOCALBASE)/ssl/include \
 			-I$(LOCALBASE)/include

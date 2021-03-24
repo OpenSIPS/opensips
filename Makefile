@@ -201,7 +201,7 @@ modules: $(deps_gen)
 	done
 ifeq (,$(FASTER))
 	@set -e; \
-	for r in $(modules) "" ; do \
+	for r in $(all_misclibs) $(modules); do \
 		if [ -n "$$r" ]; then \
 			if [ -d "$$r" ]; then \
 				echo  "" ; \

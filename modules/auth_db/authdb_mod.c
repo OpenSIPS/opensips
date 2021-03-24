@@ -50,7 +50,7 @@
  * increment this value if you change the table in
  * an backwards incompatible way
  */
-#define SUBSCRIBER_TABLE_VERSION 7
+#define SUBSCRIBER_TABLE_VERSION 8
 #define URI_TABLE_VERSION        2
 
 /*
@@ -78,27 +78,21 @@ static int fixup_check_outvar(void **param);
 struct sig_binds sigb;
 
 #define USER_COL "username"
-#define USER_COL_LEN (sizeof(USER_COL) - 1)
-
 #define DOMAIN_COL "domain"
-#define DOMAIN_COL_LEN (sizeof(DOMAIN_COL) - 1)
-
 #define PASS_COL "ha1"
-#define PASS_COL_LEN (sizeof(PASS_COL) - 1)
-
-#define PASS_COL_2 "ha1b"
-#define PASS_COL_2_LEN (sizeof(PASS_COL_2) - 1)
-
 #define DEFAULT_CRED_LIST "rpid"
+#define HASH_COL_SHA256     "ha1_sha256"
+#define HASH_COL_SHA512t256 "ha1_sha512t256"
 
 /*
  * Module parameter variables
  */
-static str db_url           = {NULL,0};
-str user_column             = {USER_COL, USER_COL_LEN};
-str domain_column           = {DOMAIN_COL, DOMAIN_COL_LEN};
-str pass_column             = {PASS_COL, PASS_COL_LEN};
-str pass_column_2           = {PASS_COL_2, PASS_COL_2_LEN};
+static str db_url           = STR_NULL;
+str user_column             = str_init(USER_COL);
+str domain_column           = str_init(DOMAIN_COL);
+str pass_column             = str_init(PASS_COL);
+str hash_column_sha256      = str_init(HASH_COL_SHA256);
+str hash_column_sha512t256  = str_init(HASH_COL_SHA512t256);
 
 str uri_user_column         = str_init("username");
 str uri_domain_column       = str_init("domain");
@@ -157,7 +151,8 @@ static param_export_t params[] = {
 	{"user_column",       STR_PARAM, &user_column.s       },
 	{"domain_column",     STR_PARAM, &domain_column.s     },
 	{"password_column",   STR_PARAM, &pass_column.s       },
-	{"password_column_2", STR_PARAM, &pass_column_2.s     },
+	{"hash_column_sha256", STR_PARAM, &hash_column_sha256 },
+	{"hash_column_sha512t256", STR_PARAM, &hash_column_sha512t256 },
 	{"uri_user_column",   STR_PARAM, &uri_user_column.s   },
 	{"uri_domain_column", STR_PARAM, &uri_domain_column.s },
 	{"uri_uriuser_column",STR_PARAM, &uri_uriuser_column.s},
@@ -229,7 +224,8 @@ static int mod_init(void)
 	user_column.len = strlen(user_column.s);
 	domain_column.len = strlen(domain_column.s);
 	pass_column.len = strlen(pass_column.s);
-	pass_column_2.len = strlen(pass_column_2.s);
+	hash_column_sha256.len = strlen(hash_column_sha256.s);
+	hash_column_sha512t256.len = strlen(hash_column_sha512t256.s);
 
 	uri_user_column.len = strlen(uri_user_column.s);
 	uri_domain_column.len = strlen(uri_domain_column.s);

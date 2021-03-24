@@ -37,10 +37,9 @@
 
 extern str user_column;     /* 'username' column name */
 extern str domain_column;   /* 'domain' column name */
-extern str pass_column;     /* 'password' column name */
-extern str pass_column_2;   /* Column containing HA1 string constructed
-			     * of user@domain username
-			     */
+extern str pass_column;     /* 'password' column name or HA1 constructed using MD5 */
+extern str hash_column_sha256; /* HA1 constructed using SHA-256 */
+extern str hash_column_sha512t256; /* HA1 constructed using SHA-512/256 */
 
 extern str uri_user_column;
 extern str uri_domain_column;

@@ -18,7 +18,7 @@ all_nostatic_modules=$(filter-out $(addprefix modules/, $(static_modules)), \
 all_modules:=$(addprefix modules/, $(all_modules))
 all_modules:=$(addprefix net/, $(builtin_modules)) $(all_modules)
 all_utils:=$(addprefix utils/, $(all_utils))
-all_misclibs=reg
+all_misclibs=digest_auth reg
 all_misclibs:=$(addprefix lib/, $(all_misclibs))
 
 #implicit rules

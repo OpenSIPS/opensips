@@ -5,6 +5,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=uac_registrant.so
-LIBS= 
+misclibs=../../lib/digest_auth/libdigest_auth.a
 
 include ../../Makefile.modules

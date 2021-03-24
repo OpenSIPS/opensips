@@ -442,4 +442,9 @@ static inline char* dp_time(void)
 				"https://github.com/OpenSIPS/opensips/issues\n\n", ##args); \
 	} while (0)
 
+#define CASE_PRINTENUM(em) \
+	CASE_FPRINTENUM(stdout, em)
+#define CASE_FPRINTENUM(file, em) \
+        case em: printf(# em "\n"); break
+
 #endif /* ifndef dprint_h */

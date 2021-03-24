@@ -264,26 +264,6 @@ modparam("auth_db", "password_column", "password")
 		</example>
 	</section>
 
-	<section id="param_password_column_2" xreflabel="password_column_2">
-		<title><varname>password_column_2</varname> (string)</title>
-		<para>
-		As described in the previous section this parameter contains name of
-		column holding pre-calculated HA1 string that were calculated including
-		the domain in the username. This parameter is used only when
-		<varname>calculate_ha1</varname> is set to 0 and user agent send a
-		credentials containing the domain in the username.
-		</para>
-		<para>
-		Default value of the parameter is ha1b.
-		</para>
-		<example>
-		<title><varname>password_column_2</varname> parameter usage</title>
-		<programlisting format="linespecific">
-modparam("auth_db", "password_column_2", "ha1_2")
-</programlisting>
-		</example>
-	</section>
-
 	<section id="param_uri_user_column" xreflabel="uri_user_column">
 		<title><varname>uri_user_column</varname> (string)</title>
 		<para>

@@ -1,7 +1,5 @@
 /*
- * Digest Authentication Module
- *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2020 Maksym Sobolyev
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -20,26 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef _digest_auth_sha512t256_h
+#define _digest_auth_sha512t256_h
 
-#include "../../parser/msg_parser.h"
+#define HASHLEN_SHA512t256 32
+#define HASHHEXLEN_SHA512t256 (HASHLEN_SHA512t256 * 2)
 
-#define MESSAGE_400 "Bad Request"
-#define MESSAGE_500 "Server Internal Error"
+typedef char HASH_SHA512t256[HASHLEN_SHA512t256];
+typedef char HASHHEX_SHA512t256[HASHHEXLEN_SHA512t256 + 1];
 
+extern const struct digest_auth_calc sha512t256_digest_calc;
+extern const struct digest_auth_calc sha512t256sess_digest_calc;
 
-/*
- * Return parsed To or From, host part of the parsed uri is realm
- */
-int get_realm(struct sip_msg* _m, hdr_types_t _hftype, struct sip_uri** _u);
-
-
-/*
- * Create a response with given code and reason phrase
- * Optionally add new headers specified in _hdr
- */
-int send_resp(struct sip_msg* _m, int _code, const str* _reason,
-	const str hdrs[], int nhdrs);
-
-#endif /* COMMON_H */
+#endif /* _digest_auth_sha512t256_h */

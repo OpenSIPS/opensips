@@ -37,7 +37,7 @@
 #include "../../parser/sdp/sdp.h"
 #include "../../locking.h"
 #include "../../script_cb.h"
-#include "../uac_auth/uac_auth.h"
+#include "../../lib/digest_auth/digest_auth.h"
 #include "../presence/hash.h"
 #include "../../action.h"
 #include "../../trim.h"
@@ -2502,7 +2502,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	struct uac_credential* crd;
 	struct authenticate_body *auth = NULL;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
-	HASHHEX response;
+	struct digest_auth_response response;
 	str *new_hdr;
 	char status_buf[INT2STR_MAX_LEN];
 	static str sdp_ct = str_init("Content-Type: application/sdp\r\n");
@@ -2805,13 +2805,13 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			}
 			switch(statuscode)
 			{
-			case 401:
-				if (0 == parse_www_authenticate_header(msg))
-					auth = get_www_authenticate(msg);
+			case WWW_AUTH_CODE:
+				parse_www_authenticate_header(msg,
+				    DAUTH_AHFM_ANYSUP, &auth);
 				break;
-			case 407:
-				if (0 == parse_proxy_authenticate_header(msg))
-					auth = get_proxy_authenticate(msg);
+			case PROXY_AUTH_CODE:
+				parse_proxy_authenticate_header(msg,
+				    DAUTH_AHFM_ANYSUP, &auth);
 				break;
 			}
 			if(uac_auth_loaded && auth && dlg->state == B2B_NEW)
@@ -2825,11 +2825,18 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					}
 					memset(&auth_nc_cnonce, 0,
 							sizeof(struct authenticate_nc_cnonce));
-					uac_auth_api._do_uac_auth(&msg_body, &t->method,
-							&t->uac[0].uri, crd, auth, &auth_nc_cnonce, response);
+					if (uac_auth_api._do_uac_auth(&msg_body, &t->method,
+							&t->uac[0].uri, crd, auth, &auth_nc_cnonce,
+							&response) != 0)
+					{
+						LM_ERR("failed in do_uac_auth()\n");
+						dlg->state = B2B_TERMINATED;
+						lock_release(&htable[hash_index].lock);
+						goto error;
+					}
 					new_hdr = uac_auth_api._build_authorization_hdr(statuscode,
 							&t->uac[0].uri, crd, auth,
-							&auth_nc_cnonce, response);
+							&auth_nc_cnonce, &response);
 					if (!new_hdr)
 					{
 						LM_ERR("failed to build auth hdr\n");

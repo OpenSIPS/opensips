@@ -9,7 +9,7 @@
 
 <table id="subscriber" xmlns:db="http://docbook.org/ns/docbook">
     <name>subscriber</name>
-    <version>7</version>
+    <version>8</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>This table is used to provide authentication information. More information about the auth_db module can be found at: &OPENSIPS_MOD_DOC;auth_db.html
@@ -69,11 +69,19 @@
     </column>
 
     <column>
-        <name>ha1b</name>
+        <name>ha1_sha256</name>
         <type>string</type>
         <size>&domain_len;</size>
         <default/>
-        <description>md5(username@domain:realm:password)</description>
+        <description>sha256(username:realm:password)</description>
+    </column>
+
+    <column>
+        <name>ha1_sha512t256</name>
+        <type>string</type>
+        <size>&domain_len;</size>
+        <default/>
+        <description>sha512t256(username:realm:password)</description>
     </column>
 
     <column>

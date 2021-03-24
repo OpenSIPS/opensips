@@ -33,13 +33,12 @@
 #include "../../pvar.h"
 #include "../../data_lump.h"
 #include "../../mem/mem.h"
-#include "../../md5global.h"
-#include "../../md5.h"
 #include "../../parser/parse_authenticate.h"
 #include "../tm/tm_load.h"
+#include "../../lib/dassert.h"
 
 #include "uac_auth.h"
-
+#include "../../lib/digest_auth/dauth_calc.h"
 
 extern int            realm_avp_name;
 extern unsigned short realm_avp_type;
@@ -48,11 +47,6 @@ extern unsigned short user_avp_type;
 extern int            pwd_avp_name;
 extern unsigned short pwd_avp_type;
 
-
-
-static str nc = {"00000001", 8};
-static str cnonce = {"o", 1};
-static str auth_hdr = {NULL, 0};
 
 static struct uac_credential *crd_list = NULL;
 
@@ -74,9 +68,9 @@ int has_credentials(void) {return (crd_list)?1:0;}
 void free_credential(struct uac_credential *crd)
 {
 	if (crd) {
-		if (crd->realm.s) pkg_free(crd->realm.s);
-		if (crd->user.s) pkg_free(crd->user.s);
-			if (crd->passwd.s) pkg_free(crd->passwd.s);
+		if (crd->auth_data.realm.s) pkg_free(crd->auth_data.realm.s);
+		if (crd->auth_data.user.s) pkg_free(crd->auth_data.user.s);
+			if (crd->auth_data.passwd.s) pkg_free(crd->auth_data.passwd.s);
 			pkg_free(crd);
 	}
 }
@@ -111,7 +105,7 @@ int add_credential( unsigned int type, void *val)
 		goto parse_error;
 	foo.len = p - foo.s;
 	/* dulicate it */
-	duplicate_str( crd->user, foo, error);
+	duplicate_str( crd->auth_data.user, foo, error);
 
 	/* parse the ':' separator */
 	while (*p && isspace((int)*p)) p++;
@@ -131,7 +125,7 @@ int add_credential( unsigned int type, void *val)
 		goto parse_error;
 	foo.len = p - foo.s;
 	/* dulicate it */
-	duplicate_str( crd->realm, foo, error);
+	duplicate_str( crd->auth_data.realm, foo, error);
 
 	/* parse the ':' separator */
 	while (*p && isspace((int)*p)) p++;
@@ -151,7 +145,7 @@ int add_credential( unsigned int type, void *val)
 		goto parse_error;
 	foo.len = p - foo.s;
 	/* dulicate it */
-	duplicate_str( crd->passwd, foo, error);
+	duplicate_str( crd->auth_data.passwd, foo, error);
 
 	/* end of string */
 	while (*p && isspace((int)*p)) p++;
@@ -198,22 +192,22 @@ static inline struct uac_credential *get_avp_credential(str *realm)
 	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
 		return 0;
 
-	crd.realm = val.s;
+	crd.auth_data.realm = val.s;
 	/* is it the domain we are looking for? */
-	if (realm->len!=crd.realm.len ||
-	strncmp( realm->s, crd.realm.s, realm->len)!=0 )
+	if (realm->len!=crd.auth_data.realm.len ||
+	strncmp( realm->s, crd.auth_data.realm.s, realm->len)!=0 )
 		return 0;
 
 	/* get username and password */
 	avp = search_first_avp( user_avp_type, user_avp_name, &val, 0);
 	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
 		return 0;
-	crd.user = val.s;
+	crd.auth_data.user = val.s;
 
 	avp = search_first_avp( pwd_avp_type, pwd_avp_name, &val, 0);
 	if ( avp==NULL || (avp->flags&AVP_VAL_STR)==0 || val.s.len<=0 )
 		return 0;
-	crd.passwd = val.s;
+	crd.auth_data.passwd = val.s;
 
 	return &crd;
 }
@@ -229,172 +223,47 @@ struct uac_credential *lookup_realm( str *realm)
 
 	/* search in the static list */
 	for( crd=crd_list ; crd ; crd=crd->next )
-		if (realm->len==crd->realm.len &&
-		strncmp( realm->s, crd->realm.s, realm->len)==0 )
+		if (realm->len==crd->auth_data.realm.len &&
+		strncmp( realm->s, crd->auth_data.realm.s, realm->len)==0 )
 			return crd;
 	return 0;
 }
 
 
-static inline void cvt_hex(HASH bin, HASHHEX hex)
-{
-	unsigned short i;
-	unsigned char j;
-
-	for (i = 0; i<HASHLEN; i++)
-	{
-		j = (bin[i] >> 4) & 0xf;
-		if (j <= 9)
-		{
-			hex[i * 2] = (j + '0');
-		} else {
-			hex[i * 2] = (j + 'a' - 10);
-		}
-
-		j = bin[i] & 0xf;
-
-		if (j <= 9)
-		{
-			hex[i * 2 + 1] = (j + '0');
-		} else {
-			hex[i * 2 + 1] = (j + 'a' - 10);
-		}
-	};
-
-	hex[HASHHEXLEN] = '\0';
-}
-
-
-
-/*
- * calculate H(A1)
- */
-void uac_calc_HA1( struct uac_credential *crd,
-		struct authenticate_body *auth,
-		str* cnonce,
-		HASHHEX sess_key)
-{
-	MD5_CTX Md5Ctx;
-	HASH HA1;
-
-	MD5Init(&Md5Ctx);
-	MD5Update(&Md5Ctx, crd->user.s, crd->user.len);
-	MD5Update(&Md5Ctx, ":", 1);
-	MD5Update(&Md5Ctx, crd->realm.s, crd->realm.len);
-	MD5Update(&Md5Ctx, ":", 1);
-	MD5Update(&Md5Ctx, crd->passwd.s, crd->passwd.len);
-	MD5Final(HA1, &Md5Ctx);
-
-	if ( auth->algorithm == ALG_MD5SESS )
-	{
-		MD5Init(&Md5Ctx);
-		MD5Update(&Md5Ctx, HA1, HASHLEN);
-		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, auth->nonce.s, auth->nonce.len);
-		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, cnonce->s, cnonce->len);
-		MD5Final(HA1, &Md5Ctx);
-	};
-
-	cvt_hex(HA1, sess_key);
-}
-
-
-
-/*
- * calculate H(A2)
- */
-void uac_calc_HA2(str *msg_body, str *method, str *uri,
-		int auth_int, HASHHEX HA2Hex)
-{
-	MD5_CTX Md5Ctx;
-	HASH HA2;
-	HASH HENTITY;
-	HASHHEX HENTITYHex;
-
-	if (auth_int) {
-		MD5Init(&Md5Ctx);
-		MD5Update(&Md5Ctx, msg_body->s, msg_body->len);
-		MD5Final(HENTITY, &Md5Ctx);
-		cvt_hex(HENTITY, HENTITYHex);
-	}
-
-	MD5Init(&Md5Ctx);
-	MD5Update(&Md5Ctx, method->s, method->len);
-	MD5Update(&Md5Ctx, ":", 1);
-	MD5Update(&Md5Ctx, uri->s, uri->len);
-
-	if (auth_int)
-	{
-		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, HENTITYHex, HASHHEXLEN);
-	};
-
-	MD5Final(HA2, &Md5Ctx);
-	cvt_hex(HA2, HA2Hex);
-}
-
-
-
-/*
- * calculate request-digest/response-digest as per HTTP Digest spec
- */
-void uac_calc_response( HASHHEX ha1, HASHHEX ha2,
-		struct authenticate_body *auth,
-		str* nc, str* cnonce,
-		HASHHEX response)
-{
-	MD5_CTX Md5Ctx;
-	HASH RespHash;
-
-	MD5Init(&Md5Ctx);
-	MD5Update(&Md5Ctx, ha1, HASHHEXLEN);
-	MD5Update(&Md5Ctx, ":", 1);
-	MD5Update(&Md5Ctx, auth->nonce.s, auth->nonce.len);
-	MD5Update(&Md5Ctx, ":", 1);
-
-	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
-	{
-		MD5Update(&Md5Ctx, nc->s, nc->len);
-		MD5Update(&Md5Ctx, ":", 1);
-		MD5Update(&Md5Ctx, cnonce->s, cnonce->len);
-		MD5Update(&Md5Ctx, ":", 1);
-		if (!(auth->flags&QOP_AUTH))
-			MD5Update(&Md5Ctx, "auth-int", 8);
-		else
-			MD5Update(&Md5Ctx, "auth", 4);
-		MD5Update(&Md5Ctx, ":", 1);
-	};
-	MD5Update(&Md5Ctx, ha2, HASHHEXLEN);
-	MD5Final(RespHash, &Md5Ctx);
-	cvt_hex(RespHash, response);
-}
-
-
-void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
+int do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd,
 		struct authenticate_body *auth, struct authenticate_nc_cnonce *auth_nc_cnonce,
-		HASHHEX response)
+		struct digest_auth_response *response)
 {
 	HASHHEX ha1;
 	HASHHEX ha2;
 	int i, has_ha1;
+	const struct digest_auth_calc *digest_calc;
+	str_const cnonce;
+	str_const nc;
+
+	digest_calc = get_digest_calc(auth->algorithm);
+	if (digest_calc == NULL) {
+		LM_ERR("digest algorithm (%d) unsupported\n", auth->algorithm);
+		return (-1);
+	}
 
 	/* before actually doing the authe, we check if the received password is
 	   a plain text password or a HA1 value ; we detect a HA1 (in the password
 	   field if: (1) starts with "0x"; (2) len is 32 + 2 (prefix) ; (3) the 32
 	   chars are HEXA values */
-	if (crd->passwd.len==34 && crd->passwd.s[0]=='0' && crd->passwd.s[1]=='x') {
+	if (crd->auth_data.passwd.len==(digest_calc->HASHHEXLEN + 2) &&
+	    crd->auth_data.passwd.s[0]=='0' && crd->auth_data.passwd.s[1]=='x') {
 		/* it may be a HA1 - check the actual content */
-		for( has_ha1=1,i=2 ; i<crd->passwd.len ; i++ ) {
-			if ( !( (crd->passwd.s[i]>='0' && crd->passwd.s[i]<='9') ||
-			(crd->passwd.s[i]>='a' && crd->passwd.s[i]<='f') )) {
+		for( has_ha1=1,i=2 ; i<crd->auth_data.passwd.len ; i++ ) {
+			if ( !( (crd->auth_data.passwd.s[i]>='0' && crd->auth_data.passwd.s[i]<='9') ||
+			(crd->auth_data.passwd.s[i]>='a' && crd->auth_data.passwd.s[i]<='f') )) {
 				has_ha1 = 0;
 				break;
 			} else {
-				ha1[i-2] = crd->passwd.s[i];
+				ha1._start[i-2] = crd->auth_data.passwd.s[i];
 			}
 		}
-		ha1[HASHHEXLEN] = 0;
+		ha1._start[digest_calc->HASHHEXLEN] = 0;
 	} else {
 		has_ha1 = 0;
 	}
@@ -402,24 +271,42 @@ void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *cr
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 	{
 		/* if qop generate nonce-count and cnonce */
+		nc = str_const_init("00000001");
 		cnonce.s = int2str(core_hash(&auth->nonce, NULL, 0),&cnonce.len);
 
 		/* do authentication */
 		if (!has_ha1)
-			uac_calc_HA1( crd, auth, &cnonce, ha1);
-		uac_calc_HA2(msg_body, method, uri, !(auth->flags&QOP_AUTH), ha2);
+			if (digest_calc->HA1(&crd->auth_data, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA1sess != NULL)
+			if (digest_calc->HA1sess(str2const(&auth->nonce), &cnonce, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA2(str2const(msg_body), str2const(method), str2const(uri),
+		    !(auth->flags&QOP_AUTH), &ha2) != 0)
+			return (-1);
 
-		uac_calc_response( ha1, ha2, auth, &nc, &cnonce, response);
-		auth_nc_cnonce->nc = &nc;
-		auth_nc_cnonce->cnonce = &cnonce;
+		if (digest_calc->response(&ha1, &ha2, str2const(&auth->nonce),
+		    str2const(&auth->qop), &nc, &cnonce, response) != 0)
+			return (-1);
+		auth_nc_cnonce->nc = nc;
+		auth_nc_cnonce->cnonce = cnonce;
 	} else {
 		/* do authentication */
 		if (!has_ha1)
-			uac_calc_HA1( crd, auth, 0/*cnonce*/, ha1);
-		uac_calc_HA2(msg_body, method, uri, 0, ha2);
+			if (digest_calc->HA1(&crd->auth_data, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA1sess != NULL)
+			if (digest_calc->HA1sess(str2const(&auth->nonce), NULL/*cnonce*/, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA2(str2const(msg_body), str2const(method), str2const(uri),
+		    0, &ha2) != 0)
+			return (-1);
 
-		uac_calc_response( ha1, ha2, auth, 0/*nc*/, 0/*cnonce*/, response);
+		if (digest_calc->response(&ha1, &ha2, str2const(&auth->nonce),
+		    NULL/*qop*/, NULL/*nc*/, NULL/*cnonce*/, response) != 0)
+			return (-1);
 	}
+	return (0);
 }
 
 
@@ -443,7 +330,7 @@ void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *cr
 #define OPAQUE_FIELD_LEN         (sizeof(OPAQUE_FIELD_S)-1)
 #define RESPONSE_FIELD_S         "response=\""
 #define RESPONSE_FIELD_LEN       (sizeof(RESPONSE_FIELD_S)-1)
-#define ALGORITHM_FIELD_S        "algorithm=MD5"
+#define ALGORITHM_FIELD_S        "algorithm="
 #define ALGORITHM_FIELD_LEN       (sizeof(ALGORITHM_FIELD_S)-1)
 #define FIELD_SEPARATOR_S        "\", "
 #define FIELD_SEPARATOR_LEN      (sizeof(FIELD_SEPARATOR_S)-1)
@@ -457,50 +344,48 @@ void do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *cr
 #define CNONCE_FIELD_S           "cnonce=\""
 #define CNONCE_FIELD_LEN         (sizeof(CNONCE_FIELD_S)-1)
 
-#define add_string( _p, _s, _l) \
+#define add_str(_p, _sp) \
 	do {\
-		memcpy( _p, _s, _l);\
-		_p += _l; \
+		memcpy(_p, (_sp)->s, (_sp)->len);\
+		_p += (_sp)->len; \
 	}while(0)
 
 
 str* build_authorization_hdr(int code, str *uri,
 		struct uac_credential *crd, struct authenticate_body *auth,
-		struct authenticate_nc_cnonce *auth_nc_cnonce, char *response)
+		struct authenticate_nc_cnonce *auth_nc_cnonce,
+		const struct digest_auth_response *response)
 {
 	char *p;
 	int len;
-	int response_len;
-	char *qop_val = NULL;
-	int qop_val_len = 0;
-
-	response_len = strlen(response);
+	str_const qop_val = STR_NULL_const;
+	static str auth_hdr = STR_NULL;
+	const struct digest_auth_calc *digest_calc = response->digest_calc;
+	int response_len = digest_calc->HASHHEXLEN;
 
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT)) {
 		if (!(auth->flags&QOP_AUTH)) {
-			qop_val = "auth-int";
-			qop_val_len = 8;
+			qop_val = str_const_init(QOP_AUTHINT_STR);
 		} else {
-			qop_val = "auth";
-			qop_val_len = 4;
+			qop_val = str_const_init(QOP_AUTH_STR);
 		}
 	}
 
 	/* compile then len */
-	len = (code==401?
+	len = (code==WWW_AUTH_CODE?
 		AUTHORIZATION_HDR_START_LEN:PROXY_AUTHORIZATION_HDR_START_LEN) +
-		USERNAME_FIELD_LEN + crd->user.len + FIELD_SEPARATOR_LEN +
-		REALM_FIELD_LEN + crd->realm.len + FIELD_SEPARATOR_LEN +
+		USERNAME_FIELD_LEN + crd->auth_data.user.len + FIELD_SEPARATOR_LEN +
+		REALM_FIELD_LEN + crd->auth_data.realm.len + FIELD_SEPARATOR_LEN +
 		NONCE_FIELD_LEN + auth->nonce.len + FIELD_SEPARATOR_LEN +
 		URI_FIELD_LEN + uri->len + FIELD_SEPARATOR_LEN +
 		(auth->opaque.len?
 			(OPAQUE_FIELD_LEN + auth->opaque.len + FIELD_SEPARATOR_LEN):0) +
 		RESPONSE_FIELD_LEN + response_len + FIELD_SEPARATOR_LEN +
-		ALGORITHM_FIELD_LEN + CRLF_LEN;
+		ALGORITHM_FIELD_LEN + digest_calc->algorithm_val.len + CRLF_LEN;
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
-		len += QOP_FIELD_LEN + qop_val_len + FIELD_SEPARATOR_UQ_LEN +
-				NC_FIELD_LEN + auth_nc_cnonce->nc->len + FIELD_SEPARATOR_UQ_LEN +
-				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce->len + FIELD_SEPARATOR_LEN;
+		len += QOP_FIELD_LEN + qop_val.len + FIELD_SEPARATOR_UQ_LEN +
+				NC_FIELD_LEN + auth_nc_cnonce->nc.len + FIELD_SEPARATOR_UQ_LEN +
+				CNONCE_FIELD_LEN + auth_nc_cnonce->cnonce.len + FIELD_SEPARATOR_LEN;
 
 	if (auth_hdr.s || auth_hdr.len)
 		LM_WARN("potential memory leak at addr: %p\n", auth_hdr.s);
@@ -514,54 +399,46 @@ str* build_authorization_hdr(int code, str *uri,
 
 	p = auth_hdr.s;
 	/* header start */
-	if (code==401)
+	if (code==WWW_AUTH_CODE)
 	{
-		add_string( p, AUTHORIZATION_HDR_START USERNAME_FIELD_S,
-			AUTHORIZATION_HDR_START_LEN+USERNAME_FIELD_LEN);
+		add_str(p, &str_init(AUTHORIZATION_HDR_START USERNAME_FIELD_S));
 	} else {
-		add_string( p, PROXY_AUTHORIZATION_HDR_START USERNAME_FIELD_S,
-			PROXY_AUTHORIZATION_HDR_START_LEN+USERNAME_FIELD_LEN);
+		add_str(p, &str_init(PROXY_AUTHORIZATION_HDR_START USERNAME_FIELD_S));
 	}
 	/* username */
-	add_string( p, crd->user.s, crd->user.len);
+	add_str(p, &crd->auth_data.user);
 	/* REALM */
-	add_string( p, FIELD_SEPARATOR_S REALM_FIELD_S,
-		FIELD_SEPARATOR_LEN+REALM_FIELD_LEN);
-	add_string( p, crd->realm.s, crd->realm.len);
+	add_str(p, &str_init(FIELD_SEPARATOR_S REALM_FIELD_S));
+	add_str(p, &crd->auth_data.realm);
 	/* NONCE */
-	add_string( p, FIELD_SEPARATOR_S NONCE_FIELD_S,
-		FIELD_SEPARATOR_LEN+NONCE_FIELD_LEN);
-	add_string( p, auth->nonce.s, auth->nonce.len);
+	add_str(p, &str_init(FIELD_SEPARATOR_S NONCE_FIELD_S));
+	add_str(p, &auth->nonce);
 	/* URI */
-	add_string( p, FIELD_SEPARATOR_S URI_FIELD_S,
-		FIELD_SEPARATOR_LEN+URI_FIELD_LEN);
-	add_string( p, uri->s, uri->len);
+	add_str(p, &str_init(FIELD_SEPARATOR_S URI_FIELD_S));
+	add_str(p, uri);
 	/* OPAQUE */
 	if (auth->opaque.len )
 	{
-		add_string( p, FIELD_SEPARATOR_S OPAQUE_FIELD_S,
-			FIELD_SEPARATOR_LEN+OPAQUE_FIELD_LEN);
-		add_string( p, auth->opaque.s, auth->opaque.len);
+		add_str(p, &str_init(FIELD_SEPARATOR_S OPAQUE_FIELD_S));
+		add_str(p, &auth->opaque);
 	}
 	if((auth->flags&QOP_AUTH) || (auth->flags&QOP_AUTH_INT))
 	{
-		add_string( p, FIELD_SEPARATOR_S QOP_FIELD_S,
-			FIELD_SEPARATOR_LEN+QOP_FIELD_LEN);
-		add_string( p, qop_val, qop_val_len);
-		add_string( p, FIELD_SEPARATOR_UQ_S NC_FIELD_S,
-			FIELD_SEPARATOR_UQ_LEN+NC_FIELD_LEN);
-		add_string( p, auth_nc_cnonce->nc->s, auth_nc_cnonce->nc->len);
-		add_string( p, FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S,
-			FIELD_SEPARATOR_UQ_LEN+CNONCE_FIELD_LEN);
-		add_string( p, auth_nc_cnonce->cnonce->s, auth_nc_cnonce->cnonce->len);
+		add_str(p, &str_init(FIELD_SEPARATOR_S QOP_FIELD_S));
+		add_str(p, &qop_val);
+		add_str(p, &str_init(FIELD_SEPARATOR_UQ_S NC_FIELD_S));
+		add_str(p, &auth_nc_cnonce->nc);
+		add_str(p, &str_init(FIELD_SEPARATOR_UQ_S CNONCE_FIELD_S));
+		add_str(p, &auth_nc_cnonce->cnonce);
 	}
 	/* RESPONSE */
-	add_string( p, FIELD_SEPARATOR_S RESPONSE_FIELD_S,
-		FIELD_SEPARATOR_LEN+RESPONSE_FIELD_LEN);
-	add_string( p, response, response_len);
+	add_str(p, &str_init(FIELD_SEPARATOR_S RESPONSE_FIELD_S));
+	digest_calc->response_hash_fill(response, p, len - (p - auth_hdr.s));
+	p += response_len;
 	/* ALGORITHM */
-	add_string( p, FIELD_SEPARATOR_S ALGORITHM_FIELD_S CRLF,
-		FIELD_SEPARATOR_LEN+ALGORITHM_FIELD_LEN+CRLF_LEN);
+	add_str(p, &str_init(FIELD_SEPARATOR_S ALGORITHM_FIELD_S));
+	add_str(p, &digest_calc->algorithm_val);
+	add_str(p, &str_init(CRLF));
 
 	auth_hdr.len = p - auth_hdr.s;
 
@@ -578,7 +455,5 @@ str* build_authorization_hdr(int code, str *uri,
 
 	return &auth_hdr;
 error:
-	return 0;
+	return NULL;
 }
-
-

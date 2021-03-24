@@ -39,6 +39,7 @@
 #include "../../parser/msg_parser.h"
 #include "../tm/tm_load.h"
 #include "../uac_auth/uac_auth.h"
+#include "../../lib/digest_auth/digest_auth.h"
 #include "../dialog/dlg_load.h"
 #include "auth.h"
 
@@ -241,7 +242,7 @@ void apply_cseq_decrement(struct cell* t, int type, struct tmcb_params *p)
 	apply_cseq_op(rpl, (int)cseq_req-(int)cseq_rpl);
 }
 
-int uac_auth( struct sip_msg *msg)
+int uac_auth( struct sip_msg *msg, int algmask)
 {
 	struct authenticate_body *auth = NULL;
 	str msg_body;
@@ -251,11 +252,12 @@ int uac_auth( struct sip_msg *msg)
 	int new_cseq;
 	struct sip_msg *rpl;
 	struct cell *t;
-	HASHHEX response;
+	struct digest_auth_response response;
 	str *new_hdr;
 	str param, ttag;
 	char *p;
 	struct dlg_cell *dlg;
+	const struct match_auth_hf_desc *mdesc;
 
 	/* get transaction */
 	t = uac_tmb.t_gett();
@@ -287,12 +289,12 @@ int uac_auth( struct sip_msg *msg)
 		goto error;
 	}
 
+	mdesc = (algmask) ? DAUTH_AHFM_MSKSUP(algmask) :
+	    DAUTH_AHFM_ANYSUP;
 	if (code==WWW_AUTH_CODE) {
-		if (0 == parse_www_authenticate_header(rpl))
-			auth = get_www_authenticate(rpl);
+		parse_www_authenticate_header(rpl, mdesc, &auth);
 	} else if (code==PROXY_AUTH_CODE) {
-		if (0 == parse_proxy_authenticate_header(rpl))
-			auth = get_proxy_authenticate(rpl);
+		parse_proxy_authenticate_header(rpl, mdesc, &auth);
 	}
 
 	if (auth == NULL) {
@@ -317,12 +319,15 @@ int uac_auth( struct sip_msg *msg)
 	}
 
 	/* do authentication */
-	uac_auth_api._do_uac_auth(&msg_body, &msg->first_line.u.request.method,
-			&t->uac[branch].uri, crd, auth, &auth_nc_cnonce, response);
+	if (uac_auth_api._do_uac_auth(&msg_body, &msg->first_line.u.request.method,
+	    &t->uac[branch].uri, crd, auth, &auth_nc_cnonce, &response) != 0) {
+		LM_ERR("Failed in do_uac_auth()\n");
+		goto error;
+	}
 
 	/* build the authorization header */
 	new_hdr = uac_auth_api._build_authorization_hdr( code, &t->uac[branch].uri,
-		crd, auth, &auth_nc_cnonce, response);
+		crd, auth, &auth_nc_cnonce, &response);
 	if (new_hdr==0)
 	{
 		LM_ERR("failed to build authorization hdr\n");
