@@ -227,6 +227,7 @@ void cgr_ref_acc_ctx(struct cgr_acc_ctx *ctx, int how, const char *who)
 static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 		void *p, char *error)
 {
+	unsigned long long timeout;
 	int_str val;
 	struct dlg_cell *dlg = (struct dlg_cell *)p;
 
@@ -252,9 +253,11 @@ static int cgr_proc_start_acc_reply(struct cgr_conn *c, json_object *jobj,
 					json_object_get_type(jobj), json_object_to_json_string(jobj));
 			return -4;
 		}
-		val.n = json_object_get_int64(jobj);
-		if (val.n != 0 && val.n != -1)
-			val.n /= 1000000000;
+		timeout = json_object_get_int64(jobj);
+		if (timeout != 0 && timeout != -1)
+			val.n = timeout / 1000000000;
+		else
+			val.n = timeout;
 	} else {
 		if (json_object_get_type(jobj) != json_type_int) {
 			LM_ERR("CGRateS returned a non-int type for InitiateSession reply: %d %s\n",
