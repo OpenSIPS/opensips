@@ -823,13 +823,13 @@ ifeq	($(CC_NAME), clang)
 	CC_OPTIMIZE_FLAG?=-O3
 endif
 
+ifeq ($(mode), release)
 ifeq (,$(CFLAGS))
 
 #common stuff
 CFLAGS+=$(DEBUGSYM)
 
 # setting more CFLAGS
-ifeq ($(mode), release)
 
 #if i386
 ifeq	($(ARCH), i386)
