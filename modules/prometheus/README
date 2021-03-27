@@ -16,7 +16,10 @@ Prometheus Module
               1.3.1. root(string)
               1.3.2. prefix(string)
               1.3.3. group_prefix(string)
-              1.3.4. statistics(string)
+              1.3.4. delimiter(string)
+              1.3.5. group_label(string)
+              1.3.6. group_mode(int)
+              1.3.7. statistics(string)
 
         1.4. Exported Functions
         1.5. Examples
@@ -42,8 +45,11 @@ Prometheus Module
    1.1. Set root parameter
    1.2. Set prefix parameter
    1.3. Set group_prefix parameter
-   1.4. Set statistics parameter
-   1.5. Prometheus Scarpe Config
+   1.4. Set delimiter parameter
+   1.5. Set group_label parameter
+   1.6. Set group_mode parameter
+   1.7. Set statistics parameter
+   1.8. Prometheus Scarpe Config
 
 Chapter 1. Admin Guide
 
@@ -95,11 +101,11 @@ modparam("prometheus", "root", "prometheus")
 
    Appends a prefix to each statistic exported.
 
-   The default value is "opensips_".
+   The default value is "opensips".
 
    Example 1.2. Set prefix parameter
 ...
-modparam("prometheus", "prefix", "opensips_1_")
+modparam("prometheus", "prefix", "opensips_1")
 ...
 
 1.3.3. group_prefix(string)
@@ -111,10 +117,54 @@ modparam("prometheus", "prefix", "opensips_1_")
 
    Example 1.3. Set group_prefix parameter
 ...
-modparam("prometheus", "group_prefix", "opensips_")
+modparam("prometheus", "group_prefix", "opensips")
 ...
 
-1.3.4. statistics(string)
+1.3.4. delimiter(string)
+
+   Specifies the delimiter to be used to separate prefix and
+   group_prefix.
+
+   The default value is "_".
+
+   Example 1.4. Set delimiter parameter
+...
+modparam("prometheus", "delimiter", "-")
+...
+
+1.3.5. group_label(string)
+
+   Specifies the label used to store the group when group_mode is
+   2.
+
+   The default value is "group".
+
+   Example 1.5. Set group_label parameter
+...
+modparam("prometheus", "group_label", "grp")
+...
+
+1.3.6. group_mode(int)
+
+   Specifies how the group of the statistic should be provisioned
+   to Prometheus. Available modes are:
+     * 0 - do not send the statistics groups.
+     * 1 - send the group in the name of the statstic.
+       For example, timestamp statistic from the core group would
+       be exported as opensips_core_timestamp. Note that the
+       group_prefix is still attached to the group's name.
+     * 2 - send the group as a label of the statstic.
+       The name of the label is specified by the group_label
+       parameter.
+
+   The default value is 0 (do not specify the group).
+
+   Example 1.6. Set group_mode parameter
+...
+modparam("prometheus", "group_mode", 1)
+...
+
+1.3.7. statistics(string)
 
    The statistics that are being exported by OpenSIPS, separated
    by space. The list can also contain statistics groups's names -
@@ -125,7 +175,7 @@ modparam("prometheus", "group_prefix", "opensips_")
 
    The default value is empty: no metric is exported.
 
-   Example 1.4. Set statistics parameter
+   Example 1.7. Set statistics parameter
 ...
 # export the number of active dialogs and the load statistics class
 modparam("prometheus", "statistics", "active_dialogs load:")
@@ -143,7 +193,7 @@ modparam("prometheus", "statistics", "active_dialogs load:")
    config, indicating the IP and port you've configured the httpd
    module to listen on (default: 0.0.0.0:8888).
 
-   Example 1.5. Prometheus Scarpe Config
+   Example 1.8. Prometheus Scarpe Config
 
 scrape_configs:
   - job_name: opensips
@@ -159,7 +209,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    10       4      528       16
+   1. Razvan Crainea (@razvancrainea)    13       5      725       65
    2. OpenSIPS                           3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
