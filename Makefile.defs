@@ -462,11 +462,11 @@ endif
 
 INSTALL_TOUCH = touch          # used to create the file first (good to
                                #  make solaris install work)
-INSTALL_CFG = $(INSTALL) -m 644
-INSTALL_BIN = $(INSTALL) -m 755
-INSTALL_MODULES = $(INSTALL) -m 755
-INSTALL_DOC = $(INSTALL) -m 644
-INSTALL_MAN = $(INSTALL) -m 644
+INSTALL_CFG ?= $(INSTALL) -m 644
+INSTALL_BIN ?= $(INSTALL) -m 755
+INSTALL_MODULES ?= $(INSTALL) -m 755
+INSTALL_DOC ?= $(INSTALL) -m 644
+INSTALL_MAN ?= $(INSTALL) -m 644
 
 
 ifeq ($(VERSIONTYPE),)
@@ -823,13 +823,13 @@ ifeq	($(CC_NAME), clang)
 	CC_OPTIMIZE_FLAG?=-O3
 endif
 
+ifeq ($(mode), release)
 ifeq (,$(CFLAGS))
 
 #common stuff
 CFLAGS+=$(DEBUGSYM)
 
 # setting more CFLAGS
-ifeq ($(mode), release)
 
 #if i386
 ifeq	($(ARCH), i386)
