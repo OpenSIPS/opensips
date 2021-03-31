@@ -1371,6 +1371,10 @@ ifeq	($(CC_NAME), suncc)
 		LDFLAGS+=$(PROFILE)
 		MOD_LDFLAGS=-G $(LDFLAGS)
 endif
+ifeq    ($(CC_NAME), clang)
+		LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE)
+		MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
+endif
 
 endif #mode=release
 
