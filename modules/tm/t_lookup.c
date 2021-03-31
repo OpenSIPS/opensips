@@ -859,9 +859,9 @@ nomatch2:
 
 /* Determine current transaction
  *
- *                   Found      Not Found     Error (e.g. parsing)
- *  Return Value     1          0             -1
- *  T                ptr        0             T_UNDEFINED
+ *                   Found      Not Found     Error (e.g. parsing)     Not Here (e.g. anycast)
+ *  Return Value     1          0             -1                       -2
+ *  T                ptr        0             T_UNDEFINED              T_UNDEFINED
  */
 int t_check( struct sip_msg* p_msg , int *param_branch )
 {
@@ -912,7 +912,7 @@ int t_check( struct sip_msg* p_msg , int *param_branch )
 				t_reply_matching(p_msg ,
 						param_branch!=0?param_branch:&local_branch);
 			else
-				T = NULL; /* reply replicated
+				return -2; /* reply replicated
 					should have never got here */
 
 		}
