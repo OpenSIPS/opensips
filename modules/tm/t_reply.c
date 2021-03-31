@@ -1514,7 +1514,10 @@ int reply_received( struct sip_msg  *p_msg )
 	set_t(T_UNDEFINED);
 
 	/* make sure we know the associated transaction ... */
-	if (t_check(p_msg, &branch ) == -1) goto not_found;
+	switch (t_check(p_msg, &branch )) {
+		case -1: goto not_found;
+		case -2: return 0; /* reply forwarded elsewhere */
+	}
 
 	/*... if there is none, tell the core router to fwd statelessly */
 	t = get_t();
