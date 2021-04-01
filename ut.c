@@ -743,7 +743,7 @@ char *db_url_escape(const str *url)
 	char *at, *slash, *scn;
 	str upw;
 
-	if (!url)
+	if (!url || !url->s)
 		return NULL;
 
 	if (pkg_str_extend(&buf, url->len + 6 + 1) < 0) {

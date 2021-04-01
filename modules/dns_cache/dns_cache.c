@@ -106,7 +106,7 @@ static int mod_init(void)
 		return -1;
 	} else {
 		cachedb_url.len = strlen(cachedb_url.s);
-		LM_DBG("using CacheDB URL: %s\n", cachedb_url.s);
+		LM_DBG("using CacheDB URL: %s\n", db_url_escape(&cachedb_url));
 	}
 
 	/* set pointers that resolver will use for caching */
@@ -119,8 +119,8 @@ static int mod_init(void)
 static int child_init(int rank)
 {
 	if (cachedb_bind_mod(&cachedb_url, &cdbf) < 0) {
-		LM_ERR("cannot bind functions for db_url %.*s\n",
-				cachedb_url.len, cachedb_url.s);
+		LM_ERR("cannot bind functions for db_url %s\n",
+				db_url_escape(&cachedb_url));
 		return -1;
 	}
 
@@ -132,7 +132,7 @@ static int child_init(int rank)
 
 	cdbc = cdbf.init(&cachedb_url);
 	if (!cdbc) {
-		LM_ERR("cannot connect to db_url %.*s\n", cachedb_url.len, cachedb_url.s);
+		LM_ERR("cannot connect to db_url %s\n", db_url_escape(&cachedb_url));
 		return -1;
 	}
 

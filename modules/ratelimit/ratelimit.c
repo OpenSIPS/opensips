@@ -390,7 +390,7 @@ static int mod_init(void)
 	if (db_url.s) {
 		db_url.len = strlen(db_url.s);
 		db_prefix.len = strlen(db_prefix.s);
-		LM_DBG("using CacheDB url: %s\n", db_url.s);
+		LM_DBG("using CacheDB url: %s\n", db_url_escape(&db_url));
 	}
 
 	RL_SHM_MALLOC(rl_network_count, sizeof(int));
