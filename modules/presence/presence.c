@@ -267,7 +267,8 @@ struct module_exports exports= {
 static int mod_init(void)
 {
 	db_url.len = db_url.s ? strlen(db_url.s) : 0;
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len,db_url.s);
+	LM_DBG("db_url=%s\n", db_url_escape(&db_url));
+
 	presentity_table.len = strlen(presentity_table.s);
 	active_watchers_table.len = strlen(active_watchers_table.s);
 	watchers_table.len = strlen(watchers_table.s);

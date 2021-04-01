@@ -312,7 +312,7 @@ int init_cachedb(void)
 
 	cdbc = cdbf.init(&cdb_url);
 	if (!cdbc) {
-		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		LM_ERR("cannot connect to cachedb_url %s\n", db_url_escape(&cdb_url));
 		return -1;
 	}
 	LM_DBG("Inited cachedb \n");
@@ -342,8 +342,8 @@ int init_cachedb_utils(void)
 		return -1;
 	}
 	if (cachedb_bind_mod(&cdb_url, &cdbf) < 0) {
-		LM_ERR("cannot bind functions for cachedb_url %.*s\n",
-				cdb_url.len, cdb_url.s);
+		LM_ERR("cannot bind functions for cachedb_url %s\n",
+		       db_url_escape(&cdb_url));
 		return -1;
 	}
 	if (!CACHEDB_CAPABILITY(&cdbf,
@@ -354,7 +354,7 @@ int init_cachedb_utils(void)
 
 	cdbc = cdbf.init(&cdb_url);
 	if (!cdbc) {
-		LM_ERR("cannot connect to cachedb_url %.*s\n", cdb_url.len, cdb_url.s);
+		LM_ERR("cannot connect to cachedb_url %s\n", db_url_escape(&cdb_url));
 		return -1;
 	}
 

@@ -735,15 +735,15 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 
 	/* cachedb init and test connection */
 	if (cachedb_bind_mod(&c_entry->cachedb_url, &new_db_hdls->cdbf) < 0) {
-		LM_ERR("Unable to bind to a cachedb database driver for URL: %.*s\n",
-			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		LM_ERR("Unable to bind to a cachedb database driver for URL: %s\n",
+			db_url_escape(&c_entry->cachedb_url));
 		return NULL;
 	}
 	/* open a test connection */
 	new_db_hdls->cdbcon = new_db_hdls->cdbf.init(&c_entry->cachedb_url);
 	if (!new_db_hdls->cdbcon) {
-		LM_ERR("Cannot init connection to cachedb: %.*s\n",
-			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		LM_ERR("Cannot init connection to cachedb: %s\n",
+			db_url_escape(&c_entry->cachedb_url));
 		return NULL;
 	}
 
@@ -756,15 +756,15 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	/* setting and getting a test key in cachedb */
 	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val,
 		0) < 0) {
-		LM_ERR("Failed to set test key in cachedb: %.*s\n",
-			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		LM_ERR("Failed to set test key in cachedb: %s\n",
+			db_url_escape(&c_entry->cachedb_url));
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
 		return NULL;
 	}
 	if (new_db_hdls->cdbf.get(new_db_hdls->cdbcon, &cdb_test_key, &cachedb_res) < 0) {
-		LM_ERR("Failed to get test key from cachedb: %.*s\n",
-			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		LM_ERR("Failed to get test key from cachedb: %s\n",
+			db_url_escape(&c_entry->cachedb_url));
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
 		return NULL;
@@ -772,8 +772,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	rc = str_strcmp(&cachedb_res, &cdb_test_val);
 	pkg_free(cachedb_res.s);
 	if (rc != 0) {
-		LM_ERR("Inconsistent test key for cachedb: %.*s\n",
-			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
+		LM_ERR("Inconsistent test key for cachedb: %s\n",
+			db_url_escape(&c_entry->cachedb_url));
 		new_db_hdls->cdbf.destroy(new_db_hdls->cdbcon);
 		new_db_hdls->cdbcon = 0;
 		return NULL;
@@ -788,14 +788,14 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 
 	/* SQL DB init and test connection */
 	if (db_bind_mod(&c_entry->db_url, &new_db_hdls->db_funcs) < 0) {
-		LM_ERR("Unable to bind to a SQL database driver for URL: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+		LM_ERR("Unable to bind to a SQL database driver for URL: %s\n",
+			db_url_escape(&c_entry->db_url));
 		return NULL;
 	}
 	/* open a test connection */
 	if ((new_db_hdls->db_con = new_db_hdls->db_funcs.init(&c_entry->db_url)) == 0) {
-		LM_ERR("Cannot init connection to SQL DB: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+		LM_ERR("Cannot init connection to SQL DB: %s\n",
+			db_url_escape(&c_entry->db_url));
 		return NULL;
 	}
 
@@ -818,8 +818,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 
 	if (new_db_hdls->db_funcs.query(new_db_hdls->db_con, &query_key_col, 0,
 		&query_key_val, c_entry->columns, 1, c_entry->nr_columns, 0, &sql_res) != 0) {
-		LM_ERR("Failure to issuse test query to SQL DB: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+		LM_ERR("Failure to issuse test query to SQL DB: %s\n",
+			db_url_escape(&c_entry->db_url));
 		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
 		new_db_hdls->db_con = 0;
 		return NULL;
@@ -917,23 +917,23 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
 		if (db_hdls->db_funcs.query(db_hdls->db_con, NULL, 0, NULL,
 						query_cols, 0, c_entry->nr_columns + 1, 0, 0) != 0) {
-			LM_ERR("Failure to issue query to SQL DB: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+			LM_ERR("Failure to issue query to SQL DB: %s\n",
+			db_url_escape(&c_entry->db_url));
 			pkg_free(query_cols);
 			goto error;
 		}
 
 		if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
-			LM_ERR("Error fetching rows from SQL DB: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+			LM_ERR("Error fetching rows from SQL DB: %s\n",
+			db_url_escape(&c_entry->db_url));
 			pkg_free(query_cols);
 			goto error;
 		}
 	} else {
 		if (db_hdls->db_funcs.query(db_hdls->db_con, NULL, 0, NULL,
 						query_cols, 0, c_entry->nr_columns + 1, 0, &sql_res) != 0) {
-			LM_ERR("Failure to issue query to SQL DB: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+			LM_ERR("Failure to issue query to SQL DB: %s\n",
+			db_url_escape(&c_entry->db_url));
 			pkg_free(query_cols);
 			goto error;
 		}
@@ -976,8 +976,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 
 		if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
 			if (db_hdls->db_funcs.fetch_result(db_hdls->db_con,&sql_res,fetch_nr_rows)<0) {
-				LM_ERR("Error fetching rows (1) from SQL DB: %.*s\n",
-					c_entry->db_url.len, c_entry->db_url.s);
+				LM_ERR("Error fetching rows (1) from SQL DB: %s\n",
+					db_url_escape(&c_entry->db_url));
 				lock_stop_write(db_hdls->c_entry->ref_lock);
 				goto error;
 			}
@@ -1061,8 +1061,8 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 	if (db_hdls->db_funcs.query(db_hdls->db_con,
 		&key_col, 0, &key_val, c_entry->columns, 1,
 		c_entry->nr_columns, 0, sql_res) != 0) {
-		LM_ERR("Failure to issue query to SQL DB: %.*s\n",
-			c_entry->db_url.len, c_entry->db_url.s);
+		LM_ERR("Failure to issue query to SQL DB: %s\n",
+			db_url_escape(&c_entry->db_url));
 		goto sql_error;
 	}
 

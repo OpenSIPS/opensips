@@ -172,8 +172,8 @@ static int rl_get_counter(str *name, rl_pipe_t * pipe)
 int init_cachedb(str * db_url)
 {
 	if (cachedb_bind_mod(db_url, &cdbf) < 0) {
-		LM_ERR("cannot bind functions for db_url %.*s\n",
-			db_url->len, db_url->s);
+		LM_ERR("cannot bind functions for db_url %s\n",
+			db_url_escape(db_url));
 		return -1;
 	}
 	if (!CACHEDB_CAPABILITY(&cdbf,
@@ -183,7 +183,7 @@ int init_cachedb(str * db_url)
 	}
 	cdbc = cdbf.init(db_url);
 	if (!cdbc) {
-		LM_ERR("cannot connect to db_url %.*s\n", db_url->len, db_url->s);
+		LM_ERR("cannot connect to db_url %s\n", db_url_escape(db_url));
 		return -1;
 	}
 	/* guessing that the name is not larger than 32 */
