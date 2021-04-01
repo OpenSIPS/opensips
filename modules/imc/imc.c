@@ -380,7 +380,7 @@ static int mod_init(void)
 
 	/*  binding to mysql module */
 	init_db_url( db_url , 0 /*cannot be null*/);
-	LM_DBG("db_url=%s/%d/%p\n", ZSW(db_url.s), db_url.len, db_url.s);
+	LM_DBG("db_url=%s\n", db_url_escape(&db_url));
 
 	if (db_bind_mod(&db_url, &imc_dbf))
 	{

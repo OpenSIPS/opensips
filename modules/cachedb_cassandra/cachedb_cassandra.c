@@ -153,7 +153,7 @@ static int child_init(int rank)
 	cachedb_con *con;
 
 	for (it = cassandra_script_urls; it; it = it->next) {
-		LM_DBG("iterating through conns - [%.*s]\n", it->url.len, it->url.s);
+		LM_DBG("iterating through conns - [%s]\n", db_url_escape(&it->url));
 		con = cassandra_init(&it->url);
 		if (con == NULL) {
 			LM_ERR("failed to open connection\n");
