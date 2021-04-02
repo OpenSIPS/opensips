@@ -85,7 +85,11 @@ typedef struct _cache_entry {
 	unsigned int on_demand;
 	unsigned int expire;
 	unsigned int nr_ints, nr_strs;
+
+	/* 0=int/1=str bitmask; bits 0 - n, represent each column,
+	 * where n = (entry.nr_columns - 1) */
 	long long column_types;
+
 	rw_lock_t *ref_lock;
 	struct _cache_entry *next;
 } cache_entry_t;
@@ -115,9 +119,9 @@ typedef struct _pv_name_fix
 	cache_entry_t *c_entry;
 	db_handlers_t *db_hdls;
 	pv_elem_t *pv_elem_list;
-	int col_offset;
-	int col_nr;
-	int last_str;
+	int col_offset; /* this column's data offset in a cachedb value */
+	int col_nr;     /* index of this column in entry->columns */
+	int last_str;   /* 1 if this column is a str and is the last one */
 } pv_name_fix_t;
 
 #endif

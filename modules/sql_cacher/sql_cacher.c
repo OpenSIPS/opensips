@@ -437,9 +437,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 		}
 
 end_parsing:
-		new_entry->next = NULL;
-		if (*entry_list)
-			new_entry->next = *entry_list;
+		new_entry->next = *entry_list;
 		*entry_list = new_entry;
 
 		pkg_free(parse_str_copy.s);
