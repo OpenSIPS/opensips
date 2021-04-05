@@ -378,12 +378,13 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 	/* not found, bad! */
 
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used, size,
-			qm->name[0] == 'p' ? "M" : "m");
-	LM_INFO("attempting defragmentation...\n");
+	LM_WARN("not enough continuous free %s memory (%ld bytes left, need %lu), attempting " \
+			"defragmentation... please increase the \"-%s\" command line parameter!\n",
+			qm->name, qm->size - qm->real_used, size, qm->name[0] == 'p' ? "M" : "m");
 #else
-	LM_ERR(oom_nostats_errorf, qm->name, size, qm->name[0] == 'p' ? "M" : "m");
-	LM_INFO("attempting defragmentation...\n");
+	LM_WARN("not enough continuous free %s memory (need %lu), attempting defragmentation... " \
+			"please increase the \"-%s\" command line parameter!\n",
+			qm->name, qm->size - qm->real_used, size, qm->name[0] == 'p' ? "M" : "m");
 #endif
 
 	for( frag = qm->first_frag; (char*)frag < (char*)qm->last_frag;  )
@@ -427,7 +428,12 @@ void* fm_malloc(struct fm_block* qm, unsigned long size)
 		frag = n;
 	}
 
-	LM_INFO("unable to alloc a big enough fragment!\n");
+#if defined(DBG_MALLOC) || defined(STATISTICS)
+	LM_ERR(oom_errorf, qm->name, qm->size - qm->real_used, size,
+			qm->name[0] == 'p' ? "M" : "m");
+#else
+	LM_ERR(oom_nostats_errorf, qm->name, size, qm->name[0] == 'p' ? "M" : "m");
+#endif
 	pkg_threshold_check();
 	return 0;
 
