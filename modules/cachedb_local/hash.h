@@ -64,5 +64,6 @@ int lcache_htable_fetch(cachedb_con *con,str* attr, str* val);
 int lcache_htable_add(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int lcache_htable_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int lcache_htable_fetch_counter(cachedb_con* con,str* attr,int *val);
+int lcache_htable_iter_keys(cachedb_con *con, int (*kv_func)(const str *, const str *));
 
 #endif

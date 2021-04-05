@@ -40,9 +40,10 @@ typedef enum {
 	CACHEDB_CAP_BINARY_VALUE = 1<<5,
 	CACHEDB_CAP_RAW = 1<<6,
 	CACHEDB_CAP_TRUNCATE = 1<<7,
+	CACHEDB_CAP_ITER_KEYS = 1<<8,
 
-	CACHEDB_CAP_QUERY = 1<<8,
-	CACHEDB_CAP_UPDATE = 1<<9,
+	CACHEDB_CAP_QUERY = 1<<9,
+	CACHEDB_CAP_UPDATE = 1<<10,
 	CACHEDB_CAP_COL_ORIENTED = (CACHEDB_CAP_QUERY|CACHEDB_CAP_UPDATE),
 
 	CACHEDB_CAP_MAP_GET = 1<<10,
@@ -85,6 +86,8 @@ static inline int check_cachedb_api(cachedb_engine *cde)
 		cde->cdb_func.capability |= CACHEDB_CAP_RAW;
 	if (cde->cdb_func.truncate)
 		cde->cdb_func.capability |= CACHEDB_CAP_TRUNCATE;
+	if (cde->cdb_func.iter_keys)
+		cde->cdb_func.capability |= CACHEDB_CAP_ITER_KEYS;
 
 	if (cde->cdb_func.query)
 		cde->cdb_func.capability |= CACHEDB_CAP_QUERY;
