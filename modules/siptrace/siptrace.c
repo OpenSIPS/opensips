@@ -1472,8 +1472,7 @@ static int sip_trace_w(struct sip_msg *msg, char *param1,
 	}
 
 	if (trace_flags == TRACE_TRANSACTION &&
-		msg->first_line.type == SIP_REQUEST &&
-		(msg->REQ_METHOD != METHOD_ACK)) {
+	msg->first_line.type == SIP_REQUEST) {
 		LM_DBG("tracing transaction!\n");
 	} else if (trace_flags == TRACE_TRANSACTION) {
 		LM_DBG("can't trace transaction! Will trace only this message!\n");
