@@ -2108,9 +2108,6 @@ after_unlock5:
 
 			if (ok) {
 				dlg->flags |= DLG_FLAG_CHANGED;
-				/* unmark dlg as loaded from DB (otherwise it would have been
-				 * dropped later when syncing from cluster is done) */
-				dlg->flags &= ~DLG_FLAG_FROM_DB;
 				if (dlg_db_mode==DB_MODE_REALTIME)
 					update_dialog_dbinfo(dlg);
 
@@ -2209,9 +2206,6 @@ early_check:
 
 	if(new_state==DLG_STATE_CONFIRMED && old_state==DLG_STATE_CONFIRMED_NA){
 		dlg->flags |= DLG_FLAG_CHANGED;
-		/* unmark dlg as loaded from DB (otherwise it would have been
-		 * dropped later when syncing from cluster is done) */
-		dlg->flags &= ~DLG_FLAG_FROM_DB;
 		if (dlg_db_mode == DB_MODE_REALTIME)
 			update_dialog_dbinfo(dlg);
 

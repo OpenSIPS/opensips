@@ -67,6 +67,7 @@
 #define DLG_FLAG_WAS_CANCELLED			(1<<16)
 #define DLG_FLAG_RACE_CONDITION_OCCURRED	(1<<17)
 #define DLG_FLAG_SELF_EXTENDED_TIMEOUT		(1<<18)
+#define DLG_FLAG_SYNCED                     (1<<19)
 
 #define dlg_has_reinvite_pinging(dlg) \
 	(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || \

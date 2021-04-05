@@ -137,9 +137,8 @@
 	In the context of dialog replication, using a database as a failsafe for obtaining
 	restart persistency for dialog data is useful in case all nodes in the cluster are down.
 	This approach makes the most sense if a separate, local DB is used for each node in the
-	cluster. In consequence dialogs loaded from the database at startup are dropped and also
-	deleted from the DB once the sync from cluster is complete. This is done for dialogs that
-	are not reconfirmed as being active in the meantime (SIP updates, received in sync data).
+	cluster. Dialogs loaded from the database at startup, which are not reconfirmed through
+	syncing, are dropped and also deleted from the database once the sync from cluster is complete.
 	</para>
 	<para>
 	Also configuring profile replication via the <emphasis>profile_replication_cluster</emphasis>
@@ -2885,22 +2884,27 @@ event_route[E_RTPPROXY_DTMF] {
 		This command will only take effect if dialog replication is enabled.
 		</para>
 		<para>
-		The current node will locate a suitable donor node within the
-		<xref linkend="param_dialog_replication_cluster"/> and issue a sync
-		request to it. The donor node will then push all the dialog information
-		to the current node, via the the binary interface. For dialogs that
-		already exist in memory, the information will be not be treated as an update
-		but discarded instead.
+		Fully synchronize the dialog information in memory from a suitable donor
+		node within the <xref linkend="param_dialog_replication_cluster"/>. Dialogs
+		that already exist in memory which are not reconfirmed through syncing will
+		be discarded. A sharing tag can be specified in order to sync only dialogs
+		marked with that sharing tag.
 		</para>
 		<para>
 		Name: <emphasis>dlg_cluster_sync</emphasis>
 		</para>
-		<para>It takes no parameters</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>sharing_tag</emphasis> - name of the sharing tag that
+				dialogs have to be marked with in order to be synced
+			</para></listitem>
+		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi dlg_cluster_sync
+		opensips-cli -x mi dlg_cluster_sync vip1
 		</programlisting>
 		</section>
 

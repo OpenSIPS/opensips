@@ -39,6 +39,11 @@
 #define SHTAG_STATE_BACKUP 0
 #define SHTAG_STATE_ACTIVE 1
 
+/* values returned by shtag_get_sync_status_f and
+ * accepted by shtag_set_sync_status_f */
+#define SHTAG_SYNC_NOT_REQUIRED 0
+#define SHTAG_SYNC_REQUIRED 1
+
 enum cl_node_state {
 	STATE_DISABLED,	/* don't send any messages and drop received ones */
 	STATE_ENABLED
@@ -208,6 +213,33 @@ typedef int (*sync_chunk_iter_f)(bin_packet_t *packet);
 typedef int (*shtag_get_f)(str *tag, int cluster_id);
 
 /*
+ * Gets the sync status (required/not required) of a sharing tag
+ *
+ * Returns -1 if error or the sync status of the tag (>=0)
+ */
+typedef int (*shtag_get_sync_status_f)(str *tag, int cluster_id, str *capability);
+
+/*
+ * Sets the sync status (required/not required) of a single sharing tag or all
+ * sharing tags if @tag is NULL.
+ *
+ * Returns -1 if error or 0 otherwise
+ */
+typedef int (*shtag_set_sync_status_f)(str *tag, int cluster_id, str *capability,
+	int new_status);
+
+/*
+ * Sets the sync status to required for all sharing tags in backup state
+ * (conversely, all active tags will be set to not required).
+ *
+ * Returns:
+ *   -1 if error
+ *    1 if there is at least one sharing tag in backup state
+ *    0 if no sharing tag is in backup state
+ */
+typedef int (*shtag_sync_all_backup_f)(int cluster_id, str *capability);
+
+/*
  * Activates a sharing tag by name and cluster ID
  *
  * Returns -1 if error or the new status of the tag (>=0)
@@ -260,6 +292,9 @@ struct clusterer_binds {
 	shtag_activate_f shtag_activate;
 	shtag_get_all_active_f shtag_get_all_active;
 	shtag_register_callback_f shtag_register_callback;
+	shtag_get_sync_status_f shtag_get_sync_status;
+	shtag_set_sync_status_f shtag_set_sync_status;
+	shtag_sync_all_backup_f shtag_sync_all_backup;
 };
 
 typedef int (*load_clusterer_f)(struct clusterer_binds *binds);

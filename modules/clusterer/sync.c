@@ -434,8 +434,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		packet->src_id = source_id;
 		set_bin_pkg_version(packet, (short)data_version);
 
-		if (ipc_dispatch_mod_packet(packet, &cap->reg) < 0)
-			LM_ERR("Failed to dispatch handling of module packet\n");
+		cap->reg.packet_cb(packet);
 	} else { /* CLUSTERER_SYNC_END */
 		LM_INFO("Received all sync packets for capability '%.*s' in "
 		        "cluster %d\n", cap_name.len, cap_name.s, cluster->cluster_id);

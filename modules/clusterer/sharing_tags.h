@@ -57,6 +57,13 @@ str** shtag_get_all_active(int c_id);
 int shtag_register_callback(str *tag_name, int c_id, void *param,
 		shtag_cb_f func);
 
+int shtag_get_sync_status(str *tag_name, int cluster_id, str *capability);
+
+int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
+	int new_status);
+
+int shtag_sync_all_backup(int cluster_id, str *capability);
+
 /* script vars related functions */
 int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 

@@ -45,6 +45,8 @@ struct clusterer_binds clusterer_api;
 
 str shtag_dlg_val = str_init("dlgX_shtag");
 
+static int get_shtag_sync_status(struct dlg_cell *dlg);
+
 static struct socket_info * fetch_socket_info(str *addr)
 {
 	struct socket_info *sock;
@@ -100,7 +102,7 @@ do { \
  * by reading the relevant information using the Binary Packet Interface
  */
 int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
-												str *ftag, str *ttag, int safe)
+	str *ftag, str *ttag, int safe, int from_sync)
 {
 	int h_entry, rc;
 	str callid = { NULL, 0 }, from_uri, to_uri, from_tag, to_tag;
@@ -133,6 +135,8 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 			/* unmark dlg as loaded from DB (otherwise it would have been
 			 * dropped later when syncing from cluster is done) */
 			dlg->flags &= ~DLG_FLAG_FROM_DB;
+			if (from_sync)
+				dlg->flags |= DLG_FLAG_SYNCED;
 			dlg_unlock(d_table, d_entry);
 			return 0;
 		}
@@ -271,6 +275,18 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 
 	dlg->locked_by = 0;
 
+	if (from_sync) {
+		dlg->flags |= DLG_FLAG_SYNCED;
+		/* drop a dialog that is not marked with a sharing tag we're
+		 * interested in */
+		if (get_shtag_sync_status(dlg) != SHTAG_SYNC_REQUIRED) {
+			dlg_unlock(d_table, d_entry);
+			unref_dlg(dlg, 3);
+
+			return 0;
+		}
+	}
+
 	if (dlg_db_mode == DB_MODE_DELAYED) {
 		/* to be later removed by timer */
 		ref_dlg_unsafe(dlg, 1);
@@ -357,7 +373,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 			goto error;
 		}
 
-		return dlg_replicated_create(packet ,dlg, &from_tag, &to_tag, 0);
+		return dlg_replicated_create(packet ,dlg, &from_tag, &to_tag, 0, 0);
 	}
 
 	/* discard an update for a deleted dialog */
@@ -648,8 +664,8 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_str(packet, profiles);
 	bin_push_int(packet, dlg->user_flags);
 	bin_push_int(packet, dlg->mod_flags);
-	bin_push_int(packet, dlg->flags &
-			     ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|DLG_FLAG_VP_CHANGED|DLG_FLAG_FROM_DB));
+	bin_push_int(packet, dlg->flags & ~(DLG_FLAG_NEW|DLG_FLAG_CHANGED|
+		DLG_FLAG_VP_CHANGED|DLG_FLAG_FROM_DB|DLG_FLAG_SYNCED));
 	bin_push_int(packet, (unsigned int)time(0) + dlg->tl.timeout - get_ticks());
 	bin_push_int(packet, dlg->legs[DLG_CALLER_LEG].last_gen_cseq);
 	bin_push_int(packet, dlg->legs[callee_leg].last_gen_cseq);
@@ -882,7 +898,7 @@ void receive_dlg_repl(bin_packet_t *packet)
 		case REPLICATION_DLG_CREATED:
 			ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 1);
+			rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 1, 0);
 			if_update_stat(dlg_enable_stats, create_recv, 1);
 			break;
 		case REPLICATION_DLG_UPDATED:
@@ -904,7 +920,7 @@ void receive_dlg_repl(bin_packet_t *packet)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 			while (clusterer_api.sync_chunk_iter(pkt))
-				if (dlg_replicated_create(pkt, NULL, NULL, NULL, 1) < 0) {
+				if (dlg_replicated_create(pkt, NULL, NULL, NULL, 1, 1) < 0) {
 					LM_ERR("Failed to process sync packet\n");
 					return;
 				}
@@ -951,81 +967,97 @@ error:
 	return -1;
 }
 
+struct dlg_cell *drop_dlg(struct dlg_cell *dlg, int i)
+{
+	struct dlg_cell *next_dlg;
+	int ret, unref, old_state, new_state;
+
+	/* make sure dialog is not freed while we don't hold the lock */
+	ref_dlg_unsafe(dlg, 1);
+	dlg_unlock(d_table, &d_table->entries[i]);
+
+	/* simulate BYE received from caller */
+	next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_UPSTREAM, &old_state,
+	        &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
+
+	if (new_state != DLG_STATE_DELETED) {
+		unref_dlg(dlg, 1 + unref);
+		dlg = dlg->next;
+		return dlg;
+	}
+	unref++; /* the extra added ref */
+	dlg_lock(d_table, &d_table->entries[i]);
+
+	destroy_linkers_unsafe(dlg);
+
+	dlg_unlock(d_table, &d_table->entries[i]);
+
+	remove_dlg_prof_table(dlg, 1);
+
+	dlg_lock(d_table, &d_table->entries[i]);
+
+	/* remove from timer, even though it may be done already */
+	ret = remove_dlg_timer(&dlg->tl);
+	if (ret < 0) {
+		LM_ERR("unable to unlink the timer on dlg %p [%u:%u] "
+			"with clid '%.*s' and tags '%.*s' '%.*s'\n",
+			dlg, dlg->h_entry, dlg->h_id,
+			dlg->callid.len, dlg->callid.s,
+			dlg_leg_print_info(dlg, DLG_CALLER_LEG, tag),
+			dlg_leg_print_info(dlg, callee_idx(dlg), tag));
+	} else if (ret == 0)
+		/* successfully removed from timer list */
+		unref++;
+
+	if (dlg_db_mode != DB_MODE_NONE) {
+		if (dlg_db_mode != DB_MODE_SHUTDOWN) {
+			dlg->flags &= ~DLG_FLAG_NEW;
+			remove_dialog_from_db(dlg);
+			dlg->flags |= DLG_FLAG_DB_DELETED;
+		}
+
+		if (dlg_db_mode == DB_MODE_DELAYED)
+			unref++;
+	}
+
+	if (old_state != DLG_STATE_DELETED)
+		if_update_stat(dlg_enable_stats, active_dlgs, -1);
+
+	next_dlg = dlg->next;
+	unref_dlg_unsafe(dlg, unref, &d_table->entries[i]);
+
+	return next_dlg;
+}
+
 void rcv_cluster_event(enum clusterer_event ev, int node_id)
 {
-	struct dlg_cell *dlg, *next_dlg;
-	int i, ret, unref, old_state, new_state;
+	struct dlg_cell *dlg;
+	int i;
 
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
 	else if (ev == SYNC_DONE) {
-		if (dlg_db_mode == DB_MODE_NONE)
-			return;
-		/* drop dialogs loaded from DB which have not been reconfirmed
-		 * through syncing or SIP(updates) */
+		/* drop dialogs that have not been reconfirmed through cluster syncing */
 		for (i = 0; i < d_table->size; i++) {
 			dlg_lock(d_table, &d_table->entries[i]);
 			dlg = d_table->entries[i].first;
 			while (dlg) {
-				if (!(dlg->flags & DLG_FLAG_FROM_DB)) {
-					dlg = dlg->next;
+				if (dlg->flags & DLG_FLAG_FROM_DB) {
+					dlg = drop_dlg(dlg, i);
 					continue;
-				}
+				} else {
+					if (!(dlg->flags & DLG_FLAG_SYNCED) &&
+						get_shtag_sync_status(dlg) == SHTAG_SYNC_REQUIRED) {
+						LM_DBG("Dropping local dialog [%.*s] - not present in "
+							"sync data\n", dlg->callid.len, dlg->callid.s);
+						dlg = drop_dlg(dlg, i);
+						continue;
+					}
 
-				/* make sure dialog is not freed while we don't hold the lock */
-				ref_dlg_unsafe(dlg, 1);
-				dlg_unlock(d_table, &d_table->entries[i]);
+					dlg->flags &= ~DLG_FLAG_SYNCED;
 
-				LM_DBG("Drop DB loaded dialog ID=%llu\n", dlg_get_db_id(dlg));
-
-				/* simulate BYE received from caller */
-				next_state_dlg(dlg, DLG_EVENT_REQBYE, DLG_DIR_UPSTREAM, &old_state,
-				        &new_state, &unref, dlg->legs_no[DLG_LEG_200OK], 0);
-
-				if (new_state != DLG_STATE_DELETED) {
-					unref_dlg(dlg, 1 + unref);
 					dlg = dlg->next;
-					continue;
 				}
-				unref++; /* the extra added ref */
-				dlg_lock(d_table, &d_table->entries[i]);
-
-				destroy_linkers_unsafe(dlg);
-
-				dlg_unlock(d_table, &d_table->entries[i]);
-
-				remove_dlg_prof_table(dlg, 1);
-
-				dlg_lock(d_table, &d_table->entries[i]);
-
-				/* remove from timer, even though it may be done already */
-				ret = remove_dlg_timer(&dlg->tl);
-				if (ret < 0) {
-					LM_ERR("unable to unlink the timer on dlg %p [%u:%u] "
-						"with clid '%.*s' and tags '%.*s' '%.*s'\n",
-						dlg, dlg->h_entry, dlg->h_id,
-						dlg->callid.len, dlg->callid.s,
-						dlg_leg_print_info(dlg, DLG_CALLER_LEG, tag),
-						dlg_leg_print_info(dlg, callee_idx(dlg), tag));
-				} else if (ret == 0)
-					/* successfully removed from timer list */
-					unref++;
-
-				if (dlg_db_mode != DB_MODE_SHUTDOWN) {
-					dlg->flags &= ~DLG_FLAG_NEW;
-					remove_dialog_from_db(dlg);
-					dlg->flags |= DLG_FLAG_DB_DELETED;
-				}
-
-				if (dlg_db_mode == DB_MODE_DELAYED)
-					unref++;
-
-				if (old_state != DLG_STATE_DELETED)
-					if_update_stat(dlg_enable_stats, active_dlgs, -1);
-
-				next_dlg = dlg->next;
-				unref_dlg_unsafe(dlg, unref, &d_table->entries[i]);
-				dlg = next_dlg;
 			}
 			dlg_unlock(d_table, &d_table->entries[i]);
 		}
@@ -1483,8 +1515,44 @@ done:
 mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+	str shtag;
+
 	if (!dialog_repl_cluster)
 		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
+
+	switch (try_get_mi_string_param(params, "sharing_tag", &shtag.s, &shtag.len)) {
+		case 0:
+			break;
+		case -1:
+			shtag.s = NULL;
+			break;
+		default:
+			return init_mi_param_error();
+	}
+
+	if (shtag.s) {
+		if (clusterer_api.shtag_set_sync_status(NULL, dialog_repl_cluster,
+			&dlg_repl_cap, SHTAG_SYNC_NOT_REQUIRED) < 0) {
+			LM_ERR("Failed to set sync state for sharing tags\n");
+			return init_mi_error(500,
+				MI_SSTR("Internal error while setting sync state"));
+		}
+
+		if (clusterer_api.shtag_set_sync_status(&shtag, dialog_repl_cluster,
+			&dlg_repl_cap, SHTAG_SYNC_REQUIRED) < 0) {
+			LM_ERR("Failed to set sync state for sharing tag: <%.*s>\n",
+				shtag.len, shtag.s);
+			return init_mi_error(500,
+				MI_SSTR("Internal error while setting sync state"));
+		}
+	} else {
+		if (clusterer_api.shtag_set_sync_status(NULL, dialog_repl_cluster,
+			&dlg_repl_cap, SHTAG_SYNC_REQUIRED) < 0) {
+			LM_ERR("Failed to set sync state for sharing tags\n");
+			return init_mi_error(500,
+				MI_SSTR("Internal error while setting sync state"));
+		}
+	}
 
 	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
 		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
@@ -1528,6 +1596,25 @@ int get_shtag_state(struct dlg_cell *dlg)
 
 	if ((rc = clusterer_api.shtag_get(&dlg->shtag, dialog_repl_cluster)) < 0) {
 		LM_ERR("Failed to get state for sharing tag: <%.*s>\n",
+			dlg->shtag.len, dlg->shtag.s);
+		return -1;
+	}
+
+	return rc;
+}
+
+static int get_shtag_sync_status(struct dlg_cell *dlg)
+{
+	int rc;
+
+	if (!dlg->shtag.s || dlg->shtag.len == 0) {
+		LM_DBG("Sharing tag not set\n");
+		return SHTAG_SYNC_NOT_REQUIRED;
+	}
+
+	if ((rc = clusterer_api.shtag_get_sync_status(&dlg->shtag,
+		dialog_repl_cluster, &dlg_repl_cap)) < 0) {
+		LM_ERR("Failed to get sync state for sharing tag: <%.*s>\n",
 			dlg->shtag.len, dlg->shtag.s);
 		return -1;
 	}

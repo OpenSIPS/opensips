@@ -381,6 +381,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "dlg_cluster_sync", 0, 0, 0, {
 		{mi_sync_cl_dlg, {0}},
+		{mi_sync_cl_dlg, {"sharing_tag", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "profile_get_size", 0, 0, 0, {

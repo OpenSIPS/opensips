@@ -1327,6 +1327,9 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->shtag_activate = shtag_activate;
 	binds->shtag_get_all_active = shtag_get_all_active;
 	binds->shtag_register_callback = shtag_register_callback;
+	binds->shtag_get_sync_status = shtag_get_sync_status;
+	binds->shtag_set_sync_status = shtag_set_sync_status;
+	binds->shtag_sync_all_backup = shtag_sync_all_backup;
 
 	return 1;
 }

@@ -33,11 +33,18 @@ struct n_send_info {
 	struct n_send_info *next;
 };
 
+struct shtag_sync_status {
+	int status;
+	str capability;
+	struct shtag_sync_status *next;
+};
+
 struct sharing_tag {
 	str name;
 	int cluster_id;
 	int state;
 	int send_active_msg;
+	struct shtag_sync_status *sync_status;
 	struct n_send_info *active_msgs_sent;
 	struct sharing_tag *next;
 };
@@ -344,6 +351,165 @@ int shtag_get(str *tag_name, int cluster_id)
 	return ret;
 }
 
+static struct shtag_sync_status *_get_sync_status(struct sharing_tag *tag,
+	str *capability, int *w_lock)
+{
+	struct shtag_sync_status *status;
+
+	for (status=tag->sync_status; status &&
+		str_strcmp(&status->capability, capability); status=status->next) ;
+
+	if (!status) {
+		if (*w_lock == 0) {
+			*w_lock = 1;
+			lock_stop_read(shtags_lock);
+			lock_start_write(shtags_lock);
+		}
+
+		status = shm_malloc(sizeof *status + capability->len);
+		if (!status) {
+			LM_ERR("No more shm memory!\n");
+			return NULL;
+		}
+		memset(status, 0, sizeof *status);
+
+		status->capability.s = (char*)(status+1);
+		memcpy(status->capability.s, capability->s, capability->len);
+		status->capability.len = capability->len;
+
+		status->status = SHTAG_SYNC_REQUIRED;
+
+		status->next = tag->sync_status;
+		tag->sync_status = status;
+	}
+
+	return status;
+}
+
+int shtag_get_sync_status(str *tag_name, int cluster_id, str *capability)
+{
+	struct sharing_tag *tag;
+	struct shtag_sync_status *status;
+	int ret;
+	int w_lock = 0;
+
+	lock_start_read(shtags_lock);
+
+	for (tag = *shtags_list;
+		tag && (tag->cluster_id!=cluster_id || str_strcmp(&tag->name, tag_name));
+		tag = tag->next) ;
+	if (!tag) {
+		lock_stop_read(shtags_lock);
+		lock_start_write(shtags_lock);
+
+		tag = shtag_get_unsafe(tag_name, cluster_id);
+		if (!tag) {
+			lock_stop_write(shtags_lock);
+			return -1;
+		}
+
+		w_lock = 1;
+		status = _get_sync_status(tag, capability, &w_lock);
+		if (!status) {
+			LM_ERR("Failed to get sync status structure\n");
+			return -1;
+		}
+		ret = status->status;
+
+		lock_stop_write(shtags_lock);
+	} else {
+		status = _get_sync_status(tag, capability, &w_lock);
+		if (!status) {
+			LM_ERR("Failed to get sync status structure\n");
+			return -1;
+		}
+		ret = status->status;
+
+		if (w_lock)
+			lock_stop_write(shtags_lock);
+		else
+			lock_stop_read(shtags_lock);
+	}
+
+	return ret;
+}
+
+int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
+	int new_status)
+{
+	struct sharing_tag *tag;
+	struct shtag_sync_status *status;
+	int w_lock = 1;
+
+	lock_start_write(shtags_lock);
+
+	for (tag = *shtags_list; tag; tag = tag->next) {
+		if ((tag->cluster_id != cluster_id) ||
+			(tag_name && str_strcmp(&tag->name, tag_name)))
+			continue;
+
+		status = _get_sync_status(tag, capability, &w_lock);
+		if (!status) {
+			LM_ERR("Failed to get sync status structure\n");
+			lock_stop_write(shtags_lock);
+			return -1;
+		}
+		status->status = new_status;
+	}
+
+	if (tag_name && !tag) {
+		tag = shtag_get_unsafe(tag_name, cluster_id);
+		if (!tag) {
+			lock_stop_write(shtags_lock);
+			return -1;
+		}
+
+		status = _get_sync_status(tag, capability, &w_lock);
+		if (!status) {
+			LM_ERR("Failed to get sync status structure\n");
+			lock_stop_write(shtags_lock);
+			return -1;
+		}
+		status->status = new_status;
+	}
+
+	lock_stop_write(shtags_lock);
+
+	return 0;
+}
+
+int shtag_sync_all_backup(int cluster_id, str *capability)
+{
+	struct sharing_tag *tag;
+	struct shtag_sync_status *status;
+	int ret = 0;
+	int w_lock = 1;
+
+	lock_start_write(shtags_lock);
+
+	for (tag = *shtags_list; tag; tag = tag->next) {
+		if (tag->cluster_id != cluster_id)
+			continue;
+
+		status = _get_sync_status(tag, capability, &w_lock);
+		if (!status) {
+			LM_ERR("Failed to get sync status structure\n");
+			lock_stop_write(shtags_lock);
+			return -1;
+		}
+
+		if (tag->state == SHTAG_STATE_BACKUP) {
+			ret = 1;
+			status->status = SHTAG_SYNC_REQUIRED;
+		} else {
+			status->status = SHTAG_SYNC_NOT_REQUIRED;
+		}
+	}
+
+	lock_stop_write(shtags_lock);
+
+	return ret;
+}
 
 static int shtag_send_active_info(int c_id, str *tag_name, int node_id)
 {
