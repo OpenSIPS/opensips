@@ -1941,7 +1941,6 @@ error:
 	return -1;
 }
 
-#define RE_MAX_SIZE 1024
 static char *reg_input_buf = NULL;
 static struct subst_expr *subst_re = NULL;
 static str buf_re = { 0, 0 };
@@ -2018,11 +2017,6 @@ int tr_eval_re(struct sip_msg *msg, tr_param_t *tp, int subtype,
 					buf_re.len = sv.len;
 				} else
 					LM_DBG("yay, we can use the pre-compile regexp\n");
-
-				if (val->rs.len >= RE_MAX_SIZE) {
-					LM_ERR("regex value too long [%.*s]\n", val->rs.len, val->rs.s);
-					goto error;
-				}
 
 				buf = pkg_realloc(reg_input_buf, val->rs.len + 1);
 				if (!buf) {
