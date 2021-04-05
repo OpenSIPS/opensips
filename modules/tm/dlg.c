@@ -689,10 +689,10 @@ void print_dlg(FILE* out, dlg_t* _d)
 			_d->rem_target.len,_d->rem_target.s);
 	fprintf(out, "state         : ");
 	switch(_d->state) {
-	case DLG_NEW:       fprintf(out, "DLG_NEW\n");       break;
-	case DLG_EARLY:     fprintf(out, "DLG_EARLY\n");     break;
-	case DLG_CONFIRMED: fprintf(out, "DLG_CONFIRMED\n"); break;
-	case DLG_DESTROYED: fprintf(out, "DLG_DESTROYED\n"); break;
+	CASE_FPRINTENUM(out, DLG_NEW);
+	CASE_FPRINTENUM(out, DLG_EARLY);
+	CASE_FPRINTENUM(out, DLG_CONFIRMED);
+	CASE_FPRINTENUM(out, DLG_DESTROYED);
 	}
 	print_rr(out, _d->route_set);
 	if (_d->hooks.request_uri)

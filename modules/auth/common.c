@@ -73,14 +73,14 @@ int get_realm(struct sip_msg* _m, hdr_types_t _hftype, struct sip_uri** _u)
 
 /*
  * Create a response with given code and reason phrase
- * Optionally add new headers specified in _hdr
+ * Optionally add new headers specified in hdrs
  */
 int send_resp(struct sip_msg* _m, int _code, const str* _reason,
-					char* _hdr, int _hdr_len)
+    const str hdrs[], int nhdrs)
 {
 	/* Add new headers if there are any */
-	if ((_hdr) && (_hdr_len)) {
-		if (add_lump_rpl( _m, _hdr, _hdr_len, LUMP_RPL_HDR)==0) {
+	for (int i = 0; i < nhdrs; i++) {
+		if (add_lump_rpl( _m, hdrs[i].s, hdrs[i].len, LUMP_RPL_HDR)==0) {
 			LM_ERR("unable to append hdr\n");
 			return -1;
 		}

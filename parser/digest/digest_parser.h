@@ -34,12 +34,35 @@
 
 /* Type of algorithm used */
 typedef enum alg {
-	ALG_UNSPEC = 0,   /* Algorithm parameter not specified */
-	ALG_MD5 = 1,      /* MD5 - default value*/
-	ALG_MD5SESS = 2,  /* MD5-Session */
-	ALG_OTHER = 4     /* Unknown */
+	ALG_UNSPEC = 0,         /* Algorithm parameter not specified: defaults to MD5 */
+	ALG_MD5 = 1,            /* MD5 */
+	ALG_MD5SESS = 2,        /* MD5-Session */
+	ALG_SHA256 = 3,         /* SHA-256 */
+	ALG_SHA256SESS = 4,     /* SHA-256-Session */
+	ALG_SHA512_256 = 5,     /* SHA-512/256 */
+	ALG_SHA512_256SESS = 6, /* SHA-512/256-Session */
+	ALG_OTHER = 7           /* Unknown */
 } alg_t;
 
+#define ALG2ALGFLG(_alg)      (1 << (_alg))
+
+/* Flags to enable/disable set of algorithms */
+#define ALGFLG_UNSPEC         ALG2ALGFLG(ALG_UNSPEC)
+#define ALGFLG_MD5            ALG2ALGFLG(ALG_MD5)
+#define ALGFLG_MD5SESS        ALG2ALGFLG(ALG_MD5SESS)
+#define ALGFLG_SHA256         ALG2ALGFLG(ALG_SHA256)
+#define ALGFLG_SHA256SESS     ALG2ALGFLG(ALG_SHA256SESS)
+#define ALGFLG_SHA512_256     ALG2ALGFLG(ALG_SHA512_256)
+#define ALGFLG_SHA512_256SESS ALG2ALGFLG(ALG_SHA512_256SESS)
+
+/* Canonical algorithm names */
+#define ALG_SESS_SFX           "-sess"
+#define ALG_MD5_STR            "MD5"
+#define ALG_MD5SESS_STR        ALG_MD5_STR ALG_SESS_SFX
+#define ALG_SHA256_STR         "SHA-256"
+#define ALG_SHA256SESS_STR     ALG_SHA256_STR ALG_SESS_SFX
+#define ALG_SHA512_256_STR     "SHA-512-256"
+#define ALG_SHA512_256SESS_STR ALG_SHA512_256_STR ALG_SESS_SFX
 
 /* Quality Of Protection used */
 typedef enum qop_type {
@@ -48,6 +71,10 @@ typedef enum qop_type {
 	QOP_AUTHINT_D = 2,  /* Authentication with integrity checks */
 	QOP_OTHER_D = 4     /* Unknown */
 } qop_type_t;
+
+/* Canonical QOP names */
+#define QOP_AUTH_STR "auth"
+#define QOP_AUTHINT_STR "auth-int"
 
 
 /* Algorithm structure */
@@ -118,6 +145,6 @@ void init_dig_cred(dig_cred_t* _c);
  *  1 - Unknown scheme
  */
 int parse_digest_cred(str* _s, dig_cred_t* _c);
-
+alg_t parse_digest_algorithm(const str *);
 
 #endif /* DIGEST_PARSER_H */

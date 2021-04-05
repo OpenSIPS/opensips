@@ -36,6 +36,7 @@
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_min_expires.h"
 #include "../uac_auth/uac_auth.h"
+#include "../../lib/digest_auth/digest_auth.h"
 #include "reg_records.h"
 #include "reg_db_handler.h"
 #include "clustering.h"
@@ -360,7 +361,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	contact_t *contact;
 	struct authenticate_body *auth = NULL;
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
-	HASHHEX response;
+	struct digest_auth_response response;
 	str *new_hdr;
 	struct reg_tm_cback_data *tm_cback_data = (struct reg_tm_cback_data*)data;
 	struct cell *t;
@@ -577,11 +578,11 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 
 		if (statuscode==WWW_AUTH_CODE) {
-			if (0 == parse_www_authenticate_header(msg))
-				auth = get_www_authenticate(msg);
+			parse_www_authenticate_header(msg,
+			    DAUTH_AHFM_ANYSUP, &auth);
 		} else if (statuscode==PROXY_AUTH_CODE) {
-			if (0 == parse_proxy_authenticate_header(msg))
-				auth = get_proxy_authenticate(msg);
+			parse_proxy_authenticate_header(msg,
+			    DAUTH_AHFM_ANYSUP, &auth);
 		}
 		if (auth == NULL) {
 			LM_ERR("Unable to extract authentication info\n");
@@ -617,13 +618,13 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 
 		/* perform authentication */
 		if (auth->realm.s && auth->realm.len) {
-			crd.realm.s = auth->realm.s; crd.realm.len = auth->realm.len;
+			crd.auth_data.realm = auth->realm;
 		} else {
 			LM_ERR("No realm found\n");
 			goto done;
 		}
-		crd.user.s = rec->auth_user.s; crd.user.len = rec->auth_user.len;
-		crd.passwd.s = rec->auth_password.s; crd.passwd.len = rec->auth_password.len;
+		crd.auth_data.user = rec->auth_user;
+		crd.auth_data.passwd = rec->auth_password;
 
 		if ((auth->flags & QOP_AUTH_INT) && get_body(msg, &msg_body) < 0) {
 			LM_ERR("Failed to get message body\n");
@@ -631,10 +632,13 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 
 		memset(&auth_nc_cnonce, 0, sizeof(struct authenticate_nc_cnonce));
-		uac_auth_api._do_uac_auth(&msg_body, &register_method,
-					&rec->td.rem_target, &crd, auth, &auth_nc_cnonce, response);
+		if (uac_auth_api._do_uac_auth(&msg_body, &register_method,
+		    &rec->td.rem_target, &crd, auth, &auth_nc_cnonce, &response) != 0) {
+			LM_ERR("Failed in do_uac_auth()\n");
+			goto done;
+		}
 		new_hdr = uac_auth_api._build_authorization_hdr(statuscode, &rec->td.rem_target,
-					&crd, auth, &auth_nc_cnonce, response);
+					&crd, auth, &auth_nc_cnonce, &response);
 		if (!new_hdr) {
 			LM_ERR("failed to build authorization hdr\n");
 			goto done;

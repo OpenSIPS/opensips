@@ -82,7 +82,7 @@ static int w_restore_from(struct sip_msg* msg);
 static int w_replace_to(struct sip_msg* msg, str* p1, str* p2);
 static int w_restore_to(struct sip_msg* msg);
 
-static int w_uac_auth(struct sip_msg* msg);
+static int w_uac_auth(struct sip_msg* msg, intptr_t _alg);
 static int fixup_replace_disp_uri(void** param);
 static int fixup_free_s(void** param);
 static int mod_init(void);
@@ -107,7 +107,8 @@ static cmd_export_t cmds[]={
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"uac_restore_to",  (cmd_function)w_restore_to, {{0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
-	{"uac_auth",        (cmd_function)w_uac_auth, {{0,0,0}},
+	{"uac_auth",        (cmd_function)w_uac_auth, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT,dauth_fixup_algorithms,0}, {0,0,0}},
 		REQUEST_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
@@ -451,9 +452,10 @@ static int w_replace_to(struct sip_msg* msg, str *dsp, str *uri)
 
 
 
-static int w_uac_auth(struct sip_msg* msg)
+static int w_uac_auth(struct sip_msg* msg, intptr_t _alg)
 {
-	return (uac_auth(msg)==0)?1:-1;
+
+	return (uac_auth(msg, _alg)==0)?1:-1;
 }
 
 

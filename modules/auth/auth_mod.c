@@ -47,9 +47,10 @@
 #include "challenge.h"
 #include "rpid.h"
 #include "api.h"
-
-
-#define RAND_SECRET_LEN 32
+#include "../../parser/digest/digest_parser.h"
+#include "../../lib/digest_auth/dauth_calc.h"
+#include "../../lib/digest_auth/dauth_nonce.h"
+#include "../../lib/dassert.h"
 
 #define DEF_RPID_PREFIX ""
 #define DEF_RPID_SUFFIX ";party=calling;id-type=subscriber;screen=yes"
@@ -68,6 +69,7 @@ static void destroy(void);
  * Module initialization function prototype
  */
 static int mod_init(void);
+static int child_init(int _rank);
 
 int pv_proxy_authorize(struct sip_msg* msg, str* realm);
 int pv_www_authorize(struct sip_msg* msg, str* realm);
@@ -82,8 +84,7 @@ struct sig_binds sigb;
 char* sec_param    = 0;   /* If the parameter was not used, the secret phrase will be auto-generated */
 unsigned int nonce_expire = 30; /* Nonce lifetime - default 30 seconds */
 
-str secret;
-char* sec_rand = 0;
+struct nonce_context *ncp = NULL;
 
 int auth_calc_ha1 = 0;
 
@@ -121,11 +122,13 @@ int disable_nonce_check = 0;
 static cmd_export_t cmds[] = {
 	{"www_challenge", (cmd_function)www_challenge, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_qop,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_qop,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,dauth_fixup_algorithms,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"proxy_challenge", (cmd_function)proxy_challenge, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_qop,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_qop,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,dauth_fixup_algorithms,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"pv_www_authorize",    (cmd_function)pv_www_authorize, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -194,39 +197,9 @@ struct module_exports exports = {
 	mod_init,   /* module initialization function */
 	0,          /* response function */
 	destroy,    /* destroy function */
-	0,          /* child initialization function */
+	child_init, /* child initialization function */
 	0           /* reload confirm function */
 };
-
-
-/*
- * Secret parameter was not used so we generate
- * a random value here
- */
-static inline int generate_random_secret(void)
-{
-	int i;
-
-	sec_rand = (char*)pkg_malloc(RAND_SECRET_LEN);
-	if (!sec_rand) {
-		LM_ERR("no pkg memory left\n");
-		return -1;
-	}
-
-	/* the generator is seeded from the core */
-
-	for(i = 0; i < RAND_SECRET_LEN; i++) {
-		sec_rand[i] = 32 + (int)(95.0 * rand() / (RAND_MAX + 1.0));
-	}
-
-	secret.s = sec_rand;
-	secret.len = RAND_SECRET_LEN;
-
-	/*LM_DBG("Generated secret: '%.*s'\n", secret.len, secret.s); */
-
-	return 0;
-}
-
 
 static int mod_init(void)
 {
@@ -239,18 +212,30 @@ static int mod_init(void)
 		return -1;
 	}
 
+	ncp = dauth_noncer_new();
+	if (ncp == NULL) {
+		LM_ERR("can't init nonce generator\n");
+		return -1;
+	}
+
 	/* If the parameter was not used */
 	if (sec_param == 0) {
 		/* Generate secret using random generator */
-		if (generate_random_secret() < 0) {
+		if (generate_random_secret(ncp) < 0) {
 			LM_ERR("failed to generate random secret\n");
 			return -3;
 		}
 	} else {
 		/* Otherwise use the parameter's value */
-		secret.s = sec_param;
-		secret.len = strlen(secret.s);
+		ncp->secret.s = sec_param;
+		ncp->secret.len = strlen(sec_param);
 	}
+
+	if (dauth_noncer_init(ncp) < 0) {
+		LM_ERR("dauth_noncer_init() failed\n");
+		return -1;
+	}
+
 
 	if ( init_rpid_avp(rpid_avp_param)<0 ) {
 		LM_ERR("failed to process rpid AVPs\n");
@@ -344,12 +329,17 @@ static int mod_init(void)
 	return 0;
 }
 
+static int child_init(int _rank)
+{
 
+	dauth_noncer_reseed();
+	return 0;
+}
 
 static void destroy(void)
 {
-	if (sec_rand) pkg_free(sec_rand);
-
+	if (ncp == NULL)
+		return;
 	if(!disable_nonce_check)
 	{
 		if(nonce_lock)
@@ -367,12 +357,14 @@ static void destroy(void)
 		if(next_index)
 			shm_free(next_index);
 	}
+	dauth_noncer_dtor(ncp);
 }
 
-static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
-		str* _domain, char* _ha1)
+static inline int auth_get_ha1(struct sip_msg *msg, dig_cred_t* digest,
+		str* _domain, HASHHEX* _ha1)
 {
 	pv_value_t sval;
+	struct username* _username = &digest->username;
 
 	/* get username from PV */
 	memset(&sval, 0, sizeof(pv_value_t));
@@ -408,14 +400,28 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 	} else {
 		return 1;
 	}
+	const struct digest_auth_calc *digest_calc;
+	digest_calc = get_digest_calc(digest->alg.alg_parsed);
+	if (digest_calc == NULL) {
+		LM_ERR("digest algorithm (%d) unsupported\n", digest->alg.alg_parsed);
+		 return -1;
+	}
 	if (auth_calc_ha1) {
+		struct digest_auth_credential creds = {.realm = *_domain,
+		    .user = _username->whole, .passwd = sval.rs};
 		/* Only plaintext passwords are stored in database,
 		 * we have to calculate HA1 */
-		calc_HA1(HA_MD5, &_username->whole, _domain, &sval.rs, 0, 0, _ha1);
-		LM_DBG("HA1 string calculated: %s\n", _ha1);
+		if (digest_calc->HA1(&creds, _ha1) != 0)
+			return -1;
+		LM_DBG("HA1 string calculated: %s\n", _ha1->_start);
 	} else {
-		memcpy(_ha1, sval.rs.s, sval.rs.len);
-		_ha1[sval.rs.len] = '\0';
+		memcpy(_ha1->_start, sval.rs.s, sval.rs.len);
+		_ha1->_start[sval.rs.len] = '\0';
+	}
+	if (digest_calc->HA1sess != NULL) {
+		if (digest_calc->HA1sess(str2const(&digest->nonce),
+		    str2const(&digest->cnonce), _ha1) != 0)
+			return -1;
 	}
 
 	return 0;
@@ -424,7 +430,7 @@ static inline int auth_get_ha1(struct sip_msg *msg, struct username* _username,
 static inline int pv_authorize(struct sip_msg* msg, str *domain,
 										hdr_types_t hftype)
 {
-	static char ha1[256];
+	HASHHEX ha1;
 	int res;
 	struct hdr_field* h;
 	auth_body_t* cred;
@@ -441,7 +447,7 @@ static inline int pv_authorize(struct sip_msg* msg, str *domain,
 
 	cred = (auth_body_t*)h->parsed;
 
-	res = auth_get_ha1(msg, &cred->digest.username, domain, ha1);
+	res = auth_get_ha1(msg, &cred->digest, domain, &ha1);
 	if (res < 0) {
 		/* Error */
 		if (sigb.reply(msg, 500, &auth_500_err, NULL) == -1)
@@ -461,7 +467,7 @@ static inline int pv_authorize(struct sip_msg* msg, str *domain,
 
 	/* Recalculate response, it must be same to authorize successfully */
 	if (!check_response(&(cred->digest),&msg->first_line.u.request.method,
-		&msg_body,ha1))
+		&msg_body, &ha1))
 	{
 		return post_auth(msg, h);
 	}

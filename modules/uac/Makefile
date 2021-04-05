@@ -8,6 +8,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=uac.so
-LIBS= 
+misclibs=../../lib/digest_auth/libdigest_auth.a
 
 include ../../Makefile.modules

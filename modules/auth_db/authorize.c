@@ -44,42 +44,74 @@
 #include "../../usr_avp.h"
 #include "../../mod_fix.h"
 #include "../../mem/mem.h"
+#include "../../lib/digest_auth/digest_auth.h"
 #include "aaa_avps.h"
 #include "authdb_mod.h"
 
 
 static str auth_500_err = str_init("Server Internal Error");
 
+static str *get_cred_column(alg_t alg)
+{
+	str *rval;
 
-static inline int get_ha1(struct username* _username, str* _domain,
-			  const str* _table, char* _ha1, db_res_t** res)
+	static db_ps_t auth_ha1_ps = NULL;
+	static db_ps_t auth_ha1_sha256_ps = NULL;
+	static db_ps_t auth_ha1_sha512t256_ps = NULL;
+
+	if (calc_ha1) {
+		rval = &pass_column;
+		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1_ps;
+		return rval;
+	}
+	switch(alg) {
+	case ALG_UNSPEC:
+	case ALG_MD5:
+	case ALG_MD5SESS:
+		rval = &pass_column;
+		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1_ps;
+		break;
+	case ALG_SHA256:
+	case ALG_SHA256SESS:
+		rval = &hash_column_sha256;
+		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1_sha256_ps;
+		break;
+	case ALG_SHA512_256:
+	case ALG_SHA512_256SESS:
+		rval = &hash_column_sha512t256;
+		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1_sha512t256_ps;
+		break;
+	default:
+		rval = NULL;
+	}
+	return (rval);
+}
+
+static inline int get_ha1(dig_cred_t* digest, const str* _domain,
+    const str* _table, HASHHEX* _ha1, db_res_t** res)
 {
 	struct aaa_avp *cred;
 	db_key_t keys[2];
 	db_val_t vals[2];
 	db_key_t *col;
 	str result;
-	static db_ps_t auth_ha1_ps = NULL;
-	static db_ps_t auth_ha1b_ps = NULL;
+	struct username* _username = &digest->username;
 
 	int n, nc;
 
 	col = pkg_malloc(sizeof(*col) * (credentials_n + 1));
 	if (col == NULL) {
 		LM_ERR("no more pkg memory\n");
-		return -1;
+		goto e0;
 	}
 
 	keys[0] = &user_column;
 	keys[1] = &domain_column;
 
-	/* should we calculate the HA1, and is it calculated with domain? */
-	if (_username->domain.len && !calc_ha1) {
-		col[0] = &pass_column_2 ;
-		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1b_ps;
-	} else {
-		col[0] = &pass_column;
-		CON_PS_REFERENCE(auth_db_handle) = &auth_ha1_ps;
+	col[0] = get_cred_column(digest->alg.alg_parsed);
+	if (col[0] == NULL) {
+		LM_ERR("unsupported algorithm: %d\n", digest->alg.alg_parsed);
+		goto e1;
 	}
 
 	for (n = 0, cred=credentials; cred ; n++, cred=cred->next) {
@@ -100,16 +132,14 @@ static inline int get_ha1(struct username* _username, str* _domain,
 
 	if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
 		LM_ERR("failed to use_table\n");
-		pkg_free(col);
-		return -1;
+		goto e1;
 	}
 
 	n = (use_domain ? 2 : 1);
 	nc = 1 + credentials_n;
 	if (auth_dbf.query(auth_db_handle, keys, 0, vals, col, n, nc, 0, res) < 0) {
 		LM_ERR("failed to query database\n");
-		pkg_free(col);
-		return -1;
+		goto e1;
 	}
 	pkg_free(col);
 
@@ -123,18 +153,29 @@ static inline int get_ha1(struct username* _username, str* _domain,
 	result.s = (char*)ROW_VALUES(RES_ROWS(*res))[0].val.string_val;
 	result.len = strlen(result.s);
 
+	struct calc_HA1_arg cprms = {.alg = digest->alg.alg_parsed};
 	if (calc_ha1) {
 		/* Only plaintext passwords are stored in database,
 		 * we have to calculate HA1 */
-		auth_api.calc_HA1(HA_MD5, &_username->whole, _domain, &result,
-				0, 0, _ha1);
-		LM_DBG("HA1 string calculated: %s\n", _ha1);
+		cprms.creds.open = &(const struct digest_auth_credential){
+		    .realm = *_domain, .user = _username->whole, .passwd = result};
+		cprms.use_hashed = 0;
 	} else {
-		memcpy(_ha1, result.s, result.len);
-		_ha1[result.len] = '\0';
+		cprms.creds.ha1 = &result;
+		cprms.use_hashed = 1;
 	}
+	cprms.nonce = &digest->nonce;
+	cprms.cnonce = &digest->cnonce;
+	if (auth_api.calc_HA1(&cprms, _ha1) != 0)
+		return (-1);
+	if (calc_ha1)
+		LM_DBG("HA1 string calculated: %s\n", _ha1->_start);
 
 	return 0;
+e1:
+	pkg_free(col);
+e0:
+	return -1;
 }
 
 
@@ -209,9 +250,9 @@ static int generate_avps(db_res_t* result)
  * Authorize digest credentials
  */
 static inline int authorize(struct sip_msg* _m, str *domain,
-									str* table, hdr_types_t _hftype)
+    str* table, hdr_types_t _hftype)
 {
-	char ha1[256];
+	HASHHEX ha1;
 	int res;
 	struct hdr_field* h;
 	auth_body_t* cred;
@@ -226,7 +267,7 @@ static inline int authorize(struct sip_msg* _m, str *domain,
 
 	cred = (auth_body_t*)h->parsed;
 
-	res = get_ha1(&cred->digest.username, domain, table, ha1, &result);
+	res = get_ha1(&cred->digest, domain, table, &ha1, &result);
 	if (res < 0) {
 		/* Error while accessing the database */
 		if (sigb.reply(_m, 500, &auth_500_err, NULL) == -1) {
@@ -248,7 +289,7 @@ static inline int authorize(struct sip_msg* _m, str *domain,
 
 	/* Recalculate response, it must be same to authorize successfully */
 	if (!auth_api.check_response(&(cred->digest),
-				&_m->first_line.u.request.method, &msg_body, ha1)) {
+	    &_m->first_line.u.request.method, &msg_body, &ha1)) {
 		ret = auth_api.post_auth(_m, h);
 		if (ret == AUTHORIZED)
 			generate_avps(result);

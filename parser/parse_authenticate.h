@@ -44,16 +44,37 @@ struct authenticate_body {
 	str qop;
 };
 
-/* casting macro for accessing www/proxy authenticate body */
+/* casting macro for accessing the topmost www/proxy authenticate body */
 #define get_www_authenticate(p_msg)   ((struct authenticate_body*)(p_msg)->www_authenticate->parsed)
 #define get_proxy_authenticate(p_msg) ((struct authenticate_body*)(p_msg)->proxy_authenticate->parsed)
 
 /*
  * WWW/Proxy-Authenticate header field parser
  */
-int parse_proxy_authenticate_header( struct sip_msg *msg );
-int parse_www_authenticate_header( struct sip_msg *msg );
-int parse_authenticate_header(struct hdr_field *authenticate);
+struct match_auth_hf_desc;
+typedef int (*match_auth_hf_function)(const struct authenticate_body *,
+    const struct match_auth_hf_desc *);
+
+struct match_auth_hf_desc {
+	match_auth_hf_function matchf;
+	const void *argp;
+};
+
+#define MATCH_AUTH_HF(_fn, _argp) (const struct match_auth_hf_desc){ \
+    .matchf = (_fn), .argp = (_argp)}
+
+int parse_proxy_authenticate_header(struct sip_msg *msg,
+    const struct match_auth_hf_desc *md, struct authenticate_body **picked_auth);
+int parse_www_authenticate_header(struct sip_msg *msg,
+    const struct match_auth_hf_desc *md, struct authenticate_body **picked_auth);
+int parse_authenticate_header(struct hdr_field *authenticate,
+    const struct match_auth_hf_desc *md, struct authenticate_body **picked_auth);
+static inline int _parse_authenticate_header(struct hdr_field *authenticate)
+{
+	struct authenticate_body *_;
+	return parse_authenticate_header(authenticate, NULL, &_);
+}
+
 
 int parse_qop_value(str val, struct authenticate_body *auth);
 int parse_authenticate_body(str body, struct authenticate_body *auth);

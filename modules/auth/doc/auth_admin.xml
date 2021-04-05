@@ -276,18 +276,19 @@ modparam("auth", "disable_nonce_check", 1)
 	<title>Exported Functions</title>
 	<section id="func_www_challenge" xreflabel="www_challenge()">
 		<title>
-			<function moreinfo="none">www_challenge(realm[, qop])</function>
+			<function moreinfo="none">www_challenge(realm[, qop[, algorithms]])</function>
 		</title>
 		<para>
-		The function challenges a user agent. It will generate a 
-		WWW-Authorize header field containing a digest challenge, it will 
-		put the header field into a response generated from the request the 
-		server is processing and will send the reply. Upon reception of such a 
+		The function challenges a user agent. It will generate one or
+		more WWW-Authorize header fields containing a digest challenges, it will
+		put the header field(s) into a response generated from the request the
+		server is processing and will send the reply. Upon reception of such a
 		reply the user agent should compute credentials and retry the
 		request. For more information regarding digest authentication 
-		see RFC2617.
+		see RFC2617, RFC3261 and RFC8760.
 		</para>
-		<para>Meaning of the parameters is as follows:</para>
+		<para id="www_challenge_params" xreflabel="www_challenge() parameters meaning">
+                    Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>realm</emphasis> (string) - Realm is an opaque string that 
@@ -319,6 +320,25 @@ modparam("auth", "disable_nonce_check", 1)
 			the challenge and response requests.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>algorithms</emphasis> (string, optional) - Value of this
+			parameter is a comma-separated list of digest algorithms to be offered for
+			the UAC to use for authentication. Possible values are:</para>
+			<itemizedlist>
+				<listitem><quote>MD5</quote></listitem>
+				<listitem><quote>MD5-sess</quote></listitem>
+				<listitem><quote>SHA-256</quote></listitem>
+				<listitem><quote>SHA-256-sess</quote></listitem>
+				<listitem><quote>SHA-512-256</quote></listitem>
+				<listitem><quote>SHA-512-256-sess</quote></listitem>
+			</itemizedlist>
+			<para>When the value is empty or not set, the only offered digest
+			algorithm is <emphasis>MD5</emphasis>, to provide compatibility
+			with pre-RFC8760 UAC implementations.</para>
+			<para>Values can be listed in any order. The actual order of individual
+			challenges in SIP response is defined by the RFC8760: from stronger
+			algorithm to a weaker one.</para>
+                </listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE.
@@ -329,7 +349,7 @@ modparam("auth", "disable_nonce_check", 1)
 		<programlisting format="linespecific">
 ...
 if (!www_authorize("siphub.net", "subscriber")) {
-	www_challenge("siphub.net", "auth,auth-int");
+	www_challenge("siphub.net", "auth,auth-int", "MD5,SHA-512-256");
 };
 ...
 </programlisting>
@@ -338,7 +358,7 @@ if (!www_authorize("siphub.net", "subscriber")) {
 
 	<section id="func_proxy_challenge" xreflabel="proxy_challenge()">
 		<title>
-			<function moreinfo="none">proxy_challenge(realm[, qop])</function>
+			<function moreinfo="none">proxy_challenge(realm[, qop[, algorithms]])</function>
 		</title>
 		<para>
 		The function challenges a user agent. It will generate a 
@@ -346,39 +366,11 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		put the header field into a response generated from the request the 
 		server is processing and will send the reply. Upon reception of such a 
 		reply the user agent should compute credentials and retry the request.
-		For more information regarding digest authentication see RFC2617.
+		For more information regarding digest authentication see RFC2617,
+		RFC3261 and RFC8760.
 		</para>
-		<para>Meaning of the parameters is as follows:</para>
-		<itemizedlist>
-		<listitem>
-			<para><emphasis>realm</emphasis> (string) - Realm is an opaque string that 
-			the user agent should present to the user so it can decide what 
-			username and password to use. Usually this is domain of the host 
-			the server is running on.
-			</para>
-			<para>
-			If an empty string <quote></quote> is used then the server will 
-			generate it from the request. <quote>From</quote> header field domain will be 
-			used as realm.
-			</para>
-		</listitem>
-		<listitem>
-			<para><emphasis>qop</emphasis> (string, optional) - Value of this
-			parameter can be either <quote>auth</quote>, <quote>auth-int</quote>
-			or both (separated by <emphasis>,</emphasis>). When this parameter is
-			set the server will put a qop parameter in the challenge. It
-			is recommended to use the qop parameter, however there are still some
-			user agents that cannot handle qop properly so we made this optional.
-			On the other hand there are still some user agents that cannot handle
-			request without a qop parameter too.
-			</para>
-			<para>Enabling this parameter don't improve the security at the moment,
-			because the sequence number is not stored and therefore could not be
-			checked. Actually there is no information kept by the module during
-			the challenge and response requests.
-			</para>
-		</listitem>
-		</itemizedlist>
+		<para>See the paragraph on <xref linkend="www_challenge_params"/> for
+		    the description of the parameters.</para>
 		<para>
 		This function can be used from REQUEST_ROUTE.
 		</para>
@@ -386,8 +378,12 @@ if (!www_authorize("siphub.net", "subscriber")) {
 		<title>proxy_challenge usage</title>
 		<programlisting format="linespecific">
 ...
+$var(secure_algorithms) = "sha-256,sha-512-256";
+...
 if (!proxy_authorize("", "subscriber)) {
-	proxy_challenge("", "auth");  # Realm will be autogenerated
+...
+	proxy_challenge("", "auth", $var(secure_algorithms));  # Realm will be autogenerated
+							       # MD5 won't be allowed
 };
 ...
 </programlisting>

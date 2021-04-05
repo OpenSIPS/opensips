@@ -28,6 +28,7 @@
 #include <string.h>
 #include "../dprint.h"
 #include "../ut.h"
+#include "../lib/turbocompare.h"
 #include "../mem/mem.h"
 #include "msg_parser.h"
 #include "parse_authenticate.h"
@@ -37,13 +38,11 @@
 #define AUTHENTICATE_DIGEST_LEN  (sizeof(AUTHENTICATE_DIGEST_S)-1)
 
 #define LOWER1B(_n) \
-	((_n)|0x20)
+	((_n < 'A' ||_n > 'Z') ? _n : _n |0x20)
 #define LOWER4B(_n) \
-	((_n)|0x20202020)
+	((_n)|TURBO_LCMASK((unsigned int)_n))
 #define GET4B(_p) \
 	((*(_p)<<24) + (*(_p+1)<<16) + (*(_p+2)<<8) + *(_p+3))
-#define GET3B(_p) \
-	((*(_p)<<24) + (*(_p+1)<<16) + (*(_p+2)<<8) + 0xff)
 
 #define CASE_5B(_hex4,_c5, _new_state, _quoted) \
 	case _hex4: \
@@ -78,16 +77,29 @@
 #define OPAQUE_STATE     6
 #define ALGORITHM_STATE  7
 
-#define STR_ADVANCE_BY(sptr, incr) {(sptr)->s += (incr); (sptr)->len -= (incr);}
+#define TRB_SCASEMATCH(cp, S) (turbo_casematch(cp, (S), (sizeof(S) - 1)))
+#define TRB_STRCASEMATCH(sarg, S) (turbo_strcasematch(sarg, (S), (sizeof(S) - 1)))
+#define TRB_STRCASESTARTS(sarg, S) ((sarg)->len >= (sizeof(S) - 1) && \
+  turbo_casematch((sarg)->s, (S), (sizeof(S) - 1)))
+
+#define STR_ADVANCE_BY(sptr, incr) {int _t = (incr); (sptr)->s += _t; (sptr)->len -= _t;}
 #define STR_ADVANCE(sptr) STR_ADVANCE_BY(sptr, 1)
+#define STR_ADVANCE_IF_STARTS(sarg, S) (str_advance_if_starts((sarg), (S), (sizeof(S) - 1)))
+
+static int str_advance_if_starts(str *val, const char *sval, size_t slen)
+{
+	if (val->len < slen || !turbo_casematch(val->s, sval, slen))
+		return 0;
+	STR_ADVANCE_BY(val, slen);
+	return 1;
+}
 
 int parse_qop_value(str val, struct authenticate_body *auth)
 {
 
 	/* parse first token */
-	if (val.len < 4 || LOWER4B(GET4B(val.s))!=0x61757468) /* "auth" */
+	if (!STR_ADVANCE_IF_STARTS(&val, "auth"))
 		return -1;
-	STR_ADVANCE_BY(&val, 4);
 	if (val.len == 0) {
 		auth->flags |= QOP_AUTH;
 		return 0;
@@ -100,9 +112,8 @@ int parse_qop_value(str val, struct authenticate_body *auth)
 			break;
 		case '-':
 			STR_ADVANCE(&val);
-			if (val.len >= 3 && LOWER4B(GET3B(val.s))==0x696e74ff) {
+			if (STR_ADVANCE_IF_STARTS(&val, "int")) {
 				auth->flags |= QOP_AUTH_INT;
-				STR_ADVANCE_BY(&val, 3);
 			} else
 				return -1;
 			break;
@@ -127,14 +138,13 @@ postcomma:
 	trim_leading(&val);
 
 	/* parse second token */
-	if (val.len < 4 || LOWER4B(GET4B(val.s))!=0x61757468)  /* "auth" */
+	if (!STR_ADVANCE_IF_STARTS(&val, "auth"))
 		return -1;
-	STR_ADVANCE_BY(&val, 4);
 	if (val.len == 0) {
 		auth->flags |= QOP_AUTH;
 		return 0;
 	}
-	if (val.len == 4 && *val.s == '-' && LOWER4B(GET3B(val.s+1))==0x696e74ff) {
+	if (TRB_STRCASEMATCH(&val, "-int")) {
 		auth->flags |= QOP_AUTH_INT;
 		return 0;
 	} else
@@ -143,7 +153,7 @@ postcomma:
 
 int parse_authenticate_body( str body, struct authenticate_body *auth)
 {
-	int  n;
+	int  n, ret = 0;
 	int state;
 	str name;
 	str val;
@@ -161,8 +171,7 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 	trim_leading(&body);
 	if (body.len <= AUTHENTICATE_DIGEST_LEN)
 		goto parse_error;
-	if ( LOWER4B( GET4B(body.s) ) != 0x64696765 /*dige*/ ||
-	LOWER1B(*(body.s+4))!=0x73 /*s*/ || LOWER1B(*(body.s+5))!=0x74 /*t*/)
+	if (!TRB_SCASEMATCH(body.s, "digest"))
 		goto parse_error;
 	STR_ADVANCE_BY(&body, AUTHENTICATE_DIGEST_LEN);
 	if (!is_ws(*body.s))
@@ -189,8 +198,7 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 				CASE_6B( 0x646f6d62, 'i', 'n', DOMAIN_STATE, 1); /*domain*/
 				CASE_6B( 0x6f706171, 'u', 'e', OPAQUE_STATE, 1); /*opaque*/
 				case 0x616c676f: /*algo*/
-					if (body.len > 9 && LOWER4B(GET4B(body.s+4))==0x72697468
-						&& LOWER1B(*(body.s+8))=='m' )
+					if (body.len > 9 && TRB_SCASEMATCH(body.s+4, "rithm"))
 					{
 						STR_ADVANCE_BY(&body, 9);
 						state = ALGORITHM_STATE;
@@ -206,8 +214,7 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 					}
 			}
 		} else if (body.len > 3) {
-			n = LOWER4B( GET3B(body.s) );
-			if (n==0x716f70ff) /*qop*/
+			if (TRB_SCASEMATCH(body.s, "qop"))
 			{
 				STR_ADVANCE_BY(&body, 3);
 				state = QOP_STATE;
@@ -236,11 +243,11 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 		if (quoted_val)
 		{
 			STR_ADVANCE(&body);
-			val.s = body.s;
-			while (body.len > 0 && *body.s != '\"')
-				STR_ADVANCE(&body);
-			if (body.len == 0)
+			char *cp = memchr(body.s, '\"', body.len);
+			if (cp == NULL)
 				goto error;
+			val.s = body.s;
+			STR_ADVANCE_BY(&body, cp - body.s);
 		} else {
 			val.s = body.s;
 			while (body.len > 0 && !is_ws(*body.s) && *body.s != ',')
@@ -283,21 +290,17 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 				auth->opaque = val;
 				break;
 			case ALGORITHM_STATE:
-				if (val.len==3)
-				{
-					if ( LOWER4B(GET3B(val.s))==0x6d6435ff) /*MD5*/
-						auth->algorithm = ALG_MD5;
-				} else {
-					LM_ERR("unsupported algorithm \"%.*s\"\n",val.len,val.s);
+				auth->algorithm = parse_digest_algorithm(&val);
+				if (auth->algorithm == ALG_OTHER) {
+					LM_INFO("bad algorithm \"%.*s\"\n", val.len, val.s);
 					goto error;
 				}
 				break;
 			case STALE_STATE:
-				if (val.len==4 && LOWER4B(GET4B(val.s))==0x74727565) /*true*/
+				if (TRB_STRCASEMATCH(&val, "true"))
 				{
-						auth->flags |= AUTHENTICATE_STALE;
-				} else if ( !(val.len==5 && LOWER1B(val.s[4])=='e' &&
-					LOWER4B(GET4B(val.s))==0x66616c73) )
+					auth->flags |= AUTHENTICATE_STALE;
+				} else if (!(TRB_STRCASEMATCH(&val, "false")))
 				{
 					LM_ERR("unsupported stale value \"%.*s\"\n",val.len,val.s);
 					goto error;
@@ -315,7 +318,7 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 		goto error;
 	}
 
-	return 0;
+	return ret;
 parse_error:
 	LM_ERR("parse error in <%.*s> around %ld\n", body.len, body.s, (long)(body.len));
 error:
@@ -323,35 +326,49 @@ error:
 }
 
 
-int parse_authenticate_header(struct hdr_field *authenticate)
+int parse_authenticate_header(struct hdr_field *authenticate,
+    const struct match_auth_hf_desc *md, struct authenticate_body **picked_auth)
 {
-    void **parsed;
-    struct authenticate_body *auth_body;
+	void **parsed;
+	struct authenticate_body *auth_body, *ret_auth;
+	int rc;
 
-    parsed = &(authenticate->parsed);
+	parsed = &(authenticate->parsed);
+	ret_auth = NULL;
 
-    while(*parsed == NULL)
-    {
-	auth_body = pkg_malloc(sizeof(struct authenticate_body));
-	if (auth_body == NULL)
+	while(*parsed == NULL)
 	{
-	    LM_ERR("oom\n");
-	    return -1;
+		auth_body = pkg_malloc(sizeof(struct authenticate_body));
+		if (auth_body == NULL)
+		{
+			LM_ERR("oom\n");
+			*picked_auth = ret_auth;
+			return -1;
+		}
+
+		rc = parse_authenticate_body(authenticate->body, auth_body);
+		if (rc < 0) {
+			pkg_free(auth_body);
+			*picked_auth = ret_auth;
+			return -1;
+		}
+
+		if (rc == 0 && !ret_auth &&
+		    (md == NULL || md->matchf(auth_body, md)))
+			ret_auth = auth_body;
+
+		*parsed = auth_body;
+
+		authenticate = authenticate->sibling;
+		if (authenticate)
+			parsed = &(authenticate->parsed);
+		else
+			break;
 	}
+	*picked_auth = ret_auth;
 
-	if (0 != parse_authenticate_body(authenticate->body, auth_body))
-	    return -1;
-	*parsed = auth_body;
-
-	authenticate = authenticate->sibling;
-	if (authenticate)
-	    parsed = &(authenticate->parsed);
-	else
-	    break;
-    }
-    return 0;
+	return ret_auth ? 0 : -1;
 }
-
 
 /*
  * This method is used to parse WWW-Authenticate header.
@@ -360,14 +377,16 @@ int parse_authenticate_header(struct hdr_field *authenticate)
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_www_authenticate_header( struct sip_msg *msg )
+int parse_www_authenticate_header(struct sip_msg *msg,
+    const struct match_auth_hf_desc *md, struct authenticate_body **picked_auth)
 {
     if ( !msg->www_authenticate &&
 	(parse_headers(msg, HDR_WWW_AUTHENTICATE_F,0)==-1 || !msg->www_authenticate)) {
 	return -1;
     }
 
-    return parse_authenticate_header(msg->www_authenticate);
+    return parse_authenticate_header(msg->www_authenticate, md,
+	picked_auth);
 }
 
 
@@ -378,14 +397,16 @@ int parse_www_authenticate_header( struct sip_msg *msg )
  * returns 0 on success,
  *        -1 on failure.
  */
-int parse_proxy_authenticate_header( struct sip_msg *msg )
+int parse_proxy_authenticate_header(struct sip_msg *msg,
+    const struct match_auth_hf_desc *md, struct authenticate_body **picked_auth)
 {
     if ( !msg->proxy_authenticate &&
 	(parse_headers(msg, HDR_PROXY_AUTHENTICATE_F,0)==-1 || !msg->proxy_authenticate)) {
 	return -1;
     }
 
-    return parse_authenticate_header(msg->proxy_authenticate);
+    return parse_authenticate_header(msg->proxy_authenticate, md,
+	picked_auth);
 }
 
 
