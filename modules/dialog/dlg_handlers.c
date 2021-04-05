@@ -868,7 +868,6 @@ static void dlg_update_callee_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_contact(dlg, msg, callee_idx(dlg));
 		dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 0);
 
 		free_sip_msg(msg);
@@ -926,12 +925,73 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 			return;
 		}
 
-		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
 		dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg),msg, 0);
 
 		free_sip_msg(msg);
 		pkg_free(msg);
 	}
+}
+
+static void dlg_update_caller_rpl_contact(struct cell* t, int type,
+		struct tmcb_params *ps)
+{
+	struct sip_msg *rpl;
+	int statuscode;
+	struct dlg_cell *dlg;
+
+	if(ps == NULL || ps->rpl == NULL) {
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if( ps->param== NULL ) {
+			LM_ERR("Null callback parameter\n");
+			return;
+	}
+
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	dlg = *(ps->param);
+
+	if(rpl==NULL || rpl==FAKED_REPLY) {
+		/* we only care about actual replayed replies */
+		return;
+	}
+
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (statuscode >= 200 && statuscode < 300)
+		dlg_update_contact(dlg, rpl, DLG_CALLER_LEG);
+}
+
+static void dlg_update_callee_rpl_contact(struct cell* t, int type,
+		struct tmcb_params *ps)
+{
+	struct sip_msg *rpl;
+	int statuscode;
+	struct dlg_cell *dlg;
+
+	if(ps == NULL || ps->rpl == NULL) {
+			LM_ERR("Wrong tmcb params\n");
+			return;
+	}
+	if( ps->param== NULL ) {
+			LM_ERR("Null callback parameter\n");
+			return;
+	}
+
+	rpl = ps->rpl;
+	statuscode = ps->code;
+	dlg = *(ps->param);
+
+	if(rpl==NULL || rpl==FAKED_REPLY) {
+		/* we only care about actual replayed replies */
+		return;
+	}
+
+	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (statuscode >= 200 && statuscode < 300)
+		dlg_update_contact(dlg, rpl, callee_idx(dlg));
 }
 
 static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
@@ -1337,7 +1397,7 @@ out_free:
 static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 											unsigned int leg)
 {
-	str contact, contact_hdr;
+	str contact;
 	char *tmp;
 	int ret = 0;
 	contact_t *ct = NULL;
@@ -1359,14 +1419,6 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		LM_DBG("Found unparsed contact [%.*s]\n", contact.len, contact.s);
 	} else {
 		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
-	}
-	contact_hdr.s = msg->contact->name.s;
-	contact_hdr.len = msg->contact->len;
-
-	if ((dlg->mod_flags & TOPOH_ONGOING) &&
-			str_strcmp(&dlg->legs[other_leg(dlg, leg)].adv_contact, &contact_hdr) == 0) {
-		LM_DBG("skip updating topo hiding advertised contact\n");
-		goto end;
 	}
 
 	if (dlg->legs[leg].contact.s) {
@@ -2011,6 +2063,14 @@ after_unlock5:
 					(void*)dlg, unreference_dialog)<0 ) {
 						LM_ERR("failed to register TMCB (2)\n");
 							unref_dlg( dlg , 1);
+					} else {
+						ref_dlg( dlg , 1);
+						if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+						(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_rpl_contact:
+						dlg_update_callee_rpl_contact, (void*)dlg, unreference_dialog)<0 ) {
+							LM_ERR("failed to register TMCB (4)\n");
+								unref_dlg( dlg , 1);
+						}
 					}
 				}
 			}
