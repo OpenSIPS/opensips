@@ -85,9 +85,7 @@ static const struct tts {
 		.ts = str_init("Digest realm=\"whocares?\", nonce=\"NonSense\","
 			       " qop=\"auth,auth-int\", algorithm=CHACHA123"),
 		.tres = -1,
-	}, {
-		.ts = STR_NULL
-	}
+	}, {}
 };
 
 
