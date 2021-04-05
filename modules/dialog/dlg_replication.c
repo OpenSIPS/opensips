@@ -1033,6 +1033,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 {
 	struct dlg_cell *dlg;
 	int i;
+	int sync_required;
 
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
@@ -1060,6 +1061,22 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				}
 			}
 			dlg_unlock(d_table, &d_table->entries[i]);
+		}
+	} else if (ev == CLUSTER_NODE_UP) {
+		if (cluster_auto_sync) {
+			if ((sync_required = clusterer_api.shtag_sync_all_backup(
+				dialog_repl_cluster, &dlg_repl_cap)) < 0) {
+				LM_ERR("Failed to set sync status for sharing tags\n");
+				return;
+			}
+
+			if (sync_required) {
+				LM_DBG("Requesting sync for dialogs marked with backup "
+					"sharing tags\n");
+				if (clusterer_api.request_sync(&dlg_repl_cap,
+					dialog_repl_cluster) < 0)
+				LM_ERR("Failed to send sync request");
+			}
 		}
 	}
 }

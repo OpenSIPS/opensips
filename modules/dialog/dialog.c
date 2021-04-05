@@ -112,6 +112,8 @@ int profile_repl_cluster = 0;
 str dlg_repl_cap = str_init("dialog-dlg-repl");
 str prof_repl_cap = str_init("dialog-prof-repl");
 
+int cluster_auto_sync = 1;
+
 static int pv_get_dlg_count( struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
@@ -331,6 +333,7 @@ static param_export_t mod_params[]={
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
+	{ "cluster_auto_sync",        INT_PARAM, &cluster_auto_sync     },
 	{ 0,0,0 }
 };
 

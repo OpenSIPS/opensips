@@ -1378,6 +1378,7 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 	struct remote_cap *n_cap;
 	int k;
 	int rc;
+	int rst_sync_pending;
 
 	for (k = 0, cl = clusters; k < no_clusters && cl; k++, cl = clusters->next) {
 		if (!select_cluster[k])
@@ -1422,6 +1423,7 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 
 				for (cap_it = cl->capabilities; cap_it; cap_it = cap_it->next) {
 					/* check pending sync request */
+					rst_sync_pending = 0;
 					lock_get(cl->lock);
 					if (cap_it->flags & CAP_SYNC_PENDING) {
 						lock_release(cl->lock);
@@ -1440,11 +1442,9 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 									lock_release(node->lock);
 									rc = send_sync_req(&n_cap->name,
 										cl->cluster_id, node->node_id);
-									if (rc == CLUSTERER_SEND_SUCCESS) {
-										lock_get(cl->lock);
-										cap_it->flags &= ~CAP_SYNC_PENDING;
-										lock_release(cl->lock);
-									} else if (rc == CLUSTERER_SEND_ERR)
+									if (rc == CLUSTERER_SEND_SUCCESS)
+										rst_sync_pending = 1;
+									else if (rc == CLUSTERER_SEND_ERR)
 										LM_ERR("Failed to send sync request to"
 											"node: %d\n", node->node_id);
 									lock_get(node->lock);
@@ -1457,6 +1457,15 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 
 					if (cap_it->reg.event_cb)
 						cap_it->reg.event_cb(CLUSTER_NODE_UP, node->node_id);
+
+					/* reset the sync pending flag only after the event CB is
+					 * run, in order to prevent a double sync request in case
+					 * a module tries to sync on node UP event */
+					if (rst_sync_pending) {
+						lock_get(cl->lock);
+						cap_it->flags &= ~CAP_SYNC_PENDING;
+						lock_release(cl->lock);
+					}
 				}
 
 				if (raise_node_state_ev(CLUSTER_NODE_UP, cl->cluster_id,

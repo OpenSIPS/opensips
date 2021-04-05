@@ -45,6 +45,8 @@ extern struct clusterer_binds clusterer_api;
 
 extern str shtag_dlg_val;
 
+extern int cluster_auto_sync;
+
 void replicate_dialog_created(struct dlg_cell *dlg);
 void replicate_dialog_updated(struct dlg_cell *dlg);
 void replicate_dialog_deleted(struct dlg_cell *dlg);
