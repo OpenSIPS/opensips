@@ -120,11 +120,11 @@ void *fm_malloc(struct fm_block *fm, unsigned long size,
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	LM_WARN("not enough continuous free %s memory (%ld bytes left, need %lu), attempting " \
 			"defragmentation... please increase the \"-%s\" command line parameter!\n",
-			fm->size - fm->real_used, size, fm->name[0] == 'p' ? "M" : "m");
+			fm->name, fm->size - fm->real_used, size, fm->name[0] == 'p' ? "M" : "m");
 #else
 	LM_WARN("not enough continuous free %s memory (need %lu), attempting defragmentation... " \
 			"please increase the \"-%s\" command line parameter!\n",
-			fm->size - fm->real_used, size, fm->name[0] == 'p' ? "M" : "m");
+			fm->name, fm->size - fm->real_used, size, fm->name[0] == 'p' ? "M" : "m");
 #endif
 
 	for( frag = fm->first_frag; (char*)frag < (char*)fm->last_frag;  )
