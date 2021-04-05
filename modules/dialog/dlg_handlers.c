@@ -1319,7 +1319,7 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type, struct tmcb_
 		return;
 	}
 
-	if (ps->code == 200)
+	if (ps->code >= 200 && ps->code < 300)
 		dlg_update_contact(dlg, msg, DLG_CALLER_LEG);
 }
 
@@ -1341,7 +1341,7 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type, struct tmcb_
 		return;
 	}
 
-	if (ps->code == 200)
+	if (ps->code >= 200 && ps->code < 300)
 		dlg_update_contact(dlg, msg, callee_idx(dlg));
 }
 
@@ -1881,7 +1881,7 @@ after_unlock5:
 
 				if (ok) {
 					ref_dlg(dlg, 1);
-					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_OUT,
+					if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
 							(dir==DLG_DIR_UPSTREAM)?dlg_update_caller_rpl_contact:dlg_update_callee_rpl_contact,
 							(void*)dlg, unreference_dialog)<0 ) {
 						LM_ERR("failed to register TMCB (4)\n");
