@@ -104,7 +104,8 @@ typedef struct tlist_dyn_elem {
 } tlist_dyn_elem_t, *tlist_dyn_elem_p;
 
 typedef struct trace_instance {
-	str *trace_attrs;
+	str trace_attrs;
+	str forced_correlation_id;
 	int trace_types;
 	tlist_elem_p trace_list;
 

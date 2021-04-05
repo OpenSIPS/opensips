@@ -215,7 +215,7 @@ modparam("tracer", "trace_id",
 	<title>Exported Functions</title>
 	<section id="func_trace" xreflabel="trace()">
 		<title>
-		<function moreinfo="none">trace(trace_id, [scope], [type], [trace_attrs])</function>
+		<function moreinfo="none">trace(trace_id, [scope], [type], [trace_attrs], [correlation_id])</function>
 		</title>
 		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
@@ -283,6 +283,12 @@ modparam("tracer", "trace_id",
 			replaces the traced_user_avp from the old version. To avoid duplicating
 			an entry only for this parameter, whatever you put here(string/pvar)
 			shall be stored in the trace_attrs column in the sip_trace table.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>correlation_id (string,pvar)</emphasis> a custom
+			SIP correlation ID to be forced (normally the SIP Call-ID is used)
+			to correlate this traffic (transaction, dialog) with other traffic.
 			</para>
 		</listitem>
 

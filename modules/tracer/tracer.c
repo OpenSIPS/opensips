@@ -127,13 +127,13 @@ static int corr_id=-1;
 static int fixup_tid(void **param);
 static int fixup_sflags(void **param);
 static int trace_w(struct sip_msg *msg, tlist_elem_p list,
-					void *scope_p, str *trace_types_s, str *trace_attrs);
+		void *scope_p, str *trace_types_s, str *trace_attrs, str *corr_id);
 static int sip_trace(struct sip_msg*, trace_info_p);
 static int sip_trace_instance(struct sip_msg*, trace_instance_p, int);
 
 static int trace_dialog(struct sip_msg*, trace_info_p);
 static int trace_transaction(struct sip_msg* msg, trace_info_p info,
-								char dlg_tran);
+		char dlg_tran);
 
 
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps);
@@ -201,6 +201,7 @@ static cmd_export_t cmds[] = {
 	{"trace", (cmd_function)trace_w, {
 		{CMD_PARAM_STR, fixup_tid, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_sflags, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
@@ -1096,7 +1097,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 			it->el.db->funcs.use_table(it->el.db->con,
 										&it->el.db->table);
 
-			if (insert_siptrace(it->el.db, keys, vals, info->trace_attrs) < 0) {
+			if (insert_siptrace(it->el.db, keys, vals, &info->trace_attrs)<0) {
 				LM_ERR("failed to insert in DB!\n");
 				return -1;
 			}
@@ -1443,7 +1444,7 @@ int trace_has_totag(struct sip_msg* _m)
 }
 
 static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
-		int trace_types, int trace_flags, str *trace_attrs)
+		int trace_types, int trace_flags, str *trace_attrs, str *corr_id)
 {
 	int extra_len=0;
 	trace_info_p info=NULL;
@@ -1452,7 +1453,10 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	trace_instance_p instance=NULL;
 
 	if (trace_attrs != NULL)
-		extra_len = sizeof(str) + trace_attrs->len;
+		extra_len += trace_attrs->len;
+
+	if (corr_id != NULL)
+		extra_len += corr_id->len;
 
 	if (trace_flags == TRACE_MESSAGE) {
 		/* we don't need to allocate this structure since it will only be
@@ -1460,9 +1464,9 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		instance = &stack_instance;
 
 		memset(instance, 0, sizeof(trace_instance_t));
-		if (extra_len) {
-			instance->trace_attrs = trace_attrs;
-		}
+		if (trace_attrs) instance->trace_attrs = *trace_attrs;
+		if (corr_id) instance->forced_correlation_id = *corr_id;
+
 	} else if (!current_processing_ctx) {
 		LM_BUG("sip_trace() failed due to NULL context");
 		return -1;
@@ -1473,18 +1477,26 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	(trace_flags == TRACE_TRANSACTION && tmb.t_gett)) {
 		instance=shm_malloc(sizeof(trace_instance_t) + extra_len);
 		if (instance==NULL) {
-			LM_ERR("no more shm!\n");
+			LM_ERR("no more shm for a new tracing context!\n");
 			return -1;
 		}
 
 		memset(instance, 0, sizeof(*instance) + extra_len);
 
 		if (extra_len) {
-			instance->trace_attrs = (str*)(instance+1);
-			instance->trace_attrs->s = (char*)(instance->trace_attrs+1);
-
-			memcpy(instance->trace_attrs->s, trace_attrs->s, trace_attrs->len);
-			instance->trace_attrs->len = trace_attrs->len;
+			if (trace_attrs) {
+				instance->trace_attrs.s = (char*)(instance+1);
+				instance->trace_attrs.len = trace_attrs->len;
+				memcpy( instance->trace_attrs.s, trace_attrs->s,
+					trace_attrs->len);
+			}
+			if (corr_id) {
+				instance->forced_correlation_id.s =  ((char*)(instance+1)) +
+					instance->trace_attrs.len;
+				instance->forced_correlation_id.len = corr_id->len;
+				memcpy(instance->forced_correlation_id.s, corr_id->s,
+					corr_id->len);
+			}
 		}
 	} else if (trace_flags == TRACE_TRANSACTION && tmb.t_gett==NULL) {
 		/* we need this structure in pkg for stateless replies
@@ -1496,8 +1508,8 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		}
 
 		memset(instance, 0, sizeof(trace_instance_t));
-		if (extra_len)
-			instance->trace_attrs = trace_attrs;
+		if (trace_attrs) instance->trace_attrs = *trace_attrs;
+		if (corr_id) instance->forced_correlation_id = *corr_id;
 	} else {
 		LM_ERR("Unknown trace flags %x\n", trace_flags);
 		return -2;
@@ -1585,7 +1597,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 
 /* tracer wrapper that verifies if the trace is on */
 static int trace_w(struct sip_msg *msg, tlist_elem_p list,
-					void *scope_p, str *trace_types_s, str *trace_attrs)
+			void *scope_p, str *trace_types_s, str *trace_attrs, str *corr_id)
 {
 
 	int trace_flags;
@@ -1641,7 +1653,8 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 		 * else the function will be useless */
 		trace_types = sip_trace_id;
 	}
-	return sip_trace_handle(msg, list, trace_types, trace_flags, trace_attrs);
+	return sip_trace_handle(msg, list, trace_types, trace_flags,
+		trace_attrs, corr_id);
 }
 
 #define set_sock_columns( _col_proto, _col_ip, _col_port, _buff, _ip, _port, _proto) \
@@ -2964,6 +2977,7 @@ static int send_trace_proto_duplicate(trace_dest dest, str* correlation,
 	str *body, *fromproto, *fromip;
 	str *toproto, *toip;
 	unsigned short fromport, toport;
+	str* final_correlation = NULL;
 
 	unsigned long long trans_correlation_id;
 	str conn_id_s;
@@ -3017,7 +3031,12 @@ static int send_trace_proto_duplicate(trace_dest dest, str* correlation,
 		}
 	}
 
-	if (correlation) {
+	if (info->forced_correlation_id.s)
+		final_correlation = &info->forced_correlation_id;
+	else
+		final_correlation = correlation;
+
+	if (final_correlation) {
 		if ( corr_id == -1 && corr_vendor == -1 ) {
 			if (tprot.get_data_id(corr_id_s, &corr_vendor, &corr_id) == 0) {
 				LM_DBG("no data id!\n");
@@ -3025,7 +3044,7 @@ static int send_trace_proto_duplicate(trace_dest dest, str* correlation,
 		}
 
 		if (tprot.add_chunk(trace_msg,
-				correlation->s, correlation->len,
+				final_correlation->s, final_correlation->len,
 					TRACE_TYPE_STR, corr_id, corr_vendor)) {
 			LM_ERR("failed to add correlation id to the packet!\n");
 			goto error;
@@ -3437,7 +3456,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param)
 					break;
 			}
 		}
-		if (sip_trace_handle(msg, it, el->type, el->scope, NULL) == 1)
+		if (sip_trace_handle(msg, it, el->type, el->scope, NULL, NULL) == 1)
 			trace_id_ref(el);
 skip:
 		continue;
