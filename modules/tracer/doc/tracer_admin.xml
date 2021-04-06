@@ -215,7 +215,7 @@ modparam("tracer", "trace_id",
 	<title>Exported Functions</title>
 	<section id="func_trace" xreflabel="trace()">
 		<title>
-		<function moreinfo="none">trace(trace_id, [scope], [type], [trace_attrs], [correlation_id])</function>
+		<function moreinfo="none">trace(trace_id, [scope], [type], [trace_attrs], [flags], [correlation_id])</function>
 		</title>
 		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
@@ -285,6 +285,21 @@ modparam("tracer", "trace_id",
 			shall be stored in the trace_attrs column in the sip_trace table.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>flags (string,pvar)</emphasis> are some control
+			flags over the tracing process (how and what to be traced).
+			</para>
+			<itemizedlist>
+				<listitem>
+					<para><emphasis>C</emphasis> - trace only the SIP caller side;</para>
+				</listitem>
+				<listitem>
+					<para><emphasis>c</emphasis> - trace onlt the SIP callee side;</para>
+				</listitem>
+			</itemizedlist>
+			<para>If both <emphasis>C</emphasis> and <emphasis>c</emphasis> flags are missing, tracing of both sides/legs is assumed.</para>
+		</listitem>
+
 		<listitem>
 			<para><emphasis>correlation_id (string,pvar)</emphasis> a custom
 			SIP correlation ID to be forced (normally the SIP Call-ID is used)
