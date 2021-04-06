@@ -1164,7 +1164,10 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 	/* context for the request message */
 	SET_TRACER_CONTEXT(info);
 
-	if (TRACE_FLAG_ISSET(info, TRACE_INFO_TRAN)) {
+	/* CANCEL forms a separate transaction, so it ok to install the
+	 * callback again. */
+	if (msg->REQ_METHOD!=METHOD_CANCEL &&
+	TRACE_FLAG_ISSET(info, TRACE_INFO_TRAN)) {
 		LM_DBG("transaction callbacks already registered!\n");
 		return 0;
 	}
