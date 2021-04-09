@@ -3300,14 +3300,11 @@ event_route[E_RTPPROXY_DTMF] {
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-					<emphasis>hash_entry</emphasis> - the entry in the dialog table.
-					This is used, along with the <emphasis>hash_id</emphasis>,
-					to uniquely identify the dialog.
+					<emphasis>id</emphasis> - the hex representation of the dialog id.
 			</para></listitem>
 			<listitem><para>
-					<emphasis>hash_id</emphasis> - the id in the dialog table.
-					This is used, along with the <emphasis>hash_entry</emphasis>,
-					to uniquely identify the dialog.
+					<emphasis>db_id</emphasis> - the integer representation of the dialog id,
+					as it is stored in the database <emphasis>dlg_id</emphasis> field.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>callid</emphasis> - the callid.

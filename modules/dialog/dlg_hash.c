@@ -55,8 +55,8 @@ static inline void raise_state_changed_event(struct dlg_cell *dlg,
 static str ei_st_ch_name = str_init("E_DLG_STATE_CHANGED");
 static evi_params_p event_params;
 
-static str ei_h_entry = str_init("hash_entry");
-static str ei_h_id = str_init("hash_id");
+static str ei_id = str_init("id");
+static str ei_db_id = str_init("db_id");
 static str ei_c_id = str_init("callid");
 static str ei_from_tag = str_init("from_tag");
 static str ei_to_tag = str_init("to_tag");
@@ -65,7 +65,7 @@ static str ei_new_state = str_init("new_state");
 
 static event_id_t ei_st_ch_id = EVI_ERROR;
 
-static evi_param_p hentry_p, hid_p, cid_p, fromt_p, tot_p;
+static evi_param_p id_p, db_id_p, cid_p, fromt_p, tot_p;
 static evi_param_p ostate_p, nstate_p;
 
 int dialog_cleanup( struct sip_msg *msg, void *param )
@@ -1028,12 +1028,12 @@ int state_changed_event_init(void)
 	}
 	memset(event_params, 0, sizeof(evi_params_t));
 
-	hentry_p = evi_param_create(event_params, &ei_h_entry);
-	if (hentry_p == NULL)
+	id_p = evi_param_create(event_params, &ei_id);
+	if (id_p == NULL)
 		goto create_error;
 
-	hid_p = evi_param_create(event_params, &ei_h_id);
-	if (hid_p == NULL)
+	db_id_p = evi_param_create(event_params, &ei_db_id);
+	if (db_id_p == NULL)
 		goto create_error;
 
 	cid_p = evi_param_create(event_params, &ei_c_id);
@@ -1077,22 +1077,17 @@ void state_changed_event_destroy(void)
 static void raise_state_changed_event(struct dlg_cell *dlg,
 									unsigned int ostate, unsigned int nstate)
 {
-	char b1[INT2STR_MAX_LEN], b2[INT2STR_MAX_LEN];
-	str s1, s2;
+	str *did = dlg_get_did(dlg);
 	int callee_leg_idx;
+	str db_id;
 
-	s1.s = int2bstr( (unsigned long)dlg->h_entry, b1, &s1.len);
-	s2.s = int2bstr( (unsigned long)dlg->h_id, b2, &s2.len);
-	if (s1.s==NULL || s2.s==NULL) {
-		LM_ERR("cannot convert hash params\n");
+	if (evi_param_set_str(id_p, did) < 0) {
+		LM_ERR("cannot set dialog id parameter\n");
 		return;
 	}
-	if (evi_param_set_str(hentry_p, &s1) < 0) {
-		LM_ERR("cannot set hash entry parameter\n");
-		return;
-	}
-	if (evi_param_set_str(hid_p, &s2) < 0) {
-		LM_ERR("cannot set hash id parameter\n");
+	db_id.s = int2str(dlg_get_db_id(dlg), &db_id.len);
+	if (evi_param_set_str(db_id_p, &db_id) < 0) {
+		LM_ERR("cannot set dialog db id parameter\n");
 		return;
 	}
 
