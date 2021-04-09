@@ -361,6 +361,9 @@ static mi_item_t * _get_mi_param(const mi_params_t *params, char *name)
 {
 	int i;
 
+	if (!params->item)
+		return NULL;
+
 	if (MI_ITEM_IS_ARRAY(params->item)) {
 		for (i = 0; params->list[i]; i++)
 			if (!strcmp(params->list[i], name))
