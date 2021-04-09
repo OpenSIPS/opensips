@@ -831,7 +831,7 @@ modparam("dialog", "to_sock_column", "to_sock_c_name")
 		</para>
 		<para>
 		<emphasis>
-			Default value is <quote>hash_id</quote>.
+			Default value is <quote>dlg_id</quote>.
 		</emphasis>
 		</para>
 		<example>
