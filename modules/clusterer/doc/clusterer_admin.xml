@@ -1042,11 +1042,13 @@ $ opensips-cli -x mi clusterer_list_cap
             "Capabilities": [
                 {
                     "name": "dialog-dlg-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 },
                 {
                     "name": "dialog-prof-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 }
             ]
         }
@@ -1055,6 +1057,40 @@ $ opensips-cli -x mi clusterer_list_cap
 </programlisting>
 		</example>
 		</section>
+
+		<section id="mi_clusterer_set_cap_status" xreflabel="clusterer_set_cap_status">
+		<title>
+		<function moreinfo="none">clusterer_set_cap_status</function>
+		</title>
+		<para>
+            Sets the status(Enabled/Disabled) of a capability. If a capability is disabled, the node will not send any replication/sync messages belonging to that capability. Likewise, received messages will be dropped. Also, the cabability will transition to a "not synced" state and the node will no longer be able to be a donor for syncing.
+        </para>
+		<para>
+		Name: <emphasis>clusterer_set_cap_status</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>cluster_id</emphasis> - the id of the cluster
+			</para></listitem>
+			<listitem><para>
+			<emphasis>capability</emphasis> - name of the capability, as listed by
+			<xref linkend="mi_clusterer_list_cap"/>
+			</para></listitem>
+            <listitem><para>
+			<emphasis>status</emphasis> - indicates the new status(0 - Disabled, 1 - Enabled).
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+		#disable dialog replication in cluster 1
+		opensips-cli -x mi clusterer_set_cap_status 1 dialog-dlg-repl 0
+		#enable dialog profile replication in cluster 2
+		opensips-cli -x mi clusterer_set_cap_status 2 dialog-prof-repl 1
+		</programlisting>
+	</section>
 
 		<section id='mi_clusterer_shtag_set_active' xreflabel="clusterer_shtag_set_active">
 		<title><function moreinfo="none">clusterer_shtag_set_active</function></title>

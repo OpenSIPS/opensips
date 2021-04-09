@@ -56,6 +56,10 @@
 #define CAP_STATE_OK		(1<<0)
 #define CAP_SYNC_PENDING	(1<<1)
 #define CAP_PKT_BUFFERING	(1<<2)
+#define CAP_STATE_ENABLED	(1<<3)
+
+#define CAP_DISABLED 0
+#define CAP_ENABLED  1
 
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
@@ -149,7 +153,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
-												int cluster_id, int dst_id);
+	int cluster_id, int dst_id, int check_cap);
 int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
 							int cap_state);
 int send_cap_update(struct node_info *dest_node, int require_reply);
@@ -178,6 +182,9 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 struct local_cap *dup_caps(struct local_cap *caps);
 
 int preserve_reg_caps(struct cluster_info *new_info);
+
+int mi_cap_set_state(int cluster_id, str *capability, int status);
+int get_capability_status(struct cluster_info *cluster, str *capability);
 
 int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
 

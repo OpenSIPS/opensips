@@ -46,7 +46,7 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 	bin_push_str(&packet, capability);
 	msg_add_trailer(&packet, cluster_id, source_id);
 
-	rc = clusterer_send_msg(&packet, cluster_id, source_id);
+	rc = clusterer_send_msg(&packet, cluster_id, source_id, 0);
 	if (rc == CLUSTERER_SEND_SUCCESS)
 		LM_INFO("Sent sync request for capability '%.*s' to node %d, "
 		        "cluster %d\n", capability->len, capability->s, source_id,
@@ -120,6 +120,12 @@ int cl_request_sync(str *capability, int cluster_id)
 		return 0;
 	}
 
+	if (!(lcap->flags & CAP_STATE_ENABLED)) {
+		lock_release(cluster->lock);
+		LM_DBG("Capability disabled, skip send sync request\n");
+		return 0;
+	}
+
 	/* node is no longer OK for this capability if it previously were */
 	if (lcap->flags & CAP_STATE_OK) {
 		lcap->flags &= ~CAP_STATE_OK;
@@ -179,7 +185,7 @@ bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
 			/* send and free the previous packet */
 			msg_add_trailer(sync_packet_snd, cluster_id, dst_id);
 
-			if (clusterer_send_msg(sync_packet_snd, cluster_id, dst_id) < 0)
+			if (clusterer_send_msg(sync_packet_snd, cluster_id, dst_id, 0) < 0)
 				LM_ERR("Failed to send sync packet\n");
 
 			bin_free_packet(sync_packet_snd);
@@ -301,7 +307,8 @@ void send_sync_repl(int sender, void *param)
 		/* send and free the lastly built packet */
 		msg_add_trailer(sync_packet_snd, p->cluster->cluster_id, p->node_id);
 
-		if ((rc = clusterer_send_msg(sync_packet_snd, p->cluster->cluster_id, p->node_id))<0)
+		if ((rc = clusterer_send_msg(sync_packet_snd, p->cluster->cluster_id,
+			p->node_id, 0))<0)
 			LM_ERR("Failed to send sync packet, rc=%d\n", rc);
 
 		bin_free_packet(sync_packet_snd);
@@ -319,7 +326,8 @@ void send_sync_repl(int sender, void *param)
 	bin_push_str(&sync_end_pkt, &p->cap_name);
 	msg_add_trailer(&sync_end_pkt, p->cluster->cluster_id, p->node_id);
 
-	if (clusterer_send_msg(&sync_end_pkt, p->cluster->cluster_id, p->node_id) < 0) {
+	if (clusterer_send_msg(&sync_end_pkt, p->cluster->cluster_id, p->node_id,
+		0) < 0) {
 		LM_ERR("Failed to send sync end message\n");
 		bin_free_packet(&sync_end_pkt);
 		lock_stop_read(cl_list_lock);
@@ -367,12 +375,21 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 {
 	str cap_name;
 	struct remote_cap *cap;
+	int rc;
 
 	bin_pop_str(packet, &cap_name);
 
 	LM_INFO("Received sync request for capability '%.*s' from node %d, "
 	        "cluster %d\n", cap_name.len, cap_name.s, source->node_id,
 	        cluster->cluster_id);
+
+	rc = get_capability_status(cluster, &cap_name);
+	if (rc == -1) {
+		return;
+	} else if (rc == 0) {
+		LM_DBG("capability disabled, drop sync request\n");
+		return;
+	}
 
 	if (get_next_hop(source)) {
 		if (ipc_dispatch_sync_reply(cluster, source->node_id, &cap_name) < 0)
@@ -418,6 +435,11 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 	if (!cap) {
 		LM_ERR("Capability: %.*s from sync packet, not found\n",
 			cap_name.len, cap_name.s);
+		return;
+	}
+
+	if (get_capability_status(cluster, &cap_name) != 1) {
+		LM_DBG("capability disabled, drop sync packet\n");
 		return;
 	}
 

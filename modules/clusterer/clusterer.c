@@ -75,10 +75,11 @@ void seed_fb_check_timer(utime_t ticks, void *param)
 
 		for (cap = cl->capabilities; cap; cap = cap->next) {
 			lock_get(cl->lock);
-			if (!(cap->flags & CAP_STATE_OK) &&
+			if ((cap->flags & CAP_STATE_ENABLED) &&
+				!(cap->flags & CAP_STATE_OK) &&
 				(cl->current_node->flags & NODE_IS_SEED) &&
 				(TIME_DIFF(cap->sync_req_time, now) >= seed_fb_interval*1000000)) {
-				cap->flags = CAP_STATE_OK;
+				cap->flags |= CAP_STATE_OK;
 				LM_INFO("No donor found, falling back to synced state\n");
 				/* send update about the state of this capability */
 				send_single_cap_update(cl, cap, 1);
@@ -184,6 +185,67 @@ int cl_set_state(int cluster_id, int node_id, enum cl_node_state state)
 	return 0;
 }
 
+int mi_cap_set_state(int cluster_id, str *capability, int status)
+{
+	cluster_info_t *cluster;
+	struct local_cap *cap;
+	int change = 0;
+
+	lock_start_read(cl_list_lock);
+
+	cluster = get_cluster_by_id(cluster_id);
+	if (!cluster) {
+		lock_stop_read(cl_list_lock);
+		LM_ERR("Cluster id [%d] not found\n", cluster_id);
+		return -1;
+	}
+
+	for (cap = cluster->capabilities; cap &&
+		str_strcmp(capability, &cap->reg.name); cap = cap->next) ;
+	if (!cap) {
+		lock_stop_read(cl_list_lock);
+		LM_ERR("Capability [%.*s] not found\n",
+			capability->len, capability->s);
+		return -2;
+	}
+
+	lock_get(cluster->lock);
+
+	if (status == CAP_DISABLED && cap->flags & CAP_STATE_ENABLED) {
+		cap->flags &= ~CAP_STATE_ENABLED;
+		cap->flags &= ~CAP_STATE_OK;
+		change = 1;
+	} else if (status == CAP_ENABLED && !(cap->flags & CAP_STATE_ENABLED)) {
+		cap->flags |= CAP_STATE_ENABLED;
+		change = 1;
+	}
+
+	lock_release(cluster->lock);
+
+	if (change)
+		send_single_cap_update(cluster, cap, status);
+
+	lock_stop_read(cl_list_lock);
+
+	return 0;
+}
+
+int get_capability_status(cluster_info_t *cluster, str *capability)
+{
+	struct local_cap *cap;
+
+	for (cap = cluster->capabilities; cap &&
+		str_strcmp(capability, &cap->reg.name); cap = cap->next) ;
+	if (!cap) {
+		LM_ERR("Capability [%.*s] not found\n",
+			capability->len, capability->s);
+		return -1;
+	}
+
+	return (cap->flags&CAP_STATE_ENABLED) ?
+		CAP_ENABLED : CAP_DISABLED;
+}
+
 /* @return:
  *  0 : success, message sent
  * -1 : error, unable to send
@@ -238,12 +300,13 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 }
 
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
-											int cluster_id, int dst_node_id)
+	int cluster_id, int dst_node_id, int check_cap)
 {
 	node_info_t *node;
 	int rc;
 	cluster_info_t *cl;
 	int ev_actions_required = 0;
+	str capability;
 
 	if (!cl_list_lock) {
 		LM_ERR("cluster shutdown - cannot send new messages!\n");
@@ -282,6 +345,19 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	}
 	lock_release(node->lock);
 
+	if (check_cap) {
+		bin_get_capability(packet, &capability);
+		rc = get_capability_status(cl, &capability);
+		if (rc == -1) {
+			lock_stop_read(cl_list_lock);
+			return CLUSTERER_SEND_ERR;
+		} else if (rc == CAP_DISABLED) {
+			lock_stop_read(cl_list_lock);
+			LM_DBG("capability disabled, skip message sending\n");
+			return CLUSTERER_SEND_SUCCESS;
+		}
+	}
+
 	rc = msg_send_retry(packet, node, 0, &ev_actions_required);
 
 	bin_remove_int_buffer_end(packet, 3);
@@ -305,12 +381,13 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 
 static enum clusterer_send_ret
 clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
-                    enum cl_node_match_op match_op)
+                    enum cl_node_match_op match_op, int check_cap)
 {
 	node_info_t *node;
 	int rc, sent = 0, down = 1, matched_once = 0;
 	cluster_info_t *dst_cl;
 	int ev_actions_required = 0;
+	str capability;
 
 	if (!cl_list_lock) {
 		LM_ERR("cluster shutdown - cannot send new messages!\n");
@@ -332,6 +409,20 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		return CLUSTERER_CURR_DISABLED;
 	}
 	lock_release(dst_cl->current_node->lock);
+
+	if (check_cap) {
+		bin_get_capability(packet, &capability);
+		rc = get_capability_status(dst_cl, &capability);
+		if (rc == -1) {
+			lock_stop_read(cl_list_lock);
+			return CLUSTERER_SEND_ERR;
+		} else if (rc == CAP_DISABLED) {
+			lock_stop_read(cl_list_lock);
+			LM_DBG("capability [%.*s] disabled, skip message sending\n",
+				capability.len, capability.s);
+			return CLUSTERER_SEND_SUCCESS;
+		}
+	}
 
 	for (node = dst_cl->node_list; node; node = node->next) {
 		if (!match_node(dst_cl->current_node, node, match_op))
@@ -416,7 +507,7 @@ enum clusterer_send_ret cl_send_to(bin_packet_t *packet, int cluster_id, int nod
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_send_msg(packet, cluster_id, node_id);
+	return clusterer_send_msg(packet, cluster_id, node_id, 1);
 }
 
 enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
@@ -426,7 +517,7 @@ enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_bcast_msg(packet, cluster_id, NODE_CMP_ANY);
+	return clusterer_bcast_msg(packet, cluster_id, NODE_CMP_ANY, 1);
 }
 
 enum clusterer_send_ret
@@ -438,7 +529,7 @@ cl_send_all_having(bin_packet_t *packet, int dst_cluster_id,
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_bcast_msg(packet, dst_cluster_id, match_op);
+	return clusterer_bcast_msg(packet, dst_cluster_id, match_op, 1);
 }
 
 enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
@@ -452,7 +543,7 @@ enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_send_msg(&packet, cluster_id, dst_id);
+	rc = clusterer_send_msg(&packet, cluster_id, dst_id, 0);
 
 	bin_free_packet(&packet);
 
@@ -470,7 +561,7 @@ enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_t
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
+	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY, 0);
 
 	bin_free_packet(&packet);
 
@@ -507,9 +598,9 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 	}
 
 	if (dst_id)
-		rc = clusterer_send_msg(&packet, cluster_id, dst_id);
+		rc = clusterer_send_msg(&packet, cluster_id, dst_id, 0);
 	else
-		rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
+		rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY, 0);
 
 	bin_free_packet(&packet);
 
@@ -535,7 +626,7 @@ enum clusterer_send_ret bcast_remove_node(int cluster_id, int target_node)
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY);
+	rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY, 0);
 
 	bin_free_packet(&packet);
 
@@ -1106,6 +1197,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	node_info_t *node = NULL;
 	cluster_info_t *cl;
 	int ev_actions_required = 0;
+	int rc;
 
 	/* pop the source and destination from the bin packet */
 	bin_pop_back_int(packet, &dest_id);
@@ -1160,6 +1252,14 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
 		LM_DBG("node disabled, ignoring received bin packet\n");
+		goto exit;
+	}
+
+	rc = get_capability_status(cl, &cap->name);
+	if (rc == -1) {
+		goto exit;
+	} else if (rc == 0) {
+		LM_DBG("capability disabled, ignoring received bin packet\n");
 		goto exit;
 	}
 
@@ -1511,6 +1611,8 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 	if (!startup_sync)
 		new_cl_cap->flags |= CAP_STATE_OK;
+
+	new_cl_cap->flags |= CAP_STATE_ENABLED;
 
 	new_cl_cap->next = cluster->capabilities;
 	cluster->capabilities = new_cl_cap;

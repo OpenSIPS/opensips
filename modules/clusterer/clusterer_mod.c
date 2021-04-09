@@ -83,6 +83,8 @@ static mi_response_t *cluster_bcast_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *clusterer_list_cap(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *clusterer_set_cap_status(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static mi_response_t *cluster_remove_node(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
@@ -195,6 +197,10 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "clusterer_list_cap", "lists registered capabilities and their states", 0,0,{
 		{clusterer_list_cap, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "clusterer_set_cap_status", "sets the status for a capability", 0,0,{
+		{clusterer_set_cap_status, {"cluster_id", "capability", "status", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "clusterer_list_shtags", "lists the sharing tags and their states", 0,0,{
@@ -582,6 +588,37 @@ static mi_response_t *clusterer_set_status(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
+static mi_response_t *clusterer_set_cap_status(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int cluster_id;
+	int status;
+	str capability;
+	int rc;
+
+	if (get_mi_int_param(params, "cluster_id", &cluster_id) < 0)
+		return init_mi_param_error();
+	if (cluster_id < 1)
+		return init_mi_error(400, MI_SSTR("Bad value for 'cluster_id'"));
+
+	if (get_mi_string_param(params, "capability",
+		&capability.s, &capability.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "status", &status) < 0)
+		return init_mi_param_error();
+	if (status != CAP_DISABLED && status != CAP_ENABLED)
+		return init_mi_error(400, MI_SSTR("Bad value for 'status'"));
+
+	rc = mi_cap_set_state(cluster_id, &capability, status);
+	if (rc == -1)
+		return init_mi_error(404, MI_SSTR("Cluster id not found"));
+	if (rc == -2)
+		return init_mi_error(404, MI_SSTR("Capability not found"));
+
+	return init_mi_result_ok();
+}
+
 static mi_response_t *clusterer_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -739,6 +776,12 @@ static mi_response_t *clusterer_list_cap(const mi_params_t *params,
 			if (add_mi_string(cap_item, MI_SSTR("state"),
 				(cap->flags & CAP_STATE_OK) ? str_ok.s : str_not_synced.s,
 				(cap->flags & CAP_STATE_OK) ? str_ok.len : str_not_synced.len) < 0) {
+				lock_release(cl->lock);
+				goto error;
+			}
+
+			if (add_mi_string_fmt(cap_item, MI_SSTR("enabled"), "%s",
+				(cap->flags&CAP_STATE_ENABLED) ? "yes" : "no") < 0) {
 				lock_release(cl->lock);
 				goto error;
 			}
