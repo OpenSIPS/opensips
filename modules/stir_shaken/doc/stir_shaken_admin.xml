@@ -156,6 +156,26 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 	    </example>
 	</section>
 
+	<section id="param_e164_strict_mode" xreflabel="e164_strict_mode">
+	    <title><varname>e164_strict_mode</varname> (integer)</title>
+	    <para>
+		Strictly check if the originating/destination identity derived from the
+		SIP message is an E.164 telephone number. Also require the URI to either
+		be a <emphasis>tel</emphasis> URI or a <emphasis>sip</emphasis> /
+		<emphasis>sips</emphasis> URI with the <emphasis>user=phone</emphasis>
+		parameter.
+	    </para>
+	    <para>The default value is <emphasis>0</emphasis> (disabled).</para>
+	    <example>
+		<title>Set <varname>e164_strict_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir_shaken", "e164_strict_mode", 1)
+...
+</programlisting>
+	    </example>
+	</section>
+
     </section>
     <section id="exported_functions" xreflabel="exported_functions">
 	<title>Exported Functions</title>

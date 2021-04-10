@@ -103,6 +103,8 @@ static char *ca_dir;
 static char *crl_list;
 static char *crl_dir;
 
+static int e164_strict_mode = 0;
+
 static int tn_authlist_nid;
 
 static int parsed_ctx_idx =-1;
@@ -117,6 +119,7 @@ static param_export_t params[] = {
 	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
 	{"crl_dir", STR_PARAM, &crl_dir},
+	{"e164_strict_mode", INT_PARAM, &e164_strict_mode},
 	{0, 0, 0}
 };
 
@@ -591,6 +594,28 @@ error:
 	return -1;
 }
 
+static int is_e164_strict(struct to_body *body)
+{
+	if ((body->parsed_uri.type != SIP_URI_T &&
+		body->parsed_uri.type != TEL_URI_T &&
+		body->parsed_uri.type != SIPS_URI_T &&
+		body->parsed_uri.type != TELS_URI_T) ||
+		((body->parsed_uri.type == SIP_URI_T ||
+		body->parsed_uri.type == SIPS_URI_T) &&
+		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
+		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter "
+			"required\n");
+		return 0;
+	}
+
+	if (is_e164(&body->parsed_uri.user) == -1) {
+		LM_INFO("E.164 number required\n");
+		return 0;
+	}
+
+	return 1;
+}
+
 static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 {
 	struct to_body *body;
@@ -619,22 +644,14 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 		return -1;
 	}
 
-	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T &&
-		body->parsed_uri.type != SIPS_URI_T && body->parsed_uri.type != TELS_URI_T) ||
-		((body->parsed_uri.type == SIP_URI_T || body->parsed_uri.type == SIPS_URI_T) &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
+	if (e164_strict_mode && !is_e164_strict(body))
 		return -3;
-	}
-
-	if (is_e164(&body->parsed_uri.user) == -1) {
-		LM_INFO("E.164 number required\n");
-		return -3;
-	}
 
 	/* get rid of the '+' sign as it should not appear in the passport claim */
-	orig_tn->s = body->parsed_uri.user.s + 1;
-	orig_tn->len = body->parsed_uri.user.len - 1;
+	if (body->parsed_uri.user.s[0] == '+') {
+		orig_tn->s = body->parsed_uri.user.s + 1;
+		orig_tn->len = body->parsed_uri.user.len - 1;
+	}
 
 	return 0;
 }
@@ -653,21 +670,15 @@ static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 		LM_ERR("Failed to parse URI\n");
 		return -1;
 	}
-	if ((body->parsed_uri.type != SIP_URI_T && body->parsed_uri.type != TEL_URI_T) ||
-		(body->parsed_uri.type == SIP_URI_T &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter required\n");
-		return -3;
-	}
 
-	if (is_e164(&body->parsed_uri.user) == -1) {
-		LM_ERR("E.164 number required\n");
+	if (e164_strict_mode && !is_e164_strict(body))
 		return -3;
-	}
 
 	/* get rid of the '+' sign as it should not appear in the passport claim */
-	dest_tn->s = body->parsed_uri.user.s + 1;
-	dest_tn->len = body->parsed_uri.user.len - 1;
+	if (body->parsed_uri.user.s[0] == '+') {
+		dest_tn->s = body->parsed_uri.user.s + 1;
+		dest_tn->len = body->parsed_uri.user.len - 1;
+	}
 
 	return 0;
 }
