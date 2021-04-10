@@ -104,6 +104,8 @@ dialog Module
               1.7.25. dlg_send_sequential(method, leg, [, body] [,
                       content-type] [, headers])
 
+              1.7.26. cluster_auto_sync (string)
+
         1.8. Exported Statistics
 
               1.8.1. active_dialogs
@@ -253,6 +255,7 @@ dialog Module
    1.73. dlg_on_timeout usage
    1.74. dlg_on_hangup usage
    1.75. dlg_send_sequential usage to convert DTMF codes
+   1.76. Set cluster_auto_sync parameter
 
 Chapter 1. Admin Guide
 
@@ -360,11 +363,10 @@ Chapter 1. Admin Guide
    failsafe for obtaining restart persistency for dialog data is
    useful in case all nodes in the cluster are down. This approach
    makes the most sense if a separate, local DB is used for each
-   node in the cluster. In consequence dialogs loaded from the
-   database at startup are dropped and also deleted from the DB
-   once the sync from cluster is complete. This is done for
-   dialogs that are not reconfirmed as being active in the
-   meantime (SIP updates, received in sync data).
+   node in the cluster. Dialogs loaded from the database at
+   startup, which are not reconfirmed through syncing, are dropped
+   and also deleted from the database once the sync from cluster
+   is complete.
 
    Also configuring profile replication via the
    profile_replication_cluster parameter is not necessary when
@@ -772,7 +774,7 @@ modparam("dialog", "to_sock_column", "to_sock_c_name")
    The column's name in the database to store the dialogs' id
    information.
 
-   Default value is “hash_id”.
+   Default value is “dlg_id”.
 
    Example 1.27. Set dlg_id_column parameter
 ...
@@ -1852,6 +1854,19 @@ event_route[E_RTPPROXY_DTMF] {
 }
 ...
 
+1.7.26. cluster_auto_sync (string)
+
+   Specifies whether to automatically issue a sync request (for
+   dialogs marked with a sharing tag in backup state) when a node
+   becomes reachable. A value of 1 means enabled and 0 disabled.
+
+   Default value is 1 (enabled).
+
+   Example 1.76. Set cluster_auto_sync parameter
+...
+modparam("dialog", "cluster_auto_sync", 0)
+...
+
 1.8. Exported Statistics
 
 1.8.1. active_dialogs
@@ -2075,19 +2090,21 @@ GIwZjAzNGM1ZDY
    This command will only take effect if dialog replication is
    enabled.
 
-   The current node will locate a suitable donor node within the
-   dialog_replication_cluster and issue a sync request to it. The
-   donor node will then push all the dialog information to the
-   current node, via the the binary interface. For dialogs that
-   already exist in memory, the information will be not be treated
-   as an update but discarded instead.
+   Fully synchronize the dialog information in memory from a
+   suitable donor node within the dialog_replication_cluster.
+   Dialogs that already exist in memory which are not reconfirmed
+   through syncing will be discarded. A sharing tag can be
+   specified in order to sync only dialogs marked with that
+   sharing tag.
 
    Name: dlg_cluster_sync
 
-   It takes no parameters
+   Parameters:
+     * sharing_tag - name of the sharing tag that dialogs have to
+       be marked with in order to be synced
 
    MI FIFO Command Format:
-                opensips-cli -x mi dlg_cluster_sync
+                opensips-cli -x mi dlg_cluster_sync vip1
 
 1.9.10. dlg_restore_db
 
@@ -2338,10 +2355,9 @@ GIwZjAzNGM1ZDY
    This event is raised when the dialog state is changed.
 
    Parameters:
-     * hash_entry - the entry in the dialog table. This is used,
-       along with the hash_id, to uniquely identify the dialog.
-     * hash_id - the id in the dialog table. This is used, along
-       with the hash_entry, to uniquely identify the dialog.
+     * id - the hex representation of the dialog id.
+     * db_id - the integer representation of the dialog id, as it
+       is stored in the database dlg_id field.
      * callid - the callid.
      * from_tag - the From tag.
      * to_tag - the To tag.
@@ -2473,9 +2489,9 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 435 274 12809 3398
-   2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
-   3. Razvan Crainea (@razvancrainea) 249 186 4777 1419
-   4. Vlad Patrascu (@rvlad-patrascu) 163 84 3406 3117
+   2. Razvan Crainea (@razvancrainea) 253 189 4866 1456
+   3. Vlad Paiu (@vladpaiu) 252 143 7199 3026
+   4. Vlad Patrascu (@rvlad-patrascu) 168 86 3583 3164
    5. Liviu Chircu (@liviuchircu) 149 107 2775 1127
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 29 23 487 111
@@ -2517,11 +2533,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2021
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Feb 2021
-   3.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
-   4.  sergei lavrov                       Dec 2020 - Dec 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2021
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2021
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2021
+   4.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
+   5.  sergei lavrov                       Dec 2020 - Dec 2020
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
    7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
    8.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
@@ -2549,8 +2565,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Zero King
    (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
    Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel

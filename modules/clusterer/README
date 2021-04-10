@@ -59,8 +59,9 @@ CLUSTERER Module
               1.6.6. cluster_send_mi
               1.6.7. cluster_broadcast_mi
               1.6.8. clusterer_list_cap
-              1.6.9. clusterer_shtag_set_active
-              1.6.10. clusterer_list_shtags
+              1.6.9. clusterer_set_cap_status
+              1.6.10. clusterer_shtag_set_active
+              1.6.11. clusterer_list_shtags
 
         1.7. Exported Script Variables
 
@@ -851,18 +852,46 @@ $ opensips-cli -x mi clusterer_list_cap
             "Capabilities": [
                 {
                     "name": "dialog-dlg-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 },
                 {
                     "name": "dialog-prof-repl",
-                    "state": "Ok"
+                    "state": "Ok",
+                    "enabled": "yes"
                 }
             ]
         }
     ]
 }
 
-1.6.9. clusterer_shtag_set_active
+1.6.9.  clusterer_set_cap_status
+
+   Sets the status(Enabled/Disabled) of a capability. If a
+   capability is disabled, the node will not send any
+   replication/sync messages belonging to that capability.
+   Likewise, received messages will be dropped. Also, the
+   cabability will transition to a "not synced" state and the node
+   will no longer be able to be a donor for syncing.
+
+   Name: clusterer_set_cap_status
+
+   Parameters:
+     * cluster_id - the id of the cluster
+     * capability - name of the capability, as listed by
+       clusterer_list_cap
+     * status - indicates the new status(0 - Disabled, 1 -
+       Enabled).
+
+   MI FIFO Command Format:
+                #disable dialog replication in cluster 1
+                opensips-cli -x mi clusterer_set_cap_status 1 dialog-dlg
+-repl 0
+                #enable dialog profile replication in cluster 2
+                opensips-cli -x mi clusterer_set_cap_status 2 dialog-pro
+f-repl 1
+
+1.6.10. clusterer_shtag_set_active
 
    Set the given sharing tag to the active state. The information
    about this change is also broadcasted in the cluster in order
@@ -877,7 +906,7 @@ $ opensips-cli -x mi clusterer_list_cap
    MI FIFO Command Format:
                 opensips-cli -x mi clusterer_shtag_set_active vip1/3
 
-1.6.10. clusterer_list_shtags
+1.6.11. clusterer_list_shtags
 
    Lists all known sharing tags and their states.
 
@@ -1210,7 +1239,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 315 103 12182 6832
+   1. Vlad Patrascu (@rvlad-patrascu) 322 106 12640 6869
    2. Liviu Chircu (@liviuchircu) 51 37 627 443
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 23 17 319 143
@@ -1243,7 +1272,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2021
    2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Mar 2021
    3.  kworm83                             Feb 2021 - Feb 2021
    4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
@@ -1264,8 +1293,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Fabian Gast (@fgast), Bogdan-Andrei Iancu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Fabian Gast (@fgast), Bogdan-Andrei Iancu
    (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
    Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
 

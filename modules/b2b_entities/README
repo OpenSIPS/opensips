@@ -452,14 +452,14 @@ Chapter 3. Contributors
    5. Razvan Crainea (@razvancrainea) 37 33 166 88
    6. Liviu Chircu (@liviuchircu) 17 13 87 126
    7. Vlad Paiu (@vladpaiu) 6 4 74 47
-   8. Stanislaw Pitucha 4 2 6 6
-   9. Peter Lemenkov (@lemenkov) 4 2 5 3
-   10. Nick Altmann (@nikbyte) 4 1 157 26
+   8. Maksym Sobolyev (@sobomax) 4 2 20 13
+   9. Stanislaw Pitucha 4 2 6 6
+   10. Peter Lemenkov (@lemenkov) 4 2 5 3
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   @DMOsipov, Stéphane Alnet (@shimaore), Henk Hesselink, Maksym
-   Sobolyev (@sobomax), Ryan Bullock (@rrb3942), Walter Doekes
-   (@wdoekes).
+   All remaining contributors: Nick Altmann (@nikbyte), Ionut
+   Ionita (@ionutrazvanionita), @DMOsipov, Stéphane Alnet
+   (@shimaore), Henk Hesselink, Ryan Bullock (@rrb3942), Walter
+   Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -481,9 +481,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2021
-   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Mar 2021
+   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2021
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2021
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Mar 2020
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020

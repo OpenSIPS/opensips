@@ -20,7 +20,7 @@ Tracer Module
         1.4. Exported Functions
 
               1.4.1. trace(trace_id, [scope], [type],
-                      [trace_attrs])
+                      [trace_attrs], [flags], [correlation_id])
 
         1.5. Exported MI Functions
 
@@ -196,7 +196,8 @@ modparam("tracer", "trace_id",
 
 1.4. Exported Functions
 
-1.4.1.  trace(trace_id, [scope], [type], [trace_attrs])
+1.4.1.  trace(trace_id, [scope], [type], [trace_attrs], [flags],
+[correlation_id])
 
    This function has replaced the sip_trace() in OpenSIPS 3.0.
 
@@ -242,6 +243,15 @@ modparam("tracer", "trace_id",
        an entry only for this parameter, whatever you put
        here(string/pvar) shall be stored in the trace_attrs column
        in the sip_trace table.
+     * flags (string,pvar) are some control flags over the tracing
+       process (how and what to be traced).
+          + C - trace only the SIP caller side;
+          + c - trace onlt the SIP callee side;
+       If both C and c flags are missing, tracing of both
+       sides/legs is assumed.
+     * correlation_id (string,pvar) a custom SIP correlation ID to
+       be forced (normally the SIP Call-ID is used) to correlate
+       this traffic (transaction, dialog) with other traffic.
 
    Example 1.4. trace() usage
 ...
@@ -420,8 +430,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Ionut Ionita (@ionutrazvanionita) 105 52 2676 1887
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 100 79 911 763
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 106 82 1118 833
+   2. Ionut Ionita (@ionutrazvanionita) 105 52 2676 1887
    3. Razvan Crainea (@razvancrainea) 56 38 1253 375
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
    5. Liviu Chircu (@liviuchircu) 24 21 85 76
@@ -457,7 +467,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Mar 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Apr 2021
    2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
    3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2020
    4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
@@ -482,14 +492,14 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Alexandr Dubovikov
-   (@adubovikov), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Andrei
+   Datcu (@andrei-datcu), Alexandr Dubovikov (@adubovikov),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

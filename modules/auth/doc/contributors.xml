@@ -52,6 +52,14 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">25</entry>
+		<entry align="center">6</entry>
+		<entry align="center">509</entry>
+		<entry align="center">806</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">21</entry>
 		<entry align="center">14</entry>
@@ -59,7 +67,7 @@
 		<entry align="center">255</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">13</entry>
 		<entry align="center">7</entry>
@@ -67,7 +75,7 @@
 		<entry align="center">210</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">12</entry>
 		<entry align="center">9</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">102</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Anca Vamanu</entry>
 		<entry align="center">12</entry>
 		<entry align="center">5</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">77</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
 		<entry align="center">11</entry>
 		<entry align="center">8</entry>
 		<entry align="center">107</entry>
 		<entry align="center">100</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Edson Gellert Schubert</entry>
-		<entry align="center">8</entry>
-		<entry align="center">1</entry>
-		<entry align="center">0</entry>
-		<entry align="center">412</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Sergio Gutierrez, Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Andrei Pelinescu-Onciul, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Sergio Gutierrez, Anatoly Pidruchny, Konstantin Bokarius, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nils Ohlmeier, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jan 2005 - Jan 2021</entry>
+		<entry align="center">Jan 2005 - Mar 2021</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Sergio Gutierrez, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Anca Vamanu, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Sergio Gutierrez, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Anca Vamanu, Daniel-Constantin Mierla (<ulink url="https://github.com/miconda">@miconda</ulink>), Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>).</para>
 </section>
 
 </chapter>
