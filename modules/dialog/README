@@ -772,7 +772,7 @@ modparam("dialog", "to_sock_column", "to_sock_c_name")
    The column's name in the database to store the dialogs' id
    information.
 
-   Default value is “hash_id”.
+   Default value is “dlg_id”.
 
    Example 1.27. Set dlg_id_column parameter
 ...
@@ -2474,7 +2474,7 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 436 275 12812 3401
    2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
-   3. Razvan Crainea (@razvancrainea) 246 183 4761 1415
+   3. Razvan Crainea (@razvancrainea) 249 185 4833 1427
    4. Vlad Patrascu (@rvlad-patrascu) 163 84 3406 3117
    5. Liviu Chircu (@liviuchircu) 148 106 2774 1126
    6. Dan Pascu (@danpascu) 30 25 233 179
@@ -2516,11 +2516,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jan 2021
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
-   4.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
-   5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2020
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2021
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jan 2021
+   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Dec 2020
+   5.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
    6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
    7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    8.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
@@ -2547,8 +2547,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Zero King
    (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
    Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel
