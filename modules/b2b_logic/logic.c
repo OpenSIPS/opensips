@@ -3122,14 +3122,23 @@ str *b2b_scenario_hdrs(struct b2bl_new_entity *entity)
 	/* reset the buffer to fill in with new information */
 	b2b_hdrs_buf.len = 0;
 
-	while ((avp_hdrs = search_first_avp(AVP_VAL_STR, entity->avp_hdrs,
-		&name_value, avp_hdrs))) {
-		avp_hdr_vals = search_first_avp(AVP_VAL_STR, entity->avp_hdr_vals,
-			&body_value, avp_hdr_vals);
+	avp_hdrs = search_first_avp(0, entity->avp_hdrs, &name_value, NULL);
+	avp_hdr_vals = search_first_avp(0, entity->avp_hdr_vals, &body_value, NULL);
+
+	for (; avp_hdrs; avp_hdrs = search_next_avp(avp_hdrs, &name_value),
+		avp_hdr_vals = search_next_avp(avp_hdr_vals, &body_value)) {
 		if (!avp_hdr_vals) {
-			LM_ERR("Mismatch in the header names and header values AVPs\n");
+			LM_ERR("Mismatch in the number of AVP values for the header names "
+				"and header bodies\n");
 			break;
 		}
+
+		if (!is_avp_str_val(avp_hdrs)) {
+			LM_ERR("Header name must be a string\n");
+			continue;
+		}
+		if (!is_avp_str_val(avp_hdr_vals))
+			body_value.s.s = int2str(body_value.n, &body_value.s.len);
 
 		trim(&name_value.s);
 		trim(&body_value.s);
