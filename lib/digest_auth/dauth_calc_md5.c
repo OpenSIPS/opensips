@@ -122,7 +122,7 @@ static int _digest_calc_response(const HASHHEX *ha1, const HASHHEX *ha2,
 	MD5Update(&Md5Ctx, nonce->s, nonce->len);
 	MD5Update(&Md5Ctx, ":", 1);
 
-	if (qop_val != NULL)
+	if (qop_val && qop_val->s && qop_val->len != 0)
 	{
 		MD5Update(&Md5Ctx, nc->s, nc->len);
 		MD5Update(&Md5Ctx, ":", 1);

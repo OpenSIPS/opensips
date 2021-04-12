@@ -124,7 +124,7 @@ static int _digest_calc_response(const HASHHEX *ha1, const HASHHEX *ha2,
 	SHA256_Update(&Sha256Ctx, nonce->s, nonce->len);
 	SHA256_Update(&Sha256Ctx, ":", 1);
 
-	if (qop_val != NULL)
+	if (qop_val && qop_val->s && qop_val->len != 0)
 	{
 		SHA256_Update(&Sha256Ctx, nc->s, nc->len);
 		SHA256_Update(&Sha256Ctx, ":", 1);
