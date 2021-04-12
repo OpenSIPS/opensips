@@ -483,10 +483,12 @@ inline static int pathmax(void)
 	return pathmax;
 }
 
+/* faster than glibc equivalents */
+#define _isdigit(c) ((c) >= '0' && (c) <= '9')
 #define _isxdigit(c) \
-	((c >= '0' && c <= '9') || \
-	 (c >= 'a' && c <= 'f') || \
-	 (c >= 'A' && c <= 'F'))
+	(((c) >= '0' && (c) <= '9') || \
+	 ((c) >= 'a' && (c) <= 'f') || \
+	 ((c) >= 'A' && (c) <= 'F'))
 
 inline static int hex2int(char hex_digit)
 {
@@ -592,22 +594,32 @@ static inline void unescape_crlf(str *in_out)
 	}
 }
 
-static inline int is_e164(str* _user)
+static inline int _is_e164(const str* _user, int require_plus)
 {
-	int i;
-	char c;
+	char *d, *start, *end;
 
-	if ((_user->len > 2) && (_user->len < 17) && ((_user->s)[0] == '+')) {
-		for (i = 1; i < _user->len; i++) {
-			c = (_user->s)[i];
-			if ((c < '0') || (c > '9')) return -1;
-		}
-		return 1;
+	if (_user->len < 1)
+		return -1;
+
+	if (_user->s[0] == '+') {
+		start = _user->s + 1;
 	} else {
-	    return -1;
+		if (require_plus)
+			return -1;
+		start = _user->s;
 	}
-}
 
+	end = _user->s + _user->len;
+	if (end - start < 2 || end - start > 15)
+		return -1;
+
+	for (d = start; d < end; d++)
+		if (!_isdigit(*d))
+			return -1;
+
+	return 1;
+}
+#define is_e164(_user) _is_e164(_user, 1)
 
 /*
  * Convert a string to lower case
