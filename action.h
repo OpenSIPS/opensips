@@ -94,5 +94,6 @@ int route_params_run(struct sip_msg *msg,  pv_param_t *ip, pv_value_t *res);
 
 struct sip_msg* get_dummy_sip_msg(void);
 void release_dummy_sip_msg( struct sip_msg* req);
+int is_dummy_sip_msg(struct sip_msg *req);
 
 #endif
