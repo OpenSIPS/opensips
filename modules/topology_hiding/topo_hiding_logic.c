@@ -1039,7 +1039,7 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 	/* we also may end up here via TERMINATE event triggered by internal
 	 * dlg termination -> the requests we have here are dummy, so nothing
 	 * to be done */
-	if (req->via1==NULL) {
+	if (is_dummy_sip_msg(req)==0) {
 		LM_DBG("dummy request identified, skipping...\n");
 		return;
 	}
