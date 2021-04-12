@@ -2234,6 +2234,13 @@ static const char *_sip_msg_buf =
 static struct sip_msg* dummy_static_req= NULL;
 static int dummy_static_in_used = 0;
 
+int is_dummy_sip_msg(struct sip_msg *req)
+{
+	if (req && req->buf==_sip_msg_buf)
+		return 0;
+	return -1;
+}
+
 struct sip_msg* get_dummy_sip_msg(void)
 {
 	struct sip_msg* req;
