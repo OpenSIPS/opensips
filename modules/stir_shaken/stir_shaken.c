@@ -103,7 +103,7 @@ static char *ca_dir;
 static char *crl_list;
 static char *crl_dir;
 
-static int e164_strict_mode = 0;
+static int e164_strict_mode;
 
 static int tn_authlist_nid;
 
@@ -594,31 +594,10 @@ error:
 	return -1;
 }
 
-static int is_e164_strict(struct to_body *body)
-{
-	if ((body->parsed_uri.type != SIP_URI_T &&
-		body->parsed_uri.type != TEL_URI_T &&
-		body->parsed_uri.type != SIPS_URI_T &&
-		body->parsed_uri.type != TELS_URI_T) ||
-		((body->parsed_uri.type == SIP_URI_T ||
-		body->parsed_uri.type == SIPS_URI_T) &&
-		str_strcmp(&body->parsed_uri.user_param, _str("user=phone")))) {
-		LM_INFO("'tel:' URI or 'sip:' URI with 'user=phone' parameter "
-			"required\n");
-		return 0;
-	}
-
-	if (is_e164(&body->parsed_uri.user) == -1) {
-		LM_INFO("E.164 number required\n");
-		return 0;
-	}
-
-	return 1;
-}
-
 static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 {
 	struct to_body *body;
+	struct sip_uri parsed_uri;
 
 	if (parse_headers(msg, HDR_PAI_F | HDR_FROM_F, 0) < 0) {
 		LM_ERR("Failed to parse headers\n");
@@ -639,19 +618,23 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 		body = get_from(msg);
 	}
 
-	if (parse_uri(body->uri.s, body->uri.len, &body->parsed_uri) < 0) {
-		LM_ERR("Failed to parse URI\n");
+	if (parse_uri(body->uri.s, body->uri.len, &parsed_uri) < 0) {
+		LM_ERR("Failed to parse %s URI: %.*s\n", msg->pai ? "PAI" : "From",
+		       body->uri.len, body->uri.s);
 		return -1;
 	}
 
-	if (e164_strict_mode && !is_e164_strict(body))
+	if ((parsed_uri.type != SIP_URI_T && parsed_uri.type != TEL_URI_T &&
+	    parsed_uri.type != SIPS_URI_T && parsed_uri.type != TELS_URI_T) ||
+	    (e164_strict_mode &&
+	      (parsed_uri.type == SIP_URI_T || parsed_uri.type == SIPS_URI_T) &&
+	      str_strcmp(&parsed_uri.user_param, _str("user=phone")))) {
+		LM_ERR("'tel:' URI or 'sip:' URI %srequired\n",
+		        e164_strict_mode ? "with ';user=phone' parameter " : "");
 		return -3;
-
-	/* get rid of the '+' sign as it should not appear in the passport claim */
-	if (body->parsed_uri.user.s[0] == '+') {
-		orig_tn->s = body->parsed_uri.user.s + 1;
-		orig_tn->len = body->parsed_uri.user.len - 1;
 	}
+
+	*orig_tn = parsed_uri.user;
 
 	return 0;
 }
@@ -659,26 +642,30 @@ static int get_orig_tn_from_msg(struct sip_msg *msg, str *orig_tn)
 static int get_dest_tn_from_msg(struct sip_msg *msg, str *dest_tn)
 {
 	struct to_body *body;
+	struct sip_uri parsed_uri;
 
 	if (parse_to_header(msg) < 0) {
-		LM_ERR("Unable to parse From header\n");
+		LM_ERR("Unable to parse To header\n");
 		return -1;
 	}
 	body = get_to(msg);
 
-	if (parse_uri(body->uri.s, body->uri.len, &body->parsed_uri) < 0) {
-		LM_ERR("Failed to parse URI\n");
+	if (parse_uri(body->uri.s, body->uri.len, &parsed_uri) < 0) {
+		LM_ERR("Failed to parse To URI: %.*s\n", body->uri.len, body->uri.s);
 		return -1;
 	}
 
-	if (e164_strict_mode && !is_e164_strict(body))
+	if ((parsed_uri.type != SIP_URI_T && parsed_uri.type != TEL_URI_T &&
+	    parsed_uri.type != SIPS_URI_T && parsed_uri.type != TELS_URI_T) ||
+	    (e164_strict_mode &&
+	      (parsed_uri.type == SIP_URI_T || parsed_uri.type == SIPS_URI_T) &&
+	      str_strcmp(&parsed_uri.user_param, _str("user=phone")))) {
+		LM_ERR("'tel:' URI or 'sip:' URI %srequired\n",
+		        e164_strict_mode ? "with ';user=phone' parameter " : "");
 		return -3;
-
-	/* get rid of the '+' sign as it should not appear in the passport claim */
-	if (body->parsed_uri.user.s[0] == '+') {
-		dest_tn->s = body->parsed_uri.user.s + 1;
-		dest_tn->len = body->parsed_uri.user.len - 1;
 	}
+
+	*dest_tn = parsed_uri.user;
 
 	return 0;
 }
@@ -933,6 +920,28 @@ static int load_pkey(EVP_PKEY **pkey, str *pkey_buf)
 	return 0;
 }
 
+/* Note: MAY modify @num */
+static int check_passport_phonenum(str *num, int log_lev)
+{
+	if (!num->s || num->len == 0) {
+		LM_GEN(log_lev, "number cannot be NULL or empty\n");
+		return -1;
+	}
+
+	/* get rid of the '+' sign as it should not appear in the passport claim */
+	if (num->s[0] == '+') {
+		num->s++;
+		num->len--;
+	}
+
+	if (_is_e164(num, e164_strict_mode) == -1) {
+		LM_GEN(log_lev, "number is not in E.164 format: %.*s\n", num->len, num->s);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p)
 {
@@ -964,6 +973,13 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		}
 		orig_tn_p = &orig_tn;
 	}
+
+	if (check_passport_phonenum(orig_tn_p, orig_log_lev) != 0) {
+		LM_GEN(orig_log_lev, "failed to validate Originator number (%.*s)\n",
+		        orig_tn_p->len, orig_tn_p->s);
+		return -3;
+	}
+
 	if (!dest_tn_p) {
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
@@ -973,6 +989,13 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
+		dest_log_lev = L_NOTICE;
+	}
+
+	if (check_passport_phonenum(dest_tn_p, dest_log_lev) != 0) {
+		LM_GEN(dest_log_lev, "failed to validate Destination number (%.*s)\n",
+		        dest_tn_p->len, dest_tn_p->s);
+		return -3;
 	}
 
 	if ((now = time(0)) == -1) {
@@ -1583,7 +1606,7 @@ static int set_err_resp_vars(struct sip_msg *msg, pv_spec_t *err_code_var,
 {
 	pv_value_t err_code_val, err_reason_val;
 
-	err_code_val.flags = PV_TYPE_INT;
+	err_code_val.flags = PV_VAL_INT|PV_TYPE_INT;
 	err_code_val.ri = code;
 	if (pv_set_value(msg, err_code_var, 0, &err_code_val) != 0)
 		return -1;
@@ -1641,6 +1664,14 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 		orig_tn_p = &orig_tn;
 	}
+
+	if (check_passport_phonenum(orig_tn_p, orig_log_lev) != 0) {
+		LM_GEN(orig_log_lev, "failed to validate Originator number (%.*s)\n",
+		       orig_tn_p->len, orig_tn_p->s);
+		SET_VERIFY_ERR_VARS(err_code, err_reason);
+		return -3;
+	}
+
 	if (!dest_tn_p) {
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
@@ -1650,6 +1681,17 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
+		dest_log_lev = L_NOTICE;
+	} else {
+		err_code = IERROR_CODE;
+		err_reason = IERROR_REASON;
+	}
+
+	if (check_passport_phonenum(dest_tn_p, dest_log_lev) != 0) {
+		LM_GEN(dest_log_lev, "failed to validate Destination number (%.*s)\n",
+		       dest_tn_p->len, dest_tn_p->s);
+		SET_VERIFY_ERR_VARS(err_code, err_reason);
+		return -3;
 	}
 
 	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
