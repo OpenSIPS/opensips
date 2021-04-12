@@ -1643,11 +1643,13 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	X509 *cert = NULL;
 	STACK_OF(X509) *certchain = NULL;
 	struct parsed_identity *parsed;
-	int rc, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
+	int rc, err_code, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
+	char *err_reason;
 
 	/* looking for 'Identity' and 'Date' */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
 		LM_ERR("Failed to parse headers\n");
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 		return -1;
 	}
 
@@ -1667,6 +1669,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 			else
 				LM_NOTICE("Originator URI is not a telephone number\n");
 
+			SET_VERIFY_ERR_VARS(err_code, err_reason);
 			return rc;
 		}
 		orig_tn_p = &orig_tn;
@@ -1684,11 +1687,15 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (!dest_tn_p) {
+		err_code = BADNUM_ERROR_CODE;
+		err_reason = BADNUM_DEST_ERROR_REASON;
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
 				LM_ERR("Failed to get Destination identity\n");
-			else  /* rc == -3 */
-				LM_INFO("Improper URI for Destination identity\n");
+			else
+				LM_NOTICE("Destination URI is not a telephone number\n");
+
+			SET_VERIFY_ERR_VARS(err_code, err_reason);
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
@@ -1708,6 +1715,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 		} else {  /* rc == -4 */
 			LM_INFO("Invalid identity header\n");
 			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
@@ -1719,18 +1727,21 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if (str_strcmp(&parsed->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
 		LM_NOTICE("Unsupported 'ppt' extension: %.*s\n",
 		          parsed->ppt_hdr_param.len, parsed->ppt_hdr_param.s);
+		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -5;
 		goto error;
 	}
 	if (parsed->alg_hdr_param.s &&
 		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
-		LM_INFO("Unsupported 'alg'\n");
+		LM_NOTICE("Unsupported 'alg': %.*s\n",
+		          parsed->alg_hdr_param.len, parsed->alg_hdr_param.s);
+		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -5;
 		goto error;
 	}
 
 	if (check_passport_claims(parsed) < 0) {
-		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
+		LM_NOTICE("Required PASSporT claims are missing or have bad datatypes\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -4;
 		goto error;
@@ -1746,12 +1757,14 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	if (get_date_ts(date_hf, &date_ts) < 0) {
 		LM_ERR("Failed to get UNIX time from Date header\n");
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 		rc = -1;
 		goto error;
 	}
 
 	if ((now = time(0)) == -1) {
 		LM_ERR("Failed to get current time\n");
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 		rc = -1;
 		goto error;
 	}
@@ -1789,6 +1802,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	if (load_cert(&cert, &certchain, cert_buf) < 0) {
 		LM_ERR("Failed to load certificate\n");
+		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 		rc = -1;
 		goto error;
 	}
@@ -1803,6 +1817,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if ((rc = validate_certificate(cert, certchain)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Error validating certificate\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 			goto error;
 		} else {  /* rc == -8 */
 			LM_INFO("Invalid certificate\n");
@@ -1818,6 +1833,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
 		if (rc < 0) {
 			LM_ERR("Error while verifying signature\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
 			rc = -1;
 			goto error;
 		} else {
