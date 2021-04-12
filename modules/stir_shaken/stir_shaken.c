@@ -950,7 +950,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	X509 *cert;
 	EVP_PKEY *pkey = NULL;
 	str orig_tn, dest_tn;
-	int rc;
+	int rc, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
 
 	/* looking for 'Identity' and 'Date' */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -959,19 +959,20 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	}
 
 	if (get_header_by_static_name(msg, "Identity")) {
-		LM_INFO("Identity header already exists\n");
+		LM_NOTICE("Identity header already exists\n");
 		return -2;
 	}
 
 	if (!orig_tn_p) {
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
-				LM_ERR("Error determining Originator's identity\n");
+				LM_ERR("Error determining Originator number\n");
 			else
-				LM_INFO("Originator's URI is not a telephone number\n");
+				LM_NOTICE("Originator URI is not a telephone number\n");
 			return rc;
 		}
 		orig_tn_p = &orig_tn;
+		orig_log_lev = L_NOTICE;
 	}
 
 	if (check_passport_phonenum(orig_tn_p, orig_log_lev) != 0) {
@@ -983,9 +984,9 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	if (!dest_tn_p) {
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
-				LM_ERR("Error determining Destinations's identity\n");
+				LM_ERR("Error determining Destination number\n");
 			else
-				LM_INFO("Destinations's URI is not a telephone number\n");
+				LM_NOTICE("Destination URI is not a telephone number\n");
 			return rc;
 		}
 		dest_tn_p = &dest_tn;
@@ -1019,7 +1020,8 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		}
 
 		if (now - date_ts > auth_date_freshness) {
-			LM_INFO("Date header value is older than local policy\n");
+			LM_NOTICE("Date header value is older than local policy "
+			          "(%lds > %ds)\n", now - date_ts, auth_date_freshness);
 			return -4;
 		}
 	}
@@ -1035,12 +1037,12 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	}
 
 	if (!check_cert_validity(&now, cert)) {
-		LM_INFO("The current time does not fall within the certificate validity\n");
+		LM_NOTICE("The current time does not fall within the certificate validity\n");
 		rc = -5;
 		goto error;
 	}
 	if (date_ts != now && !check_cert_validity(&date_ts, cert)) {
-		LM_INFO("The Date header does not fall within the certificate validity\n");
+		LM_NOTICE("The Date header does not fall within the certificate validity\n");
 		rc = -5;
 		goto error;
 	}
@@ -1640,7 +1642,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	X509 *cert = NULL;
 	STACK_OF(X509) *certchain = NULL;
 	struct parsed_identity *parsed;
-	int rc;
+	int rc, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
 
 	/* looking for 'Identity' and 'Date' */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -1649,20 +1651,28 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
+		LM_NOTICE("No Identity header found\n");
 		SET_VERIFY_ERR_VARS(USE_IDENTITY_CODE, USE_IDENTITY_REASON);
 		return -2;
 	}
 
 	if (!orig_tn_p) {
+		err_code = BADNUM_ERROR_CODE;
+		err_reason = BADNUM_ORIG_ERROR_REASON;
+
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
 				LM_ERR("Failed to get Originator identity\n");
-			else  /* rc == -3 */
-				LM_INFO("Improper URI for Originator identity\n");
+			else
+				LM_NOTICE("Originator URI is not a telephone number\n");
+
 			return rc;
 		}
 		orig_tn_p = &orig_tn;
+		orig_log_lev = L_NOTICE;
+	} else {
+		err_code = IERROR_CODE;
+		err_reason = IERROR_REASON;
 	}
 
 	if (check_passport_phonenum(orig_tn_p, orig_log_lev) != 0) {
@@ -1706,7 +1716,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (str_strcmp(&parsed->ppt_hdr_param, _str(PPORT_HDR_PPT_VAL))) {
-		LM_INFO("Unsupported 'ppt' extension\n");
+		LM_NOTICE("Unsupported 'ppt' extension: %.*s\n",
+		          parsed->ppt_hdr_param.len, parsed->ppt_hdr_param.s);
 		rc = -5;
 		goto error;
 	}
@@ -1726,7 +1737,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 	date_hf = get_header_by_static_name(msg, "Date");
 	if (!date_hf) {
-		LM_INFO("No Date header found\n");
+		LM_NOTICE("No Date header found\n");
 		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 		rc = -2;
 		goto error;
@@ -1744,7 +1755,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		goto error;
 	}
 	if (now - date_ts > verify_date_freshness) {
-		LM_INFO("Date header value is older than local policy\n");
+		LM_NOTICE("Date header value is older than local policy (%lds > %ds)\n",
+		          now - date_ts, verify_date_freshness);
 		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 		rc = -6;
 		goto error;
@@ -1755,9 +1767,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pport_orig_tn.s = parsed->orig_tn->valuestring;
 	pport_orig_tn.len = strlen(pport_orig_tn.s);
 	if (str_strcmp(&pport_orig_tn, orig_tn_p)) {
-		LM_INFO("Differing identities in orig claim [%.*s] and PAI/From hdr [%.*s]\n",
+		LM_NOTICE("Differing identities in orig claim [%.*s] and PAI/From hdr [%.*s]\n",
 			pport_orig_tn.len, pport_orig_tn.s, orig_tn_p->len, orig_tn_p->s);
-		LM_INFO("Signature would not verify successfully\n");
+		LM_NOTICE("Signature would not verify successfully\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -9;
 		goto error;
@@ -1766,9 +1778,9 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pport_dest_tn.s = parsed->dest_tn->valuestring;
 	pport_dest_tn.len = strlen(pport_dest_tn.s);
 	if (str_strcmp(&pport_dest_tn, dest_tn_p)) {
-		LM_INFO("Differing identities in dest claim [%.*s] and To hdr [%.*s]\n",
+		LM_NOTICE("Differing identities in dest claim [%.*s] and To hdr [%.*s]\n",
 			pport_dest_tn.len, pport_dest_tn.s, dest_tn_p->len, dest_tn_p->s);
-		LM_INFO("Signature would not verify successfully\n");
+		LM_NOTICE("Signature would not verify successfully\n");
 		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
 		rc = -9;
 		goto error;
