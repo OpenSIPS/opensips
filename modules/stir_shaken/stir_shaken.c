@@ -1660,8 +1660,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (!orig_tn_p) {
-		err_code = BADNUM_ERROR_CODE;
-		err_reason = BADNUM_ORIG_ERROR_REASON;
+		err_code = BADREQ_CODE;
+		err_reason = BADREQ_ORIG_REASON;
 
 		if ((rc = get_orig_tn_from_msg(msg, &orig_tn)) < 0) {
 			if (rc == -1)
@@ -1687,8 +1687,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (!dest_tn_p) {
-		err_code = BADNUM_ERROR_CODE;
-		err_reason = BADNUM_DEST_ERROR_REASON;
+		err_code = BADREQ_CODE;
+		err_reason = BADREQ_DEST_REASON;
 		if ((rc = get_dest_tn_from_msg(msg, &dest_tn)) < 0) {
 			if (rc == -1)
 				LM_ERR("Failed to get Destination identity\n");
@@ -1750,7 +1750,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	date_hf = get_header_by_static_name(msg, "Date");
 	if (!date_hf) {
 		LM_NOTICE("No Date header found\n");
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+		SET_VERIFY_ERR_VARS(BADREQ_CODE, BADREQ_NODATE_REASON);
 		rc = -2;
 		goto error;
 	}
