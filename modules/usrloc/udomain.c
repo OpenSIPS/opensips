@@ -793,7 +793,7 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 		return 0;
 	}
 
-	/* CON_PS_REFERENCE(_c) = &my_ps; - this is still dangerous with STMT */
+	/* CON_SET_CURR_PS(_c, &my_ps); - this is still dangerous with STMT */
 
 	if (ul_dbf.query(_c, keys, 0, vals, columns, use_domain ? 2:1, UL_COLS - 2,
 	                 order, &res) < 0) {
@@ -1055,7 +1055,7 @@ int db_timer_udomain(udomain_t* _d)
 	vals[1].type = DB_INT;
 	vals[1].val.int_val = 0;
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 	ul_dbf.use_table(ul_dbh, _d->name);
 
 	if (ul_dbf.delete(ul_dbh, keys, ops, vals, 2) < 0) {

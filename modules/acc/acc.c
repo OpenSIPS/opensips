@@ -595,7 +595,7 @@ int acc_db_request( struct sip_msg *rq, struct sip_msg *rpl,
 			ps = &my_ps3;
 	}
 
-	CON_PS_REFERENCE(db_handle) = ps;
+	CON_SET_CURR_PS(db_handle, ps);
 
 
 	/* multi-leg columns */
@@ -691,7 +691,7 @@ int acc_db_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 
 	total = ret + 5;
 	acc_dbf.use_table(db_handle, &table);
-	CON_PS_REFERENCE(db_handle) = &my_ps;
+	CON_SET_CURR_PS(db_handle, &my_ps);
 
 
 	/* prevent acces for setting variable */

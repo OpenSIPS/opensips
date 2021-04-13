@@ -965,7 +965,7 @@ static int load_key(cache_entry_t *c_entry, db_handlers_t *db_hdls, str key,
 		goto out_error;
 	}
 
-	CON_PS_REFERENCE(db_hdls->db_con) = &db_hdls->query_ps;
+	CON_SET_CURR_PS(db_hdls->db_con, &db_hdls->query_ps);
 	if (db_hdls->db_funcs.query(db_hdls->db_con,
 		&key_col, 0, &key_val, c_entry->columns, 1,
 		c_entry->nr_columns, 0, sql_res) != 0) {

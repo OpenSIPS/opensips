@@ -222,7 +222,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 	result_cols[etag_col=n_result_cols++] = &str_etag_col;
 	result_cols[event_col=n_result_cols++] = &str_event_col;
 
-	//CON_PS_REFERENCE(pa_db) = &my_ps_select;
+	//CON_SET_CURR_PS(pa_db, &my_ps_select);
 	if(pa_dbf.query(pa_db, db_keys, db_ops, db_vals, result_cols,
 						2, n_result_cols, &query_str, &result )< 0)
 	{
@@ -366,7 +366,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 	{
 		LM_ERR("in use_table\n");
 	} else {
-		CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+		CON_SET_CURR_PS(pa_db, &my_ps_delete);
 		if (pa_dbf.delete(pa_db, db_keys+1, db_ops+1, db_vals+1, 1) < 0)
 			LM_ERR("cleaning expired messages\n");
 	}

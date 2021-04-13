@@ -999,7 +999,7 @@ int pres_update_status(subs_t *subs, str reason, db_key_t* query_cols,
 		if(subs->status == TERMINATED_STATUS && subs->reason.len==11 &&
 				strncmp(subs->reason.s, "deactivated", 11)==0)
 		{
-			CON_PS_REFERENCE(pa_db) = &my_del_ps;
+			CON_SET_CURR_PS(pa_db, &my_del_ps);
 			if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)<0)
 			{
 				LM_ERR( "in sql delete\n");
@@ -1008,7 +1008,7 @@ int pres_update_status(subs_t *subs, str reason, db_key_t* query_cols,
 		}
 		else
 		{
-			CON_PS_REFERENCE(pa_db) = &my_upd_ps;
+			CON_SET_CURR_PS(pa_db, &my_upd_ps);
 			if(pa_dbf.update(pa_db, query_cols, 0, query_vals, update_cols,
 						update_vals, n_query_cols, n_update_cols)< 0)
 			{
@@ -1068,7 +1068,7 @@ int pres_db_delete_status(subs_t* s)
 	query_vals[n_query_cols].val.str_val= s->from_domain;
 	n_query_cols++;
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_SET_CURR_PS(pa_db, &my_ps);
 
 	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)< 0)
 	{
@@ -1176,7 +1176,7 @@ int update_watchers_status(str pres_uri, pres_ev_t* ev, str* rules_doc)
 		goto done;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_SET_CURR_PS(pa_db, &my_ps);
 	if(pa_dbf.query(pa_db, query_cols, 0, query_vals, result_cols,n_query_cols,
 				n_result_cols, 0, &result)< 0)
 	{

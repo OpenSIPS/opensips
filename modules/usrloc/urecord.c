@@ -484,7 +484,7 @@ int db_delete_urecord(urecord_t* _r)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 
 	if (ul_dbf.delete(ul_dbh, keys, 0, vals, (use_domain) ? (2) : (1)) < 0) {
 		LM_ERR("failed to delete from database\n");
