@@ -72,9 +72,10 @@
 #define HDR_PPT_PARAM_S "ppt=\"shaken\""
 #define HDR_PPT_PARAM_LEN (sizeof(HDR_PPT_PARAM_S)-1)
 
-#define BADNUM_ERROR_CODE 400
-#define BADNUM_ORIG_ERROR_REASON "Bad PAI/From Number"
-#define BADNUM_DEST_ERROR_REASON "Bad To Number"
+#define BADREQ_CODE 400
+#define BADREQ_ORIG_REASON "Bad Request (PAI/From Number)"
+#define BADREQ_DEST_REASON "Bad Request (To Number)"
+#define BADREQ_NODATE_REASON "Bad Request (Missing Date)"
 #define STALE_DATE_CODE 403
 #define STALE_DATE_REASON "Stale Date"
 #define USE_IDENTITY_CODE 428
