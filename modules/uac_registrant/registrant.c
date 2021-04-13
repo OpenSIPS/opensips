@@ -445,8 +445,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		}
 
 		if (rec->flags&FORCE_SINGLE_REGISTRATION &&
-			rec->state == REGISTERING_STATE &&
-			rec->state == AUTHENTICATING_STATE) {
+			(rec->state == REGISTERING_STATE ||
+			 rec->state == AUTHENTICATING_STATE)) {
 			head_contact = msg->contact;
 			contact = ((contact_body_t*)msg->contact->parsed)->contacts;
 			while (contact) {
