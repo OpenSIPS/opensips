@@ -1069,7 +1069,6 @@ int pres_db_delete_status(subs_t* s)
 	n_query_cols++;
 
 	CON_SET_CURR_PS(pa_db, &my_ps);
-
 	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals, n_query_cols)< 0)
 	{
 		LM_ERR("sql delete failed\n");

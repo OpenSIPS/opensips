@@ -794,7 +794,6 @@ urecord_t* db_load_urecord(db_con_t* _c, udomain_t* _d, str *_aor)
 	}
 
 	/* CON_SET_CURR_PS(_c, &my_ps); - this is still dangerous with STMT */
-
 	if (ul_dbf.query(_c, keys, 0, vals, columns, use_domain ? 2:1, UL_COLS - 2,
 	                 order, &res) < 0) {
 		LM_ERR("db_query failed\n");
