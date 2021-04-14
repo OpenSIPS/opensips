@@ -36,11 +36,11 @@ rtpproxy_pre_fwd(struct sip_msg *msg, cb_type_t cb_type, void *mod_args, void *c
     struct proxy_l *p;
     struct ip_addr ip;
     char *cp;
-    struct force_rtpp_args *args;
+    struct rtpp_args *args;
 
     assert(cb_type == REQ_PRE_FORWARD);
     p = (struct proxy_l *)core_args;
-    args = (struct force_rtpp_args *)mod_args;
+    args = (struct rtpp_args *)mod_args;
     if (args->raddr.s != NULL)
         return;
     hostent2ip_addr(&ip, &p->host, p->addr_idx);
@@ -68,10 +68,10 @@ rtpproxy_pre_fwd(struct sip_msg *msg, cb_type_t cb_type, void *mod_args, void *c
 void
 rtpproxy_pre_fwd_free(struct sip_msg *msg, cb_type_t cb_type, void *mod_args, void *core_args)
 {
-    struct force_rtpp_args *args;
+    struct rtpp_args *args;
 
     assert(cb_type == MSG_DESTROY);
-    args = (struct force_rtpp_args *)mod_args;
+    args = (struct rtpp_args *)mod_args;
     if (args->arg1 != NULL)
         pkg_free(args->arg1);
     if (args->arg2 != NULL)
