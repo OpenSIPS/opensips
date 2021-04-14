@@ -110,7 +110,6 @@ static int tn_authlist_nid;
 static int parsed_ctx_idx =-1;
 
 static X509_STORE *store;
-static X509_STORE_CTX *verify_ctx;
 
 static param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
@@ -218,11 +217,6 @@ static int init_cert_validation(void)
 		}
 		X509_STORE_set_flags(store,
 			X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
-	}
-
-	if (!(verify_ctx = X509_STORE_CTX_new())) {
-		LM_ERR("Failed to create X509_STORE_CTX object\n");
-		return -1;
 	}
 
 	return 0;
@@ -868,6 +862,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 		if (!stack) {
 			LM_ERR("Failed to allocate cert stack\n");
 			X509_free(*cert);
+			*cert = NULL;
 			BIO_free(cbio);
 			return -1;
 		}
@@ -876,6 +871,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 		if (!sk) {
 			LM_ERR("error reading certificate stack\n");
 			X509_free(*cert);
+			*cert = NULL;
 			BIO_free(cbio);
 			sk_X509_free(stack);
 			return -1;
@@ -1420,6 +1416,7 @@ static int check_passport_claims(struct parsed_identity *parsed)
 
 static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 {
+	X509_STORE_CTX *verify_ctx;
 	int rc;
 
 	/* check the TN Authorization list extension */
@@ -1428,15 +1425,22 @@ static int validate_certificate(X509 *cert, STACK_OF(X509) *certchain)
 		return -8;
 	}
 
-	if (X509_STORE_CTX_init(verify_ctx, store,
-		cert, certchain) != 1) {
+	if (!(verify_ctx = X509_STORE_CTX_new())) {
+		LM_ERR("Failed to create X509_STORE_CTX object\n");
+		return -1;
+	}
+
+	if (X509_STORE_CTX_init(verify_ctx, store, cert, certchain) != 1) {
 		X509_STORE_CTX_cleanup(verify_ctx);
+		X509_STORE_CTX_free(verify_ctx);
 		LM_ERR("Error initializing verification context\n");
 		return -1;
 	}
 
 	rc = X509_verify_cert(verify_ctx);
+
 	X509_STORE_CTX_cleanup(verify_ctx);
+	X509_STORE_CTX_free(verify_ctx);
 
 	if (rc != 1)
 		return rc == 0 ? -8 : -1;
