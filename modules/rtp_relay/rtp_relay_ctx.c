@@ -189,6 +189,7 @@ struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
 	return sess;
 }
 
+#if 0
 static int rtp_relay_ctx_initial(void)
 {
 	struct cell* t;
@@ -199,6 +200,7 @@ static int rtp_relay_ctx_initial(void)
 		return 1;
 	return get_to(t->uas.request)->tag_value.len?0:1;
 }
+#endif
 
 #define RTP_RELAY_FLAGS(_t, _f) \
 	(sess->flags[_t][_f].s?&sess->flags[_t][_f]: \
