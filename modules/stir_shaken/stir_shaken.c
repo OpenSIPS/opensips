@@ -1991,6 +1991,9 @@ int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			res->rs = parsed->dec_header;
 			break;
 		case PV_HEADER_X5U:
+			if (!parsed->x5u)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->x5u->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
@@ -1998,23 +2001,38 @@ int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 			res->rs = parsed->dec_payload;
 			break;
 		case PV_PAYLOAD_ATTEST:
+			if (!parsed->attest)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->attest->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
 		case PV_PAYLOAD_DEST:
+			if (!parsed->dest_tn)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->dest_tn->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
 		case PV_PAYLOAD_IAT:
+			if (!parsed->iat)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = int2str((uint64_t)parsed->iat->valuedouble, &res->rs.len);
 			res->ri = (int)parsed->iat->valuedouble;
 			res->flags |= PV_VAL_INT|PV_TYPE_INT;
 			break;
 		case PV_PAYLOAD_ORIG:
+			if (!parsed->orig_tn)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->orig_tn->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
 		case PV_PAYLOAD_ORIGID:
+			if (!parsed->origid)
+				return pv_get_null(msg, param, res);
+
 			res->rs.s = parsed->origid->valuestring;
 			res->rs.len = strlen(res->rs.s);
 			break;
