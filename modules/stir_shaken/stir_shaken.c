@@ -870,6 +870,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 			LM_ERR("Failed to allocate cert stack\n");
 			X509_free(*cert);
 			BIO_free(cbio);
+			return -1;
 		}
 
 		sk = PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL);
@@ -878,6 +879,7 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 			X509_free(*cert);
 			BIO_free(cbio);
 			sk_X509_free(stack);
+			return -1;
 		}
 
 		while (sk_X509_INFO_num(sk)) {
