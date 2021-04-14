@@ -19,7 +19,9 @@
  */
 
 #if !defined(__FreeBSD__)
+#ifndef _BSD_SOURCE
 #define _BSD_SOURCE             /* See feature_test_macros(7) */
+#endif
 #include <endian.h>
 #else
 #include <sys/endian.h>
@@ -55,15 +57,16 @@ static inline int bcmp_hex128(const char *bin, const char *hex, int hashlen)
 	const int inelem = VECTOR_BYTES(hashlen) / sizeof(uint64_t);
 	uint64_t base;
 	uint64_t inws[inelem];
+	int i, ib, b;
 
 	assert(hashlen >= sizeof(inws) && (hashlen % sizeof(inws) == 0));
 	memset(&base, '0', sizeof(base));
-	for (int i = 0; i < hashlen; i += sizeof(inws)) {
+	for (i = 0; i < hashlen; i += sizeof(inws)) {
 		uint64_t outw[inelem * 2];
 		memcpy(&inws, bin + i, sizeof(inws));
-		for (int ib = 0; ib < inelem; ib++) {
+		for (ib = 0; ib < inelem; ib++) {
 			uint64_t inw = nibbleswap(htole64(inws[ib]));
-			for (int b = 0; b < 2; b++) {
+			for (b = 0; b < 2; b++) {
 				uint64_t addmask, ow;
 				ow = cvt_step(inw >> (32 * b) & 0xffffffff, 0x0000ffff, 16);
 				ow = cvt_step(ow, 0x00ff000000ff, 8);
@@ -85,16 +88,17 @@ static inline void cvt_hex128(const char *bin, char *hex, int hashlen, int hashh
 	const int inelem = VECTOR_BYTES(hashlen) / sizeof(uint64_t);
 	uint64_t base;
 	uint64_t inws[inelem];
+	int i, ib, b;
 
 	assert(hashlen >= sizeof(inws) && (hashlen % sizeof(inws) == 0));
 	assert(hashhexlen >= (hashlen * 2));
 	memset(&base, '0', sizeof(base));
-	for (int i = 0; i < hashlen; i += sizeof(inws)) {
+	for (i = 0; i < hashlen; i += sizeof(inws)) {
 		uint64_t outw[inelem * 2];
 		memcpy(&inws, bin + i, sizeof(inws));
-		for (int ib = 0; ib < inelem; ib++) {
+		for (ib = 0; ib < inelem; ib++) {
 			uint64_t inw = nibbleswap(htole64(inws[ib]));
-			for (int b = 0; b < 2; b++) {
+			for (b = 0; b < 2; b++) {
 				uint64_t addmask, ow;
 				ow = cvt_step(inw >> (32 * b) & 0xffffffff, 0x0000ffff, 16);
 				ow = cvt_step(ow, 0x00ff000000ff, 8);

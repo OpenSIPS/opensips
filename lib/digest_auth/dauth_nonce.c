@@ -45,8 +45,8 @@
  */
 #define NONCE_LEN       44
 
-static_assert((NONCE_LEN * 6) % 8 == 0, "NONCE_LEN should not be padded");
-static_assert((NONCE_LEN * 6) / 8 >= RAND_SECRET_LEN, "NONCE_LEN is too small");
+_Static_assert((NONCE_LEN * 6) % 8 == 0, "NONCE_LEN should not be padded");
+_Static_assert((NONCE_LEN * 6) / 8 >= RAND_SECRET_LEN, "NONCE_LEN is too small");
 
 struct nonce_context_priv {
 	struct nonce_context pub;
@@ -54,7 +54,7 @@ struct nonce_context_priv {
 	EVP_CIPHER_CTX *ectx, *dctx;
 };
 
-static_assert(offsetof(struct nonce_context_priv, pub) == 0,
+_Static_assert(offsetof(struct nonce_context_priv, pub) == 0,
     "nonce_context_priv.pub has to be the first member");
 
 struct nonce_payload {
@@ -65,9 +65,9 @@ struct nonce_payload {
 	uint64_t expires_usec:20;
 } __attribute__((__packed__));
 
-static_assert(sizeof(struct nonce_payload) <= RAND_SECRET_LEN / 2,
+_Static_assert(sizeof(struct nonce_payload) <= RAND_SECRET_LEN / 2,
     "struct nonce_payload is too big");
-static_assert(RAND_SECRET_LEN % sizeof(uint64_t) == 0,
+_Static_assert(RAND_SECRET_LEN % sizeof(uint64_t) == 0,
     "RAND_SECRET_LEN is not multiple of sizeof(uint64_t)");
 
 static int Base64Encode(const str_const *message, char* b64buffer);
@@ -78,9 +78,9 @@ xor_bufs(unsigned char *rb, const unsigned char *ib1, const unsigned char *ib2,
     int iblen)
 {
 	uint64_t ebin[iblen / sizeof(uint64_t)];
-	int j = 0;
+	int i, j = 0;
 
-	for (int i = 0; i < sizeof(ebin); i+= sizeof(uint64_t), j++) {
+	for (i = 0; i < sizeof(ebin); i+= sizeof(uint64_t), j++) {
 		uint64_t iw1, iw2;
 		memcpy(&iw1, ib1 + i, sizeof(iw1));
 		memcpy(&iw2, ib2 + i, sizeof(iw2));
