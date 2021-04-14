@@ -2411,7 +2411,6 @@ end:
 
 static int unforce_rtpproxy(struct sip_msg* msg, struct rtpp_args *args, pv_spec_t *var)
 {
-	struct rtpp_node *node;
 	struct rtpproxy_vcmd vdel;
 
 	RTPP_VCMD_INIT(vdel, 4 + 3, {"D", 1}, {" ", 1}, {NULL, 0}, {" ", 1},
@@ -2423,8 +2422,8 @@ static int unforce_rtpproxy(struct sip_msg* msg, struct rtpp_args *args, pv_spec
 	STR2IOVEC(args->from_tag, vdel.vu[4]);
 	STR2IOVEC(args->to_tag, vdel.vu[6]);
 
-	send_rtpp_command(node, &vdel, (args->to_tag.len > 0) ? vdel.useritems :
-	    vdel.useritems - 2);
+	send_rtpp_command(args->node, &vdel,
+			(args->to_tag.len > 0)?vdel.useritems:vdel.useritems - 2);
 	LM_DBG("sent unforce command\n");
 
 	return 1;
