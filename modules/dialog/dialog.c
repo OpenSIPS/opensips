@@ -83,6 +83,7 @@ int dlg_enable_stats = 1;
 int active_dlgs_cnt = 0;
 int early_dlgs_cnt = 0;
 int db_flush_vp = 0;
+int dlg_event_id_format = 0;
 stat_var *active_dlgs = 0;
 stat_var *processed_dlgs = 0;
 stat_var *expired_dlgs = 0;
@@ -331,6 +332,7 @@ static param_export_t mod_params[]={
 	{ "replicate_profiles_check", INT_PARAM, &repl_prof_timer_check },
 	{ "replicate_profiles_buffer",INT_PARAM, &repl_prof_buffer_th   },
 	{ "replicate_profiles_expire",INT_PARAM, &repl_prof_timer_expire},
+	{ "event_id_format",          INT_PARAM, &dlg_event_id_format},
 	{ 0,0,0 }
 };
 

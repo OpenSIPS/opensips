@@ -1357,6 +1357,53 @@ modparam("dialog", "replicate_profiles_expire", 10)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_event_id_format" xreflabel="event_id_format">
+		<title><varname>event_id_format</varname> (int)</title>
+		<para>
+		Controls the dialog identifier parameters expoesed in the
+		<xref linkend="event_E_DLG_STATE_CHANGED"/> event.
+		</para>
+		<para>
+		<para>Formats:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>0</emphasis> - <emphasis>hash_id</emphasis>
+				and <emphasis>hash_entry</emphasis> parameters are
+				exposed in the
+				<xref linkend="event_E_DLG_STATE_CHANGED"/> event, but
+				<emphasis>id</emphasis> and <emphasis>db_id</emphasis>
+				are not.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>1</emphasis> - <emphasis>id</emphasis>
+				and <emphasis>db_id</emphasis> parameters are
+				exposed in the
+				<xref linkend="event_E_DLG_STATE_CHANGED"/> event, but
+				<emphasis>hash_id</emphasis> and
+				<emphasis>hash_entry</emphasis> are not.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>2</emphasis> - all id parameters (
+				<emphasis>id</emphasis>, <emphasis>db_id</emphasis>,
+				<emphasis>hash_id</emphasis> and <emphasis>hash_entry</emphasis>)
+				are exposed in the <xref linkend="event_E_DLG_STATE_CHANGED"/> event.
+			</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>event_id_format</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "event_id_format", 1)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 
@@ -3302,12 +3349,27 @@ event_route[E_RTPPROXY_DTMF] {
 			<listitem><para>
 					<emphasis>hash_entry</emphasis> - the entry in the dialog table.
 					This is used, along with the <emphasis>hash_id</emphasis>,
-					to uniquely identify the dialog.
+					to uniquely identify the dialog. This parameter is
+					is NOT available when
+					<emphasis><xref linkend="param_event_id_format"/>=1</emphasis>.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>hash_id</emphasis> - the id in the dialog table.
 					This is used, along with the <emphasis>hash_entry</emphasis>,
-					to uniquely identify the dialog.
+					to uniquely identify the dialog. This parameter is
+					is NOT available when
+					<emphasis><xref linkend="param_event_id_format"/>=1</emphasis>.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>id</emphasis> - the hex representation of the dialog id.
+					This parameter is NOT available when
+					<emphasis><xref linkend="param_event_id_format"/>=1</emphasis>.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>db_id</emphasis> - the integer representation of the dialog id,
+					as it is stored in the database <emphasis>dlg_id</emphasis> field.
+					This parameter is NOT available when
+					<emphasis><xref linkend="param_event_id_format"/>=0</emphasis>.
 			</para></listitem>
 			<listitem><para>
 					<emphasis>callid</emphasis> - the callid.
