@@ -190,9 +190,7 @@ static void sig_usr(int signo)
 					exit(0);
 					break;
 			case SIGCHLD:
-					while ( (pid = waitpid(-1, &status, WNOHANG))>0 )
-						LM_DBG("SIGCHLD received from %ld (status=%d),"
-							" ignoring\n", (long)pid,status);
+					while ( (pid = waitpid(-1, &status, WNOHANG))>0 );
 					break;
 			case SIGSEGV:
 					/* looks like we ate some spicy SIP */
