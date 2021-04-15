@@ -530,6 +530,9 @@ fix_authors=(
   ["1f14961143343b80e682f8436b353921b7309fb1"]="Christophe Sollet"
   ["034e61d1fed5c2e7ef3917f7e827a562486a0bf7"]="Ron Winacott <ronw@somanetworks.com>"
 
+  # stir_shaken
+  ["129834d125e3179ae60e56e4fc485b1ad74f9cc7"]="John Burke <john@voxtelesys.net>"
+
   # textops
   ["ad7f17082aef12211d85d2f1ec0694c4ff21bbef"]="Christophe Sollet"
   ["ca2a72ee03ce7886a3e47af78da72a8967100db5"]="Hugues Mitonneau"
