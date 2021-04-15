@@ -169,7 +169,7 @@ static inline int challenge(struct sip_msg* _msg, str *realm, int _qop,
 {
 	struct hdr_field* h = NULL;
 	auth_body_t* cred = 0;
-	int ret, nalgs, index = 0;
+	int i, ret, nalgs, index = 0;
 	hdr_types_t hftype = 0; /* Makes gcc happy */
 	struct sip_uri *uri;
 	str auth_hfs[LAST_ALG_SPTD - FIRST_ALG_SPTD + 1];
@@ -218,7 +218,7 @@ static inline int challenge(struct sip_msg* _msg, str *realm, int _qop,
 		}
 		LM_DBG("nonce index= %d\n", index);
 	}
-	for (int i = LAST_ALG_SPTD; i >= FIRST_ALG_SPTD; i--) {
+	for (i = LAST_ALG_SPTD; i >= FIRST_ALG_SPTD; i--) {
 		if ((algmask & ALG2ALGFLG(i)) == 0)
 			continue;
 		digest_calc = get_digest_calc(i);
@@ -239,7 +239,7 @@ static inline int challenge(struct sip_msg* _msg, str *realm, int _qop,
 
 	ret = send_resp(_msg, _code, reason, auth_hfs, nalgs);
 failure:
-	for (int i = 0; i < nalgs; i++) {
+	for (i = 0; i < nalgs; i++) {
 		if (auth_hfs[i].s) pkg_free(auth_hfs[i].s);
 	}
 	if (ret == -1) {
