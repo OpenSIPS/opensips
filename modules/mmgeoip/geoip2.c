@@ -37,8 +37,9 @@ int geoip2_open_db(void)
 	if ((rc = MMDB_open(MMG_city_db_path.s, MMDB_MODE_MMAP, &mmdb)) != MMDB_SUCCESS) {
 		if (rc == MMDB_IO_ERROR)
 			LM_ERR("IO error: %s\n", strerror(errno));
-		LM_ERR("Unable to open City DB at path '%.*s'\n",
-				(int)strlen(MMG_city_db_path.s),MMG_city_db_path.s);
+		LM_ERR("Unable to open City DB at path '%.*s' (%s)\n",
+				(int)strlen(MMG_city_db_path.s),MMG_city_db_path.s,
+				MMDB_strerror(rc));
 
 		return -1;
 	}
