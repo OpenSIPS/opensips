@@ -894,6 +894,8 @@ static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
 
 		BIO_free(cbio);
 		sk_X509_INFO_free(sk);
+	} else {
+		BIO_free(cbio);
 	}
 
 	return 0;
@@ -915,6 +917,8 @@ static int load_pkey(EVP_PKEY **pkey, str *pkey_buf)
 		BIO_free(kbio);
 		return -1;
 	}
+
+	BIO_free(kbio);
 
 	return 0;
 }
