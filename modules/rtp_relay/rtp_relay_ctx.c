@@ -164,6 +164,8 @@ struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
 {
 	struct list_head *it;
 	struct rtp_relay_sess *sess;
+	if (index == RTP_RELAY_ALL_BRANCHES)
+		return ctx->main;
 	list_for_each(it, &ctx->sessions) {
 		sess = list_entry(it, struct rtp_relay_sess, list);
 		if (sess->index == index)
@@ -246,14 +248,18 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 static int rtp_relay_delete(struct rtp_relay_session *info,
 		struct rtp_relay_sess *sess, struct rtp_relay_sess *main)
 {
+	int ret;
 	if (!sess->relay) {
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	return sess->relay->binds.delete(info, &sess->node,
+	ret = sess->relay->binds.delete(info, &sess->node,
 			RTP_RELAY_FLAGS(RTP_RELAY_OFFER, RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_PEER));
-	return -1;
+	if (ret < 0)
+		return -1;
+	rtp_sess_reset_pending(sess);
+	return 1;
 }
 #undef RTP_RELAY_FLAGS
 
@@ -267,8 +273,6 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 	info.msg = msg;
 	if (msg->REPLY_STATUS >= 300) {
 		if (!rtp_sess_late(sess)) {
-			if (sess == ctx->main)
-				return 1;
 			rtp_relay_delete(&info, sess, ctx->main);
 		} else {
 			/* nothing to do */
@@ -289,6 +293,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 			return -1;
 		}
 	}
+	info.branch = sess->index;
 	if (rtp_sess_late(sess))
 		ret = rtp_relay_offer(&info, sess, ctx->main);
 	else
@@ -311,26 +316,36 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 		case TMCB_RESPONSE_FWDED:
 			/* first check if there's anything setup on this branch */
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
-			if (!sess)
-				sess = rtp_relay_get_sess(ctx, RTP_RELAY_ALL_BRANCHES);
+			if (sess) {
+				if (!rtp_sess_pending(sess)) {
+					LM_DBG("no pending session on branch %d\n",
+							rtp_relay_ctx_branch());
+					sess = ctx->main;
+				}
+			} else {
+				LM_DBG("no session on branch %d\n", rtp_relay_ctx_branch());
+				sess = ctx->main;
+			}
 			if (!sess) {
-				LM_DBG("no pending session on branch %d\n",
-						rtp_relay_ctx_branch());
+				LM_DBG("no session to respond to\n");
 				goto end;
 			}
-			if (rtp_sess_disabled(sess) || !rtp_sess_pending(sess))
+			if (rtp_sess_disabled(sess) || !rtp_sess_pending(sess)) {
+				LM_DBG("disabled and/or pending session %d/%d\n",
+						rtp_sess_disabled(sess), rtp_sess_pending(sess));
 				goto end;
+			}
 			handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, sess);
 			break;
 		case TMCB_REQUEST_FWDED:
+			if (ctx->main && rtp_sess_pending(ctx->main)) {
+				LM_DBG("RTP relay already engaged in main branch\n");
+				goto end;
+			}
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
 			if (!sess) /* not engagned on this branch */ {
 				LM_DBG("RTP relay not engaged on branch %d!\n", rtp_relay_ctx_branch());
-				sess = rtp_relay_get_sess(ctx, RTP_RELAY_ALL_BRANCHES);
-				if (!sess) {
-					LM_DBG("RTP relay not engaged on request!\n");
-					goto end;
-				}
+				goto end;
 			}
 			if (rtp_sess_disabled(sess)) {
 				LM_DBG("rtp relay on branch %d is disabled\n", rtp_relay_ctx_branch());
@@ -366,6 +381,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 {
 	int index;
 	struct rtp_relay_sess *sess;
+	struct rtp_relay_session info;
 
 	if (!rtp_relay_ctx_engaged(ctx)) {
 
@@ -394,7 +410,13 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	sess->relay = relay;
 	if (rtp_sess_disabled(sess))
 		return -3; /* nothing to do */
-	if (!has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP))
+	memset(&info, 0, sizeof info);
+	info.body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!info.body) {
 		rtp_sess_set_late(sess);
-	return 1;
+		return 1;
+	}
+	info.msg = msg;
+	info.branch = sess->index;
+	return rtp_relay_offer(&info, sess, ctx->main);
 }
