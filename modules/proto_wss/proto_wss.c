@@ -107,7 +107,8 @@ static int mod_init(void);
 static int proto_wss_init(struct proto_info *pi);
 static int proto_wss_init_listener(struct socket_info *si);
 static int proto_wss_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id);
 static int wss_read_req(struct tcp_connection* con, int* bytes_read);
 static int wss_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
@@ -358,8 +359,8 @@ static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 
 /*! \brief Finds a tcpconn & sends on it */
 static int proto_wss_send(struct socket_info* send_sock,
-											char* buf, unsigned int len,
-											union sockaddr_union* to, int id)
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
 	struct tls_domain *dom;

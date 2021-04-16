@@ -90,8 +90,9 @@ int tcp_connect_blocking_timeout(int s, const struct sockaddr *servaddr,
 /********************** TCP conn management functions ************************/
 
 /* returns the connection identified by either the id or the destination to */
-int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
-		void *proto_extra_id, struct tcp_connection** conn, int* conn_fd);
+int tcp_conn_get(int unsigned id, struct ip_addr* ip, int port,
+		enum sip_protos proto, void *proto_extra_id,
+		struct tcp_connection** conn, int* conn_fd);
 
 /* creates a new tcp conn around a newly connected socket
  * and sends it to the master */
@@ -115,8 +116,8 @@ void tcp_conn_destroy(struct tcp_connection* tcpconn);
 int tcp_conn_fcntl(struct receive_info *rcv, int attr, void *value);
 
 /* returns the correlation ID of a TCP connection */
-int tcp_get_correlation_id( int id, unsigned long long *cid);
+int tcp_get_correlation_id( unsigned int id, unsigned long long *cid);
 
-extern int last_outgoing_tcp_id;
+extern unsigned int last_outgoing_tcp_id;
 
 #endif /* _NET_TCP_H_ */

@@ -543,7 +543,7 @@ int forward_reply(struct sip_msg* msg)
 	if (msg->flags & tcp_no_new_conn_rplflag)
 		tcp_no_new_conn = 1;
 
-	if (msg_send(send_sock, proto, to, (int)id, new_buf, new_len, msg)<0) {
+	if (msg_send(send_sock, proto, to, id, new_buf, new_len, msg)<0) {
 		tcp_no_new_conn = 0;
 		update_stat( drp_rpls, 1);
 		goto error0;

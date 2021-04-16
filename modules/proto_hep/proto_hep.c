@@ -59,9 +59,11 @@ static int hep_write_async_req(struct tcp_connection* con,int fd);
 static int hep_tcp_read_req(struct tcp_connection* con, int* bytes_read);
 static int hep_udp_read_req(struct socket_info *si, int* bytes_read);
 static int hep_udp_send (struct socket_info* send_sock,
-		char *buf, unsigned int len, union sockaddr_union *to, int id);
+		char *buf, unsigned int len, union sockaddr_union *to,
+		unsigned int id);
 static int hep_tcp_send (struct socket_info* send_sock,
-		char *buf, unsigned int len, union sockaddr_union *to, int id);
+		char *buf, unsigned int len, union sockaddr_union *to,
+		unsigned int id);
 static void update_recv_info(struct receive_info *ri, struct hep_desc *h);
 
 void free_hep_context(void* ptr);
@@ -671,7 +673,8 @@ inline static int _hep_write_on_socket(struct tcp_connection *c, int fd,
 }
 
 static int hep_udp_send (struct socket_info* send_sock,
-		char *buf, unsigned int len, union sockaddr_union *to, int id)
+		char *buf, unsigned int len, union sockaddr_union *to,
+		unsigned int id)
 {
 	int n, tolen;
 
@@ -693,7 +696,8 @@ again:
 }
 
 static int hep_tcp_send (struct socket_info* send_sock,
-		char *buf, unsigned int len, union sockaddr_union *to, int id)
+		char *buf, unsigned int len, union sockaddr_union *to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
 	int port=0;
