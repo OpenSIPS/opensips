@@ -96,8 +96,8 @@ struct receive_info {
 	unsigned short src_port; /*!< host byte order */
 	unsigned short dst_port; /*!< host byte order */
 	int proto;
-	int proto_reserved1; /*!< tcp stores the connection id here */
-	int proto_reserved2;
+	unsigned int proto_reserved1; /*!< tcp stores the connection id here */
+	unsigned int proto_reserved2;
 	union sockaddr_union src_su; /*!< useful for replies*/
 	struct socket_info* bind_address; /*!< sock_info structure on which the msg was received*/
 	/* no need for dst_su yet */
@@ -106,7 +106,7 @@ struct receive_info {
 
 struct dest_info {
 	int proto;
-	int proto_reserved1; /*!< tcp stores the connection id here */
+	unsigned int proto_reserved1; /*!< tcp stores the connection id here */
 	union sockaddr_union to;
 	struct socket_info* send_sock;
 };

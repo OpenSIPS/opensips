@@ -44,7 +44,8 @@ static int mod_init(void);
 static int proto_udp_init(struct proto_info *pi);
 static int proto_udp_init_listener(struct socket_info *si);
 static int proto_udp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id);
 
 static int udp_read_req(struct socket_info *src, int* bytes_read);
 
@@ -198,7 +199,8 @@ static int udp_read_req(struct socket_info *si, int* bytes_read)
  * \return -1 on error, the return value from sento on success
  */
 static int proto_udp_send(struct socket_info* source,
-		char* buf, unsigned int len, union sockaddr_union* to, int id)
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id)
 {
 	int n, tolen;
 

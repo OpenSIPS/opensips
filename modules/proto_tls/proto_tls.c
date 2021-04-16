@@ -128,7 +128,8 @@ static void mod_destroy(void);
 static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id);
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
 static mi_response_t *tls_trace_mi(const mi_params_t *params,
@@ -467,7 +468,8 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 }
 
 static int proto_tls_send(struct socket_info* send_sock,
-				char* buf, unsigned int len, union sockaddr_union* to, int id)
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
 	struct tls_domain *dom;
