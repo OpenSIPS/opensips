@@ -190,7 +190,7 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 
 /*! \brief which socket to use? main socket or new one? */
 int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
-										union sockaddr_union* to, int id)
+									union sockaddr_union* to, unsigned int id)
 {
 	int n;
 	int tolen;

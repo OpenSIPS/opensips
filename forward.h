@@ -82,7 +82,7 @@ int forward_reply( struct sip_msg* msg);
  * \return 0 if ok, -1 on error
  */
 static inline int msg_send( struct socket_info* send_sock, int proto,
-							union sockaddr_union* to, int id,
+							union sockaddr_union* to, unsigned int id,
 							char* buf, int len, struct sip_msg* msg)
 {
 	str out_buff;

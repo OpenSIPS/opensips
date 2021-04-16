@@ -46,7 +46,8 @@ static int mod_init(void);
 static int proto_bin_init(struct proto_info *pi);
 static int proto_bin_init_listener(struct socket_info *si);
 static int proto_bin_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id);
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id);
 static int bin_read_req(struct tcp_connection* con, int* bytes_read);
 static int bin_write_async_req(struct tcp_connection* con,int fd);
 static int bin_conn_init(struct tcp_connection* c);
@@ -510,7 +511,8 @@ inline static int _bin_write_on_socket(struct tcp_connection *c, int fd,
 }
 
 static int proto_bin_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to, int id)
+		char* buf, unsigned int len, union sockaddr_union* to,
+		unsigned int id)
 {
 	struct tcp_connection *c;
 	struct ip_addr ip;
