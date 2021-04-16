@@ -28,6 +28,7 @@
 #include "rtp_relay.h"
 
 #define RTP_RELAY_CTX_STATE_ENGAGED		(1<<0)
+#define RTP_RELAY_CTX_STATE_ESTABLISHED	(1<<1)
 
 #define RTP_RELAY_SESS_STATE_DISABLED	(1<<0)
 #define RTP_RELAY_SESS_STATE_PENDING	(1<<1)
@@ -36,6 +37,10 @@
 
 #define rtp_relay_ctx_engaged(_s) ((_s)->state & RTP_RELAY_CTX_STATE_ENGAGED)
 #define rtp_relay_ctx_set_engaged(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ENGAGED
+
+#define rtp_relay_ctx_established(_s) ((_s)->state & RTP_RELAY_CTX_STATE_ESTABLISHED)
+#define rtp_relay_ctx_set_establishd(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ESTABLISHED
+
 
 #define rtp_sess_disabled(_s) ((_s)->state & RTP_RELAY_SESS_STATE_DISABLED)
 #define rtp_sess_set_disabled(_s, _v) (_s)->state |= ((_v)?RTP_RELAY_SESS_STATE_DISABLED:0)

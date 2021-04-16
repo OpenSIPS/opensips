@@ -4648,7 +4648,7 @@ static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_a
 		args->from_tag = *sess->from_tag;
 	}
 	if (!sess->to_tag) {
-		if (get_to_tag(sess->msg, &args->to_tag) == -1) {
+		if (sess->msg && get_to_tag(sess->msg, &args->to_tag) == -1) {
 			LM_ERR("can't get To tag\n");
 			return 0;
 		}
@@ -4663,7 +4663,7 @@ static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_a
 	} else {
 		args->callid = *sess->callid;
 	}
-	if (sess->body)
+	if (sess->body && sess->body)
 		args->body = *sess->body;
 
 	p = pkg_malloc((type?type->len:0) + (in_iface?in_iface->len:0) +
