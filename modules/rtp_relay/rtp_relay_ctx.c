@@ -263,6 +263,51 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 }
 #undef RTP_RELAY_FLAGS
 
+static inline void rtp_relay_sess_merge(struct rtp_relay_ctx *ctx, struct rtp_relay_sess *sess)
+{
+	int f;
+
+	if (ctx->main == sess)
+		return;
+	if (ctx->main) {
+		for (f = 0; f < RTP_RELAY_FLAGS_SIZE; f++) {
+			if (!sess->flags[RTP_RELAY_OFFER][f].s) {
+				sess->flags[RTP_RELAY_OFFER][f] =
+					ctx->main->flags[RTP_RELAY_OFFER][f];
+				ctx->main->flags[RTP_RELAY_OFFER][f].s = NULL;
+			}
+			if (!sess->flags[RTP_RELAY_ANSWER][f].s) {
+				sess->flags[RTP_RELAY_ANSWER][f] =
+					ctx->main->flags[RTP_RELAY_ANSWER][f];
+				ctx->main->flags[RTP_RELAY_ANSWER][f].s = NULL;
+			}
+		}
+		rtp_relay_ctx_free_sess(ctx->main);
+	}
+	ctx->main = sess;
+}
+
+static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx, struct rtp_relay_sess *sess)
+{
+	rtp_sess_set_success(sess);
+	if (list_is_singular(&ctx->sessions))
+		rtp_relay_sess_merge(ctx, sess);
+	return 0;
+}
+
+static void rtp_relay_sess_failed(struct rtp_relay_ctx *ctx,
+		struct rtp_relay_sess *sess)
+{
+	struct rtp_relay_sess *last;
+
+	rtp_sess_reset_pending(sess);
+	list_del(&sess->list);
+	if (list_is_singular(&ctx->sessions)) {
+		last = list_last_entry(&ctx->sessions, struct rtp_relay_sess, list);
+		if (rtp_sess_success(last))
+			rtp_relay_sess_merge(ctx, last);
+	}
+}
 
 static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_msg *msg,
 		struct rtp_relay_sess *sess)
@@ -278,6 +323,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 			/* nothing to do */
 			LM_DBG("negative reply on late branch\n");
 		}
+		rtp_relay_sess_failed(ctx, sess);
 		return 1;
 	}
 	info.body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
@@ -298,10 +344,8 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 		ret = rtp_relay_offer(&info, sess, ctx->main);
 	else
 		ret = rtp_relay_answer(&info, sess, ctx->main);
-	if (ret > 0 && msg->REPLY_STATUS >= 200) {
-		rtp_sess_set_success(sess);
-		ctx->success = sess;
-	}
+	if (ret > 0 && msg->REPLY_STATUS >= 200)
+		rtp_relay_sess_success(ctx, sess);
 	return ret;
 }
 

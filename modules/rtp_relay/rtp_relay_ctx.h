@@ -86,7 +86,6 @@ struct rtp_relay_ctx {
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *main;
-	struct rtp_relay_sess *success;
 	struct list_head sessions;
 };
 
