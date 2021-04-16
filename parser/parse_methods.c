@@ -300,7 +300,7 @@ done:
 	return (start+len);
 
 unknown:
-	update_stat(unsupported_methods, 1);
+	//update_stat(unsupported_methods, 1);
 	*method = METHOD_OTHER;
 	if(end)
 	{
