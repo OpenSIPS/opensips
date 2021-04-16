@@ -559,6 +559,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 			case 1:
 				/* dlg inserted in timer list with new expire (reference it)*/
 				ref_dlg(dlg,1);
+				dlg->lifetime_dirty = 0;
 			}
 		} else {
 			init_dlg_term_reason(dlg,"Cancelled",sizeof("Cancelled")-1);
@@ -1996,8 +1997,6 @@ after_unlock5:
 		if (current_processing_ctx && (ctx_timeout_get()!=0) ) {
 			dlg->lifetime = ctx_timeout_get();
 			dlg->lifetime_dirty = 1;
-		} else {
-			dlg->lifetime_dirty = 0;
 		}
 
 		/* within dialog request */
@@ -2014,6 +2013,7 @@ after_unlock5:
 			case 1:
 				/* dlg inserted in timer list with new expire (reference it)*/
 				ref_dlg(dlg,1);
+				dlg->lifetime_dirty = 0;
 			}
 		}
 		LM_DBG("dialog_timeout: %d\n", dlg->lifetime);
