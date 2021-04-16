@@ -50,6 +50,7 @@ struct rtp_relay_binds {
 			str *flags, str *extra);
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_node *node,
 			str *flags, str *extra);
+	str *(*print_node)(struct rtp_relay_node *node);
 };
 
 struct rtp_relay {

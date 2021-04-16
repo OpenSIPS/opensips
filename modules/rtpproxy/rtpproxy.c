@@ -321,6 +321,7 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra);
 static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_node *node,
 			str *flags, str *extra);
+static str *rtpproxy_api_node(struct rtp_relay_node *node);
 
 struct rtpp_notify_head * rtpp_notify_h = 0;
 
@@ -1045,6 +1046,7 @@ static int mod_preinit(void)
 		.offer = rtpproxy_api_offer,
 		.answer = rtpproxy_api_answer,
 		.delete = rtpproxy_api_delete,
+		.print_node = rtpproxy_api_node,
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
@@ -4860,4 +4862,11 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 exit:
 	rtpproxy_free_call_args(&args);
 	return ret;
+}
+
+static str *rtpproxy_api_node(struct rtp_relay_node *node)
+{
+	static str snode;
+	snode = *get_rtpproxy_node(node->node);
+	return &snode;
 }
