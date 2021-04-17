@@ -67,6 +67,7 @@ dialog Module
               1.6.49. replicate_profiles_check (string)
               1.6.50. replicate_profiles_timer (string)
               1.6.51. replicate_profiles_expire (string)
+              1.6.52. event_id_format (int)
 
         1.7. Exported Functions
 
@@ -229,30 +230,31 @@ dialog Module
    1.49. Set replicate_profiles_check parameter
    1.50. Set replicate_profiles_timer parameter
    1.51. Set replicate_profiles_expire parameter
-   1.52. create_dialog() usage
-   1.53. match_dialog() usage
-   1.54. validate_dialog() usage
-   1.55. fix_route_dialog() usage
-   1.56. get_dialog_info usage
-   1.57. get_dialog_vals usage
+   1.52. Set event_id_format parameter
+   1.53. create_dialog() usage
+   1.54. match_dialog() usage
+   1.55. validate_dialog() usage
+   1.56. fix_route_dialog() usage
+   1.57. get_dialog_info usage
    1.58. get_dialog_vals usage
    1.59. get_dialog_vals usage
-   1.60. load_dialog_ctx usage
-   1.61. set_dlg_profile usage
-   1.62. unset_dlg_profile usage
-   1.63. is_in_profile usage
-   1.64. get_profile_size usage
-   1.65. set_dlg_flag usage
-   1.66. test_and_set_dlg_flag usage
-   1.67. reset_dlg_flag usage
-   1.68. is_dlg_flag_set usage
-   1.69. store_dlg_value usage
-   1.70. fetch_dlg_value usage
-   1.71. set_dlg_sharing_tag usage
-   1.72. dlg_on_answer usage
-   1.73. dlg_on_timeout usage
-   1.74. dlg_on_hangup usage
-   1.75. dlg_send_sequential usage to convert DTMF codes
+   1.60. get_dialog_vals usage
+   1.61. load_dialog_ctx usage
+   1.62. set_dlg_profile usage
+   1.63. unset_dlg_profile usage
+   1.64. is_in_profile usage
+   1.65. get_profile_size usage
+   1.66. set_dlg_flag usage
+   1.67. test_and_set_dlg_flag usage
+   1.68. reset_dlg_flag usage
+   1.69. is_dlg_flag_set usage
+   1.70. store_dlg_value usage
+   1.71. fetch_dlg_value usage
+   1.72. set_dlg_sharing_tag usage
+   1.73. dlg_on_answer usage
+   1.74. dlg_on_timeout usage
+   1.75. dlg_on_hangup usage
+   1.76. dlg_send_sequential usage to convert DTMF codes
 
 Chapter 1. Admin Guide
 
@@ -1086,6 +1088,28 @@ modparam("dialog", "replicate_profiles_timer", 100)
 modparam("dialog", "replicate_profiles_expire", 10)
 ...
 
+1.6.52. event_id_format (int)
+
+   Controls the dialog identifier parameters expoesed in the
+   E_DLG_STATE_CHANGED event.
+
+   Formats:
+
+     * 0 - hash_id and hash_entry parameters are exposed in the
+       E_DLG_STATE_CHANGED event, but id and db_id are not.
+     * 1 - id and db_id parameters are exposed in the
+       E_DLG_STATE_CHANGED event, but hash_id and hash_entry are
+       not.
+     * 2 - all id parameters ( id, db_id, hash_id and hash_entry)
+       are exposed in the E_DLG_STATE_CHANGED event.
+
+   Default value is 0.
+
+   Example 1.52. Set event_id_format parameter
+...
+modparam("dialog", "event_id_format", 1)
+...
+
 1.7. Exported Functions
 
 1.7.1.  create_dialog([flags])
@@ -1122,7 +1146,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.52. create_dialog() usage
+   Example 1.53. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -1161,7 +1185,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.53. match_dialog() usage
+   Example 1.54. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1196,7 +1220,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.54. validate_dialog() usage
+   Example 1.55. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1218,7 +1242,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.55. fix_route_dialog() usage
+   Example 1.56. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1259,7 +1283,7 @@ create_dialog("B");
 
    This function can be used from ALL ROUTES.
 
-   Example 1.56. get_dialog_info usage
+   Example 1.57. get_dialog_info usage
 ...
 if ( get_dialog_info("callee",$avp(callee_array),"caller",$fu,$var(dlg_n
 o)) ) {
@@ -1305,7 +1329,7 @@ $dlg_val(callee) = $ru;
 
    This function can be used from any type of route.
 
-   Example 1.57. get_dialog_vals usage
+   Example 1.58. get_dialog_vals usage
 ...
 if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
         xlog("the call $var(callid) has the variables:\n);
@@ -1341,7 +1365,7 @@ als)[$var(i)])'\n");
 
    This function can be used from any type of route.
 
-   Example 1.58. get_dialog_vals usage
+   Example 1.59. get_dialog_vals usage
 ...
 if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
         xlog("Caller $fU has $avp(dlg_no) other calls \n);
@@ -1380,7 +1404,7 @@ if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 
    This function can be used from any type of route.
 
-   Example 1.59. get_dialog_vals usage
+   Example 1.60. get_dialog_vals usage
 ...
 if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
  {
@@ -1416,7 +1440,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 
    This function can be used from any type of route.
 
-   Example 1.60. load_dialog_ctx usage
+   Example 1.61. load_dialog_ctx usage
 ...
 if (load_dialog_ctx("$var(callid)")) {
         xlog("The dialog '$var(callid)' already has a duration "
@@ -1460,7 +1484,7 @@ if (load_dialog_ctx("$var(callid)")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. set_dlg_profile usage
+   Example 1.62. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller",$fu);
@@ -1482,7 +1506,7 @@ set_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. unset_dlg_profile usage
+   Example 1.63. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller",$fu);
@@ -1510,7 +1534,7 @@ unset_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. is_in_profile usage
+   Example 1.64. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1541,7 +1565,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. get_profile_size usage
+   Example 1.65. get_profile_size usage
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1567,7 +1591,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. set_dlg_flag usage
+   Example 1.66. set_dlg_flag usage
 ...
 set_dlg_flag(3);
 ...
@@ -1586,7 +1610,7 @@ set_dlg_flag(3);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. test_and_set_dlg_flag usage
+   Example 1.67. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag(3, 0);
 ...
@@ -1606,7 +1630,7 @@ test_and_set_dlg_flag(3, 0);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. reset_dlg_flag usage
+   Example 1.68. reset_dlg_flag usage
 ...
 reset_dlg_flag(16);
 ...
@@ -1626,7 +1650,7 @@ reset_dlg_flag(16);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. is_dlg_flag_set usage
+   Example 1.69. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set(16)) {
         xlog("dialog flag 16 is set\n");
@@ -1653,7 +1677,7 @@ if (is_dlg_flag_set(16)) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.69. store_dlg_value usage
+   Example 1.70. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip",$si);
 store_dlg_value("account type","prepaid");
@@ -1681,7 +1705,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.70. fetch_dlg_value usage
+   Example 1.71. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip",$avp(2));
 fetch_dlg_value("account type",$var(account));
@@ -1707,7 +1731,7 @@ $var(account) = $dlg_val(account_type);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.71. set_dlg_sharing_tag usage
+   Example 1.72. set_dlg_sharing_tag usage
 ...
 set_dlg_sharing_tag("vip1");
 ...
@@ -1732,7 +1756,7 @@ set_dlg_sharing_tag("vip1");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.72. dlg_on_answer usage
+   Example 1.73. dlg_on_answer usage
 ...
 create_dialog();
 dlg_on_answer("dlg_answered");
@@ -1767,7 +1791,7 @@ route[dlg_answered] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.73. dlg_on_timeout usage
+   Example 1.74. dlg_on_timeout usage
 ...
 create_dialog();
 $DLG_timeout=120;
@@ -1801,7 +1825,7 @@ route[dlg_timeout] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.74. dlg_on_hangup usage
+   Example 1.75. dlg_on_hangup usage
 ...
 create_dialog();
 dlg_on_hangup("dlg_hangup");
@@ -1835,7 +1859,7 @@ route[dlg_hangup] {
 
    This function can be used from ANY route.
 
-   Example 1.75. dlg_send_sequential usage to convert DTMF codes
+   Example 1.76. dlg_send_sequential usage to convert DTMF codes
 ...
 event_route[E_RTPPROXY_DTMF] {
     if (load_dialog_ctx("$param(id)", "did")) {
@@ -2340,8 +2364,15 @@ GIwZjAzNGM1ZDY
    Parameters:
      * hash_entry - the entry in the dialog table. This is used,
        along with the hash_id, to uniquely identify the dialog.
+       This parameter is is NOT available when event_id_format=1.
      * hash_id - the id in the dialog table. This is used, along
-       with the hash_entry, to uniquely identify the dialog.
+       with the hash_entry, to uniquely identify the dialog. This
+       parameter is is NOT available when event_id_format=1.
+     * id - the hex representation of the dialog id. This
+       parameter is NOT available when event_id_format=1.
+     * db_id - the integer representation of the dialog id, as it
+       is stored in the database dlg_id field. This parameter is
+       NOT available when event_id_format=0.
      * callid - the callid.
      * from_tag - the From tag.
      * to_tag - the To tag.
@@ -2473,8 +2504,8 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 436 275 12812 3401
-   2. Vlad Paiu (@vladpaiu) 252 143 7199 3026
-   3. Razvan Crainea (@razvancrainea) 249 185 4833 1427
+   2. Razvan Crainea (@razvancrainea) 252 187 4936 1432
+   3. Vlad Paiu (@vladpaiu) 252 143 7199 3026
    4. Vlad Patrascu (@rvlad-patrascu) 163 84 3406 3117
    5. Liviu Chircu (@liviuchircu) 148 106 2774 1126
    6. Dan Pascu (@danpascu) 30 25 233 179
