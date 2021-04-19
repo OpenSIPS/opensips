@@ -665,7 +665,7 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 	reply_stream = NULL;
 
 	/* commands must look this way ':[filename]:' */
-	if (mi_read_fio(mi_buf + remain_len,
+	if (mi_read_fifo(mi_buf + remain_len,
 			MAX_MI_FIFO_BUFFER - remain_len,
 			&fifo_stream, &read_len)) {
 		LM_ERR("failed to read command\n");
