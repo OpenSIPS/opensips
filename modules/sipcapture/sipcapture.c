@@ -293,6 +293,8 @@ static int w_get_hep(struct sip_msg* msg, void *_id, void *_type,
 
 static int parse_hep_route(char *val);
 
+static int sipcapture_set_ipip_capture(modparam_t type, void * val);
+static int sipcapture_set_moni_capture(modparam_t type, void * val);
 
 /* remove chunk functions */
 static int w_del_hep(struct sip_msg* msg, void *id);
@@ -446,7 +448,6 @@ static char payload_buf[MAX_PAYLOAD];
 int  max_async_queries=5;
 
 int raw_sock_desc = -1; /* raw socket used for ip packets */
-unsigned int raw_sock_children = 1;
 int capture_on   = 0;
 int hep_capture_on   = 0;
 int ipip_capture_on   = 0;
@@ -604,12 +605,14 @@ static param_export_t params[] = {
 	{"msg_column",			STR_PARAM, &msg_column.s   },
 	{"capture_on",           	INT_PARAM, &capture_on          },
 	{"capture_node",     		STR_PARAM, &capture_node.s     	},
-        {"raw_sock_children",  		INT_PARAM, &raw_sock_children   },
+        {"raw_sock_children",  		INT_PARAM, &procs[0].no   },
         {"hep_capture_on",  		INT_PARAM, &hep_capture_on   },
     {"max_async_queries",  		INT_PARAM, &max_async_queries   },
 	{"raw_socket_listen",     	STR_PARAM, &raw_socket_listen.s   },
-        {"raw_ipip_capture_on",  	INT_PARAM, &ipip_capture_on  },
-        {"raw_moni_capture_on",  	INT_PARAM, &moni_capture_on  },
+	{"raw_ipip_capture_on",		INT_PARAM|USE_FUNC_PARAM,
+		(void*)sipcapture_set_ipip_capture   },
+	{"raw_moni_capture_on",		INT_PARAM|USE_FUNC_PARAM,
+		(void*)sipcapture_set_moni_capture   },
 	{"raw_interface",     		STR_PARAM, &raw_interface.s   },
         {"promiscious_on",  		INT_PARAM, &promisc_on   },
         {"raw_moni_bpf_on",  		INT_PARAM, &bpf_on   },
@@ -694,7 +697,7 @@ struct module_exports exports = {
 	mi_cmds,    /*!< exported MI functions */
 	mod_items,          /*!< exported pseudo-variables */
 	0,                  /*!< exported transformations */
-	procs,          /*!< extra processes */
+	0,          /*!< extra processes */
 	0,          /*!< module pre-initialization function */
 	mod_init,   /*!< module initialization function */
 	0,          /*!< response function */
@@ -702,6 +705,23 @@ struct module_exports exports = {
 	child_init,  /*!< child initialization function */
 	cfg_validate /*!< reload confirm function */
 };
+
+static int sipcapture_set_ipip_capture(modparam_t type, void * val)
+{
+	ipip_capture_on = (int)(long)val;
+	if (ipip_capture_on)
+		exports.procs = procs;
+	return 0;
+}
+
+static int sipcapture_set_moni_capture(modparam_t type, void * val)
+{
+	moni_capture_on = (int)(long)val;
+	if (moni_capture_on)
+		exports.procs = procs;
+	return 0;
+}
+
 
 static int parse_hep_route(char *val)
 {
@@ -854,9 +874,6 @@ static int mod_init(void) {
 		return -1;
 	}
 #endif
-
-	/* check if we need to start extra process */
-	procs[0].no = (ipip_capture_on || moni_capture_on) ? raw_sock_children:0;
 
 	table_name.len = strlen(table_name.s);
 	rtcp_table_name.len = strlen(rtcp_table_name.s);
