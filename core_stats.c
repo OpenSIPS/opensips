@@ -133,9 +133,16 @@ static inline void signal_pkg_status(unsigned long proc_id)
 	t = time(NULL);
 	if (t>marker_t[proc_id]+1) {
 
-		if (ipc_send_rpc( proc_id, rpc_get_pkg_stats, NULL)<0) {
-			LM_ERR("failed to trigger pkg stats for process %ld\n", proc_id );
-			return;
+		if (proc_id==process_no) {
+			/* avoid sending IPC to ourselves, as it will get executed
+			 * after we ar done with pkg_status job; better do it inline */
+			rpc_get_pkg_stats(process_no, NULL);
+		} else {
+			if (ipc_send_rpc( proc_id, rpc_get_pkg_stats, NULL)<0) {
+				LM_ERR("failed to trigger pkg stats for process %ld\n",
+					proc_id );
+				return;
+			}
 		}
 
 		marker_t[proc_id] = t;
