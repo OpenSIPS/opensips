@@ -182,11 +182,6 @@ void notification_listener_process(int rank)
 	str command;
 	int offset = 0;
 
-	if (init_child(PROC_MODULE) != 0) {
-		LM_ERR("cannot init child process\n");
-		return;
-	}
-
 	if (!rtpp_notify_socket_un) {
 		p = strrchr(rtpp_notify_socket.s, ':');
 		if (!p) {

@@ -286,6 +286,7 @@ static int fixup_all_stats(void ** param);
 static struct rtpp_set * select_rtpp_set(int id_set);
 
 static int rtpproxy_set_store(modparam_t type, void * val);
+static int rtpproxy_set_notify(modparam_t type, void * val);
 static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id);
 static int _add_proxies_from_database();
 static int unforce_rtpproxy(struct sip_msg* msg, str callid,
@@ -471,7 +472,8 @@ static param_export_t params[] = {
 	{"db_table",              STR_PARAM, &table.s                 },
 	{"rtpp_socket_col",       STR_PARAM, &rtpp_sock_col.s         },
 	{"set_id_col",            STR_PARAM, &set_id_col.s            },
-	{"rtpp_notify_socket",    STR_PARAM, &rtpp_notify_socket.s    },
+	{"rtpp_notify_socket",    STR_PARAM|USE_FUNC_PARAM,
+                             (void*)rtpproxy_set_notify            },
 	{0, 0, 0}
 };
 
@@ -493,7 +495,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 static proc_export_t procs[] = {
-	{"RTPP notification receiver",  0,  0, notification_listener_process, 1, 0},
+	{"RTPP notification receiver",  0,  0, notification_listener_process, 1, PROC_FLAG_INITCHILD},
 	{0,0,0,0,0,0}
 };
 
@@ -523,7 +525,7 @@ struct module_exports exports = {
 	mi_cmds,     /* exported MI functions */
 	0,           /* exported pseudo-variables */
 	0,			 /* exported transformations */
-	procs,       /* extra processes */
+	0,           /* extra processes */
 	0,
 	mod_init,
 	0,           /* reply processing */
@@ -575,6 +577,24 @@ static int rtpproxy_set_store(modparam_t type, void * val){
 	return 0;
 }
 
+static int rtpproxy_set_notify(modparam_t type, void * val)
+{
+
+	char * p;
+
+	p = (char* )val;
+
+	if(p==0 || *p=='\0'){
+		return 0;
+	}
+
+	rtpp_notify_socket.s = p;
+	rtpp_notify_socket.len = strlen(p);
+
+	exports.procs = procs;
+
+	return 0;
+}
 
 static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 										char * rtpproxy){
