@@ -810,7 +810,10 @@ void mi_fifo_server(FILE *fifo_stream)
 		return;
 	}
 
-	reactor_proc_add_fd( fd, mi_fifo_callback, fifo_stream);
+	if (reactor_proc_add_fd( fd, mi_fifo_callback, fifo_stream)<0) {
+		LM_CRIT("failed to add FIFO listen socket to reactor\n");
+		return;
+	}
 
 	reactor_proc_loop();
 
