@@ -203,7 +203,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 	char *s;
 
 	switch (fm->type) {
-		case F_FS_CONN:
+		case F_GEN_PROC:
 			LM_DBG("FS data available on sock %s:%d, ref: %d\n",
 			       sock->host.s, sock->port, sock->ref);
 
@@ -518,7 +518,7 @@ void handle_reconnects(void)
 			continue;
 		}
 
-		if (reactor_add_reader(sock->handle->sock, F_FS_CONN,
+		if (reactor_add_reader(sock->handle->sock, F_GEN_PROC,
 		                       RCT_PRIO_TIMER, sock) < 0) {
 			LM_ERR("failed to add FS socket %s:%d to reactor\n",
 			       sock->host.s, sock->port);
