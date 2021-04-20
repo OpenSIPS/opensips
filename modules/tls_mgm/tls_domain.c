@@ -616,6 +616,8 @@ int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s)
 	csv_record *list, *it;
 	str match_any_s = str_init("*");
 	struct ip_addr *addr;
+	char addr_buf[64];
+	str addr_s;
 	unsigned int port;
 
 	if (addresses_s->s) {
@@ -639,7 +641,10 @@ int parse_match_addresses(struct tls_domain *tls_dom, str *addresses_s)
 				return -1;
 			}
 
-			if (add_match_filt_to_dom(&it->s, &tls_dom->match_addresses) < 0) {
+			sprintf(addr_buf, "%s:%d", ip_addr2a(addr), port);
+			addr_s.s = addr_buf;
+			addr_s.len = strlen(addr_buf);
+			if (add_match_filt_to_dom(&addr_s, &tls_dom->match_addresses) < 0) {
 				free_csv_record(list);
 				return -1;
 			}
