@@ -46,6 +46,7 @@
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../lib/sliblist.h"
+#include "../../reactor_proc.h"
 #include "httpd_load.h"
 #include "httpd_proc.h"
 
@@ -682,13 +683,29 @@ send_response:
 }
 #endif
 
+
+#ifdef LIBMICROHTTPD
+static fd_set mhd_rs;
+static fd_set mhd_ws;
+static fd_set mhd_es;
+
+int httpd_callback(int fd, void *dmn, int was_timeout)
+{
+	int status;
+	status = MHD_run_from_select((struct MHD_Daemon *)dmn,
+		&mhd_rs, &mhd_ws, &mhd_es);
+	if (status == MHD_NO) {
+		LM_ERR("failed to run http daemon\n");
+		return -1;
+	}
+	return 0;
+}
+#endif
+
+
 void httpd_proc(int rank)
 {
 #ifdef LIBMICROHTTPD
-	int status;
-	fd_set rs;
-	fd_set ws;
-	fd_set es;
 	int max;
 #endif
 	struct httpd_cb *cb = httpd_cb_list;
@@ -717,9 +734,9 @@ void httpd_proc(int rank)
 	int mhd_opt_n = 0;
 	char *key_pem;
  	char *cert_pem;
-	struct timeval tv;
 	struct sockaddr_in saddr_in;
 	struct MHD_OptionItem mhd_opts[4];
+	int fd;
 
 	if (tls_key_file.s && tls_cert_file.s) {
 
@@ -757,6 +774,7 @@ void httpd_proc(int rank)
 	mhd_opts[mhd_opt_n].value = 0;
 	mhd_opts[mhd_opt_n].ptr_value = NULL;
 
+	mhd_flags = mhd_flags | MHD_USE_EPOLL;
 
 
 	memset(&saddr_in, 0, sizeof(saddr_in));
@@ -788,40 +806,41 @@ void httpd_proc(int rank)
 		return;
 	}
 
-	while(1) {
-		max = 0;
-		FD_ZERO (&rs);
-		FD_ZERO (&ws);
-		FD_ZERO (&es);
-		if (MHD_YES != MHD_get_fdset (dmn, &rs, &ws, &es, &max)) {
-			LM_ERR("unable to get file descriptors\n");
-			return;
-		}
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-		//LM_DBG("select(%d,%p,%p,%p,%p)\n",max+1, &rs, &ws, &es, &tv);
-		status = select(max+1, &rs, &ws, &es, &tv);
-		if (status < 0) {
-			switch(errno){
-				case EINTR:
-					LM_DBG("error returned by select:"
-							" [%d] [%d][%s]\n",
-							status, errno, strerror(errno));
-					break;
-				default:
-					LM_WARN("error returned by select:"
-							" [%d] [%d][%s]\n",
-							status, errno, strerror(errno));
-					return;
-			}
-		}
-		//LM_DBG("select returned %d\n", status);
-		status = MHD_run_from_select(dmn, &rs, &ws, &es);
-		if (status == MHD_NO) {
-			LM_ERR("unable to run http daemon\n");
-			return;
-		}
+	/* as we use the MHD_USE_EPOLL (so libmicrohttp is internally using
+	 * epoll), the MHD_get_fdset() will return only the epoll controll fd.
+	 * This fd never changes and is set only for reading.
+	 * So, we "learn" that fd right now and bypass MHD_get_fdset() on
+	 * further iterations.*/
+
+	max = 0;
+	FD_ZERO (&mhd_rs);
+	FD_ZERO (&mhd_ws);
+	FD_ZERO (&mhd_es);
+	if (MHD_YES != MHD_get_fdset (dmn, &mhd_rs, &mhd_ws, &mhd_es, &max)) {
+		LM_ERR("unable to get file descriptors\n");
+		return;
 	}
+
+	for (fd=0 ; fd<FD_SETSIZE && !FD_ISSET(fd,&mhd_rs); fd++);
+	if (fd==FD_SETSIZE) {
+		LM_ERR("unable to find the epoll ctl fd\n");
+		return;
+	}
+	LM_DBG("found [%d] epoll ctl fd\n",fd);
+
+	if (reactor_proc_init( "HTTPD" )<0) {
+		LM_ERR("failed to init the HTTPD reactor\n");
+		return;
+	}
+
+	if (reactor_proc_add_fd( fd, httpd_callback, (void*)dmn)<0) {
+		LM_CRIT("failed to add Datagram listen socket to reactor\n");
+		return;
+	}
+
+	reactor_proc_loop();
+
+	/* we get here only if the "loop"-ing failed to start*/
 #endif
 	LM_DBG("HTTP Server stopped!\n");
 }
