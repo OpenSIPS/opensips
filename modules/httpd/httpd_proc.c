@@ -774,8 +774,11 @@ void httpd_proc(int rank)
 	mhd_opts[mhd_opt_n].value = 0;
 	mhd_opts[mhd_opt_n].ptr_value = NULL;
 
+	#if (MHD_VERSION <= 0x00095000)
+	mhd_flags = mhd_flags | MHD_USE_EPOLL_LINUX_ONLY;
+	#else
 	mhd_flags = mhd_flags | MHD_USE_EPOLL;
-
+	#endif
 
 	memset(&saddr_in, 0, sizeof(saddr_in));
 	if (ip.s)
