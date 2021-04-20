@@ -581,6 +581,7 @@ int tcp_conn_get(int id, struct ip_addr* ip, int port, enum sip_protos proto,
 #endif
 				c = a->parent;
 				if (c->state != S_CONN_BAD &&
+				    c->flags&F_CONN_INIT &&
 				    port == a->port &&
 				    proto == c->type &&
 				    ip_addr_cmp(ip, &c->rcv.src_ip) &&
