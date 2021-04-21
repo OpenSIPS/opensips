@@ -247,6 +247,7 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER));
 }
+#undef RTP_RELAY_PEER
 
 static int rtp_relay_delete(struct rtp_relay_session *info,
 		struct rtp_relay_sess *sess, struct rtp_relay_sess *main)
@@ -411,7 +412,6 @@ void rtp_relay_indlg_tm(struct cell* t, int type, struct tmcb_params *p)
 			offer = 1;
 		else
 			offer = 0;
-		rtype = RTP_RELAY_PEER(rtype);
 	}
 	info.body = get_body_part(info.msg, TYPE_APPLICATION, SUBTYPE_SDP);
 	if (!info.body)
@@ -421,7 +421,6 @@ void rtp_relay_indlg_tm(struct cell* t, int type, struct tmcb_params *p)
 	else
 		rtp_relay_answer(&info, ctx->main, NULL, rtype);
 }
-#undef RTP_RELAY_PEER
 
 static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
 {
