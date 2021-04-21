@@ -58,7 +58,7 @@ silo:6
 sip_trace:5
 smpp:1
 speed_dial:3
-subscriber:7
+subscriber:8
 tls_mgm:3
 uri:2
 userblacklist:2

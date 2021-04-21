@@ -10,7 +10,8 @@
 				<col><field>password</field></col>
 				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
-				<col><field>ha1b</field></col>
+				<col><field>ha1_sha256</field></col>
+				<col><field>ha1_sha512t256</field></col>
 				<col><field>rpid</field></col>
 			</query_cols>
 		</cmd>
@@ -23,7 +24,8 @@
 				<col><field>password</field></col>
 				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
-				<col><field>ha1b</field></col>
+				<col><field>ha1_sha256</field></col>
+				<col><field>ha1_sha512t256</field></col>
 				<col><field>rpid</field></col>
 			</query_cols>
 		</cmd>
@@ -39,7 +41,8 @@
 				<col><field>password</field></col>
 				<col><field>email_address</field></col>
 				<col><field>ha1</field></col>
-				<col><field>ha1b</field></col>
+				<col><field>ha1_sha256</field></col>
+				<col><field>ha1_sha512t256</field></col>
 				<col><field>rpid</field></col>
 			</query_cols>
 		</cmd>

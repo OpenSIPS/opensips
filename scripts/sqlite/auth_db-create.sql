@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('subscriber','7');
+INSERT INTO version (table_name, table_version) values ('subscriber','8');
 CREATE TABLE subscriber (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
@@ -6,7 +6,8 @@ CREATE TABLE subscriber (
     password CHAR(25) DEFAULT '' NOT NULL,
     email_address CHAR(64) DEFAULT '' NOT NULL,
     ha1 CHAR(64) DEFAULT '' NOT NULL,
-    ha1b CHAR(64) DEFAULT '' NOT NULL,
+    ha1_sha256 CHAR(64) DEFAULT '' NOT NULL,
+    ha1_sha512t256 CHAR(64) DEFAULT '' NOT NULL,
     rpid CHAR(64) DEFAULT NULL,
     CONSTRAINT subscriber_account_idx  UNIQUE (username, domain)
 );

@@ -8,7 +8,8 @@
 		<column><field>password</field><type>DB_STR</type></column>
 		<column><field>email_address</field><type>DB_STR</type></column>
 		<column><field>ha1</field><type>DB_STR</type></column>
-		<column><field>ha1b</field><type>DB_STR</type></column>
+		<column><field>ha1_sha256</field><type>DB_STR</type></column>
+		<column><field>ha1_sha512t256</field><type>DB_STR</type></column>
 		<column><field>rpid</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of uri table-->
