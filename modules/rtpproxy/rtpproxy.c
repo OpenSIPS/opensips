@@ -350,7 +350,7 @@ static int rtpproxy_retr = 5;
 static int rtpproxy_tout = -1;
 static char *rtpproxy_timeout = 0;
 static int rtpproxy_autobridge = 0;
-static pid_t mypid;
+static int myprefix = 0;
 static unsigned int myseqn = 0;
 static str nortpproxy_str = str_init("a=nortpproxy:yes");
 str rtpp_notify_socket = {0, 0};
@@ -1381,7 +1381,7 @@ child_init(int rank)
 	if(*rtpp_set_list==NULL )
 		return 0;
 
-	mypid = getpid();
+	myprefix+=getpid()+rand()%10000;
 
 	return connect_rtpproxies();
 }
@@ -1905,7 +1905,7 @@ static char * gencookie(void)
 {
 	static char cook[34];
 
-	sprintf(cook, "%d_%u ", (int)mypid, myseqn);
+	sprintf(cook, "%d_%u ", myprefix, myseqn);
 	myseqn++;
 	return cook;
 }
