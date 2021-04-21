@@ -760,9 +760,12 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 		LM_DBG("prepared statement has %d columns in result\n",cols);
 		/* set the out bind array ? */
 		if (pq_ptr->cols_out==-1) {
+			char *col_bufs;
+
 			pq_ptr->cols_out = cols;
 			pq_ptr->bind_out = (MYSQL_BIND*)pkg_malloc
-				( cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)) );
+				( cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)
+			            + ps_max_col_size) );
 			if (pq_ptr->bind_out==NULL) {
 				db_mysql_free_pq(pq_ptr);
 				CON_CURR_PS(conn) = NULL;
@@ -770,15 +773,19 @@ static int db_mysql_do_prepared_query(const db_con_t* conn, const str *query,
 				return -1;
 			}
 			memset(pq_ptr->bind_out, 0 ,
-				cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)));
+				cols*(sizeof(struct bind_ocontent) + sizeof(MYSQL_BIND)
+			          + ps_max_col_size));
 
 			pq_ptr->out_bufs = (struct bind_ocontent*)(pq_ptr->bind_out+cols);
+			col_bufs = (char*)(pq_ptr->out_bufs+cols);
+
 			mysql_bind = pq_ptr->bind_out;
 			/* prepare the pointers */
-			for( i=0 ; i<pq_ptr->cols_out ; i++ ) {
-				mysql_bind[i].buffer =  pq_ptr->out_bufs[i].buf;
+			for( i=0 ; i<cols ; i++ ) {
+				mysql_bind[i].buffer = pq_ptr->out_bufs[i].buf
+				                     = col_bufs + i*ps_max_col_size;
 				mysql_bind[i].buffer_type = MYSQL_TYPE_STRING;
-				mysql_bind[i].buffer_length = PREP_STMT_VAL_LEN;
+				mysql_bind[i].buffer_length = ps_max_col_size;
 				mysql_bind[i].length = &pq_ptr->out_bufs[i].len;
 				mysql_bind[i].is_null = &pq_ptr->out_bufs[i].null;
 #if (MYSQL_VERSION_ID >= 50030)

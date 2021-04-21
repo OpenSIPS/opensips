@@ -33,15 +33,13 @@
 # define my_bool bool
 #endif
 
-#define PREP_STMT_VAL_LEN	1024
-
 struct bind_icontent {
 	unsigned long len;
 	my_bool null;
 };
 
 struct bind_ocontent {
-	char buf[PREP_STMT_VAL_LEN];
+	char *buf;
 	unsigned long len;
 	my_bool null;
 	my_bool error;

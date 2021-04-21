@@ -47,6 +47,10 @@ unsigned int db_mysql_exec_query_threshold = 0;   /* Warning in case DB query
 int max_db_retries = 3;
 int max_db_queries = 2;
 
+/* the max column (e.g. CHAR) data size, fetched using prepared statements.
+ * If a column's data exceeeds this size, it will be truncated (no errors) */
+int ps_max_col_size = 1024;
+
 static int mysql_mod_init(void);
 
 int db_mysql_bind_api(const str* mod, db_func_t *dbb);
@@ -71,6 +75,7 @@ static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_mysql_exec_query_threshold},
 	{"max_db_retries", INT_PARAM, &max_db_retries},
 	{"max_db_queries", INT_PARAM, &max_db_queries},
+	{"ps_max_col_size", INT_PARAM, &ps_max_col_size},
 	{"use_tls", INT_PARAM, &use_tls},
 	{0, 0, 0}
 };
@@ -125,15 +130,20 @@ static int mysql_mod_init(void)
 		LM_ERR("Cannot register mysql event\n");
 		return -1;
 	}
-	
-	if(max_db_queries < 1){
-		LM_WARN("Invalid number for max_db_queries\n");
+
+	if (max_db_queries < 1) {
+		LM_WARN("Invalid number for 'max_db_queries'\n");
 		max_db_queries = 2;
 	}
-	
-	if(max_db_retries < 0){
-		LM_WARN("Invalid number for max_db_retries\n");
+
+	if (max_db_retries < 0) {
+		LM_WARN("Invalid value for 'max_db_retries'\n");
 		max_db_retries = 3;
+	}
+
+	if (ps_max_col_size < 256) {
+		LM_WARN("value too small for 'ps_max_col_size', using default\n");
+		ps_max_col_size = 1024;
 	}
 
 	if (use_tls && load_tls_mgm_api(&tls_api) != 0) {

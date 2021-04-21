@@ -111,6 +111,7 @@ modparam("db_mysql", "max_db_queries", 2)
 </programlisting>
 		</example>
 	</section>
+
         <section id="param_max_db_retries" xreflabel="max_db_retries">
 		<title><varname>max_db_retries</varname> (integer)</title>
 		<para>
@@ -131,6 +132,33 @@ modparam("db_mysql", "max_db_retries", 2)
 </programlisting>
 		</example>
 	</section>
+
+        <section id="param_ps_max_col_size" xreflabel="ps_max_col_size">
+		<title><varname>ps_max_col_size</varname> (integer)</title>
+		<para>
+		The maximum size of a column's data, when fetched using prepared
+		statements.  Particularly relevant for variable-length data, such as
+		CHAR, BLOB, etc.
+		</para>
+		<para>
+		NOTE: Should a column's data exceed this limit, the value will be
+		silently truncated to fit the buffer, without reporting any errors!
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>1024 (bytes)</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>ps_max_col_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("db_mysql", "ps_max_col_size", 4096)
+...
+</programlisting>
+		</example>
+	</section>
+
         <section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>

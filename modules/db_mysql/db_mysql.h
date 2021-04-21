@@ -33,6 +33,7 @@ extern unsigned int db_mysql_timeout_interval;
 extern unsigned int db_mysql_exec_query_threshold;
 extern int max_db_retries;
 extern int max_db_queries;
+extern int ps_max_col_size;
 extern int use_tls;
 
 extern struct tls_mgm_binds tls_api;
