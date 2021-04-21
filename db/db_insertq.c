@@ -131,7 +131,7 @@ void flush_query_list(void)
 			//Reset prepared statement between query lists/connections
 			my_ps = NULL;
 
-			CON_PS_REFERENCE(it->conn[process_no]) = &my_ps;
+			CON_SET_CURR_PS(it->conn[process_no], &my_ps);
 
 			/* and let's insert the rows */
 			for (i=0;i<it->no_rows;i++)

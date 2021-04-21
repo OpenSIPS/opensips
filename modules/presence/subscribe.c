@@ -145,7 +145,7 @@ int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_SET_CURR_PS(pa_db, &my_ps);
 	LM_DBG("delete subs \n");
 	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals,
 				n_query_cols)< 0 )
@@ -248,7 +248,7 @@ int update_subs_db(subs_t* subs, int type)
 		update_vals[n_update_cols].val.str_val = subs->contact;
 		n_update_cols++;
 
-		CON_PS_REFERENCE(pa_db) = &my_ps_remote;
+		CON_SET_CURR_PS(pa_db, &my_ps_remote);
 	}
 	else
 	{
@@ -264,7 +264,7 @@ int update_subs_db(subs_t* subs, int type)
 		update_vals[n_update_cols].val.int_val = subs->version+ 1;
 		n_update_cols++;
 
-		CON_PS_REFERENCE(pa_db) = &my_ps_local;
+		CON_SET_CURR_PS(pa_db, &my_ps_local);
 	}
 
 	update_keys[n_update_cols] = &str_status_col;
@@ -1200,7 +1200,7 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_SET_CURR_PS(pa_db, &my_ps);
 
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0,  &result) < 0)
@@ -1596,7 +1596,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 						update_vals[u_reason_col].val.str_val= s->reason;
 						update_vals[u_contact_col].val.str_val= s->contact;
 
-						CON_PS_REFERENCE(db) = &my_ps_update;
+						CON_SET_CURR_PS(db, &my_ps_update);
 						if(dbf->update(db, query_cols, 0, query_vals,
 						update_cols, update_vals, n_query_update,
 						n_update_cols)< 0)
@@ -1640,7 +1640,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 							query_vals[socket_info_col].val.str_val.len = 0;
 						}
 
-						CON_PS_REFERENCE(db) = &my_ps_insert;
+						CON_SET_CURR_PS(db, &my_ps_insert);
 						if (dbf->insert( db, query_cols, query_vals,
 						n_query_cols) < 0)
 						{
@@ -1668,7 +1668,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	update_vals[0].val.int_val = (int)time(NULL);
 	update_ops[0] = OP_LT;
 
-	CON_PS_REFERENCE(db) = &my_ps_delete;
+	CON_SET_CURR_PS(db, &my_ps_delete);
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
 		CON_RESET_CURR_PS(db);
@@ -1859,7 +1859,7 @@ int insert_subs_db(subs_t* s)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_SET_CURR_PS(pa_db, &my_ps);
 	if(pa_dbf.insert(pa_db,query_cols,query_vals,n_query_cols )<0)
 	{
 		LM_ERR("unsuccessful sql insert\n");
@@ -2247,7 +2247,7 @@ int get_db_subs_auth(subs_t* subs, int* found)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_SET_CURR_PS(pa_db, &my_ps);
 	if(pa_dbf.query(pa_db, db_keys, 0, db_vals, result_cols,
 					n_query_cols, 2, 0, &result )< 0)
 	{
@@ -2361,7 +2361,7 @@ int insert_db_subs_auth(subs_t* subs)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(pa_db) = &my_ps;
+	CON_SET_CURR_PS(pa_db, &my_ps);
 	if(pa_dbf.insert(pa_db, db_keys, db_vals, n_query_cols )< 0)
 	{
 		LM_ERR("in sql insert\n");

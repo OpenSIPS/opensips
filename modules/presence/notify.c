@@ -280,7 +280,7 @@ int get_wi_subs_db(subs_t* subs, watcher_t* watchers)
 		goto error;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_SET_CURR_PS(pa_db, &my_ps);
 	if (pa_dbf.query (pa_db, query_cols, query_ops, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0,  &result) < 0)
 	{
@@ -563,7 +563,7 @@ int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 		return -1;
 	}
 
-//	CON_PS_REFERENCE(pa_db) = &my_ps;
+//	CON_SET_CURR_PS(pa_db, &my_ps);
 
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0, &result) < 0)
@@ -795,7 +795,7 @@ db_res_t* pres_search_db(struct sip_uri* uri,str* ev_name, int* body_col,
 				query_vals[i].val.str_val.s);
 	}
 
-/*	CON_PS_REFERENCE(pa_db) = &my_ps; */
+/*	CON_SET_CURR_PS(pa_db, &my_ps); */
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str, &result) < 0)
 	{
@@ -1505,7 +1505,7 @@ int get_subs_db(str* pres_uri, pres_ev_t* event, str* sender,
 		if (sh_tags)
 			query_vals[n_query_cols-1].val.str_val = *sh_tags[tag_no];
 
-		//CON_PS_REFERENCE(pa_db) = &my_ps;
+		//CON_SET_CURR_PS(pa_db, &my_ps);
 		if (pa_dbf.query(pa_db, query_cols, query_ops, query_vals,result_cols,
 				n_query_cols, n_result_cols, 0, &result) < 0)
 		{
@@ -1731,7 +1731,7 @@ int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 		LM_ERR("in use_table\n");
 		goto error;
 	}
-	CON_PS_REFERENCE(pa_db) = ps;
+	CON_SET_CURR_PS(pa_db, ps);
 
 	if ( pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
 		LM_ERR("DB query failed\n");

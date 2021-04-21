@@ -677,7 +677,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 
 	if ( !update ) {
 		/* do simple insert */
-		CON_PS_REFERENCE(ul_dbh) = &myI_ps;
+		CON_SET_CURR_PS(ul_dbh, &myI_ps);
 		if (ins_list) {
 			if (con_set_inslist(&ul_dbf,ul_dbh,ins_list,keys + start,
 						nr_vals) < 0 )
@@ -690,7 +690,7 @@ int db_insert_ucontact(ucontact_t* _c,query_list_t **ins_list, int update)
 		}
 	} else {
 		/* do insert-update / replace */
-		CON_PS_REFERENCE(ul_dbh) = &myR_ps;
+		CON_SET_CURR_PS(ul_dbh, &myR_ps);
 		if (ul_dbf.insert_update(ul_dbh, keys + start, vals + start, nr_vals) < 0) {
 			LM_ERR("inserting contact in db failed\n");
 			goto out_err;
@@ -823,7 +823,7 @@ int db_update_ucontact(ucontact_t* _c)
 		goto out_err;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 
 	if (ul_dbf.update(ul_dbh, keys1, 0, vals1, keys2, vals2, 1, 15)<0) {
 		LM_ERR("updating database failed\n");
@@ -863,7 +863,7 @@ int db_delete_ucontact(ucontact_t* _c)
 		return -1;
 	}
 
-	CON_PS_REFERENCE(ul_dbh) = &my_ps;
+	CON_SET_CURR_PS(ul_dbh, &my_ps);
 
 	if (ul_dbf.delete(ul_dbh, keys, 0, vals, 1) < 0) {
 		LM_ERR("deleting from database failed\n");

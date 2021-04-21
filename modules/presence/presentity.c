@@ -534,7 +534,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 
 		LM_DBG("inserting %d cols into table\n",n_query_cols);
 
-		//CON_PS_REFERENCE(pa_db) = &my_ps_insert;
+		//CON_SET_CURR_PS(pa_db, &my_ps_insert);
 		if (pa_dbf.insert(pa_db, query_cols, query_vals, n_query_cols) < 0)
 		{
 			LM_ERR("inserting new record in database\n");
@@ -642,7 +642,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 				LM_ERR("unsuccessful sql use table\n");
 				goto error;
 			}
-			//CON_PS_REFERENCE(pa_db) = &my_ps_delete;
+			//CON_SET_CURR_PS(pa_db, &my_ps_delete);
 			if(pa_dbf.delete(pa_db,query_cols,0,query_vals,n_query_cols)<0)
 			{
 				LM_ERR("unsuccessful sql delete operation");
@@ -775,11 +775,11 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 					goto error;
 				}
 			}
-			//CON_PS_REFERENCE(pa_db) = &my_ps_update_body;
+			//CON_SET_CURR_PS(pa_db, &my_ps_update_body);
 		}
 		else
 		{
-			//CON_PS_REFERENCE(pa_db) = &my_ps_update_no_body;
+			//CON_SET_CURR_PS(pa_db, &my_ps_update_no_body);
 		}
 
 		if (pa_dbf.use_table(pa_db, &presentity_table) < 0)
@@ -1354,7 +1354,7 @@ char* get_sphere(str* pres_uri)
 		return NULL;
 	}
 
-	// CON_PS_REFERENCE(pa_db) = &my_ps;
+	// CON_SET_CURR_PS(pa_db, &my_ps);
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, &query_str ,  &result) < 0)
 	{

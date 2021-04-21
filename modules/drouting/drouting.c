@@ -933,7 +933,7 @@ static void dr_state_flusher(struct head_db* hd)
 		LM_DBG("updating the state of gw <%.*s> to %d\n",
 				gw->id.len, gw->id.s, val_set.val.int_val);
 
-		CON_PS_REFERENCE(*hd->db_con) = gw_ps;
+		CON_SET_CURR_PS(*hd->db_con, gw_ps);
 		if ( (hd->db_funcs).update(*hd->db_con,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
 			LM_ERR("DB update failed\n");
 		} else {
@@ -971,7 +971,7 @@ static void dr_state_flusher(struct head_db* hd)
 		LM_DBG("updating the state of cr <%.*s> to %d\n",
 				cr->id.len, cr->id.s, val_set.val.int_val);
 
-		CON_PS_REFERENCE(*hd->db_con) = cr_ps;
+		CON_SET_CURR_PS(*hd->db_con, cr_ps);
 		if ( (hd->db_funcs).update(*hd->db_con,&key_cmp,0,&val_cmp,&key_set,&val_set,1,1)<0 ) {
 			LM_ERR("DB update failed\n");
 		} else {

@@ -518,7 +518,7 @@ int remove_ended_dlgs_from_db(void)
 
 	VAL_INT(values) = DLG_STATE_DELETED ;
 
-	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
+	CON_SET_CURR_PS(dialog_db_handle, &my_ps);
 
 	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 1) < 0) {
 		LM_ERR("failed to delete database information\n");
@@ -884,7 +884,7 @@ int dlg_timer_remove_from_db(struct dlg_cell *cell)
 	if (dlg_del_curr_no == dlg_bulk_del_no) {
 		LM_DBG("triggering delete for %d dialogs\n",dlg_del_curr_no);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps);
 		CON_USE_OR_OP(dialog_db_handle);
 		if(dialog_dbf.delete(dialog_db_handle, dlg_del_keys,
 					0, dlg_del_values, dlg_bulk_del_no) < 0)
@@ -949,7 +949,7 @@ int remove_dialog_from_db(struct dlg_cell * cell)
 
 	VAL_BIGINT(values) = dlg_get_db_id(cell);
 
-	CON_PS_REFERENCE(dialog_db_handle) = &my_ps;
+	CON_SET_CURR_PS(dialog_db_handle, &my_ps);
 
 	if(dialog_dbf.delete(dialog_db_handle, match_keys, 0, values, 1) < 0) {
 		LM_ERR("failed to delete database information\n");
@@ -991,7 +991,7 @@ int update_dialog_timeout_info(struct dlg_cell * cell)
 	SET_INT_VALUE(values+1, (unsigned int)( (unsigned int)time(0) +
 			 cell->tl.timeout - get_ticks()) );
 
-	CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
+	CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
 
 	if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 					(values), (insert_keys+1), (values+1), 1, 1)) !=0){
@@ -1103,7 +1103,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 		SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps_insert);
 
 		if((dialog_dbf.insert(dialog_db_handle, insert_keys, values,
 								DIALOG_TABLE_TOTAL_COL_NO)) !=0){
@@ -1147,7 +1147,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+22, cell->legs[DLG_CALLER_LEG].contact);
 		SET_STR_VALUE(values+23, cell->legs[callee_leg].contact);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
 
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 						(values), (insert_keys+11), (values+11), 1, 13)) !=0){
@@ -1174,7 +1174,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		set_final_update_cols(values+18, cell, 0);
 
-		CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
+		CON_SET_CURR_PS(dialog_db_handle, &my_ps_update_vp);
 
 		if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 						(values), (insert_keys+18), (values+18), 1, 4)) !=0){
@@ -1643,7 +1643,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 				SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
-				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+				CON_SET_CURR_PS(dialog_db_handle, &my_ps_insert);
 				if (con_set_inslist(&dialog_dbf,dialog_db_handle,
 				&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
 					CON_RESET_INSLIST(dialog_db_handle);
@@ -1693,7 +1693,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				set_final_update_cols(values+21, cell, on_shutdown);
 				SET_INT_VALUE(values+25, cell->flags);
 
-				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update;
+				CON_SET_CURR_PS(dialog_db_handle, &my_ps_update);
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+13), (values+13), 1, 13)) !=0) {
@@ -1714,7 +1714,7 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 
 				set_final_update_cols(values+21, cell, on_shutdown);
 
-				CON_PS_REFERENCE(dialog_db_handle) = &my_ps_update_vp;
+				CON_SET_CURR_PS(dialog_db_handle, &my_ps_update_vp);
 
 				if((dialog_dbf.update(dialog_db_handle, (insert_keys), 0,
 				(values), (insert_keys+21), (values+21), 1, 4)) !=0) {
@@ -2334,7 +2334,7 @@ static int restore_dlg_db(void)
 			SET_ROUTE_VALUE(values+27, cell->rt_on_timeout);
 			SET_ROUTE_VALUE(values+28, cell->rt_on_hangup);
 
-			CON_PS_REFERENCE(dialog_db_handle) = &my_ps_insert;
+			CON_SET_CURR_PS(dialog_db_handle, &my_ps_insert);
 			if (con_set_inslist(&dialog_dbf,dialog_db_handle,
 			&ins_list,insert_keys,DIALOG_TABLE_TOTAL_COL_NO) < 0 )
 				CON_RESET_INSLIST(dialog_db_handle);
