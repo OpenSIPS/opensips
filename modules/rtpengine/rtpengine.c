@@ -250,7 +250,8 @@ static int rtpengine_stats_used = 0;
 static int rtpengine_disable_tout = 60;
 static int rtpengine_retr = 5;
 static int rtpengine_tout = 1;
-static int myprefix = 0;
+static pid_t mypid;
+static int myrand = 0;
 static unsigned int myseqn = 0;
 static str extra_id_pv_param = {NULL, 0};
 static char *setid_avp_param = NULL;
@@ -1320,7 +1321,8 @@ static int connect_rtpengines(void)
 static int
 child_init(int rank)
 {
-	myprefix+=getpid()+rand()%10000;
+	mypid = getpid();
+	myrand = rand()%10000;
 
 	if(*rtpe_set_list==NULL )
 		return 0;
@@ -1400,7 +1402,7 @@ static char * gencookie(void)
 {
 	static char cook[34];
 
-	sprintf(cook, "%d_%u ", myprefix, myseqn);
+	sprintf(cook, "%d_%d_%u ", (int)mypid, myrand, myseqn);
 	myseqn++;
 	return cook;
 }
