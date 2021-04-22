@@ -321,7 +321,8 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra);
 static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_node *node,
 			str *flags, str *extra);
-static str *rtpproxy_api_node(struct rtp_relay_node *node);
+static str *rtpproxy_api_print_node(struct rtp_relay_node *node);
+static void *rtpproxy_api_get_node(str *node, int set);
 
 struct rtpp_notify_head * rtpp_notify_h = 0;
 
@@ -1046,7 +1047,8 @@ static int mod_preinit(void)
 		.offer = rtpproxy_api_offer,
 		.answer = rtpproxy_api_answer,
 		.delete = rtpproxy_api_delete,
-		.print_node = rtpproxy_api_node,
+		.print_node = rtpproxy_api_print_node,
+		.get_node = rtpproxy_api_get_node,
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
@@ -2214,7 +2216,7 @@ static struct rtpp_set * select_rtpp_set(int id_set){
 	/*is it a valid set_id?*/
 	LM_DBG("Looking for set_id %d\n", id_set);
 
-	if(!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first)
+	if(!rtpp_set_list || !(*rtpp_set_list) || !(*rtpp_set_list)->rset_first)
 		return 0;
 
 	for(rtpp_list=(*rtpp_set_list)->rset_first; rtpp_list!=0 &&
@@ -2343,20 +2345,32 @@ done:
 	return node;
 }
 
-struct rtpp_node *get_rtpp_node(str *node)
+struct rtpp_node *get_rtpp_node_from_set(str *node, struct rtpp_set *set, int test)
 {
 	struct rtpp_node *rnode;
+
+	for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
+		if (node->len == rnode->rn_url.len &&
+				!memcmp(node->s, rnode->rn_url.s, node->len)) {
+			if (!test)
+				return rnode;
+			if (rnode->rn_disabled)
+				rnode->rn_disabled = rtpp_test(rnode, rnode->rn_disabled, 0);
+			return (rnode->rn_disabled ? NULL : rnode);
+		}
+	return NULL;
+}
+
+struct rtpp_node *get_rtpp_node(str *node)
+{
 	struct rtpp_set *set;
+	struct rtpp_node *rnode;
 
 	/* if chosen a specific node, use it! */
-	for (set = (*rtpp_set_list)->rset_first; set; set = set->rset_next)
-		for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
-			if (node->len == rnode->rn_url.len &&
-					!memcmp(node->s, rnode->rn_url.s, node->len)) {
-				if (rnode->rn_disabled)
-					rnode->rn_disabled = rtpp_test(rnode, rnode->rn_disabled, 0);
-				return (rnode->rn_disabled ? NULL : rnode);
-			}
+	for (set = (*rtpp_set_list)->rset_first; set; set = set->rset_next) {
+		if ((rnode = get_rtpp_node_from_set(node, set, 1)) != NULL)
+			return rnode;
+	}
 	return NULL;
 }
 
@@ -4860,13 +4874,42 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 
 	ret = unforce_rtpproxy(sess->msg, &args, NULL);
 exit:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
+	}
 	rtpproxy_free_call_args(&args);
 	return ret;
 }
 
-static str *rtpproxy_api_node(struct rtp_relay_node *node)
+static str *rtpproxy_api_print_node(struct rtp_relay_node *node)
 {
 	static str snode;
 	snode = *get_rtpproxy_node(node->node);
 	return &snode;
+}
+
+static void *rtpproxy_api_get_node(str *node, int set)
+{
+	struct rtpp_set *rset = NULL;
+	struct rtpp_node *rnode = NULL;
+	void *rrnode = NULL;
+	if (nh_lock)
+		lock_start_read( nh_lock );
+
+	if (set != -1) {
+		rset = select_rtpp_set(set);
+		if (!rset)
+			rset = *default_rtpp_set;
+	} else {
+		rset = *default_rtpp_set;
+	}
+	rnode = get_rtpp_node_from_set(node, rset, 0);
+	if (!rnode)
+		goto exit;
+	rrnode = build_rtpproxy_node(&rnode->rn_url);
+
+exit:
+	if (nh_lock)
+		lock_stop_read( nh_lock );
+	return rrnode;
 }
