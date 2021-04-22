@@ -22,6 +22,7 @@
 #include "../../mem/shm_mem.h"
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
+#include "../../bin_interface.h"
 
 static struct tm_binds rtp_relay_tmb;
 static struct dlg_binds rtp_relay_dlg;
@@ -41,6 +42,23 @@ static int rtp_relay_ctx_idx = -1;
 #define RTP_RELAY_PUT_DLG_CTX(_d, _p) \
 	rtp_relay_dlg.dlg_ctx_put_ptr(_d, rtp_relay_dlg_ctx_idx, _p)
 
+static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
+
+
+struct rtp_relay_ctx *rtp_relay_new_ctx(void)
+{
+	struct rtp_relay_ctx *ctx = shm_malloc(sizeof *ctx);
+	if (!ctx) {
+		LM_ERR("oom for creating RTP relay context!\n");
+		return NULL;
+	}
+	memset(ctx, 0, sizeof *ctx);
+
+	lock_init(&ctx->lock);
+	INIT_LIST_HEAD(&ctx->sessions);
+	return ctx;
+}
 
 struct rtp_relay_ctx *rtp_relay_get_ctx(void)
 {
@@ -59,15 +77,9 @@ struct rtp_relay_ctx *rtp_relay_get_ctx(void)
 		}
 		return ctx;
 	}
-	ctx = shm_malloc(sizeof *ctx);
-	if (!ctx) {
-		LM_ERR("oom for creating RTP relay context!\n");
+	ctx = rtp_relay_new_ctx();
+	if (!ctx)
 		return NULL;
-	}
-	memset(ctx, 0, sizeof *ctx);
-
-	lock_init(&ctx->lock);
-	INIT_LIST_HEAD(&ctx->sessions);
 
 	if (t)
 		RTP_RELAY_PUT_TM_CTX(t, ctx);
@@ -138,6 +150,144 @@ static void rtp_relay_move_ctx( struct cell* t, int type, struct tmcb_params *ps
 	RTP_RELAY_PUT_CTX(NULL);
 }
 
+#define RTP_RELAY_CTX_VERSION 1
+#define RTP_RELAY_BIN_PUSH(_type, _value) \
+	do { \
+		if (bin_push_##_type(&packet, _value) < 0) { \
+			LM_ERR("cannot push '" #_value "' in bin packet!\n"); \
+			bin_free_packet(&packet); \
+			return; \
+		} \
+	} while (0)
+
+
+static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *params)
+{
+	str buffer;
+	str str_empty = str_init("");
+	bin_packet_t packet;
+	enum rtp_relay_type rtype;
+	enum rtp_relay_var_flags flag;
+	struct rtp_relay_sess *sess;
+	str name = str_init("rtp_relay_ctx");
+	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
+
+	if (!ctx)
+		return;
+
+	if (bin_init(&packet, &name, 0, RTP_RELAY_CTX_VERSION, 0) < 0) {
+		LM_ERR("cannot initialize bin packet!\n");
+		return;
+	}
+	if (!ctx->main) {
+		if (list_empty(&ctx->sessions)) {
+			LM_WARN("no rtp relay session!\n");
+			return;
+		}
+		LM_WARN("rtp relay session not established - storing last session!\n");
+		sess = list_last_entry(&ctx->sessions, struct rtp_relay_sess, list);
+	} else {
+		sess = ctx->main;
+	}
+	RTP_RELAY_BIN_PUSH(str, &sess->relay->name);
+	RTP_RELAY_BIN_PUSH(int, sess->index);
+	RTP_RELAY_BIN_PUSH(int, sess->state);
+	RTP_RELAY_BIN_PUSH(int, sess->node.set);
+	RTP_RELAY_BIN_PUSH(str, sess->relay->binds.print_node(&sess->node));
+	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
+		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
+			if (sess->flags[rtype][flag].s)
+				RTP_RELAY_BIN_PUSH(str, &sess->flags[rtype][flag]);
+			else
+				RTP_RELAY_BIN_PUSH(str, &str_empty);
+		}
+	}
+
+	bin_get_buffer(&packet, &buffer);
+	bin_free_packet(&packet);
+
+	if (rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, &buffer) < 0)
+		LM_WARN("rtp relay ctx was not saved in dialog\n");
+}
+#undef RTP_RELAY_BIN_PUSH
+
+#define RTP_RELAY_BIN_POP(_type, _value) \
+	do { \
+		if (bin_pop_##_type(&packet, _value) < 0) { \
+			LM_ERR("cannot pop '" #_value "' from bin packet!\n"); \
+			goto error; \
+		} \
+	} while (0)
+
+static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *params)
+{
+	str tmp;
+	int index;
+	str buffer;
+	bin_packet_t packet;
+	struct rtp_relay *relay;
+	enum rtp_relay_type rtype;
+	enum rtp_relay_var_flags flag;
+	struct rtp_relay_sess *sess;
+	struct rtp_relay_ctx *ctx = NULL;
+
+	if (!dlg) {
+		LM_ERR("null dialog - cannot fetch rtp relay info!\n");
+		return;
+	}
+
+	if (rtp_relay_dlg.fetch_dlg_value(dlg, &rtp_relay_dlg_name, &buffer, 0) < 0) {
+		LM_DBG("cannot fetch rtp relay info from the dialog\n");
+		return;
+	}
+	bin_init_buffer(&packet, buffer.s, buffer.len);
+
+	if (get_bin_pkg_version(&packet) != RTP_RELAY_CTX_VERSION) {
+		LM_ERR("invalid serialization version (%d != %d)\n",
+			get_bin_pkg_version(&packet), RTP_RELAY_CTX_VERSION);
+		return;
+	}
+	RTP_RELAY_BIN_POP(str, &tmp);
+	relay = rtp_relay_get(&tmp);
+	if (!relay) {
+		LM_ERR("no registered '%.*s' relay module\n", tmp.len, tmp.s);
+		return;
+	}
+
+	ctx = rtp_relay_new_ctx();
+	if (!ctx)
+		return;
+
+	RTP_RELAY_BIN_POP(int, &index);
+	sess = rtp_relay_new_sess(ctx, index);
+	if (!sess)
+		goto error;
+	RTP_RELAY_BIN_POP(int, &sess->state);
+	sess->relay = relay;
+	RTP_RELAY_BIN_POP(int, &sess->node.set);
+	RTP_RELAY_BIN_POP(str, &tmp);
+	sess->node.node = sess->relay->binds.get_node(&tmp, sess->node.set);
+
+	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
+		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
+			RTP_RELAY_BIN_POP(str, &tmp);
+			if (tmp.len && shm_str_dup(&sess->flags[rtype][flag], &tmp) < 0)
+				LM_ERR("could not duplicate rtp session flag!\n");
+		}
+	}
+
+	ctx->main = sess;
+	if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
+		goto error;
+
+	return;
+error:
+	rtp_relay_ctx_free(ctx);
+}
+#undef RTP_RELAY_BIN_POP
+
 int rtp_relay_ctx_init(void)
 {
 	/* load the TM API */
@@ -158,6 +308,11 @@ int rtp_relay_ctx_init(void)
 		LM_ERR("cannot register tm callbacks\n");
 		return -2;
 	}
+
+	if (rtp_relay_dlg.register_dlgcb(NULL, DLGCB_LOADED,
+			rtp_relay_loaded_callback, NULL, NULL) < 0)
+		LM_WARN("cannot register callback for loaded dialogs - will not be "
+				"able to restore an ongoing media session after a restart!\n");
 	rtp_relay_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, rtp_relay_ctx_free);
 	return 0;
 }
@@ -169,8 +324,7 @@ int rtp_relay_ctx_branch(void)
 
 int rtp_relay_ctx_downstream(void)
 {
-	/* TODO return dlg_api.get_direction() == DLG_DIR_DOWNSTREAM */
-	return 1;
+	return rtp_relay_dlg.get_direction() == DLG_DIR_DOWNSTREAM;
 }
 
 struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
@@ -400,8 +554,7 @@ void rtp_relay_indlg_tm(struct cell* t, int type, struct tmcb_params *p)
 	}
 	memset(&info, 0, sizeof info);
 	info.branch = ctx->main->index;
-	rtype = (rtp_relay_dlg.get_direction() == DLG_DIR_DOWNSTREAM?
-					RTP_RELAY_OFFER:RTP_RELAY_ANSWER);
+	rtype = (rtp_relay_ctx_downstream()?RTP_RELAY_OFFER:RTP_RELAY_ANSWER);
 
 	if (type == TMCB_REQUEST_FWDED) {
 		info.msg = p->req;
@@ -459,8 +612,8 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 		info.msg = msg;
 		info.body = body;
 		info.branch = ctx->main->index;
-		rtp_relay_answer(&info, ctx->main, NULL, (rtp_relay_dlg.get_direction() == DLG_DIR_DOWNSTREAM?
-					RTP_RELAY_OFFER:RTP_RELAY_ANSWER));
+		rtp_relay_answer(&info, ctx->main, NULL,
+				(rtp_relay_ctx_downstream()?RTP_RELAY_OFFER:RTP_RELAY_ANSWER));
 		return;
 	}
 	if (!body && msg->REQ_METHOD != METHOD_INVITE) {
@@ -472,6 +625,37 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	if (rtp_relay_tmb.register_tmcb(msg, 0, TMCB_REQUEST_FWDED|TMCB_RESPONSE_FWDED,
 				rtp_relay_indlg_tm, dlg,0)!=1)
 		LM_ERR("failed to install TM reply callback\n");
+}
+
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx)
+{
+	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
+			rtp_relay_dlg_mi, NULL, NULL) < 0)
+		LM_ERR("could not register MI dlg print!\n");
+	RTP_RELAY_PUT_DLG_CTX(dlg, ctx);
+	if (rtp_relay_dlg.register_dlgcb(dlg,
+			DLGCB_TERMINATED|DLGCB_EXPIRED,
+			rtp_relay_dlg_end, NULL, NULL) < 0) {
+		LM_ERR("could not register MI dlg end!\n");
+		goto error;
+	}
+
+	if (rtp_relay_dlg.register_dlgcb(dlg,
+			DLGCB_REQ_WITHIN,
+			rtp_relay_indlg, NULL, NULL) != 0) {
+		LM_ERR("could not register request within dlg callback!\n");
+		goto error;
+	}
+	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_WRITE_VP,
+			rtp_relay_store_callback, NULL, NULL))
+		LM_WARN("cannot register callback for rtp relay serialization! "
+				"Will not be able to engage rtp relay in case of a restart!\n");
+
+	return 0;
+
+error:
+	RTP_RELAY_PUT_DLG_CTX(dlg, NULL);
+	return -1;
 }
 
 static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
@@ -488,23 +672,11 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 			LM_ERR("could not find dialog!\n");
 			return -1;
 		}
-		RTP_RELAY_PUT_DLG_CTX(dlg, ctx);
 		/* reset old pointers */
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
-		if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
-				rtp_relay_dlg_mi, NULL, NULL) < 0)
-			LM_ERR("could not register MI dlg print!\n");
-		if (rtp_relay_dlg.register_dlgcb(dlg,
-				DLGCB_TERMINATED|DLGCB_EXPIRED,
-				rtp_relay_dlg_end, NULL, NULL) < 0)
-			LM_ERR("could not register MI dlg end!\n");
-		if (rtp_relay_dlg.register_dlgcb(dlg,
-				DLGCB_REQ_WITHIN,
-				rtp_relay_indlg, NULL, NULL) != 0) {
-			LM_ERR("could not register request within dlg callback!\n");
+		if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
 			return -1;
-		}
 	}
 	return 0;
 }
