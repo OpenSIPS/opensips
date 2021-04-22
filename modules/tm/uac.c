@@ -492,6 +492,10 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	/* set transaction AVP list */
 	backup = set_avp_list( &new_cell->user_avps );
 
+	/* run the "transaction created" callback if set */
+	if (dialog->t_created_cb)
+		dialog->t_created_cb( new_cell, dialog->t_created_cb_param);
+
 	/* ***** Create the message buffer ***** */
 	buf = build_uac_req(method, headers, body, dialog, 0, new_cell, &buf_len);
 	if (!buf) {

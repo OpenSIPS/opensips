@@ -32,6 +32,7 @@
 #include "../../str.h"
 #include "../../parser/parse_rr.h"
 #include "../../parser/msg_parser.h"
+#include "h_table.h"
 
 
 /*
@@ -82,6 +83,10 @@ typedef struct dlg_hooks {
 } dlg_hooks_t;
 
 
+/* callback prototype for UAC transaction */
+typedef void (t_uac_cb) (struct cell* t, void *param);
+
+
 /*
  * Structure representing dialog state
  */
@@ -108,6 +113,8 @@ typedef struct dlg {
 	unsigned short mf_value;    /* the Mx-Forward values, if enforced */
 	void *dialog_ctx;       /* backpointer to dialog ctx */
 	struct usr_avp *avps;
+	t_uac_cb *t_created_cb;
+	void *t_created_cb_param;
 } dlg_t;
 
 
