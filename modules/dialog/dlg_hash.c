@@ -1081,6 +1081,9 @@ static void raise_state_changed_event(struct dlg_cell *dlg,
 	int callee_leg_idx;
 	str db_id;
 
+	if (!evi_probe_event(ei_st_ch_id))
+		return;
+
 	if (evi_param_set_str(id_p, did) < 0) {
 		LM_ERR("cannot set dialog id parameter\n");
 		return;
