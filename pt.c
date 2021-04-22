@@ -408,10 +408,10 @@ void dynamic_process_final_exit(void)
 	/* if a TCP proc by chance, reset the tcp-related data */
 	tcp_reset_worker_slot();
 
-	/* mark myself as DYNAMIC (just in case) to have an err-less terminatio */
+	/* mark myself as DYNAMIC (just in case) to have an err-less termination */
 	pt[process_no].flags |= OSS_PROC_SELFEXIT;
 	LM_INFO("doing self termination\n");
 
-	/* the process slot in the proc table will be purge on SIGCHLG by main */
+	/* the process slot in the proc table will be purge on SIGCHLD by main */
 	exit(0);
 }
