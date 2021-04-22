@@ -101,8 +101,9 @@ typedef int (*mod_proc_wrapper)();
 	OPENSIPS_COMPILE_FLAGS
 
 
-#define PROC_FLAG_INITCHILD  (1<<0)
-#define PROC_FLAG_HAS_IPC    (1<<1)
+#define PROC_FLAG_INITCHILD    (1<<0)
+#define PROC_FLAG_HAS_IPC      (1<<1)
+#define PROC_FLAG_NEEDS_SCRIPT (1<<2)
 
 
 struct param_export_ {

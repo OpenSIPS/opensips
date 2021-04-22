@@ -67,7 +67,8 @@ struct httpd_cb *httpd_cb_list = NULL;
 
 
 static proc_export_t mi_procs[] = {
-	{"HTTPD",  0,  0, httpd_proc, 1, PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC },
+	{"HTTPD",  0,  0, httpd_proc, 1,
+		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{NULL, 0, 0, NULL, 0, 0}
 };
 

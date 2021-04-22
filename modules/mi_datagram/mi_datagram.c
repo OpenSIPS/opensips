@@ -94,7 +94,7 @@ int mi_datagram_pp;
 static proc_export_t mi_procs[] = {
 	{"MI Datagram",  pre_datagram_process,  post_datagram_process,
 			datagram_process, MI_CHILD_NO,
-			PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC },
+			PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{0,0,0,0,0,0}
 };
 

@@ -769,6 +769,7 @@ int start_module_procs(void)
 	struct sr_module *m;
 	unsigned int n;
 	unsigned int l;
+	unsigned int flags;
 	int x;
 
 	for( m=modules ; m ; m=m->next) {
@@ -789,9 +790,18 @@ int start_module_procs(void)
 			for ( l=0; l<m->exports->procs[n].no ; l++) {
 				LM_DBG("forking process \"%s\"/%d for module %s\n",
 					m->exports->procs[n].name, l, m->exports->name);
-				x = internal_fork( m->exports->procs[n].name,
-						((m->exports->procs[n].flags&PROC_FLAG_HAS_IPC) ?
-						0 : OSS_PROC_NO_IPC)|OSS_PROC_IS_EXTRA, TYPE_MODULE );
+				/* conver the module proc flags to internal proc flgas
+				 * NOTE that the PROC_FLAG_NEEDS_SCRIPT automatically
+				 * assumes PROC_FLAG_HAS_IPC - IPC is needed for script
+				 * reload */
+				flags = OSS_PROC_IS_EXTRA;
+				if (m->exports->procs[n].flags&PROC_FLAG_NEEDS_SCRIPT)
+					flags |= OSS_PROC_NEEDS_SCRIPT;
+				else
+				if ( (m->exports->procs[n].flags&PROC_FLAG_HAS_IPC)==0)
+					flags |= OSS_PROC_NO_IPC;
+				x = internal_fork( m->exports->procs[n].name, flags,
+					TYPE_MODULE );
 				if (x<0) {
 					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
 						m->exports->procs[n].name, l, m->exports->name);
