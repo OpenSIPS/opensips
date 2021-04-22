@@ -643,6 +643,8 @@ void ql_force_process_disconnect(int p_id)
 				it->dbf.close(it->conn[p_id]);
 				it->conn[p_id]=NULL;
 			}
+
+			lock_release(it->lock);
 		}
 	}
 }
