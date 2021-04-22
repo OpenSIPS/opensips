@@ -55,7 +55,6 @@
 #include "../../route.h"
 #include "../../action.h"
 #include "../../dset.h"
-#include "../../ipc.h"
 #include "../../data_lump.h"
 
 #include "ut.h"
@@ -76,18 +75,6 @@ int pass_provisional_replies = 0;
 
 /* T holder for the last local transaction */
 struct cell** last_localT;
-
-/* used for passing multiple params across an RPC for running local route */
-struct t_uac_rpc_param {
-	struct cell *new_cell;
-	char *buf;
-	int buf_len;
-	str next_hop;
-	/* this is a mini dlg-struct, carrying only send_sock and next_hop
-	 * as this is what the local route needs */
-	dlg_t dlg;
-};
-
 
 
 /*
@@ -391,108 +378,6 @@ skip_update:
 }
 
 
-static void rpc_run_local_route(int sender, void *v_param)
-{
-	struct t_uac_rpc_param *param=(struct t_uac_rpc_param *)v_param;
-	struct cell *new_cell = param->new_cell;
-	struct usr_avp **backup;
-	int ret;
-
-	if (sroutes->local.a==NULL) {
-
-		/* nothing to run here */
-		ret = -2;
-
-	} else {
-
-		/* run the local route */
-
-		/* set transaction AVP list */
-		backup = set_avp_list( &new_cell->user_avps);
-
-		ret = run_local_route( new_cell, &param->buf, &param->buf_len,
-			&param->dlg, NULL, NULL);
-
-		set_avp_list( backup );
-
-	}
-
-	/* setting the len of the resulting buffer is the marker for the calling
-	 * process that we are done
-	 * IMPORTANT: this MUST be the last thing to do here */
-	if (ret==0) {
-		/* success */
-		new_cell->uac[0].request.buffer.s = param->buf;
-		new_cell->uac[0].request.buffer.len = param->buf_len;
-	} else {
-		new_cell->uac[0].request.buffer.s = NULL;
-		new_cell->uac[0].request.buffer.len = -1;
-	}
-
-	/* cleanup */
-	if (param->dlg.hooks.next_hop)
-		shm_free(param->dlg.hooks.next_hop->s);
-	shm_free(param);
-}
-
-
-static inline int rpc_trigger_local_route(struct cell *new_cell,
-											char *buf, int len, dlg_t* dialog)
-{
-	struct t_uac_rpc_param *rpc_p = NULL;
-
-	rpc_p=(struct t_uac_rpc_param*)shm_malloc(sizeof(struct t_uac_rpc_param));
-	if (rpc_p==NULL) {
-		LM_ERR("failed to allocate RPC param in shm, not running local"
-			" route :(\n");
-		return -1;
-	}
-	memset( rpc_p, 0, sizeof(struct t_uac_rpc_param));
-
-	rpc_p->new_cell = new_cell;
-	rpc_p->buf = buf;
-	rpc_p->buf_len = len;
-	rpc_p->dlg.send_sock = dialog->send_sock;
-	if (dialog->hooks.next_hop) {
-		rpc_p->dlg.hooks.next_hop = &rpc_p->next_hop;
-		if (shm_str_dup( &rpc_p->next_hop, dialog->hooks.next_hop)<0) {
-			LM_ERR("failed to duplicate next_hop in shm, not running local"
-				" route :(\n");
-			goto error;
-		}
-	}
-
-	new_cell->uac[0].request.buffer.len=0;
-
-	if ( ipc_dispatch_rpc( rpc_run_local_route, (void*)rpc_p) < 0 ) {
-		LM_ERR("failed to dispatch RPC job, not running local"
-			" route :(\n");
-		shm_free(rpc_p->dlg.hooks.next_hop->s);
-		goto error;
-	}
-
-	/* wait for the job to be executed - doing a busy-waiting is a bit of
-	 * an ugly hack, but harmless - we do block module procs, not workers;
-	 * also this is a temporary solution until next releases, where 
-	 * the module procs will also have reactors ;) */
-	while (new_cell->uac[0].request.buffer.len==0)
-		usleep(10);
-
-	/* if success, the len and buf are valid and transaction updated. */
-	/* if error, the len is -1, buf NULL and the transaction not updated.
-	 *    -> the upper function will set the original buffer */
-	if (new_cell->uac[0].request.buffer.len==-1) {
-		new_cell->uac[0].request.buffer.len = 0;
-		new_cell->uac[0].request.buffer.s = NULL;
-	}
-
-	return 0;
-error:
-	shm_free(rpc_p);
-	return -1;
-}
-
-
 /*
  * Send a request using data from the dialog structure
  */
@@ -545,7 +430,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	}
 	if (dialog->send_sock==NULL) {
 		/* get the send socket */
-		dialog->send_sock = get_send_socket( NULL/*msg*/, &to_su, proxy->proto);
+		dialog->send_sock = get_send_socket(NULL/*msg*/, &to_su, proxy->proto);
 		if (!dialog->send_sock) {
 			LM_ERR("no corresponding socket for af %d\n", to_su.s.sa_family);
 			ser_error = E_NO_SOCKET;
@@ -615,11 +500,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 		goto error1;
 	}
 
-	/* run the local route, inline or remote, depending on the process
-	 * we are running in */
+	/* run the local route */
 	if (sroutes==NULL) {
-		/* do IPC to run the local route */
-		rpc_trigger_local_route( new_cell, buf, buf_len, dialog);
+		LM_BUG("running local route/t_uac, but no routes in the process\n");
 	} else if (sroutes->local.a) {
 		run_local_route( new_cell, &buf, &buf_len, dialog, &req, &buf_req);
 	}
@@ -668,12 +551,11 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	}
 
 	/* successfully sent out */
+
 	if ( req ) {
 		/* run callbacks 
-		 * NOTE: this callback will be executed ONLY the local route
-		 * was executed IN THIS process (so we have the msg); if the local
-		 * route was executed via IPC in other proc, we cannot run the 
-		 * callback */
+		 * NOTE: this callback will be executed ONLY if the local route
+		 * was executed (so we have the msg) */
 		if ( has_tran_tmcbs( new_cell, TMCB_MSG_SENT_OUT) ) {
 			set_extra_tmcb_params( &request->buffer,
 				&request->dst);
