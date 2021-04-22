@@ -193,8 +193,8 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 	RTP_RELAY_BIN_PUSH(str, &sess->relay->name);
 	RTP_RELAY_BIN_PUSH(int, sess->index);
 	RTP_RELAY_BIN_PUSH(int, sess->state);
-	RTP_RELAY_BIN_PUSH(int, sess->node.set);
-	RTP_RELAY_BIN_PUSH(str, sess->relay->binds.print_node(&sess->node));
+	RTP_RELAY_BIN_PUSH(int, sess->server.set);
+	RTP_RELAY_BIN_PUSH(str, sess->relay->binds.print_server(&sess->server));
 	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
 		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
 			if (sess->flags[rtype][flag].s)
@@ -266,9 +266,9 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 		goto error;
 	RTP_RELAY_BIN_POP(int, &sess->state);
 	sess->relay = relay;
-	RTP_RELAY_BIN_POP(int, &sess->node.set);
+	RTP_RELAY_BIN_POP(int, &sess->server.set);
 	RTP_RELAY_BIN_POP(str, &tmp);
-	sess->node.node = sess->relay->binds.get_node(&tmp, sess->node.set);
+	sess->server.node = sess->relay->binds.get_server(&tmp, sess->server.set);
 
 	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
 		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
@@ -350,7 +350,7 @@ struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
 		return NULL;
 	}
 	memset(sess, 0, sizeof *sess);
-	sess->node.set = -1;
+	sess->server.set = -1;
 	sess->index = index;
 	if (index == RTP_RELAY_ALL_BRANCHES)
 		ctx->main = sess;
@@ -372,7 +372,7 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	if (sess->relay->binds.offer(info, &sess->node,
+	if (sess->relay->binds.offer(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
@@ -393,7 +393,7 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	return sess->relay->binds.answer(info, &sess->node,
+	return sess->relay->binds.answer(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
@@ -411,7 +411,7 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	ret = sess->relay->binds.delete(info, &sess->node,
+	ret = sess->relay->binds.delete(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_OFFER, RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_PEER));
 	if (ret < 0)
@@ -509,8 +509,8 @@ static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_param
 	if (add_mi_string(rtp_item, MI_SSTR("relay"),
 			sess->relay->name.s, sess->relay->name.len) < 0)
 		goto end;
-	node = sess->relay->binds.print_node(&sess->node);
-	if (add_mi_string(rtp_item, MI_SSTR("relay_node"), node->s, node->len) < 0)
+	node = sess->relay->binds.print_server(&sess->server);
+	if (add_mi_string(rtp_item, MI_SSTR("server"), node->s, node->len) < 0)
 		goto end;
 	if (add_mi_number(rtp_item, MI_SSTR("branch"), sess->index) < 0)
 		goto end;
@@ -791,8 +791,8 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 			info.branch = sess->index;
 			if (ctx->main && sess != ctx->main) {
 				/* inherit props from ctx->main */
-				if (sess->node.set == -1)
-					sess->node.set = ctx->main->node.set;
+				if (sess->server.set == -1)
+					sess->server.set = ctx->main->server.set;
 				if (!sess->relay)
 					sess->relay = ctx->main->relay;
 			}
@@ -836,7 +836,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 		}
 	}
 	if (set)
-		sess->node.set = *set;
+		sess->server.set = *set;
 	sess->relay = relay;
 	if (rtp_sess_disabled(sess))
 		return -3; /* nothing to do */

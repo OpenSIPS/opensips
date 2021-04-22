@@ -36,22 +36,22 @@ struct rtp_relay_session {
 	str *body;
 };
 
-struct rtp_relay_node {
+struct rtp_relay_server {
 	int set;
 	void *node;
 };
 
 struct rtp_relay_binds {
-	int (*offer)(struct rtp_relay_session *sess, struct rtp_relay_node *node,
+	int (*offer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *ip, str *type, str *in_iface, str *out_iface,
 			str *flags, str *extra);
-	int (*answer)(struct rtp_relay_session *sess, struct rtp_relay_node *node,
+	int (*answer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *ip, str *type, str *in_iface, str *out_iface,
 			str *flags, str *extra);
-	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_node *node,
+	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
-	str *(*print_node)(struct rtp_relay_node *node);
-	void *(*get_node)(str *node, int set);
+	str *(*print_server)(struct rtp_relay_server *server);
+	void *(*get_server)(str *server, int set);
 };
 
 struct rtp_relay {

@@ -82,7 +82,7 @@ struct rtp_relay_sess {
 	int index;
 	unsigned int state;
 	struct rtp_relay *relay;
-	struct rtp_relay_node node;
+	struct rtp_relay_server server;
 	rtp_relay_flags flags[RTP_RELAY_SIZE];
 	struct list_head list;
 };
