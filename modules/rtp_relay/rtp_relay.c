@@ -185,10 +185,10 @@ static inline enum rtp_relay_type rtp_relay_get_seq_type(
 	if (type & RTP_RELAY_PV_PEER)
 		req = !req;
 
-	if (rtp_relay_ctx_downstream())
-		return req?RTP_RELAY_OFFER:RTP_RELAY_ANSWER;
-	else
+	if (rtp_relay_ctx_upstream())
 		return req?RTP_RELAY_ANSWER:RTP_RELAY_OFFER;
+	else
+		return req?RTP_RELAY_OFFER:RTP_RELAY_ANSWER;
 }
 
 static struct rtp_relay_sess *pv_get_rtp_relay_sess(struct sip_msg *msg,

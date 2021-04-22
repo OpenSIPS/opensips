@@ -102,7 +102,7 @@ struct rtp_relay_ctx *rtp_relay_get_ctx(void);
 
 int rtp_relay_ctx_init(void);
 int rtp_relay_ctx_branch(void);
-int rtp_relay_ctx_downstream(void);
+int rtp_relay_ctx_upstream(void);
 
 int rtp_relay_ctx_engage(struct sip_msg *msg,
 		struct rtp_relay_ctx *ctx, struct rtp_relay *relay, int *set);

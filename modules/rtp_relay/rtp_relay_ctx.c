@@ -45,6 +45,12 @@ static int rtp_relay_ctx_idx = -1;
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
 
+static struct rtp_relay_ctx *rtp_relay_get_dlg_ctx(void)
+{
+	struct dlg_cell *dlg = rtp_relay_dlg.get_dlg();
+
+	return dlg?RTP_RELAY_GET_DLG_CTX(dlg):NULL;
+}
 
 struct rtp_relay_ctx *rtp_relay_new_ctx(void)
 {
@@ -122,6 +128,9 @@ struct rtp_relay_ctx *rtp_relay_try_get_ctx(void)
 	struct cell* t;
 	struct rtp_relay_ctx* ctx = NULL;
 
+	if ((ctx = rtp_relay_get_dlg_ctx()) != NULL)
+		return ctx;
+
 	if ((ctx = RTP_RELAY_GET_MSG_CTX()) != NULL)
 		return ctx;
 
@@ -136,7 +145,7 @@ static void rtp_relay_move_ctx( struct cell* t, int type, struct tmcb_params *ps
 {
 	struct rtp_relay_ctx *ctx = rtp_relay_try_get_ctx();
 
-	if (!ctx)
+	if (!ctx || rtp_relay_get_dlg_ctx())
 		return; /* nothing to move */
 
 	t = rtp_relay_tmb.t_gett();
@@ -322,9 +331,9 @@ int rtp_relay_ctx_branch(void)
 	return rtp_relay_tmb.get_branch_index();
 }
 
-int rtp_relay_ctx_downstream(void)
+int rtp_relay_ctx_upstream(void)
 {
-	return rtp_relay_dlg.get_direction() == DLG_DIR_DOWNSTREAM;
+	return rtp_relay_dlg.get_direction() == DLG_DIR_UPSTREAM;
 }
 
 struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
@@ -536,43 +545,63 @@ static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_para
 	RTP_RELAY_CTX_UNLOCK(ctx);
 }
 
-void rtp_relay_indlg_tm(struct cell* t, int type, struct tmcb_params *p)
+void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
 {
-	int offer;
 	enum rtp_relay_type rtype;
 	struct rtp_relay_session info;
 	struct dlg_cell *dlg = (struct dlg_cell *)(*p->param);
 	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
 
-	if (!ctx) {
-		LM_BUG("could not find a rtp relay context!\n");
-		return;
-	}
-	if (!ctx->main) {
-		LM_BUG("could not find rtp relay main context!\n");
+	if (!ctx || !ctx->main) {
+		LM_BUG("could not find a rtp relay context in %p!\n", ctx);
 		return;
 	}
 	memset(&info, 0, sizeof info);
 	info.branch = ctx->main->index;
-	rtype = (rtp_relay_ctx_downstream()?RTP_RELAY_OFFER:RTP_RELAY_ANSWER);
+	info.msg = p->req;
 
-	if (type == TMCB_REQUEST_FWDED) {
-		info.msg = p->req;
-		offer = 1;
-	} else {
-		info.msg = p->rpl;
-		if (rtp_sess_late(ctx->main))
-			offer = 1;
-		else
-			offer = 0;
-	}
 	info.body = get_body_part(info.msg, TYPE_APPLICATION, SUBTYPE_SDP);
 	if (!info.body)
 		return;
-	if (offer)
+	rtype = (rtp_relay_ctx_upstream()?RTP_RELAY_ANSWER:RTP_RELAY_OFFER);
+	rtp_relay_offer(&info, ctx->main, NULL, rtype);
+}
+
+static void rtp_relay_indlg_tm_rpl(struct sip_msg *msg, struct dlg_cell *dlg, int up)
+{
+	str *body;
+	enum rtp_relay_type rtype;
+	struct rtp_relay_session info;
+	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
+
+	if (!ctx || !ctx->main) {
+		LM_BUG("could not find a rtp relay context in %p!\n", ctx);
+		return;
+	}
+
+	body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!body)
+		return;
+
+	memset(&info, 0, sizeof info);
+	info.branch = ctx->main->index;
+	info.msg = msg;
+	info.body = body;
+	rtype = (up?RTP_RELAY_OFFER:RTP_RELAY_ANSWER);
+	if (rtp_sess_late(ctx->main))
 		rtp_relay_offer(&info, ctx->main, NULL, rtype);
 	else
 		rtp_relay_answer(&info, ctx->main, NULL, rtype);
+}
+
+static void rtp_relay_indlg_tm_rpl_up(struct cell* t, int type, struct tmcb_params *p)
+{
+	rtp_relay_indlg_tm_rpl(p->rpl, (struct dlg_cell *)(*p->param), 1);
+}
+
+static void rtp_relay_indlg_tm_rpl_down(struct cell* t, int type, struct tmcb_params *p)
+{
+	rtp_relay_indlg_tm_rpl(p->rpl, (struct dlg_cell *)(*p->param), 0);
 }
 
 static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
@@ -606,14 +635,14 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	if (!ret)
 		return;
 	if (msg->REQ_METHOD == METHOD_ACK) {
-		if (!rtp_sess_late(ctx->main))
+		if (ctx->main || !rtp_sess_late(ctx->main))
 			return;
 		memset(&info, 0, sizeof info);
 		info.msg = msg;
 		info.body = body;
 		info.branch = ctx->main->index;
 		rtp_relay_answer(&info, ctx->main, NULL,
-				(rtp_relay_ctx_downstream()?RTP_RELAY_OFFER:RTP_RELAY_ANSWER));
+				(rtp_relay_ctx_upstream()?RTP_RELAY_ANSWER:RTP_RELAY_OFFER));
 		return;
 	}
 	if (!body && msg->REQ_METHOD != METHOD_INVITE) {
@@ -622,9 +651,18 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	}
 
 	rtp_sess_reset_pending(ctx->main);
-	if (rtp_relay_tmb.register_tmcb(msg, 0, TMCB_REQUEST_FWDED|TMCB_RESPONSE_FWDED,
-				rtp_relay_indlg_tm, dlg,0)!=1)
-		LM_ERR("failed to install TM reply callback\n");
+	if (rtp_relay_tmb.register_tmcb(msg, 0, TMCB_REQUEST_FWDED,
+				rtp_relay_indlg_tm_req, dlg, 0)!=1)
+		LM_ERR("failed to install TM request callback\n");
+	if (rtp_relay_ctx_upstream()) {
+		if (rtp_relay_tmb.register_tmcb(msg, 0, TMCB_RESPONSE_FWDED,
+				rtp_relay_indlg_tm_rpl_up, dlg, 0)!=1)
+			LM_ERR("failed to install TM upstream reply callback\n");
+	} else {
+		if (rtp_relay_tmb.register_tmcb(msg, 0, TMCB_RESPONSE_FWDED,
+				rtp_relay_indlg_tm_rpl_down, dlg, 0)!=1)
+			LM_ERR("failed to install TM downstream reply callback\n");
+	}
 }
 
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx)
