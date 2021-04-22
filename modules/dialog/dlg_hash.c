@@ -945,6 +945,9 @@ static void raise_state_changed_event(struct dlg_cell *dlg,
 	str s1, s2;
 	int callee_leg_idx;
 
+	if (!evi_probe_event(ei_st_ch_id))
+		return;
+
 	s1.s = int2bstr( (unsigned long)dlg->h_entry, b1, &s1.len);
 	s2.s = int2bstr( (unsigned long)dlg->h_id, b2, &s2.len);
 	if (s1.s==NULL || s2.s==NULL) {
