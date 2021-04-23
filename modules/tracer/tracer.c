@@ -44,6 +44,7 @@
 #include "../../script_cb.h"
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
+#include "../b2b_logic/b2b_load.h"
 #include "../../mod_fix.h"
 #include "tracer.h"
 
@@ -75,6 +76,7 @@ static db_ps_t siptrace_ps = NULL;
 
 struct tm_binds tmb;
 struct dlg_binds dlgb;
+b2bl_api_t b2bl;
 
 static trace_proto_t tprot;
 
@@ -133,6 +135,8 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 static int sip_trace(struct sip_msg*, trace_info_p, int);
 static int sip_trace_instance(struct sip_msg*, trace_instance_p, int, int);
 
+static struct b2b_tracer* b2b_set_tracer_cb(void);
+static int trace_b2b(struct sip_msg*, trace_info_p);
 static int trace_dialog(struct sip_msg*, trace_info_p);
 static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 		char dlg_tran, int reverte_dir);
@@ -939,6 +943,12 @@ static int mod_init(void)
 	/* load the module dependencies, best effort for now, as the strict
 	 * dependency will be checked later in fixup function, according to
 	 * the sip_trace() flags */
+	if(load_b2b_logic_api(&b2bl)< 0) {
+		LM_DBG("Failed to load b2b_logic API (module not loaded)\n");
+	} else {
+		b2bl.register_set_tracer_cb( b2b_set_tracer_cb, FL_USE_SIPTRACE);
+	}
+
 	if (load_dlg_api(&dlgb) != 0)
 		LM_DBG("failed to load the dialog API (dialog module not loaded?)\n");
 
@@ -1171,6 +1181,59 @@ void free_trace_info_shm(void *param)
 	shm_free(param);
 }
 
+
+static int trace_b2b_transaction( void *trans, void* param)
+{
+	/* context for the request message */
+	SET_TRACER_CONTEXT( (trace_info_p)param );
+
+	if(tmb.register_tmcb( NULL, (struct cell *)trans, TMCB_MSG_MATCHED_IN,
+	trace_tm_in, (trace_info_p)param, 0) <=0) {
+		LM_ERR("can't register TM MATCH IN callback\n");
+		return -1;
+	}
+
+	if(tmb.register_tmcb( NULL, (struct cell *)trans, TMCB_MSG_SENT_OUT,
+	trace_tm_out, (trace_info_p)param, 0) <=0) {
+		LM_ERR("can't register TM SEND OUT callback\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static struct b2b_tracer* b2b_set_tracer_cb(void)
+{
+	static struct b2b_tracer tracer;
+
+	/* as parameter, set the tracing info from the current contect */
+	tracer.param = (void*)GET_TRACER_CONTEXT;
+
+	if (tracer.param==NULL) {
+		tracer.f = NULL;
+		tracer.f_freep = NULL;
+	} else {
+		tracer.f = trace_b2b_transaction;
+		tracer.f_freep = free_trace_info_shm;
+	}
+
+	return &tracer;
+}
+
+
+static int trace_b2b(struct sip_msg *msg, trace_info_p info)
+{
+	/* mark the initial request with the tracing flag, so the 
+	 * B2B logic, via the "creating new session" callback, will 
+	 * install the tracing callback into the B2B logic
+	 */
+	msg->msg_flags |= FL_USE_SIPTRACE;
+
+	return 0;
+}
+
+
 static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 								char dlg_tran, int reverse_dir)
 {
@@ -1220,12 +1283,12 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 	}
 
 	if (!dlgb.create_dlg || ! dlgb.get_dlg) {
-		LM_ERR("Can't trace dialog!Api not loaded!\n");
+		LM_ERR("Can't trace dialog! Api not loaded!\n");
 		return -1;
 	}
 
 	if (dlgb.create_dlg(msg, 0)<1) {
-		LM_ERR("faield to create dialog!\n");
+		LM_ERR("failed to create dialog!\n");
 		return -1;
 	}
 
@@ -1323,6 +1386,10 @@ static int st_parse_flags(str *sflags)
 			case 'd':
 			case 'D':
 				flags = TRACE_DIALOG;
+				break;
+			case 'b':
+			case 'B':
+				flags = TRACE_B2B;
 				break;
 			case ' ':
 				continue;
@@ -1422,13 +1489,20 @@ static int fixup_sflags(void **param)
 		return -1;
 	}
 
+	if (_flags==TRACE_B2B) {
+		if (b2bl.register_set_tracer_cb==NULL) {
+			LM_ERR("B2B tracing explicitly required, but"
+				"b2b_entities module not loaded\n");
+			return -1;
+		}
+	} else
 	if (_flags==TRACE_DIALOG) {
 		if (dlgb.create_dlg==NULL) {
 			LM_ERR("Dialog tracing explicitly required, but"
 				"dialog module not loaded\n");
 			return -1;
 		}
-	}else
+	} else
 	if (_flags==TRACE_TRANSACTION) {
 		if (tmb.t_gett==NULL) {
 			LM_INFO("Will do stateless transaction aware tracing!\n");
@@ -1518,9 +1592,9 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		LM_BUG("sip_trace() failed due to NULL context");
 		return -1;
 
-	/* for stateful transactions or dialogs
+	/* for stateful transactions / dialogs / B2B
 	 * we need the structure in the shared memory */
-	} else if(trace_flags == TRACE_DIALOG ||
+	} else if(trace_flags == TRACE_DIALOG || trace_flags == TRACE_B2B ||
 	(trace_flags == TRACE_TRANSACTION && tmb.t_gett)) {
 		instance=shm_malloc(sizeof(trace_instance_t) + extra_len);
 		if (instance==NULL) {
@@ -1600,7 +1674,12 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		info->instances = instance;
 	}
 
-	if (trace_flags==TRACE_DIALOG) {
+	if (trace_flags==TRACE_B2B) {
+		if (trace_b2b(msg, info) < 0) {
+			LM_ERR("trace b2b failed!\n");
+			return -1;
+		}
+	} else if (trace_flags==TRACE_DIALOG) {
 		if (trace_dialog(msg, info) < 0) {
 			LM_ERR("trace dialog failed!\n");
 			return -1;
@@ -1672,7 +1751,11 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 		}
 	}
 
-	if (trace_flags == TRACE_DIALOG &&
+	if (trace_flags == TRACE_B2B && msg->first_line.type == SIP_REQUEST &&
+			b2bl.register_set_tracer_cb != NULL &&
+			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
+		LM_DBG("tracing b2b!\n");
+	} else if (trace_flags == TRACE_DIALOG &&
 			dlgb.get_dlg && msg->first_line.type == SIP_REQUEST &&
 			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
 		LM_DBG("tracing dialog!\n");

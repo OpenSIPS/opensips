@@ -61,17 +61,26 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>dialog</emphasis> - only if you want to trace dialogs.
+				<emphasis>b2b_logic</emphasis> - only if you want to trace
+				B2B sessions.
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>tm</emphasis> - only if you want to trace dialogs/transactions.
+				<emphasis>dialog</emphasis> - only if you want to trace
+				SIP dialogs (INVITE based).
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>proto_hep</emphasis> - only if you want to replicate messages over hep.
+				<emphasis>tm</emphasis> - only if you want to trace 
+				SIP transactions.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>proto_hep</emphasis> - only if you want to 
+				trace / replicate messages over HEP protocol.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -219,7 +228,7 @@ modparam("tracer", "trace_id",
 		</title>
 		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
-			Store or replocate current processed SIP message,transaction or dialogin database.
+			Store or replocate current processed SIP message, transaction / dialog or B2B session.
 			It is stored in the form prior applying chages made to it. The traced_user_avp
 			parameter is now an argument to trace() function. Since version 2.2, this function
 			also catches internally generated replies in stateless mode(sl_send_reply(...)).
@@ -236,11 +245,12 @@ modparam("tracer", "trace_id",
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>scope (string, optional)</emphasis> what do you want to trace:
-		dialog, transaction or only the message. If not specified, will try
-		the topmost trace that can be done: if dialog module loaded will trace
-		dialogs, else if tm module loaded will trace transaction and if none
-		of these loaded will trace messages.</para>
+		<para><emphasis>scope (string, optional)</emphasis> what do you 
+		want to trace: dialog, transaction, B2B session or only the message. 
+		If not specified, will try the topmost trace that can be done: 
+		if dialog module loaded will trace dialogs, else if tm module loaded
+		will trace transaction and if none of these loaded will trace messages.
+		</para>
 			<para>Types can be the following:</para>
 			<itemizedlist>
 			<listitem>
@@ -256,6 +266,10 @@ modparam("tracer", "trace_id",
 			<listitem>
 				<para><emphasis>'d'/'D'</emphasis> trace dialog</para>
 			</listitem>
+			<listitem>
+				<para><emphasis>'b'/'B'</emphasis> trace all the traffic
+				related to the B2B session to be later created</para>
+			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
@@ -267,14 +281,17 @@ modparam("tracer", "trace_id",
 			<para>Current possible types to be traced are the following:</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>sip</emphasis> - enable sip messages tracing;</para>
+					<para><emphasis>sip</emphasis> - enable sip messages 
+					tracing;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>xlog</emphasis> - enable xlog messages tracing in current
-						scope(dialog, transaction or message);</para>
+					<para><emphasis>xlog</emphasis> - enable xlog messages 
+					tracing in current scope(dialog, transaction, B2B session
+					or message);</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>rest</emphasis> - enable rest messages tracing;</para>
+					<para><emphasis>rest</emphasis> - enable rest messages 
+					tracing;</para>
 				</listitem>
 			</itemizedlist>
 		</listitem>
