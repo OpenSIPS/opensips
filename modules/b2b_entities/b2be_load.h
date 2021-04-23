@@ -101,10 +101,12 @@ typedef struct b2b_rpl_data
 
 
 typedef int (*b2b_tracer_cb)( void *trans, void* param);
+typedef void (*b2b_tracer_freep_cb)( void *param);
 
 struct b2b_tracer {
 	b2b_tracer_cb f;
 	void *param;
+	b2b_tracer_freep_cb f_freep;
 };
 
 

@@ -698,6 +698,9 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		shm_free(v);
 	}
 
+	if (tuple->tracer.param && tuple->tracer.f_freep)
+		tuple->tracer.f_freep( tuple->tracer.param );
+
 	shm_free(tuple);
 }
 
