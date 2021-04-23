@@ -4764,22 +4764,29 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 {
 	int ret = -1;
 	pv_value_t val;
+	str *snode;
 	struct rtpp_set *rset = NULL;
 	struct rtpp_args args;
 
 	memset(&args, '\0', sizeof(args));
 
-	if (server->set != -1) {
-		rset = select_rtpp_set(server->set);
-		if (!rset) {
-			LM_WARN("RTPProxy set %d\n not available! Using default %d...\n",
-					server->set, default_rtpp_set_no);
+	if (!server->node) {
+		if (server->set != -1) {
+			rset = select_rtpp_set(server->set);
+			if (!rset) {
+				LM_WARN("RTPProxy set %d\n not available! Using default %d...\n",
+						server->set, default_rtpp_set_no);
+				rset = *default_rtpp_set;
+			}
+		} else {
 			rset = *default_rtpp_set;
 		}
+		server->set = rset->id_set;
 	} else {
-		rset = *default_rtpp_set;
+		rset = select_rtpp_set(server->set);
+		snode = get_rtpproxy_node(server->node);
+		args.node = get_rtpp_node(snode);
 	}
-	server->set = rset->id_set;
 
 	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
 			in_iface, out_iface, flags, extra))
@@ -4792,6 +4799,8 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 		goto exit;
 	}
 	if (pv_get_spec_value(sess->msg, &media_pvar, &val) >= 0) {
+		if (server->node)
+			shm_free(server->node);
 		server->node = build_rtpproxy_node(&val.rs);
 		ret = 1;
 	} else {
@@ -4821,11 +4830,13 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 	args.set = rset;
 	args.offer = 0;
 
-	snode = get_rtpproxy_node(server->node);
-	args.node = get_rtpp_node(snode);
-	if (!args.node) {
-		LM_ERR("Could not use node %.*s for reply!\n", snode->len, snode->s);
-		goto exit;
+	if (server->node) {
+		snode = get_rtpproxy_node(server->node);
+		args.node = get_rtpp_node(snode);
+		if (!args.node) {
+			LM_ERR("Could not use node %.*s for reply!\n", snode->len, snode->s);
+			goto exit;
+		}
 	}
 
 	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
