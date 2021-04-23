@@ -608,7 +608,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	b2bl_htable[tuple->hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+			b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
 
 	b2bl_htable[tuple->hash_index].locked_by = -1;
 
@@ -737,7 +737,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			b2bl_htable[hash_index].locked_by = process_no;
 
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+					b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
 
 			b2bl_htable[hash_index].locked_by = -1;
 
@@ -2600,7 +2600,7 @@ entity_search_done:
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+				b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -2782,7 +2782,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, b2bl_key);
+			b2b_server_notify, &b2bl_mod_name, b2bl_key, NULL);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -2832,7 +2832,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	b2bl_htable[hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, NULL);
 
 	b2bl_htable[hash_index].locked_by = -1;
 
@@ -2874,7 +2874,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, NULL);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -3396,7 +3396,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 
 		/* create new server entity */
 		server_id = b2b_api.server_new(msg, &tuple->local_contact,
-				b2b_server_notify, &b2bl_mod_name, b2bl_key);
+				b2b_server_notify, &b2bl_mod_name, b2bl_key, NULL);
 		if(server_id == NULL)
 		{
 			LM_ERR("failed to create new b2b server instance\n");
@@ -3503,7 +3503,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			b2bl_htable[hash_index].locked_by = process_no;
 
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+					b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, NULL);
 
 			b2bl_htable[hash_index].locked_by = -1;
 
@@ -3824,7 +3824,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+				b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -4419,7 +4419,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, tuple->key);
+			b2b_server_notify, &b2bl_mod_name, tuple->key, NULL);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
