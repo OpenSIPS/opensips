@@ -323,7 +323,7 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
 	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
-			b2b_media_confirm, &b2b_media_exchange_cap, &hack);
+			b2b_media_confirm, &b2b_media_exchange_cap, &hack, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
 		goto release;
@@ -523,7 +523,7 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
 	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify,
-			&b2b_media_exchange_cap, &hack);
+			&b2b_media_exchange_cap, &hack, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b server for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
@@ -604,7 +604,7 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
 	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
-			b2b_media_confirm, &b2b_media_exchange_cap, &hack);
+			b2b_media_confirm, &b2b_media_exchange_cap, &hack, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
 		goto unref;
@@ -796,7 +796,7 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
 	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify,
-			&b2b_media_exchange_cap, &hack);
+			&b2b_media_exchange_cap, &hack, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b server for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
