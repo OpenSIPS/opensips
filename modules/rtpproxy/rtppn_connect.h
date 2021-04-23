@@ -23,6 +23,6 @@
 
 struct rtpp_node;
 
-int connect_rtpp_node(const struct rtpp_node *pnode);
+int connect_rtpp_node(struct rtpp_node *pnode);
 
 #endif

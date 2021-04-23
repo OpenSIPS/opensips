@@ -317,8 +317,6 @@ struct dlg_binds dlg_api;
 /* TM support for saving parameters */
 struct tm_binds tm_api;
 
-struct rtpp_notify_head * rtpp_notify_h = 0;
-
 int connect_rtpproxies();
 int update_rtpp_proxies();
 
@@ -496,7 +494,8 @@ static mi_export_t mi_cmds[] = {
 };
 
 static proc_export_t procs[] = {
-	{"RTPP notification receiver",  0,  0, notification_listener_process, 1, PROC_FLAG_INITCHILD},
+	{"RTPP notification receiver",  0,  0, notification_listener_process, 1,
+		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT},
 	{0,0,0,0,0,0}
 };
 
@@ -937,20 +936,8 @@ static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
 	*rtpp_no = 0;
 	(*list_version)++;
 
-	/* notify timeout process that the rtpp proxy list changes */
-	if (rtpp_notify_h) {
-		lock_get( rtpp_notify_h->lock );
-		rtpp_notify_h->changed = 1;
-	}
-
-	if(_add_proxies_from_database() < 0) {
-		if (rtpp_notify_h)
-			lock_release( rtpp_notify_h->lock );
+	if(_add_proxies_from_database() < 0)
 		goto error;
-	}
-
-	if (rtpp_notify_h)
-		lock_release( rtpp_notify_h->lock );
 
 	if (update_rtpp_proxies())
 		goto error;
@@ -1217,30 +1204,10 @@ mod_init(void)
 			return -1;
 		}
 
-		rtpp_notify_h = (struct rtpp_notify_head *)
-			shm_malloc(sizeof(struct rtpp_notify_head));
-		if (!rtpp_notify_h) {
-			LM_ERR("no more shm memory\n");
+		if (init_rtpp_notify() < 0) {
+			LM_ERR("cannot init notify handlers\n");
 			return -1;
 		}
-		rtpp_notify_h->lock = lock_alloc();
-		if(!rtpp_notify_h->lock) {
-			LM_ERR("failed to alloc timeout notify lock\n");
-			return -1;
-		}
-		if (!lock_init(rtpp_notify_h->lock)) {
-			LM_CRIT("failed to init timeout notify lock\n");
-			return -1;
-		}
-		rtpp_notify_h->changed = 0;
-		rtpp_notify_h->rtpp_list = NULL;
-
-		if (init_rtpp_notify_list() < 0) {
-			LM_ERR("cannot find any valid rtpproxy to use\n");
-			return -1;
-		}
-	} else {
-		exports.procs = 0;
 	}
 
 	ei_id = evi_publish_event(event_name);
@@ -1436,6 +1403,7 @@ int connect_rtpproxies(void)
 int update_rtpp_proxies(void) {
 	int i;
 
+	update_rtpp_notify();
 	LM_DBG("updating list from %d to %d [%d]\n", my_version, *list_version, rtpp_number);
 	my_version = *list_version;
 	for (i = 0; i < rtpp_number; i++) {
@@ -4611,13 +4579,12 @@ int load_rtpproxy(struct rtpproxy_binds *rtpb)
 			LM_ERR("could not set param %.*s\n", \
 					rtpproxy_event_params[_idx].name.len, \
 					rtpproxy_event_params[_idx].name.s); \
-			goto end; \
+			return -1; \
 		} \
 	} while (0)
 
-void rtpproxy_raise_dtmf_event(int sender, void *p)
+int rtpproxy_raise_dtmf_event(struct rtpp_dtmf_event *dtmf)
 {
-	struct rtpp_dtmf_event *dtmf = (struct rtpp_dtmf_event *)p;
 	str digit;
 
 	if (evi_probe_event(rtpproxy_dtmf_event)) {
@@ -4634,6 +4601,5 @@ void rtpproxy_raise_dtmf_event(int sender, void *p)
 			LM_ERR("cannot raise RTPProxy event\n");
 	} else
 		LM_DBG("nothing to do - nobody is listening!\n");
-end:
-	shm_free(dtmf);
+	return 0;
 }

@@ -59,7 +59,7 @@ out:
 	return cres;
 }
 
-int connect_rtpp_node(const struct rtpp_node *pnode)
+int connect_rtpp_node(struct rtpp_node *pnode)
 {
 	int n, s;
 	char *cp, *hostname;
@@ -107,6 +107,7 @@ int connect_rtpp_node(const struct rtpp_node *pnode)
 		LM_ERR("can't connect to a RTP proxy\n");
 		goto e3;
 	}
+	memcpy(&pnode->addr.s, res->ai_addr, res->ai_addrlen);
 	pkg_free(hostname);
 	freeaddrinfo(res);
 	LM_DBG("connected %s\n", pnode->rn_address);
