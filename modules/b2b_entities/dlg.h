@@ -113,6 +113,7 @@ typedef struct b2b_dlg
 	unsigned int         last_reply_code;
 	int                  db_flag;
 	int                  replicated;
+	struct b2b_tracer   *tracer;
 }b2b_dlg_t;
 
 typedef struct b2b_entry
@@ -193,5 +194,20 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 	int cbs_type, int event_type, bin_packet_t *storage, int backend);
 
 dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type);
+
+
+#define b2b_arm_uac_tracing( _tm_dlg, _tracer) \
+	do { \
+		(_tm_dlg)->t_created_cb = b2b_trace_uac; \
+		(_tm_dlg)->t_created_cb_param = _tracer; \
+	} while(0)
+
+
+#define b2b_run_tracer( _dlg, _t) \
+	if ((_dlg)->tracer) (_dlg)->tracer->f( _t, (_dlg)->tracer->param )
+
+
+void b2b_trace_uac(struct cell* t, void *param);
+
 
 #endif

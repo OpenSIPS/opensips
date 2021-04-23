@@ -31,7 +31,8 @@
 #include "dlg.h"
 #include "b2be_load.h"
 
-str* server_new(struct sip_msg*, str* local_contact, b2b_notify_t, str *, str*);
+str* server_new(struct sip_msg*, str* local_contact, b2b_notify_t, str *,
+		str*, struct b2b_tracer*);
 
 dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg);
 

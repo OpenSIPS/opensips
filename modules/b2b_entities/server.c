@@ -48,7 +48,8 @@
  *	*/
 
 str* server_new(struct sip_msg* msg, str* local_contact,
-		b2b_notify_t b2b_cback, str *mod_name, str* param)
+		b2b_notify_t b2b_cback, str *mod_name, str* param,
+		struct b2b_tracer *tracer)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
@@ -74,6 +75,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	dlg->state = B2B_NEW;
 	dlg->b2b_cback = b2b_cback;
+	dlg->tracer = tracer;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
 	dlg->uas_tran = tmb.t_gett();
@@ -92,6 +94,10 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 		}
 		dlg->uas_tran = tmb.t_gett();
 	}
+
+	/* start tracing for this transaction */
+	b2b_run_tracer( dlg, dlg->uas_tran);
+
 	tmb.ref_cell(dlg->uas_tran);
 	tmb.t_setkr(REQ_FWDED);
 

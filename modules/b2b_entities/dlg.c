@@ -58,6 +58,20 @@ struct b2b_callback *b2b_trig_cbs, *b2b_recv_cbs;
 
 static str storage_cap = str_init("b2b-storage-bin");
 
+
+
+/* This is the "transaction created" callback for the UAC transactions,
+ * used for enabling the tracing
+ */
+void b2b_trace_uac(struct cell* t, void *param)
+{
+	struct b2b_tracer *tracer = (struct b2b_tracer*)param;
+
+	/* call the tracing function for this transaction */
+	tracer->f( t, tracer->param);
+}
+
+
 void print_b2b_dlg(b2b_dlg_t *dlg)
 {
 	dlg_leg_t *leg = dlg->legs;
@@ -667,6 +681,7 @@ int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name)
 	return 0;
 }
 
+
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
@@ -785,8 +800,11 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		LM_DBG("Received a PRACK - send 200 reply\n");
 		str reason={"OK", 2};
 		/* send 200 OK and exit */
-		tmb.t_reply(msg, 200, &reason);
+		tmb.t_newtran( msg );
 		tm_tran = tmb.t_gett();
+		// FIXME run here the transactional tracing, but we do not have
+		// the matching dlg, in order to grab the tracing function
+		tmb.t_reply(msg, 200, &reason);
 		if(tm_tran && tm_tran!=T_UNDEFINED)
 			tmb.unref_cell(tm_tran);
 
@@ -845,7 +863,8 @@ search_dialog:
 		   a RURI that may have been changed in script (before invoking the
 		   B2B module), while the CANCEL has the original RURI (as received)
 		*/
-		dlg = b2bl_search_iteratively(&callid, &from_tag, NULL/*&ruri*/, hash_index);
+		dlg = b2bl_search_iteratively(&callid, &from_tag, NULL/*&ruri*/,
+			hash_index);
 		if(dlg == NULL)
 		{
 			lock_release(&server_htable[hash_index].lock);
@@ -880,6 +899,9 @@ search_dialog:
 			return SCB_DROP_MSG;
 		}
 
+		/* start tracing for the CANCEL transaction */
+		b2b_run_tracer( dlg, tmb.t_gett());
+
 		if(tmb.t_reply(msg, 200, &reply_text) < 0)
 		{
 			LM_ERR("failed to send reply for CANCEL\n");
@@ -909,8 +931,9 @@ search_dialog:
 	}
 
 	b2b_key = to_tag;
-	/* check if the to tag has the b2b key format -> meaning that it is a server request */
-	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index, NULL) >= 0)
+	/* check if the to tag has the b2b key format -> meaning
+	 * that it is a server request */
+	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index,NULL)>=0)
 	{
 		LM_DBG("Received a b2b server request [%.*s]\n",
 					msg->first_line.u.request.method.len,
@@ -919,7 +942,8 @@ search_dialog:
 	}
 	else
 	{
-		/* check if the callid is in b2b format -> meaning that this is a client request */
+		/* check if the callid is in b2b format -> meaning
+		 * that this is a client request */
 		b2b_key = msg->callid->body;
 		if(b2b_parse_key(&b2b_key, &hash_index, &local_index, NULL) >= 0)
 		{
@@ -940,7 +964,8 @@ search_dialog:
 				/* for server UPDATE sent before dialog confirmed */
 				table = server_htable;
 				hash_index = core_hash(&callid, &from_tag, server_hsize);
-				dlg = b2bl_search_iteratively(&callid, &from_tag,NULL, hash_index);
+				dlg = b2bl_search_iteratively(&callid, &from_tag, NULL,
+					hash_index);
 				if(dlg == NULL)
 				{
 					lock_release(&server_htable[hash_index].lock);
@@ -1054,6 +1079,10 @@ logic_notify:
 		}
 
 		tm_tran = tmb.t_gett();
+
+		/* start tracing for this transaction */
+		b2b_run_tracer( dlg, tm_tran);
+	
 		if(method_value != METHOD_ACK)
 		{
 			if(method_value == METHOD_UPDATE)
@@ -1913,6 +1942,8 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 		tmb.setlocalTholder(&dlg->uac_tran);
 	}
 
+	/* start tracing for this transaction */
+	b2b_arm_uac_tracing( td, dlg->uas_tran);
 
 	if (no_cb)
 	{
@@ -2093,6 +2124,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 					LM_ERR("Invite trasaction not found\n");
 					goto error;
 				}
+				// FIXME - tracing: how do we get to the cancel transaction?
 				ret = tmb.t_cancel_trans( inv_t, &ehdr);
 				tmb.unref_cell(inv_t);
 			}
@@ -2368,6 +2400,9 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 		else
 			dlg->cseq[CALLER_LEG]--;
 	}
+
+	/* start tracing for this transaction */
+	b2b_arm_uac_tracing( td, dlg->uas_tran);
 
 	/* send request */
 	result= tmb.t_request_within
@@ -3028,6 +3063,7 @@ dummy_reply:
 			new_dlg->prev = dlg->prev;
 			new_dlg->add_dlginfo = dlg->add_dlginfo;
 			new_dlg->last_method = dlg->last_method;
+			new_dlg->tracer = dlg->tracer;
 
 //			dlg = b2b_search_htable(htable, hash_index, local_index);
 			if(dlg->prev)

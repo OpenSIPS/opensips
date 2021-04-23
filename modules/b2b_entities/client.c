@@ -78,7 +78,8 @@ static void generate_tag(str* tag, str* src, str* callid)
  *	*/
 #define HASH_SIZE 1<<23
 str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param)
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param,
+		struct b2b_tracer *tracer)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -144,6 +145,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	dlg->b2b_cback = b2b_cback;
 	dlg->add_dlginfo = add_dlginfo;
+	dlg->tracer = tracer;
 
 	CONT_COPY(dlg, dlg->mod_name, (*mod_name));
 
@@ -227,6 +229,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.avps = ci->avps;
 
 	tmb.setlocalTholder(&dlg->uac_tran);
+
+	b2b_arm_uac_tracing( &td, dlg->tracer);
 
 	/* send request */
 	result= tmb.t_request_within
