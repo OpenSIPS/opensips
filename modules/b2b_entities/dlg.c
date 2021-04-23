@@ -1943,7 +1943,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	}
 
 	/* start tracing for this transaction */
-	b2b_arm_uac_tracing( td, dlg->uas_tran);
+	b2b_arm_uac_tracing( td, dlg->tracer);
 
 	if (no_cb)
 	{
@@ -2402,7 +2402,7 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 	}
 
 	/* start tracing for this transaction */
-	b2b_arm_uac_tracing( td, dlg->uas_tran);
+	b2b_arm_uac_tracing( td, dlg->tracer);
 
 	/* send request */
 	result= tmb.t_request_within
