@@ -89,6 +89,9 @@ static str method_notify= {NOTIFY, NOTIFY_LEN};
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
 
+#define get_tracer(_tuple) \
+	( (_tuple)->tracer.f ? &((_tuple)->tracer) : NULL )
+
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
 	b2b_dlginfo_t* new_dlginfo= NULL;
@@ -679,7 +682,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 	b2bl_htable[tuple->hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+			b2b_add_dlginfo, &b2bl_mod_name, tuple->key, get_tracer(tuple));
 
 	b2bl_htable[tuple->hash_index].locked_by = -1;
 
@@ -804,7 +807,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			b2bl_htable[hash_index].locked_by = process_no;
 
 			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+					b2b_add_dlginfo, &b2bl_mod_name, tuple->key,
+					get_tracer(tuple));
 
 			b2bl_htable[hash_index].locked_by = -1;
 
@@ -2782,7 +2786,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+			b2b_add_dlginfo, &b2bl_mod_name, tuple->key, get_tracer(tuple));
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -2946,7 +2950,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, b2bl_key);
+			b2b_server_notify, &b2bl_mod_name, b2bl_key, get_tracer(tuple));
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -2996,7 +3000,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	b2bl_htable[hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, get_tracer(tuple));
 
 	b2bl_htable[hash_index].locked_by = -1;
 
@@ -3038,7 +3042,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, get_tracer(tuple));
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -3280,7 +3284,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	/* create new server entity */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, b2bl_key);
+			b2b_server_notify, &b2bl_mod_name, b2bl_key, get_tracer(tuple));
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -3338,7 +3342,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	b2bl_htable[hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key);
+			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, get_tracer(tuple));
 
 	b2bl_htable[hash_index].locked_by = -1;
 
@@ -3879,7 +3883,7 @@ int b2bl_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 		b2bl_htable[hash_index].locked_by = process_no;
 
 		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key);
+			b2b_add_dlginfo, &b2bl_mod_name, tuple->key, get_tracer(tuple));
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -4445,7 +4449,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, tuple->key);
+			b2b_server_notify, &b2bl_mod_name, tuple->key, get_tracer(tuple));
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -4527,3 +4531,5 @@ error:
 	local_ctx_tuple = NULL;
 	return -1;
 }
+
+

@@ -56,9 +56,11 @@ typedef struct b2bl_init_params {
 	str e2_from_dname;
 } b2bl_init_params_t;
 
+
 typedef str* (*b2bl_init_f)(struct sip_msg* msg, str *scenario_name,
 	b2bl_init_params_t *scenario_params, b2bl_cback_f, void* param,
 	unsigned int cb_mask, str* custom_hdrs);
+
 
 typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str *new_proxy,
 	str* new_from_dname,int entity_type);
@@ -88,6 +90,9 @@ typedef int (*b2bl_get_stats_f)(str* key, b2bl_dlg_stat_t* stat);
 int b2bl_register_cb(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 typedef int (*b2bl_register_cb_f)(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 
+typedef struct b2b_tracer* (*b2bl_set_tracer_f)(void);
+typedef int (*b2bl_register_set_tracer_cb_f)(b2bl_set_tracer_f cb, unsigned int msg_flag_filter);
+
 int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f, void* param, unsigned int cb_mask);
 typedef int (*b2bl_restore_upper_info_f)(str* b2bl_key, b2bl_cback_f, void* param, unsigned int cb_mask);
 
@@ -100,6 +105,7 @@ typedef struct b2bl_api
 	b2bl_bridge_msg_t bridge_msg;
 	b2bl_get_stats_f get_stats;
 	b2bl_register_cb_f register_cb;
+	b2bl_register_set_tracer_cb_f register_set_tracer_cb;
 	b2bl_restore_upper_info_f restore_upper_info;
 }b2bl_api_t;
 

@@ -36,6 +36,23 @@
 #include "records.h"
 #include "entity_storage.h"
 
+static b2bl_set_tracer_f set_tracer_func = NULL;
+static unsigned int tracer_msg_flag_filter = -1;
+
+int b2bl_register_set_tracer_cb( b2bl_set_tracer_f f,
+												unsigned int msg_flag_filter )
+{
+	if (set_tracer_func!=NULL) {
+		LM_BUG("b2bl tracing function registered more than once\n");
+		return -1;
+	}
+	set_tracer_func = f;
+	tracer_msg_flag_filter = msg_flag_filter;
+
+	return 0;
+}
+
+
 static void _print_entity(int index, b2bl_entity_id_t* e, int level)
 {
 	b2bl_entity_id_t* c = e;
@@ -303,6 +320,9 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 
 	tuple->req_routeid = init_params->req_routeid;
 	tuple->reply_routeid = init_params->reply_routeid;
+
+	if (set_tracer_func && msg->msg_flags&tracer_msg_flag_filter)
+		tuple->tracer = *set_tracer_func();
 
 	LM_DBG("new tuple [%p]->[%.*s]\n", tuple, b2bl_key->len, b2bl_key->s);
 

@@ -113,6 +113,7 @@ typedef struct b2bl_tuple
 	int db_flag;
 	int repl_flag;  /* sent/received through entities replication */
 	struct b2b_ctx_val *vals;
+	struct b2b_tracer tracer;
 	b2bl_cback_f cbf;
 	unsigned int cb_mask;
 	void* cb_param;
@@ -219,5 +220,7 @@ b2bl_entity_id_t* b2bl_search_entity(b2bl_tuple_t* tuple, str* key, int src,
 void b2bl_db_delete(b2bl_tuple_t* tuple);
 
 int store_ctx_value(struct b2b_ctx_val **vals, str *name, str *new_val);
+
+int b2bl_register_set_tracer_cb( b2bl_set_tracer_f f, unsigned int msg_flag_filter );
 
 #endif
