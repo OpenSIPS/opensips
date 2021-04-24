@@ -452,10 +452,11 @@ Chapter 2. Contributors
    10. Andrei Pelinescu-Onciul 6 4 81 33
 
    All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
-   (@jiriatipteldotorg), Anatoly Pidruchny, Kennard White,
-   Konstantin Bokarius, Richard Revels, Julián Moreno Patiño,
-   Norman Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Ionut Ionita (@ionutrazvanionita).
+   (@jiriatipteldotorg), Anatoly Pidruchny, Kennard White, Walter
+   Doekes (@wdoekes), Konstantin Bokarius, Richard Revels, Julián
+   Moreno Patiño, Norman Brandinger (@NormB), Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Ionut Ionita
+   (@ionutrazvanionita).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -477,23 +478,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
-   9.  Richard Revels                      Sep 2011 - Sep 2011
-   10. Kennard White                       Jun 2011 - Jun 2011
+   1.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   2.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Jan 2015
+   10. Richard Revels                      Sep 2011 - Sep 2011
 
-   All remaining contributors: Dan Pascu (@danpascu), Sergio
-   Gutierrez, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Anatoly Pidruchny, Norman Brandinger (@NormB), Jan Janak
-   (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
-   (@jiriatipteldotorg).
+   All remaining contributors: Kennard White, Dan Pascu
+   (@danpascu), Sergio Gutierrez, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Anatoly Pidruchny, Norman Brandinger
+   (@NormB), Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri
+   Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

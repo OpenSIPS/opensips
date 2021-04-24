@@ -902,7 +902,8 @@ Chapter 4. Contributors
    5. Peter Lemenkov (@lemenkov) 4 2 1 1
    6. Vlad Paiu (@vladpaiu) 3 1 13 4
    7. Dusan Klinec (@ph4r05) 3 1 1 1
-   8. Zero King (@l2dy) 3 1 1 1
+   8. Walter Doekes (@wdoekes) 3 1 1 1
+   9. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -924,14 +925,15 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Mar 2014 - Feb 2021
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Jul 2020
-   4. Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
-   5. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
-   7. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   8. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+   1. Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   2. Razvan Crainea (@razvancrainea)     Mar 2014 - Feb 2021
+   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Jul 2020
+   5. Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
+   6. Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
+   8. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
 
    (1) including any documentation-related commits, excluding
    merge commits

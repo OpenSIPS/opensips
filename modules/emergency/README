@@ -378,7 +378,8 @@ Chapter 2. Contributors
    9. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
    10. Julián Moreno Patiño 3 1 1 1
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu).
+   All remaining contributors: Walter Doekes (@wdoekes), Vlad
+   Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -400,18 +401,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2015 - Oct 2020
-   3.  Zero King (@l2dy)                   Mar 2020 - Aug 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Mar 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   6.  Razvan Crainea (@razvancrainea)     Jul 2015 - Sep 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
-   10. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Mar 2015
+   1.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   3.  Liviu Chircu (@liviuchircu)         Mar 2015 - Oct 2020
+   4.  Zero King (@l2dy)                   Mar 2020 - Aug 2020
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Mar 2020
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   7.  Razvan Crainea (@razvancrainea)     Jul 2015 - Sep 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Evandro Villaron (@evillaron)       Feb 2015 - Sep 2015
 
-   All remaining contributors: Robison Tesini (@rtesini).
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Robison Tesini (@rtesini).
 
    (1) including any documentation-related commits, excluding
    merge commits

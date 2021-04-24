@@ -270,9 +270,9 @@ Chapter 3. Contributors
    5. Henning Westerholt (@henningw) 6 4 48 49
    6. Elena-Ramona Modroiu 5 3 92 39
    7. Vlad Patrascu (@rvlad-patrascu) 5 2 38 88
-   8. Vladimir Romanov 4 1 227 51
-   9. Sergey Khripchenko (@shripchenko) 3 1 18 22
-   10. Walter Doekes (@wdoekes) 3 1 5 5
+   8. Walter Doekes (@wdoekes) 4 2 6 6
+   9. Vladimir Romanov 4 1 227 51
+   10. Sergey Khripchenko (@shripchenko) 3 1 18 22
 
    All remaining contributors: Sergio Gutierrez, Konstantin
    Bokarius, Anca Vamanu, Dusan Klinec (@ph4r05), Peter Lemenkov
@@ -298,14 +298,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   7.  Sergey Khripchenko (@shripchenko)   Sep 2015 - Sep 2015
-   8.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
+   1.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   8.  Sergey Khripchenko (@shripchenko)   Sep 2015 - Sep 2015
    9.  Anca Vamanu                         Sep 2009 - Sep 2009
    10. Vladimir Romanov                    May 2009 - May 2009
 

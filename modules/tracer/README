@@ -96,10 +96,12 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * database module - mysql, postrgress, dbtext, unixodbc...
        only if you are using a database type trace id
-     * dialog - only if you want to trace dialogs.
-     * tm - only if you want to trace dialogs/transactions.
-     * proto_hep - only if you want to replicate messages over
-       hep.
+     * b2b_logic - only if you want to trace B2B sessions.
+     * dialog - only if you want to trace SIP dialogs (INVITE
+       based).
+     * tm - only if you want to trace SIP transactions.
+     * proto_hep - only if you want to trace / replicate messages
+       over HEP protocol.
 
 1.2.2. External Libraries or Applications
 
@@ -201,8 +203,8 @@ modparam("tracer", "trace_id",
 
    This function has replaced the sip_trace() in OpenSIPS 3.0.
 
-   Store or replocate current processed SIP message,transaction or
-   dialogin database. It is stored in the form prior applying
+   Store or replocate current processed SIP message, transaction /
+   dialog or B2B session. It is stored in the form prior applying
    chages made to it. The traced_user_avp parameter is now an
    argument to trace() function. Since version 2.2, this function
    also catches internally generated replies in stateless
@@ -215,11 +217,11 @@ modparam("tracer", "trace_id",
      * trace_id (string) the name of the trace_id specifying where
        to do the tracing.
      * scope (string, optional) what do you want to trace: dialog,
-       transaction or only the message. If not specified, will try
-       the topmost trace that can be done: if dialog module loaded
-       will trace dialogs, else if tm module loaded will trace
-       transaction and if none of these loaded will trace
-       messages.
+       transaction, B2B session or only the message. If not
+       specified, will try the topmost trace that can be done: if
+       dialog module loaded will trace dialogs, else if tm module
+       loaded will trace transaction and if none of these loaded
+       will trace messages.
        Types can be the following:
           + 'm'/'M' trace messages. Is the only one you should use
             in stateless mode.
@@ -228,6 +230,8 @@ modparam("tracer", "trace_id",
             that will catch selected requests both in and out and
             internally generated replies.
           + 'd'/'D' trace dialog
+          + 'b'/'B' trace all the traffic related to the B2B
+            session to be later created
      * type (string, optional) list of types of messages to be
        traced by this function; if not set only sip messages shall
        be traced; if the parameter is set, but sip is not
@@ -236,7 +240,7 @@ modparam("tracer", "trace_id",
        Current possible types to be traced are the following:
           + sip - enable sip messages tracing;
           + xlog - enable xlog messages tracing in current
-            scope(dialog, transaction or message);
+            scope(dialog, transaction, B2B session or message);
           + rest - enable rest messages tracing;
      * trace_attrs (string, optional) this parameter replaces the
        traced_user_avp from the old version. To avoid duplicating
@@ -430,7 +434,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 106 82 1118 833
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 108 83 1241 854
    2. Ionut Ionita (@ionutrazvanionita) 105 52 2676 1887
    3. Razvan Crainea (@razvancrainea) 56 38 1253 375
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
@@ -442,8 +446,8 @@ Chapter 2. Contributors
    10. Alexandr Dubovikov (@adubovikov) 7 1 500 4
 
    All remaining contributors: Dan Pascu (@danpascu), Dusan Klinec
-   (@ph4r05), Zero King (@l2dy), Andreas Heise, Sergio Gutierrez,
-   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Konstantin
+   (@ph4r05), Walter Doekes (@wdoekes), Zero King (@l2dy), Andreas
+   Heise, Sergio Gutierrez, Ovidiu Sas (@ovidiusas), Konstantin
    Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov), Edson
    Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
@@ -468,13 +472,13 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Apr 2021
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2020
-   4.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2019
+   2.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Oct 2020
+   5.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    10. Eric Tamme (@etamme)                Sep 2017 - Sep 2017
 

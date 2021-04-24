@@ -347,7 +347,7 @@ Chapter 2. Contributors
 
    All remaining contributors: Andrei Pelinescu-Onciul, Konstantin
    Bokarius, Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert.
+   Walter Doekes (@wdoekes), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -369,20 +369,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   7.  Sergio Gutierrez                    Nov 2008 - Dec 2008
-   8.  Daniel-Constantin Mierla (@miconda) May 2006 - Mar 2008
-   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
+   1.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   8.  Sergio Gutierrez                    Nov 2008 - Dec 2008
+   9.  Daniel-Constantin Mierla (@miconda) May 2006 - Mar 2008
+   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Anca Vamanu, Elena-Ramona Modroiu, Andrei Pelinescu-Onciul,
-   Elena-Ramona Modroiu.
+   All remaining contributors: Edson Gellert Schubert, Henning
+   Westerholt (@henningw), Anca Vamanu, Elena-Ramona Modroiu,
+   Andrei Pelinescu-Onciul, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

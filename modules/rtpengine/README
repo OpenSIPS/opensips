@@ -1200,9 +1200,9 @@ Chapter 3. Contributors
    5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
    6. Peter Lemenkov (@lemenkov) 8 6 27 34
    7. Eric Tamme (@etamme) 7 5 42 19
-   8. Ovidiu Sas (@ovidiusas) 5 3 37 7
-   9. Zero King (@l2dy) 4 2 5 4
-   10. John Burke 4 1 172 31
+   8. John Burke 6 3 180 37
+   9. Ovidiu Sas (@ovidiusas) 5 3 37 7
+   10. Zero King (@l2dy) 4 2 5 4
 
    All remaining contributors: Rob Gagnon (@rgagnon24), Flavio E.
    Goncalves, Dan Pascu (@danpascu), Maksym Sobolyev (@sobomax),
@@ -1228,16 +1228,16 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Dec 2020
-   3.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
-   4.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
-   5.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
-   7.  Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
-   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - May 2020
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   10. John Burke                          Jun 2019 - Jun 2019
+   1.  John Burke                          Jun 2019 - Apr 2021
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   3.  Razvan Crainea (@razvancrainea)     Jun 2014 - Dec 2020
+   4.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   5.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
+   6.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
+   8.  Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
+   9.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - May 2020
+   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
 
    All remaining contributors: Dan Pascu (@danpascu), Oliver
    Severin Mulelid-Tynes (@olivermt), Rob Gagnon (@rgagnon24),

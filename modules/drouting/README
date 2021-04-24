@@ -1704,10 +1704,10 @@ Chapter 3. Contributors
 
    All remaining contributors: Anca Vamanu, Jeremy Martinez
    (@JeremyMartinez51), Maksym Sobolyev (@sobomax), Dusan Klinec
-   (@ph4r05), Matt Lehner, Julián Moreno Patiño, Sergio Gutierrez,
-   Le Roy Christophe, Nick Altmann (@nikbyte), Peter Lemenkov
-   (@lemenkov), Alexey Vasilyev (@vasilevalex), Ozzyboshi, Aron
-   Podrigal (@ar45), Walter Doekes (@wdoekes).
+   (@ph4r05), Walter Doekes (@wdoekes), Matt Lehner, Julián Moreno
+   Patiño, Sergio Gutierrez, Le Roy Christophe, Nick Altmann
+   (@nikbyte), Peter Lemenkov (@lemenkov), Alexey Vasilyev
+   (@vasilevalex), Ozzyboshi, Aron Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1729,24 +1729,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2021
-   3.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
-   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
-   5.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
-   7.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
-   8.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Ovidiu Sas (@ovidiusas)             May 2012 - Mar 2017
+   1.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2021
+   4.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
+   5.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
+   6.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
+   8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
+   9.  Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Jeremy Martinez
-   (@JeremyMartinez51), Le Roy Christophe, Ionut Ionita
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Jeremy
+   Martinez (@JeremyMartinez51), Le Roy Christophe, Ionut Ionita
    (@ionutrazvanionita), Ozzyboshi, Julián Moreno Patiño, Dusan
    Klinec (@ph4r05), Mihai Tiganus (@tallicamike), Andrei Datcu
-   (@andrei-datcu), Walter Doekes (@wdoekes), Nick Altmann
-   (@nikbyte), Matt Lehner, Anca Vamanu, Andrei Dragus, Sergio
-   Gutierrez.
+   (@andrei-datcu), Nick Altmann (@nikbyte), Matt Lehner, Anca
+   Vamanu, Andrei Dragus, Sergio Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits

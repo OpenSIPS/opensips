@@ -753,17 +753,17 @@ Chapter 2. Contributors
    1. Ionut Ionita (@ionutrazvanionita) 201 45 5927 6525
    2. Liviu Chircu (@liviuchircu) 40 20 464 921
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 178 147
-   4. Razvan Crainea (@razvancrainea) 22 20 61 56
+   4. Razvan Crainea (@razvancrainea) 24 21 86 64
    5. Alexandr Dubovikov (@adubovikov) 22 2 2360 0
    6. Vlad Patrascu (@rvlad-patrascu) 8 6 70 52
-   7. Zero King (@l2dy) 4 2 2 3
-   8. Maksym Sobolyev (@sobomax) 3 1 8 4
-   9. Vlad Paiu (@vladpaiu) 3 1 3 3
-   10. Dusan Klinec (@ph4r05) 3 1 1 1
+   7. Walter Doekes (@wdoekes) 4 2 3 3
+   8. Zero King (@l2dy) 4 2 2 3
+   9. Maksym Sobolyev (@sobomax) 3 1 8 4
+   10. Vlad Paiu (@vladpaiu) 3 1 3 3
 
-   All remaining contributors: Ezequiel Lovelle (@lovelle), Julián
-   Moreno Patiño, Peter Lemenkov (@lemenkov), Walter Doekes
-   (@wdoekes).
+   All remaining contributors: Dusan Klinec (@ph4r05), Ezequiel
+   Lovelle (@lovelle), Julián Moreno Patiño, Peter Lemenkov
+   (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -785,19 +785,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jan 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Dec 2020
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Apr 2021
+   2.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2012 - Dec 2020
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ezequiel Lovelle (@lovelle), Walter
-   Doekes (@wdoekes), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
+   All remaining contributors: Dusan Klinec (@ph4r05), Ezequiel
+   Lovelle (@lovelle), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
    (@adubovikov).
 
    (1) including any documentation-related commits, excluding

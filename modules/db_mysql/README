@@ -17,7 +17,8 @@ mysql Module
               1.3.2. timeout_interval (integer)
               1.3.3. max_db_queries (integer)
               1.3.4. max_db_retries (integer)
-              1.3.5. use_tls (integer)
+              1.3.5. ps_max_col_size (integer)
+              1.3.6. use_tls (integer)
 
         1.4. Exported Functions
         1.5. Installation
@@ -47,7 +48,8 @@ mysql Module
    1.2. Set timeout_interval parameter
    1.3. Set max_db_queries parameter
    1.4. Set max_db_retries parameter
-   1.5. Set the use_tls parameter
+   1.5. Set ps_max_col_size parameter
+   1.6. Set the use_tls parameter
 
 Chapter 1. Admin Guide
 
@@ -129,7 +131,24 @@ modparam("db_mysql", "max_db_queries", 2)
 modparam("db_mysql", "max_db_retries", 2)
 ...
 
-1.3.5. use_tls (integer)
+1.3.5. ps_max_col_size (integer)
+
+   The maximum size of a column's data, when fetched using
+   prepared statements. Particularly relevant for variable-length
+   data, such as CHAR, BLOB, etc.
+
+   NOTE: Should a column's data exceed this limit, the value will
+   be silently truncated to fit the buffer, without reporting any
+   errors!
+
+   Default value is 1024 (bytes).
+
+   Example 1.5. Set ps_max_col_size parameter
+...
+modparam("db_mysql", "ps_max_col_size", 4096)
+...
+
+1.3.6. use_tls (integer)
 
    Setting this parameter will allow you to use TLS for MySQL
    connections. In order to enable TLS for a specific connection,
@@ -152,7 +171,7 @@ modparam("db_mysql", "max_db_retries", 2)
 
    Default value is 0 (not enabled)
 
-   Example 1.5. Set the use_tls parameter
+   Example 1.6. Set the use_tls parameter
 ...
 modparam("tls_mgm", "client_domain", "dom1")
 modparam("tls_mgm", "certificate", "[dom1]/etc/pki/tls/certs/opensips.pe
@@ -206,7 +225,7 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 150 53 5336 3190
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 97 71 1573 792
    3. Henning Westerholt (@henningw) 57 30 693 1239
-   4. Liviu Chircu (@liviuchircu) 35 28 423 164
+   4. Liviu Chircu (@liviuchircu) 36 29 479 176
    5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
    6. Razvan Crainea (@razvancrainea) 19 16 231 59
    7. Andrei Pelinescu-Onciul 16 14 52 49
@@ -242,7 +261,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
      Name Commit Activity
-   1. Liviu Chircu (@liviuchircu) Mar 2014 - Mar 2021
+   1. Liviu Chircu (@liviuchircu) Mar 2014 - Apr 2021
    2. Razvan Crainea (@razvancrainea) Oct 2011 - Jan 2021
    3. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - Nov 2020
    4. Vlad Paiu (@vladpaiu) Feb 2011 - Dec 2019
@@ -269,9 +288,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Eseanu Marius Cristian (@eseanucristian),
    Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Jan Janak

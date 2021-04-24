@@ -1041,17 +1041,17 @@ Chapter 3. Contributors
    7. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    8. Dan Pascu (@danpascu) 20 14 162 201
    9. Henning Westerholt (@henningw) 14 6 340 302
-   10. Saúl Ibarra Corretgé (@saghul) 8 6 36 11
+   10. Walter Doekes (@wdoekes) 10 6 145 94
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Juha Heinanen (@juha-h), Edson Gellert Schubert,
-   Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi Eshun
-   (@ekobi), Dusan Klinec (@ph4r05), Angel Marin, Klaus Darilion,
-   Carlos Oliva, Sergio Gutierrez, Kennard White, Elena-Ramona
-   Modroiu, Vasil Kolev, Benny Prijono, James Criscuolo, Peter
-   Lemenkov (@lemenkov), Vallimamod Abdullah, UnixDev, Denis
-   Bilenko, Julián Moreno Patiño, Maksym Sobolyev (@sobomax), John
-   Riordan, Julien Blache.
+   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
+   Vlad Paiu (@vladpaiu), Juha Heinanen (@juha-h), Edson Gellert
+   Schubert, Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi
+   Eshun (@ekobi), Dusan Klinec (@ph4r05), Angel Marin, Klaus
+   Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White,
+   Elena-Ramona Modroiu, Vasil Kolev, Benny Prijono, James
+   Criscuolo, Peter Lemenkov (@lemenkov), Vallimamod Abdullah,
+   UnixDev, Denis Bilenko, Julián Moreno Patiño, Maksym Sobolyev
+   (@sobomax), John Riordan, Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1073,14 +1073,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   2.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jul 2020
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   6.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
-   8.  Walter Doekes (@wdoekes)            Apr 2010 - Nov 2019
+   1.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   3.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Aug 2020
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jul 2020
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
+   7.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    10. James Criscuolo                     Mar 2016 - Mar 2016
 
