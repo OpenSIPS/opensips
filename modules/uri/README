@@ -416,6 +416,10 @@ if (uri_param("param1","value1")) {
    Example 1.21. add_uri_param usage
 ...
 add_uri_param("nat=yes");
+
+# or use $var
+$var(action) = "action=make";
+add_uri_param("$var(action)");
 ...
 
 1.4.12.  del_uri_param(param)
