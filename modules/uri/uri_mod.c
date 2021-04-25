@@ -101,6 +101,7 @@ static int aaa_fixup_1(void** param, int param_no);
 static int obsolete_fixup_0(void** param, int param_no);
 static int obsolete_fixup_1(void** param, int param_no);
 static int obsolete_fixup_2(void** param, int param_no);
+static int add_uri_param_fixup(void** param, int param_no);
 /*
  * Exported functions
  */
@@ -153,7 +154,7 @@ static cmd_export_t cmds[] = {
 			fixup_str_str, 0,
 			REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"add_uri_param", (cmd_function)add_uri_param, 1,
-			fixup_str_null, 0,
+			add_uri_param_fixup, 0,
 			REQUEST_ROUTE},
 	{"del_uri_param", (cmd_function)del_uri_param, 1,
 			fixup_str_null, 0,
@@ -486,3 +487,12 @@ static int aaa_fixup_1(void** param, int param_no) {
 }
 
 
+static int add_uri_param_fixup(void** param, int param_no){
+	switch (param_no) {
+	case 1:
+		return fixup_spve(param);
+	default:
+		LM_ERR("Too many parameters!\n");
+		return -1;
+	}
+}

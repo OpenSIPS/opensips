@@ -38,6 +38,7 @@
 #include "../../dset.h"
 #include "../../pvar.h"
 #include "checks.h"
+#include "../../mod_fix.h"
 
 
 /*
@@ -278,6 +279,11 @@ int add_uri_param(struct sip_msg* _msg, char* _param, char* _s2)
 	char *at;
 
 	param = (str*)_param;
+
+	if (fixup_get_svalue(_msg, (gparam_p)_param, param) != 0) {
+		LM_ERR("Invalid param pseudo variable!\n");
+		return -1;
+	}
 
 	if (param->len == 0) {
 		return 1;
