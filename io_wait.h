@@ -743,7 +743,7 @@ inline static int io_watch_del(io_wait_h* h, int fd, int idx,
 					 * in some cases (fds managed by external libraries),
 					 * the fd may have already been closed
 					 */
-					if (n==-1 && errno != EBADF) {
+					if (n==-1 && errno != EBADF && errno != ENOENT) {
 						LM_ERR("[%s] removing fd from epoll (%d from %d) "
 							"list failed: %s [%d]\n",h->name, fd, h->epfd,
 							strerror(errno), errno);
