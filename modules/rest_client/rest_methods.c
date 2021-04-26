@@ -726,22 +726,6 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 		LM_DBG("perform code: %d, handles: %d\n", mrc, running_handles);
 
-		mrc = curl_multi_timeout(multi_handle, &retry_time);
-		if (mrc != CURLM_OK) {
-			LM_ERR("curl_multi_timeout: %s\n", curl_multi_strerror(mrc));
-			goto error;
-		}
-
-		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
-		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
-		       connection_timeout_ms, connect_poll_interval);
-
-		if (retry_time == -1) {
-			LM_DBG("curl_multi_timeout() returned -1, pausing %ldms...\n",
-			        busy_wait);
-			goto busy_wait;
-		}
-
 		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
 			curl_easy_getinfo(handle, CURLINFO_RESPONSE_CODE, &http_rc);
@@ -813,17 +797,33 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			}
 		}
 
-		/*
-		 * from curl_multi_timeout() docs: "retry_time" milliseconds "at most!"
-		 *         -> we'll wait only 1/10 of this time before retrying
-		 */
-		busy_wait = connect_poll_interval < timeout ?
-		            connect_poll_interval : timeout;
+		mrc = curl_multi_timeout(multi_handle, &retry_time);
+		if (mrc != CURLM_OK) {
+			LM_ERR("curl_multi_timeout: %s\n", curl_multi_strerror(mrc));
+			goto error;
+		}
 
-busy_wait:
-		/* libcurl seems to be stuck in internal operations (TCP connect?) */
-		LM_DBG("busy waiting %ldms ...\n", busy_wait);
-		usleep(1000UL * busy_wait);
+		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
+		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
+		       connection_timeout_ms, connect_poll_interval);
+
+		/*
+			from curl_multi_timeout() docs:
+				retry_time = -1, no timeout set
+				retry_time =  0, proceed immediately
+				retry_time >  0, wait at most retry_time
+		*/
+		if (retry_time != -1 && retry_time < connect_poll_interval) {
+			busy_wait = retry_time < timeout ? retry_time : timeout;
+		} else {
+			busy_wait = connect_poll_interval < timeout ? connect_poll_interval : timeout;
+		}
+
+		if (busy_wait > 0) {
+			/* libcurl seems to be stuck in internal operations (TCP connect?) */
+			LM_DBG("busy waiting %ldms ...\n", busy_wait);
+			usleep(1000UL * busy_wait);
+		}
 	}
 
 	LM_ERR("connect timeout on %s (%lds)\n", url, connection_timeout);
