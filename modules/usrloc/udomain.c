@@ -1040,24 +1040,24 @@ int db_timer_udomain(udomain_t* _d)
 	db_op_t  ops[2];
 	db_val_t vals[2];
 
-	if (my_ps==NULL) {
-		keys[0] = &expires_col;
-		ops[0] = "<";
-		keys[1] = &expires_col;
-		ops[1] = "!=";
+	if (ul_dbf.use_table(ul_dbh, _d->name) < 0) {
+		LM_ERR("failed to change table\n");
+		return -1;
 	}
 
 	memset(vals, 0, sizeof vals);
 
+	keys[0] = &expires_col;
+	ops[0] = "<";
 	vals[0].type = DB_INT;
 	vals[0].val.int_val = act_time + 1;
 
+	keys[1] = &expires_col;
+	ops[1] = "!=";
 	vals[1].type = DB_INT;
 	vals[1].val.int_val = 0;
 
 	CON_SET_CURR_PS(ul_dbh, &my_ps);
-	ul_dbf.use_table(ul_dbh, _d->name);
-
 	if (ul_dbf.delete(ul_dbh, keys, ops, vals, 2) < 0) {
 		LM_ERR("failed to delete from table %s\n",_d->name->s);
 		return -1;
