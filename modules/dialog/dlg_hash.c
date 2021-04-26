@@ -1000,6 +1000,9 @@ void _ref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 
 void _unref_dlg(struct dlg_cell *dlg, unsigned int cnt)
 {
+	if (d_table==0)
+		return;
+
 	struct dlg_entry *d_entry;
 
 	d_entry = &(d_table->entries[dlg->h_entry]);
