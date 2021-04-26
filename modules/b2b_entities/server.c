@@ -96,7 +96,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	}
 
 	/* start tracing for this transaction */
-	b2b_run_tracer( dlg, dlg->uas_tran);
+	b2b_run_tracer( dlg, msg, dlg->uas_tran);
 
 	tmb.ref_cell(dlg->uas_tran);
 	tmb.t_setkr(REQ_FWDED);

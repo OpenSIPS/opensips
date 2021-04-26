@@ -1182,19 +1182,35 @@ void free_trace_info_shm(void *param)
 }
 
 
-static int trace_b2b_transaction( void *trans, void* param)
+static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
 {
-	/* context for the request message */
-	SET_TRACER_CONTEXT( (trace_info_p)param );
+	trace_info_p info = (trace_info_p)param;
+	struct cell *t = (struct cell*)trans;
 
-	if(tmb.register_tmcb( NULL, (struct cell *)trans, TMCB_MSG_MATCHED_IN,
-	trace_tm_in, (trace_info_p)param, 0) <=0) {
+	/* context for the request message */
+	SET_TRACER_CONTEXT( info );
+
+	if (t==NULL) {
+		/* the only situation when we do not have a transaction, is for
+		 * UAS/inbound ACK request, so trace it as a standalone msg */
+		sip_trace_instance( msg, info->instances, info->conn_id, 0);
+		return 0;
+	}
+
+	/* for UAS transactions, do direct trace of the incoming request */
+	if ( (t && (t->flags&T_IS_LOCAL_FLAG)==0) )
+		sip_trace_instance( msg, info->instances, info->conn_id, 0);
+
+	/* arm transaction callbacks for futher tracing*/
+
+	if(tmb.register_tmcb( NULL, t, TMCB_MSG_MATCHED_IN,
+	trace_tm_in, info, 0) <=0) {
 		LM_ERR("can't register TM MATCH IN callback\n");
 		return -1;
 	}
 
-	if(tmb.register_tmcb( NULL, (struct cell *)trans, TMCB_MSG_SENT_OUT,
-	trace_tm_out, (trace_info_p)param, 0) <=0) {
+	if(tmb.register_tmcb( NULL, t, TMCB_MSG_SENT_OUT,
+	trace_tm_out, info, 0) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
 		return -1;
 	}
@@ -1704,7 +1720,8 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	 *  (a) per-message tracing was requests
 	 *  or
 	 *  (b) we are not in LOCAL route (UAC trans do not have IN msg) */
-	if (trace_flags == TRACE_MESSAGE || route_type != LOCAL_ROUTE) {
+	if (trace_flags!=TRACE_B2B &&
+	(trace_flags == TRACE_MESSAGE || route_type != LOCAL_ROUTE)) {
 		if (sip_trace_instance(msg, instance, info->conn_id,TRACE_C_CALLER)<0){
 			LM_ERR("sip trace failed!\n");
 			return -1;

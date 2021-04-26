@@ -68,7 +68,7 @@ void b2b_trace_uac(struct cell* t, void *param)
 	struct b2b_tracer *tracer = (struct b2b_tracer*)param;
 
 	/* call the tracing function for this transaction */
-	tracer->f( t, tracer->param);
+	tracer->f( NULL /*msg*/, t, tracer->param);
 }
 
 
@@ -900,7 +900,7 @@ search_dialog:
 		}
 
 		/* start tracing for the CANCEL transaction */
-		b2b_run_tracer( dlg, tmb.t_gett());
+		b2b_run_tracer( dlg, msg, tmb.t_gett());
 
 		if(tmb.t_reply(msg, 200, &reply_text) < 0)
 		{
@@ -1081,7 +1081,7 @@ logic_notify:
 		tm_tran = tmb.t_gett();
 
 		/* start tracing for this transaction */
-		b2b_run_tracer( dlg, tm_tran);
+		b2b_run_tracer( dlg, msg, tm_tran);
 	
 		if(method_value != METHOD_ACK)
 		{

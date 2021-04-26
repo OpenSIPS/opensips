@@ -203,8 +203,8 @@ dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type);
 	} while(0)
 
 
-#define b2b_run_tracer( _dlg, _t) \
-	if ((_dlg)->tracer) (_dlg)->tracer->f( _t, (_dlg)->tracer->param )
+#define b2b_run_tracer( _dlg, _msg, _t) \
+	if ((_dlg)->tracer) (_dlg)->tracer->f( _msg, _t, (_dlg)->tracer->param )
 
 
 void b2b_trace_uac(struct cell* t, void *param);
