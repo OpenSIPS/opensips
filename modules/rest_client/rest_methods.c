@@ -876,13 +876,14 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 
 	retr = 0;
 	do {
+		/* When @enable_expect_100 is on, both the client body upload and the
+		 * server body download will be performed within this loop, blocking */
+
 		mrc = curl_multi_perform(multi_handle, &running);
 		LM_DBG("perform result: %d, running: %d\n", mrc, running);
 
-		/* When @enable_expect_100 is on, both the client body upload and the
-		 * server body download will be performed within this loop, blocking */
 		if (mrc != CURLM_CALL_MULTI_PERFORM &&
-		     (mrc != CURLM_OK || !enable_expect_100 || !running))
+		     (mrc != CURLM_OK || !running))
 			break;
 
 		usleep(_async_resume_retr_itv);
