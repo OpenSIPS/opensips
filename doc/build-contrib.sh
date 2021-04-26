@@ -152,6 +152,7 @@ github_handles=(
   ["Jasper Hafkenscheid <hafkensite@users.noreply.github.com>"]="hafkensite"
   ["Jeremy Martinez <jmarti70@harris.com>"]="JeremyMartinez51"
   ["Jiri Kuthan <jiri@iptel.org>"]="jiriatipteldotorg"
+  ["John Burke <john@voxtelesys.net>"]="john08burke"
   ["John Kiniston <johnk@simplybits.com>"]="SB-JohnK"
   ["Juha Heinanen"]="juha-h"
   ["Kobi Eshun <kobi@sightspeed.com>"]="ekobi"
