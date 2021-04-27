@@ -47,14 +47,14 @@ static struct sr_module_dep unsolved_deps;
 
 
 module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
-									  enum dep_type dep_type)
+									  unsigned int dep_type)
 {
 	return _alloc_module_dep(mod_type, mod_name, dep_type, MOD_TYPE_NULL);
 }
 
 
 module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name,
-                             enum dep_type dep_type, ... /* , MOD_TYPE_NULL */)
+                             unsigned int dep_type, ... /* , MOD_TYPE_NULL */)
 {
 	va_list ap;
 	module_dependency_t *md;
@@ -91,7 +91,7 @@ module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name
 
 		md[ndeps - 1].mod_type = mod_type;
 		md[ndeps - 1].mod_name = va_arg(ap, char *);
-		md[ndeps - 1].type = va_arg(ap, enum dep_type);
+		md[ndeps - 1].type = va_arg(ap, unsigned int);
 	}
 
 	va_end(ap);
@@ -239,7 +239,7 @@ int solve_module_dependencies(struct sr_module *modules)
 	struct sr_module_dep *md, *it;
 	struct sr_module *this, *mod;
 	enum module_type mod_type;
-	enum dep_type dep_type;
+	unsigned int dep_type;
 	int dep_solved;
 
 	/*
@@ -284,9 +284,14 @@ int solve_module_dependencies(struct sr_module *modules)
 					 * now, the dependency is solved. md->mod will point to:
 					 *		sr_module A  ---> [sr_module B]
 					 */
-					md->mod = mod;
-					md->next = this->sr_deps;
-					this->sr_deps = md;
+					if (dep_type & DEP_REVERSE) {
+						md->next = mod->sr_deps;
+						mod->sr_deps = md;
+					} else {
+						md->mod = mod;
+						md->next = this->sr_deps;
+						this->sr_deps = md;
+					}
 
 					md = NULL;
 					dep_solved++;
@@ -302,10 +307,15 @@ int solve_module_dependencies(struct sr_module *modules)
 								md->mod_type, mod->exports->name,
 								mod->exports->type);
 
-					/* same re-purposing technique as above */
-					md->next = md->mod->sr_deps;
-					md->mod->sr_deps = md;
-					md->mod = mod;
+					if (dep_type & DEP_REVERSE) {
+						md->next = mod->sr_deps;
+						mod->sr_deps = md;
+					} else {
+						/* same re-purposing technique as above */
+						md->next = md->mod->sr_deps;
+						md->mod->sr_deps = md;
+						md->mod = mod;
+					}
 
 					dep_solved++;
 					break;
@@ -315,8 +325,7 @@ int solve_module_dependencies(struct sr_module *modules)
 
 		/* treat unmet dependencies using the intended behaviour */
 		if (!dep_solved) {
-			switch (dep_type) {
-			case DEP_SILENT:
+			if (dep_type & DEP_SILENT) {
 				LM_DBG("module %s soft-depends on "
 				           "%s%s%s%.*s%s%s, and %s loaded -- proceeding\n",
 						md->mod->exports->name,
@@ -330,9 +339,7 @@ int solve_module_dependencies(struct sr_module *modules)
 						md->script_param ? " due to modparam " : "",
 						md->script_param ? md->script_param : "",
 						md->dep.len == 0 ? "none was" : "it was not");
-				break;
-			case DEP_WARN:
-			case DEP_ABORT:
+			} else if (dep_type & (DEP_WARN|DEP_ABORT)) {
 				LM_WARN("module %s depends on %s%s%s%.*s%s%s, but %s loaded!\n",
 						md->mod->exports->name,
 						md->dep.len == 0 ?
@@ -345,11 +352,10 @@ int solve_module_dependencies(struct sr_module *modules)
 						md->script_param ? " due to modparam " : "",
 						md->script_param ? md->script_param : "",
 						md->dep.len == 0 ? "none was" : "it was not");
-				break;
 			}
 
 			pkg_free(md);
-			if (dep_type == DEP_ABORT)
+			if (dep_type & DEP_ABORT)
 				return -1;
 		}
 	}

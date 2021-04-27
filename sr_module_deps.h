@@ -73,16 +73,15 @@ enum module_type {
 };
 
 /* behaviour at startup if the dependency is not met */
-enum dep_type {
-	DEP_SILENT, /* load re-ordering only if possible */
-	DEP_WARN,   /* load re-ordering, and a warning if module not found */
-	DEP_ABORT,  /* load re-ordering, and shut down if module not found */
-};
+#define DEP_SILENT	(1<<0)	/* load re-ordering only if possible */
+#define DEP_WARN	(1<<1)	/* load re-ordering, and a warning if module not found */
+#define DEP_ABORT	(1<<2)	/* load re-ordering, and shut down if module not found */
+#define DEP_REVERSE	(1<<3)	/* load re-ordering in reversed order */
 
 typedef struct module_dependency {
 	enum module_type mod_type;
 	char *mod_name; /* as found in "module_exports" */
-	enum dep_type type;
+	unsigned int type;
 } module_dependency_t;
 
 typedef struct modparam_dependency {
@@ -95,13 +94,13 @@ typedef struct modparam_dependency {
 
 /* helps to avoid duplicate code when writing "get_deps_f" functions */
 module_dependency_t *alloc_module_dep(enum module_type mod_type, char *mod_name,
-									  enum dep_type dep_type);
+									  unsigned int dep_type);
 
 
 /* same as above, but with VLA, (3 * N + 1) arguments
  * and _must_ end with the special MOD_TYPE_NULL value */
 module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name,
-                             enum dep_type dep_type, ... /* , MOD_TYPE_NULL */);
+                             unsigned int dep_type, ... /* , MOD_TYPE_NULL */);
 
 
 /* commonly used modparam dependency functions */
@@ -121,7 +120,7 @@ struct sr_module_dep {
 	struct sr_module *mod;
 	char *script_param;
 	enum module_type mod_type;
-	enum dep_type type;
+	unsigned int type;
 	str dep;
 
 	struct sr_module_dep *next;
