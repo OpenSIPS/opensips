@@ -38,6 +38,7 @@ static int pv_init_rtp_relay_var(pv_spec_p sp, int param);
 static int rtp_relay_engage(struct sip_msg *msg, struct rtp_relay *relay, int *set);
 static int fixup_rtp_relay(void **param);
 
+static int mod_preinit(void);
 static int mod_init(void);
 
 static dep_export_t mod_deps = {
@@ -88,13 +89,22 @@ struct module_exports exports = {
 	mod_pvars,			/* exported pseudo-variables */
 	0,					/* exported transformations */
 	0,					/* extra processes */
-	0,
+	mod_preinit,
 	mod_init,
 	0,					/* reply processing */
 	0,					/* destroy function */
 	0,
 	0					/* reload confirm function */
 };
+
+static int mod_preinit(void)
+{
+	if (rtp_relay_ctx_preinit() < 0) {
+		LM_ERR("could not pre-initialize rtp_relay ctx\n");
+		return -1;
+	}
+	return 0;
+}
 
 static int mod_init(void)
 {

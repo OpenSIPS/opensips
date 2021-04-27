@@ -297,7 +297,7 @@ error:
 }
 #undef RTP_RELAY_BIN_POP
 
-int rtp_relay_ctx_init(void)
+int rtp_relay_ctx_preinit(void)
 {
 	/* load the TM API */
 	if (load_tm_api(&rtp_relay_tmb)!=0) {
@@ -309,8 +309,15 @@ int rtp_relay_ctx_init(void)
 		LM_ERR("Dialog not loaded - aborting!\n");
 		return -1;
 	}
-	rtp_relay_tm_ctx_idx = rtp_relay_tmb.t_ctx_register_ptr(rtp_relay_ctx_free);
+	/* we need to register pointer in pre-init, to make sure the new dialogs
+	 * loaded have the context registered */
 	rtp_relay_dlg_ctx_idx = rtp_relay_dlg.dlg_ctx_register_ptr(rtp_relay_ctx_free);
+	return 0;
+}
+
+int rtp_relay_ctx_init(void)
+{
+	rtp_relay_tm_ctx_idx = rtp_relay_tmb.t_ctx_register_ptr(rtp_relay_ctx_free);
 	/* register a routine to move the pointer in tm when the transaction
 	 * is created! */
 	if (rtp_relay_tmb.register_tmcb(0, 0, TMCB_REQUEST_IN, rtp_relay_move_ctx, 0, 0)<=0) {

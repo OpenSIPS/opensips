@@ -100,6 +100,7 @@ void rtp_relay_ctx_free(void *param);
 struct rtp_relay_ctx *rtp_relay_try_get_ctx(void);
 struct rtp_relay_ctx *rtp_relay_get_ctx(void);
 
+int rtp_relay_ctx_preinit(void);
 int rtp_relay_ctx_init(void);
 int rtp_relay_ctx_branch(void);
 int rtp_relay_ctx_upstream(void);
