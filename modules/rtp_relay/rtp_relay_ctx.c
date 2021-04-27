@@ -287,6 +287,9 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 		}
 	}
 
+	/* all good now - delete the dialog variable as it is useless */
+	rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, NULL);
+
 	ctx->main = sess;
 	if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
 		goto error;
