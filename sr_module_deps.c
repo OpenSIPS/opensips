@@ -397,12 +397,8 @@ int solve_module_dependencies(struct sr_module *modules)
 }
 
 
-/**
- * After all modules are properly loaded, free all or part of the
- * sr_module_dep structures
- * @init_deps_only: if true, only the mod_init deps will be freed
- */
-void free_module_dependencies(struct sr_module *modules, int init_deps_only)
+/* After all modules are loaded & destroyed, free the dep structures */
+void free_module_dependencies(struct sr_module *modules)
 {
 	struct sr_module_dep *aux;
 	struct sr_module *mod;
@@ -414,12 +410,10 @@ void free_module_dependencies(struct sr_module *modules, int init_deps_only)
 			pkg_free(aux);
 		}
 
-		if (!init_deps_only) {
-			while (mod->sr_deps_destroy) {
-				aux = mod->sr_deps_destroy;
-				mod->sr_deps_destroy = aux->next;
-				pkg_free(aux);
-			}
+		while (mod->sr_deps_destroy) {
+			aux = mod->sr_deps_destroy;
+			mod->sr_deps_destroy = aux->next;
+			pkg_free(aux);
 		}
 	}
 }

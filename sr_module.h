@@ -133,6 +133,7 @@ struct sr_module{
 	char* path;
 	void* handle;
 	int init_done;
+	int init_child_done;
 	int destroy_done;
 	struct module_exports* exports;
 

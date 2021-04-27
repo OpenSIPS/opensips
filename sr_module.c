@@ -563,7 +563,7 @@ void destroy_modules(void)
 	struct sr_module *mod, *aux;
 
 	destroy_module(modules, 0);
-	free_module_dependencies(modules, 0);
+	free_module_dependencies(modules);
 
 	mod = modules;
 	while (mod) {
@@ -579,33 +579,36 @@ void destroy_modules(void)
    which modules are loaded in config file
 */
 
-static int init_mod_child( struct sr_module* m, int rank, char *type )
+static int init_mod_child( struct sr_module* m, int rank, char *type,
+                          int skip_others)
 {
-	if (m) {
-		/* iterate through the list; if error occurs,
-		   propagate it up the stack */
-		if (init_mod_child(m->next, rank, type)!=0)
-			return -1;
+	struct sr_module_dep *dep;
 
-		if (m->exports && m->exports->init_child_f) {
-			LM_DBG("type=%s, rank=%d, module=%s\n",
-					type, rank, m->exports->name);
-			if (m->exports->init_child_f(rank)<0) {
-				LM_ERR("failed to initializing module %s, rank %d\n",
-					m->exports->name,rank);
+	if (!m || m->init_child_done)
+		return 0;
+
+	/* iterate through the list; if error occurs,
+	   propagate it up the stack */
+	if (!skip_others && init_mod_child(m->next, rank, type, 0) != 0)
+		return -1;
+
+	for (dep = m->sr_deps_init; dep; dep = dep->next)
+		if (!dep->mod->init_child_done)
+			if (init_mod_child(dep->mod, rank, type, 1) != 0)
 				return -1;
-			} else {
-				/* module correctly initialized */
-				return 0;
-			}
-		}
 
-		/* no init function -- proceed with success */
-		return 0;
-	} else {
-		/* end of list */
-		return 0;
+	if (m->exports && m->exports->init_child_f) {
+		LM_DBG("type=%s, rank=%d, module=%s\n",
+				type, rank, m->exports->name);
+		if (m->exports->init_child_f(rank)<0) {
+			LM_ERR("failed to initializing module %s, rank %d\n",
+				m->exports->name,rank);
+			return -1;
+		}
 	}
+
+	m->init_child_done = 1;
+	return 0;
 }
 
 
@@ -632,7 +635,7 @@ int init_child(int rank)
 			type = "UNKNOWN";
 	}
 
-	return init_mod_child(modules, rank, type);
+	return init_mod_child(modules, rank, type, 0);
 }
 
 
@@ -729,11 +732,7 @@ int init_modules(void)
 		}
 	}
 
-	ret = init_mod(modules, 0);
-
-	free_module_dependencies(modules, 1);
-
-	return ret;
+	return init_mod(modules, 0);
 }
 
 
