@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2021 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -16,10 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * -------
- * 2014-05-12  removed all module ordering requirements at script level (liviu)
  */
 
 #ifndef SR_MODULE_DEPS_H
@@ -28,13 +24,14 @@
 /*
  * Description:
  *
- * - the core module dependencies code simply helps rearrange the module loading
- *   order so that the dependencies of each OpenSIPS module are satisfied
+ * - the core module dependencies code aids in arranging the OpenSIPS module
+ *   initialization and destruction order, so the dependencies of each
+ *   module are satisfied
  *
  * - a module may specify dependencies in two ways:
- *   * module -> module (if X -> Y, load Y before X) - most common
+ *   * module -> module (if X -> Y, initialize Y before X, destroy X before Y)
  *   * modparam -> module (if a parameter of module X has a certain value,
- *                         ensure module Y loads first)
+ *                  ensure module Y initializes first and destroys last)
  *
  * - a dependency can be of two types:
  *   * straightforward dependency ("acc" depends on "tm")
@@ -46,10 +43,10 @@
  *   * input: the parameter's populated param_export_t struct
  *   * output: NULL / module dependency resulted from the value of the modparam
  *
- * when dependencies are not satisfied (e.g. depending module not present),
+ * when an init dependency is not satisfied (e.g. depending module not loaded),
  * OpenSIPS may throw a warning, abort or not do anything at all
  *
- * For a complete usage example, please refer to the "acc" module
+ * For a complete usage example, refer to the "acc" and "dialog" modules
  *
  * Developer Notes:
  *		- circular module dependencies are possible and not detected!
@@ -73,15 +70,19 @@ enum module_type {
 };
 
 /* behaviour at startup if the dependency is not met */
-#define DEP_SILENT	(1<<0)	/* load re-ordering only if possible */
-#define DEP_WARN	(1<<1)	/* load re-ordering, and a warning if module not found */
-#define DEP_ABORT	(1<<2)	/* load re-ordering, and shut down if module not found */
-#define DEP_REVERSE	(1<<3)	/* load re-ordering in reversed order */
+#define DEP_SILENT	(1 << 0) /* re-order init & destroy if possible */
+#define DEP_WARN	(1 << 1) /* re-order init & destroy; warn if dep n/f */
+#define DEP_ABORT	(1 << 2) /* re-order init & destroy; exit if dep n/f */
+/* in some cases, the dependency direction will be reversed */
+#define DEP_REVERSE_INIT    (1 << 3) /* if A->B, A inits before B */
+#define DEP_REVERSE_DESTROY (1 << 4) /* if A->B, B destroys before A */
+
+#define DEP_REVERSE (DEP_REVERSE_INIT|DEP_REVERSE_DESTROY)
 
 typedef struct module_dependency {
 	enum module_type mod_type;
-	char *mod_name; /* as found in "module_exports" */
-	unsigned int type;
+	char *mod_name;    /* as found in "module_exports" */
+	unsigned int type; /* per the DEP_* flags */
 } module_dependency_t;
 
 typedef struct modparam_dependency {
@@ -130,6 +131,6 @@ int add_modparam_dependencies(struct sr_module *mod, param_export_t *param);
 int add_module_dependencies(struct sr_module *mod);
 
 int solve_module_dependencies(struct sr_module *modules);
-void free_module_dependencies(struct sr_module *modules);
+void free_module_dependencies(struct sr_module *modules, int init_deps_only);
 
 #endif

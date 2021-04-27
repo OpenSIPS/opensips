@@ -133,10 +133,14 @@ struct sr_module{
 	char* path;
 	void* handle;
 	int init_done;
+	int destroy_done;
 	struct module_exports* exports;
 
-	/* a list of module dependencies */
-	struct sr_module_dep *sr_deps;
+	/* modules which must be initialized before this module */
+	struct sr_module_dep *sr_deps_init;
+
+	/* modules which must be destroyed before this module */
+	struct sr_module_dep *sr_deps_destroy;
 
 	struct sr_module* next;
 };

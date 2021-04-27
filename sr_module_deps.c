@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 OpenSIPS Solutions
+ * Copyright (C) 2014-2021 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -16,10 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
- *
- * History:
- * -------
- * 2014-05-12  removed all module ordering requirements at script level (liviu)
  */
 
 #include <stdlib.h>
@@ -253,6 +249,7 @@ int solve_module_dependencies(struct sr_module *modules)
 		LM_DBG("solving dependency %s -> %s %.*s\n", md->mod->exports->name,
 				 mod_type_to_string(md->mod_type), md->dep.len, md->dep.s);
 
+		this = md->mod;
 		dep_type = md->type;
 
 		/*
@@ -260,7 +257,16 @@ int solve_module_dependencies(struct sr_module *modules)
 		 * first load all modules of given type
 		 */
 		if (!md->dep.s) {
-			this = md->mod;
+			/*
+			 * re-purpose this @md structure by linking it into a module's
+			 * list of dependencies (will be used at init time)
+			 *
+			 * md->mod used to point to (highlighted with []):
+			 *		[sr_module A] ---> "mod_name"
+			 *
+			 * now, the dependency is solved. md->mod will point to:
+			 *		sr_module A  ---> [sr_module B]
+			 */
 			mod_type = md->mod_type;
 
 			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
@@ -274,23 +280,31 @@ int solve_module_dependencies(struct sr_module *modules)
 						memset(md, 0, sizeof *md);
 					}
 
-					/*
-					 * re-purpose this structure by linking it into a module's
-					 * list of dependencies (will be used at init time)
-					 *
-					 * md->mod used to point to (highlighted with []):
-					 *		[sr_module A] ---> "mod_name"
-					 *
-					 * now, the dependency is solved. md->mod will point to:
-					 *		sr_module A  ---> [sr_module B]
-					 */
-					if (dep_type & DEP_REVERSE) {
-						md->next = mod->sr_deps;
-						mod->sr_deps = md;
+					if (dep_type & DEP_REVERSE_INIT) {
+						md->mod = this;
+						md->next = mod->sr_deps_init;
+						mod->sr_deps_init = md;
 					} else {
 						md->mod = mod;
-						md->next = this->sr_deps;
-						this->sr_deps = md;
+						md->next = this->sr_deps_init;
+						this->sr_deps_init = md;
+					}
+
+					md = pkg_malloc(sizeof *md);
+					if (!md) {
+						LM_ERR("no more pkg\n");
+						return -1;
+					}
+					memset(md, 0, sizeof *md);
+
+					if (dep_type & DEP_REVERSE_DESTROY) {
+						md->mod = mod;
+						md->next = this->sr_deps_destroy;
+						this->sr_deps_destroy = md;
+					} else {
+						md->mod = this;
+						md->next = mod->sr_deps_destroy;
+						mod->sr_deps_destroy = md;
 					}
 
 					md = NULL;
@@ -299,82 +313,113 @@ int solve_module_dependencies(struct sr_module *modules)
 			}
 		} else {
 			for (dep_solved = 0, mod = modules; mod; mod = mod->next) {
-				if (strcmp(mod->exports->name, md->dep.s) == 0) {
+				if (strcmp(mod->exports->name, md->dep.s) != 0)
+					continue;
 
-					/* quick sanity check */
-					if (mod->exports->type != md->mod_type)
-						LM_BUG("[%.*s %d] -> [%s %d]\n", md->dep.len, md->dep.s,
-								md->mod_type, mod->exports->name,
-								mod->exports->type);
+				/* quick sanity check */
+				if (mod->exports->type != md->mod_type)
+					LM_BUG("[%.*s %d] -> [%s %d]\n", md->dep.len, md->dep.s,
+							md->mod_type, mod->exports->name,
+							mod->exports->type);
 
-					if (dep_type & DEP_REVERSE) {
-						md->next = mod->sr_deps;
-						mod->sr_deps = md;
-					} else {
-						/* same re-purposing technique as above */
-						md->next = md->mod->sr_deps;
-						md->mod->sr_deps = md;
-						md->mod = mod;
-					}
-
-					dep_solved++;
-					break;
+				/* same re-purposing technique as above */
+				if (dep_type & DEP_REVERSE_INIT) {
+					md->next = mod->sr_deps_init;
+					mod->sr_deps_init = md;
+				} else {
+					md->mod = mod;
+					md->next = this->sr_deps_init;
+					this->sr_deps_init = md;
 				}
+
+				md = pkg_malloc(sizeof *md);
+				if (!md) {
+					LM_ERR("no more pkg\n");
+					return -1;
+				}
+				memset(md, 0, sizeof *md);
+
+				if (dep_type & DEP_REVERSE_DESTROY) {
+					md->mod = mod;
+					md->next = this->sr_deps_destroy;
+					this->sr_deps_destroy = md;
+				} else {
+					md->mod = this;
+					md->next = mod->sr_deps_destroy;
+					mod->sr_deps_destroy = md;
+				}
+
+				dep_solved++;
+				break;
 			}
 		}
+
+		/* reverse-init dependencies are always solved! */
+		if (dep_solved || dep_type & DEP_REVERSE_INIT)
+			continue;
 
 		/* treat unmet dependencies using the intended behaviour */
-		if (!dep_solved) {
-			if (dep_type & DEP_SILENT) {
-				LM_DBG("module %s soft-depends on "
-				           "%s%s%s%.*s%s%s, and %s loaded -- proceeding\n",
-						md->mod->exports->name,
-						md->dep.len == 0 ?
-							((md->mod_type == MOD_TYPE_SQLDB ||
-							  md->mod_type == MOD_TYPE_AAA) ? "an " :
-							md->mod_type == MOD_TYPE_CACHEDB ? "a " : "") : "",
-						mod_type_to_string(md->mod_type),
-						md->dep.len == 0 ? "" : " ",
-						md->dep.len, md->dep.s,
-						md->script_param ? " due to modparam " : "",
-						md->script_param ? md->script_param : "",
-						md->dep.len == 0 ? "none was" : "it was not");
-			} else if (dep_type & (DEP_WARN|DEP_ABORT)) {
-				LM_WARN("module %s depends on %s%s%s%.*s%s%s, but %s loaded!\n",
-						md->mod->exports->name,
-						md->dep.len == 0 ?
-							((md->mod_type == MOD_TYPE_SQLDB ||
-							  md->mod_type == MOD_TYPE_AAA) ? "an " :
-							md->mod_type == MOD_TYPE_CACHEDB ? "a " : "") : "",
-						mod_type_to_string(md->mod_type),
-						md->dep.len == 0 ? "" : " ",
-						md->dep.len, md->dep.s,
-						md->script_param ? " due to modparam " : "",
-						md->script_param ? md->script_param : "",
-						md->dep.len == 0 ? "none was" : "it was not");
-			}
-
-			pkg_free(md);
-			if (dep_type & DEP_ABORT)
-				return -1;
+		if (dep_type & DEP_SILENT) {
+			LM_DBG("module %s soft-depends on "
+			           "%s%s%s%.*s%s%s, and %s loaded -- continuing\n",
+					md->mod->exports->name,
+					md->dep.len == 0 ?
+						((md->mod_type == MOD_TYPE_SQLDB ||
+						  md->mod_type == MOD_TYPE_AAA) ? "an " :
+						md->mod_type == MOD_TYPE_CACHEDB ? "a " : "") : "",
+					mod_type_to_string(md->mod_type),
+					md->dep.len == 0 ? "" : " ",
+					md->dep.len, md->dep.s,
+					md->script_param ? " due to modparam " : "",
+					md->script_param ? md->script_param : "",
+					md->dep.len == 0 ? "none was" : "it was not");
+		} else if (dep_type & (DEP_WARN|DEP_ABORT)) {
+			LM_WARN("module %s depends on %s%s%s%.*s%s%s, but %s loaded!\n",
+					md->mod->exports->name,
+					md->dep.len == 0 ?
+						((md->mod_type == MOD_TYPE_SQLDB ||
+						  md->mod_type == MOD_TYPE_AAA) ? "an " :
+						md->mod_type == MOD_TYPE_CACHEDB ? "a " : "") : "",
+					mod_type_to_string(md->mod_type),
+					md->dep.len == 0 ? "" : " ",
+					md->dep.len, md->dep.s,
+					md->script_param ? " due to modparam " : "",
+					md->script_param ? md->script_param : "",
+					md->dep.len == 0 ? "none was" : "it was not");
 		}
+
+		pkg_free(md);
+		if (dep_type & DEP_ABORT)
+			return -1;
 	}
 
 	return 0;
 }
 
 
-/* after all modules are properly loaded, free all sr_module_dep structures */
-void free_module_dependencies(struct sr_module *modules)
+/**
+ * After all modules are properly loaded, free all or part of the
+ * sr_module_dep structures
+ * @init_deps_only: if true, only the mod_init deps will be freed
+ */
+void free_module_dependencies(struct sr_module *modules, int init_deps_only)
 {
 	struct sr_module_dep *aux;
 	struct sr_module *mod;
 
 	for (mod = modules; mod; mod = mod->next) {
-		while (mod->sr_deps) {
-			aux = mod->sr_deps;
-			mod->sr_deps = aux->next;
+		while (mod->sr_deps_init) {
+			aux = mod->sr_deps_init;
+			mod->sr_deps_init = aux->next;
 			pkg_free(aux);
+		}
+
+		if (!init_deps_only) {
+			while (mod->sr_deps_destroy) {
+				aux = mod->sr_deps_destroy;
+				mod->sr_deps_destroy = aux->next;
+				pkg_free(aux);
+			}
 		}
 	}
 }

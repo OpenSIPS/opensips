@@ -532,21 +532,45 @@ void* find_param_export(char* mod, char* name, modparam_t type)
 }
 
 
+static void destroy_module(struct sr_module *m, int skip_others)
+{
+	struct sr_module_dep *dep;
+
+	if (!m)
+		return;
+
+	/* destroy the modules in script load order using backwards iteration */
+	if (!skip_others)
+		destroy_module(m->next, 0);
+
+	if (m->destroy_done || !m->exports)
+		return;
+
+	/* make sure certain modules get destroyed before this one */
+	for (dep = m->sr_deps_destroy; dep; dep = dep->next)
+		if (!dep->mod->destroy_done)
+			destroy_module(dep->mod, 1);
+
+	if (m->init_done && m->exports->destroy_f)
+		m->exports->destroy_f();
+
+	m->destroy_done = 1;
+}
+
 
 void destroy_modules(void)
 {
-	struct sr_module* t, *foo;
+	struct sr_module *mod, *aux;
 
-	t = modules;
-	while (t) {
-		foo = t->next;
-		if (t->init_done && t->exports && t->exports->destroy_f)
-			t->exports->destroy_f();
-		pkg_free(t);
-		t = foo;
+	destroy_module(modules, 0);
+	free_module_dependencies(modules, 0);
+
+	mod = modules;
+	while (mod) {
+		aux = mod;
+		mod = mod->next;
+		pkg_free(aux);
 	}
-
-	modules = NULL;
 }
 
 
@@ -637,7 +661,7 @@ static int init_mod( struct sr_module* m, int skip_others)
 			return 0;
 
 		/* make sure certain modules get loaded before this one */
-		for (dep = m->sr_deps; dep; dep = dep->next) {
+		for (dep = m->sr_deps_init; dep; dep = dep->next) {
 			if (!dep->mod->init_done)
 				if (init_mod(dep->mod, 1) != 0)
 					return -1;
@@ -707,7 +731,7 @@ int init_modules(void)
 
 	ret = init_mod(modules, 0);
 
-	free_module_dependencies(modules);
+	free_module_dependencies(modules, 1);
 
 	return ret;
 }
