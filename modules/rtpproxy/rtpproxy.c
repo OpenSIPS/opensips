@@ -4677,7 +4677,7 @@ static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_a
 	} else {
 		args->callid = *sess->callid;
 	}
-	if (sess->body && sess->body)
+	if (sess->body)
 		args->body = *sess->body;
 
 	p = pkg_malloc((type?type->len:0) + (in_iface?in_iface->len:0) +
