@@ -195,6 +195,10 @@ static dep_export_t deps = {
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+
+		/* qrouting must always be first to load its profiles,
+		 * so drouting can look them up during DRCB_RLD_INIT_RULE */
+		{ MOD_TYPE_DEFAULT, "drouting", DEP_SILENT|DEP_REVERSE },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
