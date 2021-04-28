@@ -4763,12 +4763,17 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
 {
 	int ret = -1;
-	pv_value_t val;
 	str *snode;
+	int unlock = 0;
+	pv_value_t val;
 	struct rtpp_set *rset = NULL;
 	struct rtpp_args args;
 
 	memset(&args, '\0', sizeof(args));
+
+	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
+			in_iface, out_iface, flags, extra))
+		return -1;
 
 	if (!server->node) {
 		if (server->set != -1) {
@@ -4783,18 +4788,26 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 		}
 		server->set = rset->id_set;
 	} else {
+		if (nh_lock)
+			lock_start_read(nh_lock);
+
 		rset = select_rtpp_set(server->set);
 		snode = get_rtpproxy_node(server->node);
 		args.node = get_rtpp_node(snode);
+		/* if we're not using a node, we don't need the lock */
+		if (!args.node && nh_lock)
+			lock_stop_read(nh_lock);
+		else
+			unlock = 1;
 	}
 
-	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
-			in_iface, out_iface, flags, extra))
-		goto exit;
 	args.set = rset;
 	args.offer = 1;
 
-	if (rtpproxy_offer_answer(sess->msg, &args, &media_pvar, NULL) < 0) {
+	ret = rtpproxy_offer_answer(sess->msg, &args, &media_pvar, NULL);
+	if (nh_lock && unlock)
+		lock_stop_read(nh_lock);
+	if (ret < 0) {
 		LM_ERR("could not engage rtpproxy offer!\n");
 		goto exit;
 	}
@@ -4802,7 +4815,6 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 		if (server->node)
 			shm_free(server->node);
 		server->node = build_rtpproxy_node(&val.rs);
-		ret = 1;
 	} else {
 		LM_ERR("could not retrieve the value of the used rtpproxy!\n");
 	}
@@ -4821,10 +4833,17 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 
 	memset(&args, '\0', sizeof(args));
 
+	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
+			in_iface, out_iface, flags, extra))
+		return -1;
+
+	if (nh_lock)
+		lock_start_read(nh_lock);
+
 	rset = select_rtpp_set(server->set);
 	if (!rset) {
 		LM_ERR("RTPProxy set %d\n not available!\n", server->set);
-		return -1;
+		goto exit;
 	}
 
 	args.set = rset;
@@ -4839,12 +4858,10 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 		}
 	}
 
-	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
-			in_iface, out_iface, flags, extra))
-		goto exit;
-
 	ret = rtpproxy_offer_answer(sess->msg, &args, NULL, NULL);
 exit:
+	if (nh_lock)
+		lock_stop_read(nh_lock);
 	rtpproxy_free_call_args(&args);
 	return ret;
 
@@ -4859,6 +4876,9 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 	struct rtpp_args args;
 
 	memset(&args, '\0', sizeof(args));
+	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
+			NULL, NULL, flags, extra))
+		return -1;
 
 	if (nh_lock) {
 		lock_start_read( nh_lock );
@@ -4878,10 +4898,6 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 		LM_ERR("Could not use node %.*s for delete!\n", snode->len, snode->s);
 		goto exit;
 	}
-
-	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, flags, extra))
-		goto exit;
 
 	ret = unforce_rtpproxy(sess->msg, &args, NULL);
 exit:
