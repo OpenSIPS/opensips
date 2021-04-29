@@ -2256,7 +2256,7 @@ static void yyerror(char* s)
 	cfg_dump_backtrace();
 	LM_CRIT("parse error in %s:%d:%d-%d: %s\n",
 			get_cfg_file_name, line, startcolumn, column, s);
-	cfg_dump_context(get_cfg_file_name, line, startcolumn, column);
+	_cfg_dump_context(get_cfg_file_name, line, startcolumn, column, 1);
 	cfg_errors++;
 }
 

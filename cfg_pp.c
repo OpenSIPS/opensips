@@ -516,7 +516,8 @@ int cfg_pop(void)
 	return 0;
 }
 
-void cfg_dump_context(const char *file, int line, int colstart, int colend)
+void _cfg_dump_context(const char *file, int line, int colstart, int colend,
+                       int run_once)
 {
 	static int called_before;
 	struct cfg_context *con;
@@ -527,7 +528,7 @@ void cfg_dump_context(const char *file, int line, int colstart, int colend)
 		if (!strcmp(con->path, file))
 			break;
 
-	if (!con || !con->lines[0] || called_before)
+	if (!con || !con->lines[0] || (run_once && called_before))
 		return;
 
 	called_before = 1;
