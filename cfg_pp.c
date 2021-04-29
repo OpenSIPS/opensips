@@ -524,6 +524,9 @@ void _cfg_dump_context(const char *file, int line, int colstart, int colend,
 	int i, iter = 1, len;
 	char *p, *end, *wsbuf, *wb, *hiline;
 
+	if (!file)
+		return;
+
 	for (con = __ccon; con; con = con->next)
 		if (!strcmp(con->path, file))
 			break;

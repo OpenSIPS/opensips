@@ -952,9 +952,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 			if ((ret = get_cmd_fixups(msg, cmd->params, a->elem, cmdp,
 				tmp_vals)) < 0) {
-				LM_ERR("Failed to get fixups for command <%s> in %s, line %d:\n",
+				LM_ERR("Failed to get fixups for command <%s> in %s, line %d\n",
 					cmd->name, a->file, a->line);
-				cfg_dump_context(a->file, a->line, 1, 1);
 				break;
 			}
 
@@ -964,9 +963,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 				cmdp[6],cmdp[7]);
 
 			if (free_cmd_fixups(cmd->params, a->elem, cmdp) < 0) {
-				LM_ERR("Failed to free fixups for command <%s> in %s, line %d:\n",
+				LM_ERR("Failed to free fixups for command <%s> in %s, line %d\n",
 					cmd->name, a->file, a->line);
-				cfg_dump_context(a->file, a->line, 1, 1);
 				break;
 			}
 
@@ -988,8 +986,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem, cmdp,
 					tmp_vals)) < 0) {
 					LM_ERR("Failed to get fixups for async command <%s> in %s,"
-					       " line %d:\n", acmd->name, a->file, a->line);
-					cfg_dump_context(a->file, a->line, 1, 1);
+					       " line %d\n", acmd->name, a->file, a->line);
 					break;
 				}
 
@@ -1000,8 +997,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for async command <%s> in %s,"
-					       " line %d:\n", acmd->name, a->file, a->line);
-					cfg_dump_context(a->file, a->line, 1, 1);
+					       " line %d\n", acmd->name, a->file, a->line);
 					break;
 				}
 			}
@@ -1024,8 +1020,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem,
 					cmdp, tmp_vals)) < 0) {
 					LM_ERR("Failed to get fixups for launch command <%s> in %s,"
-					       " line %d:\n", acmd->name, a->file, a->line);
-					cfg_dump_context(a->file, a->line, 1, 1);
+					       " line %d\n", acmd->name, a->file, a->line);
 					break;
 				}
 
@@ -1033,8 +1028,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 
 				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for launch command <%s> in %s,"
-					       " line %d:\n", acmd->name, a->file, a->line);
-					cfg_dump_context(a->file, a->line, 1, 1);
+					       " line %d\n", acmd->name, a->file, a->line);
 					break;
 				}
 			}
