@@ -39,7 +39,9 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 		str *ret_buffer);
 int cfg_push(const str *cfg_file);
 int cfg_pop(void);
-void cfg_dump_context(const char *file, int line, int colstart, int colend);
+void _cfg_dump_context(const char *file, int line, int colstart, int colend,
+                       int run_once);
+#define cfg_dump_context(f, l, s, e) _cfg_dump_context(f, l, s, e, 0)
 void cfg_dump_backtrace(void);
 
 /* ultimately helps correctly parse multi-line strings by eating any

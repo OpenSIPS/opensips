@@ -516,18 +516,22 @@ int cfg_pop(void)
 	return 0;
 }
 
-void cfg_dump_context(const char *file, int line, int colstart, int colend)
+void _cfg_dump_context(const char *file, int line, int colstart, int colend,
+                       int run_once)
 {
 	static int called_before;
 	struct cfg_context *con;
 	int i, iter = 1, len;
 	char *p, *end, *wsbuf, *wb, *hiline;
 
+	if (!file)
+		return;
+
 	for (con = __ccon; con; con = con->next)
 		if (!strcmp(con->path, file))
 			break;
 
-	if (!con || !con->lines[0] || called_before)
+	if (!con || !con->lines[0] || (run_once && called_before))
 		return;
 
 	called_before = 1;
