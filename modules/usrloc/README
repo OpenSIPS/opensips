@@ -1492,7 +1492,7 @@ Chapter 3. Contributors
    All remaining contributors: Vlad Paiu (@vladpaiu), Nils
    Ohlmeier, Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
    (@ovidiusas), Ionel Cerghit (@ionel-cerghit), Maksym Sobolyev
-   (@sobomax), Andrei Dragus, Walter Doekes (@wdoekes), Alessio
+   (@sobomax), Walter Doekes (@wdoekes), Andrei Dragus, Alessio
    Garzi (@Ozzyboshi), Zero King (@l2dy), Dusan Klinec (@ph4r05),
    Andrei Datcu (@andrei-datcu), Juha Heinanen (@juha-h), Anca
    Vamanu, Marcus Hunger, Jamey Hicks, Andreas Granig, Shlomi
@@ -1522,8 +1522,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2021
-   2.  Walter Doekes (@wdoekes)            Apr 2019 - Sep 2020
+   1.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2021
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Jun 2020
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Peter Lemenkov (@lemenkov)          Feb 2020 - Feb 2020
