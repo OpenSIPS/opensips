@@ -121,7 +121,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    8        4      368       4
-   2. John Burke                         5        3       63       15
+   2. John Burke (@john08burke)          5        3       63       15
    3. Razvan Crainea (@razvancrainea)    4        2       2        1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -145,7 +145,7 @@ Chapter 2. Contributors
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
    1. Vlad Patrascu (@rvlad-patrascu) Jun 2019 - Feb 2021
-   2. John Burke                      Feb 2021 - Feb 2021
+   2. John Burke (@john08burke)       Feb 2021 - Feb 2021
    3. Razvan Crainea (@razvancrainea) Aug 2019 - Sep 2019
 
    (1) including any documentation-related commits, excluding
@@ -155,7 +155,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: John Burke, Vlad Patrascu (@rvlad-patrascu).
+   Last edited by: John Burke (@john08burke), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 

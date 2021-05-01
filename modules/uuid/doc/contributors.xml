@@ -28,7 +28,7 @@
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>John Burke</entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">3</entry>
 		<entry align="center">63</entry>
@@ -77,7 +77,7 @@
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>John Burke</entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
 		<entry align="center">Feb 2021 - Feb 2021</entry>
 	</row>
 	<row>
@@ -99,7 +99,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> John Burke, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
 </section>
 
 </chapter>
