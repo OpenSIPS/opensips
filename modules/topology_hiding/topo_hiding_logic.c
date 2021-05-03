@@ -143,7 +143,7 @@ int topology_hiding_match(struct sip_msg *msg)
 
 	r_uri = &msg->parsed_uri;
 
-	if (check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1 && msg->route == NULL) {
+	if (check_self(&r_uri->host,r_uri->port_no ? r_uri->port_no : SIP_PORT, 0) == 1 && (msg->route == NULL || (msg->REQ_METHOD==METHOD_BYE))) {
 		/* Seems we are in the topo hiding case :
 		 * we are in the R-URI and there are no other route headers */
 		for (i=0;i<r_uri->u_params_no;i++)
