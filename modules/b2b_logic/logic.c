@@ -2946,7 +2946,10 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ctx->data = tuple;
 
 	/* if it will not be confirmed -> delete */
-	tuple->lifetime = params->init_timeout + get_ticks();
+	if (params->init_timeout == 0)
+		tuple->lifetime = max_duration + get_ticks();
+	else
+		tuple->lifetime = params->init_timeout + get_ticks();
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
@@ -3251,7 +3254,10 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Failed to insert new scenario instance record\n");
 		goto error;
 	}
-	tuple->lifetime = 60 + get_ticks();
+	if (init_params->init_timeout == 0)
+		tuple->lifetime = max_duration + get_ticks();
+	else
+		tuple->lifetime = init_params->init_timeout + get_ticks();
 
 	/* save tuple in global variable for accesss from local routes */
 	local_ctx_tuple = tuple;
