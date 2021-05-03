@@ -4880,15 +4880,17 @@ static int get_config_from_db(void) {
 		value = ROW_VALUES(rows_db_config+i);
 		add_head_config();
 		for( j=0; j<nr_cols_db_config; j++) {
-			if( VAL_NULL(value+j) ) {
+			if ( (j !=1) && VAL_NULL(value+j) ) {
 				LM_DBG("Row %d is NULL\n", i);
-			} else if( VAL_TYPE(value+j) == DB_STR || VAL_TYPE(value+j) == DB_STRING ) {
+			} else if ( (j == 1) || VAL_TYPE(value+j) == DB_STR || VAL_TYPE(value+j) == DB_STRING ) {
 				if(VAL_TYPE(value+j) == DB_STR) {
 					ans_col = VAL_STR(value+j);
 				} else if(VAL_TYPE(value+j) == DB_STRING) {
 					ans_col.s = (char*)VAL_STRING(value+j);
 					ans_col.len = strlen(ans_col.s);
 				}
+				if ( (j == 1) && ((VAL_NULL(value+j) || ans_col.len == 0)) )
+					ans_col = db_partitions_url;
 				if (populate_head_config(head_start, ans_col, j) < 0 )
 					LM_ERR("Column from partition table not recognized; will continue\n");
 
