@@ -538,9 +538,11 @@ int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index, str
 {
 	b2b_req_data_t req_data;
 	static char def_hdrs[] = "Event: refer\r\nContent-Type: message/sipfrag\r\nSubscription-State: ";
-	static char buf[BUF_LEN];
-	static str body = str_init("SIP/2.0 100 Trying");
-	static str hdrs = {buf, 0};
+	static str trying = str_init("SIP/2.0 100 Trying");
+	char hdr_buf[BUF_LEN];
+	str hdrs = {hdr_buf, 0};
+	char body_buf[BUF_LEN];
+	str body = {body_buf, 0};
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(entity);
@@ -548,13 +550,18 @@ int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index, str
 	req_data.client_headers = &entity->hdrs;
 	req_data.body = 0;
 	if (!msg) {
-		hdrs.len = snprintf(buf, BUF_LEN, "%sactive;expires=%d\r\n", def_hdrs, 60);
+		hdrs.len = snprintf(hdr_buf, BUF_LEN, "%sactive;expires=%d\r\n", def_hdrs, 60);
+		memcpy(body.s, trying.s, trying.len);
+		body.len = trying.len;
 	} else {
-		body.s = msg->first_line.u.reply.version.s;
-		body.len = msg->first_line.u.reply.version.len +
-				msg->first_line.u.reply.status.len +
-				msg->first_line.u.reply.reason.len + 2;
-		hdrs.len = snprintf(buf, BUF_LEN, "%sterminated;reason=noresource\r\n", def_hdrs);
+		body.len = snprintf(body.s, BUF_LEN, "SIP/2.0 %.*s %.*s",
+			msg->first_line.u.reply.status.len, msg->first_line.u.reply.status.s,
+			msg->first_line.u.reply.reason.len, msg->first_line.u.reply.reason.s);
+		if ((unsigned)body.len >= BUF_LEN) {
+			LM_ERR("Buffer is too small\n");
+			return -1;
+		}
+		hdrs.len = snprintf(hdr_buf, BUF_LEN, "%sterminated;reason=noresource\r\n", def_hdrs);
 	}
 	LM_DBG("Sending notify [%.*s]\n", body.len, body.s);
 	if ((unsigned)hdrs.len >= BUF_LEN) {
