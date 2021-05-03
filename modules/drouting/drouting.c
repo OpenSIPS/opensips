@@ -273,9 +273,10 @@ static int use_next_gw(struct sip_msg* msg,
 #define DR_IFG_IDS_FLAG        (1<<3)
 #define DR_IFG_IGNOREPORT_FLAG (1<<4)
 #define DR_IFG_CARRIERID_FLAG  (1<<5)
+#define DR_IFG_CHECKPROTO_FLAG (1<<6)
 static int fix_gw_flags(void** param);
 static int _is_dr_gw(struct sip_msg* msg, struct head_db *current_partition,
-		int flags, int type, struct ip_addr *ip, unsigned int port);
+		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto);
 static int is_from_gw(struct sip_msg* msg, int *type, long flags,
 		pv_spec_t* gw_att, struct head_db *part);
 
@@ -3901,6 +3902,7 @@ static int fix_gw_flags(void** param)
 				case 'p': flags |= DR_IFG_PREFIX_FLAG; break;
 				case 'i': flags |= DR_IFG_IDS_FLAG; break;
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
+				case 'r': flags |= DR_IFG_CHECKPROTO_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
 				default: LM_WARN("unsupported flag %c \n",s->s[i]);
 			}
@@ -3933,11 +3935,12 @@ static int prefix_username(struct sip_msg* msg, str *pri)
 }
 
 
-static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
+static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port, unsigned short proto)
 {
 	unsigned short j;
 	for ( j=0 ; j<pgwa->ips_no ; j++)
-		if ( (pgwa->ports[j]==0 || port==0 || pgwa->ports[j]==port) &&
+		if ( (pgwa->ports[j]==0 || pgwa->ports[j]==1 || port==0 || pgwa->ports[j]==port) &&
+			(pgwa->protos[j]==0 || proto==0 || pgwa->protos[j]==proto) &&
 				ip_addr_cmp( &pgwa->ips[j], ip) ) return 1;
 	return 0;
 }
@@ -3949,7 +3952,7 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port)
  */
 static int _is_dr_gw(struct sip_msg* msg,
 		struct head_db *current_partition,
-		int flags, int type, struct ip_addr *ip, unsigned int port)
+		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto)
 {
 	pgw_t *pgwa = NULL;
 	pcr_t *pcr = NULL;
@@ -3976,7 +3979,10 @@ static int _is_dr_gw(struct sip_msg* msg,
 			pgwa = (pgw_t*)*dest;
 
 			if( (type<0 || type==pgwa->type) &&
-			gw_matches_ip( pgwa, ip, (flags&DR_IFG_IGNOREPORT_FLAG)?0:port )) {
+			gw_matches_ip( pgwa, ip,
+					(flags&DR_IFG_IGNOREPORT_FLAG)?0:port,
+					(flags&DR_IFG_CHECKPROTO_FLAG)?proto:0)
+				) {
 				/* strip ? */
 				if ( (flags&DR_IFG_STRIP_FLAG) && pgwa->strip>0)
 					strip_username(msg, pgwa->strip);
@@ -4061,7 +4067,7 @@ static int is_from_gw(struct sip_msg* msg, int *type, long flags,
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
 			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1,
-				&msg->rcv.src_ip, msg->rcv.src_port);
+				&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = it->partition;
@@ -4078,14 +4084,14 @@ static int is_from_gw(struct sip_msg* msg, int *type, long flags,
 	}
 
 	return _is_dr_gw(msg, part, (int)flags, type?*type:-1,
-		&msg->rcv.src_ip, msg->rcv.src_port);
+		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 }
 
 
 /*
  * Extracts the IP & port corresponding to the msg destination
  */
-static int _uri_to_ip_port(str *uri, struct ip_addr *ip, int *port)
+static int _uri_to_ip_port(str *uri, struct ip_addr *ip, int *port, int *proto)
 {
 	struct sip_uri puri;
 	struct hostent* he;
@@ -4108,6 +4114,7 @@ static int _uri_to_ip_port(str *uri, struct ip_addr *ip, int *port)
 	hostent2ip_addr( ip, he, 0);
 
 	*port = puri.port_no;
+	*proto = puri.proto;
 
 	return 0;
 }
@@ -4121,8 +4128,9 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 	struct head_db * it;
 	struct ip_addr ip;
 	int port;
+	int proto;
 
-	if (_uri_to_ip_port( GET_NEXT_HOP(msg), &ip, &port)!=0) {
+	if (_uri_to_ip_port( GET_NEXT_HOP(msg), &ip, &port, &proto)!=0) {
 		LM_ERR("failed to extract IP/port from msg destination\n");
 		return -1;
 	}
@@ -4132,7 +4140,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
-			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1, &ip, port);
+			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1, &ip, port, proto);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = it->partition;
@@ -4148,7 +4156,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 		return ret;
 	}
 
-	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port);
+	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port, proto);
 }
 
 
@@ -4160,8 +4168,9 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	struct head_db * it;
 	struct ip_addr ip;
 	int port;
+	int proto;
 
-	if (_uri_to_ip_port( uri, &ip, &port)!=0) {
+	if (_uri_to_ip_port( uri, &ip, &port, &proto)!=0) {
 		LM_ERR("failed to extract IP/port from uri <%.*s>\n", uri->len,uri->s);
 		return -1;
 	}
@@ -4171,7 +4180,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
 		for (it = head_db_start; it; it = it->next) {
-			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1, &ip, port);
+			ret = _is_dr_gw(msg, it, (int)flags, type?*type:-1, &ip, port, proto);
 			if (ret > 0) {
 				if (partition_pvar.s) {
 					pv_val.rs = it->partition;
@@ -4187,7 +4196,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 		return ret;
 	}
 
-	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port);
+	return _is_dr_gw(msg, part, (int)flags, type?*type:-1, &ip, port, proto);
 }
 
 
