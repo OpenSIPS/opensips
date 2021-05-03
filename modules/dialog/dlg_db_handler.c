@@ -635,7 +635,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					dialog_table_name.len, dialog_table_name.s,
 					dlg->h_entry,hash_entry);
 				shm_free(dlg);
-				goto error_unlock;
+				continue;
 			}
 
 			/* link the dialog */
@@ -1840,7 +1840,7 @@ static int sync_dlg_db_mem(void)
 						"hash_size: please erase %.*s database and restart\n",
 						dialog_table_name.len, dialog_table_name.s);
 					shm_free(dlg);
-					goto error;
+					continue;
 				}
 
 				/*link the dialog*/
