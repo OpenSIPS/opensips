@@ -97,7 +97,7 @@
 /* vars:*/
 
 extern int *log_level;
-extern int log_stderr;
+extern int log_stdout, log_stderr;
 extern int log_facility;
 extern char* log_name;
 extern char ctime_buf[];

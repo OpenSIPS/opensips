@@ -76,8 +76,8 @@ int no_daemon_mode = 0;
 int enable_asserts = 0;
 /* abort process on failed assertion. disabled by default */
 int abort_on_assert = 0;
-/* start by logging to stderr */
-int log_stderr = 1;
+/* start by only logging to stderr */
+int log_stdout = 0, log_stderr = 1;
 /* log facility (see syslog(3)) */
 int log_facility = LOG_DAEMON;
 /* the id to be printed in syslog */
