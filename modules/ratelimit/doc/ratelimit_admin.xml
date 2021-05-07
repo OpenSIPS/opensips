@@ -365,14 +365,13 @@ modparam("ratelimit", "db_prefix", "ratelimit_")
 		<title><varname>repl_buffer_threshold</varname> (string)</title>
 		<para>
 		Used to specify the length of the buffer used by the binary
-		replication, in bytes. Usually this should be big enough to hold
-		as much data as possible, but small enough to avoid UDP
-		fragmentation. The recommended value is the smallest MTU between
-		all the replication instances.
+		replication, in bytes, when a flush should be performed - the pipes
+		gathered until then should be sent on the network. This is used
+		to avoid using large amount of memory for pipes replication.
 		</para>
 		<para>
 		<emphasis>
-			Default value is 1400 bytes.
+			Default value is 32767 bytes.
 		</emphasis>
 		</para>
 		<example>

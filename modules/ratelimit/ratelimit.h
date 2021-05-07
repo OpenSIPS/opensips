@@ -147,6 +147,6 @@ int hist_get_count(rl_pipe_t *pipe);
 
 #define RL_PIPE_COUNTER		0
 #define RL_EXPIRE_TIMER		10
-#define RL_BUF_THRESHOLD	1400
+#define RL_BUF_THRESHOLD	32767
 
 #endif /* _RATELIMIT_H_ */
