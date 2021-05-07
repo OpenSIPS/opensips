@@ -30,8 +30,8 @@
 struct dlg_binds cgr_dlgb;
 struct tm_binds cgr_tmb;
 
-gen_lock_t *cgrates_contexts_lock;
-struct list_head *cgrates_contexts;
+static gen_lock_t *cgrates_contexts_lock;
+static struct list_head *cgrates_contexts;
 
 static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx);
 static void cgr_tmcb_func( struct cell* t, int type, struct tmcb_params *ps);
@@ -45,7 +45,7 @@ static str cgr_serial_str = str_init("cgrX_serial");
 int cgr_acc_init(void)
 {
 	cgrates_contexts_lock = lock_alloc();
-	if (!cgrates_contexts_lock) {
+	if (!cgrates_contexts_lock || !lock_init(cgrates_contexts_lock)) {
 		LM_ERR("cannot create lock for cgrates lists\n");
 		return -1;
 	}
