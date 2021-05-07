@@ -872,12 +872,6 @@ static inline int ALLOW_UNUSED hist_count(rl_pipe_t *pipe)
 
 int rl_repl_init(void)
 {
-	if (rl_buffer_th > (BUF_SIZE * 0.9)) {
-		LM_WARN("Buffer size too big %d - pipe information might get lost",
-			rl_buffer_th);
-		return -1;
-	}
-
 	if (rl_repl_cluster && clusterer_api.register_capability(&pipe_repl_cap,
 		rl_rcv_bin, NULL, rl_repl_cluster, 0, NODE_CMP_ANY) < 0) {
 		LM_ERR("Cannot register clusterer callback!\n");
@@ -918,7 +912,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 	rl_pipe_t **pipe;
 	str *key;
 	int nr = 0;
-	int ret;
+	int ret = 0;
 	bin_packet_t packet;
 
 	if (bin_init(&packet, &pipe_repl_cap, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
@@ -971,20 +965,19 @@ void rl_timer_repl(utime_t ticks, void *param)
 				goto error;
 			nr++;
 
-			if (ret > rl_buffer_th) {
-				/* send the buffer */
-				if (nr)
-					rl_replicate(&packet);
-				bin_reset_back_pointer(&packet);
-				nr = 0;
-			}
-
 next_pipe:
 			if (iterator_next(&it) < 0)
 				break;
 		}
 next_map:
 		RL_RELEASE_LOCK(i);
+		if (ret > rl_buffer_th) {
+			/* send the buffer */
+			if (nr)
+				rl_replicate(&packet);
+			bin_reset_back_pointer(&packet);
+			nr = 0;
+		}
 	}
 	/* if there is anything else to send, do it now */
 	if (nr)
