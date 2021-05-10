@@ -1,0 +1,231 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The purpose of this module is to simplify the usage of different
+		RTP Relays Servers (such as RTPProxy, RTPEngine, Media Proxy)
+		in &osips; scripting, as well as to provide various complex
+		features that rely on the usage of RTP relays (such as media re-anchoring).
+	</para>
+	<para>
+		The module provides the logic to engage a specific RTP relay in
+		a call during initial INVITE, and then it will handle the entire
+		communication with the RTP relay, until the call terminates.
+	</para>
+	<para>
+		Moreover, one can specify various flags that modify the way RTP
+		engines use each user agent's SDP - these flags are persistent
+		throughout the entire RTP session, and are being used for further
+		in-dialog requests. These flags can be specified through the 
+		<xref linkend="pv_rtp_relay"/> and/or
+		<xref linkend="pv_rtp_relay_peer"/> variables at initial INVITE,
+		and are then passed along with the RTP relay context until
+		the end of the call. They can also be modified during sequential
+		in-dialog requests.
+	</para>
+	<para>
+		This is not a stand-alone module that communicates directly with RTP relays,
+		but rather a generic interface that is able to interact with the
+		modules that interact with each specific RTP Relay
+		(such as <emphasis>rtpproxy</emphasis> or <emphasis>rtpengine</emphasis>)
+		and implement their specific communication protocol.
+	</para>
+	</section>
+
+	<section id="branches" xreflabel="MultipleBranches">
+	<title>Multiple Branches</title>
+	<para>
+		The module is able to handle RTP relay for multiple branches, with
+		different flags flavors. Each branch can have its flags tuned through
+		the <xref linkend="pv_rtp_relay"/> variable - if the variable
+		is provisioned in the main route, then the flags are inherited
+		by all further branches, unless specifically modified per branch.
+		To modify a specific branch, one needs to specify the desired
+		branch index as variable index
+		(i.e. <emphasis>$(rtp_relay[1]) = "cor"</emphasis>).
+		When provisioned in a branch route, the flags are only changed
+		for that specific branch.
+	</para>
+	<para>
+		The multiple branches behavior is handled differently by the
+		back-end engine, depending on its capabilities. For example,
+		<emphasis>rtpengine</emphasis> is able to natively support calls
+		with multiple branches, whereas for <emphasis>rtpproxy</emphasis>,
+		each branch is emulated in a different session with a different
+		call-id.
+	</para>
+	<para>
+		When the call gets answered and a single branch remains active,
+		all the other branches are destroyed and only the established
+		branches remain active throughout the call.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>Dialog</emphasis> module - used to keep track of in-dialog requests.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>RTP Relay</emphasis> module(s) - such <emphasis>rtpproxy</emphasis>, or
+				<emphasis>rtpengine</emphasis>, or any module that implements the
+				<emphasis>rtp_relay</emphasis> interface.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before 
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_rtp_relay_engage" xreflabel="rtp_relay_engage()">
+		<title>
+			<function moreinfo="none">rtp_relay_engage(engine, [set])</function>
+		</title>
+
+		<para>
+		Engages the RTP Relay <emphasis>engine</emphasis> for the current initial
+		INVITE. After calling this function, the entire RTP relay communication
+		will be handled by the module itself, without having to intervene for any
+		further in-dialog requests/replies (unless you specifically want to).
+		</para>
+		<para>
+		The function is not performing the media requests on the spot,
+		but rather registers the hooks to automatically handle any
+		further media requests.
+		</para>
+		<para>
+		The RTP session modifiers used are the ones provisioned through the
+		<xref linkend="pv_rtp_relay"/> and/or
+		<xref linkend="pv_rtp_relay_peer"/> variables.
+		</para>
+		<para>
+		The function can be called from the main request route - in this case
+		the RTP relay will be engaged for any further branches created, or from
+		the branch route - in this case the RTP relay will only be engaged for
+		the branch where it was called, or that has an associated
+		<emphasis>rtp_relay</emphasis> provisioned.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>engine(string)</emphasis> - the RTP relay engine
+				to be used for the call (i.e. <emphasis>rtpproxy</emphasis>.
+			</para>
+		</listitem>
+		<listitem><para>
+		<emphasis>set(int, optional)</emphasis> - the set used for this call.
+		</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
+		</para>
+		<example>
+		<title><function>rtp_relay_engage</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("INVITE") &amp;&amp; !has_totag()) {
+		xlog("SCRIPT: engaging RTPProxy relay for all branches\n");
+		$rtp_relay = "co";
+		$rtp_relay_peer = "co";
+		rtp_relay_engage("rtpproxy");
+	}
+}
+...
+		</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section id="exported_pseudo_variables">
+	<title>Exported Pseudo-Variables</title>
+		<section id="pv_rtp_relay" xreflabel="$rtp_relay">
+			<title><varname>$rtp_relay</varname></title>
+			<para>
+				Is used to provision the RTP back-end flags for the
+				current peer - if used in the initial INVITE
+				REQUEST/BRANCH route, it provisions the flags of the
+				caller, whereas if used in the initial INVITE REPLY,
+				it provisions the callee's flags.
+			</para>
+			<para>
+				For a sequential request, the variable represents the
+				flags used for the UAC that generated the request. When
+				used in a reply, the other UAC's flags are provisioned.
+			</para>
+			<para>
+				In an initial INVITE scope, the variable can be
+				provisioned per branch, by using the variable's index.
+			</para>
+			<para>
+				For each UAC/peer, there are several flags that can be
+				configured:
+				<itemizedlist>
+					<listitem><para><emphasis>flags</emphasis> (default, when
+					variable is used without a name) - are the flags associated
+					with the current UAC - they are passed along with the offer
+					command
+					</para></listitem>
+					<listitem><para><emphasis>peer</emphasis> - these flags are
+					passed along in the offer command, but they are flags associated
+					with the other UAC/peer
+					</para></listitem>
+					<listitem><para><emphasis>ip</emphasis> - the IP that should be
+					advertised in the resulted SDP (currently only used by <emphasis>
+					rtpproxy</emphasis>)
+					</para></listitem>
+					<listitem><para><emphasis>type</emphasis> - the RTP type used
+					by the current UAC (currently only used by <emphasis>
+					rtpengine</emphasis>)
+					</para></listitem>
+					<listitem><para><emphasis>iface</emphasis> - the interface
+					used for the traffic coming from this UAC.
+					</para></listitem>
+					<listitem><para><emphasis>disabled</emphasis> - provisioned
+					as an integer, it is used to disable RTP relay for this UAC.
+					</para></listitem>
+				</itemizedlist>
+			</para>
+		</section>
+		<section id="pv_rtp_relay_peer" xreflabel="$rtp_relay_peer">
+			<title><varname>$rtp_relay_peer</varname></title>
+			<para>
+				This variable has the same meaning and parameters as the
+				<xref linkend="pv_rtp_relay"/> variable, except that it
+				is used to provision the other UAC's flags, except the
+				current one. All other fields are similar.
+			</para>
+		</section>
+	</section>
+</chapter>
+
