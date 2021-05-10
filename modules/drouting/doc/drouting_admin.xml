@@ -1128,7 +1128,7 @@ modparam("drouting", "use_partitions", 1)
 	</section>
 
 <section id="param_db_partitions_url" xreflabel="db_partitions_url">
-		<title><varname>db_partitions_url</varname> (int)</title>
+		<title><varname>db_partitions_url</varname> (str)</title>
 		<para>
 		The url to the database containing partition-specific
 		information. (partition-specific information includes
@@ -1153,7 +1153,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opens
 	</section>
 
 	<section id="param_db_partitions_table" xreflabel="db_partitions_table">
-		<title><varname>db_partitions_table</varname> (int)</title>
+		<title><varname>db_partitions_table</varname> (str)</title>
 		<para>
 		The name of the table containing partition definitions. To be
 		used with <varname>use_partitions</varname> and <varname>db_partitions_url</varname>.
@@ -1198,7 +1198,7 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 	</section>
 
 	<section id="param_enable_restart_persistency" xreflabel="enable_restart_persistency">
-		<title><varname>enable_restart_persistency</varname> (pvar)</title>
+		<title><varname>enable_restart_persistency</varname> (int)</title>
 		<para>
 			Parameter set to enable restart persistency for the Dynamic Routing module.
 			When this parameter is set, the drouting module no longer loads the data
