@@ -2024,9 +2024,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			ret = get_via_branch(msg, ng_flags.via, &viabranch);
 		else if (ng_flags.via == -1 && extra_id_pv)
 			ret = get_extra_id(msg, &viabranch);
-		else if (ng_flags.via == 4 && ng_flags.viabranch.len)
+		else if (ng_flags.via == 4 && ng_flags.viabranch.len) {
 			viabranch = ng_flags.viabranch;
-		else
+			ret = 1;
+		} else
 			ret = -1;
 		if (ret == -1 || viabranch.len == 0) {
 			LM_ERR("can't get Via branch/extra ID\n");
