@@ -1050,7 +1050,7 @@ modparam("drouting", "use_partitions", 1)
 	</section>
 
 <section id="param_db_partitions_url" xreflabel="db_partitions_url">
-		<title><varname>db_partitions_url</varname> (int)</title>
+		<title><varname>db_partitions_url</varname> (str)</title>
 		<para>
 		The url to the database containing partition-specific
 		information. (partition-specific information includes
@@ -1075,7 +1075,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localhost/opens
 	</section>
 
 	<section id="param_db_partitions_table" xreflabel="db_partitions_table">
-		<title><varname>db_partitions_table</varname> (int)</title>
+		<title><varname>db_partitions_table</varname> (str)</title>
 		<para>
 		The name of the table containing partition definitions. To be
 		used with <varname>use_partitions</varname> and <varname>db_partitions_url</varname>.
