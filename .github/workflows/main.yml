@@ -35,10 +35,6 @@ jobs:
             compiler: 'gcc-arm32-cross'
           - os: ubuntu-18.04
             compiler: 'gcc-arm64-cross'
-          - os: ubuntu-16.04
-            compiler: 'gcc'
-          - os: ubuntu-16.04
-            compiler: 'clang'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
