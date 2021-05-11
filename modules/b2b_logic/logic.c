@@ -4441,6 +4441,15 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 	b2b_api.apply_lumps(msg);
 
+	str local_contact;
+
+	local_contact = tuple->local_contact;
+	if (get_local_contact(msg->rcv.bind_address, NULL, &local_contact) < 0)
+	{
+		LM_ERR("Failed to get received address\n");
+		local_contact = tuple->local_contact;
+	}
+
 	/* create server entity from Invite */
 	if (b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
 	b2b_msg_get_to(msg, &to_uri, b2bl_htable[hash_index].flags)< 0)
@@ -4448,7 +4457,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		LM_ERR("Failed to get to or from from the message\n");
 		goto error;
 	}
-	server_id = b2b_api.server_new(msg, &tuple->local_contact,
+	server_id = b2b_api.server_new(msg, &local_contact,
 			b2b_server_notify, &b2bl_mod_name, tuple->key, get_tracer(tuple));
 	if(server_id == NULL)
 	{
