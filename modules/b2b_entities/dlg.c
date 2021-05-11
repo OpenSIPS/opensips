@@ -46,7 +46,7 @@
 #include "b2be_db.h"
 #include "b2be_clustering.h"
 
-#define BUF_LEN              1024
+#define BUF_LEN              65535
 
 str ack = str_init(ACK);
 str bye = str_init(BYE);
