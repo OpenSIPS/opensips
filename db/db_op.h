@@ -40,6 +40,17 @@
 /** operator negation */
 #define OP_NEQ "!="
 
+/* Special unary operators here, because mysql prepared statements do
+ * not cope with 'column IS ?' (they would cope with 'column <=> ?' but
+ * that's not standard SQL).
+ * (Declared as char array instead of define, so they can be pointer
+ * compared in code.) */
+
+/** unary operator: IS NULL */
+extern const char OP_IS_NULL[]; /* " IS NULL" */
+/** unary operator: IS NOT NULL */
+extern const char OP_IS_NOT_NULL[]; /* " IS NOT NULL" */
+
 
 /**
  * This type represents an expression operator uses for SQL queries.
