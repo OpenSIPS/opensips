@@ -28,7 +28,7 @@
 #include "item.h"
 
 #define MAX_MI_PARAMS  10
-#define MAX_MI_RECIPES 10
+#define MAX_MI_RECIPES 11
 
 /* async MI command */
 #define MI_ASYNC_RPL_FLAG    (1<<0)
