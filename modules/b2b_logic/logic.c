@@ -654,6 +654,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 	client_info_t ci;
 	str* client_id;
 	b2bl_entity_id_t* entity;
+	struct sip_uri ct_uri;
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = method_invite;
@@ -665,8 +666,17 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
 	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
-	if (ci.send_sock) get_local_contact(ci.send_sock, NULL, &ci.local_contact);
-	else ci.local_contact = server_address;
+
+
+	if (ci.send_sock)
+	{
+		memset(&ct_uri, 0, sizeof(struct sip_uri));
+		if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
+			LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+			return NULL;
+		}
+		get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+	} else ci.local_contact = server_address;
 
 	if(msg)
 	{
@@ -714,6 +724,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	client_info_t ci;
 	int entity_no;
 	b2b_req_data_t req_data;
+	struct sip_uri ct_uri;
 
 	bentity0 = tuple->bridge_entities[0];
 	bentity1 = tuple->bridge_entities[1];
@@ -795,7 +806,13 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.body          = body;
 			ci.from_tag      = NULL;
 			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
-			get_local_contact(ci.send_sock, NULL, &ci.local_contact);
+
+			memset(&ct_uri, 0, sizeof(struct sip_uri));
+			if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
+				LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+				return -1;
+			}
+			get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
 
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 			{
@@ -2672,6 +2689,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	b2b_req_data_t req_data;
 	str *hdrs;
 	int i;
+	struct sip_uri ct_uri;
 
 	memset(bridge_entities, 0, 2*sizeof(b2bl_entity_id_t*));
 
@@ -2769,8 +2787,16 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 		}
 		ci.from_tag      = 0;
 		ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):0;
-		if (ci.send_sock) get_local_contact(ci.send_sock, NULL, &ci.local_contact);
-		else ci.local_contact = server_address;
+
+		if (ci.send_sock)
+		{
+			memset(&ct_uri, 0, sizeof(struct sip_uri));
+			if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
+				LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+				goto error1;
+			}
+			get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+		} else ci.local_contact = server_address;
 
 		if(msg)
 		{
@@ -2900,6 +2926,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	qvalue_t q;
 	str from_tag_gen= {0, 0};
 	str new_body={0, 0};
+	struct sip_uri ct_uri;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
@@ -2983,7 +3010,14 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.extra_headers = &extra_headers;
 	ci.body          = (body.s?&body:NULL);
 	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
-	get_local_contact(ci.send_sock, NULL, &ci.local_contact);
+
+	memset(&ct_uri, 0, sizeof(struct sip_uri));
+	if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
+		LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+		goto error;
+	}
+	get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+
 	/* grab all AVPs from the server side and push them into the client */
 	ci.avps = clone_avp_list( *get_avp_list() );
 
@@ -3217,6 +3251,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	int eno = 0;
 	str *hdrs;
 	struct b2bl_new_entity *new_entity;
+	struct sip_uri ct_uri;
 
 	if(msg == NULL)
 	{
@@ -3331,7 +3366,15 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.body          = (body.s?&body:NULL);
 	ci.send_sock     = msg->force_send_socket?
 		msg->force_send_socket:msg->rcv.bind_address;
-	get_local_contact(ci.send_sock, NULL, &ci.local_contact);
+
+	memset(&ct_uri, 0, sizeof(struct sip_uri));
+	if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0)
+	{
+		LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
+		goto error;
+	}
+	get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+
 	/* grab all AVPs from the server side */
 	ci.avps = clone_avp_list( *get_avp_list() );
 	if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 ) {
@@ -4304,6 +4347,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
 	int ret;
+	struct sip_uri ct_uri;
 
 	if(!msg || !key)
 	{
@@ -4443,8 +4487,14 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 	str local_contact;
 
+	memset(&ct_uri, 0, sizeof(struct sip_uri));
+	if (contact_user && parse_uri(to_uri.s, to_uri.len, &ct_uri) < 0) {
+		LM_ERR("Not a valid sip uri [%.*s]\n", to_uri.len, to_uri.s);
+		goto error;
+	}
+
 	local_contact = tuple->local_contact;
-	if (get_local_contact(msg->rcv.bind_address, NULL, &local_contact) < 0)
+	if (get_local_contact(msg->rcv.bind_address, &ct_uri.user, &local_contact) < 0)
 	{
 		LM_ERR("Failed to get received address\n");
 		local_contact = tuple->local_contact;
