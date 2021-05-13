@@ -472,7 +472,7 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 				<emphasis>flags (string, optional)</emphasis> - meanings of the flags is as follows:
 				<itemizedlist>
 					<listitem><para>
-					<emphasis>t[nn]</emphasis> - Call setup timeout for topology hiding scenario.
+					<emphasis>t[nn]</emphasis> - Call setup timeout. 0 sets timeout to max_duration value.
 					Example: t300.
 					</para></listitem>
 					<listitem><para>
