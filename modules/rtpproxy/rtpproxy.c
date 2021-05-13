@@ -3816,7 +3816,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 					}
 				}
 				args->node = NULL;
-			} while (cp == NULL);
+			} while (cp == NULL && args->offer);
 			if (locked) {
 				locked = 0;
 				lock_stop_read(nh_lock);
