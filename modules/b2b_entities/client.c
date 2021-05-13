@@ -230,7 +230,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	tmb.setlocalTholder(&dlg->uac_tran);
 
-	b2b_arm_uac_tracing( &td, dlg->tracer);
+	if (dlg->tracer)
+		b2b_arm_uac_tracing( &td, dlg->tracer);
 
 	/* send request */
 	result= tmb.t_request_within
