@@ -3345,9 +3345,6 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	pkg_free(server_id);
 	tuple->servers[0]->type = B2B_SERVER;
 
-	pkg_free(to_uri.s);
-	to_uri.s = 0;
-
 	new_entity = NULL;
 
 	if (new_entities[0]->type == B2B_CLIENT)
@@ -3363,7 +3360,8 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = method;
-	ci.to_uri        = new_entity->dest_uri;
+	ci.req_uri       = new_entity->dest_uri;
+	ci.to_uri        = to_uri;
 	ci.dst_uri       = new_entity->proxy;
 	ci.from_uri      = from_uri;
 	ci.from_dname    = from_dname;
@@ -3392,6 +3390,9 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify,
 			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, get_tracer(tuple));
+
+	pkg_free(to_uri.s);
+	to_uri.s = 0;
 
 	b2bl_htable[hash_index].locked_by = -1;
 
