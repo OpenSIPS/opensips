@@ -39,7 +39,7 @@
 #define rtp_relay_ctx_set_engaged(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ENGAGED
 
 #define rtp_relay_ctx_established(_s) ((_s)->state & RTP_RELAY_CTX_STATE_ESTABLISHED)
-#define rtp_relay_ctx_set_establishd(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ESTABLISHED
+#define rtp_relay_ctx_set_established(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ESTABLISHED
 
 
 #define rtp_sess_disabled(_s) ((_s)->state & RTP_RELAY_SESS_STATE_DISABLED)
@@ -88,10 +88,12 @@ struct rtp_relay_sess {
 };
 
 struct rtp_relay_ctx {
+	str callid;
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *main;
 	struct list_head sessions;
+	struct list_head list;
 };
 
 struct rtp_relay_ctx *rtp_relay_ctx_get(void);
@@ -110,6 +112,9 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 
 struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index);
 struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index);
+
+mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 #define RTP_RELAY_CTX_LOCK(_c) lock_get(&_c->lock);
 #define RTP_RELAY_CTX_UNLOCK(_c) lock_release(&_c->lock);

@@ -30,6 +30,9 @@ static int rtp_relay_tm_ctx_idx = -1;
 static int rtp_relay_dlg_ctx_idx = -1;
 static int rtp_relay_ctx_idx = -1;
 
+static gen_lock_t *rtp_relay_contexts_lock;
+static struct list_head *rtp_relay_contexts;
+
 #define RTP_RELAY_GET_MSG_CTX() ((struct rtp_relay_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, rtp_relay_ctx_idx))
 #define RTP_RELAY_PUT_CTX(_p) context_put_ptr(CONTEXT_GLOBAL, \
@@ -63,6 +66,7 @@ struct rtp_relay_ctx *rtp_relay_new_ctx(void)
 
 	lock_init(&ctx->lock);
 	INIT_LIST_HEAD(&ctx->sessions);
+	INIT_LIST_HEAD(&ctx->list);
 	return ctx;
 }
 
@@ -117,6 +121,9 @@ void rtp_relay_ctx_free(void *param)
 
 	if (!ctx)
 		return;
+
+	if (ctx->callid.s)
+		shm_free(ctx->callid.s);
 
 	list_for_each_safe(it, safe, &ctx->sessions)
 		rtp_relay_ctx_free_sess(list_entry(it, struct rtp_relay_sess, list));
@@ -321,6 +328,21 @@ int rtp_relay_ctx_preinit(void)
 
 int rtp_relay_ctx_init(void)
 {
+
+	rtp_relay_contexts_lock = lock_alloc();
+	if (!rtp_relay_contexts_lock ||
+			!lock_init(rtp_relay_contexts_lock)) {
+		LM_ERR("cannot create lock for RTP Relay sessions\n");
+		return -1;
+	}
+
+	rtp_relay_contexts = shm_malloc(sizeof *rtp_relay_contexts);
+	if (!rtp_relay_contexts) {
+		LM_ERR("cannot create RTP Relay sessions list\n");
+		return -1;
+	}
+
+	INIT_LIST_HEAD(rtp_relay_contexts);
 	rtp_relay_tm_ctx_idx = rtp_relay_tmb.t_ctx_register_ptr(rtp_relay_ctx_free);
 	/* register a routine to move the pointer in tm when the transaction
 	 * is created! */
@@ -496,24 +518,24 @@ static inline int rtp_relay_dlg_mi_flags(rtp_relay_flags flags,
 	return 0;
 }
 
-static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
+static int mi_rtp_relay_ctx(struct rtp_relay_ctx *ctx,
+		mi_item_t *item, int callid)
 {
+	int ret = -1;
 	struct rtp_relay_sess *sess;
 	mi_item_t *rtp_item, *caller_item, *callee_item;
-	mi_item_t *item = (mi_item_t *)(params->dlg_data);
-	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
-
-	if (!ctx || !item)
-		return;
 
 	rtp_item = add_mi_object(item, MI_SSTR("rtp_relay"));
 	if (!rtp_item) {
 		LM_ERR("cold not create rtp_relay!\n");
-		return;
+		return ret;
 	}
 	RTP_RELAY_CTX_LOCK(ctx);
 	sess = ctx->main;
 	if (!sess)
+		goto end;
+	if (callid && add_mi_string(rtp_item, MI_SSTR("callid"),
+			ctx->callid.s, ctx->callid.len) < 0)
 		goto end;
 	caller_item = add_mi_object(rtp_item, MI_SSTR("caller"));
 	if (!caller_item)
@@ -531,10 +553,26 @@ static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_param
 	if (add_mi_string(rtp_item, MI_SSTR("server"),
 			sess->server.node.s, sess->server.node.len) < 0)
 		goto end;
-	if (add_mi_number(rtp_item, MI_SSTR("branch"), sess->index) < 0)
+	if (add_mi_number(rtp_item, MI_SSTR("set"), sess->server.set) < 0)
 		goto end;
+	if (sess->index != RTP_RELAY_ALL_BRANCHES &&
+			add_mi_number(rtp_item, MI_SSTR("branch"), sess->index) < 0)
+		goto end;
+	ret = 0;
 end:
 	RTP_RELAY_CTX_UNLOCK(ctx);
+	return ret;
+}
+
+static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
+{
+	mi_item_t *item = (mi_item_t *)(params->dlg_data);
+	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
+
+	if (!ctx || !item)
+		return;
+
+	mi_rtp_relay_ctx(ctx, item, 0);
 }
 
 static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
@@ -546,13 +584,16 @@ static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_para
 		return;
 
 	memset(&info, 0, sizeof info);
-	info.callid = &dlg->callid;
+	info.callid = &ctx->callid;
 	info.from_tag = &dlg->legs[DLG_CALLER_LEG].tag;
 	info.to_tag = &dlg->legs[callee_idx(dlg)].tag;
 	info.branch = ctx->main->index;
 	RTP_RELAY_CTX_LOCK(ctx);
 	rtp_relay_delete(&info, ctx->main, NULL);
 	RTP_RELAY_CTX_UNLOCK(ctx);
+	lock_get(rtp_relay_contexts_lock);
+	list_del(&ctx->list);
+	lock_release(rtp_relay_contexts_lock);
 }
 
 void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
@@ -677,6 +718,9 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx)
 {
+	if (shm_str_sync(&ctx->callid, &dlg->callid) < 0)
+		LM_ERR("could not store callid in dialog\n");
+
 	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
 			rtp_relay_dlg_mi, NULL, NULL) < 0)
 		LM_ERR("could not register MI dlg print!\n");
@@ -698,6 +742,9 @@ static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *c
 			rtp_relay_store_callback, NULL, NULL))
 		LM_WARN("cannot register callback for rtp relay serialization! "
 				"Will not be able to engage rtp relay in case of a restart!\n");
+	lock_get(rtp_relay_contexts_lock);
+	list_add(&ctx->list, rtp_relay_contexts);
+	lock_release(rtp_relay_contexts_lock);
 
 	return 0;
 
@@ -723,8 +770,12 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 		/* reset old pointers */
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
-		if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
+
+		if (rtp_relay_dlg_callbacks(dlg, ctx) < 0) {
+			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
+		}
+		rtp_relay_ctx_set_established(ctx);
 	}
 	return 0;
 }
@@ -897,4 +948,62 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	info.msg = msg;
 	info.branch = sess->index;
 	return rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER);
+}
+
+mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *arr;
+	struct list_head *it;
+	struct rtp_relay_ctx *ctx;
+	struct rtp_relay *relay = NULL;
+	str *node = NULL, tmp;
+
+	switch(try_get_mi_string_param(params, "engine", &tmp.s, &tmp.len)) {
+		case -1:
+			break;
+		case -2:
+			return init_mi_param_error();
+		default:
+			relay = rtp_relay_get(&tmp);
+			if (!relay)
+				return init_mi_error(404, MI_SSTR("unknown RTP  Relay engine"));
+			/* if we have an engine, we might also have a node */
+			switch(try_get_mi_string_param(params, "node", &tmp.s, &tmp.len)) {
+				case -1:
+					break;
+				case -2:
+					return init_mi_param_error();
+				default:
+					node = &tmp;
+			}
+	}
+
+	resp = init_mi_result_array(&arr);
+	if (!resp)
+		return 0;
+
+	lock_get(rtp_relay_contexts_lock);
+	list_for_each(it, rtp_relay_contexts) {
+		ctx = list_entry(it, struct rtp_relay_ctx, list);
+		if (!ctx->main)
+			continue;
+		if (relay && ctx->main->relay != relay)
+			continue;
+		if (node && str_strcmp(node, &ctx->main->server.node))
+			continue;
+		if (mi_rtp_relay_ctx(ctx, arr, 1) < 0)
+			goto error;
+	}
+
+	lock_release(rtp_relay_contexts_lock);
+
+	return resp;
+
+error:
+	lock_release(rtp_relay_contexts_lock);
+	if (resp)
+		free_mi_response(resp);
+	return 0;
 }

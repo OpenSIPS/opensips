@@ -167,6 +167,42 @@ if (is_method("INVITE") &amp;&amp; !has_totag()) {
 
 	</section>
 
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_rtp_relay_list" xreflabel="rtp_relay_list">
+			<title><function moreinfo="none">rtp_relay_list</function></title>
+			<para>
+			Lists all the RTP Relay sessions engaged.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>engine</emphasis> - (optional) the RTP
+					relay engine (i.e. <emphasis>rtpproxy</emphasis>
+					or <emphasis>rtpengine</emphasis>).
+				</para></listitem>
+				<listitem><para>
+					<emphasis>node</emphasis> - (optional) the RTP
+					relay node. When used, the <emphasis>engine</emphasis>
+					parameter must also be specified.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">rtp_relay_list</function> usage</title>
+			<programlisting format="linespecific">
+...
+## list all sessions
+$ opensips-cli -x mi rtp_relay_list
+
+## list all sessions going through a specific RTP node
+$ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
+...
+			</programlisting>
+			</example>
+		</section>
+	</section>
+
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 		<section id="pv_rtp_relay" xreflabel="$rtp_relay">

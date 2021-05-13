@@ -61,6 +61,17 @@ static cmd_export_t mod_cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+static mi_export_t mi_cmds[] = {
+	{ "rtp_relay_list", 0, 0, 0, {
+		{mi_rtp_relay_list, {0}},
+		{mi_rtp_relay_list, {"engine", 0}},
+		{mi_rtp_relay_list, {"engine", "node", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
+
 static param_export_t mod_params[] = {
 	{0, 0, 0}
 };
@@ -82,10 +93,10 @@ struct module_exports exports = {
 	0,					/* load function */
 	&mod_deps,			/* OpenSIPS module dependencies */
 	mod_cmds,
-	NULL,
+	0,
 	mod_params,
 	0,					/* exported statistics */
-	0,
+	mi_cmds,
 	mod_pvars,			/* exported pseudo-variables */
 	0,					/* exported transformations */
 	0,					/* extra processes */
