@@ -321,8 +321,6 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra);
 static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
-static str *rtpproxy_api_print_server(struct rtp_relay_server *server);
-static void *rtpproxy_api_get_server(str *server, int set);
 
 struct rtpp_notify_head * rtpp_notify_h = 0;
 
@@ -1047,8 +1045,6 @@ static int mod_preinit(void)
 		.offer = rtpproxy_api_offer,
 		.answer = rtpproxy_api_answer,
 		.delete = rtpproxy_api_delete,
-		.print_server = rtpproxy_api_print_server,
-		.get_server = rtpproxy_api_get_server,
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
@@ -4737,33 +4733,18 @@ static void rtpproxy_free_call_args(struct rtpp_args *args)
 		pkg_free(args->arg1);
 }
 
-struct rtpproxy_node {
-	str s;
-	char _buf[0];
-};
-
-static struct rtpproxy_node *build_rtpproxy_node(str *s)
+static int fill_rtpproxy_node(struct rtp_relay_server *server,
+		str *s)
 {
-	struct rtpproxy_node *node = shm_malloc(sizeof *node + s->len + 1);
-	if (!node) {
-		LM_ERR("could not store the node used!\n");
-		return NULL;
-	}
-	node->s.s = node->_buf;
-	node->s.len = s->len;
-	/* node already is null terminated */
-	memcpy(node->s.s, s->s, s->len + 1);
-	return node;
+	if (server->node.s)
+		shm_free(server->node.s);
+	return shm_nt_str_dup(&server->node, s);
 }
-
-#define get_rtpproxy_node(_n) \
-	(str *)(&((struct rtpproxy_node *)(_n))->s)
 
 static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
 {
 	int ret = -1;
-	str *snode;
 	int unlock = 0;
 	pv_value_t val;
 	struct rtpp_set *rset = NULL;
@@ -4775,7 +4756,7 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 			in_iface, out_iface, flags, extra))
 		return -1;
 
-	if (!server->node) {
+	if (!server->node.s) {
 		if (server->set != -1) {
 			rset = select_rtpp_set(server->set);
 			if (!rset) {
@@ -4792,8 +4773,7 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 			lock_start_read(nh_lock);
 
 		rset = select_rtpp_set(server->set);
-		snode = get_rtpproxy_node(server->node);
-		args.node = get_rtpp_node(snode);
+		args.node = get_rtpp_node(&server->node);
 		/* if we're not using a node, we don't need the lock */
 		if (!args.node && nh_lock)
 			lock_stop_read(nh_lock);
@@ -4811,13 +4791,10 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 		LM_ERR("could not engage rtpproxy offer!\n");
 		goto exit;
 	}
-	if (pv_get_spec_value(sess->msg, &media_pvar, &val) >= 0) {
-		if (server->node)
-			shm_free(server->node);
-		server->node = build_rtpproxy_node(&val.rs);
-	} else {
+	if (pv_get_spec_value(sess->msg, &media_pvar, &val) >= 0)
+		fill_rtpproxy_node(server, &val.rs);
+	else
 		LM_ERR("could not retrieve the value of the used rtpproxy!\n");
-	}
 exit:
 	rtpproxy_free_call_args(&args);
 	return ret;
@@ -4849,9 +4826,8 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 	args.set = rset;
 	args.offer = 0;
 
-	if (server->node) {
-		snode = get_rtpproxy_node(server->node);
-		args.node = get_rtpp_node(snode);
+	if (server->node.s) {
+		args.node = get_rtpp_node(&server->node);
 		if (!args.node) {
 			LM_ERR("Could not use node %.*s for reply!\n", snode->len, snode->s);
 			goto exit;
@@ -4871,7 +4847,6 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 			str *flags, str *extra)
 {
 	int ret = -1;
-	str *snode;
 	struct rtpp_set *rset = NULL;
 	struct rtpp_args args;
 
@@ -4892,10 +4867,10 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 
 	args.set = rset;
 
-	snode = get_rtpproxy_node(server->node);
-	args.node = get_rtpp_node(snode);
+	args.node = get_rtpp_node(&server->node);
 	if (!args.node) {
-		LM_ERR("Could not use node %.*s for delete!\n", snode->len, snode->s);
+		LM_ERR("Could not use node %.*s for delete!\n",
+				server->node.len, server->node.s);
 		goto exit;
 	}
 
@@ -4906,37 +4881,4 @@ exit:
 	}
 	rtpproxy_free_call_args(&args);
 	return ret;
-}
-
-static str *rtpproxy_api_print_server(struct rtp_relay_server *server)
-{
-	static str snode;
-	snode = *get_rtpproxy_node(server->node);
-	return &snode;
-}
-
-static void *rtpproxy_api_get_server(str *server, int set)
-{
-	struct rtpp_set *rset = NULL;
-	struct rtpp_node *rnode = NULL;
-	void *rrnode = NULL;
-	if (nh_lock)
-		lock_start_read( nh_lock );
-
-	if (set != -1) {
-		rset = select_rtpp_set(set);
-		if (!rset)
-			rset = *default_rtpp_set;
-	} else {
-		rset = *default_rtpp_set;
-	}
-	rnode = get_rtpp_node_from_set(server, rset, 0);
-	if (!rnode)
-		goto exit;
-	rrnode = build_rtpproxy_node(&rnode->rn_url);
-
-exit:
-	if (nh_lock)
-		lock_stop_read( nh_lock );
-	return rrnode;
 }

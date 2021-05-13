@@ -38,7 +38,7 @@ struct rtp_relay_session {
 
 struct rtp_relay_server {
 	int set;
-	void *node;
+	str node;
 };
 
 struct rtp_relay_binds {
@@ -50,8 +50,6 @@ struct rtp_relay_binds {
 			str *flags, str *extra);
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
-	str *(*print_server)(struct rtp_relay_server *server);
-	void *(*get_server)(str *server, int set);
 };
 
 struct rtp_relay {

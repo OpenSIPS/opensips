@@ -104,6 +104,8 @@ static void rtp_relay_ctx_free_sess(struct rtp_relay_sess *s)
 		if (s->flags[RTP_RELAY_ANSWER][f].s)
 			shm_free(s->flags[RTP_RELAY_ANSWER][f].s);
 	}
+	if (s->server.node.s)
+		shm_free(s->server.node.s);
 	list_del(&s->list);
 	shm_free(s);
 }
@@ -203,7 +205,7 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 	RTP_RELAY_BIN_PUSH(int, sess->index);
 	RTP_RELAY_BIN_PUSH(int, sess->state);
 	RTP_RELAY_BIN_PUSH(int, sess->server.set);
-	RTP_RELAY_BIN_PUSH(str, sess->relay->binds.print_server(&sess->server));
+	RTP_RELAY_BIN_PUSH(str, &sess->server.node);
 	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
 		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
 			if (sess->flags[rtype][flag].s)
@@ -276,8 +278,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	RTP_RELAY_BIN_POP(int, &sess->state);
 	sess->relay = relay;
 	RTP_RELAY_BIN_POP(int, &sess->server.set);
-	RTP_RELAY_BIN_POP(str, &tmp);
-	sess->server.node = sess->relay->binds.get_server(&tmp, sess->server.set);
+	RTP_RELAY_BIN_POP(str, &sess->server.node);
 
 	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
 		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
@@ -497,7 +498,6 @@ static inline int rtp_relay_dlg_mi_flags(rtp_relay_flags flags,
 
 static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
 {
-	str *node;
 	struct rtp_relay_sess *sess;
 	mi_item_t *rtp_item, *caller_item, *callee_item;
 	mi_item_t *item = (mi_item_t *)(params->dlg_data);
@@ -528,8 +528,8 @@ static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_param
 	if (add_mi_string(rtp_item, MI_SSTR("relay"),
 			sess->relay->name.s, sess->relay->name.len) < 0)
 		goto end;
-	node = sess->relay->binds.print_server(&sess->server);
-	if (add_mi_string(rtp_item, MI_SSTR("server"), node->s, node->len) < 0)
+	if (add_mi_string(rtp_item, MI_SSTR("server"),
+			sess->server.node.s, sess->server.node.len) < 0)
 		goto end;
 	if (add_mi_number(rtp_item, MI_SSTR("branch"), sess->index) < 0)
 		goto end;

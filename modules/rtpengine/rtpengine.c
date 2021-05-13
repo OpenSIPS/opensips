@@ -286,8 +286,6 @@ static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra);
 static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
-static str *rtpengine_api_print_server(struct rtp_relay_server *server);
-static void *rtpengine_api_get_server(str *server, int set);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -1212,8 +1210,6 @@ static int mod_preinit(void)
 		.offer = rtpengine_api_offer,
 		.answer = rtpengine_api_answer,
 		.delete = rtpengine_api_delete,
-		.print_server = rtpengine_api_print_server,
-		.get_server = rtpengine_api_get_server,
 	};
 	if (!pv_parse_spec(&rtpengine_relay_pvar_str, &media_pvar))
 		return -1;
@@ -2079,7 +2075,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	RTPE_START_READ();
 	do {
-		if (snode) {
+		if (snode && snode->s) {
 			if ((node = get_rtpe_node(snode, set)) == NULL)
 				node = select_rtpe_node(ng_flags.call_id, 1, set);
 			snode = NULL;
@@ -2203,7 +2199,7 @@ static bencode_item_t *rtpe_function_call_ok(bencode_buffer_t *bencbuf, struct s
 {
 	bencode_item_t *ret;
 
-	ret = rtpe_function_call(bencbuf, msg, op, flags_str, body, spvar, NULL, NULL);
+	ret = rtpe_function_call(bencbuf, msg, op, flags_str, body, spvar, node, NULL);
 	if (!ret)
 		return NULL;
 
@@ -3597,28 +3593,13 @@ end:
 }
 
 
-struct rtpengine_node {
-	str s;
-	char _buf[0];
-};
-
-static struct rtpengine_node *build_rtpengine_node(str *s)
+static int fill_rtpengine_node(struct rtp_relay_server *server,
+		str *s)
 {
-	struct rtpengine_node *node = shm_malloc(sizeof *node + s->len + 1);
-	if (!node) {
-		LM_ERR("could not store the node used!\n");
-		return NULL;
-	}
-	node->s.s = node->_buf;
-	node->s.len = s->len;
-	/* node already is null terminated */
-	memcpy(node->s.s, s->s, s->len + 1);
-	return node;
+	if (server->node.s)
+		shm_free(server->node.s);
+	return shm_nt_str_dup(&server->node, s);
 }
-
-#define get_rtpengine_node(_n) \
-	(str *)(&((struct rtpengine_node *)(_n))->s)
-
 
 #define RTPE_APPEND_STR(_v) \
 	do { \
@@ -3704,13 +3685,13 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_
 	int ret;
 
 	RTPE_START_READ();
-	if (!server->node) {
+	if (!server->node.s) {
 		node = NULL;
 		rset = rtpengine_get_set(server->set);
 		server->set = rset->id_set;
 	} else {
-		node = get_rtpengine_node(server->node);
 		rset = select_rtpe_set(server->set);
+		node = &server->node;
 	}
 	rtpe_ctx_set_fill( rset );
 	RTPE_STOP_READ();
@@ -3721,13 +3702,10 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_
 	ret = rtpengine_offer_answer(sess->msg, newflags, node, &media_pvar, NULL, sess->body, OP_OFFER);
 	pkg_free(newflags->s);
 	if (ret >= 0) {
-		if (pv_get_spec_value(sess->msg, &media_pvar, &val) >= 0) {
-			if (server->node)
-				shm_free(server->node);
-			server->node = build_rtpengine_node(&val.rs);
-		} else {
+		if (pv_get_spec_value(sess->msg, &media_pvar, &val) >= 0)
+			fill_rtpengine_node(server, &val.rs);
+		else
 			LM_ERR("could not retrieve the value of the used rtpengine!\n");
-		}
 	}
 	return ret;
 }
@@ -3736,20 +3714,19 @@ static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
 {
 	struct rtpe_set* rset;
-	str *newflags, *node = NULL;
+	str *newflags;
 	int ret;
 
 	RTPE_START_READ();
 	rset = select_rtpe_set(server->set);
 	rtpe_ctx_set_fill( rset );
-	if (server->node)
-		node = get_rtpengine_node(server->node);
 	RTPE_STOP_READ();
 
 	newflags = rtpengine_get_call_flags(sess, type, in_iface, out_iface, flags, extra);
 	if (!newflags)
 		return -1;
-	ret = rtpengine_offer_answer(sess->msg, newflags, node, NULL, NULL, sess->body, OP_ANSWER);
+	ret = rtpengine_offer_answer(sess->msg, newflags, &server->node,
+			NULL, NULL, sess->body, OP_ANSWER);
 	pkg_free(newflags->s);
 	return ret;
 }
@@ -3759,47 +3736,21 @@ static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay
 {
 	struct sip_msg *msg;
 	struct rtpe_set* rset;
-	str *newflags, *node = NULL;
+	str *newflags;
 	int ret;
 
 	RTPE_START_READ();
 	rset = select_rtpe_set(server->set);
 	rtpe_ctx_set_fill( rset );
-	if (server->node)
-		node = get_rtpengine_node(server->node);
 	RTPE_STOP_READ();
 
 	newflags = rtpengine_get_call_flags(sess, NULL, NULL, NULL, flags, extra);
 	if (!newflags)
 		return -1;
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
-	ret = rtpengine_delete(msg, newflags, node, NULL);
+	ret = rtpengine_delete(msg, newflags, &server->node, NULL);
 	if (is_dummy_sip_msg(msg))
 		release_dummy_sip_msg(msg);
 	pkg_free(newflags->s);
 	return ret;
-}
-
-static str *rtpengine_api_print_server(struct rtp_relay_server *server)
-{
-	static str snode;
-	snode = *get_rtpengine_node(server->node);
-	return &snode;
-}
-
-static void *rtpengine_api_get_server(str *server, int set)
-{
-	struct rtpe_node *rnode;
-	struct rtpe_set *rset = NULL;
-	void *rrnode = NULL;
-
-	RTPE_START_READ();
-	rset = rtpengine_get_set(set);
-
-	rnode = get_rtpe_node(server, rset);
-	if (rnode)
-		rrnode = build_rtpengine_node(&rnode->rn_url);
-	RTPE_STOP_READ();
-
-	return rrnode;
 }
