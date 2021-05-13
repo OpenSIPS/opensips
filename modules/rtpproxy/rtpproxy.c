@@ -4804,7 +4804,6 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
 {
 	int ret = -1;
-	str *snode;
 	struct rtpp_set *rset = NULL;
 	struct rtpp_args args;
 
@@ -4829,7 +4828,8 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 	if (server->node.s) {
 		args.node = get_rtpp_node(&server->node);
 		if (!args.node) {
-			LM_ERR("Could not use node %.*s for reply!\n", snode->len, snode->s);
+			LM_ERR("Could not use node %.*s for reply!\n",
+					server->node.len, server->node.s);
 			goto exit;
 		}
 	}
