@@ -132,6 +132,7 @@ static str default_headers[HDR_DEFAULT_LEN]=
    {"RSeq", 4},
 };
 int use_init_sdp = 0;
+int contact_user = 0;
 unsigned int max_duration = 12*3600;
 
 int b2bl_key_avp_name;
@@ -230,6 +231,7 @@ static param_export_t params[]=
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{"custom_headers_regexp", STR_PARAM,          &custom_headers_regexp.s   },
 	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
+	{"contact_user",    INT_PARAM,                &contact_user              },
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"db_table",        STR_PARAM,                &b2bl_dbtable.s            },
 	{"max_duration",    INT_PARAM,                &max_duration              },

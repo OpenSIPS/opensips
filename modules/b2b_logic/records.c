@@ -30,6 +30,7 @@
 
 #include "../../mem/shm_mem.h"
 #include "../../ut.h"
+#include "../../parser/parse_uri.h"
 #include "../../pt.h"
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
@@ -117,10 +118,16 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 	int size;
 	str extra_headers={0, 0};
 	str local_contact= server_address;
+	struct sip_uri *ct_uri = NULL;
+	str *ct_user = NULL;
 
 	if(msg)
 	{
-		if (get_local_contact(msg->rcv.bind_address, NULL, &local_contact) < 0)
+		if (contact_user && msg->to) {
+			ct_uri = parse_to_uri(msg);
+			ct_user = &ct_uri->user;
+		}
+		if (get_local_contact(msg->rcv.bind_address, ct_user, &local_contact) < 0)
 		{
 			LM_ERR("Failed to get received address\n");
 			local_contact= server_address;

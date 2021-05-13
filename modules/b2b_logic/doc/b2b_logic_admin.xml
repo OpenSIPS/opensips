@@ -316,6 +316,24 @@ modparam("b2b_logic", "max_duration", 7200)
 		</example>
 	</section>
 
+	<section id="param_contact_user" xreflabel="contact_user">
+		<title><varname>contact_user</varname> (int)</title>
+		<para>
+			If set to 1, adds user from From: header to generated Contact:
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>contact_user</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "contact_user", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
 	<section id="param_b2bl_from_spec_param" xreflabel="b2bl_from_spec_param">
 		<title><varname>b2bl_from_spec_param</varname> (string)</title>
 		<para>

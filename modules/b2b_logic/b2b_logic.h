@@ -104,6 +104,7 @@ extern str custom_headers_lst[HDR_LST_LEN];
 extern regex_t* custom_headers_re;
 extern int custom_headers_lst_len;
 extern int use_init_sdp;
+extern int contact_user;
 extern str server_address;
 extern unsigned int max_duration;
 extern str init_callid_hdr;
