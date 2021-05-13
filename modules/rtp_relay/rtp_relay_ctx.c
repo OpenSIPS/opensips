@@ -30,7 +30,7 @@ static int rtp_relay_tm_ctx_idx = -1;
 static int rtp_relay_dlg_ctx_idx = -1;
 static int rtp_relay_ctx_idx = -1;
 
-static gen_lock_t *rtp_relay_contexts_lock;
+static rw_lock_t *rtp_relay_contexts_lock;
 static struct list_head *rtp_relay_contexts;
 
 #define RTP_RELAY_GET_MSG_CTX() ((struct rtp_relay_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
@@ -329,9 +329,8 @@ int rtp_relay_ctx_preinit(void)
 int rtp_relay_ctx_init(void)
 {
 
-	rtp_relay_contexts_lock = lock_alloc();
-	if (!rtp_relay_contexts_lock ||
-			!lock_init(rtp_relay_contexts_lock)) {
+	rtp_relay_contexts_lock = lock_init_rw();
+	if (!rtp_relay_contexts_lock) {
 		LM_ERR("cannot create lock for RTP Relay sessions\n");
 		return -1;
 	}
@@ -530,7 +529,6 @@ static int mi_rtp_relay_ctx(struct rtp_relay_ctx *ctx,
 		LM_ERR("cold not create rtp_relay!\n");
 		return ret;
 	}
-	RTP_RELAY_CTX_LOCK(ctx);
 	sess = ctx->main;
 	if (!sess)
 		goto end;
@@ -560,7 +558,6 @@ static int mi_rtp_relay_ctx(struct rtp_relay_ctx *ctx,
 		goto end;
 	ret = 0;
 end:
-	RTP_RELAY_CTX_UNLOCK(ctx);
 	return ret;
 }
 
@@ -572,7 +569,9 @@ static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_param
 	if (!ctx || !item)
 		return;
 
+	RTP_RELAY_CTX_LOCK(ctx);
 	mi_rtp_relay_ctx(ctx, item, 0);
+	RTP_RELAY_CTX_UNLOCK(ctx);
 }
 
 static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
@@ -591,9 +590,9 @@ static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_para
 	RTP_RELAY_CTX_LOCK(ctx);
 	rtp_relay_delete(&info, ctx->main, NULL);
 	RTP_RELAY_CTX_UNLOCK(ctx);
-	lock_get(rtp_relay_contexts_lock);
+	lock_start_write(rtp_relay_contexts_lock);
 	list_del(&ctx->list);
-	lock_release(rtp_relay_contexts_lock);
+	lock_stop_write(rtp_relay_contexts_lock);
 }
 
 void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
@@ -742,9 +741,9 @@ static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *c
 			rtp_relay_store_callback, NULL, NULL))
 		LM_WARN("cannot register callback for rtp relay serialization! "
 				"Will not be able to engage rtp relay in case of a restart!\n");
-	lock_get(rtp_relay_contexts_lock);
+	lock_start_write(rtp_relay_contexts_lock);
 	list_add(&ctx->list, rtp_relay_contexts);
-	lock_release(rtp_relay_contexts_lock);
+	lock_stop_write(rtp_relay_contexts_lock);
 
 	return 0;
 
@@ -984,25 +983,28 @@ mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
 	if (!resp)
 		return 0;
 
-	lock_get(rtp_relay_contexts_lock);
+	lock_start_read(rtp_relay_contexts_lock);
 	list_for_each(it, rtp_relay_contexts) {
 		ctx = list_entry(it, struct rtp_relay_ctx, list);
+		RTP_RELAY_CTX_LOCK(ctx);
 		if (!ctx->main)
-			continue;
+			goto next;
 		if (relay && ctx->main->relay != relay)
-			continue;
+			goto next;
 		if (node && str_strcmp(node, &ctx->main->server.node))
-			continue;
+			goto next;
 		if (mi_rtp_relay_ctx(ctx, arr, 1) < 0)
 			goto error;
+next:
+		RTP_RELAY_CTX_UNLOCK(ctx);
 	}
 
-	lock_release(rtp_relay_contexts_lock);
+	lock_stop_read(rtp_relay_contexts_lock);
 
 	return resp;
 
 error:
-	lock_release(rtp_relay_contexts_lock);
+	lock_stop_read(rtp_relay_contexts_lock);
 	if (resp)
 		free_mi_response(resp);
 	return 0;
