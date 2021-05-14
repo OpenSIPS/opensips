@@ -65,7 +65,37 @@ static mi_export_t mi_cmds[] = {
 	{ "rtp_relay_list", 0, 0, 0, {
 		{mi_rtp_relay_list, {0}},
 		{mi_rtp_relay_list, {"engine", 0}},
+		{mi_rtp_relay_list, {"engine", "set", 0}},
 		{mi_rtp_relay_list, {"engine", "node", 0}},
+		{mi_rtp_relay_list, {"engine", "set", "node", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "rtp_relay_update",
+		"updates an ongoing RTP relay session",
+			MI_ASYNC_RPL_FLAG, 0, {
+		{mi_rtp_relay_update, {0}},
+		{mi_rtp_relay_update, {"engine", 0}},
+		{mi_rtp_relay_update, {"engine", "set", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "new_set", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "new_node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "new_set", "new_node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", "new_node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", "new_node", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "rtp_relay_update_callid",
+		"updates an ongoing RTP relay session identified by its Call-ID",
+			MI_ASYNC_RPL_FLAG, 0, {
+		{mi_rtp_relay_update_callid, {"callid", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "flags", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "engine", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "engine", "flags", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "engine", "set", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "engine", "set", "flags", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "engine", "set", "node", 0}},
+		{mi_rtp_relay_update_callid, {"callid", "engine", "set", "node", "flags", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -124,40 +154,6 @@ static int mod_init(void)
 		return -1;
 	}
 	return 0;
-}
-
-/* pvar handing */
-static struct {
-	str name;
-	enum rtp_relay_var_flags flag;
-} rtp_relay_var_flags_str[]= {
-	{ str_init("flags"), RTP_RELAY_FLAGS_SELF },
-	{ str_init("peer"), RTP_RELAY_FLAGS_PEER },
-	{ str_init("ip"), RTP_RELAY_FLAGS_IP },
-	{ str_init("type"), RTP_RELAY_FLAGS_TYPE },
-	{ str_init("iface"), RTP_RELAY_FLAGS_IFACE },
-	{ str_init("disabled"), RTP_RELAY_FLAGS_DISABLED },
-};
-
-static str *rtp_relay_flags_get_str(enum rtp_relay_var_flags flags)
-{
-	static str unknown = str_init("unknown");
-	int s = sizeof(rtp_relay_var_flags_str) / sizeof (rtp_relay_var_flags_str[0]);
-	if (flags >= s)
-		return &unknown;
-	for (--s; s >=0; s--)
-		if (rtp_relay_var_flags_str[s].flag == flags)
-			return &rtp_relay_var_flags_str[s].name;
-	return &unknown;
-}
-
-static enum rtp_relay_var_flags rtp_relay_flags_get(const str *name)
-{
-	int s = sizeof(rtp_relay_var_flags_str) / sizeof (rtp_relay_var_flags_str[0]);
-	for (--s; s >= 0; s--)
-		if (str_strcasecmp(name, &rtp_relay_var_flags_str[s].name) == 0)
-			return rtp_relay_var_flags_str[s].flag;
-	return RTP_RELAY_FLAGS_UNKNOWN;
 }
 
 static int pv_init_rtp_relay_var(pv_spec_p sp, int param)

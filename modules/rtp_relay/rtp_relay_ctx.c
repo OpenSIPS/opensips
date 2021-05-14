@@ -23,6 +23,7 @@
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
 #include "../../bin_interface.h"
+#include "../../lib/cJSON.h"
 
 static struct tm_binds rtp_relay_tmb;
 static struct dlg_binds rtp_relay_dlg;
@@ -47,6 +48,40 @@ static struct list_head *rtp_relay_contexts;
 
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
+
+/* pvar handing */
+static struct {
+	str name;
+	enum rtp_relay_var_flags flag;
+} rtp_relay_var_flags_str[]= {
+	{ str_init("flags"), RTP_RELAY_FLAGS_SELF },
+	{ str_init("peer"), RTP_RELAY_FLAGS_PEER },
+	{ str_init("ip"), RTP_RELAY_FLAGS_IP },
+	{ str_init("type"), RTP_RELAY_FLAGS_TYPE },
+	{ str_init("iface"), RTP_RELAY_FLAGS_IFACE },
+	{ str_init("disabled"), RTP_RELAY_FLAGS_DISABLED },
+};
+
+str *rtp_relay_flags_get_str(enum rtp_relay_var_flags flags)
+{
+	static str unknown = str_init("unknown");
+	int s = sizeof(rtp_relay_var_flags_str) / sizeof (rtp_relay_var_flags_str[0]);
+	if (flags >= s)
+		return &unknown;
+	for (--s; s >=0; s--)
+		if (rtp_relay_var_flags_str[s].flag == flags)
+			return &rtp_relay_var_flags_str[s].name;
+	return &unknown;
+}
+
+enum rtp_relay_var_flags rtp_relay_flags_get(const str *name)
+{
+	int s = sizeof(rtp_relay_var_flags_str) / sizeof (rtp_relay_var_flags_str[0]);
+	for (--s; s >= 0; s--)
+		if (str_strcasecmp(name, &rtp_relay_var_flags_str[s].name) == 0)
+			return rtp_relay_var_flags_str[s].flag;
+	return RTP_RELAY_FLAGS_UNKNOWN;
+}
 
 static struct rtp_relay_ctx *rtp_relay_get_dlg_ctx(void)
 {
@@ -121,6 +156,14 @@ void rtp_relay_ctx_free(void *param)
 
 	if (!ctx)
 		return;
+
+	RTP_RELAY_CTX_LOCK(ctx);
+	if (rtp_relay_ctx_pending(ctx)) {
+		rtp_relay_ctx_set_deleted(ctx);
+		RTP_RELAY_CTX_UNLOCK(ctx);
+		return;
+	}
+	RTP_RELAY_CTX_UNLOCK(ctx);
 
 	if (ctx->callid.s)
 		shm_free(ctx->callid.s);
@@ -383,7 +426,7 @@ struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
 	return NULL;
 }
 
-struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
+static struct rtp_relay_sess *rtp_relay_sess_empty(void)
 {
 	struct rtp_relay_sess *sess;
 	sess = shm_malloc(sizeof *sess);
@@ -393,6 +436,16 @@ struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
 	}
 	memset(sess, 0, sizeof *sess);
 	sess->server.set = -1;
+	sess->index = RTP_RELAY_ALL_BRANCHES;
+	INIT_LIST_HEAD(&sess->list);
+	return sess;
+}
+
+struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
+{
+	struct rtp_relay_sess *sess = rtp_relay_sess_empty();
+	if (!sess)
+		return NULL;
 	sess->index = index;
 	if (index == RTP_RELAY_ALL_BRANCHES)
 		ctx->main = sess;
@@ -549,7 +602,7 @@ static int mi_rtp_relay_ctx(struct rtp_relay_ctx *ctx,
 	if (add_mi_string(rtp_item, MI_SSTR("relay"),
 			sess->relay->name.s, sess->relay->name.len) < 0)
 		goto end;
-	if (add_mi_string(rtp_item, MI_SSTR("server"),
+	if (add_mi_string(rtp_item, MI_SSTR("node"),
 			sess->server.node.s, sess->server.node.len) < 0)
 		goto end;
 	if (add_mi_number(rtp_item, MI_SSTR("set"), sess->server.set) < 0)
@@ -575,21 +628,27 @@ static void rtp_relay_dlg_mi(struct dlg_cell* dlg, int type, struct dlg_cb_param
 	RTP_RELAY_CTX_UNLOCK(ctx);
 }
 
-static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
+static void rtp_relay_delete_dlg(struct dlg_cell *dlg,
+		struct rtp_relay_ctx *ctx, struct rtp_relay_sess *sess)
 {
 	struct rtp_relay_session info;
+	memset(&info, 0, sizeof info);
+	info.callid = &ctx->callid;
+	info.from_tag = &dlg->legs[DLG_CALLER_LEG].tag;
+	info.to_tag = &dlg->legs[callee_idx(dlg)].tag;
+	info.branch = sess->index;
+	rtp_relay_delete(&info, sess, NULL);
+}
+
+static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
+{
 	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
 
 	if (!ctx->main || !rtp_sess_pending(ctx->main))
 		return;
 
-	memset(&info, 0, sizeof info);
-	info.callid = &ctx->callid;
-	info.from_tag = &dlg->legs[DLG_CALLER_LEG].tag;
-	info.to_tag = &dlg->legs[callee_idx(dlg)].tag;
-	info.branch = ctx->main->index;
 	RTP_RELAY_CTX_LOCK(ctx);
-	rtp_relay_delete(&info, ctx->main, NULL);
+	rtp_relay_delete_dlg(dlg, ctx, ctx->main);
 	RTP_RELAY_CTX_UNLOCK(ctx);
 	lock_start_write(rtp_relay_contexts_lock);
 	list_del(&ctx->list);
@@ -950,15 +1009,14 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	return rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER);
 }
 
-mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
-								struct mi_handler *async_hdl)
+static mi_response_t *mi_rtp_relay_params(const mi_params_t *params,
+		struct rtp_relay **relay, str **node, int *set)
 {
-	mi_response_t *resp;
-	mi_item_t *arr;
-	struct list_head *it;
-	struct rtp_relay_ctx *ctx;
-	struct rtp_relay *relay = NULL;
-	str *node = NULL, tmp;
+	static str tmp;
+
+	*relay = NULL;
+	*node = NULL;
+	*set = -1;
 
 	switch(try_get_mi_string_param(params, "engine", &tmp.s, &tmp.len)) {
 		case -1:
@@ -966,8 +1024,8 @@ mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
 		case -2:
 			return init_mi_param_error();
 		default:
-			relay = rtp_relay_get(&tmp);
-			if (!relay)
+			*relay = rtp_relay_get(&tmp);
+			if (!*relay)
 				return init_mi_error(404, MI_SSTR("unknown RTP  Relay engine"));
 			/* if we have an engine, we might also have a node */
 			switch(try_get_mi_string_param(params, "node", &tmp.s, &tmp.len)) {
@@ -976,9 +1034,36 @@ mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
 				case -2:
 					return init_mi_param_error();
 				default:
-					node = &tmp;
+					*node = &tmp;
+					break;
+			}
+			/* if we have an engine, we might also have a node */
+			switch(try_get_mi_int_param(params, "set", set)) {
+					break;
+				case -2:
+					return init_mi_param_error();
+				case -1:
+				default:
+					break;
 			}
 	}
+	return NULL;
+}
+
+mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *arr;
+	struct list_head *it;
+	struct rtp_relay_ctx *ctx;
+	struct rtp_relay *relay;
+	str *node;
+	int set;
+
+	resp = mi_rtp_relay_params(params, &relay, &node, &set);
+	if (resp)
+		return resp;
 
 	resp = init_mi_result_array(&arr);
 	if (!resp)
@@ -1005,8 +1090,512 @@ next:
 	return resp;
 
 error:
+	RTP_RELAY_CTX_UNLOCK(ctx);
 	lock_stop_read(rtp_relay_contexts_lock);
-	if (resp)
-		free_mi_response(resp);
+	free_mi_response(resp);
 	return 0;
+}
+
+#if 0
+	{ "rtp_relay_update", 0, 0, 0, {
+		{mi_rtp_relay_update, {0}},
+		{mi_rtp_relay_update, {"engine", 0}},
+		{mi_rtp_relay_update, {"engine", "set", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "new_set", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "new_node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "new_set", "new_node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", "new_node", 0}},
+		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", "new_node", 0}},
+#endif
+
+struct rtp_async_param {
+	int no, completed, success;
+	gen_lock_t lock;
+	struct mi_handler *async;
+	struct list_head contexts;
+};
+static struct rtp_async_param *rtp_relay_new_async_param(
+		struct mi_handler *async_hdl)
+{
+	struct rtp_async_param *p = shm_malloc(sizeof *p);
+	if (!p) {
+		LM_ERR("could not create temporary contexts list\n");
+		return NULL;
+	}
+	memset(p, 0, sizeof *p);
+	INIT_LIST_HEAD(&p->contexts);
+	lock_init(&p->lock);
+	p->async = async_hdl;
+	return p;
+}
+
+struct rtp_relay_tmp {
+	enum {
+		RTP_RELAY_TMP_FAIL,
+		RTP_RELAY_TMP_OFFER,
+		RTP_RELAY_TMP_ANSWER,
+	} state;
+	struct rtp_relay_ctx *ctx;
+	struct rtp_relay_sess *sess;
+	struct rtp_async_param *param;
+	struct dlg_cell *dlg;
+	struct list_head list;
+};
+
+static struct rtp_relay_tmp *rtp_relay_new_tmp(struct rtp_relay_ctx *ctx,
+		int set, str *node)
+{
+	int f;
+	struct rtp_relay_sess *s;
+	struct rtp_relay_tmp *tmp = shm_malloc(sizeof *tmp);
+	if (!tmp) {
+		LM_ERR("could not allocate temporary ctx\n");
+		return NULL;
+	}
+	tmp->state = 0;
+	tmp->ctx = ctx;
+	/* create a new session, similar to the existing one */
+	tmp->sess = rtp_relay_sess_empty();
+	if (!tmp->sess)
+		goto error;
+	s = ctx->main;
+	memcpy(tmp->sess, s, sizeof *ctx->main);
+	if (set != -1)
+		tmp->sess->server.set = set;
+	if (!node)
+		node = &s->server.node;
+	if (shm_str_dup(&tmp->sess->server.node, node) < 0)
+		goto error;
+	INIT_LIST_HEAD(&tmp->sess->list);
+	/* copy all flags as well */
+	for (f = 0; f < RTP_RELAY_FLAGS_SIZE; f++) {
+		if (s->flags[RTP_RELAY_OFFER][f].s)
+			shm_str_dup(&tmp->sess->flags[RTP_RELAY_OFFER][f],
+					&s->flags[RTP_RELAY_OFFER][f]);
+		if (s->flags[RTP_RELAY_ANSWER][f].s)
+			shm_str_dup(&tmp->sess->flags[RTP_RELAY_ANSWER][f],
+					&s->flags[RTP_RELAY_ANSWER][f]);
+	}
+	INIT_LIST_HEAD(&tmp->list);
+	rtp_relay_ctx_set_pending(ctx);
+	return tmp;
+error:
+	if (tmp->sess)
+		rtp_relay_ctx_free_sess(tmp->sess);
+	shm_free(tmp);
+	return NULL;
+}
+
+static int rtp_relay_release_tmp(struct rtp_relay_tmp *tmp, int success)
+{
+	int ret;
+	struct rtp_async_param *p;
+	struct rtp_relay_sess *del_sess = NULL;
+
+	RTP_RELAY_CTX_LOCK(tmp->ctx);
+	rtp_relay_ctx_reset_pending(tmp->ctx);
+	if (rtp_relay_ctx_deleted(tmp->ctx)) {
+		RTP_RELAY_CTX_UNLOCK(tmp->ctx);
+		rtp_relay_ctx_free(tmp->ctx);
+		rtp_relay_ctx_free_sess(tmp->sess);
+	} else {
+		if (success) {
+			/* if we are using a different node, or a different engine,
+			 * we should terminate the previous session */
+			if (tmp->ctx->main->relay != tmp->sess->relay ||
+					str_strcmp(&tmp->ctx->main->server.node,
+						&tmp->sess->server.node)) {
+				del_sess = tmp->ctx->main;
+				list_del(&del_sess->list);
+			} else {
+				/* otherwise cleanup the structure now */
+				rtp_relay_ctx_free_sess(tmp->ctx->main);
+			}
+			tmp->ctx->main = tmp->sess;
+			list_add(&tmp->sess->list, &tmp->ctx->sessions);
+		} else {
+			rtp_relay_ctx_free_sess(tmp->sess);
+		}
+		RTP_RELAY_CTX_UNLOCK(tmp->ctx);
+	}
+	/* update the async param */
+	p = tmp->param;
+	lock_get(&p->lock);
+	list_del(&tmp->list);
+	p->completed++;
+	if (success)
+		p->success++;
+	/* if all sessions completed, return the number of completed
+	 * sessions, otherwise return the number of failed sessions */
+	if (p->no == p->completed)
+		if (p->success)
+			ret = p->success;
+		else
+			ret = -p->no;
+	else
+		ret = 0;
+	lock_release(&p->lock);
+
+	/* finally, delete the previous session */
+	if (del_sess) {
+		if (tmp->dlg)
+			rtp_relay_delete_dlg(tmp->dlg, tmp->ctx, del_sess);
+		rtp_relay_ctx_free_sess(del_sess);
+	}
+	if (tmp->dlg)
+		rtp_relay_dlg.dlg_unref(tmp->dlg, 1);
+	shm_free(tmp);
+	return ret;
+}
+
+static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg, str *body);
+
+static int rtp_relay_reinvite_reply(struct sip_msg *msg,
+		int statuscode, void *param)
+{
+	struct rtp_relay_tmp *tmp = (struct rtp_relay_tmp *)param;
+	struct rtp_async_param *p;
+	mi_response_t *resp;
+	str body, *pbody;
+	int success = 0;
+	int ret;
+	char retbuf[10 /* 'Sessions: */ + INT2STR_MAX_LEN];
+	str sret;
+
+	/* not interested in provisional replies */
+	if (statuscode < 200)
+		return 0;
+
+	if (!param) {
+		LM_BUG("cannot get reinvite param!\n");
+		return -1;
+	}
+
+	switch (tmp->state) {
+		case RTP_RELAY_TMP_OFFER:
+			pbody = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+			if (!pbody) {
+				LM_WARN("reply without SDP - dropping\n");
+				goto error;
+			}
+			/* TODO: answer caller's SDP tp get SDP for callee */
+			tmp->state = RTP_RELAY_TMP_ANSWER;
+			return rtp_relay_reinvite(tmp, callee_idx(tmp->dlg), pbody);
+			break;
+		case RTP_RELAY_TMP_ANSWER:
+			if (statuscode >= 300) {
+				LM_ERR("callee returned negative reply\n");
+				goto error;
+			}
+			success = 1;
+			/* fallback */
+		case RTP_RELAY_TMP_FAIL:
+			/* nothing to do, just release with error! */
+			p = tmp->param;
+			ret = rtp_relay_release_tmp(tmp, success);
+			if (ret != 0) {
+				/* complete */
+				if (p->async) {
+					sret.s = retbuf;
+					memcpy(sret.s, "Sessions: ", 10);
+					sret.len = 10;
+					body.s = int2str(abs(ret), &body.len);
+					memcpy(sret.s + 10, body.s, body.len);
+					sret.len += body.len;
+					if (ret > 0)
+						resp = init_mi_result_string(sret.s, sret.len);
+					else
+						resp = init_mi_error_extra(400, MI_SSTR("Failed"), sret.s, sret.len);
+					p-> async->handler_f(resp, p->async, 1);
+					shm_free(p);
+				}
+			}
+			return (success?0:-1);
+		default:
+
+			LM_BUG("unknown tmp context state %d\n", tmp->state);
+			goto error;
+	}
+	return 0;
+error:
+	/* we presume that only caller was updated - send whatever was
+	 * last in the out buffer */
+	tmp->state = RTP_RELAY_TMP_FAIL;
+	body = dlg_get_out_sdp(tmp->dlg, DLG_CALLER_LEG);
+	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body);
+}
+
+static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg, str *body)
+{
+	static str inv = str_init("INVITE");
+	static str content_type_sdp = str_init("application/sdp");
+
+	return rtp_relay_dlg.send_indialog_request(tmp->dlg,
+			&inv, leg, body, &content_type_sdp, NULL,
+			rtp_relay_reinvite_reply, tmp);
+}
+
+static int rtp_relay_update_reinvites(struct rtp_relay_tmp *tmp)
+{
+
+	str body = tmp->dlg->legs[callee_idx(tmp->dlg)].in_sdp;
+	if (!body.s) {
+		LM_ERR("cannot get callee's SDP\n");
+		return -1;
+	}
+	/* TODO: offer callee's SDP to get SDP for caller */
+	tmp->state = RTP_RELAY_TMP_OFFER;
+	/* step one - send re-invite to caller with updated callee's SDP */
+	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body);
+}
+
+static mi_response_t *rtp_relay_update_async(struct rtp_async_param *p)
+{
+	struct list_head *it, *safe;
+	struct rtp_relay_tmp *tmp;
+	struct dlg_cell *dlg;
+	int success = 0;
+
+	list_for_each_safe(it, safe, &p->contexts) {
+		tmp = list_entry(it, struct rtp_relay_tmp, list);
+		dlg = rtp_relay_dlg.get_dlg_by_callid(&tmp->ctx->callid, 0);
+		if (!dlg) {
+			LM_BUG("could not find dialog!\n");
+			rtp_relay_release_tmp(tmp, 0);
+			continue;
+		}
+		if (dlg->state > 4) {
+			LM_DBG("call in terminate state; skipping!\n");
+			rtp_relay_release_tmp(tmp, 0);
+			continue;
+		}
+		tmp->param = p;
+		tmp->dlg = dlg;
+		if (rtp_relay_update_reinvites(tmp) < 0) {
+			rtp_relay_release_tmp(tmp, 0);
+			continue;
+		}
+
+		success++;
+	}
+	if (success) {
+		if (p->async == NULL)
+			return init_mi_result_string(MI_SSTR("Accepted"));
+		else
+			return MI_ASYNC_RPL;
+	} else {
+		shm_free(p);
+		return init_mi_error(400, MI_SSTR("RTP Relay not available"));
+	}
+}
+
+
+mi_response_t *mi_rtp_relay_update(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	struct rtp_relay *relay = NULL;
+	struct rtp_relay_ctx *ctx;
+	str *node, *new_node = NULL, tmp;
+	int set, new_set = -1;
+	struct rtp_relay_tmp *ctmp;
+	struct list_head *it, *safe;
+	struct rtp_async_param *p;
+
+	resp = mi_rtp_relay_params(params, &relay, &node, &set);
+	if (resp)
+		return resp;
+
+	switch(try_get_mi_int_param(params, "new_set", &new_set)) {
+		case -1:
+			break;
+		case -2:
+			return init_mi_param_error();
+		default:
+			/* if we have a set, we might also have a node */
+			switch(try_get_mi_string_param(params, "new_node", &tmp.s, &tmp.len)) {
+				case -1:
+					break;
+				case -2:
+					return init_mi_param_error();
+				default:
+					new_node = &tmp;
+					break;
+			}
+	}
+	p = rtp_relay_new_async_param(async_hdl);
+	if (!p) {
+		LM_ERR("could not create temporary contexts list\n");
+		return 0;
+	}
+
+	lock_start_read(rtp_relay_contexts_lock);
+	list_for_each(it, rtp_relay_contexts) {
+		ctx = list_entry(it, struct rtp_relay_ctx, list);
+		RTP_RELAY_CTX_LOCK(ctx);
+		if (!ctx->main)
+			goto next;
+		if (relay && ctx->main->relay != relay)
+			goto next;
+		if (set != -1 && ctx->main->server.set != set)
+			goto next;
+		if (node && str_strcmp(node, &ctx->main->server.node))
+			goto next;
+		if (rtp_relay_ctx_pending(ctx))
+			goto next;
+		ctmp = rtp_relay_new_tmp(ctx, new_set, new_node);
+		if (!ctmp)
+			goto error;
+		list_add(&ctmp->list, &p->contexts);
+		p->no++;
+next:
+		RTP_RELAY_CTX_UNLOCK(ctx);
+	}
+
+	lock_stop_read(rtp_relay_contexts_lock);
+
+	/* all good - start async process */
+	if (p->no == 0) {
+		/* nothing to do */
+		shm_free(p);
+		return init_mi_result_ok();
+	}
+	return rtp_relay_update_async(p);
+error:
+	RTP_RELAY_CTX_UNLOCK(ctx);
+	lock_stop_read(rtp_relay_contexts_lock);
+	list_for_each_safe(it, safe, &p->contexts)
+		rtp_relay_release_tmp(list_entry(it, struct rtp_relay_tmp, list), 0);
+	shm_free(p);
+	return 0;
+}
+
+static int rtp_relay_push_flags_type(struct rtp_relay_sess *sess,
+		enum rtp_relay_type type, const char *stype, cJSON *jflags)
+{
+	str tmp;
+	enum rtp_relay_var_flags f;
+	cJSON *o = cJSON_GetObjectItem(jflags, stype);
+
+	if (!o)
+		return 0;
+
+	if (!(o->type & cJSON_Object)) {
+		LM_WARN("%s not an object - ignoring!\n", stype);
+		return -1;
+	}
+	for (o = o->child; o; o = o->next) {
+		tmp.s = o->string;
+		tmp.len = strlen(tmp.s);
+		f = rtp_relay_flags_get(&tmp);
+		switch (f) {
+			case RTP_RELAY_FLAGS_UNKNOWN:
+				LM_WARN("Unknown RTP relay flag %s\n", o->string);
+				break;
+			case RTP_RELAY_FLAGS_DISABLED:
+				if (!(o->type & cJSON_Number)) {
+					LM_WARN("%s not a string - ignoring!\n", o->string);
+					continue;
+				}
+				rtp_sess_set_disabled(sess, o->valueint);
+				break;
+			default:
+				if (!(o->type & cJSON_String)) {
+					LM_WARN("%s not a string - ignoring!\n", o->string);
+					continue;
+				}
+				tmp.s = o->valuestring;
+				tmp.len = strlen(tmp.s);
+				if (shm_str_sync(&sess->flags[type][f], &tmp) < 0)
+					return -1;
+				break;
+		}
+	}
+	return 0;
+}
+
+static int rtp_relay_push_flags(struct rtp_relay_sess *sess, cJSON *flags)
+{
+	return rtp_relay_push_flags_type(sess, RTP_RELAY_OFFER, "caller", flags) |
+		rtp_relay_push_flags_type(sess, RTP_RELAY_ANSWER, "callee", flags);
+}
+
+mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	struct rtp_relay *relay = NULL;
+	struct rtp_relay_ctx *ctx = NULL;
+	str *node, flags, callid, tmp;
+	struct rtp_relay_tmp *ctmp;
+	struct rtp_async_param *p;
+	struct list_head *it;
+	cJSON *jflags = NULL;
+	int set, ret;
+
+	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
+		return init_mi_param_error();
+
+	resp = mi_rtp_relay_params(params, &relay, &node, &set);
+	if (resp)
+		return resp;
+
+	switch(try_get_mi_string_param(params, "flags", &flags.s, &flags.len)) {
+		case -1:
+			break;
+		case -2:
+			return init_mi_param_error();
+		default:
+			if (pkg_nt_str_dup(&tmp, &flags) < 0)
+				return 0;
+			jflags = cJSON_Parse(tmp.s);
+			if (!jflags)
+				return init_mi_param_error();
+			break;
+	}
+
+	lock_start_read(rtp_relay_contexts_lock);
+	list_for_each(it, rtp_relay_contexts) {
+		ctx = list_entry(it, struct rtp_relay_ctx, list);
+		RTP_RELAY_CTX_LOCK(ctx);
+		if (!str_strcmp(&ctx->callid, &callid))
+			break;
+		RTP_RELAY_CTX_UNLOCK(ctx);
+		ctx = NULL;
+	}
+	if (!ctx) {
+		lock_stop_read(rtp_relay_contexts_lock);
+		return init_mi_error(404, MI_SSTR("RTP Relay session not found"));
+	}
+
+	ctmp = rtp_relay_new_tmp(ctx, set, node);
+	RTP_RELAY_CTX_UNLOCK(ctx);
+	lock_stop_read(rtp_relay_contexts_lock);
+	if (!ctmp)
+		return 0;
+
+	/* update relay, if needed */
+	if (relay)
+		ctmp->sess->relay = relay;
+	if (jflags) {
+		ret = rtp_relay_push_flags(ctmp->sess, jflags);
+		cJSON_Delete(jflags);
+		if (ret < 0)
+			goto error;
+	}
+
+	p = rtp_relay_new_async_param(async_hdl);
+	if (!p) {
+		LM_ERR("could not create temporary contexts list\n");
+		goto error;
+	}
+	list_add(&ctmp->list, &p->contexts);
+	p->no = 1;
+
+	return rtp_relay_update_async(p);
+error:
+	rtp_relay_release_tmp(ctmp, 0);
+	return NULL;
 }

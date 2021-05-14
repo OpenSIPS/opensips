@@ -182,6 +182,11 @@ if (is_method("INVITE") &amp;&amp; !has_totag()) {
 					or <emphasis>rtpengine</emphasis>).
 				</para></listitem>
 				<listitem><para>
+					<emphasis>set</emphasis> - (optional) the RTP
+					relay set. When used, the <emphasis>engine</emphasis>
+					parameter must also be specified.
+				</para></listitem>
+				<listitem><para>
 					<emphasis>node</emphasis> - (optional) the RTP
 					relay node. When used, the <emphasis>engine</emphasis>
 					parameter must also be specified.
@@ -197,6 +202,135 @@ $ opensips-cli -x mi rtp_relay_list
 
 ## list all sessions going through a specific RTP node
 $ opensips-cli -x mi rtp_relay_list rtpproxy udp:127.0.0.1:2222
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_rtp_relay_update" xreflabel="rtp_relay_update">
+			<title><function moreinfo="none">rtp_relay_update</function></title>
+			<para>
+			Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
+			</para>
+			<para>
+				This function can be used to trigger dialog in-dialog
+				updates for certain ongoing RTP sessions. For all matched
+				sessions, it re-engages an RTP Relay offer/answer session,
+				then sends re-INVITEs to call's participants to with
+				the updated SDP.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis>Running the command without a filter
+				(such as <emphasis>engine</emphasis> or <emphasis>set</emphasis>)
+				will cause all RTP relay sessions to be
+				re-engaged.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis>When enforcing a new node,
+				it is not guaranteed to be used - if the node is not
+				avaialble, but a different one is, the active one will
+				be chosen.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis>If the node is being changed,
+				the module tries to unforce the previous RTP relay
+				session, even though it might not work.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>engine</emphasis> - (optional) the RTP
+					relay engine (i.e. <emphasis>rtpproxy</emphasis>
+					or <emphasis>rtpengine</emphasis>) to be used
+					as filter.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>set</emphasis> - (optional) the RTP
+					relay set to be used as filter. If missing, the
+					same set will be used as it was initially engaged
+					for.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>node</emphasis> - (optional) the RTP
+					relay node to be used as filter.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>new_set</emphasis> - (optional) a new RTP
+					Relay set to be used for the call.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>new_node</emphasis> - (optional) a new RTP
+					node to be used for the call. If
+					<emphasis>new_set</emphasis> is missing, the
+					same set will be used.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">rtp_relay_update</function> usage</title>
+			<programlisting format="linespecific">
+...
+## update all sessions that are using rtpproxy
+$ opensips-cli -x mi rtp_relay_update rtpproxy
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_rtp_relay_update_callid" xreflabel="rtp_relay_update_callid">
+			<title><function moreinfo="none">rtp_relay_update_callid</function></title>
+			<para>
+			Updates/Re-engages the RTP relays in all ongoing RTP relay sessions.
+			</para>
+			<para>
+				The function basically works in the same manner as
+				<xref linkend="mi_rtp_relay_update"/>, but is to be
+				used to update a specific callid. In addition, one can
+				also update the <emphasis>engine</emphasis> and
+				<emphasis>flags</emphasis> used for the particular
+				session.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>callid</emphasis> - the callid used to
+					match the dialog to be updated.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>engine</emphasis> - (optional) the new RTP
+					relay engine (i.e. <emphasis>rtpproxy</emphasis>
+					or <emphasis>rtpengine</emphasis>) to be used. If
+					missing, the same initial engine is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>set</emphasis> - (optional) the new RTP
+					relay set to be used. If missing, the default
+					same set will be used as it was initially engaged
+					for.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>node</emphasis> - (optional) the RTP
+					relay node to be used. If not specified, the first
+					available node is used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>flags</emphasis> - (optional) a JSON
+					contining the <emphasis>caller</emphasis> and/or
+					<emphasis>callee</emphasis> nodes, which contain
+					new flags that should be used for the session. Only
+					explicitely specified flags will be overwritten.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">rtp_relay_update_callid</function> usage</title>
+			<programlisting format="linespecific">
+...
+## update a call with a working RTPproxy node
+$ opensips-cli -x mi rtp_relay_update_callid 1-3758963@127.0.0.1 rtpproxy
+
+## update a call to use RTPEngine with a SRTP SDP for caller
+$ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
+	flags='{ "caller":{"type":"SRTP", "flags":"replace-origin"},
+		"callee":{"type":"RTP", "flags"="replace-origin"}}'
 ...
 			</programlisting>
 			</example>

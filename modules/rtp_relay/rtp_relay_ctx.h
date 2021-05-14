@@ -29,6 +29,8 @@
 
 #define RTP_RELAY_CTX_STATE_ENGAGED		(1<<0)
 #define RTP_RELAY_CTX_STATE_ESTABLISHED	(1<<1)
+#define RTP_RELAY_CTX_STATE_DELETED		(1<<2)
+#define RTP_RELAY_CTX_STATE_PENDING		(1<<3)
 
 #define RTP_RELAY_SESS_STATE_DISABLED	(1<<0)
 #define RTP_RELAY_SESS_STATE_PENDING	(1<<1)
@@ -41,6 +43,12 @@
 #define rtp_relay_ctx_established(_s) ((_s)->state & RTP_RELAY_CTX_STATE_ESTABLISHED)
 #define rtp_relay_ctx_set_established(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ESTABLISHED
 
+#define rtp_relay_ctx_deleted(_s) ((_s)->state & RTP_RELAY_CTX_STATE_DELETED)
+#define rtp_relay_ctx_set_deleted(_s) (_s)->state |= RTP_RELAY_CTX_STATE_DELETED
+
+#define rtp_relay_ctx_pending(_s) ((_s)->state & RTP_RELAY_CTX_STATE_PENDING)
+#define rtp_relay_ctx_set_pending(_s) (_s)->state |= RTP_RELAY_CTX_STATE_PENDING
+#define rtp_relay_ctx_reset_pending(_s) (_s)->state &= (~RTP_RELAY_CTX_STATE_PENDING)
 
 #define rtp_sess_disabled(_s) ((_s)->state & RTP_RELAY_SESS_STATE_DISABLED)
 #define rtp_sess_set_disabled(_s, _v) (_s)->state |= ((_v)?RTP_RELAY_SESS_STATE_DISABLED:0)
@@ -96,6 +104,9 @@ struct rtp_relay_ctx {
 	struct list_head list;
 };
 
+str *rtp_relay_flags_get_str(enum rtp_relay_var_flags flags);
+enum rtp_relay_var_flags rtp_relay_flags_get(const str *name);
+
 struct rtp_relay_ctx *rtp_relay_ctx_get(void);
 void rtp_relay_ctx_free(void *param);
 
@@ -114,6 +125,10 @@ struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index);
 struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index);
 
 mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_rtp_relay_update(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 #define RTP_RELAY_CTX_LOCK(_c) lock_get(&_c->lock);
