@@ -285,7 +285,8 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	RTP_RELAY_BIN_POP(int, &sess->state);
 	sess->relay = relay;
 	RTP_RELAY_BIN_POP(int, &sess->server.set);
-	RTP_RELAY_BIN_POP(str, &sess->server.node);
+	RTP_RELAY_BIN_POP(str, &tmp);
+	shm_str_dup(&sess->server.node, &tmp);
 
 	for (rtype = RTP_RELAY_OFFER; rtype < RTP_RELAY_SIZE; rtype++) {
 		for (flag = RTP_RELAY_FLAGS_SELF; flag < RTP_RELAY_FLAGS_SIZE; flag++) {
