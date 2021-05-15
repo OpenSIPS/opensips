@@ -24,12 +24,13 @@ B2B_LOGIC
               1.4.8. db_url (str)
               1.4.9. update_period (int)
               1.4.10. max_duration (int)
-              1.4.11. b2bl_from_spec_param (string)
-              1.4.12. server_address (str)
-              1.4.13. init_callid_hdr (str)
-              1.4.14. db_mode (int)
-              1.4.15. db_table (str)
-              1.4.16. b2bl_th_init_timeout (int)
+              1.4.11. contact_user (int)
+              1.4.12. b2bl_from_spec_param (string)
+              1.4.13. server_address (str)
+              1.4.14. init_callid_hdr (str)
+              1.4.15. db_mode (int)
+              1.4.16. db_table (str)
+              1.4.17. b2bl_th_init_timeout (int)
 
         1.5. Exported Functions
 
@@ -106,26 +107,27 @@ B2B_LOGIC
    1.8. Set db_url parameter
    1.9. Set update_period parameter
    1.10. Set max_duration parameter
-   1.11. Set b2bl_from_spec_param parameter
-   1.12. Set server_address parameter
-   1.13. Set init_callid_hdr parameter
-   1.14. Set db_mode parameter
-   1.15. Set db_table parameter
-   1.16. Set b2bl_th_init_timeout parameter
-   1.17. b2b_init_request usage
-   1.18. b2b_server_new usage
-   1.19. b2b_client_new usage
-   1.20. b2b_bridge usage
-   1.21. b2b_pass_request usage
-   1.22. b2b_handle_reply usage
-   1.23. b2b_send_reply usage
-   1.24. b2b_delete_entity usage
-   1.25. b2b_end_dlg_leg usage
-   1.26. b2b_bridge_request usage
-   1.27. $b2b_logic.key usage
-   1.28. $b2b_logic.entity usage
-   1.29. $b2b_logic.ctx usage
-   1.30. $b2b_logic.scenario usage
+   1.11. Set contact_user parameter
+   1.12. Set b2bl_from_spec_param parameter
+   1.13. Set server_address parameter
+   1.14. Set init_callid_hdr parameter
+   1.15. Set db_mode parameter
+   1.16. Set db_table parameter
+   1.17. Set b2bl_th_init_timeout parameter
+   1.18. b2b_init_request usage
+   1.19. b2b_server_new usage
+   1.20. b2b_client_new usage
+   1.21. b2b_bridge usage
+   1.22. b2b_pass_request usage
+   1.23. b2b_handle_reply usage
+   1.24. b2b_send_reply usage
+   1.25. b2b_delete_entity usage
+   1.26. b2b_end_dlg_leg usage
+   1.27. b2b_bridge_request usage
+   1.28. $b2b_logic.key usage
+   1.29. $b2b_logic.entity usage
+   1.30. $b2b_logic.ctx usage
+   1.31. $b2b_logic.scenario usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -351,14 +353,25 @@ modparam("b2b_logic", "update_period", 60)
 modparam("b2b_logic", "max_duration", 7200)
 ...
 
-1.4.11. b2bl_from_spec_param (string)
+1.4.11. contact_user (int)
+
+   If set to 1, adds user from From: header to generated Contact:
+
+   Default value is “0”.
+
+   Example 1.11. Set contact_user parameter
+...
+modparam("b2b_logic", "contact_user", 1)
+...
+
+1.4.12. b2bl_from_spec_param (string)
 
    The name of the pseudo variable for storing the new “From”
    header. The PV must be set before calling “b2b_init_request”.
 
    Default value is “NULL” (disabled).
 
-   Example 1.11. Set b2bl_from_spec_param parameter
+   Example 1.12. Set b2bl_from_spec_param parameter
 ...
 modparam("b2b_logic", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
@@ -371,7 +384,7 @@ route{
         ...
 }
 
-1.4.12. server_address (str)
+1.4.13. server_address (str)
 
    The IP address of the machine that will be used as Contact in
    the generated messages. This is compulsory only when OpenSIPS
@@ -381,24 +394,24 @@ route{
    socket will be used to send all the requests, replies for that
    session.
 
-   Example 1.12. Set server_address parameter
+   Example 1.13. Set server_address parameter
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 
-1.4.13. init_callid_hdr (str)
+1.4.14. init_callid_hdr (str)
 
    The module offers the possibility to insert the original callid
    in a header in the generated Invites. If you want this, set
    this parameter to the name of the header in which to insert the
    original callid.
 
-   Example 1.13. Set init_callid_hdr parameter
+   Example 1.14. Set init_callid_hdr parameter
 ...
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
-1.4.14. db_mode (int)
+1.4.15. db_mode (int)
 
    The B2B modules have support for the 3 type of database storage
 
@@ -410,29 +423,29 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 
    Default value is “2” (WRITE BACK).
 
-   Example 1.14. Set db_mode parameter
+   Example 1.15. Set db_mode parameter
 ...
 modparam("b2b_logic", "db_mode", 1)
 ...
 
-1.4.15. db_table (str)
+1.4.16. db_table (str)
 
    Name of the database table to be used
 
    Default value is “b2b_logic”
 
-   Example 1.15. Set db_table parameter
+   Example 1.16. Set db_table parameter
 ...
 modparam("b2b_logic", "db_table", "some_table_name")
 ...
 
-1.4.16. b2bl_th_init_timeout (int)
+1.4.17. b2bl_th_init_timeout (int)
 
    Call setup timeout for topology hiding scenario.
 
    Default value is “60”
 
-   Example 1.16. Set b2bl_th_init_timeout parameter
+   Example 1.17. Set b2bl_th_init_timeout parameter
 ...
 modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 ...
@@ -458,8 +471,8 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
        required.
      * flags (string, optional) - meanings of the flags is as
        follows:
-          + t[nn] - Call setup timeout for topology hiding
-            scenario. Example: t300.
+          + t[nn] - Call setup timeout. 0 sets timeout to
+            max_duration value. Example: t300.
           + a - Transparent authentication. In this mode b2b
             passes your 401 or 407 authentication request to
             destination server.
@@ -491,7 +504,7 @@ Note
    correctly routed, but the SIP pacakge may be invalid (as
    Contact, Via, etc).
 
-   Example 1.17. b2b_init_request usage
+   Example 1.18. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user()) {
    ...
@@ -525,7 +538,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.18. b2b_server_new usage
+   Example 1.19. b2b_server_new usage
 ...
 if(is_method("INVITE") && !has_totag()) {
    b2b_server_new("server1", $avp(b2b_hdrs), $avp(b2b_hdr_bodies));
@@ -560,7 +573,7 @@ if(is_method("INVITE") && !has_totag()) {
    This function can be used from REQUEST_ROUTE and the b2b_logic
    request routes.
 
-   Example 1.19. b2b_client_new usage
+   Example 1.20. b2b_client_new usage
 ...
 b2b_client_new("client1", "sip:alice@opensips.org");
 ...
@@ -596,7 +609,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.20. b2b_bridge usage
+   Example 1.21. b2b_bridge usage
 ...
 route[b2b_logic_request] {
    ...
@@ -615,7 +628,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.21. b2b_pass_request usage
+   Example 1.22. b2b_pass_request usage
 ...
 route[b2b_logic_request] {
    if ($rm != "BYE") {
@@ -636,7 +649,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic reply routes.
 
-   Example 1.22. b2b_handle_reply usage
+   Example 1.23. b2b_handle_reply usage
 ...
 route[b2b_logic_reply] {
     xlog("B2B REPLY: [$rs $rm] from entity: $b2b_logic.entity(id)\n");
@@ -655,7 +668,7 @@ route[b2b_logic_reply] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.23. b2b_send_reply usage
+   Example 1.24. b2b_send_reply usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -671,7 +684,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.24. b2b_delete_entity usage
+   Example 1.25. b2b_delete_entity usage
 ...
 route[b2b_logic_request] {
    if ($rm == "BYE") {
@@ -691,7 +704,7 @@ route[b2b_logic_request] {
    This function can be used from the b2b_logic request or reply
    routes.
 
-   Example 1.25. b2b_end_dlg_leg usage
+   Example 1.26. b2b_end_dlg_leg usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -713,7 +726,7 @@ route[b2b_logic_request] {
      * entity_no (int) - an integer that holds the entity of the
        entity/participant to bridge.
 
-   Example 1.26. b2b_bridge_request usage
+   Example 1.27. b2b_bridge_request usage
 ...
 modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
@@ -816,7 +829,7 @@ nsips.org
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.27. $b2b_logic.key usage
+   Example 1.28. $b2b_logic.key usage
 ...
 local_route {
    ...
@@ -856,7 +869,7 @@ local_route {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.28. $b2b_logic.entity usage
+   Example 1.29. $b2b_logic.entity usage
 ...
 modparam("b2b_entities", "script_request_route", "b2b_request")
 ...
@@ -885,7 +898,7 @@ route[b2b_request] {
    Setting the variable to NULL will delete the value at the given
    key.
 
-   Example 1.29. $b2b_logic.ctx usage
+   Example 1.30. $b2b_logic.ctx usage
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -913,7 +926,7 @@ route[b2b_reply] {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.30. $b2b_logic.scenario usage
+   Example 1.31. $b2b_logic.scenario usage
 ...
 route[b2b_logic_request] {
    if ($b2b_logic.scenario == "prepaid") {
@@ -1081,7 +1094,7 @@ Chapter 3. Contributors
    3. Vlad Patrascu (@rvlad-patrascu) 111 29 4340 2813
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 43 35 267 248
    5. Razvan Crainea (@razvancrainea) 39 29 640 211
-   6. Nick Altmann (@nikbyte) 20 10 629 212
+   6. Nick Altmann (@nikbyte) 26 15 739 228
    7. Liviu Chircu (@liviuchircu) 16 13 57 102
    8. Vlad Paiu (@vladpaiu) 7 5 35 21
    9. Maksym Sobolyev (@sobomax) 5 3 22 22
@@ -1111,9 +1124,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2021
-   3.  Nick Altmann (@nikbyte)             Oct 2012 - Feb 2021
+   1.  Nick Altmann (@nikbyte)             Oct 2012 - May 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
    6.  Zero King (@l2dy)                   Mar 2020 - Dec 2020

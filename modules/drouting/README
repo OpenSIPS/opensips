@@ -51,10 +51,10 @@ Dynamic Routing Module
               1.3.28. drg_domain_col (str)
               1.3.29. drg_grpid_col (str)
               1.3.30. use_partitions (int)
-              1.3.31. db_partitions_url (int)
-              1.3.32. db_partitions_table (int)
+              1.3.31. db_partitions_url (str)
+              1.3.32. db_partitions_table (str)
               1.3.33. partition_id_pvar (pvar)
-              1.3.34. enable_restart_persistency (pvar)
+              1.3.34. enable_restart_persistency (int)
               1.3.35. extra_prefix_chars (str)
               1.3.36. rule_tables_query (str)
 
@@ -880,7 +880,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 modparam("drouting", "use_partitions", 1)
 ...
 
-1.3.31. db_partitions_url (int)
+1.3.31. db_partitions_url (str)
 
    The url to the database containing partition-specific
    information. (partition-specific information includes partition
@@ -897,7 +897,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localho
 st/opensips_partitions")
 ...
 
-1.3.32. db_partitions_table (int)
+1.3.32. db_partitions_table (str)
 
    The name of the table containing partition definitions. To be
    used with use_partitions and db_partitions_url.
@@ -924,7 +924,7 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 ...
 
-1.3.34. enable_restart_persistency (pvar)
+1.3.34. enable_restart_persistency (int)
 
    Parameter set to enable restart persistency for the Dynamic
    Routing module. When this parameter is set, the drouting module
@@ -1692,7 +1692,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 374 177 12931 5555
-   2. Liviu Chircu (@liviuchircu) 142 80 2397 2553
+   2. Liviu Chircu (@liviuchircu) 143 81 2400 2556
    3. Razvan Crainea (@razvancrainea) 94 48 1144 2185
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
@@ -1729,7 +1729,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Apr 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2021
    2.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2021
    4.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
