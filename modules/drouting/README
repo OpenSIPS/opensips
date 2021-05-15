@@ -49,8 +49,8 @@ Dynamic Routing Module
               1.3.26. drg_domain_col (str)
               1.3.27. drg_grpid_col (str)
               1.3.28. use_partitions (int)
-              1.3.29. db_partitions_url (int)
-              1.3.30. db_partitions_table (int)
+              1.3.29. db_partitions_url (str)
+              1.3.30. db_partitions_table (str)
               1.3.31. partition_id_pvar (pvar)
 
         1.4. Exported Functions
@@ -821,7 +821,7 @@ modparam("drouting", "drg_grpid_col", "grpid")
 modparam("drouting", "use_partitions", 1)
 ...
 
-1.3.29. db_partitions_url (int)
+1.3.29. db_partitions_url (str)
 
    The url to the database containing partition-specific
    information. (partition-specific information includes partition
@@ -838,7 +838,7 @@ modparam("drouting", "db_partitions_url", "mysql://user:password@localho
 st/opensips_partitions")
 ...
 
-1.3.30. db_partitions_table (int)
+1.3.30. db_partitions_table (str)
 
    The name of the table containing partition definitions. To be
    used with use_partitions and db_partitions_url.
@@ -1546,7 +1546,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 324 162 11630 3893
    2. Razvan Crainea (@razvancrainea) 66 35 283 1525
-   3. Liviu Chircu (@liviuchircu) 58 40 886 565
+   3. Liviu Chircu (@liviuchircu) 59 41 888 567
    4. Mihai Tiganus (@tallicamike) 48 10 3130 710
    5. Vlad Paiu (@vladpaiu) 22 19 231 46
    6. Andrei Datcu (@andrei-datcu) 20 12 551 134
@@ -1581,7 +1581,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2021
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jan 2021
    3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Nov 2019
    4.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
