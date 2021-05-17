@@ -123,7 +123,7 @@ mi_response_t *init_mi_result_number(double value)
 {
 	mi_item_t *item;
 
-	return _init_mi_result(&item, cJSON_String, value, NULL, 0);
+	return _init_mi_result(&item, cJSON_Number, value, NULL, 0);
 }
 
 mi_response_t *init_mi_result_bool(int b)
