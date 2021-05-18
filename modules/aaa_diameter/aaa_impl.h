@@ -56,6 +56,23 @@ struct _acc_dict {
 	struct dict_object *Route_Record;
 };
 
+struct dm_message {
+	aaa_message *am; /* back-reference */
+	struct list_head avps;
+	struct list_head list;
+};
+
+struct dm_avp {
+	struct dict_object *obj;
+	str name;
+	str value;
+
+	struct list_head subavps;
+
+	struct list_head list;
+};
+
+extern char *dm_conf_filename;
 extern struct _acc_dict acc_dict;
 extern struct dict_object *acr_model;
 

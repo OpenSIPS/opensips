@@ -21,19 +21,66 @@
 #include <freeDiameter/extension.h>
 
 #include "../../sr_module.h"
+#include "../../locking.h"
+#include "../../lib/list.h"
 
 #include "aaa_impl.h"
 #include "peer.h"
 
 #define EVENT_RECORD 1
 
-int diameter_send_msg(void)
+/* OpenSIPS processes will use this list + locking in order to queue
+ * messages to be sent to the Diameter server peer */
+struct list_head *msg_send_queue;
+pthread_cond_t *msg_send_cond;
+pthread_mutex_t *msg_send_lk;
+
+
+int dm_init_peer(void)
+{
+	struct {
+		struct list_head queue;
+		pthread_cond_t cond;
+		pthread_mutex_t mutex;
+	} *wrap;
+
+	wrap = shm_malloc(sizeof *wrap);
+	if (!wrap) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	msg_send_queue = &wrap->queue;
+	INIT_LIST_HEAD(msg_send_queue);
+
+	msg_send_lk = &wrap->mutex;
+	pthread_mutexattr_t mattr;
+	FD_CHECK(pthread_mutexattr_init(&mattr));
+	FD_CHECK(pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED));
+	FD_CHECK(pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST));
+	FD_CHECK(pthread_mutex_init(msg_send_lk, &mattr));
+	pthread_mutexattr_destroy(&mattr);
+
+	msg_send_cond = &wrap->cond;
+	pthread_condattr_t cattr;
+	FD_CHECK(pthread_condattr_init(&cattr));
+	FD_CHECK(pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED));
+	FD_CHECK(pthread_cond_init(msg_send_cond, &cattr));
+	pthread_condattr_destroy(&cattr);
+
+	return 0;
+}
+
+
+static int diameter_send_msg(struct dm_message *msg)
 {
 	struct msg *dmsg;
 	struct avp *avp;
+	struct dm_avp *dm_avp;
+	struct list_head *it;
 	union avp_value val;
-    os0_t sess_bkp;
-    size_t sess_bkp_len;
+	os0_t sess_bkp;
+	size_t sess_bkp_len;
 
 	FD_CHECK(fd_msg_new(acr_model, MSGFL_ALLOC_ETEID, &dmsg));
 
@@ -111,6 +158,16 @@ int diameter_send_msg(void)
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 	}
 
+	list_for_each (it, &msg->avps) {
+		dm_avp = list_entry(it, struct dm_avp, list);
+		LM_INFO("XXX appending AVP: %.*s: %.*s\n", dm_avp->name.len, dm_avp->name.s,
+				dm_avp->value.len, dm_avp->value.s);
+
+		// TODO
+		//FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+		//      avp->name, &wrap->davp.obj, ENOENT));
+	}
+
 	sleep(2);
 
 	FD_CHECK(fd_msg_send(&dmsg, NULL, NULL));
@@ -120,22 +177,48 @@ int diameter_send_msg(void)
 
 void diameter_peer_loop(int _)
 {
+	struct dm_message *msg;
+
 	if (freeDiameter_init() != 0) {
 		LM_ERR("failed to init freeDiameter library\n");
 		return;
 	}
 
-	LM_INFO("XXXXX parse: %d\n", fd_core_parseconf("freeDiameter-client.conf"));
-	LM_INFO("XXXXX start: %d\n", fd_core_start());
+	__FD_CHECK(fd_core_parseconf(dm_conf_filename), 0, );
+	__FD_CHECK(dm_register_osips_avps(), 0, );
 
-	if (diameter_send_msg() != 0) {
-		LM_ERR("failed to send message!\n");
-		return;
+	__FD_CHECK(fd_core_start(), 0, );
+
+	pthread_mutex_lock(msg_send_lk);
+
+	for (;;) {
+		LM_INFO("XXX waiting for new messages...\n");
+		pthread_cond_wait(msg_send_cond, msg_send_lk);
+
+		if (list_empty(msg_send_queue)) {
+			LM_BUG("pthread cond signal on empty queue");
+			continue;
+		}
+
+		LM_INFO("XXX have new message! <3 sending...\n");
+		msg = list_entry(msg_send_queue->next, struct dm_message, list);
+		list_del(&msg->list);
+
+		if (diameter_send_msg(msg) != 0) {
+			LM_ERR("failed to send message!\n");
+			continue;
+		}
+
+		LM_INFO("Done sending!\n");
+
+		_dm_destroy_message(msg->am);
 	}
+
+	pthread_mutex_unlock(msg_send_lk);
 
 	LM_INFO("XXXX successfully sent msg!!?\n");
 
-	fd_core_wait_shutdown_complete();
+	__FD_CHECK(fd_core_wait_shutdown_complete(), 0, );
 
 	LM_INFO("XXXX exiting!!\n");
 }

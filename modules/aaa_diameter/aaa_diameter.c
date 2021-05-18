@@ -21,6 +21,7 @@
 #include <freeDiameter/extension.h>
 
 #include "../../sr_module.h"
+#include "../../lib/list.h"
 
 #include "aaa_impl.h"
 #include "peer.h"
@@ -28,7 +29,7 @@
 int mod_init(void);
 void mod_destroy(void);
 
-extern struct fifo * fd_g_outgoing;
+char *dm_conf_filename = "freeDiameter.conf";
 
 int aaa_diameter_bind_api(aaa_prot *api);
 
@@ -96,6 +97,19 @@ int mod_init(void)
 {
 	LM_DBG("initializing module...\n");
 
+	/* perform only a minimal amount of library initialization, just so modules
+	 * can look up Diameter AVPs through the API, but without neither changing
+	 * the internal library state nor forking any threads yet! */
+	if (dm_init_minimal() != 0) {
+		LM_ERR("failed to init freeDiameter global dictionary\n");
+		return -1;
+	}
+
+	if (dm_init_peer() != 0) {
+		LM_ERR("failed to init the local Diameter peer\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -120,8 +134,8 @@ int aaa_diameter_bind_api(aaa_prot *api)
 	api->create_aaa_message = dm_create_message;
 	api->destroy_aaa_message = dm_destroy_message;
 	api->send_aaa_request = dm_send_message;
-	api->init_prot = NULL;
-	api->dictionary_find = NULL;
+	api->init_prot = dm_init_prot;
+	api->dictionary_find = dm_find;
 	api->avp_add = dm_avp_add;
 	api->avp_get = NULL;
 

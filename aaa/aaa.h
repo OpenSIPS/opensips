@@ -265,6 +265,7 @@ int aaa_parse_url(str*, aaa_prot_config*);
 				   "%s attribute\n", fn, at[i].name);					\
 			return e1;					\
 		}								\
+		LM_DBG("found the '%s' AVP, value: %d\n", at[i].name, at[i].value); \
 	}									\
 	for (i = 0; i < nr_vl; i++) {		\
 		if (vl[i].name == NULL)			\
@@ -274,6 +275,7 @@ int aaa_parse_url(str*, aaa_prot_config*);
 				   "%s attribute value\n", fn, vl[i].name);\
 			return e2;					\
 		}							\
+		LM_DBG("found the '%s' Enum, value: %d\n", vl[i].name, vl[i].value); \
 	}								\
 }
 

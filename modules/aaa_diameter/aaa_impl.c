@@ -22,12 +22,18 @@
 
 #include "../../ut.h"
 #include "../../lib/list.h"
+#include "../../lib/hash.h"
+
 #include "aaa_impl.h"
+#include "peer.h"
 
 struct _acc_dict acc_dict;
 struct dict_object *acr_model;
 
-static int os_cb( struct msg ** msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+/* Workaround until we find a way of looking up a single enum val in fD */
+static gen_hash_t *osips_enumvals;
+
+static int os_cb(struct msg ** msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
 	struct msg_hdr *hdr = NULL;
 
@@ -55,6 +61,7 @@ static int os_cb( struct msg ** msg, struct avp * avp, struct session * sess, vo
 
 	return 0;
 }
+
 
 /* entry point: register handler for Base Accounting messages in the daemon */
 static int tac_entry(void)
@@ -531,27 +538,169 @@ int freeDiameter_init(void)
 }
 
 
+int dm_find(aaa_conn *con, aaa_map *map, int op)
+{
+	struct dict_object *obj;
+
+	if (!con || !map) {
+		LM_ERR("invalid arguments (%p %p)\n", con, map);
+		return -1;
+	}
+
+	switch (op) {
+	case AAA_DICT_FIND_ATTR: {
+		struct dict_avp_data avp;
+
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+		      map->name, &obj, ENOENT));
+		FD_CHECK(fd_dict_getval(obj, &avp));
+
+		map->value = avp.avp_code;
+		return 0;
+	}
+	case AAA_DICT_FIND_VAL: {
+		unsigned int entry;
+		int *value;
+
+		entry = hash_entry(osips_enumvals, *_str(map->name));
+		value = (int *)hash_find(osips_enumvals, entry, *_str(map->name));
+		if (!value) {
+			LM_ERR("enum '%s' not found\n", map->name);
+			return -1;
+		}
+
+		map->value = *value;
+		/* TODO: map->type = ?? */
+		return 0;
+	}
+	case AAA_DICT_FIND_VEND: {
+		struct dict_vendor_data vendor;
+
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_VENDOR, VENDOR_BY_NAME,
+		      map->name, &obj, ENOENT));
+		FD_CHECK(fd_dict_getval(obj, &vendor));
+
+		map->value = vendor.vendor_id;
+		return 0;
+	}}
+
+	LM_ERR("failed to locate Diameter object: '%s'\n", map->name);
+	return -1;
+}
+
+
 aaa_message *dm_create_message(aaa_conn *con, int msg_type)
 {
-	return NULL;
+	aaa_message *m;
+	struct dm_message *dm;
+
+	m = shm_malloc(sizeof *m);
+	if (!m) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	dm = shm_malloc(sizeof *dm);
+	if (!dm) {
+		shm_free(m);
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	memset(m, 0, sizeof *m);
+	m->type = msg_type;
+	m->avpair = (void *)dm;
+
+	memset(dm, 0, sizeof *dm);
+	INIT_LIST_HEAD(&dm->avps);
+	dm->am = m;
+
+	return m;
 }
 
 
-int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *name, void *val,
-               int val_length, int vendor)
+int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
+               int val_length, int _)
 {
+	struct {
+		struct dm_avp davp;
+		char buf[0];
+	} *wrap;
+	int len;
+
+	if (!avp || !avp->name)
+		return -1;
+	len = strlen(avp->name);
+
+	if (val_length < 0)
+		val_length = 0;
+
+	wrap = shm_malloc(sizeof *wrap + len + 1 + val_length + 1);
+	if (!wrap) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	memset(&wrap->davp, 0, sizeof wrap->davp);
+	INIT_LIST_HEAD(&wrap->davp.subavps);
+
+	if (val_length) {
+		wrap->davp.value.s = wrap->buf;
+		wrap->davp.value.len = val_length;
+		memcpy(wrap->buf, val, val_length);
+		wrap->buf[val_length] = '\0';
+	}
+
+	list_add_tail(&((struct dm_message *)(msg->avpair))->avps,
+	              &wrap->davp.list);
 
 	return 0;
 }
 
 
-int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **rpl)
+int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
 {
+	if (!con || !req)
+		return -1;
+
+	/* we cannot provide the reply right now, since we're asynchronous <3 */
+	if (reply)
+		*reply = NULL;
+
+	req->last_found = DM_MSG_SENT;
+
+	pthread_mutex_lock(msg_send_lk);
+
+	list_add_tail(msg_send_queue, &((struct dm_message *)(req->avpair))->list);
+	pthread_cond_signal(msg_send_cond);
+
+	pthread_mutex_unlock(msg_send_lk);
+
 	return 0;
 }
 
+
+void _dm_destroy_message(aaa_message *msg)
+{
+	struct list_head *it, *aux;
+	struct dm_avp *avp;
+
+	list_for_each_safe (it, aux, &((struct dm_message *)(msg->avpair))->avps) {
+		avp = list_entry(it, struct dm_avp, list);
+		/* TODO: clean up any sub-AVPs, if applicable?! */
+		shm_free(avp);
+	}
+
+	shm_free(msg->avpair);
+	shm_free(msg);
+}
 
 int dm_destroy_message(aaa_conn *conn, aaa_message *msg)
 {
+	/* let the peer process be the one who cleans it up */
+	if (msg->last_found == DM_MSG_SENT)
+		return 0;
+
+	_dm_destroy_message(msg);
 	return 0;
 }
