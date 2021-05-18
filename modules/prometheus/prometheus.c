@@ -177,6 +177,8 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 	v.s = int2str(get_stat_val(stat), &v.len);
 	int grp_len = 0;
 	int name_len = prom_prefix.len + prom_delimiter.len + stat->name.len;
+	char *p;
+	int s;
 
 	switch (prom_grp_mode) {
 	case PROM_GROUP_MODE_NONE:
@@ -215,7 +217,26 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 		page->len += prom_delimiter.len;
 	}
 
-	memcpy(page->s + page->len, stat->name.s, stat->name.len);
+	/*
+	 * the stat's name must adhere to the following regex:
+	 * '[a-zA-Z_:][a-zA-Z0-9_:]*'
+	 * Source: https://prometheus.io/docs/concepts/data_model/
+	 *
+	 * Replace all characters that are not allowed with '_'
+	 */
+	p = page->s + page->len;
+	for (s = 0; s < stat->name.len; s++) {
+		if ((stat->name.s[s] >= 'a' && stat->name.s[s] <= 'z') ||
+			(stat->name.s[s] >= 'A' && stat->name.s[s] <= 'Z') ||
+			(stat->name.s[s] >= '0' && stat->name.s[s] <= '9' && s != 0) ||
+			stat->name.s[s] == '_' || stat->name.s[s] == ':') {
+			*p++ = stat->name.s[s];
+		} else {
+			*p++ = '_';
+		}
+	}
+	/* remember the stat's name in p */
+	p = page->s + page->len;
 	page->len += stat->name.len;
 
 	if (stat->flags & (STAT_IS_FUNC|STAT_NO_RESET)) {
@@ -239,7 +260,8 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 		page->len += prom_delimiter.len;
 	}
 
-	memcpy(page->s + page->len, stat->name.s, stat->name.len);
+	/* make sure we copy the same thing we had in 'p' */
+	memcpy(page->s + page->len, p, stat->name.len);
 	page->len += stat->name.len;
 
 	if (prom_grp_mode == PROM_GROUP_MODE_LABEL) {
