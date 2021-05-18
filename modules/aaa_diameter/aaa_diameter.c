@@ -106,6 +106,7 @@ void mod_destroy(void)
 
 	rc = fd_core_shutdown();
 	LM_DBG("libfdcore shutdown, rc: %d\n", rc);
+	dm_destroy();
 }
 
 

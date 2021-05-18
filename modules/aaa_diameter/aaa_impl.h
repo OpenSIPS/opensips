@@ -23,16 +23,31 @@
 
 #include "../../aaa/aaa.h"
 
-#define _FD_CHECK(__call__, __retok__) \
+#define __FD_CHECK(__call__, __retok__, __retval__) \
 	do { \
 		int __ret__; \
 		__ret__ = (__call__); \
+		if (__ret__ > 0) \
+			__ret__ = -__ret__; \
 		if (__ret__ != (__retok__)) { \
 			LM_ERR("error in %s: %d\n", #__call__, __ret__); \
-			return __ret__; \
+			return __retval__; \
 		} \
 	} while (0)
+#define _FD_CHECK(__call__, __retok__) \
+	__FD_CHECK((__call__), (__retok__), __ret__)
 #define FD_CHECK(__call__) _FD_CHECK((__call__), 0)
+
+#define FD_CHECK_dict_new(type, data, parent, ref) \
+	FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, (type), \
+				(data), (parent), (ref)))
+
+#define FD_CHECK_dict_search(type, criteria, what, result) \
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, (type), \
+				(criteria), (what), (result), ENOENT))
+
+#define DM_MSG_SENT ((void *)1)
+#define DM_DUMMY_HANDLE ((void *)-1)
 
 struct _acc_dict {
 	struct dict_object *Destination_Realm;
@@ -46,10 +61,17 @@ extern struct dict_object *acr_model;
 
 int freeDiameter_init(void);
 
+aaa_conn *dm_init_prot(str *aaa_url);
+int dm_init_minimal(void);
+int dm_register_osips_avps(void);
+int dm_find(aaa_conn *con, aaa_map *map, int op);
 aaa_message *dm_create_message(aaa_conn *con, int msg_type);
-int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *name, void *val,
+int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor);
-int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **rpl);
+int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **_);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
+void _dm_destroy_message(aaa_message *msg);
+
+void dm_destroy(void);
 
 #endif
