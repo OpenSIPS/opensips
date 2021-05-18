@@ -43,6 +43,10 @@
     _Generic(*(sin), str: _unescape_paramSS, str_const: _unescape_param)(sin, sout) \
 )
 
+/*
+ * Params: ([const] str *_a), ([const] str *_b)
+ * Return: 1 on a match, 0 otherwise
+ */
 #define str_match(_a, _b) _Generic(*(_a), \
 	str: _Generic(*(_b), \
 	    str: _str_matchSS, \
@@ -52,6 +56,10 @@
 	    str_const: _str_matchCC) \
     )(_a, _b)
 
+/*
+ * Params: ([const] str *_a), ([const] str *_b)
+ * Return: 1 on a match, 0 otherwise
+ */
 #define str_casematch(_a, _b) _Generic(*(_a), \
 	str: _Generic(*(_b), \
 	    str: _str_casematchSS, \
@@ -61,6 +69,10 @@
 	    str_const: _str_casematchCC) \
     )(_a, _b)
 
+/*
+ * Params: ([const] str *_a), ([const] str *_b)
+ * Return: 0 on a match, -1/1 otherwise
+ */
 #define str_strcmp(_a, _b) _Generic(*(_a), \
         str: _Generic(*(_b), \
             str: _str_strcmpSS, \
