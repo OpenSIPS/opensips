@@ -53,6 +53,7 @@ struct _acc_dict {
 	struct dict_object *Destination_Realm;
 	struct dict_object *Accounting_Record_Type;
 	struct dict_object *Accounting_Record_Number;
+	struct dict_object *Event_Timestamp;
 	struct dict_object *Route_Record;
 };
 
@@ -74,7 +75,6 @@ struct dm_avp {
 
 extern char *dm_conf_filename;
 extern struct _acc_dict acc_dict;
-extern struct dict_object *acr_model;
 
 int freeDiameter_init(void);
 

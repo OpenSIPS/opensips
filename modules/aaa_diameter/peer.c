@@ -20,6 +20,7 @@
 
 #include <freeDiameter/extension.h>
 
+#include "../../ut.h"
 #include "../../sr_module.h"
 #include "../../locking.h"
 #include "../../lib/list.h"
@@ -72,7 +73,7 @@ int dm_init_peer(void)
 }
 
 
-static int diameter_send_msg(struct dm_message *msg)
+static int dm_acct(struct dm_message *msg)
 {
 	struct msg *dmsg;
 	struct avp *avp;
@@ -81,8 +82,12 @@ static int diameter_send_msg(struct dm_message *msg)
 	union avp_value val;
 	os0_t sess_bkp;
 	size_t sess_bkp_len;
+	struct dict_object *acr; /* Accounting-Request (ACR, code: 271) */
 
-	FD_CHECK(fd_msg_new(acr_model, MSGFL_ALLOC_ETEID, &dmsg));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_NAME,
+	      "Accounting-Request", &acr, ENOENT));
+
+	FD_CHECK(fd_msg_new(acr, MSGFL_ALLOC_ETEID, &dmsg));
 
 	/* App id */
 	{
@@ -102,10 +107,14 @@ static int diameter_send_msg(struct dm_message *msg)
 		os0_t s;
 		FD_CHECK(fd_sess_new( &sess, fd_g_config->cnf_diamid, fd_g_config->cnf_diamid_len, NULL, 0));
 		FD_CHECK(fd_sess_getsid(sess, &s, &sess_bkp_len));
-		_FD_CHECK(!!(sess_bkp = os0dup(s, sess_bkp_len)), 1);
+		sess_bkp = os0dup(s, sess_bkp_len);
+		if (!sess_bkp) {
+			LM_ERR("oom\n");
+			return -1;
+		}
 
-		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Session-Id", &acr_model, ENOENT));
-		FD_CHECK(fd_msg_avp_new(acr_model, 0, &avp));
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Session-Id", &acr, ENOENT));
+		FD_CHECK(fd_msg_avp_new(acr, 0, &avp));
 		memset(&val, 0, sizeof val);
 		val.os.data = sess_bkp;
 		val.os.len = sess_bkp_len;
@@ -147,6 +156,58 @@ static int diameter_send_msg(struct dm_message *msg)
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 	}
 
+	/* Event-Timestamp */
+	{
+		time_t ts = 0;
+		int have_bytes = 0;
+		unsigned char bytes[4]; /* per RFC 3588 § 4.3 */
+
+		/* was the event timestamp passed to us? */
+		list_for_each (it, &msg->avps) {
+			dm_avp = list_entry(it, struct dm_avp, list);
+			if (str_match(&dm_avp->name, _str("Event-Timestamp"))) {
+
+				/* did the upper module pass an UNIX timestamp or NTP bytes? */
+				if (dm_avp->value.len >= 0) {
+					if (dm_avp->value.len != 4) {
+						LM_BUG("Event-Timestamp must have 4 octets (%d given)",
+						       dm_avp->value.len);
+						continue;
+					}
+
+					memcpy(bytes, dm_avp->value.s, dm_avp->value.len);
+					have_bytes = 1;
+				} else {
+					ts = (time_t)dm_avp->value.s;
+					LM_DBG("found Event-Timestamp AVP as UNIX ts: %lu\n", ts);
+					break;
+				}
+			}
+		}
+
+		if (!have_bytes) {
+			/* ... if no ts found, just use current time */
+			if (!ts)
+				ts = time(NULL);
+
+			LM_DBG("final Event-Timestamp (UNIX ts): %lu\n", ts);
+
+			ts += 2208988800UL; /* convert to Jan 1900 00:00 UTC epoch time */
+			bytes[0] = (ts >> 24) & 0xFF;
+			bytes[1] = (ts >> 16) & 0xFF;
+			bytes[2] = (ts >> 8) & 0xFF;
+			bytes[3] = ts & 0xFF;
+		}
+
+		FD_CHECK(fd_msg_avp_new(acc_dict.Event_Timestamp, 0, &avp));
+
+		memset(&val, 0, sizeof val);
+		val.os.len = 4;
+		val.os.data = bytes;
+		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
+		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
+	}
+
 	/* Route-Record */
 	{
 		FD_CHECK(fd_msg_avp_new(acc_dict.Route_Record, 0, &avp));
@@ -160,18 +221,40 @@ static int diameter_send_msg(struct dm_message *msg)
 
 	list_for_each (it, &msg->avps) {
 		dm_avp = list_entry(it, struct dm_avp, list);
-		LM_INFO("XXX appending AVP: %.*s: %.*s\n", dm_avp->name.len, dm_avp->name.s,
-				dm_avp->value.len, dm_avp->value.s);
+
+		if (str_match(&dm_avp->name, _str("Event-Timestamp")))
+			continue; /* added earlier */
+
+		if (dm_avp->value.len < 0)
+			LM_INFO("XXX appending AVP: %.*s: int(%lu)\n",
+					dm_avp->name.len, dm_avp->name.s, (unsigned long)dm_avp->value.s);
+		else
+			LM_INFO("XXX appending AVP: %.*s: str(%.*s)\n",
+					dm_avp->name.len, dm_avp->name.s,
+					dm_avp->value.len, dm_avp->value.s);
 
 		// TODO
 		//FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 		//      avp->name, &wrap->davp.obj, ENOENT));
 	}
 
-	sleep(2);
-
 	FD_CHECK(fd_msg_send(&dmsg, NULL, NULL));
 	return 0;
+}
+
+
+static inline int diameter_send_msg(struct dm_message *msg)
+{
+	aaa_message *am = msg->am;
+
+	switch (am->type) {
+	case AAA_ACCT:
+		return dm_acct(msg);
+	default:
+		LM_ERR("unsupported AAA message type (%d), skipping\n", am->type);
+	}
+
+	return -1;
 }
 
 
@@ -204,10 +287,8 @@ void diameter_peer_loop(int _)
 		msg = list_entry(msg_send_queue->next, struct dm_message, list);
 		list_del(&msg->list);
 
-		if (diameter_send_msg(msg) != 0) {
+		if (diameter_send_msg(msg) != 0)
 			LM_ERR("failed to send message!\n");
-			continue;
-		}
 
 		LM_INFO("Done sending!\n");
 

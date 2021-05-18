@@ -28,7 +28,6 @@
 #include "peer.h"
 
 struct _acc_dict acc_dict;
-struct dict_object *acr_model;
 
 /* Workaround until we find a way of looking up a single enum val in fD */
 static gen_hash_t *osips_enumvals;
@@ -135,9 +134,9 @@ static int dm_register_radius_avps(void)
 				6,				/* Code */
 				0, 				/* Vendor */
 				"Service-Type",	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_INTEGER32 			/* base type of data */
+				AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		/* Fixed flag values */
+				AVP_TYPE_INTEGER32 		/* base type of data */
 				};
 
 		/* Create the Enumerated type, and then the AVP */
@@ -179,9 +178,9 @@ static int dm_register_radius_avps(void)
 				40,					/* Code */
 				0, 					/* Vendor */
 				"Acct-Status-Type",	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_INTEGER32 			/* base type of data */
+				AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		/* Fixed flag values */
+				AVP_TYPE_INTEGER32 		/* base type of data */
 				};
 
 		/* Create the Enumerated type, and then the AVP */
@@ -518,9 +517,6 @@ int freeDiameter_init(void)
 
 	memset(&acc_dict, 0, sizeof acc_dict);
 
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_NAME,
-	      "Accounting-Request", &acr_model, ENOENT));
-
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Destination-Realm", &acc_dict.Destination_Realm, ENOENT));
 
@@ -528,6 +524,8 @@ int freeDiameter_init(void)
 	      "Accounting-Record-Type", &acc_dict.Accounting_Record_Type, ENOENT));
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Accounting-Record-Number", &acc_dict.Accounting_Record_Number, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Event-Timestamp", &acc_dict.Event_Timestamp, ENOENT));
 
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Route-Record", &acc_dict.Route_Record, ENOENT));
@@ -632,10 +630,8 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 		return -1;
 	len = strlen(avp->name);
 
-	if (val_length < 0)
-		val_length = 0;
-
-	wrap = shm_malloc(sizeof *wrap + len + 1 + val_length + 1);
+	wrap = shm_malloc(sizeof *wrap + len + 1 +
+				(val_length < 0 ? 0 : val_length) + 1);
 	if (!wrap) {
 		LM_ERR("oom\n");
 		return -1;
@@ -644,15 +640,25 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 	memset(&wrap->davp, 0, sizeof wrap->davp);
 	INIT_LIST_HEAD(&wrap->davp.subavps);
 
-	if (val_length) {
-		wrap->davp.value.s = wrap->buf;
+	wrap->davp.name.s = wrap->buf;
+	wrap->davp.name.len = len;
+	strcpy(wrap->buf, avp->name);
+
+	/* TODO: does Diameter properly handle empty-string values? */
+	if (val_length >= 0) {
+		wrap->davp.value.s = wrap->buf + len + 1;
 		wrap->davp.value.len = val_length;
-		memcpy(wrap->buf, val, val_length);
-		wrap->buf[val_length] = '\0';
+		memcpy(wrap->davp.value.s, val, val_length);
+		wrap->davp.value.s[val_length] = '\0';
+	} else {
+		/* the (void *) value is actually a 32-bit unsigned integer! */
+		wrap->davp.value.s = (char *)(unsigned long)*(uint32_t *)val;
+		LM_INFO("XXX added value: %lu\n", (unsigned long)wrap->davp.value.s);
+		wrap->davp.value.len = val_length;
 	}
 
-	list_add_tail(&((struct dm_message *)(msg->avpair))->avps,
-	              &wrap->davp.list);
+	list_add_tail(&wrap->davp.list,
+			&((struct dm_message *)(msg->avpair))->avps);
 
 	return 0;
 }
@@ -671,7 +677,7 @@ int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
 
 	pthread_mutex_lock(msg_send_lk);
 
-	list_add_tail(msg_send_queue, &((struct dm_message *)(req->avpair))->list);
+	list_add_tail(&((struct dm_message *)(req->avpair))->list, msg_send_queue);
 	pthread_cond_signal(msg_send_cond);
 
 	pthread_mutex_unlock(msg_send_lk);
