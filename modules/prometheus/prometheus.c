@@ -174,11 +174,22 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 {
 	str v;
 	str *m = get_stat_module_name(stat);
-	v.s = int2str(get_stat_val(stat), &v.len);
 	int grp_len = 0;
 	int name_len = prom_prefix.len + prom_delimiter.len + stat->name.len;
 	char *p;
 	int s;
+	str prefix = prom_prefix;
+	v.s = int2str(get_stat_val(stat), &v.len);
+
+	/* if the first char of the stat is a number, and we have no prefix, we
+	 * force the '_' to preserve the stat's grammar */
+	if (prom_prefix.len == 0 && prom_delimiter.len == 0 &&
+			prom_grp_mode == PROM_GROUP_MODE_NONE &&
+			stat->name.s[0] >= '0' && stat->name.s[0] <= '9') {
+		prefix.s = "_";
+		prefix.len = 1;
+		name_len++;
+	}
 
 	switch (prom_grp_mode) {
 	case PROM_GROUP_MODE_NONE:
@@ -203,8 +214,8 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 		return -1;
 	memcpy(page->s + page->len, "# TYPE ", 7);
 	page->len += 7;
-	memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len);
-	page->len += prom_prefix.len;
+	memcpy(page->s + page->len, prefix.s, prefix.len);
+	page->len += prefix.len;
 	memcpy(page->s + page->len, prom_delimiter.s, prom_delimiter.len);
 	page->len += prom_delimiter.len;
 
@@ -228,7 +239,7 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 	for (s = 0; s < stat->name.len; s++) {
 		if ((stat->name.s[s] >= 'a' && stat->name.s[s] <= 'z') ||
 			(stat->name.s[s] >= 'A' && stat->name.s[s] <= 'Z') ||
-			(stat->name.s[s] >= '0' && stat->name.s[s] <= '9' && s != 0) ||
+			(stat->name.s[s] >= '0' && stat->name.s[s] <= '9') ||
 			stat->name.s[s] == '_' || stat->name.s[s] == ':') {
 			*p++ = stat->name.s[s];
 		} else {
@@ -246,8 +257,8 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 		memcpy(page->s + page->len, " counter\n", 9);
 		page->len += 9;
 	}
-	memcpy(page->s + page->len, prom_prefix.s, prom_prefix.len);
-	page->len += prom_prefix.len;
+	memcpy(page->s + page->len, prefix.s, prefix.len);
+	page->len += prefix.len;
 	memcpy(page->s + page->len, prom_delimiter.s, prom_delimiter.len);
 	page->len += prom_delimiter.len;
 
