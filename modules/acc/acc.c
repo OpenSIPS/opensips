@@ -886,9 +886,9 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
 
 	av_type = (uint32_t)_setup_time;
-	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 1, &av_type, -1);
-	av_type = (uint32_t)_created;
 	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 2, &av_type, -1);
+	av_type = (uint32_t)_created;
+	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 3, &av_type, -1);
 
 	/* call-legs attributes also get inserted */
 	if (ctx) {
