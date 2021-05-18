@@ -461,7 +461,8 @@ struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
 	(_t == RTP_RELAY_OFFER?RTP_RELAY_ANSWER:RTP_RELAY_OFFER)
 
 static int rtp_relay_offer(struct rtp_relay_session *info,
-		struct rtp_relay_sess *sess, struct rtp_relay_sess *main, enum rtp_relay_type type)
+		struct rtp_relay_sess *sess, struct rtp_relay_sess *main,
+		enum rtp_relay_type type, str *body)
 {
 	if (!sess->relay) {
 		LM_BUG("no relay found!\n");
@@ -473,7 +474,7 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER)) < 0) {
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER), body) < 0) {
 		LM_ERR("could not engage offer!\n");
 		return -1;
 	}
@@ -482,7 +483,8 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 }
 
 static int rtp_relay_answer(struct rtp_relay_session *info,
-		struct rtp_relay_sess *sess, struct rtp_relay_sess *main, enum rtp_relay_type type)
+		struct rtp_relay_sess *sess, struct rtp_relay_sess *main,
+		enum rtp_relay_type type, str *body)
 {
 	if (!sess->relay) {
 		LM_BUG("no relay found!\n");
@@ -494,7 +496,7 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER));
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER), body);
 }
 #undef RTP_RELAY_PEER
 
@@ -674,7 +676,7 @@ void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
 	if (!info.body)
 		return;
 	rtype = (rtp_relay_ctx_upstream()?RTP_RELAY_ANSWER:RTP_RELAY_OFFER);
-	rtp_relay_offer(&info, ctx->main, NULL, rtype);
+	rtp_relay_offer(&info, ctx->main, NULL, rtype, NULL);
 }
 
 static void rtp_relay_indlg_tm_rpl(struct sip_msg *msg, struct dlg_cell *dlg, int up)
@@ -699,9 +701,9 @@ static void rtp_relay_indlg_tm_rpl(struct sip_msg *msg, struct dlg_cell *dlg, in
 	info.body = body;
 	rtype = (up?RTP_RELAY_OFFER:RTP_RELAY_ANSWER);
 	if (rtp_sess_late(ctx->main))
-		rtp_relay_offer(&info, ctx->main, NULL, rtype);
+		rtp_relay_offer(&info, ctx->main, NULL, rtype, NULL);
 	else
-		rtp_relay_answer(&info, ctx->main, NULL, rtype);
+		rtp_relay_answer(&info, ctx->main, NULL, rtype, NULL);
 }
 
 static void rtp_relay_indlg_tm_rpl_up(struct cell* t, int type, struct tmcb_params *p)
@@ -752,7 +754,7 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 		info.body = body;
 		info.branch = ctx->main->index;
 		rtp_relay_answer(&info, ctx->main, NULL,
-				(rtp_relay_ctx_upstream()?RTP_RELAY_ANSWER:RTP_RELAY_OFFER));
+				(rtp_relay_ctx_upstream()?RTP_RELAY_ANSWER:RTP_RELAY_OFFER), NULL);
 		return;
 	}
 	if (!body && msg->REQ_METHOD != METHOD_INVITE) {
@@ -885,9 +887,9 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 	}
 	info.branch = sess->index;
 	if (rtp_sess_late(sess))
-		ret = rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_ANSWER);
+		ret = rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_ANSWER, NULL);
 	else
-		ret = rtp_relay_answer(&info, sess, ctx->main, RTP_RELAY_ANSWER);
+		ret = rtp_relay_answer(&info, sess, ctx->main, RTP_RELAY_ANSWER, NULL);
 	if (ret > 0 && msg->REPLY_STATUS >= 200)
 		rtp_relay_sess_success(ctx, sess, t);
 	return ret;
@@ -954,7 +956,7 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 				if (!sess->relay)
 					sess->relay = ctx->main->relay;
 			}
-			rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER);
+			rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER, NULL);
 			break;
 		default:
 			LM_BUG("unhandled callback type %d\n", type);
@@ -1006,7 +1008,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	}
 	info.msg = msg;
 	info.branch = sess->index;
-	return rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER);
+	return rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER, NULL);
 }
 
 static mi_response_t *mi_rtp_relay_params(const mi_params_t *params,
@@ -1250,18 +1252,20 @@ static int rtp_relay_release_tmp(struct rtp_relay_tmp *tmp, int success)
 	return ret;
 }
 
-static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg, str *body);
+static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,
+		str *body, int release_body);
 
 static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 		int statuscode, void *param)
 {
+	char retbuf[10 /* 'Sessions: */ + INT2STR_MAX_LEN];
 	struct rtp_relay_tmp *tmp = (struct rtp_relay_tmp *)param;
+	struct rtp_relay_session info;
 	struct rtp_async_param *p;
 	mi_response_t *resp;
 	str body, *pbody;
 	int success = 0;
 	int ret;
-	char retbuf[10 /* 'Sessions: */ + INT2STR_MAX_LEN];
 	str sret;
 
 	/* not interested in provisional replies */
@@ -1280,10 +1284,26 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 				LM_WARN("reply without SDP - dropping\n");
 				goto error;
 			}
-			/* TODO: answer caller's SDP tp get SDP for callee */
+			/* answer caller's SDP tp get SDP for callee */
+			memset(&info, 0, sizeof info);
+			/* reversed tags */
+			info.callid = &tmp->ctx->callid;
+			info.from_tag = &tmp->dlg->legs[callee_idx(tmp->dlg)].tag;
+			info.to_tag = &tmp->dlg->legs[DLG_CALLER_LEG].tag;
+			info.branch = tmp->sess->index;
+			info.body = pbody;
+			info.msg = msg;
+
+			ret = rtp_relay_answer(&info, tmp->sess, tmp->ctx->main,
+					RTP_RELAY_ANSWER, &body);
+			if (ret < 0) {
+				LM_ERR("cannot answer RTP relay for callee SDP\n");
+				goto error;
+			}
+
 			tmp->state = RTP_RELAY_TMP_ANSWER;
-			return rtp_relay_reinvite(tmp, callee_idx(tmp->dlg), pbody);
-			break;
+			return rtp_relay_reinvite(tmp, callee_idx(tmp->dlg), &body, 1);
+
 		case RTP_RELAY_TMP_ANSWER:
 			if (statuscode >= 300) {
 				LM_ERR("callee returned negative reply\n");
@@ -1324,31 +1344,54 @@ error:
 	 * last in the out buffer */
 	tmp->state = RTP_RELAY_TMP_FAIL;
 	body = dlg_get_out_sdp(tmp->dlg, DLG_CALLER_LEG);
-	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body);
+	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body, 0);
 }
 
-static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg, str *body)
+static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,
+		str *body, int release_body)
 {
 	static str inv = str_init("INVITE");
 	static str content_type_sdp = str_init("application/sdp");
 
-	return rtp_relay_dlg.send_indialog_request(tmp->dlg,
+	int ret = rtp_relay_dlg.send_indialog_request(tmp->dlg,
 			&inv, leg, body, &content_type_sdp, NULL,
 			rtp_relay_reinvite_reply, tmp);
+	if (body && release_body)
+		pkg_free(body->s);
+	return ret;
 }
 
 static int rtp_relay_update_reinvites(struct rtp_relay_tmp *tmp)
 {
+	int callee_leg, ret;
+	struct rtp_relay_session info;
+	memset(&info, 0, sizeof info);
 
-	str body = tmp->dlg->legs[callee_idx(tmp->dlg)].in_sdp;
+	callee_leg = callee_idx(tmp->dlg);
+
+	str body = tmp->dlg->legs[callee_leg].in_sdp;
 	if (!body.s) {
 		LM_ERR("cannot get callee's SDP\n");
 		return -1;
 	}
-	/* TODO: offer callee's SDP to get SDP for caller */
+
+	/* offer callee's SDP to get SDP for caller */
+	info.callid = &tmp->ctx->callid;
+	info.from_tag = &tmp->dlg->legs[DLG_CALLER_LEG].tag;
+	info.to_tag = &tmp->dlg->legs[callee_leg].tag;
+	info.branch = tmp->sess->index;
+	info.body = &body;
+
+	ret = rtp_relay_offer(&info, tmp->sess, tmp->ctx->main,
+			RTP_RELAY_ANSWER, &body);
+	if (ret < 0) {
+		LM_ERR("cannot engage RTP relay for callee SDP\n");
+		return -1;
+	}
+
 	tmp->state = RTP_RELAY_TMP_OFFER;
 	/* step one - send re-invite to caller with updated callee's SDP */
-	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body);
+	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body, 1);
 }
 
 static mi_response_t *rtp_relay_update_async(struct rtp_async_param *p)

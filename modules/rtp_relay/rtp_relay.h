@@ -44,10 +44,10 @@ struct rtp_relay_server {
 struct rtp_relay_binds {
 	int (*offer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *ip, str *type, str *in_iface, str *out_iface,
-			str *flags, str *extra);
+			str *flags, str *extra, str *body);
 	int (*answer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *ip, str *type, str *in_iface, str *out_iface,
-			str *flags, str *extra);
+			str *flags, str *extra, str *body);
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
 };

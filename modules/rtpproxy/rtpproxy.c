@@ -316,9 +316,9 @@ struct dlg_binds dlg_api;
 /* TM support for saving parameters */
 struct tm_binds tm_api;
 static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra);
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
 static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra);
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
 static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
 
@@ -3240,7 +3240,27 @@ static inline int rtpp_get_error(char *command)
 
 static char _rtp_proxy_buf[IP_ADDR_MAX_STR_SIZE + 1/* : */ + 5/* port */];
 
-static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv_spec_t *var, pv_spec_t *ipvar)
+#define RTPPROXY_APPEND(_a) \
+	do { \
+		if (body->len + (_a)->len > allocated_body) { \
+			allocated_body = body->len + (_a)->len * 2; \
+			body->s = pkg_realloc(body->s, allocated_body); \
+			if (!body->s) \
+				goto error; \
+		} \
+		memcpy(body->s + body->len, (_a)->s, (_a)->len); \
+		body->len += (_a)->len; \
+	} while(0)
+
+#define RTPPROXY_APPEND_CONST(_c) \
+	do { \
+		str __s; \
+		init_str(&__s, _c); \
+		RTPPROXY_APPEND(&__s); \
+	} while (0)
+
+static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
+		pv_spec_t *var, pv_spec_t *ipvar, str *body)
 {
 	str body1, oldport, oldip, newport, newip ,nextport;
 	str tmp, payload_types;
@@ -3280,7 +3300,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 		{NULL, 0},	/* (optional) DTMF tag */
 		{NULL, 0}	/* (optional) module opts */
 	);
-	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p;
+	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p, *newbody;
 	char medianum_buf[20];
 	char buf[32], dbuf[128];
 	int medianum, media_multi;
@@ -3294,6 +3314,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
 	str notification_socket = rtpp_notify_socket;
+	int allocated_body = 0;
 	str *did;
 	int ret = -1;
 
@@ -3468,8 +3489,8 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 			args->from_tag = args->to_tag;
 			args->to_tag = tmp;
 		}
-	} else if ((msg->first_line.type==SIP_REPLY && args->offer!=0)||
-	(msg->first_line.type == SIP_REQUEST && args->offer == 0) ) {
+	} else if (msg && ((msg->first_line.type==SIP_REPLY && args->offer!=0)||
+	(msg->first_line.type == SIP_REQUEST && args->offer == 0) )) {
 		if (args->to_tag.len == 0) {
 			goto exit;
 		}
@@ -3504,9 +3525,10 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 	 * to the same value (RTP proxy IP), so we can change all c-lines
 	 * unconditionally.
 	 */
+	trim_leading(&args->body);
 	bodylimit = args->body.s + args->body.len;
-	v1p = find_sdp_line(args->body.s, bodylimit, 'v');
-	if (v1p == NULL) {
+	v1p = args->body.s;
+	if (args->body.len < 2 || v1p[0] != 'v' || v1p[1] != '=') {
 		LM_ERR("no sessions in SDP\n");
 		goto exit;
 	}
@@ -3584,6 +3606,16 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 
 	m_opts = opts;
 
+	if (body) {
+		body->s = pkg_malloc(args->body.len);
+		if (!body->s) {
+			LM_ERR("could not allocate space for new body\n");
+			goto error;
+		}
+		allocated_body = args->body.len;
+		body->len = 0;
+	}
+
 	for(;;) {
 		/* Per-session iteration. */
 		v1p = v2p;
@@ -3657,7 +3689,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 			if (oldport.s[0] == '0' && oldport.len == 1)
 				continue;
 
-			if (asymmetric != 0 || real != 0) {
+			if (asymmetric != 0 || real != 0 || !msg) {
 				newip = oldip;
 			} else {
 				newip.s = ip_addr2a(&msg->rcv.src_ip);
@@ -3871,7 +3903,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 					newip.s = adv_address;
 				else if (argv[1])
 					newip.s = argv[1];
-				else {
+				else if (msg) {
 					newip.s = ip_addr2a(&msg->rcv.dst_ip);
 					pf1 = msg->rcv.dst_ip.af;
 				}
@@ -3891,101 +3923,186 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args, pv
 				if (pv_set_value(msg, ipvar, (int)EQ_T, &val) < 0)
 					LM_ERR("cannot store rtpproxy reply: %.*s \n", val.rs.len, val.rs.s);
 			}
+			if (keep_body != 0)
+				continue;
 
-			/* Alter port. */
-			body1.s = m1p;
-			body1.len = bodylimit - body1.s;
-			/* do not do it if old port was 0 (means media disable)
-			 * - check if actually should be better done in rtpptoxy,
-			 *   by returning also 0
-			 * - or by not sending to rtpproxy the old port if 0
-			 */
-			if(keep_body == 0 && (oldport.len!=1 || oldport.s[0]!='0'))
-			{
-				if (alter_mediaport(msg, &body1, &oldport, &newport, 0) == -1)
-					goto exit;
-			}
+			if (body) {
+				newbody = v1p;
+				if (o1p) {
+					tmpstr1.s = o1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					/* copy everything until oldip */
+					tmp.s = newbody;
+					tmp.len = oldip.s - newbody;
+					RTPPROXY_APPEND(&tmp);
+					/* alter the pf, if needed */
+					if (pf != pf1)
+						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
+					RTPPROXY_APPEND(&newip);
+					newbody = oldip.s + oldip.len;
+				}
 
-			nextport.s = int2str(port+1, &nextport.len);
-
-			if( r2p && keep_body == 0)
-				if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
-					goto exit;
-
-			/*
-			 * Alter IP. Don't alter IP common for the session
-			 * more than once.
-			 */
-			if (c2p != NULL || !c1p_altered) {
-				body1.s = c2p ? c2p : c1p;
-				body1.len = bodylimit - body1.s;
-				if (keep_body == 0 && alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					goto exit;
-				if (!c2p)
+				if (c1p && !c1p_altered && !c2p && commip) {
+					/* we have a common IP and it was requested to change */
+					/* c1p points to the common IP */
+					tmp.s = newbody;
+					tmp.len = c1p - newbody;
+					RTPPROXY_APPEND(&tmp);
+					/* alter the pf, if needed */
+					if (pf != pf1)
+						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
+					RTPPROXY_APPEND(&newip);
+					for (newbody = c1p; *newbody != '\r'; newbody++);
 					c1p_altered = 1;
-			}
-			/*
-			 * Alter common IP if required, but don't do it more than once.
-			 */
-			if (commip && c1p && !c1p_altered) {
-				tmpstr1.s = c1p;
-				tmpstr1.len = v2p - tmpstr1.s;
-				if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
-					LM_ERR("can't extract media IP from the message\n");
-					goto exit;
 				}
-				body1.s = c1p;
-				body1.len = bodylimit - body1.s;
-				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					goto exit;
-				c1p_altered = 1;
-			}
-			/*
-			 * Alter the IP in "o=", but only once per session
-			 */
-			if (o1p) {
-				tmpstr1.s = o1p;
-				tmpstr1.len = v2p - tmpstr1.s;
-				if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
-					LM_ERR("can't extract media IP from the message\n");
-					goto exit;
+				/* now update the port */
+				if(oldport.len!=1 || oldport.s[0]!='0') {
+					tmp.s = newbody;
+					tmp.len = oldport.s - newbody;
+					RTPPROXY_APPEND(&tmp);
+					RTPPROXY_APPEND(&newport);
+					newbody = oldport.s + oldport.len;
 				}
-				body1.s = o1p;
+				if (c2p) {
+					tmpstr1.s = c2p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+
+					tmp.s = newbody;
+					tmp.len = oldip.s - newbody;
+					RTPPROXY_APPEND(&tmp);
+					/* alter the pf, if needed */
+
+					if (pf != pf1)
+						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
+					RTPPROXY_APPEND(&newip);
+					newbody = oldip.s + oldip.len;
+				}
+				if( r2p ) {
+					nextport.s = int2str(port+1, &nextport.len);
+
+					RTPPROXY_APPEND_CONST("\na=rtcp:");
+					RTPPROXY_APPEND(&nextport);
+					RTPPROXY_APPEND_CONST(" IN IP4 ");
+					if (pf1 == AF_INET6)
+						body->s[body->len - 2] = '6';
+					RTPPROXY_APPEND(&newip);
+					for (newbody = r2p; *newbody != '\r'; newbody++);
+				}
+				tmp.s = newbody;
+				tmp.len = bodylimit - newbody;
+				RTPPROXY_APPEND(&tmp);
+			} else {
+
+				/*
+				 * Alter the IP in "o=", but only once per session
+				 */
+				if (o1p) {
+					tmpstr1.s = o1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					body1.s = o1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					o1p = 0;
+				}
+
+				/* Alter port. */
+				body1.s = m1p;
 				body1.len = bodylimit - body1.s;
-				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					goto exit;
-				o1p = 0;
+				/* do not do it if old port was 0 (means media disable)
+				 * - check if actually should be better done in rtpptoxy,
+				 *   by returning also 0
+				 * - or by not sending to rtpproxy the old port if 0
+				 */
+				if(oldport.len!=1 || oldport.s[0]!='0')
+				{
+					if (alter_mediaport(msg, &body1, &oldport, &newport, 0) == -1)
+						goto exit;
+				}
+
+				if( r2p ) {
+					nextport.s = int2str(port+1, &nextport.len);
+
+					if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
+						goto exit;
+				}
+
+				/*
+				 * Alter IP. Don't alter IP common for the session
+				 * more than once.
+				 */
+				if (c2p != NULL || !c1p_altered) {
+					body1.s = c2p ? c2p : c1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					if (!c2p)
+						c1p_altered = 1;
+				}
+				/*
+				 * Alter common IP if required, but don't do it more than once.
+				 */
+				if (commip && c1p && !c1p_altered) {
+					tmpstr1.s = c1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					body1.s = c1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					c1p_altered = 1;
+				}
 			}
 		} /* Iterate medias in session */
 	} /* Iterate sessions */
 
 	if (proxied == 0 && nortpproxy_str.len && keep_body == 0) {
-		cp = pkg_malloc((1 + nortpproxy_str.len + CRLF_LEN) * sizeof(char));
-		if (cp == NULL) {
-			LM_ERR("out of pkg memory\n");
-			goto exit;
-		}
-		/* find last CRLF and add after it */
-		cp1 = args->body.s + args->body.len;
-		while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
-		if (cp1==args->body.s) cp1=args->body.s + args->body.len;
+		if (body) {
+			RTPPROXY_APPEND(&nortpproxy_str);
+			RTPPROXY_APPEND_CONST(CRLF);
+		} else {
+			cp = pkg_malloc((1 + nortpproxy_str.len + CRLF_LEN) * sizeof(char));
+			if (cp == NULL) {
+				LM_ERR("out of pkg memory\n");
+				goto exit;
+			}
+			/* find last CRLF and add after it */
+			cp1 = args->body.s + args->body.len;
+			while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
+			if (cp1==args->body.s) cp1=args->body.s + args->body.len;
 
-		/* XXX: ugly hack to add a string _after_ the end of the body:
-		 * remove the last char and then add it in the new buffer */
-		cp1--;
-		cp[0] = *cp1;
-		anchor = del_lump(msg, cp1 - msg->buf, 1, 0);
-		if (anchor == NULL) {
-			LM_ERR("del_lump failed\n");
-			pkg_free(cp);
-			goto exit;
-		}
-		memcpy(cp+1, nortpproxy_str.s, nortpproxy_str.len);
-		memcpy(cp+1+nortpproxy_str.len , CRLF, CRLF_LEN);
-		if (insert_new_lump_before(anchor, cp, 1 + nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
-			LM_ERR("insert_new_lump_after failed\n");
-			pkg_free(cp);
-			goto exit;
+			/* XXX: ugly hack to add a string _after_ the end of the body:
+			 * remove the last char and then add it in the new buffer */
+			cp1--;
+			cp[0] = *cp1;
+			anchor = del_lump(msg, cp1 - msg->buf, 1, 0);
+			if (anchor == NULL) {
+				LM_ERR("del_lump failed\n");
+				pkg_free(cp);
+				goto exit;
+			}
+			memcpy(cp+1, nortpproxy_str.s, nortpproxy_str.len);
+			memcpy(cp+1+nortpproxy_str.len , CRLF, CRLF_LEN);
+			if (insert_new_lump_before(anchor, cp, 1 + nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
+				LM_ERR("insert_new_lump_after failed\n");
+				pkg_free(cp);
+				goto exit;
+			}
 		}
 	}
 
@@ -3994,11 +4111,15 @@ error:
 	/* we are done reading -> unref the data */
 	if (locked)
 		lock_stop_read( nh_lock );
+	if (ret < 0 && body && allocated_body)
+		pkg_free(body->s);
 
 exit:
 	free_opts(&opts, &rep_opts, &pt_opts, &mod_opts);
 	return ret;
 }
+#undef RTPPROXY_APPEND
+#undef RTPPROXY_APPEND_CONST
 
 int force_rtp_proxy_body(struct sip_msg* msg, struct rtpp_args *args,
 		pv_spec_p var, pv_spec_p ipvar)
@@ -4022,7 +4143,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct rtpp_args *args,
 			return -1;
 		}
 
-	return rtpproxy_offer_answer(msg, args, var, ipvar);
+	return rtpproxy_offer_answer(msg, args, var, ipvar, NULL);
 }
 
 static char *rtpproxy_stats_pop_int(struct sip_msg *msg, char *p,
@@ -4736,19 +4857,22 @@ static void rtpproxy_free_call_args(struct rtpp_args *args)
 static int fill_rtpproxy_node(struct rtp_relay_server *server,
 		str *s)
 {
+	if (!s->len)
+		return 0;
 	if (server->node.s)
 		shm_free(server->node.s);
 	return shm_nt_str_dup(&server->node, s);
 }
 
 static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
 {
 	int ret = -1;
 	int unlock = 0;
 	pv_value_t val;
 	struct rtpp_set *rset = NULL;
 	struct rtpp_args args;
+	struct sip_msg *msg = NULL;
 
 	memset(&args, '\0', sizeof(args));
 
@@ -4783,25 +4907,33 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 
 	args.set = rset;
 	args.offer = 1;
+	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
 
-	ret = rtpproxy_offer_answer(sess->msg, &args, &media_pvar, NULL);
+	val.rs.len = 0;
+	val.rs.s = "";
+	val.flags = PV_VAL_STR;
+	pv_set_value(msg, &media_pvar, (int)EQ_T, &val);
+
+	ret = rtpproxy_offer_answer(msg, &args, &media_pvar, NULL, body);
 	if (nh_lock && unlock)
 		lock_stop_read(nh_lock);
 	if (ret < 0) {
 		LM_ERR("could not engage rtpproxy offer!\n");
 		goto exit;
 	}
-	if (pv_get_spec_value(sess->msg, &media_pvar, &val) >= 0)
+	if (pv_get_spec_value(msg, &media_pvar, &val) >= 0)
 		fill_rtpproxy_node(server, &val.rs);
 	else
 		LM_ERR("could not retrieve the value of the used rtpproxy!\n");
 exit:
+	if (is_dummy_sip_msg(msg) == 0)
+		release_dummy_sip_msg(msg);
 	rtpproxy_free_call_args(&args);
 	return ret;
 }
 
 static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
 {
 	int ret = -1;
 	struct rtpp_set *rset = NULL;
@@ -4834,7 +4966,7 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 		}
 	}
 
-	ret = rtpproxy_offer_answer(sess->msg, &args, NULL, NULL);
+	ret = rtpproxy_offer_answer(sess->msg, &args, NULL, NULL, body);
 exit:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
