@@ -306,7 +306,8 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len)
 
 #define PROM_PUSH_STAT(_s) \
 	do { \
-		if (prom_push_stat(_s, page, buffer->len) < 0) { \
+		if (!((_s)->flags & STAT_HIDDEN) &&  \
+				prom_push_stat(_s, page, buffer->len) < 0) { \
 			LM_ERR("out of memory for stats\n"); \
 			return MI_HTTP_INTERNAL_ERR_CODE; \
 		} \
