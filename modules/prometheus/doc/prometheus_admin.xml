@@ -187,6 +187,11 @@ modparam("prometheus", "group_mode", 1)
 			add a colon (<emphasis>:</emphasis>) at the end of the groups's name.
 		</para>
 		<para>
+			If the <emphasis>all</emphasis> value is used, then the module will expose
+			all available statistics - therefore any other settings of this parameter
+			is useless;
+		</para>
+		<para>
 			This parameter can be defined multiple times.
 		</para>
 		<para>

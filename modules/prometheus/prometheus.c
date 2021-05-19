@@ -45,6 +45,7 @@ enum prom_group_mode {
 	PROM_GROUP_MODE_INVALID
 };
 
+int prom_all_stats = 0;
 int prom_grp_mode = PROM_GROUP_MODE_NONE;
 str prom_http_root = str_init("metrics");
 str prom_prefix = str_init("opensips");
@@ -321,6 +322,7 @@ int prom_answer_to_connection (void *cls, void *connection,
 {
 	struct list_head *it;
 	struct prom_stat *s;
+	module_stats *mod;
 	stat_var *stat;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
@@ -340,6 +342,17 @@ int prom_answer_to_connection (void *cls, void *connection,
 	page->s = buffer->s;
 	page->len = 0;
 
+	if (prom_all_stats) {
+		mod = 0;
+		while ((mod = module_stats_iterate(mod)) != NULL) {
+			stats_mod_lock(mod);
+			for (stat = mod->head; stat; stat = stat->lnext)
+				PROM_PUSH_STAT(stat);
+			stats_mod_unlock(mod);
+		}
+		goto end;
+	}
+
 	list_for_each(it, &prom_stat_mods) {
 		s = list_entry(it, struct prom_stat, list);
 		if (!s->mod) {
@@ -349,9 +362,10 @@ int prom_answer_to_connection (void *cls, void *connection,
 				continue;
 			}
 		}
-		/* TODO: should we lock here? */
+		stats_mod_lock(s->mod);
 		for (stat = s->mod->head; stat; stat = stat->lnext)
 			PROM_PUSH_STAT(stat);
+		stats_mod_unlock(s->mod);
 	}
 
 	list_for_each(it, &prom_stats) {
@@ -365,6 +379,7 @@ int prom_answer_to_connection (void *cls, void *connection,
 		}
 		PROM_PUSH_STAT(*s->stat);
 	}
+end:
 	if (page->len + 1 >= buffer->len) {
 		LM_ERR("out of memory for stats\n");
 		return MI_HTTP_INTERNAL_ERR_CODE;
@@ -384,6 +399,11 @@ static int prom_stats_param( modparam_t type, void* val)
 	struct prom_stat *s;
 	struct list_head *head;
 
+	if (prom_all_stats) {
+		LM_DBG("Already adding all statistics\n");
+		return 0;
+	}
+
 	trim_leading(&stats);
 	while (stats.len > 0) {
 		name = stats;
@@ -398,6 +418,10 @@ static int prom_stats_param( modparam_t type, void* val)
 			name.len--;
 			head = &prom_stat_mods;
 			LM_INFO("Adding statistics module %.*s\n", name.len, name.s);
+		} else if (str_match_nt(&name, "all")) {
+			prom_all_stats = 1;
+			LM_INFO("Adding all statistics\n");
+			return 0;
 		} else {
 			head = &prom_stats;
 			LM_INFO("Adding statistic %.*s\n", name.len, name.s);
