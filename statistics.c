@@ -172,6 +172,20 @@ module_stats* get_stat_module( str *module)
 	return 0;
 }
 
+module_stats *module_stats_iterate(module_stats *mod)
+{
+	int m;
+	if (!mod) {
+		/* first iteration - return head */
+		return ((collector->mod_no > 0)?
+				&collector->amodules[0]:NULL);
+	}
+	for (m = 0; m < collector->mod_no - 1; m++)
+		if (&collector->amodules[m] == mod)
+			return &collector->amodules[m + 1];
+	return NULL;
+}
+
 static inline module_stats* __add_stat_module(str *module, int unsafe)
 {
 	module_stats *amods;
@@ -940,6 +954,17 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
+void stats_mod_lock(module_stats *mod)
+{
+	if (mod->is_dyn)
+		lock_start_read((rw_lock_t *)collector->rwl);
+}
+
+void stats_mod_unlock(module_stats *mod)
+{
+	if (mod->is_dyn)
+		lock_stop_read((rw_lock_t *)collector->rwl);
+}
 
 #endif /*STATISTICS*/
 

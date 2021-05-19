@@ -161,6 +161,10 @@ unsigned int get_stat_val( stat_var *var );
 stat_var *get_stat_var_from_num_code(unsigned int numerical_code, int in_codes);
 
 
+void stats_mod_lock(module_stats *mod);
+void stats_mod_unlock(module_stats *mod);
+module_stats *module_stats_iterate(module_stats *mod);
+
 #ifdef NO_ATOMIC_OPS
 #include "locking.h"
 extern gen_lock_t *stat_lock;
@@ -184,6 +188,9 @@ extern gen_lock_t *stat_lock;
 	#define register_tcp_load_stat( _a)     0
 	#define stats_are_ready() 0
 	#define clone_pv_stat_name( _name, _clone) 0
+	#define stats_mod_lock(mod)
+	#define stats_mod_unlock(mod)
+	#define mod_stats_iterate(mod)
 #endif
 
 
