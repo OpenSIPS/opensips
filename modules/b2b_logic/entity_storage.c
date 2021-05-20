@@ -350,7 +350,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	bin_pop_str(storage, &hdrs);
 
 	entity = b2bl_create_new_entity(entity_type, entity_key, &to_uri, &proxy,
-		&from_uri, &from_dname, &entity_sid, &hdrs, NULL);
+		&from_uri, &from_dname, &entity_sid, &hdrs, NULL, NULL);
 	if (!entity) {
 		LM_ERR("Failed to create entity\n");
 		goto error;

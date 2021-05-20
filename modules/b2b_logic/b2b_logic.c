@@ -80,10 +80,10 @@ static void b2bl_db_timer_update(unsigned int ticks, void* param);
 
 int b2b_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
 	void *req_routeid, void *reply_routeid, str *init_body, str *init_body_type);
-int b2bl_server_new(struct sip_msg *msg, str *id,
+int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 	pv_spec_t *hnames, pv_spec_t *hvals);
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
-	 str *from_dname, pv_spec_t *hnames, pv_spec_t *hvals);
+	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals);
 int b2b_handle_reply(struct sip_msg* msg);
 int b2b_pass_request(struct sip_msg *msg);
 int b2b_delete_entity(struct sip_msg *msg);
@@ -91,7 +91,8 @@ int b2b_end_dlg_leg(struct sip_msg *msg);
 int b2b_send_reply(struct sip_msg *msg, int *code, str *reason);
 int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1, str *br_ent2,
 	str *provmedia_uri, int *lifetime);
-int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no);
+int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no,
+	str *adv_contact);
 
 int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_scenario(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
@@ -183,12 +184,14 @@ static cmd_export_t cmds[]=
 		REQUEST_ROUTE},
 	{"b2b_server_new", (cmd_function)b2bl_server_new, {
 		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_client_new", (cmd_function)b2bl_client_new, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
@@ -213,8 +216,10 @@ static cmd_export_t cmds[]=
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_bridge_flags, fixup_free_init_flags}, {0,0,0}},
 		REQUEST_ROUTE},
-	{"b2b_bridge_request", (cmd_function)b2b_bridge_request,
-		{{CMD_PARAM_STR,0,0}, {CMD_PARAM_INT,0,0}, {0,0,0}},
+	{"b2b_bridge_request", (cmd_function)b2b_bridge_request, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_logic_bind", (cmd_function)b2b_logic_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
@@ -1001,7 +1006,8 @@ end:
 	return resp;
 }
 
-int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no)
+int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no,
+	str *adv_contact)
 {
 	if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
 		LM_ERR("The 'b2b_bridge_request' function cannot be used from the "
@@ -1009,7 +1015,12 @@ int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no)
 		return -1;
 	}
 
-	return b2bl_bridge_msg(msg, key, *entity_no);
+	return b2bl_bridge_msg(msg, key, *entity_no, adv_contact);
+}
+
+static int b2bl_bridge_msg_w(struct sip_msg* msg, str* key, int entity_no)
+{
+	return b2bl_bridge_msg(msg, key, entity_no, NULL);
 }
 
 static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
@@ -1068,7 +1079,7 @@ static mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 			return init_mi_error(404, MI_SSTR("Bad 'prov_media_uri' parameter"));
 		}
 		prov_entity = b2bl_create_new_entity(B2B_CLIENT,
-						0, prov_media, 0, 0, 0, 0, 0, 0);
+						0, prov_media, 0, 0, 0, 0, 0, 0, 0);
 		if (!prov_entity) {
 			LM_ERR("Failed to create new b2b entity\n");
 			goto free;
@@ -1087,7 +1098,7 @@ static mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		goto free;
 	}
 
-	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0, 0, 0, 0);
+	entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_dest, 0, 0, 0, 0, 0, 0, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create new b2b entity\n");
@@ -2011,7 +2022,7 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->init          = internal_init_scenario;
 	api->bridge        = b2bl_bridge;
 	api->bridge_2calls = b2bl_bridge_2calls;
-	api->bridge_msg    = b2bl_bridge_msg;
+	api->bridge_msg    = b2bl_bridge_msg_w;
 	api->terminate_call= b2bl_terminate_call;
 	api->get_stats     = b2bl_get_stats;
 	api->register_cb   = b2bl_register_cb;

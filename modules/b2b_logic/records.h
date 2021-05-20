@@ -42,6 +42,7 @@ typedef struct b2bl_entity_id
 	str from_uri;
 	str from_dname;
 	str hdrs;
+	str adv_contact;
 	b2b_dlginfo_t* dlginfo;
 	int rejected;
 	int disconnected;
@@ -61,6 +62,7 @@ struct b2bl_new_entity {
 	str dest_uri;
 	str proxy;
 	str from_dname;
+	str adv_contact;
 	int avp_hdrs;
 	int avp_hdr_vals;
 };
@@ -199,8 +201,8 @@ str* b2bl_bridge_extern(struct b2b_params *init_params,
 void destroy_b2bl_htable(void);
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
-		str* to_uri, str *proxy, str* from_uri,str* from_dname,str* ssid,str* hdrs,
-		struct sip_msg* msg);
+		str* to_uri, str *proxy, str* from_uri,str*from_dname, str* ssid, str* hdrs,
+		str *adv_ct, struct sip_msg* msg);
 
 void unchain_ent(b2bl_entity_id_t *ent, b2bl_entity_id_t **head);
 void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head,
