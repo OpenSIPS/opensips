@@ -302,6 +302,7 @@ int internal_fork(char *proc_desc, unsigned int flags,
 		pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
 		pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
 		#ifdef PKG_MALLOC
+		pt[process_no].pkg_total->flags &= (~STAT_HIDDEN);
 		pt[process_no].pkg_used->flags &= (~STAT_HIDDEN);
 		pt[process_no].pkg_rused->flags &= (~STAT_HIDDEN);
 		pt[process_no].pkg_mused->flags &= (~STAT_HIDDEN);
