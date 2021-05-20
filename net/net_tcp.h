@@ -84,7 +84,8 @@ int tcp_init_sock_opt(int s);
 /* returns the connection identified by either the id or the destination to */
 int tcp_conn_get(int unsigned id, struct ip_addr* ip, int port,
 		enum sip_protos proto, void *proto_extra_id,
-		struct tcp_connection** conn, int* conn_fd);
+		struct tcp_connection** conn, int* conn_fd,
+		struct socket_info* send_sock);
 
 /* creates a new tcp conn around a newly connected socket */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,

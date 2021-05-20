@@ -427,7 +427,8 @@ int tcp_get_correlation_id( unsigned int id, unsigned long long *cid)
 /*! \brief _tcpconn_find with locks and acquire fd */
 int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 		enum sip_protos proto, void *proto_extra_id,
-		struct tcp_connection** conn, int* conn_fd)
+		struct tcp_connection** conn, int* conn_fd,
+		struct socket_info* send_sock)
 {
 	struct tcp_connection* c;
 	struct tcp_connection* tmp;
@@ -461,10 +462,15 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 					a, a->parent, a->parent->id, a->port,
 					a->parent->rcv.src_port);
 				print_ip("ip=",&a->parent->rcv.src_ip,"\n");
+				if (send_sock != NULL && a->parent->send_sock != NULL) {
+					print_ip("requested send_sock ip=",&send_sock->address,"\n");
+					print_ip("found send_sock ip=",&&a->parent->rcv.bind_address->address,"\n");
+				}
 #endif
 				c = a->parent;
 				if (c->state != S_CONN_BAD &&
 				    c->flags&F_CONN_INIT &&
+				    (send_sock==NULL || send_sock == a->parent->rcv.bind_address) &&
 				    port == a->port &&
 				    proto == c->type &&
 				    ip_addr_cmp(ip, &c->rcv.src_ip) &&
