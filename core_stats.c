@@ -193,6 +193,8 @@ int init_pkg_stats(int procs_no)
 	str n_str;
 	char *name;
 	str sname;
+	group_stats *total_size_grp, *used_size_grp, *real_used_size_grp,
+				*max_used_size_grp, *free_size_grp, *frags_grp;
 
 	LM_DBG("setting stats for %d processes\n",procs_no);
 
@@ -206,13 +208,46 @@ int init_pkg_stats(int procs_no)
 	memset( marker_t, 0, procs_no*sizeof(time_t));
 	no_pkg_status = procs_no;
 
+
+	total_size_grp = register_stats_group("proc_total_size");
+	if (!total_size_grp) {
+		LM_ERR("could not register stats group proc_total_size");
+		return -1;
+	}
+	used_size_grp = register_stats_group("proc_used_size");
+	if (!used_size_grp) {
+		LM_ERR("could not register stats group proc_used_size");
+		return -1;
+	}
+	real_used_size_grp = register_stats_group("proc_real_used_size");
+	if (!real_used_size_grp) {
+		LM_ERR("could not register stats group proc_real_used_size");
+		return -1;
+	}
+	max_used_size_grp = register_stats_group("proc_max_used_size");
+	if (!max_used_size_grp) {
+		LM_ERR("could not register stats group proc_max_used_size");
+		return -1;
+	}
+	free_size_grp = register_stats_group("proc_free_size");
+	if (!free_size_grp) {
+		LM_ERR("could not register stats group proc_free_size");
+		return -1;
+	}
+	frags_grp = register_stats_group("proc_fragments");
+	if (!frags_grp) {
+		LM_ERR("could not register stats group proc_fragments");
+		return -1;
+	}
+
 	/* build the stats and register them */
 	for( n=0 ; n<procs_no ; n++) {
 		n_str.s = int2str( n, &n_str.len);
 
 		if ( (name=build_stat_name( &n_str,"total_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_total_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC|STAT_PER_PROC,
+		(void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
@@ -220,10 +255,12 @@ int init_pkg_stats(int procs_no)
 		sname.len = strlen(name);
 		pt[n].pkg_total = get_stat(&sname);
 		pt[n].pkg_total->flags |= STAT_HIDDEN;
+		add_stats_group(total_size_grp, pt[n].pkg_total);
 
 		if ( (name=build_stat_name( &n_str,"used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC|STAT_PER_PROC,
+		(void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
@@ -231,10 +268,12 @@ int init_pkg_stats(int procs_no)
 		sname.len = strlen(name);
 		pt[n].pkg_used = get_stat(&sname);
 		pt[n].pkg_used->flags |= STAT_HIDDEN;
+		add_stats_group(used_size_grp, pt[n].pkg_used);
 
 		if ( (name=build_stat_name( &n_str,"real_used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_real_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC|STAT_PER_PROC,
+		(void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
@@ -242,10 +281,12 @@ int init_pkg_stats(int procs_no)
 		sname.len = strlen(name);
 		pt[n].pkg_rused = get_stat(&sname);
 		pt[n].pkg_rused->flags |= STAT_HIDDEN;
+		add_stats_group(real_used_size_grp, pt[n].pkg_rused);
 
 		if ( (name=build_stat_name( &n_str,"max_used_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_max_used_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC|STAT_PER_PROC,
+		(void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
@@ -253,10 +294,12 @@ int init_pkg_stats(int procs_no)
 		sname.len = strlen(name);
 		pt[n].pkg_mused = get_stat(&sname);
 		pt[n].pkg_mused->flags |= STAT_HIDDEN;
+		add_stats_group(max_used_size_grp, pt[n].pkg_mused);
 
 		if ( (name=build_stat_name( &n_str,"free_size"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_free_size,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC|STAT_PER_PROC,
+		(void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
@@ -264,10 +307,12 @@ int init_pkg_stats(int procs_no)
 		sname.len = strlen(name);
 		pt[n].pkg_free = get_stat(&sname);
 		pt[n].pkg_free->flags |= STAT_HIDDEN;
+		add_stats_group(free_size_grp, pt[n].pkg_free);
 
 		if ( (name=build_stat_name( &n_str,"fragments"))==0 ||
 		register_stat2("pkmem", name, (stat_var**)get_pkg_fragments,
-		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC, (void*)(long)n, 0)!=0 ) {
+		STAT_NO_RESET|STAT_SHM_NAME|STAT_IS_FUNC|STAT_PER_PROC,
+		(void*)(long)n, 0)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			return -1;
 		}
@@ -275,7 +320,7 @@ int init_pkg_stats(int procs_no)
 		sname.len = strlen(name);
 		pt[n].pkg_frags = get_stat(&sname);
 		pt[n].pkg_frags->flags |= STAT_HIDDEN;
-
+		add_stats_group(frags_grp, pt[n].pkg_frags);
 	}
 
 	return 0;

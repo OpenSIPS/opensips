@@ -385,6 +385,24 @@ int register_processes_load_stats(int procs_no)
 	str name;
 	int pno;
 
+	group_stats *load_proc_grp, *load_proc_1m_grp, *load_proc_10m_grp;
+
+	load_proc_grp = register_stats_group("proc_load");
+	if (!load_proc_grp) {
+		LM_ERR("could not register stats group proc_load");
+		return -1;
+	}
+	load_proc_1m_grp = register_stats_group("proc_load1m");
+	if (!load_proc_1m_grp) {
+		LM_ERR("could not register stats group proc_load1m");
+		return -1;
+	}
+	load_proc_10m_grp = register_stats_group("proc_load10m");
+	if (!load_proc_10m_grp) {
+		LM_ERR("could not register stats group proc_load10m");
+		return -1;
+	}
+
 	/* build the stats and register them for each potential process
 	 * skipp the attendant, id 0 */
 	for( pno=1 ; pno<procs_no ; pno++) {
@@ -395,7 +413,7 @@ int register_processes_load_stats(int procs_no)
 		stat_prefix.len = sizeof("load-proc")-1;
 		if ( (stat_name = build_stat_name( &stat_prefix, pno_s)) == 0 ||
 		register_stat2( "load", stat_name, (stat_var**)pt_get_rt_proc_load,
-		STAT_IS_FUNC, (void*)(long)pno, 0) != 0) {
+		STAT_IS_FUNC|STAT_PER_PROC, (void*)(long)pno, 0) != 0) {
 			LM_ERR("failed to add RT load stat for process %d\n",pno);
 		return -1;
 		}
@@ -403,12 +421,13 @@ int register_processes_load_stats(int procs_no)
 		name.len = strlen(stat_name);
 		pt[pno].load_rt = get_stat(&name);
 		pt[pno].load_rt->flags |= STAT_HIDDEN;
+		add_stats_group(load_proc_grp, pt[pno].load_rt);
 
 		stat_prefix.s = "load1m-proc";
 		stat_prefix.len = sizeof("load1m-proc")-1;
 		if ( (stat_name = build_stat_name( &stat_prefix, pno_s)) == 0 ||
 		register_stat2( "load", stat_name, (stat_var**)pt_get_1m_proc_load,
-		STAT_IS_FUNC, (void*)(long)pno, 0) != 0) {
+		STAT_IS_FUNC|STAT_PER_PROC, (void*)(long)pno, 0) != 0) {
 			LM_ERR("failed to add RT load stat for process %d\n",pno);
 			return -1;
 		}
@@ -416,12 +435,13 @@ int register_processes_load_stats(int procs_no)
 		name.len = strlen(stat_name);
 		pt[pno].load_1m = get_stat(&name);
 		pt[pno].load_1m->flags |= STAT_HIDDEN;
+		add_stats_group(load_proc_1m_grp, pt[pno].load_1m);
 
 		stat_prefix.s = "load10m-proc";
 		stat_prefix.len = sizeof("load10m-proc")-1;
 		if ( (stat_name = build_stat_name( &stat_prefix, pno_s)) == 0 ||
 		register_stat2( "load", stat_name, (stat_var**)pt_get_10m_proc_load,
-		STAT_IS_FUNC, (void*)(long)pno, 0) != 0) {
+		STAT_IS_FUNC|STAT_PER_PROC, (void*)(long)pno, 0) != 0) {
 			LM_ERR("failed to add RT load stat for process %d\n",pno);
 			return -1;
 		}
@@ -429,7 +449,7 @@ int register_processes_load_stats(int procs_no)
 		name.len = strlen(stat_name);
 		pt[pno].load_10m = get_stat(&name);
 		pt[pno].load_10m->flags |= STAT_HIDDEN;
-
+		add_stats_group(load_proc_10m_grp, pt[pno].load_10m);
 	}
 
 	return 0;

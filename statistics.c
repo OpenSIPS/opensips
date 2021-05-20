@@ -333,6 +333,7 @@ void destroy_stats_collector(void)
 {
 	stat_var *stat;
 	stat_var *tmp_stat;
+	group_stats *grp, *grp_next;
 	int i, idx;
 
 #ifdef NO_ATOMIC_OPS
@@ -375,6 +376,13 @@ void destroy_stats_collector(void)
 		/* destroy sts_module array */
 		if (collector->amodules)
 			shm_free(collector->amodules);
+
+		/* destroy the stat's groups */
+		for (grp = collector->groups; grp; grp = grp_next) {
+			grp_next = grp->next;
+			shm_free(grp->vars);
+			shm_free(grp);
+		}
 
 		/* destroy the RW lock */
 		if (collector->rwl)
@@ -964,6 +972,56 @@ void stats_mod_unlock(module_stats *mod)
 {
 	if (mod->is_dyn)
 		lock_stop_read((rw_lock_t *)collector->rwl);
+}
+
+group_stats *register_stats_group(const char *name)
+{
+	group_stats *grp = shm_malloc(sizeof *grp);
+	if (!grp)
+		return NULL;
+	memset(grp, 0, sizeof *grp);
+	init_str(&grp->name, name);
+	grp->vars = shm_malloc(sizeof(stat_var *));
+	if (!grp->vars) {
+		shm_free(grp);
+		return NULL;
+	}
+
+	grp->next = collector->groups;
+	collector->groups = grp;
+
+	return grp;
+}
+
+int add_stats_group(group_stats *grp, stat_var *stat)
+{
+	stat_var **stats = shm_realloc(grp->vars, sizeof(stat_var) * grp->no + 1);
+	if (!stats)
+		return -1;
+	grp->vars = stats;
+	grp->vars[grp->no++] = stat;
+	stat->flags |= STAT_HAS_GROUP;
+	return 0;
+}
+
+group_stats *get_stat_group(stat_var *stat)
+{
+	int s;
+	group_stats *grp;
+	for (grp = collector->groups; grp; grp = grp->next)
+		for (s = 0; s < grp->no; s++)
+			if (grp->vars[s] == stat)
+				return grp;
+	return NULL;
+}
+
+group_stats *find_stat_group(str *name)
+{
+	group_stats *grp;
+	for (grp = collector->groups; grp; grp = grp->next)
+		if (str_strcmp(name, &grp->name) == 0)
+			return grp;
+	return NULL;
 }
 
 #endif /*STATISTICS*/
