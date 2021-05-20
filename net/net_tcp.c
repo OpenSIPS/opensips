@@ -462,9 +462,9 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 					a, a->parent, a->parent->id, a->port,
 					a->parent->rcv.src_port);
 				print_ip("ip=",&a->parent->rcv.src_ip,"\n");
-				if (send_sock != NULL && a->parent->send_sock != NULL) {
-					print_ip("requested send_sock ip=",&send_sock->address,"\n");
-					print_ip("found send_sock ip=",&&a->parent->rcv.bind_address->address,"\n");
+				if (send_sock && a->parent->rcv.bind_address) {
+					print_ip("requested send_sock ip=", &send_sock->address,"\n");
+					print_ip("found send_sock ip=", &a->parent->rcv.bind_address->address,"\n");
 				}
 #endif
 				c = a->parent;
