@@ -19,8 +19,8 @@
 		the module when the corresponding event is raised by the &osips;
 	</para>
 	<para>
-		NOTE that there is the triggered <emphasis>event_route</emphasis> is
-		run asyncronus (and in a differen process) in regards to the code or 
+		NOTE that the triggered <emphasis>event_route</emphasis> is
+		run asyncronus (and in a different process) in regards to the code or 
 		process that generated the actual event.
 	</para>
 	<para>
