@@ -76,6 +76,11 @@ struct fs_binds fs_api;
 #define dst_is_active(_dst) \
 	(!((_dst).flags&(DS_INACTIVE_DST|DS_PROBING_DST)))
 
+enum ds_pattern_type {
+	DS_PATTERN_NONE=0,
+	DS_PATTERN_ID,
+	DS_PATTERN_URI,
+};
 
 int init_ds_data(ds_partition_t *partition)
 {
@@ -477,8 +482,10 @@ err1:
 
 
 /* variables used to generate the pvar name */
-static int ds_has_pattern = 0;
+static enum ds_pattern_type ds_pattern_one  = DS_PATTERN_NONE;
+static enum ds_pattern_type ds_pattern_two  = DS_PATTERN_NONE;
 static str ds_pattern_prefix = str_init("");
+static str ds_pattern_infix  = str_init("");
 static str ds_pattern_suffix = str_init("");
 
 void ds_pvar_parse_pattern(str pattern)
@@ -488,39 +495,75 @@ void ds_pvar_parse_pattern(str pattern)
 	ds_pattern_prefix = pattern;
 	end = pattern.s + pattern.len - DS_PV_ALGO_MARKER_LEN + 1;
 
-	/* first try to see if we have the marker */
-	for (p = pattern.s; p < end &&
-			memcmp(p, DS_PV_ALGO_MARKER, DS_PV_ALGO_MARKER_LEN); p++);
+	/* first try to see if we have any marker(s) */
+	for (p = pattern.s; p < end; p++) {
+		if (!memcmp(p, DS_PV_ALGO_ID_MARKER, DS_PV_ALGO_MARKER_LEN)) {
+			if (ds_pattern_one>DS_PATTERN_NONE) {
+				ds_pattern_two = DS_PATTERN_ID;
+				/* skip marker */
+				ds_pattern_infix.s = pattern.s + ds_pattern_prefix.len + DS_PV_ALGO_MARKER_LEN;
+				ds_pattern_infix.len = p - pattern.s - ds_pattern_prefix.len - DS_PV_ALGO_MARKER_LEN;
+			} else {
+				ds_pattern_one = DS_PATTERN_ID;
+				ds_pattern_prefix.len = p - pattern.s;
+			}
+		} else if (!memcmp(p, DS_PV_ALGO_URI_MARKER, DS_PV_ALGO_MARKER_LEN)) {
+			if (ds_pattern_one>DS_PATTERN_NONE) {
+				ds_pattern_two = DS_PATTERN_URI;
+				/* skip marker */
+				ds_pattern_infix.s = pattern.s + ds_pattern_prefix.len + DS_PV_ALGO_MARKER_LEN;
+				ds_pattern_infix.len = p - pattern.s - ds_pattern_prefix.len - DS_PV_ALGO_MARKER_LEN;
+			} else {
+				ds_pattern_one = DS_PATTERN_URI;
+				ds_pattern_prefix.len = p - pattern.s;
+			}
+		}
+	}
 
 	/* if reached end - pattern not present => pure pvar */
-	if (p == end) {
+	if (ds_pattern_one==DS_PATTERN_NONE) {
 		LM_DBG("Pattern not found\n");
 		return;
 	}
 
-	ds_has_pattern = 1;
-	ds_pattern_prefix.len = p - pattern.s;
-
 	/* skip marker */
-	ds_pattern_suffix.s = p + DS_PV_ALGO_MARKER_LEN;
+	ds_pattern_suffix.s = pattern.s + ds_pattern_prefix.len + ds_pattern_infix.len 
+							+ ( ds_pattern_two==DS_PATTERN_NONE ? DS_PV_ALGO_MARKER_LEN : 2*DS_PV_ALGO_MARKER_LEN);
 	ds_pattern_suffix.len = pattern.s + pattern.len - ds_pattern_suffix.s;
 }
 
 
-ds_pvar_param_p ds_get_pvar_param(str uri)
+ds_pvar_param_p ds_get_pvar_param(int id, str uri)
 {
-	str name;
-	int len = ds_pattern_prefix.len + uri.len + ds_pattern_suffix.len;
+	str str_id, name;	
+	str_id.s = int2str(id, &str_id.len);
+	int len = ds_pattern_prefix.len + ds_pattern_infix.len + ds_pattern_suffix.len 
+				+ uri.len + str_id.len;
+
 	char buf[len]; /* XXX: check if this works for all compilers */
 	ds_pvar_param_p param;
 
-	if (ds_has_pattern) {
+	if (ds_pattern_one>DS_PATTERN_NONE) {
 		name.len = 0;
 		name.s = buf;
 		memcpy(buf, ds_pattern_prefix.s, ds_pattern_prefix.len);
 		name.len = ds_pattern_prefix.len;
-		memcpy(name.s + name.len, uri.s, uri.len);
-		name.len += uri.len;
+		if (ds_pattern_one==DS_PATTERN_ID) {
+			memcpy(name.s + name.len, str_id.s, str_id.len);
+			name.len += str_id.len;
+		} else if (ds_pattern_one==DS_PATTERN_URI) {
+			memcpy(name.s + name.len, uri.s, uri.len);
+			name.len += uri.len;
+		}
+		memcpy(name.s + name.len, ds_pattern_infix.s, ds_pattern_infix.len);
+		name.len += ds_pattern_infix.len;
+		if (ds_pattern_two==DS_PATTERN_ID) {
+			memcpy(name.s + name.len, str_id.s, str_id.len);
+			name.len += str_id.len;
+		} else if (ds_pattern_two==DS_PATTERN_URI) {
+			memcpy(name.s + name.len, uri.s, uri.len);
+			name.len += uri.len;
+		}
 		memcpy(name.s + name.len, ds_pattern_suffix.s, ds_pattern_suffix.len);
 		name.len += ds_pattern_suffix.len;
 	}
@@ -531,7 +574,7 @@ ds_pvar_param_p ds_get_pvar_param(str uri)
 		return NULL;
 	}
 
-	if (!pv_parse_spec(ds_has_pattern ? &name : &ds_pattern_prefix,
+	if (!pv_parse_spec(ds_pattern_one>DS_PATTERN_NONE ? &name : &ds_pattern_prefix,
 	&param->pvar)) {
 		LM_ERR("cannot parse pattern spec\n");
 		shm_free(param);
@@ -576,7 +619,7 @@ int ds_pvar_algo(struct sip_msg *msg, ds_set_p set, ds_dest_p **sorted_set,
 
 		/* if pvar not set - try to evaluate it */
 		if (set->dlist[i].param == NULL) {
-			param = ds_get_pvar_param(set->dlist[i].uri);
+			param = ds_get_pvar_param(set->id, set->dlist[i].uri);
 			if (param == NULL) {
 				LM_ERR("cannot parse pvar for uri %.*s\n",
 					   set->dlist[i].uri.len, set->dlist[i].uri.s);
@@ -1737,7 +1780,7 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 			ds_id = 0;
 		break;
 		case 9:
-			if (!ds_has_pattern && ds_pattern_prefix.len == 0 ) {
+			if (ds_pattern_one==DS_PATTERN_NONE && ds_pattern_prefix.len == 0 ) {
 				LM_WARN("no pattern specified - using first entry...\n");
 				ds_select_ctl->alg = 8;
 				break;

@@ -617,7 +617,9 @@ modparam("dispatcher", "sock_avp", "$avp(275)")
 		pseudovariable pattern used to detect the load of each destination. The
 		name of the pseudovariable should contain the string <quote>%u</quote>,
 		which will be internally replaced by the module with the uri of the
-		destination.
+		destination. The string <quote>%i</quote> can also be used and will be
+		replaced with the set ID of the destination (useful in cases where same
+		uri exists in multiple sets).
 		</para>
 		<para>
 		</para>
