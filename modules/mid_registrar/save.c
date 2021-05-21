@@ -2495,6 +2495,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
+	sctx.cmatch.mode = CT_MATCH_NONE;
 
 	LM_DBG("saving to %.*s...\n", d->name->len, d->name->s);
 
