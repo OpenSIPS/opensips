@@ -1107,7 +1107,7 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 		case TYPE_SIP:
 			if (trace_send_duplicate(db_vals[0].val.str_val.s,
 					db_vals[0].val.str_val.len, &it->el.uri) < 0) {
-				LM_ERR("Faield to duplicate with sip to <%.*s:%.*s>\n",
+				LM_ERR("Failed to duplicate with sip to <%.*s:%.*s>\n",
 						it->el.uri.host.len, it->el.uri.host.s,
 						it->el.uri.port.len, it->el.uri.port.s);
 				continue;
@@ -1119,8 +1119,9 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 										&it->el.db->table);
 
 			if (insert_siptrace(it->el.db, keys, vals, &info->trace_attrs)<0) {
-				LM_ERR("failed to insert in DB!\n");
-				return -1;
+				LM_ERR("Failed to insert in DB!\n");
+				continue;
+			}
 			}
 
 			break;
