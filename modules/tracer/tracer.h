@@ -64,8 +64,17 @@ typedef struct st_hep_struct {
 	hid_list_t* hep_id;
 } st_hep_struct_t;
 
+typedef struct st_file_struct {
+	char *path;
+	int fd;
+} st_file_struct_t;
 
-enum types { TYPE_HEP=0, TYPE_SIP, TYPE_DB, TYPE_END };
+typedef struct st_syslog_struct {
+	int level;
+	int facility;
+} st_syslog_struct_t;
+
+enum types { TYPE_HEP=0, TYPE_SIP, TYPE_DB, TYPE_FILE, TYPE_SYSLOG, TYPE_END };
 typedef struct tlist_elem {
 	str name;          /* name of the partition */
 	enum types type;   /* SIP-DB-HEP */
@@ -78,6 +87,8 @@ typedef struct tlist_elem {
 		st_db_struct_t  *db;
 		st_hep_struct_t hep;
 		struct sip_uri  uri;
+		st_file_struct_t file;
+		st_syslog_struct_t syslog;
 	} el;
 
 

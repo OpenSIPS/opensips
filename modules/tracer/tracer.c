@@ -26,6 +26,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/uio.h>
 #include "../../net/net_tcp.h"
 #include "../../sr_module.h"
 #include "../../dprint.h"
@@ -50,6 +53,8 @@
 
 /* trace info context position */
 int sl_ctx_idx=-1;
+static int trace_default_syslog_level = 0;
+static int trace_default_syslog_facility = -1;
 
 /* DB structures used for all queries */
 db_key_t db_keys[NR_KEYS];
@@ -192,6 +197,7 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 			union sockaddr_union *tmp_su, unsigned int *proto);
 
 static int parse_trace_id(unsigned int type, void *val);
+static int parse_trace_syslog_level(unsigned int type, void *val);
 
 void free_trace_info_pkg(void *param);
 void free_trace_info_shm(void *param);
@@ -240,6 +246,9 @@ static param_export_t params[] = {
 	{"direction_column",   STR_PARAM, &direction_column.s   },
 	{"trace_on",           INT_PARAM, &trace_on             },
 	{"trace_local_ip",     STR_PARAM, &trace_local_ip.s     },
+	{"syslog_default_level",    INT_PARAM,&trace_default_syslog_level},
+	{"syslog_default_facility", STR_PARAM|USE_FUNC_PARAM,
+		parse_trace_syslog_level},
 	{0, 0, 0}
 };
 
@@ -475,6 +484,15 @@ static void get_siptrace_type(str *name, str *trace_uri, str *param1,
 				&& (__url__->s[0]|0x20) == 's' && (__url__->s[1]|0x20) == 'i' \
 					&& (__url__->s[2]|0x20) == 'p'))
 
+	#define IS_FILE_URI(__url__) ((__url__->len > 4 \
+				&& (__url__->s[0]|0x20) == 'f' && (__url__->s[1]|0x20) == 'i' \
+				&& (__url__->s[2]|0x20) == 'l' && (__url__->s[3]|0x20) == 'e'))
+
+	#define IS_SYSLOG_URI(__url__) ((__url__->len >= 6 \
+				&& (__url__->s[0]|0x20) == 's' && (__url__->s[1]|0x20) == 'y' \
+				&& (__url__->s[2]|0x20) == 's'  && (__url__->s[3]|0x20) == 'l'\
+				&& (__url__->s[4]|0x20) == 'o' && (__url__->s[5]|0x20) == 'g'))
+
 	#define IS_UDP(__url__) ((__url__.len == 3/*O_o*/ \
 				&& (__url__.s[0]|0x20) == 'u' && (__url__.s[1]|0x20) == 'd' \
 					&& (__url__.s[2]|0x20) == 'p'))
@@ -494,6 +512,14 @@ static void get_siptrace_type(str *name, str *trace_uri, str *param1,
 		trace_uri->s += HEP_PREFIX_LEN;
 	} else if (IS_SIP_URI(trace_uri)) {
 		*type = TYPE_SIP;
+	} else if (IS_FILE_URI(trace_uri)) {
+		*type = TYPE_FILE;
+		trace_uri->len -= 5;
+		trace_uri->s += 5;
+	} else if (IS_SYSLOG_URI(trace_uri)) {
+		*type = TYPE_SYSLOG;
+		trace_uri->len -= 6;
+		trace_uri->s += 6;
 	} else {
 		/* need to take the table into account */
 		if (param1 && (param1->s == NULL || param1->len == 0))
@@ -507,6 +533,8 @@ static void get_siptrace_type(str *name, str *trace_uri, str *param1,
 
 	#undef IS_HEP_URI
 	#undef IS_SIP_URI
+	#undef IS_FILE_URI
+	#undef IS_SYSLOG_URI
 	#undef IS_TCP
 	#undef IS_UDP
 }
@@ -534,6 +562,48 @@ static inline tlist_elem_p get_dyn_siptrace_id(str *name, unsigned int hash, enu
 	if (!leave_locked)
 		lock_release(dyn_trace_lock);
 	return el;
+}
+
+static int parse_siptrace_syslog(str *orig_uri, st_syslog_struct_t *s)
+{
+	char *p;
+	int ret;
+	str tmp;
+	str uri;
+
+	if (!orig_uri || orig_uri->len <= 0) {
+		s->facility = trace_default_syslog_facility;
+		s->level = trace_default_syslog_level;
+		return 0;
+	}
+
+	if (pkg_nt_str_dup(&uri, orig_uri) < 0) {
+		LM_ERR("cannot duplicate string in pkg!\n");
+		return -1;
+	}
+
+	p = q_memchr(uri.s, ':', uri.len);
+	if (p) {
+		tmp.s = p + 1;
+		tmp.len = uri.len - (tmp.s - uri.s);
+		if (str2sint(&tmp, &s->level) < 0) {
+			LM_ERR("invalid syslog level [%.*s], using default %d\n",
+					tmp.len, tmp.s, trace_default_syslog_level);
+			s->level = trace_default_syslog_level;
+		}
+		*p = '\0';
+	} else {
+		s->level = trace_default_syslog_level;
+	}
+	s->facility = str2facility(uri.s);
+	if (s->facility < 0) {
+		LM_ERR("invalid syslog facility [%.*s]!\n", uri.len, uri.s);
+		goto end;
+	}
+	ret = 0;
+end:
+	pkg_free(uri.s);
+	return ret;
 }
 
 static int parse_siptrace_id(str *suri)
@@ -565,7 +635,6 @@ static int parse_siptrace_id(str *suri)
 	str param1={NULL, 0};
 	tlist_elem_p elem;
 	enum types uri_type;
-
 
 	if (suri == NULL) {
 		LM_ERR("bad input parameters!\n");
@@ -624,6 +693,11 @@ static int parse_siptrace_id(str *suri)
 			LM_ERR("failed to parse the URI!\n");
 			return -1;
 		}
+	} else if (uri_type == TYPE_FILE) {
+		elem->el.file.path = trace_uri.s;
+	} else if (uri_type == TYPE_SYSLOG) {
+		if (parse_siptrace_syslog(&trace_uri, &elem->el.syslog) < 0)
+			return -1;
 	} else {
 		elem->el.hep.name = trace_uri;
 	}
@@ -822,6 +896,11 @@ static int mod_init(void)
 	if (trace_local_ip.s)
 		parse_trace_local_ip();
 
+	if (trace_default_syslog_facility < 0)
+		trace_default_syslog_facility = log_facility;
+	if (trace_default_syslog_level != 0)
+		trace_default_syslog_level = *log_level;
+
 	LM_INFO("initializing...\n");
 
 	trace_on_flag = (int*)shm_malloc(sizeof(int));
@@ -884,6 +963,17 @@ static int mod_init(void)
 
 				break;
 
+			case TYPE_FILE:
+				/* open the file in main, and it will get inherited
+				 * in each process */
+				it->el.file.fd = open(it->el.file.path,
+						O_RDWR|O_APPEND|O_CREAT, 0644);
+				if (it->el.file.fd < 0) {
+					LM_ERR("could not open file <%s> for tracing\n", it->el.file.path);
+					return -1;
+				}
+				break;
+			case TYPE_SYSLOG:
 			case TYPE_SIP:
 			case TYPE_END:
 
@@ -1063,6 +1153,76 @@ static inline int insert_siptrace(st_db_struct_t *st_db,
 	return 0;
 }
 
+static inline int trace_write_file(int fd, char *path,
+		db_key_t *keys, db_val_t *vals, str *trace_attrs)
+{
+	int ret = -1;
+	struct tm t;
+	int close_fd = 0;
+	char time_buf[32];
+	struct iovec v[] = {
+		/* 0 */{ (void *)db_vals[11].val.string_val, 0}, /* in/out */
+		/* 1 */{ " ", 1 },
+		/* 2 */{ db_vals[4].val.str_val.s, db_vals[4].val.str_val.len}, /* proto */
+		/* 3 */{ "", 0 }, /* time */
+		/* 4 */{ db_vals[5].val.str_val.s, db_vals[5].val.str_val.len}, /* from IP */
+		/* 5 */{ ":", 1 },
+		/* 6 */{ "", 0 }, /* from port */
+		/* 7 */{ " -> ", 4 },
+		/* 8 */{ db_vals[8].val.str_val.s, db_vals[8].val.str_val.len}, /* to IP */
+		/* 9 */{ ":", 1 },
+		/* 10 */{ "", 0 }, /* to port */
+		/* 11 */{ "\n", 1 },
+		/* 12 */{ db_vals[0].val.str_val.s, db_vals[0].val.str_val.len},
+		/* 13 */{ "\n\n", 2 },
+	};
+
+	localtime_r(&db_vals[10].val.time_val, &t);
+	strftime(time_buf, sizeof(time_buf), " %F %T ", &t);
+
+	v[0].iov_len = strlen(v[0].iov_base);
+	v[3].iov_base = time_buf;
+	v[3].iov_len = strlen(v[3].iov_base);
+	v[6].iov_base = int2str(db_vals[6].val.int_val, (int *)&v[6].iov_len);
+	v[11].iov_base = int2str(db_vals[9].val.int_val, (int *)&v[10].iov_len);
+
+	if (fd < 0) {
+		fd = open(path, O_RDWR|O_APPEND|O_CREAT, 0644);
+		if (fd < 0) {
+			LM_ERR("could not open write file %s (%s)\n",
+					path, strerror(errno));
+			return -1;
+		}
+		close_fd = 1;
+	}
+
+	if (writev(fd, v, sizeof(v)/sizeof(v[0])) < 0)
+		LM_ERR("could not open write in file file %s (%s)\n",
+				path, strerror(errno));
+	else
+		ret = 0;
+
+	if (close_fd)
+		close(fd);
+	return ret;
+}
+
+static inline int trace_write_syslog(st_syslog_struct_t *s,
+		db_key_t *keys, db_val_t *vals, str *trace_attrs)
+{
+	LM_GEN2(s->facility, s->level, "%s %.*s %.*s:%d -> %.*s:%d\n%.*s\n",
+			db_vals[11].val.string_val, /* in/out */
+			db_vals[4].val.str_val.len, db_vals[4].val.str_val.s, /* proto */
+			db_vals[5].val.str_val.len, db_vals[5].val.str_val.s, /* from IP */
+			db_vals[6].val.int_val, /* from port */
+			db_vals[8].val.str_val.len, db_vals[8].val.str_val.s, /* to IP */
+			db_vals[9].val.int_val, /* to port */
+			db_vals[0].val.str_val.len, db_vals[0].val.str_val.s /* body */
+		   );
+
+	return 0;
+}
+
 
 #define trace_check_legs(_instance, _leg_flag) \
 	( (((_instance)->control_flags)&(TRACE_C_CALLER|TRACE_C_CALLEE))==0 \
@@ -1122,8 +1282,22 @@ static int save_siptrace(struct sip_msg *msg, db_key_t *keys, db_val_t *vals,
 				LM_ERR("Failed to insert in DB!\n");
 				continue;
 			}
-			}
 
+			break;
+		case TYPE_FILE:
+			if (trace_write_file(it->el.file.fd, it->el.file.path,
+					keys, vals, &info->trace_attrs) < 0) {
+				LM_ERR("Failed to write in %s file\n", it->el.file.path);
+				continue;
+			}
+			break;
+
+		case TYPE_SYSLOG:
+			if (trace_write_syslog(&it->el.syslog, keys, vals,
+					&info->trace_attrs) < 0) {
+				LM_ERR("Failed to write to syslog\n");
+				continue;
+			}
 			break;
 		default:
 			LM_ERR("invalid type!\n");
@@ -2814,6 +2988,16 @@ static mi_response_t *sip_trace_mi_mode(const mi_params_t *params,
 			MI_SSTR("trace mode should be 'on' or 'off'"));
 }
 
+static int parse_trace_syslog_level(modparam_t type, void* val)
+{
+	trace_default_syslog_facility = str2facility((char *)val);
+	if (trace_default_syslog_facility < 0) {
+		LM_ERR("invalid syslog facility [%s]!\n", (char *)val);
+		return -1;
+	}
+	return 0;
+}
+
 static int parse_trace_filter(str *filter_s, enum trace_filter_types *type)
 {
 	if (filter_s->len > 7 && (strncasecmp(filter_s->s, "caller=", 7) == 0)) {
@@ -2970,7 +3154,7 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	filters = parse_trace_filters(params);
 
 	/* first check if the destination exists */
-	elem = shm_malloc(sizeof(tlist_dyn_elem_t) + uri.len + name.len);
+	elem = shm_malloc(sizeof(tlist_dyn_elem_t) + uri.len + 1 + name.len);
 	if (!elem) {
 		LM_ERR("could not allocate dynamic elem!\n");
 		goto error;
@@ -2978,16 +3162,37 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 	memset(elem, 0, sizeof(tlist_dyn_elem_t));
 	p_uri = (char *)(elem + 1);
 	memcpy(p_uri, uri.s, uri.len);
-	p_name = p_uri + uri.len;
+	p_uri[uri.len] = '\0';
+	p_name = p_uri + uri.len + 1;
 	memcpy(p_name, name.s, name.len);
 
-	if (uri_type == TYPE_HEP) {
-		elem->elem.el.hep.name.s = p_uri;
-		elem->elem.el.hep.name.len = uri.len;
-		elem->elem.el.hep.hep_id = hep_id;
-	} else if (parse_uri(p_uri, uri.len, &elem->elem.el.uri) < 0) {
-		LM_ERR("failed to parse the [%.*s] URI\n", uri.len, p_uri);
-		goto error;
+	switch (uri_type) {
+		case TYPE_HEP:
+			elem->elem.el.hep.name.s = p_uri;
+			elem->elem.el.hep.name.len = uri.len;
+			elem->elem.el.hep.hep_id = hep_id;
+			break;
+		case TYPE_SIP:
+			if (parse_uri(p_uri, uri.len, &elem->elem.el.uri) < 0) {
+				LM_ERR("failed to parse the [%.*s] URI\n", uri.len, p_uri);
+				goto error;
+			}
+			break;
+		case TYPE_FILE:
+			if (access(p_uri, 0644) < 0) {
+				LM_ERR("failed to open [%s] file\n", p_uri);
+				goto error;
+			}
+			elem->elem.el.file.fd = -1;
+			elem->elem.el.file.path = p_uri;
+			break;
+		case TYPE_SYSLOG:
+			if (parse_siptrace_syslog(&uri, &elem->elem.el.syslog) < 0)
+				goto error;
+			break;
+		default:
+			LM_ERR("unknown type %d\n", uri_type);
+			goto error;
 	}
 
 	elem->ref = 1;
