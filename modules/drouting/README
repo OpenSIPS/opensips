@@ -1284,6 +1284,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
             gw_id_avp AVP
           + 'n' (Ignore port) - ignores port number during
             matching
+          + 'r' (Check protocol) - check protocol
           + 'c' (Carrier ID) - return the carrier id into
             carrier_id_avp AVP
      * gw_attrs_pvar (var, optional) - an output writable variable

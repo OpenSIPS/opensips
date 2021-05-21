@@ -1868,6 +1868,11 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 							</para>
 						</listitem>
 						<listitem>
+							<para>
+							<emphasis role='bold'>'r'</emphasis> (Check protocol) - check protocol
+							</para>
+						</listitem>
+						<listitem>
 						<para>
 						<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
 						return the carrier id into carrier_id_avp AVP
