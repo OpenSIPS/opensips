@@ -622,6 +622,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	rerrno = R_FINE;
 	memset( &sctx, 0 , sizeof(sctx));
 
+	sctx.cmatch.mode = CT_MATCH_NONE;
 	sctx.min_expires = min_expires;
 	sctx.max_expires = max_expires;
 	if ( flags_s )
