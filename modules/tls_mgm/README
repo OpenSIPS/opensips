@@ -1476,8 +1476,8 @@ Chapter 3. Contributors
    10. Maksym Sobolyev (@sobomax) 4 2 4 18
 
    All remaining contributors: Callum Guy (@spacetourist), Aleksei
-   Vasilev, Fabian Gast (@fgast), Ovidiu Sas (@ovidiusas), Peter
-   Lemenkov (@lemenkov).
+   Vasilev, Fabian Gast (@fgast), Nick Altmann (@nikbyte), Ovidiu
+   Sas (@ovidiusas), Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1499,21 +1499,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Aleksei Vasilev                     Apr 2021 - Apr 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Mar 2021
-   3.  Maksym Sobolyev (@sobomax)          Mar 2016 - Sep 2020
-   4.  Liviu Chircu (@liviuchircu)         Oct 2015 - Aug 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
-   6.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
-   7.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
-   8.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
-   9.  Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019
-   10. Callum Guy (@spacetourist)          Jun 2018 - Jun 2018
+   1.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   2.  Aleksei Vasilev                     Apr 2021 - Apr 2021
+   3.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Mar 2021
+   4.  Maksym Sobolyev (@sobomax)          Mar 2016 - Sep 2020
+   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - Aug 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
+   7.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
+   8.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
+   9.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
+   10. Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Ovidiu
-   Sas (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Ionel
-   Cerghit (@ionel-cerghit), Eseanu Marius Cristian
-   (@eseanucristian).
+   All remaining contributors: Callum Guy (@spacetourist), Peter
+   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Eseanu
+   Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits

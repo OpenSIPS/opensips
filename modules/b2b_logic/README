@@ -38,11 +38,11 @@ B2B_LOGIC
                       [reply_route], [init_sdp_body],
                       [init_sdp_ctype])
 
-              1.5.2. b2b_server_new(id, [extra_hdrs],
-                      [extra_hdr_bodies])
+              1.5.2. b2b_server_new(id, [adv_contact],
+                      [extra_hdrs], [extra_hdr_bodies])
 
               1.5.3. b2b_client_new(id, dest_uri, [proxy],
-                      [from_dname], [extra_hdrs],
+                      [from_dname], [adv_contact], [extra_hdrs],
                       [extra_hdr_bodies])
 
               1.5.4. b2b_bridge(entity1, entity2, [provmedia_uri],
@@ -518,7 +518,8 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 }
 ...
 
-1.5.2.  b2b_server_new(id, [extra_hdrs], [extra_hdr_bodies])
+1.5.2.  b2b_server_new(id, [adv_contact], [extra_hdrs],
+[extra_hdr_bodies])
 
    This function creates a new server entity (dialog where
    OpenSIPS acts as a UAS) to be used for initializing a new B2B
@@ -528,6 +529,8 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
    Parameters:
      * id (string) - ID used to reference this entity in further
        B2B actions.
+     * adv_contact (string, optional) - Contact header to
+       advertise in generated messages.
      * extra_hdrs (var, optioanl) - AVP variable holding a list of
        extra headers (the header names) to be added for any
        request sent to this entity.
@@ -547,7 +550,7 @@ if(is_method("INVITE") && !has_totag()) {
 ...
 
 1.5.3.  b2b_client_new(id, dest_uri, [proxy], [from_dname],
-[extra_hdrs], [extra_hdr_bodies])
+[adv_contact], [extra_hdrs], [extra_hdr_bodies])
 
    This function creates a new client entity (dialog where
    OpenSIPS acts as a UAC) to be used for initializing a new B2B
@@ -562,6 +565,8 @@ if(is_method("INVITE") && !has_totag()) {
        send the INVITE to.
      * from_dname (string, optional) - Display name to use in the
        From header.
+     * adv_contact (string, optional) - Contact header to
+       advertise in generated messages.
      * extra_hdrs (var, optional) - AVP variable holding a list of
        extra headers (the header names) to be added for any
        request sent to this entity.
@@ -1091,7 +1096,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 111 29 4340 2813
+   3. Vlad Patrascu (@rvlad-patrascu) 114 30 4467 2869
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 43 35 267 248
    5. Razvan Crainea (@razvancrainea) 39 29 640 211
    6. Nick Altmann (@nikbyte) 26 15 739 228
@@ -1124,9 +1129,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Nick Altmann (@nikbyte)             Oct 2012 - May 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   2.  Nick Altmann (@nikbyte)             Oct 2012 - May 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
    6.  Zero King (@l2dy)                   Mar 2020 - Dec 2020
@@ -1145,11 +1150,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Nick Altmann (@nikbyte), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas),
-   Vlad Paiu (@vladpaiu), Anca Vamanu.
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Nick Altmann
+   (@nikbyte), Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Ovidiu Sas (@ovidiusas), Vlad Paiu
+   (@vladpaiu), Anca Vamanu.
 
    Documentation Copyrights:
 

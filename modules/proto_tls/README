@@ -594,8 +594,8 @@ Chapter 3. Contributors
    9. Maksym Sobolyev (@sobomax) 4 2 3 18
    10. Dan Pascu (@danpascu) 3 1 2 4
 
-   All remaining contributors: Julián Moreno Patiño, Peter
-   Lemenkov (@lemenkov), Zero King (@l2dy).
+   All remaining contributors: Nick Altmann (@nikbyte), Julián
+   Moreno Patiño, Peter Lemenkov (@lemenkov), Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -617,19 +617,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2021
-   3.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2021
-   4.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   7.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Apr 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2021
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2021
+   4.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2021
+   5.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
+   8.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Apr 2017
 
-   All remaining contributors: Eseanu Marius Cristian
-   (@eseanucristian), Bogdan Chifor, Vlad Paiu (@vladpaiu).
+   All remaining contributors: Julián Moreno Patiño, Eseanu Marius
+   Cristian (@eseanucristian), Bogdan Chifor, Vlad Paiu
+   (@vladpaiu).
 
    (1) including any documentation-related commits, excluding
    merge commits

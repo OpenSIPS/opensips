@@ -171,6 +171,10 @@ modparam("prometheus", "group_mode", 1)
    to do that, you shall add a colon (:) at the end of the
    groups's name.
 
+   If the all value is used, then the module will expose all
+   available statistics - therefore any other settings of this
+   parameter is useless;
+
    This parameter can be defined multiple times.
 
    The default value is empty: no metric is exported.
@@ -209,7 +213,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    13       5      725       65
+   1. Razvan Crainea (@razvancrainea)    21      10      983      119
    2. OpenSIPS                           3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -232,7 +236,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2021 - Mar 2021
+   1. Razvan Crainea (@razvancrainea) Feb 2021 - May 2021
    2. OpenSIPS                        Feb 2021 - Feb 2021
 
    (1) including any documentation-related commits, excluding
