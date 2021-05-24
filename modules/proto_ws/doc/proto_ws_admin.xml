@@ -276,6 +276,23 @@ route[ws_filter] {
 </programlisting>
 		</example>
 	</section>
+	<section id="param_require_origin" xreflabel="require_origin">
+		<title><varname>require_origin</varname> (int)</title>
+		<para>
+			Controls whether the module should require the Origin header or not.
+		</para>
+		<emphasis>
+			Default value is 1(require Origin header).
+		</emphasis>
+		<example>
+		<title>Set <varname>require_origin</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_ws", "require_origin", no)
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 

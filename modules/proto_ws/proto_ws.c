@@ -53,6 +53,8 @@ static struct tcp_req tcp_current_req;
 
 static struct ws_req ws_current_req;
 
+static int ws_require_origin = 1;
+
 /* in milliseconds */
 int ws_send_timeout = 100;
 
@@ -71,6 +73,7 @@ static str ws_resource = str_init("/");
 #define _ws_common_read_tout ws_hs_read_tout
 #define _ws_common_write_tout ws_send_timeout
 #define _ws_common_resource ws_resource
+#define _ws_common_require_origin ws_require_origin
 #include "ws_handshake_common.h"
 #include "ws_common.h"
 
@@ -118,6 +121,7 @@ static param_export_t params[] = {
 	{ "ws_max_msg_chunks", INT_PARAM, &ws_max_msg_chunks },
 	{ "ws_send_timeout",   INT_PARAM, &ws_send_timeout   },
 	{ "ws_resource",       STR_PARAM, &ws_resource.s     },
+	{ "require_origin",    INT_PARAM, &ws_require_origin },
 	{ "ws_handshake_timeout", INT_PARAM, &ws_hs_read_tout },
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "trace_on",						 INT_PARAM, &trace_is_on_tmp        },

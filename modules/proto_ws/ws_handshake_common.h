@@ -66,21 +66,6 @@
 #define WS_UPGRADE_HDR "Upgrade"
 #define WS_UPGRADE_HDR_LEN (sizeof(WS_UPGRADE_HDR) - 1)
 
-/* all flags for req */
-#define WS_ALL_REQ_F (WS_HOST_F | \
-					WS_UPGRADE_F | \
-					WS_CONN_F | \
-					WS_ORIGIN_F | \
-					WS_KEY_F | \
-					WS_VER_F | \
-					WS_PROTO_F)
-
-/* all flags for reply */
-#define WS_ALL_RPL_F (WS_UPGRADE_F | \
-					WS_CONN_F | \
-					WS_ACCEPT_F | \
-					WS_PROTO_F)
-
 #define GET_LOWER(_p) \
 	((*(_p)) | 0x20)
 #define GET_LOWER_DWORD(_p) \
@@ -156,6 +141,24 @@ static char ws_trace_buf[WS_TRACE_MAX];
 #ifndef _ws_common_write_tout
 #error "_ws_common_write_tout not defined!"
 #endif
+#ifndef _ws_common_require_origin
+#error "_ws_common_require_origin not defined!"
+#endif
+
+/* all flags for req */
+#define WS_ALL_REQ_F (WS_HOST_F | \
+					WS_UPGRADE_F | \
+					WS_CONN_F | \
+					(_ws_common_require_origin?WS_ORIGIN_F:0) | \
+					WS_KEY_F | \
+					WS_VER_F | \
+					WS_PROTO_F)
+
+/* all flags for reply */
+#define WS_ALL_RPL_F (WS_UPGRADE_F | \
+					WS_CONN_F | \
+					WS_ACCEPT_F | \
+					WS_PROTO_F)
 
 
 #define WS_KEY_LEN 24
@@ -887,13 +890,13 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 			flags |= WS_CONN_F;
 			break;
 		case GET_DWORD('o', 'r', 'i', 'g'): /* Origin */
-			/* TODO: always check for origin? */
 			if (hf->name.len !=  HDR_LEN("Origin") ||
 					GET_LOWER(hf->name.s + 4) != 'i' ||
 					GET_LOWER(hf->name.s + 5) != 'n')
 				break;
 
-			flags |= WS_ORIGIN_F;
+			if (_ws_common_require_origin)
+				flags |= WS_ORIGIN_F;
 			break;
 		case GET_DWORD('s', 'e', 'c', '-'): /* Sec-* */
 			if (hf->name.len < HDR_LEN("Sec-Websocket-*") ||
@@ -975,7 +978,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 			LM_ERR("Upgrade header not present!\n");
 		if (flags & WS_CONN_F)
 			LM_ERR("Connection header not present!\n");
-		if (flags & WS_ORIGIN_F)
+		if (_ws_common_require_origin && (flags & WS_ORIGIN_F))
 			LM_ERR("Origin header not present!\n");
 		if (flags & WS_KEY_F)
 			LM_ERR("Sec-WebSocket-Key header not present or does not "

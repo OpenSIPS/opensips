@@ -63,6 +63,7 @@ static struct ws_req wss_current_req;
 static int wss_hs_read_tout = 100;
 static int wss_hs_tls_tout = 100;
 static int wss_send_tout = 100;
+static int wss_require_origin = 1;
 
 /* check the SSL certificate when comes to TCP conn reusage */
 static int cert_check_on_conn_reusage = 0;
@@ -80,6 +81,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #define _ws_common_read(c, r) tls_read((c), (r), &tls_mgm_api)
 #define _ws_common_writev wss_raw_writev
 #define _ws_common_read_tout wss_hs_read_tout
+#define _ws_common_require_origin wss_require_origin
 /*
  * the timeout is only used by the _ws_common_writev function
  * but in our case, the timeout specified in the TLS MGM
@@ -134,6 +136,7 @@ static param_export_t params[] = {
 	{ "wss_max_msg_chunks", INT_PARAM, &wss_max_msg_chunks },
 	{ "wss_resource",       STR_PARAM, &wss_resource.s     },
 	{ "wss_send_timeout",   INT_PARAM, &wss_send_tout      },
+	{ "require_origin",     INT_PARAM, &wss_require_origin },
 	{ "wss_handshake_timeout", INT_PARAM, &wss_hs_read_tout},
 	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
 	{ "wss_tls_handshake_timeout",  INT_PARAM, &wss_hs_tls_tout           },
