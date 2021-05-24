@@ -53,6 +53,7 @@
 
 /* trace info context position */
 int sl_ctx_idx=-1;
+static int trace_file_mode = 0600;
 static int trace_default_syslog_level = 0;
 static int trace_default_syslog_facility = -1;
 
@@ -246,6 +247,7 @@ static param_export_t params[] = {
 	{"direction_column",   STR_PARAM, &direction_column.s   },
 	{"trace_on",           INT_PARAM, &trace_on             },
 	{"trace_local_ip",     STR_PARAM, &trace_local_ip.s     },
+	{"file_mode",          INT_PARAM, &trace_file_mode      },
 	{"syslog_default_level",    INT_PARAM,&trace_default_syslog_level},
 	{"syslog_default_facility", STR_PARAM|USE_FUNC_PARAM,
 		parse_trace_syslog_level},
@@ -967,7 +969,7 @@ static int mod_init(void)
 				/* open the file in main, and it will get inherited
 				 * in each process */
 				it->el.file.fd = open(it->el.file.path,
-						O_RDWR|O_APPEND|O_CREAT, 0644);
+						O_RDWR|O_APPEND|O_CREAT, trace_file_mode);
 				if (it->el.file.fd < 0) {
 					LM_ERR("could not open file <%s> for tracing\n", it->el.file.path);
 					return -1;
@@ -1187,7 +1189,7 @@ static inline int trace_write_file(int fd, char *path,
 	v[11].iov_base = int2str(db_vals[9].val.int_val, (int *)&v[10].iov_len);
 
 	if (fd < 0) {
-		fd = open(path, O_RDWR|O_APPEND|O_CREAT, 0644);
+		fd = open(path, O_RDWR|O_APPEND|O_CREAT, trace_file_mode);
 		if (fd < 0) {
 			LM_ERR("could not open write file %s (%s)\n",
 					path, strerror(errno));
@@ -3179,7 +3181,7 @@ static mi_response_t *sip_trace_mi_dyn(const mi_params_t *params,
 			}
 			break;
 		case TYPE_FILE:
-			if (access(p_uri, 0644) < 0) {
+			if (access(p_uri, trace_file_mode) < 0) {
 				LM_ERR("failed to open [%s] file\n", p_uri);
 				goto error;
 			}

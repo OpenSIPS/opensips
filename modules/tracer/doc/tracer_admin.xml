@@ -278,6 +278,27 @@ modparam("tracer", "syslog_default_level", 2) # NOTICE
 </programlisting>
 		</example>
 	</section>
+		<section id="param_file_mode" xreflabel="file_mode">
+		<title><varname>file_mode</varname> (integer)</title>
+		<para>
+			When <emphasis>file</emphasis> tracing is used, this parameter
+			specifies the permissions to be used to create the trace files.
+			It follows the UNIX conventions.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>0600 (rw-------)</emphasis>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>file_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("tracer", "file_mode", 0644)
+...
+</programlisting>
+		</example>
+	</section>
 
 	</section>
 
