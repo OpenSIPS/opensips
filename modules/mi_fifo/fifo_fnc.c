@@ -68,14 +68,14 @@ FILE* mi_create_fifo(void)
 
 	/* create FIFO ... */
 	if ((mkfifo(mi_fifo_name, mi_fifo_mode)<0)) {
-		LM_ERR("can't create FIFO: %s (mode=%d)\n", strerror(errno), mi_fifo_mode);
+		LM_ERR("can't create FIFO: %s (mode=%o)\n", strerror(errno), mi_fifo_mode);
 		return 0;
 	}
 
 	LM_DBG("FIFO created @ %s\n", mi_fifo_name );
 
 	if ((chmod(mi_fifo_name, mi_fifo_mode)<0)) {
-		LM_ERR("can't chmod FIFO: %s (mode=%d)\n", strerror(errno), mi_fifo_mode);
+		LM_ERR("can't chmod FIFO: %s (mode=%o)\n", strerror(errno), mi_fifo_mode);
 		return 0;
 	}
 
