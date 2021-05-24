@@ -850,7 +850,6 @@ LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_python3:PYTHON=python3} %{?
   modules_dir=%{_lib}/%{name}/modules
 
 %install
-rm -rf $RPM_BUILD_ROOT
 %{__make} install TLS=1 LIBDIR=%{_lib} \
   exclude_modules="%EXCLUDE_MODULES" \
   basedir=%{buildroot} prefix=%{_prefix} \
@@ -862,22 +861,22 @@ rm -rf $RPM_BUILD_ROOT
 
 # clean some things
 %if 0%{?el5}
-rm -rf $RPM_BUILD_ROOT/%{_libdir}/opensips/perl/OpenSIPS/VDB*
+rm -rf %{buildroot}/%{_libdir}/opensips/perl/OpenSIPS/VDB*
 %endif
-mkdir -p $RPM_BUILD_ROOT/%{perl_vendorlib}
-if [ -d "$RPM_BUILD_ROOT/%{_prefix}/perl" ]; then
+mkdir -p %{buildroot}/%{perl_vendorlib}
+if [ -d "%{buildroot}/%{_prefix}/perl" ]; then
   # for fedora>=11
-  mv $RPM_BUILD_ROOT/%{_prefix}/perl/* \
-    $RPM_BUILD_ROOT/%{perl_vendorlib}/
+  mv %{buildroot}/%{_prefix}/perl/* \
+    %{buildroot}/%{perl_vendorlib}/
 else
   # for fedora<=10
-  mv $RPM_BUILD_ROOT/%{_libdir}/opensips/perl/* \
-    $RPM_BUILD_ROOT/%{perl_vendorlib}/
+  mv %{buildroot}/%{_libdir}/opensips/perl/* \
+    %{buildroot}/%{perl_vendorlib}/
 fi
-mv $RPM_BUILD_ROOT/%{_sysconfdir}/opensips/tls/README \
-  $RPM_BUILD_ROOT/%{_docdir}/opensips/README.tls
-rm -f $RPM_BUILD_ROOT%{_docdir}/opensips/INSTALL
-mv $RPM_BUILD_ROOT/%{_docdir}/opensips docdir
+mv %{buildroot}/%{_sysconfdir}/opensips/tls/README \
+  %{buildroot}/%{_docdir}/opensips/README.tls
+rm -f %{buildroot}%{_docdir}/opensips/INSTALL
+mv %{buildroot}/%{_docdir}/opensips docdir
 
 # recode documentation
 for i in docdir/*; do
@@ -888,19 +887,15 @@ done
 
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
-install -D -m 0644 -p packaging/redhat_fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
-install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf $RPM_BUILD_ROOT%{_sysconfdir}/tmpfiles.d/%{name}.conf
-mkdir -p $RPM_BUILD_ROOT%{_localstatedir}/run/%{name}
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.service %{buildroot}%{_unitdir}/%{name}.service
+install -D -m 0644 -p packaging/redhat_fedora/%{name}.tmpfiles.conf %{buildroot}%{_sysconfdir}/tmpfiles.d/%{name}.conf
+mkdir -p %{buildroot}%{_localstatedir}/run/%{name}
 %else
-install -p -D -m 755 packaging/redhat_fedora/opensips.init $RPM_BUILD_ROOT%{_initrddir}/opensips
+install -p -D -m 755 packaging/redhat_fedora/opensips.init %{buildroot}%{_initrddir}/opensips
 %endif
 
 #install sysconfig file
-install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig $RPM_BUILD_ROOT%{_sysconfdir}/sysconfig/%{name}
-
-%clean
-rm -rf $RPM_BUILD_ROOT
-
+install -D -p -m 644 packaging/redhat_fedora/%{name}.sysconfig %{buildroot}%{_sysconfdir}/sysconfig/%{name}
 
 %pre
 getent group %{name} >/dev/null || groupadd -r %{name}
