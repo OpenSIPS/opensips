@@ -99,7 +99,7 @@
 			<emphasis>opensips-cli</emphasis>, you can fix it by either store
 			the fifo file in a non-sticky bit directory (such as
 			<emphasis>/var/run/opensips</emphasis>), or disable the fifo
-			protection using <emphasis>sysctl fs.protected_fifos = 1</emphasis>
+			protection using <emphasis>sysctl fs.protected_fifos = 0</emphasis>
 			(NOT RECOMMENDED).
 		</para>
 		<para>
