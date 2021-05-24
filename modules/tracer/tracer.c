@@ -567,7 +567,7 @@ static inline tlist_elem_p get_dyn_siptrace_id(str *name, unsigned int hash, enu
 static int parse_siptrace_syslog(str *orig_uri, st_syslog_struct_t *s)
 {
 	char *p;
-	int ret;
+	int ret = -1;
 	str tmp;
 	str uri;
 
