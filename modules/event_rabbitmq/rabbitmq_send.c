@@ -47,6 +47,8 @@ unsigned rmq_sync_mode = 0;
 /* used to communicate with the sending process */
 static int rmq_pipe[2];
 
+str rmq_static_holder = str_init(RMQ_DEFAULT_UP);
+
 /* creates communication pipe */
 int rmq_create_pipe(void)
 {
@@ -215,16 +217,11 @@ static int rmq_error(char const *context, amqp_rpc_reply_t x)
 
 void rmq_free_param(rmq_params_t *rmqp)
 {
-	/* XXX: hack to make clang happy, because it _always_
-	 * warns when comparing two char * (even casted to void *)
-	 */
-	static void *dummy_holder = RMQ_DEFAULT_UP;
-
 	if ((rmqp->flags & RMQ_PARAM_USER) && rmqp->user.s &&
-			rmqp->user.s != dummy_holder)
+			rmqp->user.s != rmq_static_holder.s)
 		shm_free(rmqp->user.s);
 	if ((rmqp->flags & RMQ_PARAM_PASS) && rmqp->pass.s &&
-			rmqp->pass.s != dummy_holder)
+			rmqp->pass.s != rmq_static_holder.s)
 		shm_free(rmqp->pass.s);
 	if ((rmqp->flags & RMQ_PARAM_RKEY) && rmqp->routing_key.s)
 		shm_free(rmqp->routing_key.s);
