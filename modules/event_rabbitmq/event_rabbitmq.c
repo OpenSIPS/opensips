@@ -448,8 +448,7 @@ success:
 		sock->flags |= EVI_PORT;
 	}
 	if (!(param->flags & RMQ_PARAM_USER) || !param->user.s) {
-		param->user.s = param->pass.s = RMQ_DEFAULT_UP;
-		param->user.len = param->pass.len = RMQ_DEFAULT_UP_LEN;
+		param->user = param->pass = rmq_static_holder;
 		param->flags |= RMQ_PARAM_USER|RMQ_PARAM_PASS;
 	}
 
