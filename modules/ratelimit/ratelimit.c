@@ -111,7 +111,9 @@ mi_response_t *mi_set_pid(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_get_pid(const mi_params_t *params,
 								struct mi_handler *async_hdl);
-
+mi_response_t *mi_dump_pipe(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+								
 static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_parse_rl_count(pv_spec_p sp, const str *in);
@@ -158,6 +160,7 @@ static param_export_t params[] = {
 	"Feedback Algorithm."
 #define RLH4 "Params: none ; Gets the list of in use PID Controller parameters."
 #define RLH5 "Params: none ; Shows the status of the other SIP instances."
+#define RLH6 "Params: pipe ; Dumps the details of a (SBT) pipe. "
 
 static mi_export_t mi_cmds [] = {
 	{"rl_list", RLH1, 0, 0, {
@@ -175,6 +178,10 @@ static mi_export_t mi_cmds [] = {
 	},
 	{"rl_get_pid", RLH4, 0, 0, {
 		{mi_get_pid, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"rl_dump_pipe", RLH6, 0, 0, {
+		{mi_dump_pipe, {"pipe", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -219,7 +226,28 @@ struct module_exports exports= {
 	0					/* reload confirm function */
 };
 
-
+struct {
+	str name;
+	rl_algo_t algo;
+} rl_algo_names_local[] = {
+	{ str_init("NOP"), PIPE_ALGO_NOP},
+	{ str_init("RED"), PIPE_ALGO_RED},
+	{ str_init("TAILDROP"), PIPE_ALGO_TAILDROP},
+	{ str_init("FEEDBACK"), PIPE_ALGO_FEEDBACK},
+	{ str_init("NETWORK"), PIPE_ALGO_NETWORK},
+	{ str_init("SBT"), PIPE_ALGO_HISTORY},
+	{
+		{ 0, 0}, 0
+	},
+};
+static str * get_rl_algo_name_local(rl_algo_t algo)
+{
+	int i;
+	for (i = 0; rl_algo_names_local[i].name.s; i++)
+		if (rl_algo_names_local[i].algo == algo)
+			return &rl_algo_names_local[i].name;
+	return NULL;
+}
 /* not using /proc/loadavg because it only works when our_timer_interval == theirs */
 int get_cpuload(void)
 {
@@ -762,6 +790,193 @@ error:
 	return 0;
 }
 
+/***************************************************\
+|  mi_dump_pipe : Displays detailed pipe data.		|
+|													|
+|  Usage: mi rl_dump_pipe PIPE_NAME					|
+|													|
+|  Notes: Currently only SBT has special handling.	|
+|  Should probably add a bailout for FEEDBACK algo, |
+|  and anything else, like cachedb. 		ez.vc	|
+\***************************************************/
+mi_response_t *mi_dump_pipe(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;  	//mi response 
+	mi_item_t *resp_obj;	//mi response part[s]?
+	mi_item_t *window_item, *bucket_item, *machine_item; 
+							//objects for buckets + replication vars.
+	mi_item_t *bucket_arr, *nodes_arr; 
+							//objects to hold the mi resp arrays.
+	str pipe_name; 			//var for mi arg
+	
+	unsigned int hash_idx;  //var to hold hash index 
+	rl_pipe_t **pipe;		//pipe object we're looking at.
+	int pipe_total = 0; 	//hold total of all buckets + nodes.
+	
+	str *alg; 				//var to hold alg name
+	
+	rl_repl_counter_t *nodes;
+							//replication node pointer
+	rl_repl_counter_t *d;	//nodes iterator 
+	/***** Bucket Vars ***/
+	#define U2MILI(__usec__) (__usec__/1000)
+	#define S2MILI(__sec__)  (__sec__ *1000)
+	int i;  //bucket iterator
+	int first_good_index;
+	int rl_win_ms = rl_window_size * 1000;
+
+	unsigned long long now_total, start_total;
+
+	struct timeval tv;
+	/**** End Bucket Vars ***/
+	//Get pipe name into variable 
+	if (get_mi_string_param(params, "pipe", &pipe_name.s, &pipe_name.len) < 0)
+		return init_mi_param_error();
+	
+	hash_idx = core_hash(&(pipe_name), NULL, rl_htable.size);
+	//hash_idx = RL_GET_INDEX(pipe_name);
+	lock_set_get(rl_htable.locks, ((hash_idx) % rl_htable.locks_no));
+	//RL_GET_LOCK(hash_idx);
+	pipe = (rl_pipe_t **)map_find(rl_htable.maps[(hash_idx)], pipe_name);
+	//pipe = RL_FIND_PIPE(hash_idx, pipe_name);
+	if (!pipe || !*pipe) {
+		LM_DBG("pipe %.*s not found\n", pipe_name.len, pipe_name.s);
+		lock_set_release(rl_htable.locks, ((hash_idx) % rl_htable.locks_no));
+		//RL_RELEASE_LOCK(hash_idx);
+		return init_mi_error(404, MI_SSTR("Pipe not found"));
+	}
+	
+	
+	//Start building response:
+	resp = init_mi_result_object(&resp_obj); //create response object 
+	if (!resp)
+		goto error;
+	//Start building response:
+	
+	//We know how to handle SBT 
+	if ((*pipe)->algo == PIPE_ALGO_HISTORY) {
+		window_item = add_mi_object(resp_obj, MI_SSTR("Window"));
+		if(!window_item) 
+			goto error;
+		/******** This is where the bucket dump should be ****/
+		gettimeofday(&tv, NULL);
+		//Not sure what this checks, but don't want it to break otherwise.
+		bucket_arr = add_mi_array(window_item, MI_SSTR("Buckets"));
+		if(!bucket_arr)
+			goto error;
+		if ((*pipe)->rwin.start_time.tv_sec == 0) {
+			{
+				if(add_mi_string(window_item, MI_SSTR("Status"), MI_SSTR("Unitialized (?)")) < 0)
+					goto error;
+			}
+		} else {
+			if(add_mi_number(window_item, MI_SSTR("Window Size"), (*pipe)->rwin.window_size) < 0)
+				goto error;
+			//TODO: Add these timer variables to output.
+			start_total = S2MILI((*pipe)->rwin.start_time.tv_sec) + U2MILI((*pipe)->rwin.start_time.tv_usec);
+			now_total = S2MILI(tv.tv_sec) + U2MILI(tv.tv_usec);
+			if (now_total - start_total >= 2*rl_win_ms) {
+				/* nothing here; window is expired */
+				if(add_mi_string(window_item, MI_SSTR("Status"), MI_SSTR("Expired")) < 0)
+					goto error;
+			} else if (now_total - start_total >= rl_win_ms) {
+				first_good_index = ((((now_total - rl_win_ms) - start_total)/rl_slot_period + 1) 
+					+ (*pipe)->rwin.start_index) % (*pipe)->rwin.window_size;
+
+				for (i=first_good_index; i != (*pipe)->rwin.start_index; i=(i+1)%(*pipe)->rwin.window_size)
+				{
+					bucket_item = add_mi_object(bucket_arr, 0, 0);
+					if(!bucket_item) 
+						goto error;
+					if(add_mi_number(bucket_item, MI_SSTR("Index"), i) < 0)
+						goto error;
+					if(add_mi_number(bucket_item, MI_SSTR("Count"), (*pipe)->rwin.window[i]) < 0)
+						goto error;
+					pipe_total += (*pipe)->rwin.window[i];
+					
+				}
+				if(add_mi_string(window_item, MI_SSTR("Status"), MI_SSTR("OK")) < 0)
+					goto error;
+			} else {
+				/* count all of them; valid window */
+				for (i=0; i < (*pipe)->rwin.window_size; i++)
+				{
+					bucket_item = add_mi_object(bucket_arr, 0, 0);
+					if(!bucket_item)
+						goto error;
+					if(add_mi_number(bucket_item, MI_SSTR("Index"), i) < 0)
+						goto error;
+					if(add_mi_number(bucket_item, MI_SSTR("Count"), (*pipe)->rwin.window[i]) < 0)
+						goto error;
+					pipe_total += (*pipe)->rwin.window[i];
+				}
+				if(add_mi_string(window_item, MI_SSTR("Status"), MI_SSTR("OK")) < 0)
+					goto error;
+			}
+			//XXX: If this code block moves, you might have to use a separate bucket_total variable.
+			//Yes pipe_total SHOULD be equal to (*pipe)->counter at this point,
+			//	but this is for debugging, so we verify.
+			if(add_mi_number(window_item, MI_SSTR("Bucket Total"), pipe_total) < 0)
+				goto error;
+		}
+		
+	} else {
+		//For non-SBT pipes, we just add the counter.
+		pipe_total += (*pipe)->counter;
+	}
+	/************* End Bucket Loop ***************/
+	
+	if (add_mi_string(resp_obj, MI_SSTR("Pipe"), pipe_name.s, pipe_name.len) < 0)
+		goto error;
+	
+	if (!(alg = get_rl_algo_name_local((*pipe)->algo))) {
+		LM_ERR("[BUG] unknown algorithm %d\n", (*pipe)->algo);
+		if(add_mi_string(resp, MI_SSTR("Algorithm"), MI_SSTR("UNKNOWN")) < 0)
+			goto error;
+	
+	} 
+	else if (add_mi_string(resp_obj, MI_SSTR("Algorithm"), alg->s, alg->len) < 0) 
+		goto error;	
+	
+	if (add_mi_number(resp_obj, MI_SSTR("Counter"), (*pipe)->counter) < 0)
+		goto error;
+	
+	nodes_arr = add_mi_array(resp_obj, MI_SSTR("Replication Nodes"));
+	if(!nodes_arr)
+		goto error;
+	//Get node (replication) data:
+	nodes = (*pipe)->dsts;
+
+	//TODO: Add last_update value to Node results.
+	for (d = nodes; d; d = d->next) {
+		machine_item = add_mi_object(nodes_arr, 0, 0);
+		if(!machine_item)
+			goto error;
+		pipe_total += d->counter;
+		
+		if(add_mi_number(machine_item,MI_SSTR("MachineID"), d->machine_id) < 0)
+			goto error;
+		if(add_mi_number(machine_item,MI_SSTR("NodeCounter"), d->counter) < 0)
+			goto error;
+	}
+	lock_set_release(rl_htable.locks, ((hash_idx) % rl_htable.locks_no));
+	if(add_mi_number(resp_obj, MI_SSTR("Total"), pipe_total) < 0)
+		goto error;
+	//RL_RELEASE_LOCK(hash_idx);
+	
+	return resp;
+	
+
+error:
+	if(hash_idx) lock_set_release(rl_htable.locks, ((hash_idx) % rl_htable.locks_no));
+	free_mi_response(resp);
+	return init_mi_error(500, MI_SSTR("Failed to create Response"));
+
+	#undef U2MILI
+	#undef S2MILI
+}									
+								
 mi_response_t *mi_reset_pipe(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
