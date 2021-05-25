@@ -59,11 +59,14 @@
 #define RMQ_PARAM_PASS	(1 << 5)
 #define RMQ_PARAM_EKEY	(1 << 6)
 #define RMQ_PARAM_TLS	(1 << 7)
+#define RMQ_PARAM_PERS	(1 << 8)
 
 #define RMQ_EXCHANGE_S		"exchange="
 #define RMQ_EXCHANGE_LEN	(sizeof(RMQ_EXCHANGE_S)-1)
 #define RMQ_TLS_DOM_S		"tls_domain="
 #define RMQ_TLS_DOM_LEN		(sizeof(RMQ_TLS_DOM_S)-1)
+#define RMQ_PERSISTENT_S		"persistent"
+#define RMQ_PERSISTENT_LEN		(sizeof(RMQ_PERSISTENT_S)-1)
 
 typedef struct _rmq_params {
 	str routing_key;

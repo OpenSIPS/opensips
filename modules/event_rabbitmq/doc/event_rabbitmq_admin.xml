@@ -65,7 +65,7 @@
 			</para>	</listitem>
 			<listitem><para>
 					<emphasis>params</emphasis> - extra parameters specified as
-					<emphasis>key</emphasis>=<emphasis>value</emphasis>, separated by ';':
+					<emphasis>key[=value]</emphasis>, separated by ';':
 					<itemizedlist>
 						<listitem><para>
 						<emphasis>exchange</emphasis> - exchange of the RabbitMQ server.
@@ -76,6 +76,11 @@
 						defined using the <emphasis>tls_mgm</emphasis> module) to use for
 						this connection. The <xref linkend="param_use_tls"/> module parameter
 						must be enabled.
+						</para></listitem>
+						<listitem><para>
+						<emphasis>persistent</emphasis> - indicates that the message should be
+						published as persistent <emphasis>delivery_mode=2</emphasis>. This
+						parameter does not have a value.
 						</para></listitem>
 					</itemizedlist>
 			</para></listitem>

@@ -461,9 +461,16 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 	rmq_params_t * rmqp = (rmq_params_t *)rmqs->sock->params;
 	int ret,rtrn;
 	int re_publish = 0;
+	amqp_basic_properties_t props;
 
 	if (!(rmqp->flags & RMQ_PARAM_CONN))
 		return 0;
+
+	if (rmqp->flags & RMQ_PARAM_PERS) {
+		memset(&props, 0, sizeof props);
+		props.delivery_mode = 2;
+		props._flags |= AMQP_BASIC_DELIVERY_MODE_FLAG;
+	}
 	
 	/* all checks should be already done */
 	ret = amqp_basic_publish(rmqp->conn,
@@ -474,7 +481,7 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 			amqp_cstring_bytes(rmqp->routing_key.s),
 			0,
 			0,
-			0,
+			((rmqp->flags & RMQ_PARAM_PERS)?&props:0),
 			amqp_cstring_bytes(rmqs->msg));
 
 	rtrn = amqp_check_status(rmqp, ret, &re_publish);
@@ -493,7 +500,7 @@ static int rmq_sendmsg(rmq_send_t *rmqs)
 				amqp_cstring_bytes(rmqp->routing_key.s),
 				0,
 				0,
-				0,
+				((rmqp->flags & RMQ_PARAM_PERS)?&props:0),
 				amqp_cstring_bytes(rmqs->msg));
 		rtrn = amqp_check_status(rmqp, ret, &re_publish);
 	}
