@@ -59,3 +59,6 @@ VALUE Sip-Method         Prack          2048
 VALUE Sip-Method         Refer          4096
 VALUE Sip-Method         Other          8192
 
+### Authentication ###
+VENDOR    Cisco                   9
+ATTRIBUTE Cisco-AVPair            1       string  Cisco

@@ -200,7 +200,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 			LM_ERR("unable to add Digest-CNonce attribute\n");
 			goto err;
 		}
-		if (proto.avp_add(conn, send, &attrs[A_DIGEST_BODY_DIGEST],
+		if (proto.avp_add(conn, send, &attrs[A_DIGEST_OPAQUE],
 				_cred->opaque.s, _cred->opaque.len, 0)) {
 			LM_ERR("unable to add Digest-Body-Digest attribute\n");
 			goto err;
