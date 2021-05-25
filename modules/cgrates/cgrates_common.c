@@ -292,6 +292,7 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	static struct cgr_msg cmsg;
 	struct cgr_kv *kv;
 	struct list_head *l;
+	struct json_tokener* tok;
 
 	json_object *jtmp = NULL;
 	json_object *jarr = NULL;
@@ -314,15 +315,26 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 		if (s) {
 			list_for_each(l, &s->req_kvs) {
 				kv = list_entry(l, struct cgr_kv, list);
-				if (kv->flags & CGR_KVF_TYPE_NULL) {
-					jtmp = NULL;
-				} else if (kv->flags & CGR_KVF_TYPE_INT) {
-					/* XXX: we treat here int values as booleans */
-					jtmp = json_object_new_boolean(kv->value.n);
-					JSON_CHECK(jtmp, kv->key.s);
-				} else {
-					jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
-					JSON_CHECK(jtmp, kv->key.s);
+				jtmp = NULL;
+				if (kv->flags & CGR_KVF_TYPE_JSON) {
+					tok = json_tokener_new();
+					jtmp = json_tokener_parse_ex(tok, kv->value.s.s,
+							kv->value.s.len);
+					if(tok->err != json_tokener_success)
+						jtmp = NULL;
+					json_tokener_free(tok);
+				}
+				if (!jtmp) {
+					if (kv->flags & CGR_KVF_TYPE_NULL) {
+						jtmp = NULL;
+					} else if (kv->flags & CGR_KVF_TYPE_INT) {
+						/* XXX: we treat here int values as booleans */
+						jtmp = json_object_new_boolean(kv->value.n);
+						JSON_CHECK(jtmp, kv->key.s);
+					} else {
+						jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
+						JSON_CHECK(jtmp, kv->key.s);
+					}
 				}
 				json_object_object_add(cmsg.params, kv->key.s, jtmp);
 			}
@@ -340,14 +352,25 @@ struct cgr_msg *cgr_get_generic_msg(str *method, struct cgr_session *s)
 	if (s) {
 		list_for_each(l, &s->event_kvs) {
 			kv = list_entry(l, struct cgr_kv, list);
-			if (kv->flags & CGR_KVF_TYPE_NULL) {
-				jtmp = NULL;
-			} else if (kv->flags & CGR_KVF_TYPE_INT) {
-				jtmp = json_object_new_int(kv->value.n);
-				JSON_CHECK(jtmp, kv->key.s);
-			} else {
-				jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
-				JSON_CHECK(jtmp, kv->key.s);
+			jtmp = NULL;
+			if (kv->flags & CGR_KVF_TYPE_JSON) {
+				tok = json_tokener_new();
+				jtmp = json_tokener_parse_ex(tok, kv->value.s.s,
+						kv->value.s.len);
+				if(tok->err != json_tokener_success)
+					jtmp = NULL; /* fallback as int/string */
+				json_tokener_free(tok);
+			}
+			if (!jtmp) {
+				if (kv->flags & CGR_KVF_TYPE_NULL) {
+					jtmp = NULL;
+				} else if (kv->flags & CGR_KVF_TYPE_INT) {
+					jtmp = json_object_new_int(kv->value.n);
+					JSON_CHECK(jtmp, kv->key.s);
+				} else {
+					jtmp = json_object_new_string_len(kv->value.s.s, kv->value.s.len);
+					JSON_CHECK(jtmp, kv->key.s);
+				}
 			}
 			json_object_object_add(cmsg.params, kv->key.s, jtmp);
 		}

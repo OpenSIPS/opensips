@@ -443,12 +443,12 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 	} else
 		return 0; /* initialised with NULL */
 
+	kv->flags &= ~(CGR_KVF_TYPE_NULL|CGR_KVF_TYPE_JSON);
 	if (val->flags & PV_VAL_NULL) {
 		kv->flags |= CGR_KVF_TYPE_NULL;
 	} else if (val->flags & PV_VAL_INT) {
 		kv->flags |= CGR_KVF_TYPE_INT;
 		kv->value.n = val->ri;
-		kv->flags &= ~CGR_KVF_TYPE_NULL;
 	} else if (val->flags & PV_VAL_STR) {
 		kv->value.s.s = shm_malloc(val->rs.len);
 		if (!kv->value.s.s) {
@@ -458,8 +458,9 @@ static int pv_set_cgr(struct sip_msg *msg, pv_param_t *param,
 		memcpy(kv->value.s.s, val->rs.s, val->rs.len);
 		kv->value.s.len = val->rs.len;
 		kv->flags |= CGR_KVF_TYPE_STR;
-		kv->flags &= ~CGR_KVF_TYPE_NULL;
 	}
+	if (op == COLONEQ_T)
+		kv->flags |= CGR_KVF_TYPE_JSON;
 	LM_DBG("add cgr kv: %d %s in %p\n", kv->key.len, kv->key.s, s);
 
 	return 0;
