@@ -185,6 +185,7 @@
 #include "rtpproxy_callbacks.h"
 #include "rtpproxy_vcmd.h"
 #include "rtppn_connect.h"
+#include "../rtp_relay/rtp_relay.h"
 
 #define NH_TABLE_VERSION  0
 
@@ -289,10 +290,10 @@ static int rtpproxy_set_store(modparam_t type, void * val);
 static int rtpproxy_set_notify(modparam_t type, void * val);
 static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id);
 static int _add_proxies_from_database();
-static int unforce_rtpproxy(struct sip_msg* msg, str callid,
-		str from_tag, str to_tag, nh_set_param_t *pset, pv_spec_t *var);
+static int unforce_rtpproxy(struct sip_msg* msg, struct rtpp_args *args, pv_spec_t *var);
 
 static int mod_init(void);
+static int mod_preinit(void);
 static int child_init(int);
 static void mod_destroy(void);
 static int mi_child_init(void);
@@ -311,11 +312,16 @@ static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
 
 void free_rtpp_nodes(struct rtpp_set *);
 void free_rtpp_sets();
-int msg_has_sdp(struct sip_msg *msg);
 
 struct dlg_binds dlg_api;
 /* TM support for saving parameters */
 struct tm_binds tm_api;
+static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
+static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
+static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *flags, str *extra);
 
 int connect_rtpproxies();
 int update_rtpp_proxies();
@@ -503,6 +509,7 @@ static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",     DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "rtp_relay", DEP_SILENT|DEP_REVERSE },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -525,8 +532,8 @@ struct module_exports exports = {
 	mi_cmds,     /* exported MI functions */
 	0,           /* exported pseudo-variables */
 	0,			 /* exported transformations */
-	0,           /* extra processes */
-	0,
+	procs,       /* extra processes */
+	mod_preinit,
 	mod_init,
 	0,           /* reply processing */
 	mod_destroy, /* destroy function */
@@ -1036,6 +1043,23 @@ inline static int parse_bavp(str *s, pv_spec_t *bavp)
 
 }
 
+/* hack to get the rtpproxy node used for the offer */
+static pv_spec_t media_pvar;
+
+static int mod_preinit(void)
+{
+	static str rtpproxy_relay_pvar_str = str_init("$var(___rtpproxy_relay_var__)");
+	struct rtp_relay_binds binds = {
+		.offer = rtpproxy_api_offer,
+		.answer = rtpproxy_api_answer,
+		.delete = rtpproxy_api_delete,
+	};
+	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
+		return -1;
+	register_rtp_relay(exports.name, &binds);
+	return 0;
+}
+
 static int
 mod_init(void)
 {
@@ -1387,6 +1411,7 @@ int connect_rtpproxies(void)
 				rtpp_socks[pnode->idx] = -1;
 			} else {
 				rtpp_socks[pnode->idx] = connect_rtpp_node(pnode);
+				LM_INFO("created to %d\n", rtpp_socks[pnode->idx]);
 				if (rtpp_socks[pnode->idx] == -1) {
 					LM_ERR("connect_rtpp_node() failed\n");
 					return -1;
@@ -2177,7 +2202,7 @@ static struct rtpp_set * select_rtpp_set(int id_set){
 	/*is it a valid set_id?*/
 	LM_DBG("Looking for set_id %d\n", id_set);
 
-	if(!(*rtpp_set_list) || !(*rtpp_set_list)->rset_first)
+	if(!rtpp_set_list || !(*rtpp_set_list) || !(*rtpp_set_list)->rset_first)
 		return 0;
 
 	for(rtpp_list=(*rtpp_set_list)->rset_first; rtpp_list!=0 &&
@@ -2306,53 +2331,88 @@ done:
 	return node;
 }
 
-struct rtpp_node *get_rtpp_node(str *node)
+struct rtpp_node *get_rtpp_node_from_set(str *node, struct rtpp_set *set, int test)
 {
 	struct rtpp_node *rnode;
+
+	for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
+		if (node->len == rnode->rn_url.len &&
+				!memcmp(node->s, rnode->rn_url.s, node->len)) {
+			if (!test)
+				return rnode;
+			if (rnode->rn_disabled)
+				rnode->rn_disabled = rtpp_test(rnode, rnode->rn_disabled, 0);
+			return (rnode->rn_disabled ? NULL : rnode);
+		}
+	return NULL;
+}
+
+struct rtpp_node *get_rtpp_node(str *node)
+{
 	struct rtpp_set *set;
+	struct rtpp_node *rnode;
 
 	/* if chosen a specific node, use it! */
-	for (set = (*rtpp_set_list)->rset_first; set; set = set->rset_next)
-		for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
-			if (node->len == rnode->rn_url.len &&
-					!memcmp(node->s, rnode->rn_url.s, node->len)) {
-				if (rnode->rn_disabled)
-					rnode->rn_disabled = rtpp_test(rnode, rnode->rn_disabled, 0);
-				return (rnode->rn_disabled ? NULL : rnode);
-			}
+	for (set = (*rtpp_set_list)->rset_first; set; set = set->rset_next) {
+		if ((rnode = get_rtpp_node_from_set(node, set, 1)) != NULL)
+			return rnode;
+	}
 	return NULL;
 }
 
 static int
 unforce_rtp_proxy_f(struct sip_msg* msg, nh_set_param_t *pset, pv_spec_t *var)
 {
-	str callid, from_tag, to_tag;
+	int ret = -1;
+	struct rtpp_args args;
 
 	if (!msg || msg == FAKED_REPLY)
 		return 1;
 
-	if (get_callid(msg, &callid) == -1 || callid.len == 0) {
+	memset(&args, 0, sizeof args);
+
+	if (get_callid(msg, &args.callid) == -1 || args.callid.len == 0) {
 		LM_ERR("can't get Call-Id field\n");
 		return -1;
 	}
-	to_tag.s = 0;
-	if (get_to_tag(msg, &to_tag) == -1) {
+	args.to_tag.s = 0;
+	if (get_to_tag(msg, &args.to_tag) == -1) {
 		LM_ERR("can't get To tag\n");
 		return -1;
 	}
-	if (get_from_tag(msg, &from_tag) == -1 || from_tag.len == 0) {
+	if (get_from_tag(msg, &args.from_tag) == -1 || args.from_tag.len == 0) {
 		LM_ERR("can't get From tag\n");
 		return -1;
 	}
 
-	return unforce_rtpproxy(msg, callid, from_tag, to_tag, pset, var);
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
+
+	args.set = get_rtpp_set(pset);
+	if (!args.set) {
+		LM_ERR("could not find rtpproxy set\n");
+		goto end;
+	}
+
+	args.node = select_rtpp_node(msg, args.callid, args.set, var, 1);
+	if (!args.node) {
+		LM_ERR("no available proxies\n");
+		goto end;
+	}
+
+	ret = unforce_rtpproxy(msg, &args, var);
+
+end:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
+	}
+
+	return ret;
 }
 
-static int unforce_rtpproxy(struct sip_msg* msg, str callid,
-		str from_tag, str to_tag, nh_set_param_t *pset, pv_spec_t *var)
+static int unforce_rtpproxy(struct sip_msg* msg, struct rtpp_args *args, pv_spec_t *var)
 {
-	struct rtpp_node *node;
-	struct rtpp_set *set;
 	struct rtpproxy_vcmd vdel;
 
 	RTPP_VCMD_INIT(vdel, 4 + 3, {"D", 1}, {" ", 1}, {NULL, 0}, {" ", 1},
@@ -2360,43 +2420,15 @@ static int unforce_rtpproxy(struct sip_msg* msg, str callid,
 	    {NULL, 0}, {" ", 1}, {NULL, 0});
 	    /*.vu[4]*//*.vu[5]*//*.vu[6] */
 
-	STR2IOVEC(callid, vdel.vu[2]);
-	STR2IOVEC(from_tag, vdel.vu[4]);
-	STR2IOVEC(to_tag, vdel.vu[6]);
+	STR2IOVEC(args->callid, vdel.vu[2]);
+	STR2IOVEC(args->from_tag, vdel.vu[4]);
+	STR2IOVEC(args->to_tag, vdel.vu[6]);
 
-	if (nh_lock) {
-		lock_start_read( nh_lock );
-	}
-
-	set = get_rtpp_set(pset);
-	if (!set) {
-		LM_ERR("could not find rtpproxy set\n");
-		goto error;
-	}
-
-	node = select_rtpp_node(msg, callid, set, var, 1);
-	if (!node) {
-		LM_ERR("no available proxies\n");
-		goto error;
-	}
-	send_rtpp_command(node, &vdel, (to_tag.len > 0) ? vdel.useritems :
-	    vdel.useritems - 2);
+	send_rtpp_command(args->node, &vdel,
+			(args->to_tag.len > 0)?vdel.useritems:vdel.useritems - 2);
 	LM_DBG("sent unforce command\n");
 
-	if(nh_lock)
-	{
-		/* we are done reading -> unref the data */
-		lock_stop_read( nh_lock );
-	}
-
 	return 1;
-error:
-	if(!nh_lock)
-		return -1;
-	/* we are done reading -> unref the data */
-	lock_stop_read( nh_lock );
-
-	return -1;
 }
 
 
@@ -2487,6 +2519,7 @@ static void engage_close_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
 	str value;
+	struct rtpp_args args;
 	static nh_set_param_t param;
 
 	if (!dlg || !_params)
@@ -2500,11 +2533,32 @@ static void engage_close_callback(struct dlg_cell *dlg, int type,
 		param.v.int_set = *(int *)(value.s);
 	}
 	param.t = NH_VAL_SET_UNDEF;
+	args.callid = dlg->callid;
+	args.from_tag = dlg->legs[DLG_CALLER_LEG].tag;
+	args.to_tag = dlg->legs[callee_idx(dlg)].tag;
 
-	if (unforce_rtpproxy(_params->msg, dlg->callid,
-			dlg->legs[DLG_CALLER_LEG].tag, dlg->legs[callee_idx(dlg)].tag,
-			&param, NULL) < 0) {
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
+
+	args.set = get_rtpp_set(&param);
+	if (!args.set) {
+		LM_ERR("could not find rtpproxy set\n");
+		goto end;
+	}
+
+	args.node = select_rtpp_node(_params->msg, args.callid,
+			args.set, NULL, 1);
+	if (!args.node) {
+		LM_ERR("no available proxies\n");
+		goto end;
+	}
+
+	if (unforce_rtpproxy(_params->msg, &args, NULL) < 0)
 		LM_ERR("cannot unforce rtp proxy\n");
+end:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
 	}
 }
 
@@ -2669,7 +2723,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	/* check to see if this is a late negotiation */
 	if (dlg_api.fetch_dlg_value(dlg, &late_name, &value, 0) < 0)
 		offer = 0;
-	has_sdp = msg_has_sdp(msg);
+	has_sdp = has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 
 	method_id = get_cseq(msg)->method_id;
 	LM_DBG("method id is %d SDP: %d\n", method_id, has_sdp);
@@ -2785,34 +2839,6 @@ void engage_tm_reply_callback(struct cell* t, int type, struct tmcb_params *p)
 }
 
 
-int msg_has_sdp(struct sip_msg *msg)
-{
-	str body;
-	struct body_part *p;
-
-	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
-		LM_ERR("cannot parse cseq header\n");
-		return 0;
-	}
-
-	body.len = get_content_length(msg);
-	if (!body.len)
-		return 0;
-
-	if (parse_sip_body(msg)<0 || msg->body==NULL) {
-		LM_DBG("cannot parse body\n");
-		return 0;
-	}
-
-	for (p = &msg->body->first; p; p = p->next) {
-		if ( is_body_part_received(p) &&
-		p->mime == ((TYPE_APPLICATION << 16) + SUBTYPE_SDP) )
-			return 1;
-	}
-
-	return 0;
-}
-
 static int
 engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 				nh_set_param_t *param3, pv_spec_t *param4, pv_spec_t *param5)
@@ -2867,7 +2893,7 @@ engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 		rtpp_get_nt_str_param(param2, &param2_val, 1);
 
 	/* is this a late negotiation scenario? */
-	if (msg_has_sdp(msg)) {
+	if (has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP)) {
 		LM_DBG("message has sdp body -> forcing rtp proxy\n");
 		if(force_rtp_proxy(msg,param1_val.s,param2_val.s,param3,param4, param5,1) < 0) {
 			LM_ERR("error forcing rtp proxy\n");
@@ -3041,19 +3067,13 @@ free_opts(struct options *op1, struct options *op2, struct options *op3, struct 
 	}
 }
 
-#define FORCE_RTP_PROXY_RET(e) \
-    do { \
-	free_opts(&opts, &rep_opts, &pt_opts, &mod_opts); \
-	return (e); \
-    } while (0);
-
 static int
 force_rtp_proxy(struct sip_msg* msg, char* str1, char* str2, nh_set_param_t *setid,
 											pv_spec_t *var, pv_spec_t *ipvar, int offer)
 {
 	struct body_part *p;
-	struct force_rtpp_args args;
-	struct force_rtpp_args *ap;
+	struct rtpp_args args;
+	struct rtpp_args *ap;
 	union sockaddr_union to;
 	struct ip_addr ip;
 	struct cell *trans;
@@ -3210,11 +3230,30 @@ static inline int rtpp_get_error(char *command)
 
 static char _rtp_proxy_buf[IP_ADDR_MAX_STR_SIZE + 1/* : */ + 5/* port */];
 
-int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
-		pv_spec_p var, pv_spec_p ipvar)
+#define RTPPROXY_APPEND(_a) \
+	do { \
+		if (body->len + (_a)->len > allocated_body) { \
+			allocated_body = body->len + (_a)->len * 2; \
+			body->s = pkg_realloc(body->s, allocated_body); \
+			if (!body->s) \
+				goto error; \
+		} \
+		memcpy(body->s + body->len, (_a)->s, (_a)->len); \
+		body->len += (_a)->len; \
+	} while(0)
+
+#define RTPPROXY_APPEND_CONST(_c) \
+	do { \
+		str __s; \
+		init_str(&__s, _c); \
+		RTPPROXY_APPEND(&__s); \
+	} while (0)
+
+static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
+		pv_spec_t *var, pv_spec_t *ipvar, str *body)
 {
 	str body1, oldport, oldip, newport, newip ,nextport;
-	str from_tag, to_tag, tmp, payload_types;
+	str tmp, payload_types;
 	int create, port, len, asymmetric, flookup, argc, proxied, real;
 	int orgip, commip, enable_notification, keep_body;
 	int pf, pf1, force, err, locked = 0;
@@ -3251,7 +3290,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		{NULL, 0},	/* (optional) DTMF tag */
 		{NULL, 0}	/* (optional) module opts */
 	);
-	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p;
+	char *v1p, *v2p, *c1p, *c2p, *m1p, *m2p, *bodylimit, *o1p, *r2p, *newbody;
 	char medianum_buf[20];
 	char buf[32], dbuf[128];
 	int medianum, media_multi;
@@ -3265,7 +3304,9 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	struct dlg_cell * dlg;
 	str dtmf_tag = {0, 0}, timeout_tag = {0, 0};
 	str notification_socket = rtpp_notify_socket;
+	int allocated_body = 0;
 	str *did;
+	int ret = -1;
 
 	memset(&opts, '\0', sizeof(opts));
 	memset(&rep_opts, '\0', sizeof(rep_opts));
@@ -3275,7 +3316,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	/* Leave space for U/L prefix TBD later */
 	if (append_opts(&opts, '?') == -1) {
 		LM_ERR("out of pkg memory\n");
-		FORCE_RTP_PROXY_RET (-1);
+		goto exit;
 	}
 	asymmetric = flookup = force = real = orgip = commip = enable_notification = keep_body = 0;
 	for (cp = args->arg1; cp != NULL && *cp != '\0'; cp++) {
@@ -3284,7 +3325,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'A':
 			if (append_opts(&opts, 'A') == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			asymmetric = 1;
 			real = 1;
@@ -3298,12 +3339,12 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				break;
 			if (append_opts(&mod_opts, ' ') == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			for (; cp[1] != '\0' && isdigit(cp[1]); cp++) {
 				if (append_opts(&mod_opts, cp[1]) == -1) {
 					LM_ERR("out of pkg memory\n");
-					FORCE_RTP_PROXY_RET (-1);
+					goto exit;
 				}
 			}
 			break;
@@ -3312,7 +3353,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'I':
 			if (append_opts(&opts, 'I') == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			break;
 
@@ -3320,7 +3361,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'E':
 			if (append_opts(&opts, 'E') == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			break;
 
@@ -3372,7 +3413,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'S':
 			if (append_opts(&opts, 'S') == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			break;
 
@@ -3380,13 +3421,13 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'T':
 			if (append_opts(&t_opts, *cp) == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			/* If there are any digits following T copy them into the command */
 			for (; cp[1] != '\0' && isdigit(cp[1]); cp++) {
 				if (append_opts(&t_opts, cp[1]) == -1) {
 					LM_ERR("out of pkg memory\n");
-					FORCE_RTP_PROXY_RET (-1);
+					goto exit;
 				}
 			}
 			break;
@@ -3395,13 +3436,13 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		case 'Z':
 			if (append_opts(&rep_opts, 'Z') == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 			/* If there are any digits following Z copy them into the command */
 			for (; cp[1] != '\0' && isdigit(cp[1]); cp++) {
 				if (append_opts(&rep_opts, cp[1]) == -1) {
 					LM_ERR("out of pkg memory\n");
-					FORCE_RTP_PROXY_RET (-1);
+					goto exit;
 				}
 			}
 			break;
@@ -3410,7 +3451,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			LM_WARN("unknown option `%c'\n", *cp);
 			if (append_opts(&opts, *cp) == -1) {
 				LM_ERR("out of pkg memory\n");
-				FORCE_RTP_PROXY_RET (-1);
+				goto exit;
 			}
 		}
 	}
@@ -3419,7 +3460,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		if (append_opts(&rep_opts, 'R') == -1 || \
 		    append_opts_str(&rep_opts, &args->raddr) == -1) {
 			LM_ERR("out of pkg memory\n");
-			FORCE_RTP_PROXY_RET (-1);
+			goto exit;
 		}
 	}
 
@@ -3429,34 +3470,23 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 		create = 0;
 	}
 
-	to_tag.s = 0;
-	if (get_to_tag(msg, &to_tag) == -1) {
-		LM_ERR("can't get To tag\n");
-		FORCE_RTP_PROXY_RET (-1);
-	}
-	if (get_from_tag(msg, &from_tag) == -1 || from_tag.len == 0) {
-		LM_ERR("can't get From tag\n");
-		FORCE_RTP_PROXY_RET (-1);
-	}
 	if (flookup != 0) {
-		if (to_tag.len == 0) {
-			to_tag.s = "dummy";
-			to_tag.len = strlen(to_tag.s);
-		}
+		if (args->to_tag.len == 0)
+			init_str(&args->to_tag, "dummy");
 		create = 0;
 		if (args->offer != 0) {
-			tmp = from_tag;
-			from_tag = to_tag;
-			to_tag = tmp;
+			tmp = args->from_tag;
+			args->from_tag = args->to_tag;
+			args->to_tag = tmp;
 		}
-	} else if ((msg->first_line.type==SIP_REPLY && args->offer!=0)||
-	(msg->first_line.type == SIP_REQUEST && args->offer == 0) ) {
-		if (to_tag.len == 0) {
-			FORCE_RTP_PROXY_RET (-1);
+	} else if (msg && ((msg->first_line.type==SIP_REPLY && args->offer!=0)||
+	(msg->first_line.type == SIP_REQUEST && args->offer == 0) )) {
+		if (args->to_tag.len == 0) {
+			goto exit;
 		}
-		tmp = from_tag;
-		from_tag = to_tag;
-		to_tag = tmp;
+		tmp = args->from_tag;
+		args->from_tag = args->to_tag;
+		args->to_tag = tmp;
 	}
 	proxied = 0;
 	if (nortpproxy_str.len) {
@@ -3471,9 +3501,8 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			cp = cp1 + nortpproxy_str.len;
 		}
 	}
-	if (proxied != 0 && force == 0) {
-		FORCE_RTP_PROXY_RET (-1);
-	}
+	if (proxied != 0 && force == 0)
+		goto exit;
 	/*
 	 * Parsing of SDP body.
 	 * It can contain a few session descriptions (each starts with
@@ -3486,11 +3515,12 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	 * to the same value (RTP proxy IP), so we can change all c-lines
 	 * unconditionally.
 	 */
+	trim_leading(&args->body);
 	bodylimit = args->body.s + args->body.len;
-	v1p = find_sdp_line(args->body.s, bodylimit, 'v');
-	if (v1p == NULL) {
+	v1p = args->body.s;
+	if (args->body.len < 2 || v1p[0] != 'v' || v1p[1] != '=') {
 		LM_ERR("no sessions in SDP\n");
-		FORCE_RTP_PROXY_RET (-1);
+		goto exit;
 	}
 	v2p = find_next_sdp_line(v1p, bodylimit, 'v', bodylimit);
 	media_multi = (v2p != bodylimit);
@@ -3499,8 +3529,8 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 
 	opts.s.s[0] = (create == 0) ? 'L' : 'U';
 	STR2IOVEC(args->callid, vup.vu[5]);
-	STR2IOVEC(from_tag, vup.vu[11]);
-	STR2IOVEC(to_tag, vup.vu[15]);
+	STR2IOVEC(args->from_tag, vup.vu[11]);
+	STR2IOVEC(args->to_tag, vup.vu[15]);
 
 	if (notification_socket.s == 0 || notification_socket.len == 0) {
 		if (enable_notification)
@@ -3565,6 +3595,16 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 	}
 
 	m_opts = opts;
+
+	if (body) {
+		body->s = pkg_malloc(args->body.len);
+		if (!body->s) {
+			LM_ERR("could not allocate space for new body\n");
+			goto error;
+		}
+		allocated_body = args->body.len;
+		body->len = 0;
+	}
 
 	for(;;) {
 		/* Per-session iteration. */
@@ -3639,7 +3679,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			if (oldport.s[0] == '0' && oldport.len == 1)
 				continue;
 
-			if (asymmetric != 0 || real != 0) {
+			if (asymmetric != 0 || real != 0 || !msg) {
 				newip = oldip;
 			} else {
 				newip.s = ip_addr2a(&msg->rcv.src_ip);
@@ -3737,7 +3777,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				} else {
 					vup.vu[3].iov_len = 0;
 				}
-				if (to_tag.len == 0) {
+				if (args->to_tag.len == 0) {
 					vcnt = 14;
 					vup.vu[16].iov_base = " "; /* replace ';' with ' ' */
 				} else
@@ -3798,7 +3838,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 					}
 				}
 				args->node = NULL;
-			} while (cp == NULL);
+			} while (cp == NULL && args->offer);
 			if (locked) {
 				locked = 0;
 				lock_stop_read(nh_lock);
@@ -3820,14 +3860,14 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 			}
 			if (argc < 1) {
 				LM_ERR("no reply from rtp proxy\n");
-				goto error;
+				goto exit;
 			}
 			port = atoi(argv[0]);
 			if (port <= 0 || port > 65535) {
 				if (port != 0 || flookup == 0)
 					LM_ERR("incorrect port %i in reply "
 						"from rtp proxy\n",port);
-				goto error;
+				goto exit;
 			}
 
 			pf1 = (argc >= 3 && argv[2][0] == '6') ? AF_INET6 : AF_INET;
@@ -3853,7 +3893,7 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 					newip.s = adv_address;
 				else if (argv[1])
 					newip.s = argv[1];
-				else {
+				else if (msg) {
 					newip.s = ip_addr2a(&msg->rcv.dst_ip);
 					pf1 = msg->rcv.dst_ip.af;
 				}
@@ -3873,120 +3913,228 @@ int force_rtp_proxy_body(struct sip_msg* msg, struct force_rtpp_args *args,
 				if (pv_set_value(msg, ipvar, (int)EQ_T, &val) < 0)
 					LM_ERR("cannot store rtpproxy reply: %.*s \n", val.rs.len, val.rs.s);
 			}
+			if (keep_body != 0)
+				continue;
 
-			/* Alter port. */
-			body1.s = m1p;
-			body1.len = bodylimit - body1.s;
-			/* do not do it if old port was 0 (means media disable)
-			 * - check if actually should be better done in rtpptoxy,
-			 *   by returning also 0
-			 * - or by not sending to rtpproxy the old port if 0
-			 */
-			if(keep_body == 0 && (oldport.len!=1 || oldport.s[0]!='0'))
-			{
-				if (alter_mediaport(msg, &body1, &oldport, &newport, 0) == -1)
-					goto error;
-			}
+			if (body) {
+				newbody = v1p;
+				if (o1p) {
+					tmpstr1.s = o1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					/* copy everything until oldip */
+					tmp.s = newbody;
+					tmp.len = oldip.s - newbody;
+					RTPPROXY_APPEND(&tmp);
+					/* alter the pf, if needed */
+					if (pf != pf1)
+						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
+					RTPPROXY_APPEND(&newip);
+					newbody = oldip.s + oldip.len;
+				}
 
-			nextport.s = int2str(port+1, &nextport.len);
-
-			if( r2p && keep_body == 0)
-				if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
-					goto error;
-
-			/*
-			 * Alter IP. Don't alter IP common for the session
-			 * more than once.
-			 */
-			if (c2p != NULL || !c1p_altered) {
-				body1.s = c2p ? c2p : c1p;
-				body1.len = bodylimit - body1.s;
-				if (keep_body == 0 && alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					goto error;
-				if (!c2p)
+				if (c1p && !c1p_altered && !c2p && commip) {
+					/* we have a common IP and it was requested to change */
+					/* c1p points to the common IP */
+					tmp.s = newbody;
+					tmp.len = c1p - newbody;
+					RTPPROXY_APPEND(&tmp);
+					/* alter the pf, if needed */
+					if (pf != pf1)
+						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
+					RTPPROXY_APPEND(&newip);
+					for (newbody = c1p; *newbody != '\r'; newbody++);
 					c1p_altered = 1;
-			}
-			/*
-			 * Alter common IP if required, but don't do it more than once.
-			 */
-			if (commip && c1p && !c1p_altered) {
-				tmpstr1.s = c1p;
-				tmpstr1.len = v2p - tmpstr1.s;
-				if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
-					LM_ERR("can't extract media IP from the message\n");
-					goto error;
 				}
-				body1.s = c1p;
-				body1.len = bodylimit - body1.s;
-				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					goto error;
-				c1p_altered = 1;
-			}
-			/*
-			 * Alter the IP in "o=", but only once per session
-			 */
-			if (o1p) {
-				tmpstr1.s = o1p;
-				tmpstr1.len = v2p - tmpstr1.s;
-				if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
-					LM_ERR("can't extract media IP from the message\n");
-					goto error;
+				/* now update the port */
+				if(oldport.len!=1 || oldport.s[0]!='0') {
+					tmp.s = newbody;
+					tmp.len = oldport.s - newbody;
+					RTPPROXY_APPEND(&tmp);
+					RTPPROXY_APPEND(&newport);
+					newbody = oldport.s + oldport.len;
 				}
-				body1.s = o1p;
+				if (c2p) {
+					tmpstr1.s = c2p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+
+					tmp.s = newbody;
+					tmp.len = oldip.s - newbody;
+					RTPPROXY_APPEND(&tmp);
+					/* alter the pf, if needed */
+
+					if (pf != pf1)
+						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
+					RTPPROXY_APPEND(&newip);
+					newbody = oldip.s + oldip.len;
+				}
+				if( r2p ) {
+					nextport.s = int2str(port+1, &nextport.len);
+
+					RTPPROXY_APPEND_CONST("\na=rtcp:");
+					RTPPROXY_APPEND(&nextport);
+					RTPPROXY_APPEND_CONST(" IN IP4 ");
+					if (pf1 == AF_INET6)
+						body->s[body->len - 2] = '6';
+					RTPPROXY_APPEND(&newip);
+					for (newbody = r2p; *newbody != '\r'; newbody++);
+				}
+				tmp.s = newbody;
+				tmp.len = bodylimit - newbody;
+				RTPPROXY_APPEND(&tmp);
+			} else {
+
+				/*
+				 * Alter the IP in "o=", but only once per session
+				 */
+				if (o1p) {
+					tmpstr1.s = o1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					body1.s = o1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					o1p = 0;
+				}
+
+				/* Alter port. */
+				body1.s = m1p;
 				body1.len = bodylimit - body1.s;
-				if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-					goto error;
-				o1p = 0;
+				/* do not do it if old port was 0 (means media disable)
+				 * - check if actually should be better done in rtpptoxy,
+				 *   by returning also 0
+				 * - or by not sending to rtpproxy the old port if 0
+				 */
+				if(oldport.len!=1 || oldport.s[0]!='0')
+				{
+					if (alter_mediaport(msg, &body1, &oldport, &newport, 0) == -1)
+						goto exit;
+				}
+
+				if( r2p ) {
+					nextport.s = int2str(port+1, &nextport.len);
+
+					if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
+						goto exit;
+				}
+
+				/*
+				 * Alter IP. Don't alter IP common for the session
+				 * more than once.
+				 */
+				if (c2p != NULL || !c1p_altered) {
+					body1.s = c2p ? c2p : c1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					if (!c2p)
+						c1p_altered = 1;
+				}
+				/*
+				 * Alter common IP if required, but don't do it more than once.
+				 */
+				if (commip && c1p && !c1p_altered) {
+					tmpstr1.s = c1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					body1.s = c1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					c1p_altered = 1;
+				}
 			}
 		} /* Iterate medias in session */
 	} /* Iterate sessions */
-	free_opts(&opts, &rep_opts, &pt_opts, &mod_opts);
 
 	if (proxied == 0 && nortpproxy_str.len && keep_body == 0) {
-		cp = pkg_malloc((1 + nortpproxy_str.len + CRLF_LEN) * sizeof(char));
-		if (cp == NULL) {
-			LM_ERR("out of pkg memory\n");
-			return -1;
-		}
-		/* find last CRLF and add after it */
-		cp1 = args->body.s + args->body.len;
-		while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
-		if (cp1==args->body.s) cp1=args->body.s + args->body.len;
+		if (body) {
+			RTPPROXY_APPEND(&nortpproxy_str);
+			RTPPROXY_APPEND_CONST(CRLF);
+		} else {
+			cp = pkg_malloc((1 + nortpproxy_str.len + CRLF_LEN) * sizeof(char));
+			if (cp == NULL) {
+				LM_ERR("out of pkg memory\n");
+				goto exit;
+			}
+			/* find last CRLF and add after it */
+			cp1 = args->body.s + args->body.len;
+			while( cp1>args->body.s && !(*(cp1-1)=='\n' && *(cp1-2)=='\r') ) cp1--;
+			if (cp1==args->body.s) cp1=args->body.s + args->body.len;
 
-		/* XXX: ugly hack to add a string _after_ the end of the body:
-		 * remove the last char and then add it in the new buffer */
-		cp1--;
-		cp[0] = *cp1;
-		anchor = del_lump(msg, cp1 - msg->buf, 1, 0);
-		if (anchor == NULL) {
-			LM_ERR("del_lump failed\n");
-			pkg_free(cp);
-			return -1;
+			/* XXX: ugly hack to add a string _after_ the end of the body:
+			 * remove the last char and then add it in the new buffer */
+			cp1--;
+			cp[0] = *cp1;
+			anchor = del_lump(msg, cp1 - msg->buf, 1, 0);
+			if (anchor == NULL) {
+				LM_ERR("del_lump failed\n");
+				pkg_free(cp);
+				goto exit;
+			}
+			memcpy(cp+1, nortpproxy_str.s, nortpproxy_str.len);
+			memcpy(cp+1+nortpproxy_str.len , CRLF, CRLF_LEN);
+			if (insert_new_lump_before(anchor, cp, 1 + nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
+				LM_ERR("insert_new_lump_after failed\n");
+				pkg_free(cp);
+				goto exit;
+			}
 		}
-		memcpy(cp+1, nortpproxy_str.s, nortpproxy_str.len);
-		memcpy(cp+1+nortpproxy_str.len , CRLF, CRLF_LEN);
-		if (insert_new_lump_before(anchor, cp, 1 + nortpproxy_str.len + CRLF_LEN, 0) == NULL) {
-			LM_ERR("insert_new_lump_after failed\n");
-			pkg_free(cp);
+	}
+
+	ret = 1;
+error:
+	/* we are done reading -> unref the data */
+	if (locked)
+		lock_stop_read( nh_lock );
+	if (ret < 0 && body && allocated_body)
+		pkg_free(body->s);
+
+exit:
+	free_opts(&opts, &rep_opts, &pt_opts, &mod_opts);
+	return ret;
+}
+#undef RTPPROXY_APPEND
+#undef RTPPROXY_APPEND_CONST
+
+int force_rtp_proxy_body(struct sip_msg* msg, struct rtpp_args *args,
+		pv_spec_p var, pv_spec_p ipvar)
+{
+	if (!args->callid.len && (get_callid(msg, &args->callid) == -1 || args->callid.len == 0)) {
+		LM_ERR("can't get Call-Id field\n");
+		return -1;
+	}
+
+	if (!args->to_tag.len && !args->to_tag.s) {
+		args->to_tag.s = 0;
+		if (get_to_tag(msg, &args->to_tag) == -1) {
+			LM_ERR("can't get To tag\n");
 			return -1;
 		}
 	}
 
-	return 1;
+	if (!args->from_tag.len &&
+			(get_from_tag(msg, &args->from_tag) == -1 || args->from_tag.len == 0)) {
+			LM_ERR("can't get From tag\n");
+			return -1;
+		}
 
-error:
-	if(!locked)
-		FORCE_RTP_PROXY_RET (-1);
-
-	/* we are done reading -> unref the data */
-	lock_stop_read( nh_lock );
-
-	FORCE_RTP_PROXY_RET (-1);
+	return rtpproxy_offer_answer(msg, args, var, ipvar, NULL);
 }
-
-
-
-
 
 static char *rtpproxy_stats_pop_int(struct sip_msg *msg, char *p,
 		pv_spec_p spec, const char *varname)
@@ -4602,4 +4750,255 @@ int rtpproxy_raise_dtmf_event(struct rtpp_dtmf_event *dtmf)
 	} else
 		LM_DBG("nothing to do - nobody is listening!\n");
 	return 0;
+}
+
+static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_args *args,
+		str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
+{
+	char *p;
+	str b;
+
+	if (!sess->from_tag) {
+		if (get_from_tag(sess->msg, &args->from_tag) == -1 || args->from_tag.len == 0) {
+			LM_ERR("can't get From tag\n");
+			return 0;
+		}
+	} else {
+		args->from_tag = *sess->from_tag;
+	}
+	if (!sess->to_tag) {
+		if (sess->msg && get_to_tag(sess->msg, &args->to_tag) == -1) {
+			LM_ERR("can't get To tag\n");
+			return 0;
+		}
+	} else {
+		args->to_tag = *sess->to_tag;
+	}
+	if (!sess->callid) {
+		if (get_callid(sess->msg, &args->callid) == -1 || args->callid.len == 0) {
+			LM_ERR("can't get Call-Id field\n");
+			return 0;
+		}
+	} else {
+		args->callid = *sess->callid;
+	}
+	if (sess->body)
+		args->body = *sess->body;
+
+	p = pkg_malloc((type?type->len:0) + (in_iface?in_iface->len:0) +
+			(out_iface?out_iface->len:0) + (flags?flags->len:0) +
+			(extra?extra->len:0) + 1 + ((ip && ip->len)?ip->len + 1:0) +
+			(sess->branch != -1?args->callid.len + 1 + INT2STR_MAX_LEN:0));
+	if (!p) {
+		LM_ERR("could not build flags!\n");
+		return 0;
+	}
+	if (ip && ip->len) {
+		args->arg2 = p;
+		memcpy(p, ip->s, ip->len);
+		p += ip->len;
+		*p++ = '\0';
+	}
+	args->arg1 = p;
+	if (type) {
+		memcpy(p, type->s, type->len);
+		p += type->len;
+	}
+	if (in_iface) {
+		memcpy(p, in_iface->s, in_iface->len);
+		p += in_iface->len;
+	}
+	if (out_iface) {
+		memcpy(p, out_iface->s, out_iface->len);
+		p += out_iface->len;
+	}
+	if (flags) {
+		memcpy(p, flags->s, flags->len);
+		p += flags->len;
+	}
+	if (extra) {
+		memcpy(p, extra->s, extra->len);
+		p += extra->len;
+	}
+	*p++ = '\0';
+	if (sess->branch != -1) {
+		memcpy(p, args->callid.s, args->callid.len);
+		args->callid.s = p;
+		p += args->callid.len;
+		*p++ = '-';
+		b.s = int2str(sess->branch, &b.len);
+		memcpy(p, b.s, b.len);
+		args->callid.len += b.len + 1;
+	}
+
+	return 1;
+}
+
+static void rtpproxy_free_call_args(struct rtpp_args *args)
+{
+	if (args->arg2)
+		pkg_free(args->arg2);
+	else
+		pkg_free(args->arg1);
+}
+
+static int fill_rtpproxy_node(struct rtp_relay_server *server,
+		str *s)
+{
+	if (!s->len)
+		return 0;
+	if (server->node.s)
+		shm_free(server->node.s);
+	return shm_nt_str_dup(&server->node, s);
+}
+
+static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
+{
+	int ret = -1;
+	int unlock = 0;
+	pv_value_t val;
+	struct rtpp_set *rset = NULL;
+	struct rtpp_args args;
+	struct sip_msg *msg = NULL;
+
+	memset(&args, '\0', sizeof(args));
+
+	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
+			in_iface, out_iface, flags, extra))
+		return -1;
+
+	if (!server->node.s) {
+		if (server->set != -1) {
+			rset = select_rtpp_set(server->set);
+			if (!rset) {
+				LM_WARN("RTPProxy set %d\n not available! Using default %d...\n",
+						server->set, default_rtpp_set_no);
+				rset = *default_rtpp_set;
+			}
+		} else {
+			rset = *default_rtpp_set;
+		}
+		server->set = rset->id_set;
+	} else {
+		if (nh_lock)
+			lock_start_read(nh_lock);
+
+		rset = select_rtpp_set(server->set);
+		args.node = get_rtpp_node(&server->node);
+		/* if we're not using a node, we don't need the lock */
+		if (!args.node && nh_lock)
+			lock_stop_read(nh_lock);
+		else
+			unlock = 1;
+	}
+
+	args.set = rset;
+	args.offer = 1;
+	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
+
+	val.rs.len = 0;
+	val.rs.s = "";
+	val.flags = PV_VAL_STR;
+	pv_set_value(msg, &media_pvar, (int)EQ_T, &val);
+
+	ret = rtpproxy_offer_answer(msg, &args, &media_pvar, NULL, body);
+	if (nh_lock && unlock)
+		lock_stop_read(nh_lock);
+	if (ret < 0) {
+		LM_ERR("could not engage rtpproxy offer!\n");
+		goto exit;
+	}
+	if (pv_get_spec_value(msg, &media_pvar, &val) >= 0)
+		fill_rtpproxy_node(server, &val.rs);
+	else
+		LM_ERR("could not retrieve the value of the used rtpproxy!\n");
+exit:
+	if (is_dummy_sip_msg(msg) == 0)
+		release_dummy_sip_msg(msg);
+	rtpproxy_free_call_args(&args);
+	return ret;
+}
+
+static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
+{
+	int ret = -1;
+	struct rtpp_set *rset = NULL;
+	struct rtpp_args args;
+
+	memset(&args, '\0', sizeof(args));
+
+	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
+			in_iface, out_iface, flags, extra))
+		return -1;
+
+	if (nh_lock)
+		lock_start_read(nh_lock);
+
+	rset = select_rtpp_set(server->set);
+	if (!rset) {
+		LM_ERR("RTPProxy set %d\n not available!\n", server->set);
+		goto exit;
+	}
+
+	args.set = rset;
+	args.offer = 0;
+
+	if (server->node.s) {
+		args.node = get_rtpp_node(&server->node);
+		if (!args.node) {
+			LM_ERR("Could not use node %.*s for reply!\n",
+					server->node.len, server->node.s);
+			goto exit;
+		}
+	}
+
+	ret = rtpproxy_offer_answer(sess->msg, &args, NULL, NULL, body);
+exit:
+	if (nh_lock)
+		lock_stop_read(nh_lock);
+	rtpproxy_free_call_args(&args);
+	return ret;
+
+}
+
+static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *flags, str *extra)
+{
+	int ret = -1;
+	struct rtpp_set *rset = NULL;
+	struct rtpp_args args;
+
+	memset(&args, '\0', sizeof(args));
+	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
+			NULL, NULL, flags, extra))
+		return -1;
+
+	if (nh_lock) {
+		lock_start_read( nh_lock );
+	}
+
+	rset = select_rtpp_set(server->set);
+	if (!rset) {
+		LM_ERR("RTPProxy set %d\n not available!\n", server->set);
+		goto exit;
+	}
+
+	args.set = rset;
+
+	args.node = get_rtpp_node(&server->node);
+	if (!args.node) {
+		LM_ERR("Could not use node %.*s for delete!\n",
+				server->node.len, server->node.s);
+		goto exit;
+	}
+
+	ret = unforce_rtpproxy(sess->msg, &args, NULL);
+exit:
+	if (nh_lock) {
+		lock_stop_read( nh_lock );
+	}
+	rtpproxy_free_call_args(&args);
+	return ret;
 }

@@ -1023,13 +1023,14 @@ static void dlg_indialog_reply(struct cell* t, int type, struct tmcb_params* ps)
 	statuscode = ps->code;
 	param = *(struct dlg_indialog_req_param **)ps->param;
 
-	if (param->func)
-		param->func(ps->rpl, statuscode, param->param);
-
 	if (param->is_invite && statuscode < 300 &&
 			send_leg_msg(param->dlg, &ack, other_leg(param->dlg, param->leg), param->leg,
 				NULL, NULL, NULL, NULL, NULL, NULL) < 0)
 		LM_ERR("cannot send ACK message!\n");
+
+	if (param->func)
+		param->func(ps->rpl, statuscode, param->param);
+
 }
 
 int send_indialog_request(struct dlg_cell *dlg, str *method,
