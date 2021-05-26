@@ -1809,6 +1809,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						ng_flags->received_from = val;
 				} else
 					break;
+				continue;
 
 			case 14:
 				if (str_eq(&key, "replace-origin")) {
