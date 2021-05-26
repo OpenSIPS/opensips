@@ -36,6 +36,7 @@
 #include "pua.h"
 #include "send_publish.h"
 #include "../presence/hash.h"
+#include "clustering.h"
 
 /* database colums */
 static str str_pres_uri_col = str_init("pres_uri");
@@ -78,6 +79,8 @@ void print_ua_pres(ua_pres_t* p)
 	else
 		LM_DBG("expires=[%d] desired_expires=[%d]\n",
 				p->expires, p->desired_expires);
+	if (p->sh_tag.s)
+		LM_DBG("sharing_tag=[%.*s]\n", p->sh_tag.len, p->sh_tag.s);
 }
 
 htable_t* new_htable(void)
@@ -147,7 +150,7 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code)
 	LM_DBG("\n");
 	for(p= L->next; p; p=p->next)
 	{
-		LM_DBG("Found\n");
+		LM_DBG("Checking\n");
 		print_ua_pres(p);
 		LM_DBG("\n");
 		if((p->flag & pres->flag) && (p->event & pres->event))
@@ -300,6 +303,8 @@ ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
 		size+= sizeof(str)+ publ->outbound_proxy.len;
 	if(tuple_id->s)
 		size+= tuple_id->len;
+	if (is_pua_cluster_enabled())
+		size += pua_sh_tag.len;
 
 	presentity= (ua_pres_t*)shm_malloc(size);
 	if(presentity== NULL)
@@ -344,6 +349,13 @@ ua_pres_t* new_ua_pres(publ_info_t* publ, str* tuple_id)
 		size+= publ->outbound_proxy.len;
 	}
 
+	if (is_pua_cluster_enabled()) {
+		presentity->sh_tag.s = (char*)presentity + size;
+		memcpy(presentity->sh_tag.s, pua_sh_tag.s, pua_sh_tag.len);
+		presentity->sh_tag.len = pua_sh_tag.len;
+		size += pua_sh_tag.len;
+	}
+
 	presentity->desired_expires= publ->expires + (int)time(NULL);
 	presentity->flag  = publ->source_flag;
 	presentity->event = publ->event;
@@ -370,10 +382,10 @@ unsigned long new_publ_record(publ_info_t* publ, pua_event_t* ev, str* tuple_id)
 	}
 
 	LM_DBG("cb_param = %p\n", publ->cb_param);
-	return insert_htable(presentity);
+	return insert_htable(presentity, 0);
 }
 
-unsigned long insert_htable(ua_pres_t* presentity)
+unsigned long insert_htable(ua_pres_t* presentity, int mem_only)
 {
 	unsigned int hash_code;
 	str* s1;
@@ -398,7 +410,7 @@ unsigned long insert_htable(ua_pres_t* presentity)
 
 	p= HashT->p_records[hash_code].entity;
 
-	presentity->db_flag= INSERTDB_FLAG;
+	presentity->db_flag= mem_only ? NO_UPDATEDB_FLAG : INSERTDB_FLAG;
 	presentity->next= p->next;
 	if(p->next)
 	{
@@ -415,6 +427,7 @@ unsigned long insert_htable(ua_pres_t* presentity)
 
 	return pres_id;
 }
+
 
 static void pua_db_delete(ua_pres_t* pres)
 {
@@ -496,10 +509,11 @@ static void pua_db_delete(ua_pres_t* pres)
 }
 
 
-void free_htable_entry(ua_pres_t* p)
+static void free_htable_entry(ua_pres_t* p, int mem_only)
 {
-	/* delete from database also */
-	pua_db_delete(p);
+	if (!mem_only)
+		/* delete from database also */
+		pua_db_delete(p);
 
 	if(p->etag.s)
 		shm_free(p->etag.s);
@@ -520,7 +534,7 @@ void delete_htable_safe(ua_pres_t* p, unsigned int hash_index)
 
 	if(q)
 		q->next = p->next;
-	free_htable_entry(p);
+	free_htable_entry(p,0);
 }
 
 
@@ -536,13 +550,14 @@ void delete_htable(unsigned int hash_index, unsigned int local_index)
 		if(p->local_index == local_index)
 		{
 			q->next = p->next;
-			free_htable_entry(p);
+			free_htable_entry(p,0);
 			break;
 		}
 		q = p;
 	}
 	lock_release(&HashT->p_records[hash_index].lock);
 }
+
 
 void destroy_htable(void)
 {
@@ -573,6 +588,60 @@ void destroy_htable(void)
 
 	return;
 }
+
+
+int get_record_coordinates(ua_pres_t* pres, unsigned int *hash_code,
+		unsigned int *label_index)
+{
+	ua_pres_t *presentity;
+
+	*hash_code = core_hash( pres->pres_uri, NULL, HASH_SIZE);
+
+	lock_get(&HashT->p_records[*hash_code].lock);
+
+	presentity = search_htable(pres, *hash_code);
+
+	if (presentity==NULL) {
+		lock_release(&HashT->p_records[*hash_code].lock);
+		return -1;
+	}
+
+	*label_index = presentity->local_index;
+
+	lock_release(&HashT->p_records[*hash_code].lock);
+
+	return 0;
+}
+
+
+/* replaces the in-hash presentity with coordinates (hash_index,local_index)
+ * with a new presentity record */
+int replace_in_htable(unsigned int hash_index, unsigned int local_index,
+		ua_pres_t *new_pres)
+{
+	ua_pres_t* p= NULL, *q= NULL;
+
+	lock_get(&HashT->p_records[hash_index].lock);
+
+	q = HashT->p_records[hash_index].entity;
+	for(p= q->next; p; p=p->next)
+	{
+		if(p->local_index == local_index)
+		{
+			q->next = p->next;
+			q->next = new_pres;
+			new_pres->next = p->next;
+			new_pres->local_index = local_index;
+			free_htable_entry(p,1/*mem only, no db*/);
+			lock_release(&HashT->p_records[hash_index].lock);
+			return 0;
+		}
+		q = p;
+	}
+	lock_release(&HashT->p_records[hash_index].lock);
+	return -1;
+}
+
 
 /* must lock the record line before calling this function*/
 ua_pres_t* get_dialog(ua_pres_t* dialog, unsigned int hash_code)

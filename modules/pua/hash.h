@@ -108,6 +108,7 @@ typedef struct ua_pres{
 	str record_route;
 	str remote_contact;
 	str contact;
+	str sh_tag;
 	void* cb_param;
 }ua_pres_t;
 
@@ -127,7 +128,7 @@ ua_pres_t* search_htable(ua_pres_t* pres, unsigned int hash_code);
 
 struct publ_info;
 
-unsigned long insert_htable(ua_pres_t* presentity);
+unsigned long insert_htable(ua_pres_t* presentity, int mem_only);
 unsigned long new_publ_record(struct publ_info* publ, pua_event_t* ev, str* tuple);
 
 int update_htable(unsigned int hash_index, unsigned int local_index,
@@ -135,6 +136,12 @@ int update_htable(unsigned int hash_index, unsigned int local_index,
 int find_htable(unsigned int hash_index, unsigned int local_index);
 void delete_htable(unsigned int hash_index, unsigned int local_index);
 ua_pres_t* get_htable_safe(unsigned int hash_index, unsigned int local_index);
+
+int get_record_coordinates(ua_pres_t* pres, unsigned int *hash_code,
+		unsigned int *label_index);
+
+int replace_in_htable(unsigned int hash_index, unsigned int local_index,
+		ua_pres_t *pres);
 
 void destroy_htable(void);
 int is_dialog(ua_pres_t* dialog);

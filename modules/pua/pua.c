@@ -50,9 +50,10 @@
 #include "event_list.h"
 #include "add_events.h"
 #include "pidf.h"
+#include "clustering.h"
 
 
-#define PUA_TABLE_VERSION 8
+#define PUA_TABLE_VERSION 9
 
 struct tm_binds tmb;
 htable_t* HashT= NULL;
@@ -88,6 +89,7 @@ static str str_contact_col= str_init("contact");
 static str str_remote_contact_col= str_init("remote_contact");
 static str str_extra_headers_col= str_init("extra_headers");
 static str str_desired_expires_col= str_init("desired_expires");
+static str str_sh_tag_col= str_init("sharing_tag");
 static str str_version_col = str_init("version");
 
 /* module functions */
@@ -97,8 +99,6 @@ static int child_init(int);
 static void destroy(void);
 
 static int update_pua(ua_pres_t* p, unsigned int hash_code, unsigned int final);
-
-static int db_restore(void);
 static void db_update(unsigned int ticks,void *param);
 static void hashT_clean(unsigned int ticks,void *param);
 
@@ -111,13 +111,15 @@ static cmd_export_t cmds[]={
 };
 
 static param_export_t params[]={
-	{"hash_size" ,       INT_PARAM, &HASH_SIZE          },
-	{"db_url" ,          STR_PARAM, &db_url.s           },
-	{"db_table" ,        STR_PARAM, &db_table.s         },
-	{"min_expires",      INT_PARAM, &min_expires        },
-	{"default_expires",  INT_PARAM, &default_expires    },
-	{"update_period",    INT_PARAM, &update_period      },
-	{0,                          0,         0           }
+	{"hash_size" ,          INT_PARAM, &HASH_SIZE          },
+	{"db_url" ,             STR_PARAM, &db_url.s           },
+	{"db_table" ,           STR_PARAM, &db_table.s         },
+	{"min_expires",         INT_PARAM, &min_expires        },
+	{"default_expires",     INT_PARAM, &default_expires    },
+	{"update_period",       INT_PARAM, &update_period      },
+	{"cluster_id",          INT_PARAM, &pua_cluster_id     },
+	{"cluster_sharing_tag", STR_PARAM, &pua_sh_tag.s       },
+	{0, 0, 0}
 };
 
 static dep_export_t deps = {
@@ -221,7 +223,13 @@ static int mod_init(void)
 		LM_ERR("while creating new hash table\n");
 		return -1;
 	}
-	if(db_restore()< 0)
+
+	if (init_pua_clustering()<0) {
+		LM_ERR("failed to init clustering support\n");
+		return -1;
+	}
+
+	if(db_restore(NULL)< 0)
 	{
 		LM_ERR("while restoring hash_table\n");
 		return -1;
@@ -304,24 +312,26 @@ static void destroy(void)
 	return ;
 }
 
-static int db_restore(void)
+int db_restore(ua_pres_t *pres)
 {
 	ua_pres_t* p= NULL;
 	db_key_t result_cols[20];
 	db_res_t *res= NULL;
 	db_row_t *row = NULL;
 	db_val_t *row_vals= NULL;
+	db_key_t q_cols[3];
+	db_val_t q_vals[3];
 	str pres_uri, pres_id, to_uri;
 	str etag, tuple_id;
 	str watcher_uri, call_id;
 	str to_tag, from_tag, remote_contact;
-	str record_route, contact, extra_headers;
-	int size= 0, i;
+	str record_route, contact, extra_headers, sh_tag;
+	int size= 0, q_nc=0, i;
 	int n_result_cols= 0;
 	int puri_col,touri_col,pid_col,expires_col,flag_col,etag_col, desired_expires_col;
 	int watcher_col,callid_col,totag_col,fromtag_col,cseq_col,remote_contact_col;
 	int event_col,contact_col,tuple_col,record_route_col, extra_headers_col;
-	int version_col;
+	int version_col, sh_tag_col;
 	int no_rows = 10;
 
 	result_cols[puri_col=n_result_cols++]	= &str_pres_uri_col;
@@ -343,6 +353,8 @@ static int db_restore(void)
 	result_cols[extra_headers_col= n_result_cols++]	= &str_extra_headers_col;
 	result_cols[desired_expires_col= n_result_cols++]	= &str_desired_expires_col;
 	result_cols[version_col= n_result_cols++]	= &str_version_col;
+	if (is_pua_cluster_enabled())
+		result_cols[sh_tag_col= n_result_cols++]	= &str_sh_tag_col;
 
 	if(!pua_db)
 	{
@@ -356,14 +368,35 @@ static int db_restore(void)
 		return -1;
 	}
 
+	/* do we have a presentity to use as filter ?*/
+	if (pres) {
+		q_cols[0] = &str_pres_uri_col;
+		q_vals[0].type = DB_STR;
+		q_vals[0].nul = 0;
+		q_vals[0].val.str_val = *pres->pres_uri;
+
+		q_cols[1] = &str_pres_id_col;
+		q_vals[1].type = DB_STR;
+		q_vals[1].nul = 0;
+		q_vals[1].val.str_val = pres->id;
+
+		q_cols[2] = &str_event_col;
+		q_vals[2].type = DB_INT;
+		q_vals[2].nul = 0;
+		q_vals[2].val.int_val = pres->event;
+
+		q_nc = 3;
+	}
+
 	if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
-		if(pua_dbf.query(pua_db,0, 0, 0, result_cols,0, n_result_cols, 0,0)< 0)
+		if(pua_dbf.query(pua_db, q_cols, 0, q_vals, result_cols, q_nc,
+		n_result_cols, 0,0)< 0)
 		{
 			LM_ERR("while querying table\n");
 			return -1;
 		}
 		no_rows = estimate_available_rows( 128+128+8+8+4+32+64+64+128+
-			128+64+64+16+64, n_result_cols);
+			128+64+64+16+64+32, n_result_cols);
 		if (no_rows==0) no_rows = 10;
 
 		if(pua_dbf.fetch_result(pua_db, &res, no_rows)<0)
@@ -372,7 +405,8 @@ static int db_restore(void)
 			return -1;
 		}
 	} else {
-		if(pua_dbf.query(pua_db,0, 0, 0,result_cols,0,n_result_cols,0,&res)< 0)
+		if(pua_dbf.query(pua_db, q_cols, 0, q_vals,result_cols, q_nc,
+		n_result_cols, 0, &res)< 0)
 		{
 			LM_ERR("while querrying table\n");
 			if(res)
@@ -402,8 +436,6 @@ static int db_restore(void)
 		{
 			row = &res->rows[i];
 			row_vals = ROW_VALUES(row);
-			if(row_vals[expires_col].val.int_val < time(NULL))
-				continue;
 
 			pres_uri.s= (char*)row_vals[puri_col].val.string_val;
 			pres_uri.len = strlen(pres_uri.s);
@@ -484,8 +516,19 @@ static int db_restore(void)
 						tuple_id.len)* sizeof(char);
 
 			if(watcher_uri.s)
-				size+= sizeof(str)+ to_uri.len + watcher_uri.len+ call_id.len+ to_tag.len+
-					from_tag.len+ record_route.len+ contact.len;
+				size+= sizeof(str)+ to_uri.len + watcher_uri.len+ call_id.len
+					+ to_tag.len + from_tag.len + record_route.len
+					+ contact.len;
+
+			if (is_pua_cluster_enabled() && !row_vals[sh_tag_col].nul && 
+			row_vals[sh_tag_col].val.string_val) {
+				sh_tag.s = (char*)row_vals[sh_tag_col].val.string_val;
+				sh_tag.len = strlen(sh_tag.s);
+				size += sh_tag.len;
+			} else {
+				sh_tag.s = NULL;
+				sh_tag.len = 0;
+			}
 
 			p= (ua_pres_t*)shm_malloc(size);
 			if(p== NULL)
@@ -543,7 +586,6 @@ static int db_restore(void)
 				p->version= row_vals[version_col].val.int_val;
 			}
 
-			LM_DBG("size= %d\n", size);
 			p->event= row_vals[event_col].val.int_val;
 			p->expires= row_vals[expires_col].val.int_val;
 			p->desired_expires= row_vals[desired_expires_col].val.int_val;
@@ -577,8 +619,28 @@ static int db_restore(void)
 				p->extra_headers.len= extra_headers.len;
 			}
 
+			if (sh_tag.s)
+				CONT_COPY(p, p->sh_tag, sh_tag);
+
 			print_ua_pres(p);
-			insert_htable(p);
+
+			/* should this new record be simply inserted or should it 
+			 * replace an existing record (update op) */
+			if (pres && pres->hash_index && pres->local_index) {
+				if (replace_in_htable( pres->hash_index, pres->local_index,
+				p)==0)
+					LM_DBG("replacement with updated presentity was "
+						"successfully done\n");
+				/* it should never happen to have more than one record
+				 * returned when using a filter, but to be 100%, when doing
+				 * a sensitive 'replace', better exit after the first
+				 * iteration*/
+				break;
+			} else {
+				/* insert the new record into hash, without forcing any
+				 * DB ops (mem_only) */
+				insert_htable(p, 1 /*mem_only*/);
+			}
 		} /* end for(all rows)*/
 
 		if (DB_CAPABILITY(pua_dbf, DB_CAP_FETCH)) {
@@ -592,13 +654,6 @@ static int db_restore(void)
 	} while(RES_ROW_N(res)>0);
 
 	pua_dbf.free_result(pua_db, res);
-	res = NULL;
-
-	if(pua_dbf.delete(pua_db, 0, 0 , 0, 0) < 0)
-	{
-		LM_ERR("while deleting information from db\n");
-		goto error;
-	}
 
 	return 0;
 
@@ -616,13 +671,36 @@ error:
 	return -1;
 }
 
+
+static int sh_tag_matches(str **sh_tags, str *sh_tag)
+{
+	int i;
+	for (i=0 ; sh_tags[i] ; i++)
+		if ( (sh_tags[i]->len==sh_tag->len) &&
+		!memcmp( sh_tags[i]->s, sh_tag->s, sh_tag->len))
+			return 1;
+
+	return 0;
+}
+
+
 static void hashT_clean(unsigned int ticks,void *param)
 {
 	int i;
 	time_t now;
 	ua_pres_t* p= NULL, *q= NULL;
+	str **sh_tags;
+
+	sh_tags = is_pua_cluster_enabled() ?
+		c_api.shtag_get_all_active(pua_cluster_id) : NULL;
+
+	/* if tag filtering is enabled but not active tag is present
+	 * in the list, simply return as there is nothing to do */
+	if (sh_tags && sh_tags[0]==NULL)
+		return;
 
 	now = time(NULL);
+
 	for(i= 0;i< HASH_SIZE; i++)
 	{
 		lock_get(&HashT->p_records[i].lock);
@@ -631,7 +709,11 @@ static void hashT_clean(unsigned int ticks,void *param)
 		{
 			print_ua_pres(p);
 			LM_DBG("---\n");
-			if(p->expires -update_period < now )
+
+			/* handle expired presentities with no sharing tag or with an
+			 * active sharing tag (if clustering is enabled) */
+			if ( (p->expires -update_period < now ) &&
+			(!sh_tags || !p->sh_tag.s || sh_tag_matches(sh_tags,&p->sh_tag)) )
 			{
 				if((p->desired_expires> p->expires + 5) ||
 						(p->desired_expires== 0 ))
@@ -939,7 +1021,7 @@ static void db_update(unsigned int ticks,void *param)
 		p = HashT->p_records[i].entity->next;
 		while(p)
 		{
-			if(p->expires < time(NULL))
+			if(p->expires < time(NULL) || p->db_flag==NO_UPDATEDB_FLAG)
 			{
 				p= p->next;
 				continue;
@@ -949,12 +1031,6 @@ static void db_update(unsigned int ticks,void *param)
 
 			switch(p->db_flag)
 			{
-				case NO_UPDATEDB_FLAG:
-				{
-					LM_DBG("NO_UPDATEDB_FLAG\n");
-					break;
-				}
-
 				case UPDATEDB_FLAG:
 				{
 					LM_DBG("UPDATEDB_FLAG\n");
@@ -1004,6 +1080,13 @@ static void db_update(unsigned int ticks,void *param)
 							lock_release(&HashT->p_records[i].lock);
 						return ;
 					}
+
+					/* in a clustering scenario, broadcast about the change
+					 * of this presentity, so all the other nodes having it
+					 * in memory may refresh from DB */
+					if (is_pua_cluster_enabled())
+						replicate_pres_change(p);
+
 					break;
 				}
 				case INSERTDB_FLAG:

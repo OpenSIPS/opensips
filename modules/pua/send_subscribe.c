@@ -553,7 +553,7 @@ void subs_cback_func(struct cell *t, int cb_type, struct tmcb_params *ps)
 	LM_DBG("record for subscribe from %.*s to %.*s inserted in datatbase\n",
 			presentity->watcher_uri->len, presentity->watcher_uri->s,
 			presentity->pres_uri->len, presentity->pres_uri->s);
-	insert_htable(presentity);
+	insert_htable(presentity, 0);
 
 done:
 	if(hentity->ua_flag == REQ_OTHER)
