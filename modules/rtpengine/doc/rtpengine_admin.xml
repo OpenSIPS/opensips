@@ -494,6 +494,12 @@ rtpengine_offer();
 				connection information.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>replace-zero-address</emphasis> - flags to replace zero address with real address.
+				Using a zero endpoint address is an obsolete way to signal a muted or sendonly stream.
+				Streams with zero addresses are normally flagged as sendonly and the zero address in the SDP
+				is passed through.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>symmetric</emphasis> - flags that for the UA from which
 				message is received, support symmetric RTP must be forced. You do not
 				need to explicitly specify this value, as it is the default, and the
