@@ -91,4 +91,5 @@
 		<column><field>remote_contact</field><type>DB_STR</type></column>
 		<column><field>version</field><type>DB_INT</type></column>
 		<column><field>extra_headers</field><type>DB_BLOB</type></column>
+		<column><field>sharing_tag</field><type>DB_STR</type></column>
 	</db_table>

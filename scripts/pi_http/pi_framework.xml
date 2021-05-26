@@ -797,6 +797,7 @@
 		<column><field>remote_contact</field><type>DB_STR</type></column>
 		<column><field>version</field><type>DB_INT</type></column>
 		<column><field>extra_headers</field><type>DB_BLOB</type></column>
+		<column><field>sharing_tag</field><type>DB_STR</type></column>
 	</db_table>
 	<!-- Declaration of qr_profiles table-->
 	<db_table id="qr_profiles">
@@ -4029,6 +4030,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -4054,6 +4056,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -4082,6 +4085,7 @@
 				<col><field>remote_contact</field></col>
 				<col><field>version</field></col>
 				<col><field>extra_headers</field></col>
+				<col><field>sharing_tag</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
