@@ -93,8 +93,9 @@ static void shtag_run_callbacks(str *tag_name, int state, int c_id)
 {
 	struct shtag_cb *cb;
 
-	LM_DBG("running callbacks for tag <%.*s>/%d becoming active\n",
-		tag_name->len, tag_name->s, c_id);
+	LM_DBG("running callbacks for tag <%.*s>/%d becoming %s\n",
+		tag_name->len, tag_name->s, c_id,
+		(state==0)?"backup":"active");
 
 	for (cb = shtag_cb_list ; cb ; cb=cb->next ) {
 		if ( (cb->cluster_id<0 || cb->cluster_id==c_id)
