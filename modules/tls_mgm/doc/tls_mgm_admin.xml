@@ -35,6 +35,24 @@
 	</section>
 
 	<section>
+		<title>TLS libraries</title>
+		<para>
+			Besides TLS certificates and parameters, this module also acts as
+			an inteface between the actual TLS implemenation (provided by
+			<emphasis>openSSL</emphasis> or <emphasis>wolfSSL</emphasis> libraries)
+			and transport protocol modules like <emphasis>proto_tls</emphasis> or
+			<emphasis>proto_wss</emphasis>. The <emphasis>tls_mgm</emphasis> module
+			transparently exposes the TLS operations implemented by
+			<emphasis>tls_openssl</emphasis> and <emphasis>wolfssl</emphasis> modules
+			to the higher-level OpenSIPS transport modules.
+		</para>
+		<para>
+			The TLS library selection ca be configured through the
+			<xref linkend="param_tls_library"/> module parameter.
+		</para>
+	</section>
+
+	<section>
 		<title>TLS domains</title>
 		<para>
 		The wording 'TLS domain' means that this TLS connection will have different
@@ -103,37 +121,40 @@
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+         <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_openssl</emphasis> or <emphasis>wolfssl</emphasis>,
+				depending on the desired TLS library
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tls_mgm</emphasis>.
+			</para>
+			</listitem>
+        </itemizedlist>
+		</para>
+	</section>
+	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
-			&osips; TLS v1.0 support requires the following packages:
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 0.9.6
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
-		<para>
-			&osips; TLS v1.1/1.2 support requires the following packages:
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 1.0.1e
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
-			</itemizedlist>
-		</para>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -206,6 +227,50 @@ if (is_peer_verified()) {
 				<programlisting format="linespecific">
 ...
 socket= tls:1.2.3.4:5061
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_tls_library" xreflabel="tls_library">
+			<title><varname>tls_library</varname> (string)</title>
+			<para>
+				Selects which TLS library to use. Possible values are:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>auto</emphasis> - auto-detect which TLS library
+				module (<emphasis>tls_openssl</emphasis> or <emphasis>wolfssl</emphasis>)
+				was loaded. OpenSIPS will not start if no module, or both modules are
+				found.
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>none</emphasis> - do not use any TLS library; this
+				is useful when the <emphasis>tls_mgm</emphasis> module is required only
+				for the management of TLS certificates and parameters by modules like
+				<emphasis>db_mysql</emphasis>, <emphasis>rabbitmq</emphasis> etc.
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl</emphasis> - use the <emphasis>openSSL</emphasis>
+				library through the <emphasis>tls_openssl</emphasis> module.
+				</para>
+				</listitem>
+				<listitem>
+				<para><emphasis>wolfssl</emphasis> - use the <emphasis>wolfSSL</emphasis>
+				library through the <emphasis>wolfssl</emphasis> module.
+				</para>
+				</listitem>
+			</itemizedlist>
+			<para>
+				Default value is <emphasis>auto</emphasis>.
+			</para>
+			<example>
+				<title>Set <varname>tls_library</varname> variable</title>
+				<programlisting format="linespecific">
+...
+modparam("tls_mgm", "tls_library", "none")
 ...
 				</programlisting>
 			</example>

@@ -32,7 +32,8 @@
 #include "../../pt.h"
 #include "../../bin_interface.h"
 #include "../../ut.h"
-#include "../wolfssl/wolfssl_api.h"
+
+#include "../tls_mgm/api.h"
 
 #define MARKER_SIZE 4
 
@@ -62,7 +63,7 @@ static struct tcp_req bins_current_req;
 #define _bin_common_current_req  bins_current_req
 #include "../proto_bin/bin_common.h"
 
-struct wolfssl_binds wolfssl_api;
+struct tls_mgm_binds tls_mgm_api;
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_bins_init, {{0,0,0}},0},
@@ -86,7 +87,7 @@ static param_export_t params[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "wolfssl", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -149,8 +150,8 @@ static int mod_init(void)
 {
 	LM_INFO("initializing BINS protocol\n");
 
-	if(load_wolfssl_api(&wolfssl_api) != 0){
-		LM_DBG("failed to find wolfssl API - is wolfssl module loaded?\n");
+	if (load_tls_mgm_api(&tls_mgm_api) != 0){
+		LM_DBG("failed to find tls API - is tls_mgm module loaded?\n");
 		return -1;
 	}
 
@@ -166,14 +167,36 @@ static int proto_bins_init_listener(struct socket_info *si)
 
 static int proto_bins_conn_init(struct tcp_connection* c)
 {
+	struct tls_domain *dom;
+
 	c->proto_data = 0;
 
-	return wolfssl_api.tls_conn_init(c);
+	if (c->flags&F_CONN_ACCEPTED) {
+		LM_DBG("looking up TLS server "
+			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
+		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
+	} else {
+		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+	}
+	if (!dom) {
+		LM_ERR("no TLS %s domain found\n",
+				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		return -1;
+	}
+
+	return tls_mgm_api.tls_conn_init(c, dom);
 }
 
 static void proto_bins_conn_clean(struct tcp_connection* c)
 {
-	wolfssl_api.tls_conn_clean(c);
+	struct tls_domain *dom;
+
+	tls_mgm_api.tls_conn_clean(c, &dom);
+
+	if (!dom)
+		LM_ERR("Failed to retrieve the tls_domain pointer in the SSL struct\n");
+	else
+		tls_mgm_api.release_domain(dom);
 }
 
 static int bins_write_on_socket(struct tcp_connection* c, int fd,
@@ -188,12 +211,12 @@ static int bins_write_on_socket(struct tcp_connection* c, int fd,
 		 * to be sent, otherwise we will completely break the messages' order
 		 */
 		if (!c->async->pending) {
-			if (wolfssl_api.tls_update_fd(c, fd) < 0) {
+			if (tls_mgm_api.tls_update_fd(c, fd) < 0) {
 				n = -1;
 				goto release;
 			}
 
-			n = wolfssl_api.tls_write(c, fd, buf, len, NULL);
+			n = tls_mgm_api.tls_write(c, fd, buf, len, NULL);
 			if (n >= 0 && len - n) {
 				/* if could not write entire buffer, delay it */
 				n = tcp_async_add_chunk(c, buf + n, len - n, 0);
@@ -202,8 +225,8 @@ static int bins_write_on_socket(struct tcp_connection* c, int fd,
 			n = tcp_async_add_chunk(c, buf, len, 0);
 		}
 	} else {
-		n = wolfssl_api.tls_blocking_write(c, fd, buf, len,
-				bins_handshake_tout, bins_send_tout);
+		n = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
+				bins_handshake_tout, bins_send_tout, NULL);
 	}
 release:
 	lock_release(&c->write_lock);
@@ -285,9 +308,9 @@ static int proto_bins_send(struct socket_info* send_sock,
 			lock_get(&c->write_lock);
 			/* we connect under lock to make sure no one else is reading our
 			 * connect status */
-			wolfssl_api.tls_update_fd(c, fd);
-			n = wolfssl_api.tls_async_connect(c, fd,
-				bins_async_handshake_connect_timeout);
+			tls_mgm_api.tls_update_fd(c, fd);
+			n = tls_mgm_api.tls_async_connect(c, fd,
+				bins_async_handshake_connect_timeout, NULL);
 			lock_release(&c->write_lock);
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
@@ -403,7 +426,7 @@ static int bins_async_write(struct tcp_connection* con, int fd)
 	int n;
 	struct tcp_async_chunk *chunk;
 
-	n = wolfssl_api.tls_fix_read_conn(con, fd, bins_handshake_tout, 0);
+	n = tls_mgm_api.tls_fix_read_conn(con, fd, bins_handshake_tout, NULL, 0);
 	if (n < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -412,13 +435,13 @@ static int bins_async_write(struct tcp_connection* con, int fd)
 		return 1;
 	}
 
-	wolfssl_api.tls_update_fd(con, fd);
+	tls_mgm_api.tls_update_fd(con, fd);
 
 	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
 		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
 				chunk->len, chunk, con, chunk->ticks, get_ticks());
 
-		n = wolfssl_api.tls_write(con, fd, chunk->buf, chunk->len, NULL);
+		n = tls_mgm_api.tls_write(con, fd, chunk->buf, chunk->len, NULL);
 		if (n==0) {
 			LM_DBG("Can't finish to write chunk %p on conn %p\n",
 					chunk,con);
@@ -452,7 +475,7 @@ static int bins_read_req(struct tcp_connection* con, int* bytes_read)
 		req = &bins_current_req;
 	}
 
-	ret=wolfssl_api.tls_fix_read_conn(con, con->fd, bins_handshake_tout, 1);
+	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, bins_handshake_tout, NULL, 1);
 	if (ret < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -471,7 +494,7 @@ again:
 		if (req->parsed < req->pos){
 			bytes=0;
 		} else {
-			bytes=wolfssl_api.tls_read(con,req);
+			bytes=tls_mgm_api.tls_read(con,req);
 			if (bytes < 0) {
 				LM_ERR("failed to read \n");
 				goto error;

@@ -34,11 +34,6 @@
  *
  */
 
-#include <openssl/ui.h>
-#include <openssl/ssl.h>
-#include <openssl/opensslv.h>
-#include <openssl/err.h>
-
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -65,8 +60,7 @@
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "../tls_mgm/api.h"
-#include "../tls_mgm/tls_conn_ops.h"
-#include "../tls_mgm/tls_conn_server.h"
+#include "../tls_mgm/tls_trace_common.h"
 
 #include "../../net/trans_trace.h"
 
@@ -124,7 +118,6 @@ static int tls_handshake_tout = 100;
 static int tls_send_tout = 100;
 
 static int  mod_init(void);
-static void mod_destroy(void);
 static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
 static int proto_tls_send(struct socket_info* send_sock,
@@ -146,8 +139,8 @@ static int w_tls_blocking_write(struct tcp_connection *c, int fd, const char *bu
 	int ret;
 
 	lock_get(&c->write_lock);
-	ret = tls_blocking_write(c, fd, buf, len,
-			tls_handshake_tout, tls_send_tout, t_dst, &tls_mgm_api);
+	ret = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
+			tls_handshake_tout, tls_send_tout, t_dst);
 	lock_release(&c->write_lock);
 	return ret;
 }
@@ -164,12 +157,12 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 		 * to be sent, otherwise we will completely break the messages' order
 		 */
 		if (!c->async->pending) {
-			if (tls_update_fd(c, fd) < 0) {
+			if (tls_mgm_api.tls_update_fd(c, fd) < 0) {
 				n = -1;
 				goto release;
 			}
 
-			n = tls_write(c, fd, buf, len, NULL, &tls_mgm_api);
+			n = tls_mgm_api.tls_write(c, fd, buf, len, NULL);
 			if (n >= 0 && len - n) {
 				/* if could not write entire buffer, delay it */
 				n = tcp_async_add_chunk(c, buf + n, len - n, 0);
@@ -178,8 +171,8 @@ static int tls_write_on_socket(struct tcp_connection* c, int fd,
 			n = tcp_async_add_chunk(c, buf, len, 0);
 		}
 	} else {
-		n = tls_blocking_write(c, fd, buf, len,
-				tls_handshake_tout, tls_send_tout, t_dst, &tls_mgm_api);
+		n = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
+				tls_handshake_tout, tls_send_tout, t_dst);
 	}
 release:
 	lock_release(&c->write_lock);
@@ -281,7 +274,7 @@ struct module_exports exports = {
 	0,          /* module pre-initialization function */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
-	mod_destroy,/* destroy function */
+	0,          /* destroy function */
 	0,          /* per-child init function */
 	0           /* reload confirm function */
 };
@@ -332,20 +325,10 @@ static int mod_init(void)
 	return 0;
 }
 
-
-/*
- * called from main.c when opensips exits (main process)
- */
-static void mod_destroy(void)
+static int tls_conn_extra_match(struct tcp_connection *c, void *id)
 {
-	/* library destroy */
-	ERR_free_strings();
-	/*SSL_free_comp_methods(); - this function is not on std. openssl*/
-	EVP_cleanup();
-	CRYPTO_cleanup_all_ex_data();
-	return;
+	return tls_mgm_api.tls_conn_extra_match(c, id);
 }
-
 
 static int proto_tls_init(struct proto_info *pi)
 {
@@ -406,6 +389,7 @@ error:
 static int proto_tls_conn_init(struct tcp_connection* c)
 {
 	struct tls_data* data;
+	struct tls_domain *dom;
 
 	if ( t_dst && tprot.create_trace_message ) {
 		/* this message shall be used in first send function */
@@ -430,18 +414,38 @@ static int proto_tls_conn_init(struct tcp_connection* c)
 	}
 
 out:
-	return tls_conn_init(c, &tls_mgm_api);
+	if ( c->flags&F_CONN_ACCEPTED ) {
+		LM_DBG("looking up TLS server "
+			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
+		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
+	} else {
+		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+	}
+	if (!dom) {
+		LM_ERR("no TLS %s domain found\n",
+				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		return -1;
+	}
+
+	return tls_mgm_api.tls_conn_init(c, dom);
 }
 
 
 static void proto_tls_conn_clean(struct tcp_connection* c)
 {
+	struct tls_domain *dom;
+
 	if (c->proto_data) {
 		shm_free(c->proto_data);
 		c->proto_data = NULL;
 	}
 
-	tls_conn_clean(c, &tls_mgm_api);
+	tls_mgm_api.tls_conn_clean(c, &dom);
+
+	if (!dom)
+		LM_ERR("Failed to retrieve the tls_domain pointer in the SSL struct\n");
+	else
+		tls_mgm_api.release_domain(dom);
 }
 
 
@@ -538,9 +542,9 @@ static int proto_tls_send(struct socket_info* send_sock,
 			lock_get(&c->write_lock);
 			/* we connect under lock to make sure no one else is reading our
 			 * connect status */
-			tls_update_fd(c, fd);
-			n = tls_async_connect(c, fd, tls_async_handshake_connect_timeout, t_dst,
-				&tls_mgm_api);
+			tls_mgm_api.tls_update_fd(c, fd);
+			n = tls_mgm_api.tls_async_connect(c, fd,
+				tls_async_handshake_connect_timeout, t_dst);
 			lock_release(&c->write_lock);
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
@@ -638,7 +642,7 @@ static int tls_read_req(struct tcp_connection* con, int* bytes_read)
 	}
 
 	/* do this trick in order to trace whether if it's an error or not */
-	ret=tls_fix_read_conn(con, tls_handshake_tout, t_dst, &tls_mgm_api);
+	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, tls_handshake_tout, t_dst, 1);
 	if (ret < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -680,7 +684,7 @@ again:
 		if (req->parsed<req->pos){
 			bytes=0;
 		}else{
-			bytes=tls_read(con,req, &tls_mgm_api);
+			bytes=tls_mgm_api.tls_read(con,req);
 			if (bytes<0) {
 				LM_ERR("failed to read \n");
 				goto error;
@@ -741,10 +745,8 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 	int n;
 	int err;
 	struct tcp_async_chunk *chunk;
-	SSL *ssl = (SSL *)con->extra_data;
 
-	err = tls_fix_read_conn_unlocked(con, fd, tls_handshake_tout, t_dst,
-		&tls_mgm_api);
+	err = tls_mgm_api.tls_fix_read_conn(con, fd, tls_handshake_tout, t_dst, 0);
 	if (err < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -752,50 +754,23 @@ static int tls_async_write(struct tcp_connection* con, int fd)
 		LM_DBG("SSL accept/connect still pending!\n");
 		return 1;
 	}
-	tls_update_fd(con, fd);
+	tls_mgm_api.tls_update_fd(con, fd);
 
 	while ((chunk = tcp_async_get_chunk(con)) != NULL) {
 		LM_DBG("Trying to send %d bytes from chunk %p in conn %p - %d %d \n",
 				chunk->len, chunk, con, chunk->ticks, get_ticks());
 
-		#ifndef NO_SSL_GLOBAL_LOCK
-		tls_mgm_api.global_lock_get();
-		#endif
-
-		n=SSL_write(con->extra_data, chunk->buf, chunk->len);
-		if (n<0) {
-			err = SSL_get_error(ssl, n);
-			switch (err) {
-				case SSL_ERROR_ZERO_RETURN:
-					#ifndef NO_SSL_GLOBAL_LOCK
-					tls_mgm_api.global_lock_release();
-					#endif
-
-					LM_DBG("connection closed cleanly\n");
-					return -1;
-				case SSL_ERROR_WANT_READ:
-				case SSL_ERROR_WANT_WRITE:
-					#ifndef NO_SSL_GLOBAL_LOCK
-					tls_mgm_api.global_lock_release();
-					#endif
-
-					LM_DBG("Can't finish to write chunk %p on conn %p\n",
-							chunk,con);
-					/* report back we have more writting to be done */
-					return 1;
-				default:
-					LM_ERR("Error occurred while sending async chunk %d:%d (%s)\n",
-							err, errno,strerror(errno));
-					tls_print_errstack();
-
-					#ifndef NO_SSL_GLOBAL_LOCK
-					tls_mgm_api.global_lock_release();
-					#endif
-
-					/* report the conn as broken */
-					return -1;
-			}
+		n = tls_mgm_api.tls_write(con, fd, chunk->buf, chunk->len, NULL);
+		if (n == 0) {
+			LM_DBG("Can't finish to write chunk %p on conn %p\n",
+					chunk,con);
+			/* report back we have more writting to be done */
+			return 1;
+		} else if (n < 0) {
+			/* report the conn as broken */
+			return -1;
 		}
+
 		tcp_async_update_write(con, n);
 	}
 	return 0;

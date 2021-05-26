@@ -40,7 +40,6 @@
 #include "../../str.h"
 #include "../../ip_addr.h"
 #include "../../str_list.h"
-#include <openssl/ssl.h>
 
 #include "tls_config.h"
 #include "tls_helper.h"

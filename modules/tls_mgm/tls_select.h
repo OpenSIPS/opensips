@@ -34,38 +34,8 @@
 #ifndef _TLS_SELECT_H_
 #define _TLS_SELECT_H_
 
-#include <openssl/ssl.h>
-
 #include "../../parser/msg_parser.h"
 #include "../../pvar.h"
-
-enum {
-	CERT_LOCAL      = 1<<0,   /* Select local certificate */
-	CERT_PEER       = 1<<1,   /* Select peer certificate */
-	CERT_SUBJECT    = 1<<2,   /* Select subject part of certificate */
-	CERT_ISSUER     = 1<<3,   /* Select issuer part of certificate */
-
-	CERT_VERIFIED   = 1<<4,   /* Test for verified certificate */
-	CERT_REVOKED    = 1<<5,   /* Test for revoked certificate */
-	CERT_EXPIRED    = 1<<6,   /* Expiration certificate test */
-	CERT_SELFSIGNED = 1<<7,   /* self-signed certificate test */
-	CERT_NOTBEFORE  = 1<<8,   /* Select validity end from certificate */
-	CERT_NOTAFTER   = 1<<9,   /* Select validity start from certificate */
-
-	COMP_CN = 1<<10,          /* Common name */
-	COMP_O  = 1<<11,          /* Organization name */
-	COMP_OU = 1<<12,          /* Organization unit */
-	COMP_C  = 1<<13,          /* Country name */
-	COMP_ST = 1<<14,          /* State */
-	COMP_L  = 1<<15,          /* Locality/town */
-
-	COMP_HOST = 1<<16,        /* hostname from subject/alternative */
-	COMP_URI  = 1<<17,        /* URI from subject/alternative */
-	COMP_E    = 1<<18,        /* Email address */
-	COMP_IP   = 1<<19,        /* IP from subject/alternative */
-	COMP_SUBJECT_SERIAL = 1<<20    /*Serial name from Subject*/
-};
-
 
 typedef int select_t;
 

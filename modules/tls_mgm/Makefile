@@ -12,7 +12,6 @@ tls_configs=$(patsubst $(ETC_DIR)/%, %, $(wildcard $(ETC_DIR)/tls/*) \
 		$(wildcard $(ETC_DIR)/tls/rootCA/private/*) $(wildcard $(ETC_DIR)/tls/user/*))
 
 
-include ../../Makefile.openssl
 include ../../Makefile.modules
 
 install_module_custom: 

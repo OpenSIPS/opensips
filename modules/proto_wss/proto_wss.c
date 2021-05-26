@@ -48,8 +48,6 @@
 #include "proto_wss.h"
 #include "../proto_ws/ws_common_defs.h"
 #include "../tls_mgm/api.h"
-#include "../tls_mgm/tls_conn_ops.h"
-#include "../tls_mgm/tls_conn_server.h"
 
 struct tls_mgm_binds tls_mgm_api;
 
@@ -78,7 +76,7 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #define _ws_common_tcp_current_req tcp_current_req
 #define _ws_common_current_req wss_current_req
 #define _ws_common_max_msg_chunks wss_max_msg_chunks
-#define _ws_common_read(c, r) tls_read((c), (r), &tls_mgm_api)
+#define _ws_common_read(c, r) tls_mgm_api.tls_read((c), (r))
 #define _ws_common_writev wss_raw_writev
 #define _ws_common_read_tout wss_hs_read_tout
 #define _ws_common_require_origin wss_require_origin
@@ -117,6 +115,7 @@ static int wss_conn_init(struct tcp_connection* c);
 static void ws_conn_clean(struct tcp_connection* c);
 static void wss_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
+static int tls_conn_extra_match(struct tcp_connection *c, void *id);
 
 static mi_response_t *wss_trace_mi(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -265,6 +264,7 @@ static int mod_init(void)
 static int wss_conn_init(struct tcp_connection* c)
 {
 	struct ws_data *d;
+	struct tls_domain *dom;
 	int ret;
 
 	/* allocate the tcp_data and the array of chunks as a single mem chunk */
@@ -292,7 +292,20 @@ static int wss_conn_init(struct tcp_connection* c)
 
 	c->proto_data = (void*)d;
 
-	ret = tls_conn_init(c, &tls_mgm_api);
+	if ( c->flags&F_CONN_ACCEPTED ) {
+		LM_DBG("looking up TLS server "
+			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
+		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
+	} else {
+		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+	}
+	if (!dom) {
+		LM_ERR("no TLS %s domain found\n",
+				(c->flags&F_CONN_ACCEPTED?"server":"client"));
+		return -1;
+	}
+
+	ret = tls_mgm_api.tls_conn_init(c, dom);
 	if (ret < 0) {
 		c->proto_data = NULL;
 		LM_ERR("Cannot initiate the conn\n");
@@ -304,6 +317,8 @@ static int wss_conn_init(struct tcp_connection* c)
 
 static void ws_conn_clean(struct tcp_connection* c)
 {
+	struct tls_domain *dom;
+
 	if (c->proto_data) {
 
 		if (c->state == S_CONN_OK && !is_tcp_main) {
@@ -324,9 +339,19 @@ static void ws_conn_clean(struct tcp_connection* c)
 
 	}
 
-	tls_conn_clean(c, &tls_mgm_api);
+	tls_mgm_api.tls_conn_clean(c, &dom);
+
+	if (!dom)
+		LM_ERR("Failed to retrieve the tls_domain pointer in the SSL struct\n");
+	else
+		tls_mgm_api.release_domain(dom);
 }
 
+
+static int tls_conn_extra_match(struct tcp_connection *c, void *id)
+{
+	return tls_mgm_api.tls_conn_extra_match(c, id);
+}
 
 static int proto_wss_init_listener(struct socket_info *si)
 {
@@ -492,7 +517,7 @@ static int wss_read_req(struct tcp_connection* con, int* bytes_read)
 	struct ws_data* d;
 
 	/* we need to fix the SSL connection before doing anything */
-	if (tls_fix_read_conn(con, 0, t_dst, &tls_mgm_api) < 0) {
+	if (tls_mgm_api.tls_fix_read_conn(con, con->fd, 0, t_dst, 1) < 0) {
 		LM_ERR("cannot fix read connection\n");
 		if ( (d=con->proto_data) && d->dest && d->tprot ) {
 			if ( d->message ) {
@@ -561,8 +586,8 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 #ifndef TLS_DONT_WRITE_FRAGMENTS
 	lock_get(&c->write_lock);
 	for (i = 0; i < iovcnt; i++) {
-		n = tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
-				wss_hs_tls_tout, wss_send_tout, t_dst, &tls_mgm_api);
+		n = tls_mgm_api.tls_blocking_write(c, fd, iov[i].iov_base, iov[i].iov_len,
+				wss_hs_tls_tout, wss_send_tout, t_dst);
 		if (n < 0) {
 			ret = -1;
 			goto end;
@@ -584,8 +609,8 @@ static int wss_raw_writev(struct tcp_connection *c, int fd,
 		n += iov[i].iov_len;
 	}
 	lock_get(&c->write_lock);
-	n = tls_blocking_write(c, fd, buf, n,
-				wss_hs_tls_tout, wss_send_tout, t_dst, &tls_mgm_api);
+	n = tls_mgm_api.tls_blocking_write(c, fd, buf, n,
+				wss_hs_tls_tout, wss_send_tout, t_dst);
 #endif /* TLS_DONT_WRITE_FRAGMENTS */
 
 end:

@@ -50,45 +50,32 @@ modparam("tls_mgm", "require_cert", "1")
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
-                    <itemizedlist>
+         <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_openssl</emphasis> or <emphasis>wolfssl</emphasis>,
+				depending on the desired TLS library
+			</para>
+			</listitem>
 			<listitem>
 			<para>
 				<emphasis>tls_mgm</emphasis>.
 			</para>
 			</listitem>
-                    </itemizedlist>
+        </itemizedlist>
 		</para>
 	</section>
 	<section>
 		<title>Dependencies of external libraries</title>
 		<para>
-			&osips; TLS v1.0 support requires the following packages:
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
 			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 0.9.6
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
-			</itemizedlist>
-		</para>
-		<para>
-			&osips; TLS v1.1/1.2 support requires the following packages:
-			<itemizedlist>
-				<listitem>
-				<para><emphasis>openssl</emphasis> or
-					<emphasis>libssl</emphasis> >= 1.0.1e
-				</para>
-				</listitem>
-				<listitem>
-				<para><emphasis>openssl-dev</emphasis> or
-					<emphasis>libssl-dev</emphasis>
-				</para>
-				</listitem>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 	</section>
