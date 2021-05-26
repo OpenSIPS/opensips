@@ -9,7 +9,7 @@
 
 <table id="pua" xmlns:db="http://docbook.org/ns/docbook">
     <name>pua</name>
-    <version>8</version>
+    <version>9</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
         <db:para>Table for the presence related pua module. More information can be found at: &OPENSIPS_MOD_DOC;pua.html
@@ -168,6 +168,15 @@
         <type>text</type>
         <null/>
         <description>Extra Headers</description>
+    </column>
+
+    <column>
+        <name>sharing_tag</name>
+        <type>string</type>
+        <size>32</size>
+        <null/>
+        <default><null/></default>
+        <description>The name of the tag assigned to this presentity inside the sharing cluster</description>
     </column>
 
     <index>
