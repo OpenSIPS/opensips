@@ -1051,6 +1051,7 @@ fi
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
 %{_libdir}/opensips/modules/rr.so
+%{_libdir}/opensips/modules/rtp_relay.so
 %{_libdir}/opensips/modules/rtpengine.so
 %{_libdir}/opensips/modules/rtpproxy.so
 %{_libdir}/opensips/modules/script_helper.so
@@ -1140,6 +1141,7 @@ fi
 %doc docdir/README.ratelimit
 %doc docdir/README.registrar
 %doc docdir/README.rr
+%doc docdir/README.rtp_relay
 %doc docdir/README.rtpengine
 %doc docdir/README.rtpproxy
 %doc docdir/README.signaling
@@ -1487,9 +1489,9 @@ fi
 
 
 %changelog
-* Sat Feb 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
+* Sat May 26 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
-- New modules: b2b_logic, event_kafka, prometeus
+- New modules: b2b_logic, event_kafka, prometeus, rtp_relay
 - New package: kafka-module, prometeus-module
 - Obsoleted modules: b2b_logic_xml
 - Renamed: b2b_logic -> b2b_logic_xml
