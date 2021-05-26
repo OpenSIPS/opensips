@@ -199,7 +199,7 @@ struct rtpe_ctx {
 struct ng_flags_parse {
 	int via, to, packetize, transport;
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
-	str call_id, from_tag, to_tag;
+	str call_id, from_tag, to_tag, received_from;
 	str viabranch;
 };
 
@@ -1804,8 +1804,11 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					err = "missing value";
 					if (!val.s)
 						goto error;
-				}
-				break;
+				} else if (str_eq(&key, "received-from")) {
+					if (val.s)
+						ng_flags->received_from = val;
+				} else
+					break;
 
 			case 14:
 				if (str_eq(&key, "replace-origin")) {
@@ -2045,11 +2048,30 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	item = bencode_list(bencbuf);
 	bencode_dictionary_add(ng_flags.dict, "received-from", item);
 	if (msg) {
-		bencode_list_add_string(item, (msg->rcv.src_ip.af == AF_INET) ? "IP4" : (
-			(msg->rcv.src_ip.af == AF_INET6) ? "IP6" :
-			"?"
-		) );
-		bencode_list_add_string(item, ip_addr2a(&msg->rcv.src_ip));
+		if (!ng_flags.received_from.len) {
+			bencode_list_add_string(item, (msg->rcv.src_ip.af == AF_INET) ? "IP4" : (
+					(msg->rcv.src_ip.af == AF_INET6) ? "IP6" :
+					"?"
+			) );
+			bencode_list_add_string(item, ip_addr2a(&msg->rcv.src_ip));
+		} else {
+			struct ip_addr *ip_tmp = NULL;
+
+			ip_tmp = str2ip(&ng_flags.received_from);
+			if (!ip_tmp) {
+				ip_tmp = str2ip6(&ng_flags.received_from);
+				if (!ip_tmp) {
+					LM_ERR("received-from value is not an IP\n");
+					goto error;
+				}
+			}
+
+			bencode_list_add_string(item, (ip_tmp->af == AF_INET) ? "IP4" : (
+				(ip_tmp->af == AF_INET6) ? "IP6" :
+				"?"
+			) );
+			bencode_list_add_string(item, ip_addr2a(ip_tmp));
+		}
 	}
 
 	if (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
