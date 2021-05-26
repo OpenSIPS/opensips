@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 OpenSIPS Solutions
+ * Copyright (C) 2015 - OpenSIPS Foundation
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -7,19 +7,6 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version
- *
- * In addition, as a special exception, the copyright holders give
- * permission to link the code of portions of this program with the
- * OpenSSL library under certain conditions as described in each
- * individual source file, and distribute linked combinations
- * including the two.
- * You must obey the GNU General Public License in all respects
- * for all of the code used other than OpenSSL.  If you modify
- * file(s) with this exception, you may extend this exception to your
- * version of the file(s), but you are not obligated to do so.  If you
- * do not wish to do so, delete this exception statement from your
- * version.  If you delete this exception statement from all source
- * files in the program, then also delete it here.
  *
  * opensips is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -33,102 +20,62 @@
  *
  */
 
-#ifndef TLS_CONN_SERVER_H
-#define TLS_CONN_SERVER_H
-
+#include <openssl/ui.h>
 #include <openssl/ssl.h>
+#include <openssl/opensslv.h>
 #include <openssl/err.h>
+#include <openssl/rand.h>
+
 #include <poll.h>
-#include "api.h"
-#include "tls_conn.h"
-#include "tls_config_helper.h"
-#include "../../locking.h"
-#ifndef trace_api_h
-	#include "../../trace_api.h"
-#endif
-#include "../../net/trans_trace.h"
+#include <errno.h>
+#include <unistd.h>
+#include <netinet/tcp.h>
+
+#include "../../net/tcp_conn_defs.h"
+#include "../../net/proto_tcp/tcp_common_defs.h"
+#include "../tls_mgm/tls_helper.h"
+
+#include "openssl_trace.h"
+
+void tls_print_errstack(void);
+void tls_dump_cert_info(char* s, X509* cert);
+
+extern gen_lock_t *tls_global_lock;
 
 #define TLS_ERR_MAX 256
 static char tls_err_buf[TLS_ERR_MAX];
 
-static inline int trace_tls( struct tcp_connection* conn, SSL* ctx, trans_trace_event event, trans_trace_status status, str* data);
-
-#define TRACE_IS_ON( CONN ) (CONN->proto_data && \
-		((struct tls_data*)CONN->proto_data)->tprot && \
-			((struct tls_data*)CONN->proto_data)->dest && \
-			*((struct tls_data*)CONN->proto_data)->trace_is_on)
-
-struct tls_data {
-	TRACE_PROTO_COMMON;
-};
-
-static void tls_dump_cert_info(char* s,	X509* cert)
+static int tls_get_errstack( char* result, int size )
 {
-	char* subj;
-	char* issuer;
+	int len = 0, new, code;
 
-	subj   = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-	issuer = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
+	if ( !result || !size )
+		return 0;
 
-	LM_INFO("%s subject: %s, issuer: %s\n", s ? s : "", subj, issuer);
-	OPENSSL_free(subj);
-	OPENSSL_free(issuer);
-}
 
-static inline void tls_append_cert_info(X509* cert, char client, trace_message message, trace_proto_t* tprot)
-{
-	str subj, issuer;
+	while ((code = ERR_get_error())) {
+		/* in case we overflow the buffer we still need to report the error
+		 * to syslog */
+		if ( len < size ) {
+			new = snprintf( result + len, size - len,
+						"%s\n", ERR_error_string( code, 0) );
+			LM_ERR("TLS errstack: %s\n", result + len);
+		} else {
+			/* even though there s no place in the buffer we still have
+			 * to print the errors */
+			LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
+			continue;
+		}
 
-	if ( !cert || !message || !tprot )
-		return;
-
-	subj.s   = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-	issuer.s = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-
-	subj.len = strlen( subj.s );
-	issuer.len = strlen( issuer.s );
-
-	if ( client ) {
-		add_trace_data( message, "client-subject", &subj );
-		add_trace_data( message, "client-issuer", &issuer );
-	} else {
-		add_trace_data( message, "server-subject", &subj );
-		add_trace_data( message, "server-issuer", &issuer );
+		if ( new < size ) {
+			len += new;
+		} else {
+			len = size;
+		}
 	}
 
-	OPENSSL_free( subj.s );
-	OPENSSL_free( issuer.s );
+	return len;
 }
-
-
-
-static inline void tls_append_master_secret( SSL* ctx, struct tls_data* data )
-{
-	static char ssl_print_master_buf[SSL_MAX_MASTER_KEY_LENGTH * 2];
-
-	str master;
-	SSL_SESSION* s;
-
-	s = SSL_get1_session( ctx );
-	if ( !s ) {
-		LM_DBG("no session to get master key from!\n");
-		return;
-	}
-
-	master.s = ssl_print_master_buf;
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-	master.len = string2hex( s->master_key, s->master_key_length, ssl_print_master_buf );
-#else
-	master.len = SSL_SESSION_get_master_key(s, (unsigned char *)master.s,
-		SSL_MAX_MASTER_KEY_LENGTH * 2);
-#endif
-
-	data->tprot->add_payload_part( data->message, "master-key", &master);
-	/* this will not always free the session, probably never will just
-	 * decrease the session refcount */
-	SSL_SESSION_free( s );
-}
-
 
 static void tls_dump_verification_failure(long verification_result)
 {
@@ -232,23 +179,315 @@ static void tls_dump_verification_failure(long verification_result)
 	}
 }
 
-static void add_certificates( SSL* ssl, struct tls_data* data)
+int openssl_tls_update_fd(struct tcp_connection *c, int fd)
 {
-	X509* cert;
+	/*
+	* must be run from within a lock
+	*/
+	SSL            *ssl;
 
-	cert = SSL_get_peer_certificate( ssl );
-	tls_append_cert_info(cert, 1/* client */, data->message, data->tprot);
+	ssl = (SSL *) c->extra_data;
 
+	if (!SSL_set_fd(ssl, fd)) {
+		LM_ERR("failed to assign socket to ssl\n");
+		return -1;
+	}
 
-	cert = SSL_get_certificate( ssl );
-	tls_append_cert_info(cert, 0/* server */, data->message, data->tprot);
+	LM_DBG("New fd is %d\n", fd);
+	return 0;
 }
 
-/*
- * Wrapper around SSL_accept, returns -1 on error, 0 on success
- */
-static int tls_accept(struct tcp_connection *c, short *poll_events,
-	struct tls_mgm_binds *tls_api)
+int openssl_tls_conn_init(struct tcp_connection* c, struct tls_domain *tls_dom)
+{
+	/*
+	* new connection within a single process, no lock necessary
+	*/
+	LM_DBG("Creating a whole new ssl connection\n");
+
+	if ( c->flags&F_CONN_ACCEPTED ) {
+		/* connection created as a result of an accept -> server */
+		c->proto_flags = F_TLS_DO_ACCEPT;
+	} else
+		/* connection created as a result of a connect -> client */
+		c->proto_flags = F_TLS_DO_CONNECT;
+
+	c->extra_data = SSL_new(((void**)tls_dom->ctx)[process_no]);
+	if (!c->extra_data) {
+		LM_ERR("failed to create SSL structure (%d:%s)\n", errno, strerror(errno));
+		tls_print_errstack();
+		return -1;
+	}
+
+	/* put pointers to the tcp_connection and tls_domain structs
+	 * in the SSL struct as extra data */
+	if (!SSL_set_ex_data(c->extra_data, SSL_EX_CONN_IDX, c)) {
+		LM_ERR("Failed to store tcp_connection pointer in SSL struct\n");
+		return -1;
+	}
+	if (!SSL_set_ex_data(c->extra_data, SSL_EX_DOM_IDX, tls_dom)) {
+		LM_ERR("Failed to store tls_domain pointer in SSL struct\n");
+		return -1;
+	}
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#ifndef OPENSSL_NO_KRB5
+	if ( ((SSL *)c->extra_data)->kssl_ctx ) {
+		kssl_ctx_free( ((SSL *)c->extra_data)->kssl_ctx );
+		((SSL *)c->extra_data)->kssl_ctx = 0;
+	}
+#endif
+#endif
+
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		LM_DBG("Setting in ACCEPT mode (server)\n");
+		SSL_set_accept_state((SSL *) c->extra_data);
+	} else {
+		LM_DBG("Setting in CONNECT mode (client)\n");
+		SSL_set_connect_state((SSL *) c->extra_data);
+	}
+
+	/* if the connection is asynchronous, allow partial writes */
+	if (c->async && !SSL_set_mode((SSL *)c->extra_data,
+			SSL_MODE_ENABLE_PARTIAL_WRITE|SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER))
+		LM_ERR("Failed to enable non-blocking write! Running in blocking mode!\n");
+	return 0;
+}
+
+static int openssl_tls_conn_shutdown(struct tcp_connection *c)
+{
+	int             ret,
+					err;
+	SSL            *ssl;
+
+	/* If EOF or other error on connection, no point in attempting to
+	 * do further writing & reading on the con */
+	if (c->state == S_CONN_BAD ||
+		c->state == S_CONN_ERROR ||
+		c->state == S_CONN_EOF)
+		return 0;
+	/*
+	* we do not implement full ssl shutdown
+	*/
+	ssl = (SSL *) c->extra_data;
+	if (ssl == 0) {
+		LM_ERR("no ssl data\n");
+		return -1;
+	}
+
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_get(tls_global_lock);
+	#endif
+
+	ERR_clear_error();
+
+	ret = SSL_shutdown(ssl);
+	if (ret == 1) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		lock_release(tls_global_lock);
+		#endif
+		LM_DBG("shutdown successful\n");
+		return 0;
+	} else if (ret == 0) {
+		#ifndef NO_SSL_GLOBAL_LO
+		lock_release(tls_global_lock);
+		#endif
+		LM_DBG("first phase of 2-way handshake completed succesfuly\n");
+		return 0;
+	} else {
+		err = SSL_get_error(ssl, ret);
+		switch (err) {
+			case SSL_ERROR_ZERO_RETURN:
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(tls_global_lock);
+				#endif
+
+				c->state = S_CONN_EOF;
+
+				return 0;
+
+			case SSL_ERROR_WANT_READ:
+			case SSL_ERROR_WANT_WRITE:
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(tls_global_lock);
+				#endif
+
+				c->state = S_CONN_EOF;
+				return 0;
+
+			default:
+				LM_ERR("something wrong in SSL: %d, %d, %s\n",err,errno,strerror(errno));
+				/* fall through */
+
+			case SSL_ERROR_SYSCALL:
+				c->state = S_CONN_BAD;
+				tls_print_errstack();
+
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(tls_global_lock);
+				#endif
+
+				return -1;
+		}
+	}
+
+	LM_ERR("bug\n");
+	return -1;
+}
+
+void openssl_tls_conn_clean(struct tcp_connection *c, struct tls_domain **tls_dom)
+{
+	void *d = NULL;
+
+	if (c->extra_data) {
+		d = SSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX);
+
+		openssl_tls_update_fd(c,c->s);
+		openssl_tls_conn_shutdown(c);
+		SSL_free((SSL *) c->extra_data);
+		c->extra_data = 0;
+	}
+
+	*tls_dom = d;
+}
+
+static int openssl_tls_connect(struct tcp_connection *c, short *poll_events,
+	trace_dest t_dst)
+{
+	int ret, err;
+	SSL *ssl;
+	X509* cert;
+
+	str tls_err_s;
+
+	if ( (c->proto_flags&F_TLS_DO_CONNECT)==0 ) {
+		LM_BUG("invalid connection state (bug in TLS code)\n");
+		return -1;
+	}
+
+	ssl = (SSL *) c->extra_data;
+
+	#ifndef NO_SSL_GLOBAL_LOCK
+	lock_get(tls_global_lock);
+	#endif
+
+	ERR_clear_error();
+
+	ret = SSL_connect(ssl);
+	if (ret > 0) {
+		#ifndef NO_SSL_GLOBAL_LOCK
+		lock_release(tls_global_lock);
+		#endif
+
+		LM_INFO("New TLS connection to %s:%d established\n",
+			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+		trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+				TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+
+		tls_send_trace_data(c, t_dst);
+
+		c->proto_flags &= ~F_TLS_DO_CONNECT;
+		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
+			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
+			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
+			SSL_get_cipher_bits(ssl, 0)
+			);
+		LM_DBG("sending socket: %s:%d \n",
+			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
+			);
+		cert = SSL_get_peer_certificate(ssl);
+		if (cert != 0) {
+			tls_dump_cert_info("tls_connect: server TLS certificate", cert);
+			if (SSL_get_verify_result(ssl) != X509_V_OK) {
+				LM_WARN("TLS server certificate verification failed\n");
+				tls_dump_verification_failure(SSL_get_verify_result(ssl));
+			}
+			X509_free(cert);
+		} else {
+			/* this should not happen, servers always present a cert */
+			LM_ERR("server did not present a TLS certificate\n");
+		}
+		cert = SSL_get_certificate(ssl);
+		if (cert != 0) {
+			tls_dump_cert_info("tls_connect: local TLS client certificate",
+				cert);
+		} else {
+			LM_INFO("local TLS client domain does not have a certificate\n");
+		}
+		return 1;
+	} else {
+		err = SSL_get_error(ssl, ret);
+		switch (err) {
+			case SSL_ERROR_ZERO_RETURN:
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(tls_global_lock);
+			#endif
+
+				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
+				trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+						TRANS_TRACE_FAILURE, &CONNECT_FAIL);
+
+				tls_send_trace_data(c, t_dst);
+
+				c->state = S_CONN_BAD;
+				return -1;
+			case SSL_ERROR_WANT_READ:
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(tls_global_lock);
+				#endif
+
+				if (poll_events)
+					*poll_events = POLLIN;
+				return 0;
+			case SSL_ERROR_WANT_WRITE:
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(tls_global_lock);
+				#endif
+
+				if (poll_events)
+					*poll_events = POLLOUT;
+				return 0;
+			case SSL_ERROR_SYSCALL:
+				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
+					strerror(errno), errno);
+				/* fall through */
+			default:
+				LM_ERR("New TLS connection to %s:%d failed\n",
+					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+
+				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
+					err,ret,strerror(errno), errno);
+				c->state = S_CONN_BAD;
+
+				if ( TRACE_IS_ON( c ) ) {
+					if ( ( tls_err_s.len =
+							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
+						tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
+								"New TLS connection failed to connect" );
+					}
+					tls_err_s.s = tls_err_buf;
+					trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
+							TRANS_TRACE_FAILURE, &tls_err_s);
+
+					tls_send_trace_data(c, t_dst);
+				} else {
+					tls_print_errstack();
+				}
+
+				#ifndef NO_SSL_GLOBAL_LOCK
+				lock_release(tls_global_lock);
+				#endif
+
+				return -1;
+		}
+	}
+
+	LM_BUG("bug\n");
+	return -1;
+}
+
+static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 {
 	int ret, err;
 	SSL *ssl;
@@ -269,8 +508,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 #endif
 #endif
 	#ifndef NO_SSL_GLOBAL_LOCK
-	if (tls_api)
-		tls_api->global_lock_get();
+	lock_get(tls_global_lock);
 	#endif
 	ERR_clear_error();
 	ret = SSL_accept(ssl);
@@ -285,8 +523,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 
 	if (ret > 0) {
 		#ifndef NO_SSL_GLOBAL_LOCK
-		if (tls_api)
-			tls_api->global_lock_release();
+		lock_release(tls_global_lock);
 		#endif
 
 		LM_INFO("New TLS connection from %s:%d accepted\n",
@@ -321,14 +558,13 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 			/* this should not happen, servers always present a cert */
 			LM_ERR("local TLS server domain has no certificate\n");
 		}
-		return 0;
+		return 1;
 	} else {
 		err = SSL_get_error(ssl, ret);
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				LM_INFO("TLS connection from %s:%d accept failed cleanly\n",
@@ -342,8 +578,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 				return -1;
 			case SSL_ERROR_WANT_READ:
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				if (poll_events)
@@ -351,8 +586,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 				return 0;
 			case SSL_ERROR_WANT_WRITE:
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				if (poll_events)
@@ -391,8 +625,7 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 				}
 
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				return -1;
@@ -403,175 +636,8 @@ static int tls_accept(struct tcp_connection *c, short *poll_events,
 	return -1;
 }
 
-void tls_send_trace_data(struct tcp_connection *c, trace_dest t_dst) {
-	struct tls_data* data;
-
-	if ( (c->flags&F_CONN_ACCEPTED)==0 && c->proto_flags & F_TLS_TRACE_READY ) {
-		data = c->proto_data;
-
-		/* send the message if set from tls_mgm */
-		if ( data->message ) {
-			send_trace_message( data->message, t_dst);
-			data->message = NULL;
-		}
-
-		/* don't allow future traces for this connection */
-		data->tprot = 0;
-		data->dest  = 0;
-
-		c->proto_flags &= ~( F_TLS_TRACE_READY );
-	}
-}
-
-/*
- * wrapper around SSL_connect, returns 0 on success, -1 on error
- */
-static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest t_dst,
-	struct tls_mgm_binds *tls_api)
-{
-	int ret, err;
-	SSL *ssl;
-	X509* cert;
-
-	str tls_err_s;
-
-	if ( (c->proto_flags&F_TLS_DO_CONNECT)==0 ) {
-		LM_BUG("invalid connection state (bug in TLS code)\n");
-		return -1;
-	}
-
-	ssl = (SSL *) c->extra_data;
-
-	#ifndef NO_SSL_GLOBAL_LOCK
-	if (tls_api)
-		tls_api->global_lock_get();
-	#endif
-
-	ERR_clear_error();
-
-	ret = SSL_connect(ssl);
-	if (ret > 0) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		if (tls_api)
-			tls_api->global_lock_release();
-		#endif
-
-		LM_INFO("New TLS connection to %s:%d established\n",
-			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-		trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
-				TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
-
-		tls_send_trace_data(c, t_dst);
-
-		c->proto_flags &= ~F_TLS_DO_CONNECT;
-		LM_DBG("new TLS connection to %s:%d using %s %s %d\n",
-			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
-			SSL_get_cipher_version(ssl), SSL_get_cipher_name(ssl),
-			SSL_get_cipher_bits(ssl, 0)
-			);
-		LM_DBG("sending socket: %s:%d \n",
-			ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port
-			);
-		cert = SSL_get_peer_certificate(ssl);
-		if (cert != 0) {
-			tls_dump_cert_info("tls_connect: server TLS certificate", cert);
-			if (SSL_get_verify_result(ssl) != X509_V_OK) {
-				LM_WARN("TLS server certificate verification failed\n");
-				tls_dump_verification_failure(SSL_get_verify_result(ssl));
-			}
-			X509_free(cert);
-		} else {
-			/* this should not happen, servers always present a cert */
-			LM_ERR("server did not present a TLS certificate\n");
-		}
-		cert = SSL_get_certificate(ssl);
-		if (cert != 0) {
-			tls_dump_cert_info("tls_connect: local TLS client certificate",
-				cert);
-		} else {
-			LM_INFO("local TLS client domain does not have a certificate\n");
-		}
-		return 0;
-	} else {
-		err = SSL_get_error(ssl, ret);
-		switch (err) {
-			case SSL_ERROR_ZERO_RETURN:
-			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
-			#endif
-
-				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
-					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-
-				trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
-						TRANS_TRACE_FAILURE, &CONNECT_FAIL);
-
-				tls_send_trace_data(c, t_dst);
-
-				c->state = S_CONN_BAD;
-				return -1;
-			case SSL_ERROR_WANT_READ:
-				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
-				#endif
-
-				if (poll_events)
-					*poll_events = POLLIN;
-				return 0;
-			case SSL_ERROR_WANT_WRITE:
-				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
-				#endif
-
-				if (poll_events)
-					*poll_events = POLLOUT;
-				return 0;
-			case SSL_ERROR_SYSCALL:
-				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
-					strerror(errno), errno);
-				/* fall through */
-			default:
-				LM_ERR("New TLS connection to %s:%d failed\n",
-					ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
-
-				LM_ERR("TLS error: %d (ret=%d) err=%s(%d)\n",
-					err,ret,strerror(errno), errno);
-				c->state = S_CONN_BAD;
-
-				if ( TRACE_IS_ON( c ) ) {
-					if ( ( tls_err_s.len =
-							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
-						tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
-								"New TLS connection failed to connect" );
-					}
-					tls_err_s.s = tls_err_buf;
-					trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
-							TRANS_TRACE_FAILURE, &tls_err_s);
-
-					tls_send_trace_data(c, t_dst);
-				} else {
-					tls_print_errstack();
-				}
-
-				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
-				#endif
-
-				return -1;
-		}
-	}
-
-	LM_BUG("bug\n");
-	return -1;
-}
-
-/* wrapper around async connect */
-static int tls_async_connect(struct tcp_connection *con, int fd, int timeout,
-	trace_dest t_dst, struct tls_mgm_binds *tls_api)
+int openssl_tls_async_connect(struct tcp_connection *con, int fd,
+	int timeout, trace_dest t_dst)
 {
 	unsigned int elapsed,to;
 	unsigned int err_len;
@@ -608,15 +674,13 @@ static int tls_async_connect(struct tcp_connection *con, int fd, int timeout,
 
 	while (1) {
 		#ifndef NO_SSL_GLOBAL_LOCK
-		if (tls_api)
-			tls_api->global_lock_get();
+		lock_get(tls_global_lock);
 		#endif
 
 		n = SSL_connect(ssl);
 		if (n > 0) {
-			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
+			#ifndef NO_SSL_GLOBAL_LOC
+			lock_release(tls_global_lock);
 			#endif
 
 			LM_INFO("new TLS connection to %s:%d established\n",
@@ -629,9 +693,8 @@ static int tls_async_connect(struct tcp_connection *con, int fd, int timeout,
 			return 1;
 		} else if (n == 0) {
 			err = SSL_get_error(ssl, n);
-			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
+			#ifndef NO_SSL_GLOBAL_LOC
+			lock_release(tls_global_lock);
 			#endif
 
 			LM_ERR("Failed to connect to %s:%d %d:%d (%s)\n",
@@ -644,8 +707,7 @@ static int tls_async_connect(struct tcp_connection *con, int fd, int timeout,
 		switch (err) {
 			case SSL_ERROR_ZERO_RETURN:
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				LM_INFO("New TLS connection to %s:%d failed cleanly\n",
@@ -655,8 +717,7 @@ static int tls_async_connect(struct tcp_connection *con, int fd, int timeout,
 			case SSL_ERROR_WANT_READ:
 			case SSL_ERROR_WANT_WRITE:
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				/* we need to retry, if time has not passed yet */
@@ -708,8 +769,7 @@ again:
 				}
 			case SSL_ERROR_SYSCALL:
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				LM_ERR("SSL_ERROR_SYSCALL err=%s(%d)\n",
@@ -737,8 +797,7 @@ again:
 				tls_print_errstack();
 
 				#ifndef NO_SSL_GLOBAL_LOCK
-				if (tls_api)
-					tls_api->global_lock_release();
+				lock_release(tls_global_lock);
 				#endif
 
 				return -1;
@@ -754,64 +813,8 @@ failure:
 	return -1;
 }
 
-static inline int tls_fix_read_conn_unlocked(struct tcp_connection *c,
-		int fd, int async_timeout, trace_dest t_dst, struct tls_mgm_binds *tls_api)
-{
-	int ret = 0;
-
-	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
-		ret = tls_update_fd(c, fd);
-		if (!ret)
-			ret = tls_accept(c, NULL, tls_api);
-	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
-		ret = tls_update_fd(c, fd);
-		if (!ret) {
-			if (c->async && async_timeout)
-				ret = tls_async_connect(c, fd, async_timeout, t_dst,
-					tls_api);
-			else
-				ret = tls_connect(c, NULL, t_dst, tls_api);
-		}
-	} else
-		ret = 1;
-
-	return ret;
-}
-
-
-/*
- * called before tls_read, the this function should attempt tls_accept or
- * tls_connect depending on the state of the connection, if this function
- * does not transit a connection into S_CONN_OK then tcp layer would not
- * call tcp_read
- */
-static inline int tls_fix_read_conn(struct tcp_connection *c,
-		int async_timeout, trace_dest t_dst, struct tls_mgm_binds *tls_api)
-{
-	/*
-	* no lock acquired
-	*/
-	int             ret;
-
-	/*
-	* We have to acquire the lock before testing c->state, otherwise a
-	* writer could modify the structure if it gets preempted and has
-	* something to write
-	*/
-	lock_get(&c->write_lock);
-	ret = tls_fix_read_conn_unlocked(c, c->fd, async_timeout, t_dst,
-		tls_api);
-	lock_release(&c->write_lock);
-
-	return ret;
-}
-
-/*
- * Wrapper around SSL_write, returns number of bytes written on success, *
- * -1 on error, 0 when it would block
- */
-static int tls_write(struct tcp_connection *c, int fd, const void *buf,
-	size_t len, short *poll_events, struct tls_mgm_binds *tls_api)
+int openssl_tls_write(struct tcp_connection *c, int fd, const void *buf,
+	size_t len, short *poll_events)
 {
 	int             ret,
 					err;
@@ -823,17 +826,15 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 	ssl = (SSL *) c->extra_data;
 
 	#ifndef NO_SSL_GLOBAL_LOCK
-	if (tls_api)
-		tls_api->global_lock_get();
+	lock_get(tls_global_lock);
 	#endif
 
 	ERR_clear_error();
 
 	ret = SSL_write(ssl, buf, len);
 	if (ret > 0) {
-		#ifndef NO_SSL_GLOBAL_LOCK
-		if (tls_api)
-			tls_api->global_lock_release();
+		#ifndef NO_SSL_GLOBAL_LOC
+		lock_release(tls_global_lock);
 		#endif
 
 		LM_DBG("write was successful (%d bytes)\n", ret);
@@ -843,8 +844,7 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 		switch (err) {
 		case SSL_ERROR_ZERO_RETURN:
 			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
+			lock_release(tls_global_lock);
 			#endif
 
 			LM_DBG("connection closed cleanly\n");
@@ -852,8 +852,7 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 			return -1;
 		case SSL_ERROR_WANT_READ:
 			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
+			lock_release(tls_global_lock);
 			#endif
 
 			if (poll_events)
@@ -861,8 +860,7 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 			return 0;
 		case SSL_ERROR_WANT_WRITE:
 			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
+			lock_release(tls_global_lock);
 			#endif
 
 			if (poll_events)
@@ -876,8 +874,7 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 			tls_print_errstack();
 
 			#ifndef NO_SSL_GLOBAL_LOCK
-			if (tls_api)
-				tls_api->global_lock_release();
+			lock_release(tls_global_lock);
 			#endif
 
 			return -1;
@@ -888,16 +885,9 @@ static int tls_write(struct tcp_connection *c, int fd, const void *buf,
 	return -1;
 }
 
-
-/*
- * This is shamelessly stolen tsend_stream from tsend.c
- */
-/*
- * fixme: probably does not work correctly
- */
-static inline int tls_blocking_write(struct tcp_connection *c, int fd, const char *buf,
-										size_t len, int handshake_timeout, int send_timeout,
-										trace_dest t_dst, struct tls_mgm_binds *tls_api)
+int openssl_tls_blocking_write(struct tcp_connection *c, int fd,
+	const char *buf, size_t len, int handshake_timeout, int send_timeout,
+	trace_dest t_dst)
 {
 	#define MAX_SSL_RETRIES 32
 	int             written, n;
@@ -913,7 +903,7 @@ static inline int tls_blocking_write(struct tcp_connection *c, int fd, const cha
 		goto error;
 	}
 
-	if (tls_update_fd(c, fd) < 0)
+	if (openssl_tls_update_fd(c, fd) < 0)
 		goto error;
 
 	timeout = send_timeout;
@@ -922,15 +912,15 @@ again:
 	pf.events = 0;
 
 	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
-		if (tls_accept(c, &(pf.events), tls_api) < 0)
+		if (openssl_tls_accept(c, &(pf.events)) < 0)
 			goto error;
 		timeout = handshake_timeout;
 	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
-		if (tls_connect(c, &(pf.events), t_dst, tls_api) < 0)
+		if (openssl_tls_connect(c, &(pf.events), t_dst) < 0)
 			goto error;
 		timeout = handshake_timeout;
 	} else {
-		n = tls_write(c, fd, buf, len, &(pf.events), tls_api);
+		n = openssl_tls_write(c, fd, buf, len, &(pf.events));
 		timeout = send_timeout;
 	}
 
@@ -1007,55 +997,142 @@ error:
 	return -1;
 }
 
-static inline int trace_tls( struct tcp_connection* conn, SSL* ctx,
-		trans_trace_event event, trans_trace_status status, str* message)
+int openssl_tls_fix_read_conn(struct tcp_connection *c, int fd,
+	int async_timeout, trace_dest t_dst, int lock)
 {
-	struct tls_data* data;
-	union sockaddr_union src, dst;
+	int ret = 0;
 
-	if ( !conn || !TRACE_IS_ON(conn) || !(data=conn->proto_data) )
-		return 0;
+	if (lock)
+		lock_get(&c->write_lock);
 
-	if ( data->trace_route_id != -1 ) {
-		check_trace_route( data->trace_route_id, conn );
-		/* avoid doing this multiple times */
-		data->trace_route_id = -1;
-	}
-
-	/* check if tracing is deactivated from the route for this connection */
-	if ( conn->flags & F_CONN_TRACE_DROPPED )
-		return 0;
-
-	if ( !data->message ) {
-		if ( tcpconn2su( conn, &src, &dst ) < 0 ) {
-			LM_ERR("can't get network info from connection!\n");
-			return -1;
+	if ( c->proto_flags & F_TLS_DO_ACCEPT ) {
+		ret = openssl_tls_update_fd(c, fd);
+		if (!ret)
+			ret = openssl_tls_accept(c, NULL);
+	} else if ( c->proto_flags & F_TLS_DO_CONNECT ) {
+		ret = openssl_tls_update_fd(c, fd);
+		if (!ret) {
+			if (c->async && async_timeout)
+				ret = openssl_tls_async_connect(c, fd, async_timeout, t_dst);
+			else
+				ret = openssl_tls_connect(c, NULL, t_dst);
 		}
+	} else
+		ret = 1;
 
-		data->message = create_trace_message( conn->cid, &src, &dst,
-				conn->type, data->dest );
-		if ( !data->message ) {
-			LM_ERR("failed to create trace message!\n");
-			return -1;
-		}
-	}
+	if (lock)
+		lock_release(&c->write_lock);
 
-	add_certificates( ctx, data);
-	tls_append_master_secret( ctx, data);
-
-	add_trace_data( data->message, "Event", &trans_trace_str_event[event]);
-	add_trace_data( data->message, "Status", &trans_trace_str_status[status]);
-
-	if ( message && message->s && message->len) {
-		add_trace_data( data->message, "Message", message);
-	}
-
-	conn->proto_flags |= F_TLS_TRACE_READY;
-
-	return 0;
+	return ret;
 }
 
+static int openssl_read(struct tcp_connection *c, void *buf, size_t len)
+{
+	int ret, err;
+	SSL *ssl;
 
+	ssl = c->extra_data;
 
-#endif /* TLS_CONN_SERVER_H */
+	#ifndef NO_SSL_GLOBAL_LO
+	lock_get(tls_global_lock);
+	#endif
 
+	ERR_clear_error();
+
+	ret = SSL_read(ssl, buf, len);
+	if (ret > 0) {
+		#ifndef NO_SSL_GLOBAL_LOC
+		lock_release(tls_global_lock);
+		#endif
+
+		LM_DBG("%d bytes read\n", ret);
+		return ret;
+	} else if (ret == 0) {
+		#ifndef NO_SSL_GLOBAL_LOC
+		lock_release(tls_global_lock);
+		#endif
+
+		/* unclean shutdown of the other peer */
+		c->state = S_CONN_EOF;
+		return 0;
+	} else {
+		err = SSL_get_error(ssl, ret);
+		switch (err) {
+		case SSL_ERROR_ZERO_RETURN:
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(tls_global_lock);
+			#endif
+
+			LM_DBG("TLS connection to %s:%d closed cleanly\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			/*
+			* mark end of file
+			*/
+			c->state = S_CONN_EOF;
+			return 0;
+
+		case SSL_ERROR_WANT_READ:
+		case SSL_ERROR_WANT_WRITE:
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(tls_global_lock);
+			#endif
+
+			return 0;
+
+		case SSL_ERROR_SYSCALL:
+			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
+			/* fall through */
+		default:
+			LM_ERR("TLS connection to %s:%d read failed\n",
+				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
+			LM_ERR("TLS read error: %d\n",err);
+			c->state = S_CONN_BAD;
+			tls_print_errstack();
+
+			#ifndef NO_SSL_GLOBAL_LOCK
+			lock_release(tls_global_lock);
+			#endif
+
+			return -1;
+		}
+	}
+
+	LM_BUG("bug\n");
+	return -1;
+}
+
+int openssl_tls_read(struct tcp_connection * c,struct tcp_req *r)
+{
+	int             bytes_free;
+	int             fd, read;
+
+	fd = c->fd;
+	bytes_free = TCP_BUF_SIZE - (int) (r->pos - r->buf);
+
+	if (bytes_free == 0) {
+		LM_ERR("TLS buffer overrun, dropping\n");
+		r->error = TCP_REQ_OVERRUN;
+		return -1;
+	}
+
+	/*
+	* ssl structures may be accessed from several processes, we need to
+	* protect each access and modification by a lock
+	*/
+	lock_get(&c->write_lock);
+	openssl_tls_update_fd(c, fd);
+	read = openssl_read(c, r->pos, bytes_free);
+	lock_release(&c->write_lock);
+	if (read > 0)
+		r->pos += read;
+	return read;
+}
+
+int openssl_tls_conn_extra_match(struct tcp_connection *c, void *id)
+{
+	if ( (c->flags&F_CONN_ACCEPTED) ||
+	(SSL_get_ex_data(c->extra_data, SSL_EX_DOM_IDX) == id) )
+		return 1; /*true*/
+
+	return 0; /*false*/
+}

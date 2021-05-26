@@ -68,7 +68,7 @@ static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 
 		/* tls_mgm must init TLS first, since it also sets custom alloc func */
-		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "tls_openssl", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */

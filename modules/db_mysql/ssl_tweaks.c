@@ -30,12 +30,12 @@ int SSL_CTX_set_default_verify_paths(SSL_CTX *ctx)
 {
 	int (*real_SSL_CTX_set_default_verify_paths)(SSL_CTX *ctx);
 	static int init = 0;
-	static int have_tls_mgm = -1;
+	static int have_openssl = -1;
 
-	if (have_tls_mgm == -1)
-		have_tls_mgm = module_loaded("tls_mgm");
+	if (have_openssl == -1)
+		have_openssl = module_loaded("tls_openssl");
 
-	if (have_tls_mgm && init) {
+	if (have_openssl && init) {
 		return 1;
 	} else {
 		real_SSL_CTX_set_default_verify_paths = dlsym(RTLD_NEXT,

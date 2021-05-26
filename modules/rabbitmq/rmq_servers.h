@@ -31,6 +31,7 @@
 #define RMQ_MIN_FRAMES				4096
 #define RMQ_DEFAULT_FRAMES			131072
 
+#include "../tls_openssl/openssl_api.h"
 #include "../tls_mgm/api.h"
 #include <amqp.h>
 
@@ -97,6 +98,7 @@ int rmq_send(struct rmq_server *srv, str *rkey, str *body, str *ctype,
 		int *names, int *values);
 
 extern int use_tls;
+extern struct openssl_binds openssl_api;
 extern struct tls_mgm_binds tls_api;
 
 #endif /* _RMQ_SERVERS_H_ */

@@ -38,14 +38,7 @@
 
 #include "../../dprint.h"
 
-static void tls_print_errstack(void)
-{
-	int             code;
-
-	while ((code = ERR_get_error())) {
-		LM_ERR("TLS errstack: %s\n", ERR_error_string(code, 0));
-	}
-}
+void tls_print_errstack(void);
 
 void tls_ctx_set_cert_store(void *ctx, void *src_ctx)
 {

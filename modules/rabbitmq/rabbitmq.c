@@ -42,6 +42,7 @@ static int rmq_publish(struct sip_msg *msg, struct rmq_server *srv, str *srkey,
 			str *sbody, str *sctype, pv_spec_t *hnames, pv_spec_t *hvals);
 
 int use_tls;
+struct openssl_binds openssl_api;
 struct tls_mgm_binds tls_api;
 
 #if AMQP_VERSION < 0x00090000
@@ -55,12 +56,19 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_use_tls(param_export_t *param)
+static module_dependency_t *get_deps_use_tls_mgm(param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;
 
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
+}
+static module_dependency_t *get_deps_use_tls_openssl(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_openssl", DEP_ABORT);
 }
 
 /* modules dependencies */
@@ -69,7 +77,8 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "use_tls", get_deps_use_tls },
+		{ "use_tls", get_deps_use_tls_mgm },
+		{ "use_tls", get_deps_use_tls_openssl },
 		{ NULL, NULL },
 	},
 };
@@ -123,6 +132,11 @@ static int mod_init(void)
 		LM_ERR("TLS not supported for librabbitmq version lower than 0.4.0\n");
 		return -1;
 		#endif
+
+		if (load_tls_openssl_api(&openssl_api)) {
+			LM_DBG("Failed to load openssl API\n");
+			return -1;
+		}
 
 		if (load_tls_mgm_api(&tls_api) != 0) {
 			LM_ERR("failed to load tls_mgm API!\n");

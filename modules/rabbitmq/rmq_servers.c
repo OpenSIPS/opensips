@@ -258,16 +258,18 @@ int rmq_reconnect(struct rmq_server *srv)
 			ssl_ctx = amqp_ssl_socket_get_context(amqp_sock);
 
 			/* set CA in AMQP's SSL_CTX  */
-			tls_api.ctx_set_cert_store(ssl_ctx, srv->tls_dom->ctx[process_no]);
+			openssl_api.ctx_set_cert_store(ssl_ctx,
+				((void**)srv->tls_dom->ctx)[process_no]);
 
 			/* set certificate in AMQP's SSL_CTX */
-			if (tls_api.ctx_set_cert_chain(ssl_ctx, srv->tls_dom->ctx[process_no]) < 0) {
+			if (openssl_api.ctx_set_cert_chain(ssl_ctx,
+				((void**)srv->tls_dom->ctx)[process_no]) < 0) {
 				LM_ERR("Failed to set certificate\n");
 				goto clean_rmq_conn;
 			}
 
 			/* set private key in AMQP's SSL_CTX */
-			if (tls_api.ctx_set_pkey_file(ssl_ctx, srv->tls_dom->pkey.s) < 0) {
+			if (openssl_api.ctx_set_pkey_file(ssl_ctx, srv->tls_dom->pkey.s) < 0) {
 				LM_ERR("Failed to set private key\n");
 				goto clean_rmq_conn;
 			}
