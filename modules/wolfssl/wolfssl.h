@@ -20,28 +20,22 @@
  *
  */
 
-#ifndef WOLFSSL_API_H
-#define WOLFSSL_API_H
+#include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
+#include <wolfssl/error-ssl.h>
 
-#include "../tls_mgm/tls_lib_api.h"
-
-struct wolfssl_binds {
-    TLS_LIB_API_BINDS;
+struct _WOLFSSL {
+	WOLFSSL *read_ssl;
+	WOLFSSL *write_ssl;
 };
 
-typedef int(*load_wolfssl_f)(struct wolfssl_binds *binds);
+#define _WOLFSSL_READ_SSL(_ssl) \
+	(((struct _WOLFSSL *)(_ssl))->read_ssl)
+#define _WOLFSSL_WRITE_SSL(_ssl) \
+	(((struct _WOLFSSL *)(_ssl))->write_ssl)
 
-static inline int load_wolfssl_api(struct wolfssl_binds *binds) {
-    load_wolfssl_f load_wolfssl;
+#define _WOLFSSL_ERR_BUFLEN 80
 
-    /* import the wolfssl auto-loading function */
-    if (!(load_wolfssl = (load_wolfssl_f)find_export("load_wolfssl", 0)))
-        return -1;
+#define SSL_VERSIONS_SIZE 4
 
-    if (load_wolfssl(binds) == -1)
-        return -1;
-
-    return 0;
-}
-
-#endif	/* WOLFSSL_API_H */
+extern WOLFSSL_METHOD *ssl_methods[SSL_VERSIONS_SIZE];
