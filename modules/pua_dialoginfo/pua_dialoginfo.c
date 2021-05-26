@@ -342,6 +342,9 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 	char *state;
 	str mute_val = {NULL,0};
 
+	if (!_params->is_active)
+		return;
+
 	param = (struct dlginfo_cb_params*)(*_params->param);
 	peer = &(param->peer);
 	entity = &(param->entity);
