@@ -469,6 +469,10 @@ rtpengine_offer();
 				having different m-lines with different IP-protocols grouped together.
 				</para></listitem>
 				<listitem><para>
+				<emphasis>received-from=...</emphasis> - sets the address from which SIP packet with &sdp; received.
+				This flag always set automatically, don't use it until you have a reason for that.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>force</emphasis> - instructs the &rtp; proxy to ignore marks
 				inserted by another &rtp; proxy in transit to indicate that the
 				session is already goes through another proxy. Allows creating
