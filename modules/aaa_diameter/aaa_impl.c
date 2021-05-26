@@ -361,7 +361,7 @@ static int dm_register_cdr_avps(void)
 				AVP_FLAG_MANDATORY,			/* Fixed flag values */
 				AVP_TYPE_UNSIGNED32 		/* base type of data */
 				};
-		FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, DICT_AVP, &data, NULL, NULL));
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
 	}
 
 	/* Sip-Call-Setuptime */
@@ -379,7 +379,7 @@ static int dm_register_cdr_avps(void)
 				AVP_FLAG_MANDATORY,			/* Fixed flag values */
 				AVP_TYPE_UNSIGNED32 		/* base type of data */
 				};
-		FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, DICT_AVP, &data, NULL, NULL));
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
 	}
 
 	/* Sip-Call-Created */
@@ -397,7 +397,7 @@ static int dm_register_cdr_avps(void)
 				AVP_FLAG_MANDATORY,			/* Fixed flag values */
 				AVP_TYPE_UNSIGNED32 		/* base type of data */
 				};
-		FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, DICT_AVP, &data, NULL, NULL));
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
 	}
 
 	/* Sip-Call-MSDuration */
@@ -414,7 +414,290 @@ static int dm_register_cdr_avps(void)
 				AVP_FLAG_MANDATORY,			/* Fixed flag values */
 				AVP_TYPE_UNSIGNED32 		/* base type of data */
 				};
-		FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, DICT_AVP, &data, NULL, NULL));
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
+	}
+
+	return 0;
+}
+
+
+/* all of these AVPs are included in the RADIUS AVP registry */
+static int dm_register_digest_avps(void)
+{
+	struct dict_object *UTF8String_type;
+
+	FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &UTF8String_type);
+
+	/* Digest-Response */
+	{
+		struct dict_avp_data data = {
+				103, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Response", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Realm */
+	{
+		struct dict_avp_data data = {
+				104, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Realm", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 	/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Nonce */
+	{
+		struct dict_avp_data data = {
+				105, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Nonce", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Response-Auth */
+	{
+		struct dict_avp_data data = {
+				106,					/* Code */
+				0, 						/* Vendor */
+				"Digest-Response-Auth",	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Nextnonce */
+	{
+		struct dict_avp_data data = {
+				107, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Nextnonce", /* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Method */
+	{
+		struct dict_avp_data data = {
+				108, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Method", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-URI */
+	{
+		struct dict_avp_data data = {
+				109, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-URI", 		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Qop */
+	{
+		struct dict_avp_data data = {
+				110,				/* Code */
+				0, 					/* Vendor */
+				"Digest-Qop", 		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Algorithm */
+	{
+		struct dict_avp_data data = {
+				111, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Algorithm",	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Entity-Body-Hash */
+	{
+		struct dict_avp_data data = {
+				112,						/* Code */
+				0, 							/* Vendor */
+				"Digest-Entity-Body-Hash", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-CNonce */
+	{
+		struct dict_avp_data data = {
+				113, 					/* Code */
+				0, 					/* Vendor */
+				"Digest-CNonce", 		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 			/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Nonce-Count */
+	{
+		struct dict_avp_data data = {
+				114, 					/* Code */
+				0,						/* Vendor */
+				"Digest-Nonce-Count", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Username */
+	{
+		struct dict_avp_data data = {
+				115, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Username", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Opaque */
+	{
+		struct dict_avp_data data = {
+				116, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Opaque", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Auth-Param */
+	{
+		struct dict_avp_data data = {
+				117,					/* Code */
+				0, 						/* Vendor */
+				"Digest-Auth-Param", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-AKA-Auts */
+	{
+		struct dict_avp_data data = {
+				118, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-AKA-Auts", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Domain */
+	{
+		struct dict_avp_data data = {
+				119, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Domain", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-Stale */
+	{
+		struct dict_avp_data data = {
+				120, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-Stale", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* Digest-HA1 */
+	{
+		struct dict_avp_data data = {
+				121, 				/* Code */
+				0, 					/* Vendor */
+				"Digest-HA1", 		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* SIP-AOR */
+	{
+		struct dict_avp_data data = {
+				122, 			/* Code */
+				0, 				/* Vendor */
+				"SIP-AOR", 		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	return 0;
+}
+
+
+static int dm_register_custom_vendors(void)
+{
+	/* Cisco */
+	{
+		struct dict_vendor_data cisco_data = { 9, "Cisco" };
+		FD_CHECK_dict_new(DICT_VENDOR, &cisco_data, NULL, NULL);
 	}
 
 	return 0;
@@ -432,6 +715,9 @@ int dm_register_osips_avps(void)
 	FD_CHECK(dm_register_radius_avps());
 	FD_CHECK(dm_register_custom_sip_avps());
 	FD_CHECK(dm_register_cdr_avps());
+	FD_CHECK(dm_register_digest_avps());
+	FD_CHECK(dm_register_custom_vendors());
+
 	return 0;
 }
 
@@ -579,6 +865,7 @@ int dm_find(aaa_conn *con, aaa_map *map, int op)
 		FD_CHECK(fd_dict_getval(obj, &vendor));
 
 		map->value = vendor.vendor_id;
+		LM_DBG("found vendor '%s', id: %d\n", map->name, map->value);
 		return 0;
 	}}
 
