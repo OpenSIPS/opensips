@@ -122,7 +122,6 @@ static inline int load_b2b_logic_api( b2bl_api_t *api)
 
 	/* import the b2b logic auto-loading function */
 	if ( !(load_b2b=(load_b2bl_f)find_export("b2b_logic_bind", 0))) {
-		LM_ERR("failed to import b2b_logic_bind\n");
 		return -1;
 	}
 	/* let the auto-loading function load all B2B stuff */
