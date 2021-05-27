@@ -154,7 +154,7 @@ static int mod_init(void)
 	bind_auth_t bind_auth;
 	str proto_url;
 
-	aaa_map map;
+	aaa_map vendor;
 
 	LM_INFO("initializing...\n");
 
@@ -201,10 +201,12 @@ static int mod_init(void)
 		return -2;
 	}
 
-	map.name = "Cisco";
-	if (proto.dictionary_find(conn, &map, AAA_DICT_FIND_VEND)) {
+	vendor.name = "Cisco";
+	if (proto.dictionary_find(conn, &vendor, AAA_DICT_FIND_VEND)) {
 		LM_DBG("no `Cisco' vendor in AAA protocol dictionary\n");
 		attrs[A_CISCO_AVPAIR].name = NULL;
+	} else {
+		attrs[A_CISCO_AVPAIR].type = vendor.value;
 	}
 
 	if (is_script_func_used("aaa_www_authorize", -1) ||

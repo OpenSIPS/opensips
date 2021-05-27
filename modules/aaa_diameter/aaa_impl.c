@@ -341,6 +341,24 @@ static int dm_register_custom_sip_avps(void)
 		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
 	}
 
+	/* SIP-AVP */
+	{
+		/*
+			The SIP-AVP AVP (AVP Code 225) is of type UTF8String and
+			represents a key/value mapping returned by the RADIUS server, to be
+			automatically exported as an opensips.cfg $avp variable
+		*/
+		struct dict_avp_data data = {
+				225,		/* Code */
+				0, 			/* Vendor */
+				"SIP-AVP", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,			/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
 	return 0;
 }
 
@@ -694,10 +712,27 @@ static int dm_register_digest_avps(void)
 
 static int dm_register_custom_vendors(void)
 {
+	struct dict_object *UTF8String_type;
+
+	FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &UTF8String_type);
+
 	/* Cisco */
 	{
 		struct dict_vendor_data cisco_data = { 9, "Cisco" };
 		FD_CHECK_dict_new(DICT_VENDOR, &cisco_data, NULL, NULL);
+	}
+
+	/* Cisco-AVPair */
+	{
+		struct dict_avp_data data = {
+				1,				/* Code */
+				9,				/* Vendor */
+				"Cisco-AVPair", /* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_VENDOR,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
 	}
 
 	return 0;
@@ -835,9 +870,21 @@ int dm_find(aaa_conn *con, aaa_map *map, int op)
 	case AAA_DICT_FIND_ATTR: {
 		struct dict_avp_data avp;
 
-		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-		      map->name, &obj, ENOENT));
-		FD_CHECK(fd_dict_getval(obj, &avp));
+		if (map->type == 0) {
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+			      map->name, &obj, ENOENT));
+			FD_CHECK(fd_dict_getval(obj, &avp));
+		} else {
+			struct dict_avp_request_ex req;
+
+			memset(&req, 0, sizeof req);
+			req.avp_data.avp_name = map->name;
+			req.avp_vendor.vendor_id = map->type;
+
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_STRUCT,
+			      &req, &obj, ENOENT));
+			FD_CHECK(fd_dict_getval(obj, &avp));
+		}
 
 		map->value = avp.avp_code;
 		return 0;

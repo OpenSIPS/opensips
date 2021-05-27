@@ -70,5 +70,4 @@
 #define	V_SIP_VERIFY_SOURCE	        9
 #define	V_MAX			       10
 
-
 #endif
