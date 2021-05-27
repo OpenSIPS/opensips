@@ -1865,20 +1865,20 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 						<para>
 						<emphasis role='bold'>'n'</emphasis> (Ignore port) -
 						ignores port number during matching
-							</para>
-						</listitem>
-						<listitem>
-							<para>
-							<emphasis role='bold'>'r'</emphasis> (Check protocol) - check protocol
-							</para>
-						</listitem>
-						<listitem>
-						<para>
-						<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
-						return the carrier id into carrier_id_avp AVP
 						</para>
 					</listitem>
-				</itemizedlist>
+					<listitem>
+						<para>
+						<emphasis role='bold'>'r'</emphasis> (Check protocol) - check protocol
+						</para>
+					</listitem>
+					<listitem>
+					<para>
+					<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
+					return the carrier id into carrier_id_avp AVP
+					</para>
+				</listitem>
+			</itemizedlist>
 			</listitem>
 			<listitem>
 				<para>
