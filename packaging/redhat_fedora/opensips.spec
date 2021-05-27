@@ -753,11 +753,25 @@ Requires: %{name}-tlsmgm-module
 Requires: openssl
 BuildRequires: openssl-devel
 
+%description  tls-openssl-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the OpenSSL implementation for TLS in OpenSIPS.
+
 %package  tls-wolfssl-module
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-tlsmgm-module
+
+%description  tls-wolfssl-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the wolfSSL implementation for TLS in OpenSIPS.
 
 %package  tls-module
 Summary:  TLS transport module for OpenSIPS
