@@ -169,7 +169,7 @@ static int check_for_krb(void)
 
 	int j;
 
-	xx = SSL_CTX_new(ssl_methods[tls_default_method - 1]);
+	xx = SSL_CTX_new(ssl_methods[TLS_USE_SSLv23 - 1]);
 	if (xx==NULL)
 		return -1;
 
