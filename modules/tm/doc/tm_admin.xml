@@ -1672,6 +1672,34 @@ t_relay();
 		</example>
 	</section>
 
+	<section id="func_t_wait_no_more_branches" xreflabel="t_wait_no_more_branches()">
+		<title>
+		<function moreinfo="none">t_wait_no_more_branches()</function>
+		</title>
+		<para>
+		This function instructs the existing SIP transaction to stop wait
+		for new any new branches to be injected. This functions should be 
+		used for a transaction that is waiting for dynamic branches, via the
+		<xref linkend="func_t_wait_for_new_branches"/> function.
+		</para>
+		<para>
+		Usage scenario: your transaction is waiting for dynamic new branches
+		(as a reusult of Push Notification). To a point, on an ongoing
+		branch you receive a final reply - and the fact that the branch fails
+		translates into stop waiting for any more branche (this is an example
+		of a logic on deciding how long to wait for more branches, depending 
+		on the answers you get from various devices, fix or mobile).
+		</para>
+		<example>
+		<title><function>t_wait_no_more_branches</function> usage</title>
+		<programlisting format="linespecific">
+...
+t_wait_no_more_branches();
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="func_t_add_hdrs" xreflabel="t_add_hdrs()">
 		<title>
 		<function moreinfo="none">t_add_hdrs("sip_hdrs")</function>
