@@ -615,6 +615,8 @@ mod_renames=(
   [mi_http]=mi_json:1540473075:  # old_module:new_module_since:old_module_until
   [mi_html]=mi_http::1540473075
   [event_stream]=event_jsonrpc
+  [b2b_logic]=b2b_logic:1605638778
+  [b2b_logic_xml]=b2b_logic::1605638778
 )
 
 mk_git_handle() {
@@ -715,8 +717,10 @@ _count_module_changes() {
     local old_mod="${arr[0]}"; local since="${arr[1]}"; local until="${arr[2]}"
     unset IFS
 
-    # this trick helps deal with the mi_html->mi_http, mi_http->mi_json rename
-    [ -z "$3" -o -z "$since" ] && \
+    # deal with renames, e.g.:
+    #   * mi_html->mi_http, mi_http->mi_json
+    #   * b2b_logic->b2b_logic_xml, NEW_MOD->b2b_logic
+    [[ $1 != $old_mod ]] && [ -z "$3" -o -z "$since" ] && \
         _count_module_changes "$old_mod" "$2" "recurse" "$until"
   fi
 
