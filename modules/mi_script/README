@@ -1,0 +1,307 @@
+MI script Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Values Returned
+        1.3. Dependencies
+
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
+
+        1.4. Exported Parameters
+
+              1.4.1. pretty_printing (int)
+              1.4.2. trace_destination (string)
+              1.4.3. trace_bwlist (string)
+
+        1.5. Exported Functions
+
+              1.5.1. mi(command, [ret_var [,params_avp[,
+                      vals_avp]]])
+
+        1.6. Exported Asyncronous Functions
+
+              1.6.1. mi(command, [ret_var [,params_avp[,
+                      vals_avp]]])
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set pretty_printing parameter
+   1.2. Set trace_destination parameter
+   1.3. Set trace_destination parameter
+   1.4. mi without params
+   1.5. mi with params in command
+   1.6. mi with return
+   1.7. mi without return but with indexed params
+   1.8. mi with return and named parameters
+   1.9. async mi call usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides multiple hooks to run Management Interface
+   commands directly from OpenSIPS script. It supports running
+   both synchronous and asynchronous commands. Depending on the
+   nature of the command (asynchronous or not), and on the way the
+   mi command is run from script, the returned result is
+   different.
+
+1.2. Values Returned
+
+   In case of success, the MI command returns with success. If a
+   return variable is provided as parameter, a JSON is also stored
+   in the variable provided.
+
+   In case of failure of the MI command, JSON-RPC reply error code
+   is stored in the $rc variable, as a negative number. Lower
+   values, such as -1,-2,-3 can also be returned to indicate an
+   internal error. If a return variable is provided, it is stored
+   to the error description.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * proto_hep module, in case MI tracing is used.
+
+1.3.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * none
+
+1.4. Exported Parameters
+
+1.4.1. pretty_printing (int)
+
+   Indicates whether the JSON responses stored in the return
+   variable should be pretty-printed or not.
+
+   Default value is “0 - no pretty-printing”.
+
+   Example 1.1. Set pretty_printing parameter
+...
+modparam("mi_script", "pretty_printing", 1)
+...
+
+1.4.2. trace_destination (string)
+
+   Trace destination as defined in the tracing module. Currently
+   the only tracing module is proto_hep. This is where traced mi
+   messages will go.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.2. Set trace_destination parameter
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
+=tcp;version=3")
+
+modparam("mi_stream", "trace_destination", "hep_dest")
+...
+
+1.4.3. trace_bwlist (string)
+
+   Filter traced mi commands based on a blacklist or a whitelist.
+   trace_destination must be defined for this parameter to have
+   any purpose. Whitelists can be defined using 'w' or 'W',
+   blacklists using 'b' or 'B'. The type is separate by the actual
+   blacklist by ':'. The mi commands in the list must be separated
+   by ','.
+
+   Defining a blacklists means all the commands that are not
+   blacklisted will be traced. Defining a whitelist means all the
+   commands that are not whitelisted will not be traced. WARNING:
+   One can't define both a whitelist and a blacklist. Only one of
+   them is allowed. Defining the parameter a second time will just
+   overwrite the first one.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.3. Set trace_destination parameter
+...
+## blacklist ps and which mi commands
+## all the other commands shall be traced
+modparam("mi_stream", "trace_bwlist", "b: ps, which")
+...
+## allow only sip_trace mi command
+## all the other commands will not be traced
+modparam("mi_stream", "trace_bwlist", "w: sip_trace")
+...
+
+1.5. Exported Functions
+
+1.5.1.  mi(command, [ret_var [,params_avp[, vals_avp]]])
+
+   Runs an MI command in synchronous mode, blocking until a
+   response is available.
+
+   IMPORTANT: it is highly recommended to prevent using this
+   function for tasks that take long time, such as reloads, as the
+   function would block until the command ends. Moreover, if the
+   running MI command is configured to run in asynchronous mode
+   (such as t_uac_dlg the command blocks in a busy waiting manner
+   until the response is received.
+
+   This function can be used in any route.
+
+   The function can receive the following parameters:
+     * command(string) - the MI command to be run. This can be a
+       single token, representing the MI command to run (without
+       parameters), or can be followed by several space separated
+       parameters (no escaping is handled). Each space separated
+       parameter will be passed to the MI command as an indexed
+       parameter.
+       NOTE: named parameters can not be specified using this
+       parameter, and you will have to use the params_avp and/or
+       the vals_avp parameters to specify named commands, in which
+       case this parameter will only consist of the MI command.
+     * ret_var(var, optional) - a variable used to store the
+       return of the MI command execution. In case of success, a
+       JSON is stored, otherwise an erorr message.
+     * params_avp(avp, optional) - an AVP consisting of all the
+       parameters names that will be sent to the MI command. If
+       this parameter is used without the vals_avp, all the values
+       inside the AVP will be passed to the MI command as indexed
+       parameters, otherwise as named parameters.
+       NOTE: if this parameter is used, the parameters specified
+       in the command parameter are ignored.
+       NOTE: the order the parameters are passed to the command is
+       the same as the one you populate the AVPs (thus somehow
+       reversed compared to the way AVPs are stored in memory -
+       the first AVP added is the first parameter)
+     * vals_avp(avp, optional) - an AVP consisting of all the
+       parameters values that will be sent to the MI command. This
+       parameter only makes sense if the params_avp is set, and
+       has to contain the same number of values as there are
+       parameters.
+
+   Example 1.4. mi without params
+...
+mi("shm_check");
+...
+
+   Example 1.5. mi with params in command
+...
+# this command is similar to the above
+mi("cache_remove local password_user1");
+...
+
+   Example 1.6. mi with return
+...
+mi("ds_list", $var(ret));
+...
+
+   Example 1.7. mi without return but with indexed params
+...
+$avp(params) = "local";
+$avp(params) = "password_user1";
+mi("cache_remove",,$avp(params));
+
+# the following command is similar to the above
+mi("cache_remove local password_user1");
+...
+
+   Example 1.8. mi with return and named parameters
+...
+$avp(params) = "callid";
+$avp(vals) = "SEARCH_FOR_THIS_CALLID";
+$avp(params) = "from_tag";
+$avp(vals) = "SEARCH_FOR_THIS_FROM_TAG";
+mi("dlg_list", $var(dlg), $avp(params), $avp(vals));
+...
+
+1.6. Exported Asyncronous Functions
+
+1.6.1.  mi(command, [ret_var [,params_avp[, vals_avp]]])
+
+   The function works is more or less the same as its synchronous
+   corespondent, except that the MI command is run in an
+   asynchronous manner - the process does not block to wait for
+   the response, but it continues its execution and the MI command
+   is run in an asynchronous context.
+
+   NOTE: currently MI commands run asynchronously cannot be traced
+   through hep.
+
+   Example 1.9. async mi call usage
+...
+xlog("reload starting\n");
+async(mi("dr_reload"), after_reload);
+...
+
+route[after_reload] {
+        xlog("reload completed\n");
+}
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Razvan Crainea (@razvancrainea)    10       1      1091      0
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) May 2021 - May 2021
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Razvan Crainea (@razvancrainea).
+
+   Documentation Copyrights:
+
+   Copyright © 2021 OpenSIPS Solutions
