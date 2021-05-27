@@ -383,8 +383,7 @@ Description: B2B User Agent modules for OpenSIPS
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides modules for controling B2BUA support in OpenSIPS
- using an XML based scenario description.
+ This package provides old style XML module for B2BUA support in OpenSIPS.
 
 Package: opensips-dbhttp-module
 Architecture: any

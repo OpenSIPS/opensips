@@ -149,8 +149,7 @@ OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
-This package provides modules for B2BUA support in OpenSIPS. Both the
-implementation and control (XML based scenario description) are included.
+This package provides old style XML module for B2BUA support in OpenSIPS.
 
 %package  berkeley-bin
 Summary:  Berkeley Database module for OpenSIPS - helper program
@@ -1181,7 +1180,7 @@ fi
 %doc docdir/README.auth_jwt
 %endif
 
-%files b2b-logic-xml-module
+%files b2bua-module
 %{_libdir}/opensips/modules/b2b_logic_xml.so
 %doc docdir/README.b2b_logic_xml
 
@@ -1492,9 +1491,8 @@ fi
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
 - New modules: b2b_logic, event_kafka, prometeus, rtp_relay
-- New package: b2b-logic-xml-module, kafka-module, prometeus-module
+- New package: kafka-module, prometeus-module
 - Obsoleted modules: b2b_logic_xml
-- Removed packages: b2bua-module
 
 * Fri Feb 26 2021 Razvan Crainea <razvan@opensips.org> - 3.2.0-1
 - New modules: prometheus
