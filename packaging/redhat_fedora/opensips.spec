@@ -953,6 +953,7 @@ fi
 %endif
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}
 %attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/opensips.cfg
+%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/scenario_callcenter.xml
 # these files are just an examples so no need to restrict access to them
 %config(noreplace) %{_sysconfdir}/opensips/tls/ca.conf
 %config(noreplace) %{_sysconfdir}/opensips/tls/request.conf
@@ -990,9 +991,13 @@ fi
 %{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/avpops.so
+%{_libdir}/opensips/modules/b2b_entities.so
+%{_libdir}/opensips/modules/b2b_logic.so
+%{_libdir}/opensips/modules/b2b_sca.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
+%{_libdir}/opensips/modules/call_center.so
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/callops.so
 %{_libdir}/opensips/modules/cfgutils.so
@@ -1083,9 +1088,13 @@ fi
 %doc docdir/README.auth_aaa
 %doc docdir/README.auth_db
 %doc docdir/README.avpops
+%doc docdir/README.b2b_entities
+%doc docdir/README.b2b_logic
+%doc docdir/README.b2b_sca
 %doc docdir/README.benchmark
 %doc docdir/README.cachedb_local
 %doc docdir/README.cachedb_sql
+%doc docdir/README.call_center
 %doc docdir/README.call_control
 %doc docdir/README.callops
 %doc docdir/README.cfgutils
@@ -1172,18 +1181,9 @@ fi
 %doc docdir/README.auth_jwt
 %endif
 
-%files b2bua-module
-%{_libdir}/opensips/modules/b2b_entities.so
-%{_libdir}/opensips/modules/b2b_logic.so
+%files b2b-logic-xml-module
 %{_libdir}/opensips/modules/b2b_logic_xml.so
-%{_libdir}/opensips/modules/b2b_sca.so
-%{_libdir}/opensips/modules/call_center.so
-%attr(640,%{name},%{name}) %config(noreplace) %{_sysconfdir}/opensips/scenario_callcenter.xml
-%doc docdir/README.b2b_entities
-%doc docdir/README.b2b_logic
 %doc docdir/README.b2b_logic_xml
-%doc docdir/README.b2b_sca
-%doc docdir/README.call_center
 
 %files berkeley-bin
 %{_sbindir}/bdb_recover
@@ -1492,9 +1492,9 @@ fi
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
 - New modules: b2b_logic, event_kafka, prometeus, rtp_relay
-- New package: kafka-module, prometeus-module
+- New package: b2b-logic-xml-module, kafka-module, prometeus-module
 - Obsoleted modules: b2b_logic_xml
-- Renamed: b2b_logic -> b2b_logic_xml
+- Removed packages: b2bua-module
 
 * Fri Feb 26 2021 Razvan Crainea <razvan@opensips.org> - 3.2.0-1
 - New modules: prometheus
