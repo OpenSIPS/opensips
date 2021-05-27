@@ -48,7 +48,7 @@ Package: opensips
 Architecture: any
 Multi-Arch: foreign
 Depends: adduser, python, ${misc:Depends}, ${shlibs:Depends}
-Suggests: opensips-b2bua-module,
+Suggests: opensips-b2bua-xml-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
@@ -374,7 +374,7 @@ Description: SIP Identity module for OpenSIPS
  .
  This package provides support for SIP Identity (see RFC 4474).
 
-Package: opensips-b2bua-module
+Package: opensips-b2bua-xml-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
@@ -383,8 +383,8 @@ Description: B2B User Agent modules for OpenSIPS
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides modules for B2BUA support in OpenSIPS. Both the
- implementation and control (XML based scenario description) are included.
+ This package provides modules for controling B2BUA support in OpenSIPS
+ using an XML based scenario description.
 
 Package: opensips-dbhttp-module
 Architecture: any
