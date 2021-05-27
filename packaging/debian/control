@@ -48,7 +48,7 @@ Package: opensips
 Architecture: any
 Multi-Arch: foreign
 Depends: adduser, python, ${misc:Depends}, ${shlibs:Depends}
-Suggests: opensips-b2bua-xml-module,
+Suggests: opensips-b2bua-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
@@ -374,7 +374,7 @@ Description: SIP Identity module for OpenSIPS
  .
  This package provides support for SIP Identity (see RFC 4474).
 
-Package: opensips-b2bua-xml-module
+Package: opensips-b2bua-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
