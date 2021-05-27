@@ -376,7 +376,7 @@ param("proto_wss", "wss_tls_handshake_timeout", 200) # number of milliseconds
 			<title>Set <varname>wss_send_timeout</varname> variable</title>
 			<programlisting format="linespecific">
 
-aram("proto_wss", "wss_send_timeout", 200) # number of milliseconds
+modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds
 
 			</programlisting>
 		</example>
@@ -394,9 +394,9 @@ aram("proto_wss", "wss_send_timeout", 200) # number of milliseconds
 		<title>Set <varname>require_origin</varname> parameter</title>
 		<programlisting format="linespecific">
 
-modparamparam("proto_wss", "require_origin", no)
+modparam("proto_wss", "require_origin", no)
 
-	rogramlisting>
+		</programlisting>
 		</example>
 	</section>
 </section>
