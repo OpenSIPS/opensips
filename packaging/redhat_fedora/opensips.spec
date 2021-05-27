@@ -1489,7 +1489,7 @@ fi
 
 
 %changelog
-* Sat May 26 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
+* Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
 - New modules: b2b_logic, event_kafka, prometeus, rtp_relay
 - New package: kafka-module, prometeus-module
