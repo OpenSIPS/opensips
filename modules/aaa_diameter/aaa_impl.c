@@ -32,6 +32,37 @@ struct _acc_dict acc_dict;
 /* Workaround until we find a way of looking up a single enum val in fD */
 static gen_hash_t *osips_enumvals;
 
+struct local_rules_definition {
+	char 			*avp_name;
+	enum rule_position	position;
+	int 			min;
+	int			max;
+};
+
+#define RULE_ORDER( _position ) ((((_position) == RULE_FIXED_HEAD) || ((_position) == RULE_FIXED_TAIL)) ? 1 : 0 )
+#define PARSE_loc_rules( _rulearray, _parent) {								\
+	int __ar;											\
+	for (__ar=0; __ar < sizeof(_rulearray) / sizeof((_rulearray)[0]); __ar++) {			\
+		struct dict_rule_data __data = { NULL, 							\
+			(_rulearray)[__ar].position,							\
+			0, 										\
+			(_rulearray)[__ar].min,								\
+			(_rulearray)[__ar].max};							\
+		__data.rule_order = RULE_ORDER(__data.rule_position);					\
+		FD_CHECK(fd_dict_search( 								\
+			fd_g_config->cnf_dict,								\
+			DICT_AVP, 									\
+			AVP_BY_NAME, 									\
+			(_rulearray)[__ar].avp_name, 							\
+			&__data.rule_avp, 0 ) );							\
+		if ( !__data.rule_avp ) {								\
+			LM_ERR("AVP not found: '%s'\n", (_rulearray)[__ar].avp_name );		\
+			return -1;									\
+		}											\
+		FD_CHECK_dict_new(DICT_RULE, &__data, _parent, NULL);	\
+	} \
+}
+
 static int os_cb(struct msg ** msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
 	struct msg_hdr *hdr = NULL;
@@ -729,10 +760,355 @@ static int dm_register_custom_vendors(void)
 				9,				/* Vendor */
 				"Cisco-AVPair", /* Name */
 				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_VENDOR,		 	/* Fixed flag values */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
 				AVP_TYPE_OCTETSTRING 		/* base type of data */
 				};
 		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	return 0;
+}
+
+
+/* Register the Diameter SIP Application (RFC 4740) commands, AVPs, etc. */
+int dm_init_sip_application(void)
+{
+	struct dict_object *sip;
+	struct dict_object * UTF8String_type;
+
+	struct dict_application_data data =
+		{ 	6, "Diameter Session Initiation Protocol (SIP) Application"	};
+	FD_CHECK_dict_new(DICT_APPLICATION, &data, NULL, &sip);
+
+	FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &UTF8String_type);
+
+	/* SIP-Server-URI */
+	{
+		/*
+			The SIP-Server-URI AVP (AVP Code 371) is of type UTF8String.  This
+			AVP contains a SIP or SIPS URI (as defined in RFC 3261 [RFC3261])
+			that identifies a SIP server.
+		*/
+		struct dict_avp_data data = {
+				369,				/* Code */
+				0, 					/* Vendor */
+				"SIP-Server-URI", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* SIP-Method */
+	{
+		/*
+			The SIP-Method-AVP (AVP Code 393) is of type UTF8String and contains
+			the method of the SIP request that triggered the Diameter message.
+			The Diameter server MUST use this AVP solely for authorization of SIP
+			requests, and MUST NOT use it to compute the Digest authentication.
+			To compute the Digest authentication, the Diameter server MUST use
+			the Digest-Method AVP instead.
+		*/
+		struct dict_avp_data data = {
+				393, 			/* Code */
+				0, 				/* Vendor */
+				"SIP-Method", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
+	}
+
+	/* SIP-Number-Auth-Items */
+	{
+		/*
+			The SIP-Number-Auth-Items AVP (AVP Code 382) is of type Unsigned32
+			and indicates the number of authentication and/or authorization
+			credentials that the Diameter server included in a Diameter message.
+
+			When the AVP is present in a request, it indicates the number of
+			SIP-Auth-Data-Items the Diameter client is requesting.  This can be
+			used, for instance, when the SIP server is requesting several
+			pre-calculated authentication credentials.  In the answer message,
+			the SIP-Number-Auth-Items AVP indicates the actual number of items
+			that the Diameter server included.
+		*/
+		struct dict_avp_data data = {
+				382,						/* Code */
+				0, 							/* Vendor */
+				"SIP-Number-Auth-Items",	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_UNSIGNED32 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
+	}
+
+	/* SIP-Authentication-Scheme */
+	{
+		/*
+			The SIP-Authentication-Scheme AVP (AVP Code 377) is of type
+			Enumerated and indicates the authentication scheme used in the
+			authentication of SIP services.  RFC 2617 identifies this value as an
+			"auth-scheme" (see Section 1.2 of RFC 2617 [RFC2617]).  The only
+			currently defined value is:
+
+			o  DIGEST (0) to indicate HTTP Digest authentication as specified in
+			RFC 2617 [RFC2617] Section 3.2.1.  Derivative work is also
+			considered Digest authentication scheme, as long as the
+			"auth-scheme" is identified as Digest in the SIP headers carrying
+			the HTTP authentication.  This includes, e.g., the HTTP Digest
+			authentication using AKA [RFC3310].
+
+			Each HTTP Digest directive (parameter) is transported in a
+			corresponding AVP, whose name follows the pattern Digest-*.  The
+			Digest-* AVPs are RADIUS attributes imported from the RADIUS
+			Extension for Digest Authentication [RFC4590] namespace, allowing a
+			smooth transition between RADIUS and Diameter applications supporting
+			SIP.  The Diameter SIP application goes a step further by grouping
+			the Digest-* AVPs into the SIP-Authenticate, SIP-Authorization, and
+			SIP-Authentication-Info grouped AVPs that correspond to the SIP WWW-
+			Authenticate/Proxy-Authentication, Authorization/Proxy-Authorization,
+			and Authentication-Info headers fields, respectively.
+
+			Note: Due to the fact that HTTP Digest authentication [RFC2617] is
+			the only mandatory authentication mechanism in SIP, this memo only
+			provides support for HTTP Digest authentication and derivative
+			work such as HTTP Digest authentication using AKA [RFC3310].
+			Extensions to this memo can register new values and new AVPs to
+			provide support for other authentication schemes or extensions to
+			HTTP Digest authentication.
+
+			Note: Although RFC 2617 [RFC2617] defines the Basic and Digest
+			schemes for authenticating HTTP requests, RFC 3261 [RFC3261] only
+			imports HTTP Digest as a mechanism to provide authentication in
+			SIP.
+
+			Due to syntactic requirements, HTTP Digest authentication has to
+			escape quote characters in contents of HTTP Digest directives.  When
+			translating directives into Digest-* AVPs, the Diameter client or
+			server removes the surrounding quotes where present, as required by
+			the syntax of the Digest-* attributes defined in the "RADIUS
+			Extension for Digest Authentication" [RFC4590].
+
+		*/
+		#define enumval_def_u32( _val_, _str_ ) \
+				{ _str_, 		{ .u32 = _val_ }}
+
+		struct dict_object 	*type;
+		struct dict_type_data 	 tdata = {
+			AVP_TYPE_UNSIGNED32,	"Enumerated(SIP-Authentication-Scheme)",
+				NULL, NULL, NULL, NULL, NULL};
+		struct dict_enumval_data tvals[] = {
+			enumval_def_u32( 0, "DIGEST")
+		};
+		struct dict_avp_data data = {
+				377,							/* Code */
+				0, 								/* Vendor */
+				"SIP-Authentication-Scheme", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_UNSIGNED32			/* base type of data */
+		};
+		int i;
+		/* Create the Enumerated type, enumerated values, and the AVP */
+		FD_CHECK_dict_new(DICT_TYPE, &tdata, NULL, &type);
+		for (i = 0; i < sizeof(tvals) / sizeof(tvals[0]); i++) {
+			FD_CHECK_dict_new(DICT_ENUMVAL, &tvals[i], type, NULL);
+		}
+		FD_CHECK_dict_new(DICT_AVP, &data, type, NULL);
+	}
+
+	/* SIP-Item-Number */
+	{
+		/*
+			The SIP-Item-Number (AVP Code 378) is of type Unsigned32 and is
+			included in a SIP-Auth-Data-Item grouped AVP in circumstances where
+			there are multiple occurrences of SIP-Auth-Data-Item AVPs and the
+			order of processing is relevant.  The AVP indicates the order in
+			which the Grouped SIP-Auth-Data-Item should be processed.  Lower
+			values of the SIP-Item-Number AVP indicate that the whole
+			SIP-Auth-Data-Item SHOULD be processed before other
+			SIP-Auth-Data-Item AVPs that contain higher values in the
+			SIP-Item-Number AVP.
+		*/
+		struct dict_avp_data data = {
+				378, 					/* Code */
+				0, 					/* Vendor */
+				"SIP-Item-Number", 		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_UNSIGNED32 			/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
+	}
+
+	/* SIP-Authorization */
+	{
+		/*
+			The SIP-Authorization AVP (AVP Code 380) is of type Grouped and
+			contains a reconstruction of either the SIP Authorization or
+			Proxy-Authorization header fields specified in RFC 2617 [RFC2617] for
+			the HTTP Digest authentication scheme.
+
+			The SIP-Authorization AVP is defined as follows (per the
+			grouped-avp-def of RFC 3588 [RFC3588]):
+
+			SIP-Authorization ::= < AVP Header: 380 >
+					    { Digest-Username }
+					    { Digest-Realm }
+					    { Digest-Nonce }
+					    { Digest-URI }
+					    { Digest-Response }
+					    [ Digest-Algorithm ]
+					    [ Digest-CNonce ]
+					    [ Digest-Opaque ]
+					    [ Digest-Qop ]
+					    [ Digest-Nonce-Count ]
+					    [ Digest-Method]
+					    [ Digest-Entity-Body-Hash ]
+					  * [ Digest-Auth-Param ]
+					  * [ AVP ]
+		*/
+		struct dict_object *avp;
+		struct dict_avp_data data = {
+				380, 					/* Code */
+				0,						/* Vendor */
+				"SIP-Authorization", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_GROUPED 			/* base type of data */
+				};
+		struct local_rules_definition rules[] = {
+			{ "Digest-Username",	RULE_REQUIRED, -1, 1 },
+			{ "Digest-Realm",		RULE_REQUIRED, -1, 1 },
+			{ "Digest-Nonce",		RULE_REQUIRED, -1, 1 },
+			{ "Digest-URI",			RULE_REQUIRED, -1, 1 },
+			{ "Digest-Response",	RULE_REQUIRED, -1, 1 },
+			{ "Digest-Algorithm",	RULE_OPTIONAL, -1, 1 },
+			{ "Digest-CNonce",		RULE_OPTIONAL, -1, 1 },
+			{ "Digest-Opaque",		RULE_OPTIONAL, -1, 1 },
+			{ "Digest-Qop",			RULE_OPTIONAL, -1, 1 },
+			{ "Digest-Nonce-Count",	RULE_OPTIONAL, -1, 1 },
+			{ "Digest-Method",		RULE_OPTIONAL, -1, 1 },
+			{ "Digest-Entity-Body-Hash",	RULE_OPTIONAL, -1, 1 },
+			{ "Digest-Auth-Param",	RULE_OPTIONAL, -1, -1 },
+		};
+
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, &avp);
+		PARSE_loc_rules(rules, avp);
+	}
+
+	/* SIP-Auth-Data-Item */
+	{
+		/*
+			The SIP-Auth-Data-Item (AVP Code 376) is of type Grouped and contains
+			the authentication and/or authorization information pertaining to a
+			user.
+
+			When the Diameter server uses the grouped SIP-Auth-Data-Item AVP to
+			include a SIP-Authenticate AVP, the Diameter server MUST send a
+			maximum of one authentication data item (e.g., in case the SIP
+			request contained several credentials).  Section 11 contains a
+			detailed discussion and normative text of the case when a SIP request
+			contains several credentials.
+
+			The SIP-Auth-Data-Item AVP is defined as follows (per the
+			grouped-avp-def of RFC 3588 [RFC3588]):
+
+			SIP-Auth-Data-Item ::= < AVP Header: 376 >
+			{ SIP-Authentication-Scheme }
+				[ SIP-Item-Number ]
+				[ SIP-Authenticate ]
+				[ SIP-Authorization ]
+				[ SIP-Authentication-Info ]
+				* [ AVP ]
+		*/
+		struct dict_object * avp;
+		struct dict_avp_data data = {
+				376, 					/* Code */
+				0,						/* Vendor */
+				"SIP-Auth-Data-Item", 	/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
+				AVP_TYPE_GROUPED 			/* base type of data */
+				};
+		struct local_rules_definition rules[] = {
+			{ "SIP-Authentication-Scheme",	RULE_REQUIRED, -1, 1 },
+			{ "SIP-Item-Number",			RULE_OPTIONAL, -1, 1 },
+			//{ "SIP-Authenticate",			RULE_OPTIONAL, -1, 1 },
+			{ "SIP-Authorization",			RULE_OPTIONAL, -1, 1 },
+			//{ "SIP-Authentication-Info",	RULE_OPTIONAL, -1, 1 },
+		};
+
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, &avp);
+		PARSE_loc_rules(rules, avp);
+	}
+
+	/* Multimedia-Auth-Request (MAR) Command */
+	{
+		struct dict_object *cmd;
+		struct dict_cmd_data data = {
+				286,						/* Code */
+				"Multimedia-Auth-Request", 	/* Name */
+				CMD_FLAG_REQUEST | CMD_FLAG_PROXIABLE | CMD_FLAG_ERROR,
+				CMD_FLAG_REQUEST | CMD_FLAG_PROXIABLE
+				};
+		struct local_rules_definition rules[] =  {
+			{ "Session-Id",				RULE_FIXED_HEAD, -1, 1 },
+			{ "Auth-Application-Id",	RULE_REQUIRED,   -1, 1 },
+			{ "Auth-Session-State", 	RULE_REQUIRED,   -1, 1 },
+			{ "Origin-Host",			RULE_REQUIRED,   -1, 1 },
+			{ "Origin-Realm", 			RULE_REQUIRED,   -1, 1 },
+			{ "Destination-Realm",		RULE_REQUIRED,   -1, 1 },
+			{ "SIP-AOR", 				RULE_REQUIRED,   -1, 1 },
+			{ "SIP-Method", 			RULE_REQUIRED,   -1, 1 },
+			{ "Destination-Host", 		RULE_OPTIONAL,   -1, 1 },
+			{ "User-Name",				RULE_OPTIONAL,   -1, 1 },
+			{ "SIP-Server-URI", 		RULE_OPTIONAL,   -1, 1 },
+			{ "SIP-Number-Auth-Items",	RULE_OPTIONAL,   -1, 1 },
+			{ "SIP-Auth-Data-Item", 	RULE_OPTIONAL,   -1, 1 },
+			{ "Proxy-Info",				RULE_OPTIONAL,   -1, -1 },
+			{ "Route-Record", 			RULE_OPTIONAL,   -1, -1 },
+		};
+
+		FD_CHECK_dict_new(DICT_COMMAND, &data, sip, &cmd);
+		PARSE_loc_rules(rules, cmd);
+	}
+
+	/* Multimedia-Auth-Answer (MAA) Command */
+	{
+		struct dict_object *cmd;
+		struct dict_cmd_data data = {
+				286,						/* Code */
+				"Multimedia-Auth-Answer", 	/* Name */
+				CMD_FLAG_REQUEST | CMD_FLAG_PROXIABLE | CMD_FLAG_ERROR, 	/* Fixed flags */
+				CMD_FLAG_PROXIABLE 			/* Fixed flag values */
+				};
+		struct local_rules_definition rules[] = {
+			{ "Session-Id",				RULE_FIXED_HEAD, -1, 1 },
+			{ "Auth-Application-Id",	RULE_REQUIRED,   -1, 1 },
+			{ "Result-Code",			RULE_REQUIRED,   -1, 1 },
+			{ "Auth-Session-State",		RULE_REQUIRED,   -1, 1 },
+			{ "Origin-Host",			RULE_REQUIRED,   -1, 1 },
+			{ "Origin-Realm",			RULE_REQUIRED,   -1, 1 },
+			{ "User-Name",				RULE_OPTIONAL,   -1, 1 },
+			{ "SIP-AOR",				RULE_OPTIONAL,   -1, 1 },
+			{ "SIP-Number-Auth-Items",	RULE_OPTIONAL,   -1, 1 },
+			{ "SIP-Auth-Data-Item",		RULE_OPTIONAL,   -1, -1 },
+			{ "Authorization-Lifetime",	RULE_OPTIONAL,   -1, 1 },
+			{ "Auth-Grace-Period",		RULE_OPTIONAL,   -1, 1 },
+			{ "Redirect-Host",			RULE_OPTIONAL,   -1, 1 },
+			{ "Redirect-Host-Usage",	RULE_OPTIONAL,   -1, 1 },
+			{ "Redirect-Max-Cache-Time",	RULE_OPTIONAL,   -1, 1 },
+			{ "Proxy-Info",				RULE_OPTIONAL,   -1, -1 },
+			{ "Route-Record",			RULE_OPTIONAL,   -1, -1 },
+		};
+
+		FD_CHECK_dict_new(DICT_COMMAND, &data, sip, &cmd);
+		PARSE_loc_rules(rules, cmd);
 	}
 
 	return 0;
@@ -782,6 +1158,7 @@ int dm_init_minimal(void)
 	FD_CHECK(fd_conf_init());
 	FD_CHECK(fd_dict_base_protocol(fd_g_config->cnf_dict));
 	FD_CHECK(dm_register_osips_avps());
+	FD_CHECK(dm_init_sip_application());
 
 	init_done = 1;
 	return 0;
@@ -847,6 +1224,11 @@ int freeDiameter_init(void)
 	      "Accounting-Record-Number", &acc_dict.Accounting_Record_Number, ENOENT));
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Event-Timestamp", &acc_dict.Event_Timestamp, ENOENT));
+
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Auth-Application-Id", &acc_dict.Auth_Application_Id, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Auth-Session-State", &acc_dict.Auth_Session_State, ENOENT));
 
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Route-Record", &acc_dict.Route_Record, ENOENT));
@@ -952,7 +1334,7 @@ aaa_message *dm_create_message(aaa_conn *con, int msg_type)
 
 
 int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
-               int val_length, int _)
+               int val_length, int vendor)
 {
 	struct {
 		struct dm_avp davp;
@@ -977,6 +1359,7 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 	wrap->davp.name.s = wrap->buf;
 	wrap->davp.name.len = len;
 	strcpy(wrap->buf, avp->name);
+	wrap->davp.vendor_id = vendor;
 
 	/* TODO: does Diameter properly handle empty-string values? */
 	if (val_length >= 0) {
@@ -987,7 +1370,6 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 	} else {
 		/* the (void *) value is actually a 32-bit unsigned integer! */
 		wrap->davp.value.s = (char *)(unsigned long)*(uint32_t *)val;
-		LM_INFO("XXX added value: %lu\n", (unsigned long)wrap->davp.value.s);
 		wrap->davp.value.len = val_length;
 	}
 
@@ -1025,6 +1407,9 @@ void _dm_destroy_message(aaa_message *msg)
 	struct list_head *it, *aux;
 	struct dm_avp *avp;
 
+	if (!msg)
+		return;
+
 	list_for_each_safe (it, aux, &((struct dm_message *)(msg->avpair))->avps) {
 		avp = list_entry(it, struct dm_avp, list);
 		/* TODO: clean up any sub-AVPs, if applicable?! */
@@ -1037,6 +1422,9 @@ void _dm_destroy_message(aaa_message *msg)
 
 int dm_destroy_message(aaa_conn *conn, aaa_message *msg)
 {
+	if (!msg)
+		return 0;
+
 	/* let the peer process be the one who cleans it up */
 	if (msg->last_found == DM_MSG_SENT)
 		return 0;

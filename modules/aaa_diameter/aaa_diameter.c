@@ -130,6 +130,7 @@ static int dm_check_config(void)
 		LM_ERR("the 'realm' modparam is not set\n");
 		return -1;
 	}
+	dm_realm.len = strlen(dm_realm.s);
 
 	if (!dm_peer_identity.s) {
 		LM_ERR("the 'peer_identity' modparam is not set\n");

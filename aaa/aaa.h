@@ -53,6 +53,8 @@
 #define AAA_GET_FROM_START 7
 #define AAA_GET_FROM_CURRENT 8
 
+#define AAA_APP_ACCOUNTING 3
+#define AAA_APP_SIP        6
 
 /* Generic structure for an AVP */
 typedef struct _aaa_map {

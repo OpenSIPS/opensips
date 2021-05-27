@@ -51,8 +51,13 @@
 
 struct _acc_dict {
 	struct dict_object *Destination_Realm;
+
 	struct dict_object *Accounting_Record_Type;
 	struct dict_object *Accounting_Record_Number;
+
+	struct dict_object *Auth_Application_Id;
+	struct dict_object *Auth_Session_State;
+
 	struct dict_object *Event_Timestamp;
 	struct dict_object *Route_Record;
 };
@@ -67,6 +72,7 @@ struct dm_avp {
 	struct dict_object *obj;
 	str name;
 	str value;
+	int vendor_id;
 
 	struct list_head subavps;
 
@@ -80,6 +86,7 @@ int freeDiameter_init(void);
 
 aaa_conn *dm_init_prot(str *aaa_url);
 int dm_init_minimal(void);
+int dm_init_sip_application(void);
 int dm_register_osips_avps(void);
 int dm_find(aaa_conn *con, aaa_map *map, int op);
 aaa_message *dm_create_message(aaa_conn *con, int msg_type);
