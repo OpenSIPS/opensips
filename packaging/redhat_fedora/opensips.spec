@@ -732,13 +732,26 @@ per second even on low-budget hardware.
 This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
 Authentication and Verification services in OpenSIPS.
 
-%package  tls-module
+%package  tls-openssl-module
 Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-tlsmgm-module
 Requires: openssl
 BuildRequires: openssl-devel
+
+%package  tls-wolfssl-module
+Summary:  TLS transport module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-tlsmgm-module
+
+%package  tls-module
+Summary:  TLS transport module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-tlsmgm-module
+Requires: (%{name}-tls-openssl-module or %{name}-tls-wolfssl-module)
 
 %description  tls-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -1079,7 +1092,6 @@ fi
 %{_libdir}/opensips/modules/uac_registrant.so
 %{_libdir}/opensips/modules/userblacklist.so
 %{_libdir}/opensips/modules/usrloc.so
-%{_libdir}/opensips/modules/wolfssl.so
 
 %doc docdir/README.acc
 %doc docdir/README.alias_db
@@ -1454,6 +1466,14 @@ fi
 %{_libdir}/opensips/modules/stir_shaken.so
 %doc docdir/README.stir_shaken
 
+%files  tls-openssl-module
+%{_libdir}/opensips/modules/tls_openssl.so
+%doc docdir/README.tls_openssl
+
+%files  tls-wolfssl-module
+%{_libdir}/opensips/modules/tls_wolfssl.so
+%doc docdir/README.tls_wolfssl
+
 %files tls-module
 %{_libdir}/opensips/modules/proto_tls.so
 %doc docdir/README.proto_tls
@@ -1490,8 +1510,8 @@ fi
 %changelog
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
-- New modules: b2b_logic, event_kafka, prometeus, rtp_relay
-- New package: kafka-module, prometeus-module
+- New modules: b2b_logic, event_kafka, prometeus, rtp_relay, tls_openssl, tls_wolfssl
+- New packages: kafka-module, prometeus-module, tls-openssl-module, tls-wolfssl-module
 - Obsoleted modules: b2b_logic_xml
 
 * Fri Feb 26 2021 Razvan Crainea <razvan@opensips.org> - 3.2.0-1
