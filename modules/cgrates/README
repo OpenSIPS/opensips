@@ -494,6 +494,12 @@ select,$var(idx),,}{s.select,1,:});
    another. if the session tag does not exist, the default (no
    name) one is used.
 
+   When assigned with the := operator, the value is treated as a
+   JSON, rather than a string/integer. However, the evaluation of
+   the JSON is late, therefore when the CGRateS request is built,
+   if the module is unable to parse the JSON, the value is sent as
+   a string.
+
    Example 1.10. $cgr(name) simple usage
                 ...
                 if (!has_totag()) {
@@ -502,6 +508,8 @@ select,$var(idx),,}{s.select,1,:});
  a tenant
                         $cgr(RequestType) = "*prepaid"; # do prepaid acc
 ounting
+                        $cgr(AttributeIDs) := '["+5551234"]'; # treat as
+ array
                         if (!cgrates_auth("$fU", "$rU")) {
                                 sl_send_reply("403", "Forbidden");
                                 exit;
@@ -706,7 +714,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 170 82 7066 1805
+   1. Razvan Crainea (@razvancrainea) 172 84 7103 1807
    2. Vlad Patrascu (@rvlad-patrascu) 13 9 115 172
    3. Liviu Chircu (@liviuchircu) 9 7 32 48
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 20 21
@@ -751,8 +759,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 

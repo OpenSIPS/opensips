@@ -63,14 +63,15 @@ tm Module
               1.4.13. t_on_branch(branch_route)
               1.4.14. t_inject_branches(source[,flags])
               1.4.15. t_wait_for_new_branches([branches])
-              1.4.16. t_add_hdrs("sip_hdrs")
-              1.4.17. t_add_cancel_reason("Reason_hdr")
-              1.4.18. t_replicate(URI,[flags])
-              1.4.19. t_write_req(info,fifo)
+              1.4.16. t_wait_no_more_branches()
+              1.4.17. t_add_hdrs("sip_hdrs")
+              1.4.18. t_add_cancel_reason("Reason_hdr")
+              1.4.19. t_replicate(URI,[flags])
+              1.4.20. t_write_req(info,fifo)
                       t_write_unix(info,sock)
 
-              1.4.20. t_flush_flags()
-              1.4.21. t_anycast_replicate()
+              1.4.21. t_flush_flags()
+              1.4.22. t_anycast_replicate()
 
         1.5. Exported Pseudo-Variables
 
@@ -165,12 +166,13 @@ tm Module
    1.35. t_on_branch usage
    1.36. t_inject_branches usage
    1.37. t_wait_for_new_branches usage
-   1.38. t_add_hdrs usage
-   1.39. t_add_cancel_reason usage
-   1.40. t_replicate usage
-   1.41. t_write_req/unix usage
-   1.42. t_flush_flags usage
-   1.43. t_anycast_replicate usage
+   1.38. t_wait_no_more_branches usage
+   1.39. t_add_hdrs usage
+   1.40. t_add_cancel_reason usage
+   1.41. t_replicate usage
+   1.42. t_write_req/unix usage
+   1.43. t_flush_flags usage
+   1.44. t_anycast_replicate usage
 
 Chapter 1. Admin Guide
 
@@ -1237,7 +1239,27 @@ t_wait_for_new_branches();
 t_relay();
 ...
 
-1.4.16.  t_add_hdrs("sip_hdrs")
+1.4.16.  t_wait_no_more_branches()
+
+   This function instructs the existing SIP transaction to stop
+   wait for new any new branches to be injected. This functions
+   should be used for a transaction that is waiting for dynamic
+   branches, via the t_wait_for_new_branches() function.
+
+   Usage scenario: your transaction is waiting for dynamic new
+   branches (as a reusult of Push Notification). To a point, on an
+   ongoing branch you receive a final reply - and the fact that
+   the branch fails translates into stop waiting for any more
+   branche (this is an example of a logic on deciding how long to
+   wait for more branches, depending on the answers you get from
+   various devices, fix or mobile).
+
+   Example 1.38. t_wait_no_more_branches usage
+...
+t_wait_no_more_branches();
+...
+
+1.4.17.  t_add_hdrs("sip_hdrs")
 
    Attach a set of headers to the existing transaction - these
    headers will be appended to all requests related to the
@@ -1246,12 +1268,12 @@ t_relay();
    Parameters:
      * sip_hdrs (string)
 
-   Example 1.38. t_add_hdrs usage
+   Example 1.39. t_add_hdrs usage
 ...
 t_add_hdrs("X-origin: 1.1.1.1\r\n");
 ...
 
-1.4.17.  t_add_cancel_reason("Reason_hdr")
+1.4.18.  t_add_cancel_reason("Reason_hdr")
 
    This function is used to enforce from the script level a custom
    "Reason" header into a CANCEL request. Normally, the Reason
@@ -1264,14 +1286,14 @@ t_add_hdrs("X-origin: 1.1.1.1\r\n");
    Parameters:
      * reason_hdr (string)
 
-   Example 1.39. t_add_cancel_reason usage
+   Example 1.40. t_add_cancel_reason usage
 ...
 t_add_cancel_reason("Reason: SIP ;cause=200 ;text=\"Call completed elsew
 here\"\r\n");
 t_relay();
 ...
 
-1.4.18.  t_replicate(URI,[flags])
+1.4.19.  t_replicate(URI,[flags])
 
    Replicates a request to another destination. No information due
    the replicated request (like reply code) will be forwarded to
@@ -1290,14 +1312,14 @@ t_relay();
 
    This functions can be used from REQUEST_ROUTE.
 
-   Example 1.40. t_replicate usage
+   Example 1.41. t_replicate usage
 ...
 t_replicate("sip:1.2.3.4:5060");
 t_replicate("sip:1.2.3.4:5060;transport=tcp");
 t_replicate("sip:1.2.3.4",0x4);
 ...
 
-1.4.19.  t_write_req(info,fifo) t_write_unix(info,sock)
+1.4.20.  t_write_req(info,fifo) t_write_unix(info,sock)
 
    Write via FIFO file or UNIX socket a lot of information
    regarding the request. Which information should be written may
@@ -1310,7 +1332,7 @@ t_replicate("sip:1.2.3.4",0x4);
    This functions can be used from REQUEST_ROUTE, FAILURE_ROUTE
    and BRANCH_ROUTE.
 
-   Example 1.41. t_write_req/unix usage
+   Example 1.42. t_write_req/unix usage
 ...
 modparam("tm","tw_append","append1:Email=$avp(email);UA=$ua")
 modparam("tm","tw_append","append2:body=$rb")
@@ -1320,7 +1342,7 @@ t_write_req("voicemail/append1","/tmp/appx_fifo");
 t_write_unix("logger/append2","/var/run/logger.sock");
 ...
 
-1.4.20.  t_flush_flags()
+1.4.21.  t_flush_flags()
 
    Flush the flags from current request into the already created
    transaction. It make sense only in routing block if the
@@ -1329,12 +1351,12 @@ t_write_unix("logger/append2","/var/run/logger.sock");
 
    This function can be used from REQUEST_ROUTE and BRANCH_ROUTE .
 
-   Example 1.42. t_flush_flags usage
+   Example 1.43. t_flush_flags usage
 ...
 t_flush_flags();
 ...
 
-1.4.21.  t_anycast_replicate()
+1.4.22.  t_anycast_replicate()
 
    This function is used in an anycast setup to replicate a CANCEL
    or ACK method for whom there are no local transactions found.
@@ -1342,7 +1364,7 @@ t_flush_flags();
    the cluster, but only the “owner” of the transaction will be
    able to handle it.
 
-   Example 1.43. t_anycast_replicate usage
+   Example 1.44. t_anycast_replicate usage
 ...
 if (is_method("ACK|CANCEL") && !t_check_trans()) {
         t_anycast_replicate();
@@ -1560,7 +1582,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1063 615 21543 16628
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1064 616 21618 16640
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
@@ -1606,7 +1628,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2021
    2.  Razvan Crainea (@razvancrainea)     Jul 2010 - Mar 2021
    3.  Maksym Sobolyev (@sobomax)          Mar 2004 - Mar 2021
    4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021

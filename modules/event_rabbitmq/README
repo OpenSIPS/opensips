@@ -92,13 +92,16 @@ Chapter 1. Admin Guide
      * host - host name of the RabbitMQ server.
      * port - port of the RabbitMQ server. The default value is
        '5672'.
-     * params - extra parameters specified as key=value, separated
-       by ';':
+     * params - extra parameters specified as key[=value],
+       separated by ';':
           + exchange - exchange of the RabbitMQ server. The
             default value is ''.
           + tls_domain - indicates which TLS domain (as defined
             using the tls_mgm module) to use for this connection.
             The use_tls module parameter must be enabled.
+          + persistent - indicates that the message should be
+            published as persistent delivery_mode=2. This
+            parameter does not have a value.
      * routing_key - this is the routing key used by the AMQP
        protocol and it is used to identify the queue where the
        event should be sent.
@@ -454,7 +457,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 57 36 1916 298
+   1. Razvan Crainea (@razvancrainea) 60 38 1943 310
    2. Vlad Patrascu (@rvlad-patrascu) 20 10 495 263
    3. Liviu Chircu (@liviuchircu) 8 6 14 31
    4. Ovidiu Sas (@ovidiusas) 5 3 35 7
@@ -488,7 +491,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2020
+   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2021
    2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
    3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
@@ -508,8 +511,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu), Ionut Ionita (@ionutrazvanionita).
 
    Documentation Copyrights:

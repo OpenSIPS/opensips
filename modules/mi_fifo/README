@@ -113,6 +113,17 @@ Chapter 1. Admin Guide
    The name of the FIFO file to be created for listening and
    reading external commands.
 
+   NOTE:Starting with Linux kernel 4.19, processes can no longer
+   read from FIFO files that are saved in directories with sticky
+   bits (such as /tmp) and are not owned by the same user the
+   process runs with. This prevents external tools (such as
+   opensips-cli) from running MI commands using a different user
+   (a Permissions denied error is triggered). If you are getting
+   this error while trying to use opensips-cli, you can fix it by
+   either store the fifo file in a non-sticky bit directory (such
+   as /var/run/opensips), or disable the fifo protection using
+   sysctl fs.protected_fifos = 0 (NOT RECOMMENDED).
+
    Default value is "/tmp/opensips_fifo".
 
    Example 1.1. Set fifo_name parameter
@@ -253,7 +264,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 61 37 2289 248
-   2. Razvan Crainea (@razvancrainea) 38 15 547 1061
+   2. Razvan Crainea (@razvancrainea) 41 18 565 1064
    3. Liviu Chircu (@liviuchircu) 13 11 28 61
    4. Daniel-Constantin Mierla (@miconda) 12 10 20 22
    5. Ionut Ionita (@ionutrazvanionita) 7 4 211 22
@@ -288,9 +299,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2021
-   2.  Maksym Sobolyev (@sobomax)          Feb 2021 - Feb 2021
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
+   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - May 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2021
+   3.  Maksym Sobolyev (@sobomax)          Feb 2021 - Feb 2021
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
    5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -311,8 +322,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Ionut Ionita
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
    (@ionutrazvanionita), Bogdan-Andrei Iancu (@bogdan-iancu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Jerome Martin.

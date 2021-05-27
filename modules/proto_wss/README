@@ -24,6 +24,7 @@ proto_wss Module
               1.3.9. trace_filter_route (string)
               1.3.10. wss_tls_handshake_timeout (integer)
               1.3.11. wss_send_timeout (integer)
+              1.3.12. require_origin (int)
 
         1.4. Exported MI Functions
 
@@ -59,6 +60,7 @@ proto_wss Module
    1.9. Set trace_filter_route parameter
    1.10. Set wss_tls_handshake_timeout variable
    1.11. Set wss_send_timeout variable
+   1.12. Set require_origin parameter
 
 Chapter 1. Admin Guide
 
@@ -100,17 +102,15 @@ modparam("tls_mgm", "require_cert", "1")
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
+     * tls_openssl or tls_wolfssl, depending on the desired TLS
+       library
      * tls_mgm.
 
 1.2.2. Dependencies of external libraries
 
-   OpenSIPS TLS v1.0 support requires the following packages:
-     * openssl or libssl >= 0.9.6
-     * openssl-dev or libssl-dev
-
-   OpenSIPS TLS v1.1/1.2 support requires the following packages:
-     * openssl or libssl >= 1.0.1e
-     * openssl-dev or libssl-dev
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
 
 1.3. Exported Parameters
 
@@ -323,7 +323,18 @@ conds
 
    Example 1.11. Set wss_send_timeout variable
 
-aram("proto_wss", "wss_send_timeout", 200) # number of milliseconds
+modparam("proto_wss", "wss_send_timeout", 200) # number of milliseconds
+
+
+1.3.12. require_origin (int)
+
+   Controls whether the module should require the Origin header or
+   not.
+   Default value is 1(require Origin header).
+
+   Example 1.12. Set require_origin parameter
+
+modparam("proto_wss", "require_origin", no)
 
 
 1.4. Exported MI Functions
@@ -358,10 +369,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 30 20 761 123
+   1. Razvan Crainea (@razvancrainea) 32 22 784 126
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 17 14 238 22
-   3. Ionut Ionita (@ionutrazvanionita) 14 10 362 19
-   4. Vlad Patrascu (@rvlad-patrascu) 12 9 85 78
+   3. Vlad Patrascu (@rvlad-patrascu) 16 12 130 112
+   4. Ionut Ionita (@ionutrazvanionita) 14 10 362 19
    5. Liviu Chircu (@liviuchircu) 8 6 33 46
    6. Maksym Sobolyev (@sobomax) 4 2 2 18
    7. Dan Pascu (@danpascu) 3 1 3 5
@@ -388,13 +399,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Nick Altmann (@nikbyte)             May 2021 - May 2021
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Apr 2021
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2021
-   4. Maksym Sobolyev (@sobomax)          Feb 2017 - Sep 2020
-   5. Liviu Chircu (@liviuchircu)         Mar 2016 - Jan 2020
-   6. Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   7. Razvan Crainea (@razvancrainea)     Jan 2016 - Jan 2020
+   1. Razvan Crainea (@razvancrainea)     Jan 2016 - May 2021
+   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   3. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2016 - Apr 2021
+   5. Maksym Sobolyev (@sobomax)          Feb 2017 - Sep 2020
+   6. Liviu Chircu (@liviuchircu)         Mar 2016 - Jan 2020
+   7. Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
    8. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9. Ionut Ionita (@ionutrazvanionita)   Mar 2017 - Apr 2017
 
@@ -405,10 +416,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut
-   Ionita (@ionutrazvanionita).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
+   (@ionutrazvanionita).
 
    Documentation Copyrights:
 

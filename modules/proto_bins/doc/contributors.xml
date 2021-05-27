@@ -21,9 +21,9 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">8</entry>
-		<entry align="center">2</entry>
-		<entry align="center">569</entry>
+		<entry align="center">11</entry>
+		<entry align="center">3</entry>
+		<entry align="center">853</entry>
 		<entry align="center">19</entry>
 	</row>
 	<row>
@@ -99,7 +99,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>).</para>
 </section>
 
 </chapter>
