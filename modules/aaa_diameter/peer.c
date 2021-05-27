@@ -36,6 +36,8 @@ struct list_head *msg_send_queue;
 pthread_cond_t *msg_send_cond;
 pthread_mutex_t *msg_send_lk;
 
+extern str dm_realm;
+extern str dm_peer_identity;
 
 int dm_init_peer(void)
 {
@@ -130,8 +132,8 @@ static int dm_acct(struct dm_message *msg)
 		FD_CHECK(fd_msg_avp_new(acc_dict.Destination_Realm, 0, &avp));
 
 		memset(&val, 0, sizeof val);
-		val.os.data = (unsigned char *)"diameter.test";
-		val.os.len = strlen("diameter.test");
+		val.os.data = (unsigned char *)dm_realm.s;
+		val.os.len = dm_realm.len;
 		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 	}
@@ -213,8 +215,8 @@ static int dm_acct(struct dm_message *msg)
 		FD_CHECK(fd_msg_avp_new(acc_dict.Route_Record, 0, &avp));
 
 		memset(&val, 0, sizeof val);
-		val.os.data = (unsigned char *)"server";
-		val.os.len = strlen("server");
+		val.os.data = (unsigned char *)dm_peer_identity.s;
+		val.os.len = dm_peer_identity.len;
 		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 	}

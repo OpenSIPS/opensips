@@ -27,6 +27,7 @@
 #include "peer.h"
 
 int mod_init(void);
+static int dm_check_config(void);
 void mod_destroy(void);
 
 char *dm_conf_filename = "freeDiameter.conf";
@@ -34,6 +35,8 @@ char *dm_conf_filename = "freeDiameter.conf";
 int aaa_diameter_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
+str dm_realm;
+str dm_peer_identity;
 
 static cmd_export_t cmds[]= {
 	{"aaa_bind_api", (cmd_function) aaa_diameter_bind_api, {{0, 0, 0}}, 0},
@@ -47,7 +50,9 @@ static proc_export_t procs[] = {
 
 static param_export_t params[] =
 {
-	{ "fd_log_level",          INT_PARAM, &fd_log_level         },
+	{ "fd_log_level",    INT_PARAM, &fd_log_level     },
+	{ "realm",           STR_PARAM, &dm_realm.s       },
+	{ "peer_identity",   STR_PARAM, &dm_peer_identity.s   },
 	{ NULL, 0, NULL },
 };
 
@@ -97,6 +102,11 @@ int mod_init(void)
 {
 	LM_DBG("initializing module...\n");
 
+	if (dm_check_config() != 0) {
+		LM_ERR("bad modparam configuration\n");
+		return -1;
+	}
+
 	/* perform only a minimal amount of library initialization, just so modules
 	 * can look up Diameter AVPs through the API, but without neither changing
 	 * the internal library state nor forking any threads yet! */
@@ -107,6 +117,27 @@ int mod_init(void)
 
 	if (dm_init_peer() != 0) {
 		LM_ERR("failed to init the local Diameter peer\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static int dm_check_config(void)
+{
+	if (!dm_realm.s) {
+		LM_ERR("the 'realm' modparam is not set\n");
+		return -1;
+	}
+
+	if (!dm_peer_identity.s) {
+		LM_ERR("the 'peer_identity' modparam is not set\n");
+		return -1;
+	}
+	dm_peer_identity.len = strlen(dm_peer_identity.s);
+	if (dm_peer_identity.len == 0) {
+		LM_ERR("the 'peer_identity' modparam cannot be empty\n");
 		return -1;
 	}
 
