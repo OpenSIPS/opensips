@@ -886,9 +886,9 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 		ADD_AAA_AVPAIR( offset + i, val_arr[i].s, val_arr[i].len );
 
 	av_type = (uint32_t)_setup_time;
-	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 1, &av_type, -1);
-	av_type = (uint32_t)_created;
 	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 2, &av_type, -1);
+	av_type = (uint32_t)_created;
+	ADD_AAA_AVPAIR( offset + attr_cnt + extra_len + 3, &av_type, -1);
 
 	/* call-legs attributes also get inserted */
 	if (ctx) {
@@ -987,11 +987,20 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 
 	ms_duration = TIMEVAL_MS_DIFF(start_time, ctx->bye_time);
 	duration = ceil((double)ms_duration/1000);
-	/* add duration and setup values */
+
+	/* Sip-Call-Duration (227) */
 	ADD_AAA_AVPAIR( offset + nr_leg_vals, &duration, -1);
-	ADD_AAA_AVPAIR( offset + nr_leg_vals + 1, &ms_duration, -1);
+
+	/* Sip-Call-Setuptime (228) */
 	av_type = (uint32_t)(start_time.tv_sec - ctx->created);
 	ADD_AAA_AVPAIR( offset + nr_leg_vals + 2, &av_type, -1);
+
+	/* Sip-Call-Created (229) */
+	av_type = ctx->created;
+	ADD_AAA_AVPAIR( offset + nr_leg_vals + 3, &av_type, -1);
+
+	/* Sip-Call-MSDuration (230) */
+	ADD_AAA_AVPAIR( offset + nr_leg_vals + 1, &ms_duration, -1);
 
 	/* prevent acces for setting variable */
 	accX_lock(&ctx->lock);

@@ -205,6 +205,7 @@ OPEN_FD_LIMIT		"open_files_limit"
 ENABLE_ASSERTS	enable_asserts
 ABORT_ON_ASSERT	abort_on_assert
 LOGLEVEL	log_level
+LOGSTDOUT	log_stdout
 LOGSTDERROR	log_stderror
 LOGFACILITY	log_facility
 LOGNAME		log_name
@@ -407,6 +408,7 @@ SPACE		[ ]
 <INITIAL>{ENABLE_ASSERTS}	{ count(); yylval.strval=yytext; return ENABLE_ASSERTS; }
 <INITIAL>{ABORT_ON_ASSERT}	{ count(); yylval.strval=yytext; return ABORT_ON_ASSERT; }
 <INITIAL>{LOGLEVEL} { count(); yylval.strval=yytext; return LOGLEVEL; }
+<INITIAL>{LOGSTDOUT}	{ yylval.strval=yytext; return LOGSTDOUT; }
 <INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }

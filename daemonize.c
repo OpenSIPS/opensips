@@ -351,13 +351,13 @@ int daemonize(char* name, int * own_pgid)
 			strerror(errno));
 		/* continue, leave it open */
 	};
-	if (freopen("/dev/null", "w", stdout)==0){
+	if (!log_stdout && freopen("/dev/null", "w", stdout)==0){
 		LM_WARN("unable to replace stdout with /dev/null: %s\n",
 			strerror(errno));
 		/* continue, leave it open */
 	};
 	/* close stderr only if not to be used */
-	if ( (!log_stderr) && (freopen("/dev/null", "w", stderr)==0)){
+	if (!log_stderr && (freopen("/dev/null", "w", stderr)==0)){
 		LM_WARN("unable to replace stderr with /dev/null: %s\n",
 			strerror(errno));
 		/* continue, leave it open */

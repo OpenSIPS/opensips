@@ -154,26 +154,26 @@ static int mod_init(void)
 	bind_auth_t bind_auth;
 	str proto_url;
 
-	aaa_map map;
+	aaa_map vendor;
 
 	LM_INFO("initializing...\n");
 
 	memset(attrs, 0, sizeof(attrs));
 	memset(vals, 0, sizeof(vals));
 	attrs[A_SERVICE_TYPE].name			= "Service-Type";
-	attrs[A_SIP_URI_USER].name			= "Sip-URI-User";
-	attrs[A_SIP_URI_HOST].name			= "SIP-URI-Host";
+	attrs[A_SIP_URI_USER].name			= "Sip-Uri-User";
+	attrs[A_SIP_URI_HOST].name			= "Sip-Uri-Host";
 	attrs[A_DIGEST_RESPONSE].name		= "Digest-Response";
 	attrs[A_DIGEST_ALGORITHM].name		= "Digest-Algorithm";
-	attrs[A_DIGEST_BODY_DIGEST].name	= "Digest-Body-Digest";
+	attrs[A_DIGEST_OPAQUE].name			= "Digest-Opaque";
 	attrs[A_DIGEST_CNONCE].name			= "Digest-CNonce";
 	attrs[A_DIGEST_NONCE_COUNT].name	= "Digest-Nonce-Count";
-	attrs[A_DIGEST_QOP].name			= "Digest-QOP";
+	attrs[A_DIGEST_QOP].name			= "Digest-Qop";
 	attrs[A_DIGEST_METHOD].name			= "Digest-Method";
 	attrs[A_DIGEST_URI].name			= "Digest-URI";
 	attrs[A_DIGEST_NONCE].name			= "Digest-Nonce";
 	attrs[A_DIGEST_REALM].name			= "Digest-Realm";
-	attrs[A_DIGEST_USER_NAME].name		= "Digest-User-Name";
+	attrs[A_DIGEST_USER_NAME].name		= "Digest-Username";
 	attrs[A_USER_NAME].name				= "User-Name";
 	attrs[A_CISCO_AVPAIR].name			= "Cisco-AVPair";
 	attrs[A_SIP_AVP].name				= "SIP-AVP";
@@ -201,10 +201,12 @@ static int mod_init(void)
 		return -2;
 	}
 
-	map.name = "Cisco";
-	if (proto.dictionary_find(conn, &map, AAA_DICT_FIND_VEND)) {
+	vendor.name = "Cisco";
+	if (proto.dictionary_find(conn, &vendor, AAA_DICT_FIND_VEND)) {
 		LM_DBG("no `Cisco' vendor in AAA protocol dictionary\n");
 		attrs[A_CISCO_AVPAIR].name = NULL;
+	} else {
+		attrs[A_CISCO_AVPAIR].type = vendor.value;
 	}
 
 	if (is_script_func_used("aaa_www_authorize", -1) ||

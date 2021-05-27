@@ -1,32 +1,46 @@
 #
-# $Id$
-#
 # SIP RADIUS attributes
 #
-# Proprietary indicates an attribute that hasn't
-# been standardized
+# "Proprietary" indicates an attribute that hasn't been standardized
 #
-#
-# NOTE: All standard (IANA registered) attributes are 
-#       defined in the default dictionary of the 
+# NOTE: All standard (IANA registered) attributes are
+#       defined in the default dictionary of the
 #       radiusclient-ng library.
 #
 
 
 #### Attributes ###
-ATTRIBUTE Sip-Uri-User         208  string     # Proprietary, auth_radius
-ATTRIBUTE Sip-Group            211  string     # Proprietary, group_radius
-ATTRIBUTE Sip-Rpid             213  string     # Proprietary, auth_radius
-ATTRIBUTE SIP-AVP              225  string     # Proprietary, avp_radius
+ATTRIBUTE Sip-Method           204  integer    # Proprietary, acc
+ATTRIBUTE Sip-Response-Code    205  integer    # Proprietary, acc
+ATTRIBUTE Sip-From-Tag         206  integer    # Proprietary, acc
+ATTRIBUTE Sip-To-Tag           207  integer    # Proprietary, acc
+ATTRIBUTE Sip-Uri-User         208  string     # Proprietary, auth_aaa
+ATTRIBUTE Sip-Uri-Host         209  string     # Proprietary, auth_aaa
+ATTRIBUTE Sip-Group            211  string     # Proprietary, group
+ATTRIBUTE Sip-Rpid             213  string     # Proprietary, auth_aaa
+ATTRIBUTE SIP-AVP              225  string     # Proprietary, aaa_radius
 ATTRIBUTE Sip-Call-Duration    227  integer
 ATTRIBUTE Sip-Call-Setuptime   228  integer
 ATTRIBUTE Sip-Call-Created     229  integer
 ATTRIBUTE Sip-Call-MSDuration  230  integer
 
+### Acct-Status-Type Values ###
+VALUE Acct-Status-Type     Start             1         # RFC2866, RADIUS acc
+VALUE Acct-Status-Type     Stop              2         # RFC2866, RADIUS acc
+VALUE Acct-Status-Type     Interim-Update    3         # RFC2866, RADIUS acc
+VALUE Acct-Status-Type     Alive             3  #dup
+VALUE Acct-Status-Type     Accounting-On     7         # RFC2866, RADIUS acc
+VALUE Acct-Status-Type     Accounting-Off    8         # RFC2866, RADIUS acc
+VALUE Acct-Status-Type     Failed           15         # RFC2866, RADIUS acc
+
 ### Service-Type Values ###
-VALUE Service-Type       Group-Check      12   # Proprietary, group_radius
-VALUE Service-Type       SIP-Caller-AVPs  30   # Proprietary, avp_radius
-VALUE Service-Type       SIP-Callee-AVPs  31   # Proprietary, avp_radius
+VALUE Service-Type       Call-Check             10   # RFC2865, auth_aaa
+VALUE Service-Type       Group-Check            12   # Proprietary, group
+VALUE Service-Type       Sip-Session            15   # Schulzrinne, acc
+VALUE Service-Type       Sip-Verify-Destination 21   # Proprietary, peering
+VALUE Service-Type       Sip-Verify-Source      22   # Proprietary, peering
+VALUE Service-Type       SIP-Caller-AVPs        30   # Proprietary, aaa_radius
+VALUE Service-Type       SIP-Callee-AVPs        31   # Proprietary, aaa_radius
 
 ### Sip-Method Values ###
 VALUE Sip-Method         Undefined      0
@@ -45,4 +59,6 @@ VALUE Sip-Method         Prack          2048
 VALUE Sip-Method         Refer          4096
 VALUE Sip-Method         Other          8192
 
-
+### Authentication ###
+VENDOR    Cisco                   9
+ATTRIBUTE Cisco-AVPair            1       string  Cisco

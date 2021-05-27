@@ -179,7 +179,7 @@ struct multi_str{
 	char *s;
 	struct multi_str* next;
 };
-#else 
+#else
 static struct multi_str *tmp_mod;
 #endif
 
@@ -284,6 +284,7 @@ extern int cfg_parse_only_routes;
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
 %token LOGLEVEL
+%token LOGSTDOUT
 %token LOGSTDERROR
 %token LOGFACILITY
 %token LOGNAME
@@ -742,8 +743,12 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 		| DEBUG_MODE EQUAL error
 			{ yyerror("boolean value expected for debug_mode"); }
-		| LOGSTDERROR EQUAL NUMBER 
-			/* in config-check or debug mode we force logging 
+		| LOGSTDOUT EQUAL NUMBER
+			/* may be useful when integrating 3rd party libraries */
+			{ IFOR(); log_stdout=$3; }
+		| LOGSTDOUT EQUAL error { yyerror("boolean value expected"); }
+		| LOGSTDERROR EQUAL NUMBER
+			/* in config-check or debug mode we force logging
 			 * to standard error */
 			{ IFOR(); if (!config_check && !debug_mode) log_stderr=$3; }
 		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
@@ -1117,7 +1122,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 								}
 							}
 
-							mem_free_idx++;	
+							mem_free_idx++;
 
 							if(alloc_group_stat()){
 								YYABORT;
