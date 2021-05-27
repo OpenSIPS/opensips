@@ -25,4 +25,4 @@
 <!ENTITY DEFAULT_DATETIME "1900-01-01 00:00:01"> <!-- postgresql doesn't like 0000-00-00 00:00:00 -->
 <!ENTITY DEFAULT_FLAGS "0">
 <!ENTITY DEFAULT_DOMAIN "">
-<!ENTITY OPENSIPS_MOD_DOC "https://opensips.org/docs/modules/devel/">
+<!ENTITY OPENSIPS_MOD_DOC "https://opensips.org/docs/modules/3.2/">
