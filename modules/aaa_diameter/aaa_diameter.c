@@ -35,8 +35,8 @@ char *dm_conf_filename = "freeDiameter.conf";
 int aaa_diameter_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
-str dm_realm;
-str dm_peer_identity;
+str dm_realm = str_init("diameter.test");
+str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
 
 static cmd_export_t cmds[]= {
 	{"aaa_bind_api", (cmd_function) aaa_diameter_bind_api, {{0, 0, 0}}, 0},

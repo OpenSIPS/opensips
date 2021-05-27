@@ -1,0 +1,134 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides a Diameter implementation for the core AAA API interface.
+	</para>
+
+	<para>
+		Any module that wishes to use it has to do the following:
+	</para>
+	<itemizedlist>
+		<listitem>
+			<para><emphasis>include aaa.h</emphasis>
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>make a bind call with a proper Diameter-specific URL, e.g. "diameter:freeDiameter-client.conf"</emphasis>
+			</para>
+		</listitem>
+
+	</itemizedlist>
+
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		None.
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		All Diameter message building and parsing, as well as the peer state
+		machine and Diameter-related network communication are all powered by
+		<ulink url="http://www.freediameter.net/trac/"><citetitle>the freeDiameter project</citetitle></ulink>
+		and C libraries, dynamically linking with the "aaa_diameter" module.
+		</para>
+		<para>
+		The following libraries must be installed before running
+		&osips; with this module loaded:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>libfdcore</emphasis> v1.2.1 or higher
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>libfdproto</emphasis> v1.2.1 or higher
+			</para>
+			</listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+		<section id="param_fd_log_level" xreflabel="fd_log_level">
+		<title><varname>fd_log_level (integer)</varname></title>
+		<para>
+		This parameter measures the <emphasis>quietness</emphasis> of the logging
+		done by the freeDiameter library. Possible values:
+		</para>
+		<itemizedlist>
+			<listitem><para>0 (ANNOYING)</para></listitem>
+			<listitem><para>1 (DEBUG)</para></listitem>
+			<listitem><para>3 (NOTICE, default)</para></listitem>
+			<listitem><para>5 (ERROR)</para></listitem>
+			<listitem><para>6 (FATAL)</para></listitem>
+		</itemizedlist>
+		<para>
+		NOTE: since freeDiameter logs to standard output, you must also enable
+		the new core parameter, <emphasis role='bold'>log_stdout</emphasis>,
+		before getting any logs from the library.
+		</para>
+		<example>
+		<title>Setting the <varname>fd_log_level</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "fd_log_level", 0)
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_realm" xreflabel="realm">
+		<title><varname>realm (string)</varname></title>
+		<para>
+			The unique realm to be used by all participating Diameter peers.
+		</para>
+		<para>
+			Default value is <emphasis>"diameter.test"</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <varname>realm</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "realm", "opensips.org")
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_peer_identity" xreflabel="peer_identity">
+		<title><varname>peer_identity (string)</varname></title>
+		<para>
+		The identity (realm subdomain) of the Diameter server peer, to which
+		the OpenSIPS Diameter client peer will connect.
+		</para>
+		<para>
+			Default value is <emphasis>"server"</emphasis>
+				(i.e. "server.diameter.test").
+		</para>
+		<example>
+		<title>Setting the <varname>peer_identity</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "peer_identity", "server")
+
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+</chapter>
