@@ -29,7 +29,11 @@
 %global _with_python3 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
+%if 0%{?fedora} > 32
+%global _with_aaa_diameter 1
+%endif
+
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats}
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
@@ -290,11 +294,12 @@ This package provides dialplan module that implements generic string
 translations based on matching and replacement rules. It can be used to
 manipulate R-URI or a PV and to translated to a new format/value.
 
+%if 0%{?_with_aaa_diameter:1}
 %package  diameter-module
 Summary:  Diameter module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
-BuildRequires: freeDiameter-devel
+BuildRequires: freeDiameter-devel >= 1.4.0
 
 %description  diameter-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -302,6 +307,7 @@ server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
 This package provides a DIAMETER driver for the AAA API from OpenSIPS.
+%endif
 
 %package  emergency-module
 Summary:  Emergency call module for OpenSIPS
@@ -778,7 +784,9 @@ Summary:  TLS transport module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-tlsmgm-module
+%if 0%{?rhel} > 7 || 0%{?fedora} > 23
 Requires: (%{name}-tls-openssl-module or %{name}-tls-wolfssl-module)
+%endif
 
 %description  tls-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -1076,6 +1084,7 @@ fi
 %{_libdir}/opensips/modules/mediaproxy.so
 %{_libdir}/opensips/modules/mi_datagram.so
 %{_libdir}/opensips/modules/mi_fifo.so
+%{_libdir}/opensips/modules/mi_script.so
 %{_libdir}/opensips/modules/mid_registrar.so
 %{_libdir}/opensips/modules/msilo.so
 %{_libdir}/opensips/modules/nat_traversal.so
@@ -1170,6 +1179,7 @@ fi
 %doc docdir/README.mediaproxy
 %doc docdir/README.mi_datagram
 %doc docdir/README.mi_fifo
+%doc docdir/README.mi_script
 %doc docdir/README.mid_registrar
 %doc docdir/README.msilo
 %doc docdir/README.nat_traversal
@@ -1269,9 +1279,11 @@ fi
 %{_libdir}/opensips/modules/dialplan.so
 %doc docdir/README.dialplan
 
+%if 0%{?_with_aaa_diameter:1}
 %files diameter-module
 %{_libdir}/opensips/modules/aaa_diameter.so
 %doc docdir/README.aaa_diameter
+%endif
 
 %files emergency-module
 %{_libdir}/opensips/modules/emergency.so
