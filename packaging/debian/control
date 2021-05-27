@@ -12,6 +12,8 @@ Build-Depends: bison,
                libcurl4-gnutls-dev,
                libdb-dev (>= 4.6.19),
                libexpat1-dev,
+               libfdcore6 (>= 1.2.1),
+               libfdproto6 (>= 1.2.1),
                libmaxminddb-dev | libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
                libjson-c-dev,
@@ -189,6 +191,17 @@ Description: Radius modules for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides the RADIUS driver for the AAA API from OpenSIPS.
+
+Package: opensips-diameter-modules
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Radius modules for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides a DIAMETER driver for the AAA API from OpenSIPS.
 
 Package: opensips-unixodbc-module
 Architecture: any

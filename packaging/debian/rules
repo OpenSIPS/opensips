@@ -56,7 +56,7 @@ ALL_MODPKG_LIST := \
 	PROTO_TLS PROTO_WSS TLS_MGM TLS_OPENSSL TLS_WOLFSSL \
 	REST_CLIENT LUA \
 	SQLITE CGRATES XML SIPREC PYTHON UUID STIR_SHAKEN \
-	PROMETHEUS KAFKA
+	PROMETHEUS KAFKA DIAMETER
 # add SCTP only on linux systems
 ifeq ($(DEB_HOST_ARCH_OS),linux)
 	ALL_MODPKG_LIST += PROTO_SCTP
@@ -113,6 +113,9 @@ CPL_MOD_PATH=$(addprefix modules/, $(CPL_MODULES))
 RADIUS_PKGNAME = opensips-radius-modules
 RADIUS_MODULES = aaa_radius peering
 RADIUS_MOD_PATH=$(addprefix modules/, $(RADIUS_MODULES))
+DIAMETER_PKGNAME = opensips-diameter-modules
+DIAMETER_MODULES = aaa_diameter
+DIAMETER_MOD_PATH=$(addprefix modules/, $(DIAMETER_MODULES))
 PRESENCE_PKGNAME = opensips-presence-modules
 PRESENCE_MODULES = presence presence_callinfo presence_dialoginfo presence_xml presence_mwi presence_xcapdiff presence_dfks pua pua_bla pua_dialoginfo pua_mi pua_usrloc pua_xmpp rls xcap xcap_client
 PRESENCE_MOD_PATH=$(addprefix modules/, $(PRESENCE_MODULES))
