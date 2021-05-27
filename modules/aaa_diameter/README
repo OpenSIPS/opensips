@@ -1,0 +1,159 @@
+AAA_DIAMETER MODULE
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. fd_log_level (integer)
+              1.3.2. realm (string)
+              1.3.3. peer_identity (string)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Setting the fd_log_level parameter
+   1.2. Setting the realm parameter
+   1.3. Setting the peer_identity parameter
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides a Diameter implementation for the core AAA
+   API interface.
+
+   Any module that wishes to use it has to do the following:
+     * include aaa.h
+     * make a bind call with a proper Diameter-specific URL, e.g.
+       "diameter:freeDiameter-client.conf"
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   None.
+
+1.2.2. External Libraries or Applications
+
+   All Diameter message building and parsing, as well as the peer
+   state machine and Diameter-related network communication are
+   all powered by the freeDiameter project and C libraries,
+   dynamically linking with the "aaa_diameter" module.
+
+   The following libraries must be installed before running
+   OpenSIPS with this module loaded:
+     * libfdcore v1.2.1 or higher
+     * libfdproto v1.2.1 or higher
+
+1.3. Exported Parameters
+
+1.3.1. fd_log_level (integer)
+
+   This parameter measures the quietness of the logging done by
+   the freeDiameter library. Possible values:
+     * 0 (ANNOYING)
+     * 1 (DEBUG)
+     * 3 (NOTICE, default)
+     * 5 (ERROR)
+     * 6 (FATAL)
+
+   NOTE: since freeDiameter logs to standard output, you must also
+   enable the new core parameter, log_stdout, before getting any
+   logs from the library.
+
+   Example 1.1. Setting the fd_log_level parameter
+
+modparam("aaa_diameter", "fd_log_level", 0)
+
+
+1.3.2. realm (string)
+
+   The unique realm to be used by all participating Diameter
+   peers.
+
+   Default value is "diameter.test".
+
+   Example 1.2. Setting the realm parameter
+
+modparam("aaa_diameter", "realm", "opensips.org")
+
+
+1.3.3. peer_identity (string)
+
+   The identity (realm subdomain) of the Diameter server peer, to
+   which the OpenSIPS Diameter client peer will connect.
+
+   Default value is "server" (i.e. "server.diameter.test").
+
+   Example 1.3. Setting the peer_identity parameter
+
+modparam("aaa_diameter", "peer_identity", "server")
+
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                 Name             DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)    31       9      2435      92
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                 Name               Commit Activity
+   1. Liviu Chircu (@liviuchircu) May 2021 - May 2021
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu).
+
+   Documentation Copyrights:
+
+   Copyright © 2021 www.opensips-solutions.com
