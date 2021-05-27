@@ -95,13 +95,6 @@ void tls_dump_cert_info(char* s, X509* cert)
 	OPENSSL_free(issuer);
 }
 
-static inline char *get_ssl_method_name(enum tls_method method)
-{
-	if (method < 1 || method > SSL_VERSIONS_SIZE)
-		return "UNKNOWN";
-	return ssl_versions_struct[method-1].name;
-}
-
 enum tls_method get_ssl_min_method(void)
 {
 	return ssl_versions_struct[1].method;  // skip SSLv23/TLSany
