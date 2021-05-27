@@ -29,16 +29,16 @@ struct wolfssl_binds {
     TLS_LIB_API_BINDS;
 };
 
-typedef int(*load_wolfssl_f)(struct wolfssl_binds *binds);
+typedef int(*load_tls_wolfssl_f)(struct wolfssl_binds *binds);
 
-static inline int load_wolfssl_api(struct wolfssl_binds *binds) {
-    load_wolfssl_f load_wolfssl;
+static inline int load_tls_wolfssl_api(struct wolfssl_binds *binds) {
+    load_tls_wolfssl_f load_tls_wolfssl;
 
     /* import the wolfssl auto-loading function */
-    if (!(load_wolfssl = (load_wolfssl_f)find_export("load_wolfssl", 0)))
+    if (!(load_tls_wolfssl = (load_tls_wolfssl_f)find_export("load_tls_wolfssl", 0)))
         return -1;
 
-    if (load_wolfssl(binds) == -1)
+    if (load_tls_wolfssl(binds) == -1)
         return -1;
 
     return 0;

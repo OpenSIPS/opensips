@@ -53,7 +53,7 @@ modparam("tls_mgm", "require_cert", "1")
          <itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>tls_openssl</emphasis> or <emphasis>wolfssl</emphasis>,
+				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
 				depending on the desired TLS library
 			</para>
 			</listitem>

@@ -41,7 +41,7 @@
 #include "wolfssl.h"
 #include "wolfssl_api.h"
 
-static int load_wolfssl(struct wolfssl_binds *binds);
+static int load_tls_wolfssl(struct wolfssl_binds *binds);
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -82,13 +82,13 @@ int _wolfssl_tls_var_validity(int ind, void *ssl, str *res);
 WOLFSSL_METHOD *ssl_methods[SSL_VERSIONS_SIZE];
 
 static cmd_export_t cmds[] = {
-	{"load_wolfssl", (cmd_function)load_wolfssl,
+	{"load_tls_wolfssl", (cmd_function)load_tls_wolfssl,
 		{{0,0,0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
 struct module_exports exports = {
-	"wolfssl",  /* module name*/
+	"tls_wolfssl",  /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS, /* dlopen flags */
@@ -135,7 +135,7 @@ static void *oss_realloc(void *ptr, size_t size)
 
 static int mod_init(void)
 {
-	LM_INFO("initializing wolfssl module\n");
+	LM_INFO("initializing tls_wolfssl module\n");
 	LM_INFO("wolfSSL version: %s\n", wolfSSL_lib_version());
 
 	wolfSSL_SetAllocators(oss_malloc, oss_free, oss_realloc);
@@ -148,7 +148,7 @@ static int mod_init(void)
 
 static void mod_destroy(void)
 {
-	LM_INFO("destroying wolfssl module\n");
+	LM_INFO("destroying tls_wolfssl module\n");
 
 	wolfSSL_Cleanup();
 }
@@ -180,7 +180,7 @@ static int _wolfssl_is_peer_verified(void *ssl)
 	return 0;
 }
 
-static int load_wolfssl(struct wolfssl_binds *binds)
+static int load_tls_wolfssl(struct wolfssl_binds *binds)
 {
 	binds->tls_conn_init = _wolfssl_tls_conn_init;
 	binds->tls_conn_clean = _wolfssl_tls_conn_clean;

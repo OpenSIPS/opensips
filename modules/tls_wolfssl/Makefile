@@ -1,13 +1,13 @@
 include ../../Makefile.defs
 auto_gen=
-NAME=wolfssl.so
+NAME=tls_wolfssl.so
 
 LIBS=-L./lib/lib/ -lwolfssl -lm
 DEFS+=-I./lib/include/
 DEPS+=lib/lib/libwolfssl.a
 
 _makefile_path := $(lastword $(MAKEFILE_LIST))
-MOD_DIR ?= $(shell realpath `dirname $(_makefile_path)`)/modules/wolfssl
+MOD_DIR ?= $(shell realpath `dirname $(_makefile_path)`)/modules/tls_wolfssl
 
 include ../../Makefile.modules
 

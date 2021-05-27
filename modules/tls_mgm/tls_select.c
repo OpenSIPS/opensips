@@ -41,7 +41,7 @@
 #include "../../net/net_tcp.h"
 
 #include "../tls_openssl/openssl_api.h"
-#include "../wolfssl/wolfssl_api.h"
+#include "../tls_wolfssl/wolfssl_api.h"
 
 #include "tls_select.h"
 #include "tls_config.h"

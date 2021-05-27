@@ -43,7 +43,7 @@
 			and transport protocol modules like <emphasis>proto_tls</emphasis> or
 			<emphasis>proto_wss</emphasis>. The <emphasis>tls_mgm</emphasis> module
 			transparently exposes the TLS operations implemented by
-			<emphasis>tls_openssl</emphasis> and <emphasis>wolfssl</emphasis> modules
+			<emphasis>tls_openssl</emphasis> and <emphasis>tls_wolfssl</emphasis> modules
 			to the higher-level OpenSIPS transport modules.
 		</para>
 		<para>
@@ -129,7 +129,7 @@
          <itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>tls_openssl</emphasis> or <emphasis>wolfssl</emphasis>,
+				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
 				depending on the desired TLS library
 			</para>
 			</listitem>
@@ -240,7 +240,7 @@ socket= tls:1.2.3.4:5061
 			<itemizedlist>
 				<listitem>
 				<para><emphasis>auto</emphasis> - auto-detect which TLS library
-				module (<emphasis>tls_openssl</emphasis> or <emphasis>wolfssl</emphasis>)
+				module (<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>)
 				was loaded. OpenSIPS will not start if no module, or both modules are
 				found.
 				</para>
@@ -259,7 +259,7 @@ socket= tls:1.2.3.4:5061
 				</listitem>
 				<listitem>
 				<para><emphasis>wolfssl</emphasis> - use the <emphasis>wolfSSL</emphasis>
-				library through the <emphasis>wolfssl</emphasis> module.
+				library through the <emphasis>tls_wolfssl</emphasis> module.
 				</para>
 				</listitem>
 			</itemizedlist>

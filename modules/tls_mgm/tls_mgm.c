@@ -59,7 +59,7 @@
 #include "../../str_list.h"
 
 #include "../tls_openssl/openssl_api.h"
-#include "../wolfssl/wolfssl_api.h"
+#include "../tls_wolfssl/wolfssl_api.h"
 
 #include "../../net/proto_tcp/tcp_common_defs.h"
 #include "tls_config.h"
@@ -349,7 +349,7 @@ static pv_export_t mod_items[] = {
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tls_openssl", DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "wolfssl", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "tls_wolfssl", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -892,7 +892,7 @@ static int load_tls_library(void)
 	tls_library = TLS_LIB_NONE;
 
 	openssl_loaded = module_loaded("tls_openssl");
-	wolfssl_loaded = module_loaded("wolfssl");
+	wolfssl_loaded = module_loaded("tls_wolfssl");
 
 	tls_library_param.len = strlen(tls_library_param.s);
 
@@ -925,7 +925,7 @@ static int load_tls_library(void)
 		tls_library = TLS_LIB_OPENSSL;
 	} else if (!str_strcmp(&tls_library_param, _str(TLS_LIB_WOLFSSL_STR))) {
 		if (!wolfssl_loaded) {
-			LM_ERR("Configured to use wolfSSL library but 'wolfssl' "
+			LM_ERR("Configured to use wolfSSL library but 'tls_wolfssl' "
 				"module not loaded!\n");
 			return -1;
 		}
@@ -944,7 +944,7 @@ static int load_tls_library(void)
 
 		openssl_api.reg_tls_sni_cb(tls_sni_cb);
 	} else if (tls_library == TLS_LIB_WOLFSSL) {
-		if (load_wolfssl_api(&wolfssl_api)) {
+		if (load_tls_wolfssl_api(&wolfssl_api)) {
 			LM_DBG("Failed to load wolfSSL API\n");
 			return -1;
 		}
