@@ -1,0 +1,333 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides multiple hooks to run Management Interface
+		commands directly from OpenSIPS script. It supports running
+		both synchronous and asynchronous commands. Depending on the
+		nature of the command (asynchronous or not), and on the way
+		the <emphasis>mi</emphasis> command is run from script,
+		the returned result is different.
+	</para>
+	</section>
+
+	<section>
+	<title>Values Returned</title>
+	<para>
+		In case of success, the MI command returns with success.
+		If a return variable is provided as parameter,
+		a JSON is also stored in the variable provided.
+	</para>
+	<para>
+		In case of failure of the MI command, JSON-RPC reply error code
+		is stored in the <emphasis>$rc</emphasis> variable, as a negative
+		number. Lower values, such as <emphasis>-1,-2,-3</emphasis> can also
+		be returned to indicate an internal error. If a return variable is
+		provided, it is stored to the error description.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>proto_hep module</emphasis>, in case MI
+				tracing is used.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>none</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+
+	<section id="param_pretty_printing" xreflabel="pretty_printing">
+		<title><varname>pretty_printing</varname> (int)</title>
+		<para>
+			Indicates whether the JSON responses stored in the return
+			variable should be pretty-printed or not.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0 - no pretty-printing</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>pretty_printing</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("mi_script", "pretty_printing", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_trace_destination" xreflabel="trace_destination">
+		<title><varname>trace_destination</varname> (string)</title>
+		<para>
+			Trace destination as defined in the tracing module. Currently
+		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
+		This is where traced mi messages will go.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep</emphasis>).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+
+modparam("mi_stream", "trace_destination", "hep_dest")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_trace_bwlist" xreflabel="trace_bwlist">
+		<title><varname>trace_bwlist</varname> (string)</title>
+		<para>
+			Filter traced mi commands based on a blacklist or a whitelist.
+		<emphasis role="bold">trace_destination</emphasis> must be defined for
+		this parameter to have any purpose. Whitelists can be defined using
+		'w' or 'W', blacklists using 'b' or 'B'. The type is separate by the
+		actual blacklist by ':'. The mi commands in the list must be separated
+		by ','.
+		</para>
+		<para>
+			Defining a blacklists means all the commands that are not blacklisted
+			will be traced. Defining a whitelist means all the commands that are
+			not whitelisted will not be traced.
+			<emphasis role="bold">WARNING: </emphasis> One can't define both
+			a whitelist and a blacklist. Only one of them is allowed. Defining
+			the parameter a second time will just overwrite the first one.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep)</emphasis>.
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+## blacklist ps and which mi commands
+## all the other commands shall be traced
+modparam("mi_stream", "trace_bwlist", "b: ps, which")
+...
+## allow only sip_trace mi command
+## all the other commands will not be traced
+modparam("mi_stream", "trace_bwlist", "w: sip_trace")
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+
+	<title>Exported Functions</title>
+	<section id="func_mi" xreflabel="mi()">
+		<title>
+			<function moreinfo="none">mi(command, [ret_var [,params_avp[, vals_avp]]])</function>
+                </title>
+		<para>
+			Runs an MI command in synchronous mode, blocking
+			until a response is available.
+		</para>
+		<para>
+			<emphasis>IMPORTANT:</emphasis> it is highly recommended
+			to prevent using this function for tasks that take long
+			time, such as reloads, as the function would block until
+			the command ends. Moreover, if the running MI
+			<emphasis>command </emphasis> is configured to run in
+			asynchronous mode (such as <emphasis>t_uac_dlg</emphasis>
+			the command blocks in a busy waiting manner until
+			the response is received.
+		</para>
+		<para>
+			This function can be used in any route.
+		</para>
+		<para>
+			The function can receive the following parameters:
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>command(string)</emphasis> - the MI command
+					to be run. This can be a single token, representing
+					the MI command to run (without parameters), or
+					can be followed by several space separated
+					parameters (no escaping is handled). Each space
+					separated parameter will be passed to the MI
+					command as an indexed parameter.
+					<para><emphasis>NOTE:</emphasis> named parameters can
+					not be specified using this parameter, and you
+					will have to use the <emphasis>params_avp</emphasis>
+					and/or the <emphasis>vals_avp</emphasis> parameters
+					to specify named commands, in which case this
+					parameter will only consist of the MI command.
+					</para>
+				</para></listitem>
+				<listitem><para>
+					<emphasis>ret_var(var, optional)</emphasis> - a
+					variable used to store the return of the
+					MI command execution. In case of success,
+					a JSON is stored, otherwise an erorr message.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>params_avp(avp, optional)</emphasis> - an
+					AVP consisting of all the parameters names that
+					will be sent to the MI command. If this parameter
+					is used without the <emphasis>vals_avp</emphasis>,
+					all the values inside the AVP will be passed to the
+					MI command as indexed parameters, otherwise as
+					named parameters.
+					<para><emphasis>NOTE:</emphasis> if this parameter
+					is used, the parameters specified in the
+					<emphasis>command</emphasis> parameter are ignored.
+					</para>
+					<para><emphasis>NOTE:</emphasis> the order the
+					parameters are passed to the command is the
+					same as the one you populate the AVPs (thus
+					somehow reversed compared to the way AVPs are
+					stored in memory - the first AVP added is the
+					first parameter)
+					</para>
+				</para></listitem>
+				<listitem><para>
+					<emphasis>vals_avp(avp, optional)</emphasis> - an
+					AVP consisting of all the parameters values that
+					will be sent to the MI command. This parameter
+					only makes sense if the <emphasis>params_avp</emphasis>
+					is set, and has to contain the same number
+					of values as there are parameters.
+				</para></listitem>
+			</itemizedlist>
+		</para>
+		<example>
+		<title><function>mi</function> without params</title>
+		<programlisting format="linespecific">
+...
+mi("shm_check");
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>mi</function> with params in command</title>
+		<programlisting format="linespecific">
+...
+# this command is similar to the above
+mi("cache_remove local password_user1");
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>mi</function> with return</title>
+		<programlisting format="linespecific">
+...
+mi("ds_list", $var(ret));
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>mi</function> without return but with indexed params</title>
+		<programlisting format="linespecific">
+...
+$avp(params) = "local";
+$avp(params) = "password_user1";
+mi("cache_remove",,$avp(params));
+
+# the following command is similar to the above
+mi("cache_remove local password_user1");
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>mi</function> with return and named parameters</title>
+		<programlisting format="linespecific">
+...
+$avp(params) = "callid";
+$avp(vals) = "SEARCH_FOR_THIS_CALLID";
+$avp(params) = "from_tag";
+$avp(vals) = "SEARCH_FOR_THIS_FROM_TAG";
+mi("dlg_list", $var(dlg), $avp(params), $avp(vals));
+...
+</programlisting>
+		</example>
+        </section>
+	</section>
+
+	<section>
+	<title>Exported Asyncronous Functions</title>
+	<section id="afunc_mi" xreflabel="mi()">
+		<title>
+			<function moreinfo="none">mi(command, [ret_var [,params_avp[, vals_avp]]])</function>
+		</title>
+		<para>
+			The function works is more or less the same as its
+			synchronous corespondent, except that the MI command
+			is run in an asynchronous manner - the process does
+			not block to wait for the response, but it continues
+			its execution and the MI command is run in an
+			asynchronous context.
+		</para>
+		<para>
+			<emphasis>NOTE:</emphasis> currently MI commands run
+			asynchronously cannot be traced through hep.
+		</para>
+		<example>
+		<title><function moreinfo="none">async mi call</function> usage</title>
+		<programlisting format="linespecific">
+...
+xlog("reload starting\n");
+async(mi("dr_reload"), after_reload);
+...
+
+route[after_reload] {
+	xlog("reload completed\n");
+}
+</programlisting>
+		</example>
+	</section>
+	</section>
+
+</chapter>
+
