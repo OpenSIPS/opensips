@@ -1,0 +1,256 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements a secure Binary communication protocol
+		over TLS, to be used by the OpenSIPS clustering engine provided
+		by the clusterer module.
+	</para>
+	</section>
+	<para>
+		Once loaded, you will be able to define BINS listeners in your
+		configuration file by adding their IP and, optionally, a
+		listening port, similar to this example:
+	<para>
+		<programlisting format="linespecific">
+...
+socket= bins:127.0.0.1 		# change the listening IP
+socket= bins:127.0.0.1:5557	# change the listening IP and port
+...
+</programlisting>
+	</para>
+	</para>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+        <itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
+				depending on the desired TLS library
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tls_mgm</emphasis>.
+			</para>
+			</listitem>
+        </itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_bins_port" xreflabel="bins_port">
+		<title><varname>bins_port</varname> (integer)</title>
+		<para>
+		The default port to be used by all BINS listeners.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 5556.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bins_port</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_bins", "bins_port", 5557)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_bins_handshake_timeout" xreflabel="bins_handshake_timeout">
+		<title><varname>bins_handshake_timeout</varname> (integer)</title>
+		<para>
+		Sets the timeout (in milliseconds) for the SSL/TLS handshake
+		sequence to complete. It may be necessary to increase this
+		value when using a CPU intensive cipher for the connection to
+		allow time for keys to be generated and processed.
+		</para>
+		<para>
+		The timeout is invoked during acceptance of a new connection
+		(inbound) and during the wait period when a new session is
+		being initiated (outbound).
+		</para>
+		<para><emphasis>
+			Default value is 100.
+		</emphasis></para>
+		<example>
+			<title>Set <varname>bins_handshake_timeout</varname> variable</title>
+			<programlisting format="linespecific">
+
+param("proto_tls", "bins_handshake_timeout", 200) # number of milliseconds
+
+			</programlisting>
+		</example>
+	</section>
+
+	<section id="param_bins_send_timeout" xreflabel="bins_send_timeout">
+		<title><varname>bins_send_timeout</varname> (integer)</title>
+		<para>
+		Sets the timeout (in milliseconds) for blocking send operations
+		to complete.
+		</para>
+		<para>
+		The send timeout is invoked for all TLS write operations,
+		excluding the handshake process (see: bins_handshake_timeout)
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bins_send_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_bins", "bins_send_timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bins_max_msg_chunks" xreflabel="bins_max_msg_chunks">
+		<title><varname>bins_max_msg_chunks</varname> (integer)</title>
+		<para>
+			The maximum number of chunks in which a BINS message is
+			expected to arrive via TCP. If a received packet is more
+			fragmented than this, the connection is dropped (either the
+			connection is very overloaded and this leads to high
+			fragmentation - or we are the victim of an ongoing attack where
+			the attacker is sending very fragmented traffic in order to
+			decrease server performance).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 32.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bins_max_msg_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_bins", "bins_max_msg_chunks", 8)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bins_async" xreflabel="bins_async">
+		<title><varname>bins_async</varname> (integer)</title>
+		<para>
+			Specifies whether the TCP/TLS connect and write operations
+			should be done in an asynchronous mode (non-blocking connect
+			and write) or not. If disabled, OpenSIPS will block and wait
+			for TCP/TLS operations like connect and write.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 1 (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bins_async</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_bins", "bins_async", 0)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bins_async_max_postponed_chunks" xreflabel="bins_async_max_postponed_chunks">
+		<title><varname>bins_async_max_postponed_chunks</varname> (integer)</title>
+		<para>
+			If bins_async is enabled, this specifies the maximum number of
+			BINS messages that can be stashed for later/async writing. If
+			the connection pending writes exceed this number, the
+			connection will be marked as broken and dropped.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 32.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bins_async_max_postponed_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_bins", "bins_async_max_postponed_chunks", 16)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_bins_async_local_connect_timeout" xreflabel="bins_async_local_connect_timeout">
+		<title><varname>bins_async_local_connect_timeout</varname> (integer)</title>
+		<para>
+			If bin_async is enabled, this specifies the number of
+			milliseconds that a connect will be tried in blocking mode
+			(optimization). If the connect operation lasts more than this,
+			the connect will go to async mode and will be passed to TCP
+			MAIN for polling.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>bins_async_local_connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_bins", "bins_async_local_connect_timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+		<section id="param_bins_async_handshake_timeout" xreflabel="bins_async_handshake_timeout">
+			<title><varname>bins_async_handshake_timeout</varname> (integer)</title>
+			<para>
+				If <emphasis>tls_async</emphasis> is enabled, this specifies the
+				number of milliseconds that a TLS handshake should be tried in blocking
+				mode (optimization). If the handshake operation lasts more than this,
+				the write will go to async mode and will be passed to tls MAIN for
+				polling.
+			</para>
+			<para>
+			<emphasis>
+				Default value is 10 ms.
+			</emphasis>
+			</para>
+			<example>
+			<title>Set <varname>bins_async_handshake_timeout</varname> parameter</title>
+			<programlisting format="linespecific">
+	...
+	modparam("proto_tls", "bins_async_handshake_timeout", 100)
+	...
+	</programlisting>
+			</example>
+		</section>
+	</section>
+
+</chapter>

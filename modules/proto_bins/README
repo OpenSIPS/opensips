@@ -71,7 +71,9 @@ socket= bins:127.0.0.1:5557     # change the listening IP and port
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * wolfssl.
+     * tls_openssl or tls_wolfssl, depending on the desired TLS
+       library
+     * tls_mgm.
 
 1.2.2. External Libraries or Applications
 
@@ -107,8 +109,8 @@ modparam("proto_bins", "bins_port", 5557)
 
    Example 1.2. Set bins_handshake_timeout variable
 
-param("proto_bins", "bins_handshake_timeout", 200) # number of milliseco
-nds
+param("proto_tls", "bins_handshake_timeout", 200) # number of millisecon
+ds
 
 
 1.3.3. bins_send_timeout (integer)
@@ -154,7 +156,7 @@ modparam("proto_bins", "bins_max_msg_chunks", 8)
 
    Example 1.5. Set bins_async parameter
 ...
-modparam("proto_bin", "bins_async", 0)
+modparam("proto_bins", "bins_async", 0)
 ...
 
 1.3.6. bins_async_max_postponed_chunks (integer)
@@ -168,7 +170,7 @@ modparam("proto_bin", "bins_async", 0)
 
    Example 1.6. Set bins_async_max_postponed_chunks parameter
 ...
-modparam("proto_bin", "bins_async_max_postponed_chunks", 16)
+modparam("proto_bins", "bins_async_max_postponed_chunks", 16)
 ...
 
 1.3.7. bins_async_local_connect_timeout (integer)
@@ -183,7 +185,7 @@ modparam("proto_bin", "bins_async_max_postponed_chunks", 16)
 
    Example 1.7. Set bins_async_local_connect_timeout parameter
 ...
-modparam("proto_bin", "bins_async_local_connect_timeout", 200)
+modparam("proto_bins", "bins_async_local_connect_timeout", 200)
 ...
 
 1.3.8. bins_async_handshake_timeout (integer)
@@ -197,9 +199,9 @@ modparam("proto_bin", "bins_async_local_connect_timeout", 200)
    Default value is 10 ms.
 
    Example 1.8. Set bins_async_handshake_timeout parameter
-...
-modparam("proto_tls", "bins_async_handshake_timeout", 100)
-...
+        ...
+        modparam("proto_tls", "bins_async_handshake_timeout", 100)
+        ...
 
 Chapter 2. Contributors
 
@@ -207,8 +209,10 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    14       1      1584      0
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 8 2 569 19
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 4 2
+   3. Nick Altmann (@nikbyte) 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -229,8 +233,10 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Feb 2021 - Feb 2021
+                     Name                   Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu)     Feb 2021 - May 2021
+   2. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -239,8 +245,6 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu).
-
    Documentation Copyrights:
 
-   Copyright © 2021 www.opensips-solutions.com
+   Copyright © 2015 www.opensips-solutions.com
