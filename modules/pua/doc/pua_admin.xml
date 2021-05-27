@@ -7,31 +7,78 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module offer the functionality of a presence user agent client,
-		sending Subscribe and Publish messages. 
+		This module offer the internal support for OpenSIPS to act as a 
+		Presence User Agent client, by sending Subscribe and Publish messages.
 	</para>
 	<para>
-		 Now it can be used with the following modules: pua_mi and pua_usrloc,
-		 pua_bla and pua_xmpp.
+	Note that the module does NOT provide any functionality to be used
+	directly from the script, but it is providing this PUA client support
+	(via an internal API) for other event-specific modules to do PUA 
+	client operations.
+	</para>
+	<para>
+		 Some of modules build on top of the PUA module are pua_mi, pua_usrloc,
+		 pua_dialoginfo, pua_bla and pua_xmpp.
 		 The pua_mi offer the possibility to publish any kind of information
 		 or subscribing to a resource through fifo. The pua_usrloc module calls
 		 a function exported by pua modules to publish elementary presence
 		 information, such as basic status "open" or "closed", for clients that
 		 do not implement client-to-server presence.
-		 Through pua_bla , BRIDGED LINE APPEARANCE features are added to OpenSIPs.
-		 The pua_xmpp module represents a gateway between SIP and XMPP, so that 
-		 jabber and SIP clients can exchange presence information. 
+		 The pua_dialoginfo provideds BLF support, by publishing the status of
+		 the participants into a call (like ringing, established, terminated).
+		 Through pua_bla , BRIDGED LINE APPEARANCE features are added to 
+		 OpenSIPs.
+		 The pua_xmpp module represents a gateway between SIP and XMPP, so 
+		 that jabber and SIP clients can exchange presence information.
 	</para>
 	<para>
 		The module use cache to store presentity list and writes to database
 		on timer to be able to recover upon restart.
 	</para>
 	<para>
-		Notice: This module must not be used in no fork mode (the locking mechanism
-		used may cause deadlock in no fork mode).
+		Notice: This module must not be used in no fork mode (the locking 
+		mechanism used may cause deadlock in no fork mode).
 	</para>
 	</section>
-		<section id="dependencies" xreflabel="Dependencies">
+
+	<section id="pua_clustering">
+	<title>PUA clustering</title>
+	<para>
+	Starting 3.2, the module was extended with clustering support also. This 
+	means multiple OpenSIPS instance, configured with PUA module, may work 
+	together. For example, the publishing for a certain presentity may be done 
+	via different node (PUA OpenSIPS instance) in the cluster.
+	</para>
+	<para>
+	The clustering support is a mixture of DB sharing and OpenSIPS clustering.
+	The OpenSIPS clustering layer is used for broadcasting notifications with 
+	the cluster when a presentity is modified by one of the nodes (so that, 
+	the other nodes in cluster may refresh the presentity via DB.
+	</para>
+	<para>
+	The shared DB is used by sharing between the nodes the actual presentity
+	data. A node caches into memory only the presentities created by the node
+	or the presentitites the node worked with. A presentity record may be
+	loaded into memory (from DB) if the node needs to perform an operation 
+	with that presentity.
+	</para>
+	<para>
+	IMPORTANT: because the actual presentity data is shared between the nodes
+	via DB (the clustering layer is used for notifications only), it is
+	important to set a very low update interval for the DB (for data being
+	flushed from memoryc cache into DB), to get the DB content updated as 
+	realtime as possible. See the the <xref linkend="param_update_period"/>,
+	module parameter, with recomanded values like 2-5 seconds.
+	</para>
+	<para>
+	On the OpenSIPS clustering layer, the PUA module use the sharing-tags
+	mechanism in order to control (between all the nodes in the cluster) which
+	node is responsible for performing the expiring operation on the
+	presentity (like sending the PUBLISH with expires 0).
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
 		<title>&osips; Modules</title>
@@ -46,6 +93,12 @@
 			<listitem>
 			<para>
 				<emphasis>tm</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>clusterer</emphasis>, if the cluster_id 
+				module parameter is set and clustering support activated.
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -66,6 +119,7 @@
 		</para>
 	</section>
 	</section>
+
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 	<title>Exported Parameters</title>
 	<section id="param_hash_size" xreflabel="hash_size">
@@ -171,6 +225,10 @@ modparam("pua", "default_expires", 3600)
 		<emphasis>Default value is <quote>30</quote>.
 		</emphasis>
 		</para>
+		<para>
+		IMPORTANT - if you use clustering support for this module, set a low
+		value here, like 2-5, see the clustering chapter above.
+		</para>
 		<example>
 		<title>Set <varname>update_period</varname> parameter</title>
 		<programlisting format="linespecific">
@@ -180,6 +238,62 @@ modparam("pua", "update_period", 100)
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_cluster_id" xreflabel="cluster_id">
+		<title><varname>cluster_id</varname> (int)</title>
+		<para>
+		The cluster ID where the PUA data should be replicated/shared.
+		This parameter is to be used only if clustering mode is needed.
+		In order to understand the concept of a cluster ID, please see the 
+		<emphasis>clusterer</emphasis> module.
+		</para>
+		<para>
+		For more on PUA clustering see the 
+		<xref linkend="pua_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>None</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_id</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pua", "cluster_id", 10)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cluster_sharing_tag" xreflabel="cluster_sharing_tag">
+		<title><varname>cluster_sharing_tag</varname> (int)</title>
+		<para>
+		The clustering share-tag to be used by the PUA module when creating
+		any new presentity record. The tag will by used to decide which
+		OpenSIPS instance (owning the tag as active) will be responsible
+		for expiring this presentity.
+		This parameter is to be used only if clustering mode is needed.
+		In order to understand the concept of sharing TAG, please see the 
+		<emphasis>clusterer</emphasis> module.
+		</para>
+		<para>
+		For more on PUA clustering see the 
+		<xref linkend="pua_clustering"/> chapter.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>NULL</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_sharing_tag</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("pua", "cluster_sharing_tag", "vip")
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 <section id="exported_functions" xreflabel="exported_functions">
