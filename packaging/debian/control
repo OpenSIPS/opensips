@@ -192,11 +192,11 @@ Description: Radius modules for OpenSIPS
  .
  This package provides the RADIUS driver for the AAA API from OpenSIPS.
 
-Package: opensips-diameter-modules
+Package: opensips-diameter-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Radius modules for OpenSIPS
+Description: Diameter module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.

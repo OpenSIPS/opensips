@@ -290,6 +290,19 @@ This package provides dialplan module that implements generic string
 translations based on matching and replacement rules. It can be used to
 manipulate R-URI or a PV and to translated to a new format/value.
 
+%package  diameter-module
+Summary:  Diameter module for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+BuildRequires: freeDiameter-devel
+
+%description  diameter-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides a DIAMETER driver for the AAA API from OpenSIPS.
+
 %package  emergency-module
 Summary:  Emergency call module for OpenSIPS
 Group:    System Environment/Daemons
@@ -1242,6 +1255,10 @@ fi
 %{_libdir}/opensips/modules/dialplan.so
 %doc docdir/README.dialplan
 
+%files diameter-module
+%{_libdir}/opensips/modules/aaa_diameter.so
+%doc docdir/README.aaa_diameter
+
 %files emergency-module
 %{_libdir}/opensips/modules/emergency.so
 %doc docdir/README.emergency
@@ -1510,8 +1527,8 @@ fi
 %changelog
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
-- New modules: b2b_logic, event_kafka, prometeus, rtp_relay, tls_openssl, tls_wolfssl
-- New packages: kafka-module, prometeus-module, tls-openssl-module, tls-wolfssl-module
+- New modules: aaa_diameter, b2b_logic, event_kafka, prometeus, rtp_relay, tls_openssl, tls_wolfssl
+- New packages: aaa-diameter-module, kafka-module, prometeus-module, tls-openssl-module, tls-wolfssl-module
 - Obsoleted modules: b2b_logic_xml
 
 * Fri Feb 26 2021 Razvan Crainea <razvan@opensips.org> - 3.2.0-1
