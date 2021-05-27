@@ -182,7 +182,8 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 		<para>
 			When the uri is a <emphasis>file</emphasis>, the path to the file has
 			to be specified after the colon. The output is always appended if the file
-			exists, or created using <emphasis>644</emphasis> permissions if it doesn't.
+			exists, or created if it doesn't, using <xref linkend="param_file_mode"/>
+			permissions.
 		</para>
 		<para>
 			When the uri is <emphasis>syslog</emphasis>, it has to follow the following
