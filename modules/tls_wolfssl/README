@@ -1,4 +1,4 @@
-wolfssl Module
+tls_wolfssl Module
      __________________________________________________________
 
    Table of Contents
@@ -10,12 +10,6 @@ wolfssl Module
 
               1.2.1. OpenSIPS Modules
               1.2.2. External Libraries or Applications
-
-        1.3. Exported Parameters
-
-              1.3.1. ca_list (string)
-              1.3.2. certificate (string)
-              1.3.3. private_key (string)
 
    2. Contributors
 
@@ -33,19 +27,16 @@ wolfssl Module
 
    2.2. Most recently active contributors^(1) to this module
 
-   List of Examples
-
-   1.1. Set ca_list variable
-   1.2. Set certificate variable
-   1.3. Set private_key variable
-
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   This module implements TLS operations using the wolfssl
-   libarary and provides an interface for the proto_bins module.
-   The wolfssl library is statically-linked and bundled with this
+   This module implements TLS operations using the wolfSSL
+   libarary. It provides the primitives required by the tls_mgm
+   module in order to expose a higher-level API used by TLS-based
+   protocol modules like proto_tls or proto_wss.
+
+   The wolfSSL library is statically-linked and bundled with this
    module so no installation or external dependency is required.
 
 1.2. Dependencies
@@ -60,46 +51,6 @@ Chapter 1. Admin Guide
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
-
-1.3. Exported Parameters
-
-1.3.1. ca_list (string)
-
-   List of trusted CAs. The file contains the certificates
-   accepted, one after the other. It MUST be a file, not a folder.
-
-   Default value is "".
-
-   Example 1.1. Set ca_list variable
-...
-modparam("wolfssl", "ca_list", "/mycerts/certs/ca_list.pem")
-...
-
-1.3.2. certificate (string)
-
-   Public certificate file for OpenSIPS. It will be used as
-   server-side certificate for incoming TLS connections, and as a
-   client-side certificate for outgoing TLS connections.
-
-   Default value is "".
-
-   Example 1.2. Set certificate variable
-...
-modparam("wolfssl", "certificate", "/mycerts/certs/opensips_server_cert.
-pem")
-...
-
-1.3.3. private_key (string)
-
-   Private key of the above certificate. I must be kept in a safe
-   place with tight permissions!
-
-   Default value is "".
-
-   Example 1.3. Set private_key variable
-...
-modparam("wolfssl", "private_key", "/mycerts/private/prik.pem")
-...
 
 Chapter 2. Contributors
 
