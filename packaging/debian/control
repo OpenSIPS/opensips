@@ -545,11 +545,40 @@ Description: TLS management module for OpenSIPS
  .
  This package provides support for TLS management for OpenSIPS.
 
+Package: opensips-tls-openssl-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-tlsmgm-module (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: TLS transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the OpenSSL implementation for TLS in OpenSIPS.
+
+Package: opensips-tls-wolfssl-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-tlsmgm-module (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: TLS transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the wolfSSL implementation for TLS in OpenSIPS.
+
 Package: opensips-tls-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          opensips-tlsmgm-module (= ${binary:Version}),
+         opensips-tls-openssl-module (= ${binary:Version}) | opensips-tls-wolfssl-module (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: TLS transport module for OpenSIPS
@@ -564,6 +593,7 @@ Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          opensips-tlsmgm-module (= ${binary:Version}),
+         opensips-tls-openssl-module (= ${binary:Version}) | opensips-tls-wolfssl-module (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: WebSocket Secure (WSS) transport module for OpenSIPS
