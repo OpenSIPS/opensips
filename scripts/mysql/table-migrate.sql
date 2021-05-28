@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2019-2020 OpenSIPS Solutions
+# Copyright (C) 2019-2021 OpenSIPS Solutions
 #
 # This file is part of opensips, a free SIP server.
 #
@@ -17,9 +17,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-DROP PROCEDURE IF EXISTS `OSIPS_TB_COPY_3_0_TO_3_1`;
+DROP PROCEDURE IF EXISTS `OSIPS_TB_COPY_3_1_TO_3_2`;
 DELIMITER $$
-CREATE PROCEDURE `OSIPS_TB_COPY_3_0_TO_3_1`(
+CREATE PROCEDURE `OSIPS_TB_COPY_3_1_TO_3_2`(
 	IN old_db CHAR(64), IN new_db CHAR(64), IN tb_name CHAR(64))
 BEGIN
 SET @c1 = (SELECT EXISTS(
@@ -33,73 +33,33 @@ SET @c2 = (SELECT EXISTS(
        AND table_name = tb_name
 ));
 IF @c1 = 1 AND @c2 = 1 THEN
-	IF tb_name = 'b2b_entities' THEN
+	IF tb_name = 'subscriber' THEN
 		SET @Q = CONCAT(
 		'INSERT INTO ', new_db, '.', tb_name, '
-			(id, type, state, ruri, from_uri, to_uri, from_dname, to_dname, tag0,
-				tag1, callid, cseq0, cseq1, contact0, contact1, route0, route1,
-				sockinfo_srv, param, mod_name, storage, lm, lrc, lic, leg_cseq,
-				leg_route, leg_tag, leg_contact, leg_sockinfo)
+			(id, username, domain, password, email_address,
+				ha1, ha1_sha256, ha1_sha512t256, rpid)
 		SELECT
-			id, type, state, ruri, from_uri, to_uri, from_dname, to_dname, tag0,
-				tag1, callid, cseq0, cseq1, contact0, contact1, route0, route1,
-				sockinfo_srv, param, "b2b_logic", NULL, lm, lrc, lic, leg_cseq,
-				leg_route, leg_tag, leg_contact, leg_sockinfo
+			id, username, domain, password, email_address, ha1, "", "", rpid
 		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'cc_agents' THEN
+	ELSEIF tb_name = 'b2b_logic' THEN
 		SET @Q = CONCAT(
 		'INSERT INTO ', new_db, '.', tb_name, '
-			(id, agentid, location, logstate, skills, wrapup_end_time)
+			(id, si_key, scenario, sstate, sdp, lifetime,
+				e1_type, e1_sid, e1_from, e1_to, e1_key,
+				e2_type, e2_sid, e2_from, e2_to, e2_key,
+				e3_type, e3_sid, e3_from, e3_to, e3_key)
 		SELECT
-			id, agentid, location, logstate, skills, last_call_end
+			id, si_key, scenario, sstate, sdp, lifetime,
+				e1_type, e1_sid, e1_from, e1_to, e1_key,
+				e2_type, e2_sid, e2_from, e2_to, e2_key,
+				e3_type, e3_sid, e3_from, e3_to, e3_key
 		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'cc_calls' THEN
-		SET @Q = CONCAT(
-		'INSERT INTO ', new_db, '.', tb_name, '
-		SELECT
-			*, ""
-		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'cc_flows' THEN
-		SET @Q = CONCAT(
-		'INSERT INTO ', new_db, '.', tb_name, '
-			(id, flowid, priority, skill, prependcid, max_wrapup_time,
-				dissuading_hangup, dissuading_onhold_th, dissuading_ewt_th,
-				dissuading_qsize_th, message_welcome, message_queue,
-				message_dissuading, message_flow_id)
-		SELECT
-			id, flowid, priority, skill, prependcid, 0,
-				0, 0, 0, 0, message_welcome, message_queue,
-				"", NULL
-		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'dialog' THEN
-		SET @Q = CONCAT(
-		'INSERT INTO ', new_db, '.', tb_name, '
-		SELECT
-			*, NULL, NULL, NULL
-		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'dr_carriers' THEN
-		SET @Q = CONCAT(
-		'INSERT INTO ', new_db, '.', tb_name, '
-			(id, carrierid, gwlist, flags, sort_alg, state, attrs, description)
-		SELECT
-			id, carrierid, gwlist, flags, "N", state, attrs, description
-		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'dr_rules' THEN
-		SET @Q = CONCAT(
-		'INSERT INTO ', new_db, '.', tb_name, '
-			(ruleid, groupid, prefix, timerec, priority, routeid, gwlist,
-				sort_alg, sort_profile, attrs, description)
-		SELECT
-			ruleid, groupid, prefix, timerec, priority, routeid, gwlist,
-				"N", NULL, attrs, description
-		FROM ', old_db, '.', tb_name);
-	ELSEIF tb_name = 'load_balancer' THEN
-		SET @Q = CONCAT(
-		'INSERT INTO ', new_db, '.', tb_name, '
-			(id, group_id, dst_uri, resources, probe_mode, attrs, description)
-		SELECT
-			id, group_id, dst_uri, resources, probe_mode, NULL, description
-		FROM ', old_db, '.', tb_name);
+	ELSEIF tb_name = 'registrant' THEN
+		SET @Q = CONCAT('INSERT INTO ', new_db, '.', tb_name,
+						' SELECT *, 0 FROM ', old_db, '.', tb_name);
+	ELSEIF tb_name = 'pua' THEN
+		SET @Q = CONCAT('INSERT INTO ', new_db, '.', tb_name,
+						' SELECT *, NULL FROM ', old_db, '.', tb_name);
 	ELSE
 		SET @Q = CONCAT('INSERT INTO ', new_db, '.', tb_name,
 						' SELECT * FROM ', old_db, '.', tb_name);
