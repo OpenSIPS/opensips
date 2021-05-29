@@ -348,7 +348,7 @@ static pv_export_t mod_items[] = {
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tls_openssl", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tls_openssl", DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "tls_wolfssl", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
