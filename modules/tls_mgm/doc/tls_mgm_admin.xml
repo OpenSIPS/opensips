@@ -130,12 +130,7 @@
 			<listitem>
 			<para>
 				<emphasis>tls_openssl</emphasis> or <emphasis>tls_wolfssl</emphasis>,
-				depending on the desired TLS library
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				<emphasis>tls_mgm</emphasis>.
+				unless <xref linkend="param_tls_library"/> is set to 'none'.
 			</para>
 			</listitem>
         </itemizedlist>
@@ -249,7 +244,9 @@ socket= tls:1.2.3.4:5061
 				<para><emphasis>none</emphasis> - do not use any TLS library; this
 				is useful when the <emphasis>tls_mgm</emphasis> module is required only
 				for the management of TLS certificates and parameters by modules like
-				<emphasis>db_mysql</emphasis>, <emphasis>rabbitmq</emphasis> etc.
+				<emphasis>db_mysql</emphasis>, <emphasis>rabbitmq</emphasis> etc. (
+				and not for TLS operations by transport modules like
+				<emphasis>proto_tls</emphasis> etc.)
 				</para>
 				</listitem>
 				<listitem>
