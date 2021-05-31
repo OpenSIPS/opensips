@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('registrant','2');
+INSERT INTO version (table_name, table_version) values ('registrant','3');
 CREATE TABLE registrant (
     id SERIAL PRIMARY KEY NOT NULL,
     registrar VARCHAR(255) DEFAULT '' NOT NULL,
