@@ -848,14 +848,30 @@ release:
 
 static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *param)
 {
+	int code = 0;
 	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
 	if (!ctx) {
 		LM_ERR("No b2b sdp context!\n");
 		return -1;
 	}
 	if (type == B2B_REQUEST) {
-		if (msg->REQ_METHOD == METHOD_ACK)
-			return 0;
+		switch (msg->REQ_METHOD) {
+			case METHOD_ACK:
+				return 0;
+			case METHOD_BYE:
+				lock_get(&ctx->lock);
+				if (ctx->pending_no) {
+					LM_INFO("we still have pending clients!\n");
+					code = 491;
+				} else {
+					code = 200;
+				}
+				lock_release(&ctx->lock);
+				b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, code, NULL);
+				if (code == 200)
+					b2b_sdp_ctx_free(ctx);
+				return 0;
+		}
 	}
 	LM_ERR("TODO: NOT implemented yet %d\n", type);
 	return -1;
