@@ -1557,7 +1557,7 @@ if (use_next_gw("my_partition")) {
 }
 ...
 # Also fetch the carrier attributes, if any
-if (use_next_gw("my_partition", , "$var(carrier_attrs)")) {
+if (use_next_gw("my_partition", , , "$var(carrier_attrs)")) {
 	xlog("Carrier attributes of current gateway: $var(carrier_attrs)\n");
 	t_relay();
 	exit;

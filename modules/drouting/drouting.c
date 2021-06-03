@@ -262,7 +262,7 @@ static int do_routing_0(struct sip_msg* msg);
 static int do_routing_1(struct sip_msg* msg, char * , char* id, char* fl,
 		char* wl, char* rule_att, char* gw_att, char* carr_att);
 static int use_next_gw(struct sip_msg* msg,
-		char* rule_or_part, char* rule_or_gw, char* gw_or_carr, char * carr);
+		char* part_or_rule, char* rule_or_gw, char* gw_or_carr, char * carr);
 static int is_from_gw_0(struct sip_msg* msg);
 static int is_from_gw_1(struct sip_msg* msg, char * part);
 static int is_from_gw_2(struct sip_msg* msg, char * part, char* str1);
@@ -2142,13 +2142,13 @@ static int do_routing_1(struct sip_msg* msg, char *part_grp, char* grp_flags,
 	return do_routing(msg, (dr_part_group_t*)dr_part_group, flags, (gparam_t*)wlst);
 }
 
-static int use_next_gw(struct sip_msg* msg, char* rule_or_part,
+static int use_next_gw(struct sip_msg* msg, char* part_or_rule,
 		char * rule_or_gw, char *gw_carr, char * carr) {
 	dr_partition_t * part = 0;
 	struct head_db * current_partition = 0;
 
 	if( use_partitions ) { /* first argument is partition name */
-		part = (dr_partition_t*)rule_or_part;
+		part = (dr_partition_t*)part_or_rule;
 		if(part != NULL) {
 			if(part->type == DR_PTR_PART) {
 				current_partition = part->v.part;
@@ -2169,7 +2169,7 @@ static int use_next_gw(struct sip_msg* msg, char* rule_or_part,
 					" file\n");
 			return -1;
 		}
-		return use_next_gw_w_part(msg, head_db_start, rule_or_part,
+		return use_next_gw_w_part(msg, head_db_start, part_or_rule,
 				rule_or_gw, gw_carr);
 	}
 	return 0;
