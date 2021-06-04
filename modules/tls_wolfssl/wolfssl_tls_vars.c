@@ -38,12 +38,15 @@
 #include <wolfssl/openssl/ec.h>
 #include <wolfssl/openssl/x509v3.h>
 
+#include "wolfssl.h"
+
 #include "../../ut.h"
 #include "../tls_mgm/tls_helper.h"
 
 static inline int get_cert(WOLFSSL_X509** cert, WOLFSSL *ssl, int my)
 {	
-	*cert = my ? wolfSSL_get_certificate(ssl) : wolfSSL_get_peer_certificate(ssl);
+	*cert = my ? wolfSSL_get_certificate(_WOLFSSL_READ_SSL(ssl)) :
+		wolfSSL_get_peer_certificate(_WOLFSSL_READ_SSL(ssl));
 	if (!*cert) {
 		LM_ERR("failed to get certificate from SSL structure\n");
 		return -1;
@@ -57,7 +60,7 @@ int _wolfssl_tls_var_version(void *ssl, str *res)
 	str version;
 	static char buf[1024];
 
-	version.s = (char*)wolfSSL_get_version(ssl);
+	version.s = (char*)wolfSSL_get_version(_WOLFSSL_READ_SSL(ssl));
 	version.len = version.s ? strlen(version.s) : 0;
 	if (version.len >= 1024) {
 		LM_ERR("version string too long\n");
@@ -76,7 +79,8 @@ int _wolfssl_tls_var_desc(void *ssl, str *res)
 	static char buf[128];
 
 	buf[0] = '\0';
-	wolfSSL_CIPHER_description(wolfSSL_get_current_cipher(ssl), buf, 128);
+	wolfSSL_CIPHER_description(wolfSSL_get_current_cipher(
+		_WOLFSSL_READ_SSL(ssl)), buf, 128);
 	res->s = buf;
 	res->len = strlen(buf);
 
@@ -88,7 +92,8 @@ int _wolfssl_tls_var_cipher(void *ssl, str *res)
 	str cipher;
 	static char buf[1024];
 
-	cipher.s = (char*)wolfSSL_CIPHER_get_name(wolfSSL_get_current_cipher(ssl));
+	cipher.s = (char*)wolfSSL_CIPHER_get_name(wolfSSL_get_current_cipher(
+		_WOLFSSL_READ_SSL(ssl)));
 	cipher.len = cipher.s ? strlen(cipher.s) : 0;
 	if (cipher.len >= 1024) {
 		LM_ERR("cipher name too long\n");
@@ -106,7 +111,8 @@ int _wolfssl_tls_var_bits(void *ssl, str *str_res, int *int_res)
 	str bits;
 	static char buf[1024];
 
-	*int_res = wolfSSL_CIPHER_get_bits(wolfSSL_get_current_cipher(ssl), 0);
+	*int_res = wolfSSL_CIPHER_get_bits(wolfSSL_get_current_cipher(
+		_WOLFSSL_READ_SSL(ssl)), 0);
 	bits.s = int2str(*int_res, &bits.len);
 	if (bits.len >= 1024) {
 		LM_ERR("bits string too long\n");
@@ -377,8 +383,8 @@ int _wolfssl_tls_var_check_cert(int ind, void *ssl, str *str_res, int *int_res)
 		return -1;
 	}
 
-	if ((cert = wolfSSL_get_peer_certificate(ssl)) &&
-		wolfSSL_get_verify_result(ssl) == err) {
+	if ((cert = wolfSSL_get_peer_certificate(_WOLFSSL_READ_SSL(ssl))) &&
+		wolfSSL_get_verify_result(_WOLFSSL_READ_SSL(ssl)) == err) {
 		str_res->s = succ.s;
 		str_res->len = succ.len;
 		*int_res   = 1;
