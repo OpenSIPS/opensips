@@ -201,7 +201,7 @@ static struct b2b_sdp_stream *b2b_sdp_stream_new(sdp_stream_cell_t *sstream,
 	memset(stream, 0, sizeof *stream);
 	stream->disabled_body.s = (char *)(stream + 1);
 	/* copy media type */
-	memcpy(stream->disabled_body.s + stream->disabled_body.len, "a=", 2);
+	memcpy(stream->disabled_body.s + stream->disabled_body.len, "m=", 2);
 	stream->disabled_body.len += 2;
 	memcpy(stream->disabled_body.s + stream->disabled_body.len,
 			sstream->media.s, sstream->media.len);
