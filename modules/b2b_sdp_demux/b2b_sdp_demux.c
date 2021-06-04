@@ -387,6 +387,7 @@ static int b2b_sdp_streams_from_sdp(struct b2b_sdp_ctx *ctx,
 	return 0;
 }
 
+#if 0
 static void b2b_sdp_streams_print(struct b2b_sdp_ctx *ctx)
 {
 	struct list_head *c, *s;
@@ -412,6 +413,7 @@ static void b2b_sdp_streams_print(struct b2b_sdp_ctx *ctx)
 				stream->disabled_body.len, stream->disabled_body.s);
 	}
 }
+#endif
 
 static inline sdp_stream_cell_t *b2b_sdp_get_stream(sdp_info_t *sdp, int idx)
 {
