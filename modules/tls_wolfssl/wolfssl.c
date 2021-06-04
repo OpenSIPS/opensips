@@ -158,7 +158,7 @@ static int _wolfssl_is_peer_verified(void *ssl)
 	long ssl_verify;
 	WOLFSSL_X509 *x509_cert;
 
-	ssl_verify = wolfSSL_get_verify_result(ssl);
+	ssl_verify = wolfSSL_get_verify_result(_WOLFSSL_READ_SSL(ssl));
 	if ( ssl_verify != X509_V_OK ) {
 		LM_INFO("verification of presented certificate failed... return -1\n");
 		return -1;
@@ -167,7 +167,7 @@ static int _wolfssl_is_peer_verified(void *ssl)
 	/* now, we have only valid peer certificates or peers without certificates.
 	 * Thus we have to check for the existence of a peer certificate
 	 */
-	x509_cert = wolfSSL_get_peer_certificate(ssl);
+	x509_cert = wolfSSL_get_peer_certificate(_WOLFSSL_READ_SSL(ssl));
 	if ( x509_cert == NULL ) {
 		LM_INFO("peer did not presented "
 				"a certificate. Thus it could not be verified... return -1\n");
