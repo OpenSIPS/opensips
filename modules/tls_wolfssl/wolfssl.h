@@ -38,4 +38,6 @@ struct _WOLFSSL {
 
 #define SSL_VERSIONS_SIZE 4
 
-extern WOLFSSL_METHOD *ssl_methods[SSL_VERSIONS_SIZE];
+typedef WOLFSSL_METHOD *(*_wolfssl_method_f)(void);
+
+extern _wolfssl_method_f ssl_methods[SSL_VERSIONS_SIZE];
