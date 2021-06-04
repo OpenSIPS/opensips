@@ -2987,6 +2987,8 @@ dummy_reply:
 			memset(&cb, 0, sizeof(struct cseq_body));
 			memset(&cseq, 0, sizeof(struct hdr_field));
 			cb.method = t->method;
+			parse_method(cb.method.s, cb.method.s + cb.method.len,
+					(unsigned int *)&cb.method_id);
 
 			dummy_msg.rcv.bind_address = t->uac[0].request.dst.send_sock;
 			dummy_msg.rcv.proto = dummy_msg.rcv.bind_address->proto;
