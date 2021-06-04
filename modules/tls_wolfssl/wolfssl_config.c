@@ -395,7 +395,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		&d->method_max) < 0)
 		return -1;
 
-	d->ctx = wolfSSL_CTX_new(ssl_methods[d->method - 1]);
+	d->ctx = wolfSSL_CTX_new(ssl_methods[d->method - 1]());
 	if (!d->ctx) {
 		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
 			d->name.len, d->name.s);
