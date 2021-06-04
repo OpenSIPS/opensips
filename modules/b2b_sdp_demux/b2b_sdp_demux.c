@@ -115,9 +115,13 @@ struct b2b_sdp_stream {
 	struct list_head list;
 	struct list_head ordered;
 };
+static int b2b_sdp_ack(int type, str *key);
+static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body);
+static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body);
 
 #define B2B_SDP_CLIENT_EARLY	(1<<0)
 #define B2B_SDP_CLIENT_STARTED	(1<<1)
+#define B2B_SDP_CLIENT_PENDING	(1<<2)
 
 struct b2b_sdp_client {
 	unsigned int flags;
@@ -274,9 +278,11 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	str method;
 	b2b_req_data_t req_data;
 	int send_cancel = 0;
-	if (!key)
+	if (!key) {
 		key = &client->b2b_key;
-	if (key->len == 0) {
+		if (!key || key->len == 0)
+			return;
+	} else if (key->len == 0) {
 		LM_WARN("cannot terminate non-started client\n");
 		return;
 	}
@@ -303,12 +309,9 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 }
 
 
-static void b2b_sdp_client_free(struct b2b_sdp_client *client)
+static void b2b_sdp_client_release(struct b2b_sdp_client *client)
 {
 	struct list_head *it, *safe;
-
-	b2b_sdp_client_terminate(client, NULL);
-
 	if (client->hdrs.s)
 		shm_free(client->hdrs.s);
 
@@ -317,9 +320,19 @@ static void b2b_sdp_client_free(struct b2b_sdp_client *client)
 
 	list_for_each_safe(it, safe, &client->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
+	lock_get(&client->ctx->lock);
 	list_del(&client->list);
-	shm_free(client);
 	client->ctx->clients_no--;
+	lock_release(&client->ctx->lock);
+	shm_free(client);
+}
+
+static void b2b_sdp_client_free(struct b2b_sdp_client *client)
+{
+
+	b2b_sdp_client_terminate(client, NULL);
+	b2b_sdp_client_release(client);
+
 }
 
 static struct b2b_sdp_ctx *b2b_sdp_ctx_new(void)
@@ -559,12 +572,6 @@ static int b2b_sdp_hdrs_from_avps(struct b2b_sdp_ctx *ctx, pv_spec_t *headers)
 	return 0;
 }
 
-static int b2b_sdp_client_req(struct sip_msg *msg, struct b2b_sdp_client *client)
-{
-	LM_ERR("TODO: NOT implemented yet\n");
-	return -1;
-}
-
 static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 {
 	/*
@@ -638,6 +645,93 @@ static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 	}
 	body.len = len;
 	return &body;
+}
+
+static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *client)
+{
+	str *body;
+	str method = str_init("INVITE");
+	b2b_req_data_t req_data;
+	int code = 0, ret = -1;
+
+	body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!body) {
+		LM_INFO("cannot handle re-INVITE without body!\n");
+		return -1;
+	}
+	lock_get(&client->ctx->lock);
+	if (client->ctx->pending_no || client->flags & B2B_SDP_CLIENT_PENDING) {
+		LM_INFO("we still have pending requests!\n");
+		code = 491;
+		goto end;
+	}
+	client->ctx->pending_no = 1;
+	if (b2b_sdp_client_sync(client, body) < 0) {
+		LM_INFO("cannot parse re-INVITE body!\n");
+		goto end;
+	}
+	client->flags |= B2B_SDP_CLIENT_PENDING;
+	body = b2b_sdp_mux_body(client->ctx);
+	ret = 0;
+end:
+	lock_release(&client->ctx->lock);
+	if (ret == 0) {
+		if (body) {
+			memset(&req_data, 0, sizeof(b2b_req_data_t));
+			req_data.et = B2B_SERVER;
+			req_data.b2b_key = &client->ctx->b2b_key;
+			req_data.method = &method;
+			req_data.body = body;
+			if (b2b_api.send_request(&req_data) < 0) {
+				LM_ERR("cannot send upstream INVITE\n");
+				code = 500;
+				ret = -1;
+			}
+		} else {
+			LM_ERR("cannot print upstream INVITE body\n");
+			code = 500;
+			ret = -1;
+		}
+	}
+	if (code)
+		b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, code, NULL);
+	return ret;
+}
+
+static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
+{
+	str *body;
+	str method = str_init("INVITE");
+	b2b_req_data_t req_data;
+	struct b2b_sdp_stream *stream;
+	struct list_head *it, *safe;
+	struct b2b_sdp_ctx *ctx = client->ctx;
+	lock_get(&ctx->lock);
+	/* terminate whatever the client was doing */
+	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_STARTED);
+	/* we need to move all the streams in the disabled list */
+	list_for_each_safe(it, safe, &client->streams) {
+		stream = list_entry(it, struct b2b_sdp_stream, list);
+		list_del(&stream->list);
+		stream->client = NULL;
+	}
+	lock_release(&ctx->lock);
+	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
+	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
+	b2b_sdp_client_release(client);
+	/* also notify the upstream */
+	body = b2b_sdp_mux_body(ctx);
+	if (body) {
+		memset(&req_data, 0, sizeof(b2b_req_data_t));
+		req_data.et = B2B_SERVER;
+		req_data.b2b_key = &ctx->b2b_key;
+		req_data.method = &method;
+		req_data.body = body;
+		req_data.no_cb = 1;
+		if (b2b_api.send_request(&req_data) < 0)
+			LM_ERR("cannot send upstream INVITE\n");
+	}
+	return 0;
 }
 
 static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body)
@@ -767,38 +861,27 @@ end:
 	free_sdp_content(&sdp);
 	return ret;
 }
-#undef B2B_SDP_EAT_CRLF
 
-static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type, void *param)
+static int b2b_sdp_ack(int type, str *key)
 {
-	str *body;
-	int ret = -1;
 	str ack = str_init(ACK);
 	struct b2b_req_data req;
-	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)
-		((str *)param)->s;
-
-	if (!client) {
-		LM_ERR("No b2b sdp client!\n");
-		return -1;
-	}
-
-	if (type == B2B_REQUEST)
-		return b2b_sdp_client_req(msg, client);
-
-	/* not interested in provisional replies */
-	if (msg->REPLY_STATUS < 200)
-		return 0;
-
 	memset(&req, 0, sizeof(req));
-	req.et = B2B_CLIENT;
-	req.b2b_key = &client->b2b_key;
+	req.et = type;
+	req.b2b_key = key;
 	req.method = &ack;
 	req.no_cb = 1; /* do not call callback */
 
-	if (b2b_api.send_request(&req) < 0)
+	return b2b_api.send_request(&req);
+}
+
+static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_client *client)
+{
+	str *body;
+	int ret = -1;
+	if (b2b_sdp_ack(B2B_CLIENT, &client->b2b_key) < 0)
 		LM_ERR("Cannot ack recording session for key %.*s\n",
-				req.b2b_key->len, req.b2b_key->s);
+				client->b2b_key.len, client->b2b_key.s);
 
 	lock_get(&client->ctx->lock);
 
@@ -846,34 +929,52 @@ release:
 	return ret;
 }
 
-static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *param)
+static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type, void *param)
 {
-	int code = 0;
-	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
-	if (!ctx) {
-		LM_ERR("No b2b sdp context!\n");
+	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)
+		((str *)param)->s;
+
+	if (!client) {
+		LM_ERR("No b2b sdp client!\n");
 		return -1;
 	}
+
 	if (type == B2B_REQUEST) {
+		lock_get(&client->ctx->lock);
+		if (client->ctx->pending_no) {
+			lock_release(&client->ctx->lock);
+			LM_INFO("we still have pending clients!\n");
+			b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, 491, NULL);
+			return -1;
+		}
+		lock_release(&client->ctx->lock);
 		switch (msg->REQ_METHOD) {
 			case METHOD_ACK:
 				return 0;
+			case METHOD_INVITE:
+				return b2b_sdp_client_reinvite(msg, client);
 			case METHOD_BYE:
-				lock_get(&ctx->lock);
-				if (ctx->pending_no) {
-					LM_INFO("we still have pending clients!\n");
-					code = 491;
-				} else {
-					code = 200;
-				}
-				lock_release(&ctx->lock);
-				b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, code, NULL);
-				if (code == 200)
-					b2b_sdp_ctx_free(ctx);
-				return 0;
+				return b2b_sdp_client_bye(msg, client);
 		}
+		LM_ERR("request message %.*s not handled\n", msg->REQ_METHOD_S.len,
+				msg->REQ_METHOD_S.s);
+	} else {
+		/* not interested in provisional replies */
+		if (msg->REPLY_STATUS < 200)
+			return 0;
+
+		if (!msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) == -1) || !msg->cseq)) {
+			LM_ERR("failed to parse CSeq\n");
+			return -1;
+		}
+
+		switch (get_cseq(msg)->method_id) {
+			case METHOD_INVITE:
+				return b2b_sdp_client_reply_invite(msg, client);
+		}
+		LM_ERR("reply message %d for %.*s not handled\n", msg->REPLY_STATUS,
+				get_cseq(msg)->method.len, get_cseq(msg)->method.s);
 	}
-	LM_ERR("TODO: NOT implemented yet %d\n", type);
 	return -1;
 }
 
@@ -930,6 +1031,117 @@ static str *b2b_sdp_demux_body(struct b2b_sdp_client *client,
 		len += sstream->body.len;
 	}
 	return &body;
+}
+
+static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
+{
+	int code;
+	str *body = NULL;
+	sdp_info_t sdp;
+	struct list_head *it;
+	struct b2b_sdp_client *client;
+
+	/* re-INVITE failed - reply the same code to the client
+	 * that started the challenging */
+	b2b_sdp_ack(B2B_SERVER, &ctx->b2b_key);
+	list_for_each(it, &ctx->clients) {
+		client = list_entry(it, struct b2b_sdp_client, list);
+		if (client->flags & B2B_SDP_CLIENT_PENDING) {
+			client->flags &= ~B2B_SDP_CLIENT_PENDING;
+			break;
+		} else {
+			client = NULL;
+		}
+	}
+	if (!client) {
+		ctx->pending_no = 0;
+		lock_release(&client->ctx->lock);
+		LM_WARN("cannot identify a pending client!\n");
+		return -1;
+	}
+	if (msg->REPLY_STATUS < 300) {
+		body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+		if (body) {
+			memset(&sdp, 0, sizeof sdp);
+			if (parse_sdp_session(body, 0, NULL, &sdp) < 0) {
+				LM_ERR("cannot parse SDP body\n");
+				code = 606;
+				body = NULL;
+			} else {
+				body = b2b_sdp_demux_body(client, &sdp);
+				if (!body) {
+					LM_ERR("cannot get body for client!\n");
+					free_sdp_content(&sdp);
+				}
+				code = msg->REPLY_STATUS;
+			}
+		} else {
+			LM_ERR("message without SDP body\n");
+			code = 606;
+		}
+	} else {
+		code = msg->REPLY_STATUS;
+	}
+	lock_release(&client->ctx->lock);
+	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_INVITE, code, body);
+	if (body) {
+		free_sdp_content(&sdp);
+		pkg_free(body->s);
+	}
+	lock_get(&client->ctx->lock);
+	ctx->pending_no = 0;
+	lock_release(&client->ctx->lock);
+	return 0;
+}
+
+static int b2b_sdp_server_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
+{
+	b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, 200, NULL);
+	b2b_sdp_ctx_free(ctx);
+	return 0;
+}
+
+static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *param)
+{
+	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
+	if (!ctx) {
+		LM_ERR("No b2b sdp context!\n");
+		return -1;
+	}
+	if (type == B2B_REQUEST) {
+		lock_get(&ctx->lock);
+		if (ctx->pending_no) {
+			lock_release(&ctx->lock);
+			LM_INFO("we still have pending clients!\n");
+			b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, 491, NULL);
+			return -1;
+		}
+		lock_release(&ctx->lock);
+		switch (msg->REQ_METHOD) {
+			case METHOD_ACK:
+				return 0;
+			case METHOD_BYE:
+				return b2b_sdp_server_bye(msg, ctx);
+		}
+		LM_ERR("request message %.*s not handled\n", msg->REQ_METHOD_S.len,
+				msg->REQ_METHOD_S.s);
+	} else {
+		/* not interested in provisional replies */
+		if (msg->REPLY_STATUS < 200)
+			return 0;
+
+		if (!msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) == -1) || !msg->cseq)) {
+			LM_ERR("failed to parse CSeq\n");
+			return -1;
+		}
+		switch (get_cseq(msg)->method_id) {
+			case METHOD_INVITE:
+				return b2b_sdp_server_reply_invite(msg, ctx);
+		}
+		LM_ERR("reply message %d for %.*s not handled\n", msg->REPLY_STATUS,
+				get_cseq(msg)->method.len, get_cseq(msg)->method.s);
+	}
+	return -1;
 }
 
 static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
