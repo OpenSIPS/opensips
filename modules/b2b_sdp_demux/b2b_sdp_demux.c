@@ -356,7 +356,7 @@ static void b2b_sdp_ctx_free(struct b2b_sdp_ctx *ctx)
 		b2b_sdp_client_free(list_entry(it, struct b2b_sdp_client, list));
 	/* free remaining streams */
 	list_for_each_safe(it, safe, &ctx->streams)
-		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
+		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, ordered));
 	if (ctx->b2b_key.s) {
 		b2b_api.entity_delete(B2B_SERVER, &ctx->b2b_key, NULL, 1, 1);
 		shm_free(ctx->b2b_key.s);
@@ -713,6 +713,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	list_for_each_safe(it, safe, &client->streams) {
 		stream = list_entry(it, struct b2b_sdp_stream, list);
 		list_del(&stream->list);
+		INIT_LIST_HEAD(&stream->list);
 		stream->client = NULL;
 	}
 	lock_release(&ctx->lock);
@@ -1276,7 +1277,6 @@ static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 		goto error;
 	}
 
-	b2b_sdp_streams_print(ctx);
 	if (b2b_sdp_demux_start(msg, uri, ctx, &sdp) < 0) {
 		LM_ERR("could not start B2B SDP demux\n");
 		goto error;
