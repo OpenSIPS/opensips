@@ -62,15 +62,8 @@
 							F_MALLOC_OPTIMIZE_FACTOR-1)\
 					)
 
-#define F_MALLOC_LARGE_LIMIT    F_MALLOC_OPTIMIZE
-#define F_MALLOC_DEFRAG_LIMIT (F_MALLOC_LARGE_LIMIT * 5)
-#define F_MALLOC_DEFRAG_PERCENT 5
-
 static inline void free_minus(struct fm_block *fm, unsigned long size)
 {
-
-	if( size > F_MALLOC_LARGE_LIMIT )
-		fm->large_space -= size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->real_used+=size;
@@ -81,9 +74,6 @@ static inline void free_minus(struct fm_block *fm, unsigned long size)
 
 static inline void free_plus(struct fm_block *fm, unsigned long size)
 {
-
-	if( size > F_MALLOC_LARGE_LIMIT )
-		fm->large_space += size;
 
 	#if defined(DBG_MALLOC) || defined(STATISTICS)
 	fm->real_used-=size;
@@ -231,14 +221,7 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 
 	/* link initial fragment into the free list*/
 
-	fm->large_space = 0;
-	fm->large_limit = fm->size / 100 * F_MALLOC_DEFRAG_PERCENT;
-
-	if( fm->large_limit < F_MALLOC_DEFRAG_LIMIT )
-		fm->large_limit = F_MALLOC_DEFRAG_LIMIT;
-
 	fm_insert_free(fm, fm->first_frag);
-
 
 	return fm;
 }
