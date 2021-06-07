@@ -103,8 +103,6 @@ struct fm_block{
 	char *name; /* purpose of this memory block */
 
 	unsigned long size; /* total size */
-        unsigned long large_space;
-        unsigned long large_limit;
     unsigned long fragments; /* number of fragments in use */
 #if defined(DBG_MALLOC) || defined(STATISTICS)
 	unsigned long used; /* alloc'ed size*/
