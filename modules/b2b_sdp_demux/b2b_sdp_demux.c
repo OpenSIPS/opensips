@@ -141,7 +141,6 @@ struct b2b_sdp_ctx {
 	time_t sess_id;
 	str *sess_ip;
 	gen_lock_t lock;
-	struct socket_info *si;
 	struct list_head clients;
 	struct list_head streams;
 };
@@ -1156,18 +1155,19 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	struct list_head *it;
 	struct b2b_sdp_client *client;
 	client_info_t ci;
+	struct socket_info *si;
 
 	hack.s = (char *)&ctx;
 	hack.len = sizeof(void *);
 
 	if (!msg->force_send_socket) {
-		ctx->si = uri2sock(msg, uri, &tmp_su, PROTO_NONE);
-		if (!ctx->si) {
+		si = uri2sock(msg, uri, &tmp_su, PROTO_NONE);
+		if (!si) {
 			LM_ERR("could not find an available send socket!\n");
 			return -1;
 		}
 	} else {
-		ctx->si = msg->force_send_socket;
+		si = msg->force_send_socket;
 	}
 
 	contact.s = contact_builder(msg->rcv.bind_address, &contact.len);
@@ -1188,9 +1188,9 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	/* we need to wait for all pending clients */
 	ctx->pending_no = ctx->clients_no;
 
-	contact.s = contact_builder(ctx->si, &contact.len);
+	contact.s = contact_builder(si, &contact.len);
 	memset(&ci, 0, sizeof ci);
-	ci.send_sock = ctx->si;
+	ci.send_sock = si;
 	ci.local_contact = contact;
 	ci.method.s = INVITE;
 	ci.method.len = INVITE_LEN;
