@@ -532,7 +532,7 @@ struct module_exports exports = {
 	mi_cmds,     /* exported MI functions */
 	0,           /* exported pseudo-variables */
 	0,			 /* exported transformations */
-	procs,       /* extra processes */
+	0,           /* extra processes */
 	mod_preinit,
 	mod_init,
 	0,           /* reply processing */
