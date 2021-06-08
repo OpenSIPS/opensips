@@ -253,4 +253,18 @@ static inline void list_cut_position(struct list_head *list,
 	     pos != (head); \
 	     pos = n, n = pos->prev)
 
+/**
+ * list_size - returns the number of elements in the list
+ * @head: a list with entries
+ */
+static inline int list_size(struct list_head *head)
+{
+	int count = 0;
+	struct list_head *it;
+	list_for_each(it, head)
+		count++;
+	return count;
+}
+
+
 #endif /* __OSS_LIST_H */
