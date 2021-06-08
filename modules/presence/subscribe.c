@@ -1619,7 +1619,12 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 						query_vals[from_domain_col].val.str_val =
 							s->from_domain;
 						query_vals[event_col].val.str_val = s->event->name;
-						query_vals[event_id_col].val.str_val = s->event_id;
+						if (s->event_id.s) {
+							query_vals[event_id_col].val.str_val = s->event_id;
+						} else {
+							query_vals[event_id_col].val.str_val.s = "";
+							query_vals[event_id_col].val.str_val.len = 0;
+						}
 						query_vals[local_cseq_col].val.int_val= s->local_cseq;
 						query_vals[remote_cseq_col].val.int_val=s->remote_cseq;
 						query_vals[expires_col].val.int_val = s->expires;
@@ -1774,7 +1779,12 @@ int insert_subs_db(subs_t* s)
 	query_cols[n_query_cols] =&str_event_id_col;
 	query_vals[n_query_cols].type = DB_STR;
 	query_vals[n_query_cols].nul = 0;
-	query_vals[n_query_cols].val.str_val = s->event_id;
+	if (s->event_id.s) {
+		query_vals[n_query_cols].val.str_val = s->event_id;
+	} else {
+		query_vals[n_query_cols].val.str_val.s = "";
+		query_vals[n_query_cols].val.str_val.len = 0;
+	}
 	n_query_cols++;
 
 	query_cols[n_query_cols]=&str_local_cseq_col;
