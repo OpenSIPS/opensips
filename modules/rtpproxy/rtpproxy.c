@@ -3939,14 +3939,21 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 				if (c1p && !c1p_altered && !c2p && commip) {
 					/* we have a common IP and it was requested to change */
 					/* c1p points to the common IP */
+					tmpstr1.s = c1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"c=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					/* copy everything until oldip */
 					tmp.s = newbody;
-					tmp.len = c1p - newbody;
+					tmp.len = oldip.s - newbody;
 					RTPPROXY_APPEND(&tmp);
 					/* alter the pf, if needed */
 					if (pf != pf1)
 						body->s[body->len - 2] = (pf1 == AF_INET6) ? '6' : '4';
 					RTPPROXY_APPEND(&newip);
-					for (newbody = c1p; *newbody != '\r'; newbody++);
+					newbody = oldip.s + oldip.len;
 					c1p_altered = 1;
 				}
 				/* now update the port */
@@ -3990,24 +3997,6 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 				tmp.len = bodylimit - newbody;
 				RTPPROXY_APPEND(&tmp);
 			} else {
-
-				/*
-				 * Alter the IP in "o=", but only once per session
-				 */
-				if (o1p) {
-					tmpstr1.s = o1p;
-					tmpstr1.len = v2p - tmpstr1.s;
-					if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
-						LM_ERR("can't extract media IP from the message\n");
-						goto exit;
-					}
-					body1.s = o1p;
-					body1.len = bodylimit - body1.s;
-					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
-						goto exit;
-					o1p = 0;
-				}
-
 				/* Alter port. */
 				body1.s = m1p;
 				body1.len = bodylimit - body1.s;
@@ -4028,7 +4017,6 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 					if (alter_rtcp(msg, &body1, &newip, pf1, &nextport, r2p) < 0 )
 						goto exit;
 				}
-
 				/*
 				 * Alter IP. Don't alter IP common for the session
 				 * more than once.
@@ -4056,6 +4044,22 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
 						goto exit;
 					c1p_altered = 1;
+				}
+				/*
+				 * Alter the IP in "o=", but only once per session
+				 */
+				if (o1p) {
+					tmpstr1.s = o1p;
+					tmpstr1.len = v2p - tmpstr1.s;
+					if (extract_mediaip(&tmpstr1, &oldip, &pf,"o=") == -1) {
+						LM_ERR("can't extract media IP from the message\n");
+						goto exit;
+					}
+					body1.s = o1p;
+					body1.len = bodylimit - body1.s;
+					if (alter_mediaip(msg, &body1, &oldip, pf, &newip, pf1, 0)==-1)
+						goto exit;
+					o1p = 0;
 				}
 			}
 		} /* Iterate medias in session */
