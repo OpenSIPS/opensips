@@ -1476,7 +1476,7 @@ mi_response_t *mi_rtp_relay_update(const mi_params_t *params,
 			return init_mi_param_error();
 		default:
 			new_node = &tmp;
-			LM_INFO("new_node=%.*s\n", tmp.len, tmp.s);
+			LM_DBG("using new node %.*s\n", tmp.len, tmp.s);
 			break;
 	}
 	p = rtp_relay_new_async_param(async_hdl);
