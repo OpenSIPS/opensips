@@ -1466,16 +1466,18 @@ mi_response_t *mi_rtp_relay_update(const mi_params_t *params,
 		case -2:
 			return init_mi_param_error();
 		default:
-			/* if we have a set, we might also have a node */
-			switch(try_get_mi_string_param(params, "new_node", &tmp.s, &tmp.len)) {
-				case -1:
-					break;
-				case -2:
-					return init_mi_param_error();
-				default:
-					new_node = &tmp;
-					break;
-			}
+			LM_DBG("using new set %d\n", new_set);
+	}
+	/* we might also have a node */
+	switch(try_get_mi_string_param(params, "new_node", &tmp.s, &tmp.len)) {
+		case -1:
+			break;
+		case -2:
+			return init_mi_param_error();
+		default:
+			new_node = &tmp;
+			LM_INFO("new_node=%.*s\n", tmp.len, tmp.s);
+			break;
 	}
 	p = rtp_relay_new_async_param(async_hdl);
 	if (!p) {
