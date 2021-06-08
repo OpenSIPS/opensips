@@ -1197,6 +1197,7 @@ static int rtp_relay_release_tmp(struct rtp_relay_tmp *tmp, int success)
 						&tmp->sess->server.node)) {
 				del_sess = tmp->ctx->main;
 				list_del(&del_sess->list);
+				INIT_LIST_HEAD(&del_sess->list);
 			} else {
 				/* otherwise cleanup the structure now */
 				rtp_relay_ctx_free_sess(tmp->ctx->main);
