@@ -1098,20 +1098,6 @@ error:
 	return 0;
 }
 
-#if 0
-	{ "rtp_relay_update", 0, 0, 0, {
-		{mi_rtp_relay_update, {0}},
-		{mi_rtp_relay_update, {"engine", 0}},
-		{mi_rtp_relay_update, {"engine", "set", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "node", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "new_set", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "new_node", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "new_set", "new_node", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "node", "new_node", 0}},
-		{mi_rtp_relay_update, {"engine", "set", "node", "new_set", "new_node", 0}},
-#endif
-
 struct rtp_async_param {
 	int no, completed, success;
 	gen_lock_t lock;
