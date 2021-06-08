@@ -1349,7 +1349,9 @@ static int rtp_relay_reinvite(struct rtp_relay_tmp *tmp, int leg,
 
 static int rtp_relay_update_reinvites(struct rtp_relay_tmp *tmp)
 {
-	int callee_leg, ret;
+	struct ip_addr *ip = NULL;
+	struct sip_uri uri;
+	int callee_leg, ret = -1;
 	struct rtp_relay_session info;
 	memset(&info, 0, sizeof info);
 
@@ -1363,21 +1365,41 @@ static int rtp_relay_update_reinvites(struct rtp_relay_tmp *tmp)
 
 	/* offer callee's SDP to get SDP for caller */
 	info.callid = &tmp->ctx->callid;
-	info.from_tag = &tmp->dlg->legs[DLG_CALLER_LEG].tag;
-	info.to_tag = &tmp->dlg->legs[callee_leg].tag;
+	info.from_tag = &tmp->dlg->legs[callee_leg].tag;
+	info.to_tag = &tmp->dlg->legs[DLG_CALLER_LEG].tag;
 	info.branch = tmp->sess->index;
 	info.body = &body;
+	info.msg = get_dummy_sip_msg();
+	if (!info.msg) {
+		LM_ERR("could not get dummy msg!\n");
+		return -1;
+	}
+	/* in order to advertise the right IP in to the media server, we need to
+	 * store the received information in the message */
+	if (parse_uri(tmp->dlg->legs[callee_leg].contact.s,
+			tmp->dlg->legs[callee_leg].contact.len, &uri) < 0) {
+		LM_ERR("could not parse contact's uri!\n");
+		goto end;
+	}
+
+	if ((ip = str2ip(&uri.host)) != NULL || (ip = str2ip6(&uri.host)) != NULL)
+		memcpy(&info.msg->rcv.src_ip, ip, sizeof *ip);
+	else
+		LM_DBG("could not convert uri host [%.*s] to an ip\n", uri.host.len, uri.host.s);
 
 	ret = rtp_relay_offer(&info, tmp->sess, tmp->ctx->main,
 			RTP_RELAY_ANSWER, &body);
 	if (ret < 0) {
 		LM_ERR("cannot engage RTP relay for callee SDP\n");
-		return -1;
+		goto end;
 	}
 
 	tmp->state = RTP_RELAY_TMP_OFFER;
 	/* step one - send re-invite to caller with updated callee's SDP */
-	return rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body, 1);
+	ret =  rtp_relay_reinvite(tmp, DLG_CALLER_LEG, &body, 1);
+end:
+	release_dummy_sip_msg(info.msg);
+	return ret;
 }
 
 static mi_response_t *rtp_relay_update_async(struct rtp_async_param *p)
