@@ -154,11 +154,10 @@
 		<programlisting format="linespecific">
 ...
 if (is_method("INVITE") &amp;&amp; !has_totag()) {
-		xlog("SCRIPT: engaging RTPProxy relay for all branches\n");
-		$rtp_relay = "co";
-		$rtp_relay_peer = "co";
-		rtp_relay_engage("rtpproxy");
-	}
+	xlog("SCRIPT: engaging RTPProxy relay for all branches\n");
+	$rtp_relay = "co";
+	$rtp_relay_peer = "co";
+	rtp_relay_engage("rtpproxy");
 }
 ...
 		</programlisting>
