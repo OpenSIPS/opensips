@@ -603,6 +603,7 @@ int b2b_entities_bind(b2b_api_t* api)
 static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsigned int hsize)
 {
 	int i;
+	str param;
 	b2b_dlg_t* dlg;
 	dlg_leg_t* leg;
 	mi_item_t *arr_item, *cseq_item, *rs_item, *ct_item, *legs_arr, *leg_item;
@@ -619,8 +620,12 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 
 			if (add_mi_number(arr_item, MI_SSTR("dlg"), dlg->id) < 0)
 				goto error;
+			/* check if param is printable */
+			param = dlg->param;
+			if (!str_check_token(&param))
+				init_str(&param, "");
 			if (add_mi_string(arr_item, MI_SSTR("param"),
-				dlg->param.s, dlg->param.len) < 0)
+				param.s, param.len) < 0)
 				goto error;
 			if (add_mi_string(arr_item, MI_SSTR("mod_name"),
 				dlg->mod_name.s, dlg->mod_name.len) < 0)
