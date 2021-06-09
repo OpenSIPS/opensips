@@ -628,8 +628,7 @@ void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
 		return;
 	}
 
-	p = (c->sock) ? (char *)(&buf->sock[1]) + c->sock->sock_str.len :
-	    (char *)(&buf->sock[0]);
+	p = (c->sock) ? (char *)(&buf->sock[1]) : (char *)(&buf->sock[0]);
 
 	buf->ev.reason.s = p;
 	buf->ev.reason.len = reason->len;
