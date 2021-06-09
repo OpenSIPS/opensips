@@ -49,13 +49,14 @@ int init_pua_clustering(void)
 		}
 		pua_sh_tag.len = strlen(pua_sh_tag.s);
 	} else {
-		if (pua_cluster_id==0) {
+		if (pua_sh_tag.s) {
 			LM_WARN("'sharing_tag' configured, but clustering disabled,"
-			" ignoring...\n");
+				" ignoring...\n");
+			pkg_free( pua_sh_tag.s);
+			pua_sh_tag.s = NULL;
+			pua_sh_tag.len = 0;
 		}
-		pkg_free( pua_sh_tag.s);
-		pua_sh_tag.s = NULL;
-		pua_sh_tag.len = 0;
+		return 0;
 	}
 
 	/* load the clusterer api */
