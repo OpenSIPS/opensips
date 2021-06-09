@@ -38,12 +38,25 @@ static dep_export_t mod_deps = {
 };
 
 static b2b_api_t b2b_api;
-static str b2b_sdp_demux_cap = str_init("b2b_sdp_demux");
+static str b2b_sdp_demux_server_cap = str_init("b2b_sdp_demux_server");
+static str b2b_sdp_demux_client_cap = str_init("b2b_sdp_demux_client");
 static str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
 
 static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 		pv_spec_t *hdrs, pv_spec_t *streams);
 static int fixup_check_avp(void** param);
+static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend);
+static void b2b_sdp_server_event_received(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend);
+static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend);
+static void b2b_sdp_client_event_received(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend);
 
 static cmd_export_t mod_cmds[] = {
 	{"b2b_sdp_demux", (cmd_function)b2b_sdp_demux, {
@@ -59,11 +72,35 @@ static int mod_init(void)
 {
 
 	/* load b2b_entities api */
-	if(load_b2b_api(&b2b_api)< 0)
-	{
+	if(load_b2b_api(&b2b_api) < 0) {
 		LM_ERR("Failed to load b2b api\n");
 		return -1;
 	}
+
+	if (b2b_api.register_cb(b2b_sdp_server_event_received,
+			B2BCB_RECV_EVENT, &b2b_sdp_demux_server_cap) < 0) {
+		LM_ERR("could not register server event receive callback!\n");
+		return -1;
+	}
+
+	if (b2b_api.register_cb(b2b_sdp_server_event_trigger,
+			B2BCB_TRIGGER_EVENT, &b2b_sdp_demux_server_cap) < 0) {
+		LM_ERR("could not register server event trigger callback!\n");
+		return -1;
+	}
+
+	if (b2b_api.register_cb(b2b_sdp_client_event_received,
+			B2BCB_RECV_EVENT, &b2b_sdp_demux_client_cap) < 0) {
+		LM_ERR("could not register client event receive callback!\n");
+		return -1;
+	}
+
+	if (b2b_api.register_cb(b2b_sdp_client_event_trigger,
+			B2BCB_TRIGGER_EVENT, &b2b_sdp_demux_client_cap) < 0) {
+		LM_ERR("could not register client event trigger callback!\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -118,6 +155,8 @@ struct b2b_sdp_stream {
 static int b2b_sdp_ack(int type, str *key);
 static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body);
 static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body);
+static struct b2b_sdp_stream *b2b_sdp_stream_raw_new(struct b2b_sdp_client *client,
+		str *disabled_body, int index, int client_index);
 
 #define B2B_SDP_CLIENT_EARLY	(1<<0)
 #define B2B_SDP_CLIENT_STARTED	(1<<1)
@@ -240,6 +279,27 @@ static struct b2b_sdp_stream *b2b_sdp_stream_new(sdp_stream_cell_t *sstream,
 	}
 
 	stream->index = sstream->stream_num;
+	stream->client_index = client_index;
+	if (client) {
+		stream->client = client;
+		list_add_tail(&stream->list, &client->streams);
+	}
+	return stream;
+}
+
+static struct b2b_sdp_stream *b2b_sdp_stream_raw_new(struct b2b_sdp_client *client,
+		str *disabled_body, int index, int client_index)
+{
+	struct b2b_sdp_stream *stream = shm_malloc(sizeof *stream + disabled_body->len);
+	if (!stream) {
+		LM_ERR("could not allocate raw B2B SDP stream!\n");
+		return NULL;
+	}
+	memset(stream, 0, sizeof *stream);
+	stream->disabled_body.s = (char *)(stream + 1);
+	stream->disabled_body.len = disabled_body->len;
+	memcpy(stream->disabled_body.s, disabled_body->s, disabled_body->len);
+	stream->index = index;
 	stream->client_index = client_index;
 	if (client) {
 		stream->client = client;
@@ -699,14 +759,12 @@ end:
 	return ret;
 }
 
-static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
+static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
 {
-	str *body;
-	str method = str_init("INVITE");
-	b2b_req_data_t req_data;
-	struct b2b_sdp_stream *stream;
 	struct list_head *it, *safe;
+	struct b2b_sdp_stream *stream;
 	struct b2b_sdp_ctx *ctx = client->ctx;
+
 	lock_get(&ctx->lock);
 	/* terminate whatever the client was doing */
 	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_STARTED);
@@ -718,6 +776,16 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 		stream->client = NULL;
 	}
 	lock_release(&ctx->lock);
+}
+
+static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
+{
+	str *body;
+	str method = str_init("INVITE");
+	b2b_req_data_t req_data;
+	struct b2b_sdp_ctx *ctx = client->ctx;
+
+	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 	b2b_sdp_client_release(client);
@@ -1174,7 +1242,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	ctx->sess_ip = get_adv_host(msg->rcv.bind_address);
 
 	b2b_key = b2b_api.server_new(msg, &contact, b2b_sdp_server_notify,
-			&b2b_sdp_demux_cap, &hack, NULL);
+			&b2b_sdp_demux_server_cap, &hack, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b sdp demux server!\n");
 		return -1;
@@ -1213,7 +1281,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 
 		client->flags |= B2B_SDP_CLIENT_EARLY;
 		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
-				&b2b_sdp_demux_cap, &hack, NULL);
+				&b2b_sdp_demux_client_cap, &hack, NULL);
 		pkg_free(body->s);
 		if (!b2b_key) {
 			LM_ERR("could not create b2b sdp demux client!\n");
@@ -1290,4 +1358,324 @@ error:
 	free_sdp_content(&sdp);
 	b2b_sdp_ctx_free(ctx);
 	return -1;
+}
+
+static void bin_push_stream(bin_packet_t *store, struct b2b_sdp_stream *stream)
+{
+	bin_push_int(store, stream->index);
+	bin_push_int(store, stream->client_index);
+	bin_push_str(store, &stream->disabled_body);
+	bin_push_int(store, stream->label.len);
+	if (stream->label.len) /* only push label offset */
+		bin_push_int(store, stream->label.s - stream->disabled_body.s);
+	bin_push_str(store, &stream->body);
+}
+
+static struct b2b_sdp_stream *bin_pop_stream(bin_packet_t *store, struct b2b_sdp_client *client)
+{
+	str tmp;
+	int index, client_index, offset;
+	struct b2b_sdp_stream *stream;
+	bin_pop_int(store, &index);
+	bin_pop_int(store, &client_index);
+	bin_pop_str(store, &tmp);
+	stream = b2b_sdp_stream_raw_new(client, &tmp, index, client_index);
+	if (!stream) {
+		LM_ERR("could not allocate new stream!\n");
+		return NULL;
+	}
+	bin_pop_int(store, &stream->label.len);
+	if (stream->label.len) {
+		bin_pop_int(store, &offset);
+		stream->label.s = stream->disabled_body.s + offset;
+	}
+	bin_pop_str(store, &tmp);
+	if (tmp.len && shm_str_sync(&stream->body, &tmp) < 0) {
+		LM_ERR("could not duplicate b2b stream body!\n");
+		shm_free(stream);
+		return NULL;
+	}
+	return stream;
+}
+
+static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_packet_t *store)
+{
+	struct list_head *c, *s;
+	struct b2b_sdp_client *client;
+	struct b2b_sdp_stream *stream;
+	int pushed_streams = 0;
+
+	bin_push_str(store, &ctx->b2b_key);
+	bin_push_int(store, ctx->clients_no);
+	bin_push_int(store, ctx->sess_id);
+
+	list_for_each(c, &ctx->clients) {
+		client = list_entry(c, struct b2b_sdp_client, list);
+		bin_push_int(store, client->flags);
+		bin_push_str(store, &client->b2b_key);
+		bin_push_str(store, &client->hdrs);
+		bin_push_str(store, &client->body);
+		bin_push_int(store, list_size(&client->streams));
+		list_for_each(s, &client->streams) {
+			stream = list_entry(s, struct b2b_sdp_stream, list);
+			bin_push_stream(store, stream);
+			pushed_streams++;
+		}
+	}
+	/* now handle disabled streams - skip already pushed ones */
+	bin_push_int(store, list_size(&ctx->streams) - pushed_streams);
+	list_for_each(s, &client->streams) {
+		stream = list_entry(s, struct b2b_sdp_stream, list);
+		if (!stream->client)
+			bin_push_stream(store, stream);
+	}
+}
+
+static int b2b_sdp_ctx_restore(struct b2b_sdp_ctx *ctx)
+{
+	str hack;
+	hack.s = (char *)&ctx;
+	hack.len = sizeof(void *);
+	if (b2b_api.update_b2bl_param(B2B_SERVER, &ctx->b2b_key, &hack, 0) < 0) {
+		LM_ERR("could not update restore param!\n");
+		return -1;
+	}
+	if (b2b_api.restore_logic_info(B2B_SERVER, &ctx->b2b_key, b2b_sdp_server_notify) < 0) {
+		LM_ERR("could not register restore logic!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int b2b_sdp_client_restore(struct b2b_sdp_client *client)
+{
+	str hack;
+	hack.s = (char *)&client;
+	hack.len = sizeof(void *);
+	if (b2b_api.update_b2bl_param(B2B_SERVER, &client->b2b_key, &hack, 0) < 0) {
+		LM_ERR("could not update restore param!\n");
+		return -1;
+	}
+	if (b2b_api.restore_logic_info(B2B_SERVER, &client->b2b_key, b2b_sdp_client_notify) < 0) {
+		LM_ERR("could not register restore logic!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
+{
+	str tmp;
+	int clients, streams;
+	time_t sess_id;
+	struct b2b_sdp_ctx *ctx;
+	struct b2b_sdp_client *client;
+	struct b2b_sdp_stream *stream;
+
+	bin_pop_int(store, &clients);
+	bin_pop_int(store, &sess_id);
+
+	ctx = b2b_sdp_ctx_new();
+	if (!ctx) {
+		LM_INFO("cannot create new context!\n");
+		return;
+	}
+	if (shm_str_sync(&ctx->b2b_key, key) < 0) {
+		LM_ERR("could not duplicate b2b key!\n");
+		goto error;
+	}
+	if (b2b_sdp_ctx_restore(ctx) < 0) {
+		LM_ERR("could not restore b2b ctx logic!\n");
+		goto error;
+	}
+	ctx->sess_id = sess_id;
+
+	while (clients-- > 0) {
+		client = b2b_sdp_client_new(ctx);
+		if (!client) {
+			LM_ERR("cannot create new client\n");
+			goto error;
+		}
+		bin_pop_int(store, &client->flags);
+		bin_pop_str(store, &tmp);
+		if (shm_str_sync(&client->b2b_key, &tmp) < 0) {
+			LM_ERR("could not duplicate b2b client key!\n");
+			goto error;
+		}
+		if (b2b_sdp_client_restore(client) < 0) {
+			LM_ERR("could not restore b2b client logic!\n");
+			goto error;
+		}
+		bin_pop_str(store, &tmp);
+		if (tmp.len && shm_str_sync(&client->hdrs, &tmp) < 0) {
+			LM_ERR("could not duplicate b2b client headers!\n");
+			goto error;
+		}
+		bin_pop_str(store, &tmp);
+		if (tmp.len && shm_str_sync(&client->body, &tmp) < 0) {
+			LM_ERR("could not duplicate b2b client body!\n");
+			goto error;
+		}
+		bin_pop_int(store, &streams);
+		while (streams-- > 0) {
+			stream = bin_pop_stream(store, client);
+			if (!stream)
+				goto error;
+			b2b_add_stream_ctx(ctx, stream);
+		}
+	}
+
+	/* also handle disabled streams */
+	bin_pop_int(store, &streams);
+	while (streams-- > 0) {
+		stream = bin_pop_stream(store, NULL);
+		if (!stream)
+			goto error;
+		b2b_add_stream_ctx(ctx, stream);
+	}
+error:
+	b2b_sdp_ctx_free(ctx);
+}
+
+static void b2b_sdp_server_event_received_delete(struct b2b_sdp_ctx *ctx, bin_packet_t *store)
+{
+	b2b_sdp_ctx_free(ctx);
+}
+
+static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend)
+{
+	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
+
+	switch (event_type) {
+		case B2B_EVENT_CREATE:
+			b2b_sdp_server_event_trigger_create(ctx, store);
+			break;
+		default:
+			/* nothing else for now */
+			break;
+	}
+}
+
+static void b2b_sdp_server_event_received(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend)
+{
+	struct b2b_sdp_ctx *ctx;
+	if (param && param->s)
+		ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
+	else
+		ctx = NULL;
+	switch (event_type) {
+		case B2B_EVENT_CREATE:
+			b2b_sdp_server_event_received_create(key, store);
+			break;
+		case B2B_EVENT_DELETE:
+			b2b_sdp_server_event_received_delete(ctx, store);
+			break;
+		default:
+			/* nothing else for now */
+			break;
+	}
+}
+
+static void b2b_sdp_client_event_trigger_update(struct b2b_sdp_client *client,
+		bin_packet_t *store)
+{
+	struct list_head *s;
+	struct b2b_sdp_stream *stream;
+
+	bin_push_int(store, client->flags);
+	bin_push_str(store, &client->body);
+	bin_push_int(store, list_size(&client->streams));
+	list_for_each(s, &client->streams) {
+		stream = list_entry(s, struct b2b_sdp_stream, list);
+		bin_push_int(store, stream->index);
+		bin_push_str(store, &stream->body);
+	}
+}
+
+static void b2b_sdp_client_event_receive_update(struct b2b_sdp_client *client,
+		bin_packet_t *store)
+{
+	str tmp;
+	int streams, index;
+	struct b2b_sdp_stream *stream;
+
+	lock_get(&client->ctx->lock);
+	bin_pop_int(store, &client->flags);
+	bin_pop_str(store, &tmp);
+	if (shm_str_sync(&client->body, &tmp) < 0) {
+		LM_ERR("could not duplicate body for client!\n");
+		goto end;
+	}
+	bin_pop_int(store, &streams);
+	while (streams-- > 0) {
+		bin_pop_int(store, &index);
+		stream = b2b_sdp_get_stream_client_idx(client, index);
+		if (!stream) {
+			LM_ERR("could not find stream index %d\n", index);
+			continue;
+		}
+		bin_pop_str(store, &tmp);
+		if (shm_str_sync(&stream->body, &tmp) < 0) {
+			LM_ERR("could not duplicate body for stream %d!\n", index);
+			continue;
+		}
+	}
+end:
+	lock_release(&client->ctx->lock);
+}
+
+static void b2b_sdp_client_event_receive_delete(struct b2b_sdp_client *client,
+		bin_packet_t *store)
+{
+	b2b_sdp_client_remove(client);
+	b2b_sdp_client_release(client);
+}
+
+static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend)
+{
+	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)((str *)param)->s;
+
+	switch (event_type) {
+		case B2B_EVENT_CREATE:
+			/* already handled by server */
+			break;
+		case B2B_EVENT_UPDATE:
+			b2b_sdp_client_event_trigger_update(client, store);
+			break;
+		case B2B_EVENT_DELETE:
+			/* nothing to do, as all we need is the b2b key */
+			break;
+		default:
+			/* nothing else for now */
+			break;
+	}
+}
+
+static void b2b_sdp_client_event_received(enum b2b_entity_type et, str *key,
+		str *param, enum b2b_event_type event_type, bin_packet_t *store,
+		int backend)
+{
+	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)((str *)param)->s;
+
+	switch (event_type) {
+			break;
+		case B2B_EVENT_UPDATE:
+			b2b_sdp_client_event_receive_update(client, store);
+			break;
+		case B2B_EVENT_DELETE:
+			b2b_sdp_client_event_receive_delete(client, store);
+			break;
+		case B2B_EVENT_CREATE:
+		default:
+			/* nothing else for now */
+			break;
+	}
 }
