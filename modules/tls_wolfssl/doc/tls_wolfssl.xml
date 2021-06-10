@@ -4,6 +4,7 @@
 
 
 <!ENTITY admin SYSTEM "tls_wolfssl_admin.xml">
+<!ENTITY faq SYSTEM "tls_wolfssl_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
 <!-- Include general documentation entities -->
@@ -20,6 +21,7 @@
 	<toc></toc>
 
 	&admin;
+	&faq;
 	&contrib;
 
 	&docCopyrights;
