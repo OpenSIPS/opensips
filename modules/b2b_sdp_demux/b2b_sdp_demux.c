@@ -1405,7 +1405,6 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 	struct b2b_sdp_stream *stream;
 	int pushed_streams = 0;
 
-	bin_push_str(store, &ctx->b2b_key);
 	bin_push_int(store, ctx->clients_no);
 	bin_push_int(store, ctx->sess_id);
 
@@ -1453,11 +1452,11 @@ static int b2b_sdp_client_restore(struct b2b_sdp_client *client)
 	str hack;
 	hack.s = (char *)&client;
 	hack.len = sizeof(void *);
-	if (b2b_api.update_b2bl_param(B2B_SERVER, &client->b2b_key, &hack, 0) < 0) {
+	if (b2b_api.update_b2bl_param(B2B_CLIENT, &client->b2b_key, &hack, 0) < 0) {
 		LM_ERR("could not update restore param!\n");
 		return -1;
 	}
-	if (b2b_api.restore_logic_info(B2B_SERVER, &client->b2b_key, b2b_sdp_client_notify) < 0) {
+	if (b2b_api.restore_logic_info(B2B_CLIENT, &client->b2b_key, b2b_sdp_client_notify) < 0) {
 		LM_ERR("could not register restore logic!\n");
 		return -1;
 	}
@@ -1535,6 +1534,7 @@ static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
 			goto error;
 		b2b_add_stream_ctx(ctx, stream);
 	}
+	return;
 error:
 	b2b_sdp_ctx_free(ctx);
 }
@@ -1551,6 +1551,14 @@ static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
 	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
 
 	switch (event_type) {
+		case B2B_EVENT_ACK:
+			/*
+			 * for DB backend, the entity is stored during ACK,
+			 * but for clusterer, during CREATE, thus we don't need to store
+			 * it one more type on the ACK
+			 */
+			if (backend == B2BCB_BACKEND_CLUSTER)
+				return;
 		case B2B_EVENT_CREATE:
 			b2b_sdp_server_event_trigger_create(ctx, store);
 			break;
