@@ -31,4 +31,5 @@ clean-wolfssl-lib:
 	@if [ -f ./lib/wolfssl/Makefile ]; then \
 		$(MAKE) -C ./lib/wolfssl clean; \
 	fi;
-	@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share
+	@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
+	./lib/wolfssl/Makefile ./lib/wolfssl/configure
