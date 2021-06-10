@@ -605,6 +605,10 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 
 	for (i = 0; i < hsize; i++)
 		for (dlg = htable[i].first; dlg; dlg = dlg->next) {
+			if (dlg->mod_name.len != cb->mod_name.len ||
+				memcmp(dlg->mod_name.s, cb->mod_name.s, cb->mod_name.len))
+				continue;
+
 			if (dlg->storage.len > 0) {
 				if (bin_init(&storage, &storage_cap, B2BE_STORAGE_BIN_TYPE,
 					B2BE_STORAGE_BIN_VERS, 0) < 0) {
