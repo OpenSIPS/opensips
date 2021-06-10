@@ -610,11 +610,11 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 	unsigned int hsize;
 
 	if (etype == B2B_CLIENT) {
-		htable = server_htable;
-		hsize = server_hsize;
-	} else {
 		htable = client_htable;
 		hsize = client_hsize;
+	} else {
+		htable = server_htable;
+		hsize = server_hsize;
 	}
 
 	for (i = 0; i < hsize; i++)
