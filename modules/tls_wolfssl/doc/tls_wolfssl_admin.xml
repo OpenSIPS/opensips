@@ -23,6 +23,30 @@
 	<section id="dependencies" xreflabel="Dependencies">
 	<title>Dependencies</title>
 	<section>
+		<title>Compilation</title>
+		<para>
+		The following packages must be installed before compiling this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>autoconf</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>automake</emphasis>.
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>libtool</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
 		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
