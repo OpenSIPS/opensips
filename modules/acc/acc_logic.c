@@ -55,9 +55,6 @@ extern str extra_str;
 extern str leg_str;
 extern str created_str;
 
-extern str acc_created_avp_name;
-extern int acc_created_avp_id;
-
 extern int acc_flags_ctx_idx;
 extern int acc_tm_flags_ctx_idx;
 extern int acc_dlg_ctx_idx;

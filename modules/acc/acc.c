@@ -103,7 +103,6 @@ extern int acc_log_facility;
 
 
 /* call created avp id */
-extern int acc_created_avp_id;
 
 static int build_core_dlg_values(struct dlg_cell *dlg,struct sip_msg *req);
 static int build_extra_dlg_values(extra_value_t* values);
