@@ -138,10 +138,6 @@ str acc_created_col    = str_init("created");
 struct acc_extra *evi_extra_tags = 0;
 struct acc_extra *evi_leg_tags = 0;
 
-/* db avp variables */
-str acc_created_avp_name = str_init("accX_created");
-int acc_created_avp_id = -1;
-
 /* acc context position */
 int acc_flags_ctx_idx;
 int acc_tm_flags_ctx_idx;
@@ -231,7 +227,6 @@ static param_export_t params[] = {
 	{"acc_sip_code_column",  STR_PARAM, &acc_sipcode_col.s    },
 	{"acc_sip_reason_column",STR_PARAM, &acc_sipreason_col.s  },
 	{"acc_time_column",      STR_PARAM, &acc_time_col.s       },
-	{"acc_created_avp_name", STR_PARAM, &acc_created_avp_name.s},
 	{0,0,0}
 };
 
@@ -336,7 +331,6 @@ static int mod_init( void )
 	acc_sipcode_col.len = strlen(acc_sipcode_col.s);
 	acc_sipreason_col.len = strlen(acc_sipreason_col.s);
 	acc_time_col.len = strlen(acc_time_col.s);
-	acc_created_avp_name.len = strlen(acc_created_avp_name.s);
 
 	if (log_facility_str) {
 		int tmp = str2facility(log_facility_str);
