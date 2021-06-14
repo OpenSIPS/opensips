@@ -1202,18 +1202,6 @@ static int pv_get_rcvport(struct sip_msg *msg, pv_param_t *param,
 			&msg->rcv.bind_address->port_no_str);
 }
 
-static int pv_get_force_sock(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	if(msg==NULL)
-		return -1;
-
-	if (msg->force_send_socket==0)
-		return pv_get_null(msg, param, res);
-
-	return pv_get_strval(msg, param, res, &msg->force_send_socket->sock_str);
-}
-
 static int pv_get_useragent(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -2784,25 +2772,6 @@ static int pv_get_scriptvar(struct sip_msg *msg,  pv_param_t *param,
 	return 0;
 }
 
-static int pv_get_af(struct sip_msg *msg,  pv_param_t *param,
-		pv_value_t *res)
-{
-	if(msg==NULL)
-		return -1;
-
-	res->flags = PV_VAL_STR;
-	if (msg->rcv.src_ip.af == AF_INET) {
-		res->rs.s = "INET";
-		res->rs.len = 4;
-	} else if (msg->rcv.src_ip.af == AF_INET6) {
-		res->rs.s = "INET6";
-		res->rs.len = 5;
-	} else
-		return pv_get_null(msg, param, res);
-
-	return 0;
-}
-
 /********* end PV get functions *********/
 
 /********* start PV set functions *********/
@@ -3880,42 +3849,6 @@ static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *
 
 /********** generic helper functions ***************/
 
-static int pv_is_obsolete(const pv_spec_p sp, int param)
-{
-	char *old, *new;
-
-	switch(sp->type) {
-		case PVT_RCVIP: /* added in 3.1 */
-			old="$Ri";
-			new="$socket_in(ip)";
-			break;
-		case PVT_RCVPORT: /* added in 3.1 */
-			old="$Rp";
-			new="$socket_in(port)";
-			break;
-		case PVT_PROTO: /* added in 3.1 */
-			old="$pr/$proto";
-			new="$socket_in(proto)";
-			break;
-		case PVT_FORCE_SOCK: /* added in 3.1 */
-			old="$fs";
-			new="$socket_out";
-			break;
-		case PVT_AF: /* added in 3.1 */
-			old="$af";
-			new="$socket_in(af)";
-			break;
-		default:
-			LM_BUG("unrecognized deprecated pvar %d\n",sp->type);
-			return -1;
-	}
-
-	LM_WARN("variable '%s' is marked as deprecated and it will be soon "
-		"removed, please use '%s' instead\n",old,new);
-	return 0;
-}
-
-
 /**
  * the table with core pseudo-variables
  */
@@ -3974,9 +3907,6 @@ static const pv_export_t _pv_names_table[] = {
 	{str_init("Au"), /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("af"),
-		PVT_AF, pv_get_af, 0,
-		0, 0, pv_is_obsolete, 0},	/* */
 	{str_init("bf"), /* */
 		PVT_BFLAGS, pv_get_bflags, 0,
 		0, 0, 0, 0},
@@ -4058,9 +3988,6 @@ static const pv_export_t _pv_names_table[] = {
 	{str_init("fn"), /* */
 		PVT_FROM_DISPLAYNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 5},
-	{str_init("fs"), /* */
-		PVT_FORCE_SOCK, pv_get_force_sock, pv_set_force_sock,
-		0, 0, pv_is_obsolete, 0},
 	{str_init("ft"), /* */
 		PVT_FROM_TAG, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 4},
@@ -4130,12 +4057,6 @@ static const pv_export_t _pv_names_table[] = {
 	{str_init("pp"), /* */
 		PVT_PID, pv_get_pid, 0,
 		0, 0, 0, 0},
-	{str_init("pr"), /* */
-		PVT_PROTO, pv_get_proto, 0,
-		0, 0, pv_is_obsolete, 0},
-	{str_init("proto"), /* */
-		PVT_PROTO, pv_get_proto, 0,
-		0, 0, pv_is_obsolete, 0},
 	{str_init("pu"), /* */
 		PVT_PPI, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 1},
@@ -4199,12 +4120,6 @@ static const pv_export_t _pv_names_table[] = {
 	{str_init("ruri.user"), /* */
 		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
 		0, 0, pv_init_iname, 1},
-	{str_init("Ri"), /* */
-		PVT_RCVIP, pv_get_rcvip, 0,
-		0, 0, pv_is_obsolete, 0},
-	{str_init("Rp"), /* */
-		PVT_RCVPORT, pv_get_rcvport, 0,
-		0, 0, pv_is_obsolete, 0},
 	{str_init("src_ip"), /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
