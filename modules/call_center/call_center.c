@@ -49,6 +49,8 @@ static str b2b_scenario_agent = str_init("call center agent");
 /* b2b logic API */
 b2bl_api_t b2b_api;
 
+static call_state cc_call_state = CC_CALL_NONE;
+
 
 static int mod_init(void);
 static void mod_destroy(void);
@@ -72,6 +74,9 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 
 static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param);
 static int w_agent_login(struct sip_msg *req, str *agent_s, int *state);
+
+static int pv_get_cc_state( struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 static void cc_timer_agents(unsigned int ticks, void* param);
 static void cc_timer_calls(unsigned int ticks, void* param);
@@ -200,6 +205,12 @@ static dep_export_t deps = {
 	},
 };
 
+static pv_export_t mod_pvars[] = {
+	{ {"cc_state",  sizeof("cc_state")-1},     1000, pv_get_cc_state,
+		0,                 0, 0, 0, 0 },
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
+};
+
 struct module_exports exports= {
 	"call_center",   /* module's name */
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -212,7 +223,7 @@ struct module_exports exports= {
 	mod_params,      /* param exports */
 	mod_stats,       /* exported statistics */
 	mi_cmds,         /* exported MI functions */
-	0,               /* exported pseudo-variables */
+	mod_pvars,       /* exported pseudo-variables */
 	0,				 /* exported transformations */
 	0,               /* extra processes */
 	0,               /* module pre-initialization function */
@@ -587,6 +598,7 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 
 	lock_release( data->lock );
 
+	cc_call_state = call->state;
 	if(from_customer || call->prev_state != CC_CALL_QUEUED) {
 		/* send call to queue */
 		if (set_call_leg( NULL, call, &out)< 0 ) {
@@ -599,6 +611,7 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 			update_stat( call->flow->st_onhold_calls, 1);
 		}
 	}
+	cc_call_state = CC_CALL_NONE;
 	/* write CDR */
 	cc_write_cdr( &un, &fid, &aid, -2, call->recv_time,
 		get_ticks() - call->recv_time, 0 , pickup_time, call->no_rejections-1,
@@ -667,14 +680,17 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 	update_stat( call->flow->st_onhold_calls, -1);
 
 	LM_DBG("Bridge two calls [%p] - [%p]\n", call, call->agent);
+	cc_call_state = call->state;
 	cnt = --call->ref_cnt;
 	if(b2b_api.bridge_2calls(&call->b2bua_id, &call->b2bua_agent_id) < 0)
 	{
 		LM_ERR("Failed to bridge the agent with the customer\n");
 		lock_set_release( data->call_locks, call->lock_idx );
 		b2b_api.terminate_call(&call->b2bua_id);
+		cc_call_state = CC_CALL_NONE;
 		return -1;
 	}
+	cc_call_state = CC_CALL_NONE;
 	/* if the agent was connected to the costumer */	
 	lock_set_release( data->call_locks, call->lock_idx );
 	
@@ -693,6 +709,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 
 	lock_set_get( data->call_locks, call->lock_idx );
 	cs = call->state;
+	cc_call_state = call->state;
 
 	if (event==B2B_DESTROY_CB) {
 		LM_DBG("A delete in b2blogic, call->state=%d, %p\n", call->state, call);
@@ -719,11 +736,13 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			free_cc_call( data, call);
 		else
 			LM_DBG("!!! Call ref not 0 - do not delete %p\n", call);
+		cc_call_state = CC_CALL_NONE;
 		return 0;
 	}
 
 	if(call->ign_cback) {
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 2;
 	}
 
@@ -745,6 +764,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		}
 		/* external caller terminated the call */
 		call->state = CC_CALL_ENDED;
+		cc_call_state = CC_CALL_ENDED;
 		lock_set_release( data->call_locks, call->lock_idx );
 		if (cs<CC_CALL_TOAGENT) {
 			/* call terminated while onwait */
@@ -764,11 +784,13 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		terminate_call(call, stat, cs);
 
 		/* route the BYE according to scenario */
+		cc_call_state = CC_CALL_NONE;
 		return 2;
 	}
 	/* if reInvite to the customer failed - end the call */
 	if(event == B2B_REJECT_CB && params->entity==0) {
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 1;
 	}
 
@@ -776,9 +798,11 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		if(call->state == CC_CALL_TOAGENT) {
 			handle_agent_reject(call, 1, stat->setup_time);
 			lock_set_release( data->call_locks, call->lock_idx );
+			cc_call_state = CC_CALL_NONE;
 			return 0;
 		}
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 1;
 	}
 
@@ -786,6 +810,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	 * events, just in the BYEs from media/agent side */
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 0;
 	}
 
@@ -795,12 +820,14 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			call->agent->location.len, call->agent->location.s);
 		handle_agent_reject(call, 1, stat->setup_time);
 		lock_set_release( data->call_locks, call->lock_idx );
+		cc_call_state = CC_CALL_NONE;
 		return 0;
 	}
 
 	/* get next state */
 	lock_get( data->lock );
 
+	cc_call_state = CC_CALL_NONE;
 	if (cc_call_state_machine( data, call, &leg )!=0) {
 		LM_ERR("failed to get next call destination \n");
 		lock_release( data->lock );
@@ -808,6 +835,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		/* force BYE to be sent in both parts */
 		return -1;
 	}
+	cc_call_state = call->state;
 
 	lock_release( data->lock );
 
@@ -817,6 +845,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	if (call->state == CC_CALL_ENDED) {
 		lock_set_release( data->call_locks, call->lock_idx );
 		terminate_call( call, stat, cs);
+		cc_call_state = CC_CALL_NONE;
 		return 2;
 	} else if (call->state == CC_CALL_TOAGENT) {
 		/* call no longer on wait */
@@ -830,8 +859,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		LM_ERR("failed to set new destination for call\n");
 		lock_set_release( data->call_locks, call->lock_idx );
 		pkg_free(leg.s);
+		cc_call_state = CC_CALL_NONE;
 		return -1;
 	}
+	cc_call_state = CC_CALL_NONE;
 	lock_set_release( data->call_locks, call->lock_idx );
 
 	if(cc_db_update_call(call) < 0)
@@ -1056,6 +1087,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		ret = -5;
 		goto error;
 	}
+	cc_call_state = call->state;
 
 	lock_release( data->lock );
 	LM_DBG("new destination for call(%p) is %.*s (state=%d)\n",
@@ -1087,6 +1119,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		LM_ERR("Failed to insert call record in db\n");
 	}
 
+	cc_call_state = CC_CALL_NONE;
 	return 1;
 error:
 	lock_release( data->lock );
@@ -1097,6 +1130,7 @@ error1:
 		free_cc_call( data, call);
 		flow->ongoing_calls--;
 	}
+	cc_call_state = CC_CALL_NONE;
 	return ret;
 }
 
@@ -1273,9 +1307,11 @@ next_ag:
 			lock_release( data->lock );
 
 			/* send call to selected agent */
+			cc_call_state = call->state;
 			if (set_call_leg( NULL, call, &out)< 0 ) {
 				LM_ERR("failed to set new destination for call\n");
 			}
+			cc_call_state = CC_CALL_NONE;
 			lock_set_release( data->call_locks, call->lock_idx );
 
 			if(cc_db_update_call(call) < 0)
@@ -1355,10 +1391,12 @@ static void cc_timer_calls(unsigned int ticks, void* param)
 				/* unlock data */
 				lock_release( data->lock );
 
+				cc_call_state = call->state;
 				/* send call to selected destination */
 				if (set_call_leg( NULL, call, &out)<-0 ) {
 					LM_ERR("failed to set new destination for call\n");
 				}
+				cc_call_state = CC_CALL_NONE;
 			}
 			lock_set_release( data->call_locks, call->lock_idx );
 		}
@@ -1793,3 +1831,13 @@ error:
 }
 
 
+static int pv_get_cc_state( struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	if (cc_call_state == CC_CALL_NONE)
+		return pv_get_null( msg, param, res);
+
+	res->rs = *call_state_str(cc_call_state);
+	res->flags = PV_VAL_STR;
+	return 0;
+}

@@ -1205,6 +1205,47 @@ opensips-cli -x mi cc_reset_stats
 	<section id="exported_pseudo_variables">
 	<title>Exported Pseudo-Variables</title>
 	<para>
+		<section id="pv_cc_state" xreflabel="$cc_state">
+			<title><function moreinfo="none">$cc_state</function></title>
+			<para>
+			Returns the state of a call.
+			</para>
+			<para>
+				Possible values returned are:
+				<para>
+				<itemizedlist>
+					<listitem><para>
+					<emphasis>welcome</emphasis> - the welcome message is played.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>dissuading1</emphasis> - the first dissuading message is played.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>dissuading2</emphasis> - the second dissuading message is played.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>queue</emphasis> - the call is in queue.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>preagent</emphasis> - the agent is being called.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>toagent</emphasis> - the agent is in call.
+					</para></listitem>
+				</itemizedlist>
+				</para>
+			</para>
+
+		<example>
+		<title>$rtpquery Usage</title>
+		<programlisting format="linespecific">
+...
+	$json(reply) := $rtpquery;
+	xlog("Total RTP Stats: $json(reply/totals)\n");
+...
+		</programlisting>
+		</example>
+		</section>
 	NONE
 	</para>
 	</section>
