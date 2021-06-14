@@ -26,6 +26,7 @@
 
 #include "aaa_impl.h"
 #include "peer.h"
+#include "app_opensips/avps.h"
 
 struct _acc_dict acc_dict;
 
@@ -114,7 +115,7 @@ static int tac_entry(void)
 }
 
 
-static int dm_store_enumval(const char *name, int value)
+int dm_store_enumval(const char *name, int value)
 {
 	unsigned int e;
 	int *val_holder;
@@ -132,342 +133,8 @@ static int dm_store_enumval(const char *name, int value)
 }
 
 
-static int dm_register_radius_avps(void)
-{
-	int i;
-
-	/* Service-Type, RFC 2865 */
-	{
-		/*
-			The Service-Type AVP (AVP Code 6) indicates the type of service the
-			user has requested, or the type of service to be provided.  It MAY
-			be used in both Access-Request and Access-Accept packets.  A NAS is
-			not required to implement all of these service types, and MUST
-			treat unknown or unsupported Service-Types as though an
-			Access-Reject had been received instead.
-		*/
-		struct dict_object 	* 	type;
-		struct dict_type_data 		tdata = {
-			AVP_TYPE_INTEGER32, "Enumerated(Service-Type)",
-			NULL, NULL, NULL, NULL, NULL };
-		struct dict_enumval_data 	vals[] = {
-			{ "Call-Check",				{ .i32 = 10 }},
-			{ "Group-Check", 			{ .i32 = 12 }},
-			{ "Sip-Session", 			{ .i32 = 15 }},
-			{ "Sip-Verify-Destination",	{ .i32 = 21 }},
-			{ "Sip-Verify-Source",		{ .i32 = 22 }},
-			{ "Sip-Caller-AVPs", 		{ .i32 = 30 }},
-			{ "Sip-Callee-AVPs", 		{ .i32 = 31 }},
-			{ NULL, {.i32 = 0} },
-		};
-
-		struct dict_avp_data 		data = {
-				6,				/* Code */
-				0, 				/* Vendor */
-				"Service-Type",	/* Name */
-				AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,		/* Fixed flag values */
-				AVP_TYPE_INTEGER32 		/* base type of data */
-				};
-
-		/* Create the Enumerated type, and then the AVP */
-		FD_CHECK_dict_new(DICT_TYPE, &tdata, NULL, &type);
-
-		for (i = 0; vals[i].enum_name; i++) {
-			FD_CHECK_dict_new(DICT_ENUMVAL, &vals[i], type, NULL);
-			FD_CHECK(dm_store_enumval(vals[i].enum_name, vals[i].enum_value.i32));
-		}
-
-		FD_CHECK_dict_new(DICT_AVP, &data, type, NULL);
-	}
-
-	/* Acct-Status-Type, RFC 2866 */
-	{
-		/*
-			The Acct-Status-Type AVP (AVP Code 40) indicates whether this
-			Accounting-Request marks the beginning of the user service (Start)
-			or the end (Stop).
-
-			It MAY be used by the client to mark the start of accounting (for
-			example, upon booting) by specifying Accounting-On and to mark the
-			end of accounting (for example, just before a scheduled reboot) by
-			specifying Accounting-Off.
-		*/
-		struct dict_object 	* 	type;
-		struct dict_type_data 		tdata = {
-			AVP_TYPE_INTEGER32, "Enumerated(Acct-Status-Type)",
-			NULL, NULL, NULL, NULL, NULL };
-		struct dict_enumval_data 	vals[] = {
-			{ "Start",	{ .i32 = 1 }},
-			{ "Stop", 	{ .i32 = 2 }},
-			{ "Alive", 	{ .i32 = 3 }},
-			{ "Failed",	{ .i32 = 15 }},
-			{ NULL, {.i32 = 0} },
-		};
-
-		struct dict_avp_data 		data = {
-				40,					/* Code */
-				0, 					/* Vendor */
-				"Acct-Status-Type",	/* Name */
-				AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,		/* Fixed flag values */
-				AVP_TYPE_INTEGER32 		/* base type of data */
-				};
-
-		/* Create the Enumerated type, and then the AVP */
-		FD_CHECK_dict_new(DICT_TYPE, &tdata, NULL, &type);
-
-		for (i = 0; vals[i].enum_name; i++) {
-			FD_CHECK_dict_new(DICT_ENUMVAL, &vals[i], type, NULL);
-			FD_CHECK(dm_store_enumval(vals[i].enum_name, vals[i].enum_value.i32));
-		}
-
-		FD_CHECK_dict_new(DICT_AVP, &data, type, NULL);
-	}
-
-	return 0;
-}
 
 
-static int dm_register_custom_sip_avps(void)
-{
-	struct dict_object * UTF8String_type;
-	int i;
-
-	FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &UTF8String_type);
-
-	/* Sip-Method */
-	{
-		/*
-			The Sip-Method AVP (AVP Code 204) is of type Enumerated, and
-			its values are bitmasks for each SIP method, per the
-			"enum request_method" structure in the OpenSIPS C code
-		*/
-		struct dict_object 	* 	type;
-		struct dict_type_data 		tdata = {
-			AVP_TYPE_INTEGER32, "Enumerated(Sip-Method)",
-			NULL, NULL, NULL, NULL, NULL };
-		struct dict_enumval_data 	vals[] = {
-			{ "UNDEFINED", 	{ .i32 = 0 }},
-			{ "INVITE", 	{ .i32 = 1 }},
-			{ "CANCEL",		{ .i32 = 2 }},
-			{ "ACK",		{ .i32 = 4 }},
-			{ "BYE", 		{ .i32 = 8 }},
-			{ "INFO",		{ .i32 = 15 }},
-			{ "OPTIONS", 	{ .i32 = 32 }},
-			{ "UPDATE", 	{ .i32 = 64 }},
-			{ "REGISTER", 	{ .i32 = 128 }},
-			{ "MESSAGE",	{ .i32 = 256 }},
-			{ "SUBSCRIBE", 	{ .i32 = 512 }},
-			{ "NOTIFY",		{ .i32 = 1024 }},
-			{ "PRACK", 		{ .i32 = 2048 }},
-			{ "REFER", 		{ .i32 = 4096 }},
-			{ "PUBLISH", 	{ .i32 = 8192 }},
-			{ "OTHER",		{ .i32 = 16384 }},
-			{ NULL, {.i32 = 0} },
-		};
-
-		struct dict_avp_data 		data = {
-				204, 				/* Code */
-				0, 					/* Vendor */
-				"Sip-Method",		/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_INTEGER32 			/* base type of data */
-				};
-
-		/* Create the Enumerated type, and then the AVP */
-		FD_CHECK_dict_new(DICT_TYPE, &tdata, NULL, &type);
-
-		for (i = 0; vals[i].enum_name; i++) {
-			FD_CHECK_dict_new(DICT_ENUMVAL, &vals[i], type, NULL);
-			FD_CHECK(dm_store_enumval(vals[i].enum_name, vals[i].enum_value.i32));
-		}
-
-		FD_CHECK_dict_new(DICT_AVP, &data, type, NULL);
-	}
-
-	/* Sip-Response-Code */
-	{
-		/*
-			The Sip-Method AVP (AVP Code 205) is of type Unsigned32, and
-			represents the final status of the SIP transaction.
-		*/
-		struct dict_avp_data data = {
-				205,					/* Code */
-				0, 						/* Vendor */
-				"Sip-Response-Code", 	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_UNSIGNED32 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
-	}
-
-	/* Sip-From-Tag */
-	{
-		/*
-			The Sip-From-Tag AVP (AVP Code 206) is of type UTF8String and
-			represents the value of the SIP From header ";tag=" parameter
-		*/
-		struct dict_avp_data data = {
-				206,				/* Code */
-				0, 					/* Vendor */
-				"Sip-From-Tag", 	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_OCTETSTRING 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
-	}
-
-	/* Sip-To-Tag */
-	{
-		/*
-			The Sip-To-Tag AVP (AVP Code 207) is of type UTF8String and
-			represents the value of the SIP To header ";tag=" parameter
-		*/
-		struct dict_avp_data data = {
-				207,			/* Code */
-				0, 				/* Vendor */
-				"Sip-To-Tag", 	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_OCTETSTRING 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
-	}
-
-	/* Sip-Uri-User */
-	{
-		/*
-			The Sip-Uri-User AVP (AVP Code 208) is of type UTF8String and
-			represents the value of the Request-URI "user" production
-		*/
-		struct dict_avp_data data = {
-				208,				/* Code */
-				0, 					/* Vendor */
-				"Sip-Uri-User", 	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_OCTETSTRING 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
-	}
-
-	/* Sip-Uri-Host */
-	{
-		/*
-			The Sip-Uri-Host AVP (AVP Code 209) is of type UTF8String and
-			represents the value of the Request-URI "host" production
-		*/
-		struct dict_avp_data data = {
-				209,				/* Code */
-				0, 					/* Vendor */
-				"Sip-Uri-Host", 	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_OCTETSTRING 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
-	}
-
-	/* SIP-AVP */
-	{
-		/*
-			The SIP-AVP AVP (AVP Code 225) is of type UTF8String and
-			represents a key/value mapping returned by the RADIUS server, to be
-			automatically exported as an opensips.cfg $avp variable
-		*/
-		struct dict_avp_data data = {
-				225,		/* Code */
-				0, 			/* Vendor */
-				"SIP-AVP", 	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_OCTETSTRING 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
-	}
-
-	return 0;
-}
-
-
-static int dm_register_cdr_avps(void)
-{
-	/* Sip-Call-Duration */
-	{
-		/*
-			The Sip-Call-Duration AVP (AVP Code 227) is of type Unsigned32 and
-			represents the duration of the call in seconds, rounded up
-		*/
-		struct dict_avp_data data = {
-				227, 					/* Code */
-				0,						/* Vendor */
-				"Sip-Call-Duration",	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_UNSIGNED32 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
-	}
-
-	/* Sip-Call-Setuptime */
-	{
-		/*
-			The Sip-Call-Setuptime AVP (AVP Code 228) is of type Unsigned32 and
-			represents the time required to set up the call (INVITE receipt vs.
-			200 OK receipt), in seconds
-		*/
-		struct dict_avp_data data = {
-				228, 					/* Code */
-				0,						/* Vendor */
-				"Sip-Call-Setuptime",	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_UNSIGNED32 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
-	}
-
-	/* Sip-Call-Created */
-	{
-		/*
-			The Sip-Call-Created AVP (AVP Code 229) is of type Unsigned32 and
-			represents the UNIX timestamp for the start of the call (time of
-			the receipt of the 200 OK)
-		*/
-		struct dict_avp_data data = {
-				229, 					/* Code */
-				0,						/* Vendor */
-				"Sip-Call-Created",	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_UNSIGNED32 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
-	}
-
-	/* Sip-Call-MSDuration */
-	{
-		/*
-			The Sip-Call-MSDuration AVP (AVP Code 230) is of type Unsigned32
-			and represents the duration of the call in milliseconds, rounded up
-		*/
-		struct dict_avp_data data = {
-				230, 					/* Code */
-				0,						/* Vendor */
-				"Sip-Call-MSDuration",	/* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,			/* Fixed flag values */
-				AVP_TYPE_UNSIGNED32 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
-	}
-
-	return 0;
-}
 
 
 /* all of these AVPs are included in the RADIUS AVP registry */
@@ -741,33 +408,6 @@ static int dm_register_digest_avps(void)
 }
 
 
-static int dm_register_custom_vendors(void)
-{
-	struct dict_object *UTF8String_type;
-
-	FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &UTF8String_type);
-
-	/* Cisco */
-	{
-		struct dict_vendor_data cisco_data = { 9, "Cisco" };
-		FD_CHECK_dict_new(DICT_VENDOR, &cisco_data, NULL, NULL);
-	}
-
-	/* Cisco-AVPair */
-	{
-		struct dict_avp_data data = {
-				1,				/* Code */
-				9,				/* Vendor */
-				"Cisco-AVPair", /* Name */
-				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
-				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
-				AVP_TYPE_OCTETSTRING 		/* base type of data */
-				};
-		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
-	}
-
-	return 0;
-}
 
 
 /* Register the Diameter SIP Application (RFC 4740) commands, AVPs, etc. */
@@ -1123,12 +763,8 @@ int dm_init_sip_application(void)
  */
 int dm_register_osips_avps(void)
 {
-	FD_CHECK(dm_register_radius_avps());
-	FD_CHECK(dm_register_custom_sip_avps());
-	FD_CHECK(dm_register_cdr_avps());
+	FD_CHECK(register_osips_avps());
 	FD_CHECK(dm_register_digest_avps());
-	FD_CHECK(dm_register_custom_vendors());
-
 	return 0;
 }
 
