@@ -75,7 +75,6 @@ static int w_pv_get_cgr_opt(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
 static int pv_parse_cgr(pv_spec_p sp, const str *in);
 static int w_pv_parse_cgr(pv_spec_p sp, const str *in);
-static int w_pv_parse_cgr_warn(pv_spec_p sp, const str *in);
 static int pv_parse_idx_cgr(pv_spec_p sp, const str *in);
 static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
@@ -108,8 +107,6 @@ static pv_export_t pvars[] = {
 		w_pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
 	{ str_init("cgr_ret"), 2005, pv_get_cgr_reply, 0,
 		pv_parse_cgr, 0, 0, 0},
-	{ str_init("cgrret"), 2005, pv_get_cgr_reply, 0,
-		w_pv_parse_cgr_warn, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -575,11 +572,11 @@ static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 	} else {
 		if (param->pvn.type == CGR_PV_NAME_VAR) {
 			if (pv_get_spec_value(msg, (pv_spec_p)param->pvn.u.dname, val) != 0) {
-				LM_ERR("cannot get the name of the $cgrret variable\n");
+				LM_ERR("cannot get the name of the $cgr_ret variable\n");
 				return -1;
 			}
 			if (val->flags & PV_VAL_NULL || !(val->flags & PV_VAL_STR)) {
-				LM_ERR("invalid name for the $cgrret variable!\n");
+				LM_ERR("invalid name for the $cgr_ret variable!\n");
 				return -1;
 			}
 			tmp = val->rs;
@@ -649,16 +646,6 @@ static int w_pv_parse_cgr(pv_spec_p sp, const str *in)
 				in->len, in->s);
 		LM_WARN("using $cgr_opt(%.*s) exactly as $cgr(NAME)!\n",
 				in->len, in->s);
-	}
-	return pv_parse_cgr(sp, in);
-}
-
-static int w_pv_parse_cgr_warn(pv_spec_p sp, const str *in)
-{
-	static int warned = 0;
-	if (!warned) {
-		LM_WARN("$cgrret(name) is deprecated - please using $cgr_ret(name) instead!\n");
-		warned = 1;
 	}
 	return pv_parse_cgr(sp, in);
 }
