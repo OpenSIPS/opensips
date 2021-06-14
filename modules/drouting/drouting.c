@@ -43,7 +43,6 @@
 
 #include "../../mem/rpm_mem.h"
 
-#define DR_PARAM_USE_WEIGTH         (1<<0)
 #define DR_PARAM_RULE_FALLBACK      (1<<1)
 #define DR_PARAM_STRICT_LEN         (1<<2)
 #define DR_PARAM_ONLY_CHECK         (1<<3)
@@ -3803,10 +3802,6 @@ static int fix_flags(void** param)
 	if (s) {
 		for ( p=s->s ; p<s->s+s->len ; p++ ) {
 			switch (*p) {
-				case 'W':
-					flags |= DR_PARAM_USE_WEIGTH;
-					LM_DBG("using weights in GW selection\n");
-					break;
 				case 'F':
 					flags |= DR_PARAM_RULE_FALLBACK;
 					LM_DBG("enabling rule fallback\n");

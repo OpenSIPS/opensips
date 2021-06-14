@@ -1324,20 +1324,6 @@ modparam("drouting", "rule_tables_query", "
 				routing info (no GW is set, the RURI is not altered)
 				</para>
 			</listitem>
-			<listitem>
-				<para>
-				<emphasis role='bold'>W (deprecated)</emphasis> - Instead of using the
-				destination (from the rule definition) in the given order,
-				sort them based on their weight.
-				</para>
-				<para>
-					<emphasis>This flag is deprecated in 3.1+.  The new
-						approach is to set a <emphasis role='bold'>"W"</emphasis>
-						value as the "sort_alg" column of the dr_rules or dr_carriers
-						tables.  See the <ulink url='https://www.opensips.org/Documentation/Install-DBSchema-3-2'>Dynamic Routing DB schema</ulink>
-						for more details.</emphasis>
-				</para>
-			</listitem>
 			</itemizedlist>
 		</listitem>
 		<listitem>
