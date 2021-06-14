@@ -55,12 +55,6 @@ static int fixup_check_avp(void** param);
 static int fixup_event_name(void** param);
 static int fixup_format_string(void** param);
 static int fixup_nt_string(void** param);
-static int fixup_rewritehost(void **param);
-static int fixup_rewritehostport(void **param);
-static int fixup_rewriteuser(void **param);
-static int fixup_rewriteuserpass(void **param);
-static int fixup_rewriteport(void **param);
-static int fixup_rewriteuri(void **param);
 
 static int w_forward(struct sip_msg *msg, struct proxy_l *dest);
 static int w_send(struct sip_msg *msg, struct proxy_l *dest, str *headers);
@@ -155,38 +149,20 @@ static cmd_export_t core_cmds[]={
 	{"sethost", (cmd_function)w_sethost, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"rewritehost", (cmd_function)w_sethost, {
-		{CMD_PARAM_STR, fixup_rewritehost, 0}, {0,0,0}},
-		ALL_ROUTES},
 	{"sethostport", (cmd_function)w_sethostport, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
-		ALL_ROUTES},
-	{"rewritehostport", (cmd_function)w_sethostport, {
-		{CMD_PARAM_STR, fixup_rewritehostport, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"setuser", (cmd_function)w_setuser, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"rewriteuser", (cmd_function)w_setuser, {
-		{CMD_PARAM_STR, fixup_rewriteuser, 0}, {0,0,0}},
-		ALL_ROUTES},
 	{"setuserpass", (cmd_function)w_setuserpass, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
-		ALL_ROUTES},
-	{"rewriteuserpass", (cmd_function)w_setuserpass, {
-		{CMD_PARAM_STR, fixup_rewriteuserpass, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"setport", (cmd_function)w_setport, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"rewriteport", (cmd_function)w_setport, {
-		{CMD_PARAM_STR, fixup_rewriteport, 0}, {0,0,0}},
-		ALL_ROUTES},
 	{"seturi", (cmd_function)w_seturi, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
-		ALL_ROUTES},
-	{"rewriteuri", (cmd_function)w_seturi, {
-		{CMD_PARAM_STR, fixup_rewriteuri, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"prefix", (cmd_function)w_prefix, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
@@ -560,42 +536,6 @@ static int fixup_nt_string(void** param)
 
 	*param = s_nt.s;
 	return 0;
-}
-
-static int fixup_rewritehost(void **param)
-{
-	LM_CRIT("'rewritehost()' is deprecated, use sethost() instead\n");
-	return -1;
-}
-
-static int fixup_rewritehostport(void **param)
-{
-	LM_CRIT("'rewritehostport()' is deprecated, use sethostport() instead\n");
-	return -1;
-}
-
-static int fixup_rewriteuser(void **param)
-{
-	LM_CRIT("'rewriteuser()' is deprecated, use setuser() instead\n");
-	return -1;
-}
-
-static int fixup_rewriteuserpass(void **param)
-{
-	LM_CRIT("'rewriteuserpass()' is deprecated, use setuserpass() instead\n");
-	return -1;
-}
-
-static int fixup_rewriteport(void **param)
-{
-	LM_CRIT("'rewriteport()' is deprecated, use setport() instead\n");
-	return -1;
-}
-
-static int fixup_rewriteuri(void **param)
-{
-	LM_CRIT("'rewriteuri()' is deprecated, use seturi() instead\n");
-	return -1;
 }
 
 
