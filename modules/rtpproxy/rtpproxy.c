@@ -350,7 +350,7 @@ static struct {
 
 static int rtpproxy_disable_tout = 60;
 static int rtpproxy_retr = 5;
-int rtpproxy_tout = -1;
+int rtpproxy_tout = 1000;
 static char *rtpproxy_timeout = 0;
 static int rtpproxy_autobridge = 0;
 static pid_t mypid;
@@ -469,7 +469,6 @@ static param_export_t params[] = {
 	                         (void*)rtpproxy_set_store            },
 	{"rtpproxy_disable_tout", INT_PARAM, &rtpproxy_disable_tout   },
 	{"rtpproxy_retr",         INT_PARAM, &rtpproxy_retr           },
-	{"rtpproxy_tout",         INT_PARAM, &rtpproxy_tout           },
 	{"rtpproxy_timeout",      STR_PARAM, &rtpproxy_timeout        },
 	{"rtpproxy_autobridge",   INT_PARAM, &rtpproxy_autobridge     },
 	{"default_set",           INT_PARAM, &default_rtpp_set_no     },
@@ -1183,21 +1182,8 @@ mod_init(void)
 	}
 
 	/* configure rtpproxy timeout */
-	if(rtpproxy_timeout && sscanf(rtpproxy_timeout, "%f", &timeout)) {
-		if(rtpproxy_tout != -1) {
-			LM_ERR("you can't use rtpproxy_timeout and rtpproxy_tout : \n"
-				"check your config !\n");
-			return -1;
-		}
+	if(rtpproxy_timeout && sscanf(rtpproxy_timeout, "%f", &timeout))
 		rtpproxy_tout = (int) (timeout * 1000);
-	} else if(rtpproxy_tout < 0) {
-		/* not defined : set default value */
-		rtpproxy_tout = 1000;
-	} else {
-		LM_WARN("rtpproxy_tout param is obsolete, please replace with \n"
-			"rtpproxy_timeout\n");
-		rtpproxy_tout = rtpproxy_tout * 1000;
-	}
 
 	/* load dlg api */
 	memset(&dlg_api, 0, sizeof(struct dlg_binds));

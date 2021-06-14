@@ -290,12 +290,6 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
 </programlisting>
 		</example>
 	</section>
-	<section id="param_rtpproxy_tout" xreflabel="rtpproxy_tout">
-		<title><varname>rtpproxy_tout</varname> (integer)</title>
-		<para>
-		Obsolete. see rtpproxy_timeout.
-		</para>
-	</section>
 	<section id="param_rtpproxy_retr" xreflabel="rtpproxy_retr">
 		<title><varname>rtpproxy_retr</varname> (integer)</title>
 		<para>
