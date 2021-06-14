@@ -1174,34 +1174,6 @@ static int pv_get_srcport(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_uintval(msg, param, res, msg->rcv.src_port);
 }
 
-static int pv_get_rcvip(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	if(msg==NULL)
-		return -1;
-
-	if(msg->rcv.bind_address==NULL
-			|| msg->rcv.bind_address->address_str.s==NULL)
-		return pv_get_null(msg, param, res);
-
-	return pv_get_strval(msg, param, res, &msg->rcv.bind_address->address_str);
-}
-
-static int pv_get_rcvport(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	if(msg==NULL)
-		return -1;
-
-	if(msg->rcv.bind_address==NULL
-			|| msg->rcv.bind_address->port_no_str.s==NULL)
-		return pv_get_null(msg, param, res);
-
-	return pv_get_intstrval(msg, param, res,
-			(int)msg->rcv.bind_address->port_no,
-			&msg->rcv.bind_address->port_no_str);
-}
-
 static int pv_get_useragent(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -1377,26 +1349,6 @@ static int pv_get_pai(struct sip_msg *msg, pv_param_t *param,
 
 	return pv_get_strval(msg, param, res, &(get_pai(msg)->uri));
 }
-
-/* proto of received message: $pr or $proto*/
-static int pv_get_proto(struct sip_msg *msg, pv_param_t *param,
-		pv_value_t *res)
-{
-	str s;
-	if(msg==NULL)
-		return -1;
-
-	if ( msg->rcv.proto>=PROTO_FIRST && msg->rcv.proto<PROTO_LAST &&
-	protos[msg->rcv.proto].id ) {
-		s.s = protos[msg->rcv.proto].name;
-		s.len = strlen(s.s);
-	} else {
-		s = str_null;
-	}
-
-	return pv_get_strintval(msg, param, res, &s, (int)msg->rcv.proto);
-}
-
 
 static int pv_get_dset(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
