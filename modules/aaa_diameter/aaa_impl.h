@@ -88,6 +88,7 @@ aaa_conn *dm_init_prot(str *aaa_url);
 int dm_init_minimal(void);
 int dm_init_sip_application(void);
 int dm_register_osips_avps(void);
+
 int dm_find(aaa_conn *con, aaa_map *map, int op);
 aaa_message *dm_create_message(aaa_conn *con, int msg_type);
 int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
