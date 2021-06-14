@@ -345,8 +345,8 @@ CROSS_COMPILE ?=
 SYSBASE ?= /usr
 
 # dirs
-cfg_dir = etc/$(MAIN_NAME)/
-bin_dir = sbin/
+cfg_dir ?= etc/$(MAIN_NAME)/
+bin_dir ?= sbin/
 
 ARCH_B = $(shell echo $(ARCH) | sed -e 's/.*64.*/64b/')
 ifeq ($(OS),freebsd)
