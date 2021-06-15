@@ -28,17 +28,24 @@
 #include "peer.h"
 #include "app_opensips/avps.h"
 
-struct _acc_dict acc_dict;
+struct local_rules_definition {
+	char *avp_name;
+	enum rule_position position;
+	int min;
+	int max;
+};
+
+struct _dm_dict dm_dict;
 
 /* Workaround until we find a way of looking up a single enum val in fD */
 static gen_hash_t *osips_enumvals;
 
-struct local_rules_definition {
-	char 			*avp_name;
-	enum rule_position	position;
-	int 			min;
-	int			max;
-};
+/* helps locate a SIP worker awaiting a Diameter reply when receiving
+ * that async Diameter reply on some freeDiameter peer thread */
+static gen_hash_t *pending_replies;
+
+/* the condition variable used by a SIP worker to wait for a Diameter reply */
+static struct dm_cond *my_reply_cond;
 
 #define RULE_ORDER( _position ) ((((_position) == RULE_FIXED_HEAD) || ((_position) == RULE_FIXED_TAIL)) ? 1 : 0 )
 #define PARSE_loc_rules( _rulearray, _parent) {								\
@@ -64,52 +71,171 @@ struct local_rules_definition {
 	} \
 }
 
-static int os_cb(struct msg ** msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+
+int dm_init_reply_cond(int proc_rank)
 {
-	struct msg_hdr *hdr = NULL;
-
-	FD_CHECK(fd_msg_hdr(*msg, &hdr));
-
-	if (hdr->msg_flags & CMD_FLAG_REQUEST) {
-		/* we received an ACR message (??), just discard it */
-		FD_CHECK(fd_msg_free(*msg));
-		*msg = NULL;
-		return 0;
+	my_reply_cond = shm_malloc(sizeof *my_reply_cond);
+	if (!my_reply_cond) {
+		LM_ERR("oom\n");
+		return -1;
 	}
+	memset(my_reply_cond, 0, sizeof *my_reply_cond);
 
-	if (hdr->msg_flags & CMD_FLAG_ERROR) {
-		LM_ERR("XXXXXXXXXXX failed to send msg?!\n");
-		FD_CHECK(fd_msg_free(*msg));
-		*msg = NULL;
-		return 0;
-	}
+	init_mutex_cond(&my_reply_cond->mutex, &my_reply_cond->cond);
+	return 0;
+}
 
-	/* we received an ACA reply! */
 
-	LM_ERR("XXXXXXXXXXX wooot?!\n");
-	FD_CHECK(fd_msg_free(*msg));
-	*msg = NULL;
+int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond)
+{
+	pthread_mutexattr_t mattr;
+	FD_CHECK(pthread_mutexattr_init(&mattr));
+	FD_CHECK(pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED));
+	FD_CHECK(pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST));
+	FD_CHECK(pthread_mutex_init(mutex, &mattr));
+	pthread_mutexattr_destroy(&mattr);
+
+	pthread_condattr_t cattr;
+	FD_CHECK(pthread_condattr_init(&cattr));
+	FD_CHECK(pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED));
+	FD_CHECK(pthread_cond_init(cond, &cattr));
+	pthread_condattr_destroy(&cattr);
 
 	return 0;
 }
 
 
-/* entry point: register handler for Base Accounting messages in the daemon */
-static int tac_entry(void)
+static int dm_acc_reply(struct msg ** msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+{
+	struct avp *a = NULL;
+	struct avp_hdr * h = NULL;
+	struct msg_hdr *hdr = NULL;
+	int rc;
+
+	FD_CHECK(fd_msg_hdr(*msg, &hdr));
+
+	if (hdr->msg_flags & CMD_FLAG_REQUEST) {
+		LM_INFO("received ACR request?! discarding...\n");
+		goto out;
+	}
+
+	FD_CHECK(fd_msg_search_avp(*msg, dm_dict.Result_Code, &a));
+	FD_CHECK(fd_msg_avp_hdr(a, &h));
+	rc = h->avp_value->u32;
+
+	FD_CHECK(fd_msg_search_avp(*msg, dm_dict.Error_Message, &a));
+	if (a) {
+		FD_CHECK(fd_msg_avp_hdr(a, &h));
+		LM_ERR("server failed to process ACR request, rc: %d (%.*s)\n",
+			rc, (int)h->avp_value->os.len, h->avp_value->os.data);
+	}
+
+	if (hdr->msg_flags & CMD_FLAG_ERROR)
+		LM_ERR("protocol failure for ACR request (rc: %d, 'E' bit set)\n", rc);
+
+out:
+	FD_CHECK(fd_msg_free(*msg));
+	*msg = NULL;
+	return 0;
+}
+
+
+static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+{
+	struct msg_hdr *hdr = NULL;
+	struct msg *msg = *_msg;
+	struct avp *a = NULL;
+	struct avp_hdr * h = NULL;
+	int rc;
+	str callid;
+	struct dm_cond **prpl_cond, *rpl_cond;
+
+	FD_CHECK(fd_msg_hdr(msg, &hdr));
+
+	if (hdr->msg_flags & CMD_FLAG_REQUEST) {
+		LM_INFO("received MAR request?! discarding...\n");
+		goto out;
+	}
+
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Result_Code, &a));
+	FD_CHECK(fd_msg_avp_hdr(a, &h));
+	rc = h->avp_value->u32;
+
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Acct_Session_Id, &a));
+	FD_CHECK(fd_msg_avp_hdr(a, &h));
+	callid.s = (char *)h->avp_value->os.data;
+	callid.len = (int)h->avp_value->os.len;
+
+	LM_DBG("MAA reply %d, Acct-Session-Id: %.*s\n", rc, callid.len, callid.s);
+
+	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, callid);
+	if (!prpl_cond) {
+		LM_ERR("failed to match Call-ID %.*s to a pending request\n",
+		       callid.len, callid.s);
+		goto out;
+	}
+	rpl_cond = *prpl_cond;
+	rpl_cond->rc = rc;
+
+	hash_remove_key(pending_replies, callid);
+
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
+	if (a) {
+		rpl_cond->is_error = 1;
+		FD_CHECK(fd_msg_avp_hdr(a, &h));
+		LM_DBG("auth failure, rc: %d (%.*s)\n",
+			rc, (int)h->avp_value->os.len, h->avp_value->os.data);
+	} else {
+		rpl_cond->is_error = 0;
+	}
+
+	/* signal the blocked SIP worker that the auth result is available! */
+	pthread_mutex_lock(&rpl_cond->mutex);
+	pthread_cond_signal(&rpl_cond->cond);
+	pthread_mutex_unlock(&rpl_cond->mutex);
+
+out:
+	FD_CHECK(fd_msg_free(msg));
+	*_msg = NULL;
+	return 0;
+}
+
+
+int dm_register_callbacks(void)
 {
 	struct disp_when data;
 
-	memset(&data, 0, sizeof data);
+	/* accounting */
+	{
+		memset(&data, 0, sizeof data);
 
-	/* Initialize the dictionary objects we use */
-	fd_dict_search(fd_g_config->cnf_dict, DICT_APPLICATION,
-		APPLICATION_BY_NAME, "Diameter Base Accounting", &data.app, ENOENT);
+		/* Initialize the dictionary objects we use */
+		FD_CHECK_dict_search(DICT_APPLICATION, APPLICATION_BY_NAME,
+				"Diameter Base Accounting", &data.app);
 
-	/* Register the dispatch callback */
-	FD_CHECK(fd_disp_register(os_cb, DISP_HOW_APPID, &data, NULL, NULL));
+		/* Register the dispatch callback */
+		FD_CHECK(fd_disp_register(dm_acc_reply,
+				DISP_HOW_APPID, &data, NULL, NULL));
 
-	/* Advertise support for the Diameter Base Accounting app in the peer */
-	FD_CHECK(fd_disp_app_support(data.app, NULL, 0, 1 ));
+		/* Advertise support for the Diameter Base Accounting app */
+		FD_CHECK(fd_disp_app_support(data.app, NULL, 0, 1 ));
+	}
+
+	/* auth */
+	{
+		memset(&data, 0, sizeof data);
+
+		/* Initialize the dictionary objects we use */
+		FD_CHECK_dict_search(DICT_APPLICATION, APPLICATION_BY_NAME,
+			"Diameter Session Initiation Protocol (SIP) Application", &data.app);
+
+		/* Register the dispatch callback */
+		FD_CHECK(fd_disp_register(dm_auth_reply,
+				DISP_HOW_APPID, &data, NULL, NULL));
+
+		/* Advertise support for the Diameter SIP Application app */
+		FD_CHECK(fd_disp_app_support(data.app, NULL, 0, 1 ));
+	}
 
 	return 0;
 }
@@ -117,12 +243,10 @@ static int tac_entry(void)
 
 int dm_store_enumval(const char *name, int value)
 {
-	unsigned int e;
 	int *val_holder;
 	const str *_name = _str(name);
 
-	e = hash_entry(osips_enumvals, *_name);
-	val_holder = (int *)hash_get(osips_enumvals, e, *_name);
+	val_holder = (int *)hash_get_key(osips_enumvals, *_name);
 	if (!val_holder) {
 		LM_ERR("oom\n");
 		return -1;
@@ -133,11 +257,30 @@ int dm_store_enumval(const char *name, int value)
 }
 
 
+int dm_add_pending_reply(const str *callid, struct dm_cond *reply_cond)
+{
+	struct dm_cond **cond_holder;
+	unsigned int hentry;
+
+	hentry = hash_entry(pending_replies, *callid);
+	hash_lock(pending_replies, hentry);
+
+	cond_holder = (struct dm_cond **)hash_get(pending_replies, hentry, *callid);
+	if (!cond_holder) {
+		hash_unlock(pending_replies, hentry);
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	*cond_holder = reply_cond;
+	hash_unlock(pending_replies, hentry);
+
+	return 0;
+}
 
 
 
-
-/* all of these AVPs are included in the RADIUS AVP registry */
+/* all of these AVPs are part of "RADIUS Extension for Digest Auth" RFC 5090 */
 static int dm_register_digest_avps(void)
 {
 	struct dict_object *UTF8String_type;
@@ -777,12 +920,17 @@ int dm_init_minimal(void)
 	extern int fd_dict_base_protocol(struct dictionary * dict);
 
 	static struct fd_config g_conf;
-	static char init_done;
+	static char min_init_done;
 
-	if (init_done)
+	if (min_init_done)
 		return 0;
 
 	if (!(osips_enumvals = hash_init(8))) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	if (!(pending_replies = hash_init(64))) {
 		LM_ERR("oom\n");
 		return -1;
 	}
@@ -796,7 +944,7 @@ int dm_init_minimal(void)
 	FD_CHECK(dm_register_osips_avps());
 	FD_CHECK(dm_init_sip_application());
 
-	init_done = 1;
+	min_init_done = 1;
 	return 0;
 }
 
@@ -805,6 +953,9 @@ void dm_destroy(void)
 {
 	hash_destroy(osips_enumvals, NULL);
 	osips_enumvals = NULL;
+
+	hash_destroy(pending_replies, NULL);
+	pending_replies = NULL;
 }
 
 
@@ -844,32 +995,13 @@ int freeDiameter_init(void)
 	/* free the "minimal initialization" we've done at mod_init() */
 	FD_CHECK(fd_conf_deinit());
 
-	/* ... and now fully init the entire freeDiameter library */
+	/* ... and now fully init the entire freeDiameter library
+	 *	(parse freeDiameter-client.conf file, fork all threads, etc.) */
 	FD_CHECK(fd_core_initialize());
 
 	fd_g_debug_lvl = fd_log_level;
 
-	memset(&acc_dict, 0, sizeof acc_dict);
-
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Destination-Realm", &acc_dict.Destination_Realm, ENOENT));
-
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Accounting-Record-Type", &acc_dict.Accounting_Record_Type, ENOENT));
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Accounting-Record-Number", &acc_dict.Accounting_Record_Number, ENOENT));
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Event-Timestamp", &acc_dict.Event_Timestamp, ENOENT));
-
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Auth-Application-Id", &acc_dict.Auth_Application_Id, ENOENT));
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Auth-Session-State", &acc_dict.Auth_Session_State, ENOENT));
-
-	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-	      "Route-Record", &acc_dict.Route_Record, ENOENT));
-
-	tac_entry();
+	FD_CHECK(fd_core_parseconf(dm_conf_filename));
 
 	return 0;
 }
@@ -919,7 +1051,6 @@ int dm_find(aaa_conn *con, aaa_map *map, int op)
 		}
 
 		map->value = *value;
-		/* TODO: map->type = ?? */
 		return 0;
 	}
 	case AAA_DICT_FIND_VEND: {
@@ -997,7 +1128,6 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 	strcpy(wrap->buf, avp->name);
 	wrap->davp.vendor_id = vendor;
 
-	/* TODO: does Diameter properly handle empty-string values? */
 	if (val_length >= 0) {
 		wrap->davp.value.s = wrap->buf + len + 1;
 		wrap->davp.value.len = val_length;
@@ -1018,10 +1148,15 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 
 int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
 {
-	if (!con || !req)
+	struct dm_message *dm;
+
+	if (!con || !req || !my_reply_cond)
 		return -1;
 
-	/* we cannot provide the reply right now, since we're asynchronous <3 */
+	dm = (struct dm_message *)(req->avpair);
+	dm->reply_cond = my_reply_cond;
+
+	/* never provide the reply, just grab the result code, if any */
 	if (reply)
 		*reply = NULL;
 
@@ -1029,10 +1164,25 @@ int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
 
 	pthread_mutex_lock(msg_send_lk);
 
-	list_add_tail(&((struct dm_message *)(req->avpair))->list, msg_send_queue);
+	list_add_tail(&dm->list, msg_send_queue);
 	pthread_cond_signal(msg_send_cond);
 
 	pthread_mutex_unlock(msg_send_lk);
+
+	LM_DBG("message queued for sending\n");
+
+	if (req->type == AAA_AUTH) {
+		LM_DBG("awaiting auth reply...\n");
+
+		pthread_mutex_lock(&my_reply_cond->mutex);
+		pthread_cond_wait(&my_reply_cond->cond, &my_reply_cond->mutex);
+		pthread_mutex_unlock(&my_reply_cond->mutex);
+
+		LM_DBG("reply received, Result-Code: %d (%s)\n", my_reply_cond->rc,
+				my_reply_cond->is_error ? "FAILURE" : "SUCCESS");
+		if (my_reply_cond->is_error)
+			return -1;
+	}
 
 	return 0;
 }

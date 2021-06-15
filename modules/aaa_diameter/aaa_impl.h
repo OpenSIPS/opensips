@@ -49,21 +49,30 @@
 #define DM_MSG_SENT ((void *)1)
 #define DM_DUMMY_HANDLE ((void *)-1)
 
-struct _acc_dict {
+struct _dm_dict {
 	struct dict_object *Destination_Realm;
+	struct dict_object *Result_Code;
+	struct dict_object *Error_Message;
 
 	struct dict_object *Accounting_Record_Type;
 	struct dict_object *Accounting_Record_Number;
+	struct dict_object *Acct_Session_Id;
 
 	struct dict_object *Auth_Application_Id;
 	struct dict_object *Auth_Session_State;
+	struct dict_object *SIP_AOR;
+	struct dict_object *SIP_Method;
 
 	struct dict_object *Event_Timestamp;
 	struct dict_object *Route_Record;
 };
 
 struct dm_message {
-	aaa_message *am; /* back-reference */
+	aaa_message *am; /* back-reference, useful during cleanup */
+
+	str sip_method;
+	struct dm_cond *reply_cond; /* the cond to signal on reply arrival */
+
 	struct list_head avps;
 	struct list_head list;
 };
@@ -79,8 +88,17 @@ struct dm_avp {
 	struct list_head list;
 };
 
+struct dm_cond {
+	pthread_mutex_t mutex;
+	pthread_cond_t cond;
+
+	int rc; /* the Diameter Result-Code AVP value */
+	int is_error;
+};
+int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond);
+
 extern char *dm_conf_filename;
-extern struct _acc_dict acc_dict;
+extern struct _dm_dict dm_dict;
 
 int freeDiameter_init(void);
 
@@ -88,6 +106,7 @@ aaa_conn *dm_init_prot(str *aaa_url);
 int dm_init_minimal(void);
 int dm_init_sip_application(void);
 int dm_register_osips_avps(void);
+int dm_register_callbacks(void);
 
 int dm_find(aaa_conn *con, aaa_map *map, int op);
 aaa_message *dm_create_message(aaa_conn *con, int msg_type);
@@ -96,6 +115,9 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **_);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
 void _dm_destroy_message(aaa_message *msg);
+
+int dm_init_reply_cond(int proc_rank);
+int dm_add_pending_reply(const str *callid, struct dm_cond *reply_cond);
 
 void dm_destroy(void);
 

@@ -26,9 +26,10 @@
 #include "aaa_impl.h"
 #include "peer.h"
 
-int mod_init(void);
+static int mod_init(void);
+static int child_init(int rank);
 static int dm_check_config(void);
-void mod_destroy(void);
+static void mod_destroy(void);
 
 char *dm_conf_filename = "freeDiameter.conf";
 
@@ -93,7 +94,7 @@ struct module_exports exports =
 	mod_init,         /* module initialization function */
 	NULL,             /* reply processing function */
 	mod_destroy,      /* shutdown function */
-	NULL,             /* per-child init function */
+	child_init,       /* per-child init function */
 	NULL              /* reload confirm function */
 };
 
@@ -124,6 +125,17 @@ int mod_init(void)
 }
 
 
+static int child_init(int rank)
+{
+	if (dm_init_reply_cond(rank) != 0) {
+		LM_ERR("failed to init cond variable for replies\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 static int dm_check_config(void)
 {
 	if (!dm_realm.s) {
@@ -146,7 +158,7 @@ static int dm_check_config(void)
 }
 
 
-void mod_destroy(void)
+static void mod_destroy(void)
 {
 	int rc;
 
