@@ -597,6 +597,9 @@ static int init_mod_child( struct sr_module* m, int rank, char *type,
 			if (init_mod_child(dep->mod, rank, type, 1) != 0)
 				return -1;
 
+	if (m->init_child_done)
+		return 0;
+
 	if (m->exports && m->exports->init_child_f) {
 		LM_DBG("type=%s, rank=%d, module=%s\n",
 				type, rank, m->exports->name);
