@@ -393,8 +393,10 @@ static int handle_replicated_publish(bin_packet_t *packet)
 	} else if (presentity_has_subscribers(&s, pres.event) == 0) {
 		LM_DBG("Presentity has NO local subscribers\n");
 		/* no subscribers for this presentity, discard the publish */
-		if (p==NULL)
+		if (p==NULL) {
+			pkg_free(s.s); // allocated by uandd_to_uri()
 			return 0;
+		}
 
 		LM_DBG("Forcing expires 0\n");
 		/* force an expire of the presentity */
