@@ -58,20 +58,9 @@ int dm_init_peer(void)
 	INIT_LIST_HEAD(msg_send_queue);
 
 	msg_send_lk = &wrap->mutex;
-	pthread_mutexattr_t mattr;
-	FD_CHECK(pthread_mutexattr_init(&mattr));
-	FD_CHECK(pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED));
-	FD_CHECK(pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST));
-	FD_CHECK(pthread_mutex_init(msg_send_lk, &mattr));
-	pthread_mutexattr_destroy(&mattr);
-
 	msg_send_cond = &wrap->cond;
-	pthread_condattr_t cattr;
-	FD_CHECK(pthread_condattr_init(&cattr));
-	FD_CHECK(pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED));
-	FD_CHECK(pthread_cond_init(msg_send_cond, &cattr));
-	pthread_condattr_destroy(&cattr);
 
+	init_mutex_cond(msg_send_lk, msg_send_cond);
 	return 0;
 }
 
@@ -133,7 +122,7 @@ static int dm_auth(struct dm_message *msg)
 
 	/* Auth-Application-Id */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Auth_Application_Id, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Auth_Application_Id, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.i32 = AAA_APP_SIP;
@@ -143,7 +132,7 @@ static int dm_auth(struct dm_message *msg)
 
 	/* Auth-Session-State */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Auth_Session_State, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Auth_Session_State, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.i32 = NO_STATE_MAINTAINED;
@@ -156,7 +145,7 @@ static int dm_auth(struct dm_message *msg)
 
 	/* Destination-Realm */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Destination_Realm, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Destination_Realm, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.os.data = (unsigned char *)dm_realm.s;
@@ -165,9 +154,38 @@ static int dm_auth(struct dm_message *msg)
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 	}
 
+	/* SIP-AOR */
+	{
+		list_for_each (it, &msg->avps) {
+			dm_avp = list_entry(it, struct dm_avp, list);
+
+			if (!strcmp(dm_avp->name.s, "User-Name")) {
+				FD_CHECK(fd_msg_avp_new(dm_dict.SIP_AOR, 0, &avp));
+
+				memset(&val, 0, sizeof val);
+				val.os.data = (unsigned char *)dm_avp->value.s;
+				val.os.len = dm_avp->value.len;
+				FD_CHECK(fd_msg_avp_setvalue(avp, &val));
+				FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
+				break;
+			}
+		}
+	}
+
+	/* SIP-Method */
+	{
+		FD_CHECK(fd_msg_avp_new(dm_dict.SIP_Method, 0, &avp));
+
+		memset(&val, 0, sizeof val);
+		val.os.data = (uint8_t *)"opensips-auth";
+		val.os.len = strlen("opensips-auth");
+		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
+		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
+	}
+
 	/* Route-Record */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Route_Record, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Route_Record, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.os.data = (unsigned char *)dm_peer_identity.s;
@@ -182,9 +200,13 @@ static int dm_auth(struct dm_message *msg)
 
 		LM_DBG("appending AVP '%s'...\n", dm_avp->name.s);
 
+		/* we use the SIP Call-ID in order to match
+		 * replies arriving on a separate thread */
+		if (!strcmp(dm_avp->name.s, "Acct-Session-Id"))
+			FD_CHECK(dm_add_pending_reply(&dm_avp->value, msg->reply_cond));
+
 		if (dm_avp->vendor_id == 0) {
-			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-			      dm_avp->name.s, &obj, ENOENT));
+			FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
 			FD_CHECK(fd_msg_avp_new(obj, 0, &avp));
 		} else {
 			struct dict_avp_request_ex req;
@@ -193,8 +215,7 @@ static int dm_auth(struct dm_message *msg)
 			req.avp_data.avp_name = dm_avp->name.s;
 			req.avp_vendor.vendor_id = dm_avp->vendor_id;
 
-			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_STRUCT,
-			      &req, &obj, ENOENT));
+			FD_CHECK_dict_search(DICT_AVP, AVP_BY_STRUCT, &req, &obj);
 			FD_CHECK(fd_msg_avp_new(obj, 0, &avp));
 		}
 
@@ -252,7 +273,7 @@ static int dm_acct(struct dm_message *msg)
 
 	/* Destination-Realm */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Destination_Realm, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Destination_Realm, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.os.data = (unsigned char *)dm_realm.s;
@@ -263,7 +284,7 @@ static int dm_acct(struct dm_message *msg)
 
 	/* Accounting-Record-Type */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Accounting_Record_Type, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Accounting_Record_Type, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.i32 = EVENT_RECORD;
@@ -273,7 +294,7 @@ static int dm_acct(struct dm_message *msg)
 
 	/* Accounting-Record-Number */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Accounting_Record_Number, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Accounting_Record_Number, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.i32 = 0; /* just 0; the Session-Id makes it unique anyway */
@@ -324,7 +345,7 @@ static int dm_acct(struct dm_message *msg)
 			bytes[3] = ts & 0xFF;
 		}
 
-		FD_CHECK(fd_msg_avp_new(acc_dict.Event_Timestamp, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Event_Timestamp, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.os.len = 4;
@@ -335,7 +356,7 @@ static int dm_acct(struct dm_message *msg)
 
 	/* Route-Record */
 	{
-		FD_CHECK(fd_msg_avp_new(acc_dict.Route_Record, 0, &avp));
+		FD_CHECK(fd_msg_avp_new(dm_dict.Route_Record, 0, &avp));
 
 		memset(&val, 0, sizeof val);
 		val.os.data = (unsigned char *)dm_peer_identity.s;
@@ -385,6 +406,44 @@ static inline int diameter_send_msg(struct dm_message *msg)
 }
 
 
+static int dm_prepare_globals(void)
+{
+	memset(&dm_dict, 0, sizeof dm_dict);
+
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Destination-Realm", &dm_dict.Destination_Realm, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Result-Code", &dm_dict.Result_Code, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Error-Message", &dm_dict.Error_Message, ENOENT));
+
+	/* accounting AVPs */
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Accounting-Record-Type", &dm_dict.Accounting_Record_Type, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Accounting-Record-Number", &dm_dict.Accounting_Record_Number, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Acct-Session-Id", &dm_dict.Acct_Session_Id, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Event-Timestamp", &dm_dict.Event_Timestamp, ENOENT));
+
+	/* auth AVPs */
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Auth-Application-Id", &dm_dict.Auth_Application_Id, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Auth-Session-State", &dm_dict.Auth_Session_State, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "SIP-AOR", &dm_dict.SIP_AOR, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "SIP-Method", &dm_dict.SIP_Method, ENOENT));
+
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Route-Record", &dm_dict.Route_Record, ENOENT));
+
+	return 0;
+}
+
+
 void diameter_peer_loop(int _)
 {
 	struct dm_message *msg;
@@ -394,16 +453,17 @@ void diameter_peer_loop(int _)
 		return;
 	}
 
-	__FD_CHECK(fd_core_parseconf(dm_conf_filename), 0, );
 	__FD_CHECK(dm_register_osips_avps(), 0, );
 	__FD_CHECK(dm_init_sip_application(), 0, );
+	__FD_CHECK(dm_prepare_globals(), 0, );
 
+	__FD_CHECK(dm_register_callbacks(), 0, );
 	__FD_CHECK(fd_core_start(), 0, );
 
 	pthread_mutex_lock(msg_send_lk);
 
 	for (;;) {
-		LM_INFO("XXX waiting for new messages...\n");
+		LM_DBG("waiting to send new messages...\n");
 		pthread_cond_wait(msg_send_cond, msg_send_lk);
 
 		if (list_empty(msg_send_queue)) {
@@ -411,23 +471,19 @@ void diameter_peer_loop(int _)
 			continue;
 		}
 
-		LM_INFO("XXX have new message! <3 sending...\n");
+		LM_DBG("have new message to send -- processing...\n");
 		msg = list_entry(msg_send_queue->next, struct dm_message, list);
 		list_del(&msg->list);
 
 		if (diameter_send_msg(msg) != 0)
-			LM_ERR("failed to send message!\n");
+			LM_ERR("failed to send message\n");
 		else
-			LM_INFO("successfully sent\n");
+			LM_DBG("successfully sent\n");
 
 		_dm_destroy_message(msg->am);
 	}
 
 	pthread_mutex_unlock(msg_send_lk);
 
-	LM_INFO("XXXX successfully sent msg!!?\n");
-
 	__FD_CHECK(fd_core_wait_shutdown_complete(), 0, );
-
-	LM_INFO("XXXX exiting!!\n");
 }
