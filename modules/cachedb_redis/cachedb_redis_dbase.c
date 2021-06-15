@@ -90,8 +90,9 @@ static int redis_init_ssl(char *url_extra_opts, redisContext *ctx,
 {
 	str tls_dom_name;
 	SSL *ssl;
+	struct tls_domain *d;
 
-	if (*tls_dom == NULL) {
+	if (tls_dom == NULL) {
 		if (strncmp(url_extra_opts, CACHEDB_TLS_DOM_PARAM,
 				CACHEDB_TLS_DOM_PARAM_LEN)) {
 			LM_ERR("Invalid Redis URL parameter: %s\n", url_extra_opts);
@@ -105,15 +106,19 @@ static int redis_init_ssl(char *url_extra_opts, redisContext *ctx,
 			return -1;
 		}
 
-		*tls_dom = tls_api.find_client_domain_name(&tls_dom_name);
-		if (*tls_dom == NULL) {
+		d = tls_api.find_client_domain_name(&tls_dom_name);
+		if (d == NULL) {
 			LM_ERR("TLS domain: %.*s not found\n",
 				tls_dom_name.len, tls_dom_name.s);
 			return -1;
 		}
+
+		*tls_dom = d;
+	} else {
+		d = *tls_dom;
 	}
 
-	ssl = SSL_new((*tls_dom)->ctx[process_no]);
+	ssl = SSL_new(((void**)d->ctx)[process_no]);
 	if (!ssl) {
 		LM_ERR("failed to create SSL structure (%d:%s)\n", errno, strerror(errno));
 		tls_print_errstack();
