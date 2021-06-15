@@ -536,7 +536,7 @@ int forward_reply(struct sip_msg* msg)
 		goto error;
 	}
 
-	if (msg_send(send_sock, proto, to, (int)id, new_buf, new_len, msg)<0) {
+	if (msg_send(send_sock, proto, to, id, new_buf, new_len, msg)<0) {
 		update_stat( drp_rpls, 1);
 		goto error0;
 	}
