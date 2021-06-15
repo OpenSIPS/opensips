@@ -78,12 +78,6 @@ extern int      sip_client_domain_avp;
 
 extern str tls_library_param;
 
-enum os_tls_library {
-	TLS_LIB_NONE,
-	TLS_LIB_OPENSSL,
-	TLS_LIB_WOLFSSL
-};
-
 extern enum os_tls_library tls_library;
 
 #define TLS_LIB_AUTO_STR "auto"

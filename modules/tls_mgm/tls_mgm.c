@@ -1455,6 +1455,11 @@ int tls_conn_extra_match(struct tcp_connection *c, void *id)
 	}
 }
 
+int get_tls_library_used(void)
+{
+	return tls_library;
+}
+
 static int load_tls_mgm(struct tls_mgm_binds *binds)
 {
 	binds->find_server_domain = tls_find_server_domain;
@@ -1471,6 +1476,8 @@ static int load_tls_mgm(struct tls_mgm_binds *binds)
 	binds->tls_fix_read_conn = tls_fix_read_conn;
 	binds->tls_read = tls_read;
 	binds->tls_conn_extra_match = tls_conn_extra_match;
+
+	binds->get_tls_library_used = get_tls_library_used;
 
 	return 1;
 }

@@ -69,12 +69,21 @@ static module_dependency_t *get_deps_use_tls(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
+static module_dependency_t *get_deps_use_tls_openssl(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_openssl", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{
 		{ "use_tls", get_deps_use_tls },
+		{ "use_tls", get_deps_use_tls_openssl },
 		{ NULL, NULL },
 	},
 };
@@ -143,6 +152,13 @@ static int mod_init(void)
 #endif
 	if (use_tls && load_tls_mgm_api(&tls_api) != 0) {
 		LM_ERR("failed to load tls_mgm API!\n");
+		return -1;
+	}
+
+	/* check if openssl is the configured library in order to have properly
+	 * initialised SSL_CTXes */
+	if (use_tls && tls_api.get_tls_library_used() != TLS_LIB_OPENSSL) {
+		LM_ERR("tls_mgm has to use the openssl library\n");
 		return -1;
 	}
 

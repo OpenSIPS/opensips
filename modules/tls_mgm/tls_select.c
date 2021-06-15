@@ -45,6 +45,7 @@
 
 #include "tls_select.h"
 #include "tls_config.h"
+#include "api.h"
 
 extern struct openssl_binds openssl_api;
 extern struct wolfssl_binds wolfssl_api;

@@ -65,6 +65,14 @@ typedef int (*tls_fix_read_conn_f)(struct tcp_connection *c, int fd,
 typedef int (*tls_read_f)(struct tcp_connection * c,struct tcp_req *r);
 typedef int (*tls_conn_extra_match_f)(struct tcp_connection *c, void *id);
 
+enum os_tls_library {
+    TLS_LIB_NONE,
+    TLS_LIB_OPENSSL,
+    TLS_LIB_WOLFSSL
+};
+
+typedef int (*get_tls_library_used_f)(void);
+
 struct tls_mgm_binds {
     tls_find_server_domain_f find_server_domain;
     tls_find_client_domain_f find_client_domain;
@@ -80,6 +88,8 @@ struct tls_mgm_binds {
     tls_fix_read_conn_f tls_fix_read_conn;
     tls_read_f tls_read;
     tls_conn_extra_match_f tls_conn_extra_match;
+
+    get_tls_library_used_f get_tls_library_used;
 };
 
 
