@@ -260,7 +260,7 @@ int aaa_authorize_sterman(struct sip_msg* _msg, dig_cred_t* _cred, str* _method,
 			goto err;
 		}*/
 #endif
-		LM_ERR("authorization failed\n");
+		LM_DBG("authorization failed\n");
 	}
 
 err:
