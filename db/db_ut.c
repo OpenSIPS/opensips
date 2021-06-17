@@ -28,6 +28,8 @@
  */
 
 #define _XOPEN_SOURCE 700 /* See strptime(3), snprintf(3) */
+#define _DEFAULT_SOURCE
+
 #include <time.h>
 #include <limits.h>
 #include <errno.h>

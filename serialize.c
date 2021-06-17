@@ -27,6 +27,8 @@
  * \brief Sequential forking implementation
  */
 #define _ISOC11_SOURCE
+#define _DEFAULT_SOURCE
+
 #include <assert.h>
 
 #include "str.h"
