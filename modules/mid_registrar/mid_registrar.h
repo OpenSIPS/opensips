@@ -127,6 +127,7 @@ extern unsigned int outgoing_expires;
 extern enum mid_reg_mode reg_mode;
 extern enum mid_reg_insertion_mode ctid_insertion;
 extern str ctid_param;
+extern str at_escape_str;
 
 extern str register_method;
 extern str contact_hdr;

@@ -209,6 +209,7 @@ int extract_aor(str* _uri, str* _a, str *sip_instance, str* call_id,
 	_a->s = aor_buf;
 	_a->len = puri.user.len;
 
+	/* per RFC 3261 § 10.3.5 (conversion to canonical form) */
 	if (un_escape(&puri.user, _a) < 0) {
 		rerrno = R_UNESCAPE;
 		LM_ERR("failed to unescape username\n");
