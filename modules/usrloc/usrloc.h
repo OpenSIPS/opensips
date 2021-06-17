@@ -193,7 +193,7 @@ typedef struct usrloc_api {
 	 * @ct_uri: the contact URI to search
 	 * @callid: the SIP Call-ID of the pending REGISTER message
 	 * @cseq: the SIP CSeq of the pending REGISTER message
-	 * @match: how to match the pending contact against existing bindings
+	 * @match: how to match the contact against existing bindings
 	 * @c: will hold the returned contact if found or NULL
 	 *
 	 * Return:
@@ -205,7 +205,7 @@ typedef struct usrloc_api {
 	 *       one, so you should ignore this REGISTER (is it a retransmission?)
 	 */
 	int (*get_ucontact) (urecord_t *r, str *ct_uri, str *callid, int cseq,
-	                     struct ct_match *match, ucontact_t **c);
+	                     const struct ct_match *match, ucontact_t **c);
 
 	/**
 	 * Fetch a ucontact from an usrloc domain using a contact ID.
@@ -232,14 +232,17 @@ typedef struct usrloc_api {
 	 * @ct_uri: the SIP URI of the contact
 	 * @ci: various info pertaining to the contact, extract from the REGISTER
 	 *      message (and not only!)
-	 * @c: will hold the contact, once created
+	 * @match: Required if @skip_replication is false, in order to instruct
+	 *      the replicas on how to match this contact
 	 * @skip_replication: set to true in order to avoid replicating an "insert"
 	 *                    event to neighboring cluster nodes
+	 * @c: will hold the output contact, once created
 	 *
 	 * Return: 0 (success), negative otherwise
 	 */
 	int (*insert_ucontact) (urecord_t *r, str *ct_uri, ucontact_info_t *ci,
-	                        ucontact_t **c, char skip_replication);
+	                      const struct ct_match *match, char skip_replication,
+	                      ucontact_t **c);
 
 	/**
 	 * Update the info of an existing usrloc contact, possibly on a re-REGISTER
@@ -247,13 +250,15 @@ typedef struct usrloc_api {
 	 * @r: the usrloc record of the contact
 	 * @c: the usrloc contact to update
 	 * @ci: various info pertaining to the contact to update
+	 * @match: Required if @skip_replication is false, in order to instruct
+	 *      the replicas on how to match this contact
 	 * @skip_replication: set to true in order to avoid replicating an "update"
 	 *                    event to neighboring cluster nodes
 	 *
 	 * Return: 0 (success), negative otherwise
 	 */
 	int (*update_ucontact) (urecord_t *r, ucontact_t *c, ucontact_info_t *ci,
-	                        char skip_replication);
+	                      const struct ct_match *match, char skip_replication);
 
 	/**
 	 * Fetch a key from contact-level storage.
@@ -292,7 +297,7 @@ typedef struct usrloc_api {
 	 * Return: 0 (success), negative otherwise
 	 */
 	int (*delete_ucontact) (urecord_t *r, ucontact_t *c,
-	                        char skip_replication);
+	                      const struct ct_match *match, char skip_replication);
 
 	/**
 	 * Delete a contact from a given usrloc domain, using its hash table or

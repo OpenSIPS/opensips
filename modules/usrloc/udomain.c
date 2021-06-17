@@ -1525,7 +1525,7 @@ int delete_urecord(udomain_t* _d, str* _aor, struct urecord* _r,
 	while(c) {
 		t = c;
 		c = c->next;
-		if (delete_ucontact(_r, t, skip_replication) < 0) {
+		if (delete_ucontact(_r, t, NULL, skip_replication) < 0) {
 			LM_ERR("deleting contact failed\n");
 			return -1;
 		}

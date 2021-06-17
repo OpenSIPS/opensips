@@ -320,7 +320,7 @@ mi_response_t *mi_usrloc_rm_contact(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Contact not found"));
 	}
 
-	if (delete_ucontact(rec, con, 0) < 0) {
+	if (delete_ucontact(rec, con, NULL, 0) < 0) {
 		unlock_udomain( dom, &aor);
 		return 0;
 	}
@@ -468,6 +468,7 @@ mi_response_t *mi_usrloc_flush(const mi_params_t *params,
 mi_response_t *mi_usrloc_add(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+	struct ct_match cmatch = {CT_MATCH_CONTACT_CALLID, NULL};
 	ucontact_info_t ci;
 	urecord_t* r;
 	ucontact_t* c;
@@ -539,13 +540,13 @@ mi_response_t *mi_usrloc_add(const mi_params_t *params,
 		/* update contact record */
 		ci.callid = &mi_ul_cid;
 		ci.cseq = c->cseq;
-		if (update_ucontact( r, c, &ci, 0) < 0)
+		if (update_ucontact( r, c, &ci, &cmatch, 0) < 0)
 			goto release_error;
 	} else {
 		/* new contact record */
 		ci.callid = &mi_ul_cid;
 		ci.cseq = MI_UL_CSEQ;
-		if ( insert_ucontact( r, &contact, &ci, &c, 0) < 0 )
+		if ( insert_ucontact( r, &contact, &ci, &cmatch, 0, &c) < 0 )
 			goto release_error;
 	}
 

@@ -38,7 +38,10 @@
 #define REPL_UCONTACT_UPDATE 4
 #define REPL_UCONTACT_DELETE 5
 
-#define UL_BIN_VERSION 2
+#define UL_BIN_V2      2
+#define UL_BIN_V3      3 // added "cmatch" (default: CT_MATCH_CONTACT_CALLID)
+
+#define UL_BIN_VERSION UL_BIN_V3
 
 extern int location_cluster;
 extern struct clusterer_binds clusterer_api;
@@ -55,9 +58,12 @@ int ul_init_cluster(void);
 /* duplicate local events to other OpenSIPS instances */
 void replicate_urecord_insert(urecord_t *r);
 void replicate_urecord_delete(urecord_t *r);
-void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c);
-void replicate_ucontact_update(urecord_t *r, ucontact_t *ct);
-void replicate_ucontact_delete(urecord_t *r, ucontact_t *c);
+void replicate_ucontact_insert(urecord_t *r, str *contact, ucontact_t *c,
+        const struct ct_match *match);
+void replicate_ucontact_update(urecord_t *r, ucontact_t *ct,
+        const struct ct_match *match);
+void replicate_ucontact_delete(urecord_t *r, ucontact_t *c,
+        const struct ct_match *match);
 
 void receive_binary_packets(bin_packet_t *packet);
 void receive_cluster_event(enum clusterer_event ev, int node_id);

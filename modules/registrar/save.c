@@ -244,7 +244,7 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 					rerrno = R_INTERNAL;
 					goto error;
 				}
-				if (ul.delete_ucontact( r, r->contacts, 0)!=0) {
+				if (ul.delete_ucontact( r, r->contacts, &_sctx->cmatch, 0)!=0) {
 					LM_ERR("failed to remove contact\n");
 					rerrno = R_INTERNAL;
 					goto error;
@@ -279,13 +279,14 @@ static inline int insert_contacts(struct sip_msg* _m, contact_t* _c,
 		if ( r->contacts==0 ||
 		ul.get_ucontact(r, &_c->uri, ci->callid, ci->cseq+1, &_sctx->cmatch,
 		&c)!=0 ){
-			if (ul.insert_ucontact( r, &_c->uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact( r, &_c->uri, ci, &_sctx->cmatch,
+				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
 			}
 		} else {
-			if (ul.update_ucontact( r, c, ci, 0) < 0) {
+			if (ul.update_ucontact( r, c, ci, &_sctx->cmatch, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				goto error;
@@ -429,7 +430,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					}
 					LM_DBG("overflow on inserting new contact -> removing "
 						"<%.*s>\n", c_last->c.len, c_last->c.s);
-					if (ul.delete_ucontact( _r, c_last, 0)!=0) {
+					if (ul.delete_ucontact( _r, c_last, &_sctx->cmatch, 0)!=0) {
 						LM_ERR("failed to remove contact\n");
 						goto error;
 					}
@@ -449,7 +450,8 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 				goto error;
 			}
 
-			if (ul.insert_ucontact( _r, &_c->uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact( _r, &_c->uri, ci, &_sctx->cmatch,
+				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
@@ -466,7 +468,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					c->flags &= ~FL_MEM;
 				}
 
-				if (ul.delete_ucontact(_r, c, 0) < 0) {
+				if (ul.delete_ucontact(_r, c, &_sctx->cmatch, 0) < 0) {
 					rerrno = R_UL_DEL_C;
 					LM_ERR("failed to delete contact\n");
 					goto error;
@@ -496,7 +498,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 						}
 						LM_DBG("overflow on update -> removing contact "
 							"<%.*s>\n", c_last->c.len, c_last->c.s);
-						if (ul.delete_ucontact( _r, c_last, 0)!=0) {
+						if (ul.delete_ucontact( _r, c_last, &_sctx->cmatch, 0)!=0) {
 							LM_ERR("failed to remove contact\n");
 							goto error;
 						}
@@ -516,7 +518,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 					goto error;
 				}
 
-				if (ul.update_ucontact(_r, c, ci, 0) < 0) {
+				if (ul.update_ucontact(_r, c, ci, &_sctx->cmatch, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
 					goto error;
@@ -1010,7 +1012,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 				continue;
 		}
 
-		ul.delete_ucontact(record, contact, 0);
+		ul.delete_ucontact(record, contact, NULL, 0);
 	}
 
 	ul.release_urecord(record, 0);
