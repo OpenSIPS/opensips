@@ -60,7 +60,7 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri)
 	regex_t ua_re;
 
 	if (reg_mode == MID_REG_THROTTLE_AOR)
-		return lookup(req, d, sflags, uri, 0, 1);
+		return lookup(req, d, sflags, uri, 0, mid_reg_update_aor);
 
 	if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
 	                       &max_latency) != 0) {
