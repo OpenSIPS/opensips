@@ -966,7 +966,7 @@ static inline void update_contact_pos(struct urecord* _r, ucontact_t* _c)
  * Update ucontact with new values
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
-															char skip_replication)
+                    const struct ct_match *match, char skip_replication)
 {
 	int ret, persist_kv_store = 1;
 
@@ -986,7 +986,7 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 		else
 			persist_kv_store = 0;
 
-		replicate_ucontact_update(_r, _c);
+		replicate_ucontact_update(_r, _c, match);
 	}
 
 	/* run callbacks for UPDATE event */

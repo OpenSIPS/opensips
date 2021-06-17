@@ -77,7 +77,7 @@ static void test_lookup(void)
 
 	fill_ucontact_info(&ci);
 	ci.methods = METHOD_UNDEF;
-	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert Contact");
+	ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert Contact");
 	ul.unlock_udomain(d, &aor);
 
 	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_OK, "lookup-2");
@@ -93,17 +93,17 @@ static void test_lookup(void)
 	set_ruri(&msg, &aor_ruri);
 	ok(reg_lookup(&msg, d, _str("m"), NULL) == LOOKUP_OK, "lookup-5");
 
-	ok(ul.delete_ucontact(r, c, 0) == 0, "delete ucontact");
+	ok(ul.delete_ucontact(r, c, NULL, 0) == 0, "delete ucontact");
 
 	fill_ucontact_info(&ci);
 	ci.flags |= FL_PN_ON; /* this is needed until we rewrite to call save() */
-	ok(ul.insert_ucontact(r, &ct1, &ci, &c, 0) == 0, "insert ct1 (PN)");
+	ok(ul.insert_ucontact(r, &ct1, &ci, NULL, 1, &c) == 0, "insert ct1 (PN)");
 
 	set_ruri(&msg, &aor_ruri);
 	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_PN_SENT, "lookup-6");
 
 	fill_ucontact_info(&ci);
-	ok(ul.insert_ucontact(r, &ct2, &ci, &c, 0) == 0, "insert ct2 (normal)");
+	ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert ct2 (normal)");
 
 	set_ruri(&msg, &aor_ruri);
 	ok(reg_lookup(&msg, d, _str(""), NULL) == LOOKUP_OK, "lookup-7");
