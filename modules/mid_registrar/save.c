@@ -1009,7 +1009,7 @@ int append_contacts(ucontact_t *contacts, struct sip_msg *msg)
 	return 0;
 }
 
-int trim_contacts(urecord_t *r, int trims)
+int trim_contacts(urecord_t *r, int trims, const struct ct_match *match)
 {
 	ucontact_t *uc;
 
@@ -1020,7 +1020,7 @@ int trim_contacts(urecord_t *r, int trims)
 		LM_DBG("overflow on inserting new contact -> removing <%.*s>\n",
 		       uc->c.len, uc->c.s);
 
-		if (ul.delete_ucontact(r, uc, 0) != 0) {
+		if (ul.delete_ucontact(r, uc, match, 0) != 0) {
 			LM_ERR("failed to remove contact, aor: %.*s\n",
 			       r->aor.len, r->aor.s);
 			return -1;
@@ -1358,13 +1358,14 @@ update_usrloc:
 					goto error;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts + 1) != 0)
+				if (trim_contacts(r, vct - mri->max_contacts + 1, &mri->cmatch))
 					goto error;
 			}
 
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
-			if (ul.insert_ucontact(r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact(r, &ctmap->req_ct_uri, ci,
+				    &mri->cmatch, 0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto error;
@@ -1389,7 +1390,7 @@ update_usrloc:
 				}
 
 				was_valid = VALID_CONTACT(c, get_act_time());
-				if (ul.delete_ucontact(r, c, 0) < 0) {
+				if (ul.delete_ucontact(r, c, &mri->cmatch, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to delete contact\n");
 					goto error;
@@ -1412,7 +1413,7 @@ update_usrloc:
 					goto error;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts) != 0)
+				if (trim_contacts(r, vct - mri->max_contacts, &mri->cmatch))
 					goto error;
 			}
 
@@ -1423,7 +1424,7 @@ update_usrloc:
 				goto error;
 			}
 
-			if (ul.update_ucontact(r, c, ci, 0) < 0) {
+			if (ul.update_ucontact(r, c, ci, &mri->cmatch, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				goto error;
@@ -1619,13 +1620,14 @@ update_usrloc:
 					goto out_clear_err;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts + 1) != 0)
+				if (trim_contacts(r, vct - mri->max_contacts + 1, &mri->cmatch))
 					goto out_clear_err;
 			}
 
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
-			if (ul.insert_ucontact( r, &ctmap->req_ct_uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact( r, &ctmap->req_ct_uri, ci, &mri->cmatch,
+				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				goto out_clear_err;
@@ -1643,7 +1645,7 @@ update_usrloc:
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
 				was_valid = VALID_CONTACT(c, get_act_time());
-				if (ul.delete_ucontact(r, c, 0) < 0) {
+				if (ul.delete_ucontact(r, c, &mri->cmatch, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
 					goto out_clear_err;
@@ -1664,7 +1666,7 @@ update_usrloc:
 					goto out_clear_err;
 				}
 
-				if (trim_contacts(r, vct - mri->max_contacts) != 0)
+				if (trim_contacts(r, vct - mri->max_contacts, &mri->cmatch))
 					goto out_clear_err;
 			}
 
@@ -1674,7 +1676,7 @@ update_usrloc:
 				goto out_clear_err;
 			}
 
-			if (ul.update_ucontact( r, c, ci, 0) < 0) {
+			if (ul.update_ucontact( r, c, ci, &mri->cmatch, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				goto out_clear_err;
@@ -2226,7 +2228,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 				if (!ul.put_ucontact_key(c, &ul_key_last_cseq, &value))
 					LM_ERR("failed to update CSeq - oom?\n");
 
-				if (ul.update_ucontact(urec, c, ci, 0) < 0) {
+				if (ul.update_ucontact(urec, c, ci, &_sctx->cmatch, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					LM_ERR("failed to update contact\n");
 					return -1;
@@ -2377,7 +2379,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 					return 1;
 				}
 
-				if (ul.delete_ucontact(urec, c, 0) < 0) {
+				if (ul.delete_ucontact(urec, c, &_sctx->cmatch, 0) < 0) {
 					rerrno = R_UL_UPD_C;
 					return -1;
 				}
@@ -2397,7 +2399,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 					return -1;
 				}
 
-				if (trim_contacts(urec, vct - _sctx->max_contacts) != 0)
+				if (trim_contacts(urec, vct - _sctx->max_contacts, &_sctx->cmatch))
 					return -1;
 			}
 
@@ -2417,7 +2419,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				return -1;
 			}
 
-			if (ul.update_ucontact(urec, c, ci, 0) < 0) {
+			if (ul.update_ucontact(urec, c, ci, &_sctx->cmatch, 0) < 0) {
 				rerrno = R_UL_UPD_C;
 				LM_ERR("failed to update contact\n");
 				return -1;
@@ -2435,7 +2437,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 					return -1;
 				}
 
-				if (trim_contacts(urec, vct - _sctx->max_contacts + 1) != 0)
+				if (trim_contacts(urec, vct - _sctx->max_contacts + 1, &_sctx->cmatch))
 					return -1;
 			}
 
@@ -2450,7 +2452,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 			ci->expires_out = e_out;
 
-			if (ul.insert_ucontact(urec, &ct->uri, ci, &c, 0) < 0) {
+			if (ul.insert_ucontact(urec, &ct->uri, ci, &_sctx->cmatch,
+				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
 				LM_ERR("failed to insert contact\n");
 				return -1;

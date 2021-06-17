@@ -300,7 +300,7 @@ struct urecord;
  * Update ucontact with new values
  */
 int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
-                    char skip_replication);
+                    const struct ct_match *match, char skip_replication);
 
 /*! \brief
  * Fetch a key from the contact-level storage

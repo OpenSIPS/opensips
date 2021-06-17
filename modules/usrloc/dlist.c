@@ -1205,7 +1205,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 	}
 
 	if (!skip_replication && location_cluster)
-		replicate_ucontact_delete(r, c);
+		replicate_ucontact_delete(r, c, NULL);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
 		run_ul_callbacks( UL_CONTACT_DELETE, c);
