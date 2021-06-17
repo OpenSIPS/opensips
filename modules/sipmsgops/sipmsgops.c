@@ -1370,34 +1370,6 @@ failed:
 }
 
 
-static inline int check_username(const str *username)
-{
-	char *p, *end, c;
-
-	for (p = username->s, end = p + username->len; p < end; p++) {
-		c = *p;
-
-		if (c < 0)
-			goto err;
-
-		if (c == '%') {
-			if ((p + 3) > end || !_isxdigit(*(p + 1)) || !_isxdigit(*(p + 2)))
-				goto err;
-			p += 2;
-		} else if (!is_username_char(c)) {
-			goto err;
-		}
-	}
-
-	return 0;
-
-err:
-	LM_DBG("invalid character %c[%d] in username <%.*s> on index %ld\n",
-	       c, c, username->len, username->s, p - username->s);
-	return -1;
-}
-
-
 static int check_hostname(str *domain)
 {
 	char *p, *end;
@@ -1602,7 +1574,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			ret = SV_TO_DOMAIN_ERROR;
 			goto failed;
 		}
-		if(check_username(&to->parsed_uri.user) < 0) {
+
+		if(!is_username_str(&to->parsed_uri.user)) {
 			strcpy(reason, "invalid username for 'To' header");
 			ret = SV_TO_USERNAME_ERROR;
 			goto failed;
@@ -1633,7 +1606,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 			ret = SV_FROM_DOMAIN_ERROR;
 			goto failed;
 		}
-		if (check_username(&from->parsed_uri.user) < 0) {
+
+		if (!is_username_str(&from->parsed_uri.user)) {
 			strcpy(reason, "invalid username for 'From' header");
 			ret = SV_FROM_USERNAME_ERROR;
 			goto failed;
@@ -1656,7 +1630,8 @@ static int w_sip_validate(struct sip_msg *msg, void *_flags, pv_spec_t* err_txt)
 					ret = SV_BAD_HOSTNAME;
 					goto failed;
 				}
-				if (check_username(&msg->parsed_uri.user) < 0) {
+
+				if (!is_username_str(&msg->parsed_uri.user)) {
 					strcpy(reason, "invalid username for R-URI");
 					ret = SV_BAD_USERNAME;
 					goto failed;

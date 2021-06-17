@@ -122,6 +122,7 @@ enum mid_reg_insertion_mode   ctid_insertion  = MR_REPLACE_USER;
 char *mp_ctid_insertion = "ct-param";
 
 str ctid_param = str_init("ctid");
+str at_escape_str = str_init("%40");
 
 static cmd_export_t cmds[] = {
 	{"mid_registrar_save", (cmd_function)mid_reg_save, {
@@ -161,6 +162,7 @@ static param_export_t mod_params[] = {
 	{ "outgoing_expires",     INT_PARAM, &outgoing_expires },
 	{ "contact_id_insertion", STR_PARAM, &mp_ctid_insertion },
 	{ "contact_id_param",     STR_PARAM, &ctid_param.s },
+	{ "at_escape_str",        STR_PARAM, &at_escape_str.s },
 	{ "extra_contact_params_avp", STR_PARAM, &extra_ct_params_str.s },
 	{ "attr_avp",             STR_PARAM, &attr_avp_param },
 
@@ -262,6 +264,18 @@ static int mid_reg_post_script(struct sip_msg *foo, void *bar)
 static int mid_reg_init_globals(void)
 {
 	ctid_param.len = strlen(ctid_param.s);
+	if (ctid_param.len == 0 || !is_uri_parameter_str(&ctid_param)) {
+		LM_ERR("empty 'contact_id_param' or it contains bad chars: '%.*s'\n",
+		       ctid_param.len, ctid_param.s);
+		return -1;
+	}
+
+	at_escape_str.len = strlen(at_escape_str.s);
+	if (at_escape_str.len == 0 || !is_username_str(&at_escape_str)) {
+		LM_ERR("empty 'at_escape_str' or it contains bad chars: '%.*s'\n",
+		       at_escape_str.len, at_escape_str.s);
+		return -1;
+	}
 
 	if (is_script_func_used("mid_registrar_save", 5) && !ul.tags_in_use()) {
 		LM_ERR("as per your current usrloc module configuration, "

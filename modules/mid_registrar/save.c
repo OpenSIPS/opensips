@@ -120,7 +120,6 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 
 static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires)
 {
-	static str escape_buf;
 	contact_t *c = NULL;
 	struct socket_info *send_sock;
 	struct lump *anchor = NULL;
@@ -169,27 +168,17 @@ static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires)
 		}
 	}
 
-	extra_ct_params = get_extra_ct_params(msg);
-
-	if (!reg_use_domain) {
-		esc_aor = *aor;
-	} else {
-		if (pkg_str_extend(&escape_buf, 3 * aor->len + 1) != 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-
-		esc_aor = escape_buf;
-		if (escape_param(aor, &esc_aor) != 0) {
-			LM_ERR("failed to escape AoR string: %.*s\n", aor->len, aor->s);
-			return -1;
-		}
+	if (mid_reg_escape_aor(aor, &esc_aor) < 0) {
+		LM_ERR("failed to escape AoR string: '%.*s'\n", aor->len, aor->s);
+		return -1;
 	}
 
-	/*    <   sip:               @                  :ddddd */
+	extra_ct_params = get_extra_ct_params(msg);
+
+	/*    <   sip:              @                   :ddddd */
 	len = 1 + 4 + esc_aor.len + 1 + adv_host->len + 6 +
-	      extra_ct_params.len + 1 + 9 + 10 + 1;
-	                   /* > ;expires=<integer> \0 */
+	      extra_ct_params.len + 1    + 9     + 10   + 1;
+	                         /* > ;expires=<integer> \0 */
 
 	buf = pkg_malloc(len);
 	if (!buf) {

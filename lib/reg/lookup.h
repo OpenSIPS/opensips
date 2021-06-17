@@ -57,10 +57,13 @@ int reg_init_lookup(void);
  * and fill in the R-URI, along with other branches, in preparation to route to
  * the found contacts.
  * @use_domain: how to extract the AoR from the R-URI (include '@host' part)
- * @unescape_aor: after extracting the AoR, do 1 round of unescape_param()
+ * @aor_update: optional callback, invoked right after the AoR is extracted
+ *              and un-escaped, where you may perform a quick edit on it.
+ *      @aor: input/output parameter.  Nothing is freed, use a static buffer!
+ *      Return: 0 (success), negative otherwise
  */
 lookup_rc lookup(struct sip_msg *req, udomain_t *d, const str *sflags, str *aor_uri,
-                 int use_domain, int unescape_aor);
+                 int use_domain, int (*aor_update) (str *aor));
 
 
 /**

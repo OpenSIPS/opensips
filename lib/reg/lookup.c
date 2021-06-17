@@ -47,17 +47,16 @@ int reg_init_lookup(void)
 
 
 lookup_rc lookup(struct sip_msg *req, udomain_t *d, const str *sflags, str *aor_uri,
-                 int use_domain, int unescape_aor)
+                 int use_domain, int (*aor_update) (str *aor))
 {
 	static char urimem[MAX_BRANCHES-1][MAX_URI_SIZE];
 	static str branch_uris[MAX_BRANCHES-1];
-	static str unescape_buf;
 	int idx = 0, nbranches = 0, tlen;
 	char *turi;
 	qvalue_t tq;
 
 	urecord_t* r;
-	str aor, unesc_aor;
+	str aor;
 	ucontact_t *ct, **ptr, **pn_cts, **cts;
 	int max_latency = 0, ruri_is_pushed = 0, regexp_flags = 0;
 	unsigned int flags;
@@ -107,19 +106,10 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d, const str *sflags, str *aor_
 		return LOOKUP_ERROR;
 	}
 
-	if (unescape_aor) {
-		if (pkg_str_extend(&unescape_buf, aor.len + 1) != 0) {
-			LM_ERR("oom\n");
-			return -3;
-		}
-
-		unesc_aor = unescape_buf;
-		if (unescape_param(&aor, &unesc_aor) != 0) {
-			LM_ERR("failed to unescape aor: %.*s\n", aor.len, aor.s);
-			return -3;
-		}
-
-		aor = unesc_aor;
+	/* any on-the-spot edits to the AoR? */
+	if (aor_update && aor_update(&aor) != 0) {
+		LM_ERR("failed to apply changes to AoR: %.*s\n", aor.len, aor.s);
+		return LOOKUP_ERROR;
 	}
 
 	update_act_time();
