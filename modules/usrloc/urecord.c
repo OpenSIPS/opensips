@@ -990,6 +990,9 @@ static inline struct ucontact* contact_params_match(ucontact_t* contacts,
 		}
 
 		for (param = _params; param; param = param->next) {
+			/* a bit counter-intuitive, but, according to RFC 3261 § 19.1.4, if
+			 * an unknown URI parameter is missing from either URI,
+			 * the matching of that parameter is successful! */
 			if (get_uri_param_val(&ct, &param->s, &v1) != 0 ||
 			        get_uri_param_val(&cti, &param->s, &v2) != 0)
 				continue;

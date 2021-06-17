@@ -114,7 +114,10 @@ static inline unsigned short get_uri_port(struct sip_uri* _uri,
  * @param - URI param name to search for
  * @val - output value
  *
- * Return: 0 on parser-recognized parameters or success, -1 otherwise
+ * Return:
+ *   0 on RFC-recognized parameters (even if they are missing!)
+ *       or successful search of unknown ones
+ *  -1 otherwise
  */
 static inline int get_uri_param_val(const struct sip_uri *uri,
                                     const str *param, str *val)
