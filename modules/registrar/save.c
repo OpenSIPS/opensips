@@ -444,7 +444,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 			/* pack the contact_info */
 			if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-							&_sctx->ownership_tag, NULL))==0 ) {
+							&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 				LM_ERR("failed to extract contact info\n");
 				goto error;
 			}
@@ -511,7 +511,7 @@ static inline int update_contacts(struct sip_msg* _m, urecord_t* _r,
 
 				/* pack the contact specific info */
 				if ( (ci=pack_ci( 0, _c, e, 0, ul.nat_flag, _sctx->flags,
-								&_sctx->ownership_tag, NULL))==0 ) {
+								&_sctx->ownership_tag, &_sctx->cmatch))==0 ) {
 					LM_ERR("failed to pack contact specific info\n");
 					goto error;
 				}
