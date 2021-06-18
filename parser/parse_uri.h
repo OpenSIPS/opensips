@@ -409,8 +409,8 @@ static inline int is_username_str(const str *username)
 	return 1;
 
 err:
-	LM_DBG("invalid character %c[%d] in username <%.*s> on index %ld\n",
-	       c, c, username->len, username->s, p - username->s);
+	LM_DBG("invalid character %c[%d] in username <%.*s> on index %d\n",
+	       c, c, username->len, username->s, (int)(p - username->s));
 	return 0;
 }
 
@@ -572,8 +572,8 @@ static inline int is_uri_parameter_str(const str *uri_param)
 	return 1;
 
 err:
-	LM_DBG("invalid character %c[%d] in uri-parameter <%.*s> on index %ld\n",
-	       c, c, uri_param->len, uri_param->s, p - uri_param->s);
+	LM_DBG("invalid character %c[%d] in uri-parameter <%.*s> on index %d\n",
+	       c, c, uri_param->len, uri_param->s, (int)(p - uri_param->s));
 	return 0;
 }
 
