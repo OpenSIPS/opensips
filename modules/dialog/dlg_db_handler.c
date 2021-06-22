@@ -1762,7 +1762,7 @@ static int sync_dlg_db_mem(void)
 	struct socket_info *caller_sock,*callee_sock;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
-	int hash_entry,hash_id;
+	unsigned int hash_entry, hash_id;
 	str tag_name;
 	int rc;
 
