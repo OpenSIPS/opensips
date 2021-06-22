@@ -655,8 +655,8 @@ void state_changed_event_destroy(void);
 
 #define dlg_parse_db_id(_did, _h_entry, _h_id) \
 	do { \
-		(_h_entry) = (unsigned int)((_did) >> 32); \
-		(_h_id) = (unsigned int)((_did) & 0x00000000ffffffff); \
+		(_h_entry) = (unsigned int)((unsigned long long)(_did) >> 32); \
+		(_h_id) = (unsigned int)((unsigned long long)(_did) & 0xFFFFFFFFULL); \
 	} while(0)
 
 #endif
