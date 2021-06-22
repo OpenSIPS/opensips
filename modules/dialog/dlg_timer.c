@@ -605,7 +605,6 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 {
 	struct dlg_ping_list *exp = NULL,*del=NULL,*it=NULL,*next=NULL;
 	struct dlg_cell *current;
-	int detached;
 
 	if (reinvite)
 		lock_get(reinvite_ping_timer->lock);
@@ -618,7 +617,6 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 
 		current = it->dlg;
 		next = it->next;
-		detached = 0;
 
 		if (current->state == DLG_STATE_DELETED) {
 			/* the dialog has terminated - we remove it as well
@@ -639,47 +637,34 @@ void get_timeout_dlgs(struct dlg_ping_list **expired,
 			continue;
 		}
 
-		if (reinvite?(current->flags & DLG_FLAG_REINVITE_PING_CALLER):
-		(current->flags & DLG_FLAG_PING_CALLER)) {
-			if (reinvite?(current->legs[DLG_CALLER_LEG].reinvite_confirmed == DLG_PING_FAIL):
-			(current->legs[DLG_CALLER_LEG].reply_received == DLG_PING_FAIL)) {
-				detach_ping_node_unsafe(it,reinvite);
-				detached=1;
+		/* if pinging failed on any leg: detach the timer and end the dialog */
+		if ((reinvite &&
+		        ((current->flags & DLG_FLAG_REINVITE_PING_CALLER
+		            && current->legs[DLG_CALLER_LEG].reinvite_confirmed == DLG_PING_FAIL)
+		        || (current->flags & DLG_FLAG_REINVITE_PING_CALLEE
+		            && current->legs[callee_idx(current)].reinvite_confirmed == DLG_PING_FAIL)))
 
-				if (reinvite)
-					it->dlg->reinvite_pl = 0;
-				else
-					it->dlg->pl = 0;
+		    || (!reinvite &&
+		        ((current->flags & DLG_FLAG_PING_CALLER
+		            && current->legs[DLG_CALLER_LEG].reply_received == DLG_PING_FAIL)
+		        || (current->flags & DLG_FLAG_PING_CALLEE
+		            && current->legs[callee_idx(current)].reply_received == DLG_PING_FAIL)))) {
 
-				if (exp == NULL)
-					exp = it;
-				else {
-					it->next = exp;
-					exp = it;
-				}
+			detach_ping_node_unsafe(it,reinvite);
+
+			if (reinvite)
+				it->dlg->reinvite_pl = 0;
+			else
+				it->dlg->pl = 0;
+
+			if (exp == NULL)
+				exp = it;
+			else {
+				it->next = exp;
+				exp = it;
 			}
-		}
 
-		if (detached == 0) {
-			if (reinvite?(current->flags & DLG_FLAG_REINVITE_PING_CALLEE):
-			(current->flags & DLG_FLAG_PING_CALLEE)) {
-				if (reinvite?(current->legs[callee_idx(current)].reinvite_confirmed == DLG_PING_FAIL):
-				current->legs[callee_idx(current)].reply_received == DLG_PING_FAIL) {
-					detach_ping_node_unsafe(it,reinvite);
-					if (reinvite)
-						it->dlg->reinvite_pl = 0;
-					else
-						it->dlg->pl = 0;
-
-
-					if (exp == NULL)
-						exp = it;
-					else {
-						it->next = exp;
-						exp = it;
-					}
-				}
-			}
+			continue;
 		}
 	}
 

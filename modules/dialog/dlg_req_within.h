@@ -38,9 +38,9 @@
 #define MI_DIALOG_BACKUP_ERR		"Node is backup for requested dialog"
 #define MI_DLG_OPERATION_ERR		"Operation failed"
 
-#define DLG_PING_PENDING	(1<<0)
-#define DLG_PING_SUCCESS	(1<<1)
-#define DLG_PING_FAIL		(1<<2)
+#define DLG_PING_SUCCESS  0
+#define DLG_PING_PENDING  1
+#define DLG_PING_FAIL     2
 
 extern struct tm_binds d_tmb;
 
