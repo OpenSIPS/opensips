@@ -1,3 +1,339 @@
+=========================== Release 3.1.3 ==============================
+
+2021-06-22  Razvan Crainea  <razvan at opensips dot org>
+	* [d576a0659] :
+
+	bump version to 3.1.3
+
+
+2021-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [ae1ffaf89] :
+
+	dialog pinging: Avoid nested pinging transactions
+	This fixes a rare condition that could occur whenever the
+	OPTIONS/Re-INVITE pinging interval was lower than the SIP transaction
+	timeout (typically 15 seconds, so a pinging interval of < 15 seconds).
+
+	In this case, a new pinging transaction would be continuously started,
+	before the previous one would get the chance to complete, e.g. with 408
+	Timeout for a dead SIP endpoint.
+
+	Fixes #2535
+
+
+2021-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [4b6097de4] :
+
+	dialog: Minor rewrite of get_timeout_dlgs()
+	    * re-define the ping state values, as they are NOT meant to be
+	        combined or checked as a bitmask (they are mutually exclusive)
+
+	    * eliminate copy-pasted list detachment blocks (merge into one "if")
+	(cherry picked from commit d1e2fdc5f44b1950d65ddcb4c97fc0d2d93d49e6)
+
+
+2021-06-19  OpenSIPS  <github at opensips dot org>
+	* [0b4d365e1] :
+
+	Rebuild documentation
+
+
+2021-06-18  Liviu Chircu  <liviu at opensips dot org>
+	* [bcb8ad95b] :
+
+	mid-registrar: Make the "%40" Contact user substring configurable
+	This patch adds the "at_escape_str" modparam, which is only relevant for
+	mid-registrar running in "mode == 2" (AoR throttling).  This setting
+	gives developers more control over the mid-registrar's Contact headers
+	in case the default sequence is problematic.
+
+	This may fix issues where, for example, the "%40" string is un-escaped
+	by the backend registrar, causing errors during DNS lookup of something
+	resembling, e.g., "alice@1.1.1.1@2.2.2.2".
+	                         ^-------------^
+				     (the hostname that gets looked up)
+
+	The default value remains unchanged: "%40"
+
+	Related to #2367
+	(cherry picked from commit a5501ab3d2476382a3e6cb0382689c17a30c1a9f)
+
+
+2021-06-18  Liviu Chircu  <liviu at opensips dot org>
+	* [cdd7eb44e] :
+
+	Export is_username_char() to core and reuse it
+	Also remove the duplicate IS_ALPHANUM() module macro while at it.
+
+	Work in progress for #2367
+	(cherry picked from commit b03cb41a3155623ba15bbde582e46f1f55864f70)
+
+
+2021-06-17  Liviu Chircu  <liviu at opensips dot org>
+	* [65feaf1b7] :
+
+	usrloc: Include the matching algorithm in replication packets
+	Although this commit also bumps the usrloc BIN packet version from
+	2 -> 3, there is added logic for backwards-compatibility with
+	version 2 packets, so the migration in a clustered environment should
+	be silky smooth!
+
+	Many thanks to Giovanni Maruzzelli (@gmaruzz) for catching this issue
+	and providing a detailed bug report!
+
+	Fixes #2351
+	(cherry picked from commit 60f1a532531cefe5696edc0844b7ccb0b36be4c6)
+
+
+2021-06-17  Liviu Chircu  <liviu at opensips dot org>
+	* [9a592a8cc] :
+
+	registrar: Update the Contact URI on param-based matching
+	(cherry picked from commit 8cc4b3249625802f2b3a11fb5f8b264cae6c6a11)
+
+
+2021-06-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [48010230a] :
+
+	Migrate tcp conn ID from int to unsigned int
+	As used to generate array indexes (for tcp partitions), the ID of the TCP conn must be a positive number.
+	Still it was initialized with rand() (so possible high valules) and continously incremented -> this may lead to an overflow, resulting into a negative value (for an int data type).
+	The solution was to move to unsigned int, so we are safe when overflowing (still resutling into a positive number)
+	Fixes #2344
+	(cherry picked from commit 6a89cb8eb1f62578a71fa43353c564a7ea69c685)
+
+
+2021-06-15  Razvan Crainea  <razvan at opensips dot org>
+	* [a4ca05eb5] :
+
+	presence: fix memory leak when receiving an unmatched replicated publish
+	(cherry picked from commit d1d898878555abe48cd3584ab1f3a8fe6f84ced7)
+
+
+2021-06-12  OpenSIPS  <github at opensips dot org>
+	* [6298c80e2] :
+
+	Rebuild documentation
+
+
+2021-06-11  Razvan Crainea  <razvan at opensips dot org>
+	* [b45d73648] :
+
+	b2b_entities: cover all cases where param is not printable
+	Completes commit 0bd7fbe7
+	(cherry picked from commit 8ea5ce536664083b526e7fcf567e624bf9b7fe78)
+
+
+2021-06-10  Vlad Patrascu  <vladp at opensips dot org>
+	* [d7bba42b3] :
+
+	b2b_entities: run the create callbacks for the proper entities
+	(cherry picked from commit 39f7aefb031ddafa5bd9dcebf0f8875f9d4c03fb)
+
+
+2021-06-10  Vlad Patrascu  <vladp at opensips dot org>
+	* [317d1f6b1] :
+
+	b2b_entities: fix entity type in create callbacks
+	(cherry picked from commit 291417cc1f6564c6fe72dba50dd6adc5d5c86793)
+
+
+2021-06-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7ccf9088b] :
+
+	[presence] Fix inconsistent handling of optional "event_id" column
+	If no value, the event_id could end up with a NULL or "" value. This was failing the later update query (no match on the event_id value), resulting in broken subscription status after a re-subscribe.
+	(cherry picked from commit eaa2fd6510f533c357e8536fcdf22cad6f455322)
+
+
+2021-06-07  Liviu Chircu  <liviu at opensips dot org>
+	* [b433bd0b3] :
+
+	F_MALLOC: Always perform an O(1) defragmentation on free()
+	Changes:
+	    * remove the "memory space" runtime computation, as well as the 95%
+		defragmentation "start threshold" (better performance!)
+	    * change the defragmentation heuristic from O(N) to O(1).  This way,
+	        we avoid any performance issues caused by _too much_
+		defragmentation
+
+	The main idea is to get rid of the dreaded "not enough shared memory,
+	attempting defragmentation..." state, where SHM performance goes down
+	dramatically, to the point where SIP traffic processing may stall.
+	(cherry picked from commit fb9a377768f250a8f99a0e29f1fc9689d564dd5c)
+
+
+2021-06-05  OpenSIPS  <github at opensips dot org>
+	* [907a9aea0] :
+
+	Rebuild documentation
+
+
+2021-06-04  Liviu Chircu  <liviu at opensips dot org>
+	* [60d62837e] :
+
+	registrar & mid-registrar: Do not always force the matching mode
+	When the "M<matching-mode>" save() flag is not used, the registrars
+	should not default to forcing the Contact-only matching mode (0), rather
+	they should use the None mode (-1), and let usrloc use its own default
+	setting.
+
+	Part of a set of fixes for #2351
+	(cherry picked from commit 700b718db6520094c8ab458698088fd1d60c6eb3)
+
+
+2021-06-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8ffc647af] :
+
+	Fix docs, removed old rule_attrs_avp modparam
+	This was replaced for a long time by the `rule_attrs_pvar` param of `do_routing()`
+	Reported by @MosinAnton
+	Closes #2537
+
+
+2021-05-29  OpenSIPS  <github at opensips dot org>
+	* [701337810] :
+
+	Rebuild documentation
+
+
+2021-05-28  Liviu Chircu  <liviu at opensips dot org>
+	* [7ab67f684] :
+
+	MySQL DB migration: Remove duplicate tables
+
+
+2021-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [00bdca20f] :
+
+	[db] fix docs to point to 3.1 modules
+
+
+2021-05-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f63233ca3] :
+
+	Fix debug message to properly show the tag's status
+	(cherry picked from commit 0ccb7c89d04b68ef7b336476cc453bab0b06ae4c)
+
+
+2021-05-25  Razvan Crainea  <razvan at opensips dot org>
+	* [d6e2aff37] :
+
+	event_rabbitmq: fix crash when dynamic sockets
+	When freeing dynamic sockets, the pointer to the default user/password
+	was lost, resulting in a bad check.
+	(cherry picked from commit c2814f3be510ecaf7cb2a438e367597ff4e59360)
+
+
+2021-05-25  Razvan Crainea  <razvan at opensips dot org>
+	* [a87c262ee] :
+
+	cgrates: reset NULl flag if the variable is set
+	(cherry picked from commit 9ea46a1f79d10fb9dc1cd29e25fa80d07720e89c)
+
+
+2021-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [b10309fa4] :
+
+	mi_fifo: fix syslog protected_fifos setting
+	Credits go to Liviu Chircu (@liviuchircu) for spotting the error.
+	(cherry picked from commit adf18b0333fbef4fad61dc98b090b2b91aa37e76)
+
+
+2021-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [bd6ead32c] :
+
+	mi_fifo: document fifo /tmp directory error
+	Starting with linux kernel 4.19, by default, the kernel no longer
+	allows users to write in fifo files that are stored in a sticky-bit
+	directory but they are not owned by the user trying to access it.
+	The limitation was introduced in torvalds/linux@30aba6656f
+	This problem was reported in OpenSIPS/opensips-cli#83
+	(cherry picked from commit 0882e7d6fc43ae6bd5f3c734144ff490582d775d)
+
+
+2021-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [be9191c9d] :
+
+	mi_fifo: proper print of fifo mode error
+	(cherry picked from commit ba730cd8bcb0ff8391b8012762ed6325a324330c)
+
+
+2021-05-23  OpenSIPS  <github at opensips dot org>
+	* [a06e3d721] :
+
+	Rebuild documentation
+
+
+2021-05-20  Razvan Crainea  <razvan at opensips dot org>
+	* [63cd8ea3c] :
+
+	event_route: fix documentation typo
+	(cherry picked from commit 5414d5b34164286c4935cfe5283ed020802a7fae)
+
+
+2021-05-20  Razvan Crainea  <razvan at opensips dot org>
+	* [3d4316620] :
+
+	statistics: turn on total pkg statistic
+	(cherry picked from commit 886466543f85655bd83cab263c5de5eb7455917a)
+
+
+2021-05-16  OpenSIPS  <github at opensips dot org>
+	* [19673e514] :
+
+	Rebuild documentation
+
+
+2021-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [9de82858b] :
+
+	drouting docs: Fix modparam types
+	(cherry picked from commit 7f7118bbfaf984426a180f1c31d98ac2c228bc64)
+
+
+2021-05-09  OpenSIPS  <github at opensips dot org>
+	* [f4473776c] :
+
+	Rebuild documentation
+
+
+2021-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [5cdfedebb] :
+
+	ratelimit: repurpose the repl_buffer_threshold
+	Instead of defaulting it to MTU (due to an old datagram limitation), we
+	should use a higher value, that would only control the fragmentation of
+	the send buffer.
+	Moreover, do not send the buffer to the clusters nodes under lock,
+	since it might block, thus block the entire ratelimit function.
+	(cherry picked from commit e13d0620407aa7e9b5a2905f76432e4c940dfc8b)
+
+
+2021-05-07  Razvan Crainea  <razvan at opensips dot org>
+	* [c72c82dfc] :
+
+	cgrates: initialize sessions lock
+	Without the init, the lock might start as locked, thus OpenSIPS would
+	have locked at first context. This was initially reported in
+	ticket #2271.
+
+	Credits go to Barny Ritchley (@barnabyritchley on GitHub) from
+	SIPSynergy for reporting and providing testing environments.
+	(cherry picked from commit 40e660d74470ac14643b20a952dd8ebe21454480)
+
+
+2021-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [39b54fd9f] :
+
+	Packaging: Fix tarball URL for BSD systems
+
+
+2021-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [539ab0b3a] :
+
+	topology_hiding: Fix Clang warning on Xenial
+
 =========================== Release 3.1.2 ==============================
 2021-05-06 16:38:09 +0300 Liviu Chircu <liviu@opensips.org>
         * [b60b42376] :
