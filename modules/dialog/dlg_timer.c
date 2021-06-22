@@ -945,7 +945,8 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 		 * might have terminated in the mean time - we'll clean them up on
 		 * our next iteration */
 		if (dlg->state != DLG_STATE_DELETED && it->timeout <= current_ticks) {
-			if (dlg->flags & DLG_FLAG_PING_CALLER) {
+			if (dlg->flags & DLG_FLAG_PING_CALLER &&
+			        dlg->legs[DLG_CALLER_LEG].reply_received == DLG_PING_SUCCESS) {
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,callee_idx(dlg),
 				DLG_CALLER_LEG,0,0,reply_from_caller,dlg,unref_dlg_cb,
@@ -955,7 +956,8 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 				}
 			}
 
-			if (dlg->flags & DLG_FLAG_PING_CALLEE) {
+			if (dlg->flags & DLG_FLAG_PING_CALLEE &&
+			        dlg->legs[callee_idx(dlg)].reply_received == DLG_PING_SUCCESS) {
 				ref_dlg(dlg,1);
 				if (send_leg_msg(dlg,&options_str,DLG_CALLER_LEG,
 				callee_idx(dlg),0,0,reply_from_callee,dlg,unref_dlg_cb,
@@ -1048,7 +1050,8 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 		 * might have terminated in the mean time - we'll clean them up on
 		 * our next iteration */
 		if (dlg->state != DLG_STATE_DELETED && it->timeout <= current_ticks) {
-			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER) {
+			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLER &&
+			        dlg->legs[DLG_CALLER_LEG].reinvite_confirmed == DLG_PING_SUCCESS) {
 
 				if (dlg->legs[DLG_CALLER_LEG].adv_contact.len)
 					extra_headers.len = 
@@ -1096,7 +1099,8 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 			}
 
 
-			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE) {
+			if (dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE &&
+			        dlg->legs[callee_idx(dlg)].reinvite_confirmed == DLG_PING_SUCCESS) {
 				if (dlg->legs[callee_idx(dlg)].adv_contact.len)
 					extra_headers.len = 
 					dlg->legs[callee_idx(dlg)].adv_contact.len +
