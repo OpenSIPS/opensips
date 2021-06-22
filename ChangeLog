@@ -1,3 +1,170 @@
+=========================== Release 2.4.11 ==============================
+
+2021-06-22  Razvan Crainea  <razvan at opensips dot org>
+	* [3d1312861] :
+
+	bump version to 2.4.11
+
+
+2021-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [3576e66dd] :
+
+	dialog pinging: Avoid nested pinging transactions
+	This fixes a rare condition that could occur whenever the
+	OPTIONS/Re-INVITE pinging interval was lower than the SIP transaction
+	timeout (typically 15 seconds, so a pinging interval of < 15 seconds).
+
+	In this case, a new pinging transaction would be continuously started,
+	before the previous one would get the chance to complete, e.g. with 408
+	Timeout for a dead SIP endpoint.
+
+	Fixes #2535
+
+
+2021-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [d1e2fdc5f] :
+
+	dialog: Minor rewrite of get_timeout_dlgs()
+	    * re-define the ping state values, as they are NOT meant to be
+	        combined or checked as a bitmask (they are mutually exclusive)
+
+	    * eliminate copy-pasted list detachment blocks (merge into one "if")
+
+
+2021-06-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a1b44444c] :
+
+	Fix cherry-pick error
+	Related to f22dfa0d6264970837ee95f41ec1411360f11587
+
+
+2021-06-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [f22dfa0d6] :
+
+	Migrate tcp conn ID from int to unsigned int
+	As used to generate array indexes (for tcp partitions), the ID of the TCP conn must be a positive number.
+	Still it was initialized with rand() (so possible high valules) and continously incremented -> this may lead to an overflow, resulting into a negative value (for an int data type).
+	The solution was to move to unsigned int, so we are safe when overflowing (still resutling into a positive number)
+	Fixes #2344
+
+	(cherry picked from commit 6a89cb8eb1f62578a71fa43353c564a7ea69c685)
+	(cherry picked from commit 48010230ae03f409be7919708cd67c2e7cc589cd)
+
+
+2021-06-15  Razvan Crainea  <razvan at opensips dot org>
+	* [6f3caacc8] :
+
+	presence: fix memory leak when receiving an unmatched replicated publish
+	(cherry picked from commit d1d898878555abe48cd3584ab1f3a8fe6f84ced7)
+
+
+2021-06-09  Razvan Crainea  <razvan at opensips dot org>
+	* [61519da3e] :
+
+	b2b_entities: cover all cases where param is not printable
+	Completes commit 0bd7fbe7
+	(cherry picked from commit 8ea5ce536664083b526e7fcf567e624bf9b7fe78)
+
+
+2021-06-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [eaa2fd651] :
+
+	[presence] Fix inconsistent handling of optional "event_id" column
+	If no value, the event_id could end up with a NULL or "" value. This was failing the later update query (no match on the event_id value), resulting in broken subscription status after a re-subscribe.
+
+
+2021-06-07  Liviu Chircu  <liviu at opensips dot org>
+	* [5106ccb5c] :
+
+	F_MALLOC: Always perform an O(1) defragmentation on free()
+	Changes:
+	    * remove the "memory space" runtime computation, as well as the 95%
+		defragmentation "start threshold" (better performance!)
+	    * change the defragmentation heuristic from O(N) to O(1).  This way,
+	        we avoid any performance issues caused by _too much_
+		defragmentation
+
+	The main idea is to get rid of the dreaded "not enough shared memory,
+	attempting defragmentation..." state, where SHM performance goes down
+	dramatically, to the point where SIP traffic processing may stall.
+	(cherry picked from commit fb9a377768f250a8f99a0e29f1fc9689d564dd5c)
+
+
+2021-06-03  Liviu Chircu  <liviu at opensips dot org>
+	* [c3f41c655] :
+
+	drouting docs: Fix bad use_next_gw() example
+	The carrier attrs are extracted using the 4th parameter, not the 3rd.
+	Also fix a variable naming inconsistency.
+
+
+2021-05-25  Razvan Crainea  <razvan at opensips dot org>
+	* [5ecbb25fe] :
+
+	event_rabbitmq: fix crash when dynamic sockets
+	When freeing dynamic sockets, the pointer to the default user/password
+	was lost, resulting in a bad check.
+	(cherry picked from commit c2814f3be510ecaf7cb2a438e367597ff4e59360)
+
+
+2021-05-25  Razvan Crainea  <razvan at opensips dot org>
+	* [3156cd346] :
+
+	cgrates: reset NULl flag if the variable is set
+	(cherry picked from commit 9ea46a1f79d10fb9dc1cd29e25fa80d07720e89c)
+
+
+2021-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [52a47ff40] :
+
+	mi_fifo: fix syslog protected_fifos setting
+	Credits go to Liviu Chircu (@liviuchircu) for spotting the error.
+	(cherry picked from commit adf18b0333fbef4fad61dc98b090b2b91aa37e76)
+
+
+2021-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [ba19b3a1f] :
+
+	mi_fifo: document fifo /tmp directory error
+	Starting with linux kernel 4.19, by default, the kernel no longer
+	allows users to write in fifo files that are stored in a sticky-bit
+	directory but they are not owned by the user trying to access it.
+	The limitation was introduced in torvalds/linux@30aba6656f
+	This problem was reported in OpenSIPS/opensips-cli#83
+	(cherry picked from commit 0882e7d6fc43ae6bd5f3c734144ff490582d775d)
+
+
+2021-05-15  OpenSIPS  <github at opensips dot org>
+	* [0eb1b9aed] :
+
+	Rebuild documentation
+
+
+2021-05-10  Liviu Chircu  <liviu at opensips dot org>
+	* [f177835ac] :
+
+	drouting docs: Fix modparam types
+	(cherry picked from commit 7f7118bbfaf984426a180f1c31d98ac2c228bc64)
+
+
+2021-05-08  OpenSIPS  <github at opensips dot org>
+	* [8f099c614] :
+
+	Rebuild documentation
+
+
+2021-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [5db3546e9] :
+
+	Packaging: Fix tarball URL for BSD systems
+
+
+2021-05-06  Liviu Chircu  <liviu at opensips dot org>
+	* [f4326af05] :
+
+	topology_hiding: Fix Clang warning on Xenial
+	(cherry picked from commit 539ab0b3aa927e8c0bd8b543ac2b70fe296411df)
+
 =========================== Release 2.4.10 ==============================
 2021-05-06 17:24:13 +0300 Liviu Chircu <liviu@opensips.org>
         * [67978d0ce] :
