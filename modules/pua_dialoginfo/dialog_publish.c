@@ -347,6 +347,8 @@ error:
 			xmlFree(body->s);
 		pkg_free(body);
 	}
+	if (publ.id.s)
+		pkg_free(publ.id.s);
 
 	return;
 }
