@@ -1,5 +1,5 @@
 # The app_opensips extension
-PROJECT("OpenSIPS Diameter Accounting" C)
+PROJECT("OpenSIPS Diameter Applications" C)
 
 # Find MySQL
 FIND_PACKAGE(MySQL REQUIRED)

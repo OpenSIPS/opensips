@@ -50,6 +50,7 @@
 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <ctype.h>
 
 #include "avps.h"
 
@@ -271,24 +272,40 @@ static int acc_request( struct msg ** msg, struct avp * avp, struct session * se
 			CHECK_FCT( fd_msg_avp_add( ans, MSG_BRW_LAST_CHILD, a ) );
 		}
 
-		a = NULL;
-		CHECK_FCT( fd_msg_search_avp ( qry, dm_dict.Event_Timestamp, &a) );
-		if (a) {
-			time_t ts;
-			unsigned char *bytes;
+		struct avp * nextavp;
+		CHECK_FCT(  fd_msg_browse(qry, MSG_BRW_FIRST_CHILD, (void *)&nextavp, NULL)  );
+		while (nextavp) {
+			CHECK_FCT( fd_msg_avp_hdr( nextavp, &h )  );
 
-			CHECK_FCT( fd_msg_avp_hdr( a, &h )  );
-			bytes = h->avp_value->os.data;
+			/* special handling for Event-Timestamp, which needs decoding */
+			if (h->avp_code == 55) {
+				time_t ts;
+				unsigned char *bytes;
 
-			ts = ((time_t)bytes[0] << 24) | ((time_t)bytes[1] << 16) |
-			     ((time_t)bytes[2] << 8) | (time_t)bytes[3];
+				bytes = h->avp_value->os.data;
 
-			ts -= 2208988800UL;
-			fd_log_debug("[ACC] Event-Timestamp (UNIX ts): %lu", ts);
-			IOV_ADD_NUMBER(ts);
+				ts = ((time_t)bytes[0] << 24) | ((time_t)bytes[1] << 16) |
+				     ((time_t)bytes[2] << 8) | (time_t)bytes[3];
+
+				ts -= 2208988800UL;
+				fd_log_debug("[ACC] Event-Timestamp (UNIX ts): %lu", ts);
+				IOV_ADD_NUMBER(ts);
+				goto next;
+			}
+
+			if (h->avp_value->os.len) {
+				IOV_ADD_STRING(h->avp_value->os.data, h->avp_value->os.len);
+				fd_log_debug("[ACC] adding AVP %d (string, '%.*s')",
+						h->avp_code, h->avp_value->os.len, h->avp_value->os.data);
+			} else {
+				IOV_ADD_NUMBER(h->avp_value->u32);
+				fd_log_debug("[ACC] adding AVP %d (integer, %d)",
+						h->avp_code, h->avp_value->u32);
+			}
+
+next:
+			CHECK_FCT( fd_msg_browse(nextavp, MSG_BRW_NEXT, (void *)&nextavp, NULL) );
 		}
-
-		/* We may also dump other data from the message, such as Accounting session Id, number of packets, ...  */
 
 		if (acc_log_cdrs && n) {
 			FILE *f = get_acc_log();
@@ -306,8 +323,6 @@ static int acc_request( struct msg ** msg, struct avp * avp, struct session * se
 
 			IOV_CLEANUP();
 		}
-
-		/* TODO: acc extra iteration */
 
 		fd_log_debug("----------------------------------------------------------------------");
 
@@ -632,14 +647,64 @@ prepare_response:
 }
 
 
+static int parse_conf_string(const char *confstring,
+                              char **extra_avps_file, int *lib_mode)
+{
+	char *p;
+
+	*extra_avps_file = NULL;
+	*lib_mode = 0;
+
+	if (!confstring)
+		goto out;
+
+	p = strcasestr(confstring, "extra-avps-file");
+	if (p) {
+		p += strlen("extra-avps-file");
+		while (*p != '/' && *p != '\0')
+			p++;
+
+		if (*p != '/') {
+			fd_log_error("'extra-avps-file' requires an absolute file path\n");
+		} else {
+			char *e = p;
+			while (!isspace(*e) && *e != ';' && *e != '\0')
+				e++;
+			*extra_avps_file = malloc(e - p + 1);
+			memcpy(*extra_avps_file, p, e - p);
+			(*extra_avps_file)[e - p] = '\0';
+		}
+	}
+
+	p = strcasestr(confstring, "library-mode");
+	if (p) {
+		p += strlen("library-mode");
+		while (!isdigit(*p) && *p != ';' && *p != '\0')
+			p++;
+		if (isdigit(*p) && *p != '0')
+			*lib_mode = 1;
+	}
+
+out:
+	fd_log_debug("[INIT] extra-avps-file: %s", *extra_avps_file);
+	fd_log_debug("[INIT] library-mode: %d", *lib_mode);
+	return 0;
+}
+
+
 /* entry point: register handler for Base Accounting messages in the daemon */
-static int os_entry(char * conffile)
+static int os_entry(char *confstring)
 {
 	struct disp_when data;
+	char *extra_avps_file;
+	int lib_mode;
 
-	fd_log_debug("opensips entry");
+	CHECK_FCT(parse_conf_string(confstring, &extra_avps_file, &lib_mode));
+	CHECK_FCT(parse_extra_avps(extra_avps_file));
+	free(extra_avps_file);
 
-	TRACE_ENTRY("%p", conffile);
+	if (lib_mode)
+		return 0;
 
 	CHECK_FCT(register_osips_avps());
 
