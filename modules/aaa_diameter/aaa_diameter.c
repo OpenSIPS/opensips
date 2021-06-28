@@ -32,6 +32,7 @@ static int dm_check_config(void);
 static void mod_destroy(void);
 
 char *dm_conf_filename = "freeDiameter.conf";
+char *extra_avps_file;
 
 int aaa_diameter_bind_api(aaa_prot *api);
 

@@ -27,6 +27,7 @@
 
 #include "aaa_impl.h"
 #include "peer.h"
+#include "app_opensips/avps.h"
 
 #define EVENT_RECORD        1
 #define NO_STATE_MAINTAINED 1
@@ -366,22 +367,29 @@ static int dm_acct(struct dm_message *msg)
 	}
 
 	list_for_each (it, &msg->avps) {
+		struct dict_object *obj;
+
 		dm_avp = list_entry(it, struct dm_avp, list);
 
 		if (str_match(&dm_avp->name, _str("Event-Timestamp")))
 			continue; /* added earlier */
 
-		if (dm_avp->value.len < 0)
-			LM_INFO("XXX appending AVP: %.*s: int(%lu)\n",
-					dm_avp->name.len, dm_avp->name.s, (unsigned long)dm_avp->value.s);
-		else
-			LM_INFO("XXX appending AVP: %.*s: str(%.*s)\n",
-					dm_avp->name.len, dm_avp->name.s,
-					dm_avp->value.len, dm_avp->value.s);
+		FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
+		FD_CHECK(fd_msg_avp_new(obj, 0, &avp));
 
-		// TODO
-		//FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-		//      avp->name, &wrap->davp.obj, ENOENT));
+		memset(&val, 0, sizeof val);
+		if (dm_avp->value.len < 0) {
+			val.u32 = (unsigned int)(unsigned long)dm_avp->value.s;
+			LM_DBG("appending AVP: %s: int(%lu)\n",
+					dm_avp->name.s, (unsigned long)dm_avp->value.s);
+		} else {
+			val.os.data = (unsigned char *)dm_avp->value.s;
+			val.os.len = dm_avp->value.len;
+			LM_DBG("appending AVP: %s: str(%.*s)\n",
+					dm_avp->name.s, dm_avp->value.len, dm_avp->value.s);
+		}
+		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
+		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 	}
 
 	FD_CHECK(fd_msg_send(&dmsg, NULL, NULL));
@@ -456,6 +464,7 @@ void diameter_peer_loop(int _)
 	__FD_CHECK(dm_register_osips_avps(), 0, );
 	__FD_CHECK(dm_init_sip_application(), 0, );
 	__FD_CHECK(dm_prepare_globals(), 0, );
+	__FD_CHECK(parse_extra_avps(extra_avps_file), 0, );
 
 	__FD_CHECK(dm_register_callbacks(), 0, );
 	__FD_CHECK(fd_core_start(), 0, );

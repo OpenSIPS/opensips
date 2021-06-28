@@ -22,6 +22,7 @@
 
 #include "../../ut.h"
 #include "../../lib/list.h"
+#include "../../lib/csv.h"
 #include "../../lib/hash.h"
 
 #include "aaa_impl.h"
@@ -959,20 +960,82 @@ void dm_destroy(void)
 }
 
 
+static int parse_config_string(const char *cfgstr,
+        char **cfg_filename, char **extra_avps_file)
+{
+	csv_record *items, *it;
+	int have_conf = 0;
+
+	items = __parse_csv_record(_str(cfgstr), 0, ';');
+	for (it = items; it; it = it->next) {
+		str dup;
+
+		if (!have_conf) {
+			if (pkg_nt_str_dup(&dup, &it->s) != 0) {
+				LM_ERR("oom\n");
+				return -1;
+			}
+
+			*cfg_filename = dup.s;
+			have_conf = 1;
+		} else {
+			csv_record *kv;
+
+			kv = __parse_csv_record(&it->s, 0, ':');
+			if (str_match(&kv->s, const_str("extra-avps-file"))) {
+				if (pkg_nt_str_dup(&dup, &kv->next->s) != 0) {
+					LM_ERR("oom\n");
+					return -1;
+				}
+
+				*extra_avps_file = dup.s;
+			}
+		}
+	}
+
+	LM_DBG("freeDiameter cfg file: '%s'\n", *cfg_filename);
+	LM_DBG("freeDiameter extra-avps-file: '%s'\n", *extra_avps_file);
+
+	free_csv_record(items);
+	return 0;
+}
+
+
 aaa_conn *dm_init_prot(str *aaa_url)
 {
+	static str previous_url;
 	aaa_prot_config parsed;
+
+	if (previous_url.s && !str_match(&previous_url, aaa_url)) {
+		LM_ERR("please use the same Diameter URL for all modules\n");
+		return NULL;
+	}
+
+	if (!previous_url.s && pkg_str_dup(&previous_url, aaa_url) != 0) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
 
 	if (aaa_parse_url(aaa_url, &parsed) != 0) {
 		LM_ERR("bad AAA URL\n");
 		return NULL;
 	}
 
-	if (strlen((char *)parsed.rest))
-		dm_conf_filename = (char *)parsed.rest;
+	if (strlen((char *)parsed.rest)) {
+		if (parse_config_string((char *)parsed.rest,
+		        &dm_conf_filename, &extra_avps_file) != 0) {
+			LM_ERR("failed to parse config string\n");
+			return NULL;
+		}
+	}
 
 	if (dm_init_minimal() != 0) {
 		LM_ERR("failed to init freeDiameter global dictionary\n");
+		return NULL;
+	}
+
+	if (parse_extra_avps(extra_avps_file) != 0) {
+		LM_ERR("failed to load the 'extra-avps-file'\n");
 		return NULL;
 	}
 

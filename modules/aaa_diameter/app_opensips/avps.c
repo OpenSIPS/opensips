@@ -35,6 +35,8 @@
 
 #include <freeDiameter/extension.h>
 
+#include "ctype.h"
+
 #include "../peer.h"
 #include "avps.h"
 
@@ -46,6 +48,12 @@
 extern int dm_store_enumval(const char *name, int value);
 #endif
 
+#ifdef PKG_MALLOC
+#include "../../../dprint.h"
+#define LOG_DBG LM_DBG
+#else
+#define LOG_DBG fd_log_debug
+#endif
 
 static int dm_register_radius_avps(void)
 {
@@ -420,6 +428,119 @@ int register_osips_avps(void)
 	FD_CHECK(dm_register_custom_sip_avps());
 	FD_CHECK(dm_register_cdr_avps());
 	FD_CHECK(dm_register_custom_vendors());
+
+	return 0;
+}
+
+
+int parse_attr_line(char *line, ssize_t len)
+{
+	int attr_len = strlen("ATTRIBUTE"), avp_len, avp_code;
+	char *avp_name, *newp, *p = line, *end = p + len;
+	enum dict_avp_basetype avp_type;
+
+	if (len < attr_len || strncasecmp(p, "ATTRIBUTE", attr_len))
+		goto error;
+
+	p += attr_len;
+	len -= attr_len;
+
+	while (isspace(*p)) { p++; len--; }
+	if (p >= end)
+		goto error;
+
+	avp_name = p; avp_len = 0;
+	while (!isspace(*p)) { p++; len--; avp_len++; }
+	if (p >= end)
+		goto error;
+
+	while (isspace(*p)) { p++; len--; }
+	if (p >= end)
+		goto error;
+
+	avp_code = strtol(p, &newp, 10);
+	if (avp_code == 0)
+		goto error;
+
+	len -= newp - p;
+	p = newp;
+
+	while (isspace(*p)) { p++; len--; }
+	if (p >= end) {
+		avp_type = AVP_TYPE_OCTETSTRING;
+	} else {
+		if ((len >= strlen("integer")
+		        && !strncasecmp(p, "integer", strlen("integer"))) ||
+		    (len >= strlen("unsigned32")
+		        && !strncasecmp(p, "unsigned32", strlen("unsigned32"))))
+			avp_type = AVP_TYPE_UNSIGNED32;
+		else if ((len >= strlen("string")
+		        && !strncasecmp(p, "string", strlen("string"))) ||
+		    (len >= strlen("utf8string")
+		        && !strncasecmp(p, "utf8string", strlen("utf8string"))))
+			avp_type = AVP_TYPE_OCTETSTRING;
+		else
+			goto error;
+	}
+
+	char *nt_name = malloc(avp_len + 1);
+	memcpy(nt_name, avp_name, avp_len);
+	nt_name[avp_len] = '\0';
+
+	struct dict_avp_data data = {
+		avp_code, 	/* Code */
+		0,			/* Vendor */
+		nt_name,	/* Name */
+		AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+		AVP_FLAG_MANDATORY,			/* Fixed flag values */
+		avp_type 	/* base type of data */
+	};
+	FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
+
+	LOG_DBG("registered custom AVP (%s, code %d, type %s)\n",
+			nt_name, avp_code, avp_type == AVP_TYPE_UNSIGNED32 ?
+				"integer" : "string");
+
+	free(nt_name);
+	return 0;
+error:
+	printf("ERROR: failed to parse line: %s\n", line);
+	return -1;
+}
+
+
+int parse_extra_avps(const char *extra_avps_file)
+{
+	FILE *fp;
+	char *line = NULL;
+	size_t len = 0;
+	ssize_t read;
+
+	if (!extra_avps_file)
+		return 0;
+
+	fp = fopen(extra_avps_file, "r");
+	if (!fp)
+		return -1;
+
+	while ((read = getline(&line, &len, fp)) != -1) {
+		char *p = line;
+
+		while (isspace(*p))
+			p++;
+
+		// comment or empty line
+		if (*p == '#' || p - line >= read)
+			continue;
+
+		if (parse_attr_line(p, read - (p - line)) == 0)
+			continue;
+
+		// unknown line... ignoring
+	}
+
+	fclose(fp);
+	free(line);
 
 	return 0;
 }
