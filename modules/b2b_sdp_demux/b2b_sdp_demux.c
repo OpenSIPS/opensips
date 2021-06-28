@@ -1342,9 +1342,11 @@ static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 		LM_ERR("could not create all clients and streams\n");
 		goto error;
 	}
-	if (b2b_sdp_hdrs_from_avps(ctx, hdrs) < 0) {
-		LM_ERR("could assign headers to clients\n");
-		goto error;
+	if (hdrs) {
+		if (b2b_sdp_hdrs_from_avps(ctx, hdrs) < 0) {
+			LM_ERR("could assign headers to clients\n");
+			goto error;
+		}
 	}
 
 	if (b2b_sdp_demux_start(msg, uri, ctx, &sdp) < 0) {
