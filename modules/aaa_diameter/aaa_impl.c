@@ -982,7 +982,7 @@ static int parse_config_string(const char *cfgstr,
 			csv_record *kv;
 
 			kv = __parse_csv_record(&it->s, 0, ':');
-			if (str_match(&kv->s, const_str("extra-avps-file"))) {
+			if (str_casematch(&kv->s, const_str("extra-avps-file"))) {
 				if (pkg_nt_str_dup(&dup, &kv->next->s) != 0) {
 					LM_ERR("oom\n");
 					return -1;
@@ -990,6 +990,8 @@ static int parse_config_string(const char *cfgstr,
 
 				*extra_avps_file = dup.s;
 			}
+
+			free_csv_record(kv);
 		}
 	}
 
