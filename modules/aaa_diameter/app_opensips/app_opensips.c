@@ -692,7 +692,7 @@ out:
 }
 
 
-/* entry point: register handler for Base Accounting messages in the daemon */
+/* entry point: register handlers for Accounting and Digest Auth */
 static int os_entry(char *confstring)
 {
 	struct disp_when data;
