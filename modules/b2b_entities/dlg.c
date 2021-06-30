@@ -2639,8 +2639,10 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		from_tag = ((struct to_body*)msg->from->parsed)->tag_value;
 	} else if (ps->req) {
 		if (!(struct to_body*)ps->req->from->parsed) {
-			if (!parse_to(ps->req->from->body.s,
-					ps->req->from->body.s, &from_hdr_parsed)) {
+			parse_to(ps->req->from->body.s,
+					ps->req->from->body.s + ps->req->from->body.len + 1,
+					&from_hdr_parsed);
+			if (from_hdr_parsed.error == PARSE_ERROR) {
 				from_tag.s = NULL;
 				from_tag.len = 0;
 			} else {
@@ -2651,8 +2653,10 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			from_tag = ((struct to_body*)ps->req->from->parsed)->tag_value;
 		}
 		if (!(struct to_body*)ps->req->to->parsed) {
-			if (!parse_to(ps->req->to->body.s,
-					ps->req->to->body.s, &to_hdr_parsed)) {
+			parse_to(ps->req->to->body.s,
+					ps->req->to->body.s + ps->req->to->body.len + 1,
+					&to_hdr_parsed);
+			if (to_hdr_parsed.error == PARSE_ERROR) {
 				to_tag.s = NULL;
 				to_tag.len = 0;
 			} else {
@@ -2662,7 +2666,6 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		} else {
 			to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
 		}
-		to_tag = ((struct to_body*)ps->req->to->parsed)->tag_value;
 		callid = ps->req->callid->body;
 	} else {
 		to_tag.s = NULL;
