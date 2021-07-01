@@ -31,7 +31,7 @@
 #include "../tm//tm_load.h"
 #include "../../ut.h"
 
-#define SIPREC_SESSION_VERSION 0
+#define SIPREC_SESSION_VERSION 1
 #define SRC_MAX_PARTICIPANTS 2
 /* Uncomment this to enable SIPREC debugging
 #define SIPREC_DEBUG_REF
@@ -63,6 +63,7 @@ struct src_part {
 
 #define SIPREC_STARTED	(1<<0)
 #define SIPREC_DLG_CBS	(1<<1)
+#define SIPREC_PAUSED	(1<<2)
 
 #define SIPREC_SRS(_s) (list_entry((_s)->srs.next, struct srs_node, list)->uri)
 
@@ -72,6 +73,7 @@ struct src_sess {
 	time_t ts;
 	int version;
 	int streams_no;
+	int streams_inactive;
 	str rtpproxy;
 	str media_ip;
 	str headers;

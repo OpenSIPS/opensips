@@ -26,7 +26,9 @@
 #include "siprec_logic.h"
 #include "siprec_body.h"
 #include "../../mod_fix.h"
+#include "../../error.h"
 
+int srec_dlg_idx;
 struct b2b_api srec_b2b;
 str skip_failover_codes = str_init("");
 static regex_t skip_codes_regex;
@@ -194,6 +196,48 @@ int srec_register_callbacks(struct src_sess *sess)
 	return 0;
 }
 
+int srec_reply(struct src_sess *ss, int method, int code, str *body)
+{
+	static str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
+	b2b_rpl_data_t reply_data;
+	str reason;
+
+	init_str(&reason, error_text(code));
+
+	memset(&reply_data, 0, sizeof (reply_data));
+	reply_data.et = B2B_CLIENT;
+	reply_data.b2b_key = &ss->b2b_key;
+	reply_data.method = method;
+	reply_data.code = code;
+	reply_data.text = &reason;
+	reply_data.body = body;
+	if (body)
+		reply_data.extra_headers = &content_type_sdp_hdr;
+
+	return srec_b2b.send_reply(&reply_data);
+}
+
+static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
+{
+	str body = str_init("");
+	int code = 405;
+
+#if 0
+	/* handle disabled streams from SIPREC */
+	if (msg->REQ_METHOD != METHOD_INVITE)
+		return -1;
+	/* this is a re-invite - parse the SDP to see if any of them was disabled */
+
+	if (get_body(msg, &body) != 0 || body.len==0)
+		goto reply;
+
+	code = 200;
+reply:
+#endif
+	srec_reply(ss, msg->REQ_METHOD, code, (body.len?&body:NULL));
+	return 0;
+}
+
 static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 {
 	struct b2b_req_data req;
@@ -201,10 +245,6 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 	int ret = -1;
 	str ack = str_init(ACK);
 	str bye = str_init(BYE);
-
-	/* for now we only receive replies from SRS */
-	if (type != B2B_REPLY)
-		return -1;
 
 	if (!param) {
 		LM_ERR("no callback parameter specified!\n");
@@ -215,6 +255,9 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		LM_ERR("cannot find session in parameter!\n");
 		return -1;
 	}
+	/* for now we only receive replies from SRS */
+	if (type != B2B_REPLY)
+		return srec_b2b_req(msg, ss);
 
 	LM_DBG("received b2b reply with code %d\n", msg->REPLY_STATUS);
 
@@ -251,15 +294,19 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
 		goto no_recording;
 	}
 
-	if (srs_handle_media(msg, ss) < 0) {
-		LM_ERR("cannot handle SRS media!\n");
-		goto no_recording;
+	if (ss->flags & SIPREC_PAUSED) {
+		ss->flags &= ~SIPREC_PAUSED;
+		srs_stop_media(ss);
+	} else {
+		if (srs_handle_media(msg, ss) < 0) {
+			LM_ERR("cannot handle SRS media!\n");
+			goto no_recording;
+		}
 	}
 
 	if (!(ss->flags & SIPREC_DLG_CBS)) {
 		if (srec_register_callbacks(ss) < 0) {
 			LM_ERR("cannot register callback for terminating session\n");
-			SIPREC_UNREF(ss);
 			goto no_recording;
 		}
 
@@ -284,6 +331,7 @@ no_recording:
 	srec_logic_destroy(ss);
 
 	/* we finishd everything with the dialog, let it be! */
+	srec_dlg.dlg_ctx_put_ptr(ss->dlg, srec_dlg_idx, NULL);
 	srec_dlg.dlg_unref(ss->dlg, 1);
 	ss->dlg = NULL;
 	SIPREC_UNREF(ss);
@@ -451,12 +499,10 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	return 1;
 }
 
-static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int part_no)
+static void srs_send_update_invite(struct src_sess *sess, str *body)
 {
-	str body;
 	struct b2b_req_data req;
 	str inv = str_init(INVITE);
-	int streams;
 	static str extra_headers = str_init(
 			"Require: siprec" CRLF
 			"Content-Type: multipart/mixed;boundary=" OSS_BOUNDARY CRLF
@@ -467,6 +513,20 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int 
 	req.b2b_key = &sess->b2b_key;
 	req.method = &inv;
 	req.extra_headers = &extra_headers;
+	req.body = body;
+
+	if (srec_b2b.send_request(&req) < 0)
+		LM_ERR("Cannot end recording session for key %.*s\n",
+				req.b2b_key->len, req.b2b_key->s);
+}
+
+static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int part_no)
+{
+	str body;
+	int streams;
+
+	if (msg == FAKED_REPLY)
+		return 0;
 
 	streams = srs_fill_sdp_stream(msg, sess, &sess->participants[part_no], 1);
 	if (streams < 0) {
@@ -480,11 +540,8 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int 
 		LM_ERR("cannot generate request body!\n");
 		goto error;
 	}
-	req.body = &body;
+	srs_send_update_invite(sess, &body);
 
-	if (srec_b2b.send_request(&req) < 0)
-		LM_ERR("Cannot end recording session for key %.*s\n",
-				req.b2b_key->len, req.b2b_key->s);
 	return 0;
 error:
 	return -1;
@@ -549,3 +606,85 @@ void srec_logic_destroy(struct src_sess *sess)
 	sess->b2b_key.s = NULL;
 }
 
+struct src_sess *src_get_session(void)
+{
+	struct dlg_cell *dlg;
+	struct src_sess *sess;
+
+	dlg = srec_dlg.get_dlg();
+	if (!dlg) {
+		LM_WARN("could not get ongoing dialog!\n");
+		return NULL;
+	}
+
+	sess = (struct src_sess *)srec_dlg.dlg_ctx_get_ptr(dlg, srec_dlg_idx);
+	if (!sess) {
+		LM_WARN("could not get siprec session for this dialog!\n");
+		return NULL;
+	}
+	return sess;
+}
+
+int src_pause_recording(void)
+{
+	str body;
+	int ret = 0;
+	struct src_sess *sess = src_get_session();
+
+	if (!sess)
+		return -2;
+	SIPREC_LOCK(sess);
+
+	if (sess->flags & SIPREC_PAUSED) {
+		LM_DBG("nothing to do - session already paused!\n");
+		goto end;
+	}
+
+	if (!sess->streams_no || sess->streams_no == sess->streams_inactive) {
+		LM_DBG("nothing to do - all %d streams are inactive!\n",
+				sess->streams_inactive);
+		goto end;
+	}
+
+	if (srs_build_body_inactive(sess, &body) < 0) {
+		LM_ERR("cannot generate request body!\n");
+		ret = -1;
+		goto end;
+	}
+
+	/* mark the session as being paused */
+	sess->flags |= SIPREC_PAUSED;
+	srs_send_update_invite(sess, &body);
+
+	pkg_free(body.s);
+
+end:
+	SIPREC_UNLOCK(sess);
+	return ret;
+}
+
+int src_resume_recording(void)
+{
+	str body;
+	int ret = 0;
+	struct src_sess *sess = src_get_session();
+	if (!sess)
+		return -2;
+
+	if (!sess->streams_no) {
+		LM_DBG("nothing to do - no streams active!\n");
+		ret = 0;
+		goto end;
+	}
+
+	if (srs_build_body(sess, &body, SRS_BOTH) < 0) {
+		LM_ERR("cannot generate request body!\n");
+		ret = -1;
+		goto end;
+	}
+	srs_send_update_invite(sess, &body);
+
+end:
+	SIPREC_UNLOCK(sess);
+	return ret;
+}

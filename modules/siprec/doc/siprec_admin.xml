@@ -389,6 +389,52 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	</programlisting>
 			</example>
 		</section>
+		<section id="func_siprec_pause_recording" xreflabel="siprec_pause_recording()">
+			<title>
+			<function moreinfo="none">siprec_pause_recording()</function>
+			</title>
+			<para>
+				Pauses the recording for the ongoing call. Should be called after
+				the dialog has matched.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<example>
+			<title>Use <function>siprec_pause_recording()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INVITE")) {
+		if (is_audio_on_hold())
+			siprec_pause_recording();
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
+		<section id="func_siprec_resume_recording" xreflabel="siprec_resume_recording()">
+			<title>
+			<function moreinfo="none">siprec_resume_recording()</function>
+			</title>
+			<para>
+				Resumes the recording for the ongoing call. Should be called after
+				the dialog has matched.
+			</para>
+			<para>
+				This function can be used from any route.
+			</para>
+			<example>
+			<title>Use <function>siprec_resume_recording()</function> </title>
+			<programlisting format="linespecific">
+	...
+	if (has_totag() &amp;&amp; is_method("INVITE")) {
+		if (!is_audio_on_hold())
+			siprec_resume_recording();
+	}
+	...
+	</programlisting>
+			</example>
+		</section>
 	</section>
 
 </chapter>

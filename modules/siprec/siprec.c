@@ -32,12 +32,15 @@
 #include "siprec_sess.h"
 #include "siprec_logic.h"
 
+static int mod_preinit(void);
 static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
 static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 		str *_cA, str *_cB, str *rtp, str *m_ip, str *_hdrs);
+static int siprec_pause_rec(struct sip_msg *msg);
+static int siprec_resume_rec(struct sip_msg *msg);
 
 /* modules dependencies */
 static dep_export_t deps = {
@@ -65,6 +68,10 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
+	{"siprec_pause_recording",(cmd_function)siprec_pause_rec,
+		{{0,0,0}}, ALL_ROUTES},
+	{"siprec_resume_recording",(cmd_function)siprec_resume_rec,
+		{{0,0,0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -92,7 +99,7 @@ struct module_exports exports = {
 	0,								/* exported pseudo-variables */
 	0,								/* extra processes */
 	0,								/* extra transformations */
-	0,								/* module pre-initialization function */
+	mod_preinit,					/* module pre-initialization function */
 	mod_init,						/* module initialization function */
 	(response_function) 0,			/* response handling function */
 	(destroy_function)mod_destroy,	/* destroy function */
@@ -101,22 +108,10 @@ struct module_exports exports = {
 };
 
 /**
- * init module function
+ * pre-init module function
  */
-static int mod_init(void)
+static int mod_preinit(void)
 {
-	LM_DBG("initializing siprec module ...\n");
-
-	if (srs_init() < 0) {
-		LM_ERR("cannot initialize srs structures!\n");
-		return -1;
-	}
-
-	if (src_init() < 0) {
-		LM_ERR("cannot initialize src structures!\n");
-		return -1;
-	}
-
 	if (load_dlg_api(&srec_dlg) != 0) {
 		LM_ERR("dialog module not loaded! Cannot use siprec module\n");
 		return -1;
@@ -134,6 +129,29 @@ static int mod_init(void)
 
 	if (load_rtpproxy_api(&srec_rtp) != 0) {
 		LM_ERR("rtpproxy module not loaded! Cannot use siprec module\n");
+		return -1;
+	}
+
+	srec_dlg_idx = srec_dlg.dlg_ctx_register_ptr(NULL);
+
+	return 0;
+}
+
+
+/**
+ * init module function
+ */
+static int mod_init(void)
+{
+	LM_DBG("initializing siprec module ...\n");
+
+	if (srs_init() < 0) {
+		LM_ERR("cannot initialize srs structures!\n");
+		return -1;
+	}
+
+	if (src_init() < 0) {
+		LM_ERR("cannot initialize src structures!\n");
 		return -1;
 	}
 
@@ -194,6 +212,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 	 * the reply from the SRS */
 	srec_dlg.dlg_ref(dlg, 1);
 	ss->dlg = dlg;
+	srec_dlg.dlg_ctx_put_ptr(dlg, srec_dlg_idx, ss);
 
 	ret = -2;
 
@@ -249,4 +268,14 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 session_cleanup:
 	src_free_session(ss);
 	return ret;
+}
+
+static int siprec_pause_rec(struct sip_msg *msg)
+{
+	return (src_pause_recording() < 0 ? -1: 1);
+}
+
+static int siprec_resume_rec(struct sip_msg *msg)
+{
+	return (src_resume_recording() < 0 ? -1: 1);
 }

@@ -195,6 +195,7 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 	int medianum = 0;
 	int label;
 	int stream_port;
+	int inactive_streams = 0;
 
 	struct srs_sdp_stream *stream = NULL;
 
@@ -386,9 +387,10 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 			stream->body.len += 4;
 
 			/* sendonly or inactive */
-			if (media_inactive)
+			if (media_inactive) {
 				memcpy(stream->body.s + stream->body.len, "inactive\r\n", 10);
-			else
+				inactive_streams++;
+			} else
 				memcpy(stream->body.s + stream->body.len, "sendonly\r\n", 10);
 			stream->body.len += 10;
 
@@ -401,6 +403,8 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 		}
 		pkg_free(allocated_buf);
 	}
+	/* update inactive streams */
+	sess->streams_inactive = inactive_streams;
 	return streams_no;
 stream_error:
 	pkg_free(allocated_buf);
@@ -824,4 +828,57 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 	return streams_no;
 }
 
+int srs_build_body_inactive(struct src_sess *sess, str *body)
+{
+	char *p;
+	int istreams;
 
+	if (srs_build_body(sess, body, SRS_BOTH) < 0) {
+		LM_ERR("cannot generate request body!\n");
+		return -1;
+	}
+	/* now make all streams inactive */
+	istreams = sess->streams_no - sess->streams_inactive;
+	while (istreams-- > 0) {
+		p = l_memmem(body->s, "a=sendonly\r\n", body->len, 12);
+		if (!p) {
+			LM_WARN("cannot find %dth active stream in [%.*s]\n",
+					sess->streams_no - istreams, body->len, body->s);
+			goto error;
+		}
+		/* found sendonly - replace with inactive */
+		memcpy(p + 2, "inactive", 8);
+	}
+	return 0;
+
+error:
+	pkg_free(body->s);
+	return -1;
+}
+
+void srs_stop_media(struct src_sess *sess)
+{
+	int p;
+	struct list_head *it;
+	str *from_tag, *to_tag;
+	struct srs_sdp_stream *stream;
+
+	for (p = 0; p < sess->participants_no; p++) {
+		if (p) {
+			from_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
+			to_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
+		} else {
+			from_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
+			to_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
+		}
+		list_for_each(it, &sess->participants[p].streams) {
+			stream = list_entry(it, struct srs_sdp_stream, list);
+			if (srec_rtp.stop_recording(&sess->dlg->callid, from_tag, to_tag,
+						(sess->rtpproxy.s ? &sess->rtpproxy: NULL),
+						stream->medianum + 1) < 0) {
+					LM_ERR("cannot stop recording for stream %p (label=%d)\n",
+							stream, stream->label);
+				}
+		}
+	}
+}

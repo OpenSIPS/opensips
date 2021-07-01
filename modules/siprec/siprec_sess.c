@@ -168,6 +168,8 @@ void src_free_session(struct src_sess *sess)
 		shm_free(node);
 	}
 	srec_logic_destroy(sess);
+	if (sess->dlg)
+		srec_dlg.dlg_ctx_put_ptr(sess->dlg, srec_dlg_idx, NULL);
 	lock_destroy(&sess->lock);
 	shm_free(sess);
 }
@@ -251,6 +253,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	struct socket_info *si;
 	int p, port, proto, c, label, medianum;
 	int p_type;
+	int flags;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch siprec info!\n");
@@ -277,6 +280,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(&ts, tmp.s, tmp.len);
 	SIPREC_BIN_POP(int, &version);
+	SIPREC_BIN_POP(int, &flags);
 	SIPREC_BIN_POP(str, &rtpproxy);
 	SIPREC_BIN_POP(str, &media_ip);
 	SIPREC_BIN_POP(str, &srs_uri);
@@ -312,6 +316,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		LM_ERR("cannot create a new siprec session!\n");
 		return;
 	}
+	sess->flags = flags;
 
 	node = shm_malloc(sizeof(*node) + srs_uri.len);
 	if (!node) {
@@ -355,6 +360,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(sess->b2b_callid.s, tmp.s, tmp.len);
 	sess->b2b_callid.len = tmp.len;
+	SIPREC_BIN_POP(int, &sess->streams_inactive);
 
 	SIPREC_BIN_POP(int, &p);
 	for (; p > 0; p--) {
@@ -414,6 +420,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	/* all good: continue with dialog support! */
 	SIPREC_REF(sess);
 	sess->dlg = dlg;
+	srec_dlg.dlg_ctx_put_ptr(dlg, srec_dlg_idx, sess);
 
 	if (srec_register_callbacks(sess) < 0) {
 		LM_ERR("cannot register callback for terminating session\n");
@@ -472,6 +479,7 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 
 	SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->ts));
 	SIPREC_BIN_PUSH(int, ss->version);
+	SIPREC_BIN_PUSH(int, ss->flags);
 	SIPREC_BIN_PUSH(str, &ss->rtpproxy);
 	SIPREC_BIN_PUSH(str, &ss->media_ip);
 	/* push only the first SRS - this is the one chosen */
@@ -486,6 +494,7 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, &ss->b2b_fromtag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_totag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
+	SIPREC_BIN_PUSH(int, ss->streams_inactive);
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 
 	for (p = 0; p < ss->participants_no; p++) {
