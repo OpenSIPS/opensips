@@ -788,10 +788,19 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
+	lock_get(&client->ctx->lock);
 	b2b_sdp_client_release(client);
 	/* also notify the upstream */
 	body = b2b_sdp_mux_body(ctx);
 	if (body) {
+		/* we do a busy waiting if there's a different negociation happening */
+		while (ctx->pending_no) {
+			lock_release(&client->ctx->lock);
+			usleep(50);
+			lock_get(&client->ctx->lock);
+		}
+		ctx->pending_no = 1;
+		lock_release(&client->ctx->lock);
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		req_data.et = B2B_SERVER;
 		req_data.b2b_key = &ctx->b2b_key;
@@ -800,6 +809,8 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 		req_data.no_cb = 1;
 		if (b2b_api.send_request(&req_data) < 0)
 			LM_ERR("cannot send upstream INVITE\n");
+	} else {
+		lock_release(&client->ctx->lock);
 	}
 	return 0;
 }
@@ -1131,7 +1142,7 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 	if (!client) {
 		ctx->pending_no = 0;
 		lock_release(&client->ctx->lock);
-		LM_WARN("cannot identify a pending client!\n");
+		LM_DBG("cannot identify a pending client!\n");
 		return -1;
 	}
 	if (msg->REPLY_STATUS < 300) {
