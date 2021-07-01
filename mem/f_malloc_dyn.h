@@ -118,11 +118,11 @@ void *fm_malloc(struct fm_block *fm, unsigned long size,
 	/* not found, bad! */
 
 #if defined(DBG_MALLOC) || defined(STATISTICS)
-	LM_WARN("not enough continuous free %s memory (%ld bytes left, need %lu), attempting " \
+	LM_WARN("not enough contiguous free %s memory (%ld bytes left, need %lu), attempting " \
 			"defragmentation... please increase the \"-%s\" command line parameter!\n",
 			fm->name, fm->size - fm->real_used, size, fm->name[0] == 'p' ? "M" : "m");
 #else
-	LM_WARN("not enough continuous free %s memory (need %lu), attempting defragmentation... " \
+	LM_WARN("not enough contiguous free %s memory (need %lu), attempting defragmentation... " \
 			"please increase the \"-%s\" command line parameter!\n",
 			fm->name, fm->size - fm->real_used, size, fm->name[0] == 'p' ? "M" : "m");
 #endif
