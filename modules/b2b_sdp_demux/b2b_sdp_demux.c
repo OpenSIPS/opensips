@@ -952,9 +952,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 
 	/* only ACK if not fake reply, or not a dummy message as
 	 * built in the dlg.c tm callback */
-	if (msg != FAKED_REPLY && (msg->REPLY_STATUS != 408 ||
-			(msg->first_line.u.reply.reason.s > msg->buf &&
-			 msg->first_line.u.reply.reason.s < msg->buf + msg->len))) {
+	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300) {
 		if (b2b_sdp_ack(B2B_CLIENT, &client->b2b_key) < 0)
 			LM_ERR("Cannot ack recording session for key %.*s\n",
 					client->b2b_key.len, client->b2b_key.s);
@@ -970,7 +968,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 	client->ctx->pending_no--;
 	client->flags &= ~B2B_SDP_CLIENT_EARLY;
 
-	if (msg->REPLY_STATUS < 300) {
+	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300) {
 		body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 		if (body && b2b_sdp_client_sync(client, body) >= 0) {
 			client->ctx->success_no++;
