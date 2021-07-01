@@ -31,21 +31,14 @@
 
 #undef UN_HASH
 
-#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
  * aligned memory */
 	#define QM_ROUNDTO		sizeof(long long)
 #else
-	#define QM_ROUNDTO		sizeof(void*) /* minimum possible QM_ROUNDTO
-										     -> heavy debugging */
-#endif
-#else /* DBG_MALLOC */
-	#define QM_ROUNDTO		16UL /* size we round to, must be = 2^n  and also
-							 sizeof(qm_frag)+sizeof(qm_frag_end)
-							 must be multiple of QM_ROUNDTO!
-						   */
+	/* memory alignment, in bytes; a value of 8UL might help with debugging */
+	#define QM_ROUNDTO		16UL
 #endif
 
 #define Q_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
@@ -80,7 +73,7 @@ struct qm_frag {
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
-};
+} __attribute__ ((aligned (QM_ROUNDTO)));
 
 #define QM_FRAG_OVERHEAD (sizeof(struct qm_frag))
 
@@ -93,7 +86,7 @@ struct qm_frag_end {
 #endif
 	unsigned long size;
 	struct qm_frag *prev_free;
-};
+} __attribute__ ((aligned (QM_ROUNDTO)));
 
 struct qm_frag_lnk {
 	struct qm_frag head;
@@ -114,7 +107,7 @@ struct qm_block {
 	struct qm_frag_end *last_frag_end;
 
 	struct qm_frag_lnk free_hash[QM_HASH_SIZE];
-};
+} __attribute__ ((aligned (QM_ROUNDTO)));
 
 struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name);
 
