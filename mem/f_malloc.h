@@ -31,18 +31,13 @@
 #undef ROUNDTO
 #undef UN_HASH
 
-#ifdef DBG_MALLOC
 #if defined(__CPU_sparc64) || defined(__CPU_sparc)
 /* tricky, on sun in 32 bits mode long long must be 64 bits aligned
  * but long can be 32 bits aligned => malloc should return long long
  * aligned memory */
 	#define ROUNDTO		sizeof(long long)
 #else
-	#define ROUNDTO		sizeof(void*) /* size we round to, must be = 2^n, and
-                      sizeof(fm_frag) must be multiple of ROUNDTO !*/
-#endif
-#else /* DBG_MALLOC */
-	#define ROUNDTO 8UL
+	#define ROUNDTO		sizeof(void *) /* address alignment, in bytes (2^n) */
 #endif
 
 #define F_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
@@ -78,7 +73,7 @@ struct fm_frag {
 #ifdef SHM_EXTRA_STATS
 	unsigned long statistic_index;
 #endif
-};
+} __attribute__ ((aligned (ROUNDTO)));
 
 #define FM_FRAG_OVERHEAD (sizeof(struct fm_frag))
 
@@ -102,7 +97,7 @@ struct fm_block {
 	struct fm_frag *last_frag;
 
 	struct fm_frag_lnk free_hash[F_HASH_SIZE];
-};
+} __attribute__ ((aligned (ROUNDTO)));
 
 struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name);
 

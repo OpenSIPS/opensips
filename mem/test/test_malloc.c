@@ -41,12 +41,16 @@ static osips_free_t    FREE;
 #define MY_MAX_USED ((long)((double)HPT_SHM / TEST_MALLOC_PROCS * HPT_MAX_PROC_USAGE))
 #define check_limit() (hpt_my_used < MY_MAX_USED)
 
+/* ensure all allocations are aligned to this multiple (match this to ROUNDTO) */
+#define MEM_ALIGN           8UL
+
 #define HPT_MAX_ALLOC_SZ    65536
 #define HPT_FAC             65536
-#define HPT_OPS             4000000
+#define HPT_OPS             100000
 
 static long hpt_my_used = 0;
 static long mallocs, reallocs, frees;
+static long aligned_mallocs, aligned_reallocs;
 static long should_grow = 1;
 
 OSIPS_LIST_HEAD(hpt_frags);
@@ -79,6 +83,9 @@ static void _hpt_malloc(void)
 		return;
 	}
 	memset(ret, -1, sizeof *ret + size);
+
+	if ((unsigned long)ret % MEM_ALIGN == 0)
+		aligned_mallocs++;
 
 	ret->chunk = (void *)(ret + 1);
 	ret->size = size;
@@ -121,6 +128,9 @@ static void _hpt_realloc(void)
 		goto out;
 	}
 	memset(ret, -1, sizeof *ret + size);
+
+	if ((unsigned long)ret % MEM_ALIGN == 0)
+		aligned_reallocs++;
 
 	ret->chunk = (void *)(ret + 1);
 	ret->size = size;
@@ -181,7 +191,7 @@ static void _test_malloc(int procs)
 		if (i % 100000 == 0)
 			LM_INFO("ops left: %d, F: %ld, M: %ld, R: %ld, F: %ld, usage: %ld/%ld, frags: %lu\n",
 			        i, fragments, mallocs, reallocs, frees,
-			        hpt_my_used, MY_MAX_USED, shm_frags ? get_stat_val(shm_frags) : -1);
+			        hpt_my_used, MY_MAX_USED, get_stat_val(get_stat(_str("fragments"))));
 
 		if (should_grow) {
 			if (rand() % 10 >= 1)
@@ -222,11 +232,25 @@ static inline void test_pkg_malloc(void)
 	LM_INFO("================================\n");
 
 	_test_malloc(1);
+
+	LM_INFO("PKG test complete.  Final stats:\n");
+	LM_INFO("================================\n");
+
+	LM_INFO("mallocs %ld : %ld aligned-mallocs\n", mallocs, aligned_mallocs);
+	LM_INFO("reallocs %ld : %ld aligned-reallocs\n", reallocs, aligned_reallocs);
+	LM_INFO("frees %ld\n", frees);
+
+	ok(mallocs == aligned_mallocs,   "check pkg_malloc() alignment");
+	ok(reallocs == aligned_reallocs,   "check pkg_realloc() alignment");
+
+	mallocs = aligned_mallocs = 0;
+	reallocs = aligned_reallocs = 0;
+	frees = 0;
 }
 
 static inline void test_shm_malloc(void)
 {
-	unsigned long used, rused, new_used, new_rused;
+	unsigned long used, rused, frags, new_used, new_rused, new_frags;
 
 	MALLOC  = osips_shm_malloc;
 	REALLOC = osips_shm_realloc;
@@ -234,6 +258,7 @@ static inline void test_shm_malloc(void)
 
 	used = get_stat_val(get_stat(_str("used_size")));
 	rused = get_stat_val(get_stat(_str("real_used_size")));
+	frags = get_stat_val(get_stat(_str("fragments")));
 
 	LM_INFO("Starting SHM stress test...\n");
 	LM_INFO("================================\n");
@@ -247,17 +272,25 @@ static inline void test_shm_malloc(void)
 
 	new_used = get_stat_val(get_stat(_str("used_size")));
 	new_rused = get_stat_val(get_stat(_str("real_used_size")));
+	new_frags = get_stat_val(get_stat(_str("fragments")));
 
 	LM_INFO("SHM test complete.  Final stats:\n");
 	LM_INFO("================================\n");
-	LM_INFO("used: %ld\n", new_used);
-	LM_INFO("real_used: %ld\n", new_rused);
+	LM_INFO("used: %ld -> %ld\n", used, new_used);
+	LM_INFO("real_used: %ld -> %ld\n", rused, new_rused);
 	LM_INFO("max_real_used: %ld\n", get_stat_val(get_stat(_str("max_used_size"))));
-	LM_INFO("fragments: %ld\n", get_stat_val(get_stat(_str("fragments"))));
+	LM_INFO("fragments: %ld -> %ld\n", frags, new_frags);
+	LM_INFO("mallocs %ld : %ld aligned-mallocs\n", mallocs, aligned_mallocs);
+	LM_INFO("reallocs %ld : %ld aligned-reallocs\n", reallocs, aligned_reallocs);
+	LM_INFO("frees %ld\n", frees);
 	LM_INFO("================================\n");
 
 	ok(new_used == used,   "check stats: shm_used");
-	ok(new_rused == rused, "check stats: shm_rused");
+	/* we don't yet have a way of testing the correctness of real_used
+		ok(new_rused == rused, "check stats: shm_rused"); */
+
+	ok(mallocs == aligned_mallocs,   "check shm_malloc() alignment");
+	ok(reallocs == aligned_reallocs,   "check shm_realloc() alignment");
 }
 
 void test_malloc(void)

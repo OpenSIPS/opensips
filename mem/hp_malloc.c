@@ -526,10 +526,11 @@ static struct hp_block *hp_malloc_init(char *address, unsigned long size,
 
 	/* make address and size multiple of 8*/
 	start = (char *)ROUNDUP((unsigned long) address);
-	LM_DBG("HP_OPTIMIZE=%lu, HP_LINEAR_HASH_SIZE=%lu\n",
-			HP_MALLOC_OPTIMIZE, HP_LINEAR_HASH_SIZE);
-	LM_DBG("HP_HASH_SIZE=%lu, HP_EXTRA_HASH_SIZE=%lu, hp_block size=%zu\n",
-			HP_HASH_SIZE, HP_EXTRA_HASH_SIZE, sizeof(struct hp_block));
+	LM_DBG("HP_OPTIMIZE=%lu, HP_LINEAR_HASH_SIZE=%lu, %zu-bytes aligned\n",
+			HP_MALLOC_OPTIMIZE, HP_LINEAR_HASH_SIZE, ROUNDTO);
+	LM_DBG("HP_HASH_SIZE=%lu, HP_EXTRA_HASH_SIZE=%lu, hp_block size=%zu, "
+			"frag_size=%zu\n", HP_HASH_SIZE, HP_EXTRA_HASH_SIZE,
+			sizeof(struct hp_block), sizeof(struct hp_frag));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
 
 	if (size < (unsigned long)(start - address))
