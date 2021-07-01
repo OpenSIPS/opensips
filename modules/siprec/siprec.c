@@ -178,6 +178,13 @@ static void mod_destroy(void)
 {
 }
 
+static void tm_src_unref_session(void *p)
+{
+	struct src_sess *ss = (struct src_sess *)p;
+	srec_hlog(ss, SREC_UNREF, "start recording unref");
+	SIPREC_UNREF(ss);
+}
+
 /*
  * function that simply prints the parameters passed
  */
@@ -257,9 +264,11 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 	}
 
 	SIPREC_REF_UNSAFE(ss);
+	srec_hlog(ss, SREC_REF, "starting recording");
 	if (srec_tm.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, tm_start_recording,
-			ss, src_unref_session) <= 0) {
+			ss, tm_src_unref_session) <= 0) {
 		LM_ERR("cannot register tm callbacks\n");
+		srec_hlog(ss, SREC_UNREF, "error starting recording");
 		SIPREC_UNREF_UNSAFE(ss);
 		goto session_cleanup;
 	}

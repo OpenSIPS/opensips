@@ -35,10 +35,22 @@ static regex_t skip_codes_regex;
 
 static str mod_name = str_init("siprec");
 
+#ifdef DBG_SIPREC_HIST
+struct struct_hist_list *srec_hist;
+#endif
+
 static int srs_send_invite(struct src_sess *sess);
 
 int src_init(void)
 {
+#ifdef DBG_SIPREC_HIST
+	srec_hist = shl_init("SIPREC sessions", 1000, 1);
+	if (!srec_hist) {
+		LM_ERR("oom siprec hist\n");
+		return -1;
+	}
+#endif
+
 	skip_failover_codes.len = strlen(skip_failover_codes.s);
 	if (!skip_failover_codes.len)
 		return 0;
@@ -105,7 +117,8 @@ struct _tm_src_param {
 static void _tmp_src_param_free(void *p)
 {
 	struct _tm_src_param *tmp = (struct _tm_src_param *)p;
-	src_unref_session(tmp->ss);
+	srec_hlog(tmp->ss, SREC_UNREF, "update unref");
+	SIPREC_UNREF(tmp->ss);
 	shm_free(tmp);
 }
 
@@ -165,18 +178,27 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 	if (srec_tm.register_tmcb(_params->msg, 0, TMCB_RESPONSE_OUT, tm_update_recording,
 			tmp, _tmp_src_param_free) <= 0) {
 		LM_ERR("cannot register tm callbacks for reply\n");
+		srec_hlog(ss, SREC_UNREF, "error updating recording");
 		SIPREC_UNREF_UNSAFE(ss);
 	}
 unlock:
 	SIPREC_UNLOCK(ss);
 }
 
+static void dlg_src_unref_session(void *p)
+{
+	struct src_sess *ss = (struct src_sess *)p;
+	srec_hlog(ss, SREC_UNREF, "dlg recording unref");
+	SIPREC_UNREF(ss);
+}
+
 int srec_register_callbacks(struct src_sess *sess)
 {
 	/* also, the b2b ref moves on the dialog */
 	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED|DLGCB_FAILED,
-			srec_dlg_end, sess, src_unref_session)){
+			srec_dlg_end, sess, dlg_src_unref_session)){
 		LM_ERR("cannot register callback for dialog termination\n");
+		srec_hlog(ss, SREC_UNREF, "error registering callback for terminating");
 		return -1;
 	}
 
@@ -334,6 +356,7 @@ no_recording:
 	srec_dlg.dlg_ctx_put_ptr(ss->dlg, srec_dlg_idx, NULL);
 	srec_dlg.dlg_unref(ss->dlg, 1);
 	ss->dlg = NULL;
+	srec_hlog(ss, SREC_UNREF, "no recording");
 	SIPREC_UNREF(ss);
 	return ret;
 }
@@ -488,8 +511,10 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		return 0;
 
 	SIPREC_REF_UNSAFE(sess);
+	srec_hlog(sess, SREC_REF, "started recording");
 	ret = srs_send_invite(sess);
 	if (ret < 0) {
+		srec_hlog(sess, SREC_UNREF, "error while starting recording");
 		SIPREC_UNREF_UNSAFE(sess);
 		return ret;
 	}
