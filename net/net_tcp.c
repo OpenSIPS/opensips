@@ -616,6 +616,74 @@ static struct tcp_connection* tcpconn_add(struct tcp_connection *c)
 	}
 }
 
+static str e_tcp_src_ip = str_init("src_ip");
+static str e_tcp_src_port = str_init("src_port");
+static str e_tcp_dst_ip = str_init("dst_ip");
+static str e_tcp_dst_port = str_init("dst_port");
+static str e_tcp_c_proto = str_init("proto");
+
+void tcp_disconnect_event_raise(struct tcp_connection* c)
+{
+	evi_params_p list = 0;
+	str src_ip,dst_ip, proto;
+	int src_port,dst_port;
+
+	// event has to be triggered - check for subscribers
+	if (!evi_probe_event(EVI_TCP_DISCONNECT)) {
+		goto end;
+	}
+
+	if (!(list = evi_get_params()))
+		goto end;
+
+	src_ip.s = ip_addr2a( &c->rcv.src_ip );
+	src_ip.len = strlen(src_ip.s);
+
+	if (evi_param_add_str(list, &e_tcp_src_ip, &src_ip)) {
+		LM_ERR("unable to add parameter\n");
+		goto end;
+	}
+
+	src_port = c->rcv.src_port;
+
+	if (evi_param_add_int(list, &e_tcp_src_port, &src_port)) {
+		LM_ERR("unable to add parameter\n");
+		goto end;
+	}
+
+	dst_ip.s = ip_addr2a( &c->rcv.dst_ip );
+	dst_ip.len = strlen(dst_ip.s);
+
+	if (evi_param_add_str(list, &e_tcp_dst_ip, &dst_ip)) {
+		LM_ERR("unable to add parameter\n");
+		goto end;
+	}
+
+	dst_port = c->rcv.dst_port;
+
+	if (evi_param_add_int(list, &e_tcp_dst_port, &dst_port)) {
+		LM_ERR("unable to add parameter\n");
+		goto end;
+	}
+
+	proto.s = protos[c->rcv.proto].name;
+	proto.len = strlen(proto.s);
+
+	if (evi_param_add_str(list, &e_tcp_c_proto, &proto)) {
+		LM_ERR("unable to add parameter\n");
+		goto end;
+	}
+
+	if (evi_raise_event(EVI_TCP_DISCONNECT, list)) {
+		LM_ERR("unable to send tcp disconnect event\n");
+	}
+	list = 0;
+
+end:
+	if (list)
+		evi_free_params(list);
+}
+
 /*! \brief unsafe tcpconn_rm version (nolocks) */
 static void _tcpconn_rm(struct tcp_connection* c)
 {
@@ -638,6 +706,8 @@ static void _tcpconn_rm(struct tcp_connection* c)
 
 	if (protos[c->type].net.conn_clean)
 		protos[c->type].net.conn_clean(c);
+
+	tcp_disconnect_event_raise(c);
 
 #ifdef DBG_TCPCON
 	sh_log(c->hist, TCP_DESTROY, "type=%d", c->type);
