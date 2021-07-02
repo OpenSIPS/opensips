@@ -1025,6 +1025,131 @@ out_unlock:
 	return ret;
 }
 
+/* Assumes everything is locked */
+int _remove_ip_port_urecord(urecord_t* record, str *ip, int* port)
+{
+	ucontact_t *contact, *it;
+	struct hostent *he;
+	str contact_ip;
+
+	for (it = record->contacts; it; ) {
+		contact = it;
+		it = it->next;
+
+		he = sip_resolvehost(&contact->next_hop.name,
+		                     &contact->next_hop.port,
+		                     &contact->next_hop.proto, 0, NULL);
+		if (!he) {
+			LM_ERR("failed to resolve next hop %.*s of contact '%.*s'\n",
+				contact->next_hop.name.len, contact->next_hop.name.s,
+				contact->c.len, contact->c.s);
+			continue;
+		}
+
+		contact_ip.s = inet_ntoa(*(struct in_addr *)(he->h_addr_list[0]));
+		contact_ip.len = strlen(contact_ip.s);
+
+		LM_DBG("next hop is [%.*s] resolving to [%s]\n",
+			contact->next_hop.name.len, contact->next_hop.name.s,
+			contact_ip.s);
+
+
+		if (ip->len == contact_ip.len &&
+		memcmp(ip->s,contact_ip.s,ip->len) == 0 &&
+		contact->next_hop.port == *port) {
+			LM_DBG("Removing contact \n");
+			ul.delete_ucontact(record, contact, NULL, 0);
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * _remove - Delete ALL contacts by IP and Port
+ *
+ * @ip:		IP to filter for deletion
+ * @port	Port to filter for deletion
+ * @aor:	Optionally, AOR to filter for deletion
+ *
+ * @return:      1 on success, negative on failure
+ */
+int _remove_ip_port(struct sip_msg *msg, str *ip, int *port, void *udomain, str* aor)
+{
+	urecord_t *record;
+	str aor_user;
+	int ret = 1;
+	int i;
+	map_iterator_t it;
+	void ** dest;
+	udomain_t *dom = (udomain_t *)udomain;
+
+	if (!udomain || !ip || !port) {
+		LM_ERR("Mandatory parameters not provided \n");
+		return -1;
+	}
+
+	if (aor && aor->s ) {
+		LM_DBG("Removing %.*s : %d for AOR %.*s\n",ip->len,ip->s,
+		*port,aor->len,aor->s);
+		/* received AOR indication, we're lucky */
+		if (extract_aor(aor, &aor_user, 0, 0, reg_use_domain) < 0) {
+			LM_ERR("failed to extract Address Of Record\n");
+			return E_BAD_URI;
+		}
+
+
+		ul.lock_udomain(dom, &aor_user);
+
+		if (ul.get_urecord(dom, &aor_user, &record) != 0) {
+			LM_DBG("no record '%.*s' found!\n", aor_user.len, aor_user.s);
+			goto out_unlock;
+		}
+
+		if (_remove_ip_port_urecord(record,ip,port) != 0) {
+			LM_ERR("Failed to remove contacts \n");
+			ret = -1;
+		}
+
+		ul.release_urecord(record, 0);
+		goto out_unlock;
+	}
+
+	LM_DBG("Removing %.*s : %d for ALL AORs\n",ip->len,ip->s,*port);
+	
+	/* no AOR help, go through ALL registered AORs :( */
+	for(i=0; i<dom->size; i++) {
+		ul.lock_ulslot( dom, i);
+		for ( map_first( dom->table[i].records, &it);
+			iterator_is_valid(&it);
+			iterator_next(&it) ) {
+
+			dest = iterator_val(&it);
+			if( dest == NULL ) {
+				LM_ERR("Failed to get urecord\n");
+				goto error_unlock;
+			}
+			record =( urecord_t * ) *dest;
+
+			if (_remove_ip_port_urecord(record,ip,port) != 0) {
+				LM_ERR("Failed to remove contacts \n");
+				/* continue here, might be more */
+			}
+
+			ul.release_urecord(record, 0);
+		}
+
+error_unlock:
+		ul.unlock_ulslot( dom, i);
+	}
+
+	return 1;
+
+out_unlock:
+	ul.unlock_udomain(dom, &aor_user);
+	return ret;
+}
+
 static ucontact_t **contacts_bak;
 static int contacts_bak_no;
 static int contacts_bak_sz;

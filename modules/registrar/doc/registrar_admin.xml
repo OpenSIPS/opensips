@@ -755,6 +755,55 @@ remove("location", "sip:bob@atlanta.com", , , "&lt;urn:uuid:e5e68d40-f08a-4600-b
 		</example>
 	</section>
 
+	<section id="func_remove_ip_port" xreflabel="remove_ip_port()">
+		<title>
+		<function moreinfo="none">remove_ip_port(IP,Port, domain, [AOR])</function>
+		</title>
+		<para>
+		Remove all contacts behind a specific IP and Port, optionally filtering by AOR.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+				<emphasis>IP (string)</emphasis> - IP of the Contact to be removed
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>Port (integer)</emphasis> - Port of the Contact to be removed
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>domain (static string</emphasis> - Logical domain within the registrar.
+			If a database is used, then this must be name of the table which
+			stores the contacts.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis>AOR (string, optional)</emphasis> - address-of-record to be searched (SIP URI)
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from ALL ROUTES.
+		</para>
+		<example>
+		<title><function>remove_ip_port</function> usage</title>
+		<programlisting format="linespecific">
+...
+# remove all contacts behind 8.8.8.8 port 43213
+remove("8.8.8.8",43213,"location");
+...
+# remove only bob's contacts behind the 8.8.8.8:43213 host
+remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="func_lookup" xreflabel="lookup()">
 		<title>
 		<function moreinfo="none">lookup(domain [, flags [, aor]])</function>

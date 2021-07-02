@@ -54,13 +54,14 @@ registrar Module
               1.4.2. remove(domain, AOR[, [contact][, [next_hop][,
                       [sip_instance]]]])
 
-              1.4.3. lookup(domain [, flags [, aor]])
-              1.4.4. is_registered(domain ,[AOR])
-              1.4.5. is_contact_registered(domain
+              1.4.3. remove_ip_port(IP,Port, domain, [AOR])
+              1.4.4. lookup(domain [, flags [, aor]])
+              1.4.5. is_registered(domain ,[AOR])
+              1.4.6. is_contact_registered(domain
                       ,[AOR],[contact],[callid])
 
-              1.4.6. is_ip_registered(domain ,[AOR],IPvar)
-              1.4.7. add_sock_hdr(hdr_name)
+              1.4.7. is_ip_registered(domain ,[AOR],IPvar)
+              1.4.8. add_sock_hdr(hdr_name)
 
         1.5. Exported Asynchronous Functions
 
@@ -123,12 +124,13 @@ registrar Module
    1.28. Setting the pn_enable_purr parameter
    1.29. save usage
    1.30. remove usage
-   1.31. lookup usage
-   1.32. is_registered usage
-   1.33. is_contact_registered usage
-   1.34. is_ip_registered usage
-   1.35. add_sock_hdr usage
-   1.36. async pn_process_purr() usage
+   1.31. remove_ip_port usage
+   1.32. lookup usage
+   1.33. is_registered usage
+   1.34. is_contact_registered usage
+   1.35. is_ip_registered usage
+   1.36. add_sock_hdr usage
+   1.37. async pn_process_purr() usage
 
 Chapter 1. Admin Guide
 
@@ -926,7 +928,32 @@ remove("location", "sip:bob@atlanta.com", "sip:bob@46.50.64.78", "50.60.
 remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 600-b82e-ff4d5d8c1a8f>")
 
-1.4.3.  lookup(domain [, flags [, aor]])
+1.4.3.  remove_ip_port(IP,Port, domain, [AOR])
+
+   Remove all contacts behind a specific IP and Port, optionally
+   filtering by AOR.
+
+   Meaning of the parameters is as follows:
+     * IP (string) - IP of the Contact to be removed
+     * Port (integer) - Port of the Contact to be removed
+     * domain (static string - Logical domain within the
+       registrar. If a database is used, then this must be name of
+       the table which stores the contacts.
+     * AOR (string, optional) - address-of-record to be searched
+       (SIP URI)
+
+   This function can be used from ALL ROUTES.
+
+   Example 1.31. remove_ip_port usage
+...
+# remove all contacts behind 8.8.8.8 port 43213
+remove("8.8.8.8",43213,"location");
+...
+# remove only bob's contacts behind the 8.8.8.8:43213 host
+remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
+...
+
+1.4.4.  lookup(domain [, flags [, aor]])
 
    The functions extracts username from Request-URI and tries to
    find all contacts for the username in usrloc. If there are no
@@ -1029,7 +1056,7 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.31. lookup usage
+   Example 1.32. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -1054,7 +1081,7 @@ switch ($retcode) {
 };
 ...
 
-1.4.4.  is_registered(domain ,[AOR])
+1.4.5.  is_registered(domain ,[AOR])
 
    The function returns true if an AOR is registered, false
    otherwise. The function does not modify the message being
@@ -1073,7 +1100,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.32. is_registered usage
+   Example 1.33. is_registered usage
 ...
 /**/
 if (is_method("REGISTER")) {
@@ -1089,7 +1116,7 @@ if (is_registered("location",$fu)) {
 }
 ...
 
-1.4.5.  is_contact_registered(domain ,[AOR],[contact],[callid])
+1.4.6.  is_contact_registered(domain ,[AOR],[contact],[callid])
 
    The function returns true if a contact and/or a callid from a
    certain AOR is registered, false otherwise. The function does
@@ -1114,7 +1141,7 @@ if (is_registered("location",$fu)) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.33. is_contact_registered usage
+   Example 1.34. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -1131,7 +1158,7 @@ if(is_method("INVITE")) {
 }
 ...
 
-1.4.6.  is_ip_registered(domain ,[AOR],IPvar)
+1.4.7.  is_ip_registered(domain ,[AOR],IPvar)
 
    The function returns true if there is at least one contact that
    has been registered from the IP in the IPvar variable. The IP
@@ -1154,7 +1181,7 @@ if(is_method("INVITE")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.34. is_ip_registered usage
+   Example 1.35. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
@@ -1165,7 +1192,7 @@ if (is_method("REGISTER")) {
 };
 ...
 
-1.4.7.  add_sock_hdr(hdr_name)
+1.4.8.  add_sock_hdr(hdr_name)
 
    Adds to the current REGISTER request a new header with
    “hdr_name” which contains the description of the received
@@ -1178,7 +1205,7 @@ if (is_method("REGISTER")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.35. add_sock_hdr usage
+   Example 1.36. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -1211,7 +1238,7 @@ add_sock_hdr("Sock-Info");
        foreign PURR or offline contact)
      * -1 - Internal Error
 
-   Example 1.36. async pn_process_purr() usage
+   Example 1.37. async pn_process_purr() usage
 route {
         ...
         if (has_totag()) {
