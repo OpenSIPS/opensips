@@ -55,7 +55,7 @@ extern stat_var *rpm_frags;
 #undef ROUNDTO
 #undef UN_HASH
 
-#define ROUNDTO 8UL /* memory alignment, in bytes */
+#define ROUNDTO 8UL /* address alignment, in bytes */
 
 #define HP_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
 #define HP_MALLOC_OPTIMIZE  (1UL << HP_MALLOC_OPTIMIZE_FACTOR)
