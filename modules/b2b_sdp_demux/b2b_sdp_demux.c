@@ -368,7 +368,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 }
 
 
-static void b2b_sdp_client_release(struct b2b_sdp_client *client)
+static void b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
 {
 	struct list_head *it, *safe;
 	if (client->hdrs.s)
@@ -379,10 +379,12 @@ static void b2b_sdp_client_release(struct b2b_sdp_client *client)
 
 	list_for_each_safe(it, safe, &client->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
-	lock_get(&client->ctx->lock);
+	if (lock)
+		lock_get(&client->ctx->lock);
 	list_del(&client->list);
 	client->ctx->clients_no--;
-	lock_release(&client->ctx->lock);
+	if (lock)
+		lock_release(&client->ctx->lock);
 	shm_free(client);
 }
 
@@ -390,7 +392,7 @@ static void b2b_sdp_client_free(struct b2b_sdp_client *client)
 {
 
 	b2b_sdp_client_terminate(client, NULL);
-	b2b_sdp_client_release(client);
+	b2b_sdp_client_release(client, 1);
 
 }
 
@@ -789,7 +791,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 	lock_get(&client->ctx->lock);
-	b2b_sdp_client_release(client);
+	b2b_sdp_client_release(client, 0);
 	/* also notify the upstream */
 	body = b2b_sdp_mux_body(ctx);
 	if (body) {
@@ -1660,7 +1662,7 @@ static void b2b_sdp_client_event_receive_delete(struct b2b_sdp_client *client,
 		bin_packet_t *store)
 {
 	b2b_sdp_client_remove(client);
-	b2b_sdp_client_release(client);
+	b2b_sdp_client_release(client, 1);
 }
 
 static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
