@@ -434,6 +434,12 @@ static int mod_init(void)
 			LM_WARN("collection <%.*s> is not assigned to any url!\n",
 					col_it->col_name.len, col_it->col_name.s);
 		}
+
+		if (!cluster_id && col_it->replicated) {
+			LM_WARN("collection <%.*s> is replicated but no "
+				"'cluster_id' defined!\n",
+					col_it->col_name.len, col_it->col_name.s);
+		}
 	}
 
 	/* register timer to delete the expired entries */
@@ -549,6 +555,7 @@ static int parse_collections(unsigned int type, void* val)
 	str collection_list, coll;
 	lcache_col_t *new_col, *it;
 	csv_record *cols, *col, *kv;
+	int replicated;
 
 	if (!val) {
 		LM_ERR("null collection list!\n");
@@ -578,6 +585,13 @@ static int parse_collections(unsigned int type, void* val)
 		if (ZSTR(coll)) {
 			LM_DBG("skipping empty-string collection: ''!\n");
 			continue;
+		}
+
+		if (coll.s[coll.len-2] == '/' && coll.s[coll.len-1] == 'r') {
+			coll.len -= 2;
+			replicated = 1;
+		} else {
+			replicated = 0;
 		}
 
 		LM_DBG("creating collection '%.*s' with hash_size %d\n",
@@ -611,6 +625,8 @@ static int parse_collections(unsigned int type, void* val)
 					coll.len, coll.s);
 			return -1;
 		}
+
+		new_col->replicated = replicated;
 
 		add_last(new_col, lcache_collection);
 		free_csv_record(kv);

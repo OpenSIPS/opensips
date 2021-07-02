@@ -168,7 +168,7 @@ int _lcache_htable_insert(lcache_col_t *cache_col, str* attr, str* value,
 		cdb_slow_queries, cdb_total_queries);
 
 	/* replicate */
-	if (cluster_id && isrepl != 1)
+	if (cluster_id && isrepl != 1 && cache_col->replicated)
 		replicate_cache_insert(&cache_col->col_name, attr, value, expires);
 
 	return 1;
@@ -235,7 +235,7 @@ int _lcache_htable_remove(lcache_col_t *cache_col, str* attr, int isrepl)
 		"cachedb_local remove",attr->s,attr->len,0,
 		cdb_slow_queries, cdb_total_queries);
 
-	if (cluster_id && isrepl != 1)
+	if (cluster_id && isrepl != 1 && cache_col->replicated)
 		replicate_cache_remove(&cache_col->col_name, attr);
 
 	return 0;

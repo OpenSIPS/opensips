@@ -56,6 +56,8 @@ typedef struct lcache_col {
 	 * if not used we'll need to throw an error */
 	int is_used;
 
+	int replicated;
+
 	struct lcache_col* next;
 } lcache_col_t;
 

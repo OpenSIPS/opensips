@@ -46,6 +46,10 @@
 			module for details on how to do this and why is it needed.
 		</para>
 		<para>
+			<emphasis>Note:</emphasis> You have to explicitly specify which collections
+			you want to replicate when you set <xref linkend="param_cache_collections"/>.
+		</para>
+		<para>
 			<emphasis role='bold'>Limitations:</emphasis> The clustering operations are not atomic
 			and constistency over the cluster nodes is not guaranteed.
 		</para>
@@ -138,6 +142,10 @@ cache_store("local:group2", ...)
 			used in at least one URL, else you'll receive a WARNING.
 		</para>
 		<para>
+			If clustering is enabled you have to specify which collections you want to replicate
+			with the <emphasis>/r</emphasis> suffix to the collection name.
+		</para>
+		<para>
 			The <emphasis>"default"</emphasis> collection always gets created, even when
 				not included in this list of collections.
 		</para>
@@ -148,7 +156,9 @@ cache_store("local:group2", ...)
 ## creating collection1 with default size (512) and collection2 with custom size
 ## 2^5 (32); we also changed the size of the default collection, which would have been
 ## created anyway from 2^9 - 512 (default value) to 2^4 - 16
-modparam("cachedb_local", "cache_collections", "collection1; collection2 = 5; default = 4")
+## also, collection1 and collection2 will be replicated in the cluster, while the
+## default collection will be local to this node
+modparam("cachedb_local", "cache_collections", "collection1/r; collection2/r = 5; default = 4")
 ...
 	</programlisting>
 		</example>

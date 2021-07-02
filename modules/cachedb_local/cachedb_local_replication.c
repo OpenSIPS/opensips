@@ -53,6 +53,12 @@ int cache_replicated_insert(bin_packet_t *packet)
                 return -1;
         }
 
+        if (!col->replicated) {
+                LM_DBG("Collection: %.*s not configured as replicated, "
+                        "ignoring cache entry\n", col_name.len, col_name.s);
+                return 0;
+        }
+
         if ((_lcache_htable_insert(col, &attr, &value, expires, 1)) < 0) {
                 LM_ERR("Can not insert...\n");
                 return -1;
@@ -80,6 +86,12 @@ int cache_replicated_remove(bin_packet_t *packet)
         if (!col) {
                 LM_ERR("Collection: %.*s not found\n", col_name.len, col_name.s);
                 return -1;
+        }
+
+        if (!col->replicated) {
+                LM_DBG("Collection: %.*s not configured as replicated, "
+                        "ignoring cache remove\n", col_name.len, col_name.s);
+                return 0;
         }
 
         if ((_lcache_htable_remove(col, &attr, 1)) < 0) {
@@ -171,6 +183,9 @@ int receive_sync_request(int node_id)
 
         for ( col=lcache_collection; col; col=col->next ) {
                 LM_DBG("Found collection %.*s\n", col->col_name.len, col->col_name.s);
+
+                if (!col->replicated)
+                        continue;
 
                 for (i =0; i < col->size; i++) {
                         lock_get(&col->col_htable[i].lock);
