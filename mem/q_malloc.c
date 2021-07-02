@@ -185,7 +185,8 @@ struct qm_block *qm_malloc_init(char *address, unsigned long size, char *name)
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
 	LM_DBG("QM_OPTIMIZE=%lu, /ROUNDTO=%lu, %lu-bytes aligned\n",
-			Q_MALLOC_OPTIMIZE, Q_MALLOC_OPTIMIZE/QM_ROUNDTO, QM_ROUNDTO);
+			Q_MALLOC_OPTIMIZE, Q_MALLOC_OPTIMIZE/QM_ROUNDTO,
+			(unsigned long)QM_ROUNDTO);
 	LM_DBG("QM_HASH_SIZE=%lu, qm_block size=%zu, frag_size=%zu\n",
 			QM_HASH_SIZE, sizeof(struct qm_block), FRAG_OVERHEAD);
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);
