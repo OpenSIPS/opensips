@@ -178,8 +178,9 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 
 	/* make address and size multiple of 8*/
 	start=(char*)ROUNDUP((unsigned long) address);
-	LM_DBG("F_OPTIMIZE=%lu, /ROUNDTO=%lu, %zu-bytes aligned\n",
-			F_MALLOC_OPTIMIZE, F_MALLOC_OPTIMIZE/ROUNDTO, ROUNDTO);
+	LM_DBG("F_OPTIMIZE=%lu, /ROUNDTO=%lu, %lu-bytes aligned\n",
+			F_MALLOC_OPTIMIZE, F_MALLOC_OPTIMIZE/ROUNDTO,
+			(unsigned long)ROUNDTO);
 	LM_DBG("F_HASH_SIZE=%lu, fm_block size=%zu, frag_size=%zu\n",
 			F_HASH_SIZE, sizeof(struct fm_block), sizeof(struct fm_frag));
 	LM_DBG("params (%p, %lu), start=%p\n", address, size, start);

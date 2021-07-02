@@ -37,8 +37,8 @@
  * aligned memory */
 	#define QM_ROUNDTO		sizeof(long long)
 #else
-	/* memory alignment, in bytes; a value of 8UL might help with debugging */
-	#define QM_ROUNDTO		16UL
+	/* address alignment, in bytes (2^n) */
+	#define QM_ROUNDTO		sizeof(void *)
 #endif
 
 #define Q_MALLOC_OPTIMIZE_FACTOR 14UL /*used below */
