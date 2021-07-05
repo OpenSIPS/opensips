@@ -485,10 +485,14 @@ inline static int pathmax(void)
 
 /* faster than glibc equivalents */
 #define _isdigit(c) ((c) >= '0' && (c) <= '9')
+#define _isalpha(c) \
+	(((c) >= 'a' && (c) <= 'z') || \
+	 ((c) >= 'A' && (c) <= 'Z'))
 #define _isxdigit(c) \
 	(((c) >= '0' && (c) <= '9') || \
 	 ((c) >= 'a' && (c) <= 'f') || \
 	 ((c) >= 'A' && (c) <= 'F'))
+#define _isalnum(c) (_isalpha(c) || _isdigit(c))
 
 inline static int hex2int(char hex_digit)
 {
