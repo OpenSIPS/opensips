@@ -373,7 +373,6 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 		return -1;
 	}
 
-	*reply = NULL;
 	col = mongoc_client_get_collection(MONGO_CLIENT(con), MONGO_DB_STR(con),
 	                                   bson_iter_utf8(ns, NULL));
 
@@ -412,6 +411,10 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 		fields = &proj;
 #endif
 	}
+
+	if (!reply)
+		goto ok_skip_result;
+	*reply = NULL;
 
 #if MONGOC_CHECK_VERSION(1, 5, 0)
 	start_expire_timer(start, mongo_exec_threshold);
@@ -474,6 +477,8 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	}
 
 	*reply_no = csz;
+
+ok_skip_result:
 	if (opts)
 		bson_destroy(opts);
 	if (query != &_query)
@@ -794,8 +799,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 {
 	static str raw_query_buf;
 
-	struct json_object *obj = NULL;
-	bson_t doc, rpl;
+	bson_t doc = BSON_INITIALIZER, rpl = BSON_INITIALIZER;
 	bson_iter_t iter;
 	bson_error_t error;
 	struct timeval start;
@@ -818,7 +822,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	if (ret < 0) {
 		LM_ERR("Failed to convert [%.*s] to BSON\n", qstr->len, qstr->s);
 		ret = -1;
-		goto out;
+		goto out_err;
 	}
 
 	/* treat "find" differently on pre-3.2 MongoDB servers */
@@ -853,11 +857,14 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	_stop_expire_timer(start, mongo_exec_threshold, "MongoDB raw query",
 	            qstr->s, qstr->len, 0, cdb_slow_queries, cdb_total_queries);
 
+	if (!reply)
+		goto ok_skip_result;
+
 	/* start with a single returned document */
 	*reply = pkg_malloc(1 * sizeof **reply);
 	if (!*reply) {
 		LM_ERR("no more PKG mem\n");
-		return -1;
+		goto out_err;
 	}
 
 	/* expected_kv_no is always 1 for MongoDB */
@@ -865,7 +872,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	if (!**reply) {
 		LM_ERR("No more pkg mem\n");
 		pkg_free(*reply);
-		return -1;
+		goto out_err;
 	}
 
 	if (!bson_iter_init(&iter, &rpl)) {
@@ -875,6 +882,8 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 	}
 
 	do {
+		struct json_object *obj;
+
 		if (csz > 0) {
 			*reply = pkg_realloc(*reply, (csz + 1) * sizeof **reply);
 			if (!*reply) {
@@ -896,6 +905,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		p = json_object_to_json_string(obj);
 		if (!p) {
 			LM_ERR("failed to translate json to string\n");
+			json_object_put(obj);
 			ret = -1;
 			goto out_err;
 		}
@@ -906,6 +916,7 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		(*reply)[csz][0].val.s.s = pkg_malloc(len);
 		if (!(*reply)[csz][0].val.s.s ) {
 			LM_ERR("No more pkg \n");
+			json_object_put(obj);
 			ret = -1;
 			goto out_err;
 		}
@@ -919,24 +930,19 @@ int mongo_con_raw_query(cachedb_con *con, str *qstr, cdb_raw_entry ***reply,
 		csz++;
 	} while (bson_iter_next(&iter));
 
+	*reply_no = csz;
+
+ok_skip_result:
 	bson_destroy(&doc);
 	bson_destroy(&rpl);
 
-out:
-	*reply_no = csz;
-	if (csz == 0)
-		return -2;
-
-	return 1;
+	return csz == 0 ? -2 : 1;
 
 out_err:
 	bson_destroy(&doc);
 	bson_destroy(&rpl);
 
-	if (obj)
-		json_object_put(obj);
-
-	if (*reply) {
+	if (reply && *reply) {
 		for (i = 0; i < csz; i++) {
 			pkg_free((*reply)[i][0].val.s.s);
 			pkg_free((*reply)[i]);
@@ -944,6 +950,7 @@ out_err:
 
 		pkg_free(*reply);
 		*reply = NULL;
+		*reply_no = 0;
 	}
 
 	return ret;
