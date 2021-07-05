@@ -1161,7 +1161,7 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 	str header_str, payload_str, sig_str, params_str;
 	char *p;
 	param_hooks_t _;
-	param_t* params = NULL;
+	param_t* params = NULL, *it;
 	int rc = -1;
 
 	payload_str.s = q_memchr(hdr_buf->s, PPORT_SEPARATOR, hdr_buf->len);
@@ -1213,13 +1213,11 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		LM_INFO("Header parameters missing\n");
 		goto invalid_hdr;
 	}
-	while (params) {
-		if (!str_strcmp(const_str("alg"), &params->name))
-			parsed->alg_hdr_param = params->body;
-		if (!str_strcmp(const_str("ppt"), &params->name))
-			parsed->ppt_hdr_param = params->body;
-
-		params = params->next;
+	for (it = params; it; it = it->next) {
+		if (!str_strcmp(const_str("alg"), &it->name))
+			parsed->alg_hdr_param = it->body;
+		if (!str_strcmp(const_str("ppt"), &it->name))
+			parsed->ppt_hdr_param = it->body;
 	}
 
 	parsed->dec_header.len = calc_max_base64_decode_len(header_str.len);
