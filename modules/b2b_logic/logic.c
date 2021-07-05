@@ -1177,6 +1177,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 	if (!tuple) {
 		lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
+		do_unlock = 1;
 		tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
 			cur_route_ctx.local_index);
 		if(tuple == NULL)
@@ -1202,8 +1203,6 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 		LM_DBG("b2b_entity key = %.*s\n",
 			cur_route_ctx.entity_key.len, cur_route_ctx.entity_key.s);
-
-		do_unlock = 1;
 	}
 
 	method = get_cseq(msg)->method;
@@ -1602,6 +1601,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 	if (!tuple) {
 		lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
+		do_unlock = 1;
 		tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
 			cur_route_ctx.local_index);
 		if(tuple == NULL)
@@ -1624,7 +1624,6 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			goto error;
 		}
 
-		do_unlock = 1;
 	}
 
 	peer = entity->peer;
