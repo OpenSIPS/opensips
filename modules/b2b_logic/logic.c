@@ -1159,11 +1159,10 @@ do{								\
 }while(0)
 
 int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
-	b2bl_entity_id_t *entity)
+	b2bl_entity_id_t *entity, b2bl_entity_id_t **entity_head)
 {
 	str method;
 	b2bl_entity_id_t *peer, *e, *ent;
-	b2bl_entity_id_t** entity_head = NULL;
 	int statuscode;
 	int ret;
 	unsigned int method_value;
@@ -1549,7 +1548,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	cur_route_ctx.flags = 0;
 
 	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR || tuple->reply_routeid <= 0) {
-		if (_b2b_handle_reply(msg, tuple, entity) < 0)
+		if (_b2b_handle_reply(msg, tuple, entity, entity_head) < 0)
 			goto error;
 	} else {
 		cur_route_ctx.entity_type = src;
@@ -2030,7 +2029,7 @@ int b2b_handle_reply(struct sip_msg *msg)
 		return -1;
 	}
 
-	return _b2b_handle_reply(msg, NULL, NULL) ? -1 : 1;
+	return _b2b_handle_reply(msg, NULL, NULL, NULL) ? -1 : 1;
 }
 
 int b2b_pass_request(struct sip_msg *msg)
