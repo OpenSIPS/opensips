@@ -145,8 +145,8 @@ int delete_db_subs(str pres_uri, str ev_stored_name, str to_tag)
 		return -1;
 	}
 
-	CON_SET_CURR_PS(pa_db, &my_ps);
 	LM_DBG("delete subs \n");
+	CON_SET_CURR_PS(pa_db, &my_ps);
 	if(pa_dbf.delete(pa_db, query_cols, 0, query_vals,
 				n_query_cols)< 0 )
 	{
@@ -1201,7 +1201,6 @@ int get_database_info(struct sip_msg* msg, subs_t* subs, int* reply_code, str* r
 	}
 
 	CON_SET_CURR_PS(pa_db, &my_ps);
-
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0,  &result) < 0)
 	{
@@ -1673,10 +1672,8 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	update_vals[0].val.int_val = (int)time(NULL);
 	update_ops[0] = OP_LT;
 
-	CON_SET_CURR_PS(db, &my_ps_delete);
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
-		CON_RESET_CURR_PS(db);
 		return;
 	}
 
@@ -1685,6 +1682,7 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 		/* no clustering, simply delete all expired subs */
 		LM_DBG("delete all expired subscriptions\n");
 
+		CON_SET_CURR_PS(db, &my_ps_delete);
 		if (dbf->delete(db, update_cols, update_ops, update_vals, 1) < 0)
 			LM_ERR("deleting expired information from database\n");
 
@@ -1702,13 +1700,11 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 				sh_tags[i]->len, sh_tags[i]->s);
 
 			update_vals[1].val.str_val = *sh_tags[i];
+			CON_SET_CURR_PS(db, &my_ps_delete);
 			if (dbf->delete(db, update_cols, update_ops, update_vals, 2) < 0)
 				LM_ERR("deleting expired information from database\n");
 			i++;
 		}
-
-		if (i == 0)
-			CON_RESET_CURR_PS(db);
 	}
 
 	return;

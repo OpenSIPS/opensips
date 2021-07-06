@@ -1142,10 +1142,11 @@ static inline int insert_siptrace(st_db_struct_t *st_db,
 		db_vals[13].val.str_val.len = 0;
 	}
 
-	CON_SET_CURR_PS(st_db->con, &siptrace_ps);
-	if (con_set_inslist(&st_db->funcs,st_db->con,
-						&st_db->ins_list,keys,NR_KEYS) < 0 )
+	if (con_set_inslist(&st_db->funcs, st_db->con,
+			&st_db->ins_list, keys, NR_KEYS) < 0) {
 		CON_RESET_INSLIST(st_db->con);
+	}
+	CON_SET_CURR_PS(st_db->con, &siptrace_ps);
 	if(st_db->funcs.insert(st_db->con, keys, vals, NR_KEYS) < 0) {
 		LM_ERR("error storing trace\n");
 		return -1;

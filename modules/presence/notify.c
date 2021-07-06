@@ -564,7 +564,6 @@ int add_waiting_watchers(watcher_t* watchers, str pres_uri, str event)
 	}
 
 //	CON_SET_CURR_PS(pa_db, &my_ps);
-
 	if (pa_dbf.query (pa_db, query_cols, 0, query_vals,
 		 result_cols, n_query_cols, n_result_cols, 0, &result) < 0)
 	{
@@ -1731,9 +1730,9 @@ int presentity_has_subscribers(str* pres_uri, pres_ev_t* event)
 		LM_ERR("in use_table\n");
 		goto error;
 	}
-	CON_SET_CURR_PS(pa_db, ps);
 
-	if ( pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
+	CON_SET_CURR_PS(pa_db, ps);
+	if (pa_dbf.query(pa_db, keys, 0, vals, cols, 3, 1, 0, &res) < 0) {
 		LM_ERR("DB query failed\n");
 		goto error;
 	}
