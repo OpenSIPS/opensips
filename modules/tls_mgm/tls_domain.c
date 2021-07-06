@@ -147,6 +147,7 @@ void tls_free_db_domains(struct tls_domain *dom)
 	while (dom && dom->flags & DOM_FLAG_DB) {
 		tmp = dom;
 		dom = dom->next;
+		map_remove_tls_dom(tmp);
 		tls_free_domain(tmp);
 	}
 }
