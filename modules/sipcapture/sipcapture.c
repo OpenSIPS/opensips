@@ -2752,8 +2752,9 @@ static int sip_capture_store(struct _sipcapture_object *sco,
 	ret=1;
 
 	/* each query has it's own parameters for the prepared statements */
-	if (con_set_inslist(&db_funcs,db_con,&sc_ins_list,db_keys+1,NR_KEYS-1) < 0)
-	               CON_RESET_INSLIST(db_con);
+	if (con_set_inslist(&db_funcs, db_con, &sc_ins_list, db_keys + 1, NR_KEYS - 1) < 0) {
+		CON_RESET_INSLIST(db_con);
+	}
 	CON_SET_CURR_PS(db_con, &sc_ps);
 
 	if (!actx && db_sync_store(db_vals+1, db_keys+1, NR_KEYS-1) != 1) {
@@ -4704,8 +4705,9 @@ static int report_capture(struct sip_msg* msg, str* table, str* cor_id,
 	}
 
 	/* each query has it's own parameters for the prepared statements */
-	if (con_set_inslist(&db_funcs,db_con,&rc_ins_list,db_keys,NR_KEYS) < 0 )
-	               CON_RESET_INSLIST(db_con);
+	if (con_set_inslist(&db_funcs, db_con, &rc_ins_list, db_keys, NR_KEYS) < 0) {
+		CON_RESET_INSLIST(db_con);
+	}
 	CON_SET_CURR_PS(db_con, &rc_ps);
 
 	if (!actx && db_sync_store(db_vals, rtcp_db_keys, rtp_keys_no) != 1) {

@@ -921,7 +921,6 @@ int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt, int tt,
 	vals[10].val.int_val = cid;
 
 	CON_SET_CURR_PS(cc_acc_db_handle, &my_ps);
-
 	if (cc_acc_dbf.insert( cc_acc_db_handle, columns, vals, 11) < 0) {
 		LM_ERR("CDR insert failed\n");
 		return -1;

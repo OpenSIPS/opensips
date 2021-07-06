@@ -651,7 +651,6 @@ static mi_response_t *mi_sync_domain(udomain_t *dom)
 	}
 
 	CON_SET_CURR_PS(ul_dbh, &my_ps);
-
 	if (ul_dbf.delete(ul_dbh, 0, 0, 0, 0) < 0) {
 		LM_ERR("failed to delete from database\n");
 		return 0;
