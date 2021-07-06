@@ -1131,7 +1131,11 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 
 	/* re-INVITE failed - reply the same code to the client
 	 * that started the challenging */
-	b2b_sdp_ack(B2B_SERVER, &ctx->b2b_key);
+	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300)
+		if (b2b_sdp_ack(B2B_SERVER, &ctx->b2b_key) < 0)
+			LM_ERR("Cannot ack recording session for server key %.*s\n",
+					ctx->b2b_key.len, ctx->b2b_key.s);
+
 	list_for_each(it, &ctx->clients) {
 		client = list_entry(it, struct b2b_sdp_client, list);
 		if (client->flags & B2B_SDP_CLIENT_PENDING) {
