@@ -64,6 +64,11 @@ static inline int get_ha1(struct username* _username, str* _domain,
 
 	int n, nc;
 
+	if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
+		LM_ERR("failed to use_table\n");
+		return -1;
+	}
+
 	col = pkg_malloc(sizeof(*col) * (credentials_n + 1));
 	if (col == NULL) {
 		LM_ERR("no more pkg memory\n");
@@ -96,12 +101,6 @@ static inline int get_ha1(struct username* _username, str* _domain,
 		VAL_STR(vals + 1) = _username->domain;
 	} else {
 		VAL_STR(vals + 1) = *_domain;
-	}
-
-	if (auth_dbf.use_table(auth_db_handle, _table) < 0) {
-		LM_ERR("failed to use_table\n");
-		pkg_free(col);
-		return -1;
 	}
 
 	n = (use_domain ? 2 : 1);
