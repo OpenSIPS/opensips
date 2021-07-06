@@ -1673,10 +1673,8 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 	update_vals[0].val.int_val = (int)time(NULL);
 	update_ops[0] = OP_LT;
 
-	CON_PS_REFERENCE(db) = &my_ps_delete;
 	if (dbf->use_table(db, &active_watchers_table) < 0) {
 		LM_ERR("deleting expired information from database\n");
-		CON_RESET_CURR_PS(db);
 		return;
 	}
 
@@ -1702,13 +1700,12 @@ void update_db_subs(db_con_t *db,db_func_t *dbf, shtable_t hash_table,
 				sh_tags[i]->len, sh_tags[i]->s);
 
 			update_vals[1].val.str_val = *sh_tags[i];
+			CON_PS_REFERENCE(db) = &my_ps_delete;
 			if (dbf->delete(db, update_cols, update_ops, update_vals, 2) < 0)
 				LM_ERR("deleting expired information from database\n");
 			i++;
 		}
 
-		if (i == 0)
-			CON_RESET_CURR_PS(db);
 	}
 
 	return;
