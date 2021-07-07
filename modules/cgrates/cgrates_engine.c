@@ -158,20 +158,14 @@ int cgrc_conn(struct cgr_conn *c)
 {
 	int s = -1;
 	union sockaddr_union my_name;
-	int my_name_len;
 	struct ip_addr *ip;
 
 	if (cgre_bind_ip.s) {
-		my_name_len = sizeof(struct sockaddr_in);
 		if ((ip = str2ip(&cgre_bind_ip)) == NULL) {
 			LM_ERR("invalid ip in bind_ip: %s\n", cgre_bind_ip.s);
 			goto error;
 		}
 		init_su(&my_name, ip, 0);
-		if (bind(s, &my_name.s, my_name_len )!=0) {
-			LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
-			goto error;
-		}
 		s = tcp_sync_connect_fd(&my_name, &c->engine->su);
 	} else
 		s = tcp_sync_connect_fd(NULL, &c->engine->su);
