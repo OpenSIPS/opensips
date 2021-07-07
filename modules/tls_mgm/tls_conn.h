@@ -45,7 +45,7 @@
 /*
  * dump ssl error stack
  */
-static void tls_print_errstack(void)
+static inline void tls_print_errstack(void)
 {
 	int             code;
 

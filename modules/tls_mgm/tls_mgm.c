@@ -875,6 +875,7 @@ static int load_certificate(SSL_CTX * ctx, char *filename)
 		#ifndef NO_SSL_GLOBAL_LOCK
 		tls_global_lock_release();
 		#endif
+		tls_print_errstack();
 		LM_ERR("unable to load certificate file '%s'\n",
 				filename);
 		return -1;
@@ -909,6 +910,7 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 	tls_global_lock_get();
 	#endif
 	if (! SSL_CTX_use_certificate(ctx, cert)) {
+		tls_print_errstack();
 		#ifndef NO_SSL_GLOBAL_LOCK
 		tls_global_lock_release();
 		#endif
@@ -928,6 +930,7 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 		tls_global_lock_get();
 		#endif
 		if (!SSL_CTX_add_extra_chain_cert(ctx, cert)){
+			tls_print_errstack();
 			#ifndef NO_SSL_GLOBAL_LOCK
 			tls_global_lock_release();
 			#endif
@@ -1050,6 +1053,7 @@ static int load_ca(SSL_CTX * ctx, char *filename)
 	tls_global_lock_get();
 	#endif
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
+		tls_print_errstack();
 		#ifndef NO_SSL_GLOBAL_LOCK
 		tls_global_lock_release();
 		#endif
@@ -1173,6 +1177,7 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 	}
 
 	if( ! ret_pwd ) {
+		tls_print_errstack();
 		#ifndef NO_SSL_GLOBAL_LOCK
 		tls_global_lock_release();
 		#endif
@@ -1227,6 +1232,7 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 
 	BIO_free(kbio);
 	if(!key) {
+		tls_print_errstack();
 		#ifndef NO_SSL_GLOBAL_LOCK
 		tls_global_lock_release();
 		#endif
