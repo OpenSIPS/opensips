@@ -544,6 +544,7 @@ static inline int new_avp_extra_alias(const str *alias)
 	lock_get(extra_lock);
 	id = (*last_avp_index_shm) + 1;
 	if (map_put(avp_map_shm, *alias, int2p(id))) {
+		lock_release(extra_lock);
 		LM_WARN("[BUG] Value should have already be found [%.*s]\n",
 				alias->len, alias->s);
 		return -1;
