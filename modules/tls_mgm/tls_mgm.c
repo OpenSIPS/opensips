@@ -829,6 +829,7 @@ static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
 static int load_certificate(SSL_CTX * ctx, char *filename)
 {
 	if (!SSL_CTX_use_certificate_chain_file(ctx, filename)) {
+		tls_print_errstack();
 		LM_ERR("unable to load certificate file '%s'\n",
 				filename);
 		return -1;
@@ -857,6 +858,7 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 	}
 
 	if (! SSL_CTX_use_certificate(ctx, cert)) {
+		tls_print_errstack();
 		LM_ERR("Unable to use certificate\n");
 		X509_free(cert);
 		BIO_free(cbio);
@@ -867,6 +869,7 @@ static int load_certificate_db(SSL_CTX * ctx, str *blob)
 
 	while ((cert = PEM_read_bio_X509(cbio, NULL, 0, NULL)) != NULL) {
 		if (!SSL_CTX_add_extra_chain_cert(ctx, cert)){
+			tls_print_errstack();
 			tls_dump_cert_info("Unable to add chain cert: ", cert);
 			X509_free(cert);
 			BIO_free(cbio);
@@ -980,6 +983,7 @@ static int load_crl(SSL_CTX * ctx, char *crl_directory, int crl_check_all)
 static int load_ca(SSL_CTX * ctx, char *filename)
 {
 	if (!SSL_CTX_load_verify_locations(ctx, filename, 0)) {
+		tls_print_errstack();
 		LM_ERR("unable to load ca '%s'\n", filename);
 		return -1;
 	}
@@ -1085,6 +1089,7 @@ static int load_private_key(SSL_CTX * ctx, char *filename)
 	}
 
 	if( ! ret_pwd ) {
+		tls_print_errstack();
 		LM_ERR("unable to load private key file '%s'\n",
 				filename);
 		return -1;
@@ -1127,6 +1132,7 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 
 	BIO_free(kbio);
 	if(!key) {
+		tls_print_errstack();
 		LM_ERR("unable to load private key from buffer\n");
 		return -1;
 	}
