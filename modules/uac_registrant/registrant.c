@@ -110,6 +110,7 @@ uac_auth_api_t uac_auth_api;
 
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
+unsigned int match_contact = URI_MATCH_ALL;
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
@@ -139,6 +140,7 @@ static param_export_t params[]= {
 	{"hash_size",		INT_PARAM,			&reg_hsize},
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
+	{"match_contact",	INT_PARAM,			&match_contact},
 	{"enable_clustering",	INT_PARAM,			&enable_clustering},
 	{"db_url",		STR_PARAM,			&db_url.s},
 	{"table_name",		STR_PARAM,			&reg_table_name.s},
@@ -481,8 +483,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		contact = ((contact_body_t*)msg->contact->parsed)->contacts;
 		while (contact) {
 			/* Check for binding */
-			if (contact->uri.len==rec->contact_uri.len &&
-				strncmp(contact->uri.s,rec->contact_uri.s,contact->uri.len)==0){
+			if (compare_uris_parts(&contact->uri, &rec->contact_uri, (enum uri_match_flags)match_contact) == 0) {
 				if (contact->expires && contact->expires->body.len) {
 					if (str2int(&contact->expires->body, &exp)<0) {
 						LM_ERR("Unable to extract expires from [%.*s]"
