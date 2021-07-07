@@ -627,6 +627,7 @@ void tcp_disconnect_event_raise(struct tcp_connection* c)
 	evi_params_p list = 0;
 	str src_ip,dst_ip, proto;
 	int src_port,dst_port;
+	char src_ip_buf[IP_ADDR_MAX_STR_SIZE],dst_ip_buf[IP_ADDR_MAX_STR_SIZE];
 
 	// event has to be triggered - check for subscribers
 	if (!evi_probe_event(EVI_TCP_DISCONNECT)) {
@@ -637,6 +638,8 @@ void tcp_disconnect_event_raise(struct tcp_connection* c)
 		goto end;
 
 	src_ip.s = ip_addr2a( &c->rcv.src_ip );
+	memcpy(src_ip_buf,src_ip.s,IP_ADDR_MAX_STR_SIZE);
+	src_ip.s = src_ip_buf;
 	src_ip.len = strlen(src_ip.s);
 
 	if (evi_param_add_str(list, &e_tcp_src_ip, &src_ip)) {
@@ -652,6 +655,8 @@ void tcp_disconnect_event_raise(struct tcp_connection* c)
 	}
 
 	dst_ip.s = ip_addr2a( &c->rcv.dst_ip );
+	memcpy(dst_ip_buf,dst_ip.s,IP_ADDR_MAX_STR_SIZE);
+	dst_ip.s = dst_ip_buf;
 	dst_ip.len = strlen(dst_ip.s);
 
 	if (evi_param_add_str(list, &e_tcp_dst_ip, &dst_ip)) {
