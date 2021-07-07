@@ -1005,14 +1005,13 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 release:
 	lock_release(&client->ctx->lock);
 	/* avoid sending reply under lock */
-	if (ret == -2) {
-		b2b_sdp_reply(&client->ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 503, NULL);
-		b2b_sdp_ctx_free(client->ctx);
-	} else if (body) {
+	if (body) {
 		/* we are done - answer the call */
 		if (b2b_sdp_reply(&client->ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
 			LM_CRIT("could not answer B2B call!\n");
 		pkg_free(body->s);
+	} else if (ret == -2) {
+		b2b_sdp_reply(&client->ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 503, NULL);
 	}
 	return ret;
 }
