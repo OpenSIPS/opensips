@@ -979,7 +979,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 	}
 	/* we have a final reply for this client */
 	client->ctx->pending_no--;
-	client->flags &= ~B2B_SDP_CLIENT_EARLY;
+	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING);
 
 	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300) {
 		body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
@@ -1192,6 +1192,51 @@ static int b2b_sdp_server_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 	return 0;
 }
 
+static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
+{
+	str method = str_init(INVITE);
+	sdp_info_t sdp;
+	struct list_head *it;
+	str *body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	struct b2b_sdp_client *client;
+	b2b_req_data_t req_data;
+
+	if (!body) {
+		LM_WARN("re-INVITE without a body - declining\n");
+		goto error;
+	}
+	if (parse_sdp_session(body, 0, NULL, &sdp) < 0) {
+		LM_ERR("could not parse re-INVITE body\n");
+		goto error;
+	}
+
+	lock_get(&ctx->lock);
+	list_for_each(it, &ctx->clients) {
+		client = list_entry(it, struct b2b_sdp_client, list);
+		body = b2b_sdp_demux_body(client, &sdp);
+		if (!body) {
+			LM_ERR("could not get new body for client!\n");
+			continue;
+		}
+		ctx->pending_no++;
+		client->flags |= B2B_SDP_CLIENT_PENDING;
+		memset(&req_data, 0, sizeof(b2b_req_data_t));
+		req_data.et = B2B_CLIENT;
+		req_data.b2b_key = &client->b2b_key;
+		req_data.method = &method;
+		req_data.body = body;
+		if (b2b_api.send_request(&req_data) < 0) {
+
+		}
+	}
+	lock_release(&ctx->lock);
+
+	return 0;
+error:
+	b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 606, NULL);
+	return -1;
+}
+
 static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *param)
 {
 	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
@@ -1211,6 +1256,8 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *
 		switch (msg->REQ_METHOD) {
 			case METHOD_ACK:
 				return 0;
+			case METHOD_INVITE:
+				return b2b_sdp_server_invite(msg, ctx);
 			case METHOD_BYE:
 				return b2b_sdp_server_bye(msg, ctx);
 		}
@@ -1300,7 +1347,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		ci.body = body;
 		ci.extra_headers = &client->hdrs;
 
-		client->flags |= B2B_SDP_CLIENT_EARLY;
+		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
 		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
 				&b2b_sdp_demux_client_cap, &hack, NULL);
 		pkg_free(body->s);
