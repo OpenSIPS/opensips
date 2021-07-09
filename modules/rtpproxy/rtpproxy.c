@@ -431,21 +431,21 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE | ONREPLY_ROUTE},
+		REQUEST_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE},
 	{"rtpproxy_stream2uas", (cmd_function)rtpproxy_stream2uas4_f, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE | ONREPLY_ROUTE},
+		REQUEST_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE},
 	{"rtpproxy_stop_stream2uac", (cmd_function)rtpproxy_stop_stream2uac2_f, {
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE | ONREPLY_ROUTE},
+		REQUEST_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE},
 	{"rtpproxy_stop_stream2uas", (cmd_function)rtpproxy_stop_stream2uas2_f, {
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
-		REQUEST_ROUTE | ONREPLY_ROUTE},
+		REQUEST_ROUTE | ONREPLY_ROUTE | LOCAL_ROUTE},
 	{"rtpproxy_stats", (cmd_function)rtpproxy_stats_f, {
 		{CMD_PARAM_VAR, 0, 0},
 		{CMD_PARAM_VAR, 0, 0},
