@@ -34,6 +34,7 @@ static dep_export_t mod_deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ NULL, NULL },
 	},
 };
 
@@ -41,6 +42,12 @@ static b2b_api_t b2b_api;
 static str b2b_sdp_demux_server_cap = str_init("b2b_sdp_demux_server");
 static str b2b_sdp_demux_client_cap = str_init("b2b_sdp_demux_client");
 static str content_type_sdp_hdr = str_init("Content-Type: application/sdp\r\n");
+
+static enum {
+	B2B_SDP_BYE_DISABLE_TERMINATE,
+	B2B_SDP_BYE_DISABLE,
+	B2B_SDP_BYE_TERMINATE
+} b2b_sdp_bye_mode = B2B_SDP_BYE_DISABLE;
 
 static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 		pv_spec_t *hdrs, pv_spec_t *streams);
@@ -104,6 +111,28 @@ static int mod_init(void)
 	return 0;
 }
 
+static int b2b_sdp_parse_bye_mode(unsigned int type, void *val)
+{
+	str mode;
+	init_str(&mode, (char *)val);
+
+	if (str_strcasecmp(&mode, _str("disable-terminate")) == 0)
+		b2b_sdp_bye_mode = B2B_SDP_BYE_DISABLE_TERMINATE;
+	else if (str_strcasecmp(&mode, _str("disable")) == 0)
+		b2b_sdp_bye_mode = B2B_SDP_BYE_DISABLE;
+	else if (str_strcasecmp(&mode, _str("terminate")) == 0)
+		b2b_sdp_bye_mode = B2B_SDP_BYE_TERMINATE;
+	else
+		LM_ERR("unknown client_bye_mode mode: %.*s\n", mode.len, mode.s);
+
+	return 0;
+}
+
+static param_export_t mod_params[]={
+	{ "client_bye_mode", STR_PARAM|USE_FUNC_PARAM, b2b_sdp_parse_bye_mode },
+	{ 0,                 0,                        0                       }
+};
+
 
 /** Module interface */
 struct module_exports exports= {
@@ -115,7 +144,7 @@ struct module_exports exports= {
 	&mod_deps,                      /* OpenSIPS module dependencies */
 	mod_cmds,                       /* exported functions */
 	0,                              /* exported async functions */
-	0,                              /* exported parameters */
+	mod_params,                     /* exported parameters */
 	0,                              /* exported statistics */
 	0,                              /* exported MI functions */
 	0,                              /* exported pseudo-variables */
@@ -783,36 +812,68 @@ static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
 static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
 	str *body;
-	str method = str_init("INVITE");
+	str method;
 	b2b_req_data_t req_data;
 	struct b2b_sdp_ctx *ctx = client->ctx;
+	struct list_head *it, *safe;
 
 	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 	lock_get(&client->ctx->lock);
 	b2b_sdp_client_release(client, 0);
-	/* also notify the upstream */
-	body = b2b_sdp_mux_body(ctx);
-	if (body) {
-		/* we do a busy waiting if there's a different negociation happening */
-		while (ctx->pending_no) {
-			lock_release(&client->ctx->lock);
-			usleep(50);
-			lock_get(&client->ctx->lock);
-		}
-		ctx->pending_no = 1;
-		lock_release(&client->ctx->lock);
-		memset(&req_data, 0, sizeof(b2b_req_data_t));
-		req_data.et = B2B_SERVER;
-		req_data.b2b_key = &ctx->b2b_key;
-		req_data.method = &method;
-		req_data.body = body;
-		req_data.no_cb = 1;
-		if (b2b_api.send_request(&req_data) < 0)
-			LM_ERR("cannot send upstream INVITE\n");
-	} else {
-		lock_release(&client->ctx->lock);
+
+	switch (b2b_sdp_bye_mode) {
+
+		case B2B_SDP_BYE_TERMINATE:
+			lock_release(&ctx->lock);
+			/* release all other clients */
+			list_for_each_safe(it, safe, &ctx->clients) {
+				client = list_entry(it, struct b2b_sdp_client, list);
+				b2b_sdp_client_terminate(client, NULL);
+				b2b_sdp_client_release(client, 0);
+			}
+			lock_get(&ctx->lock);
+			/* fallback - it will definitely hit the next if and release lock */
+
+		case B2B_SDP_BYE_DISABLE_TERMINATE:
+			if (list_size(&ctx->clients) == 0) {
+				init_str(&method, "BYE");
+				memset(&req_data, 0, sizeof(b2b_req_data_t));
+				req_data.et = B2B_SERVER;
+				req_data.b2b_key = &ctx->b2b_key;
+				req_data.method = &method;
+				if (b2b_api.send_request(&req_data) < 0)
+					LM_ERR("cannot send upstream BYE\n");
+				lock_release(&ctx->lock);
+				break;
+			}
+			/* fallback */
+
+		case B2B_SDP_BYE_DISABLE:
+			/* also notify the upstream */
+			body = b2b_sdp_mux_body(ctx);
+			if (body) {
+				/* we do a busy waiting if there's a different negociation happening */
+				while (ctx->pending_no) {
+					lock_release(&ctx->lock);
+					usleep(50);
+					lock_get(&ctx->lock);
+				}
+				ctx->pending_no = 1;
+				lock_release(&ctx->lock);
+				memset(&req_data, 0, sizeof(b2b_req_data_t));
+				init_str(&method, "INVITE");
+				req_data.et = B2B_SERVER;
+				req_data.b2b_key = &ctx->b2b_key;
+				req_data.method = &method;
+				req_data.body = body;
+				if (b2b_api.send_request(&req_data) < 0)
+					LM_ERR("cannot send upstream INVITE\n");
+			} else {
+				lock_release(&ctx->lock);
+			}
+			break;
 	}
 	return 0;
 }
@@ -1126,7 +1187,7 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 	str *body = NULL;
 	sdp_info_t sdp;
 	struct list_head *it;
-	struct b2b_sdp_client *client;
+	struct b2b_sdp_client *client = NULL;
 
 	/* re-INVITE failed - reply the same code to the client
 	 * that started the challenging */
@@ -1146,7 +1207,7 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 	}
 	if (!client) {
 		ctx->pending_no = 0;
-		lock_release(&client->ctx->lock);
+		lock_release(&ctx->lock);
 		LM_DBG("cannot identify a pending client!\n");
 		return -1;
 	}
@@ -1182,6 +1243,12 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 	lock_get(&client->ctx->lock);
 	ctx->pending_no = 0;
 	lock_release(&client->ctx->lock);
+	return 0;
+}
+
+static int b2b_sdp_server_reply_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
+{
+	b2b_sdp_ctx_free(ctx);
 	return 0;
 }
 
@@ -1275,6 +1342,8 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *
 		switch (get_cseq(msg)->method_id) {
 			case METHOD_INVITE:
 				return b2b_sdp_server_reply_invite(msg, ctx);
+			case METHOD_BYE:
+				return b2b_sdp_server_reply_bye(msg, ctx);
 		}
 		LM_ERR("reply message %d for %.*s not handled\n", msg->REPLY_STATUS,
 				get_cseq(msg)->method.len, get_cseq(msg)->method.s);
