@@ -28,6 +28,7 @@
 #include "codecs.h"
 #include "../../route.h"
 #include "../../mod_fix.h"
+#include "../../ut.h"
 
 #define MAX_STREAMS 64
 
@@ -511,7 +512,9 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 
 				if(op == FIND)
 				{
-					ret = 1;
+					str2sint(&(payload->rtp_payload), &ret);
+					if( (ret >= 0) && (ret <= 34) ) /* if a fixed payload ID then just return 1 */
+						ret = 1;
 					goto end;
 				}
 
