@@ -29,22 +29,14 @@
 #define free_cloned_msg_unsafe( _msg ) \
 	do { \
 		if ((_msg)->msg_flags & FL_SHM_UPDATABLE) { \
-			if ((_msg)->new_uri.s) \
-				shm_free_bulk((_msg)->new_uri.s);\
-			if ((_msg)->dst_uri.s) \
-				shm_free_bulk((_msg)->dst_uri.s);\
-			if ((_msg)->path_vec.s) \
-				shm_free_bulk((_msg)->path_vec.s);\
-			if ((_msg)->set_global_address.s) \
-				shm_free_bulk((_msg)->set_global_address.s);\
-			if ((_msg)->set_global_port.s) \
-				shm_free_bulk((_msg)->set_global_port.s);\
-			if ((_msg)->add_rm) \
-				shm_free_bulk((_msg)->add_rm);\
-			if ((_msg)->body_lumps) \
-				shm_free_bulk((_msg)->body_lumps);\
-			if ((_msg)->reply_lump) \
-				shm_free_bulk((_msg)->reply_lump);\
+			shm_free_bulk((_msg)->new_uri.s);\
+			shm_free_bulk((_msg)->dst_uri.s);\
+			shm_free_bulk((_msg)->path_vec.s);\
+			shm_free_bulk((_msg)->set_global_address.s);\
+			shm_free_bulk((_msg)->set_global_port.s);\
+			shm_free_bulk((_msg)->add_rm);\
+			shm_free_bulk((_msg)->body_lumps);\
+			shm_free_bulk((_msg)->reply_lump);\
 		}\
 		if ((_msg)->body) { \
 			/* ungly hack to free the body parts which do not support
@@ -60,22 +52,14 @@
 #define free_cloned_msg( _msg ) \
 	do { \
 		if ((_msg)->msg_flags & FL_SHM_UPDATABLE) { \
-			if ((_msg)->new_uri.s) \
-				shm_free((_msg)->new_uri.s);\
-			if ((_msg)->dst_uri.s) \
-				shm_free((_msg)->dst_uri.s);\
-			if ((_msg)->path_vec.s) \
-				shm_free((_msg)->path_vec.s);\
-			if ((_msg)->set_global_address.s) \
-				shm_free((_msg)->set_global_address.s);\
-			if ((_msg)->set_global_port.s) \
-				shm_free((_msg)->set_global_port.s);\
-			if ((_msg)->add_rm) \
-				shm_free((_msg)->add_rm);\
-			if ((_msg)->body_lumps) \
-				shm_free((_msg)->body_lumps);\
-			if ((_msg)->reply_lump) \
-				shm_free((_msg)->reply_lump);\
+			shm_free((_msg)->new_uri.s);\
+			shm_free((_msg)->dst_uri.s);\
+			shm_free((_msg)->path_vec.s);\
+			shm_free((_msg)->set_global_address.s);\
+			shm_free((_msg)->set_global_port.s);\
+			shm_free((_msg)->add_rm);\
+			shm_free((_msg)->body_lumps);\
+			shm_free((_msg)->reply_lump);\
 		}\
 		free_sip_body((_msg)->body);\
 		shm_free((_msg));\

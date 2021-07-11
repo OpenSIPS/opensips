@@ -3222,8 +3222,7 @@ error:
 	if (hep_id)
 		tprot.release_trace_dest(hep_id);
 	lock_release(dyn_trace_lock);
-	if (elem)
-		shm_free(elem);
+	shm_free(elem);
 	return NULL;
 }
 

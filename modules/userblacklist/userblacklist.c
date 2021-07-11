@@ -412,7 +412,7 @@ static void destroy_source_list(void)
 			struct source_t *src = sources->head;
 			sources->head = src->next;
 
-			if (src->table) shm_free(src->table);
+			shm_free(src->table);
 			dt_destroy(&(src->dt_root));
 			shm_free(src);
 		}

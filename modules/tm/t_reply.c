@@ -268,8 +268,8 @@ inline static int update_totag_set(struct cell *t, struct sip_msg *ok)
 
 	if (!s || !n) {
 		LM_ERR("no more share memory \n");
-		if (n) shm_free(n);
-		if (s) shm_free(s);
+		shm_free(n);
+		shm_free(s);
 		return 0;
 	}
 	memset(n, 0, sizeof(struct totag_elem));
