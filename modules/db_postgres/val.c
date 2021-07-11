@@ -263,21 +263,21 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 
 	case DB_STR:
 		l = VAL_STR(_v).len;
-		if (*_len < (l * 2 + 3)) {
+		if (*_len < (VAL_STR(_v).len * 2 + 3)) {
 			LM_ERR("destination STR buffer too short (have %d, need %d)\n",
-			       *_len, l * 2 + 3);
+			       *_len, VAL_STR(_v).len * 2 + 3);
 			return -5;
 		} else {
 			old_s = _s;
 			*_s++ = '\'';
-			ret = PQescapeStringConn(CON_CONNECTION(_con), _s, VAL_STRING(_v),
-					l, &pgret);
+			ret = PQescapeStringConn(CON_CONNECTION(_con), _s, VAL_STR(_v).s,
+					VAL_STR(_v).len, &pgret);
 			if(pgret!=0)
 			{
 				LM_ERR("PQescapeStringConn failed \n");
 				return -5;
 			}
-	        LM_DBG("PQescapeStringConn: in: %d chars, out: %d chars\n", l, ret);
+			LM_DBG("PQescapeStringConn: in: %d chars, out: %d chars\n", VAL_STR(_v).len, ret);
 			_s += ret;
 			*_s++ = '\'';
 			*_s = '\0'; /* FIXME */
