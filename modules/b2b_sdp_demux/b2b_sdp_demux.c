@@ -393,7 +393,8 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key, in
 	req_data.b2b_key = key;
 	req_data.method = &method;
 	b2b_api.send_request(&req_data);
-	b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
+	if (!cb)
+		b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
 }
 
 
@@ -1086,6 +1087,7 @@ static int b2b_sdp_client_reply_bye(struct sip_msg *msg, struct b2b_sdp_client *
 	str method;
 	b2b_req_data_t req_data;
 	struct b2b_sdp_ctx *ctx = client->ctx;
+	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 	lock_get(&ctx->lock);
 	b2b_sdp_client_release(client, 0);
 	if (list_size(&ctx->clients) == 0) {
