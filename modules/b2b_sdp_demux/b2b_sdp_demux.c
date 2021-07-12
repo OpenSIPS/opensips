@@ -388,7 +388,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key, in
 		init_str(&method, BYE);
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
-	req_data.no_cb = 1; /* do not call callback */
+	req_data.no_cb = !cb; /* do not call callback */
 	req_data.et = B2B_CLIENT;
 	req_data.b2b_key = key;
 	req_data.method = &method;
