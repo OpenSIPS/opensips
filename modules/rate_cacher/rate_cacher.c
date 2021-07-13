@@ -1869,6 +1869,7 @@ static int script_get_vendor_price(struct sip_msg *msg, str *vendorid,
 		unlock_bucket_read( entry->lock );
 		LM_ERR("No prefix match for %.*s on vendor %.*s \n",
 		dnis->len,dnis->s,vendorid->len,vendorid->s);
+		return -1;
 	}
 
 	pv_val.flags = PV_VAL_STR;
