@@ -133,6 +133,7 @@ typedef int (*b2b_send_reply_t)(b2b_rpl_data_t*);
 
 typedef void (*b2b_entity_delete_t)(enum b2b_entity_type et, str* b2b_key,
 	 b2b_dlginfo_t* dlginfo, int db_del, int replicate);
+typedef int (*b2b_entity_exists_t)(enum b2b_entity_type et, str* b2b_key);
 typedef void (*b2b_db_delete_t)(str param);
 
 typedef int (*b2b_restore_linfo_t)(enum b2b_entity_type type, str* key,
@@ -156,6 +157,7 @@ typedef struct b2b_api
 	b2b_send_request_t        send_request;
 	b2b_send_reply_t          send_reply;
 	b2b_entity_delete_t       entity_delete;
+	b2b_entity_exists_t       entity_exists;
 	b2b_db_delete_t           entities_db_delete;
 	b2b_restore_linfo_t       restore_logic_info;
 	b2b_reg_cb_t       		  register_cb;

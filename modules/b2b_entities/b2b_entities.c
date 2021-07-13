@@ -591,6 +591,7 @@ int b2b_entities_bind(b2b_api_t* api)
 	api->send_request       = b2b_send_request;
 	api->send_reply         = b2b_send_reply;
 	api->entity_delete      = b2b_entity_delete;
+	api->entity_exists      = b2b_entity_exists;
 	api->restore_logic_info = b2b_restore_logic_info;
 	api->register_cb 		= b2b_register_cb;
 	api->update_b2bl_param  = b2b_update_b2bl_param;

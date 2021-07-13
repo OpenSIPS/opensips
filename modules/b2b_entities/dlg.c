@@ -1851,6 +1851,31 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		bin_free_packet(&storage);
 }
 
+int b2b_entity_exists(enum b2b_entity_type et, str* b2b_key)
+{
+	b2b_table table;
+	b2b_dlg_t* dlg;
+	unsigned int hash_index, local_index;
+
+	if(et == B2B_SERVER)
+		table = server_htable;
+	else
+		table = client_htable;
+
+	/* parse the key and find the position in hash table */
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	{
+		LM_ERR("Wrong format for b2b key\n");
+		return 0;
+	}
+
+	lock_get(&table[hash_index].lock);
+	dlg = b2b_search_htable(table, hash_index, local_index);
+	lock_release(&table[hash_index].lock);
+
+	return dlg?1:0;
+}
+
 void shm_free_param(void* param)
 {
 	shm_free(param);
