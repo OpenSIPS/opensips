@@ -417,9 +417,9 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 
 	return;
 error:
-	lock_release(&b2bl_htable[hash_index].lock);
 	if (tuple && !old_tuple)
 		b2bl_delete(tuple, hash_index, 0, 0);
+	lock_release(&b2bl_htable[hash_index].lock);
 	if (entity) {
 		if (entity->dlginfo)
 			shm_free(entity->dlginfo);
