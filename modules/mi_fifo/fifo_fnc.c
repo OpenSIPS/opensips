@@ -662,8 +662,6 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 	int rc;
 	str buf;
 
-	reply_stream = NULL;
-
 	/* commands must look this way ':[filename]:' */
 	if (mi_read_fifo(mi_buf + remain_len,
 			MAX_MI_FIFO_BUFFER - remain_len,
@@ -671,9 +669,12 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 		LM_ERR("failed to read command\n");
 		goto skip_unparsed;
 	}
-	remain_len = read_len;
-	parse_len = read_len;
+	parse_len = remain_len + read_len;
+
+retry:
 	p = mi_buf;
+	reply_stream = NULL;
+
 
 	while (parse_len && is_ws(*p)) {
 		p++;
@@ -689,7 +690,7 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 		return -1;
 	}
 	if (*p!=MI_CMD_SEPARATOR) {
-		LM_ERR("command must begin with %c: %.*s\n",
+		LM_ERR("command must begin with '%c': %.*s\n",
 			MI_CMD_SEPARATOR, parse_len, p);
 		goto skip_unparsed;
 	}
@@ -698,8 +699,8 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 	file = p;
 	file_sep=memchr(p, MI_CMD_SEPARATOR , parse_len);
 	if (file_sep==NULL) {
-		LM_ERR("file separator missing: %.*s\n", read_len, mi_buf);
-		goto skip_unparsed;
+		LM_DBG("file separator missing: %.*s\n", read_len, mi_buf);
+		return 0;
 	}
 	if (file_sep - file + 1 >= parse_len) {
 		LM_DBG("no command specified yet: %.*s\n", read_len, mi_buf);
@@ -726,6 +727,11 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 		LM_ERR("cannot parse command: %.*s\n", parse_len, p);
 		return -1;
 	}
+
+	if (parse_end)
+		LM_DBG("running command [%.*s]\n", (int)(parse_end - p), p);
+	else
+		LM_DBG("running command [%s]\n", p);
 
 	if (parse_end && parse_len != parse_end - p) {
 		parse_len -= parse_end - p;
@@ -781,13 +787,16 @@ int mi_fifo_callback(int fd, void *fs, int was_timeout)
 		}
 		/* if there is no file specified, there is nothing to reply */
 	} else
-		goto skip_unparsed;
+		goto end;
 
 free_request:
 	free_async_handler(hdl);
 	free_mi_request_parsed(&request);
 	if (reply_stream)
 		fclose(reply_stream);
+end:
+	if (parse_len)
+		goto retry;
 	return 0;
 skip_unparsed:
 	remain_len = 0;
