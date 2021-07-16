@@ -648,7 +648,7 @@ static inline struct mi_handler* build_async_handler(char *name, int len, mi_ite
 
 void mi_fifo_server(FILE *fifo_stream)
 {
-	const char **parse_end = NULL;
+	const char *parse_end;
 	mi_request_t request;
 	int read_len, parse_len;
 	char *req_method = NULL;
@@ -662,7 +662,6 @@ void mi_fifo_server(FILE *fifo_stream)
 	str buf;
 
 	while(1) {
-		reply_stream = NULL;
 
 		/* commands must look this way ':[filename]:' */
 		if (mi_read_fifo(mi_buf + remain_len,
@@ -671,8 +670,10 @@ void mi_fifo_server(FILE *fifo_stream)
 			LM_ERR("failed to read command\n");
 			goto skip_unparsed;
 		}
-		remain_len = read_len;
-		parse_len = read_len;
+		parse_len = remain_len + read_len;
+
+retry:
+		reply_stream = NULL;
 		p = mi_buf;
 
 		while (parse_len && is_ws(*p)) {
@@ -689,7 +690,7 @@ void mi_fifo_server(FILE *fifo_stream)
 			continue;
 		}
 		if (*p!=MI_CMD_SEPARATOR) {
-			LM_ERR("command must begin with %c: %.*s\n", MI_CMD_SEPARATOR, parse_len, p);
+			LM_ERR("command must begin with '%c': [%.*s]\n", MI_CMD_SEPARATOR, parse_len, p);
 			goto skip_unparsed;
 		}
 		p++;
@@ -697,8 +698,8 @@ void mi_fifo_server(FILE *fifo_stream)
 		file = p;
 		file_sep=memchr(p, MI_CMD_SEPARATOR , parse_len);
 		if (file_sep==NULL) {
-			LM_ERR("file separator missing: %.*s\n", read_len, mi_buf);
-			goto skip_unparsed;
+			LM_DBG("file separator missing: %.*s\n", read_len, mi_buf);
+			continue;
 		}
 		if (file_sep - file + 1 >= parse_len) {
 			LM_DBG("no command specified yet: %.*s\n", read_len, mi_buf);
@@ -721,14 +722,18 @@ void mi_fifo_server(FILE *fifo_stream)
 		/* make the command null terminated */
 		p[parse_len] = '\0';
 		memset(&request, 0, sizeof request);
-		if (parse_mi_request(p, parse_end, &request) < 0) {
+		if (parse_mi_request(p, &parse_end, &request) < 0) {
 			LM_ERR("cannot parse command: %.*s\n", parse_len, p);
 			continue;
 		}
+		if (parse_end)
+			LM_DBG("running command [%.*s]\n", (int)(parse_end - p), p);
+		else
+			LM_DBG("running command [%s]\n", p);
 
 		if (parse_end) {
-			parse_len -= *parse_end - p;
-			p = (char *)*parse_end;
+			parse_len -= parse_end - p;
+			p = (char *)parse_end;
 			memmove(mi_buf, p, parse_len);
 		} else
 			parse_len = 0;
@@ -780,13 +785,16 @@ void mi_fifo_server(FILE *fifo_stream)
 			}
 			/* if there is no file specified, there is nothing to reply */
 		} else
-			goto skip_unparsed;
+			goto end;
 
 free_request:
 		free_async_handler(hdl);
 		free_mi_request_parsed(&request);
 		if (reply_stream)
 			fclose(reply_stream);
+end:
+		if (parse_len)
+			goto retry;
 		continue;
 skip_unparsed:
 		remain_len = 0;
