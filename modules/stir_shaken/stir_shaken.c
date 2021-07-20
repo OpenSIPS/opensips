@@ -1213,9 +1213,9 @@ static int parse_identity_hf(str *hdr_buf, struct parsed_identity *parsed)
 		goto invalid_hdr;
 	}
 	for (it = params; it; it = it->next) {
-		if (!str_strcmp(const_str("alg"), &it->name))
+		if (!str_strcmp(_str("alg"), &it->name))
 			parsed->alg_hdr_param = it->body;
-		if (!str_strcmp(const_str("ppt"), &it->name))
+		if (!str_strcmp(_str("ppt"), &it->name))
 			parsed->ppt_hdr_param = it->body;
 	}
 
