@@ -906,6 +906,10 @@ int cgrates_process(json_object *jobj,
 	}
 
 	if (is_reply) {
+		if (!proc_reply) {
+			LM_ERR("no handler for reply %s\n", rpc);
+			return -2;
+		}
 		LM_DBG("treating JSON-RPC as a reply\n");
 		if (jerror) {
 			type = json_object_get_type(jerror);
