@@ -22,3 +22,6 @@ jobs:
         stale-issue-label: 'stale'
         days-before-issue-stale: 15
         days-before-issue-close: 30
+        stale-pr-message: 'Any updates here? No progress has been made in the last 30 days, marking as stale.'
+        days-before-pr-stale: 30
+        exempt-all-pr-assignees: true
