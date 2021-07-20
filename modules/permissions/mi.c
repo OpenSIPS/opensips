@@ -43,7 +43,7 @@ mi_response_t *mi_address_reload(const mi_params_t *params,
 	int errlen = strlen(errbuf);
 
 	for (it=get_part_structs(); it; it = it->next) {
-		if (it->hash_table == NULL)
+		if (it->netmask_table == NULL)
 			continue;
 
 		sprintf(errbuf + errlen, " %.*s!", it->name.len, it->name.s);
@@ -68,7 +68,7 @@ mi_response_t *mi_address_reload_1(const mi_params_t *params,
 	ps = get_part_struct(&partn);
 	if (ps == NULL)
 		return init_mi_error( 400, MI_SSTR("Trusted table reload failed"));
-	if (ps->hash_table == NULL)
+	if (ps->netmask_table == NULL)
 		return init_mi_result_ok();
 
 	LM_INFO("trying to reload address table for %.*s\n",
@@ -88,7 +88,8 @@ mi_response_t *mi_address_dump(const mi_params_t *params,
 	struct pm_part_struct *it;
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
-	mi_item_t *parts_arr, *part_item;
+	mi_item_t *parts_arr, *part_item, *dests_arr;
+	int i;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
@@ -99,7 +100,7 @@ mi_response_t *mi_address_dump(const mi_params_t *params,
 		goto error;
 
 	for (it=get_part_structs(); it; it = it->next) {
-		if (it->hash_table == NULL)
+		if (it->netmask_table == NULL)
 			continue;
 
 		part_item = add_mi_object(parts_arr, NULL, 0);
@@ -110,8 +111,15 @@ mi_response_t *mi_address_dump(const mi_params_t *params,
 			it->name.s, it->name.len) < 0)
 			goto error;
 
-		if(pm_hash_mi_print(*it->hash_table, part_item, it)< 0)
+		dests_arr = add_mi_array(part_item, MI_SSTR("Destinations"));
+		if (!dests_arr)
 			goto error;
+
+		for (i = 0; i < 129; i++) {
+			if (!(*it->netmask_table)[i].hash_table) continue;
+			if(pm_hash_mi_print((*it->netmask_table)[i].hash_table, dests_arr, it)< 0)
+				goto error;
+		}
 	}
 
 	return resp;
@@ -127,7 +135,8 @@ mi_response_t *mi_address_dump_1(const mi_params_t *params,
 	struct pm_part_struct *ps;
 	str partn;
 	mi_response_t *resp;
-	mi_item_t *resp_obj;
+	mi_item_t *resp_obj, *dests_arr;
+	int i;
 
 	if (get_mi_string_param(params, "partition", &partn.s, &partn.len) < 0)
 		return init_mi_param_error();
@@ -136,7 +145,7 @@ mi_response_t *mi_address_dump_1(const mi_params_t *params,
 	if (ps == NULL)
 		return init_mi_error(404, MI_SSTR("No such partition"));
 
-	if (ps->hash_table == NULL)
+	if (ps->netmask_table == NULL)
 		return init_mi_result_ok();
 
 	resp = init_mi_result_object(&resp_obj);
@@ -146,8 +155,15 @@ mi_response_t *mi_address_dump_1(const mi_params_t *params,
 	if (add_mi_string(resp_obj, MI_SSTR("part"),ps->name.s, ps->name.len) < 0)
 		goto error;
 
-	if(pm_hash_mi_print(*ps->hash_table, resp_obj, ps)< 0)
+	dests_arr = add_mi_array(resp_obj, MI_SSTR("Destinations"));
+	if (!dests_arr)
 		goto error;
+
+	for (i = 0; i < 129; i++) {
+		if (!(*ps->netmask_table)[i].hash_table) continue;
+		if(pm_hash_mi_print((*ps->netmask_table)[i].hash_table, dests_arr, ps)< 0)
+			goto error;
+	}
 
 	return resp;
 
@@ -209,81 +225,4 @@ mi_response_t *mi_allow_uri(const mi_params_t *params,
     } else {
 	return init_mi_error(403, MI_SSTR("Forbidden"));
     }
-}
-
-/*
- * MI function to print subnets from current subnet table
- */
-mi_response_t *mi_subnet_dump(const mi_params_t *params,
-								struct mi_handler *async_hdl)
-{
-	struct pm_part_struct *it;
-	mi_response_t *resp;
-	mi_item_t *resp_obj;
-	mi_item_t *parts_arr, *part_item;
-
-	resp = init_mi_result_object(&resp_obj);
-	if (!resp)
-		return 0;
-
-	parts_arr = add_mi_array(resp_obj, MI_SSTR("Partitions"));
-	if (!parts_arr)
-		goto error;
-
-	for (it=get_part_structs(); it; it = it->next) {
-		if (it->subnet_table == NULL)
-			continue;
-
-		part_item = add_mi_object(parts_arr, NULL, 0);
-		if (!part_item)
-			goto error;
-
-		if (add_mi_string(part_item, MI_SSTR("name"),
-			it->name.s, it->name.len) < 0)
-			goto error;
-
-		if (subnet_table_mi_print(*it->subnet_table, part_item, it) <  0)
-			goto error;
-	}
-
-	return resp;
-
-error:
-	free_mi_response(resp);
-	return 0;
-}
-
-mi_response_t *mi_subnet_dump_1(const mi_params_t *params,
-								struct mi_handler *async_hdl)
-{
-	str partn;
-	mi_response_t *resp;
-	mi_item_t *resp_obj;
-	struct pm_part_struct *ps;
-
-	if (get_mi_string_param(params, "partition", &partn.s, &partn.len) < 0)
-		return init_mi_param_error();
-
-	ps = get_part_struct(&partn);
-	if (ps == NULL)
-		return init_mi_error(404, MI_SSTR("No such partition"));
-	
-	if (ps->subnet_table == NULL)
-		return init_mi_result_ok();
-
-	resp = init_mi_result_object(&resp_obj);
-	if (!resp)
-		return 0;
-
-	if (add_mi_string(resp_obj, MI_SSTR("part"),ps->name.s, ps->name.len) < 0)
-		goto error;
-
-	if (subnet_table_mi_print(*ps->subnet_table, resp_obj, ps) <  0)
-		goto error;
-
-	return resp;
-
-error:
-	free_mi_response(resp);
-	return 0;
 }

@@ -43,13 +43,9 @@ struct pm_part_struct {
 	str name;
 	str table;
 
-	struct address_list ***hash_table;     /* Pointer to current hash table pointer */
-	struct address_list **hash_table_1;   /* Pointer to hash table 1 */
-	struct address_list **hash_table_2;   /* Pointer to hash table 2 */
-
-	struct subnet **subnet_table;        /* Ptr to current subnet table */
-	struct subnet *subnet_table_1;       /* Ptr to subnet table 1 */
-	struct subnet *subnet_table_2;       /* Ptr to subnet table 2 */
+	struct netmask_list **netmask_table;        /* Pointer to current hash table pointer */
+	struct netmask_list *netmask_table_1;       /* Pointer to hash table 1 */
+	struct netmask_list *netmask_table_2;       /* Pointer to hash table 2 */
 
 	db_con_t* db_handle;
 	db_func_t perm_dbf;
@@ -57,6 +53,11 @@ struct pm_part_struct {
 	struct pm_part_struct *next;
 };
 
+struct netmask_list {
+	unsigned int bitlen;
+	struct network_list **hash_table; /* hash table of network_list* */
+	struct netmask_list *next;
+};
 
 int init_address_df_part(void);
 int parse_partition(modparam_t, void*);

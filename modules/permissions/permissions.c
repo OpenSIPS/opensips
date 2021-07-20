@@ -179,11 +179,6 @@ static mi_export_t mi_cmds[] = {
 		{mi_address_dump_1, {"partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ MI_SUBNET_DUMP, 0, 0, 0, {
-		{mi_subnet_dump, {0}},
-		{mi_subnet_dump_1, {"partition", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
 	{ MI_ALLOW_URI, 0, 0, 0, {
 		{mi_allow_uri, {"basename", "uri", "contact", 0}},
 		{EMPTY_MI_RECIPE}}

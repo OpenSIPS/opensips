@@ -121,8 +121,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 	db_row_t* row;
 	db_val_t* val;
 
-	struct address_list **new_hash_table;
-	struct subnet *new_subnet_table;
+	struct netmask_list *new_netmask_table;
 	int i, mask, proto, group, port, id;
 	struct ip_addr *ip_addr;
 	struct net *subnet;
@@ -151,22 +150,13 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		return -1;
 	}
 
-	/* Choose new hash table and free its old contents */
-	if (*part_struct->hash_table == part_struct->hash_table_1) {
-		pm_empty_hash(part_struct->hash_table_2);
-		new_hash_table = part_struct->hash_table_2;
+	/* Choose new table and free its old contents */
+	if (*part_struct->netmask_table == part_struct->netmask_table_1) {
+		empty_netmask_table(part_struct->netmask_table_2);
+		new_netmask_table = part_struct->netmask_table_2;
 	} else {
-		pm_empty_hash(part_struct->hash_table_1);
-		new_hash_table = part_struct->hash_table_1;
-	}
-
-	/* Choose new subnet table */
-	if (*part_struct->subnet_table == part_struct->subnet_table_1) {
-		empty_subnet_table(part_struct->subnet_table_2);
-		new_subnet_table = part_struct->subnet_table_2;
-	} else {
-		empty_subnet_table(part_struct->subnet_table_1);
-		new_subnet_table = part_struct->subnet_table_1;
+		empty_netmask_table(part_struct->netmask_table_1);
+		new_netmask_table = part_struct->netmask_table_1;
 	}
 
 	row = RES_ROWS(res);
@@ -224,14 +214,14 @@ int reload_address_table(struct pm_part_struct *part_struct)
 			str_src_ip = VAL_STR(val);
 		}
 		if (str_src_ip.len==0) {
-			LM_DBG("empty ip field in address table, ignoring entry"
+			LM_WARN("empty ip field in address table, ignoring entry"
 					" number %d\n", i);
 			continue;
 		}
 
 		if ( (ip_addr=str2ip(&str_src_ip))==NULL &&
 		(ip_addr=str2ip6(&str_src_ip))==NULL ) {
-			LM_DBG("invalid ip <%.*s> in address table, ignoring entry "
+			LM_WARN("invalid ip <%.*s> in address table, ignoring entry "
 				"with id %d\n", str_src_ip.len, str_src_ip.s, id);
 			continue;
 		}
@@ -239,7 +229,7 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		/* now that we know the AF family, we can validate the mask len */
 		if ( (ip_addr->af==AF_INET && VAL_INT(val + 2)>32) ||
 		(ip_addr->af==AF_INET6 && VAL_INT(val + 2)>128) ) {
-			LM_DBG("netmask size %d too large of IP's AF %d, ignoring entry"
+			LM_WARN("netmask size %d too large of IP's AF %d, ignoring entry"
 				" number %d\n", VAL_INT(val + 2), ip_addr->af, i);
 			continue;
 		}
@@ -253,14 +243,14 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		}
 
 		if (str_proto.len==4 && !strncasecmp(str_proto.s, "none",4)) {
-			LM_DBG("protocol field is \"none\" in address table, ignoring"
+			LM_WARN("protocol field is \"none\" in address table, ignoring"
 					" entry with id %d\n", id);
 			continue;
 		}
 
 		proto = proto_char2int(&str_proto);
 		if (proto == -1) {
-			LM_DBG("unknown protocol field in address table, ignoring"
+			LM_WARN("unknown protocol field in address table, ignoring"
 					" entry with id %d\n", id);
 			continue;
 		}
@@ -295,40 +285,43 @@ int reload_address_table(struct pm_part_struct *part_struct)
 		port = (unsigned int) VAL_INT(val + 3);
 		mask = (unsigned int) VAL_INT(val + 2);
 
-		if ( (mask == 32 && ip_addr->af==AF_INET) ||
-		(mask == 128 && ip_addr->af==AF_INET6) ) {
-			if (pm_hash_insert(new_hash_table, ip_addr, group, port, proto,
-				&str_pattern, &str_info) == -1) {
-					LM_ERR("hash table insert error\n");
-					goto error;
-			}
-			LM_DBG("Tuple <%.*s, %u, %u, %u, %.*s, %.*s> inserted into "
-					"address hash table\n", str_src_ip.len, str_src_ip.s,
-					group, port, proto, str_pattern.len, str_pattern.s,
-					str_info.len,str_info.s);
-		} else {
-			subnet = mk_net_bitlen(ip_addr, mask);
-			if (subnet_table_insert(new_subnet_table, group, subnet,
-				port, proto, &str_pattern, &str_info) == -1) {
-					LM_ERR("subnet table problem\n");
-					if (subnet) {
-						pkg_free(subnet);
-					}
-					goto error;
-				}
-			LM_DBG("Tuple <%.*s, %u, %u, %u> inserted into subnet table\n",
-					str_src_ip.len, str_src_ip.s, group, mask, port);
-			/* subnet in pkg; needs to be freed since was copied to shm */
+		// Create network_list hash table for this mask if it does not exist
+		if (!new_netmask_table[mask].hash_table) {
+			new_netmask_table[mask].hash_table = pm_hash_create();
+			if (!new_netmask_table[mask].hash_table) goto error;
+		}
+
+		subnet = mk_net_bitlen(ip_addr, mask);
+		if (pm_hash_insert(new_netmask_table[mask].hash_table, subnet, group, port, proto,
+		                &str_pattern, &str_info) == -1) {
+			LM_ERR("hash table insert error\n");
 			if (subnet) {
 				pkg_free(subnet);
 			}
+			goto error;
+		}
+		LM_DBG("Tuple <%.*s/%u, %u, %u, %u, %.*s, %.*s> inserted into "
+		       "address hash table\n", str_src_ip.len, str_src_ip.s, mask,
+		       group, port, proto, str_pattern.len, str_pattern.s,
+		       str_info.len,str_info.s);
+		/* subnet in pkg; needs to be freed since was copied to shm */
+		if (subnet) {
+			pkg_free(subnet);
 		}
 	}
 
 	part_struct->perm_dbf.free_result(part_struct->db_handle, res);
 
-	*part_struct->hash_table = new_hash_table;
-	*part_struct->subnet_table = new_subnet_table;
+	// Chain list
+	struct netmask_list *last_netmask_list = NULL;
+	for (i = 0; i < 129; i++) {
+		new_netmask_table[i].next = last_netmask_list;
+		if (new_netmask_table[i].hash_table) {
+			last_netmask_list = new_netmask_table + i;
+		}
+	}
+
+	*part_struct->netmask_table = new_netmask_table;
 	LM_DBG("address table reloaded successfully.\n");
 
 	return 1;
@@ -372,8 +365,8 @@ int init_address_part(struct pm_partition *partition)
 		return -1;
 	}
 
-	part_struct->hash_table_1 = part_struct->hash_table_2 = 0;
-	part_struct->hash_table = 0;
+	part_struct->netmask_table_1 = part_struct->netmask_table_2 = 0;
+	part_struct->netmask_table = 0;
 
 	part_struct->db_handle = part_struct->perm_dbf.init(&partition->url);
 	if (!part_struct->db_handle) {
@@ -389,28 +382,16 @@ int init_address_part(struct pm_partition *partition)
 		return -1;
 	}
 
-	part_struct->hash_table_1 = pm_hash_create();
-	if (!part_struct->hash_table_1) return -1;
+	part_struct->netmask_table_1 = new_netmask_table();
+	if (!part_struct->netmask_table_1) goto error;
 
-	part_struct->hash_table_2  = pm_hash_create();
-	if (!part_struct->hash_table_2) goto error;
+	part_struct->netmask_table_2 = new_netmask_table();
+	if (!part_struct->netmask_table_2) goto error;
 
-	part_struct->hash_table = (struct address_list ***)shm_malloc
-							(sizeof(struct address_list **));
-	if (!part_struct->hash_table) goto error;
+	part_struct->netmask_table = (struct netmask_list **)shm_malloc(sizeof(struct netmask_list *));
+	if (!part_struct->netmask_table) goto error;
 
-	*part_struct->hash_table = part_struct->hash_table_1;
-
-	part_struct->subnet_table_1 = new_subnet_table();
-    if (!part_struct->subnet_table_1) goto error;
-
-    part_struct->subnet_table_2 = new_subnet_table();
-    if (!part_struct->subnet_table_2) goto error;
-
-	part_struct->subnet_table = (struct subnet **)shm_malloc(sizeof(struct subnet *));
-	if (!part_struct->subnet_table) goto error;
-
-	*part_struct->subnet_table = part_struct->subnet_table_1;
+	*part_struct->netmask_table = part_struct->netmask_table_1;
 
 	if (reload_address_table(part_struct) == -1) {
 		LM_CRIT("reload of address table failed\n");
@@ -425,31 +406,18 @@ int init_address_part(struct pm_partition *partition)
 	return 0;
 
 error:
-	if (part_struct->hash_table_1) {
-		pm_hash_destroy(part_struct->hash_table_1);
-		part_struct->hash_table_1 = 0;
-	}
-	if (part_struct->hash_table_2) {
-		pm_hash_destroy(part_struct->hash_table_2);
-		part_struct->hash_table_2 = 0;
-	}
-	if (part_struct->hash_table) {
-		shm_free(part_struct->hash_table);
-		part_struct->hash_table = 0;
+	if (part_struct->netmask_table_1) {
+		free_netmask_table(part_struct->netmask_table_1);
+		part_struct->netmask_table_1 = 0;
 	}
 
-	if (part_struct->subnet_table_1) {
-		free_subnet_table(part_struct->subnet_table_1);
-		part_struct->subnet_table_1 = 0;
-	}
-
-	if (part_struct->subnet_table_2) {
-		free_subnet_table(part_struct->subnet_table_2);
-		part_struct->subnet_table_2 = 0;
+	if (part_struct->netmask_table_2) {
+		free_netmask_table(part_struct->netmask_table_2);
+		part_struct->netmask_table_2 = 0;
     }
-	if (part_struct->subnet_table) {
-		shm_free(part_struct->subnet_table);
-		part_struct->subnet_table = 0;
+	if (part_struct->netmask_table) {
+		shm_free(part_struct->netmask_table);
+		part_struct->netmask_table = 0;
 	}
 	part_struct->perm_dbf.close(part_struct->db_handle);
 	part_struct->db_handle = 0;
@@ -486,9 +454,9 @@ int mi_init_address(void)
  */
 void clean_address(struct pm_part_struct *part_struct)
 {
-	if (part_struct->hash_table_1) pm_hash_destroy(part_struct->hash_table_1);
-	if (part_struct->hash_table_2) pm_hash_destroy(part_struct->hash_table_2);
-	if (part_struct->hash_table) shm_free(part_struct->hash_table);
+	if (part_struct->netmask_table_1) free_netmask_table(part_struct->netmask_table_1);
+	if (part_struct->netmask_table_2) free_netmask_table(part_struct->netmask_table_2);
+	if (part_struct->netmask_table) shm_free(part_struct->netmask_table);
 }
 
 
@@ -499,7 +467,10 @@ int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 				pv_spec_t *info, char *pattern, struct pm_part_struct *part)
 {
 	struct ip_addr *ip;
-	int hash_ret, subnet_ret;
+	int ret, i;
+	struct netmask_list *netmask_node;
+	unsigned int bitlen, new_bitlen;
+	struct ip_addr ip_match;
 
 	/* ip addr */
 	if ( (ip=str2ip(s_ip))==NULL && (ip=str2ip6(s_ip))==NULL ) {
@@ -511,15 +482,34 @@ int check_addr(struct sip_msg* msg, int* grp, str* s_ip, int *port, long proto,
 		part->name.len, part->name.s, *grp,
 		s_ip->len, s_ip->s, (int)proto, *port, ZSW(pattern) );
 
-	hash_ret = pm_hash_match(msg, *part->hash_table, *grp,
-			ip, *port, (int)proto, pattern, info);
-	if (hash_ret < 0) {
-		subnet_ret = match_subnet_table(msg, *part->subnet_table, *grp,
-				ip, *port, (int)proto, pattern, info);
-		hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
+	ip_match = *ip;
+	ret = 0;
+	// Iterate on bitlen
+	if (ip_match.af == AF_INET) {
+		bitlen = 32;
+	} else {
+		bitlen = 128;
+	}
+	netmask_node = (*part->netmask_table) + bitlen;
+	while (1) {
+		if (netmask_node->hash_table) {
+			ret = pm_hash_match(msg, netmask_node->hash_table, *grp, &ip_match, *port,
+					(int)proto, pattern, info);
+			if (ret > 0) break;
+		}
+		if (!netmask_node->next) break;
+		netmask_node = netmask_node->next;
+		new_bitlen = netmask_node->bitlen;
+		if (new_bitlen == 0) {
+			for (i = 0; i <= (bitlen - 1) / 8; i++) ip_match.u.addr[i] = 0;
+		} else {
+			for (i = (new_bitlen - 1) / 8 + 1; i <= (bitlen - 1) / 8; i++) ip_match.u.addr[i] = 0;
+			if (new_bitlen % 8) ip_match.u.addr[new_bitlen/8] &= ~((1<<(8-(new_bitlen%8)))-1);
+		}
+		bitlen = new_bitlen;
 	}
 
-	return hash_ret;
+	return ret;
 }
 
 
@@ -527,52 +517,93 @@ int check_src_addr(struct sip_msg *msg, int *grp,
 				pv_spec_t *info, char* pattern, struct pm_part_struct *part)
 {
 
-	int hash_ret, subnet_ret;
-	struct ip_addr *ip;
-
-	ip = &msg->rcv.src_ip;
+	int ret, i;
+	struct ip_addr ip_match;
+	struct netmask_list *netmask_node;
+	unsigned int bitlen, new_bitlen;
 
 	LM_DBG("Looking for : <%.*s:%d, %s, %d, %d, %s>\n",
 		part->name.len, part->name.s, *grp,
-		ip_addr2a(ip), msg->rcv.proto, msg->rcv.src_port, ZSW(pattern) );
+		ip_addr2a(&msg->rcv.src_ip), msg->rcv.proto, msg->rcv.src_port, ZSW(pattern) );
 
-	hash_ret = pm_hash_match(msg, *part->hash_table, *grp, ip,
-		msg->rcv.src_port, msg->rcv.proto, pattern, info);
-	if (hash_ret < 0) {
-			subnet_ret = match_subnet_table(msg, *part->subnet_table,
-				*grp, ip, msg->rcv.src_port, msg->rcv.proto, pattern,info);
-			hash_ret = (hash_ret > subnet_ret) ? hash_ret : subnet_ret;
+	ip_match = msg->rcv.src_ip;
+	ret = 0;
+	// Iterate on bitlen
+	if (ip_match.af == AF_INET) {
+		bitlen = 32;
+	} else {
+		bitlen = 128;
+	}
+	netmask_node = (*part->netmask_table) + bitlen;
+	while (1) {
+		if (netmask_node->hash_table) {
+			ret = pm_hash_match(msg, netmask_node->hash_table, *grp,
+				&ip_match,
+				msg->rcv.src_port,
+				msg->rcv.proto,
+				pattern,
+				info);
+			if (ret > 0) break;
+		}
+		if (!netmask_node->next) break;
+		netmask_node = netmask_node->next;
+		new_bitlen = netmask_node->bitlen;
+		if (new_bitlen == 0) {
+			for (i = 0; i <= (bitlen - 1) / 8; i++) ip_match.u.addr[i] = 0;
+		} else {
+			for (i = (new_bitlen - 1) / 8 + 1; i <= (bitlen - 1) / 8; i++) ip_match.u.addr[i] = 0;
+			if (new_bitlen % 8) ip_match.u.addr[new_bitlen/8] &= ~((1<<(8-(new_bitlen%8)))-1);
+		}
+		bitlen = new_bitlen;
 	}
 
-	return hash_ret;
+	return ret;
 }
 
 
 int get_source_group(struct sip_msg* msg, pv_spec_t *out_var,
 												struct pm_part_struct *part)
 {
-	int group;
-	struct ip_addr *ip;
+	int group, i;
+	struct ip_addr ip_match;
 	pv_value_t pvt;
+	struct netmask_list *netmask_node;
+	unsigned int bitlen, new_bitlen;
 
-	ip = &msg->rcv.src_ip;
 	LM_DBG("Looking for <%s, %u> in address table\n",
-			ip_addr2a(ip), msg->rcv.src_port);
+			ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
 
-	group = find_group_in_hash_table(*part->hash_table,
-		ip, msg->rcv.src_port);
-	if (group == -1) {
-
-		LM_DBG("Looking for <%x, %u> in subnet table\n",
-			msg->rcv.src_ip.u.addr32[0], msg->rcv.src_port);
-
-		group = find_group_in_subnet_table(*part->subnet_table,
-			ip, msg->rcv.src_port);
-		if (group == -1) {
-			LM_DBG("IP <%s:%u> not found in any group\n",
-					ip_addr2a(ip), msg->rcv.src_port);
-			return -1;
+	ip_match = msg->rcv.src_ip;
+	group = -1;
+	// Iterate on bitlen
+	if (ip_match.af == AF_INET) {
+		bitlen = 32;
+	} else {
+		bitlen = 128;
+	}
+	netmask_node = (*part->netmask_table) + bitlen;
+	while (1) {
+		if (netmask_node->hash_table) {
+			group = find_group_in_hash_table(netmask_node->hash_table,
+			                                 &ip_match,
+			                                 msg->rcv.src_port);
+			if (group != -1) break;
 		}
+		if (!netmask_node->next) break;
+		netmask_node = netmask_node->next;
+		new_bitlen = netmask_node->bitlen;
+		if (new_bitlen == 0) {
+			for (i = 0; i <= (bitlen - 1) / 8; i++) ip_match.u.addr[i] = 0;
+		} else {
+			for (i = (new_bitlen - 1) / 8 + 1; i <= (bitlen - 1) / 8; i++) ip_match.u.addr[i] = 0;
+			if (new_bitlen % 8) ip_match.u.addr[new_bitlen/8] &= ~((1<<(8-(new_bitlen%8)))-1);
+		}
+		bitlen = new_bitlen;
+	}
+	if (group == -1) {
+		LM_DBG("IP <%s:%u> not found in any group\n",
+		       ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port);
+		return -1;
 	}
 	LM_DBG("Found <%d>\n", group);
 
