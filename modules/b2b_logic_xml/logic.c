@@ -2674,13 +2674,13 @@ error:
 	return -1;
 }
 
-int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param)
+int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param, int flags)
 {
 	return b2b_logic_notify(B2B_SERVER, msg, key, type, param);
 }
 
 
-int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param)
+int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param, int flags)
 {
 	return b2b_logic_notify(B2B_CLIENT, msg, key, type, param);
 }
