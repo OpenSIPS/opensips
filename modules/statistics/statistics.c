@@ -495,6 +495,7 @@ static int resolve_stat(str *in, str *out_group, str *out_name, int *out_grp_idx
 			LM_ERR("stat group '%.*s' must be explicitly defined "
 			       "using the 'stat_groups' module parameter!\n",
 			       out_group->len, out_group->s);
+			*out_grp_idx = -1;
 			return -1;
 		}
 		*out_grp_idx = ms->idx;
