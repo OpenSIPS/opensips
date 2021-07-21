@@ -361,7 +361,7 @@ int mongo_raw_find(cachedb_con *con, bson_t *raw_query, bson_iter_t *ns,
 	mongoc_collection_t *col = NULL;
 	bson_iter_t iter;
 	bson_t _query, *query = NULL, *opts = NULL, proj;
-	mongoc_cursor_t *cursor;
+	mongoc_cursor_t *cursor = NULL;
 	struct timeval start;
 	const bson_value_t *v;
 	const bson_t *doc;
