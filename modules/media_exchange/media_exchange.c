@@ -47,7 +47,8 @@ static int media_indialog(struct sip_msg *msg);
 static int fixup_media_leg(void **param);
 static int fixup_media_leg_both(void **param);
 
-static int b2b_media_notify(struct sip_msg *msg, str *key, int type, void *param);
+static int b2b_media_notify(struct sip_msg *msg, str *key, int type, void *param,
+	int flags);
 static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info);
 
 static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
@@ -1453,7 +1454,8 @@ static int handle_indialog_request(struct sip_msg *msg, struct media_session_leg
 	}
 }
 
-static int b2b_media_notify(struct sip_msg *msg, str *key, int type, void *param)
+static int b2b_media_notify(struct sip_msg *msg, str *key, int type, void *param,
+	int flags)
 {
 	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
 	int initial_state;

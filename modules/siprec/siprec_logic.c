@@ -194,7 +194,8 @@ int srec_register_callbacks(struct src_sess *sess)
 	return 0;
 }
 
-static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param)
+static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
+	int flags)
 {
 	struct b2b_req_data req;
 	struct src_sess *ss;

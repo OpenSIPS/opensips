@@ -81,6 +81,7 @@ struct b2bl_new_entity {
 #define B2BL_RT_REQ_CTX 1
 #define B2BL_RT_RPL_CTX 2
 #define B2BL_RT_DO_UPDATE 4
+#define B2BL_RT_ENTITY_TERM 8
 
 struct b2b_ctx_val {
 	unsigned int id;
