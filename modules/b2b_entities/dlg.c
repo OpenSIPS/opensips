@@ -998,6 +998,11 @@ search_dialog:
 					LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
 						callid.len, callid.s,msg->first_line.u.request.method.len,
 						msg->first_line.u.request.method.s);
+			} else {
+				tmb.t_newtran(msg);
+				tm_tran = tmb.t_gett();
+				if (tm_tran && tm_tran!=T_UNDEFINED)
+					tmb.unref_cell(tm_tran);
 			}
 			lock_release(&table[hash_index].lock);
 			return SCB_RUN_ALL;
@@ -1164,7 +1169,7 @@ logic_notify:
 	dlg_state = dlg->state;
 	lock_release(&table[hash_index].lock);
 
-	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0);
+	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0, 0);
 
 	if(param.s)
 		pkg_free(param.s);
@@ -2090,15 +2095,20 @@ int b2b_send_request(b2b_req_data_t* req_data)
 
 	if(dlg->state == B2B_TERMINATED)
 	{
-		LM_ERR("Can not send request [%.*s] for entity type [%d] "
-			"for dlg[%p]->[%.*s] in terminated state\n",
-			method->len, method->s, et,
-			dlg, b2b_key->len, b2b_key->s);
 		lock_release(&table[hash_index].lock);
-		if(method_value==METHOD_BYE || method_value==METHOD_CANCEL)
+		if(method_value==METHOD_BYE || method_value==METHOD_CANCEL) {
+			LM_DBG("Can not send request [%.*s] for entity type [%d] "
+				"for dlg[%p]->[%.*s] in terminated state\n",
+				method->len, method->s, et,
+				dlg, b2b_key->len, b2b_key->s);
 			return 0;
-		else
+		} else {
+			LM_ERR("Can not send request [%.*s] for entity type [%d] "
+				"for dlg[%p]->[%.*s] in terminated state\n",
+				method->len, method->s, et,
+				dlg, b2b_key->len, b2b_key->s);
 			return -1;
+		}
 	}
 
 	if(b2breq_complete_ehdr(req_data->extra_headers, req_data->client_headers,
@@ -2575,6 +2585,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	bin_packet_t storage;
 	int b2b_ev = -1;
 	struct b2b_context *ctx;
+	int b2b_cb_flags = 0;
 
 	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
@@ -3072,6 +3083,7 @@ dummy_reply:
 				}
 				pkg_free(leg);
 			}
+			b2b_cb_flags |= B2B_NOTIFY_FL_TERMINATED;
 			goto done;
 		}
 
@@ -3286,7 +3298,7 @@ done1:
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}
 
-	b2b_cback(msg, b2b_key, B2B_REPLY, param.s?&param:0);
+	b2b_cback(msg, b2b_key, B2B_REPLY, param.s?&param:0, b2b_cb_flags);
 	if(param.s)
 	{
 		pkg_free(param.s);

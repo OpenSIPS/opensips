@@ -41,6 +41,7 @@
 
 #define B2BL_ENT_NEW		0
 #define B2BL_ENT_CONFIRMED	1
+#define B2BL_ENT_CANCELING	2
 
 
 #define b2b_peer(type) ((type+1)%2)
@@ -123,6 +124,8 @@ extern str internal_scen_s;
 
 extern struct b2bl_route_ctx cur_route_ctx;
 
+extern str requestTerminated;
+
 #define B2B_TOP_HIDING_ID_PTR &top_hiding_scen_s
 #define B2B_INTERNAL_ID_PTR &internal_scen_s
 
@@ -159,8 +162,10 @@ static inline int b2b_get_request_id(str* request)
 }
 
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
-int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param);
-int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
+int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param,
+	int flags);
+int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param,
+	int flags);
 void b2bl_db_init(void);
 
 #endif
