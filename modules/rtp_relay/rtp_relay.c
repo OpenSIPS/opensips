@@ -217,6 +217,8 @@ static struct rtp_relay_sess *pv_get_rtp_relay_sess(struct sip_msg *msg,
 	pv_value_t flags_name;
 	struct rtp_relay_sess *sess = NULL;
 
+	*flag = RTP_RELAY_FLAGS_UNKNOWN;
+
 	if (param->pvi.type != 0) {
 		if (pv_get_spec_index(msg, param, &idx, &idxf)!=0) {
 			LM_ERR("invalid branch index\n");
