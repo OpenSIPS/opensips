@@ -161,7 +161,7 @@ int add_record(uac_reg_map_t *uac, str *now, unsigned int mode,
 	str call_id_ftag;
 	char *p;
 	slinkedl_list_t *list;
-	slinkedl_element_t *new_elem;
+	slinkedl_element_t *new_elem = NULL;
 
 	/* Reserve space for record */
 	size = sizeof(reg_record_t) + MD5_LEN +
