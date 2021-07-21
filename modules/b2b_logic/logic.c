@@ -1767,7 +1767,12 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 
 	method = msg->first_line.u.request.method;
 	method_value = msg->first_line.u.request.method_value;
-	/* extract body if it has a body */
+
+	cur_route_ctx.hash_index = hash_index;
+	cur_route_ctx.local_index = local_index;
+	cur_route_ctx.extra_headers = extra_headers;
+	cur_route_ctx.body = body;
+	cur_route_ctx.flags = 0;
 
 	LM_DBG("request received for tuple[%p]->[%.*s]\n", tuple, tuple->key->len, tuple->key->s);
 	request_id = b2b_get_request_id(&method);
@@ -1991,12 +1996,6 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 
 		break;
 	}
-
-	cur_route_ctx.hash_index = hash_index;
-	cur_route_ctx.local_index = local_index;
-	cur_route_ctx.extra_headers = extra_headers;
-	cur_route_ctx.body = body;
-	cur_route_ctx.flags = 0;
 
 	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR || tuple->req_routeid <= 0) {
 		if(request_id == B2B_BYE)
