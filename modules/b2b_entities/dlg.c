@@ -2143,7 +2143,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	/* send request */
 	if(method_value == METHOD_CANCEL)
 	{
-		if(dlg->state < B2B_CONFIRMED)
+		if(dlg->state != B2B_CONFIRMED)
 		{
 			if(dlg->uac_tran)
 			{
@@ -2157,6 +2157,8 @@ int b2b_send_request(b2b_req_data_t* req_data)
 				// FIXME - tracing: how do we get to the cancel transaction?
 				ret = tmb.t_cancel_trans( inv_t, &ehdr);
 				tmb.unref_cell(inv_t);
+				if (dlg->state > B2B_CONFIRMED)
+					method_value = METHOD_INVITE;
 			}
 			else
 			{
@@ -2166,10 +2168,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		}
 		else
 		{
-			if(dlg->state == B2B_CONFIRMED)
-			{
-				b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, req_data->no_cb);
-			}
+			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, req_data->no_cb);
 			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, req_data->body, req_data->no_cb);
 			method_value = METHOD_BYE;
 		}
