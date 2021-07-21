@@ -157,7 +157,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	dlg->cseq[CALLER_LEG] =(ci->cseq?ci->cseq:1);
 	dlg->send_sock = ci->send_sock;
 
-	srand(get_uticks());
 	random_info.s = int2str(rand(), &random_info.len);
 
 	dlg->send_sock = ci->send_sock;
