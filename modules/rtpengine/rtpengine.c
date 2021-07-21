@@ -1651,17 +1651,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 		err = "unknown error";
 		switch (key.len) {
 			case 3:
-				if (str_eq(&key, "ICE")) {
-					err = "missing value";
-					if (!val.s)
-						goto error;
-					err = "invalid value";
-					if (str_eq(&val, "force") || str_eq(&val, "force-relay") || str_eq(&val, "remove"))
-						BCHECK(bencode_dictionary_add_str(ng_flags->dict, "ICE", &val));
-					else
-						goto error;
-				}
-				else if (str_eq(&key, "RTP")) {
+				if (str_eq(&key, "RTP")) {
 					ng_flags->transport |= 0x100;
 					ng_flags->transport &= ~0x001;
 				}
