@@ -6,6 +6,93 @@
 	Bump version to 3.2.0
 
 
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [80ff0f404] :
+
+	rtp_relay: fix uninitialized warning
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [20fc08a49] :
+
+	uac_registrant: Fix buggy gcc 7.x "uninitialized" error
+	reg_records.c:302:7: error: ‘new_elem’
+	    may be used uninitialized in this function
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [7a92b0240] :
+
+	freeswitch: fix string maipulation warnings in esl
+	(cherry picked from commit 7bc88e2d029e664149609b093bba3d9bc76fce79)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [d4b7a6150] :
+
+	sip_i: fix (buggy) uninitialized warning
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [2b3d73d8b] :
+
+	cachedb_mongodb: Fix possible uninitialized variable
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [6d26478e7] :
+
+	statistics: Fix possible uninitialized output variable
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [28f7a0d5e] :
+
+	tracer: replace un-necessary strncpy with memcpy
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [a098fe047] :
+
+	tracer: Mask buggy gcc 9.x warnings on Ubuntu 20.04
+	In function ‘strncpy’,
+	    inlined from ‘trace_slreply_out’ at tracer.c:2290:2:
+	/usr/include/x86_64-linux-gnu/bits/string_fortified.h:106:10: warning:
+	    ‘__builtin___strncpy_chk’ output may be truncatedl copying between
+	    1 and 21 bytes from a string of length 153 [-Wstringop-truncation]
+
+	This is a false positive, since the "153" bytes are actually 7 * 22
+	bytes, packed as a (char **) array of 7 buffers.  So just mask the
+	warning for now, just at "tracer" module level.
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [2d98eefa0] :
+
+	jabber: Fix off-by-one strncpy() error
+	warning: ‘__builtin_strncpy’ output truncated before terminating nul
+	copying as many bytes from a string as its length [-Wstringop-truncation]
+	  106 |   return __builtin___strncpy_chk (__dest, __src, __len, __bo...
+	      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+	xjab_wlist.c: In function ‘xj_wlist_set_aliases’:
+	xjab_wlist.c:455:34: note: length computed here
+	  455 |   i = jwl->aliases->proxy->len = strlen(pa);
+	      |                                  ^~~~~~~~~~
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [5b5f2f68b] :
+
+	httpd: Fix gcc warning for unchecked fread() retcode
+
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [4675b1fff] :
+
+	ldap: Fix possible buffer overflow
+	If gcc says "2050 chars can overflow a 2049 buffer", gcc is definitely
+	not wrong...
+
 2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
 	* [f921eba0f] :
 
