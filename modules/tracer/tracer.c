@@ -1938,8 +1938,7 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 	}
 
 	char * str_code = int2str(rpl_code, &len);
-	statusbuf[INT2STR_MAX_LEN-1]=0;
-	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
+	memcpy(statusbuf, str_code, len + 1 /* NULL terminated */);
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 	memset(&to_ip, 0, sizeof(struct ip_addr));
@@ -2197,8 +2196,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps)
 	db_vals[2].val.str_val= get_cseq(msg)->method;
 
 	char * str_code = int2str(ps->code, &len);
-	statusbuf[INT2STR_MAX_LEN-1]=0;
-	strncpy(statusbuf, str_code, len >= INT2STR_MAX_LEN ? INT2STR_MAX_LEN-1 : len);
+	memcpy(statusbuf, str_code, len + 1 /* NULL terminated */);
 	db_vals[3].val.str_val.s = statusbuf;
 	db_vals[3].val.str_val.len = len;
 
