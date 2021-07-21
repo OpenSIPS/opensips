@@ -4265,7 +4265,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
 	b2bl_tuple_t* tuple;
 	struct b2b_context *ctx;
-	struct b2b_ctx_val *v;
+	struct b2b_ctx_val *v, *v_old;
 	unsigned int hash_index, local_index;
 	b2bl_entity_id_t *bridging_entity= NULL;
 	b2bl_entity_id_t *old_entity;
@@ -4310,8 +4310,19 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 
 	/* update tuple context values with the new ones set in request route */
 	for (v = local_ctx_vals; v; v = v->next) {
-		v->next = tuple->vals;
-		tuple->vals = v;
+		for (v_old = tuple->vals; v_old; v_old = v_old->next)
+			if (!str_strcmp(&v->name, &v_old->name)) {
+				if (store_ctx_value(&tuple->vals, &v->name, &v->val) < 0)
+					LM_ERR("Failed to store context value [%.*s]\n",
+						v->name.len, v->name.s);
+
+				break;
+			}
+
+		if (!v_old) {
+			v->next = tuple->vals;
+			tuple->vals = v;
+		}
 	}
 
 	local_ctx_vals = NULL;
