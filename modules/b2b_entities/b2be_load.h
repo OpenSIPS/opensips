@@ -48,6 +48,7 @@
 #define B2B_REPLY     1
 
 #define B2B_NOTIFY_FL_TERMINATED (1<<0)
+#define B2B_NOTIFY_FL_ACK_NEG    (1<<1)
 
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
