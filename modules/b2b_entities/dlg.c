@@ -3316,8 +3316,14 @@ int b2breq_complete_ehdr(str* extra_headers, str *client_headers,
 		memcpy(ehdr.s, extra_headers->s, extra_headers->len);
 		ehdr.len = extra_headers->len;
 	}
-	ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
-		local_contact->len, local_contact->s);
+	if (local_contact->s[0] == '<') {
+		/* already enclosed */
+		ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: %.*s\r\n",
+			local_contact->len, local_contact->s);
+	} else {
+		ehdr.len += sprintf(ehdr.s+ ehdr.len, "Contact: <%.*s>\r\n",
+			local_contact->len, local_contact->s);
+	}
 	if (client_headers && client_headers->len && client_headers->s)
 	{
 		memcpy(ehdr.s + ehdr.len, client_headers->s, client_headers->len);
