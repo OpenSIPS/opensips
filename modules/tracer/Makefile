@@ -9,6 +9,5 @@ include ../../Makefile.defs
 auto_gen=
 NAME=tracer.so
 LIBS=
-DEFS+= -Wno-stringop-truncation
 
 include ../../Makefile.modules
