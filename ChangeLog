@@ -1,3 +1,141 @@
+=========================== Release 3.2.0 ==============================
+
+2021-07-21  Liviu Chircu  <liviu at opensips dot org>
+	* [d5a0f2a3d] :
+
+	Bump version to 3.2.0
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [f921eba0f] :
+
+	b2b_logic: overwrite existing context keys when using b2b_bridge_request()
+	Closes #2424
+	(cherry picked from commit ba3bd6f4d18b2edca3ba942545aa3524d44f08e4)
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [b470b29b1] :
+
+	b2b_logic_xml: fix compilation
+	(cherry picked from commit 5e105b3dae2dba8259d74ac472a8f7e7b1082680)
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [125b2af25] :
+
+	b2b_logic: fix crash when receiving an INFO or unsupported method
+	Thanks to David Escartin from Sonoc for reporting.
+	(cherry picked from commit b59a436cb12854105f379512f32758987b911f47)
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [802ce9d2a] :
+
+	b2b_entities/logic: fix a race condition with simultaneous reINVITEs
+	Fix behavior when receiving reINVITES from the connected entities at the
+	same time, one replied with 491 and the other with 200OK. The 200 OK
+	would not be passed to the other entity and the tuple would never be
+	deleted in this case.
+
+	Thanks to David Escartin from Sonoc for reporting and testing the fix.
+	(cherry picked from commit 9c9ab8f948be65dc6a99024f901e748d629f8e56)
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [944002af5] :
+
+	b2b_entities/logic: properly reply to canceled/expired entities
+	Generate a 487 reply from opensips to the server entity if:
+	* no final reply from the client entity received and the tuple
+	  expires after a CANCEL request has been received;
+	* a 200 OK has be received after a previous CANCEL request.
+
+	Also, reply with 408 to the server entity if the tuple expires and no
+	final reply from the client entity has been received.
+
+	Credits to David Escartin from Sonoc for reporting and testing the
+	fixes.
+	(cherry picked from commit 3261d2cb59f4477495cb770af6e3489ce186bc6b)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [9112ad6bd] :
+
+	siprec: add mandatory +sip.src Contact header param
+	Credits go to @jofiy on GitHub for reporting this. Close #2383
+	(cherry picked from commit be6ce6a5982559e9fa37a2823b219b04e3bd5b55)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [61e4863bd] :
+
+	tm: add Route headers to CANCEL of locally generated INVITE
+	Thanks go to David Escartin from Sonoc for reporting and testing the
+	fixes for this bug
+	(cherry picked from commit 4e6ea0a356267272b8b2b9b48382bcef08756bf4)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [5c3554413] :
+
+	b2b_entities: do not terminate dialog for CANCEL on reINVITE
+	Thanks go to David Escartin from Sonoc for reporting and testing the
+	fixes for this bug
+	(cherry picked from commit 66f9cfcd56a04235eea43f11cdc93db839136436)
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [6eba44156] :
+
+	b2b_entities: fix callid collisions for client entities
+	Prevent the possiblity of using the same seed for generating the random
+	part of the callid for a new client entity.
+	(cherry picked from commit 62728f1775c4ce61645faed3d0130e6c09540b6c)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [3c84aae84] :
+
+	rtpengine: remove special handling for ICE
+	This allows the module to blindfully pass the ICE variables to RTPEngine
+
+	Reported by @wenyuanZZ on GitHub in sipwise/rtpengine#1319
+	(cherry picked from commit 0936ec3f9ca565f434a133adc42b51b811411af8)
+
+
+2021-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [6bd1d9284] :
+
+	cgrates: prevent crash when a reply without request comes
+	Reported by Vasilios Tzanoudakis (@vtzan on GitHub) in #2571
+	(cherry picked from commit 882450d9e0b9d4f5f314786f90d64bd707f81e78)
+
+
+2021-07-16  Razvan Crainea  <razvan at opensips dot org>
+	* [3c6712d16] :
+
+	mi_fifo: proper parse multiple commands received at once
+	(cherry picked from commit e107b029be250b61ff2027fdbe03258d096e9344)
+
+
+2021-07-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [08c258418] :
+
+	b2b_logic: properly release lock in case of error for create event
+	Credits to @nikbyte for the fix
+
+	Related to #2425
+	Closes #2426
+	(cherry picked from commit aba8ae577ba3e6f1c00b239140bc948714774d1b)
+
+
+2021-07-13  Artiom Druz  <druz at sima-land dot ru>
+	* [f6c711b18] :
+
+	Fix crash when vendor hasn't price for prefix
+	(cherry picked from commit be9caba4ad469224c9213edcb1e8bdb11192c823)
+
 =========================== Release 3.2.0-rc1 ==============================
 
 2021-07-12  Liviu Chircu  <liviu at opensips dot org>
