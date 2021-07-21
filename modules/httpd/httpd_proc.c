@@ -872,7 +872,12 @@ static char * load_file(char * filename)
 	fseek(f, 0, SEEK_SET);
 
 	char *string = malloc(fsize + 1);
-	fread(string, 1, fsize, f);
+	size_t bread;
+
+	bread = fread(string, 1, fsize, f);
+	if (bread == 0 || ferror(f))
+		LM_ERR("error while reading from %s (bytes read: %lu)\n",
+				filename, bread);
 	fclose(f);
 
 	string[fsize] = 0;
