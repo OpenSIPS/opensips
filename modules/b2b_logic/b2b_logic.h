@@ -44,6 +44,7 @@
 
 #define B2BL_ENT_NEW		0
 #define B2BL_ENT_CONFIRMED	1
+#define B2BL_ENT_CANCELING	2
 
 
 #define b2b_peer(type) ((type+1)%2)
@@ -136,6 +137,8 @@ extern char* b2bl_db_buf;
 extern int b2bl_db_mode;
 extern unsigned int b2bl_th_init_timeout;
 
+extern str requestTerminated;
+
 static inline int b2b_get_request_id(str* request)
 {
 	if(request->len ==INVITE_LEN&&strncasecmp(request->s,INVITE,INVITE_LEN)==0)
@@ -171,8 +174,10 @@ static inline int b2b_get_request_id(str* request)
 b2b_scenario_t* b2b_find_scenario(b2b_scenario_t* scenario,
 		unsigned int scenario_id);
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
-int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param);
-int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param);
+int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param,
+	int flags);
+int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param,
+	int flags);
 b2b_scenario_t* get_scenario_id_list(str* sid, b2b_scenario_t* list);
 b2b_scenario_t* get_scenario_id(str* sid);
 void b2bl_db_init(void);

@@ -118,6 +118,8 @@ static str default_headers[HDR_DEFAULT_LEN]=
 int use_init_sdp = 0;
 unsigned int max_duration = 12*3600;
 
+static str requestTimeout = str_init("Request Timeout");
+
 int b2bl_key_avp_name;
 unsigned short b2bl_key_avp_type;
 static str b2bl_key_avp_param = {NULL, 0};
@@ -520,13 +522,48 @@ void b2bl_db_timer_update(unsigned int ticks, void* param)
 	b2b_logic_dump(0);
 }
 
+static void term_expired_entity(b2bl_entity_id_t *entity, int hash_index)
+{
+	str bye = {BYE, BYE_LEN};
+	b2b_req_data_t req_data;
+	b2b_rpl_data_t rpl_data;
+
+	if (entity->type == B2B_SERVER &&
+		entity->state != B2BL_ENT_CONFIRMED) {
+		memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+		PREP_RPL_DATA(entity);
+		rpl_data.method = METHOD_INVITE;
+		rpl_data.body = NULL;
+
+		if (entity->state == B2BL_ENT_CANCELING) {
+			rpl_data.code = 487;
+			rpl_data.text = &requestTerminated;
+		} else {
+			rpl_data.code = 408;
+			rpl_data.text = &requestTimeout;
+		}
+
+		b2bl_htable[hash_index].locked_by = process_no;
+		if(b2b_api.send_reply(&rpl_data) < 0)
+			LM_ERR("Sending reply failed - %d, [%.*s]\n",
+				rpl_data.code, entity->key.len,
+				entity->key.s);
+		b2bl_htable[hash_index].locked_by = -1;
+	} else {
+		memset(&req_data, 0, sizeof(b2b_req_data_t));
+		PREP_REQ_DATA(entity);
+		req_data.method =&bye;
+		b2bl_htable[hash_index].locked_by = process_no;
+		b2b_api.send_request(&req_data);
+		b2bl_htable[hash_index].locked_by = -1;
+	}
+}
+
 void b2bl_clean(unsigned int ticks, void* param)
 {
 	int i;
 	b2bl_tuple_t* tuple, *tuple_next;
 	unsigned int now;
-	str bye = {BYE, BYE_LEN};
-	b2b_req_data_t req_data;
 
 	now = get_ticks();
 
@@ -544,23 +581,10 @@ void b2bl_clean(unsigned int ticks, void* param)
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
 					if(!tuple->bridge_entities[0]->disconnected)
-					{
-						memset(&req_data, 0, sizeof(b2b_req_data_t));
-						PREP_REQ_DATA(tuple->bridge_entities[0]);
-						req_data.method =&bye;
-						b2bl_htable[i].locked_by = process_no;
-						b2b_api.send_request(&req_data);
-						b2bl_htable[i].locked_by = -1;
-					}
+						term_expired_entity(tuple->bridge_entities[0], i);
+
 					if(!tuple->bridge_entities[1]->disconnected)
-					{
-						memset(&req_data, 0, sizeof(b2b_req_data_t));
-						PREP_REQ_DATA(tuple->bridge_entities[1]);
-						req_data.method =&bye;
-						b2bl_htable[i].locked_by = process_no;
-						b2b_api.send_request(&req_data);
-						b2bl_htable[i].locked_by = -1;
-					}
+						term_expired_entity(tuple->bridge_entities[1], i);
 				}
 				b2bl_delete(tuple, i, 1, tuple->repl_flag != TUPLE_REPL_RECV);
 			}

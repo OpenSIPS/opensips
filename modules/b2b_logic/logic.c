@@ -84,6 +84,7 @@ static str method_cancel= {CANCEL, CANCEL_LEN};
 
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
+str requestTerminated = str_init("Request Terminated");
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
@@ -1059,7 +1060,7 @@ do{								\
 }while(0)
 
 int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, str* extra_headers,
-		str* b2bl_key, unsigned int hash_index, unsigned int local_index)
+		str* b2bl_key, unsigned int hash_index, unsigned int local_index, int flags)
 {
 	b2bl_tuple_t* tuple;
 	str method;
@@ -1294,6 +1295,30 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						tuple->bridge_entities[0] = tuple->servers[0];
 						tuple->bridge_entities[1] = tuple->clients[0];
 					}
+
+					if (flags & B2B_NOTIFY_FL_TERMINATED) {
+						memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+						PREP_RPL_DATA(peer);
+						rpl_data.method = METHOD_INVITE;
+						rpl_data.code = 487;
+						rpl_data.text = &requestTerminated;
+						rpl_data.body = NULL;
+
+						b2bl_htable[hash_index].locked_by = process_no;
+						if(b2b_api.send_reply(&rpl_data) < 0) {
+							b2bl_htable[hash_index].locked_by = -1;
+							LM_ERR("Sending reply failed - %d, [%.*s]\n",
+								rpl_data.code, peer->key.len, peer->key.s);
+							goto done;
+						}
+						b2bl_htable[hash_index].locked_by = -1;
+
+						LM_DBG("Sent 487 reply to peer after terminating entity "
+							"[%.*s]\n", entity->key.len, entity->key.s);
+						b2b_mark_todel(tuple);
+						goto done;
+					}
+
 					entity->state = B2BL_ENT_CONFIRMED;
 					peer->state = B2BL_ENT_CONFIRMED;
 					entity->stats.setup_time = get_ticks() - entity->stats.start_time;
@@ -1608,6 +1633,10 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 
 			goto done;
 		}
+		break;
+
+	case B2B_CANCEL:
+		entity->state = B2BL_ENT_CANCELING;
 		break;
 
 	case B2B_INVITE:
@@ -2019,7 +2048,8 @@ static inline int get_b2b_dialog_by_replace(str *replaces, str *u_replaces,
 	return 0;
 }
 
-int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
+int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param,
+	int flags)
 {
 	#define U_REPLACES_BUF_LEN 512
 	char u_replaces_buf[U_REPLACES_BUF_LEN];
@@ -2109,7 +2139,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			goto done;
 		}
 		ret = b2b_logic_notify_reply(src, msg, key, &body, &extra_headers,
-						b2bl_key, hash_index, local_index);
+						b2bl_key, hash_index, local_index, flags);
 	}
 	else
 	if(type == B2B_REQUEST)
@@ -2674,15 +2704,17 @@ error:
 	return -1;
 }
 
-int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param)
+int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param,
+	int flags)
 {
-	return b2b_logic_notify(B2B_SERVER, msg, key, type, param);
+	return b2b_logic_notify(B2B_SERVER, msg, key, type, param, flags);
 }
 
 
-int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param)
+int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param,
+	int flags)
 {
-	return b2b_logic_notify(B2B_CLIENT, msg, key, type, param);
+	return b2b_logic_notify(B2B_CLIENT, msg, key, type, param, flags);
 }
 
 static char fromtag_buf[MD5_LEN];

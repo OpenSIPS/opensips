@@ -47,6 +47,8 @@
 #define B2B_REQUEST   0
 #define B2B_REPLY     1
 
+#define B2B_NOTIFY_FL_TERMINATED (1<<0)
+
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
 typedef struct client_info
@@ -106,7 +108,8 @@ typedef void (*b2b_cb_t)(enum b2b_entity_type entity_type, str* entity_key,
 	str *param, enum b2b_event_type event_type, bin_packet_t *storage,
 	int backend);
 
-typedef int (*b2b_notify_t)(struct sip_msg* , str* , int , void* );
+typedef int (*b2b_notify_t)(struct sip_msg* msg, str* key, int type, void* param,
+	int flags);
 typedef int (*b2b_add_dlginfo_t)(str* key, str* entity_key, int src,
 	 b2b_dlginfo_t* info);
 
