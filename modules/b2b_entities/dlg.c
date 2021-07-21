@@ -483,7 +483,8 @@ void set_dlg_state(b2b_dlg_t* dlg, int meth)
 			dlg->state= B2B_TERMINATED;
 			break;
 		case METHOD_ACK:
-			dlg->state= B2B_ESTABLISHED;
+			if (dlg->state != B2B_MODIFIED || !dlg->uac_tran)
+				dlg->state= B2B_ESTABLISHED;
 			break;
 		default:
 			break;
@@ -710,6 +711,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	int b2b_ev = -1;
 	bin_packet_t storage;
 	struct b2b_context *ctx;
+	int b2b_cb_flags = 0;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -1133,8 +1135,12 @@ logic_notify:
 		}
 		else
 		{
-			if(!tm_tran || tm_tran==T_UNDEFINED)
+			if(!tm_tran || tm_tran==T_UNDEFINED) {
 				tm_tran = tmb.t_get_e2eackt();
+				if (!tm_tran || tm_tran==T_UNDEFINED)
+					/* ACK for a negative reply */
+					b2b_cb_flags |= B2B_NOTIFY_FL_ACK_NEG;
+			}
 
 			if(tm_tran && tm_tran!=T_UNDEFINED)
 				tmb.unref_cell(tm_tran);
@@ -1169,7 +1175,7 @@ logic_notify:
 	dlg_state = dlg->state;
 	lock_release(&table[hash_index].lock);
 
-	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0, 0);
+	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0, b2b_cb_flags);
 
 	if(param.s)
 		pkg_free(param.s);
@@ -1614,7 +1620,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		{
 			if(code < 300)
 				dlg->state = B2B_CONFIRMED;
-			else
+			else if (!dlg->uac_tran)
 				dlg->state= B2B_TERMINATED;
 			UPDATE_DBFLAG(dlg);
 		}

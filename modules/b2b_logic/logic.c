@@ -1712,7 +1712,7 @@ error:
 }
 
 int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, str* extra_headers,
-		str* b2bl_key, unsigned int hash_index, unsigned int local_index)
+		str* b2bl_key, unsigned int hash_index, unsigned int local_index, int flags)
 {
 	b2bl_tuple_t* tuple;
 	str method;
@@ -1981,6 +1981,14 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			}
 
 		}
+		break;
+
+	case B2B_ACK:
+		if (flags & B2B_NOTIFY_FL_ACK_NEG) {
+			LM_DBG("ACK for a negative reply\n");
+			goto done;
+		}
+
 		break;
 	}
 
@@ -2700,7 +2708,7 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 			}
 		}
 		ret = b2b_logic_notify_request(src, msg, key, &body, &extra_headers,
-		 				b2bl_key, hash_index, local_index);
+						b2bl_key, hash_index, local_index, flags);
 	}
 	else
 	{
