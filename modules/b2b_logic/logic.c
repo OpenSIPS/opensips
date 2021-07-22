@@ -549,7 +549,8 @@ int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index, str
 	b2b_req_data_t req_data;
 	static char def_hdrs[] = "Event: refer\r\nContent-Type: message/sipfrag\r\nSubscription-State: ";
 	static char buf[BUF_LEN];
-	static str body = str_init("SIP/2.0 100 Trying");
+	static str trying_s = str_init("SIP/2.0 100 Trying");
+	str body;
 	static str hdrs = {buf, 0};
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
@@ -558,6 +559,7 @@ int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index, str
 	req_data.client_headers = &entity->hdrs;
 	req_data.body = 0;
 	if (!msg) {
+		body = trying_s;
 		hdrs.len = snprintf(buf, BUF_LEN, "%sactive;expires=%d\r\n", def_hdrs, 60);
 	} else {
 		body.s = msg->first_line.u.reply.version.s;
