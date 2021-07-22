@@ -2207,7 +2207,7 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	} else if (!new_br_ent[1])
 		goto done;
 
-	if (params->flags & B2BL_BR_FLAG_NOTIFY)
+	if (params->flags & B2BL_BR_FLAG_NOTIFY && entity)
 		process_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
 
 	if (process_bridge_action(msg, tuple, cur_route_ctx.hash_index,
@@ -2216,7 +2216,8 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 		goto done;
 	}
 
-	if (params->flags & B2BL_BR_FLAG_NOTIFY || params->flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE)
+	if ((params->flags & B2BL_BR_FLAG_NOTIFY ||
+		params->flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE) && entity)
 		tuple->bridge_initiator = entity;
 
 	cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
