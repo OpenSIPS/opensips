@@ -226,6 +226,14 @@ int w_topology_hiding(struct sip_msg *req, str *flags_s)
 					flags |= TOPOH_DID_IN_USER;
 					LM_DBG("Will push DID into contact username\n");
 					break;
+				case 'a':
+					flags |= TOPOH_KEEP_ADV_A;
+					LM_DBG("Will store advertised contact for calller\n");
+					break;
+				case 'A':
+					flags |= TOPOH_KEEP_ADV_B;
+					LM_DBG("Will store advertised contact for calllee\n");
+					break;
 				default:
 					LM_DBG("unknown topology_hiding flag : [%c] . Skipping\n",*p);
 			}

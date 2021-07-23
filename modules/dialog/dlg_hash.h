@@ -119,6 +119,8 @@ struct dlg_leg {
 #define TOPOH_KEEP_USER   (1 << 2)
 #define TOPOH_HIDE_CALLID (1 << 3)
 #define TOPOH_DID_IN_USER (1 << 4)
+#define TOPOH_KEEP_ADV_A  (1 << 5)
+#define TOPOH_KEEP_ADV_B  (1 << 6)
 
 struct dlg_cell
 {
