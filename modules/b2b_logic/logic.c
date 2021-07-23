@@ -1241,7 +1241,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			process_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
 			if(statuscode == 200 || !(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE))
 			{
-				b2bl_delete_entity(tuple->bridge_initiator, tuple, tuple->hash_index, 1);
+				b2b_end_dialog(tuple->bridge_initiator, tuple, tuple->hash_index);
 				tuple->bridge_initiator = 0;
 			}
 		}
