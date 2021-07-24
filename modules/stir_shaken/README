@@ -372,8 +372,9 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu)    53      24      2934     290
    2. Liviu Chircu (@liviuchircu)        16      12      198       95
    3. Razvan Crainea (@razvancrainea)    3        1       6        8
-   4. John Burke                         2        1       4        0
-   5. Andriy Pylypenko (@bambyster)      2        1       1        0
+   4. Nick Altmann (@nikbyte)            3        1       2        2
+   5. John Burke                         2        1       4        0
+   6. Andriy Pylypenko (@bambyster)      2        1       1        0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -395,11 +396,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Jul 2021 - Jul 2021
-   2. John Burke                      Apr 2021 - Apr 2021
-   3. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2021
-   4. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Apr 2021
-   5. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
+   1. Nick Altmann (@nikbyte)         Jul 2021 - Jul 2021
+   2. Razvan Crainea (@razvancrainea) Jul 2021 - Jul 2021
+   3. John Burke                      Apr 2021 - Apr 2021
+   4. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2021
+   5. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Apr 2021
+   6. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
