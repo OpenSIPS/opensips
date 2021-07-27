@@ -994,6 +994,7 @@ static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
 				LM_ERR("could not find stream %d\n", stream->stream_num);
 				continue;
 			}
+			nline.s = NULL;
 			if (bstream->label.len) {
 				label = b2b_sdp_label_from_sdp(stream);
 				if (!label) {
@@ -1023,8 +1024,7 @@ static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
 				cline.len = (session->ip_addr.s + session->ip_addr.len) - cline.s;
 				/* add new lines as well */
 				bstream->body.s = shm_realloc(bstream->body.s, stream->body.len + cline.len +
-						((bstream->label.len && !label)?
-						 (lline.len + bstream->label.len + nline.len):0));
+						(nline.s?(lline.len + bstream->label.len + nline.len):0));
 				if (!bstream->body.s)
 					goto end;
 				/* now copy the first m= line of the stream */
@@ -1042,15 +1042,14 @@ static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
 			} else {
 				/* sync the entire stream just as it is */
 				bstream->body.s = shm_realloc(bstream->body.s, stream->body.len +
-						((bstream->label.len && !label)?
-						 (lline.len + bstream->label.len + nline.len):0));
+						(nline.s?(lline.len + bstream->label.len + nline.len):0));
 				if (!bstream->body.s)
 					goto end;
 				memcpy(bstream->body.s, stream->body.s, stream->body.len);
 				bstream->body.len = stream->body.len;
 			}
 			/* only add label if it was initially there */
-			if (bstream->label.len && !label) {
+			if (nline.s) {
 				/* copy terminator from end of stream to make space for label */
 				eline.s = bstream->body.s + bstream->body.len;
 				eline.len = 0;
@@ -1094,7 +1093,7 @@ static int b2b_sdp_ack(int type, str *key)
 
 static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
-	str *body;
+	str *body = NULL;
 	int ret = -1;
 
 	/* only ACK if not fake reply, or not a dummy message as
@@ -1173,7 +1172,8 @@ static int b2b_sdp_client_reply_bye(struct sip_msg *msg, struct b2b_sdp_client *
 	return 0;
 }
 
-static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type, void *param)
+static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
+		void *param, int flags)
 {
 	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)
 		((str *)param)->s;
@@ -1402,7 +1402,8 @@ error:
 	return -1;
 }
 
-static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type, void *param)
+static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
+		void *param, int flags)
 {
 	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
 	if (!ctx) {
@@ -1660,7 +1661,7 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 	}
 	/* now handle disabled streams - skip already pushed ones */
 	bin_push_int(store, list_size(&ctx->streams) - pushed_streams);
-	list_for_each(s, &client->streams) {
+	list_for_each(s, &ctx->streams) {
 		stream = list_entry(s, struct b2b_sdp_stream, list);
 		if (!stream->client)
 			bin_push_stream(store, stream);
