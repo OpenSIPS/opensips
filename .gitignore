@@ -25,6 +25,9 @@ cscope*
 /mem/mem_stats.c
 /mem/mem_stats.h
 
+# /modules/
+modules/tls_wolfssl/lib
+
 # miscellaneous files
 core
 core.*
