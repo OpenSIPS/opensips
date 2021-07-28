@@ -290,6 +290,10 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 		/* wait for a final reply */
 		return 0;
 	} else if (msg->REPLY_STATUS > 300) {
+		/* if this is a re-invite, it was simply declined - do not update
+		 * ongoing media sessions */
+		if (ss->flags & SIPREC_ONGOING)
+			return 0;
 		if (srs_skip_failover(msg->first_line.u.reply.status) ||
 				srs_do_failover(ss) < 0) {
 			LM_DBG("no more to failover!\n");
@@ -316,6 +320,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 		LM_ERR("dialog already in deleted state!\n");
 		goto no_recording;
 	}
+	ss->flags |= SIPREC_ONGOING;
 
 	if (ss->flags & SIPREC_PAUSED) {
 		ss->flags &= ~SIPREC_PAUSED;
