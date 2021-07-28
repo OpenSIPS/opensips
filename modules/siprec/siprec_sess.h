@@ -63,6 +63,7 @@ struct src_part {
 
 #define SIPREC_STARTED	(1<<0)
 #define SIPREC_DLG_CBS	(1<<1)
+#define SIPREC_ONGOING	(1<<2)
 
 #define SIPREC_SRS(_s) (list_entry((_s)->srs.next, struct srs_node, list)->uri)
 
