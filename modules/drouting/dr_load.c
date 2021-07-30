@@ -628,9 +628,9 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 				/* ROUTE_ID column */
 				check_val( routeid_drr_col, ROW_VALUES(row)+5, DB_STRING, 0, 0);
 				/* DSTLIST column */
-				check_val( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, 0, 1);
-				str_vals[STR_VALS_DSTLIST_DRR_COL] =
-					(char*)VAL_STRING(ROW_VALUES(row)+6);
+				check_val2( dstlist_drr_col, ROW_VALUES(row)+6, DB_STRING, DB_BLOB, 0, 1);
+				str_vals[STR_VALS_DSTLIST_DRR_COL] = ROW_VALUES(row)[6].type == DB_STRING ?
+					(char*)VAL_STRING(ROW_VALUES(row)+6) : VAL_BLOB(ROW_VALUES(row)+6).s;
 				/* SORT_ALG column */
 				if( VAL_TYPE(ROW_VALUES(row)+7) == DB_INT ) {
 					check_val(sort_alg_drr_col, ROW_VALUES(row)+7, DB_INT, 1, 0);
@@ -645,9 +645,9 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 				check_val(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, 0, 0);
 				int_vals[INT_VALS_QR_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
 				/* ATTRS column */
-				check_val( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, 0, 0);
-				str_vals[STR_VALS_ATTRS_DRR_COL] =
-					(char*)VAL_STRING(ROW_VALUES(row)+9);
+				check_val2( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, DB_BLOB, 0, 0);
+				str_vals[STR_VALS_ATTRS_DRR_COL] = ROW_VALUES(row)[9].type == DB_STRING ?
+					(char*)VAL_STRING(ROW_VALUES(row)+9) : VAL_BLOB(ROW_VALUES(row)+9).s;
 				/* parse the time definition */
 				if ( VAL_NULL(ROW_VALUES(row)+3) ||
 				((str_vals[STR_VALS_TIME_DRR_COL]=
