@@ -31,6 +31,7 @@
 #include "../../db/db_con.h"
 #include "../../db/db.h"
 #include "../../db/db_cap.h"
+#include "../tls_mgm/api.h"
 #include "dbase.h"
 #include "db_postgres.h"
 
@@ -51,6 +52,10 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
+struct tls_mgm_binds tls_api;
+struct tls_domain *tls_dom;
+int use_tls = 0;
+
 /*
  * Exported parameters
  */
@@ -58,15 +63,24 @@ static param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_postgres_exec_query_threshold},
 	{"max_db_queries", INT_PARAM, &max_db_queries},
 	{"timeout", INT_PARAM, &pq_timeout},
+	{"use_tls", INT_PARAM, &use_tls},
 	{0, 0, 0}
 };
 
+static module_dependency_t *get_deps_use_tls(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "use_tls", get_deps_use_tls },
 		{ NULL, NULL },
 	},
 };
@@ -103,7 +117,12 @@ static int mod_init(void)
 		LM_WARN("Invalid number for max_db_queries\n");
 		max_db_queries = 2;
 	}
-	
+
+	if (use_tls && load_tls_mgm_api(&tls_api) != 0) {
+		LM_ERR("failed to load tls_mgm API!\n");
+		return -1;
+	}
+
 	return 0;
 }
 

@@ -1,6 +1,6 @@
 divert(-1)
-define(`ENABLE_TCP', `no') # OpenSIPS will listen on TCP for SIP requests
-define(`ENABLE_TLS', `no') # OpenSIPS will listen on TLS for SIP requests
+define(`ENABLE_TCP', `yes') # OpenSIPS will listen on TCP for SIP requests
+define(`ENABLE_TLS', `yes') # OpenSIPS will listen on TLS for SIP requests
 define(`USE_ALIASES', `no') # OpenSIPS will allow the use of Aliases for SIP users
 define(`USE_AUTH', `no') # OpenSIPS will authenticate Register & Invite requests
 define(`USE_DBACC', `no') # OpenSIPS will save ACC entries in DB for all calls

@@ -34,6 +34,7 @@
 
 #include "../../db/db_pool.h"
 #include "../../db/db_id.h"
+#include "../tls_mgm/tls_helper.h"
 
 #include <time.h>
 #include <libpq-fe.h>
@@ -56,6 +57,10 @@ struct pg_con {
 	char**  row;		/* Actual row in the result */
 	time_t timestamp;	/* Timestamp of last query */
 
+	unsigned int init;       /* If the connection is initialized */
+	unsigned int disconnected; /* disconnection detected */
+	struct tls_domain *tls_dom;;  /* TLS domain */
+
 };
 
 #define CON_SQLURL(db_con)     (((struct pg_con*)((db_con)->tail))->sqlurl)
@@ -65,6 +70,8 @@ struct pg_con {
 #define CON_ROW(db_con)	       (((struct pg_con*)((db_con)->tail))->row)
 #define CON_TIMESTAMP(db_con)  (((struct pg_con*)((db_con)->tail))->timestamp)
 #define CON_ID(db_con) 	       (((struct pg_con*)((db_con)->tail))->id)
+
+str *get_postgres_tls_dom(struct db_id* id);
 
 /*
  * Create a new connection structure,
