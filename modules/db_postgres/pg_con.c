@@ -120,6 +120,11 @@ int db_postgres_connect(struct pg_con* ptr)
 		}
 	}
 
+	/* force the default timeout */
+	if (pq_timeout > 0) {
+		PSQL_PARAM("connect_timeout", int2str(pq_timeout, 0));
+	}
+
 	if (id->parameters) {
 
 		lenp = strlen(id->parameters);
@@ -196,11 +201,6 @@ int db_postgres_connect(struct pg_con* ptr)
 	} else {
 		ports = NULL;
 		LM_DBG("opening connection: postgres://xxxx:xxxx@%s/%s %s\n", ZSW(id->host), ZSW(id->database), ZSW(dbname));
-	}
-
-	/* force the default timeout */
-	if (pq_timeout > 0) {
-		PSQL_PARAM("connect_timeout", int2str(pq_timeout, 0));
 	}
 
 	/* End of the parameter list */
