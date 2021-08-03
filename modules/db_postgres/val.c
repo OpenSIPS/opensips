@@ -270,7 +270,7 @@ int db_postgres_val2str(const db_con_t* _con, const db_val_t* _v,
 		} else {
 			old_s = _s;
 			*_s++ = '\'';
-			ret = PQescapeStringConn(CON_CONNECTION(_con), _s, VAL_STRING(_v),
+			ret = PQescapeStringConn(CON_CONNECTION(_con), _s, VAL_STR(_v).s,
 					l, &pgret);
 			if(pgret!=0)
 			{
