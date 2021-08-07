@@ -2489,29 +2489,29 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 435 274 12809 3398
-   2. Razvan Crainea (@razvancrainea) 256 192 4875 1461
+   2. Razvan Crainea (@razvancrainea) 258 194 4878 1462
    3. Vlad Paiu (@vladpaiu) 252 143 7199 3026
    4. Vlad Patrascu (@rvlad-patrascu) 168 86 3583 3164
-   5. Liviu Chircu (@liviuchircu) 150 108 2777 1128
+   5. Liviu Chircu (@liviuchircu) 155 112 2805 1167
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 29 23 487 111
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
    9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
    10. Henning Westerholt (@henningw) 16 10 172 187
 
-   All remaining contributors: Anca Vamanu, Ionut Ionita
-   (@ionutrazvanionita), Walter Doekes (@wdoekes), Ionel Cerghit
+   All remaining contributors: Anca Vamanu, Walter Doekes
+   (@wdoekes), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Andrei Dragus, Maksym Sobolyev (@sobomax),
    John Riordan, Hugues Mitonneau, Carsten Bock, Jerome Martin,
-   Klaus Darilion, Jarrod Baumann (@jarrodb), Zero King (@l2dy),
-   Michel Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis
-   Paquette, Andrei Datcu (@andrei-datcu), Jeffrey Magder, Ron
-   Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin
-   Bokarius, sergei lavrov, Alex Massover, Damien Sandras
-   (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05), Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), UnixDev, Eliot
-   Gable, Ryan Bullock (@rrb3942), Nick Altmann (@nikbyte), Edson
-   Gellert Schubert.
+   Klaus Darilion, Jarrod Baumann (@jarrodb), Nick Altmann
+   (@nikbyte), Zero King (@l2dy), Michel Bensoussan, Richard
+   Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
+   (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy Pyles,
+   Julián Moreno Patiño, Konstantin Bokarius, sergei lavrov, Alex
+   Massover, Damien Sandras (@dsandras), Alex Hermann, Dusan
+   Klinec (@ph4r05), Norman Brandinger (@NormB), Peter Lemenkov
+   (@lemenkov), UnixDev, Eliot Gable, Ryan Bullock (@rrb3942),
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2533,24 +2533,24 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - May 2021
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Apr 2021
-   3.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2021
-   5.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
-   6.  sergei lavrov                       Dec 2020 - Dec 2020
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
-   8.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
-   9.  Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
-   10. Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2021
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jun 2021
+   3.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
+   4.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2021
+   6.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
+   7.  sergei lavrov                       Dec 2020 - Dec 2020
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2020
+   9.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
+   10. Vlad Paiu (@vladpaiu)               Oct 2010 - Apr 2020
 
-   All remaining contributors: Dan Pascu (@danpascu), Peter
-   Lemenkov (@lemenkov), Ionel Cerghit (@ionel-cerghit), Jarrod
-   Baumann (@jarrodb), Ionut Ionita (@ionutrazvanionita), Julián
-   Moreno Patiño, Dusan Klinec (@ph4r05), Eseanu Marius Cristian
-   (@eseanucristian), Andrei Datcu (@andrei-datcu), Nick Altmann
-   (@nikbyte), Norman Brandinger (@NormB), Damien Sandras
-   (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
+   All remaining contributors: Zero King (@l2dy), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Ionel Cerghit
+   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut Ionita
+   (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Eseanu Marius Cristian (@eseanucristian), Andrei
+   Datcu (@andrei-datcu), Norman Brandinger (@NormB), Damien
+   Sandras (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
    Massover, Andrei Dragus, John Riordan, Hugues Mitonneau,
    Richard Revels, UnixDev, Alex Hermann, Henning Westerholt
    (@henningw), Carsten Bock, Klaus Darilion, Daniel-Constantin

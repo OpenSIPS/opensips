@@ -1001,13 +1001,6 @@ modparam("drouting", "rule_tables_query", "
           + C - Only check if the dialed number matches any
             routing rule, without loading / applying any routing
             info (no GW is set, the RURI is not altered)
-          + W (deprecated) - Instead of using the destination
-            (from the rule definition) in the given order, sort
-            them based on their weight.
-            This flag is deprecated in 3.1+. The new approach is
-            to set a "W" value as the "sort_alg" column of the
-            dr_rules or dr_carriers tables. See the Dynamic
-            Routing DB schema for more details.
      * gw_whitelist (string, optional) - a comma separated white
        list of gateways. This will force routing over, at most,
        this list of carriers or gateways (in other words, the
@@ -1674,8 +1667,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 377 179 12931 5578
-   2. Liviu Chircu (@liviuchircu) 143 81 2400 2556
-   3. Razvan Crainea (@razvancrainea) 94 48 1144 2185
+   2. Liviu Chircu (@liviuchircu) 144 82 2406 2562
+   3. Razvan Crainea (@razvancrainea) 95 49 1144 2204
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1712,12 +1705,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jun 2021
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2021
-   3.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
-   4.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
-   5.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
-   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jul 2021
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Jun 2021
+   4.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
+   5.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
+   6.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
    7.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
    8.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
    9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
@@ -1737,9 +1730,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Nick Altmann (@nikbyte), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Alexey
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Nick
+   Altmann (@nikbyte), Vlad Patrascu (@rvlad-patrascu), Alexey
    Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai
    Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt

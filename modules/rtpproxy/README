@@ -19,15 +19,14 @@ rtpproxy Module
               1.5.2. rtpproxy_disable_tout (integer)
               1.5.3. rtpproxy_timeout (string)
               1.5.4. rtpproxy_autobridge (integer)
-              1.5.5. rtpproxy_tout (integer)
-              1.5.6. rtpproxy_retr (integer)
-              1.5.7. default_set (integer)
-              1.5.8. nortpproxy_str (string)
-              1.5.9. db_url (string)
-              1.5.10. db_table (string)
-              1.5.11. rtpp_socket_col (string)
-              1.5.12. set_id_col (string)
-              1.5.13. rtpp_notify_socket (string)
+              1.5.5. rtpproxy_retr (integer)
+              1.5.6. default_set (integer)
+              1.5.7. nortpproxy_str (string)
+              1.5.8. db_url (string)
+              1.5.9. db_table (string)
+              1.5.10. rtpp_socket_col (string)
+              1.5.11. set_id_col (string)
+              1.5.12. rtpp_notify_socket (string)
 
         1.6. Exported Functions
 
@@ -303,11 +302,7 @@ modparam("rtpproxy", "rtpproxy_timeout", "0.2")
 modparam("rtpproxy", "rtpproxy_autobridge", 1)
 ...
 
-1.5.5. rtpproxy_tout (integer)
-
-   Obsolete. see rtpproxy_timeout.
-
-1.5.6. rtpproxy_retr (integer)
+1.5.5. rtpproxy_retr (integer)
 
    How many times rtpproxy should retry to send and receive after
    timeout was generated.
@@ -319,7 +314,7 @@ modparam("rtpproxy", "rtpproxy_autobridge", 1)
 modparam("rtpproxy", "rtpproxy_retr", 2)
 ...
 
-1.5.7. default_set (integer)
+1.5.6. default_set (integer)
 
    The parameter indicates the default RTPProxy set to be used
    when provisioning an engine in the config file without an
@@ -333,7 +328,7 @@ modparam("rtpproxy", "rtpproxy_retr", 2)
 modparam("rtpproxy", "default_set", 1)
 ...
 
-1.5.8. nortpproxy_str (string)
+1.5.7. nortpproxy_str (string)
 
    The parameter sets the SDP attribute used by rtpproxy to mark
    the packet SDP informations have already been mangled.
@@ -352,7 +347,7 @@ Note
 modparam("rtpproxy", "nortpproxy_str", "a=sdpmangled:yes\r\n")
 ...
 
-1.5.9. db_url (string)
+1.5.8. db_url (string)
 
    The database url. This parameter should be set if you want to
    use a database table from where to load or reload definitions
@@ -371,7 +366,7 @@ modparam("rtpproxy", "db_url",
 ...
 
 
-1.5.10. db_table (string)
+1.5.9. db_table (string)
 
    The name of the database table containing definitions of
    socket(s) used to connect to (a set) RTPProxy.
@@ -384,7 +379,7 @@ modparam("rtpproxy", "db_table", "nh_sockets")
 ...
 
 
-1.5.11. rtpp_socket_col (string)
+1.5.10. rtpp_socket_col (string)
 
    The name rtpp socket column in the database table.
 
@@ -396,7 +391,7 @@ modparam("rtpproxy", "rtpp_socket_col", "rtpp_socket")
 ...
 
 
-1.5.12. set_id_col (string)
+1.5.11. set_id_col (string)
 
    The name set id column in the database table.
 
@@ -408,7 +403,7 @@ modparam("rtpproxy", "set_id_col", "rtpp_set_id")
 ...
 
 
-1.5.13. rtpp_notify_socket (string)
+1.5.12. rtpp_notify_socket (string)
 
    The socket OpenSIPS listens for notifications from RTPProxy.
    Currently OpenSIPS can receive RTP timeout and DTMF events.
@@ -926,11 +921,11 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 221 139 4823 2546
+   1. Razvan Crainea (@razvancrainea) 222 140 4825 2568
    2. Maksym Sobolyev (@sobomax) 53 7 5009 256
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Vlad Patrascu (@rvlad-patrascu) 23 8 362 699
-   5. Liviu Chircu (@liviuchircu) 20 16 91 183
+   5. Liviu Chircu (@liviuchircu) 22 17 95 187
    6. Ovidiu Sas (@ovidiusas) 7 5 31 22
    7. Peter Lemenkov (@lemenkov) 6 4 60 11
    8. Vlad Paiu (@vladpaiu) 6 4 15 9
@@ -963,23 +958,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Jun 2021
-   2.  John Burke (@john08burke)           Apr 2021 - Apr 2021
-   3.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jan 2021
-   4.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jul 2020
-   5.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
-   7.  robdyck                             Apr 2020 - Apr 2020
-   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   10. Dan Pascu (@danpascu)               May 2019 - May 2019
+   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - Jul 2021
+   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - Jun 2021
+   3.  John Burke (@john08burke)           Apr 2021 - Apr 2021
+   4.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jan 2021
+   5.  Peter Lemenkov (@lemenkov)          Dec 2011 - Jul 2020
+   6.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
+   8.  robdyck                             Apr 2020 - Apr 2020
+   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
 
-   All remaining contributors: Ryan Bullock (@rrb3942), Liviu
-   Chircu (@liviuchircu), Julián Moreno Patiño, Vlad Paiu
-   (@vladpaiu), Dusan Klinec (@ph4r05), Dave Sidwell
-   (@davesidwell), Ezequiel Lovelle (@lovelle), Mikko Lehto,
-   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Anca
-   Vamanu.
+   All remaining contributors: Dan Pascu (@danpascu), Ryan Bullock
+   (@rrb3942), Julián Moreno Patiño, Vlad Paiu (@vladpaiu), Dusan
+   Klinec (@ph4r05), Dave Sidwell (@davesidwell), Ezequiel Lovelle
+   (@lovelle), Mikko Lehto, Walter Doekes (@wdoekes), Christophe
+   Sollet (@csollet), Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -988,8 +982,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Maksym Sobolyev (@sobomax), Razvan Crainea
-   (@razvancrainea), Zero King (@l2dy), Vlad Patrascu
+   Last edited by: Razvan Crainea (@razvancrainea), Maksym
+   Sobolyev (@sobomax), Zero King (@l2dy), Vlad Patrascu
    (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
    (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu

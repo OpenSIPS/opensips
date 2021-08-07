@@ -372,7 +372,7 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu)    53      24      2934     290
    2. Liviu Chircu (@liviuchircu)        16      12      198       95
    3. Maksym Sobolyev (@sobomax)         4        2       18       18
-   4. Razvan Crainea (@razvancrainea)    3        1       2        1
+   4. Razvan Crainea (@razvancrainea)    4        2       8        9
    5. John Burke (@john08burke)          2        1       4        0
    6. Andriy Pylypenko (@bambyster)      2        1       1        0
 
@@ -396,11 +396,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. John Burke (@john08burke)       Apr 2021 - Apr 2021
-   2. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2021
-   3. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Apr 2021
-   4. Maksym Sobolyev (@sobomax)      Jan 2021 - Jan 2021
-   5. Razvan Crainea (@razvancrainea) Jan 2021 - Jan 2021
+   1. Razvan Crainea (@razvancrainea) Jan 2021 - Jul 2021
+   2. John Burke (@john08burke)       Apr 2021 - Apr 2021
+   3. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2021
+   4. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Apr 2021
+   5. Maksym Sobolyev (@sobomax)      Jan 2021 - Jan 2021
    6. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
 
    (1) including any documentation-related commits, excluding

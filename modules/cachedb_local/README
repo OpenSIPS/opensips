@@ -92,6 +92,9 @@ Chapter 1. Admin Guide
    nodes in the cluster as a "seed" node. See the clusterer module
    for details on how to do this and why is it needed.
 
+   Note: You have to explicitly specify which collections you want
+   to replicate when you set cache_collections.
+
    Limitations: The clustering operations are not atomic and
    constistency over the cluster nodes is not guaranteed.
 
@@ -155,6 +158,10 @@ cache_store("local:group2", ...)
    '='. Every collection that is defined in this parameter SHOULD
    be used in at least one URL, else you'll receive a WARNING.
 
+   If clustering is enabled you have to specify which collections
+   you want to replicate with the /r suffix to the collection
+   name.
+
    The "default" collection always gets created, even when not
    included in this list of collections.
 
@@ -165,8 +172,11 @@ tom size
 ## 2^5 (32); we also changed the size of the default collection, which w
 ould have been
 ## created anyway from 2^9 - 512 (default value) to 2^4 - 16
-modparam("cachedb_local", "cache_collections", "collection1; collection2
- = 5; default = 4")
+## also, collection1 and collection2 will be replicated in the cluster,
+while the
+## default collection will be local to this node
+modparam("cachedb_local", "cache_collections", "collection1/r; collectio
+n2/r = 5; default = 4")
 ...
 
 1.4.3. cache_clean_period (int)
@@ -277,7 +287,7 @@ Chapter 3. Contributors
    1. Vlad Paiu (@vladpaiu) 32 10 1155 693
    2. Liviu Chircu (@liviuchircu) 20 14 125 190
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
-   4. Vlad Patrascu (@rvlad-patrascu) 13 9 99 125
+   4. Vlad Patrascu (@rvlad-patrascu) 15 10 145 128
    5. Anca Vamanu 13 5 739 54
    6. Andrei Dragus 9 4 182 181
    7. Fabian Gast (@fgast) 9 3 517 48
@@ -309,9 +319,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
-   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Nov 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Jul 2021
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
@@ -331,8 +341,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Zero King (@l2dy), Bogdan-Andrei Iancu
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Zero King (@l2dy), Bogdan-Andrei Iancu
    (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
    (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
    (@vladpaiu), Andrei Dragus, Anca Vamanu.

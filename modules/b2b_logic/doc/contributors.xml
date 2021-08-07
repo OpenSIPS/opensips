@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">64</entry>
-		<entry align="center">7</entry>
-		<entry align="center">2235</entry>
-		<entry align="center">2290</entry>
+		<entry align="center">75</entry>
+		<entry align="center">16</entry>
+		<entry align="center">2370</entry>
+		<entry align="center">2338</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -53,10 +53,10 @@
 	<row>
 		<entry>5. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">7</entry>
-		<entry align="center">8</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">9</entry>
+		<entry align="center">11</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
@@ -104,27 +104,27 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Nov 2020 - Jul 2021</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jan 2021 - Jul 2021</entry>
+	</row>
+	<row>
+		<entry>3. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Apr 2021 - May 2021</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Nov 2020 - May 2021</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
 		<entry align="center">Feb 2021 - May 2021</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jan 2021 - Jan 2021</entry>
-	</row>
-	<row>
 		<entry>5. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jan 2021 - Jan 2021</entry>
 	</row>
 	<row>

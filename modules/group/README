@@ -367,17 +367,17 @@ Chapter 2. Contributors
    2. Jan Janak (@janakj) 35 20 1370 148
    3. Daniel-Constantin Mierla (@miconda) 24 18 176 226
    4. Liviu Chircu (@liviuchircu) 15 11 87 152
-   5. Irina-Maria Stanescu 9 4 466 59
-   6. Razvan Crainea (@razvancrainea) 8 6 16 12
+   5. Razvan Crainea (@razvancrainea) 9 7 16 39
+   6. Irina-Maria Stanescu 9 4 466 59
    7. Andrei Pelinescu-Onciul 7 5 101 40
    8. Henning Westerholt (@henningw) 7 5 27 46
    9. Vlad Patrascu (@rvlad-patrascu) 5 2 78 106
    10. Edson Gellert Schubert 5 1 0 206
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
-   Peter Lemenkov (@lemenkov), Dan Pascu (@danpascu), Sergio
-   Gutierrez, Konstantin Bokarius, Norman Brandinger (@NormB),
-   UnixDev, Anca Vamanu, Walter Doekes (@wdoekes).
+   Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Dan Pascu
+   (@danpascu), Sergio Gutierrez, Konstantin Bokarius, Norman
+   Brandinger (@NormB), UnixDev, Anca Vamanu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -399,11 +399,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - May 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Mar 2020
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2021
+   2.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - May 2020
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Mar 2020
    6.  Dan Pascu (@danpascu)               Oct 2007 - Apr 2019
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    8.  Irina-Maria Stanescu                Aug 2009 - Dec 2009

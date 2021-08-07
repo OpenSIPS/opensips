@@ -440,7 +440,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 50 36 778 375
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 51 37 783 380
    2. Jan Janak (@janakj) 50 29 1610 424
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
    4. Liviu Chircu (@liviuchircu) 17 14 78 103
@@ -452,10 +452,10 @@ Chapter 2. Contributors
    10. Andrei Pelinescu-Onciul 6 4 81 33
 
    All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
-   (@jiriatipteldotorg), Anatoly Pidruchny, Kennard White, Walter
-   Doekes (@wdoekes), Konstantin Bokarius, Richard Revels, Julián
-   Moreno Patiño, Norman Brandinger (@NormB), Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert, Ionut Ionita
+   (@jiriatipteldotorg), Walter Doekes (@wdoekes), Anatoly
+   Pidruchny, Kennard White, Konstantin Bokarius, Richard Revels,
+   Julián Moreno Patiño, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Ionut Ionita
    (@ionutrazvanionita).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -478,10 +478,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   2.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2021
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jul 2021
+   2.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   3.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2021
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

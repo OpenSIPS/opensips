@@ -241,6 +241,13 @@ modparam("topology_hiding", "th_contact_encode_scheme", "base32")
      * D - Dialog ID (DID) is pushed into Contact username, rather
        than URI param. This option makes sense only when using
        topology hiding with dialog support.
+     * a - Preserve the advertised Contact header advertised to
+       the caller throughout the entire dialog.
+     * A - Preserve the advertised Contact header advertised to
+       the callee throughout the entire dialog.
+     * D - Dialog ID (DID) is pushed into Contact username, rather
+       than URI param. This option makes sense only when using
+       topology hiding with dialog support.
      * C - Encode the callid header
        There are many cases where propagating the callid towards
        the callee side is not a good idea, since sometimes the
@@ -329,7 +336,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 31 8 2700 25
-   2. Razvan Crainea (@razvancrainea) 23 19 132 62
+   2. Razvan Crainea (@razvancrainea) 24 20 218 72
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 21 17 133 78
    4. Liviu Chircu (@liviuchircu) 15 13 80 53
    5. Vlad Patrascu (@rvlad-patrascu) 9 6 82 72
@@ -357,9 +364,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Apr 2021
-   2. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Oct 2020
+   1. Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2021
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Apr 2021
+   3. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    4. Liviu Chircu (@liviuchircu)         Mar 2015 - May 2020
    5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2020
@@ -373,10 +380,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Paiu (@vladpaiu).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
+   (@vladpaiu).
 
    Documentation Copyrights:
 
