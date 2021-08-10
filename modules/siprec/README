@@ -97,7 +97,7 @@ Chapter 1. Admin Guide
    to the SRS contains a multi-part body consisting of two parts:
      * Recording SDP - the SDP of the Media Server that will fork
        the RTP to the recorder.
-     * Participants Metadata - an XML-formated document that
+     * Participants Metadata - an XML-formatted document that
        contains information about the participants. The structure
        of the document is detailed in RFC 7865.
 
@@ -146,7 +146,7 @@ Chapter 1. Admin Guide
        for us to postpone the media between the caller and callee
        to play a Recording Indicator message.
      * Cannot handle Recording Sessions initiated by SRS - we do
-       not support the scenario when an SRS suddently decides to
+       not support the scenario when an SRS suddenly decides to
        record a call in the middle of the dialog.
      * OpenSIPS cannot be “queried” for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
@@ -222,10 +222,10 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 [rtpproxy_sock], [media_ip], [headers])
 
    Calling this function on an initial INVITE engages call
-   recording to SRSs for that call. Note that it does not
+   recording to SRS(s) for that call. Note that it does not
    necessary mean that the call will be recorded - it just means
    that OpenSIPS will query instruct the SRS that a new call has
-   sterted, but the SRS might decide that the recording is
+   started, but the SRS might decide that the recording is
    disabled for those participants.
 
    Note that the call recording is not started right away, but
@@ -244,7 +244,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * callee (string, optional) - an XML block containing
        information about the callee. If absent, the To header is
        used to build the value from.
-     * rtpproxy_sock (string, optional) - the RTPProxy soscket
+     * rtpproxy_sock (string, optional) - the RTPProxy socket
        used for this call. If absent, the rtpproxy module will try
        to detect the proxy used for the initial call, based on the
        default set provisioned in the rtpproxy module.
