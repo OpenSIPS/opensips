@@ -58,7 +58,7 @@
 		</listitem>
 		<listitem>
 		<para>
-			<emphasis>Participants Metadata</emphasis> - an XML-formated
+			<emphasis>Participants Metadata</emphasis> - an XML-formatted
 			document that contains information about the participants. The
 			structure of the document is detailed in <ulink
 				url='https://tools.ietf.org/html/rfc7865'>RFC 7865</ulink>.
@@ -278,10 +278,10 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 			</title>
 			<para>
 				Calling this function on an initial
-				<emphasis>INVITE</emphasis> engages call recording to SRSs for
+				<emphasis>INVITE</emphasis> engages call recording to SRS(s) for
 				that call. Note that it does not necessary mean that the call
 				will be recorded - it just means that &osips; will query
-				instruct the SRS that a new call has sterted, but the SRS
+				instruct the SRS that a new call has started, but the SRS
 				might decide that the recording is disabled for those
 				participants.
 			</para>
@@ -316,7 +316,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 				</para></listitem>
 				<listitem><para>
 					<emphasis>rtpproxy_sock</emphasis> (string, optional) - the
-					RTPProxy soscket used for this call. If absent, the rtpproxy
+					RTPProxy socket used for this call. If absent, the rtpproxy
 					module will try to detect the proxy used for the initial call,
 					based on the default set provisioned in the
 					<emphasis>rtpproxy</emphasis> module.
