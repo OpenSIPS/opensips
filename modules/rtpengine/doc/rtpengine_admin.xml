@@ -188,6 +188,26 @@ modparam("rtpengine", "rtpengine_retr", 2)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_rtpengine_timer_interval" xreflabel="rtpengine_timer_interval">
+		<title><varname>rtpengine_timer_interval</varname> (integer)</title>
+		<para>
+    Frequency to scan rtpengine sets for disabled node probing. Probing is done
+    outside the SIP processing context and in a separate timer routine. Disabled nodes
+    are probed for re-enablement after rtpengine_disable_tout seconds. Setting this value
+    too high can lead to unexpectedly large disabled interval as the max interval
+    before probing is (rtpengine_timer_interval + rtpengine_disable_tout) seconds.
+		</para><para>
+			Default value is <quote>5</quote>.
+		</para>
+		<example>
+		<title>Set <varname>rtpengine_timer_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpengine", "rtpengine_timer_interval", 1)
+...
+</programlisting>
+		</example>
+	</section>
 	<section id="param_notification_sock" xreflabel="notification_sock">
 		<title><varname>notification_sock</varname> (string)</title>
 		<para>
