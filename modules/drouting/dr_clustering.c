@@ -160,7 +160,7 @@ static int gw_status_update(bin_packet_t *packet, int raise_event)
 	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
-	if (part==NULL)
+	if (part==NULL || part->rdata==NULL)
 		return -1;
 
 	lock_start_read(part->ref_lock);
@@ -197,7 +197,7 @@ static int cr_status_update(bin_packet_t *packet)
 	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
-	if (part==NULL)
+	if (part==NULL || part->rdata==NULL)
 		return -1;
 
 	lock_start_read(part->ref_lock);
@@ -376,9 +376,6 @@ int dr_init_cluster(void)
 	} else {
 		dr_cluster_shtag.len = 0;
 	}
-
-	if (dr_cluster_sync() < 0)
-		return -1;
 
 	return 0;
 }
