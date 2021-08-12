@@ -66,11 +66,16 @@ modparam("stir_shaken", "auth_date_freshness", 300)
 	<section id="param_verify_date_freshness" xreflabel="verify_date_freshness">
 	    <title><varname>verify_date_freshness</varname> (integer)</title>
 	    <para>
-		The maximum number of seconds that the value in the Date header field
-		can be older than the current time. Also, if the <emphasis>iat</emphasis>
-		value in the PASSporT is different than the  Date value, but remains within
-		this interval, it will be used in the verification process (for the
+		The maximum number of seconds that the value in the Date header field can be
+		older than the current time. Also, if the <emphasis>iat</emphasis> value in
+		the PASSporT is different than the Date value, but remains within the
+		permitted interval, it will be used in the verification process (for the
 		reconstructed PASSporT) instead of the Date value.
+		</para>
+		<para>
+		If the <xref linkend="param_require_date_hdr"/> parameter is set to not
+		required and the Date header is missing, the <emphasis>iat</emphasis> value
+		will be used for this check instead.
 		</para>
 		<para>
 		This parameter is only relevant for the
@@ -171,6 +176,34 @@ modparam("stir_shaken", "crl_dir", "/stir_certs/crls")
 		<programlisting format="linespecific">
 ...
 modparam("stir_shaken", "e164_strict_mode", 1)
+...
+</programlisting>
+	    </example>
+	</section>
+
+	<section id="param_require_date_hdr" xreflabel="require_date_hdr">
+	    <title><varname>require_date_hdr</varname> (integer)</title>
+	    <para>
+	    Specifies whether the Date header is mandatory when doing verification
+	    with the <xref linkend="func_stir_shaken_verify"/> function.
+	    </para>
+	    <para>
+	    A value of <emphasis>1</emphasis> means required and <emphasis>0</emphasis>
+	    not required.
+	    </para>
+	    <para>
+	    If the parameter is set to not required but the header is present in the
+	    message, the Date value will be used as normally to check the freshness (as
+	    configured in the <xref linkend="param_verify_date_freshness"/>
+	    parameter). If the Date header is indeed missing, the value of the
+	    <emphasis>iat</emphasis> claim in the PASSporT will be used instead.
+		</para>
+	    <para>The default value is <emphasis>1</emphasis> (required).</para>
+	    <example>
+		<title>Set <varname>require_date_hdr</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir_shaken", "require_date_hdr", 0)
 ...
 </programlisting>
 	    </example>
