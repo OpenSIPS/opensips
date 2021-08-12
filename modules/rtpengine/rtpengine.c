@@ -1211,6 +1211,9 @@ void rtpengine_timer(unsigned int ticks, void *param)
   struct rtpe_set *rtpe_list;
   struct rtpe_node *crt_rtpe;
 
+  if (*rtpe_set_list == NULL)
+    return;
+
   RTPE_START_READ();
   for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
