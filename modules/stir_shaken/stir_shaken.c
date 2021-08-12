@@ -105,6 +105,8 @@ static char *crl_dir;
 
 static int e164_strict_mode;
 
+static int require_date_hdr = 1;
+
 static int tn_authlist_nid;
 
 static int parsed_ctx_idx =-1;
@@ -119,6 +121,7 @@ static param_export_t params[] = {
 	{"crl_list", STR_PARAM, &crl_list},
 	{"crl_dir", STR_PARAM, &crl_dir},
 	{"e164_strict_mode", INT_PARAM, &e164_strict_mode},
+	{"require_date_hdr", INT_PARAM, &require_date_hdr},
 	{0, 0, 0}
 };
 
@@ -1755,19 +1758,6 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	date_hf = get_header_by_static_name(msg, "Date");
-	if (!date_hf) {
-		LM_NOTICE("No Date header found\n");
-		SET_VERIFY_ERR_VARS(BADREQ_CODE, BADREQ_NODATE_REASON);
-		rc = -2;
-		goto error;
-	}
-
-	if (get_date_ts(date_hf, &date_ts) < 0) {
-		LM_ERR("Failed to get UNIX time from Date header\n");
-		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
-		rc = -1;
-		goto error;
-	}
 
 	if ((now = time(0)) == -1) {
 		LM_ERR("Failed to get current time\n");
@@ -1775,12 +1765,39 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		rc = -1;
 		goto error;
 	}
-	if (now - date_ts > verify_date_freshness) {
-		LM_NOTICE("Date header value is older than local policy (%lds > %ds)\n",
-		          now - date_ts, verify_date_freshness);
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -6;
-		goto error;
+
+	iat_ts = (time_t)parsed->iat->valuedouble;
+
+	if (require_date_hdr || date_hf) {
+		if (!date_hf) {
+			LM_NOTICE("No Date header found\n");
+			SET_VERIFY_ERR_VARS(BADREQ_CODE, BADREQ_NODATE_REASON);
+			rc = -2;
+			goto error;
+		}
+
+		if (get_date_ts(date_hf, &date_ts) < 0) {
+			LM_ERR("Failed to get UNIX time from Date header\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+			rc = -1;
+			goto error;
+		}
+
+		if (now - date_ts > verify_date_freshness) {
+			LM_NOTICE("Date header value is older than local policy (%lds > %ds)\n",
+			          now - date_ts, verify_date_freshness);
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -6;
+			goto error;
+		}
+	} else {
+		if (now - iat_ts > verify_date_freshness) {
+			LM_NOTICE("'iat' value is older than local policy (%lds > %ds)\n",
+			          now - iat_ts, verify_date_freshness);
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -6;
+			goto error;
+		}
 	}
 
 	/* if the identities in the PASSporT and SIP message are different
@@ -1814,11 +1831,20 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		goto error;
 	}
 
-	if (!check_cert_validity(&date_ts, cert)) {
-		LM_INFO("The Date header does not fall within the certificate validity\n");
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -7;
-		goto error;
+	if (require_date_hdr || date_hf) {
+		if (!check_cert_validity(&date_ts, cert)) {
+			LM_INFO("The Date header does not fall within the certificate validity\n");
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -7;
+			goto error;
+		}
+	} else {
+		if (!check_cert_validity(&iat_ts, cert)) {
+			LM_INFO("The 'iat' value does not fall within the certificate validity\n");
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -7;
+			goto error;
+		}
 	}
 
 	if ((rc = validate_certificate(cert, certchain)) < 0) {
@@ -1833,8 +1859,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
-	iat_ts = (time_t)parsed->iat->valuedouble;
-	if (iat_ts != date_ts && (now - iat_ts > verify_date_freshness))
+	if (date_hf && iat_ts != date_ts &&
+		(now - iat_ts > verify_date_freshness))
 		iat_ts = date_ts;
 
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
