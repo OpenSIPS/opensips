@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fnmatch.h>
 
 #include "ratelimit.h"
 
@@ -651,18 +652,50 @@ static int rl_map_print(void *param, str key, void *value)
 	return 0;
 }
 
-static int rl_map_print_array(void *param, str key, void *value)
+static int rl_map_print_array(void *extras, str key, void *value)
 {
-	mi_item_t *pipe_item = add_mi_object((mi_item_t *)param, NULL, 0);
+	mi_item_t *pipe_item = add_mi_object((mi_item_t *)(((void**)extras)[0]),
+		NULL, 0);
 	if (!pipe_item)
 		return -1;
-	return rl_map_print(pipe_item, key, value);
+	return rl_map_print(pipe_item, key, value );
 }
 
-int rl_stats(mi_item_t *resp_obj, str * value)
+static int rl_map_print_array_filter(void *extras, str key, void *value)
+{
+	static str nt_key = {NULL,0};
+	mi_item_t *pipe_item;
+	char *filter_s = (char*)(((void**)extras)[1]);
+	int filter_out = (int)(long)(((void**)extras)[2]);
+
+	/* make the key null terminated */
+	if (pkg_str_extend( &nt_key, key.len+1))
+		return -1;
+	memcpy( nt_key.s, key.s, key.len);
+	nt_key.s[key.len] = 0;
+
+	if ( fnmatch( filter_s, nt_key.s, 0)!=0 ) {
+		if (filter_out==0)
+			return 0;
+	} else {
+		if (filter_out==1)
+			return 0;
+	}
+
+	pipe_item = add_mi_object((mi_item_t *)(((void**)extras)[0]), NULL, 0);
+	if (!pipe_item)
+		return -1;
+
+	return rl_map_print(pipe_item, key, value );
+}
+
+int rl_stats(mi_item_t *resp_obj, str * value, str *filter, int filter_out)
 {
 	mi_item_t *pipe_item, *pipe_arr;
 	rl_pipe_t **pipe;
+	void *extras[3];
+	char *filter_s;
+	process_each_func func;
 	int i;
 
 	if (value && value->s && value->len) {
@@ -688,11 +721,25 @@ int rl_stats(mi_item_t *resp_obj, str * value)
 		pipe_arr = add_mi_array(resp_obj, MI_SSTR("Pipes"));
 		if (!pipe_arr)
 			return -1;
+		extras[0] = pipe_arr;
+		if (filter && filter->s && filter->len) {
+			// make filter NULL terminated
+			filter_s = (char*)pkg_malloc( filter->len+1 );
+			if (!filter_s)
+				return -1;
+			memcpy( filter_s, filter->s, filter->len);
+			filter_s[filter->len] = 0;
+			extras[1] = filter_s;
+			extras[2] = (void*)(long)filter_out;
+			func = rl_map_print_array_filter;
+		} else {
+			func = rl_map_print_array;
+		}
 		for (i = 0; i < rl_htable.size; i++) {
 			if (map_size(rl_htable.maps[i]) == 0)
 				continue;
 			RL_GET_LOCK(i);
-			if (map_for_each(rl_htable.maps[i], rl_map_print_array, pipe_arr)) {
+			if (map_for_each(rl_htable.maps[i], func, (void*)extras)) {
 				LM_ERR("cannot print values\n");
 				goto error;
 			}

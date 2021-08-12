@@ -105,6 +105,10 @@ mi_response_t *mi_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_stats_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+mi_response_t *mi_stats_2(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_stats_3(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 mi_response_t *mi_reset_pipe(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_set_pid(const mi_params_t *params,
@@ -166,6 +170,8 @@ static mi_export_t mi_cmds [] = {
 	{"rl_list", RLH1, 0, 0, {
 		{mi_stats, {0}},
 		{mi_stats_1, {"pipe", 0}},
+		{mi_stats_2, {"filter", 0}},
+		{mi_stats_3, {"filter_out", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{"rl_reset_pipe", RLH2, 0, 0, {
@@ -658,7 +664,7 @@ mi_response_t *mi_stats(const mi_params_t *params,
 	if (!resp)
 		return 0;
 
-	if (rl_stats(resp_obj, NULL) < 0) {
+	if (rl_stats(resp_obj, NULL, NULL, 0) < 0) {
 		LM_ERR("cannot mi print values\n");
 		goto free;
 	}
@@ -692,7 +698,81 @@ mi_response_t *mi_stats_1(const mi_params_t *params,
 	if (get_mi_string_param(params, "pipe", &pipe_name.s, &pipe_name.len) < 0)
 		return init_mi_param_error();
 
-	rc = rl_stats(resp_obj, &pipe_name);
+	rc = rl_stats(resp_obj, &pipe_name, NULL, 0);
+	if (rc < 0) {
+		LM_ERR("cannot mi print values\n");
+		goto free;
+	} else if (rc == 1) {
+		return init_mi_error(404, MI_SSTR("Pipe Not Found"));
+	}
+
+	LOCK_GET(rl_lock);
+	if (add_mi_number(resp_obj, MI_SSTR("drop_rate"), *drop_rate) < 0) {
+		LOCK_RELEASE(rl_lock);
+		goto free;
+	}
+	LOCK_RELEASE(rl_lock);
+
+	return resp;
+
+free:
+	free_mi_response(resp);
+	return 0;
+}
+
+mi_response_t *mi_stats_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str filter;
+	int rc;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (get_mi_string_param(params, "filter", &filter.s, &filter.len) < 0)
+		return init_mi_param_error();
+
+	rc = rl_stats(resp_obj, NULL, &filter, 0);
+	if (rc < 0) {
+		LM_ERR("cannot mi print values\n");
+		goto free;
+	} else if (rc == 1) {
+		return init_mi_error(404, MI_SSTR("Pipe Not Found"));
+	}
+
+	LOCK_GET(rl_lock);
+	if (add_mi_number(resp_obj, MI_SSTR("drop_rate"), *drop_rate) < 0) {
+		LOCK_RELEASE(rl_lock);
+		goto free;
+	}
+	LOCK_RELEASE(rl_lock);
+
+	return resp;
+
+free:
+	free_mi_response(resp);
+	return 0;
+}
+
+mi_response_t *mi_stats_3(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str filter;
+	int rc;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (get_mi_string_param(params, "filter_out", &filter.s, &filter.len) < 0)
+		return init_mi_param_error();
+
+	rc = rl_stats(resp_obj, NULL, &filter, 1);
 	if (rc < 0) {
 		LM_ERR("cannot mi print values\n");
 		goto free;
