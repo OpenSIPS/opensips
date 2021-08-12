@@ -1397,7 +1397,7 @@ mod_init(void)
 		memset(&dlgb, 0, sizeof(struct dlg_binds));
 	}
 
-  if (register_timer("rtpengine-timer", rtpengine_timer, NULL, rtpengine_timer_interval, TIMER_FLAG_SKIP_ON_DELAY) <0 ) {
+  if (register_timer("rtpengine-timer", rtpengine_timer, NULL, rtpengine_timer_interval, TIMER_FLAG_DELAY_ON_DELAY) <0 ) {
     LM_ERR("could not register timer function\n");
     return -1;
   }
