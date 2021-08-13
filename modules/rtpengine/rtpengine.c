@@ -296,7 +296,7 @@ static int fixup_set_id(void ** param);
 static int fixup_free_set_id(void ** param);
 static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
 static struct rtpe_set * select_rtpe_set(int id_set);
-static struct rtpe_node *select_rtpe_node(str, int, struct rtpe_set *);
+static struct rtpe_node *select_rtpe_node(str, struct rtpe_set *);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -330,6 +330,7 @@ static int rtpengine_stats_used = 0;
 static int rtpengine_disable_tout = 60;
 static int rtpengine_retr = 5;
 static int rtpengine_tout = 1;
+static int rtpengine_timer_interval = 5;
 static pid_t mypid;
 static int myrand = 0;
 static unsigned int myseqn = 0;
@@ -637,6 +638,7 @@ static param_export_t params[] = {
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
 	{"rtpengine_retr",         INT_PARAM, &rtpengine_retr         },
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
+  {"rtpengine_timer_interval", INT_PARAM, &rtpengine_timer_interval},
 	{"notification_sock",      STR_PARAM, &rtpengine_notify_sock.s},
 	{"extra_id_pv",            STR_PARAM, &extra_id_pv_param.s },
 	{"setid_avp",              STR_PARAM, &setid_avp_param },
@@ -1201,6 +1203,29 @@ static mi_response_t *mi_teardown_call(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
+/*
+ * Timer housekeeping, invoked each timer interval to check for proxy re-enablement
+ */
+void rtpengine_timer(unsigned int ticks, void *param)
+{
+  struct rtpe_set *rtpe_list;
+  struct rtpe_node *crt_rtpe;
+
+  if (*rtpe_set_list == NULL)
+    return;
+
+  RTPE_START_READ();
+  for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
+					rtpe_list = rtpe_list->rset_next){
+		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
+						crt_rtpe = crt_rtpe->rn_next){      
+      if (crt_rtpe->rn_disabled && crt_rtpe->rn_recheck_ticks <= get_ticks())
+        crt_rtpe->rn_disabled = rtpe_test(crt_rtpe, 0, 1);
+    }
+  }
+  RTPE_STOP_READ();
+}
+
 /* hack to get the rtpengine node used for the offer */
 static pv_spec_t media_pvar;
 
@@ -1374,6 +1399,11 @@ mod_init(void)
 				" command will not work\n");
 		memset(&dlgb, 0, sizeof(struct dlg_binds));
 	}
+
+  if (register_timer("rtpengine-timer", rtpengine_timer, NULL, rtpengine_timer_interval, TIMER_FLAG_DELAY_ON_DELAY) <0 ) {
+    LM_ERR("could not register timer function\n");
+    return -1;
+  }
 
 	return 0;
 }
@@ -2104,10 +2134,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	do {
 		if (snode && snode->s) {
 			if ((node = get_rtpe_node(snode, set)) == NULL)
-				node = select_rtpe_node(ng_flags.call_id, 1, set);
+				node = select_rtpe_node(ng_flags.call_id, set);
 			snode = NULL;
 		} else {
-			node = select_rtpe_node(ng_flags.call_id, 1, set);
+			node = select_rtpe_node(ng_flags.call_id, set);
 		}
 		if (!node) {
 			LM_ERR("no available proxies\n");
@@ -2486,7 +2516,7 @@ static struct rtpe_set * select_rtpe_set(int id_set )
  * too expensive here.
  */
 static struct rtpe_node *
-select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
+select_rtpe_node(str callid, struct rtpe_set *set)
 {
 	unsigned sum, weight_sum;
 	struct rtpe_node* node;
@@ -2506,11 +2536,8 @@ select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 	/* Most popular case: 1 proxy, nothing to calculate */
 	if (set->rtpe_node_count == 1) {
 		node = set->rn_first;
-		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks())
-			node->rn_disabled = rtpe_test(node, 1, 0);
 		if (node->rn_disabled)
 			return NULL;
-
 		return node;
 	}
 
@@ -2520,16 +2547,10 @@ select_rtpe_node(str callid, int do_test, struct rtpe_set *set)
 	sum &= 0xff;
 
 	was_forced = 0;
-retry:
 	weight_sum = 0;
 	constant_weight_sum = 0;
 	found = 0;
 	for (node=set->rn_first; node!=NULL; node=node->rn_next) {
-
-		if (node->rn_disabled && node->rn_recheck_ticks <= get_ticks()){
-			/* Try to enable if it's time to try. */
-			node->rn_disabled = rtpe_test(node, 1, 0);
-		}
 		constant_weight_sum += node->rn_weight;
 		if (!node->rn_disabled) {
 			weight_sum += node->rn_weight;
@@ -2537,14 +2558,7 @@ retry:
 		}
 	}
 	if (found == 0) {
-		/* No proxies? Force all to be re-detected, if not yet */
-		if (was_forced)
 			return NULL;
-		was_forced = 1;
-		for(node=set->rn_first; node!=NULL; node=node->rn_next) {
-			node->rn_disabled = rtpe_test(node, 1, 1);
-		}
-		goto retry;
 	}
 	sumcut = weight_sum ? sum % constant_weight_sum : -1;
 	/*
@@ -2555,7 +2569,7 @@ retry:
 	for (node=set->rn_first; node!=NULL;) {
 		if (sumcut < (int)node->rn_weight) {
 			if (!node->rn_disabled)
-				goto found;
+				return node;
 			if (was_forced == 0) {
 				/* appropriate proxy is disabled : redistribute on enabled ones */
 				sumcut = weight_sum ? sum %  weight_sum : -1;
@@ -2569,14 +2583,6 @@ retry:
 	}
 	/* No node list */
 	return NULL;
-found:
-	if (do_test) {
-		node->rn_disabled = rtpe_test(node, node->rn_disabled, 0);
-		if (node->rn_disabled)
-			goto retry;
-	}
-
-	return node;
 }
 
 static int
