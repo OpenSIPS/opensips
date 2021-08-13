@@ -173,6 +173,11 @@ typedef struct ucontact_info {
 
 	/* contact matching algorithm - no need to free anything */
 	struct ct_match *cmatch;
+
+	/* optional callback to be invoked before a freshly created contact
+	 * is replicated (useful to attach additional data, then replicate!) */
+	int (*pre_replicate_cb)(ucontact_t *c, void *info);
+	void *pre_replicate_info;
 } ucontact_info_t;
 
 /*! \brief
