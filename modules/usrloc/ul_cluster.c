@@ -504,7 +504,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		user_agent, path, attr, st, sock, kv_str;
 	udomain_t *domain;
 	urecord_t *record;
-	ucontact_t *contact;
+	ucontact_t *contact, *ct;
 	int rc, port, proto, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
@@ -603,13 +603,30 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 		record->label = rlabel;
 		sl = record->aorhash & (domain->size - 1);
-		if (domain->table[sl].next_label <= record->label)
-			domain->table[sl].next_label = record->label + 1;
+		if (domain->table[sl].next_label <= rlabel)
+			domain->table[sl].next_label = rlabel + 1;
 	}
 
-	if (record->label != rlabel)
-		LM_BUG("replicated ct insert: differring rlabels! (ci: '%.*s')",
-		       callid.len, callid.s);
+	if (record->label != rlabel) {
+		int has_good_cts = 0;
+
+		for (ct = record->contacts; ct; ct = ct->next)
+			if (ct->expires != UL_EXPIRED_TIME) {
+				has_good_cts = 1;
+				break;
+			}
+
+		if (has_good_cts) {
+			LM_BUG("differring rlabels (%u vs. %u, ci: '%.*s')",
+			       record->label, rlabel, callid.len, callid.s);
+		} else {
+			/* no contacts -> it's safe to inherit the active node's rlabel */
+			record->label = rlabel;
+			sl = record->aorhash & (domain->size - 1);
+			if (domain->table[sl].next_label <= rlabel)
+				domain->table[sl].next_label = rlabel + 1;
+		}
+	}
 
 	if (record->next_clabel <= clabel)
 		record->next_clabel = CLABEL_INC_AND_TEST(clabel);
