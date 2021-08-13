@@ -229,15 +229,14 @@ void mid_reg_ct_event(void *binding, ul_cb_type type)
 
 	LM_DBG("Contact callback (%d): contact='%.*s'\n", type, c->c.len, c->c.s);
 
-	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)) {
-		if (reg_mode == MID_REG_THROTTLE_CT) {
-			skip_dereg = ul.get_ucontact_key(c, &ul_key_skip_dereg);
-			if (skip_dereg && skip_dereg->i == 1)
-				return;
+	if (type & (UL_CONTACT_DELETE|UL_CONTACT_EXPIRE)
+	        && reg_mode == MID_REG_THROTTLE_CT) {
+		skip_dereg = ul.get_ucontact_key(c, &ul_key_skip_dereg);
+		if ((skip_dereg && skip_dereg->i == 1) || !ul.is_my_ucontact(c))
+			return;
 
-			if (unregister_contact(c) != 0)
-				LM_ERR("failed to unregister contact\n");
-		}
+		if (unregister_contact(c) != 0)
+			LM_ERR("failed to unregister contact\n");
 	}
 }
 

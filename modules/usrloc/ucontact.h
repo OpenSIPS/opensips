@@ -199,6 +199,7 @@ typedef struct {
 
 int ucontact_coords_cmp(ucontact_coords a, ucontact_coords b);
 void free_ucontact_coords(ucontact_coords coords);
+int is_my_ucontact(ucontact_t *c);
 
 /*! \brief
  * ancient time used for marking the contacts forced to expired

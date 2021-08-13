@@ -716,7 +716,7 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 				/* a lot slower than fetching all tags before the outermost
 				 * loop, but at least we have proper responsiveness to tag
 				 * switches! */
-				if (pinging_mode == PMD_OWNERSHIP && !is_my_contact(c))
+				if (pinging_mode == PMD_OWNERSHIP && !_is_my_ucontact(c))
 					continue;
 
 				needed = (int)((c->received.s?

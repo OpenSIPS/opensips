@@ -327,6 +327,15 @@ typedef struct usrloc_api {
 	void (*free_ucontact_coords) (ucontact_coords coords);
 
 	/**
+	 * Check if an ucontact is logically owned by the current OpenSIPS node.
+	 * Always returns true in single node setups or if a contact does not have
+	 * an ownership tag attached.
+	 *
+	 * Return: 1 (true), 0 (false)
+	 */
+	int (*is_my_ucontact) (ucontact_t *c);
+
+	/**
 	 * Generate the next contact ID of a given record.  Returns a different
 	 * contact ID on each new call, rotating across CLABEL_MASK values.
 	 *
