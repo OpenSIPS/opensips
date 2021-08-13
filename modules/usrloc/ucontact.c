@@ -1045,3 +1045,8 @@ int_str_t *put_ucontact_key(ucontact_t* _ct, const str* _key,
 {
 	return kv_put(_ct->kv_storage, _key, _val);
 }
+
+int is_my_ucontact(ucontact_t *c)
+{
+	return _is_my_ucontact(c);
+}
