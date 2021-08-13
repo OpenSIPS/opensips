@@ -50,7 +50,7 @@ extern str ul_shtag_key;
 extern str contact_repl_cap;
 
 int ul_init_cluster(void);
-#define is_my_contact(__ct) \
+#define _is_my_ucontact(__ct) \
 	(!__ct->shtag.s || \
 	 clusterer_api.shtag_get(&__ct->shtag, location_cluster) \
 		== SHTAG_STATE_ACTIVE)
