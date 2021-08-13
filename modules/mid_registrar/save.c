@@ -226,6 +226,41 @@ void free_ct_mappings(struct list_head *mappings)
 	}
 }
 
+struct mr_ct_data {
+	struct mid_reg_info *mri;
+	const str *ct_uri;
+	int expires;
+	int expires_out;
+	int last_reg_ts;
+	int last_cseq;
+};
+
+static int mid_reg_store_ct_data(ucontact_t *c, void *info)
+{
+	struct mr_ct_data *data = (struct mr_ct_data *)info;
+	int rc;
+
+	rc = store_ucontact_data(c, data->mri, data->ct_uri, data->expires,
+		data->expires_out, data->last_reg_ts, data->last_cseq);
+	if (rc != 0)
+		LM_ERR("failed to attach ucontact data - oom?\n");
+
+	return rc;
+}
+
+static int mid_reg_update_ct_data(ucontact_t *c, void *info)
+{
+	struct mr_ct_data *data = (struct mr_ct_data *)info;
+	int rc;
+
+	rc = update_ucontact_data(c, data->expires,
+		data->expires_out, data->last_cseq);
+	if (rc != 0)
+		LM_ERR("failed to update ucontact data - oom?\n");
+
+	return rc;
+}
+
 /**
  * Overwrites each Contact header field of the request.
  * Saves all these mappings to the mri->ct_mappings list.
@@ -1351,6 +1386,15 @@ update_usrloc:
 					goto error;
 			}
 
+			if (reg_mode == MID_REG_THROTTLE_CT) {
+				/* populate extra ct stuff between "insert" and "replicate" */
+				ci->pre_replicate_cb = mid_reg_store_ct_data;
+				ci->pre_replicate_info = &(struct mr_ct_data){
+						mri, &_c->uri, ctmap->expires, e_out,
+						get_act_time(), ci->cseq
+					};
+			}
+
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
 			if (ul.insert_ucontact(r, &ctmap->req_ct_uri, ci,
@@ -1361,13 +1405,6 @@ update_usrloc:
 			}
 
 			vct++;
-
-			if (reg_mode == MID_REG_THROTTLE_CT &&
-			    store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
-			                        get_act_time(), ci->cseq) != 0) {
-				LM_ERR("failed to attach ucontact data - oom?\n");
-				goto error;
-			}
 		} else if (c) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
@@ -1613,6 +1650,15 @@ update_usrloc:
 					goto out_clear_err;
 			}
 
+			if (reg_mode == MID_REG_THROTTLE_AOR) {
+				/* populate extra ct stuff between "insert" and "replicate" */
+				ci->pre_replicate_cb = mid_reg_store_ct_data;
+				ci->pre_replicate_info = &(struct mr_ct_data){
+						mri, &_c->uri, ctmap->expires, e_out,
+						mri->last_reg_ts, ci->cseq
+					};
+			}
+
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
 
 			if (ul.insert_ucontact( r, &ctmap->req_ct_uri, ci, &mri->cmatch,
@@ -1623,13 +1669,6 @@ update_usrloc:
 			}
 
 			vct++;
-
-			if (reg_mode == MID_REG_THROTTLE_AOR &&
-			    store_ucontact_data(c, mri, &_c->uri, ctmap->expires, e_out,
-			                        mri->last_reg_ts, ci->cseq) != 0) {
-				LM_ERR("failed to attach ucontact data - oom?\n");
-				goto out_clear_err;
-			}
 		} else if (c) {
 			/* delete expired or stale contact (not present on main reg) */
 			if (ctmap->expires == 0 || !_c) {
@@ -2441,6 +2480,12 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 			ci->expires_out = e_out;
 
+			/* populate extra ct stuff between "insert" and "replicate" */
+			ci->pre_replicate_cb = mid_reg_update_ct_data;
+			ci->pre_replicate_info = &(struct mr_ct_data){
+					NULL, NULL, e, e_out, 0, ci->cseq
+				};
+
 			if (ul.insert_ucontact(urec, &ct->uri, ci, &_sctx->cmatch,
 				    0, &c) < 0) {
 				rerrno = R_UL_INS_C;
@@ -2449,11 +2494,6 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			}
 
 			vct++;
-
-			if (update_ucontact_data(c, e, e_out, ci->cseq) != 0) {
-				LM_ERR("failed to update ucontact data - oom?\n");
-				return -1;
-			}
 		}
 
 		/* ignore contacts with duplicate / lower cseq (ret == -2) */
@@ -2468,7 +2508,6 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 	return 2;
 }
-
 
 int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
                           str *to_uri, int *expires, str *owtag)
