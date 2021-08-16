@@ -41,7 +41,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.2.0
+Version:  3.3.0
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -59,9 +59,11 @@ BuildRequires:  postgresql-devel
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
+BuildRequires:  make
+BuildRequires:  docbook-xsl
+BuildRequires:  gcc
 
 Requires: m4
-BuildRequires:  net-snmp-devel
 BuildRequires:  unixODBC-devel
 BuildRequires:  openssl-devel
 BuildRequires:  expat-devel
@@ -716,7 +718,7 @@ Summary:  SNMP AgentX subagent module for OpenSIPS
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 Requires: perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
-BuildRequires:  lm_sensors-devel
+BuildRequires: net-snmp-devel
 
 %description  snmpstats-module
 OpenSIPS is a very fast and flexible SIP (RFC3261)
@@ -896,7 +898,7 @@ This package provides the SIP to XMPP IM translator module for OpenSIPS.
 %setup -q -n %{name}-%{version}
 
 %build
-LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all %{?_smp_mflags} TLS=1 \
+LOCALBASE=/usr NICER=0 CFLAGS="%{optflags}" LDFLAGS="%{?__global_ldflags}" %{?_with_python3:PYTHON=python3} %{?_with_db_oracle:ORAHOME="$ORACLE_HOME"} %{__make} all modules-readme %{?_smp_mflags} TLS=1 \
   exclude_modules="%EXCLUDE_MODULES" \
   cfg_target=%{_sysconfdir}/opensips/ \
   modules_prefix=%{buildroot}%{_prefix} \
@@ -1559,6 +1561,9 @@ fi
 
 
 %changelog
+* Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
+- Specification updated for opensips 3.3
+
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
 - New modules: aaa_diameter, b2b_logic, event_kafka, prometeus, rtp_relay, tls_openssl, tls_wolfssl
