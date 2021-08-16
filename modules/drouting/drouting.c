@@ -2632,8 +2632,14 @@ static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 			for( i=first ; i<size ; i++ )
 				if (running_sum[i]>rand_no) break;
 			if (i==size) {
-				LM_CRIT("bug in weight sort\n");
-				return -1;
+				LM_CRIT("bug in weight sort, first=%u, size=%u, rand_no=%u, total weight=%u\n",
+					first, size, rand_no, weight_sum);
+				for(i=first; i<size;i++)
+					LM_CRIT("i %d, idx %u, weight %u, running sum %u\n",
+						i, idx[i], pgwl[idx[i]].weight, running_sum[i]);
+				/* try to recover here by picking the last gw */
+				i = size - 1;
+				// return -1;
 			}
 		} else {
 			/* randomly select index */
