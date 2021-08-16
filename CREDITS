@@ -1,16 +1,13 @@
 	This is a credits-file of people that have contributed with code
-	to the OpenSIPS 3.1 release, sorted by last name.  The fields are:
+	to the OpenSIPS 3.2 release, sorted by last name.  The fields are:
 	name (N), email (E).
 	Cheers,
-	                                                2020, May 27
+	                                                2021, May 27
 
 ----------
 
 N: Nick Altmann
 E: nick.altmann@gmail.com
-
-N: Ryan Bullock
-E: rrb3942@gmail.com
 
 N: John Burke
 E: john@voxtelesys.net
@@ -24,23 +21,14 @@ E: razvan@opensips.org
 N: Walter Doekes
 E: walter+github@wjd.nu
 
-N: Robert Dyck
-E: 58280584+robdyck@users.noreply.github.com
-
-N: Björn Esser
-E: besser82@fedoraproject.org
-
-N: Alessio Garzi
-E: gun101@email.it
-
 N: Fabian Gast
 E: fgast+git@only640k.net
 
-N: Callum Guy
-E: callum.guy@x-on.co.uk
+N: Flavio Goncalves
+E: flavio@voffice.com.br
 
-N: Jasper Hafkenscheid
-E: hafkensite@users.noreply.github.com
+N: Eric Green
+E: eric.green@onsip.com
 
 N: Bogdan-Andrei Iancu
 E: bogdan@opensips.org
@@ -48,14 +36,20 @@ E: bogdan@opensips.org
 N: Zero King
 E: l2dy@icloud.com
 
+N: Sergei Lavrov
+E: 7936874+ccppprogrammer@users.noreply.github.com
+
 N: Peter Lemenkov
 E: lemenkov@gmail.com
 
+N: Sagar Malam
+E: 47811226+sagarmalam@users.noreply.github.com
+
+N: Robert Moss
+E: rmoss@sipnavigator.com
+
 N: Vlad Paiu
 E: vladpaiu@opensips.org
-
-N: Dan Pascu
-E: dan@ag-projects.com
 
 N: Vlad Pătrașcu
 E: vladp@opensips.org
@@ -63,20 +57,26 @@ E: vladp@opensips.org
 N: Aron Podrigal
 E: aronp@guaranteedplus.com
 
+N: Andriy Pylypenko
+E: bamby@sippysoft.com
+
+N: Rustam Safargalin
+E: rustam.safargalin@sifox.ru
+
 N: Ovidiu Sas
 E: osas@voipembedded.com
 
-N: Roman Sevko
-E: apple@rom.by
+N: Dan Shields
+E: dshields@sorenson.com
 
 N: Maksym Sobolyev
 E: sobomax@sippysoft.com
 
-N: Mihai Țigănuș
-E: mtiganus@gmail.com
-
 N: Alexey Vasilyev
 E: alexei.vasilyev@gmail.com
 
-N: Ralf Zerres
-E: ralf.zerres@networkx.de
+N: kworm83
+E: 21957311+kworm83@users.noreply.github.com
+
+N: rance
+E: rance@ytel.com
