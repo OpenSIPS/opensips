@@ -94,6 +94,9 @@
 #define R_S_INT_LEN 32
 #define RAW_SIG_LEN 64
 
+#define AUTH_OUT_REQ_STR "req"
+#define AUTH_OUT_RPL_STR "rpl"
+
 struct parsed_identity {
 	cJSON *header;
 	cJSON *x5u;
@@ -122,4 +125,15 @@ enum pv_identity_field {
 	PV_PAYLOAD_IAT,
 	PV_PAYLOAD_ORIG,
 	PV_PAYLOAD_ORIGID
+};
+
+enum auth_out_type {
+	AUTH_APPEND_TO_REQ,
+	AUTH_APPEND_TO_RPL,
+	AUTH_OUT_VAR
+};
+
+struct auth_out_param {
+	enum auth_out_type type;
+	pv_spec_t var;
 };
