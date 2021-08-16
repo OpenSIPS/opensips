@@ -48,7 +48,8 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>libmicrohttpd</emphasis>.
+				<emphasis>libmicrohttpd</emphasis>, with EPOLL support. This
+				typically mean a version newer than 0.9.50.
 			</para>
 			</listitem>
 			</itemizedlist>

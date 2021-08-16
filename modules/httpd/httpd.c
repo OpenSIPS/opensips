@@ -129,7 +129,14 @@ static int mod_init(void)
 {
 	struct ip_addr *_ip;
 
-
+	/* Get whether epoll() is supported. If supported then
+	 * Flags MHD_USE_EPOLL and MHD_USE_EPOLL_INTERNAL_THREAD can be used. */
+	if (MHD_is_feature_supported(MHD_FEATURE_EPOLL)!=MHD_YES) {
+		LM_CRIT("the version of libmicrohttpd you have does not support "
+			"EPOLL feature, you need a version newer than 0.9.50, but "
+			"running %s\n",MHD_get_version());
+		return -1;
+	}
 	if (ip.s) {
 		ip.len = strlen(ip.s);
 		if ( (_ip=str2ip(&ip)) == NULL ) {
