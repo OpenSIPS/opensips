@@ -20,6 +20,19 @@
 		qop "auth" and qop "auth-int" but if both values are presented
 		by the server, "auth" will be prefered.
 		</para>
+
+	<section id="rfc-8760-support" xreflabel="RFC 8760 Support">
+	        <title>RFC 8760 Support (Strenghtened Authentication)</title>
+	        <para>
+			Starting with OpenSIPS 3.2, the <ulink url='auth'>auth</ulink>,
+			<ulink url='auth_db'>auth_db</ulink> and
+			<ulink url='uac_auth'>uac_auth</ulink>
+			modules include support for two new digest authentication algorithms
+			("SHA-256" and "SHA-512-256"), according to the
+	        <ulink url="https://datatracker.ietf.org/doc/html/rfc8760">RFC 8760</ulink>
+	        specs.
+	        </para>
+	</section>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
