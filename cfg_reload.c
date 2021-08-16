@@ -274,10 +274,15 @@ static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 	for( i=1 ; i<counted_max_processes ; i++) {
 		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
 		OSS_PROC_NEEDS_SCRIPT ) {
-			if (ipc_send_rpc( i, rpc, (void*)(long)srr_ctx->seq_no)<0)
-				srr_ctx->proc_status[i] = RELOAD_FAILED;
-			else
-				srr_ctx->proc_status[i] = RELOAD_SENT;
+			if (i==process_no) {
+				/* run line the cmd for the proc itself */
+				rpc( process_no, (void*)(long)srr_ctx->seq_no);
+			} else {
+				if (ipc_send_rpc( i, rpc, (void*)(long)srr_ctx->seq_no)<0)
+					srr_ctx->proc_status[i] = RELOAD_FAILED;
+				else
+					srr_ctx->proc_status[i] = RELOAD_SENT;
+			}
 		}
 	}
 }
@@ -294,6 +299,26 @@ static inline int check_status_of_all_procs(enum proc_reload_status min_status,
 				if (srr_ctx->proc_status[i]<min_status ||
 				srr_ctx->proc_status[i]>max_status)
 					return -1;
+		}
+	}
+
+	return 1;
+}
+
+
+/* this is used only for debugging purposes */
+static inline int list_status_of_all_procs(void)
+{
+	int i;
+
+	for( i=1 ; i<counted_max_processes ; i++) {
+		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
+		OSS_PROC_NEEDS_SCRIPT ) {
+			LM_INFO("process %d [%d] reported status %d\n",
+				i, pt[i].pid, srr_ctx->proc_status[i]);
+		} else {
+			LM_INFO("process %d [%d] not needing script \n", 
+				i, pt[i].pid);
 		}
 	}
 
@@ -560,6 +585,7 @@ int reload_routing_script(void)
 	if (check_status_of_all_procs( RELOAD_SUCCESS, RELOAD_SUCCESS)!=1) {
 		LM_INFO("not all processes managed to load the new script, "
 			"aborting the reload\n");
+		list_status_of_all_procs( );
 		/* some processes failed with the reload - setting an out-of-order
 		 * sequence number will prevent any potential process waiting to 
 		 * start the reload to actually do it */
