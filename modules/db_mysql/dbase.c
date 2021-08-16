@@ -976,14 +976,15 @@ int db_mysql_query(const db_con_t* _h, const db_key_t* _k, const db_op_t* _op,
 		}
 
 		ret = db_mysql_do_prepared_query(_h, &query_holder, _v, _n, NULL, 0);
-		CON_RESET_CURR_PS(_h);
 		if (ret != 0) {
+			CON_RESET_CURR_PS(_h);
 			if (_r)
 				*_r = NULL;
 			return ret;
 		}
 
 		ret = db_mysql_store_result(_h, _r);
+		CON_RESET_CURR_PS(_h);
 		return ret;
 	}
 	return db_do_query(_h, _k, _op, _v, _c, _n, _nc, _o, _r,
