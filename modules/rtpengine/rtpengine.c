@@ -650,6 +650,9 @@ static param_export_t params[] = {
 static mi_export_t mi_cmds[] = {
 	{ MI_ENABLE_RTP_ENGINE, 0, 0, 0, {
 		{mi_enable_rtp_proxy, {"url", "enable", 0}},
+		{mi_enable_rtp_proxy, {"url", "enable", "setid", 0}},
+		{mi_enable_rtp_proxy, {"url", "enable", "weight", 0}},
+		{mi_enable_rtp_proxy, {"url", "enable", "setid", "weight", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ MI_SHOW_RTP_ENGINES, 0, 0, 0, {
@@ -1030,7 +1033,7 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str rtpe_url;
-	int enable;
+	int enable, set, weight;
 	struct rtpe_set * rtpe_list;
 	struct rtpe_node * crt_rtpe;
 	int found;
@@ -1047,10 +1050,17 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 
 	if (get_mi_int_param(params, "enable", &enable) < 0)
 		return init_mi_param_error();
+	if (try_get_mi_int_param(params, "weight", &weight) < 0)
+		weight = -1;
+	if (try_get_mi_int_param(params, "setid", &set) < 0)
+		set = -1;
 
 	RTPE_START_READ();
 	for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
+
+    if (set !=-1 && set != rtpe_list->id_set)
+      continue;
 
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
 						crt_rtpe = crt_rtpe->rn_next){
@@ -1064,6 +1074,7 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 					crt_rtpe->rn_recheck_ticks =
 						enable? MI_MIN_RECHECK_TICKS : MI_MAX_RECHECK_TICKS;
 					crt_rtpe->rn_disabled = enable?0:1;
+          crt_rtpe->rn_weight = weight!=-1 ? weight : crt_rtpe->rn_weight;
 				}
 			}
 		}
