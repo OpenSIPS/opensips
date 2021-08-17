@@ -114,6 +114,8 @@ int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri)
 	LM_DBG("getting ucontact from contact_id %llu\n",
 	       (unsigned long long)contact_id);
 
+	update_act_time();
+
 	ct = ul.get_ucontact_from_id(d, contact_id, &r);
 	if (!ct) {
 		LM_DBG("no record found for %.*s, ci: %.*s\n", uri->len, uri->s,
