@@ -297,6 +297,7 @@ static int fixup_free_set_id(void ** param);
 static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
 static struct rtpe_set * select_rtpe_set(int id_set);
 static struct rtpe_node *select_rtpe_node(str, struct rtpe_set *);
+static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -364,6 +365,9 @@ static unsigned int rtpe_number = 0;
 
 static int     setid_avp_type;
 static int_str setid_avp;
+
+/* keys to be stored in the dialog */
+static str rtpe_url_dlg_key = str_init("rtpengine_url");
 
 /* tm */
 static struct tm_binds tmb;
@@ -1555,6 +1559,30 @@ static int update_rtpengines(void)
 	return connect_rtpengines();
 }
 
+/* Returns the first matching node in set */
+static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url)
+{
+	struct rtpe_node * crt_rtpe;
+
+	if (rtpe_list == NULL)
+		return NULL;
+
+	if (rtpe_url->len==0 || !rtpe_url->s)
+		return NULL;
+
+	for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
+					crt_rtpe = crt_rtpe->rn_next){
+		if(crt_rtpe->rn_url.len == rtpe_url->len){
+			if(strncmp(crt_rtpe->rn_url.s, rtpe_url->s, rtpe_url->len) == 0){
+				return crt_rtpe;
+			}
+		}
+	}
+
+	/* No match */
+	return NULL;
+}
+
 static void free_rtpe_nodes(struct rtpe_set *list)
 {
 	struct rtpe_node * crt_rtpp, *last_rtpp;
@@ -2521,6 +2549,8 @@ select_rtpe_node(str callid, struct rtpe_set *set)
 	unsigned sum, weight_sum;
 	struct rtpe_node* node;
 	int was_forced, sumcut, found, constant_weight_sum;
+	str rtpe_url_dlg_val;
+	struct dlg_cell *dlg = NULL;
 
 	/* check last list version */
 	if (my_version != *list_version && update_rtpengines() < 0) {
@@ -2539,6 +2569,20 @@ select_rtpe_node(str callid, struct rtpe_set *set)
 		if (node->rn_disabled)
 			return NULL;
 		return node;
+	}
+
+	/* Use dialog to lookup node */
+	if (dlgb.get_dlg) {
+		dlg = dlgb.get_dlg();
+		if (!dlg)
+			LM_DBG("dialg not found\n");
+	}
+	if (dlg && !dlgb.fetch_dlg_value(dlg, &rtpe_url_dlg_key, &rtpe_url_dlg_val, 0)) {
+		node = lookup_rtpe_node(set, &rtpe_url_dlg_val);
+		if (node && !node->rn_disabled) {
+			LM_DBG("using node from dialog: %.*s\n", rtpe_url_dlg_val.len, rtpe_url_dlg_val.s);
+			return node;
+		}
 	}
 
 	/* XXX Use quick-and-dirty hashing algo */
@@ -2568,8 +2612,11 @@ select_rtpe_node(str callid, struct rtpe_set *set)
 	was_forced = 0;
 	for (node=set->rn_first; node!=NULL;) {
 		if (sumcut < (int)node->rn_weight) {
-			if (!node->rn_disabled)
+			if (!node->rn_disabled) {
+				if (dlg)
+					dlgb.store_dlg_value(dlg, &rtpe_url_dlg_key, &node->rn_url);
 				return node;
+			}
 			if (was_forced == 0) {
 				/* appropriate proxy is disabled : redistribute on enabled ones */
 				sumcut = weight_sum ? sum %  weight_sum : -1;
