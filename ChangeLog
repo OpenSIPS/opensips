@@ -1,3 +1,521 @@
+=========================== Release 3.1.4 ==============================
+
+2021-08-17  Liviu Chircu  <liviu at opensips dot org>
+	* [676b30aab] :
+
+	Bump version to 3.1.4
+
+
+2021-08-17  Liviu Chircu  <liviu at opensips dot org>
+	* [73c5ce1a6] :
+
+	usrloc DB schema: Extend location.contact from CHAR(255) to TEXT
+	This extension is especially useful with RFC 8599 (SIP Push
+	Notifications), which may lead to sizeable Contact header URIs, often
+	reaching 300+ bytes in size.
+
+	Credits to John Quick for the suggestion!
+	(cherry picked from commit ec09a18f6c240dd3159e284370bd6f4dc6747f03)
+
+
+2021-08-17  Razvan Crainea  <razvan at opensips dot org>
+	* [c266e8c87] :
+
+	ratelimit: proper expire for replicated pipes
+	Instead of updating the last_used on every received pipe, we shall only
+	consider the last locally used value when we want to expire. This way,
+	we only replicate pipes that have been locally used recently, if the
+	ones that are not, will not be replicated, thus will eventually be
+	deleted by the backup nodes.
+
+	Thanks go to Ken Rice (SIPNav) for reporting this and troubleshooting
+	the problem.
+	(cherry picked from commit d430c1ae8e77bc0ae2d2eb0ac4eb31d779a8101f)
+
+
+2021-08-17  Liviu Chircu  <liviu at opensips dot org>
+	* [0370387c4] :
+
+	mid_registrar: Properly trigger PN during lookup() in modes 0/1
+	This fixes a bug where one or more Push Notifications are not triggered
+	because the "regtime" was not initialized near the start of the
+	mid_reg_lookup() routine...
+
+	Many thanks to John Quick for the report and accurate logs describing
+	the issue!
+	(cherry picked from commit 9ea64cc6cfa290e8c97c921330d6379ed6cd25b3)
+
+
+2021-08-16  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [35cf96e2c] :
+
+	Add code to troubleshoot some BUG report on weight sorting alg.
+	Dump all the gws, their weights and the running sums, so we can undestand why the alg fails here - this dump will happen only when the bug is detected.
+	Also, in case of this BUG, avoid dropping the call (by return -1), but rather return something usefull, so the call can be routed further.
+
+
+2021-08-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [c6369b40d] :
+
+	stir_shaken: add ability to skip Date header checks when verifying
+	Add a new "require_date_hdr" modparam that controls whether the Date
+	header is mandatory when verifying.
+	(cherry picked from commit 736ad5cc3b4ba4a25ac81d3b98af6e83b4129404)
+
+
+2021-08-15  Nick Altmann  <nick.altmann at gmail dot com>
+	* [e470700f9] :
+
+	packaging/debian: fix Debian Bullseye build
+
+
+2021-08-14  OpenSIPS  <github at opensips dot org>
+	* [ad79c6fc8] :
+
+	Rebuild documentation
+
+
+2021-08-13  Liviu Chircu  <liviu at opensips dot org>
+	* [907023eb1] :
+
+	mid-registrar: Avoid generating De-REGISTER from Passive node
+	    * enhance the usrloc API with a contact ownership checking function
+	    * mid-registrar now only generates De-REGISTER for owned contacts
+
+	Credits to Giovanni Maruzzelli for detailed reporting and instructions
+	on how to reproduce this issue!
+
+	Fixes #2559
+	(cherry picked from commit 4128f67d271b4851a194ebf69da0349c4403e2a9)
+
+
+2021-08-13  Liviu Chircu  <liviu at opensips dot org>
+	* [977dd04f2] :
+
+	mid-registrar: Improve replication behavior on INSERT
+	Ensure all mid-registrar data tied to a contact gets included in
+	the very first "INSERT" packet.  This prevents some unnecessary error
+	logs on the backup box when doing a quick REGISTER/De-REGISTER in
+	Active/Passive scenarios:
+
+	ERROR:mid_registrar:unregister_record: 'from' key not found, skipping De-REGISTER
+	ERROR:mid_registrar:mid_reg_aor_event: failed to unregister contact
+
+	Credits to Giovanni Maruzzelli for an accurate report and detailed
+	logs on this issue!
+
+	Fixes #2525
+	(cherry picked from commit c11f92698c6f345d8921d645177f71aa36c9791d)
+
+
+2021-08-13  Liviu Chircu  <liviu at opensips dot org>
+	* [f0f6a22f3] :
+
+	usrloc: Learn the active node AoR rlabel (as backup node)
+	When using timer-based contact cleanup in Active/Passive user location
+	scenarios, the two timers may run in such a way that the backup node
+	still has a given AoR, while the AoR does _not_ exist on the active
+	node...
+
+	Now, if a phone registers, the backup node complains that the
+	replicated AoR's auto-generated rlabel differs from its own one, since
+	the old AoR has yet to be cleaned up.  And as long as the AoR has no
+	contacts, we can safely re-learn (overwrite) the AoR's rlabel on the
+	backup node and fix this race condition.
+
+	Credits to Giovanni Maruzzelli for reporting this issue and providing
+	accurate debug logs!
+
+	Fixes #2524
+	(cherry picked from commit 24ec0d23d6f9193548bf0f4296acdba039a4483b)
+
+
+2021-08-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3b8bdb794] :
+
+	Fix race between data sync and data load
+	Be sure we trigger the startup cluster sync AFTER loading the data from DB.
+	Also, when receiving replicated data, be sure the data is actually loaded.
+	Closes #2581
+
+
+2021-08-10  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [ac6f3a202] :
+
+	fix: From Nick Altmann: Fix wrong variable usege when escape STR type in db_postgres
+	(cherry picked from commit 0d2dac363256e8bcacfc1391f63715fe10a905c6)
+
+
+2021-08-10  Norm Brandinger  <n.brandinger at gmail dot com>
+	* [8b24f54a7] :
+
+	Fix spelling
+	(cherry picked from commit 41b4a018af55f08815dec7e19001d68442e19370)
+
+
+2021-07-31  OpenSIPS  <github at opensips dot org>
+	* [b333a222f] :
+
+	Rebuild documentation
+
+
+2021-07-30  Vlad Patrascu  <vladp at opensips dot org>
+	* [19a50a190] :
+
+	b2b_entities/logic: fix a race condition with simultaneous reINVITEs
+	Fix behavior when receiving reINVITES from the connected entities at the
+	same time, one replied with 491 and the other with 200OK. The 200 OK
+	would not be passed to the other entity and the tuple would never be
+	deleted in this case.
+
+	Thanks to David Escartin from Sonoc for reporting and testing the fix.
+	(cherry picked from commit 9c9ab8f948be65dc6a99024f901e748d629f8e56)
+
+
+2021-07-29  Vlad Patrascu  <vladp at opensips dot org>
+	* [68ddeed61] :
+
+	b2b_entities/logic: properly reply to canceled/expired entities
+	Generate a 487 reply from opensips to the server entity if:
+	* no final reply from the client entity received and the tuple
+	  expires after a CANCEL request has been received;
+	* a 200 OK has be received after a previous CANCEL request.
+
+	Also, reply with 408 to the server entity if the tuple expires and no
+	final reply from the client entity has been received.
+
+	Credits to David Escartin from Sonoc for reporting and testing the
+	fixes.
+	(cherry picked from commit 3261d2cb59f4477495cb770af6e3489ce186bc6b)
+
+
+2021-07-28  Razvan Crainea  <razvan at opensips dot org>
+	* [985bdfa3d] :
+
+	siprec: handle denied re-invites by SRC
+	Credits go to MikhailKalashnikov on GitHub for reporting it. Close #2398
+	(cherry picked from commit 1804bad76ed30688e609dd03654e242fd9e68d00)
+
+
+2021-07-26  Razvan Crainea  <razvan at opensips dot org>
+	* [f70fd8dce] :
+
+	dialog: bump dlg replication version to 3
+	Commit 58343d45 introduced some new fields in the binary packet,
+	changing its structure. Thus, when using different versions, they may
+	crash due to the packet's mismatch.
+	(cherry picked from commit 7af3886511a8cd37bd6121025ab88b41864775dc)
+
+
+2021-07-24  OpenSIPS  <github at opensips dot org>
+	* [6dfe68806] :
+
+	Rebuild documentation
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [91d97516d] :
+
+	b2b_logic: overwrite existing context keys when using b2b_bridge_request()
+	Closes #2424
+	(cherry picked from commit ba3bd6f4d18b2edca3ba942545aa3524d44f08e4)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [abb79b0e3] :
+
+	siprec: add mandatory +sip.src Contact header param
+	Credits go to @jofiy on GitHub for reporting this. Close #2383
+	(cherry picked from commit be6ce6a5982559e9fa37a2823b219b04e3bd5b55)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [0987cffe6] :
+
+	tm: add Route headers to CANCEL of locally generated INVITE
+	Thanks go to David Escartin from Sonoc for reporting and testing the
+	fixes for this bug
+	(cherry picked from commit 4e6ea0a356267272b8b2b9b48382bcef08756bf4)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [49609290c] :
+
+	b2b_entities: do not terminate dialog for CANCEL on reINVITE
+	Thanks go to David Escartin from Sonoc for reporting and testing the
+	fixes for this bug
+	(cherry picked from commit 66f9cfcd56a04235eea43f11cdc93db839136436)
+
+
+2021-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [6782f5422] :
+
+	b2b_entities: fix callid collisions for client entities
+	Prevent the possiblity of using the same seed for generating the random
+	part of the callid for a new client entity.
+	(cherry picked from commit 62728f1775c4ce61645faed3d0130e6c09540b6c)
+
+
+2021-07-21  Razvan Crainea  <razvan at opensips dot org>
+	* [4a90daeed] :
+
+	rtpengine: remove special handling for ICE
+	This allows the module to blindfully pass the ICE variables to RTPEngine
+
+	Reported by @wenyuanZZ on GitHub in sipwise/rtpengine#1319
+	(cherry picked from commit 0936ec3f9ca565f434a133adc42b51b811411af8)
+
+
+2021-07-20  Razvan Crainea  <razvan at opensips dot org>
+	* [7bbe1acac] :
+
+	cgrates: prevent crash when a reply without request comes
+	Reported by Vasilios Tzanoudakis (@vtzan on GitHub) in #2571
+	(cherry picked from commit 882450d9e0b9d4f5f314786f90d64bd707f81e78)
+
+
+2021-07-20  Nick Altmann  <nick.altmann at gmail dot com>
+	* [36d0957a4] :
+
+	stir_shaken: fix cherry-pick issue
+
+
+2021-07-17  OpenSIPS  <github at opensips dot org>
+	* [e5def93b1] :
+
+	Rebuild documentation
+
+
+2021-07-16  Razvan Crainea  <razvan at opensips dot org>
+	* [2bb958213] :
+
+	mi_fifo: proper parse multiple commands received at once
+
+
+2021-07-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [231529468] :
+
+	b2b_logic: properly release lock in case of error for create event
+	Credits to @nikbyte for the fix
+
+	Related to #2425
+	Closes #2426
+	(cherry picked from commit aba8ae577ba3e6f1c00b239140bc948714774d1b)
+
+
+2021-07-13  Liviu Chircu  <liviu at opensips dot org>
+	* [eb38a5099] :
+
+	Merge pull request #2572 from Shkiperon/3.1-fix-rate-cacher
+	Fix crash when vendor hasn't price for prefix
+
+
+2021-07-13  Artiom Druz  <druz at sima-land dot ru>
+	* [be9caba4a] :
+
+	Fix crash when vendor hasn't price for prefix
+
+
+2021-07-10  OpenSIPS  <github at opensips dot org>
+	* [698f95ccc] :
+
+	Rebuild documentation
+
+
+2021-07-09  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e77830b83] :
+
+	[core] fix limited support for transport vals in PATH
+	The transport of the received parameter was limited to TPC/TLS/SCTP (no WS or WSS)
+
+	(cherry picked from commit e1347ebe47984492f5a7d383ef00559ce41da8be)
+	(cherry picked from commit 3f053873f05b5b6eaf15670083f6f0a4fc938544)
+
+
+2021-07-07  Liviu Chircu  <liviu at opensips dot org>
+	* [51643e897] :
+
+	tls_mgm: Print the OpenSSL error stack after library errors
+	This may help with debugging some certificate or key loading issues.
+
+	Thanks to @ovidiusas and @JeffreyVIP for the suggestion
+
+
+2021-07-07  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a9c4bb883] :
+
+	Fix deadlock upon BUG/ERROR report
+	Credits for finding this issue go to Damien Sandras @ Seconix
+	(cherry picked from commit 2e042353ecdaa14cc3e901478c07965830ee5a3b)
+
+
+2021-07-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [b982e2eff] :
+
+	tls_mgm: fix domain matching after MI reload
+	After doing an MI reload, old domains might still be matched for new
+	connections while there are ongoing connections that use those domains.
+
+	Credits to Alexey Vasilyev (@vasilievalex) for troubleshooting and
+	suggesting the fix.
+
+	Fixes #2433
+	(cherry picked from commit 9412ed271172810e55cc771fa9fd2c82007eafbd)
+
+
+2021-07-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [af1481052] :
+
+	Be sure there is no "exit" between setting the PS and running the query
+
+
+2021-07-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [d28153a0c] :
+
+	Fix misuage of CON_RESET_CURR_PS in a while() loop
+	Be sure you set CON_RESET_CURR_PS for each query at a time (while looping).
+	Partial backport of #2470
+	Credits go to @wdoekes
+
+
+2021-07-05  Razvan Crainea  <razvan at opensips dot org>
+	* [4b218ad2d] :
+
+	stir_shaken: fix pkg_memleak of params parsing
+	do not change the `params` while iterating through the list, as it will
+	prevent `free_params` from releasing the list
+	Thakns go to Nick Altmann for reporting and testing the fix
+	(cherry picked from commit 2b0dde30258da947b023737338f165dfa44a135d)
+
+
+2021-07-05  Liviu Chircu  <liviu at opensips dot org>
+	* [9902dda66] :
+
+	cachedb_mongodb: Fix possible raw query crashes
+	This patch fixes a series of bugs:
+
+	* raw queries with no result AVP holder, causing a crash, e.g.:
+	    cache_raw_query("mongodb", '
+		"delete": "test",
+	        "deletes": [
+	            {"q": {}, "limit": 0}
+	        ]}');
+
+	* raw queries with bad syntax, causing a crash
+	* pkg memory leak during the "out of pkg memory" condition
+
+	Credits to Bogdan-Andrei Iancu for the finds!
+	(cherry picked from commit 0f748f46cf4b164890d024e8f9938b076137ce84)
+
+
+2021-07-05  Liviu Chircu  <liviu at opensips dot org>
+	* [02e9b8539] :
+
+	sipmsgops: Fix sipmsg_validate() regression
+	Commit b03cb41a31 introduced a regression while attempting to simplify
+	some character-checking macros.
+
+	Reported by Alexey Vasilyev
+	Fixes #2563
+	(cherry picked from commit 21547d571d0ceaf19e5892b684a27c80e95987c9)
+
+
+2021-07-03  OpenSIPS  <github at opensips dot org>
+	* [cb7450462] :
+
+	Rebuild documentation
+
+
+2021-07-02  Liviu Chircu  <liviu at opensips dot org>
+	* [635ce30f7] :
+
+	Memory allocators: Revert Q_MALLOC to 8-byte alignment
+	Commit 1f55d05c2b actually upped Q_MALLOC's address alignment from
+	8-bytes to 16-bytes.  While this isn't necessarily a bug (in fact,
+	it makes OpenSIPS more crash-safe), it enables new scenarios where
+	buffer overrun crashes would happen with F_MALLOC but not with Q_MALLOC.
+
+	And since Q_MALLOC is the intended crash debugger, these scenarios
+	must not be allowed, so we stick to 8-byte alignment.  If anyone needs
+	16-byte aligned memory, they can just re-define ROUNDTO and re-compile.
+	(cherry picked from commit c29652fa10dbd34ce499f817891abe25964ee63b)
+
+
+2021-07-01  Liviu Chircu  <liviu at opensips dot org>
+	* [d1ba33683] :
+
+	Fix ARM32 warnings
+	(cherry picked from commit e89b09e9eac4dfd4ac6673b9b7aaed9610466384)
+	(cherry picked from commit 6fc17804e8f5ee6769dd5a1dfb794852b66afe5c)
+
+
+2021-07-01  Liviu Chircu  <liviu at opensips dot org>
+	* [c09421db7] :
+
+	Memory allocators: Improve the memory alignment support
+	This patch fixes the support for configurable memory alignment, such
+	that the ROUNDTO macro is now truly customizable, for any allocator.  As
+	long as the ROUNDTO is a multiple of 2, the allocators will return
+	memory aligned to any required multiple.
+
+	The defaults are still the same, as follows:
+	    * F_MALLOC: 8-byte aligned memory addresses
+	    * HP_MALLOC: 8-byte aligned memory addresses
+	    * Q_MALLOC: 16-byte aligned memory addresses (the default in libc!)
+
+	Also extend the allocator testing suite with memory alignment tests.
+	Related to #2546
+	(cherry picked from commit 1f55d05c2b786ee8cca227ff367d49145bed51a4)
+
+
+2021-06-28  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c893c2378] :
+
+	Fix pkg memory leak when building pres ID.
+	This leak was introduced durin the 29e86ddf2b rework
+	Reported by Bernard Buitenhuis
+
+
+2021-06-26  OpenSIPS  <github at opensips dot org>
+	* [553603552] :
+
+	Rebuild documentation
+
+
+2021-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [c9450c8d4] :
+
+	dialog: Avoid storing id/entry values as signed integers
+	This patch does not necessarily fix an immediate issue, however it's
+	never advisable to compare / assign integers of different signedness.
+	(cherry picked from commit 41a3230df25a53634e310e0ed874adcb829e885d)
+
+
+2021-06-22  Liviu Chircu  <liviu at opensips dot org>
+	* [43ac874ff] :
+
+	dialog: Fix a subtle bug in parsing dialog IDs from DB
+	This fixes a rare issue where the dlg_parse_db_id() macro would
+	right-shift a signed "long long" value, potentially leading to
+	implementation or compiler defined behavior.
+
+	The fact that there is a binary diff after applying this patch proves
+	that there was an underlying, hard-to-detect issue in there:
+
+	-   4b192:	48 c1 f8 20          	sar    $0x20,%rax
+	+   4b192:	48 c1 e8 20          	shr    $0x20,%rax
+
+	Credits to Nick Altmann for providing some hints on this issue!
+	Related to #2504
+	(cherry picked from commit 103bdb48ae3f29e0121a180c8b3c53c0d6704df8)
+
+
+2021-06-22  Nick Altmann  <nick.altmann at gmail dot com>
+	* [387bfe5ba] :
+
+	Dialog module: skip bogus dialogs when loading from DB
+	(cherry picked from commit dd6cab3dac6d0c87f04aab4ff3d0027282098a06)
+
 =========================== Release 3.1.3 ==============================
 
 2021-06-22  Razvan Crainea  <razvan at opensips dot org>
