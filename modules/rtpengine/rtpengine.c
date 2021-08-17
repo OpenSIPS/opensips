@@ -316,6 +316,7 @@ static int fixup_free_set_id(void ** param);
 static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param);
 static struct rtpe_set * select_rtpe_set(int id_set);
 static struct rtpe_node *select_rtpe_node(str, struct rtpe_set *);
+static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -872,7 +873,6 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 			return -1;
 		}
 		memset(pnode, 0, sizeof(*pnode));
-		pnode->idx = (*rtpe_no)++;
 		pnode->rn_recheck_ticks = 0;
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
@@ -888,6 +888,17 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 		pnode->rn_url.len			= p2-p1;
 
 		LM_DBG("url is %s, len is %i\n", pnode->rn_url.s, pnode->rn_url.len);
+
+		if (lookup_rtpe_node(rtpe_list, &pnode->rn_url) != NULL) {
+			LM_DBG("node with url %s already exists in set %d, not adding new node\n", pnode->rn_url.s, rtpe_list->id_set);
+			shm_free(pnode->rn_url.s);
+			shm_free(pnode);
+			return 0;
+		}
+
+		/* incr index once we've determined this is a new node */
+		pnode->idx = (*rtpe_no)++;
+
 		/* Leave only address in rn_address */
 		pnode->rn_address = pnode->rn_url.s;
 		if (strncasecmp(pnode->rn_address, "udp:", 4) == 0) {
@@ -1616,6 +1627,30 @@ static int update_rtpengines(void)
 	}
 
 	return connect_rtpengines();
+}
+
+/* Returns the first matching node in set */
+static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url)
+{
+	struct rtpe_node * crt_rtpe;
+
+	if (rtpe_list == NULL)
+		return NULL;
+
+	if (rtpe_url->len==0 || !rtpe_url->s)
+		return NULL;
+
+	for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
+					crt_rtpe = crt_rtpe->rn_next){
+		if(crt_rtpe->rn_url.len == rtpe_url->len){
+			if(strncmp(crt_rtpe->rn_url.s, rtpe_url->s, rtpe_url->len) == 0){
+				return crt_rtpe;
+			}
+		}
+	}
+
+	/* No match */
+	return NULL;
 }
 
 static void free_rtpe_nodes(struct rtpe_set *list)
