@@ -3,7 +3,7 @@ CREATE TABLE location (
     contact_id  INTEGER PRIMARY KEY AUTOINCREMENT  NOT NULL,
     username CHAR(64) DEFAULT '' NOT NULL,
     domain CHAR(64) DEFAULT NULL,
-    contact CHAR(255) DEFAULT '' NOT NULL,
+    contact TEXT NOT NULL,
     received CHAR(255) DEFAULT NULL,
     path CHAR(255) DEFAULT NULL,
     expires INTEGER NOT NULL,
