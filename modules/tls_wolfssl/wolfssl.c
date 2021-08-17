@@ -153,10 +153,23 @@ static void mod_destroy(void)
 	wolfSSL_Cleanup();
 }
 
+int _wolfssl_has_session_ticket(WOLFSSL *ssl)
+{
+	static unsigned char buf[1024];
+	unsigned int len = 1024;
+
+	if (wolfSSL_get_SessionTicket(ssl, buf, &len) != SSL_SUCCESS)
+		return 0;
+
+	return len ? 1 : 0;
+}
+
 static int _wolfssl_is_peer_verified(void *ssl)
 {
 	long ssl_verify;
 	WOLFSSL_X509 *x509_cert;
+	int verify_mode;
+	int peer_ok;
 
 	ssl_verify = wolfSSL_get_verify_result(_WOLFSSL_READ_SSL(ssl));
 	if ( ssl_verify != X509_V_OK ) {
@@ -169,9 +182,29 @@ static int _wolfssl_is_peer_verified(void *ssl)
 	 */
 	x509_cert = wolfSSL_get_peer_certificate(_WOLFSSL_READ_SSL(ssl));
 	if ( x509_cert == NULL ) {
-		LM_INFO("peer did not presented "
-				"a certificate. Thus it could not be verified... return -1\n");
-		return -1;
+		peer_ok = 0;
+
+		/* if a session ticket is used, we cannot retrieve the peer cert but
+		 * we might be able to determine if the peer did present one initailly
+		 * and it has been verified */
+		if (_wolfssl_has_session_ticket(_WOLFSSL_READ_SSL(ssl))) {
+			verify_mode = wolfSSL_get_verify_mode(_WOLFSSL_READ_SSL(ssl));
+
+			if (wolfSSL_GetSide(_WOLFSSL_READ_SSL(ssl)) == WOLFSSL_SERVER_END) {
+				if ((verify_mode & SSL_VERIFY_PEER) &&
+					(verify_mode & SSL_VERIFY_FAIL_IF_NO_PEER_CERT))
+					peer_ok = 1;
+			} else {
+				if (verify_mode & SSL_VERIFY_PEER)
+					peer_ok = 1;
+			}
+		}
+
+		if (!peer_ok) {
+			LM_INFO("peer did not presented "
+					"a certificate. Thus it could not be verified... return -1\n");
+			return -1;
+		}
 	}
 
 	wolfSSL_X509_free(x509_cert);

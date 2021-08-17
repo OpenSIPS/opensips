@@ -36,6 +36,8 @@
 
 #include "wolfssl.h"
 
+int _wolfssl_has_session_ticket(WOLFSSL *ssl);
+
 void tls_dump_cert_info(char* s, WOLFSSL_X509* cert)
 {
 	char* subj;
@@ -519,7 +521,10 @@ static int _wolfssl_tls_accept(struct tcp_connection *c, short *poll_events)
 			}
 			wolfSSL_X509_free(cert);
 		} else {
-			LM_INFO("client did not present a TLS certificate\n");
+			/* client certificate can only be retrieved when
+			 * session tickets are not used */
+			if (!_wolfssl_has_session_ticket(ssl))
+				LM_INFO("client did not present a TLS certificate\n");
 		}
 
 		return 1;
