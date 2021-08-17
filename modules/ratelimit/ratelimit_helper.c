@@ -399,6 +399,7 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 				name->len, name->s, *pipe);
 		if ((*pipe)->algo == PIPE_ALGO_NETWORK)
 			should_update = 1;
+		(*pipe)->last_local_used = time(0);
 	} else {
 		LM_DBG("Pipe %.*s found: %p - last used %lu\n",
 			name->len, name->s, *pipe, (*pipe)->last_used);
@@ -486,7 +487,8 @@ void rl_timer(unsigned int ticks, void *param)
 				goto next_pipe;
 			}
 			/* check to see if it is expired */
-			if ((*pipe)->last_used + rl_expire_time < now) {
+			if (((*pipe)->last_local_used + rl_expire_time < now) &&
+				((*pipe)->last_used + rl_expire_time + rl_timer_interval < now)) {
 				/* this pipe is engaged in a transaction */
 				del = it;
 				if (iterator_next(&it) < 0)
@@ -914,6 +916,7 @@ void rl_timer_repl(utime_t ticks, void *param)
 	int nr = 0;
 	int ret = 0;
 	bin_packet_t packet;
+	time_t now = time(0);
 
 	if (bin_init(&packet, &pipe_repl_cap, RL_PIPE_COUNTER, BIN_VERSION, 0) < 0) {
 		LM_ERR("cannot initiate bin buffer\n");
@@ -936,6 +939,10 @@ void rl_timer_repl(utime_t ticks, void *param)
 			}
 			/* ignore cachedb replicated stuff */
 			if (RL_USE_CDB(*pipe))
+				goto next_pipe;
+
+			/* do not replicate if about to expire */
+			if ((*pipe)->last_local_used + rl_expire_time < now)
 				goto next_pipe;
 
 			key = iterator_key(&it);
