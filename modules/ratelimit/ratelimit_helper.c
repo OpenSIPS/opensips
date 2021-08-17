@@ -551,7 +551,11 @@ void rl_timer(unsigned int ticks, void *param)
 			}
 			/* check to see if it is expired */
 			if (((*pipe)->last_local_used + rl_expire_time < now) &&
-				((*pipe)->last_used + rl_expire_time + rl_timer_interval < now)) {
+				/* We shall wait a while until we make sure all destinations
+				 * have sent us replicated packets - after that, we can delete
+				 * the pipe; the condition is always true if pipe is not
+				 * replicated */
+				((*pipe)->last_used + (RL_USE_BIN(*pipe)?rl_repl_timer_expire:0) < now)) {
 				/* this pipe is engaged in a transaction */
 				del = it;
 				if (iterator_next(&it) < 0)
