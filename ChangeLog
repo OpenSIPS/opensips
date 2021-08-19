@@ -1,3 +1,56 @@
+=========================== Release 3.2.2 ==============================
+
+2021-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [4963c4ee0] :
+
+	Bump version to 3.2.2
+
+
+2021-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [2232f6a33] :
+
+	proto_bin: fix crash when parsed data is printed on error
+	The module was trying to print the parsed data in case of an error,
+	however it was using the `start` field of the tcp_conn. The problem is
+	that the module does not use the `start` field, therefore when a request
+	is not entirely read from the begining, it is not updated to point to
+	the new structure. Therefore, when we're trying to print the buffer, it
+	is pointing to an address on stack.
+	The fix for this bug was to suppress the parsed printing, as it is
+	binary anyway and it is the same value as the `buf`.
+
+	Many thanks to Bernard Buitenhuis for reporting the issue.
+	(cherry picked from commit 4c52754b8cb2ade4f877d6a03c4b84d84608d49a)
+
+
+2021-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [a802c934a] :
+
+	cfg: enhance description when an unknown route is called
+	(cherry picked from commit ca9f428a4d59a9b40ebd7235edf545e9609ddfeb)
+
+
+2021-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [3378261ef] :
+
+	httpd: fix feature detection for older libraries
+	Feature detection has been added in version 0.9.35, thus we can't
+	compile older version. However, when running cross compiling, we might
+	compile aginst an older version, but run with a newer one - that's why
+	we'd rather do the version detection at runtime - that's what this
+	commit does.
+	(cherry picked from commit e4065aaf3734409e05b59954057be4fed5d2479d)
+
+
+2021-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [e0823818b] :
+
+	drouting: Fix startup crash with no clustering
+	The crash was a regression, introduced in 40355a3c1.
+
+	Many thanks to @masudmuborakshohi and Sasmita Panda for the reports!
+	(cherry picked from commit 4206f768923dd95deb1b51ebcfda4905c334f2ce)
+
 =========================== Release 3.2.1 ==============================
 
 2021-08-17  Liviu Chircu  <liviu at opensips dot org>
