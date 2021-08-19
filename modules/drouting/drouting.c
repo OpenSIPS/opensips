@@ -1932,7 +1932,6 @@ static void rpc_dr_reload_data(int sender_id, void *unused)
 	dr_reload_data(1);
 
 	dr_cluster_sync();
-
 }
 
 
