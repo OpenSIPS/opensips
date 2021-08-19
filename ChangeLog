@@ -1,3 +1,44 @@
+=========================== Release 3.1.5 ==============================
+
+2021-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [1c1c7ff69] :
+
+	Bump version to 3.1.5
+
+
+2021-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [4330d9578] :
+
+	proto_bin: fix crash when parsed data is printed on error
+	The module was trying to print the parsed data in case of an error,
+	however it was using the `start` field of the tcp_conn. The problem is
+	that the module does not use the `start` field, therefore when a request
+	is not entirely read from the begining, it is not updated to point to
+	the new structure. Therefore, when we're trying to print the buffer, it
+	is pointing to an address on stack.
+	The fix for this bug was to suppress the parsed printing, as it is
+	binary anyway and it is the same value as the `buf`.
+
+	Many thanks to Bernard Buitenhuis for reporting the issue.
+	(cherry picked from commit 4c52754b8cb2ade4f877d6a03c4b84d84608d49a)
+
+
+2021-08-19  Razvan Crainea  <razvan at opensips dot org>
+	* [a7965974f] :
+
+	cfg: enhance description when an unknown route is called
+	(cherry picked from commit ca9f428a4d59a9b40ebd7235edf545e9609ddfeb)
+
+
+2021-08-19  Liviu Chircu  <liviu at opensips dot org>
+	* [4b87fa2ab] :
+
+	drouting: Fix startup crash with no clustering
+	The crash was a regression, introduced in 40355a3c1.
+
+	Many thanks to @masudmuborakshohi and Sasmita Panda for the reports!
+	(cherry picked from commit 4206f768923dd95deb1b51ebcfda4905c334f2ce)
+
 =========================== Release 3.1.4 ==============================
 
 2021-08-17  Liviu Chircu  <liviu at opensips dot org>
