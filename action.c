@@ -657,6 +657,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			ret=1;
 			break;
 		case ROUTE_T:
+			init_str(&sval, "unknown");
 			switch (a->elem[0].type) {
 				case NUMBER_ST:
 					i = a->elem[0].u.number;
@@ -686,7 +687,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 					break;
 			}
 			if (i == -1) {
-				LM_ALERT("BUG in route() type %d\n",
+				LM_ALERT("unknown route(%.*s) (type %d)\n", sval.len, sval.s,
 						a->elem[0].type);
 				ret=E_BUG;
 				break;
