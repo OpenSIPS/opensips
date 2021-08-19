@@ -47,32 +47,73 @@ struct {
 
 tls_sni_cb_f mod_sni_cb;
 
-static int tls_get_method(str *method_str,
-	enum tls_method *method, enum tls_method *method_max)
+enum tls_method get_ssl_min_method(void)
+{
+	return ssl_versions_struct[1].method;  // skip SSLv23
+}
+
+enum tls_method get_ssl_max_method(void)
+{
+	return ssl_versions_struct[SSL_VERSIONS_SIZE-1].method;
+}
+
+int parse_ssl_method(str *name)
 {
 	int i;
-	str val = *method_str;
-
-	if (q_memchr(val.s, '-', val.len)) {
-		LM_WARN("wolfSSL does not support method range specification\n");
-		return -1;
-	}
-	trim(&val);
-	if (val.len == 0) {
-		LM_ERR("Empty TLS method specification\n");
-		return -1;
-	}
 
 	for (i = 0; i < SSL_VERSIONS_SIZE; i++)
-		if (!strncasecmp(ssl_versions_struct[i].name, val.s, val.len))
-			break;
-	if (i == SSL_VERSIONS_SIZE) {
-		LM_ERR("unsupported method [%s]\n", val.s);
+		if (!strncasecmp(ssl_versions_struct[i].name, name->s, name->len))
+			return ssl_versions_struct[i].method;
+
+	return -1;
+}
+
+int tls_get_method(str *method_str,
+	enum tls_method *method, enum tls_method *method_max)
+{
+	str val = *method_str;
+	str val_max;
+	int m;
+	char *s;
+
+	/* search for a '-' to denote an interval */
+	s = q_memchr(val.s, '-', val.len);
+	if (s) {
+		val_max.s = s + 1;
+		val_max.len = val.len - (s - val.s) - 1;
+		val.len = s - val.s;
+		trim(&val_max);
+	}
+	trim(&val);
+	if (val.len == 0)
+		m = get_ssl_min_method();
+	else
+		m = parse_ssl_method(&val);
+	if (m < 0) {
+		LM_ERR("unsupported method [%s]\n",val.s);
 		return -1;
 	}
 
-	*method = ssl_versions_struct[i].method;
-	*method_max = ssl_versions_struct[i].method;
+	*method = m;
+
+	if (s) {
+		if (m == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23 as the lower value for the method range makes no sense\n");
+
+		if (val_max.len == 0)
+			m = get_ssl_max_method();
+		else
+			m = parse_ssl_method(&val_max);
+		if (m < 0) {
+			LM_ERR("unsupported method [%s]\n",val_max.s);
+			return -1;
+		}
+
+		if (m == TLS_USE_SSLv23)
+			LM_WARN("Using SSLv23 as the higher value for the method range makes no sense\n");
+	}
+
+	*method_max = m;
 
 	return 0;
 }
@@ -395,11 +436,22 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		&d->method_max) < 0)
 		return -1;
 
-	d->ctx = wolfSSL_CTX_new(ssl_methods[d->method - 1]());
+	d->ctx = wolfSSL_CTX_new(wolfSSLv23_method());
 	if (!d->ctx) {
 		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
 			d->name.len, d->name.s);
 		return -1;
+	}
+
+	if (d->method != TLS_USE_SSLv23) {
+		if ((wolfSSL_CTX_set_min_proto_version(d->ctx,
+			ssl_versions[d->method - 1]) != WOLFSSL_SUCCESS) ||
+			(wolfSSL_CTX_set_max_proto_version(d->ctx,
+				ssl_versions[d->method_max - 1]) != WOLFSSL_SUCCESS)) {
+			LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
+					d->name.len, ZSW(d->name.s));
+			return -1;
+		}
 	}
 
 	wolfSSL_CTX_set_options(d->ctx,
