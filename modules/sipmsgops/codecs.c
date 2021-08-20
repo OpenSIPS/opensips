@@ -96,11 +96,18 @@ static int create_codec_lumps(struct sip_msg * msg)
 		struct sdp_stream_cell * cur_cell = cur_session->streams;
 		struct lump* l;
 		str text;
+		str payloads;
 
 		while(cur_cell)
 		{
-			l = del_lump(msg, cur_cell->payloads.s - msg->buf,
-					cur_cell->payloads.len,0);
+			payloads = cur_cell->payloads;
+			/* include the previous whitespaces */
+			while (payloads.s > cur_cell->body.s && *(payloads.s-1) == ' ') {
+				payloads.s--;
+				payloads.len++;
+			}
+
+			l = del_lump(msg, payloads.s - msg->buf, payloads.len, 0);
 
 			lumps[count] = l;
 
@@ -119,8 +126,8 @@ static int create_codec_lumps(struct sip_msg * msg)
 				return -1;
 			}
 
-			text.len = cur_cell->payloads.len;
-			text.s = (char*)pkg_malloc(cur_cell->payloads.len);
+			text.len = payloads.len;
+			text.s = (char*)pkg_malloc(payloads.len);
 
 			if( text.s == NULL )
 			{
@@ -128,7 +135,7 @@ static int create_codec_lumps(struct sip_msg * msg)
 				return -1;
 			}
 
-			memcpy(text.s,cur_cell->payloads.s,cur_cell->payloads.len);
+			memcpy(text.s,payloads.s,payloads.len);
 
 			tmp = insert_new_lump_after( tmp, text.s, text.len, 0);
 			if(tmp == NULL)
@@ -272,14 +279,18 @@ static struct lump * get_associated_lump(struct sip_msg * msg,
 								  struct sdp_stream_cell * cell)
 {
 	struct lump *lmp;
-	int i;
+	char *payload;
+	int i, have,want;
 
 	LM_DBG("Have %d lumps\n",lumps_len);
 
 	for( i =0 ; i< lumps_len; i++)
 	{
-		int have = lumps[i]->u.offset;
-		int want = cell->payloads.s - msg->buf;
+		have = lumps[i]->u.offset;
+		payload = cell->payloads.s;
+		while (payload > cell->body.s && *(payload - 1) == ' ')
+			payload--;
+		want = payload - msg->buf;
 
 		LM_DBG("have lump at %d want at %d\n", have, want );
 		if( have == want ) {
@@ -402,7 +413,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 	char *cur, *tmp, *buff, temp;
 	struct lump * lmp;
 	str found;
-	int ret, i, depl, single, match, buff_len, is_static;
+	int ret, i,match, buff_len, is_static;
 	regmatch_t pmatch;
 
 
@@ -535,10 +546,9 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 				}
 
 				{
-					/* take the following whitespaces as well */
-					while( cur < lmp->u.value + lmp->len &&  *cur == ' '  )
-					{
-						cur++;
+					/* take the previous whitespaces as well */
+					while (found.s > lmp->u.value && *(found.s - 1) == ' ') {
+						found.s--;
 						found.len++;
 					}
 
@@ -562,11 +572,8 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 				/* add the deleted number into a buffer to be addded later */
 				if( op == ADD_TO_FRONT  || op == ADD_TO_BACK)
 				{
-					if( buff_len > 0)
-					{
-						memcpy(&buff[buff_len]," ",1);
-						buff_len++;
-					}
+					memcpy(&buff[buff_len]," ",1);
+					buff_len++;
 
 					memcpy(&buff[buff_len],payload->rtp_payload.s,
 						payload->rtp_payload.len);
@@ -597,16 +604,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 
 	if( op == ADD_TO_FRONT && buff_len >0 )
 	{
-		depl = buff_len;
-		single = 1;
-
-		if( lmp->len > 0)
-		{
-			depl++;
-			single = 0;
-		}
-
-		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+depl);
+		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len);
 		if(!lmp->u.value) {
 			LM_ERR("No more pkg memory\n");
 			ret = -1;
@@ -614,40 +612,48 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 		}
 
 		for( i = lmp->len -1 ; i>=0;i--)
-			lmp->u.value[i+depl] = lmp->u.value[i];
+			lmp->u.value[i+buff_len] = lmp->u.value[i];
 
 		memcpy(lmp->u.value,buff,buff_len);
 
-		if(!single)
-			lmp->u.value[buff_len] = ' ';
-
-		lmp->len += depl;
+		lmp->len += buff_len;
 
 	}
 
 	if( op == ADD_TO_BACK && buff_len >0 )
 	{
 
-		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len+1);
+		lmp->u.value = (char*)pkg_realloc(lmp->u.value, lmp->len+buff_len);
 		if(!lmp->u.value) {
 			LM_ERR("No more pkg memory\n");
 			ret = -1;
 			goto end;
 		}
 
-
-		if( lmp->len > 0)
-		{
-
-			memcpy(&lmp->u.value[lmp->len]," ",1);
-			lmp->len++;
-		}
-
-
 		memcpy(&lmp->u.value[lmp->len],buff,buff_len);
 
 		lmp->len += buff_len;
 
+	}
+
+	/* if we ended up with a 0-length lump, then it means that all payloads
+	 * have been deleted, therefore we need to disable the media stream */
+	if (lmp->len == 0) {
+		/* replace the media port with 0 - we also replace the spaces before
+		 * and after the port, to make sure we have a larger buffer */
+		lmp = del_lump(msg, cell->port.s - msg->buf - 1, cell->port.len + 2, 0);
+		if (!lmp) {
+			LM_ERR("could not add lump to disable stream!\n");
+			goto end;
+		}
+		tmp = pkg_malloc(3);
+		if (!tmp) {
+			LM_ERR("oom for port 0\n");
+			goto end;
+		}
+		memcpy(tmp, " 0 ", 3);
+		if (!insert_new_lump_after(lmp, tmp, 3, 0))
+			LM_ERR("could not insert lump to disable stream!\n");
 	}
 
 end:
