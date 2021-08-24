@@ -323,7 +323,7 @@ static void disconnect_rtpe_socket(int);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
-static int update_rtpengines(void);
+static int update_rtpengines(int);
 static int _add_rtpengine_from_database(void);
 static int rtpengine_set_store(modparam_t type, void * val);
 static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id);
@@ -1208,7 +1208,7 @@ static mi_response_t *mi_reload_rtpengines(const mi_params_t *params,
 	if(_add_rtpengine_from_database() < 0)
 		goto error;
 
-	if (update_rtpengines())
+	if (update_rtpengines(1))
 		goto error;
 
 	/* update pointer to default_rtpp_set*/
@@ -1568,7 +1568,7 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 	return 1;
 }
 
-static int connect_rtpengines(void)
+static int connect_rtpengines(int force_test)
 {
 	struct rtpe_set  *rtpe_list;
 	struct rtpe_node *pnode;
@@ -1592,7 +1592,7 @@ static int connect_rtpengines(void)
 		rtpe_list = rtpe_list->rset_next){
 
 		for (pnode=rtpe_list->rn_first; pnode!=0; pnode = pnode->rn_next){
-			if (rtpengine_connect_node(pnode))
+			if (rtpengine_connect_node(pnode) && force_test)
 				pnode->rn_disabled = rtpe_test(pnode, 0, 1);
 			/* else, there is an error, and we try to connect the next one */
 		}
@@ -1612,10 +1612,10 @@ child_init(int rank)
 		return 0;
 
 	/* Iterate known RTP proxies - create sockets */
-	return connect_rtpengines();
+	return connect_rtpengines(1);
 }
 
-static int update_rtpengines(void)
+static int update_rtpengines(int force_test)
 {
 	int i;
 
@@ -1625,7 +1625,7 @@ static int update_rtpengines(void)
 		disconnect_rtpe_socket(i);
 	}
 
-	return connect_rtpengines();
+	return connect_rtpengines(force_test);
 }
 
 /* Returns the first matching node in set */
@@ -2759,7 +2759,7 @@ select_rtpe_node(str callid, struct rtpe_set *set)
 	int was_forced, sumcut, found, constant_weight_sum;
 
 	/* check last list version */
-	if (my_version != *list_version && update_rtpengines() < 0) {
+	if (my_version != *list_version && update_rtpengines(0) < 0) {
 		LM_ERR("cannot update rtpengines list\n");
 		return 0;
 	}
