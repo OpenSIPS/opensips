@@ -319,6 +319,7 @@ static struct rtpe_node *select_rtpe_node(str, struct rtpe_set *);
 static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url);
 static void free_rtpe_set(int);
 static void free_rtpe_node(struct rtpe_set *, str *);
+static void disconnect_rtpe_socket(int);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -1621,9 +1622,7 @@ static int update_rtpengines(void)
 	LM_DBG("updating list from %d to %d [%d]\n", my_version, *list_version, rtpe_number);
 	my_version = *list_version;
 	for (i = 0; i < rtpe_number; i++) {
-		shutdown(rtpe_socks[i], SHUT_RDWR);
-		close(rtpe_socks[i]);
-		rtpe_socks[i] = -1;
+		disconnect_rtpe_socket(i);
 	}
 
 	return connect_rtpengines();
@@ -1747,6 +1746,15 @@ static void free_rtpe_sets(void)
 	}
 	(*rtpe_set_list)->rset_first = NULL;
 	(*rtpe_set_list)->rset_last = NULL;
+}
+
+static void disconnect_rtpe_socket(int idx)
+{
+	LM_DBG("disconnect socket idx=%d\n", idx);
+
+	shutdown(rtpe_socks[idx], SHUT_RDWR);
+	close(rtpe_socks[idx]);
+	rtpe_socks[idx] = -1;
 }
 
 static void mod_destroy(void)
