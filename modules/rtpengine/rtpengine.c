@@ -1570,6 +1570,7 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 
 static int connect_rtpengines(int force_test)
 {
+	int i;
 	struct rtpe_set  *rtpe_list;
 	struct rtpe_node *pnode;
 
@@ -1585,6 +1586,8 @@ static int connect_rtpengines(int force_test)
 			LM_ERR("no more pkg memory\n");
 			return -1;
 		}
+		for (i=rtpe_number; i<*rtpe_no; i++)
+			rtpe_socks[i] = -1; /* init new elems */
 	}
 	rtpe_number = *rtpe_no;
 
