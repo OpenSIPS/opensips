@@ -320,6 +320,8 @@ static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe
 static void free_rtpe_set(int);
 static void free_rtpe_node(struct rtpe_set *, str *);
 static void disconnect_rtpe_socket(int);
+static void cleanup_rtpengine_versions(void);
+static int add_rtpengine_version(int);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -356,6 +358,7 @@ static int rtpengine_tout = 1;
 static int rtpengine_timer_interval = 5;
 static pid_t mypid;
 static int myrand = 0;
+static int myrank = 0;
 static unsigned int myseqn = 0;
 static str extra_id_pv_param = {NULL, 0};
 static char *setid_avp_param = NULL;
@@ -382,8 +385,14 @@ static db_con_t *db_connection = NULL;
 static db_func_t db_functions;
 static rw_lock_t *rtpe_lock=NULL;
 static unsigned int *rtpe_no = 0;
-static unsigned int *list_version;
-static unsigned int my_version = 0;
+
+/* version management */
+struct rtpe_version_head **rtpe_versions = 0; /* chronological list of versions */
+static unsigned int *list_version;            /* master version */
+static unsigned int my_version = 0;           /* per process version */
+static unsigned int *child_versions;          /* array of per process versions */
+static unsigned int *child_versions_no;       /* number of elems */
+
 static unsigned int rtpe_number = 0;
 
 static int     setid_avp_type;
@@ -686,6 +695,7 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ MI_RELOAD_RTP_ENGINES, 0, 0, mi_child_init, {
 		{mi_reload_rtpengines, {0}},
+		{mi_reload_rtpengines, {"type", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "teardown", 0, 0, 0, {
@@ -840,12 +850,85 @@ static int rtpengine_set_store(modparam_t type, void * val){
 	return 0;
 }
 
+/*
+	frees any versions from list that have been applied by
+	all processes
+*/
+static void cleanup_rtpengine_versions(void)
+{
+	int i, min_version=0;
+	struct rtpe_version *crt_version, *prev_version;
+
+	if (*rtpe_versions == NULL || (*rtpe_versions)->version_count == 0)
+		return; // nothing to do
+
+	for (i=0; i<*child_versions_no; i++) {
+		if (!min_version || child_versions[i] < min_version)
+			min_version = child_versions[i];
+	}
+
+	for (crt_version = (*rtpe_versions)->version_first; crt_version != NULL;) {
+		if (crt_version->version >= min_version)
+			break;
+		prev_version = crt_version;
+		crt_version = prev_version->version_next;
+
+		/* first version remove */
+		if ((*rtpe_versions)->version_first == prev_version)
+			(*rtpe_versions)->version_first = crt_version;
+
+		/* last version remove */
+		if ((*rtpe_versions)->version_last == prev_version)
+			(*rtpe_versions)->version_last = NULL;
+
+		shm_free(prev_version);
+		(*rtpe_versions)->version_count--;
+	}
+
+	return;
+}
+
+/* increments version and adds version to end of list */
+static int add_rtpengine_version(int flags)
+{
+	struct rtpe_version *pversion;
+
+	/* init list of versions */
+	if (*rtpe_versions == NULL) {
+		*rtpe_versions = shm_malloc(sizeof(struct rtpe_version_head));
+		if (*rtpe_versions == NULL) {
+			LM_ERR("no shm memory left\n");
+			return -1;
+		}
+		memset(*rtpe_versions, 0, sizeof(struct rtpe_version_head));
+	}
+
+	pversion = shm_malloc(sizeof(struct rtpe_version));
+	if (pversion == NULL) {
+		LM_ERR("no shm memory left\n");
+		return -1;
+	}
+	memset(pversion, 0, sizeof(*pversion));
+	pversion->version = ++(*list_version);
+	pversion->version_flags = flags;
+
+	if ((*rtpe_versions)->version_first == NULL) {
+		(*rtpe_versions)->version_first = pversion;
+	} else {
+		(*rtpe_versions)->version_last->version_next = pversion;
+	}
+	(*rtpe_versions)->version_last = pversion;
+	(*rtpe_versions)->version_count++;
+
+	return 0;
+}
+
 
 static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 										char * rtpengine){
 	/* Make rtp proxies list. */
 	char *p, *p1, *p2, *plim;
-	struct rtpe_node *pnode;
+	struct rtpe_node *pnode, *tmpnode;
 	int weight;
 
 	p = rtpengine;
@@ -879,6 +962,7 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 		pnode->rn_weight = weight;
 		pnode->rn_umode = 0;
 		pnode->rn_disabled = 0;
+		pnode->rn_flags = 0;
 		pnode->rn_url.s = shm_malloc(p2 - p1 + 1);
 		if (pnode->rn_url.s == NULL) {
 			shm_free(pnode);
@@ -891,8 +975,9 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 
 		LM_DBG("url is %s, len is %i\n", pnode->rn_url.s, pnode->rn_url.len);
 
-		if (lookup_rtpe_node(rtpe_list, &pnode->rn_url) != NULL) {
+		if ((tmpnode = lookup_rtpe_node(rtpe_list, &pnode->rn_url)) != NULL) {
 			LM_DBG("node with url %s already exists in set %d, not adding new node\n", pnode->rn_url.s, rtpe_list->id_set);
+			tmpnode->rn_flags &= ~RTPE_TEARDOWN_NODE;
 			shm_free(pnode->rn_url.s);
 			shm_free(pnode);
 			return 0;
@@ -1003,6 +1088,8 @@ static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id)
 	} else {
 		new_list = 0;
 	}
+
+	rtpe_list->set_flags &= ~RTPE_TEARDOWN_SET;
 
 	if(add_rtpengine_socks(rtpe_list, rtp_proxies)!= 0){
 		/*if this list will not be inserted, clean it up*/
@@ -1189,27 +1276,77 @@ error:
 static mi_response_t *mi_reload_rtpengines(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	struct rtpe_set *it;
+	str type;
+	int soft_reload = 0;
+	struct rtpe_set *crt_list, *next_list;
+	struct rtpe_node *crt_rtpe, *next_rtpe;
+
 	if(db_url.s == NULL) {
 		LM_ERR("Dynamic loading of rtpengines not enabled\n");
 		return init_mi_error(400, MI_SSTR("Dynamic loading not enabled"));
 	}
 
-	lock_start_write(rtpe_lock);
-	if(*rtpe_set_list) {
-		for (it = (*rtpe_set_list)->rset_first; it; it = it->rset_next)
-			free_rtpe_nodes(it);
+	if (try_get_mi_string_param(params, "type", &type.s, &type.len) == 0) {
+		if (!str_strcmp(&type, _str("soft")))
+			soft_reload = 1;
 	}
-	*rtpe_no = 0;
-	(*list_version)++;
 
-	/* notify timeout process that the rtpp proxy list changes */
+	lock_start_write(rtpe_lock);
 
-	if(_add_rtpengine_from_database() < 0)
-		goto error;
+	if (soft_reload) {
+		/*
+			soft reload:
+			- mark all nodes/sets for teardown; as nodes are added
+			  from the database, this flag is cleared and sockets
+			  will be reused
+		*/
+		if (*rtpe_set_list) {
+			for(crt_list = (*rtpe_set_list)->rset_first; crt_list != NULL;
+							crt_list = crt_list->rset_next){
+				crt_list->set_flags |= RTPE_TEARDOWN_SET;
+				for(crt_rtpe = crt_list->rn_first; crt_rtpe != NULL;
+								crt_rtpe = crt_rtpe->rn_next)
+					crt_rtpe->rn_flags |= RTPE_TEARDOWN_NODE;
+			}
+		}
 
-	if (update_rtpengines(1))
-		goto error;
+		if(_add_rtpengine_from_database() < 0)
+			goto error;
+
+		/* remove old sets/nodes */
+		for(crt_list = (*rtpe_set_list)->rset_first; crt_list != NULL; ){
+			if (crt_list->set_flags&RTPE_TEARDOWN_SET) {
+				next_list = crt_list->rset_next;
+				free_rtpe_set(crt_list->id_set);
+				crt_list = next_list;
+				continue;
+			}
+			for(crt_rtpe = crt_list->rn_first; crt_rtpe != NULL; ){
+				if (crt_rtpe->rn_flags&RTPE_TEARDOWN_NODE) {
+					next_rtpe = crt_rtpe->rn_next;
+					free_rtpe_node(crt_list, &crt_rtpe->rn_url);
+					crt_rtpe = next_rtpe;
+					continue;
+				}
+				crt_rtpe = crt_rtpe->rn_next;
+			}
+			crt_list = crt_list->rset_next;
+		}
+	} else {
+		/*
+			hard reload:
+			- teardown all nodes and establish fresh connections
+		*/
+		if(*rtpe_set_list) {
+			for (crt_list = (*rtpe_set_list)->rset_first; crt_list != NULL;
+						crt_list = crt_list->rset_next)
+				free_rtpe_nodes(crt_list);
+		}
+		*rtpe_no = 0;
+
+		if(_add_rtpengine_from_database() < 0)
+			goto error;
+	}
 
 	/* update pointer to default_rtpp_set*/
 	*default_rtpe_set = select_rtpe_set(DEFAULT_RTPE_SET_ID);
@@ -1217,8 +1354,25 @@ static mi_response_t *mi_reload_rtpengines(const mi_params_t *params,
 		LM_WARN("there is no rtpengine in the default set %d\n",
 				DEFAULT_RTPE_SET_ID);
 
+	/* update version history */
+	cleanup_rtpengine_versions();
+	if (add_rtpengine_version(soft_reload ? 0 : RTPE_TEARDOWN_SOCKETS) < 0)
+		goto error;
+
 	/* release the readers */
 	lock_stop_write(rtpe_lock);
+
+	/*
+		set has been updated so we can connect to nodes
+		with read lock only like SIP procs; this will test node
+		outside of SIP context
+	*/
+	RTPE_START_READ();
+	if (update_rtpengines(1)) {
+		RTPE_STOP_READ();
+		return init_mi_error(500, MI_SSTR("Internal error"));
+	}
+	RTPE_STOP_READ();
 
 	return init_mi_result_ok();
 error:
@@ -1257,6 +1411,11 @@ void rtpengine_timer(unsigned int ticks, void *param)
     return;
 
   RTPE_START_READ();
+	if (my_version != *list_version && update_rtpengines(0) < 0) {
+		LM_ERR("cannot update rtpengines list\n");
+		RTPE_STOP_READ();
+		return;
+	}
   for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
@@ -1304,15 +1463,22 @@ mod_init(void)
 
 	rtpe_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
 	list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
+	child_versions=(unsigned int*)shm_malloc((1/*non-SIP at head*/ + udp_workers_no + tcp_workers_no) * sizeof(unsigned int));
+	child_versions_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
+	rtpe_versions = (struct rtpe_version_head **)shm_malloc(sizeof(struct rtpe_version_head *));
 
-	if(!rtpe_no || !list_version) {
+	if(!rtpe_no || !list_version || !child_versions || !child_versions_no || !rtpe_versions) {
 		LM_ERR("No more shared memory\n");
 		return -1;
 	}
 
 	*rtpe_no = 0;
 	*list_version = 0;
+	*child_versions_no = 1/*non-SIP at head*/ + udp_workers_no + tcp_workers_no;
+	*rtpe_versions = 0;
 	my_version = 0;
+
+	memset(child_versions, 0, *child_versions_no * sizeof(unsigned int));
 
 	if (!(rtpe_set_list = (struct rtpe_set_head **)
 		shm_malloc(sizeof(struct rtpe_set_head *)))) {
@@ -1468,7 +1634,7 @@ mod_init(void)
 
 static int mi_child_init(void)
 {
-	if(child_init(1) < 0)
+	if(child_init(myrank) < 0)
 	{
 		LM_ERR("Failed to initial rtpp socks\n");
 		return -1;
@@ -1595,7 +1761,8 @@ static int connect_rtpengines(int force_test)
 		rtpe_list = rtpe_list->rset_next){
 
 		for (pnode=rtpe_list->rn_first; pnode!=0; pnode = pnode->rn_next){
-			if (rtpengine_connect_node(pnode) && force_test)
+			/* reuse socket if already initialized */
+			if ((rtpe_socks[pnode->idx] != -1 || rtpengine_connect_node(pnode)) && force_test)
 				pnode->rn_disabled = rtpe_test(pnode, 0, 1);
 			/* else, there is an error, and we try to connect the next one */
 		}
@@ -1610,6 +1777,11 @@ child_init(int rank)
 {
 	mypid = getpid();
 	myrand = rand()%10000;
+	myrank = rank;
+
+	/* external procs are assigned to head of version array */
+	if (rank == PROC_MODULE)
+		myrank = 0;
 
 	if(*rtpe_set_list==NULL )
 		return 0;
@@ -1620,13 +1792,64 @@ child_init(int rank)
 
 static int update_rtpengines(int force_test)
 {
-	int i;
+	int *tmp_socks;
+	int i, reset=0;
+	struct rtpe_set * crt_list;
+	struct rtpe_node * crt_rtpe;
+	struct rtpe_version * crt_version;
 
 	LM_DBG("updating list from %d to %d [%d]\n", my_version, *list_version, rtpe_number);
-	my_version = *list_version;
-	for (i = 0; i < rtpe_number; i++) {
-		disconnect_rtpe_socket(i);
+
+	if (*rtpe_versions==NULL || (*rtpe_versions)->version_last==NULL
+			|| my_version == (*rtpe_versions)->version_last->version)
+		return 0; /* nothing to do or already updated */
+
+	for (crt_version = (*rtpe_versions)->version_first; crt_version != NULL;
+				crt_version = crt_version->version_next) {
+		if (crt_version->version <= my_version)
+			continue;
+		if (crt_version->version_flags&RTPE_TEARDOWN_SOCKETS)
+			reset = 1;
+		my_version = crt_version->version;
 	}
+
+	child_versions[myrank] = my_version;
+
+	/*
+		close all sockets if any versions required
+		a hard reload of rtpengine nodes
+	*/
+	if (reset) {
+		for (i = 0; i < rtpe_number; i++)
+			disconnect_rtpe_socket(i);
+		return connect_rtpengines(force_test);
+	}
+
+	/*
+		only close sockets that were removed from set(s)
+	*/
+	tmp_socks = (int*)pkg_malloc(rtpe_number * sizeof(int));
+	if (tmp_socks == NULL) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+	memcpy(tmp_socks, rtpe_socks, rtpe_number * sizeof(int));
+
+  for(crt_list = (*rtpe_set_list)->rset_first; crt_list != NULL;
+					crt_list = crt_list->rset_next){
+		for(crt_rtpe = crt_list->rn_first; crt_rtpe != NULL;
+						crt_rtpe = crt_rtpe->rn_next) {
+			if (crt_rtpe->idx < rtpe_number)
+				tmp_socks[crt_rtpe->idx] = 0; /* mark as active */
+		}
+  }
+
+	for (i = 0; i < rtpe_number; i++) {
+		if (tmp_socks[i])
+			disconnect_rtpe_socket(i);
+	}
+
+	pkg_free(tmp_socks);
 
 	return connect_rtpengines(force_test);
 }
