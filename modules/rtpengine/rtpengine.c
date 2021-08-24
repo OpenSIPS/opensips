@@ -361,7 +361,6 @@ static pv_spec_t err_pv;
 
 static char ** rtpe_strings=0;
 static int rtpe_sets=0; /*used in rtpengine_set_store()*/
-static int rtpe_set_count = 0;
 static int rtpe_ctx_idx = -1;
 struct rtpe_set_head **rtpe_set_list =0;
 struct rtpe_set **default_rtpe_set=0;
@@ -1025,7 +1024,6 @@ static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id)
 		}
 
 		(*rtpe_set_list)->rset_last = rtpe_list;
-		rtpe_set_count++;
 	}
 
 	return 0;
