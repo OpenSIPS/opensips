@@ -317,6 +317,8 @@ static int set_rtpengine_set_f(struct sip_msg * msg, rtpe_set_link_t *set_param)
 static struct rtpe_set * select_rtpe_set(int id_set);
 static struct rtpe_node *select_rtpe_node(str, struct rtpe_set *);
 static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe_url);
+static void free_rtpe_set(int);
+static void free_rtpe_node(struct rtpe_set *, str *);
 static char *send_rtpe_command(struct rtpe_node *, bencode_item_t *, int *);
 static int get_extra_id(struct sip_msg* msg, str *id_str);
 
@@ -1651,6 +1653,39 @@ static struct rtpe_node *lookup_rtpe_node(struct rtpe_set * rtpe_list, str *rtpe
 	return NULL;
 }
 
+/* finds the node based upon URL and frees it from set */
+static void free_rtpe_node(struct rtpe_set *list, str *rtpe_url)
+{
+	struct rtpe_node *prev_rtpp=NULL, *crt_rtpp;
+
+	for(crt_rtpp=list->rn_first; crt_rtpp!=NULL && str_strcmp(&crt_rtpp->rn_url, rtpe_url);
+			crt_rtpp=crt_rtpp->rn_next)
+		prev_rtpp = crt_rtpp;
+
+	if (!crt_rtpp) {
+		LM_DBG("no matching node %s\n", rtpe_url->s);
+		return;
+	}
+
+	/* first node matched */
+	if (!prev_rtpp) {
+		list->rn_first = crt_rtpp->rn_next;
+		goto free;
+	}
+
+	/* last node matched */
+	if (crt_rtpp->rn_next == NULL)
+		list->rn_last = prev_rtpp;
+
+	prev_rtpp->rn_next = crt_rtpp->rn_next;
+
+free:
+	list->rtpe_node_count--;
+	if (crt_rtpp->rn_url.s)
+		shm_free(crt_rtpp->rn_url.s);
+	shm_free(crt_rtpp);
+}
+
 static void free_rtpe_nodes(struct rtpe_set *list)
 {
 	struct rtpe_node * crt_rtpp, *last_rtpp;
@@ -1666,6 +1701,37 @@ static void free_rtpe_nodes(struct rtpe_set *list)
 	}
 	list->rn_first = NULL;
 	list->rtpe_node_count = 0;
+}
+
+/* finds the set based upon ID and frees it from list */
+static void free_rtpe_set(int id_set)
+{
+	struct rtpe_set *prev_list=NULL, *crt_list;
+
+	for(crt_list=(*rtpe_set_list)->rset_first; crt_list!=NULL && crt_list->id_set!=id_set;
+			crt_list=crt_list->rset_next)
+		prev_list = crt_list;
+
+	if (!crt_list) {
+		LM_DBG("no matching set %d\n", id_set);
+		return;
+	}
+
+	/* first set matched */
+	if (!prev_list) {
+		(*rtpe_set_list)->rset_first = crt_list->rset_next;
+		goto free;
+	}
+
+	/* last set matched */
+	if (crt_list->rset_next == NULL)
+		(*rtpe_set_list)->rset_last = prev_list;
+
+	prev_list->rset_next = crt_list->rset_next;
+
+free:
+		free_rtpe_nodes(crt_list);
+		shm_free(crt_list);
 }
 
 static void free_rtpe_sets(void)
