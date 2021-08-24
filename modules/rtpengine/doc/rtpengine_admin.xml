@@ -1447,6 +1447,15 @@ $ opensips-cli -x mi rtpengine_show
 			Reloads all rtpengine sets from the database. Used only when the
 			<quote><xref linkend="param_db_url"/></quote> parameter is set.
 			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+					<emphasis>type</emphasis> (optional) soft - when reloading nodes
+					from the database, reuse any existing sockets and keep existing
+					node disabled state. If not provided, then all nodes and sockets
+					will first be torndown and then nodes will be loaded from the database.
+				</para></listitem>
+			</itemizedlist>
 			<para>
 			No parameter.
 			</para>
@@ -1456,6 +1465,7 @@ $ opensips-cli -x mi rtpengine_show
 			<programlisting format="linespecific">
 ...
 $ opensips-cli -x mi rtpengine_reload
+$ opensips-cli -x mi rtpengine_reload type=soft
 ...
 			</programlisting>
 			</example>
