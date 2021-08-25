@@ -392,6 +392,8 @@ static inline void parse_pipe_name(str *name, str *pipe_name, unsigned *flags)
 				}
 				/* fall back */
 			default:
+				if (pipe_name->len == name->len)
+					*flags = 0;
 				/* not flags - something else at the end */
 				return;
 		}
