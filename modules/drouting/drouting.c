@@ -164,7 +164,6 @@ static str db_partitions_url;
 rw_lock_t *reload_lock; /* lock to protect the partitions while reloading */
 
 
-//static int use_partitions = 0;
 int use_partitions = 0; /* by default don't use db for config */
 static struct head_config {
 	str partition; /* partition name extracted from database */
@@ -185,7 +184,7 @@ static struct head_config {
 	str carrier_attrs_avp_spec; /* extracted from database - has default value */
 	struct head_config *next;
 } *head_start;
-int *n_partitions; /* total number of partitions (does not change at runtime) */
+int *n_partitions; /* total number of partitions */
 
 struct head_db *head_db_start;
 
@@ -243,6 +242,7 @@ static char *extra_prefix_chars;
 static rw_lock_t *ref_lock = NULL;
 
 static int dr_init(void);
+static int dr_reload_partitions(int initial);
 static int dr_child_init(int rank);
 static int dr_exit(void);
 
@@ -295,6 +295,8 @@ int set_rule_tables_query(modparam_t type, void *val);
 mi_response_t *dr_reload_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *dr_partition_reload_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 mi_response_t *mi_dr_gw_status_1(const mi_params_t *params,
@@ -524,6 +526,10 @@ static mi_export_t mi_cmds[] = {
 	{ "dr_reload", HLP1, 0, 0, {
 		{dr_reload_cmd, {0}},
 		{dr_reload_cmd_1, {"partition_name", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "dr_partition_reload", HLP1, 0, 0, {
+		{dr_partition_reload_cmd, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dr_gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
@@ -1513,15 +1519,6 @@ void update_cache_info(void)
 
 static int dr_init(void)
 {
-	pv_spec_t avp_spec;
-	unsigned short dummy;
-	str name_w_part;
-	struct head_cache *cache = NULL;
-	struct head_config * it_head_config = 0;
-	struct head_db *db_part = NULL;
-	char name_w_buf[MAX_LEN_NAME_W_PART];
-	name_w_part.s = name_w_buf;
-
 	LM_INFO("dynamic routing - initializing\n");
 	reload_lock = lock_init_rw();
 	if (!reload_lock) {
@@ -1569,12 +1566,117 @@ static int dr_init(void)
 		return -1;
 	}
 
-	name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of
-													   fixed string */);
-		if( name_w_part.s == 0 ) {
-			LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
+	if (dr_reload_partitions(1) < 0) return -1;
+
+	if (init_dr_bls(head_db_start)!=0) {
+		LM_ERR("failed to init DR blacklists\n");
+		goto error;
+	}
+
+	dr_enable_probing_state =(unsigned int *) shm_malloc(sizeof(unsigned int));
+	if (!dr_enable_probing_state) {
+		LM_ERR("no shmem left\n");
+		goto error;
+	}
+	*dr_enable_probing_state = MI_DEFAULT_PROBING_STATE;
+
+	if (dr_prob_interval) {
+		str host;
+		int port,proto;
+
+		/* load TM API */
+		if (load_tm_api(&dr_tmb)!=0) {
+			LM_ERR("can't load TM API\n");
 			goto error;
 		}
+
+		/* parse and look for the socket to ping from */
+		if (dr_probe_sock_s && dr_probe_sock_s[0]!=0 ) {
+			if (parse_phostport( dr_probe_sock_s, strlen(dr_probe_sock_s),
+			&host.s, &host.len, &port, &proto)!=0 ) {
+				LM_ERR("socket description <%s> is not valid\n",
+					dr_probe_sock_s);
+				goto error;
+			}
+			dr_probe_sock = grep_internal_sock_info( &host, port, proto);
+			if (dr_probe_sock==NULL) {
+				LM_ERR("socket <%s> is not local to opensips (we must listen "
+					"on it\n", dr_probe_sock_s);
+				goto error;
+			}
+		}
+
+		/* probing method */
+		dr_probe_method.len = strlen(dr_probe_method.s);
+		dr_probe_from.len = strlen(dr_probe_from.s);
+		if (dr_probe_replies.s)
+			dr_probe_replies.len = strlen(dr_probe_replies.s);
+
+		/* register pinger function */
+		if (register_timer( "dr-pinger", dr_prob_handler, NULL,
+					dr_prob_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+			LM_ERR("failed to register probing handler\n");
+			goto error;
+		}
+
+		if (dr_probe_replies.s) {
+			dr_probe_replies.len = strlen(dr_probe_replies.s);
+			if(parse_reply_codes( &dr_probe_replies, &probing_reply_codes,
+						&probing_codes_no )< 0) {
+				LM_ERR("Bad format for options_reply_code parameter"
+						" - Need a code list separated by commas\n");
+				goto error;
+			}
+		}
+
+	}
+
+	if (dr_persistent_state) {
+		/* register function to flush changes in state */
+		if (register_timer("dr-flush", dr_state_timer, NULL, 30,
+		TIMER_FLAG_SKIP_ON_DELAY)<0) {
+			LM_ERR("failed to register state flush handler\n");
+			goto error;
+		}
+	}
+	LM_DBG("All in place in the init. Will return 0\n");
+
+	dr_evi_id = evi_publish_event(dr_event);
+	if (dr_evi_id == EVI_ERROR) {
+		LM_ERR("cannot register %.*s event\n", dr_event.len, dr_event.s);
+		goto error;
+	}
+
+	if (dr_cluster_id>0 && dr_init_cluster()<0) {
+		LM_ERR("failed to initialized the clustering support\n");
+		goto error;
+	}
+
+	return 0;
+
+error:
+	cleanup_head_db_table();
+	return -1;
+}
+
+static int dr_reload_partitions(int initial) {
+	pv_spec_t avp_spec;
+	unsigned short dummy;
+	str name_w_part;
+	struct head_cache *cache = NULL;
+	struct head_config * it_head_config = 0;
+	struct head_db *db_part = NULL;
+	struct head_db *it_head_db;
+	struct head_db *prev_head_db = 0;
+	char name_w_buf[MAX_LEN_NAME_W_PART];
+	name_w_part.s = name_w_buf;
+	int found;
+
+	name_w_part.s = shm_malloc( MAX_LEN_NAME_W_PART /* length of fixed string */);
+	if( name_w_part.s == 0 ) {
+		LM_ERR(" No more shm memory [drouting:name_w_part.s]\n");
+		goto error;
+	}
 
 	if( use_partitions == 1 ) { /* loading configurations from db */
 		if (get_config_from_db() == -1) {
@@ -1598,7 +1700,9 @@ static int dr_init(void)
 	} else {
 		init_db_url(db_url, 0);
 
+		lock_start_write(reload_lock);
 		add_head_config();
+		lock_stop_write(reload_lock);
 
 		/* if not empty save to head_config structure */
 		if (drd_table.s[0]==0) {
@@ -1665,17 +1769,44 @@ static int dr_init(void)
 
 	update_cache_info();
 
-	if (init_prefix_tree( extra_prefix_chars )!=0) {
-		LM_ERR("failed to initiate the prefix array\n");
-		goto error;
-	}
+	if (initial) {
+		if (init_prefix_tree( extra_prefix_chars )!=0) {
+			LM_ERR("failed to initiate the prefix array\n");
+			goto error;
+		}
 
-	drg_user_col.len = strlen(drg_user_col.s);
-	drg_domain_col.len = strlen(drg_domain_col.s);
-	drg_grpid_col.len = strlen(drg_grpid_col.s);
+		drg_user_col.len = strlen(drg_user_col.s);
+		drg_domain_col.len = strlen(drg_domain_col.s);
+		drg_grpid_col.len = strlen(drg_grpid_col.s);
+	} else {
+		// Check if we have partitions to delete
+		for (it_head_db = head_db_start; it_head_db != NULL; it_head_db = it_head_db->next) {
+			found = 0;
+			for (it_head_config = head_start; it_head_config != NULL;
+					it_head_config = it_head_config->next) {
+
+				if (str_match(&it_head_config->partition, &it_head_db->partition))
+					found = 1;
+			}
+			if (!found) {
+				LM_INFO("delete partition %.*s\n", it_head_db->partition.len, it_head_db->partition.s);
+
+				if (prev_head_db == 0)
+					head_db_start = it_head_db->next;
+				else
+					prev_head_db->next = it_head_db->next;
+
+				cleanup_head_db(it_head_db);
+				shm_free(it_head_db);
+			}
+		}
+	}
 
 	for (it_head_config = head_start; it_head_config != NULL;
 			it_head_config = it_head_config->next) {
+
+		if (!initial && get_partition(&it_head_config->partition) != NULL) continue;
+		LM_INFO("create partition %.*s\n", it_head_config->partition.len, it_head_config->partition.s);
 
 		db_part = shm_malloc(sizeof(struct head_db));
 		if (!db_part) {
@@ -1879,8 +2010,10 @@ static int dr_init(void)
 			goto error_cfg;
 		}
 
-		(db_part->db_funcs).close(*db_part->db_con);
-		*db_part->db_con = 0;
+		if (initial) {
+			(db_part->db_funcs).close(*db_part->db_con);
+			*db_part->db_con = 0;
+		}
 
 		/* all good now - add the partition to the list */
 		db_part->next = head_db_start;
@@ -1904,93 +2037,13 @@ static int dr_init(void)
 			}
 		}
 	}
+
+
+
 	/* all good now - release the config */
 	cleanup_head_config_table();
 
-	if (init_dr_bls(head_db_start)!=0) {
-		LM_ERR("failed to init DR blacklists\n");
-		goto error;
-	}
-
-	dr_enable_probing_state =(unsigned int *) shm_malloc(sizeof(unsigned int));
-	if (!dr_enable_probing_state) {
-		LM_ERR("no shmem left\n");
-		goto error;
-	}
-	*dr_enable_probing_state = MI_DEFAULT_PROBING_STATE;
-
-	if (dr_prob_interval) {
-
-		str host;
-		int port,proto;
-
-		/* load TM API */
-		if (load_tm_api(&dr_tmb)!=0) {
-			LM_ERR("can't load TM API\n");
-			goto error;
-		}
-
-		/* parse and look for the socket to ping from */
-		if (dr_probe_sock_s && dr_probe_sock_s[0]!=0 ) {
-			if (parse_phostport( dr_probe_sock_s, strlen(dr_probe_sock_s),
-			&host.s, &host.len, &port, &proto)!=0 ) {
-				LM_ERR("socket description <%s> is not valid\n",
-					dr_probe_sock_s);
-				goto error;
-			}
-			dr_probe_sock = grep_internal_sock_info( &host, port, proto);
-			if (dr_probe_sock==NULL) {
-				LM_ERR("socket <%s> is not local to opensips (we must listen "
-					"on it\n", dr_probe_sock_s);
-				goto error;
-			}
-		}
-
-		/* probing method */
-		dr_probe_method.len = strlen(dr_probe_method.s);
-		dr_probe_from.len = strlen(dr_probe_from.s);
-		if (dr_probe_replies.s)
-			dr_probe_replies.len = strlen(dr_probe_replies.s);
-
-		/* register pinger function */
-		if (register_timer( "dr-pinger", dr_prob_handler, NULL,
-					dr_prob_interval, TIMER_FLAG_DELAY_ON_DELAY)<0) {
-			LM_ERR("failed to register probing handler\n");
-			goto error;
-		}
-
-		if (dr_probe_replies.s) {
-			dr_probe_replies.len = strlen(dr_probe_replies.s);
-			if(parse_reply_codes( &dr_probe_replies, &probing_reply_codes,
-						&probing_codes_no )< 0) {
-				LM_ERR("Bad format for options_reply_code parameter"
-						" - Need a code list separated by commas\n");
-				goto error;
-			}
-		}
-
-	}
-
-	if (dr_persistent_state) {
-		/* register function to flush changes in state */
-		if (register_timer("dr-flush", dr_state_timer, NULL, 30,
-		TIMER_FLAG_SKIP_ON_DELAY)<0) {
-			LM_ERR("failed to register state flush handler\n");
-			goto error;
-		}
-	}
-	LM_DBG("All in place in the init. Will return 0\n");
-
-	dr_evi_id = evi_publish_event(dr_event);
-	if (dr_evi_id == EVI_ERROR) {
-		LM_ERR("cannot register %.*s event\n", dr_event.len, dr_event.s);
-		goto error;
-	}
-
-	if (dr_cluster_id>0 && dr_init_cluster()<0) {
-		LM_ERR("failed to initialized the clustering support\n");
-		goto error;
-	}
+	if (!initial) lock_stop_write(reload_lock);
 
 	return 0;
 
@@ -2183,6 +2236,21 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
+mi_response_t *dr_partition_reload_cmd(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	LM_INFO("dr_partition_reload MI command received!\n");
+
+	if (use_partitions && dr_reload_partitions(0) != 0) {
+		LM_CRIT("failed to reload partitions\n");
+		return init_mi_error(500, MI_SSTR("Failed to reload partitions"));
+	}
+
+	if (dr_cluster_id && dr_cluster_sync() < 0)
+		return init_mi_error(500, MI_SSTR("Failed to synchronize states from cluster"));
+
+	return init_mi_result_ok();
+}
 
 static inline int get_group_id(struct sip_uri *uri, struct head_db *
 		current_partition)
@@ -2946,10 +3014,8 @@ struct head_db * get_partition(const str *name)
 	struct head_db * it = head_db_start;
 
 	while( it!= NULL) {
-		if( it->partition.len==name->len && memcmp( it->partition.s, name->s,
-					name->len)==0 ) {
+		if (str_match(&it->partition, name))
 			return it;
-		}
 		it = it->next;
 	}
 
@@ -4890,7 +4956,10 @@ static int get_config_from_db(void) {
 
 	for( i=0; i<nr_rows_db_config; i++) {
 		value = ROW_VALUES(rows_db_config+i);
+		lock_start_write(reload_lock);
+		*n_partitions = 0;
 		add_head_config();
+		lock_stop_write(reload_lock);
 		for( j=0; j<nr_cols_db_config; j++) {
 			if ( (j !=1) && VAL_NULL(value+j) ) {
 				LM_DBG("Row %d is NULL\n", i);
@@ -4903,8 +4972,10 @@ static int get_config_from_db(void) {
 				}
 				if ( (j == 1) && ((VAL_NULL(value+j) || ans_col.len == 0)) )
 					ans_col = db_partitions_url;
+				lock_start_write(reload_lock);
 				if (populate_head_config(head_start, ans_col, j) < 0 )
 					LM_ERR("Column from partition table not recognized; will continue\n");
+				lock_stop_write(reload_lock);
 
 			} else {
 				LM_ERR("Result from query is not a string\n");
