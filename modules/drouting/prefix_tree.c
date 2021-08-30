@@ -104,7 +104,7 @@ internal_check_rt(
 		j = 0;
 		while(rtlw!=NULL) {
 			if ( j++ >= *rgidx) {
-				if (!rtlw->rtl->time_rec || tmrec_expr_check(rtlw->rtl->time_rec))
+				if (!rtlw->rtl->time_rec || tmrec_expr_check(rtlw->rtl->time_rec) == 1)
 					goto ok_exit;
 			}
 			rtlw=rtlw->next;

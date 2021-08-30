@@ -304,7 +304,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 		if(rulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rulep->timerec.len, rulep->timerec.s);
 			// Doesn't matches time period continue with next rule
-			if(!tmrec_expr_check(rulep->parsed_timerec)) {
+			if(tmrec_expr_check(rulep->parsed_timerec) < 0) {
 				LM_DBG("Time rule doesn't match: skip next!\n");
 				continue;
 			}
@@ -328,7 +328,7 @@ int translate(struct sip_msg *msg, str input, str * output, dpl_id_p idp, str * 
 		if(rrulep->parsed_timerec) {
 			LM_DBG("Timerec exists for rule checking: %.*s\n", rrulep->timerec.len, rrulep->timerec.s);
 			// Doesn't matches time period continue with next rule
-			if(!tmrec_expr_check(rrulep->parsed_timerec)) {
+			if(tmrec_expr_check(rrulep->parsed_timerec) < 0) {
 				LM_DBG("Time rule doesn't match: skip next!\n");
 				continue;
 			}
