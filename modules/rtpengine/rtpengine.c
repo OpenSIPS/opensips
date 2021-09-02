@@ -3675,8 +3675,8 @@ static str *rtpengine_get_call_flags(struct rtp_relay_session *sess,
 			(out_iface? (11/* 'out-iface= ' */ + out_iface->len): 0) +
 			(type? (1/* ' ' */ + type->len): 0) +
 			(flags? (1/* ' ' */ + flags->len): 0) +
-			(extra? (1/* ' ' */ + extra->len): 0)) +
-			(sess->branch != RTP_RELAY_ALL_BRANCHES? 20/* 'via-branch-param=br ' */ + INT2STR_MAX_LEN : 0);
+			(extra? (1/* ' ' */ + extra->len): 0) +
+			(sess->branch != RTP_RELAY_ALL_BRANCHES? 20/* 'via-branch-param=br ' */ + INT2STR_MAX_LEN : 0));
 	if (!ret.s)
 		return NULL;
 	p = ret.s;
