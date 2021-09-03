@@ -1815,18 +1815,18 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						goto error;
 				}
 				else if (str_eq(&key, "rtcp-mux-demux"))
-					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "demux"));
+					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "demux"));
 				else if (str_eq(&key, "rtcp-mux-offer"))
-					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "offer"));
+					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "offer"));
 				else
 					break;
 				continue;
 
 			case 15:
 				if (str_eq(&key, "rtcp-mux-reject"))
-					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "reject"));
+					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "reject"));
 				else if (str_eq(&key, "rtcp-mux-accept"))
-					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "accept"));
+					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "accept"));
 				else
 					break;
 				continue;
@@ -1835,7 +1835,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				if (str_eq(&key, "UDP/TLS/RTP/SAVP"))
 					ng_flags->transport = 0x104;
 				else if (str_eq(&key, "rtcp-mux-require"))
-					BCHECK(bencode_list_add_string(ng_flags->rtcp_mux, "require"));
+					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "require"));
 				else
 					break;
 				continue;
