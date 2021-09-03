@@ -814,13 +814,31 @@ error:
 	return -1;
 }
 
+static int rtp_relay_sess_last(struct rtp_relay_ctx *ctx,
+		struct rtp_relay_sess *sess)
+{
+	struct list_head *it;
+	struct rtp_relay_sess *s;
+	int n = 0;
+
+	list_for_each(it, &ctx->sessions) {
+		s = list_entry(it, struct rtp_relay_sess, list);
+		if (s->index == RTP_RELAY_ALL_BRANCHES)
+			continue;
+		if (sess && sess->index == s->index)
+			continue;
+		n++;
+	}
+	return n == 0;
+}
+
 static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 	struct rtp_relay_sess *sess, struct cell *t)
 {
 	struct dlg_cell *dlg;
 
 	rtp_sess_set_success(sess);
-	if (list_is_singular(&ctx->sessions))
+	if (rtp_relay_sess_last(ctx, sess))
 		rtp_relay_sess_merge(ctx, sess);
 	if (!rtp_relay_ctx_established(ctx)) {
 		dlg = rtp_relay_dlg.get_dlg();
@@ -848,7 +866,7 @@ static void rtp_relay_sess_failed(struct rtp_relay_ctx *ctx,
 
 	rtp_sess_reset_pending(sess);
 	list_del(&sess->list);
-	if (list_is_singular(&ctx->sessions)) {
+	if (rtp_relay_sess_last(ctx, NULL)) {
 		last = list_last_entry(&ctx->sessions, struct rtp_relay_sess, list);
 		if (rtp_sess_success(last))
 			rtp_relay_sess_merge(ctx, last);
