@@ -2858,7 +2858,12 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 				goto error1;
 			}
 			get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
-		} else ci.local_contact = server_address;
+		} else if (server_address.s) {
+			 ci.local_contact = server_address;
+		} else {
+			LM_ERR("'server_address' modparam required in order to to set Contact\n");
+			goto error1;
+		}
 
 		if(msg)
 		{
