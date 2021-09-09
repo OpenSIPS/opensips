@@ -1014,8 +1014,6 @@ mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 
 	if (b2bl_bridge_extern(&init_params, &scen_params, e1_id, e2_id,
 		0, 0, 0) == NULL) {
-		free_csv_record(list1);
-		free_csv_record(list2);
 		resp = init_mi_error(500, MI_SSTR("Failed to initialize scenario"));
 		goto end;
 	}
