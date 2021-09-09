@@ -2008,7 +2008,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		}
 		goto send_usual_request;
 	} else {
-		if(tuple->state != B2B_NOTDEF_STATE)
+		if(tuple->state != B2B_NOTDEF_STATE && peer)
 			peer->sdp_type = body->len ? B2BL_SDP_NORMAL : B2BL_SDP_LATE;
 
 		cur_route_ctx.entity_type = src;
@@ -2016,10 +2016,13 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			LM_ERR("Out of pkg memory!\n");
 			goto error;
 		}
-		cur_route_ctx.peer_type = peer->type;
-		if (pkg_str_dup(&cur_route_ctx.peer_key, &peer->key) < 0) {
-			LM_ERR("Out of pkg memory!\n");
-			goto error;
+
+		if (peer) {
+			cur_route_ctx.peer_type = peer->type;
+			if (pkg_str_dup(&cur_route_ctx.peer_key, &peer->key) < 0) {
+				LM_ERR("Out of pkg memory!\n");
+				goto error;
+			}
 		}
 
 		lock_release(&b2bl_htable[hash_index].lock);
@@ -2030,7 +2033,8 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		cur_route_ctx.flags &= ~B2BL_RT_REQ_CTX;
 
 		pkg_free(cur_route_ctx.entity_key.s);
-		pkg_free(cur_route_ctx.peer_key.s);
+		if (peer)
+			pkg_free(cur_route_ctx.peer_key.s);
 	}
 
 	goto done;
