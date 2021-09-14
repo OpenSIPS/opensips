@@ -628,6 +628,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 			if(dlg->h_entry != hash_entry){
+				dlg_unlock(d_table, d_entry);
 				LM_ERR("inconsistent hash data in the dialog database: "
 					"you may have restarted opensips using a different "
 					"hash_size: please erase %.*s database and restart\n"
@@ -671,6 +672,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
+				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
@@ -728,6 +730,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
+				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 
