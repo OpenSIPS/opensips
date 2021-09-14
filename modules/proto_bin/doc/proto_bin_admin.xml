@@ -82,8 +82,8 @@ modparam("proto_bin", "bin_port", 6666)
 		</example>
 	</section>
 
-	<section id="param_bin_port_send_timeout" xreflabel="bin_port_send_timeout">
-		<title><varname>bin_port_send_timeout</varname> (integer)</title>
+	<section id="param_bin_send_timeout" xreflabel="bin_send_timeout">
+		<title><varname>bin_send_timeout</varname> (integer)</title>
 		<para>
 		Time in milliseconds after a TCP connection will be closed if it is
 		not available for blocking writing in this interval (and &osips; wants
