@@ -270,7 +270,9 @@ struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 			if (port) {
 				LM_DBG("checking if port %d matches port %d\n",
 						si->port_no, port);
-				if (si->port_no!=port && si->adv_port!=port) {
+				if ((si->port_no != 0 || protos[c_proto].default_port != port) &&
+				    (si->port_no == 0 || si->port_no != port) &&
+				    si->adv_port!=port) {
 					continue;
 				}
 			}
