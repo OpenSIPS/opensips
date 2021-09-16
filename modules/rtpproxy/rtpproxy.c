@@ -658,7 +658,7 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 		pnode->rn_umode = CM_UNIX;
 		pnode->rn_disabled = 0;
 		memcpy(pnode->rn_url.s, p1, p2 - p1);
-		pnode->rn_url.s[p2 - p1] 	= 0;
+		pnode->rn_url.s[p2 - p1] 	= '\0';
 		pnode->rn_url.len 			= p2-p1;
 		if (p3) {
 			pnode->adv_address = pnode->rn_url.s + pnode->rn_url.len + 1;
@@ -666,8 +666,8 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 			pnode->adv_address[p4 - p3] = 0;
 		}
 
-		LM_DBG("url is %s, len is %i, adv is [%s]\n",
-				pnode->rn_url.s, pnode->rn_url.len, pnode->adv_address);
+		LM_DBG("url: %s, len: %i, weight: %d, adv: [%s]\n",
+		       pnode->rn_url.s, pnode->rn_url.len, weight, pnode->adv_address);
 		/* Leave only address in rn_address */
 		pnode->rn_address = pnode->rn_url.s;
 		if (strncasecmp(pnode->rn_address, "udp:", 4) == 0) {
