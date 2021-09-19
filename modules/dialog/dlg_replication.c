@@ -152,11 +152,11 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 		DLG_BIN_POP(str, packet, to_tag, malformed);
 		DLG_BIN_POP(str, packet, from_uri, malformed);
 		DLG_BIN_POP(str, packet, to_uri, malformed);
-		DLG_BIN_POP(int, packet, h_id, pre_linking_error);
+		DLG_BIN_POP(int, packet, h_id, malformed);
 	}
 
-	DLG_BIN_POP(int, packet, start_ts, pre_linking_error);
-	DLG_BIN_POP(int, packet, state, pre_linking_error);
+	DLG_BIN_POP(int, packet, start_ts, malformed);
+	DLG_BIN_POP(int, packet, state, malformed);
 
 	if (!cell) {
 		h_entry = dlg_hash(&callid);
