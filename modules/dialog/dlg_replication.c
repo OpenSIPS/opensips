@@ -655,7 +655,8 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 
 		if (!match_dialog(dlg, &call_id, &from_tag, &to_tag, &dir, &dst_leg)) {
 			LM_ERR("Failed to match dialog\n");
-			goto err_unlock;
+			dlg_unlock(d_table, d_entry);
+			return -1;
 		}
 
 		dlg_unlock(d_table, d_entry);
@@ -670,7 +671,7 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 		return 0;
 	}
 
-	DLG_BIN_POP(int, packet, cseq, err_unlock);
+	DLG_BIN_POP(int, packet, cseq, malformed);
 	dlg->legs[dst_leg].last_gen_cseq = cseq;
 
 	if (pkg_ver != DLG_BIN_V4)
@@ -679,10 +680,6 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 	return 0;
 malformed:
 	LM_ERR("malformed cseq update packet for %.*s\n", call_id.len, call_id.s);
-	return -1;
-err_unlock:
-	if (pkg_ver == DLG_BIN_V4)
-		dlg_unlock(d_table, d_entry);
 	return -1;
 }
 #undef DLG_BIN_POP
