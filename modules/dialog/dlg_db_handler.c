@@ -751,7 +751,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				read_dialog_profiles( VAL_STR(values+18).s,
 					strlen(VAL_STR(values+18).s), dlg, 0, 0);
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+			if (dlg_has_options_pinging(dlg)) {
 				if (0 != insert_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
@@ -1943,7 +1943,7 @@ static int sync_dlg_db_mem(void)
 				dlg->legs[callee_idx(dlg)].last_gen_cseq =
 					(unsigned int)(VAL_INT(values+21));
 
-				if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+				if (dlg_has_options_pinging(dlg)) {
 					if (0 != insert_ping_timer(dlg))
 						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 					else {

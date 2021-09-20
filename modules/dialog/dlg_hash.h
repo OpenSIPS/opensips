@@ -69,6 +69,9 @@
 #define DLG_FLAG_SELF_EXTENDED_TIMEOUT		(1<<18)
 #define DLG_FLAG_SYNCED                     (1<<19)
 
+#define dlg_has_options_pinging(dlg) \
+	(dlg->flags & DLG_FLAG_PING_CALLER || \
+	 dlg->flags & DLG_FLAG_PING_CALLEE)
 #define dlg_has_reinvite_pinging(dlg) \
 	(dlg->flags & DLG_FLAG_REINVITE_PING_CALLER || \
 	 dlg->flags & DLG_FLAG_REINVITE_PING_CALLEE)

@@ -337,7 +337,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	/* avoid AB/BA deadlock with pinging routines */
 	dlg_unlock(d_table, d_entry);
 
-	if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+	if (dlg_has_options_pinging(dlg)) {
 		if (insert_ping_timer(dlg) != 0)
 			LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 		else {
