@@ -65,7 +65,6 @@ static void mod_destroy(void);
 int log_profile_hash_size = 4;
 str rr_param = {"did",3};
 static int dlg_hash_size = 4096;
-static str timeout_spec = {NULL, 0};
 static int default_timeout = 60 * 60 * 12;  /* 12 hours */
 static char* profiles_wv_s = NULL;
 static char* profiles_nv_s = NULL;
@@ -691,9 +690,6 @@ static int mod_init(void)
 	unsigned int n;
 
 	LM_INFO("Dialog module - initializing\n");
-
-	if (timeout_spec.s)
-		timeout_spec.len = strlen(timeout_spec.s);
 
 	init_db_url( db_url , 1 /*can be null*/);
 	dlg_id_column.len = strlen(dlg_id_column.s);
