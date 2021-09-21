@@ -238,11 +238,13 @@ static cmd_export_t cmds[]={
 		ONREPLY_ROUTE },
 
 	{"stream_exists",	(cmd_function)stream_find, {
-		{CMD_PARAM_REGEX, 0, 0}, {0, 0, 0}},
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_REGEX|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"stream_delete",	(cmd_function)stream_delete, {
-		{CMD_PARAM_REGEX, 0, 0}, {0, 0, 0}},
+		{CMD_PARAM_REGEX, 0, 0},
+		{CMD_PARAM_REGEX|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"list_hdr_has_option", (cmd_function)list_hdr_has_option, {
