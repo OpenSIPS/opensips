@@ -1840,8 +1840,14 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 					<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
 					return the carrier id into carrier_id_avp AVP
 					</para>
-				</listitem>
-			</itemizedlist>
+					</listitem>
+					<listitem>
+					<para>
+					<emphasis role='bold'>'C'</emphasis> (Carrier attrs) - 
+					return the carrier's attributes into carrier_attrs_avp AVP
+					</para>
+					</listitem>
+				</itemizedlist>
 			</listitem>
 			<listitem>
 				<para>

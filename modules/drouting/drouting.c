@@ -267,12 +267,13 @@ static int use_next_gw(struct sip_msg* msg,
 		pv_spec_t* rule_att, pv_spec_t* gw_att, pv_spec_t* carr_att,
 		struct head_db *part);
 
-#define DR_IFG_STRIP_FLAG      (1<<0)
-#define DR_IFG_PREFIX_FLAG     (1<<1)
-#define DR_IFG_IDS_FLAG        (1<<3)
-#define DR_IFG_IGNOREPORT_FLAG (1<<4)
-#define DR_IFG_CARRIERID_FLAG  (1<<5)
-#define DR_IFG_CHECKPROTO_FLAG (1<<6)
+#define DR_IFG_STRIP_FLAG       (1<<0)
+#define DR_IFG_PREFIX_FLAG      (1<<1)
+#define DR_IFG_IDS_FLAG         (1<<3)
+#define DR_IFG_IGNOREPORT_FLAG  (1<<4)
+#define DR_IFG_CARRIERID_FLAG   (1<<5)
+#define DR_IFG_CARRIERATTR_FLAG (1<<6)
+#define DR_IFG_CHECKPROTO_FLAG  (1<<7)
 static int fix_gw_flags(void** param);
 static int _is_dr_gw(struct sip_msg* msg, struct head_db *current_partition,
 		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto);
@@ -3907,6 +3908,7 @@ static int fix_gw_flags(void** param)
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
 				case 'r': flags |= DR_IFG_CHECKPROTO_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
+				case 'C': flags |= DR_IFG_CARRIERATTR_FLAG; break;
 				default: LM_WARN("unsupported flag %c \n",s->s[i]);
 			}
 		}
@@ -4016,7 +4018,10 @@ static int _is_dr_gw(struct sip_msg* msg,
 						LM_ERR("failed to insert GW attrs avp\n");
 				}
 
-				if ( flags & DR_IFG_CARRIERID_FLAG ) {
+				if ( ( (flags & DR_IFG_CARRIERID_FLAG)
+						&& current_partition->carrier_id_avp!=-1 )
+				|| ( (flags & DR_IFG_CARRIERATTR_FLAG)
+						&& current_partition->carrier_attrs_avp!=-1 ) ) {
 					/* lookup first carrier that contains this gw */
 					for (map_first(current_partition->rdata->carriers_tree, &cr_it);
 							iterator_is_valid(&cr_it); iterator_next(&cr_it)) {
@@ -4031,7 +4036,8 @@ static int _is_dr_gw(struct sip_msg* msg,
 							if (pcr->pgwl[i].is_carrier == 0 &&
 									pcr->pgwl[i].dst.gw == pgwa ) {
 								/* found our carrier */
-								if (current_partition->carrier_id_avp!=-1) {
+								if ( (flags & DR_IFG_CARRIERID_FLAG) &&
+								current_partition->carrier_id_avp!=-1) {
 									val.s = pcr->id;
 									if (add_avp_last(AVP_VAL_STR,
 									current_partition->carrier_id_avp,val)!=0){
@@ -4039,6 +4045,17 @@ static int _is_dr_gw(struct sip_msg* msg,
 											"AVP\n");
 									}
 								}
+								if ( (flags & DR_IFG_CARRIERATTR_FLAG) &&
+								current_partition->carrier_attrs_avp!=-1) {
+									val.s = pcr->attrs;
+									if (add_avp_last(AVP_VAL_STR,
+									current_partition->carrier_attrs_avp,
+									val)!=0){
+										LM_ERR("failed to add carrier attrs "
+											"AVP\n");
+									}
+								}
+
 								goto end;
 							}
 						}
