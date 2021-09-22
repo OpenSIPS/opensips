@@ -50,6 +50,8 @@
 extern str       rr_param;
 
 static int       default_timeout;
+static int       default_options_ping_interval;
+static int       default_reinvite_ping_interval;
 static int       shutdown_done = 0;
 
 extern int       seq_match_mode;
@@ -64,6 +66,8 @@ extern stat_var *failed_dlgs;
 
 int ctx_lastdstleg_idx = -1;
 int ctx_timeout_idx = -1;
+int ctx_options_ping_interval_idx = -1;
+int ctx_reinvite_ping_interval_idx = -1;
 
 static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg);
@@ -205,9 +209,13 @@ static void dlg_update_ack_sdp(struct sip_msg* req, str *buffer, int rpl_code,
 }
 
 
-void init_dlg_handlers(int default_timeout_p)
+void init_dlg_handlers(int default_timeout_p,
+		int default_options_ping_interval_p,
+		int default_reinvite_ping_interval_p)
 {
 	default_timeout = default_timeout_p;
+	default_options_ping_interval = default_options_ping_interval_p;
+	default_reinvite_ping_interval = default_reinvite_ping_interval_p;
 
 	/* statelessly forwarded ACK requests with SDP */
 	if (register_slcb(SLCB_REQUEST_OUT, FL_ACK_WITH_BODY,
@@ -1367,6 +1375,18 @@ inline static int get_dlg_timeout(struct sip_msg *msg)
 			ctx_timeout_get() : default_timeout;
 }
 
+inline static int get_dlg_options_ping_interval(struct sip_msg *msg)
+{
+	return (current_processing_ctx && (ctx_options_ping_interval_get()!=0)) ?
+			ctx_options_ping_interval_get() : default_options_ping_interval;
+}
+
+inline static int get_dlg_reinvite_ping_interval(struct sip_msg *msg)
+{
+	return (current_processing_ctx && (ctx_reinvite_ping_interval_get()!=0)) ?
+			ctx_reinvite_ping_interval_get() : default_reinvite_ping_interval;
+}
+
 
 static void unreference_dialog_cseq(void *cseq_wrap)
 {
@@ -1886,7 +1906,18 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		t->dialog_ctx = (void*) dlg;
 		dlg->flags |= DLG_FLAG_ISINIT;
 	}
+
 	dlg->lifetime = get_dlg_timeout(req);
+
+	if (dlg_has_options_pinging(dlg))
+		dlg->options_ping_interval = get_dlg_options_ping_interval(req);
+	else
+		dlg->options_ping_interval = 0;
+
+	if (dlg_has_reinvite_pinging(dlg))
+		dlg->reinvite_ping_interval = get_dlg_reinvite_ping_interval(req);
+	else
+		dlg->reinvite_ping_interval = 0;
 
 	_dlg_setup_reinvite_callbacks(t, req, dlg);
 
@@ -2313,6 +2344,9 @@ after_unlock5:
 
 	if ( (event==DLG_EVENT_REQ || event==DLG_EVENT_REQACK || event==DLG_EVENT_REQPRACK)
 	&& (new_state==DLG_STATE_CONFIRMED || new_state==DLG_STATE_CONFIRMED_NA) ) {
+		int update_options_ping_timer = 0;
+		int update_reinvite_ping_timer = 0;
+
 		LM_DBG("sequential request successfully processed (dst_leg=%d)\n",
 			dst_leg);
 
@@ -2321,9 +2355,32 @@ after_unlock5:
 			dlg->lifetime = ctx_timeout_get();
 			dlg->lifetime_dirty = 1;
 		}
+		if (dlg_has_options_pinging(dlg))
+			/* update the dialog options_ping_interval timer from the processing context */
+			if (current_processing_ctx && (ctx_options_ping_interval_get()!=0) ) {
+				LM_DBG("Setting dlg->options_ping_interval from ctx_options_ping_interval_get()\n");
+				dlg->options_ping_interval = ctx_options_ping_interval_get();
+				if (dlg->state == DLG_STATE_CONFIRMED_NA ||
+				dlg->state == DLG_STATE_CONFIRMED)
+					update_options_ping_timer = 1;
+			}
+		if (dlg_has_reinvite_pinging(dlg))
+			/* update the dialog reinvite_ping_interval timer from the processing context */
+			if (current_processing_ctx && (ctx_reinvite_ping_interval_get()!=0) ) {
+				LM_DBG("Setting dlg->reinvite_ping_interval from ctx_reinvite_ping_interval_get()\n");
+				dlg->reinvite_ping_interval = ctx_reinvite_ping_interval_get();
+				if (dlg->state == DLG_STATE_CONFIRMED_NA ||
+				dlg->state == DLG_STATE_CONFIRMED)
+					update_reinvite_ping_timer = 1;
+			}
 
 		/* within dialog request */
 		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, dst_leg, NULL, 0, 1);
+
+		if (update_options_ping_timer)
+			update_dlg_ping_timer(dlg->pl, dlg->options_ping_interval, 0);
+		if (update_reinvite_ping_timer)
+			update_dlg_ping_timer(dlg->reinvite_pl, dlg->reinvite_ping_interval, 1);
 
 		/* update timer during sequential request? */
 		if (dlg->lifetime_dirty) {

@@ -37,6 +37,9 @@
 #include "dlg_profile.h"
 #include "dlg_replication.h"
 
+extern int options_ping_interval;
+extern int reinvite_ping_interval;
+
 str dlg_id_column			=	str_init(DLG_ID_COL);
 str call_id_column			=	str_init(CALL_ID_COL);
 str from_uri_column			=	str_init(FROM_URI_COL);
@@ -780,6 +783,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				(unsigned int)(VAL_INT(values+20));
 			dlg->legs[callee_idx(dlg)].last_gen_cseq =
 				(unsigned int)(VAL_INT(values+21));
+
+			dlg->options_ping_interval = options_ping_interval;
+			dlg->reinvite_ping_interval = reinvite_ping_interval;
 
 			dlg_unlock(d_table, d_entry);
 
@@ -2077,6 +2083,9 @@ static int sync_dlg_db_mem(void)
 					(unsigned int)(VAL_INT(values+20));
 				dlg->legs[callee_idx(dlg)].last_gen_cseq =
 					(unsigned int)(VAL_INT(values+21));
+
+				dlg->options_ping_interval = options_ping_interval;
+				dlg->reinvite_ping_interval = reinvite_ping_interval;
 
 				if (dlg_has_options_pinging(dlg)) {
 					if (0 != insert_ping_timer(dlg))

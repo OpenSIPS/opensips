@@ -38,9 +38,6 @@ struct dlg_reinvite_ping_timer *reinvite_ping_timer=0;
 str options_str=str_init("OPTIONS");
 str invite_str=str_init("INVITE");
 
-extern int reinvite_ping_interval;
-extern int options_ping_interval;
-
 /* for the dlg timer, there are 3 possible states :
  * prev=next=0 -> dialog not in timer list
  * prev=0 -> dialog expired
@@ -194,7 +191,7 @@ error0:
 
 int init_dlg_reinvite_ping_timer(void)
 {
-	reinvite_ping_timer = (struct dlg_reinvite_ping_timer*)shm_malloc(sizeof(struct dlg_timer));
+	reinvite_ping_timer = shm_malloc(sizeof *reinvite_ping_timer);
 	if (reinvite_ping_timer==0) {
 		LM_ERR("no more shm mem\n");
 		return -1;
@@ -224,14 +221,21 @@ error0:
 
 void destroy_ping_timer(void)
 {
-	if (ping_timer ==0)
-		return;
+	if (reinvite_ping_timer) {
+		lock_destroy(reinvite_ping_timer->lock);
+		lock_dealloc(reinvite_ping_timer->lock);
 
-	lock_destroy(ping_timer->lock);
-	lock_dealloc(ping_timer->lock);
+		shm_free(reinvite_ping_timer);
+		reinvite_ping_timer = 0;
+	}
 
-	shm_free(ping_timer);
-	ping_timer=0;
+	if (ping_timer) {
+		lock_destroy(ping_timer->lock);
+		lock_dealloc(ping_timer->lock);
+
+		shm_free(ping_timer);
+		ping_timer = 0;
+	}
 }
 
 
@@ -357,6 +361,10 @@ void unsafe_insert_ping_timer(struct dlg_ping_list *node,int new_timeout)
 				node->prev = ping_timer->last;
 				ping_timer->last->next = node;
 				ping_timer->last = node;
+			} else if (it == ping_timer->first) {
+				node->next = it;
+				it->prev = node;
+				ping_timer->first = node;
 			} else {
 				it->prev->next=node;
 				node->prev = it->prev;
@@ -384,7 +392,7 @@ int insert_ping_timer(struct dlg_cell* dlg)
 
 	lock_get( ping_timer->lock );
 
-	unsafe_insert_ping_timer(node,options_ping_interval);
+	unsafe_insert_ping_timer(node,dlg->options_ping_interval);
 	dlg->pl = node;
 
 	dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_SUCCESS;
@@ -426,6 +434,10 @@ void unsafe_insert_reinvite_ping_timer(struct dlg_ping_list *node,int new_timeou
 				node->prev = reinvite_ping_timer->last;
 				reinvite_ping_timer->last->next = node;
 				reinvite_ping_timer->last = node;
+			} else if (it == reinvite_ping_timer->first) {
+				node->next = it;
+				it->prev = node;
+				reinvite_ping_timer->first = node;
 			} else {
 				it->prev->next=node;
 				node->prev = it->prev;
@@ -452,7 +464,7 @@ int insert_reinvite_ping_timer(struct dlg_cell* dlg)
 
 	lock_get( reinvite_ping_timer->lock );
 
-	unsafe_insert_reinvite_ping_timer(node,reinvite_ping_interval);
+	unsafe_insert_reinvite_ping_timer(node,dlg->reinvite_ping_interval);
 	dlg->reinvite_pl = node;
 
 	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_SUCCESS;
@@ -983,7 +995,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 
 			/* we've pinged, now update the timeout & move the entry further down the list */
 			detach_ping_node_unsafe(it,0);
-			unsafe_insert_ping_timer(it,options_ping_interval);
+			unsafe_insert_ping_timer(it,dlg->options_ping_interval);
 		}
 		it = next;
 	}
@@ -1117,11 +1129,39 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 			/* we've pinged, now update the timeout & move the entry further down the list */
 			detach_ping_node_unsafe(it,1);
-			unsafe_insert_reinvite_ping_timer(it,reinvite_ping_interval);
+			unsafe_insert_reinvite_ping_timer(it,dlg->reinvite_ping_interval);
 		}
 		it = next;
 	}
 
 	lock_release(reinvite_ping_timer->lock);
 	tcp_no_new_conn = 0;
+}
+
+void update_dlg_ping_timer( struct dlg_ping_list *node, int timeout, int reinvite )
+{
+	if (!node) {
+		LM_BUG("cannot update dialog ping timer: missing timer node\n");
+		return;
+	}
+
+	if (reinvite)
+		lock_get(reinvite_ping_timer->lock);
+	else
+		lock_get(ping_timer->lock);
+
+
+	/* remove dialog */
+	detach_ping_node_unsafe(node, reinvite);
+
+	if (reinvite)
+		unsafe_insert_reinvite_ping_timer(node,timeout);
+	else
+		unsafe_insert_ping_timer(node,timeout);
+
+
+	if (reinvite)
+		lock_release(reinvite_ping_timer->lock);
+	else
+		lock_release(ping_timer->lock);
 }

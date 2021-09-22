@@ -36,8 +36,9 @@
 
 #define DLG_BIN_V3      3
 #define DLG_BIN_V4      4
+#define DLG_BIN_V5      5
 
-#define BIN_VERSION DLG_BIN_V4
+#define BIN_VERSION DLG_BIN_V5
 
 extern int dialog_repl_cluster;
 extern int profile_repl_cluster;
@@ -74,4 +75,3 @@ int get_shtag_state(struct dlg_cell *dlg);
 int set_dlg_shtag(struct dlg_cell *dlg, str *tag_name);
 
 #endif /* _DIALOG_DLG_REPLICATION_H_ */
-
