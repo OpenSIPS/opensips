@@ -950,6 +950,10 @@ again:
 	memcpy(*buf_p, new_buf.s, new_buf.len);
 	*olen = new_buf.len;
 
+	if (new_buf.len > msg_total_len)
+		LM_BUG("buffer overflow: "\
+			"calculated=%d, actual=%d\n", msg_total_len, new_buf.len);
+
 	/* Free the vector */
 	pkg_free(hdr_mask);
 
