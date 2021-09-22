@@ -272,19 +272,18 @@ static int use_next_gw(struct sip_msg* msg,
 #define DR_IFG_IDS_FLAG         (1<<3)
 #define DR_IFG_IGNOREPORT_FLAG  (1<<4)
 #define DR_IFG_CARRIERID_FLAG   (1<<5)
-#define DR_IFG_CARRIERATTR_FLAG (1<<6)
-#define DR_IFG_CHECKPROTO_FLAG  (1<<7)
+#define DR_IFG_CHECKPROTO_FLAG  (1<<6)
 static int fix_gw_flags(void** param);
 static int _is_dr_gw(struct sip_msg* msg, struct head_db *current_partition,
 		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto);
 static int is_from_gw(struct sip_msg* msg, int *type, long flags,
-		pv_spec_t* gw_att, struct head_db *part);
+		pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part);
 
 static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
-		pv_spec_t* gw_att, struct head_db *part);
+		pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part);
 
 static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
-		pv_spec_t* gw_att, struct head_db *part);
+		pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part);
 
 static int dr_disable(struct sip_msg *req, struct head_db *current_partition);
 
@@ -405,7 +404,8 @@ static cmd_export_t cmds[] = {
 	{"is_from_gw", (cmd_function)is_from_gw,
 		{ {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_gw_flags, NULL},
-		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -414,7 +414,8 @@ static cmd_export_t cmds[] = {
 	{"goes_to_gw", (cmd_function)goes_to_gw,
 		{ {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_gw_flags, NULL},
-		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -424,7 +425,8 @@ static cmd_export_t cmds[] = {
 		{ {CMD_PARAM_STR, NULL, NULL},
 		  {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_gw_flags, NULL},
-		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -3908,7 +3910,6 @@ static int fix_gw_flags(void** param)
 				case 'n': flags |= DR_IFG_IGNOREPORT_FLAG; break;
 				case 'r': flags |= DR_IFG_CHECKPROTO_FLAG; break;
 				case 'c': flags |= DR_IFG_CARRIERID_FLAG; break;
-				case 'C': flags |= DR_IFG_CARRIERATTR_FLAG; break;
 				default: LM_WARN("unsupported flag %c \n",s->s[i]);
 			}
 		}
@@ -3957,7 +3958,8 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port, u
  */
 static int _is_dr_gw(struct sip_msg* msg,
 		struct head_db *current_partition,
-		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto)
+		int flags, int type, struct ip_addr *ip, unsigned int port,
+		unsigned int proto)
 {
 	pgw_t *pgwa = NULL;
 	pcr_t *pcr = NULL;
@@ -4020,8 +4022,7 @@ static int _is_dr_gw(struct sip_msg* msg,
 
 				if ( ( (flags & DR_IFG_CARRIERID_FLAG)
 						&& current_partition->carrier_id_avp!=-1 )
-				|| ( (flags & DR_IFG_CARRIERATTR_FLAG)
-						&& current_partition->carrier_attrs_avp!=-1 ) ) {
+				|| ( carrier_attrs_spec!=NULL  ) ) {
 					/* lookup first carrier that contains this gw */
 					for (map_first(current_partition->rdata->carriers_tree, &cr_it);
 							iterator_is_valid(&cr_it); iterator_next(&cr_it)) {
@@ -4045,17 +4046,15 @@ static int _is_dr_gw(struct sip_msg* msg,
 											"AVP\n");
 									}
 								}
-								if ( (flags & DR_IFG_CARRIERATTR_FLAG) &&
-								current_partition->carrier_attrs_avp!=-1) {
-									val.s = pcr->attrs;
-									if (add_avp_last(AVP_VAL_STR,
-									current_partition->carrier_attrs_avp,
-									val)!=0){
-										LM_ERR("failed to add carrier attrs "
-											"AVP\n");
-									}
+								if ( carrier_attrs_spec!=NULL ) {
+									pv_val.flags = PV_VAL_STR;
+									pv_val.rs = pcr->attrs.s ?
+										pcr->attrs : attrs_empty;
+									if (pv_set_value(msg, carrier_attrs_spec,
+									0, &pv_val) != 0)
+										LM_ERR("failed to set value for "
+											"CARRIER attrs pvar\n");
 								}
-
 								goto end;
 							}
 						}
@@ -4075,13 +4074,14 @@ end:
 
 
 static int is_from_gw(struct sip_msg* msg, int *type, long flags,
-									pv_spec_t* gw_att, struct head_db *part)
+					pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part)
 {
 	int ret=-1;
 	pv_value_t pv_val;
 	struct head_db * it;
 
 	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)cr_att;
 
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
@@ -4141,7 +4141,7 @@ static int _uri_to_ip_port(str *uri, struct ip_addr *ip, int *port, int *proto)
 
 
 static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
-									pv_spec_t* gw_att, struct head_db *part)
+					pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part)
 {
 	int ret=-1;
 	pv_value_t pv_val;
@@ -4156,6 +4156,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 	}
 
 	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)cr_att;
 
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
@@ -4181,7 +4182,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 
 
 static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
-									pv_spec_t* gw_att, struct head_db *part)
+					pv_spec_t* gw_att, pv_spec_t* cr_att, struct head_db *part)
 {
 	int ret=-1;
 	pv_value_t pv_val;
@@ -4196,6 +4197,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	}
 
 	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)cr_att;
 
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
