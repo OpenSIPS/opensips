@@ -35,9 +35,6 @@ struct dlg_reinvite_ping_timer *reinvite_ping_timer=0;
 str options_str=str_init("OPTIONS");
 str invite_str=str_init("INVITE");
 
-extern int reinvite_ping_interval;
-extern int options_ping_interval;
-
 /* for the dlg timer, there are 3 possible states :
  * prev=next=0 -> dialog not in timer list
  * prev=0 -> dialog expired
@@ -332,7 +329,7 @@ int insert_ping_timer(struct dlg_cell* dlg)
 
 	lock_get( ping_timer->lock );
 
-	unsafe_insert_ping_timer(node,options_ping_interval);
+	unsafe_insert_ping_timer(node,dlg->options_ping_interval);
 	dlg->pl = node;
 
 	dlg->legs[DLG_CALLER_LEG].reply_received = DLG_PING_SUCCESS;
@@ -400,7 +397,7 @@ int insert_reinvite_ping_timer(struct dlg_cell* dlg)
 
 	lock_get( reinvite_ping_timer->lock );
 
-	unsafe_insert_reinvite_ping_timer(node,reinvite_ping_interval);
+	unsafe_insert_reinvite_ping_timer(node,dlg->reinvite_ping_interval);
 	dlg->reinvite_pl = node;
 
 	dlg->legs[DLG_CALLER_LEG].reinvite_confirmed = DLG_PING_SUCCESS;
@@ -907,7 +904,7 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 
 			/* we've pinged, now update the timeout & move the entry further down the list */
 			detach_ping_node_unsafe(it,0);
-			unsafe_insert_ping_timer(it,options_ping_interval);
+			unsafe_insert_ping_timer(it,dlg->options_ping_interval);
 		}
 		it = next;
 	}
@@ -1031,11 +1028,34 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 
 			/* we've pinged, now update the timeout & move the entry further down the list */
 			detach_ping_node_unsafe(it,1);
-			unsafe_insert_reinvite_ping_timer(it,reinvite_ping_interval);
+			unsafe_insert_reinvite_ping_timer(it,dlg->reinvite_ping_interval);
 		}
 		it = next;
 	}
 
 	lock_release(reinvite_ping_timer->lock);
 	tcp_no_new_conn = 0;
+}
+
+void update_dlg_ping_timer( struct dlg_ping_list *node, int timeout, int reinvite )
+{
+	if (reinvite)
+		lock_get(reinvite_ping_timer->lock);
+	else
+		lock_get(ping_timer->lock);
+
+
+	/* remove dialog */
+	detach_ping_node_unsafe(node, reinvite);
+
+	if (reinvite)
+		unsafe_insert_reinvite_ping_timer(node,timeout);
+	else
+		unsafe_insert_ping_timer(node,timeout);
+
+
+	if (reinvite)
+		lock_release(reinvite_ping_timer->lock);
+	else
+		lock_release(ping_timer->lock);
 }

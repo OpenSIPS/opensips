@@ -86,6 +86,22 @@ extern int ctx_timeout_idx;
 #define ctx_timeout_set(_timeout) \
 	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_timeout_idx, _timeout)
 
+extern int ctx_options_ping_interval_idx;
+
+#define ctx_options_ping_interval_get() \
+	context_get_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_options_ping_interval_idx)
+
+#define ctx_options_ping_interval_set(_ping_interval) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_options_ping_interval_idx, _ping_interval)
+
+extern int ctx_reinvite_ping_interval_idx;
+
+#define ctx_reinvite_ping_interval_get() \
+	context_get_int(CONTEXT_GLOBAL,current_processing_ctx,ctx_reinvite_ping_interval_idx)
+
+#define ctx_reinvite_ping_interval_set(_ping_interval) \
+	context_put_int(CONTEXT_GLOBAL,current_processing_ctx, ctx_reinvite_ping_interval_idx, _ping_interval)
+
 /* IMPORTANT - as the default value for INT in context is 0, we shift the
    last leg idx with +1 to avoid having idx 0; this shifting is hidden by the
    get /  set functions, so transparent for the usage */
@@ -110,7 +126,9 @@ typedef int (*send_indialog_req_f)(struct dlg_cell *dlg, str *method,
 		void *param);
 
 
-void init_dlg_handlers(int default_timeout);
+void init_dlg_handlers(int default_timeout,
+		int default_options_ping_interval,
+		int default_reinvite_ping_interval);
 
 void destroy_dlg_handlers();
 

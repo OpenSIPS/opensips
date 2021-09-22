@@ -96,4 +96,6 @@ void dlg_options_routine(unsigned int ticks , void * attr);
 
 void dlg_reinvite_routine(unsigned int ticks , void * attr);
 
+void update_dlg_ping_timer( struct dlg_ping_list *node, int timeout, int reinvite );
+
 #endif

@@ -175,6 +175,14 @@ int pv_get_dlg_json(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 int pv_get_dlg_ctx_json(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+int pv_get_dlg_options_ping_interval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+int pv_set_dlg_options_ping_interval(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val);
+int pv_get_dlg_reinvite_ping_interval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+int pv_set_dlg_reinvite_ping_interval(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val);
 
 static cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog, {
@@ -452,6 +460,10 @@ static pv_export_t mod_items[] = {
 		pv_get_dlg_json, 0,  0, 0, 0, 0 },
 	{ {"DLG_ctx_json",        sizeof("DLG_ctx_json")-1},       1000,
 		pv_get_dlg_ctx_json, 0,  0, 0, 0, 0 },
+	{ {"DLG_options_ping_interval",   sizeof("DLG_options_ping_interval")-1},    1000,
+		pv_get_dlg_options_ping_interval, pv_set_dlg_options_ping_interval,  0, 0, 0, 0 },
+	{ {"DLG_reinvite_ping_interval",   sizeof("DLG_reinvite_ping_interval")-1},    1000,
+		pv_get_dlg_reinvite_ping_interval, pv_set_dlg_reinvite_ping_interval,  0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -777,6 +789,8 @@ static int mod_init(void)
 	/* allocate a slot in the processing context */
 	ctx_dlg_idx = context_register_ptr(CONTEXT_GLOBAL, ctx_dlg_idx_destroy);
 	ctx_timeout_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	ctx_options_ping_interval_idx = context_register_int(CONTEXT_GLOBAL, NULL);
+	ctx_reinvite_ping_interval_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 	ctx_lastdstleg_idx = context_register_int(CONTEXT_GLOBAL, NULL);
 
 	/* create dialog state changed event */
@@ -882,7 +896,7 @@ static int mod_init(void)
 	}
 
 	/* init handlers */
-	init_dlg_handlers(default_timeout);
+	init_dlg_handlers(default_timeout, options_ping_interval, reinvite_ping_interval);
 
 	/* init timer */
 	if (init_dlg_timer(dlg_ontimeout)!=0) {
@@ -1608,6 +1622,276 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = l;
 
 	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+
+int pv_get_dlg_options_ping_interval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	int l;
+	char *ch = NULL;
+	struct dlg_cell *dlg;
+
+	if(res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())!=NULL ) {
+		dlg_lock_dlg(dlg);
+		if (dlg_has_options_pinging(dlg)) {
+			if (dlg->state == DLG_STATE_DELETED)
+				l = 0;
+			else if (dlg->state < DLG_STATE_CONFIRMED_NA)
+				l = dlg->options_ping_interval;
+			else
+				if (dlg->pl) {
+					l = dlg->pl->timeout - get_ticks();
+				} else {
+					LM_ERR("BUG: NULL option ping timer for dlg=[%p]\n", dlg);
+					l = -1;
+				}
+		} else {
+			l = -1;
+		}
+		dlg_unlock_dlg(dlg);
+
+		/* The ping was not set and we return NULL. */
+		if (l == -1)
+			return pv_get_null( msg, param, res);
+
+	} else if (current_processing_ctx) {
+		if ((l=ctx_options_ping_interval_get())==0)
+			return pv_get_null( msg, param, res);
+	} else {
+		return pv_get_null( msg, param, res);
+	}
+
+	res->ri = l;
+
+	ch = int2str( (unsigned long)res->ri, &l);
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+int pv_get_dlg_reinvite_ping_interval(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	int l;
+	char *ch = NULL;
+	struct dlg_cell *dlg;
+
+	if(res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())!=NULL ) {
+		dlg_lock_dlg(dlg);
+		if (dlg_has_reinvite_pinging(dlg)) {
+			if (dlg->state == DLG_STATE_DELETED)
+				l = 0;
+			else if (dlg->state < DLG_STATE_CONFIRMED_NA)
+				l = dlg->reinvite_ping_interval;
+			else
+				if (dlg->reinvite_pl) {
+					l = dlg->reinvite_pl->timeout - get_ticks();
+				} else {
+					LM_ERR("BUG: NULL reINVITE ping timer for dlg=[%p]\n", dlg);
+					l = -1;
+				}
+		} else {
+			l = -1;
+		}
+		dlg_unlock_dlg(dlg);
+
+		/* The ping was not set and we return NULL. */
+		if (l == -1)
+			return pv_get_null( msg, param, res);
+
+	} else if (current_processing_ctx) {
+		if ((l=ctx_reinvite_ping_interval_get())==0)
+			return pv_get_null( msg, param, res);
+	} else {
+		return pv_get_null( msg, param, res);
+	}
+
+	res->ri = l;
+
+	ch = int2str( (unsigned long)res->ri, &l);
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
+
+int pv_set_dlg_options_ping_interval(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val)
+{
+	struct dlg_cell *dlg;
+	int ping_interval, db_update = 0, timer_update = 0;
+
+	if (val==NULL || val->flags & PV_VAL_NULL) {
+		LM_ERR("cannot assign dialog ping_interval to NULL\n");
+		return -1;
+	}
+
+	if (!(val->flags&PV_VAL_INT)){
+		/* try parsing the string */
+		if (str2sint(&val->rs, &ping_interval) < 0) {
+			LM_ERR("assigning non-int value to dialog ping interval\n");
+			return -1;
+		}
+	} else {
+		ping_interval = val->ri;
+	}
+
+	if (ping_interval < 0) {
+		LM_ERR("cannot set a negative ping interval\n");
+		return -1;
+	}
+
+	if ((dlg = get_current_dialog()) != NULL) {
+		if (!(dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION) ||
+		!(dlg->flags & DLG_FLAG_WAS_CANCELLED)) {
+			if (!dlg_has_options_pinging(dlg)) {
+				/* FIXME:
+					Should we silenly ignore setting the PV for dialogs w/ ping ?
+				*/
+				LM_ERR("cannot assign dialog ping_interval to dialog w/ ping\n");
+				return -1;
+			}
+			dlg_lock_dlg(dlg);
+			LM_DBG("Set options ping interval to [%d]\n", ping_interval);
+			dlg->options_ping_interval = ping_interval;
+			/* update now only if realtime and the dialog is confirmed */
+			if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME) {
+				db_update = 1;
+			}
+			else {
+				dlg->flags |= DLG_FLAG_CHANGED;
+			}
+
+			if (dlg->state == DLG_STATE_CONFIRMED_NA ||
+			dlg->state == DLG_STATE_CONFIRMED)
+				timer_update = 1;
+
+			dlg_unlock_dlg(dlg);
+
+			if (timer_update) {
+				/* FIXME:
+					Do not run update_dlg_ping_timer while setting the PV
+					from local_route when sending out an OPTIONS.
+					It will cause a deadlock: re-entrant lock for
+					ping_timer->lock.
+				*/
+				update_dlg_ping_timer(dlg->pl, ping_interval, 0);
+			}
+
+			if (db_update) /* FIXME */
+				LM_ERR("FIXME: db_update\n");
+			if (dialog_repl_cluster) /* FIXME */
+				LM_ERR("FIXME: dialog_repl_cluster\n");
+		} else {
+			LM_DBG("Set ping interval for race condition dlg [%.*s] - ignoring\n",
+			dlg->callid.len,dlg->callid.s);
+		}
+
+	} else if (current_processing_ctx) {
+		/* store it until we match the dialog */
+		ctx_options_ping_interval_set( ping_interval );
+	} else {
+		LM_CRIT("BUG - no processing context found while setting ping interval!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+int pv_set_dlg_reinvite_ping_interval(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val)
+{
+	struct dlg_cell *dlg;
+	int ping_interval, db_update = 0, timer_update = 0;
+
+	if (val==NULL || val->flags & PV_VAL_NULL) {
+		LM_ERR("cannot assign dialog ping_interval to NULL\n");
+		return -1;
+	}
+
+	if (!(val->flags&PV_VAL_INT)){
+		/* try parsing the string */
+		if (str2sint(&val->rs, &ping_interval) < 0) {
+			LM_ERR("assigning non-int value to dialog ping interval\n");
+			return -1;
+		}
+	} else {
+		ping_interval = val->ri;
+	}
+
+	if (ping_interval < 0) {
+		LM_ERR("cannot set a negative ping interval\n");
+		return -1;
+	}
+
+	if ((dlg = get_current_dialog()) != NULL) {
+		if (!(dlg->flags & DLG_FLAG_END_ON_RACE_CONDITION) ||
+		!(dlg->flags & DLG_FLAG_WAS_CANCELLED)) {
+			if (!dlg_has_reinvite_pinging(dlg)) {
+				/* FIXME:
+					Should we silenly ignore setting the PV for dialogs w/ ping ?
+				*/
+				LM_ERR("cannot assign dialog ping_interval to dialog w/ ping\n");
+				return -1;
+			}
+			dlg_lock_dlg(dlg);
+			LM_DBG("Set reinvite ping interval to [%d]\n", ping_interval);
+			dlg->reinvite_ping_interval = ping_interval;
+			/* update now only if realtime and the dialog is confirmed */
+			if (dlg->state >= DLG_STATE_CONFIRMED && dlg_db_mode == DB_MODE_REALTIME) {
+				db_update = 1;
+			}
+			else {
+				dlg->flags |= DLG_FLAG_CHANGED;
+			}
+
+			if (dlg->state == DLG_STATE_CONFIRMED_NA ||
+			dlg->state == DLG_STATE_CONFIRMED)
+				timer_update = 1;
+
+			dlg_unlock_dlg(dlg);
+
+			if (timer_update) {
+				/* FIXME:
+					Do not run update_dlg_ping_timer while setting the PV
+					from local_route when sending out a reINVITE.
+					It will cause a deadlock: re-entrant lock for
+					reinvite_ping_timer->lock.
+				*/
+				update_dlg_ping_timer(dlg->reinvite_pl, ping_interval, 1);
+			}
+
+			if (db_update) /* FIXME */
+				LM_ERR("FIXME: db_update\n");
+			if (dialog_repl_cluster) /* FIXME */
+				LM_ERR("FIXME: dialog_repl_cluster\n");
+		} else {
+			LM_DBG("Set ping interval for race condition dlg [%.*s] - ignoring\n",
+			dlg->callid.len,dlg->callid.s);
+		}
+
+	} else if (current_processing_ctx) {
+		/* store it until we match the dialog */
+		ctx_reinvite_ping_interval_set( ping_interval );
+	} else {
+		LM_CRIT("BUG - no processing context found while setting ping interval!\n");
+		return -1;
+	}
 
 	return 0;
 }

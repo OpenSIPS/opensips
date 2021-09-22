@@ -136,6 +136,10 @@ struct dlg_cell
 	unsigned int         lifetime;
 	unsigned short       lifetime_dirty; /* 1 if lifetime timer should
 	                                      * be updated */
+	unsigned int         options_ping_interval; /* holds the OPTIONS
+                                         * ping interval */
+	unsigned int         reinvite_ping_interval; /* holds the reINVITE
+                                         * ping interval */
 	unsigned short       locked_by;   /* holds the ID of the process locking
 	                                   * the dialog (if the case) while
 	                                   * calling a callback */

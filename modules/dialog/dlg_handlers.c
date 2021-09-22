@@ -49,6 +49,8 @@
 extern str       rr_param;
 
 static int       default_timeout;
+static int       default_options_ping_interval;
+static int       default_reinvite_ping_interval;
 static int       shutdown_done = 0;
 
 extern int       seq_match_mode;
@@ -63,6 +65,8 @@ extern stat_var *failed_dlgs;
 
 int ctx_lastdstleg_idx = -1;
 int ctx_timeout_idx = -1;
+int ctx_options_ping_interval_idx = -1;
+int ctx_reinvite_ping_interval_idx = -1;
 
 static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		unsigned int leg);
@@ -73,9 +77,13 @@ static inline int dlg_update_sdp(struct dlg_cell *dlg, struct sip_msg *msg,
 static inline void dlg_merge_tmp_sdp(struct dlg_cell *dlg, unsigned int leg);
 
 
-void init_dlg_handlers(int default_timeout_p)
+void init_dlg_handlers(int default_timeout_p,
+		int default_options_ping_interval_p,
+		int default_reinvite_ping_interval_p)
 {
 	default_timeout = default_timeout_p;
+	default_options_ping_interval = default_options_ping_interval_p;
+	default_reinvite_ping_interval = default_reinvite_ping_interval_p;
 }
 
 
@@ -1102,6 +1110,18 @@ inline static int get_dlg_timeout(struct sip_msg *msg)
 			ctx_timeout_get() : default_timeout;
 }
 
+inline static int get_dlg_options_ping_interval(struct sip_msg *msg)
+{
+	return (current_processing_ctx && (ctx_options_ping_interval_get()!=0)) ?
+			ctx_options_ping_interval_get() : default_options_ping_interval;
+}
+
+inline static int get_dlg_reinvite_ping_interval(struct sip_msg *msg)
+{
+	return (current_processing_ctx && (ctx_reinvite_ping_interval_get()!=0)) ?
+			ctx_reinvite_ping_interval_get() : default_reinvite_ping_interval;
+}
+
 
 static void unreference_dialog_cseq(void *cseq_wrap)
 {
@@ -1653,7 +1673,18 @@ int dlg_create_dialog(struct cell* t, struct sip_msg *req,unsigned int flags)
 		t->dialog_ctx = (void*) dlg;
 		dlg->flags |= DLG_FLAG_ISINIT;
 	}
+
 	dlg->lifetime = get_dlg_timeout(req);
+
+	if (dlg_has_options_pinging(dlg))
+		dlg->options_ping_interval = get_dlg_options_ping_interval(req);
+	else
+		dlg->options_ping_interval = 0;
+
+	if (dlg_has_reinvite_pinging(dlg))
+		dlg->reinvite_ping_interval = get_dlg_reinvite_ping_interval(req);
+	else
+		dlg->reinvite_ping_interval = 0;
 
 	_dlg_setup_reinvite_callbacks(t, req, dlg);
 
@@ -2008,6 +2039,26 @@ after_unlock5:
 			dlg->lifetime = ctx_timeout_get();
 			dlg->lifetime_dirty = 1;
 		}
+		if (dlg_has_options_pinging(dlg))
+			/* update the dialog options_ping_interval timer from the processing context */
+			if (current_processing_ctx && (ctx_options_ping_interval_get()!=0) ) {
+				LM_DBG("Setting dlg->options_ping_interval from ctx_options_ping_interval_get()\n");
+				dlg->options_ping_interval = ctx_options_ping_interval_get();
+				/* FIXME:
+					Should we update the ping_interval timer here
+					or after run_dlg_callbacks()?
+				*/
+			}
+		if (dlg_has_reinvite_pinging(dlg))
+			/* update the dialog reinvite_ping_interval timer from the processing context */
+			if (current_processing_ctx && (ctx_reinvite_ping_interval_get()!=0) ) {
+				LM_DBG("Setting dlg->reinvite_ping_interval from ctx_reinvite_ping_interval_get()\n");
+				dlg->reinvite_ping_interval = ctx_reinvite_ping_interval_get();
+				/* FIXME:
+					Should we update the ping_interval timer here
+					or after run_dlg_callbacks()?
+				*/
+			}
 
 		/* within dialog request */
 		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0, 1);
