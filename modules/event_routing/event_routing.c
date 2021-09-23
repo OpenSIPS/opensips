@@ -200,6 +200,12 @@ static int mod_init(void)
 		LM_NOTICE("unable to load TM API, so TM context will not be "
 		          "available in notification routes\n");
 
+	if (register_timer( "EBR timeout", ebr_timeout, NULL, 1,
+	TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
+		LM_ERR("failed to register timer, halting...");
+		return -1;
+	}
+
 	return 0;
 }
 
