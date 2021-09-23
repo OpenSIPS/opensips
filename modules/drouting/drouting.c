@@ -262,7 +262,7 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 		pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part);
 
 static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
-		struct head_db *part);
+		pv_spec_t* cr_attr, struct head_db *part);
 
 static int use_next_gw(struct sip_msg* msg,
 		pv_spec_t* rule_att, pv_spec_t* gw_att, pv_spec_t* carr_att,
@@ -388,6 +388,7 @@ static cmd_export_t cmds[] = {
 	{"route_to_gw", (cmd_function)route2_gw,
 		{ {CMD_PARAM_STR, NULL, NULL},
 		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_carr_attr, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -3688,18 +3689,20 @@ error_free:
 
 
 static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
-														struct head_db *part)
+									pv_spec_t* cr_attr, struct head_db *part)
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
 	pgw_list_t dst;
 	pv_value_t pv_val;
 	str ruri, id;
-	str next_gw_attrs = {NULL, 0};
 	char *p;
-	int idx;
+	int idx, i;
 	struct head_db * current_partition = 0;
 	char *ruri_buf = NULL;
+	pcr_t *pcr = NULL;
+	map_iterator_t cr_it;
+	void** dest;
 
 	if(part== NULL) {
 		LM_ERR("Partition is mandatory for route_to_gw.\n");
@@ -3714,6 +3717,7 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 	}
 
 	gw_attrs_spec = (pv_spec_p)gw_attr;
+	carrier_attrs_spec = (pv_spec_p)cr_attr;
 
 	/* get the RURI */
 	ruri = *GET_RURI(msg);
@@ -3769,9 +3773,42 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 			} else {
 				idx++;
 
-				/* only export the top-most gw attributes in the script */
-				if (idx == 1)
-					next_gw_attrs = gw->attrs;
+				if (gw_attrs_spec) {
+					pv_val.flags = PV_VAL_STR;
+					pv_val.rs = !gw->attrs.s ? attrs_empty : gw->attrs;
+					if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
+						LM_ERR("failed to set value for gateway attrs pvar\n");
+					}
+				}
+
+				if (carrier_attrs_spec) {
+					/* lookup first carrier that contains this gw */
+					for (map_first(current_partition->rdata->carriers_tree, &cr_it);
+							iterator_is_valid(&cr_it); iterator_next(&cr_it)) {
+
+						dest = iterator_val(&cr_it);
+						if (dest==NULL)
+							break;
+
+						pcr = (pcr_t*)*dest;
+
+						for (i=0;i<pcr->pgwa_len;i++) {
+							if (pcr->pgwl[i].is_carrier == 0 &&
+									pcr->pgwl[i].dst.gw == gw ) {
+								/* found our carrier */
+								pv_val.flags = PV_VAL_STR;
+								pv_val.rs = pcr->attrs.s ?
+									pcr->attrs : attrs_empty;
+								if (pv_set_value(msg, carrier_attrs_spec,
+								0, &pv_val) != 0)
+									LM_ERR("failed to set value for "
+										"CARRIER attrs pvar\n");
+								goto cr_end;
+							}
+						}
+					}
+cr_end: ;
+				}
 			}
 		}
 	} while(ids->len>0);
@@ -3782,15 +3819,6 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 	if ( idx==0 ) {
 		LM_ERR("no GW added at all\n");
 		goto error_free;
-	}
-
-	if (gw_attrs_spec) {
-		pv_val.flags = PV_VAL_STR;
-		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
-		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
-			LM_ERR("failed to set value for gateway attrs pvar\n");
-			goto error_free;
-		}
 	}
 
 	if (ruri_buf) pkg_free(ruri_buf);
