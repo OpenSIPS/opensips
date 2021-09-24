@@ -447,7 +447,6 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 
 	packet.front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
 	memcpy(&packet.type, capability.s + capability.len, sizeof(int));
-	packet.next = NULL;
 
 	/* packet will be now processed for a specific capability */
 	for (p = reg_cbs; p; p = p->next) {
