@@ -218,33 +218,31 @@ void receive_cluster_event(enum clusterer_event ev, int node_id)
 		LM_ERR("Failed to send sync data to node: %d\n", node_id);
 }
 
-void receive_binary_packet(bin_packet_t *packet)
+void receive_binary_packet(bin_packet_t *pkt)
 {
         int rc = 0;
-        bin_packet_t * pkt;
-        for (pkt = packet; pkt; pkt = pkt->next) {
-                LM_DBG("Got cache replication packet %d\n", pkt->type);
-                switch(pkt->type) {
-                        case REPL_CACHE_INSERT:
-                        rc = cache_replicated_insert(pkt);
-                        break;
-                        case REPL_CACHE_REMOVE:
-                        rc = cache_replicated_remove(pkt);
-                        break;
-                        case SYNC_PACKET_TYPE:
-        			while (clusterer_api.sync_chunk_iter(pkt))
-        				if (cache_replicated_insert(pkt) < 0) {
-        					LM_ERR("Failed to process sync packet\n");
-        					return;
-        				}
-        			break;
-                default:
-                        rc = -1;
-                        LM_WARN("Invalid cache binary packet command: %d "
-                                "(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
-                                cluster_id);
-                }
-                if (rc != 0)
-			LM_ERR("Failed to process a binary packet!\n");
+
+        LM_DBG("Got cache replication packet %d\n", pkt->type);
+        switch(pkt->type) {
+                case REPL_CACHE_INSERT:
+                rc = cache_replicated_insert(pkt);
+                break;
+                case REPL_CACHE_REMOVE:
+                rc = cache_replicated_remove(pkt);
+                break;
+                case SYNC_PACKET_TYPE:
+			while (clusterer_api.sync_chunk_iter(pkt))
+				if (cache_replicated_insert(pkt) < 0) {
+					LM_ERR("Failed to process sync packet\n");
+					return;
+				}
+			break;
+        default:
+                rc = -1;
+                LM_WARN("Invalid cache binary packet command: %d "
+                        "(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
+                        cluster_id);
         }
+        if (rc != 0)
+		LM_ERR("Failed to process a binary packet!\n");
 }

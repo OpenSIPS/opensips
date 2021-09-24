@@ -603,40 +603,37 @@ error:
 }
 
 
-static void bin_packet_handler(bin_packet_t *packet)
+static void bin_packet_handler(bin_packet_t *pkt)
 {
 	int rc;
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		switch (pkt->type) {
-			case CL_PRESENCE_PUBLISH:
-				ensure_bin_version(pkt, BIN_VERSION);
-				rc = handle_replicated_publish(pkt);
-				break;
-			case CL_PRESENCE_PRES_QUERY:
-				ensure_bin_version(pkt, BIN_VERSION);
-				rc = handle_presentity_query(pkt);
-				break;
-			case SYNC_PACKET_TYPE:
-				_ensure_bin_version(pkt, BIN_VERSION, "presence sync packet");
-				rc = 0;
-				while (c_api.sync_chunk_iter(pkt))
-					if (handle_replicated_publish(pkt) < 0) {
-						LM_WARN("failed to process sync chunk!\n");
-						rc = -1;
-					}
-				break;
-			default:
-				LM_ERR("Unknown binary packet %d received from node %d in "
-					"presence cluster %d)\n", pkt->type,
-					pkt->src_id, pres_cluster_id);
-				rc = -1;
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+	switch (pkt->type) {
+		case CL_PRESENCE_PUBLISH:
+			ensure_bin_version(pkt, BIN_VERSION);
+			rc = handle_replicated_publish(pkt);
+			break;
+		case CL_PRESENCE_PRES_QUERY:
+			ensure_bin_version(pkt, BIN_VERSION);
+			rc = handle_presentity_query(pkt);
+			break;
+		case SYNC_PACKET_TYPE:
+			_ensure_bin_version(pkt, BIN_VERSION, "presence sync packet");
+			rc = 0;
+			while (c_api.sync_chunk_iter(pkt))
+				if (handle_replicated_publish(pkt) < 0) {
+					LM_WARN("failed to process sync chunk!\n");
+					rc = -1;
+				}
+			break;
+		default:
+			LM_ERR("Unknown binary packet %d received from node %d in "
+				"presence cluster %d)\n", pkt->type,
+				pkt->src_id, pres_cluster_id);
+			rc = -1;
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int receive_sync_request(int node_id)

@@ -144,28 +144,24 @@ error:
 }
 
 
-static void bin_packet_handler(bin_packet_t *packet)
+static void bin_packet_handler(bin_packet_t *pkt)
 {
 	int rc;
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		switch (pkt->type) {
-			case CL_PUA_UPDATE_PRES:
-				ensure_bin_version(pkt, CL_PUA_BIN_VERSION);
-				rc = handle_pres_update(pkt);
-				break;
-			default:
-				LM_ERR("Unknown binary packet %d received from node %d in "
-					"pua cluster %d)\n", pkt->type,
-					pkt->src_id, pua_cluster_id);
-				rc = -1;
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+	switch (pkt->type) {
+		case CL_PUA_UPDATE_PRES:
+			ensure_bin_version(pkt, CL_PUA_BIN_VERSION);
+			rc = handle_pres_update(pkt);
+			break;
+		default:
+			LM_ERR("Unknown binary packet %d received from node %d in "
+				"pua cluster %d)\n", pkt->type,
+				pkt->src_id, pua_cluster_id);
+			rc = -1;
 	}
 
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 

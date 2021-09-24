@@ -159,7 +159,7 @@ typedef void (*free_next_hop_f)(clusterer_node_t *next_hop);
  * This function will be called for:
  *   - every regular binary packet received;
  *   - every sync packet received;
- *   - all regular packets buffered during sync (@packet - list head).
+ *   - all regular packets buffered during sync.
  */
 typedef void (*cl_packet_cb_f)(bin_packet_t *packet);
 /*

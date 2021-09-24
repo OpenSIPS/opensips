@@ -132,34 +132,31 @@ static int ds_status_update(bin_packet_t *packet, int is_sync)
 
 static void receive_ds_binary_packet(bin_packet_t *packet)
 {
-	bin_packet_t *pkt;
 	int rc = 0;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", packet->type);
+	LM_DBG("received a binary packet [%d]!\n", packet->type);
 
-		switch (packet->type) {
-		case REPL_DS_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+	switch (packet->type) {
+	case REPL_DS_STATUS_UPDATE:
+		ensure_bin_version(packet, BIN_VERSION);
 
-			rc = ds_status_update(packet, 0);
-			break;
-		case SYNC_PACKET_TYPE:
-			_ensure_bin_version(pkt, BIN_VERSION, "dispatcher sync packet");
+		rc = ds_status_update(packet, 0);
+		break;
+	case SYNC_PACKET_TYPE:
+		_ensure_bin_version(packet, BIN_VERSION, "dispatcher sync packet");
 
-			while (c_api.sync_chunk_iter(pkt))
-				if (ds_status_update(pkt, 1) < 0)
-					LM_WARN("failed to process sync chunk!\n");
-			break;
-		default:
-			LM_WARN("Invalid dispatcher binary packet command: %d "
-				"(from node: %d in cluster: %d)\n",
-				packet->type, packet->src_id, ds_cluster_id);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+		while (c_api.sync_chunk_iter(packet))
+			if (ds_status_update(packet, 1) < 0)
+				LM_WARN("failed to process sync chunk!\n");
+		break;
+	default:
+		LM_WARN("Invalid dispatcher binary packet command: %d "
+			"(from node: %d in cluster: %d)\n",
+			packet->type, packet->src_id, ds_cluster_id);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int ds_recv_sync_request(int node_id)

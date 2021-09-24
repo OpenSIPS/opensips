@@ -70,8 +70,6 @@ int bin_init(bin_packet_t *packet, str *capability, int packet_type,
 	packet->buffer.len = 0;
 	packet->size = length;
 
-	packet->next = NULL;
-
 	/* binary packet header: marker + pkg_len */
 	memcpy(packet->buffer.s + packet->buffer.len,
 	       BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE);
@@ -114,7 +112,6 @@ void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 	packet->buffer.len = length;
 	packet->buffer.s = buffer;
 	packet->size = length;
-	packet->next = NULL;
 
 	bin_get_capability(packet, &capability);
 

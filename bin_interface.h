@@ -65,7 +65,6 @@ typedef struct bin_packet {
 	int size;
 	int type;
 	/* not populated by bin_interface */
-	struct bin_packet *next;
 	int src_id;
 } bin_packet_t;
 

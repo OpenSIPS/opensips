@@ -413,13 +413,58 @@ void handle_sync_request(bin_packet_t *packet, cluster_info_t *cluster,
 	}
 }
 
+static void run_cb_buf_pkt(int sender, void *param)
+{
+	struct packet_rpc_params *p = (struct packet_rpc_params *)param;
+	bin_packet_t packet;
+
+	if (p->pkt_buf.s) {
+		bin_init_buffer(&packet, p->pkt_buf.s, p->pkt_buf.len);
+		packet.src_id = p->pkt_src_id;
+
+		p->cap->packet_cb(&packet);
+	} else {
+		p->cap->event_cb(SYNC_DONE, p->pkt_src_id);
+	}
+
+	shm_free(param);
+}
+
+int ipc_dispatch_buf_pkt(struct buf_bin_pkt *buf_pkt,
+	struct capability_reg *cap, int source_id)
+{
+	struct packet_rpc_params *params;
+
+	params = shm_malloc(sizeof *params + (buf_pkt ? buf_pkt->buf.len : 0));
+	if (!params) {
+		LM_ERR("oom!\n");
+		return -1;
+	}
+	memset(params, 0, sizeof *params);
+
+	if (buf_pkt) {
+		params->pkt_buf.s = (char *)(params + 1);
+		memcpy(params->pkt_buf.s, buf_pkt->buf.s, buf_pkt->buf.len);
+		params->pkt_buf.len = buf_pkt->buf.len;
+	}
+
+	params->pkt_src_id = source_id;
+	params->cap = cap;
+
+	if (ipc_dispatch_rpc(run_cb_buf_pkt, params) < 0) {
+		LM_ERR("Failed to dispatch rpc\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 void handle_sync_packet(bin_packet_t *packet, int packet_type,
 								cluster_info_t *cluster, int source_id)
 {
 	str cap_name;
 	struct local_cap *cap;
-	struct buf_bin_pkt *buf_pkt, *buf_tmp, *cutpos_next;
-	bin_packet_t *bin_pkt_list = NULL, *bin_pkt, *bin_tmp;
+	struct buf_bin_pkt *buf_pkt, *buf_tmp;
 	int data_version;
 
 	if (get_bin_pkg_version(packet) != BIN_SYNC_VERSION) {
@@ -464,63 +509,29 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		lock_get(cluster->lock);
 
 		/* post-sync phase */
-		while (cap->pkt_q_front) {
-			/* delimit list of buffered packets to deliver for processing */
-			cap->pkt_q_cutpos = cap->pkt_q_back;
+		buf_pkt = cap->pkt_q_front;
+		while (buf_pkt) {
+			ipc_dispatch_buf_pkt(buf_pkt, &cap->reg, source_id);
 
-			for (bin_tmp = NULL, buf_pkt = cap->pkt_q_front;
-				buf_pkt != cap->pkt_q_cutpos->next;
-				bin_tmp = bin_pkt, buf_pkt = buf_pkt->next) {
-				/* aloc and init a bin_packet_t */
-				bin_pkt = pkg_malloc(sizeof *bin_pkt);
-				if (!bin_pkt) {
-					LM_ERR("No more pkg mem\n");
-					lock_release(cluster->lock);
-					return;
-				}
-
-				bin_init_buffer(bin_pkt, buf_pkt->buf.s, buf_pkt->buf.len);
-				bin_pkt->src_id = buf_pkt->src_id;
-
-				if (bin_tmp)
-					bin_tmp->next = bin_pkt;
-				else
-					bin_pkt_list = bin_pkt;
-			}
-
-			lock_release(cluster->lock);
-
-			/* deliver list of bin packets to module for processing */
-			cap->reg.packet_cb(bin_pkt_list);
-
-			lock_get(cluster->lock);
-
-			/* free previously processed packets */
-			buf_pkt = cap->pkt_q_front;
-			cutpos_next = cap->pkt_q_cutpos->next;
-			bin_pkt = bin_pkt_list;
-			while (buf_pkt != cutpos_next) {
-				buf_tmp = buf_pkt;
-				bin_tmp = bin_pkt;
-				buf_pkt = buf_pkt->next;
-				bin_pkt = bin_pkt->next;
-				/* do shm_free() instead of bin_free_packet() becuase the buffer
-				 * in bin_packet_t points to the shm buf in struct buf_bin_pkt */
-				shm_free(buf_tmp->buf.s);
-				pkg_free(bin_tmp);
-				shm_free(buf_tmp);
-			}
-			cap->pkt_q_front = cutpos_next;
-			if (!cap->pkt_q_front)
-				cap->pkt_q_back = NULL;
+			buf_tmp = buf_pkt;
+			buf_pkt = buf_pkt->next;
+			/* do shm_free() instead of bin_free_packet() becuase the buffer
+			 * in bin_packet_t points to the shm buf in struct buf_bin_pkt */
+			shm_free(buf_tmp->buf.s);
+			shm_free(buf_tmp);
 		}
+
+		cap->pkt_q_front = NULL;
+		cap->pkt_q_back = NULL;
 
 		/* no more buffered packets to process, stop buffering */
 		cap->flags &= ~CAP_PKT_BUFFERING;
 		cap->flags |= CAP_STATE_OK;
 
-		/* inform module that sync is finished */
-		cap->reg.event_cb(SYNC_DONE, source_id);
+		/* inform module that sync is finished; this job is also
+		 * dispatched in order to be processed _after_ all the buffered packets
+		 * */
+		ipc_dispatch_buf_pkt(NULL, &cap->reg, source_id);
 
 		/* send update about the state of this capability */
 		send_single_cap_update(cluster, cap, 1);

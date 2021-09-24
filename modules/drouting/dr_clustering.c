@@ -233,39 +233,36 @@ static void dr_recv_sync_packet(bin_packet_t *packet)
 	}
 }
 
-static void receive_dr_binary_packet(bin_packet_t *packet)
+static void receive_dr_binary_packet(bin_packet_t *pkt)
 {
-	bin_packet_t *pkt;
 	int rc = 0;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", packet->type);
+	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-		switch (pkt->type) {
-		case REPL_GW_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+	switch (pkt->type) {
+	case REPL_GW_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = gw_status_update(pkt, 1);
-			break;
-		case REPL_CR_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+		rc = gw_status_update(pkt, 1);
+		break;
+	case REPL_CR_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = cr_status_update(pkt);
-			break;
-		case SYNC_PACKET_TYPE:
-			_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
+		rc = cr_status_update(pkt);
+		break;
+	case SYNC_PACKET_TYPE:
+		_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
 
-			dr_recv_sync_packet(pkt);
-			break;
-		default:
-			LM_WARN("Invalid drouting binary packet command: %d "
-				"(from node: %d in cluster: %d)\n",
-				pkt->type, pkt->src_id, dr_cluster_id);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+		dr_recv_sync_packet(pkt);
+		break;
+	default:
+		LM_WARN("Invalid drouting binary packet command: %d "
+			"(from node: %d in cluster: %d)\n",
+			pkt->type, pkt->src_id, dr_cluster_id);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int dr_recv_sync_request(int node_id)

@@ -104,30 +104,27 @@ static int lb_recv_status_update(bin_packet_t *packet, int raise_event)
 	return lb_update_from_replication( group, &uri, flags, raise_event);
 }
 
-static void receive_lb_binary_packet(bin_packet_t *packet)
+static void receive_lb_binary_packet(bin_packet_t *pkt)
 {
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", packet->type);
+	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-		switch (pkt->type) {
-		case REPL_LB_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+	switch (pkt->type) {
+	case REPL_LB_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			if (lb_recv_status_update(pkt, 1)<0)
-				LM_ERR("failed to process binary packet!\n");
-			break;
-		case SYNC_PACKET_TYPE:
-			_ensure_bin_version(pkt, BIN_VERSION, "load_balancer sync packet");
+		if (lb_recv_status_update(pkt, 1)<0)
+			LM_ERR("failed to process binary packet!\n");
+		break;
+	case SYNC_PACKET_TYPE:
+		_ensure_bin_version(pkt, BIN_VERSION, "load_balancer sync packet");
 
-			while (c_api.sync_chunk_iter(pkt))
-				if (lb_recv_status_update(pkt, 0) < 0)
-					LM_WARN("failed to process sync chunk!\n");
-			break;
-		default:
-			LM_ERR("invalid load_balancer binary packet type: %d\n", pkt->type);
-		}
+		while (c_api.sync_chunk_iter(pkt))
+			if (lb_recv_status_update(pkt, 0) < 0)
+				LM_WARN("failed to process sync chunk!\n");
+		break;
+	default:
+		LM_ERR("invalid load_balancer binary packet type: %d\n", pkt->type);
 	}
 }
 

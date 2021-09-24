@@ -979,62 +979,59 @@ error:
 	LM_ERR("Failed to replicate dialog cseq update\n");
 }
 
-void receive_dlg_repl(bin_packet_t *packet)
+void receive_dlg_repl(bin_packet_t *pkt)
 {
 	int rc = 0;
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		short ver = get_bin_pkg_version(pkt);
+	short ver = get_bin_pkg_version(pkt);
 
-		switch (pkt->type) {
-		case REPLICATION_DLG_CREATED:
-			if (ver != DLG_BIN_V3)
-				ensure_bin_version(pkt, BIN_VERSION);
+	switch (pkt->type) {
+	case REPLICATION_DLG_CREATED:
+		if (ver != DLG_BIN_V3)
+			ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 0, 0, 0);
-			if_update_stat(dlg_enable_stats, create_recv, 1);
-			break;
-		case REPLICATION_DLG_UPDATED:
-			if (ver != DLG_BIN_V3)
-				ensure_bin_version(pkt, BIN_VERSION);
+		rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 0, 0, 0);
+		if_update_stat(dlg_enable_stats, create_recv, 1);
+		break;
+	case REPLICATION_DLG_UPDATED:
+		if (ver != DLG_BIN_V3)
+			ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = dlg_replicated_update(pkt);
-			if_update_stat(dlg_enable_stats, update_recv, 1);
-			break;
-		case REPLICATION_DLG_DELETED:
-			if (ver != DLG_BIN_V3)
-				ensure_bin_version(pkt, BIN_VERSION);
+		rc = dlg_replicated_update(pkt);
+		if_update_stat(dlg_enable_stats, update_recv, 1);
+		break;
+	case REPLICATION_DLG_DELETED:
+		if (ver != DLG_BIN_V3)
+			ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = dlg_replicated_delete(pkt);
-			if_update_stat(dlg_enable_stats, delete_recv, 1);
-			break;
-		case REPLICATION_DLG_CSEQ:
-			if (ver != DLG_BIN_V3)
-				ensure_bin_version(pkt, BIN_VERSION);
+		rc = dlg_replicated_delete(pkt);
+		if_update_stat(dlg_enable_stats, delete_recv, 1);
+		break;
+	case REPLICATION_DLG_CSEQ:
+		if (ver != DLG_BIN_V3)
+			ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = dlg_replicated_cseq_updated(pkt);
-			break;
-		case SYNC_PACKET_TYPE:
-			if (ver != DLG_BIN_V3)
-				ensure_bin_version(pkt, BIN_VERSION);
+		rc = dlg_replicated_cseq_updated(pkt);
+		break;
+	case SYNC_PACKET_TYPE:
+		if (ver != DLG_BIN_V3)
+			ensure_bin_version(pkt, BIN_VERSION);
 
-			while (clusterer_api.sync_chunk_iter(pkt))
-				if (dlg_replicated_create(pkt, NULL, NULL, NULL, 0, 0, 1) < 0) {
-					LM_ERR("Failed to process sync packet\n");
-					return;
-				}
-			break;
-		default:
-			rc = -1;
-			LM_WARN("Invalid dialog binary packet command: %d "
-				"(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
-				dialog_repl_cluster);
-		}
-
-		if (rc != 0)
-			LM_ERR("Failed to process a binary packet!\n");
+		while (clusterer_api.sync_chunk_iter(pkt))
+			if (dlg_replicated_create(pkt, NULL, NULL, NULL, 0, 0, 1) < 0) {
+				LM_ERR("Failed to process sync packet\n");
+				return;
+			}
+		break;
+	default:
+		rc = -1;
+		LM_WARN("Invalid dialog binary packet command: %d "
+			"(from node: %d in cluster: %d)\n", pkt->type, pkt->src_id,
+			dialog_repl_cluster);
 	}
+
+	if (rc != 0)
+		LM_ERR("Failed to process a binary packet!\n");
 }
 
 static int receive_sync_request(int node_id)

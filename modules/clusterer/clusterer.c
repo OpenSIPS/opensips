@@ -1153,7 +1153,6 @@ void run_mod_packet_cb(int sender, void *param)
 
 	bin_init_buffer(&packet, p->pkt_buf.s, p->pkt_buf.len);
 	packet.src_id = p->pkt_src_id;
-	packet.type = p->pkt_type;
 
 	p->cap->packet_cb(&packet);
 
@@ -1175,7 +1174,6 @@ int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap)
 	memcpy(params->pkt_buf.s, packet->buffer.s, packet->buffer.len);
 	params->pkt_buf.len = packet->buffer.len;
 	params->cap = cap;
-	params->pkt_type = packet->type;
 	params->pkt_src_id = packet->src_id;
 
 	if (ipc_dispatch_rpc(run_mod_packet_cb, params) < 0) {
