@@ -1148,11 +1148,21 @@ exit:
 
 void run_mod_packet_cb(int sender, void *param)
 {
+	extern char *next_data_chunk;
 	struct packet_rpc_params *p = (struct packet_rpc_params *)param;
 	bin_packet_t packet;
+	str cap_name;
+	int data_version;
 
 	bin_init_buffer(&packet, p->pkt_buf.s, p->pkt_buf.len);
 	packet.src_id = p->pkt_src_id;
+
+	if (packet.type == SYNC_PACKET_TYPE) {
+		/* this packet is cloned and both below fields have been used */
+		bin_pop_str(&packet, &cap_name);
+		bin_pop_int(&packet, &data_version);
+		next_data_chunk = NULL;
+	}
 
 	p->cap->packet_cb(&packet);
 
