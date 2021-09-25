@@ -68,20 +68,21 @@ Dynamic Routing Module
                       [carrier_attrs_pvar], [partition])
 
               1.4.3. route_to_gw(gw_id, [gw_attrs_var],
-                      [partition])
+                      [carrier_attrs_var], [partition])
 
               1.4.4. use_next_gw( [rule_attrs_pvar],
                       [gw_attrs_pvar], [carrier_attrs_pvar],
                       [partition])
 
               1.4.5. goes_to_gw( [type], [flags], [gw_attrs_pvar],
-                      [partition])
+                      [carrier_attrs_pvar], [partition])
 
               1.4.6. is_from_gw([type], [flag], [gw_attrs_pvar],
-                      [partition])
+                      [carrier_attrs_pvar], [partition])
 
               1.4.7. dr_is_gw( sip_uri, [type], [flag],
-                      [gw_attrs_pvar], [partition])
+                      [gw_attrs_pvar], [carrier_attrs_pvar],
+                      [partition])
 
               1.4.8. dr_disable([partition])
               1.4.9. dr_match([groupID], [flags], number,
@@ -1106,7 +1107,8 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 }
 ...
 
-1.4.3.  route_to_gw(gw_id, [gw_attrs_var], [partition])
+1.4.3.  route_to_gw(gw_id, [gw_attrs_var], [carrier_attrs_var],
+[partition])
 
    Function to trigger the direct routing to a given gateway (or
    list of gateways). Attributes and per-gw processing will be
@@ -1124,6 +1126,10 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
      * gw_attrs_pvar (var, optional) - an output writable variable
        which will be populated with the attributes of the
        currently matched gateway.
+     * carrier_attrs_pvar (var, optional) - an output writable
+       variable which will be populated with the attributes of
+       this carrier. NOTE: the first carrier pointing to the GW(s)
+       will be considered!
      * partition (string, optional) - the name of the DR partition
        to be used. This parameter is to be defined ONLY if the
        "use_partition" module parameter is turned on. Wildcard
@@ -1146,13 +1152,13 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs)) ) {
 }
 ...
 # use_partitions is enabled
-if ( route_to_gw("gw_europe", , "my_partition") ) {
+if ( route_to_gw("gw_europe", , , "my_partition") ) {
         t_relay();
         exit;
 }
 ...
 # use_partitions is enabled
-if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), "my_partition") ) {
+if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), , "my_partition") ) {
         xlog("Relaying to first gateway from our list - $var(gw_attrs)\n
 ");
         t_relay();
@@ -1226,7 +1232,8 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 }
 ...
 
-1.4.5.  goes_to_gw( [type], [flags], [gw_attrs_pvar], [partition])
+1.4.5.  goes_to_gw( [type], [flags], [gw_attrs_pvar],
+[carrier_attrs_pvar], [partition])
 
    Function returns true if the destination of the current request
    (destination URI or Request URI) points (as IP) to one of the
@@ -1263,6 +1270,9 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
      * gw_attrs_pvar (var, optional) - an output writable variable
        which will be populated with the attributes of the matched
        gateway.
+     * carrier_attrs_pvar (var, optional) - an output writable
+       variable which will be populated with the attributes of the
+       matched carrier.
      * partition (string, optional) - the name of the DR partition
        to be used. This parameter is to be defined ONLY if the
        "use_partition" module parameter is turned on. Wildcard
@@ -1277,13 +1287,14 @@ if (goes_to_gw( 1, , $var(gw_attrs))) {
 }
 ...
 # use_partitions is enabledt
-if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
+if (goes_to_gw(1, , $var(gw_attrs), , "my_partition")) {
         sl_send_reply(403,"Forbidden");
         exit;
 }
 ...
 
-1.4.6.  is_from_gw([type], [flag], [gw_attrs_pvar], [partition])
+1.4.6.  is_from_gw([type], [flag], [gw_attrs_pvar],
+[carrier_attrs_pvar], [partition])
 
    The function checks if the sender of the message (source IP +
    source port) is a gateway from a certain group.
@@ -1319,6 +1330,9 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
      * gw_attrs_pvar (var, optional) - an output writable variable
        which will be populated with the attributes of the matched
        gateway.
+     * carrier_attrs_pvar (var, optional) - an output writable
+       variable which will be populated with the attributes of the
+       matched carrier.
      * partition (string, optional) - the name of the DR partition
        to be used. This parameter is to be defined ONLY if the
        "use_partition" module parameter is turned on. Wildcard
@@ -1334,12 +1348,12 @@ if (is_from_gw(-1, "n")) {
 # use_partitions is enabled
 # match the source IP and port against all gateways from the "outbound"
 # partition and return the matched gateway's carrier
-if (is_from_gw(, "c", , "outbound")) {
+if (is_from_gw(, "c", , , "outbound")) {
         ...
 }
 
 1.4.7.  dr_is_gw( sip_uri, [type], [flag], [gw_attrs_pvar],
-[partition])
+[carrier_attrs_pvar], [partition])
 
    The function checks if the SIP URI hostname part stored inside
    the "src_pv" pseudo-variable is a gateway from a certain group.
@@ -1376,6 +1390,9 @@ if (is_from_gw(, "c", , "outbound")) {
      * gw_attrs_pvar (var, optional) - an output writable variable
        which will be populated with the attributes of the matched
        gateway.
+     * carrier_attrs_pvar (var, optional) - an output writable
+       variable which will be populated with the attributes of the
+       matched carrier.
      * partition (string, optional) - the name of the DR partition
        to be used. This parameter is to be defined ONLY if the
        "use_partition" module parameter is turned on. Wildcard
@@ -1390,7 +1407,7 @@ if (dr_is_gw( $var(uac), , "n")) {
 
 # match the SIP URI host within $var(uac) against
 # all gws in "outbound" partition
-if (dr_is_gw( $avp(uac), , "n", , "partition")) {
+if (dr_is_gw( $avp(uac), , "n", , , "partition")) {
         ...
 }
 
@@ -1666,11 +1683,11 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 379 181 12944 5585
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 384 184 13079 5644
    2. Liviu Chircu (@liviuchircu) 146 84 2410 2564
    3. Razvan Crainea (@razvancrainea) 95 49 1144 2204
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
-   5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
+   5. Vlad Patrascu (@rvlad-patrascu) 39 18 1092 733
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
    7. Andrei Datcu (@andrei-datcu) 20 12 551 134
    8. Ovidiu Sas (@ovidiusas) 15 11 132 70
@@ -1705,14 +1722,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Aug 2021
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2021
-   4.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
-   5.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
-   6.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
-   7.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   8.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Sep 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Sep 2021
+   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2021
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2021
+   5.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
+   6.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
+   7.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
+   8.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
    9.  Vlad Paiu (@vladpaiu)               Aug 2011 - Nov 2018
    10. Alexey Vasilyev (@vasilevalex)      Oct 2018 - Oct 2018
 
@@ -1730,8 +1747,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Nick
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Liviu Chircu (@liviuchircu), Nick
    Altmann (@nikbyte), Vlad Patrascu (@rvlad-patrascu), Alexey
    Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai
