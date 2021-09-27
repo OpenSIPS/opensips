@@ -154,11 +154,13 @@ static inline int get_ha1(dig_cred_t* digest, const str* _domain,
 	result.len = strlen(result.s);
 
 	struct calc_HA1_arg cprms = {.alg = digest->alg.alg_parsed};
+	struct digest_auth_credential ocreds;
 	if (calc_ha1) {
 		/* Only plaintext passwords are stored in database,
 		 * we have to calculate HA1 */
-		cprms.creds.open = &(const struct digest_auth_credential){
+		ocreds = (struct digest_auth_credential){
 		    .realm = *_domain, .user = _username->whole, .passwd = result};
+		cprms.creds.open = &ocreds;
 		cprms.use_hashed = 0;
 	} else {
 		cprms.creds.ha1 = &result;
