@@ -115,4 +115,10 @@ static inline str *str_cpy(str *dest, const str *src)
  */
 #define const_str(sbuf) ({static const str_const _stc = str_const_init(sbuf); &_stc;})
 
+/**
+ * Initialize private static str given the static buffer
+ * and return const pointer to it.
+ */
+#define str_static(sbuf) ({static const str _stc = str_init(sbuf); &_stc;})
+
 #endif
