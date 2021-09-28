@@ -1290,6 +1290,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 	int tcp_check = 0;
 	struct sip_uri uri;
 	struct ct_mapping *ctmap;
+	struct mr_ct_data ct_data;
 	struct hdr_field *hdr;
 	struct list_head *_;
 
@@ -1389,10 +1390,11 @@ update_usrloc:
 			if (reg_mode == MID_REG_THROTTLE_CT) {
 				/* populate extra ct stuff between "insert" and "replicate" */
 				ci->pre_replicate_cb = mid_reg_store_ct_data;
-				ci->pre_replicate_info = &(struct mr_ct_data){
+				memcpy(&ct_data, &(struct mr_ct_data){
 						mri, &_c->uri, ctmap->expires, e_out,
 						get_act_time(), ci->cseq
-					};
+					}, sizeof ct_data);
+				ci->pre_replicate_info = &ct_data;
 			}
 
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
@@ -1533,6 +1535,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 	struct sip_uri uri;
 	struct list_head *_;
 	struct ct_mapping *ctmap;
+	struct mr_ct_data ct_data;
 
 	if (str2int(&get_cseq(rpl)->number, &cseq) < 0) {
 		rerrno = R_INV_CSEQ;
@@ -1653,10 +1656,11 @@ update_usrloc:
 			if (reg_mode == MID_REG_THROTTLE_AOR) {
 				/* populate extra ct stuff between "insert" and "replicate" */
 				ci->pre_replicate_cb = mid_reg_store_ct_data;
-				ci->pre_replicate_info = &(struct mr_ct_data){
+				memcpy(&ct_data, &(struct mr_ct_data){
 						mri, &_c->uri, ctmap->expires, e_out,
 						mri->last_reg_ts, ci->cseq
-					};
+					}, sizeof ct_data);
+				ci->pre_replicate_info = &ct_data;
 			}
 
 			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
