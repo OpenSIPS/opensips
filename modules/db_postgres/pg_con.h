@@ -57,8 +57,6 @@ struct pg_con {
 	char**  row;		/* Actual row in the result */
 	time_t timestamp;	/* Timestamp of last query */
 
-	unsigned int init;       /* If the connection is initialized */
-	unsigned int disconnected; /* disconnection detected */
 	struct tls_domain *tls_dom;;  /* TLS domain */
 
 };
