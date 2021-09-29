@@ -728,7 +728,8 @@ int codec_move_down(struct sip_msg* msg, str* codec, str* clock)
 }
 
 
-static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
+static int handle_streams(struct sip_msg* msg, regex_t* re, regex_t* re2,
+																	int delete)
 {
 	struct sdp_session_cell *session;
 	struct sdp_stream_cell *stream;
@@ -761,6 +762,13 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 			stream->media.s[stream->media.len] = 0;
 			match = regexec( re, stream->media.s, 1, &pmatch, 0) == 0;
 			stream->media.s[stream->media.len] = temp;
+			/* optionally check the transport in stream also */
+			if (match && re2) {
+				temp = stream->transport.s[stream->transport.len];
+				stream->transport.s[stream->transport.len] = 0;
+				match = regexec( re2, stream->transport.s, 1, &pmatch, 0) == 0;
+				stream->transport.s[stream->transport.len] = temp;
+			}
 			if (match) break;
 		}
 	}
@@ -768,7 +776,9 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 	if (!match)
 		return -1;
 
-	LM_DBG(" found stream [%.*s]\n",stream->media.len,stream->media.s);
+	LM_DBG(" found stream media [%.*s], transport [%.*s]\n",
+		stream->media.len,stream->media.s,
+		stream->transport.len,stream->transport.s);
 
 	/* stream found */
 	if (!delete)
@@ -825,15 +835,15 @@ static int handle_streams(struct sip_msg* msg, regex_t* re, int delete)
 }
 
 
-int stream_find(struct sip_msg* msg, regex_t* re)
+int stream_find(struct sip_msg* msg, regex_t* re, regex_t* re2)
 {
-	return handle_streams(msg, re, 0);
+	return handle_streams(msg, re, re2, 0);
 }
 
 
-int stream_delete(struct sip_msg* msg, regex_t* re)
+int stream_delete(struct sip_msg* msg, regex_t* re, regex_t* re2)
 {
-	return handle_streams(msg, re, 1);
+	return handle_streams(msg, re, re2, 1);
 }
 
 

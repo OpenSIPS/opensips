@@ -1324,7 +1324,7 @@ onreply_route {
 
 	<section id="func_stream_exists" xreflabel="stream_exists()">
 		<title>
-		<function moreinfo="none">stream_exists(regexp)</function>
+		<function moreinfo="none">stream_exists(regexp[,regexp2])</function>
 		</title>
 		<para>
 		This function can be used to verify if a stream exists inside an
@@ -1339,6 +1339,11 @@ onreply_route {
 		to match the stream media name.
 		</para>
 		</listitem>
+		<listitem>
+		<para><emphasis>regexp2</emphasis> - an optional POSIX regular 
+		expression to match the stream transport name.
+		</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1351,13 +1356,15 @@ onreply_route {
 # check for FAX
 stream_exists("image");
 ...
+stream_exists("audio","SAVP");
+...
 </programlisting>
 		</example>
 	</section>
 
 	<section id="func_stream_delete" xreflabel="stream_delete()">
 		<title>
-		<function moreinfo="none">stream_delete(regexp)</function>
+		<function moreinfo="none">stream_delete(regexp[,regexp2])</function>
 		</title>
 		<para>
 		This function can be used to delete a whole stream from inside an
@@ -1371,6 +1378,11 @@ stream_exists("image");
 		<listitem>
 		<para><emphasis>regexp</emphasis> - a POSIX regular expression
 		to match the stream media name.
+		</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>regexp2</emphasis> - an optional POSIX regular 
+		expression to match the stream transport name.
 		</para>
 		</listitem>
 		</itemizedlist>

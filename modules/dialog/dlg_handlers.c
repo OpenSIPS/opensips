@@ -2212,8 +2212,7 @@ early_check:
 		if (dialog_repl_cluster && is_active)
 			replicate_dialog_updated(dlg);
 
-		if (dlg->flags & DLG_FLAG_PING_CALLER ||
-		dlg->flags & DLG_FLAG_PING_CALLEE) {
+		if (dlg_has_options_pinging(dlg)) {
 			if (0 != insert_ping_timer( dlg)) {
 				LM_CRIT("Unable to insert ping dlg %p [%u:%u] on event %d "
 					"[%d->%d] with clid '%.*s' and tags '%.*s' '%.*s'\n",

@@ -90,7 +90,8 @@ int extract_rtpmap(str *body,
 	cp1 = (char*)l_memmem(cp, "/", len, 1);
 	len -= cp1 - cp;
 	if (cp1==NULL || len <= 1 || cp == cp1) {
-		LM_ERR("invalid encoding in `a=rtpmap'\n");
+		LM_ERR("invalid encoding in `a=rtpmap' [%.*s]\n",
+			rtpmap_payload->len,rtpmap_payload->s);
 		return -1;
 	}
 	rtpmap_encoding->len = cp1 - cp;
@@ -110,7 +111,8 @@ int extract_rtpmap(str *body,
 		rtpmap_clockrate->len = cp1-cp;
 		len -= cp1 - cp;
 		if (len <= 1) {
-			LM_ERR("invalid encoding in `a=rtpmap:'\n");
+			LM_ERR("invalid encoding in `a=rtpmap' [%.*s]\n",
+				rtpmap_payload->len,rtpmap_payload->s);
 			return -1;
 		}
 		rtpmap_parmas->s = cp1 + 1;

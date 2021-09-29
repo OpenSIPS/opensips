@@ -169,7 +169,7 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 	if (_realm->len == 0) {
 		if (get_realm(_m, _hftype, &uri) < 0) {
 			LM_ERR("failed to extract realm\n");
-			emsg = &str_init(MESSAGE_400);
+			emsg = str_static(MESSAGE_400);
 			ecode = 400;
 			goto ereply;
 		}
@@ -186,10 +186,10 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 	if (ret < 0) {
 		LM_ERR("failed to find credentials\n");
 		if (ret == -2) {
-			emsg = &str_init(MESSAGE_500);
+			emsg = str_static(MESSAGE_500);
 			ecode = 500;
 		} else {
-			emsg = &str_init(MESSAGE_400);
+			emsg = str_static(MESSAGE_400);
 			ecode = 400;
 		}
 		goto ereply;
@@ -205,14 +205,14 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 	/* Check credentials correctness here */
 	if (check_dig_cred(dcp) != E_DIG_OK) {
 		LM_DBG("received credentials are not filled properly\n");
-		emsg = &str_init(MESSAGE_400);
+		emsg = str_static(MESSAGE_400);
 		ecode = 400;
 		goto ereply;
 	}
 
 	if (mark_authorized_cred(_m, *_h) < 0) {
 		LM_ERR("failed to mark parsed credentials\n");
-		emsg = &str_init(MESSAGE_400);
+		emsg = str_static(MESSAGE_400);
 		ecode = 500;
 		goto ereply;
 	}

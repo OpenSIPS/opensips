@@ -70,8 +70,6 @@ int bin_init(bin_packet_t *packet, str *capability, int packet_type,
 	packet->buffer.len = 0;
 	packet->size = length;
 
-	packet->next = NULL;
-
 	/* binary packet header: marker + pkg_len */
 	memcpy(packet->buffer.s + packet->buffer.len,
 	       BIN_PACKET_MARKER, BIN_PACKET_MARKER_SIZE);
@@ -114,7 +112,6 @@ void bin_init_buffer(bin_packet_t *packet, char *buffer, int length)
 	packet->buffer.len = length;
 	packet->buffer.s = buffer;
 	packet->size = length;
-	packet->next = NULL;
 
 	bin_get_capability(packet, &capability);
 
@@ -450,7 +447,6 @@ void call_callbacks(char* buffer, struct receive_info *rcv)
 
 	packet.front_pointer = capability.s + capability.len + CMD_FIELD_SIZE;
 	memcpy(&packet.type, capability.s + capability.len, sizeof(int));
-	packet.next = NULL;
 
 	/* packet will be now processed for a specific capability */
 	for (p = reg_cbs; p; p = p->next) {

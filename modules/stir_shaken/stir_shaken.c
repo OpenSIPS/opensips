@@ -70,6 +70,8 @@
 #include "../../data_lump.h"
 #include "../../lib/cJSON.h"
 #include "../../context.h"
+#include "../../mod_fix.h"
+#include "../../data_lump_rpl.h"
 
 #include "stir_shaken.h"
 
@@ -84,8 +86,11 @@
 static int mod_init(void);
 static void mod_destroy(void);
 
+static int fixup_auth_out(void** param);
+
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
-	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p);
+	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p,
+	struct auth_out_param *out);
 static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code, pv_spec_t *err_reason, str *orig_tn_p, str *dest_tn_p);
 static int w_stir_check(struct sip_msg *msg);
@@ -105,6 +110,8 @@ static char *crl_dir;
 
 static int e164_strict_mode;
 
+static int require_date_hdr = 1;
+
 static int tn_authlist_nid;
 
 static int parsed_ctx_idx =-1;
@@ -119,6 +126,7 @@ static param_export_t params[] = {
 	{"crl_list", STR_PARAM, &crl_list},
 	{"crl_dir", STR_PARAM, &crl_dir},
 	{"e164_strict_mode", INT_PARAM, &e164_strict_mode},
+	{"require_date_hdr", INT_PARAM, &require_date_hdr},
 	{0, 0, 0}
 };
 
@@ -136,7 +144,9 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
+			fixup_auth_out, fixup_free_pkg}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"stir_shaken_verify", (cmd_function)w_stir_verify, {
 		{CMD_PARAM_STR, 0, 0},
@@ -692,16 +702,15 @@ void ECDSA_SIG_get0(const ECDSA_SIG *sig, const BIGNUM **pr, const BIGNUM **ps)
 }
 #endif
 
-static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
+static str *build_identity_hf(EVP_PKEY *pkey,
 	time_t date_ts, str *attest, str *cr_url, str *orig_tn,
 	str *dest_tn, str *origid)
 {
-	str hdr_buf = {0,0};
+	static str hdr_buf = {0,0};
 	str unsigned_buf;
 	str der_sig_buf = {0,0};
 	unsigned char *der_sig_p;
 	unsigned char raw_sig_buf[RAW_SIG_LEN];
-	struct lump* anchor;
 	EVP_MD_CTX *mdctx = NULL;
 	ECDSA_SIG *sig = NULL;
 	const BIGNUM *r, *s;
@@ -710,7 +719,7 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	if (build_unsigned_pport(&unsigned_buf, date_ts, attest, cr_url,
 		orig_tn, dest_tn, origid) < 0) {
 		LM_ERR("Failed to build PASSporT\n");
-		return -1;
+		return NULL;
 	}
 
 	mdctx = EVP_MD_CTX_create();
@@ -811,17 +820,7 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	memcpy(hdr_buf.s + hdr_buf.len, CRLF, CRLF_LEN);
 	hdr_buf.len += CRLF_LEN;
 
-	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
-	if (!anchor) {
-		LM_ERR("Failed to get anchor lump\n");
-		goto error;
-	}
-	if (!insert_new_lump_before(anchor, hdr_buf.s, hdr_buf.len, 0)) {
-		LM_ERR("Failed to insert lump\n");
-		goto error;
-	}
-
-	return 0;
+	return &hdr_buf;
 
 error:
 	pkg_free(unsigned_buf.s);
@@ -833,7 +832,8 @@ error:
 		pkg_free(der_sig_buf.s);
 	if (sig)
 		ECDSA_SIG_free(sig);
-	return -1;
+
+	return NULL;
 }
 
 static int load_cert(X509 **cert, STACK_OF(X509) **certchain, str *cert_buf)
@@ -945,8 +945,39 @@ static int check_passport_phonenum(str *num, int log_lev)
 	return 0;
 }
 
+static int fixup_auth_out(void** param)
+{
+	struct auth_out_param *out_p;
+	str *s = (str*)*param;
+
+	out_p = pkg_malloc(sizeof *out_p);
+	memset(out_p, 0, sizeof *out_p);
+
+	if (!str_strcmp(_str(AUTH_OUT_REQ_STR), s)) {
+		out_p->type = AUTH_APPEND_TO_REQ;
+	} else if (!str_strcmp(_str(AUTH_OUT_RPL_STR), s)) {
+		out_p->type = AUTH_APPEND_TO_RPL;
+	} else if (*s->s == PV_MARKER) {
+		out_p->type = AUTH_OUT_VAR;
+
+		if (pv_parse_spec(s, &out_p->var) == NULL) {
+			pkg_free(out_p);
+			LM_ERR("Failed to parese output variable spec\n");
+			return -1;
+		}
+	} else {
+		LM_ERR("Expected variable or the 'req'/'rpl' flags\n");
+		return -1;
+	}
+
+	*param = out_p;
+
+	return 0;
+}
+
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
-	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p)
+	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p,
+	struct auth_out_param *out_p)
 {
 	time_t now, date_ts;
 	struct hdr_field *date_hf = NULL;
@@ -954,6 +985,9 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	EVP_PKEY *pkey = NULL;
 	str orig_tn, dest_tn;
 	int rc, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
+	str *hdr_buf = NULL;
+	struct lump* anchor;
+	pv_value_t out_val;
 
 	/* looking for 'Identity' and 'Date' */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
@@ -1050,11 +1084,40 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 		goto error;
 	}
 
-	if (add_identity_hf(msg, pkey, date_ts, attest, cr_url,
-		orig_tn_p, dest_tn_p, origid) < 0) {
+	if ((hdr_buf = build_identity_hf(pkey, date_ts, attest, cr_url,
+		orig_tn_p, dest_tn_p, origid)) ==  NULL) {
 		LM_ERR("Failed to add Identity header\n");
 		rc = -1;
 		goto error;
+	}
+
+	if (!out_p || out_p->type == AUTH_APPEND_TO_REQ) {
+		anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+		if (!anchor) {
+			LM_ERR("Failed to get anchor lump\n");
+			rc = -1;
+			goto error;
+		}
+		if (!insert_new_lump_before(anchor, hdr_buf->s, hdr_buf->len, 0)) {
+			LM_ERR("Failed to insert lump\n");
+			rc = -1;
+			goto error;
+		}
+	} else if (out_p->type == AUTH_APPEND_TO_RPL) {
+		if (!add_lump_rpl(msg, hdr_buf->s, hdr_buf->len, LUMP_RPL_HDR)) {
+			LM_ERR("unable to add reply lump\n");
+			rc = -1;
+			goto error;
+		}
+	} else {
+		out_val.flags = PV_VAL_STR;
+		out_val.rs = *hdr_buf;
+		if (pv_set_value(msg, &out_p->var, 0, &out_val) != 0) {
+			rc = -1;
+			goto error;
+		}
+
+		pkg_free(hdr_buf->s);
 	}
 
 	X509_free(cert);
@@ -1062,6 +1125,8 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 
 	return 1;
 error:
+	if (hdr_buf)
+		pkg_free(hdr_buf->s);
 	X509_free(cert);
 	if (pkey)
 		EVP_PKEY_free(pkey);
@@ -1756,19 +1821,6 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	date_hf = get_header_by_static_name(msg, "Date");
-	if (!date_hf) {
-		LM_NOTICE("No Date header found\n");
-		SET_VERIFY_ERR_VARS(BADREQ_CODE, BADREQ_NODATE_REASON);
-		rc = -2;
-		goto error;
-	}
-
-	if (get_date_ts(date_hf, &date_ts) < 0) {
-		LM_ERR("Failed to get UNIX time from Date header\n");
-		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
-		rc = -1;
-		goto error;
-	}
 
 	if ((now = time(0)) == -1) {
 		LM_ERR("Failed to get current time\n");
@@ -1776,12 +1828,39 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		rc = -1;
 		goto error;
 	}
-	if (now - date_ts > verify_date_freshness) {
-		LM_NOTICE("Date header value is older than local policy (%lds > %ds)\n",
-		          now - date_ts, verify_date_freshness);
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -6;
-		goto error;
+
+	iat_ts = (time_t)parsed->iat->valuedouble;
+
+	if (require_date_hdr || date_hf) {
+		if (!date_hf) {
+			LM_NOTICE("No Date header found\n");
+			SET_VERIFY_ERR_VARS(BADREQ_CODE, BADREQ_NODATE_REASON);
+			rc = -2;
+			goto error;
+		}
+
+		if (get_date_ts(date_hf, &date_ts) < 0) {
+			LM_ERR("Failed to get UNIX time from Date header\n");
+			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
+			rc = -1;
+			goto error;
+		}
+
+		if (now - date_ts > verify_date_freshness) {
+			LM_NOTICE("Date header value is older than local policy (%lds > %ds)\n",
+			          now - date_ts, verify_date_freshness);
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -6;
+			goto error;
+		}
+	} else {
+		if (now - iat_ts > verify_date_freshness) {
+			LM_NOTICE("'iat' value is older than local policy (%lds > %ds)\n",
+			          now - iat_ts, verify_date_freshness);
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -6;
+			goto error;
+		}
 	}
 
 	/* if the identities in the PASSporT and SIP message are different
@@ -1815,11 +1894,20 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		goto error;
 	}
 
-	if (!check_cert_validity(&date_ts, cert)) {
-		LM_INFO("The Date header does not fall within the certificate validity\n");
-		SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
-		rc = -7;
-		goto error;
+	if (require_date_hdr || date_hf) {
+		if (!check_cert_validity(&date_ts, cert)) {
+			LM_INFO("The Date header does not fall within the certificate validity\n");
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -7;
+			goto error;
+		}
+	} else {
+		if (!check_cert_validity(&iat_ts, cert)) {
+			LM_INFO("The 'iat' value does not fall within the certificate validity\n");
+			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			rc = -7;
+			goto error;
+		}
 	}
 
 	if ((rc = validate_certificate(cert, certchain)) < 0) {
@@ -1834,8 +1922,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		}
 	}
 
-	iat_ts = (time_t)parsed->iat->valuedouble;
-	if (iat_ts != date_ts && (now - iat_ts > verify_date_freshness))
+	if (date_hf && iat_ts != date_ts &&
+		(now - iat_ts > verify_date_freshness))
 		iat_ts = date_ts;
 
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {

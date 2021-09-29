@@ -173,6 +173,11 @@ typedef struct ucontact_info {
 
 	/* contact matching algorithm - no need to free anything */
 	struct ct_match *cmatch;
+
+	/* optional callback to be invoked before a freshly created contact
+	 * is replicated (useful to attach additional data, then replicate!) */
+	int (*pre_replicate_cb)(ucontact_t *c, void *info);
+	void *pre_replicate_info;
 } ucontact_info_t;
 
 /*! \brief
@@ -194,6 +199,7 @@ typedef struct {
 
 int ucontact_coords_cmp(ucontact_coords a, ucontact_coords b);
 void free_ucontact_coords(ucontact_coords coords);
+int is_my_ucontact(ucontact_t *c);
 
 /*! \brief
  * ancient time used for marking the contacts forced to expired

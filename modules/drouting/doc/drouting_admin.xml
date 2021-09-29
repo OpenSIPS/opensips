@@ -1488,7 +1488,7 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 
 	<section id="func_route_to_gw" xreflabel="route_to_gw()">
 		<title>
-		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_var], [partition])</function>
+		<function moreinfo="none">route_to_gw(gw_id, [gw_attrs_var], [carrier_attrs_var], [partition])</function>
 		</title>
 		<para>
 		Function to trigger the direct routing to a given gateway (or list of
@@ -1516,6 +1516,14 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 					<emphasis role='bold'>gw_attrs_pvar</emphasis>  (var, optional)
 					- an output writable variable which will be populated
 					with the attributes of the currently matched gateway.
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>carrier_attrs_pvar </emphasis> (var, 
+					optional) - an output writable variable which will be 
+					populated with the attributes of this carrier. NOTE: the
+					first carrier pointing to the GW(s) will be considered!
 					</para>
 				</listitem>
 				<listitem>
@@ -1548,13 +1556,13 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs)) ) {
 }
 ...
 # use_partitions is enabled
-if ( route_to_gw("gw_europe", , "my_partition") ) {
+if ( route_to_gw("gw_europe", , , "my_partition") ) {
 	t_relay();
 	exit;
 }
 ...
 # use_partitions is enabled
-if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), "my_partition") ) {
+if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), , "my_partition") ) {
 	xlog("Relaying to first gateway from our list - $var(gw_attrs)\n");
 	t_relay();
 	exit;
@@ -1660,7 +1668,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 
 	<section id="func_goes_to_gw" xreflabel="goes_to_gw()">
 		<title>
-		<function moreinfo="none">goes_to_gw( [type], [flags], [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">goes_to_gw( [type], [flags], [gw_attrs_pvar], [carrier_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		Function returns true if the destination of the current request
@@ -1739,6 +1747,13 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 			</listitem>
 			<listitem>
 				<para>
+				<emphasis role='bold'>carrier_attrs_pvar</emphasis> (var, optional) - an 
+				output writable variable which will be populated with
+				the attributes of the matched carrier.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
 				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
@@ -1758,7 +1773,7 @@ if (goes_to_gw( 1, , $var(gw_attrs))) {
 }
 ...
 # use_partitions is enabledt
-if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
+if (goes_to_gw(1, , $var(gw_attrs), , "my_partition")) {
 	sl_send_reply(403,"Forbidden");
 	exit;
 }
@@ -1769,7 +1784,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 
 	<section id="func_is_from_gw" xreflabel="is_from_gw()">
 		<title>
-		<function moreinfo="none">is_from_gw([type], [flag], [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">is_from_gw([type], [flag], [gw_attrs_pvar], [carrier_attrs_pvar],  [partition])</function>
 		</title>
 		<para>
 		The function checks if the sender of the message (source IP + source
@@ -1840,14 +1855,21 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 					<emphasis role='bold'>'c'</emphasis> (Carrier ID) - 
 					return the carrier id into carrier_id_avp AVP
 					</para>
-				</listitem>
-			</itemizedlist>
+					</listitem>
+				</itemizedlist>
 			</listitem>
 			<listitem>
 				<para>
 				<emphasis role='bold'>gw_attrs_pvar</emphasis> (var, optional) - an 
 				output writable variable which will be populated with
 				the attributes of the matched gateway.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>carrier_attrs_pvar</emphasis> (var, optional) - an 
+				output writable variable which will be populated with
+				the attributes of the matched carrier.
 				</para>
 			</listitem>
 			<listitem>
@@ -1872,7 +1894,7 @@ if (is_from_gw(-1, "n")) {
 # use_partitions is enabled
 # match the source IP and port against all gateways from the "outbound"
 # partition and return the matched gateway's carrier
-if (is_from_gw(, "c", , "outbound")) {
+if (is_from_gw(, "c", , , "outbound")) {
 	...
 }
 </programlisting>
@@ -1881,7 +1903,7 @@ if (is_from_gw(, "c", , "outbound")) {
 
 	<section id="func_dr_is_gw" xreflabel="dr_is_gw()">
 		<title>
-		<function moreinfo="none">dr_is_gw( sip_uri, [type], [flag], [gw_attrs_pvar], [partition])</function>
+		<function moreinfo="none">dr_is_gw( sip_uri, [type], [flag], [gw_attrs_pvar], [carrier_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		The function checks if the SIP URI hostname part stored inside the
@@ -1966,6 +1988,13 @@ if (is_from_gw(, "c", , "outbound")) {
 			</listitem>
 			<listitem>
 				<para>
+				<emphasis role='bold'>carrier_attrs_pvar</emphasis> (var, optional) - an 
+				output writable variable which will be populated with
+				the attributes of the matched carrier.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
 				<emphasis role='bold'>partition</emphasis> (string, optional) - 
 				the name of the DR partition to be used. This parameter is
 				to be defined ONLY if the "use_partition" module parameter
@@ -1985,7 +2014,7 @@ if (dr_is_gw( $var(uac), , "n")) {
 
 # match the SIP URI host within $var(uac) against
 # all gws in "outbound" partition
-if (dr_is_gw( $avp(uac), , "n", , "partition")) {
+if (dr_is_gw( $avp(uac), , "n", , , "partition")) {
 	...
 }
 </programlisting>

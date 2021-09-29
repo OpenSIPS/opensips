@@ -1066,11 +1066,11 @@ Chapter 3. Contributors
    Sobolyev (@sobomax), Irina-Maria Stanescu, Karel Kozlik, Andrei
    Pelinescu-Onciul, Dan Pascu (@danpascu), Juha Heinanen
    (@juha-h), Elena-Ramona Modroiu, Ryan Bullock (@rrb3942),
-   Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Peter Nixon, Alex
-   Massover, Nils Ohlmeier, Konstantin Bokarius, Walter Doekes
-   (@wdoekes), Jesus Rodrigues, Julien Blache, Julián Moreno
-   Patiño, Peter Lemenkov (@lemenkov), Dusan Klinec (@ph4r05),
-   Edson Gellert Schubert.
+   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Sergio
+   Gutierrez, Peter Nixon, Alex Massover, Nils Ohlmeier,
+   Konstantin Bokarius, Jesus Rodrigues, Julien Blache, Julián
+   Moreno Patiño, Peter Lemenkov (@lemenkov), Dusan Klinec
+   (@ph4r05), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

@@ -100,7 +100,6 @@ struct local_cap {
 	struct capability_reg reg;
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
-	struct buf_bin_pkt *pkt_q_cutpos;
 	struct timeval sync_req_time;
 	unsigned int flags;
 	struct local_cap *next;
@@ -115,7 +114,6 @@ struct remote_cap {
 struct packet_rpc_params {
 	struct capability_reg *cap;
 	int pkt_src_id;
-	int pkt_type;
 	str pkt_buf;
 };
 

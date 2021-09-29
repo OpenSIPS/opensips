@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">166</entry>
-		<entry align="center">75</entry>
-		<entry align="center">5312</entry>
-		<entry align="center">2836</entry>
+		<entry align="center">169</entry>
+		<entry align="center">78</entry>
+		<entry align="center">5320</entry>
+		<entry align="center">2854</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -60,6 +60,14 @@
 	</row>
 	<row>
 		<entry>6. </entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
+		<entry align="center">10</entry>
+		<entry align="center">6</entry>
+		<entry align="center">236</entry>
+		<entry align="center">67</entry>
+	</row>
+	<row>
+		<entry>7. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">8</entry>
 		<entry align="center">6</entry>
@@ -67,7 +75,7 @@
 		<entry align="center">34</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Eric Tamme (<ulink url="https://github.com/etamme">@etamme</ulink>)</entry>
 		<entry align="center">7</entry>
 		<entry align="center">5</entry>
@@ -75,20 +83,12 @@
 		<entry align="center">19</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
 		<entry align="center">6</entry>
 		<entry align="center">4</entry>
 		<entry align="center">43</entry>
 		<entry align="center">2</entry>
-	</row>
-	<row>
-		<entry>9. </entry>
-		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
-		<entry align="center">6</entry>
-		<entry align="center">3</entry>
-		<entry align="center">180</entry>
-		<entry align="center">37</entry>
 	</row>
 	<row>
 		<entry>10. </entry>
@@ -129,17 +129,17 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2014 - May 2021</entry>
+		<entry align="center">Jun 2014 - Sep 2021</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
-		<entry align="center">May 2021 - May 2021</entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
+		<entry align="center">Jun 2019 - Aug 2021</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
-		<entry align="center">Jun 2019 - Apr 2021</entry>
+		<entry>Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>)</entry>
+		<entry align="center">May 2021 - May 2021</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Flavio E. Goncalves, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Richard Fuchs.</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Flavio E. Goncalves, Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Richard Fuchs.</para>
 </section>
 
 </chapter>

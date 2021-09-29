@@ -873,6 +873,10 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		return -1;
 	}
 
+	if (_ci->pre_replicate_cb
+	        && _ci->pre_replicate_cb(*_c, _ci->pre_replicate_info) != 0)
+		LM_ERR("pre-replication callback returned non-zero\n");
+
 	if (!skip_replication && have_data_replication())
 		replicate_ucontact_insert(_r, _contact, *_c, match);
 

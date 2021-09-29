@@ -91,7 +91,8 @@ typedef struct rl_pipe {
 	int last_counter;			/* last counter */
 	int load;					/* countes the accesses */
 	rl_algo_t algo;				/* the algorithm used */
-	unsigned long last_used;	/* timestamp when the pipe was last accessed */
+	time_t last_used;			/* timestamp when the pipe was last accessed */
+	time_t last_local_used;		/* timestamp when the pipe was last locally accessed */
 	rl_repl_counter_t *dsts;	/* counters per destination */
 	rl_window_t rwin;			/* window of requests */
 } rl_pipe_t;
@@ -137,7 +138,7 @@ int w_rl_check(struct sip_msg*, str *, int *, str *);
 int w_rl_dec(struct sip_msg*, str *);
 int w_rl_reset(struct sip_msg*, str *);
 int w_rl_set_count(str, int);
-int rl_stats(mi_item_t *, str *);
+int rl_stats(mi_item_t *, str *, str *, int);
 int rl_pipe_check(rl_pipe_t *);
 int rl_get_counter_value(str *);
 /* update load */

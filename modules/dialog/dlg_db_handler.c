@@ -627,6 +627,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 			}
 
 			if(dlg->h_entry != hash_entry){
+				dlg_unlock(d_table, d_entry);
 				LM_ERR("inconsistent hash data in the dialog database: "
 					"you may have restarted opensips using a different "
 					"hash_size: please erase %.*s database and restart\n"
@@ -670,6 +671,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				LM_ERR("dlg_set_leg_info failed\n");
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
+				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 			dlg->legs_no[DLG_LEG_200OK] = DLG_FIRST_CALLEE_LEG;
@@ -727,6 +729,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 					ZSW(dlg->legs[callee_idx(dlg)].tag.s));
 				/* destroy the dialog */
 				unref_dlg_unsafe(dlg, 1, d_entry);
+				dlg_unlock(d_table, d_entry);
 				continue;
 			}
 
@@ -748,7 +751,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				read_dialog_profiles( VAL_STR(values+18).s,
 					strlen(VAL_STR(values+18).s), dlg, 0, 0);
 
-			if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+			if (dlg_has_options_pinging(dlg)) {
 				if (0 != insert_ping_timer(dlg))
 					LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 				else {
@@ -1940,7 +1943,7 @@ static int sync_dlg_db_mem(void)
 				dlg->legs[callee_idx(dlg)].last_gen_cseq =
 					(unsigned int)(VAL_INT(values+21));
 
-				if (dlg->flags & DLG_FLAG_PING_CALLER || dlg->flags & DLG_FLAG_PING_CALLEE) {
+				if (dlg_has_options_pinging(dlg)) {
 					if (0 != insert_ping_timer(dlg))
 						LM_CRIT("Unable to insert dlg %p into ping timer\n",dlg);
 					else {

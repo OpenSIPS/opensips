@@ -126,6 +126,7 @@ Call-Center Module
    1.27. Set ccf_m_flow_id_column parameter
    1.28. cc_handle_call usage
    1.29. cc_agent_login usage
+   1.30. $rtpquery Usage
 
 Chapter 1. Admin Guide
 
@@ -847,6 +848,25 @@ opensips-cli -x mi cc_reset_stats
 
 1.9. Exported Pseudo-Variables
 
+1. $cc_state
+
+   Returns the state of a call.
+
+   Possible values returned are:
+
+     * welcome - the welcome message is played.
+     * dissuading1 - the first dissuading message is played.
+     * dissuading2 - the second dissuading message is played.
+     * queue - the call is in queue.
+     * preagent - the agent is being called.
+     * toagent - the agent is in call.
+
+   Example 1.30. $rtpquery Usage
+...
+        $json(reply) := $rtpquery;
+        xlog("Total RTP Stats: $json(reply/totals)\n");
+...
+
    NONE
 
 Chapter 2. Developer Guide
@@ -896,13 +916,13 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 79 29 5561 198
-   2. Razvan Crainea (@razvancrainea) 37 28 695 153
+   2. Razvan Crainea (@razvancrainea) 40 30 791 154
    3. Vlad Patrascu (@rvlad-patrascu) 18 9 287 314
    4. Liviu Chircu (@liviuchircu) 14 11 72 89
-   5. Peter Lemenkov (@lemenkov) 4 2 1 1
-   6. Vlad Paiu (@vladpaiu) 3 1 13 4
-   7. Dusan Klinec (@ph4r05) 3 1 1 1
-   8. Walter Doekes (@wdoekes) 3 1 1 1
+   5. Walter Doekes (@wdoekes) 4 2 1 2
+   6. Peter Lemenkov (@lemenkov) 4 2 1 1
+   7. Vlad Paiu (@vladpaiu) 3 1 13 4
+   8. Dusan Klinec (@ph4r05) 3 1 1 1
    9. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -925,8 +945,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   2. Razvan Crainea (@razvancrainea)     Mar 2014 - Feb 2021
+   1. Razvan Crainea (@razvancrainea)     Mar 2014 - Jun 2021
+   2. Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Jul 2020
    5. Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
@@ -942,8 +962,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Zero
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Zero
    King (@l2dy), Peter Lemenkov (@lemenkov), Liviu Chircu
    (@liviuchircu).
 

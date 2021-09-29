@@ -504,7 +504,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 		user_agent, path, attr, st, sock, kv_str;
 	udomain_t *domain;
 	urecord_t *record;
-	ucontact_t *contact;
+	ucontact_t *contact, *ct;
 	int rc, port, proto, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
@@ -603,13 +603,30 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 
 		record->label = rlabel;
 		sl = record->aorhash & (domain->size - 1);
-		if (domain->table[sl].next_label <= record->label)
-			domain->table[sl].next_label = record->label + 1;
+		if (domain->table[sl].next_label <= rlabel)
+			domain->table[sl].next_label = rlabel + 1;
 	}
 
-	if (record->label != rlabel)
-		LM_BUG("replicated ct insert: differring rlabels! (ci: '%.*s')",
-		       callid.len, callid.s);
+	if (record->label != rlabel) {
+		int has_good_cts = 0;
+
+		for (ct = record->contacts; ct; ct = ct->next)
+			if (ct->expires != UL_EXPIRED_TIME) {
+				has_good_cts = 1;
+				break;
+			}
+
+		if (has_good_cts) {
+			LM_BUG("differring rlabels (%u vs. %u, ci: '%.*s')",
+			       record->label, rlabel, callid.len, callid.s);
+		} else {
+			/* no contacts -> it's safe to inherit the active node's rlabel */
+			record->label = rlabel;
+			sl = record->aorhash & (domain->size - 1);
+			if (domain->table[sl].next_label <= rlabel)
+				domain->table[sl].next_label = rlabel + 1;
+		}
+	}
 
 	if (record->next_clabel <= clabel)
 		record->next_clabel = CLABEL_INC_AND_TEST(clabel);
@@ -905,65 +922,62 @@ static int receive_sync_packet(bin_packet_t *packet)
 	return rc;
 }
 
-void receive_binary_packets(bin_packet_t *packet)
+void receive_binary_packets(bin_packet_t *pkt)
 {
 	int rc;
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		/* Supported smooth BIN transitions:
-			UL_BIN_V2 -> UL_BIN_V3: the "cmatch" has been added
-							(assume: CT_MATCH_CONTACT_CALLID if not present)
-		*/
-		short ver = get_bin_pkg_version(pkt);
+	/* Supported smooth BIN transitions:
+		UL_BIN_V2 -> UL_BIN_V3: the "cmatch" has been added
+						(assume: CT_MATCH_CONTACT_CALLID if not present)
+	*/
+	short ver = get_bin_pkg_version(pkt);
 
-		LM_DBG("received a binary packet [%d]!\n", pkt->type);
+	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-		switch (pkt->type) {
-		case REPL_URECORD_INSERT:
-			if (ver != UL_BIN_V2)
-				ensure_bin_version(pkt, UL_BIN_VERSION);
-			rc = receive_urecord_insert(pkt);
-			break;
+	switch (pkt->type) {
+	case REPL_URECORD_INSERT:
+		if (ver != UL_BIN_V2)
+			ensure_bin_version(pkt, UL_BIN_VERSION);
+		rc = receive_urecord_insert(pkt);
+		break;
 
-		case REPL_URECORD_DELETE:
-			if (ver != UL_BIN_V2)
-				ensure_bin_version(pkt, UL_BIN_VERSION);
-			rc = receive_urecord_delete(pkt);
-			break;
+	case REPL_URECORD_DELETE:
+		if (ver != UL_BIN_V2)
+			ensure_bin_version(pkt, UL_BIN_VERSION);
+		rc = receive_urecord_delete(pkt);
+		break;
 
-		case REPL_UCONTACT_INSERT:
-			if (ver != UL_BIN_V2)
-				ensure_bin_version(pkt, UL_BIN_VERSION);
-			rc = receive_ucontact_insert(pkt);
-			break;
+	case REPL_UCONTACT_INSERT:
+		if (ver != UL_BIN_V2)
+			ensure_bin_version(pkt, UL_BIN_VERSION);
+		rc = receive_ucontact_insert(pkt);
+		break;
 
-		case REPL_UCONTACT_UPDATE:
-			if (ver != UL_BIN_V2)
-				ensure_bin_version(pkt, UL_BIN_VERSION);
-			rc = receive_ucontact_update(pkt);
-			break;
+	case REPL_UCONTACT_UPDATE:
+		if (ver != UL_BIN_V2)
+			ensure_bin_version(pkt, UL_BIN_VERSION);
+		rc = receive_ucontact_update(pkt);
+		break;
 
-		case REPL_UCONTACT_DELETE:
-			if (ver != UL_BIN_V2)
-				ensure_bin_version(pkt, UL_BIN_VERSION);
-			rc = receive_ucontact_delete(pkt);
-			break;
+	case REPL_UCONTACT_DELETE:
+		if (ver != UL_BIN_V2)
+			ensure_bin_version(pkt, UL_BIN_VERSION);
+		rc = receive_ucontact_delete(pkt);
+		break;
 
-		case SYNC_PACKET_TYPE:
-			if (ver != UL_BIN_V2)
-				_ensure_bin_version(pkt, UL_BIN_VERSION, "usrloc sync packet");
-			rc = receive_sync_packet(pkt);
-			break;
+	case SYNC_PACKET_TYPE:
+		if (ver != UL_BIN_V2)
+			_ensure_bin_version(pkt, UL_BIN_VERSION, "usrloc sync packet");
+		rc = receive_sync_packet(pkt);
+		break;
 
-		default:
-			rc = -1;
-			LM_ERR("invalid usrloc binary packet type: %d\n", pkt->type);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+	default:
+		rc = -1;
+		LM_ERR("invalid usrloc binary packet type: %d\n", pkt->type);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int receive_sync_request(int node_id)

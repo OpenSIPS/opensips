@@ -225,7 +225,7 @@ Chapter 2. Contributors
    1. Jan Janak (@janakj) 150 53 5336 3190
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 97 71 1573 792
    3. Henning Westerholt (@henningw) 57 30 693 1239
-   4. Liviu Chircu (@liviuchircu) 36 29 479 176
+   4. Liviu Chircu (@liviuchircu) 37 30 481 177
    5. Daniel-Constantin Mierla (@miconda) 28 20 571 154
    6. Razvan Crainea (@razvancrainea) 19 16 231 59
    7. Andrei Pelinescu-Onciul 16 14 52 49
@@ -235,11 +235,11 @@ Chapter 2. Contributors
 
    All remaining contributors: Nils Ohlmeier, Norman Brandinger
    (@NormB), Peter Lemenkov (@lemenkov), Eseanu Marius Cristian
-   (@eseanucristian), Dan Pascu (@danpascu), Ionut Ionita
-   (@ionutrazvanionita), Ovidiu Sas (@ovidiusas), Konstantin
-   Bokarius, Andreas Heise, Razvan Pistolea, Saúl Ibarra Corretgé
-   (@saghul), Sergio Gutierrez, Edson Gellert Schubert, Augusto
-   Caringi.
+   (@eseanucristian), Dan Pascu (@danpascu), Walter Doekes
+   (@wdoekes), Ionut Ionita (@ionutrazvanionita), Ovidiu Sas
+   (@ovidiusas), Konstantin Bokarius, Andreas Heise, Razvan
+   Pistolea, Saúl Ibarra Corretgé (@saghul), Sergio Gutierrez,
+   Edson Gellert Schubert, Augusto Caringi.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -260,26 +260,25 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-     Name Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Apr 2017 - May 2021
-   2. Liviu Chircu (@liviuchircu) Mar 2014 - Apr 2021
-   3. Razvan Crainea (@razvancrainea) Oct 2011 - Jan 2021
-   4. Vlad Paiu (@vladpaiu) Feb 2011 - Dec 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
-   6. Peter Lemenkov (@lemenkov) Nov 2017 - Jun 2018
-   7. Augusto Caringi Jul 2017 - Jul 2017
-   8. Ovidiu Sas (@ovidiusas) Mar 2017 - Mar 2017
-   9. Ionut Ionita (@ionutrazvanionita) Feb 2016 - Feb 2016
-   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul
-   2015
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2021
+   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2021
+   5.  Vlad Paiu (@vladpaiu)               Feb 2011 - Dec 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Nov 2017 - Jun 2018
+   8.  Augusto Caringi                     Jul 2017 - Jul 2017
+   9.  Ovidiu Sas (@ovidiusas)             Mar 2017 - Mar 2017
+   10. Ionut Ionita (@ionutrazvanionita)   Feb 2016 - Feb 2016
 
-   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
-   Razvan Pistolea, Norman Brandinger (@NormB), Sergio Gutierrez,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Andreas Heise, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
-   Dan Pascu (@danpascu), Jiri Kuthan (@jiriatipteldotorg), Nils
-   Ohlmeier.
+   All remaining contributors: Eseanu Marius Cristian
+   (@eseanucristian), Saúl Ibarra Corretgé (@saghul), Razvan
+   Pistolea, Norman Brandinger (@NormB), Sergio Gutierrez, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Andreas Heise, Jan
+   Janak (@janakj), Andrei Pelinescu-Onciul, Dan Pascu
+   (@danpascu), Jiri Kuthan (@jiriatipteldotorg), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits

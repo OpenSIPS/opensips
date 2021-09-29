@@ -650,50 +650,47 @@ int receive_entity_delete(bin_packet_t *packet)
 	return 0;
 }
 
-void b2be_recv_bin_packets(bin_packet_t *packet)
+void b2be_recv_bin_packets(bin_packet_t *pkt)
 {
 	int rc;
-	bin_packet_t *pkt;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", pkt->type);
+	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-		switch (pkt->type) {
-		case REPL_ENTITY_CREATE:
-			ensure_bin_version(pkt, B2BE_BIN_VERSION);
+	switch (pkt->type) {
+	case REPL_ENTITY_CREATE:
+		ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
-			rc = receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0, 0);
-			break;
-		case REPL_ENTITY_UPDATE:
-		case REPL_ENTITY_PARAM_UPDATE:
-		case REPL_ENTITY_ACK:
-			ensure_bin_version(pkt, B2BE_BIN_VERSION);
+		rc = receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0, 0);
+		break;
+	case REPL_ENTITY_UPDATE:
+	case REPL_ENTITY_PARAM_UPDATE:
+	case REPL_ENTITY_ACK:
+		ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
-			rc = receive_entity_update(pkt);
-			break;
-		case REPL_ENTITY_DELETE:
-			ensure_bin_version(pkt, B2BE_BIN_VERSION);
+		rc = receive_entity_update(pkt);
+		break;
+	case REPL_ENTITY_DELETE:
+		ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
-			rc = receive_entity_delete(pkt);
-			break;
-		case SYNC_PACKET_TYPE:
-			ensure_bin_version(pkt, B2BE_BIN_VERSION);
+		rc = receive_entity_delete(pkt);
+		break;
+	case SYNC_PACKET_TYPE:
+		ensure_bin_version(pkt, B2BE_BIN_VERSION);
 
-			while (cl_api.sync_chunk_iter(pkt))
-				if (receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0, 0) < 0) {
-					LM_ERR("Failed to process sync packet\n");
-					return;
-				}
-			rc = 0;
-			break;
-		default:
-			rc = -1;
-			LM_ERR("invalid usrloc binary packet type: %d\n", pkt->type);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+		while (cl_api.sync_chunk_iter(pkt))
+			if (receive_entity_create(pkt, NULL, B2B_NONE, NULL, 0, 0, 0) < 0) {
+				LM_ERR("Failed to process sync packet\n");
+				return;
+			}
+		rc = 0;
+		break;
+	default:
+		rc = -1;
+		LM_ERR("invalid usrloc binary packet type: %d\n", pkt->type);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,

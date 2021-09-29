@@ -47,6 +47,9 @@ struct proto_info protos[PROTO_LAST - PROTO_NONE] = {
 	{ .name = "sctp", .default_rfc_port = 5060 }, /* PROTO_SCTP */
 	{ .name = "ws",   .default_rfc_port = 80 },   /* PROTO_WS */
 	{ .name = "wss",  .default_rfc_port = 443 },  /* PROTO_WSS */
+
+	{ .name = "bin",  .default_port = 5555 },     /* PROTO_BIN */
+	{ .name = "bins", .default_port = 5556 },     /* PROTO_BINS */
 	/* populate here for other protos - not necessary right now */
 };
 

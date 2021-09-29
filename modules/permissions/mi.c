@@ -110,7 +110,7 @@ mi_response_t *mi_address_dump(const mi_params_t *params,
 			it->name.s, it->name.len) < 0)
 			goto error;
 
-		if(hash_mi_print(*it->hash_table, part_item, it)< 0)
+		if(pm_hash_mi_print(*it->hash_table, part_item, it)< 0)
 			goto error;
 	}
 
@@ -146,7 +146,7 @@ mi_response_t *mi_address_dump_1(const mi_params_t *params,
 	if (add_mi_string(resp_obj, MI_SSTR("part"),ps->name.s, ps->name.len) < 0)
 		goto error;
 
-	if(hash_mi_print(*ps->hash_table, resp_obj, ps)< 0)
+	if(pm_hash_mi_print(*ps->hash_table, resp_obj, ps)< 0)
 		goto error;
 
 	return resp;

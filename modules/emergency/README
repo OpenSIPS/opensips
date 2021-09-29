@@ -373,13 +373,13 @@ Chapter 2. Contributors
    4. Liviu Chircu (@liviuchircu) 18 12 133 187
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 11 9 52 52
    6. Peter Lemenkov (@lemenkov) 5 3 38 17
-   7. Zero King (@l2dy) 4 2 2 1
-   8. Maksym Sobolyev (@sobomax) 3 1 12 12
-   9. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
-   10. Julián Moreno Patiño 3 1 1 1
+   7. Walter Doekes (@wdoekes) 4 2 4 4
+   8. Zero King (@l2dy) 4 2 2 1
+   9. Maksym Sobolyev (@sobomax) 3 1 12 12
+   10. Ionut Ionita (@ionutrazvanionita) 3 1 7 13
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Julián Moreno Patiño, Vlad Patrascu
+   (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

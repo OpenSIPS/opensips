@@ -194,6 +194,8 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 			"%d has proto=%d\n", int_vals[INT_VALS_NODE_ID_COL], proto);
 		return 1;
 	}
+	LM_DBG("adding node: %.*s:%d (df: %d)\n", hlen, host, port,
+	       protos[PROTO_BIN].default_port);
 
 	(*new_info)->proto = proto;
 
@@ -206,6 +208,10 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		}
 
 		hostent2su(&((*new_info)->addr), he, 0, port);
+
+		struct ip_addr ip;
+		su2ip_addr(&ip, &(*new_info)->addr);
+		LM_DBG("resolved node: %s:%d\n", ip_addr2a(&ip), port);
 
 		t.tv_sec = 0;
 		t.tv_usec = 0;

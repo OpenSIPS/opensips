@@ -6,6 +6,10 @@ UAC AUTH Module
    1. Admin Guide
 
         1.1. Overview
+
+              1.1.1. RFC 8760 Support (Strenghtened
+                      Authentication)
+
         1.2. Dependencies
 
               1.2.1. OpenSIPS Modules
@@ -54,6 +58,13 @@ Chapter 1. Admin Guide
    Note that authentication provided by this module supports both
    qop "auth" and qop "auth-int" but if both values are presented
    by the server, "auth" will be prefered.
+
+1.1.1. RFC 8760 Support (Strenghtened Authentication)
+
+   Starting with OpenSIPS 3.2, the auth, auth_db and uac_auth
+   modules include support for two new digest authentication
+   algorithms ("SHA-256" and "SHA-512-256"), according to the RFC
+   8760 specs.
 
 1.2. Dependencies
 
@@ -140,8 +151,8 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 16 7 869 15
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 10 7 229 9
-   3. Maksym Sobolyev (@sobomax) 9 3 121 258
-   4. Liviu Chircu (@liviuchircu) 8 6 27 61
+   3. Liviu Chircu (@liviuchircu) 9 7 40 61
+   4. Maksym Sobolyev (@sobomax) 9 3 121 258
    5. Razvan Crainea (@razvancrainea) 8 6 8 11
    6. Vlad Patrascu (@rvlad-patrascu) 6 4 44 30
    7. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -166,11 +177,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Maksym Sobolyev (@sobomax)          Sep 2020 - Mar 2021
-   2. Razvan Crainea (@razvancrainea)     Sep 2011 - Jan 2021
-   3. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2012 - Apr 2019
-   5. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   1. Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
+   2. Maksym Sobolyev (@sobomax)          Sep 2020 - Mar 2021
+   3. Razvan Crainea (@razvancrainea)     Sep 2011 - Jan 2021
+   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2012 - Apr 2019
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7. Ovidiu Sas (@ovidiusas)             Jun 2011 - Oct 2013
 
@@ -181,9 +192,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Ovidiu Sas (@ovidiusas).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

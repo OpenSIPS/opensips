@@ -160,7 +160,7 @@ static int gw_status_update(bin_packet_t *packet, int raise_event)
 	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
-	if (part==NULL)
+	if (part==NULL || part->rdata==NULL)
 		return -1;
 
 	lock_start_read(part->ref_lock);
@@ -197,7 +197,7 @@ static int cr_status_update(bin_packet_t *packet)
 	bin_pop_int(packet, &flags);
 
 	part = get_partition( &part_name );
-	if (part==NULL)
+	if (part==NULL || part->rdata==NULL)
 		return -1;
 
 	lock_start_read(part->ref_lock);
@@ -233,39 +233,36 @@ static void dr_recv_sync_packet(bin_packet_t *packet)
 	}
 }
 
-static void receive_dr_binary_packet(bin_packet_t *packet)
+static void receive_dr_binary_packet(bin_packet_t *pkt)
 {
-	bin_packet_t *pkt;
 	int rc = 0;
 
-	for (pkt = packet; pkt; pkt = pkt->next) {
-		LM_DBG("received a binary packet [%d]!\n", packet->type);
+	LM_DBG("received a binary packet [%d]!\n", pkt->type);
 
-		switch (pkt->type) {
-		case REPL_GW_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+	switch (pkt->type) {
+	case REPL_GW_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = gw_status_update(pkt, 1);
-			break;
-		case REPL_CR_STATUS_UPDATE:
-			ensure_bin_version(pkt, BIN_VERSION);
+		rc = gw_status_update(pkt, 1);
+		break;
+	case REPL_CR_STATUS_UPDATE:
+		ensure_bin_version(pkt, BIN_VERSION);
 
-			rc = cr_status_update(pkt);
-			break;
-		case SYNC_PACKET_TYPE:
-			_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
+		rc = cr_status_update(pkt);
+		break;
+	case SYNC_PACKET_TYPE:
+		_ensure_bin_version(pkt, BIN_VERSION, "drouting sync packet");
 
-			dr_recv_sync_packet(pkt);
-			break;
-		default:
-			LM_WARN("Invalid drouting binary packet command: %d "
-				"(from node: %d in cluster: %d)\n",
-				pkt->type, pkt->src_id, dr_cluster_id);
-		}
-
-		if (rc != 0)
-			LM_ERR("failed to process binary packet!\n");
+		dr_recv_sync_packet(pkt);
+		break;
+	default:
+		LM_WARN("Invalid drouting binary packet command: %d "
+			"(from node: %d in cluster: %d)\n",
+			pkt->type, pkt->src_id, dr_cluster_id);
 	}
+
+	if (rc != 0)
+		LM_ERR("failed to process binary packet!\n");
 }
 
 static int dr_recv_sync_request(int node_id)
@@ -339,6 +336,9 @@ void receive_dr_cluster_event(enum clusterer_event ev, int node_id)
 
 int dr_cluster_sync(void)
 {
+	if (!dr_cluster_id)
+		return 0;
+
 	if (c_api.request_sync(&status_repl_cap, dr_cluster_id) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
@@ -376,9 +376,6 @@ int dr_init_cluster(void)
 	} else {
 		dr_cluster_shtag.len = 0;
 	}
-
-	if (dr_cluster_sync() < 0)
-		return -1;
 
 	return 0;
 }

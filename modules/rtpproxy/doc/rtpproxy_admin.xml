@@ -216,17 +216,19 @@
 		<programlisting format="linespecific">
 ...
 # single rtproxy with specific weight
-modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:12221=2")
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222=2")
+
+# single rtpproxy with advertised address + weight
+modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222|8.8.8.8=2")
+
 # multiple rtproxies for LB
 modparam("rtpproxy", "rtpproxy_sock",
-	"udp:localhost:12221 udp:localhost:12222 tcp:remote1:33422 tcp6:remote2:32322")
+	"udp:localhost:22222 udp:localhost:22223 tcp:remote1:33422 tcp6:remote2:32322")
+
 # multiple sets of multiple rtproxies
-modparam("rtpproxy", "rtpproxy_sock",
-	"1 == udp:localhost:12221 udp:localhost:12222")
-modparam("rtpproxy", "rtpproxy_sock",
-	"2 == udp:localhost:12225")
-modparam("rtpproxy", "rtpproxy_sock",
-	"2 == udp:localhost:12225|8.8.8.8")
+modparam("rtpproxy", "rtpproxy_sock", "1 == udp:localhost:22222 udp:localhost:22223")
+modparam("rtpproxy", "rtpproxy_sock", "2 == udp:localhost:22223")
+modparam("rtpproxy", "rtpproxy_sock", "2 == udp:localhost:22223|8.8.8.8")
 ...
 </programlisting>
 		</example>

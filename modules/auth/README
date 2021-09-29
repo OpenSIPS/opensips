@@ -6,6 +6,10 @@ Auth Module
    1. Admin Guide
 
         1.1. Overview
+
+              1.1.1. RFC 8760 Support (Strenghtened
+                      Authentication)
+
         1.2. Nonce Security
         1.3. Dependencies
 
@@ -81,6 +85,13 @@ Chapter 1. Admin Guide
    by other authentication related modules. Also, it can perform
    authentication taking username and password from
    pseudo-variables.
+
+1.1.1. RFC 8760 Support (Strenghtened Authentication)
+
+   Starting with OpenSIPS 3.2, the auth, auth_db and uac_auth
+   modules include support for two new digest authentication
+   algorithms ("SHA-256" and "SHA-512-256"), according to the RFC
+   8760 specs.
 
 1.2. Nonce Security
 
@@ -512,7 +523,7 @@ Chapter 2. Contributors
    3. Daniel-Constantin Mierla (@miconda) 39 21 1136 476
    4. Jiri Kuthan (@jiriatipteldotorg) 26 19 660 51
    5. Maksym Sobolyev (@sobomax) 25 6 509 806
-   6. Liviu Chircu (@liviuchircu) 22 15 143 259
+   6. Liviu Chircu (@liviuchircu) 23 16 169 259
    7. Vlad Patrascu (@rvlad-patrascu) 13 7 193 210
    8. Razvan Crainea (@razvancrainea) 12 9 87 102
    9. Anca Vamanu 12 5 497 77
@@ -545,7 +556,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
    2.  Maksym Sobolyev (@sobomax)          Jan 2005 - Mar 2021
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
@@ -570,8 +581,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Maksym Sobolyev (@sobomax), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   Last edited by: Liviu Chircu (@liviuchircu), Maksym Sobolyev
+   (@sobomax), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
    (@lemenkov), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Sergio Gutierrez, Dan Pascu (@danpascu),
    Anca Vamanu, Daniel-Constantin Mierla (@miconda), Konstantin

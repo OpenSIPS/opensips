@@ -89,7 +89,8 @@ Chapter 1. Admin Guide
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
-     * libmicrohttpd.
+     * libmicrohttpd, with EPOLL support. This typically mean a
+       version newer than 0.9.50.
 
 1.4. Exported Parameters
 
@@ -257,9 +258,9 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 47 30 1667 147
-   2. Razvan Crainea (@razvancrainea) 20 18 71 57
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 13 11 93 52
-   4. Liviu Chircu (@liviuchircu) 11 9 26 49
+   2. Razvan Crainea (@razvancrainea) 21 19 100 57
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 103 54
+   4. Liviu Chircu (@liviuchircu) 12 10 32 50
    5. Vlad Patrascu (@rvlad-patrascu) 10 7 52 89
    6. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
    7. Fabian Gast (@fgast) 4 1 150 3
@@ -289,10 +290,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Apr 2021
-   2.  Razvan Crainea (@razvancrainea)     Mar 2015 - Feb 2021
-   3.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2019
+   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - Aug 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
+   4.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -309,10 +310,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Fabian Gast (@fgast), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ovidiu Sas
-   (@ovidiusas), Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Fabian
+   Gast (@fgast), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 

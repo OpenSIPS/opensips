@@ -6,6 +6,10 @@ Auth_db Module
    1. Admin Guide
 
         1.1. Overview
+
+              1.1.1. RFC 8760 Support (Strenghtened
+                      Authentication)
+
         1.2. Dependencies
 
               1.2.1. OpenSIPS Modules
@@ -21,9 +25,11 @@ Auth_db Module
               1.3.6. user_column (string)
               1.3.7. domain_column (string)
               1.3.8. password_column (string)
-              1.3.9. uri_user_column (string)
-              1.3.10. uri_domain_column (string)
-              1.3.11. uri_uriuser_column (string)
+              1.3.9. hash_column_sha256 (string)
+              1.3.10. hash_column_sha512t256 (string)
+              1.3.11. uri_user_column (string)
+              1.3.12. uri_domain_column (string)
+              1.3.13. uri_uriuser_column (string)
 
         1.4. Exported Functions
 
@@ -60,14 +66,16 @@ Auth_db Module
    1.6. user_column parameter usage
    1.7. domain_column parameter usage
    1.8. password_column parameter usage
-   1.9. Set uri_user_column parameter
-   1.10. Set uri_domain_column parameter
-   1.11. Set uriuser_column parameter
-   1.12. www_authorize usage
-   1.13. proxy_authorize usage
-   1.14. db_is_to_authorized usage
-   1.15. db_does_uri_exist usage
-   1.16. db_get_auth_id usage
+   1.9. password_column parameter usage
+   1.10. password_column parameter usage
+   1.11. Set uri_user_column parameter
+   1.12. Set uri_domain_column parameter
+   1.13. Set uriuser_column parameter
+   1.14. www_authorize usage
+   1.15. proxy_authorize usage
+   1.16. db_is_to_authorized usage
+   1.17. db_does_uri_exist usage
+   1.18. db_get_auth_id usage
 
 Chapter 1. Admin Guide
 
@@ -80,6 +88,13 @@ Chapter 1. Admin Guide
    want to use database to store authentication information like
    subscriber usernames and passwords. If you want to use radius
    authentication, then use auth_radius instead.
+
+1.1.1. RFC 8760 Support (Strenghtened Authentication)
+
+   Starting with OpenSIPS 3.2, the auth, auth_db and uac_auth
+   modules include support for two new digest authentication
+   algorithms ("SHA-256" and "SHA-512-256"), according to the RFC
+   8760 specs.
 
 1.2. Dependencies
 
@@ -125,31 +140,23 @@ e")
      * 1 (calculate HA1) - the loaded password is a plaintext
        password, so OpenSIPS will internally calculate the HA1. As
        the passwords will be loaded from the column specified in
-       the “password_column” parameter, be sure this parameter
+       the password_column parameter, be sure this parameter
        points to a column holding a plaintext password (by
-       default, this parameter points to “ha1” column);
-     * 0 (do NOT calculate HA1) - the loaded password is an
-       already computed HA1 value, so OpenSIPS does not have do
-       any further computing (for HA1 value). Depending on the
-       presence of a “@domain” part (some user agents append the
-       domain to the username credentials parameter too), the
-       modules will load the password (pre-computed HA1) from the
-       “password_column_2” column (if domain present) or from the
-       “password_column” column (if domain not present). Usually,
-       most of the UAs do NOT include a domain part in the
-       username credentials parameter.
+       default, this parameter points to the “ha1” column);
+     * 0 (do not calculate HA1) - the loaded password is a
+       pre-computed HA1 hash (no calculation needed). The module
+       will load all hashes stored in the password_column,
+       hash_column_sha256 and hash_column_sha512t256 columns, then
+       use the hash corresponding to the hashing algorithm
+       selected for a given digest authentication challenge.
+       The content of the hash columns can be generated as
+       follows:
+          + password_column: MD5(username:realm:password)
+          + hash_column_sha256: SHA-256(username:realm:password)
+          + hash_column_sha512t256:
+            SHA-512-256(username:realm:password)
 
-   The “password_column_2” column contains also HA1 strings but
-   they should be calculated including the domain in the username
-   parameter (as opposed to password_column which (when containing
-   HA1 strings) should always contain HA1 strings calculated
-   without domain in username.
-
-   This ensures that the authentication will always work when
-   using pre-calculated HA1 strings, not depending on the presence
-   of the domain in username.
-
-   Default value of this parameter is 0.
+   Default value of this parameter is 0 (use hashed passwords).
 
    Example 1.2. calculate_ha1 parameter usage
 modparam("auth_db", "calculate_ha1", 1)
@@ -228,7 +235,7 @@ modparam("auth_db", "domain_column", "domain")
    This is the name of the column in a 'SUBSCRIBER' like table
    holding the passwords. Passwords can be either stored as plain
    text or pre-calculated HA1 strings. HA1 strings are MD5 hashes
-   of username, password, and realm. HA1 strings are more safe
+   of username, password and realm. HA1 strings are more safe
    because the server doesn't need to know plaintext passwords and
    they cannot be obtained from HA1 strings.
 
@@ -237,35 +244,55 @@ modparam("auth_db", "domain_column", "domain")
    Example 1.8. password_column parameter usage
 modparam("auth_db", "password_column", "password")
 
-1.3.9. uri_user_column (string)
+1.3.9. hash_column_sha256 (string)
+
+   The name of the column holding SHA-256 HA1 hashes (RFC 8760
+   support).
+
+   Default value is “ha1_sha256”.
+
+   Example 1.9. password_column parameter usage
+modparam("auth_db", "hash_column_sha256", "ha1_sha256")
+
+1.3.10. hash_column_sha512t256 (string)
+
+   The name of the column holding SHA-512/256 HA1 hashes. (RFC
+   8760 support).
+
+   Default value is “ha1_sha512t256”.
+
+   Example 1.10. password_column parameter usage
+modparam("auth_db", "hash_column_sha512t256", "ha1_sha512t256")
+
+1.3.11. uri_user_column (string)
 
    Column holding usernames in an 'URI' like table.
 
    Default value is “username”.
 
-   Example 1.9. Set uri_user_column parameter
+   Example 1.11. Set uri_user_column parameter
 ...
 modparam("auth_db", "uri_user_column", "username")
 ...
 
-1.3.10. uri_domain_column (string)
+1.3.12. uri_domain_column (string)
 
    Column holding domain in an 'URI' like table.
 
    Default value is “domain”.
 
-   Example 1.10. Set uri_domain_column parameter
+   Example 1.12. Set uri_domain_column parameter
 ...
 modparam("auth_db", "uri_domain_column", "domain")
 ...
 
-1.3.11. uri_uriuser_column (string)
+1.3.13. uri_uriuser_column (string)
 
    Column holding URI username in an 'URI' like table.
 
    Default value is “uri_user”.
 
-   Example 1.11. Set uriuser_column parameter
+   Example 1.13. Set uriuser_column parameter
 ...
 modparam("auth_db", "uri_uriuser_column", "uri_user")
 ...
@@ -308,7 +335,7 @@ modparam("auth_db", "uri_uriuser_column", "uri_user")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.12. www_authorize usage
+   Example 1.14. www_authorize usage
 ...
 if (!www_authorize("siphub.net", "subscriber"))
         www_challenge("siphub.net", "auth");
@@ -349,7 +376,7 @@ if (!www_authorize("siphub.net", "subscriber"))
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.13. proxy_authorize usage
+   Example 1.15. proxy_authorize usage
 ...
 if (!proxy_authorize("", "subscriber"))
         proxy_challenge("", "auth");  # Realm will be autogenerated
@@ -373,7 +400,7 @@ if (!proxy_authorize("", "subscriber"))
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.14. db_is_to_authorized usage
+   Example 1.16. db_is_to_authorized usage
 ...
 if (!db_is_to_authorized("uri")) {
         xlog("User $tu is not authorized to authenticate with $au creden
@@ -399,7 +426,7 @@ tial\n");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.15. db_does_uri_exist usage
+   Example 1.17. db_does_uri_exist usage
 ...
 if (db_does_uri_exist($ru, "subscriber")) {
         ...
@@ -426,7 +453,7 @@ if (db_does_uri_exist($ru, "subscriber")) {
    This function can be used from REQUEST_ROUTE ,FAILURE_ROUTE and
    LOCAL_ROUTE.
 
-   Example 1.16. db_get_auth_id usage
+   Example 1.18. db_get_auth_id usage
 ...
 if (db_get_auth_id("uri", $ru, $avp(auth_id), $avp(auth_realm))) {
         ...
@@ -440,10 +467,10 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 50 36 778 375
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 51 37 783 380
    2. Jan Janak (@janakj) 50 29 1610 424
    3. Daniel-Constantin Mierla (@miconda) 29 20 130 382
-   4. Liviu Chircu (@liviuchircu) 17 14 78 103
+   4. Liviu Chircu (@liviuchircu) 21 16 154 129
    5. Henning Westerholt (@henningw) 11 9 83 49
    6. Razvan Crainea (@razvancrainea) 9 7 29 47
    7. Vlad Patrascu (@rvlad-patrascu) 8 4 69 163
@@ -452,10 +479,10 @@ Chapter 2. Contributors
    10. Andrei Pelinescu-Onciul 6 4 81 33
 
    All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
-   (@jiriatipteldotorg), Anatoly Pidruchny, Kennard White, Walter
-   Doekes (@wdoekes), Konstantin Bokarius, Richard Revels, Julián
-   Moreno Patiño, Norman Brandinger (@NormB), Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert, Ionut Ionita
+   (@jiriatipteldotorg), Walter Doekes (@wdoekes), Anatoly
+   Pidruchny, Kennard White, Konstantin Bokarius, Richard Revels,
+   Julián Moreno Patiño, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Ionut Ionita
    (@ionutrazvanionita).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -478,10 +505,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   2.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2021
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jul 2021
+   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   4.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -503,10 +530,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Maksym Sobolyev (@sobomax), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Kennard
-   White, Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
+   Last edited by: Liviu Chircu (@liviuchircu), Maksym Sobolyev
+   (@sobomax), Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
+   (@lemenkov), Razvan Crainea (@razvancrainea), Kennard White,
+   Sergio Gutierrez, Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Anatoly Pidruchny, Jan Janak (@janakj).
 

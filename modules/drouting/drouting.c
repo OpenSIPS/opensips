@@ -261,29 +261,29 @@ static int route2_carrier(struct sip_msg* msg, str* ids,
 		pv_spec_t* gw_att, pv_spec_t* carr_att, struct head_db *part);
 
 static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
-		struct head_db *part);
+		pv_spec_t* cr_attr, struct head_db *part);
 
 static int use_next_gw(struct sip_msg* msg,
 		pv_spec_t* rule_att, pv_spec_t* gw_att, pv_spec_t* carr_att,
 		struct head_db *part);
 
-#define DR_IFG_STRIP_FLAG      (1<<0)
-#define DR_IFG_PREFIX_FLAG     (1<<1)
-#define DR_IFG_IDS_FLAG        (1<<3)
-#define DR_IFG_IGNOREPORT_FLAG (1<<4)
-#define DR_IFG_CARRIERID_FLAG  (1<<5)
-#define DR_IFG_CHECKPROTO_FLAG (1<<6)
+#define DR_IFG_STRIP_FLAG       (1<<0)
+#define DR_IFG_PREFIX_FLAG      (1<<1)
+#define DR_IFG_IDS_FLAG         (1<<3)
+#define DR_IFG_IGNOREPORT_FLAG  (1<<4)
+#define DR_IFG_CARRIERID_FLAG   (1<<5)
+#define DR_IFG_CHECKPROTO_FLAG  (1<<6)
 static int fix_gw_flags(void** param);
 static int _is_dr_gw(struct sip_msg* msg, struct head_db *current_partition,
 		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto);
 static int is_from_gw(struct sip_msg* msg, int *type, long flags,
-		pv_spec_t* gw_att, struct head_db *part);
+		pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part);
 
 static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
-		pv_spec_t* gw_att, struct head_db *part);
+		pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part);
 
 static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
-		pv_spec_t* gw_att, struct head_db *part);
+		pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part);
 
 static int dr_disable(struct sip_msg *req, struct head_db *current_partition);
 
@@ -387,6 +387,7 @@ static cmd_export_t cmds[] = {
 	{"route_to_gw", (cmd_function)route2_gw,
 		{ {CMD_PARAM_STR, NULL, NULL},
 		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_carr_attr, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -404,7 +405,8 @@ static cmd_export_t cmds[] = {
 	{"is_from_gw", (cmd_function)is_from_gw,
 		{ {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_gw_flags, NULL},
-		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -413,7 +415,8 @@ static cmd_export_t cmds[] = {
 	{"goes_to_gw", (cmd_function)goes_to_gw,
 		{ {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_gw_flags, NULL},
-		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -423,7 +426,8 @@ static cmd_export_t cmds[] = {
 		{ {CMD_PARAM_STR, NULL, NULL},
 		  {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_gw_flags, NULL},
-		  {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_gw_attr, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
+		  {CMD_PARAM_VAR|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
@@ -2028,6 +2032,8 @@ static int db_connect_head(struct head_db *x) {
 static void rpc_dr_reload_data(int sender_id, void *unused)
 {
 	dr_reload_data(1);
+
+	dr_cluster_sync();
 }
 
 
@@ -2727,8 +2733,14 @@ static int weight_based_sort(pgw_list_t *pgwl, int size, unsigned short *idx)
 			for( i=first ; i<size ; i++ )
 				if (running_sum[i]>rand_no) break;
 			if (i==size) {
-				LM_CRIT("bug in weight sort\n");
-				return -1;
+				LM_CRIT("bug in weight sort, first=%u, size=%u, rand_no=%u, total weight=%u\n",
+					first, size, rand_no, weight_sum);
+				for(i=first; i<size;i++)
+					LM_CRIT("i %d, idx %u, weight %u, running sum %u\n",
+						i, idx[i], pgwl[idx[i]].weight, running_sum[i]);
+				/* try to recover here by picking the last gw */
+				i = size - 1;
+				// return -1;
 			}
 		} else {
 			/* randomly select index */
@@ -3679,18 +3691,20 @@ error_free:
 
 
 static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
-														struct head_db *part)
+									pv_spec_t* cr_attr, struct head_db *part)
 {
 	struct sip_uri  uri;
 	pgw_t *gw;
 	pgw_list_t dst;
 	pv_value_t pv_val;
 	str ruri, id;
-	str next_gw_attrs = {NULL, 0};
 	char *p;
-	int idx;
+	int idx, i;
 	struct head_db * current_partition = 0;
 	char *ruri_buf = NULL;
+	pcr_t *pcr = NULL;
+	map_iterator_t cr_it;
+	void** dest;
 
 	if(part== NULL) {
 		LM_ERR("Partition is mandatory for route_to_gw.\n");
@@ -3705,6 +3719,7 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 	}
 
 	gw_attrs_spec = (pv_spec_p)gw_attr;
+	carrier_attrs_spec = (pv_spec_p)cr_attr;
 
 	/* get the RURI */
 	ruri = *GET_RURI(msg);
@@ -3760,9 +3775,42 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 			} else {
 				idx++;
 
-				/* only export the top-most gw attributes in the script */
-				if (idx == 1)
-					next_gw_attrs = gw->attrs;
+				if (gw_attrs_spec) {
+					pv_val.flags = PV_VAL_STR;
+					pv_val.rs = !gw->attrs.s ? attrs_empty : gw->attrs;
+					if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
+						LM_ERR("failed to set value for gateway attrs pvar\n");
+					}
+				}
+
+				if (carrier_attrs_spec) {
+					/* lookup first carrier that contains this gw */
+					for (map_first(current_partition->rdata->carriers_tree, &cr_it);
+							iterator_is_valid(&cr_it); iterator_next(&cr_it)) {
+
+						dest = iterator_val(&cr_it);
+						if (dest==NULL)
+							break;
+
+						pcr = (pcr_t*)*dest;
+
+						for (i=0;i<pcr->pgwa_len;i++) {
+							if (pcr->pgwl[i].is_carrier == 0 &&
+									pcr->pgwl[i].dst.gw == gw ) {
+								/* found our carrier */
+								pv_val.flags = PV_VAL_STR;
+								pv_val.rs = pcr->attrs.s ?
+									pcr->attrs : attrs_empty;
+								if (pv_set_value(msg, carrier_attrs_spec,
+								0, &pv_val) != 0)
+									LM_ERR("failed to set value for "
+										"CARRIER attrs pvar\n");
+								goto cr_end;
+							}
+						}
+					}
+cr_end: ;
+				}
 			}
 		}
 	} while(ids->len>0);
@@ -3773,15 +3821,6 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 	if ( idx==0 ) {
 		LM_ERR("no GW added at all\n");
 		goto error_free;
-	}
-
-	if (gw_attrs_spec) {
-		pv_val.flags = PV_VAL_STR;
-		pv_val.rs = !next_gw_attrs.s ? attrs_empty : next_gw_attrs;
-		if (pv_set_value(msg, gw_attrs_spec, 0, &pv_val) != 0) {
-			LM_ERR("failed to set value for gateway attrs pvar\n");
-			goto error_free;
-		}
 	}
 
 	if (ruri_buf) pkg_free(ruri_buf);
@@ -3947,7 +3986,8 @@ static int gw_matches_ip(pgw_t *pgwa, struct ip_addr *ip, unsigned short port, u
  */
 static int _is_dr_gw(struct sip_msg* msg,
 		struct head_db *current_partition,
-		int flags, int type, struct ip_addr *ip, unsigned int port, unsigned int proto)
+		int flags, int type, struct ip_addr *ip, unsigned int port,
+		unsigned int proto)
 {
 	pgw_t *pgwa = NULL;
 	pcr_t *pcr = NULL;
@@ -4008,7 +4048,9 @@ static int _is_dr_gw(struct sip_msg* msg,
 						LM_ERR("failed to insert GW attrs avp\n");
 				}
 
-				if ( flags & DR_IFG_CARRIERID_FLAG ) {
+				if ( ( (flags & DR_IFG_CARRIERID_FLAG)
+						&& current_partition->carrier_id_avp!=-1 )
+				|| ( carrier_attrs_spec!=NULL  ) ) {
 					/* lookup first carrier that contains this gw */
 					for (map_first(current_partition->rdata->carriers_tree, &cr_it);
 							iterator_is_valid(&cr_it); iterator_next(&cr_it)) {
@@ -4023,13 +4065,23 @@ static int _is_dr_gw(struct sip_msg* msg,
 							if (pcr->pgwl[i].is_carrier == 0 &&
 									pcr->pgwl[i].dst.gw == pgwa ) {
 								/* found our carrier */
-								if (current_partition->carrier_id_avp!=-1) {
+								if ( (flags & DR_IFG_CARRIERID_FLAG) &&
+								current_partition->carrier_id_avp!=-1) {
 									val.s = pcr->id;
 									if (add_avp_last(AVP_VAL_STR,
 									current_partition->carrier_id_avp,val)!=0){
 										LM_ERR("failed to add carrier id "
 											"AVP\n");
 									}
+								}
+								if ( carrier_attrs_spec!=NULL ) {
+									pv_val.flags = PV_VAL_STR;
+									pv_val.rs = pcr->attrs.s ?
+										pcr->attrs : attrs_empty;
+									if (pv_set_value(msg, carrier_attrs_spec,
+									0, &pv_val) != 0)
+										LM_ERR("failed to set value for "
+											"CARRIER attrs pvar\n");
 								}
 								goto end;
 							}
@@ -4050,13 +4102,14 @@ end:
 
 
 static int is_from_gw(struct sip_msg* msg, int *type, long flags,
-									pv_spec_t* gw_att, struct head_db *part)
+					pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part)
 {
 	int ret=-1;
 	pv_value_t pv_val;
 	struct head_db * it;
 
 	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)cr_att;
 
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
@@ -4116,7 +4169,7 @@ static int _uri_to_ip_port(str *uri, struct ip_addr *ip, int *port, int *proto)
 
 
 static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
-									pv_spec_t* gw_att, struct head_db *part)
+					pv_spec_t* gw_att, pv_spec_t *cr_att, struct head_db *part)
 {
 	int ret=-1;
 	pv_value_t pv_val;
@@ -4131,6 +4184,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 	}
 
 	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)cr_att;
 
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */
@@ -4156,7 +4210,7 @@ static int goes_to_gw(struct sip_msg* msg, int *type, long flags,
 
 
 static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
-									pv_spec_t* gw_att, struct head_db *part)
+					pv_spec_t* gw_att, pv_spec_t* cr_att, struct head_db *part)
 {
 	int ret=-1;
 	pv_value_t pv_val;
@@ -4171,6 +4225,7 @@ static int dr_is_gw(struct sip_msg* msg, str *uri, int *type, long flags,
 	}
 
 	gw_attrs_spec = (pv_spec_p)gw_att;
+	carrier_attrs_spec = (pv_spec_p)cr_att;
 
 	if (part==NULL) {
 		/* if we got here we have the wildcard operator */

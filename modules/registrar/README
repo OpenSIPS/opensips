@@ -1403,12 +1403,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 185 113 2791 2990
+   1. Liviu Chircu (@liviuchircu) 189 116 2809 3006
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 167 113 2382 2031
    3. Jan Janak (@janakj) 120 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Razvan Crainea (@razvancrainea) 19 14 265 73
-   6. Vlad Paiu (@vladpaiu) 16 10 489 81
+   6. Vlad Paiu (@vladpaiu) 19 11 671 81
    7. Ionut Ionita (@ionutrazvanionita) 16 4 763 248
    8. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
    9. Andreas Granig 13 7 527 36
@@ -1446,24 +1446,24 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2021
-   2.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jul 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   5.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  @jalung                             Aug 2017 - Aug 2017
-   8.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
-   9.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Vlad Paiu (@vladpaiu)               Sep 2011 - Jul 2021
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jun 2021
+   3.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jul 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   6.  Razvan Crainea (@razvancrainea)     Apr 2011 - Sep 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  @jalung                             Aug 2017 - Aug 2017
+   9.  Ovidiu Sas (@ovidiusas)             May 2011 - Mar 2017
+   10. Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Feb 2017
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Nick
-   Altmann (@nikbyte), Vlad Paiu (@vladpaiu), Tolga Tarhan, Saúl
-   Ibarra Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu,
-   Kobi Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus
-   Darilion, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jesus Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
+   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Nick Altmann (@nikbyte), Tolga Tarhan, Saúl Ibarra
+   Corretgé (@saghul), Ruslan Bukin, Irina-Maria Stanescu, Kobi
+   Eshun (@ekobi), Phil D'Amore, Sergio Gutierrez, Klaus Darilion,
+   Henning Westerholt (@henningw), Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Jesus
+   Rodrigues, Dan Pascu (@danpascu), Ancuta Onofrei, Marcus
    Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Jeffrey
    Magder, Carsten Bock, Andreas Granig, Dmitry Semyonov, Jan
    Janak (@janakj), Andrei Pelinescu-Onciul, Jiri Kuthan
@@ -1476,16 +1476,16 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Razvan Crainea (@razvancrainea), Ionut
-   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Nick Altmann
-   (@nikbyte), Vlad Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas),
-   Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio Gutierrez,
-   Klaus Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Marcus
-   Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu, Carsten
-   Bock, Andreas Granig, Jan Janak (@janakj).
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Razvan
+   Crainea (@razvancrainea), Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño, Nick Altmann (@nikbyte), Ovidiu Sas
+   (@ovidiusas), Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio
+   Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues,
+   Marcus Hunger, Juha Heinanen (@juha-h), Elena-Ramona Modroiu,
+   Carsten Bock, Andreas Granig, Jan Janak (@janakj).
 
    Documentation Copyrights:
 

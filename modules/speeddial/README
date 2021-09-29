@@ -343,11 +343,11 @@ Chapter 2. Contributors
    7. Henning Westerholt (@henningw) 4 2 50 41
    8. Elena-Ramona Modroiu 4 2 4 1
    9. Sergio Gutierrez 4 2 2 2
-   10. Anca Vamanu 3 1 20 22
+   10. Walter Doekes (@wdoekes) 4 2 2 2
 
-   All remaining contributors: Andrei Pelinescu-Onciul, Konstantin
-   Bokarius, Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes), Edson Gellert Schubert.
+   All remaining contributors: Anca Vamanu, Andrei
+   Pelinescu-Onciul, Konstantin Bokarius, Julián Moreno Patiño,
+   Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
