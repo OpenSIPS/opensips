@@ -38,29 +38,38 @@
 
 str *get_postgres_tls_dom(struct db_id* id)
 {
-	static str dom = {0,0};
+    static str dom = {0,0};
+    char *start = NULL;
+    int len = 0;
 
-	LM_DBG("db_id = %p\n", id);
+    if (!id->parameters) {
+        LM_ERR("TLS Empty parameter list\n");
+        return &dom;
+    }
 
-	if (!id->parameters)
-		return NULL;
+    char *index = strstr(id->parameters, DB_TLS_DOMAIN_PARAM_EQ);
+    if (index) {
+        start = index + DB_TLS_DOMAIN_PARAM_EQ_LEN;
+        char *end = strchr(start, '&');
+        if (end) {
+            len = end - start;
+        } else {
+            len = strlen(start);
+        }
+    } else {
+        LM_ERR("TLS Unable to locate domain parameter (%s)\n", DB_TLS_DOMAIN_PARAM_EQ);
+        return &dom;
+    }
 
-	if (strncmp(id->parameters, DB_TLS_DOMAIN_PARAM_EQ, DB_TLS_DOMAIN_PARAM_EQ_LEN)) {
-		LM_ERR("Invalid URL (tls_domain) parameter: %s\n", id->parameters);
-		return NULL;
-	}
+    if (!len) {
+        LM_ERR("TLS Empty domain name\n");
+        return &dom;
+    }
 
-	char *pos = strchr(id->parameters, '&');
+    dom.s = start;
+    dom.len = len;
 
-	dom.s = id->parameters + DB_TLS_DOMAIN_PARAM_EQ_LEN;
-	dom.len = pos - dom.s;
-
-	if (!dom.len) {
-		LM_ERR("Empty TLS domain name\n");
-		return NULL;
-	}
-
-	return &dom;
+    return &dom;
 }
 
 
@@ -92,8 +101,7 @@ int db_postgres_connect(struct pg_con* ptr)
 
 	if (use_tls) {
 		tls_domain_name = get_postgres_tls_dom(ptr->id);
-		if (tls_domain_name) {
-
+		if (tls_domain_name->len) {
 			LM_DBG("TLS domain(%d): %.*s\n", tls_domain_name->len, tls_domain_name->len, tls_domain_name->s);
 
 			/* the connection should use TLS */
