@@ -474,8 +474,8 @@ Chapter 2. Contributors
    5. Henning Westerholt (@henningw) 11 9 83 49
    6. Razvan Crainea (@razvancrainea) 9 7 29 47
    7. Vlad Patrascu (@rvlad-patrascu) 8 4 69 163
-   8. Sergio Gutierrez 7 5 13 13
-   9. Maksym Sobolyev (@sobomax) 7 2 301 111
+   8. Maksym Sobolyev (@sobomax) 8 3 304 112
+   9. Sergio Gutierrez 7 5 13 13
    10. Andrei Pelinescu-Onciul 6 4 81 33
 
    All remaining contributors: Dan Pascu (@danpascu), Jiri Kuthan
@@ -505,10 +505,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jul 2021
-   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   4.  Maksym Sobolyev (@sobomax)          Oct 2004 - Mar 2021
+   1.  Maksym Sobolyev (@sobomax)          Oct 2004 - Sep 2021
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jul 2021
+   4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
