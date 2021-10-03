@@ -94,10 +94,10 @@ int db_postgres_connect(struct pg_con* ptr)
 
 	char *ports = NULL;
 	char *dbname = NULL;
-    int inn = 0;
+    int len = 0;
     char *tls_domain = NULL;
     char *copy = NULL;
-	str tls_domain_name = {0,0};
+	static str tls_domain_name = {0,0};
 	struct db_id* id = NULL;
 
 	if (ptr) {
