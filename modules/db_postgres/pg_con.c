@@ -93,7 +93,6 @@ int db_postgres_connect(struct pg_con* ptr)
 	int p = 0;
 
 	char *ports = NULL;
-	char *dbname = NULL;
     int len = 0;
     char *tls_domain = NULL;
     char *copy = NULL;
@@ -210,11 +209,11 @@ int db_postgres_connect(struct pg_con* ptr)
 
 	if (id->port) {
 		ports = int2str(id->port, 0);
-		LM_DBG("opening connection: postgres://xxxx:xxxx@%s:%d/%s %s\n", ZSW(id->host), id->port, ZSW(id->database), ZSW(dbname));
+		LM_DBG("opening connection: postgres://xxxx:xxxx@%s:%d/%s %s\n", ZSW(id->host), id->port, ZSW(id->database), ZSW(copy));
 		PSQL_PARAM("port", ports);
 	} else {
 		ports = NULL;
-		LM_DBG("opening connection: postgres://xxxx:xxxx@%s/%s %s\n", ZSW(id->host), ZSW(id->database), ZSW(dbname));
+		LM_DBG("opening connection: postgres://xxxx:xxxx@%s/%s %s\n", ZSW(id->host), ZSW(id->database), ZSW(copy));
 	}
 
 	/* End of the parameter list */
@@ -235,10 +234,14 @@ int db_postgres_connect(struct pg_con* ptr)
 	ptr->con = PQconnectdbParams(keywords, values, EXPAND_DBNAME);
 
 	/* Free connection parameters string */
-	if (dbname) {
-		pkg_free(dbname);
-		dbname = NULL;
+	if (tls_domain) {
+		free(tls_domain);
+		tls_domain = NULL;
 	}
+    if (copy) {
+        free(copy);
+        copy = NULL;
+    }
 
 	/* If an error  happened while trying to connect, cleanup */
 	if(!ptr->con || (PQstatus(ptr->con) != CONNECTION_OK) )
