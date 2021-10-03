@@ -117,6 +117,9 @@ int db_postgres_connect(struct pg_con* ptr)
         tls_domain_name->len = strlen(tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN); // len of [dom]
         copy = strdup(ptr->id->parameters);
 
+        // remove tls_domain=[dom]
+        rmSubstr(copy, tls_domain);
+
         // if tls_domain was the first parameter
         // before ?tls_domain=dom1&application_name=opensips
         // after  ?&application_name=opensips
