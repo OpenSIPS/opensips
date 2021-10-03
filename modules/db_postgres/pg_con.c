@@ -110,8 +110,8 @@ int db_postgres_connect(struct pg_con* ptr)
     tls_domain = get_postgres_tls_dom(ptr->id);
 
     if (tls_domain) {
-        tls_domain_name->s = tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN;           // tls_domain=
-        tls_domain_name->len = strlen(tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN); // len of [dom]
+        tls_domain_name.s = tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN;           // tls_domain=
+        tls_domain_name.len = strlen(tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN); // len of [dom]
         copy = strdup(ptr->id->parameters);
 
         // if tls_domain was the first parameter
@@ -131,14 +131,14 @@ int db_postgres_connect(struct pg_con* ptr)
     }
 
     if (use_tls) {
-        if (tls_domain_name->len) {
-            LM_DBG("TLS domain(%d): %.*s\n", tls_domain_name->len, tls_domain_name->len, tls_domain_name->s);
+        if (tls_domain_name.len) {
+            LM_DBG("TLS domain(%d): %.*s\n", tls_domain_name.len, tls_domain_name.len, tls_domain_name.s);
 
             /* the connection should use TLS */
             if (!ptr->tls_dom) {
                 ptr->tls_dom = tls_api.find_client_domain_name(tls_domain_name);
                 if (!ptr->tls_dom) {
-                    LM_ERR("TLS domain: %.*s not found\n", tls_domain_name->len, tls_domain_name->s);
+                    LM_ERR("TLS domain: %.*s not found\n", tls_domain_name.len, tls_domain_name.s);
                     return -1;
                 }
             }
