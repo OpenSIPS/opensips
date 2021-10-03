@@ -37,7 +37,7 @@
 #define EXPAND_DBNAME 1
 
 /* locate tls_domain=[dom] in the parameter string */
-/* if found, a new string with tls_domain=[dom] is returned and MUSTA be freed */
+/* if found, a new string with tls_domain=[dom] is returned and MUST be freed */
 /* if not found, NULL is returned */
 char *get_postgres_tls_dom(struct db_id* id)
 {
@@ -107,6 +107,9 @@ int db_postgres_connect(struct pg_con* ptr)
 		return -1;
 	}
 
+    /* locate tls_domain=[dom] in the parameter string */
+    /* if found, a new string with tls_domain=[dom] is returned and MUST be freed */
+    /* if not found, NULL is returned */
     tls_domain = get_postgres_tls_dom(ptr->id);
 
     if (tls_domain) {
@@ -115,7 +118,9 @@ int db_postgres_connect(struct pg_con* ptr)
         copy = strdup(ptr->id->parameters);
 
         // if tls_domain was the first parameter
-        if (*copy == '&') {
+        // before ?tls_domain=dom1&application_name=opensips
+        // after  ?&application_name=opensips
+        if (*copy[1] == '&') {
             memmove(copy, copy+1, strlen(copy));
         }
         // if tls_domain was the last parameter
