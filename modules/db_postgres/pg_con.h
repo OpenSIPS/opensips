@@ -69,8 +69,6 @@ struct pg_con {
 #define CON_TIMESTAMP(db_con)  (((struct pg_con*)((db_con)->tail))->timestamp)
 #define CON_ID(db_con) 	       (((struct pg_con*)((db_con)->tail))->id)
 
-str *get_postgres_tls_dom(struct db_id* id);
-
 /*
  * Create a new connection structure,
  * open the PostgreSQL connection and set reference count to 1

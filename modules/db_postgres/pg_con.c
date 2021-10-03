@@ -36,42 +36,49 @@
 #define DB_TLS_DOMAIN_PARAM_EQ_LEN 11	// tls_domain=
 #define EXPAND_DBNAME 1
 
-str *get_postgres_tls_dom(struct db_id* id)
+/* locate tls_domain=[dom] in the parameter string */
+/* if found, a new string with tls_domain=[dom] is returned and MUSTA be freed */
+/* if not found, NULL is returned */
+char *get_postgres_tls_dom(struct db_id* id)
 {
-    static str dom = {0,0};
-    char *start = NULL;
+    char *output = NULL;
     int len = 0;
 
     if (!id->parameters) {
-        LM_ERR("TLS Empty parameter list\n");
-        return &dom;
+        return NULL;
     }
 
     char *index = strstr(id->parameters, DB_TLS_DOMAIN_PARAM_EQ);
     if (index) {
-        start = index + DB_TLS_DOMAIN_PARAM_EQ_LEN;
-        char *end = strchr(start, '&');
+        char *end = strchr(index, '&');
         if (end) {
-            len = end - start;
+            len = end - index;
         } else {
-            len = strlen(start);
+            len = strlen(index);
         }
-    } else {
-        LM_ERR("TLS Unable to locate domain parameter (%s)\n", DB_TLS_DOMAIN_PARAM_EQ);
-        return &dom;
+        output = malloc(len+1);
+        strncpy(output, index, len);
+        output[11+len] = '\0';
     }
-
-    if (!len) {
-        LM_ERR("TLS Empty domain name\n");
-        return &dom;
-    }
-
-    dom.s = start;
-    dom.len = len;
-
-    return &dom;
+    return output;
 }
 
+/* helper routine to remove a substring from a string */
+void rmSubstr(char *str, const char *toRemove)
+{
+    size_t length = strlen(toRemove);
+    while((str = strstr(str, toRemove)))
+    {
+        memmove(str, str + length, 1 + strlen(str + length));
+    }
+}
+
+/* helper routine to remove a character at an index from a string */
+void removeChar(char *str, unsigned int index) {
+    char *src;
+    for (src = str+index; *src != '\0'; *src = *(src+1),++src) ;
+    *src = '\0';
+}
 
 int db_postgres_connect(struct pg_con* ptr)
 {
@@ -87,9 +94,10 @@ int db_postgres_connect(struct pg_con* ptr)
 
 	char *ports = NULL;
 	char *dbname = NULL;
-	int lenp = 0;
-	str *tls_domain_name = NULL;
-	str unused_dom = {0,0};
+    int inn = 0;
+    char *tls_domain = NULL;
+    char *copy = NULL;
+	str tls_domain_name = {0,0};
 	struct db_id* id = NULL;
 
 	if (ptr) {
@@ -99,98 +107,83 @@ int db_postgres_connect(struct pg_con* ptr)
 		return -1;
 	}
 
-	if (use_tls) {
-		tls_domain_name = get_postgres_tls_dom(ptr->id);
-		if (tls_domain_name->len) {
-			LM_DBG("TLS domain(%d): %.*s\n", tls_domain_name->len, tls_domain_name->len, tls_domain_name->s);
+    tls_domain = get_postgres_tls_dom(ptr->id);
 
-			/* the connection should use TLS */
-			if (!ptr->tls_dom) {
-				ptr->tls_dom = tls_api.find_client_domain_name(tls_domain_name);
-				if (!ptr->tls_dom) {
-					LM_ERR("TLS domain: %.*s not found\n", tls_domain_name->len, tls_domain_name->s);
-					return -1;
-				}
-			}
+    if (tls_domain) {
+        tls_domain_name->s = tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN;           // tls_domain=
+        tls_domain_name->len = strlen(tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN); // len of [dom]
+        copy = strdup(ptr->id->parameters);
 
-			LM_DBG("SSL key file: %.*s\n", ptr->tls_dom->pkey.len, ptr->tls_dom->pkey.s);
-			LM_DBG("SSL cert file: %.*s\n", ptr->tls_dom->cert.len, ptr->tls_dom->cert.s);
-			LM_DBG("SSL ca file: %.*s\n", ptr->tls_dom->ca.len, ptr->tls_dom->ca.s);
-			LM_DBG("SSL verify_cert: %d\n", ptr->tls_dom->verify_cert);
+        // if tls_domain was the first parameter
+        if (*copy == '&') {
+            memmove(copy, copy+1, strlen(copy));
+        }
+        // if tls_domain was the last parameter
+        len = strlen(copy);
+        if (copy[len-1] == '&') {
+            copy[len-1] = '\0';
+        }
+        // if tls_domain was a middle parameter
+        char *index = strstr(copy, "&&");
+        if (index) {
+            removeChar(copy, index-copy);
+        }
+    }
 
-			if (ptr->tls_dom->verify_cert == 1) {
-				PSQL_PARAM("sslmode", "verify-ca");
-			}
+    if (use_tls) {
+        if (tls_domain_name->len) {
+            LM_DBG("TLS domain(%d): %.*s\n", tls_domain_name->len, tls_domain_name->len, tls_domain_name->s);
 
-			PSQL_PARAM("sslkey", ptr->tls_dom->pkey.s)
-			PSQL_PARAM("sslcert", ptr->tls_dom->cert.s)
-			PSQL_PARAM("sslrootcert", ptr->tls_dom->ca.s)
-		}
-	}
+            /* the connection should use TLS */
+            if (!ptr->tls_dom) {
+                ptr->tls_dom = tls_api.find_client_domain_name(tls_domain_name);
+                if (!ptr->tls_dom) {
+                    LM_ERR("TLS domain: %.*s not found\n", tls_domain_name->len, tls_domain_name->s);
+                    return -1;
+                }
+            }
+
+            LM_DBG("SSL key file: %.*s\n", ptr->tls_dom->pkey.len, ptr->tls_dom->pkey.s);
+            LM_DBG("SSL cert file: %.*s\n", ptr->tls_dom->cert.len, ptr->tls_dom->cert.s);
+            LM_DBG("SSL ca file: %.*s\n", ptr->tls_dom->ca.len, ptr->tls_dom->ca.s);
+            LM_DBG("SSL verify_cert: %d\n", ptr->tls_dom->verify_cert);
+
+            if (ptr->tls_dom->verify_cert == 1) {
+                PSQL_PARAM("sslmode", "verify-ca");
+            }
+
+            PSQL_PARAM("sslkey", ptr->tls_dom->pkey.s)
+            PSQL_PARAM("sslcert", ptr->tls_dom->cert.s)
+            PSQL_PARAM("sslrootcert", ptr->tls_dom->ca.s)
+        }
+    }
 
 	/* force the default timeout */
 	if (pq_timeout > 0) {
 		PSQL_PARAM("connect_timeout", int2str(pq_timeout, 0));
 	}
 
-	if (id->parameters) {
+    if (id->parameters) {
+        if (!copy) {
+            copy = strdup(id->parameters);
+        }
 
-		lenp = strlen(id->parameters);
-		LM_DBG("id->parameters(%d): %s\n", lenp, id->parameters);
+        /* Change parameters to connection string: convert '&' to space */
+        for (int i=0; copy[i] != '\0'; i++) {
+            if (copy[i] == '&' ) {
+                copy[i] = ' ';
+            }
+        }
 
-		dbname = pkg_malloc(lenp + 1 /* '\0' */);
-		memset(dbname, 0, lenp + 1);
-
-		if (!dbname) {
-			LM_ERR("oom for building database connection string!\n");
-			return -1;
-		}
-
-		if (!use_tls) {
-			/* Handle the situation when use_tls=0 and db_url still contains tls_domain=[dom1] */
-			if (!strncmp(id->parameters, DB_TLS_DOMAIN_PARAM_EQ, DB_TLS_DOMAIN_PARAM_EQ_LEN)) {
-				char *pos = strchr(id->parameters, '&');
-				
-				unused_dom.s = id->parameters + DB_TLS_DOMAIN_PARAM_EQ_LEN;
-
-				if (!pos) {
-					unused_dom.len = strlen(id->parameters) - DB_TLS_DOMAIN_PARAM_EQ_LEN;
-				} else {
-					unused_dom.len = pos - unused_dom.s;
-				}
-			}
-			tls_domain_name = &unused_dom;
-		}
-
-		/* Set the initial dbname parameter */
-		if (tls_domain_name->len && lenp > DB_TLS_DOMAIN_PARAM_EQ_LEN+tls_domain_name->len) {
-			/* For example: tls_domain=[dom]&hostaddr=1.2.3.4&application_name=opensips */
-			/* DB_TLS_DOMAIN_PARAM_EQ_LEN = length of 'tls_donain=' (11) */
-			/* tls_domain_name->len = length of [dom] */
-			/* +1 is because the first parameter starts with a '&' and there is no need to memcpy() it */
-			/* Result is 'hostaddr=1.2.3.4 application_name=opensips' */
-			/* https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-PARAMKEYWORDS */
-			memcpy(dbname, id->parameters+DB_TLS_DOMAIN_PARAM_EQ_LEN+tls_domain_name->len+1, lenp - (DB_TLS_DOMAIN_PARAM_EQ_LEN+tls_domain_name->len)-1);
-		} else {
-			memcpy(dbname, id->parameters, lenp);
-		}
-		
-		/* Change parameters to connection string: convert '&' to space */
-		for (int i=0; dbname[i] != '\0' && i<lenp; i++) {
-			if (dbname[i] == '&' ) {
-				dbname[i] = ' ';
-			}
-		}
-
-		/* PQconnectdbParams(keywords, values, EXPAND_DBNAME) */
-		/* When expand_dbname is non-zero, the value for the first dbname key word is checked to see if it is a connection string. */
-		/* If so, it is “expanded” into the individual connection parameters extracted from the string. */
-		/* The value is considered to be a connection string, rather than just a database name, */
-		/* if it contains an equal sign (=) or it begins with a URI scheme designator. */
-		/* Only the first occurrence of dbname is treated in this way; any subsequent dbname parameter is processed as a plain database name. */
-		LM_DBG("connection string (%ld): %s\n", strlen(dbname), dbname);
-		PSQL_PARAM("dbname", dbname);
-	}
+        /* PQconnectdbParams(keywords, values, EXPAND_DBNAME) */
+        /* When expand_dbname is non-zero, the value for the first dbname key word is checked to see if it is a connection string. */
+        /* If so, it is expanded into the individual connection parameters extracted from the string. */
+        /* The value is considered to be a connection string, rather than just a database name, */
+        /* if it contains an equal sign (=) or it begins with a URI scheme designator. */
+        /* Only the first occurrence of dbname is treated in this way; any subsequent dbname parameter is processed as a plain database name. */
+        LM_DBG("connection string (%ld): %s\n", strlen(copy), copy);
+        PSQL_PARAM("dbname", copy);
+    }
 
 	if (id->host)
 		PSQL_PARAM("host", id->host);
