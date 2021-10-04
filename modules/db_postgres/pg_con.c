@@ -32,8 +32,20 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 
+#define DEFAULT_PSQL_TIMEOUT 5
 #define PSQL_PARAMS_MAX 15
 #define DB_TLS_DOMAIN_PARAM_EQ_LEN 11	// tls_domain=
+
+/*
+ * When expand_dbname is non-zero, the value for the first dbname key word is checked to see if it is a connection string.
+ * If so, it is "expanded" into the individual connection parameters extracted from the string.
+ * The value is considered to be a connection string, rather than just a database name, if it contains an equal
+ * sign (=) or it begins with a URI scheme designator.
+ * Only the first occurrence of dbname is treated in this way; any subsequent dbname parameter is processed as a plain
+ * database name.
+ * https://www.postgresql.org/docs/9.6/libpq-connect.html
+ *
+ */
 #define EXPAND_DBNAME 1
 
 /* locate tls_domain=[dom] in the parameter string */
@@ -58,7 +70,7 @@ char *get_postgres_tls_dom(struct db_id* id)
         }
         output = malloc(len+1);
         strncpy(output, index, len);
-        output[11+len] = '\0';
+        output[DB_TLS_DOMAIN_PARAM_EQ_LEN+len] = '\0';
     }
     return output;
 }
@@ -109,12 +121,12 @@ int db_postgres_connect(struct pg_con* ptr)
     /* locate tls_domain=[dom] in the parameter string */
     /* if found, a new string with tls_domain=[dom] is returned and MUST be freed */
     /* if not found, NULL is returned */
-    tls_domain = get_postgres_tls_dom(ptr->id);
+    tls_domain = get_postgres_tls_dom(id);
 
     if (tls_domain) {
-        tls_domain_name->s = tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN;           // tls_domain=
-        tls_domain_name->len = strlen(tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN); // len of [dom]
-        copy = strdup(ptr->id->parameters);
+        tls_domain_name->s = tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN;               // tls_domain=
+        tls_domain_name->len = strlen(tls_domain + DB_TLS_DOMAIN_PARAM_EQ_LEN);  // len of [dom]
+        copy = strdup(id->parameters);
 
         // remove tls_domain=[dom]
         rmSubstr(copy, tls_domain);
@@ -253,7 +265,6 @@ int db_postgres_connect(struct pg_con* ptr)
 	ptr->timestamp = time(0);
 
 	return 0;
-
 }
 
 /*
