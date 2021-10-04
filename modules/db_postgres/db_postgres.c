@@ -137,8 +137,10 @@ static int mod_init(void)
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 {
-	if(dbb==NULL)
-		return -1;
+	if(!dbb) {
+        LM_ERR("%.*s dbb parameter is NULL\n", mod->len, mod->s);
+        return -1;
+    }
 
 	memset(dbb, 0, sizeof(db_func_t));
 
