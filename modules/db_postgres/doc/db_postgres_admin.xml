@@ -15,11 +15,21 @@
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
-			<listitem>
-			<para>
-				<emphasis>No dependencies on other &osips; modules</emphasis>.
-			</para>
+				<listitem>
+					<para>
+						<emphasis>No dependencies on other &osips; modules</emphasis>.
+					</para>
+				</listitem>
+				<listitem>
+				<para>
+					<emphasis>tls_mgm</emphasis> - if use_tls=1 is specified.
+				</para>
 			</listitem>
+				<listitem>
+					<para>
+						<emphasis>tls_wolfssl</emphasis> - if use_tls=1 is specified.
+					</para>
+				</listitem>
 			</itemizedlist>
 		</para>
 	</section>
@@ -36,8 +46,7 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>PostgreSQL devel library</emphasis> - to compile
-				the module (e.g., libpq-dev).
+				<emphasis>PostgreSQL devel library</emphasis> - to compile the module (e.g., libpq-dev).
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -50,8 +59,7 @@
 	<section id="param_exec_query_threshold" xreflabel="exec_query_threshold">
 		<title><varname>exec_query_threshold</varname> (integer)</title>
 		<para>
-		If queries take longer than 'exec_query_threshold' microseconds, warning
-		messages will be written to logging facility.
+		If queries take longer than 'exec_query_threshold' microseconds, warning  messages will be written to logging facility.
 		</para>
 		<para>
 		<emphasis>
@@ -119,7 +127,8 @@ modparam("db_postgres", "timeout", 2)
         <section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>
-		Warning: <emphasis>wolfSSL</emphasis> is the recommended TLS/SSL Library.
+		Warning: <emphasis>wolfSSL</emphasis> is the required TLS/SSL Library.
+
 		This feature is not compatible with OpenSSL for the reasons defined in
 		https://blog.opensips.org/2021/02/11/exploring-ssl-tls-libraries-for-opensips-3-2
 		It is possible to use this feature with no TLS library for the tls_mgm module.

@@ -53,15 +53,16 @@ Chapter 1. Admin Guide
 1.2.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * No dependencies on other OpenSIPS modules.
+
+     tls_wolfssl - if use_tls=1 is specified
+     tls_mgm - if use_tls=1 is specified
 
 1.2.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * PostgreSQL library - e.g., libpq5.
-     * PostgreSQL devel library - to compile the module (e.g.,
-       libpq-dev).
+     * PostgreSQL devel library - to compile the module (e.g., libpq-dev).
 
 1.3. Exported Parameters
 
@@ -100,7 +101,7 @@ modparam("db_postgres", "max_db_queries", 2)
    succeed, OpenSIPS will block until the connection becomes back
    available and gets successfully established. This is the
    default behavior of the library and is the behavior prior to
-   the adition of this parameter.
+   the addition of this parameter.
 
    Default value is 5.
 
@@ -111,7 +112,10 @@ modparam("db_postgres", "timeout", 2)
 
 1.3.4. use_tls (integer)
 
-   Warning: wolfSSL is the recommended TLS/SSL Library
+   Warning: wolfSSL is the required TLS/SSL Library
+
+    This feature is not compatible with OpenSSL for the reasons defined in
+    https://blog.opensips.org/2021/02/11/exploring-ssl-tls-libraries-for-opensips-3-2
 
    Setting this parameter will allow you to use TLS for PostgreSQL
    connections. In order to enable TLS for a specific connection,
@@ -136,17 +140,19 @@ modparam("db_postgres", "timeout", 2)
 
    Example 1.6. Set the use_tls parameter
 ...
+loadmodule "tls_wolfssl"
+loadmodule "tls_mgm"
+loadmodule "db_postgres"
+...
 modparam("tls_mgm", "client_domain", "dom1")
-modparam("tls_mgm", "certificate", "[dom1]/etc/pki/tls/certs/opensips.pe
-m")
-modparam("tls_mgm", "private_key", "[dom1]/etc/pki/tls/private/opensips.
-key")
+modparam("tls_mgm", "certificate", "[dom1]/etc/pki/tls/certs/opensips.pem")
+modparam("tls_mgm", "private_key", "[dom1]/etc/pki/tls/private/opensips.key")
 modparam("tls_mgm", "ca_list",     "[dom1]/etc/pki/tls/certs/ca.pem")
 ...
 modparam("db_postgres", "use_tls", 1)
 ...
-modparam("usrloc", "db_url", "postgres://root:1234@localhost/opensips?
-tls_domain=dom1")
+loadmodule "usrloc"
+modparam("usrloc", "db_url", "postgres://root:1234@localhost/opensips?tls_domain=dom1")
 ...
 
 1.4. Exported Functions
