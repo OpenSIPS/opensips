@@ -460,7 +460,7 @@ static int openssl_tls_connect(struct tcp_connection *c, short *poll_events,
 					err,ret,strerror(errno), errno);
 				c->state = S_CONN_BAD;
 
-				if ( TRACE_IS_ON( c ) ) {
+				if ( TLS_TRACE_IS_ON( c ) ) {
 					if ( ( tls_err_s.len =
 							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
 						tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,
@@ -605,7 +605,7 @@ static int openssl_tls_accept(struct tcp_connection *c, short *poll_events)
 					       ret, err, errno, strerror(errno));
 				}
 
-				if ( TRACE_IS_ON( c ) ) {
+				if ( TLS_TRACE_IS_ON( c ) ) {
 					if ( ( tls_err_s.len =
 							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
 						if ( errno ) {
@@ -782,7 +782,7 @@ again:
 					err, n, strerror(errno), errno);
 				con->state = S_CONN_BAD;
 
-				if ( TRACE_IS_ON( con ) ) {
+				if ( TLS_TRACE_IS_ON( con ) ) {
 					if ( ( tls_err_s.len =
 							tls_get_errstack( tls_err_buf, TLS_ERR_MAX ) ) == 0 ) {
 						tls_err_s.len = snprintf( tls_err_buf, TLS_ERR_MAX,

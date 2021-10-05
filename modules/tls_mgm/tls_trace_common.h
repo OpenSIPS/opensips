@@ -22,6 +22,31 @@
 
 #include "../../trace_api.h"
 
+#define TLS_TRACE_IS_ON( CONN ) (CONN->proto_data && \
+		((struct tls_data*)CONN->proto_data)->tprot && \
+			((struct tls_data*)CONN->proto_data)->dest && \
+			*((struct tls_data*)CONN->proto_data)->trace_is_on)
+
 struct tls_data {
 	TRACE_PROTO_COMMON;
 };
+
+void tls_send_trace_data(struct tcp_connection *c, trace_dest t_dst) {
+	struct tls_data* data;
+
+	if ( (c->flags&F_CONN_ACCEPTED)==0 && c->proto_flags & F_TLS_TRACE_READY ) {
+		data = c->proto_data;
+
+		/* send the message if set from tls_mgm */
+		if ( data->message ) {
+			send_trace_message( data->message, t_dst);
+			data->message = NULL;
+		}
+
+		/* don't allow future traces for this connection */
+		data->tprot = 0;
+		data->dest  = 0;
+
+		c->proto_flags &= ~( F_TLS_TRACE_READY );
+	}
+}
