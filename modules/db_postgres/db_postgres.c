@@ -132,6 +132,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (use_tls && module_loaded("tls_openssl")) {
+		LM_ERR("use_tls and tls_openssl are incompatible.  Instead, use tls_wolfssl\n");
+		return -1;
+	}
+
 	return 0;
 }
 
