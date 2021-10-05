@@ -705,9 +705,6 @@ int httpd_callback(int fd, void *dmn, int was_timeout)
 
 void httpd_proc(int rank)
 {
-#ifdef LIBMICROHTTPD
-	int max;
-#endif
 	struct httpd_cb *cb = httpd_cb_list;
 
 	/*child's initial settings*/
@@ -736,6 +733,7 @@ void httpd_proc(int rank)
  	char *cert_pem;
 	struct sockaddr_in saddr_in;
 	struct MHD_OptionItem mhd_opts[4];
+	const union MHD_DaemonInfo *dmni;
 	int fd;
 
 	if (tls_key_file.s && tls_cert_file.s) {
@@ -815,20 +813,17 @@ void httpd_proc(int rank)
 	 * So, we "learn" that fd right now and bypass MHD_get_fdset() on
 	 * further iterations.*/
 
-	max = 0;
 	FD_ZERO (&mhd_rs);
 	FD_ZERO (&mhd_ws);
 	FD_ZERO (&mhd_es);
-	if (MHD_YES != MHD_get_fdset (dmn, &mhd_rs, &mhd_ws, &mhd_es, &max)) {
+
+	dmni = MHD_get_daemon_info(dmn, MHD_DAEMON_INFO_EPOLL_FD);
+	if (!dmni) {
 		LM_ERR("unable to get file descriptors\n");
 		return;
 	}
+	fd = dmni->epoll_fd;
 
-	for (fd=0 ; fd<FD_SETSIZE && !FD_ISSET(fd,&mhd_rs); fd++);
-	if (fd==FD_SETSIZE) {
-		LM_ERR("unable to find the epoll ctl fd\n");
-		return;
-	}
 	LM_DBG("found [%d] epoll ctl fd\n",fd);
 
 	if (reactor_proc_init( "HTTPD" )<0) {
