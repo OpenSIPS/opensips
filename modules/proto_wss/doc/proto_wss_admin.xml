@@ -251,7 +251,7 @@ modparam("proto_wss", "cert_check_on_conn_reusage", 1)
 		<title>Set <varname>trace_destination</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
 
 modparam("proto_wss", "trace_destination", "hep_dest")
 ...
