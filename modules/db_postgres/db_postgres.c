@@ -38,7 +38,7 @@
 int db_postgres_exec_query_threshold = 0;   /* Warning in case DB query
 											takes too long disabled by default*/
 int max_db_queries = 2;
-int pq_timeout = DEFAULT_PSQL_TIMEOUT;
+int pq_timeout = 5;
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 

@@ -26,6 +26,7 @@
 /**
  * Postgres default timeout
  */
+#define DEFAULT_PSQL_TIMEOUT 5
 extern int pq_timeout;
 
 extern int use_tls;
