@@ -36,9 +36,9 @@
 #include "db_postgres.h"
 
 int db_postgres_exec_query_threshold = 0;   /* Warning in case DB query
-											takes too long disabled by default*/
+					       takes too long disabled by default*/
 int max_db_queries = 2;
-int pq_timeout = 5;
+int pq_timeout = DEFAULT_PSQL_TIMEOUT;
 
 int db_postgres_bind_api(const str* mod, db_func_t *dbb);
 
@@ -69,10 +69,10 @@ static param_export_t params[] = {
 
 static module_dependency_t *get_deps_use_tls(param_export_t *param)
 {
-    if (*(int *)param->param_pointer == 0)
-        return NULL;
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
 
-    return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
 static module_dependency_t *get_deps_use_tls_wolfssl(param_export_t *param)
@@ -89,7 +89,7 @@ static dep_export_t deps = {
 	},
 	{ /* modparam dependencies */
 		{ "use_tls", get_deps_use_tls },
-        { "use_tls", get_deps_use_tls_wolfssl },
+		{ "use_tls", get_deps_use_tls_wolfssl },
 		{ NULL, NULL },
 	},
 };
@@ -121,7 +121,7 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
-	
+
 	if(max_db_queries < 1){
 		LM_WARN("Invalid number for max_db_queries\n");
 		max_db_queries = 2;
@@ -138,9 +138,9 @@ static int mod_init(void)
 int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 {
 	if(!dbb) {
-        LM_ERR("%.*s dbb parameter is NULL\n", mod->len, mod->s);
-        return -1;
-    }
+		LM_ERR("%.*s dbb parameter is NULL\n", mod->len, mod->s);
+		return -1;
+	}
 
 	memset(dbb, 0, sizeof(db_func_t));
 
@@ -162,4 +162,3 @@ int db_postgres_bind_api(const str* mod, db_func_t *dbb)
 	dbb->cap |= DB_CAP_MULTIPLE_INSERT;
 	return 0;
 }
-
