@@ -381,7 +381,7 @@ static int openssl_tls_connect(struct tcp_connection *c, short *poll_events,
 		LM_INFO("New TLS connection to %s:%d established\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 		trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
-				TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+				TRANS_TRACE_SUCCESS, &CONNECT_OK);
 
 		tls_send_trace_data(c, t_dst);
 
@@ -686,7 +686,7 @@ int openssl_tls_async_connect(struct tcp_connection *con, int fd,
 			LM_INFO("new TLS connection to %s:%d established\n",
 					ip_addr2a(&con->rcv.src_ip), con->rcv.src_port);
 			trace_tls(con, ssl, TRANS_TRACE_CONNECTED,
-					TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+					TRANS_TRACE_SUCCESS, &ASYNC_CONNECT_OK);
 
 			tls_send_trace_data(con, t_dst);
 			con->proto_flags &= ~F_TLS_DO_CONNECT;
