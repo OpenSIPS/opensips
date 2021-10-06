@@ -456,7 +456,7 @@ static int tls_connect(struct tcp_connection *c, short *poll_events, trace_dest 
 		LM_INFO("New TLS connection to %s:%d established\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 		trace_tls( c, ssl, TRANS_TRACE_CONNECTED,
-				TRANS_TRACE_SUCCESS, &CONNECT_FAIL);
+				TRANS_TRACE_SUCCESS, &CONNECT_OK);
 
 		tls_send_trace_data(c, t_dst);
 
