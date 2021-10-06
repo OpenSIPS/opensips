@@ -997,7 +997,7 @@ static inline int _str_casematchCC(const str_const *a, const str_const *b)
 	p = a->s;
 	q = b->s;
 
-	if (p == q)
+	if (p == q || a->len == 0)
 		return 1;
 
 	end = p + a->len;
