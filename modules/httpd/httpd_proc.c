@@ -728,6 +728,7 @@ void httpd_proc(int rank)
 
 #ifdef LIBMICROHTTPD
 	unsigned int mhd_flags = MHD_USE_DEBUG;
+	unsigned int mhdi_flags;
 	int mhd_opt_n = 0;
 	char *key_pem;
  	char *cert_pem;
@@ -816,13 +817,24 @@ void httpd_proc(int rank)
 	FD_ZERO (&mhd_rs);
 	FD_ZERO (&mhd_ws);
 	FD_ZERO (&mhd_es);
+	MHD_get_fdset (dmn, &mhd_rs, &mhd_ws, &mhd_es, NULL);
 
-	dmni = MHD_get_daemon_info(dmn, MHD_DAEMON_INFO_EPOLL_FD);
+#if (MHD_VERSION <= 0x00095100)
+	mhdi_flags = MHD_DAEMON_INFO_EPOLL_FD_LINUX_ONLY;
+#else
+	mhdi_flags = MHD_DAEMON_INFO_EPOLL_FD;
+#endif
+
+	dmni = MHD_get_daemon_info(dmn, mhdi_flags);
 	if (!dmni) {
 		LM_ERR("unable to get file descriptors\n");
 		return;
 	}
+#if (MHD_VERSION <= 0x00095200)
+	fd = dmni->listen_fd;
+#else
 	fd = dmni->epoll_fd;
+#endif
 
 	LM_DBG("found [%d] epoll ctl fd\n",fd);
 
