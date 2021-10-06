@@ -37,6 +37,7 @@ static str TCP_PROTO_ID = str_init("TCP");
 static str TLS_PROTO_ID = str_init("TLS");
 static str WS_PROTO_ID = str_init("WS");
 static str WSS_PROTO_ID = str_init("WSS");
+static str BINS_PROTO_ID = str_init("BINS");
 
 /* error reasons */
 str AS_CONNECT_INIT = str_init("Async connect in progress...");
@@ -79,6 +80,9 @@ trace_message create_trace_message( unsigned long long id, union sockaddr_union*
 			break;
 		case PROTO_WSS:
 			net_proto = IPPROTO_ESP;
+			break;
+		case PROTO_BINS:
+			net_proto = IPPROTO_IDP;
 			break;
 		default:
 			return 0;
@@ -145,6 +149,9 @@ static void add_proto( trace_message message, int proto)
 			break;
 		case PROTO_WSS:
 			add_trace_data( message, "Protocol", &WSS_PROTO_ID );
+			break;
+		case PROTO_BINS:
+			add_trace_data( message, "Protocol", &BINS_PROTO_ID );
 			break;
 		default:
 			break;

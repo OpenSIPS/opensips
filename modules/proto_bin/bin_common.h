@@ -152,3 +152,5 @@ error:
 	/* report error */
 	return -1;
 }
+
+#define TRANS_TRACE_PROTO_ID "net"

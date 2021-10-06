@@ -26,6 +26,7 @@
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
 #include "../../net/tcp_common.h"
+#include "../../net/net_tcp_report.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
@@ -34,6 +35,9 @@
 #include "../../ut.h"
 
 #include "../tls_mgm/api.h"
+#include "../tls_mgm/tls_trace_common.h"
+
+#include "../../net/trans_trace.h"
 
 #define MARKER_SIZE 4
 
@@ -48,6 +52,13 @@ static int bins_read_req(struct tcp_connection* con, int* bytes_read);
 static int bins_async_write(struct tcp_connection* con,int fd);
 static int proto_bins_conn_init(struct tcp_connection* c);
 static void proto_bins_conn_clean(struct tcp_connection* c);
+static void bins_report(int type, unsigned long long conn_id, int conn_flags,
+																void *extra);
+
+static mi_response_t *tls_trace_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *tls_trace_mi_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int bins_port = 5556;
 static int bins_send_tout = 100;
@@ -57,6 +68,8 @@ static int bins_async_max_postponed_chunks = 32;
 static int bins_async_local_connect_timeout = 100;
 static int bins_handshake_tout = 100;
 static int bins_async_handshake_connect_timeout = 10;
+static str trace_destination_name = {NULL, 0};
+static int trace_is_on_tmp;
 
 static struct tcp_req bins_current_req;
 
@@ -65,9 +78,26 @@ static struct tcp_req bins_current_req;
 
 struct tls_mgm_binds tls_mgm_api;
 
+#define TLS_TRACE_PROTO "proto_hep"
+
+trace_dest t_dst;
+trace_proto_t tprot;
+
+static int *trace_is_on;
+
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_bins_init, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
+};
+
+static mi_export_t mi_cmds[] = {
+	{ "tls_trace", 0, 0, 0, {
+		{tls_trace_mi, {0}},
+		{tls_trace_mi_1, {"trace_mode", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 static param_export_t params[] = {
@@ -82,12 +112,15 @@ static param_export_t params[] = {
 										   &bins_async_local_connect_timeout},
 	{ "bins_async_handshake_timeout",	 INT_PARAM,
 									&bins_async_handshake_connect_timeout },
+	{ "trace_destination",     STR_PARAM,         &trace_destination_name.s  },
+	{ "trace_on",					INT_PARAM, &trace_is_on_tmp           },
 	{0, 0, 0}
 };
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -106,7 +139,7 @@ struct module_exports exports = {
 	0,          /* exported async functions */
 	params,     /* module parameters */
 	0,          /* exported statistics */
-	0,          /* exported MI functions */
+	mi_cmds,    /* exported MI functions */
 	0,          /* exported pseudo-variables */
 	0,			/* exported transformations */
 	0,          /* extra processes */
@@ -133,6 +166,7 @@ static int proto_bins_init(struct proto_info *pi)
 	pi->net.write			= (proto_net_write_f)bins_async_write;
 	pi->net.conn_init		= proto_bins_conn_init;
 	pi->net.conn_clean		= proto_bins_conn_clean;
+	pi->net.report			= bins_report;
 
 	if (bins_async && !tcp_has_async_write()) {
 		LM_WARN("TCP network layer does not have support for ASYNC write, "
@@ -155,6 +189,32 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (trace_destination_name.s) {
+		if ( !net_trace_api ) {
+			if ( trace_prot_bind( TLS_TRACE_PROTO, &tprot) < 0 ) {
+				LM_ERR( "can't bind trace protocol <%s>\n", TLS_TRACE_PROTO );
+				return -1;
+			}
+			net_trace_api = &tprot;
+		} else {
+			tprot = *net_trace_api;
+		}
+
+		trace_destination_name.len = strlen( trace_destination_name.s );
+
+		if ( net_trace_proto_id == -1 )
+			net_trace_proto_id = tprot.get_message_id( TRANS_TRACE_PROTO_ID );
+
+		t_dst = tprot.get_trace_dest_by_name( &trace_destination_name );
+	}
+
+	if ( !(trace_is_on = shm_malloc(sizeof(int))) ) {
+		LM_ERR("no more shared memory!\n");
+		return -1;
+	}
+
+	*trace_is_on = trace_is_on_tmp;
+
 	return 0;
 }
 
@@ -168,9 +228,29 @@ static int proto_bins_init_listener(struct socket_info *si)
 static int proto_bins_conn_init(struct tcp_connection* c)
 {
 	struct tls_domain *dom;
+	struct tls_data* data;
 
-	c->proto_data = 0;
+	if (t_dst && tprot.create_trace_message) {
+		/* this message shall be used in first send function */
+		data = shm_malloc( sizeof(struct tls_data) );
+		if (!data) {
+			LM_ERR("no more pkg mem!\n");
+			goto out;
+		}
+		memset(data, 0, sizeof(struct tls_data));
 
+		data->tprot = &tprot;
+		data->dest  = t_dst;
+		data->net_trace_proto_id = net_trace_proto_id;
+		data->trace_is_on = trace_is_on;
+		data->trace_route_id = -1;
+
+		c->proto_data = data;
+	} else {
+		c->proto_data = 0;
+	}
+
+out:
 	if (c->flags&F_CONN_ACCEPTED) {
 		LM_DBG("looking up TLS server "
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
@@ -197,6 +277,28 @@ static void proto_bins_conn_clean(struct tcp_connection* c)
 		LM_ERR("Failed to retrieve the tls_domain pointer in the SSL struct\n");
 	else
 		tls_mgm_api.release_domain(dom);
+}
+
+static void bins_report(int type, unsigned long long conn_id, int conn_flags,
+																void *extra)
+{
+	str s;
+
+	if (type==TCP_REPORT_CLOSE) {
+		if ( !*trace_is_on || !t_dst || (conn_flags & F_CONN_TRACE_DROPPED) )
+			return;
+
+		/* grab reason text */
+		if (extra) {
+			s.s = (char*)extra;
+			s.len = strlen (s.s);
+		}
+
+		trace_message_atonce( PROTO_BINS, conn_id, NULL/*src*/, NULL/*dst*/,
+			TRANS_TRACE_CLOSED, TRANS_TRACE_SUCCESS, extra?&s:NULL, t_dst );
+	}
+
+	return;
 }
 
 static int bins_write_on_socket(struct tcp_connection* c, int fd,
@@ -226,7 +328,7 @@ static int bins_write_on_socket(struct tcp_connection* c, int fd,
 		}
 	} else {
 		n = tls_mgm_api.tls_blocking_write(c, fd, buf, len,
-				bins_handshake_tout, bins_send_tout, NULL);
+				bins_handshake_tout, bins_send_tout, t_dst);
 	}
 release:
 	lock_release(&c->write_lock);
@@ -310,7 +412,7 @@ static int proto_bins_send(struct socket_info* send_sock,
 			 * connect status */
 			tls_mgm_api.tls_update_fd(c, fd);
 			n = tls_mgm_api.tls_async_connect(c, fd,
-				bins_async_handshake_connect_timeout, NULL);
+				bins_async_handshake_connect_timeout, t_dst);
 			lock_release(&c->write_lock);
 			if (n<0) {
 				LM_ERR("failed async TLS connect\n");
@@ -426,7 +528,7 @@ static int bins_async_write(struct tcp_connection* con, int fd)
 	int n;
 	struct tcp_async_chunk *chunk;
 
-	n = tls_mgm_api.tls_fix_read_conn(con, fd, bins_handshake_tout, NULL, 0);
+	n = tls_mgm_api.tls_fix_read_conn(con, fd, bins_handshake_tout, t_dst, 0);
 	if (n < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
@@ -462,6 +564,7 @@ static int bins_read_req(struct tcp_connection* con, int* bytes_read)
 	int bytes;
 	int total_bytes;
 	struct tcp_req *req;
+	struct tls_data* data;
 
 	bytes = -1;
 	total_bytes = 0;
@@ -475,13 +578,31 @@ static int bins_read_req(struct tcp_connection* con, int* bytes_read)
 		req = &bins_current_req;
 	}
 
-	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, bins_handshake_tout, NULL, 1);
+	ret=tls_mgm_api.tls_fix_read_conn(con, con->fd, bins_handshake_tout, t_dst, 1);
 	if (ret < 0) {
 		LM_ERR("failed to do pre-tls handshake!\n");
 		return -1;
 	} else if (ret == 0) {
 		LM_DBG("SSL accept/connect still pending!\n");
 		return 0;
+	}
+
+	/* if there is pending tracing data on an accepted connection, flush it
+	 * As this is a read op, we look only for accepted conns, not to conflict
+	 * with connected conns (flushed on write op) */
+	if ( con->flags&F_CONN_ACCEPTED && con->proto_flags & F_TLS_TRACE_READY ) {
+		data = con->proto_data;
+		/* send the message if set from tls_mgm */
+		if ( data->message ) {
+			send_trace_message( data->message, t_dst);
+			data->message = NULL;
+		}
+
+		/* don't allow future traces for this connection */
+		data->tprot = 0;
+		data->dest  = 0;
+
+		con->proto_flags &= ~( F_TLS_TRACE_READY );
 	}
 
 	if(con->state!=S_CONN_OK)
@@ -543,4 +664,53 @@ done:
 error:
 	/* connection will be released as ERROR */
 		return -1;
+}
+
+static mi_response_t *tls_trace_mi(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if ( *trace_is_on ) {
+		if (add_mi_string(resp_obj, MI_SSTR("BINS tracing"), MI_SSTR("on")) < 0) {
+			free_mi_response(resp);
+			return 0;
+		}
+	} else {
+		if (add_mi_string(resp_obj, MI_SSTR("BINS tracing"), MI_SSTR("off")) < 0) {
+			free_mi_response(resp);
+			return 0;
+		}
+	}
+
+	return resp;
+}
+
+static mi_response_t *tls_trace_mi_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str new_mode;
+
+	if (get_mi_string_param(params, "trace_mode", &new_mode.s, &new_mode.len) < 0)
+		return init_mi_param_error();
+
+	if ( (new_mode.s[0] | 0x20) == 'o' &&
+			(new_mode.s[1] | 0x20) == 'n' ) {
+		*trace_is_on = 1;
+		return init_mi_result_ok();
+	} else
+	if ( (new_mode.s[0] | 0x20) == 'o' &&
+			(new_mode.s[1] | 0x20) == 'f' &&
+			(new_mode.s[2] | 0x20) == 'f' ) {
+		*trace_is_on = 0;
+		return init_mi_result_ok();
+	} else {
+		return init_mi_error_extra(500, MI_SSTR("Bad parameter value"),
+			MI_SSTR("trace_mode should be 'on' or 'off'"));
+	}
 }
