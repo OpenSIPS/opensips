@@ -17,7 +17,8 @@ lib/lib/libwolfssl.a:
 		./autogen.sh; \
 	fi; \
 	if [ ! -f "Makefile" ]; then \
-		env -u DEFS -u CFLAGS -u LDFLAGS -u LIBS ./configure --enable-all \
+		env -u DEFS -u CFLAGS -u LDFLAGS -u LIBS ./configure \
+		--enable-all --disable-fpecc \
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC"; \

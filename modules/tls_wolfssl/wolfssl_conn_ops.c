@@ -858,6 +858,7 @@ static int _wolfssl_read(struct tcp_connection *c, void *buf, size_t len)
 
 	ret = wolfSSL_read(ssl, buf, len);
 	if (ret > 0) {
+		wolfSSL_ERR_clear_error();
 		LM_DBG("%d bytes read\n", ret);
 		return ret;
 	} else if (ret == 0) {
@@ -872,12 +873,15 @@ static int _wolfssl_read(struct tcp_connection *c, void *buf, size_t len)
 				ip_addr2a(&c->rcv.src_ip), c->rcv.src_port);
 		}
 
+		wolfSSL_ERR_clear_error();
+
 		return 0;
 	} else {
 		err = wolfSSL_get_error(ssl, ret);
 		switch (err) {
 		case SSL_ERROR_WANT_READ:
 		case SSL_ERROR_WANT_WRITE:
+			wolfSSL_ERR_clear_error();
 			return 0;
 		case SSL_ERROR_SYSCALL:
 			LM_ERR("SYSCALL error -> (%d) <%s>\n",errno,strerror(errno));
@@ -888,6 +892,8 @@ static int _wolfssl_read(struct tcp_connection *c, void *buf, size_t len)
 			LM_ERR("TLS read error: %d, %s\n",err,
 				wolfSSL_ERR_error_string(err, err_buf));
 			c->state = S_CONN_BAD;
+
+			wolfSSL_ERR_clear_error();
 
 			return -1;
 		}
