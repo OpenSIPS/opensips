@@ -101,7 +101,6 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 		} else {
 			LM_INFO("re-connected to %.*s:%d\n", e->host.len,
 					e->host.s, e->port);
-			e->default_con->state = CGRC_FREE;
 			e->disable_time = 0;
 			cgrc_start_listen(e->default_con);
 			return e->default_con;
@@ -129,6 +128,7 @@ struct cgr_conn *cgrc_new(struct cgr_engine *e)
 		goto error;
 	}
 	c->engine = e;
+	c->state = CGRC_CLOSED;
 
 	return c;
 error:
