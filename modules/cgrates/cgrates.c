@@ -274,10 +274,11 @@ static int child_init(int rank)
 	/* go through each server and initialize a default connection */
 	list_for_each(l, &cgrates_engines) {
 		e = list_entry(l, struct cgr_engine, list);
-		if ((c = cgrc_new(e)) && cgrc_conn(c) >= 0) {
+		if ((c = cgrc_new(e)) != NULL) {
 			e->default_con = c;
 			CGRC_SET_DEFAULT(c);
-			cgrc_start_listen(c);
+			if (cgrc_conn(c) >= 0)
+				cgrc_start_listen(c);
 		}
 	}
 	return cgr_init_common();
