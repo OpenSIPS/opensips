@@ -168,7 +168,9 @@ int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
  * field must has format "a=attrname:" */
 int extract_field(str *body, str *value, str field)
 {
-	if (strncmp(body->s, field.s, field.len < body->len ? field.len : body->len) !=0) {
+	if (body->len < field.len)
+		return -1;
+	if (memcmp(body->s, field.s, field.len) !=0) {
 		/*LM_DBG("We are not pointing to an %.* attribute =>`%.*s'\n", field.len, field.s, body->len, body->s); */
 		return -1;
 	}
