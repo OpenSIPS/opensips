@@ -21,6 +21,12 @@ proto_bins Module
               1.3.6. bins_async_max_postponed_chunks (integer)
               1.3.7. bins_async_local_connect_timeout (integer)
               1.3.8. bins_async_handshake_timeout (integer)
+              1.3.9. trace_destination (string)
+              1.3.10. trace_on (int)
+
+        1.4. Exported MI Functions
+
+              1.4.1. bins_trace
 
    2. Contributors
 
@@ -48,6 +54,8 @@ proto_bins Module
    1.6. Set bins_async_max_postponed_chunks parameter
    1.7. Set bins_async_local_connect_timeout parameter
    1.8. Set bins_async_handshake_timeout parameter
+   1.9. Set trace_destination parameter
+   1.10. Set trace_on parameter
 
 Chapter 1. Admin Guide
 
@@ -203,6 +211,58 @@ modparam("proto_bins", "bins_async_local_connect_timeout", 200)
         modparam("proto_tls", "bins_async_handshake_timeout", 100)
         ...
 
+1.3.9. trace_destination (string)
+
+   Trace destination as defined in the tracing module. Currently
+   the only tracing module is proto_hep. Network events such as
+   connect, accept and connection closed events shall be traced
+   along with errors that could appear in the process. For each
+   connection that is created an event containing information
+   about the client and server certificates, master key and
+   network layer information shall be sent.
+
+   WARNING: A tracing module must be loaded in order for this
+   parameter to work. (for example proto_hep).
+
+   Default value is none(not defined).
+
+   Example 1.9. Set trace_destination parameter
+...
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
+
+modparam("proto_bins", "trace_destination", "hep_dest")
+...
+
+1.3.10. trace_on (int)
+
+   This controls whether tracing for tls is on or not. You still
+   need to define trace_destinationin order to work, but this
+   value will be controlled using mi function bins_trace.
+   Default value is 0(tracing inactive).
+
+   Example 1.10. Set trace_on parameter
+...
+modparam("proto_bins", "trace_on", 1)
+...
+
+1.4. Exported MI Functions
+
+1.4.1.  bins_trace
+
+   Name: bins_trace
+
+   Parameters:
+     * trace_mode(optional): set bins tracing on and off. This
+       parameter can be missing and the command will show the
+       current tracing status for this module( on or off );
+       Possible values:
+          + on
+          + off
+
+   MI FIFO Command Format:
+                        opensips-cli -x mi bins_trace on
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -210,7 +270,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 11 3 853 19
+   1. Vlad Patrascu (@rvlad-patrascu) 15 4 1118 24
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 4 2
    3. Nick Altmann (@nikbyte) 3 1 2 2
 
@@ -234,7 +294,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     Feb 2021 - May 2021
+   1. Vlad Patrascu (@rvlad-patrascu)     Feb 2021 - Oct 2021
    2. Nick Altmann (@nikbyte)             May 2021 - May 2021
    3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
 
