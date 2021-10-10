@@ -33,6 +33,10 @@
 %global _with_aaa_diameter 1
 %endif
 
+%if 0%{?fedora} > 33
+%global _without_snmpstats 1
+%endif
+
 %if 0%{?rhel} > 7 || 0%{?fedora} > 30
 %global _with_wolfssl 1
 %endif
