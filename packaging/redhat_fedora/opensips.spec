@@ -25,6 +25,10 @@
 %global _without_aaa_radius 1
 %endif
 
+%if 0%{?fedora} > 33
+%global _without_snmpstats 1
+%endif
+
 %if 0%{?rhel} > 7
 %global _with_python3 1
 %endif
