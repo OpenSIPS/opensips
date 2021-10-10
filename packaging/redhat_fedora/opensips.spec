@@ -850,13 +850,6 @@ mv $RPM_BUILD_ROOT/%{_sysconfdir}/opensips/tls/README \
 rm -f $RPM_BUILD_ROOT%{_docdir}/opensips/INSTALL
 mv $RPM_BUILD_ROOT/%{_docdir}/opensips docdir
 
-# recode documentation
-for i in docdir/*; do
-  mv -f $i $i.old
-  iconv -f iso8859-1 -t UTF-8 $i.old > $i
-  rm -f $i.old
-done
-
 %if 0%{?fedora} > 16 || 0%{?rhel} > 6
 # install systemd files
 install -D -m 0644 -p packaging/redhat_fedora/%{name}.service $RPM_BUILD_ROOT%{_unitdir}/%{name}.service
