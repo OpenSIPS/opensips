@@ -606,13 +606,9 @@ int tls_sni_cb(struct tls_domain *dom, struct tcp_connection *c,
 void destroy_tls_dom(struct tls_domain *d)
 {
 	if (tls_library == TLS_LIB_OPENSSL)
-		return openssl_api.destroy_tls_dom(d);
+		openssl_api.destroy_tls_dom(d);
 	else if (tls_library == TLS_LIB_WOLFSSL)
-		return wolfssl_api.destroy_tls_dom(d);
-
-	lock_destroy(d->lock);
-	lock_dealloc(d->lock);
-	shm_free(d);
+		wolfssl_api.destroy_tls_dom(d);
 }
 
 static int init_tls_dom(struct tls_domain *d)
