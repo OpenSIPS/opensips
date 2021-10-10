@@ -34,6 +34,7 @@
 
 #include "../../db/db_pool.h"
 #include "../../db/db_id.h"
+#include "../tls_mgm/tls_helper.h"
 
 #include <time.h>
 #include <libpq-fe.h>
@@ -55,6 +56,8 @@ struct pg_con {
 	PGresult *res;		/* this is the current result */
 	char**  row;		/* Actual row in the result */
 	time_t timestamp;	/* Timestamp of last query */
+
+	struct tls_domain *tls_dom;;  /* TLS domain */
 
 };
 
