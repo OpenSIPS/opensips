@@ -75,21 +75,12 @@ static module_dependency_t *get_deps_use_tls(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
-static module_dependency_t *get_deps_use_tls_wolfssl(param_export_t *param)
-{
-	if (*(int *)param->param_pointer == 0)
-		return NULL;
-
-	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_wolfssl", DEP_ABORT);
-}
-
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
 		{ "use_tls", get_deps_use_tls },
-		{ "use_tls", get_deps_use_tls_wolfssl },
 		{ NULL, NULL },
 	},
 };

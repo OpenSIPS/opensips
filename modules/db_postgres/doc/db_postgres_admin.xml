@@ -119,7 +119,9 @@ modparam("db_postgres", "timeout", 2)
         <section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>
-		Warning: <emphasis>wolfSSL</emphasis> is the recommended TLS/SSL Library
+		Warning: the <emphasis>tls_openssl</emphasis> module cannot be used
+		when setting this parameter. Use the <emphasis>tls_wolfssl</emphasis>
+		module instead if a TLS/SSL Library is required.
 		</para>
 		<para>
 		Setting this parameter will allow you to use TLS for PostgreSQL connections.
