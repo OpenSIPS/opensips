@@ -329,7 +329,8 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 			/* extended case */
 			if (req->tcp.pos - req->tcp.buf < WS_MIN_HDR_LEN + WS_ELENC_SIZE +
 					WS_IF_MASK_SIZE(req))
-				return 0;
+				/* wait for more data to come */
+				goto update_parsed;
 
 			clen = WS_ELENC(req);
 			if ((clen+WS_MIN_HDR_LEN+WS_ELENC_SIZE+WS_IF_MASK_SIZE(req))>
@@ -345,7 +346,8 @@ static enum ws_close_code inline ws_parse(struct ws_req *req)
 			/* extended case */
 			if (req->tcp.pos - req->tcp.buf < WS_MIN_HDR_LEN + WS_ELEN_SIZE +
 					WS_IF_MASK_SIZE(req))
-				return 0;
+				/* wait for more data to come */
+				goto update_parsed;
 
 			req->tcp.content_len = WS_ELEN(req);
 			if ((req->tcp.content_len+WS_MIN_HDR_LEN+WS_ELEN_SIZE+WS_IF_MASK_SIZE(req))>
