@@ -292,21 +292,6 @@ struct pg_con* db_postgres_new_connection(struct db_id* id)
 		return 0;
 	}
 
-	/* Print connection information */
-	PQconninfoOption *conninfo = NULL;
-	conninfo = PQconninfo(ptr->con);
-	if (!conninfo) {
-		LM_DBG("unable to get connection options for ptr = %p con = %p\n", ptr, ptr->con);
-	} else {
-		for (int i=0; conninfo[i].keyword != NULL; i++) {
-			if (!strncmp(conninfo[i].keyword, "password", 8) || !strncmp(conninfo[i].keyword, "user", 4)) {
-				continue;
-			}	
-			LM_DBG("con(%p) %s=%s\n", ptr->con, conninfo[i].keyword, conninfo[i].val);
-		}
-		PQconninfoFree(conninfo);
-	}
-
 	return ptr;
 }
 
