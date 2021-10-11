@@ -25,7 +25,7 @@
 %global _without_aaa_radius 1
 %endif
 
-%if 0%{?fedora} > 33
+%if 0%{?fedora} > 32
 %global _without_snmpstats 1
 %endif
 
