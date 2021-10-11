@@ -94,6 +94,7 @@ int db_postgres_connect(struct pg_con* ptr)
 	char *copy = NULL;
 	str tls_domain_name = {0, 0};
 	struct db_id* id = NULL;
+	int i;
 
 	if (ptr) {
 		id = ptr->id;
@@ -183,7 +184,7 @@ int db_postgres_connect(struct pg_con* ptr)
 
 	if (copy) {
 		/* Change parameters to connection string: convert '&' to space */
-		for (int i=0; copy[i] != '\0'; i++) {
+		for (i=0; copy[i] != '\0'; i++) {
 			if (copy[i] == '&' ) {
 				copy[i] = ' ';
 			}
@@ -222,7 +223,7 @@ int db_postgres_connect(struct pg_con* ptr)
 	PSQL_PARAM(0, 0);
 
 	/* Print the parameter list created by PGSQL_PARAM */
-	for (int i=0; i<PSQL_PARAMS_MAX; i++) {
+	for (i=0; i<PSQL_PARAMS_MAX; i++) {
 		if (!keywords[i]) {
 			break;
 		}
