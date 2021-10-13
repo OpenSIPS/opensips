@@ -28,10 +28,10 @@
 static inline int
 is_ws(unsigned char ch)
 {
-    const unsigned int mask = (1 << (' ' - 1)) | (1 << ('\r' - 1)) |
-        (1 << ('\n' - 1)) | (1 << ('\t' - 1));
+    const unsigned int mask = (1U << (' ' - 1)) | (1U << ('\r' - 1)) |
+        (1U << ('\n' - 1)) | (1U << ('\t' - 1));
     ch--;
-    return ch < ' ' && ((1 << ch) & mask);
+    return ch < ' ' && ((1U << ch) & mask);
 }
 
 /*
