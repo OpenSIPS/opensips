@@ -57,6 +57,11 @@ int extract_rtpmap(str *body,
 	char *cp, *cp1;
 	int len;
 
+	/* a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>] */
+	/* 1       9            10              12           14 */
+	if (body->len < 14)
+		return -1;
+
 	if (strncasecmp(body->s, "a=rtpmap:", 9) !=0) {
 		/*LM_DBG("We are not pointing to an a=rtpmap: attribute =>`%.*s'\n", body->len, body->s); */
 		return -1;
@@ -123,6 +128,11 @@ int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
 {
 	char *cp, *cp1;
 	int len;
+
+	/* a=fmtp:<format> <format specific parameters> */
+	/* 1     7       8                           10 */
+	if (body->len < 10)
+		return -1;
 
 	if (strncasecmp(body->s, "a=fmtp:", 7) !=0) {
 		/*LM_DBG("We are not pointing to an a=fmtp: attribute =>`%.*s'\n", body->len, body->s); */
@@ -221,6 +231,9 @@ int extract_rtcp(str *body, str *rtcp)
 int extract_sendrecv_mode(str *body, str *sendrecv_mode, int *is_on_hold)
 {
 	char *cp1;
+
+	if (body->len < 10)
+		return -1;
 
 	cp1 = body->s;
 	if ( !( (strncasecmp(cp1, "a=sendrecv", 10) == 0) ||
