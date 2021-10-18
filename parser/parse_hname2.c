@@ -88,8 +88,17 @@ static inline char* skip_ws(char* p, char *end)
 #include "case_repl.h"     /* Replaces */
 
 
-#define READ(val) \
-(*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16) + (*(val + 3) << 24))
+/*
+ * Read 4-bytes from memory, as an unsigned integer
+ * Reading byte by byte ensures, that the code works also on HW which
+ * does not allow reading 4-bytes at once from unaligned memory position
+ * (Sparc for example)
+ */
+#define READ(addr) \
+	(*((unsigned char *)addr + 0) + \
+	(*((unsigned char *)addr + 1) << 8) + \
+	(*((unsigned char *)addr + 2) << 16) + \
+	(*((unsigned char *)addr + 3) << 24))
 
 
 #define FIRST_QUATERNIONS       \
