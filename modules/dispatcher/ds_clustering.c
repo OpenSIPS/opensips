@@ -32,6 +32,8 @@
 int ds_cluster_id = 0;
 
 str ds_cluster_shtag = {NULL,0};
+char* ds_cluster_prob_mode_s = NULL;
+int ds_cluster_prob_mode = DS_CLUSTER_PROB_MODE_ALL;
 
 static str status_repl_cap = str_init("dispatcher-status-repl");
 static struct clusterer_binds c_api;
@@ -45,6 +47,14 @@ int ds_cluster_shtag_is_active(void)
 		/* no clustering support or sharing tag found active */
 		return 1;
 
+	return 0;
+}
+
+int ds_cluster_get_my_index(int *size)
+{
+	if (ds_cluster_id>0)
+		return c_api.get_my_index( ds_cluster_id, &status_repl_cap, size);
+	*size = 1;
 	return 0;
 }
 
@@ -210,6 +220,17 @@ int ds_cluster_sync(void) {
 	return 0;
 }
 
+static int get_cluster_prob_mode(char *mode)
+{
+	if ( strcasecmp( mode, "all")==0 )
+		return DS_CLUSTER_PROB_MODE_ALL;
+	if ( strcasecmp( mode, "by-shtag")==0 )
+		return DS_CLUSTER_PROB_MODE_SHTAG;
+	if ( strcasecmp( mode, "distributed")==0 )
+		return DS_CLUSTER_PROB_MODE_DISTRIBUTED;
+	return -1;
+}
+
 int ds_init_cluster(void)
 {
 	if (load_clusterer_api(&c_api)!=0) {
@@ -238,6 +259,23 @@ int ds_init_cluster(void)
 		}
 	} else {
 		ds_cluster_shtag.len = 0;
+	}
+
+	if (ds_cluster_prob_mode_s) {
+		ds_cluster_prob_mode =
+			get_cluster_prob_mode(ds_cluster_prob_mode_s);
+		if (ds_cluster_prob_mode < 0) {
+			LM_ERR("failed to initialized the cluster prob mode <%s>,"
+				" unknown value\n", ds_cluster_prob_mode_s);
+			return -1;
+		}
+	}
+
+	if ( (ds_cluster_prob_mode == DS_CLUSTER_PROB_MODE_SHTAG)
+	&& (ds_cluster_shtag.len == 0)) {
+		LM_ERR("cluster probing mode 'by-shtag' requires the definition"
+			" of a sharing tag\n");
+		return -1;
 	}
 
 	if (ds_cluster_sync() < 0)

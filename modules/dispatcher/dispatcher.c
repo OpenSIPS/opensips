@@ -305,6 +305,7 @@ static param_export_t params[]={
 	{"max_freeswitch_weight", INT_PARAM, &max_freeswitch_weight},
 	{"cluster_id",            INT_PARAM, &ds_cluster_id },
 	{"cluster_sharing_tag",   STR_PARAM, &ds_cluster_shtag },
+	{"cluster_probing_mode",  STR_PARAM, &ds_cluster_prob_mode_s},
 
 	{0,0,0}
 };

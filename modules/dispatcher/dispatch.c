@@ -2588,8 +2588,16 @@ void ds_check_timer(unsigned int ticks, void* param)
 	ds_set_p list;
 	int_str val;
 	int j;
+	int nodes_no, node_idx=-1;
+	unsigned int h;
 
-	if ( !ds_cluster_shtag_is_active() )
+	if ( !( ds_cluster_id<=0
+	|| (ds_cluster_prob_mode == DS_CLUSTER_PROB_MODE_ALL)
+	|| (ds_cluster_prob_mode == DS_CLUSTER_PROB_MODE_DISTRIBUTED &&
+		(node_idx=ds_cluster_get_my_index(&nodes_no))>=0 )
+	|| (ds_cluster_prob_mode == DS_CLUSTER_PROB_MODE_SHTAG &&
+		ds_cluster_shtag_is_active())
+	) )
 		return;
 
 	for (partition = partitions; partition; partition = partition->next){
@@ -2612,6 +2620,13 @@ void ds_check_timer(unsigned int ticks, void* param)
 				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
 				))
 				{
+					/* stage 2 of checking, clustering level */
+					if (node_idx>=0) {
+						h=core_hash( &list->dlist[j].uri, NULL, 0);
+						if ( (h % nodes_no) != node_idx)
+							continue;
+					}
+
 					LM_DBG("probing set #%d, URI %.*s\n", list->id,
 							list->dlist[j].uri.len, list->dlist[j].uri.s);
 
