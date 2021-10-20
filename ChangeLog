@@ -1,3 +1,224 @@
+=========================== Release 3.1.6 ==============================
+
+2021-10-20  Liviu Chircu  <liviu at opensips dot org>
+	* [b19fc7edd] :
+
+	Bump version to 3.1.6
+
+
+2021-10-18  Liviu Chircu  <liviu at opensips dot org>
+	* [599b11593] :
+
+	is_ws(): Play well with UndefinedBehaviorSanitizer (UBSan)
+	Avoid bitwise shifting by 31 of a signed integer type.  Practically,
+	this patch does not fix any bug on the widely used arches (the resulting
+	assembly is 100% the same on these), but at least it makes the code more
+	C-standards compliant.
+
+	OSS-Fuzz#39920
+	(cherry picked from commit 6581e0efeace51234932d97621aaa1636ad56cc3)
+
+
+2021-10-16  OpenSIPS  <github at opensips dot org>
+	* [c2283365a] :
+
+	Rebuild documentation
+
+
+2021-10-13  Razvan Crainea  <razvan at opensips dot org>
+	* [faf3515b8] :
+
+	fraud_detection: allow empty prefix
+	(cherry picked from commit ae8ec85b8b04703948846f871d6f6e18ce484c6a)
+	(cherry picked from commit 8aabc2049832dc4fce87d7e8bad3b676d702c53c)
+
+
+2021-10-11  Răzvan Crainea  <razvan at opensips dot org>
+	* [a52fc6825] :
+
+	Merge pull request #2614 from danlshields/dshields/wsPartialExtendedLength
+	Wait for more data if WS header doesn't have extended length yet
+
+	(cherry picked from commit 078c57b515e0f3a2111205e058d431817d9e1d42)
+	(cherry picked from commit debe7c928d2630b324ead288a7d280e1810d5f1a)
+
+
+2021-10-11  Nick Altmann  <nick.altmann at gmail dot com>
+	* [891fd513b] :
+
+	RPM package: don't build smnpstats for fc==33 because of broken lib
+
+
+2021-10-10  Nick Altmann  <nick.altmann at gmail dot com>
+	* [3e48737a6] :
+
+	RPM package: stop docs recoding
+
+
+2021-10-10  Nick Altmann  <nick.altmann at gmail dot com>
+	* [de35b2b53] :
+
+	RPM package: don't build smnpstats for fc>=34 because of broken lib
+
+
+2021-10-09  OpenSIPS  <github at opensips dot org>
+	* [23af830e7] :
+
+	Rebuild documentation
+
+
+2021-10-08  Razvan Crainea  <razvan at opensips dot org>
+	* [67eb12686] :
+
+	cgrates: make sure default connection can reconnect
+	(cherry picked from commit e941c1f248116fcee608ef0f2b7b5b54b1671dd3)
+
+
+2021-10-08  Razvan Crainea  <razvan at opensips dot org>
+	* [c990e6ab1] :
+
+	Fix crash in parse_sdp when a= is empty
+	When a bogus SDP was provided, with an empty `a=` line, there was no
+	check for the length to be compared, resulting in a bad memory access,
+	hence a crash.
+
+	Issue discovered during OpenSIPS Security Audit 2021,
+	    by Alfred Farrugia & Sandro Gauci (Enable Security)
+	(cherry picked from commit 2617c97207b1fe2afead9f887f7a5df4da3b7d55)
+
+
+2021-10-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [25f379051] :
+
+	proto_tls/wss: fix trace message for successful connect
+
+
+2021-10-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [1f780f072] :
+
+	proto_tcp/tls/ws/wss: fix doc example for trace_destination
+	(cherry picked from commit cc00b7fb53c834f198c34e48a63b02b54916b027)
+
+
+2021-10-05  Razvan Crainea  <razvan at opensips dot org>
+	* [910014e74] :
+
+	sipmsgops: disable stream when all codecs are deleted
+	(cherry picked from commit 5f9c333d45242c7caa55513f2d84cad8fe24547c)
+
+
+2021-10-02  OpenSIPS  <github at opensips dot org>
+	* [9a8365624] :
+
+	Rebuild documentation
+
+
+2021-09-30  Razvan Crainea  <razvan at opensips dot org>
+	* [34b982b26] :
+
+	cgrates: returning a non-object response is not a problem
+	(cherry picked from commit f7f66d39baef10ce0db4fce02119c23454dca940)
+
+
+2021-09-28  Liviu Chircu  <liviu at opensips dot org>
+	* [0ea900e5c] :
+
+	mid_registrar: Fix regression introduced in c11f92698
+	Avoid re-using anonymous structures outside of the block scope they were
+	declared in, as the compiler may easily re-use that stack memory outside
+	the given scope.
+
+	Credits to Andrew Yager for providing debugging info, as well as
+	bisecting down to the exact culprit commit!
+	(cherry picked from commit 8df8fd960b3311487b58e10244023ca547884536)
+
+
+2021-09-25  OpenSIPS  <github at opensips dot org>
+	* [40017d2fd] :
+
+	Rebuild documentation
+
+
+2021-09-24  Vlad Patrascu  <vladp at opensips dot org>
+	* [63359e868] :
+
+	dialog: match replicated dialogs by did
+	This fixes issues in call looping scenarios when trying to replicate
+	multiple dialogs with the same SIP coordinates.
+	(cherry picked from commit b3c31fbff198ee551b62dcf42ef7e2e45d2e8fcf)
+
+
+2021-09-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7917c4299] :
+
+	Fix the timeout for wait_for_event()
+	Even if a timeout is provided, it was not taken into account, leading to a potential permanent blocking of a request execution thread if there was no event ever delivered to it.
+
+
+2021-09-18  OpenSIPS  <github at opensips dot org>
+	* [c38c59072] :
+
+	Rebuild documentation
+
+
+2021-09-16  Liviu Chircu  <liviu at opensips dot org>
+	* [0dfa49caf] :
+
+	rtpproxy: Document adv+weight socket syntax; Improve dbg log
+	(cherry picked from commit 067b547e98504eca688fb6e20977a00b17c63b34)
+
+
+2021-09-14  Liviu Chircu  <liviu at opensips dot org>
+	* [a5d011ee8] :
+
+	proto_bin docs: Fix 'bin_port_send_timeout' typo
+	(cherry picked from commit 48aba0aed73af04f9860936a204496b9006d01af)
+
+
+2021-09-14  Liviu Chircu  <liviu at opensips dot org>
+	* [d0ce8e553] :
+
+	dialog: Fix missing unlock ops on DB load error-cases
+	This patch fixes some startup deadlocks in case a dialog loaded from
+	database has an incorrect DID (failed checksum check) or if OpenSIPS
+	runs out of shared memory while importing dialogs from DB on startup.
+	(cherry picked from commit 9e8d36c34390d18d5996121deddcce5cd143830f)
+
+
+2021-09-11  OpenSIPS  <github at opensips dot org>
+	* [34ac9e781] :
+
+	Rebuild documentation
+
+
+2021-09-10  Razvan Crainea  <razvan at opensips dot org>
+	* [651e9c78a] :
+
+	cgrates: make MaxUsage optional for InitiateSession reply
+	In newer versions of CGRateS, MaxUsage is no longer returned - this
+	means that the session should be allowed without any duration
+	limitation.
+	(cherry picked from commit ae596cccbcb89c9d66a6878421fd672201856f09)
+
+
+2021-09-04  OpenSIPS  <github at opensips dot org>
+	* [18be6e883] :
+
+	Rebuild documentation
+
+
+2021-09-03  Razvan Crainea  <razvan at opensips dot org>
+	* [02e898b23] :
+
+	rtpengine: only add mux flags if answer/offer
+	(cherry picked from commit c342ab0633b5a774b81c1eedcefc17bf43474ce4)
+
+
+2021-08-21  OpenSIPS  <github at opensips dot org>
+	* [c528ada09] :
+
+	Rebuild documentation
+
 =========================== Release 3.1.5 ==============================
 
 2021-08-19  Liviu Chircu  <liviu at opensips dot org>
