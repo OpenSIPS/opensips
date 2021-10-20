@@ -971,7 +971,8 @@ modparam("drouting", "cluster_id", 9)
 		<para>
 		The name of the sharing tag (as defined per clusterer modules) to 
 		control which node is responsible for perform the self-triggered
-		actions in the module. Such actions may be the gateway probing or 
+		actions in the module. Such actions may be the gateway probing (see
+		also the <xref linkend="param_cluster_probing_mode"/> parameter)  or
 		sharing the gateway/carrier status changes.
 		If defined, only the node with active status of this tag will 
 		perform the actions (pinging and sharing status).
@@ -982,7 +983,7 @@ modparam("drouting", "cluster_id", 9)
 		</para>
 		<para>
 		This is an optional parameter. If not set, all the nodes in the cluster
-		will individually do the probing and share the status changes.
+		will share the status changes.
 		</para>
 		<para>
 		<emphasis>
@@ -997,6 +998,72 @@ modparam("drouting", "cluster_id", 9)
 # and broadcast the status changes
 modparam("drouting", "cluster_id", 9)
 modparam("drouting", "cluster_sharing_tag", "vip")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cluster_probing_mode" xreflabel="cluster_probing_mode">
+		<title><varname>cluster_probing_mode</varname> (string)</title>
+		<para>
+		This paramter controls how the probing/pinging should be done when
+		using the clustering support. It is about which node in the cluster
+		pings which gateway/destination.
+		</para>
+		<para>
+		The <xref linkend="param_cluster_id"/> must be defined for this option
+		to work.
+		</para>
+		<para>
+		The supported probing modes are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"all"</emphasis> - all the nodes in the
+			cluster will independetly ping all the defined gateways,
+			an "all" pings "all" mode.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"by-shtag"</emphasis> - all the gateways
+			are pinged by only one node in the cluster, the node having the
+			<xref linkend="param_cluster_sharing_tag"/> active. By 
+			activating the sharing tag on a different node, the pinging
+			duty will be transfered to another node in the cluster.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"distributed"</emphasis> - the pinging
+			effort is distributed across all the nodes in the cluster, so each
+			node will ping a sub-set of the overall set of gateway. Still all
+			the gateways will get pinged (and only once per pinging cycle).
+			The re-partitioning of the pinging effort over the available nodes
+			in the cluster is automatically done when new nodes are joining or
+			nodes are dropping out. Still there is no guaratee on which node
+			will be responsible for pinging which gateway.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <quote>"all"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cluster_probing_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# only the node with the active "vip" sharing tag will perform pinging
+modparam("drouting", "cluster_id", 9)
+modparam("drouting", "cluster_sharing_tag", "vip")
+modparam("drouting", "cluster_probing_mode", "by-shtag")
+...
+# the pinging effort is distributed across all the nodes
+modparam("drouting", "cluster_id", 9)
+modparam("drouting", "cluster_probing_mode", "distributed")
 ...
 </programlisting>
 		</example>

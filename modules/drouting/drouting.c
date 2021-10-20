@@ -496,6 +496,7 @@ static param_export_t params[] = {
 	{"partition_id_pvar", STR_PARAM, &partition_pvar.s        },
 	{"cluster_id",        INT_PARAM, &dr_cluster_id           },
 	{"cluster_sharing_tag",STR_PARAM, &dr_cluster_shtag       },
+	{"cluster_probing_mode",STR_PARAM, &dr_cluster_prob_mode_s},
 	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable   },
 	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
 	{0, 0, 0}
@@ -798,14 +799,25 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	param_prob_callback_t *params;
 	dlg_t *dlg;
 	str uri;
+	int nodes_no, node_idx=-1;
+	unsigned int h;
 
 	void** dest;
 	map_iterator_t map_it;
 
 	struct head_db *it = head_db_start;
 
-	if ((*dr_enable_probing_state) == 0 ||
-	!dr_cluster_shtag_is_active() )
+
+	if (*dr_enable_probing_state==0)
+		return;
+
+	if ( !( dr_cluster_id<=0
+	|| (dr_cluster_prob_mode == DR_CLUSTER_PROB_MODE_ALL)
+	|| (dr_cluster_prob_mode == DR_CLUSTER_PROB_MODE_DISTRIBUTED &&
+		(node_idx=dr_cluster_get_my_index(&nodes_no))>=0 )
+	|| (dr_cluster_prob_mode == DR_CLUSTER_PROB_MODE_SHTAG &&
+		dr_cluster_shtag_is_active())
+	) )
 		return;
 
 	while( it!=NULL ) {
@@ -833,6 +845,13 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 						)
 			   ) {
 				continue;
+			}
+
+			/* dst requires probing ? step 2, for clustering, distributed mode */
+			if (node_idx>=0) {
+				h=core_hash( &dst->id, NULL, 0);
+				if ( (h % nodes_no) != node_idx)
+					continue;
 			}
 
 			memcpy(buff + 4, dst->ip_str.s, dst->ip_str.len);

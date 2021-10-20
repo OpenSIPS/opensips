@@ -34,6 +34,8 @@
 int dr_cluster_id = 0;
 
 str dr_cluster_shtag = {NULL,0};
+char* dr_cluster_prob_mode_s = NULL;
+int dr_cluster_prob_mode = DR_CLUSTER_PROB_MODE_ALL;
 
 static str status_repl_cap = str_init("drouting-status-repl");
 static struct clusterer_binds c_api;
@@ -52,6 +54,15 @@ int dr_cluster_shtag_is_active(void)
 		return 1;
 
 	return 0;
+}
+
+int dr_cluster_get_my_index(int *size)
+{
+	if (dr_cluster_id>0)
+		return c_api.get_my_index( dr_cluster_id, &status_repl_cap, size);
+	*size = 1;
+	return 0;
+
 }
 
 static void bin_push_gw_status(bin_packet_t *packet, str *part_name,
@@ -347,6 +358,17 @@ int dr_cluster_sync(void)
 	return 0;
 }
 
+static int get_cluster_prob_mode(char *mode)
+{
+	if ( strcasecmp( mode, "all")==0 )
+		return DR_CLUSTER_PROB_MODE_ALL;
+	if ( strcasecmp( mode, "by-shtag")==0 )
+		return DR_CLUSTER_PROB_MODE_SHTAG;
+	if ( strcasecmp( mode, "distributed")==0 )
+		return DR_CLUSTER_PROB_MODE_DISTRIBUTED;
+	return -1;
+}
+
 int dr_init_cluster(void)
 {
 	if (load_clusterer_api(&c_api)!=0) {
@@ -375,6 +397,23 @@ int dr_init_cluster(void)
 		}
 	} else {
 		dr_cluster_shtag.len = 0;
+	}
+
+	if (dr_cluster_prob_mode_s) {
+		dr_cluster_prob_mode =
+			get_cluster_prob_mode(dr_cluster_prob_mode_s);
+		if (dr_cluster_prob_mode < 0) {
+			LM_ERR("failed to initialized the cluster prob mode <%s>,"
+				" unknown value\n", dr_cluster_prob_mode_s);
+			return -1;
+		}
+	}
+
+	if ( (dr_cluster_prob_mode == DR_CLUSTER_PROB_MODE_SHTAG)
+	&& (dr_cluster_shtag.len == 0)) {
+		LM_ERR("cluster probing mode 'by-shtag' requires the definition"
+			" of a sharing tag\n");
+		return -1;
 	}
 
 	return 0;
