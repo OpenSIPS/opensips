@@ -1,3 +1,353 @@
+=========================== Release 3.2.3 ==============================
+
+2021-10-20  Liviu Chircu  <liviu at opensips dot org>
+	* [20278cf7b] :
+
+	Bump version to 3.2.3
+
+
+2021-10-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [eb18952b1] :
+
+	tls_mgm: fix double free when no TLS library is used
+	(cherry picked from commit 834ab5a577e8b7986f763c540aefc81a0303dd32)
+
+
+2021-10-18  Liviu Chircu  <liviu at opensips dot org>
+	* [05b3d1dca] :
+
+	is_ws(): Play well with UndefinedBehaviorSanitizer (UBSan)
+	Avoid bitwise shifting by 31 of a signed integer type.  Practically,
+	this patch does not fix any bug on the widely used arches (the resulting
+	assembly is 100% the same on these), but at least it makes the code more
+	C-standards compliant.
+
+	OSS-Fuzz#39920
+	(cherry picked from commit 6581e0efeace51234932d97621aaa1636ad56cc3)
+
+
+2021-10-13  Razvan Crainea  <razvan at opensips dot org>
+	* [e597df449] :
+
+	fraud_detection: allow empty prefix
+	(cherry picked from commit ae8ec85b8b04703948846f871d6f6e18ce484c6a)
+	(cherry picked from commit 8aabc2049832dc4fce87d7e8bad3b676d702c53c)
+
+
+2021-10-11  Răzvan Crainea  <razvan at opensips dot org>
+	* [debe7c928] :
+
+	Merge pull request #2614 from danlshields/dshields/wsPartialExtendedLength
+	Wait for more data if WS header doesn't have extended length yet
+	(cherry picked from commit 078c57b515e0f3a2111205e058d431817d9e1d42)
+
+
+2021-10-11  Nick Altmann  <nick.altmann at gmail dot com>
+	* [d7d143c6c] :
+
+	RPM package: don't build smnpstats for fc==33 because of broken lib
+
+
+2021-10-10  Nick Altmann  <nick.altmann at gmail dot com>
+	* [dff6ec904] :
+
+	RPM package: stop docs recoding
+
+
+2021-10-10  Nick Altmann  <nick.altmann at gmail dot com>
+	* [d15e06b24] :
+
+	RPM package: don't build smnpstats for fc>=34 because of broken lib
+
+
+2021-10-08  Vlad Patrascu  <vladp at opensips dot org>
+	* [ce81ade54] :
+
+	tls_wolfssl: fix memory leaks
+	Do not use the wolfSSL ECC Fixed Point cache as it is not freed until
+	library cleanup. Also, clear the error queue after each call to
+	wolfSSL_read().
+
+	Fixes #2604
+	(cherry picked from commit d5d069d37a1dddfff002337c5d39f2ad2d83b69e)
+
+
+2021-10-08  Razvan Crainea  <razvan at opensips dot org>
+	* [7e317da0f] :
+
+	cgrates: make sure default connection can reconnect
+	(cherry picked from commit e941c1f248116fcee608ef0f2b7b5b54b1671dd3)
+
+
+2021-10-08  Razvan Crainea  <razvan at opensips dot org>
+	* [50b61365e] :
+
+	Fix crash in parse_sdp when a= is empty
+	When a bogus SDP was provided, with an empty `a=` line, there was no
+	check for the length to be compared, resulting in a bad memory access,
+	hence a crash.
+
+	Issue discovered during OpenSIPS Security Audit 2021,
+	    by Alfred Farrugia & Sandro Gauci (Enable Security)
+	(cherry picked from commit 2617c97207b1fe2afead9f887f7a5df4da3b7d55)
+
+
+2021-10-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [b5e78e547] :
+
+	tls_wolfssl: allow range of accepted TLS methods
+	Closes #2564
+	(cherry picked from commit 8ea4ca09270ce4bdb74fe5b3b6cc8350d1b5a60e)
+
+
+2021-10-06  Razvan Crainea  <razvan at opensips dot org>
+	* [38b54db9c] :
+
+	ut.h: fix off-by-one check in str_casematch
+	when the string length is 0, the first char of the string would have
+	been checked, resulting in a possible memory corruption
+	(cherry picked from commit a96190e97e9bd073740c1959678884bf6595cd04)
+
+
+2021-10-06  Razvan Crainea  <razvan at opensips dot org>
+	* [d4b98ad3a] :
+
+	httpd: port epoll fd get to older version
+	Credits go to Nick Altman for reporting
+	(cherry picked from commit 9fa482b40f903faad1816344ef0a49c383a9e7ea)
+
+
+2021-10-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [1f80fd151] :
+
+	proto_tcp/tls/ws/wss: fix doc example for trace_destination
+	(cherry picked from commit cc00b7fb53c834f198c34e48a63b02b54916b027)
+
+
+2021-10-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [1f72f2290] :
+
+	tls_openssl: fix trace message for successful connect
+	(cherry picked from commit 1c6fa0b4768c716b1e405f925ffe6cc769c8924d)
+
+
+2021-10-06  Vlad Patrascu  <vladp at opensips dot org>
+	* [d8cd0c84c] :
+
+	tls_wolfssl: add TLS tracing support
+	(cherry picked from commit d4377e8853c475d9c4817ae829878e8210205805)
+
+
+2021-10-05  Razvan Crainea  <razvan at opensips dot org>
+	* [f80034915] :
+
+	httpd: fix fetching epoll fd when more than FD_SETSIZE are used
+	(cherry picked from commit 5e94bece0b2c62d8a8c411033df7dffbe3381fa4)
+
+
+2021-10-05  Razvan Crainea  <razvan at opensips dot org>
+	* [f8f671a50] :
+
+	sipmsgops: disable stream when all codecs are deleted
+	(cherry picked from commit 5f9c333d45242c7caa55513f2d84cad8fe24547c)
+
+
+2021-09-30  Razvan Crainea  <razvan at opensips dot org>
+	* [563a78533] :
+
+	cgrates: returning a non-object response is not a problem
+	(cherry picked from commit f7f66d39baef10ce0db4fce02119c23454dca940)
+
+
+2021-09-28  Liviu Chircu  <liviu at opensips dot org>
+	* [6765b7d95] :
+
+	mid_registrar: Fix regression introduced in c11f92698
+	Avoid re-using anonymous structures outside of the block scope they were
+	declared in, as the compiler may easily re-use that stack memory outside
+	the given scope.
+
+	Credits to Andrew Yager for providing debugging info, as well as
+	bisecting down to the exact culprit commit!
+	(cherry picked from commit 8df8fd960b3311487b58e10244023ca547884536)
+
+
+2021-09-28  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [4e1bb9cf6] :
+
+	Add str_static() macro similar to the const_str() but returning const str *, not const str_const *. This provides useful construct to initialize time-of-use const str * that won't go out of scope. This is another way to address issue fixed by @liviuchircu in the 0fadc0a6cb, one that is bit more cleaner and generates a slightly smaller compiled code.
+	(cherry picked from commit ea3436b26108fe129d04b47b02dd8d60255487c3)
+
+
+2021-09-28  Liviu Chircu  <liviu at opensips dot org>
+	* [cb0680ab8] :
+
+	Fix crash with REGISTER + incomplete Authorization header
+	Avoid re-using anonymous structures outside of the block scope they were
+	declared in.  The compiler allows such broken code, yet it is also quick
+	to re-use/re-claim that memory quickly after exiting the block, leading
+	to stack corruption later down the road, when the "now re-used struct"
+	is read.
+
+	Issue discovered during OpenSIPS Security Audit 2021,
+	    by Alfred Farrugia & Sandro Gauci (Enable Security)
+	(cherry picked from commit 0fadc0a6cb130d40fba6cf36bb1399d45d0496aa)
+
+
+2021-09-28  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [83fee1c7a] :
+
+	Avoid passing pointer to a structure that might be already out of scope.
+	This fixes crashing issue reported here:
+
+	http://lists.opensips.org/pipermail/users/2021-September/045122.html
+
+
+2021-09-23  Liviu Chircu  <liviu at opensips dot org>
+	* [33097b43f] :
+
+	Revert "drouting: route_to_gw() returns also the carrier's attributes"
+	This reverts commit 7d8c08f5288fbba29b83e621aa9f52a19cda421f.
+
+
+2021-09-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7d8c08f52] :
+
+	drouting: route_to_gw() returns also the carrier's attributes
+	(cherry picked from commit 2011a9f1e2fb0980c9668adec044b780509c54c6)
+
+
+2021-09-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1a8e4853b] :
+
+	Fix the timeout for wait_for_event()
+	Even if a timeout is provided, it was not taken into account, leading to a potential permanent blocking of a request execution thread if there was no event ever delivered to it.
+
+
+2021-09-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [688bbbab0] :
+
+	dialog: complete fix from previous commit
+	(cherry picked from commit 5eb5c8f89de7ec135b83aad7755a10083bc3cbce)
+
+
+2021-09-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [d357f9488] :
+
+	dialog: properly handle BIN pop errors in previous commit
+	(cherry picked from commit 4d969df83aaf5c08ea4de25dab4eabc0cd05a538)
+
+
+2021-09-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [fb613129b] :
+
+	dialog: match replicated dialogs by did
+	This fixes issues in call looping scenarios when trying to replicate
+	multiple dialogs with the same SIP coordinates.
+	(cherry picked from commit b3c31fbff198ee551b62dcf42ef7e2e45d2e8fcf)
+
+
+2021-09-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [3a0cde5f4] :
+
+	b2b_logic: fix crash when b2b_trigger_scenario fails to init scenario
+	(cherry picked from commit 586a4a22d0c1691696fdc5434547aca84f4ee9f3)
+
+
+2021-09-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [f04722f2b] :
+
+	b2b_logic: prevent crash if 'server_address' modparam is not set
+	Do not crash when 'server_address' modparam is not set and the
+	'b2b_trigger_scenario' MI function is used.
+	(cherry picked from commit e17f8193753b1d423ec2a472702f3c01e0b38d5a)
+
+
+2021-09-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [43d73a7b7] :
+
+	b2b_logic: fix possible crash after peer entity is disconnected
+	The crash would happen when a receiving a request and the current entity
+	has no peer.
+	(cherry picked from commit afbff6a00842d8d02395a8f793636123319978da)
+
+
+2021-09-16  Liviu Chircu  <liviu at opensips dot org>
+	* [976319f5d] :
+
+	rtpproxy: Document adv+weight socket syntax; Improve dbg log
+	(cherry picked from commit 067b547e98504eca688fb6e20977a00b17c63b34)
+
+
+2021-09-14  Liviu Chircu  <liviu at opensips dot org>
+	* [716c95f48] :
+
+	proto_bin docs: Fix 'bin_port_send_timeout' typo
+	(cherry picked from commit 48aba0aed73af04f9860936a204496b9006d01af)
+
+
+2021-09-14  Liviu Chircu  <liviu at opensips dot org>
+	* [229bf72f4] :
+
+	dialog: Fix missing unlock ops on DB load error-cases
+	This patch fixes some startup deadlocks in case a dialog loaded from
+	database has an incorrect DID (failed checksum check) or if OpenSIPS
+	runs out of shared memory while importing dialogs from DB on startup.
+	(cherry picked from commit 9e8d36c34390d18d5996121deddcce5cd143830f)
+
+
+2021-09-10  Razvan Crainea  <razvan at opensips dot org>
+	* [a903c1840] :
+
+	cgrates: make MaxUsage optional for InitiateSession reply
+	In newer versions of CGRateS, MaxUsage is no longer returned - this
+	means that the session should be allowed without any duration
+	limitation.
+	(cherry picked from commit ae596cccbcb89c9d66a6878421fd672201856f09)
+
+
+2021-09-03  Razvan Crainea  <razvan at opensips dot org>
+	* [dc45f112e] :
+
+	rtpengine: only add mux flags if answer/offer
+	(cherry picked from commit c342ab0633b5a774b81c1eedcefc17bf43474ce4)
+
+
+2021-09-03  Razvan Crainea  <razvan at opensips dot org>
+	* [f87c3ff36] :
+
+	rtp_relay: proper detection of last available session
+	(cherry picked from commit 9e18d404ff2a1eb416a57d2bf6e5d0d4e6caa10e)
+
+
+2021-09-02  Razvan Crainea  <razvan at opensips dot org>
+	* [d3b93d663] :
+
+	rtp_relay: do not offer the same request twice
+	When engaging rtp_relay on branches, make sure that the RTP relay does
+	not get engaged twice (once per main request, and second time per
+	branch)
+	(cherry picked from commit 562962a0589f332920cd4c962704a3d0ca5ab51c)
+
+
+2021-09-02  Razvan Crainea  <razvan at opensips dot org>
+	* [a7398993f] :
+
+	rtpengine: fix memory coruption when using branches through API
+	(cherry picked from commit 3f0af75f404c7127a5d6dd6a1627cf2e513797d2)
+
+
+2021-08-30  Liviu Chircu  <liviu at opensips dot org>
+	* [7b7347575] :
+
+	dialplan/drouting: Fix time recurrence check interpretation
+	The tmrec_expr_check() function actually returns 1/-1 on success/failure
+	and not 1/0, as expected by the calling modules.
+
+	Many thanks to Flavio Goncalves for the report!
+	Fixes #2616
+	(cherry picked from commit 3056a37407f4cd29dc5e486c12449efe7f4c634e)
+
 =========================== Release 3.2.2 ==============================
 
 2021-08-19  Liviu Chircu  <liviu at opensips dot org>
