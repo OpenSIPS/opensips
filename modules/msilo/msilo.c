@@ -939,7 +939,8 @@ static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 
 		/** sending using TM function: t_uac */
 		body_str.len = 1024;
-		n = m_build_body(&body_str, rtime, str_vals[2/*body*/], 0);
+		n = m_build_body(&body_str, rtime, str_vals[2/*body*/],
+			rtime /*Date*/, 0 /*not a reminder*/);
 		if(n<0)
 			LM_DBG("sending simple body\n");
 		else
@@ -1206,7 +1207,8 @@ void m_send_ontimer(unsigned int ticks, void *param)
 		body_str.len = 1024;
 		stime =
 			(time_t)RES_ROWS(db_res)[i].values[5/*snd time*/].val.int_val;
-		n = m_build_body(&body_str, 0, str_vals[2/*body*/], stime);
+		n = m_build_body(&body_str, 0, str_vals[2/*body*/], stime,
+			1 /*is a reminder*/);
 		if(n<0)
 			LM_DBG("sending simple body\n");
 		else

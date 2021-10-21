@@ -50,7 +50,8 @@ int m_extract_content_type(char*, int, content_type_t*, int);
 int m_build_headers(str *buf, str ctype, str contact, time_t date);
 
 /** build MESSAGE body */
-int m_build_body(str *body, time_t date, str msg, time_t sdate);
+int m_build_body(str *body, time_t date, str msg, time_t sdate,
+	int is_reminder);
 
 int ms_extract_time(str *time_str, int *time_val);
 
