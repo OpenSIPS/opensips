@@ -114,6 +114,7 @@ struct remote_cap {
 struct packet_rpc_params {
 	struct capability_reg *cap;
 	int pkt_src_id;
+	int pkt_type;
 	str pkt_buf;
 };
 

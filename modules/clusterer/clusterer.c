@@ -1156,6 +1156,7 @@ void run_mod_packet_cb(int sender, void *param)
 
 	bin_init_buffer(&packet, p->pkt_buf.s, p->pkt_buf.len);
 	packet.src_id = p->pkt_src_id;
+	packet.type = p->pkt_type;
 
 	if (packet.type == SYNC_PACKET_TYPE) {
 		/* this packet is cloned and both below fields have been used */
@@ -1185,6 +1186,7 @@ int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap)
 	params->pkt_buf.len = packet->buffer.len;
 	params->cap = cap;
 	params->pkt_src_id = packet->src_id;
+	params->pkt_type = packet->type;
 
 	if (ipc_dispatch_rpc(run_mod_packet_cb, params) < 0) {
 		LM_ERR("Failed to dispatch rpc\n");
