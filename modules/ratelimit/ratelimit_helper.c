@@ -399,7 +399,6 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 				name->len, name->s, *pipe);
 		if ((*pipe)->algo == PIPE_ALGO_NETWORK)
 			should_update = 1;
-		(*pipe)->last_local_used = time(0);
 	} else {
 		LM_DBG("Pipe %.*s found: %p - last used %lu\n",
 			name->len, name->s, *pipe, (*pipe)->last_used);
@@ -413,6 +412,8 @@ int w_rl_check(struct sip_msg *_m, str *name, int *limit, str *algorithm)
 
 	/* set the last used time */
 	(*pipe)->last_used = time(0);
+	/* set the last 'local' used time: */
+	(*pipe)->last_local_used = time(0);
 	if (RL_USE_CDB(*pipe)) {
 		/* release the counter for a while */
 		if (rl_change_counter(name, *pipe, 1) < 0) {
