@@ -80,6 +80,7 @@ void seed_fb_check_timer(utime_t ticks, void *param)
 				(cl->current_node->flags & NODE_IS_SEED) &&
 				(TIME_DIFF(cap->sync_req_time, now) >= seed_fb_interval*1000000)) {
 				cap->flags |= CAP_STATE_OK;
+				cap->flags &= ~CAP_SYNC_PENDING;
 				LM_INFO("No donor found, falling back to synced state\n");
 				/* send update about the state of this capability */
 				send_single_cap_update(cl, cap, 1);
