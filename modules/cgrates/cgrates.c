@@ -496,7 +496,7 @@ static int pv_get_cgr(struct sip_msg *msg, pv_param_t *param,
 		return -1;
 	}
 
-	if (!(ctx = CGR_GET_CTX()))
+	if (!(ctx = cgr_try_get_ctx()))
 		return pv_get_null(msg, param, val);
 
 	s = cgr_get_sess(ctx, pv_get_idx_value(msg, param));
