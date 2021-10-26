@@ -312,10 +312,10 @@ struct socket_info * create_socket_info(db_val_t * vals, int n){
 			LM_ERR("bad socket <%.*s>\n", p.len, p.s);
 			return 0;
 		}
-		sock = grep_sock_info( &host, (unsigned short)port, proto);
+		sock = grep_internal_sock_info( &host, (unsigned short)port, proto);
 		if (sock==0) {
 			LM_WARN("non-local socket <%.*s>...ignoring\n", p.len, p.s);
-			}
+		}
 	}
 
 	return sock;
@@ -1070,10 +1070,11 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		SET_STR_VALUE(values+4, cell->to_uri);
 		SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-		SET_STR_VALUE(values+6, cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+		SET_STR_VALUE(values+6,
+			*get_socket_internal_name(cell->legs[DLG_CALLER_LEG].bind_addr) );
 		if (cell->legs[callee_leg].bind_addr) {
 			SET_STR_VALUE(values+7,
-				cell->legs[callee_leg].bind_addr->sock_str);
+				*get_socket_internal_name(cell->legs[callee_leg].bind_addr) );
 		} else {
 			VAL_NULL(values+7) = 1;
 		}
@@ -1600,11 +1601,11 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 				SET_STR_VALUE(values+4, cell->to_uri);
 				SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-				SET_STR_VALUE(values+6,
-					cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+				SET_STR_VALUE(values+6, *get_socket_internal_name
+					(cell->legs[DLG_CALLER_LEG].bind_addr) );
 				if (cell->legs[callee_leg].bind_addr) {
-					SET_STR_VALUE(values+7,
-						cell->legs[callee_leg].bind_addr->sock_str);
+					SET_STR_VALUE(values+7, *get_socket_internal_name
+						(cell->legs[callee_leg].bind_addr) );
 				} else {
 					VAL_NULL(values+7) = 1;
 				}
@@ -2291,11 +2292,11 @@ static int restore_dlg_db(void)
 			SET_STR_VALUE(values+4, cell->to_uri);
 			SET_STR_VALUE(values+5, cell->legs[callee_leg].tag);
 
-			SET_STR_VALUE(values+6,
-				cell->legs[DLG_CALLER_LEG].bind_addr->sock_str);
+			SET_STR_VALUE(values+6, *get_socket_internal_name
+				(cell->legs[DLG_CALLER_LEG].bind_addr) );
 			if (cell->legs[callee_leg].bind_addr) {
-				SET_STR_VALUE(values+7,
-					cell->legs[callee_leg].bind_addr->sock_str);
+				SET_STR_VALUE(values+7, *get_socket_internal_name
+					(cell->legs[callee_leg].bind_addr) );
 			} else {
 				VAL_NULL(values+7) = 1;
 			}
