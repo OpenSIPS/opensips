@@ -140,7 +140,7 @@ int async_fd_resume(int fd, void *param);
 /******** functions related to async launch *******/
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-		int report_route, void **params);
+		int report_route, str *report_route_param, void **params);
 
 /* @fd is always valid */
 int async_launch_resume(int fd, void *param);

@@ -2229,6 +2229,12 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 				mk_action3($$, ASYNC_T, ACTIONS_ST, NUMBER_ST, NUMBER_ST,
 						$3, (void*)(long)i_tmp, (void*)(long)$7);
 				}
+		| LAUNCH_TOKEN LPAREN async_func COMMA route_name COMMA STRING RPAREN {
+				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
+				if (i_tmp==-1) yyerror("too many script routes");
+				mk_action3($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST, STRING_ST,
+						$3, (void*)(long)i_tmp, $7);
+				}
 		| LAUNCH_TOKEN LPAREN async_func COMMA route_name RPAREN {
 				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
 				if (i_tmp==-1) yyerror("too many script routes");

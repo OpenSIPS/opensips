@@ -47,6 +47,7 @@ typedef struct _async_launch_ctx {
 	async_ctx  async;
 	/* the ID of the report script route (-1 if none) */
 	int report_route;
+	str report_route_param;
 } async_launch_ctx;
 
 
@@ -151,6 +152,24 @@ done:
 
 /************* Functions related to ASYNC Launch support ***************/
 
+int launch_route_param_get(struct sip_msg *msg, pv_param_t *ip,
+		pv_value_t *res, void *params, void *extra)
+{
+	str *val = (str*)params;
+
+	/* we do accept here only one param with index */
+	if (ip->pvn.type!=PV_NAME_INTSTR || ip->pvn.u.isname.type!=0
+	|| ip->pvn.u.isname.name.n!=1)
+		return pv_get_null(msg, ip, res);
+
+	res->flags = PV_VAL_STR;
+	res->rs.s =val->s;
+	res->rs.len = val->len;
+
+	return 0;
+}
+
+
 int async_launch_resume(int fd, void *param)
 {
 	struct sip_msg *req;
@@ -221,9 +240,19 @@ run_route:
 		close(fd);
 
 	if (ctx->report_route!=-1) {
-		LM_DBG("runinng report route for a launch job\n");
+		LM_DBG("runinng report route for a launch job,"
+			" route <%s>, param [%.*s]\n",
+			sroutes->request[ctx->report_route].name, 
+			ctx->report_route_param.len, ctx->report_route_param.s);
 		set_route_type( REQUEST_ROUTE );
+		if (ctx->report_route_param.s)
+			route_params_push_level(
+				sroutes->request[ctx->report_route].name, 
+				&ctx->report_route_param, NULL,
+				launch_route_param_get);
 		run_top_route( sroutes->request[ctx->report_route], req);
+		if (ctx->report_route_param.s)
+			route_params_pop_level();
 
 		/* remove all added AVP */
 		reset_avps( );
@@ -242,7 +271,7 @@ restore:
 
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-					int report_route, void **params)
+					int report_route, str *report_route_param, void **params)
 {
 	struct sip_msg *req;
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
@@ -258,7 +287,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		return -1;
 	}
 
-	if ( (ctx=shm_malloc(sizeof(async_launch_ctx)))==NULL) {
+	if ( (ctx=shm_malloc(sizeof(async_launch_ctx) + (report_route_param?report_route_param->len:0)))==NULL) {
 		LM_ERR("failed to allocate new ctx, forcing sync mode\n");
 		return -1;
 	}
@@ -300,6 +329,16 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 
 	/* ctx is to be used from this point further */
 	ctx->report_route = report_route;
+
+	if (report_route_param) {
+		ctx->report_route_param.s = (char *)(ctx+1);
+		ctx->report_route_param.len = report_route_param->len;
+		memcpy(ctx->report_route_param.s, report_route_param->s,
+			report_route_param->len);
+	} else {
+		ctx->report_route_param.s = NULL;
+		ctx->report_route_param.len = 0;
+	}
 
 	if (async_status!=ASYNC_NO_FD) {
 		LM_DBG("placing launch job into reactor\n");

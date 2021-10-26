@@ -1276,6 +1276,23 @@ static int fix_actions(struct action* a)
 					if ((ret=fix_actions((struct action*)t->elem[0].u.data))<0)
 						return ret;
 				}
+				/* LAUNCH may have a third param, a FMT'ed string */
+				if ( (t->elem[2].type==STRING_ST) &&
+				(s.s=(char*)t->elem[2].u.data)!=NULL) {
+					if ( (s.len=strlen(s.s))==0 ) {
+						t->elem[2].type = NOSUBTYPE;
+					} else {
+						if(pv_parse_format(&s ,&model) || model==NULL) {
+							LM_ERR("wrong format [%s] for value param!\n",s.s);
+							ret=E_BUG;
+							goto error;
+						}
+						t->elem[2].u.data = (void*)model;
+						t->elem[2].type = SCRIPTVAR_ELEM_ST;
+					}
+				} else {
+					t->elem[2].type = NOSUBTYPE;
+				}
 				break;
 			case AMODULE_T:
 				acmd = (acmd_export_t*)t->elem[0].u.data;

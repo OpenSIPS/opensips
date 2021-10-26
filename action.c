@@ -1025,7 +1025,18 @@ int do_action(struct action* a, struct sip_msg* msg)
 					break;
 				}
 
-				ret = async_script_launch( msg, aitem, a->elem[1].u.number, cmdp);
+				if (a->elem[2].type==SCRIPTVAR_ELEM_ST && a->elem[2].u.data) {
+					if (pv_printf_s(msg, a->elem[2].u.data, &sval) < 0) {
+						LM_ERR("cannot print resume route parameter!\n");
+						break;
+					}
+
+					ret = async_script_launch( msg, aitem, a->elem[1].u.number,
+						&sval, cmdp);
+				} else {
+					ret = async_script_launch( msg, aitem, a->elem[1].u.number,
+						NULL, cmdp);
+				}
 
 				if (free_cmd_fixups(acmd->params, aitem->elem, cmdp) < 0) {
 					LM_ERR("Failed to free fixups for launch command <%s> in %s,"
