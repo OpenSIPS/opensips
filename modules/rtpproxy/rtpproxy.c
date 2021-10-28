@@ -3984,8 +3984,11 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 				}
 				if( r2p ) {
 					nextport.s = int2str(port+1, &nextport.len);
+					tmp.s = newbody;
+					tmp.len = r2p - newbody;
+					RTPPROXY_APPEND(&tmp);
 
-					RTPPROXY_APPEND_CONST("\na=rtcp:");
+					RTPPROXY_APPEND_CONST("a=rtcp:");
 					RTPPROXY_APPEND(&nextport);
 					RTPPROXY_APPEND_CONST(" IN IP4 ");
 					if (pf1 == AF_INET6)
