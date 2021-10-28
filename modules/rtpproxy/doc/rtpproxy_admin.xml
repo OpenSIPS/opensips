@@ -656,19 +656,25 @@ if (is_method("INVITE") &amp;&amp; has_totag()) {
 
         <section id="func_rtpproxy_offer" xreflabel="rtpproxy_offer()">
                 <title>
-                <function moreinfo="none">rtpproxy_offer([[flags][, [ip_address][, [set_id][, [sock_var][, ret_var]]]])</function>
+                <function moreinfo="none">rtpproxy_offer([[flags][, [ip_address][, [set_id][, [sock_var][, [ret_var][, [body_var]]]]]])</function>
                 </title>
                 <para>
                 Rewrites &sdp; body to ensure that media is passed through
                 an &rtp; proxy. To be invoked
 		on INVITE for the cases the SDPs are in INVITE and 200 OK and on 200 OK
 		when SDPs are in 200 OK and ACK.
-                </para>
-                <para>
-		See rtpproxy_engage() function description above for the meaning of the
-		parameters.
-		</para>
-		<para>
+			</para>
+				<para>
+					The function receives the same parameters as
+					<function>rtpproxy_engage()</function>, as well as an extra
+					parameter named <emphasis>body_var</emphasis> - this parameter
+					is used as an in-out variable for the body that should be used
+					to challenge &rtp; proxy server. If the variable is specified,
+					it is the function uses its content as the body to challenge,
+					and returns the resulted body in it. If not used, the message's
+					body is used, and the outgoing body is changed.
+				</para>
+			<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE.
                 </para>
@@ -710,7 +716,7 @@ onreply_route[2]
 	</section>
         <section id="func_rtpproxy_answer" xreflabel="rtpproxy_answer()">
                 <title>
-                <function moreinfo="none">rtpproxy_answer([[flags][, [ip_address][, [set_id][, [sock_var][, ret_var]]]]])</function>
+                <function moreinfo="none">rtpproxy_answer([[flags][, [ip_address][, [set_id][, [sock_var][, [ret_var][, [body_var]]]]]]])</function>
                 </title>
 		<para>
 		Rewrites &sdp; body to ensure that media is passed through
@@ -719,8 +725,8 @@ onreply_route[2]
 		when SDPs are in 200 OK and ACK.
 		</para>
 		<para>
-		See rtpproxy_engage() function description above for the meaning of the
-		parameters.
+			See <function>rtpproxy_offer()</function> function description
+			above for the meaning of the parameters.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
