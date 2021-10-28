@@ -908,7 +908,6 @@ static inline void shm_str_clean(str* dst)
 	memset(dst, 0, sizeof *dst);
 }
 
-
 /*
  * Make a copy of a str structure using pkg_malloc
  */
@@ -962,6 +961,32 @@ static inline int pkg_str_extend(str *in, int size)
 
 	return 0;
 }
+
+/*
+ * Ensure "dst" matches the content of "src" without leaking memory
+ *
+ * Note: if you just want to dup a string, use "pkg_str_dup()" instead
+ */
+static inline int pkg_str_sync(str* dst, const str* src)
+{
+	if (ZSTRP(src)) {
+		if (dst->s)
+			pkg_free(dst->s);
+		memset(dst, 0, sizeof *dst);
+		return 0;
+	}
+
+	if (pkg_str_extend(dst, src->len) != 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	memcpy(dst->s, src->s, src->len);
+	dst->len = src->len;
+	return 0;
+}
+
+
 
 
 /*
