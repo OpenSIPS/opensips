@@ -36,6 +36,7 @@ typedef int (*dump_part_function)(void *, struct sip_msg *, str *buf);
 
 #define SIP_BODY_PART_FLAG_NEW      (1<<0)
 #define SIP_BODY_PART_FLAG_DELETED  (1<<1)
+#define SIP_BODY_PART_FLAG_MARKED   (1<<30)
 
 struct body_part{
 
