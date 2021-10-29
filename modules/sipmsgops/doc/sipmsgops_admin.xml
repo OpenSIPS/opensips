@@ -841,6 +841,54 @@ add_body_part("Hello World!", "text/plain");
 		</example>
 	</section>
 
+
+	<section id="func_get_updated_body_part" xreflabel="get_updated_body_part()">
+		<title>
+		<function moreinfo="none">get_updated_body_part( [mime], variable)</function>
+		</title>
+		<para>
+		This function returns into a variable the regenerated body part,
+		meaning the body part updated with all the changes done so far by 
+		OpenSIPS. This is helpful if you want to do a sequance of operations
+		over the body parts and some operations require to have all the
+		previous changes applied (like first doing some codec related changes
+		and later to rtpengine insertion).
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>mime (string)</emphasis> - the mime string for
+			the body to be regenerated and returned. If missing, the whole
+			body (with all its parts) will be regenerated.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>variable</emphasis> - a variable to be used to 
+			return the regenerated body part (as text).
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>get_updated_body_part</function> usage</title>
+		<programlisting format="linespecific">
+...
+	codec_delete_re("PCMA|PCMU");
+
+	get_updated_body_part( "application/sdp", $var(new_sdp));
+
+	xlog("------updated SDP is ----\n$var(new_sdp)\n-----------\n");
+	exit;
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="func_sipmsg_validate" xreflabel="sipmsg_validate()">
 		<title>
 		<function moreinfo="none">sipmsg_validate([flags[, result_pvar]])</function>

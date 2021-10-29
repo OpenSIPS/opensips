@@ -50,6 +50,7 @@
 #include "../../parser/sdp/sdp.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/digest/digest.h"
+#include "../../msg_translator.h"
 #include "../../mod_fix.h"
 #include "../../trim.h"
 
@@ -95,6 +96,7 @@ static int is_privacy_f(struct sip_msg *msg, void *privacy);
 static int remove_body_part_f(struct sip_msg *msg, void *type, void *revert);
 static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
                            str *extra_hdrs);
+static int get_updated_body_part_f(struct sip_msg *msg, int *type,pv_spec_t* out);
 static int is_audio_on_hold_f(struct sip_msg *msg);
 static int w_sip_validate(struct sip_msg *msg, void *flags, pv_spec_t* err_txt);
 
@@ -182,6 +184,11 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
+
+	{"get_updated_body_part",    (cmd_function)get_updated_body_part_f, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_mime_type, 0},
+		{CMD_PARAM_VAR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{"codec_exists",	(cmd_function)codec_find, {
@@ -954,6 +961,110 @@ static int add_body_part_f(struct sip_msg *msg, str *body, str *mime,
 
 	if (!add_body_part(msg, mime, extra_hdrs, body)) {
 		LM_ERR("failed to add new body part <%.*s>\n", mime->len, mime->s);
+		return -1;
+	}
+
+	return 1;
+}
+
+
+/*
+ *	Function to apply all pending changes over a body part and
+ *	return the result into a variable
+ * */
+static int get_updated_body_part_f(struct sip_msg *msg, int *type, pv_spec_t* res)
+{
+	static str out = {NULL, 0};
+	struct body_part *p, *it;
+	unsigned int out_offs, orig_offs, parts;
+	pv_value_t val;
+
+
+	if (parse_sip_body(msg)<0 || msg->body==NULL) {
+		LM_DBG("no body found\n");
+		return -1;
+	}
+
+
+	if (type) {
+
+		p = &msg->body->first;
+		while (p) {
+			if ( (p->flags&SIP_BODY_PART_FLAG_DELETED) == 0
+			&& p->mime == ((int)(long)type) )
+				break;
+
+			p = p->next;
+		}
+
+		if (p==NULL)
+			return -2;  /* not found */
+
+		/* found */
+
+		/* iterate again and mark all the other as DELETED */
+		for (it = &msg->body->first ; it ; it=it->next)
+			if (it!=p) {
+				if (it->flags&SIP_BODY_PART_FLAG_DELETED)
+					it->flags |= SIP_BODY_PART_FLAG_MARKED;
+				else
+					it->flags |= SIP_BODY_PART_FLAG_DELETED;
+			}
+
+		parts = msg->body->updated_part_count;
+		msg->body->updated_part_count = 1;
+
+		/* now the body is faked as having only one part,
+		 * so the body assembler will generate output only for it */
+	}
+
+
+	/* re-assemble the whole body, with all its existing parts */
+
+	/* calculate the new len */
+	out.len = prep_reassemble_body_parts( msg, msg->rcv.bind_address );
+
+	/* get the new buffer */
+	if (out.s)
+		pkg_free(out.s);
+	out.s = (char*)pkg_malloc(out.len+1);
+	if (out.s==0){
+		LM_ERR("out of pkg mem\n");
+		return -1;
+	}
+
+	/* generate the out buffer */
+	out_offs = 0;
+	orig_offs = msg->body->body.s - msg->buf;
+	reassemble_body_parts( msg, out.s, &out_offs, &orig_offs,
+		msg->rcv.bind_address);
+
+	if (out_offs!=out.len) {
+		LM_BUG("len mismatch : calculated %d, written %d\n", out.len, out_offs);
+		abort();
+	}
+
+
+	if (type) {
+
+		/* restore the correct DELETED flag */
+		for (it = &msg->body->first ; it ; it=it->next)
+			if (it!=p) {
+				if (it->flags&SIP_BODY_PART_FLAG_MARKED)
+					it->flags &= ~SIP_BODY_PART_FLAG_MARKED;
+				else
+					it->flags &= ~SIP_BODY_PART_FLAG_DELETED;
+			}
+
+		msg->body->updated_part_count = parts;
+
+	}
+
+	/* continue setting the output variable with the result */
+	val.rs = out;
+	val.flags = PV_VAL_STR;
+	if (pv_set_value( msg, res, 0, &val)!=0) {
+		LM_ERR("failed to set the result to script var\n");
 		return -1;
 	}
 
