@@ -854,6 +854,9 @@ add_body_part("Hello World!", "text/plain");
 		previous changes applied (like first doing some codec related changes
 		and later to rtpengine insertion).
 		</para>
+		<para>
+		NOTE: the actual SIP message will not be affected by this operation!
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
