@@ -179,4 +179,11 @@ char* received_builder(struct sip_msg *msg, unsigned int *received_len);
 
 char* rport_builder(struct sip_msg *msg, unsigned int *rport_len);
 
+unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
+		struct socket_info* send_sock);
+
+void reassemble_body_parts( struct sip_msg* msg, char* new_buf,
+		unsigned int* new_offs, unsigned int* orig_offs,
+		struct socket_info* send_sock);
+
 #endif

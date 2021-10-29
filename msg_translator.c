@@ -1252,7 +1252,7 @@ skip_after:
  *    to be 100% that estimating and building the body leads to the same
  *    result (as len).
  */
-static unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
+unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 												struct socket_info* send_sock)
 {
 	struct body_part *part;
