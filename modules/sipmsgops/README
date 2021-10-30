@@ -35,22 +35,23 @@ sipmsgops Module
               1.3.20. is_privacy(privacy_type)
               1.3.21. remove_body_part([mime[, revert]])
               1.3.22. add_body_part(body, mime[, headers])
-              1.3.23. sipmsg_validate([flags[, result_pvar]])
-              1.3.24. codec_exists (name[, clock])
-              1.3.25. codec_delete(name[, clock])
-              1.3.26. codec_move_up(name[, clock])
-              1.3.27. codec_move_down(name[, clock])
-              1.3.28. codec_exists_re ( regexp )
-              1.3.29. codec_delete_re ( regexp )
-              1.3.30. codec_delete_except_re ( regexp )
-              1.3.31. codec_move_up_re ( regexp )
-              1.3.32. codec_move_down_re ( regexp )
-              1.3.33. change_reply_status(code, reason)
-              1.3.34. stream_exists(regexp[,regexp2])
-              1.3.35. stream_delete(regexp[,regexp2])
-              1.3.36. list_hdr_has_option(hdr_name, option)
-              1.3.37. list_hdr_add_option(hdr_name, option)
-              1.3.38. list_hdr_remove_option(hdr_name, option)
+              1.3.23. get_updated_body_part( [mime], variable)
+              1.3.24. sipmsg_validate([flags[, result_pvar]])
+              1.3.25. codec_exists (name[, clock])
+              1.3.26. codec_delete(name[, clock])
+              1.3.27. codec_move_up(name[, clock])
+              1.3.28. codec_move_down(name[, clock])
+              1.3.29. codec_exists_re ( regexp )
+              1.3.30. codec_delete_re ( regexp )
+              1.3.31. codec_delete_except_re ( regexp )
+              1.3.32. codec_move_up_re ( regexp )
+              1.3.33. codec_move_down_re ( regexp )
+              1.3.34. change_reply_status(code, reason)
+              1.3.35. stream_exists(regexp[,regexp2])
+              1.3.36. stream_delete(regexp[,regexp2])
+              1.3.37. list_hdr_has_option(hdr_name, option)
+              1.3.38. list_hdr_add_option(hdr_name, option)
+              1.3.39. list_hdr_remove_option(hdr_name, option)
 
         1.4. Known Limitations
 
@@ -94,24 +95,25 @@ sipmsgops Module
    1.20. is_privacy usage
    1.21. remove_body_part() usage
    1.22. add_body_part usage
-   1.23. sipmsg_validate usage
-   1.24. codec_exists usage
-   1.25. codec_delete usage
-   1.26. codec_move_up usage
-   1.27. codec_move_down usage
+   1.23. get_updated_body_part usage
+   1.24. sipmsg_validate usage
+   1.25. codec_exists usage
+   1.26. codec_delete usage
+   1.27. codec_move_up usage
    1.28. codec_move_down usage
-   1.29. codec_exists_re usage
-   1.30. codec_delete_re usage
-   1.31. codec_delete_except_re usage
-   1.32. codec_move_up_re usage
-   1.33. codec_move_down_re usage
-   1.34. codec_move_down usage
-   1.35. change_reply_status usage
-   1.36. stream_exists usage
-   1.37. stream_delete usage
-   1.38. list_hdr_has_option usage
-   1.39. list_hdr_add_option usage
-   1.40. list_hdr_remove_option usage
+   1.29. codec_move_down usage
+   1.30. codec_exists_re usage
+   1.31. codec_delete_re usage
+   1.32. codec_delete_except_re usage
+   1.33. codec_move_up_re usage
+   1.34. codec_move_down_re usage
+   1.35. codec_move_down usage
+   1.36. change_reply_status usage
+   1.37. stream_exists usage
+   1.38. stream_delete usage
+   1.39. list_hdr_has_option usage
+   1.40. list_hdr_add_option usage
+   1.41. list_hdr_remove_option usage
 
 Chapter 1. Admin Guide
 
@@ -589,7 +591,40 @@ remove_body_part("application/sdp","revert")
 add_body_part("Hello World!", "text/plain");
 ...
 
-1.3.23.  sipmsg_validate([flags[, result_pvar]])
+1.3.23.  get_updated_body_part( [mime], variable)
+
+   This function returns into a variable the regenerated body
+   part, meaning the body part updated with all the changes done
+   so far by OpenSIPS. This is helpful if you want to do a
+   sequance of operations over the body parts and some operations
+   require to have all the previous changes applied (like first
+   doing some codec related changes and later to rtpengine
+   insertion).
+
+   NOTE: the actual SIP message will not be affected by this
+   operation!
+
+   Meaning of the parameters is as follows:
+     * mime (string) - the mime string for the body to be
+       regenerated and returned. If missing, the whole body (with
+       all its parts) will be regenerated.
+     * variable - a variable to be used to return the regenerated
+       body part (as text).
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.23. get_updated_body_part usage
+...
+        codec_delete_re("PCMA|PCMU");
+
+        get_updated_body_part( "application/sdp", $var(new_sdp));
+
+        xlog("------updated SDP is ----\n$var(new_sdp)\n-----------\n");
+        exit;
+...
+
+1.3.24.  sipmsg_validate([flags[, result_pvar]])
 
    The function returns true if the SIP message is properly built
    according to SIP RFC3261. It verifies if the mandatory headers
@@ -652,7 +687,7 @@ add_body_part("Hello World!", "text/plain");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE and BRANCH_ROUTE.
 
-   Example 1.23. sipmsg_validate usage
+   Example 1.24. sipmsg_validate usage
 ...
 if(!sipmsg_validate())
 {
@@ -670,7 +705,7 @@ if(!sipmsg_validate("sh", $var(err_reason)))
 }
 ...
 
-1.3.24.  codec_exists (name[, clock])
+1.3.25.  codec_exists (name[, clock])
 
    This function can be used to verify if a codec exists inside an
    sdp payload. It will search for the codec inside all streams
@@ -685,14 +720,14 @@ if(!sipmsg_validate("sh", $var(err_reason)))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.24. codec_exists usage
+   Example 1.25. codec_exists usage
 ...
 codec_exists("speex");
 or
 codec_exists("GSM", "8000");
 ...
 
-1.3.25.  codec_delete(name[, clock])
+1.3.26.  codec_delete(name[, clock])
 
    This function can be used to delete a codec from inside an sdp
    payload. It will search for the codec inside all streams from
@@ -708,14 +743,14 @@ codec_exists("GSM", "8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.25. codec_delete usage
+   Example 1.26. codec_delete usage
 ...
 codec_delete("speex");
 or
 codec_delete("GSM", "8000");
 ...
 
-1.3.26.  codec_move_up(name[, clock])
+1.3.27.  codec_move_up(name[, clock])
 
    This function can be used to move a codec up in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -731,14 +766,14 @@ codec_delete("GSM", "8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.26. codec_move_up usage
+   Example 1.27. codec_move_up usage
 ...
 codec_move_up("speex");
 or
 codec_move_up("GSM", "8000");
 ...
 
-1.3.27.  codec_move_down(name[, clock])
+1.3.28.  codec_move_down(name[, clock])
 
    This function can be used to move a codec down in the list of
    indexes ("m=..."). It will search for the codec inside all
@@ -757,14 +792,14 @@ codec_move_up("GSM", "8000");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.27. codec_move_down usage
+   Example 1.28. codec_move_down usage
 ...
 codec_move_down("speex");
 or
 codec_move_down("GSM", "8000");
 ...
 
-   Example 1.28. codec_move_down usage
+   Example 1.29. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -777,7 +812,7 @@ codec_delete("GSM", "8000");
 codec_move_up("speex");
 ...
 
-1.3.28.  codec_exists_re ( regexp )
+1.3.29.  codec_exists_re ( regexp )
 
    This function has the same effect as codec_exists ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -786,12 +821,12 @@ codec_move_up("speex");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.29. codec_exists_re usage
+   Example 1.30. codec_exists_re usage
 ...
 codec_exists_re("sp[a-z]*");
 ...
 
-1.3.29.  codec_delete_re ( regexp )
+1.3.30.  codec_delete_re ( regexp )
 
    This function has the same effect as codec_delete ( without the
    clock parameter ) the only difference is that it takes a POSIX
@@ -800,13 +835,13 @@ codec_exists_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.30. codec_delete_re usage
+   Example 1.31. codec_delete_re usage
 ...
 codec_delete_re("PCMA|PCMU");
 ...
 
 
-1.3.30.  codec_delete_except_re ( regexp )
+1.3.31.  codec_delete_except_re ( regexp )
 
    This function deletes all the codecs except those specified by
    the regular expression.
@@ -814,14 +849,14 @@ codec_delete_re("PCMA|PCMU");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.31. codec_delete_except_re usage
+   Example 1.32. codec_delete_except_re usage
 ...
 codec_delete_except_re("PCMA|PCMU");#will delete all codecs except PCMA
 and PCMU
 ...
 
 
-1.3.31.  codec_move_up_re ( regexp )
+1.3.32.  codec_move_up_re ( regexp )
 
    This function has the same effect as codec_move_up ( without
    the clock parameter ) the only difference is that it takes a
@@ -830,12 +865,12 @@ and PCMU
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.32. codec_move_up_re usage
+   Example 1.33. codec_move_up_re usage
 ...
 codec_move_up_re("sp[a-z]*");
 ...
 
-1.3.32.  codec_move_down_re ( regexp )
+1.3.33.  codec_move_down_re ( regexp )
 
    This function has the same effect as codec_move_down ( without
    the clock parameter ) the only difference is that it takes a
@@ -844,12 +879,12 @@ codec_move_up_re("sp[a-z]*");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.33. codec_move_down_re usage
+   Example 1.34. codec_move_down_re usage
 ...
 codec_move_down_re("sp[a-z]*");
 ...
 
-   Example 1.34. codec_move_down usage
+   Example 1.35. codec_move_down usage
 ...
 /*
   This example will move speex with 8000 codec to the back of the list,
@@ -862,7 +897,7 @@ codec_delete("GSM","8000");
 codec_move_up("speex");
 ...
 
-1.3.33.  change_reply_status(code, reason)
+1.3.34.  change_reply_status(code, reason)
 
    Intercept a SIP reply (in any onreply_route) and change its
    status code and reason phrase prior to propogating it.
@@ -873,7 +908,7 @@ codec_move_up("speex");
 
    This function can be used from ONREPLY_ROUTE.
 
-   Example 1.35. change_reply_status usage
+   Example 1.36. change_reply_status usage
 ...
 onreply_route {
     if ($rs == "603") {
@@ -883,7 +918,7 @@ onreply_route {
 }
 ...
 
-1.3.34.  stream_exists(regexp[,regexp2])
+1.3.35.  stream_exists(regexp[,regexp2])
 
    This function can be used to verify if a stream exists inside
    an sdp payload. It will search for the stream inside all sdp
@@ -899,7 +934,7 @@ onreply_route {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.36. stream_exists usage
+   Example 1.37. stream_exists usage
 ...
 # check for FAX
 stream_exists("image");
@@ -907,7 +942,7 @@ stream_exists("image");
 stream_exists("audio","SAVP");
 ...
 
-1.3.35.  stream_delete(regexp[,regexp2])
+1.3.36.  stream_delete(regexp[,regexp2])
 
    This function can be used to delete a whole stream from inside
    an sdp payload. It will search for the stream inside all sdp
@@ -924,13 +959,13 @@ stream_exists("audio","SAVP");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.37. stream_delete usage
+   Example 1.38. stream_delete usage
 ...
 # prevent usage of video
 stream_delete("video");
 ...
 
-1.3.36.  list_hdr_has_option(hdr_name, option)
+1.3.37.  list_hdr_has_option(hdr_name, option)
 
    Checks and returns true if the given option/token is listed in
    the body of the given header. The header must have its body
@@ -953,14 +988,14 @@ stream_delete("video");
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.38. list_hdr_has_option usage
+   Example 1.39. list_hdr_has_option usage
 ...
 # check if 100rel is advertised
 if (list_hdr_has_option("Supported", "100rel"))
         xlog("100rel option found\n");
 ...
 
-1.3.37.  list_hdr_add_option(hdr_name, option)
+1.3.38.  list_hdr_add_option(hdr_name, option)
 
    Add a new option/token at the end of the list in the body of
    the given header. The header must have its body formated as a
@@ -987,13 +1022,13 @@ if (list_hdr_has_option("Supported", "100rel"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.39. list_hdr_add_option usage
+   Example 1.40. list_hdr_add_option usage
 ...
 # add 100rel for advertising
 if (!list_hdr_has_option("Supported", "100rel"))
     list_hdr_add_option("Supported", "100rel");
 
-1.3.38.  list_hdr_remove_option(hdr_name, option)
+1.3.39.  list_hdr_remove_option(hdr_name, option)
 
    Removes an option/token from the list inside the body of the
    given header. The header must have its body formated as a CSV
@@ -1023,7 +1058,7 @@ if (!list_hdr_has_option("Supported", "100rel"))
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.40. list_hdr_remove_option usage
+   Example 1.41. list_hdr_remove_option usage
 ...
 # add 100rel for advertising
 if (list_hdr_has_option("Supported", "100rel"))
@@ -1045,7 +1080,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 60 32 1940 683
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 64 34 2102 683
    2. Liviu Chircu (@liviuchircu) 57 25 798 1503
    3. Razvan Crainea (@razvancrainea) 47 20 2949 87
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
@@ -1082,7 +1117,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Sep 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Oct 2021
    2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2021
    3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jul 2021
    4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Mar 2021
