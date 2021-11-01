@@ -57,6 +57,7 @@ static int exec_preprocessor(FILE *flat_cfg, const char *preproc_cmdline,
                              str *out);
 
 static struct cfg_context *cfg_context_new_file(const char *path);
+static void cfg_context_reset_all(void);
 static void cfg_context_append_line(struct cfg_context *con,
                                     char *line, int len);
 
@@ -81,6 +82,8 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 			return -1;
 		}
 	}
+
+	cfg_context_reset_all();
 
 	if (flatten_opensips_cfg(cfg_stream,
 				cfg_stream == stdin ? "stdin" : cfg_file, &cfg_buf) < 0) {
@@ -247,6 +250,21 @@ static struct cfg_context {
 	int bufsz;
 	struct cfg_context *next;
 } *__ccon;
+
+static void cfg_context_reset_all(void)
+{
+	struct cfg_context *pos = NULL, *it = __ccon;
+
+	while ( it && (it != __ccon || !pos) ) {
+		pos = it;
+		it = it->next;
+		free((char*)pos->path);
+		free((char*)pos->dirname);
+		free(pos->lines);
+		free(pos);
+	};
+	__ccon = NULL;
+}
 
 static struct cfg_context *cfg_context_new_file(const char *path)
 {
