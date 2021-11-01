@@ -227,8 +227,10 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 
 	(*new_info)->ls_seq_no = -1;
 	(*new_info)->top_seq_no = -1;
+	(*new_info)->cap_seq_no = -1;
 	(*new_info)->ls_timestamp = 0;
 	(*new_info)->top_timestamp = 0;
+	(*new_info)->cap_timestamp = 0;
 
 	(*new_info)->sp_info = shm_malloc(sizeof(struct node_search_info));
 	if (!(*new_info)->sp_info) {
