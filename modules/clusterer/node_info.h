@@ -92,8 +92,10 @@ struct node_info {
 	struct neighbour *neighbour_list;   /* list of directly reachable neighbours */
 	int ls_seq_no;                      /* sequence number of the last link state update */
 	int top_seq_no;                     /* sequence number of the last topology update message */
+	int cap_seq_no;
 	int ls_timestamp;
 	int top_timestamp;
+	int cap_timestamp;
 	struct node_info *next_hop;         /* next hop from the shortest path */
 	struct remote_cap *capabilities;	/* known capabilities of this node */
 	int flags;
@@ -167,6 +169,18 @@ static inline node_info_t *get_node_by_id(cluster_info_t *cluster, int node_id)
 			return node;
 
 	return NULL;
+}
+
+static inline int validate_update(int seq_no, int msg_seq_no, int timestamp,
+									int msg_timestamp, int val_type, int node_id)
+{
+	if (msg_seq_no == 0) {
+		if (seq_no == 0 && msg_timestamp <= timestamp)
+			return -1;
+	} else if (msg_seq_no <= seq_no)
+		return -1;
+
+	return 0;
 }
 
 #endif /* CL_NODE_INFO_H */

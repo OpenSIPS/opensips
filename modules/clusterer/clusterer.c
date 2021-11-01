@@ -727,6 +727,21 @@ static void handle_cap_update(bin_packet_t *packet, node_info_t *source)
 	int cap_state;
 	int rc;
 	int require_reply;
+	int seq_no, timestamp;
+
+	bin_pop_int(packet, &seq_no);
+	bin_pop_int(packet, &timestamp);
+
+	lock_get(source->lock);
+	if (validate_update(source->cap_seq_no, seq_no,
+		source->cap_timestamp, timestamp, 0, source->node_id) < 0) {
+		lock_release(source->lock);
+		return;
+	} else {
+		source->cap_seq_no = seq_no;
+		source->cap_timestamp = timestamp;
+	}
+	lock_release(source->lock);
 
 	bin_pop_int(packet, &nr_nodes);
 
@@ -1349,6 +1364,9 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 	node_info_t* destinations[MAX_NO_NODES];
 	struct neighbour *neigh;
 	int no_dests = 0, i;
+	int timestamp;
+
+	timestamp = time(NULL);
 
 	lock_get(cluster->current_node->lock);
 
@@ -1356,18 +1374,24 @@ int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,
 		neigh = neigh->next)
 		destinations[no_dests++] = neigh->node;
 
-	lock_release(cluster->current_node->lock);
-
-	if (no_dests == 0)
+	if (no_dests == 0) {
+		lock_release(cluster->current_node->lock);
 		return 0;
+	}
 
 	if (bin_init(&packet, &cl_internal_cap, CLUSTERER_CAP_UPDATE,
 		BIN_VERSION, 0) < 0) {
+		lock_release(cluster->current_node->lock);
 		LM_ERR("Failed to init bin send buffer\n");
 		return -1;
 	}
 	bin_push_int(&packet, cluster->cluster_id);
 	bin_push_int(&packet, current_id);
+
+	bin_push_int(&packet, ++cluster->current_node->cap_seq_no);
+	bin_push_int(&packet, timestamp);
+
+	lock_release(cluster->current_node->lock);
 
 	/* only the current node */
 	bin_push_int(&packet, 1);
@@ -1407,6 +1431,9 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	struct remote_cap *n_cap;
 	int nr_cap, nr_nodes = 0;
 	node_info_t *node;
+	int timestamp;
+
+	timestamp = time(NULL);
 
 	if (dest_node->cluster->capabilities)
 		nr_nodes++;
@@ -1427,6 +1454,13 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	}
 	bin_push_int(&packet, dest_node->cluster->cluster_id);
 	bin_push_int(&packet, current_id);
+
+	lock_get(dest_node->cluster->current_node->lock);
+
+	bin_push_int(&packet, ++dest_node->cluster->current_node->cap_seq_no);
+	bin_push_int(&packet, timestamp);
+
+	lock_release(dest_node->cluster->current_node->lock);
 
 	bin_push_int(&packet, nr_nodes);
 

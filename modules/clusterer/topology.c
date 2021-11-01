@@ -678,18 +678,6 @@ static int send_ls_update(node_info_t *node, clusterer_link_state new_ls)
 	return 0;
 }
 
-static inline int validate_update(int seq_no, int msg_seq_no, int timestamp,
-									int msg_timestamp, int val_type, int node_id)
-{
-	if (msg_seq_no == 0) {
-		if (seq_no == 0 && msg_timestamp <= timestamp)
-			return -1;
-	} else if (msg_seq_no <= seq_no)
-		return -1;
-
-	return 0;
-}
-
 static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 								int src_node_id, str *str_vals, int *int_vals)
 {
