@@ -40,6 +40,7 @@ extern int column;
 
 extern FILE *yyin;
 extern int yyparse();
+extern int yyrestart(FILE*);
 #ifdef DEBUG_PARSER
 extern int yydebug;
 #endif
@@ -116,6 +117,7 @@ int parse_opensips_cfg(const char *cfg_file, const char *preproc_cmdline,
 	/* parse the config file, prior to this only default values
 	   e.g. for debugging settings will be used */
 	yyin = cfg_stream;
+	yyrestart(yyin);
 	cfg_errors = 0;
 	if (yyparse() != 0 || cfg_errors) {
 		LM_ERR("bad config file (%d errors)\n", cfg_errors);
