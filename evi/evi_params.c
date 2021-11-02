@@ -173,7 +173,7 @@ evi_params_p evi_dup_shm_params(evi_params_p pkg_params)
 	sp = (evi_param_p)(shm_params + 1);
 	p = (char *)(shm_params) + parambufs_size;
 	for (param = pkg_params->first, prev = NULL; param;
-			prev = sp, param = param->next) {
+			prev = sp++, param = param->next) {
 		sp->flags = param->flags;
 		sp->next = NULL;
 		sp->name.len = param->name.len;
@@ -194,7 +194,6 @@ evi_params_p evi_dup_shm_params(evi_params_p pkg_params)
 			shm_params->last = sp;
 		} else
 			shm_params->first = sp;
-		sp++;
 	}
 	return shm_params;
 }
