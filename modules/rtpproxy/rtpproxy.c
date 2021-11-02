@@ -3662,6 +3662,7 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 		body->len = 0;
 	}
 
+	newbody = v2p;
 	for(;;) {
 		/* Per-session iteration. */
 		v1p = v2p;
@@ -3973,7 +3974,6 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 				continue;
 
 			if (body) {
-				newbody = v1p;
 				if (o1p) {
 					tmpstr1.s = o1p;
 					tmpstr1.len = v2p - tmpstr1.s;
@@ -4053,8 +4053,9 @@ static int rtpproxy_offer_answer(struct sip_msg *msg, struct rtpp_args *args,
 					for (newbody = r2p; *newbody != '\r'; newbody++);
 				}
 				tmp.s = newbody;
-				tmp.len = bodylimit - newbody;
+				tmp.len = m2p - newbody;
 				RTPPROXY_APPEND(&tmp);
+				newbody = m2p;
 			} else {
 				/* Alter port. */
 				body1.s = m1p;
