@@ -842,11 +842,7 @@ static void db_sqlite_free_result_rows(db_res_t* _r)
 		/* db_sqlite_allocate_rows allocates memory for rows and values separately.
 		 * Hence freeing rows using generic function and then values separately*/
 		db_free_rows(_r);
-		if(values)
-		{
-			pkg_free(values);
-			values = NULL;
-		}
+		pkg_free(values);
 	}
 	RES_ROWS(_r) = 0;
 	RES_ROW_N(_r) = 0;
