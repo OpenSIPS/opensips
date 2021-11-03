@@ -878,6 +878,20 @@ static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
 	lock_release(&ctx->lock);
 }
 
+static void b2b_sdp_server_send_bye(struct b2b_sdp_ctx *ctx)
+{
+	str method;
+	b2b_req_data_t req_data;
+
+	init_str(&method, "BYE");
+	memset(&req_data, 0, sizeof(b2b_req_data_t));
+	req_data.et = B2B_SERVER;
+	req_data.b2b_key = &ctx->b2b_key;
+	req_data.method = &method;
+	if (b2b_api.send_request(&req_data) < 0)
+		LM_ERR("cannot send upstream BYE\n");
+}
+
 static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
 	str *body;
@@ -896,6 +910,8 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 		case B2B_SDP_BYE_TERMINATE:
 			if (ctx->pending_no) {
 				LM_DBG("already terminating - not interested any more\n");
+				if (list_size(&ctx->clients) == 0)
+					b2b_sdp_server_send_bye(ctx);
 				lock_release(&ctx->lock);
 				return 0;
 			}
@@ -911,14 +927,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 
 		case B2B_SDP_BYE_DISABLE_TERMINATE:
 			if (list_size(&ctx->clients) == 0) {
-				b2b_sdp_client_release(client, 0);
-				init_str(&method, "BYE");
-				memset(&req_data, 0, sizeof(b2b_req_data_t));
-				req_data.et = B2B_SERVER;
-				req_data.b2b_key = &ctx->b2b_key;
-				req_data.method = &method;
-				if (b2b_api.send_request(&req_data) < 0)
-					LM_ERR("cannot send upstream BYE\n");
+				b2b_sdp_server_send_bye(ctx);
 				lock_release(&ctx->lock);
 				break;
 			}
@@ -1153,21 +1162,13 @@ release:
 
 static int b2b_sdp_client_reply_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
-	str method;
-	b2b_req_data_t req_data;
 	struct b2b_sdp_ctx *ctx = client->ctx;
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 	lock_get(&ctx->lock);
 	b2b_sdp_client_release(client, 0);
 	if (list_size(&ctx->clients) == 0) {
-		init_str(&method, "BYE");
-		memset(&req_data, 0, sizeof(b2b_req_data_t));
-		req_data.et = B2B_SERVER;
-		req_data.b2b_key = &ctx->b2b_key;
-		req_data.method = &method;
+		b2b_sdp_server_send_bye(ctx);
 		lock_release(&ctx->lock);
-		if (b2b_api.send_request(&req_data) < 0)
-			LM_ERR("cannot send upstream BYE\n");
 	} else {
 		lock_release(&ctx->lock);
 	}
