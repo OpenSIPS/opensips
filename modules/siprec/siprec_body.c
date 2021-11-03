@@ -179,6 +179,50 @@ int srs_add_raw_sdp_stream(int label, int medianum, str *body,
 	return 0;
 }
 
+static sdp_info_t *siprec_parse_sdp(struct sip_msg *_m, int *release_sdp)
+{
+	struct body_part *part;
+	static sdp_info_t sdp;
+	unsigned int mime;
+
+	if ( parse_sip_body(_m)<0 || _m->body==NULL) {
+		LM_DBG("message body has length zero\n");
+		return NULL;
+	}
+	*release_sdp = 0;
+
+	/* first, check if there is any body added */
+	for( part=&_m->body->first ; part ; part=part->next) {
+		if (is_body_part_received(part) || is_body_part_deleted(part))
+			continue;
+
+		if (!part->mime) {
+			if (!decode_mime_type(part->mime_s.s,
+					part->mime_s.s + part->mime_s.len, &mime, NULL)) {
+				LM_ERR("cannot parse mime [%.*s]\n",
+						part->mime_s.len, part->mime_s.s);
+				continue;
+			}
+		} else {
+			mime = part->mime;
+		}
+		if (mime != ((TYPE_APPLICATION<<16)+SUBTYPE_SDP))
+			continue;
+
+		if (!part->parsed) {
+			*release_sdp = 1;
+			memset(&sdp, 0, sizeof(sdp));
+			if (parse_sdp_session(&part->body, 0, NULL, &sdp)<0)
+				LM_ERR("failed to parse SDP for body part, skipping\n");
+			else
+				return &sdp;
+		} else {
+			return part->parsed;
+		}
+	}
+	return parse_sdp(_m);
+}
+
 int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 		struct src_part *part, int update)
 {
@@ -196,10 +240,11 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 	int label;
 	int stream_port;
 	int inactive_streams = 0;
+	int free_sdp = 0;
 
 	struct srs_sdp_stream *stream = NULL;
 
-	msg_sdp = parse_sdp(msg);
+	msg_sdp = siprec_parse_sdp(msg, &free_sdp);
 	if (!msg_sdp)
 		return 0;
 	allocated_buf = NULL;
@@ -218,7 +263,7 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 		allocated_buf = pkg_malloc(msg_session->body.len);
 		if (!allocated_buf) {
 			LM_ERR("no more pkg memory to build body stream!\n");
-			return -1;
+			goto error;
 		}
 		tmp_buf.s = allocated_buf;
 		tmp_buf.len = 0;
@@ -404,10 +449,15 @@ int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
 		pkg_free(allocated_buf);
 	}
 	/* update inactive streams */
+	if (free_sdp)
+		free_sdp_content(msg_sdp);
 	sess->streams_inactive = inactive_streams;
 	return streams_no;
 stream_error:
 	pkg_free(allocated_buf);
+error:
+	if (free_sdp)
+		free_sdp_content(msg_sdp);
 	return -1;
 }
 
