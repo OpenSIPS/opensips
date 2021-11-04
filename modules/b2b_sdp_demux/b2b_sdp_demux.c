@@ -381,16 +381,12 @@ static struct b2b_sdp_client *b2b_sdp_client_new(struct b2b_sdp_ctx *ctx)
 	return client;
 }
 
-static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key, int cb)
+static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 {
 	str method;
 	b2b_req_data_t req_data;
 	int send_cancel = 0;
-	if (!key) {
-		key = &client->b2b_key;
-		if (!key || key->len == 0)
-			return;
-	} else if (key->len == 0) {
+	if (!key || key->len == 0) {
 		LM_WARN("cannot terminate non-started client\n");
 		return;
 	}
@@ -408,13 +404,12 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key, in
 		init_str(&method, BYE);
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
-	req_data.no_cb = !cb; /* do not call callback */
+	req_data.no_cb = 1; /* do not call callback */
 	req_data.et = B2B_CLIENT;
 	req_data.b2b_key = key;
 	req_data.method = &method;
 	b2b_api.send_request(&req_data);
-	if (!cb)
-		b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
+	b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
 }
 
 
@@ -445,7 +440,7 @@ static void b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
 static void b2b_sdp_client_free(struct b2b_sdp_client *client)
 {
 
-	b2b_sdp_client_terminate(client, NULL, 0);
+	b2b_sdp_client_terminate(client, &client->b2b_key);
 	b2b_sdp_client_release(client, 1);
 
 }
@@ -866,6 +861,10 @@ static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
 	struct b2b_sdp_ctx *ctx = client->ctx;
 
 	lock_get(&ctx->lock);
+	if (!(client->flags & B2B_SDP_CLIENT_STARTED)) {
+		lock_release(&ctx->lock);
+		return;
+	}
 	/* terminate whatever the client was doing */
 	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_STARTED);
 	/* we need to move all the streams in the disabled list */
@@ -898,7 +897,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	str method;
 	b2b_req_data_t req_data;
 	struct b2b_sdp_ctx *ctx = client->ctx;
-	struct list_head *it, *safe;
+	struct list_head *it, *safe, bk;
 
 	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
@@ -910,20 +909,22 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 		case B2B_SDP_BYE_TERMINATE:
 			if (ctx->pending_no) {
 				LM_DBG("already terminating - not interested any more\n");
-				if (list_size(&ctx->clients) == 0)
-					b2b_sdp_server_send_bye(ctx);
 				lock_release(&ctx->lock);
 				return 0;
 			}
 			ctx->pending_no = 1;
 			b2b_sdp_client_release(client, 0);
+			/* detach the list */
+			bk = ctx->clients;
+			INIT_LIST_HEAD(&ctx->clients);
 			lock_release(&ctx->lock);
 			/* release all other clients */
-			list_for_each_safe(it, safe, &ctx->clients) {
+			list_for_each_safe(it, safe, &bk) {
 				client = list_entry(it, struct b2b_sdp_client, list);
-				b2b_sdp_client_terminate(client, NULL, 1);
+				b2b_sdp_client_terminate(client, &client->b2b_key);
 			}
-			break;
+			lock_get(&ctx->lock);
+			/* fallback - size is definitely 0 */
 
 		case B2B_SDP_BYE_DISABLE_TERMINATE:
 			if (list_size(&ctx->clients) == 0) {
@@ -1160,21 +1161,6 @@ release:
 	return ret;
 }
 
-static int b2b_sdp_client_reply_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
-{
-	struct b2b_sdp_ctx *ctx = client->ctx;
-	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
-	lock_get(&ctx->lock);
-	b2b_sdp_client_release(client, 0);
-	if (list_size(&ctx->clients) == 0) {
-		b2b_sdp_server_send_bye(ctx);
-		lock_release(&ctx->lock);
-	} else {
-		lock_release(&ctx->lock);
-	}
-	return 0;
-}
-
 static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 		void *param, int flags)
 {
@@ -1218,8 +1204,6 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 		switch (get_cseq(msg)->method_id) {
 			case METHOD_INVITE:
 				return b2b_sdp_client_reply_invite(msg, client);
-			case METHOD_BYE:
-				return b2b_sdp_client_reply_bye(msg, client);
 		}
 		LM_ERR("reply message %d for %.*s not handled\n", msg->REPLY_STATUS,
 				get_cseq(msg)->method.len, get_cseq(msg)->method.s);
@@ -1529,7 +1513,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		if (shm_str_dup(&client->b2b_key, b2b_key) < 0) {
 			LM_ERR("could not copy b2b client key\n");
 			/* key is not yet stored, but INVITE sent - terminate it */
-			b2b_sdp_client_terminate(client, b2b_key, 0);
+			b2b_sdp_client_terminate(client, b2b_key);
 			return -1;
 		}
 	}
