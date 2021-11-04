@@ -897,12 +897,12 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	str method;
 	b2b_req_data_t req_data;
 	struct b2b_sdp_ctx *ctx = client->ctx;
-	struct list_head *it, *safe, bk;
 
 	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 	lock_get(&client->ctx->lock);
+	b2b_sdp_client_release(client, 0);
 
 	switch (b2b_sdp_bye_mode) {
 
@@ -913,18 +913,9 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 				return 0;
 			}
 			ctx->pending_no = 1;
-			b2b_sdp_client_release(client, 0);
-			/* detach the list */
-			bk = ctx->clients;
-			INIT_LIST_HEAD(&ctx->clients);
+			b2b_sdp_server_send_bye(ctx);
 			lock_release(&ctx->lock);
-			/* release all other clients */
-			list_for_each_safe(it, safe, &bk) {
-				client = list_entry(it, struct b2b_sdp_client, list);
-				b2b_sdp_client_terminate(client, &client->b2b_key);
-			}
-			lock_get(&ctx->lock);
-			/* fallback - size is definitely 0 */
+			break;
 
 		case B2B_SDP_BYE_DISABLE_TERMINATE:
 			if (list_size(&ctx->clients) == 0) {
@@ -935,7 +926,6 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 			/* fallback */
 
 		case B2B_SDP_BYE_DISABLE:
-			b2b_sdp_client_release(client, 0);
 			/* also notify the upstream */
 			body = b2b_sdp_mux_body(ctx);
 			if (body) {
