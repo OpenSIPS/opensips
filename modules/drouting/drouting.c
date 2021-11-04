@@ -3735,7 +3735,6 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 	pcr_t *pcr = NULL;
 	map_iterator_t cr_it;
 	void** dest;
-	int_str val;
 
 	if(part== NULL) {
 		LM_ERR("Partition is mandatory for route_to_gw.\n");
@@ -3836,18 +3835,6 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 								0, &pv_val) != 0)
 									LM_ERR("failed to set value for "
 										"CARRIER attrs pvar\n");
-								/* insert the carrier ID also */
-								if (current_partition->carrier_id_avp!=-1) {
-									val.s = pcr->id;
-									/* we need to replace as the 
-									 * push_gw_for_usage() function
-									 * already added an empty one
-									 */
-									if (replace_avp( AVP_VAL_STR,
-									current_partition->carrier_id_avp,
-									val, 0)!=0)
-										LM_ERR("failed to update carrier ID avp\n");
-								}
 								goto cr_end;
 							}
 						}
