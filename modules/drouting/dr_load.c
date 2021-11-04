@@ -42,6 +42,15 @@
 #include "dr_db_def.h"
 
 
+enum dr_gw_socket_filter_mode {
+	DR_GW_SOCK_FILTER_MODE_NONE=0,
+	DR_GW_SOCK_FILTER_MODE_IGNORE,
+	DR_GW_SOCK_FILTER_MODE_MATCH
+};
+
+enum dr_gw_socket_filter_mode gw_sock_filter = DR_GW_SOCK_FILTER_MODE_NONE;
+
+
 #define check_val2( _col, _val, _type1, _type2, _not_null, _is_empty_str) \
 	do{\
 		if ((_val)->type!=(_type1) && (_val)->type!=(_type2)) { \
@@ -76,6 +85,23 @@
 		} \
 	}while(0)
 
+
+int dr_set_gw_sock_filter_mode(char *mode)
+{
+	if ( strcasecmp( mode, "none")==0 ) {
+		gw_sock_filter = DR_GW_SOCK_FILTER_MODE_NONE;
+		return 0;
+	}
+	if ( strcasecmp( mode, "ignore")==0 ) {
+		gw_sock_filter = DR_GW_SOCK_FILTER_MODE_IGNORE;
+		return 0;
+	}
+	if ( strcasecmp( mode, "matched-only")==0 ) {
+		gw_sock_filter = DR_GW_SOCK_FILTER_MODE_MATCH;
+		return 0;
+	}
+	return -1;
+}
 
 static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
 		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f)
@@ -369,7 +395,8 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 			int_vals[INT_VALS_PROBE_DRD_COL] = VAL_INT(ROW_VALUES(row)+7);
 			/* SOCKET column */
 			check_val( sock_drd_col, ROW_VALUES(row)+8, DB_STRING, 0, 0);
-			if ( !VAL_NULL(ROW_VALUES(row)+8) &&
+			if ( gw_sock_filter!=DR_GW_SOCK_FILTER_MODE_IGNORE &&
+					!VAL_NULL(ROW_VALUES(row)+8) &&
 					(s_sock.s=(char*)VAL_STRING(ROW_VALUES(row)+8))[0]!=0 ) {
 				s_sock.len = strlen(s_sock.s);
 				if (parse_phostport( s_sock.s, s_sock.len, &host.s, &host.len,
@@ -382,6 +409,8 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 				} else {
 					sock = grep_internal_sock_info( &host, port, proto);
 					if (sock == NULL) {
+						if (gw_sock_filter==DR_GW_SOCK_FILTER_MODE_MATCH)
+							continue;
 						LM_ERR("GW <%s>(%s): socket <%.*s> is not local to "
 								"OpenSIPS (we must listen on it) -> ignoring socket\n",
 								str_vals[STR_VALS_GWID_DRD_COL],

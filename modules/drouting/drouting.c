@@ -136,6 +136,8 @@ pv_spec_t partition_spec;
 int dr_rpm_enable = 0;
 struct head_cache *dr_cache;
 
+static char *gw_sock_filter_s = NULL;
+
 /*
  * global pointers for faster parameter passing between functions
  * meaning: current script pvar to dump attrs in (NULL to ignore)
@@ -499,6 +501,7 @@ static param_export_t params[] = {
 	{"cluster_probing_mode",STR_PARAM, &dr_cluster_prob_mode_s},
 	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable   },
 	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
+	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s  },
 	{0, 0, 0}
 };
 
@@ -2013,6 +2016,14 @@ static int dr_init(void)
 	if (dr_cluster_id>0 && dr_init_cluster()<0) {
 		LM_ERR("failed to initialized the clustering support\n");
 		goto error;
+	}
+
+	if (gw_sock_filter_s) {
+		if (dr_set_gw_sock_filter_mode(gw_sock_filter_s)<0) {
+			LM_ERR("failed to set the GW socket filtering, unknown \"%s\""
+				"mode\n", gw_sock_filter_s);
+			goto error;
+		}
 	}
 
 	return 0;
@@ -3724,6 +3735,7 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 	pcr_t *pcr = NULL;
 	map_iterator_t cr_it;
 	void** dest;
+	int_str val;
 
 	if(part== NULL) {
 		LM_ERR("Partition is mandatory for route_to_gw.\n");
@@ -3824,6 +3836,18 @@ static int route2_gw(struct sip_msg* msg, str* ids, pv_spec_t* gw_attr,
 								0, &pv_val) != 0)
 									LM_ERR("failed to set value for "
 										"CARRIER attrs pvar\n");
+								/* insert the carrier ID also */
+								if (current_partition->carrier_id_avp!=-1) {
+									val.s = pcr->id;
+									/* we need to replace as the 
+									 * push_gw_for_usage() function
+									 * already added an empty one
+									 */
+									if (replace_avp( AVP_VAL_STR,
+									current_partition->carrier_id_avp,
+									val, 0)!=0)
+										LM_ERR("failed to update carrier ID avp\n");
+								}
 								goto cr_end;
 							}
 						}

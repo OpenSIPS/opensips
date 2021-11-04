@@ -925,6 +925,65 @@ modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 		</example>
 	</section>
 
+	<section id="param_gw_socket_filter_mode" xreflabel="gw_socket_filter_mode">
+		<title><varname>gw_socket_filter_mode</varname> (string)</title>
+		<para>
+		This parameter controls the gateway filtering during DB loading, or which
+		gateways are loaded or not into memory depending on the configured
+		socket they have.
+		</para>
+		<para>
+		The supported filtering modes are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"all"</emphasis> - all the gateways
+			defined in DB are loaded into memory, disregarding what socket
+			value they have. NOTE: for the gw sockets not matching any OpenSIPS
+			listeners/sockets, the GW will be loaded with NULL/no socket.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"ignore"</emphasis> - all the gateways
+			defined in DB are loaded into memory, but ignoring the socket
+			value they have (the socket will be set to NULL/NONE with no 
+			attempt to check it against the OpenSIPS listeners/sockets).
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>"matched-only"</emphasis> - in this mode
+			the module will load from DB only the gateways that have a
+			configured a socket matching any of the  the OpenSIPS
+			listeners/sockets. If the gateways socket does not match, it will
+			be discards, not loaded into memory at all.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>
+			Default value is <quote>"all"</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>gw_socket_filter_mode</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# multiple OpenSIPS instances sharing a DR setting, so each should
+# load only the GWs they have sockets for.
+modparam("drouting", "gw_socket_filter_mode", "matched-only")
+...
+# an OpenSIPs instance not doing routing, but needing to be
+# aware of all the gws, so load them all ignoring the sockets
+modparam("drouting", "gw_socket_filter_mode", "ignore")
+...
+</programlisting>
+		</example>
+	</section>
+
+
 	<section id="param_cluster_id" xreflabel="cluster_id">
 		<title><varname>cluster_id</varname> (integer)</title>
 		<para>
