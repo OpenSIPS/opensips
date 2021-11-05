@@ -98,7 +98,7 @@ int init_ipc(void)
 
 int create_ipc_pipes( int proc_no )
 {
-	int i;
+	int optval, i;
 
 	for( i=0 ; i<proc_no ; i++ ) {
 		if (pipe(pt[i].ipc_pipe_holder)<0) {
@@ -107,11 +107,39 @@ int create_ipc_pipes( int proc_no )
 			return -1;
 		}
 
-		if (pipe(pt[i].ipc_sync_pipe_holder)<0) {
-			LM_ERR("failed to create IPC sync pipe for process %d, err %d/%s\n",
-				i, errno, strerror(errno));
+		/* make writing fd non-blocking */
+		optval = fcntl( pt[i].ipc_pipe_holder[1], F_GETFL);
+		if (optval == -1) {
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
 			return -1;
 		}
+
+		if (fcntl(pt[i].ipc_pipe_holder[1], F_SETFL, optval|O_NONBLOCK) == -1){
+			LM_ERR("set non-blocking write failed: (%d) %s\n",
+				errno, strerror(errno));
+			return -1;
+		}
+
+
+		if (pipe(pt[i].ipc_sync_pipe_holder)<0) {
+			LM_ERR("failed to create IPC sync pipe for process %d, "
+				"err %d/%s\n", i, errno, strerror(errno));
+			return -1;
+		}
+
+		/* make writing fd non-blocking */
+		optval = fcntl( pt[i].ipc_sync_pipe_holder[1], F_GETFL);
+		if (optval == -1) {
+			LM_ERR("fcntl failed: (%d) %s\n", errno, strerror(errno));
+			return -1;
+		}
+
+		if (fcntl(pt[i].ipc_sync_pipe_holder[1], F_SETFL, optval|O_NONBLOCK) == -1){
+			LM_ERR("set non-blocking write failed: (%d) %s\n",
+				errno, strerror(errno));
+			return -1;
+		}
+
 	}
 	return 0;
 }
@@ -167,7 +195,11 @@ static inline int __ipc_send_job(int fd, ipc_handler_type type,
 	job.payload2 = payload2;
 
 again:
-	// TODO - should we do this non blocking and discard if we block ??
+	/* The per-proc IPC write fds are sent to non-blocking (to be sure we
+	 * do not escalate into a global blocking if a single process got stuck.
+	 * In such care the EAGAIN or EWOULDBLOCK will be thrown and we will
+	 * handle as generic error, nothing special to do.
+	 */
 	n = write(fd, &job, sizeof(job) );
 	if (n<0) {
 		if (errno==EINTR)
