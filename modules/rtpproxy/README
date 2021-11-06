@@ -34,10 +34,12 @@ rtpproxy Module
                       [set_id][, [sock_var][, ret_var]]]]])
 
               1.6.2. rtpproxy_offer([[flags][, [ip_address][,
-                      [set_id][, [sock_var][, ret_var]]]])
+                      [set_id][, [sock_var][, [ret_var][,
+                      [body_var]]]]]])
 
               1.6.3. rtpproxy_answer([[flags][, [ip_address][,
-                      [set_id][, [sock_var][, ret_var]]]]])
+                      [set_id][, [sock_var][, [ret_var][,
+                      [body_var]]]]]]])
 
               1.6.4. rtpproxy_unforce([[set_id][, sock_var]])
               1.6.5. rtpproxy_stream2uac(prompt_name, count[,
@@ -544,15 +546,20 @@ if (is_method("INVITE") && has_totag()) {
 ...
 
 1.6.2.  rtpproxy_offer([[flags][, [ip_address][, [set_id][,
-[sock_var][, ret_var]]]])
+[sock_var][, [ret_var][, [body_var]]]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on INVITE for the cases the SDPs are in
    INVITE and 200 OK and on 200 OK when SDPs are in 200 OK and
    ACK.
 
-   See rtpproxy_engage() function description above for the
-   meaning of the parameters.
+   The function receives the same parameters as rtpproxy_engage(),
+   as well as an extra parameter named body_var - this parameter
+   is used as an in-out variable for the body that should be used
+   to challenge RTP proxy server. If the variable is specified, it
+   is the function uses its content as the body to challenge, and
+   returns the resulted body in it. If not used, the message's
+   body is used, and the outgoing body is changed.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -590,14 +597,14 @@ onreply_route[2]
 }
 
 1.6.3.  rtpproxy_answer([[flags][, [ip_address][, [set_id][,
-[sock_var][, ret_var]]]]])
+[sock_var][, [ret_var][, [body_var]]]]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
    INVITE and 200 OK and on ACK when SDPs are in 200 OK and ACK.
 
-   See rtpproxy_engage() function description above for the
-   meaning of the parameters.
+   See rtpproxy_offer() function description above for the meaning
+   of the parameters.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
@@ -925,7 +932,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 223 141 4829 2569
+   1. Razvan Crainea (@razvancrainea) 228 143 5016 2679
    2. Maksym Sobolyev (@sobomax) 53 7 5009 256
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Liviu Chircu (@liviuchircu) 23 18 108 198
@@ -962,7 +969,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Oct 2021
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Nov 2021
    2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Sep 2021
    3.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jan 2021
@@ -986,12 +993,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Maksym Sobolyev (@sobomax), Zero King
-   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
-   (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu
-   Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Maksym Sobolyev (@sobomax), Zero King (@l2dy),
+   Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
+   Julián Moreno Patiño, Bogdan-Andrei Iancu (@bogdan-iancu),
+   Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 
