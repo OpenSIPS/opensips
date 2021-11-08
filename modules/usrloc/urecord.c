@@ -941,34 +941,48 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c,
 
 static inline struct ucontact* contact_match( ucontact_t* ptr, str* _c)
 {
+	struct sip_uri _c_uri;
+
+	if (parse_uri( _c->s, _c->len, &_c_uri) < 0) {
+		LM_ERR("Failed to parse searched URI\n");
+		return NULL;
+	}
+
 	while(ptr) {
-		if ( ptr->expires != UL_EXPIRED_TIME
-		&& (_c->len == ptr->c.len) && !memcmp(_c->s, ptr->c.s, _c->len)
-		) {
+		if ( compare_uris( &ptr->c, NULL, _c, &_c_uri)==0
+		&& ptr->expires != UL_EXPIRED_TIME ) {
 			return ptr;
 		}
 
 		ptr = ptr->next;
 	}
-	return 0;
+	return NULL;
 }
 
 
 static inline struct ucontact* contact_callid_match( ucontact_t* ptr,
 														str* _c, str *_callid)
 {
+	struct sip_uri _c_uri;
+
+	if (parse_uri( _c->s, _c->len, &_c_uri) < 0) {
+		LM_ERR("Failed to parse searched URI\n");
+		return NULL;
+	}
+
 	while(ptr) {
-		if ( ptr->expires != UL_EXPIRED_TIME
-		&& (_c->len==ptr->c.len) && (_callid->len==ptr->callid.len)
-		&& !memcmp(_c->s, ptr->c.s, _c->len)
+
+		if ( (_callid->len==ptr->callid.len)
+		&& compare_uris( &ptr->c, NULL, _c, &_c_uri)==0
 		&& !memcmp(_callid->s, ptr->callid.s, _callid->len)
+		&& ptr->expires != UL_EXPIRED_TIME
 		) {
 			return ptr;
 		}
 
 		ptr = ptr->next;
 	}
-	return 0;
+	return NULL;
 }
 
 
