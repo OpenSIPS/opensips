@@ -497,6 +497,42 @@ static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_col
 	return 0;
 }
 
+/* get the column types from the sql query result */
+static int build_column_types(cache_entry_t *c_entry, db_key_t *names, db_type_t *types,
+		int nr_columns)
+{
+	unsigned int i;
+	db_type_t val_type;
+
+	c_entry->nr_ints = 0;
+	c_entry->nr_strs = 0;
+	c_entry->column_types = 0;
+
+	for (i = 0; i < nr_columns; i++) {
+		val_type = types[i];
+		switch (val_type) {
+			case DB_INT:
+			case DB_BIGINT:
+			case DB_DOUBLE:
+				c_entry->nr_ints++;
+				c_entry->column_types &= ~(1LL << i);
+				break;
+			case DB_STRING:
+			case DB_STR:
+			case DB_BLOB:
+				c_entry->nr_strs++;
+				c_entry->column_types |= (1LL << i);
+				break;
+			default:
+				LM_ERR("Unsupported type: %d for column: %.*s\n", val_type,
+					names[i]->len, names[i]->s);
+				return -1;
+		}
+	}
+
+	return 0;
+}
+
 /* returns the total size of the actual value which will be stored in the cachedb*/
 static unsigned int get_cdb_val_size(cache_entry_t *c_entry, db_val_t *values, int nr_columns)
 {
@@ -784,6 +820,16 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 			memcpy((*c_entry->columns[i]).s, RES_NAMES(sql_res)[i]->s,
 				(*c_entry->columns[i]).len);
 		}
+	}
+
+	if (c_entry->on_demand && build_column_types(c_entry, sql_res->col.names,
+				sql_res->col.types, sql_res->col.n) < 0) {
+		LM_ERR("Failure to build column types: %.*s\n",
+			c_entry->db_url.len, c_entry->db_url.s);
+		new_db_hdls->db_funcs.free_result(new_db_hdls->db_con, sql_res);
+		new_db_hdls->db_funcs.close(new_db_hdls->db_con);
+		new_db_hdls->db_con = 0;
+		return NULL;
 	}
 
 	new_db_hdls->db_funcs.free_result(new_db_hdls->db_con, sql_res);
