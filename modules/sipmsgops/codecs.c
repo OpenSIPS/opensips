@@ -347,7 +347,10 @@ static int do_for_all_streams(struct sip_msg* msg, str* str1,str * str2,
 }
 
 
-int delete_sdp_line( struct sip_msg * msg, char * s)
+/* deletes a SDP line (from a stream) by giving a pointer within the line.
+ * The stream is used to safeguard the identification of the line boundries.
+ */
+int delete_sdp_line( struct sip_msg * msg, char * s, struct sdp_stream_cell *stream)
 {
 	char * start,*end;
 
@@ -357,11 +360,11 @@ int delete_sdp_line( struct sip_msg * msg, char * s)
 	start = s;
 	end  = s;
 
-	while(*start != '\n')
+	while(*start != '\n' && start > stream->body.s)
 		start--;
 	start++;
 
-	while(*end != '\n')
+	while(*end != '\n' && end < (stream->body.s+stream->body.len) )
 		end++;
 	end++;
 
@@ -530,14 +533,14 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 				{
 					/* find the full 'a=...' entry */
 
-					if( delete_sdp_line( msg, payload->rtp_enc.s) < 0 )
+					if( delete_sdp_line( msg, payload->rtp_enc.s, cell) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
 						goto end;
 					}
 
-					if( delete_sdp_line( msg, payload->fmtp_string.s) < 0 )
+					if( delete_sdp_line( msg, payload->fmtp_string.s, cell) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
