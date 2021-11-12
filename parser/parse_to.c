@@ -232,6 +232,8 @@ static inline char* parse_to_param(char *buffer, char *end,
 				switch (status)
 				{
 					case PARA_VALUE_QUOTED:
+						if (tmp+1==end)
+							goto parse_error;
 						switch (*(tmp+1))
 						{
 							case '\r':
@@ -453,8 +455,13 @@ static inline char* parse_to_param(char *buffer, char *end,
 		}/*switch*/
 	}/*for*/
 
+	if (status==PARA_VALUE_QUOTED) {
+			LM_ERR("unexpected end of header in state %d\n", status);
+			goto parse_error;
+	}
 
 endofheader:
+	LM_DBG("end of header reached, state=%d\n", status);
 	if (param) {
 		if (saved_status==S_EQUAL||saved_status==S_PARA_VALUE) {
 			saved_status = E_PARA_VALUE;
