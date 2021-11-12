@@ -24,6 +24,7 @@
 #include "../../str.h"
 #include "../../ut.h"
 #include "../../pt.h"
+#include "../../re.h"
 #include "../../mem/mem.h"
 #include "../../mem/shm_mem.h"
 #include "../../lib/list.h"
@@ -56,6 +57,7 @@ str prom_grp_label = str_init("group");
 httpd_api_t prom_httpd_api;
 
 static int prom_stats_param( modparam_t type, void* val);
+static int prom_labels_param( modparam_t type, void* val);
 
 /* module parameters */
 static param_export_t mi_params[] = {
@@ -66,6 +68,7 @@ static param_export_t mi_params[] = {
 	{"group_label", STR_PARAM, &prom_grp_label.s},
 	{"group_mode",  INT_PARAM, &prom_grp_mode},
 	{"statistics",  STR_PARAM|USE_FUNC_PARAM, &prom_stats_param},
+	{"labels",      STR_PARAM|USE_FUNC_PARAM, &prom_labels_param},
 	{0,0,0}
 };
 
@@ -105,6 +108,7 @@ struct module_exports exports = {
 
 static OSIPS_LIST_HEAD(prom_stats);
 static OSIPS_LIST_HEAD(prom_stat_mods);
+static OSIPS_LIST_HEAD(prom_labels);
 
 struct prom_stat {
 	str name;
@@ -114,6 +118,13 @@ struct prom_stat {
 		stat_var **stat; /* shm pointer to the stat */
 	};
 	char name_s[0];
+};
+
+struct prom_label {
+	str module;
+	struct list_head list;
+	struct subst_expr *subst;
+	char _buf[0];
 };
 
 static int mod_init(void)
@@ -168,9 +179,24 @@ static ssize_t prom_flush_data(void *cls, uint64_t pos, char *buf,
 	return -1;
 }
 
+struct prom_labels_stat {
+	str labels;
+	str *free_buf;
+	stat_var *stat;
+	struct list_head list;
+};
+
 struct prom_grp {
 	group_stats *grp;
 	struct list_head list;
+	struct list_head stats;
+};
+
+struct prom_labels_grp {
+	str name;
+	struct list_head list;
+	struct list_head stats;
+	char _buf[0];
 };
 
 static void prom_groups_add(struct list_head *groups, group_stats *grp)
@@ -191,11 +217,25 @@ static int prom_groups_exists(struct list_head *groups, group_stats *grp)
 	return 0;
 }
 
-static void prom_groups_free(struct list_head *groups)
+static void prom_groups_free(struct list_head *groups,
+		struct list_head *label_groups)
 {
 	struct list_head *it, *safe;
+	struct list_head *it_stat, *safe_stat;
+	struct prom_labels_grp *grp;
+	struct prom_labels_stat *stat;
+
 	list_for_each_safe(it, safe, groups)
 		pkg_free(list_entry(it, struct prom_grp, list));
+	list_for_each_safe(it, safe, label_groups) {
+		grp = list_entry(it, struct prom_labels_grp, list);
+		list_for_each_safe(it_stat, safe_stat, &grp->stats) {
+			stat = list_entry(it_stat, struct prom_labels_stat, list);
+			pkg_free(stat->free_buf);
+			pkg_free(stat);
+		}
+		pkg_free(grp);
+	}
 }
 
 
@@ -229,7 +269,7 @@ static void fill_stats_name(str *stat_name, str *page)
 }
 
 static inline int prom_print_stat(stat_var *stat, str *stat_name,
-		str *page, int max_len, int *skip_type)
+		str *labels, str *page, int max_len, int *skip_type)
 {
 	str v, id;
 	str *m = get_stat_module_name(stat);
@@ -251,6 +291,8 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		prefix.len = 1;
 	}
 	name_len = prefix.len + prom_delimiter.len + stat_name->len;
+	if (labels)
+		label_len = labels->len + 1;
 
 	switch (prom_grp_mode) {
 	case PROM_GROUP_MODE_NONE:
@@ -259,7 +301,7 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		name_len += prom_grp_prefix.len + m->len + prom_delimiter.len;
 		break;
 	case PROM_GROUP_MODE_LABEL:
-		label_len = prom_grp_label.len + 2 /* '="' */ +
+		label_len += prom_grp_label.len + 2 /* '="' */ +
 			prom_grp_prefix.len +  m->len + 1 /* '"' */;
 		label_idx++;
 		break;
@@ -344,6 +386,15 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		memcpy(page->s + page->len, "{", 1);
 		page->len += 1;
 
+		if (labels) {
+			memcpy(page->s + page->len, labels->s, labels->len);
+			page->len += labels->len;
+			if (labels->len != label_len) {
+				memcpy(page->s + page->len, ",", 1);
+				page->len += 1;
+			}
+		}
+
 		if (prom_grp_mode == PROM_GROUP_MODE_LABEL) {
 			memcpy(page->s + page->len, prom_grp_label.s, prom_grp_label.len);
 			page->len += prom_grp_label.len;
@@ -417,8 +468,98 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 	return 0;
 }
 
+static struct prom_labels_grp *prom_labels_grp_get(str *name, struct list_head *groups)
+{
+	struct prom_labels_grp *grp;
+	struct list_head *it;
+	list_for_each(it, groups) {
+		grp = list_entry(it, struct prom_labels_grp, list);
+		if (str_match(&grp->name, name))
+			return grp;
+	}
+	grp = pkg_malloc(sizeof (*grp) + name->len);
+	if (!grp) {
+		LM_ERR("oom for new labels group\n");
+		return NULL;
+	}
+	grp->name.s = grp->_buf;
+	memcpy(grp->name.s, name->s, name->len);
+	grp->name.len = name->len;
+	INIT_LIST_HEAD(&grp->stats);
+	list_add(&grp->list, groups);
+	return grp;
+}
+
+static int prom_push_stat_labels(stat_var *stat, struct list_head *groups)
+{
+	str input, name, labels;
+	str *result;
+	struct list_head *it;
+	struct prom_label *label = NULL;
+	str *mod;
+	int match_no;
+	struct prom_labels_stat *grp_stat;
+	struct prom_labels_grp *grp;
+
+	if (list_empty(&prom_labels))
+		return -1;
+
+	mod = get_stat_module_name(stat);
+
+	/* unknown module */
+	if (!mod)
+		return -1;
+	/* check to see if there are any labels regex defined for this group */
+	list_for_each(it, &prom_labels) {
+		label = list_entry(it, struct prom_label, list);
+		if (str_match(&label->module, mod))
+			break;
+		label = NULL;
+	}
+	if (!label)
+		return -1;
+	/* all good - apply regexp and see if there is any match */
+	if (pkg_nt_str_dup(&input, &stat->name) < 0)
+		return -1;
+
+	result = subst_str(input.s, NULL, label->subst, &match_no);
+	if (!result)
+		goto end;
+	name.s = result->s;
+	labels.s = q_memchr(result->s, ':', result->len);
+	if (labels.s == NULL)
+		goto free_result;
+
+	name.len = labels.s - name.s;
+	if (name.len <= 0)
+		goto free_result;
+	labels.s++;
+	labels.len = result->len - name.len - 1;
+	if (labels.len <= 0)
+		goto free_result;
+
+	grp = prom_labels_grp_get(&name, groups);
+	if (!grp)
+		goto free_result;
+
+	grp_stat = pkg_malloc(sizeof *grp_stat);
+	if (!grp_stat)
+		goto free_result;
+	grp_stat->labels = labels;
+	grp_stat->free_buf = result;
+	grp_stat->stat = stat;
+	list_add(&grp_stat->list, &grp->stats);
+	pkg_free(input.s);
+	return 0;
+free_result:
+	pkg_free(result);
+end:
+	pkg_free(input.s);
+	return -1;
+}
+
 static inline int prom_push_stat(stat_var *stat, str *page, int max_len,
-		struct list_head *groups)
+		struct list_head *groups, struct list_head *label_groups)
 {
 	int s, skip_type = 0;
 	group_stats *grp = NULL;
@@ -432,21 +573,23 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len,
 		/* print all stats in the group - the first one prints the type */
 		for (s = 0; s < grp->no; s++)
 			if (prom_print_stat(grp->vars[s],
-					&grp->name, page, max_len, &skip_type) < 0)
+					&grp->name, NULL, page, max_len, &skip_type) < 0)
 				return -1;
 		prom_groups_add(groups, grp); /* add the group, to make sure
 										 vars are not double printed */
 		return 0;
+	} else if (prom_push_stat_labels(stat, label_groups) < 0) {
+		return prom_print_stat(stat, &stat->name, NULL, page, max_len, 0);
 	} else {
-		return prom_print_stat(stat, &stat->name, page, max_len, 0);
+		return 0;
 	}
 }
 
 #define PROM_PUSH_STAT(_s) \
 	do { \
-		if (prom_push_stat(_s, page, buffer->len, &groups) < 0) { \
+		if (prom_push_stat(_s, page, buffer->len, &groups, &label_groups) < 0) { \
 			LM_ERR("out of memory for stats\n"); \
-			prom_groups_free(&groups); \
+			prom_groups_free(&groups, &label_groups); \
 			return MI_HTTP_INTERNAL_ERR_CODE; \
 		} \
 	} while(0)
@@ -458,10 +601,14 @@ int prom_answer_to_connection (void *cls, void *connection,
 	str *buffer, str *page, union sockaddr_union* cl_socket)
 {
 	struct list_head groups;
-	struct list_head *it;
+	struct list_head label_groups;
+	struct list_head *it, *grp;
 	struct prom_stat *s;
+	struct prom_labels_grp *lgrp;
+	struct prom_labels_stat *lstat;
 	module_stats *mod;
 	stat_var *stat;
+	int skip_type;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"version=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -480,6 +627,7 @@ int prom_answer_to_connection (void *cls, void *connection,
 	page->s = buffer->s;
 	page->len = 0;
 	INIT_LIST_HEAD(&groups);
+	INIT_LIST_HEAD(&label_groups);
 
 	if (prom_all_stats) {
 		mod = 0;
@@ -519,15 +667,27 @@ int prom_answer_to_connection (void *cls, void *connection,
 		PROM_PUSH_STAT(*s->stat);
 	}
 end:
+	list_for_each(grp, &label_groups) {
+		lgrp = list_entry(grp, struct prom_labels_grp, list);
+		skip_type = 0;
+		list_for_each(it, &lgrp->stats) {
+			lstat = list_entry(it, struct prom_labels_stat, list);
+			if (prom_print_stat(lstat->stat, &lgrp->name, &lstat->labels,
+					page, buffer->len, &skip_type) < 0) {
+				prom_groups_free(&groups, &label_groups);
+				return MI_HTTP_INTERNAL_ERR_CODE;
+			}
+		}
+	}
 	if (page->len + 1 >= buffer->len) {
 		LM_ERR("out of memory for stats\n");
-		prom_groups_free(&groups);
+		prom_groups_free(&groups, &label_groups);
 		return MI_HTTP_INTERNAL_ERR_CODE;
 	}
 	memcpy(page->s + page->len, "\n", 1);
 	page->len++;
 
-	prom_groups_free(&groups);
+	prom_groups_free(&groups, &label_groups);
 	return MI_HTTP_OK_CODE;
 }
 #undef PROM_PUSH_STAT
@@ -578,5 +738,52 @@ static int prom_stats_param( modparam_t type, void* val)
 		memcpy(s->name.s, name.s, name.len);
 		list_add(&s->list, head);
 	}
+	return 0;
+}
+
+static int prom_labels_param(modparam_t type, void* val)
+{
+	str module;
+	str regex;
+	struct prom_label *label;
+	init_str(&regex, val);
+
+	trim_leading(&regex);
+	module = regex;
+	while (regex.len > 0 && *regex.s != ':') {
+		regex.s++;
+		regex.len--;
+	}
+	module.len = regex.s - module.s;
+	if (module.len == 0) {
+		LM_ERR("no type regexined!\n");
+		return -1;
+	}
+	regex.s++;
+	regex.len--;
+	trim_leading(&regex);
+	if (regex.len <= 0) {
+		LM_ERR("no regex regexined!\n");
+		return -1;
+	}
+	label = pkg_malloc(sizeof(*label) + module.len);
+	if (!label) {
+		LM_ERR("oom for label!\n");
+		return -1;
+	}
+	memset(label, 0, sizeof *label);
+	label->module.s = label->_buf;
+	memcpy(label->module.s, module.s, module.len);
+	label->module.len = module.len;
+
+	label->subst = subst_parser(&regex);
+	if (!label->subst) {
+		pkg_free(label);
+		LM_ERR("could not parse substitution [%.*s]\n",
+				regex.len, regex.s);
+		return -1;
+	}
+	list_add(&label->list, &prom_labels);
+
 	return 0;
 }

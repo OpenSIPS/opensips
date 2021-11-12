@@ -207,6 +207,58 @@ modparam("prometheus", "statistics", "active_dialogs load:")
 </programlisting>
 		</example>
 	</section>
+	<section id="param_labels" xreflabel="labels">
+		<title><varname>labels</varname>(string)</title>
+		<para>
+			Rules that define how to convert the name of a statistic
+			within a group to obtain the name and set of labels to be
+			pushed in Prometheus.
+		</para>
+		<para>
+			The format is <emphasis>group: regex</emphasis>, where
+			<emphasis>group</emphasis> represents the group of statistics
+			for whom the regular expression should be applied for, and
+			<emphasis>regexp</emphasis> is a regular expression used to
+			match the statistic's name and convert it to the desired name
+			and labels.
+		</para>
+		<para>
+			The <emphasis>regex</emphasis> format is
+			<emphasis>/matching_expression/substitution_expression/flags</emphasis>.
+			The <emphasis>substitution_expression</emphasis> resulted after
+			the substituion should result in a string with the following
+			format: <emphasis>name:labels</emphasis>, where
+			<emphasis>name</emphasis> represents the name of the statistic
+			as it will be pushed towards Prometheus, and <emphasis>labels</emphasis>
+			the labels, expressed as <emphasis>key=value</emphasis> pairs
+			separated by comma, as they are received by Prometheus.
+			<emphasis>Note</emphasis> that the <emphasis>labels</emphasis>
+			string resulted is concatenated to the other labeles as
+			plain string - no other transformations are performed.
+		</para>
+		<para>
+			If a statistic's name within the declared group does not match the
+			regular, or the resulted format does not comply with the
+			<emphasis>name:labels</emphasis> format, the statistics transformations
+			are ignored and it shall be printed as a regular statistic, as if
+			the rule was not even used.
+		</para>
+		<para>
+			This parameter can be defined multiple times, once per group.
+		</para>
+		<para>
+		<emphasis>The default value is empty: statistic name is provided.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>statistics</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# convert duration_gateway to stat duration with gateway as a label
+modparam("prometheus", "statistics", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/")
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
