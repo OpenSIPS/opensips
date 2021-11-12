@@ -3305,7 +3305,12 @@ static int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		LM_ERR("invalid socket specification\n");
 		goto error;
 	}
-	set_sip_defaults( port, proto);
+	/*
+	 * Do not set the explicit proto and port, otherwise we won't be able to
+	 * match based on socket's tag
+	 *
+	 * set_sip_defaults( port, proto);
+	 */
 	si = grep_internal_sock_info(&host, (unsigned short)port,
 		(unsigned short)proto);
 	if (si!=NULL)
