@@ -1804,7 +1804,6 @@ parse_again:
 
 			case ':':
 				switch(state){
-					case F_HOST:
 					case F_IP6HOST:
 						state=P_IP6HOST;
 						break;
