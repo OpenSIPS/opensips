@@ -122,6 +122,8 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 	static struct sip_msg* fake_msg= NULL;
 	context_p old_ctx, *new_ctx;
 	int old_route_type;
+	struct usr_avp **old_avps;
+	struct usr_avp *local_avps = NULL;
 
 	/************* pre-run sequance ****************/
 
@@ -129,6 +131,8 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 		LM_ERR("failed to prepare context for runing dlg route\n");
 		return -1;
 	}
+
+	old_avps = set_avp_list( &local_avps );
 
 	swap_route_type(old_route_type, REQUEST_ROUTE);
 
@@ -147,8 +151,9 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 		context_destroy(CONTEXT_GLOBAL, *new_ctx);
 	current_processing_ctx = old_ctx;
 
-	/* remove all added AVP - here we use all the time the default AVP list */
-	reset_avps( );
+	/* remove all added AVP and restore the original list */
+	set_avp_list( old_avps );
+	destroy_avp_list( &local_avps );
 
 	return 0;
 }
