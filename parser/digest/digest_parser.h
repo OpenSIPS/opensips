@@ -69,7 +69,9 @@ typedef enum qop_type {
 	QOP_UNSPEC_D = 0,   /* QOP parameter not present in response */
 	QOP_AUTH_D = 1,     /* Authentication only */
 	QOP_AUTHINT_D = 2,  /* Authentication with integrity checks */
-	QOP_OTHER_D = 4     /* Unknown */
+	QOP_AUTHINT_AUTH_D = 3,  /* Authentication with integrity checks+Authentication only */
+	QOP_AUTH_AUTHINT_D = 4,  /* Authentication only+Authentication with integrity checks */
+	QOP_OTHER_D = 5     /* Unknown */
 } qop_type_t;
 
 /* Canonical QOP names */

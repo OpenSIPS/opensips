@@ -60,7 +60,8 @@
 
 #define QOP_AUTH	  ", qop=\"" QOP_AUTH_STR "\""
 #define QOP_AUTH_INT	  ", qop=\"" QOP_AUTHINT_STR "\""
-#define QOP_AUTH_BOTH	  ", qop=\"" QOP_AUTH_STR "," QOP_AUTHINT_STR "\""
+#define QOP_AUTH_BOTH_AAI	  ", qop=\"" QOP_AUTH_STR "," QOP_AUTHINT_STR "\""
+#define QOP_AUTH_BOTH_AIA	  ", qop=\"" QOP_AUTHINT_STR "," QOP_AUTH_STR "\""
 #define STALE_PARAM	  ", stale=true"
 #define DIGEST_REALM	  ": Digest realm=\""
 #define DIGEST_NONCE	  "\", nonce=\""
@@ -84,12 +85,22 @@ static inline char *build_auth_hf(int _retries, int _stale,
 	struct nonce_params calc_np;
 
 	if (_qop) {
-		if (_qop == QOP_TYPE_AUTH) {
+		switch (_qop) {
+		case QOP_TYPE_AUTH:
 			qop_param = str_const_init(QOP_AUTH);
-		} else if (_qop == QOP_TYPE_AUTH_INT) {
+			break;
+		case QOP_TYPE_AUTH_INT:
 			qop_param = str_const_init(QOP_AUTH_INT);
-		} else {
-			qop_param = str_const_init(QOP_AUTH_BOTH);
+			break;
+		case QOP_TYPE_AUTH_AUTH_INT:
+			qop_param = str_const_init(QOP_AUTH_BOTH_AAI);
+			break;
+		case QOP_TYPE_AUTH_INT_AUTH:
+			qop_param = str_const_init(QOP_AUTH_BOTH_AIA);
+			break;
+		default:
+			LM_ERR("Wrong _qop value: %d\n", _qop);
+			abort();
 		}
 	}
 	if (_stale)
@@ -264,12 +275,12 @@ int fixup_qop(void** param)
 	for (q = q_csv; q; q = q->next) {
 		if (!str_strcmp(&q->s, const_str(QOP_AUTH_STR)))  {
 			if (qop_type == QOP_TYPE_AUTH_INT)
-				qop_type = QOP_TYPE_BOTH;
+				qop_type = QOP_TYPE_AUTH_INT_AUTH;
 			else
 				qop_type = QOP_TYPE_AUTH;
 		} else if (!str_strcmp(&q->s, const_str(QOP_AUTHINT_STR))) {
 			if (qop_type == QOP_TYPE_AUTH)
-				qop_type = QOP_TYPE_BOTH;
+				qop_type = QOP_TYPE_AUTH_AUTH_INT;
 			else
 				qop_type = QOP_TYPE_AUTH_INT;
 		} else {
