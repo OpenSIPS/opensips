@@ -72,7 +72,7 @@
  * Create {WWW,Proxy}-Authenticate header field
  */
 static inline char *build_auth_hf(int _retries, int _stale,
-    const str_const *_realm, int* _len, int _qop, alg_t alg,
+    const str_const *_realm, int* _len, qop_type_t _qop, alg_t alg,
     const str_const *alg_val, const str_const* _hf_name,
     int index)
 {
@@ -86,16 +86,16 @@ static inline char *build_auth_hf(int _retries, int _stale,
 
 	if (_qop) {
 		switch (_qop) {
-		case QOP_TYPE_AUTH:
+		case QOP_AUTH_D:
 			qop_param = str_const_init(QOP_AUTH);
 			break;
-		case QOP_TYPE_AUTH_INT:
+		case QOP_AUTHINT_D:
 			qop_param = str_const_init(QOP_AUTH_INT);
 			break;
-		case QOP_TYPE_AUTH_AUTH_INT:
+		case QOP_AUTHINT_AUTH_D:
 			qop_param = str_const_init(QOP_AUTH_BOTH_AAI);
 			break;
-		case QOP_TYPE_AUTH_INT_AUTH:
+		case QOP_AUTH_AUTHINT_D:
 			qop_param = str_const_init(QOP_AUTH_BOTH_AIA);
 			break;
 		default:
@@ -175,7 +175,7 @@ e1:
 /*
  * Create and send a challenge
  */
-static inline int challenge(struct sip_msg* _msg, str *realm, int _qop,
+static inline int challenge(struct sip_msg* _msg, str *realm, qop_type_t _qop,
     int _code, const str *reason, const str_const *_challenge_msg, int algmask)
 {
 	struct hdr_field* h = NULL;
@@ -215,9 +215,9 @@ static inline int challenge(struct sip_msg* _msg, str *realm, int _qop,
 	}
 
 	nalgs = 0;
-	if (algmask >= ALGFLG_SHA256 && _qop == 0) {
-		/* RFC8760 mandates QOP */
-		_qop = QOP_TYPE_AUTH;
+	if (algmask >= ALG_MD5SESS && _qop == QOP_UNSPEC_D) {
+		/* RFC8760 algos and XYZ-sess mandates QOP */
+		_qop = QOP_AUTH_D;
 	}
 	if(!disable_nonce_check) {
 		/* get the nonce index and mark it as used */
@@ -264,7 +264,7 @@ failure:
 int fixup_qop(void** param)
 {
 	str *s = (str*)*param;
-	int qop_type = 0;
+	qop_type_t qop_type = QOP_UNSPEC_D;
 	csv_record *q_csv, *q;
 
 	q_csv = parse_csv_record(s);
@@ -274,15 +274,15 @@ int fixup_qop(void** param)
 	}
 	for (q = q_csv; q; q = q->next) {
 		if (!str_strcmp(&q->s, const_str(QOP_AUTH_STR)))  {
-			if (qop_type == QOP_TYPE_AUTH_INT)
-				qop_type = QOP_TYPE_AUTH_INT_AUTH;
+			if (qop_type == QOP_AUTHINT_D)
+				qop_type = QOP_AUTHINT_AUTH_D;
 			else
-				qop_type = QOP_TYPE_AUTH;
+				qop_type = QOP_AUTH_D;
 		} else if (!str_strcmp(&q->s, const_str(QOP_AUTHINT_STR))) {
-			if (qop_type == QOP_TYPE_AUTH)
-				qop_type = QOP_TYPE_AUTH_AUTH_INT;
+			if (qop_type == QOP_AUTH_D)
+				qop_type = QOP_AUTH_AUTHINT_D;
 			else
-				qop_type = QOP_TYPE_AUTH_INT;
+				qop_type = QOP_AUTHINT_D;
 		} else {
 			LM_ERR("Bad qop type\n");
 			free_csv_record(q_csv);
@@ -302,7 +302,7 @@ int www_challenge(struct sip_msg* _msg, str* _realm, void* _qop,
     intptr_t algmask)
 {
 
-	return challenge(_msg, _realm, (int)(long)_qop, WWW_AUTH_CODE,
+	return challenge(_msg, _realm, (qop_type_t)(long)_qop, WWW_AUTH_CODE,
 	    &str_init(MESSAGE_401), &str_const_init(WWW_AUTH_HDR),
 	    algmask ? algmask : ALGFLG_UNSPEC);
 }
@@ -315,7 +315,7 @@ int proxy_challenge(struct sip_msg* _msg, str* _realm, void* _qop,
     intptr_t algmask)
 {
 
-	return challenge(_msg, _realm, (int)(long)_qop, PROXY_AUTH_CODE,
+	return challenge(_msg, _realm, (qop_type_t)(long)_qop, PROXY_AUTH_CODE,
 	    &str_init(MESSAGE_407), &str_const_init(PROXY_AUTH_HDR),
 	    algmask ? algmask : ALGFLG_UNSPEC);
 }

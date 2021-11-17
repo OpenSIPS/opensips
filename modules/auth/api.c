@@ -231,8 +231,8 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 	qop_type_t qop = dcp->qop.qop_parsed;
 	if (np.qop != qop) {
 		switch (np.qop) {
-		case QOP_TYPE_AUTH_AUTH_INT:
-		case QOP_TYPE_AUTH_INT_AUTH:
+		case QOP_AUTH_AUTHINT_D:
+		case QOP_AUTHINT_AUTH_D:
 			if (qop == QOP_AUTH_D || qop == QOP_AUTHINT_D)
 				break;
 			/* Fall through */
