@@ -229,10 +229,17 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 		goto stalenonce;
 	}
 	qop_type_t qop = dcp->qop.qop_parsed;
-	if ((np.qop != qop) &&
-	    (np.qop != QOP_TYPE_BOTH || (qop != QOP_AUTH_D && qop != QOP_AUTHINT_D))) {
-		LM_DBG("nonce does not match qop\n");
-		goto stalenonce;
+	if (np.qop != qop) {
+		switch (np.qop) {
+		case QOP_AUTH_AUTHINT_D:
+		case QOP_AUTHINT_AUTH_D:
+			if (qop == QOP_AUTH_D || qop == QOP_AUTHINT_D)
+				break;
+			/* Fall through */
+		default:
+			LM_DBG("nonce (%d) does not match qop (%d)\n", np.qop, qop);
+			goto stalenonce;
+		}
 	}
 	if (is_nonce_stale(&np, nonce_expire)) {
 		LM_DBG("stale nonce value received\n");

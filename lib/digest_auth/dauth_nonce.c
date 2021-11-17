@@ -59,7 +59,7 @@ _Static_assert(offsetof(struct nonce_context_priv, pub) == 0,
 
 struct nonce_payload {
 	int index;
-	uint64_t qop:2;
+	uint64_t qop:3;
 	uint64_t alg:3;
 	uint64_t expires_sec:34;
 	uint64_t expires_usec:20;
