@@ -1245,14 +1245,15 @@ static inline void JSON_free(void* root)
 
 static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 {
-	#define UPDATE_CHECK_REMAINING(__rem, __len, __curr) \
+	#define HEP3_BUF_APPEND(_dst, _src, _sz) \
 		do { \
-			if (__rem < __curr) { \
+			if (rem < (_sz)) { \
 				LM_BUG("bad packet length inside hep structure!\n"); \
-				return NULL; \
+				goto out_err; \
 			} \
-			__rem -= __curr; \
-			__len += __curr; \
+			memcpy((_dst), (_src), (_sz)); \
+			rem -= (_sz); \
+			(*len) += (_sz); \
 		} while (0);
 
 
@@ -1353,20 +1354,17 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		return NULL;
 	}
 
-	memcpy(buf, &hep_msg->u.hepv3.hg, sizeof(hep_generic_t));
-	UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_generic_t));
+	HEP3_BUF_APPEND(buf, &hep_msg->u.hepv3.hg, sizeof(hep_generic_t));
 
 	if (hep_msg->u.hepv3.hg.ip_family.data == AF_INET) {
-		memcpy(buf+*len, &hep_msg->u.hepv3.addr.ip4_addr, sizeof(struct ip4_addr));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(struct ip4_addr));
+		HEP3_BUF_APPEND(buf+*len, &hep_msg->u.hepv3.addr.ip4_addr, sizeof(struct ip4_addr));
 	}
 	/* IPv6 */
 	else if(hep_msg->u.hepv3.hg.ip_family.data == AF_INET6) {
-		memcpy(buf+*len, &hep_msg->u.hepv3.addr.ip6_addr, sizeof(struct ip6_addr));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(struct ip6_addr));
+		HEP3_BUF_APPEND(buf+*len, &hep_msg->u.hepv3.addr.ip6_addr, sizeof(struct ip6_addr));
 	} else {
 		LM_ERR("unknown IP family\n");
-		return NULL;
+		goto out_err;
 	}
 
 	if ( hep_msg->u.hepv3.payload_chunk.data
@@ -1377,23 +1375,18 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		hep_msg->u.hepv3.payload_chunk.chunk.length =
 					htons(hep_msg->u.hepv3.payload_chunk.chunk.length);
 
-		memcpy(buf+*len, &hep_msg->u.hepv3.payload_chunk, sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
-
-		memcpy(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
-		UPDATE_CHECK_REMAINING(rem, *len, pld_len);
+		HEP3_BUF_APPEND(buf+*len, &hep_msg->u.hepv3.payload_chunk, sizeof(hep_chunk_t));
+		HEP3_BUF_APPEND(buf+*len, hep_msg->u.hepv3.payload_chunk.data, pld_len);
 	}
 
 	/* copy the correlation if exists */
 	if ( hep_msg->correlation ) {
 		/* if on it will be with the rest of the chunks */
 		if ( !homer5_on ) {
-			memcpy( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
-			UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
+			HEP3_BUF_APPEND( buf + *len, &correlation.chunk, sizeof(hep_chunk_t));
 
 			/* can't get the correlation length from header since it's in htons form */
-			memcpy(buf + *len, correlation.data, corr_len);
-			UPDATE_CHECK_REMAINING(rem, *len, corr_len);
+			HEP3_BUF_APPEND(buf + *len, correlation.data, corr_len);
 
 			/* just dumped the string - no need to keep it further on */
 			cJSON_PurgeString((char *)correlation.data);
@@ -1407,22 +1400,21 @@ static char* build_hep3_buf(struct hep_desc* hep_msg, int* len)
 		it->chunk.length = htons(it->chunk.length);
 		it->chunk.type_id = htons(it->chunk.type_id);
 
-		memcpy(buf+*len, &it->chunk, sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, sizeof(hep_chunk_t));
-
-		memcpy(buf+*len, it->data, hdr_len - sizeof(hep_chunk_t));
-		UPDATE_CHECK_REMAINING(rem, *len, hdr_len - sizeof(hep_chunk_t));
+		HEP3_BUF_APPEND(buf+*len, &it->chunk, sizeof(hep_chunk_t));
+		HEP3_BUF_APPEND(buf+*len, it->data, hdr_len - sizeof(hep_chunk_t));
 	}
 
 	if (rem) {
 		LM_ERR("%d bytes not copied!\n", rem);
-		return NULL;
+		goto out_err;
 	}
-
 
 	return buf;
 
-#undef UPDATE_CHECK_REMAINING
+out_err:
+	pkg_free(buf);
+	return NULL;
+#undef HEP3_BUF_APPEND
 }
 
 /*
