@@ -37,7 +37,7 @@
  */
 size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 {
-	int len = size * nmemb;
+	unsigned int len = size * nmemb;
 	str *buff = (str *)body;
 
 #ifdef EXTRA_DEBUG
@@ -46,9 +46,6 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 
 	if (len == 0)
 		return 0;
-
-	if (len < 0)
-		len = strlen(ptr);
 
 	buff->s = pkg_realloc(buff->s, buff->len + len + 1);
 	if (!buff->s) {
