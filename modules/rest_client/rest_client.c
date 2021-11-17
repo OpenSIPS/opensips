@@ -51,6 +51,7 @@ long connection_timeout_ms;
 int max_async_transfers = 100;
 long curl_timeout = 20;
 char *ssl_capath;
+unsigned int max_transfer_size = 10240; /* KB (10MB) */
 
 /*
  * curl_multi_perform() may indicate a "try again" response even
@@ -196,6 +197,7 @@ static param_export_t params[] = {
 	{ "connection_timeout",	INT_PARAM, &connection_timeout	},
 	{ "connect_poll_interval", INT_PARAM, &connect_poll_interval },
 	{ "max_async_transfers", INT_PARAM, &max_async_transfers },
+	{ "max_transfer_size",	INT_PARAM, &max_transfer_size	},
 	{ "curl_timeout",		INT_PARAM, &curl_timeout		},
 	{ "ssl_capath",			STR_PARAM, &ssl_capath			},
 	{ "ssl_verifypeer",		INT_PARAM, &ssl_verifypeer		},

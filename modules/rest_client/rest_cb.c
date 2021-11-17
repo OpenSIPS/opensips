@@ -34,6 +34,8 @@
  * @size:	size of a block
  * @nmemb:	number of blocks
  * @body:	parameter previously set with the CURLOPT_WRITEDATA option
+ *
+ * Return: number of bytes processed (if != @len, transfer is aborted)
  */
 size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 {
@@ -47,11 +49,17 @@ size_t write_func(char *ptr, size_t size, size_t nmemb, void *body)
 	if (len == 0)
 		return 0;
 
+	if (max_transfer_size && buff->len + len > max_transfer_size * 1024UL) {
+		LM_ERR("max download size exceeded (%u KB, per 'max_transfer_size'), "
+		       "aborting transfer\n", max_transfer_size);
+		return 0;
+	}
+
 	buff->s = pkg_realloc(buff->s, buff->len + len + 1);
 	if (!buff->s) {
 		buff->len = 0;
 		LM_ERR("No more pkg memory!\n");
-		return E_OUT_OF_MEM;
+		return 0;
 	}
 
 	memcpy(buff->s + buff->len, ptr, len);

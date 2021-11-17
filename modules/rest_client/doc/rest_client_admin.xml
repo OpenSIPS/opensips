@@ -147,6 +147,29 @@ modparam("rest_client", "max_async_transfers", 300)
 		</example>
 	</section>
 
+	<section id="param_max_transfer_size" xreflabel="max_transfer_size">
+		<title><varname>max_transfer_size</varname> (integer)</title>
+		<para>
+		The maximum allowed size of a single transfer (download).  Reaching
+		this limit during a transfer will cause the transfer to stop
+		immediately, returning error -10 at script level.  A value of
+		<emphasis role='bold'>0</emphasis> will disable the check.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>10240</quote> (KB).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>max_transfer_size</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "max_transfer_size", 64)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_ssl_verifypeer" xreflabel="ssl_verifypeer">
 		<title><varname>ssl_verifypeer</varname> (integer)</title>
 		<para>
