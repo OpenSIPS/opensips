@@ -31,5 +31,6 @@ enum tr_rest_subtype {
 };
 
 extern int enable_expect_100;
+extern unsigned int max_transfer_size;
 
 #endif /* _REST_CLIENT_ */
