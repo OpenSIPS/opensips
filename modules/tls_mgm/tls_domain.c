@@ -772,9 +772,19 @@ int update_matching_map(struct tls_domain *tls_dom)
 
 		/* map this address to each domain filter of this tls domain */
 		for (domf_s = tls_dom->match_domains; domf_s; domf_s = domf_s->next) {
-			pos = (doms_array->size)++;
-			doms_array->arr[pos].hostname = domf_s;
-			doms_array->arr[pos].dom_link = tls_dom;
+			for (pos = 0; pos < doms_array->size &&
+				str_strcmp(&domf_s->s, &doms_array->arr[pos].hostname->s); pos++) ;
+
+			if (pos == doms_array->size) {
+				if (doms_array->size == DOM_FILT_ARR_MAX) {
+					LM_ERR("Too many domain filters per address\n");
+					return -1;
+				}
+
+				doms_array->size++;
+				doms_array->arr[pos].hostname = domf_s;
+				doms_array->arr[pos].dom_link = tls_dom;
+			}
 		}
 	}
 
