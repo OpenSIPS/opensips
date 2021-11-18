@@ -2079,6 +2079,12 @@ after_unlock5:
 					/* save INVITE cseq, in case any requests follow after this
 					( pings or other in-dialog requests until the ACK comes in */
 					dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
+
+					/* Received RE-INVITE where we mangle the CSEQ due to existing pings sent
+					 *
+					 * Set the FL_USE_UAC_CSEQ flag so that the TM build_local knows to get the
+					 * CSEQ from the INVITE when generating the ACK */
+					req->msg_flags |= FL_USE_UAC_CSEQ;
 				}
 
 				dlg_unlock( d_table, d_entry );
