@@ -196,10 +196,13 @@
 	<listitem><para>list of gateways with/without weights (string)
 	(Ex:<quote>gw1=10,gw4=10</quote> or <quote>gw1,gw2</quote>
 	</para></listitem>
-	<listitem><para>flags : 0x1 - use weight for sorting the list and
-	not definition order; 0x2 - use only the first gateway from the carrier
-	(depending on the sorting); 0x4 - disable the usage of this
+	<listitem><para>flags : 0x1 - use only the first gateway from the carrier
+	(depending on the sorting); 0x2 - disable the usage of this
 	carrier</para></listitem>
+	<listitem><para>sort algorithm : how the list of the gateways should be
+	sorted before being used, NULL - use the DB given order, W - do weight
+	based re-ordering, Q - do quality based sorting (requires the qrouting 
+	module)</para></listitem>
 	<listitem><para>attributes (not used by DR engine, but only pushed
 	to script level when routing to this carrier)</para></listitem>
 	</itemizedlist>
