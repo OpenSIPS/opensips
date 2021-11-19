@@ -245,6 +245,16 @@ static int cgrc_conn(struct cgr_conn *c)
 	int s = -1;
 	union sockaddr_union my_name;
 	struct ip_addr *ip;
+	struct hostent *he;
+
+	if (c->engine->is_fqdn) {
+		he = resolvehost(c->engine->host.s, 1);
+		if (!he || hostent2su(&c->engine->su, he, 0, c->engine->port) < 0) {
+			LM_ERR("cannot resolve %.*s:%d\n", c->engine->host.len,
+					c->engine->host.s, c->engine->port);
+			return -1;
+		}
+	}
 
 	if (cgre_bind_ip.s) {
 		if ((ip = str2ip(&cgre_bind_ip)) == NULL) {

@@ -27,6 +27,8 @@ struct cgr_engine {
 	/* engine params */
 	short port;
 	str host;
+
+	int is_fqdn;
 	union sockaddr_union su;
 	time_t disable_time;
 

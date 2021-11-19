@@ -324,14 +324,10 @@ static int cgrates_set_engine(modparam_t type, void * val)
 		port = CGR_DEFAULT_PORT;
 	}
 	str_trim_spaces_lr(host);
-	if ((ip = str2ip(&host)) == NULL) {
-		LM_ERR("invalid ip in cgr engine host: %.*s\n", host.len, host.s);
-		return -1;
-	}
 
 	LM_DBG("Adding cgrates engine %.*s:%u\n", host.len, host.s, port);
 
-	e = pkg_malloc(sizeof(*e) + host.len);
+	e = pkg_malloc(sizeof(*e) + host.len + 1);
 	if (!e) {
 		LM_ERR("out of pkg mem!\n");
 		return -1;
@@ -340,9 +336,14 @@ static int cgrates_set_engine(modparam_t type, void * val)
 	e->host.s = (char *)(e + 1);
 	e->host.len = host.len;
 	memcpy(e->host.s, host.s, host.len);
+	e->host.s[e->host.len] = '\0';
 
 	e->port = port;
-	init_su(&e->su, ip, port);
+
+	if ((ip = str2ip(&host)) || (ip = str2ip6(&host)))
+		init_su(&e->su, ip, port);
+	else
+		e->is_fqdn = 1;
 
 	INIT_LIST_HEAD(&e->conns);
 
