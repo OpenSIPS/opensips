@@ -670,10 +670,8 @@ int cgr_handle_async_cmd(struct sip_msg *msg, json_object *jmsg,
 		if (!(c = cgr_get_free_conn(e)))
 			continue;
 		/* found a free connection - build the buffer */
-		if (cgrc_send(c, &smsg) < 0) {
-			cgrc_close(c, CGRC_IS_LISTEN(c));
+		if (cgrc_send(c, &smsg) < 0)
 			continue;
-		}
 		cp->c = c;
 		/* message successfully sent - now fetch the reply */
 		if (CGRC_IS_DEFAULT(c)) {

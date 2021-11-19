@@ -31,6 +31,7 @@
 #include "../../mem/mem.h"
 #include "../../db/db.h"
 #include "../../mod_fix.h"
+#include "../../ipc.h"
 #include "../../lib/list.h"
 #include "../../resolve.h"
 #include "cgrates.h"
@@ -277,8 +278,8 @@ static int child_init(int rank)
 		if ((c = cgrc_new(e)) != NULL) {
 			e->default_con = c;
 			CGRC_SET_DEFAULT(c);
-			if (cgrc_conn(c) >= 0)
-				cgrc_start_listen(c);
+			if (ipc_send_rpc(process_no, cgrc_conn_rpc, c) < 0)
+				LM_ERR("could not send connect job!\n");
 		}
 	}
 	return cgr_init_common();
