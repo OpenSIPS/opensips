@@ -295,10 +295,13 @@ Chapter 1. Admin Guide
      * id (string)
      * list of gateways with/without weights (string)
        (Ex:“gw1=10,gw4=10” or “gw1,gw2”
-     * flags : 0x1 - use weight for sorting the list and not
-       definition order; 0x2 - use only the first gateway from the
-       carrier (depending on the sorting); 0x4 - disable the usage
-       of this carrier
+     * flags : 0x1 - use only the first gateway from the carrier
+       (depending on the sorting); 0x2 - disable the usage of this
+       carrier
+     * sort algorithm : how the list of the gateways should be
+       sorted before being used, NULL - use the DB given order, W
+       - do weight based re-ordering, Q - do quality based sorting
+       (requires the qrouting module)
      * attributes (not used by DR engine, but only pushed to
        script level when routing to this carrier)
 
@@ -1643,7 +1646,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 378 180 12944 5585
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 379 181 12950 5588
    2. Liviu Chircu (@liviuchircu) 131 73 2132 2412
    3. Razvan Crainea (@razvancrainea) 93 47 1144 2182
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
@@ -1681,8 +1684,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Aug 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2021
    3.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
    4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
    5.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jan 2020
