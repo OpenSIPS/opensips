@@ -31,14 +31,14 @@
 
 #include "siprec_sess.h"
 #include "siprec_logic.h"
+#include "siprec_var.h"
 
 static int mod_preinit(void);
 static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
-static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
-		str *_cA, str *_cB, str *rtp, str *m_ip, str *_hdrs);
+static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp);
 static int siprec_pause_rec(struct sip_msg *msg);
 static int siprec_resume_rec(struct sip_msg *msg);
 
@@ -61,11 +61,6 @@ static dep_export_t deps = {
 static cmd_export_t cmds[] = {
 	{"siprec_start_recording",(cmd_function)siprec_start_rec, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{"siprec_pause_recording",(cmd_function)siprec_pause_rec,
@@ -83,6 +78,13 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
+static pv_export_t vars[] = {
+	{ {"siprec", sizeof("siprec")-1}, 1000,
+		pv_get_siprec, pv_set_siprec, pv_parse_siprec,
+		0, 0, 0 },
+};
+
+
 /* module exports */
 struct module_exports exports = {
 	"siprec",						/* module name */
@@ -96,7 +98,7 @@ struct module_exports exports = {
 	params,							/* exported parameters */
 	0,								/* exported statistics */
 	0,								/* exported MI functions */
-	0,								/* exported pseudo-variables */
+	vars,							/* exported pseudo-variables */
 	0,								/* extra processes */
 	0,								/* extra transformations */
 	mod_preinit,					/* module pre-initialization function */
@@ -133,6 +135,11 @@ static int mod_preinit(void)
 	}
 
 	srec_dlg_idx = srec_dlg.dlg_ctx_register_ptr(NULL);
+
+	if (init_srec_var() < 0) {
+		LM_ERR("cannot initialize siprec variable!\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -188,13 +195,13 @@ static void tm_src_unref_session(void *p)
 /*
  * function that simply prints the parameters passed
  */
-static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
-		str *_cA, str *_cB, str *rtp, str *m_ip, str *_hdrs)
+static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp)
 {
 	int ret;
 	str *aor, *display, *xml_val;
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
+	struct srec_var *var;
 
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
@@ -206,11 +213,17 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 		dlg = srec_dlg.get_dlg();
 	}
 
+	var = get_srec_var();
+
 	/* XXX: if there is a forced send socket in the message, use it
 	 * this is the only way to provide a different socket for SRS, but
 	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_new_session(srs, rtp, m_ip, group, _hdrs, msg->force_send_socket))) {
+	if (!(ss = src_new_session(srs, rtp,
+				(var && var->media.len?&var->media:NULL),
+				(var && var->group.len?&var->group:NULL),
+				(var && var->headers.len?&var->headers:NULL),
+				msg->force_send_socket))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}
@@ -224,8 +237,8 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 	ret = -2;
 
 	/* caller info */
-	if (_cA) {
-		xml_val = _cA;
+	if (var && var->caller.len) {
+		xml_val = &var->caller;
 		display = aor = NULL;
 	} else {
 		if (parse_from_header(msg) < 0) {
@@ -246,8 +259,8 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *group,
 		goto session_cleanup;
 	}
 	/* caller info */
-	if (_cB) {
-		xml_val = _cB;
+	if (var && var->callee.len) {
+		xml_val = &var->callee;
 	} else {
 		if ((!msg->to && parse_headers(msg, HDR_TO_F, 0) < 0) || !msg->to) {
 			LM_ERR("inexisting or invalid to header!\n");
