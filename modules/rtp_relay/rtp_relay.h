@@ -41,7 +41,7 @@ struct rtp_relay_server {
 	str node;
 };
 
-struct rtp_relay_binds {
+struct rtp_relay_funcs {
 	int (*offer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *ip, str *type, str *in_iface, str *out_iface,
 			str *flags, str *extra, str *body);
@@ -54,16 +54,16 @@ struct rtp_relay_binds {
 
 struct rtp_relay {
 	str name;
-	struct rtp_relay_binds binds;
+	struct rtp_relay_funcs funcs;
 	struct list_head list;
 	char _name_s[0];
 };
 
-typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_binds *);
+typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_funcs *);
 struct rtp_relay *rtp_relay_get(str *name);
-int rtp_relay_reg(char *name, struct rtp_relay_binds *binds);
+int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs);
 
-static inline int register_rtp_relay(char *name, struct rtp_relay_binds *binds)
+static inline int register_rtp_relay(char *name, struct rtp_relay_funcs *funcs)
 {
 	reg_rtp_relay_f func;
 
@@ -71,7 +71,7 @@ static inline int register_rtp_relay(char *name, struct rtp_relay_binds *binds)
 	if (!(func=(reg_rtp_relay_f)find_export("register_rtp_relay", 0)))
 		return -1;
 
-	return func(name, binds);
+	return func(name, funcs);
 }
 
 #endif /* _RTP_RELAY_H_ */

@@ -1232,7 +1232,7 @@ static pv_spec_t media_pvar;
 static int mod_preinit(void)
 {
 	static str rtpengine_relay_pvar_str = str_init("$var(___rtpengine_relay_var__)");
-	struct rtp_relay_binds binds = {
+	struct rtp_relay_funcs binds = {
 		.offer = rtpengine_api_offer,
 		.answer = rtpengine_api_answer,
 		.delete = rtpengine_api_delete,

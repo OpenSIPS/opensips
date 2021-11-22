@@ -468,7 +468,7 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	if (sess->relay->binds.offer(info, &sess->server,
+	if (sess->relay->funcs.offer(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
@@ -490,7 +490,7 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	return sess->relay->binds.answer(info, &sess->server,
+	return sess->relay->funcs.answer(info, &sess->server,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
@@ -508,7 +508,7 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	ret = sess->relay->binds.delete(info, &sess->server,
+	ret = sess->relay->funcs.delete(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_OFFER, RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_PEER));
 	if (ret < 0)

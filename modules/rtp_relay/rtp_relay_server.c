@@ -36,7 +36,7 @@ struct rtp_relay *rtp_relay_get(str *name)
 	return NULL;
 }
 
-int rtp_relay_reg(char *name, struct rtp_relay_binds *binds)
+int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs)
 {
 	struct rtp_relay *relay;
 	str name_s;
@@ -56,7 +56,7 @@ int rtp_relay_reg(char *name, struct rtp_relay_binds *binds)
 	relay->name.len = name_s.len;
 	relay->name.s = relay->_name_s;
 	memcpy(relay->name.s, name_s.s, name_s.len);
-	memcpy(&relay->binds, binds, sizeof *binds);
+	memcpy(&relay->funcs, funcs, sizeof *funcs);
 
 	list_add(&relay->list, &rtp_relays);
 	LM_INFO("Adding RTP relay %.*s\n", relay->name.len, relay->name.s);

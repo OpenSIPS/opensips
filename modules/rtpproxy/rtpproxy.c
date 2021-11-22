@@ -1052,7 +1052,7 @@ static pv_spec_t media_pvar;
 static int mod_preinit(void)
 {
 	static str rtpproxy_relay_pvar_str = str_init("$var(___rtpproxy_relay_var__)");
-	struct rtp_relay_binds binds = {
+	struct rtp_relay_funcs binds = {
 		.offer = rtpproxy_api_offer,
 		.answer = rtpproxy_api_answer,
 		.delete = rtpproxy_api_delete,
