@@ -551,7 +551,12 @@ modparam("dialplan", "repl_exp_col", "column_name")
 		<title><varname>timerec_col</varname> (integer)</title>
 		<para>
 		The column name that indicates an additional time recurrence check 
-		within the rule (column values are RFC 2445-compatible strings)
+		within the rule (column values are RFC 2445-compatible strings).  The
+		value format is identical to the input of the
+		<ulink url='cfgutils#func_check_time_rec'>check_time_rec()</ulink>
+		function of the <emphasis>cfgutils</emphasis> module, including the
+		optional use of logical operators linking multiple such strings into a
+		larger expression.
 		</para>
 		<para>
 		<emphasis>
