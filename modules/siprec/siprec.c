@@ -223,7 +223,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp)
 				(var && var->media.len?&var->media:NULL),
 				(var && var->group.len?&var->group:NULL),
 				(var && var->headers.len?&var->headers:NULL),
-				msg->force_send_socket))) {
+				(var?var->si:NULL)))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}

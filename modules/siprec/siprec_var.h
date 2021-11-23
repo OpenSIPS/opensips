@@ -23,9 +23,11 @@
 
 #include "../../str.h"
 #include "../../pvar.h"
+#include "../../socket_info.h"
 
 struct srec_var {
 	str group, caller, callee, media, headers;
+	struct socket_info *si;
 };
 
 int init_srec_var(void);

@@ -28,6 +28,7 @@
 #define SIPREC_VAR_CALLEE_ID	(1 << 2)
 #define SIPREC_VAR_HEADERS_ID	(1 << 3)
 #define SIPREC_VAR_MEDIA_ID		(1 << 4)
+#define SIPREC_VAR_SOCKET_ID	(1 << 5)
 
 struct {
 	const char *name;
@@ -38,6 +39,7 @@ struct {
 	{"callee", SIPREC_VAR_CALLEE_ID},
 	{"media_ip", SIPREC_VAR_MEDIA_ID},
 	{"headers", SIPREC_VAR_HEADERS_ID},
+	{"socket", SIPREC_VAR_SOCKET_ID},
 };
 
 static int srec_msg_idx;
@@ -177,6 +179,11 @@ int pv_get_siprec(struct sip_msg *msg,  pv_param_t *param,
 		case SIPREC_VAR_HEADERS_ID:
 			field = &sv->headers;
 			break;
+		case SIPREC_VAR_SOCKET_ID:
+			if (!sv->si)
+				return pv_get_null(msg, param, val);
+			field = get_socket_real_name(sv->si);
+			break;
 		default:
 			LM_BUG("unknown field!\n");
 		case SIPREC_VAR_INVAID_ID:
@@ -221,6 +228,18 @@ int pv_set_siprec(struct sip_msg* msg, pv_param_t *param,
 		case SIPREC_VAR_HEADERS_ID:
 			field = &sv->headers;
 			break;
+		case SIPREC_VAR_SOCKET_ID:
+			if (!(val->flags & PV_VAL_STR)) {
+				LM_ERR("invalid socket type!\n");
+				return -1;
+			}
+			sv->si = parse_sock_info(&val->rs);
+			if (!sv->si) {
+				LM_ERR("socket info not existing %.*s\n",
+						val->rs.len, val->rs.s);
+				return -1;
+			}
+			return 1;
 		default:
 			LM_BUG("unknown field %d!\n", pv_parse_siprec_get_name(msg, param));
 		case SIPREC_VAR_INVAID_ID:
