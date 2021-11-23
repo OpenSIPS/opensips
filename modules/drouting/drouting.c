@@ -72,7 +72,7 @@ static str dr_probe_replies = {NULL,0};
 struct tm_binds dr_tmb;
 str dr_probe_method = str_init("OPTIONS");
 str dr_probe_from = str_init("sip:prober@localhost");
-static char *dr_probe_sock_s = NULL;
+static str dr_probe_sock_s;
 struct socket_info *dr_probe_sock = NULL;
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
@@ -490,7 +490,7 @@ static param_export_t params[] = {
 	{"probing_interval", INT_PARAM, &dr_prob_interval         },
 	{"probing_method",   STR_PARAM, &dr_probe_method.s        },
 	{"probing_from",     STR_PARAM, &dr_probe_from.s          },
-	{"probing_socket",   STR_PARAM, &dr_probe_sock_s          },
+	{"probing_socket",   STR_PARAM, &dr_probe_sock_s.s        },
 	{"probing_reply_codes",STR_PARAM, &dr_probe_replies.s     },
 	{"persistent_state", INT_PARAM, &dr_persistent_state      },
 	{"rule_tables_query",STR_PARAM|USE_FUNC_PARAM, (void *)set_rule_tables_query },
@@ -1947,9 +1947,6 @@ static int dr_init(void)
 
 	if (dr_prob_interval) {
 
-		str host;
-		int port,proto;
-
 		/* load TM API */
 		if (load_tm_api(&dr_tmb)!=0) {
 			LM_ERR("can't load TM API\n");
@@ -1957,18 +1954,15 @@ static int dr_init(void)
 		}
 
 		/* parse and look for the socket to ping from */
-		if (dr_probe_sock_s && dr_probe_sock_s[0]!=0 ) {
-			if (parse_phostport( dr_probe_sock_s, strlen(dr_probe_sock_s),
-			&host.s, &host.len, &port, &proto)!=0 ) {
-				LM_ERR("socket description <%s> is not valid\n",
-					dr_probe_sock_s);
-				goto error;
-			}
-			dr_probe_sock = grep_internal_sock_info( &host, port, proto);
-			if (dr_probe_sock==NULL) {
-				LM_ERR("socket <%s> is not local to opensips (we must listen "
-					"on it\n", dr_probe_sock_s);
-				goto error;
+		if (dr_probe_sock_s.s && dr_probe_sock_s.s[0]!=0 ) {
+			dr_probe_sock_s.len = strlen(dr_probe_sock_s.s);
+			if (dr_probe_sock_s.len) {
+				dr_probe_sock = parse_sock_info(&dr_probe_sock_s);
+				if (dr_probe_sock==NULL) {
+					LM_ERR("socket <%.*s> is not local to opensips (we must listen "
+							"on it\n", dr_probe_sock_s.len, dr_probe_sock_s.s);
+					goto error;
+				}
 			}
 		}
 

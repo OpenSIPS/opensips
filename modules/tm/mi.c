@@ -381,8 +381,6 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	str s;
 	str callid = {0,0};
 	int sip_error;
-	int proto = PROTO_NONE;
-	int port = 0;
 	int cseq = 0;
 	int n;
 	mi_response_t *resp;
@@ -400,11 +398,7 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 		return init_mi_error( 400, MI_SSTR("Invalid next_hop"));
 
 	if (socket && socket->len) {
-		if (parse_phostport( socket->s, socket->len, &s.s, &s.len,
-		&port,&proto)!=0)
-			return init_mi_error( 404, MI_SSTR("Invalid local socket"));
-		set_sip_defaults( port, proto);
-		sock = grep_internal_sock_info( &s, (unsigned short)port, proto);
+		sock = parse_sock_info(socket);
 		if (sock==0)
 			return init_mi_error( 404, MI_SSTR("Local socket not found"));
 	} else {

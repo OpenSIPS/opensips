@@ -989,9 +989,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	struct socket_info *sock;
 	str uri;
 	str attrs, weight_st;
-	str host;
 	str description;
-	int port, proto;
 	db_res_t * res = NULL;
 	db_val_t * values;
 	db_row_t * rows;
@@ -1056,17 +1054,10 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		get_str_from_dbval( "SOCKET", values+2,
 			0/*not_null*/, 0/*not_empty*/, attrs, error2);
 		if ( attrs.len ) {
-			if (parse_phostport( attrs.s, attrs.len, &host.s, &host.len,
-			&port, &proto)!=0){
-				LM_ERR("socket description <%.*s> is not valid -> ignoring\n",
-					attrs.len,attrs.s);
-				sock = NULL;
-			} else {
-				sock = grep_internal_sock_info( &host, port, proto);
-				if (sock == NULL) {
-					LM_ERR("socket <%.*s> is not local to opensips (we must "
-						"listen on it) -> ignoring it\n", attrs.len, attrs.s);
-				}
+			sock = parse_sock_info(&attrs);
+			if (sock == NULL) {
+				LM_ERR("socket <%.*s> is not local to opensips (we must "
+					"listen on it) -> ignoring it\n", attrs.len, attrs.s);
 			}
 		} else {
 			sock = NULL;

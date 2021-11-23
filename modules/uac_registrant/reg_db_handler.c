@@ -104,8 +104,7 @@ int load_reg_info_from_db(unsigned int mode, record_coords_t *coords)
 	str _param_str = {NULL, 0};
 	int reg_id_found = 0;
 	int sip_instance_found = 0;
-	str forced_socket, host, s;
-	int port, proto;
+	str forced_socket, s;
 	uac_reg_map_t uac_param;
 
 	p = int2str((unsigned long)(time(0)), &len);
@@ -365,20 +364,10 @@ int load_reg_info_from_db(unsigned int mode, record_coords_t *coords)
 			}
 
 			/* Get the socket */
-			if (values[forced_socket_col].val.string_val &&
-				(forced_socket.s = (char*)values[forced_socket_col].val.string_val)) {
-				if((forced_socket.len = strlen(forced_socket.s))){
-					if (parse_phostport(forced_socket.s,
-							forced_socket.len,
-							&host.s, &host.len,
-							&port, &proto)<0) {
-						LM_ERR("cannot parse forced socket [%.*s]\n",
-							forced_socket.len, forced_socket.s);
-						continue;
-					}
-					uac_param.send_sock = grep_internal_sock_info(&host,
-								(unsigned short) port,
-								(unsigned short) proto);
+			if (values[forced_socket_col].val.string_val) {
+				init_str(&forced_socket, values[forced_socket_col].val.string_val);
+				if (forced_socket.len) {
+					uac_param.send_sock = parse_sock_info(&forced_socket);
 					if (uac_param.send_sock==NULL) {
 						LM_ERR("invalid forced socket [%.*s]\n",
 							forced_socket.len, forced_socket.s);

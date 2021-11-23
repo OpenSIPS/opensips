@@ -145,6 +145,8 @@ void print_aliases();
 struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 										unsigned short proto, int check_tag);
 
+struct socket_info* parse_sock_info(str *spec);
+
 struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 												unsigned short proto);
 

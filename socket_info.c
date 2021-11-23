@@ -372,6 +372,25 @@ found:
 }
 
 
+/* parses the specified `spec` and returns an associated
+ * socket_info*, if it could be found */
+struct socket_info* parse_sock_info(str *addr)
+{
+	int port, proto;
+	str host;
+
+	if (!addr || !addr->s)
+		return NULL;
+
+	if (parse_phostport(addr->s, addr->len, &host.s, &host.len,
+		&port, &proto) != 0) {
+		return NULL;
+	}
+
+	return grep_internal_sock_info(&host, (unsigned short) port,
+		(unsigned short) proto);
+}
+
 
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */

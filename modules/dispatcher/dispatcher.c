@@ -144,7 +144,7 @@ pv_spec_t ds_setid_pv;
 static str options_reply_codes_str= {0, 0};
 static int* options_reply_codes = NULL;
 static int options_codes_no;
-static char *probing_sock_s = NULL;
+static str probing_sock_s;
 struct socket_info *probing_sock = NULL;
 
 ds_partition_t *partitions = NULL, *default_partition = NULL;
@@ -297,7 +297,7 @@ static param_export_t params[]={
 	{"ds_ping_maxfwd",        INT_PARAM, &ds_ping_maxfwd},
 	{"ds_probing_mode",       INT_PARAM, &ds_probing_mode},
 	{"options_reply_codes",   STR_PARAM, &options_reply_codes_str.s},
-	{"ds_probing_sock",       STR_PARAM, &probing_sock_s},
+	{"ds_probing_sock",       STR_PARAM, &probing_sock_s.s},
 	{"ds_probing_list",       STR_PARAM|USE_FUNC_PARAM, (void*)set_probing_list},
 	{"ds_define_blacklist",   STR_PARAM|USE_FUNC_PARAM, (void*)set_ds_bl},
 	{"persistent_state",      INT_PARAM, &ds_persistent_state},
@@ -921,8 +921,6 @@ next_part:
 	if (ds_ping_interval > 0)
 	{
 		load_tm_f load_tm;
-		str host;
-		int port,proto;
 
 		if (ds_ping_from.s)
 			ds_ping_from.len = strlen(ds_ping_from.s);
@@ -939,17 +937,11 @@ next_part:
 			}
 		}
 		/* parse and look for the socket to ping from */
-		if (probing_sock_s && probing_sock_s[0]!=0 ) {
-			if (parse_phostport( probing_sock_s, strlen(probing_sock_s),
-			&host.s, &host.len, &port, &proto)!=0 ) {
-				LM_ERR("socket description <%s> is not valid\n",
-					probing_sock_s);
-				return -1;
-			}
-			probing_sock = grep_internal_sock_info( &host, port, proto);
+		if (probing_sock_s.s && (probing_sock_s.len = strlen(probing_sock_s.s))) {
+			probing_sock = parse_sock_info(&probing_sock_s);
 			if (probing_sock==NULL) {
-				LM_ERR("socket <%s> is not local to opensips (we must listen "
-					"on it\n", probing_sock_s);
+				LM_ERR("socket <%.*s> is not local to opensips (we must listen "
+					"on it\n", probing_sock_s.len, probing_sock_s.s);
 				return -1;
 			}
 		}

@@ -297,8 +297,7 @@ static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 struct socket_info * create_socket_info(db_val_t * vals, int n){
 
 	struct socket_info * sock;
-	str host, p;
-	int port, proto;
+	str p;
 
 	/* socket name */
 	p.s  = (VAL_STR(vals+n)).s;
@@ -307,12 +306,7 @@ struct socket_info * create_socket_info(db_val_t * vals, int n){
 	if (VAL_NULL(vals+n) || p.s==0 || p.s[0]==0){
 		sock = 0;
 	} else {
-		if (parse_phostport( p.s, p.len, &host.s, &host.len,
-		&port, &proto)!=0) {
-			LM_ERR("bad socket <%.*s>\n", p.len, p.s);
-			return 0;
-		}
-		sock = grep_internal_sock_info( &host, (unsigned short)port, proto);
+		sock = parse_sock_info(&p);
 		if (sock==0) {
 			LM_WARN("non-local socket <%.*s>...ignoring\n", p.len, p.s);
 		}

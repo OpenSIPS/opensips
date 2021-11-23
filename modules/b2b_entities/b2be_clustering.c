@@ -318,20 +318,10 @@ end:
 static struct socket_info *fetch_socket_info(str *addr)
 {
 	struct socket_info *sock;
-	int port, proto;
-	str host;
-
-	if (!addr->s || addr->s[0] == 0)
+	if (!addr || !addr->len)
 		return NULL;
 
-	if (parse_phostport(addr->s, addr->len, &host.s, &host.len,
-		&port, &proto) != 0) {
-		LM_ERR("bad socket <%.*s>\n", addr->len, addr->s);
-		return NULL;
-	}
-
-	sock = grep_internal_sock_info(&host, (unsigned short) port,
-		(unsigned short) proto);
+	sock = parse_sock_info(addr);
 	if (!sock) {
 		LM_WARN("non-local socket <%.*s>...ignoring\n", addr->len, addr->s);
 	}

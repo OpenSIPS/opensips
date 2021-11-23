@@ -3175,16 +3175,7 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 			if (!val || val->flags&PV_VAL_NULL) {
 				si = NULL;
 			} else {
-				str host;
-				int port, proto;
-				if (parse_phostport(val->rs.s, val->rs.len, &host.s, &host.len,
-				&port, &proto) < 0) {
-					LM_ERR("invalid socket specification\n");
-					return -1;
-				}
-				set_sip_defaults( port, proto);
-				si = grep_internal_sock_info(&host, (unsigned short)port,
-					(unsigned short)proto);
+				si = parse_sock_info(&val->rs);
 				if (si==NULL)
 					return -1;
 			}
@@ -3200,8 +3191,6 @@ static int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
 	struct socket_info *si;
-	int port, proto;
-	str host;
 
 	if(msg==NULL || param==NULL)
 	{
@@ -3221,19 +3210,7 @@ static int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		goto error;
 	}
 
-	if (parse_phostport(val->rs.s, val->rs.len, &host.s, &host.len, &port, &proto) < 0)
-	{
-		LM_ERR("invalid socket specification\n");
-		goto error;
-	}
-	/*
-	 * Do not set the explicit proto and port, otherwise we won't be able to
-	 * match based on socket's tag
-	 *
-	 * set_sip_defaults( port, proto);
-	 */
-	si = grep_internal_sock_info(&host, (unsigned short)port,
-		(unsigned short)proto);
+	si = parse_sock_info(&val->rs);
 	if (si!=NULL)
 	{
 		msg->force_send_socket = si;

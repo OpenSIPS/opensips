@@ -500,12 +500,12 @@ out_err:
 static int receive_ucontact_insert(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
-	static str d, aor, host, contact_str, callid,
+	static str d, aor, contact_str, callid,
 		user_agent, path, attr, st, sock, kv_str;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact, *ct;
-	int rc, port, proto, sl;
+	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
 	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
@@ -554,14 +554,7 @@ static int receive_ucontact_insert(bin_packet_t *packet)
 	bin_pop_str(packet, &sock);
 
 	if (sock.s && sock.s[0]) {
-		if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
-			&port, &proto) != 0) {
-			LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
-			goto error;
-		}
-
-		ci.sock = grep_internal_sock_info(&host, (unsigned short) port,
-			(unsigned short) proto);
+		ci.sock = parse_sock_info(&sock);
 		if (!ci.sock)
 			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 	} else {
@@ -672,12 +665,12 @@ error:
 static int receive_ucontact_update(bin_packet_t *packet)
 {
 	static ucontact_info_t ci;
-	static str d, aor, host, contact_str, callid,
+	static str d, aor, contact_str, callid,
 		user_agent, path, attr, st, kv_str, sock;
 	udomain_t *domain;
 	urecord_t *record;
 	ucontact_t *contact;
-	int port, proto, rc, sl;
+	int rc, sl;
 	unsigned short _, clabel;
 	unsigned int rlabel;
 	struct ct_match cmatch = {CT_MATCH_NONE, NULL};
@@ -723,14 +716,7 @@ static int receive_ucontact_update(bin_packet_t *packet)
 	bin_pop_str(packet, &sock);
 
 	if (sock.s && sock.s[0]) {
-		if (parse_phostport(sock.s, sock.len, &host.s, &host.len,
-			&port, &proto) != 0) {
-			LM_ERR("bad socket <%.*s>\n", sock.len, sock.s);
-			goto error;
-		}
-
-		ci.sock = grep_internal_sock_info(&host, (unsigned short) port,
-			(unsigned short) proto);
+		ci.sock = parse_sock_info(&sock);
 		if (!ci.sock)
 			LM_DBG("non-local socket <%.*s>\n", sock.len, sock.s);
 	} else {
