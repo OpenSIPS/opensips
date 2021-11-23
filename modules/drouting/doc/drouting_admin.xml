@@ -262,15 +262,18 @@
 	<listitem><para>
 	A date-time expression that defines the time recurrence to be matched for
 	current rule. Time recurrences are based closely on the recurring time
-	intervals from the Internet Calendaring and Scheduling
-	Core Object Specification (calendar COS), RFC 2445. The set of attributes
-	used in routing rule specification is a subset of time recurrence attributes.
+	intervals from the Internet Calendaring and Scheduling Core Object
+	Specification (calendar COS), RFC 2445. The set of attributes used in
+	a routing rule specification is a subset of time recurrence attributes.
 	</para></listitem>
 	<listitem><para>
-	The value stored in database has the format of:
+	The value stored in database has the basic format of:
 	<![CDATA[
-	<dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
+	<timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<interval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth>
 	]]>
+	, identical to the input of the <ulink url='cfgutils#func_check_time_rec'>check_time_rec()</ulink>
+	function of the <emphasis>cfgutils</emphasis> module, including the optional
+	use of logical operators linking multiple such strings into a larger expression.
 	</para></listitem>
 	<listitem><para>
 	When an attribute is not specified, the corresponding place must be left
