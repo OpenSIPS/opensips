@@ -42,7 +42,7 @@ static struct list_head *rtp_relay_contexts;
 #define RTP_RELAY_PUT_TM_CTX(_t, _p) \
 	rtp_relay_tmb.t_ctx_put_ptr(_t, rtp_relay_tm_ctx_idx, _p)
 
-#define RTP_RELAY_GET_DLG_CTX(_d) (rtp_relay_dlg.dlg_ctx_get_ptr(_d, rtp_relay_dlg_ctx_idx))
+#define RTP_RELAY_GET_DLG_CTX(_d) (rtp_relay_dlg.dlg_ctx_get_ptr(_d, rtp_relay_tm_ctx_idx))
 #define RTP_RELAY_PUT_DLG_CTX(_d, _p) \
 	rtp_relay_dlg.dlg_ctx_put_ptr(_d, rtp_relay_dlg_ctx_idx, _p)
 
@@ -492,10 +492,10 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 	}
 	return sess->relay->binds.answer(info, &sess->server,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IP),
-			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
+			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_PEER), body);
 }
 #undef RTP_RELAY_PEER
@@ -946,12 +946,10 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 			handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess);
 			break;
 		case TMCB_REQUEST_FWDED:
-			/*
 			if (ctx->main && (rtp_sess_pending(ctx->main) || rtp_sess_late(ctx->main))) {
 				LM_DBG("RTP relay already engaged in main branch\n");
 				goto end;
 			}
-			*/
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
 			if (!sess) /* not engagned on this branch */ {
 				LM_DBG("RTP relay not engaged on branch %d!\n", rtp_relay_ctx_branch());
@@ -1026,12 +1024,9 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 		rtp_sess_set_late(sess);
 		return 1;
 	}
-	return 1;
-	/*
 	info.msg = msg;
 	info.branch = sess->index;
 	return rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER, NULL);
-	*/
 }
 
 static mi_response_t *mi_rtp_relay_params(const mi_params_t *params,
