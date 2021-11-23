@@ -66,17 +66,17 @@ int perl_exec_simple(struct sip_msg* _msg, str *_fnc_s, str *_param_s)
 			return -1;
 		}
 		memcpy(args[0], _param_s->s, _param_s->len);
-		args[0][_param_s->len] = 0;
+		args[0][_param_s->len] = '\0';
 	} else
 		flags |= G_NOARGS;
 
-	fnc = pkg_malloc(_fnc_s->len);
+	fnc = pkg_malloc(_fnc_s->len+1);
 	if (!fnc) {
 		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
 	memcpy(fnc, _fnc_s->s, _fnc_s->len);
-	fnc[_fnc_s->len] = 0;
+	fnc[_fnc_s->len] = '\0';
 
 	if (perl_checkfnc(fnc)) {
 		LM_DBG("running perl function \"%s\"\n", fnc);
