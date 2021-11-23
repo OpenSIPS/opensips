@@ -128,8 +128,8 @@ struct module_exports exports = {
 #if defined MHD_VERSION && MHD_VERSION < 0x00093500
 static long httpd_get_runtime_version(void)
 {
-	char *end, *rend, *vi;
-	const char *ver = MHD_get_version();
+	char *end;
+	const char *ver = MHD_get_version(), *rend, *vi;
 	unsigned long tmp, version = 0;
 	int i;
 
