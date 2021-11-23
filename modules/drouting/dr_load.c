@@ -671,7 +671,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 							ROW_VALUES(row)+7);
 				}
 				/* SORT_PROFILE column */
-				check_val(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, 0, 0);
+				check_val2(sort_profile_drr_col, ROW_VALUES(row)+8, DB_INT, DB_BIGINT, 0, 0);
 				int_vals[INT_VALS_QR_PROFILE_DRR_COL] = VAL_INT(ROW_VALUES(row)+8);
 				/* ATTRS column */
 				check_val2( attrs_drr_col, ROW_VALUES(row)+9, DB_STRING, DB_BLOB, 0, 0);
