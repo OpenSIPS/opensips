@@ -197,7 +197,7 @@ struct rtpe_ctx {
 
 
 struct ng_flags_parse {
-	int via, to, packetize, transport;
+	int via, to, packetize, transport, directional;
 	bencode_item_t *dict, *flags, *direction, *replace, *rtcp_mux;
 	str call_id, from_tag, to_tag, received_from;
 	str viabranch;
@@ -1747,6 +1747,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					if (!val.s)
 						goto error;
 					ng_flags->from_tag = val;
+					ng_flags->directional = 1;
 				}
 				else
 					break;
@@ -1795,6 +1796,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						goto error;
 					BCHECK(bencode_dictionary_add_integer(ng_flags->dict, "repacketize", ng_flags->packetize));
 					continue;
+				} else if (str_eq(&key, "directional")) {
+					ng_flags->directional = 1;
 				}
 				break;
 
@@ -2097,10 +2100,16 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		}
 	}
 
-	if (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
+	if (op == OP_START_MEDIA || op == OP_STOP_MEDIA ||
+			op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_MEDIA ||
+			op == OP_BLOCK_DTMF || op == OP_UNBLOCK_DTMF ||
+			op == OP_START_FORWARD || op == OP_STOP_FORWARD) {
+		if (ng_flags.directional)
+			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
+	} else if (ng_flags.directional
+		|| (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
-		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER)
-		|| (msg->first_line.type == SIP_REPLY && op == OP_STOP_MEDIA)))
+		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))))
 	{
 		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
 		if (op != OP_START_MEDIA && op != OP_STOP_MEDIA) {
