@@ -62,16 +62,29 @@ enum redis_flag {
 	REDIS_SINGLE_INSTANCE  = 1 << 0,
 	REDIS_CLUSTER_INSTANCE = 1 << 1,
 	REDIS_INIT_NODES       = 1 << 2,
+
+	/* failover set (combination of single and/or cluster instances) */
+	REDIS_MULTIPLE_HOSTS   = 1 << 3,
 };
 
-typedef struct {
+typedef struct _redis_con {
+	/* ------ Fixed conn header -------- */
 	struct cachedb_id *id;
 	unsigned int ref;
 	struct cachedb_pool_con_t *next;
+	/* --------------------------------- */
+
+	char *host;            // Note: the .id may contain multi-hosts, so the
+	unsigned short port;   // host/port of this connection are extracted here
 
 	enum redis_flag flags;
 	unsigned short slots_assigned; /* total slots for cluster */
 	cluster_node *nodes; /* one or more Redis nodes */
+
+	/* circular list of Redis instances to be attempted in failover fashion */
+	struct _redis_con *next_con;
+	/* only populated for 1st item in the list: the "last-known-to-work" con */
+	struct _redis_con *current;
 } redis_con;
 
 cachedb_con* redis_init(str *url);
