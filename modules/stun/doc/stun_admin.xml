@@ -28,12 +28,24 @@
 				<listitem>socket3 = ip2 : port1</listitem>
 				<listitem>socket4 = ip2 : port2</listitem>
 			</itemizedlist>
+			where <emphasis>ip1</emphasis> / <emphasis>port1</emphasis>
+			represent an UDP SIP listener and <emphasis>ip2</emphasis> /
+			 <emphasis>port2</emphasis> are configured via the
+			<xref linkend="param_alternate_ip"/> and
+			<xref linkend="param_alternate_port"/>
+			parameters.
 			</para>
 			<para>
 				The sockets come from existing SIP sockets or are created.
 			</para>
 			<para>
 				Socket1 must allways be a SIP UDP listener from OpenSIPS.
+			</para>
+			<para>
+			If <xref linkend="param_use_listeners_as_primary"/> is enabled
+			the STUN server will actually use multiple sets of sockets obtained
+			from the IP/port combinations described above, each set corresponding
+			to a SIP UDP listener from OpenSIPS.
 			</para>
 			<para>
 				The server will create a separate process.
@@ -106,13 +118,14 @@
 
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section>
+		<section id="param_primary_ip" xreflabel="primary_ip">
 			<title>
 				<varname>primary_ip</varname> (str)
 			</title>
 			<para>
 			The IP of an interface which is configured as an UDP SIP listener
-			in &osips;. This is a mandatory parameter. 
+			in &osips;. This is a mandatory parameter, unless
+			<xref linkend="param_use_listeners_as_primary"/> is enabled.
 			</para>
 			<para>
 			Syntax: "ip [/ advertised_ip]
@@ -137,7 +150,7 @@ modparam("stun", "primary_ip", "192.168.0.100 / 64.50.46.78")
 			</example>
 		</section>
 		
-		<section>
+		<section id="param_primary_port" xreflabel="primary_port">
 			<title>
 				<varname>primary_port</varname> (str)
 			</title>
@@ -167,12 +180,29 @@ modparam("stun", "primary_port", "5060 / 5062")
 			</example>
 		</section>
 
-		<section>
+		<section id="param_alternate_ip" xreflabel="alternate_ip">
 			<title>
 				<varname>alternate_ip</varname> (str)
 			</title>
 			<para>
 			Another IP from another interface. This is a mandatory parameter.
+			</para>
+			<para>
+			If <xref linkend="param_use_listeners_as_primary"/> is enabled, the
+			alternate IP must be either:
+			<itemizedlist>
+				<listitem>
+				<para>
+				an IP from an existing UDP SIP listener configured in OpenSIPS,
+				but one that is different from all the other UPD listeners;
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+				an IP that is different from the UDP SIP listeners configured in OpenSIPS.
+				</para>
+				</listitem>
+			</itemizedlist>
 			</para>
 			<para>
 			Syntax: "ip [/ advertised_ip]
@@ -197,13 +227,30 @@ modparam("stun", "alternate_ip", "192.168.0.100 / 64.78.46.50")
 			</example>
 		</section>
 		
-		<section>
+		<section id="param_alternate_port" xreflabel="alternate_port">
 			<title>
 				<varname>alternate_port</varname> (str)
 			</title>
 			<para>
 			The port used by the STUN server for the second interface.
 			The default value is 3478 (default STUN port).
+			</para>
+			<para>
+			If <xref linkend="param_use_listeners_as_primary"/> is enabled, the
+			alternate port must be either:
+			<itemizedlist>
+				<listitem>
+				<para>
+				a port from an existing UDP SIP listener configured in OpenSIPS,
+				but one that is different from all the other UPD listeners;
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+				a port that is different from the UDP SIP listeners configured in OpenSIPS.
+				</para>
+				</listitem>
+			</itemizedlist>
 			</para>
 			<para>
 			Syntax: "port [/ advertised_port]
@@ -223,6 +270,35 @@ modparam("stun","alternate_port","3479")
 
 # Listening on an alternate port, but advertising a different one
 modparam("stun", "alternate_port", "5060 / 5062")
+...
+				</programlisting>
+			</example>
+		</section>
+
+		<section id="param_use_listeners_as_primary" xreflabel="use_listeners_as_primary">
+			<title>
+				<varname>use_listeners_as_primary</varname> (int)
+			</title>
+			<para>
+			Setting this parameter to <emphasis>1</emphasis> will allow all
+			configured UDP SIP listeners to be automatically used as "primary"
+			STUN sockets.
+			</para>
+			<para>
+			The <xref linkend="param_primary_ip"/> and
+			<xref linkend="param_primary_port"/>
+			parameters will be ignored when this behavior is enabled.
+			</para>
+			<para>
+			The default value is <emphasis>0</emphasis> (disabled).
+			</para>
+			<example>
+				<title>Set
+					<varname>use_listeners_as_primary</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("stun","use_listeners_as_primary",1)
 ...
 				</programlisting>
 			</example>

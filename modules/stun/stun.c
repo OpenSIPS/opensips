@@ -40,9 +40,6 @@ struct socket_info* grep3 = NULL;
 struct socket_info* grep4 = NULL;
 int assign_once = FALSE;
 
-int sockfd1=-1;	/* ip1 port1 */
-int sockfd2=-1;	/* ip1 port2 */
-int sockfd3=-1;	/* ip2 port1 */
 int sockfd4=-1;	/* ip2 port2 */
 
 int ip1, ip2;
@@ -54,6 +51,13 @@ char *primary_ip, *alternate_ip;
 /* different advertised IPs and ports, in case we're behind NAT */
 int adv_ip1 = -1, adv_ip2 = -1;
 int adv_port1, adv_port2;
+
+int use_listeners_as_primary = 0;
+
+struct stun_socket *created_sockets;
+
+struct stun_socket_set *socket_sets;
+int no_socket_sets;
 
 /* Fixup functions */
 int parse_primary_ip(modparam_t type, void *val);
@@ -69,6 +73,7 @@ static param_export_t params[] = {
 	{"primary_port",    STR_PARAM | USE_FUNC_PARAM,  parse_primary_port   },
 	{"alternate_ip",    STR_PARAM | USE_FUNC_PARAM,  parse_alternate_ip   },
 	{"alternate_port",  STR_PARAM | USE_FUNC_PARAM,  parse_alternate_port },
+	{"use_listeners_as_primary",  INT_PARAM, &use_listeners_as_primary },
 	{ 0, 0, 0}
 };
 
@@ -105,7 +110,6 @@ struct module_exports exports = {
 int bind_ip_port(int ip, int port, int* sockfd){
 
 	struct sockaddr_in server;
-
 	int rc;
 
 	*sockfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -129,66 +133,207 @@ int bind_ip_port(int ip, int port, int* sockfd){
 	return 0;
 }
 
+static struct stun_socket *add_sock_to_set(struct stun_socket_set *set,
+	int ip, int port)
+{
+	struct stun_socket *sock;
+
+	for (sock = created_sockets; sock; sock = sock->next)
+		if (sock->ip == ip && sock->port == port)
+			break;
+
+	if (!sock) {
+		sock = pkg_malloc(sizeof *sock);
+		memset(sock, 0, sizeof *sock);
+		sock->next = created_sockets;
+		created_sockets = sock;
+
+		sock->sockfd = -1;
+		sock->ip = ip;
+		sock->port = port;
+	}
+
+	sock->no_sets++;
+
+	return sock;
+}
 
 static int stun_mod_init(void)
 {
 	str s;
+	struct socket_info *si;
+	struct socket_info **si_list;
+	int i = 0;
+	int ip;
+	struct stun_socket *sock;
+	struct stun_socket_set *set;
 
-	if (!primary_ip || primary_ip[0] == '\0') {
-		LM_ERR("Primary IP was not configured!\n");
+	if (use_listeners_as_primary) {
+		si_list = get_sock_info_list(PROTO_UDP);
+		for (si = si_list ? *si_list : 0; si; si = si->next)
+			if (si->address.af == AF_INET)
+				no_socket_sets++;
+	} else {
+		if (!primary_ip || primary_ip[0] == '\0') {
+			LM_ERR("Primary IP was not configured!\n");
+			return -1;
+		}
+
+		no_socket_sets = 1;
+	}
+
+	socket_sets = pkg_malloc(no_socket_sets * sizeof *socket_sets);
+	if (!socket_sets) {
+		LM_ERR("no more shm memory!\n");
 		return -1;
 	}
+	memset(socket_sets, 0, no_socket_sets * sizeof *socket_sets);
 
 	if (!alternate_ip || alternate_ip[0] == '\0') {
 		LM_ERR("Alternate IP was not configured!\n");
 		return -1;
 	}
 
-	if (adv_ip1 != -1 && adv_port1 == 0)
-		adv_port1 = port1;
-
-	if (adv_ip2 != -1 && adv_port2 == 0)
-		adv_port1 = port2;
-
-	s.s = primary_ip; s.len = strlen(primary_ip);
-	grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
-	if(!grep1){
-		LM_ERR("IP1:port1 [%s:%d] not found in listening sockets\n",
-			primary_ip, port1);
-		return -1;
-	}
-
-	grep2 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
-	if(!grep2){
-		LM_DBG("IP1:port2 [%s:%d] not found in listening sockets\n",
-			primary_ip, port2);
-		if (bind_ip_port(ip1, port2, &sockfd2)!=0) {
-			LM_ERR("failed to bind for IP1:port2 [%s:%d]\n",
-				primary_ip, port2);
-			return -1;
-		}
-	}
-
-	s.s = alternate_ip; s.len = strlen(alternate_ip);
-	grep3 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
-	if(!grep3){
-		LM_DBG("IP2:port1 [%s:%d] not found in listening sockets\n",
-			alternate_ip, port1);
-		if (bind_ip_port(ip2, port1, &sockfd3)!=0) {
-			LM_ERR("failed to bind for IP2:port1 [%s:%d]\n",
-				alternate_ip, port1);
-			return -1;
-		}
-	}
-
-	grep4 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
-	if(!grep4){
-		LM_DBG("IP2:port2 [%s:%d] not found in listening sockets\n",
-			alternate_ip, port2);
-		if (bind_ip_port(ip2, port2, &sockfd4)!=0) {
-			LM_ERR("failed to bind for IP2:port2 [%s:%d]\n",
+	if (use_listeners_as_primary) {
+		s.s = alternate_ip; s.len = strlen(alternate_ip);
+		grep4 = grep_sock_info(&s, (unsigned short)port2,
+			PROTO_UDP);
+		if (!grep4){
+			LM_DBG("IP2:port2 [%s:%d] not found in listening sockets\n",
 				alternate_ip, port2);
+			if (bind_ip_port(ip2, port2, &sockfd4)!=0) {
+				LM_ERR("failed to bind for IP2:port2 [%s:%d]\n",
+					alternate_ip, port2);
+				return -1;
+			}
+		} else {
+			no_socket_sets--;
+		}
+
+		si_list = get_sock_info_list(PROTO_UDP);
+		for (si = si_list ? *si_list : 0; si; si = si->next) {
+			if (si->address.af != AF_INET || si == grep4)
+				continue;
+			else
+				i++;
+
+			ip = ntohl(si->address.u.addr32[0]);
+			if (ip == ip2 && si->port_no != port2) {
+				LM_ERR("Invalid alternate address [%s:%d]! Same IP and "
+					"different port than SIP listener [%.*s:%d]\n",
+					alternate_ip, port2,
+					si->address_str.len, si->address_str.s, si->port_no);
+				return -1;
+			} else if (ip != ip2 && si->port_no == port2) {
+				LM_ERR("Invalid alternate address [%s:%d]! Different IP and "
+					"same port as SIP listener [%.*s:%d]\n",
+					alternate_ip, port2,
+					si->address_str.len, si->address_str.s, si->port_no);
+				return -1;
+			}
+
+			set = socket_sets + i-1;
+
+			set->si = si;
+			set->ip1 = ip;
+			set->port1 = si->port_no;
+
+			if (si->adv_sock_str.len) {
+				set->adv_ip1 = ntohl(si->adv_address.u.addr32[0]);
+				set->adv_port1 = si->adv_port;
+			} else {
+				set->adv_ip1 = -1;
+				set->adv_port1 = 0;
+			}
+
+			sock = add_sock_to_set(set, set->ip1, port2);
+
+			if (sock->sockfd == -1 && bind_ip_port(set->ip1, port2,
+				&sock->sockfd)!=0) {
+				LM_ERR("failed to bind for IP1:port2 [%.*s:%d]\n",
+					si->address_str.len, si->address_str.s, port2);
+				return -1;
+			}
+
+			set->sock2 = sock;
+
+			sock = add_sock_to_set(set, ip2, set->port1);
+
+			if (sock->sockfd == -1 && bind_ip_port(ip2, set->port1,
+				&sock->sockfd)!=0) {
+				LM_ERR("failed to bind for IP2:port1 [%s:%d]\n",
+					alternate_ip, socket_sets[i-1].port1);
+				return -1;
+			}
+
+			set->sock3 = sock;
+		}
+	} else {
+		if (adv_ip1 != -1 && adv_port1 == 0)
+			adv_port1 = port1;
+
+		if (adv_ip2 != -1 && adv_port2 == 0)
+			adv_port2 = port2;
+
+		s.s = primary_ip; s.len = strlen(primary_ip);
+		grep1 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
+		if(!grep1){
+			LM_ERR("IP1:port1 [%s:%d] not found in listening sockets\n",
+				primary_ip, port1);
 			return -1;
+		}
+
+		socket_sets->si = grep1;
+		socket_sets->ip1 = ip1;
+		socket_sets->port1 = port1;
+		socket_sets->adv_ip1 = adv_ip1;
+		socket_sets->adv_port1 = adv_port1;
+
+		sock = add_sock_to_set(socket_sets, ip1, port2);
+
+		grep2 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
+		if(!grep2){
+			LM_DBG("IP1:port2 [%s:%d] not found in listening sockets\n",
+				primary_ip, port2);
+			if (bind_ip_port(ip1, port2, &sock->sockfd)!=0) {
+				LM_ERR("failed to bind for IP1:port2 [%s:%d]\n",
+					primary_ip, port2);
+				return -1;
+			}
+		} else {
+			sock->sockfd = grep2->socket;
+		}
+
+		socket_sets->sock2 = sock;
+
+		sock = add_sock_to_set(socket_sets, ip2, port1);
+
+		s.s = alternate_ip; s.len = strlen(alternate_ip);
+		grep3 = grep_sock_info(&s, (unsigned short)port1, PROTO_UDP);
+		if(!grep3){
+			LM_DBG("IP2:port1 [%s:%d] not found in listening sockets\n",
+				alternate_ip, port1);
+			sock = add_sock_to_set(socket_sets, ip2, port1);
+			if (bind_ip_port(ip2, port1, &sock->sockfd)!=0) {
+				LM_ERR("failed to bind for IP2:port1 [%s:%d]\n",
+					alternate_ip, port1);
+				return -1;
+			}
+		} else {
+			sock->sockfd = grep3->socket;
+		}
+
+		socket_sets->sock3 = sock;
+
+		grep4 = grep_sock_info(&s, (unsigned short)port2, PROTO_UDP);
+		if(!grep4){
+			LM_DBG("IP2:port2 [%s:%d] not found in listening sockets\n",
+				alternate_ip, port2);
+			if (bind_ip_port(ip2, port2, &sockfd4)!=0) {
+				LM_ERR("failed to bind for IP2:port2 [%s:%d]\n",
+					alternate_ip, port2);
+				return -1;
+			}
 		}
 	}
 
@@ -207,37 +352,43 @@ static int stun_mod_init(void)
 void stun_loop(int rank)
 {
 	fd_set read_set, all_set;
-	int maxfd;
+	int maxfd = -1;
 	int nready;
 	char buffer[65536];
 	str msg;
 	unsigned int clientAddrLen;
 	struct receive_info ri;
+	int i;
+	struct stun_socket *sock;
 
 	FD_ZERO(&all_set);
-	maxfd = MAX ( MAX(sockfd1, sockfd2), MAX(sockfd3, sockfd4));
 
-	LM_DBG("created sockets fd = %i %i %i %i (max = %i)\n",
-		sockfd1, sockfd2, sockfd3, sockfd4, maxfd);
+	if (!use_listeners_as_primary) {
+		if (grep2)
+			socket_sets->sock2->sockfd = grep2->socket;
+		else
+			FD_SET(socket_sets->sock2->sockfd, &all_set);
 
-	sockfd1 = grep1->socket;
-	if(grep2)
-		sockfd2 = grep2->socket;
-	else
-		FD_SET(sockfd2, &all_set);
+		if (grep3)
+			socket_sets->sock3->sockfd = grep3->socket;
+		else
+			FD_SET(socket_sets->sock3->sockfd, &all_set);
+	} else {
+		for (i = 0; i < no_socket_sets; i++) {
+			maxfd = MAX(maxfd,
+				MAX(socket_sets[i].sock2->sockfd, socket_sets[i].sock3->sockfd));
 
-	if(grep3)
-		sockfd3 = grep3->socket;
-	else
-		FD_SET(sockfd3, &all_set);
+			FD_SET(socket_sets[i].sock2->sockfd, &all_set);
+			FD_SET(socket_sets[i].sock3->sockfd, &all_set);
+		}
+	}
 
 	if(grep4)
 		sockfd4 = grep4->socket;
 	else
 		FD_SET(sockfd4, &all_set);
 
-	LM_DBG("created and gained sockets fd = %i %i %i %i\n",
-		sockfd1, sockfd2, sockfd3, sockfd4);
+	maxfd = MAX(maxfd, sockfd4);
 
 	/* this will never change as buffer is fixed */
 	msg.s = buffer;
@@ -254,19 +405,13 @@ void stun_loop(int rank)
 			continue;
 		}
 
-		if(FD_ISSET(sockfd2, &read_set)){
-			clientAddrLen = sizeof(struct sockaddr);
-			msg.len = recvfrom(sockfd2, buffer, 65536, 0,
-				(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
-			receive(sockfd2, &ri, &msg, NULL);
-		}
-
-		if(FD_ISSET(sockfd3, &read_set)){
-			clientAddrLen = sizeof(struct sockaddr);
-			msg.len = recvfrom(sockfd3, buffer, 65536, 0,
-				(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
-			receive(sockfd3, &ri, &msg, NULL);
-		}
+		for (sock = created_sockets; sock; sock = sock->next)
+			if(FD_ISSET(sock->sockfd, &read_set)){
+				clientAddrLen = sizeof(struct sockaddr);
+				msg.len = recvfrom(sock->sockfd, buffer, 65536, 0,
+					(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
+				receive(sock->sockfd, &ri, &msg, sock);
+			}
 
 		if(FD_ISSET(sockfd4, &read_set)){
 			clientAddrLen = sizeof(struct sockaddr);
@@ -279,14 +424,6 @@ void stun_loop(int rank)
 }
 
 static int child_init(int rank){
-    sockfd1 = grep1->socket;
-    if(grep2)
-	sockfd2 = grep2->socket;
-    if(grep3)
-	sockfd3 = grep3->socket;
-    if(grep4)
-	sockfd4 = grep4->socket;
-
     /*optimization
     if(getpid() < -5?){
 	close(sockfd1);
@@ -295,9 +432,31 @@ static int child_init(int rank){
 	close(sockfd4);
     }
      */
+	if (!use_listeners_as_primary) {
+		if (grep2)
+			socket_sets->sock2->sockfd = grep2->socket;
+		if (grep3)
+			socket_sets->sock3->sockfd = grep3->socket;
+	}
+
+	if (grep4)
+		sockfd4 = grep4->socket;
+
     return 0;
 }
 
+static int match_set_by_src(struct receive_info *ri, int size)
+{
+	str ip_str;
+	str port_str;
+	unsigned short port;
+
+	get_su_info(&ri->src_su.s, ip_str.s, port);
+	ip_str.len = strlen(ip_str.s);
+	port_str.s = int2str(port, &port_str.len);
+
+	return core_hash(&ip_str, &port_str, size);
+}
 
 /* receive */
 int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
@@ -309,21 +468,66 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 	StunMsg* resp_msg;
 	StunCtl ctl;
 	char s[32];
+	int i, j = 0;
+	struct stun_socket_set *set;
+	struct stun_socket *sock;
+
+	if (use_listeners_as_primary) {
+		if (sockfd == sockfd4) {
+			set = socket_sets + match_set_by_src(ri, no_socket_sets);
+		} else {
+			if (param) {
+				/* received on one of the created stun sockets */
+				sock = (struct stun_socket *)param;
+
+				if (sock->no_sets > 1)
+					j = match_set_by_src(ri, sock->no_sets);
+
+				for (i = 0; i < no_socket_sets; i++)
+					if (sock == socket_sets[i].sock2 ||
+						sock == socket_sets[i].sock3 ) {
+						if (j==0)
+							break;
+						else
+							j--;
+					}
+			} else {
+				/* received on a SIP listener */
+				for (i = 0; i < no_socket_sets; i++)
+					if (sockfd == socket_sets[i].si->socket)
+						break;
+			}
+
+			if (i == no_socket_sets) {
+				LM_ERR("Failed to match socket set\n");
+				return -1;
+			}
+
+			set = socket_sets + i;
+		}
+	} else {
+		set = socket_sets;
+	}
+
+	LM_DBG("Matched socket set corresponding to listener [%.*s:%d]\n",
+		set->si->address_str.len, set->si->address_str.s, set->si->port_no);
 
 	client = (struct sockaddr_in *) &(ri->src_su.sin);
 
 	/* info & checks*/
-    if(sockfd == sockfd1)
-	sprintf(s, "%i %s %d", sockfd1, primary_ip, port1);
-    else if(sockfd == sockfd2)
-	sprintf(s, "%i %s %d", sockfd2, primary_ip, port2);
-    else if(sockfd == sockfd3)
-	sprintf(s, "%i %s %d", sockfd3, alternate_ip, port1);
+    if(sockfd == set->si->socket)
+	sprintf(s, "%i %.*s %d", set->si->socket,
+		set->si->address_str.len, set->si->address_str.s, set->port1);
+    else if(sockfd == set->sock2->sockfd)
+	sprintf(s, "%i %.*s %d", set->sock2->sockfd,
+		set->si->address_str.len, set->si->address_str.s, port2);
+    else if(sockfd == set->sock3->sockfd)
+	sprintf(s, "%i %s %d", set->sock3->sockfd, alternate_ip, set->port1);
     else if(sockfd == sockfd4)
 	sprintf(s, "%i %s %d", sockfd4, alternate_ip, port2);
     else{
 	LM_DBG("Received: on [%i unknown %s %d] from [%s %i]; drop msg\n",
-		sockfd, alternate_ip, port2, inet_ntoa(client->sin_addr),
+		sockfd, ip_addr2a(&ri->dst_ip), ri->dst_port, inet_ntoa(client->sin_addr),
 	    ntohs(client->sin_port));
 	return -1;
     }
@@ -346,6 +550,7 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
     ctl.srs = client;
     ctl.srs_size = sizeof(struct sockaddr);;
     ctl.sock_inbound = sockfd;
+    ctl.socket_set = set;
     resp_msg = process(recv_msg, &ctl);
     if(!resp_msg){   /* process junk or out of mem */
 		freeStunMsg(&recv_msg);
@@ -367,12 +572,14 @@ int receive(int sockfd, struct receive_info *ri, str *msg, void* param)
 	}
 
 /* send */
-    if(ctl.sock_outbound == sockfd1)
-	sprintf(s, "%i %s %d", sockfd1, primary_ip, port1);
-    else if(ctl.sock_outbound == sockfd2)
-	sprintf(s, "%i %s %d", sockfd2, primary_ip, port2);
-    else if(ctl.sock_outbound == sockfd3)
-	sprintf(s, "%i %s %d", sockfd3, alternate_ip, port1);
+    if(ctl.sock_outbound == set->si->socket)
+	sprintf(s, "%i %.*s %d", set->si->socket,
+		set->si->address_str.len, set->si->address_str.s, set->port1);
+    else if(ctl.sock_outbound == set->sock2->sockfd)
+	sprintf(s, "%i %.*s %d", set->sock2->sockfd,
+		set->si->address_str.len, set->si->address_str.s, port2);
+    else if(ctl.sock_outbound == set->sock3->sockfd)
+	sprintf(s, "%i %s %d", set->sock3->sockfd, alternate_ip, set->port1);
     else if(ctl.sock_outbound == sockfd4)
 	sprintf(s, "%i %s %d", sockfd4, alternate_ip, port2);
     else
@@ -725,15 +932,19 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 	    msg->sourceAddress->unused = 0;
 	    msg->sourceAddress->family = 0x01;
 
-	    if(ctl->sock_outbound == sockfd1){
-		msg->sourceAddress->ip4 = ADV_IP(ip1, adv_ip1);
-		msg->sourceAddress->port = ADV_PORT(port1, adv_port1);
-	    }else if(ctl->sock_outbound == sockfd2){
-		msg->sourceAddress->ip4 = ADV_IP(ip1, adv_ip1);
+	    if(ctl->sock_outbound == ctl->socket_set->si->socket){
+		msg->sourceAddress->ip4 = ADV_IP(ctl->socket_set->ip1,
+			ctl->socket_set->adv_ip1);
+		msg->sourceAddress->port = ADV_PORT(ctl->socket_set->port1,
+			ctl->socket_set->adv_port1);
+	    }else if(ctl->sock_outbound == ctl->socket_set->sock2->sockfd){
+		msg->sourceAddress->ip4 = ADV_IP(ctl->socket_set->ip1,
+			ctl->socket_set->adv_ip1);
 		msg->sourceAddress->port = ADV_PORT(port2, adv_port2);
-	    }else if(ctl->sock_outbound == sockfd3){
+	    }else if(ctl->sock_outbound == ctl->socket_set->sock3->sockfd){
 		msg->sourceAddress->ip4 = ADV_IP(ip2, adv_ip2);
-		msg->sourceAddress->port = ADV_PORT(port1, adv_port1);
+		msg->sourceAddress->port = ADV_PORT(ctl->socket_set->port1,
+			ctl->socket_set->adv_port1);
 	    }else if(ctl->sock_outbound == sockfd4){
 		msg->sourceAddress->ip4 = ADV_IP(ip2, adv_ip2);
 		msg->sourceAddress->port = ADV_PORT(port2, adv_port2);
@@ -761,18 +972,22 @@ int addTlvAttribute(IN_OUT StunMsg* msg , IN StunMsg* srs_msg,
 		it is the inverse ip and port on whitch it was received
 		1 >< 4  ;  2 >< 3
 	     */
-	    if(ctl->sock_inbound == sockfd1){
+	    if(ctl->sock_inbound == ctl->socket_set->si->socket){
 		msg->changedAddress->ip4 = ADV_IP(ip2, adv_ip2);
 		msg->changedAddress->port = ADV_PORT(port2, adv_port2);
-	    }else if(ctl->sock_inbound == sockfd2){
+	    }else if(ctl->sock_inbound == ctl->socket_set->sock2->sockfd){
 		msg->changedAddress->ip4 = ADV_IP(ip2, adv_ip2);
-		msg->changedAddress->port = ADV_PORT(port1, adv_port1);
-	    }else if(ctl->sock_inbound == sockfd3){
-		msg->changedAddress->ip4 = ADV_IP(ip1, adv_ip1);
+		msg->changedAddress->port = ADV_PORT(ctl->socket_set->port1,
+			ctl->socket_set->adv_port1);
+	    }else if(ctl->sock_inbound == ctl->socket_set->sock3->sockfd){
+		msg->changedAddress->ip4 = ADV_IP(ctl->socket_set->ip1,
+			ctl->socket_set->adv_ip1);
 		msg->changedAddress->port = ADV_PORT(port2, adv_port2);
 	    }else if(ctl->sock_inbound == sockfd4){
-		msg->changedAddress->ip4 = ADV_IP(ip1, adv_ip1);
-		msg->changedAddress->port = ADV_PORT(port1, adv_port1);
+		msg->changedAddress->ip4 = ADV_IP(ctl->socket_set->ip1,
+			ctl->socket_set->adv_ip1);
+		msg->changedAddress->port = ADV_PORT(ctl->socket_set->port1,
+			ctl->socket_set->adv_port1);
 	    }
 	    return 2 + 2 + 8;
 
@@ -955,11 +1170,11 @@ StunMsg* process(IN StunMsg* msg, IN_OUT StunCtl* ctl){
 
 	/* if has change ip, port request */
 	if(msg->hasChangeRequest && !msg->hasErrorCode){
-	    /*		    ip  port	    */
-	    t1 = sockfd1;	/*  0	0   */
-	    t2 = sockfd2;	/*  0	1   */
-	    t3 = sockfd3;	/*  1	0   */
-	    t4 = sockfd4;	/*  1	1   */
+	    /*		                                   ip  port */
+	    t1 = ctl->socket_set->si->socket;        /*  0	0   */
+	    t2 = ctl->socket_set->sock2->sockfd;	 /*  0	1   */
+	    t3 = ctl->socket_set->sock3->sockfd;	 /*  1	0   */
+	    t4 = sockfd4;	                         /*  1	1   */
 
 	    /* LM_DBG("process()1 t1=%i  t2=%i  t3=%i  t4=%i\n", t1, t2, t3, t4); */
 	/* outbound depends on INBOUND and on REQUEST_FLAGS */
