@@ -91,7 +91,7 @@ static cmd_export_t cmds[] = {
 	{"perl_exec_simple", (cmd_function)perl_exec_simple, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
+		ALL_ROUTES},
 	{"perl_exec", (cmd_function)perl_exec, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
