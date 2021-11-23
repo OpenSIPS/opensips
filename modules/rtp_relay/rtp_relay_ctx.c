@@ -42,7 +42,7 @@ static struct list_head *rtp_relay_contexts;
 #define RTP_RELAY_PUT_TM_CTX(_t, _p) \
 	rtp_relay_tmb.t_ctx_put_ptr(_t, rtp_relay_tm_ctx_idx, _p)
 
-#define RTP_RELAY_GET_DLG_CTX(_d) (rtp_relay_dlg.dlg_ctx_get_ptr(_d, rtp_relay_tm_ctx_idx))
+#define RTP_RELAY_GET_DLG_CTX(_d) (rtp_relay_dlg.dlg_ctx_get_ptr(_d, rtp_relay_dlg_ctx_idx))
 #define RTP_RELAY_PUT_DLG_CTX(_d, _p) \
 	rtp_relay_dlg.dlg_ctx_put_ptr(_d, rtp_relay_dlg_ctx_idx, _p)
 
@@ -492,10 +492,10 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 	}
 	return sess->relay->funcs.answer(info, &sess->server,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IP),
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_TYPE),
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
-			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_SELF),
+			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_PEER), body);
 }
 #undef RTP_RELAY_PEER
