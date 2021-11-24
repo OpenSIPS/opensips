@@ -442,9 +442,11 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len,
 	}
 }
 
-#define PROM_PUSH_STAT(_s) \
+#define PROM_PUSH_STAT(_s, _m) \
 	do { \
 		if (prom_push_stat(_s, page, buffer->len, &groups) < 0) { \
+			if (_m) \
+				stats_mod_unlock(_m); \
 			LM_ERR("out of memory for stats\n"); \
 			prom_groups_free(&groups); \
 			return MI_HTTP_INTERNAL_ERR_CODE; \
@@ -486,7 +488,7 @@ int prom_answer_to_connection (void *cls, void *connection,
 		while ((mod = module_stats_iterate(mod)) != NULL) {
 			stats_mod_lock(mod);
 			for (stat = mod->head; stat; stat = stat->lnext)
-				PROM_PUSH_STAT(stat);
+				PROM_PUSH_STAT(stat, mod);
 			stats_mod_unlock(mod);
 		}
 		goto end;
@@ -503,7 +505,7 @@ int prom_answer_to_connection (void *cls, void *connection,
 		}
 		stats_mod_lock(s->mod);
 		for (stat = s->mod->head; stat; stat = stat->lnext)
-			PROM_PUSH_STAT(stat);
+			PROM_PUSH_STAT(stat, s->mod);
 		stats_mod_unlock(s->mod);
 	}
 
@@ -516,7 +518,7 @@ int prom_answer_to_connection (void *cls, void *connection,
 				continue;
 			*s->stat = stat;
 		}
-		PROM_PUSH_STAT(*s->stat);
+		PROM_PUSH_STAT(*s->stat, NULL);
 	}
 end:
 	if (page->len + 1 >= buffer->len) {
