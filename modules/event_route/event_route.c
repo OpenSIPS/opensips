@@ -233,6 +233,8 @@ static evi_reply_sock* scriptroute_parse(str socket)
 	LM_DBG("route is <%.*s> idx %d\n", sock->address.len, sock->address.s, idx);
 	sock->flags |= EVI_ADDRESS;
 
+	sock->flags |= SCRIPTROUTE_FLAG;
+
 	return sock;
 }
 
