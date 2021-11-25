@@ -351,7 +351,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
-	char *p, proto_str[PROTO_NAME_MAX_SIZE];
+	char *p, proto_str[PROTO_NAME_MAX_SIZE+1];
 	str *address, *port;
 	str st;
 	int len;
@@ -370,7 +370,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	sbranch.s = branch;
 	sbranch.len = strlen(branch);
 
-	p = proto2str(s->proto, proto_str);
+	p = proto2upper(s->proto, proto_str);
 	*(p++) = ' ';
 	st.s = proto_str;
 	st.len = p - proto_str;
@@ -387,9 +387,6 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 		port = default_global_port;
 	else
 		port = &s->port_no_str;
-
-	/* quick proto uppercase */
-	*((int *)st.s) &= ~((1 << 21) | (1 << 13) | (1 << 5));
 
 	if ( sipping_method.len + 1 + curi->len + s_len(" SIP/2.0"CRLF) +
 		s_len("Via: SIP/2.0/") + st.len + address->len +
