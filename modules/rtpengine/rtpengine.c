@@ -1823,7 +1823,11 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					break;
 				continue;
 			case 13:
-				if (str_eq(&key, "received-from")) {
+				if (str_eq(&key, "media-address")) {
+					err = "missing value";
+					if (!val.s)
+						goto error;
+				} else if (str_eq(&key, "received-from")) {
 					if (val.s)
 						ng_flags->received_from = val;
 				} else
