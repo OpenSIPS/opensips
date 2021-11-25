@@ -362,7 +362,6 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	sbranch.len = strlen(branch);
 
 	p = proto2str(s->proto, proto_str);
-	*(p++) = ' ';
 	st.s = proto_str;
 	st.len = p - proto_str;
 
@@ -383,7 +382,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	*((int *)st.s) &= ~((1 << 21) | (1 << 13) | (1 << 5));
 
 	if ( sipping_method.len + 1 + curi->len + s_len(" SIP/2.0"CRLF) +
-		s_len("Via: SIP/2.0/") + st.len + address.len +
+		s_len("Via: SIP/2.0/") + st.len + 1 + address.len +
 		1 + port.len + strlen(branch) +
 		(path->len ? (s_len(CRLF"Route: ") + path->len) : 0) +
 		s_len(CRLF"From: ") +  sipping_from.len + s_len(";tag=") + 8 +
@@ -405,6 +404,7 @@ build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
 	append_str( p, *curi);
 	append_fix( p, " SIP/2.0"CRLF"Via: SIP/2.0/");
 	append_str( p, st);
+	*(p++) = ' ';
 	append_str( p, address);
 	*(p++) = ':';
 	append_str( p, port);
