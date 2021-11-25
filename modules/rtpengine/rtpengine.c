@@ -1843,8 +1843,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				else if (str_eq(&key, "via-branch-param")) {
 					ng_flags->via = 4;
 					ng_flags->viabranch = val;
-				}
-				else
+				} else if (str_eq(&key, "replace-username")) {
+					if (!ng_flags->replace)
+						LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
+					else
+						BCHECK(bencode_list_add_string(ng_flags->replace, "username"));
+				} else
 					break;
 				continue;
 
@@ -1855,12 +1859,27 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					break;
 				continue;
 
+			case 19:
+				if (str_eq(&key, "replace-SDP-version")) {
+					if (!ng_flags->replace)
+						LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
+					else
+						BCHECK(bencode_list_add_string(ng_flags->replace, "SDP version"));
+				} else
+					break;
+				continue;
+
 			case 20:
 				if (str_eq(&key, "replace-zero-address")) {
 					if (!ng_flags->replace)
 						LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
 					else
 						BCHECK(bencode_list_add_string(ng_flags->replace, "zero address"));
+				} else if (str_eq(&key, "replace-session-name")) {
+					if (!ng_flags->replace)
+						LM_DBG("%.*s not supported for %d op\n", key.len, key.s, *op);
+					else
+						BCHECK(bencode_list_add_string(ng_flags->replace, "session name"));
 				} else
 					break;
 				continue;
