@@ -1689,8 +1689,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					ng_flags->transport |= 0x100;
 					ng_flags->transport &= ~0x002;
 				} else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 4:
 				if (str_eq(&key, "SRTP"))
@@ -1698,8 +1698,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				else if (str_eq(&key, "AVPF"))
 					ng_flags->transport |= 0x102;
 				else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 6:
 				if (str_eq(&key, "to-tag")) {
@@ -1709,8 +1709,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				} else if (str_eq(&key, "callid") && val.s)
 					ng_flags->call_id = val;
 				else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 7:
 				if (str_eq(&key, "RTP/AVP"))
@@ -1721,8 +1721,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						goto error;
 					ng_flags->call_id = val;
 				} else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 8:
 				if (str_eq(&key, "internal")) {
@@ -1750,8 +1750,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					ng_flags->directional = 1;
 				}
 				else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 9:
 				if (str_eq(&key, "RTP/SAVPF"))
@@ -1759,8 +1759,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				else if (str_eq(&key, "out-iface"))
 					outiface = val;
 				else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 10:
 				if (str_eq(&key, "via-branch")) {
@@ -1776,9 +1776,9 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						ng_flags->via = -1;
 					else
 						goto error;
-					continue;
+					break;
 				}
-				break;
+				continue;
 
 			case 11:
 				if (str_eq(&key, "repacketize")) {
@@ -1795,12 +1795,12 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					if (!ng_flags->packetize)
 						goto error;
 					BCHECK(bencode_dictionary_add_integer(ng_flags->dict, "repacketize", ng_flags->packetize));
-					continue;
+					break;
 				} else if (str_eq(&key, "directional")) {
 					ng_flags->directional = 1;
-					continue;
+					break;
 				}
-				break;
+				continue;
 
 			case 12:
 				if (str_eq(&key, "force-answer")) {
@@ -1821,8 +1821,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 						BCHECK(bencode_dictionary_add_integer(ng_flags->dict, "delete-delay", delete_delay));
 					}
 				} else
-					break;
-				continue;
+					continue;
+				break;
 			case 13:
 				if (str_eq(&key, "media-address")) {
 					err = "missing value";
@@ -1833,9 +1833,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					if (val.s)
 						ng_flags->received_from = val;
 				} else
-					break;
-				continue;
-
+					continue;
+				break;
 			case 14:
 				if (str_eq(&key, "replace-origin")) {
 					if (!ng_flags->replace)
@@ -1857,8 +1856,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				else if (str_eq(&key, "rtcp-mux-offer"))
 					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "offer"));
 				else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 15:
 				if (str_eq(&key, "rtcp-mux-reject"))
@@ -1866,9 +1865,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 				else if (str_eq(&key, "rtcp-mux-accept"))
 					BCHECK(!ng_flags->rtcp_mux || bencode_list_add_string(ng_flags->rtcp_mux, "accept"));
 				else
-					break;
-				continue;
-
+					continue;
+				break;
 			case 16:
 				if (str_eq(&key, "UDP/TLS/RTP/SAVP"))
 					ng_flags->transport = 0x104;
@@ -1883,15 +1881,15 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					else
 						BCHECK(bencode_list_add_string(ng_flags->replace, "username"));
 				} else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 17:
 				if (str_eq(&key, "UDP/TLS/RTP/SAVPF"))
 					ng_flags->transport = 0x105;
 				else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 19:
 				if (str_eq(&key, "replace-SDP-version")) {
@@ -1900,8 +1898,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					else
 						BCHECK(bencode_list_add_string(ng_flags->replace, "SDP version"));
 				} else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 20:
 				if (str_eq(&key, "replace-zero-address")) {
@@ -1915,8 +1913,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					else
 						BCHECK(bencode_list_add_string(ng_flags->replace, "session name"));
 				} else
-					break;
-				continue;
+					continue;
+				break;
 
 			case 26:
 				if (str_eq(&key, "replace-session-connection")) {
@@ -1925,8 +1923,8 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 					else
 						BCHECK(bencode_list_add_string(ng_flags->replace, "session-connection"));
 				} else
-					break;
-				continue;
+					continue;
+				break;
 		}
 
 		/* we got here if we didn't match something specific */
