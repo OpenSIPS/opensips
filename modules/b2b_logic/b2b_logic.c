@@ -635,6 +635,7 @@ void b2bl_clean(unsigned int ticks, void* param)
 	int i;
 	b2bl_tuple_t* tuple, *tuple_next;
 	unsigned int now;
+	static context_p my_ctx = NULL;
 
 	now = get_ticks();
 
@@ -651,11 +652,29 @@ void b2bl_clean(unsigned int ticks, void* param)
 					tuple->key->len, tuple->key->s);
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
-					if(!tuple->bridge_entities[0]->disconnected)
-						term_expired_entity(tuple->bridge_entities[0], i);
+					/* as this processing is outside the scope of other messages (it is
+					trigger from timer), a processing context must be attached to it */
+					if (!tuple->bridge_entities[0]->disconnected || !tuple->bridge_entities[1]->disconnected) {
+						if ((my_ctx = context_alloc(CONTEXT_GLOBAL))) {
+							context_p old_ctx = current_processing_ctx;
+							memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
+							current_processing_ctx = my_ctx;
 
-					if(!tuple->bridge_entities[1]->disconnected)
-						term_expired_entity(tuple->bridge_entities[1], i);
+							if(!tuple->bridge_entities[0]->disconnected)
+								term_expired_entity(tuple->bridge_entities[0], i);
+
+							if(!tuple->bridge_entities[1]->disconnected)
+								term_expired_entity(tuple->bridge_entities[1], i);
+
+							context_destroy(CONTEXT_GLOBAL, my_ctx);
+							my_ctx = NULL;
+							/* switch back to the old context */
+							current_processing_ctx = old_ctx;
+						} else {
+							LM_ERR("failed to alloc new ctx in pkg\n");
+						}
+					}
+
 				}
 				b2bl_delete(tuple, i, 1, tuple->repl_flag != TUPLE_REPL_RECV);
 			}

@@ -30,6 +30,7 @@
 #include "../../str.h"
 #include "../../db/db.h"
 #include "../../timer.h"
+#include "../../context.h"
 #include "../b2b_entities/b2be_load.h"
 
 #define B2B_BRIDGING_STATE      -1
