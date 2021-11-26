@@ -2005,8 +2005,6 @@ static struct rtpe_node *get_rtpe_node(str *node, struct rtpe_set *set)
 }
 
 
-static str rtpe_function_call_error;
-
 static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_msg *msg,
 	enum rtpe_operation op, str *flags_str, str *body_in, pv_spec_t *spvar, str *snode,
 	bencode_item_t *extra_dict)
@@ -2017,7 +2015,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	int ret;
 	struct rtpe_node *node;
 	struct rtpe_set *set;
-	char *cp, *err;
+	char *cp, *err = NULL;
 	pv_value_t val;
 	str flags_nt = {0,0};
 
@@ -2025,12 +2023,6 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 
 	memset(&ng_flags, 0, sizeof(ng_flags));
 	error.len = 0;
-
-	/* cleanup whatever was in error */
-	if (rtpe_function_call_error.s) {
-		pkg_free(rtpe_function_call_error.s);
-		rtpe_function_call_error.s = NULL;
-	}
 
 	if (!extra_dict) {
 		if (bencode_buffer_init(bencbuf)) {
