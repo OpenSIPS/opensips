@@ -272,6 +272,24 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 ...
 </programlisting>
 		</example>
+
+	<section id="param_error_pv" xreflabel="error_pv">
+		<title><varname>error_pv</varname> (string)</title>
+		<para>
+			The parameter defines a variable that shall be populated
+			by &rtp; when one of the rtpengine_* functions fail.
+		</para>
+		<para>
+			There is no default value.
+		</para>
+		<example>
+		<title>Set <varname>error_pv</varname> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("rtpengine", "error_pv", "$var(rtpengine_error)")
+...
+</programlisting>
+		</example>
 	</section>
 
 	<section id="param_db_url" xreflabel="db_url">

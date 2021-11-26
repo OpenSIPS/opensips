@@ -336,6 +336,8 @@ static int myrand = 0;
 static unsigned int myseqn = 0;
 static str extra_id_pv_param = {NULL, 0};
 static char *setid_avp_param = NULL;
+static char *err_pv_param = NULL;
+static pv_spec_t err_pv;
 
 static char ** rtpe_strings=0;
 static int rtpe_sets=0; /*used in rtpengine_set_store()*/
@@ -642,6 +644,7 @@ static param_export_t params[] = {
 	{"notification_sock",      STR_PARAM, &rtpengine_notify_sock.s},
 	{"extra_id_pv",            STR_PARAM, &extra_id_pv_param.s },
 	{"setid_avp",              STR_PARAM, &setid_avp_param },
+	{"error_pv",               STR_PARAM, &err_pv_param },
 	{"db_url",                 STR_PARAM, &db_url.s               },
 	{"db_table",               STR_PARAM, &db_table.s             },
 	{"socket_column",          STR_PARAM, &db_rtpe_sock_col.s        },
@@ -1365,6 +1368,15 @@ mod_init(void)
 		setid_avp_type = avp_flags;
 	}
 
+	if (err_pv_param) {
+		init_str(&s, err_pv_param);
+		if (pv_parse_spec(&s, &err_pv) < 0) {
+			LM_ERR("malformed return variable definition <%s>\n",
+					err_pv_param);
+			return -1;
+		}
+	}
+
 	if (rtpe_strings)
 		pkg_free(rtpe_strings);
 
@@ -1993,6 +2005,8 @@ static struct rtpe_node *get_rtpe_node(str *node, struct rtpe_set *set)
 }
 
 
+static str rtpe_function_call_error;
+
 static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_msg *msg,
 	enum rtpe_operation op, str *flags_str, str *body_in, pv_spec_t *spvar, str *snode,
 	bencode_item_t *extra_dict)
@@ -2003,18 +2017,26 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	int ret;
 	struct rtpe_node *node;
 	struct rtpe_set *set;
-	char *cp;
+	char *cp, *err;
 	pv_value_t val;
 	str flags_nt = {0,0};
 
 	/*** get & init basic stuff needed ***/
 
 	memset(&ng_flags, 0, sizeof(ng_flags));
+	error.len = 0;
+
+	/* cleanup whatever was in error */
+	if (rtpe_function_call_error.s) {
+		pkg_free(rtpe_function_call_error.s);
+		rtpe_function_call_error.s = NULL;
+	}
 
 	if (!extra_dict) {
 		if (bencode_buffer_init(bencbuf)) {
-			LM_ERR("could not initialize bencode_buffer_t\n");
-			return NULL;
+			err = "could not initialize bencode_buffer_t";
+			bencbuf = NULL;
+			goto error;
 		}
 		ng_flags.dict = bencode_dictionary(bencbuf);
 	} else
@@ -2036,27 +2058,29 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	ng_flags.to = (op == OP_DELETE) ? 0 : 1;
 
 	if (flags_str && pkg_nt_str_dup(&flags_nt, flags_str) < 0) {
-		LM_ERR("No more pkg mem\n");
+		err = "No more pkg mem";
 		goto error;
 	}
 
-	if (parse_flags(&ng_flags, msg, &op, flags_nt.s))
+	if (parse_flags(&ng_flags, msg, &op, flags_nt.s)) {
+		err = "could not parse flags";
 		goto error;
+	}
 
 	if (!ng_flags.call_id.len &&
 			(get_callid(msg, &ng_flags.call_id) == -1 || ng_flags.call_id.len == 0)) {
-		LM_ERR("can't get Call-Id field\n");
+		err = "can't get Call-Id field";
 		goto error;
 	}
 	if (!ng_flags.to_tag.len &&
 			get_to_tag(msg, &ng_flags.to_tag) == -1) {
-		LM_ERR("can't get To tag\n");
+		err = "can't get To tag";
 		goto error;
 	}
 
 	if (!ng_flags.from_tag.len &&
 			(get_from_tag(msg, &ng_flags.from_tag) == -1 || ng_flags.from_tag.len == 0)) {
-		LM_ERR("can't get From tag\n");
+		err = "can't get From tag";
 		goto error;
 	}
 
@@ -2086,7 +2110,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		} else
 			ret = -1;
 		if (ret == -1 || viabranch.len == 0) {
-			LM_ERR("can't get Via branch/extra ID\n");
+			err = "can't get Via branch/extra ID";
 			goto error;
 		}
 		bencode_dictionary_add_str(ng_flags.dict, "via-branch", &viabranch);
@@ -2108,7 +2132,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			if (!ip_tmp) {
 				ip_tmp = str2ip6(&ng_flags.received_from);
 				if (!ip_tmp) {
-					LM_ERR("received-from value is not an IP\n");
+					err = "received-from value is not an IP";
 					goto error;
 				}
 			}
@@ -2141,7 +2165,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	}
 	else {
 		if (!ng_flags.to_tag.s || !ng_flags.to_tag.len) {
-			LM_ERR("No to-tag present\n");
+			err = "No to-tag present";
 			goto error;
 		}
 		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.to_tag);
@@ -2153,7 +2177,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	/*** send it out ***/
 
 	if (bencbuf->error) {
-		LM_ERR("out of memory - bencode failed\n");
+		err = "out of memory - bencode failed";
 		goto error;
 	}
 
@@ -2170,7 +2194,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			node = select_rtpe_node(ng_flags.call_id, set);
 		}
 		if (!node) {
-			LM_ERR("no available proxies\n");
+			err = "no available proxies";
 			RTPE_STOP_READ();
 			goto error;
 		}
@@ -2194,6 +2218,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	resp = bencode_decode_expect(bencbuf, cp, ret, BENCODE_DICTIONARY);
 	if (!resp) {
 		LM_ERR("failed to decode bencoded reply from proxy: %.*s\n", ret, cp);
+		err = "failed to decode bencoded reply";
 		goto error;
 	}
 	if (!bencode_dictionary_get_strcmp(resp, "result", "error")) {
@@ -2212,7 +2237,19 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 error:
 	if (flags_nt.s)
 		pkg_free(flags_nt.s);
-	bencode_buffer_free(bencbuf);
+	if (err) {
+		LM_ERR("%s\n", err);
+		init_str(&error, err);
+	}
+	if (error.len && err_pv_param) {
+		memset(&val, 0, sizeof(pv_value_t));
+		val.flags = PV_VAL_STR;
+		val.rs = error;
+		if(pv_set_value(msg, &err_pv, (int)EQ_T, &val)<-1)
+			LM_ERR("setting rtpengine result pvar failed\n");
+	}
+	if (bencbuf)
+		bencode_buffer_free(bencbuf);
 	return NULL;
 }
 
