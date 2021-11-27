@@ -272,6 +272,7 @@ modparam("rtpengine", "setid_avp", "$avp(setid)")
 ...
 </programlisting>
 		</example>
+	</section>
 
 	<section id="param_error_pv" xreflabel="error_pv">
 		<title><varname>error_pv</varname> (string)</title>
