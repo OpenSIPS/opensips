@@ -102,6 +102,11 @@
 #define COMPRESS_CB (1<<0)
 #define COMPACT_CB (1<<1)
 
+#define NO_COMPACT_FORM (1<<1)
+
+#define CL_NAME_NO_DELIM		"Content-Length"
+#define CL_NAME_NO_DELIM_LEN	(sizeof(CL_NAME_NO_DELIM) - 1)
+
 #define SET_GLOBAL_CTX(pos, value) \
 	(context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, pos, value))
 
@@ -122,9 +127,11 @@ int tm_compress_ctx_pos, tm_compact_ctx_pos;
 static int fixup_whitelist_compact(void**);
 static int fixup_whitelist_compress(void**);
 static int fixup_whitelist_free(void **);
+static int fixup_mc_compact_flags(void **);
+static int fixup_mc_compact_flags_free(void **);
 
-static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list);
-static int mc_compact_cb(char** buf, mc_whitelist_p wh_list, int, int*);
+static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, int* flags_p);
+static int mc_compact_cb(char** buf, struct mc_compact_args* mc_compact_args, int, int*);
 
 static int mc_compress(struct sip_msg* msg, int* algo, int* flags,
 		mc_whitelist_p wh_list);
@@ -158,6 +165,8 @@ static cmd_export_t cmds[]={
 	{"mc_compact",	  (cmd_function)mc_compact, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_whitelist_compact, fixup_whitelist_free},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			 fixup_mc_compact_flags, fixup_mc_compact_flags_free},
 		{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
 	{"mc_compress",	  (cmd_function)mc_compress, {
@@ -282,6 +291,7 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 {
 	int ret = 0;
 	mc_whitelist_p wh_list = NULL;
+	struct mc_compact_args* mc_compact_args = NULL;
 	struct mc_comp_args* args = NULL;
 	char* buf = t->uac[p->code].request.buffer.s;
 	int olen = t->uac[p->code].request.buffer.len;
@@ -301,10 +311,10 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 
 		case COMPACT_CB:
 			/* if not registered yet we take from global context */
-			if ((wh_list = GET_GLOBAL_CTX(compact_ctx_pos)) == NULL)
+			if ((mc_compact_args = GET_GLOBAL_CTX(compact_ctx_pos)) == NULL)
 				break;
 
-			if ((ret = mc_compact_cb(&buf, wh_list, TM_CB, &olen)) < 0)
+			if ((ret = mc_compact_cb(&buf, mc_compact_args, TM_CB, &olen)) < 0)
 				LM_ERR("compaction failed\n");
 
 			SET_GLOBAL_CTX(compact_ctx_pos, NULL);
@@ -319,6 +329,7 @@ void wrap_tm_func(struct cell* t, int type, struct tmcb_params* p)
 	/* free whitelists for both actions */
 	if (wh_list)
 		free_whitelist(wh_list);
+	free_mc_compact_args(mc_compact_args);
 	if (ret < 0)
 		return;
 
@@ -341,6 +352,7 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 {
 	int ret = 0;
 	struct mc_comp_args* args;
+	struct mc_compact_args *mc_compact_args = NULL;
 	mc_whitelist_p wh_list = NULL;
 	int olen=buf->len;
 
@@ -363,10 +375,10 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 		break;
 
 	case COMPACT_CB:
-		if ((wh_list = GET_GLOBAL_CTX(compact_ctx_pos))==NULL)
+		if ((mc_compact_args = GET_GLOBAL_CTX(compact_ctx_pos))==NULL)
 			break;
 
-		if ((ret = mc_compact_cb(&buf->s, wh_list, PROCESSING_CB, &olen)) < 0)
+		if ((ret = mc_compact_cb(&buf->s, mc_compact_args, PROCESSING_CB, &olen)) < 0)
 			LM_ERR("compaction failed\n");
 
 		SET_GLOBAL_CTX(compact_ctx_pos, NULL);
@@ -376,6 +388,7 @@ int wrap_msg_func(str* buf, struct sip_msg* p_msg, int type)
 	/* free whitelists for both actions */
 	if (wh_list)
 		free_whitelist(wh_list);
+	free_mc_compact_args(mc_compact_args);
 	if (ret < 0)
 		return -1;
 
@@ -448,6 +461,45 @@ static int fixup_whitelist_compress(void** param)
 static int fixup_whitelist_free(void **param)
 {
 	return free_whitelist(*param);
+}
+
+static int fixup_mc_compact_flags(void **param)
+{
+	str *s = (str *) *param;
+	int st;
+	int *flags;
+
+	flags = pkg_malloc(sizeof *flags);
+	if (!flags) {
+		LM_ERR("out of pkg memory\n");
+		return -1;
+	}
+	*flags = 0;
+
+	*param = (void *) flags;
+
+	if (!s)
+		return 0;
+
+	for (st = 0; st < s->len; st++) {
+		switch (s->s[st]) {
+			case 'n':
+				*flags |= NO_COMPACT_FORM;
+				break;
+			default:
+				LM_WARN("unknown option `%c'\n", s->s[st]);
+		}
+	}
+
+	return 0;
+}
+
+static int fixup_mc_compact_flags_free(void** param)
+{
+	if (*param)
+		pkg_free(*param);
+
+	return 0;
 }
 
 
@@ -590,14 +642,28 @@ error:
  * 3) Headers which not in whitelist will be removed
  * 4) Unnecessary sdp body codec attributes lower than 96 removed
  */
-static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list)
+static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, int* flags_p)
 {
+	struct mc_compact_args *mc_compact_args_p;
+
 	/* first check if anyone else has called mc_compact() on this msg */
 	if (GET_GLOBAL_CTX(compact_ctx_pos))
 		return -1;
 
-	wh_list = mc_dup_whitelist(wh_list);
-	SET_GLOBAL_CTX(compact_ctx_pos, (void*)wh_list);
+	mc_compact_args_p = pkg_malloc(sizeof(struct mc_compact_args));
+	if (mc_compact_args_p==NULL) {
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
+
+	mc_compact_args_p->wh_list = mc_dup_whitelist(wh_list);
+	if (mc_compact_args_p->wh_list==NULL) {
+		LM_ERR("no more pkg mem\n");
+		goto error;
+	}
+
+	mc_compact_args_p->flags = *flags_p;
+	SET_GLOBAL_CTX(compact_ctx_pos, (void*)mc_compact_args_p);
 
 	/* register stateless callbacks */
 	if (register_post_raw_processing_cb(wrap_msg_compact, POST_RAW_PROCESSING, 1/*to be freed*/) < 0) {
@@ -623,14 +689,14 @@ static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list)
 
 error:
 	SET_GLOBAL_CTX(compact_ctx_pos, NULL);
-	free_whitelist(wh_list);
+	free_mc_compact_args(mc_compact_args_p);
 	return -1;
 }
 
 /*
  *
  */
-static int mc_compact_cb(char** buf_p, mc_whitelist_p wh_list, int type, int* olen)
+static int mc_compact_cb(char** buf_p, struct mc_compact_args *mc_compact_args, int type, int* olen)
 {
 	int i;
 	int msg_total_len;
@@ -684,7 +750,7 @@ static int mc_compact_cb(char** buf_p, mc_whitelist_p wh_list, int type, int* ol
 			break;
 		}
 
-		if (mc_is_in_whitelist(hf, wh_list)) {
+		if (mc_is_in_whitelist(hf, mc_compact_args->wh_list)) {
 			if (hdr_mask[hf->type]) {
 				/* If hdr already found or hdr of type other */
 				if (append_hf2lst(&hdr_mask[hf->type], hf,
@@ -699,6 +765,7 @@ static int mc_compact_cb(char** buf_p, mc_whitelist_p wh_list, int type, int* ol
 
 				/* Get the compact form of the header */
 				if (hf->type != HDR_OTHER_T &&
+					!(mc_compact_args->flags & NO_COMPACT_FORM) &&
 					(c=get_compact_form(hf)) != NO_FORM) {
 
 					hf->name.s = &COMPACT_FORMS[c];
@@ -800,8 +867,13 @@ static int mc_compact_cb(char** buf_p, mc_whitelist_p wh_list, int type, int* ol
 	memset(hf, 0, sizeof(struct hdr_field));
 
 	hf->type = HDR_CONTENTLENGTH_T;
-	hf->name.s = &COMPACT_FORMS[get_compact_form(hf)];
-	hf->name.len = 1;
+	if (mc_compact_args->flags & NO_COMPACT_FORM) {
+		hf->name.s = CL_NAME_NO_DELIM;
+		hf->name.len = CL_NAME_NO_DELIM_LEN;
+	} else {
+		hf->name.s = &COMPACT_FORMS[get_compact_form(hf)];
+		hf->name.len = 1;
+	}
 
 	if (new_body_len <= CRLF_LEN)
 		new_body_len = 0;
@@ -846,7 +918,8 @@ again:
 		if (hdr_mask[i]) {
 			/* Compact form name so the header have
 				to be built */
-			if (LOWER_CASE(hdr_mask[i]->name.s)) {
+			if (LOWER_CASE(hdr_mask[i]->name.s) ||
+				hdr_mask[i]->type == HDR_CONTENTLENGTH_T) {
 				/* Copy the name of the header */
 				wrap_copy_and_update(&new_buf.s,
 					hdr_mask[i]->name.s,

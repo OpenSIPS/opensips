@@ -291,6 +291,17 @@ int free_whitelist(mc_whitelist_p whitelist)
 
 }
 
+int free_mc_compact_args(struct mc_compact_args* args)
+{
+	if (args) {
+		if (args->wh_list)
+			free_whitelist(args->wh_list);
+		pkg_free(args);
+	}
+
+	return 0;
+}
+
 int fixup_compression_flags_free(void **param)
 {
 	pkg_free(*param);
