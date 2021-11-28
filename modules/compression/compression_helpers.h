@@ -39,6 +39,7 @@ int parse_whitelist(str*, mc_whitelist_p*, unsigned char*);
 int fixup_compression_flags(void**);
 int fixup_compression_flags_free(void **);
 int free_whitelist(mc_whitelist_p whitelist);
+int free_mc_compact_args(struct mc_compact_args* args);
 int free_hdr_list(struct hdr_field** hdr_lst_p);
 int free_hdr_mask(struct hdr_field** hdr_mask);
 int check_zlib_rc(int rc);
