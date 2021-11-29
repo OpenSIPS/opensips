@@ -1072,7 +1072,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		return init_mi_error(500, MI_SSTR("ERROR Cache entry not found"));
 	}
 
-	if (db_hdls->c_entry->on_demand) {
+	if (db_hdls->c_entry->on_demand || key) {
 		if (key) {
 			src_key.len = db_hdls->c_entry->id.len + key->len;
 			src_key.s = pkg_malloc(src_key.len);
