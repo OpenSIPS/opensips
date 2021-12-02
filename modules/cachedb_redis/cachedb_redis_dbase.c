@@ -546,17 +546,23 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 	}
 
 	rc = redis_run_command(connection, &reply, attr, "GET %b", attr->s, attr->len);
-	if (rc != 0) {
-		if (reply && (reply->type == REDIS_REPLY_NIL || reply->str == NULL
-				|| reply->len == 0)) {
-			LM_DBG("no such key - %.*s\n",attr->len,attr->s);
-			val->s = NULL;
-			val->len = 0;
-			freeReplyObject(reply);
-			return -2;
-		}
-
+	if (rc != 0)
 		goto out_err;
+
+	if (reply->type == REDIS_REPLY_NIL) {
+		LM_DBG("no such key - %.*s\n",attr->len,attr->s);
+		val->s = NULL;
+		val->len = 0;
+		freeReplyObject(reply);
+		return -2;
+	}
+
+	if (reply->str == NULL || reply->len == 0) {
+		/* empty string key */
+		val->s = NULL;
+		val->len = 0;
+		freeReplyObject(reply);
+		return 0;
 	}
 
 	LM_DBG("GET %.*s  - %.*s\n",attr->len,attr->s,(unsigned)reply->len,reply->str);
@@ -573,7 +579,8 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 	return 0;
 
 out_err:
-	freeReplyObject(reply);
+	if (reply)
+		freeReplyObject(reply);
 	return rc;
 }
 
