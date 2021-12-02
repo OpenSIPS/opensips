@@ -116,6 +116,9 @@ void tls_free_domain(struct tls_domain *dom)
 
 	dom->refs--;
 	if (dom->refs == 0) {
+		LM_DBG("Freeing domain: %.*s\n",
+			tls_domain->name.len, tls_domain->name.s);
+
 		destroy_tls_dom(dom);
 
 		lock_destroy(dom->lock);
