@@ -94,6 +94,8 @@ static int dbt_get_columns(db_con_t* _h, db_res_t* _r)
 static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 {
 	int i;
+	static str dummy_string = {"", 0};
+
 	if (!_h || !_r || !_res) {
 		LM_ERR("invalid parameter value\n");
 		return -1;
@@ -124,19 +126,31 @@ static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 			break;
 
 			case DB_STRING:
-				VAL_STR(&(ROW_VALUES(_r)[i])).s =
-						DBT_CON_ROW(_h)->fields[i].val.str_val.s;
-				VAL_STR(&(ROW_VALUES(_r)[i])).len =
-						DBT_CON_ROW(_h)->fields[i].val.str_val.len;
+				if (DBT_CON_ROW(_h)->fields[i].nul) {
+					/* Initialize the string pointers to a dummy empty
+					 * string so that we do not crash when the NULL flag
+					 * is set but the module does not check it properly
+					 */
+					VAL_STRING(&(ROW_VALUES(_r)[i])) = dummy_string.s;
+				} else {
+					VAL_STR(&(ROW_VALUES(_r)[i])).s =
+							DBT_CON_ROW(_h)->fields[i].val.str_val.s;
+					VAL_STR(&(ROW_VALUES(_r)[i])).len =
+							DBT_CON_ROW(_h)->fields[i].val.str_val.len;
+				}
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_STRING;
 				VAL_FREE(&(ROW_VALUES(_r)[i])) = 0;
 			break;
 
 			case DB_STR:
-				VAL_STR(&(ROW_VALUES(_r)[i])).s =
-						DBT_CON_ROW(_h)->fields[i].val.str_val.s;
-				VAL_STR(&(ROW_VALUES(_r)[i])).len =
-						DBT_CON_ROW(_h)->fields[i].val.str_val.len;
+				if (DBT_CON_ROW(_h)->fields[i].nul) {
+					VAL_STR(&(ROW_VALUES(_r)[i])) = dummy_string;
+				} else {
+					VAL_STR(&(ROW_VALUES(_r)[i])).s =
+							DBT_CON_ROW(_h)->fields[i].val.str_val.s;
+					VAL_STR(&(ROW_VALUES(_r)[i])).len =
+							DBT_CON_ROW(_h)->fields[i].val.str_val.len;
+				}
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_STR;
 				VAL_FREE(&(ROW_VALUES(_r)[i])) = 0;
 			break;
@@ -148,10 +162,14 @@ static int dbt_convert_row(db_con_t* _h, db_res_t* _res, db_row_t* _r)
 			break;
 
 			case DB_BLOB:
-				VAL_STR(&(ROW_VALUES(_r)[i])).s =
-						DBT_CON_ROW(_h)->fields[i].val.str_val.s;
-				VAL_STR(&(ROW_VALUES(_r)[i])).len =
-						DBT_CON_ROW(_h)->fields[i].val.str_val.len;
+				if (DBT_CON_ROW(_h)->fields[i].nul) {
+					VAL_BLOB(&(ROW_VALUES(_r)[i])) = dummy_string;
+				} else {
+					VAL_STR(&(ROW_VALUES(_r)[i])).s =
+							DBT_CON_ROW(_h)->fields[i].val.str_val.s;
+					VAL_STR(&(ROW_VALUES(_r)[i])).len =
+							DBT_CON_ROW(_h)->fields[i].val.str_val.len;
+				}
 				VAL_TYPE(&(ROW_VALUES(_r)[i])) = DB_BLOB;
 				VAL_FREE(&(ROW_VALUES(_r)[i])) = 0;
 			break;
