@@ -817,8 +817,8 @@ static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *c
 	}
 	lock_get(&client->ctx->lock);
 	if (client->ctx->pending_no || client->flags & B2B_SDP_CLIENT_PENDING) {
-		LM_INFO("we still have pending requests!\n");
-		code = 491;
+		LM_INFO("we still have pending requests - let them retransmit!\n");
+		//code = 491;
 		goto end;
 	}
 	client->ctx->pending_no = 1;
