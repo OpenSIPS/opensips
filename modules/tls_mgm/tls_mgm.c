@@ -705,7 +705,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			destroy_tls_dom(tmp);
+			tls_free_domain(tmp);
 
 			if (!db)
 				return -1;
@@ -755,7 +755,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			destroy_tls_dom(tmp);
+			tls_free_domain(tmp);
 
 			if (!db)
 				return -1;
