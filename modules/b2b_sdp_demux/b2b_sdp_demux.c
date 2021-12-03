@@ -1166,9 +1166,12 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 		lock_get(&client->ctx->lock);
 		if (client->ctx->pending_no) {
 			lock_release(&client->ctx->lock);
-			LM_INFO("we still have pending clients!\n");
+			LM_INFO("we still have pending clients - let them retransmit!\n");
+			/*
 			b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, 491, NULL);
 			return -1;
+			*/
+			return 0;
 		}
 		lock_release(&client->ctx->lock);
 		switch (msg->REQ_METHOD) {
@@ -1726,7 +1729,7 @@ static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
 		client->flags |= B2B_SDP_CLIENT_REPL;
 
 		/* check if the key exists */
-		if (b2b_api.entity_exists(B2B_CLIENT, &client->b2b_key) && 
+		if (b2b_api.entity_exists(B2B_CLIENT, &client->b2b_key) &&
 				b2b_sdp_client_restore(client) < 0) {
 			LM_ERR("could not restore b2b client logic!\n");
 			goto error;
