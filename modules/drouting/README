@@ -357,12 +357,16 @@ Chapter 1. Admin Guide
        be matched for current rule. Time recurrences are based
        closely on the recurring time intervals from the Internet
        Calendaring and Scheduling Core Object Specification
-       (calendar COS), RFC 2445. The set of attributes used in
+       (calendar COS), RFC 2445. The set of attributes used in a
        routing rule specification is a subset of time recurrence
        attributes.
-     * The value stored in database has the format of:
-       <dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bym
-       onthday>|<byyearday>|<byweekno>|<bymonth>
+     * The value stored in database has the basic format of:
+       <timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<int
+       erval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth
+       > , identical to the input of the check_time_rec() function
+       of the cfgutils module, including the optional use of
+       logical operators linking multiple such strings into a
+       larger expression.
      * When an attribute is not specified, the corresponding place
        must be left empty, whenever another attribute that follows
        in the list has to be specified.
@@ -1765,8 +1769,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 390 188 13340 5665
-   2. Liviu Chircu (@liviuchircu) 146 84 2410 2564
-   3. Razvan Crainea (@razvancrainea) 95 49 1144 2204
+   2. Liviu Chircu (@liviuchircu) 148 86 2419 2570
+   3. Razvan Crainea (@razvancrainea) 97 50 1153 2219
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 39 18 1092 733
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1803,10 +1807,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Sep 2021
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2021
-   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jun 2021
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Nov 2021
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
+   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Sep 2021
    5.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    6.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    7.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
@@ -1828,8 +1832,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Liviu Chircu (@liviuchircu), Nick
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Nick
    Altmann (@nikbyte), Vlad Patrascu (@rvlad-patrascu), Alexey
    Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai

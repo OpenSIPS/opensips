@@ -387,7 +387,10 @@ modparam("dialplan", "repl_exp_col", "column_name")
 
    The column name that indicates an additional time recurrence
    check within the rule (column values are RFC 2445-compatible
-   strings)
+   strings). The value format is identical to the input of the
+   check_time_rec() function of the cfgutils module, including the
+   optional use of logical operators linking multiple such strings
+   into a larger expression.
 
    Default value is “timerec”.
 
@@ -540,7 +543,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 67 43 965 937
+   1. Liviu Chircu (@liviuchircu) 68 44 971 938
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 61 41 657 852
    3. Ionut Ionita (@ionutrazvanionita) 40 20 1149 579
    4. Anca Vamanu 33 5 3263 19
@@ -577,7 +580,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - Aug 2021
+   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2021
    2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
