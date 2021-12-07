@@ -1054,6 +1054,7 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	pcr_t *cr, *old_cr;
 	time_t rawtime;
 	struct dr_prepare_part_params pp;
+	int ret = -1;
 
 	void **dest;
 	map_iterator_t it;
@@ -1102,7 +1103,8 @@ static inline int dr_reload_data_head(struct head_db *hd,
 		}
 
 		if (RES_ROW_N(res) == 0) {
-			LM_ERR("No rows returned by raw query\n");
+			ret = 1;
+			LM_INFO("No rows returned by raw query\n");
 			goto multi_err1;
 		}
 
@@ -1223,7 +1225,7 @@ multi_err1:
 error:
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
-	return -1;
+	return ret;
 }
 
 static inline int dr_reload_data(int initial)
@@ -1232,7 +1234,7 @@ static inline int dr_reload_data(int initial)
 	int ret_val = 0;
 
 	for (part = head_db_start; part; part = part->next)
-		if (dr_reload_data_head(part, &part->partition, initial) != 0)
+		if (dr_reload_data_head(part, &part->partition, initial) < 0)
 			ret_val = -1;
 
 	/* make the new list the main list used by qrouting */
@@ -2195,9 +2197,18 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	if (resp)
 		return resp;
 
-	if (dr_reload_data_head(part, &part->partition, 0) < 0) {
-		LM_CRIT("Failed to load data head\n");
-		return init_mi_error(500, MI_SSTR("Failed to reload"));
+	switch (dr_reload_data_head(part, &part->partition, 0)) {
+		case 0:
+			/* all good, fallback to reloading */
+			break;
+		case 1:
+			return init_mi_error(404, MI_SSTR("No rules tables"));
+		case -2:
+			return init_mi_error(500, MI_SSTR("Reload in progress"));
+		case -1:
+		default:
+			LM_CRIT("Failed to load data head\n");
+			return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
 
 	/* put the new part in use within qrouting */
