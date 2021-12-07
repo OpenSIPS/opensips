@@ -803,6 +803,15 @@ static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 	return &body;
 }
 
+#define B2B_SDP_CLIENT_WAIT_FREE(_ctx) \
+	do { \
+		while ((_ctx)->pending_no) { \
+			lock_release(&(_ctx)->lock); \
+			usleep(50); \
+			lock_get(&(_ctx)->lock); \
+		} \
+	} while (0)
+
 static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
 	str *body;
@@ -816,11 +825,12 @@ static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *c
 		return -1;
 	}
 	lock_get(&client->ctx->lock);
-	if (client->ctx->pending_no || client->flags & B2B_SDP_CLIENT_PENDING) {
-		LM_INFO("we still have pending requests - let them retransmit!\n");
-		//code = 491;
+	if (client->flags & B2B_SDP_CLIENT_PENDING) {
+		LM_INFO("we still have pending requests!\n");
+		code = 491;
 		goto end;
 	}
+	B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
 	client->ctx->pending_no = 1;
 	if (b2b_sdp_client_sync(client, body) < 0) {
 		LM_INFO("cannot parse re-INVITE body!\n");
@@ -930,11 +940,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 			body = b2b_sdp_mux_body(ctx);
 			if (body) {
 				/* we do a busy waiting if there's a different negociation happening */
-				while (ctx->pending_no) {
-					lock_release(&ctx->lock);
-					usleep(50);
-					lock_get(&ctx->lock);
-				}
+				B2B_SDP_CLIENT_WAIT_FREE(ctx);
 				ctx->pending_no = 1;
 				lock_release(&ctx->lock);
 				memset(&req_data, 0, sizeof(b2b_req_data_t));
@@ -1164,15 +1170,15 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 
 	if (type == B2B_REQUEST) {
 		lock_get(&client->ctx->lock);
+		B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
+		/*
 		if (client->ctx->pending_no) {
 			lock_release(&client->ctx->lock);
 			LM_INFO("we still have pending clients - let them retransmit!\n");
-			/*
 			b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, 491, NULL);
-			return -1;
-			*/
 			return 0;
 		}
+		*/
 		lock_release(&client->ctx->lock);
 		switch (msg->REQ_METHOD) {
 			case METHOD_ACK:
