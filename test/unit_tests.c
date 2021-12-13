@@ -58,7 +58,7 @@ int run_unit_tests(void)
 
 	/* core tests */
 	if (!strcmp(testing_module, "core")) {
-		test_malloc();
+		//test_malloc();
 		test_cachedb();
 		test_lib_csv();
 		test_parser();
