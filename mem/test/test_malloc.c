@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
+#ifdef HP_MALLOC
 #include <tap.h>
 
 #include "../../str.h"
@@ -311,3 +312,4 @@ void init_malloc_tests(void)
 		return;
 	}
 }
+#endif
