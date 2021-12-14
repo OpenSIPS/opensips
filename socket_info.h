@@ -400,35 +400,37 @@ static inline char* proto2str(int proto, char *p)
 	return p;
 }
 
+/* Similar to proto2str(), but proto is written in uppercase. The
+   new resulting pointer will be returned (where writing ended) */
 static inline char* proto2upper(int proto, char *p)
 {
 	switch (proto) {
 	case PROTO_UDP:
-		memcpy(p, STR_L("UDP"));
+		p = memcpy(p, STR_L("UDP")) + sizeof("UDP")-1;
 		break;
 	case PROTO_TCP:
-		memcpy(p, STR_L("TCP"));
+		p = memcpy(p, STR_L("TCP")) + sizeof("TCP")-1;
 		break;
 	case PROTO_TLS:
-		memcpy(p, STR_L("TLS"));
+		p = memcpy(p, STR_L("TLS")) + sizeof("TLS")-1;
 		break;
 	case PROTO_SCTP:
-		memcpy(p, STR_L("SCTP"));
+		p = memcpy(p, STR_L("SCTP")) + sizeof("SCTP")-1;
 		break;
 	case PROTO_WS:
-		memcpy(p, STR_L("WS"));
+		p = memcpy(p, STR_L("WS")) + sizeof("WS")-1;
 		break;
 	case PROTO_WSS:
-		memcpy(p, STR_L("WSS"));
+		p = memcpy(p, STR_L("WSS")) + sizeof("WSS")-1;
 		break;
 	case PROTO_BIN:
-		memcpy(p, STR_L("BIN"));
+		p = memcpy(p, STR_L("BIN")) + sizeof("BIN")-1;
 		break;
 	case PROTO_HEP_UDP:
-		memcpy(p, STR_L("HEP_UDP"));
+		p = memcpy(p, STR_L("HEP_UDP")) + sizeof("HEP_UDP")-1;
 		break;
 	case PROTO_HEP_TCP:
-		memcpy(p, STR_L("HEP_TCP"));
+		p = memcpy(p, STR_L("HEP_TCP")) + sizeof("HEP_TCP")-1;
 		break;
 	default:
 		LM_CRIT("unsupported proto %d\n", proto);
