@@ -124,6 +124,8 @@ static inline struct sip_msg* buf_to_sip_msg(char *buf, unsigned int len,
 	req->rcv.src_port = req->rcv.dst_port = dialog->send_sock->port_no;
 	req->rcv.bind_address = dialog->send_sock;
 
+	req->flags |= FL_IS_LOCAL;
+
 	return req;
 
 error1:
