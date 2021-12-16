@@ -50,22 +50,22 @@ static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
 	}
 
 	if (m_ip) {
-		ss->media_ip.s = (char *)(ss + 1) + ss->rtpproxy.len;
-		memcpy(ss->media_ip.s, m_ip->s, m_ip->len);
-		ss->media_ip.len = m_ip->len;
+		ss->media.s = (char *)(ss + 1) + ss->rtpproxy.len;
+		memcpy(ss->media.s, m_ip->s, m_ip->len);
+		ss->media.len = m_ip->len;
 	} else {
-		ss->media_ip.s = NULL;
-		ss->media_ip.len = 0;
+		ss->media.s = NULL;
+		ss->media.len = 0;
 	}
 
 	if (grp) {
-		ss->group.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media_ip.len;
+		ss->group.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media.len;
 		memcpy(ss->group.s, grp->s, grp->len);
 		ss->group.len = grp->len;
 	}
 
 	if (hdrs && hdrs->len) {
-		ss->headers.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media_ip.len +
+		ss->headers.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media.len +
 			ss->group.len;
 		memcpy(ss->headers.s, hdrs->s, hdrs->len);
 		ss->headers.len = hdrs->len;
@@ -488,7 +488,7 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(int, ss->version);
 	SIPREC_BIN_PUSH(int, ss->flags);
 	SIPREC_BIN_PUSH(str, &ss->rtpproxy);
-	SIPREC_BIN_PUSH(str, &ss->media_ip);
+	SIPREC_BIN_PUSH(str, &ss->media);
 	/* push only the first SRS - this is the one chosen */
 	SIPREC_BIN_PUSH(str, &SIPREC_SRS(ss));
 	SIPREC_BIN_PUSH(str, &ss->group);

@@ -37,6 +37,7 @@ struct {
 	{"group", SIPREC_VAR_GROUP_ID},
 	{"caller", SIPREC_VAR_CALLER_ID},
 	{"callee", SIPREC_VAR_CALLEE_ID},
+	{"media", SIPREC_VAR_MEDIA_ID},
 	{"media_ip", SIPREC_VAR_MEDIA_ID},
 	{"headers", SIPREC_VAR_HEADERS_ID},
 	{"socket", SIPREC_VAR_SOCKET_ID},

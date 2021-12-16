@@ -90,7 +90,7 @@ struct src_sess {
 	int streams_no;
 	int streams_inactive;
 	str rtpproxy;
-	str media_ip;
+	str media;
 	str headers;
 
 	/* SRS */

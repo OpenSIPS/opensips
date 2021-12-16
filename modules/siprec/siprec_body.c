@@ -543,7 +543,7 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 	str localh = str_init("127.0.0.1");
 	str crlf_str = str_init(CRLF);
 
-	media_ip = (sess->media_ip.s?sess->media_ip:localh);
+	media_ip = (sess->media.s?sess->media:localh);
 
 	SIPREC_COPY_STR(header1, buf);
 	SIPREC_COPY_INT(sess->ts, buf);
