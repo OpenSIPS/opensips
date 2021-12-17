@@ -32,7 +32,7 @@
 #include "../../ut.h"
 #include "../../trim.h"
 
-struct rtpproxy_binds srec_rtp;
+struct rtp_relay_binds srec_rtp;
 
 int siprec_port_min = 35000;
 int siprec_port_max = 65000;
@@ -85,6 +85,7 @@ static int srs_new_port(void)
 	return port;
 }
 
+#if 0
 static struct srs_sdp_stream *srs_get_stream(struct src_sess *ss, int label, int *part)
 {
 	int p;
@@ -102,6 +103,7 @@ static struct srs_sdp_stream *srs_get_stream(struct src_sess *ss, int label, int
 		}
 	return NULL;
 }
+#endif
 
 void srs_free_stream(struct srs_sdp_stream *stream)
 {
@@ -520,6 +522,7 @@ struct srec_buffer {
 		(_b)->buffer->s[(_b)->buffer->len++] = (_c); \
 	} while(0)
 
+#if 0
 static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 {
 	int p;
@@ -564,6 +567,7 @@ static int srs_build_sdp(struct src_sess *sess, struct srec_buffer *buf)
 
 	return 1;
 }
+#endif
 
 #define SIPREC_COPY_OPEN_TAG(_t, _b) \
 		SIPREC_COPY("<" _t ">", _b);
@@ -717,7 +721,7 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 /*
  * You need to free the body->s after using it!
  */
-int srs_build_body(struct src_sess *sess, str *body, int type)
+int srs_build_body(struct src_sess *sess, str *body)
 {
 	struct srec_buffer buf;
 	str boundary = str_init(CRLF "--" OSS_BOUNDARY CRLF);
@@ -736,47 +740,42 @@ int srs_build_body(struct src_sess *sess, str *body, int type)
 
 	/* body may be a multipart consisting on a SDP and a SIPREC XML */
 
-	if (type & SRS_BOTH) {
-		/* first boundary */
-		/* we do not add the first CRLF, because the message generator already
-		 * adds it */
-		tmp.s = boundary.s + 2;
-		tmp.len = boundary.len - 2;
-		SIPREC_COPY_STR(tmp, &buf);
+	/* first boundary */
+	/* we do not add the first CRLF, because the message generator already
+	 * adds it */
+	tmp.s = boundary.s + 2;
+	tmp.len = boundary.len - 2;
+	SIPREC_COPY_STR(tmp, &buf);
 
-		/* Content-Type of SDP */
-		SIPREC_COPY_STR(content_type, &buf);
-		SIPREC_COPY_STR(sdp_content_type, &buf);
-		SIPREC_COPY(CRLF, &buf);
-	}
+	/* Content-Type of SDP */
+	SIPREC_COPY_STR(content_type, &buf);
+	SIPREC_COPY_STR(sdp_content_type, &buf);
+	SIPREC_COPY(CRLF, &buf);
 
-	if (type & SRS_SDP && srs_build_sdp(sess, &buf) < 0)
-		return -1;
+	if (sess->initial_sdp.s)
+		SIPREC_COPY_STR(sess->initial_sdp, &buf);
 
-	if (type & SRS_BOTH) {
-		/* add second bondary */
-		SIPREC_COPY_STR(boundary, &buf);
+	/* add second bondary */
+	SIPREC_COPY_STR(boundary, &buf);
 
-		/* Content-Type of SIPREC */
-		SIPREC_COPY_STR(content_type, &buf);
-		SIPREC_COPY_STR(siprec_content_type, &buf);
-		SIPREC_COPY_STR(siprec_content_disposition, &buf);
-		SIPREC_COPY(CRLF, &buf);
-	}
+	/* Content-Type of SIPREC */
+	SIPREC_COPY_STR(content_type, &buf);
+	SIPREC_COPY_STR(siprec_content_type, &buf);
+	SIPREC_COPY_STR(siprec_content_disposition, &buf);
+	SIPREC_COPY(CRLF, &buf);
 	
-	if (type & SRS_XML && srs_build_xml(sess, &buf) < 0)
+	if (srs_build_xml(sess, &buf) < 0)
 		return -1;
 
-	if (type & SRS_BOTH) {
-		/* add final boundary */
-		SIPREC_COPY_STR(boundary_end, &buf);
-	}
+	/* add final boundary */
+	SIPREC_COPY_STR(boundary_end, &buf);
 
 	return 0;
 }
 
 int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 {
+#if 0
 	int len;
 	int label;
 	int part = 0;
@@ -855,6 +854,7 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 					msg_stream->port.len);
 			destination.len += msg_stream->port.len;
 
+#if 0
 			if (part) {
 				from_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
 				to_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
@@ -869,6 +869,7 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 				LM_ERR("cannot start recording for stream %p (label=%d)\n",
 						stream, stream->label);
 			} else
+#endif
 				streams_no++;
 
 			pkg_free(destination.s);
@@ -876,6 +877,20 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 	}
 
 	return streams_no;
+#endif
+	str *body;
+
+	body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!body || body->len == 0) {
+		LM_ERR("no body to handle!\n");
+		return -1;
+	}
+	if (srec_rtp.copy_start(sess->rtp, sess->rtp_copy,
+			&sess->media, body) < 0) {
+		LM_ERR("could not start recording!\n");
+		return -1;
+	}
+	return 0;
 }
 
 int srs_build_body_inactive(struct src_sess *sess, str *body)
@@ -883,7 +898,7 @@ int srs_build_body_inactive(struct src_sess *sess, str *body)
 	char *p;
 	int istreams;
 
-	if (srs_build_body(sess, body, SRS_BOTH) < 0) {
+	if (srs_build_body(sess, body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		return -1;
 	}
@@ -908,6 +923,7 @@ error:
 
 void srs_stop_media(struct src_sess *sess)
 {
+#if 0
 	int p;
 	struct list_head *it;
 	str *from_tag, *to_tag;
@@ -931,4 +947,5 @@ void srs_stop_media(struct src_sess *sess)
 				}
 		}
 	}
+#endif
 }

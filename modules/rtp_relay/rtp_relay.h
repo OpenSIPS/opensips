@@ -24,6 +24,7 @@
 #include "../../str.h"
 #include "../../sr_module.h"
 #include "../../lib/list.h"
+#include "rtp_relay_common.h"
 
 #define RTP_RELAY_ALL_BRANCHES -1
 
@@ -50,6 +51,15 @@ struct rtp_relay_funcs {
 			str *flags, str *extra, str *body);
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
+
+	void *(*copy_create)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, str *flags,
+			unsigned int copy_flags, str *ret);
+	int (*copy_start)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void *copy,
+			str *flags, str *body);
+	int (*copy_stop)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void *copy, str *flags);
 };
 
 struct rtp_relay {

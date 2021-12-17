@@ -96,7 +96,7 @@ struct rtp_relay_sess {
 };
 
 struct rtp_relay_ctx {
-	str callid;
+	str callid, from_tag, to_tag;
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *main;

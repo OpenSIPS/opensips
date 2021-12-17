@@ -158,6 +158,9 @@ enum rtpe_operation {
 	OP_START_FORWARD,
 	OP_STOP_FORWARD,
 	OP_PLAY_DTMF,
+	OP_SUBSCRIBE_REQUEST,
+	OP_SUBSCRIBE_ANSWER,
+	OP_UNSUBSCRIBE,
 };
 
 enum rtpe_stat {
@@ -231,6 +234,9 @@ static const char *command_strings[] = {
 	[OP_START_FORWARD]= "start forwarding",
 	[OP_STOP_FORWARD] = "stop forwarding",
 	[OP_PLAY_DTMF]    = "play DTMF",
+	[OP_SUBSCRIBE_REQUEST]= "subscribe request",
+	[OP_SUBSCRIBE_ANSWER] = "subscribe answer",
+	[OP_UNSUBSCRIBE]    = "unsubscribe",
 };
 
 static const str stat_maps[] = {
@@ -286,6 +292,13 @@ static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
 static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
+static void *rtpengine_api_copy_create(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *flags,
+		unsigned int copy_flags, str *body);
+static int rtpengine_api_copy_start(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *subs, str *flags, str *body);
+static int rtpengine_api_copy_stop(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *subs, str *flags);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -1239,6 +1252,9 @@ static int mod_preinit(void)
 		.offer = rtpengine_api_offer,
 		.answer = rtpengine_api_answer,
 		.delete = rtpengine_api_delete,
+		.copy_create = rtpengine_api_copy_create,
+		.copy_start = rtpengine_api_copy_start,
+		.copy_stop = rtpengine_api_copy_stop,
 	};
 	if (!pv_parse_spec(&rtpengine_relay_pvar_str, &media_pvar))
 		return -1;
@@ -2012,7 +2028,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	struct ng_flags_parse ng_flags;
 	bencode_item_t *item, *resp;
 	str viabranch, error;
-	int ret;
+	int ret, flags_exist = 0;
 	struct rtpe_node *node;
 	struct rtpe_set *set;
 	char *cp, *err = NULL;
@@ -2031,19 +2047,32 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			goto error;
 		}
 		ng_flags.dict = bencode_dictionary(bencbuf);
-	} else
+	} else {
 		ng_flags.dict = extra_dict;
 
+		ng_flags.flags = bencode_dictionary_get(ng_flags.dict, "flags");
+		if (ng_flags.flags)
+			flags_exist = 1;
+		bencode_dictionary_get_str(ng_flags.dict, "call-id", &ng_flags.call_id);
+		bencode_dictionary_get_str(ng_flags.dict, "from_tag", &ng_flags.from_tag);
+		bencode_dictionary_get_str(ng_flags.dict, "to_tag", &ng_flags.to_tag);
+	}
 	if (op == OP_OFFER || op == OP_ANSWER) {
-		ng_flags.flags = bencode_list(bencbuf);
+		if (!flags_exist)
+			ng_flags.flags = bencode_list(bencbuf);
 		ng_flags.direction = bencode_list(bencbuf);
 		ng_flags.replace = bencode_list(bencbuf);
 		ng_flags.rtcp_mux = bencode_list(bencbuf);
 
 		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
-	} else if (op == OP_BLOCK_DTMF || op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_DTMF ||
-			op == OP_UNBLOCK_MEDIA || op == OP_START_FORWARD || op == OP_STOP_FORWARD)
-		ng_flags.flags = bencode_list(bencbuf);
+	} else if (!flags_exist &&
+		(op == OP_BLOCK_DTMF || op == OP_UNBLOCK_DTMF ||
+		 op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_MEDIA ||
+		 op == OP_START_FORWARD || op == OP_STOP_FORWARD)) {
+			ng_flags.flags = bencode_list(bencbuf);
+	} else if (op == OP_SUBSCRIBE_ANSWER) {
+		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
+	}
 
 	/*** parse flags & build dictionary ***/
 
@@ -2079,7 +2108,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	/* only add those if any flags were given at all */
 	if (ng_flags.direction && ng_flags.direction->child)
 		bencode_dictionary_add(ng_flags.dict, "direction", ng_flags.direction);
-	if (ng_flags.flags && ng_flags.flags->child)
+	if (!flags_exist && ng_flags.flags && ng_flags.flags->child)
 		bencode_dictionary_add(ng_flags.dict, "flags", ng_flags.flags);
 	if (ng_flags.replace && ng_flags.replace->child)
 		bencode_dictionary_add(ng_flags.dict, "replace", ng_flags.replace);
@@ -2311,11 +2340,12 @@ static int rtpe_function_call_simple(struct sip_msg *msg, enum rtpe_operation op
 }
 
 static bencode_item_t *rtpe_function_call_ok(bencode_buffer_t *bencbuf, struct sip_msg *msg,
-		enum rtpe_operation op, str *flags_str, str *body, pv_spec_t *spvar, str *node)
+		enum rtpe_operation op, str *flags_str, str *body, pv_spec_t *spvar, str *node,
+		bencode_item_t *dict)
 {
 	bencode_item_t *ret;
 
-	ret = rtpe_function_call(bencbuf, msg, op, flags_str, body, spvar, node, NULL);
+	ret = rtpe_function_call(bencbuf, msg, op, flags_str, body, spvar, node, dict);
 	if (!ret)
 		return NULL;
 
@@ -2815,7 +2845,7 @@ rtpengine_offer_answer_body(struct sip_msg *msg, str *flags, str *node,
 		oldbody = *body;
 	}
 
-	dict = rtpe_function_call_ok(&bencbuf, msg, op, flags, &oldbody, spvar, node);
+	dict = rtpe_function_call_ok(&bencbuf, msg, op, flags, &oldbody, spvar, node, NULL);
 	if (!dict)
 		return -1;
 
@@ -2922,7 +2952,7 @@ static int rtpe_fetch_stats(struct sip_msg *msg, bencode_buffer_t *retbuf, benco
 		}
 	}
 
-	dict = rtpe_function_call_ok(&bencbuf, msg, OP_QUERY, NULL, NULL, NULL, NULL);
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_QUERY, NULL, NULL, NULL, NULL, NULL);
 	if (!dict)
 		return -1;
 
@@ -3467,7 +3497,7 @@ static int rtpengine_playmedia_f(struct sip_msg* msg, str *flags,
 	if (set_rtpengine_set_from_avp(msg) == -1)
 		return -1;
 
-	dict = rtpe_function_call_ok(&bencbuf, msg, OP_START_MEDIA, flags, NULL, spvar, NULL);
+	dict = rtpe_function_call_ok(&bencbuf, msg, OP_START_MEDIA, flags, NULL, spvar, NULL, NULL);
 	if (!dict) {
 		LM_ERR("could not start media!\n");
 		return -1;
@@ -3861,4 +3891,110 @@ static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay
 		release_dummy_sip_msg(msg);
 	pkg_free(newflags->s);
 	return ret;
+}
+
+//struct rtpengine_rec_subs {
+//};
+//
+static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
+		int op, struct rtp_relay_server *server, void *copy_ctx,
+		str *flags, unsigned int copy_flags, str *body)
+{
+	static bencode_buffer_t bencbuf;
+	bencode_item_t *dict, *list;
+	bencode_item_t *ret;
+	struct sip_msg *msg;
+	struct rtpe_set* rset;
+	str viabranch, *to_tag;
+	char viabranch_buf[2/* br */ + INT2STR_MAX_LEN];
+
+	RTPE_START_READ();
+	rset = select_rtpe_set(server->set);
+	rtpe_ctx_set_fill( rset );
+	RTPE_STOP_READ();
+
+	if (bencode_buffer_init(&bencbuf)) {
+		LM_ERR("could not initialize bencode_buffer_t\n");
+		return NULL;
+	}
+	dict = bencode_dictionary(&bencbuf);
+
+	if (sess->callid)
+		bencode_dictionary_add_str(dict, "call-id", sess->callid);
+	if (sess->branch != RTP_RELAY_ALL_BRANCHES) {
+		viabranch.s = int2bstr(sess->branch, viabranch_buf, &viabranch.len);
+		viabranch.s -= 2;
+		viabranch.len += 2;
+		memcpy(viabranch.s, "br", 2);
+		bencode_dictionary_add_str(dict, "via-branch", &viabranch);
+	}
+	to_tag = copy_ctx?copy_ctx:sess->to_tag;
+	if (to_tag && to_tag->len)
+		bencode_dictionary_add_str(dict, "to_tag", to_tag);
+	if (copy_flags & RTP_COPY_MODE_SIPREC) {
+		list = bencode_list(&bencbuf);
+		bencode_dictionary_add(dict, "flags", list);
+		bencode_list_add_string(list, "all");
+		bencode_list_add_string(list, "siprec");
+	} else {
+		if (sess->from_tag)
+			bencode_dictionary_add_str(dict, "from_tag", sess->from_tag);
+	}
+	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
+	ret = rtpe_function_call_ok(&bencbuf, msg, op, flags, body,
+			NULL, &server->node, dict);
+	if (is_dummy_sip_msg(msg) == 0)
+		release_dummy_sip_msg(msg);
+
+	return ret;
+}
+
+static void *rtpengine_api_copy_create(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *flags,
+		unsigned int copy_flags, str *ret_body)
+{
+	str tmp, *to_tag;
+	bencode_item_t *ret;
+	ret = rtpengine_api_copy_op(sess, OP_SUBSCRIBE_REQUEST,
+			server, NULL, flags, copy_flags, NULL);
+	if (!ret)
+		return NULL;
+	if (!bencode_dictionary_get_str_dup(ret, "sdp", ret_body))
+		LM_ERR("failed to extract sdp body from proxy reply\n");
+	if (!bencode_dictionary_get_str(ret, "to-tag", &tmp))
+		LM_ERR("failed to extract to-tag from proxy reply\n");
+	to_tag = shm_malloc(sizeof *to_tag + tmp.len);
+	if (to_tag) {
+		to_tag->s = (char *)(to_tag + 1);
+		to_tag->len = tmp.len;
+		memcpy(to_tag->s, tmp.s, tmp.len);
+	}
+	bencode_buffer_free(bencode_item_buffer(ret));
+	return to_tag;
+}
+
+static int rtpengine_api_copy_start(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *subs, str *flags, str *body)
+{
+	bencode_item_t *ret;
+	ret = rtpengine_api_copy_op(sess, OP_SUBSCRIBE_ANSWER,
+			server, subs, flags, 0, body);
+	if (!ret)
+		return -1;
+	bencode_buffer_free(bencode_item_buffer(ret));
+	return ret != NULL;
+}
+
+static int rtpengine_api_copy_stop(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *subs, str *flags)
+{
+	bencode_item_t *ret;
+	ret = rtpengine_api_copy_op(sess, OP_UNSUBSCRIBE,
+			server, subs, flags, 0, NULL);
+	if (subs)
+		shm_free(subs);
+	if (!ret)
+		return -1;
+	bencode_buffer_free(bencode_item_buffer(ret));
+	return ret != NULL;
 }

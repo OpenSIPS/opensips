@@ -32,13 +32,14 @@
 #include "siprec_sess.h"
 #include "siprec_logic.h"
 #include "siprec_var.h"
+#include "../rtp_relay/rtp_relay_load.h"
 
 static int mod_preinit(void);
 static int mod_init(void);
 static int child_init(int);
 static void mod_destroy(void);
 
-static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp);
+static int siprec_start_rec(struct sip_msg *msg, str *srs);
 static int siprec_pause_rec(struct sip_msg *msg);
 static int siprec_resume_rec(struct sip_msg *msg);
 
@@ -48,7 +49,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "rtpproxy", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "rtp_relay", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -129,8 +130,8 @@ static int mod_preinit(void)
 		return -1;
 	}
 
-	if (load_rtpproxy_api(&srec_rtp) != 0) {
-		LM_ERR("rtpproxy module not loaded! Cannot use siprec module\n");
+	if (load_rtp_relay(&srec_rtp) != 0) {
+		LM_ERR("rtp_relay module not loaded! Cannot use siprec module\n");
 		return -1;
 	}
 
@@ -195,13 +196,14 @@ static void tm_src_unref_session(void *p)
 /*
  * function that simply prints the parameters passed
  */
-static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp)
+static int siprec_start_rec(struct sip_msg *msg, str *srs)
 {
 	int ret;
 	str *aor, *display, *xml_val;
 	struct src_sess *ss;
 	struct dlg_cell *dlg;
 	struct srec_var *var;
+	rtp_ctx rtp;
 
 	/* create the dialog, if does not exist yet */
 	dlg = srec_dlg.get_dlg();
@@ -212,6 +214,11 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp)
 		}
 		dlg = srec_dlg.get_dlg();
 	}
+	rtp = srec_rtp.get_ctx();
+	if (!rtp) {
+		LM_ERR("no existing rtp relay context!\n");
+		return -2;
+	}
 
 	var = get_srec_var();
 
@@ -219,11 +226,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp)
 	 * this is the only way to provide a different socket for SRS, but
 	 * we might need to take a different approach */
 	/* check if the current dialog has a siprec session ongoing */
-	if (!(ss = src_new_session(srs, rtp,
-				(var && var->media.len?&var->media:NULL),
-				(var && var->group.len?&var->group:NULL),
-				(var && var->headers.len?&var->headers:NULL),
-				(var?var->si:NULL)))) {
+	if (!(ss = src_new_session(srs, rtp, var))) {
 		LM_ERR("cannot create siprec session!\n");
 		return -2;
 	}
@@ -254,10 +257,12 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs, str *rtp)
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
+#if 0
 	if (srs_fill_sdp_stream(msg, ss, &ss->participants[0], 0) < 0) {
 		LM_ERR("cannot add SDP for caller!\n");
 		goto session_cleanup;
 	}
+#endif
 	/* caller info */
 	if (var && var->callee.len) {
 		xml_val = &var->callee;

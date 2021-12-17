@@ -144,6 +144,7 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 	if (srec_b2b.send_request(&req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
+	srec_rtp.copy_stop(ss->rtp, ss->rtp_copy, &ss->media);
 	srec_logic_destroy(ss);
 }
 
@@ -151,13 +152,14 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 {
 	struct src_sess *ss;
 	int part_no;
-	int streams;
+	//int streams;
 	struct _tm_src_param *tmp;
 	/* check which participant we are talking about */
 	part_no = (_params->direction == DLG_DIR_UPSTREAM ? 1 : 0);
 	ss = *_params->param;
 
 	SIPREC_LOCK(ss);
+#if 0
 	streams = srs_fill_sdp_stream(_params->msg, ss, &ss->participants[part_no], 1);
 	if (streams < 0) {
 		LM_ERR("cannot add SDP for calle%c!\n",part_no == 0?'r':'e');
@@ -165,6 +167,7 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 	}
 	if (streams == 0)
 		goto unlock;
+#endif
 
 	tmp = shm_malloc(sizeof *tmp);
 	if (!tmp) {
@@ -303,6 +306,11 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 	}
 	ret = -1;
 
+	if (ss->initial_sdp.s) {
+		shm_free(ss->initial_sdp.s);
+		ss->initial_sdp.s = NULL;
+	}
+
 	/* reply received - sending ACK */
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
@@ -325,6 +333,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 	if (ss->flags & SIPREC_PAUSED) {
 		ss->flags &= ~SIPREC_PAUSED;
 		srs_stop_media(ss);
+
 	} else {
 		if (srs_handle_media(msg, ss) < 0) {
 			LM_ERR("cannot handle SRS media!\n");
@@ -356,6 +365,7 @@ no_recording:
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
+	srec_rtp.copy_stop(ss->rtp, ss->rtp_copy, &ss->media);
 	srec_logic_destroy(ss);
 
 	/* we finishd everything with the dialog, let it be! */
@@ -458,7 +468,7 @@ static int srs_send_invite(struct src_sess *sess)
 
 	ct.s = contact_builder(sess->socket, &ct.len);
 
-	if (srs_build_body(sess, &body, SRS_BOTH) < 0) {
+	if (srs_build_body(sess, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		return -2;
 	}
@@ -508,7 +518,8 @@ static int srs_send_invite(struct src_sess *sess)
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	union sockaddr_union tmp;
-	int streams, ret;
+	int /*streams, */ret;
+	str sdp;
 
 	if (!sess->socket) {
 		sess->socket = uri2sock(msg, &SIPREC_SRS(sess), &tmp, PROTO_NONE);
@@ -519,6 +530,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		}
 	}
 
+#if 0
 	streams = srs_fill_sdp_stream(msg, sess, &sess->participants[1], 0);
 	if (streams < 0) {
 		LM_ERR("cannot add SDP for callee!\n");
@@ -526,6 +538,19 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 	if (streams == 0)
 		return 0;
+#endif
+	sess->rtp_copy = srec_rtp.copy_create(sess->rtp, &sess->media,
+			RTP_COPY_MODE_SIPREC, &sdp);
+	if (!sess->rtp_copy) {
+		LM_ERR("could not start recording!\n");
+		return -3;
+	}
+	if (shm_str_dup(&sess->initial_sdp, &sdp) < 0) {
+		pkg_free(sdp.s);
+		srec_rtp.copy_stop(sess->rtp, sess->rtp_copy, &sess->media);
+		return -3;
+	}
+	pkg_free(sdp.s);
 
 	SIPREC_REF_UNSAFE(sess);
 	srec_hlog(sess, SREC_REF, "started recording");
@@ -533,6 +558,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	if (ret < 0) {
 		srec_hlog(sess, SREC_UNREF, "error while starting recording");
 		SIPREC_UNREF_UNSAFE(sess);
+		srec_rtp.copy_stop(sess->rtp, sess->rtp_copy, &sess->media);
 		return ret;
 	}
 
@@ -565,11 +591,12 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int part_no)
 {
 	str body;
-	int streams;
+	//int streams;
 
 	if (msg == FAKED_REPLY)
 		return 0;
 
+#if 0
 	streams = srs_fill_sdp_stream(msg, sess, &sess->participants[part_no], 1);
 	if (streams < 0) {
 		LM_ERR("cannot add SDP for calle%c!\n",part_no == 0?'r':'e');
@@ -577,8 +604,9 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int 
 	}
 	if (streams == 0)
 		return 0;
+#endif
 
-	if (srs_build_body(sess, &body, SRS_BOTH) < 0) {
+	if (srs_build_body(sess, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		goto error;
 	}
@@ -605,14 +633,15 @@ static void tm_update_recording(struct cell *t, int type, struct tmcb_params *ps
 
 void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 {
-	str body;
+	str *body;
 	struct src_sess *ss;
 
 	if (!is_invite(t) || ps->code >= 300)
 		return;
 
 	/* check if we have a reply with body */
-	if (get_body(ps->rpl, &body) != 0 || body.len==0)
+	body = get_body_part(ps->rpl, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!body || body->len == 0)
 		return;
 
 	ss = (struct src_sess *)*ps->param;
@@ -632,6 +661,9 @@ void srec_logic_destroy(struct src_sess *sess)
 	if (!sess->b2b_key.s)
 		return;
 	shm_free(sess->b2b_key.s);
+
+	if (sess->initial_sdp.s)
+		shm_free(sess->initial_sdp.s);
 
 	info.fromtag = sess->b2b_fromtag;
 	info.totag = sess->b2b_totag;
@@ -719,7 +751,7 @@ int src_resume_recording(void)
 		goto end;
 	}
 
-	if (srs_build_body(sess, &body, SRS_BOTH) < 0) {
+	if (srs_build_body(sess, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		ret = -1;
 		goto end;
