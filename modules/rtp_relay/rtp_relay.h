@@ -62,6 +62,9 @@ struct rtp_relay_funcs {
 			struct rtp_relay_server *server, void *copy, str *flags);
 };
 
+struct rtp_relay_hooks {
+};
+
 struct rtp_relay {
 	str name;
 	struct rtp_relay_funcs funcs;
@@ -69,11 +72,14 @@ struct rtp_relay {
 	char _name_s[0];
 };
 
-typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_funcs *);
+typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_funcs *,
+		struct rtp_relay_hooks *hooks);
 struct rtp_relay *rtp_relay_get(str *name);
-int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs);
+int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs,
+		struct rtp_relay_hooks *hooks);
 
-static inline int register_rtp_relay(char *name, struct rtp_relay_funcs *funcs)
+static inline int register_rtp_relay(char *name,
+		struct rtp_relay_funcs *funcs, struct rtp_relay_hooks *hooks)
 {
 	reg_rtp_relay_f func;
 
@@ -81,7 +87,7 @@ static inline int register_rtp_relay(char *name, struct rtp_relay_funcs *funcs)
 	if (!(func=(reg_rtp_relay_f)find_export("register_rtp_relay", 0)))
 		return -1;
 
-	return func(name, funcs);
+	return func(name, funcs, hooks);
 }
 
 #endif /* _RTP_RELAY_H_ */

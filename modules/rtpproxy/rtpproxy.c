@@ -1049,6 +1049,8 @@ inline static int parse_bavp(str *s, pv_spec_t *bavp)
 /* hack to get the rtpproxy node used for the offer */
 static pv_spec_t media_pvar;
 
+static struct rtp_relay_hooks rtp_relay;
+
 static int mod_preinit(void)
 {
 	static str rtpproxy_relay_pvar_str = str_init("$var(___rtpproxy_relay_var__)");
@@ -1059,7 +1061,7 @@ static int mod_preinit(void)
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
-	register_rtp_relay(exports.name, &binds);
+	register_rtp_relay(exports.name, &binds, &rtp_relay);
 	return 0;
 }
 
