@@ -1776,3 +1776,16 @@ int rtp_relay_copy_stop(rtp_ctx _ctx, rtp_copy_ctx copy, str *flags)
 	return ctx->main->relay->funcs.copy_stop(
 			&info, &ctx->main->server, copy, flags);
 }
+
+str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type)
+{
+	/* fetch the dialog */
+	struct dlg_cell *dlg = rtp_relay_dlg.get_dlg();
+	if (!dlg)
+		dlg = rtp_relay_dlg.get_dlg_by_callid(sess->callid, 0);
+
+	if (!dlg)
+		return NULL;
+	return &dlg->legs[type==RTP_RELAY_CALLER?
+		DLG_CALLER_LEG:callee_idx(dlg)].in_sdp;
+}
