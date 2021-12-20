@@ -237,10 +237,8 @@ void qr_check_reply_tmcb(struct cell *cell, int type, struct tmcb_params *ps)
 			trans_prop->state |= QR_TM_180_RCVD;
 			lock_release(trans_prop->prop_lock);
 
-			if ((pdd_tm = get_elapsed_time(&trans_prop->invite, 'm')) < 0) {
-				lock_release(trans_prop->prop_lock);
+			if ((pdd_tm = get_elapsed_time(&trans_prop->invite, 'm')) < 0)
 				return;
-			}
 
 			qr_add_pdd(trans_prop->gw, pdd_tm);
 		} else {
