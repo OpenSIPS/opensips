@@ -169,6 +169,7 @@ static FILE *get_acc_log(void)
 		fd_log_debug("[ACC] opened %s for writing (append mode)", fpath);
 		if (!acc_log[acc_log_idx]) {
 			fd_log_error("[ACC] failed to open %s (%d: %s)\n", fpath, errno, strerror(errno));
+			pthread_mutex_unlock(&acc_rotate_lock);
 			return NULL;
 		}
 
