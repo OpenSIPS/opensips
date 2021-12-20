@@ -34,6 +34,7 @@ typedef void tmrec_expr;
 #define PKG_ALLOC    2
 #define TR_BYXXX     4
 
+#define TR_NOVAL ((time_t)-1)
 
 tmrec *tmrec_parse(const char *tr, char alloc_type);
 
