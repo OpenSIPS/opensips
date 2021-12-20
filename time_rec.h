@@ -185,6 +185,7 @@ typedef struct _tmrec_expr
 } tmrec_expr_t;
 
 tmrec_p tmrec_new(char);
+void tmrec_init(tmrec_p t);
 
 int tr_parse_tz(tmrec_p, char*);
 int tr_parse_dtstart(tmrec_p, char*);

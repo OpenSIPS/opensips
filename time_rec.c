@@ -485,7 +485,7 @@ int tr_byxxx_free(tr_byxxx_p _bxp)
 	return 0;
 }
 
-static inline void tmrec_init(tmrec_p t)
+void tmrec_init(tmrec_p t)
 {
 	memset(t, 0, sizeof *t);
 
