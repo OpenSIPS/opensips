@@ -335,6 +335,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 	} else {
 		if (shm_str_sync(&se->stats.last_dial, number) != 0) {
 			lock_release(frd_seq_calls_lock);
+			lock_release(&se->lock);
 			LM_ERR("oom\n");
 			rc = rc_error;
 			goto out;
