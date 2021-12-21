@@ -90,7 +90,15 @@ struct route_params_level {
 static struct route_params_level route_params[ROUTE_MAX_REC_LEV];
 static int route_rec_level = -1;
 
+/* the current stack of route names (first route name is at index 0) */
 char *route_stack[ROUTE_MAX_REC_LEV + 1];
+
+/* the virtual start of the stack; typically 0, but may get temporarily bumped
+ * with each added nesting level of script route callback execution
+ * (e.g. due to logic similar to dlg_on_hangup(), followed by a SIP BYE) */
+int route_stack_start;
+
+/* the total size of the stack, counting from index 0 */
 int route_stack_size;
 
 int curr_action_line;
@@ -106,11 +114,11 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 /* (0 if drop or break encountered, 1 if not ) */
 static inline int run_actions(struct action* a, struct sip_msg* msg)
 {
-	int ret, has_name;
+	int ret, _;
 	str top_route;
 
 	if (route_stack_size > ROUTE_MAX_REC_LEV) {
-		get_top_route_type(&top_route, &has_name);
+		get_top_route_type(&top_route, &_);
 		LM_ERR("route recursion limit reached, giving up! (nested routes: %d, "
 		           "first: '%.*s', last: '%s')!\n", route_stack_size,
 		        top_route.len, top_route.s, route_stack[ROUTE_MAX_REC_LEV]);
@@ -156,6 +164,7 @@ void run_error_route(struct sip_msg* msg, int init_route_stack)
 		swap_route_type(old_route, ERROR_ROUTE);
 
 		route_stack[0] = NULL;
+		route_stack_start = 0;
 		route_stack_size = 1;
 
 		run_actions(sroutes->error.a, msg);
@@ -195,10 +204,11 @@ int run_action_list(struct action* a, struct sip_msg* msg)
 	return ret;
 }
 
-
 int run_top_route(struct script_route sr, struct sip_msg* msg)
 {
-	int bk_action_flags;
+	static int recursing;
+
+	int bk_action_flags, route_stack_start_bkp = -1, route_stack_size_bkp;
 	int ret;
 	context_p ctx = NULL;
 
@@ -216,17 +226,36 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 		current_processing_ctx = ctx;
 	}
 
+	/* the recursion support allows run_top_route() to be freely called from
+	 * other modules (e.g. dialog) in order to provide contextless script
+	 * callbacks using routes, without losing the original route stack */
+	if (recursing) {
+		route_stack_start_bkp = route_stack_start;
+		route_stack_size_bkp = route_stack_size;
+		route_stack_start = route_stack_size;
+		route_stack_size += 1;
+	} else {
+		route_stack_start = 0;
+		route_stack_size = 1;
+		recursing = 1;
+	}
+
 	if (route_type & (ERROR_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE) ||
 	     (route_type &
 	        (REQUEST_ROUTE|ONREPLY_ROUTE) && !strcmp(sr.name, "0")))
-		route_stack[0] = NULL;
+		route_stack[route_stack_start] = NULL;
 	else
-		route_stack[0] = sr.name;
-
-	route_stack_size = 1;
+		route_stack[route_stack_start] = sr.name;
 
 	run_actions(sr.a, msg);
 	ret = action_flags;
+
+	if (route_stack_start_bkp != -1) {
+		route_stack_size = route_stack_size_bkp;
+		route_stack_start = route_stack_start_bkp;
+	} else {
+		recursing = 0;
+	}
 
 	action_flags = bk_action_flags;
 	/* reset script tracing */
