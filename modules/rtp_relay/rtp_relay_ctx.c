@@ -48,7 +48,7 @@ static struct list_head *rtp_relay_contexts;
 	rtp_relay_dlg.dlg_ctx_put_ptr(_d, rtp_relay_dlg_ctx_idx, _p)
 
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
-static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx, str *to_tag);
 
 /* pvar handing */
 static struct {
@@ -358,7 +358,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, NULL);
 
 	ctx->main = sess;
-	if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
+	if (rtp_relay_dlg_callbacks(dlg, ctx, NULL) < 0)
 		goto error;
 
 	return;
@@ -792,13 +792,15 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	}
 }
 
-static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx)
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
+		struct rtp_relay_ctx *ctx, str *to_tag)
 {
 	if (shm_str_sync(&ctx->callid, &dlg->callid) < 0)
 		LM_ERR("could not store callid in context\n");
 	if (shm_str_sync(&ctx->from_tag, &dlg->legs[DLG_CALLER_LEG].tag) < 0)
 		LM_ERR("could not store from tag in context\n");
-	if (shm_str_sync(&ctx->to_tag, &dlg->legs[callee_idx(dlg)].tag) < 0)
+	if (shm_str_sync(&ctx->to_tag,
+			(to_tag?to_tag:&dlg->legs[callee_idx(dlg)].tag)) < 0)
 		LM_ERR("could not store to tag in context\n");
 
 	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
@@ -852,9 +854,10 @@ static int rtp_relay_sess_last(struct rtp_relay_ctx *ctx,
 }
 
 static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
-	struct rtp_relay_sess *sess, struct cell *t)
+	struct rtp_relay_sess *sess, struct cell *t, struct sip_msg *msg)
 {
 	struct dlg_cell *dlg;
+	str *to_tag = NULL;
 
 	rtp_sess_set_success(sess);
 	if (rtp_relay_sess_last(ctx, sess))
@@ -869,7 +872,26 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
 
-		if (rtp_relay_dlg_callbacks(dlg, ctx) < 0) {
+		/* if we have a to_tag, use it from dlg,
+		 * otherwise fetch it from tm */
+		if (!dlg->legs[callee_idx(dlg)].tag.len) {
+			if (parse_headers(msg, HDR_TO_F, 0) == -1) {
+				LM_ERR("failed to parse To header\n");
+				return -1;
+			}
+
+			if (!msg->to) {
+				LM_ERR("missing To header\n");
+				return -1;
+			}
+
+			to_tag = &get_to(msg)->tag_value;
+
+			if (to_tag->len == 0)
+				to_tag = NULL;
+		}
+
+		if (rtp_relay_dlg_callbacks(dlg, ctx, to_tag) < 0) {
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
 		}
@@ -928,7 +950,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 	else
 		ret = rtp_relay_answer(&info, sess, ctx->main, RTP_RELAY_ANSWER, NULL);
 	if (ret > 0 && msg->REPLY_STATUS >= 200)
-		rtp_relay_sess_success(ctx, sess, t);
+		rtp_relay_sess_success(ctx, sess, t, msg);
 	return ret;
 }
 
@@ -1746,6 +1768,7 @@ int rtp_relay_copy_start(rtp_ctx _ctx, rtp_copy_ctx copy,
 	info.callid = &ctx->callid;
 	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
+
 	info.branch = ctx->main->index;
 	return ctx->main->relay->funcs.copy_start(
 			&info, &ctx->main->server, copy, flags, body);

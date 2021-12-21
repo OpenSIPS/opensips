@@ -73,8 +73,6 @@ static cmd_export_t cmds[] = {
 
 /* exported parameters */
 static param_export_t params[] = {
-	{"media_port_min",		INT_PARAM, &siprec_port_min },
-	{"media_port_max",		INT_PARAM, &siprec_port_max },
 	{"skip_failover_codes",	STR_PARAM, &skip_failover_codes.s },
 	{0, 0, 0}
 };
@@ -152,11 +150,6 @@ static int mod_preinit(void)
 static int mod_init(void)
 {
 	LM_DBG("initializing siprec module ...\n");
-
-	if (srs_init() < 0) {
-		LM_ERR("cannot initialize srs structures!\n");
-		return -1;
-	}
 
 	if (src_init() < 0) {
 		LM_ERR("cannot initialize src structures!\n");
@@ -257,12 +250,6 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
-#if 0
-	if (srs_fill_sdp_stream(msg, ss, &ss->participants[0], 0) < 0) {
-		LM_ERR("cannot add SDP for caller!\n");
-		goto session_cleanup;
-	}
-#endif
 	/* caller info */
 	if (var && var->callee.len) {
 		xml_val = &var->callee;

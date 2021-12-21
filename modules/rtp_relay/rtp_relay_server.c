@@ -20,6 +20,7 @@
 
 #include "rtp_relay.h"
 #include "../../ut.h"
+#include "rtp_relay_ctx.h"
 
 OSIPS_LIST_HEAD(rtp_relays);
 

@@ -152,22 +152,12 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 {
 	struct src_sess *ss;
 	int part_no;
-	//int streams;
 	struct _tm_src_param *tmp;
 	/* check which participant we are talking about */
 	part_no = (_params->direction == DLG_DIR_UPSTREAM ? 1 : 0);
 	ss = *_params->param;
 
 	SIPREC_LOCK(ss);
-#if 0
-	streams = srs_fill_sdp_stream(_params->msg, ss, &ss->participants[part_no], 1);
-	if (streams < 0) {
-		LM_ERR("cannot add SDP for calle%c!\n",part_no == 0?'r':'e');
-		goto unlock;
-	}
-	if (streams == 0)
-		goto unlock;
-#endif
 
 	tmp = shm_malloc(sizeof *tmp);
 	if (!tmp) {
@@ -530,15 +520,6 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		}
 	}
 
-#if 0
-	streams = srs_fill_sdp_stream(msg, sess, &sess->participants[1], 0);
-	if (streams < 0) {
-		LM_ERR("cannot add SDP for callee!\n");
-		return -2;
-	}
-	if (streams == 0)
-		return 0;
-#endif
 	sess->rtp_copy = srec_rtp.copy_create(sess->rtp, &sess->media,
 			RTP_COPY_MODE_SIPREC, &sdp);
 	if (!sess->rtp_copy) {
@@ -591,20 +572,9 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int part_no)
 {
 	str body;
-	//int streams;
 
 	if (msg == FAKED_REPLY)
 		return 0;
-
-#if 0
-	streams = srs_fill_sdp_stream(msg, sess, &sess->participants[part_no], 1);
-	if (streams < 0) {
-		LM_ERR("cannot add SDP for calle%c!\n",part_no == 0?'r':'e');
-		return -2;
-	}
-	if (streams == 0)
-		return 0;
-#endif
 
 	if (srs_build_body(sess, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");

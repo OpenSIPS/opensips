@@ -198,47 +198,6 @@
 	
 	<section id="exported_parameters" xreflabel="Exported Parameters">
 		<title>Exported Parameters</title>
-		<section id="param_media_port_min" xreflabel="media_port_min">
-		<title><varname>media_port_min</varname> (integer)</title>
-		<para>
-			The minimum value of the port used in the SDP sent to the SRS.
-			This value should correlate to the port-range configured in the
-			RTPProxy Media Server.
-		</para>
-		
-		<para>
-		<emphasis>Default value is <quote>35000</quote>.</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>media_port_min</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siprec", "media_port_min", 10000)
-...
-		</programlisting>
-		</example>
-		</section>
-
-		<section id="param_media_port_max" xreflabel="media_port_max">
-		<title><varname>media_port_max</varname> (integer)</title>
-		<para>
-			The maximum value of the port used in the SDP sent to the SRS.
-			This value should correlate to the port-range configured in the
-			RTPProxy Media Server.
-		</para>
-		
-		<para>
-		<emphasis>Default value is <quote>65000</quote>.</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>media_port_max</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("siprec", "media_port_max", 20000)
-...
-		</programlisting>
-		</example>
-		</section>
 
 		<section id="param_skip_failover_codes" xreflabel="skip_failover_codes">
 		<title><varname>skip_failover_codes</varname> (string)</title>
