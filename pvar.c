@@ -365,19 +365,19 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 
 	} else {
 		s = str_route;
-		if (!route_stack[idx])
+		if (!route_stack[route_stack_start + idx])
 			goto out_ok;
 	}
 
-	len = strlen(route_stack[idx]);
+	len = strlen(route_stack[route_stack_start + idx]);
 
-	if (route_stack[idx][0] != '!') {
+	if (route_stack[route_stack_start + idx][0] != '!') {
 		if (pkg_str_extend(&rn_buf, s.len + 2 + len + 1) != 0) {
 			LM_ERR("oom\n");
 			return pv_get_null(msg, param, res);
 		}
 
-		s.len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[idx]);
+		s.len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[route_stack_start + idx]);
 		s.s = rn_buf.s;
 	} else {
 		/* the "!" marker tells us to print that route name as-is */
@@ -386,7 +386,7 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 			return pv_get_null(msg, param, res);
 		}
 
-		s.len = sprintf(rn_buf.s, "%s", route_stack[idx] + 1);
+		s.len = sprintf(rn_buf.s, "%s", route_stack[route_stack_start + idx] + 1);
 		s.s = rn_buf.s;
 	}
 
