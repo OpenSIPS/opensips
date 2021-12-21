@@ -55,7 +55,7 @@ extern int min_action_time;
 
 /* the current route call stack, containing route names */
 extern char *route_stack[];
-extern int route_stack_size;
+extern int route_stack_start, route_stack_size;
 
 int do_action(struct action* a, struct sip_msg* msg);
 int run_top_route(struct script_route sr, struct sip_msg* msg);
