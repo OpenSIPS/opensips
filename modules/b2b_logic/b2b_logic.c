@@ -354,6 +354,24 @@ static int mod_init(void)
 	if (server_address.s)
 		server_address.len = strlen(server_address.s);
 
+	if (script_req_route) {
+		global_req_rtid = get_script_route_ID_by_name(script_req_route,
+			sroutes->request, RT_NO);
+		if (global_req_rtid < 1) {
+			LM_ERR("route <%s> does not exist\n", script_req_route);
+			return -1;
+		}
+	}
+
+	if (script_reply_route) {
+		global_reply_rtid = get_script_route_ID_by_name(script_reply_route,
+			sroutes->request, RT_NO);
+		if (global_reply_rtid < 1) {
+			LM_ERR("route <%s> does not exist\n",script_reply_route);
+			return -1;
+		}
+	}
+
 	if(init_b2bl_htable() < 0)
 	{
 		LM_ERR("Failed to initialize b2b logic hash table\n");
@@ -565,24 +583,6 @@ next_hdr:
 		B2BCB_RECV_EVENT, &b2bl_mod_name) < 0) {
 		LM_ERR("could not register entity event received callback!\n");
 		return -1;
-	}
-
-	if (script_req_route) {
-		global_req_rtid = get_script_route_ID_by_name(script_req_route,
-			sroutes->request, RT_NO);
-		if (global_req_rtid < 1) {
-			LM_ERR("route <%s> does not exist\n", script_req_route);
-			return -1;
-		}
-	}
-
-	if (script_reply_route) {
-		global_reply_rtid = get_script_route_ID_by_name(script_reply_route,
-			sroutes->request, RT_NO);
-		if (global_reply_rtid < 1) {
-			LM_ERR("route <%s> does not exist\n",script_reply_route);
-			return -1;
-		}
 	}
 
 	return 0;
@@ -1667,22 +1667,35 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	}
 
 	if (param->pvi.type != PV_IDX_INT) {
-		/* no index provided, identify the current entity by callid */
-		if (get_callid(msg, &callid) < 0) {
-			LM_ERR("Failed to get callid from SIP message\n");
-			goto ret_null;
-		}
-
-		entity = curr_entities[0];
-		if (entity &&
-			(!entity->dlginfo || str_strcmp(&entity->dlginfo->callid, &callid)))
-			entity = NULL;
-
-		if (!entity) {
-			entity = curr_entities[1];
-			if (entity && (!entity->dlginfo ||
-				str_strcmp(&entity->dlginfo->callid, &callid)))
+		if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
+			/* identify the current entity by entity key */
+			entity = curr_entities[0];
+			if (entity && str_strcmp(&entity->key, &cur_route_ctx.entity_key))
 				entity = NULL;
+
+			if (!entity) {
+				entity = curr_entities[1];
+				if (entity && str_strcmp(&entity->key, &cur_route_ctx.entity_key))
+					entity = NULL;
+			}
+		} else {
+			/* identify the current entity by callid */
+			if (get_callid(msg, &callid) < 0) {
+				LM_ERR("Failed to get callid from SIP message\n");
+				goto ret_null;
+			}
+
+			entity = curr_entities[0];
+			if (entity &&
+				(!entity->dlginfo || str_strcmp(&entity->dlginfo->callid, &callid)))
+				entity = NULL;
+
+			if (!entity) {
+				entity = curr_entities[1];
+				if (entity && (!entity->dlginfo ||
+					str_strcmp(&entity->dlginfo->callid, &callid)))
+					entity = NULL;
+			}
 		}
 
 		if (!entity) {
