@@ -23,6 +23,7 @@
  */
 
 #include <string.h>
+#include <time.h>
 #include "../../ut.h"
 #include "../../str.h"
 #include "../../db/db.h"
@@ -66,6 +67,7 @@ int jwt_authorize(struct sip_msg* _msg, str* jwt_token,
 	db_row_t *row;
 	pv_value_t pv_val;
 	int_str ivalue;
+	time_t unix_ts;
 
 	jwt_token_buf = pkg_malloc(jwt_token->len + 1);
 	if (!jwt_token_buf) {
@@ -106,16 +108,17 @@ int jwt_authorize(struct sip_msg* _msg, str* jwt_token,
 		DEC_AND_CHECK_LEN(len,n);
 		p+=n;
 	}
-	
-	n = snprintf(p,len," from %.*s a inner join %.*s b on a.%.*s = b.%.*s  where a.%.*s=\"%.*s\" and UNIX_TIMESTAMP() >= b.%.*s and UNIX_TIMESTAMP() < b.%.*s",
+
+	time( &unix_ts);
+	n = snprintf(p,len," from %.*s a inner join %.*s b on a.%.*s = b.%.*s  where a.%.*s='%.*s' and %ld >= b.%.*s and %ld < b.%.*s",
 	profiles_table.len,profiles_table.s,
-	secrets_table.len,secrets_table.s,	
+	secrets_table.len,secrets_table.s,
 	tag_column.len,tag_column.s,
 	secret_tag_column.len,secret_tag_column.s,
 	tag_column.len,tag_column.s,
 	tag.len,tag.s,
-	start_ts_column.len,start_ts_column.s,
-	end_ts_column.len,end_ts_column.s);
+	unix_ts, start_ts_column.len,start_ts_column.s,
+	unix_ts, end_ts_column.len,end_ts_column.s);
 
 	DEC_AND_CHECK_LEN(len,n);
 	p+=n;
