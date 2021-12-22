@@ -102,6 +102,7 @@ struct rtp_relay_ctx {
 	struct rtp_relay_sess *main;
 	struct list_head sessions;
 	struct list_head list;
+	struct list_head copy_contexts;
 };
 
 str *rtp_relay_flags_get_str(enum rtp_relay_var_flags flags);

@@ -329,6 +329,8 @@ static int rtpproxy_api_copy_start(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *subs, str *flags, str *body);
 static int rtpproxy_api_copy_stop(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *subs, str *flags);
+static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet);
+static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
 
 int connect_rtpproxies();
 int update_rtpp_proxies();
@@ -1088,6 +1090,8 @@ static int mod_preinit(void)
 		.copy_create = rtpproxy_api_copy_create,
 		.copy_start = rtpproxy_api_copy_start,
 		.copy_stop = rtpproxy_api_copy_stop,
+		.copy_serialize = rtpproxy_api_copy_serialize,
+		.copy_deserialize = rtpproxy_api_copy_deserialize,
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
@@ -5679,4 +5683,77 @@ error:
 	rtpproxy_free_call_args(&args);
 	rtpproxy_copy_ctx_free(ctx);
 	return ret <= 0?-1:1;
+}
+
+static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet)
+{
+	struct rtpproxy_copy_ctx *ctx = _ctx;
+	str tmp;
+	int leg, idx;
+
+	tmp.s = (char *)(unsigned long)&ctx->ts;
+	tmp.len = sizeof(ctx->ts);
+	if (bin_push_str(packet, &tmp) < 0)
+		return -1;
+	if (bin_push_str(packet, &ctx->media_ip) < 0)
+		return -1;
+	if (bin_push_int(packet, ctx->flags) < 0)
+		return -1;
+	if (bin_push_int(packet, ctx->version) < 0)
+		return -1;
+	if (bin_push_int(packet, ctx->version) < 0)
+		return -1;
+	for (leg = RTP_RELAY_CALLER; leg <= RTP_RELAY_CALLEE; leg++) {
+		if (bin_push_int(packet, ctx->legs[leg].streams_no) < 0)
+			return -1;
+		for (idx = 0; idx < ctx->legs[leg].streams_no; idx++) {
+			if (bin_push_int(packet, ctx->legs[leg].streams[idx].port) < 0)
+				return -1;
+			if (bin_push_int(packet, ctx->legs[leg].streams[idx].index) < 0)
+				return -1;
+			ctx->streams_no++;
+		}
+	}
+	return 0;
+}
+
+static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
+{
+	time_t ts;
+	struct rtpproxy_copy_ctx *ctx;
+	str media_ip, tmp;
+	unsigned int version, flags;
+	int leg, idx;
+
+	if (bin_pop_str(packet, &tmp) < 0)
+		return -1;
+	ts = (time_t)(unsigned long)tmp.s;
+	if (bin_pop_str(packet, &media_ip) < 0)
+		return -1;
+	if (bin_pop_int(packet, &flags) < 0)
+		return -1;
+	if (bin_pop_int(packet, &version) < 0)
+		return -1;
+	ctx = rtpproxy_copy_ctx_new(&media_ip, flags);
+	if (!ctx)
+		return -1;
+	ctx->ts = ts;
+	ctx->version = version;
+
+	for (leg = RTP_RELAY_CALLER; leg <= RTP_RELAY_CALLEE; leg++) {
+		if (bin_pop_int(packet, &ctx->legs[leg].streams_no) < 0)
+			return -1;
+
+		ctx->legs[leg].streams = shm_malloc(ctx->legs[leg].streams_no *
+				sizeof(struct rtpproxy_copy_stream));
+		if (!ctx->legs[leg].streams)
+			return -1;
+		for (idx = 0; idx < ctx->legs[leg].streams_no; idx++) {
+			if (bin_pop_int(packet, &ctx->legs[leg].streams[idx].port) < 0)
+				return -1;
+			if (bin_pop_int(packet, &ctx->legs[leg].streams[idx].index) < 0)
+				return -1;
+		}
+	}
+	return -1;
 }

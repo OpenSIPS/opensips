@@ -93,7 +93,6 @@ struct src_sess {
 	str media;
 	str headers;
 	rtp_ctx rtp;
-	rtp_copy_ctx rtp_copy;
 	str initial_sdp;
 
 	/* SRS */

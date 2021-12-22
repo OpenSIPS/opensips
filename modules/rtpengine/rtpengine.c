@@ -299,6 +299,8 @@ static int rtpengine_api_copy_start(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *subs, str *flags, str *body);
 static int rtpengine_api_copy_stop(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *subs, str *flags);
+static int rtpengine_api_copy_serialize(void *_ctx, bin_packet_t *packet);
+static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -1257,6 +1259,8 @@ static int mod_preinit(void)
 		.copy_create = rtpengine_api_copy_create,
 		.copy_start = rtpengine_api_copy_start,
 		.copy_stop = rtpengine_api_copy_stop,
+		.copy_serialize = rtpengine_api_copy_serialize,
+		.copy_deserialize = rtpengine_api_copy_deserialize,
 	};
 	if (!pv_parse_spec(&rtpengine_relay_pvar_str, &media_pvar))
 		return -1;
@@ -3895,9 +3899,6 @@ static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay
 	return ret;
 }
 
-//struct rtpengine_rec_subs {
-//};
-//
 static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		int op, struct rtp_relay_server *server, void *copy_ctx,
 		str *flags, unsigned int copy_flags, str *body)
@@ -3951,6 +3952,17 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 	return ret;
 }
 
+static str *rtpengine_new_subs(str *tag)
+{
+	str *to_tag = shm_malloc(sizeof *to_tag + tag->len);
+	if (to_tag) {
+		to_tag->s = (char *)(to_tag + 1);
+		to_tag->len = tag->len;
+		memcpy(to_tag->s, tag->s, tag->len);
+	}
+	return to_tag;
+}
+
 static void *rtpengine_api_copy_create(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, str *flags,
 		unsigned int copy_flags, str *ret_body)
@@ -3965,12 +3977,7 @@ static void *rtpengine_api_copy_create(struct rtp_relay_session *sess,
 		LM_ERR("failed to extract sdp body from proxy reply\n");
 	if (!bencode_dictionary_get_str(ret, "to-tag", &tmp))
 		LM_ERR("failed to extract to-tag from proxy reply\n");
-	to_tag = shm_malloc(sizeof *to_tag + tmp.len);
-	if (to_tag) {
-		to_tag->s = (char *)(to_tag + 1);
-		to_tag->len = tmp.len;
-		memcpy(to_tag->s, tmp.s, tmp.len);
-	}
+	to_tag = rtpengine_new_subs(&tmp);
 	bencode_buffer_free(bencode_item_buffer(ret));
 	return to_tag;
 }
@@ -3999,4 +4006,22 @@ static int rtpengine_api_copy_stop(struct rtp_relay_session *sess,
 		return -1;
 	bencode_buffer_free(bencode_item_buffer(ret));
 	return ret != NULL;
+}
+
+static int rtpengine_api_copy_serialize(void *_ctx, bin_packet_t *packet)
+{
+	return bin_push_str(packet, (str *)_ctx);
+}
+
+static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
+{
+	str to_tag;
+	if (bin_pop_str(packet, &to_tag) < 0)
+		return -1;
+
+	*_ctx = rtpengine_new_subs(&to_tag);
+	if (*_ctx == NULL)
+		return -1;
+	else
+		return 1;
 }

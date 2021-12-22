@@ -32,8 +32,6 @@
 #include "../../ut.h"
 #include "../../trim.h"
 
-struct rtp_relay_binds srec_rtp;
-
 void srs_free_stream(struct srs_sdp_stream *stream)
 {
 	list_del(&stream->list);
@@ -378,126 +376,6 @@ int srs_build_body(struct src_sess *sess, str *body)
 	/* add final boundary */
 	SIPREC_COPY_STR(boundary_end, &buf);
 
-	return 0;
-}
-
-int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
-{
-#if 0
-	int len;
-	int label;
-	int part = 0;
-	int streams_no = -1;
-	struct srs_sdp_stream *stream = NULL;
-	sdp_info_t *msg_sdp;
-	sdp_attr_t *attr;
-	sdp_stream_cell_t *msg_stream;
-	sdp_session_cell_t *msg_session;
-	str destination;
-	str *from_tag, *to_tag;
-
-	msg_sdp = parse_sdp(msg);
-	if (!msg_sdp) {
-		LM_ERR("mising or invalid SDP!\n");
-		return -1;
-	}
-
-	for (msg_session = msg_sdp->sessions; msg_session;
-			msg_session = msg_session->next) {
-		for (msg_stream = msg_session->streams; msg_stream;
-				msg_stream = msg_stream->next) {
-			/* first get the label, to know which stream we are talking about */
-			label = -1;
-			for (attr = msg_stream->attr; attr && label == -1; attr = attr->next) {
-				if (attr->value.len != 0 && attr->attribute.len == 5 &&
-					memcmp(attr->attribute.s, "label", 5) == 0) {
-					if (str2sint(&attr->value, &label) < 0) {
-						LM_ERR("invalid label number: %.*s - should have been numeric\n",
-								attr->value.len, attr->value.s);
-						continue;
-					}
-					stream = srs_get_stream(sess, label, &part);
-					if (!stream) {
-						LM_ERR("unknown media stream label: %d\n", label);
-						label = -2;
-					}
-					break;
-				}
-			}
-			if (label < 0 || !stream) {
-				LM_INFO("SDP stream not processed for [%.*s]\n",
-						msg_stream->body.len, msg_stream->body.s);
-				continue;
-			}
-			LM_DBG("found stream %p for label %d\n", stream, label);
-
-			len = 4/* udp: */;
-			/* if there is an IP in the stream, use it, otherwise use the
-			 * SDP session IP */
-			if (msg_stream->ip_addr.len)
-				len += msg_stream->ip_addr.len;
-			else
-				len += msg_session->ip_addr.len;
-			len += 1/* : */ + msg_stream->port.len;
-
-			/* build the socket to stream to */
-			destination.s = pkg_malloc(len);
-			if (!destination.s) {
-				LM_ERR("cannot allocate destination buffer!\n");
-				return -1;
-			}
-			memcpy(destination.s, "udp:", 4);
-			destination.len = 4;
-			if (msg_stream->ip_addr.len) {
-				memcpy(destination.s + destination.len, msg_stream->ip_addr.s,
-						msg_stream->ip_addr.len);
-				destination.len += msg_stream->ip_addr.len;
-			} else {
-				memcpy(destination.s + destination.len, msg_session->ip_addr.s,
-						msg_session->ip_addr.len);
-				destination.len += msg_session->ip_addr.len;
-			}
-			destination.s[destination.len++] = ':';
-			memcpy(destination.s + destination.len, msg_stream->port.s,
-					msg_stream->port.len);
-			destination.len += msg_stream->port.len;
-
-#if 0
-			if (part) {
-				from_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
-				to_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
-			} else {
-				from_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
-				to_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
-			}
-
-			if (srec_rtp.start_recording(&sess->dlg->callid, from_tag, to_tag,
-					(sess->rtpproxy.s ? &sess->rtpproxy: NULL),
-					NULL, &destination, stream->medianum) < 0) {
-				LM_ERR("cannot start recording for stream %p (label=%d)\n",
-						stream, stream->label);
-			} else
-#endif
-				streams_no++;
-
-			pkg_free(destination.s);
-		}
-	}
-
-	return streams_no;
-#endif
-	str *body;
-
-	body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
-	if (!body || body->len == 0) {
-		LM_ERR("no body to handle!\n");
-		return -1;
-	}
-	if (srec_rtp.copy_start(sess->rtp, sess->rtp_copy,
-			&sess->media, body) < 0) {
-		LM_ERR("could not start recording!\n");
-		return -1;
-	}
 	return 0;
 }
 

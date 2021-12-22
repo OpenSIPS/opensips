@@ -24,6 +24,7 @@
 
 #include "../../str.h"
 #include "../../sr_module.h"
+#include "../../bin_interface.h"
 #include "rtp_relay_common.h"
 struct dlg_cell;
 
@@ -32,11 +33,11 @@ typedef void * rtp_ctx;
 struct rtp_relay_binds {
 	rtp_ctx (*get_ctx)(void);
 	rtp_ctx (*get_ctx_dlg)(struct dlg_cell *);
-	rtp_copy_ctx (*copy_create)(rtp_ctx ctx, str *flags,
+	int (*copy_create)(rtp_ctx ctx, str *id, str *flags,
 			unsigned int copy_flags, str *ret_body);
-	int (*copy_start)(rtp_ctx ctx, rtp_copy_ctx copy,
+	int (*copy_start)(rtp_ctx ctx, str *id,
 			str *flags, str *body);
-	int (*copy_stop)(rtp_ctx ctx, rtp_copy_ctx copy,
+	int (*copy_stop)(rtp_ctx ctx, str *id,
 			str *flags);
 };
 
@@ -60,11 +61,11 @@ static inline int load_rtp_relay(struct rtp_relay_binds *rtpb)
 int rtp_relay_load(struct rtp_relay_binds *binds);
 rtp_ctx rtp_relay_get_context(void);
 rtp_ctx rtp_relay_get_context_dlg(struct dlg_cell *);
-rtp_copy_ctx rtp_relay_copy_create(rtp_ctx ctx,
+int rtp_relay_copy_create(rtp_ctx ctx, str *id,
 		str *flags, unsigned int copy_flags, str *ret_body);
-int rtp_relay_copy_start(rtp_ctx ctx, rtp_copy_ctx copy,
+int rtp_relay_copy_start(rtp_ctx ctx, str *id,
 		str *flags, str *body);
-int rtp_relay_copy_stop(rtp_ctx ctx, rtp_copy_ctx copy,
+int rtp_relay_copy_stop(rtp_ctx ctx, str *id,
 		str *flags);
 
 #endif /* _RTP_RELAY_LOAD_H_ */

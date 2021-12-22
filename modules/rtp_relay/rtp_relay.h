@@ -24,6 +24,7 @@
 #include "../../str.h"
 #include "../../sr_module.h"
 #include "../../lib/list.h"
+#include "../../bin_interface.h"
 #include "rtp_relay_common.h"
 
 #define RTP_RELAY_ALL_BRANCHES -1
@@ -62,6 +63,8 @@ struct rtp_relay_funcs {
 			str *flags, str *body);
 	int (*copy_stop)(struct rtp_relay_session *sess,
 			struct rtp_relay_server *server, void *copy, str *flags);
+	int (*copy_serialize)(void *ctx, bin_packet_t *packet);
+	int (*copy_deserialize)(void **ctx, bin_packet_t *packet);
 };
 
 struct rtp_relay_hooks {

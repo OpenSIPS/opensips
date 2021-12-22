@@ -22,8 +22,6 @@
 #ifndef _RTP_RELAY_COMMON_H_
 #define _RTP_RELAY_COMMON_H_
 
-typedef void * rtp_copy_ctx;
-
 #define RTP_COPY_MODE_SIPREC (1<<0)
 
 #endif /* _RTP_RELAY_COMMON_H_ */
