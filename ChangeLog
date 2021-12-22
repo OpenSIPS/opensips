@@ -1,3 +1,418 @@
+=========================== Release 3.1.7 ==============================
+
+2021-12-22  Liviu Chircu  <liviu at opensips dot org>
+	* [952a8a2e6] :
+
+	Bump version to 3.1.7
+
+
+2021-12-22  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c3e46d4da] :
+
+	[auth_jwt] fix sql raw query
+	Use simple quoting for values and avoid mysql specific time functions - better push the unix timestamp values from opensips side.
+
+	Reported by Jonathan Hunter via user's mailing list
+	(cherry picked from commit 05212f01291fd939db42c6d16adbf25492a41348)
+
+
+2021-12-18  OpenSIPS  <github at opensips dot org>
+	* [d5645d512] :
+
+	Rebuild documentation
+
+
+2021-12-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5732f6b63] :
+
+	Solve the problem of recognizing the local SIP msg
+	We need a consistent and solid way to recognize the internanlly generated SIP msg (as a result of t_uac) - these are msg structs resulted from the parsing of buffers with SIP msgs
+	(cherry picked from commit 02c6ed9eaa3751623f19ed160dc802e11862df3d)
+
+
+2021-12-14  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [68988b989] :
+
+	Revert "[topology-hiding] fix detection of the UAC requests"
+	This reverts commit 62d0edb18838d10c38abb30834fa4e958fdc8128.
+
+
+2021-12-14  Liviu Chircu  <liviu at opensips dot org>
+	* [fe2e8dfe7] :
+
+	nathelper: Fix bug introduced in ecbd9856efb
+	Credits to Alexey Vasilyev (@vasilevalex) for reviewing the commit and
+	catching the regression!
+	(cherry picked from commit 54bb91a373a2457ad5c5ccc22ab70bd4c83c01d8)
+
+
+2021-12-11  OpenSIPS  <github at opensips dot org>
+	* [f9c19ed33] :
+
+	Rebuild documentation
+
+
+2021-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [62d0edb18] :
+
+	[topology-hiding] fix detection of the UAC requests
+	Use a more generix approach (check VIA2 presence) to see if we deal with a locally generated or proxyed requests.
+	Fixes #2690, credits go to @bcnewlin for reporting.
+	(cherry picked from commit abeeb36d77e05df4a4a3fc71af1f0795dc2a7e61)
+
+
+2021-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2b84ad085] :
+
+	[core] build_res_buf_from_sip_req(): fix hdr correlation
+	Issue discovered during OpenSIPS Security Audit 2021,
+	        by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-7pf3-24qg-8v9h
+	(cherry picked from commit 9cf3dd3398719dd91207495f76d7726701c5145c)
+
+
+2021-12-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [018cb953c] :
+
+	[usrloc] fix contact matching on registrations handling
+	instead of pron-to-error string matching, use the SIP wise matching when matching the registered contacts. The SIP URI matching is more complex, mainly when comes about the URI parameters - some important (user, transport, etc) params must be present in both URIs in order to match, other generic params may match even if the param is present in only one URI.
+
+	Some devices may use during registration some proprietary params for the contact, but without sending the full list when re-registering or when deleting the contact - and this is perfectly ok from the perspective of the SIP RFC3261.
+
+	Prior to the fix, in the above scenario, OpenSIPS will have failed to re-register or un-register the contact, leaking registrations.
+	(cherry picked from commit 85e67d890cc0e225d1a4512ccb8cadc1a5090a41)
+
+
+2021-12-04  OpenSIPS  <github at opensips dot org>
+	* [dbded91a6] :
+
+	Rebuild documentation
+
+
+2021-12-03  Vlad Patrascu  <vladp at opensips dot org>
+	* [6440d44f6] :
+
+	db_text: return a valid empty string for a null DB value
+	This prevents crashes in modules which do not check the null flag
+	in the db result before using the string value (eg. doing strlen()).
+
+	Fixes #2658
+	(cherry picked from commit ddbec155fc89d2085149f2debc66edecb0789554)
+
+
+2021-12-02  Vlad Pătrașcu  <vladp at opensips dot org>
+	* [5d3514ed0] :
+
+	Merge pull request #2676 from GangZhuo/issues-2649
+	[sql_cacher] When on demand mode, get column types at mod_init
+	(cherry picked from commit 69966d71127f34b6dec1f4d2a4b431a9778f5d72)
+
+
+2021-11-25  Liviu Chircu  <liviu at opensips dot org>
+	* [237997bba] :
+
+	nathelper: Fix rare message corruption due to bitwise opts on strings
+	Credits to Damien Sandras for the report and initial PR!
+
+	Closes #2695
+	(cherry picked from commit ecbd9856efb7a420e2fceff6769951d307be8c03)
+
+
+2021-11-24  Vlad Patrascu  <vladp at opensips dot org>
+	* [a49ca4642] :
+
+	event_route: allow a 'route' subscriber to be used from event_virtual
+	(cherry picked from commit 447a88a19c86fc4159e290b2aa8475e4db5ce551)
+
+
+2021-11-23  Liviu Chircu  <liviu at opensips dot org>
+	* [33113c14f] :
+
+	drouting: Allow 64-bit integers for dr_rules.sort_profile
+	This allows SQL views to represent the NULL value as a 64-bit integer
+	without getting rejected by OpenSIPS, which expected a 32-bit integer
+	for that column.
+
+	Admittedly, any 64-bit integer "sort profile" will now be truncated to
+	32 bits, but OpenSIPS had no full support for 64-bit sort profile values
+	in the first place, so it's better to just truncate and NOT error.
+	(cherry picked from commit 7fb5ddf64826bc9d6c1c3d3c0d58cf7275e748dc)
+
+
+2021-11-23  Liviu Chircu  <liviu at opensips dot org>
+	* [36c3c25bf] :
+
+	perl: Fix PKG corruption in perl_exec_simple() (off-by-one)
+	Credits to Kingsley Tart for the report!
+
+	Fixes #2666
+	(cherry picked from commit 38e67d4ce6bbfec9f30188cedfd73bd80b18e1bc)
+
+
+2021-11-23  Liviu Chircu  <liviu at opensips dot org>
+	* [1bd755e0a] :
+
+	perl: Allow perl_exec_simple() from any route
+	This function is neither tied to a SIP message nor does it perform any
+	SIP signaling, so we can call it from any route!
+	(cherry picked from commit 4dbd2ced3a1db3326b7201c64bba165033ab2d95)
+
+
+2021-11-20  OpenSIPS  <github at opensips dot org>
+	* [e63924130] :
+
+	Rebuild documentation
+
+
+2021-11-19  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e6ad0ccfd] :
+
+	[drouting] update docs on carrier sorting algorithms
+	(cherry picked from commit 394ba080486f97f44afaf794fa82aba1f630b186)
+
+
+2021-11-18  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [be332478e] :
+
+	Fix ACK CSEQ generation for in-dialog RE-INVITEs where in-dialogs pings have been sent out
+	Closes #2678
+	(cherry picked from commit aaa3831c6cc878abdc805a2538e62026d67117f8)
+
+
+2021-11-18  Vlad Patrascu  <vladp at opensips dot org>
+	* [78a91ac75] :
+
+	tls_mgm: fix possible crash when reloading from DB
+	The crash would occur after multiple DB reloads when there are also TLS
+	domains defined in the script.
+	(cherry picked from commit f877f8752f3ce334924c2b22985c89997aa0ffc2)
+
+
+2021-11-18  Liviu Chircu  <liviu at opensips dot org>
+	* [30029bdcc] :
+
+	rest_client: Add the 'max_transfer_size' setting
+	Sets a limit on the maximum size of a single download.  May be important
+	for security purposes, to prevent certain attack vectors such as
+	malicious "x5u" certificate URLs in STIR/SHAKEN setups.
+	    Default: 0 KB (check disabled)
+
+	Issue discovered during OpenSIPIt'02,
+		by Alfred Farrugia & Sandro Gauci (Enable Security)
+	(cherry picked from commit b56bba344e0c067ee7af53bdd1add9ed05b403f3)
+
+
+2021-11-17  Liviu Chircu  <liviu at opensips dot org>
+	* [2f1727b2b] :
+
+	proto_hep: Do not corrupt PKG memory if HEP3 buffer too small
+	This patch makes proto_hep more stable in production, so it doesn't
+	cause a crash if it reaches an unexpected state, such as "buffer too
+	small" followed by overrunning the PKG buffer, for example:
+
+	CRITICAL:core:qm_debug_frag:  qm_*: prev. fragm.
+	    tail overwritten(f00000a000c0000, abcdefedabcdefa0)
+	    [0x7f1b840306c8:0x7f1b840306f8] (build_hep3_buf, hep.c:1347)!
+
+	Now, the respective tracing will simply fail and OpenSIPS processing
+	continues safely.  Still, the original bug remains to be understood and
+	addressed.
+
+	Issue discovered during OpenSIPIt'02,
+	        thanks to Alfred Farrugia & Sandro Gauci (Enable Security)
+	(cherry picked from commit 78e4356aee36eb4cc4b89f712462588c1af28470)
+
+
+2021-11-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7b0144959] :
+
+	Proper stack of the AVP list when running the dialog specific routes
+	Fixes #2464
+	Credits go to Ben Newlin for reporting and assisting with the fixing.
+	(cherry picked from commit 7193c5d8d86fa527433eab8c2c2af4b40a76e275)
+
+
+2021-11-13  OpenSIPS  <github at opensips dot org>
+	* [6284500ef] :
+
+	Rebuild documentation
+
+
+2021-11-12  Razvan Crainea  <razvan at opensips dot org>
+	* [4e40f0455] :
+
+	pvar: allow $socket_out matching based on tags
+	Do not force a port, if not specified in the socket's string, otherwise
+	the socket will no longer match its token
+	(cherry picked from commit 1e952a7f13c7e78faec1afc2667758d1e7825a54)
+
+
+2021-11-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6ac9795dc] :
+
+	[core] fix parse_via() parsing
+	Issue discovered during OpenSIPS Security Audit 2021,
+		by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-wxfg-3gwh-rhvx
+	(cherry picked from commit ab611f74f69d9c42be5401c40d56ea06a58f5dd7)
+
+
+2021-11-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1d4e56fc1] :
+
+	[sipmsgops] fix parse_to_param() parsing
+	Issue discovered during OpenSIPS Security Audit 2021,
+		by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-qvj2-vqrg-f5jx
+	(cherry picked from commit cb56694d290530ac308f44b453c18120b1c1109d)
+
+
+2021-11-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a23908d30] :
+
+	[sipmsgops] fix codec_delete_XX() parsing (2)
+	Issue discovered during OpenSIPS Security Audit 2021,
+		by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-67w7-g4j8-3wcx
+	(cherry picked from commit c6ab3bb406c447e30c7d33a1a8970048b4612100)
+
+
+2021-11-11  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ee115c0e0] :
+
+	[sipmsgops] fix codec_delete_XX() parsing
+	Issue discovered during OpenSIPS Security Audit 2021,
+	        by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-xj5x-g52f-548h
+	(cherry picked from commit 8f87c7c03da55f9c79bd92e67fa2c94b2a7ce5cf)
+
+
+2021-11-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [290e1ab55] :
+
+	[core] improve logging when IPC blocking is detected
+	Throw a CRITical log with info on the target process
+	(cherry picked from commit dce2643e5716f082847a90e409c2156dde9e4852)
+
+
+2021-11-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [bfac92714] :
+
+	[core] make the per-process IPC sending non-blocking
+	A process may get stuck (history showed us such real cases) and we do not want to have other processes getting blocked by trying to do an IPC to such procs (if they are stuck, they will not consume their IPC cmds, so the IPC sender will also block after some time, when the pipe's buffer is full).
+	So, better make the write pipe non-blocking, discard the current IPC cmd and avoid escalating the blocking over other procs.
+	(cherry picked from commit 62af720cd5a9d04d982b474398294ef5068e9f45)
+
+
+2021-11-06  OpenSIPS  <github at opensips dot org>
+	* [2ec3238bf] :
+
+	Rebuild documentation
+
+
+2021-11-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [41d57ac56] :
+
+	[core] fix printing cfg file context for errors after a reload_routes
+	Reset the file context list each time a new cfg parsing starts, to be sure we do not inherite the context from a previous parsing.
+	If we do not do this, when doing a reload_routes, if an parsing error occurs, we will get references and dumps (of the faulty lines) from the original, startup script, not from the reloaded one.
+	(cherry picked from commit 52e51809ca219c97ea9e348f5dab6a109859eece)
+
+
+2021-11-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [7ea9b66f4] :
+
+	[core] proper re-init of cfg parser during reload_routes
+	The lex parser needs an explicit reset/init after a parsing attempt completed with a parsing error. This is needed to be able to start a new parting session, via the route_reload MI cmd
+	(cherry picked from commit 5dd7976c03b6364f307b993bfdff1d8c1c010aa0)
+
+
+2021-11-02  Razvan Crainea  <razvan at opensips dot org>
+	* [5ac273d60] :
+
+	db_sqlite: fix memory leak for row values
+	(cherry picked from commit 06a35a635e71778342ee272411657040ecdcb0e6)
+
+
+2021-11-01  Vlad Patrascu  <vladp at opensips dot org>
+	* [c493e01b4] :
+
+	clusterer: fix internal traffic flood caused by node UP event
+	The capability update broadcasting mechanism would generate an
+	unncessarily large number of packets, especially for clusters
+	of more than 6,7 nodes.
+	(cherry picked from commit 32dbcbae74bfaec095849d8c0349ab2f7ecc97bb)
+
+
+2021-10-30  OpenSIPS  <github at opensips dot org>
+	* [a49a9e7a3] :
+
+	Rebuild documentation
+
+
+2021-10-28  Razvan Crainea  <razvan at opensips dot org>
+	* [a162f8859] :
+
+	ratelimit: always update last local used when pipe is accessed
+	Thanks go to SIPNav for troubleshooting and providing a fix for the
+	problem.
+	(cherry picked from commit 668acafc90f807b97ffe55a887a1b30e492bb65c)
+
+
+2021-10-27  Liviu Chircu  <liviu at opensips dot org>
+	* [d79487042] :
+
+	parse_param_name(): Improve param parsing macros
+	Issue discovered during OpenSIPS Security Audit 2021,
+	    by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-jrqg-vppj-hr2h
+	(cherry picked from commit dd9141b6f67d7df4072f3430f628d4b73df5e102)
+
+
+2021-10-26  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [80588ce7c] :
+
+	Fix the DB saved description of the caller/callee sockets
+	Use the internal description of the socket when saving in DB. This means using the socket TAG when defined, versus the proto:ip:port description.
+	This is how the replication is also doing, to cope with potential changes of the socket IP during a replication. And in our case, during a restart.
+	(cherry picked from commit 7aa24e1c1973fb56da2d03aceaf843b71e87c8b0)
+
+
+2021-10-23  OpenSIPS  <github at opensips dot org>
+	* [2c0bbbf7f] :
+
+	Rebuild documentation
+
+
+2021-10-22  Razvan Crainea  <razvan at opensips dot org>
+	* [0952d98a4] :
+
+	cgrates: search for ctx in trans as well when reading
+	When reading a $cgr* variable, we shall also check if the context is
+	stored in transaction, not only in the current processing ctx.
+	(cherry picked from commit be1e32e5839c5dc71dd89be1506760de95c5df48)
+
+
+2021-10-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [73d171c25] :
+
+	[msilo] Fixed setting proper time in offline message
+	(cherry picked from commit cc20f738b83f5a9c7f24630309ddb5bab889bf56)
+
+
+2021-10-21  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [633697eee] :
+
+	[msilo] Fixed len calculation for added time
+	Reported by "jacky z" on user's mailing list
+	(cherry picked from commit 9bc117953730a0ea761e3ceaeea9fee7facea2cc)
+
 =========================== Release 3.1.6 ==============================
 
 2021-10-20  Liviu Chircu  <liviu at opensips dot org>
