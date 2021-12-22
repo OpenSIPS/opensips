@@ -260,13 +260,7 @@ rtp_copy_ctx *rtp_copy_ctx_get(struct rtp_relay_ctx *ctx, str *id)
 rtp_copy_ctx *rtp_copy_ctx_new(struct rtp_relay_ctx *ctx, str *id)
 {
 
-	rtp_copy_ctx *copy_ctx;
-
-	copy_ctx = rtp_copy_ctx_get(ctx, id);
-	if (copy_ctx)
-		return NULL;
-
-	copy_ctx = shm_malloc(sizeof(*copy_ctx) + id->len);
+	rtp_copy_ctx *copy_ctx = shm_malloc(sizeof(*copy_ctx) + id->len);
 	if (!copy_ctx)
 		return NULL;
 	memset(copy_ctx, 0, sizeof *copy_ctx);
@@ -1779,9 +1773,10 @@ error:
 	return NULL;
 }
 
-int rtp_relay_copy_create(rtp_ctx _ctx, str *id,
+int rtp_relay_copy_offer(rtp_ctx _ctx, str *id,
 		str *flags, unsigned int copy_flags, str *ret_body)
 {
+	int release = 0;
 	struct rtp_relay_session info;
 	struct rtp_relay_ctx *ctx = _ctx;
 	rtp_copy_ctx *rtp_copy;
@@ -1797,31 +1792,36 @@ int rtp_relay_copy_create(rtp_ctx _ctx, str *id,
 		LM_ERR("rtp not established!\n");
 		return -1;
 	}
-	if (!ctx->main->relay->funcs.copy_create) {
+	if (!ctx->main->relay->funcs.copy_offer) {
 		LM_ERR("rtp does not support recording!\n");
 		return -1;
 	}
-	rtp_copy = rtp_copy_ctx_new(ctx, id);
+	rtp_copy = rtp_copy_ctx_get(ctx, id);
 	if (!rtp_copy) {
-		LM_ERR("oom for rtp copy context!\n");
-		return -1;
+		rtp_copy = rtp_copy_ctx_new(ctx, id);
+		if (!rtp_copy) {
+			LM_ERR("oom for rtp copy context!\n");
+			return -1;
+		}
+		release = 1;
 	}
 	memset(&info, 0, sizeof info);
 	info.callid = &ctx->callid;
 	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
 	info.branch = ctx->main->index;
-	rtp_copy->ctx = ctx->main->relay->funcs.copy_create(&info,
-			&ctx->main->server, flags, copy_flags, ret_body);
-	if (!rtp_copy->ctx) {
-		list_del(&rtp_copy->list);
-		shm_free(rtp_copy);
+	if (ctx->main->relay->funcs.copy_offer(&info, &ctx->main->server,
+			&rtp_copy->ctx, flags, copy_flags, ret_body) < 0) {
+		if (release) {
+			list_del(&rtp_copy->list);
+			shm_free(rtp_copy);
+		}
 		return -1;
 	}
 	return 0;
 }
 
-int rtp_relay_copy_start(rtp_ctx _ctx, str *id,
+int rtp_relay_copy_answer(rtp_ctx _ctx, str *id,
 		str *flags, str *body)
 {
 	struct rtp_relay_session info;
@@ -1839,7 +1839,7 @@ int rtp_relay_copy_start(rtp_ctx _ctx, str *id,
 		LM_ERR("rtp not established!\n");
 		return -1;
 	}
-	if (!ctx->main->relay->funcs.copy_start) {
+	if (!ctx->main->relay->funcs.copy_answer) {
 		LM_ERR("rtp does not support recording!\n");
 		return -1;
 	}
@@ -1854,12 +1854,12 @@ int rtp_relay_copy_start(rtp_ctx _ctx, str *id,
 	info.to_tag = &ctx->to_tag;
 
 	info.branch = ctx->main->index;
-	return ctx->main->relay->funcs.copy_start(
+	return ctx->main->relay->funcs.copy_answer(
 			&info, &ctx->main->server,
 			copy_ctx->ctx, flags, body);
 }
 
-int rtp_relay_copy_stop(rtp_ctx _ctx, str *id, str *flags)
+int rtp_relay_copy_delete(rtp_ctx _ctx, str *id, str *flags)
 {
 	int ret;
 	struct rtp_relay_session info;
@@ -1874,7 +1874,7 @@ int rtp_relay_copy_stop(rtp_ctx _ctx, str *id, str *flags)
 		LM_ERR("rtp not established!\n");
 		return -1;
 	}
-	if (!ctx->main->relay->funcs.copy_stop) {
+	if (!ctx->main->relay->funcs.copy_delete) {
 		LM_DBG("rtp does not support stop recording!\n");
 		return 1;
 	}
@@ -1888,7 +1888,7 @@ int rtp_relay_copy_stop(rtp_ctx _ctx, str *id, str *flags)
 	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
 	info.branch = ctx->main->index;
-	ret = ctx->main->relay->funcs.copy_stop(
+	ret = ctx->main->relay->funcs.copy_delete(
 			&info, &ctx->main->server,
 			copy_ctx->ctx, flags);
 	list_del(&copy_ctx->list);

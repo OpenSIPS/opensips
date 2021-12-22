@@ -292,13 +292,13 @@ static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
 static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
-static void *rtpengine_api_copy_create(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, str *flags,
+static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void **_ctx, str *flags,
 		unsigned int copy_flags, str *body);
-static int rtpengine_api_copy_start(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, void *subs, str *flags, str *body);
-static int rtpengine_api_copy_stop(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, void *subs, str *flags);
+static int rtpengine_api_copy_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags, str *body);
+static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags);
 static int rtpengine_api_copy_serialize(void *_ctx, bin_packet_t *packet);
 static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
 
@@ -1256,9 +1256,9 @@ static int mod_preinit(void)
 		.offer = rtpengine_api_offer,
 		.answer = rtpengine_api_answer,
 		.delete = rtpengine_api_delete,
-		.copy_create = rtpengine_api_copy_create,
-		.copy_start = rtpengine_api_copy_start,
-		.copy_stop = rtpengine_api_copy_stop,
+		.copy_offer = rtpengine_api_copy_offer,
+		.copy_answer = rtpengine_api_copy_answer,
+		.copy_delete = rtpengine_api_copy_delete,
 		.copy_serialize = rtpengine_api_copy_serialize,
 		.copy_deserialize = rtpengine_api_copy_deserialize,
 	};
@@ -3963,26 +3963,27 @@ static str *rtpengine_new_subs(str *tag)
 	return to_tag;
 }
 
-static void *rtpengine_api_copy_create(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, str *flags,
+static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void **_ctx, str *flags,
 		unsigned int copy_flags, str *ret_body)
 {
 	str tmp, *to_tag;
 	bencode_item_t *ret;
 	ret = rtpengine_api_copy_op(sess, OP_SUBSCRIBE_REQUEST,
-			server, NULL, flags, copy_flags, NULL);
+			server, *_ctx, flags, copy_flags, NULL);
 	if (!ret)
-		return NULL;
+		return -1;
 	if (!bencode_dictionary_get_str_dup(ret, "sdp", ret_body))
 		LM_ERR("failed to extract sdp body from proxy reply\n");
 	if (!bencode_dictionary_get_str(ret, "to-tag", &tmp))
 		LM_ERR("failed to extract to-tag from proxy reply\n");
 	to_tag = rtpengine_new_subs(&tmp);
+	*_ctx = to_tag;
 	bencode_buffer_free(bencode_item_buffer(ret));
-	return to_tag;
+	return 0;
 }
 
-static int rtpengine_api_copy_start(struct rtp_relay_session *sess,
+static int rtpengine_api_copy_answer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *subs, str *flags, str *body)
 {
 	bencode_item_t *ret;
@@ -3994,7 +3995,7 @@ static int rtpengine_api_copy_start(struct rtp_relay_session *sess,
 	return ret != NULL;
 }
 
-static int rtpengine_api_copy_stop(struct rtp_relay_session *sess,
+static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *subs, str *flags)
 {
 	bencode_item_t *ret;

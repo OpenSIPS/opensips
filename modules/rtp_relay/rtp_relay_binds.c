@@ -24,8 +24,8 @@ int rtp_relay_load(struct rtp_relay_binds *binds)
 {
 	binds->get_ctx = rtp_relay_get_context;
 	binds->get_ctx_dlg = rtp_relay_get_context_dlg;
-	binds->copy_create = rtp_relay_copy_create;
-	binds->copy_start = rtp_relay_copy_start;
-	binds->copy_stop = rtp_relay_copy_stop;
+	binds->copy_offer = rtp_relay_copy_offer;
+	binds->copy_answer = rtp_relay_copy_answer;
+	binds->copy_delete = rtp_relay_copy_delete;
 	return 1;
 }

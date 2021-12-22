@@ -145,7 +145,7 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 	if (srec_b2b.send_request(&req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
 				req.b2b_key->len, req.b2b_key->s);
-	srec_rtp.copy_stop(ss->rtp, &mod_name, &ss->media);
+	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
 	srec_logic_destroy(ss);
 }
 
@@ -356,7 +356,7 @@ no_recording:
 			LM_ERR("Cannot send bye for recording session with key %.*s\n",
 					req.b2b_key->len, req.b2b_key->s);
 	}
-	srec_rtp.copy_stop(ss->rtp, &mod_name, &ss->media);
+	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
 	srec_logic_destroy(ss);
 
 	/* we finishd everything with the dialog, let it be! */
@@ -521,14 +521,14 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 		}
 	}
 
-	if (srec_rtp.copy_create(sess->rtp, &mod_name,
+	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
 			&sess->media, RTP_COPY_MODE_SIPREC, &sdp) < 0) {
 		LM_ERR("could not start recording!\n");
 		return -3;
 	}
 	if (shm_str_dup(&sess->initial_sdp, &sdp) < 0) {
 		pkg_free(sdp.s);
-		srec_rtp.copy_stop(sess->rtp, &mod_name, &sess->media);
+		srec_rtp.copy_delete(sess->rtp, &mod_name, &sess->media);
 		return -3;
 	}
 	pkg_free(sdp.s);
@@ -539,7 +539,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	if (ret < 0) {
 		srec_hlog(sess, SREC_UNREF, "error while starting recording");
 		SIPREC_UNREF_UNSAFE(sess);
-		srec_rtp.copy_stop(sess->rtp, &mod_name, &sess->media);
+		srec_rtp.copy_delete(sess->rtp, &mod_name, &sess->media);
 		return ret;
 	}
 
@@ -557,7 +557,7 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 		LM_ERR("no body to handle!\n");
 		return -1;
 	}
-	if (srec_rtp.copy_start(sess->rtp, &mod_name,
+	if (srec_rtp.copy_answer(sess->rtp, &mod_name,
 			&sess->media, body) < 0) {
 		LM_ERR("could not start recording!\n");
 		return -1;

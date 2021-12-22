@@ -322,13 +322,13 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
 static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
-static void *rtpproxy_api_copy_create(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, str *flags,
+static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void **_ctx, str *flags,
 		unsigned int copy_flags, str *body);
-static int rtpproxy_api_copy_start(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, void *subs, str *flags, str *body);
-static int rtpproxy_api_copy_stop(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, void *subs, str *flags);
+static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags, str *body);
+static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags);
 static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet);
 static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
 
@@ -1087,9 +1087,9 @@ static int mod_preinit(void)
 		.offer = rtpproxy_api_offer,
 		.answer = rtpproxy_api_answer,
 		.delete = rtpproxy_api_delete,
-		.copy_create = rtpproxy_api_copy_create,
-		.copy_start = rtpproxy_api_copy_start,
-		.copy_stop = rtpproxy_api_copy_stop,
+		.copy_offer = rtpproxy_api_copy_offer,
+		.copy_answer = rtpproxy_api_copy_answer,
+		.copy_delete = rtpproxy_api_copy_delete,
 		.copy_serialize = rtpproxy_api_copy_serialize,
 		.copy_deserialize = rtpproxy_api_copy_deserialize,
 	};
@@ -5435,18 +5435,20 @@ static int rtpproxy_gen_sdp_medias(struct rtpproxy_sdp_buf *buf,
 	return 0;
 }
 
-static void *rtpproxy_api_copy_create(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, str *flags,
+static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void **_ctx, str *flags,
 		unsigned int copy_flags, str *body)
 {
 	str *media_ip;
 	struct rtpproxy_sdp_buf *buf;
-	struct rtpproxy_copy_ctx *ctx;
+	struct rtpproxy_copy_ctx *ctx = *_ctx;
 
-	media_ip = (flags && flags->len)?flags:&rtpproxy_media_ip;
-	ctx = rtpproxy_copy_ctx_new(media_ip, copy_flags);
-	if (!ctx)
-		return NULL;
+	if (!ctx) {
+		media_ip = (flags && flags->len)?flags:&rtpproxy_media_ip;
+		ctx = rtpproxy_copy_ctx_new(media_ip, copy_flags);
+		if (!ctx)
+			return -1;
+	}
 
 	buf = rtpproxy_sdp_buf_new();
 
@@ -5457,10 +5459,13 @@ static void *rtpproxy_api_copy_create(struct rtp_relay_session *sess,
 		goto error;
 
 	*body = buf->buffer;
-	return ctx;
+	*_ctx = ctx;
+	return 0;
 error:
+	if (*_ctx == NULL)
+		rtpproxy_copy_ctx_free(ctx);
 	pkg_free(buf->buffer.s);
-	return NULL;
+	return -1;
 }
 
 static int rtpproxy_get_stream_index(struct rtpproxy_copy_ctx *ctx,
@@ -5580,8 +5585,8 @@ static int rtpproxy_start_recording_all(struct rtpproxy_copy_ctx *ctx,
 	return ret;
 }
 
-static int rtpproxy_api_copy_start(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, void *ctx, str *flags, str *body)
+static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags, str *body)
 {
 	int ret = -1;
 	struct rtpp_args args;
@@ -5612,7 +5617,7 @@ static int rtpproxy_api_copy_start(struct rtp_relay_session *sess,
 		goto error;
 	}
 
-	ret = rtpproxy_start_recording_all(ctx, &args, flags, body);
+	ret = rtpproxy_start_recording_all(_ctx, &args, flags, body);
 error:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
@@ -5642,8 +5647,8 @@ static int rtpproxy_stop_recording_leg(struct rtpproxy_copy_ctx *ctx,
 	return ret;
 }
 
-static int rtpproxy_api_copy_stop(struct rtp_relay_session *sess,
-		struct rtp_relay_server *server, void *ctx, str *flags)
+static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, void *_ctx, str *flags)
 
 {
 	int ret = -1;
@@ -5675,13 +5680,13 @@ static int rtpproxy_api_copy_stop(struct rtp_relay_session *sess,
 		goto error;
 	}
 
-	ret = rtpproxy_stop_recording_leg(ctx, &args, flags, RTP_RELAY_CALLER) +
-		rtpproxy_stop_recording_leg(ctx, &args, flags, RTP_RELAY_CALLEE);
+	ret = rtpproxy_stop_recording_leg(_ctx, &args, flags, RTP_RELAY_CALLER) +
+		rtpproxy_stop_recording_leg(_ctx, &args, flags, RTP_RELAY_CALLEE);
 error:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
 	rtpproxy_free_call_args(&args);
-	rtpproxy_copy_ctx_free(ctx);
+	rtpproxy_copy_ctx_free(_ctx);
 	return ret <= 0?-1:1;
 }
 
@@ -5755,5 +5760,6 @@ static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 				return -1;
 		}
 	}
+	*_ctx = ctx;
 	return -1;
 }

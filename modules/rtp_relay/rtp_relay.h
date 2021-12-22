@@ -55,14 +55,14 @@ struct rtp_relay_funcs {
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
 
-	void *(*copy_create)(struct rtp_relay_session *sess,
-			struct rtp_relay_server *server, str *flags,
-			unsigned int copy_flags, str *ret);
-	int (*copy_start)(struct rtp_relay_session *sess,
-			struct rtp_relay_server *server, void *copy,
+	int (*copy_offer)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void **ctx,
+			str *flags, unsigned int copy_flags, str *ret);
+	int (*copy_answer)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void *ctx,
 			str *flags, str *body);
-	int (*copy_stop)(struct rtp_relay_session *sess,
-			struct rtp_relay_server *server, void *copy, str *flags);
+	int (*copy_delete)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void *ctx, str *flags);
 	int (*copy_serialize)(void *ctx, bin_packet_t *packet);
 	int (*copy_deserialize)(void **ctx, bin_packet_t *packet);
 };
