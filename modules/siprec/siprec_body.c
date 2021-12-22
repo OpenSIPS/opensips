@@ -317,7 +317,7 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 /*
  * You need to free the body->s after using it!
  */
-int srs_build_body(struct src_sess *sess, str *body)
+int srs_build_body(struct src_sess *sess, str *sdp, str *body)
 {
 	struct srec_buffer buf;
 	str boundary = str_init(CRLF "--" OSS_BOUNDARY CRLF);
@@ -348,8 +348,8 @@ int srs_build_body(struct src_sess *sess, str *body)
 	SIPREC_COPY_STR(sdp_content_type, &buf);
 	SIPREC_COPY(CRLF, &buf);
 
-	if (sess->initial_sdp.s)
-		SIPREC_COPY_STR(sess->initial_sdp, &buf);
+	if (sdp)
+		SIPREC_COPY_STR((*sdp), &buf);
 
 	/* add second bondary */
 	SIPREC_COPY_STR(boundary, &buf);
@@ -367,61 +367,4 @@ int srs_build_body(struct src_sess *sess, str *body)
 	SIPREC_COPY_STR(boundary_end, &buf);
 
 	return 0;
-}
-
-int srs_build_body_inactive(struct src_sess *sess, str *body)
-{
-	char *p;
-	int istreams;
-
-	if (srs_build_body(sess, body) < 0) {
-		LM_ERR("cannot generate request body!\n");
-		return -1;
-	}
-	/* now make all streams inactive */
-	istreams = sess->streams_no - sess->streams_inactive;
-	while (istreams-- > 0) {
-		p = l_memmem(body->s, "a=sendonly\r\n", body->len, 12);
-		if (!p) {
-			LM_WARN("cannot find %dth active stream in [%.*s]\n",
-					sess->streams_no - istreams, body->len, body->s);
-			goto error;
-		}
-		/* found sendonly - replace with inactive */
-		memcpy(p + 2, "inactive", 8);
-	}
-	return 0;
-
-error:
-	pkg_free(body->s);
-	return -1;
-}
-
-void srs_stop_media(struct src_sess *sess)
-{
-#if 0
-	int p;
-	struct list_head *it;
-	str *from_tag, *to_tag;
-	struct srs_sdp_stream *stream;
-
-	for (p = 0; p < sess->participants_no; p++) {
-		if (p) {
-			from_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
-			to_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
-		} else {
-			from_tag = &sess->dlg->legs[DLG_CALLER_LEG].tag;
-			to_tag = &sess->dlg->legs[callee_idx(sess->dlg)].tag;
-		}
-		list_for_each(it, &sess->participants[p].streams) {
-			stream = list_entry(it, struct srs_sdp_stream, list);
-			if (srec_rtp.stop_recording(&sess->dlg->callid, from_tag, to_tag,
-						(sess->rtpproxy.s ? &sess->rtpproxy: NULL),
-						stream->medianum + 1) < 0) {
-					LM_ERR("cannot stop recording for stream %p (label=%d)\n",
-							stream, stream->label);
-				}
-		}
-	}
-#endif
 }

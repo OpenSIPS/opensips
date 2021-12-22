@@ -323,7 +323,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 
 	if (ss->flags & SIPREC_PAUSED) {
 		ss->flags &= ~SIPREC_PAUSED;
-		srs_stop_media(ss);
+		//srs_stop_media(ss);
 
 	} else {
 		if (srs_handle_media(msg, ss) < 0) {
@@ -459,7 +459,7 @@ static int srs_send_invite(struct src_sess *sess)
 
 	ct.s = contact_builder(sess->socket, &ct.len);
 
-	if (srs_build_body(sess, &body) < 0) {
+	if (srs_build_body(sess, &sess->initial_sdp, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		return -2;
 	}
@@ -589,15 +589,23 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 
 static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int part_no)
 {
-	str body;
+	str body, sdp;
 
 	if (msg == FAKED_REPLY)
 		return 0;
 
-	if (srs_build_body(sess, &body) < 0) {
-		LM_ERR("cannot generate request body!\n");
+	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
+			&sess->media, RTP_COPY_MODE_SIPREC, &sdp) < 0) {
+		LM_ERR("could not refresh recording!\n");
 		goto error;
 	}
+
+	if (srs_build_body(sess, &sdp, &body) < 0) {
+		LM_ERR("cannot generate request body!\n");
+		pkg_free(sdp.s);
+		goto error;
+	}
+	pkg_free(sdp.s);
 	srs_send_update_invite(sess, &body);
 
 	return 0;
@@ -708,11 +716,13 @@ int src_pause_recording(void)
 		goto end;
 	}
 
+#if 0
 	if (srs_build_body_inactive(sess, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		ret = -1;
 		goto end;
 	}
+#endif
 
 	/* mark the session as being paused */
 	sess->flags |= SIPREC_PAUSED;
@@ -739,7 +749,7 @@ int src_resume_recording(void)
 		goto end;
 	}
 
-	if (srs_build_body(sess, &body) < 0) {
+	if (srs_build_body(sess, NULL, &body) < 0) {
 		LM_ERR("cannot generate request body!\n");
 		ret = -1;
 		goto end;

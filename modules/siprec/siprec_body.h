@@ -53,10 +53,8 @@ void srs_free_stream(struct srs_sdp_stream *stream);
 
 int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
 		struct src_sess *sess, struct src_part *part);
-int srs_build_body(struct src_sess *sess, str *body);
-int srs_build_body_inactive(struct src_sess *sess, str *body);
+int srs_build_body(struct src_sess *sess, str *sdp, str *body);
 
-void srs_stop_media(struct src_sess *sess);
 int srs_handle_media(struct sip_msg *msg, struct src_sess *sess);
 
 int srs_build_default_name(struct to_body *body);
