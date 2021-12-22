@@ -344,7 +344,6 @@ int dbt_cache_destroy(void)
 	if(!_dbt_cachesem)
 		return -1;
 
-	lock_get(_dbt_cachesem);
 	if(	_dbt_cachedb!=NULL )
 	{
 		_dc = *_dbt_cachedb;
