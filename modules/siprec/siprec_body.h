@@ -45,15 +45,14 @@ struct srs_sdp_stream {
 	int port;
 	int inactive;
 	int medianum;
-	str body;
 	siprec_uuid uuid;
 	struct list_head list;
 };
 
 void srs_free_stream(struct srs_sdp_stream *stream);
 
-int srs_add_raw_sdp_stream(int label, int medianum, str *body,
-		siprec_uuid *uuid, struct src_sess *sess, struct src_part *part);
+int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
+		struct src_sess *sess, struct src_part *part);
 int srs_build_body(struct src_sess *sess, str *body);
 int srs_build_body_inactive(struct src_sess *sess, str *body);
 

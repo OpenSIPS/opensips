@@ -35,13 +35,11 @@
 void srs_free_stream(struct srs_sdp_stream *stream)
 {
 	list_del(&stream->list);
-	if (stream->body.s)
-		shm_free(stream->body.s);
 	shm_free(stream);
 }
 
-int srs_add_raw_sdp_stream(int label, int medianum, str *body,
-		siprec_uuid *uuid, struct src_sess *sess, struct src_part *part)
+int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
+		struct src_sess *sess, struct src_part *part)
 {
 	struct srs_sdp_stream *stream = NULL;
 
@@ -51,16 +49,8 @@ int srs_add_raw_sdp_stream(int label, int medianum, str *body,
 		return -1;
 	}
 	memset(stream, 0, sizeof *stream);
-	stream->body.s = shm_malloc(body->len);
-	if (!stream->body.s) {
-		LM_ERR("cannot add body for the loaded stream!\n");
-		shm_free(stream);
-		return -1;
-	}
 	stream->label = label;
 	stream->medianum = medianum;
-	memcpy(stream->body.s, body->s, body->len);
-	stream->body.len = body->len;
 
 	memcpy(stream->uuid, uuid, sizeof *uuid);
 	list_add_tail(&stream->list, &part->streams);

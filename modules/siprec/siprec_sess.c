@@ -410,9 +410,8 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 				goto error;
 			}
 			memcpy(&uuid, tmp.s, tmp.len);
-			SIPREC_BIN_POP(str, &tmp);
-			if (srs_add_raw_sdp_stream(label, medianum, &tmp, &uuid,
-					sess, &sess->participants[sess->participants_no - 1]) < 0) {
+			if (srs_add_raw_sdp_stream(label, medianum, &uuid, sess,
+					&sess->participants[sess->participants_no - 1]) < 0) {
 				LM_ERR("cannot add new media stream!\n");
 				goto error;
 			}
@@ -529,7 +528,6 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 			SIPREC_BIN_PUSH(int, s->label);
 			SIPREC_BIN_PUSH(int, s->medianum);
 			SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(s->uuid));
-			SIPREC_BIN_PUSH(str, &s->body);
 		}
 	}
 	bin_get_buffer(&packet, &buffer);
