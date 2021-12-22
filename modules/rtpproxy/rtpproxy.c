@@ -5399,6 +5399,8 @@ static int rtpproxy_gen_sdp_media(struct rtpproxy_sdp_buf *buf,
 		if (media_inactive) {
 			rtp_stream->flags |= RTPPROXY_COPY_STREAM_INACTIVE;
 			RTPPROXY_SDP_COPY("a=inactive" CRLF, buf);
+		} else if (ctx->flags & RTP_COPY_MODE_DISABLE) {
+			RTPPROXY_SDP_COPY("a=inactive" CRLF, buf);
 		} else {
 			rtp_stream->flags &= ~RTPPROXY_COPY_STREAM_INACTIVE;
 			RTPPROXY_SDP_COPY("a=sendonly" CRLF, buf);
@@ -5456,6 +5458,9 @@ static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 		ctx = rtpproxy_copy_ctx_new(media_ip, copy_flags);
 		if (!ctx)
 			return -1;
+	} else {
+		/* update the flags */
+		ctx->flags = copy_flags;
 	}
 
 	buf = rtpproxy_sdp_buf_new();
@@ -5587,7 +5592,7 @@ static int rtpproxy_handle_recording(struct rtpproxy_copy_ctx *ctx,
 			from_tag = &args->to_tag;
 			to_tag = &args->from_tag;
 		}
-		if (media_inactive ||
+		if (media_inactive || ctx->flags & RTP_COPY_MODE_DISABLE ||
 				ctx->legs[leg].streams[index].flags &
 					RTPPROXY_COPY_STREAM_INACTIVE) {
 			if (ctx->legs[leg].streams[index].flags &

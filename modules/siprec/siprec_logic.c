@@ -110,17 +110,11 @@ static int srs_do_failover(struct src_sess *sess)
 
 static void tm_update_recording(struct cell *t, int type, struct tmcb_params *ps);
 
-struct _tm_src_param {
-	struct src_sess *ss;
-	int part_no;
-};
-
-static void _tmp_src_param_free(void *p)
+static void srec_tm_unref(void *p)
 {
-	struct _tm_src_param *tmp = (struct _tm_src_param *)p;
-	srec_hlog(tmp->ss, SREC_UNREF, "update unref");
-	SIPREC_UNREF(tmp->ss);
-	shm_free(tmp);
+	struct src_sess *ss = (struct src_sess *)p;
+	srec_hlog(ss, SREC_UNREF, "update unref");
+	SIPREC_UNREF(ss);
 }
 
 static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
@@ -152,30 +146,18 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 {
 	struct src_sess *ss;
-	int part_no;
-	struct _tm_src_param *tmp;
 	/* check which participant we are talking about */
-	part_no = (_params->direction == DLG_DIR_UPSTREAM ? 1 : 0);
 	ss = *_params->param;
 
 	SIPREC_LOCK(ss);
 
-	tmp = shm_malloc(sizeof *tmp);
-	if (!tmp) {
-		LM_ERR("cannot alloc temporary param!\n");
-		goto unlock;
-	}
-	tmp->ss = ss;
-	tmp->part_no = 1 - part_no;
-
 	SIPREC_REF_UNSAFE(ss);
 	if (srec_tm.register_tmcb(_params->msg, 0, TMCB_RESPONSE_OUT, tm_update_recording,
-			tmp, _tmp_src_param_free) <= 0) {
+			ss, srec_tm_unref) <= 0) {
 		LM_ERR("cannot register tm callbacks for reply\n");
 		srec_hlog(ss, SREC_UNREF, "error updating recording");
 		SIPREC_UNREF_UNSAFE(ss);
 	}
-unlock:
 	SIPREC_UNLOCK(ss);
 }
 
@@ -587,15 +569,19 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 				req.b2b_key->len, req.b2b_key->s);
 }
 
-static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int part_no)
+static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	str body, sdp;
+	unsigned int flags = RTP_COPY_MODE_SIPREC;
 
 	if (msg == FAKED_REPLY)
 		return 0;
 
+	if (sess->flags & SIPREC_PAUSED)
+		flags |= RTP_COPY_MODE_DISABLE;
+
 	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
-			&sess->media, RTP_COPY_MODE_SIPREC, &sdp) < 0) {
+			&sess->media, flags, &sdp) < 0) {
 		LM_ERR("could not refresh recording!\n");
 		goto error;
 	}
@@ -615,16 +601,16 @@ error:
 
 static void tm_update_recording(struct cell *t, int type, struct tmcb_params *ps)
 {
-	struct _tm_src_param *tmp;
+	struct src_sess *ss;
 
 	if (!is_invite(t) || ps->code < 200 || ps->code >= 300)
 		return;
 
-	tmp = (struct _tm_src_param *)*ps->param;
+	ss = (struct src_sess *)*ps->param;
 	/* engage only on successful calls */
-	SIPREC_LOCK(tmp->ss);
-	src_update_recording(ps->rpl, tmp->ss, tmp->part_no);
-	SIPREC_UNLOCK(tmp->ss);
+	SIPREC_LOCK(ss);
+	src_update_recording(ps->rpl, ss);
+	SIPREC_UNLOCK(ss);
 }
 
 void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
@@ -697,7 +683,6 @@ struct src_sess *src_get_session(void)
 
 int src_pause_recording(void)
 {
-	str body;
 	int ret = 0;
 	struct src_sess *sess = src_get_session();
 
@@ -710,25 +695,9 @@ int src_pause_recording(void)
 		goto end;
 	}
 
-	if (!sess->streams_no || sess->streams_no == sess->streams_inactive) {
-		LM_DBG("nothing to do - all %d streams are inactive!\n",
-				sess->streams_inactive);
-		goto end;
-	}
-
-#if 0
-	if (srs_build_body_inactive(sess, &body) < 0) {
-		LM_ERR("cannot generate request body!\n");
-		ret = -1;
-		goto end;
-	}
-#endif
-
 	/* mark the session as being paused */
 	sess->flags |= SIPREC_PAUSED;
-	srs_send_update_invite(sess, &body);
-
-	pkg_free(body.s);
+	ret = src_update_recording(NULL, sess);
 
 end:
 	SIPREC_UNLOCK(sess);
@@ -737,7 +706,6 @@ end:
 
 int src_resume_recording(void)
 {
-	str body;
 	int ret = 0;
 	struct src_sess *sess = src_get_session();
 	if (!sess)
@@ -745,16 +713,15 @@ int src_resume_recording(void)
 
 	if (!sess->streams_no) {
 		LM_DBG("nothing to do - no streams active!\n");
-		ret = 0;
 		goto end;
 	}
 
-	if (srs_build_body(sess, NULL, &body) < 0) {
-		LM_ERR("cannot generate request body!\n");
-		ret = -1;
+	if (!(sess->flags & SIPREC_PAUSED)) {
+		LM_DBG("nothing to do - recording not paused!\n");
 		goto end;
 	}
-	srs_send_update_invite(sess, &body);
+	sess->flags &= ~SIPREC_PAUSED;
+	ret = src_update_recording(NULL, sess);
 
 end:
 	SIPREC_UNLOCK(sess);

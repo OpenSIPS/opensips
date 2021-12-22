@@ -89,7 +89,6 @@ struct src_sess {
 	time_t ts;
 	int version;
 	int streams_no;
-	int streams_inactive;
 	str media;
 	str headers;
 	rtp_ctx rtp;

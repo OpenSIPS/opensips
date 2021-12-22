@@ -368,7 +368,6 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(sess->b2b_callid.s, tmp.s, tmp.len);
 	sess->b2b_callid.len = tmp.len;
-	SIPREC_BIN_POP(int, &sess->streams_inactive);
 
 	SIPREC_BIN_POP(int, &p);
 	for (; p > 0; p--) {
@@ -502,7 +501,6 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, &ss->b2b_fromtag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_totag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
-	SIPREC_BIN_PUSH(int, ss->streams_inactive);
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 
 	for (p = 0; p < ss->participants_no; p++) {

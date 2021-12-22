@@ -23,5 +23,6 @@
 #define _RTP_RELAY_COMMON_H_
 
 #define RTP_COPY_MODE_SIPREC (1<<0)
+#define RTP_COPY_MODE_DISABLE (1<<1)
 
 #endif /* _RTP_RELAY_COMMON_H_ */
