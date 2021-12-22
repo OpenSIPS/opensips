@@ -51,6 +51,9 @@
 #include "strcommon.h"
 #include "transformations.h"
 #include "re.h"
+#include "sha1.h"
+#include "sha256.h"
+#include "sha512.h"
 
 #define TR_BUFFER_SIZE 65536
 
@@ -300,6 +303,80 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->ri = 0;
 			val->rs.s = _tr_buffer;
 			val->rs.len = MD5_LEN;
+			break;
+		case TR_S_SHA1:
+		case TR_S_SHA1_HMAC:
+		case TR_S_SHA224:
+		case TR_S_SHA224_HMAC:
+		case TR_S_SHA256:
+		case TR_S_SHA256_HMAC:
+		case TR_S_SHA384:
+		case TR_S_SHA384_HMAC:
+		case TR_S_SHA512:
+		case TR_S_SHA512_HMAC:
+			if(!(val->flags&PV_VAL_STR))
+				val->rs.s = int2str(val->ri, &val->rs.len);
+
+			unsigned char sha_buf[64];
+			int sha_hash_len = 0;
+
+			if (tp != 0) { // We have parameter (hmac function)
+				if(tp->type==TR_PARAM_STRING)
+				{
+					st = tp->v.s;
+				} else {
+					if(pv_get_spec_value(msg, (pv_spec_p)tp->v.data, &v)!=0
+						|| (!(v.flags&PV_VAL_STR)) || v.rs.len<=0)
+					{
+						LM_ERR("sha hmac transformation cannot get p1\n");
+						goto error;
+					}
+					st = v.rs;
+				}
+			}
+
+			if (subtype == TR_S_SHA1) {
+				sha1((unsigned char *)val->rs.s, val->rs.len, sha_buf);
+				sha_hash_len = 20;
+			} else if (subtype == TR_S_SHA224) {
+				sha256((unsigned char *)val->rs.s, val->rs.len, sha_buf, 1);
+				sha_hash_len = 28;
+			} else if (subtype == TR_S_SHA256) {
+				sha256((unsigned char *)val->rs.s, val->rs.len, sha_buf, 0);
+				sha_hash_len = 32;
+			} else if (subtype == TR_S_SHA384) {
+				sha512((unsigned char *)val->rs.s, val->rs.len, sha_buf, 1);
+				sha_hash_len = 48;
+			} else if (subtype == TR_S_SHA512) {
+				sha512((unsigned char *)val->rs.s, val->rs.len, sha_buf, 0);
+				sha_hash_len = 64;
+			} else if (subtype == TR_S_SHA1_HMAC) {
+				sha1_hmac((unsigned char *)st.s, st.len,
+					(unsigned char *)val->rs.s, val->rs.len, sha_buf);
+				sha_hash_len = 20;
+			} else if (subtype == TR_S_SHA224_HMAC) {
+				sha256_hmac((unsigned char *)st.s, st.len,
+					(unsigned char *)val->rs.s, val->rs.len, sha_buf, 1);
+				sha_hash_len = 28;
+			} else if (subtype == TR_S_SHA256_HMAC) {
+				sha256_hmac((unsigned char *)st.s, st.len,
+					(unsigned char *)val->rs.s, val->rs.len, sha_buf, 0);
+				sha_hash_len = 32;
+			} else if (subtype == TR_S_SHA384_HMAC) {
+				sha512_hmac((unsigned char *)st.s, st.len,
+					(unsigned char *)val->rs.s, val->rs.len, sha_buf, 1);
+				sha_hash_len = 48;
+			} else if (subtype == TR_S_SHA512_HMAC) {
+				sha512_hmac((unsigned char *)st.s, st.len,
+					(unsigned char *)val->rs.s, val->rs.len, sha_buf, 0);
+				sha_hash_len = 64;
+			}
+
+			val->flags = PV_VAL_STR;
+			val->ri = 0;
+			val->rs.s = _tr_buffer;
+			val->rs.len = string2hex(sha_buf, sha_hash_len, _tr_buffer);
+			_tr_buffer[sha_hash_len*2] = '\0';
 			break;
 		case TR_S_CRC32:
 			if(!(val->flags&PV_VAL_STR))
@@ -3048,8 +3125,54 @@ int tr_parse_string(str* in, trans_t *t)
 	} else if(name.len==4 && strncasecmp(name.s, "eval", 4)==0) {
 		t->subtype = TR_S_EVAL;
 		return 0;
+		return 0;
+	} else if(name.len==4 && strncasecmp(name.s, "sha1", 4)==0) {
+		t->subtype = TR_S_SHA1;
+		return 0;
+	} else if(name.len==6 && strncasecmp(name.s, "sha224", 6)==0) {
+		t->subtype = TR_S_SHA224;
+		return 0;
+	} else if(name.len==6 && strncasecmp(name.s, "sha256", 6)==0) {
+		t->subtype = TR_S_SHA256;
+		return 0;
+	} else if(name.len==6 && strncasecmp(name.s, "sha384", 6)==0) {
+		t->subtype = TR_S_SHA384;
+		return 0;
+	} else if(name.len==6 && strncasecmp(name.s, "sha512", 6)==0) {
+		t->subtype = TR_S_SHA512;
+		return 0;
+	} else if ( (name.len==9 || name.len==11) && strncasecmp(name.s, "sha", 3)==0 &&
+			strncasecmp(name.s+(name.len-5), "_hmac", 5)==0 ) {
+
+		if (strncasecmp(name.s+3, "1", 1) == 0) { // SHA1
+			t->subtype = TR_S_SHA1_HMAC;
+		} else if (strncasecmp(name.s+3, "224", 3) == 0) { // SHA224
+			t->subtype = TR_S_SHA224_HMAC;
+		} else if (strncasecmp(name.s+3, "256", 3) == 0) { // SHA256
+			t->subtype = TR_S_SHA256_HMAC;
+		} else if (strncasecmp(name.s+3, "384", 3) == 0) { // SHA384
+			t->subtype = TR_S_SHA384_HMAC;
+		} else if (strncasecmp(name.s+3, "512", 3) == 0) { // SHA512
+			t->subtype = TR_S_SHA512_HMAC;
+		} else {
+			goto unknown;
+		}
+
+		if(*p!=TR_PARAM_MARKER)
+		{
+			LM_ERR("invalid sha hmac transformation: %.*s!\n", in->len, in->s);
+			goto error;
+		}
+		p++;
+		if (tr_parse_sparam(p, in, &tp, 0) == NULL)
+			goto error;
+		t->params = tp;
+		tp = 0;
+
+		return 0;
 	}
 
+unknown:
 	LM_ERR("unknown transformation: %.*s/%.*s/%d!\n", in->len, in->s,
 			name.len, name.s, name.len);
 error:
