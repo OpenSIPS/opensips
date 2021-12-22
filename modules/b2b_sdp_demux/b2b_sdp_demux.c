@@ -1356,6 +1356,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 		LM_WARN("re-INVITE without a body - declining\n");
 		goto error;
 	}
+	memset(&sdp, 0, sizeof sdp);
 	if (parse_sdp_session(body, 0, NULL, &sdp) < 0) {
 		LM_ERR("could not parse re-INVITE body\n");
 		goto error;
