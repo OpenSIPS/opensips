@@ -123,6 +123,7 @@ typedef struct trace_instance {
 	str forced_correlation_id;
 	int control_flags;
 	int trace_types;
+	int trace_flags;
 	tlist_elem_p trace_list;
 
 	struct trace_instance *next;
