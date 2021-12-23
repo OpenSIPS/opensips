@@ -224,7 +224,7 @@ struct b2b_sdp_ctx {
 	int pending_no;
 	int success_no;
 	time_t sess_id;
-	str *sess_ip;
+	str sess_ip;
 	gen_lock_t lock;
 	struct list_head clients;
 	struct list_head streams;
@@ -515,6 +515,7 @@ static void b2b_sdp_ctx_free(struct b2b_sdp_ctx *ctx, int replicate)
 	lock_start_write(b2b_sdp_contexts_lock);
 	list_del(&ctx->contexts);
 	lock_stop_write(b2b_sdp_contexts_lock);
+	shm_free(ctx->sess_ip.s);
 	shm_free(ctx);
 }
 
@@ -754,8 +755,8 @@ static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 	time(&now);
 
 	len = header1.len + 2 * INT2STR_MAX_LEN + 1 /* " " */ +
-		header2.len + ctx->sess_ip->len +
-		header3.len + ctx->sess_ip->len + header4.len;
+		header2.len + ctx->sess_ip.len +
+		header3.len + ctx->sess_ip.len + header4.len;
 	list_for_each(it, &ctx->streams) {
 		stream = list_entry(it, struct b2b_sdp_stream, ordered);
 		if (stream->client && stream->client->flags & B2B_SDP_CLIENT_STARTED)
@@ -781,12 +782,12 @@ static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 	len += tmp.len;
 	memcpy(body.s + len, header2.s, header2.len);
 	len += header2.len;
-	memcpy(body.s + len, ctx->sess_ip->s, ctx->sess_ip->len);
-	len += ctx->sess_ip->len;
+	memcpy(body.s + len, ctx->sess_ip.s, ctx->sess_ip.len);
+	len += ctx->sess_ip.len;
 	memcpy(body.s + len, header3.s, header3.len);
 	len += header3.len;
-	memcpy(body.s + len, ctx->sess_ip->s, ctx->sess_ip->len);
-	len += ctx->sess_ip->len;
+	memcpy(body.s + len, ctx->sess_ip.s, ctx->sess_ip.len);
+	len += ctx->sess_ip.len;
 	memcpy(body.s + len, header4.s, header4.len);
 	len += header4.len;
 	list_for_each(it, &ctx->streams) {
@@ -1447,6 +1448,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	struct b2b_sdp_client *client;
 	client_info_t ci;
 	struct socket_info *si;
+	str *sess_ip;
 
 	hack.s = (char *)&ctx;
 	hack.len = sizeof(void *);
@@ -1462,7 +1464,11 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	}
 
 	contact.s = contact_builder(msg->rcv.bind_address, &contact.len);
-	ctx->sess_ip = get_adv_host(msg->rcv.bind_address);
+	sess_ip = get_adv_host(msg->rcv.bind_address);
+	if (shm_str_dup(&ctx->sess_ip, sess_ip) < 0) {
+		LM_ERR("could not fetch session IP\n");
+		return -1;
+	}
 
 	b2b_key = b2b_api.server_new(msg, &contact, b2b_sdp_server_notify,
 			&b2b_sdp_demux_server_cap, &hack, NULL);
@@ -1632,6 +1638,7 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 
 	bin_push_int(store, ctx->clients_no);
 	bin_push_int(store, ctx->sess_id);
+	bin_push_str(store, &ctx->sess_ip);
 
 	list_for_each(c, &ctx->clients) {
 		client = list_entry(c, struct b2b_sdp_client, list);
@@ -1705,11 +1712,16 @@ static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
 
 	bin_pop_int(store, &clients);
 	bin_pop_int(store, &sess_id);
+	bin_pop_str(store, &tmp);
 
 	ctx = b2b_sdp_ctx_new();
 	if (!ctx) {
 		LM_INFO("cannot create new context!\n");
 		return;
+	}
+	if (shm_str_sync(&ctx->sess_ip, &tmp) < 0) {
+		LM_ERR("could not duplicate session ip!\n");
+		goto error;
 	}
 	if (shm_str_sync(&ctx->b2b_key, key) < 0) {
 		LM_ERR("could not duplicate b2b key!\n");
