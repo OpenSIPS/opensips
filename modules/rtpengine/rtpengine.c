@@ -294,7 +294,7 @@ static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay
 			str *flags, str *extra);
 static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, str *body);
+		unsigned int copy_flags, unsigned int streams, str *body);
 static int rtpengine_api_copy_answer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags, str *body);
 static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
@@ -3939,9 +3939,13 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		bencode_dictionary_add(dict, "flags", list);
 		bencode_list_add_string(list, "all");
 		bencode_list_add_string(list, "siprec");
-	} else {
-		if (sess->from_tag)
-			bencode_dictionary_add_str(dict, "from_tag", sess->from_tag);
+	} else if ((copy_flags & RTP_COPY_LEG_BOTH) == RTP_COPY_LEG_BOTH) {
+		list = bencode_list(&bencbuf);
+		bencode_list_add_string(list, "all");
+	} else if (copy_flags & RTP_COPY_LEG_CALLER && sess->from_tag) {
+		bencode_dictionary_add_str(dict, "from_tag", sess->from_tag);
+	} else if (sess->to_tag) {
+		bencode_dictionary_add_str(dict, "from_tag", sess->to_tag);
 	}
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
 	ret = rtpe_function_call_ok(&bencbuf, msg, op, flags, body,
@@ -3965,7 +3969,7 @@ static str *rtpengine_new_subs(str *tag)
 
 static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, str *ret_body)
+		unsigned int copy_flags, unsigned int streams, str *ret_body)
 {
 	str tmp, *to_tag;
 	bencode_item_t *ret;

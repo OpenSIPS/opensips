@@ -56,8 +56,8 @@ struct rtp_relay_funcs {
 			str *flags, str *extra);
 
 	int (*copy_offer)(struct rtp_relay_session *sess,
-			struct rtp_relay_server *server, void **ctx,
-			str *flags, unsigned int copy_flags, str *ret);
+			struct rtp_relay_server *server, void **ctx, str *flags,
+			unsigned int copy_flags, unsigned int streams, str *ret);
 	int (*copy_answer)(struct rtp_relay_session *sess,
 			struct rtp_relay_server *server, void *ctx,
 			str *flags, str *body);

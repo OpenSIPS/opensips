@@ -324,7 +324,7 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 			str *flags, str *extra);
 static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, str *body);
+		unsigned int copy_flags, unsigned int streams, str *body);
 static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags, str *body);
 static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
@@ -5199,26 +5199,24 @@ struct rtpproxy_copy_stream {
 	unsigned short port;
 	unsigned int index;
 	unsigned int flags;
-};
-
-struct rtpproxy_copy_leg {
-	unsigned int streams_no;
-	struct rtpproxy_copy_stream *streams;
+	unsigned int medianum;
+	struct list_head list;
 };
 
 struct rtpproxy_copy_ctx {
 	time_t ts;
 	str media_ip;
-	unsigned int complete;
 	unsigned int flags;
 	unsigned int version;
-	unsigned int streams_no;
-	struct rtpproxy_copy_leg legs[2];
+	unsigned int max_index;
+	unsigned int streams_mask;
+	struct list_head streams[2];
 };
 
 static struct rtpproxy_copy_ctx *rtpproxy_copy_ctx_new(
 		str *media_ip, unsigned int flags)
 {
+	int s;
 	struct rtpproxy_copy_ctx *ctx;
 
 	ctx = shm_malloc(media_ip->len + sizeof *ctx);
@@ -5230,15 +5228,26 @@ static struct rtpproxy_copy_ctx *rtpproxy_copy_ctx_new(
 	ctx->media_ip.len = media_ip->len;
 	memcpy(ctx->media_ip.s, media_ip->s, media_ip->len);
 	ctx->flags = flags;
+	for (s = 0; s < sizeof(ctx->streams)/sizeof(ctx->streams[0]); s++)
+		INIT_LIST_HEAD(&ctx->streams[s]);
 	return ctx;
+}
+
+static void rtpproxy_copy_stream_free(struct rtpproxy_copy_stream *stream)
+{
+	list_del(&stream->list);
+	shm_free(stream);
 }
 
 static void rtpproxy_copy_ctx_free(struct rtpproxy_copy_ctx *ctx)
 {
-	if (ctx->legs[RTP_RELAY_CALLER].streams)
-		shm_free(ctx->legs[RTP_RELAY_CALLER].streams);
-	if (ctx->legs[RTP_RELAY_CALLEE].streams)
-		shm_free(ctx->legs[RTP_RELAY_CALLEE].streams);
+	int s;
+	struct list_head *it, *safe;
+
+	for (s = 0; s < sizeof(ctx->streams)/sizeof(ctx->streams[0]); s++) {
+		list_for_each_safe(it, safe, &ctx->streams[s])
+			rtpproxy_copy_stream_free(list_entry(it, struct rtpproxy_copy_stream, list));
+	}
 	shm_free(ctx);
 }
 
@@ -5298,13 +5307,37 @@ static char rtpproxy_get_sdp_line(char *start, char *end, str *line)
 		return 0;
 }
 
+static struct rtpproxy_copy_stream *rtpproxy_get_stream(
+		struct rtpproxy_copy_ctx *ctx, int leg, int medianum)
+{
+	struct list_head *it;
+	struct rtpproxy_copy_stream *stream;
+
+	list_for_each(it, &ctx->streams[leg]) {
+		stream = list_entry(it, struct rtpproxy_copy_stream, list);
+		if (stream->medianum == medianum)
+			return stream;
+	}
+	stream = shm_malloc(sizeof *stream);
+	if (!stream) {
+		LM_ERR("cannot alloc new stream!\n");
+		return NULL;
+	}
+	memset(stream, 0, sizeof *stream);
+	stream->port = rtpproxy_gen_port();
+	stream->index = ctx->max_index++;
+	stream->medianum = medianum;
+
+	list_add(&stream->list, &ctx->streams[leg]);
+	return stream;
+}
+
 static int rtpproxy_gen_sdp_media(struct rtpproxy_sdp_buf *buf,
 		struct rtpproxy_copy_ctx *ctx, str *body, int type)
 {
 	str tmp;
 	char sdp_type;
 	char *start, *end;
-	int ret = -1;
 	int media_inactive;
 	static sdp_info_t sdp;
 	sdp_stream_cell_t *stream;
@@ -5316,25 +5349,13 @@ static int rtpproxy_gen_sdp_media(struct rtpproxy_sdp_buf *buf,
 		return -1;
 	}
 
-	if (!ctx->complete) {
-		ctx->legs[type].streams = shm_malloc(sdp.sessions->streams_num *
-				sizeof(struct rtpproxy_copy_stream));
-		if (!ctx->legs[type].streams) {
-			LM_ERR("oom for streams' ports!\n");
-			goto release;
-		}
-		ctx->legs[type].streams_no = sdp.sessions->streams_num;
-	}
-
 	for (stream = sdp.sessions->streams; stream; stream = stream->next) {
-		rtp_stream = &ctx->legs[type].streams[stream->stream_num];
-		/* if it is not RTP, we are not interested */
-		if (!stream->is_rtp)
+		/* not interested in this stream */
+		if (!(ctx->streams_mask & (1 << stream->stream_num)) || !stream->is_rtp)
 			continue;
-		if (!ctx->complete) {
-			rtp_stream->port = rtpproxy_gen_port();
-			rtp_stream->index = ctx->streams_no++;
-		}
+		rtp_stream = rtpproxy_get_stream(ctx, type, stream->stream_num);
+		if (!rtp_stream)
+			continue;
 		media_inactive = stream->is_on_hold ? 1: 0;
 		/* m= line */
 		tmp.s = stream->body.s;
@@ -5412,10 +5433,8 @@ static int rtpproxy_gen_sdp_media(struct rtpproxy_sdp_buf *buf,
 		}
 	}
 
-	ret = 0;
-release:
 	free_sdp_content(&sdp);
-	return ret;
+	return 0;
 }
 
 static int rtpproxy_gen_sdp_medias(struct rtpproxy_sdp_buf *buf,
@@ -5423,23 +5442,27 @@ static int rtpproxy_gen_sdp_medias(struct rtpproxy_sdp_buf *buf,
 {
 	str *msg_body;
 
-	msg_body = rtp_relay.get_sdp(sess, RTP_RELAY_CALLER);
-	if (!msg_body) {
-		LM_ERR("could not get caller's SDP\n");
-		return -1;
+	if (ctx->flags & RTP_COPY_LEG_CALLER) {
+		msg_body = rtp_relay.get_sdp(sess, RTP_RELAY_CALLER);
+		if (!msg_body) {
+			LM_ERR("could not get caller's SDP\n");
+			return -1;
+		}
+		if (rtpproxy_gen_sdp_media(buf, ctx, msg_body, RTP_RELAY_CALLER) < 0) {
+			LM_ERR("could not push caller's SDP\n");
+			return -1;
+		}
 	}
-	if (rtpproxy_gen_sdp_media(buf, ctx, msg_body, RTP_RELAY_CALLER) < 0) {
-		LM_ERR("could not push caller's SDP\n");
-		return -1;
-	}
-	msg_body = rtp_relay.get_sdp(sess, RTP_RELAY_CALLEE);
-	if (!msg_body) {
-		LM_ERR("could not get callee's SDP\n");
-		return -1;
-	}
-	if (rtpproxy_gen_sdp_media(buf, ctx, msg_body, RTP_RELAY_CALLEE) < 0) {
-		LM_ERR("could not push callee's SDP\n");
-		return -1;
+	if (ctx->flags & RTP_COPY_LEG_CALLEE) {
+		msg_body = rtp_relay.get_sdp(sess, RTP_RELAY_CALLEE);
+		if (!msg_body) {
+			LM_ERR("could not get callee's SDP\n");
+			return -1;
+		}
+		if (rtpproxy_gen_sdp_media(buf, ctx, msg_body, RTP_RELAY_CALLEE) < 0) {
+			LM_ERR("could not push callee's SDP\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -5447,7 +5470,7 @@ static int rtpproxy_gen_sdp_medias(struct rtpproxy_sdp_buf *buf,
 
 static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void **_ctx, str *flags,
-		unsigned int copy_flags, str *body)
+		unsigned int copy_flags, unsigned int streams, str *body)
 {
 	str *media_ip;
 	struct rtpproxy_sdp_buf *buf;
@@ -5462,6 +5485,7 @@ static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 		/* update the flags */
 		ctx->flags = copy_flags;
 	}
+	ctx->streams_mask = streams;
 
 	buf = rtpproxy_sdp_buf_new();
 
@@ -5470,8 +5494,6 @@ static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
 
 	if (rtpproxy_gen_sdp_medias(buf, ctx, sess) < 0)
 		goto error;
-	/* all good, no more pending streams */
-	ctx->complete = 1;
 
 	*body = buf->buffer;
 	*_ctx = ctx;
@@ -5483,9 +5505,11 @@ error:
 	return -1;
 }
 
-static int rtpproxy_get_stream_index(struct rtpproxy_copy_ctx *ctx,
-		unsigned int *leg, unsigned int *media, sdp_stream_cell_t *stream)
+static struct rtpproxy_copy_stream *rtpproxy_get_stream_index(
+		struct rtpproxy_copy_ctx *ctx, unsigned int *leg, sdp_stream_cell_t *stream)
 {
+	struct rtpproxy_copy_stream *rtp_stream;
+	struct list_head *it;
 	unsigned int label;
 	sdp_attr_t *attr;
 	/* if we are in SIPREC mode, we need to search based on index */
@@ -5505,10 +5529,10 @@ static int rtpproxy_get_stream_index(struct rtpproxy_copy_ctx *ctx,
 		if (attr != NULL) {
 			/* search for the proper label */
 			for (*leg = RTP_RELAY_CALLER; *leg <= RTP_RELAY_CALLEE; (*leg)++) {
-				for (*media = 0; *media < ctx->legs[*leg].streams_no;
-						(*media)++) {
-					if (ctx->legs[*leg].streams[*media].index == label)
-						return 0;
+				list_for_each(it, &ctx->streams[*leg]) {
+					rtp_stream = list_entry(it, struct rtpproxy_copy_stream, list);
+					if (rtp_stream->index == label)
+						return rtp_stream;
 				}
 			}
 			LM_WARN("label %u not found - match based on media index %d\n",
@@ -5518,17 +5542,14 @@ static int rtpproxy_get_stream_index(struct rtpproxy_copy_ctx *ctx,
 					stream->stream_num);
 		}
 	}
-	if (stream->stream_num < ctx->legs[RTP_RELAY_CALLER].streams_no) {
-		*leg = RTP_RELAY_CALLER;
-		*media = stream->stream_num;
-	} else if (stream->stream_num - ctx->legs[RTP_RELAY_CALLER].streams_no <
-			ctx->legs[RTP_RELAY_CALLEE].streams_no) {
-		*leg = RTP_RELAY_CALLEE;
-		*media = stream->stream_num - ctx->legs[RTP_RELAY_CALLER].streams_no;
-	} else {
-		return -1;
+	for (*leg = RTP_RELAY_CALLER; *leg <= RTP_RELAY_CALLEE; (*leg)++) {
+		list_for_each(it, &ctx->streams[*leg]) {
+			rtp_stream = list_entry(it, struct rtpproxy_copy_stream, list);
+			if (rtp_stream->medianum == stream->stream_num)
+				return rtp_stream;
+		}
 	}
-	return 0;
+	return NULL;
 }
 
 static int rtpproxy_handle_recording(struct rtpproxy_copy_ctx *ctx,
@@ -5537,9 +5558,11 @@ static int rtpproxy_handle_recording(struct rtpproxy_copy_ctx *ctx,
 	int ret = -1, len;
 	sdp_info_t sdp;
 	sdp_stream_cell_t *stream;
-	unsigned int index, leg, media_inactive;
+	unsigned int leg;
 	str *from_tag, *to_tag;
 	str destination;
+	struct list_head *it;
+	struct rtpproxy_copy_stream *rtp_stream;
 
 	if (parse_sdp_session(body, 0, NULL, &sdp)<0) {
 		LM_ERR("failed to parse SDP for body\n");
@@ -5547,44 +5570,14 @@ static int rtpproxy_handle_recording(struct rtpproxy_copy_ctx *ctx,
 	};
 
 	for (stream = sdp.sessions->streams; stream; stream = stream->next) {
-		if (rtpproxy_get_stream_index(ctx, &leg, &index, stream) < 0) {
+		if (!(ctx->streams_mask & (1 << rtp_stream->medianum)))
+			continue;
+		rtp_stream = rtpproxy_get_stream_index(ctx, &leg, stream);
+		if (!rtp_stream) {
 			LM_WARN("could not find associated stream %d\n",
 					stream->stream_num);
 			continue;
 		}
-		media_inactive = stream->is_on_hold ? 1: 0;
-		len = 4/* udp: */;
-		/* if there is an IP in the stream, use it, otherwise use the
-		 * SDP session IP */
-		if (stream->ip_addr.len)
-			len += stream->ip_addr.len;
-		else
-			len += sdp.sessions->ip_addr.len;
-		len += 1/* : */ + stream->port.len;
-
-		/* build the socket to stream to */
-		destination.s = pkg_malloc(len);
-		if (!destination.s) {
-			LM_ERR("cannot allocate destination buffer!\n");
-			return -1;
-		}
-		memcpy(destination.s, "udp:", 4);
-		destination.len = 4;
-		if (stream->ip_addr.len) {
-			memcpy(destination.s + destination.len, stream->ip_addr.s,
-					stream->ip_addr.len);
-			destination.len += stream->ip_addr.len;
-		} else {
-			memcpy(destination.s + destination.len,
-					sdp.sessions->ip_addr.s,
-					sdp.sessions->ip_addr.len);
-			destination.len += sdp.sessions->ip_addr.len;
-		}
-		destination.s[destination.len++] = ':';
-		memcpy(destination.s + destination.len, stream->port.s,
-				stream->port.len);
-		destination.len += stream->port.len;
-
 		if (leg == RTP_RELAY_CALLER) {
 			from_tag = &args->from_tag;
 			to_tag = &args->to_tag;
@@ -5592,38 +5585,88 @@ static int rtpproxy_handle_recording(struct rtpproxy_copy_ctx *ctx,
 			from_tag = &args->to_tag;
 			to_tag = &args->from_tag;
 		}
-		if (media_inactive || ctx->flags & RTP_COPY_MODE_DISABLE ||
-				ctx->legs[leg].streams[index].flags &
-					RTPPROXY_COPY_STREAM_INACTIVE) {
-			if (ctx->legs[leg].streams[index].flags &
-					RTPPROXY_COPY_STREAM_STARTED) {
+		if (!stream->is_on_hold && !(ctx->flags & RTP_COPY_MODE_DISABLE) &&
+				!(rtp_stream->flags & RTPPROXY_COPY_STREAM_INACTIVE)) {
+
+			if (rtp_stream->flags & RTPPROXY_COPY_STREAM_STARTED) {
+				ret++;
+				continue; /* stream already started  */
+			}
+
+			len = 4/* udp: */;
+			/* if there is an IP in the stream, use it, otherwise use the
+			 * SDP session IP */
+			if (stream->ip_addr.len)
+				len += stream->ip_addr.len;
+			else
+				len += sdp.sessions->ip_addr.len;
+			len += 1/* : */ + stream->port.len;
+
+			/* build the socket to stream to */
+			destination.s = pkg_malloc(len);
+			if (!destination.s) {
+				LM_ERR("cannot allocate destination buffer!\n");
+				return -1;
+			}
+			memcpy(destination.s, "udp:", 4);
+			destination.len = 4;
+			if (stream->ip_addr.len) {
+				memcpy(destination.s + destination.len, stream->ip_addr.s,
+						stream->ip_addr.len);
+				destination.len += stream->ip_addr.len;
+			} else {
+				memcpy(destination.s + destination.len,
+						sdp.sessions->ip_addr.s,
+						sdp.sessions->ip_addr.len);
+				destination.len += sdp.sessions->ip_addr.len;
+			}
+			destination.s[destination.len++] = ':';
+			memcpy(destination.s + destination.len, stream->port.s,
+					stream->port.len);
+			destination.len += stream->port.len;
+
+			if (w_rtpproxy_recording(NULL, &args->callid,
+					from_tag, to_tag, args->node,
+					NULL, NULL, &destination, rtp_stream->medianum+1) >= 0) {
+				ret++;
+				rtp_stream->flags |= RTPPROXY_COPY_STREAM_STARTED;
+			}
+			pkg_free(destination.s);
+		} else {
+			if (rtp_stream->flags & RTPPROXY_COPY_STREAM_STARTED) {
 				if (w_rtpproxy_stop_recording(NULL, &args->callid,
 						from_tag, to_tag, args->node,
-						NULL, index+1) >= 0) {
+						NULL, rtp_stream->medianum+1) >= 0) {
 					ret++;
-					ctx->legs[leg].streams[index].flags &=
-						~RTPPROXY_COPY_STREAM_STARTED;
+					rtp_stream->flags &= ~RTPPROXY_COPY_STREAM_STARTED;
 				}
 			} else {
 				/* media already disabled and stream not started */
 				ret++;
 			}
-		} else {
-			if (!(ctx->legs[leg].streams[index].flags &
-					RTPPROXY_COPY_STREAM_STARTED)) {
-				if (w_rtpproxy_recording(NULL, &args->callid,
-						from_tag, to_tag, args->node,
-						NULL, NULL, &destination, index+1) >= 0) {
-					ret++;
-					ctx->legs[leg].streams[index].flags |=
-						RTPPROXY_COPY_STREAM_STARTED;
-				}
-			} else {
-				/* media already streaming */
-				ret++;
-			}
 		}
-		pkg_free(destination.s);
+	}
+	/* cleanup streams that we don't know about */
+	for (leg = RTP_RELAY_CALLER; leg <= RTP_RELAY_CALLEE; leg++) {
+		list_for_each(it, &ctx->streams[leg]) {
+			rtp_stream = list_entry(it, struct rtpproxy_copy_stream, list);
+			if (ctx->streams_mask & (1 << rtp_stream->medianum))
+				continue;
+			if (!(rtp_stream->flags & RTPPROXY_COPY_STREAM_STARTED))
+				continue;
+			if (leg == RTP_RELAY_CALLER) {
+				from_tag = &args->from_tag;
+				to_tag = &args->to_tag;
+			} else {
+				from_tag = &args->to_tag;
+				to_tag = &args->from_tag;
+			}
+			if (w_rtpproxy_stop_recording(NULL, &args->callid,
+					from_tag, to_tag, args->node,
+					NULL, rtp_stream->medianum+1) >= 0)
+				rtp_stream->flags &= ~RTPPROXY_COPY_STREAM_STARTED;
+			rtp_stream->flags |= RTPPROXY_COPY_STREAM_INACTIVE;
+		}
 	}
 	return ret;
 }
@@ -5671,8 +5714,10 @@ error:
 static int rtpproxy_stop_recording_leg(struct rtpproxy_copy_ctx *ctx,
 		struct rtpp_args *args, str *flags, int leg)
 {
-	int medianum, ret = 0;
+	int ret = 0;
 	str *to_tag, *from_tag;
+	struct list_head *it;
+	struct rtpproxy_copy_stream *rtp_stream;
 
 	if (leg == RTP_RELAY_CALLER) {
 		from_tag = &args->from_tag;
@@ -5681,13 +5726,13 @@ static int rtpproxy_stop_recording_leg(struct rtpproxy_copy_ctx *ctx,
 		from_tag = &args->to_tag;
 		to_tag = &args->from_tag;
 	}
-	for (medianum = 0; medianum < ctx->legs[leg].streams_no; medianum++) {
-		if (!(ctx->legs[leg].streams[medianum].flags &
-				RTPPROXY_COPY_STREAM_STARTED) ||
-				w_rtpproxy_stop_recording(NULL, &args->callid,
-					from_tag, to_tag, args->node, NULL, medianum + 1) > 0)
-			ret++;
 
+	list_for_each(it, &ctx->streams[leg]) {
+		rtp_stream = list_entry(it, struct rtpproxy_copy_stream, list);
+		if (!(rtp_stream->flags & RTPPROXY_COPY_STREAM_STARTED) ||
+				w_rtpproxy_stop_recording(NULL, &args->callid, from_tag,
+					to_tag, args->node, NULL, rtp_stream->medianum + 1) > 0)
+			ret++;
 	}
 	return ret;
 }
@@ -5739,7 +5784,9 @@ static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet)
 {
 	struct rtpproxy_copy_ctx *ctx = _ctx;
 	str tmp;
-	int leg, idx;
+	int leg;
+	struct list_head *it;
+	struct rtpproxy_copy_stream *stream;
 
 	tmp.s = (char *)(unsigned long)&ctx->ts;
 	tmp.len = sizeof(ctx->ts);
@@ -5751,19 +5798,23 @@ static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet)
 		return -1;
 	if (bin_push_int(packet, ctx->version) < 0)
 		return -1;
-	if (bin_push_int(packet, ctx->version) < 0)
+	if (bin_push_int(packet, ctx->max_index) < 0)
+		return -1;
+	if (bin_push_int(packet, ctx->streams_mask) < 0)
 		return -1;
 	for (leg = RTP_RELAY_CALLER; leg <= RTP_RELAY_CALLEE; leg++) {
-		if (bin_push_int(packet, ctx->legs[leg].streams_no) < 0)
+		if (bin_push_int(packet, list_size(&ctx->streams[leg])) < 0)
 			return -1;
-		for (idx = 0; idx < ctx->legs[leg].streams_no; idx++) {
-			if (bin_push_int(packet, ctx->legs[leg].streams[idx].port) < 0)
+		list_for_each(it, &ctx->streams[leg]) {
+			stream = list_entry(it, struct rtpproxy_copy_stream, list);
+			if (bin_push_int(packet, stream->port) < 0)
 				return -1;
-			if (bin_push_int(packet, ctx->legs[leg].streams[idx].index) < 0)
+			if (bin_push_int(packet, stream->index) < 0)
 				return -1;
-			if (bin_push_int(packet, ctx->legs[leg].streams[idx].flags) < 0)
+			if (bin_push_int(packet, stream->flags) < 0)
 				return -1;
-			ctx->streams_no++;
+			if (bin_push_int(packet, stream->medianum) < 0)
+				return -1;
 		}
 	}
 	return 0;
@@ -5773,9 +5824,10 @@ static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 {
 	time_t ts;
 	struct rtpproxy_copy_ctx *ctx;
+	struct rtpproxy_copy_stream *stream;
 	str media_ip, tmp;
-	unsigned int version, flags;
-	int leg, idx;
+	unsigned int flags, medianum;
+	int leg, idx, no, port;
 
 	if (bin_pop_str(packet, &tmp) < 0)
 		return -1;
@@ -5784,30 +5836,36 @@ static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 		return -1;
 	if (bin_pop_int(packet, &flags) < 0)
 		return -1;
-	if (bin_pop_int(packet, &version) < 0)
-		return -1;
 	ctx = rtpproxy_copy_ctx_new(&media_ip, flags);
 	if (!ctx)
 		return -1;
+	if (bin_pop_int(packet, &ctx->version) < 0)
+		return -1;
+	if (bin_pop_int(packet, &ctx->max_index) < 0)
+		return -1;
+	if (bin_pop_int(packet, &ctx->streams_mask) < 0)
+		return -1;
 	ctx->ts = ts;
-	ctx->version = version;
-	ctx->complete = 1;
 
 	for (leg = RTP_RELAY_CALLER; leg <= RTP_RELAY_CALLEE; leg++) {
-		if (bin_pop_int(packet, &ctx->legs[leg].streams_no) < 0)
+		if (bin_pop_int(packet, &no) < 0)
 			return -1;
 
-		ctx->legs[leg].streams = shm_malloc(ctx->legs[leg].streams_no *
-				sizeof(struct rtpproxy_copy_stream));
-		if (!ctx->legs[leg].streams)
-			return -1;
-		for (idx = 0; idx < ctx->legs[leg].streams_no; idx++) {
-			if (bin_pop_int(packet, &ctx->legs[leg].streams[idx].port) < 0)
+		while (no--) {
+			if (bin_pop_int(packet, &port) < 0)
 				return -1;
-			if (bin_pop_int(packet, &ctx->legs[leg].streams[idx].index) < 0)
+			if (bin_pop_int(packet, &idx) < 0)
 				return -1;
-			if (bin_pop_int(packet, &ctx->legs[leg].streams[idx].flags) < 0)
+			if (bin_pop_int(packet, &flags) < 0)
 				return -1;
+			if (bin_pop_int(packet, &medianum) < 0)
+				return -1;
+			stream = rtpproxy_get_stream(ctx, leg, medianum);
+			if (stream) {
+				stream->port = port;
+				stream->flags = flags;
+				stream->index = idx;
+			}
 		}
 	}
 	*_ctx = ctx;

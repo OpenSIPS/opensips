@@ -228,7 +228,7 @@ static void rtp_relay_move_ctx( struct cell* t, int type, struct tmcb_params *ps
 	RTP_RELAY_PUT_CTX(NULL);
 }
 
-#define RTP_RELAY_CTX_VERSION 1
+#define RTP_RELAY_CTX_VERSION 2
 #define RTP_RELAY_BIN_PUSH(_type, _value) \
 	do { \
 		if (bin_push_##_type(&packet, _value) < 0) { \
@@ -303,6 +303,7 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 		sess = ctx->main;
 	}
 	RTP_RELAY_BIN_PUSH(str, &sess->relay->name);
+	RTP_RELAY_BIN_PUSH(int, ctx->state);
 	RTP_RELAY_BIN_PUSH(int, sess->index);
 	RTP_RELAY_BIN_PUSH(int, sess->state);
 	RTP_RELAY_BIN_PUSH(int, sess->server.set);
@@ -383,6 +384,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	ctx = rtp_relay_new_ctx();
 	if (!ctx)
 		return;
+	RTP_RELAY_BIN_POP(int, &ctx->state);
 
 	RTP_RELAY_BIN_POP(int, &index);
 	sess = rtp_relay_new_sess(ctx, index);
@@ -1773,8 +1775,8 @@ error:
 	return NULL;
 }
 
-int rtp_relay_copy_offer(rtp_ctx _ctx, str *id,
-		str *flags, unsigned int copy_flags, str *ret_body)
+int rtp_relay_copy_offer(rtp_ctx _ctx, str *id, str *flags,
+		unsigned int copy_flags, unsigned int streams, str *ret_body)
 {
 	int release = 0;
 	struct rtp_relay_session info;
@@ -1811,7 +1813,7 @@ int rtp_relay_copy_offer(rtp_ctx _ctx, str *id,
 	info.to_tag = &ctx->to_tag;
 	info.branch = ctx->main->index;
 	if (ctx->main->relay->funcs.copy_offer(&info, &ctx->main->server,
-			&rtp_copy->ctx, flags, copy_flags, ret_body) < 0) {
+			&rtp_copy->ctx, flags, copy_flags, streams, ret_body) < 0) {
 		if (release) {
 			list_del(&rtp_copy->list);
 			shm_free(rtp_copy);

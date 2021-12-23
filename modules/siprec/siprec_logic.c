@@ -353,9 +353,18 @@ no_recording:
 
 int srec_restore_callback(struct src_sess *sess)
 {
+	str param;
 	if (srec_b2b.restore_logic_info(B2B_CLIENT, &sess->b2b_key,
 			srec_b2b_notify) < 0) {
 		LM_ERR("cannot register notify callback for [%.*s]!\n",
+				sess->b2b_key.len, sess->b2b_key.s);
+		return -1;
+	}
+	param.s = (char *)&sess;
+	param.len = sizeof(void *);
+	if (srec_b2b.update_b2bl_param(B2B_CLIENT, &sess->b2b_key,
+			&param, 1) < 0) {
+		LM_ERR("cannot update param for [%.*s]!\n",
 				sess->b2b_key.len, sess->b2b_key.s);
 		return -1;
 	}
@@ -490,8 +499,9 @@ static int srs_send_invite(struct src_sess *sess)
 /* starts the recording to the srs */
 int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
+	unsigned int flags = RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH;
 	union sockaddr_union tmp;
-	int /*streams, */ret;
+	int ret;
 	str sdp;
 
 	if (!sess->socket) {
@@ -504,7 +514,7 @@ int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 	}
 
 	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
-			&sess->media, RTP_COPY_MODE_SIPREC, &sdp) < 0) {
+			&sess->media, flags, -1, &sdp) < 0) {
 		LM_ERR("could not start recording!\n");
 		return -3;
 	}
@@ -572,7 +582,7 @@ static void srs_send_update_invite(struct src_sess *sess, str *body)
 static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	str body, sdp;
-	unsigned int flags = RTP_COPY_MODE_SIPREC;
+	unsigned int flags = RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH;
 
 	if (msg == FAKED_REPLY)
 		return 0;
@@ -581,7 +591,7 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess)
 		flags |= RTP_COPY_MODE_DISABLE;
 
 	if (srec_rtp.copy_offer(sess->rtp, &mod_name,
-			&sess->media, flags, &sdp) < 0) {
+			&sess->media, flags, -1, &sdp) < 0) {
 		LM_ERR("could not refresh recording!\n");
 		goto error;
 	}
