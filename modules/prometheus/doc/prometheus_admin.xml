@@ -244,7 +244,10 @@ modparam("prometheus", "statistics", "active_dialogs load:")
 			the rule was not even used.
 		</para>
 		<para>
-			This parameter can be defined multiple times, once per group.
+			This parameter can be defined multiple times, even for a single group.
+			However, if the statistic matches multiple regular expressions, only
+			the first regular expression that matches is considered. The order
+			they are checked is the order declared in the script.
 		</para>
 		<para>
 		<emphasis>The default value is empty: statistic name is provided.</emphasis>
