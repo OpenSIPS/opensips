@@ -291,8 +291,10 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		prefix.len = 1;
 	}
 	name_len = prefix.len + prom_delimiter.len + stat_name->len;
-	if (labels)
+	if (labels) {
 		label_len = labels->len + 1;
+		label_idx++;
+	}
 
 	switch (prom_grp_mode) {
 	case PROM_GROUP_MODE_NONE:
@@ -325,7 +327,7 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 			name_len +
 			9 /* ' counter\n' */ : 0);
 	if (label_idx)
-		label_len += 2 /* '{' and '{' */ + label_idx - 1 /* ',' */;
+		label_len += 2 /* '{' and '}' */ + label_idx - 1 /* ',' */;
 
 	if (page->len +
 			type_len +
@@ -389,13 +391,14 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		if (labels) {
 			memcpy(page->s + page->len, labels->s, labels->len);
 			page->len += labels->len;
-			if (labels->len != label_len) {
-				memcpy(page->s + page->len, ",", 1);
-				page->len += 1;
-			}
+			label_idx++;
 		}
 
 		if (prom_grp_mode == PROM_GROUP_MODE_LABEL) {
+			if (label_idx) {
+				memcpy(page->s + page->len, ",", 1);
+				page->len += 1;
+			}
 			memcpy(page->s + page->len, prom_grp_label.s, prom_grp_label.len);
 			page->len += prom_grp_label.len;
 
