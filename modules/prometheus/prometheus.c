@@ -231,6 +231,8 @@ static void prom_groups_free(struct list_head *groups,
 		grp = list_entry(it, struct prom_labels_grp, list);
 		list_for_each_safe(it_stat, safe_stat, &grp->stats) {
 			stat = list_entry(it_stat, struct prom_labels_stat, list);
+			if (stat->free_buf->s)
+				pkg_free(stat->free_buf->s);
 			pkg_free(stat->free_buf);
 			pkg_free(stat);
 		}
