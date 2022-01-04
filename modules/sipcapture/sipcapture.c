@@ -396,21 +396,6 @@ static str msg_column6 		= str_init("data");
 /* hep pvar related */
 static str afinet_str    = str_init("AF_INET");
 static str afinet6_str   = str_init("AF_INET6");
-/* hep capture proto types */
-static str hep_net_protos[]={
-	/* want same index as in opensips enum */
-	{NULL, 0},
-	str_init("UDP"),
-	str_init("TCP"),
-	str_init("TLS"),
-	str_init("SCTP"),
-	str_init("WS"),
-	str_init("WSS"),
-	str_init("BIN"),
-	str_init("HEP_UDP"),
-	str_init("HEP_TCP"),
-	{NULL, 0}
-};
 
 static str hep_app_protos[]= {
 	str_init("reserved"),
@@ -1470,6 +1455,7 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 
 	str addr_str;
 	str payload_str;
+	str proto_name;
 	hep_str.len = 0;
 
 	res->rs    = hep_str;
@@ -1498,7 +1484,10 @@ static int get_hep_chunk(struct hepv3* h3, unsigned int chunk_id,
 					h3->hg.ip_proto.data);
 			return -1;
 		}
-		SET_PVAL_STR(res, hep_net_protos[h3->hg.ip_proto.data]);
+		if ( (proto_name.s = get_proto_name(h3->hg.ip_proto.data))==NULL)
+			proto_name.s = "n/a";
+		proto_name.len = strlen(proto_name.s);
+		SET_PVAL_STR(res, proto_name);
 
 		break;
 	/* ipv4/6 source
@@ -1751,6 +1740,7 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 	struct receive_info *ri;
 
 	str addr_str;
+	str proto_name;
 
 	if (msg == NULL)
 	{
@@ -1800,7 +1790,10 @@ static int pv_get_hep_net(struct sip_msg *msg, pv_param_t *param,
 					ri->proto);
 			return -1;
 		}
-		SET_PVAL_STR(res, hep_net_protos[ri->proto]);
+		if ( (proto_name.s = get_proto_name(ri->proto))==NULL)
+			proto_name.s = "n/a";
+		proto_name.len = strlen(proto_name.s);
+		SET_PVAL_STR(res, proto_name);
 
 		break;
 	/* ipv4 source */
