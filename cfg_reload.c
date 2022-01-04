@@ -274,14 +274,15 @@ static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 	for( i=1 ; i<counted_max_processes ; i++) {
 		if ( (pt[i].flags&(OSS_PROC_NO_IPC|OSS_PROC_NEEDS_SCRIPT))==
 		OSS_PROC_NEEDS_SCRIPT ) {
+			/* set the status before sending, to avoid any race condition
+			 * with running the callback function */
+			srr_ctx->proc_status[i] = RELOAD_SENT;
 			if (i==process_no) {
 				/* run line the cmd for the proc itself */
 				rpc( process_no, (void*)(long)srr_ctx->seq_no);
 			} else {
 				if (ipc_send_rpc( i, rpc, (void*)(long)srr_ctx->seq_no)<0)
 					srr_ctx->proc_status[i] = RELOAD_FAILED;
-				else
-					srr_ctx->proc_status[i] = RELOAD_SENT;
 			}
 		}
 	}
