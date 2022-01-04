@@ -18,6 +18,7 @@ Build-Depends: bison,
                libmaxminddb-dev | libgeoip-dev (>= 1.4.4),
                libhiredis-dev,
                libjson-c-dev,
+               libjwt-dev,
                librdkafka-dev,
                libldap2-dev,
                liblua5.1-0-dev,
@@ -51,7 +52,8 @@ Package: opensips
 Architecture: any
 Multi-Arch: foreign
 Depends: adduser, python, ${misc:Depends}, ${shlibs:Depends}
-Suggests: opensips-b2bua-module,
+Suggests: opensips-auth-jwt-module,
+          opensips-b2bua-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
@@ -725,3 +727,27 @@ Description: Implementation of an Apache Kafka producer
  It serves as a transport backend for the Event Interface and
  also provides a stand-alone connector to be used from the
  OpenSIPS script in order to publish messages to Kafka brokers.
+
+Package: opensips-auth-jwt-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: JSON Web Tokens authentication module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ The module implements authentication over JSON Web Tokens. In
+ some cases ( ie. WebRTC ) the user authenticates on another
+ layer ( other than SIP ), so it makes no sense to
+ double-authenticate it on the SIP layer. Thus, the SIP client
+ will simply present the JWT auth token it received from the
+ server, and pass it on to OpenSIPS which will use that for
+ authentication purposes. It relies on two DB tables, one
+ containing JWT profiles ( a profile name and it's SIP username
+ associated to it ) and one containing JWT secrets. Each secret
+ has a corresponding profile, the KEY used for signing the JWT
+ and two timestamps describing a validation interval. Multiple
+ JWT secrets can point to the same JWT profile.
