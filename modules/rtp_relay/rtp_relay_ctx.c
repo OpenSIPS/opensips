@@ -1901,12 +1901,16 @@ int rtp_relay_copy_delete(rtp_ctx _ctx, str *id, str *flags)
 str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type)
 {
 	/* fetch the dialog */
+	int leg;
 	struct dlg_cell *dlg = rtp_relay_dlg.get_dlg();
 	if (!dlg)
 		dlg = rtp_relay_dlg.get_dlg_by_callid(sess->callid, 0);
 
 	if (!dlg)
 		return NULL;
-	return &dlg->legs[type==RTP_RELAY_CALLER?
-		DLG_CALLER_LEG:callee_idx(dlg)].in_sdp;
+	leg = (type==RTP_RELAY_CALLER?
+		DLG_CALLER_LEG:callee_idx(dlg));
+	return (dlg->legs[leg].tmp_in_sdp.s?
+			&dlg->legs[leg].tmp_in_sdp:
+			&dlg->legs[leg].in_sdp);
 }
