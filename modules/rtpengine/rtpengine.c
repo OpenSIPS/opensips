@@ -3908,7 +3908,7 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 	bencode_item_t *ret;
 	struct sip_msg *msg;
 	struct rtpe_set* rset;
-	str viabranch, *to_tag;
+	str viabranch;
 	char viabranch_buf[2/* br */ + INT2STR_MAX_LEN];
 
 	RTPE_START_READ();
@@ -3931,9 +3931,8 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		memcpy(viabranch.s, "br", 2);
 		bencode_dictionary_add_str(dict, "via-branch", &viabranch);
 	}
-	to_tag = copy_ctx?copy_ctx:sess->to_tag;
-	if (to_tag && to_tag->len)
-		bencode_dictionary_add_str(dict, "to_tag", to_tag);
+	if (copy_ctx && ((str *)copy_ctx)->len)
+		bencode_dictionary_add_str(dict, "to_tag", copy_ctx);
 	if (copy_flags & RTP_COPY_MODE_SIPREC) {
 		list = bencode_list(&bencbuf);
 		bencode_dictionary_add(dict, "flags", list);
