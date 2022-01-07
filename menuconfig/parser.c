@@ -365,6 +365,7 @@ int parse_defs_m4(select_menu *curr_menu,cfg_gen_t *curr_cfg)
 
 		if (parse_defs_m4_line(p,curr_menu) < 0) {
 			fprintf(output,"Failed to parse m4 line [%s]\n",p);
+			fclose(f);
 			return -1;
 		}
 	}

@@ -331,6 +331,7 @@ int recover(char* jfn)
 	{
 		fprintf(stderr, "[recover]: Table %s is not supported.\n",tn);
 		fprintf(stderr, "[recover]: FAILED to load journal file: %s.\n", jfn);
+		fclose(fp);
 		return 2;
 	}
 
@@ -339,6 +340,7 @@ int recover(char* jfn)
 	if(!tbc || !tp)
 	{
 		fprintf(stderr, "[recover]: FAILED to get find metadata for : %s.\n", tn);
+		fclose(fp);
 		return 3;
 	}
 
