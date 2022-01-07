@@ -385,6 +385,8 @@ badparam:
 		return -1;
 	}
 
+	CON_ORA(_h)->pqdata = &cb;
+	CON_ORA(_h)->bindpos = 0;
 	CON_RESET_CURR_PS(_h); /* no prepared statements support */
 	memset(&cb, 0, sizeof(cb));
 
