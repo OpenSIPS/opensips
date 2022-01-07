@@ -454,7 +454,7 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 	str hack;
 	str contact;
 	str *b2b_key;
-	sdp_info_t *sdp;
+	str body, sdp, reason;
 	struct dlg_cell *dlg;
 	struct media_session_leg *msl;
 	struct media_fork_info *mf;
@@ -470,18 +470,13 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 		return -1;
 	}
 
+	if (get_body(msg, &sdp) < 0 || sdp.len == 0) {
+		LM_WARN("no body to exchange media with!\n");
+		return -1;
+	}
+
 	if (leg == MEDIA_LEG_UNSPEC)
 		leg = MEDIA_LEG_BOTH;
-
-	sdp = parse_sdp(msg);
-	if (!sdp) {
-		LM_ERR("could not parse message SDP!\n");
-		return -2;
-	}
-	if (!sdp->streams_num) {
-		LM_WARN("no stream to fork media to!\n");
-		return -2;
-	}
 
 	contact.s = contact_builder(msg->rcv.bind_address, &contact.len);
 
@@ -493,32 +488,11 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 		return -2;
 	}
 
-	/* TODO
-	mf = media_sdp_match(dlg, leg, sdp, (medianum?*medianum:-1));
-	if (!mf)
-		goto unref;
-	*/
-
 	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, leg, 0);
 	if (!msl) {
 		LM_ERR("cannot create new fetch leg!\n");
 		goto unref;
 	}
-	if (!msl->ms->rtp) {
-		msl->ms->rtp = media_rtp.get_ctx();
-		if (!msl->ms->rtp) {
-			LM_ERR("no existing rtp relay context!\n");
-			goto destroy;
-		}
-	}
-	MEDIA_LEG_LOCK(msl);
-	if (msl->params) {
-		LM_WARN("already an ongoing forking for this leg!\n");
-		MEDIA_LEG_UNLOCK(msl);
-		goto destroy;
-	}
-	msl->params = mf;
-	MEDIA_LEG_UNLOCK(msl);
 
 	hack.s = (char *)&msl;
 	hack.len = sizeof(void *);
@@ -534,17 +508,43 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 		media_b2b.entity_delete(B2B_SERVER, b2b_key, NULL, 1, 1);
 		goto destroy;
 	}
-	msl->b2b_entity = B2B_SERVER;
-
-	/* TODO
-	if (media_fork_streams(msl, mf) < 0) {
-		LM_ERR("could not fork streams!\n");
-		goto destroy;
+	if (!msl->ms->rtp) {
+		msl->ms->rtp = media_rtp.get_ctx_dlg(dlg);
+		if (!msl->ms->rtp) {
+			LM_ERR("no existing rtp relay context!\n");
+			goto error;
+		}
 	}
-	*/
+
+	MEDIA_LEG_LOCK(msl);
+	if (msl->params) {
+		LM_WARN("already an ongoing forking for this leg!\n");
+		MEDIA_LEG_UNLOCK(msl);
+		goto error;
+	}
+	mf = media_get_fork_sdp(msl, (medianum?*medianum:-1), &body);
+	if (!mf) {
+		MEDIA_LEG_UNLOCK(msl);
+		LM_ERR("could not generate media fork SDP!\n");
+		goto error;
+	}
+	msl->params = mf;
+
+	MEDIA_LEG_UNLOCK(msl);
+
+	if (media_fork_answer(msl, mf, &sdp) < 0) {
+		LM_WARN("could not answer fork!\n");
+		goto error;
+	}
+	init_str(&reason, "OK");
+	media_session_rpl(msl, METHOD_INVITE, 200, &reason, &body);
+
 	MEDIA_LEG_STATE_SET(msl, MEDIA_SESSION_STATE_RUNNING);
 	media_dlg.dlg_unref(dlg, 1);
 	return 1;
+error:
+	init_str(&reason, "Not Acceptable Here");
+	media_session_rpl(msl, METHOD_INVITE, 488, &reason, NULL);
 destroy:
 	MSL_UNREF(msl);
 unref:
