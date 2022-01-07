@@ -33,7 +33,6 @@ enum media_session_state {
 	MEDIA_SESSION_STATE_INIT,
 	MEDIA_SESSION_STATE_RUNNING,
 	MEDIA_SESSION_STATE_PENDING,
-	MEDIA_SESSION_STATE_UPDATING,
 };
 
 struct media_session_leg {
@@ -51,6 +50,7 @@ struct media_session_leg {
 };
 
 struct media_session {
+	rtp_ctx rtp;
 	gen_lock_t lock;
 	struct dlg_cell *dlg;
 
