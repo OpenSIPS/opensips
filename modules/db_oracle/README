@@ -147,12 +147,12 @@ Chapter 2. Contributors
    5. dronord 8 6 29 18
    6. Peter Lemenkov (@lemenkov) 7 5 41 5
    7. Henning Westerholt (@henningw) 5 3 19 7
-   8. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
-   9. fabriziopicconi 3 1 18 2
-   10. Ovidiu Sas (@ovidiusas) 3 1 12 12
+   8. Gang Zhuo 4 2 4 2
+   9. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
+   10. fabriziopicconi 3 1 18 2
 
-   All remaining contributors: Sergio Gutierrez, Julián Moreno
-   Patiño, Razvan Pistolea.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Sergio
+   Gutierrez, Julián Moreno Patiño, Razvan Pistolea.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -174,19 +174,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
-   6.  dronord                             Nov 2017 - Dec 2017
-   7.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   8.  fabriziopicconi                     Jun 2013 - Jun 2013
-   9.  Ovidiu Sas (@ovidiusas)             Jun 2012 - Jun 2012
-   10. Razvan Pistolea                     Jul 2009 - Jul 2009
+   1.  Gang Zhuo                           Dec 2021 - Dec 2021
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2008 - Apr 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Aug 2012 - Jun 2018
+   7.  dronord                             Nov 2017 - Dec 2017
+   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   9.  fabriziopicconi                     Jun 2013 - Jun 2013
+   10. Ovidiu Sas (@ovidiusas)             Jun 2012 - Jun 2012
 
-   All remaining contributors: Sergio Gutierrez, Henning
-   Westerholt (@henningw), Iouri Kharon.
+   All remaining contributors: Razvan Pistolea, Sergio Gutierrez,
+   Henning Westerholt (@henningw), Iouri Kharon.
 
    (1) including any documentation-related commits, excluding
    merge commits
