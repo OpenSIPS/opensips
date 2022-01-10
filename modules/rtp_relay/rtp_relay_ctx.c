@@ -61,6 +61,7 @@ static struct {
 	{ str_init("type"), RTP_RELAY_FLAGS_TYPE },
 	{ str_init("iface"), RTP_RELAY_FLAGS_IFACE },
 	{ str_init("body"), RTP_RELAY_FLAGS_BODY },
+	{ str_init("delete"), RTP_RELAY_FLAGS_DELETE },
 	{ str_init("disabled"), RTP_RELAY_FLAGS_DISABLED },
 };
 
@@ -570,8 +571,8 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 		return -1;
 	}
 	ret = sess->relay->funcs.delete(info, &sess->server,
-			RTP_RELAY_FLAGS(RTP_RELAY_OFFER, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_PEER));
+			RTP_RELAY_FLAGS(RTP_RELAY_OFFER, RTP_RELAY_FLAGS_DELETE),
+			RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_DELETE));
 	if (ret < 0)
 		return -1;
 	rtp_sess_reset_pending(sess);
