@@ -380,6 +380,9 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
 					<listitem><para><emphasis>iface</emphasis> - the interface
 					used for the traffic coming from this UAC.
 					</para></listitem>
+					<listitem><para><emphasis>body</emphasis> - the body to be used
+					for the UAC.
+					</para></listitem>
 					<listitem><para><emphasis>disabled</emphasis> - provisioned
 					as an integer, it is used to disable RTP relay for this UAC.
 					</para></listitem>

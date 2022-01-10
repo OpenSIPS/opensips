@@ -24,6 +24,7 @@
 #include "../dialog/dlg_load.h"
 #include "../../bin_interface.h"
 #include "../../lib/cJSON.h"
+#include "../../data_lump.h"
 
 static struct tm_binds rtp_relay_tmb;
 static struct dlg_binds rtp_relay_dlg;
@@ -59,6 +60,7 @@ static struct {
 	{ str_init("ip"), RTP_RELAY_FLAGS_IP },
 	{ str_init("type"), RTP_RELAY_FLAGS_TYPE },
 	{ str_init("iface"), RTP_RELAY_FLAGS_IFACE },
+	{ str_init("body"), RTP_RELAY_FLAGS_BODY },
 	{ str_init("disabled"), RTP_RELAY_FLAGS_DISABLED },
 };
 
@@ -455,19 +457,51 @@ struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index)
 
 #define RTP_RELAY_FLAGS(_t, _f) \
 	(sess->flags[_t][_f].s?&sess->flags[_t][_f]: \
-	 (main?&main->flags[_t][_f]:NULL))
+	 (main?(main->flags[_t][_f].s?&main->flags[_t][_f]:NULL):NULL))
 
 #define RTP_RELAY_PEER(_t) \
 	(_t == RTP_RELAY_OFFER?RTP_RELAY_ANSWER:RTP_RELAY_OFFER)
+
+static int rtp_relay_replace_body(struct sip_msg *msg, str *body)
+{
+	str *oldbody;
+	struct lump *anchor;
+
+	oldbody = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
+	if (!oldbody)
+		return -1;
+
+	anchor = del_lump(msg, oldbody->s - msg->buf, oldbody->len, 0);
+	if (!anchor) {
+		LM_ERR("del_lump failed\n");
+		return -1;
+	}
+	if (!insert_new_lump_after(anchor, body->s, body->len, 0)) {
+		LM_ERR("insert_new_lump_after failed\n");
+		return -1;
+	}
+	return 0;
+}
 
 static int rtp_relay_offer(struct rtp_relay_session *info,
 		struct rtp_relay_sess *sess, struct rtp_relay_sess *main,
 		enum rtp_relay_type type, str *body)
 {
+	str ret_body;
+
 	if (!sess->relay) {
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
+	/* if we have a body in the session, use it */
+	if (RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_BODY)) {
+		info->body = RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_BODY);
+		if (!body) {
+			memset(&ret_body, 0, sizeof ret_body);
+			body = &ret_body;
+		}
+	}
+
 	if (sess->relay->funcs.offer(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
@@ -478,6 +512,12 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 		LM_ERR("could not engage offer!\n");
 		return -1;
 	}
+	if (body && body == &ret_body) {
+		if (rtp_relay_replace_body(info->msg, body) < 0) {
+			pkg_free(body->s);
+			return -2;
+		}
+	}
 	rtp_sess_set_pending(sess);
 	return 1;
 }
@@ -486,17 +526,38 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 		struct rtp_relay_sess *sess, struct rtp_relay_sess *main,
 		enum rtp_relay_type type, str *body)
 {
+	str ret_body;
+
 	if (!sess->relay) {
 		LM_BUG("no relay found!\n");
 		return -1;
 	}
-	return sess->relay->funcs.answer(info, &sess->server,
+	/* if we have a body in the session, use it */
+	if (RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_BODY)) {
+		info->body = RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_BODY);
+		if (!body) {
+			memset(&ret_body, 0, sizeof ret_body);
+			body = &ret_body;
+		}
+	}
+
+	if (sess->relay->funcs.answer(info, &sess->server,
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_PEER), body);
+			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_PEER), body) < 0) {
+		LM_ERR("could not engage answer!\n");
+		return -1;
+	}
+	if (body && body == &ret_body) {
+		if (rtp_relay_replace_body(info->msg, body) < 0) {
+			pkg_free(body->s);
+			return -2;
+		}
+	}
+	return 1;
 }
 #undef RTP_RELAY_PEER
 
@@ -657,7 +718,7 @@ static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_para
 	lock_stop_write(rtp_relay_contexts_lock);
 }
 
-void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
+static void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
 {
 	enum rtp_relay_type rtype;
 	struct rtp_relay_session info;
@@ -1300,7 +1361,7 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 			info.msg = msg;
 
 			ret = rtp_relay_answer(&info, tmp->sess, tmp->ctx->main,
-					RTP_RELAY_ANSWER, &body);
+					RTP_RELAY_OFFER, &body);
 			if (ret < 0) {
 				LM_ERR("cannot answer RTP relay for callee SDP\n");
 				goto error;
