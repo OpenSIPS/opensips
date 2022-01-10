@@ -425,7 +425,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 						EXPIRE_STR_LEN, EXPIRE_STR, str_val.len, str_val.s);
 				goto parse_err;
 			}
-		} else {
+		} else if (parse_str.len - (p1 - parse_str.s) > 0) {
 			LM_ERR("unknown parameter: %.*s\n",
 				(int)(parse_str.len - (p1 - parse_str.s)), p1);
 			goto parse_err;
