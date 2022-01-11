@@ -543,12 +543,12 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 	}
 
 	if (sess->relay->funcs.answer(info, &sess->server,
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IP),
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
-			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_PEER), body) < 0) {
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER), body) < 0) {
 		LM_ERR("could not engage answer!\n");
 		return -1;
 	}
