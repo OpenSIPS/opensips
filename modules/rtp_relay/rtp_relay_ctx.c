@@ -491,12 +491,12 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 		return -1;
 	}
 	return sess->relay->binds.answer(info, &sess->server,
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IP),
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
-			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_IFACE),
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IFACE),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_PEER), body);
+			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_PEER), body);
 }
 #undef RTP_RELAY_PEER
 
@@ -657,7 +657,7 @@ static void rtp_relay_dlg_end(struct dlg_cell* dlg, int type, struct dlg_cb_para
 	lock_stop_write(rtp_relay_contexts_lock);
 }
 
-void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
+static void rtp_relay_indlg_tm_req(struct cell* t, int type, struct tmcb_params *p)
 {
 	enum rtp_relay_type rtype;
 	struct rtp_relay_session info;
@@ -1300,7 +1300,7 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 			info.msg = msg;
 
 			ret = rtp_relay_answer(&info, tmp->sess, tmp->ctx->main,
-					RTP_RELAY_ANSWER, &body);
+					RTP_RELAY_OFFER, &body);
 			if (ret < 0) {
 				LM_ERR("cannot answer RTP relay for callee SDP\n");
 				goto error;
