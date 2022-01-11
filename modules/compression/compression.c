@@ -128,7 +128,6 @@ static int fixup_whitelist_compact(void**);
 static int fixup_whitelist_compress(void**);
 static int fixup_whitelist_free(void **);
 static int fixup_mc_compact_flags(void **);
-static int fixup_mc_compact_flags_free(void **);
 
 static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, int* flags_p);
 static int mc_compact_cb(char** buf, struct mc_compact_args* mc_compact_args, int, int*);
@@ -166,7 +165,7 @@ static cmd_export_t cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_whitelist_compact, fixup_whitelist_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
-			 fixup_mc_compact_flags, fixup_mc_compact_flags_free},
+			 fixup_mc_compact_flags, 0},
 		{0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|FAILURE_ROUTE},
 	{"mc_compress",	  (cmd_function)mc_compress, {
@@ -467,38 +466,20 @@ static int fixup_mc_compact_flags(void **param)
 {
 	str *s = (str *) *param;
 	int st;
-	int *flags;
+	long flags = 0;
 
-	flags = pkg_malloc(sizeof *flags);
-	if (!flags) {
-		LM_ERR("out of pkg memory\n");
-		return -1;
-	}
-	*flags = 0;
-
-	*param = (void *) flags;
-
-	if (!s)
-		return 0;
-
-	for (st = 0; st < s->len; st++) {
-		switch (s->s[st]) {
-			case 'n':
-				*flags |= NO_COMPACT_FORM;
-				break;
-			default:
-				LM_WARN("unknown option `%c'\n", s->s[st]);
+	if (s) {
+		for (st = 0; st < s->len; st++) {
+			switch (s->s[st]) {
+				case 'n':
+					flags |= NO_COMPACT_FORM;
+					break;
+					default:
+						LM_WARN("unknown option `%c'\n", s->s[st]);
+			}
 		}
+		*param = (void *) flags;
 	}
-
-	return 0;
-}
-
-static int fixup_mc_compact_flags_free(void** param)
-{
-	if (*param)
-		pkg_free(*param);
-
 	return 0;
 }
 
