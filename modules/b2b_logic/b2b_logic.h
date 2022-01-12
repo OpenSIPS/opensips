@@ -29,6 +29,7 @@
 
 #include "../../str.h"
 #include "../../db/db.h"
+#include "../../cachedb/cachedb.h"
 #include "../../timer.h"
 #include "../b2b_entities/b2be_load.h"
 
@@ -111,8 +112,12 @@ extern str server_address;
 extern unsigned int max_duration;
 extern str init_callid_hdr;
 extern str db_url;
+extern str cdb_url;
+extern str cdb_key_prefix;
 extern db_con_t *b2bl_db ;
 extern db_func_t b2bl_dbf;
+extern cachedb_funcs b2bl_cdbf;
+extern cachedb_con *b2bl_cdb;
 extern str b2bl_dbtable;
 extern char* b2bl_db_buf;
 extern int b2bl_db_mode;

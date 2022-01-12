@@ -37,6 +37,7 @@
 #include "client.h"
 #include "server.h"
 #include "../../db/db.h"
+#include "../../cachedb/cachedb.h"
 
 /* modes to write in db */
 #define NO_DB         0
@@ -53,12 +54,17 @@ extern struct tm_binds tmb;
 extern uac_auth_api_t uac_auth_api;
 extern int req_routeid;
 extern int reply_routeid;
+extern str db_url;
+extern str b2be_cdb_url;
 extern db_con_t *b2be_db;
 extern db_func_t b2be_dbf;
+extern cachedb_funcs b2be_cdbf;
+extern cachedb_con *b2be_cdb;
 extern str b2be_dbtable;
 extern int b2be_db_mode;
 extern int serialize_backend;
 extern int b2b_ctx_idx;
+extern str cdb_key_prefix;
 
 void *b2b_get_context(void);
 

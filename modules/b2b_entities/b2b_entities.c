@@ -64,7 +64,9 @@ static char* script_req_route;
 static char* script_reply_route;
 int req_routeid  = -1;
 int reply_routeid = -1;
-static str db_url;
+str db_url;
+str b2be_cdb_url;
+str cdb_key_prefix = str_init("b2be$");
 db_con_t *b2be_db;
 db_func_t b2be_dbf;
 str b2be_dbtable= str_init("b2b_entities");
@@ -74,6 +76,9 @@ str b2b_key_prefix = str_init("B2B");
 int b2be_db_mode = WRITE_BACK;
 b2b_table server_htable;
 b2b_table client_htable;
+
+cachedb_funcs b2be_cdbf;
+cachedb_con *b2be_cdb;
 
 int b2be_cluster;
 int serialize_backend;
@@ -101,6 +106,8 @@ static param_export_t params[]={
 	{ "script_req_route",      STR_PARAM,    &script_req_route   },
 	{ "script_reply_route",    STR_PARAM,    &script_reply_route },
 	{ "db_url",                STR_PARAM,    &db_url.s           },
+	{ "cachedb_url",           STR_PARAM, 	 &b2be_cdb_url.s     },
+	{ "cachedb_key_prefix",    STR_PARAM, 	 &cdb_key_prefix.s   },
 	{ "db_table",              STR_PARAM,    &b2be_dbtable.s     },
 	{ "db_mode",               INT_PARAM,    &b2be_db_mode       },
 	{ "update_period",         INT_PARAM,    &b2b_update_period  },
@@ -223,6 +230,19 @@ static int mod_init(void)
 	}
 	memset(&b2be_dbf, 0, sizeof(db_func_t));
 
+	if(b2be_db_mode) {
+		if (!b2be_cdb_url.s) {
+			init_db_url(db_url, 1);
+			if (!db_url.s)
+				b2be_db_mode = NO_DB;
+		} else if (db_url.s) {
+			LM_ERR("Both 'db_url' and 'cachedb_url' defined\n");
+			return -1;
+		} else {
+			b2be_cdb_url.len = strlen(b2be_cdb_url.s);
+		}
+	}
+
 	if(b2be_db_mode)
 		init_db_url(db_url, 1);
 
@@ -270,9 +290,40 @@ static int mod_init(void)
 		if(b2be_db)
 			b2be_dbf.close(b2be_db);
 		b2be_db = NULL;
+	} else if (b2be_db_mode && b2be_cdb_url.s) {
+		if (cachedb_bind_mod(&b2be_cdb_url, &b2be_cdbf) < 0) {
+			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
+			       b2be_cdb_url.len, b2be_cdb_url.s);
+			return -1;
+		}
+
+		if (!CACHEDB_CAPABILITY(&b2be_cdbf, CACHEDB_CAP_MAP)) {
+			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
+			       b2be_cdb_url.len, b2be_cdb_url.s);
+			return -1;
+		}
+
+		b2be_cdb = b2be_cdbf.init(&b2be_cdb_url);
+		if (!b2be_cdb) {
+			LM_ERR("connecting to database failed\n");
+			return -1;
+		}
+
+		cdb_key_prefix.len = strlen(cdb_key_prefix.s);
+
+		b2be_initialize();
+
+		/* reload data */
+		if(b2b_entities_restore() < 0)
+		{
+			LM_ERR("Failed to restore data from database\n");
+			return -1;
+		}
+
+		if(b2be_cdb)
+			b2be_cdbf.destroy(b2be_cdb);
+		b2be_cdb = NULL;
 	}
-	else
-		b2be_db_mode = 0;
 
 	if(register_script_cb( b2b_prescript_f, PRE_SCRIPT_CB|REQ_TYPE_CB, 0 ) < 0)
 	{
@@ -367,21 +418,35 @@ void check_htables(void)
 static int child_init(int rank)
 {
 	/* if database is needed */
-	if (b2be_db_mode && db_url.s)
-	{
-		if (b2be_dbf.init==0)
-		{
-			LM_CRIT("child_init: database not bound\n");
-			return -1;
-		}
+	if (b2be_db_mode) {
+		if (db_url.s) {
+			if (b2be_dbf.init==0)
+			{
+				LM_CRIT("child_init: database not bound\n");
+				return -1;
+			}
 
-		b2be_db = b2be_dbf.init(&db_url);
-		if(!b2be_db)
-		{
-			LM_ERR("connecting to database failed\n");
-			return -1;
+			b2be_db = b2be_dbf.init(&db_url);
+			if(!b2be_db)
+			{
+				LM_ERR("connecting to database failed\n");
+				return -1;
+			}
+			LM_DBG("child %d: Database connection opened successfully\n", rank);
+		} else {
+			if (!b2be_cdbf.init) {
+				LM_ERR("cachedb functions not initialized\n");
+				return -1;
+			}
+
+			b2be_cdb = b2be_cdbf.init(&b2be_cdb_url);
+			if (!b2be_cdb) {
+				LM_ERR("connecting to database failed\n");
+				return -1;
+			}
+
+			LM_DBG("child %d: cachedb connection opened successfully\n", rank);
 		}
-		LM_DBG("child %d: Database connection opened successfully\n", rank);
 	}
 	check_htables();
 	return 0;
@@ -390,13 +455,23 @@ static int child_init(int rank)
 /** Module destroy function */
 static void mod_destroy(void)
 {
-	if (b2be_dbf.init && b2be_db_mode==WRITE_BACK) {
-		b2be_db = b2be_dbf.init(&db_url);
-		if(!b2be_db) {
-			LM_ERR("connecting to database failed, unable to flush\n");
-		} else {
-			b2b_entities_dump(1);
-			b2be_dbf.close(b2be_db);
+	if (b2be_db_mode==WRITE_BACK) {
+		if (b2be_dbf.init) {
+			b2be_db = b2be_dbf.init(&db_url);
+			if(!b2be_db) {
+				LM_ERR("connecting to database failed, unable to flush\n");
+			} else {
+				b2b_entities_dump(1);
+				b2be_dbf.close(b2be_db);
+			}
+		} else if (b2be_cdbf.init) {
+			b2be_cdb = b2be_cdbf.init(&b2be_cdb_url);
+			if (!b2be_cdb) {
+				LM_ERR("connecting to database failed\n");
+			} else {
+				b2b_entities_dump(1);
+				b2be_cdbf.destroy(b2be_cdb);
+			}
 		}
 	}
 	destroy_b2b_htables();
