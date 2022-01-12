@@ -204,7 +204,8 @@ static inline void add_xlog_data(trace_message message, void* param)
 
 	tprot.add_payload_part( message, "text", &xtrace_param->buf);
 
-	tprot.add_extra_correlation( message, &sip_str, &xtrace_param->msg->callid->body );
+	if (xtrace_param->msg && xtrace_param->msg->callid)
+		tprot.add_extra_correlation( message, &sip_str, &xtrace_param->msg->callid->body );
 }
 
 static inline int trace_xlog(struct sip_msg* msg, char* buf, int len)
