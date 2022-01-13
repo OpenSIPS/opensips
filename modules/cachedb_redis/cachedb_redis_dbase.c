@@ -466,6 +466,7 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 	cluster_node *node;
 	redisReply *reply = NULL;
 	int i, last_err = 0;
+	va_list aq;
 
 	first = ((redis_con *)connection->data)->current;
 	while (((redis_con *)connection->data)->current != first || !con) {
@@ -492,10 +493,13 @@ static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *ke
 		}
 
 		for (i = QUERY_ATTEMPTS; i; i--) {
-			if (argc)
+			if (argc) {
 				reply = redisCommandArgv(node->context, argc, argv, argvlen);
-			else
-				reply = redisvCommand(node->context, cmd_fmt, ap);
+			} else {
+				va_copy(aq, ap);
+				reply = redisvCommand(node->context, cmd_fmt, aq);
+				va_end(aq);
+			}
 
 			if (reply == NULL || reply->type == REDIS_REPLY_ERROR) {
 				LM_INFO("Redis query failed: %p %.*s (%s)\n",
@@ -551,9 +555,9 @@ static int redis_run_command(cachedb_con *connection, redisReply **rpl,
 static int redis_run_command_argv(cachedb_con *connection, redisReply **rpl,
               str *key, int argc, const char **argv, const size_t *argvlen)
 {
-	va_list ap;
+	va_list _;
 
-	return _redis_run_command(connection, rpl, key, argc, argv, argvlen, NULL, ap);
+	return _redis_run_command(connection, rpl, key, argc, argv, argvlen, NULL, _);
 }
 
 int redis_get(cachedb_con *connection,str *attr,str *val)
@@ -1261,9 +1265,6 @@ int redis_map_remove(cachedb_con *con, const str *key, const str *subkey)
 	redisReply *reply;
 	int i;
 	str s;
-
-	LM_DBG("DDD MAP REMOVE key=%.*s subkey=%.*s\n", key ? key->len : 0,
-		key ? key->s : NULL, subkey ? subkey->len : 0, subkey ? subkey->s : NULL);
 
 	if (!con || (!key && !subkey)) {
 		LM_ERR("null parameter\n");
