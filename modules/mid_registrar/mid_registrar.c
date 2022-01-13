@@ -58,6 +58,9 @@ struct usrloc_api ul;
 struct tm_binds tmb;
 struct sig_binds sig_api;
 
+/* the list of domains (tables) used at opensips.cfg level by mid-registrar */
+static str_list *mid_reg_domains;
+
 /* specifically used to mutually exclude concurrent calls of the
  * TMCB_RESPONSE_IN callback, upon SIP 200 OK retransmissions */
 rw_lock_t *tm_retrans_lk;
@@ -211,24 +214,45 @@ struct module_exports exports= {
 	cfg_validate /* reload confirm function */
 };
 
+int is_mid_reg_domain(const str *dom)
+{
+	str_list *it;
+
+	for (it = mid_reg_domains; it; it = it->next)
+		if (str_match(&it->s, dom))
+			return 1;
+
+	return 0;
+}
+
 /*! \brief
  * Convert char* parameter to udomain_t* pointer
  */
 static int domain_fixup(void** param)
 {
 	udomain_t* d;
-	str dom_s;
+	str_list *dom;
 
-	if (pkg_nt_str_dup(&dom_s, (str*)*param) < 0)
+	dom = pkg_malloc(sizeof *dom);
+	if (!dom) {
+		LM_ERR("oom\n");
 		return E_OUT_OF_MEM;
+	}
+	memset(dom, 0, sizeof *dom);
 
-	if (ul.register_udomain(dom_s.s, &d) < 0) {
+	if (pkg_nt_str_dup(&dom->s, (str*)*param) < 0) {
+		pkg_free(dom);
+		return E_OUT_OF_MEM;
+	}
+
+	if (ul.register_udomain(dom->s.s, &d) < 0) {
 		LM_ERR("failed to register domain\n");
-		pkg_free(dom_s.s);
+		pkg_free(dom->s.s);
+		pkg_free(dom);
 		return E_UNSPEC;
 	}
 
-	pkg_free(dom_s.s);
+	add_last(dom, mid_reg_domains);
 
 	*param = (void*)d;
 	return 0;
