@@ -804,7 +804,7 @@ int pn_async_process_purr(struct sip_msg *req, async_ctx *ctx, udomain_t *d)
 	if (!req->route && (parse_headers(req, HDR_ROUTE_F, 0) != 0 ||
 	                    !req->route)) {
 		LM_DBG("request has no 'pn-purr' (no Route headers found)\n");
-		return -1;
+		return 2;
 	}
 
 	if (!req->route->parsed && parse_rr(req->route) != 0) {
