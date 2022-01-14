@@ -62,6 +62,7 @@ int dbt_bind_api(const str* mod, db_func_t *dbb);
  */
 static cmd_export_t cmds[] = {
 	{"db_bind_api", (cmd_function)dbt_bind_api, {{0,0,0}}, 0},
+	{0,0,{{0,0,0}},0}
 };
 
 /*

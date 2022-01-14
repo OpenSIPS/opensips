@@ -127,6 +127,7 @@ static int wss_port = WSS_DEFAULT_PORT;
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_wss_init, {{0,0,0}},0},
+	{0,0,{{0,0,0}},0}
 };
 
 static param_export_t params[] = {
