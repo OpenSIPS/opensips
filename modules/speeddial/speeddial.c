@@ -79,6 +79,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
+	{0,0,{{0,0,0}},0}
 };
 
 /* Exported parameters */
