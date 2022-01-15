@@ -1316,15 +1316,16 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 493 193 16235 10190
+   1. Liviu Chircu (@liviuchircu) 495 195 16286 10201
    2. Vlad Patrascu (@rvlad-patrascu) 9 5 74 126
    3. Razvan Crainea (@razvancrainea) 8 6 19 14
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 5 100 109
    5. Chad Attermann (@attermann) 7 5 19 5
    6. Dan Pascu (@danpascu) 4 2 4 4
-   7. Maksym Sobolyev (@sobomax) 3 1 2 4
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
-   9. Italo Rossi (@italorossi) 2 1 6 0
+   7. Alexey Vasilyev (@vasilevalex) 3 1 2 5
+   8. Maksym Sobolyev (@sobomax) 3 1 2 4
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Italo Rossi (@italorossi) 2 1 6 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1345,16 +1346,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2016 - Sep 2021
-   2. Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Nov 2019
-   4. Razvan Crainea (@razvancrainea)     Mar 2017 - Sep 2019
-   5. Dan Pascu (@danpascu)               May 2019 - May 2019
-   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7. Italo Rossi (@italorossi)           Jul 2018 - Jul 2018
-   8. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Jul 2016 - Jan 2022
+   2.  Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
+   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Nov 2019
+   5.  Razvan Crainea (@razvancrainea)     Mar 2017 - Sep 2019
+   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Italo Rossi (@italorossi)           Jul 2018 - Jul 2018
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
 
    (1) including any documentation-related commits, excluding
    merge commits
