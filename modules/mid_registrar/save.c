@@ -2528,6 +2528,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 	sctx.cmatch.mode = CT_MATCH_NONE;
+	sctx.max_contacts = max_contacts;
 
 	LM_DBG("saving to %.*s...\n", d->name->len, d->name->s);
 
