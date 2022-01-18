@@ -627,6 +627,7 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	sctx.cmatch.mode = CT_MATCH_NONE;
 	sctx.min_expires = min_expires;
 	sctx.max_expires = max_expires;
+	sctx.max_contacts = max_contacts;
 	if ( flags_s )
 		reg_parse_save_flags( flags_s, &sctx);
 
