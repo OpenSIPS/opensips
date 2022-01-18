@@ -22,7 +22,7 @@ lib/lib/libwolfssl.a:
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
 		--disable-jni --disable-crl-monitor \
 		--prefix=$(MOD_DIR)/lib \
-		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA -DWOLFSSL_USER_MUTEX"; \
+		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA"; \
 	fi;
 	@$(MAKE) -C ./lib/wolfssl install
 

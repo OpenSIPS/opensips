@@ -143,42 +143,12 @@ static void *oss_realloc(void *ptr, size_t size)
 	return shm_realloc(ptr, size);
 }
 
-int oss_mutex_cb(wolfSSL_Mutex *m, int op)
-{
-	switch (op) {
-	case WOLFSSL_USER_MUTEX_INIT:
-		m->mutex = lock_alloc();
-		if (!m->mutex || !lock_init(m->mutex)) {
-			LM_ERR("could not initialize wolfssl mutex!\n");
-			return -1;
-		}
-		break;
-	case WOLFSSL_USER_MUTEX_FREE:
-		lock_destroy(m->mutex);
-		lock_dealloc(m->mutex);
-		m->mutex = NULL;
-		break;
-	case WOLFSSL_USER_MUTEX_LOCK:
-		lock_get(m->mutex);
-		break;
-	case WOLFSSL_USER_MUTEX_UNLOCK:
-		lock_release(m->mutex);
-		break;
-	default:
-		LM_CRIT("Bad mutex operation in wolfssl callback\n");
-		return -1;
-	}
-
-	return 0;
-}
-
 static int mod_init(void)
 {
 	LM_INFO("initializing tls_wolfssl module\n");
 	LM_INFO("wolfSSL version: %s\n", wolfSSL_lib_version());
 
 	wolfSSL_SetAllocators(oss_malloc, oss_free, oss_realloc);
-	wolfSSL_SetUserMutexCb(oss_mutex_cb);
 	wolfSSL_Init();
 
 	_wolfssl_init_ssl_methods();
