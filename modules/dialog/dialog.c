@@ -1912,8 +1912,15 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			*p++=':';
 			*p++='"';
 
-			memcpy(p,dv->val.s,dv->val.len);
-			p+=dv->val.len;
+			for (it = dv->val.s, end = it + dv->val.len; it < end; it++)
+				if (*it == '"') {
+					DEC_AND_CHECK_LEN(len, 1);
+					*p++='\\';
+					*p++='"';
+				} else {
+					*p++=*it;
+				}
+
 			*p++='"';
 next_val:;
 		}
