@@ -1,4 +1,3 @@
 [submodule "modules/wolfssl/lib/wolfssl"]
 	path = modules/tls_wolfssl/lib/wolfssl
-	url = https://github.com/OpenSIPS/wolfssl.git
-	branch = 4.7.1r
+	url = https://github.com/wolfSSL/wolfssl.git
