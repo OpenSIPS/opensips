@@ -2122,7 +2122,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	RTPE_START_READ();
 	do {
 		if (snode && snode->s) {
-			if ((node = get_rtpe_node(snode, set)) == NULL)
+			if ((node = get_rtpe_node(snode, set)) == NULL && op == OP_OFFER)
 				node = select_rtpe_node(ng_flags.call_id, 1, set);
 			snode = NULL;
 		} else {
