@@ -31,11 +31,16 @@
 #define RMQ_MIN_FRAMES				4096
 #define RMQ_DEFAULT_FRAMES			131072
 
+#ifndef AMQP_VERSION_CODE
+#define AMQP_VERSION_CODE(major, minor, patch, release) \
+    ((major << 24) | (minor << 16) | (patch << 8) | (release))
+#endif
+
 #include "../tls_openssl/openssl_api.h"
 #include "../tls_mgm/api.h"
 #include <amqp.h>
 
-#if AMQP_VERSION < 0x00090000
+#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 #include "../../locking.h"
 
 extern gen_lock_t *ssl_lock;
@@ -44,7 +49,7 @@ extern gen_lock_t *ssl_lock;
 /* AMQP_VERSION was only added in v0.4.0 - there is no way to check the
  * version of the library before this, so we consider everything beyond v0.4.0
  * as old and inneficient */
-#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
+#if defined AMQP_VERSION && AMQP_VERSION >= AMQP_VERSION_CODE(0, 4, 0, 0)
   #define AMQP_VERSION_v04
 #include <amqp_tcp_socket.h>
 #include <amqp_ssl_socket.h>
