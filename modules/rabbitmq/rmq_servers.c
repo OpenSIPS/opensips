@@ -232,10 +232,11 @@ int rmq_reconnect(struct rmq_server *srv)
 				goto clean_rmq_conn;
 			}
 
-			#if AMQP_VERSION < 0x00090000
+			#if AMQP_VERSION < 0x00100000
 			/* if amqp_ssl_socket_get_context() is not available, serialize the CA,
 			 * cert and key loading in order to prevent openssl multiprocess issues */
 			lock_get(ssl_lock);
+			void *ssl_ctx = amqp_sock->ctx;
 			if (amqp_ssl_socket_set_cacert(amqp_sock, srv->tls_dom->ca.s) !=
 				AMQP_STATUS_OK) {
 				LM_ERR("Failed to set CA certificate\n");
