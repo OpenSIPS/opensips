@@ -45,7 +45,7 @@ int use_tls;
 struct openssl_binds openssl_api;
 struct tls_mgm_binds tls_api;
 
-#if AMQP_VERSION < 0x00100000
+#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 gen_lock_t *ssl_lock;
 #endif
 
@@ -143,7 +143,7 @@ static int mod_init(void)
 			return -1;
 		}
 
-		#if AMQP_VERSION < 0x00100000
+		#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 		ssl_lock = lock_alloc();
 		if (!ssl_lock) {
 			LM_ERR("No more shm memory\n");
@@ -177,7 +177,7 @@ static void mod_destroy(void)
 {
 	LM_NOTICE("destroying RabbitMQ module ...\n");
 
-	#if AMQP_VERSION < 0x00100000
+	#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 	lock_destroy(ssl_lock);
 	lock_dealloc(ssl_lock);
 	#endif
