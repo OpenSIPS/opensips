@@ -80,6 +80,10 @@ str *b2b_scenario_hdrs(struct b2bl_new_entity *entity);
 int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned int local_index,
 			b2bl_entity_id_t **entity, int etype, str *ekey);
 int udh_to_uri(str user, str host, str port, str* uri);
+
+static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
+			b2bl_tuple_t* tuple, str* ssid, str* hdrs, struct sip_msg* msg);
+
 static str method_invite= {INVITE, INVITE_LEN};
 static str method_ack   = {ACK, ACK_LEN};
 static str method_bye   = {BYE, BYE_LEN};
@@ -462,6 +466,8 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 	int entity_no, b2bl_entity_id_t* bentity)
 {
+	b2bl_entity_id_t* entity;
+
 	if(entity_no == 0) /* if a negative reply received from the server */
 	{
 		/* send cancel or bye to the peers */
@@ -470,7 +476,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 		b2b_mark_todel(tuple);
 	}
 	else
-	if(entity_no == 1)
+	if(entity_no == 1) /* if a negative reply received from client or media server */
 	{
 		/* if the media server in 2 stage connecting did not reply */
 		if(tuple->bridge_entities[2])
@@ -478,12 +484,25 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 			/* media server did not reply with success */
 			b2bl_delete_entity(bentity, tuple, hash_index, 1);
 
-			tuple->bridge_entities[1] = tuple->bridge_entities[0];
-			tuple->bridge_entities[0] = tuple->bridge_entities[2];
-			tuple->bridge_entities[2] = NULL;
+			/* anyway contact the real destination */
+			entity =  b2bl_new_client(&tuple->bridge_entities[2]->to_uri,
+				&tuple->bridge_entities[2]->proxy, &tuple->bridge_entities[0]->from_uri, tuple,
+				&tuple->bridge_entities[2]->scenario_id, &tuple->bridge_entities[2]->hdrs, NULL);
 
-			tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
-			tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
+			if(entity == NULL)
+			{
+				LM_ERR("Failed to generate new client\n");
+				return -1;
+			}
+			entity->no = 1;
+			b2bl_delete_entity(tuple->bridge_entities[2], tuple, hash_index, 1);
+			if (0 != b2bl_add_client(tuple, entity))
+				return -1;
+
+			/* original destination connected in the second step */
+			tuple->bridge_entities[2]= entity;
+
+			return 1; // Don't delete tuple
 		}
 		else
 		{
@@ -503,6 +522,8 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 				/* Disable bridging state */
 				tuple->state = B2B_NOTDEF_STATE;
 				tuple->bridge_initiator = 0;
+
+				return 1; // Don't delete tuple
 			} else {
 				/* the entity to connect replied with negative reply */
 				b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
@@ -511,10 +532,42 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 		}
 	}
 	else
+	if(entity_no == 2) /* if a negative reply received from real destination in case of media server used */
 	{
-		/* if the final destination replied with negative reply */
+		if(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE &&
+			tuple->bridge_initiator != 0 && tuple->bridge_initiator->peer)
+		{
+			/* Delete failed entity */
+			b2bl_delete_entity(bentity, tuple, hash_index, 1);
+
+			/* End media entity */
+			b2b_end_dialog(tuple->bridge_entities[1], tuple, hash_index);
+
+			tuple->bridge_entities[2] = NULL;
+			tuple->bridge_entities[1] = tuple->bridge_entities[0];
+			tuple->bridge_entities[0] = tuple->bridge_initiator;
+
+			tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
+			tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
+
+			/* Disable bridging state */
+			tuple->state = B2B_NOTDEF_STATE;
+			tuple->bridge_initiator = 0;
+
+			return 1; // Don't delete tuple
+		} else {
+			/* if the final destination replied with negative reply */
+			b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
+			b2b_end_dialog(tuple->bridge_entities[1], tuple, hash_index);
+			b2b_mark_todel(tuple);
+		}
+	}
+	else /* if a negative reply received from bridge initiator */
+	{
+		/* send cancel or bye to the peers */
 		b2b_end_dialog(tuple->bridge_entities[0], tuple, hash_index);
 		b2b_end_dialog(tuple->bridge_entities[1], tuple, hash_index);
+		b2b_end_dialog(tuple->bridge_entities[2], tuple, hash_index);
 		b2b_mark_todel(tuple);
 	}
 
@@ -527,11 +580,17 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 	int entity_no;
 	b2b_rpl_data_t rpl_data;
 
-	entity_no = bridge_get_entityno(tuple, entity);
-	if(entity_no < 0)
+	if (tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE &&
+		entity && tuple->bridge_initiator == entity)
 	{
-		LM_ERR("No match found\n");
-		return -1;
+		entity_no = 3; // Bridge initiator
+	} else {
+		entity_no = bridge_get_entityno(tuple, entity);
+		if(entity_no < 0)
+		{
+			LM_ERR("No match found\n");
+			return -1;
+		}
 	}
 
 	memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
@@ -605,6 +664,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 			tuple->state = B2B_NONE;
 			break;
 		case 1: break;
+		case 2: break;
 		default:
 			LM_ERR("unexpected entity_no [%d] for tuple [%p]\n",
 				entity_no, tuple);
@@ -1235,7 +1295,8 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		}
 
 		/* Reply from new bridge entity */
-		if(statuscode >= 200 && entity == tuple->bridge_entities[1] &&
+		if(statuscode >= 200 &&
+			entity == (tuple->bridge_entities[2]?tuple->bridge_entities[2]:tuple->bridge_entities[1]) &&
 			tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY && tuple->bridge_initiator != 0)
 		{
 			process_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
@@ -2771,6 +2832,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 				LM_ERR("Failed to create new b2b entity\n");
 				goto error;
 			}
+			entity->force_send_socket = msg?(msg->force_send_socket?msg->force_send_socket:0):0;
 		} else
 			entity = old_entity;
 
