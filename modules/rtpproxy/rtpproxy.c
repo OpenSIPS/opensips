@@ -2342,6 +2342,12 @@ struct rtpp_node *get_rtpp_node(str *node)
 	struct rtpp_set *set;
 	struct rtpp_node *rnode;
 
+	/* check last list version */
+	if (my_version != *list_version && update_rtpp_proxies() < 0) {
+		LM_ERR("cannot update rtpp proxies list\n");
+		return 0;
+	}
+
 	/* if chosen a specific node, use it! */
 	for (set = (*rtpp_set_list)->rset_first; set; set = set->rset_next) {
 		if ((rnode = get_rtpp_node_from_set(node, set, 1)) != NULL)

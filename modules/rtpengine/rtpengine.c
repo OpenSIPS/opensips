@@ -2002,6 +2002,12 @@ static struct rtpe_node *get_rtpe_node(str *node, struct rtpe_set *set)
 {
 	struct rtpe_node *rnode;
 
+	/* check last list version */
+	if (my_version != *list_version && update_rtpengines() < 0) {
+		LM_ERR("cannot update rtpengines list\n");
+		return NULL;
+	}
+
 	for (rnode = set->rn_first; rnode; rnode = rnode->rn_next)
 		if (node->len == rnode->rn_url.len &&
 				!memcmp(node->s, rnode->rn_url.s, node->len)) {
