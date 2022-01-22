@@ -1181,6 +1181,8 @@ opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
    Parameters:
      * full (optional) - adds the weight, priority and description
        fields to the listing
+     * partition (optional) - return only destinations and sets in
+       the provided partition.
 
    MI FIFO Command Format:
 opensips-cli -x mi ds_list
@@ -1395,14 +1397,14 @@ Chapter 3. Contributors
    10. Henning Westerholt (@henningw) 11 7 93 125
 
    All remaining contributors: Carsten Bock, Ionel Cerghit
-   (@ionel-cerghit), Elena-Ramona Modroiu, Klaus Darilion, Anca
-   Vamanu, John Burke (@john08burke), Jarrod Baumann (@jarrodb),
-   Walter Doekes (@wdoekes), Nick Altmann (@nikbyte), Jan Janak
-   (@janakj), Andrei Pelinescu-Onciul, Peter Lemenkov (@lemenkov),
-   Stanislaw Pitucha, Federico Cabiddu, Konstantin Bokarius,
-   Andreas Granig, John Riordan, Aron Podrigal (@ar45), Julián
-   Moreno Patiño, Kevin McAllister, Roman Sevko, UnixDev, David
-   Sanders, Edson Gellert Schubert.
+   (@ionel-cerghit), Elena-Ramona Modroiu, John Burke
+   (@john08burke), Klaus Darilion, Anca Vamanu, Jarrod Baumann
+   (@jarrodb), Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
+   Jan Janak (@janakj), Andrei Pelinescu-Onciul, Peter Lemenkov
+   (@lemenkov), Stanislaw Pitucha, Federico Cabiddu, Konstantin
+   Bokarius, Andreas Granig, John Riordan, Aron Podrigal (@ar45),
+   Julián Moreno Patiño, Kevin McAllister, Roman Sevko, UnixDev,
+   David Sanders, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1424,11 +1426,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2021
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
-   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2021
-   5.  John Burke (@john08burke)           Feb 2021 - Feb 2021
+   1.  John Burke (@john08burke)           Feb 2021 - Jan 2022
+   2.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2021
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
+   5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2021
    6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    8.  Roman Sevko                         Oct 2019 - Oct 2019
@@ -1453,8 +1455,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), John Burke
-   (@john08burke), Liviu Chircu (@liviuchircu), Razvan Crainea
+   Last edited by: John Burke (@john08burke), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Razvan Crainea
    (@razvancrainea), Vlad Paiu (@vladpaiu), Roman Sevko, Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Nick
    Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
