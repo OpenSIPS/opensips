@@ -530,7 +530,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					LM_ERR("got a truncated POST request\n");
 					return MHD_NO;
 				}
-				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
+				LM_DBG("got ContentType [%d] with len [%d]: %.*s\n",
 					pr->content_type, pr->content_len,
 					(int)*upload_data_size, upload_data);
 				/* Here we save data. */
