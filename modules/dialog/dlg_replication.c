@@ -641,7 +641,7 @@ int dlg_replicated_cseq_updated(bin_packet_t *packet)
 
 		dlg = lookup_dlg_unsafe(h_entry, h_id);
 
-		if (!match_dialog(dlg, &call_id, &from_tag, &to_tag, &dir, &dst_leg)) {
+		if (dlg && !match_dialog(dlg, &call_id, &from_tag, &to_tag, &dir, &dst_leg)) {
 			LM_ERR("Failed to match dialog\n");
 			dlg_unlock(d_table, d_entry);
 			return -1;
