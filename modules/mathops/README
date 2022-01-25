@@ -24,6 +24,7 @@ mathops Module
               1.4.5. math_ceil(number, result_var)
               1.4.6. math_round(number, result_var[, decimals])
               1.4.7. math_round_sf(number, result_var, figures)
+              1.4.8. math_compare(exp1, exp2, result_var)
 
    2. Contributors
 
@@ -51,6 +52,7 @@ mathops Module
    1.6. math_ceil usage
    1.7. math_round usage
    1.8. math_round_sf usage
+   1.9. math_compare usage
 
 Chapter 1. Admin Guide
 
@@ -326,6 +328,37 @@ if (math_round_sf($avp(1), $avp(result), 4)) {
         xlog("Round result: $avp(result)\n");
 } else {
         xlog("Round operation failed!\n");
+}
+
+...
+
+1.4.8.  math_compare(exp1, exp2, result_var)
+
+   Compare exp1 with exp2 and returns the comparison result in the
+   result_var. Standard comparison return codes used : If exp1 >
+   exp2, result_var = 1. Else if exp2 > exp1, result_var = -1,
+   else (in case they are equal), 0 is populated in the result_var
+
+   Meaning of the parameters is as follows:
+     * exp1 (string) - First expression to be evaluated and used
+       for comparison.
+     * exp2 (string) - Second expression to be evaluated and used
+       for comparison.
+     * result_var (var) - variable which will hold the result of
+       the comparison.
+
+   This function can be used from any route.
+
+   Example 1.9. math_compare usage
+...
+# Rounding PI
+
+$var(exp1) = "1 + 8";
+$var(exp2) = "7/2";
+
+if (math_compare($var(exp1), $var(exp2), $var(result))) {
+
+        # $var(result) will be 1, since 9 > 3.5
 }
 
 ...
