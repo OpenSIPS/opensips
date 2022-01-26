@@ -1194,7 +1194,9 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 		s->acc_info->acc.s = (char *)s->acc_info + sizeof(struct cgr_acc_sess);
 		s->acc_info->dst.s = s->acc_info->acc.s + tmp1.len;
 		memcpy(s->acc_info->acc.s, tmp1.s, tmp1.len);
+		s->acc_info->acc.len = tmp1.len;
 		memcpy(s->acc_info->dst.s, tmp2.s, tmp2.len);
+		s->acc_info->dst.len = tmp2.len;
 		pkg_free(tmp1.s);
 		pkg_free(tmp2.s);
 		s->acc_info->start_time = start_time;
