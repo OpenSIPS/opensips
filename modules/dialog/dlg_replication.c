@@ -1114,16 +1114,16 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 					/* successfully removed from timer list */
 					unref++;
 
+				if (dlg_db_mode == DB_MODE_DELAYED &&
+					!(dlg->flags&DLG_FLAG_DB_DELETED))
+					unref++;
+
 				if (dlg_db_mode != DB_MODE_SHUTDOWN &&
 					!(dlg->flags&DLG_FLAG_DB_DELETED)) {
 					dlg->flags &= ~DLG_FLAG_NEW;
 					remove_dialog_from_db(dlg);
 					dlg->flags |= DLG_FLAG_DB_DELETED;
 				}
-
-				if (dlg_db_mode == DB_MODE_DELAYED &&
-					!(dlg->flags&DLG_FLAG_DB_DELETED))
-					unref++;
 
 				if (old_state != DLG_STATE_DELETED)
 					if_update_stat(dlg_enable_stats, active_dlgs, -1);
