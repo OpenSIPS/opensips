@@ -127,6 +127,11 @@ static inline int wrapper_single_mysql_stmt_prepare(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n",
@@ -154,6 +159,11 @@ static inline int wrapper_single_mysql_stmt_execute(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n", error, mysql_stmt_error(stmt));
@@ -180,6 +190,11 @@ static inline int wrapper_single_mysql_real_query(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		case ER_LOCK_DEADLOCK:
 			LM_WARN("server error (%i): %s\n", error,
@@ -210,6 +225,11 @@ static inline int wrapper_single_mysql_send_query(const db_con_t *conn,
 		case CR_SERVER_GONE_ERROR:
 		case CR_SERVER_LOST:
 		case CR_COMMANDS_OUT_OF_SYNC:
+		/* UGLY magic number here - unfortunately MySQL & MariaDB
+		 * are diverging. MySQL has this as ER_CLIENT_INTERACTION_TIMEOUT
+		 * while MariaDB has it as ER_REFERENCED_TRG_DOES_NOT_EXIST
+		 */
+		case 4031:
 			return -1; /* reconnection error -> <0 */
 		default:
 			LM_CRIT("driver error (%i): %s\n", error,
