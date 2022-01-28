@@ -271,6 +271,8 @@ int reload_domain_table ( void )
 			attrs.len = strlen(attrs.s);
 		} else if (VAL_TYPE(val + 1) == DB_STR) {
 			attrs = VAL_STR(val + 1);
+		} else if (VAL_TYPE(val + 1) == DB_BLOB) {
+			attrs = VAL_BLOB(val + 1);
 		} else {
 			LM_ERR("Database problem on attrs column\n");
 			domain_dbf.free_result(db_handle, res);
