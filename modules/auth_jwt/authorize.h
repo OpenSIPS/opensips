@@ -28,6 +28,8 @@
 int auth_db_init(const str* db_url);
 void auth_db_close();
 
-int jwt_authorize(struct sip_msg* _msg, str* jwt_token, pv_spec_t* auth_user);
+int jwt_db_authorize(struct sip_msg* _msg, str* jwt_token, pv_spec_t* auth_user);
+int jwt_script_authorize(struct sip_msg* _msg, str* jwt_token, str* key, 
+		pv_spec_t* decoded_jwt);
 
 #endif /* JWTAUTHORIZE_H */

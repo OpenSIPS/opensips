@@ -77,6 +77,7 @@ static int fixup_check_outvar(void **param);
 /*
  * Module parameter variables
  */
+int jwt_db_mode	    = 0;
 static str db_url           = {NULL,0};
 
 str profiles_table          = str_init("jwt_profiles");
@@ -102,9 +103,14 @@ int jwt_credentials_n           = 0; /* Number of credentials in the list */
  */
 
 static cmd_export_t cmds[] = {
-	{"jwt_authorize", (cmd_function)jwt_authorize, {
+	{"jwt_db_authorize", (cmd_function)jwt_db_authorize, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_outvar, 0},
+		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"jwt_script_authorize", (cmd_function)jwt_script_authorize, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
@@ -114,6 +120,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
+	{"db_mode",           INT_PARAM, &jwt_db_mode                 },
 	{"db_url",            STR_PARAM, &db_url.s                },
 	{"profiles_table",    STR_PARAM, &profiles_table.s        },
 	{"secrets_table",     STR_PARAM, &secrets_table.s         },
@@ -168,10 +175,12 @@ struct module_exports exports = {
 
 static int child_init(int rank)
 {
-	auth_db_handle = auth_dbf.init(&db_url);
-	if (auth_db_handle == 0){
-		LM_ERR("unable to connect to the database\n");
-		return -1;
+	if (jwt_db_mode > 0 ) {
+		auth_db_handle = auth_dbf.init(&db_url);
+		if (auth_db_handle == 0){
+			LM_ERR("unable to connect to the database\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -182,22 +191,50 @@ static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
 
-	init_db_url( db_url , 0 /*cannot be null*/);
+	if (db_url.s != NULL) {
+		jwt_db_mode = 1;
+		init_db_url( db_url , 0 /*cannot be null*/);
 
-	profiles_table.len = strlen(profiles_table.s);
-	secrets_table.len = strlen(secrets_table.s);
-	tag_column.len = strlen(tag_column.s);
-	username_column.len = strlen(username_column.s);
-	secret_tag_column.len = strlen(secret_tag_column.s);
-	secret_column.len = strlen(secret_column.s);
-	start_ts_column.len = strlen(start_ts_column.s);
-	end_ts_column.len = strlen(end_ts_column.s);
-	jwt_tag_claim.len = strlen(jwt_tag_claim.s);
+		profiles_table.len = strlen(profiles_table.s);
+		secrets_table.len = strlen(secrets_table.s);
+		tag_column.len = strlen(tag_column.s);
+		username_column.len = strlen(username_column.s);
+		secret_tag_column.len = strlen(secret_tag_column.s);
+		secret_column.len = strlen(secret_column.s);
+		start_ts_column.len = strlen(start_ts_column.s);
+		end_ts_column.len = strlen(end_ts_column.s);
+		jwt_tag_claim.len = strlen(jwt_tag_claim.s);
 
-	/* Find a database module */
-	if (db_bind_mod(&db_url, &auth_dbf) < 0){
-		LM_ERR("unable to bind to a database driver\n");
-		return -1;
+		/* Find a database module */
+		if (db_bind_mod(&db_url, &auth_dbf) < 0){
+			LM_ERR("unable to bind to a database driver\n");
+			return -1;
+		}
+
+		auth_db_handle = auth_dbf.init(&db_url);
+		if (auth_db_handle == 0){
+			LM_ERR("unable to connect to the database\n");
+			return -1;
+		}
+
+		if (db_check_table_version(&auth_dbf, auth_db_handle, &profiles_table,
+		PROFILES_TABLE_VERSION) < 0) {
+			LM_ERR("error during table version check.\n");
+			auth_dbf.close(auth_db_handle);
+			return -1;
+		}
+
+		if (db_check_table_version(&auth_dbf, auth_db_handle, &secrets_table,
+		SECRETS_TABLE_VERSION) < 0) {
+			LM_ERR("error during table version check.\n");
+			auth_dbf.close(auth_db_handle);
+			return -1;
+		}
+
+		auth_dbf.close(auth_db_handle);
+
+	} else {
+		jwt_db_mode = 0;
 	}
 
 	/* process additional list of credentials */
@@ -206,27 +243,6 @@ static int mod_init(void)
 		return -5;
 	}
 
-	auth_db_handle = auth_dbf.init(&db_url);
-	if (auth_db_handle == 0){
-		LM_ERR("unable to connect to the database\n");
-		return -1;
-	}
-
-	if (db_check_table_version(&auth_dbf, auth_db_handle, &profiles_table,
-	PROFILES_TABLE_VERSION) < 0) {
-		LM_ERR("error during table version check.\n");
-		auth_dbf.close(auth_db_handle);
-		return -1;
-	}
-
-	if (db_check_table_version(&auth_dbf, auth_db_handle, &secrets_table,
-	SECRETS_TABLE_VERSION) < 0) {
-		LM_ERR("error during table version check.\n");
-		auth_dbf.close(auth_db_handle);
-		return -1;
-       	}
-
-	auth_dbf.close(auth_db_handle);
 	return 0;
 }
 
