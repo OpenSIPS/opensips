@@ -115,6 +115,9 @@ struct mid_reg_info {
 	rw_lock_t *tm_lock;
 };
 
+/* check if a given domain belongs to mid-registrar or not */
+int is_mid_reg_domain(const str *dom);
+
 extern rw_lock_t *tm_retrans_lk;
 
 extern int case_sensitive;

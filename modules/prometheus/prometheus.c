@@ -231,6 +231,8 @@ static void prom_groups_free(struct list_head *groups,
 		grp = list_entry(it, struct prom_labels_grp, list);
 		list_for_each_safe(it_stat, safe_stat, &grp->stats) {
 			stat = list_entry(it_stat, struct prom_labels_stat, list);
+			if (stat->free_buf->s)
+				pkg_free(stat->free_buf->s);
 			pkg_free(stat->free_buf);
 			pkg_free(stat);
 		}
@@ -291,8 +293,10 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		prefix.len = 1;
 	}
 	name_len = prefix.len + prom_delimiter.len + stat_name->len;
-	if (labels)
+	if (labels) {
 		label_len = labels->len + 1;
+		label_idx++;
+	}
 
 	switch (prom_grp_mode) {
 	case PROM_GROUP_MODE_NONE:
@@ -325,7 +329,7 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 			name_len +
 			9 /* ' counter\n' */ : 0);
 	if (label_idx)
-		label_len += 2 /* '{' and '{' */ + label_idx - 1 /* ',' */;
+		label_len += 2 /* '{' and '}' */ + label_idx - 1 /* ',' */;
 
 	if (page->len +
 			type_len +
@@ -389,13 +393,14 @@ static inline int prom_print_stat(stat_var *stat, str *stat_name,
 		if (labels) {
 			memcpy(page->s + page->len, labels->s, labels->len);
 			page->len += labels->len;
-			if (labels->len != label_len) {
-				memcpy(page->s + page->len, ",", 1);
-				page->len += 1;
-			}
+			label_idx++;
 		}
 
 		if (prom_grp_mode == PROM_GROUP_MODE_LABEL) {
+			if (label_idx) {
+				memcpy(page->s + page->len, ",", 1);
+				page->len += 1;
+			}
 			memcpy(page->s + page->len, prom_grp_label.s, prom_grp_label.len);
 			page->len += prom_grp_label.len;
 
@@ -512,49 +517,45 @@ static int prom_push_stat_labels(stat_var *stat, struct list_head *groups)
 	/* check to see if there are any labels regex defined for this group */
 	list_for_each(it, &prom_labels) {
 		label = list_entry(it, struct prom_label, list);
-		if (str_match(&label->module, mod))
-			break;
-		label = NULL;
-	}
-	if (!label)
-		return -1;
-	/* all good - apply regexp and see if there is any match */
-	if (pkg_nt_str_dup(&input, &stat->name) < 0)
-		return -1;
+		if (str_match(&label->module, mod)) {
+			/* try to get the labels */
+			if (pkg_nt_str_dup(&input, &stat->name) < 0)
+				return -1;
+			result = subst_str(input.s, NULL, label->subst, &match_no);
+			if (!result)
+				goto next;
+			name.s = result->s;
+			labels.s = q_memchr(result->s, ':', result->len);
+			if (labels.s == NULL)
+				goto free_result;
 
-	result = subst_str(input.s, NULL, label->subst, &match_no);
-	if (!result)
-		goto end;
-	name.s = result->s;
-	labels.s = q_memchr(result->s, ':', result->len);
-	if (labels.s == NULL)
-		goto free_result;
+			name.len = labels.s - name.s;
+			if (name.len <= 0)
+				goto free_result;
+			labels.s++;
+			labels.len = result->len - name.len - 1;
+			if (labels.len <= 0)
+				goto free_result;
 
-	name.len = labels.s - name.s;
-	if (name.len <= 0)
-		goto free_result;
-	labels.s++;
-	labels.len = result->len - name.len - 1;
-	if (labels.len <= 0)
-		goto free_result;
+			grp = prom_labels_grp_get(&name, groups);
+			if (!grp)
+				goto free_result;
 
-	grp = prom_labels_grp_get(&name, groups);
-	if (!grp)
-		goto free_result;
-
-	grp_stat = pkg_malloc(sizeof *grp_stat);
-	if (!grp_stat)
-		goto free_result;
-	grp_stat->labels = labels;
-	grp_stat->free_buf = result;
-	grp_stat->stat = stat;
-	list_add(&grp_stat->list, &grp->stats);
-	pkg_free(input.s);
-	return 0;
+			grp_stat = pkg_malloc(sizeof *grp_stat);
+			if (!grp_stat)
+				goto free_result;
+			grp_stat->labels = labels;
+			grp_stat->free_buf = result;
+			grp_stat->stat = stat;
+			list_add(&grp_stat->list, &grp->stats);
+			pkg_free(input.s);
+			return 0;
 free_result:
-	pkg_free(result);
-end:
-	pkg_free(input.s);
+			pkg_free(result);
+next:
+			pkg_free(input.s);
+		}
+	}
 	return -1;
 }
 
@@ -785,7 +786,7 @@ static int prom_labels_param(modparam_t type, void* val)
 				regex.len, regex.s);
 		return -1;
 	}
-	list_add(&label->list, &prom_labels);
+	list_add_tail(&label->list, &prom_labels);
 
 	return 0;
 }

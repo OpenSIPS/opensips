@@ -1824,7 +1824,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		return NULL;
 	}
 	
-	DEC_AND_CHECK_LEN(len,i);
+	DEC_AND_CHECK_LEN(len, i + 1);
 	p+=i;
 
 	if (dlg->legs_no[DLG_LEGS_USED]>0) {
@@ -1848,8 +1848,8 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 
 	memcpy(p,",\"callees\":[",12);
 	p+=12;
-	DEC_AND_CHECK_LEN(len,12);
-	
+	DEC_AND_CHECK_LEN(len, 12 + 1);
+
 	for( j=1 ; j < dlg->legs_no[DLG_LEGS_USED] ; j++  ) {
 		if (j != 1) {
 			*p++=',';
@@ -1874,12 +1874,13 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 		DEC_AND_CHECK_LEN(len,i);
 	}
 	*p++=']';
-	DEC_AND_CHECK_LEN(len,1);
 
 	if (ctx && dlg->vals) {
+		char *it, *end;
+
 		memcpy(p,",\"values\":{",11);
 		p+=11;
-		DEC_AND_CHECK_LEN(len,11);
+		DEC_AND_CHECK_LEN(len, 11 + 1);
 
 		k=0;
 		for( dv=dlg->vals ; dv ; dv=dv->next) {
@@ -1895,33 +1896,42 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 			}
 			k++;
 
-			*p++='\"';
-			len--;
-			memcpy(p,dv->name.s,dv->name.len);
-			p+=dv->name.len;
-			len-=dv->name.len;
+			DEC_AND_CHECK_LEN(len, 1 + dv->name.len + 3 + dv->val.len + 1);
+			*p++='"';
 
-			*p++='\"';
+			for (it = dv->name.s, end = it + dv->name.len; it < end; it++)
+				if (*it == '"') {
+					DEC_AND_CHECK_LEN(len, 1);
+					*p++='\\';
+					*p++='"';
+				} else {
+					*p++=*it;
+				}
+
+			*p++='"';
 			*p++=':';
-			*p++='\"';
-			DEC_AND_CHECK_LEN(len,3);
-			memcpy(p,dv->val.s,dv->val.len);
-			p+=dv->val.len;
-			DEC_AND_CHECK_LEN(len,dv->val.len);
-			*p++='\"';
-			DEC_AND_CHECK_LEN(len,1);
-next_val:
-			;
+			*p++='"';
+
+			for (it = dv->val.s, end = it + dv->val.len; it < end; it++)
+				if (*it == '"') {
+					DEC_AND_CHECK_LEN(len, 1);
+					*p++='\\';
+					*p++='"';
+				} else {
+					*p++=*it;
+				}
+
+			*p++='"';
+next_val:;
 		}
 
 		*p++='}';
-		DEC_AND_CHECK_LEN(len,1);
 	}
 
 	if (ctx && dlg->profile_links) {
 		memcpy(p,",\"profiles\":{",13);
 		p+=13;
-		DEC_AND_CHECK_LEN(len,13);
+		DEC_AND_CHECK_LEN(len, 13 + 1);
 		for (dl=dlg->profile_links ; dl ; dl=dl->next)
 			dl->it_marker= 0;
 
@@ -1936,27 +1946,22 @@ next_val:
 				DEC_AND_CHECK_LEN(len,1);
 			}
 
+			DEC_AND_CHECK_LEN(len, 1 + dl->profile->name.len + 2 + 1 +
+						1 + dl->value.len + 1 + 1);
+
 			*p++='\"';
-			DEC_AND_CHECK_LEN(len,1);
 			memcpy(p,dl->profile->name.s,dl->profile->name.len);
 			p+=dl->profile->name.len;
-			DEC_AND_CHECK_LEN(len,dl->profile->name.len);
 
 			*p++='\"';
-			DEC_AND_CHECK_LEN(len,1);
 			*p++=':';	
-			DEC_AND_CHECK_LEN(len,1);
 
 			*p++='[';
-			DEC_AND_CHECK_LEN(len,1);
 
 			*p++='\"';
-			DEC_AND_CHECK_LEN(len,1);
 			memcpy(p,ZSW(dl->value.s),dl->value.len);
 			p+=dl->value.len;
-			DEC_AND_CHECK_LEN(len,dl->value.len);
 			*p++='\"';
-			DEC_AND_CHECK_LEN(len,1);
 
 			for (dl2=dlg->profile_links; dl2; dl2=dl2->next) {
 				if (dl2->it_marker != 0)
@@ -1966,31 +1971,26 @@ next_val:
 				memcmp(dl->profile->name.s,dl2->profile->name.s,dl->profile->name.len) == 0) {
 					/* found another member of the same profile */
 
+					DEC_AND_CHECK_LEN(len, 2 + dl2->value.len + 1);
+
 					*p++=',';
-					DEC_AND_CHECK_LEN(len,1);
 					*p++='\"';
-					DEC_AND_CHECK_LEN(len,1);
-					
+
 					memcpy(p,ZSW(dl2->value.s),dl2->value.len);
 					p+=dl2->value.len;
-					DEC_AND_CHECK_LEN(len,dl2->value.len);
 					*p++='\"';
-					DEC_AND_CHECK_LEN(len,1);
 
 					dl2->it_marker=1;
 				}
 			}
 
 			*p++=']';
-			DEC_AND_CHECK_LEN(len,1);
 		}
 
 		*p++='}';
-		DEC_AND_CHECK_LEN(len,1);
 	}
 
 	*p++='}';
-	DEC_AND_CHECK_LEN(len,1);
 
 	*out_len = (int)(p-dlg_info);
 	return dlg_info;	

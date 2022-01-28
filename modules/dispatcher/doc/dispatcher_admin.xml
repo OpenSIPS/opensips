@@ -1652,6 +1652,10 @@ opensips-cli -x mi ds_set_state a 2 sip:10.0.0.202
 				<emphasis>full</emphasis> (optional) - adds the weight,
 				priority and description fields to the listing
 			</para></listitem>
+			<listitem><para>
+				<emphasis>partition</emphasis> (optional) - return only
+				destinations and sets in the provided partition.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:

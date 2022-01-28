@@ -1753,13 +1753,13 @@ void get_top_route_type(str *type, int *has_name)
 	switch (route_type) {
 	case REQUEST_ROUTE:
 		*type = str_route;
-		if (!route_stack[0])
+		if (!route_stack[route_stack_start])
 			goto out_noname;
 		break;
 
 	case ONREPLY_ROUTE:
 		*type = str_onreply_route;
-		if (!route_stack[0])
+		if (!route_stack[route_stack_start])
 			goto out_noname;
 		break;
 

@@ -258,23 +258,42 @@ int pv_parse_xml_name(pv_spec_p sp, const str *in)
 			prev_state = ST_END_IDX;
 			break;
 		case '.':
-			if (prev_state != ST_START_NAME && prev_state != ST_END_IDX) {
-				LM_ERR("<.attr> or <.val> must follow a complete path\n");
-				return -1;
-			}
-
-			if (prev_state == ST_START_NAME) {
-				tag_str.len = cur - start;
-				if (tag_str.len == 0) {
-					LM_ERR("No element name\n");
+			if (!memcmp(cur+1, "val", 3)) {
+				if (prev_state != ST_START_NAME && prev_state != ST_END_IDX) {
+					LM_ERR("<.attr> or <.val> must follow a complete path\n");
 					return -1;
 				}
-				tag_str.s = start;
-			}
 
-			if (!memcmp(cur+1, "val", 3)) {
+				if (prev_state == ST_START_NAME) {
+					tag_str.len = cur - start;
+					if (tag_str.len == 0) {
+						LM_ERR("No element name\n");
+						return -1;
+					}
+					tag_str.s = start;
+				}
+
 				path->access_mode = ACCESS_EL_VAL;
+
+				/* it was the final element in the path */
+				cur = in->s + in->len;
+				prev_state = ST_ACCESS;
+				break;
 			} else if (!memcmp(cur+1, "attr", 4)) {
+				if (prev_state != ST_START_NAME && prev_state != ST_END_IDX) {
+					LM_ERR("<.attr> or <.val> must follow a complete path\n");
+					return -1;
+				}
+
+				if (prev_state == ST_START_NAME) {
+					tag_str.len = cur - start;
+					if (tag_str.len == 0) {
+						LM_ERR("No element name\n");
+						return -1;
+					}
+					tag_str.s = start;
+				}
+
 				path->access_mode = ACCESS_EL_ATTR;
 
 				attr_str.len = in->len - (cur - in->s + 6); /* 6 = len(".attr/") */
@@ -291,14 +310,12 @@ int pv_parse_xml_name(pv_spec_p sp, const str *in)
 					path->attr_is_var = 1;
 				} else
 					path->attr = attr_str;
-			} else {
-				LM_ERR("Invalid access type, must be: <.attr> or <.val>\n");
-				return -1;
-			}
 
-			/* it was the final element in the path */
-			cur = in->s + in->len;
-			prev_state = ST_ACCESS;
+				/* it was the final element in the path */
+				cur = in->s + in->len;
+				prev_state = ST_ACCESS;
+				break;
+			}
 			break;
 		}
 	}

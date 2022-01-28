@@ -418,6 +418,7 @@ str* get_wi_notify_body(subs_t* subs, subs_t* watcher_subs)
 				subs->event->wipeer->name)< 0 )
 	{
 		LM_ERR("failed to add waiting watchers\n");
+		lock_release(&subs_htable[hash_code].lock);
 		goto error;
 	}
 

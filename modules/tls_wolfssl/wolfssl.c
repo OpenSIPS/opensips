@@ -28,6 +28,7 @@
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
+#include <wolfssl/wolfcrypt/wc_port.h>
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -118,6 +119,15 @@ static void _wolfssl_init_ssl_methods(void)
 	ssl_versions[TLS_USE_TLSv1_3-1] = TLS1_3_VERSION;
 }
 
+static void _wolfssl_show_ciphers(void)
+{
+	char ciphers[4096];
+	int ret = wolfSSL_get_ciphers(ciphers, (int)sizeof(ciphers));
+	if(ret == SSL_SUCCESS){
+		LM_INFO("Ciphers: %s\n", ciphers);
+	}
+}
+
 static void *oss_malloc(size_t size)
 {
 	return shm_malloc(size);
@@ -142,6 +152,8 @@ static int mod_init(void)
 	wolfSSL_Init();
 
 	_wolfssl_init_ssl_methods();
+
+	_wolfssl_show_ciphers();
 
 	return 0;
 }

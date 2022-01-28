@@ -29,9 +29,6 @@ void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
 	static str_list mp;
 	int st, max_ct;
 
-	sctx->cmatch.mode = CT_MATCH_NONE;
-	sctx->max_contacts = max_contacts;
-
 	for( st=0 ; st< flags_s->len ; st++ ) {
 		switch (flags_s->s[st]) {
 			case 'm': sctx->flags |= REG_SAVE_MEMORY_FLAG; break;

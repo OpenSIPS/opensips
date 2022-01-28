@@ -1036,8 +1036,8 @@ Chapter 3. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 147 91 3098 1815
    3. Razvan Crainea (@razvancrainea) 35 28 423 163
    4. Vlad Patrascu (@rvlad-patrascu) 32 18 630 480
-   5. Ovidiu Sas (@ovidiusas) 29 20 618 170
-   6. Liviu Chircu (@liviuchircu) 29 19 253 375
+   5. Liviu Chircu (@liviuchircu) 31 21 257 375
+   6. Ovidiu Sas (@ovidiusas) 29 20 618 170
    7. Daniel-Constantin Mierla (@miconda) 24 19 174 165
    8. Dan Pascu (@danpascu) 20 14 162 201
    9. Henning Westerholt (@henningw) 14 6 340 302
@@ -1073,13 +1073,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2021
-   4.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   6.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
-   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2021
+   5.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
    8.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    10. James Criscuolo                     Mar 2016 - Mar 2016

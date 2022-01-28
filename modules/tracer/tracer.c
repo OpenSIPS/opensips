@@ -144,8 +144,7 @@ static int sip_trace_instance(struct sip_msg*, trace_instance_p, int, int);
 static struct b2b_tracer* b2b_set_tracer_cb(void);
 static int trace_b2b(struct sip_msg*, trace_info_p);
 static int trace_dialog(struct sip_msg*, trace_info_p);
-static int trace_transaction(struct sip_msg* msg, trace_info_p info,
-		char dlg_tran, int reverte_dir);
+static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverte_dir);
 
 
 static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps,
@@ -200,8 +199,8 @@ static int pipport2su (str *sproto, str *ip, unsigned short port,
 static int parse_trace_id(unsigned int type, void *val);
 static int parse_trace_syslog_level(unsigned int type, void *val);
 
-void free_trace_info_pkg(void *param);
-void free_trace_info_shm(void *param);
+static void free_trace_info_pkg(void *param);
+static void free_trace_info_shm(void *param, int type);
 static void free_trace_filters(struct trace_filter *list);
 
 
@@ -1322,7 +1321,7 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 	if (dlgb.get_direction()==DLG_DIR_UPSTREAM)
 		reverte_dir = 1;
 
-	if (trace_transaction(params->msg, info, 1, reverte_dir)<0) {
+	if (trace_transaction(params->msg, info, reverte_dir)<0) {
 		LM_ERR("trace transaction failed!\n");
 		return;
 	}
@@ -1331,7 +1330,7 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 	sip_trace(params->msg, info, reverte_dir?TRACE_C_CALLEE:TRACE_C_CALLER);
 }
 
-void free_trace_info_pkg(void *param)
+static void free_trace_info_pkg(void *param)
 {
 	trace_info_p info = (trace_info_p)param;
 	trace_instance_p it, next;
@@ -1345,18 +1344,43 @@ void free_trace_info_pkg(void *param)
 	pkg_free(param);
 }
 
-void free_trace_info_shm(void *param)
+static void free_trace_info_shm(void *param, int type)
 {
 	trace_info_p info = (trace_info_p)param;
-	trace_instance_p it, next;
+	trace_instance_p it, next, prev;
 
-	for (it = info->instances; it; it = next) {
+	for (prev = NULL, it = info->instances; it; it = next) {
+		/* we should only release instances that only used tm */
 		next = it->next;
+		if (it->trace_flags != type) {
+			prev = it;
+			continue;
+		}
 		if (it->trace_list->dynamic)
 			trace_id_unref(it->trace_list);
+		if (prev)
+			prev->next = it->next;
+		else
+			info->instances = it->next;
 		shm_free(it);
 	}
-	shm_free(param);
+	if (!prev)
+		shm_free(param);
+}
+
+static void free_trace_info_tm(void *param)
+{
+	free_trace_info_shm(param, TRACE_TRANSACTION);
+}
+
+static void free_trace_info_b2b(void *param)
+{
+	free_trace_info_shm(param, TRACE_B2B);
+}
+
+static void free_trace_info_dlg(void *param)
+{
+	free_trace_info_shm(param, TRACE_DIALOG);
 }
 
 
@@ -1409,7 +1433,7 @@ static struct b2b_tracer* b2b_set_tracer_cb(void)
 		tracer.f_freep = NULL;
 	} else {
 		tracer.f = trace_b2b_transaction;
-		tracer.f_freep = free_trace_info_shm;
+		tracer.f_freep = free_trace_info_b2b;
 	}
 
 	return &tracer;
@@ -1428,11 +1452,15 @@ static int trace_b2b(struct sip_msg *msg, trace_info_p info)
 }
 
 
-static int trace_transaction(struct sip_msg* msg, trace_info_p info,
-								char dlg_tran, int reverse_dir)
+static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverse_dir)
 {
 	if (msg==NULL)
 		return 0;
+
+	if (TRACE_FLAG_ISSET(info, TRACE_INFO_TRAN)) {
+		LM_DBG("transacton callbacks already registered!\n");
+		return 0;
+	}
 
 	/* context for the request message */
 	SET_TRACER_CONTEXT(info);
@@ -1456,8 +1484,7 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info,
 	}
 
 	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT,
-	reverse_dir?trace_tm_out_rev:trace_tm_out, info,
-	dlg_tran?0:free_trace_info_shm) <=0) {
+	reverse_dir?trace_tm_out_rev:trace_tm_out, info, free_trace_info_tm) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
 		return -1;
 	}
@@ -1503,13 +1530,13 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 	 * this callback is ran only once - when dialog gets for
 	 * the first time in DELETED state */
 	if(dlgb.register_dlgcb(dlg,DLGCB_TERMINATED,
-				trace_transaction_dlgcb,info,free_trace_info_shm)!=0) {
+				trace_transaction_dlgcb,info,free_trace_info_dlg)!=0) {
 		LM_ERR("failed to register dialog callback\n");
 		return -1;
 	}
 
 	/* also trace this transaction */
-	if (trace_transaction(msg, info, 1, 0/*initial request*/) < 0) {
+	if (trace_transaction(msg, info, 0/*initial request*/) < 0) {
 		LM_ERR("failed to trace initial INVITE transaction!\n");
 		return -1;
 	}
@@ -1535,7 +1562,7 @@ static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *pa
 
 	LM_DBG("Tracing incoming cancel due to trace_dialog() \n");
 
-	if (trace_transaction(req, *param->param, 1, 0 /*initial request*/) < 0) {
+	if (trace_transaction(req, *param->param, 0 /*initial request*/) < 0) {
 		LM_ERR("trace transaction failed!\n");
 		return;
 	}
@@ -1833,6 +1860,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	instance->control_flags = control_flags;
 	instance->trace_list=el;
 	instance->trace_types = trace_types;
+	instance->trace_flags = trace_flags;
 
 	if (trace_flags != TRACE_MESSAGE) {
 		info = GET_TRACER_CONTEXT;
@@ -1879,7 +1907,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 			return -1;
 		}
 	} else if (trace_flags==TRACE_TRANSACTION) {
-		if (trace_transaction(msg, info, 0, 0 /*initial request*/) < 0) {
+		if (trace_transaction(msg, info, 0 /*initial request*/) < 0) {
 			LM_ERR("trace transaction failed!\n");
 			return -1;
 		}

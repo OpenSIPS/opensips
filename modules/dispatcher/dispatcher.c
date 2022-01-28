@@ -333,7 +333,9 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "ds_list", 0, 0, 0, {
 		{w_ds_mi_list, {0}},
+		{w_ds_mi_list, {"partition", 0}},
 		{w_ds_mi_list_1, {"full", 0}},
+		{w_ds_mi_list_1, {"full", "partition", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "ds_reload", 0, 0, mi_child_init, {
@@ -1281,22 +1283,36 @@ mi_response_t *ds_mi_set(const mi_params_t *params,
 	return init_mi_result_ok();
 }
 
-mi_response_t *ds_mi_list(int full)
+mi_response_t *ds_mi_list(const mi_params_t *params, int full)
 {
+	str partition_name;
 	mi_response_t *resp;
 	mi_item_t *resp_obj;
 	mi_item_t *parts_arr, *part_item;
-	ds_partition_t *part_it;
+	ds_partition_t *partition=NULL, *part_it;
 
 	resp = init_mi_result_object(&resp_obj);
 	if (!resp)
 		return 0;
+
+	if (try_get_mi_string_param(params, "partition", &partition_name.s, &partition_name.len) == 0) {
+		if (partition_name.s==NULL)
+			return init_mi_error(500, MI_SSTR("partition param not found"));
+
+		partition = find_partition_by_name(&partition_name);
+
+		if (partition == NULL)
+			return init_mi_error(500, MI_SSTR(MI_UNK_PARTITION));
+	}
 
 	parts_arr = add_mi_array(resp_obj, MI_SSTR("PARTITIONS"));
 	if (!parts_arr)
 		goto error;
 
 	for (part_it = partitions; part_it; part_it = part_it->next) {
+		if (partition!=NULL && partition!=part_it)
+			continue;
+
 		part_item = add_mi_object(parts_arr, NULL, 0);
 		if (!part_item)
 			goto error;
@@ -1319,7 +1335,7 @@ error:
 mi_response_t *w_ds_mi_list(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	return ds_mi_list(0);
+	return ds_mi_list(params, 0);
 }
 
 mi_response_t *w_ds_mi_list_1(const mi_params_t *params,
@@ -1330,7 +1346,7 @@ mi_response_t *w_ds_mi_list_1(const mi_params_t *params,
 	if (get_mi_int_param(params, "full", &full) < 0)
 		return init_mi_param_error();
 
-	return ds_mi_list(full);
+	return ds_mi_list(params, full);
 }
 
 mi_response_t *ds_mi_reload(const mi_params_t *params,

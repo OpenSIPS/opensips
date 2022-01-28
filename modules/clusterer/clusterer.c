@@ -1283,8 +1283,10 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 
 	rc = get_capability_status(cl, &cap->name);
 	if (rc == -1) {
+		lock_release(node->lock);
 		goto exit;
 	} else if (rc == 0) {
+		lock_release(node->lock);
 		LM_DBG("capability disabled, ignoring received bin packet\n");
 		goto exit;
 	}

@@ -33,8 +33,13 @@
 static int pv_parse_rtp_relay_var(pv_spec_p sp, const str *in);
 static int pv_get_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val);
+static int pv_get_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val);
 static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val);
+static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val);
+static int pv_parse_rtp_relay_ctx(pv_spec_p sp, const str *in);
 static int pv_init_rtp_relay_var(pv_spec_p sp, int param);
 static int rtp_relay_engage(struct sip_msg *msg, struct rtp_relay *relay, int *set);
 static int fixup_rtp_relay(void **param);
@@ -115,6 +120,9 @@ static pv_export_t mod_pvars[] = {
 	{ str_init("rtp_relay_peer"), 2005, pv_get_rtp_relay_var,
 		pv_set_rtp_relay_var, pv_parse_rtp_relay_var,
 		pv_parse_index, pv_init_rtp_relay_var, RTP_RELAY_PV_PEER},
+	{ str_init("rtp_relay_ctx"), 2006, pv_get_rtp_relay_ctx,
+		pv_set_rtp_relay_ctx, pv_parse_rtp_relay_ctx,
+		NULL, NULL, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -367,6 +375,150 @@ static int fixup_rtp_relay(void **param)
 		return E_INVALID_PARAMS;
 	}
 	*param = relay;
+	return 0;
+}
+
+enum rtp_relay_ctx_flags {
+	RTP_RELAY_CTX_CALLID,
+	RTP_RELAY_CTX_UNKNOWN,
+};
+
+static enum rtp_relay_ctx_flags rtp_relay_ctx_flags_get(const str *in)
+{
+	if (str_casematch_nt(in, "call-id") || str_casematch_nt(in, "callid"))
+		return RTP_RELAY_CTX_CALLID;
+	return RTP_RELAY_CTX_UNKNOWN;
+}
+
+static enum rtp_relay_ctx_flags
+	rtp_relay_ctx_flags_resolve(struct sip_msg *msg, pv_param_t *param)
+{
+	pv_value_t flags_name;
+	if (param->pvn.type & RTP_RELAY_PV_VAR) {
+		if (pv_get_spec_value(msg, (pv_spec_p)param->pvi.u.dval, &flags_name) < 0)
+			LM_ERR("cannot get the name of the RTP ctx flag\n");
+		else if (pvv_is_str(&flags_name))
+			return rtp_relay_ctx_flags_get(&flags_name.rs);
+	} else {
+		return param->pvn.u.isname.name.n;
+	}
+	return RTP_RELAY_CTX_UNKNOWN;
+}
+
+static int pv_get_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *val)
+{
+	str *sync = NULL;
+	struct rtp_relay_ctx *ctx;
+	enum rtp_relay_ctx_flags flag;
+
+	flag = rtp_relay_ctx_flags_resolve(msg, param);
+	if (flag == RTP_RELAY_CTX_UNKNOWN) {
+		LM_ERR("could not resolve ctx flag!\n");
+		return -1;
+	}
+
+	if (!(ctx = rtp_relay_try_get_ctx()))
+		return pv_get_null(msg, param, val);
+
+	RTP_RELAY_CTX_LOCK(ctx);
+	switch (flag) {
+		case RTP_RELAY_CTX_CALLID:
+			sync = &ctx->callid;
+			break;
+		default:
+			LM_BUG("unhandled flag %d\n", flag);
+			break;
+	}
+	if (sync && sync->len) {
+		val->rs = *sync;
+		val->flags = PV_VAL_STR;
+	} else {
+		pv_get_null(msg, param, val);
+	}
+	RTP_RELAY_CTX_UNLOCK(ctx);
+	return 0;
+}
+
+static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	int ret = -3;
+	str *sync = NULL;
+	struct rtp_relay_ctx *ctx;
+	enum rtp_relay_ctx_flags flag;
+	str s = {NULL, 0};
+
+	flag = rtp_relay_ctx_flags_resolve(msg, param);
+	if (flag == RTP_RELAY_CTX_UNKNOWN) {
+		LM_ERR("could not resolve ctx flag!\n");
+		return -1;
+	}
+
+	if (!(ctx = rtp_relay_get_ctx())) {
+		LM_ERR("could not get/create context!\n");
+		return -2;
+	}
+	RTP_RELAY_CTX_LOCK(ctx);
+	switch (flag) {
+		case RTP_RELAY_CTX_CALLID:
+			sync = &ctx->callid;
+			break;
+		default:
+			LM_BUG("unhandled flag %d\n", flag);
+			break;
+	}
+	if (sync) {
+		if (!(val->flags & PV_VAL_NULL)) {
+			if (pvv_is_int(val))
+				s.s = int2str(val->ri, &s.len);
+			else
+				s = val->rs;
+		}
+		if (s.s && s.len) {
+			if (shm_str_sync(sync, &s) >=0)
+				ret = 1;
+		} else {
+			if (sync->s) {
+				shm_free(sync->s);
+				sync->s = 0;
+				sync->len = 0;
+			}
+		}
+	}
+	RTP_RELAY_CTX_UNLOCK(ctx);
+	return ret;
+}
+
+static int pv_parse_rtp_relay_ctx(pv_spec_p sp, const str *in)
+{
+	enum rtp_relay_ctx_flags flag;
+	pv_spec_t *pv;
+	if (!in || !in->s || in->len < 1) {
+		LM_ERR("invalid RTP relay var name!\n");
+		return -1;
+	}
+	if (in->s[0] == PV_MARKER) {
+		pv = pkg_malloc(sizeof(pv_spec_t));
+		if (!pv) {
+			LM_ERR("Out of mem!\n");
+			return -1;
+		}
+		if (!pv_parse_spec(in, pv)) {
+			LM_ERR("cannot parse PVAR [%.*s]\n",
+					in->len, in->s);
+			return -1;
+		}
+		sp->pvp.pvn.type |= RTP_RELAY_PV_VAR;
+		sp->pvp.pvn.u.dname = pv;
+	} else {
+		flag = rtp_relay_ctx_flags_get(in);
+		if (flag == RTP_RELAY_CTX_UNKNOWN) {
+			LM_ERR("invalid RTP relay context flag %.*s\n", in->len, in->s);
+			return -1;
+		}
+		sp->pvp.pvn.u.isname.name.n = flag;
+	}
 	return 0;
 }
 

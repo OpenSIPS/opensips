@@ -26,6 +26,7 @@ RTP Relay Module
 
               1.6.1. $rtp_relay
               1.6.2. $rtp_relay_peer
+              1.6.3. $rtp_relay_ctx()
 
    2. Contributors
 
@@ -286,6 +287,9 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
        used by rtpengine)
      * iface - the interface used for the traffic coming from this
        UAC.
+     * body - the body to be used for the UAC.
+     * delete - flags to be used when the media session is
+       terminated/deleted.
      * disabled - provisioned as an integer, it is used to disable
        RTP relay for this UAC.
 
@@ -296,6 +300,17 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
    other UAC's flags, except the current one. All other fields are
    similar.
 
+1.6.3. $rtp_relay_ctx()
+
+   This variable can be used to provide information about the RTP
+   context, information that is not associated with any of the
+   involved peers.
+
+   The following settings can be used:
+     * callidThe callid to be used for all communication with the
+       rtp server. If not specified, it is taken from the
+       message/dialog.
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -303,7 +318,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    66      34      3090     313
+   1. Razvan Crainea (@razvancrainea)    72      38      3372     329
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -325,7 +340,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2021 - Nov 2021
+   1. Razvan Crainea (@razvancrainea) Apr 2021 - Jan 2022
 
    (1) including any documentation-related commits, excluding
    merge commits

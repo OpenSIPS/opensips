@@ -530,7 +530,7 @@ MHD_RET answer_to_connection (void *cls, struct MHD_Connection *connection,
 					LM_ERR("got a truncated POST request\n");
 					return MHD_NO;
 				}
-				LM_DBG("got ContentType [%d] with len [%d]: %.*s\\n",
+				LM_DBG("got ContentType [%d] with len [%d]: %.*s\n",
 					pr->content_type, pr->content_len,
 					(int)*upload_data_size, upload_data);
 				/* Here we save data. */
@@ -873,8 +873,10 @@ static char * load_file(char * filename)
 	fseek(f, 0, SEEK_END);
 	long fsize = ftell(f);
 
-	if(fsize == 0)
+	if(fsize == 0) {
+		fclose(f);
 		return NULL;
+	}
 
 	fseek(f, 0, SEEK_SET);
 

@@ -134,6 +134,9 @@ static int mod_init(void)
 	cde.cdb_func.add = redis_add;
 	cde.cdb_func.sub = redis_sub;
 	cde.cdb_func.raw_query = redis_raw_query;
+	cde.cdb_func.map_get = redis_map_get;
+	cde.cdb_func.map_set = redis_map_set;
+	cde.cdb_func.map_remove = redis_map_remove;
 
 	cde.cdb_func.capability = 0;
 

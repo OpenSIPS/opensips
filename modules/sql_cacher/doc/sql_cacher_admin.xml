@@ -279,7 +279,8 @@ modparam("sql_cacher", "reload_interval", 5)
 	<section id="mi_sql_cacher_reload" xreflabel="sql_cacher_reload">
 		<title><function moreinfo="none">sql_cacher_reload</function></title>
 		<para>
-			Reloads the entire SQL table in cache in <emphasis>full caching</emphasis> mode.
+			Reloads the entire SQL table in cache or the single key (if key provided) in
+			<emphasis>full caching</emphasis> mode.
 		</para>
 		<para>
 			Reloads the given key or invalidates all the keys in cache in <emphasis>on demand</emphasis> mode.
@@ -290,8 +291,7 @@ modparam("sql_cacher", "reload_interval", 5)
 				<emphasis>id</emphasis> - the caching entry's id
 			</para></listitem>
 			<listitem><para>
-				<emphasis>key</emphasis> (optional) - the specific key to be reloaded, 
-				only makes sense in <emphasis>on demand</emphasis> mode.
+				<emphasis>key</emphasis> (optional) - the specific key to be reloaded.
 			</para></listitem>
 		</itemizedlist>
 		<example>

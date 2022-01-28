@@ -280,6 +280,40 @@ modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/opensips"
 	</programlisting>
 		</example>
 	</section>
+		<section id="param_cachedb_url" xreflabel="cachedb_url">
+			<title><varname>cachedb_url</varname> (str)</title>
+			<para>
+				URL of a NoSQL database to be used. Only Redis is supported
+				at the moment.
+			</para>
+			<example>
+			<title>Set <varname>cachedb_url</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("b2b_logic", "cachedb_url", "redis://localhost:6379/")
+...
+		</programlisting>
+			</example>
+		</section>
+		<section id="param_cachedb_key_prefix" xreflabel="cachedb_key_prefix">
+			<title><varname>cachedb_key_prefix</varname> (string)</title>
+			<para>
+			Prefix to use for every key set in the NoSQL database.
+			</para>
+			<para>
+			<emphasis>
+				Default value is <quote>b2bl$</quote>.
+			</emphasis>
+			</para>
+			<example>
+			<title>Set <varname>cachedb_key_prefix</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("b2b_logic", "cachedb_key_prefix", "b2b")
+...
+	</programlisting>
+			</example>
+		</section>
 	<section id="param_update_period" xreflabel="update_period">
 		<title><varname>update_period</varname> (int)</title>
 		<para>

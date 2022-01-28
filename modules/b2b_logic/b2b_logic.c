@@ -151,10 +151,15 @@ static struct to_body b2bl_from;
 static char b2bl_from_buf[B2BL_FROM_BUF_LEN + 1];
 
 str db_url= {0, 0};
+str cdb_url;
+str cdb_key_prefix = str_init("b2bl$");
 db_con_t *b2bl_db = NULL;
 db_func_t b2bl_dbf;
 str b2bl_dbtable= str_init("b2b_logic");
 str init_callid_hdr={0, 0};
+
+cachedb_funcs b2bl_cdbf;
+cachedb_con *b2bl_cdb;
 
 str server_address = {0, 0};
 int b2bl_db_mode = WRITE_BACK;
@@ -240,6 +245,8 @@ static param_export_t params[]=
 	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
 	{"contact_user",    INT_PARAM,                &contact_user              },
 	{"db_url",          STR_PARAM,                &db_url.s                  },
+	{"cachedb_url",     STR_PARAM, 				  &cdb_url.s         		 },
+	{"cachedb_key_prefix",    STR_PARAM, 	 	  &cdb_key_prefix.s  		 },
 	{"db_table",        STR_PARAM,                &b2bl_dbtable.s            },
 	{"max_duration",    INT_PARAM,                &max_duration              },
 	/*
@@ -354,14 +361,42 @@ static int mod_init(void)
 	if (server_address.s)
 		server_address.len = strlen(server_address.s);
 
+	if (script_req_route) {
+		global_req_rtid = get_script_route_ID_by_name(script_req_route,
+			sroutes->request, RT_NO);
+		if (global_req_rtid < 1) {
+			LM_ERR("route <%s> does not exist\n", script_req_route);
+			return -1;
+		}
+	}
+
+	if (script_reply_route) {
+		global_reply_rtid = get_script_route_ID_by_name(script_reply_route,
+			sroutes->request, RT_NO);
+		if (global_reply_rtid < 1) {
+			LM_ERR("route <%s> does not exist\n",script_reply_route);
+			return -1;
+		}
+	}
+
 	if(init_b2bl_htable() < 0)
 	{
 		LM_ERR("Failed to initialize b2b logic hash table\n");
 		return -1;
 	}
 
-	if(b2bl_db_mode)
-		init_db_url(db_url, 1);
+	if(b2bl_db_mode) {
+		if (!cdb_url.s) {
+			init_db_url(db_url, 1);
+			if (!db_url.s)
+				b2bl_db_mode = NO_DB;
+		} else if (db_url.s) {
+			LM_ERR("Both 'db_url' and 'cachedb_url' defined\n");
+			return -1;
+		} else {
+			cdb_url.len = strlen(cdb_url.s);
+		}
+	}
 
 	if(b2bl_db_mode && db_url.s)
 	{
@@ -405,9 +440,40 @@ static int mod_init(void)
 		if(b2bl_db)
 			b2bl_dbf.close(b2bl_db);
 		b2bl_db = NULL;
+	} else if (b2bl_db_mode && cdb_url.s) {
+		if (cachedb_bind_mod(&cdb_url, &b2bl_cdbf) < 0) {
+			LM_ERR("cannot bind functions for cachedb_url %.*s\n",
+			       cdb_url.len, cdb_url.s);
+			return -1;
+		}
+
+		if (!CACHEDB_CAPABILITY(&b2bl_cdbf, CACHEDB_CAP_MAP)) {
+			LM_ERR("not enough capabilities for cachedb_url %.*s\n",
+			       cdb_url.len, cdb_url.s);
+			return -1;
+		}
+
+		b2bl_cdb = b2bl_cdbf.init(&cdb_url);
+		if (!b2bl_cdb) {
+			LM_ERR("connecting to database failed\n");
+			return -1;
+		}
+
+		cdb_key_prefix.len = strlen(cdb_key_prefix.s);
+
+		b2bl_db_init();
+
+		/* reload data */
+		if(b2b_logic_restore() < 0)
+		{
+			LM_ERR("Failed to restore data from database\n");
+			return -1;
+		}
+
+		if(b2bl_cdb)
+			b2bl_cdbf.destroy(b2bl_cdb);
+		b2bl_cdb = NULL;
 	}
-	else
-		b2bl_db_mode = 0;
 
 	if (b2bl_key_avp_param.s)
 		b2bl_key_avp_param.len = strlen(b2bl_key_avp_param.s);
@@ -567,24 +633,6 @@ next_hdr:
 		return -1;
 	}
 
-	if (script_req_route) {
-		global_req_rtid = get_script_route_ID_by_name(script_req_route,
-			sroutes->request, RT_NO);
-		if (global_req_rtid < 1) {
-			LM_ERR("route <%s> does not exist\n", script_req_route);
-			return -1;
-		}
-	}
-
-	if (script_reply_route) {
-		global_reply_rtid = get_script_route_ID_by_name(script_reply_route,
-			sroutes->request, RT_NO);
-		if (global_reply_rtid < 1) {
-			LM_ERR("route <%s> does not exist\n",script_reply_route);
-			return -1;
-		}
-	}
-
 	return 0;
 }
 
@@ -667,15 +715,25 @@ void b2bl_clean(unsigned int ticks, void* param)
 
 static void mod_destroy(void)
 {
-	if (b2bl_db_mode==WRITE_BACK && b2bl_dbf.init) {
+	if (b2bl_db_mode==WRITE_BACK) {
+		if (b2bl_dbf.init) {
 
-		b2bl_db = b2bl_dbf.init(&db_url);
-		if(!b2bl_db)
-		{
-			LM_ERR("connecting to database failed\n");
-		} else {
-			b2b_logic_dump(1);
-			b2bl_dbf.close(b2bl_db);
+			b2bl_db = b2bl_dbf.init(&db_url);
+			if(!b2bl_db)
+			{
+				LM_ERR("connecting to database failed\n");
+			} else {
+				b2b_logic_dump(1);
+				b2bl_dbf.close(b2bl_db);
+			}
+		} else if (b2bl_cdbf.init) {
+			b2bl_cdb = b2bl_cdbf.init(&cdb_url);
+			if (!b2bl_cdb) {
+				LM_ERR("connecting to database failed\n");
+			} else {
+				b2b_logic_dump(1);
+				b2bl_cdbf.destroy(b2bl_cdb);
+			}
 		}
 	}
 
@@ -687,19 +745,34 @@ static int child_init(int rank)
 	if (b2bl_db_mode==0)
 		return 0;
 
-	if (b2bl_dbf.init==0)
-	{
-		LM_CRIT("child_init: database not bound\n");
-		return -1;
-	}
+	if (db_url.s) {
+		if (b2bl_dbf.init==0)
+		{
+			LM_CRIT("child_init: database not bound\n");
+			return -1;
+		}
 
-	b2bl_db = b2bl_dbf.init(&db_url);
-	if(!b2bl_db)
-	{
-		LM_ERR("connecting to database failed\n");
-		return -1;
+		b2bl_db = b2bl_dbf.init(&db_url);
+		if(!b2bl_db)
+		{
+			LM_ERR("connecting to database failed\n");
+			return -1;
+		}
+		LM_DBG("child %d: Database connection opened successfully\n", rank);
+	} else {
+		if (!b2bl_cdbf.init) {
+			LM_ERR("cachedb functions not initialized\n");
+			return -1;
+		}
+
+		b2bl_cdb = b2bl_cdbf.init(&cdb_url);
+		if (!b2bl_cdb) {
+			LM_ERR("connecting to database failed\n");
+			return -1;
+		}
+
+		LM_DBG("child %d: cachedb connection opened successfully\n", rank);
 	}
-	LM_DBG("child %d: Database connection opened successfully\n", rank);
 
 	return 0;
 }
@@ -1667,22 +1740,35 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	}
 
 	if (param->pvi.type != PV_IDX_INT) {
-		/* no index provided, identify the current entity by callid */
-		if (get_callid(msg, &callid) < 0) {
-			LM_ERR("Failed to get callid from SIP message\n");
-			goto ret_null;
-		}
-
-		entity = curr_entities[0];
-		if (entity &&
-			(!entity->dlginfo || str_strcmp(&entity->dlginfo->callid, &callid)))
-			entity = NULL;
-
-		if (!entity) {
-			entity = curr_entities[1];
-			if (entity && (!entity->dlginfo ||
-				str_strcmp(&entity->dlginfo->callid, &callid)))
+		if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
+			/* identify the current entity by entity key */
+			entity = curr_entities[0];
+			if (entity && str_strcmp(&entity->key, &cur_route_ctx.entity_key))
 				entity = NULL;
+
+			if (!entity) {
+				entity = curr_entities[1];
+				if (entity && str_strcmp(&entity->key, &cur_route_ctx.entity_key))
+					entity = NULL;
+			}
+		} else {
+			/* identify the current entity by callid */
+			if (get_callid(msg, &callid) < 0) {
+				LM_ERR("Failed to get callid from SIP message\n");
+				goto ret_null;
+			}
+
+			entity = curr_entities[0];
+			if (entity &&
+				(!entity->dlginfo || str_strcmp(&entity->dlginfo->callid, &callid)))
+				entity = NULL;
+
+			if (!entity) {
+				entity = curr_entities[1];
+				if (entity && (!entity->dlginfo ||
+					str_strcmp(&entity->dlginfo->callid, &callid)))
+					entity = NULL;
+			}
 		}
 
 		if (!entity) {

@@ -1092,13 +1092,20 @@ pstat(MOS-min-at)[$ft])\r\n");
      * url - the RTP proxy url (exactly as defined in the config
        file).
      * enable - 1 - enable, 0 - disable the RTP proxy.
+     * setid (optional) the set ID of the nodes to be updated. If
+       provided, only nodes in the provided set will be updated.
 
    NOTE: if a RTP proxy is defined multiple times (in the same or
-   different set), all of its instances will be enables/disabled.
+   different set), all of its instances will be enabled/disbled IF
+   no set ID is provided.
 
    Example 1.37.  rtpengine_enable usage
 ...
+## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
+## enable rtpengine by URL and set ID (3)
+$ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
+1 setid=3
 ...
 
 1.7.2. rtpengine_show
@@ -1236,12 +1243,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 179 86 5431 2888
+   1. Razvan Crainea (@razvancrainea) 182 89 5471 2924
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 30 16 422 594
    3. Richard Fuchs 20 2 640 723
    4. Liviu Chircu (@liviuchircu) 17 13 71 135
    5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
-   6. John Burke (@john08burke) 10 6 236 67
+   6. John Burke (@john08burke) 13 8 250 69
    7. Peter Lemenkov (@lemenkov) 8 6 27 34
    8. Eric Tamme (@etamme) 7 5 42 19
    9. Nick Altmann (@nikbyte) 6 4 43 2
@@ -1272,9 +1279,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2021
-   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Nov 2021
-   3.  John Burke (@john08burke)           Jun 2019 - Aug 2021
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jan 2022
+   2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2021
+   3.  John Burke (@john08burke)           Jun 2019 - Oct 2021
    4.  Nick Altmann (@nikbyte)             May 2021 - May 2021
    5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    6.  Flavio E. Goncalves                 Oct 2020 - Oct 2020

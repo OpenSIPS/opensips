@@ -425,7 +425,7 @@ static int parse_cache_entry(unsigned int type, void *val)
 						EXPIRE_STR_LEN, EXPIRE_STR, str_val.len, str_val.s);
 				goto parse_err;
 			}
-		} else {
+		} else if (parse_str.len - (p1 - parse_str.s) > 0) {
 			LM_ERR("unknown parameter: %.*s\n",
 				(int)(parse_str.len - (p1 - parse_str.s)), p1);
 			goto parse_err;
@@ -1118,34 +1118,42 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		return init_mi_error(500, MI_SSTR("ERROR Cache entry not found"));
 	}
 
-	if (db_hdls->c_entry->on_demand) {
+	if (db_hdls->c_entry->on_demand || key) {
 		if (key) {
-			src_key.len = db_hdls->c_entry->id.len + key->len;
-			src_key.s = pkg_malloc(src_key.len);
-			if (!src_key.s) {
-				LM_ERR("No more pkg memory\n");
-				return NULL;
-			}
-			memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
-			memcpy(src_key.s + db_hdls->c_entry->id.len, key->s, key->len);
+			if (db_hdls->c_entry->on_demand) {
+				src_key.len = db_hdls->c_entry->id.len + key->len;
+				src_key.s = pkg_malloc(src_key.len);
+				if (!src_key.s) {
+					LM_ERR("No more pkg memory\n");
+					return NULL;
+				}
+				memcpy(src_key.s, db_hdls->c_entry->id.s, db_hdls->c_entry->id.len);
+				memcpy(src_key.s + db_hdls->c_entry->id.len, key->s, key->len);
 
-			lock_get(queries_lock);
+				lock_get(queries_lock);
 
-			for (it = *queries_in_progress; it; it = it->next)
-				if (!str_strcmp(&it->key, &src_key))
-					break;
-			pkg_free(src_key.s);
-			if (it) {	/* key is in list */
-				lock_release(queries_lock);
-				lock_get(it->wait_sql_query);
+				for (it = *queries_in_progress; it; it = it->next)
+					if (!str_strcmp(&it->key, &src_key))
+						break;
+				pkg_free(src_key.s);
+				if (it) {	/* key is in list */
+					lock_release(queries_lock);
+					lock_get(it->wait_sql_query);
+				}
+			} else {
+				lock_start_write(db_hdls->c_entry->ref_lock);
 			}
 
 			if ((rld_vers = get_rld_vers_from_cache(db_hdls->c_entry, db_hdls)) < 0) {
 				LM_ERR("Unable to fetch reload version counter\n");
-				if (it)
-					lock_release(it->wait_sql_query);
-				else
-					lock_release(queries_lock);
+				if (db_hdls->c_entry->on_demand) {
+					if (it)
+						lock_release(it->wait_sql_query);
+					else
+						lock_release(queries_lock);
+				} else {
+					lock_stop_write(db_hdls->c_entry->ref_lock);
+				}
 
 				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
 													" database\n"));
@@ -1155,10 +1163,14 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 			if (rc == 0)
 				db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
 
-			if (it)
-				lock_release(it->wait_sql_query);
-			else
-				lock_release(queries_lock);
+			if (db_hdls->c_entry->on_demand) {
+				if (it)
+					lock_release(it->wait_sql_query);
+				else
+					lock_release(queries_lock);
+			} else {
+				lock_stop_write(db_hdls->c_entry->ref_lock);
+			}
 
 			if (rc == -1)
 				return init_mi_error(500, MI_SSTR("ERROR Reloading key from SQL"
@@ -1853,7 +1865,8 @@ int pv_get_sql_cached_value(struct sip_msg *msg,  pv_param_t *param, pv_value_t 
 			return pv_get_null(msg, param, res);
 		} else {
 			if (cdb_res.len == 0 || !cdb_res.s) {
-				LM_ERR("Cache fetch result should not be empty\n");
+				LM_DBG("key: %.*s not found in SQL db\n",
+						pv_name->key.len, pv_name->key.s);
 				lock_stop_read(pv_name->c_entry->ref_lock);
 				pkg_free(cdb_res.s);
 				return pv_get_null(msg, param, res);

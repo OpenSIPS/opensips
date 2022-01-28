@@ -215,7 +215,11 @@ modparam("prometheus", "statistics", "active_dialogs load:")
    and it shall be printed as a regular statistic, as if the rule
    was not even used.
 
-   This parameter can be defined multiple times, once per group.
+   This parameter can be defined multiple times, even for a single
+   group. However, if the statistic matches multiple regular
+   expressions, only the first regular expression that matches is
+   considered. The order they are checked is the order declared in
+   the script.
 
    The default value is empty: statistic name is provided.
 
@@ -254,7 +258,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    26      12      1259     134
+   1. Razvan Crainea (@razvancrainea)    29      15      1281     152
    2. OpenSIPS                           3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -277,7 +281,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2021 - Nov 2021
+   1. Razvan Crainea (@razvancrainea) Feb 2021 - Jan 2022
    2. OpenSIPS                        Feb 2021 - Feb 2021
 
    (1) including any documentation-related commits, excluding

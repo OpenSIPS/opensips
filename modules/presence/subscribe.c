@@ -1074,6 +1074,7 @@ found_rec:
 			(s->record_route.len);
 		if(subs->record_route.s== NULL)
 		{
+			lock_release(&subs_htable[i].lock);
 			ERR_MEM(PKG_MEM_STR);
 		}
 		memcpy(subs->record_route.s, s->record_route.s, s->record_route.len);
@@ -2203,6 +2204,8 @@ int refresh_watcher(str* pres_uri, str* watcher_uri, str* event,
 		}
 		s= s->next;
 	}
+
+	lock_release(&subs_htable[hash_code].lock);
 	return 0;
 }
 

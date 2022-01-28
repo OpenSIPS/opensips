@@ -78,6 +78,8 @@ enum rtp_relay_var_flags {
 	RTP_RELAY_FLAGS_IP,
 	RTP_RELAY_FLAGS_TYPE,
 	RTP_RELAY_FLAGS_IFACE,
+	RTP_RELAY_FLAGS_BODY,
+	RTP_RELAY_FLAGS_DELETE,
 
 	RTP_RELAY_FLAGS_SIZE,		/* keep these *after* the last entry */
 	RTP_RELAY_FLAGS_UNKNOWN = RTP_RELAY_FLAGS_SIZE,
@@ -96,7 +98,8 @@ struct rtp_relay_sess {
 };
 
 struct rtp_relay_ctx {
-	str callid, from_tag, to_tag;
+	str callid;
+	str dlg_callid, from_tag, to_tag;
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *main;

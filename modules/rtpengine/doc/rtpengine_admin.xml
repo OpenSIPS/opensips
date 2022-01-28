@@ -1399,17 +1399,23 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 				<listitem><para>
 					<emphasis>enable</emphasis> - 1 - enable, 0 - disable the &rtp; proxy.
 				</para></listitem>
+        <listitem><para>
+					<emphasis>setid</emphasis> (optional) the set ID of the nodes to be updated. If provided, only nodes in the provided set will be updated.
+				</para></listitem>
 			</itemizedlist>
 			<para>
 			NOTE: if a &rtp; proxy is defined multiple times (in the same or
-			different set), all of its instances will be enables/disabled.
+			different set), all of its instances will be enabled/disbled IF no set ID is provided.
 			</para>
 			<example>
 			<title>
 			<function moreinfo="none">rtpengine_enable</function> usage</title>
 			<programlisting format="linespecific">
 ...
+## disable all rtpengines by URL
 $ opensips-cli -x mi rtpengine_enable udp:192.168.2.133:8081 0
+## enable rtpengine by URL and set ID (3)
+$ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=1 setid=3
 ...
 			</programlisting>
 			</example>

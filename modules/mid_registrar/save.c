@@ -539,10 +539,7 @@ void overwrite_contact_expirations(struct sip_msg *req, struct mid_reg_info *mri
 	for (c = get_first_contact(req); c; c = get_next_contact(c)) {
 		calc_contact_expires(req, c->expires, &e, 1);
 		calc_ob_contact_expires(req, c->expires, &expiry_tick, mri->expires_out);
-		if (expiry_tick == 0)
-			new_expires = 0;
-		else
-			new_expires = expiry_tick - get_act_time();
+		new_expires = expiry_tick == 0 ? 0 : expiry_tick - get_act_time();
 
 		LM_DBG("....... contact: '%.*s' Calculated TIMEOUT = %d (%d)\n",
 		       c->len, c->uri.s, expiry_tick, new_expires);
@@ -1348,7 +1345,7 @@ static inline int save_restore_rpl_contacts(struct sip_msg *req,
 			goto update_usrloc;
 
 		calc_ob_contact_expires(rpl, _c->expires, &e_out, 0);
-		e_out -= get_act_time();
+		e_out = e_out == 0 ? 0 : e_out - get_act_time();
 
 		/* the main registrar might enforce shorter lifetimes */
 		if (e_out < ctmap->expires)
@@ -2531,6 +2528,7 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 	rerrno = R_FINE;
 	memset(&sctx, 0, sizeof sctx);
 	sctx.cmatch.mode = CT_MATCH_NONE;
+	sctx.max_contacts = max_contacts;
 
 	LM_DBG("saving to %.*s...\n", d->name->len, d->name->s);
 

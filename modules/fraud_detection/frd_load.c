@@ -247,6 +247,7 @@ static int create_time_rec(const str *time_start, const str *time_end,
 	memset(trx, 0, sizeof *trx);
 	trx->is_leaf = 1;
 
+	tmrec_init(trec);
 	trec->duration = (end_h * 3600 + end_m * 60) -
 		(trec->ts.tm_hour * 3600 + trec->ts.tm_min * 60);
 	trec->ts.tm_isdst = -1 /*daylight*/;

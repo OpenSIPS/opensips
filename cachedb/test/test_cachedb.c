@@ -65,6 +65,11 @@ static void load_cachedb_modules(void)
 		exit(-1);
 	}
 
+	if (load_module("cachedb_redis.so") != 0) {
+		printf("failed to load redis\n");
+		exit(-1);
+	}
+
 	if (set_mod_param_regex("cachedb_mongodb", "cachedb_url", STR_PARAM,
 	    "mongodb://10.0.0.177:27017/OpensipsTests.OpensipsTests") != 0) {
 		printf("failed to set mongo url\n");
@@ -81,6 +86,12 @@ static void load_cachedb_modules(void)
 	if (set_mod_param_regex("cachedb_cassandra", "cachedb_url", STR_PARAM,
 	    "cassandra:test2://10.0.0.178/testcass1.osstest2.osscnttest1") != 0) {
 		printf("failed to set cassandra url\n");
+		exit(-1);
+	}
+
+	if (set_mod_param_regex("cachedb_redis", "cachedb_url", STR_PARAM,
+	    "redis://localhost:6379/") != 0) {
+		printf("failed to set Redis url\n");
 		exit(-1);
 	}
 }
@@ -429,6 +440,158 @@ static int test_column_ops(cachedb_funcs *api, cachedb_con *con1,
 	return 1;
 }
 
+static int test_map_set(cachedb_funcs *api, cachedb_con *con,
+	cdb_dict_t *out_pairs1, cdb_dict_t *out_pairs2)
+{
+	str key, subkey;
+	cdb_key_t field;
+	cdb_pair_t *pair;
+
+	cdb_dict_init(out_pairs1);
+
+	init_str(&key, "keyA");
+	init_str(&subkey, "subkeyAB");
+
+	cdb_key_init(&field, "field_null");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_NULL;
+	cdb_dict_add(pair, out_pairs1);
+
+	cdb_key_init(&field, "field_32bit");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_INT32;
+	pair->val.val.i32 = 2147483647;
+	cdb_dict_add(pair, out_pairs1);
+
+	cdb_key_init(&field, "field_str");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("foo"));
+	cdb_dict_add(pair, out_pairs1);
+
+	if (!ok(api->map_set(con, &key, &subkey, out_pairs1) == 0))
+		return 0;
+
+	cdb_dict_init(out_pairs2);
+
+	init_str(&key, "keyB");
+
+	cdb_key_init(&field, "field_null");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_NULL;
+	cdb_dict_add(pair, out_pairs2);
+
+	cdb_key_init(&field, "field_32bit");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_INT32;
+	pair->val.val.i32 = 1148367;
+	cdb_dict_add(pair, out_pairs2);
+
+	cdb_key_init(&field, "field_str");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("bar"));
+	cdb_dict_add(pair, out_pairs2);
+
+	if (!ok(api->map_set(con, &key, &subkey, out_pairs2) == 0))
+		return 0;
+
+	return 1;
+}
+
+static int test_map_get(cachedb_funcs *api, cachedb_con *con,
+	const cdb_dict_t *pairs1, const cdb_dict_t *pairs2)
+{
+	cdb_res_t res;
+	cdb_row_t *row;
+	struct list_head *_;
+	cdb_pair_t *pair1, *pair2;
+	cdb_key_t key1, key2;
+	int found = 0;
+
+	if (!ok(api->map_get(con, NULL, &res) == 0))
+		return 0;
+
+	key1.is_pk = 1;
+	init_str(&key1.name, "keyA");
+	key2.is_pk = 1;
+	init_str(&key2.name, "keyB");
+
+	list_for_each (_, &res.rows) {
+		row = list_entry(_, cdb_row_t, list);
+
+		pair1 = cdb_dict_fetch(&key1, &row->dict);
+		if (pair1 && dict_cmp(&pair1->val.val.dict, pairs1) == 0)
+			found++;
+		pair2 = cdb_dict_fetch(&key2, &row->dict);
+		if (pair2 && dict_cmp(&pair2->val.val.dict, pairs2) == 0)
+			found++;
+	}
+
+	cdb_free_rows(&res);
+
+	if (!ok(found == 2))
+		return 0;
+
+	return 1;
+}
+
+static int test_map_ops(cachedb_funcs *api, cachedb_con *con)
+{
+	cdb_dict_t cols1, cols2;
+	str key1, key2, subkey;
+	cdb_key_t field;
+	cdb_pair_t *pair;
+
+	if (!ok(test_map_set(api, con, &cols1, &cols2), "test map set") ||
+		!ok(test_map_get(api, con, &cols1, &cols2), "test map get"))
+		return 0;
+
+	init_str(&subkey, "subkeyAB");
+
+	if (!ok(api->map_remove(con, NULL, &subkey) == 0))
+		return 0;
+
+	cdb_free_entries(&cols1, osips_pkg_free);
+	cdb_free_entries(&cols2, osips_pkg_free);
+
+	cdb_dict_init(&cols1);
+
+	init_str(&key1, "keyC");
+	init_str(&subkey, "subkeyCD");
+
+	cdb_key_init(&field, "field_str");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("baz"));
+	cdb_dict_add(pair, &cols1);
+
+	api->map_set(con, &key1, &subkey, &cols1);
+
+	cdb_dict_init(&cols2);
+
+	init_str(&key2, "keyD");
+	init_str(&subkey, "subkeyCD");
+
+	cdb_key_init(&field, "field_str");
+	pair = cdb_mk_pair(&field, NULL);
+	pair->val.type = CDB_STR;
+	init_str(&pair->val.val.st, pkg_strdup("biz"));
+	cdb_dict_add(pair, &cols2);
+
+	api->map_set(con, &key2, &subkey, &cols2);
+
+	if (!ok(api->map_remove(con, &key1, &subkey) == 0))
+		return 0;
+	if (!ok(api->map_remove(con, &key2, &subkey) == 0))
+		return 0;
+
+	cdb_free_entries(&cols1, osips_pkg_free);
+	cdb_free_entries(&cols2, osips_pkg_free);
+
+	return 1;
+}
+
 static void test_cachedb_api(const char *cachedb_name, const char *group1,
 								const char *group2)
 {
@@ -487,6 +650,10 @@ static void test_cachedb_api(const char *cachedb_name, const char *group1,
 	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_COL_ORIENTED))
 		ok(test_column_ops(&cde->cdb_func, con1, con2, cachedb_name),
 			"column-oriented tests");
+
+	if (CACHEDB_CAPABILITY(&cde->cdb_func, CACHEDB_CAP_MAP))
+		ok(test_map_ops(&cde->cdb_func, con1),
+			"map ops tests");
 }
 
 /*
@@ -510,6 +677,8 @@ static void test_cachedb_backends(void)
 
 	test_cachedb_api("mongodb", NULL, NULL);
 	test_cachedb_api("cassandra", "test1", "test2");
+
+	test_cachedb_api("redis", NULL, NULL);
 
 	// todo();
 	// skip tests here

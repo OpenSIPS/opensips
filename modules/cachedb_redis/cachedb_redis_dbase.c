@@ -458,14 +458,15 @@ void redis_destroy(cachedb_con *con) {
  *
  * On error, a negative code is returned
  */
-static int redis_run_command(cachedb_con *connection, redisReply **rpl,
-              str *key, char *cmd_fmt, ...)
+static int _redis_run_command(cachedb_con *connection, redisReply **rpl, str *key,
+	int argc, const char **argv, const size_t *argvlen,
+	char *cmd_fmt, va_list ap)
 {
 	redis_con *con = NULL, *first;
 	cluster_node *node;
 	redisReply *reply = NULL;
-	va_list ap;
 	int i, last_err = 0;
+	va_list aq;
 
 	first = ((redis_con *)connection->data)->current;
 	while (((redis_con *)connection->data)->current != first || !con) {
@@ -491,10 +492,15 @@ static int redis_run_command(cachedb_con *connection, redisReply **rpl,
 			}
 		}
 
-		va_start(ap, cmd_fmt);
-
 		for (i = QUERY_ATTEMPTS; i; i--) {
-			reply = redisvCommand(node->context, cmd_fmt, ap);
+			if (argc) {
+				reply = redisCommandArgv(node->context, argc, argv, argvlen);
+			} else {
+				va_copy(aq, ap);
+				reply = redisvCommand(node->context, cmd_fmt, aq);
+				va_end(aq);
+			}
+
 			if (reply == NULL || reply->type == REDIS_REPLY_ERROR) {
 				LM_INFO("Redis query failed: %p %.*s (%s)\n",
 					reply,reply?(unsigned)reply->len:7,reply?reply->str:"FAILURE",
@@ -508,8 +514,6 @@ static int redis_run_command(cachedb_con *connection, redisReply **rpl,
 				}
 			} else break;
 		}
-
-		va_end(ap);
 
 		if (i==0) {
 			LM_ERR("giving up on query to %s:%d\n", con->host, con->port);
@@ -535,6 +539,27 @@ try_next_con:
 	return last_err;
 }
 
+static int redis_run_command(cachedb_con *connection, redisReply **rpl,
+              str *key, char *cmd_fmt, ...)
+{
+	int rc;
+	va_list ap;
+
+	va_start(ap, cmd_fmt);
+	rc = _redis_run_command(connection, rpl, key, 0, NULL, NULL, cmd_fmt, ap);
+	va_end(ap);
+
+	return rc;
+}
+
+static int redis_run_command_argv(cachedb_con *connection, redisReply **rpl,
+              str *key, int argc, const char **argv, const size_t *argvlen)
+{
+	va_list _;
+
+	return _redis_run_command(connection, rpl, key, argc, argv, argvlen, NULL, _);
+}
+
 int redis_get(cachedb_con *connection,str *attr,str *val)
 {
 	redisReply *reply;
@@ -545,7 +570,8 @@ int redis_get(cachedb_con *connection,str *attr,str *val)
 		return -1;
 	}
 
-	rc = redis_run_command(connection, &reply, attr, "GET %b", attr->s, attr->len);
+	rc = redis_run_command(connection, &reply, attr, "GET %b",
+		attr->s, (size_t)attr->len);
 	if (rc != 0)
 		goto out_err;
 
@@ -990,4 +1016,296 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 	}
 
 	return 1;
+}
+
+int redis_map_get(cachedb_con *con, const str *key, cdb_res_t *res)
+{
+	redisReply *scan_reply = NULL, *get_reply = NULL;
+	str null_key = {0,0};
+	int rc;
+	int scan_cursor = 0;
+	str s;
+	int i,j;
+	cdb_row_t *cdb_row;
+	cdb_key_t cdb_key;
+	cdb_pair_t *hfield, *pair;
+
+	if (!res || !con) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	cdb_res_init(res);
+
+	/* iterate over all keys, return a cdb_pair_t for every key */
+	do {
+		rc = redis_run_command(con, &scan_reply, &null_key,
+			"SCAN %d COUNT %d TYPE hash", scan_cursor, MAP_GET_SCAN_COUNT);
+		if (rc != 0)
+			goto err_free_reply;
+
+		s.len = scan_reply->element[0]->len;
+		s.s = scan_reply->element[0]->str;
+		if (str2sint(&s, &scan_cursor) != 0) {
+			LM_ERR("Cursor returned by SCAN command is not an integer\n");
+			goto err_free_reply;
+		}
+
+		for (i = 0; i < scan_reply->element[1]->elements; i++) {
+			/* get the all the map fields for this key */
+			s.len = scan_reply->element[1]->element[i]->len;
+			s.s = scan_reply->element[1]->element[i]->str;
+
+			rc = redis_run_command(con, &get_reply, &s, "HGETALL %b",
+				s.s, (size_t)s.len);
+			if (rc != 0)
+				goto err_free_reply;
+
+			if (get_reply->elements == 0)
+				continue;
+
+			cdb_row = pkg_malloc(sizeof *cdb_row);
+			if (!cdb_row) {
+				LM_ERR("no more pkg memory\n");
+				goto err_free_reply;
+			}
+			INIT_LIST_HEAD(&cdb_row->dict);
+
+			cdb_key.name = s;
+			cdb_key.is_pk = 1;
+			pair = cdb_mk_pair(&cdb_key, NULL);
+			if (!pair) {
+				LM_ERR("no more pkg memory\n");
+				goto err_free_row;
+			}
+			pair->val.type = CDB_DICT;
+			INIT_LIST_HEAD(&pair->val.val.dict);
+
+			for (j = 0; j < get_reply->elements; j+=2) {
+				/* in the array returned by HGETALL every
+				 * field name is followed by its' value */
+				cdb_key.name.len = get_reply->element[j]->len;
+				cdb_key.name.s = get_reply->element[j]->str;
+				cdb_key.is_pk = 0;
+
+				hfield = cdb_mk_pair(&cdb_key, NULL);
+				if (!hfield) {
+					LM_ERR("no more pkg memory\n");
+					goto err_free_pair;
+				}
+
+				s.len = get_reply->element[j+1]->len;
+				s.s = get_reply->element[j+1]->str;
+
+				switch (s.s[0]) {
+				case HASH_FIELD_VAL_NULL:
+					hfield->val.type = CDB_NULL;
+					break;
+				case HASH_FIELD_VAL_STR:
+					hfield->val.type = CDB_STR;
+					s.s++;
+					s.len--;
+					if (pkg_str_dup(&hfield->val.val.st, &s) < 0) {
+						LM_ERR("no more pkg memory\n");
+						pkg_free(hfield);
+						goto err_free_pair;
+					}
+					break;
+				case HASH_FIELD_VAL_INT32:
+					hfield->val.type = CDB_INT32;
+					s.s++;
+					s.len--;
+					if (str2sint(&s, (int *)&hfield->val.val.i32) < 0) {
+						LM_ERR("Expected hash field value to be an integer\n");
+						pkg_free(hfield);
+						goto err_free_pair;
+					}
+					break;
+				default:
+					LM_DBG("Unexpected type [%c] for hash field, skipping\n", s.s[0]);
+					pkg_free(hfield);
+					continue;
+				}
+
+				cdb_dict_add(hfield, &pair->val.val.dict);
+			}
+
+			if (!list_empty(&pair->val.val.dict)) {
+				cdb_dict_add(pair, &cdb_row->dict);
+				res->count++;
+				list_add_tail(&cdb_row->list, &res->rows);
+			}
+
+			freeReplyObject(get_reply);
+			get_reply = NULL;
+		}
+
+		freeReplyObject(scan_reply);
+		scan_reply = NULL;
+	} while (scan_cursor);
+
+	return 0;
+
+err_free_pair:
+	pkg_free(pair);
+err_free_row:
+	cdb_free_entries(&cdb_row->dict, osips_pkg_free);
+	pkg_free(cdb_row);
+err_free_reply:
+	if (get_reply)
+		freeReplyObject(get_reply);
+	if (scan_reply)
+		freeReplyObject(scan_reply);
+	return rc;
+}
+
+int redis_map_set(cachedb_con *con, const str *key, const str *subkey,
+	const cdb_dict_t *pairs)
+{
+	int argc = 0;
+	const char *argv[MAP_SET_MAX_FIELDS+2];
+	size_t argvlen[MAP_SET_MAX_FIELDS+2];
+	cdb_pair_t *pair;
+	struct list_head *_;
+	static str valbuf;
+	int offset = 0;
+	char *int_buf;
+	int len;
+	int rc;
+	redisReply *reply;
+
+	if (!con || !key) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	argv[0] = "HSET";
+	argvlen[0] = sizeof("HSET")-1;
+	argv[1] = key->s;
+	argvlen[1] = key->len;
+	argc = 2;
+
+	list_for_each (_, pairs) {
+		pair = list_entry(_, cdb_pair_t, list);
+
+		argv[argc] = pair->key.name.s;
+		argvlen[argc] = pair->key.name.len;
+		argc++;
+
+		if (argc > MAP_SET_MAX_FIELDS) {
+			LM_ERR("Trying to set too many fields(%d)\n", argc);
+			return -1;
+		}
+
+		switch (pair->val.type) {
+		case CDB_NULL:
+			len = 0;
+			break;
+		case CDB_INT32:
+			int_buf = sint2str((long)pair->val.val.i32, &len);
+			break;
+		case CDB_STR:
+			len = pair->val.val.st.len;
+			break;
+		default:
+			LM_DBG("Unexpected type [%d] for hash field\n", pair->val.type);
+			return -1;
+		}
+
+		if (pkg_str_extend(&valbuf, offset+len+1) < 0)
+			return -1;
+
+		switch (pair->val.type) {
+		case CDB_NULL:
+			valbuf.s[offset] = HASH_FIELD_VAL_NULL;
+			break;
+		case CDB_INT32:
+			valbuf.s[offset] = HASH_FIELD_VAL_INT32;
+			memcpy(valbuf.s+offset+1, int_buf, len);
+			break;
+		case CDB_STR:
+			valbuf.s[offset] = HASH_FIELD_VAL_STR;
+			memcpy(valbuf.s+offset+1, pair->val.val.st.s, len);
+			break;
+		default:
+			LM_DBG("Unexpected type [%d] for hash field\n", pair->val.type);
+			return -1;
+		}
+
+		argv[argc] = valbuf.s+offset;
+		argvlen[argc] = len+1;
+		argc++;
+
+		offset += len+1;
+	}
+
+	rc = redis_run_command_argv(con, &reply, (str *)key,
+		argc, argv, argvlen);
+	if (rc != 0)
+		return rc;
+
+	freeReplyObject(reply);
+	reply = NULL;
+
+	if (subkey) {
+		rc = redis_run_command(con, &reply, (str*)subkey, "SADD %b %b",
+			subkey->s, (size_t)subkey->len, key->s, (size_t)key->len);
+		if (rc != 0)
+			return rc;
+
+		freeReplyObject(reply);
+	}
+
+	return 0;
+}
+
+int redis_map_remove(cachedb_con *con, const str *key, const str *subkey)
+{
+	int rc;
+	redisReply *reply;
+	int i;
+	str s;
+
+	if (!con || (!key && !subkey)) {
+		LM_ERR("null parameter\n");
+		return -1;
+	}
+
+	if (!subkey)
+		return redis_remove(con, (str*)key);
+
+	if (key) {
+		/* key based delete, but also remove the member "key"
+		 * from the Set at "subkey" */
+		rc = redis_run_command(con, &reply, (str*)subkey, "SREM %b %b",
+			subkey->s, (size_t)subkey->len, key->s, (size_t)key->len);
+		if (rc < 0)
+			return rc;
+
+		freeReplyObject(reply);
+
+		return redis_remove(con, (str*)key);
+	} else {
+		/* subkey based delete - delete all the keys that are members
+		 * of the Set at "subkey" */
+		rc = redis_run_command(con, &reply, (str*)subkey, "SMEMBERS %b",
+			subkey->s, (size_t)subkey->len);
+		if (rc != 0)
+			return rc;
+
+		for (i = 0; i < reply->elements; i++) {
+			s.s = reply->element[i]->str;
+			s.len = reply->element[i]->len;
+
+			rc = redis_remove(con, &s);
+			if (rc < 0) {
+				freeReplyObject(reply);
+				return -1;
+			}
+		}
+
+		freeReplyObject(reply);
+
+		return redis_remove(con, (str*)subkey);
+	}
 }

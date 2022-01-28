@@ -74,7 +74,7 @@
 #define REC_MATCH   0
 #define REC_NOMATCH 1
 
-#define _IS_SET(x) ((x) != (time_t)-1)
+#define _IS_SET(x) ((x) != TR_NOVAL)
 #define _D(c) ((c) -'0')
 
 #define TR_SEPARATOR '|'
@@ -485,18 +485,18 @@ int tr_byxxx_free(tr_byxxx_p _bxp)
 	return 0;
 }
 
-static inline void tmrec_init(tmrec_p t)
+void tmrec_init(tmrec_p t)
 {
 	memset(t, 0, sizeof *t);
 
 	/* these values may be legitimately set to 0 (i.e. UNIX start time) */
-	t->dtstart  = (time_t)-1;
-	t->dtend    = (time_t)-1;
-	t->duration = (time_t)-1;
+	t->dtstart  = TR_NOVAL;
+	t->dtend    = TR_NOVAL;
+	t->duration = TR_NOVAL;
 
-	t->freq     = (time_t)-1;
-	t->until    = (time_t)-1;
-	t->interval = (time_t)-1;
+	t->freq     = TR_NOVAL;
+	t->until    = TR_NOVAL;
+	t->interval = TR_NOVAL;
 }
 
 static inline void tmrec_expr_init(tmrec_expr_t *e)
@@ -569,7 +569,7 @@ int tr_parse_dtstart(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->dtstart = ic_parse_datetime(_in, &(_trp->ts));
-	return (_trp->dtstart == (time_t)-1) ? -1 : 0;
+	return (_trp->dtstart == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_dtend(tmrec_p _trp, char *_in)
@@ -578,7 +578,7 @@ int tr_parse_dtend(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->dtend = ic_parse_datetime(_in,&_tm);
-	return (_trp->dtend == (time_t)-1) ? -1 : 0;
+	return (_trp->dtend == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_duration(tmrec_p _trp, char *_in)
@@ -586,7 +586,7 @@ int tr_parse_duration(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->duration = ic_parse_duration(_in);
-	return (_trp->duration == (time_t)-1) ? -1 : 0;
+	return (_trp->duration == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_until(tmrec_p _trp, char *_in)
@@ -595,7 +595,7 @@ int tr_parse_until(tmrec_p _trp, char *_in)
 	if (!_in)
 		return -1;
 	_trp->until = ic_parse_datetime(_in, &_tm);
-	return (_trp->until == (time_t)-1) ? -1 : 0;
+	return (_trp->until == TR_NOVAL) ? -1 : 0;
 }
 
 int tr_parse_freq(tmrec_p _trp, char *_in)
@@ -767,13 +767,13 @@ time_t ic_parse_datetime(char *_in, struct tm *_tm)
 	struct tm t;
 
 	if (!_in || strlen(_in)!=15)
-		return (time_t)-1;
+		return TR_NOVAL;
 
 	t.tm_year = _D(_in[0])*1000 + _D(_in[1])*100
 			+ _D(_in[2])*10 + _D(_in[3]);
 	if (t.tm_year < 1970) {
 		LM_ERR("invalid year in Date-Time: '%s'\n", _in);
-		return (time_t)-1;
+		return TR_NOVAL;
 	}
 
 	t.tm_year -= 1900; /* per man ctime(3) */
@@ -781,7 +781,7 @@ time_t ic_parse_datetime(char *_in, struct tm *_tm)
 	t.tm_mday = _D(_in[6])*10 + _D(_in[7]);
 	if (t.tm_mon == -1 || t.tm_mday == 0) {
 		LM_ERR("month or month day cannot be zero in Date-Time: '%s'\n", _in);
-		return (time_t)-1;
+		return TR_NOVAL;
 	}
 
 	t.tm_hour = _D(_in[9])*10 + _D(_in[10]);
@@ -800,7 +800,7 @@ time_t ic_parse_duration(char *_in)
 	int _fl;
 
 	if(!_in || strlen(_in)<2)
-		return (time_t)-1;
+		return TR_NOVAL;
 
 	if(*_in == 'P' || *_in=='p')
 	{

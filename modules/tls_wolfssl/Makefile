@@ -20,6 +20,7 @@ lib/lib/libwolfssl.a:
 		env -u DEFS -u CFLAGS -u LDFLAGS -u LIBS ./configure \
 		--enable-all --disable-fpecc \
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
+		--disable-jni --disable-crl-monitor \
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA"; \
 	fi;

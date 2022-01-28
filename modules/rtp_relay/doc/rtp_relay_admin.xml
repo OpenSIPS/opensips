@@ -380,6 +380,12 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
 					<listitem><para><emphasis>iface</emphasis> - the interface
 					used for the traffic coming from this UAC.
 					</para></listitem>
+					<listitem><para><emphasis>body</emphasis> - the body to be used
+					for the UAC.
+					</para></listitem>
+					<listitem><para><emphasis>delete</emphasis> - flags to be used
+					when the media session is terminated/deleted.
+					</para></listitem>
 					<listitem><para><emphasis>disabled</emphasis> - provisioned
 					as an integer, it is used to disable RTP relay for this UAC.
 					</para></listitem>
@@ -393,6 +399,23 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
 				<xref linkend="pv_rtp_relay"/> variable, except that it
 				is used to provision the other UAC's flags, except the
 				current one. All other fields are similar.
+			</para>
+		</section>
+		<section id="pv_rtp_relay_ctx" xreflabel="$rtp_relay_ctx">
+			<title><varname>$rtp_relay_ctx()</varname></title>
+			<para>
+				This variable can be used to provide information about the
+				RTP context, information that is not associated with any of
+				the involved peers.
+			</para>
+			<para>
+				The following settings can be used:
+				<itemizedlist>
+					<listitem><para><emphasis>callid</emphasis>The callid
+					to be used for all communication with the rtp server.
+					If not specified, it is taken from the message/dialog.
+					</para></listitem>
+				</itemizedlist>
 			</para>
 		</section>
 	</section>

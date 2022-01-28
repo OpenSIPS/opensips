@@ -51,6 +51,14 @@ typedef struct cluster_nodes {
 
 #define CACHEDB_REDIS_DEFAULT_TIMEOUT 5000
 
+#define MAP_GET_SCAN_COUNT 1000
+
+#define HASH_FIELD_VAL_NULL  '0'
+#define HASH_FIELD_VAL_STR   '1'
+#define HASH_FIELD_VAL_INT32 '2'
+
+#define MAP_SET_MAX_FIELDS 128
+
 extern int redis_query_tout;
 extern int redis_connnection_tout;
 extern int shutdown_on_error;
@@ -96,6 +104,10 @@ int redis_add(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_get_counter(cachedb_con *connection,str *attr,int *val);
 int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
+int redis_map_get(cachedb_con *con, const str *key, cdb_res_t *res);
+int redis_map_set(cachedb_con *con, const str *key, const str *subkey,
+	const cdb_dict_t *pairs);
+int redis_map_remove(cachedb_con *con, const str *key, const str *subkey);
 
 #endif /* CACHEDBREDIS_DBASE_H */
 

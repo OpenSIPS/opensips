@@ -435,6 +435,52 @@ if (math_round_sf($avp(1), $avp(result), 4)) {
 </programlisting>
 		</example>
 	</section>
+
+	<section id="func_math_compare" xreflabel="math_compare()">
+		<title>
+		<function moreinfo="none">math_compare(exp1, exp2, result_var)</function>
+		</title>
+		<para>
+		Compare exp1 with exp2 and returns the comparison result in the result_var.
+		Standard comparison return codes used : If exp1 > exp2, result_var = 1.
+		Else if exp2 > exp1, result_var = -1, else (in case they are equal), 
+		0 is populated in the result_var
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>exp1</emphasis> (string) - First expression to be evaluated and used for comparison.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>exp2</emphasis> (string) - Second expression to be evaluated and used for comparison.</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>result_var</emphasis> (var) - variable which will
+			hold the result of the comparison.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">math_compare</function> usage</title>
+		<programlisting format="linespecific">
+...
+# Rounding PI
+
+$var(exp1) = "1 + 8";
+$var(exp2) = "7/2";
+
+if (math_compare($var(exp1), $var(exp2), $var(result))) {
+
+	# $var(result) will be 1, since 9 > 3.5
+}
+
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 </chapter>
 

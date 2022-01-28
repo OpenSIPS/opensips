@@ -883,6 +883,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	lock_get(dest_node->lock);
 
 	if (add_clusterer_node(&ret, dest_node->next_hop) < 0) {
+		lock_release(dest_node->lock);
 		LM_ERR("Failed to allocate next hop\n");
 		return NULL;
 	}

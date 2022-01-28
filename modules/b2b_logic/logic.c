@@ -3382,7 +3382,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	if (new_entities_no != MAX_BRIDGE_ENT-1) {
 		LM_ERR("Two bridge entities required!\n");
-		return NULL;
+		goto error;
 	}
 
 	if (new_entities[0]->type == B2B_SERVER)

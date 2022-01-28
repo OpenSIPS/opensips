@@ -143,7 +143,7 @@ int init_ebr_event( ebr_event *ev )
 	if (evi_event_subscribe( ev->event_name, sock, 0, 0) < 0) {
 		LM_ERR("cannot subscribe to event %.*s\n",
 			ev->event_name.len, ev->event_name.s);
-		return -1;
+		goto error;
 	}
 
 	lock_release( &(ev->lock) );

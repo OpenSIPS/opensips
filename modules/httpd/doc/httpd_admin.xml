@@ -49,10 +49,40 @@
 			<listitem>
 			<para>
 				<emphasis>libmicrohttpd</emphasis>, with EPOLL support. This
-				typically mean a version newer than 0.9.50.
+					typically means a version newer than <emphasis role='bold'>0.9.50</emphasis>.
 			</para>
 			</listitem>
 			</itemizedlist>
+		</para>
+		<para>
+			<emphasis role='bold'>WARNING!</emphasis>  Please be aware about an
+			EPOLL support regression in the <emphasis>libmicrohttpd</emphasis>
+			library and packaging which affects the OpenSIPS httpd module, which
+			was fixed according to the below timeline.  The effect of the
+			regression is that the HTTP reply body is <emphasis>sometimes</emphasis>
+			never written by the library, causing the client (e.g. opensips-cli)
+			to hang indefinitely waiting for it:
+		<itemizedlist>
+		<listitem>
+			<para>
+			versions <emphasis role='bold'>0.9.51</emphasis> - <emphasis role='bold'>0.9.52</emphasis>
+				have been tested and work correctly
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				regression introduced in <emphasis role='bold'>0.9.53</emphasis> (Apr 2017),
+				lasting until <emphasis role='bold'>0.9.71</emphasis> (May 2020)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				regression is fixed since <emphasis role='bold'>0.9.72</emphasis> (Dec 2020)
+			</para>
+		</listitem>
+		</itemizedlist>
+
+
 		</para>
 	</section>
 	</section>

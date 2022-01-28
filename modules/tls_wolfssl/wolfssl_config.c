@@ -431,6 +431,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 {
 	int verify_mode = 0;
 	int rc = -1;
+	int ret = -1;
 
 	if (d->method_str.s && tls_get_method(&d->method_str, &d->method,
 		&d->method_max) < 0)
@@ -440,7 +441,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 	if (!d->ctx) {
 		LM_ERR("cannot create ssl context for tls domain '%.*s'\n",
 			d->name.len, d->name.s);
-		return -1;
+		goto end;
 	}
 
 	if (d->method != TLS_USE_SSLv23) {
@@ -450,7 +451,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 				ssl_versions[d->method_max - 1]) != WOLFSSL_SUCCESS)) {
 			LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
 					d->name.len, ZSW(d->name.s));
-			return -1;
+			goto end;
 		}
 	}
 
@@ -495,7 +496,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 
 	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_DH_FILE_FL) {
 		if (d->dh_param.s && set_dh_params(d->ctx, d->dh_param.s) < 0)
-			return -1;
+			goto end;
 	} else {
 		set_dh_params_db(d->ctx, &d->dh_param);
 	}
@@ -503,42 +504,45 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 	if (!d->tls_ec_curve)
 		LM_NOTICE("No EC curve defined\n");
 	else if (set_ec_params(d->ctx, d->tls_ec_curve) < 0)
-		return -1;
+		goto end;
 
 	if (d->ciphers_list != 0 &&
 		wolfSSL_CTX_set_cipher_list(d->ctx, d->ciphers_list) != SSL_SUCCESS) {
 		LM_ERR("failure to set SSL context "
 				"cipher list '%s'\n", d->ciphers_list);
-		return -1;
+		goto end;
 	}
 
 	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CERT_FILE_FL) {
 		if (load_certificate(d->ctx, d->cert.s) < 0)
-			return -1;
+			goto end;
 	} else {
 		if (load_certificate_db(d->ctx, &d->cert) < 0)
-			return -1;
+			goto end;
 	}
 
 	if (d->crl_directory && load_crl(d->ctx, d->crl_directory,
 		d->crl_check_all) < 0)
-		return -1;
+		goto end;
 
 	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CA_FILE_FL) {
 		if (d->ca.s && (rc = load_ca(d->ctx, d->ca.s)) < 0)
-			return -1;
+			goto end;
 	} else {
 		if ((rc = load_ca_db(d->ctx, &d->ca)) < 0)
-			return -1;
+			goto end;
 	}
 
 	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0 &&
 		rc == -1) {
 		LM_ERR("No CA loaded\n");
-		return -1;
+		goto end;
 	}
 
-	return 0;
+	ret = 0;
+end:
+	wolfSSL_ERR_clear_error();
+	return ret;
 }
 
 static int load_private_key(WOLFSSL_CTX * ctx, char *filename)

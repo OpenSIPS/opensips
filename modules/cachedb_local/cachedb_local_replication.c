@@ -196,6 +196,7 @@ int receive_sync_request(int node_id)
                                                                         cluster_id, node_id, BIN_VERSION);
                                         if (!sync_packet) {
                                                 LM_ERR("Can not create sync packet!\n");
+												lock_release(&col->col_htable[i].lock);
                                                 return -1;
                                         }
                                         bin_push_str(sync_packet, &col->col_name);

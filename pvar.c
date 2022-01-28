@@ -278,7 +278,7 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 	static str rn_buf;
 
 	str s;
-	int i, idx, idx_flags, len, rlen, has_name;
+	int i, idx, idx_flags, len, rlen, has_name, route_stack_size_ctx;
 
 	if (pv_get_spec_index(msg, param, &idx, &idx_flags) != 0) {
 		LM_ERR("invalid index\n");
@@ -290,13 +290,13 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 		if (!has_name)
 			goto unnamed_route;
 
-		len = strlen(route_stack[0]);
+		len = strlen(route_stack[route_stack_start]);
 		if (pkg_str_extend(&rn_buf, s.len + 2 + len + 1) != 0) {
 			LM_ERR("oom\n");
 			return pv_get_null(msg, param, res);
 		}
 
-		len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[idx]);
+		len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[route_stack_start]);
 		goto print_remaining;
 
 	unnamed_route:
@@ -310,7 +310,7 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 	print_remaining:
 		s = str_route;
 
-		for (i = 1; i < route_stack_size; i++) {
+		for (i = route_stack_start+1; i < route_stack_size; i++) {
 			if (!route_stack[i]) {
 				if (pkg_str_extend(&rn_buf, len + 3 + s.len + 1) != 0) {
 					LM_ERR("oom\n");
@@ -346,15 +346,17 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 		return pv_get_strval(msg, param, res, &s);
 	}
 
+	route_stack_size_ctx = route_stack_size - route_stack_start;
+
 	if (idx < 0)
-		idx += route_stack_size;
+		idx += route_stack_size_ctx;
 
 	/* index out of bounds -- play nice and return NULL */
-	if (idx > route_stack_size - 1 || idx < 0)
+	if (idx > route_stack_size_ctx - 1 || idx < 0)
 		return pv_get_null(msg, param, res);
 
 	/* reverse the index, since we index the route stack backwards */
-	idx = route_stack_size - idx - 1;
+	idx = route_stack_size_ctx - idx - 1;
 
 	if (idx == 0) {
 		get_top_route_type(&s, &has_name);
@@ -363,19 +365,19 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 
 	} else {
 		s = str_route;
-		if (!route_stack[idx])
+		if (!route_stack[route_stack_start + idx])
 			goto out_ok;
 	}
 
-	len = strlen(route_stack[idx]);
+	len = strlen(route_stack[route_stack_start + idx]);
 
-	if (route_stack[idx][0] != '!') {
+	if (route_stack[route_stack_start + idx][0] != '!') {
 		if (pkg_str_extend(&rn_buf, s.len + 2 + len + 1) != 0) {
 			LM_ERR("oom\n");
 			return pv_get_null(msg, param, res);
 		}
 
-		s.len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[idx]);
+		s.len = sprintf(rn_buf.s, "%.*s[%s]", s.len, s.s, route_stack[route_stack_start + idx]);
 		s.s = rn_buf.s;
 	} else {
 		/* the "!" marker tells us to print that route name as-is */
@@ -384,10 +386,9 @@ static int pv_get_route_name(struct sip_msg *msg, pv_param_t *param,
 			return pv_get_null(msg, param, res);
 		}
 
-		s.len = sprintf(rn_buf.s, "%s", route_stack[idx] + 1);
+		s.len = sprintf(rn_buf.s, "%s", route_stack[route_stack_start + idx] + 1);
 		s.s = rn_buf.s;
 	}
-
 
 out_ok:
 	return pv_get_strval(msg, param, res, &s);

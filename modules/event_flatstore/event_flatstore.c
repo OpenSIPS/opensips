@@ -687,6 +687,7 @@ static void flat_free(evi_reply_sock *sock) {
 	if (!del_it) {
 		new_del = shm_malloc(sizeof *new_del);
 		if (!new_del) {
+			lock_release(global_lock);
 			LM_ERR("oom!\n");
 			return;
 		}

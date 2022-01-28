@@ -34,7 +34,7 @@
 #include "rmq_servers.h"
 #include <amqp_framing.h>
 
-#if defined AMQP_VERSION && AMQP_VERSION >= 0x00040000
+#ifdef AMQP_VERSION_v04
 #define rmq_parse amqp_parse_url
 #else
 #include "../../db/db_id.h"
@@ -232,7 +232,7 @@ int rmq_reconnect(struct rmq_server *srv)
 				goto clean_rmq_conn;
 			}
 
-			#if AMQP_VERSION < 0x00090000
+			#if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 			/* if amqp_ssl_socket_get_context() is not available, serialize the CA,
 			 * cert and key loading in order to prevent openssl multiprocess issues */
 			lock_get(ssl_lock);
@@ -275,14 +275,14 @@ int rmq_reconnect(struct rmq_server *srv)
 			}
 			#endif
 
-			#if AMQP_VERSION >= 0x00080000
+			#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 8, 0, 0)
 			amqp_ssl_socket_set_verify_peer(amqp_sock, srv->tls_dom->verify_cert);
 			amqp_ssl_socket_set_verify_hostname(amqp_sock, 0);
 			#else
 			amqp_ssl_socket_set_verify(amqp_sock, srv->tls_dom->verify_cert);
 			#endif
 
-			#if AMQP_VERSION >= 0x00080000
+			#if AMQP_VERSION >= AMQP_VERSION_CODE(0, 8, 0, 0)
 			amqp_tls_version_t method_min, method_max;
 
 			if (srv->tls_dom->method != TLS_METHOD_UNSPEC) {

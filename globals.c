@@ -72,8 +72,12 @@ enum poll_types io_poll_method=0;
 int debug_mode = 0;
 /* do not become daemon, stay attached to the console */
 int no_daemon_mode = 0;
-/* assertion statements in script. disabled by default */
+/* assertion statements in script. disabled by default, except for DEV build */
+#if defined(CC_O0) || defined(EXTRA_DEBUG)
+int enable_asserts = 1;
+#else
 int enable_asserts = 0;
+#endif
 /* abort process on failed assertion. disabled by default */
 int abort_on_assert = 0;
 /* start by only logging to stderr */
