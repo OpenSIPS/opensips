@@ -227,6 +227,17 @@ static inline void db_print_val(db_val_t *v)
 			} else { \
 				_str = VAL_STR(_val); \
 			} \
+		} else if ((_val)->type==DB_BLOB) { \
+			if ( VAL_BLOB(_val).s==NULL || VAL_BLOB(_val).len==0 ) { \
+				if (_not_empty) { \
+					LM_ERR("value in column %s cannot be empty\n", _col_name); \
+					goto _error_label;\
+				} else { \
+					_str = VAL_BLOB(_val) ;\
+				} \
+			} else { \
+				_str = VAL_BLOB(_val); \
+			} \
 		} else {\
 			LM_ERR("column %s does not have a string type (found %d)\n",\
 				_col_name,(_val)->type); \
