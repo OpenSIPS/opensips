@@ -1326,7 +1326,7 @@ ifeq		($(LDTYPE), solaris)
 else
 		#gcc and maybe others, => gnu ld
 		LDFLAGS+=-Wl,-O2 -Wl,-E $(PROFILE)
-		MOD_LDFLAGS=-shared $(LDFLAGS)
+		MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
 endif
 endif
 ifeq    ($(CC_NAME), clang)
@@ -1358,7 +1358,7 @@ ifeq		($(LDTYPE), solaris)
 else
 			#gnu or other ld type
 			LDFLAGS+=-Wl,-E $(PROFILE)
-			MOD_LDFLAGS=-shared $(LDFLAGS)
+			MOD_LDFLAGS=-shared -fPIC -DPIC $(LDFLAGS)
 endif
 endif
 ifeq	($(CC_NAME), icc)
