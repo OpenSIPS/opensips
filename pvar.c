@@ -394,6 +394,16 @@ out_ok:
 	return pv_get_strval(msg, param, res, &s);
 }
 
+static int pv_get_route_type(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	str rt;
+	int _;
+
+	get_top_route_type(&rt, &_);
+	return pv_get_strval(msg, param, res, &rt);
+}
+
 static int pv_get_times(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -4189,6 +4199,9 @@ static const pv_export_t _pv_names_table[] = {
 		0, 0, 0, 0},
 	{str_init("rt"), /* */
 		PVT_REFER_TO, pv_get_refer_to, 0,
+		0, 0, 0, 0},
+	{str_init("rT"), /* */
+		PVT_ROUTE_TYPE, pv_get_route_type, 0,
 		0, 0, 0, 0},
 	{str_init("ru"), /* */
 		PVT_RURI, pv_get_ruri, pv_set_ruri,

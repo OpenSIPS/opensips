@@ -127,10 +127,10 @@ enum _pv_type {
 	PVT_HDRCNT,           PVT_AUTH_NONCE_COUNT,  PVT_AUTH_QOP,
 	PVT_AUTH_ALGORITHM,   PVT_AUTH_OPAQUE,       PVT_AUTH_CNONCE,
 	PVT_RU_Q,             PVT_ROUTE_PARAM,       PVT_ROUTE_NAME,
-	PVT_LINE_NUMBER,      PVT_CFG_FILE_NAME,     PVT_LOG_LEVEL,
-	PVT_XLOG_LEVEL,       PVT_AF,                PVT_HDR_NAME,
-	PVT_SOCKET_IN,        PVT_SOCKET_OUT,        PVT_BRANCH_FLAG,
-	PVT_MSG_FLAG,
+	PVT_ROUTE_TYPE,       PVT_LINE_NUMBER,       PVT_CFG_FILE_NAME,
+	PVT_LOG_LEVEL,        PVT_XLOG_LEVEL,        PVT_AF,
+	PVT_HDR_NAME,         PVT_SOCKET_IN,         PVT_SOCKET_OUT,
+	PVT_BRANCH_FLAG,      PVT_MSG_FLAG,
 	/* registered by json module */
 	PVT_JSON,
 	/* registered by xml module */
