@@ -417,36 +417,50 @@ static int media_fork_to_uri(struct sip_msg *msg,
 			return -2;
 		}
 	}
-	mp = shm_malloc(sizeof *mp + uri->len + (headers?headers->len:0));
-	if (!mp) {
-		LM_ERR("could not allocate media fork params!\n");
-		MSL_UNREF(msl);
-		return -2;
-	}
-	memset(mp, 0, sizeof *mp);
-	mp->msl = msl;
-	mp->si = si;
-	mp->medianum = (medianum?*medianum:-1);
-	mp->uri.s = (char *)(mp + 1);
-	mp->uri.len = uri->len;
-	memcpy(mp->uri.s, uri->s, uri->len);
-	if (headers && headers->len) {
-		mp->headers.s = mp->uri.s + mp->uri.len;
-		mp->headers.len = headers->len;
-		memcpy(mp->headers.s, headers->s, headers->len);
-	}
-	MSL_REF(msl);
-	if (media_tm.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, media_fork_start,
-			mp, media_fork_params_free) <= 0) {
-		LM_ERR("could not schedule media fork start!\n");
-		MSL_UNREF(msl);
-		/* also destroy! */
-		MSL_UNREF(msl);
-		return -3;
+	if (dlg->state < DLG_STATE_CONFIRMED_NA) {
+		mp = shm_malloc(sizeof *mp + uri->len + (headers?headers->len:0));
+		if (!mp) {
+			LM_ERR("could not allocate media fork params!\n");
+			MSL_UNREF(msl);
+			return -2;
+		}
+		memset(mp, 0, sizeof *mp);
+		mp->msl = msl;
+		mp->si = si;
+		mp->medianum = (medianum?*medianum:-1);
+		mp->uri.s = (char *)(mp + 1);
+		mp->uri.len = uri->len;
+		memcpy(mp->uri.s, uri->s, uri->len);
+		if (headers && headers->len) {
+			mp->headers.s = mp->uri.s + mp->uri.len;
+			mp->headers.len = headers->len;
+			memcpy(mp->headers.s, headers->s, headers->len);
+		}
+		/* if the dialog has both SDPs available, we can engage forking now */
+		MSL_REF(msl);
+		if (media_tm.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, media_fork_start,
+				mp, media_fork_params_free) <= 0) {
+			LM_ERR("could not schedule media fork start!\n");
+			MSL_UNREF(msl);
+			shm_free(mp);
+			/* also destroy! */
+			goto destroy;
+		}
+	} else if (dlg->state < DLG_STATE_DELETED) {
+		if (handle_media_fork_to_uri(msl, si, uri, headers, (medianum?*medianum:-1)) < 0) {
+			LM_ERR("could not start media forking!\n");
+			goto destroy;
+		}
+	} else {
+		LM_INFO("dialog already terminated!\n");
+		goto destroy;
 	}
 
 	/* all good now, unref the dialog as it is reffed by the ms */
 	return 1;
+destroy:
+	MSL_UNREF(msl);
+	return -3;
 }
 
 static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *medianum)
