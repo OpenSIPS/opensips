@@ -1164,7 +1164,7 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)
 		((str *)param)->s;
 
-	if (!client) {
+	if (!client || !client->ctx) {
 		LM_ERR("No b2b sdp client!\n");
 		return -1;
 	}
