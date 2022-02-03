@@ -414,6 +414,14 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1 \
 					to be used for all communication with the rtp server.
 					If not specified, it is taken from the message/dialog.
 					</para></listitem>
+					<listitem><para><emphasis>from_tag</emphasis>The from-tag
+					to be used for all communication with the rtp server.
+					If not specified, it is taken from the message/dialog.
+					</para></listitem>
+					<listitem><para><emphasis>to_tag</emphasis>The to-tag
+					to be used for all communication with the rtp server.
+					If not specified, it is taken from the message/dialog.
+					</para></listitem>
 					<listitem><para><emphasis>flags</emphasis>Generic flags
 					to be sent to all offer/answer requests.
 					</para></listitem>

@@ -380,6 +380,8 @@ static int fixup_rtp_relay(void **param)
 
 enum rtp_relay_ctx_flags {
 	RTP_RELAY_CTX_CALLID,
+	RTP_RELAY_CTX_FROM_TAG,
+	RTP_RELAY_CTX_TO_TAG,
 	RTP_RELAY_CTX_FLAGS,
 	RTP_RELAY_CTX_DELETE,
 	RTP_RELAY_CTX_UNKNOWN,
@@ -387,8 +389,18 @@ enum rtp_relay_ctx_flags {
 
 static enum rtp_relay_ctx_flags rtp_relay_ctx_flags_get(const str *in)
 {
-	if (str_casematch_nt(in, "call-id") || str_casematch_nt(in, "callid"))
+	if (str_casematch_nt(in, "call_id") ||
+			str_casematch_nt(in, "call-id") ||
+			str_casematch_nt(in, "callid"))
 		return RTP_RELAY_CTX_CALLID;
+	if (str_casematch_nt(in, "from_tag") ||
+			str_casematch_nt(in, "from-tag") ||
+			str_casematch_nt(in, "fromtag"))
+		return RTP_RELAY_CTX_FROM_TAG;
+	if (str_casematch_nt(in, "to_tag") ||
+			str_casematch_nt(in, "to-tag") ||
+			str_casematch_nt(in, "totag"))
+		return RTP_RELAY_CTX_TO_TAG;
 	if (str_casematch_nt(in, "flags"))
 		return RTP_RELAY_CTX_FLAGS;
 	if (str_casematch_nt(in, "delete"))
@@ -431,6 +443,12 @@ static int pv_get_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 	switch (flag) {
 		case RTP_RELAY_CTX_CALLID:
 			sync = &ctx->callid;
+			break;
+		case RTP_RELAY_CTX_FROM_TAG:
+			sync = &ctx->from_tag;
+			break;
+		case RTP_RELAY_CTX_TO_TAG:
+			sync = &ctx->to_tag;
 			break;
 		case RTP_RELAY_CTX_FLAGS:
 			sync = &ctx->flags;
@@ -475,6 +493,12 @@ static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 	switch (flag) {
 		case RTP_RELAY_CTX_CALLID:
 			sync = &ctx->callid;
+			break;
+		case RTP_RELAY_CTX_FROM_TAG:
+			sync = &ctx->from_tag;
+			break;
+		case RTP_RELAY_CTX_TO_TAG:
+			sync = &ctx->to_tag;
 			break;
 		case RTP_RELAY_CTX_FLAGS:
 			sync = &ctx->flags;

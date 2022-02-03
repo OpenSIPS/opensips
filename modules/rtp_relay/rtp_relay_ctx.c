@@ -599,6 +599,10 @@ static int rtp_relay_offer(struct rtp_relay_session *info,
 	}
 	if (ctx->callid.len)
 		info->callid = &ctx->callid;
+	if (!info->from_tag && ctx->from_tag.len)
+		info->from_tag = &ctx->from_tag;
+	if (!info->to_tag && ctx->to_tag.len)
+		info->to_tag = &ctx->to_tag;
 	if (sess->relay->funcs.offer(info, &sess->server, body,
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_IP),
 			RTP_RELAY_FLAGS(RTP_RELAY_PEER(type), RTP_RELAY_FLAGS_TYPE),
@@ -632,6 +636,10 @@ static int rtp_relay_answer(struct rtp_relay_session *info,
 	}
 	if (ctx->callid.len)
 		info->callid = &ctx->callid;
+	if (!info->from_tag && ctx->from_tag.len)
+		info->from_tag = &ctx->from_tag;
+	if (!info->to_tag && ctx->to_tag.len)
+		info->to_tag = &ctx->to_tag;
 	/* if we have a body in the session, use it */
 	if (RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_BODY)) {
 		info->body = RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_BODY);
@@ -672,6 +680,10 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 	}
 	if (ctx->callid.len)
 		info->callid = &ctx->callid;
+	if (!info->from_tag && ctx->from_tag.len)
+		info->from_tag = &ctx->from_tag;
+	if (!info->to_tag && ctx->to_tag.len)
+		info->to_tag = &ctx->to_tag;
 	ret = sess->relay->funcs.delete(info, &sess->server,
 			(ctx && ctx->delete.s?&ctx->flags:NULL),
 			RTP_RELAY_FLAGS(type, RTP_RELAY_FLAGS_DELETE));
@@ -957,11 +969,12 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
 		struct rtp_relay_ctx *ctx, str *to_tag)
 {
-	if (shm_str_sync(&ctx->callid, &dlg->callid) < 0)
+	if (shm_str_sync(&ctx->dlg_callid, &dlg->callid) < 0)
 		LM_ERR("could not store callid in context\n");
-	if (shm_str_sync(&ctx->from_tag, &dlg->legs[DLG_CALLER_LEG].tag) < 0)
+	if (!ctx->from_tag.s && shm_str_sync(&ctx->from_tag,
+			&dlg->legs[DLG_CALLER_LEG].tag) < 0)
 		LM_ERR("could not store from tag in context\n");
-	if (shm_str_sync(&ctx->to_tag,
+	if (!ctx->to_tag.s && shm_str_sync(&ctx->to_tag,
 			(to_tag?to_tag:&dlg->legs[callee_idx(dlg)].tag)) < 0)
 		LM_ERR("could not store to tag in context\n");
 
