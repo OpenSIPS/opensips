@@ -46,12 +46,14 @@ struct rtp_relay_server {
 };
 
 struct rtp_relay_funcs {
-	int (*offer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+	int (*offer)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, str *body,
 			str *ip, str *type, str *in_iface, str *out_iface,
-			str *flags, str *extra, str *body);
-	int (*answer)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
+			str *global_flags, str *flags, str *extra_flags);
+	int (*answer)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, str *body,
 			str *ip, str *type, str *in_iface, str *out_iface,
-			str *flags, str *extra, str *body);
+			str *global_flags, str *flags, str *extra_flags);
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
 

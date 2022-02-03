@@ -286,10 +286,14 @@ static int rtpengine_stop_forward_f(struct sip_msg* msg, str *flags, pv_spec_t *
 static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_spec_t *spvar);
 static void rtpengine_notify_process(int rank);
 
-static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
-static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
+static int rtpengine_api_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags);
+static int rtpengine_api_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags);
 static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
 static int rtpengine_api_copy_offer(struct rtp_relay_session *sess,
@@ -3778,7 +3782,8 @@ static int fill_rtpengine_node(struct rtp_relay_server *server,
 	} while (0)
 
 static str *rtpengine_get_call_flags(struct rtp_relay_session *sess,
-		str *type, str *in_iface, str *out_iface, str *flags, str *extra)
+		str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
 {
 	static str ret;
 	char *p;
@@ -3790,8 +3795,9 @@ static str *rtpengine_get_call_flags(struct rtp_relay_session *sess,
 			(in_iface? (10/* 'in-iface= ' */ + in_iface->len): 0) +
 			(out_iface? (11/* 'out-iface= ' */ + out_iface->len): 0) +
 			(type? (1/* ' ' */ + type->len): 0) +
+			(global_flags? (1/* ' ' */ + global_flags->len): 0) +
 			(flags? (1/* ' ' */ + flags->len): 0) +
-			(extra? (1/* ' ' */ + extra->len): 0) +
+			(extra_flags? (1/* ' ' */ + extra_flags->len): 0) +
 			(sess->branch != RTP_RELAY_ALL_BRANCHES? 20/* 'via-branch-param=br ' */ + INT2STR_MAX_LEN : 0));
 	if (!ret.s)
 		return NULL;
@@ -3802,8 +3808,9 @@ static str *rtpengine_get_call_flags(struct rtp_relay_session *sess,
 	RTPE_APPEND_STRP("in-iface", in_iface);
 	RTPE_APPEND_STRP("out-iface", out_iface);
 	RTPE_APPEND_STR(type);
+	RTPE_APPEND_STR(global_flags);
 	RTPE_APPEND_STR(flags);
-	RTPE_APPEND_STR(extra);
+	RTPE_APPEND_STR(extra_flags);
 	if (sess->branch != RTP_RELAY_ALL_BRANCHES) {
 		memcpy(p, "via-branch-param=br", 19);
 		p += 19;
@@ -3834,8 +3841,10 @@ static inline struct rtpe_set *rtpengine_get_set(int set)
 	return rset;
 }
 
-static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
+static int rtpengine_api_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
 {
 	struct rtpe_set* rset;
 	str *newflags, *node;
@@ -3853,7 +3862,8 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_
 	}
 	RTPE_STOP_READ();
 
-	newflags = rtpengine_get_call_flags(sess, type, in_iface, out_iface, flags, extra);
+	newflags = rtpengine_get_call_flags(sess, type, in_iface, out_iface,
+			global_flags, flags, extra_flags);
 	if (!newflags)
 		return -1;
 	ret = rtpengine_offer_answer_body(sess->msg, newflags, node,
@@ -3868,8 +3878,10 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_
 	return ret;
 }
 
-static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
+static int rtpengine_api_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
 {
 	struct rtpe_set* rset;
 	str *newflags;
@@ -3879,7 +3891,8 @@ static int rtpengine_api_answer(struct rtp_relay_session *sess, struct rtp_relay
 	rset = select_rtpe_set(server->set);
 	RTPE_STOP_READ();
 
-	newflags = rtpengine_get_call_flags(sess, type, in_iface, out_iface, flags, extra);
+	newflags = rtpengine_get_call_flags(sess, type, in_iface, out_iface,
+			global_flags, flags, extra_flags);
 	if (!newflags)
 		return -1;
 	ret = rtpengine_offer_answer_body(sess->msg, newflags, &server->node,
@@ -3900,7 +3913,7 @@ static int rtpengine_api_delete(struct rtp_relay_session *sess, struct rtp_relay
 	rset = select_rtpe_set(server->set);
 	RTPE_STOP_READ();
 
-	newflags = rtpengine_get_call_flags(sess, NULL, NULL, NULL, flags, extra);
+	newflags = rtpengine_get_call_flags(sess, NULL, NULL, NULL, flags, extra, NULL);
 	if (!newflags)
 		return -1;
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());

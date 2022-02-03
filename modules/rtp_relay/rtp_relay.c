@@ -380,6 +380,8 @@ static int fixup_rtp_relay(void **param)
 
 enum rtp_relay_ctx_flags {
 	RTP_RELAY_CTX_CALLID,
+	RTP_RELAY_CTX_FLAGS,
+	RTP_RELAY_CTX_DELETE,
 	RTP_RELAY_CTX_UNKNOWN,
 };
 
@@ -387,6 +389,10 @@ static enum rtp_relay_ctx_flags rtp_relay_ctx_flags_get(const str *in)
 {
 	if (str_casematch_nt(in, "call-id") || str_casematch_nt(in, "callid"))
 		return RTP_RELAY_CTX_CALLID;
+	if (str_casematch_nt(in, "flags"))
+		return RTP_RELAY_CTX_FLAGS;
+	if (str_casematch_nt(in, "delete"))
+		return RTP_RELAY_CTX_DELETE;
 	return RTP_RELAY_CTX_UNKNOWN;
 }
 
@@ -426,6 +432,12 @@ static int pv_get_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 		case RTP_RELAY_CTX_CALLID:
 			sync = &ctx->callid;
 			break;
+		case RTP_RELAY_CTX_FLAGS:
+			sync = &ctx->flags;
+			break;
+		case RTP_RELAY_CTX_DELETE:
+			sync = &ctx->delete;
+			break;
 		default:
 			LM_BUG("unhandled flag %d\n", flag);
 			break;
@@ -463,6 +475,12 @@ static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 	switch (flag) {
 		case RTP_RELAY_CTX_CALLID:
 			sync = &ctx->callid;
+			break;
+		case RTP_RELAY_CTX_FLAGS:
+			sync = &ctx->flags;
+			break;
+		case RTP_RELAY_CTX_DELETE:
+			sync = &ctx->delete;
 			break;
 		default:
 			LM_BUG("unhandled flag %d\n", flag);

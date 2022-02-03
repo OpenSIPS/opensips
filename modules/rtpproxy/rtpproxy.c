@@ -316,10 +316,14 @@ void free_rtpp_sets();
 struct dlg_binds dlg_api;
 /* TM support for saving parameters */
 struct tm_binds tm_api;
-static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
-static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body);
+static int rtpproxy_api_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags);
+static int rtpproxy_api_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags);
 static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
 static int rtpproxy_api_copy_offer(struct rtp_relay_session *sess,
@@ -4895,7 +4899,8 @@ int rtpproxy_raise_dtmf_event(struct rtpp_dtmf_event *dtmf)
 }
 
 static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_args *args,
-		str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra)
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
 {
 	char *p;
 	str b;
@@ -4928,8 +4933,9 @@ static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_a
 		args->body = *sess->body;
 
 	p = pkg_malloc((type?type->len:0) + (in_iface?in_iface->len:0) +
-			(out_iface?out_iface->len:0) + (flags?flags->len:0) +
-			(extra?extra->len:0) + 1 + ((ip && ip->len)?ip->len + 1:0) +
+			(out_iface?out_iface->len:0) + (global_flags?global_flags->len:0) +
+			(flags?flags->len:0) + (extra_flags?extra_flags->len:0) + 1 +
+			((ip && ip->len)?ip->len + 1:0) +
 			(sess->branch != -1?args->callid.len + 1 + INT2STR_MAX_LEN:0));
 	if (!p) {
 		LM_ERR("could not build flags!\n");
@@ -4954,13 +4960,17 @@ static int rtpproxy_fill_call_args(struct rtp_relay_session *sess, struct rtpp_a
 		memcpy(p, out_iface->s, out_iface->len);
 		p += out_iface->len;
 	}
+	if (global_flags) {
+		memcpy(p, global_flags->s, global_flags->len);
+		p += global_flags->len;
+	}
 	if (flags) {
 		memcpy(p, flags->s, flags->len);
 		p += flags->len;
 	}
-	if (extra) {
-		memcpy(p, extra->s, extra->len);
-		p += extra->len;
+	if (extra_flags) {
+		memcpy(p, extra_flags->s, extra_flags->len);
+		p += extra_flags->len;
 	}
 	*p++ = '\0';
 	if (sess->branch != -1) {
@@ -4994,8 +5004,10 @@ static int fill_rtpproxy_node(struct rtp_relay_server *server,
 	return shm_nt_str_dup(&server->node, s);
 }
 
-static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
+static int rtpproxy_api_offer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
 {
 	int ret = -1;
 	int unlock = 0;
@@ -5007,7 +5019,7 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess, struct rtp_relay_s
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
-			in_iface, out_iface, flags, extra))
+			in_iface, out_iface, global_flags, flags, extra_flags))
 		return -1;
 
 	if (!server->node.s) {
@@ -5062,8 +5074,10 @@ exit:
 	return ret;
 }
 
-static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_server *server,
-			str *ip, str *type, str *in_iface, str *out_iface, str *flags, str *extra, str *body)
+static int rtpproxy_api_answer(struct rtp_relay_session *sess,
+		struct rtp_relay_server *server, str *body,
+		str *ip, str *type, str *in_iface, str *out_iface,
+		str *global_flags, str *flags, str *extra_flags)
 {
 	int ret = -1;
 	struct rtpp_set *rset = NULL;
@@ -5072,7 +5086,7 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess, struct rtp_relay_
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, ip, type,
-			in_iface, out_iface, flags, extra))
+			in_iface, out_iface, global_flags, flags, extra_flags))
 		return -1;
 
 	if (nh_lock)
@@ -5114,7 +5128,7 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 
 	memset(&args, '\0', sizeof(args));
 	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, flags, extra))
+			NULL, NULL, NULL, flags, extra))
 		return -1;
 
 	if (nh_lock) {
@@ -5687,7 +5701,7 @@ static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, flags, NULL))
+			NULL, NULL, NULL, flags, NULL))
 		return -1;
 
 	if (!server->node.s) {
@@ -5754,7 +5768,7 @@ static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
 	memset(&args, '\0', sizeof(args));
 
 	if (!rtpproxy_fill_call_args(sess, &args, NULL, NULL,
-			NULL, NULL, flags, NULL))
+			NULL, NULL, NULL, flags, NULL))
 		return -1;
 
 	if (!server->node.s) {

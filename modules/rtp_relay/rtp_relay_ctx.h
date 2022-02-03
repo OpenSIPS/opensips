@@ -100,6 +100,7 @@ struct rtp_relay_sess {
 struct rtp_relay_ctx {
 	str callid;
 	str dlg_callid, from_tag, to_tag;
+	str flags, delete;
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *main;
