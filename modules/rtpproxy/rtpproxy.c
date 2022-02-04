@@ -5584,13 +5584,15 @@ static int rtpproxy_handle_recording(struct rtpproxy_copy_ctx *ctx,
 	struct list_head *it;
 	struct rtpproxy_copy_stream *rtp_stream;
 
+	memset(&sdp, 0, sizeof sdp);
+
 	if (parse_sdp_session(body, 0, NULL, &sdp)<0) {
 		LM_ERR("failed to parse SDP for body\n");
 		return -1;
 	};
 
 	for (stream = sdp.sessions->streams; stream; stream = stream->next) {
-		if (!(ctx->streams_mask & (1 << rtp_stream->medianum)))
+		if (!(ctx->streams_mask & (1 << stream->stream_num)))
 			continue;
 		rtp_stream = rtpproxy_get_stream_index(ctx, &leg, stream);
 		if (!rtp_stream) {
