@@ -260,8 +260,8 @@ reply:
 	return 0;
 }
 
-static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
-	int flags)
+static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
+		str *logic_key, void *param, int flags)
 {
 	struct b2b_req_data req;
 	struct src_sess *ss;
@@ -273,7 +273,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 		LM_ERR("no callback parameter specified!\n");
 		return -1;
 	}
-	ss = *(struct src_sess **)((str *)param)->s;
+	ss = (struct src_sess *)param;
 	if (!ss) {
 		LM_ERR("cannot find session in parameter!\n");
 		return -1;
@@ -371,20 +371,26 @@ no_recording:
 int srec_restore_callback(struct src_sess *sess)
 {
 	if (srec_b2b.restore_logic_info(B2B_CLIENT, &sess->b2b_key,
-			srec_b2b_notify) < 0) {
+			srec_b2b_notify, sess, NULL) < 0) {
 		LM_ERR("cannot register notify callback for [%.*s]!\n",
+				sess->b2b_key.len, sess->b2b_key.s);
+		return -1;
+	}
+	if (srec_b2b.update_b2bl_param(B2B_CLIENT, &sess->b2b_key,
+			&sess->dlg->callid, 1) < 0) {
+		LM_ERR("cannot update param for [%.*s]!\n",
 				sess->b2b_key.len, sess->b2b_key.s);
 		return -1;
 	}
 	return 0;
 }
 
-static int srec_b2b_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
+static int srec_b2b_confirm(str* logic_key, str* entity_key, int src, b2b_dlginfo_t* info, void *param)
 {
 	char *tmp;
 	struct src_sess *ss;
 
-	ss = *(struct src_sess **)key->s;
+	ss = (struct src_sess *)param;
 	if (!ss) {
 		LM_ERR("cannot find session in key parameter [%.*s]!\n",
 				entity_key->len, entity_key->s);
@@ -422,7 +428,7 @@ static int srec_b2b_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* i
 static int srs_send_invite(struct src_sess *sess)
 {
 	client_info_t ci;
-	str param, body;
+	str body;
 	str *client;
 	str hdrs;
 	str ct, contact;
@@ -476,11 +482,8 @@ static int srs_send_invite(struct src_sess *sess)
 		ci.local_contact = ct;
 	}
 
-	/* XXX: hack to pass a parameter :( */
-	param.s = (char *)&sess;
-	param.len = sizeof(void *);
 	client = srec_b2b.client_new(&ci, srec_b2b_notify, srec_b2b_confirm,
-			&mod_name, (str *)&param, NULL);
+			&mod_name, &sess->dlg->callid, NULL, sess, NULL);
 	pkg_free(body.s);
 	if (contact.s)
 		pkg_free(contact.s);

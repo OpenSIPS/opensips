@@ -72,14 +72,17 @@ static void generate_tag(str* tag, str* src, str* callid)
  *	from_uri: the source URI
  *	extra_headers: the extra headers to be added in the request
  *	b2b_cback : callback function to notify the logic about a change in dialog
- *	param     : the parameter that will be used when calling b2b_cback function
+ *	logic_key : the logic identifier
+ *	tracer    : structure used to instruct how the client should be traced
+ *	param     : optional, the parameter that will be used when calling b2b_cback function
+ *	free_param: an optional function to free the parameter
  *
  *	Return value: dialog key allocated in private memory
  *	*/
 #define HASH_SIZE 1<<23
 str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
-		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param,
-		struct b2b_tracer *tracer)
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* logic_key,
+		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -92,16 +95,10 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	str from_tag;
 	str random_info = {0, 0};
 
-	if(ci == NULL || b2b_cback == NULL || param== NULL)
+	if(ci == NULL || b2b_cback == NULL || logic_key == NULL)
 	{
 		LM_ERR("Wrong parameters.\n");
 		return NULL;
-	}
-	if(param && param->len > B2BL_MAX_KEY_LEN)
-	{
-		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
-				param->len, B2BL_MAX_KEY_LEN);
-		return 0;
 	}
 
 	hash_index = core_hash(&ci->from_uri, &ci->to_uri, client_hsize);
@@ -115,7 +112,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
 		+ ci->from_dname.len + ci->to_dname.len +
 		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE +
-		B2BL_MAX_KEY_LEN + mod_name->len;
+		mod_name->len;
 
 	/* create record in hash table */
 	dlg = (b2b_dlg_t*)shm_malloc(size);
@@ -136,14 +133,13 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 	CONT_COPY(dlg, dlg->contact[CALLER_LEG], ci->local_contact);
 
-	if(param && param->s)
-	{
-		dlg->param.s = (char*)dlg + size;
-		memcpy(dlg->param.s, param->s, param->len);
-		dlg->param.len = param->len;
-		size+= B2BL_MAX_KEY_LEN;
+	if(logic_key->s && shm_str_dup(&dlg->logic_key, logic_key) < 0) {
+		LM_ERR("not enough shm memory\n");
+		goto error;
 	}
 	dlg->b2b_cback = b2b_cback;
+	dlg->param = param;
+	dlg->free_param = free_param;
 	dlg->add_dlginfo = add_dlginfo;
 	dlg->tracer = tracer;
 
@@ -152,7 +148,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	if(parse_method(ci->method.s, ci->method.s+ci->method.len, &dlg->last_method) == 0)
 	{
 		LM_ERR("wrong method %.*s\n", ci->method.len, ci->method.s);
-		shm_free(dlg);
 		goto error;
 	}
 	dlg->state = B2B_NEW;
@@ -170,7 +165,6 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	if(callid == NULL)
 	{
 		LM_ERR("Inserting new record in hash table failed\n");
-		shm_free(dlg);
 		goto error;
 	}
 
@@ -257,11 +251,14 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 			" last method=[%d] dlg->uac_tran=[%p]\n",
 			dlg, callid->len, callid->s,
 			dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-			dlg->param.len, dlg->param.s, dlg->last_method, dlg->uac_tran);
+			dlg->logic_key.len, dlg->logic_key.s, dlg->last_method, dlg->uac_tran);
 
 	return callid;
 
 error:
+	if (dlg->logic_key.s)
+		shm_free(dlg->logic_key.s);
+	shm_free(dlg);
 	if(callid)
 		pkg_free(callid);
 	return NULL;

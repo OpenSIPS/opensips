@@ -97,7 +97,7 @@ void bin_pack_entity(bin_packet_t *packet, b2b_dlg_t *dlg, int etype)
 	bin_push_str(packet, &dlg->route_set[1]);
 	bin_push_str(packet, dlg->send_sock ?
 		get_socket_internal_name(dlg->send_sock) : NULL);
-	bin_push_str(packet, &dlg->param);
+	bin_push_str(packet, &dlg->logic_key);
 	bin_push_str(packet, &dlg->mod_name);
 
 	bin_push_int(packet, dlg->state);
@@ -428,7 +428,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 		return -1;
 	}
 
-	bin_pop_str(packet, &dlg->param);
+	bin_pop_str(packet, &dlg->logic_key);
 	bin_pop_str(packet, &dlg->mod_name);
 
 	bin_pop_int(packet, &dlg->state);
@@ -497,17 +497,13 @@ error:
 
 static inline int recv_b2bl_param_update(bin_packet_t *packet, b2b_dlg_t *dlg)
 {
-	str param;
+	str logic_key;
 
-	bin_pop_str(packet, &param);
-
-	if (param.len > B2BL_MAX_KEY_LEN) {
-		LM_ERR("b2bl parameter too long, received [%d], maximum [%d]\n",
-			param.len, B2BL_MAX_KEY_LEN);
+	bin_pop_str(packet, &logic_key);
+	if (shm_str_sync(&dlg->logic_key, &logic_key) < 0) {
+		LM_ERR("cannot duplicate logic key!\n");
 		return -1;
 	}
-	memcpy(dlg->param.s, param.s, param.len);
-	dlg->param.len = param.len;
 
 	return 0;
 }

@@ -100,7 +100,7 @@ typedef struct b2b_dlg
 	struct b2b_dlg      *prev;
 	b2b_notify_t         b2b_cback;
 	b2b_add_dlginfo_t    add_dlginfo;
-	str                  param;
+	str                  logic_key;
 	str                  storage;
 	str                  mod_name;
 	str                  ack_sdp;
@@ -114,6 +114,8 @@ typedef struct b2b_dlg
 	int                  db_flag;
 	int                  replicated;
 	struct b2b_tracer   *tracer;
+	void                *param;
+	b2b_param_free_cb    free_param;
 }b2b_dlg_t;
 
 typedef struct b2b_entry

@@ -337,7 +337,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	}
 
 	if (b2b_api.restore_logic_info(entity_type, entity_key,
-		entity_type == B2B_SERVER ? b2b_server_notify : b2b_client_notify) < 0) {
+		entity_type == B2B_SERVER ? b2b_server_notify : b2b_client_notify, NULL, NULL) < 0) {
 		LM_ERR("Failed to restore entity notify callback\n");
 		goto error;
 	}

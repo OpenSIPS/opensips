@@ -115,7 +115,7 @@ int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 	return 0;
 }
 
-int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo)
+int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo, void *param)
 {
 	b2bl_tuple_t* tuple;
 	b2bl_entity_id_t* entity = NULL;
@@ -607,8 +607,8 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 
 	b2bl_htable[tuple->hash_index].locked_by = process_no;
 
-	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
+	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+			&b2bl_mod_name, tuple->key, NULL, NULL, NULL);
 
 	b2bl_htable[tuple->hash_index].locked_by = -1;
 
@@ -736,8 +736,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 			b2bl_htable[hash_index].locked_by = process_no;
 
-			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
+			client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+					&b2bl_mod_name, tuple->key, NULL, NULL, NULL);
 
 			b2bl_htable[hash_index].locked_by = -1;
 
@@ -1965,8 +1965,7 @@ static inline int get_b2b_dialog_by_replace(str *replaces, str *u_replaces,
 			str *entity_key, unsigned int *hash_idx, unsigned int *local_idx )
 {
 	struct replaces_body replaces_b;
-	char tuple_buf[B2BL_MAX_KEY_LEN];
-	str tuple_key;
+	str *tuple_key;
 
 	//LM_DBG("Replaces=[%.*s]\n",replaces->len,replaces->s);
 	if(unescape_param(replaces,u_replaces)!=0)
@@ -1986,13 +1985,11 @@ static inline int get_b2b_dialog_by_replace(str *replaces, str *u_replaces,
 			u_replaces->len, u_replaces->s);
 		return -1;
 	}
-	tuple_key.s = tuple_buf;
-	tuple_key.len = B2BL_MAX_KEY_LEN;
-	if(b2b_api.get_b2bl_key(&replaces_b.callid_val,
+	tuple_key = b2b_api.get_b2bl_key(&replaces_b.callid_val,
 		&replaces_b.from_tag_val,
 		&replaces_b.to_tag_val,
-		entity_key,
-		&tuple_key)!=0)
+		entity_key);
+	if(!tuple_key)
 	{
 		LM_ERR("no b2bl key for [%.*s][%.*s][%.*s]\n",
 			replaces_b.callid_val.len,
@@ -2003,10 +2000,11 @@ static inline int get_b2b_dialog_by_replace(str *replaces, str *u_replaces,
 			replaces_b.from_tag_val.s);
 		return -1;
 	}
-	if(b2bl_parse_key(&tuple_key, hash_idx, local_idx)< 0)
+	if(b2bl_parse_key(tuple_key, hash_idx, local_idx)< 0)
 	{
 		LM_ERR("Failed to parse b2b logic key [%.*s]\n",
-			tuple_key.len, tuple_key.s);
+			tuple_key->len, tuple_key->s);
+		pkg_free(tuple_key);
 		return -1;
 	}
 	LM_DBG("Need to replace callid=[%.*s] to-tag=[%.*s] and "
@@ -2014,12 +2012,13 @@ static inline int get_b2b_dialog_by_replace(str *replaces, str *u_replaces,
 		replaces_b.callid_val.len, replaces_b.callid_val.s,
 		replaces_b.to_tag_val.len, replaces_b.to_tag_val.s,
 		replaces_b.from_tag_val.len, replaces_b.from_tag_val.s,
-		tuple_key.len, tuple_key.s);
+		tuple_key->len, tuple_key->s);
+	pkg_free(tuple_key);
 
 	return 0;
 }
 
-int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* param)
+int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, str* b2bl_key)
 {
 	#define U_REPLACES_BUF_LEN 512
 	char u_replaces_buf[U_REPLACES_BUF_LEN];
@@ -2028,7 +2027,6 @@ int b2b_logic_notify(int src, struct sip_msg* msg, str* key, int type, void* par
 	unsigned int hash_idx, local_idx;
 	str entity_key = {NULL, 0};
 	b2bl_tuple_t* tuple;
-	str* b2bl_key = (str*)param;
 	str body= {NULL, 0};
 	str extra_headers = {NULL, 0};
 	str new_body={NULL, 0};
@@ -2599,8 +2597,8 @@ entity_search_done:
 
 		b2bl_htable[hash_index].locked_by = process_no;
 
-		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
+		client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+				&b2bl_mod_name, tuple->key, NULL, NULL, NULL);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -2674,15 +2672,17 @@ error:
 	return -1;
 }
 
-int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param, int flags)
+int b2b_server_notify(struct sip_msg* msg, str* key, int type,
+		str *logic_key, void* param, int flags)
 {
-	return b2b_logic_notify(B2B_SERVER, msg, key, type, param);
+	return b2b_logic_notify(B2B_SERVER, msg, key, type, logic_key);
 }
 
 
-int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param, int flags)
+int b2b_client_notify(struct sip_msg* msg, str* key, int type,
+		str *logic_key, void* param, int flags)
 {
-	return b2b_logic_notify(B2B_CLIENT, msg, key, type, param);
+	return b2b_logic_notify(B2B_CLIENT, msg, key, type, logic_key);
 }
 
 static char fromtag_buf[MD5_LEN];
@@ -2782,7 +2782,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	/* create new server */
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, b2bl_key, NULL);
+			b2b_server_notify, &b2bl_mod_name, b2bl_key, NULL, NULL, NULL);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");
@@ -2831,8 +2831,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	b2bl_htable[hash_index].locked_by = process_no;
 
-	client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, NULL);
+	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+			&b2bl_mod_name, b2bl_key, NULL, NULL, NULL);
 
 	b2bl_htable[hash_index].locked_by = -1;
 
@@ -2873,8 +2873,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 		b2bl_htable[hash_index].locked_by = process_no;
 
-		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-			b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, NULL);
+		client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+				&b2bl_mod_name, b2bl_key, NULL, NULL, NULL);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -3396,7 +3396,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 
 		/* create new server entity */
 		server_id = b2b_api.server_new(msg, &tuple->local_contact,
-				b2b_server_notify, &b2bl_mod_name, b2bl_key, NULL);
+				b2b_server_notify, &b2bl_mod_name, b2bl_key, NULL, NULL, NULL);
 		if(server_id == NULL)
 		{
 			LM_ERR("failed to create new b2b server instance\n");
@@ -3502,8 +3502,8 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 
 			b2bl_htable[hash_index].locked_by = process_no;
 
-			client_id = b2b_api.client_new(&ci, b2b_client_notify,
-					b2b_add_dlginfo, &b2bl_mod_name, b2bl_key, NULL);
+			client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+					&b2bl_mod_name, b2bl_key, NULL, NULL, NULL);
 
 			b2bl_htable[hash_index].locked_by = -1;
 
@@ -3823,8 +3823,8 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 
 		b2bl_htable[hash_index].locked_by = process_no;
 
-		client_id = b2b_api.client_new(&ci, b2b_client_notify,
-				b2b_add_dlginfo, &b2bl_mod_name, tuple->key, NULL);
+		client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+				&b2bl_mod_name, tuple->key, NULL, NULL, NULL);
 
 		b2bl_htable[hash_index].locked_by = -1;
 
@@ -4223,14 +4223,15 @@ error:
 int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
 		unsigned int *local_index)
 {
-	char tuple_buffer[B2BL_MAX_KEY_LEN];
-	str callid, from_tag, to_tag, tuple;
+	int ret;
+	str callid, from_tag, to_tag, *tuple;
 
 	/* check to see if the key is specified as callid;from_tag;to_tag */
 	from_tag.s = q_memchr(key->s, ';', key->len);
 	if (!from_tag.s) {
 		LM_DBG("there's no tuple separator: must be plain key: %.*s\n",
 				key->len, key->s);
+		tuple = key;
 		goto end;
 	}
 	callid.s = key->s;
@@ -4246,15 +4247,16 @@ int b2bl_get_tuple_key(str *key, unsigned int *hash_index,
 	to_tag.len = key->s + key->len - to_tag.s;
 
 	/* we've got the entity's coordinates, try to find the entity now */
-	tuple.s = tuple_buffer;
-	tuple.len = B2BL_MAX_KEY_LEN;
-	if(b2b_api.get_b2bl_key(&callid, &from_tag, &to_tag, NULL, &tuple)) {
+	tuple = b2b_api.get_b2bl_key(&callid, &from_tag, &to_tag, NULL);
+	if(!tuple) {
 		LM_DBG("cannot find entity [%.*s]\n", key->len, key->s);
 		return -2;
 	}
-	key = &tuple;
 end:
-	return b2bl_parse_key(key, hash_index, local_index);
+	ret = b2bl_parse_key(tuple, hash_index, local_index);
+	if (key != tuple)
+		pkg_free(tuple);
+	return ret;
 }
 
 
@@ -4419,7 +4421,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 		goto error;
 	}
 	server_id = b2b_api.server_new(msg, &tuple->local_contact,
-			b2b_server_notify, &b2bl_mod_name, tuple->key, NULL);
+			b2b_server_notify, &b2bl_mod_name, tuple->key, NULL, NULL, NULL);
 	if(server_id == NULL)
 	{
 		LM_ERR("failed to create new b2b server instance\n");

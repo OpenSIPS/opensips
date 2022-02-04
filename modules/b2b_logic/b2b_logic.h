@@ -170,11 +170,11 @@ static inline int b2b_get_request_id(str* request)
 	return -1;
 }
 
-int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info);
-int b2b_server_notify(struct sip_msg* msg, str* key, int type, void* param,
-	int flags);
-int b2b_client_notify(struct sip_msg* msg, str* key, int type, void* param,
-	int flags);
+int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info, void *param);
+int b2b_server_notify(struct sip_msg* msg, str* key, int type,
+		str *logic_key, void* param, int flags);
+int b2b_client_notify(struct sip_msg* msg, str* key, int type,
+		str *logic_key, void* param, int flags);
 void b2bl_db_init(void);
 
 #endif

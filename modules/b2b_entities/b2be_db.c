@@ -258,11 +258,11 @@ int b2be_db_insert(b2b_dlg_t* dlg, int type)
 		qvals[11].val.str_val.s = 0;
 		qvals[11].val.str_val.len = 0;
 	}
-	if (!str_check_token(&dlg->param)) {
+	if (!str_check_token(&dlg->logic_key)) {
 		qvals[12].val.str_val.s = NULL;
 		qvals[12].val.str_val.len = 0;
 	} else {
-		qvals[12].val.str_val = dlg->param;
+		qvals[12].val.str_val = dlg->logic_key;
 	}
 	qvals[13].val.str_val= dlg->mod_name;
 
@@ -327,10 +327,10 @@ static void b2b_entity_cdb_delete(int type, b2b_dlg_t* dlg)
 		return;
 	}
 
-	if (!str_check_token(&dlg->param)) {
+	if (!str_check_token(&dlg->logic_key)) {
 		cdb_subkey = NULL;
 	} else {
-		cdb_subkey = get_b2be_map_subkey(&dlg->param);
+		cdb_subkey = get_b2be_map_subkey(&dlg->logic_key);
 		if (!cdb_subkey) {
 			LM_ERR("Failed to build map key\n");
 			return;
@@ -503,11 +503,11 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 					qvals[11].val.str_val.s = 0;
 					qvals[11].val.str_val.len = 0;
 				}
-				if (!str_check_token(&dlg->param)) {
+				if (!str_check_token(&dlg->logic_key)) {
 					qvals[12].val.str_val.s = NULL;
 					qvals[12].val.str_val.len = 0;
 				} else {
-					qvals[12].val.str_val = dlg->param;
+					qvals[12].val.str_val = dlg->logic_key;
 				}
 				qvals[13].val.str_val= dlg->mod_name;
 			}
@@ -662,7 +662,7 @@ static int load_entity(int_str_t *vals)
 	dlg.last_method      = vals[18].i;
 	dlg.last_reply_code  = vals[19].i;
 	dlg.last_invite_cseq = vals[20].i;
-	dlg.param            = vals[12].s;
+	dlg.logic_key        = vals[12].s;
 	dlg.mod_name         = vals[13].s;
 	sockinfo_str         = vals[11].s;
 	if(sockinfo_str.s)

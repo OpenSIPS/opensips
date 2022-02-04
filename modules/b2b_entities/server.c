@@ -48,22 +48,15 @@
  *	*/
 
 str* server_new(struct sip_msg* msg, str* local_contact,
-		b2b_notify_t b2b_cback, str *mod_name, str* param,
-		struct b2b_tracer *tracer)
+		b2b_notify_t b2b_cback, str *mod_name, str* logic_key,
+		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
 	int ret;
 
-	if(param && param->len > B2BL_MAX_KEY_LEN)
-	{
-		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
-				param->len, B2BL_MAX_KEY_LEN);
-		return NULL;
-	}
-
 	/* create new entry in hash table */
-	dlg = b2b_new_dlg(msg, local_contact, 0, param, mod_name);
+	dlg = b2b_new_dlg(msg, local_contact, 0, logic_key, mod_name);
 	if( dlg == NULL )
 	{
 		LM_ERR("failed to create new dialog structure entry\n");
@@ -75,6 +68,8 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	dlg->state = B2B_NEW;
 	dlg->b2b_cback = b2b_cback;
+	dlg->param = param;
+	dlg->free_param = free_param;
 	dlg->tracer = tracer;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
@@ -104,7 +99,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	LM_DBG("new server entity[%p]: callid=[%.*s] tag=[%.*s] param=[%.*s] dlg->uas_tran=[%p]\n",
 		dlg, dlg->callid.len, dlg->callid.s,
 		dlg->tag[CALLER_LEG].len, dlg->tag[CALLER_LEG].s,
-		dlg->param.len, dlg->param.s, dlg->uas_tran);
+		dlg->logic_key.len, dlg->logic_key.s, dlg->uas_tran);
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;

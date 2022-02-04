@@ -478,7 +478,7 @@ static void mod_destroy(void)
 }
 
 int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
-		b2b_notify_t cback)
+		b2b_notify_t cback, void *param, b2b_param_free_cb free_param)
 {
 	b2b_dlg_t* dlg;
 	b2b_table table;
@@ -510,26 +510,22 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 		return -1;
 	}
 	dlg->b2b_cback = cback;
+	dlg->param = param;
+	dlg->free_param = free_param;
 	return 0;
 }
 
 int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
-		str* param, int replicate)
+		str* logic_key, int replicate)
 {
 	b2b_dlg_t* dlg;
 	b2b_table table;
 	unsigned int hash_index, local_index;
 	int unlock = 1;
 
-	if(!param)
+	if(!logic_key)
 	{
-		LM_ERR("NULL param\n");
-		return -1;
-	}
-	if(param->len > B2BL_MAX_KEY_LEN)
-	{
-		LM_ERR("parameter too long, received [%d], maximum [%d]\n",
-				param->len, B2BL_MAX_KEY_LEN);
+		LM_ERR("NULL logic_key\n");
 		return -1;
 	}
 
@@ -559,39 +555,35 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 			lock_release(&table[hash_index].lock);
 		return -1;
 	}
-	memcpy(dlg->param.s, param->s, param->len);
-	dlg->param.len = param->len;
+	memcpy(dlg->logic_key.s, logic_key->s, logic_key->len);
+	dlg->logic_key.len = logic_key->len;
 	if (unlock)
 		lock_release(&table[hash_index].lock);
 
 	if (b2be_cluster && replicate)
-		replicate_entity_update(dlg, type, hash_index, param, -1, NULL);
+		replicate_entity_update(dlg, type, hash_index, logic_key, -1, NULL);
 
 	return 0;
 }
 
-int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, str* tuple_key)
+str *b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index, local_index;
 	b2b_table table;
-	int ret;
+	str *tuple_key = NULL;
 
 	if(!callid || !callid->s || !callid->len){
 		LM_ERR("Wrong callid param\n");
-		return -1;
+		return NULL;
 	}
 	if(!from_tag || !from_tag->s || !from_tag->len){
 		LM_ERR("Wrong from_tag param\n");
-		return -1;
+		return NULL;
 	}
 	if(!to_tag){
 		LM_ERR("Wrong to_tag param\n");
-		return -1;
-	}
-	if(!tuple_key || !tuple_key->s || tuple_key->len<B2BL_MAX_KEY_LEN) {
-		LM_ERR("Wrong tuple param\n");
-		return -1;
+		return NULL;
 	}
 	/* check if the to tag has the b2b key format
 	 * -> meaning that it is a server request */
@@ -600,13 +592,19 @@ int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, s
 	else if (b2b_parse_key(callid, &hash_index, &local_index, NULL)>=0)
 		table = client_htable;
 	else
-		return -1; /* to tag and/or callid are not part of this B2B */
+		return NULL; /* to tag and/or callid are not part of this B2B */
 	lock_get(&table[hash_index].lock);
 	dlg=b2b_search_htable_dlg(table, hash_index, local_index,
 					to_tag, from_tag, callid);
 	if(dlg){
-		memcpy(tuple_key->s, dlg->param.s, dlg->param.len);
-		tuple_key->len = dlg->param.len;
+		tuple_key = pkg_malloc(sizeof(str) + dlg->logic_key.len);
+		if (!tuple_key) {
+			LM_ERR("cannot duplicate logic\n");
+			return NULL;
+		}
+		tuple_key->s = (char *)(tuple_key + 1);
+		memcpy(tuple_key->s, dlg->logic_key.s, dlg->logic_key.len);
+		tuple_key->len = dlg->logic_key.len;
 		if (entity_key) {
 			if (table == server_htable) {
 				entity_key->s = to_tag->s;
@@ -620,12 +618,9 @@ int b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key, s
 			tuple_key->len, tuple_key->s,
 			(entity_key?entity_key->len:0),
 			(entity_key?entity_key->s:NULL));
-		ret = 0;
-	} else {
-		ret = -1;
 	}
 	lock_release(&table[hash_index].lock);
-	return ret;
+	return tuple_key;
 }
 
 void *b2b_get_context(void)
@@ -700,10 +695,10 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 			if (add_mi_number(arr_item, MI_SSTR("dlg"), dlg->id) < 0)
 				goto error;
 			/* check if param is printable */
-			param = dlg->param;
+			param = dlg->logic_key;
 			if (!str_check_token(&param))
 				init_str(&param, "");
-			if (add_mi_string(arr_item, MI_SSTR("param"),
+			if (add_mi_string(arr_item, MI_SSTR("logic_key"),
 				param.s, param.len) < 0)
 				goto error;
 			if (add_mi_string(arr_item, MI_SSTR("mod_name"),

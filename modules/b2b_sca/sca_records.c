@@ -267,8 +267,7 @@ b2b_sca_call_t* restore_call(b2b_sca_record_t *record,
 	size = sizeof(b2b_sca_call_t) +
 		appearance_index_str.len +
 		call_info_uri->len +
-		call_info_apperance_uri->len +
-		B2BL_MAX_KEY_LEN;
+		call_info_apperance_uri->len;
 	call = (b2b_sca_call_t *)shm_malloc(size);
 	if (call == NULL) {
 		LM_ERR("OOM\n");
@@ -298,8 +297,7 @@ b2b_sca_call_t* restore_call(b2b_sca_record_t *record,
 	p += call_info_apperance_uri->len;
 
 	call->b2bl_key.len = 0;
-	call->b2bl_key.s = p;
-	p += B2BL_MAX_KEY_LEN;
+	call->b2bl_key.s = NULL;
 
 	record->call[appearance_index-1] = call;
 
@@ -339,10 +337,10 @@ b2b_sca_record_t* restore_record(str *shared_line, str *watchers_csv)
 
 int b2b_sca_update_call_record_key(b2b_sca_call_t *call, str* b2bl_key)
 {
-	if (!b2bl_key || !b2bl_key->s || b2bl_key->len > B2BL_MAX_KEY_LEN)
+	if (!b2bl_key || !b2bl_key->s)
 		return -1;
-	memcpy(call->b2bl_key.s, b2bl_key->s, b2bl_key->len);
-	call->b2bl_key.len = b2bl_key->len;
+	if (shm_str_sync(&call->b2bl_key, b2bl_key) < 0)
+		return -1;
 	return 0;
 }
 
@@ -461,6 +459,8 @@ void b2b_sca_delete_call_record(int hash_index, b2b_sca_record_t *record, unsign
 {
 	b2b_sca_call_t *call = b2b_sca_search_call_safe(record, appearance);
 	if (call) {
+		if (call->b2bl_key.s)
+			shm_free(call->b2bl_key.s);
 		shm_free(call);
 		record->call[appearance - 1] = NULL;
 	}
@@ -489,6 +489,8 @@ void b2b_sca_delete_record(b2b_sca_record_t *record, unsigned int hash_index)
 		if (record->call[i]) {
 			b2b_sca_print_call_record(i, record->call[i]);
 			LM_WARN("delete record with active appearance [%d]\n", i+1);
+			if (record->call[i]->b2bl_key.s)
+				shm_free(record->call[i]->b2bl_key.s);
 			shm_free(record->call[i]);
 		}
 

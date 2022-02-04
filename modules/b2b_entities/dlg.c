@@ -76,9 +76,9 @@ void print_b2b_dlg(b2b_dlg_t *dlg)
 {
 	dlg_leg_t *leg = dlg->legs;
 
-	LM_DBG("dlg[%p][%p][%p]: [%.*s] id=[%d] param=[%.*s] state=[%d] db_flag=[%d]\n",
+	LM_DBG("dlg[%p][%p][%p]: [%.*s] id=[%d] logic_key=[%.*s] state=[%d] db_flag=[%d]\n",
 		dlg, dlg->prev, dlg->next, dlg->ruri.len, dlg->ruri.s,
-		dlg->id, dlg->param.len, dlg->param.s, dlg->state, dlg->db_flag);
+		dlg->id, dlg->logic_key.len, dlg->logic_key.s, dlg->state, dlg->db_flag);
 	LM_DBG("  from=[%.*s] [%.*s]\n",
 		dlg->from_dname.len, dlg->from_dname.s, dlg->from_uri.len, dlg->from_uri.s);
 	LM_DBG("    to=[%.*s] [%.*s]\n",
@@ -384,18 +384,27 @@ str* b2b_key_copy_shm(str* b2b_key)
 
 b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 {
+	str logic_key;
 	b2b_dlg_t* new_dlg;
 	int size;
 
+	if (dlg->logic_key.s && shm_str_dup(&logic_key, &dlg->logic_key) < 0)
+	{
+		LM_ERR("No more shared memory\n");
+		return 0;
+	}
+
 	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+
 		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
-		dlg->contact[0].len+ dlg->contact[1].len+ dlg->ruri.len+ B2BL_MAX_KEY_LEN+
+		dlg->contact[0].len+ dlg->contact[1].len+ dlg->ruri.len+
 		dlg->from_dname.len + dlg->to_dname.len + dlg->mod_name.len;
 
 	new_dlg = (b2b_dlg_t*)shm_malloc(size);
 	if(new_dlg == 0)
 	{
 		LM_ERR("No more shared memory\n");
+		if (dlg->logic_key.s)
+			shm_free(logic_key.s);
 		return 0;
 	}
 	memset(new_dlg, 0, size);
@@ -418,13 +427,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 		CONT_COPY(new_dlg, new_dlg->contact[0], dlg->contact[0]);
 	if(dlg->contact[1].len && dlg->contact[1].s)
 		CONT_COPY(new_dlg, new_dlg->contact[1], dlg->contact[1]);
-	if(dlg->param.s)
-	{
-		new_dlg->param.s= (char*)new_dlg+ size;
-		memcpy(new_dlg->param.s, dlg->param.s, dlg->param.len);
-		new_dlg->param.len= dlg->param.len;
-		size+= B2BL_MAX_KEY_LEN;
-	}
+	if(dlg->logic_key.s)
+		new_dlg->logic_key = logic_key;
 
 	CONT_COPY(new_dlg, new_dlg->mod_name, dlg->mod_name);
 
@@ -438,6 +442,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 	new_dlg->id               = dlg->id;
 	new_dlg->state            = dlg->state;
 	new_dlg->b2b_cback        = dlg->b2b_cback;
+	new_dlg->param            = dlg->param;
+	new_dlg->free_param       = dlg->free_param;
 	new_dlg->add_dlginfo      = dlg->add_dlginfo;
 	new_dlg->last_invite_cseq = dlg->last_invite_cseq;
 	new_dlg->db_flag          = dlg->db_flag;
@@ -580,7 +586,7 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		lock_release(&client_htable[hash_index].lock);
 
 	cb->cbf(entity_type, entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid,
-		&dlg->param, event_type, storage, backend);
+		&dlg->logic_key, event_type, storage, backend);
 
 	if (entity_type == B2B_SERVER)
 		lock_get(&server_htable[hash_index].lock);
@@ -641,7 +647,7 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 			}
 
 			cb->cbf(etype, etype == B2B_CLIENT ? &dlg->callid : &dlg->tag[1],
-				&dlg->param, B2B_EVENT_CREATE, dlg->storage.len ? &storage : NULL,
+				&dlg->logic_key, B2B_EVENT_CREATE, dlg->storage.len ? &storage : NULL,
 				B2BCB_BACKEND_DB);
 
 			if (dlg->storage.len) {
@@ -693,7 +699,7 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	b2b_dlg_t* dlg = 0, *aux_dlg;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
-	str param= {NULL,0};
+	str logic_key= {NULL,0};
 	b2b_table table = NULL;
 	int method_value;
 	str from_tag;
@@ -884,7 +890,7 @@ search_dialog:
 			lock_release(&server_htable[hash_index].lock);
 			return SCB_DROP_MSG;
 		}
-		if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+		if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 			LM_ERR("Failed to copy b2b_logic key to b2b context\n");
 			lock_release(&server_htable[hash_index].lock);
 			return SCB_DROP_MSG;
@@ -1017,7 +1023,7 @@ search_dialog:
 		lock_release(&server_htable[hash_index].lock);
 		return SCB_DROP_MSG;
 	}
-	if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+	if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
 		lock_release(&server_htable[hash_index].lock);
 		return SCB_DROP_MSG;
@@ -1154,17 +1160,17 @@ logic_notify:
 	}
 
 	b2b_cback = dlg->b2b_cback;
-	if(dlg->param.s)
+	if(dlg->logic_key.s)
 	{
-		param.s = (char*)pkg_malloc(dlg->param.len);
-		if(param.s == NULL)
+		logic_key.s = (char*)pkg_malloc(dlg->logic_key.len);
+		if(logic_key.s == NULL)
 		{
 			LM_ERR("No more private memory\n");
 			lock_release(&table[hash_index].lock);
 			return SCB_RUN_ALL;
 		}
-		memcpy(param.s, dlg->param.s, dlg->param.len);
-		param.len = dlg->param.len;
+		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
+		logic_key.len = dlg->logic_key.len;
 	}
 
 	set_dlg_state( dlg, method_value);
@@ -1181,10 +1187,10 @@ logic_notify:
 	dlg_state = dlg->state;
 	lock_release(&table[hash_index].lock);
 
-	b2b_cback(msg, &b2b_key, B2B_REQUEST, param.s?&param:0, b2b_cb_flags);
+	b2b_cback(msg, &b2b_key, B2B_REQUEST, logic_key.s?&logic_key:0, dlg->param, b2b_cb_flags);
 
-	if(param.s)
-		pkg_free(param.s);
+	if(logic_key.s)
+		pkg_free(logic_key.s);
 
 	lock_get(&table[hash_index].lock);
 
@@ -1288,6 +1294,10 @@ void destroy_b2b_htables(void)
 					shm_free(dlg->tag[CALLEE_LEG].s);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
+				if (dlg->logic_key.s)
+					shm_free(dlg->logic_key.s);
+				if (dlg->free_param)
+					dlg->free_param(dlg->param);
 				shm_free(dlg);
 				dlg = aux;
 			}
@@ -1307,6 +1317,10 @@ void destroy_b2b_htables(void)
 				b2b_delete_legs(&dlg->legs);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
+				if (dlg->logic_key.s)
+					shm_free(dlg->logic_key.s);
+				if (dlg->free_param)
+					dlg->free_param(dlg->param);
 				shm_free(dlg);
 				dlg = aux;
 			}
@@ -1317,7 +1331,7 @@ void destroy_b2b_htables(void)
 
 
 b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
-		b2b_dlg_t* init_dlg, str* param, str *mod_name)
+		b2b_dlg_t* init_dlg, str* logic_key, str *mod_name)
 {
 	struct to_body *pto, *pfrom = NULL;
 	b2b_dlg_t dlg;
@@ -1457,8 +1471,8 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		}
 	}
 
-	if(param)
-		dlg.param = *param;
+	if(logic_key)
+		dlg.logic_key = *logic_key;
 	dlg.db_flag = INSERTDB_FLAG;
 
 	dlg.mod_name = *mod_name;
@@ -1776,11 +1790,17 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 	if(dlg->uac_tran)
 		tmb.unref_cell(dlg->uac_tran);
 
+	if (dlg->logic_key.s)
+		shm_free(dlg->logic_key.s);
+
 	if(dlg->uas_tran)
 		tmb.unref_cell(dlg->uas_tran);
 
 	if(dlg->ack_sdp.s)
 		shm_free(dlg->ack_sdp.s);
+
+	if (dlg->free_param)
+		dlg->free_param(dlg->param);
 
 	shm_free(dlg);
 }
@@ -2568,9 +2588,10 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	str* b2b_key;
 	unsigned int hash_index, local_index;
 	b2b_notify_t b2b_cback;
+	void *b2b_param;
 	b2b_dlg_t *dlg, *previous_dlg;
 	b2b_dlg_t *aux_dlg,*new_dlg;
-	str param= {NULL, 0};
+	str logic_key= {NULL, 0};
 	int statuscode = 0;
 	dlg_leg_t* leg;
 	struct to_body* pto;
@@ -2775,7 +2796,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		lock_release(&server_htable[hash_index].lock);
 		return;
 	}
-	if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+	if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
 		lock_release(&server_htable[hash_index].lock);
 		return;
@@ -2833,17 +2854,18 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	prev_state = dlg->state;
 
 	b2b_cback = dlg->b2b_cback;
-	if(dlg->param.s)
+	b2b_param = dlg->param;
+	if(dlg->logic_key.s)
 	{
-		param.s = (char*)pkg_malloc(dlg->param.len);
-		if(param.s == NULL)
+		logic_key.s = (char*)pkg_malloc(dlg->logic_key.len);
+		if(logic_key.s == NULL)
 		{
 			LM_ERR("No more private memory\n");
 			lock_release(&htable[hash_index].lock);
 			return;
 		}
-		memcpy(param.s, dlg->param.s, dlg->param.len);
-		param.len = dlg->param.len;
+		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
+		logic_key.len = dlg->logic_key.len;
 	}
 
 	LM_DBG("Received reply [%d] for dialog [%p], method [%.*s]\n",
@@ -3106,7 +3128,7 @@ dummy_reply:
 					dlg->state == B2B_EARLY))
 		{
 			new_dlg = b2b_new_dlg(msg, &dlg->contact[CALLER_LEG],
-					dlg, &dlg->param, &dlg->mod_name);
+					dlg, &dlg->logic_key, &dlg->mod_name);
 			if(new_dlg == NULL)
 			{
 				LM_ERR("Failed to create b2b dialog structure\n");
@@ -3116,6 +3138,8 @@ dummy_reply:
 			new_dlg->id = dlg->id;
 			new_dlg->state = dlg->state;
 			new_dlg->b2b_cback = dlg->b2b_cback;
+			new_dlg->param = dlg->param;
+			new_dlg->free_param = dlg->free_param;
 			new_dlg->uac_tran = dlg->uac_tran;
 			new_dlg->uas_tran = dlg->uas_tran;
 			new_dlg->next = dlg->next;
@@ -3135,6 +3159,8 @@ dummy_reply:
 
 			dlg->next= dlg->prev = NULL;
 			b2b_delete_legs(&dlg->legs);
+			if (dlg->logic_key.s)
+				shm_free(dlg->logic_key.s);
 			shm_free(dlg);
 			dlg = new_dlg;
 			UPDATE_DBFLAG(dlg);
@@ -3269,8 +3295,8 @@ dummy_reply:
 
 					lock_release(&htable[hash_index].lock);
 
-					if(add_infof && add_infof(param.s?&param:0, b2b_key,
-							etype,&dlginfo)< 0)
+					if(add_infof && add_infof(logic_key.s?&logic_key:0, b2b_key,
+							etype,&dlginfo, b2b_param)< 0)
 					{
 						LM_ERR("Failed to add dialoginfo\n");
 						goto error1;
@@ -3312,11 +3338,11 @@ done1:
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}
 
-	b2b_cback(msg, b2b_key, B2B_REPLY, param.s?&param:0, b2b_cb_flags);
-	if(param.s)
+	b2b_cback(msg, b2b_key, B2B_REPLY, logic_key.s?&logic_key:0, b2b_param, b2b_cb_flags);
+	if(logic_key.s)
 	{
-		pkg_free(param.s);
-		param.s = NULL;
+		pkg_free(logic_key.s);
+		logic_key.s = NULL;
 	}
 	if (msg == &dummy_msg) {
 		free_lump_list(msg->add_rm);
@@ -3399,8 +3425,8 @@ b2b_route:
 error:
 	lock_release(&htable[hash_index].lock);
 error1:
-	if(param.s)
-		pkg_free(param.s);
+	if(logic_key.s)
+		pkg_free(logic_key.s);
 	if (msg == &dummy_msg) {
 		free_lump_list(msg->add_rm);
 		free_lump_list(msg->body_lumps);

@@ -396,7 +396,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 		/* restore to the entities from b2b_entities module
 		 * the parameter and callback function */
 		if(b2b_api.restore_logic_info(tuple->bridge_entities[i]->type,
-			&tuple->bridge_entities[i]->key, cback)< 0)
+			&tuple->bridge_entities[i]->key, cback, NULL, NULL)< 0)
 			LM_WARN("Failed to restore logic info for tuple:entity [%.*s][%d]\n",
 				b2bl_key->len, b2bl_key->s, i);
 		else

@@ -47,9 +47,9 @@ static int media_indialog(struct sip_msg *msg);
 static int fixup_media_leg(void **param);
 static int fixup_media_leg_both(void **param);
 
-static int b2b_media_notify(struct sip_msg *msg, str *key, int type, void *param,
-	int flags);
-static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info);
+static int b2b_media_notify(struct sip_msg *msg, str *key, int type,
+		str *logic_key, void *param, int flags);
+static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info, void *param);
 
 static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -294,7 +294,6 @@ static inline client_info_t *media_get_client_info(struct socket_info *si,
 static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket_info *si,
 		str *uri, str *headers, int medianum, str *caller_body, str *callee_body)
 {
-	str hack;
 	static client_info_t *ci;
 	struct media_fork_info *mf;
 	str *b2b_key;
@@ -321,10 +320,8 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket
 		goto release;
 	}
 
-	hack.s = (char *)&msl;
-	hack.len = sizeof(void *);
-	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
-			b2b_media_confirm, &b2b_media_exchange_cap, &hack, NULL);
+	b2b_key = media_b2b.client_new(ci, b2b_media_notify, b2b_media_confirm,
+			&b2b_media_exchange_cap, &msl->ms->dlg->callid, NULL, msl, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
 		goto release;
@@ -457,7 +454,6 @@ static int media_fork_to_uri(struct sip_msg *msg,
 
 static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *medianum)
 {
-	str hack;
 	str contact;
 	str *b2b_key;
 	sdp_info_t *sdp;
@@ -521,10 +517,8 @@ static int media_fork_from_call(struct sip_msg *msg, str *callid, int leg, int *
 	MEDIA_LEG_STATE_SET_UNSAFE(msl, MEDIA_SESSION_STATE_UPDATING);
 	MEDIA_LEG_UNLOCK(msl);
 
-	hack.s = (char *)&msl;
-	hack.len = sizeof(void *);
 	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify,
-			&b2b_media_exchange_cap, &hack, NULL);
+			&b2b_media_exchange_cap, callid, NULL, msl, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b server for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
@@ -583,7 +577,6 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 		str *uri, int leg, str *body, str *headers, int nohold,
 		struct media_session_tm_param *p)
 {
-	str hack;
 	struct media_session_leg *msl;
 	static client_info_t *ci;
 	str *b2b_key;
@@ -602,10 +595,8 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 			msl->params = p;
 	}
 
-	hack.s = (char *)&msl;
-	hack.len = sizeof(void *);
-	b2b_key = media_b2b.client_new(ci, b2b_media_notify,
-			b2b_media_confirm, &b2b_media_exchange_cap, &hack, NULL);
+	b2b_key = media_b2b.client_new(ci, b2b_media_notify, b2b_media_confirm,
+			&b2b_media_exchange_cap, &dlg->callid, NULL, msl, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b client!\n");
 		goto unref;
@@ -759,7 +750,6 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 	struct dlg_cell *dlg;
 	struct media_session_leg *msl;
 	static str inv = str_init("INVITE");
-	str hack;
 
 	if (leg == MEDIA_LEG_UNSPEC) {
 		LM_BUG("leg parameter is mandatory for media_exchange_to_call!\n");
@@ -794,10 +784,8 @@ static int media_exchange_to_call(struct sip_msg *msg, str *callid, int leg, int
 		goto unref;
 	}
 
-	hack.s = (char *)&msl;
-	hack.len = sizeof(void *);
 	b2b_key = media_b2b.server_new(msg, &contact, b2b_media_notify,
-			&b2b_media_exchange_cap, &hack, NULL);
+			&b2b_media_exchange_cap, callid, NULL, msl, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b server for callid %.*s\n", callid->len, callid->s);
 		goto destroy;
@@ -1454,10 +1442,10 @@ static int handle_indialog_request(struct sip_msg *msg, struct media_session_leg
 	}
 }
 
-static int b2b_media_notify(struct sip_msg *msg, str *key, int type, void *param,
-	int flags)
+static int b2b_media_notify(struct sip_msg *msg, str *key, int type,
+		str *logic_key, void *param, int flags)
 {
-	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
+	struct media_session_leg *msl = (struct media_session_leg *)param;
 	int initial_state;
 
 	if (type == B2B_REPLY) {
@@ -1510,7 +1498,7 @@ terminate:
 	return -1;
 }
 
-static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
+static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info, void *param)
 {
 	/* TODO: copy from info fromtag, totag, callid
 	struct media_session_leg *msl = *(struct media_session_leg **)((str *)key)->s;
@@ -1520,15 +1508,12 @@ static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* 
 
 int b2b_media_restore_callbacks(struct media_session_leg *msl)
 {
-	str hack;
-	hack.s = (char *)&msl;
-	hack.len = sizeof(void *);
-	if (media_b2b.update_b2bl_param(msl->b2b_entity, &msl->b2b_key, &hack, 0) < 0) {
+	if (media_b2b.update_b2bl_param(msl->b2b_entity, &msl->b2b_key, &msl->ms->dlg->callid, 0) < 0) {
 		LM_ERR("could not update restore param!\n");
 		return -1;
 	}
 	if (media_b2b.restore_logic_info(msl->b2b_entity,
-			&msl->b2b_key, b2b_media_notify) < 0) {
+			&msl->b2b_key, b2b_media_notify, msl, NULL) < 0) {
 		LM_ERR("could not register restore logic!\n");
 		return -1;
 	}
