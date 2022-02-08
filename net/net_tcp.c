@@ -47,6 +47,7 @@
 #include "../pt.h"
 #include "../pt_load.h"
 #include "../daemonize.h"
+#include "../status_report.h"
 #include "../reactor.h"
 #include "../timer.h"
 #include "../ipc.h"
@@ -1226,7 +1227,7 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 	if (bytes<(int)sizeof(response)){
 		if (bytes==0){
 			/* EOF -> bad, worker has died */
-			if (get_osips_state()!=STATE_TERMINATING)
+			if (sr_get_core_status()!=STATE_TERMINATING)
 				LM_CRIT("dead tcp worker %d (EOF received), pid %d\n",
 					(int)(tcp_c-&tcp_workers[0]), tcp_c->pid );
 			/* don't listen on it any more */
@@ -1370,7 +1371,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 		/* too few bytes read */
 		if (bytes==0){
 			/* EOF -> bad, worker has died */
-			if (get_osips_state()!=STATE_TERMINATING)
+			if (sr_get_core_status()!=STATE_TERMINATING)
 				LM_CRIT("dead tcp worker %d (EOF received), pid %d\n",
 					(int)(p-&pt[0]), p->pid);
 			/* don't listen on it any more */
