@@ -1,0 +1,156 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		The <acronym>Status/Report</acronym> module is a wrapper over the 
+		internal status/report framework, allowing the script writer to 
+		dynamically define and use of SR groups.
+	</para>
+	<para>
+		By bringing the Status/Report support into the script, it opens the
+		possibility to create custom reports from script, depending on
+		the logic you have there.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>No dependencies on other &osips; modules</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before running
+		&osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+
+	<title>Exported Parameters</title>
+	<section id="param_script_sr_group" xreflabel="script_sr_group">
+		<title><varname>script_sr_group</varname> (string)</title>
+		<para>
+		Name of a new Status/Report group to be created and later used
+		from script level.
+		</para>
+		<para>
+		This parameter may be defined multiple times, in order to define
+		multiple groups.
+		</para>
+		<example>
+		<title>script_sr_group example</title>
+		<programlisting format="linespecific">
+modparam("status_report", "script_sr_group", "security")
+modparam("status_report", "script_sr_group", "alarms")
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+
+	<section id="func_sr_set_status" xreflabel="sr_set_status">
+		<title>
+		<function moreinfo="none">sr_set_status( group, status, [details])</function>
+		</title>
+		<para>
+		Sets a new status (and details) for a Status/Report group.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>group</emphasis> (string) - the name of the
+			SR group; you can change the status only for the groups defined via
+			this module (as parameter).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>status</emphasis> (int) - the new status value
+			( strict positive meaning OK, strict negative meaning NOT OK,
+			0 is not accepts, it is converted to 1 automatically).
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>details</emphasis> (string, optional) - a
+			descripting text to detail the status value
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>sr_set_status</function> usage</title>
+		<programlisting format="linespecific">
+...
+sr_set_status( "script_caching", 1, "completed");
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_sr_add_report" xreflabel="sr_add_report">
+		<title>
+		<function moreinfo="none">sr_add_report( group, report)</function>
+		</title>
+		<para>
+		Adds a new report/log to a Status/Report group.This must have been
+		defined via this module too.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>group</emphasis> (string) - the name of the
+			SR group; you can change the status only for the groups defined via
+			this module (as parameter).
+			</para>
+			<para><emphasis>report</emphasis> (string) - the log to be added.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function>sr_add_report</function> usage</title>
+		<programlisting format="linespecific">
+...
+sr_add_report("security","IP $si detected as attacker");
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+</chapter>
+
