@@ -40,6 +40,7 @@
 #include "prefix_tree.h"
 #include "parse.h"
 #include "dr_db_def.h"
+#include "status_report.h"
 
 
 enum dr_gw_socket_filter_mode {
@@ -295,17 +296,22 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 	rt_info_t *ri;
 	rt_data_t *rdata;
 	tmrec_expr *time_rec;
-	int i, j, n, tot_gw = 0, tot_cr = 0, tot_rl = 0;
+	int i, j, n;
+	int loaded_gw = 0, loaded_cr = 0, loaded_rl = 0;
+	int discarded_gw = 0, discarded_cr = 0, discarded_rl = 0;
 	int no_rows = 10;
 	int db_cols;
 	struct socket_info *sock;
 	str s_sock, host;
-	int proto, port;
+	int proto, port, r_len;
 	char id_buf[INT2STR_MAX_LEN];
+	char r_buf[150]; /* buffer for final SR report */
 
 	res = 0;
 	ri = 0;
 	rdata = 0;
+
+	dr_sr_add_report( part->partition, "starting DB data loading");
 
 	/* init new data structure */
 	if ( (rdata=build_rt_data(part))==0 ) {
@@ -449,9 +455,10 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
 						str_vals[STR_VALS_GWID_DRD_COL],
 						str_vals[STR_VALS_ID_DRD_COL]);
+				discarded_gw++;
 				continue;
 			}
-			tot_gw++;
+			loaded_gw++;
 		}
 		if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
 			if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
@@ -569,9 +576,10 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 							part->free) != 0 ) {
 					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
 							str_vals[STR_VALS_ID_DRC_COL]);
+					discarded_cr++;
 					continue;
 				}
-				tot_cr++;
+				loaded_cr++;
 			}
 			if (DB_CAPABILITY(*dr_dbf, DB_CAP_FETCH)) {
 				if(dr_dbf->fetch_result(db_hdl, &res, no_rows)<0) {
@@ -718,6 +726,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 					LM_ERR("failed to add rule id %d -> skipping\n",
 							int_vals[INT_VALS_RULE_ID_DRR_COL]);
 					free_rt_info(ri, part->free);
+					discarded_rl++;
 					continue;
 				}
 				n++;
@@ -741,25 +750,41 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 		if (custom_rule_tables)
 			LM_NOTICE("loaded %d rules from table '%.*s'\n", n,
 			          rules_tables[j].len, rules_tables[j].s);
-		tot_rl += n;
+		loaded_rl += n;
 	}
 
-	LM_NOTICE("loaded %d gateways in partition '%.*s'\n", tot_gw,
-	         part->partition.len, part->partition.s);
+	LM_INFO("loaded %d (discarded %d) gateways in partition '%.*s'\n",
+		loaded_gw, discarded_gw,
+		part->partition.len, part->partition.s);
 
-	LM_NOTICE("loaded %d carriers in partition '%.*s'\n", tot_cr,
-	         part->partition.len, part->partition.s);
+	LM_INFO("loaded %d (discarded %d) carriers in partition '%.*s'\n",
+		loaded_cr, discarded_cr,
+		part->partition.len, part->partition.s);
 
 	if (custom_rule_tables)
-		LM_NOTICE("loaded %d rules from %d table%s in partition '%.*s'\n",
-		     tot_rl, rules_tables_no, rules_tables_no != 1 ? "s":"",
-		     part->partition.len, part->partition.s);
+		LM_INFO("loaded %d (discarded %d) rules from %d table%s in "
+			"partition '%.*s'\n", loaded_rl, discarded_rl, rules_tables_no,
+			rules_tables_no != 1 ? "s":"",
+			part->partition.len, part->partition.s);
 	else
-		LM_NOTICE("loaded %d rules in partition '%.*s'\n",
-		     tot_rl, part->partition.len, part->partition.s);
+		LM_NOTICE("loaded %d (discarded %d) rules in partition '%.*s'\n",
+			loaded_rl, discarded_rl,
+			 part->partition.len, part->partition.s);
+
+	/* do the reporting */
+	dr_sr_add_report( part->partition,
+		"DB data loading successfully completed");
+	r_len = snprintf( r_buf, sizeof(r_buf),
+		"%d gateways loaded (%d discarded), "
+		"%d carriers loaded (%d discarded), %d rules loaded (%d discarded)",
+		loaded_gw, discarded_gw,
+		loaded_cr, discarded_cr,
+		loaded_rl, discarded_rl);
+	dr_sr_add_report_cl( part->partition, r_buf, r_len);
 
 	return rdata;
 error:
+	dr_sr_add_report( part->partition, "DB data loading failed, discarding");
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
 	if (rdata)
