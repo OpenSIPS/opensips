@@ -86,7 +86,9 @@ static int add_sr_group( modparam_t type, void* val)
 	name.len = strlen(name.s);
 	trim( &name );
 
-	if ( sr_register_group( name.s, name.len , 1/*public*/)==NULL ) {
+	if ( sr_register_group_with_identifier( name.s, name.len ,
+	1/*public*/, CHAR_LEN_NULL/*identifier*/,
+	SR_STATUS_READY, CHAR_LEN_NULL /*txt*/, 50 /*reports*/)==NULL ) {
 		LM_ERR("failed to register new 'status-report' group |%.*s|\n",
 			name.len, name.s);
 		return -1;
