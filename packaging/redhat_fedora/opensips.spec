@@ -1117,6 +1117,7 @@ fi
 %{_libdir}/opensips/modules/sip_i.so
 %{_libdir}/opensips/modules/sipcapture.so
 %{_libdir}/opensips/modules/sipmsgops.so
+%{_libdir}/opensips/modules/status_report.so
 %{_libdir}/opensips/modules/tracer.so
 %{_libdir}/opensips/modules/sl.so
 %{_libdir}/opensips/modules/speeddial.so
@@ -1210,6 +1211,7 @@ fi
 %doc docdir/README.sip_i
 %doc docdir/README.sipcapture
 %doc docdir/README.sipmsgops
+%doc docdir/README.status_report
 %doc docdir/README.tracer
 %doc docdir/README.sl
 %doc docdir/README.speeddial
@@ -1560,6 +1562,7 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
+- New modules: status_report
 
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
