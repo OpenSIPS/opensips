@@ -26,7 +26,9 @@
 #define CHAR_LEN MI_SSTR
 #define CHAR_LEN_NULL NULL,0
 
-enum sr_status {SR_STATUS_READY=1, SR_STATUS_NOT_READY=-1, SR_STATUS_NOT_FOUND=(unsigned int)-1};
+enum sr_status {SR_STATUS_READY=1,
+	SR_STATUS_NOT_READY = -1,
+	SR_STATUS_NOT_FOUND = INT_MIN};
 
 
 /* functions to be used by modules using the status/report framework */
