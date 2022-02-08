@@ -49,6 +49,7 @@
 #include "../ipc.h"
 #include "../xlog.h"
 #include "../cfg_reload.h"
+#include "../status_report.h"
 #include "mi.h"
 #include "mi_trace.h"
 
@@ -894,6 +895,28 @@ static mi_export_t mi_core_cmds[] = {
 	},
 	{ "reload_routes", "triggers the script (routes only) reload", 0, 0, {
 		{w_reload_routes, {0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "sr_get_status", "gets the status (only) of a 'status-report' "
+	"group/identifier", 0, 0, {
+		{mi_sr_get_status, {"group",0}},
+		{mi_sr_get_status, {"group","identifier",0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "sr_list_status", "list the status of all the identifiers in OpenSIPS"
+	" or from a certain 'status-report' group", 0, 0, {
+		{mi_sr_list_status, {0}},
+		{mi_sr_list_status, {"group",0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "sr_list_reports", "list the reports produced by some 'status-report' "
+	"identifiers / groups" , 0, 0, {
+		{mi_sr_list_reports, {0}},
+		{mi_sr_list_reports, {"group",0}},
+		{mi_sr_list_reports, {"group","identifier",0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},

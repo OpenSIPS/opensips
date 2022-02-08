@@ -131,6 +131,7 @@
 #include "ut.h"
 #include "serialize.h"
 #include "statistics.h"
+#include "status_report.h"
 #include "core_stats.h"
 #include "pvar.h"
 #include "signals.h"
@@ -256,7 +257,8 @@ static int main_loop(void)
 		shm_free(startup_done);
 	}
 
-	set_osips_state( STATE_RUNNING );
+	sr_set_core_status( STATE_RUNNING, MI_SSTR("running"));
+	sr_add_core_report( MI_SSTR("initialization completed, ready now") );
 
 	/* main process left */
 	is_main=1;
@@ -632,7 +634,13 @@ try_again:
 		goto error;
 	}
 
-	set_osips_state( STATE_STARTING );
+	if (init_status_report() < 0) {
+		LM_ERR("failed to initialize status-report support\n");
+		goto error;
+	}
+
+	sr_set_core_status( STATE_INITIALIZING, MI_SSTR("initializing"));
+	sr_add_core_report( MI_SSTR("initializing") );
 
 	if ((!testing_framework || strcmp(testing_module, "core"))
 	        && parse_opensips_cfg(cfg_file, preproc, NULL) < 0) {

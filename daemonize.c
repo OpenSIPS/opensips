@@ -67,8 +67,6 @@ char *startup_wdir = NULL;
 
 static int status_pipe[2];
 
-static enum opensips_states *osips_state = NULL;
-
 /* creates the status pipe which will be used for
  * proper status code returning
  *
@@ -566,27 +564,4 @@ done:
 error:
 	return -1;
 }
-
-
-/* first setting must be done before any forking, so all processes will
- * inherite the same pointer to the global state variable */
-void set_osips_state(enum opensips_states state)
-{
-	if (osips_state==NULL) {
-		osips_state = shm_malloc( sizeof(enum opensips_states) );
-		if (osips_state==NULL) {
-			LM_ERR("failed to allocate opensips state variable in shm\n");
-			return;
-		}
-	}
-
-	*osips_state = state;
-}
-
-
-enum opensips_states get_osips_state(void)
-{
-	return osips_state ? *osips_state : STATE_NONE;
-}
-
 

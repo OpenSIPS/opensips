@@ -34,6 +34,7 @@
 #include "route.h"
 #include "script_cb.h"
 #include "blacklists.h"
+#include "status_report.h"
 #include "mem/shm_mem.h"
 #include "db/db_insertq.h"
 #include "net/net_udp.h"
@@ -189,7 +190,7 @@ void shutdown_opensips( int status )
 	int i, n, p;
 	int chld_status;
 
-	set_osips_state( STATE_TERMINATING );
+	sr_set_core_status( STATE_TERMINATING, MI_SSTR("shutting down"));
 
 	/* terminate all processes */
 

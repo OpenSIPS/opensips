@@ -40,7 +40,7 @@
 #include "../../ut.h"
 #include "../../db/db_ut.h"
 #include "../../mem/shm_mem.h"
-#include "../../daemonize.h"
+#include "../../status_report.h"
 #include "../../dprint.h"
 #include "../../ip_addr.h"
 #include "../../socket_info.h"
@@ -895,7 +895,7 @@ static inline int new_dlist(str* _n, dlist_t** _d)
 {
 	dlist_t* ptr;
 
-	if (get_osips_state()>STATE_STARTING) {
+	if (sr_get_core_status()!=STATE_INITIALIZING) {
 		LM_ERR("cannot register new domain during runtime\n");
 		return -1;
 	}

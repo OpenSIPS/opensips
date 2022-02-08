@@ -36,6 +36,7 @@
 #include "flags.h"
 #include "serialize.h"
 #include "blacklists.h"
+#include "status_report.h"
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
 /* needed by tcpconn_add_alias() */
@@ -299,6 +300,11 @@ static cmd_export_t core_cmds[]={
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
+	{"sr_check_status", (cmd_function)w_sr_check_status, {
+		{CMD_PARAM_STR, fixup_sr_group, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
+
 	{0,0,{{0,0,0}},0}
 };
 

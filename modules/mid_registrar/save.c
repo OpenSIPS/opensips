@@ -42,7 +42,7 @@
 #include "../../dset.h"
 
 #include "../../parser/parse_from.h"
-#include "../../daemonize.h"
+#include "../../status_report.h"
 #include "../../mod_fix.h"
 #include "../../data_lump.h"
 #include "../../data_lump_rpl.h"
@@ -1865,7 +1865,7 @@ void mid_reg_tmcb_deleted(struct cell *_, int __, struct tmcb_params *params)
 
 	/* no response from downstream - clear up any lingering refs! */
 	if (mri->pending_replies && (reg_mode != MID_REG_THROTTLE_AOR) &&
-	        get_osips_state() < STATE_TERMINATING) {
+	        sr_get_core_status() == STATE_RUNNING) {
 		ul.lock_udomain(mri->dom, &mri->aor);
 		ul.get_urecord(mri->dom, &mri->aor, &r);
 		if (!r) {

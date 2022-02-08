@@ -29,7 +29,7 @@
 
 #include "../../ut.h"
 #include "../../trim.h"
-#include "../../daemonize.h"
+#include "../../status_report.h"
 #include "../../dprint.h"
 #include "../../action.h"
 #include "../../route.h"
@@ -909,7 +909,8 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 	ds_set_p list;
 	int j;
 
-	if (ticks > 0 && get_osips_state() > STATE_RUNNING)
+	/* do not run this routine if not in running mode */
+	if (ticks > 0 && sr_get_core_status() < STATE_RUNNING)
 		return;
 
 	ds_partition_t *partition;
@@ -2682,7 +2683,8 @@ void ds_update_weights(unsigned int ticks, void *param)
 	ds_partition_t *part;
 	ds_set_p sp;
 
-	if (get_osips_state() > STATE_RUNNING)
+	/* do not run this routine if not in running mode */
+	if (sr_get_core_status() < STATE_RUNNING)
 		return;
 
 	for (part = partitions; part; part = part->next) {
