@@ -18,6 +18,14 @@
 	</row>
 	</thead>
 	<tbody>
+	<row>
+		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">1</entry>
+		<entry align="center">330</entry>
+		<entry align="center">0</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -46,6 +54,11 @@
 	</row>
 	</thead>
 	<tbody>
+	<row>
+		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Feb 2022 - Feb 2022</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -60,7 +73,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	
+	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>).</para>
 </section>
 
 </chapter>
