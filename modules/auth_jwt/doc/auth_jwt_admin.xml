@@ -39,6 +39,11 @@
 				<listitem>
 				<para><emphasis>libjwt-dev</emphasis></para>
 				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
+				</listitem>
 			</itemizedlist>
 		</section>
 	</section>
@@ -410,6 +415,57 @@ if (!jwt_script_authorize("$avp(my_jwt_token)",$avp(pub_key), $avp(decoded_token
 	exit;
 } else {
 	xlog("Succesful JWT auth - $avp(decoded_token) \n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_extract_pub_key_from_cert" xreflabel="extract_pub_key_from_cert()">
+		<title>
+			<function moreinfo="none">extract_pub_key_from_cert(certificate,out_public_key)</function>
+		</title>
+		<para>
+			The function will read the first param ( certificate ), decode it and then try to extract the public key with the certificate. If the extraction is succesful, the out_public_key will be populated. Useful to be used in conjuction with the jwt_script_authorize function, since most providers make their certificates public, but the JWTs are signed with the actual public key embeded in the certificate.
+			Return codes are : 
+			<itemizedlist>
+				<listitem>
+				<para>
+					-1 : Failure in extracting the pub key
+					
+				</para>
+				</listitem>
+				<listitem>
+				<para>
+					1 : out_public_key succesfully populated
+					
+				</para>
+				</listitem>
+			</itemizedlist>
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>certificate (string)</emphasis> - The certificate to read and from which to extract the public key
+			</para>
+			<para>
+			The string may contain pseudo variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>out_public_key (pvar)</emphasis> - PVAR used to store the extracted public key
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">extract_pub_key_from_cert</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (extract_pub_key_from_cert("$avp(my_certificate)",$avp(my_pub_key))) {
+    xlog("Succesfully extracted public key - $avp(my_pub_key) \n");
 }
 ...
 </programlisting>

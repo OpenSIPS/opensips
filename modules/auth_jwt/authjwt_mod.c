@@ -31,6 +31,12 @@
 #include "../../mem/mem.h"
 #include "jwt_avps.h"
 #include "authorize.h"
+#include "auth_jwt_certops.h"
+
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
 
 /*
  * Version of JWT profiles & secrets required by the module,
@@ -110,6 +116,10 @@ static cmd_export_t cmds[] = {
 		REQUEST_ROUTE},
 	{"jwt_script_authorize", (cmd_function)jwt_script_authorize, {
 		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
+		REQUEST_ROUTE},
+	{"extract_pub_key_from_cert", (cmd_function)extract_pub_key_from_cert, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_outvar, 0}, {0,0,0}},
 		REQUEST_ROUTE},

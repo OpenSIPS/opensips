@@ -35,6 +35,10 @@ AUTH_JWT Module
               1.4.2. jwt_script_authorize(jwt_token,key,
                       out_decoded_token)
 
+              1.4.3.
+                      extract_pub_key_from_cert(certificate,out_publ
+                      ic_key)
+
    2. Contributors
 
         2.1. By Commit Statistics
@@ -67,6 +71,7 @@ AUTH_JWT Module
    1.12. load_credentials parameter usage
    1.13. jwt_db_authorize usage
    1.14. jwt_script_authorize usage
+   1.15. extract_pub_key_from_cert usage
 
 Chapter 1. Admin Guide
 
@@ -99,6 +104,7 @@ Chapter 1. Admin Guide
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * libjwt-dev
+     * openssl-dev or libssl-dev
 
 1.3. Exported Parameters
 
@@ -317,6 +323,35 @@ ed_token))) {
         exit;
 } else {
         xlog("Succesful JWT auth - $avp(decoded_token) \n");
+}
+...
+
+1.4.3.  extract_pub_key_from_cert(certificate,out_public_key)
+
+   The function will read the first param ( certificate ), decode
+   it and then try to extract the public key with the certificate.
+   If the extraction is succesful, the out_public_key will be
+   populated. Useful to be used in conjuction with the
+   jwt_script_authorize function, since most providers make their
+   certificates public, but the JWTs are signed with the actual
+   public key embeded in the certificate. Return codes are :
+     * -1 : Failure in extracting the pub key
+     * 1 : out_public_key succesfully populated
+
+   Meaning of the parameters is as follows:
+     * certificate (string) - The certificate to read and from
+       which to extract the public key
+       The string may contain pseudo variables.
+     * out_public_key (pvar) - PVAR used to store the extracted
+       public key
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.15. extract_pub_key_from_cert usage
+...
+if (extract_pub_key_from_cert("$avp(my_certificate)",$avp(my_pub_key)))
+{
+    xlog("Succesfully extracted public key - $avp(my_pub_key) \n");
 }
 ...
 
