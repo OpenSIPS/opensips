@@ -89,7 +89,7 @@ struct tls_mgm_binds tls_mgm_api;
 static int tls_port_no = SIPS_PORT;
 
 /* 1 if tls connect & write should be async */
-static int tls_async = 1;
+static int tls_async = 0;
 
 /* Number of milliseconds that a worker will block waiting for a local
  * connect - if connect op exceeds this, it will get passed to tls main*/

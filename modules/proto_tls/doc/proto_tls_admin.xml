@@ -509,7 +509,7 @@ param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
 			operations like connect and write.
 		</para>
 		<para><emphasis>
-			Default value is 1 (enabled).
+			Default value is 0 (disabled).
 		</emphasis></para>
 		<example>
 			<title>Set <varname>tls_async</varname> variable</title>
