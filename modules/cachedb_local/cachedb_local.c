@@ -44,6 +44,8 @@
 #include "cachedb_local_replication.h"
 #include "hash.h"
 
+#include "../../mem/rpm_mem.h"
+
 #include <fnmatch.h>
 
 
@@ -63,6 +65,10 @@ int cluster_id = 0;
 enum cachedb_rr_persist rr_persist = RRP_SYNC_FROM_CLUSTER;
 char *cluster_persist;
 
+/* restart persistency with rpm */
+int lcache_rpm_enable = 0;
+lcache_rpm_cache_t *lcache_rpm_cache;
+
 static int remove_chunk_f(struct sip_msg* msg, str* collection, str* glob);
 mi_response_t *mi_cache_remove_chunk_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
@@ -79,6 +85,7 @@ static param_export_t params[]={
 	{ "cachedb_url",        STR_PARAM|USE_FUNC_PARAM, (void *)store_urls },
 	{ "cluster_id",INT_PARAM, &cluster_id },
 	{ "cluster_persistency",STR_PARAM, &cluster_persist },
+	{ "enable_restart_persistency",INT_PARAM, &lcache_rpm_enable },
 	{0,0,0}
 };
 
@@ -163,7 +170,7 @@ static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 		}
 	}
 
-	cache_htable = col->col_htable;
+	cache_htable = col->col_htable->htable;
 
 	if (pat->len+1 > pat_buff_size) {
 		pat_buff = pkg_realloc(pat_buff,pat->len+1);
@@ -182,7 +189,7 @@ static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 	LM_DBG("trying to remove chunk with pattern [%s]\n",pat_buff);
 	start_expire_timer(start,local_exec_threshold);
 
-	for(i = 0; i< col->size; i++) {
+	for(i = 0; i< col->col_htable->size; i++) {
 		lock_get(&cache_htable[i].lock);
 		me1 = cache_htable[i].entries;
 		me2 = NULL;
@@ -212,11 +219,11 @@ static int remove_chunk_f(struct sip_msg* msg, str* col_s, str* pat)
 
 				if(me2) {
 					me2->next = me1->next;
-					shm_free(me1);
+					func_free(col->free, me1);
 					me1 = me2->next;
 				} else{
 					cache_htable[i].entries = me1->next;
-					shm_free(me1);
+					func_free(col->free, me1);
 					me1 = cache_htable[i].entries;
 				}
 			} else {
@@ -321,6 +328,89 @@ void lcache_destroy(cachedb_con *con)
 	cachedb_do_close(con,lcache_free_connection);
 }
 
+lcache_rpm_cache_t *get_rpm_cache(str *col_name)
+{
+	lcache_rpm_cache_t *cache;
+
+	for (cache = lcache_rpm_cache; cache; cache = cache->next)
+		if (cache->col_name.len == col_name->len &&
+				memcmp(cache->col_name.s, col_name->s, col_name->len) == 0)
+			return cache;
+	return NULL;
+}
+
+lcache_rpm_cache_t *add_head_rpm_cache(str *col_name)
+{
+	lcache_rpm_cache_t *c = rpm_malloc(sizeof(*c) + col_name->len);
+	if (!c) {
+		LM_ERR("cannot allocate persistent mem for cache head!\n");
+		return NULL;
+	}
+	c->col_name.s = (char *)(c + 1);
+	c->col_name.len = col_name->len;
+	memcpy(c->col_name.s, col_name->s, col_name->len);
+	c->col_htable = NULL;
+	c->next = lcache_rpm_cache;
+	lcache_rpm_cache = c;
+	rpm_key_set("cachedb_local", lcache_rpm_cache);
+
+	return c;
+}
+
+void fix_rpm_cache_entries(lcache_htable_t *col_htable)
+{
+	lcache_entry_t *me;
+	int i;
+
+	for(i = 0; i < col_htable->size; i++) {
+		me = col_htable->htable[i].entries;
+		while (me) {
+			if (me->expires > 0)
+				me->expires = get_ticks() + me->ttl;
+
+			me->synced = 0;
+
+			me = me->next;
+		}
+	}
+}
+
+void clean_rpm_cache_old(void)
+{
+	lcache_col_t *it = NULL;
+	lcache_rpm_cache_t *c, *prev_c = NULL, *free_c;
+
+	if (!lcache_rpm_cache)
+		return;
+
+	/* cleanup old collections */
+	c = lcache_rpm_cache;
+	while (c) {
+		for (it=lcache_collection; it; it=it->next) {
+			if (c->col_name.len == it->col_name.len &&
+				memcmp(c->col_name.s, it->col_name.s,
+						it->col_name.len) == 0)
+				break;
+		}
+		if (it != NULL) {
+			prev_c = c;
+			c = c->next;
+			continue;
+		}
+		LM_NOTICE("<%.*s> collection no longer used - cleaning old data!\n",
+			c->col_name.len, c->col_name.s);
+
+		if (!prev_c) {
+			lcache_rpm_cache = c->next;
+			rpm_key_set("cachedb_local", lcache_rpm_cache);
+		} else {
+			prev_c->next = c->next;
+		}
+		free_c = c;
+		c = c->next;
+		lcache_htable_destroy(free_c->col_htable, rpm_free_func);
+	}
+}
 
 /**
  * init module function
@@ -334,6 +424,8 @@ static int mod_init(void)
 
 	url_lst_t *it=url_list, *foo=NULL;
 	lcache_col_t *default_col, *col_it;
+
+	lcache_rpm_cache_t *rpm_cache;
 
 	memset(&cde, 0, sizeof cde);
 
@@ -363,6 +455,19 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (lcache_rpm_enable) {
+		if (rpm_init_mem() < 0) {
+			LM_ERR("could not initilize restart persistent memory!\n");
+			return -1;
+		}
+		lcache_rpm_cache = (lcache_rpm_cache_t *)rpm_key_get("cachedb_local");
+		if (!lcache_rpm_cache)
+			LM_INFO("starting cachedb_local with empty rpm cache\n");
+
+		LM_INFO("using %ld MB of restart-persistent memory, allocator: %s\n",
+		          rpm_mem_size/1024/1024, mm_str(mem_allocator_rpm));
+	}
+
 	for ( col_it=lcache_collection; col_it; col_it=col_it->next ) {
 		if ( !memcmp(col_it->col_name.s, DEFAULT_COLLECTION_NAME,
 					sizeof(DEFAULT_COLLECTION_NAME) - 1) ) {
@@ -377,15 +482,11 @@ static int mod_init(void)
 			LM_ERR("no more shared memory!\n");
 			return -1;
 		}
+		memset(default_col, 0, sizeof(lcache_col_t));
 
 		default_col->col_name.s = DEFAULT_COLLECTION_NAME;
 		default_col->col_name.len = sizeof(DEFAULT_COLLECTION_NAME) - 1;
 		default_col->size = (1 << HASH_SIZE_DEFAULT);
-		if (lcache_htable_init(&default_col->col_htable, default_col->size) < 0) {
-			LM_ERR("failed to initialize for <%s> collection!\n",
-						DEFAULT_COLLECTION_NAME);
-			return -1;
-		}
 
 		/* the default collection is special; it's always there, it doesn't have
 		 * to be used in order to keep backwards compatibility */
@@ -428,17 +529,80 @@ static int mod_init(void)
 		}
 	}
 
-	/* check to see if we've got unused collections */
+	clean_rpm_cache_old();
+
 	for ( col_it=lcache_collection; col_it; col_it=col_it->next ) {
+		/* check to see if we've got unused collections */
 		if ( !col_it->is_used ) {
 			LM_WARN("collection <%.*s> is not assigned to any url!\n",
 					col_it->col_name.len, col_it->col_name.s);
+			continue;
 		}
 
 		if (!cluster_id && col_it->replicated) {
 			LM_WARN("collection <%.*s> is replicated but no "
 				"'cluster_id' defined!\n",
 					col_it->col_name.len, col_it->col_name.s);
+		}
+
+		if (lcache_rpm_enable) {
+			rpm_cache = get_rpm_cache(&col_it->col_name);
+			if (!rpm_cache)
+				rpm_cache = add_head_rpm_cache(&col_it->col_name);
+			if (!rpm_cache) {
+				LM_ERR("could not create rpm cache head!\n");
+				continue;
+			} else {
+				col_it->malloc = rpm_malloc_func;
+				col_it->realloc = rpm_realloc_func;
+				col_it->free = rpm_free_func;
+				col_it->rpm_cache = rpm_cache;
+			}
+
+			if (rpm_cache->col_htable) {
+				LM_INFO("starting cachedb_local with cache data %p->%p!\n",
+					rpm_cache, rpm_cache->col_htable);
+
+				col_it->col_htable = rpm_cache->col_htable;
+
+				if (rpm_cache->col_htable->size != col_it->size) {
+					LM_WARN("Defined size [%d] for collection <%.*s> is different "
+						"than the old rpm cached size - cleaning old data\n",
+						col_it->size, col_it->col_name.len, col_it->col_name.s);
+
+					lcache_htable_destroy(col_it->col_htable, col_it->free);
+
+					if (lcache_htable_init(col_it) < 0) {
+						LM_ERR("failed to initialize htable for collection <%.*s>!\n",
+							col_it->col_name.len, col_it->col_name.s);
+						return -1;
+					}
+
+					rpm_cache->col_htable = col_it->col_htable;
+
+					continue;
+				}
+
+				fix_rpm_cache_entries(col_it->col_htable);
+			} else {
+				if (lcache_htable_init(col_it) < 0) {
+					LM_ERR("failed to initialize htable for collection <%.*s>!\n",
+						col_it->col_name.len, col_it->col_name.s);
+					return -1;
+				}
+
+				rpm_cache->col_htable = col_it->col_htable;
+			}
+		} else {
+			col_it->malloc = shm_malloc_func;
+			col_it->realloc = shm_realloc_func;
+			col_it->free = shm_free_func;
+
+			if (lcache_htable_init(col_it) < 0) {
+				LM_ERR("failed to initialize htable for collection <%.*s>!\n",
+					col_it->col_name.len, col_it->col_name.s);
+				return -1;
+			}
 		}
 	}
 
@@ -494,9 +658,23 @@ static int child_init(int rank)
 static void destroy(void)
 {
 	lcache_col_t* it;
+	lcache_entry_t *me;
+	int i;
 
 	for ( it=lcache_collection; it; it=it->next) {
-		lcache_htable_destroy(&it->col_htable, it->size);
+		if (!it->rpm_cache) {
+			lcache_htable_destroy(it->col_htable, it->free);
+		} else {
+			for(i = 0; i< it->col_htable->size; i++) {
+				me = it->col_htable->htable[i].entries;
+				while (me) {
+					if (me->expires > 0)
+						me->ttl = me->expires - get_ticks();
+
+					me = me->next;
+				}
+			}
+		}
 	}
 }
 
@@ -509,9 +687,9 @@ void localcache_clean(unsigned int ticks,void *param)
 
 	for ( it=lcache_collection; it; it=it->next ) {
 		LM_DBG("start\n");
-		cache_htable = it->col_htable;
+		cache_htable = it->col_htable->htable;
 
-		for(i = 0; i< it->size; i++)
+		for(i = 0; i< it->col_htable->size; i++)
 		{
 			lock_get(&cache_htable[i].lock);
 			me1 = cache_htable[i].entries;
@@ -527,18 +705,21 @@ void localcache_clean(unsigned int ticks,void *param)
 					if(me2)
 					{
 						me2->next = me1->next;
-						shm_free(me1);
+						func_free(it->free, me1);
 						me1 = me2->next;
 					}
 					else
 					{
 						cache_htable[i].entries = me1->next;
-						shm_free(me1);
+						func_free(it->free, me1);
 						me1 = cache_htable[i].entries;
 					}
 				}
 				else
 				{
+					if (me1->expires > 0 && it->rpm_cache)
+						me1->ttl = me1->expires - get_ticks();
+
 					me2 = me1;
 					me1 = me1->next;
 				}
@@ -620,11 +801,6 @@ static int parse_collections(unsigned int type, void* val)
 		}
 
 		new_col->size = (1 << coll_size);
-		if (lcache_htable_init(&new_col->col_htable, new_col->size) < 0) {
-			LM_ERR("failed to initialize htable for collection <%.*s>!\n",
-					coll.len, coll.s);
-			return -1;
-		}
 
 		new_col->replicated = replicated;
 

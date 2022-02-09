@@ -364,7 +364,7 @@ inline static void* _shm_malloc_bulk(unsigned long size,
 }
 
 inline static void* _shm_realloc(void *ptr, unsigned int size, 
-		const char* file, const char* function, int line )
+		const char* file, const char* function, unsigned int line )
 {
 	void *p;
 

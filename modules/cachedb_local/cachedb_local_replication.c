@@ -180,6 +180,7 @@ int receive_sync_request(int node_id)
         lcache_col_t *col;
         lcache_entry_t *data;
         bin_packet_t *sync_packet;
+        lcache_t* cache_htable;
 
         for ( col=lcache_collection; col; col=col->next ) {
                 LM_DBG("Found collection %.*s\n", col->col_name.len, col->col_name.s);
@@ -187,16 +188,18 @@ int receive_sync_request(int node_id)
                 if (!col->replicated)
                         continue;
 
-                for (i =0; i < col->size; i++) {
-                        lock_get(&col->col_htable[i].lock);
-                        data = col->col_htable[i].entries;
+                cache_htable = col->col_htable->htable;
+
+                for (i =0; i < col->col_htable->size; i++) {
+                        lock_get(&cache_htable[i].lock);
+                        data = cache_htable[i].entries;
                         while(data) {
                                 if (data->expires == 0 || data->expires > get_ticks()) {
                                         sync_packet = clusterer_api.sync_chunk_start(&cache_repl_cap,
                                                                         cluster_id, node_id, BIN_VERSION);
                                         if (!sync_packet) {
                                                 LM_ERR("Can not create sync packet!\n");
-												lock_release(&col->col_htable[i].lock);
+												lock_release(&cache_htable[i].lock);
                                                 return -1;
                                         }
                                         bin_push_str(sync_packet, &col->col_name);
@@ -206,7 +209,7 @@ int receive_sync_request(int node_id)
                                 }
                                 data = data->next;
                         }
-                        lock_release(&col->col_htable[i].lock);
+                        lock_release(&cache_htable[i].lock);
                 }
         }
 
@@ -215,8 +218,47 @@ int receive_sync_request(int node_id)
 
 void receive_cluster_event(enum clusterer_event ev, int node_id)
 {
+        lcache_col_t *col;
+        lcache_t* cache_htable;
+        lcache_entry_t *entry, *prev, *tmp;
+        int i;
+
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to send sync data to node: %d\n", node_id);
+        else if (ev == SYNC_DONE) {
+                for (col = lcache_collection; col; col = col->next) {
+                        if (!col->replicated || !col->rpm_cache)
+                                continue;
+
+                        cache_htable = col->col_htable->htable;
+
+                        for (i = 0; i < col->col_htable->size; i++) {
+                                lock_get(&cache_htable[i].lock);
+
+                                prev = NULL;
+                                entry = cache_htable[i].entries;
+
+                                while (entry) {
+                                        if (!entry->synced) {
+                                                if (prev)
+                                                        prev->next = entry->next;
+                                                else
+                                                        cache_htable[i].entries = entry->next;
+
+                                                tmp = entry;
+                                                entry = entry->next;
+
+                                                func_free(col->free, tmp);
+                                        } else {
+                                                prev = entry;
+                                                entry = entry->next;
+                                        }
+                                }
+
+                                lock_release(&cache_htable[i].lock);
+                        }
+                }
+        }
 }
 
 void receive_binary_packet(bin_packet_t *pkt)

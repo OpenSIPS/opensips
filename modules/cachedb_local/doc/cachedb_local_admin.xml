@@ -242,6 +242,33 @@ modparam("cachedb_local", "cluster_persistency", "sync-from-cluster")
 		</programlisting>
 		</example>
 	</section>
+	<section id="param_enable_restart_persistency" xreflabel="enable_restart_persistency">
+		<title><varname>enable_restart_persistency</varname> (int)</title>
+		<para>
+			Enable restart persistency using the persistent memory mechanism. Data is
+			stored in a cache file that is mapped against OpenSIPS memory.
+		</para>
+		<para>
+			Note that you have to keep the same collection definitions from a previous
+			run in order to use the cached data for the respective collections.
+		</para>
+		<para>
+			If cluster persistency is enabled as well, keys loaded from the persistent
+			cache will be discarded if they are not received in the cluster sync data.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0 (disabled)</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>enable_restart_persistency</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("cachedb_local", "enable_restart_persistency", yes)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
