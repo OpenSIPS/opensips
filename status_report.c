@@ -660,9 +660,8 @@ static int _check_status(sr_group *srg, str *identifier, mi_item_t *id_item)
 		if (id_item) {
 			_add_mi_readiness( id_item, status);
 			add_mi_number( id_item, CHAR_LEN("Status"), status);
-			if (sri->status_txt.s)
-				add_mi_string(id_item, CHAR_LEN("Details"),
-					CHAR_LEN("aggregated"));
+			add_mi_string(id_item, CHAR_LEN("Details"),
+				CHAR_LEN("aggregated"));
 		}
 
 	}
