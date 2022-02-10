@@ -151,18 +151,24 @@ void dialog_terminate_CB(struct dlg_cell *dlg, int type,
 	extern str call_dur_name;
 	frd_dlg_param *frdparam = (frd_dlg_param*) *(params->param);
 
-	if (type & (DLGCB_TERMINATED|DLGCB_EXPIRED)) {
-		unsigned int duration = time(NULL) - dlg->start_ts;
-		if (frdparam->calldur_crit && duration >= frdparam->calldur_crit)
-			raise_critical_event(&call_dur_name, &duration,
-					&frdparam->calldur_crit,
-					&frdparam->user, &frdparam->number, &frdparam->ruleid);
+	if (frdparam->dlg_terminated ||
+	        !(type & (DLGCB_FAILED|DLGCB_TERMINATED|DLGCB_EXPIRED)))
+		return;
+	frdparam->dlg_terminated = 1;
 
-		else if (frdparam->calldur_warn && duration >= frdparam->calldur_warn)
-			raise_warning_event(&call_dur_name, &duration,
-					&frdparam->calldur_warn,
-					&frdparam->user, &frdparam->number, &frdparam->ruleid);
-	}
+	unsigned int duration = time(NULL) - dlg->start_ts;
+	LM_DBG("call-duration: %u sec (warn: %u, crit: %u), dlgcb: %d\n",
+	       duration, frdparam->calldur_warn, frdparam->calldur_crit, type);
+
+	if (frdparam->calldur_crit && duration >= frdparam->calldur_crit)
+		raise_critical_event(&call_dur_name, &duration,
+				&frdparam->calldur_crit,
+				&frdparam->user, &frdparam->number, &frdparam->ruleid);
+
+	else if (frdparam->calldur_warn && duration >= frdparam->calldur_warn)
+		raise_warning_event(&call_dur_name, &duration,
+				&frdparam->calldur_warn,
+				&frdparam->user, &frdparam->number, &frdparam->ruleid);
 
 	lock_get(&frdparam->stats->lock);
 	if (frdparam->interval_id == frdparam->stats->interval_id)
