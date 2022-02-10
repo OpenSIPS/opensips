@@ -92,7 +92,7 @@ static sr_group *sr_groups = NULL;
 static str main_identifier = str_init("main");
 
 /* event to be raised when the status of an identifier changed */
-static str sr_event = str_init("E_SR_STATUS_CHANGED");
+static str sr_event = str_init("E_CORE_SR_STATUS_CHANGED");
 static event_id_t sr_evi_id;
 
 /* the SR group of the core */
