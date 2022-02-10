@@ -428,6 +428,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		param->stats = se;        /* safe to ref, only freed @ shutdown */
 		param->user = shm_user;   /* safe to ref, only freed @ shutdown */
 		param->ruleid = rule->id;
+		param->dlg_terminated = 0;
 
 		param->calldur_warn = thr->call_duration_thr.warning;
 		param->calldur_crit = thr->call_duration_thr.critical;
