@@ -2612,7 +2612,7 @@ Status:: 0
 
 	<para>
 	The module provides the "drouting" Status/Report group, where each
-	routing partition is defined as a separate SR idenifier.
+	routing partition is defined as a separate SR identifier.
 	</para>
 	<para>
 	The status of these identifiers reflects the readiness/status of the 
