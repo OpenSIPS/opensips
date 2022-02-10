@@ -48,6 +48,8 @@ typedef struct {
 
 	unsigned int calldur_warn;
 	unsigned int calldur_crit;
+
+	int dlg_terminated;
 } frd_dlg_param;
 
  void dialog_terminate_CB(struct dlg_cell *dlgc, int type,
