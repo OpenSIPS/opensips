@@ -283,7 +283,7 @@ static mi_export_t mi_cmds[] = {
 		{EMPTY_MI_RECIPE}}
 	},
 	{"b2b_terminate_call", 0, 0, 0, {
-		{mi_b2b_terminate_call, {0}},
+		{mi_b2b_terminate_call,   {"key", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -593,7 +593,7 @@ void b2bl_db_timer_update(unsigned int ticks, void* param)
 	b2b_logic_dump(0);
 }
 
-static void term_expired_entity(b2bl_entity_id_t *entity, int hash_index)
+static void term_entity(b2bl_entity_id_t *entity, int hash_index)
 {
 	str bye = {BYE, BYE_LEN};
 	b2b_req_data_t req_data;
@@ -652,10 +652,10 @@ void b2bl_clean(unsigned int ticks, void* param)
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
 					if(!tuple->bridge_entities[0]->disconnected)
-						term_expired_entity(tuple->bridge_entities[0], i);
+						term_entity(tuple->bridge_entities[0], i);
 
 					if(!tuple->bridge_entities[1]->disconnected)
-						term_expired_entity(tuple->bridge_entities[1], i);
+						term_entity(tuple->bridge_entities[1], i);
 				}
 				b2bl_delete(tuple, i, 1, tuple->repl_flag != TUPLE_REPL_RECV);
 			}
@@ -1049,11 +1049,39 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str key;
+	unsigned int hash_index, local_index;
+	b2bl_tuple_t* tuple;
 
 	if (get_mi_string_param(params, "key", &key.s, &key.len) < 0)
 		return init_mi_param_error();
 
-	b2bl_terminate_call(&key);
+	if (b2bl_get_tuple_key(&key, &hash_index, &local_index) < 0)
+		return init_mi_error(404, MI_SSTR("B2B session not found"));
+
+	lock_get(&b2bl_htable[hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(hash_index, local_index);
+	if(tuple == NULL)
+	{
+		lock_release(&b2bl_htable[hash_index].lock);
+		return init_mi_error(404, MI_SSTR("B2B session not found"));
+	}
+
+	if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
+	{
+		if(!tuple->bridge_entities[0]->disconnected) {
+			term_entity(tuple->bridge_entities[0], hash_index);
+			tuple->bridge_entities[0]->disconnected = 1;
+		}
+
+		if(!tuple->bridge_entities[1]->disconnected) {
+			term_entity(tuple->bridge_entities[1], hash_index);
+			tuple->bridge_entities[1]->disconnected = 1;
+		}
+	}
+	b2b_mark_todel(tuple);
+
+	lock_release(&b2bl_htable[hash_index].lock);
 
 	return init_mi_result_ok();
 }

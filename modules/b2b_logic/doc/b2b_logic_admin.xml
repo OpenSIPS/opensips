@@ -1034,6 +1034,31 @@ route[b2b_request]
 	</programlisting>
 	</section>
 
+	<section id="mi_b2b_terminate_call" xreflabel="b2b_terminate_call">
+		<title>
+		<function moreinfo="none">b2b_terminate_call</function>
+		</title>
+		<para>
+			Terminates an ongoing B2B session.
+		</para>
+		<para>
+		Name: <emphasis>b2b_terminate_call</emphasis>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem>
+				<para><emphasis>key</emphasis> : the <emphasis>b2b_logic key</emphasis>
+				or the <emphasis>callid;from-tag;to-tag</emphasis> of
+				one of call legs of the ongoing session.
+				</para>
+			</listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+	<programlisting  format="linespecific">
+	opensips-cli -x mi b2b_terminate_call 159.0
+	</programlisting>
+	</section>
+
 </section>
 
 <section id="exported_pseudo_variables">
