@@ -40,6 +40,7 @@
 #include "../../ipc.h"
 #include "dialplan.h"
 #include "dp_db.h"
+#include "status_report.h"
 
 
 
@@ -83,6 +84,8 @@ static str default_param_s = str_init(DEFAULT_PARAM);
 str dp_df_part = str_init(DEFAULT_PARTITION);
 dp_param_p default_par2 = NULL;
 static str database_url = {NULL, 0};
+
+void *dp_srg = NULL;
 
 
 static param_export_t mod_params[]={
@@ -384,6 +387,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	dp_srg = sr_register_group( CHAR_LEN("dialplan"), 0 /*not public*/);
+	if (dp_srg==NULL) {
+		LM_ERR("failed to create dialplan group for 'status-report'");
+		return -1;
+	}
+
 	dp_print_list();
 	if(init_data() != 0) {
 		LM_ERR("could not initialize data\n");
@@ -399,7 +408,7 @@ static int mod_init(void)
  * when done */
 static void dp_rpc_data_load(int sender_id, void *unused)
 {
-	if(dp_load_all_db() != 0){
+	if(dp_load_all_db(1) != 0){
 		LM_ERR("failed to reload database\n");
 		return;
 	}
@@ -738,7 +747,7 @@ error:
 static mi_response_t *mi_reload_rules(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	if(dp_load_all_db() != 0){
+	if(dp_load_all_db(0) != 0){
 			LM_ERR("failed to reload database\n");
 			return 0;
 	}
@@ -760,7 +769,7 @@ static mi_response_t *mi_reload_rules_1(const mi_params_t *params,
 			return init_mi_error( 400, MI_SSTR("Partition not found"));
 	/* Reload rules from specified  partition */
 	LM_DBG("Reloading rules from partition %.*s\n", table.len, table.s);
-	if(dp_load_db(el) != 0){
+	if(dp_load_db(el,0) != 0){
 			LM_ERR("failed to reload database data\n");
 			return 0;
 	}

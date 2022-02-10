@@ -793,6 +793,59 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 		</section>
 	</section>
 
+
+	<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Provided Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "dialplan" Status/Report group, where each
+	dialplan partition is defined as a separate SR identifier.
+	</para>
+	<para>
+	The status of these identifiers reflects the readiness/status of the 
+	cached data (if available or not when being loaded from DB):
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		<emphasis>-2</emphasis> - no data at all (initial status)
+		</para></listitem>
+		<listitem><para>
+		<emphasis>-1</emphasis> - no data, initial loading in progress
+		</para></listitem>
+		<listitem><para>
+		<emphasis>1</emphasis> - data loaded, partition ready
+		</para></listitem>
+		<listitem><para>
+		<emphasis>2</emphasis> - data available, a reload in progress
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	In terms of reports/logs, the following events will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		starting DB data loading
+		</para></listitem>
+		<listitem><para>
+		DB data loading failed, discarding
+		</para></listitem>
+		<listitem><para>
+		DB data loading successfully completed
+		</para></listitem>
+		<listitem><para>
+		N rules loaded (N discarded)
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+
+</section>
+
+
 	<section>
 		<title>Installation</title>
 		<para>
