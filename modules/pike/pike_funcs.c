@@ -45,6 +45,7 @@
 #include "../../action.h"
 #include "../../route.h"
 #include "../../script_cb.h"
+#include "../../status_report.h"
 #include "ip_tree.h"
 #include "pike_funcs.h"
 #include "timer.h"
@@ -59,6 +60,7 @@ extern int               pike_log_level;
 extern int               pike_start_level;
 extern int               pike_stop_level;
 extern event_id_t        pike_event_id;
+extern void *            pike_srg;
 
 static inline void pike_raise_event(char *ip)
 {
@@ -96,6 +98,8 @@ int pike_check_req(struct sip_msg *msg)
 	struct ip_node *father;
 	unsigned char flags;
 	struct ip_addr* ip;
+	char r_buf[50];
+	int r_len;
 
 
 #ifdef _test
@@ -188,6 +192,11 @@ int pike_check_req(struct sip_msg *msg)
 			LM_GEN1( pike_log_level,
 				"PIKE - BLOCKing ip %s, node=%p\n",ip_addr2a(ip),node);
 			pike_raise_event(ip_addr2a(ip));
+			r_len = snprintf( r_buf, sizeof(r_buf),
+				"IP %s detected as flooding",
+				ip_addr2a(ip));
+			sr_add_report( pike_srg, CHAR_LEN_NULL/*identifier*/,
+				r_buf, r_len, 0/*is_public*/);
 			return -2;
 		}
 		return -1;

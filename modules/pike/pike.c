@@ -45,6 +45,7 @@
 #include "../../evi/evi_modules.h"
 #include "../../timer.h"
 #include "../../locking.h"
+#include "../../status_report.h"
 #include "ip_tree.h"
 #include "timer.h"
 #include "pike_mi.h"
@@ -73,6 +74,9 @@ struct list_link*       timer = 0;
 /* event id */
 static str pike_block_event = str_init("E_PIKE_BLOCKED");
 event_id_t pike_event_id = EVI_ERROR;
+
+/* status/repport group */
+void *pike_srg;
 
 static cmd_export_t cmds[]={
 	{"pike_check_req", (cmd_function)pike_check_req, {{0,0,0}},
@@ -187,8 +191,19 @@ static int pike_init(void)
 			goto error3;
 		}
 	}
+
 	if((pike_event_id = evi_publish_event(pike_block_event)) == EVI_ERROR)
 		LM_ERR("cannot register pike flood start event\n");
+
+	pike_srg = sr_register_group_with_identifier( CHAR_LEN("pike"),
+		0 /*is_public*/, CHAR_LEN_NULL /*identifier*/,
+		1, CHAR_LEN_NULL /*status_txt*/,
+		100 /*max_reports*/);
+	if (pike_srg==NULL) {
+		LM_ERR("failed to register SR identifier for reporting\n");
+		goto error3;
+	}
+
 
 	return 0;
 error3:

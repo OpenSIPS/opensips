@@ -335,5 +335,32 @@ if (!pike_check_req()) { exit; };
 	</section>
 	</section>
 
+	<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Provided Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "pike" Status/Report group, only with
+	the "main"/default SR identifier.
+	</para>
+	<para>
+	There is no usefull status published by the module.
+	</para>
+	<para>
+	In terms of reports/logs, the following events will be reported:
+	</para>
+	<itemizedlist>
+		<listitem><para>
+		IP X.Y.Z.W detected as flooding
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+
+</section>
+
+
 </chapter>
 
