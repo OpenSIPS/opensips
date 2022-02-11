@@ -195,9 +195,9 @@ static int pike_init(void)
 	if((pike_event_id = evi_publish_event(pike_block_event)) == EVI_ERROR)
 		LM_ERR("cannot register pike flood start event\n");
 
-	pike_srg = sr_register_group_with_identifier( CHAR_LEN("pike"),
-		0 /*is_public*/, CHAR_LEN_NULL /*identifier*/,
-		1, CHAR_LEN_NULL /*status_txt*/,
+	pike_srg = sr_register_group_with_identifier( CHAR_INT("pike"),
+		0 /*is_public*/, CHAR_INT_NULL /*identifier*/,
+		1, CHAR_INT_NULL /*status_txt*/,
 		100 /*max_reports*/);
 	if (pike_srg==NULL) {
 		LM_ERR("failed to register SR identifier for reporting\n");

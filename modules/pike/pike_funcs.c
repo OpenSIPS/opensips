@@ -195,7 +195,7 @@ int pike_check_req(struct sip_msg *msg)
 			r_len = snprintf( r_buf, sizeof(r_buf),
 				"IP %s detected as flooding",
 				ip_addr2a(ip));
-			sr_add_report( pike_srg, CHAR_LEN_NULL/*identifier*/,
+			sr_add_report( pike_srg, CHAR_INT_NULL/*identifier*/,
 				r_buf, r_len, 0/*is_public*/);
 			return -2;
 		}
