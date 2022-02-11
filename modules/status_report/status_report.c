@@ -87,8 +87,8 @@ static int add_sr_group( modparam_t type, void* val)
 	trim( &name );
 
 	if ( sr_register_group_with_identifier( name.s, name.len ,
-	1/*public*/, CHAR_LEN_NULL/*identifier*/,
-	SR_STATUS_READY, CHAR_LEN_NULL /*txt*/, 50 /*reports*/)==NULL ) {
+	1/*public*/, CHAR_INT_NULL/*identifier*/,
+	SR_STATUS_READY, CHAR_INT_NULL /*txt*/, 50 /*reports*/)==NULL ) {
 		LM_ERR("failed to register new 'status-report' group |%.*s|\n",
 			name.len, name.s);
 		return -1;
@@ -115,7 +115,7 @@ static int w_add_report(struct sip_msg *msg, void *srg,
 {
 	int rc;
 
-	rc = sr_add_report( srg, CHAR_LEN_NULL,
+	rc = sr_add_report( srg, CHAR_INT_NULL,
 		report->s, report->len, 1/*public access*/);
 
 	return (rc>=0)?1:-1;
@@ -126,11 +126,11 @@ static int w_set_status(struct sip_msg *msg, void *srg,
 		int *status, str *txt)
 {
 	if (txt)
-		return sr_set_status( srg, CHAR_LEN_NULL,
+		return sr_set_status( srg, CHAR_INT_NULL,
 			*status, txt->s, txt->len, 1/*public access*/);
 	else
-		return sr_set_status( srg, CHAR_LEN_NULL,
-			*status, CHAR_LEN_NULL, 1/*public access*/);
+		return sr_set_status( srg, CHAR_INT_NULL,
+			*status, CHAR_INT_NULL, 1/*public access*/);
 }
 
 
