@@ -33,6 +33,7 @@
 #include "../../rw_locking.h"
 #include "../../timer.h"
 #include "../../ipc.h"
+#include "../../status_report.h"
 #include "sql_cacher.h"
 
 static int mod_init(void);
@@ -64,6 +65,8 @@ static struct queried_key **queries_in_progress;
 static db_handlers_t *db_hdls_list;
 
 gen_lock_t *queries_lock;
+
+void *sql_srg = NULL;
 
 /* module parameters */
 static param_export_t mod_params[] = {
@@ -869,11 +872,21 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	db_val_t *values;
 	int i;
 	int reload_vers = 0;
+	int loaded_rec = 0;
+
+	sr_add_report( sql_srg, STR2CI(c_entry->id),
+		CHAR_INT("starting DB data loading"), 0);
+	if (inc_rld_vers==0)
+		sr_set_status( sql_srg,  STR2CI(c_entry->id),
+			SR_STATUS_LOADING_DATA, CHAR_INT("startup data loading"), 0);
+	else 
+		sr_set_status( sql_srg,  STR2CI(c_entry->id),
+			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
 
 	query_cols = pkg_malloc((c_entry->nr_columns + 1) * sizeof(db_key_t));
 	if (!query_cols) {
 		LM_ERR("No more pkg memory\n");
-		return -1;
+		goto error_end;
 	}
 	query_cols[0] = &(c_entry->key);
 	for (i=0; i < c_entry->nr_columns; i++)
@@ -885,7 +898,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		db_hdls->db_funcs.close(db_hdls->db_con);
 		db_hdls->db_con = 0;
 		pkg_free(query_cols);
-		return -1;
+		goto error_end;
 	}
 	if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
 		if (db_hdls->db_funcs.query(db_hdls->db_con, NULL, 0, NULL,
@@ -940,12 +953,14 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		for (i=0; i < RES_ROW_N(sql_res); i++) {
 			row = RES_ROWS(sql_res) + i;
 			values = ROW_VALUES(row);
-			if (!VAL_NULL(values))
+			if (!VAL_NULL(values)) {
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
 					lock_stop_write(db_hdls->c_entry->ref_lock);
 					return -1;
 				}
+				loaded_rec++;
+			}
 		}
 
 		if (DB_CAPABILITY(db_hdls->db_funcs, DB_CAP_FETCH)) {
@@ -963,11 +978,30 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	lock_stop_write(db_hdls->c_entry->ref_lock);
 
 	db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
+
+	/* do the reporting */
+	sr_add_report( sql_srg, STR2CI(c_entry->id),
+		CHAR_INT("DB data loading successfully completed"), 0);
+	sr_add_report_fmt( sql_srg, STR2CI(c_entry->id), 0,
+		"%d records loaded", loaded_rec);
+	sr_set_status( sql_srg, STR2CI(c_entry->id), SR_STATUS_READY,
+		CHAR_INT("data available"), 0);
+
 	return 0;
 
 error:
 	if (sql_res)
 		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
+error_end:
+	sr_add_report( sql_srg, STR2CI(c_entry->id),
+		CHAR_INT("DB data loading failed, discarding"), 0);
+	if (inc_rld_vers==0)
+		sr_set_status( sql_srg, STR2CI(c_entry->id), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
+	else
+		sr_set_status( sql_srg, STR2CI(c_entry->id), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
+
 	return -1;
 }
 
@@ -1301,6 +1335,12 @@ static int mod_init(void)
 		return -1;
 	}
 
+	sql_srg = sr_register_group( CHAR_INT("sql_cacher"), 0 /*not public*/);
+	if (sql_srg==NULL) {
+		LM_ERR("failed to create sql_cacher group for 'status-report'");
+		return -1;
+	}
+
 	c_entry = *entry_list;
 	while (c_entry) {
 		if ((db_hdls = db_init_test_conn(c_entry)) == NULL) {
@@ -1315,6 +1355,13 @@ static int mod_init(void)
 			if (!c_entry->ref_lock) {
 				LM_ERR("Failed to init readers-writers lock\n");
 				continue;
+			}
+			if (sr_register_identifier( sql_srg, STR2CI(c_entry->id),
+				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
+				LM_ERR("failed to create status report identifier for "
+					" cache \'%.*s\')\n",
+					c_entry->id.len, c_entry->id.s);
+				return -1;
 			}
 		}
 
