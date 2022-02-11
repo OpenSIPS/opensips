@@ -404,11 +404,11 @@ err1:
 	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
 		CHAR_INT("DB data loading failed, discarding"), 0);
 	if (initial)
-		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
-			CHAR_INT("data available"), 0);
-	else
 		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_NO_DATA,
 			CHAR_INT("no data loaded"), 0);
+	else
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
 
 	return -1;
 
