@@ -23,12 +23,20 @@
 
 #include "mi/mi.h"
 
-#define CHAR_LEN MI_SSTR
-#define CHAR_LEN_NULL NULL,0
+#define CHAR_INT MI_SSTR
+#define CHAR_INT_NULL NULL,0
+#define STR2CI(_str) _str.s, _str.len
 
-enum sr_status {SR_STATUS_READY=1,
-	SR_STATUS_NOT_READY = -1,
-	SR_STATUS_NOT_FOUND = INT_MIN};
+/* some pre-defined statuses that may be used by modules too */
+enum sr_status {
+	SR_STATUS_NOT_FOUND		= INT_MIN, /* just for internal usage! */
+	SR_STATUS_NO_DATA		=- 2,
+	SR_STATUS_LOADING_DATA	= -1,
+	SR_STATUS_NOT_READY		= -1,
+	SR_STATUS_RESEARVED		=  0,
+	SR_STATUS_READY			=  1,
+	SR_STATUS_RELOADING_DATA=  2,
+	};
 
 
 /* functions to be used by modules using the status/report framework */
@@ -60,6 +68,11 @@ int sr_add_report(void *group,
 		char *identifier_s, int identifier_len,
 		char *report_s, int report_len,
 		int is_public);
+
+int sr_add_report_fmt(void *group,
+		char *identifier_s, int identifier_len,
+		int is_public,
+		char *fmt_val, ...);
 
 
 /* functions related to status of the OpenSIPS core */

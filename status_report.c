@@ -24,6 +24,7 @@
 #include "str.h"
 #include "ut.h"
 #include "evi/evi.h"
+#include "mi/fmt.h"
 #include "status_report.h"
 
 struct report_rec {
@@ -601,12 +602,31 @@ int sr_add_report(void *group,
 	lock_stop_read( sr_lock );
 
 	return sri?0:-1;
+}
 
+
+int sr_add_report_fmt(void *group,
+		char *identifier_s, int identifier_len,
+		int is_public,
+		char *fmt_val, ...)
+{
+	va_list ap;
+	char *report_s;
+	int report_len;
+
+	va_start(ap, fmt_val);
+	report_s = mi_print_fmt(fmt_val, ap, &report_len);
+	va_end(ap);
+	if (!report_s)
+		return -1;
+
+	return sr_add_report( group, identifier_s, identifier_len,
+		report_s, report_len, is_public);
 }
 
 
 #define _add_mi_readiness( _mi_item, _status) \
-	add_mi_bool(_mi_item, CHAR_LEN("Readiness"), (_status<0)?0:1)
+	add_mi_bool(_mi_item, CHAR_INT("Readiness"), (_status<0)?0:1)
 
 /* Checks the status of an identifier
  * NOTE1 : for internal usage only, it does its own locking
@@ -638,9 +658,9 @@ static int _check_status(sr_group *srg, str *identifier, mi_item_t *id_item)
 			status = sri->status ;
 			if (id_item) {
 				_add_mi_readiness( id_item, status);
-				add_mi_number( id_item, CHAR_LEN("Status"), status);
+				add_mi_number( id_item, CHAR_INT("Status"), status);
 				if (sri->status_txt.s)
-					add_mi_string(id_item, CHAR_LEN("Details"),
+					add_mi_string(id_item, CHAR_INT("Details"),
 						sri->status_txt.s, sri->status_txt.len);
 			}
 			lock_release( &sri->lock );
@@ -659,9 +679,9 @@ static int _check_status(sr_group *srg, str *identifier, mi_item_t *id_item)
 
 		if (id_item) {
 			_add_mi_readiness( id_item, status);
-			add_mi_number( id_item, CHAR_LEN("Status"), status);
-			add_mi_string(id_item, CHAR_LEN("Details"),
-				CHAR_LEN("aggregated"));
+			add_mi_number( id_item, CHAR_INT("Status"), status);
+			add_mi_string(id_item, CHAR_INT("Details"),
+				CHAR_INT("aggregated"));
 		}
 
 	}
@@ -676,7 +696,7 @@ static int _check_status(sr_group *srg, str *identifier, mi_item_t *id_item)
 
 int sr_set_core_status(int status, char *txt_s, int txt_len)
 {
-	return sr_set_status( srg_core, CHAR_LEN_NULL /*main*/, status,
+	return sr_set_status( srg_core, CHAR_INT_NULL /*main*/, status,
 		txt_s, txt_len, 0);
 }
 
@@ -689,7 +709,7 @@ int sr_get_core_status(void)
 
 int sr_add_core_report(char *report_s, int report_len)
 {
-	return sr_add_report( srg_core, CHAR_LEN_NULL /*main*/,
+	return sr_add_report( srg_core, CHAR_INT_NULL /*main*/,
 		report_s, report_len, 0);
 }
 
@@ -710,8 +730,8 @@ int init_status_report(void)
 	}
 
 	srg_core = (sr_group*)sr_register_group_with_identifier(
-		CHAR_LEN("core"), 0/*not public*/, CHAR_LEN_NULL /*main*/,
-		STATE_NONE, CHAR_LEN_NULL/*report*/, 10);
+		CHAR_INT("core"), 0/*not public*/, CHAR_INT_NULL /*main*/,
+		STATE_NONE, CHAR_INT_NULL/*report*/, 10);
 	if (srg_core==NULL) {
 		LM_ERR("Failed to register 'status_report' group and identifier for "
 			"'core'\n");
@@ -781,7 +801,7 @@ mi_response_t *mi_sr_get_status(const mi_params_t *params,
 	if ( (srg=sr_get_group_by_name( group.s, group.len )) == NULL ) {
 		LM_DBG("SR group [%.*s] not found as registered\n",
 			group.len, group.s);
-		return init_mi_error(404, CHAR_LEN("Group not found"));
+		return init_mi_error(404, CHAR_INT("Group not found"));
 	}
 
 	resp = init_mi_result_object(&resp_obj);
@@ -798,7 +818,7 @@ mi_response_t *mi_sr_get_status(const mi_params_t *params,
 
 	if (status == SR_STATUS_NOT_FOUND) {
 		free_mi_response(resp);
-		return init_mi_error(404, CHAR_LEN("Identity not found"));
+		return init_mi_error(404, CHAR_INT("Identity not found"));
 	}
 
 	return resp;
@@ -818,7 +838,7 @@ static int _mi_list_status_group(sr_group *srg, mi_item_t *id_arr)
 
 		lock_get( &sri->lock );
 
-		if (add_mi_string(id_item, CHAR_LEN("Name"),
+		if (add_mi_string(id_item, CHAR_INT("Name"),
 		sri->name.s, sri->name.len ) < 0 ) {
 			lock_release( &sri->lock );
 			return -1;
@@ -829,12 +849,12 @@ static int _mi_list_status_group(sr_group *srg, mi_item_t *id_arr)
 			return -1;
 		}
 
-		if (add_mi_number( id_item, CHAR_LEN("Status"), sri->status)<0) {
+		if (add_mi_number( id_item, CHAR_INT("Status"), sri->status)<0) {
 			lock_release( &sri->lock );
 			return -1;
 		}
 
-		if (sri->status_txt.s && add_mi_string(id_item, CHAR_LEN("Details"),
+		if (sri->status_txt.s && add_mi_string(id_item, CHAR_INT("Details"),
 		sri->status_txt.s, sri->status_txt.len) < 0) {
 			lock_release( &sri->lock );
 			return -1;
@@ -863,7 +883,7 @@ mi_response_t *mi_sr_list_status(const mi_params_t *params,
 		if ( (srg=sr_get_group_by_name( group.s, group.len )) == NULL ) {
 			LM_DBG("SR group [%.*s] not found as registered\n",
 				group.len, group.s);
-			return init_mi_error(404, CHAR_LEN("Group not found"));
+			return init_mi_error(404, CHAR_INT("Group not found"));
 		}
 	}
 
@@ -893,11 +913,11 @@ mi_response_t *mi_sr_list_status(const mi_params_t *params,
 			if (!grp_item)
 				goto error;
 
-			if (add_mi_string( grp_item, CHAR_LEN("Name"),
+			if (add_mi_string( grp_item, CHAR_INT("Name"),
 			srg->name.s, srg->name.len)<0)
 				goto error;
 
-			id_arr = add_mi_array( grp_item, CHAR_LEN("Identifiers"));
+			id_arr = add_mi_array( grp_item, CHAR_INT("Identifiers"));
 			if (!id_arr)
 				goto error;
 
@@ -945,15 +965,15 @@ static int _mi_list_reports(sr_identifier *sri, mi_item_t *log_arr)
 		if (log_item==NULL)
 			goto error;
 
-		if (add_mi_number( log_item, CHAR_LEN("Timestamp"), sri->reports[i].ts) < 0)
+		if (add_mi_number( log_item, CHAR_INT("Timestamp"), sri->reports[i].ts) < 0)
 			goto error;
 
 		date.s = ctime( &sri->reports[i].ts );
 		date.len = strlen(date.s) - 1 /* get rid of the trailing \n */;
-		if (add_mi_string( log_item, CHAR_LEN("Date"), date.s, date.len) < 0)
+		if (add_mi_string( log_item, CHAR_INT("Date"), date.s, date.len) < 0)
 			goto error;
 
-		if (add_mi_string( log_item, CHAR_LEN("Log"),
+		if (add_mi_string( log_item, CHAR_INT("Log"),
 		sri->reports[i].log.s, sri->reports[i].log.len ) < 0)
 			goto error;
 	}
@@ -978,11 +998,11 @@ static int _mi_list_reports_group(sr_group *srg, mi_item_t *id_arr)
 		if (!id_item)
 			return -1;
 
-		if (add_mi_string( id_item, CHAR_LEN("Name"),
+		if (add_mi_string( id_item, CHAR_INT("Name"),
 		sri->name.s, sri->name.len ) < 0 )
 			return -1;
 
-		log_arr = add_mi_array( id_item, CHAR_LEN("Reports"));
+		log_arr = add_mi_array( id_item, CHAR_INT("Reports"));
 		if (log_arr==NULL)
 			return -1;
 
@@ -1010,7 +1030,7 @@ mi_response_t *mi_sr_list_reports(const mi_params_t *params,
 		if ( (srg=sr_get_group_by_name( group.s, group.len )) == NULL ) {
 			LM_DBG("SR group [%.*s] not found as registered\n",
 				group.len, group.s);
-			return init_mi_error(404, CHAR_LEN("Group not found"));
+			return init_mi_error(404, CHAR_INT("Group not found"));
 		}
 
 		lock_start_read( sr_lock );
@@ -1022,7 +1042,7 @@ mi_response_t *mi_sr_list_reports(const mi_params_t *params,
 				LM_DBG("SR identifier [%.*s] group [%.*s] not found as "
 					"registered\n", identifier.len, identifier.s,
 					group.len, group.s);
-				return init_mi_error(404, CHAR_LEN("Identifier not found"));
+				return init_mi_error(404, CHAR_INT("Identifier not found"));
 			}
 
 		}
@@ -1067,11 +1087,11 @@ mi_response_t *mi_sr_list_reports(const mi_params_t *params,
 			if (!grp_item)
 				goto error;
 
-			if (add_mi_string( grp_item, CHAR_LEN("Name"),
+			if (add_mi_string( grp_item, CHAR_INT("Name"),
 			srg->name.s, srg->name.len)<0)
 				goto error;
 
-			id_arr = add_mi_array(grp_item, CHAR_LEN("Identifiers"));
+			id_arr = add_mi_array(grp_item, CHAR_INT("Identifiers"));
 			if (!id_arr)
 				goto error;
 

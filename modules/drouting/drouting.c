@@ -30,6 +30,7 @@
 #include "../../ipc.h"
 #include "../../ut.h"
 #include "../../lib/csv.h"
+#include "../../status_report.h"
 
 #include "dr_load.h"
 #include "prefix_tree.h"
@@ -40,7 +41,6 @@
 #include "dr_api.h"
 #include "dr_api_internal.h"
 #include "dr_cb.h"
-#include "status_report.h"
 
 #include "../../mem/rpm_mem.h"
 
@@ -1092,11 +1092,11 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	LM_INFO("loading drouting data!\n");
 
 	if (initial)
-		dr_sr_set_status( hd->partition, DR_STATUS_LOADING,
-			"startup data loading");
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_LOADING_DATA,
+			CHAR_INT("startup data loading"), 0);
 	else 
-		dr_sr_set_status( hd->partition, DR_STATUS_RELOADING,
-			"data re-loading");
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_RELOADING_DATA,
+			CHAR_INT("data re-loading"), 0);
 
 	if (!uses_rule_table_query(hd, &rule_table_query)) {
 		new_data = dr_load_routing_info(hd, dr_persistent_state, &hd->drr_table, 1);
@@ -1222,7 +1222,8 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	populate_dr_bls(hd->rdata->pgw_tree);
 
 success:
-	dr_sr_set_status( hd->partition, DR_STATUS_READY, "data available");
+	sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+		CHAR_INT("data available"), 0);
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
 	return 0;
@@ -1235,9 +1236,11 @@ multi_err1:
 	dr_dbf->free_result(db_hdl, res);
 error:
 	if (initial)
-		dr_sr_set_status( hd->partition, DR_STATUS_READY, "data available");
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
 	else
-		dr_sr_set_status( hd->partition, DR_STATUS_NO_DATA, "no data loaded");
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
 	return ret;
@@ -1619,7 +1622,7 @@ static int dr_init(void)
 			goto error;
 		}
 
-	dr_srg = sr_register_group( CHAR_LEN("drouting"), 0 /*not public*/);
+	dr_srg = sr_register_group( CHAR_INT("drouting"), 0 /*not public*/);
 	if (dr_srg==NULL) {
 		LM_ERR("failed to create drouting group for 'status-report'");
 		return -1;
@@ -1931,9 +1934,8 @@ static int dr_init(void)
 		(db_part->db_funcs).close(*db_part->db_con);
 		*db_part->db_con = 0;
 
-		if (sr_register_identifier( dr_srg,
-				db_part->partition.s, db_part->partition.len,
-				DR_STATUS_NO_DATA, CHAR_LEN("no data loaded"), 20 ) ) {
+		if (sr_register_identifier( dr_srg, STR2CI(db_part->partition),
+				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
 			LM_ERR("failed to create status report identifier for "
 				" partition \'%.*s\')\n",
 				db_part->partition.len, db_part->partition.s);

@@ -28,9 +28,9 @@
 #include "../../dprint.h"
 #include "../../ut.h"
 #include "../../time_rec.h"
+#include "../../status_report.h"
 
 #include "dp_db.h"
-#include "status_report.h"
 
 dp_head_p dp_hlist;
 dp_head_p dp_df_head;
@@ -49,6 +49,7 @@ str disabled_column      =   str_init(DISABLED_COL);
 str attrs_column         =   str_init(ATTRS_COL);
 str timerec_column       =   str_init(TIMEREC_COL);
 
+extern void *dp_srg;
 
 #define GET_STR_VALUE(_res, _values, _index, _null)\
 	do{\
@@ -183,9 +184,8 @@ int init_data(void)
 			return -1;
 		}
 
-		if (sr_register_identifier( dp_srg,
-				start->partition.s, start->partition.len,
-				DP_STATUS_NO_DATA, CHAR_LEN("no data loaded"), 20 ) ) {
+		if (sr_register_identifier( dp_srg, STR2CI(start->partition),
+				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
 			LM_ERR("failed to create status report identifier for "
 				" partition \'%.*s\')\n",
 				start->partition.len, start->partition.s);
@@ -260,8 +260,7 @@ int dp_load_db(dp_connection_list_p dp_conn, int initial)
 
 	dpl_node_t *rule;
 	int no_rows = 10;
-	int loaded_rl=0, discarded_rl=0, r_len;
-	char r_buf[50]; /* buffer for final SR report */
+	int loaded_rl=0, discarded_rl=0;
 
 
 	lock_start_write( dp_conn->ref_lock );
@@ -276,13 +275,14 @@ int dp_load_db(dp_connection_list_p dp_conn, int initial)
 
 	lock_stop_write( dp_conn->ref_lock );
 
-	dp_sr_add_report( dp_conn->partition, "starting DB data loading");
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("starting DB data loading"), 0);
 	if (initial)
-		dp_sr_set_status( dp_conn->partition, DP_STATUS_LOADING,
-			"startup data loading");
+		sr_set_status( dp_srg,  STR2CI(dp_conn->partition),
+			SR_STATUS_LOADING_DATA, CHAR_INT("startup data loading"), 0);
 	else 
-		dp_sr_set_status( dp_conn->partition, DP_STATUS_RELOADING,
-			"data re-loading");
+		sr_set_status( dp_srg,  STR2CI(dp_conn->partition),
+			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
 
 	if (dp_conn->dp_dbf.use_table(*dp_conn->dp_db_handle, &dp_conn->table_name) < 0){
 		LM_ERR("error in use_table\n");
@@ -384,14 +384,12 @@ end:
 	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
 
 	/* do the reporting */
-	dp_sr_add_report( dp_conn->partition,
-		"DB data loading successfully completed");
-	r_len = snprintf( r_buf, sizeof(r_buf),
-		"%d rules loaded (%d discarded)",
-		loaded_rl, discarded_rl);
-	dp_sr_add_report_cl( dp_conn->partition, r_buf, r_len);
-
-	dp_sr_set_status( dp_conn->partition, DP_STATUS_READY, "data available");
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("DB data loading successfully completed"), 0);
+	sr_add_report_fmt( dp_srg, STR2CI(dp_conn->partition), 0,
+		"%d rules loaded (%d discarded)", loaded_rl, discarded_rl);
+	sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+		CHAR_INT("data available"), 0);
 
 	return 0;
 
@@ -403,13 +401,14 @@ err1:
 
 	lock_stop_write( dp_conn->ref_lock );
 
-	dp_sr_add_report( dp_conn->partition,"DB data loading failed, discarding");
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("DB data loading failed, discarding"), 0);
 	if (initial)
-		dp_sr_set_status( dp_conn->partition, DP_STATUS_READY,
-			"data available");
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
 	else
-		dp_sr_set_status( dp_conn->partition, DP_STATUS_NO_DATA,
-			"no data loaded");
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
 
 	return -1;
 
@@ -425,13 +424,14 @@ err2:
 
 	lock_stop_write( dp_conn->ref_lock );
 
-	dp_sr_add_report( dp_conn->partition,"DB data loading failed, discarding");
+	sr_add_report( dp_srg, STR2CI(dp_conn->partition),
+		CHAR_INT("DB data loading failed, discarding"), 0);
 	if (initial)
-		dp_sr_set_status( dp_conn->partition, DP_STATUS_READY,
-			"data available");
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
 	else
-		dp_sr_set_status( dp_conn->partition, DP_STATUS_NO_DATA,
-			"no data loaded");
+		sr_set_status( dp_srg, STR2CI(dp_conn->partition), SR_STATUS_NO_DATA,
+			CHAR_INT("no data loaded"), 0);
 
 	return -1;
 }

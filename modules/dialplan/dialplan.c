@@ -38,9 +38,9 @@
 #include "../../lib/csv.h"
 #include "../../mod_fix.h"
 #include "../../ipc.h"
+#include "../../status_report.h"
 #include "dialplan.h"
 #include "dp_db.h"
-#include "status_report.h"
 
 
 
@@ -387,7 +387,7 @@ static int mod_init(void)
 		return -1;
 	}
 
-	dp_srg = sr_register_group( CHAR_LEN("dialplan"), 0 /*not public*/);
+	dp_srg = sr_register_group( CHAR_INT("dialplan"), 0 /*not public*/);
 	if (dp_srg==NULL) {
 		LM_ERR("failed to create dialplan group for 'status-report'");
 		return -1;

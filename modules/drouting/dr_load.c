@@ -34,14 +34,16 @@
 #include "../../mem/rpm_mem.h"
 #include "../../time_rec.h"
 #include "../../socket_info.h"
+#include "../../status_report.h"
 
 #include "dr_load.h"
 #include "routing.h"
 #include "prefix_tree.h"
 #include "parse.h"
 #include "dr_db_def.h"
-#include "status_report.h"
 
+
+extern void *dr_srg;
 
 enum dr_gw_socket_filter_mode {
 	DR_GW_SOCK_FILTER_MODE_NONE=0,
@@ -303,15 +305,15 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 	int db_cols;
 	struct socket_info *sock;
 	str s_sock, host;
-	int proto, port, r_len;
+	int proto, port;
 	char id_buf[INT2STR_MAX_LEN];
-	char r_buf[150]; /* buffer for final SR report */
 
 	res = 0;
 	ri = 0;
 	rdata = 0;
 
-	dr_sr_add_report( part->partition, "starting DB data loading");
+	sr_add_report( dr_srg, STR2CI(part->partition),
+		CHAR_INT("starting DB data loading"), 0 /*is_public*/);
 
 	/* init new data structure */
 	if ( (rdata=build_rt_data(part))==0 ) {
@@ -772,19 +774,20 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 			 part->partition.len, part->partition.s);
 
 	/* do the reporting */
-	dr_sr_add_report( part->partition,
-		"DB data loading successfully completed");
-	r_len = snprintf( r_buf, sizeof(r_buf),
-		"%d gateways loaded (%d discarded), "
-		"%d carriers loaded (%d discarded), %d rules loaded (%d discarded)",
+	sr_add_report( dr_srg, STR2CI(part->partition),
+		CHAR_INT("DB data loading successfully completed"), 0 /*is_public*/);
+	sr_add_report_fmt( dr_srg, STR2CI(part->partition), 0 /*is_public*/,
+			"%d gateways loaded (%d discarded), "
+			"%d carriers loaded (%d discarded), "
+			"%d rules loaded (%d discarded)",
 		loaded_gw, discarded_gw,
 		loaded_cr, discarded_cr,
 		loaded_rl, discarded_rl);
-	dr_sr_add_report_cl( part->partition, r_buf, r_len);
 
 	return rdata;
 error:
-	dr_sr_add_report( part->partition, "DB data loading failed, discarding");
+	sr_add_report( dr_srg, STR2CI(part->partition),
+		CHAR_INT("DB data loading failed, discarding"), 0 /*is_public*/);
 	if (res)
 		dr_dbf->free_result(db_hdl, res);
 	if (rdata)
