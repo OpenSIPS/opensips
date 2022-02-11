@@ -1236,11 +1236,11 @@ multi_err1:
 	dr_dbf->free_result(db_hdl, res);
 error:
 	if (initial)
-		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
-			CHAR_INT("data available"), 0);
-	else
 		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_NO_DATA,
 			CHAR_INT("no data loaded"), 0);
+	else
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
 	return ret;
