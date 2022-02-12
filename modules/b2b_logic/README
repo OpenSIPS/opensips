@@ -43,6 +43,7 @@ B2B_LOGIC
               1.5.1. b2b_trigger_scenario
               1.5.2. b2b_bridge
               1.5.3. b2b_list
+              1.5.4. b2b_terminate_call
 
         1.6. Exported Pseudo-Variables
 
@@ -535,6 +536,19 @@ ps.org sip:322@opensips.org:5070 sip:alice@opensips.org
    MI FIFO Command Format:
         opensips-cli -x mi b2b_list
 
+1.5.4.  b2b_terminate_call
+
+   Terminates an ongoing B2B session.
+
+   Name: b2b_terminate_call
+
+   Parameters:
+     * key : the b2b_logic key or the callid;from-tag;to-tag of
+       one of call legs of the ongoing session.
+
+   MI FIFO Command Format:
+        opensips-cli -x mi b2b_terminate_call 159.0
+
 1.6. Exported Pseudo-Variables
 
 1.6.1.  $b2b_logic.key
@@ -787,7 +801,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 57 27 2343 610
+   3. Vlad Patrascu (@rvlad-patrascu) 59 28 2401 615
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 41 34 233 248
    5. Razvan Crainea (@razvancrainea) 38 28 633 203
    6. Liviu Chircu (@liviuchircu) 15 12 55 100
@@ -819,7 +833,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2022
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Jan 2021
    3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
