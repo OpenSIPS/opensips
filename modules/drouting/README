@@ -103,7 +103,8 @@ Dynamic Routing Module
 
               1.6.1. E_DROUTING_STATUS
 
-        1.7. Installation
+        1.7. Provided Status/Report Identifiers
+        1.8. Installation
 
    2. Developer Guide
    3. Contributors
@@ -1746,7 +1747,33 @@ Status:: 0
        if it was disabled from the script or active if the gateway
        is enabled.
 
-1.7. Installation
+1.7. Provided Status/Report Identifiers
+
+   The module provides the "drouting" Status/Report group, where
+   each routing partition is defined as a separate SR identifier.
+
+   The status of these identifiers reflects the readiness/status
+   of the cached data (if available or not when being loaded from
+   DB):
+     * -2 - no data at all (initial status)
+     * -1 - no data, initial loading in progress
+     * 1 - data loaded, partition ready
+     * 2 - data available, a reload in progress
+
+   In terms of reports/logs, the following events will be
+   reported:
+     * starting DB data loading
+     * DB data loading failed, discarding
+     * DB data loading successfully completed
+     * N gateways loaded (N discarded), N carriers loaded (N
+       discarded), N rules loaded (N discarded)
+
+   For how to access and use the Status/Report information, please
+   see
+   https://www.opensips.org/Documentation/Interface-StatusReport-3
+   -3.
+
+1.8. Installation
 
    The module requires 4 tables in the OpenSIPS database:
    dr_groups, dr_gateways, dr_carriers, dr_rules. The SQL syntax
@@ -1768,7 +1795,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 390 188 13340 5665
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 399 194 13544 5755
    2. Liviu Chircu (@liviuchircu) 148 86 2419 2570
    3. Razvan Crainea (@razvancrainea) 98 51 1168 2223
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
@@ -1807,9 +1834,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2021
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Feb 2022
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2021
+   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2021
    4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Sep 2021
    5.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    6.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
@@ -1832,8 +1859,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Nick
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Nick
    Altmann (@nikbyte), Vlad Patrascu (@rvlad-patrascu), Alexey
    Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai

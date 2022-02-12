@@ -33,6 +33,8 @@ pike Module
 
               1.7.1. E_PIKE_BLOCKED
 
+        1.8. Provided Status/Report Identifiers
+
    2. Developer Guide
    3. Contributors
 
@@ -262,6 +264,22 @@ if (!pike_check_req()) { exit; };
    Parameters:
      * ip - the IP address that has been blocked.
 
+1.8. Provided Status/Report Identifiers
+
+   The module provides the "pike" Status/Report group, only with
+   the "main"/default SR identifier.
+
+   There is no usefull status published by the module.
+
+   In terms of reports/logs, the following events will be
+   reported:
+     * IP X.Y.Z.W detected as flooding
+
+   For how to access and use the Status/Report information, please
+   see
+   https://www.opensips.org/Documentation/Interface-StatusReport-3
+   -3.
+
 Chapter 2. Developer Guide
 
    One single tree (for both IPv4 and IPv6) is used. Each node
@@ -316,7 +334,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 134 56 4151 2665
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 137 58 4206 2669
    2. Andrei Pelinescu-Onciul 15 8 120 336
    3. Razvan Crainea (@razvancrainea) 13 11 94 18
    4. Liviu Chircu (@liviuchircu) 12 9 29 67
@@ -352,9 +370,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   2.  Razvan Crainea (@razvancrainea)     May 2011 - Sep 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2002 - Feb 2022
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
+   3.  Razvan Crainea (@razvancrainea)     May 2011 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Julián Moreno Patiño                Feb 2016 - Feb 2016
@@ -375,13 +393,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Julián Moreno Patiño, Jarrod Baumann
-   (@jarrodb), Norman Brandinger (@NormB), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Jesus Rodrigues,
-   Elena-Ramona Modroiu, Jan Janak (@janakj).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Julián
+   Moreno Patiño, Jarrod Baumann (@jarrodb), Norman Brandinger
+   (@NormB), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona
+   Modroiu, Jan Janak (@janakj).
 
    Documentation Copyrights:
 
