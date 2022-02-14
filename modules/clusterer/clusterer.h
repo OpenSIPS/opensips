@@ -55,7 +55,7 @@
 /* capability flags */
 #define CAP_STATE_OK		(1<<0)
 #define CAP_SYNC_PENDING	(1<<1)
-#define CAP_PKT_BUFFERING	(1<<2)
+#define CAP_SYNC_IN_PROGRESS	(1<<2)
 #define CAP_STATE_ENABLED	(1<<3)
 
 #define CAP_DISABLED 0

@@ -119,6 +119,11 @@ int cl_request_sync(str *capability, int cluster_id)
 		LM_DBG("Sync request already pending\n");
 		return 0;
 	}
+	if (lcap->flags & CAP_SYNC_IN_PROGRESS) {
+		lock_release(cluster->lock);
+		LM_DBG("Sync already in progress\n");
+		return 1;
+	}
 
 	if (!(lcap->flags & CAP_STATE_ENABLED)) {
 		lock_release(cluster->lock);
@@ -493,7 +498,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 
 		lock_get(cluster->lock);
 		/* buffer other types of packets during sync */
-		cap->flags |= CAP_PKT_BUFFERING;
+		cap->flags |= CAP_SYNC_IN_PROGRESS;
 		lock_release(cluster->lock);
 
 		/* overwrite packet type with one identifiable by modules */
@@ -526,7 +531,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		cap->pkt_q_back = NULL;
 
 		/* no more buffered packets to process, stop buffering */
-		cap->flags &= ~CAP_PKT_BUFFERING;
+		cap->flags &= ~CAP_SYNC_IN_PROGRESS;
 		cap->flags |= CAP_STATE_OK;
 
 		/* inform module that sync is finished; this job is also
