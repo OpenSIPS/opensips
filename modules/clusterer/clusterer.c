@@ -1327,7 +1327,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 
 		lock_get(cl->lock);
 
-		if (cl_cap->flags & CAP_PKT_BUFFERING) {
+		if (cl_cap->flags & CAP_SYNC_IN_PROGRESS) {
 			/* buffer regular packets during sync or during processing of
 			 * previously buffered packets */
 			buffer_bin_pkt(packet, cl_cap, source_id);

@@ -1136,6 +1136,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 	struct dlg_cell *dlg;
 	int i;
 	int sync_required;
+	int rc;
 
 	if (ev == SYNC_REQ_RCV && receive_sync_request(node_id) < 0)
 		LM_ERR("Failed to reply to sync request from node: %d\n", node_id);
@@ -1175,9 +1176,12 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 			if (sync_required) {
 				LM_DBG("Requesting sync for dialogs marked with backup "
 					"sharing tags\n");
-				if (clusterer_api.request_sync(&dlg_repl_cap,
-					dialog_repl_cluster) < 0)
-				LM_ERR("Failed to send sync request");
+				rc = clusterer_api.request_sync(&dlg_repl_cap,
+					dialog_repl_cluster);
+				if (rc < 0)
+					LM_ERR("Failed to send sync request");
+				else if (rc == 1)
+					LM_DBG("Sync already in progress");
 			}
 		}
 	}
@@ -1635,6 +1639,7 @@ mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	str shtag;
+	int rc;
 
 	if (!dialog_repl_cluster)
 		return init_mi_error(400, MI_SSTR("Dialog replication disabled"));
@@ -1673,8 +1678,12 @@ mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
 		}
 	}
 
-	if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster) < 0)
+	rc = clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster);
+
+	if (rc < 0)
 		return init_mi_error(400, MI_SSTR("Failed to send sync request"));
+	else if (rc == 1)
+		return init_mi_result_string(MI_SSTR("Sync already in progress"));
 	else
 		return init_mi_result_ok();
 }
