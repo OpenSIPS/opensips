@@ -1356,6 +1356,26 @@ modparam("dialog", "replicate_profiles_expire", 10)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_cluster_auto_sync" xreflabel="cluster_auto_sync">
+		<title><varname>cluster_auto_sync</varname> (string)</title>
+		<para>
+		Specifies whether to automatically issue a sync request (for dialogs
+		marked with a sharing tag in backup state) when a node becomes reachable.
+		A value of <emphasis>1</emphasis> means enabled and <emphasis>0</emphasis>
+		disabled.
+		</para>
+		<para><emphasis>
+			Default value is 1 (enabled).
+		</emphasis></para>
+		<example>
+		<title>Set <varname>cluster_auto_sync</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "cluster_auto_sync", 0)
+...
+</programlisting>
+		</example>
+	</section>
 	</section>
 
 
@@ -2526,27 +2546,6 @@ event_route[E_RTPPROXY_DTMF] {
         unload_dialog_ctx();
     }
 }
-...
-</programlisting>
-		</example>
-	</section>
-
-	<section id="param_cluster_auto_sync" xreflabel="cluster_auto_sync">
-		<title><varname>cluster_auto_sync</varname> (string)</title>
-		<para>
-		Specifies whether to automatically issue a sync request (for dialogs
-		marked with a sharing tag in backup state) when a node becomes reachable.
-		A value of <emphasis>1</emphasis> means enabled and <emphasis>0</emphasis>
-		disabled.
-		</para>
-		<para><emphasis>
-			Default value is 1 (enabled).
-		</emphasis></para>
-		<example>
-		<title>Set <varname>cluster_auto_sync</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("dialog", "cluster_auto_sync", 0)
 ...
 </programlisting>
 		</example>
