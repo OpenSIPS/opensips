@@ -672,7 +672,7 @@ static int pv_parse_idx_cgr(pv_spec_p sp, const str *in)
 					in->len, in->s);
 			return -1;
 		}
-		sp->pvp.pvi.u.dval = sp;
+		sp->pvp.pvi.u.dval = pv;
 		sp->pvp.pvi.type = CGR_PV_NAME_VAR;
 	} else {
 		/* we need to add the null terminator */
