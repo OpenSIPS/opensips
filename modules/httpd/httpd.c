@@ -168,7 +168,7 @@ static int mod_init(void)
 	}
 	if (ip.s) {
 		ip.len = strlen(ip.s);
-		if ( (_ip=str2ip(&ip)) == NULL ) {
+		if ( strcmp(ip.s, "*") && !(_ip=str2ip(&ip)) && !(_ip=str2ip6(&ip))) {
 			LM_ERR("invalid IP [%.*s]\n", ip.len, ip.s);
 			return -1;
 		}

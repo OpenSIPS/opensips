@@ -96,9 +96,7 @@
 		requests.
 		</para>
 		<para>
-		<emphasis>The default value is an empty string.</emphasis>
-		If no IP address is set, then the http server
-		will bind to all available IPs.
+		<emphasis>The default value is "*" </emphasis> (bind to all IPv6 and IPv4 interfaces).
 		</para>
 		<example>
 		<title>Set <varname>ip</varname> parameter</title>

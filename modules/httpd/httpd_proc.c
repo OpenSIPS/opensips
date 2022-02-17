@@ -730,9 +730,9 @@ void httpd_proc(int rank)
 	unsigned int mhd_flags = MHD_USE_DEBUG;
 	unsigned int mhdi_flags;
 	int mhd_opt_n = 0;
-	char *key_pem;
- 	char *cert_pem;
-	struct sockaddr_in saddr_in;
+	char *key_pem, *cert_pem, *ip_repr, ip6buf[1+IP_ADDR_MAX_STR_SIZE+1];
+	void *saddr;
+	struct sockaddr_in saddr4;
 	struct MHD_OptionItem mhd_opts[4];
 	const union MHD_DaemonInfo *dmni;
 	int fd;
@@ -779,27 +779,74 @@ void httpd_proc(int rank)
 	mhd_flags = mhd_flags | MHD_USE_EPOLL;
 	#endif
 
-	memset(&saddr_in, 0, sizeof(saddr_in));
-	if (ip.s)
-		saddr_in.sin_addr.s_addr = inet_addr(ip.s);
-	else
-		saddr_in.sin_addr.s_addr = INADDR_ANY;
-	saddr_in.sin_family = AF_INET;
-	saddr_in.sin_port = htons(port);
+#if ( MHD_VERSION >= 0x000092800 )
+	struct sockaddr_in6 saddr6;
+	if (ip.s && strcmp(ip.s, "*")) {
+		if (q_memchr(ip.s, ':', strlen(ip.s))) {
+			LM_DBG("preparing to listen on IPv6 interface '%s'\n", ip.s);
+			memset(&saddr6, 0, sizeof saddr6);
 
+			if (!inet_pton(AF_INET6, ip.s, &saddr6.sin6_addr)) {
+				LM_ERR("failed to parse 'ip' modparam: %s\n", ip.s);
+				return;
+			}
 
-#if ( MHD_VERSION < 0x000092800 )
-	memcpy( &httpd_server_info, &saddr_in, sizeof(struct sockaddr_in) );
+			saddr6.sin6_family = AF_INET6;
+			saddr6.sin6_port = htons(port);
+			saddr = &saddr6;
+			sprintf(ip6buf, "[%s]", !strcmp(ip.s, "::0") ? "::" : ip.s);
+			ip_repr = ip6buf;
+			mhd_flags |= MHD_USE_IPv6;
+		} else {
+			LM_DBG("preparing to listen on IPv4 interface '%s'\n", ip.s);
+			memset(&saddr4, 0, sizeof saddr4);
+
+			if (!inet_pton(AF_INET, ip.s, &saddr4.sin_addr)) {
+				LM_ERR("failed to parse 'ip' modparam: %s\n", ip.s);
+				return;
+			}
+
+			saddr4.sin_family = AF_INET;
+			saddr4.sin_port = htons(port);
+			saddr = &saddr4;
+			ip_repr = ip.s;
+		}
+	} else {
+		LM_DBG("preparing to listen on all IPv6 + IPv4 interfaces\n");
+		memset(&saddr6, 0, sizeof saddr6);
+
+		saddr6.sin6_addr = in6addr_any;
+		saddr6.sin6_family = AF_INET6;
+		saddr6.sin6_port = htons(port);
+		saddr = &saddr6;
+		ip_repr = "*";
+
+		mhd_flags |= MHD_USE_DUAL_STACK;
+	}
+#else
+	memset(&saddr4, 0, sizeof saddr4);
+	saddr4.sin_family = AF_INET;
+	saddr4.sin_port = htons(port);
+	saddr = &saddr4;
+
+	if (ip.s) {
+		saddr4.sin_addr.s_addr = inet_addr(ip.s);
+		ip_repr = ip.s;
+	} else {
+		saddr4.sin_addr.s_addr = INADDR_ANY;
+		ip_repr = "0.0.0.0";
+	}
+
+	memcpy( &httpd_server_info, &saddr, sizeof(struct sockaddr_in) );
 	httpd_server_info.sin.sin_port = port;
 #endif
 
-
 	LM_DBG("init_child [%d] - [%d] HTTP Server init [%s:%d]\n",
-		rank, getpid(), (ip.s?ip.s:"INADDR_ANY"), port);
-	set_proc_attrs("HTTPD %s:%d", (ip.s?ip.s:"INADDR_ANY"), port);
+		rank, getpid(), ip_repr, port);
+	set_proc_attrs("HTTPD %s:%d", ip_repr, port);
 	dmn = MHD_start_daemon(mhd_flags, port, NULL, NULL,
 			&(answer_to_connection), NULL,
-			MHD_OPTION_SOCK_ADDR, &saddr_in,
+			MHD_OPTION_SOCK_ADDR, saddr,
 			MHD_OPTION_ARRAY, mhd_opts,
 			MHD_OPTION_END);
 
