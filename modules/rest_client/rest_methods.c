@@ -1113,9 +1113,9 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 
 
 	/* resolve ip addresses */
-	if ( !inet_pton( AF_INET, tparam->local_ip, &addr) ) {
+	if ( inet_pton( AF_INET, tparam->local_ip, &addr) <= 0 ) {
 		/* check IPV6 */
-		if ( !inet_pton( AF_INET6, tparam->local_ip, &addr6) ){
+		if ( inet_pton( AF_INET6, tparam->local_ip, &addr6) <= 0 ){
 			LM_ERR("Invalid local ip from curl <%s>\n", tparam->local_ip);
 			return -1;
 		} else {
@@ -1129,9 +1129,9 @@ static int trace_rest_message( rest_trace_param_t* tparam )
 		local_su.sin.sin_addr = addr;
 	}
 
-	if ( !inet_pton( AF_INET, tparam->remote_ip, &addr) ) {
+	if ( inet_pton( AF_INET, tparam->remote_ip, &addr) <= 0) {
 		/* check IPV6 */
-		if ( !inet_pton( AF_INET6, tparam->remote_ip, &addr6) ){
+		if ( inet_pton( AF_INET6, tparam->remote_ip, &addr6) <= 0 ){
 			LM_ERR("Invalid remote ip from curl <%s>\n", tparam->remote_ip);
 			return -1;
 		} else {

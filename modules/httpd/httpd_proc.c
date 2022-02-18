@@ -786,7 +786,7 @@ void httpd_proc(int rank)
 			LM_DBG("preparing to listen on IPv6 interface '%s'\n", ip.s);
 			memset(&saddr6, 0, sizeof saddr6);
 
-			if (!inet_pton(AF_INET6, ip.s, &saddr6.sin6_addr)) {
+			if (inet_pton(AF_INET6, ip.s, &saddr6.sin6_addr) <= 0) {
 				LM_ERR("failed to parse 'ip' modparam: %s\n", ip.s);
 				return;
 			}
@@ -801,7 +801,7 @@ void httpd_proc(int rank)
 			LM_DBG("preparing to listen on IPv4 interface '%s'\n", ip.s);
 			memset(&saddr4, 0, sizeof saddr4);
 
-			if (!inet_pton(AF_INET, ip.s, &saddr4.sin_addr)) {
+			if (inet_pton(AF_INET, ip.s, &saddr4.sin_addr) <= 0) {
 				LM_ERR("failed to parse 'ip' modparam: %s\n", ip.s);
 				return;
 			}

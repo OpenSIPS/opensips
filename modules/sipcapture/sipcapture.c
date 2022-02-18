@@ -1976,9 +1976,9 @@ set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data)
 		/** possible values(string)
 		 * ip address in human readable format
 		 */
-		if (inet_pton(AF_INET, data->s, &h3->addr.ip4_addr.src_ip4.data) == 0) {
+		if (inet_pton(AF_INET, data->s, &h3->addr.ip4_addr.src_ip4.data) <= 0) {
 			/* check if it's ipV6*/
-			if (inet_pton(AF_INET6, data->s, &h3->addr.ip6_addr.src_ip6.data) == 0) {
+			if (inet_pton(AF_INET6, data->s, &h3->addr.ip6_addr.src_ip6.data) <= 0) {
 				RETURN_ERROR("address <<%.*s>> it's neither IPv4 nor IPv6!\n",
 							data->len, data->s);
 			} else {
@@ -2007,9 +2007,9 @@ set_generic_hep_chunk(struct hepv3* h3, unsigned chunk_id, str *data)
 		/** possible values(string)
 		 * ip address in human readable format
 		 */
-		if (inet_pton(AF_INET, data->s, &h3->addr.ip4_addr.dst_ip4.data) == 0) {
+		if (inet_pton(AF_INET, data->s, &h3->addr.ip4_addr.dst_ip4.data) <= 0) {
 			/* check if it's ipV6*/
-			if (inet_pton(AF_INET6, data->s, &h3->addr.ip6_addr.dst_ip6.data) == 0) {
+			if (inet_pton(AF_INET6, data->s, &h3->addr.ip6_addr.dst_ip6.data) <= 0) {
 				RETURN_ERROR("address <<%.*s>> it's neither IPv4 nor IPv6!\n",
 							data->len, data->s);
 			} else {
@@ -3725,14 +3725,14 @@ static int w_set_hep(struct sip_msg* msg, void *id, str *data_s,
 		data_len = data_s->len;
 	} else if (data_type == TYPE_INET_ADDR) {
 		data_len = sizeof(struct in_addr);
-		if (inet_pton(AF_INET, data_s->s, &addr4)==0) {
+		if (inet_pton(AF_INET, data_s->s, &addr4)<=0) {
 			LM_ERR("not an IPv4 address <<%.*s>>!\n",
 					data_s->len, data_s->s);
 			return -1;
 		}
 	} else if (data_type == TYPE_INET6_ADDR) {
 		data_len = sizeof(struct in6_addr);
-		if (inet_pton(AF_INET6, data_s->s, &addr6)==0) {
+		if (inet_pton(AF_INET6, data_s->s, &addr6)<=0) {
 			LM_ERR("not an IPv6 address <<%.*s>>!\n",
 					data_s->len, data_s->s);
 			return -1;
