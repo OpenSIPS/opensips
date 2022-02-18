@@ -224,6 +224,16 @@ void clean_hdr_field(struct hdr_field* hf)
 			free_fcaps((struct fcaps_body **)&hf->parsed);
 			break;
 
+		case HDR_TO_PATH_T:
+		case HDR_FROM_PATH_T:
+		case HDR_MESSAGE_ID_T:
+		case HDR_BYTE_RANGE_T:
+		case HDR_FAILURE_REPORT_T:
+		case HDR_SUCCESS_REPORT_T:
+		case HDR_STATUS_T:
+			/* nothing parsed here */
+			break;
+
 		default:
 			LM_CRIT("unknown header type %d\n", hf->type);
 			break;

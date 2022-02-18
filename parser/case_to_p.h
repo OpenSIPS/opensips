@@ -1,7 +1,5 @@
 /*
- * Route Header Field Name Parsing Macros
- *
- * Copyright (C) 2001-2003 FhG Fokus
+ * Copyright (C) 2022 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -21,31 +19,30 @@
  */
 
 
-#ifndef CASE_SIP_H
-#define CASE_SIP_H
-
-#define atch_CASE                            \
-        switch(LOWER_DWORD(val)) {          \
-        case _atch_:                        \
-                hdr->type = HDR_SIPIFMATCH_T; \
-                p += 4;                     \
-                goto dc_end;                \
-        }
+#ifndef CASE_TO_P_H
+#define CASE_TO_P_H
 
 
-#define ifm_CASE				\
-	switch(LOWER_DWORD(val)) {		\
-	case _ifm_:				\
-		p += 4;				\
-		val = READ(p);			\
-		atch_CASE;			\
-		goto other;			\
+#define ATH1_CASE                            \
+	switch( LOWER_DWORD(val) ) {             \
+		case _ath1_:                         \
+			hdr->type = HDR_TO_PATH_T;       \
+			hdr->name.len = 7;               \
+			return p + 4;                    \
+		case _ath2_:                         \
+			hdr->type = HDR_TO_PATH_T;       \
+			hdr->name.len = 7;               \
+			p += 4;                          \
+			goto dc_cont;                    \
 	}
 
-#define sip_CASE          \
-        p += 4;           \
-        val = READ(p);    \
-        ifm_CASE;         \
-        goto other;
 
-#endif /* CASE_SIP_H */
+#define to_p_CASE         \
+		p += 4;           \
+		val = READ(p);    \
+		ATH1_CASE;        \
+		goto other;
+
+
+#endif /* CASE_TO_P_H */
+

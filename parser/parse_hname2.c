@@ -86,6 +86,12 @@ static inline char* skip_ws(char* p, char *end)
 #include "case_www.h"      /* WWW-Authenticate */
 #include "case_feat.h"     /* Feature-Caps */
 #include "case_repl.h"     /* Replaces */
+#include "case_to_p.h"     /* To-Path */
+#include "case_mess.h"     /* Message-ID */
+#include "case_byte.h"     /* Byte-Range */
+#include "case_fail.h"     /* Failure-Report */
+#include "case_succ.h"     /* Success-Report */
+#include "case_stat.h"     /* Status */
 
 
 /*
@@ -137,6 +143,12 @@ static inline char* skip_ws(char* p, char *end)
 	case _www__: www_CASE;  \
 	case _feat_: feat_CASE; \
 	case _repl_: repl_CASE; \
+	case _to_p_: to_p_CASE; \
+	case _mess_: mess_CASE; \
+	case _byte_: byte_CASE; \
+	case _fail_: fail_CASE; \
+	case _succ_: succ_CASE; \
+	case _stat_: stat_CASE; \
 
 
 #define PARSE_COMPACT(id)      \

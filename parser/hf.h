@@ -92,6 +92,13 @@ enum _hdr_types_t {
 	HDR_MIN_EXPIRES_T			     /**> Min-Expires header field */,
 	HDR_FEATURE_CAPS_T			     /**> Feature-Caps header field */,
 	HDR_REPLACES_T				     /**> Replaces header field */,
+	HDR_TO_PATH_T				     /**> MSRP To-Path header field */,
+	HDR_FROM_PATH_T				     /**> MSRP From-Path header field */,
+	HDR_MESSAGE_ID_T			     /**> MSRP Message-ID header field */,
+	HDR_BYTE_RANGE_T			     /**> MSRP Byte-Range header field */,
+	HDR_FAILURE_REPORT_T		     /**> MSRP Failure-Report header field */,
+	HDR_SUCCESS_REPORT_T		     /**> MSRP Success-Report header field */,
+	HDR_STATUS_T				     /**> MSRP Status header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -158,6 +165,13 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_MIN_EXPIRES_F			HDR_F_DEF(MIN_EXPIRES)
 #define HDR_FEATURE_CAPS_F			HDR_F_DEF(FEATURE_CAPS)
 #define HDR_REPLACES_F				HDR_F_DEF(REPLACES)
+#define HDR_TO_PATH_F				HDR_F_DEF(TO_PATH)
+#define HDR_FROM_PATH_F				HDR_F_DEF(FROM_PATH)
+#define HDR_MESSAGE_ID_F			HDR_F_DEF(MESSAGE_ID)
+#define HDR_BYTE_RANGE_F			HDR_F_DEF(BYTE_RANGE)
+#define HDR_FAILURE_REPORT_F		HDR_F_DEF(FAILURE_REPORT)
+#define HDR_SUCCESS_REPORT_F		HDR_F_DEF(SUCCESS_REPORT)
+#define HDR_STATUS_F				HDR_F_DEF(STATUS)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;

@@ -59,7 +59,10 @@
 #define _expi_ 0x69707865   /* "expi" */
 #define _res2_ 0x20736572   /* "res " */
 #define _res1_ 0x3a736572   /* "res:" */
+
 #define _from_ 0x6d6f7266   /* "from" */
+#define __pat_ 0x7461702d   /* "-pat" */
+
 #define _max__ 0x2d78616d   /* "max-" */
 #define _forw_ 0x77726f66   /* "forw" */
 #define _ards_ 0x73647261   /* "ards" */
@@ -172,7 +175,26 @@
 #define _caps_ 0x73706163   /* "caps" */
 
 #define _repl_ 0x6c706572   /* "repl" for "replaces" */
-#define _aces_ 0x73656361  /* "aces" */
+#define _aces_ 0x73656361   /* "aces" */
 
+#define _to_p_ 0x702d6f74   /* "to-p" for "to-path" */
+#define _ath2_ 0x20687461   /* "ath " */
+#define _ath1_ 0x3a687461   /* "ath:" */
+
+#define _mess_ 0x7373656d   /* "mess" for "message-id" */
+#define _age__ 0x2d656761   /* "age-" */
+#define _id12_ 0x203a6469   /* "id: " */
+
+#define _byte_ 0x65747962   /* "byte" for "byte-range" */
+#define __ran_ 0x6e61722d   /* "-ran" */
+
+#define _fail_ 0x6c696166   /* "fail" for "failure-report" */
+                            /* "ure-" */
+#define _repo_ 0x6f706572   /* "repo" */
+
+#define _succ_ 0x63637573   /* "succ" for "success-report" */
+#define _ess__ 0x2d737365   /* "ess-" */
+
+#define _stat_ 0x74617473   /* "stat" for "status" */
 
 #endif /* KEYS_H */
