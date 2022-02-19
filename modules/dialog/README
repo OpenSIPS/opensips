@@ -67,6 +67,7 @@ dialog Module
               1.6.49. replicate_profiles_check (string)
               1.6.50. replicate_profiles_timer (string)
               1.6.51. replicate_profiles_expire (string)
+              1.6.52. cluster_auto_sync (string)
 
         1.7. Exported Functions
 
@@ -103,8 +104,6 @@ dialog Module
               1.7.24. dlg_on_hangup([route_name])
               1.7.25. dlg_send_sequential(method, leg, [, body] [,
                       content-type] [, headers])
-
-              1.7.26. cluster_auto_sync (string)
 
         1.8. Exported Statistics
 
@@ -231,31 +230,31 @@ dialog Module
    1.49. Set replicate_profiles_check parameter
    1.50. Set replicate_profiles_timer parameter
    1.51. Set replicate_profiles_expire parameter
-   1.52. create_dialog() usage
-   1.53. match_dialog() usage
-   1.54. validate_dialog() usage
-   1.55. fix_route_dialog() usage
-   1.56. get_dialog_info usage
-   1.57. get_dialog_vals usage
+   1.52. Set cluster_auto_sync parameter
+   1.53. create_dialog() usage
+   1.54. match_dialog() usage
+   1.55. validate_dialog() usage
+   1.56. fix_route_dialog() usage
+   1.57. get_dialog_info usage
    1.58. get_dialog_vals usage
    1.59. get_dialog_vals usage
-   1.60. load_dialog_ctx usage
-   1.61. set_dlg_profile usage
-   1.62. unset_dlg_profile usage
-   1.63. is_in_profile usage
-   1.64. get_profile_size usage
-   1.65. set_dlg_flag usage
-   1.66. test_and_set_dlg_flag usage
-   1.67. reset_dlg_flag usage
-   1.68. is_dlg_flag_set usage
-   1.69. store_dlg_value usage
-   1.70. fetch_dlg_value usage
-   1.71. set_dlg_sharing_tag usage
-   1.72. dlg_on_answer usage
-   1.73. dlg_on_timeout usage
-   1.74. dlg_on_hangup usage
-   1.75. dlg_send_sequential usage to convert DTMF codes
-   1.76. Set cluster_auto_sync parameter
+   1.60. get_dialog_vals usage
+   1.61. load_dialog_ctx usage
+   1.62. set_dlg_profile usage
+   1.63. unset_dlg_profile usage
+   1.64. is_in_profile usage
+   1.65. get_profile_size usage
+   1.66. set_dlg_flag usage
+   1.67. test_and_set_dlg_flag usage
+   1.68. reset_dlg_flag usage
+   1.69. is_dlg_flag_set usage
+   1.70. store_dlg_value usage
+   1.71. fetch_dlg_value usage
+   1.72. set_dlg_sharing_tag usage
+   1.73. dlg_on_answer usage
+   1.74. dlg_on_timeout usage
+   1.75. dlg_on_hangup usage
+   1.76. dlg_send_sequential usage to convert DTMF codes
 
 Chapter 1. Admin Guide
 
@@ -1088,6 +1087,19 @@ modparam("dialog", "replicate_profiles_timer", 100)
 modparam("dialog", "replicate_profiles_expire", 10)
 ...
 
+1.6.52. cluster_auto_sync (string)
+
+   Specifies whether to automatically issue a sync request (for
+   dialogs marked with a sharing tag in backup state) when a node
+   becomes reachable. A value of 1 means enabled and 0 disabled.
+
+   Default value is 1 (enabled).
+
+   Example 1.52. Set cluster_auto_sync parameter
+...
+modparam("dialog", "cluster_auto_sync", 0)
+...
+
 1.7. Exported Functions
 
 1.7.1.  create_dialog([flags])
@@ -1124,7 +1136,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.52. create_dialog() usage
+   Example 1.53. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -1163,7 +1175,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.53. match_dialog() usage
+   Example 1.54. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1198,7 +1210,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.54. validate_dialog() usage
+   Example 1.55. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1220,7 +1232,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.55. fix_route_dialog() usage
+   Example 1.56. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1261,7 +1273,7 @@ create_dialog("B");
 
    This function can be used from ALL ROUTES.
 
-   Example 1.56. get_dialog_info usage
+   Example 1.57. get_dialog_info usage
 ...
 if ( get_dialog_info("callee",$avp(callee_array),"caller",$fu,$var(dlg_n
 o)) ) {
@@ -1307,7 +1319,7 @@ $dlg_val(callee) = $ru;
 
    This function can be used from any type of route.
 
-   Example 1.57. get_dialog_vals usage
+   Example 1.58. get_dialog_vals usage
 ...
 if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
         xlog("the call $var(callid) has the variables:\n);
@@ -1343,7 +1355,7 @@ als)[$var(i)])'\n");
 
    This function can be used from any type of route.
 
-   Example 1.58. get_dialog_vals usage
+   Example 1.59. get_dialog_vals usage
 ...
 if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
         xlog("Caller $fU has $avp(dlg_no) other calls \n);
@@ -1382,7 +1394,7 @@ if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 
    This function can be used from any type of route.
 
-   Example 1.59. get_dialog_vals usage
+   Example 1.60. get_dialog_vals usage
 ...
 if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
  {
@@ -1418,7 +1430,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 
    This function can be used from any type of route.
 
-   Example 1.60. load_dialog_ctx usage
+   Example 1.61. load_dialog_ctx usage
 ...
 if (load_dialog_ctx("$var(callid)")) {
         xlog("The dialog '$var(callid)' already has a duration "
@@ -1462,7 +1474,7 @@ if (load_dialog_ctx("$var(callid)")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.61. set_dlg_profile usage
+   Example 1.62. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller",$fu);
@@ -1484,7 +1496,7 @@ set_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. unset_dlg_profile usage
+   Example 1.63. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller",$fu);
@@ -1512,7 +1524,7 @@ unset_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. is_in_profile usage
+   Example 1.64. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1543,7 +1555,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. get_profile_size usage
+   Example 1.65. get_profile_size usage
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1569,7 +1581,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. set_dlg_flag usage
+   Example 1.66. set_dlg_flag usage
 ...
 set_dlg_flag(3);
 ...
@@ -1588,7 +1600,7 @@ set_dlg_flag(3);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. test_and_set_dlg_flag usage
+   Example 1.67. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag(3, 0);
 ...
@@ -1608,7 +1620,7 @@ test_and_set_dlg_flag(3, 0);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. reset_dlg_flag usage
+   Example 1.68. reset_dlg_flag usage
 ...
 reset_dlg_flag(16);
 ...
@@ -1628,7 +1640,7 @@ reset_dlg_flag(16);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. is_dlg_flag_set usage
+   Example 1.69. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set(16)) {
         xlog("dialog flag 16 is set\n");
@@ -1655,7 +1667,7 @@ if (is_dlg_flag_set(16)) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.69. store_dlg_value usage
+   Example 1.70. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip",$si);
 store_dlg_value("account type","prepaid");
@@ -1683,7 +1695,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.70. fetch_dlg_value usage
+   Example 1.71. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip",$avp(2));
 fetch_dlg_value("account type",$var(account));
@@ -1709,7 +1721,7 @@ $var(account) = $dlg_val(account_type);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.71. set_dlg_sharing_tag usage
+   Example 1.72. set_dlg_sharing_tag usage
 ...
 set_dlg_sharing_tag("vip1");
 ...
@@ -1734,7 +1746,7 @@ set_dlg_sharing_tag("vip1");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.72. dlg_on_answer usage
+   Example 1.73. dlg_on_answer usage
 ...
 create_dialog();
 dlg_on_answer("dlg_answered");
@@ -1769,7 +1781,7 @@ route[dlg_answered] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.73. dlg_on_timeout usage
+   Example 1.74. dlg_on_timeout usage
 ...
 create_dialog();
 $DLG_timeout=120;
@@ -1803,7 +1815,7 @@ route[dlg_timeout] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.74. dlg_on_hangup usage
+   Example 1.75. dlg_on_hangup usage
 ...
 create_dialog();
 dlg_on_hangup("dlg_hangup");
@@ -1837,7 +1849,7 @@ route[dlg_hangup] {
 
    This function can be used from ANY route.
 
-   Example 1.75. dlg_send_sequential usage to convert DTMF codes
+   Example 1.76. dlg_send_sequential usage to convert DTMF codes
 ...
 event_route[E_RTPPROXY_DTMF] {
     if (load_dialog_ctx("$param(id)", "did")) {
@@ -1852,19 +1864,6 @@ event_route[E_RTPPROXY_DTMF] {
         unload_dialog_ctx();
     }
 }
-...
-
-1.7.26. cluster_auto_sync (string)
-
-   Specifies whether to automatically issue a sync request (for
-   dialogs marked with a sharing tag in backup state) when a node
-   becomes reachable. A value of 1 means enabled and 0 disabled.
-
-   Default value is 1 (enabled).
-
-   Example 1.76. Set cluster_auto_sync parameter
-...
-modparam("dialog", "cluster_auto_sync", 0)
 ...
 
 1.8. Exported Statistics
@@ -2491,7 +2490,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 437 276 12828 3411
    2. Razvan Crainea (@razvancrainea) 260 195 4883 1485
    3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
-   4. Vlad Patrascu (@rvlad-patrascu) 177 93 3724 3203
+   4. Vlad Patrascu (@rvlad-patrascu) 179 95 3756 3227
    5. Liviu Chircu (@liviuchircu) 159 115 2844 1203
    6. Ovidiu Sas (@ovidiusas) 32 25 494 120
    7. Dan Pascu (@danpascu) 30 25 233 179
@@ -2533,7 +2532,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2022
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Feb 2022
    2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2022
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Nov 2021
    4.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
@@ -2565,8 +2564,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Liviu Chircu (@liviuchircu), Bogdan-Andrei
    Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Zero King
    (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
    Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel

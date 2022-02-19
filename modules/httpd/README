@@ -111,8 +111,8 @@ Chapter 1. Admin Guide
    The IP address used by the HTTP server to listen for incoming
    requests.
 
-   The default value is an empty string. If no IP address is set,
-   then the http server will bind to all available IPs.
+   The default value is "*" (bind to all IPv6 and IPv4
+   interfaces).
 
    Example 1.1. Set ip parameter
 ...
@@ -271,7 +271,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Ovidiu Sas (@ovidiusas) 47 30 1667 147
    2. Razvan Crainea (@razvancrainea) 24 21 118 68
-   3. Liviu Chircu (@liviuchircu) 16 14 69 55
+   3. Liviu Chircu (@liviuchircu) 20 16 136 77
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 14 12 103 54
    5. Vlad Patrascu (@rvlad-patrascu) 10 7 52 89
    6. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
@@ -302,7 +302,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2022
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2022
    2.  Razvan Crainea (@razvancrainea)     Mar 2015 - Oct 2021
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
    4.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
