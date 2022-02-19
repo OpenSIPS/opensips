@@ -666,11 +666,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	}else if (scheme==TEL_SCH){
 		uri->type=TEL_URI_T;
 	}else if (scheme==URN_SERVICE_SCH){
-		if (memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
+		if ((end-(buf+3)) >= URN_SERVICE_STR_LEN
+		        && memcmp(buf+3,URN_SERVICE_STR,URN_SERVICE_STR_LEN) == 0) {
 			p+= URN_SERVICE_STR_LEN-1;
 			uri->type=URN_SERVICE_URI_T;
 		}
-		else if (memcmp(buf+3,URN_NENA_SERVICE_STR,URN_NENA_SERVICE_STR_LEN) == 0) {
+		else if ((end-(buf+3)) >= URN_NENA_SERVICE_STR_LEN
+		        && memcmp(buf+3,URN_NENA_SERVICE_STR,URN_NENA_SERVICE_STR_LEN) == 0) {
 			p+= URN_NENA_SERVICE_STR_LEN-1;
 			uri->type=URN_NENA_SERVICE_URI_T;
 		}else goto error_bad_uri;
