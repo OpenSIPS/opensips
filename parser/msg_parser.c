@@ -701,8 +701,8 @@ int parse_msg(char* buf, unsigned int len, struct sip_msg* msg)
 	hdr_flags_t flags;
 
 	/* eat crlf from the beginning */
-	for (tmp=buf; (*tmp=='\n' || *tmp=='\r')&&
-			(unsigned int)(tmp-buf) < len ; tmp++);
+	for (tmp=buf; (unsigned int)(tmp-buf) < len
+	        && (*tmp=='\n' || *tmp=='\r'); tmp++);
 	offset=tmp-buf;
 	fl=&(msg->first_line);
 	rest=parse_first_line(tmp, len-offset, fl);
