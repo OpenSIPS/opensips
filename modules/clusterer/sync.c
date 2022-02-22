@@ -515,7 +515,6 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 {
 	str cap_name;
 	struct local_cap *cap;
-	struct buf_bin_pkt *buf_pkt, *buf_tmp;
 	int data_version;
 	int no_sync_chunks;
 
