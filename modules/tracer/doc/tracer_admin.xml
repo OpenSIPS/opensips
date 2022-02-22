@@ -398,6 +398,7 @@ modparam("tracer", "file_mode", 0644)
 				</listitem>
 			</itemizedlist>
 			<para>If both <emphasis>C</emphasis> and <emphasis>c</emphasis> flags are missing, tracing of both sides/legs is assumed.</para>
+			<para>NOTE these flags are supported only by transactional and dialog tracing</para>
 		</listitem>
 
 		<listitem>

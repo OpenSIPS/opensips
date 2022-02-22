@@ -1368,6 +1368,12 @@ static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
 	/* context for the request message */
 	SET_TRACER_CONTEXT( info );
 
+	if (t==T_UNDEFINED) {
+		/* Negative hop-by-hop ACK shouldn't be here */
+		LM_BUG("undefined transaction received here\n");
+		return 0;
+	}
+
 	if (t==NULL) {
 		/* the only situation when we do not have a transaction, is for
 		 * UAS/inbound ACK request, so trace it as a standalone msg */
