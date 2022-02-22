@@ -1091,9 +1091,15 @@ logic_notify:
 
 		tm_tran = tmb.t_gett();
 
-		/* start tracing for this transaction */
-		b2b_run_tracer( dlg, msg, tm_tran);
-	
+		/* if a valid transaction was created, trace it
+		   NOTE that the end2end ACK forms a separate transaction
+		   (even if TM will return a NULL transaction) and
+		   we will trace it as standalone request, while a negative hop-by-hop ACK
+		   (part of INVITE transaction) we will get T_UNDEFINED, so not to be traced
+		*/
+		if (tm_tran != T_UNDEFINED)
+			b2b_run_tracer(dlg, msg, tm_tran);
+
 		if(method_value != METHOD_ACK)
 		{
 			if(method_value == METHOD_UPDATE)
