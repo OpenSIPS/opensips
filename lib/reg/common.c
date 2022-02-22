@@ -38,16 +38,25 @@ int reg_init_globals(void)
 	realm_prefix.len = strlen(realm_prefix.s);
 	rcv_param.len = strlen(rcv_param.s);
 
-	if (min_expires > default_expires) {
-		LM_ERR("min_expires > default_expires! "
-		       "Decreasing min_expires to %d...\n", default_expires);
-		min_expires = default_expires;
+	if (max_expires && max_expires < min_expires) {
+		LM_ERR("max_expires (%d) < min_expires (%d), "
+		       "bumping max_expires up to %d\n", max_expires,
+		       min_expires, min_expires);
+		max_expires = min_expires;
 	}
 
-	if (max_expires && max_expires < default_expires) {
-		LM_ERR("max_expires < default_expires! "
-		       "Increasing max_expires to %d...\n", default_expires);
-		max_expires = default_expires;
+	if (default_expires < min_expires) {
+		LM_ERR("default_expires (%d) < min_expires (%d), "
+		       "bumping default_expires up to %d\n", default_expires,
+		       min_expires, min_expires);
+		default_expires = min_expires;
+	}
+
+	if (max_expires && default_expires > max_expires) {
+		LM_ERR("default_expires (%d) > max_expires (%d), "
+		       "bumping default_expires down to %d\n", default_expires,
+		       max_expires, max_expires);
+		default_expires = max_expires;
 	}
 
 	/* Normalize default_q parameter */
