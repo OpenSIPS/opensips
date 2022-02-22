@@ -32,7 +32,7 @@
 #include "api.h"
 
 #define BIN_VERSION 1
-#define BIN_SYNC_VERSION 2
+#define BIN_SYNC_VERSION 3
 #define DEFAULT_PING_INTERVAL 4
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
@@ -101,6 +101,8 @@ struct local_cap {
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
 	struct timeval sync_req_time;
+	int sync_total_chunks_cnt;
+	int sync_cur_chunks_cnt;
 	unsigned int flags;
 	struct local_cap *next;
 };
@@ -113,6 +115,7 @@ struct remote_cap {
 
 struct packet_rpc_params {
 	struct capability_reg *cap;
+	int cluster_id;
 	int pkt_src_id;
 	int pkt_type;
 	str pkt_buf;
@@ -187,6 +190,7 @@ int get_capability_status(struct cluster_info *cluster, str *capability);
 
 int run_rcv_mi_cmd(str *cmd_name, str *cmd_params_arr, int no_params);
 
-int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap);
+int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
+	int cluster_id);
 
 #endif  /* CLUSTERER_H */

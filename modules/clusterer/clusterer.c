@@ -1165,6 +1165,7 @@ exit:
 void run_mod_packet_cb(int sender, void *param)
 {
 	extern char *next_data_chunk;
+	extern int no_sync_chunks_iter;
 	struct packet_rpc_params *p = (struct packet_rpc_params *)param;
 	bin_packet_t packet;
 	str cap_name;
@@ -1179,14 +1180,21 @@ void run_mod_packet_cb(int sender, void *param)
 		bin_pop_str(&packet, &cap_name);
 		bin_pop_int(&packet, &data_version);
 		next_data_chunk = NULL;
+		no_sync_chunks_iter = 0;
 	}
 
 	p->cap->packet_cb(&packet);
 
+	if (packet.type == SYNC_PACKET_TYPE)
+		/* update the number of processed sync chunks and
+		 * run sync end actions if necessary */
+		update_sync_chunks_cnt(p->cluster_id, &cap_name, p->pkt_src_id);
+
 	shm_free(param);
 }
 
-int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap)
+int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap,
+	int cluster_id)
 {
 	struct packet_rpc_params *params;
 
@@ -1203,6 +1211,7 @@ int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap)
 	params->cap = cap;
 	params->pkt_src_id = packet->src_id;
 	params->pkt_type = packet->type;
+	params->cluster_id = cluster_id;
 
 	if (ipc_dispatch_rpc(run_mod_packet_cb, params) < 0) {
 		LM_ERR("Failed to dispatch rpc\n");
@@ -1347,7 +1356,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			lock_stop_read(cl_list_lock);
 			packet->src_id = source_id;
 
-			if (ipc_dispatch_mod_packet(packet, cap) < 0)
+			if (ipc_dispatch_mod_packet(packet, cap, cluster_id) < 0)
 				LM_ERR("Failed to dispatch handling of module packet\n");
 
 			return;

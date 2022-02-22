@@ -131,6 +131,9 @@ int cl_request_sync(str *capability, int cluster_id)
 		return 0;
 	}
 
+	lcap->sync_total_chunks_cnt = 0;
+	lcap->sync_cur_chunks_cnt = 0;
+
 	/* node is no longer OK for this capability if it previously were */
 	if (lcap->flags & CAP_STATE_OK) {
 		lcap->flags &= ~CAP_STATE_OK;
@@ -164,6 +167,8 @@ int cl_request_sync(str *capability, int cluster_id)
 
 	return 0;
 }
+
+static int no_sync_chunks_sent;
 
 bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
                                   short data_version)
@@ -229,8 +234,12 @@ bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
 	bin_get_buffer(sync_packet_snd, &bin_buffer);
 	sync_prev_buf_len = bin_buffer.len;
 
+	no_sync_chunks_sent++;
+
 	return sync_packet_snd;
 }
+
+int no_sync_chunks_iter;
 
 /* this mechanism allows modules to ignore all or part of a sync chunk
  * without disrupting the sequencing / consuming of the remaining data */
@@ -279,6 +288,8 @@ int cl_sync_chunk_iter(bin_packet_t *packet)
 		return 0;
 	}
 
+	no_sync_chunks_iter++;
+
 	next_data_chunk = packet->front_pointer + next_chunk_sz;
 	return 1;
 }
@@ -302,6 +313,8 @@ void send_sync_repl(int sender, void *param)
 		lock_stop_read(cl_list_lock);
 		return;
 	}
+
+	no_sync_chunks_sent = 0;
 
 	cap->reg.event_cb(SYNC_REQ_RCV, p->node_id);
 
@@ -329,6 +342,7 @@ void send_sync_repl(int sender, void *param)
 		return;
 	}
 	bin_push_str(&sync_end_pkt, &p->cap_name);
+	bin_push_int(&sync_end_pkt, no_sync_chunks_sent);
 	msg_add_trailer(&sync_end_pkt, p->cluster->cluster_id, p->node_id);
 
 	if (clusterer_send_msg(&sync_end_pkt, p->cluster->cluster_id, p->node_id,
@@ -464,6 +478,38 @@ int ipc_dispatch_buf_pkt(struct buf_bin_pkt *buf_pkt,
 	return 0;
 }
 
+void handle_sync_end(cluster_info_t *cluster, struct local_cap *cap,
+	int source_id)
+{
+	struct buf_bin_pkt *buf_pkt, *buf_tmp;
+
+	/* post-sync phase */
+	buf_pkt = cap->pkt_q_front;
+	while (buf_pkt) {
+		ipc_dispatch_buf_pkt(buf_pkt, &cap->reg, source_id);
+
+		buf_tmp = buf_pkt;
+		buf_pkt = buf_pkt->next;
+		/* do shm_free() instead of bin_free_packet() becuase the buffer
+		 * in bin_packet_t points to the shm buf in struct buf_bin_pkt */
+		shm_free(buf_tmp->buf.s);
+		shm_free(buf_tmp);
+	}
+
+	cap->pkt_q_front = NULL;
+	cap->pkt_q_back = NULL;
+
+	/* no more buffered packets to process, stop buffering */
+	cap->flags &= ~CAP_SYNC_IN_PROGRESS;
+	cap->flags |= CAP_STATE_OK;
+
+	/* inform module that sync is finished; this job is also dispatched */
+	ipc_dispatch_buf_pkt(NULL, &cap->reg, source_id);
+
+	/* send update about the state of this capability */
+	send_single_cap_update(cluster, cap, 1);
+}
+
 void handle_sync_packet(bin_packet_t *packet, int packet_type,
 								cluster_info_t *cluster, int source_id)
 {
@@ -471,6 +517,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 	struct local_cap *cap;
 	struct buf_bin_pkt *buf_pkt, *buf_tmp;
 	int data_version;
+	int no_sync_chunks;
 
 	if (get_bin_pkg_version(packet) != BIN_SYNC_VERSION) {
 		LM_INFO("discarding sync packet version %d, need version %d\n",
@@ -506,41 +553,21 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		packet->src_id = source_id;
 		set_bin_pkg_version(packet, (short)data_version);
 
-		if (ipc_dispatch_mod_packet(packet, &cap->reg) < 0)
+		if (ipc_dispatch_mod_packet(packet, &cap->reg, cluster->cluster_id) < 0)
 			LM_ERR("Failed to dispatch handling of module packet\n");
 	} else { /* CLUSTERER_SYNC_END */
 		LM_INFO("Received all sync packets for capability '%.*s' in "
 		        "cluster %d\n", cap_name.len, cap_name.s, cluster->cluster_id);
 
+		bin_pop_int(packet, &no_sync_chunks);
+
 		lock_get(cluster->lock);
 
-		/* post-sync phase */
-		buf_pkt = cap->pkt_q_front;
-		while (buf_pkt) {
-			ipc_dispatch_buf_pkt(buf_pkt, &cap->reg, source_id);
+		cap->sync_total_chunks_cnt = no_sync_chunks;
 
-			buf_tmp = buf_pkt;
-			buf_pkt = buf_pkt->next;
-			/* do shm_free() instead of bin_free_packet() becuase the buffer
-			 * in bin_packet_t points to the shm buf in struct buf_bin_pkt */
-			shm_free(buf_tmp->buf.s);
-			shm_free(buf_tmp);
-		}
-
-		cap->pkt_q_front = NULL;
-		cap->pkt_q_back = NULL;
-
-		/* no more buffered packets to process, stop buffering */
-		cap->flags &= ~CAP_SYNC_IN_PROGRESS;
-		cap->flags |= CAP_STATE_OK;
-
-		/* inform module that sync is finished; this job is also
-		 * dispatched in order to be processed _after_ all the buffered packets
-		 * */
-		ipc_dispatch_buf_pkt(NULL, &cap->reg, source_id);
-
-		/* send update about the state of this capability */
-		send_single_cap_update(cluster, cap, 1);
+		/* if all chunks have been processed run the sync end actions */
+		if (cap->sync_cur_chunks_cnt == no_sync_chunks)
+			handle_sync_end(cluster, cap, source_id);
 
 		lock_release(cluster->lock);
 	}
@@ -587,3 +614,45 @@ int buffer_bin_pkt(bin_packet_t *packet, struct local_cap *cap, int src_id)
 	return 0;
 }
 
+int update_sync_chunks_cnt(int cluster_id, str *cap_name, int source_id)
+{
+	cluster_info_t *cluster;
+	struct local_cap *cap;
+
+	lock_start_read(cl_list_lock);
+
+	cluster = get_cluster_by_id(cluster_id);
+	if (!cluster) {
+		LM_ERR("unknown cluster, id [%d]\n", cluster_id);
+		goto error;
+	}
+
+	for (cap = cluster->capabilities; cap; cap = cap->next)
+		if (!str_strcmp(&cap->reg.name, cap_name))
+			break;
+	if (!cap) {
+		LM_ERR("capability: %.*s not found in cluster info\n",
+			cap_name->len, cap_name->s);
+		goto error;
+	}
+
+	lock_get(cluster->lock);
+
+	cap->sync_cur_chunks_cnt += no_sync_chunks_iter;
+
+	/* if we know the total number of chunks and this is the last chunk,
+	 * run the sync end actions */
+	if (cap->sync_total_chunks_cnt != 0 &&
+		cap->sync_cur_chunks_cnt == cap->sync_total_chunks_cnt)
+		handle_sync_end(cluster, cap, source_id);
+
+	lock_release(cluster->lock);
+
+	lock_stop_read(cl_list_lock);
+
+	return 0;
+
+error:
+	lock_stop_read(cl_list_lock);
+	return -1;
+}
