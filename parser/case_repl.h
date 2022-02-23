@@ -23,26 +23,18 @@
 #ifndef CASE_REPL_H
 #define CASE_REPL_H
 
-#define repl_CASE              \
-	switch(LOWER_DWORD(val)) { \
-		case _repl_:           \
-			p += 4;            \
-			val = READ(p);     \
-			aces_CASE;         \
-			goto other;        \
-	}
+#define repl_CASE          \
+		p += 4;            \
+		val = READ(p);     \
+		aces_CASE;         \
+		goto other;        \
 
-#define aces_CASE                               \
-	switch(LOWER_DWORD(val)) {                  \
-		case _aces_:                            \
-			p += 4;                             \
-			if (*p == ':') {                    \
-				hdr->type = HDR_REPLACES_T;     \
-				hdr->name.len = 8;              \
-				return p + 1;                   \
-			}                                   \
-			p++;                                \
-			goto dc_cont;                       \
-		}
+#define aces_CASE                         \
+	if (LOWER_DWORD(val) == _aces_) {     \
+		hdr->type = HDR_REPLACES_T;       \
+		hdr->name.len = 8;                \
+		p += 4;                           \
+		goto dc_cont;                     \
+	}
 
 #endif /* CASE_REPL_H */
