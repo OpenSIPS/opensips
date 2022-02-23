@@ -1532,7 +1532,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case TELS_URI_T:
 			/* fix tel uris, move the number in uri and empty the host */
 			uri->user=uri->host;
-			uri->host.s="";
+			/* TEL does not have a host part, still most of the code expects
+			 * one, so lets keep the pointer, but set a 0 length */
 			uri->host.len=0;
 			break;
 		case SIP_URI_T:
@@ -1543,8 +1544,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case URN_NENA_SERVICE_URI_T:
 			uri->user.s=0;
 			uri->user.len=0;
-			uri->host.s="";
-			uri->host.len=0;
+			/* keep the service name as host part */
 			break;
 		case ERROR_URI_T:
 			LM_ERR("unexpected error (BUG?)\n");
