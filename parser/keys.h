@@ -197,4 +197,6 @@
 
 #define _stat_ 0x74617473   /* "stat" for "status" */
 
+#define _use__ 0x2d657375   /* "use-" for "use-path" */
+
 #endif /* KEYS_H */

@@ -231,6 +231,7 @@ void clean_hdr_field(struct hdr_field* hf)
 		case HDR_FAILURE_REPORT_T:
 		case HDR_SUCCESS_REPORT_T:
 		case HDR_STATUS_T:
+		case HDR_USE_PATH_T:
 			/* nothing parsed here */
 			break;
 

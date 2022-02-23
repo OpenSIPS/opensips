@@ -99,6 +99,7 @@ enum _hdr_types_t {
 	HDR_FAILURE_REPORT_T		     /**> MSRP Failure-Report header field */,
 	HDR_SUCCESS_REPORT_T		     /**> MSRP Success-Report header field */,
 	HDR_STATUS_T				     /**> MSRP Status header field */,
+	HDR_USE_PATH_T				     /**> MSRP Use-Path header field */,
 	HDR_EOH_T					     /**< Some other header field */
 };
 
@@ -172,6 +173,7 @@ typedef unsigned long long hdr_flags_t;
 #define HDR_FAILURE_REPORT_F		HDR_F_DEF(FAILURE_REPORT)
 #define HDR_SUCCESS_REPORT_F		HDR_F_DEF(SUCCESS_REPORT)
 #define HDR_STATUS_F				HDR_F_DEF(STATUS)
+#define HDR_USE_PATH_F				HDR_F_DEF(USE_PATH)
 #define HDR_OTHER_F					HDR_F_DEF(OTHER)
 
 typedef enum _hdr_types_t hdr_types_t;
