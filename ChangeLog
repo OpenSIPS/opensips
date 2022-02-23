@@ -1,3 +1,457 @@
+=========================== Release 3.2.5 ==============================
+
+2022-02-23  Liviu Chircu  <liviu at opensips dot org>
+	* [847f341db] :
+
+	Bump version to 3.2.5
+
+
+2022-02-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [31d99cdaa] :
+
+	Fix switch-case levels for Replaces and Feature-Caps header name parsing
+	(cherry picked from commit 6b49736cca0d1e8ebf0440cf51f95a08f31b9222)
+
+
+2022-02-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b2dffe4b5] :
+
+	[core] fix parse_uri() parsing
+	Issue discovered during OpenSIPS Security Audit 2022,
+		by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-358f-935m-7p9c
+
+
+2022-02-22  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [35dfd3a20] :
+
+	Merge pull request #2757 from nikbyte/master
+	Fix crash in tracer module when negative hop-by-hop ACK received during b2b tracing
+	(cherry picked from commit 34f3947b48640cfede8b0d281a6d32163057c3d6)
+
+
+2022-02-22  Liviu Chircu  <liviu at opensips dot org>
+	* [a275c41a9] :
+
+	parse_msg: Fix possible buffer read overflow with whitespace input
+	Fixes OSS-Fuzz#44887
+	(cherry picked from commit a880e1faee1df2b23054de13689de97b2ec08f28)
+
+
+2022-02-22  Liviu Chircu  <liviu at opensips dot org>
+	* [0a0c8a0eb] :
+
+	parse_uri: Fix possible buffer read overflow with urn: URIs
+	Fixes OSS-Fuzz#39800
+	(cherry picked from commit 0b6e9db4fcdcd1ff91e4727be07c95ecef26c50d)
+
+
+2022-02-18  Liviu Chircu  <liviu at opensips dot org>
+	* [886d1ebc6] :
+
+	Fix inet_pton() error handling in various modules
+	(cherry picked from commit 594a5140a4677ed2d21c7d7d997c8d92ffb94597)
+
+
+2022-02-16  Razvan Crainea  <razvan at opensips dot org>
+	* [b7c9aa588] :
+
+	cgrates: properly parse $cgr index
+	Many thanks to Sergei Lavrov (@ccppprogrammer) for reporting it
+	Close #2737
+	(cherry picked from commit b6c4beb3547ec2bcc1b8ad9e9f508c34064d19c1)
+
+
+2022-02-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [175dc99ee] :
+
+	dialog docs: put the cluster_auto_sync param in the proper section
+	(cherry picked from commit 25ba2d55b3bb70ede77b242cfd9f1e7ff75b2be1)
+
+
+2022-02-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [86064cbb7] :
+
+	clusterer: fix crashes when loading bad local node URL from DB
+	Closes #2746
+	(cherry picked from commit e9932270ba593f2c95f7cc572cbb67e0174040d9)
+
+
+2022-02-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [7d6d840fa] :
+
+	clusterer: fix sync status when attempting to overlap sync requests
+	In the case of dialog syncing, this would lead to incorrectly discarding
+	received dialogs marked with an active sharing tag, when the "auto_sync"
+	feature is enabled(default).
+	(cherry picked from commit 2e0cf9b53d8b33efd8f4e3a439a73c195abdf75b)
+
+
+2022-02-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c6252d79e] :
+
+	[uac_redirect] update script sample in docs
+	Reported by Slava Bendersky
+	(cherry picked from commit 14179bf7e0c7b3d5a3fe321cedc76afbcb9b4476)
+
+
+2022-02-11  Vlad Patrascu  <vladp at opensips dot org>
+	* [a5d8ba8af] :
+
+	b2b_logic: fix and document the b2b_terminate_call MI command
+	Closes #2530
+	(cherry picked from commit 0a6b2607fcf3282c941e4dedae122ddfc2fd927a)
+
+
+2022-02-10  Liviu Chircu  <liviu at opensips dot org>
+	* [6da81c2ac] :
+
+	fraud_detection: Complete previous commit
+	(cherry picked from commit dea72f1c47eca22b14773aa23e70158e21448382)
+
+
+2022-02-10  Liviu Chircu  <liviu at opensips dot org>
+	* [6128df70d] :
+
+	fraud_detection: Fix the 'call duration' events
+	The 'call duration' events were not being raised anymore since commit
+	a0fcf857ddb, due to the mismatching callback type check in
+	dialog_terminate_CB().
+
+	Also rework commit a0fcf857ddb, where instead of switching the
+	decrement operation on the DLGCB_DESTROY callback (to guarantee it only
+	gets called one time), we just store and use a boolean marker, thus
+	achieving the same effect but while using the optimal callbacks!
+	(cherry picked from commit 7aa272aec749702627404c0d518b4b4fada5ec93)
+
+
+2022-02-09  Razvan Crainea  <razvan at opensips dot org>
+	* [f9b259311] :
+
+	proto_tls: disable async by default
+	According to ticket #2724, async tls might lead to unexpected behavior.
+	We are disabling it by default until we figure out what is going on and
+	fix the core problem.
+
+
+2022-01-31  Liviu Chircu  <liviu at opensips dot org>
+	* [28101e124] :
+
+	Re-introduce the $rT (top route type) variable
+	Although the recently introduced $route variable holds all necessary
+	information (including route type), saying $rT (just as before) is
+	preferable to the convoluted $(route[-1]{s.select,0,[}) alternative.
+
+	Many thanks to Nick Altmann / Bogdan Iancu for pointing this out!
+
+
+2022-01-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [22c63d06f] :
+
+	dialog: fix previous commit
+	(cherry picked from commit 7ab192753b3d14a87357099cb830b8152c4c8bd7)
+
+
+2022-01-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [25f43caaf] :
+
+	dialog: fix crash when dropping unsynced dialogs
+	(cherry picked from commit da47168d02a9359de5f95ab83f6f040bbb7c9db9)
+
+
+2022-01-28  John Burke  <john at voxtelesys dot net>
+	* [e1c137a6c] :
+
+	db: add `DB_BLOB` to string parsing macro
+	Mysql/Mariadb return BLOB type when `group_concat_max_len`<=512. This will only occur when using custom SQL schema for OpenSIPS tables (such as VIEWs).
+	(cherry picked from commit 969a5a304df20b875d53259950c234f80c48d41a)
+
+
+2022-01-28  John Burke  <john at voxtelesys dot net>
+	* [3038ba2c9] :
+
+	domain: add support for `DB_BLOB` attrs type
+	(cherry picked from commit 0ed1ee5726c470f95de40bfff04b8d47b73e9e86)
+
+
+2022-01-28  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [16d73398c] :
+
+	Force re-connection on the new MySQL 4031 code
+	ER_CLIENT_INTERACTION_TIMEOUT in MySQL and
+	ER_REFERENCED_TRG_DOES_NOT_EXIST in MariaDB
+	(cherry picked from commit cde6757a3ebaaea09949107c2a49536681c8a88e)
+
+
+2022-01-26  Razvan Crainea  <razvan at opensips dot org>
+	* [fc00a66c9] :
+
+	cgrates: properly restore replication acc and dst
+	Credits go to Barnaby Ritchley (from sipsynergy) for reporting it.
+	(cherry picked from commit 914f95aeff075d61843b4b54d11f0e21af8d75cd)
+
+
+2022-01-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [cfd879188] :
+
+	dialog: fix crash when receiving replicated cseq update
+	Prevent crash when receiving a cseq update for an unknown dialog.
+	The dialog may be already deleted due to timeout or other unexpected
+	race conditions.
+
+	Fixes #2651
+	(cherry picked from commit bd7f5e4b7ab215c4affe72e927013f0033088836)
+
+
+2022-01-25  Liviu Chircu  <liviu at opensips dot org>
+	* [070dfa0fa] :
+
+	httpd: Fix ending newline in DBG log
+	(cherry picked from commit 29188a85d5da0bbcf2b28a0ccd041d29fd17e858)
+
+
+2022-01-25  Liviu Chircu  <liviu at opensips dot org>
+	* [4541680d3] :
+
+	mid_registrar: Skip usrloc callbacks for foreign domains
+	In case mid_registrar is used alongside registrar using separate domains
+	(location tables), then mid_registrar must not process any callbacks for
+	Contacts/AORs which it is not responsible for.
+
+	A similar logic should be added for registrar as well, however it
+	currently does not subscribe to any usrloc callbacks.
+
+	Fixes #2716
+	(cherry picked from commit 30cdbd674eb6a974088e531a8206659c494f5868)
+
+	mid_registrar: Improve previous commit
+
+	Check the domain list for duplicates before appending a new one.
+
+	(cherry picked from commit c5d884e60d1a708fd49540b622c66cfb6eb170b1)
+
+
+2022-01-21  Razvan Crainea  <razvan at opensips dot org>
+	* [19f1541ff] :
+
+	rtpproxy/rtpengine: update sockets when a node is forced
+	(cherry picked from commit 8b4f8d19087e67f01d7b9b999125494add65c769)
+
+
+2022-01-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [6f8a184b7] :
+
+	xml: allow '.' character in node name
+	Fixes #2420
+	(cherry picked from commit d28805f9bc10b8dce5dc2ec45ab953b46b14a76f)
+
+
+2022-01-20  Razvan Crainea  <razvan at opensips dot org>
+	* [a0b9fa786] :
+
+	rabbitmq: proper detection of AMQP version
+	completes previous commit
+	(cherry picked from commit 6982bad6dc0d5e3ef3f95668a8dc899dfe0318cf)
+
+
+2022-01-20  Razvan Crainea  <razvan at opensips dot org>
+	* [03c30ec20] :
+
+	rabbitmq: fix amqp_ssl_socket_get_context version detection
+	Completes commit f7877f9c
+
+	Thanks go to @axyi on GitHub for reporting this. Close #2713
+	(cherry picked from commit 8e4b17adc939af92c0a4de8a08b8fa9e6f42caed)
+
+
+2022-01-19  Razvan Crainea  <razvan at opensips dot org>
+	* [a179e2dd8] :
+
+	rtpengine: only re-negociate used node during offer
+	(cherry picked from commit b5049ac5614d97899deca0635eea3b3f75c81066)
+
+
+2022-01-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [e60d6e1bf] :
+
+	tls_wolfssl: change remote of wolfssl submodule to official repo
+	(cherry picked from commit 75350ef3ffe3cc80cce11aae58dc00617c23cecc)
+
+
+2022-01-18  Vlad Patrascu  <vladp at opensips dot org>
+	* [f3a3a2640] :
+
+	tls_wolfssl: properly fix crash when clearing the error queue
+	Make sure the wolfssl error queue is empty after module init so that
+	multiple processes would not try to free the same elements. Drop the
+	custom locking callbacks mechanism introduced in commit 0b75867, as each
+	process allocates it's own queue elements even though shm is used.
+
+	Fixes #2667
+	(cherry picked from commit 91abb6c4fd3851da57c751ac8c97d0757d4b09dc)
+
+
+2022-01-18  Liviu Chircu  <liviu at opensips dot org>
+	* [9c53945bd] :
+
+	dialog: Add quotation mark escaping in get_dialogs_by_val()
+	In case a dialog name/value contained the '"' character (ASCII 34), such
+	as values stored by pua_dialoginfo, the resulting JSON would be invalid.
+
+	Also optimize the function code a bit, by merging lots of
+	DEC_AND_CHECK_LEN() calls together wherever possible.
+
+	Credits to Giovanni Maruzzelli for a detailed reporting on this issue!
+	(cherry picked from commit 2b6c3239da501ec4d4627c48d58bd723785566ba)
+
+
+2022-01-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c3767d930] :
+
+	[mid-registrar/registrar] fix setting default max_contacts
+	Be sure max_contacts global limit is set even when there are no flags passed to hte save() function.
+
+	Credits go to John Burke / @john08burke
+	Closes #2727
+	(cherry picked from commit 1aa6aa2ceea2b50e9b84bb8354877dba61ab7141)
+
+
+2022-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [1c672d51e] :
+
+	PN PURR processing: Handle "no Route headers" as success
+	If the ";pn-purr=" parameter is not present in the R-URI and the request
+	has no Route headers to search for it, it is a non-PN request.  So
+	return a "success" return code (2), as there is nothing left to do here.
+	(cherry picked from commit b1fed3e74ea3529f6b1190f8104bf4181d28ec9a)
+
+
+2022-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [ce72f89f6] :
+
+	speeddial: NULL-terminate commands array
+	Completes ae4e8256
+	(cherry picked from commit 7756d34316e1bc21f4d800bea43308af50c3e9ea)
+
+
+2022-01-14  Razvan Crainea  <razvan at opensips dot org>
+	* [f89a96813] :
+
+	modules: fix array termination in cmd_export_t
+	Terminate the commands array with an NULL entry, as this breaks on some
+	architectures that do add enough padding after the structure, and
+	allocates it right next to the following structure.
+
+	Many thanks to Dan Jenkins (@danjenkins) for reporting it!
+	(cherry picked from commit 05115c42e40bc54c2210a1ab5b89607383e18343)
+
+
+2022-01-12  Razvan Crainea  <razvan at opensips dot org>
+	* [9444f15da] :
+
+	tracer: prevent crash when xlog tracing broken msg
+	Prevent crash generated by xlog tracing a SIP message that lacks
+	Call-ID
+	(cherry picked from commit 0925ce379e8af9e4297e3f17a07232e54549b105)
+
+
+2022-01-12  Liviu Chircu  <liviu at opensips dot org>
+	* [fa5459500] :
+
+	Merge pull request #2701 from ar45/fix_b2b_logic_lock
+	b2b_logic: Fix missing lock release
+
+
+2022-01-11  Razvan Crainea  <razvan at opensips dot org>
+	* [013fe427d] :
+
+	rtp_relay: rework answer flags to match $rtp_relay
+	(cherry picked from commit 095ffcd83ace71f956c47bb0c0f36045d3a3183f)
+
+
+2022-01-10  Razvan Crainea  <razvan at opensips dot org>
+	* [e6460628d] :
+
+	rtpengine: suppress error for chosen set without context
+	(cherry picked from commit 5b07db60e3855307eb36c7d9dbfb37a52e3ab8f7)
+
+
+2022-01-10  Alexey Vasilyev  <alexei.vasilyev at gmail dot com>
+	* [2dfacce0b] :
+
+	[mid_registrar] Fixes expires parameter when it must be 0.
+	Fixes #2722
+	(cherry picked from commit 5d50923f40000dd8e36404845d22d55e3c70ed0a)
+
+
+2022-01-10  Vlad Patrascu  <vladp at opensips dot org>
+	* [13424143e] :
+
+	sql_cacher: fix parsing of 'cache_table' with trailing newline
+	Closes #2682
+	(cherry picked from commit 312ab9fa032e9cfca231519110e30286e1c804cf)
+
+
+2022-01-07  Gang Zhuo  <gang_zhuo at asus dot com>
+	* [6b4226dfe] :
+
+	[db_oracle] fix crash when executing db_oracle_raw_query(), function db_oracle_submit_query() require that CON_ORA(_h)->pqdata is not null.
+	(cherry picked from commit d0fdbc04b608f003cad0a68e0e48b269ff5d98a9)
+
+
+2022-01-07  Gang Zhuo  <gang_zhuo at asus dot com>
+	* [a6bd812b4] :
+
+	[db_oracle] Using DB_STRING as character type
+	Fix https://github.com/OpenSIPS/opensips/issues/2706
+
+	All modules (e.g. load_balancer) using DB_STRING as character
+	type to checking column type.
+	(cherry picked from commit 36d98a7c53f4acaf9e476d1fe34f28ab4f9c4c43)
+
+
+2022-01-07  Liviu Chircu  <liviu at opensips dot org>
+	* [1aa0f0e55] :
+
+	Fix some corner-case file descriptor leaks
+	Credits to @ryancaicse for the analysis and report in #2714
+	(cherry picked from commit 3ca4d8ce7218865ee81ae201f332ba034be56ae3)
+
+
+2022-01-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c318205ce] :
+
+	[sipcapture] Fix array-out-of-bound when converting proto ID to string/name
+	Instead of using a local array for mapping the proto IDs to names, better use the core get_proto_name() function - this will avoid duble code maintaining and risks of looking up IDs out-of-bound.
+
+	Closes #2671
+	(cherry picked from commit 7de9b15f8bbac3f1294c418ec1e4bbe9111e1454)
+
+
+2022-01-04  Nick Altmann  <nick.altmann at gmail dot com>
+	* [ad51838b7] :
+
+	DEB packaging: add auth_jwt module package
+
+
+2022-01-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [3b9112a8b] :
+
+	Fix race condition on reporting successful per-proc cfg reload
+	Set the initial per-proc reload status (to SENT) before actually sending the IPC job, to avoid any race condition (in updating the status) with the IPC callback (ran in the target process).
+
+	Fixes #2584
+	Many thanks to @etamme on providing the troubleshooting logs
+	(cherry picked from commit e85072cd6e9f54d0a593449b87e492c488393301)
+
+
+2021-11-25  Aron Podrigal  <aronp at guaranteedplus dot com>
+	* [73f60301b] :
+
+	b2b_logic: Fix missing lock release
+	When `new_entities_no` is not 2 we get dead locked.
+
 =========================== Release 3.2.4 ==============================
 
 2021-12-22  Liviu Chircu  <liviu at opensips dot org>
