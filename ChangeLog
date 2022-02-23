@@ -1,3 +1,387 @@
+=========================== Release 3.1.8 ==============================
+
+2022-02-23  Liviu Chircu  <liviu at opensips dot org>
+	* [e0d46d3a6] :
+
+	Bump version to 3.1.8
+
+
+2022-02-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [21e20da9c] :
+
+	Fix switch-case levels for Replaces and Feature-Caps header name parsing
+	(cherry picked from commit 6b49736cca0d1e8ebf0440cf51f95a08f31b9222)
+
+
+2022-02-23  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [77fff20e6] :
+
+	[core] fix parse_uri() parsing
+	Issue discovered during OpenSIPS Security Audit 2022,
+		by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-358f-935m-7p9c
+	(cherry picked from commit b2dffe4b5cd81182c9c8eabb6c96aac96c7acfe3)
+
+
+2022-02-22  Liviu Chircu  <liviu at opensips dot org>
+	* [d446d2540] :
+
+	parse_msg: Fix possible buffer read overflow with whitespace input
+	Fixes OSS-Fuzz#44887
+	(cherry picked from commit a880e1faee1df2b23054de13689de97b2ec08f28)
+
+
+2022-02-22  Liviu Chircu  <liviu at opensips dot org>
+	* [391ea3b21] :
+
+	parse_uri: Fix possible buffer read overflow with urn: URIs
+	Fixes OSS-Fuzz#39800
+	(cherry picked from commit 0b6e9db4fcdcd1ff91e4727be07c95ecef26c50d)
+
+
+2022-02-19  OpenSIPS  <github at opensips dot org>
+	* [9a40c274a] :
+
+	Rebuild documentation
+
+
+2022-02-18  Liviu Chircu  <liviu at opensips dot org>
+	* [73ee10a3b] :
+
+	Fix inet_pton() error handling in various modules
+	(cherry picked from commit 594a5140a4677ed2d21c7d7d997c8d92ffb94597)
+	(cherry picked from commit 886d1ebc601ac43ba9e70dd6dfe21ec55e4a7f43)
+
+
+2022-02-16  Razvan Crainea  <razvan at opensips dot org>
+	* [938ddfcf8] :
+
+	cgrates: properly parse $cgr index
+	Many thanks to Sergei Lavrov (@ccppprogrammer) for reporting it
+	Close #2737
+	(cherry picked from commit b6c4beb3547ec2bcc1b8ad9e9f508c34064d19c1)
+
+
+2022-02-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [6d45f7478] :
+
+	clusterer: fix crashes when loading bad local node URL from DB
+	Closes #2746
+	(cherry picked from commit e9932270ba593f2c95f7cc572cbb67e0174040d9)
+
+
+2022-02-15  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [b95fac711] :
+
+	[uac_redirect] update script sample in docs
+	Reported by Slava Bendersky
+	(cherry picked from commit 14179bf7e0c7b3d5a3fe321cedc76afbcb9b4476)
+
+
+2022-02-12  OpenSIPS  <github at opensips dot org>
+	* [45c6f7d37] :
+
+	Rebuild documentation
+
+
+2022-02-11  Vlad Patrascu  <vladp at opensips dot org>
+	* [99390287c] :
+
+	b2b_logic: fix and document the b2b_terminate_call MI command
+	Closes #2530
+	(cherry picked from commit 0a6b2607fcf3282c941e4dedae122ddfc2fd927a)
+
+
+2022-02-10  Liviu Chircu  <liviu at opensips dot org>
+	* [498508d5e] :
+
+	fraud_detection: Complete previous commit
+	(cherry picked from commit dea72f1c47eca22b14773aa23e70158e21448382)
+
+
+2022-02-10  Liviu Chircu  <liviu at opensips dot org>
+	* [637631a32] :
+
+	fraud_detection: Fix the 'call duration' events
+	The 'call duration' events were not being raised anymore since commit
+	a0fcf857ddb, due to the mismatching callback type check in
+	dialog_terminate_CB().
+
+	Also rework commit a0fcf857ddb, where instead of switching the
+	decrement operation on the DLGCB_DESTROY callback (to guarantee it only
+	gets called one time), we just store and use a boolean marker, thus
+	achieving the same effect but while using the optimal callbacks!
+	(cherry picked from commit 7aa272aec749702627404c0d518b4b4fada5ec93)
+
+
+2022-01-29  OpenSIPS  <github at opensips dot org>
+	* [2ff20721a] :
+
+	Rebuild documentation
+
+
+2022-01-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [8c129d4f3] :
+
+	dialog: fix previous commit
+	(cherry picked from commit 7ab192753b3d14a87357099cb830b8152c4c8bd7)
+
+
+2022-01-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [122c1e31c] :
+
+	dialog: fix crash when dropping unsynced dialogs
+	(cherry picked from commit da47168d02a9359de5f95ab83f6f040bbb7c9db9)
+
+
+2022-01-28  John Burke  <john at voxtelesys dot net>
+	* [8d0e21ff5] :
+
+	db: add `DB_BLOB` to string parsing macro
+	Mysql/Mariadb return BLOB type when `group_concat_max_len`<=512. This will only occur when using custom SQL schema for OpenSIPS tables (such as VIEWs).
+	(cherry picked from commit 969a5a304df20b875d53259950c234f80c48d41a)
+
+
+2022-01-28  John Burke  <john at voxtelesys dot net>
+	* [42e41cef5] :
+
+	domain: add support for `DB_BLOB` attrs type
+	(cherry picked from commit 0ed1ee5726c470f95de40bfff04b8d47b73e9e86)
+
+
+2022-01-28  Vlad Paiu  <vladpaiu at opensips dot org>
+	* [12119c415] :
+
+	Force re-connection on the new MySQL 4031 code
+	ER_CLIENT_INTERACTION_TIMEOUT in MySQL and
+	ER_REFERENCED_TRG_DOES_NOT_EXIST in MariaDB
+	(cherry picked from commit cde6757a3ebaaea09949107c2a49536681c8a88e)
+
+
+2022-01-26  Razvan Crainea  <razvan at opensips dot org>
+	* [e58aa5179] :
+
+	cgrates: properly restore replication acc and dst
+	Credits go to Barnaby Ritchley (from sipsynergy) for reporting it.
+	(cherry picked from commit 914f95aeff075d61843b4b54d11f0e21af8d75cd)
+
+
+2022-01-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [c0edd56aa] :
+
+	dialog: fix crash when receiving replicated cseq update
+	Prevent crash when receiving a cseq update for an unknown dialog.
+	The dialog may be already deleted due to timeout or other unexpected
+	race conditions.
+
+	Fixes #2651
+	(cherry picked from commit bd7f5e4b7ab215c4affe72e927013f0033088836)
+
+
+2022-01-25  Razvan Crainea  <razvan at opensips dot org>
+	* [05b6376bf] :
+
+	httpd: Fix compilation warnings with libmicrohttpd v0.9.70+
+	httpd: adapt implementation to microhttpd v0.9.71
+	(cherry picked from commit 62a8b3c5736526235c1751876f2f26905f1c16d8)
+
+
+2022-01-25  Liviu Chircu  <liviu at opensips dot org>
+	* [5efe4e268] :
+
+	httpd: Fix ending newline in DBG log
+	(cherry picked from commit 29188a85d5da0bbcf2b28a0ccd041d29fd17e858)
+
+
+2022-01-25  Liviu Chircu  <liviu at opensips dot org>
+	* [cc06f74dd] :
+
+	mid_registrar: Skip usrloc callbacks for foreign domains
+	In case mid_registrar is used alongside registrar using separate domains
+	(location tables), then mid_registrar must not process any callbacks for
+	Contacts/AORs which it is not responsible for.
+
+	A similar logic should be added for registrar as well, however it
+	currently does not subscribe to any usrloc callbacks.
+
+	Fixes #2716
+	(cherry picked from commit 30cdbd674eb6a974088e531a8206659c494f5868)
+
+	mid_registrar: Improve previous commit
+
+	Check the domain list for duplicates before appending a new one.
+
+	(cherry picked from commit c5d884e60d1a708fd49540b622c66cfb6eb170b1)
+	(cherry picked from commit 4541680d32c52dd77e4ab8a802c19f95c3cd0ba1)
+
+
+2022-01-22  OpenSIPS  <github at opensips dot org>
+	* [2ef094c50] :
+
+	Rebuild documentation
+
+
+2022-01-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [76207e557] :
+
+	xml: allow '.' character in node name
+	Fixes #2420
+	(cherry picked from commit d28805f9bc10b8dce5dc2ec45ab953b46b14a76f)
+
+
+2022-01-18  Liviu Chircu  <liviu at opensips dot org>
+	* [62f6cf888] :
+
+	dialog: Add quotation mark escaping in get_dialogs_by_val()
+	In case a dialog name/value contained the '"' character (ASCII 34), such
+	as values stored by pua_dialoginfo, the resulting JSON would be invalid.
+
+	Also optimize the function code a bit, by merging lots of
+	DEC_AND_CHECK_LEN() calls together wherever possible.
+
+	Credits to Giovanni Maruzzelli for a detailed reporting on this issue!
+
+	(cherry picked from commit 2b6c3239da501ec4d4627c48d58bd723785566ba)
+	(cherry picked from commit 9c53945bdde63060aa476459cb6ec579fb65d43e)
+
+
+2022-01-18  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a1a0f6d17] :
+
+	[mid-registrar/registrar] fix setting default max_contacts
+	Be sure max_contacts global limit is set even when there are no flags passed to hte save() function.
+
+	Credits go to John Burke / @john08burke
+	Closes #2727
+	(cherry picked from commit 1aa6aa2ceea2b50e9b84bb8354877dba61ab7141)
+
+
+2022-01-15  OpenSIPS  <github at opensips dot org>
+	* [6a3cd7829] :
+
+	Rebuild documentation
+
+
+2022-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [b86ad0712] :
+
+	PN PURR processing: Handle "no Route headers" as success
+	If the ";pn-purr=" parameter is not present in the R-URI and the request
+	has no Route headers to search for it, it is a non-PN request.  So
+	return a "success" return code (2), as there is nothing left to do here.
+	(cherry picked from commit b1fed3e74ea3529f6b1190f8104bf4181d28ec9a)
+
+
+2022-01-14  Liviu Chircu  <liviu at opensips dot org>
+	* [7f355cc6f] :
+
+	speeddial: NULL-terminate commands array
+	Completes ae4e8256
+	(cherry picked from commit 7756d34316e1bc21f4d800bea43308af50c3e9ea)
+
+
+2022-01-14  Razvan Crainea  <razvan at opensips dot org>
+	* [ae4e82562] :
+
+	modules: fix array termination in cmd_export_t
+	Terminate the commands array with an NULL entry, as this breaks on some
+	architectures that do add enough padding after the structure, and
+	allocates it right next to the following structure.
+
+	Many thanks to Dan Jenkins (@danjenkins) for reporting it!
+	(cherry picked from commit 05115c42e40bc54c2210a1ab5b89607383e18343)
+
+
+2022-01-12  Razvan Crainea  <razvan at opensips dot org>
+	* [634bfe90b] :
+
+	tracer: prevent crash when xlog tracing broken msg
+	Prevent crash generated by xlog tracing a SIP message that lacks
+	Call-ID
+	(cherry picked from commit 0925ce379e8af9e4297e3f17a07232e54549b105)
+
+
+2022-01-10  Alexey Vasilyev  <alexei.vasilyev at gmail dot com>
+	* [d5b86135a] :
+
+	[mid_registrar] Fixes expires parameter when it must be 0.
+	Fixes #2722
+	(cherry picked from commit 5d50923f40000dd8e36404845d22d55e3c70ed0a)
+
+
+2022-01-10  Vlad Patrascu  <vladp at opensips dot org>
+	* [03f2e3112] :
+
+	sql_cacher: fix parsing of 'cache_table' with trailing newline
+	Closes #2682
+	(cherry picked from commit 312ab9fa032e9cfca231519110e30286e1c804cf)
+
+
+2022-01-08  OpenSIPS  <github at opensips dot org>
+	* [1468f05e5] :
+
+	Rebuild documentation
+
+
+2022-01-07  Gang Zhuo  <gang_zhuo at asus dot com>
+	* [9e556ab25] :
+
+	[db_oracle] fix crash when executing db_oracle_raw_query(), function db_oracle_submit_query() require that CON_ORA(_h)->pqdata is not null.
+	(cherry picked from commit d0fdbc04b608f003cad0a68e0e48b269ff5d98a9)
+
+
+2022-01-07  Gang Zhuo  <gang_zhuo at asus dot com>
+	* [adc1caf66] :
+
+	[db_oracle] Using DB_STRING as character type
+	Fix https://github.com/OpenSIPS/opensips/issues/2706
+
+	All modules (e.g. load_balancer) using DB_STRING as character
+	type to checking column type.
+	(cherry picked from commit 36d98a7c53f4acaf9e476d1fe34f28ab4f9c4c43)
+
+
+2022-01-07  Liviu Chircu  <liviu at opensips dot org>
+	* [0019f5510] :
+
+	Fix some corner-case file descriptor leaks
+	Credits to @ryancaicse for the analysis and report in #2714
+	(cherry picked from commit 3ca4d8ce7218865ee81ae201f332ba034be56ae3)
+
+
+2022-01-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [ab5f0f807] :
+
+	[sipcapture] Fix array-out-of-bound when converting proto ID to string/name
+	Instead of using a local array for mapping the proto IDs to names, better use the core get_proto_name() function - this will avoid duble code maintaining and risks of looking up IDs out-of-bound.
+
+	Closes #2671
+	(cherry picked from commit 7de9b15f8bbac3f1294c418ec1e4bbe9111e1454)
+
+
+2022-01-04  Nick Altmann  <nick.altmann at gmail dot com>
+	* [2f5ed39fd] :
+
+	DEB packaging: add auth_jwt module package
+
+
+2022-01-04  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [cb813ba24] :
+
+	Fix race condition on reporting successful per-proc cfg reload
+	Set the initial per-proc reload status (to SENT) before actually sending the IPC job, to avoid any race condition (in updating the status) with the IPC callback (ran in the target process).
+
+	Fixes #2584
+	Many thanks to @etamme on providing the troubleshooting logs
+	(cherry picked from commit e85072cd6e9f54d0a593449b87e492c488393301)
+
+
+2021-12-25  OpenSIPS  <github at opensips dot org>
+	* [8e3045947] :
+
+	Rebuild documentation
+
 =========================== Release 3.1.7 ==============================
 
 2021-12-22  Liviu Chircu  <liviu at opensips dot org>
