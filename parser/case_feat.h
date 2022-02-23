@@ -23,14 +23,11 @@
 #ifndef CASE_FEAT_H
 #define CASE_FEAT_H
 
-#define feat_CASE              \
-	switch(LOWER_DWORD(val)) { \
-		case _feat_:           \
-			p += 4;            \
-			val = READ(p);     \
-			ure__CASE;         \
-			goto other;        \
-	}
+#define feat_CASE          \
+		p += 4;            \
+		val = READ(p);     \
+		ure__CASE;         \
+		goto other;        \
 
 #define ure__CASE              \
 	switch(LOWER_DWORD(val)) { \
@@ -41,17 +38,12 @@
 			goto other;        \
 	}
 
-#define caps_CASE                               \
-	switch(LOWER_DWORD(val)) {                  \
-		case _caps_:                            \
-			p += 4;                             \
-			if (*p == ':') {                    \
-				hdr->type = HDR_FEATURE_CAPS_T; \
-				hdr->name.len = 12;             \
-				return p + 1;                   \
-			}                                   \
-			p++;                                \
-			goto dc_cont;                       \
-		}
+#define caps_CASE                         \
+	if (LOWER_DWORD(val) == _caps_) {     \
+		hdr->type = HDR_FEATURE_CAPS_T;   \
+		hdr->name.len = 12;               \
+		p += 4;                           \
+		goto dc_cont;                     \
+	}
 
 #endif /* CASE_FEAT_H */
