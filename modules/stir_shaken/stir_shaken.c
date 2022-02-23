@@ -815,8 +815,8 @@ static int add_identity_hf(struct sip_msg *msg, EVP_PKEY *pkey,
 	hdr_buf.s[hdr_buf.len++] = '>';
 	hdr_buf.s[hdr_buf.len++] = ';';
 	memcpy(hdr_buf.s + hdr_buf.len, HDR_ALG_PARAM_S, HDR_ALG_PARAM_LEN);
-+       hdr_buf.len += HDR_ALG_PARAM_LEN;
-+       hdr_buf.s[hdr_buf.len++] = ';';
+        hdr_buf.len += HDR_ALG_PARAM_LEN;
+        hdr_buf.s[hdr_buf.len++] = ';';
 	memcpy(hdr_buf.s + hdr_buf.len, HDR_PPT_PARAM_S, HDR_PPT_PARAM_LEN);
 	hdr_buf.len += HDR_PPT_PARAM_LEN;
 	memcpy(hdr_buf.s + hdr_buf.len, CRLF, CRLF_LEN);
