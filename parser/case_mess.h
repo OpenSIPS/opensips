@@ -21,21 +21,16 @@
 #ifndef CASE_MESS_H
 #define CASE_MESS_H
 
-#define id12_CASE                               \
-	switch(LOWER_DWORD(val)) {                  \
-		case _id12_:                            \
-			hdr->type = HDR_MESSAGE_ID_T;       \
-			hdr->name.len = 12;                 \
-			return p + 4;                       \
-		}
-
-
 #define age__CASE              \
 	switch(LOWER_DWORD(val)) { \
 		case _age__:           \
 			p += 4;            \
-			val = READ(p);     \
-			id12_CASE;         \
+			if (LOWER_BYTE(*(p))=='i' && LOWER_BYTE(*(p+1))=='d') { \
+				hdr->type = HDR_MESSAGE_ID_T;       \
+				hdr->name.len = 10;                 \
+				p += 2;                             \
+				goto dc_cont;                       \
+			}                  \
 			goto other;        \
 	}
 

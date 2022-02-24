@@ -28,7 +28,7 @@
 			p += 4;            \
 			if (LOWER_BYTE(*(p))=='g' && LOWER_BYTE(*(p+1))=='e') { \
 				hdr->type = HDR_BYTE_RANGE_T;       \
-				hdr->name.len = 12;                 \
+				hdr->name.len = 10;                 \
 				p += 2;                             \
 				goto dc_cont;                       \
 			}                  \

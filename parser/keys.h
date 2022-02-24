@@ -183,7 +183,6 @@
 
 #define _mess_ 0x7373656d   /* "mess" for "message-id" */
 #define _age__ 0x2d656761   /* "age-" */
-#define _id12_ 0x203a6469   /* "id: " */
 
 #define _byte_ 0x65747962   /* "byte" for "byte-range" */
 #define __ran_ 0x6e61722d   /* "-ran" */
