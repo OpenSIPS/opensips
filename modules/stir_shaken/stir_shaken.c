@@ -785,7 +785,7 @@ static str *build_identity_hf(EVP_PKEY *pkey,
 
 	hdr_buf.len = IDENTITY_HDR_LEN + unsigned_buf.len + 1/*'.'*/ +
 		calc_base64_encode_len(RAW_SIG_LEN) + 1/*';'*/ + HDR_INFO_PARAM_LEN +
-		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_PPT_PARAM_LEN + CRLF_LEN;
+		2/*'<','>'*/ + cr_url->len + 1/*';'*/ + HDR_ALG_PARAM_LEN + 1/*';'*/ + HDR_PPT_PARAM_LEN + CRLF_LEN;
 	hdr_buf.s = pkg_malloc(hdr_buf.len);
 	if (!hdr_buf.s) {
 		LM_ERR("oom!\n");
@@ -815,6 +815,9 @@ static str *build_identity_hf(EVP_PKEY *pkey,
 	hdr_buf.len += cr_url->len;
 	hdr_buf.s[hdr_buf.len++] = '>';
 	hdr_buf.s[hdr_buf.len++] = ';';
+	memcpy(hdr_buf.s + hdr_buf.len, HDR_ALG_PARAM_S, HDR_ALG_PARAM_LEN);
+        hdr_buf.len += HDR_ALG_PARAM_LEN;
+        hdr_buf.s[hdr_buf.len++] = ';';
 	memcpy(hdr_buf.s + hdr_buf.len, HDR_PPT_PARAM_S, HDR_PPT_PARAM_LEN);
 	hdr_buf.len += HDR_PPT_PARAM_LEN;
 	memcpy(hdr_buf.s + hdr_buf.len, CRLF, CRLF_LEN);

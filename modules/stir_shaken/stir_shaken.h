@@ -69,7 +69,9 @@
 #define IDENTITY_HDR_LEN (sizeof(IDENTITY_HDR_S)-1)
 #define HDR_INFO_PARAM_S "info="
 #define HDR_INFO_PARAM_LEN (sizeof(HDR_INFO_PARAM_S)-1)
-#define HDR_PPT_PARAM_S "ppt=\"shaken\""
+#define HDR_ALG_PARAM_S "alg=ES256"
+#define HDR_ALG_PARAM_LEN (sizeof(HDR_ALG_PARAM_S)-1)
+#define HDR_PPT_PARAM_S "ppt=shaken"
 #define HDR_PPT_PARAM_LEN (sizeof(HDR_PPT_PARAM_S)-1)
 
 #define BADREQ_CODE 400
