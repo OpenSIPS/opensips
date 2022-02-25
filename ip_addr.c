@@ -178,6 +178,7 @@ int ip_addr_is_1918(str *s_ip)
 		{ 0xac100000, 0xffffffffu << 20},  /* "172.16.0.0"  RFC 1918 */
 		{ 0xc0a80000, 0xffffffffu << 16},  /* "192.168.0.0" RFC 1918 */
 		{ 0x64400000, 0xffffffffu << 22},  /* "100.64.0.0"  RFC 6598 */
+		{ 0x7f000000, 0xffffffffu << 24},  /* "127.0.0.0"   RFC 1122 */
 		{ 0, 0}
 	};
 	struct ip_addr *ip;
