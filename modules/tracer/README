@@ -313,6 +313,8 @@ modparam("tracer", "file_mode", 0644)
           + c - trace onlt the SIP callee side;
        If both C and c flags are missing, tracing of both
        sides/legs is assumed.
+       NOTE these flags are supported only by transactional and
+       dialog tracing
      * correlation_id (string,pvar) a custom SIP correlation ID to
        be forced (normally the SIP Call-ID is used) to correlate
        this traffic (transaction, dialog) with other traffic.
@@ -507,10 +509,10 @@ Chapter 2. Contributors
 
    All remaining contributors: Dan Pascu (@danpascu), Walter
    Doekes (@wdoekes), Dusan Klinec (@ph4r05), Zero King (@l2dy),
-   Andreas Heise, Sergio Gutierrez, Ovidiu Sas (@ovidiusas),
-   Konstantin Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme
-   (@etamme).
+   Andreas Heise, Nick Altmann (@nikbyte), Sergio Gutierrez,
+   Ovidiu Sas (@ovidiusas), Konstantin Bokarius, Iouri Kharon,
+   Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
+   Elena-Ramona Modroiu, Eric Tamme (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -532,23 +534,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Apr 2021
-   3.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
-   5.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   1.  Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Dec 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Apr 2021
+   4.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
+   5.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
+   6.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Dusan Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov), Sergio
-   Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Eric Tamme (@etamme), Ionut Ionita
+   (@ionutrazvanionita), Dusan Klinec (@ph4r05), Andrei Datcu
+   (@andrei-datcu), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
+   (@adubovikov), Sergio Gutierrez, Daniel-Constantin Mierla
+   (@miconda), Iouri Kharon, Konstantin Bokarius, Edson Gellert
+   Schubert, Henning Westerholt (@henningw), Andreas Heise,
+   Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -557,14 +560,14 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
-   (@andrei-datcu), Alexandr Dubovikov (@adubovikov),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
-   Modroiu.
+   Last edited by: Nick Altmann (@nikbyte), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Alexandr
+   Dubovikov (@adubovikov), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
