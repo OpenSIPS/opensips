@@ -351,14 +351,7 @@ static int backup_config(void) {
 		LM_ERR("out of private memory\n");
 		return -1;
 	}
-	if(strcpy(backup_file, config_file) == NULL){
-		LM_ERR("can't copy filename\n");
-		goto errout;
-	}
-	if(!strcat(backup_file, ".bak")){
-		LM_ERR("can't attach suffix\n");
-		goto errout;
-	}
+	sprintf(backup_file, "%s.bak", config_file);
 	/* open source file */
 	if ((from = fopen(config_file, "rb"))==NULL) {
 		LM_ERR("Cannot open source file.\n");
