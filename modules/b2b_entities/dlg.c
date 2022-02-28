@@ -586,7 +586,7 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		lock_release(&client_htable[hash_index].lock);
 
 	cb->cbf(entity_type, entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid,
-		&dlg->logic_key, event_type, storage, backend);
+		&dlg->logic_key, dlg->param, event_type, storage, backend);
 
 	if (entity_type == B2B_SERVER)
 		lock_get(&server_htable[hash_index].lock);
@@ -647,8 +647,8 @@ static void run_create_cb_all(struct b2b_callback *cb, int etype)
 			}
 
 			cb->cbf(etype, etype == B2B_CLIENT ? &dlg->callid : &dlg->tag[1],
-				&dlg->logic_key, B2B_EVENT_CREATE, dlg->storage.len ? &storage : NULL,
-				B2BCB_BACKEND_DB);
+				&dlg->logic_key, dlg->param, B2B_EVENT_CREATE,
+				dlg->storage.len ? &storage : NULL, B2BCB_BACKEND_DB);
 
 			if (dlg->storage.len) {
 				bin_free_packet(&storage);

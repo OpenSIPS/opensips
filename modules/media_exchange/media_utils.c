@@ -1144,10 +1144,10 @@ static void media_exchange_event_update(struct media_session_leg *msl,
 }
 
 void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend)
+		str *logic_param, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend)
 {
-	struct media_session_leg *msl = *(struct media_session_leg **)((str *)param)->s;
+	struct media_session_leg *msl = (struct media_session_leg *)param;
 
 	/* we always need to identify the media session */
 	bin_push_str(store, &msl->ms->dlg->callid);
@@ -1295,8 +1295,8 @@ static void media_exchange_event_received_delete(struct dlg_cell *dlg, int leg)
 }
 
 void media_exchange_event_received(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend)
+		str *logic_param, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend)
 {
 	struct dlg_cell *dlg;
 	str callid;

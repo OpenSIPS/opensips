@@ -65,10 +65,10 @@ int media_util_init_static(void);
 void media_util_release_static(void);
 
 void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend);
+		str *logic_param, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 void media_exchange_event_received(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend);
+		str *logic_param, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 
 #endif /* _MEDIA_UTILS_H_ */

@@ -117,7 +117,7 @@ enum b2b_event_type {B2B_EVENT_CREATE, B2B_EVENT_ACK, B2B_EVENT_UPDATE,
 	B2B_EVENT_DELETE};
 
 typedef void (*b2b_cb_t)(enum b2b_entity_type entity_type, str* entity_key,
-	str *param, enum b2b_event_type event_type, bin_packet_t *storage,
+	str *logic_param, void *param, enum b2b_event_type event_type, bin_packet_t *storage,
 	int backend);
 
 typedef int (*b2b_notify_t)(struct sip_msg* msg, str* key, int type,

@@ -157,8 +157,8 @@ static void pack_entity(b2bl_tuple_t* tuple, enum b2b_entity_type entity_type,
 }
 
 void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
-	str *b2bl_key, enum b2b_event_type event_type, bin_packet_t *storage,
-	int backend)
+	str *b2bl_key, void *param, enum b2b_event_type event_type,
+	bin_packet_t *storage, int backend)
 {
 	unsigned int hash_index, local_index;
 	b2bl_tuple_t* tuple;
@@ -624,8 +624,8 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 }
 
 void entity_event_received(enum b2b_entity_type etype, str *entity_key,
-	str *b2bl_key, enum b2b_event_type event_type, bin_packet_t *storage,
-	int backend)
+	str *b2bl_key, void *param, enum b2b_event_type event_type,
+	bin_packet_t *storage, int backend)
 {
 	int tuple_storage_type;
 	unsigned int hash_index, local_index;
