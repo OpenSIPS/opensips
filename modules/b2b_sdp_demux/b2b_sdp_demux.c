@@ -54,17 +54,17 @@ static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 		pv_spec_t *hdrs, pv_spec_t *streams);
 static int fixup_check_avp(void** param);
 static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend);
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 static void b2b_sdp_server_event_received(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend);
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend);
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 static void b2b_sdp_client_event_received(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend);
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 
 static cmd_export_t mod_cmds[] = {
 	{"b2b_sdp_demux", (cmd_function)b2b_sdp_demux, {
@@ -219,6 +219,7 @@ struct b2b_sdp_client {
 };
 
 struct b2b_sdp_ctx {
+	str callid;
 	str b2b_key;
 	int clients_no;
 	int pending_no;
@@ -445,9 +446,9 @@ static void b2b_sdp_client_free(struct b2b_sdp_client *client)
 
 }
 
-static struct b2b_sdp_ctx *b2b_sdp_ctx_new(void)
+static struct b2b_sdp_ctx *b2b_sdp_ctx_new(str *callid)
 {
-	struct b2b_sdp_ctx *ctx = shm_malloc(sizeof *ctx);
+	struct b2b_sdp_ctx *ctx = shm_malloc(sizeof *ctx + callid->len);
 	if (!ctx)
 		return NULL;
 	memset(ctx, 0, sizeof *ctx);
@@ -455,6 +456,9 @@ static struct b2b_sdp_ctx *b2b_sdp_ctx_new(void)
 	INIT_LIST_HEAD(&ctx->streams);
 	lock_init(&ctx->lock);
 	time(&ctx->sess_id);
+	ctx->callid.len = callid->len;
+	ctx->callid.s = (char *)(ctx + 1);
+	memcpy(&ctx->callid.s, callid->s, callid->len);
 	lock_start_write(b2b_sdp_contexts_lock);
 	list_add(&ctx->contexts, b2b_sdp_contexts);
 	lock_stop_write(b2b_sdp_contexts_lock);
@@ -1159,10 +1163,9 @@ release:
 }
 
 static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
-		void *param, int flags)
+		str *logic_key, void *param, int flags)
 {
-	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)
-		((str *)param)->s;
+	struct b2b_sdp_client *client = (struct b2b_sdp_client *)param;
 
 	if (!client || !client->ctx) {
 		LM_ERR("No b2b sdp client!\n");
@@ -1391,9 +1394,9 @@ error:
 }
 
 static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
-		void *param, int flags)
+		str *logic_key, void *param, int flags)
 {
-	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
+	struct b2b_sdp_ctx *ctx = (struct b2b_sdp_ctx *)param;
 	if (!ctx) {
 		LM_ERR("No b2b sdp context!\n");
 		return -1;
@@ -1442,16 +1445,13 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		struct b2b_sdp_ctx *ctx, sdp_info_t *sdp)
 {
 	str *b2b_key, *body;
-	str hack, contact;
+	str contact;
 	union sockaddr_union tmp_su;
 	struct list_head *it;
 	struct b2b_sdp_client *client;
 	client_info_t ci;
 	struct socket_info *si;
 	str *sess_ip;
-
-	hack.s = (char *)&ctx;
-	hack.len = sizeof(void *);
 
 	if (!msg->force_send_socket) {
 		si = uri2sock(msg, uri, &tmp_su, PROTO_NONE);
@@ -1469,9 +1469,10 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		LM_ERR("could not fetch session IP\n");
 		return -1;
 	}
+	/* we will use the callid as the ideantifier */
 
 	b2b_key = b2b_api.server_new(msg, &contact, b2b_sdp_server_notify,
-			&b2b_sdp_demux_server_cap, &hack, NULL);
+			&b2b_sdp_demux_server_cap, &msg->callid->body, NULL, ctx, NULL);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b sdp demux server!\n");
 		return -1;
@@ -1504,13 +1505,12 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 			return -1;
 		}
 		/* per client stuff */
-		hack.s = (char *)&client;
 		ci.body = body;
 		ci.extra_headers = &client->hdrs;
 
 		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
 		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
-				&b2b_sdp_demux_client_cap, &hack, NULL);
+				&b2b_sdp_demux_client_cap, &ctx->callid, NULL, client, NULL);
 		pkg_free(body->s);
 		if (!b2b_key) {
 			LM_ERR("could not create b2b sdp demux client!\n");
@@ -1546,7 +1546,13 @@ static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 		return -3;
 	}
 
-	ctx = b2b_sdp_ctx_new();
+	if ((parse_headers(msg, HDR_CALLID_F, 0) < -1 ||
+			msg->callid == NULL)) {
+		LM_ERR("could not extract Call-ID!\n");
+		return -1;
+	}
+
+	ctx = b2b_sdp_ctx_new(&msg->callid->body);
 	if (!ctx) {
 		LM_ERR("could not allocate new B2B SDP ctx\n");
 		return -1;
@@ -1636,6 +1642,7 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 	struct b2b_sdp_stream *stream;
 	int pushed_streams = 0;
 
+	bin_push_str(store, &ctx->callid);
 	bin_push_int(store, ctx->clients_no);
 	bin_push_int(store, ctx->sess_id);
 	bin_push_str(store, &ctx->sess_ip);
@@ -1664,14 +1671,12 @@ static void b2b_sdp_server_event_trigger_create(struct b2b_sdp_ctx *ctx, bin_pac
 
 static int b2b_sdp_ctx_restore(struct b2b_sdp_ctx *ctx)
 {
-	str hack;
-	hack.s = (char *)&ctx;
-	hack.len = sizeof(void *);
-	if (b2b_api.update_b2bl_param(B2B_SERVER, &ctx->b2b_key, &hack, 0) < 0) {
+	if (b2b_api.update_b2bl_param(B2B_SERVER, &ctx->b2b_key, &ctx->callid, 0) < 0) {
 		LM_ERR("could not update restore param!\n");
 		return -1;
 	}
-	if (b2b_api.restore_logic_info(B2B_SERVER, &ctx->b2b_key, b2b_sdp_server_notify) < 0) {
+	if (b2b_api.restore_logic_info(B2B_SERVER, &ctx->b2b_key,
+			b2b_sdp_server_notify, ctx, NULL) < 0) {
 		LM_ERR("could not register restore logic!\n");
 		return -1;
 	}
@@ -1681,18 +1686,16 @@ static int b2b_sdp_ctx_restore(struct b2b_sdp_ctx *ctx)
 
 static int b2b_sdp_client_restore(struct b2b_sdp_client *client)
 {
-	str hack;
-	hack.s = (char *)&client;
-	hack.len = sizeof(void *);
-
 	if ((client->flags & B2B_SDP_CLIENT_REPL) == 0)
 		return 0;
 
-	if (b2b_api.update_b2bl_param(B2B_CLIENT, &client->b2b_key, &hack, 0) < 0) {
+	if (b2b_api.update_b2bl_param(B2B_CLIENT, &client->b2b_key,
+			&client->ctx->callid, 0) < 0) {
 		LM_ERR("could not update restore param!\n");
 		return -1;
 	}
-	if (b2b_api.restore_logic_info(B2B_CLIENT, &client->b2b_key, b2b_sdp_client_notify) < 0) {
+	if (b2b_api.restore_logic_info(B2B_CLIENT, &client->b2b_key,
+			b2b_sdp_client_notify, client, NULL) < 0) {
 		LM_ERR("could not register restore logic!\n");
 		return -1;
 	}
@@ -1710,15 +1713,16 @@ static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
 	struct b2b_sdp_client *client;
 	struct b2b_sdp_stream *stream;
 
+	bin_pop_str(store, &tmp);
 	bin_pop_int(store, &clients);
 	bin_pop_int(store, &sess_id);
-	bin_pop_str(store, &tmp);
 
-	ctx = b2b_sdp_ctx_new();
+	ctx = b2b_sdp_ctx_new(&tmp);
 	if (!ctx) {
 		LM_INFO("cannot create new context!\n");
 		return;
 	}
+	bin_pop_str(store, &tmp);
 	if (shm_str_sync(&ctx->sess_ip, &tmp) < 0) {
 		LM_ERR("could not duplicate session ip!\n");
 		goto error;
@@ -1792,10 +1796,10 @@ static void b2b_sdp_server_event_received_delete(struct b2b_sdp_ctx *ctx, bin_pa
 }
 
 static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend)
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend)
 {
-	struct b2b_sdp_ctx *ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
+	struct b2b_sdp_ctx *ctx = (struct b2b_sdp_ctx *)param;
 
 	switch (event_type) {
 		case B2B_EVENT_ACK:
@@ -1816,14 +1820,14 @@ static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
 }
 
 static void b2b_sdp_server_event_received(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend)
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend)
 {
-	struct b2b_sdp_ctx *ctx;
-	if (param && param->s)
-		ctx = *(struct b2b_sdp_ctx **)((str *)param)->s;
-	else
-		ctx = NULL;
+	struct b2b_sdp_ctx *ctx = param;
+
+	if (!store)
+		return;
+
 	switch (event_type) {
 		case B2B_EVENT_CREATE:
 			b2b_sdp_server_event_received_create(key, store);
@@ -1924,10 +1928,10 @@ static void b2b_sdp_client_event_receive_delete(struct b2b_sdp_client *client,
 }
 
 static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend)
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend)
 {
-	struct b2b_sdp_client *client = *(struct b2b_sdp_client **)((str *)param)->s;
+	struct b2b_sdp_client *client = (struct b2b_sdp_client *)param;
 
 	switch (event_type) {
 		case B2B_EVENT_CREATE:
@@ -1946,17 +1950,12 @@ static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
 }
 
 static void b2b_sdp_client_event_received(enum b2b_entity_type et, str *key,
-		str *param, enum b2b_event_type event_type, bin_packet_t *store,
-		int backend)
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend)
 {
-	struct b2b_sdp_client *client;
+	struct b2b_sdp_client *client = param;
 	if (!store)
 		return;
-
-	if (!param || !param->s)
-		client = *(struct b2b_sdp_client **)((str *)param)->s;
-	else
-		client = NULL;
 
 	switch (event_type) {
 		case B2B_EVENT_CREATE:
