@@ -413,13 +413,14 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
 }
 
-
-static void b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
+static void b2b_sdp_client_free(void *param)
 {
-	struct b2b_sdp_ctx *ctx = client->ctx;
 	struct list_head *it, *safe;
 
-	client->ctx = NULL;
+	struct b2b_sdp_client *client = param;
+
+	if (!param)
+		return;
 
 	if (client->hdrs.s)
 		shm_free(client->hdrs.s);
@@ -429,26 +430,30 @@ static void b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
 
 	list_for_each_safe(it, safe, &client->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
+	shm_free(client);
+}
+
+static void b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
+{
+	struct b2b_sdp_ctx *ctx = client->ctx;
+
 	if (lock)
 		lock_get(&ctx->lock);
 	list_del(&client->list);
 	ctx->clients_no--;
 	if (lock)
 		lock_release(&ctx->lock);
-	shm_free(client);
 }
 
-static void b2b_sdp_client_free(struct b2b_sdp_client *client)
+static void b2b_sdp_client_delete(struct b2b_sdp_client *client)
 {
-
-	b2b_sdp_client_terminate(client, &client->b2b_key);
 	b2b_sdp_client_release(client, 1);
-
+	b2b_sdp_client_terminate(client, &client->b2b_key);
 }
 
 static struct b2b_sdp_ctx *b2b_sdp_ctx_new(str *callid)
 {
-	struct b2b_sdp_ctx *ctx = shm_malloc(sizeof *ctx + callid->len);
+	struct b2b_sdp_ctx *ctx = shm_malloc(sizeof(*ctx) + callid->len);
 	if (!ctx)
 		return NULL;
 	memset(ctx, 0, sizeof *ctx);
@@ -458,7 +463,7 @@ static struct b2b_sdp_ctx *b2b_sdp_ctx_new(str *callid)
 	time(&ctx->sess_id);
 	ctx->callid.len = callid->len;
 	ctx->callid.s = (char *)(ctx + 1);
-	memcpy(&ctx->callid.s, callid->s, callid->len);
+	memcpy(ctx->callid.s, callid->s, callid->len);
 	lock_start_write(b2b_sdp_contexts_lock);
 	list_add(&ctx->contexts, b2b_sdp_contexts);
 	lock_stop_write(b2b_sdp_contexts_lock);
@@ -503,22 +508,29 @@ static struct b2b_sdp_client *b2b_sdp_client_get(struct b2b_sdp_ctx *ctx, str *k
 	return NULL;
 }
 
-static void b2b_sdp_ctx_free(struct b2b_sdp_ctx *ctx, int replicate)
+static void b2b_sdp_ctx_release(struct b2b_sdp_ctx *ctx, int replicate)
 {
 	struct list_head *it, *safe;
 
 	list_for_each_safe(it, safe, &ctx->clients)
-		b2b_sdp_client_free(list_entry(it, struct b2b_sdp_client, list));
+		b2b_sdp_client_delete(list_entry(it, struct b2b_sdp_client, list));
 	/* free remaining streams */
 	list_for_each_safe(it, safe, &ctx->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, ordered));
-	if (ctx->b2b_key.s) {
-		b2b_api.entity_delete(B2B_SERVER, &ctx->b2b_key, NULL, 1, replicate);
-		shm_free(ctx->b2b_key.s);
-	}
 	lock_start_write(b2b_sdp_contexts_lock);
 	list_del(&ctx->contexts);
 	lock_stop_write(b2b_sdp_contexts_lock);
+	if (ctx->b2b_key.s)
+		b2b_api.entity_delete(B2B_SERVER, &ctx->b2b_key, NULL, 1, replicate);
+}
+
+static void b2b_sdp_ctx_free(void *param)
+{
+	struct b2b_sdp_ctx *ctx = param;
+	if (!ctx)
+		return;
+	if (ctx->b2b_key.s)
+		shm_free(ctx->b2b_key.s);
 	shm_free(ctx->sess_ip.s);
 	shm_free(ctx);
 }
@@ -688,7 +700,7 @@ static int b2b_sdp_streams_from_avps(struct b2b_sdp_ctx *ctx,
 		}
 		if (list_empty(&client->streams)) {
 			LM_WARN("no stream added to client - ignoring!\n");
-			b2b_sdp_client_free(client);
+			b2b_sdp_client_delete(client);
 		}
 	}
 	/* we should also account for any remaining streams and disable them */
@@ -915,9 +927,9 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 
 	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
+	b2b_sdp_client_release(client, 1);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
-	lock_get(&client->ctx->lock);
-	b2b_sdp_client_release(client, 0);
+	lock_get(&ctx->lock);
 
 	switch (b2b_sdp_bye_mode) {
 
@@ -1174,7 +1186,8 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 
 	if (type == B2B_REQUEST) {
 		lock_get(&client->ctx->lock);
-		B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
+		if (msg->REQ_METHOD != METHOD_BYE)
+			B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
 		/*
 		if (client->ctx->pending_no) {
 			lock_release(&client->ctx->lock);
@@ -1336,14 +1349,14 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 
 static int b2b_sdp_server_reply_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 {
-	b2b_sdp_ctx_free(ctx, 1);
+	b2b_sdp_ctx_release(ctx, 1);
 	return 0;
 }
 
 static int b2b_sdp_server_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 {
 	b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, 200, NULL);
-	b2b_sdp_ctx_free(ctx, 1);
+	b2b_sdp_ctx_release(ctx, 1);
 	return 0;
 }
 
@@ -1472,7 +1485,8 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 	/* we will use the callid as the ideantifier */
 
 	b2b_key = b2b_api.server_new(msg, &contact, b2b_sdp_server_notify,
-			&b2b_sdp_demux_server_cap, &msg->callid->body, NULL, ctx, NULL);
+			&b2b_sdp_demux_server_cap, &msg->callid->body, NULL,
+			ctx, b2b_sdp_ctx_free);
 	if (!b2b_key) {
 		LM_ERR("could not create b2b sdp demux server!\n");
 		return -1;
@@ -1510,7 +1524,8 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 
 		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
 		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
-				&b2b_sdp_demux_client_cap, &ctx->callid, NULL, client, NULL);
+				&b2b_sdp_demux_client_cap, &ctx->callid, NULL,
+				client, b2b_sdp_client_free);
 		pkg_free(body->s);
 		if (!b2b_key) {
 			LM_ERR("could not create b2b sdp demux client!\n");
@@ -1593,7 +1608,7 @@ static int b2b_sdp_demux(struct sip_msg *msg, str *uri,
 	return 0;
 error:
 	free_sdp_content(&sdp);
-	b2b_sdp_ctx_free(ctx, 1);
+	b2b_sdp_ctx_release(ctx, 1);
 	return -1;
 }
 
@@ -1787,12 +1802,12 @@ static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
 	}
 	return;
 error:
-	b2b_sdp_ctx_free(ctx, 0);
+	b2b_sdp_ctx_release(ctx, 0);
 }
 
 static void b2b_sdp_server_event_received_delete(struct b2b_sdp_ctx *ctx, bin_packet_t *store)
 {
-	b2b_sdp_ctx_free(ctx, 0);
+	b2b_sdp_ctx_release(ctx, 0);
 }
 
 static void b2b_sdp_server_event_trigger(enum b2b_entity_type et, str *key,
@@ -1923,8 +1938,8 @@ static void b2b_sdp_client_event_receive_create(str *key, bin_packet_t *store)
 static void b2b_sdp_client_event_receive_delete(struct b2b_sdp_client *client,
 		bin_packet_t *store)
 {
-	b2b_sdp_client_remove(client);
 	b2b_sdp_client_release(client, 1);
+	b2b_sdp_client_remove(client);
 }
 
 static void b2b_sdp_client_event_trigger(enum b2b_entity_type et, str *key,
