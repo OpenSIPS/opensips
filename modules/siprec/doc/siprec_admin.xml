@@ -84,10 +84,12 @@
 	<para>
 		Since &osips; is a SIP Proxy, it does not have any Media Capabilities
 		by itself. Thus we need to rely on a different Media Server to capture
-		the RTP traffic and fork it to the SRS. This module currently uses the
-		<ulink url='rtpproxy'>RTPProxy module</ulink> in &osips; to instruct
-		the <ulink url='http://www.rtpproxy.org/'>RTPProxy Media
-			Server</ulink> to fork the RTP media to the SRS.
+		the RTP traffic and fork it to the SRS. The current implementation
+		supports both the <ulink url='http://www.rtpproxy.org/'>RTPProxy</ulink>
+		(through the <ulink url='rtpproxy'>RTPProxy module</ulink>) and
+		<ulink url='https://github.com/sipwise/rtpengine'>RTPEngine</ulink>
+		(through the <ulink url='rtpengine'>RTEngine module</ulink>) Media
+		Servers.
 	</para>
 	</section>
 
@@ -96,12 +98,12 @@
 	<para>
 		The <emphasis>siprec</emphasis> module supports failover between
 		multiple SRS servers - when calling the <emphasis><xref
-				linkend="func_siprec_start_recording"/></emphasis> function, one
-		can provision more SRS URIs, separated by comma. In this case, &osips;
+		linkend="func_siprec_start_recording"/></emphasis> function, one
+		can provision multiple SRS URIs, separated by comma. In this case, &osips;
 		will try to use them in the same order specified, one by one, until
 		either one of them responds with a positive reply (200 OK), or the
 		response code is one of the codes matched by the <emphasis><xref
-				linkend="param_skip_failover_codes"/></emphasis> regular expression.
+		linkend="param_skip_failover_codes"/></emphasis> regular expression.
 		In the latter case the call is not recorded at all.
 	</para>
 	</section>
@@ -168,7 +170,8 @@
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>RTPProxy</emphasis> - RTPProxy module used for controlling the media forked.
+				<emphasis>RTP_Relay</emphasis> - RTP Relay module used for controlling the
+				Media Servers that will fork the media.
 			</para>
 			</listitem>
 			<listitem>
@@ -232,7 +235,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 		<title>Exported Functions</title>
 		<section id="func_siprec_start_recording" xreflabel="siprec_start_recording()">
 			<title>
-			<function moreinfo="none">siprec_start_recording(srs[, rtpproxy_sock])</function>
+			<function moreinfo="none">siprec_start_recording(srs)</function>
 			</title>
 			<para>
 				Calling this function on an initial
@@ -256,13 +259,6 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 					URIs. These URIs are used in the order specified. See
 					<xref linkend="siprec_srs_failover"/> for more
 					information.
-				</para></listitem>
-				<listitem><para>
-					<emphasis>rtpproxy_sock</emphasis> (string, optional) - the
-					RTPProxy socket used for this call. If absent, the rtpproxy
-					module will try to detect the proxy used for the initial call,
-					based on the default set provisioned in the
-					<emphasis>rtpproxy</emphasis> module.
 				</para></listitem>
 				</itemizedlist>
 			</para>
@@ -307,7 +303,8 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	$xml(caller_xml) = "&lt;nameID&gt;&lt;/nameID&gt;";
 	$xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:5090";
 	$xml(caller_xml/nameID) = "&lt;name&gt;test&lt;/name&gt;";
-	siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
+	$siprec(caller) = $xml(caller_xml/nameID);
+	siprec_start_recording($var(srs));
 	...
 	</programlisting>
 			</example>
@@ -316,7 +313,8 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 			<title>Use <function>siprec_start_recording()</function> function with custom headers</title>
 			<programlisting format="linespecific">
 	...
-	siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
+	$siprec(headers) = "X-MY-CUSTOM_HDR: 1\r\n";
+	siprec_start_recording($var(srs));
 	...
 	</programlisting>
 			</example>
@@ -428,4 +426,3 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	</section>
 
 </chapter>
-

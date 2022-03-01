@@ -353,7 +353,6 @@ no_recording:
 
 int srec_restore_callback(struct src_sess *sess)
 {
-	str param;
 	if (srec_b2b.restore_logic_info(B2B_CLIENT, &sess->b2b_key,
 			srec_b2b_notify, sess, NULL) < 0) {
 		LM_ERR("cannot register notify callback for [%.*s]!\n",

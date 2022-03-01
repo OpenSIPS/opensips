@@ -61,8 +61,7 @@ static dep_export_t deps = {
 /* exported commands */
 static cmd_export_t cmds[] = {
 	{"siprec_start_recording",(cmd_function)siprec_start_rec, {
-		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{"siprec_pause_recording",(cmd_function)siprec_pause_rec,
 		{{0,0,0}}, ALL_ROUTES},
