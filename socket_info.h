@@ -253,6 +253,11 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_SMPP; return 0;
 			}
 			break;
+		case PROTO2UINT('m', 's', 'r'):
+			if(len==4 && (s[3]=='p' || s[3]=='P')) {
+				*proto=PROTO_MSRP; return 0;
+			}
+			break;
 		default:
 			if(len==2 && (s[0]|0x20)=='w' && (s[1]|0x20)=='s') {
 				*proto=PROTO_WS; return 0;
