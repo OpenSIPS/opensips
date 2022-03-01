@@ -45,7 +45,7 @@ extern struct struct_hist_list *srec_hist;
 #endif
 #endif
 
-#define SIPREC_SESSION_VERSION 1
+#define SIPREC_SESSION_VERSION 2
 #define SRC_MAX_PARTICIPANTS 2
 /* Uncomment this to enable SIPREC debugging
 #define SIPREC_DEBUG_REF
@@ -60,6 +60,7 @@ extern struct struct_hist_list *srec_hist;
 #endif
 
 struct srec_dlg;
+struct srec_var;
 
 struct srs_node {
 	str uri;
@@ -88,10 +89,10 @@ struct src_sess {
 	time_t ts;
 	int version;
 	int streams_no;
-	int streams_inactive;
-	str rtpproxy;
 	str media;
 	str headers;
+	rtp_ctx rtp;
+	str initial_sdp;
 
 	/* SRS */
 	struct list_head srs;
@@ -122,8 +123,7 @@ struct src_sess {
 #endif
 };
 
-struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *group,
-		str *hdrs, struct socket_info *si);
+struct src_sess *src_new_session(str *srs, rtp_ctx rtp, struct srec_var *var);
 void src_free_session(struct src_sess *sess);
 int src_add_participant(struct src_sess *sess, str *aor, str *name, str *xml_val,
 		siprec_uuid *uuid, time_t *start);

@@ -26,31 +26,28 @@
 #include "siprec_sess.h"
 #include "siprec_body.h"
 #include "siprec_logic.h"
+#include "siprec_var.h"
 #include "../../bin_interface.h"
 
 struct tm_binds srec_tm;
 struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
-static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
+static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 		struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid)
 {
-	struct src_sess *ss = shm_malloc(sizeof *ss + (rtp ? rtp->len : 0) +
-			(m_ip ? m_ip->len : 0) + (grp ? grp->len : 0) + (hdrs ? hdrs->len : 0));
+	struct src_sess *ss = shm_malloc(sizeof *ss + (m_ip ? m_ip->len : 0) +
+			(grp ? grp->len : 0) + (hdrs ? hdrs->len : 0));
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
 	}
 	memset(ss, 0, sizeof *ss);
 	ss->socket = si;
-	if (rtp) {
-		ss->rtpproxy.s = (char *)(ss + 1);
-		memcpy(ss->rtpproxy.s, rtp->s, rtp->len);
-		ss->rtpproxy.len = rtp->len;
-	}
+	ss->rtp = rtp;
 
 	if (m_ip) {
-		ss->media.s = (char *)(ss + 1) + ss->rtpproxy.len;
+		ss->media.s = (char *)(ss + 1);
 		memcpy(ss->media.s, m_ip->s, m_ip->len);
 		ss->media.len = m_ip->len;
 	} else {
@@ -59,13 +56,13 @@ static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
 	}
 
 	if (grp) {
-		ss->group.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media.len;
+		ss->group.s = (char *)(ss + 1) + ss->media.len;
 		memcpy(ss->group.s, grp->s, grp->len);
 		ss->group.len = grp->len;
 	}
 
 	if (hdrs && hdrs->len) {
-		ss->headers.s = (char *)(ss + 1) + ss->rtpproxy.len + ss->media.len +
+		ss->headers.s = (char *)(ss + 1) + ss->media.len +
 			ss->group.len;
 		memcpy(ss->headers.s, hdrs->s, hdrs->len);
 		ss->headers.len = hdrs->len;
@@ -85,8 +82,8 @@ static struct src_sess *src_create_session(str *rtp, str *m_ip, str *grp,
 	return ss;
 }
 
-struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *grp,
-		str *hdrs, struct socket_info *si)
+struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
+		struct srec_var *var)
 {
 	struct src_sess *sess;
 	struct srs_node *node;
@@ -96,7 +93,12 @@ struct src_sess *src_new_session(str *srs, str *rtp, str *m_ip, str *grp,
 	siprec_uuid uuid;
 	siprec_build_uuid(uuid);
 
-	sess = src_create_session(rtp, m_ip, grp, si, 0, time(NULL), hdrs, &uuid);
+	sess = src_create_session(rtp,
+			(var && var->media.len)?&var->media:NULL,
+			(var && var->group.len)?&var->group:NULL,
+			(var?var->si:NULL), 0, time(NULL),
+			(var && var->headers.len)?&var->headers:NULL,
+			&uuid);
 	if (!sess)
 		return NULL;
 
@@ -252,11 +254,12 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	bin_packet_t packet;
 	int version;
 	time_t ts;
-	str tmp, rtpproxy, media_ip, srs_uri, group, host;
+	str tmp, media_ip, srs_uri, group;
 	str aor, name, xml_val, *xml;
 	siprec_uuid uuid;
 	struct socket_info *si;
-	int p, port, proto, c, label, medianum;
+	int p, c, label, medianum;
+	rtp_ctx rtp;
 	int p_type;
 	int flags;
 
@@ -265,10 +268,18 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		return;
 	}
 
+	/* retrieve the RTP information */
+	rtp = srec_rtp.get_ctx_dlg(dlg);
+	if (!rtp) {
+		LM_DBG("no RTP Relay context not available!\n");
+		return;
+	}
+
 	if (srec_dlg.fetch_dlg_value(dlg, &srec_dlg_name, &buf, 0) < 0) {
 		LM_DBG("cannot fetch siprec info from the dialog\n");
 		return;
 	}
+
 	bin_init_buffer(&packet, buf.s, buf.len);
 
 	if (get_bin_pkg_version(&packet) != SIPREC_SESSION_VERSION) {
@@ -286,21 +297,13 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	memcpy(&ts, tmp.s, tmp.len);
 	SIPREC_BIN_POP(int, &version);
 	SIPREC_BIN_POP(int, &flags);
-	SIPREC_BIN_POP(str, &rtpproxy);
 	SIPREC_BIN_POP(str, &media_ip);
 	SIPREC_BIN_POP(str, &srs_uri);
 	SIPREC_BIN_POP(str, &group);
 	SIPREC_BIN_POP(str, &tmp);
 
 	if (tmp.len) {
-		if (parse_phostport(tmp.s, tmp.len, &host.s, &host.len,
-				&port, &proto) != 0) {
-			LM_ERR("bad socket <%.*s>\n", tmp.len, tmp.s);
-			goto error;
-		}
-
-		si = grep_sock_info(&host, (unsigned short)port,
-				(unsigned short)proto);
+		si = parse_sock_info(&tmp);
 		if (!si)
 			LM_DBG("non-local socket <%.*s>\n", tmp.len, tmp.s);
 	} else
@@ -314,7 +317,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(&uuid, tmp.s, tmp.len);
 
-	sess = src_create_session((rtpproxy.len ? &rtpproxy : NULL),
+	sess = src_create_session(rtp,
 			(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
 			si, version, ts, NULL /* we do not replicate headers */, &uuid);
 	if (!sess) {
@@ -365,7 +368,6 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(sess->b2b_callid.s, tmp.s, tmp.len);
 	sess->b2b_callid.len = tmp.len;
-	SIPREC_BIN_POP(int, &sess->streams_inactive);
 
 	SIPREC_BIN_POP(int, &p);
 	for (; p > 0; p--) {
@@ -407,9 +409,8 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 				goto error;
 			}
 			memcpy(&uuid, tmp.s, tmp.len);
-			SIPREC_BIN_POP(str, &tmp);
-			if (srs_add_raw_sdp_stream(label, medianum, &tmp, &uuid,
-					sess, &sess->participants[sess->participants_no - 1]) < 0) {
+			if (srs_add_raw_sdp_stream(label, medianum, &uuid, sess,
+					&sess->participants[sess->participants_no - 1]) < 0) {
 				LM_ERR("cannot add new media stream!\n");
 				goto error;
 			}
@@ -487,7 +488,6 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->ts));
 	SIPREC_BIN_PUSH(int, ss->version);
 	SIPREC_BIN_PUSH(int, ss->flags);
-	SIPREC_BIN_PUSH(str, &ss->rtpproxy);
 	SIPREC_BIN_PUSH(str, &ss->media);
 	/* push only the first SRS - this is the one chosen */
 	SIPREC_BIN_PUSH(str, &SIPREC_SRS(ss));
@@ -501,7 +501,6 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_PUSH(str, &ss->b2b_fromtag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_totag);
 	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
-	SIPREC_BIN_PUSH(int, ss->streams_inactive);
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 
 	for (p = 0; p < ss->participants_no; p++) {
@@ -527,7 +526,6 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 			SIPREC_BIN_PUSH(int, s->label);
 			SIPREC_BIN_PUSH(int, s->medianum);
 			SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(s->uuid));
-			SIPREC_BIN_PUSH(str, &s->body);
 		}
 	}
 	bin_get_buffer(&packet, &buffer);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 OpenSIPS Solutions
+ * Copyright (C) 2021 OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -18,25 +18,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _MEDIA_BRIDGING_H_
-#define _MEDIA_BRIDGING_H_
+#include "rtp_relay_load.h"
 
-#define MEDIA_LEG_UNSPEC	0
-#define MEDIA_LEG_CALLER	1
-#define MEDIA_LEG_CALLEE	2
-#define MEDIA_LEG_BOTH		3
-
-struct media_session_leg;
-
-#include "../tm/tm_load.h"
-extern struct tm_binds media_tm;
-#include "../dialog/dlg_load.h"
-extern struct dlg_binds media_dlg;
-#include "../b2b_entities/b2be_load.h"
-extern struct b2b_api media_b2b;
-#include "../rtp_relay/rtp_relay_load.h"
-extern struct rtp_relay_binds media_rtp;
-
-int b2b_media_restore_callbacks(struct media_session_leg *msl);
-
-#endif /* _MEDIA_BRIDGING_H_ */
+int rtp_relay_load(struct rtp_relay_binds *binds)
+{
+	binds->get_ctx = rtp_relay_get_context;
+	binds->get_ctx_dlg = rtp_relay_get_context_dlg;
+	binds->copy_offer = rtp_relay_copy_offer;
+	binds->copy_answer = rtp_relay_copy_answer;
+	binds->copy_delete = rtp_relay_copy_delete;
+	return 1;
+}

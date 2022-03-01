@@ -20,6 +20,7 @@
 
 #include "rtp_relay.h"
 #include "../../ut.h"
+#include "rtp_relay_ctx.h"
 
 OSIPS_LIST_HEAD(rtp_relays);
 
@@ -36,7 +37,8 @@ struct rtp_relay *rtp_relay_get(str *name)
 	return NULL;
 }
 
-int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs)
+int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs,
+		struct rtp_relay_hooks *hooks)
 {
 	struct rtp_relay *relay;
 	str name_s;
@@ -60,5 +62,9 @@ int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs)
 
 	list_add(&relay->list, &rtp_relays);
 	LM_INFO("Adding RTP relay %.*s\n", relay->name.len, relay->name.s);
+
+	/* fill in hooks */
+	memset(hooks, 0, sizeof *hooks);
+	hooks->get_sdp = rtp_relay_get_sdp;
 	return 0;
 }

@@ -23,6 +23,7 @@
 #include "../../mem/mem.h"
 #include "../../ut.h"
 
+#include "rtp_relay_load.h"
 #include "rtp_relay_ctx.h"
 #include "rtp_relay.h"
 
@@ -62,6 +63,8 @@ static cmd_export_t mod_cmds[] = {
 		{0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE},
 	{"register_rtp_relay", (cmd_function)rtp_relay_reg,
+		{{0,0,0}},0},
+	{"load_rtp_relay", (cmd_function)rtp_relay_load,
 		{{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };

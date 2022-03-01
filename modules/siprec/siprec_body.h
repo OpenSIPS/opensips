@@ -30,45 +30,33 @@
 #include "../../str.h"
 #include "../../lib/list.h"
 #include "../../parser/msg_parser.h"
-#include "../rtpproxy/rtpproxy_load.h"
+#include "../rtp_relay/rtp_relay_load.h"
 #include "siprec_uuid.h"
 
-extern struct rtpproxy_binds srec_rtp;
+extern struct rtp_relay_binds srec_rtp;
 extern int siprec_port_min;
 extern int siprec_port_max;
 
 struct src_sess;
 struct src_part;
 
-#define SRS_SDP (1 << 0)
-#define SRS_XML (1 << 1)
-#define SRS_BOTH (SRS_SDP|SRS_XML)
-
 struct srs_sdp_stream {
 	int label;
 	int port;
 	int inactive;
 	int medianum;
-	str body;
 	siprec_uuid uuid;
 	struct list_head list;
 };
 
 void srs_free_stream(struct srs_sdp_stream *stream);
 
-int srs_fill_sdp_stream(struct sip_msg *msg, struct src_sess *sess,
-		struct src_part *part, int update);
-int srs_add_raw_sdp_stream(int label, int medianum, str *body,
-		siprec_uuid *uuid, struct src_sess *sess, struct src_part *part);
-int srs_build_body(struct src_sess *sess, str *body, int type);
-int srs_build_body_inactive(struct src_sess *sess, str *body);
+int srs_add_raw_sdp_stream(int label, int medianum, siprec_uuid *uuid,
+		struct src_sess *sess, struct src_part *part);
+int srs_build_body(struct src_sess *sess, str *sdp, str *body);
 
-void srs_stop_media(struct src_sess *sess);
 int srs_handle_media(struct sip_msg *msg, struct src_sess *sess);
 
 int srs_build_default_name(struct to_body *body);
-
-int srs_init(void);
-
 
 #endif /* _SIPREC_BODY_H_ */

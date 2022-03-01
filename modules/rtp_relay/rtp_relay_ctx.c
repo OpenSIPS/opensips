@@ -19,6 +19,7 @@
  */
 
 #include "rtp_relay_ctx.h"
+#include "rtp_relay_load.h"
 #include "../../mem/shm_mem.h"
 #include "../tm/tm_load.h"
 #include "../dialog/dlg_load.h"
@@ -48,7 +49,7 @@ static struct list_head *rtp_relay_contexts;
 	rtp_relay_dlg.dlg_ctx_put_ptr(_d, rtp_relay_dlg_ctx_idx, _p)
 
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
-static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx, str *to_tag);
 
 /* pvar handing */
 static struct {
@@ -105,6 +106,7 @@ struct rtp_relay_ctx *rtp_relay_new_ctx(void)
 	lock_init(&ctx->lock);
 	INIT_LIST_HEAD(&ctx->sessions);
 	INIT_LIST_HEAD(&ctx->list);
+	INIT_LIST_HEAD(&ctx->copy_contexts);
 	return ctx;
 }
 
@@ -134,6 +136,16 @@ struct rtp_relay_ctx *rtp_relay_get_ctx(void)
 	else
 		RTP_RELAY_PUT_CTX(ctx);
 	return ctx;
+}
+
+rtp_ctx rtp_relay_get_context(void)
+{
+	return rtp_relay_try_get_ctx();
+}
+
+rtp_ctx rtp_relay_get_context_dlg(struct dlg_cell *dlg)
+{
+	return RTP_RELAY_GET_DLG_CTX(dlg);
 }
 
 static void rtp_relay_ctx_free_sess(struct rtp_relay_sess *s)
@@ -170,6 +182,10 @@ void rtp_relay_ctx_free(void *param)
 
 	if (ctx->callid.s)
 		shm_free(ctx->callid.s);
+	if (ctx->from_tag.s)
+		shm_free(ctx->from_tag.s);
+	if (ctx->to_tag.s)
+		shm_free(ctx->to_tag.s);
 	if (ctx->dlg_callid.s)
 		shm_free(ctx->dlg_callid.s);
 
@@ -226,6 +242,38 @@ static void rtp_relay_move_ctx( struct cell* t, int type, struct tmcb_params *ps
 		} \
 	} while (0)
 
+typedef struct rtp_copy_ctx {
+	str id;
+	void *ctx;
+	struct list_head list;
+} rtp_copy_ctx;
+
+rtp_copy_ctx *rtp_copy_ctx_get(struct rtp_relay_ctx *ctx, str *id)
+{
+	struct list_head *it;
+	rtp_copy_ctx *c;
+
+	list_for_each(it, &ctx->copy_contexts) {
+		c = list_entry(it, rtp_copy_ctx, list);
+		if (str_match(&c->id, id))
+			return c;
+	}
+	return NULL;
+}
+
+rtp_copy_ctx *rtp_copy_ctx_new(struct rtp_relay_ctx *ctx, str *id)
+{
+
+	rtp_copy_ctx *copy_ctx = shm_malloc(sizeof(*copy_ctx) + id->len);
+	if (!copy_ctx)
+		return NULL;
+	memset(copy_ctx, 0, sizeof *copy_ctx);
+	copy_ctx->id.s = (char *)(copy_ctx + 1);
+	copy_ctx->id.len = id->len;
+	memcpy(copy_ctx->id.s, id->s, id->len);
+	list_add(&copy_ctx->list, &ctx->copy_contexts);
+	return copy_ctx;
+};
 
 static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params)
@@ -233,9 +281,11 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 	str buffer;
 	str str_empty = str_init("");
 	bin_packet_t packet;
+	struct list_head *it;
 	enum rtp_relay_type rtype;
 	enum rtp_relay_var_flags flag;
 	struct rtp_relay_sess *sess;
+	rtp_copy_ctx *copy_ctx;
 	str name = str_init("rtp_relay_ctx");
 	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
 
@@ -257,6 +307,7 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 		sess = ctx->main;
 	}
 	RTP_RELAY_BIN_PUSH(str, &sess->relay->name);
+	RTP_RELAY_BIN_PUSH(int, ctx->state);
 	RTP_RELAY_BIN_PUSH(int, sess->index);
 	RTP_RELAY_BIN_PUSH(int, sess->state);
 	RTP_RELAY_BIN_PUSH(int, sess->server.set);
@@ -268,6 +319,17 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 			else
 				RTP_RELAY_BIN_PUSH(str, &str_empty);
 		}
+	}
+	if (sess->relay->funcs.copy_serialize) {
+		RTP_RELAY_BIN_PUSH(int, list_size(&ctx->copy_contexts));
+		/* also serialize all the copy contexts */
+		list_for_each(it, &ctx->copy_contexts) {
+			copy_ctx = list_entry(it, rtp_copy_ctx, list);
+			RTP_RELAY_BIN_PUSH(str, &copy_ctx->id);
+			sess->relay->funcs.copy_serialize(copy_ctx->ctx, &packet);
+		}
+	} else {
+		RTP_RELAY_BIN_PUSH(int, 0);
 	}
 
 	RTP_RELAY_BIN_PUSH(str, &ctx->callid);
@@ -299,6 +361,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	enum rtp_relay_var_flags flag;
 	struct rtp_relay_sess *sess;
 	struct rtp_relay_ctx *ctx = NULL;
+	rtp_copy_ctx *copy_ctx;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch rtp relay info!\n");
@@ -326,6 +389,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	ctx = rtp_relay_new_ctx();
 	if (!ctx)
 		return;
+	RTP_RELAY_BIN_POP(int, &ctx->state);
 
 	RTP_RELAY_BIN_POP(int, &index);
 	sess = rtp_relay_new_sess(ctx, index);
@@ -348,11 +412,23 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	if (tmp.len)
 		shm_str_dup(&ctx->callid, &tmp);
 
+	if (bin_pop_int(&packet, &index) == 0) {
+		while (index--) {
+			RTP_RELAY_BIN_POP(str, &tmp);
+			copy_ctx = rtp_copy_ctx_new(ctx, &tmp);
+			if (copy_ctx &&
+					!relay->funcs.copy_deserialize(&copy_ctx->ctx, &packet)) {
+				list_del(&copy_ctx->list);
+				shm_free(copy_ctx);
+			}
+		}
+	}
+
 	/* all good now - delete the dialog variable as it is useless */
 	rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, NULL);
 
 	ctx->main = sess;
-	if (rtp_relay_dlg_callbacks(dlg, ctx) < 0)
+	if (rtp_relay_dlg_callbacks(dlg, ctx, NULL) < 0)
 		goto error;
 
 	return;
@@ -707,8 +783,8 @@ static void rtp_relay_delete_dlg(struct dlg_cell *dlg,
 	struct rtp_relay_session info;
 	memset(&info, 0, sizeof info);
 	info.callid = &ctx->callid;
-	info.from_tag = &dlg->legs[DLG_CALLER_LEG].tag;
-	info.to_tag = &dlg->legs[callee_idx(dlg)].tag;
+	info.from_tag = &ctx->from_tag;
+	info.to_tag = &ctx->to_tag;
 	info.branch = sess->index;
 	rtp_relay_delete(&info, sess, NULL);
 }
@@ -854,10 +930,16 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	}
 }
 
-static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx)
+static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
+		struct rtp_relay_ctx *ctx, str *to_tag)
 {
-	if (shm_str_sync(&ctx->dlg_callid, &dlg->callid) < 0)
-		LM_ERR("could not store callid in dialog\n");
+	if (shm_str_sync(&ctx->callid, &dlg->callid) < 0)
+		LM_ERR("could not store callid in context\n");
+	if (shm_str_sync(&ctx->from_tag, &dlg->legs[DLG_CALLER_LEG].tag) < 0)
+		LM_ERR("could not store from tag in context\n");
+	if (shm_str_sync(&ctx->to_tag,
+			(to_tag?to_tag:&dlg->legs[callee_idx(dlg)].tag)) < 0)
+		LM_ERR("could not store to tag in context\n");
 
 	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
 			rtp_relay_dlg_mi, NULL, NULL) < 0)
@@ -910,9 +992,10 @@ static int rtp_relay_sess_last(struct rtp_relay_ctx *ctx,
 }
 
 static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
-	struct rtp_relay_sess *sess, struct cell *t)
+	struct rtp_relay_sess *sess, struct cell *t, struct sip_msg *msg)
 {
 	struct dlg_cell *dlg;
+	str *to_tag = NULL;
 
 	rtp_sess_set_success(sess);
 	if (rtp_relay_sess_last(ctx, sess))
@@ -927,7 +1010,26 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 		RTP_RELAY_PUT_TM_CTX(t, NULL);
 		RTP_RELAY_PUT_CTX(NULL);
 
-		if (rtp_relay_dlg_callbacks(dlg, ctx) < 0) {
+		/* if we have a to_tag, use it from dlg,
+		 * otherwise fetch it from tm */
+		if (!dlg->legs[callee_idx(dlg)].tag.len) {
+			if (parse_headers(msg, HDR_TO_F, 0) == -1) {
+				LM_ERR("failed to parse To header\n");
+				return -1;
+			}
+
+			if (!msg->to) {
+				LM_ERR("missing To header\n");
+				return -1;
+			}
+
+			to_tag = &get_to(msg)->tag_value;
+
+			if (to_tag->len == 0)
+				to_tag = NULL;
+		}
+
+		if (rtp_relay_dlg_callbacks(dlg, ctx, to_tag) < 0) {
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
 		}
@@ -988,7 +1090,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 	else
 		ret = rtp_relay_answer(&info, sess, ctx->main, RTP_RELAY_ANSWER, NULL);
 	if (ret > 0 && msg->REPLY_STATUS >= 200)
-		rtp_relay_sess_success(ctx, sess, t);
+		rtp_relay_sess_success(ctx, sess, t, msg);
 	return ret;
 }
 
@@ -1379,8 +1481,8 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 				info.callid = &tmp->ctx->callid;
 			else
 				info.callid = &tmp->ctx->dlg_callid;
-			info.from_tag = &tmp->dlg->legs[callee_idx(tmp->dlg)].tag;
-			info.to_tag = &tmp->dlg->legs[DLG_CALLER_LEG].tag;
+			info.from_tag = &tmp->ctx->to_tag;
+			info.to_tag = &tmp->ctx->from_tag;
 			info.branch = tmp->sess->index;
 			info.body = pbody;
 			info.msg = msg;
@@ -1470,8 +1572,10 @@ static int rtp_relay_update_reinvites(struct rtp_relay_tmp *tmp)
 
 	/* offer callee's SDP to get SDP for caller */
 	info.callid = &tmp->ctx->callid;
-	info.from_tag = &tmp->dlg->legs[callee_leg].tag;
-	info.to_tag = &tmp->dlg->legs[DLG_CALLER_LEG].tag;
+	if (!info.callid->len)
+		info.callid = &tmp->ctx->dlg_callid;
+	info.from_tag = &tmp->ctx->to_tag;
+	info.to_tag = &tmp->ctx->from_tag;
 	info.branch = tmp->sess->index;
 	info.body = &body;
 	info.msg = get_dummy_sip_msg();
@@ -1758,4 +1862,150 @@ mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
 error:
 	rtp_relay_release_tmp(ctmp, 0);
 	return NULL;
+}
+
+int rtp_relay_copy_offer(rtp_ctx _ctx, str *id, str *flags,
+		unsigned int copy_flags, unsigned int streams, str *ret_body)
+{
+	int release = 0;
+	struct rtp_relay_session info;
+	struct rtp_relay_ctx *ctx = _ctx;
+	rtp_copy_ctx *rtp_copy;
+	if (!ret_body) {
+		LM_ERR("no body to return!\n");
+		return -1;
+	}
+	if (!ctx) {
+		LM_ERR("no context to use!\n");
+		return -1;
+	}
+	if (!ctx->main || !(rtp_relay_ctx_engaged(ctx)) || !ctx->main->relay) {
+		LM_ERR("rtp not established!\n");
+		return -1;
+	}
+	if (!ctx->main->relay->funcs.copy_offer) {
+		LM_ERR("rtp does not support recording!\n");
+		return -1;
+	}
+	rtp_copy = rtp_copy_ctx_get(ctx, id);
+	if (!rtp_copy) {
+		rtp_copy = rtp_copy_ctx_new(ctx, id);
+		if (!rtp_copy) {
+			LM_ERR("oom for rtp copy context!\n");
+			return -1;
+		}
+		release = 1;
+	}
+	memset(&info, 0, sizeof info);
+	info.callid = &ctx->callid;
+	if (!info.callid->len)
+		info.callid = &ctx->dlg_callid;
+	info.from_tag = &ctx->from_tag;
+	info.to_tag = &ctx->to_tag;
+	info.branch = ctx->main->index;
+	if (ctx->main->relay->funcs.copy_offer(&info, &ctx->main->server,
+			&rtp_copy->ctx, flags, copy_flags, streams, ret_body) < 0) {
+		if (release) {
+			list_del(&rtp_copy->list);
+			shm_free(rtp_copy);
+		}
+		return -1;
+	}
+	return 0;
+}
+
+int rtp_relay_copy_answer(rtp_ctx _ctx, str *id,
+		str *flags, str *body)
+{
+	struct rtp_relay_session info;
+	struct rtp_relay_ctx *ctx = _ctx;
+	struct rtp_copy_ctx *copy_ctx;
+	if (!body) {
+		LM_ERR("no body to provide!\n");
+		return -1;
+	}
+	if (!ctx) {
+		LM_ERR("no context to use!\n");
+		return -1;
+	}
+	if (!ctx->main || !(rtp_relay_ctx_engaged(ctx)) || !ctx->main->relay) {
+		LM_ERR("rtp not established!\n");
+		return -1;
+	}
+	if (!ctx->main->relay->funcs.copy_answer) {
+		LM_ERR("rtp does not support recording!\n");
+		return -1;
+	}
+	copy_ctx = rtp_copy_ctx_get(ctx, id);
+	if (!copy_ctx) {
+		LM_ERR("cannot find copy context %.*s\n", id->len, id->s);
+		return -1;
+	}
+	memset(&info, 0, sizeof info);
+	info.callid = &ctx->callid;
+	if (!info.callid->len)
+		info.callid = &ctx->dlg_callid;
+	info.from_tag = &ctx->from_tag;
+	info.to_tag = &ctx->to_tag;
+
+	info.branch = ctx->main->index;
+	return ctx->main->relay->funcs.copy_answer(
+			&info, &ctx->main->server,
+			copy_ctx->ctx, flags, body);
+}
+
+int rtp_relay_copy_delete(rtp_ctx _ctx, str *id, str *flags)
+{
+	int ret;
+	struct rtp_relay_session info;
+	struct rtp_relay_ctx *ctx = _ctx;
+	struct rtp_copy_ctx *copy_ctx;
+
+	if (!ctx) {
+		LM_ERR("no context to use!\n");
+		return -1;
+	}
+	if (!ctx->main || !ctx->main->relay) {
+		LM_ERR("rtp not established!\n");
+		return -1;
+	}
+	if (!ctx->main->relay->funcs.copy_delete) {
+		LM_DBG("rtp does not support stop recording!\n");
+		return 1;
+	}
+	copy_ctx = rtp_copy_ctx_get(ctx, id);
+	if (!copy_ctx) {
+		LM_ERR("cannot find copy context %.*s\n", id->len, id->s);
+		return -1;
+	}
+	memset(&info, 0, sizeof info);
+	info.callid = &ctx->callid;
+	if (!info.callid->len)
+		info.callid = &ctx->dlg_callid;
+	info.from_tag = &ctx->from_tag;
+	info.to_tag = &ctx->to_tag;
+	info.branch = ctx->main->index;
+	ret = ctx->main->relay->funcs.copy_delete(
+			&info, &ctx->main->server,
+			copy_ctx->ctx, flags);
+	list_del(&copy_ctx->list);
+	shm_free(copy_ctx);
+	return ret;
+}
+
+str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type)
+{
+	/* fetch the dialog */
+	int leg;
+	struct dlg_cell *dlg = rtp_relay_dlg.get_dlg();
+	if (!dlg)
+		dlg = rtp_relay_dlg.get_dlg_by_callid(sess->callid, 0);
+
+	if (!dlg)
+		return NULL;
+	leg = (type==RTP_RELAY_CALLER?
+		DLG_CALLER_LEG:callee_idx(dlg));
+	return (dlg->legs[leg].tmp_in_sdp.s?
+			&dlg->legs[leg].tmp_in_sdp:
+			&dlg->legs[leg].in_sdp);
 }

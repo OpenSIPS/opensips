@@ -33,36 +33,17 @@ str *media_session_get_hold_sdp(struct media_session_leg *msl);
 
 str *media_get_dlg_headers(struct dlg_cell *dlg, int dleg, int ct);
 
-int media_fork_streams(struct media_session_leg *msl, struct media_fork_info *forks);
+struct media_fork_info *media_get_fork_sdp(struct media_session_leg *leg,
+		int medianum, str *body);
 
-struct media_fork_info *media_sdp_match(struct dlg_cell *dlg,
-		int leg, sdp_info_t *invite_sdp, int medianum);
-
-struct media_fork_info *media_sdp_get(struct dlg_cell *dlg,
-		int leg, int medianum, str *caller_body, str *callee_body);
-
-str *media_sdp_buf_get(void);
-
-int media_fork(struct dlg_cell *dlg, struct media_fork_info *mf);
-
-void media_forks_free(struct media_fork_info *mf);
-
-struct media_fork_info *media_fork_search(struct media_fork_info *mf, int search);
+int media_fork_offer(struct media_session_leg *leg,
+		struct media_fork_info *msl, str *body);
+int media_fork_answer(struct media_session_leg *leg,
+		struct media_fork_info *msl, str *body);
 
 int media_forks_stop(struct media_session_leg *msl);
-
-int media_fork_pause_resume(struct media_session_leg *msl, int medianum, int resume);
-
-int media_fork_body_update(struct media_session_leg *ml, str *body, int leg);
-
-int media_session_fork_update(struct media_session_leg *msl);
-
-int media_fork_update(struct media_session_leg *msl,
-		struct media_fork_info *mf, str *ip, str *port, int disabled);
-
-int media_util_init_static(void);
-
-void media_util_release_static(void);
+int media_fork_pause_resume(struct media_session_leg *msl,
+		int medianum, int resume);
 
 void media_exchange_event_trigger(enum b2b_entity_type et, str *key,
 		str *logic_param, void *param, enum b2b_event_type event_type,

@@ -486,6 +486,70 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 		</example>
 	</section>
 
+	<section id="param_generated_sdp_port_min"
+			xreflabel="generated_sdp_port_min">
+		<title><varname>generated_sdp_port_min</varname> (integer)</title>
+		<para>
+			When RTPProxy module needs to generate an SDP body,
+			use this value as the minimum value of the port.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>35000</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generated_sdp_port_min</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "generated_sdp_port_min", 10000)
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="param_generated_sdp_port_max"
+			xreflabel="generated_sdp_port_max">
+		<title><varname>generated_sdp_port_max</varname> (integer)</title>
+		<para>
+			When RTPProxy module needs to generate an SDP body,
+			use this value as the maximum value of the port.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>65000</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generated_sdp_port_max</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "generated_sdp_port_max", 30000)
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="param_generated_sdp_media_ip"
+			xreflabel="generated_sdp_media_ip">
+		<title><varname>generated_sdp_media_ip</varname> (string)</title>
+		<para>
+			When RTPProxy module needs to generate an SDP body,
+			use this value as the media_ip in the <emphasis>c=</emphasis>
+			and the <emphasis>o=</emphasis>.
+		</para>
+
+		<para>
+		<emphasis>Default value is <quote>127.0.0.1</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generated_sdp_media_ip</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rtpproxy", "generated_sdp_media_ip", "10.0.0.1")
+...
+		</programlisting>
+		</example>
+	</section>
+
 </section>
 
 

@@ -24,8 +24,12 @@
 #include "../../str.h"
 #include "../../sr_module.h"
 #include "../../lib/list.h"
+#include "../../bin_interface.h"
+#include "rtp_relay_common.h"
 
 #define RTP_RELAY_ALL_BRANCHES -1
+#define RTP_RELAY_CALLER 0
+#define RTP_RELAY_CALLEE 1
 
 struct rtp_relay_session {
 	struct sip_msg *msg;
@@ -50,6 +54,21 @@ struct rtp_relay_funcs {
 			str *flags, str *extra, str *body);
 	int (*delete)(struct rtp_relay_session *sess, struct rtp_relay_server *server,
 			str *flags, str *extra);
+
+	int (*copy_offer)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void **ctx, str *flags,
+			unsigned int copy_flags, unsigned int streams, str *ret);
+	int (*copy_answer)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void *ctx,
+			str *flags, str *body);
+	int (*copy_delete)(struct rtp_relay_session *sess,
+			struct rtp_relay_server *server, void *ctx, str *flags);
+	int (*copy_serialize)(void *ctx, bin_packet_t *packet);
+	int (*copy_deserialize)(void **ctx, bin_packet_t *packet);
+};
+
+struct rtp_relay_hooks {
+	str * (*get_sdp)(struct rtp_relay_session *sess, int type);
 };
 
 struct rtp_relay {
@@ -59,11 +78,14 @@ struct rtp_relay {
 	char _name_s[0];
 };
 
-typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_funcs *);
+typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_funcs *,
+		struct rtp_relay_hooks *hooks);
 struct rtp_relay *rtp_relay_get(str *name);
-int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs);
+int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs,
+		struct rtp_relay_hooks *hooks);
 
-static inline int register_rtp_relay(char *name, struct rtp_relay_funcs *funcs)
+static inline int register_rtp_relay(char *name,
+		struct rtp_relay_funcs *funcs, struct rtp_relay_hooks *hooks)
 {
 	reg_rtp_relay_f func;
 
@@ -71,7 +93,7 @@ static inline int register_rtp_relay(char *name, struct rtp_relay_funcs *funcs)
 	if (!(func=(reg_rtp_relay_f)find_export("register_rtp_relay", 0)))
 		return -1;
 
-	return func(name, funcs);
+	return func(name, funcs, hooks);
 }
 
 #endif /* _RTP_RELAY_H_ */

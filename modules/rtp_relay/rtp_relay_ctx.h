@@ -99,12 +99,13 @@ struct rtp_relay_sess {
 
 struct rtp_relay_ctx {
 	str callid;
-	str dlg_callid;
+	str dlg_callid, from_tag, to_tag;
 	gen_lock_t lock;
 	unsigned int state;
 	struct rtp_relay_sess *main;
 	struct list_head sessions;
 	struct list_head list;
+	struct list_head copy_contexts;
 };
 
 str *rtp_relay_flags_get_str(enum rtp_relay_var_flags flags);
@@ -133,6 +134,8 @@ mi_response_t *mi_rtp_relay_update(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+
+str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type);
 
 #define RTP_RELAY_CTX_LOCK(_c) lock_get(&_c->lock);
 #define RTP_RELAY_CTX_UNLOCK(_c) lock_release(&_c->lock);

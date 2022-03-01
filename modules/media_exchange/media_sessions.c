@@ -79,7 +79,8 @@ void media_session_leg_free(struct media_session_leg *msl)
 	}
 	LM_DBG("releasing media_session_leg=%p\n", msl);
 	if (msl->params && msl->type == MEDIA_SESSION_TYPE_FORK)
-		media_forks_free(msl->params);
+		shm_free(msl->params);
+		//media_forks_free(msl->params);
 	shm_free(msl);
 }
 

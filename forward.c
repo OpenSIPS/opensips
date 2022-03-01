@@ -180,7 +180,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 	 * eg: ipv4 -> ipv6 or ipv6 -> ipv4) */
 	switch(proto){
 		case PROTO_UDP:
-			if (msg &&
+			if (msg && msg->rcv.bind_address &&
 			msg->rcv.bind_address->address.af==to->s.sa_family &&
 			msg->rcv.bind_address->proto==PROTO_UDP) {
 				send_sock = msg->rcv.bind_address;
