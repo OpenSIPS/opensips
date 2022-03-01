@@ -1,0 +1,259 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section>
+	<title>Overview</title>
+	<para>
+		The <emphasis role='bold'>proto_msrp</emphasis> module provides
+		the MSRP protocol stack, meaning the network read/wite (plain and TLS),
+		message parsing and assembling, transactional layer and the basic
+		signalling operations.
+	</para>
+	</section>
+	<para>
+		Once loaded, you will be able to define MSRP listeners in your script,
+		by adding its IP, and optionally the listening port,
+		in your configuration file, similar to this example:
+	<para>
+		<programlisting format="linespecific">
+...
+socket=msrp:127.0.0.1:65432
+...
+</programlisting>
+	</para>
+	</para>
+
+	<section>
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The following libraries or applications must be installed before
+		running &osips; with this module loaded:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section>
+	<title>Exported Parameters</title>
+	<section>
+		<title><varname>msrp_send_timeout</varname> (integer)</title>
+		<para>
+		Time in milliseconds after a MSRP connection will be closed if it is
+		not available for blocking writing in this interval (and &osips; wants
+		to send something on it).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 100 ms.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>msrp_send_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_msrp", "msrp_send_timeout", 200)
+...
+</programlisting>
+		</example>
+	</section>
+	<section>
+		<title><varname>msrp_max_msg_chunks</varname> (integer)</title>
+		<para>
+			The maximum number of chunks that a SIP message is expected to
+			arrive via MSRP. If a packet is received more fragmented than this,
+			the connection is dropped (either the connection is very
+			overloaded and this leads to high fragmentation - or we are the
+			victim of an ongoing attack where the attacker is sending the
+			traffic very fragmented in order to decrease our performance).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 4.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>msrp_max_msg_chunks</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_msrp", "msrp_max_msg_chunks", 8)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="trace-destination">
+		<title><varname>trace_destination</varname> (string)</title>
+		<para>
+			Trace destination as defined in the tracing module. Currently
+		the only tracing module is <emphasis role="bold">proto_hep</emphasis>.
+		Network events such as connect, accept and connection closed events
+		shall be traced along with errors that could appear in the process.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING: </emphasis>A tracing module must be
+			loaded in order for this parameter to work. (for example
+			<emphasis role="bold">proto_hep</emphasis>).
+		</para>
+		<para>
+		<emphasis>
+			Default value is none(not defined).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>trace_destination</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;version=3")
+
+modparam("proto_msrp", "trace_destination", "hep_dest")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="trace-on">
+		<title><varname>trace_on</varname> (int)</title>
+		<para>
+		This controls whether tracing for MSRP is on or not. You still need
+		to define <xref linkend="trace-destination"/>in order to work, but
+		this value will be controlled using MI function
+		<xref linkend="msrp-trace"/>.
+		</para>
+		<emphasis>
+			Default value is 0(tracing inactive).
+		</emphasis>
+		<example>
+		<title>Set <varname>trace_on</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_msrp", "trace_on", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section>
+		<title><varname>trace_filter_route</varname> (string)</title>
+		<para>
+			Define the name of a route in which you can filter which connections will
+			be trace and which connections won't be. In this route you will have
+			information regarding source and destination ips and ports for the current
+			connection. To disable tracing for a specific connection the last call in
+			this route must be <emphasis role="bold">drop</emphasis>, any other exit
+			mode resulting in tracing the current connection ( of course you still
+			have to define a <xref linkend="trace-destination"/> and trace must be
+			on at the time this connection is opened.
+		</para>
+		<para>
+			<emphasis role="bold">IMPORTANT</emphasis>
+			Filtering on ip addresses and ports can be made using <emphasis role="bold">
+			$si</emphasis> and <emphasis role="bold">$sp</emphasis> for matching
+			either the entity that is connecting to &osips; or the entity to which
+			&osips; is connecting. The name might be misleading (<emphasis role="bold">
+				$si</emphasis> meaning the source ip if you read the docs) but in reality
+			it is simply the socket other than the &osips; socket. In order to match
+			&osips; interface (either the one that accepted the connection or the one
+			that initiated a connection) <emphasis role="bold">$socket_in(ip)</emphasis> (ip) and
+			<emphasis role="bold">$socket_in(port)</emphasis> (port) can be used.
+		</para>
+		<para>
+			<emphasis role="bold">WARNING:</emphasis> IF <xref linkend="trace-on"/> is
+			set to 0 or tracing is deactived via the mi command <xref linkend="msrp-trace"/>
+			this route won't be called.
+		</para>
+		<emphasis>
+			Default value is none(no route is set).
+		</emphasis>
+		<example>
+		<title>Set <varname>trace_filter_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_msrp", "trace_filter_route", "msrp_filter")
+...
+/* all MSRP connections will go through this route if tracing is activated
+ * and a trace destination is defined */
+route[msrp_filter] {
+	...
+	/* all connections opened from/by ip 1.1.1.1:8000 will be traced
+	   on interface 1.1.1.10:5060(opensips listener)
+	   all the other connections won't be */
+	 if ( $si == "1.1.1.1" &amp;&amp; $sp == 8000 &amp;&amp;
+		$socket_in(ip) == "1.1.1.10"  &amp;&amp; $socket_in(port) == 5060)
+		exit;
+	else
+		drop;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+
+	<section>
+	<title>Exported MI Functions</title>
+
+		<section id="msrp-trace">
+			<title>
+			<function moreinfo="none">msrp_trace</function>
+			</title>
+
+			<para>
+			</para>
+
+			<para>
+			Name: <emphasis>msrp_trace</emphasis>
+			</para>
+
+			<para>Parameters: </para>
+			<itemizedlist>
+			<listitem>
+				<para>trace_mode(optional): set MSRP tracing on and off.
+				This parameter can be missing and the command will show the 
+				current tracing status for this module( on or off );
+				Possible values:
+				<itemizedlist>
+				<listitem><para> on </para></listitem>
+				<listitem><para> off </para></listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			</itemizedlist>
+
+			<para>
+			MI FIFO Command Format:
+			</para>
+			<programlisting  format="linespecific">
+			:msrp_trace:_reply_fifo_file_
+			trace_mode
+			_empty_line_
+			</programlisting>
+		</section>
+	</section>
+</chapter>
