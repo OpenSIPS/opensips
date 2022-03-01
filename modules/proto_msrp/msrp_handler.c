@@ -51,7 +51,7 @@ int register_req_handler( str *host_filter, int port_filter,
 		return -1;
 
 	hdl = pkg_malloc( sizeof(struct req_handler_filter) +
-		(host_filter && host_filter->len)?host_filter->len+1:0 );
+		((host_filter && host_filter->len)?host_filter->len+1:0) );
 	if (hdl==NULL) {
 		LM_ERR("pkg malloc failed for new req handler filter\n");
 		return -1;
