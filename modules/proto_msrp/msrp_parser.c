@@ -76,7 +76,7 @@ other:
 
 int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 {
-	struct hdr_field *hf;
+	struct hdr_field *hf = NULL;
 	char *p, *end;
 	str mth;
 
@@ -110,7 +110,7 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 	} else {
 		/* let's hope it is a request, check for spaces at least */
 		if (q_memchr( msg->fl.u.request.method.s, ' ',
-		msg->fl.u.request.method.len)) {
+		msg->fl.u.request.method.len)!=NULL) {
 			/* ups, spaces in the method name */
 			goto error;
 		}
