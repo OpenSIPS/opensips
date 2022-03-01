@@ -38,6 +38,7 @@ static int log_level_holder = L_NOTICE;
 
 /* current logging level for this process */
 int *log_level = &log_level_holder;
+char *log_prefix = "";
 
 /* used when resetting the logging level of this process */
 static int *default_log_level;

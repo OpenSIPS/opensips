@@ -284,6 +284,7 @@ extern int cfg_parse_only_routes;
 %token ENABLE_ASSERTS
 %token ABORT_ON_ASSERT
 %token LOGLEVEL
+%token LOGPREFIX
 %token LOGSTDOUT
 %token LOGSTDERROR
 %token LOGFACILITY
@@ -732,6 +733,19 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			/* in debug mode, force logging to DEBUG level*/
 			*log_level = debug_mode?L_DBG:$3;
 			}
+		| LOGPREFIX EQUAL STRING { IFOR();
+			if (*$3) {
+				int len = strlen($3);
+				char *buf = pkg_malloc(len + 2);
+				if (!buf)
+					yyerror("oom");
+				sprintf(buf, "%s:", $3);
+				log_prefix = buf;
+			} else {
+				log_prefix = $3;
+			}
+			}
+		| LOGPREFIX EQUAL error  { yyerror("string value expected"); }
 		| ENABLE_ASSERTS EQUAL NUMBER  { IFOR(); enable_asserts=$3; }
 		| ENABLE_ASSERTS EQUAL error  { yyerror("boolean value expected"); }
 		| ABORT_ON_ASSERT EQUAL NUMBER  { IFOR(); abort_on_assert=$3; }
