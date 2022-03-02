@@ -1105,6 +1105,7 @@ fi
 %{_libdir}/opensips/modules/proto_ws.so
 %{_libdir}/opensips/modules/qos.so
 %{_libdir}/opensips/modules/qrouting.so
+%{_libdir}/opensips/modules/proto_msrp.so
 %{_libdir}/opensips/modules/rate_cacher.so
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
@@ -1200,6 +1201,7 @@ fi
 %doc docdir/README.proto_ws
 %doc docdir/README.qos
 %doc docdir/README.qrouting
+%doc docdir/README.proto_msrp
 %doc docdir/README.rate_cacher
 %doc docdir/README.ratelimit
 %doc docdir/README.registrar
@@ -1562,7 +1564,7 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: status_report
+- New modules: proto_msrp, status_report
 
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
