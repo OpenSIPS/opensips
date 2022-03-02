@@ -43,8 +43,8 @@
 #define MIN_FRAG_SIZE	ROUNDTO
 
 /* only perform a split if the resulting free fragment is at least this size */
-#define MIN_SHM_SPLIT_SIZE	4096
-#define MIN_PKG_SPLIT_SIZE	 256
+#define MIN_SHM_SPLIT_SIZE	 256
+#define MIN_PKG_SPLIT_SIZE	 128
 
 #define FRAG_NEXT(f) ((struct hp_frag *)((char *)((f) + 1) + (f)->size))
 
