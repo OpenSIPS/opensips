@@ -125,6 +125,9 @@ int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 		struct receive_info *rcv_info)
 {
 	struct msrp_msg* msg;
+#ifdef MSRP_DEBUG
+	struct hdr_field *hf;
+#endif
 
 	msg = pkg_malloc(sizeof(struct msrp_msg));
 	if (msg==0) {
@@ -159,7 +162,7 @@ int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 			msg->fl.u.reply.status.len, msg->fl.u.reply.status.s,
 			msg->fl.u.reply.reason.len, msg->fl.u.reply.reason.s);
 	}
-	for( struct hdr_field *hf=msg->headers; hf ; hf=hf->next)
+	for( hf=msg->headers; hf ; hf=hf->next )
 		LM_DBG("\tHeader [%.*s], body [%.*s]\n",
 			hf->name.len, hf->name.s, hf->body.len, hf->body.s) ;
 	if (msg->body.s)
