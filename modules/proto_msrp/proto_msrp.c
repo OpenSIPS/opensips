@@ -37,10 +37,12 @@
 #include "../../net/trans_trace.h"  // ??
 #include "../../mi/mi.h"
 #include "msrp_plain.h"
+#include "msrp_signaling.h"
 #include "msrp_api.h"
 
-static int mod_init(void);
-static int proto_msrp_init(struct proto_info *pi);
+static int  mod_init(void);
+static void mod_destroy(void);
+static int  proto_msrp_init(struct proto_info *pi);
 
 static mi_response_t *w_msrp_trace_mi(const mi_params_t *params,
 		struct mi_handler *async_hdl);
@@ -114,7 +116,7 @@ struct module_exports exports = {
 	0,          /* module pre-initialization function */
 	mod_init,   /* module initialization function */
 	0,          /* response function */
-	0,          /* destroy function */
+	mod_destroy,/* destroy function */
 	0,          /* per-child init function */
 	0           /* reload confirm function */
 };
@@ -135,10 +137,33 @@ static int proto_msrp_init(struct proto_info *pi)
 	return 0;
 }
 
+#ifdef MSRP_SELF_TESTING
+#include "msrp_api.h"
+void *self_hdl = NULL;
+
+int self_req_hdl(struct msrp_msg *req, void *param)
+{
+	msrp_fwd_request( self_hdl, req, NULL, 0);
+	return 0;
+}
+
+int self_rpl_hdl(struct msrp_msg *rpl, struct msrp_cell *tran, void *param)
+{
+	msrp_fwd_reply( self_hdl, rpl);
+	return 0;
+}
+#endif
+
 
 static int mod_init(void)
 {
 	LM_INFO("initializing MSRP-plain protocol\n");
+
+	if (msrp_init_trans_layer()<0) {
+		LM_ERR("failed to init transactional layer\n");
+		return -1;
+	}
+
 	if (trace_destination_name.s) {
 		if ( !net_trace_api ) {
 			if ( trace_prot_bind( MSRP_TRACE_PROTO, &tprot) < 0 ) {
@@ -173,7 +198,19 @@ static int mod_init(void)
 				RT_NO);
 	}
 
+#ifdef MSRP_SELF_TESTING
+	str host_all = str_init("*");
+	self_hdl = register_msrp_handler( &host_all, 0, 0,
+			self_req_hdl, self_rpl_hdl, NULL);
+#endif
+
 	return 0;
+}
+
+
+static void mod_destroy(void)
+{
+	msrp_destroy_trans_layer();
 }
 
 

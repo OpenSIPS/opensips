@@ -25,23 +25,26 @@
 #include "msrp_parser.h"
 #include "msrp_handler.h"
 
-typedef int (*register_req_handler_f)( str *host_filter, int port_filter,
-		int secure_filter, msrp_req_handler_f f, void *param);
+typedef void* (*register_msrp_handler_f)( str *req_host_filter,
+		int req_port_filter, int req_secured_filter,
+		msrp_req_handler_f req_f, msrp_rpl_handler_f rpl_f,
+		void *param);
 
-typedef int (*send_reply_f)( struct msrp_msg *req, int code, str* reason,
+typedef int (*send_reply_f)( void *hdl, struct msrp_msg *req,
+		int code, str* reason,
 		str *hdrs, int hdrs_no);
 
-typedef int (*fwd_request_f)( struct msrp_msg *req,
+typedef int (*fwd_request_f)( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no);
 
-typedef int (*fwd_reply_f)( struct msrp_msg *rpl);
+typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl);
 
 
 struct msrp_binds {
-	register_req_handler_f  register_req_handler;
-	send_reply_f            send_reply;
-	fwd_request_f           forward_request;
-	fwd_reply_f             forward_reply;
+	register_msrp_handler_f  register_msrp_handler;
+	send_reply_f             send_reply;
+	fwd_request_f            forward_request;
+	fwd_reply_f              forward_reply;
 };
 
 void load_msrp( struct msrp_binds *binds);

@@ -26,11 +26,19 @@
 
 #include "../../ip_addr.h"
 #include "msrp_parser.h"
+#include "msrp_signaling.h"
 
-typedef int (*msrp_req_handler_f) ( struct msrp_msg *req , void *param);
+typedef int (*msrp_req_handler_f) (struct msrp_msg *req,
+		void *param);
 
-int register_req_handler( str *host_filter, int port_filter,
-		int secure_filter, msrp_req_handler_f f, void *param);
+typedef int (*msrp_rpl_handler_f) (struct msrp_msg *rpl,
+		struct msrp_cell *tran, void *param);
+
+
+
+void* register_msrp_handler( str *host_filter, int port_filter,
+		int secured_filter, msrp_req_handler_f req_f,
+		msrp_rpl_handler_f rpl_f, void *param);
 
 int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 		struct receive_info *local_rcv);

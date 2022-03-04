@@ -25,69 +25,73 @@
 #include "msrp_signaling.h"
 #include "msrp_handler.h"
 
-struct req_handler_filter {
+struct msrp_handler {
 	/* 0 - MSRP ; 1 - MSRPS */
-	unsigned short secure_filter;
+	unsigned short secured_filter;
 	/* NULL - everything matches; a fmt may be here too */
 	str host_filter;
 	/* 0 - wild card; or a port value */
 	unsigned short port_filter;
-	msrp_req_handler_f f;
+	msrp_req_handler_f req_f;
+	msrp_rpl_handler_f rpl_f;
 	void *param;
-	struct req_handler_filter *next;
+	struct msrp_handler *next;
 };
 
-static struct req_handler_filter *req_handler_filters = NULL;
+
+static struct msrp_handler *msrp_handlers = NULL;
 
 #define MSRP_DEBUG
 
 
-int register_req_handler( str *host_filter, int port_filter,
-		int secure_filter, msrp_req_handler_f f, void *param)
+void* register_msrp_handler( str *host_filter, int port_filter,
+		int secured_filter, msrp_req_handler_f req_f,
+		msrp_rpl_handler_f rpl_f, void *param)
 {
-	struct req_handler_filter *hdl, *hdl_it;
+	struct msrp_handler *hdl, *hdl_it;
 
-	if (f==NULL)
-		return -1;
+	if (req_f==NULL || rpl_f==NULL)
+		return NULL;
 
-	hdl = pkg_malloc( sizeof(struct req_handler_filter) +
+	hdl = pkg_malloc( sizeof(struct msrp_handler) +
 		((host_filter && host_filter->len)?host_filter->len+1:0) );
 	if (hdl==NULL) {
 		LM_ERR("pkg malloc failed for new req handler filter\n");
-		return -1;
+		return NULL;
 	}
 
-	hdl->secure_filter = (secure_filter==0) ? 0 : 1 ;
+	hdl->secured_filter = (secured_filter==0) ? 0 : 1 ;
 	hdl->port_filter = (port_filter<=0) ? 0 : port_filter;
-	hdl->f = f;
+	hdl->req_f = req_f;
+	hdl->rpl_f = rpl_f;
 	hdl->param = param;
 	if (host_filter && host_filter->len) {
 		hdl->host_filter.s = (char*)(hdl+1);
+		hdl->host_filter.len = host_filter->len;
 		memcpy(hdl->host_filter.s, host_filter->s, host_filter->len);
 		hdl->host_filter.s[ hdl->host_filter.len ] = 0;
-		hdl->host_filter.len = host_filter->len;
 	} else {
 		hdl->host_filter.s = NULL;
 		hdl->host_filter.len = 0;
 	}
 
 	/* link it at the end */
-	if (req_handler_filters==NULL) {
-		req_handler_filters = hdl;
+	if (msrp_handlers==NULL) {
+		msrp_handlers = hdl;
 	} else {
-		for( hdl_it=req_handler_filters ; hdl_it->next ; hdl_it=hdl_it->next);
+		for( hdl_it=msrp_handlers ; hdl_it->next ; hdl_it=hdl_it->next);
 		hdl_it->next = hdl;
 	}
 	hdl->next = NULL;
 
-	return 0;
+	return (void*)hdl;
 }
 
 
 static int _dispatch_req_to_handler( struct msrp_msg *req)
 {
 	struct msrp_url *url;
-	struct req_handler_filter *hdl = req_handler_filters;
+	struct msrp_handler *hdl = msrp_handlers;
 	char bk;
 
 	/* the To-Path must be already parsed and we need the top URL */
@@ -99,17 +103,25 @@ static int _dispatch_req_to_handler( struct msrp_msg *req)
 	 * in the msg buffer (this is an URL inside the msrp msg */
 	bk = url->host.s[url->host.len];
 	url->host.s[url->host.len] = 0;
+#ifdef MSRP_DEBUG
+	LM_DBG("msg is [%d/%s/%d]\n",
+			url->secured,  url->host.s, url->port_no);
+#endif
 
 	/* now, do the matching */
 	for( ; hdl ; hdl=hdl->next) {
-		if ( !(hdl->secure_filter ^ url->secured) &&
-		(hdl->port_filter == url->port_no) &&
+#ifdef MSRP_DEBUG
+		LM_DBG("checking on filter [%d/%s/%d]\n",
+			hdl->secured_filter, hdl->host_filter.s, hdl->port_filter);
+#endif
+		if ( !(hdl->secured_filter ^ url->secured) &&
+		(hdl->port_filter==0 || hdl->port_filter == url->port_no) &&
 		fnmatch( hdl->host_filter.s, url->host.s, FNM_CASEFOLD) == 0 ) {
 			url->host.s[url->host.len] = bk;
 			LM_DBG("matched on filter [%d/%s/%d]\n",
-				hdl->secure_filter, hdl->host_filter.s, hdl->port_filter);
+				hdl->secured_filter, hdl->host_filter.s, hdl->port_filter);
 			/* run the handler */
-			hdl->f( req, hdl->param);
+			hdl->req_f( req, hdl->param);
 			return 0;
 		}
 	}
@@ -180,9 +192,17 @@ int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 		goto parse_error;  // FIXME a 400 reply ??
 	}
 
-	if (_dispatch_req_to_handler( msg )<0) {
-		LM_ERR("Message not handled by any handler :(\n");
-		goto parse_error;  // FIXME a 4xx reply ??
+	if (msg->fl.type==MSRP_REQUEST) {
+
+		if (_dispatch_req_to_handler( msg )<0) {
+			LM_ERR("Message not handled by any handler :(\n");
+			goto parse_error;  // FIXME a 4xx reply ??
+		}
+
+	} else {
+
+		/* TODO FIXME handle replies here */
+
 	}
 
 	LM_DBG("cleaning up\n");

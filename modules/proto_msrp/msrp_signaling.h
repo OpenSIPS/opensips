@@ -26,12 +26,32 @@
 
 #include "msrp_parser.h"
 
-int msrp_send_reply( struct msrp_msg *req, int code, str* reason,
+
+struct msrp_cell {
+	unsigned short hash;
+	str ident;
+	str from_full;
+	str to_top;
+	str message_id;
+	str byte_range;
+	str failure_report;
+	void *msrp_hdl;
+	struct msrp_cell *expired_next;
+};
+
+
+extern unsigned int msrp_ident_hash_size;
+
+int msrp_init_trans_layer(void);
+
+int msrp_destroy_trans_layer(void);
+
+int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 		str *hdrs, int hdrs_no);
 
-int msrp_fwd_request( struct msrp_msg *req,
+int msrp_fwd_request( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no);
 
-int msrp_fwd_reply( struct msrp_msg *rpl);
+int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl);
 
 #endif

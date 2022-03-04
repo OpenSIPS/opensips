@@ -26,7 +26,7 @@
 
 void load_msrp( struct msrp_binds *binds)
 {
-	binds->register_req_handler = register_req_handler;
+	binds->register_msrp_handler = register_msrp_handler;
 	binds->send_reply = msrp_send_reply;
 	binds->forward_request = msrp_fwd_request;
 	binds->forward_reply = msrp_fwd_reply;

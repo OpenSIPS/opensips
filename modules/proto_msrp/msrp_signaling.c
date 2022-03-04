@@ -21,8 +21,13 @@
 
 #include "../../ut.h"
 #include "../../forward.h"
+#include "../../md5.h"
+#include "../../timer.h"
+#include "../../rw_locking.h"
 #include "../../mem/mem.h"
+#include "../../lib/hash.h"
 #include "msrp_parser.h"
+#include "msrp_signaling.h"
 
 #define MSRP_PREFIX "MSRP "
 #define MSRP_PREFIX_LEN (sizeof(MSRP_PREFIX) - 1)
@@ -44,8 +49,29 @@
 	}while(0);
 
 
+unsigned int msrp_ident_hash_size = 256;
+unsigned int msrp_ident_timeout = 30;
 
-int msrp_send_reply( struct msrp_msg *req, int code, str* reason,
+static unsigned short table_curr_idx = 0;
+static gen_hash_t **msrp_table = NULL;
+static rw_lock_t *ident_lock = NULL;
+
+
+static char * msrp_ident_builder( unsigned short hash, unsigned short idx,
+		char *padding, int padding_len,
+		int *ident_len);
+
+static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
+		str *ident);
+
+static void _free_transaction(struct msrp_cell *cell);
+
+static void msrp_timer(unsigned int ticks, void* param);
+
+#define MSRP_DEBUG
+
+
+int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 		str *hdrs, int hdrs_no)
 {
 	char *buf, *p;
@@ -168,13 +194,17 @@ error:
  *  -2 - cannot resolve destination
  *  -3 - internal error
  */
-int msrp_fwd_request( struct msrp_msg *req, str *hdrs, int hdrs_no)
+int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no)
 {
 	char *buf, *p, *s, bk;
 	struct msrp_url *to, *from;
 	union sockaddr_union su;
 	struct hostent* he;
-	int i, len;
+	int i, len, hash, idx;
+	char md5[MD5_LEN];
+	str ident, md5_src[3];
+	struct msrp_cell *cell;
+	void **val;
 
 	if (req==NULL)
 		return -1;
@@ -220,9 +250,31 @@ int msrp_fwd_request( struct msrp_msg *req, str *hdrs, int hdrs_no)
 	}
 
 
+	/* decide which hash to use for the transaction */
+	lock_start_read( ident_lock );
+	idx = table_curr_idx;
+	lock_stop_read( ident_lock );
+
+
+redo_ident:
+	/* compute the new ident first */
+	hash = hash_entry( msrp_table[idx] , req->fl.ident);
+#ifdef MSRP_DEBUG
+	LM_DBG("using idx %d, hash %d  over [%.*s] (size is %d)\n",
+		idx, hash, req->fl.ident.len, req->fl.ident.s, msrp_table[idx]->size);
+#endif
+	i = 0;
+	md5_src[i++] = to->whole;
+	md5_src[i++] = from->whole;
+	if (req->message_id)
+		md5_src[i++] = req->message_id->body;
+	MD5StringArray( md5, md5_src, i);
+	ident.s  = msrp_ident_builder( hash, idx, md5, MD5_LEN, &ident.len);
+
+
 	/* the len will be the same after moving the URL, the only diff will
-	 * be imposed by any extra hdrs */
-	len = req->len;
+	 * be imposed by any extra hdrs and diff in ident len (twice!) */
+	len = req->len + 2 * (ident.len - req->fl.ident.len);
 	if (hdrs_no>0 && hdrs) 
 		for( i=0 ; i<hdrs_no ; i++ )
 			len += hdrs[i].len + CRLF_LEN;
@@ -240,16 +292,21 @@ int msrp_fwd_request( struct msrp_msg *req, str *hdrs, int hdrs_no)
 	p = buf;
 	s = req->buf;
 
+	/* copy everything up to the ident, which needs to be replaced here */
+	append_string( p, s, (int)(req->fl.ident.s-s));
+	/* put our new ident */
+	append_string( p, ident.s, ident.len);
 	/* TO is the first hdr, so copy everything up to its first URL (which
 	 * needs to be skipped here) */
+	s = req->fl.ident.s + req->fl.ident.len;
 	append_string( p, s, (int)(to->whole.s-s));
-	// copy starting with the second URL, all the way to the first FROM URL
+	/* copy starting with the second URL, all the way to the first FROM URL */
 	s = to->next->whole.s;
 	append_string( p, s, (int)(from->whole.s-s));
-	// first place here the first TO URL that was skipped
+	/* first place here the first TO URL that was skipped */
 	append_string( p, to->whole.s, to->whole.len);
 	*(p++) = ' ';
-	// copy starting with the first FROM URL
+	/* copy starting with the first FROM URL */
 	s = from->whole.s;
 	if (hdrs_no>0 && hdrs) {
 		/* copy up to the end of the last hdr (including its CRLF) */
@@ -262,11 +319,15 @@ int msrp_fwd_request( struct msrp_msg *req, str *hdrs, int hdrs_no)
 		}
 		/* copy from the end of the last hdr all the way to the end of buffer*/
 		s = req->last_header->name.s + req->last_header->len;
-		append_string( p, s, (int)(req->buf+req->len-s));
-	} else {
-		/* nothing to append, copy all the way to the end of buffer*/
-		append_string( p, s, (int)(req->buf+req->len-s));
-	}
+	}/* else {
+		nothing to append, copy all the way to the end of buffer
+	}*/
+	append_string( p, s,
+		(int)(req->buf+req->len-s-req->fl.ident.len-CRLF_LEN-1));
+	/* put our new ident */
+	append_string( p, ident.s, ident.len);
+	s = req->buf+req->len-CRLF_LEN-1;
+	append_string( p, s, CRLF_LEN+1 );
 
 	if (p-buf!=len) {
 		LM_BUG("computed %d, but wrote %d :(\n",len,(int)(p-buf));
@@ -275,6 +336,36 @@ int msrp_fwd_request( struct msrp_msg *req, str *hdrs, int hdrs_no)
 #ifdef MSRP_DEBUG
 	LM_DBG("----|\n%.*s|-----\n",len,buf);
 #endif
+
+
+	/* do transactional stuff */
+	cell = _build_transaction( req, hash, &ident);
+	if (cell==NULL) {
+		LM_ERR("failed to build transaction, not sending request out\n");
+		goto error;
+	}
+	/* remember the handler that created this transaction */
+	cell->msrp_hdl = hdl;
+	/* add trasaction to hash table.... */
+	hash_lock( msrp_table[idx], hash);
+
+	val = hash_get(  msrp_table[idx], hash, ident);
+	if (val==NULL) {
+		hash_unlock( msrp_table[idx], hash);
+		_free_transaction( cell );
+		LM_ERR("failed to insert transaction into hash, "
+			"dropping everything\n");
+		goto error;
+	} else
+	if (*val!=NULL) {
+		/* duplicate :O, try generating another ident */
+		hash_unlock( msrp_table[idx], hash);
+		pkg_free(buf);
+		goto redo_ident;
+	}
+	*val = cell;
+
+	hash_unlock( msrp_table[idx], hash);
 
 
 	/* now, send it out*/
@@ -286,6 +377,11 @@ int msrp_fwd_request( struct msrp_msg *req, str *hdrs, int hdrs_no)
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
 		LM_ERR("failed to fwd MSRP request\n");
+		/* trash the current transaction */
+		hash_lock( msrp_table[idx], hash);
+		hash_remove(  msrp_table[idx], hash, ident);
+		hash_unlock( msrp_table[idx], hash);
+		_free_transaction( cell );
 		goto error;
 	}
 
@@ -298,7 +394,7 @@ error:
 }
 
 
-int msrp_fwd_reply( struct msrp_msg *rpl)
+int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl)
 {
 	char *buf, *p;
 	struct msrp_url *to, *from;
@@ -333,4 +429,271 @@ int msrp_fwd_reply( struct msrp_msg *rpl)
 
 
 	return -1;
+}
+
+
+/********* transactional layer ************/
+
+int msrp_init_trans_layer(void)
+{
+	int i;
+
+	/* limit the timeout to 30 secs */
+	if (msrp_ident_hash_size>30) {
+		LM_WARN("ident timeout too big (%d), limiting to 30\n",
+			msrp_ident_timeout);
+		msrp_ident_timeout = 30;
+	}
+	/* we want to keep the hash values below 2^10 (there is a hard
+	 * limit of 2^16 due the "short" storge and 4 hexa */
+	if (msrp_ident_hash_size>1024) {
+		LM_WARN("ident hash table too big (%d), limiting to 10\n",
+			msrp_ident_hash_size);
+		msrp_ident_hash_size = 1024;
+	}
+
+	/* build the array oh hashes, one for each second */
+	msrp_table = shm_malloc( msrp_ident_timeout * sizeof(gen_hash_t*));
+	if (msrp_table==NULL) {
+		LM_ERR("failed to init array of ident hashes (size=%d)\n",
+			msrp_ident_timeout);
+		return -1;
+	}
+	for ( i=0 ; i<msrp_ident_timeout ; i++ ) {
+		msrp_table[i] = hash_init( msrp_ident_hash_size );
+		if (msrp_table[i]==NULL) {
+			LM_ERR("failed to init ident hash table %d (size=%d)\n",
+				i, msrp_ident_hash_size);
+			return -1;
+		}
+	}
+
+	table_curr_idx = 0;
+
+	ident_lock = lock_init_rw();
+	if (ident_lock==NULL) {
+		LM_ERR("failed to create RW lock for indet table\n");
+		return -1;
+	}
+
+	if (register_timer( "MSRP timeout", msrp_timer, NULL, 1,
+	TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+		LM_ERR("failed to register timer\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int msrp_destroy_trans_layer(void)
+{
+	int i;
+
+	if (msrp_table) {
+		for ( i=1 ; i<msrp_ident_timeout ; i++ )
+			hash_destroy( msrp_table[i], NULL /*FIXME*/);
+		shm_free(msrp_table);
+	}
+
+	if (ident_lock)
+		lock_destroy_rw( ident_lock );
+
+	return 0;
+}
+
+
+static char * msrp_ident_builder( unsigned short hash, unsigned short idx,
+		char *padding, int padding_len,
+		int *ident_len)
+{
+	#define IDENT_SEPARATOR '.'
+	#define IDENT_BUF_MAX_LEN 20
+	/* format is hash_hexa.hash_idx.rand_hexa.padding , max 20 chars*/
+	static char ident_s[IDENT_BUF_MAX_LEN + 1];
+	unsigned short rnd;
+	int size;
+	char *p;
+
+	/* hash+idx+rand hexas are minimum 6 chars overall, leaving a 14 max
+	 * for padding. On the other side, with (4+1) max hash+idx+rand hexas
+	 * => max 15 chars, leaving another 5 for padding
+	 */
+
+	p = ident_s;
+	size = IDENT_BUF_MAX_LEN;
+
+	/* start with the hash hexa; it is "short", so it fits on 4 hexa chars */
+	if (int2reverse_hex( &p, &size, hash)==-1)
+		return NULL;
+
+	*(p++)=IDENT_SEPARATOR;
+	size--;
+
+	/* now the idx, which is "short" (usually less than 255) */
+	if (int2reverse_hex( &p, &size, idx)==-1)
+		return NULL;
+
+	*(p++)=IDENT_SEPARATOR;
+	size--;
+
+	/* now put the rand hexa, also up to 65K, to fit on 4 hexa chars */
+	rnd = ((1<<16)*((float)rand()/(float)RAND_MAX));
+	if (int2reverse_hex( &p, &size, rnd)==-1)
+		return NULL;
+
+	*(p++)=IDENT_SEPARATOR;
+	size--;
+
+	/* padding */
+	if (size>padding_len) {
+		memcpy( p, padding, padding_len);
+		p += padding_len;
+	} else {
+		memcpy( p, padding, size);
+		p += size;
+	}
+
+	*p = 0;
+
+	*ident_len = (int)(p-ident_s);
+
+#ifdef MSRP_DEBUG
+	LM_DBG(" new ident is <%.*s>/%d\n",*ident_len,ident_s,*ident_len);
+#endif
+
+	return ident_s;
+}
+
+
+static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
+		str *ident)
+{
+	struct msrp_cell *cell;
+	struct msrp_url *to;
+	char *p;
+
+	to = ((struct msrp_url*)(req->to_path->parsed));
+
+	cell = shm_malloc( sizeof(struct msrp_cell)
+			 + ident->len
+			 + req->from_path->body.len
+			 + to->whole.len
+			 + (req->message_id?req->message_id->body.len:0)
+			 + (req->byte_range?req->byte_range->body.len:0)
+			 + (req->failure_report?req->failure_report->body.len:0) 
+			);
+	if (cell==NULL) {
+		LM_ERR("failed to sh malloc new transaction\n");
+		return NULL;
+	}
+
+	memset( cell, 0, sizeof(struct msrp_cell));
+	cell->hash = hash;
+	p = (char*)(cell+1);
+
+	cell->ident.s = p;
+	cell->ident.len = ident->len;
+	append_string( p, ident->s, ident->len);
+
+	cell->from_full.s = p;
+	cell->from_full.len = req->from_path->body.len;
+	append_string( p, req->from_path->body.s, req->from_path->body.len);
+
+	cell->to_top.s = p;
+	cell->to_top.len = to->whole.len;
+	append_string( p, to->whole.s, to->whole.len );
+
+	if (req->message_id) {
+		cell->message_id.s = p;
+		cell->message_id.len = req->message_id->body.len;
+		append_string( p, req->message_id->body.s, req->message_id->body.len);
+	}
+
+	if (req->byte_range) {
+		cell->byte_range.s = p;
+		cell->byte_range.len = req->byte_range->body.len;
+		append_string( p, req->byte_range->body.s, req->byte_range->body.len);
+	}
+
+	if (req->failure_report) {
+		cell->failure_report.s = p;
+		cell->failure_report.len = req->failure_report->body.len;
+		append_string( p, req->failure_report->body.s,
+			req->failure_report->body.len);
+	}
+
+	return cell;
+}
+
+
+static void _free_transaction(struct msrp_cell *cell)
+{
+	shm_free(cell);
+}
+
+
+/* it is safe to use a global list for collecting the records from the map
+ * as this timer function is ran without overlapping (DELAY on DELAY) */
+static struct msrp_cell *expired_list;
+
+static void _table_process_each(void * value)
+{
+	struct msrp_cell *cell = (struct msrp_cell*)value;
+
+	cell->expired_next = expired_list;
+	expired_list = cell;
+}
+
+
+static void msrp_timer(unsigned int ticks, void* param)
+{
+	int i, n;
+	struct msrp_cell *to_handle, *cell;
+
+	/* every second here, incrementing the time index in the table */
+
+	/* move all transactions from the "expired" slot into a simple list,
+	 * so we can "consume" separately, without any locking or conflicts */
+
+	lock_start_write( ident_lock );
+
+	expired_list = NULL;
+
+	i = (table_curr_idx + 1) % msrp_ident_timeout ;
+
+	for ( n=0 ; n < msrp_table[i]->size ; n++) {
+
+		hash_lock( msrp_table[i], n);
+
+		/* destroy the whole map and replace it with an empty one */
+		map_destroy( msrp_table[i]->entries[n], _table_process_each);
+		msrp_table[i]->entries[n] = map_create(AVLMAP_SHARED);
+		if ( msrp_table[i]->entries[n] == NULL) {
+			LM_ERR("failed to re-create new AVL");
+			//FIXME - what should we do here????
+		}
+
+		hash_unlock( msrp_table[i], n);
+	}
+
+	to_handle = expired_list;
+
+	table_curr_idx = i;
+
+	lock_stop_write( ident_lock );
+
+	/* now simply handle the expired list one by one */
+
+	while(to_handle) {
+
+		cell = to_handle;
+		to_handle = cell->expired_next;
+
+		/* run the reply handler */
+		//((struct msrp_handler*)cell->msrp_hdl)->rpl_f( NULL, cell,
+		//	((struct msrp_handler*)cell->msrp_hdl)->param  );
+
+		_free_transaction(cell);
+	}
 }
