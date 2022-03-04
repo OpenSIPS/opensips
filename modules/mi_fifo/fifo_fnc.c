@@ -535,7 +535,7 @@ static int mi_fifo_write(char *file, FILE *stream, str *msg, struct mi_cmd *cmd)
 	return written;
 
 error:
-	if (stream)
+	if (!old_stream && stream)
 		fclose(stream);
 	return -1;
 }
