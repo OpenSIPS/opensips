@@ -281,8 +281,7 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
        along with the offer command
      * peer - these flags are passed along in the offer command,
        but they are flags associated with the other UAC/peer
-     * ip - the IP that should be advertised in the resulted SDP
-       (currently only used by rtpproxy)
+     * ip - the IP that should be advertised in the resulted SDP.
      * type - the RTP type used by the current UAC (currently only
        used by rtpengine)
      * iface - the interface used for the traffic coming from this
@@ -307,9 +306,18 @@ $ opensips-cli -x mi rtp_relay_update_callid callid=1-3758963@127.0.0.1
    involved peers.
 
    The following settings can be used:
-     * callidThe callid to be used for all communication with the
-       rtp server. If not specified, it is taken from the
+     * callid - The callid to be used for all communication with
+       the rtp server. If not specified, it is taken from the
        message/dialog.
+     * from_tag - The from-tag to be used for all communication
+       with the rtp server. If not specified, it is taken from the
+       message/dialog.
+     * to_tag - The to-tag to be used for all communication with
+       the rtp server. If not specified, it is taken from the
+       message/dialog.
+     * flags - Generic flags to be sent to all offer/answer
+       requests.
+     * delete - flags sent when the relay session is terminated.
 
 Chapter 2. Contributors
 
@@ -318,7 +326,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    72      38      3372     329
+   1. Razvan Crainea (@razvancrainea)    91      50      4014     477
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -340,7 +348,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2021 - Jan 2022
+   1. Razvan Crainea (@razvancrainea) Apr 2021 - Mar 2022
 
    (1) including any documentation-related commits, excluding
    merge commits

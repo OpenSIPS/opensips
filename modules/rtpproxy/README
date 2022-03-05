@@ -27,6 +27,9 @@ rtpproxy Module
               1.5.10. rtpp_socket_col (string)
               1.5.11. set_id_col (string)
               1.5.12. rtpp_notify_socket (string)
+              1.5.13. generated_sdp_port_min (integer)
+              1.5.14. generated_sdp_port_max (integer)
+              1.5.15. generated_sdp_media_ip (string)
 
         1.6. Exported Functions
 
@@ -104,17 +107,20 @@ rtpproxy Module
    1.10. Set rtpp_socket_col parameter
    1.11. Set set_id parameter
    1.12. Set rtpp_notify_socket parameter
-   1.13. rtpproxy_engage usage
-   1.14. rtpproxy_offer usage
-   1.15. rtpproxy_answer usage
-   1.16. rtpproxy_unforce usage
-   1.17. rtpproxy_stream2xxx usage
-   1.18. rtpproxy_start_recording usage
-   1.19. rtpproxy_stats usage
-   1.20. rtpproxy_all_stats usage
-   1.21. rtpproxy_enable usage
-   1.22. rtpproxy_show usage
-   1.23. rtpproxy_reload usage
+   1.13. Set generated_sdp_port_min parameter
+   1.14. Set generated_sdp_port_max parameter
+   1.15. Set generated_sdp_media_ip parameter
+   1.16. rtpproxy_engage usage
+   1.17. rtpproxy_offer usage
+   1.18. rtpproxy_answer usage
+   1.19. rtpproxy_unforce usage
+   1.20. rtpproxy_stream2xxx usage
+   1.21. rtpproxy_start_recording usage
+   1.22. rtpproxy_stats usage
+   1.23. rtpproxy_all_stats usage
+   1.24. rtpproxy_enable usage
+   1.25. rtpproxy_show usage
+   1.26. rtpproxy_reload usage
 
 Chapter 1. Admin Guide
 
@@ -427,6 +433,42 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
 ...
 
 
+1.5.13. generated_sdp_port_min (integer)
+
+   When RTPProxy module needs to generate an SDP body, use this
+   value as the minimum value of the port.
+
+   Default value is “35000”.
+
+   Example 1.13. Set generated_sdp_port_min parameter
+...
+modparam("rtpproxy", "generated_sdp_port_min", 10000)
+...
+
+1.5.14. generated_sdp_port_max (integer)
+
+   When RTPProxy module needs to generate an SDP body, use this
+   value as the maximum value of the port.
+
+   Default value is “65000”.
+
+   Example 1.14. Set generated_sdp_port_max parameter
+...
+modparam("rtpproxy", "generated_sdp_port_max", 30000)
+...
+
+1.5.15. generated_sdp_media_ip (string)
+
+   When RTPProxy module needs to generate an SDP body, use this
+   value as the media_ip in the c= and the o=.
+
+   Default value is “127.0.0.1”.
+
+   Example 1.15. Set generated_sdp_media_ip parameter
+...
+modparam("rtpproxy", "generated_sdp_media_ip", "10.0.0.1")
+...
+
 1.6. Exported Functions
 
 1.6.1.  rtpproxy_engage([[flags][, [ip_address][, [set_id][,
@@ -532,7 +574,7 @@ modparam("rtpproxy", "rtpp_notify_socket", "/tmp/rtpproxy.unix")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE.
 
-   Example 1.13. rtpproxy_engage usage
+   Example 1.16. rtpproxy_engage usage
 ...
 if (is_method("INVITE") && has_totag()) {
         if ($var(setid) != 0) {
@@ -564,7 +606,7 @@ if (is_method("INVITE") && has_totag()) {
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.14. rtpproxy_offer usage
+   Example 1.17. rtpproxy_offer usage
 route {
 ...
     if (is_method("INVITE")) {
@@ -609,7 +651,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.15. rtpproxy_answer usage
+   Example 1.18. rtpproxy_answer usage
 
    See rtpproxy_offer() function example above for example.
 
@@ -625,7 +667,7 @@ onreply_route[2]
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
-   Example 1.16. rtpproxy_unforce usage
+   Example 1.19. rtpproxy_unforce usage
 ...
 rtpproxy_unforce();
 ...
@@ -669,7 +711,7 @@ sock_var]])
      * sock_var(var, optional) - variable used to store the
        RTPProxy socket chosen for this call.
 
-   Example 1.17. rtpproxy_stream2xxx usage
+   Example 1.20. rtpproxy_stream2xxx usage
 ...
     if (is_method("INVITE")) {
         rtpproxy_offer();
@@ -725,7 +767,7 @@ rtpproxy_stop_stream2uas([[set_id][, sock_var]])
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.18. rtpproxy_start_recording usage
+   Example 1.21. rtpproxy_start_recording usage
 ...
 rtpproxy_start_recording();
 
@@ -757,7 +799,7 @@ rtpproxy_start_recording(,,,"udp:127.0.0.1:60000", 1);
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.19. rtpproxy_stats usage
+   Example 1.22. rtpproxy_stats usage
 ...
 rtpproxy_stats($var(up),$var(down),$var(sent),$var(fail));
 xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
@@ -796,7 +838,7 @@ xlog("RTP statistics for $ci: up=$var(up) down=$var(down) sent=$var(sent
      * rtpa_lost - $(avp(ret)[8])
      * rtpa_perrs - $(avp(ret)[9])
 
-   Example 1.20. rtpproxy_all_stats usage
+   Example 1.23. rtpproxy_all_stats usage
 ...
 rtpproxy_all_stats($avp(stats));
 xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
@@ -820,7 +862,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    different set), all its instances will be enables/disabled IF
    no set ID provided (as second param).
 
-   Example 1.21.  rtpproxy_enable usage
+   Example 1.24.  rtpproxy_enable usage
 ...
 ## disable a RTPProxy by URL only
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
@@ -835,7 +877,7 @@ $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
 
    No parameter.
 
-   Example 1.22.  rtpproxy_show usage
+   Example 1.25.  rtpproxy_show usage
 ...
 $ opensips-cli -x mi rtpproxy_show
 ...
@@ -849,7 +891,7 @@ $ opensips-cli -x mi rtpproxy_show
 
    No parameter.
 
-   Example 1.23.  rtpproxy_reload usage
+   Example 1.26.  rtpproxy_reload usage
 ...
 $ opensips-cli -x mi rtpproxy_reload
 ...
@@ -932,7 +974,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 230 145 5023 2680
+   1. Razvan Crainea (@razvancrainea) 251 154 6078 2850
    2. Maksym Sobolyev (@sobomax) 53 7 5009 256
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Liviu Chircu (@liviuchircu) 23 18 108 198
@@ -969,7 +1011,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Jan 2022
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Feb 2022
    2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Sep 2021
    3.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jan 2021

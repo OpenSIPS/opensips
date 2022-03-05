@@ -17,13 +17,11 @@ SIPREC Module
 
         1.7. Exported Parameters
 
-              1.7.1. media_port_min (integer)
-              1.7.2. media_port_max (integer)
-              1.7.3. skip_failover_codes (string)
+              1.7.1. skip_failover_codes (string)
 
         1.8. Exported Functions
 
-              1.8.1. siprec_start_recording(srs[, rtpproxy_sock])
+              1.8.1. siprec_start_recording(srs)
               1.8.2. siprec_pause_recording()
               1.8.3. siprec_resume_recording()
 
@@ -49,19 +47,17 @@ SIPREC Module
 
    List of Examples
 
-   1.1. Set media_port_min parameter
-   1.2. Set media_port_max parameter
-   1.3. Set skip_failover_codes parameter
-   1.4. Use siprec_start_recording() function with a single SRS
-   1.5. Use siprec_start_recording() function with multiple SRS
+   1.1. Set skip_failover_codes parameter
+   1.2. Use siprec_start_recording() function with a single SRS
+   1.3. Use siprec_start_recording() function with multiple SRS
           servers
 
-   1.6. Use siprec_start_recording() function with custom XML
+   1.4. Use siprec_start_recording() function with custom XML
           values for participants
 
-   1.7. Use siprec_start_recording() function with custom headers
-   1.8. Use siprec_pause_recording()
-   1.9. Use siprec_resume_recording()
+   1.5. Use siprec_start_recording() function with custom headers
+   1.6. Use siprec_pause_recording()
+   1.7. Use siprec_resume_recording()
 
 Chapter 1. Admin Guide
 
@@ -121,16 +117,16 @@ Chapter 1. Admin Guide
    Since OpenSIPS is a SIP Proxy, it does not have any Media
    Capabilities by itself. Thus we need to rely on a different
    Media Server to capture the RTP traffic and fork it to the SRS.
-   This module currently uses the RTPProxy module in OpenSIPS to
-   instruct the RTPProxy Media Server to fork the RTP media to the
-   SRS.
+   The current implementation supports both the RTPProxy (through
+   the RTPProxy module) and RTPEngine (through the RTEngine
+   module) Media Servers.
 
 1.4. SRS Failover
 
    The siprec module supports failover between multiple SRS
    servers - when calling the siprec_start_recording() function,
-   one can provision more SRS URIs, separated by comma. In this
-   case, OpenSIPS will try to use them in the same order
+   one can provision multiple SRS URIs, separated by comma. In
+   this case, OpenSIPS will try to use them in the same order
    specified, one by one, until either one of them responds with a
    positive reply (200 OK), or the response code is one of the
    codes matched by the skip_failover_codes regular expression. In
@@ -164,8 +160,8 @@ Chapter 1. Admin Guide
    The following modules must be loaded before this module:
      * TM - Transaction module.
      * Dialog - Dialog module for keeping track of the call.
-     * RTPProxy - RTPProxy module used for controlling the media
-       forked.
+     * RTP_Relay - RTP Relay module used for controlling the Media
+       Servers that will fork the media.
      * B2B_ENTITIES - Back-2-Back module used for communicating
        with the SRS.
 
@@ -177,40 +173,14 @@ Chapter 1. Admin Guide
 
 1.7. Exported Parameters
 
-1.7.1. media_port_min (integer)
-
-   The minimum value of the port used in the SDP sent to the SRS.
-   This value should correlate to the port-range configured in the
-   RTPProxy Media Server.
-
-   Default value is “35000”.
-
-   Example 1.1. Set media_port_min parameter
-...
-modparam("siprec", "media_port_min", 10000)
-...
-
-1.7.2. media_port_max (integer)
-
-   The maximum value of the port used in the SDP sent to the SRS.
-   This value should correlate to the port-range configured in the
-   RTPProxy Media Server.
-
-   Default value is “65000”.
-
-   Example 1.2. Set media_port_max parameter
-...
-modparam("siprec", "media_port_max", 20000)
-...
-
-1.7.3. skip_failover_codes (string)
+1.7.1. skip_failover_codes (string)
 
    A regular expression used to specify the codes that should
    prevent the module from failing over to a new SRS server.
 
    By default any negative reply generates a failover.
 
-   Example 1.3. Set skip_failover_codes parameter
+   Example 1.1. Set skip_failover_codes parameter
 ...
 # do not failover on 408 reply codes
 modparam("siprec", "skip_failover_codes", "408")
@@ -224,7 +194,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 
 1.8. Exported Functions
 
-1.8.1.  siprec_start_recording(srs[, rtpproxy_sock])
+1.8.1.  siprec_start_recording(srs)
 
    Calling this function on an initial INVITE engages call
    recording to SRS(s) for that call. Note that it does not
@@ -241,10 +211,6 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * srs (string) - a comma-separated list of SRS URIs. These
        URIs are used in the order specified. See
        siprec_srs_failover for more information.
-     * rtpproxy_sock (string, optional) - the RTPProxy socket used
-       for this call. If absent, the rtpproxy module will try to
-       detect the proxy used for the initial call, based on the
-       default set provisioned in the rtpproxy module.
 
    The function returns false when an internal error is triggered
    and the call recording setup fails. Otherwise, if all the
@@ -252,7 +218,7 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.4. Use siprec_start_recording() function with a
+   Example 1.2. Use siprec_start_recording() function with a
    single SRS
         ...
         if (!has_totag() && is_method("INVITE")) {
@@ -263,7 +229,7 @@ n");
         }
         ...
 
-   Example 1.5. Use siprec_start_recording() function with
+   Example 1.3. Use siprec_start_recording() function with
    multiple SRS servers
         ...
         if (!has_totag() && is_method("INVITE")) {
@@ -275,20 +241,22 @@ for $ci in inbound group\n");
         }
         ...
 
-   Example 1.6. Use siprec_start_recording() function with custom
+   Example 1.4. Use siprec_start_recording() function with custom
    XML values for participants
         ...
         $xml(caller_xml) = "<nameID></nameID>";
         $xml(caller_xml/nameID.attr/aor) = "sip:6024151234@10.0.0.11:509
 0";
         $xml(caller_xml/nameID) = "<name>test</name>";
-        siprec_start_recording($var(srs),,$xml(caller_xml/nameID));
+        $siprec(caller) = $xml(caller_xml/nameID);
+        siprec_start_recording($var(srs));
         ...
 
-   Example 1.7. Use siprec_start_recording() function with custom
+   Example 1.5. Use siprec_start_recording() function with custom
    headers
         ...
-        siprec_start_recording($var(srs),,,,,,"X-MY-CUSTOM_HDR: 1\r\n");
+        $siprec(headers) = "X-MY-CUSTOM_HDR: 1\r\n";
+        siprec_start_recording($var(srs));
         ...
 
 1.8.2.  siprec_pause_recording()
@@ -298,7 +266,7 @@ for $ci in inbound group\n");
 
    This function can be used from any route.
 
-   Example 1.8. Use siprec_pause_recording()
+   Example 1.6. Use siprec_pause_recording()
         ...
         if (has_totag() && is_method("INVITE")) {
                 if (is_audio_on_hold())
@@ -313,7 +281,7 @@ for $ci in inbound group\n");
 
    This function can be used from any route.
 
-   Example 1.9. Use siprec_resume_recording()
+   Example 1.7. Use siprec_resume_recording()
         ...
         if (has_totag() && is_method("INVITE")) {
                 if (!is_audio_on_hold())
@@ -362,7 +330,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 105 55 4463 781
+   1. Razvan Crainea (@razvancrainea) 130 64 4691 1634
    2. Vlad Patrascu (@rvlad-patrascu) 14 9 159 138
    3. Liviu Chircu (@liviuchircu) 8 6 27 50
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
@@ -388,7 +356,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Feb 2022
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Mar 2022
    2. Norman Brandinger (@NormB)          Aug 2021 - Aug 2021
    3. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Jul 2021
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
