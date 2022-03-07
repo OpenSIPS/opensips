@@ -885,6 +885,8 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 		if (strncasecmp(pnode->rn_address, "udp:", 4) == 0) {
 			pnode->rn_umode = 1;
 			pnode->rn_address += 4;
+			if (pnode->rn_address[0] == '[') /* it is actually an ipv6 url */
+				pnode->rn_umode = 6;
 		} else if (strncasecmp(pnode->rn_address, "udp6:", 5) == 0) {
 			pnode->rn_umode = 6;
 			pnode->rn_address += 5;
@@ -1410,7 +1412,7 @@ static int mi_child_init(void)
 static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 {
 	int n;
-	char *cp;
+	char *cp, *start, *end;
 	char *hostname;
 	struct addrinfo hints, *res;
 
@@ -1419,20 +1421,37 @@ static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 		return 1;
 	}
 
-	hostname = (char*)pkg_malloc(strlen(pnode->rn_address) + 1);
+	start = pnode->rn_address;
+
+	cp = strrchr(pnode->rn_address, ':');
+	if (cp == NULL) {
+		/* no explicit port, use the default one */
+		cp = CPORT;
+		end = start + strlen(pnode->rn_address);
+	} else {
+		end = cp++;
+		if (pnode->rn_umode == 6) {
+			/* if IPv6 mode, port should be right after ] */
+			if (end > start && *(end - 1) != ']') {
+				/* if it is not, then it is part of the address */
+				cp = CPORT;
+				end = start + strlen(pnode->rn_address);
+			}
+		}
+	}
+	if (pnode->rn_umode == 6 && *start == '[') {
+		start++;
+		if (end > start && *(end - 1) == ']')
+			end--;
+	}
+
+	hostname = (char*)pkg_malloc(end - start + 1);
 	if (hostname==NULL) {
 		LM_ERR("no more pkg memory\n");
 		return 0;
 	}
-	strcpy(hostname, pnode->rn_address);
-
-	cp = strrchr(hostname, ':');
-	if (cp != NULL) {
-		*cp = '\0';
-		cp++;
-	}
-	if (cp == NULL || *cp == '\0')
-		cp = CPORT;
+	memcpy(hostname, start, end - start);
+	hostname[end-start] = '\0';
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = 0;
