@@ -22,6 +22,8 @@
 #ifndef _PROTO_MSRP_MSRP_API_H_
 #define _PROTO_MSRP_MSRP_API_H_
 
+#include "../../sr_module.h"
+
 #include "msrp_parser.h"
 #include "msrp_handler.h"
 
@@ -48,5 +50,20 @@ struct msrp_binds {
 };
 
 void load_msrp( struct msrp_binds *binds);
+
+typedef void (*load_msrp_f)(struct msrp_binds *binds);
+
+static inline int load_msrp_api(struct msrp_binds *binds) {
+	load_msrp_f load_msrp;
+
+	/* import the msrp auto-loading function */
+	if (!(load_msrp = (load_msrp_f) find_export("load_msrp", 0)))
+		return -1;
+
+	/* let the auto-loading function load all msrp API functions */
+	load_msrp(binds);
+
+	return 0;
+}
 
 #endif
