@@ -117,20 +117,35 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 	str* b2bl_key;
 	int size;
 	str extra_headers={0, 0};
-	str local_contact= server_address;
+	str local_contact={0, 0};
 	struct sip_uri *ct_uri = NULL;
 	str *ct_user = NULL;
 
-	if(msg)
+	if (server_address.len > 0)
 	{
-		if (contact_user && msg->to) {
-			ct_uri = parse_to_uri(msg);
-			ct_user = &ct_uri->user;
-		}
-		if (get_local_contact(msg->rcv.bind_address, ct_user, &local_contact) < 0)
+		if (pv_printf_s(msg, server_address_pve, &local_contact) != 0)
 		{
-			LM_ERR("Failed to get received address\n");
-			local_contact= server_address;
+			LM_WARN("Failed to build contact from server address\n");
+			if (!msg || get_local_contact(msg->rcv.bind_address, NULL, &local_contact) < 0)
+			{
+				LM_ERR("Failed to build contact from received address\n");
+				goto error;
+			}
+		}
+	}
+	else
+	{
+		if(msg)
+		{
+			if (contact_user && msg->to) {
+				ct_uri = parse_to_uri(msg);
+				ct_user = &ct_uri->user;
+			}
+			if (get_local_contact(msg->rcv.bind_address, ct_user, &local_contact) < 0)
+			{
+				LM_ERR("Failed to get received address\n");
+				goto error;
+			}
 		}
 	}
 

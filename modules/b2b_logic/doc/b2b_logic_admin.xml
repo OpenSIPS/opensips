@@ -406,12 +406,21 @@ route{
 			socket where the initiating request was received.
 			This socket will be used to send all the requests, replies for that
 			session.
+			This parameter support Pseudo-Variables.
 		</para>
 		<example>
 		<title>Set <varname>server_address</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
+...
+	</programlisting>
+		</example>
+		<example>
+		<title>Set <varname>server_address</varname> parameter using Pseudo-Variables</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "server_address", "sip:$socket_in(advertised_ip):$socket_in(advertised_port)")
 ...
 	</programlisting>
 		</example>

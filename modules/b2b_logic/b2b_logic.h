@@ -58,6 +58,7 @@
 /* B2BL_BR_FLAGS constants */
 #define B2BL_BR_FLAG_NOTIFY			0x01
 #define B2BL_BR_FLAG_RETURN_AFTER_FAILURE	0x02
+#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR	0x04
 
 /* modes to write in db */
 #define NO_DB         0
@@ -95,12 +96,16 @@ struct b2b_bridge_params
 {
 	unsigned int flags;
 	unsigned int lifetime;
+	str *remote_entity;
+	unsigned int remote_entity_party;
 };
 
 enum pv_entity_field {
 	PV_ENTITY_KEY,
 	PV_ENTITY_CALLID,
-	PV_ENTITY_ID
+	PV_ENTITY_ID,
+	PV_ENTITIY_FROMTAG,
+	PV_ENTITIY_TOTAG
 };
 
 extern str custom_headers_lst[HDR_LST_LEN];
@@ -109,6 +114,7 @@ extern int custom_headers_lst_len;
 extern int use_init_sdp;
 extern int contact_user;
 extern str server_address;
+extern pv_elem_t *server_address_pve;
 extern unsigned int max_duration;
 extern str init_callid_hdr;
 extern str db_url;
@@ -124,6 +130,7 @@ extern int b2bl_db_mode;
 extern unsigned int b2bl_th_init_timeout;
 extern int global_req_rtid;
 extern int global_reply_rtid;
+extern int b2b_early_update;
 
 extern str top_hiding_scen_s;
 extern str internal_scen_s;
