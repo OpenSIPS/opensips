@@ -639,14 +639,15 @@ modparam("dialplan", "attrs_col", "column_name")
 	<listitem>
 		<para>
 		<emphasis>out_var</emphasis> (var, optional) - variable to be populated/written with 
-		the output string (if provided by the translation rule).
+		the output string (if provided by the translation rule), on a successful translation.
 		</para>
 	</listitem>
 
 	<listitem>
 		<para>
 		<emphasis>attrs_var</emphasis> (var, optional) - variable to be populated/written 
-		with the atribute string, if provided by the translation rule.
+		with the "attributes" field of the translation rule, on a successful translation.
+		If the field is NULL or empty-string, the variable will be set to empty-string.
 	</para>
 	</listitem>
 

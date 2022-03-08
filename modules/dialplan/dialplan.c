@@ -562,10 +562,15 @@ static int dp_translate_f(struct sip_msg *msg, int* dpid, str *in_str,
 	/* we are done reading -> unref the data */
 	lock_stop_read( part->ref_lock );
 
-	if (attr_var && attrs.s && attrs.len) {
+	if (attr_var) {
 		verify_par_type(*attr_var);
+
 		pval.flags = PV_VAL_STR;
-		pval.rs = attrs;
+
+		if (ZSTR(attrs))
+			pval.rs = str_init("");
+		else
+			pval.rs = attrs;
 
 		if (pv_set_value(msg, attr_var, 0, &pval) != 0) {
 			LM_ERR("failed to set value '%.*s' for the attr pvar!\n",
