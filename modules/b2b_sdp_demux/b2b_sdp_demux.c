@@ -428,6 +428,9 @@ static void b2b_sdp_client_free(void *param)
 	if (client->b2b_key.s)
 		shm_free(client->b2b_key.s);
 
+	if (client->body.s)
+		shm_free(client->body.s);
+
 	list_for_each_safe(it, safe, &client->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
 	shm_free(client);
@@ -831,7 +834,7 @@ static str *b2b_sdp_mux_body(struct b2b_sdp_ctx *ctx)
 
 static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *client)
 {
-	str *body;
+	str *body, *rbody = NULL;
 	str method = str_init("INVITE");
 	b2b_req_data_t req_data;
 	int code = 0, ret = -1;
@@ -848,17 +851,23 @@ static int b2b_sdp_client_reinvite(struct sip_msg *msg, struct b2b_sdp_client *c
 		goto end;
 	}
 	B2B_SDP_CLIENT_WAIT_FREE(client->ctx);
-	client->ctx->pending_no = 1;
-	if (b2b_sdp_client_sync(client, body) < 0) {
+	ret = b2b_sdp_client_sync(client, body);
+	if (ret < 0) {
+		code = 488;
 		LM_INFO("cannot parse re-INVITE body!\n");
 		goto end;
+	} else if (ret == 0) {
+		code = 200;
+		rbody = &client->body;
+		LM_DBG("nothing to update, replying re-INVITE immediately!\n");
+		goto end;
 	}
+	client->ctx->pending_no = 1;
 	client->flags |= B2B_SDP_CLIENT_PENDING;
 	body = b2b_sdp_mux_body(client->ctx);
-	ret = 0;
 end:
 	lock_release(&client->ctx->lock);
-	if (ret == 0) {
+	if (ret > 0) {
 		if (body) {
 			memset(&req_data, 0, sizeof(b2b_req_data_t));
 			req_data.et = B2B_SERVER;
@@ -877,7 +886,7 @@ end:
 		}
 	}
 	if (code)
-		b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, code, NULL);
+		b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, code, rbody);
 	return ret;
 }
 
@@ -1006,6 +1015,8 @@ static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
 	struct b2b_sdp_stream *bstream;
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
+	int synced_streams = 0;
+	str bstream_body;
 
 	if (parse_sdp_session(body, 0, NULL, &sdp) < 0) {
 		LM_ERR("could not parse SDP\n");
@@ -1048,9 +1059,9 @@ static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
 				}
 				cline.len = (session->ip_addr.s + session->ip_addr.len) - cline.s;
 				/* add new lines as well */
-				bstream->body.s = shm_realloc(bstream->body.s, stream->body.len + cline.len +
+				bstream_body.s = pkg_malloc(stream->body.len + cline.len +
 						(nline.s?(lline.len + bstream->label.len + nline.len):0));
-				if (!bstream->body.s)
+				if (!bstream_body.s)
 					goto end;
 				/* now copy the first m= line of the stream */
 				mline.s = stream->body.s;
@@ -1058,46 +1069,60 @@ static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body)
 				while (mline.len < stream->body.len && mline.s[mline.len] != '\r' &&
 						mline.s[mline.len] != '\n')
 					mline.len++;
-				memcpy(bstream->body.s, stream->body.s, mline.len);
-				memcpy(bstream->body.s + mline.len, cline.s, cline.len);
+				memcpy(bstream_body.s, stream->body.s, mline.len);
+				memcpy(bstream_body.s + mline.len, cline.s, cline.len);
 				/* rest of the stream */
-				memcpy(bstream->body.s + mline.len + cline.len,
+				memcpy(bstream_body.s + mline.len + cline.len,
 						mline.s + mline.len, stream->body.len - mline.len);
-				bstream->body.len = stream->body.len + cline.len;
+				bstream_body.len = stream->body.len + cline.len;
 			} else {
 				/* sync the entire stream just as it is */
-				bstream->body.s = shm_realloc(bstream->body.s, stream->body.len +
+				bstream_body.s = pkg_malloc(stream->body.len +
 						(nline.s?(lline.len + bstream->label.len + nline.len):0));
-				if (!bstream->body.s)
+				if (!bstream_body.s)
 					goto end;
-				memcpy(bstream->body.s, stream->body.s, stream->body.len);
-				bstream->body.len = stream->body.len;
+				memcpy(bstream_body.s, stream->body.s, stream->body.len);
+				bstream_body.len = stream->body.len;
 			}
 			/* only add label if it was initially there */
 			if (nline.s) {
 				/* copy terminator from end of stream to make space for label */
-				eline.s = bstream->body.s + bstream->body.len;
+				eline.s = stream->body.s + stream->body.len;
 				eline.len = 0;
 				while (eline.s > stream->body.s &&
 						(*(eline.s - 1) == '\r' || *(eline.s - 1) == '\n')) {
 					eline.s--;
 					eline.len++;
-					bstream->body.s[bstream->body.len + nline.len +
+					bstream_body.s[bstream_body.len + nline.len +
 						lline.len + bstream->label.len - eline.len] = *eline.s;
 				}
-				bstream->body.len -= eline.len;
+				bstream_body.len -= eline.len;
 
-				memcpy(bstream->body.s + bstream->body.len, nline.s, nline.len);
-				bstream->body.len += nline.len;
-				memcpy(bstream->body.s + bstream->body.len, lline.s, lline.len);
-				bstream->body.len += lline.len;
-				memcpy(bstream->body.s + bstream->body.len, bstream->label.s, bstream->label.len);
-				bstream->body.len += bstream->label.len;
-				bstream->body.len += eline.len;
+				memcpy(bstream_body.s + bstream_body.len, nline.s, nline.len);
+				bstream_body.len += nline.len;
+				memcpy(bstream_body.s + bstream_body.len, lline.s, lline.len);
+				bstream_body.len += lline.len;
+				memcpy(bstream_body.s + bstream_body.len, bstream->label.s, bstream->label.len);
+				bstream_body.len += bstream->label.len;
+				bstream_body.len += eline.len;
+			}
+			if (bstream->body.len && bstream->body.s &&
+					str_match(&bstream->body, &bstream_body)) {
+				LM_DBG("identical body - not updating!\n");
+				pkg_free(bstream_body.s);
+			} else {
+				LM_DBG("updating stream with new body!\n");
+				if (shm_str_sync(&bstream->body, &bstream_body) < 0) {
+					pkg_free(bstream_body.s);
+					LM_ERR("cannot sync stream body\n");
+					goto end;
+				}
+				pkg_free(bstream_body.s);
+				synced_streams++;
 			}
 		}
 	}
-	ret = 0;
+	ret = synced_streams;
 end:
 	free_sdp_content(&sdp);
 	return ret;
@@ -1227,13 +1252,13 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 	return -1;
 }
 
-static str *b2b_sdp_demux_body(struct b2b_sdp_client *client,
+static int b2b_sdp_demux_body(struct b2b_sdp_client *client,
 		sdp_info_t *sdp)
 {
 	int len;
 	char *p;
 	str session_str;
-	static str body;
+	str body;
 	static str media = str_init("m=");
 	struct list_head *it;
 	struct b2b_sdp_stream *stream;
@@ -1242,14 +1267,14 @@ static str *b2b_sdp_demux_body(struct b2b_sdp_client *client,
 			list_last_entry(&client->streams, struct b2b_sdp_stream, list)->index);
 	if (!session) {
 		LM_ERR("could not locate session\n");
-		return NULL;
+		return -1;
 	}
 	session_str = session->body;
 	do {
 		p = str_strstr(&session_str, &media);
 		if (!p || (p - session_str.s < 1)) {
 			LM_ERR("could not locate first media stream in session\n");
-			return NULL;
+			return -1;
 		}
 		if (*(p - 1) == '\r' || *(p - 1) == '\n')
 			break;
@@ -1268,7 +1293,7 @@ static str *b2b_sdp_demux_body(struct b2b_sdp_client *client,
 	body.s = pkg_malloc(len);
 	if (!body.s) {
 		LM_ERR("oom in pkg for body!\n");
-		return NULL;
+		return -1;
 	}
 	memcpy(body.s, session_str.s, session_str.len);
 	body.len = len;
@@ -1279,7 +1304,9 @@ static str *b2b_sdp_demux_body(struct b2b_sdp_client *client,
 		memcpy(body.s + len, sstream->body.s, sstream->body.len);
 		len += sstream->body.len;
 	}
-	return &body;
+	len = shm_str_sync(&client->body, &body);
+	pkg_free(body.s);
+	return len;
 }
 
 static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
@@ -1321,11 +1348,11 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 				code = 606;
 				body = NULL;
 			} else {
-				body = b2b_sdp_demux_body(client, &sdp);
-				if (!body) {
+				if (b2b_sdp_demux_body(client, &sdp) < 0) {
 					LM_ERR("cannot get body for client!\n");
 					free_sdp_content(&sdp);
 				}
+				body = &client->body;
 				code = msg->REPLY_STATUS;
 			}
 		} else {
@@ -1337,10 +1364,8 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 	}
 	lock_release(&client->ctx->lock);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_INVITE, code, body);
-	if (body) {
+	if (body)
 		free_sdp_content(&sdp);
-		pkg_free(body->s);
-	}
 	lock_get(&client->ctx->lock);
 	ctx->pending_no = 0;
 	lock_release(&client->ctx->lock);
@@ -1382,8 +1407,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 	lock_get(&ctx->lock);
 	list_for_each(it, &ctx->clients) {
 		client = list_entry(it, struct b2b_sdp_client, list);
-		body = b2b_sdp_demux_body(client, &sdp);
-		if (!body) {
+		if (b2b_sdp_demux_body(client, &sdp) < 0) {
 			LM_ERR("could not get new body for client!\n");
 			continue;
 		}
@@ -1393,10 +1417,9 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 		req_data.et = B2B_CLIENT;
 		req_data.b2b_key = &client->b2b_key;
 		req_data.method = &method;
-		req_data.body = body;
-		if (b2b_api.send_request(&req_data) < 0) {
-
-		}
+		req_data.body = &client->body;
+		if (b2b_api.send_request(&req_data) < 0)
+			LM_ERR("could not send re-INVITE to client!\n");
 	}
 	lock_release(&ctx->lock);
 
@@ -1457,7 +1480,7 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		struct b2b_sdp_ctx *ctx, sdp_info_t *sdp)
 {
-	str *b2b_key, *body;
+	str *b2b_key;
 	str contact;
 	union sockaddr_union tmp_su;
 	struct list_head *it;
@@ -1513,20 +1536,18 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 
 	list_for_each(it, &ctx->clients) {
 		client = list_entry(it, struct b2b_sdp_client, list);
-		body = b2b_sdp_demux_body(client, sdp);
-		if (!body) {
+		if (b2b_sdp_demux_body(client, sdp) < 0) {
 			LM_ERR("could not get body for client!\n");
 			return -1;
 		}
 		/* per client stuff */
-		ci.body = body;
+		ci.body = &client->body;
 		ci.extra_headers = &client->hdrs;
 
 		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
 		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
 				&b2b_sdp_demux_client_cap, &ctx->callid, NULL,
 				client, b2b_sdp_client_free);
-		pkg_free(body->s);
 		if (!b2b_key) {
 			LM_ERR("could not create b2b sdp demux client!\n");
 			return -1;
