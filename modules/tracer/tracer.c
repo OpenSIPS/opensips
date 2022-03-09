@@ -1187,7 +1187,7 @@ static inline int trace_write_file(int fd, char *path,
 	v[3].iov_base = time_buf;
 	v[3].iov_len = strlen(v[3].iov_base);
 	v[6].iov_base = int2str(db_vals[6].val.int_val, (int *)&v[6].iov_len);
-	v[11].iov_base = int2str(db_vals[9].val.int_val, (int *)&v[10].iov_len);
+	v[10].iov_base = int2str(db_vals[9].val.int_val, (int *)&v[10].iov_len);
 
 	if (fd < 0) {
 		fd = open(path, O_RDWR|O_APPEND|O_CREAT, trace_file_mode);
