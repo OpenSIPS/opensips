@@ -136,7 +136,8 @@ static int _dispatch_req_to_handler( struct msrp_msg *req)
 int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 		struct receive_info *rcv_info)
 {
-	struct msrp_msg* msg;
+	struct msrp_msg *msg;
+	struct msrp_cell *cell;
 #ifdef MSRP_DEBUG
 	struct hdr_field *hf;
 #endif
@@ -195,14 +196,27 @@ int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 	if (msg->fl.type==MSRP_REQUEST) {
 
 		if (_dispatch_req_to_handler( msg )<0) {
-			LM_ERR("Message not handled by any handler :(\n");
+			LM_ERR("Request for [%.*s] not handled by any handler :(\n",
+				msg->to_path->body.len, msg->to_path->body.s);
 			goto parse_error;  // FIXME a 4xx reply ??
 		}
 
 	} else {
 
-		/* TODO FIXME handle replies here */
+		/* match against the existing transactions */
+		if ( (cell=msrp_get_transaction( &msg->fl.ident ))==NULL) {
+			LM_ERR("Reply not matching any transaction, discrading :(\n");
+			goto parse_error; // FIXME closing conn here??
+		}
+		/* take care, the transaction is removed from hash, it's our duty
+		 * to destroy it once we are done here */
 
+		/* run the reply handler */
+		((struct msrp_handler*)cell->msrp_hdl)->rpl_f( msg, cell,
+			((struct msrp_handler*)cell->msrp_hdl)->param  );
+
+		/* we are done, free the transaction now */
+		msrp_free_transaction(cell);
 	}
 
 	LM_DBG("cleaning up\n");
@@ -217,3 +231,21 @@ error:
 	return -1;
 }
 
+
+void handle_msrp_timeout( struct msrp_cell *list)
+{
+	struct msrp_cell *cell;
+
+	while(list) {
+
+		cell = list;
+		list = cell->expired_next;
+
+		/* run the reply handler, using NULL msg to indicate the timeout */
+		((struct msrp_handler*)cell->msrp_hdl)->rpl_f( NULL, cell,
+			((struct msrp_handler*)cell->msrp_hdl)->param  );
+
+		msrp_free_transaction(cell);
+	}
+
+}

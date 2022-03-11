@@ -55,16 +55,15 @@ unsigned int msrp_ident_timeout = 30;
 static unsigned short table_curr_idx = 0;
 static gen_hash_t **msrp_table = NULL;
 static rw_lock_t *ident_lock = NULL;
+static handle_trans_timeout_f *handle_trans_timeout = NULL;
 
 
-static char * msrp_ident_builder( unsigned short hash, unsigned short idx,
+static char * _ident_builder( unsigned short hash, unsigned short idx,
 		char *padding, int padding_len,
 		int *ident_len);
 
 static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 		str *ident);
-
-static void _free_transaction(struct msrp_cell *cell);
 
 static void msrp_timer(unsigned int ticks, void* param);
 
@@ -269,7 +268,7 @@ redo_ident:
 	if (req->message_id)
 		md5_src[i++] = req->message_id->body;
 	MD5StringArray( md5, md5_src, i);
-	ident.s  = msrp_ident_builder( hash, idx, md5, MD5_LEN, &ident.len);
+	ident.s  = _ident_builder( hash, idx, md5, MD5_LEN, &ident.len);
 
 
 	/* the len will be the same after moving the URL, the only diff will
@@ -352,7 +351,7 @@ redo_ident:
 	val = hash_get(  msrp_table[idx], hash, ident);
 	if (val==NULL) {
 		hash_unlock( msrp_table[idx], hash);
-		_free_transaction( cell );
+		msrp_free_transaction( cell );
 		LM_ERR("failed to insert transaction into hash, "
 			"dropping everything\n");
 		goto error;
@@ -381,7 +380,7 @@ redo_ident:
 		hash_lock( msrp_table[idx], hash);
 		hash_remove(  msrp_table[idx], hash, ident);
 		hash_unlock( msrp_table[idx], hash);
-		_free_transaction( cell );
+		msrp_free_transaction( cell );
 		goto error;
 	}
 
@@ -433,8 +432,10 @@ int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl)
 
 
 /********* transactional layer ************/
+#define IDENT_SEPARATOR '.'
 
-int msrp_init_trans_layer(void)
+
+int msrp_init_trans_layer(handle_trans_timeout_f *timout_f)
 {
 	int i;
 
@@ -482,6 +483,8 @@ int msrp_init_trans_layer(void)
 		return -1;
 	}
 
+	handle_trans_timeout = timout_f;
+
 	return 0;
 }
 
@@ -503,13 +506,12 @@ int msrp_destroy_trans_layer(void)
 }
 
 
-static char * msrp_ident_builder( unsigned short hash, unsigned short idx,
+static char * _ident_builder( unsigned short hash, unsigned short idx,
 		char *padding, int padding_len,
 		int *ident_len)
 {
-	#define IDENT_SEPARATOR '.'
 	#define IDENT_BUF_MAX_LEN 20
-	/* format is hash_hexa.hash_idx.rand_hexa.padding , max 20 chars*/
+	/* format is hash_hexa.idx_hexa.rand_hexa.padding , max 20 chars*/
 	static char ident_s[IDENT_BUF_MAX_LEN + 1];
 	unsigned short rnd;
 	int size;
@@ -627,7 +629,7 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 }
 
 
-static void _free_transaction(struct msrp_cell *cell)
+void msrp_free_transaction(struct msrp_cell *cell)
 {
 	shm_free(cell);
 }
@@ -649,7 +651,6 @@ static void _table_process_each(void * value)
 static void msrp_timer(unsigned int ticks, void* param)
 {
 	int i, n;
-	struct msrp_cell *to_handle, *cell;
 
 	/* every second here, incrementing the time index in the table */
 
@@ -677,23 +678,80 @@ static void msrp_timer(unsigned int ticks, void* param)
 		hash_unlock( msrp_table[i], n);
 	}
 
-	to_handle = expired_list;
-
 	table_curr_idx = i;
 
 	lock_stop_write( ident_lock );
 
-	/* now simply handle the expired list one by one */
+	/* now handle the expired list one by one */
+	handle_trans_timeout( expired_list );
+}
 
-	while(to_handle) {
 
-		cell = to_handle;
-		to_handle = cell->expired_next;
+static int _ident_parser( str *ident,
+		unsigned short *hash, unsigned short *idx)
+{
+	char *p, *end;
+	str hexa;
+	unsigned int hval;
 
-		/* run the reply handler */
-		//((struct msrp_handler*)cell->msrp_hdl)->rpl_f( NULL, cell,
-		//	((struct msrp_handler*)cell->msrp_hdl)->param  );
+	/* split the ident into hash.idx.xxxxxx */
+	p = ident->s;
+	end = ident->s + ident->len;
 
-		_free_transaction(cell);
+	for ( hexa.s=p ; (p<end) && (*p!=IDENT_SEPARATOR) ; p++);
+	if ( *p!=IDENT_SEPARATOR)
+		goto parse_error;
+	hexa.len = p - hexa.s;
+	if (reverse_hex2int( hexa.s, hexa.len,  &hval)<0 ||
+	hval >= msrp_ident_hash_size)
+		goto parse_error;
+	*hash = hval;
+
+	p++; /* get over the separator */
+
+	for ( hexa.s=p ; (p<end) && (*p!=IDENT_SEPARATOR) ; p++);
+	if ( *p!=IDENT_SEPARATOR)
+		goto parse_error;
+	hexa.len = p - hexa.s;
+	if (reverse_hex2int( hexa.s, hexa.len,  &hval)<0 ||
+	hval >= msrp_ident_timeout)
+		goto parse_error;
+	*idx = hval;
+
+	/* we do not care of the rest of the ident, it will be checked 
+	 * only when doing the key searching in the map */
+	return 0;
+parse_error:
+	LM_ERR("failed in [%.*s] at pos %d[%c]\n", ident->len, ident->s,
+		(int)(p-ident->s), *p);
+	return -1;
+}
+
+
+/* Searches (ident based), removes and returns a transaction from the hash
+ * NULL returned if not found
+ */
+struct msrp_cell *msrp_get_transaction(str *ident)
+{
+	unsigned short hash, idx;
+	struct msrp_cell *cell;
+
+	if (ident->s==NULL || ident->len==0 ||
+	_ident_parser( ident, &hash, &idx)<0)
+		return NULL;
+
+	LM_DBG("looking for transaction ident [%.*s] on hash %d, idx=%d\n",
+		ident->len, ident->s, hash, idx);
+
+	hash_lock( msrp_table[idx], hash);
+	cell = hash_remove( msrp_table[idx], hash, *ident);
+	hash_unlock( msrp_table[idx], hash);
+
+	if (cell == NULL) {
+		LM_DBG("no transaction found with ident [%.*s] on hash %d, idx=%d\n",
+			ident->len, ident->s, hash, idx);
+		return NULL;
 	}
+
+	return cell;
 }

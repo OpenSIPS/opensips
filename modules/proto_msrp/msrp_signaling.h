@@ -39,12 +39,20 @@ struct msrp_cell {
 	struct msrp_cell *expired_next;
 };
 
-
 extern unsigned int msrp_ident_hash_size;
 
-int msrp_init_trans_layer(void);
+typedef void (handle_trans_timeout_f)( struct msrp_cell *list);
+
+
+int msrp_init_trans_layer(handle_trans_timeout_f f);
 
 int msrp_destroy_trans_layer(void);
+
+void msrp_free_transaction(struct msrp_cell *cell);
+
+struct msrp_cell *msrp_get_transaction(str *ident);
+
+
 
 int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 		str *hdrs, int hdrs_no);
