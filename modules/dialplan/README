@@ -436,10 +436,12 @@ modparam("dialplan", "attrs_col", "column_name")
        and for computing the output string.
      * out_var (var, optional) - variable to be populated/written
        with the output string (if provided by the translation
-       rule).
+       rule), on a successful translation.
      * attrs_var (var, optional) - variable to be
-       populated/written with the atribute string, if provided by
-       the translation rule.
+       populated/written with the "attributes" field of the
+       translation rule, on a successful translation. If the field
+       is NULL or empty-string, the variable will be set to
+       empty-string.
      * partition (string, optional) - the name of the partition
        (set of data) to be used for locating the DP ID.
 
@@ -569,7 +571,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 68 44 971 938
+   1. Liviu Chircu (@liviuchircu) 69 45 980 941
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 68 44 863 980
    3. Ionut Ionita (@ionutrazvanionita) 40 20 1149 579
    4. Anca Vamanu 33 5 3263 19
@@ -606,8 +608,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Feb 2022
-   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Nov 2021
+   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - Mar 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Feb 2022
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
@@ -630,8 +632,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Zero King (@l2dy), Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Zero King (@l2dy), Vlad Patrascu
    (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
    Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Dragus, Anca Vamanu.
