@@ -25,12 +25,13 @@
 
 
 #include "../../parser/digest/digest.h"
+#include "../../parser/digest/digest_parser.h"
 #include "../../parser/msg_parser.h"
 #include "../../parser/hf.h"
 #include "../../str.h"
 #include "../../usr_avp.h"
 #include "../../lib/digest_auth/digest_auth.h"
-
+#include "../../lib/digest_auth/dauth_nonce.h"
 
 typedef enum auth_result {
 	AUTH_ERROR = -5,    /* Error occurred, a reply has not been sent out */
@@ -90,6 +91,13 @@ typedef int (*calc_HA1_t)(const struct calc_HA1_arg *params, HASHHEX *_sess_key)
     __attribute__ ((warn_unused_result));
 
 /*
+ * Build {WWW,Proxy}-Authenticate header field
+ */
+typedef char *(*build_auth_hf_t)(struct nonce_context *ncp, struct nonce_params *calc_np,
+	int _stale, const str_const *_realm, int* _len,
+    const str_const *alg_val, const str_const* _hf_name);
+
+/*
  * Strip the beginning of realm
  */
 void strip_realm(str *_realm);
@@ -105,6 +113,7 @@ typedef struct auth_api {
 	post_auth_t post_auth; /* The function to be called after auth */
 	calc_HA1_t  calc_HA1;  /* calculate H(A1) as per spec */
 	check_response_t check_response; /* check auth response */
+	build_auth_hf_t build_auth_hf;   /* build {WWW,Proxy}-Authenticate header field */
 } auth_api_t;
 
 

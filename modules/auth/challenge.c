@@ -71,10 +71,9 @@
 /*
  * Create {WWW,Proxy}-Authenticate header field
  */
-static inline char *build_auth_hf(int _retries, int _stale,
-    const str_const *_realm, int* _len, qop_type_t _qop, alg_t alg,
-    const str_const *alg_val, const str_const* _hf_name,
-    int index)
+char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
+	int _stale, const str_const *_realm, int* _len,
+    const str_const *alg_val, const str_const* _hf_name)
 {
 	char *hf, *p;
 	str_const alg_param;
@@ -82,10 +81,9 @@ static inline char *build_auth_hf(int _retries, int _stale,
 	str_const stale_param = STR_NULL_const;
 	const str_const digest_realm = str_const_init(DIGEST_REALM);
 	const str_const nonce_param = str_const_init(DIGEST_NONCE);
-	struct nonce_params calc_np;
 
-	if (_qop) {
-		switch (_qop) {
+	if (calc_np->qop) {
+		switch (calc_np->qop) {
 		case QOP_AUTH_D:
 			qop_param = str_const_init(QOP_AUTH);
 			break;
@@ -99,7 +97,7 @@ static inline char *build_auth_hf(int _retries, int _stale,
 			qop_param = str_const_init(QOP_AUTH_BOTH_AIA);
 			break;
 		default:
-			LM_ERR("Wrong _qop value: %d\n", _qop);
+			LM_ERR("Wrong _qop value: %d\n", calc_np->qop);
 			abort();
 		}
 	}
@@ -132,21 +130,13 @@ static inline char *build_auth_hf(int _retries, int _stale,
 	memcpy(p, digest_realm.s, digest_realm.len);p+=digest_realm.len;
 	memcpy(p, _realm->s, _realm->len);p+=_realm->len;
 	memcpy(p, nonce_param.s, nonce_param.len);p+=nonce_param.len;
-	if (clock_gettime(CLOCK_REALTIME, &calc_np.expires) != 0) {
-		LM_ERR("clock_gettime failed\n");
-		goto e2;
-	}
-	calc_np.expires.tv_sec += nonce_expire;
-	calc_np.index = index;
-	calc_np.qop = _qop;
-	calc_np.alg = (alg == ALG_UNSPEC) ? ALG_MD5 : alg;
-	if (calc_nonce(ncp, p, &calc_np) != 0) {
+	if (calc_nonce(ncp, p, calc_np) != 0) {
 		LM_ERR("calc_nonce failed\n");
 		goto e2;
 	}
 	p+=ncp->nonce_len;
 	*p='"';p++;
-	if (_qop) {
+	if (calc_np->qop) {
 		memcpy(p, qop_param.s, qop_param.len);
 		p+=qop_param.len;
 	}
@@ -186,6 +176,7 @@ static inline int challenge(struct sip_msg* _msg, str *realm, qop_type_t _qop,
 	str auth_hfs[LAST_ALG_SPTD - FIRST_ALG_SPTD + 1];
 	const str_const *alg_val;
 	const struct digest_auth_calc *digest_calc;
+	struct nonce_params calc_np;
 
 	switch(_code) {
 	case WWW_AUTH_CODE:
@@ -229,6 +220,15 @@ static inline int challenge(struct sip_msg* _msg, str *realm, qop_type_t _qop,
 		}
 		LM_DBG("nonce index= %d\n", index);
 	}
+
+	if (clock_gettime(CLOCK_REALTIME, &calc_np.expires) != 0) {
+		LM_ERR("clock_gettime failed\n");
+		return -1;
+	}
+	calc_np.expires.tv_sec += nonce_expire;
+	calc_np.index = index;
+	calc_np.qop = _qop;
+
 	for (i = LAST_ALG_SPTD; i >= FIRST_ALG_SPTD; i--) {
 		if ((algmask & ALG2ALGFLG(i)) == 0)
 			continue;
@@ -236,9 +236,9 @@ static inline int challenge(struct sip_msg* _msg, str *realm, qop_type_t _qop,
 		if (digest_calc == NULL)
 			continue;
 		alg_val = (i == ALG_UNSPEC) ? NULL : &digest_calc->algorithm_val;
-		auth_hfs[nalgs].s = build_auth_hf(0, (cred ? cred->stale : 0),
-		    str2const(realm), &auth_hfs[nalgs].len, _qop, i, alg_val,
-		    _challenge_msg, index);
+		calc_np.alg = (i == ALG_UNSPEC) ? ALG_MD5 : i;
+		auth_hfs[nalgs].s = build_auth_hf(ncp, &calc_np, (cred ? cred->stale : 0),
+		    str2const(realm), &auth_hfs[nalgs].len, alg_val, _challenge_msg);
 		if (!auth_hfs[nalgs].s) {
 			LM_ERR("failed to generate nonce\n");
 			ret = -1;
