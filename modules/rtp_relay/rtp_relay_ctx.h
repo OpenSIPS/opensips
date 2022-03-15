@@ -32,7 +32,8 @@
 #define RTP_RELAY_CTX_STATE_DELETED		(1<<2)
 #define RTP_RELAY_CTX_STATE_PENDING		(1<<3)
 
-#define RTP_RELAY_SESS_STATE_DISABLED	(1<<0)
+#define RTP_RELAY_LEG_DISABLED			(1<<0)
+
 #define RTP_RELAY_SESS_STATE_PENDING	(1<<1)
 #define RTP_RELAY_SESS_STATE_SUCCESS	(1<<2)
 #define RTP_RELAY_SESS_STATE_LATE		(1<<3)
@@ -50,9 +51,12 @@
 #define rtp_relay_ctx_set_pending(_s) (_s)->state |= RTP_RELAY_CTX_STATE_PENDING
 #define rtp_relay_ctx_reset_pending(_s) (_s)->state &= (~RTP_RELAY_CTX_STATE_PENDING)
 
-#define rtp_sess_disabled(_s) ((_s)->state & RTP_RELAY_SESS_STATE_DISABLED)
-#define rtp_sess_set_disabled(_s, _v) (_s)->state |= ((_v)?RTP_RELAY_SESS_STATE_DISABLED:0)
-#define rtp_sess_reset_disabled(_s) (_s)->state &= (~RTP_RELAY_SESS_STATE_DISABLED)
+#define rtp_leg_disabled(_l) ((_l)->state & RTP_RELAY_LEG_DISABLED)
+#define rtp_leg_set_disabled(_l, _v) (_l)->state |= ((_v)?RTP_RELAY_LEG_DISABLED:0)
+#define rtp_leg_reset_disabled(_s) (_s)->state &= (~RTP_RELAY_LEG_DISABLED)
+#define rtp_sess_disabled(_s) \
+	(((_s)->legs[RTP_RELAY_CALLER] && rtp_leg_disabled((_s)->legs[RTP_RELAY_CALLER])) || \
+	 ((_s)->legs[RTP_RELAY_CALLEE] && rtp_leg_disabled((_s)->legs[RTP_RELAY_CALLEE])))
 
 #define rtp_sess_pending(_s) ((_s)->state & RTP_RELAY_SESS_STATE_PENDING)
 #define rtp_sess_set_pending(_s) (_s)->state |= RTP_RELAY_SESS_STATE_PENDING
@@ -66,14 +70,9 @@
 #define rtp_sess_set_late(_s) (_s)->state |= RTP_RELAY_SESS_STATE_LATE
 #define rtp_sess_reset_late(_s) (_s)->state &= (~RTP_RELAY_SESS_STATE_LATE)
 
-enum rtp_relay_type {
-	RTP_RELAY_OFFER,
-	RTP_RELAY_ANSWER,
-	RTP_RELAY_SIZE,
-};
-
 enum rtp_relay_var_flags {
-	RTP_RELAY_FLAGS_SELF,
+	RTP_RELAY_FLAGS_FIRST = 0,
+	RTP_RELAY_FLAGS_SELF  = 0,
 	RTP_RELAY_FLAGS_PEER,
 	RTP_RELAY_FLAGS_IP,
 	RTP_RELAY_FLAGS_TYPE,
@@ -88,13 +87,27 @@ enum rtp_relay_var_flags {
 
 typedef str rtp_relay_flags[RTP_RELAY_FLAGS_SIZE];
 
+enum rtp_relay_leg_type {
+	RTP_RELAY_LEG_CALLER = 0,
+	RTP_RELAY_LEG_CALLEE = 1
+};
+
+struct rtp_relay_leg {
+	int index;
+	int ref;
+	unsigned int state;
+	enum rtp_relay_leg_type type;
+	rtp_relay_flags flags;
+	struct list_head list;
+};
+
 struct rtp_relay_sess {
 	int index;
 	unsigned int state;
 	struct rtp_relay *relay;
 	struct rtp_relay_server server;
-	rtp_relay_flags flags[RTP_RELAY_SIZE];
 	struct list_head list;
+	struct rtp_relay_leg *legs[2];
 };
 
 struct rtp_relay_ctx {
@@ -103,8 +116,9 @@ struct rtp_relay_ctx {
 	str flags, delete;
 	gen_lock_t lock;
 	unsigned int state;
-	struct rtp_relay_sess *main;
+	struct rtp_relay_sess *established;
 	struct list_head sessions;
+	struct list_head legs;
 	struct list_head list;
 	struct list_head copy_contexts;
 };
@@ -127,7 +141,11 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 		struct rtp_relay_ctx *ctx, struct rtp_relay *relay, int *set);
 
 struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index);
-struct rtp_relay_sess *rtp_relay_new_sess(struct rtp_relay_ctx *ctx, int index);
+
+struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
+		enum rtp_relay_leg_type type, int idx);
+struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
+		enum rtp_relay_leg_type type, int idx);
 
 mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);

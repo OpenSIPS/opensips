@@ -159,7 +159,7 @@ static int mod_init(void)
 {
 	LM_INFO("initializing MSRP-plain protocol\n");
 
-	if (msrp_init_trans_layer()<0) {
+	if (msrp_init_trans_layer( handle_msrp_timeout )<0) {
 		LM_ERR("failed to init transactional layer\n");
 		return -1;
 	}

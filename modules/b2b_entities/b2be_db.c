@@ -579,7 +579,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 				}
 			}
 
-			if (b2be_db_mode == WRITE_BACK && dlg->storage.len) {
+			if (dlg->storage.len) {
 				shm_free(dlg->storage.s);
 				dlg->storage.len = 0;
 				dlg->storage.s = NULL;

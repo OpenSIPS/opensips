@@ -207,26 +207,58 @@ static int pv_parse_rtp_relay_var(pv_spec_p sp, const str *in)
 	return 0;
 }
 
-static inline enum rtp_relay_type rtp_relay_get_seq_type(
+static inline enum rtp_relay_leg_type rtp_relay_get_seq_type(
 		struct sip_msg *msg, int req, int type)
 {
 	if (type & RTP_RELAY_PV_PEER)
 		req = !req;
 
 	if (rtp_relay_ctx_upstream())
-		return req?RTP_RELAY_ANSWER:RTP_RELAY_OFFER;
+		return req?RTP_RELAY_LEG_CALLEE:RTP_RELAY_LEG_CALLER;
 	else
-		return req?RTP_RELAY_OFFER:RTP_RELAY_ANSWER;
+		return req?RTP_RELAY_LEG_CALLER:RTP_RELAY_LEG_CALLEE;
 }
 
-static struct rtp_relay_sess *pv_get_rtp_relay_sess(struct sip_msg *msg,
-		pv_param_t *param, struct rtp_relay_ctx *ctx, enum rtp_relay_var_flags *flag,
-		enum rtp_relay_type *type, int set)
+struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
+		enum rtp_relay_leg_type type, int idx)
 {
+	struct list_head *it;
+	struct rtp_relay_leg *leg;
+
+	list_for_each(it, &ctx->legs) {
+		leg = list_entry(it, struct rtp_relay_leg, list);
+		if (leg->type == type && leg->index == idx)
+			return leg;
+	}
+
+	return NULL;
+}
+
+struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
+		enum rtp_relay_leg_type type, int idx)
+{
+	struct rtp_relay_leg *leg = shm_malloc(sizeof(*leg));
+	if (!leg) {
+		LM_ERR("oom for new leg!\n");
+		return NULL;
+	}
+	memset(leg, 0, sizeof(*leg));
+	leg->type = type;
+	leg->index = idx;
+	leg->ref = 1;
+	list_add(&leg->list, &ctx->legs);
+	return leg;
+}
+
+static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
+		pv_param_t *param, struct rtp_relay_ctx *ctx,
+		enum rtp_relay_var_flags *flag, int set)
+{
+	struct rtp_relay_leg *leg;
+	pv_value_t flags_name;
+	enum rtp_relay_leg_type type;
 	int idx = RTP_RELAY_ALL_BRANCHES;
 	int idxf = 0;
-	pv_value_t flags_name;
-	struct rtp_relay_sess *sess = NULL;
 
 	*flag = RTP_RELAY_FLAGS_UNKNOWN;
 
@@ -242,24 +274,11 @@ static struct rtp_relay_sess *pv_get_rtp_relay_sess(struct sip_msg *msg,
 		}
 		if (idxf == PV_IDX_ALL)
 			idx = RTP_RELAY_ALL_BRANCHES;
-	} else if (route_type == BRANCH_ROUTE) {
+	} else if (route_type == BRANCH_ROUTE || route_type == ONREPLY_ROUTE) {
 		idx = rtp_relay_ctx_branch();
 	}
 
-	sess = rtp_relay_get_sess(ctx, idx);
-	if (!sess) {
-		if (set) {
-			sess = rtp_relay_new_sess(ctx, idx);
-			if (!sess) {
-				LM_ERR("could not create new RTP relay session!\n");
-				return NULL;
-			}
-		} else {
-			return NULL;
-		}
-	}
-
-	*type = rtp_relay_get_seq_type(msg,
+	type = rtp_relay_get_seq_type(msg,
 			(msg->first_line.type == SIP_REQUEST), param->pvn.type);
 
 	if (param->pvn.type & RTP_RELAY_PV_VAR) {
@@ -276,16 +295,19 @@ static struct rtp_relay_sess *pv_get_rtp_relay_sess(struct sip_msg *msg,
 	} else {
 		*flag = param->pvn.u.isname.name.n;
 	}
-	return sess;
+
+	leg = rtp_relay_get_leg(ctx, type, idx);
+	if (!leg && set)
+		leg = rtp_relay_new_leg(ctx, type, idx);
+	return leg;
 }
 
 static int pv_get_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *val)
 {
 	struct rtp_relay_ctx *ctx;
-	struct rtp_relay_sess *sess;
+	struct rtp_relay_leg *leg;
 	enum rtp_relay_var_flags flag;
-	enum rtp_relay_type type;
 
 	if (!param) {
 		LM_ERR("invalid parameter or value to set\n");
@@ -297,15 +319,15 @@ static int pv_get_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 
 	RTP_RELAY_CTX_LOCK(ctx);
 
-	sess = pv_get_rtp_relay_sess(msg, param, ctx, &flag, &type, 0);
-	if (!sess) {
+	leg = pv_get_rtp_relay_leg(msg, param, ctx, &flag, 0);
+	if (!leg) {
 		pv_get_null(msg, param, val);
 		goto end;
 	}
 
 	if (flag != RTP_RELAY_FLAGS_DISABLED) {
-		val->rs = sess->flags[type][flag];
-	} else if (rtp_sess_disabled(sess)) {
+		val->rs = leg->flags[flag];
+	} else if (rtp_leg_disabled(leg)) {
 		init_str(&val->rs, "disabled");
 	} else {
 		init_str(&val->rs, "enabled");
@@ -320,9 +342,8 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
 	enum rtp_relay_var_flags flag;
-	enum rtp_relay_type type;
 	struct rtp_relay_ctx *ctx;
-	struct rtp_relay_sess *sess;
+	struct rtp_relay_leg *leg;
 	int ret = 0;
 	int disabled;
 	str s = {NULL, 0};
@@ -333,12 +354,13 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 	}
 	RTP_RELAY_CTX_LOCK(ctx);
 
-	sess = pv_get_rtp_relay_sess(msg, param, ctx, &flag, &type, 1);
-	if (!sess) {
+	leg = pv_get_rtp_relay_leg(msg, param, ctx, &flag, 1);
+	if (!leg) {
 		LM_ERR("could not get context session!\n");
 		ret = -2;
 		goto end;
 	}
+
 	if (flag == RTP_RELAY_FLAGS_DISABLED) {
 		/* disabled is treated differently */
 		if (val->flags & PV_VAL_NULL)
@@ -349,7 +371,7 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 			disabled = 1;
 		else
 			disabled = 0;
-		rtp_sess_set_disabled(sess, disabled);
+		rtp_leg_set_disabled(leg, disabled);
 		goto end;
 	}
 	if (!(val->flags & PV_VAL_NULL)) {
@@ -358,7 +380,7 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		else
 			s = val->rs;
 	}
-	if (shm_str_sync(&sess->flags[type][flag], &s) >= 0)
+	if (shm_str_sync(&leg->flags[flag], &s) >= 0)
 		goto end;
 	ret = -1;
 end:
