@@ -503,6 +503,31 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 		</example>
 	</section>
 
+
+	<section id="param_b2bl_early_update" xreflabel="b2bl_early_update">
+		<title><varname>b2bl_early_update</varname> (int)</title>
+		<para>
+			Allow bridging of calls in early stage by issuing a "UPDATE" request
+		</para>
+		<para>
+		<itemizedlist>
+				<listitem>0 - Do not bridge dialogs in early stage</listitem>
+				<listitem>1 - Try to update an session in early stage by sending an UPDATE</listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> Do not bridge dialogs in early stage</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>b2bl_early_update</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "b2bl_early_update", 1)
+...
+	</programlisting>
+		</example>
+	</section>	
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -825,7 +850,7 @@ route[b2b_logic_reply] {
 
 	<section id="func_b2b_send_reply" xreflabel="b2b_send_reply()">
 		<title>
-		<function moreinfo="none">b2b_send_reply(code, reason)</function>
+		<function moreinfo="none">b2b_send_reply(code, reason[, headers[, body]])</function>
 		</title>
 		<para>
 			This function sends a reply to the entity that sent the current
@@ -838,6 +863,12 @@ route[b2b_logic_reply] {
 			</para></listitem>
 			<listitem><para>
 				<emphasis>reason (string)</emphasis> - reply reason string
+			</para></listitem>
+			<listitem><para>
+				<emphasis>headers (string, optional)</emphasis> - additional headers
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body (string, optional)</emphasis> - message body
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -950,6 +981,99 @@ route[b2b_request]
          b2b_bridge_request($ci,$var(entity));
       }
    }
+   ...
+}
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_b2b_trigger_scenario" xreflabel="b2b_trigger_scenario()">
+		<title>
+		<function moreinfo="none">b2b_trigger_scenario(scenario, [params], peer1,
+			[extra_headers_peer1], [extra_headers_contents_peer1],
+			peer2
+			[extra_headers_peer2], [extra_headers_contents_peer2])</function>
+		</title>
+		<para>
+			This function triggers a certain scenario from routing script, e.g.
+			out-of-dialog REFERs.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>scenario (string)</emphasis> - Name of the scenario to be triggered.
+			</para></listitem>
+			<listitem>
+				<para>
+					<emphasis>params (string, optional)</emphasis> - Parameters to be used in this scenario (optionally as CSV)
+				</para>
+				<itemizedlist>
+					<listitem><para>
+						<emphasis>n</emphasis> - Enable rfc3515 NOTIFY to inform the agent sending the
+						REFER of the status of the reference.
+					</para></listitem>
+					<listitem><para>
+						<emphasis>key (string, optional)</emphasis> - Internal key, who should receive the NOTIFY requests
+						(default: initiator of message)
+					</para></listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+					<emphasis>peer1 (string)</emphasis> - Parameters to define the A-Party of the triggered scenario
+				</para>
+				<itemizedlist>
+					<listitem><para>
+						<emphasis>entitiy_name (string)</emphasis> - Name of the entity
+					</para></listitem>
+					<listitem><para>
+						<emphasis>RURI (string)</emphasis> - R-URI of the entity to contact
+					</para></listitem>
+					<listitem><para>
+						<emphasis>Proxy (string, optional)</emphasis> - Outbound Proxy to be used for this entity
+					</para></listitem>
+					<listitem><para>
+						<emphasis>Display-Name (string, optional)</emphasis> - Display Name to be used for this entity
+					</para></listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem><para>
+				<emphasis>extra_headers_peer1 (var, optional)</emphasis> - AVP variable holding a list
+				of extra headers (the header names) to be added for any request sent for the first entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers_contents_peer1 (var, optional)</emphasis> - AVP variable holding a
+				list of extra header bodies (corresponding to the headers given in the
+				<emphasis>extra_headers_peer1</emphasis> parameter) to be added for any request
+				sent for the first entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>peer2 (string)</emphasis> - Parameters to define the B-Party of the
+				triggered scenario. The format is identitical to the definition of <emphasis>peer1</emphasis>.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers_peer2 (var, optional)</emphasis> - AVP variable holding a list
+				of extra headers (the header names) to be added for any request sent for the second entity.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>extra_headers_contents_peer2 (var, optional)</emphasis> - AVP variable holding a
+				list of extra header bodies (corresponding to the headers given in the
+				<emphasis>extra_headers_peer2</emphasis> parameter) to be added for any request
+				sent for the second entity.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+			<title><function>b2b_trigger_scenario</function> usage</title>
+		<programlisting format="linespecific">
+...
+if(is_method("REFER") &amp;&amp; !has_totag()) {
+   $avp(header) = "Replaces";
+   $avp(header_content) = "call-id=xyz";
+   b2b_trigger_scenario("refer", "n", "conf,sip:conference@10.0.0.1", $avp(header), $avp(header_content), "callee,sip:user@10.0.0.1,sip:10.0.0.1");
    ...
 }
 ...
@@ -1159,6 +1283,14 @@ local_route {
 			<listitem><para>
 				the entity ID, accessible by using the
 				<emphasis>id</emphasis> subname.
+			</para></listitem>
+			<listitem><para>
+				the From-Tag of the dialog, accessible by using the
+				<emphasis>fromtag</emphasis> subname.
+			</para></listitem>
+			<listitem><para>
+				the To-Tag of the dialog, accessible by using the
+				<emphasis>totag</emphasis> subname.
 			</para></listitem>
 		</itemizedlist>
 	</para>

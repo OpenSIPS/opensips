@@ -2272,7 +2272,7 @@ done:
 	return rc;
 }
 
-int b2b_send_reply(struct sip_msg *msg, int *code, str *reason)
+int b2b_send_reply(struct sip_msg *msg, int *code, str *reason, str *headers, str *body)
 {
 	b2bl_tuple_t *tuple;
 	b2bl_entity_id_t *entity;
@@ -2316,6 +2316,8 @@ int b2b_send_reply(struct sip_msg *msg, int *code, str *reason)
 	rpl_data.method =method_value;
 	rpl_data.code =*code;
 	rpl_data.text =reason;
+	rpl_data.extra_headers = headers;
+	rpl_data.body = body;
 
 	b2bl_htable[cur_route_ctx.hash_index].locked_by = process_no;
 	b2b_api.send_reply(&rpl_data);
