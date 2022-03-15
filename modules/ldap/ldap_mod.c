@@ -186,7 +186,7 @@ static int child_init(int rank)
 		}
 
 		/* won't check for null in get_ld_session since it's barely been initialized */
-		if (ldap_connect(ld_name, &get_ld_session(ld_name)->conn_s) != 0)
+		if (opensips_ldap_connect(ld_name, &get_ld_session(ld_name)->conn_s) != 0)
 		{
 			LM_ERR("[%s]: failed to connect to LDAP host(s)\n", ld_name);
 			ldap_disconnect(ld_name, NULL);
