@@ -29,8 +29,15 @@
 
 struct msrp_cell {
 	unsigned short hash;
+	/* the computed ident for sending the request on this transaction */
 	str ident;
+	/* info on where the request was recv'ed from */
+	struct dest_info recv;
+	/* the received/inbound ident for the request */
+	str recv_ident;
+	/* FROM PATH as received in the request */
 	str from_full;
+	/* TO PATH (only first URL) as received in the request */
 	str to_top;
 	str message_id;
 	str byte_range;
@@ -60,6 +67,6 @@ int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 int msrp_fwd_request( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no);
 
-int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl);
+int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell);
 
 #endif

@@ -39,7 +39,8 @@ typedef int (*send_reply_f)( void *hdl, struct msrp_msg *req,
 typedef int (*fwd_request_f)( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no);
 
-typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl);
+typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl,
+		struct msrp_cell *cell);
 
 
 struct msrp_binds {

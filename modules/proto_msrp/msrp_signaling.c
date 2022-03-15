@@ -89,7 +89,7 @@ int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 	 */
 	len += MSRP_PREFIX_LEN + req->fl.ident.len + 1 + 3
 		+ (reason?(1 + reason->len):0) + CRLF_LEN;
-	
+
 	/* headers
 	 * headers = To-Path CRLF From-Path CRLF 1*( header CRLF )
 	 */
@@ -393,16 +393,17 @@ error:
 }
 
 
-int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl)
+int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell)
 {
-	char *buf, *p;
+	char *buf, *p, *s;
 	struct msrp_url *to, *from;
+	int i, len;
 
-	if (rpl==NULL)
+	if (rpl==NULL || cell==NULL)
 		return -1;
 
-	/* we need both TO and FROM path hdrs to be parsed, none are 
-	 * parsed for sure at this point */
+	/* we need both TO and FROM path hdrs to be parsed. The TO should be
+	 * already, so let's do the FROM */
 	if (rpl->from_path->parsed == NULL) {
 		rpl->from_path->parsed = parse_msrp_path( &rpl->from_path->body);
 		if (rpl->from_path->parsed == NULL) {
@@ -421,13 +422,72 @@ int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl)
 		return -1;
 	}
 
-	/*  WIP - we need the transactional support
-	 */
-	p = NULL; buf = p; p = buf;
-	to = from;
+	/* the len will be the same after moving the URL, the only diff will
+	 * be imposed by the diff in ident len (twice!) */
+	len = rpl->len + 2 * (cell->recv_ident.len - rpl->fl.ident.len);
 
 
-	return -1;
+	/* allocate the buffer */
+	buf = pkg_malloc( len );
+	if (buf==NULL) {
+		LM_ERR("failed to pkg allocate the request buffer\n");
+		return -3;
+	}
+
+
+	/* start building */
+	p = buf;
+	s = rpl->buf;
+
+	/* copy everything up to the ident, which needs to be replaced here */
+	append_string( p, s, (int)(rpl->fl.ident.s-s));
+	/* put back the ident received in the request */
+	append_string( p, cell->recv_ident.s, cell->recv_ident.len);
+	/* TO is the first hdr, so copy everything up to its first URL (which
+	 * needs to be skipped here) */
+	s = rpl->fl.ident.s + rpl->fl.ident.len;
+	append_string( p, s, (int)(to->whole.s-s));
+	/* copy starting with the second URL, all the way to the first FROM URL */
+	s = to->next->whole.s;
+	append_string( p, s, (int)(from->whole.s-s));
+	/* first place here the first TO URL that was skipped */
+	append_string( p, to->whole.s, to->whole.len);
+	*(p++) = ' ';
+	/* copy starting with the first FROM URL */
+	s = from->whole.s;
+	append_string( p, s,
+		(int)(rpl->buf+rpl->len-s-rpl->fl.ident.len-CRLF_LEN-1));
+	/* put back the received ident */
+	append_string( p, cell->recv_ident.s, cell->recv_ident.len);
+	s = rpl->buf+rpl->len-CRLF_LEN-1;
+	append_string( p, s, CRLF_LEN+1 );
+
+	if (p-buf!=len) {
+		LM_BUG("computed %d, but wrote %d :(\n",len,(int)(p-buf));
+		goto error;
+	}
+#ifdef MSRP_DEBUG
+	LM_DBG("----|\n%.*s|-----\n",len,buf);
+#endif
+
+
+	/* now, send it out, back to the same spot where the request came from */
+	i = msg_send( cell->recv.send_sock, PROTO_MSRP, &cell->recv.to,
+			cell->recv.proto_reserved1 /*conn-id*/,
+			buf, len, NULL);
+	if (i<0) {
+		/* sending failed, TODO - close the connection */
+		LM_ERR("failed to fwd MSRP request\n");
+		goto error;
+	}
+
+
+	pkg_free(buf);
+	return 0;
+
+error:
+	pkg_free(buf);
+	return -3;
 }
 
 
@@ -579,6 +639,7 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 
 	cell = shm_malloc( sizeof(struct msrp_cell)
 			 + ident->len
+			 + req->fl.ident.len
 			 + req->from_path->body.len
 			 + to->whole.len
 			 + (req->message_id?req->message_id->body.len:0)
@@ -597,6 +658,10 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 	cell->ident.s = p;
 	cell->ident.len = ident->len;
 	append_string( p, ident->s, ident->len);
+
+	cell->recv_ident.s = p;
+	cell->recv_ident.len = req->fl.ident.len;
+	append_string( p, req->fl.ident.s, req->fl.ident.len);
 
 	cell->from_full.s = p;
 	cell->from_full.len = req->from_path->body.len;
@@ -624,6 +689,11 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 		append_string( p, req->failure_report->body.s,
 			req->failure_report->body.len);
 	}
+
+	init_su( &cell->recv.to, &req->rcv.src_ip, req->rcv.src_port);
+	cell->recv.proto = req->rcv.proto;
+	cell->recv.proto_reserved1 = req->rcv.proto_reserved1;
+	cell->recv.send_sock = req->rcv.bind_address;
 
 	return cell;
 }
