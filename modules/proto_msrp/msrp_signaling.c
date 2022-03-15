@@ -70,6 +70,9 @@ static void msrp_timer(unsigned int ticks, void* param);
 #define MSRP_DEBUG
 
 
+/* generates a "local" MSRP reply to a received MSRP request;
+ * no transaction is involved here.
+ */
 int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 		str *hdrs, int hdrs_no)
 {
@@ -109,7 +112,7 @@ int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 	}
 	/* as FROM use the first URL from TO, which is already parsed */
 	from_body = ((struct msrp_url*)(req->to_path->parsed))->whole;
-	/* and now let's calcalate */
+	/* and now let's calculate */
 	len += TO_PATH_PREFIX_LEN + to_body.len + CRLF_LEN
 		+ FROM_PATH_PREFIX_LEN + from_body.len + CRLF_LEN;
 	/* add the hdrs */
@@ -121,14 +124,12 @@ int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 	  */
 	len += EOM_PREFIX_LEN + req->fl.ident.len + 1 + CRLF_LEN;
 
-
 	/* allocate the buffer */
 	buf = pkg_malloc( len );
 	if (buf==NULL) {
 		LM_ERR("failed to pkg allocate the reply buffer\n");
 		return -1;
 	}
-
 
 	/* start building */
 	p = buf;
@@ -254,7 +255,6 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no)
 	idx = table_curr_idx;
 	lock_stop_read( ident_lock );
 
-
 redo_ident:
 	/* compute the new ident first */
 	hash = hash_entry( msrp_table[idx] , req->fl.ident);
@@ -278,14 +278,12 @@ redo_ident:
 		for( i=0 ; i<hdrs_no ; i++ )
 			len += hdrs[i].len + CRLF_LEN;
 
-
 	/* allocate the buffer */
 	buf = pkg_malloc( len );
 	if (buf==NULL) {
 		LM_ERR("failed to pkg allocate the request buffer\n");
 		return -3;
 	}
-
 
 	/* start building */
 	p = buf;
@@ -336,7 +334,6 @@ redo_ident:
 	LM_DBG("----|\n%.*s|-----\n",len,buf);
 #endif
 
-
 	/* do transactional stuff */
 	cell = _build_transaction( req, hash, &ident);
 	if (cell==NULL) {
@@ -366,7 +363,6 @@ redo_ident:
 
 	hash_unlock( msrp_table[idx], hash);
 
-
 	/* now, send it out*/
 	// TODO - for now we use the same socket (as the received one), but
 	//        it will nice to be able to change it (via script??) in order
@@ -393,6 +389,10 @@ error:
 }
 
 
+/* forwards back a received MSRP reply using info from the existing MSRP
+ * transaction (like where the request was received from).
+ * the "cell" is not freed here, just used
+ */
 int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell)
 {
 	char *buf, *p, *s;
@@ -434,7 +434,6 @@ int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell)
 		return -3;
 	}
 
-
 	/* start building */
 	p = buf;
 	s = rpl->buf;
@@ -470,6 +469,114 @@ int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell)
 	LM_DBG("----|\n%.*s|-----\n",len,buf);
 #endif
 
+	/* now, send it out, back to the same spot where the request came from */
+	i = msg_send( cell->recv.send_sock, PROTO_MSRP, &cell->recv.to,
+			cell->recv.proto_reserved1 /*conn-id*/,
+			buf, len, NULL);
+	if (i<0) {
+		/* sending failed, TODO - close the connection */
+		LM_ERR("failed to fwd MSRP request\n");
+		goto error;
+	}
+
+	pkg_free(buf);
+	return 0;
+
+error:
+	pkg_free(buf);
+	return -3;
+}
+
+
+/* sends back a MSRP reply based only on an existing MSRP transaction (no
+ * request). This is usefull for generating replies on timeout case.
+ * the "cell" is not freed here, just used
+ */
+int msrp_send_reply_on_cell( void *hdl, struct msrp_cell *cell,
+		int code, str* reason,
+		str *hdrs, int hdrs_no)
+{
+	char *buf, *p;
+	int i, len = 0;
+
+	if (cell==NULL)
+		return -1;
+
+	if (code<100 || code>999) {
+		LM_ERR("invalid status reply %d, must be [100..999]\n",code);
+		return -1;
+	}
+
+	/* compute the lenght of the reply*/
+
+	/* first line
+	 * MSRP SP transact-id SP status-code [SP comment] CRLF
+	 */
+	len += MSRP_PREFIX_LEN + cell->recv_ident.len + 1 + 3
+		+ (reason?(1 + reason->len):0) + CRLF_LEN;
+
+	/* headers
+	 * headers = To-Path CRLF From-Path CRLF 1*( header CRLF )
+	 */
+	len += TO_PATH_PREFIX_LEN + cell->from_full.len + CRLF_LEN
+		+ FROM_PATH_PREFIX_LEN + cell->to_top.len + CRLF_LEN;
+	/* add the hdrs */
+	for ( i=0 ; i<hdrs_no ; i++)
+		len += hdrs[i].len + CRLF_LEN;
+
+	 /* EOM
+	  * end-line = "-------" transact-id continuation-flag CRLF
+	  */
+	len += EOM_PREFIX_LEN + cell->recv_ident.len + 1 + CRLF_LEN;
+
+	/* allocate the buffer */
+	buf = pkg_malloc( len );
+	if (buf==NULL) {
+		LM_ERR("failed to pkg allocate the request buffer\n");
+		return -3;
+	}
+
+	/* start building */
+	p = buf;
+
+	/* first line */
+	append_string( p, MSRP_PREFIX, MSRP_PREFIX_LEN);
+	append_string( p, cell->recv_ident.s, cell->recv_ident.len);
+	*(p++) = ' ';
+	p += btostr( p, code );
+	if (reason) {
+		*(p++) = ' ';
+		append_string( p, reason->s, reason->len);
+	}
+	append_string( p, CRLF, CRLF_LEN);
+
+	/* headers */
+	append_string( p, TO_PATH_PREFIX, TO_PATH_PREFIX_LEN);
+	append_string( p, cell->from_full.s, cell->from_full.len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	append_string( p, FROM_PATH_PREFIX, FROM_PATH_PREFIX_LEN);
+	append_string( p, cell->to_top.s, cell->to_top.len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	for ( i=0 ; i<hdrs_no ; i++) {
+		append_string( p,  hdrs[i].s,  hdrs[i].len);
+		append_string( p, CRLF, CRLF_LEN);
+	}
+
+	/* EOM */
+	append_string( p, EOM_PREFIX, EOM_PREFIX_LEN);
+	append_string( p, cell->recv_ident.s, cell->recv_ident.len);
+	*(p++) = '$';
+	append_string( p, CRLF, CRLF_LEN);
+
+	if (p-buf!=len) {
+		LM_BUG("computed %d, but wrote %d :(\n",len,(int)(p-buf));
+		goto error;
+	}
+#ifdef MSRP_DEBUG
+	LM_DBG("----|\n%.*s|-----\n",len,buf);
+#endif
 
 	/* now, send it out, back to the same spot where the request came from */
 	i = msg_send( cell->recv.send_sock, PROTO_MSRP, &cell->recv.to,
@@ -489,6 +596,8 @@ error:
 	pkg_free(buf);
 	return -3;
 }
+
+
 
 
 /********* transactional layer ************/

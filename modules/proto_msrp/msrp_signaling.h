@@ -61,7 +61,12 @@ struct msrp_cell *msrp_get_transaction(str *ident);
 
 
 
-int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
+int msrp_send_reply( void *hdl, struct msrp_msg *req,
+		int code, str* reason,
+		str *hdrs, int hdrs_no);
+
+int msrp_send_reply_on_cell( void *hdl, struct msrp_cell *cell,
+		int code, str* reason,
 		str *hdrs, int hdrs_no);
 
 int msrp_fwd_request( void *hdl, struct msrp_msg *req,
