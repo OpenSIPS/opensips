@@ -395,7 +395,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	send_cancel = (client->flags & B2B_SDP_CLIENT_EARLY);
 	if (!send_cancel && !(client->flags & B2B_SDP_CLIENT_STARTED)) {
 		lock_release(&client->ctx->lock);
-		return;
+		goto delete;
 	}
 	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_STARTED);
 	lock_release(&client->ctx->lock);
@@ -410,6 +410,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	req_data.b2b_key = key;
 	req_data.method = &method;
 	b2b_api.send_request(&req_data);
+delete:
 	b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
 }
 
