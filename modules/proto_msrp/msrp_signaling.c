@@ -41,6 +41,18 @@
 #define FROM_PATH_PREFIX "From-Path: "
 #define FROM_PATH_PREFIX_LEN (sizeof(FROM_PATH_PREFIX) - 1)
 
+#define MESSAGE_ID_PREFIX "Message-ID: "
+#define MESSAGE_ID_PREFIX_LEN (sizeof(MESSAGE_ID_PREFIX) - 1)
+
+#define BYTE_RANGE_PREFIX "Byte-Range: "
+#define BYTE_RANGE_PREFIX_LEN (sizeof(BYTE_RANGE_PREFIX) - 1)
+
+#define STATUS_PREFIX "Status: "
+#define STATUS_PREFIX_LEN (sizeof(STATUS_PREFIX) - 1)
+
+#define MSRP_REPORT_METHOD "REPORT"
+#define MSRP_REPORT_METHOD_LEN (sizeof(MSRP_REPORT_METHOD) - 1)
+
 /* convenience macro */
 #define  append_string(_d,_s,_len) \
 	do{\
@@ -82,6 +94,10 @@ int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 
 	if (code<100 || code>999) {
 		LM_ERR("invalid status reply %d, must be [100..999]\n",code);
+		return -1;
+	}
+	if (req->fl.u.request.method_id==MSRP_METHOD_REPORT) {
+		LM_ERR("cannot send reply for REPORT request\n");
 		return -1;
 	}
 
@@ -229,7 +245,7 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no)
 		return -1;
 	}
 
-	/* before doing and heavy lifting (as building the out buffer), let's
+	/* before doing the heavy lifting (as building the out buffer), let's
 	 * resolve the destination first. */
 	bk = to->next->host.s[to->next->host.len]; // usual hack
 	to->next->host.s[to->next->host.len] = 0;
@@ -249,27 +265,36 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no)
 		return -2;
 	}
 
+	/* REPORT request do not get a new ident on fwd, but use the
+	 * received one */
+	if (req->fl.u.request.method_id==MSRP_METHOD_REPORT) {
 
-	/* decide which hash to use for the transaction */
-	lock_start_read( ident_lock );
-	idx = table_curr_idx;
-	lock_stop_read( ident_lock );
+		ident = req->fl.ident;
+
+	} else {
+
+		/* decide which hash to use for the transaction */
+		lock_start_read( ident_lock );
+		idx = table_curr_idx;
+		lock_stop_read( ident_lock );
 
 redo_ident:
-	/* compute the new ident first */
-	hash = hash_entry( msrp_table[idx] , req->fl.ident);
+		/* compute the new ident first */
+		hash = hash_entry( msrp_table[idx] , req->fl.ident);
 #ifdef MSRP_DEBUG
-	LM_DBG("using idx %d, hash %d  over [%.*s] (size is %d)\n",
-		idx, hash, req->fl.ident.len, req->fl.ident.s, msrp_table[idx]->size);
+		LM_DBG("using idx %d, hash %d  over [%.*s] (size is %d)\n",
+			idx, hash, req->fl.ident.len, req->fl.ident.s,
+			msrp_table[idx]->size);
 #endif
-	i = 0;
-	md5_src[i++] = to->whole;
-	md5_src[i++] = from->whole;
-	if (req->message_id)
-		md5_src[i++] = req->message_id->body;
-	MD5StringArray( md5, md5_src, i);
-	ident.s  = _ident_builder( hash, idx, md5, MD5_LEN, &ident.len);
+		i = 0;
+		md5_src[i++] = to->whole;
+		md5_src[i++] = from->whole;
+		if (req->message_id)
+			md5_src[i++] = req->message_id->body;
+		MD5StringArray( md5, md5_src, i);
+		ident.s  = _ident_builder( hash, idx, md5, MD5_LEN, &ident.len);
 
+	}
 
 	/* the len will be the same after moving the URL, the only diff will
 	 * be imposed by any extra hdrs and diff in ident len (twice!) */
@@ -334,34 +359,39 @@ redo_ident:
 	LM_DBG("----|\n%.*s|-----\n",len,buf);
 #endif
 
-	/* do transactional stuff */
-	cell = _build_transaction( req, hash, &ident);
-	if (cell==NULL) {
-		LM_ERR("failed to build transaction, not sending request out\n");
-		goto error;
-	}
-	/* remember the handler that created this transaction */
-	cell->msrp_hdl = hdl;
-	/* add trasaction to hash table.... */
-	hash_lock( msrp_table[idx], hash);
+	/* REPORT request do not create transaction */
+	if (req->fl.u.request.method_id!=MSRP_METHOD_REPORT) {
 
-	val = hash_get(  msrp_table[idx], hash, ident);
-	if (val==NULL) {
-		hash_unlock( msrp_table[idx], hash);
-		msrp_free_transaction( cell );
-		LM_ERR("failed to insert transaction into hash, "
-			"dropping everything\n");
-		goto error;
-	} else
-	if (*val!=NULL) {
-		/* duplicate :O, try generating another ident */
-		hash_unlock( msrp_table[idx], hash);
-		pkg_free(buf);
-		goto redo_ident;
-	}
-	*val = cell;
+		/* do transactional stuff */
+		cell = _build_transaction( req, hash, &ident);
+		if (cell==NULL) {
+			LM_ERR("failed to build transaction, not sending request out\n");
+			goto error;
+		}
+		/* remember the handler that created this transaction */
+		cell->msrp_hdl = hdl;
+		/* add trasaction to hash table.... */
+		hash_lock( msrp_table[idx], hash);
 
-	hash_unlock( msrp_table[idx], hash);
+		val = hash_get(  msrp_table[idx], hash, ident);
+		if (val==NULL) {
+			hash_unlock( msrp_table[idx], hash);
+			msrp_free_transaction( cell );
+			LM_ERR("failed to insert transaction into hash, "
+				"dropping everything\n");
+			goto error;
+		} else
+		if (*val!=NULL) {
+			/* duplicate :O, try generating another ident */
+			hash_unlock( msrp_table[idx], hash);
+			pkg_free(buf);
+			goto redo_ident;
+		}
+		*val = cell;
+
+		hash_unlock( msrp_table[idx], hash);
+
+	}
 
 	/* now, send it out*/
 	// TODO - for now we use the same socket (as the received one), but
@@ -372,11 +402,13 @@ redo_ident:
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
 		LM_ERR("failed to fwd MSRP request\n");
-		/* trash the current transaction */
-		hash_lock( msrp_table[idx], hash);
-		hash_remove(  msrp_table[idx], hash, ident);
-		hash_unlock( msrp_table[idx], hash);
-		msrp_free_transaction( cell );
+		if (req->fl.u.request.method_id!=MSRP_METHOD_REPORT) {
+			/* trash the current transaction */
+			hash_lock( msrp_table[idx], hash);
+			hash_remove(  msrp_table[idx], hash, ident);
+			hash_unlock( msrp_table[idx], hash);
+			msrp_free_transaction( cell );
+		}
 		goto error;
 	}
 
@@ -598,6 +630,157 @@ error:
 }
 
 
+/* Builds and sends back a REPORT request for a given request/transaction
+ */
+int msrp_send_report(void *hdl, str *status,
+		struct msrp_msg *req, struct msrp_cell *cell)
+{
+	int i, len, hash, idx;
+	char md5[MD5_LEN];
+	str ident, md5_src[3];
+	str *to, *from, *mid, *recv_ident, *br;
+	char *buf, *p;
+
+	if ((cell==NULL && req==NULL) || status==NULL || status->len==0)
+		return -1;
+
+	/* extract needed info*/
+	if (cell) {
+		recv_ident = &cell->recv_ident;
+		to = &cell->to_top;
+		from = &cell->from_full;
+		mid = cell->message_id.len ? &cell->message_id : NULL;
+		br = cell->byte_range.len ? &cell->byte_range : NULL;
+	} else {
+		recv_ident = &req->fl.ident;
+		/* full FROM path is used */
+		from = &req->from_path->body;
+		/* top TO URL is used (TO hdr already parsed) */
+		to = &((struct msrp_url*)(req->to_path->parsed))->whole;
+		mid = req->message_id ? &req->message_id->body : NULL ;
+		br = req->byte_range ? &req->byte_range->body : NULL ;
+	}
+
+	if (mid==NULL) {
+		LM_ERR("cannot generate REPORT for a request without Message-ID\n");
+		return -1;
+	}
+	if (br==NULL) {
+		LM_ERR("cannot generate REPORT for a request without Byte-Range\n");
+		return -1;
+	}
+
+	/* compute its ident first */
+	/* decide which hash/idx to use for this pseudo transaction (we do 
+	 * not actually build a transaction here, we just get an ident) */
+	lock_start_read( ident_lock );
+	idx = table_curr_idx;
+	lock_stop_read( ident_lock );
+
+	hash = hash_entry( msrp_table[idx] , *recv_ident);
+	i = 0;
+	md5_src[i++] = *to;
+	md5_src[i++] = *from;
+	if (mid)
+		md5_src[i++] = *mid;
+	MD5StringArray( md5, md5_src, i);
+	ident.s  = _ident_builder( hash, idx, md5, MD5_LEN, &ident.len);
+
+
+	/* compute the len */
+	/* first line
+	 * MSRP SP transact-id SP method CRLF
+	 */
+	len = MSRP_PREFIX_LEN + ident.len + 1 + 3
+		+ MSRP_REPORT_METHOD_LEN + CRLF_LEN;
+
+	/* headers
+	 * headers = To-Path CRLF From-Path CRLF 1*( header CRLF )
+	 */
+	len += TO_PATH_PREFIX_LEN + from->len + CRLF_LEN
+		+ FROM_PATH_PREFIX_LEN + to->len + CRLF_LEN
+		+ MESSAGE_ID_PREFIX_LEN + mid->len + CRLF_LEN
+		+ BYTE_RANGE_PREFIX_LEN + br->len + CRLF_LEN
+		+ STATUS_PREFIX_LEN + status->len + CRLF_LEN ;
+
+	 /* EOM
+	  * end-line = "-------" transact-id continuation-flag CRLF
+	  */
+	len += EOM_PREFIX_LEN + ident.len + 1 + CRLF_LEN;
+
+	/* allocate the buffer */
+	buf = pkg_malloc( len );
+	if (buf==NULL) {
+		LM_ERR("failed to pkg allocate the request buffer\n");
+		return -3;
+	}
+
+	/* start building */
+	p = buf;
+
+	/* first line */
+	append_string( p, MSRP_PREFIX, MSRP_PREFIX_LEN);
+	append_string( p, ident.s, ident.len);
+	*(p++) = ' ';
+	append_string( p, MSRP_REPORT_METHOD, MSRP_REPORT_METHOD_LEN);
+	append_string( p, CRLF, CRLF_LEN);
+
+	/* headers */
+	append_string( p, TO_PATH_PREFIX, TO_PATH_PREFIX_LEN);
+	append_string( p, from->s, from->len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	append_string( p, FROM_PATH_PREFIX, FROM_PATH_PREFIX_LEN);
+	append_string( p, to->s, to->len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	append_string( p, MESSAGE_ID_PREFIX, MESSAGE_ID_PREFIX_LEN);
+	append_string( p, mid->s, mid->len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	append_string( p, BYTE_RANGE_PREFIX, BYTE_RANGE_PREFIX_LEN);
+	append_string( p, br->s, br->len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	append_string( p, STATUS_PREFIX, STATUS_PREFIX_LEN);
+	append_string( p, status->s, status->len);
+	append_string( p, CRLF, CRLF_LEN);
+
+	/* EOM */
+	append_string( p, EOM_PREFIX, EOM_PREFIX_LEN);
+	append_string( p, ident.s, ident.len);
+	*(p++) = '$';
+	append_string( p, CRLF, CRLF_LEN);
+
+	if (p-buf!=len) {
+		LM_BUG("computed %d, but wrote %d :(\n",len,(int)(p-buf));
+		goto error;
+	}
+
+	/* now, send it out*/
+	if (cell) {
+		i = msg_send( cell->recv.send_sock, PROTO_MSRP,
+				&cell->recv.to, cell->recv.proto_reserved1,
+				buf, len, NULL);
+	} else {
+		i = msg_send( req->rcv.bind_address, PROTO_MSRP,
+				&req->rcv.src_su, req->rcv.proto_reserved1,
+				buf, len, NULL);
+	}
+	if (i<0) {
+		/* sending failed, FIXME - close the connection */
+		LM_ERR("failed to send MSRP REPORT request\n");
+		goto error;
+	}
+
+	pkg_free(buf);
+	return 0;
+
+error:
+	pkg_free(buf);
+	return -1;
+
+}
 
 
 /********* transactional layer ************/
