@@ -310,6 +310,43 @@ modparam("b2b_entities", "cluster_id", 10)
 		</example>
 	</section>
 
+	<section id="generate_prack_id" xreflabel="generate_prack">
+		<title><varname>generate_prack</varname> (int)</title>
+		<para>
+		This parameter allows to control, whether a PRACK should be generated locally
+		or if we request it to be end-to-end.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (generate PRACK locally)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>generate_prack</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "generate_prack", 0)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="check_more_routes_id" xreflabel="check_more_routes">
+		<title><varname>check_more_routes</varname> (int)</title>
+		<para>
+		If this parameter is set to <emphasis>0</emphasis>, only the first route
+		header is checked to identify a B2B Session.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (check all Route-Headers)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>check_more_routes</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "check_more_routes", 0)
+...
+	</programlisting>
+		</example>
+	</section>
 </section>
 
 
