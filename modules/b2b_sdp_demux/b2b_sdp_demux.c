@@ -1561,12 +1561,14 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		/* per client stuff */
 		ci.body = &client->body;
 		ci.extra_headers = &client->hdrs;
+		ci.avps = clone_avp_list( *get_avp_list() );
 
 		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
 		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
 				&b2b_sdp_demux_client_cap, &ctx->callid, NULL,
 				client, b2b_sdp_client_free);
 		if (!b2b_key) {
+			destroy_avp_list(&ci.avps);
 			LM_ERR("could not create b2b sdp demux client!\n");
 			return -1;
 		}
