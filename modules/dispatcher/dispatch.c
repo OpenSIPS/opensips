@@ -2310,7 +2310,7 @@ int ds_is_in_list(struct sip_msg *_m, str *_ip, int port, int set,
 	char *pattern = NULL;
 
 	if (!(ip = str2ip(_ip)) && !(ip = str2ip6(_ip))) {
-		LM_ERR("IP val is not IP <%.*s>\n",val.rs.len,val.rs.s);
+		LM_ERR("IP val is not IP <%.*s>\n", _ip->len, _ip->s);
 		return -1;
 	}
 
