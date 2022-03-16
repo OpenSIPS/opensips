@@ -330,6 +330,8 @@ static struct b2b_sdp_stream *b2b_sdp_stream_new(sdp_stream_cell_t *sstream,
 
 	stream->index = sstream->stream_num;
 	stream->client_index = client_index;
+	INIT_LIST_HEAD(&stream->ordered);
+	INIT_LIST_HEAD(&stream->list);
 	if (client) {
 		stream->client = client;
 		list_add_tail(&stream->list, &client->streams);
@@ -351,6 +353,8 @@ static struct b2b_sdp_stream *b2b_sdp_stream_raw_new(struct b2b_sdp_client *clie
 	memcpy(stream->disabled_body.s, disabled_body->s, disabled_body->len);
 	stream->index = index;
 	stream->client_index = client_index;
+	INIT_LIST_HEAD(&stream->ordered);
+	INIT_LIST_HEAD(&stream->list);
 	if (client) {
 		stream->client = client;
 		list_add_tail(&stream->list, &client->streams);
