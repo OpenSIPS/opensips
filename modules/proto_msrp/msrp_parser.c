@@ -215,7 +215,8 @@ done:
 			LM_ERR("MSRP req has no content-type hdr\n");
 			goto error;
 		}
-		if (msg->message_id==NULL) {
+		if (msg->fl.u.request.method_id != MSRP_METHOD_AUTH &&
+			msg->message_id==NULL) {
 			LM_ERR("MSRP req has no message-id hdr\n");
 			goto error;
 		}
