@@ -430,6 +430,12 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'p';
 			*(p++) = 'p';
 			break;
+		case PROTO_MSRP:
+			*(p++) = 'm';
+			*(p++) = 's';
+			*(p++) = 'r';
+			*(p++) = 'p';
+			break;
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);
 	}
@@ -474,6 +480,9 @@ static inline char* proto2upper(int proto, char *p)
 		break;
 	case PROTO_SMPP:
 		p = memcpy(p, STR_L("SMPP")) + sizeof("SMPP")-1;
+		break;
+	case PROTO_MSRP:
+		p = memcpy(p, STR_L("MSRP")) + sizeof("MSRP")-1;
 		break;
 	default:
 		LM_CRIT("unsupported proto %d\n", proto);

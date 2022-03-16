@@ -28,6 +28,7 @@ void load_msrp( struct msrp_binds *binds)
 {
 	binds->register_msrp_handler = register_msrp_handler;
 	binds->send_reply = msrp_send_reply;
+	binds->send_reply_on_cell = msrp_send_reply_on_cell;
 	binds->forward_request = msrp_fwd_request;
 	binds->forward_reply = msrp_fwd_reply;
 }

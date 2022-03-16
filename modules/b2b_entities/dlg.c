@@ -533,7 +533,6 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 {
 	struct b2b_callback *cb;
 	str st;
-	char *prev_st;
 
 	/* search for the callback registered by the module that
 	 * this entity belongs to */
@@ -543,9 +542,10 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 			!memcmp(dlg->mod_name.s, cb->mod_name.s, cb->mod_name.len))
 			break;
 
-	prev_st = dlg->storage.s;
-	dlg->storage.s = NULL;
-	dlg->storage.len = 0;
+	if (b2be_db_mode == WRITE_THROUGH) {
+		dlg->storage.s = NULL;
+		dlg->storage.len = 0;
+	}
 
 	if (cbs_type == B2BCB_TRIGGER_EVENT) {
 		if (!cb) {
@@ -569,8 +569,8 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 				if (b2be_db_mode == WRITE_THROUGH) {
 					dlg->storage = st;
 				} else {
-					if (prev_st)
-						shm_free(prev_st);
+					if (dlg->storage.s)
+						shm_free(dlg->storage.s);
 					if (shm_str_dup(&dlg->storage, &st) < 0) {
 						LM_ERR("oom!\n");
 						return;
@@ -600,8 +600,8 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		if (b2be_db_mode == WRITE_THROUGH) {
 			dlg->storage = st;
 		} else {
-			if (prev_st)
-				shm_free(prev_st);
+			if (dlg->storage.s)
+				shm_free(dlg->storage.s);
 			if (shm_str_dup(&dlg->storage, &st) < 0) {
 				LM_ERR("oom!\n");
 				return;

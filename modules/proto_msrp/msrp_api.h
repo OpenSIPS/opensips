@@ -22,6 +22,8 @@
 #ifndef _PROTO_MSRP_MSRP_API_H_
 #define _PROTO_MSRP_MSRP_API_H_
 
+#include "../../sr_module.h"
+
 #include "msrp_parser.h"
 #include "msrp_handler.h"
 
@@ -34,19 +36,40 @@ typedef int (*send_reply_f)( void *hdl, struct msrp_msg *req,
 		int code, str* reason,
 		str *hdrs, int hdrs_no);
 
+typedef int (*send_reply_on_cell_f)( void *hdl, struct msrp_cell *cell,
+		int code, str* reason,
+		str *hdrs, int hdrs_no);
+
 typedef int (*fwd_request_f)( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no);
 
-typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl);
+typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl,
+		struct msrp_cell *cell);
 
 
 struct msrp_binds {
 	register_msrp_handler_f  register_msrp_handler;
 	send_reply_f             send_reply;
+	send_reply_on_cell_f     send_reply_on_cell;
 	fwd_request_f            forward_request;
 	fwd_reply_f              forward_reply;
 };
 
 void load_msrp( struct msrp_binds *binds);
+
+typedef void (*load_msrp_f)(struct msrp_binds *binds);
+
+static inline int load_msrp_api(struct msrp_binds *binds) {
+	load_msrp_f load_msrp;
+
+	/* import the msrp auto-loading function */
+	if (!(load_msrp = (load_msrp_f) find_export("load_msrp", 0)))
+		return -1;
+
+	/* let the auto-loading function load all msrp API functions */
+	load_msrp(binds);
+
+	return 0;
+}
 
 #endif

@@ -43,5 +43,6 @@ void* register_msrp_handler( str *host_filter, int port_filter,
 int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 		struct receive_info *local_rcv);
 
+void handle_msrp_timeout( struct msrp_cell *list);
 
 #endif
