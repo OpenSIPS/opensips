@@ -895,10 +895,22 @@ end:
 	return ret;
 }
 
-static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
+static void b2b_sdp_client_release_streams(struct b2b_sdp_client *client)
 {
 	struct list_head *it, *safe;
 	struct b2b_sdp_stream *stream;
+
+	/* we need to move all the streams in the disabled list */
+	list_for_each_safe(it, safe, &client->streams) {
+		stream = list_entry(it, struct b2b_sdp_stream, list);
+		list_del(&stream->list);
+		INIT_LIST_HEAD(&stream->list);
+		stream->client = NULL;
+	}
+}
+
+static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
+{
 	struct b2b_sdp_ctx *ctx = client->ctx;
 
 	lock_get(&ctx->lock);
@@ -908,13 +920,7 @@ static void b2b_sdp_client_remove(struct b2b_sdp_client *client)
 	}
 	/* terminate whatever the client was doing */
 	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_STARTED);
-	/* we need to move all the streams in the disabled list */
-	list_for_each_safe(it, safe, &client->streams) {
-		stream = list_entry(it, struct b2b_sdp_stream, list);
-		list_del(&stream->list);
-		INIT_LIST_HEAD(&stream->list);
-		stream->client = NULL;
-	}
+	b2b_sdp_client_release_streams(client);
 	lock_release(&ctx->lock);
 }
 
@@ -1176,6 +1182,13 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 			client->flags |= B2B_SDP_CLIENT_STARTED;
 		} else {
 			LM_ERR("no body for client!\n");
+		}
+	} else {
+		if (!(client->flags & B2B_SDP_CLIENT_STARTED)) {
+			/* client was not started, thus this is a final negative reply */
+			b2b_sdp_client_release_streams(client);
+			b2b_sdp_client_release(client, 0);
+			b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
 		}
 	}
 	body = NULL;
