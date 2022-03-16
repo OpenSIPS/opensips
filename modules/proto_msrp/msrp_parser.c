@@ -143,7 +143,7 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 		switch (hf->type){
 			case HDR_ERROR_T:
 				LM_INFO("bad header field\n");
-				goto  error;
+				goto  err_free_hf;
 			case HDR_EOH_T:
 				pkg_free(hf);
 				hf = NULL;
@@ -180,7 +180,7 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 			default:
 				LM_CRIT("unsupported MSRP header type [%.*s]\n",
 					hf->name.len, hf->name.s);
-				goto error;
+				goto err_free_hf;
 		}
 
 		/* add the header to the list*/
@@ -223,8 +223,9 @@ done:
 	}
 
 	return 0;
-error:
+err_free_hf:
 	if (hf) pkg_free(hf);
+error:
 	return -1;
 }
 
