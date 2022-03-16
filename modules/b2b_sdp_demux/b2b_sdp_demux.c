@@ -1156,6 +1156,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 {
 	str *body = NULL;
 	int ret = -1;
+	struct b2b_sdp_ctx *ctx;
 
 	/* only ACK if not fake reply, or not a dummy message as
 	 * built in the dlg.c tm callback */
@@ -1165,20 +1166,21 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 					client->b2b_key.len, client->b2b_key.s);
 	}
 
-	lock_get(&client->ctx->lock);
+	ctx = client->ctx;
+	lock_get(&ctx->lock);
 
-	if (client->ctx->pending_no <= 0) {
+	if (ctx->pending_no <= 0) {
 		LM_ERR("not expecting any replies!\n");
 		goto release;
 	}
 	/* we have a final reply for this client */
-	client->ctx->pending_no--;
+	ctx->pending_no--;
 	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING);
 
 	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300) {
 		body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 		if (body && b2b_sdp_client_sync(client, body) >= 0) {
-			client->ctx->success_no++;
+			ctx->success_no++;
 			client->flags |= B2B_SDP_CLIENT_STARTED;
 		} else {
 			LM_ERR("no body for client!\n");
@@ -1192,27 +1194,33 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 		}
 	}
 	body = NULL;
+	ret = -2;
 
-	if (client->ctx->pending_no == 0) {
+	if (ctx->pending_no == 0) {
+		/* if there was no successful stream, deny the call */
+		if (ctx->success_no == 0)
+			goto release;
 		/* we've actually completed all the upstream clients
 		 * therefore we need to respond to the server */
-		body = b2b_sdp_mux_body(client->ctx);
-		if (!body) {
+		body = b2b_sdp_mux_body(ctx);
+		if (!body)
 			LM_CRIT("could not build to B2B server body!\n");
-			ret = -2;
-		}
 	}
 
 release:
-	lock_release(&client->ctx->lock);
+	lock_release(&ctx->lock);
 	/* avoid sending reply under lock */
 	if (body) {
 		/* we are done - answer the call */
-		if (b2b_sdp_reply(&client->ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
+		if (b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
 			LM_CRIT("could not answer B2B call!\n");
 		pkg_free(body->s);
 	} else if (ret == -2) {
-		b2b_sdp_reply(&client->ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 503, NULL);
+		b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 503, NULL);
+	}
+	if (ret < 0 && ctx->clients_no == 0) {
+		/* no more remaining clients - terminate the entity as well */
+		b2b_sdp_ctx_release(ctx, 1);
 	}
 	return ret;
 }
