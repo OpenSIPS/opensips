@@ -154,7 +154,7 @@ int msrp_send_reply( void *hdl, struct msrp_msg *req, int code, str* reason,
 	append_string( p, MSRP_PREFIX, MSRP_PREFIX_LEN);
 	append_string( p, req->fl.ident.s, req->fl.ident.len);
 	*(p++) = ' ';
-	p += btostr( p, code );
+	p += rctostr( p, code );
 	if (reason) {
 		*(p++) = ' ';
 		append_string( p, reason->s, reason->len);
@@ -575,7 +575,7 @@ int msrp_send_reply_on_cell( void *hdl, struct msrp_cell *cell,
 	append_string( p, MSRP_PREFIX, MSRP_PREFIX_LEN);
 	append_string( p, cell->recv_ident.s, cell->recv_ident.len);
 	*(p++) = ' ';
-	p += btostr( p, code );
+	p += rctostr( p, code );
 	if (reason) {
 		*(p++) = ' ';
 		append_string( p, reason->s, reason->len);
