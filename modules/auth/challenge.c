@@ -66,6 +66,7 @@
 #define DIGEST_REALM	  ": Digest realm=\""
 #define DIGEST_NONCE	  "\", nonce=\""
 #define DIGEST_ALGORITHM  ", algorithm="
+#define DIGEST_OPAQUE  ", opaque=\""
 
 
 /*
@@ -73,7 +74,7 @@
  */
 char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
 	int _stale, const str_const *_realm, int* _len,
-    const str_const *alg_val, const str_const* _hf_name)
+    const str_const *alg_val, const str_const* _hf_name, const str_const *opaque)
 {
 	char *hf, *p;
 	str_const alg_param;
@@ -81,6 +82,7 @@ char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
 	str_const stale_param = STR_NULL_const;
 	const str_const digest_realm = str_const_init(DIGEST_REALM);
 	const str_const nonce_param = str_const_init(DIGEST_NONCE);
+	str_const opaque_param;
 
 	if (calc_np->qop) {
 		switch (calc_np->qop) {
@@ -120,6 +122,11 @@ char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
 		*_len += alg_param.len + alg_val->len;
 	}
 
+	if (opaque != NULL) {
+		opaque_param = str_const_init(DIGEST_OPAQUE);
+		*_len += opaque_param.len + opaque->len + 1 /* '"' */;
+	}
+
 	p=hf=pkg_malloc(*_len+1);
 	if (!hf) {
 		LM_ERR("no pkg memory left\n");
@@ -150,6 +157,14 @@ char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
 		memcpy(p, alg_val->s, alg_val->len);
 		p += alg_val->len;
 	}
+	if (opaque != NULL) {
+		memcpy(p, opaque_param.s, opaque_param.len);
+		p += opaque_param.len;
+		memcpy(p, opaque->s, opaque->len);
+		p += opaque->len;
+		*p='"';p++;
+	}
+
 	memcpy(p, CRLF, CRLF_LEN ); p+=CRLF_LEN;
 	*p=0; /* zero terminator, just in case */
 
@@ -238,7 +253,7 @@ static inline int challenge(struct sip_msg* _msg, str *realm, qop_type_t _qop,
 		alg_val = (i == ALG_UNSPEC) ? NULL : &digest_calc->algorithm_val;
 		calc_np.alg = (i == ALG_UNSPEC) ? ALG_MD5 : i;
 		auth_hfs[nalgs].s = build_auth_hf(ncp, &calc_np, (cred ? cred->stale : 0),
-		    str2const(realm), &auth_hfs[nalgs].len, alg_val, _challenge_msg);
+		    str2const(realm), &auth_hfs[nalgs].len, alg_val, _challenge_msg, NULL);
 		if (!auth_hfs[nalgs].s) {
 			LM_ERR("failed to generate nonce\n");
 			ret = -1;

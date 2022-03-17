@@ -55,6 +55,6 @@ int consume_credentials(struct sip_msg* _m, char* _s1, char* _s2);
  */
 char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
 	int _stale, const str_const *_realm, int* _len,
-    const str_const *alg_val, const str_const* _hf_name);
+    const str_const *alg_val, const str_const* _hf_name, const str_const *opaque);
 
 #endif /* AUTH_H */

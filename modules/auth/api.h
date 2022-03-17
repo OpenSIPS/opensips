@@ -95,7 +95,7 @@ typedef int (*calc_HA1_t)(const struct calc_HA1_arg *params, HASHHEX *_sess_key)
  */
 typedef char *(*build_auth_hf_t)(struct nonce_context *ncp, struct nonce_params *calc_np,
 	int _stale, const str_const *_realm, int* _len,
-    const str_const *alg_val, const str_const* _hf_name);
+    const str_const *alg_val, const str_const* _hf_name,  const str_const *opaque);
 
 /*
  * Strip the beginning of realm
