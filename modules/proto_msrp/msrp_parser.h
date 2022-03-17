@@ -76,6 +76,7 @@ struct msrp_msg {
 	struct hdr_field* status;
 	struct hdr_field* use_path;
 	struct hdr_field* content_type;
+	struct hdr_field* authorization;
 
 	str body;
 

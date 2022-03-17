@@ -176,6 +176,9 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 			case HDR_CONTENTTYPE_T:
 				link_hdr( content_type, hf);
 				break;
+			case HDR_AUTHORIZATION_T:
+				link_hdr( authorization, hf);
+				break;
 			case HDR_OTHER_T:
 			default:
 				LM_CRIT("unsupported MSRP header type [%.*s]\n",
