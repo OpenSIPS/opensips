@@ -100,7 +100,7 @@ int proto_msrp_send(struct socket_info* send_sock,
 	if (to){
 		su2ip_addr(&ip, to);
 		port=su_getport(to);
-		n = tcp_conn_get(id, &ip, port, PROTO_TCP, NULL, &c, &fd, send_sock);
+		n = tcp_conn_get(id, &ip, port, PROTO_MSRP, NULL, &c, &fd, send_sock);
 	}else if (id){
 		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
 	}else{
