@@ -48,7 +48,7 @@ static int _parse_msrp_method( str *method_s, int *method_id)
 	}
 
 	switch ( _READ4(method_s->s) ) {
-	case 0x64636573 :  /*SEND*/
+	case 0x646e6573 :  /*SEND*/
 		if (method_s->len==4) {
 			*method_id = MSRP_METHOD_SEND;
 			return 0;
