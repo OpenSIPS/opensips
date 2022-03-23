@@ -44,7 +44,7 @@ typedef int (*send_report_f)( void *hdl, str *status,
 		struct msrp_msg *req, struct msrp_cell *cell );
 
 typedef int (*fwd_request_f)( void *hdl, struct msrp_msg *req,
-		str *hdrs, int hdrs_no);
+		str *hdrs, int hdrs_no, union sockaddr_union *to_su);
 
 typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl,
 		struct msrp_cell *cell);

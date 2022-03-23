@@ -210,7 +210,8 @@ error:
  *  -2 - cannot resolve destination
  *  -3 - internal error
  */
-int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no)
+int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
+	union sockaddr_union *to_su)
 {
 	char *buf, *p, *s, bk;
 	struct msrp_url *to, *from;
@@ -245,24 +246,26 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no)
 		return -1;
 	}
 
-	/* before doing the heavy lifting (as building the out buffer), let's
-	 * resolve the destination first. */
-	bk = to->next->host.s[to->next->host.len]; // usual hack
-	to->next->host.s[to->next->host.len] = 0;
-	he = resolvehost( to->next->host.s, 0/*no_ip_test*/); // FIXME - do SRV
-	to->next->host.s[to->next->host.len] = bk;
-	if (he==NULL) {
-		LM_ERR("Could not resolve the destination <%.*s>\n",
-			to->next->host.len, to->next->host.s);
-		return -2;
-	}
-	if ( to->next->port_no==0 ) {
-		LM_BUG("Add the check or SRV support !!\n");
-		return -2;
-	}
-	if ( hostent2su( &su, he, 0/*idx*/, to->next->port_no )!=0 ) {
-		LM_ERR("Could translate he to su :-/, bad familly type??\n");
-		return -2;
+	if (!to_su) {
+		/* before doing the heavy lifting (as building the out buffer), let's
+		 * resolve the destination first. */
+		bk = to->next->host.s[to->next->host.len]; // usual hack
+		to->next->host.s[to->next->host.len] = 0;
+		he = resolvehost( to->next->host.s, 0/*no_ip_test*/); // FIXME - do SRV
+		to->next->host.s[to->next->host.len] = bk;
+		if (he==NULL) {
+			LM_ERR("Could not resolve the destination <%.*s>\n",
+				to->next->host.len, to->next->host.s);
+			return -2;
+		}
+		if ( to->next->port_no==0 ) {
+			LM_BUG("Add the check or SRV support !!\n");
+			return -2;
+		}
+		if ( hostent2su( &su, he, 0/*idx*/, to->next->port_no )!=0 ) {
+			LM_ERR("Could translate he to su :-/, bad familly type??\n");
+			return -2;
+		}
 	}
 
 	/* REPORT request do not get a new ident on fwd, but use the
@@ -397,8 +400,8 @@ redo_ident:
 	// TODO - for now we use the same socket (as the received one), but
 	//        it will nice to be able to change it (via script??) in order
 	//        to do traffic bridging between 2 interfaces.
-	i = msg_send( req->rcv.bind_address, PROTO_MSRP, &su, 0 /*conn-id*/,
-			buf, len, NULL);
+	i = msg_send( req->rcv.bind_address, PROTO_MSRP, to_su ? to_su : &su,
+		0 /*conn-id*/, buf, len, NULL);
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
 		LM_ERR("failed to fwd MSRP request\n");

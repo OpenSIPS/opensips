@@ -73,7 +73,7 @@ int msrp_send_report(void *hdl, str *status,
 		struct msrp_msg *req, struct msrp_cell *cell);
 
 int msrp_fwd_request( void *hdl, struct msrp_msg *req,
-		str *hdrs, int hdrs_no);
+		str *hdrs, int hdrs_no, union sockaddr_union *to_su);
 
 int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell);
 
