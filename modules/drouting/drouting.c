@@ -378,7 +378,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+		ALL_ROUTES
 	},
 	{"route_to_carrier", (cmd_function)route2_carrier,
 		{ {CMD_PARAM_STR, NULL, NULL},
@@ -387,7 +387,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+		ALL_ROUTES
 	},
 	{"route_to_gw", (cmd_function)route2_gw,
 		{ {CMD_PARAM_STR, NULL, NULL},
@@ -396,7 +396,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE|BRANCH_ROUTE
+		ALL_ROUTES
 	},
 	{"use_next_gw", (cmd_function)use_next_gw,
 		{ {CMD_PARAM_VAR|CMD_PARAM_OPT, fix_rule_attr, NULL},
@@ -436,8 +436,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|
-		LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE
+		ALL_ROUTES
 	},
 	{"dr_disable", (cmd_function)dr_disable,
 		{ {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
