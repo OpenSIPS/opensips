@@ -4,7 +4,7 @@
 
 PKG=opensips
 DEFAULTS=/etc/default/opensips
-HOMEDIR=/var/run/opensips
+HOMEDIR=/run/opensips
 
 set -e
 
