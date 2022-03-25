@@ -242,6 +242,7 @@ void clean_head_cache(struct head_cache *c);
 void init_head_db(struct head_db *new);
 static int db_connect_head(struct head_db*); /* populate a db connection */
 static char *extra_prefix_chars;
+str extra_id_chars = str_init("_-.");
 
 
 /* reader-writers lock for reloading the data */
@@ -503,6 +504,7 @@ static param_export_t params[] = {
 	{"cluster_probing_mode",STR_PARAM, &dr_cluster_prob_mode_s},
 	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable   },
 	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
+	{"extra_id_chars",     STR_PARAM, &extra_id_chars.s       },
 	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s  },
 	{0, 0, 0}
 };
@@ -1585,6 +1587,7 @@ static int dr_init(void)
 	drg_table.len = strlen(drg_table.s);
 	drr_table.len = strlen(drr_table.s);
 	drc_table.len = strlen(drc_table.s);
+	extra_id_chars.len = strlen(extra_id_chars.s);
 
 	if (dr_rpm_enable) {
 		/* if we are using cache, we need to fetch our dr zone */
