@@ -31,8 +31,6 @@
 
 
 #define ID_INF_CASE                      \
-	if (!HAVE(4))                        \
-		goto other;                      \
 	switch(LOWER_DWORD(val)) {           \
 		case __id1_:                     \
 			hdr->type = HDR_CALLID_T;    \
@@ -59,6 +57,8 @@
 
 #define call_CASE      \
 	p += 4;            \
+	if (!HAVE(4))      \
+		goto other;    \
 	val = READ(p);     \
 	ID_INF_CASE;       \
 	goto other;

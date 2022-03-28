@@ -67,8 +67,6 @@
 	switch(LOWER_DWORD(val)) {     \
 		case _osit_:               \
 		p += 4;                    \
-		if (!HAVE(4))              \
-			goto other;            \
 		val = READ(p);             \
 		ion_CASE;                  \
 		goto other;                \
@@ -91,7 +89,7 @@
 				goto dc_cont;               \
 		case _disp_:                        \
 				p += 4;                     \
-				if (!HAVE(4))               \
+				if (!HAVE(8))               \
 					goto other;             \
 				val = READ(p);              \
 				DISPOSITION_CASE;           \

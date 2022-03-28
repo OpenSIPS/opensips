@@ -109,7 +109,7 @@ static inline char* skip_ws(char* p, char *end)
 
 #ifdef FUZZ_BUILD
 /* fuzzers are sensible to heap read overflows, so enable all "HAVE" checks */
-#define HAVE(bytes) (end - p < (bytes))
+#define HAVE(bytes) (end - p >= (long)(bytes))
 #else
 /* with PKG memory, parser read overflows of a few bytes are harmless, since
  * the memory is pre-allocated and the read cannot SIGSEGV, making the parser
