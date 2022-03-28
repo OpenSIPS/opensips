@@ -28,7 +28,7 @@
 			p += 4;            \
 			if (LOWER_BYTE(*(p))=='r' && LOWER_BYTE(*(p+1))=='t') { \
 				hdr->type = HDR_FAILURE_REPORT_T;   \
-				hdr->name.len = 12;                 \
+				hdr->name.len = 14;                 \
 				p += 2;                             \
 				goto dc_cont;                       \
 			}                  \
