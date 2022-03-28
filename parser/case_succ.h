@@ -48,6 +48,8 @@
 
 #define succ_CASE          \
 		p += 4;            \
+		if (!HAVE(10))     \
+			goto other;    \
 		val = READ(p);     \
 		ess__CASE2;        \
 		goto other;

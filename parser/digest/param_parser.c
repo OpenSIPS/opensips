@@ -65,7 +65,7 @@
 
 /*
  * Read 4-bytes from memory and store them in an integer variable
- * Reading byte by byte ensures, that the code works also on HW which
+ * Reading byte by byte ensures that the code works also on HW which
  * does not allow reading 4-bytes at once from unaligned memory position
  * (Sparc for example)
  */

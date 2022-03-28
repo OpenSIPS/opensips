@@ -38,6 +38,8 @@
 	switch(LOWER_DWORD(val)) { \
 		case _rd_r_:           \
 			p += 4;            \
+			if (!HAVE(4))      \
+				goto other;    \
 			val = READ(p);     \
 			OUTE_CASE;         \
 			goto other;        \
@@ -46,6 +48,8 @@
 
 #define reco_CASE     \
 	p += 4;           \
+	if (!HAVE(4))     \
+		goto other;   \
 	val = READ(p);    \
 	RD_R_CASE;        \
 	goto other;

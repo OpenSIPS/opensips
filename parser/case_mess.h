@@ -37,6 +37,8 @@
 
 #define mess_CASE          \
 		p += 4;            \
+		if (!HAVE(6))      \
+			goto other;    \
 		val = READ(p);     \
 		age__CASE;         \
 		goto other;

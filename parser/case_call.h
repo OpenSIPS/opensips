@@ -31,6 +31,8 @@
 
 
 #define ID_INF_CASE                      \
+	if (!HAVE(4))                        \
+		goto other;                      \
 	switch(LOWER_DWORD(val)) {           \
 		case __id1_:                     \
 			hdr->type = HDR_CALLID_T;    \
@@ -45,13 +47,13 @@
 		                                 \
 		case __inf_:                     \
 			p += 4;                      \
-			if ( LOWER_BYTE(*p) == 'o') {\
+			if ( HAVE(1) && LOWER_BYTE(*p) == 'o') {\
 				hdr->type = HDR_CALL_INFO_T; \
 				hdr->name.len = 9;       \
 				p += 1;                  \
 				goto dc_cont;            \
 			}                            \
-		goto other;                      \
+			goto other;                  \
 		}
 
 

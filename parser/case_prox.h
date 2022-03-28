@@ -48,6 +48,8 @@
 	switch(LOWER_DWORD(val)) {     \
 		case _izat_:               \
 				p += 4;            \
+				if (!HAVE(4))      \
+					goto other;    \
 				val = READ(p);     \
 				ION_CASE;          \
 				goto other;        \
@@ -65,6 +67,8 @@
 	switch(LOWER_DWORD(val)) {     \
 		case _tica_:               \
 				p += 4;            \
+				if (!HAVE(4))      \
+					goto other;    \
 				val = READ(p);     \
 				TE_CASE;           \
 				goto other;        \
@@ -74,11 +78,15 @@
 	switch(LOWER_DWORD(val)) { \
 		case _thor_:           \
 			p += 4;            \
+			if (!HAVE(4))      \
+				goto other;    \
 			val = READ(p);     \
 			IZAT_CASE;         \
 			goto other;        \
 		case _then_:           \
 			p += 4;            \
+			if (!HAVE(4))      \
+				goto other;    \
 			val = READ(p);     \
 			TICA_CASE;         \
 			goto other;        \
@@ -88,6 +96,8 @@
 	switch(LOWER_DWORD(val)) {                      \
 		case _quir_:                                \
 			p += 4;                                 \
+			if (!HAVE(1))                           \
+				goto other;                         \
 			switch(LOWER_BYTE(*p)) {                \
 				case 'e':                           \
 					hdr->type = HDR_PROXYREQUIRE_T; \
@@ -103,11 +113,15 @@
 	switch(LOWER_DWORD(val)) {     \
 		case _y_au_:               \
 				p += 4;            \
+				if (!HAVE(4))      \
+					goto other;    \
 				val = READ(p);     \
 				TH2_CASE;          \
 				goto other;        \
 		case _y_re_:               \
 				p += 4;            \
+				if (!HAVE(4))      \
+					goto other;    \
 				val = READ(p);     \
 				QUIR_CASE;         \
 				goto other;        \
@@ -116,6 +130,8 @@
 
 #define prox_CASE         \
 		p += 4;           \
+		if (!HAVE(4))     \
+			goto other;   \
 		val = READ(p);    \
 		PROX2_CASE;       \
 		goto other;

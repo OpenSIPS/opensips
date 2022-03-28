@@ -31,22 +31,22 @@
 #define CASE_CONT_H
 
 
-#define TH_CASE                                     \
-		switch(LOWER_DWORD(val)) {                  \
-		case _th12_:                                \
-				hdr->type = HDR_CONTENTLENGTH_T;    \
-				hdr->name.len = 14;                 \
-				return (p + 4);                     \
-		}                                           \
-		if (LOWER_BYTE(*p) == 't') {                \
-				p++;                                \
-				if (LOWER_BYTE(*p) == 'h') {        \
-						hdr->type = HDR_CONTENTLENGTH_T; \
-						hdr->name.len = 14;         \
-						p++;                        \
-						goto dc_cont;               \
-				}                                   \
-		}
+#define TH_CASE                                 \
+	switch(LOWER_DWORD(val)) {                  \
+	case _th12_:                                \
+			hdr->type = HDR_CONTENTLENGTH_T;    \
+			hdr->name.len = 14;                 \
+			return (p + 4);                     \
+	}                                           \
+	if (LOWER_BYTE(*p) == 't') {                \
+			p++;                                \
+			if (LOWER_BYTE(*p) == 'h') {        \
+					hdr->type = HDR_CONTENTLENGTH_T; \
+					hdr->name.len = 14;         \
+					p++;                        \
+					goto dc_cont;               \
+			}                                   \
+	}
 
 
 #define ion_CASE                                      \
@@ -67,6 +67,8 @@
 	switch(LOWER_DWORD(val)) {     \
 		case _osit_:               \
 		p += 4;                    \
+		if (!HAVE(4))              \
+			goto other;            \
 		val = READ(p);             \
 		ion_CASE;                  \
 		goto other;                \
@@ -77,6 +79,8 @@
 	switch(LOWER_DWORD(val)) {              \
 		case _leng_:                        \
 				p += 4;                     \
+				if (!HAVE(4))               \
+					goto other;             \
 				val = READ(p);              \
 				TH_CASE;                    \
 				goto other;                 \
@@ -87,6 +91,8 @@
 				goto dc_cont;               \
 		case _disp_:                        \
 				p += 4;                     \
+				if (!HAVE(4))               \
+					goto other;             \
 				val = READ(p);              \
 				DISPOSITION_CASE;           \
 				goto other;                 \
@@ -106,6 +112,8 @@
 			goto dc_end;                \
 		case _ent__:                    \
 			p += 4;                     \
+			if (!HAVE(4))               \
+				goto other;             \
 			val = READ(p);              \
 			CONTENT_CASE;               \
 			goto other;                 \
@@ -113,6 +121,8 @@
 
 #define cont_CASE    \
 	p += 4;          \
+	if (!HAVE(4))    \
+		goto other;  \
 	val = READ(p);   \
 	ACT_ENT_CASE;    \
 	goto other;

@@ -38,6 +38,8 @@
 	switch(LOWER_DWORD(val)) { \
 		case _forw_:           \
 			p += 4;            \
+			if (!HAVE(4))      \
+				goto other;    \
 			val = READ(p);     \
 			ARDS_CASE;         \
 		goto other;            \
@@ -46,6 +48,8 @@
 
 #define max_CASE      \
 	p += 4;           \
+	if (!HAVE(4))     \
+		goto other;   \
 	val = READ(p);    \
 	FORW_CASE;        \
 	goto other;       \

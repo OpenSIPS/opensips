@@ -48,6 +48,8 @@
 
 #define fail_CASE          \
 		p += 4;            \
+		if (!HAVE(10))     \
+			goto other;    \
 		val = READ(p);     \
 		ure__CASE1;        \
 		goto other;

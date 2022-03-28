@@ -41,6 +41,8 @@
 
 #define supp_CASE     \
 	p += 4;           \
+	if (!HAVE(5))     \
+		goto other;   \
 	val = READ(p);    \
 	ORTE_CASE;        \
 	goto other;

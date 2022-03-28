@@ -27,7 +27,7 @@
 
 #define even_CASE                     \
 	p += 4;                           \
-	if (LOWER_BYTE(*p) == 't') {      \
+	if (HAVE(1) && LOWER_BYTE(*p) == 't') {      \
 		hdr->type = HDR_EVENT_T;      \
 		hdr->name.len = 5;            \
 		p++;                          \
