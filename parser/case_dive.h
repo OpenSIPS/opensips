@@ -41,6 +41,8 @@
 
 #define dive_CASE         \
 		p += 4;           \
+		if (!HAVE(5))     \
+			goto other;   \
 		val = READ(p);    \
 		RSIO_CASE;        \
 		goto other;

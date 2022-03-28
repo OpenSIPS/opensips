@@ -39,6 +39,8 @@
 
 #define priv_CASE     \
 	p += 4;           \
+	if (!HAVE(4))     \
+		goto other;   \
 	val = READ(p);    \
 	ACY_CASE;         \
 	goto other;

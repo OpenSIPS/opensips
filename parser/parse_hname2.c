@@ -91,6 +91,15 @@ static inline char* skip_ws(char* p, char *end)
 #define READ(val) \
 (*(val + 0) + (*(val + 1) << 8) + (*(val + 2) << 16) + (*(val + 3) << 24))
 
+#ifdef FUZZ_BUILD
+/* fuzzers are sensible to heap read overflows, so enable all "HAVE" checks */
+#define HAVE(bytes) (end - p >= (long)(bytes))
+#else
+/* with PKG memory, parser read overflows of a few bytes are harmless, since
+ * the memory is pre-allocated and the read cannot SIGSEGV, making the parser
+ * a lot more performant in production */
+#define HAVE(bytes) 1
+#endif
 
 #define FIRST_QUATERNIONS       \
 	case _via1_: via1_CASE; \
@@ -256,7 +265,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 	}
 
  error:
-	/* No double colon found, error.. */
+	/* No colon found, error.. */
 	hdr->type = HDR_ERROR_T;
 	hdr->name.s = 0;
 	hdr->name.len = 0;

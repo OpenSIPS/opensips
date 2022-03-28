@@ -25,6 +25,8 @@
 
 #define repl_CASE          \
 		p += 4;            \
+		if (!HAVE(4))      \
+			goto other;    \
 		val = READ(p);     \
 		aces_CASE;         \
 		goto other;        \

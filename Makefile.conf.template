@@ -100,5 +100,6 @@ DEFS+= -DDBG_MALLOC #Include additional, debug-enabled allocator flavors
 #DEFS+= -DORACLE_USRLOC #Use Oracle compatible queries for USRLOC
 #DEFS+= -DSHM_EXTRA_STATS #Provide tools to get extra statistics for the shared memory used
 #DEFS+= -DUNIT_TESTS #Include unit testing code into opensips and modules
+#DEFS+= -DFUZZ_BUILD #Add extra runtime checks to prevent false-positive crashes
 
 PREFIX ?= /usr/local/

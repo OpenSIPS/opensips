@@ -25,6 +25,8 @@
 
 #define feat_CASE          \
 		p += 4;            \
+		if (!HAVE(8))      \
+			goto other;    \
 		val = READ(p);     \
 		ure__CASE;         \
 		goto other;        \
