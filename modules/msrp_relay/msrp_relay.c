@@ -363,7 +363,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 		}
 	} else if (req->fl.u.request.method_id != MSRP_METHOD_OTHER) {
 		if (req->fl.u.request.method_id == MSRP_METHOD_SEND &&
-			(!req->failure_report || str_strcmp(&str_init(REPORT_NO_STR),
+			(!req->failure_report || str_strcmp((&str_init(REPORT_NO_STR)),
 			&req->failure_report->body))) {
 			report = 1;
 
@@ -493,7 +493,7 @@ int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran, void *param)
 			}
 		} else {
 			if ((!tran->failure_report.len || str_strcmp(&tran->failure_report,
-				&str_init(REPORT_NO_STR))) &&
+				(&str_init(REPORT_NO_STR)))) &&
 				msrp_api.send_report(msrp_hdl, &str_init(STATUS_TIMEOUT_STR),
 				NULL, tran) < 0)
 				LM_ERR("Failed to send REPORT for failure response\n");
@@ -503,7 +503,7 @@ int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran, void *param)
 
 		if (tran->method_id != MSRP_METHOD_AUTH) {
 			if ((tran->failure_report.len && !str_strcmp(&tran->failure_report,
-				&str_init(REPORT_YES_STR))) &&
+				(&str_init(REPORT_YES_STR)))) &&
 				msrp_api.send_report(msrp_hdl, &str_init(STATUS_TIMEOUT_STR),
 				NULL, tran) < 0)
 				LM_ERR("Failed to send REPORT on timeout\n");
