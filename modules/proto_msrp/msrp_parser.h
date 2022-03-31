@@ -113,7 +113,7 @@ void free_msrp_msg( struct msrp_msg *msg);
 
 /*
  * Parse a the first MSRP URL from the string
- * Format is "msrp[s]://hostname[:port]/session[?parameters]"
+ * Format is "msrp[s]://hostname[:port][/session][?parameters]"
  * Returns:
  *   NULL - if the URL is invalid
  *   pointer where the parsing stopped after the first URL
@@ -209,6 +209,11 @@ static inline char* parse_msrp_url(char *start, char *end, struct msrp_url* url)
 				url->session.s = p+1;
 				st = MURL_SESSION;
 				break;
+			case ';':
+				url->host.len = p-url->host.s-ipv6_flag;
+				url->params.s = p+1;
+				st = MURL_PARAMS;
+				break;
 			case ' ':
 				url->host.len = p-url->host.s-ipv6_flag;
 				goto hdr_end;
@@ -232,6 +237,11 @@ static inline char* parse_msrp_url(char *start, char *end, struct msrp_url* url)
 				url->port.len = p-url->port.s;
 				url->session.s = p+1;
 				st = MURL_SESSION;
+				break;
+			case ';':
+				url->port.len = p-url->port.s;
+				url->params.s = p+1;
+				st = MURL_PARAMS;
 				break;
 			case ' ':
 				url->port.len = p-url->port.s;
