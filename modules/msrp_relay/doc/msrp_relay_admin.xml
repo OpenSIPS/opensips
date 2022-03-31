@@ -1,0 +1,317 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This modules implements a Relay for the MSRP protocol, according to
+		the specifications of RFC 4976. Once loaded, the module will
+		automatically forward messages and manage MSRP sessions for the MSRP
+		listeners defined in the script. 
+    </para>
+    <para>
+    	For authenticating MSRP clients, a dedicated script route is run in order
+    	to check the Digest credentials via pseudo-variables.
+    </para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>proto_msrp</emphasis></para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			The following libraries or applications must be installed 
+			before running &osips; with this module loaded:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>none</emphasis></para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+		<section id="param_hash_size" xreflabel="hash_size">
+			<title><varname>hash_size</varname> (int)</title>
+			<para>
+				The size of the hash table that stores the MSRP sessions.
+				It is the 2 logarithmic value of the real size.
+			</para>
+			<para>
+			<emphasis>Default value is <quote>10</quote>
+			</emphasis>
+			 (1024 records).
+			</para>
+			<example>
+			<title>Set <varname>server_hsize</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("msrp_relay", "hash_size", 10)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_cleanup_interval" xreflabel="cleanup_interval">
+		<title><varname>cleanup_interval</varname> (int)</title>
+		<para>
+			The interval between full iterations of the sessions table
+			in order to clean up expired MSRP sessions. Note that a session
+			will be kept in memory as long as the <emphasis>Expires</emphasis>
+			value provided in the 200 OK response to the AUTH request indicates.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cleanup_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_relay", "cleanup_interval", 30)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_auth_route" xreflabel="auth_route">
+		<title><varname>auth_route</varname> (str)</title>
+		<para>
+			The name of the script route to be called when authorizing
+			MSRP clients (receiving an AUTH request with an Authorization header).
+			Here you should provide the appropriate password (or pre-calculated HA1
+			string) for the credentials via the <xref linkend="param_password_var"/>
+			pseudo-variable, in order for the relay to check the client response.
+		</para>
+		<para>
+		<emphasis>No default value; this parameter is mandatory.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>auth_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_relay", "auth_route", "auth")
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_username_var" xreflabel="username_var">
+		<title><varname>username_var</varname> (string)</title>
+		<para>
+		This name of the pseudo-variable that holds the authentication
+		username.
+		</para>
+		<para>
+		Default value is <quote>$var(username)</quote>.
+		</para>
+		<example>
+		<title><varname>username_var</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "username_var", "$var(msrp_auth_user)")
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_realm_var" xreflabel="realm_var">
+		<title><varname>realm_var</varname> (string)</title>
+		<para>
+		This name of the pseudo-variable that hols the authentication
+		Realm. 
+		</para>
+		<para>
+		Default value is <quote>$var(realm)</quote>.
+		</para>
+		<example>
+		<title><varname>realm_var</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "realm_var", "$var(msrp_auth_realm)")
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_password_var" xreflabel="password_var">
+		<title><varname>password_var</varname> (string)</title>
+		<para>
+		This name of the pseudo-variable that should be set in the
+		<xref linkend="param_auth_route"/> script route in order to check
+		the client response when authenticating. The value to be set can be
+		either the plaintext password or pre-calculated HA1 string, based on
+		the  parameter.
+		</para>
+		<para>
+		Default value is <quote>$var(password)</quote>.
+		</para>
+		<example>
+		<title><varname>password_var</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "password_var", "$var(msrp_auth_password)")
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_calculate_ha1" xreflabel="calculate_ha1">
+		<title><varname>calculate_ha1</varname> (integer)</title>
+		<para>
+		This parameter configures whether the value of the
+		<xref linkend="param_password_var"/> pseudo-variable should be
+		treated as a plaintext password or a pre-calculated HA1 string.
+		</para>
+		<para>
+		Default value of this parameter is 0 (HA1 string).
+		</para>
+		<example>
+		<title><varname>calculate_ha1</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "calculate_ha1", 1)
+</programlisting>
+		</example>
+	</section>
+
+		<section id="param_auth_realm" xreflabel="auth_realm">
+		<title><varname>auth_realm</varname> (string)</title>
+		<para>
+		The realm to be provided in the WWW-Authenticate header when the relay
+		automatically challanges an MSRP client.
+		</para>
+		<para>If this parameter is not set, the realm chose by the relay is the
+		domain part of the top MSRP URI in the To-Path header of the AUTH request.
+		</para>
+		<example>
+		<title><varname>auth_realm</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "auth_realm", "opensips.org")
+</programlisting>
+		</example>
+		</section>
+
+	<section id="param_auth_expires" xreflabel="auth_expires">
+		<title><varname>auth_expires</varname> (int)</title>
+		<para>
+		The <emphasis>Expires</emphasis> header value to be provided in the 200 OK
+		response to an AUTH request, if the client does not explicitly request
+		one. This represents how long the MSRP URI provided by the relay in the
+		Use-Path header is valid.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1800</quote>
+		</emphasis>
+		 (1024 records).
+		</para>
+		<example>
+		<title>Set <varname>server_hsize</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_relay", "auth_expires", 600)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_auth_min_expires" xreflabel="auth_min_expires">
+		<title><varname>auth_min_expires</varname> (int)</title>
+		<para>
+		The minimum value accepted by the relay in the <emphasis>Expires</emphasis>
+		header, if the client provides it in the AUTH request. If the requested value
+		is lower that this parameter, the relay will include a
+		<emphasis>Min-Expires</emphasis> header with the configured value, in the
+		423 Interval Out-of-Bounds response.
+		</para>
+		<para>
+		If not set, the relay will accept any value.
+		</para>
+		<example>
+		<title>Set <varname>auth_min_expires</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_relay", "auth_min_expires", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_auth_max_expires" xreflabel="auth_max_expires">
+		<title><varname>auth_max_expires</varname> (int)</title>
+		<para>
+		The maximum value accepted by the relay in the <emphasis>Expires</emphasis>
+		header, if the client provides it in the AUTH request. If the requested value
+		is higher that this parameter, the relay will include a
+		<emphasis>Max-Expires</emphasis> header with the configured value, in the
+		423 Interval Out-of-Bounds response.
+		</para>
+		<para>
+		If not set, the relay will accept any value.
+		</para>
+		<example>
+		<title>Set <varname>auth_max_expires</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_relay", "auth_max_expires", 60)
+...
+	</programlisting>
+		</example>
+	</section>
+
+	<section id="param_nonce_expire" xreflabel="nonce_expire">
+		<title><varname>nonce_expire</varname> (integer)</title>
+		<para>
+		Nonces have limited lifetime. After a given period of time nonces 
+		will be considered invalid. This is to protect replay attacks. 
+		Credentials containing a stale nonce will be not authorized, but the 
+		user agent will be challenged again. This time the challenge will 
+		contain <varname>stale</varname> parameter which will indicate to the
+		client that it doesn't have to disturb user by asking for username 
+		and password, it can recalculate credentials using existing username 
+		and password.
+		</para>
+		<para>
+		The value is in seconds and default value is 30 seconds.
+		</para>
+		<example>
+		<title>nonce_expire parameter example</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "nonce_expire", 15)   # Set nonce_expire to 15s
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_my_uri" xreflabel="my_uri">
+		<title><varname>my_uri</varname> (string)</title>
+		<para>
+		MSRP URI of this relay, that will be matched against the first URI in
+		the To-Path header of any request or response received. Messages that
+		are not addressed to this relay will be dropped.
+		</para>
+		<para>
+		The MSRP URI provided by the relay in the Use-Path header, will be
+		chosen based on the URI in the To-Path header of the AUTH request.
+		</para>
+		<para>This parameter can be set multiple times</para>
+		<para>If the port is not set explicitly, the default value of 2855 wil
+		be assumed. The session-id part of the URI should not be set</para>
+		<example>
+		<title><varname>my_uri</varname> parameter usage</title>
+		<programlisting format="linespecific">
+modparam("msrp_relay", "my_uri", "msrp://opensips.org:2855;tcp")
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+</chapter>
+
