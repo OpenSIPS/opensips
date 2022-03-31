@@ -990,6 +990,8 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 	cell->recv.proto_reserved1 = req->rcv.proto_reserved1;
 	cell->recv.send_sock = req->rcv.bind_address;
 
+	cell->method_id = req->fl.u.request.method_id;
+
 	return cell;
 }
 

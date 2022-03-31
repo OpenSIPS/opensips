@@ -29,6 +29,7 @@
 
 struct msrp_cell {
 	unsigned short hash;
+	int method_id;
 	/* the computed ident for sending the request on this transaction */
 	str ident;
 	/* info on where the request was recv'ed from */
