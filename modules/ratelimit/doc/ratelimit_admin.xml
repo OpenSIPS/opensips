@@ -398,7 +398,7 @@ modparam("ratelimit", "repl_buffer_threshold", 500)
 		</para>
 		<para>
 		<emphasis>
-			Default value is 10 ms.
+			Default value is 200 ms.
 		</emphasis>
 		</para>
 		<example>

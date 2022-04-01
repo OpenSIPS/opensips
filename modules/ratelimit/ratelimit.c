@@ -76,7 +76,7 @@ static str db_url = {0,0};
 str db_prefix = str_init("rl_pipe_");
 
 unsigned int rl_repl_timer_expire = RL_TIMER_INTERVAL;
-static unsigned int rl_repl_timer_interval = RL_TIMER_INTERVAL;
+static unsigned int rl_repl_timer_interval = RL_TIMER_BCAST;
 
 /* === */
 
