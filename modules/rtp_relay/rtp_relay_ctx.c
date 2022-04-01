@@ -50,6 +50,7 @@ static struct list_head *rtp_relay_contexts;
 
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx, str *to_tag);
+static void rtp_relay_ctx_release(void *param);
 
 /* pvar handing */
 static struct {
@@ -103,6 +104,7 @@ struct rtp_relay_ctx *rtp_relay_new_ctx(void)
 	}
 	memset(ctx, 0, sizeof *ctx);
 
+	ctx->ref = 1;
 	lock_init(&ctx->lock);
 	INIT_LIST_HEAD(&ctx->sessions);
 	INIT_LIST_HEAD(&ctx->list);
@@ -180,21 +182,9 @@ static void rtp_relay_ctx_free_sess(struct rtp_relay_sess *s)
 	shm_free(s);
 }
 
-void rtp_relay_ctx_free(void *param)
+static void rtp_relay_ctx_free(struct rtp_relay_ctx *ctx)
 {
 	struct list_head *it, *safe;
-	struct rtp_relay_ctx *ctx = (struct rtp_relay_ctx *)param;
-
-	if (!ctx)
-		return;
-
-	RTP_RELAY_CTX_LOCK(ctx);
-	if (rtp_relay_ctx_pending(ctx)) {
-		rtp_relay_ctx_set_deleted(ctx);
-		RTP_RELAY_CTX_UNLOCK(ctx);
-		return;
-	}
-	RTP_RELAY_CTX_UNLOCK(ctx);
 
 	list_for_each_safe(it, safe, &ctx->legs)
 		rtp_relay_ctx_release_leg(list_entry(it, struct rtp_relay_leg, list));
@@ -218,6 +208,28 @@ void rtp_relay_ctx_free(void *param)
 	lock_destroy(&ctx->lock);
 	shm_free(ctx);
 }
+
+static void rtp_relay_ctx_release(void *param)
+{
+	struct rtp_relay_ctx *ctx = (struct rtp_relay_ctx *)param;
+
+	if (!ctx)
+		return;
+	RTP_RELAY_CTX_LOCK(ctx);
+	if (ctx->ref <= 0) {
+		LM_BUG("invalid ref=%d for ctx=%p\n", ctx->ref, ctx);
+		RTP_RELAY_CTX_UNLOCK(ctx);
+		return;
+	} else if (--ctx->ref > 0) {
+		LM_DBG("pending ref=%d for ctx=%p\n", ctx->ref, ctx);
+		RTP_RELAY_CTX_UNLOCK(ctx);
+		return;
+	}
+	RTP_RELAY_CTX_UNLOCK(ctx);
+
+	rtp_relay_ctx_free(ctx);
+}
+
 
 struct rtp_relay_ctx *rtp_relay_try_get_ctx(void)
 {
@@ -247,7 +259,7 @@ static void rtp_relay_move_ctx( struct cell* t, int type, struct tmcb_params *ps
 	t = rtp_relay_tmb.t_gett();
 	if (!t || t == T_UNDEFINED) {
 		LM_DBG("no transaction - can't move the context - freeing!\n");
-		rtp_relay_ctx_free(ctx);
+		rtp_relay_ctx_release(ctx);
 		return;
 	}
 
@@ -563,7 +575,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 
 	return;
 error:
-	rtp_relay_ctx_free(ctx);
+	rtp_relay_ctx_release(ctx);
 }
 #undef RTP_RELAY_BIN_POP
 
@@ -581,7 +593,7 @@ int rtp_relay_ctx_preinit(void)
 	}
 	/* we need to register pointer in pre-init, to make sure the new dialogs
 	 * loaded have the context registered */
-	rtp_relay_dlg_ctx_idx = rtp_relay_dlg.dlg_ctx_register_ptr(rtp_relay_ctx_free);
+	rtp_relay_dlg_ctx_idx = rtp_relay_dlg.dlg_ctx_register_ptr(rtp_relay_ctx_release);
 	return 0;
 }
 
@@ -601,7 +613,7 @@ int rtp_relay_ctx_init(void)
 	}
 
 	INIT_LIST_HEAD(rtp_relay_contexts);
-	rtp_relay_tm_ctx_idx = rtp_relay_tmb.t_ctx_register_ptr(rtp_relay_ctx_free);
+	rtp_relay_tm_ctx_idx = rtp_relay_tmb.t_ctx_register_ptr(rtp_relay_ctx_release);
 	/* register a routine to move the pointer in tm when the transaction
 	 * is created! */
 	if (rtp_relay_tmb.register_tmcb(0, 0, TMCB_REQUEST_IN, rtp_relay_move_ctx, 0, 0)<=0) {
@@ -613,7 +625,7 @@ int rtp_relay_ctx_init(void)
 			rtp_relay_loaded_callback, NULL, NULL) < 0)
 		LM_WARN("cannot register callback for loaded dialogs - will not be "
 				"able to restore an ongoing media session after a restart!\n");
-	rtp_relay_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, rtp_relay_ctx_free);
+	rtp_relay_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, rtp_relay_ctx_release);
 	return 0;
 }
 
@@ -1430,6 +1442,9 @@ static struct rtp_relay_tmp *rtp_relay_new_tmp(struct rtp_relay_ctx *ctx,
 		goto error;
 	INIT_LIST_HEAD(&tmp->list);
 	rtp_relay_ctx_set_pending(ctx);
+	RTP_RELAY_CTX_LOCK(ctx);
+	ctx->ref++;
+	RTP_RELAY_CTX_UNLOCK(ctx);
 	return tmp;
 error:
 	if (tmp->sess)
@@ -1446,7 +1461,8 @@ static int rtp_relay_release_tmp(struct rtp_relay_tmp *tmp, int success)
 
 	RTP_RELAY_CTX_LOCK(tmp->ctx);
 	rtp_relay_ctx_reset_pending(tmp->ctx);
-	if (rtp_relay_ctx_deleted(tmp->ctx)) {
+	tmp->ctx--;
+	if (tmp->ctx == 0) {
 		RTP_RELAY_CTX_UNLOCK(tmp->ctx);
 		rtp_relay_ctx_free(tmp->ctx);
 		rtp_relay_ctx_free_sess(tmp->sess);
