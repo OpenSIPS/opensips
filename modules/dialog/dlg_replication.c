@@ -1173,9 +1173,9 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 }
 
 int repl_prof_buffer_th = DLG_REPL_PROF_BUF_THRESHOLD;
-int repl_prof_utimer = DLG_REPL_PROF_TIMER;
-int repl_prof_timer_check = DLG_REPL_PROF_TIMER;
-int repl_prof_timer_expire = DLG_REPL_PROF_EXPIRE_TIMER;
+int repl_prof_utimer = DLG_REPL_PROF_TIMER_BCAST;
+int repl_prof_timer_check = DLG_REPL_PROF_TIMER_CLEAN;
+int repl_prof_timer_expire = DLG_REPL_PROF_EXPIRE_SEC;
 
 static void broadcast_profiles(utime_t ticks, void *param);
 static void clean_profiles(unsigned int ticks, void *param);
@@ -1478,7 +1478,9 @@ int replicate_profiles_count(prof_rcv_count_t *rp)
 		/* if the replication expired, reset its counter */
 		if ((head->update + repl_prof_timer_expire) < now)
 			head->counter = 0;
-		counter += head->counter;
+		else
+			counter += head->counter;
+
 		head = head->next;
 	}
 	lock_release(&rp->lock);
