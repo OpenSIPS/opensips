@@ -377,7 +377,7 @@ modparam("ratelimit", "repl_buffer_threshold", 500)
    Timer in milliseconds, used to specify how often the module
    should replicate its counters to the other instances.
 
-   Default value is 10 ms.
+   Default value is 200 ms.
 
    Example 1.9. Set repl_timer_interval parameter
 ...
@@ -654,7 +654,7 @@ Chapter 2. Contributors
    2. Ovidiu Sas (@ovidiusas) 39 17 2481 44
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 34 28 295 133
    4. Vlad Patrascu (@rvlad-patrascu) 30 17 359 558
-   5. Liviu Chircu (@liviuchircu) 19 16 54 118
+   5. Liviu Chircu (@liviuchircu) 20 17 59 121
    6. Eseanu Marius Cristian (@eseanucristian) 13 6 329 195
    7. Daniel-Constantin Mierla (@miconda) 9 7 24 18
    8. Ionel Cerghit (@ionel-cerghit) 4 2 34 24
@@ -687,9 +687,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Aug 2021
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2022
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Oct 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2008 - Aug 2021
    4.  Robert Moss                         Feb 2021 - Feb 2021
    5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
@@ -712,8 +712,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian
    (@eseanucristian), Walter Doekes (@wdoekes), Arnaud Boussus,

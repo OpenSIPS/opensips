@@ -216,7 +216,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 43 9 3821 108
-   2. Vlad Patrascu (@rvlad-patrascu) 18 9 345 318
+   2. Vlad Patrascu (@rvlad-patrascu) 21 12 366 324
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
