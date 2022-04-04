@@ -132,8 +132,8 @@ ucontact_info_t *pack_ci(struct sip_msg* _m, contact_t* _c, unsigned int _e,
 			goto error;
 		}
 
-		/* set expire time */
-		ci.expires = _e;
+		/* set expire time, with an optional random deviation */
+		ci.expires = randomize_expires(_e);
 
 		if (pn_enable && _reg_flags & REG_SAVE__PN_ON_FLAG) {
 			ci.flags |= FL_PN_ON;

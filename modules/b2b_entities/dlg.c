@@ -809,26 +809,6 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 		}
 	}
 
-	if(method_value == METHOD_PRACK)
-	{
-		LM_DBG("Received a PRACK - send 200 reply\n");
-		str reason={"OK", 2};
-		/* send 200 OK and exit */
-		tmb.t_newtran( msg );
-		tm_tran = tmb.t_gett();
-		// FIXME run here the transactional tracing, but we do not have
-		// the matching dlg, in order to grab the tracing function
-		tmb.t_reply(msg, 200, &reason);
-		if(tm_tran && tm_tran!=T_UNDEFINED)
-			tmb.unref_cell(tm_tran);
-
-		/* No need to apply lumps */
-		if(req_routeid > 0)
-			run_top_route(sroutes->request[req_routeid], msg);
-
-		goto done;
-	}
-
 search_dialog:
 	if( msg->callid==NULL || msg->callid->body.s==NULL)
 	{
@@ -968,7 +948,7 @@ search_dialog:
 		}
 		else /* if also not a client request - not for us */
 		{
-			if(method_value != METHOD_UPDATE)
+			if(method_value != METHOD_UPDATE && method_value != METHOD_PRACK)
 			{
 				LM_DBG("Not a b2b request\n");
 				return SCB_RUN_ALL;
@@ -983,7 +963,7 @@ search_dialog:
 				if(dlg == NULL)
 				{
 					lock_release(&server_htable[hash_index].lock);
-					LM_DBG("No dialog found for cancel\n");
+					LM_DBG("No dialog found for UPDATE/PRACK\n");
 					return SCB_RUN_ALL;
 				}
 			}
@@ -1017,6 +997,26 @@ search_dialog:
 			lock_release(&table[hash_index].lock);
 			return SCB_RUN_ALL;
 		}
+	}
+	if (method_value == METHOD_PRACK)
+	{
+		lock_release(&table[hash_index].lock);
+		LM_DBG("Received a PRACK - send 200 reply\n");
+		str reason={"OK", 2};
+		/* send 200 OK and exit */
+		tmb.t_newtran( msg );
+		tm_tran = tmb.t_gett();
+		if (dlg)
+			b2b_run_tracer(dlg, msg, tm_tran);
+		tmb.t_reply(msg, 200, &reason);
+		if(tm_tran && tm_tran!=T_UNDEFINED)
+			tmb.unref_cell(tm_tran);
+
+		/* No need to apply lumps */
+		if(req_routeid > 0)
+			run_top_route(sroutes->request[req_routeid], msg);
+
+		goto done;
 	}
 
 	ctx = b2b_get_context();

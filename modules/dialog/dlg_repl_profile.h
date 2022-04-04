@@ -60,8 +60,9 @@ int replicate_profiles_count(prof_rcv_count_t *rp);
 void receive_prof_repl(bin_packet_t *packet);
 
 #define REPLICATION_DLG_PROFILE		4
-#define DLG_REPL_PROF_TIMER			10
-#define DLG_REPL_PROF_EXPIRE_TIMER	10
+#define DLG_REPL_PROF_TIMER_BCAST	200  /* ms */
+#define DLG_REPL_PROF_TIMER_CLEAN	10   /* s */
+#define DLG_REPL_PROF_EXPIRE_SEC	10   /* s */
 #define DLG_REPL_PROF_BUF_THRESHOLD	1400
 
 static void free_profile_val_t (prof_value_info_t *val){

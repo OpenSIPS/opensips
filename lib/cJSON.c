@@ -1483,7 +1483,7 @@ static const unsigned char *parse_object(cJSON *item, const unsigned char *value
 fail:
     if (item->child != NULL)
     {
-        cJSON_Delete(child);
+        cJSON_Delete(item->child);
         item->child = NULL;
     }
 

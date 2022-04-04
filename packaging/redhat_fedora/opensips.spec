@@ -153,18 +153,6 @@ and two timestamps describing a validation interval. Multiple
 JWT secrets can point to the same JWT profile.
 %endif
 
-%package  b2bua-module
-Summary:  B2B User Agent modules for OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  b2bua-module
-OpenSIPS is a very fast and flexible SIP (RFC3261)
-server. Written entirely in C, OpenSIPS can handle thousands calls
-per second even on low-budget hardware.
-.
-This package provides old style XML module for B2BUA support in OpenSIPS.
-
 %package  berkeley-bin
 Summary:  Berkeley Database module for OpenSIPS - helper program
 Group:    System Environment/Daemons
@@ -1092,6 +1080,7 @@ fi
 %{_libdir}/opensips/modules/mi_script.so
 %{_libdir}/opensips/modules/mid_registrar.so
 %{_libdir}/opensips/modules/msilo.so
+%{_libdir}/opensips/modules/msrp_relay.so
 %{_libdir}/opensips/modules/nat_traversal.so
 %{_libdir}/opensips/modules/nathelper.so
 %{_libdir}/opensips/modules/options.so
@@ -1189,6 +1178,7 @@ fi
 %doc docdir/README.mi_script
 %doc docdir/README.mid_registrar
 %doc docdir/README.msilo
+%doc docdir/README.msrp_relay
 %doc docdir/README.nat_traversal
 %doc docdir/README.nathelper
 %doc docdir/README.options
@@ -1237,10 +1227,6 @@ fi
 %{_libdir}/opensips/modules/auth_jwt.so
 %doc docdir/README.auth_jwt
 %endif
-
-%files b2bua-module
-%{_libdir}/opensips/modules/b2b_logic_xml.so
-%doc docdir/README.b2b_logic_xml
 
 %files berkeley-bin
 %{_sbindir}/bdb_recover
@@ -1564,7 +1550,9 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: proto_msrp, status_report
+- New modules: msrp_relay, proto_msrp, status_report
+- Removed modules: b2b_logic_xml
+- Removed packages: b2bua-module
 
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2

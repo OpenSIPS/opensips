@@ -48,6 +48,8 @@
 	switch(LOWER_DWORD(val)) {     \
 		case _ppor_:               \
 			p += 4;                \
+			if (!HAVE(4))          \
+				goto other;        \
 			val = READ(p);         \
 			TED_CASE;              \
 			goto other;            \
@@ -56,6 +58,8 @@
 
 #define unsu_CASE         \
 		p += 4;           \
+		if (!HAVE(4))     \
+			goto other;   \
 		val = READ(p);    \
 		PPOR_CASE;        \
 		goto other;       \

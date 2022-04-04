@@ -1322,7 +1322,7 @@ modparam("dialog", "replicate_profiles_check", 100)
 		</para>
 		<para>
 		<emphasis>
-			Default value is 10 ms.
+			Default value is 200 ms.
 		</emphasis>
 		</para>
 		<example>

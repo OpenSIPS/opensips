@@ -143,7 +143,7 @@ void *self_hdl = NULL;
 
 int self_req_hdl(struct msrp_msg *req, void *param)
 {
-	msrp_fwd_request( self_hdl, req, NULL, 0);
+	msrp_fwd_request( self_hdl, req, NULL, 0, NULL);
 	return 0;
 }
 

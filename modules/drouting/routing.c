@@ -40,10 +40,11 @@
 
 
 #define is_valid_gw_char(_c) \
-	(isalpha(_c) || isdigit(_c) || (_c)=='_' || (_c)=='-' || (_c)=='.')
+	(_isalnum(_c) || q_memchr(extra_id_chars.s, _c, extra_id_chars.len))
 
 
 extern int dr_force_dns;
+extern str extra_id_chars;
 
 rt_data_t*
 build_rt_data(struct head_db *part)

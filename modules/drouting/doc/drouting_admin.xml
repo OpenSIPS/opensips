@@ -1356,6 +1356,26 @@ modparam("drouting", "extra_prefix_chars", "#-%")
 		</example>
 	</section>
 
+	<section id="param_extra_id_chars" xreflabel="extra_id_chars">
+		<title><varname>extra_id_chars</varname> (str)</title>
+		<para>
+			A set of extra characters to be allowed in both Gateway and Carrier
+			unique string identifiers, on top of alphanumeric characters.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>_-.</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>extra_id_chars</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "extra_id_chars", ":_-.")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_rule_tables_query" xreflabel="rule_tables_query">
 		<title><varname>rule_tables_query</varname> (str)</title>
 		<para>
@@ -1405,8 +1425,7 @@ modparam("drouting", "rule_tables_query", "
 		rules in the database table and the configured parameters.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> to 1 the 
@@ -1543,8 +1562,7 @@ do_routing(2, "F", , , $var(gw_attributes));
 		policy).
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -1627,8 +1645,7 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
 		gateways). Attributes and per-gw processing will be available.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and LOCAL_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
@@ -2045,8 +2062,7 @@ if (is_from_gw(, "c", , , "outbound")) {
 		This function does not change anything in the message.
 		</para>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+		This function can be used from all routes.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 

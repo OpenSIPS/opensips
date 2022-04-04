@@ -27,25 +27,26 @@ registrar Module
               1.3.7. case_sensitive (integer)
               1.3.8. received_avp (str)
               1.3.9. received_param (string)
-              1.3.10. max_contacts (integer)
-              1.3.11. max_username_len (integer)
-              1.3.12. max_domain_len (integer)
-              1.3.13. max_aor_len (integer)
-              1.3.14. max_contact_len (integer)
-              1.3.15. retry_after (integer)
-              1.3.16. sock_hdr_name (string)
-              1.3.17. mcontact_avp (string)
-              1.3.18. attr_avp (string)
-              1.3.19. gruu_secret (string)
-              1.3.20. disable_gruu (int)
-              1.3.21. pn_enable (boolean)
-              1.3.22. pn_providers (string)
-              1.3.23. pn_ct_match_params (string)
-              1.3.24. pn_pnsreg_interval (integer)
-              1.3.25. pn_trigger_interval (integer)
-              1.3.26. pn_skip_pn_interval (integer)
-              1.3.27. pn_refresh_timeout (integer)
-              1.3.28. pn_enable_purr (boolean)
+              1.3.10. expires_max_deviation (integer)
+              1.3.11. max_contacts (integer)
+              1.3.12. max_username_len (integer)
+              1.3.13. max_domain_len (integer)
+              1.3.14. max_aor_len (integer)
+              1.3.15. max_contact_len (integer)
+              1.3.16. retry_after (integer)
+              1.3.17. sock_hdr_name (string)
+              1.3.18. mcontact_avp (string)
+              1.3.19. attr_avp (string)
+              1.3.20. gruu_secret (string)
+              1.3.21. disable_gruu (int)
+              1.3.22. pn_enable (boolean)
+              1.3.23. pn_providers (string)
+              1.3.24. pn_ct_match_params (string)
+              1.3.25. pn_pnsreg_interval (integer)
+              1.3.26. pn_trigger_interval (integer)
+              1.3.27. pn_skip_pn_interval (integer)
+              1.3.28. pn_refresh_timeout (integer)
+              1.3.29. pn_enable_purr (boolean)
 
         1.4. Exported Functions
 
@@ -103,34 +104,35 @@ registrar Module
    1.7. Set case_sensitive parameter
    1.8. Set received_avp parameter
    1.9. Set received_param parameter
-   1.10. Set max_contacts parameter
-   1.11. Setting the max_username_len module parameter
-   1.12. Setting the max_domain_len module parameter
-   1.13. Setting the max_aor_len module parameter
-   1.14. Setting the max_contact_len module parameter
-   1.15. Set retry_after parameter
-   1.16. Set sock_hdr_namer parameter
-   1.17. Set mcontact_avp parameter
-   1.18. Set attr_avp parameter
-   1.19. Set gruu_secret parameter
+   1.10. Setting the expires_max_deviation parameter
+   1.11. Set max_contacts parameter
+   1.12. Setting the max_username_len module parameter
+   1.13. Setting the max_domain_len module parameter
+   1.14. Setting the max_aor_len module parameter
+   1.15. Setting the max_contact_len module parameter
+   1.16. Set retry_after parameter
+   1.17. Set sock_hdr_namer parameter
+   1.18. Set mcontact_avp parameter
+   1.19. Set attr_avp parameter
    1.20. Set gruu_secret parameter
-   1.21. Setting the pn_enable parameter
-   1.22. Setting the pn_providers parameter
-   1.23. Setting the pn_ct_match_params parameter
-   1.24. Setting the pn_pnsreg_interval parameter
-   1.25. Setting the pn_trigger_interval parameter
-   1.26. Setting the pn_skip_pn_interval parameter
-   1.27. Setting the pn_refresh_timeout parameter
-   1.28. Setting the pn_enable_purr parameter
-   1.29. save usage
-   1.30. remove usage
-   1.31. remove_ip_port usage
-   1.32. lookup usage
-   1.33. is_registered usage
-   1.34. is_contact_registered usage
-   1.35. is_ip_registered usage
-   1.36. add_sock_hdr usage
-   1.37. async pn_process_purr() usage
+   1.21. Set gruu_secret parameter
+   1.22. Setting the pn_enable parameter
+   1.23. Setting the pn_providers parameter
+   1.24. Setting the pn_ct_match_params parameter
+   1.25. Setting the pn_pnsreg_interval parameter
+   1.26. Setting the pn_trigger_interval parameter
+   1.27. Setting the pn_skip_pn_interval parameter
+   1.28. Setting the pn_refresh_timeout parameter
+   1.29. Setting the pn_enable_purr parameter
+   1.30. save usage
+   1.31. remove usage
+   1.32. remove_ip_port usage
+   1.33. lookup usage
+   1.34. is_registered usage
+   1.35. is_contact_registered usage
+   1.36. is_ip_registered usage
+   1.37. add_sock_hdr usage
+   1.38. async pn_process_purr() usage
 
 Chapter 1. Admin Guide
 
@@ -404,7 +406,31 @@ modparam("registrar", "received_avp", "$avp(rcv)")
 modparam("registrar", "received_param", "rcv")
 ...
 
-1.3.10. max_contacts (integer)
+1.3.10. expires_max_deviation (integer)
+
+   Set this parameter in order to add a random +/- deviation up to
+   and including the given value to the expiration interval of a
+   newly registered contact. For example, if this parameter is set
+   to 100 and a phone registers for 1800 sec, the final expiry
+   will be random number in the [1700, 1900] interval.
+
+   By randomizing the registration lifetimes of the contacts, the
+   server is better equipped to deal with a post-restart
+   registration storm, when all TCP connections are lost and a
+   significant portion of UAs will re-register at the same time.
+   Thanks to the contact lifetime randomization, the registration
+   storm will only happen once rather than, e.g., every 1800
+   seconds following the restart.
+
+   Default value is 0 (no deviation).
+
+   Example 1.10. Setting the expires_max_deviation parameter
+...
+# add a random +/- 0-100 seconds to each registration lifetime
+modparam("registrar", "expires_max_deviation", 100)
+...
+
+1.3.11. max_contacts (integer)
 
    The parameter can be used to limit the number of contacts per
    AOR (Address of Record) in the user location database. Value 0
@@ -417,51 +443,51 @@ modparam("registrar", "received_param", "rcv")
 
    Default value is 0.
 
-   Example 1.10. Set max_contacts parameter
+   Example 1.11. Set max_contacts parameter
 ...
 # Allow no more than 10 contacts per AOR
 modparam("registrar", "max_contacts", 10)
 ...
 
-1.3.11. max_username_len (integer)
+1.3.12. max_username_len (integer)
 
    The maximum length of the "username" part of an
    Address-of-Record SIP URI.
 
    Default value is 64.
 
-   Example 1.11. Setting the max_username_len module parameter
+   Example 1.12. Setting the max_username_len module parameter
 modparam("registrar", "max_username_len", 128)
 
-1.3.12. max_domain_len (integer)
+1.3.13. max_domain_len (integer)
 
    The maximum length of the "domain" part of an Address-of-Record
    SIP URI.
 
    Default value is 64.
 
-   Example 1.12. Setting the max_domain_len module parameter
+   Example 1.13. Setting the max_domain_len module parameter
 modparam("registrar", "max_domain_len", 128)
 
-1.3.13. max_aor_len (integer)
+1.3.14. max_aor_len (integer)
 
    The maximum length of an Address-of-Record SIP URI.
 
    Default value is 256.
 
-   Example 1.13. Setting the max_aor_len module parameter
+   Example 1.14. Setting the max_aor_len module parameter
 modparam("registrar", "max_aor_len", 512)
 
-1.3.14. max_contact_len (integer)
+1.3.15. max_contact_len (integer)
 
    The maximum length of a Contact header field SIP URI.
 
    Default value is 255.
 
-   Example 1.14. Setting the max_contact_len module parameter
+   Example 1.15. Setting the max_contact_len module parameter
 modparam("registrar", "max_contact_len", 512)
 
-1.3.15. retry_after (integer)
+1.3.16. retry_after (integer)
 
    The registrar can generate 5xx reply to REGISTER in various
    situations. It can, for example, happen when the max_contacts
@@ -476,12 +502,12 @@ modparam("registrar", "max_contact_len", 512)
 
    Default value is 0 (disabled).
 
-   Example 1.15. Set retry_after parameter
+   Example 1.16. Set retry_after parameter
 ...
 modparam("registrar", "retry_after", 30)
 ...
 
-1.3.16. sock_hdr_name (string)
+1.3.17. sock_hdr_name (string)
 
    Header which contains a socket description (proto:IP:port) to
    override the received socket info. The header will be search
@@ -492,12 +518,12 @@ modparam("registrar", "retry_after", 30)
 
    Default value is NULL.
 
-   Example 1.16. Set sock_hdr_namer parameter
+   Example 1.17. Set sock_hdr_namer parameter
 ...
 modparam("registrar", "sock_hdr_name", "Sock-Info")
 ...
 
-1.3.17. mcontact_avp (string)
+1.3.18. mcontact_avp (string)
 
    AVP to store the modified binding/contact that is set during
    cached registrations scenario (when REGISTER is forwarded to
@@ -510,7 +536,7 @@ modparam("registrar", "sock_hdr_name", "Sock-Info")
 
    Default value is NULL.
 
-   Example 1.17. Set mcontact_avp parameter
+   Example 1.18. Set mcontact_avp parameter
 ...
 modparam("registrar", "mcontact_avp", "$avp(orig_ct)")
 ...
@@ -531,7 +557,7 @@ onreply_route[do_save] {
 }
 ...
 
-1.3.18. attr_avp (string)
+1.3.19. attr_avp (string)
 
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
@@ -546,7 +572,7 @@ onreply_route[do_save] {
 
    Default value is NULL.
 
-   Example 1.18. Set attr_avp parameter
+   Example 1.19. Set attr_avp parameter
 # reading attributes from the attr_pvar when doing parallel forking
 ...
 modparam("registrar", "attr_avp", "$avp(attr)")
@@ -567,30 +593,30 @@ _idx])\n");
 }
 
 
-1.3.19. gruu_secret (string)
+1.3.20. gruu_secret (string)
 
    The string that will be used in XORing when generating
    temporary GRUUs.
 
    If not set, 'OpenSIPS' is the default secret.
 
-   Example 1.19. Set gruu_secret parameter
+   Example 1.20. Set gruu_secret parameter
 ...
 modparam("registrar", "gruu_secret", "top_secret")
 ...
 
-1.3.20. disable_gruu (int)
+1.3.21. disable_gruu (int)
 
    Globally disable GRUU handling
 
    Default value is 1 ( GRUU will not be handled ).
 
-   Example 1.20. Set gruu_secret parameter
+   Example 1.21. Set gruu_secret parameter
 ...
 modparam("registrar", "disable_gruu", 0)
 ...
 
-1.3.21. pn_enable (boolean)
+1.3.22. pn_enable (boolean)
 
    Enable SIP Push Notification support (RFC 8599). If enabled,
    Contact header field URIs which include all pn_ct_match_params
@@ -600,12 +626,12 @@ modparam("registrar", "disable_gruu", 0)
 
    Default value is false.
 
-   Example 1.21. Setting the pn_enable parameter
+   Example 1.22. Setting the pn_enable parameter
 ...
 modparam("registrar", "pn_enable", true)
 ...
 
-1.3.22. pn_providers (string)
+1.3.23. pn_providers (string)
 
    A list of supported Push Notification providers. While only
    three possible values are defined by RFC 8599 ("apns", "fcm"
@@ -613,12 +639,12 @@ modparam("registrar", "pn_enable", true)
 
    Default value is NULL (not set).
 
-   Example 1.22. Setting the pn_providers parameter
+   Example 1.23. Setting the pn_providers parameter
 ...
 modparam("registrar", "pn_providers", "apns, fcm, webpush")
 ...
 
-1.3.23. pn_ct_match_params (string)
+1.3.24. pn_ct_match_params (string)
 
    The minimally required list of RFC 8599 parameters (custom ones
    are accepted as well) which must be present in a Contact URI
@@ -640,12 +666,12 @@ modparam("registrar", "pn_providers", "apns, fcm, webpush")
 
    Default value is "pn-provider, pn-prid, pn-param".
 
-   Example 1.23. Setting the pn_ct_match_params parameter
+   Example 1.24. Setting the pn_ct_match_params parameter
 ...
 modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 ...
 
-1.3.24. pn_pnsreg_interval (integer)
+1.3.25. pn_pnsreg_interval (integer)
 
    For devices capable of waking up and refreshing their binding
    on their own (signified by the ";+sip.pnsreg" Contact header
@@ -655,12 +681,12 @@ modparam("registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 
    Default value is 130 (seconds before expiry).
 
-   Example 1.24. Setting the pn_pnsreg_interval parameter
+   Example 1.25. Setting the pn_pnsreg_interval parameter
 ...
 modparam("registrar", "pn_pnsreg_interval", 140)
 ...
 
-1.3.25. pn_trigger_interval (integer)
+1.3.26. pn_trigger_interval (integer)
 
    If a binding refresh REGISTER request from a given SIP endpoint
    does not arrive within at least pn_trigger_interval seconds
@@ -676,12 +702,12 @@ modparam("registrar", "pn_pnsreg_interval", 140)
 
    Default value is 120 (seconds before expiry).
 
-   Example 1.25. Setting the pn_trigger_interval parameter
+   Example 1.26. Setting the pn_trigger_interval parameter
 ...
 modparam("registrar", "pn_trigger_interval", 130)
 ...
 
-1.3.26. pn_skip_pn_interval (integer)
+1.3.27. pn_skip_pn_interval (integer)
 
    Following a successful (re)registration of a contact, this
    setting denotes a time interval, in seconds, during which the
@@ -691,12 +717,12 @@ modparam("registrar", "pn_trigger_interval", 130)
    Default value is 0 seconds (always generate Push
    Notifications).
 
-   Example 1.26. Setting the pn_skip_pn_interval parameter
+   Example 1.27. Setting the pn_skip_pn_interval parameter
 ...
 modparam("registrar", "pn_skip_pn_interval", 10)
 ...
 
-1.3.27. pn_refresh_timeout (integer)
+1.3.28. pn_refresh_timeout (integer)
 
    This timeout starts counting following a lookup() or a
    pn_process_purr() which triggers a Push Notification. The value
@@ -717,12 +743,12 @@ modparam("registrar", "pn_skip_pn_interval", 10)
 
    Default value is 6 seconds.
 
-   Example 1.27. Setting the pn_refresh_timeout parameter
+   Example 1.28. Setting the pn_refresh_timeout parameter
 ...
 modparam("registrar", "pn_refresh_timeout", 10)
 ...
 
-1.3.28. pn_enable_purr (boolean)
+1.3.29. pn_enable_purr (boolean)
 
    Enable the SIP Push Notification mechanism for long-lived
    dialogs. If enabled, the registrar will include a
@@ -743,7 +769,7 @@ modparam("registrar", "pn_refresh_timeout", 10)
 
    Default value is false.
 
-   Example 1.28. Setting the pn_enable_purr parameter
+   Example 1.29. Setting the pn_enable_purr parameter
 ...
 modparam("registrar", "pn_enable_purr", true)
 ...
@@ -848,7 +874,7 @@ modparam("registrar", "pn_enable_purr", true)
    If you plan to use the “save()” function in reply route, please
    refer to mcontact_avp module parameter.
 
-   Example 1.29. save usage
+   Example 1.30. save usage
 ...
 # save into 'location', no flags, use default AOR (TO URI)
 save("location");
@@ -905,7 +931,7 @@ save("location", , , "vip");
 
    This function can be used from REQUEST_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.30. remove usage
+   Example 1.31. remove usage
 ...
 # remove all contacts belonging to the "bob" AOR
 remove("location", "sip:bob@atlanta.com");
@@ -944,7 +970,7 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
 
    This function can be used from ALL ROUTES.
 
-   Example 1.31. remove_ip_port usage
+   Example 1.32. remove_ip_port usage
 ...
 # remove all contacts behind 8.8.8.8 port 43213
 remove("8.8.8.8",43213,"location");
@@ -1056,7 +1082,7 @@ remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE.
 
-   Example 1.32. lookup usage
+   Example 1.33. lookup usage
 ...
 lookup("location");  # simple lookup
    #or
@@ -1100,7 +1126,7 @@ switch ($retcode) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.33. is_registered usage
+   Example 1.34. is_registered usage
 ...
 /**/
 if (is_method("REGISTER")) {
@@ -1141,7 +1167,7 @@ if (is_registered("location",$fu)) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.34. is_contact_registered usage
+   Example 1.35. is_contact_registered usage
 ...
 /*let's say you want to block users that are not registered*/
 if (is_method("INVITE")) {
@@ -1181,7 +1207,7 @@ if(is_method("INVITE")) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.
 
-   Example 1.35. is_ip_registered usage
+   Example 1.36. is_ip_registered usage
 ...
 /* check the source ip  whether it is already registered */
 if (is_method("REGISTER")) {
@@ -1205,7 +1231,7 @@ if (is_method("REGISTER")) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.36. add_sock_hdr usage
+   Example 1.37. add_sock_hdr usage
 ...
 add_sock_hdr("Sock-Info");
 ...
@@ -1238,7 +1264,7 @@ add_sock_hdr("Sock-Info");
        foreign PURR or offline contact)
      * -1 - Internal Error
 
-   Example 1.37. async pn_process_purr() usage
+   Example 1.38. async pn_process_purr() usage
 route {
         ...
         if (has_totag()) {

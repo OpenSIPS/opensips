@@ -26,7 +26,7 @@
 
 #define allo_CASE                    \
 	p += 4;                          \
-	if (LOWER_BYTE(*p) == 'w') {     \
+	if (HAVE(1) && LOWER_BYTE(*p) == 'w') {     \
 		hdr->type = HDR_ALLOW_T;     \
 		hdr->name.len = 5;           \
 		p++;                         \

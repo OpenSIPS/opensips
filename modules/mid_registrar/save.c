@@ -1186,7 +1186,7 @@ struct ucontact_info *mid_reg_pack_ci(struct sip_msg *req, struct sip_msg *rpl,
 	ci.last_modified = get_act_time();
 	ci.flags = mri->ul_flags;
 	ci.cflags = mri->cflags;
-	ci.expires = ctmap->expires + get_act_time();
+	ci.expires = randomize_expires(ctmap->expires + get_act_time());
 	ci.shtag = mri->ownership_tag;
 
 	ci.q = ctmap->q;

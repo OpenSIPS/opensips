@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 OpenSIPS Solutions
+ * Copyright (C) 2022 - OpenSIPS Solutions
  *
  * This file is part of opensips, a free SIP server.
  *
@@ -16,21 +16,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *
  */
 
-#ifndef CASE_STAT_H
-#define CASE_STAT_H
+#ifndef _MSRP_RELAY_H_
+#define _MSRP_RELAY_H_
 
+#include "../auth/api.h"
+#include "../../ut.h"
 
-#define stat_CASE          \
-		p += 4;            \
-		if (HAVE(2) && LOWER_BYTE(*(p))=='u' && LOWER_BYTE(*(p+1))=='s') { \
-			hdr->type = HDR_STATUS_T;           \
-			hdr->name.len = 6;                  \
-			p += 2;                             \
-			goto dc_cont;                       \
-		}                                       \
-		goto other;
+extern auth_api_t auth_api;
+extern struct msrp_binds msrp_api;
+extern void *msrp_hdl;
 
+extern int auth_routeid;
 
-#endif /* CASE_STAT_H */
+extern struct msrp_url *my_url_list;
+
+extern int msrp_sessions_hsize;
+extern gen_hash_t *msrp_sessions;
+
+#define SESS_HAVE_PEER_CONN     (1<<0)
+#define SESS_ACCEPTED_PEER_CONN (1<<1)
+
+struct msrp_session {
+	str session_id;
+	str top_from;
+	unsigned int expires;
+	unsigned int flags;
+	/* saved only if the peer connected to us first */
+	union sockaddr_union peer_src_su;
+};
+
+#endif  /* _MSRP_RELAY_H_ */

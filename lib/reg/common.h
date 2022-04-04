@@ -47,6 +47,7 @@ extern usrloc_api_t ul;
 extern struct tm_binds tmb;
 
 /* common registrar modparams */
+extern int expires_max_deviation;
 extern int max_contacts;
 extern int max_username_len;
 extern int max_domain_len;
@@ -54,13 +55,40 @@ extern int max_aor_len;
 extern int max_contact_len;
 
 #define reg_modparams \
-	{"max_contacts",       INT_PARAM, &max_contacts}, \
-	{"max_username_len",   INT_PARAM, &max_username_len}, \
-	{"max_domain_len",     INT_PARAM, &max_domain_len}, \
-	{"max_aor_len",        INT_PARAM, &max_aor_len}, \
-	{"max_contact_len",    INT_PARAM, &max_contact_len}
+	{"max_contacts",          INT_PARAM, &max_contacts}, \
+	{"max_username_len",      INT_PARAM, &max_username_len}, \
+	{"max_domain_len",        INT_PARAM, &max_domain_len}, \
+	{"max_aor_len",           INT_PARAM, &max_aor_len}, \
+	{"max_contact_len",       INT_PARAM, &max_contact_len}, \
+	{"expires_max_deviation", INT_PARAM, &expires_max_deviation}
 
 /* common registrar init code */
 int reg_init_globals(void);
+
+static inline time_t randomize_expires(unsigned int expires_ts)
+{
+	time_t ret;
+
+	if (!expires_max_deviation)
+		return expires_ts;
+
+	int expires_dur = expires_ts - get_act_time();
+	int expires_adj = rand() % (expires_max_deviation * 2 + 1)
+						- expires_max_deviation;
+
+	expires_dur += expires_adj;
+	if (expires_dur < min_expires)
+		expires_dur = min_expires;
+
+	if (max_expires && expires_dur > max_expires)
+		expires_dur = max_expires;
+
+	ret = expires_dur + get_act_time();
+	LM_DBG("randomized expiry ts from %u to %lu (adj: %d/%d, "
+	       "max_deviation: %d)\n", expires_ts, ret, expires_adj,
+	       (int)ret - (int)expires_ts, expires_max_deviation);
+
+	return ret;
+}
 
 #endif /* __LIB_REG_COMMON_H__ */

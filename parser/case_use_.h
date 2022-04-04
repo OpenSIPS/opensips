@@ -32,6 +32,8 @@
 
 #define use__CASE          \
 		p += 4;            \
+		if (!HAVE(4))      \
+			goto other;    \
 		val = READ(p);     \
 		path_CASE2;        \
 		goto other;

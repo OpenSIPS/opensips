@@ -42,9 +42,9 @@
 
 
 #define SE_EXPI_CASE    \
-	if ( LOWER_BYTE(*p) == 's' ) {          \
+	if (HAVE(2) && LOWER_BYTE(*p) == 's') { \
 		p++;                                \
-		switch ( LOWER_BYTE(*p) ) {     \
+		switch ( LOWER_BYTE(*p) ) {         \
 			case 'e':                       \
 				hdr->type = HDR_MIN_SE_T;   \
 				hdr->name.len = 6;          \
@@ -53,6 +53,8 @@
 		}                                   \
 		goto other;                         \
 	}                                       \
+	if (!HAVE(8))                           \
+		goto other;                         \
 	val = READ(p);                          \
 	switch(LOWER_DWORD(val)) {              \
 		case _expi_:                        \

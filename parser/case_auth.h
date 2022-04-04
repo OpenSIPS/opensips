@@ -50,6 +50,8 @@
 
 #define auth_CASE     \
 	p += 4;           \
+	if (!HAVE(9))     \
+		goto other;   \
 	val = READ(p);    \
 	AUTH_ORIZ_CASE;   \
 	goto other;

@@ -62,6 +62,8 @@
 
 #define p_pr_CASE     \
 	p += 4;           \
+	if (!HAVE(16))    \
+		goto other;   \
 	val = READ(p);    \
 	EFER_CASE;        \
 	goto other;

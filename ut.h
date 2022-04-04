@@ -231,6 +231,18 @@ static inline int btostr( char *p,  unsigned char val)
 	return i;
 }
 
+static inline int rctostr( char *p,  unsigned int val)
+{
+	unsigned int a,b,i =0;
+
+	if ( (a=val/100)!=0 )
+		*(p+(i++)) = a+'0';         /*first digit*/
+	if ( (b=val%100/10)!=0 || a)
+		*(p+(i++)) = b+'0';        /*second digit*/
+	*(p+(i++)) = '0'+val%10;              /*third digit*/
+
+	return i;
+}
 
 /* 2^64~= 16*10^18 => 19+1+1 sign + digits + \0 */
 #define INT2STR_MAX_LEN  (1+19+1+1)
