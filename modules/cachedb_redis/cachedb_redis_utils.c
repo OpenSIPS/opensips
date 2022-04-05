@@ -110,6 +110,7 @@ void destroy_cluster_nodes(redis_con *con)
 	while (new) {
 		foo = new->next;
 		redisFree(new->context);
+		new->context = NULL;
 		if (use_tls && new->tls_dom)
 			tls_api.release_domain(new->tls_dom);
 		pkg_free(new);
