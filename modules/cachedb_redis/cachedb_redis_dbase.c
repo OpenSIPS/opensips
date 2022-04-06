@@ -161,9 +161,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 			LM_ERR("failed to auth to redis - %.*s\n",
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
-			redisFree(node->context);
-			node->context = NULL;
-			return -1;
+			goto error;
 		}
 		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
@@ -175,9 +173,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 			LM_ERR("failed to select database %s - %.*s\n",con->id->database,
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
-			redisFree(node->context);
-			node->context = NULL;
-			return -1;
+			goto error;
 		}
 
 		LM_DBG("SELECT [%s] - %.*s\n",con->id->database,(unsigned)rpl->len,rpl->str);
@@ -192,6 +188,7 @@ error:
 		tls_api.release_domain(node->tls_dom);
 		node->tls_dom = NULL;
 	}
+	node->context = NULL;
 	return -1;
 }
 
