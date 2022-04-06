@@ -110,6 +110,7 @@ void destroy_cluster_nodes(redis_con *con)
 	while (new) {
 		foo = new->next;
 		redisFree(new->context);
+		new->context = NULL;
 		pkg_free(new);
 		new = foo;
 	}
