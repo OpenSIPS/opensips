@@ -86,6 +86,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
 			redisFree(node->context);
+			node->context = NULL;
 			return -1;
 		}
 		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
@@ -99,6 +100,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
 			redisFree(node->context);
+			node->context = NULL;
 			return -1;
 		}
 
@@ -114,8 +116,10 @@ int redis_reconnect_node(redis_con *con,cluster_node *node)
 	LM_DBG("reconnecting node %s:%d \n",node->ip,node->port);
 
 	/* close the old connection */
-	if(node->context)
+	if(node->context) {
 		redisFree(node->context);
+		node->context = NULL;
+	}
 
 	return redis_connect_node(con,node);
 }
