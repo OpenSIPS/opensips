@@ -161,7 +161,9 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 			LM_ERR("failed to auth to redis - %.*s\n",
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
-			goto error;
+			redisFree(node->context);
+			node->context = NULL;
+			return -1;
 		}
 		LM_DBG("AUTH [password] -  %.*s\n",(unsigned)rpl->len,rpl->str);
 		freeReplyObject(rpl);
@@ -173,7 +175,9 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 			LM_ERR("failed to select database %s - %.*s\n",con->id->database,
 				rpl?(unsigned)rpl->len:7,rpl?rpl->str:"FAILURE");
 			freeReplyObject(rpl);
-			goto error;
+			redisFree(node->context);
+			node->context = NULL;
+			return -1;
 		}
 
 		LM_DBG("SELECT [%s] - %.*s\n",con->id->database,(unsigned)rpl->len,rpl->str);
@@ -196,8 +200,10 @@ int redis_reconnect_node(redis_con *con,cluster_node *node)
 	LM_DBG("reconnecting node %s:%d \n",node->ip,node->port);
 
 	/* close the old connection */
-	if(node->context)
+	if(node->context) {
 		redisFree(node->context);
+		node->context = NULL;
+	}
 
 	return redis_connect_node(con,node);
 }
