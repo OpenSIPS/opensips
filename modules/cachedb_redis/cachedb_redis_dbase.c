@@ -151,6 +151,7 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 		redis_init_ssl(con->id->extra_options, node->context,
 			&node->tls_dom) < 0) {
 		redisFree(node->context);
+		node->context = NULL;
 		return -1;
 	}
 #endif
@@ -184,11 +185,11 @@ int redis_connect_node(redis_con *con,cluster_node *node)
 
 error:
 	redisFree(node->context);
+	node->context = NULL;
 	if (use_tls && node->tls_dom) {
 		tls_api.release_domain(node->tls_dom);
 		node->tls_dom = NULL;
 	}
-	node->context = NULL;
 	return -1;
 }
 
