@@ -6,7 +6,7 @@
 # description: OpenSIPS is a fast SIP Server.
 #
 # processname: opensips
-# pidfile: /var/run/opensips.pid
+# pidfile: /run/opensips.pid
 # config: /etc/opensips/opensips.cfg
 #
 ### BEGIN INIT INFO
@@ -23,7 +23,7 @@
 prog=opensips
 opensips=/usr/sbin/$prog
 cfgdir="/etc/$prog"
-pidfile="/var/run/$prog.pid"
+pidfile="/run/$prog.pid"
 lockfile="/var/lock/subsys/$prog"
 configfile="$cfgdir/$prog.cfg"
 m4configfile="$cfgdir/$prog.m4"

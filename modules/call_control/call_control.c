@@ -126,7 +126,7 @@ int parse_stop(unsigned int type, void *val);
 
 // Local global variables
 static CallControlSocket callcontrol_socket = {
-    "/var/run/callcontrol/socket", // name
+    "/run/callcontrol/socket", // name
     -1,                            // sock
     500,                           // timeout in 500 milliseconds if there is no answer
     0,                             // time of the last failure
