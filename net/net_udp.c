@@ -180,18 +180,18 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 		goto error;
 	}
 	/* tos */
-    	optval=tos;
-    	if (addr->s.sa_family==AF_INET6){
-            if (setsockopt(si->socket,  IPPROTO_IPV6, IPV6_TCLASS, (void*)&optval, sizeof(optval)) ==-1){
-    			LM_WARN("setsockopt tos for IPV6: %s\n", strerror(errno));
-    			/* continue since this is not critical */
-    		}
-    	} else {
-    		if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval, sizeof(optval)) ==-1){
-    			LM_WARN("setsockopt tos: %s\n", strerror(errno));
-    			/* continue since this is not critical */
-    		}
-    	}
+		optval=tos;
+		if (addr->s.sa_family==AF_INET6){
+			if (setsockopt(si->socket,  IPPROTO_IPV6, IPV6_TCLASS, (void*)&optval, sizeof(optval)) ==-1){
+				LM_WARN("setsockopt tos for IPV6: %s\n", strerror(errno));
+				/* continue since this is not critical */
+			}
+		} else {
+			if (setsockopt(si->socket, IPPROTO_IP, IP_TOS, (void*)&optval, sizeof(optval)) ==-1){
+				LM_WARN("setsockopt tos: %s\n", strerror(errno));
+				/* continue since this is not critical */
+			}
+		}
 #if defined (__linux__) && defined(UDP_ERRORS)
 	optval=1;
 	/* enable error receiving on unconnected sockets */
