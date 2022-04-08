@@ -39,7 +39,13 @@
 			</para>
 			<itemizedlist>
 				<listitem>
-				<para><emphasis>none</emphasis></para>
+				<para><emphasis>openssl</emphasis> or
+				<emphasis>libssl</emphasis></para>
+				</listitem>
+				<listitem>
+				<para><emphasis>openssl-dev</emphasis> or
+					<emphasis>libssl-dev</emphasis>
+				</para>
 				</listitem>
 			</itemizedlist>
 		</section>

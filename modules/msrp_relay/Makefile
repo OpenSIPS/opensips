@@ -8,4 +8,5 @@ auto_gen=
 NAME=msrp_relay.so
 misclibs=../../lib/digest_auth/libdigest_auth.a
 
+include ../../Makefile.openssl
 include ../../Makefile.modules
