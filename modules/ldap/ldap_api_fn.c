@@ -118,7 +118,7 @@ struct ld_conn* get_ldap_connection(struct ld_session* lds)
 		return NULL;
 	}
 
-	if (ldap_connect(lds->name, NULL) < 0) {
+	if (opensips_ldap_connect(lds->name, NULL) < 0) {
 			LM_ERR("failed to create new ldap connection!\n");
 			return NULL;
 	}

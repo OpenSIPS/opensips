@@ -113,7 +113,7 @@ error:
 }
 
 
-int ldap_connect(char* _ld_name, struct ld_conn* conn)
+int opensips_ldap_connect(char* _ld_name, struct ld_conn* conn)
 {
 	int rc;
 	int ldap_proto_version;
@@ -411,7 +411,7 @@ int ldap_reconnect(char* _ld_name, struct ld_conn* conn)
 		return -1;
 	}
 
-	if ((rc = ldap_connect(_ld_name, conn)) != 0)
+	if ((rc = opensips_ldap_connect(_ld_name, conn)) != 0)
 	{
 		LM_ERR("[%s]: reconnect failed\n",
 				_ld_name);
