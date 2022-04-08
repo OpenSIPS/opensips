@@ -34,6 +34,8 @@
 #include "../../parser/parse_methods.h"
 #include "../../parser/parse_content.h"
 #include "../../parser/parse_authenticate.h"
+#include "../../parser/parse_supported.h"
+
 #include "../../parser/sdp/sdp.h"
 #include "../../locking.h"
 #include "../../script_cb.h"
@@ -2619,6 +2621,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	int b2b_ev = -1;
 	struct b2b_context *ctx;
 	int b2b_cb_flags = 0;
+	unsigned int reqmask;
 
 	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
@@ -3194,14 +3197,11 @@ dummy_reply:
 				while(hdr)
 				{
 					LM_DBG("Found require hdr\n");
-					if ( (hdr->body.len == 6 &&
-						strncmp(hdr->body.s, "100rel", 6)==0) ||
-					(hdr->body.len == 8 &&
-						strncmp(hdr->body.s, "100rel\r\n", 8)==0) )
-					{
-						LM_DBG("Found 100rel header\n");
-						break;
-					}
+					parse_supported_body(&(hdr->body), &reqmask);
+					if (reqmask & F_SUPPORTED_100REL) {
+ 						LM_DBG("Found 100rel header\n");
+ 						break;
+					}					
 					hdr = hdr->sibling;
 				}
 				if(hdr)
