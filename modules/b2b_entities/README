@@ -488,9 +488,9 @@ Chapter 3. Contributors
    10. Stanislaw Pitucha 4 2 6 6
 
    All remaining contributors: Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita), @DMOsipov, Stéphane Alnet
-   (@shimaore), Henk Hesselink, Ryan Bullock (@rrb3942), Walter
-   Doekes (@wdoekes).
+   Ionita (@ionutrazvanionita), Carsten Bock, @DMOsipov, Stéphane
+   Alnet (@shimaore), Henk Hesselink, Ryan Bullock (@rrb3942),
+   Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -514,18 +514,19 @@ Chapter 3. Contributors
                       Name                   Commit Activity
    1.  Razvan Crainea (@razvancrainea)     Dec 2010 - Mar 2022
    2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2022
-   3.  Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Mar 2021
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   8.  @DMOsipov                           Mar 2016 - Mar 2016
-   9.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
-   10. Ionut Ionita (@ionutrazvanionita)   Feb 2015 - Feb 2015
+   3.  Carsten Bock                        Mar 2022 - Mar 2022
+   4.  Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Mar 2021
+   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  @DMOsipov                           Mar 2016 - Mar 2016
+   10. Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
 
-   All remaining contributors: Walter Doekes (@wdoekes), Vlad Paiu
-   (@vladpaiu), Ryan Bullock (@rrb3942), Stéphane Alnet
-   (@shimaore), Anca Vamanu, Henk Hesselink, Stanislaw Pitucha.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Walter Doekes (@wdoekes), Vlad Paiu (@vladpaiu), Ryan Bullock
+   (@rrb3942), Stéphane Alnet (@shimaore), Anca Vamanu, Henk
+   Hesselink, Stanislaw Pitucha.
 
    (1) including any documentation-related commits, excluding
    merge commits

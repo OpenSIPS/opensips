@@ -477,8 +477,8 @@ PS\r\nX-MyHeader: some_value\r\n")
 
    Example 1.5. Setting the keepalive_state_file parameter
 ...
-modparam("nat_traversal", "keepalive_state_file", "/var/run/opensips/kee
-palive_state")
+modparam("nat_traversal", "keepalive_state_file", "/run/opensips/keepali
+ve_state")
 ...
 
 1.4.6. cluster_id (integer)
@@ -873,7 +873,8 @@ Chapter 2. Contributors
    10. Stéphane Alnet (@shimaore) 3 1 6 1
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Sergio
-   Gutierrez, Peter Lemenkov (@lemenkov).
+   Gutierrez, Alexey Vasilyev (@vasilevalex), Peter Lemenkov
+   (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -895,19 +896,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   4.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
-   9.  David Sanders                       Oct 2014 - Oct 2014
-   10. Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2012
+   1.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   5.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
+   10. David Sanders                       Oct 2014 - Oct 2014
 
-   All remaining contributors: Anca Vamanu, Stéphane Alnet
-   (@shimaore), Sergio Gutierrez.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
+   Stéphane Alnet (@shimaore), Sergio Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -916,10 +917,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu
-   (@danpascu), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Saúl Ibarra Corretgé (@saghul).
+   Last edited by: Alexey Vasilyev (@vasilevalex), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Dan Pascu (@danpascu), Liviu Chircu
+   (@liviuchircu), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Saúl Ibarra
+   Corretgé (@saghul).
 
    Documentation Copyrights:
 
