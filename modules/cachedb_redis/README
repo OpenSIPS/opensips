@@ -217,12 +217,12 @@ Chapter 2. Contributors
    5. jalung 4 1 144 61
    6. Dan Pascu (@danpascu) 3 1 15 15
    7. Ezequiel Lovelle 3 1 11 4
-   8. Julián Moreno Patiño 3 1 1 1
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. Jarrod Baumann (@jarrodb) 2 1 12 0
+   8. John Burke 3 1 6 1
+   9. Julián Moreno Patiño 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
-   All remaining contributors: Kristian Høgh, Vlad Patrascu
-   (@rvlad-patrascu).
+   All remaining contributors: Jarrod Baumann (@jarrodb), Kristian
+   Høgh, Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -244,19 +244,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   7.  Kristian Høgh                       Apr 2016 - Apr 2016
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Jarrod Baumann (@jarrodb)           May 2015 - May 2015
-   10. jalung                              Jun 2014 - Jun 2014
+   1.  John Burke                          Apr 2022 - Apr 2022
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   8.  Kristian Høgh                       Apr 2016 - Apr 2016
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Jarrod Baumann (@jarrodb)           May 2015 - May 2015
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Ezequiel
-   Lovelle.
+   All remaining contributors: jalung, Vlad Paiu (@vladpaiu),
+   Ezequiel Lovelle.
 
    (1) including any documentation-related commits, excluding
    merge commits
