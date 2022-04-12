@@ -86,6 +86,7 @@ typedef int (*mod_proc_wrapper)();
 #define PROC_TIMER    -1  /* Timer attendant process */
 #define PROC_MODULE   -2  /* Extra process requested by modules */
 #define PROC_TCP_MAIN -4  /* TCP main process */
+#define is_worker_proc(rank) (rank >= 1)
 
 #define DEFAULT_DLFLAGS	0 /* value that signals to module loader to
 							use default dlopen flags in opensips */

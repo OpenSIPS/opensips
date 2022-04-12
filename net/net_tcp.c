@@ -57,6 +57,7 @@
 #include "net_tcp_report.h"
 #include "net_tcp.h"
 #include "tcp_conn.h"
+#include "tcp_conn_profile.h"
 #include "trans.h"
 
 struct struct_hist_list *con_hist;
@@ -120,7 +121,6 @@ char* tcp_auto_scaling_profile = NULL;
  * to arrive in - anything above will lead to the connection to closed */
 int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;
 
-
 #ifdef HAVE_SO_KEEPALIVE
     int tcp_keepalive = 1;
 #else
@@ -155,26 +155,25 @@ static struct scaling_profile *s_profile = NULL;
 /****************************** helper functions *****************************/
 extern void handle_sigs(void);
 
-static inline int init_sock_keepalive(int s)
+static inline int init_sock_keepalive(int s, struct tcp_conn_profile *prof)
 {
-	int optval;
+	int optval, ka;
 
-	if (tcp_keepinterval || tcp_keepidle || tcp_keepcount) {
-		tcp_keepalive = 1; /* force on */
-	}
+	if (prof->keepinterval || prof->keepidle || prof->keepcount)
+		ka = 1; /* force on */
+	else
+		ka = prof->keepalive;
 
 #ifdef HAVE_SO_KEEPALIVE
-	if ((optval = tcp_keepalive)) {
-		if (setsockopt(s,SOL_SOCKET,SO_KEEPALIVE,&optval,sizeof(optval))<0){
-			LM_WARN("setsockopt failed to enable SO_KEEPALIVE: %s\n",
-				strerror(errno));
-			return -1;
-		}
-		LM_DBG("TCP keepalive enabled on socket %d\n",s);
+	if (setsockopt(s,SOL_SOCKET,SO_KEEPALIVE,&ka,sizeof(ka))<0){
+		LM_WARN("setsockopt failed to enable SO_KEEPALIVE: %s\n",
+			strerror(errno));
+		return -1;
 	}
+	LM_DBG("TCP keepalive enabled on socket %d\n",s);
 #endif
 #ifdef HAVE_TCP_KEEPINTVL
-	if ((optval = tcp_keepinterval)) {
+	if ((optval = prof->keepinterval)) {
 		if (setsockopt(s,IPPROTO_TCP,TCP_KEEPINTVL,&optval,sizeof(optval))<0){
 			LM_WARN("setsockopt failed to set keepalive probes interval: %s\n",
 				strerror(errno));
@@ -182,7 +181,7 @@ static inline int init_sock_keepalive(int s)
 	}
 #endif
 #ifdef HAVE_TCP_KEEPIDLE
-	if ((optval = tcp_keepidle)) {
+	if ((optval = prof->keepidle)) {
 		if (setsockopt(s,IPPROTO_TCP,TCP_KEEPIDLE,&optval,sizeof(optval))<0){
 			LM_WARN("setsockopt failed to set keepalive idle interval: %s\n",
 				strerror(errno));
@@ -190,7 +189,7 @@ static inline int init_sock_keepalive(int s)
 	}
 #endif
 #ifdef HAVE_TCP_KEEPCNT
-	if ((optval = tcp_keepcount)) {
+	if ((optval = prof->keepcount)) {
 		if (setsockopt(s,IPPROTO_TCP,TCP_KEEPCNT,&optval,sizeof(optval))<0){
 			LM_WARN("setsockopt failed to set maximum keepalive count: %s\n",
 				strerror(errno));
@@ -204,7 +203,7 @@ static inline int init_sock_keepalive(int s)
 /*! \brief Set all socket/fd options:  disable nagle, tos lowdelay,
  * non-blocking
  * \return -1 on error */
-int tcp_init_sock_opt(int s)
+int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof)
 {
 	int flags;
 	int optval;
@@ -228,7 +227,7 @@ int tcp_init_sock_opt(int s)
 		/* continue since this is not critical */
 	}
 
-	init_sock_keepalive(s);
+	init_sock_keepalive(s, prof);
 
 	/* non-blocking */
 	flags=fcntl(s, F_GETFL);
@@ -357,14 +356,14 @@ int tcp_init_listener(struct socket_info *si)
 		/* continue since this is not critical */
 	}
 
-	init_sock_keepalive(si->socket);
+	init_sock_keepalive(si->socket, &tcp_con_df_profile);
 	if (bind(si->socket, &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s:%d : %s\n",
- 				si->socket, &addr->s,
- 				(unsigned)sockaddru_len(*addr),
- 				si->address_str.s,
+				si->socket, &addr->s,
+				(unsigned)sockaddru_len(*addr),
+				si->address_str.s,
 				si->port_no,
- 				strerror(errno));
+				strerror(errno));
 		goto error;
 	}
 	if (listen(si->socket, tcp_socket_backlog)==-1){
@@ -751,7 +750,7 @@ static void tcpconn_rm(struct tcp_connection* c)
 
 /*! \brief add port as an alias for the "id" connection
  * \return 0 on success,-1 on failure */
-int tcpconn_add_alias(unsigned int id, int port, int proto)
+int tcpconn_add_alias(struct sip_msg *msg, unsigned int id, int port, int proto)
 {
 	struct tcp_connection* c;
 	unsigned hash;
@@ -763,7 +762,16 @@ int tcpconn_add_alias(unsigned int id, int port, int proto)
 	TCPCONN_LOCK(id);
 	/* check if alias already exists */
 	c=_tcpconn_find(id);
-	if (c){
+	if (c) {
+		if (msg && !(c->profile.alias_mode == TCP_ALIAS_ALWAYS
+		               || (c->profile.alias_mode == TCP_ALIAS_RFC_5923
+		                   && msg->via1->alias))) {
+			LM_DBG("aliasing is not enabled for this conn (alias_mode: %u)\n",
+			        c->profile.alias_mode);
+			TCPCONN_UNLOCK(id);
+			return 0;
+		}
+
 		hash=tcp_addr_hash(&c->rcv.src_ip, port);
 		/* search the aliases for an already existing one */
 		for (a=TCP_PART(id).tcpconn_aliases_hash[hash]; a; a=a->next) {
@@ -825,7 +833,8 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 
 
 static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
-							struct socket_info* si, int state, int flags)
+                    struct socket_info* si, struct tcp_conn_profile *prof,
+                    int state, int flags)
 {
 	struct tcp_connection *c;
 	union sockaddr_union local_su;
@@ -872,7 +881,8 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->type = si->proto;
 	c->rcv.proto = si->proto;
 	/* start with the default conn lifetime */
-	c->lifetime = get_ticks()+tcp_con_lifetime;
+	c->lifetime = get_ticks() + prof->con_lifetime;
+	c->profile = *prof;
 	c->flags|=F_CONN_REMOVED|flags;
 #ifdef DBG_TCPCON
 	c->hist = sh_push(c, con_hist);
@@ -908,12 +918,16 @@ error0:
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-		struct socket_info* si, int state, int send2main)
+		struct socket_info* si, struct tcp_conn_profile *prof,
+		int state, int send2main)
 {
 	struct tcp_connection *c;
 
+	if (!prof)
+		tcp_con_get_profile(su, &si->su, si->proto, prof);
+
 	/* create the connection structure */
-	c = tcpconn_new(sock, su, si, state, 0);
+	c = tcpconn_new(sock, su, si, prof, state, 0);
 	if (c==NULL) {
 		LM_ERR("tcpconn_new failed\n");
 		return NULL;
@@ -1028,6 +1042,7 @@ static inline int handle_new_connect(struct socket_info* si)
 {
 	union sockaddr_union su;
 	struct tcp_connection* tcpconn;
+	struct tcp_conn_profile prof;
 	socklen_t su_len = sizeof(su);
 	int new_sock;
 	unsigned int id;
@@ -1046,14 +1061,16 @@ static inline int handle_new_connect(struct socket_info* si)
 		close(new_sock);
 		return 1; /* success, because the accept was successful */
 	}
-	if (tcp_init_sock_opt(new_sock)<0){
+
+	tcp_con_get_profile(&su, &si->su, si->proto, &prof);
+	if (tcp_init_sock_opt(new_sock, &prof)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		close(new_sock);
 		return 1; /* success, because the accept was successful */
 	}
 
 	/* add socket to list */
-	tcpconn=tcpconn_new(new_sock, &su, si, S_CONN_OK, F_CONN_ACCEPTED);
+	tcpconn=tcpconn_new(new_sock, &su, si, &prof, S_CONN_OK, F_CONN_ACCEPTED);
 	if (tcpconn){
 		tcpconn->refcnt++; /* safe, not yet available to the
 							  outside world */
@@ -1695,7 +1712,6 @@ error:
 
 /**************************** Control functions ******************************/
 
-
 /* initializes the TCP network level in terms of data structures */
 int tcp_init(void)
 {
@@ -1729,6 +1745,8 @@ int tcp_init(void)
 			auto_scaling_enabled = 1;
 		}
 	}
+
+	tcp_init_con_profiles();
 
 	tcp_workers_max_no = (s_profile && (tcp_workers_no<s_profile->max_procs)) ?
 		s_profile->max_procs : tcp_workers_no ;

@@ -969,6 +969,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 									}
 		| POLL_METHOD EQUAL error { yyerror("poll method name expected"); }
 		| TCP_ACCEPT_ALIASES EQUAL NUMBER { IFOR();
+				if ($3 < TCP_ALIAS_NEVER || $3 > TCP_ALIAS_ALWAYS)
+					yyerror("invalid 'tcp_accept_aliases' value");
 				tcp_accept_aliases=$3;
 		}
 		| TCP_ACCEPT_ALIASES EQUAL error { yyerror("boolean value expected"); }
@@ -981,6 +983,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		}
 		| TCP_WORKERS EQUAL error { yyerror("number expected"); }
 		| TCP_CONNECT_TIMEOUT EQUAL NUMBER { IFOR();
+				if ($3 <= 0)
+					yyerror("invalid 'tcp_connect_timeout' (value too low!)");
 				tcp_connect_timeout=$3;
 		}
 		| TCP_CONNECT_TIMEOUT EQUAL error { yyerror("number expected"); }
@@ -1014,7 +1018,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| TCP_NO_NEW_CONN_RPLFLAG EQUAL error { yyerror("number value expected"); }
 
 		| TCP_KEEPALIVE EQUAL NUMBER { IFOR();
-				tcp_keepalive=$3;
+				tcp_keepalive=!!$3;
 		}
 		| TCP_KEEPALIVE EQUAL error { yyerror("boolean value expected"); }
 		| TCP_MAX_MSG_TIME EQUAL NUMBER { IFOR();

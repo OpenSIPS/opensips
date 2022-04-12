@@ -360,7 +360,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		}
 
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/
@@ -442,7 +442,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (con->msg_attempts==0)
 			/* if first iteration, set a short timeout for reading
 			 * a whole SIP message */
-			con->timeout = get_ticks() + tcp_max_msg_time;
+			con->timeout = get_ticks() + con->profile.msg_read_timeout;
 
 		con->msg_attempts ++;
 		if (con->msg_attempts == _max_msg_chunks) {

@@ -636,7 +636,7 @@ static void ws_close(struct tcp_connection *c)
 }
 
 static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server)
+		union sockaddr_union* server, struct tcp_conn_profile *prof)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -648,10 +648,12 @@ static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
 		LM_ERR("socket: (%d) %s\n", errno, strerror(errno));
 		goto error;
 	}
-	if (tcp_init_sock_opt(s)<0){
+
+	if (tcp_init_sock_opt(s, prof)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
+
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
 	su_setport( &my_name, 0);
@@ -660,11 +662,12 @@ static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
 		goto error;
 	}
 
-	if (tcp_connect_blocking(s, &server->s, sockaddru_len(*server))<0){
+	if (tcp_connect_blocking_timeout(s, &server->s, sockaddru_len(*server),
+	                      prof->connect_timeout)<0){
 		LM_ERR("tcp_blocking_connect failed\n");
 		goto error;
 	}
-	con=tcp_conn_create(s, server, send_sock, S_CONN_OK, 0);
+	con=tcp_conn_create(s, server, send_sock, prof, S_CONN_OK, 0);
 	if (con==NULL){
 		LM_ERR("tcp_conn_create failed, closing the socket\n");
 		goto error;
@@ -681,11 +684,11 @@ error:
 
 
 static struct tcp_connection* ws_connect(struct socket_info* send_sock,
-		union sockaddr_union* to, int *fd)
+		union sockaddr_union* to, struct tcp_conn_profile *prof, int *fd)
 {
 	struct tcp_connection *c;
 
-	if ((c=ws_sync_connect(send_sock, to))==0) {
+	if ((c=ws_sync_connect(send_sock, to, prof))==0) {
 		LM_ERR("connect failed\n");
 		return NULL;
 	}

@@ -173,14 +173,13 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			goto parse_error;
 		}
 		/* check if necessary to add receive?->moved to forward_req */
-		/* check for the alias stuff */
-		if (msg->via1->alias && tcp_accept_aliases &&
-		is_tcp_based_proto(rcv_info->proto) ) {
-			if (tcpconn_add_alias(rcv_info->proto_reserved1, msg->via1->port,
-									rcv_info->proto)!=0){
-				LM_WARN("tcp alias failed\n");
-				/* continue */
-			}
+
+		/* should we reuse this connection for the opposite direction? */
+		if (is_tcp_based_proto(rcv_info->proto)
+		    && tcpconn_add_alias(msg, rcv_info->proto_reserved1,
+			                     msg->via1->port, rcv_info->proto) != 0) {
+			LM_WARN("tcp alias failed\n");
+			/* continue */
 		}
 
 		LM_DBG("preparing to run routing scripts...\n");

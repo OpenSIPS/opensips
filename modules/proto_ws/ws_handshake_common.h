@@ -326,7 +326,7 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 	}
 
 	/* update the timeout - we successfully read the request */
-	tcp_conn_set_lifetime(con, tcp_con_lifetime);
+	tcp_conn_reset_lifetime(con);
 	con->timeout=con->lifetime;
 
 	con->rcv.proto_reserved1=con->id; /* copy the id */
@@ -465,7 +465,7 @@ static int ws_server_handshake(struct tcp_connection *con)
 		}
 
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
 		con->rcv.proto_reserved1=con->id; /* copy the id */
@@ -1036,14 +1036,14 @@ static int ws_complete_handshake(struct tcp_connection *c)
 	str trace_str = { ws_trace_buf, 0 };
 	int iov_len = sizeof(iov) / sizeof(struct iovec), i;
 
-	reset_tcp_vars(tcpthreshold);
-	start_expire_timer(get, tcpthreshold);
+	reset_tcp_vars(c->profile.send_threshold);
+	start_expire_timer(get, c->profile.send_threshold);
 
 	/* compute the ws_key in ws_accept_buf */
 	ws_compute_key(&WS_KEY(c));
 
 	n = _ws_common_writev(c, c->fd, iov, 3, _ws_common_write_tout);
-	stop_expire_timer(get, tcpthreshold,
+	stop_expire_timer(get, c->profile.send_threshold,
 			_ws_common_module " handshake", "", 0, 1);
 
 	if ( ((struct ws_data *) c->proto_data)->dest ) {
@@ -1076,10 +1076,10 @@ static int ws_bad_handshake(struct tcp_connection *c)
 
 	str trace_str = { WS_HTTP_BAD_REQ, WS_HTTP_BAD_REQ_LEN };
 
-	reset_tcp_vars(tcpthreshold);
-	start_expire_timer(get, tcpthreshold);
+	reset_tcp_vars(c->profile.send_threshold);
+	start_expire_timer(get, c->profile.send_threshold);
 	n = _ws_common_writev(c, c->fd, iov, 1, _ws_common_write_tout);
-	stop_expire_timer(get, tcpthreshold,
+	stop_expire_timer(get, c->profile.send_threshold,
 			_ws_common_module " handshake", "", 0, 1);
 
 	if ( ((struct ws_data *) c->proto_data)->dest ) {
@@ -1290,8 +1290,8 @@ static int ws_start_handshake(struct tcp_connection *c)
 
 	int iov_len = sizeof(iov) / sizeof(struct iovec);
 
-	reset_tcp_vars(tcpthreshold);
-	start_expire_timer(get, tcpthreshold);
+	reset_tcp_vars(c->profile.send_threshold);
+	start_expire_timer(get, c->profile.send_threshold);
 
 	ip = ip_addr2a(&c->rcv.src_ip);
 	port = int2str(c->rcv.src_port, &port_len);
@@ -1310,7 +1310,7 @@ static int ws_start_handshake(struct tcp_connection *c)
 	iov[13].iov_len = WS_KEY(c).len;
 
 	n = _ws_common_writev(c, c->fd, iov, 16, _ws_common_write_tout);
-	stop_expire_timer(get, tcpthreshold,
+	stop_expire_timer(get, c->profile.send_threshold,
 			_ws_common_module " start handshake", "", 0, 1);
 
 	if ( ((struct ws_data *) c->proto_data)->dest ) {

@@ -28,6 +28,7 @@
 #define _WS_TCP_H_
 
 #include "../../net/tcp_conn_defs.h"
+#include "../../net/tcp_conn_profile.h"
 #include "../../net/proto_tcp/tcp_common_defs.h"
 
 int ws_raw_read(struct tcp_connection *c, struct tcp_req *r);

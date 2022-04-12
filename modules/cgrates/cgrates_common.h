@@ -83,6 +83,7 @@ enum cgrc_state {
 
 struct cgr_conn {
 	int fd;
+	int connect_timeout;
 	char flags;
 	enum cgrc_state state;
 	time_t disable_time;

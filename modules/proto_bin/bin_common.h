@@ -56,7 +56,7 @@ static inline int bin_handle_req(struct tcp_req *req,
 
 	if (req->complete){
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(con);
 		con->timeout = con->lifetime;
 
 		LM_DBG("completely received a message\n");

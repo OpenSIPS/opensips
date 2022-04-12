@@ -121,7 +121,8 @@ struct cgr_conn *cgr_get_free_conn(struct cgr_engine *e)
 		c = list_entry(l, struct cgr_conn, list);
 		if (c->state == CGRC_CLOSED) {
 			if (c->disable_time + cgre_retry_tout < now) {
-				if (tcp_connect_blocking(c->fd, &c->engine->su.s, sockaddru_len(c->engine->su))<0){
+				if (tcp_connect_blocking_timeout(c->fd, &c->engine->su.s,
+				        sockaddru_len(c->engine->su), c->connect_timeout)<0){
 					LM_INFO("cannot connect to %.*s:%d\n", c->engine->host.len,
 							c->engine->host.s, c->engine->port);
 					c->disable_time = now;
@@ -243,7 +244,8 @@ void cgrc_close(struct cgr_conn *c, int release)
 static int cgrc_conn(struct cgr_conn *c)
 {
 	int s = -1;
-	union sockaddr_union my_name;
+	union sockaddr_union *src_su = NULL, _src_su;
+	struct tcp_conn_profile prof;
 	struct ip_addr *ip;
 	struct hostent *he;
 
@@ -261,11 +263,13 @@ static int cgrc_conn(struct cgr_conn *c)
 			LM_ERR("invalid ip in bind_ip: %s\n", cgre_bind_ip.s);
 			goto error;
 		}
-		init_su(&my_name, ip, 0);
-		s = tcp_sync_connect_fd(&my_name, &c->engine->su);
-	} else
-		s = tcp_sync_connect_fd(NULL, &c->engine->su);
+		init_su(&_src_su, ip, 0);
+		src_su = &_src_su;
+	}
 
+	tcp_con_get_profile(src_su, &c->engine->su, PROTO_TCP, &prof);
+
+	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof);
 	if (s < 0) {
 		LM_ERR("cannot connect to %.*s:%d\n", c->engine->host.len,
 				c->engine->host.s, c->engine->port);
@@ -275,6 +279,7 @@ static int cgrc_conn(struct cgr_conn *c)
 	/* all good - set the fd */
 	c->fd = s;
 
+	c->connect_timeout = prof.connect_timeout;
 	c->state = CGRC_FREE;
 
 	return 0;

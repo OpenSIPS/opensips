@@ -28,6 +28,7 @@
 
 #include "../mi/mi.h"
 #include "tcp_conn_defs.h"
+#include "tcp_conn_profile.h"
 #include "net_tcp_dbg.h"
 
 #define TCP_PARTITION_SIZE 32
@@ -77,7 +78,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 int tcp_init_listener(struct socket_info *si);
 
 /* helper function to set all TCP related options to a socket */
-int tcp_init_sock_opt(int s);
+int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof);
 
 /********************** TCP conn management functions ************************/
 
@@ -89,7 +90,8 @@ int tcp_conn_get(int unsigned id, struct ip_addr* ip, int port,
 
 /* creates a new tcp conn around a newly connected socket */
 struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-		struct socket_info* si, int state, int send2main);
+		struct socket_info* si, struct tcp_conn_profile *prof,
+		int state, int send2main);
 
 /* sends a connected connection to the master */
 int tcp_conn_send(struct tcp_connection *con);

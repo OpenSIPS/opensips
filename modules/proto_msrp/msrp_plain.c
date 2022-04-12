@@ -85,17 +85,16 @@ int proto_msrp_send(struct socket_info* send_sock,
 		union sockaddr_union* to, unsigned int id)
 {
 	struct tcp_connection *c;
+	struct tcp_conn_profile prof;
 	struct ip_addr ip;
-	int port;
 	struct timeval get,snd;
-	int fd, n;
-
 	union sockaddr_union src_su, dst_su;
+	int port = 0, fd, n, matched;
 
-	port=0;
+	matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
 
-	reset_tcp_vars(tcpthreshold);
-	start_expire_timer(get,tcpthreshold);
+	reset_tcp_vars(prof.send_threshold);
+	start_expire_timer(get,prof.send_threshold);
 
 	if (to){
 		su2ip_addr(&ip, to);
@@ -105,31 +104,31 @@ int proto_msrp_send(struct socket_info* send_sock,
 		n = tcp_conn_get(id, 0, 0, PROTO_NONE, NULL, &c, &fd, NULL);
 	}else{
 		LM_CRIT("tcp_send called with null id & to\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	if (n<0) {
 		/* error during conn get, return with error too */
 		LM_ERR("failed to acquire connection\n");
-		get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+		get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 		return -1;
 	}
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new tcp connection\n");
 			return -1;
 		}
 		LM_DBG("no open tcp connection found, opening new one\n");
 		/* create tcp connection */
-		if ((c=tcp_sync_connect(send_sock, to, &fd, 1))==0) {
+		if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
 			LM_ERR("connect failed\n");
-			get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+			get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 			return -1;
 		}
 
@@ -163,7 +162,7 @@ int proto_msrp_send(struct socket_info* send_sock,
 		c->proto_flags |= F_TCP_CONN_TRACED;
 	}
 
-	get_time_difference(get,tcpthreshold,tcp_timeout_con_get);
+	get_time_difference(get,prof.send_threshold,tcp_timeout_con_get);
 
 	/* now we have a connection, let's see what we can do with it */
 	/* BE CAREFUL now as we need to release the conn before exiting !!! */
@@ -178,15 +177,15 @@ int proto_msrp_send(struct socket_info* send_sock,
 send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
-	start_expire_timer(snd,tcpthreshold);
+	start_expire_timer(snd,prof.send_threshold);
 
 	n = tcp_write_on_socket(c, fd, buf, len,
 			msrp_send_timeout, 0);
 
-	get_time_difference(snd,tcpthreshold,tcp_timeout_send);
-	stop_expire_timer(get,tcpthreshold,"MSRP ops",buf,(int)len,1);
+	get_time_difference(snd,prof.send_threshold,tcp_timeout_send);
+	stop_expire_timer(get,prof.send_threshold,"MSRP ops",buf,(int)len,1);
 
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */

@@ -90,7 +90,7 @@ int ws_raw_writev(struct tcp_connection *c, int fd,
 	/* we do not have any threosholds for ws
 	struct timeval snd;
 
-	start_expire_timer(snd,tcpthreshold);
+	start_expire_timer(snd,c->profile.send_threshold);
 	*/
 	lock_get(&c->write_lock);
 
@@ -102,7 +102,7 @@ int ws_raw_writev(struct tcp_connection *c, int fd,
 
 	lock_release(&c->write_lock);
 	/*
-	 get_time_difference(snd, tcpthreshold, tout);
+	 get_time_difference(snd, c->profile.send_threshold, tout);
 	 */
 
 	return n;

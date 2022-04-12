@@ -274,7 +274,7 @@ int msrp_handle_req(struct msrp_req *req,
 #endif
 
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
 		/* if we are here everything is nice and ok*/

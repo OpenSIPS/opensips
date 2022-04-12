@@ -842,7 +842,7 @@ static int w_force_tcp_alias(struct sip_msg *msg, int *port)
 		else
 			p=*port;
 
-		if (tcpconn_add_alias(msg->rcv.proto_reserved1, p,
+		if (tcpconn_add_alias(NULL, msg->rcv.proto_reserved1, p,
 							msg->rcv.proto)!=0){
 			LM_WARN("tcp alias failed\n");
 			return E_UNSPEC;

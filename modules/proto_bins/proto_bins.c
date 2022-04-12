@@ -367,9 +367,12 @@ static int proto_bins_send(struct socket_info* send_sock,
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		struct tcp_conn_profile prof;
+		int matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
+
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new tcp connection\n");
 			return -1;
@@ -378,7 +381,7 @@ static int proto_bins_send(struct socket_info* send_sock,
 			bins_async);
 		/* create tcp connection */
 		if (bins_async) {
-			n = tcp_async_connect(send_sock, to,
+			n = tcp_async_connect(send_sock, to, &prof,
 					bins_async_local_connect_timeout, &c, &fd, 1);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
@@ -435,7 +438,7 @@ static int proto_bins_send(struct socket_info* send_sock,
 			LM_DBG("First TLS handshake attempt succeeded in less than %dms, "
 				"proceed to writing \n",bins_async_handshake_connect_timeout);
 		} else {
-			if ((c=tcp_sync_connect(send_sock, to, &fd, 0))==0) {
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 0))==0) {
 				LM_ERR("connect failed\n");
 				return -1;
 			}
@@ -485,7 +488,7 @@ send:
 
 	n = bins_write_on_socket(c, fd, buf, len);
 
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	if (n<0){

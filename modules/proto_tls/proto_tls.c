@@ -505,9 +505,12 @@ static int proto_tls_send(struct socket_info* send_sock,
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		struct tcp_conn_profile prof;
+		int matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
+
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new ws connection\n");
 			return -1;
@@ -515,7 +518,8 @@ static int proto_tls_send(struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",
 			tls_async);
 		if (tls_async) {
-			n = tcp_async_connect(send_sock, to, tls_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof,
+					tls_async_local_connect_timeout, &c, &fd, 1);
 			if (n<0) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
@@ -567,7 +571,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 		} else {
 			/* it is safe to send the fd to the main, because it doesn't
 			 * matter which process completes the handshake */
-			if ((c=tcp_sync_connect(send_sock, to, &fd, 1))==0) {
+			if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
 				LM_ERR("connect failed\n");
 				return -1;
 			}
@@ -589,7 +593,7 @@ send_it:
 	LM_DBG("sending via fd %d...\n",fd);
 
 	rlen = tls_write_on_socket(c, fd, buf, len);
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c=%p n=%d fd=%d\n",c, rlen, fd);
 	LM_DBG("buf=\n%.*s\n", (int)len, buf);

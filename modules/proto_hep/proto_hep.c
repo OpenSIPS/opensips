@@ -349,9 +349,12 @@ static int hep_tcp_send (struct socket_info* send_sock,
 
 	/* was connection found ?? */
 	if (c==0) {
-		if (tcp_no_new_conn) {
+		struct tcp_conn_profile prof;
+		int matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
+
+		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;
-		}
+
 		if (!to) {
 			LM_ERR("Unknown destination - cannot open new tcp connection\n");
 			return -1;
@@ -359,7 +362,8 @@ static int hep_tcp_send (struct socket_info* send_sock,
 		LM_DBG("no open tcp connection found, opening new one, async = %d\n",hep_async);
 		/* create tcp connection */
 		if (hep_async) {
-			n = tcp_async_connect(send_sock, to, hep_async_local_connect_timeout, &c, &fd, 1);
+			n = tcp_async_connect(send_sock, to, &prof,
+					hep_async_local_connect_timeout, &c, &fd, 1);
 			if ( n<0 ) {
 				LM_ERR("async TCP connect failed\n");
 				return -1;
@@ -384,7 +388,7 @@ static int hep_tcp_send (struct socket_info* send_sock,
 				return len;
 			}
 			/* our first connect attempt succeeded - go ahead as normal */
-		} else if ((c=tcp_sync_connect(send_sock, to, &fd, 1))==0) {
+		} else if ((c=tcp_sync_connect(send_sock, to, &prof, &fd, 1))==0) {
 			LM_ERR("connect failed\n");
 			return -1;
 		}
@@ -435,7 +439,7 @@ send_it:
 	n = tcp_write_on_socket(c, fd, buf, len,
 			hep_send_timeout, hep_async_local_write_timeout);
 
-	tcp_conn_set_lifetime( c, tcp_con_lifetime);
+	tcp_conn_reset_lifetime(c);
 
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n",c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
@@ -559,7 +563,7 @@ static inline int hep_handle_req(struct tcp_req *req,
 
 	if (req->complete){
 		/* update the timeout - we successfully read the request */
-		tcp_conn_set_lifetime( con, tcp_con_lifetime);
+		tcp_conn_reset_lifetime(con);
 		con->timeout=con->lifetime;
 
 		/* just for debugging use sendipv4 as receiving socket  FIXME*/
