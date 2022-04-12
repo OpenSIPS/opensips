@@ -3523,7 +3523,7 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 	if (bencode_dictionary_get_strcmp(ret, "result", "ok")) {
 		LM_ERR("proxy didn't return \"ok\" result\n");
 	} else
-		rcode = 0;
+		rcode = 1;
 
 	bencode_buffer_free(&bencbuf);
 	return rcode;
