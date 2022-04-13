@@ -1014,8 +1014,12 @@ route[b2b_request]
 						REFER of the status of the reference.
 					</para></listitem>
 					<listitem><para>
-						<emphasis>key (string, optional)</emphasis> - Internal key, who should receive the NOTIFY requests
-						(default: initiator of message)
+						<emphasis>session key (string, optional)</emphasis> - Internal session key, if the NOTIFY should be sent
+						in a different session on this B2B-UA (e.g. useful for receiving out-of-dialog REFERs)
+					</para></listitem>
+					<listitem><para>
+						<emphasis>party of remote session (int, optional)</emphasis> - If the NOTIFY should be sent to a different session, which
+						side should receive the NOTIFY of the session (0 = A-Party of the session, 1 = B-Party of the session)
 					</para></listitem>
 				</itemizedlist>
 			</listitem>
