@@ -36,6 +36,8 @@
 
 #define prio_CASE         \
 		p += 4;           \
+		if (!HAVE(4))     \
+			goto other;   \
 		val = READ(p);    \
 		rity_CASE;        \
 		goto other;

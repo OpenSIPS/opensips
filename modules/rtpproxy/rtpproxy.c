@@ -3216,7 +3216,7 @@ force_rtpproxy_body_part(struct sip_msg *msg, struct rtpp_args *args,
 					LM_ERR("can't allocate memory\n");
 					goto error_with_lock;
 				}
-				memcpy(ap, &args, sizeof(*ap));
+				memcpy(ap, args, sizeof(*ap));
 				if (args->arg1 != NULL) {
 					ap->arg1 = pkg_strdup(args->arg1);
 					if (ap->arg1 == NULL) {

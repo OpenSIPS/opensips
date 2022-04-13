@@ -53,7 +53,6 @@ Architecture: any
 Multi-Arch: foreign
 Depends: adduser, python, ${misc:Depends}, ${shlibs:Depends}
 Suggests: opensips-auth-jwt-module,
-          opensips-b2bua-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
@@ -70,6 +69,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-ldap-modules,
           opensips-lua-module,
           opensips-memcached-module,
+          opensips-msrp-relay-module,
           opensips-mysql-module,
           opensips-mongodb-module,
           opensips-perl-modules,
@@ -389,17 +389,6 @@ Description: SIP Identity module for OpenSIPS
  per second even on low-budget hardware.
  .
  This package provides support for SIP Identity (see RFC 4474).
-
-Package: opensips-b2bua-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: B2B User Agent modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides old style XML module for B2BUA support in OpenSIPS.
 
 Package: opensips-dbhttp-module
 Architecture: any
@@ -751,3 +740,19 @@ Description: JSON Web Tokens authentication module for OpenSIPS
  has a corresponding profile, the KEY used for signing the JWT
  and two timestamps describing a validation interval. Multiple
  JWT secrets can point to the same JWT profile.
+
+Package: opensips-msrp-relay-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: Implementation of a Relay for the MSRP protocol
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package implements a Relay for the MSRP protocol, according
+ to the specifications of RFC 4976. Once loaded, the module will
+ automatically forward messages and manage MSRP sessions for the
+ MSRP listeners defined in the script.

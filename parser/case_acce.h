@@ -84,11 +84,15 @@
 	switch(LOWER_DWORD(val)) { \
 		case _pt_l_:           \
 			p += 4;            \
+			if (!HAVE(8))      \
+				goto other;    \
 			val = READ(p);     \
 			angu_CASE;         \
 			goto other;        \
 		case _pt_d_:           \
 			p += 4;            \
+			if (!HAVE(10))     \
+				goto other;    \
 			val = READ(p);     \
 			ispo_CASE;         \
 			goto other;        \
@@ -97,9 +101,11 @@
 
 #define acce_CASE                           \
 	p += 4;                                 \
-	val = READ(p);                          \
-	ptld_CASE;                              \
-	if (LOWER_BYTE(*p) == 'p') {            \
+	if (HAVE(4)) {                          \
+		val = READ(p);                      \
+		ptld_CASE;                          \
+	}                                       \
+	if (HAVE(2) && LOWER_BYTE(*p) == 'p') { \
 		p++;                                \
 		if (LOWER_BYTE(*p) == 't') {        \
 			hdr->type = HDR_ACCEPT_T;       \

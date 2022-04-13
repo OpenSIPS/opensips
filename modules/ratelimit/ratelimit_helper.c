@@ -1134,7 +1134,8 @@ int rl_get_all_counters(rl_pipe_t *pipe)
 		/* if the replication expired, reset its counter */
 		if ((d->update + rl_repl_timer_expire) < now)
 			d->counter = 0;
-		counter += d->counter;
+		else
+			counter += d->counter;
 	}
 	return counter + pipe->counter;
 }

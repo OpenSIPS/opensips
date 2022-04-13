@@ -25,6 +25,9 @@
 #define CHALLENGE_H
 
 #include "../../parser/msg_parser.h"
+#include "../../parser/digest/digest_parser.h"
+
+#include "../../lib/digest_auth/dauth_nonce.h"
 
 int fixup_qop(void** param);
 
@@ -47,5 +50,11 @@ int proxy_challenge(struct sip_msg* _msg, str* _realm, void* _qop,
  */
 int consume_credentials(struct sip_msg* _m, char* _s1, char* _s2);
 
+/*
+ * Build {WWW,Proxy}-Authenticate header field
+ */
+char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
+	int _stale, const str_const *_realm, int* _len,
+    const str_const *alg_val, const str_const* _hf_name, const str_const *opaque);
 
 #endif /* AUTH_H */

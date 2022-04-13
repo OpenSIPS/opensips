@@ -276,7 +276,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 	struct sip_msg *req;
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
 	async_launch_ctx *ctx;
-	int fd;
+	int fd = -1;
 
 	/* run the function (the action) and get back from it the FD,
 	 * resume function and param */

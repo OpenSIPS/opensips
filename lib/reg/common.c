@@ -20,7 +20,8 @@
 
 #include "common.h"
 
-/* modparams */
+/* common registrar modparams */
+int expires_max_deviation;  /*!< +/- max deviation for contact lifetimes */
 int max_contacts = 0;		/*!< Maximum number of contacts per AOR
                                  (0 == no checking) */
 int max_username_len = USERNAME_MAX_SIZE;
@@ -37,6 +38,18 @@ int reg_init_globals(void)
 
 	realm_prefix.len = strlen(realm_prefix.s);
 	rcv_param.len = strlen(rcv_param.s);
+
+	if (expires_max_deviation < 0) {
+		expires_max_deviation = -expires_max_deviation;
+		LM_ERR("'expires_max_deviation' cannot be negative, fixing to %d\n",
+		       expires_max_deviation);
+	}
+
+	if (expires_max_deviation > RAND_MAX/2) {
+		expires_max_deviation = RAND_MAX/2;
+		LM_ERR("'expires_max_deviation' is too large, fixing to %d\n",
+		       expires_max_deviation);
+	}
 
 	if (max_expires && max_expires < min_expires) {
 		LM_ERR("max_expires (%d) < min_expires (%d), "

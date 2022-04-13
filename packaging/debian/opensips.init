@@ -25,7 +25,7 @@ DESC=opensips
 CFGFILE=/etc/opensips/opensips.cfg
 M4CFGFILE=/etc/opensips/opensips.m4
 M4ARCHIVEDIR=/etc/opensips/archive
-HOMEDIR=/var/run/opensips
+HOMEDIR=/run/opensips
 PIDFILE=$HOMEDIR/$NAME.pid
 DEFAULTS=/etc/default/opensips
 RUN_OPENSIPS=no
@@ -69,9 +69,9 @@ create_radius_seqfile ()
     # write to the file. If the file exists before opensips starts, it
     # won't change it's ownership and will be writable for both root
     # and opensips, no matter what options are chosen at install time
-    RADIUS_SEQ_FILE=/var/run/opensips/opensips_radius.seq
-    if [ -d /var/run/opensips ]; then
-	chown ${USER}:${GROUP} /var/run/opensips
+    RADIUS_SEQ_FILE=/run/opensips/opensips_radius.seq
+    if [ -d /run/opensips ]; then
+	chown ${USER}:${GROUP} /run/opensips
 
 	if [ ! -f $RADIUS_SEQ_FILE ]; then
 	    touch $RADIUS_SEQ_FILE
@@ -108,7 +108,7 @@ case "$1" in
 	check_opensips_config
 	create_radius_seqfile
 
-	# dirs under /var/run will go away on reboot.
+	# dirs under /run will go away on reboot.
 	mkdir -p "$HOMEDIR"
 	chmod 775 "$HOMEDIR"
 	chown "$USER:$GROUP" "$HOMEDIR" >/dev/null 2>&1 || true

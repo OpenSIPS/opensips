@@ -105,7 +105,7 @@
 			you are getting this error while trying to use
 			<emphasis>opensips-cli</emphasis>, you can fix it by either store
 			the fifo file in a non-sticky bit directory (such as
-			<emphasis>/var/run/opensips</emphasis>), or disable the fifo
+			<emphasis>/run/opensips</emphasis>), or disable the fifo
 			protection using <emphasis>sysctl fs.protected_fifos = 0</emphasis>
 			(NOT RECOMMENDED).
 		</para>

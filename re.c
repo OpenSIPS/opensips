@@ -44,8 +44,14 @@
 
 void subst_expr_free(struct subst_expr* se)
 {
+	int i;
+
 	if (se->replacement.s) pkg_free(se->replacement.s);
 	if (se->re) { regfree(se->re); pkg_free(se->re); };
+	for (i = 0; i < se->n_escapes; i++)
+		if (se->replace[i].type == REPLACE_SPEC
+		    && se->replace[i].u.spec.pvp.pvi.type == PV_IDX_PVAR)
+		        pv_spec_free(se->replace[i].u.spec.pvp.pvi.u.dval);
 	pkg_free(se);
 }
 

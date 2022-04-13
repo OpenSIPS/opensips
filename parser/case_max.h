@@ -46,6 +46,8 @@
 
 #define max_CASE      \
 	p += 4;           \
+	if (!HAVE(8))     \
+		goto other;   \
 	val = READ(p);    \
 	FORW_CASE;        \
 	goto other;       \

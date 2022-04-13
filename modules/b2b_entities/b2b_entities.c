@@ -559,8 +559,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 			lock_release(&table[hash_index].lock);
 		return -1;
 	}
-	memcpy(dlg->logic_key.s, logic_key->s, logic_key->len);
-	dlg->logic_key.len = logic_key->len;
+	shm_str_sync(&dlg->logic_key, logic_key);
 	if (unlock)
 		lock_release(&table[hash_index].lock);
 

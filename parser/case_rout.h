@@ -27,6 +27,8 @@
 
 #define rout_CASE                    \
 	p += 4;                          \
+	if (!HAVE(1))                    \
+		goto other;                  \
 	switch(LOWER_BYTE(*p)) {         \
 		case 'e':                    \
 			hdr->type = HDR_ROUTE_T; \

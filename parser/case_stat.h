@@ -24,9 +24,9 @@
 
 #define stat_CASE          \
 		p += 4;            \
-		if (LOWER_BYTE(*(p))=='u' && LOWER_BYTE(*(p+1))=='s') { \
+		if (HAVE(2) && LOWER_BYTE(*(p))=='u' && LOWER_BYTE(*(p+1))=='s') { \
 			hdr->type = HDR_STATUS_T;           \
-			hdr->name.len = 12;                 \
+			hdr->name.len = 6;                  \
 			p += 2;                             \
 			goto dc_cont;                       \
 		}                                       \

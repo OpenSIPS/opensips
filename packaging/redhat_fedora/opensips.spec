@@ -153,18 +153,6 @@ and two timestamps describing a validation interval. Multiple
 JWT secrets can point to the same JWT profile.
 %endif
 
-%package  b2bua-module
-Summary:  B2B User Agent modules for OpenSIPS
-Group:    System Environment/Daemons
-Requires: %{name} = %{version}-%{release}
-
-%description  b2bua-module
-OpenSIPS is a very fast and flexible SIP (RFC3261)
-server. Written entirely in C, OpenSIPS can handle thousands calls
-per second even on low-budget hardware.
-.
-This package provides old style XML module for B2BUA support in OpenSIPS.
-
 %package  berkeley-bin
 Summary:  Berkeley Database module for OpenSIPS - helper program
 Group:    System Environment/Daemons
@@ -483,6 +471,21 @@ per second even on low-budget hardware.
 This module is an implementation of a cache system designed to work with
 MongoDB servers.
 %endif
+
+%package  msrp-relay-module
+Summary:  Implementation of a Relay for the MSRP protocol
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  msrp-relay-module
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package implements a Relay for the MSRP protocol, according
+to the specifications of RFC 4976. Once loaded, the module will
+automatically forward messages and manage MSRP sessions for the
+MSRP listeners defined in the script.
 
 %package  mysql-module
 Summary:  MySQL database connectivity module for OpenSIPS
@@ -1238,10 +1241,6 @@ fi
 %doc docdir/README.auth_jwt
 %endif
 
-%files b2bua-module
-%{_libdir}/opensips/modules/b2b_logic_xml.so
-%doc docdir/README.b2b_logic_xml
-
 %files berkeley-bin
 %{_sbindir}/bdb_recover
 
@@ -1348,6 +1347,10 @@ fi
 %{_libdir}/opensips/modules/cachedb_mongodb.so
 %doc docdir/README.cachedb_mongodb
 %endif
+
+%files msrp-relay-module
+%{_libdir}/opensips/modules/msrp_relay.so
+%doc docdir/README.msrp_relay
 
 %files mysql-module
 %{_libdir}/opensips/modules/db_mysql.so
@@ -1564,7 +1567,10 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: proto_msrp, status_report
+- New modules: msrp_relay, proto_msrp, status_report
+- New packages: msrp-relay-module
+- Removed modules: b2b_logic_xml
+- Removed packages: b2bua-module
 
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2

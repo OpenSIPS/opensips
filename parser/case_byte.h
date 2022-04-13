@@ -38,6 +38,8 @@
 
 #define byte_CASE          \
 		p += 4;            \
+		if (!HAVE(6))      \
+			goto other;    \
 		val = READ(p);     \
 		_ran_CASE;         \
 		goto other;

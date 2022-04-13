@@ -559,7 +559,7 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 					/* when trimming the very last payload, avoid trailing ws */
 					if (cur == lmp->u.value + lmp->len) {
 						tmp = found.s;
-						while (*(--tmp) == ' ') {
+						while (tmp>lmp->u.value && *(--tmp) == ' ') {
 							found.s--;
 							found.len++;
 						}
