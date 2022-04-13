@@ -76,7 +76,6 @@ str b2b_key_prefix = str_init("B2B");
 int b2be_db_mode = WRITE_BACK;
 b2b_table server_htable;
 b2b_table client_htable;
-int check_more_routes = 1;
 int passthru_prack = 0;
 
 cachedb_funcs b2be_cdbf;
@@ -115,7 +114,6 @@ static param_export_t params[]={
 	{ "update_period",         INT_PARAM,    &b2b_update_period  },
 	{ "b2b_key_prefix",        STR_PARAM,    &b2b_key_prefix.s   },
 	{ "cluster_id",            INT_PARAM,    &b2be_cluster		 },
-	{ "check_more_routes",     INT_PARAM,    &check_more_routes  },
 	{ "passthru_prack",        INT_PARAM,    &passthru_prack     },
 	{ 0,                       0,            0                   }
 };

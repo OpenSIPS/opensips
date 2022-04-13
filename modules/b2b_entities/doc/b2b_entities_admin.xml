@@ -329,24 +329,6 @@ modparam("b2b_entities", "passthru_prack", 1)
 		</example>
 	</section>
 
-	<section id="check_more_routes_id" xreflabel="check_more_routes">
-		<title><varname>check_more_routes</varname> (int)</title>
-		<para>
-		If this parameter is set to <emphasis>0</emphasis>, only the first route
-		header is checked to identify a B2B Session.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>1</quote> (check all Route-Headers)</emphasis>
-		</para>
-		<example>
-		<title>Set <varname>check_more_routes</varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("b2b_entities", "check_more_routes", 0)
-...
-	</programlisting>
-		</example>
-	</section>
 </section>
 
 

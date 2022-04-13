@@ -65,7 +65,6 @@ extern int b2be_db_mode;
 extern int serialize_backend;
 extern int b2b_ctx_idx;
 extern str cdb_key_prefix;
-extern int check_more_routes;
 extern int passthru_prack;
 
 void *b2b_get_context(void);
