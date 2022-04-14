@@ -27,6 +27,7 @@
 	&contrib;
 
 	&docCopyrights;
+	<para>&copyright; 2022 <ulink url="https://www.ng-voice.com">ng-voice GmbH</ulink></para>
 	<para>&copyright; 2010 <ulink url="http://www.voipembedded.com">VoIP Embedded, Inc.</ulink></para>
 	<para>&copyright; 2009 Anca-Maria Vamanu</para>
 </book>
