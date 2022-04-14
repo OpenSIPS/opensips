@@ -91,7 +91,6 @@
 #define WORD(p) (*(p + 0) + (*(p + 1) << 8))
 #define DWORD(p) (*(p+0) + (*(p+1) << 8) + (*(p+2) << 16) + (*(p+3) << 24))
 
-#define LOWER_CASE(p) (*(p) & 0x20)
 #define BUFLEN 4096
 
 #define COMPACT_FORMS	"cfiklmstvx"
@@ -844,31 +843,19 @@ static int mc_compact_cb(char** buf_p, mc_whitelist_p wh_list, int type, int* ol
 			i = HDR_OTHER_T;
 again:
 		if (hdr_mask[i]) {
-			/* Compact form name so the header have
-				to be built */
-			if (LOWER_CASE(hdr_mask[i]->name.s)) {
-				/* Copy the name of the header */
-				wrap_copy_and_update(&new_buf.s,
-					hdr_mask[i]->name.s,
-					hdr_mask[i]->name.len, &new_buf.len);
+			/* Copy the name of the header */
+			wrap_copy_and_update(&new_buf.s,
+				hdr_mask[i]->name.s,
+				hdr_mask[i]->name.len, &new_buf.len);
 
-				/* Copy the ': ' delimiter*/
-				wrap_copy_and_update(&new_buf.s, DELIM,
-						DELIM_LEN, &new_buf.len);
-				/* Copy the first field of the header*/
-				wrap_copy_and_update(&new_buf.s,
-					hdr_mask[i]->body.s,
-					hdr_mask[i]->body.len, &new_buf.len);
-			/* Normal form header so it can be copied in one step */
-			} else {
-				wrap_copy_and_update(
-					&new_buf.s,
-					hdr_mask[i]->name.s,
-					/* Possible siblings. No CRLF yet */
-					hdr_mask[i]->len - CRLF_LEN,
-					&new_buf.len
-				);
-			}
+			/* Copy the ': ' delimiter*/
+			wrap_copy_and_update(&new_buf.s, DELIM,
+					DELIM_LEN, &new_buf.len);
+
+			/* Copy the first field of the header*/
+			wrap_copy_and_update(&new_buf.s,
+				hdr_mask[i]->body.s,
+				hdr_mask[i]->body.len, &new_buf.len);
 
 			/* Copy the rest of the header fields(siblings)
 							if they exist */
@@ -949,6 +936,10 @@ again:
 
 	memcpy(*buf_p, new_buf.s, new_buf.len);
 	*olen = new_buf.len;
+
+	if (new_buf.len > msg_total_len)
+		LM_BUG("buffer overflow: "\
+			"calculated=%d, actual=%d\n", msg_total_len, new_buf.len);
 
 	/* Free the vector */
 	pkg_free(hdr_mask);
