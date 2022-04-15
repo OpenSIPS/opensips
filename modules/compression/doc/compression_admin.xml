@@ -222,16 +222,16 @@ xlog("compression registered\n");
 
 	<section id="func_mc_compact" xreflabel="mc_compact()">
 	<title>
-		<function moreinfo="none">mc_compact([whitelist])</function>
+		<function moreinfo="none">mc_compact([whitelist], flags)</function>
 	</title>
 	<para>
 		This function will realise four different things: headers which are not mandatory
 		and are not in the whitelist will be removed, headers of same type will be merged
 		together, separated by ',', header names which have a short form
-		will be reduced to that short form and SDP rtpmap attribute headers which contain
-		a value lower than 96 will be removed, because they are not mandatory. Lumps are not
-		affected by this function, because it is applied after all messages changes are
-		processed.
+		will be reduced to that short form (unless the <emphasis>n</emphasis> flag has been set)
+		and SDP rtpmap attribute headers which contain a value lower than 96 will be removed, 
+		because they are not mandatory. Lumps are not affected by this function, because it is 
+		applied after all messages changes are processed.
 		done.
 		The <emphasis>mc_compact</emphasis> supported short forms are:
 		<itemizedlist>
@@ -304,6 +304,18 @@ xlog("compression registered\n");
 			removed, except from the mandatory ones. The whitelist header names
 			must pe separated by '|'.
 		</para>
+	</listitem>
+	<listitem>
+		<para>
+			<emphasis>flags</emphasis> (string) - Controls the behavior of the function. Possible flags are:
+		</para>
+		<itemizedlist>
+			<listitem>
+				<para>
+					<quote>n</quote> - Do not use short form of headers.
+				</para>
+			</listitem>
+		<itemizedlist>
 	</listitem>
 
 	</itemizedlist>
