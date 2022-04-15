@@ -310,6 +310,25 @@ modparam("b2b_entities", "cluster_id", 10)
 		</example>
 	</section>
 
+	<section id="passthru_prack_id" xreflabel="passthru_prack">
+		<title><varname>passthru_prack</varname> (int)</title>
+		<para>
+		This parameter allows to control, whether a PRACK should be generated locally (=0)
+		or if we request it to be end-to-end (=1).
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> (generate PRACK locally)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>passthru_prack</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_entities", "passthru_prack", 1)
+...
+	</programlisting>
+		</example>
+	</section>
+
 </section>
 
 

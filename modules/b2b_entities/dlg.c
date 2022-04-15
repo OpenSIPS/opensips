@@ -3190,47 +3190,50 @@ dummy_reply:
 					}
 					UPDATE_DBFLAG(dlg);
 				}
-				/* PRACK handling */
-				/* if the provisional reply contains a
-				 * Require: 100rel header -> send PRACK */
-				hdr = get_header_by_static_name( msg, "Require");
-				while(hdr)
+				if (!passthru_prack)
 				{
-					LM_DBG("Found require hdr\n");
-					parse_supported_body(&(hdr->body), &reqmask);
-					if (reqmask & F_SUPPORTED_100REL) {
- 						LM_DBG("Found 100rel header\n");
- 						break;
-					}					
-					hdr = hdr->sibling;
-				}
-				if(hdr)
-				{
-					str method={"PRACK", 5};
-					str extra_headers;
-					char buf[128];
-					str rseq, cseq;
-
-					hdr = get_header_by_static_name( msg, "RSeq");
-					if(!hdr)
+					/* PRACK handling */
+					/* if the provisional reply contains a
+					* Require: 100rel header -> send PRACK */
+					hdr = get_header_by_static_name( msg, "Require");
+					while(hdr)
 					{
-						LM_ERR("RSeq header not found\n");
-						goto error;
+						LM_DBG("Found require hdr\n");
+						parse_supported_body(&(hdr->body), &reqmask);
+						if (reqmask & F_SUPPORTED_100REL) {
+							LM_DBG("Found 100rel header\n");
+							break;
+						}					
+						hdr = hdr->sibling;
 					}
-					rseq = hdr->body;
-					cseq = msg->cseq->body;
-					trim_trailing(&rseq);
-					trim_trailing(&cseq);
-					sprintf(buf, "RAck: %.*s %.*s\r\n",
-							rseq.len, rseq.s, cseq.len, cseq.s);
-					extra_headers.s = buf;
-					extra_headers.len = strlen(buf);
-
-					if(dlg->callid.s==0 || dlg->callid.len==0)
-						dlg->callid = msg->callid->body;
-					if(b2b_send_req(dlg, etype, leg, &method, &extra_headers, 0) < 0)
+					if(hdr)
 					{
-						LM_ERR("Failed to send PRACK\n");
+						str method={"PRACK", 5};
+						str extra_headers;
+						char buf[128];
+						str rseq, cseq;
+
+						hdr = get_header_by_static_name( msg, "RSeq");
+						if(!hdr)
+						{
+							LM_ERR("RSeq header not found\n");
+							goto error;
+						}
+						rseq = hdr->body;
+						cseq = msg->cseq->body;
+						trim_trailing(&rseq);
+						trim_trailing(&cseq);
+						sprintf(buf, "RAck: %.*s %.*s\r\n",
+								rseq.len, rseq.s, cseq.len, cseq.s);
+						extra_headers.s = buf;
+						extra_headers.len = strlen(buf);
+
+						if(dlg->callid.s==0 || dlg->callid.len==0)
+							dlg->callid = msg->callid->body;
+						if(b2b_send_req(dlg, etype, leg, &method, &extra_headers, 0) < 0)
+						{
+							LM_ERR("Failed to send PRACK\n");
+						}
 					}
 				}
 				goto done;
