@@ -315,7 +315,7 @@ xlog("compression registered\n");
 					<quote>n</quote> - Do not use short form of headers.
 				</para>
 			</listitem>
-		<itemizedlist>
+		</itemizedlist>
 	</listitem>
 
 	</itemizedlist>

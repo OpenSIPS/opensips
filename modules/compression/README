@@ -20,7 +20,7 @@ compression Module
         1.7. Exported Functions
 
               1.7.1. mc_compress([algo], flags, [whitelist])
-              1.7.2. mc_compact([whitelist])
+              1.7.2. mc_compact([whitelist], flags)
               1.7.3. mc_decompress()
 
         1.8. Compression performance test for sip messages
@@ -187,17 +187,18 @@ mc_compres($avp(algo), $var(flags), $var(list);
 xlog("compression registered\n");
 ...
 
-1.7.2.  mc_compact([whitelist])
+1.7.2.  mc_compact([whitelist], flags)
 
    This function will realise four different things: headers which
    are not mandatory and are not in the whitelist will be removed,
    headers of same type will be merged together, separated by ',',
    header names which have a short form will be reduced to that
-   short form and SDP rtpmap attribute headers which contain a
-   value lower than 96 will be removed, because they are not
-   mandatory. Lumps are not affected by this function, because it
-   is applied after all messages changes are processed. done. The
-   mc_compact supported short forms are:
+   short form (unless the n flag has been set) and SDP rtpmap
+   attribute headers which contain a value lower than 96 will be
+   removed, because they are not mandatory. Lumps are not affected
+   by this function, because it is applied after all messages
+   changes are processed. done. The mc_compact supported short
+   forms are:
      * “c” - Content-Type (RFC 3261)
      * “f” - From (RFC 3261)
      * “i” - Call-ID (RFC 3261)
@@ -213,6 +214,9 @@ xlog("compression registered\n");
      * whitelist (string, optional) - Whitelist of headers not to
        be removed, except from the mandatory ones. The whitelist
        header names must pe separated by '|'.
+     * flags (string) - Controls the behavior of the function.
+       Possible flags are:
+          + “n” - Do not use short form of headers.
 
    This function can be used from REQUEST_ROUTE, LOCAL_ROUTE,
    FAILURE_ROUTE.
