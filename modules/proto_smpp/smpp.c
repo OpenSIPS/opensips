@@ -809,7 +809,7 @@ static struct tcp_connection *smpp_connect(smpp_session_t *session, int *fd)
 		return NULL;
 	}
 
-	tcp_con_get_profile(&send_socket->su, &server, PROTO_SMPP, &prof);
+	tcp_con_get_profile(&server, &send_socket->su, PROTO_SMPP, &prof);
 
 	return tcp_sync_connect(send_socket, &server, &prof, fd, 1);
 }

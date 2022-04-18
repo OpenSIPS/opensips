@@ -766,8 +766,8 @@ int tcpconn_add_alias(struct sip_msg *msg, unsigned int id, int port, int proto)
 		if (msg && !(c->profile.alias_mode == TCP_ALIAS_ALWAYS
 		               || (c->profile.alias_mode == TCP_ALIAS_RFC_5923
 		                   && msg->via1->alias))) {
-			LM_DBG("aliasing is not enabled for this conn (alias_mode: %u)\n",
-			        c->profile.alias_mode);
+			LM_DBG("refusing to add alias (alias_mode: %u, via 'alias': %u)\n",
+			        c->profile.alias_mode, !!msg->via1->alias);
 			TCPCONN_UNLOCK(id);
 			return 0;
 		}

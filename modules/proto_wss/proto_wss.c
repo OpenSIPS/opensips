@@ -400,7 +400,7 @@ static int proto_wss_send(struct socket_info* send_sock,
 	int port = 0, fd, n, matched;
 	struct ws_data* d;
 
-	matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
+	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
 	reset_tcp_vars(prof.send_threshold);
 	start_expire_timer(get,prof.send_threshold);

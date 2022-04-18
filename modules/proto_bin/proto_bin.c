@@ -172,7 +172,7 @@ static int proto_bin_send(struct socket_info* send_sock,
 	/* was connection found ?? */
 	if (c==0) {
 		struct tcp_conn_profile prof;
-		int matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
+		int matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
 		if ((matched && prof.no_new_conn) || (!matched && tcp_no_new_conn))
 			return -1;

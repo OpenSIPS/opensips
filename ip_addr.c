@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "ut.h"
 #include "ip_addr.h"
 #include "dprint.h"
 #include "mem/mem.h"
@@ -218,6 +219,62 @@ int is_mcast(struct ip_addr* ip)
 		LM_ERR("unsupported protocol family\n");
 		return -1;
 	}
+}
+
+int mk_net_cidr(const str *cidr, struct net *out_net)
+{
+	str ip_str, px_str;
+	unsigned int prefix_len = UINT_MAX;
+	struct ip_addr *ip;
+	struct net *tmp_cidr;
+	char *c;
+
+	ip_str.s = cidr->s;
+
+	c = q_memchr(ip_str.s, '/', cidr->len);
+	if (c) {
+		ip_str.len = c - ip_str.s;
+		px_str.s = c + 1;
+		px_str.len = cidr->len - ip_str.len - 1;
+
+		if (px_str.len > 0 && str2int(&px_str, &prefix_len) != 0) {
+			LM_ERR("bad characters in network prefix length (CIDR: %.*s)\n",
+			        cidr->len, cidr->s);
+			goto error;
+		}
+	} else {
+		ip_str.len = cidr->len;
+	}
+
+	if (!(ip=str2ip(&ip_str)) && !(ip=str2ip6(&ip_str))) {
+		LM_ERR("invalid IP address <%.*s>\n", ip_str.len, ip_str.s);
+		goto error;
+	}
+
+	if (prefix_len == UINT_MAX)
+		prefix_len = (ip->af == AF_INET ? 32 : 128);
+
+	/* now that we know the AF family, we can validate the prefix len */
+	if ((ip->af==AF_INET && prefix_len>32) ||
+	        (ip->af==AF_INET6 && prefix_len>128)) {
+		LM_ERR("network prefix length %d too large for AF %d (ip: %.*s)\n",
+		        prefix_len, ip->af, ip_str.len, ip_str.s);
+		goto error;
+	}
+
+	tmp_cidr = mk_net_bitlen(ip, prefix_len);
+	if (!tmp_cidr) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+
+	*out_net = *tmp_cidr;
+	pkg_free(tmp_cidr);
+	return 0;
+
+error:
+	memset(out_net, 0, sizeof *out_net);
+	return -1;
 }
 
 #endif /* USE_MCAST */

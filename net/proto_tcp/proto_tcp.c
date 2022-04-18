@@ -358,7 +358,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 	union sockaddr_union src_su, dst_su;
 	int port = 0, fd, n, matched;
 
-	matched = tcp_con_get_profile(&send_sock->su, to, send_sock->proto, &prof);
+	matched = tcp_con_get_profile(to, &send_sock->su, send_sock->proto, &prof);
 
 	reset_tcp_vars(prof.send_threshold);
 	start_expire_timer(get,prof.send_threshold);

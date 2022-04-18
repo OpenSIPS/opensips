@@ -173,6 +173,8 @@ struct socket_id {
 
 struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask);
 struct net* mk_net_bitlen(struct ip_addr* ip, unsigned int bitlen);
+/* parse a (struct net) out of a CIDR v4 or v6 address such as 1.2.3.4/28 */
+int mk_net_cidr(const str *cidr, struct net *out_net);
 
 void print_ip(char* prefix, struct ip_addr* ip, char* suffix);
 void stdout_print_ip(struct ip_addr* ip);

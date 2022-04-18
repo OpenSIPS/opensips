@@ -26,21 +26,18 @@ struct tcp_conn_profile tcp_con_df_profile;
 
 static int tcp_con_get_df_profile(union sockaddr_union *_,
         union sockaddr_union *__, enum sip_protos ___,
-        struct tcp_conn_profile *out_profile);
-
-/* global function/variable which may be overridden by tcp_mgm */
-int (*tcp_con_get_profile)(union sockaddr_union *src,
-         union sockaddr_union *dst, enum sip_protos proto,
-         struct tcp_conn_profile *out_profile) = tcp_con_get_df_profile;
-
-
-static int tcp_con_get_df_profile(union sockaddr_union *_,
-        union sockaddr_union *__, enum sip_protos ___,
         struct tcp_conn_profile *out_profile)
 {
 	*out_profile = tcp_con_df_profile;
 	return 0;
 }
+
+
+/* global function/variable which may be overridden by tcp_mgm */
+int (*tcp_con_get_profile)(union sockaddr_union *remote,
+         union sockaddr_union *local, enum sip_protos proto,
+         struct tcp_conn_profile *out_profile) = tcp_con_get_df_profile;
+
 
 void tcp_init_con_profiles(void)
 {
@@ -58,6 +55,6 @@ void tcp_init_con_profiles(void)
 		.keepidle         = tcp_keepidle,
 		.keepinterval     = tcp_keepinterval,
 
-		.is_default       = 1,
+		.id               = 0,
 	};
 }

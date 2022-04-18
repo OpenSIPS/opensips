@@ -139,7 +139,7 @@ struct tcp_conn_profile {
 	unsigned int keepidle;
 	unsigned int keepinterval;
 
-	unsigned char is_default:1; /* helps identify the global conn profile */
+	unsigned int id; /* unique profile identifier (default profile ID is 0) */
 };
 
 /*! \brief TCP connection structure */

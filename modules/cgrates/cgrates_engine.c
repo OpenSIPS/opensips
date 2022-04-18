@@ -267,7 +267,7 @@ static int cgrc_conn(struct cgr_conn *c)
 		src_su = &_src_su;
 	}
 
-	tcp_con_get_profile(src_su, &c->engine->su, PROTO_TCP, &prof);
+	tcp_con_get_profile(&c->engine->su, src_su, PROTO_TCP, &prof);
 
 	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof);
 	if (s < 0) {

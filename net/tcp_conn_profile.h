@@ -29,7 +29,7 @@ void tcp_init_con_profiles(void);
 
 /**
  * A global function for looking up TCP connection profiles based on
- * a given path tuple of: (source, destination, protocol).
+ * a given TCP path tuple of: (remote, local, protocol).
  *
  * By default, it always returns the same profile: a collection of all global
  * TCP connection settings (e.g. tcp_connect_timeout, tcp_con_lifetime, etc.).
@@ -40,8 +40,8 @@ void tcp_init_con_profiles(void);
  *   0 (success, but just the default TCP profile was returned)
  *   1 (success, a custom TCP profile from tcp_mgm DB was matched)
  */
-extern int (*tcp_con_get_profile)(union sockaddr_union *src,
-             union sockaddr_union *dst, enum sip_protos proto,
+extern int (*tcp_con_get_profile)(union sockaddr_union *remote,
+             union sockaddr_union *local, enum sip_protos proto,
              struct tcp_conn_profile *out_profile);
 
 #endif /* TCP_CONN_PROFILE_H */
