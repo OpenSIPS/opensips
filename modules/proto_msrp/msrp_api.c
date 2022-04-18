@@ -32,4 +32,5 @@ void load_msrp( struct msrp_binds *binds)
 	binds->send_report = msrp_send_report;
 	binds->forward_request = msrp_fwd_request;
 	binds->forward_reply = msrp_fwd_reply;
+	binds->send_request = msrp_send_request;
 }

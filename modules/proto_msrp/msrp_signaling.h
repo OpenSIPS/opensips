@@ -29,9 +29,11 @@
 
 struct msrp_cell {
 	unsigned short hash;
-	int method_id;
+	enum msrp_method method_id;
 	/* the computed ident for sending the request on this transaction */
 	str ident;
+
+	/***** fields specific to a proxy transaction only *****/
 	/* info on where the request was recv'ed from */
 	struct dest_info recv;
 	/* the received/inbound ident for the request */
@@ -43,7 +45,12 @@ struct msrp_cell {
 	str message_id;
 	str byte_range;
 	str failure_report;
+
+	/* generic parameter at transaction level */
+	void *trans_param;
+	/* reference to the handler (module using the MSRP layer) */
 	void *msrp_hdl;
+
 	struct msrp_cell *expired_next;
 };
 
@@ -74,8 +81,15 @@ int msrp_send_report(void *hdl, str *status,
 		struct msrp_msg *req, struct msrp_cell *cell);
 
 int msrp_fwd_request( void *hdl, struct msrp_msg *req,
-		str *hdrs, int hdrs_no, union sockaddr_union *to_su);
+		str *hdrs, int hdrs_no, union sockaddr_union *to_su,
+		void *trans_param);
 
 int msrp_fwd_reply( void *hdl, struct msrp_msg *rpl, struct msrp_cell *cell);
+
+int msrp_send_request(void *hdl, enum msrp_method method_id,
+		str *from, struct msrp_url *to, union sockaddr_union *to_su,
+		str *mime, str *body,
+		str *hdrs, int hdrs_no, char cont_flag,
+		void *trans_param);
 
 #endif

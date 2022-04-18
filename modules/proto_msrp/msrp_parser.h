@@ -49,7 +49,7 @@ struct msrp_firstline {
 	union {
 		struct {
 			str method;
-			int method_id;
+			enum msrp_method method_id;
 		} request;
 		struct {
 			str status;

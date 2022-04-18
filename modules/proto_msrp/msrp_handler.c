@@ -213,7 +213,8 @@ int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 
 		/* run the reply handler */
 		((struct msrp_handler*)cell->msrp_hdl)->rpl_f( msg, cell,
-			((struct msrp_handler*)cell->msrp_hdl)->param  );
+			cell->trans_param,
+			((struct msrp_handler*)cell->msrp_hdl)->param );
 
 		/* we are done, free the transaction now */
 		msrp_free_transaction(cell);
@@ -243,7 +244,8 @@ void handle_msrp_timeout( struct msrp_cell *list)
 
 		/* run the reply handler, using NULL msg to indicate the timeout */
 		((struct msrp_handler*)cell->msrp_hdl)->rpl_f( NULL, cell,
-			((struct msrp_handler*)cell->msrp_hdl)->param  );
+			cell->trans_param,
+			((struct msrp_handler*)cell->msrp_hdl)->param );
 
 		msrp_free_transaction(cell);
 	}

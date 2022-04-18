@@ -44,10 +44,17 @@ typedef int (*send_report_f)( void *hdl, str *status,
 		struct msrp_msg *req, struct msrp_cell *cell );
 
 typedef int (*fwd_request_f)( void *hdl, struct msrp_msg *req,
-		str *hdrs, int hdrs_no, union sockaddr_union *to_su);
+		str *hdrs, int hdrs_no, union sockaddr_union *to_su,
+		void *trans_param);
 
 typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl,
 		struct msrp_cell *cell);
+
+typedef int (*send_request_f)(void *hdl, enum msrp_method method_id,
+		str *from, struct msrp_url *to, union sockaddr_union *to_su,
+		str *mime, str *body,
+		str *hdrs, int hdrs_no, char cont_flag,
+		void *trans_param);
 
 
 struct msrp_binds {
@@ -57,6 +64,7 @@ struct msrp_binds {
 	send_report_f            send_report;
 	fwd_request_f            forward_request;
 	fwd_reply_f              forward_reply;
+	send_request_f           send_request;
 };
 
 void load_msrp( struct msrp_binds *binds);

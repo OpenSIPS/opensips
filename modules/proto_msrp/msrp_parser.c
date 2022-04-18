@@ -37,7 +37,7 @@
 #define MSRP_DEBUG
 
 
-static int _parse_msrp_method( str *method_s, int *method_id)
+static int _parse_msrp_method( str *method_s, enum msrp_method *method_id)
 {
 	if (method_s==NULL || method_id==NULL || method_s->s==NULL)
 		return -1;

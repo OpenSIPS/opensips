@@ -29,16 +29,17 @@
 #include "msrp_signaling.h"
 
 typedef int (*msrp_req_handler_f) (struct msrp_msg *req,
-		void *param);
+		void *hdl_param);
 
 typedef int (*msrp_rpl_handler_f) (struct msrp_msg *rpl,
-		struct msrp_cell *tran, void *param);
+		struct msrp_cell *tran, void *trans_param,
+		void *hdl_param);
 
 
 
 void* register_msrp_handler( str *host_filter, int port_filter,
 		int secured_filter, msrp_req_handler_f req_f,
-		msrp_rpl_handler_f rpl_f, void *param);
+		msrp_rpl_handler_f rpl_f, void *hdl_param);
 
 int handle_msrp_msg(char* buf, int len, struct msrp_firstline *fl, str *body,
 		struct receive_info *local_rcv);
