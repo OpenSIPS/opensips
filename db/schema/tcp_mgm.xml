@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE table PUBLIC "-//opensips.org//DTD DBSchema V1.1//EN"
+  "https://opensips.org/pub/opensips/dbschema/dtd/1.1/dbschema.dtd" [
+
+<!ENTITY % entities SYSTEM "entities.xml">
+%entities;
+
+]>
+
+<table id="tcp_mgm" xmlns:db="http://docbook.org/ns/docbook">
+    <name>tcp_mgm</name>
+    <version>1</version>
+    <type db="mysql">&MYSQL_TABLE_TYPE;</type>
+    <description>
+        <db:para>This table is used for defining TCP connection profiles.
+        </db:para>
+    </description>
+
+    <column id="id">
+        <name>id</name>
+        <type>unsigned int</type>
+        <size>&table_id_len;</size>
+        <autoincrement/>
+        <primary/>
+        <type db="dbtext">int,auto</type>
+        <description>Unique DB ID</description>
+    </column>
+
+    <column id="proto">
+        <name>proto</name>
+        <type>string</type>
+        <size>8</size>
+        <default>any</default>
+        <description>Restrict this profile to a specific OpenSIPS supported protocol.</description>
+    </column>
+
+    <column id="remote_addr">
+        <name>remote_addr</name>
+        <type>string</type>
+        <size>43</size>
+        <default><null/></default>
+        <null/>
+		<description>Remote network address in "ip[/prefix_length]" format, or the special values NULL or "any", which will both match any remote IPv4 or IPv6 address.</description>
+    </column>
+
+    <column id="remote_port">
+        <name>remote_port</name>
+        <type>unsigned int</type>
+        <default>0</default>
+        <description>Remote network port.  A value of 0 will match any remote port.</description>
+    </column>
+
+    <column id="local_addr">
+        <name>local_addr</name>
+        <type>string</type>
+        <size>43</size>
+		<default><null/></default>
+        <null/>
+		<description>Local network address in "ip[/prefix_length]" format, or the special values NULL or "any", which will both match any of the OpenSIPS network listeners.</description>
+    </column>
+
+    <column id="local_port">
+        <name>local_port</name>
+        <type>unsigned int</type>
+        <default>0</default>
+        <description>Local network port.  A value of 0 will match any OpenSIPS listening port.</description>
+    </column>
+
+    <column id="priority">
+        <name>priority</name>
+        <type>int</type>
+        <default>0</default>
+        <description>By default, higher network prefix lengths will match first.  The priority field can be used to override this behavior, with lower priority rules being attempted first.</description>
+    </column>
+
+    <column id="connect_timeout">
+        <name>connect_timeout</name>
+        <type>unsigned int</type>
+        <default>100</default>
+        <description>Time in milliseconds before an ongoing blocking TCP connect attempt is aborted.  Default: 100 ms.</description>
+    </column>
+
+    <column id="con_lifetime">
+        <name>con_lifetime</name>
+        <type>unsigned int</type>
+        <default>120</default>
+        <description>Time in seconds with no READ or WRITE events on a TCP connection before it is destroyed.  Default: 120 s.</description>
+    </column>
+
+    <column id="msg_read_timeout">
+        <name>msg_read_timeout</name>
+        <type>unsigned int</type>
+        <default>4</default>
+        <description>The maximum number of seconds that a complete SIP message is expected to arrive via TCP.  Default: 4 s.</description>
+    </column>
+
+    <column id="send_threshold">
+        <name>send_threshold</name>
+        <type>unsigned int</type>
+        <default>0</default>
+		<description>The maximum number of microseconds that sending a TCP request can take.  Send latencies above this threshold will trigger a logging warning.  A value of 0 disables the check.  Default: 0 us.</description>
+    </column>
+
+    <column id="no_new_conn">
+        <name>no_new_conn</name>
+        <type>unsigned int</type>
+        <default>0</default>
+		<description>Set this to 1 in order to instruct OpenSIPS to never open connections to the "remote" side.  This may be useful when there is a NAT firewall in-between, so only remote->local connections are possible.  Default: 0. </description>
+    </column>
+
+    <column id="alias_mode">
+        <name>alias_mode</name>
+        <type>unsigned int</type>
+        <default>0</default>
+        <description>Controls TCP connection reusage for requests in the opposite direction to the original one.  0 (never reuse), 1 (only reuse if RFC 5923 Via ";alias" is present), 2 (always reuse).  Default: 0.</description>
+    </column>
+
+    <column id="keepalive">
+        <name>keepalive</name>
+        <type>unsigned int</type>
+        <default>0</default>
+		<description>Set to 1 in order to enable TCP keepalives at Operating System level.  Default: 0. </description>
+    </column>
+
+    <column id="keepcount">
+        <name>keepcount</name>
+        <type>unsigned int</type>
+        <default>9</default>
+		<description>Number of keepalives to send before closing the connection.  Default: 9. </description>
+    </column>
+
+    <column id="keepidle">
+        <name>keepidle</name>
+        <type>unsigned int</type>
+        <default>7200</default>
+		<description>Amount of time, in seconds, before OpenSIPS will start to send keepalives if the connection is idle.  Default: 7200. </description>
+    </column>
+
+    <column id="keepinterval">
+        <name>keepinterval</name>
+        <type>unsigned int</type>
+        <default>75</default>
+		<description>Interval in seconds between successive (failed) keepalive probes.  Default: 75. </description>
+    </column>
+
+</table>

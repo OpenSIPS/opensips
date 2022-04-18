@@ -132,6 +132,8 @@ speed_dial|
 speed_dial|3
 subscriber|
 subscriber|8
+tcp_mgm|
+tcp_mgm|1
 tls_mgm|
 tls_mgm|3
 uri|

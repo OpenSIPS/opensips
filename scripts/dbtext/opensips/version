@@ -59,6 +59,7 @@ sip_trace:5
 smpp:1
 speed_dial:3
 subscriber:8
+tcp_mgm:1
 tls_mgm:3
 uri:2
 userblacklist:2
