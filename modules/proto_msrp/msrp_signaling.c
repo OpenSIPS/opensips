@@ -249,7 +249,9 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 		return -1;
 	}
 
-	if (!to_su) {
+	if (to_su==NULL || to_su->s.sa_family==0/*not set*/) {
+		if (to_su==NULL)
+			to_su = &su;
 		/* before doing the heavy lifting (as building the out buffer), let's
 		 * resolve the destination first. */
 		bk = to->next->host.s[to->next->host.len]; // usual hack
@@ -265,7 +267,7 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 			LM_BUG("Add the check or SRV support !!\n");
 			return -2;
 		}
-		if ( hostent2su( &su, he, 0/*idx*/, to->next->port_no )!=0 ) {
+		if ( hostent2su( to_su, he, 0/*idx*/, to->next->port_no )!=0 ) {
 			LM_ERR("Could translate he to su :-/, bad familly type??\n");
 			return -2;
 		}
@@ -403,7 +405,7 @@ redo_ident:
 	// TODO - for now we use the same socket (as the received one), but
 	//        it will nice to be able to change it (via script??) in order
 	//        to do traffic bridging between 2 interfaces.
-	i = msg_send( req->rcv.bind_address, PROTO_MSRP, to_su ? to_su : &su,
+	i = msg_send( req->rcv.bind_address, PROTO_MSRP, to_su ,
 		0 /*conn-id*/, buf, len, NULL);
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
@@ -828,7 +830,9 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 			return -1;
 	}
 
-	if (!to_su) {
+	if (to_su==NULL || to_su->s.sa_family==0/*not set*/) {
+		if (to_su==NULL)
+			to_su = &su;
 		/* before doing the heavy lifting (as building the out buffer), let's
 		 * resolve the destination first. */
 		tmp = pkg_malloc(to->host.len+1);
@@ -997,10 +1001,9 @@ redo_ident:
 	}
 
 	/* now, send it out*/
-	// TODO - for now we use the same socket (as the received one), but
-	//        it will nice to be able to change it (via script??) in order
-	//        to do traffic bridging between 2 interfaces.
-	i = msg_send( NULL /*FIXME*/, PROTO_MSRP, to_su ? to_su : &su,
+	// TODO - for now we will use all the time the first MSRP socket,
+	//        but for the future it will be nice to be able to control this
+	i = msg_send( NULL, PROTO_MSRP, to_su,
 		0 /*conn-id*/, buf, len, NULL);
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
