@@ -192,7 +192,9 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 
 	/* signal the blocked SIP worker that the auth result is available! */
 	pthread_mutex_lock(&rpl_cond->mutex);
-	pthread_cond_signal(&rpl_cond->cond);
+	if (rpl_cond->count == 0)
+		pthread_cond_signal(&rpl_cond->cond);
+	rpl_cond->count += 1;
 	pthread_mutex_unlock(&rpl_cond->mutex);
 
 out:
@@ -1240,7 +1242,9 @@ int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
 		LM_DBG("awaiting auth reply...\n");
 
 		pthread_mutex_lock(&my_reply_cond->mutex);
-		pthread_cond_wait(&my_reply_cond->cond, &my_reply_cond->mutex);
+		while (my_reply_cond->count == 0)
+			pthread_cond_wait(&my_reply_cond->cond, &my_reply_cond->mutex);
+		my_reply_cond->count -= 1;
 		pthread_mutex_unlock(&my_reply_cond->mutex);
 
 		LM_DBG("reply received, Result-Code: %d (%s)\n", my_reply_cond->rc,

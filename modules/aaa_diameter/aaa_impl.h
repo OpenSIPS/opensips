@@ -91,6 +91,7 @@ struct dm_avp {
 struct dm_cond {
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
+	int count; /* helps solve signal/wait race conditions */
 
 	int rc; /* the Diameter Result-Code AVP value */
 	int is_error;
