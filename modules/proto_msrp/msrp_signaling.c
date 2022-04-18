@@ -1175,14 +1175,14 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 
 	cell = shm_malloc( sizeof(struct msrp_cell)
 			 + ident->len
-			 + req ? (
+			 + ( req ? (
 				req->fl.ident.len
 				 + req->from_path->body.len
 				 + to->whole.len
 				 + (req->message_id?req->message_id->body.len:0)
 				 + (req->byte_range?req->byte_range->body.len:0)
 				 + (req->failure_report?req->failure_report->body.len:0)
-			 ) : 0
+			 ) : 0 )
 			);
 	if (cell==NULL) {
 		LM_ERR("failed to sh malloc new transaction\n");
