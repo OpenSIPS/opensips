@@ -112,7 +112,8 @@ struct module_exports exports = {
 };
 
 int handle_msrp_request(struct msrp_msg *req, void *param);
-int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran, void *param);
+int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
+		void *trans_param, void *hdl_param);
 
 void clean_msrp_sessions(unsigned int ticks,void *param);
 
@@ -349,7 +350,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 
 	if (req->fl.u.request.method_id == MSRP_METHOD_AUTH) {
 		if (to->next) {
-			if (msrp_api.forward_request(msrp_hdl, req, NULL, 0, NULL) < 0) {
+			if (msrp_api.forward_request(msrp_hdl, req, NULL, 0,NULL,NULL)<0){
 				LM_ERR("Failed to forward AUTH request\n");
 
 				if (msrp_api.send_reply(msrp_hdl, req, 403, NULL, NULL, 0)<0) {
@@ -440,7 +441,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 			hash_unlock(msrp_sessions, hentry);
 		}
 
-		rc = msrp_api.forward_request(msrp_hdl, req, NULL, 0, to_su);
+		rc = msrp_api.forward_request(msrp_hdl, req, NULL, 0, to_su, NULL);
 		if (rc == 0) {
 			if (mark_peer_conn) {
 				hash_lock(msrp_sessions, hentry);
@@ -465,7 +466,8 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 	return 0;
 }
 
-int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran, void *param)
+int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
+		void *trans_param, void *hdl_param)
 {
 	struct msrp_url *my_url, *to;
 
