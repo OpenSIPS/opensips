@@ -118,8 +118,8 @@
     <column id="keepalive">
         <name>keepalive</name>
         <type>unsigned int</type>
-        <default>0</default>
-		<description>Set to 1 in order to enable TCP keepalives at Operating System level.  Default: 0. </description>
+        <default>1</default>
+		<description>Set to 0 in order to disable TCP keepalives at Operating System level.  Default: 1 (enabled). </description>
     </column>
 
     <column id="keepcount">

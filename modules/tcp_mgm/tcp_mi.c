@@ -29,7 +29,7 @@
 #include "../../dprint.h"
 
 /* reloads data from the db */
-mi_response_t *tcp_reload(const mi_params_t *_, struct mi_handler *__)
+mi_response_t *tcp_mi_reload(const mi_params_t *_, struct mi_handler *__)
 {
 	struct tcp_path *new_paths, *old_paths;
 	int new_paths_sz;
@@ -39,7 +39,7 @@ mi_response_t *tcp_reload(const mi_params_t *_, struct mi_handler *__)
 	if (!tcp_db_url.s)
 		return init_mi_error(500, MI_SSTR("DB url not set"));
 
-	if (reload_data(&new_paths, &new_paths_sz) < 0) {
+	if (tcp_reload_paths(&new_paths, &new_paths_sz) < 0) {
 		LM_ERR("failed to load TCP data\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}

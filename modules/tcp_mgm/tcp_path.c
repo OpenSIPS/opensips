@@ -164,7 +164,8 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 				return -1;
 			}
 
-			tmp_net = mk_net_bitlen(&sock->address, 32);
+			tmp_net = mk_net_bitlen(&sock->address,
+			               sock->address.af == AF_INET ? 32 : 128);
 			if (!tmp_net) {
 				LM_ERR("oom\n");
 				return -1;

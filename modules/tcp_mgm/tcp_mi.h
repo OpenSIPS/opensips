@@ -28,6 +28,6 @@
 
 #include "../../mi/mi.h"
 
-mi_response_t *tcp_reload(const mi_params_t *_, struct mi_handler *__);
+mi_response_t *tcp_mi_reload(const mi_params_t *_, struct mi_handler *__);
 
 #endif /* TCP_MI_H */

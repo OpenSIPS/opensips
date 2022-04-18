@@ -13,7 +13,7 @@ CREATE TABLE tcp_mgm (
     send_threshold INTEGER DEFAULT 0 NOT NULL,
     no_new_conn INTEGER DEFAULT 0 NOT NULL,
     alias_mode INTEGER DEFAULT 0 NOT NULL,
-    keepalive INTEGER DEFAULT 0 NOT NULL,
+    keepalive INTEGER DEFAULT 1 NOT NULL,
     keepcount INTEGER DEFAULT 9 NOT NULL,
     keepidle INTEGER DEFAULT 7200 NOT NULL,
     keepinterval INTEGER DEFAULT 75 NOT NULL

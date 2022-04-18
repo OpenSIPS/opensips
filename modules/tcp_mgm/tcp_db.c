@@ -69,7 +69,7 @@ int tcp_db_init(void)
 	}
 
 	/* cache all DB data - we're still at mod_init(), no locking needed */
-	if (reload_data(&tcp_paths, tcp_paths_sz) < 0) {
+	if (tcp_reload_paths(&tcp_paths, tcp_paths_sz) < 0) {
 		LM_ERR("failed to load TCP data\n");
 		return -1;
 	}
@@ -279,7 +279,7 @@ int tcp_path_comparator(const void *_a, const void *_b)
 }
 
 
-int reload_data(struct tcp_path **new_paths, int *new_paths_sz)
+int tcp_reload_paths(struct tcp_path **new_paths, int *new_paths_sz)
 {
 	struct tcp_path *paths = NULL;
 	int paths_sz = 0;

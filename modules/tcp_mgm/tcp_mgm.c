@@ -40,8 +40,8 @@ static param_export_t params[] = {
 	{"db_table", STR_PARAM, &tcp_db_table.s},
 	{"id_col",              STR_PARAM, &tcp_mgm_cols[0].name.s},
 	{"proto_col",           STR_PARAM, &tcp_mgm_cols[1].name.s},
-	{"remote_addr_col",	    STR_PARAM, &tcp_mgm_cols[2].name.s},
-	{"remote_port_col",	    STR_PARAM, &tcp_mgm_cols[3].name.s},
+	{"remote_addr_col",     STR_PARAM, &tcp_mgm_cols[2].name.s},
+	{"remote_port_col",     STR_PARAM, &tcp_mgm_cols[3].name.s},
 	{"local_addr_col",      STR_PARAM, &tcp_mgm_cols[4].name.s},
 	{"local_port_col",      STR_PARAM, &tcp_mgm_cols[5].name.s},
 	{"direction_col",       STR_PARAM, &tcp_mgm_cols[6].name.s},
@@ -68,7 +68,7 @@ static cmd_export_t cmds[] = {
  */
 static mi_export_t mi_cmds[] = {
 	{ "tcp_reload", "re-cache all TCP profiles from the database", 0, 0, {
-		{tcp_reload, {0}},
+		{tcp_mi_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	//{ "tcp_list_profiles", "list all cached TCP profiles", 0, 0, {

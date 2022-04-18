@@ -69,6 +69,6 @@ extern db_func_t db;
 #define NO_DB_COLS (NO_STR_VALS + NO_INT_VALS)
 
 int tcp_db_init(void);
-int reload_data(struct tcp_path **new_paths, int *new_paths_sz);
+int tcp_reload_paths(struct tcp_path **new_paths, int *new_paths_sz);
 
 #endif /* TCP_DB_H */
