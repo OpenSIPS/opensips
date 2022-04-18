@@ -2381,7 +2381,7 @@ static struct rtpe_node *get_rtpe_node(str *node, struct rtpe_set *set)
 	struct rtpe_node *rnode;
 
 	/* check last list version */
-	if (my_version != *list_version && update_rtpengines() < 0) {
+	if (my_version != *list_version && update_rtpengines(0) < 0) {
 		LM_ERR("cannot update rtpengines list\n");
 		return NULL;
 	}
