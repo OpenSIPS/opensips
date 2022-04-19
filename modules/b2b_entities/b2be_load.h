@@ -50,6 +50,9 @@
 #define B2B_NOTIFY_FL_TERMINATED (1<<0)
 #define B2B_NOTIFY_FL_ACK_NEG    (1<<1)
 
+#define B2B_MAX_PREFIX_LEN    5
+#define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN+4+10+10+INT2STR_MAX_LEN)
+
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
 typedef struct client_info

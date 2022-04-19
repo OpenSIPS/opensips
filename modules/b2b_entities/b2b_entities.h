@@ -46,7 +46,6 @@
 
 extern int uac_auth_loaded;
 extern str b2b_key_prefix;
-#define B2B_MAX_PREFIX_LEN    5
 
 extern unsigned int server_hsize;
 extern unsigned int client_hsize;
