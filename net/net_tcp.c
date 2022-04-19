@@ -69,7 +69,7 @@ struct tcp_worker {
 	pid_t pid;
 	int unix_sock;		/*!< Main-Worker comm, worker end */
 	int main_unix_sock;	/*!< Main-Worker comm, TCP Main end */
-	int busy;
+	int pt_idx;			/*!< Index in the main Process Table */
 	enum tcp_worker_state state;
 	int n_reqs;		/*!< number of requests serviced so far */
 };
@@ -247,33 +247,32 @@ error:
 static int send2worker(struct tcp_connection* tcpconn,int rw)
 {
 	int i;
-	int min_busy;
+	int min_load;
 	int idx;
 	long response[2];
+	unsigned int load;
 
-	min_busy=INT_MAX;
+	min_load=100; /* it is a percentage */
 	idx=0;
 	for (i=0; i<tcp_workers_max_no; i++){
 		if (tcp_workers[i].state==STATE_ACTIVE) {
-			if (!tcp_workers[i].busy){
-				idx=i;
-				min_busy=0;
-				break;
-			}else if (min_busy>tcp_workers[i].busy){
-				min_busy=tcp_workers[i].busy;
-				idx=i;
+			load = pt_get_1m_proc_load( tcp_workers[i].pt_idx );
+#ifdef EXTRA_DEBUG
+			LM_DBG("checking TCP worker %d (proc %d), with load %u,"
+				"min_load so far %u\n", i, tcp_workers[i].pt_idx, load,
+				min_load);
+#endif
+			if (min_load>load) {
+				min_load = load;
+				idx = i;
 			}
 		}
 	}
 
-	tcp_workers[idx].busy++;
 	tcp_workers[idx].n_reqs++;
-	if (min_busy) {
-		LM_DBG("no free tcp receiver, connection passed to the least "
-		       "busy one (proc #%d, %d con)\n", idx, min_busy);
-	}
-	LM_DBG("to tcp worker %d (%d), %p rw %d\n", idx,
-		tcp_workers[idx].pid, tcpconn,rw);
+	LM_DBG("to tcp worker %d (%d/%d) load %u, %p/%d rw %d\n", idx,
+		tcp_workers[idx].pid, tcp_workers[idx].pt_idx, min_load,
+		tcpconn, tcpconn->s, rw);
 	response[0]=(long)tcpconn;
 	response[1]=rw;
 	if (send_fd(tcp_workers[idx].unix_sock, response, sizeof(response),
@@ -1287,7 +1286,6 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 	}
 	switch(cmd){
 		case CONN_RELEASE:
-			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){
 				sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release bad, (%d)", tcpconn->refcnt);
 				tcpconn_destroy(tcpconn);
@@ -1300,7 +1298,6 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			tcpconn->flags&=~F_CONN_REMOVED_READ;
 			break;
 		case CONN_RELEASE_WRITE:
-			tcp_c->busy--;
 			if (tcpconn->state==S_CONN_BAD){
 				sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release write bad, (%d)", tcpconn->refcnt);
 				tcpconn_destroy(tcpconn);
@@ -1310,7 +1307,6 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			tcpconn_put(tcpconn);
 			break;
 		case ASYNC_WRITE:
-			tcp_c->busy--;
 			/* fall through*/
 		case ASYNC_WRITE2:
 			if (tcpconn->state==S_CONN_BAD){
@@ -1328,7 +1324,6 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 		case CONN_DESTROY:
 		case CONN_EOF:
 			/* WARNING: this will auto-dec. refcnt! */
-			tcp_c->busy--;
 			/* fall through*/
 		case CONN_ERROR2:
 			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
@@ -1908,7 +1903,7 @@ void tcp_reset_worker_slot(void)
 	if ((i=_get_own_tcp_worker_id())>=0) {
 		tcp_workers[i].state=STATE_INACTIVE;
 		tcp_workers[i].pid=0;
-		tcp_workers[i].busy=0;
+		tcp_workers[i].pt_idx=0;
 	}
 }
 
@@ -1958,8 +1953,8 @@ error:
 	} else {
 		/*parent/main*/
 		tcp_workers[r].state=STATE_ACTIVE;
-		tcp_workers[r].busy=0;
 		tcp_workers[r].n_reqs=0;
+		tcp_workers[r].pt_idx=p_id;
 		return p_id;
 	}
 
@@ -2054,8 +2049,8 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 		}else if (p_id>0){
 			/* parent */
 			tcp_workers[r].state=STATE_ACTIVE;
-			tcp_workers[r].busy=0;
 			tcp_workers[r].n_reqs=0;
+			tcp_workers[r].pt_idx=p_id;
 		}else{
 			/* child */
 			set_proc_attrs("TCP receiver");
