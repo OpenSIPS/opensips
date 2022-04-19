@@ -1129,6 +1129,7 @@ fi
 %{_libdir}/opensips/modules/sst.so
 %{_libdir}/opensips/modules/statistics.so
 %{_libdir}/opensips/modules/stun.so
+%{_libdir}/opensips/modules/tcp_mgm.so
 %{_libdir}/opensips/modules/textops.so
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/topology_hiding.so
@@ -1224,6 +1225,7 @@ fi
 %doc docdir/README.sst
 %doc docdir/README.statistics
 %doc docdir/README.stun
+%doc docdir/README.tcp_mgm
 %doc docdir/README.textops
 %doc docdir/README.tls
 %doc docdir/README.tm
@@ -1567,7 +1569,7 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: msrp_relay, proto_msrp, status_report
+- New modules: msrp_relay, proto_msrp, status_report, tcp_mgm
 - New packages: msrp-relay-module
 - Removed modules: b2b_logic_xml
 - Removed packages: b2bua-module
