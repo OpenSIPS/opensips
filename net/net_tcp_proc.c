@@ -231,7 +231,7 @@ again:
 					break;
 			}
 			if (s==-1) {
-				LM_BUG("read_fd:no fd read\n");
+				LM_BUG("read_fd:no fd read for conn %p, rw %d\n", con, rw);
 				/* FIXME? */
 				goto error;
 			}
@@ -333,8 +333,8 @@ again:
 					       resp, con->msg_attempts);
 					tcpconn_release(con, CONN_EOF,0);
 				} else {
-					//tcpconn_release(con, CONN_RELEASE);
-					/* keep the connection for now */
+					if (tcp_parallel_read_on_workers)
+						tcpconn_release(con, CONN_RELEASE,0);
 					break;
 				}
 			}

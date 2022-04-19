@@ -120,6 +120,9 @@ char* tcp_auto_scaling_profile = NULL;
 /* Max number of seconds that we except a full SIP message
  * to arrive in - anything above will lead to the connection to closed */
 int tcp_max_msg_time = TCP_CHILD_MAX_MSG_TIME;
+/* If the data reading may be performed across different workers (still
+ * serial) or by a single worker (the TCP conns sticks to one worker) */
+int tcp_parallel_read_on_workers = 0;
 
 #ifdef HAVE_SO_KEEPALIVE
     int tcp_keepalive = 1;

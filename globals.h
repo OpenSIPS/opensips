@@ -73,6 +73,7 @@ extern int tcp_max_msg_time;
 extern int tcp_no_new_conn;
 extern int tcp_no_new_conn_bflag;
 extern int tcp_no_new_conn_rplflag;
+extern int tcp_parallel_read_on_workers;
 extern struct tcp_conn_profile tcp_con_df_profile;
 
 extern int no_daemon_mode;
