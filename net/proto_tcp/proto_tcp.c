@@ -141,6 +141,8 @@ static param_export_t params[] = {
 											&tcp_async_max_postponed_chunks },
 	{ "tcp_async_local_connect_timeout", INT_PARAM,
 											&tcp_async_local_connect_timeout},
+	{ "tcp_async_local_write_timeout",   INT_PARAM,
+											&tcp_async_local_write_timeout  },
 	{ "tcp_parallel_handling",           INT_PARAM,
 											&tcp_parallel_handling  },
 	{ "trace_destination",               STR_PARAM, &trace_destination_name.s},
