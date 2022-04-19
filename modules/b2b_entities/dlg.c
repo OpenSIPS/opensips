@@ -529,7 +529,7 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 }
 
 void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
-	unsigned int cbs_type, int event_type, bin_packet_t *storage, int backend)
+	int cbs_type, int event_type, bin_packet_t *storage, int backend)
 {
 	struct b2b_callback *cb;
 	str st;
