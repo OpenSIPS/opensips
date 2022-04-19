@@ -59,6 +59,15 @@
 
 #include <stdlib.h>
 
+/* define internal timer to 10 milliseconds */
+#define ITIMER_TICK 10000
+
+/* try to synchronize with system time every 5 seconds */
+#define TIMER_SYNC_TICKS 1000000
+
+/* synchronize if drift is greater than internal timer tick */
+#define TIMER_MAX_DRIFT_TICKS ITIMER_TICK
+
 /* list with all the registered timers */
 static struct os_timer *timer_list = NULL;
 
