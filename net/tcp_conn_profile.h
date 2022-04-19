@@ -21,11 +21,15 @@
 #ifndef TCP_CONN_PROFILE_H
 #define TCP_CONN_PROFILE_H
 
+/* attributes only useful to some TCP modules (e.g. proto_tcp or proto_ws) */
+enum tcp_conn_attr {
+	TCP_ATTR_MAX_MSG_CHUNKS,
+
+	TCP_ATTR_COUNT,
+};
+
 #include "../ip_addr.h"
 #include "tcp_conn_defs.h"
-
-/* initialize the support for customized, per-path TCP connection profiles */
-void tcp_init_con_profiles(void);
 
 /**
  * A global function for looking up TCP connection profiles based on
@@ -43,5 +47,21 @@ void tcp_init_con_profiles(void);
 extern int (*tcp_con_get_profile)(union sockaddr_union *remote,
              union sockaddr_union *local, enum sip_protos proto,
              struct tcp_conn_profile *out_profile);
+
+/* initialize the support for customized, per-path TCP connection profiles */
+void tcp_init_con_profiles(void);
+#define tcp_is_default_profile(prof) ((prof).id == 0)
+
+#define TCP_ATTR_UNSET 0xf0f0f0f0
+#define tcp_init_attrs(arr) (memset(arr, 0xf0, TCP_ATTR_COUNT * sizeof *(arr)))
+#define tcp_attr_isset(con, attr) ((con)->profile.attrs[attr] != TCP_ATTR_UNSET)
+
+struct tcp_conn_attr_key {
+	str attr_key;
+	enum tcp_conn_attr attr;
+};
+extern struct tcp_conn_attr_key tcp_con_attr[];
+
+int tcp_con_attr_lookup(const str *attr, enum tcp_conn_attr *out_val);
 
 #endif /* TCP_CONN_PROFILE_H */

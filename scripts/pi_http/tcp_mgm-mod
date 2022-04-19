@@ -11,6 +11,7 @@
 				<col><field>local_addr</field></col>
 				<col><field>local_port</field></col>
 				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
 				<col><field>connect_timeout</field></col>
 				<col><field>con_lifetime</field></col>
 				<col><field>msg_read_timeout</field></col>
@@ -34,6 +35,7 @@
 				<col><field>local_addr</field></col>
 				<col><field>local_port</field></col>
 				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
 				<col><field>connect_timeout</field></col>
 				<col><field>con_lifetime</field></col>
 				<col><field>msg_read_timeout</field></col>
@@ -60,6 +62,7 @@
 				<col><field>local_addr</field></col>
 				<col><field>local_port</field></col>
 				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
 				<col><field>connect_timeout</field></col>
 				<col><field>con_lifetime</field></col>
 				<col><field>msg_read_timeout</field></col>

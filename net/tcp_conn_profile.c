@@ -19,6 +19,8 @@
  */
 
 #include "tcp_conn_profile.h"
+#include "../str.h"
+#include "../ut.h"
 
 /* a collection of default TCP connection settings which can be overridden
  * by defining specific settings (per TCP path) using the "tcp_mgm" module */
@@ -38,6 +40,23 @@ int (*tcp_con_get_profile)(union sockaddr_union *remote,
          union sockaddr_union *local, enum sip_protos proto,
          struct tcp_conn_profile *out_profile) = tcp_con_get_df_profile;
 
+struct tcp_conn_attr_key tcp_con_attr[] = {
+	{str_init("max_msg_chunks"), TCP_ATTR_MAX_MSG_CHUNKS},
+	{STR_NULL, 0},
+};
+
+int tcp_con_attr_lookup(const str *attr, enum tcp_conn_attr *out_val)
+{
+	struct tcp_conn_attr_key *it;
+
+	for (it = tcp_con_attr; it->attr_key.s; it++)
+		if (str_match(&it->attr_key, attr)) {
+			*out_val = it->attr;
+			return 1;
+		}
+
+	return 0;
+}
 
 void tcp_init_con_profiles(void)
 {
@@ -58,4 +77,6 @@ void tcp_init_con_profiles(void)
 
 		.id               = 0,
 	};
+
+	tcp_init_attrs(tcp_con_df_profile.attrs);
 }

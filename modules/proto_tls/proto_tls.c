@@ -727,7 +727,10 @@ again:
 		goto error;
 	}
 
-	switch (tcp_handle_req(req, con, tls_max_msg_chunks, 0) ) {
+	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tls_max_msg_chunks;
+
+	switch (tcp_handle_req(req, con, max_chunks, 0) ) {
 		case 1:
 			goto again;
 		case -1:

@@ -7,6 +7,7 @@ CREATE TABLE tcp_mgm (
     local_addr CHAR(43) DEFAULT NULL,
     local_port INTEGER DEFAULT 0 NOT NULL,
     priority INTEGER DEFAULT 0 NOT NULL,
+    attrs CHAR(255) DEFAULT NULL,
     connect_timeout INTEGER DEFAULT 100 NOT NULL,
     con_lifetime INTEGER DEFAULT 120 NOT NULL,
     msg_read_timeout INTEGER DEFAULT 4 NOT NULL,

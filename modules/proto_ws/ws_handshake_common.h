@@ -296,8 +296,11 @@ static inline int ws_client_handshake(struct tcp_connection *con)
 			goto error;
 		}
 
+		int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : _ws_common_max_msg_chunks;
+
 		con->msg_attempts++;
-		if (con->msg_attempts == _ws_common_max_msg_chunks) {
+		if (con->msg_attempts == max_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;
@@ -531,10 +534,13 @@ static int ws_server_handshake(struct tcp_connection *con)
 		goto done;
 
 	} else {
+		int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : _ws_common_max_msg_chunks;
+
 		/* request not complete - check the if the thresholds are exceeded */
 
 		con->msg_attempts++;
-		if (con->msg_attempts == _ws_common_max_msg_chunks) {
+		if (con->msg_attempts == max_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			goto error;

@@ -724,10 +724,12 @@ again:
 		goto error;
 	}
 
-	int parallel_handling = con->profile.parallel_read == 0 ?
+	int parallel_handling = tcp_is_default_profile(con->profile) ?
 			tcp_parallel_handling : (con->profile.parallel_read == 2);
+	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : tcp_max_msg_chunks;
 
-	switch (tcp_handle_req(req,con,tcp_max_msg_chunks,parallel_handling)){
+	switch (tcp_handle_req(req,con,max_chunks,parallel_handling)){
 		case 1:
 			goto again;
 		case -1:

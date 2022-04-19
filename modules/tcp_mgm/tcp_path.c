@@ -26,6 +26,7 @@
 #include "tcp_path.h"
 #include "tcp_db.h"
 #include "../../socket_info.h"
+#include "../../lib/csv.h"
 
 struct tcp_path *tcp_paths;
 int *tcp_paths_sz;
@@ -186,6 +187,46 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 	}
 
 	path->priority = int_vals[TCPCOL_PRIORITY];
+
+	tcp_init_attrs(path->prof.attrs);
+	if (str_vals[TCPCOL_ATTRS]) {
+		csv_record *params, *it;
+		init_str(&st, str_vals[TCPCOL_ATTRS]);
+
+		params = __parse_csv_record(&st, 0, ';');
+		for (it = params; it; it = it->next) {
+			char *eq = q_memchr(it->s.s, '=', it->s.len);
+			str key;
+			int val;
+
+			if (!eq) {
+				key = st;
+				val = 0;
+			} else {
+				key.s = st.s;
+				key.len = eq - st.s;
+
+				st.s = eq + 1;
+				st.len -= key.len + 1;
+				if (str2sint(&st, &val) < 0) {
+					LM_ERR("non-integer TCP conn value: '%.*s', id: %d\n",
+					       st.len, st.s, int_vals[TCPCOL_ID]);
+					return -1;
+				}
+			}
+
+			enum tcp_conn_attr attr;
+			if (!tcp_con_attr_lookup(&it->s, &attr)) {
+				LM_ERR("unknown TCP conn attribute: '%.*s', id: %d\n",
+				       key.len, key.s, int_vals[TCPCOL_ID]);
+				return -1;
+			}
+
+			path->prof.attrs[attr] = val;
+		}
+
+		free_csv_record(params);
+	}
 
 	path->prof.alias_mode = int_vals[TCPCOL_ALIAS_MODE];
 	if (path->prof.alias_mode > TCP_ALIAS_ALWAYS) {

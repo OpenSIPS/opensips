@@ -985,6 +985,7 @@
 		<column><field>local_addr</field><type>DB_STR</type></column>
 		<column><field>local_port</field><type>DB_INT</type></column>
 		<column><field>priority</field><type>DB_INT</type></column>
+		<column><field>attrs</field><type>DB_STR</type></column>
 		<column><field>connect_timeout</field><type>DB_INT</type></column>
 		<column><field>con_lifetime</field><type>DB_INT</type></column>
 		<column><field>msg_read_timeout</field><type>DB_INT</type></column>
@@ -4823,6 +4824,7 @@
 				<col><field>local_addr</field></col>
 				<col><field>local_port</field></col>
 				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
 				<col><field>connect_timeout</field></col>
 				<col><field>con_lifetime</field></col>
 				<col><field>msg_read_timeout</field></col>
@@ -4846,6 +4848,7 @@
 				<col><field>local_addr</field></col>
 				<col><field>local_port</field></col>
 				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
 				<col><field>connect_timeout</field></col>
 				<col><field>con_lifetime</field></col>
 				<col><field>msg_read_timeout</field></col>
@@ -4872,6 +4875,7 @@
 				<col><field>local_addr</field></col>
 				<col><field>local_port</field></col>
 				<col><field>priority</field></col>
+				<col><field>attrs</field></col>
 				<col><field>connect_timeout</field></col>
 				<col><field>con_lifetime</field></col>
 				<col><field>msg_read_timeout</field></col>

@@ -38,6 +38,7 @@
 
 #include "../locking.h"
 #include "../ip_addr.h"
+#include "tcp_conn_profile.h"
 
 /* keepalive */
 #ifndef NO_TCP_KEEPALIVE
@@ -140,6 +141,7 @@ struct tcp_conn_profile {
 	unsigned int keepidle;
 	unsigned int keepinterval;
 
+	int attrs[TCP_ATTR_COUNT]; /* use (enum tcp_conn_attr) as index */
 	unsigned int id; /* unique profile identifier (default profile ID is 0) */
 };
 

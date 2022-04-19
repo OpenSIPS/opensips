@@ -43,11 +43,12 @@ extern db_col_t tcp_mgm_cols[];
 extern db_con_t *db_hdl;
 extern db_func_t db;
 
-#define NO_STR_VALS 3
+#define NO_STR_VALS 4
 
 #define TCPCOL_PROTO        0
 #define TCPCOL_REMOTE_ADDR  1
 #define TCPCOL_LOCAL_ADDR   2
+#define TCPCOL_ATTRS        3
 
 #define NO_INT_VALS 15
 

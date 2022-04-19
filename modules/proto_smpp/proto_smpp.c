@@ -293,9 +293,11 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 			return 1;
 		}
 	} else {
+		int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : smpp_max_msg_chunks;
 
 		con->msg_attempts ++;
-		if (con->msg_attempts == smpp_max_msg_chunks) {
+		if (con->msg_attempts == max_chunks) {
 			LM_ERR("Made %u read attempts but message is not complete yet - "
 				   "closing connection \n",con->msg_attempts);
 			return -1;

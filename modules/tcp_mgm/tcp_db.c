@@ -41,6 +41,7 @@ db_col_t tcp_mgm_cols[] = {
 	{str_init("local_addr"), DB_STR, 0, 1},
 	{str_init("local_port"), DB_INT, 0, 0},
 	{str_init("priority"), DB_INT, 0, 0},
+	{str_init("attrs"), DB_STR, 0, 1},
 	{str_init("connect_timeout"), DB_INT, 0, 0},
 	{str_init("con_lifetime"), DB_INT, 0, 0},
 	{str_init("msg_read_timeout"), DB_INT, 0, 0},

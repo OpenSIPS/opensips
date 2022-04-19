@@ -358,7 +358,10 @@ again:
 		goto error;
 	}
 
-	switch (msrp_handle_req(req, con, msrp_max_msg_chunks) ) {
+	int max_chunks = tcp_attr_isset(con, TCP_ATTR_MAX_MSG_CHUNKS) ?
+			con->profile.attrs[TCP_ATTR_MAX_MSG_CHUNKS] : msrp_max_msg_chunks;
+
+	switch (msrp_handle_req(req, con, max_chunks) ) {
 		case 1:
 			goto again;
 		case -1:
