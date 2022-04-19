@@ -77,7 +77,6 @@ static struct os_timer *utimer_list = NULL;
 static unsigned int  *jiffies=0;
 static utime_t       *ujiffies=0;
 static utime_t       *ijiffies=0;
-static utime_t       *ijiffies_drift=0;
 static unsigned short timer_id=0;
 static int            timer_pipe[2];
 static struct scaling_profile *s_profile=NULL;
@@ -112,9 +111,8 @@ int init_timer(void)
 	jiffies  = shm_malloc(sizeof(unsigned int));
 	ujiffies = shm_malloc(sizeof(utime_t));
 	ijiffies = shm_malloc(sizeof(utime_t));
-	ijiffies_drift = shm_malloc(sizeof(utime_t));
 
-	if (jiffies==0 || ujiffies==0 || ijiffies==0 || ijiffies_drift==0){
+	if (jiffies==0 || ujiffies==0 || ijiffies==0 ){
 		LM_CRIT("could not init jiffies\n");
 		return E_OUT_OF_MEM;
 	}
@@ -132,7 +130,6 @@ int init_timer(void)
 	*jiffies=0;
 	*ujiffies=0;
 	*ijiffies=0;
-	*ijiffies_drift=0;
 
 	/* create the pipe for dispatching the timer jobs */
 	if ( pipe(timer_pipe)!=0 ) {
@@ -335,9 +332,6 @@ static inline void timer_ticker(struct os_timer *tlist)
 		if (j < t->expires)
 			continue;
 
-		if (*ijiffies_drift != 0)
-			LM_INFO("timer task <%s> got drifted by %lld\n", t->label, *ijiffies_drift);
-
 		if (t->trigger_time) {
 			LM_WARN("timer task <%s> already scheduled %lld ms ago"
 				" (now %lld ms), %s\n", t->label, ((utime_t)*ijiffies/1000) -
@@ -388,9 +382,6 @@ static inline void utimer_ticker(struct os_timer *utlist)
 	for ( t=utlist ; t ; t=t->next){
 		if (uj < t->expires)
 			continue;
-
-		if (*ijiffies_drift != 0)
-			LM_INFO("utimer task <%s> got drifted by %lld\n", t->label, *ijiffies_drift);
 
 		if (t->trigger_time) {
 			LM_WARN("utimer task <%s> already scheduled %lld ms ago"
@@ -448,12 +439,9 @@ static void run_timer_process( void )
 			_tv.tv_sec = wait / 1000000;                         \
 			_tv.tv_usec = wait % 1000000;                        \
 			drift -= uinterval-wait;                             \
-			LM_INFO("computed wait %lld w/ remaining drift=%lld (initial drift=%lld) ij=%lld ijiffies=%lld", \
-				 wait, drift, drift + uinterval-wait, ij, *ijiffies); \
 		} else {                                                 \
 			_tv = o_tv;                                          \
 		}                                                        \
-		*ijiffies_drift = 0;                                     \
 	}while(0)
 
 
@@ -467,7 +455,7 @@ static void run_timer_process( void )
 		multiple = (( TIMER_TICK * 1000000 ) / UTIMER_TICK ) / 1000000;
 	}
 
-	LM_INFO("tv = %ld, %ld , m=%d\n",
+	LM_DBG("tv = %ld, %ld , m=%d\n",
 		(long)o_tv.tv_sec,(long)o_tv.tv_usec,multiple);
 
 	drift = 0;
@@ -545,7 +533,6 @@ static void run_timer_process_jif(void)
 	struct timeval sync_ts, last_ts;
 	stime_t interval, drift;
 	utime_t last_ticks, last_sync = 0;
-	utime_t old_ijiffies;
 
 	o_tv.tv_sec = 0;
 	o_tv.tv_usec = ITIMER_TICK; /* internal timer */
@@ -600,14 +587,11 @@ static void run_timer_process_jif(void)
 			}
 
 			if (drift > TIMER_MAX_DRIFT_TICKS) {
-				old_ijiffies = *(ijiffies);
 				*(ijiffies) += (drift / ITIMER_TICK) * ITIMER_TICK;
-				*(ijiffies_drift) = (drift / ITIMER_TICK) * ITIMER_TICK;
 
 				ucnt += drift / ITIMER_TICK;
 				*(ujiffies) += (ucnt / umultiple) * (UTIMER_TICK);
 				ucnt = ucnt % umultiple;
-				LM_INFO("Recalibrating ijiffies:%llu->%llu\n", old_ijiffies, *(ijiffies));
 
 				cnt += (unsigned int)(drift / (UTIMER_TICK));
 				*(jiffies) += (cnt / multiple) * TIMER_TICK;
@@ -868,36 +852,17 @@ void handle_timer_job(void)
 	/* run the handler */
 	if (t->flags&TIMER_FLAG_IS_UTIMER) {
 
-		if (*ijiffies_drift)
-			LM_INFO("utimer job <%s> observed a drift and has a %lld us delay in execution: time=%lld trigger_time=%lld ijiffies=%lld ijiffies_drift=%lld\n",
-				t->label, *ijiffies-t->trigger_time, t->time, t->trigger_time, *ijiffies, *ijiffies_drift);
-
-		if (t->trigger_time<(*ijiffies-ITIMER_TICK-*ijiffies_drift) )
-			LM_WARN("utimer job <%s> has a %lld us delay in execution: time=%lld trigger_time=%lld ijiffies=%lld ijiffies_drift=%lld\n",
-				t->label, *ijiffies-t->trigger_time, t->time, t->trigger_time, *ijiffies, *ijiffies_drift);
-			//LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
-			//	t->label, *ijiffies-t->trigger_time);
-		else if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
-			LM_NOTICE("utimer job <%s> has a %lld us delay in execution: time=%lld trigger_time=%lld ijiffies=%lld ijiffies_drift=%lld\n",
-				t->label, *ijiffies-t->trigger_time, t->time, t->trigger_time, *ijiffies, *ijiffies_drift);
-
+		if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
+			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
+				t->label, *ijiffies-t->trigger_time);
 		t->u.utimer_f( t->time , t->t_param);
 		t->trigger_time = 0;
 
 	} else {
 
-		if (*ijiffies_drift)
-			LM_INFO("timer job <%s> observed a drift and has a %lld us delay in execution time=%lld trigger_time=%lld ijiffies=%lld ijiffies_drift=%lld\n",
-				t->label, *ijiffies-t->trigger_time, t->time, t->trigger_time, *ijiffies, *ijiffies_drift);
-
-		if (t->trigger_time<(*ijiffies-ITIMER_TICK-*ijiffies_drift) )
-			LM_WARN("timer job <%s> has a %lld us delay in execution time=%lld trigger_time=%lld ijiffies=%lld ijiffies_drift=%lld\n",
-				t->label, *ijiffies-t->trigger_time, t->time, t->trigger_time, *ijiffies, *ijiffies_drift);
-			//LM_WARN("timer job <%s> has a %lld us delay in execution\n",
-			//	t->label, *ijiffies-t->trigger_time);
-		else if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
-			LM_NOTICE("timer job <%s> has a %lld us delay in execution time=%lld trigger_time=%lld ijiffies=%lld ijiffies_drift=%lld\n",
-				t->label, *ijiffies-t->trigger_time, t->time, t->trigger_time, *ijiffies, *ijiffies_drift);
+		if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
+			LM_WARN("timer job <%s> has a %lld us delay in execution\n",
+				t->label, *ijiffies-t->trigger_time);
 		t->u.timer_f( (unsigned int)t->time , t->t_param);
 		t->trigger_time = 0;
 
