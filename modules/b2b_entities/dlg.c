@@ -56,7 +56,7 @@ str bye = str_init(BYE);
 /* used to make WRITE_THROUGH db mode more efficient */
 b2b_dlg_t* current_dlg= NULL;
 
-struct b2b_callback *b2b_trig_cbs, *b2b_recv_cbs;
+struct b2b_callback *b2b_event_cbs;
 
 static str storage_cap = str_init("b2b-storage-bin");
 
@@ -529,16 +529,16 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 }
 
 void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
-	int cbs_type, int event_type, bin_packet_t *storage, int backend)
+	unsigned int cbs_type, int event_type, bin_packet_t *storage, int backend)
 {
 	struct b2b_callback *cb;
 	str st;
 
 	/* search for the callback registered by the module that
 	 * this entity belongs to */
-	for (cb = cbs_type == B2BCB_TRIGGER_EVENT ? b2b_trig_cbs : b2b_recv_cbs;
-		cb; cb = cb->next)
-		if (dlg->mod_name.len == cb->mod_name.len &&
+	for (cb = b2b_event_cbs; cb; cb = cb->next)
+		if ((cbs_type & cb->type) != 0 &&
+			dlg->mod_name.len == cb->mod_name.len &&
 			!memcmp(dlg->mod_name.s, cb->mod_name.s, cb->mod_name.len))
 			break;
 
@@ -558,7 +558,7 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 			LM_ERR("Failed to init entity storage buffer\n");
 			return;
 		}
-	} else {  /* B2BCB_RECV_EVENT */
+	} else if (cbs_type == B2BCB_RECV_EVENT) {
 		if (!cb)
 			return;
 
@@ -678,18 +678,16 @@ int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name)
 		LM_ERR("oom!\n");
 		return -1;
 	}
+	new_cb->type = cb_type;
 
 	if (cb_type == B2BCB_RECV_EVENT) {
 		/* for DB-loaded entities */
 		run_create_cb_all(new_cb, B2B_CLIENT);
 		run_create_cb_all(new_cb, B2B_SERVER);
-
-		new_cb->next = b2b_recv_cbs;
-		b2b_recv_cbs = new_cb;
-	} else {
-		new_cb->next = b2b_trig_cbs;
-		b2b_trig_cbs = new_cb;
 	}
+
+	new_cb->next = b2b_event_cbs;
+	b2b_event_cbs = new_cb;
 
 	return 0;
 }
