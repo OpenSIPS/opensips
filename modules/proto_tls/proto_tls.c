@@ -727,7 +727,7 @@ again:
 		goto error;
 	}
 
-	switch (tcp_handle_req(req, con, tls_max_msg_chunks) ) {
+	switch (tcp_handle_req(req, con, tls_max_msg_chunks, 0) ) {
 		case 1:
 			goto again;
 		case -1:

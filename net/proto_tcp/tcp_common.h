@@ -317,7 +317,9 @@ inline static void tcp_parse_headers(struct tcp_req *r,
 
 			default:
 				LM_CRIT("unexpected state %d\n", r->state);
+#ifdef USE_ABORT
 				abort();
+#endif
 		}
 	}
 	if (r->state == H_SKIP_EMPTY_CRLF_FOUND && _crlf_drop) {
@@ -333,13 +335,14 @@ skip:
 
 
 static inline int tcp_handle_req(struct tcp_req *req,
-							struct tcp_connection *con, int _max_msg_chunks)
+		struct tcp_connection *con, int _max_msg_chunks,
+		int _parallel_handling)
 {
 	struct receive_info local_rcv;
 	char *msg_buf;
 	int msg_len;
 	long size;
-	char c;
+	char c, *msg_buf_cpy = NULL;
 
 	if (req->complete){
 #ifdef EXTRA_DEBUG
@@ -400,9 +403,18 @@ static inline int tcp_handle_req(struct tcp_req *req,
 					 *	detach it , release the conn and free it afterwards */
 					con->con_req = NULL;
 				}
-				/* TODO - we could indicate to the TCP net layer to release
-				 * the connection -> other worker may read the next available
-				 * message on the pipe */
+
+				/* If parallel handling, make a copy (null terminted) of the
+				 * current reading buffer (so we can continue its handling)
+				 * and release the TCP conn on READ */
+				if ( (_parallel_handling!=0) &&
+				(msg_buf_cpy=(char*)pkg_malloc( msg_len+1 )) !=NULL ) {
+					memcpy( msg_buf_cpy, msg_buf, msg_len);
+					msg_buf_cpy[msg_len] = 0;
+					msg_buf = msg_buf_cpy;
+					tcp_done_reading( con );
+				}
+
 			} else {
 				LM_DBG("We still have things on the pipe - "
 					"keeping connection \n");
@@ -411,6 +423,9 @@ static inline int tcp_handle_req(struct tcp_req *req,
 			if (receive_msg(msg_buf, msg_len,
 				&local_rcv, NULL, 0) <0)
 					LM_ERR("receive_msg failed \n");
+
+			if (msg_buf_cpy)
+				pkg_free(msg_buf_cpy);
 		}
 
 		con->msg_attempts = 0;

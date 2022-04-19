@@ -44,6 +44,8 @@ static int _my_fd_to_tcp_main = -1;
 /*!< list of tcp connections handled by this process */
 static struct tcp_connection* tcp_conn_lst=0;
 
+static int _tcp_done_reading_marker = 0;
+
 static int tcpmain_sock=-1;
 extern int unix_tcp_sock;
 
@@ -106,6 +108,22 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 		return;
 	}
 	tcpconn_put(c);
+}
+
+
+int tcp_done_reading(struct tcp_connection* con)
+{
+	if (_tcp_done_reading_marker==0) {
+		reactor_del_all( con->fd, -1, IO_FD_CLOSING );
+		tcpconn_check_del(con);
+		tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
+		if (con->fd!=-1) { close(con->fd); con->fd = -1; }
+		tcpconn_release(con, CONN_RELEASE,0);
+
+		_tcp_done_reading_marker = 1;
+	}
+
+	return 0;
 }
 
 
@@ -309,6 +327,7 @@ again:
 		case F_TCPCONN:
 			if (event_type & IO_WATCH_READ) {
 				con=(struct tcp_connection*)fm->data;
+				_tcp_done_reading_marker = 0;
 				resp = protos[con->type].net.read( (void*)con, &ret );
 				if (resp<0) {
 					ret=-1; /* some error occurred */
@@ -334,7 +353,8 @@ again:
 					tcpconn_release(con, CONN_EOF,0);
 				} else {
 					if (tcp_parallel_read_on_workers)
-						tcpconn_release(con, CONN_RELEASE,0);
+						/* return the connection if not already */
+						tcp_done_reading( con );
 					break;
 				}
 			}

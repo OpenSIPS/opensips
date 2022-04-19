@@ -265,6 +265,27 @@ modparam("proto_tcp", "tcp_async_local_write_timeout", 100)
 </programlisting>
 		</example>
 	</section>
+	<section>
+		<title><varname>tcp_parallel_handling</varname> (integer)</title>
+		<para>
+		This parameter says if the handling/processing (NOT READING) of the
+		SIP messages should be done in parallel (after one SIP msg is read, 
+		while processing it, another READ op may be performed).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>tcp_parallel_handling</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_tcp", "tcp_parallel_handling", 1)
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section id="trace-destination">
 		<title><varname>trace_destination</varname> (string)</title>
