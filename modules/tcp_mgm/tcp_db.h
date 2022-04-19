@@ -49,7 +49,7 @@ extern db_func_t db;
 #define TCPCOL_REMOTE_ADDR  1
 #define TCPCOL_LOCAL_ADDR   2
 
-#define NO_INT_VALS 14
+#define NO_INT_VALS 15
 
 #define TCPCOL_ID               0
 #define TCPCOL_REMOTE_PORT      1
@@ -61,10 +61,11 @@ extern db_func_t db;
 #define TCPCOL_SEND_THRESHOLD   7
 #define TCPCOL_NO_NEW_CONN      8
 #define TCPCOL_ALIAS_MODE       9
-#define TCPCOL_KEEPALIVE        10
-#define TCPCOL_KEEPCOUNT        11
-#define TCPCOL_KEEPIDLE         12
-#define TCPCOL_KEEPINTERVAL     13
+#define TCPCOL_PARALLEL_READ    10
+#define TCPCOL_KEEPALIVE        11
+#define TCPCOL_KEEPCOUNT        12
+#define TCPCOL_KEEPIDLE         13
+#define TCPCOL_KEEPINTERVAL     14
 
 #define NO_DB_COLS (NO_STR_VALS + NO_INT_VALS)
 

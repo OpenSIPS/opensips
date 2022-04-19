@@ -47,6 +47,7 @@ db_col_t tcp_mgm_cols[] = {
 	{str_init("send_threshold"), DB_INT, 0, 0},
 	{str_init("no_new_conn"), DB_INT, 0, 0},
 	{str_init("alias_mode"), DB_INT, 0, 0},
+	{str_init("parallel_read"), DB_INT, 0, 0},
 	{str_init("keepalive"), DB_INT, 0, 0},
 	{str_init("keepcount"), DB_INT, 0, 0},
 	{str_init("keepidle"), DB_INT, 0, 0},

@@ -15,6 +15,7 @@
 		<column><field>send_threshold</field><type>DB_INT</type></column>
 		<column><field>no_new_conn</field><type>DB_INT</type></column>
 		<column><field>alias_mode</field><type>DB_INT</type></column>
+		<column><field>parallel_read</field><type>DB_INT</type></column>
 		<column><field>keepalive</field><type>DB_INT</type></column>
 		<column><field>keepcount</field><type>DB_INT</type></column>
 		<column><field>keepidle</field><type>DB_INT</type></column>

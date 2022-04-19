@@ -115,6 +115,13 @@
         <description>Controls TCP connection reusage for requests in the opposite direction to the original one.  0 (never reuse), 1 (only reuse if RFC 5923 Via ";alias" is present), 2 (always reuse).  Default: 0.</description>
     </column>
 
+    <column id="parallel_read">
+        <name>parallel_read</name>
+        <type>unsigned int</type>
+        <default>0</default>
+        <description>Set to 1 to re-balance a TCP connection for reading after a worker processes one packet.  Set to 2 in order to have proto modules re-balance a TCP conn for reading before processing a fully read packet, but only if they have support for this (e.g. proto_tcp).  Default: 0 (lock a connection in a TCP reader process for "tcp_con_lifetime" seconds at a time).</description>
+    </column>
+
     <column id="keepalive">
         <name>keepalive</name>
         <type>unsigned int</type>

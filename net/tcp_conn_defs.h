@@ -131,6 +131,7 @@ struct tcp_conn_profile {
 	unsigned int msg_read_timeout;
 	unsigned int send_threshold;
 	unsigned char no_new_conn:1;
+	unsigned char parallel_read:2;
 
 	enum tcp_conn_alias_mode alias_mode;
 

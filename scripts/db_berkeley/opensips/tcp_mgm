@@ -1,5 +1,5 @@
 METADATA_COLUMNS
-id(int) proto(str) remote_addr(str) remote_port(int) local_addr(str) local_port(int) priority(int) connect_timeout(int) con_lifetime(int) msg_read_timeout(int) send_threshold(int) no_new_conn(int) alias_mode(int) keepalive(int) keepcount(int) keepidle(int) keepinterval(int)
+id(int) proto(str) remote_addr(str) remote_port(int) local_addr(str) local_port(int) priority(int) connect_timeout(int) con_lifetime(int) msg_read_timeout(int) send_threshold(int) no_new_conn(int) alias_mode(int) parallel_read(int) keepalive(int) keepcount(int) keepidle(int) keepinterval(int)
 METADATA_KEY
 
 METADATA_READONLY
@@ -7,4 +7,4 @@ METADATA_READONLY
 METADATA_LOGFLAGS
 0
 METADATA_DEFAULTS
-NIL|'any'|NULL|0|NULL|0|0|100|120|4|0|0|0|1|9|7200|75
+NIL|'any'|NULL|0|NULL|0|0|100|120|4|0|0|0|0|1|9|7200|75

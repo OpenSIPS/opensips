@@ -79,11 +79,12 @@ int tcp_mgm_get_profile(union sockaddr_union *remote,
 
 	/* was a matching TCP path found? */
 	if (path < lim) {
-		LM_DBG("matched a TCP path, id: %d (%d/%d/%d/%d/%d/%d/%d)\n",
+		LM_DBG("matched a TCP path, id: %d (%d/%d/%d/%d/%d/%d/%d/%d)\n",
 		       out_profile->id, out_profile->connect_timeout,
 		       out_profile->con_lifetime, out_profile->msg_read_timeout,
 		       out_profile->send_threshold, out_profile->no_new_conn,
-		       out_profile->alias_mode, out_profile->keepalive);
+		       out_profile->alias_mode, out_profile->parallel_read,
+		       out_profile->keepalive);
 		return 1;
 	}
 
@@ -165,7 +166,7 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 			}
 
 			tmp_net = mk_net_bitlen(&sock->address,
-			               sock->address.af == AF_INET ? 32 : 128);
+			               sock->address.af == AF_INET6 ? 128 : 32);
 			if (!tmp_net) {
 				LM_ERR("oom\n");
 				return -1;
@@ -198,6 +199,7 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 	path->prof.msg_read_timeout = int_vals[TCPCOL_MSG_READ_TIMEOUT];
 	path->prof.send_threshold = int_vals[TCPCOL_SEND_THRESHOLD];
 	path->prof.no_new_conn = !!int_vals[TCPCOL_NO_NEW_CONN];
+	path->prof.parallel_read = int_vals[TCPCOL_PARALLEL_READ];
 	path->prof.keepalive = !!int_vals[TCPCOL_KEEPALIVE];
 	path->prof.keepcount = int_vals[TCPCOL_KEEPCOUNT];
 	path->prof.keepidle = int_vals[TCPCOL_KEEPIDLE];
@@ -215,8 +217,9 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 	LM_INFO("local_prefix: %s\n", ip_addr2a(&path->local_addr.mask));
 	LM_INFO("  %d %d %d\n", path->prof.connect_timeout,
 	          path->prof.con_lifetime, path->prof.msg_read_timeout);
-	LM_INFO("  %d %d %d\n", path->prof.send_threshold,
-	          path->prof.no_new_conn, path->prof.alias_mode);
+	LM_INFO("  %d %d %d %d\n", path->prof.send_threshold,
+	          path->prof.no_new_conn, path->prof.alias_mode,
+	          path->prof.parallel_read);
 	LM_INFO("  %d %d %d %d\n", path->prof.keepalive,
 	          path->prof.keepcount, path->prof.keepidle, path->prof.keepinterval);
 #endif

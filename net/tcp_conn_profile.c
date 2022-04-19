@@ -50,6 +50,7 @@ void tcp_init_con_profiles(void)
 		.no_new_conn      = 0, /* by default, the only way to enforce
 		                         no-new-conn is via br/rpl flags */
 		.alias_mode       = tcp_accept_aliases,
+		.parallel_read    = tcp_parallel_read_on_workers,
 		.keepalive        = tcp_keepalive,
 		.keepcount        = tcp_keepcount,
 		.keepidle         = tcp_keepidle,

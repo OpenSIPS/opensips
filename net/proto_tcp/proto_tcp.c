@@ -724,7 +724,10 @@ again:
 		goto error;
 	}
 
-	switch (tcp_handle_req(req,con,tcp_max_msg_chunks,tcp_parallel_handling)){
+	int parallel_handling = con->profile.parallel_read == 0 ?
+			tcp_parallel_handling : (con->profile.parallel_read == 2);
+
+	switch (tcp_handle_req(req,con,tcp_max_msg_chunks,parallel_handling)){
 		case 1:
 			goto again;
 		case -1:

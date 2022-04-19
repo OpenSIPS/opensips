@@ -17,6 +17,7 @@
 				<col><field>send_threshold</field></col>
 				<col><field>no_new_conn</field></col>
 				<col><field>alias_mode</field></col>
+				<col><field>parallel_read</field></col>
 				<col><field>keepalive</field></col>
 				<col><field>keepcount</field></col>
 				<col><field>keepidle</field></col>
@@ -39,6 +40,7 @@
 				<col><field>send_threshold</field></col>
 				<col><field>no_new_conn</field></col>
 				<col><field>alias_mode</field></col>
+				<col><field>parallel_read</field></col>
 				<col><field>keepalive</field></col>
 				<col><field>keepcount</field></col>
 				<col><field>keepidle</field></col>
@@ -64,6 +66,7 @@
 				<col><field>send_threshold</field></col>
 				<col><field>no_new_conn</field></col>
 				<col><field>alias_mode</field></col>
+				<col><field>parallel_read</field></col>
 				<col><field>keepalive</field></col>
 				<col><field>keepcount</field></col>
 				<col><field>keepidle</field></col>

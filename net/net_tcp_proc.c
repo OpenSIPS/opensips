@@ -352,7 +352,7 @@ again:
 					       resp, con->msg_attempts);
 					tcpconn_release(con, CONN_EOF,0);
 				} else {
-					if (tcp_parallel_read_on_workers)
+					if (con->profile.parallel_read)
 						/* return the connection if not already */
 						tcp_done_reading( con );
 					break;
