@@ -744,13 +744,17 @@ int redis_raw_query_extract_key(str *attr,str *query_key)
 	return 0;
 }
 
-int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entry ***rpl,int expected_kv_no,int *reply_no,str *attr, ...)
+#define MAP_SET_MAX_FIELDS 128
+static int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
+		cdb_raw_entry ***_, int __, int *___, str *attr)
 {
+	int i, argc = 0;
+	const char *argv[MAP_SET_MAX_FIELDS];
+	size_t argvlen[MAP_SET_MAX_FIELDS];
 	redis_con *con;
 	cluster_node *node;
-	int i,end;
-	va_list ap;
-	str query_key;
+	str key, st, arg;
+	char *p;
 
 	con = (redis_con *)connection->data;
 
@@ -759,12 +763,50 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 		return -9;
 	}
 
-	if (redis_raw_query_extract_key(attr,&query_key) < 0) {
-		LM_ERR("Failed to extra Redis raw query key \n");
+	st = *attr;
+	trim(&st);
+	while (st.len > 0 && (p = q_memchr(st.s, ' ', st.len))) {
+		if (argc == MAP_SET_MAX_FIELDS) {
+			LM_ERR("max raw query args exceeded (%d)\n", MAP_SET_MAX_FIELDS);
+			return -1;
+		}
+
+		arg.s = st.s;
+		arg.len = p - st.s;
+		trim(&arg);
+
+		argv[argc] = arg.s;
+		argvlen[argc++] = arg.len;
+
+		st.len -= p - st.s + 1;
+		st.s = p + 1;
+		trim(&st);
+	}
+
+	if (st.len > 0) {
+		argv[argc] = st.s;
+		argvlen[argc++] = st.len;
+	}
+
+	if (argc < 2) {
+		LM_ERR("malformed Redis RAW query: '%.*s' (%d)\n",
+		       attr->len, attr->s, attr->len);
 		return -1;
 	}
 
-	node = get_redis_connection(con,&query_key);
+	/* TODO - altough in most of the cases the targetted key is the 2nd query string,
+		that's not always the case ! - make this 100% */
+	key.s = (char *)argv[1];
+	key.len = argvlen[1];
+
+#ifdef EXTRA_DEBUG
+	LM_DBG("raw query key: %.*s\n", key.len, key.s);
+	for (i = 0; i < argc; i++)
+		LM_DBG("raw query arg %d: '%.*s' (%d)\n", i, (int)argvlen[i], argv[i],
+		       (int)argvlen[i]);
+#endif
+
+	node = get_redis_connection(con, &key);
 	if (node == NULL) {
 		LM_ERR("Bad cluster configuration\n");
 		return -10;
@@ -776,12 +818,8 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 		}
 	}
 
-	va_start(ap,attr);
-	end = attr->s[attr->len];
-	attr->s[attr->len] = 0;
-
 	for (i = QUERY_ATTEMPTS; i; i--) {
-		*reply = redisvCommand(node->context,attr->s,ap);
+		*reply = redisCommandArgv(node->context, argc, argv, argvlen);
 		if (*reply == NULL || (*reply)->type == REDIS_REPLY_ERROR) {
 			LM_INFO("Redis query failed: %.*s\n",
 				*reply?(unsigned)((*reply)->len):7,*reply?(*reply)->str:"FAILURE");
@@ -792,9 +830,6 @@ int redis_raw_query_send(cachedb_con *connection,redisReply **reply,cdb_raw_entr
 			}
 		} else break;
 	}
-
-	va_end(ap);
-	attr->s[attr->len]=end;
 
 	if (i==0) {
 		LM_ERR("giving up on query\n");
