@@ -953,12 +953,8 @@ int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 	}
 
 	if (st.len > 0) {
-		arg.s = st.s;
-		arg.len = attr->s + attr->len - st.s;
-		trim(&arg);
-
-		argv[argc] = arg.s;
-		argvlen[argc++] = arg.len;
+		argv[argc] = st.s;
+		argvlen[argc++] = st.len;
 	}
 
 	if (argc < 2) {
