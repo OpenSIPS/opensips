@@ -234,6 +234,33 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
 		</section>
 
+		<section id="param_enable_raw_query_quoting" xreflabel="enable_raw_query_quoting">
+		<title><varname>enable_raw_query_quoting</varname> (integer)</title>
+		<para>
+		Set this parameter to 1 in order to allow raw query arguments to be
+		optionally enclosed by single or double-quotes, which allows the
+		enclosed string to contain a wider array of characters, including
+		whitespace.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>0</emphasis> (disabled).
+		</emphasis>
+		</para>
+
+		<example>
+		<title>Set the <varname>enable_raw_query_quoting</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# enable quoted raw query arguments
+modparam("cachedb_redis", "enable_raw_query_quoting", 1)
+...
+		</programlisting>
+		</example>
+
+		</section>
+
+
 		 <section id="param_use_tls" xreflabel="use_tls">
 		<title><varname>use_tls</varname> (integer)</title>
 		<para>

@@ -40,8 +40,16 @@ int redis_query_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int redis_connnection_tout = CACHEDB_REDIS_DEFAULT_TIMEOUT;
 int shutdown_on_error = 0;
 int use_tls = 0;
+int enable_raw_query_quoting;
 
 struct tls_mgm_binds tls_api;
+
+/*
+ *	- redis_raw_query_send_old()
+ *	- redis_raw_query_send_new()
+ */
+int (*redis_raw_query_send)(cachedb_con *connection, redisReply **reply,
+		cdb_raw_entry ***_, int __, int *___, str *attr);
 
 redisContext *redis_get_ctx(char *ip, int port)
 {
@@ -716,36 +724,8 @@ error:
 	return -1;
 }
 
-/* TODO - altough in most of the cases the targetted key is the 2nd query string,
-	that's not always the case ! - make this 100% */
-int redis_raw_query_extract_key(str *attr,str *query_key)
-{
-	int len;
-	char *p,*q,*r;
-
-	if (!attr || attr->s == NULL || query_key == NULL)
-		return -1;
-
-	trim_len(len,p,*attr);
-	q = memchr(p,' ',len);
-	if (q == NULL) {
-		LM_ERR("Malformed Redis RAW query \n");
-		return -1;
-	}
-
-	query_key->s = q+1;
-	r = memchr(query_key->s,' ',len - (query_key->s - p));
-	if (r == NULL) {
-		query_key->len = (p+len) - query_key->s;
-	} else {
-		query_key->len = r-query_key->s;
-	}
-
-	return 0;
-}
-
 #define MAP_SET_MAX_FIELDS 128
-static int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
+int redis_raw_query_send_old(cachedb_con *connection, redisReply **reply,
 		cdb_raw_entry ***_, int __, int *___, str *attr)
 {
 	int i, argc = 0;
@@ -794,7 +774,7 @@ static int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 		return -1;
 	}
 
-	/* TODO - altough in most of the cases the targetted key is the 2nd query string,
+	/* TODO - although in most of the cases the targetted key is the 2nd query string,
 		that's not always the case ! - make this 100% */
 	key.s = (char *)argv[1];
 	key.len = argvlen[1];
@@ -843,6 +823,132 @@ static int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 	return 0;
 }
 
+int redis_raw_query_send_new(cachedb_con *connection, redisReply **reply,
+		cdb_raw_entry ***_, int __, int *___, str *attr)
+{
+	int i, argc = 0, squoted = 0, dquoted = 0;
+	const char *argv[MAP_SET_MAX_FIELDS];
+	size_t argvlen[MAP_SET_MAX_FIELDS];
+	redis_con *con;
+	cluster_node *node;
+	str key, st;
+	char *p, *lim, *arg = NULL;
+
+	con = (redis_con *)connection->data;
+
+	if (!(con->flags & REDIS_INIT_NODES) && redis_connect(con) < 0) {
+		LM_ERR("failed to connect to DB\n");
+		return -9;
+	}
+
+	st = *attr;
+	trim(&st);
+
+	/* allow script developers to enclose swaths of text with single/double
+	 * quotes, in case any of their raw query string arguments must include
+	 * whitespace chars.  The enclosing quotes shall not be passed to Redis. */
+	for (p = st.s, lim = p + st.len; p < lim; p++) {
+		if ((dquoted && *p != '"') || (squoted && *p != '\''))
+			continue;
+
+		if (argc == MAP_SET_MAX_FIELDS) {
+			LM_ERR("max raw query args exceeded (%d)\n", MAP_SET_MAX_FIELDS);
+			goto bad_query;
+		}
+
+		if (dquoted || squoted) {
+			if (p+1 < lim && !is_ws(*(p+1)))
+				goto bad_query;
+
+			argv[argc]++;
+			argvlen[argc] = p - argv[argc];
+			argc++;
+			dquoted = squoted = 0;
+		} else if (*p == '"') {
+			dquoted = 1;
+			argv[argc] = p;
+		} else if (*p == '\'') {
+			squoted = 1;
+			argv[argc] = p;
+		} else if (is_ws(*p)) {
+			if (!arg)
+				continue;
+
+			argv[argc] = arg;
+			argvlen[argc++] = p - arg;
+			arg = NULL;
+		} else if (!arg) {
+			arg = p;
+		}
+	}
+
+	if (squoted || dquoted) {
+		LM_ERR("unterminated quoted query argument\n");
+		goto bad_query;
+	}
+
+	if (arg) {
+		argv[argc] = arg;
+		argvlen[argc++] = st.s + st.len - arg;
+	}
+
+	if (argc < 2)
+		goto bad_query;
+
+	/* TODO - although in most of the cases the targetted key is the 2nd query string,
+		that's not always the case ! - make this 100% */
+	key.s = (char *)argv[1];
+	key.len = argvlen[1];
+
+#ifdef EXTRA_DEBUG
+	LM_DBG("raw query key: %.*s\n", key.len, key.s);
+	for (i = 0; i < argc; i++)
+		LM_DBG("raw query arg %d: '%.*s' (%d)\n", i, (int)argvlen[i], argv[i],
+		       (int)argvlen[i]);
+#endif
+
+	node = get_redis_connection(con, &key);
+	if (node == NULL) {
+		LM_ERR("Bad cluster configuration\n");
+		return -10;
+	}
+
+	if (node->context == NULL) {
+		if (redis_reconnect_node(con,node) < 0) {
+			return -1;
+		}
+	}
+
+	for (i = QUERY_ATTEMPTS; i; i--) {
+		*reply = redisCommandArgv(node->context, argc, argv, argvlen);
+		if (*reply == NULL || (*reply)->type == REDIS_REPLY_ERROR) {
+			LM_INFO("Redis query failed: %.*s\n",
+				*reply?(unsigned)((*reply)->len):7,*reply?(*reply)->str:"FAILURE");
+			if (*reply)
+				freeReplyObject(*reply);
+			if (node->context->err == REDIS_OK || redis_reconnect_node(con,node) < 0) {
+				i = 0; break;
+			}
+		} else break;
+	}
+
+	if (i==0) {
+		LM_ERR("giving up on query\n");
+		return -1;
+	}
+
+	if (i != QUERY_ATTEMPTS)
+		LM_INFO("successfully ran query after %d failed attempt(s)\n",
+		        QUERY_ATTEMPTS - i);
+
+	return 0;
+
+bad_query:
+	LM_ERR("malformed Redis RAW query: '%.*s' (%d)\n",
+	       attr->len, attr->s, attr->len);
+	return -1;
+}
+
 int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int expected_kv_no,int *reply_no)
 {
 	redisReply *reply;
@@ -851,7 +957,6 @@ int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int e
 		LM_ERR("null parameter\n");
 		return -1;
 	}
-
 
 	if (redis_raw_query_send(connection,&reply,rpl,expected_kv_no,reply_no,attr) < 0) {
 		LM_ERR("Failed to send query to server \n");
