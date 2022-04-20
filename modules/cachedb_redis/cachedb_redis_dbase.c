@@ -928,54 +928,59 @@ error:
 	return -1;
 }
 
-/* TODO - altough in most of the cases the targetted key is the 2nd query string,
-	that's not always the case ! - make this 100% */
-int redis_raw_query_extract_key(str *attr,str *query_key)
-{
-	int len;
-	char *p,*q,*r;
-
-	if (!attr || attr->s == NULL || query_key == NULL)
-		return -1;
-
-	trim_len(len,p,*attr);
-	q = memchr(p,' ',len);
-	if (q == NULL) {
-		LM_ERR("Malformed Redis RAW query \n");
-		return -1;
-	}
-
-	query_key->s = q+1;
-	r = memchr(query_key->s,' ',len - (query_key->s - p));
-	if (r == NULL) {
-		query_key->len = (p+len) - query_key->s;
-	} else {
-		query_key->len = r-query_key->s;
-	}
-
-	return 0;
-}
-
 int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 		cdb_raw_entry ***_, int __, int *___, str *attr, ...)
 {
-	static str attr_nt;
-	str query_key;
+	int argc = 0;
+	const char *argv[MAP_SET_MAX_FIELDS+2];
+	size_t argvlen[MAP_SET_MAX_FIELDS+2];
+	str key, st, arg;
+	char *p;
 
-	if (redis_raw_query_extract_key(attr, &query_key) < 0) {
-		LM_ERR("Failed to extract Redis raw query key\n");
+	st = *attr;
+	trim(&st);
+	while (st.len > 0 && (p = q_memchr(st.s, ' ', st.len))) {
+		arg.s = st.s;
+		arg.len = p - st.s;
+		trim(&arg);
+
+		argv[argc] = arg.s;
+		argvlen[argc++] = arg.len;
+
+		st.len -= p - st.s + 1;
+		st.s = p + 1;
+		trim(&st);
+	}
+
+	if (st.len > 0) {
+		arg.s = st.s;
+		arg.len = attr->s + attr->len - st.s;
+		trim(&arg);
+
+		argv[argc] = arg.s;
+		argvlen[argc++] = arg.len;
+	}
+
+	if (argc < 2) {
+		LM_ERR("malformed Redis RAW query: '%.*s' (%d)\n",
+		       attr->len, attr->s, attr->len);
 		return -1;
 	}
 
-	if (pkg_str_extend(&attr_nt, attr->len + 1) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
+	/* TODO - altough in most of the cases the targetted key is the 2nd query string,
+		that's not always the case ! - make this 100% */
+	key.s = (char *)argv[1];
+	key.len = argvlen[1];
 
-	memcpy(attr_nt.s, attr->s, attr->len);
-	attr_nt.s[attr->len] = '\0';
+#ifdef EXTRA_DEBUG
+	int i;
+	LM_DBG("raw query key: %.*s\n", key.len, key.s);
+	for (i = 0; i < argc; i++)
+		LM_DBG("raw query arg %d: '%.*s' (%d)\n", i, (int)argvlen[i], argv[i],
+		       (int)argvlen[i]);
+#endif
 
-	return redis_run_command(connection, reply, &query_key, attr_nt.s);
+	return redis_run_command_argv(connection, reply, &key, argc, argv, argvlen);
 }
 
 int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int expected_kv_no,int *reply_no)
