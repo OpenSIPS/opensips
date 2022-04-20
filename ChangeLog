@@ -1,3 +1,325 @@
+=========================== Release 3.1.9 ==============================
+
+2022-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [f5b228b84] :
+
+	Bump version to 3.1.9
+
+
+2022-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [13a5185bd] :
+
+	cachedb_redis: Allow quoting strings in raw queries
+	In case the Redis raw query string arguments include whitespace (' ',
+	\t, \r, \n), script developers can now enclose them in single (') or
+	double quotes ("), and OpenSIPS will pass the correct string to Redis.
+
+	For example:
+	    cache_raw_query("redis", "SET foo \"bar baz\"", "$avp(result)");
+	        or:
+	    cache_raw_query("redis", "SET foo 'bar baz'", "$avp(result)");
+
+	... are now possible and equivalent.  Both of these will set the
+	"bar baz" value, without the quotes.
+
+	NEW module parameter in order to maintain backwards-compatibility with
+	previous code (default: 0):
+
+	    modparam("cachedb_redis", "enable_query_arg_quoting", 1)
+
+	Fixes #2036
+	(cherry picked from commit 6ecac89e5418b9a192519d1ed3cde000695079d1)
+
+
+2022-04-20  Liviu Chircu  <liviu at opensips dot org>
+	* [04e71a8ad] :
+
+	cachedb_redis: Use argv API instead of fmt-string API for raw queries
+	This change allows "%" to be safely used in raw queries (e.g. maybe some
+	Redis key contains a random "%" char), while also making the raw query
+	operation a lot more safe and/or unexploitable from the outside.
+
+	Many thanks to David Escartin (Sonoc) for a detailed bug report!
+	(cherry picked from commit d03f17c4dffff5f8b9d114b036ff4d6dc0ad83ba)
+
+
+2022-04-16  OpenSIPS  <github at opensips dot org>
+	* [498b78763] :
+
+	Rebuild documentation
+
+
+2022-04-12  Liviu Chircu  <liviu at opensips dot org>
+	* [36bf27147] :
+
+	re.subst transformation: Fix possible pkg memleak
+	The leak would only happen under these simultaneous conditions:
+	  1. the "subst" (last) part of the RE is a variable
+	  2. the variable is using an index (e.g. an AVP)
+	  3. there are at least two different "subst" strings in the script,
+	     which can run alternatively (see the global "subst_re" logic to
+	     understand more about the "reusage" mechanism and this effect)
+
+	Many thanks to Richard Revels for a detailed report on this bug!
+
+	Fixes #2761
+	(cherry picked from commit c739c2f4de2b26767e894765bb5f47d908f88603)
+
+
+2022-04-12  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8b955ed5b] :
+
+	[rtpengine] avoid returning 0 as it breaks the script execution
+	Fixes #2796
+	(cherry picked from commit 1763c7a5c894c9adecd19023cd1470a408f626fb)
+
+
+2022-04-12  Peter Lemenkov  <lemenkov at gmail dot com>
+	* [97baf8192] :
+
+	Explicitly add fPIC and DPIC for gcc
+	This addresses linking on Fedora 34 and later with gcc 11:
+
+	```
+	gcc -shared -Wl,-z,relro -Wl,--as-needed  -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld  -Wl,-O2 -Wl,-E   alarm_checks.o hashTable.o interprocess_buffer.o openserMIBNotifications.o openserObjects.o openserSIPCommonObjects.o openserSIPContactTable.o openserSIPMethodSupportedTable.o openserSIPPortTable.o openserSIPRegUserLookupTable.o openserSIPRegUserTable.o openserSIPServerObjects.o openserSIPStatusCodesTable.o snmpstats.o sub_agent.o utilities.o  -L/usr/lib64 -lnetsnmpmibs -lnetsnmpagent -lnetsnmp -Wl,-z,relro -Wl,--as-needed -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -lm -lsensors -ldl -lm -lrpm -lrpmio -Wl,--enable-new-dtags -Wl,-z,relro -Wl,--as-needed -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -lm -lssl -lssl -lcrypto  -o snmpstats.so
+	/usr/bin/ld: /tmp/cccfDV1K.ltrans0.ltrans.o: warning: relocation against `event_shm_threshold' in read-only section `.text'
+	/usr/bin/ld: /tmp/cccfDV1K.ltrans0.ltrans.o: relocation R_X86_64_PC32 against undefined symbol `ctime_buf' can not be used when making a shared object; recompile with -fPIC
+	/usr/bin/ld: final link failed: bad value
+	collect2: error: ld returned 1 exit status
+	make[1]: Leaving directory '/builddir/build/BUILD/opensips-3.1.7/modules/snmpstats'
+	make[1]: *** [../../Makefile.rules:39: snmpstats.so] Error 1
+	make: *** [Makefile:197: modules] Error 2
+	```
+
+	Closes #2734.
+
+	(cherry picked from commit 0896f9a46700005a304a65ddf7e09419a3963b82)
+
+
+2022-04-09  OpenSIPS  <github at opensips dot org>
+	* [5a2312ba2] :
+
+	Rebuild documentation
+
+
+2022-04-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [f461e38d3] :
+
+	Merge pull request #2790 from Transatel/FIX_TOS_IPV6
+	Add TOS in IPV6
+
+
+2022-04-08  Matthieu Casanova  <matthieu.casanova at transatel dot com>
+	* [fd88ea53d] :
+
+	fix indentation
+
+
+2022-04-08  Matthieu Casanova  <matthieu.casanova at transatel dot com>
+	* [87fdd67dd] :
+
+	fix indentation
+
+
+2022-04-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [84a7b90c9] :
+
+	Merge pull request #2779 from ppisar/openldap-2.6.1
+	Rename an ldap_connect() to opensips_ldap_connect()
+	(cherry picked from commit 457111cebc2010225dffa668edd8155fdca6a62a)
+
+
+2022-04-08  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [de7062c28] :
+
+	Merge pull request #2773 from carstenbock/use_library_for_require_parsing
+	Use library function to fix edge case in require parsing
+	(cherry picked from commit 432a53305ba421067f2feb7b19cb2c3f1b0289ee)
+
+
+2022-04-06  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [6ea4a7ac1] :
+
+	Merge pull request #2806 from john08burke/redis_bugfix_3_1
+	[cachedb_redis] cleanup stale context pointer, branch 3.1
+
+
+2022-04-06  John Burke  <john at voxtelesys dot net>
+	* [439b8b099] :
+
+	[cachedb_redis] cleanup stale context pointer
+	revised version of d79f3765b35bd6268ca369b2152c379090bc5b2b for 3.1 branch
+
+
+2022-04-06  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [38eeb4100] :
+
+	Fix bad body re-assembling when handling a multi part with empty parts
+	Credits for the finding and for the fix go to John Burke ( @john08burke )
+	Closes #2794
+	(cherry picked from commit b0591d285ad966c2cb13672de8071c03fcba7414)
+
+
+2022-03-30  Razvan Crainea  <razvan at opensips dot org>
+	* [09daaa22f] :
+
+	Fix crash in parse_sdp for fmtp, rtpmap and hold
+	When invalid strings would have been passed, the remaining value would
+	have resulted in an invalid memory access.
+
+	Issue discovered during OpenSIPS Security Audit 2021,
+	    by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+
+2022-03-26  OpenSIPS  <github at opensips dot org>
+	* [3e08f3378] :
+
+	Rebuild documentation
+
+
+2022-03-24  Vlad Patrascu  <vladp at opensips dot org>
+	* [92614e94d] :
+
+	cJSON: fix memory leak on object parsing error
+	Issue discovered during OpenSIPS Security Audit 2021/2022,
+	by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-2mg2-g46r-j4qr
+	(cherry picked from commit 417568707520af25ec5c5dd91da18e6db3649dcb)
+
+
+2022-03-24  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [81941d188] :
+
+	[sipmsgops] fix codec_delete_XX() parsing
+	Issue discovered during OpenSIPS Security Audit 2021/2022,
+	by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-3ghx-j39m-cw4f
+	(cherry picked from commit dd051f8ed5ae3347fb1d556ced3c97822c9d8450)
+
+
+2022-03-19  OpenSIPS  <github at opensips dot org>
+	* [1e94508f4] :
+
+	Rebuild documentation
+
+
+2022-03-18  Liviu Chircu  <liviu at opensips dot org>
+	* [87e1f27d0] :
+
+	core: Fix Content-Length parsing
+	Issue discovered during OpenSIPS Security Audit 2022,
+	        by Alfred Farrugia & Sandro Gauci (Enable Security)
+
+	https://github.com/OpenSIPS/opensips/security/advisories/GHSA-c6j5-f4h4-2xrq
+	(cherry picked from commit 7cab422e2fc648f910abba34f3f0dbb3ae171ff5)
+
+
+2022-03-16  Razvan Crainea  <razvan at opensips dot org>
+	* [0c37ba495] :
+
+	b2b_entities: properly handle PRACK after dlg is matched
+	Otherwise, simply relay the PRACK.
+	(cherry picked from commit 8edf6ff627456c8cfa5c496e44c477e9ba8852a6)
+
+
+2022-03-16  Liviu Chircu  <liviu at opensips dot org>
+	* [4ed384ef6] :
+
+	dispatcher: Fix IP printing on error case
+	Many thanks to @Cossack9989 for the report!
+
+	Fixes #2780
+	(cherry picked from commit e2f13d3747577937152346b031b86639b37bc2b5)
+
+
+2022-03-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [75a59b801] :
+
+	b2b_entities: fix entity storage memory leak
+	Do not reset the pointer to the storage buffer when there is nothing
+	to serialize after running the callback.
+	(cherry picked from commit e19ed6eaaf8d238ada6b9868760127f097412439)
+
+
+2022-03-12  OpenSIPS  <github at opensips dot org>
+	* [b17405b01] :
+
+	Rebuild documentation
+
+
+2022-03-09  Liviu Chircu  <liviu at opensips dot org>
+	* [3a93dae19] :
+
+	dialplan: Always set the "attrs" pvar on success; Improve docs
+	This patch avoids leaving an untouched "attrs_pvar" variable after a
+	successful dp_translate(), in case the attributes are NULL or
+	empty-string.
+
+	In order to both prevent scripting bugs as well as boilerplate
+	initialization code, the "attrs_pvar" is now always set to ""
+	(empty-string) in case the "attrs" field is either NULL or empty-string.
+	(cherry picked from commit a8f964c8f565f5fb66797ca7f352e013ec3aa79a)
+
+
+2022-03-07  Razvan Crainea  <razvan at opensips dot org>
+	* [845eed213] :
+
+	rtpengine: fix hostname detection for IPv6
+	(cherry picked from commit 4d921360eb9dfa4dffe100de3444849afc7af5c9)
+
+
+2022-03-05  OpenSIPS  <github at opensips dot org>
+	* [84fc9936f] :
+
+	Rebuild documentation
+
+
+2022-03-04  Liviu Chircu  <liviu at opensips dot org>
+	* [2af7b6a2b] :
+
+	mi_fifo: Fix double fclose() during error handling
+	Example double-free scenario (multiple ones were possible):
+	  mi_fifo_callback
+	    -> mi_fifo_reply -> mi_fifo_flush -> mi_fifo_write -> ERROR -> fclose()
+	    -> mi_throw_error -> mi_fifo_write -> ERROR -> fclose()
+
+	Many thanks to David Escartin (Sonoc) for a detailed report!
+	(cherry picked from commit 85ba95d105dd564bdd1b02282dff1e6ab8ac109a)
+
+
+2022-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [c5f1b7c92] :
+
+	HP_MALLOC: Fine-tune the "frag split size" constants
+	It seems that "split on 4096 or larger" is too large a value, leading to
+	fragmentation issues on typical 1G - 4G SHM pools.
+
+	With this patch, HP_MALLOC will visibly use less shared memory, but will
+	also split fragments more often.
+	(cherry picked from commit 043d4f31d084560681733358438e5cb13926f84d)
+
+
+2022-03-02  Liviu Chircu  <liviu at opensips dot org>
+	* [d82fd36f4] :
+
+	fraud_detection: Do not raise call-duration alerts for CANCEL/487 calls
+	(cherry picked from commit 1c4a8a5ac7f685d5515191cd1654aa93c1f72739)
+
+
+2022-03-02  ihsinme  <ihsinme at gmail dot com>
+	* [e6ed91f09] :
+
+	incorrect error handling.
+	(cherry picked from commit 336e6b0b2ccdf53673eac2c9d27d6923b977ab7b)
+
+
+2022-02-17  benjamin.landais  <benjamin.landais at transatel dot com>
+	* [910af2ea8] :
+
+	Add TOS in IPV6
+
 =========================== Release 3.1.8 ==============================
 
 2022-02-23  Liviu Chircu  <liviu at opensips dot org>
