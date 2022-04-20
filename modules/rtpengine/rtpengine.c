@@ -2128,8 +2128,8 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			LM_ERR("No to-tag present\n");
 			goto error;
 		}
-		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.to_tag);
-		bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.from_tag);
+		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
+		bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
 	}
 
 	bencode_dictionary_add_string(ng_flags.dict, "command", command_strings[op]);
