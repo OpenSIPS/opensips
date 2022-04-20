@@ -931,37 +931,65 @@ error:
 int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 		cdb_raw_entry ***_, int __, int *___, str *attr, ...)
 {
-	int argc = 0;
-	const char *argv[MAP_SET_MAX_FIELDS+2];
-	size_t argvlen[MAP_SET_MAX_FIELDS+2];
-	str key, st, arg;
-	char *p;
+	int argc = 0, squoted = 0, dquoted = 0;
+	const char *argv[MAP_SET_MAX_FIELDS+1];
+	size_t argvlen[MAP_SET_MAX_FIELDS+1];
+	str key, st;
+	char *p, *lim, *arg = NULL;
 
 	st = *attr;
 	trim(&st);
-	while (st.len > 0 && (p = q_memchr(st.s, ' ', st.len))) {
-		arg.s = st.s;
-		arg.len = p - st.s;
-		trim(&arg);
 
-		argv[argc] = arg.s;
-		argvlen[argc++] = arg.len;
+	/* allow script developers to enclose swaths of text with single/double
+	 * quotes, in case any of their raw query string arguments must include
+	 * whitespace chars.  The enclosing quotes shall not be passed to Redis. */
+	for (p = st.s, lim = p + st.len; p < lim; p++) {
+		if ((dquoted && *p != '"') || (squoted && *p != '\''))
+			continue;
 
-		st.len -= p - st.s + 1;
-		st.s = p + 1;
-		trim(&st);
+		if (argc == MAP_SET_MAX_FIELDS) {
+			LM_ERR("max raw query args exceeded (%d)\n", MAP_SET_MAX_FIELDS);
+			goto bad_query;
+		}
+
+		if (dquoted || squoted) {
+			if (p+1 < lim && !is_ws(*(p+1)))
+				goto bad_query;
+
+			argv[argc]++;
+			argvlen[argc] = p - argv[argc];
+			argc++;
+			dquoted = squoted = 0;
+		} else if (*p == '"') {
+			dquoted = 1;
+			argv[argc] = p;
+		} else if (*p == '\'') {
+			squoted = 1;
+			argv[argc] = p;
+		} else if (is_ws(*p)) {
+			if (!arg)
+				continue;
+
+			argv[argc] = arg;
+			argvlen[argc++] = p - arg;
+			arg = NULL;
+		} else if (!arg) {
+			arg = p;
+		}
 	}
 
-	if (st.len > 0) {
-		argv[argc] = st.s;
-		argvlen[argc++] = st.len;
+	if (squoted || dquoted) {
+		LM_ERR("unterminated quoted query argument\n");
+		goto bad_query;
 	}
 
-	if (argc < 2) {
-		LM_ERR("malformed Redis RAW query: '%.*s' (%d)\n",
-		       attr->len, attr->s, attr->len);
-		return -1;
+	if (arg) {
+		argv[argc] = arg;
+		argvlen[argc++] = st.s + st.len - arg;
 	}
+
+	if (argc < 2)
+		goto bad_query;
 
 	/* TODO - altough in most of the cases the targetted key is the 2nd query string,
 		that's not always the case ! - make this 100% */
@@ -977,6 +1005,11 @@ int redis_raw_query_send(cachedb_con *connection, redisReply **reply,
 #endif
 
 	return redis_run_command_argv(connection, reply, &key, argc, argv, argvlen);
+
+bad_query:
+	LM_ERR("malformed Redis RAW query: '%.*s' (%d)\n",
+	       attr->len, attr->s, attr->len);
+	return -1;
 }
 
 int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***rpl,int expected_kv_no,int *reply_no)
