@@ -69,8 +69,8 @@ int tcp_mgm_get_profile(union sockaddr_union *remote,
 		        && path->proto != proto)
 			continue;
 
-		if (matchnet(&remote_ip, &path->remote_addr) == 1
-		        && matchnet(&local_ip, &path->local_addr) == 1) {
+		if ((path->remote_any || matchnet(&remote_ip, &path->remote_addr) == 1)
+		        && (path->local_any || matchnet(&local_ip, &path->local_addr) == 1)) {
 			*out_profile = path->prof;
 			break;
 		}
@@ -230,7 +230,15 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 
 	path->prof.alias_mode = int_vals[TCPCOL_ALIAS_MODE];
 	if (path->prof.alias_mode > TCP_ALIAS_ALWAYS) {
-		LM_ERR("invalid alias_mode: %d\n", path->prof.alias_mode);
+		LM_ERR("invalid alias_mode: %d, id: %d\n",
+		       path->prof.alias_mode, int_vals[TCPCOL_ID]);
+		return -1;
+	}
+
+	path->prof.parallel_read = int_vals[TCPCOL_PARALLEL_READ];
+	if (path->prof.parallel_read > 2) {
+		LM_ERR("invalid parallel_read mode: %d, id: %d\n",
+		       path->prof.parallel_read, int_vals[TCPCOL_ID]);
 		return -1;
 	}
 
@@ -240,7 +248,6 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 	path->prof.msg_read_timeout = int_vals[TCPCOL_MSG_READ_TIMEOUT];
 	path->prof.send_threshold = int_vals[TCPCOL_SEND_THRESHOLD];
 	path->prof.no_new_conn = !!int_vals[TCPCOL_NO_NEW_CONN];
-	path->prof.parallel_read = int_vals[TCPCOL_PARALLEL_READ];
 	path->prof.keepalive = !!int_vals[TCPCOL_KEEPALIVE];
 	path->prof.keepcount = int_vals[TCPCOL_KEEPCOUNT];
 	path->prof.keepidle = int_vals[TCPCOL_KEEPIDLE];
