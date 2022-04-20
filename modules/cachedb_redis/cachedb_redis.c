@@ -57,6 +57,7 @@ static param_export_t params[]={
 	{ "query_timeout",               INT_PARAM,                &redis_query_tout      },
 	{ "shutdown_on_error",           INT_PARAM,                &shutdown_on_error     },
 	{ "cachedb_url",                 STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
+	{ "enable_raw_query_quoting",    INT_PARAM,                &enable_raw_query_quoting},
 	{0,0,0}
 };
 
@@ -114,6 +115,9 @@ static int mod_init(void)
 		LM_ERR("failed to initialize cachedb_redis\n");
 		return -1;
 	}
+
+	redis_raw_query_send = enable_raw_query_quoting ?
+			redis_raw_query_send_new : redis_raw_query_send_old;
 
 	return 0;
 }

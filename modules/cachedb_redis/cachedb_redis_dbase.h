@@ -45,6 +45,7 @@ typedef struct cluster_nodes {
 extern int redis_query_tout;
 extern int redis_connnection_tout;
 extern int shutdown_on_error;
+extern int enable_raw_query_quoting;
 
 enum redis_flag {
 	REDIS_SINGLE_INSTANCE  = 1 << 0,
@@ -71,6 +72,13 @@ int redis_add(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_sub(cachedb_con *con,str *attr,int val,int expires,int *new_val);
 int redis_get_counter(cachedb_con *connection,str *attr,int *val);
 int redis_raw_query(cachedb_con *connection,str *attr,cdb_raw_entry ***reply,int expected_kv_no,int *reply_no);
+
+extern int redis_raw_query_send_old(cachedb_con *connection, redisReply **reply,
+		cdb_raw_entry ***_, int __, int *___, str *attr);
+extern int redis_raw_query_send_new(cachedb_con *connection, redisReply **reply,
+		cdb_raw_entry ***_, int __, int *___, str *attr);
+extern int (*redis_raw_query_send)(cachedb_con *connection, redisReply **reply,
+		cdb_raw_entry ***_, int __, int *___, str *attr);
 
 #endif /* CACHEDBREDIS_DBASE_H */
 
