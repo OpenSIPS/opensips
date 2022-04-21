@@ -3596,7 +3596,9 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 {
 	bencode_buffer_t bencbuf;
 	bencode_item_t *ret, *d_code;
-	int rcode = -1;
+
+	if (set_rtpengine_set_from_avp(msg) == -1)
+	    return -1;
 
 	if (bencode_buffer_init(&bencbuf)) {
 		LM_ERR("could not initialize bencode_buffer_t\n");
@@ -3608,18 +3610,13 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 		return -2;
 	}
 	bencode_dictionary_add_str(d_code, "code", code);
-	ret = rtpe_function_call(&bencbuf, msg, OP_PLAY_DTMF,
+	ret = rtpe_function_call_ok(&bencbuf, msg, OP_PLAY_DTMF,
 			flags, NULL, spvar, NULL, NULL, d_code);
 	if (!ret)
 		return -2;
 
-	if (bencode_dictionary_get_strcmp(ret, "result", "ok")) {
-		LM_ERR("proxy didn't return \"ok\" result\n");
-	} else
-		rcode = 1;
-
 	bencode_buffer_free(&bencbuf);
-	return rcode;
+	return 1;
 }
 
 static void rtpengine_raise_event(int sender, void *p)
