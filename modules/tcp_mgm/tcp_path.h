@@ -34,12 +34,12 @@ struct tcp_path {
 	enum sip_protos proto;
 
 	struct net remote_addr;
-	unsigned short remote_port;
 	char remote_any:1;
+	unsigned short remote_port;
 
 	struct net local_addr;
-	unsigned short local_port;
 	char local_any:1;
+	unsigned short local_port;
 
 	int priority;
 	struct tcp_conn_profile prof;

@@ -58,9 +58,12 @@ int tcp_mgm_get_profile(union sockaddr_union *remote,
 {
 	struct tcp_path *path, *lim;
 	struct ip_addr remote_ip, local_ip;
+	unsigned short remote_port, local_port;
 
 	sockaddr2ip_addr(&remote_ip, &remote->s);
 	sockaddr2ip_addr(&local_ip, &local->s);
+	remote_port = su_getport(remote);
+	local_port = su_getport(local);
 
 	lock_start_read(tcp_paths_lk);
 
@@ -69,7 +72,9 @@ int tcp_mgm_get_profile(union sockaddr_union *remote,
 		        && path->proto != proto)
 			continue;
 
-		if ((path->remote_any || matchnet(&remote_ip, &path->remote_addr) == 1)
+		if ((!path->remote_port || path->remote_port == remote_port)
+		        && (!path->local_port || path->local_port == local_port)
+		        && (path->remote_any || matchnet(&remote_ip, &path->remote_addr) == 1)
 		        && (path->local_any || matchnet(&local_ip, &path->local_addr) == 1)) {
 			*out_profile = path->prof;
 			break;
