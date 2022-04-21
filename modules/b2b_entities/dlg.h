@@ -127,7 +127,6 @@ typedef struct b2b_entry
 typedef b2b_entry_t* b2b_table;
 
 struct b2b_callback {
-	int type;
 	b2b_cb_t cbf;
 	str mod_name;
 	struct b2b_callback *next;
