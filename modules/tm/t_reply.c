@@ -290,6 +290,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	str method = str_init(ACK);
 	str to;
 	str ack_buf;
+	struct usr_avp **backup_list;
 
 	if(parse_headers(rpl,is_local(trans)?HDR_EOH_F:(HDR_TO_F|HDR_FROM_F),0)==-1
 	|| !rpl->to || !rpl->from ) {
@@ -310,6 +311,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	if (trans->uac[branch].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
+	backup_list = set_avp_list( &trans->user_avps );
 	if(SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len)==0){
 		/* successfully sent out */
 		if ( has_tran_tmcbs( trans, TMCB_MSG_SENT_OUT) ) {
@@ -318,6 +320,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 				trans, trans->uas.request, 0, 0);
 		}
 	}
+	set_avp_list(backup_list);
 
 	tcp_no_new_conn = 0;
 
