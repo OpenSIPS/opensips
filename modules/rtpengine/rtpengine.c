@@ -3505,6 +3505,9 @@ static int rtpengine_play_dtmf_f(struct sip_msg* msg, str *code, str *flags, pv_
 	bencode_item_t *ret, *d_code;
 	int rcode = -1;
 
+	if (set_rtpengine_set_from_avp(msg) == -1)
+		return -1;
+
 	if (bencode_buffer_init(&bencbuf)) {
 		LM_ERR("could not initialize bencode_buffer_t\n");
 		return -2;
