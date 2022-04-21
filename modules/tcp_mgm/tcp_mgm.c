@@ -116,14 +116,7 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
-	int i;
-
-	init_db_url(tcp_db_url, 0);
-	tcp_db_table.len = strlen(tcp_db_table.s);
-
-	for (i = 0; i < NO_DB_COLS; i++)
-		tcp_mgm_cols[i].name.len = strlen(tcp_mgm_cols[i].name.s);
-
+	/* initialize the data cache */
 	if (!tcp_path_init()) {
 		LM_ERR("failed to init internal structures\n");
 		return -1;
@@ -136,7 +129,8 @@ static int mod_init(void)
 	}
 
 	tcp_con_get_profile = tcp_mgm_get_profile;
-	LM_INFO("successfully installed our callback in the TCP core\n");
+
+	LM_DBG("successfully installed a custom TCP profile lookup func\n");
 	return 0;
 }
 

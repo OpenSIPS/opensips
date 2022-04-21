@@ -58,6 +58,14 @@ db_col_t tcp_mgm_cols[] = {
 
 int tcp_db_init(void)
 {
+	int i;
+
+	init_db_url(tcp_db_url, 0);
+	tcp_db_table.len = strlen(tcp_db_table.s);
+
+	for (i = 0; i < NO_DB_COLS; i++)
+		tcp_mgm_cols[i].name.len = strlen(tcp_mgm_cols[i].name.s);
+
 	if (db_bind_mod(&tcp_db_url, &db)) {
 		LM_ERR("cannot bind to database module! "
 		         "Did you forget to load a database module?\n");

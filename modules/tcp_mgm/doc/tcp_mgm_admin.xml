@@ -1,0 +1,113 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides optional, SQL-based support for fine-grained
+		management of all TCP connections taking place on OpenSIPS.
+	</para>
+
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+			At least one SQL database module must be loaded (e.g. "db_xxx").
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+			None.
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+
+		<section id="param_db_url" xreflabel="db_url">
+		<title><varname>db_url (string)</varname></title>
+		<para>
+		Mandatory URL to the SQL database.
+		</para>
+		<example>
+		<title>Setting the <varname>db_url</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("tcp_mgm", "db_url", "mysql://opensips:opensipsrw@localhost/opensips")
+
+</programlisting>
+		</example>
+		</section>
+
+
+		<section id="param_db_table" xreflabel="db_table">
+		<title><varname>db_table (string)</varname></title>
+		<para>
+			The name of the table holding the TCP paths (rules).
+		</para>
+		<para>
+			Default value is <emphasis>"tcp_mgm"</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <varname>db_table</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("tcp_mgm", "db_table", "tcp_mgm")
+
+</programlisting>
+		</example>
+		</section>
+
+
+		<section id="param_column_name_col" xreflabel="column_name_col">
+		<title><varname>[column-name]_col (string)</varname></title>
+		<para>
+			Use a different name for column <emphasis>"column-name"</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <varname>[column-name]_col</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("tcp_mgm", "connect_timeout_col", "connect_to")
+
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+		<section id="mi_tcp_reload" xreflabel="tcp_reload">
+		<title>
+		<function moreinfo="none">tcp_reload</function>
+		</title>
+		<para>
+		Reload all TCP paths from the <emphasis>tcp_mgm</emphasis> table
+		without disrupting ongoing traffic.  Note that the reloaded rules will
+		NOT immediately apply to existing TCP connections, rather only to
+		newly established ones.
+		</para>
+		<para>Example:</para>
+		<programlisting  format="linespecific">
+
+# reload all TCP paths
+$ opensips-cli -x mi tcp_reload
+$ "OK"
+		</programlisting>
+		</section>
+
+	</section>
+
+</chapter>
