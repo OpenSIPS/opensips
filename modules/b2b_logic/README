@@ -33,6 +33,7 @@ B2B_LOGIC
               1.4.17. db_mode (int)
               1.4.18. db_table (str)
               1.4.19. b2bl_th_init_timeout (int)
+              1.4.20. b2bl_early_update (int)
 
         1.5. Exported Functions
 
@@ -52,10 +53,17 @@ B2B_LOGIC
 
               1.5.5. b2b_pass_request()
               1.5.6. b2b_handle_reply()
-              1.5.7. b2b_send_reply(code, reason)
+              1.5.7. b2b_send_reply(code, reason[, headers[,
+                      body]])
+
               1.5.8. b2b_delete_entity()
               1.5.9. b2b_end_dlg_leg()
               1.5.10. b2b_bridge_request(b2bl_key,entity_no)
+              1.5.11. b2b_trigger_scenario(scenario, [params],
+                      peer1, [extra_headers_peer1],
+                      [extra_headers_contents_peer1], peer2
+                      [extra_headers_peer2],
+                      [extra_headers_contents_peer2])
 
         1.6. Exported MI Functions
 
@@ -115,24 +123,27 @@ B2B_LOGIC
    1.13. Set contact_user parameter
    1.14. Set b2bl_from_spec_param parameter
    1.15. Set server_address parameter
-   1.16. Set init_callid_hdr parameter
-   1.17. Set db_mode parameter
-   1.18. Set db_table parameter
-   1.19. Set b2bl_th_init_timeout parameter
-   1.20. b2b_init_request usage
-   1.21. b2b_server_new usage
-   1.22. b2b_client_new usage
-   1.23. b2b_bridge usage
-   1.24. b2b_pass_request usage
-   1.25. b2b_handle_reply usage
-   1.26. b2b_send_reply usage
-   1.27. b2b_delete_entity usage
-   1.28. b2b_end_dlg_leg usage
-   1.29. b2b_bridge_request usage
-   1.30. $b2b_logic.key usage
-   1.31. $b2b_logic.entity usage
-   1.32. $b2b_logic.ctx usage
-   1.33. $b2b_logic.scenario usage
+   1.16. Set server_address parameter using Pseudo-Variables
+   1.17. Set init_callid_hdr parameter
+   1.18. Set db_mode parameter
+   1.19. Set db_table parameter
+   1.20. Set b2bl_th_init_timeout parameter
+   1.21. Set b2bl_early_update parameter
+   1.22. b2b_init_request usage
+   1.23. b2b_server_new usage
+   1.24. b2b_client_new usage
+   1.25. b2b_bridge usage
+   1.26. b2b_pass_request usage
+   1.27. b2b_handle_reply usage
+   1.28. b2b_send_reply usage
+   1.29. b2b_delete_entity usage
+   1.30. b2b_end_dlg_leg usage
+   1.31. b2b_bridge_request usage
+   1.32. b2b_trigger_scenario usage
+   1.33. $b2b_logic.key usage
+   1.34. $b2b_logic.entity usage
+   1.35. $b2b_logic.ctx usage
+   1.36. $b2b_logic.scenario usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -418,11 +429,18 @@ route{
    received calls, if it is not set, it is constructed dynamically
    from the socket where the initiating request was received. This
    socket will be used to send all the requests, replies for that
-   session.
+   session. This parameter support Pseudo-Variables.
 
    Example 1.15. Set server_address parameter
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
+...
+
+   Example 1.16. Set server_address parameter using
+   Pseudo-Variables
+...
+modparam("b2b_logic", "server_address", "sip:$socket_in(advertised_ip):$
+socket_in(advertised_port)")
 ...
 
 1.4.16. init_callid_hdr (str)
@@ -432,7 +450,7 @@ modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
    this parameter to the name of the header in which to insert the
    original callid.
 
-   Example 1.16. Set init_callid_hdr parameter
+   Example 1.17. Set init_callid_hdr parameter
 ...
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
@@ -449,7 +467,7 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 
    Default value is “2” (WRITE BACK).
 
-   Example 1.17. Set db_mode parameter
+   Example 1.18. Set db_mode parameter
 ...
 modparam("b2b_logic", "db_mode", 1)
 ...
@@ -460,7 +478,7 @@ modparam("b2b_logic", "db_mode", 1)
 
    Default value is “b2b_logic”
 
-   Example 1.18. Set db_table parameter
+   Example 1.19. Set db_table parameter
 ...
 modparam("b2b_logic", "db_table", "some_table_name")
 ...
@@ -471,9 +489,25 @@ modparam("b2b_logic", "db_table", "some_table_name")
 
    Default value is “60”
 
-   Example 1.19. Set b2bl_th_init_timeout parameter
+   Example 1.20. Set b2bl_th_init_timeout parameter
 ...
 modparam("b2b_logic", "b2bl_th_init_timeout", 60)
+...
+
+1.4.20. b2bl_early_update (int)
+
+   Allow bridging of calls in early stage by issuing a "UPDATE"
+   request
+
+     * 0 - Do not bridge dialogs in early stage
+     * 1 - Try to update an session in early stage by sending an
+       UPDATE
+
+   Default value is “0” Do not bridge dialogs in early stage
+
+   Example 1.21. Set b2bl_early_update parameter
+...
+modparam("b2b_logic", "b2bl_early_update", 1)
 ...
 
 1.5. Exported Functions
@@ -530,7 +564,7 @@ Note
    correctly routed, but the SIP pacakge may be invalid (as
    Contact, Via, etc).
 
-   Example 1.20. b2b_init_request usage
+   Example 1.22. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user()) {
    ...
@@ -567,7 +601,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.21. b2b_server_new usage
+   Example 1.23. b2b_server_new usage
 ...
 if(is_method("INVITE") && !has_totag()) {
    b2b_server_new("server1", $avp(b2b_hdrs), $avp(b2b_hdr_bodies));
@@ -604,7 +638,7 @@ if(is_method("INVITE") && !has_totag()) {
    This function can be used from REQUEST_ROUTE and the b2b_logic
    request routes.
 
-   Example 1.22. b2b_client_new usage
+   Example 1.24. b2b_client_new usage
 ...
 b2b_client_new("client1", "sip:alice@opensips.org");
 ...
@@ -640,7 +674,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.23. b2b_bridge usage
+   Example 1.25. b2b_bridge usage
 ...
 route[b2b_logic_request] {
    ...
@@ -659,7 +693,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.24. b2b_pass_request usage
+   Example 1.26. b2b_pass_request usage
 ...
 route[b2b_logic_request] {
    if ($rm != "BYE") {
@@ -680,7 +714,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic reply routes.
 
-   Example 1.25. b2b_handle_reply usage
+   Example 1.27. b2b_handle_reply usage
 ...
 route[b2b_logic_reply] {
     xlog("B2B REPLY: [$rs $rm] from entity: $b2b_logic.entity(id)\n");
@@ -688,7 +722,7 @@ route[b2b_logic_reply] {
 }
 ...
 
-1.5.7.  b2b_send_reply(code, reason)
+1.5.7.  b2b_send_reply(code, reason[, headers[, body]])
 
    This function sends a reply to the entity that sent the current
    request.
@@ -696,10 +730,12 @@ route[b2b_logic_reply] {
    Parameters:
      * code (int) - reply code
      * reason (string) - reply reason string
+     * headers (string, optional) - additional headers
+     * body (string, optional) - message body
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.26. b2b_send_reply usage
+   Example 1.28. b2b_send_reply usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -715,7 +751,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.27. b2b_delete_entity usage
+   Example 1.29. b2b_delete_entity usage
 ...
 route[b2b_logic_request] {
    if ($rm == "BYE") {
@@ -735,7 +771,7 @@ route[b2b_logic_request] {
    This function can be used from the b2b_logic request or reply
    routes.
 
-   Example 1.28. b2b_end_dlg_leg usage
+   Example 1.30. b2b_end_dlg_leg usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -757,7 +793,7 @@ route[b2b_logic_request] {
      * entity_no (int) - an integer that holds the entity of the
        entity/participant to bridge.
 
-   Example 1.29. b2b_bridge_request usage
+   Example 1.31. b2b_bridge_request usage
 ...
 modparam("b2b_entities", "script_req_route", "b2b_request")
 ...
@@ -773,6 +809,67 @@ route[b2b_request]
          b2b_bridge_request($ci,$var(entity));
       }
    }
+   ...
+}
+...
+
+1.5.11.  b2b_trigger_scenario(scenario, [params], peer1,
+[extra_headers_peer1], [extra_headers_contents_peer1], peer2
+[extra_headers_peer2], [extra_headers_contents_peer2])
+
+   This function triggers a certain scenario from routing script,
+   e.g. out-of-dialog REFERs.
+
+   Parameters:
+     * scenario (string) - Name of the scenario to be triggered.
+     * params (string, optional) - Parameters to be used in this
+       scenario (optionally as CSV)
+          + n - Enable rfc3515 NOTIFY to inform the agent sending
+            the REFER of the status of the reference.
+          + session key (string, optional) - Internal session key,
+            if the NOTIFY should be sent in a different session on
+            this B2B-UA (e.g. useful for receiving out-of-dialog
+            REFERs)
+          + party of remote session (int, optional) - If the
+            NOTIFY should be sent to a different session, which
+            side should receive the NOTIFY of the session (0 =
+            A-Party of the session, 1 = B-Party of the session)
+     * peer1 (string) - Parameters to define the A-Party of the
+       triggered scenario
+          + entitiy_name (string) - Name of the entity
+          + RURI (string) - R-URI of the entity to contact
+          + Proxy (string, optional) - Outbound Proxy to be used
+            for this entity
+          + Display-Name (string, optional) - Display Name to be
+            used for this entity
+     * extra_headers_peer1 (var, optional) - AVP variable holding
+       a list of extra headers (the header names) to be added for
+       any request sent for the first entity.
+     * extra_headers_contents_peer1 (var, optional) - AVP variable
+       holding a list of extra header bodies (corresponding to the
+       headers given in the extra_headers_peer1 parameter) to be
+       added for any request sent for the first entity.
+     * peer2 (string) - Parameters to define the B-Party of the
+       triggered scenario. The format is identitical to the
+       definition of peer1.
+     * extra_headers_peer2 (var, optional) - AVP variable holding
+       a list of extra headers (the header names) to be added for
+       any request sent for the second entity.
+     * extra_headers_contents_peer2 (var, optional) - AVP variable
+       holding a list of extra header bodies (corresponding to the
+       headers given in the extra_headers_peer2 parameter) to be
+       added for any request sent for the second entity.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.32. b2b_trigger_scenario usage
+...
+if(is_method("REFER") && !has_totag()) {
+   $avp(header) = "Replaces";
+   $avp(header_content) = "call-id=xyz";
+   b2b_trigger_scenario("refer", "n", "conf,sip:conference@10.0.0.1", $a
+vp(header), $avp(header_content), "callee,sip:user@10.0.0.1,sip:10.0.0.1
+");
    ...
 }
 ...
@@ -873,7 +970,7 @@ nsips.org
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.30. $b2b_logic.key usage
+   Example 1.33. $b2b_logic.key usage
 ...
 local_route {
    ...
@@ -896,6 +993,10 @@ local_route {
      * the entity key, accessible by using the key subname or no
        subname at all.
      * the entity ID, accessible by using the id subname.
+     * the From-Tag of the dialog, accessible by using the fromtag
+       subname.
+     * the To-Tag of the dialog, accessible by using the totag
+       subname.
 
    The index is used to select which entity from the B2B session
    to refer to. The only possible values are 0 or 1 and correspond
@@ -913,7 +1014,7 @@ local_route {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.31. $b2b_logic.entity usage
+   Example 1.34. $b2b_logic.entity usage
 ...
 modparam("b2b_entities", "script_request_route", "b2b_request")
 ...
@@ -942,7 +1043,7 @@ route[b2b_request] {
    Setting the variable to NULL will delete the value at the given
    key.
 
-   Example 1.32. $b2b_logic.ctx usage
+   Example 1.35. $b2b_logic.ctx usage
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -970,7 +1071,7 @@ route[b2b_reply] {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.33. $b2b_logic.scenario usage
+   Example 1.36. $b2b_logic.scenario usage
 ...
 route[b2b_logic_request] {
    if ($b2b_logic.scenario == "prepaid") {
@@ -1135,12 +1236,13 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 88 22 2964 2464
    2. Nick Altmann (@nikbyte) 13 9 278 29
-   3. Razvan Crainea (@razvancrainea) 9 4 130 128
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 49 11
-   5. Maksym Sobolyev (@sobomax) 4 2 21 21
-   6. Liviu Chircu (@liviuchircu) 3 1 2 2
-   7. Aron Podrigal (@ar45) 3 1 1 1
-   8. Zero King (@l2dy) 3 1 1 1
+   3. Carsten Bock 12 5 679 23
+   4. Razvan Crainea (@razvancrainea) 9 4 130 128
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 49 11
+   6. Maksym Sobolyev (@sobomax) 4 2 21 21
+   7. Liviu Chircu (@liviuchircu) 3 1 2 2
+   8. Aron Podrigal (@ar45) 3 1 1 1
+   9. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1162,14 +1264,15 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jan 2021 - Feb 2022
-   2. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Feb 2022
-   3. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
-   5. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
-   6. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   7. Zero King (@l2dy)                   Dec 2020 - Dec 2020
-   8. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2020
+   1. Carsten Bock                        Mar 2022 - Apr 2022
+   2. Razvan Crainea (@razvancrainea)     Jan 2021 - Feb 2022
+   3. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Feb 2022
+   4. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
+   6. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
+   7. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   8. Zero King (@l2dy)                   Dec 2020 - Dec 2020
+   9. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1178,10 +1281,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Nick Altmann
-   (@nikbyte).
+   Last edited by: Carsten Bock, Vlad Patrascu (@rvlad-patrascu),
+   Nick Altmann (@nikbyte).
 
    Documentation Copyrights:
+
+   Copyright © 2022 ng-voice GmbH
 
    Copyright © 2010 VoIP Embedded, Inc.
 

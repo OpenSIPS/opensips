@@ -271,8 +271,9 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 15 4 1118 24
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 4 2
-   3. Nick Altmann (@nikbyte) 3 1 2 2
+   2. Liviu Chircu (@liviuchircu) 5 3 13 7
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 4 2
+   4. Nick Altmann (@nikbyte) 3 1 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -294,9 +295,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     Feb 2021 - Oct 2021
-   2. Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
+   1. Liviu Chircu (@liviuchircu)         Apr 2022 - Apr 2022
+   2. Vlad Patrascu (@rvlad-patrascu)     Feb 2021 - Oct 2021
+   3. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
 
    (1) including any documentation-related commits, excluding
    merge commits

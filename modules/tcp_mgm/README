@@ -116,7 +116,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                  Name             DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)    17       6      1115      42
+   1. Liviu Chircu (@liviuchircu)    19       7      1266      51
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -146,6 +146,8 @@ Chapter 2. Contributors
 Chapter 3. Documentation
 
 3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
 

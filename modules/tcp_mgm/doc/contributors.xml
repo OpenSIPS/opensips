@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">17</entry>
-		<entry align="center">6</entry>
-		<entry align="center">1115</entry>
-		<entry align="center">42</entry>
+		<entry align="center">19</entry>
+		<entry align="center">7</entry>
+		<entry align="center">1266</entry>
+		<entry align="center">51</entry>
 	</row>
 	</tbody>
 	</tgroup>
@@ -73,7 +73,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>).</para>
 </section>
 
 </chapter>

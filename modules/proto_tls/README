@@ -581,12 +581,12 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 57 30 1547 811
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 58 31 1548 812
    2. Razvan Crainea (@razvancrainea) 53 33 920 706
    3. Eseanu Marius Cristian (@eseanucristian) 41 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
    5. Vlad Patrascu (@rvlad-patrascu) 18 12 172 201
-   6. Liviu Chircu (@liviuchircu) 10 7 30 105
+   6. Liviu Chircu (@liviuchircu) 13 10 44 112
    7. Bogdan Chifor 5 2 141 1
    8. Vlad Paiu (@vladpaiu) 4 2 84 3
    9. Maksym Sobolyev (@sobomax) 4 2 3 18
@@ -615,14 +615,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
-   2.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2021
-   4.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2021
-   5.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
-   8.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2022
+   2.  Liviu Chircu (@liviuchircu)         Mar 2015 - Apr 2022
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   4.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   5.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2021
+   6.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    10. Ionut Ionita (@ionutrazvanionita)   Mar 2015 - Apr 2017
 
