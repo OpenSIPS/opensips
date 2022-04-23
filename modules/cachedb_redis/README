@@ -19,6 +19,7 @@ cachedb_redis Module
               1.5.2. connect_timeout (integer)
               1.5.3. query_timeout (integer)
               1.5.4. shutdown_on_error (integer)
+              1.5.5. enable_raw_query_quoting (integer)
 
         1.6. Exported Functions
         1.7. Raw Query Syntax
@@ -46,7 +47,8 @@ cachedb_redis Module
    1.3. Set connect_timeout parameter
    1.4. Set connect_timeout parameter
    1.5. Set the shutdown_on_error parameter
-   1.6. Redis Raw Query Examples
+   1.6. Set the enable_raw_query_quoting parameter
+   1.7. Redis Raw Query Examples
 
 Chapter 1. Admin Guide
 
@@ -160,6 +162,21 @@ modparam("cachedb_redis", "query_timeout",1000)
 modparam("cachedb_redis", "shutdown_on_error", 1)
 ...
 
+1.5.5. enable_raw_query_quoting (integer)
+
+   Set this parameter to 1 in order to allow raw query arguments
+   to be optionally enclosed by single or double-quotes, which
+   allows the enclosed string to contain a wider array of
+   characters, including whitespace.
+
+   Default value is 0 (disabled).
+
+   Example 1.6. Set the enable_raw_query_quoting parameter
+...
+# enable quoted raw query arguments
+modparam("cachedb_redis", "enable_raw_query_quoting", 1)
+...
+
 1.6. Exported Functions
 
    The module does not export functions to be used in
@@ -173,7 +190,7 @@ modparam("cachedb_redis", "shutdown_on_error", 1)
 
    Here are a couple examples of running some Redis queries :
 
-   Example 1.6. Redis Raw Query Examples
+   Example 1.7. Redis Raw Query Examples
 ...
         $var(my_hash) = "my_hash_name";
         $var(my_key) = "my_key_name";
@@ -211,8 +228,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 30 17 1428 43
-   2. Razvan Crainea (@razvancrainea) 16 13 130 35
-   3. Liviu Chircu (@liviuchircu) 13 11 107 56
+   2. Liviu Chircu (@liviuchircu) 18 13 331 102
+   3. Razvan Crainea (@razvancrainea) 16 13 130 35
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 7 5
    5. jalung 4 1 144 61
    6. Dan Pascu (@danpascu) 3 1 15 15
@@ -244,8 +261,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  John Burke                          Apr 2022 - Apr 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2022
+   2.  John Burke                          Apr 2022 - Apr 2022
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Mar 2020
    4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    5.  Dan Pascu (@danpascu)               May 2019 - May 2019
@@ -265,8 +282,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Julián Moreno Patiño, Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Razvan Crainea
    (@razvancrainea), Vlad Paiu (@vladpaiu).
 
    Documentation Copyrights:
