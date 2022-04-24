@@ -2001,7 +2001,7 @@ int tr_eval_ip(struct sip_msg *msg, tr_param_t *tp,int subtype,
 			if(!(val->flags&PV_VAL_STR))
 				val->rs.s = int2str(val->ri, &val->rs.len);
 
-			val->ri = (ip_addr_is_1918(&(val->rs))==1) ? 1 : 0;
+			val->ri = ip_addr_is_1918(&(val->rs));
 
 			val->flags = PV_TYPE_INT|PV_VAL_INT|PV_VAL_STR;
 			val->rs.s = int2str(val->ri, &val->rs.len);

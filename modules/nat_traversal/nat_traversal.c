@@ -747,9 +747,6 @@ get_contact_uri(struct sip_msg* msg, struct sip_uri *uri, contact_t **_c)
     return True;
 }
 
-
-#define is_private_address(x) (ip_addr_is_1918(x)==1 ? 1 : 0)
-
 // Test if address of signaling is different from address in 1st Via field
 static Bool
 test_source_address(struct sip_msg *msg)
@@ -775,7 +772,7 @@ test_private_contact(struct sip_msg *msg)
     if (!get_contact_uri(msg, &uri, &contact))
         return False;
 
-    return is_private_address(&(uri.host));
+    return ip_addr_is_1918(&(uri.host));
 }
 
 
@@ -783,7 +780,7 @@ test_private_contact(struct sip_msg *msg)
 static Bool
 test_private_via(struct sip_msg *msg)
 {
-    return is_private_address(&(msg->via1->host));
+    return ip_addr_is_1918(&(msg->via1->host));
 }
 
 
