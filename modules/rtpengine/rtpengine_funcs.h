@@ -24,13 +24,11 @@
 
 #include "../../str.h"
 #include "../../parser/msg_parser.h"
-#include "../../parser/contact/contact.h"
 
 int extract_body(struct sip_msg * , str *);
 int check_content_type(struct sip_msg * );
 int get_to_tag(struct sip_msg *, str *);
 int get_from_tag(struct sip_msg *, str *);
-int get_contact_uri(struct sip_msg *, struct sip_uri *, contact_t **);
 int get_via_branch(struct sip_msg *, int, str *);
 
 #endif
