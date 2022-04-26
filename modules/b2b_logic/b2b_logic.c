@@ -2220,6 +2220,18 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->register_set_tracer_cb = b2bl_register_set_tracer_cb;
 	api->restore_upper_info = b2bl_restore_upper_info;
 
+	api->ctx_register_int = b2bl_ctx_register_int;
+	api->ctx_register_str = b2bl_ctx_register_str;
+	api->ctx_register_ptr = b2bl_ctx_register_ptr;
+
+	api->ctx_put_int = b2bl_ctx_put_int;
+	api->ctx_put_str = b2bl_ctx_put_str;
+	api->ctx_put_ptr = b2bl_ctx_put_ptr;
+
+	api->ctx_get_int = b2bl_ctx_get_int;
+	api->ctx_get_str = b2bl_ctx_get_str;
+	api->ctx_get_ptr = b2bl_ctx_get_ptr;
+
 	return 0;
 }
 

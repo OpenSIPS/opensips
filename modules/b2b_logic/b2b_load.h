@@ -4,6 +4,7 @@
 #include "../../sr_module.h"
 #include "../b2b_entities/b2b_common.h"
 #include "../b2b_entities/b2be_load.h"
+#include "b2b_logic_ctx.h"
 
 #define B2B_BYE_CB        (1<<0)
 #define B2B_REJECT_CB     (1<<1)
@@ -107,6 +108,18 @@ typedef struct b2bl_api
 	b2bl_register_cb_f register_cb;
 	b2bl_register_set_tracer_cb_f register_set_tracer_cb;
 	b2bl_restore_upper_info_f restore_upper_info;
+
+	b2bl_ctx_register_int_f ctx_register_int;
+	b2bl_ctx_register_str_f ctx_register_str;
+	b2bl_ctx_register_ptr_f ctx_register_ptr;
+
+	b2bl_ctx_put_int_f ctx_put_int;
+	b2bl_ctx_put_str_f ctx_put_str;
+	b2bl_ctx_put_ptr_f ctx_put_ptr;
+
+	b2bl_ctx_get_int_f ctx_get_int;
+	b2bl_ctx_get_str_f ctx_get_str;
+	b2bl_ctx_get_ptr_f ctx_get_ptr;
 }b2bl_api_t;
 
 str* internal_init_scenario(struct sip_msg* msg, str *scen_name,

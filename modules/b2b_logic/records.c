@@ -32,6 +32,7 @@
 #include "../../ut.h"
 #include "../../parser/parse_uri.h"
 #include "../../pt.h"
+#include "../../context.h"
 #include "../presence/hash.h"
 #include "../presence/utils_func.h"
 #include "records.h"
@@ -149,7 +150,8 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 		}
 	}
 
-	size = sizeof(b2bl_tuple_t) + local_contact.len;
+	size = sizeof(b2bl_tuple_t) + local_contact.len +
+		context_size(CONTEXT_B2B_LOGIC);
 	tuple = (b2bl_tuple_t*)shm_malloc(size);
 	if(tuple == NULL)
 	{
@@ -158,7 +160,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 	}
 	memset(tuple, 0, size);
 
-	tuple->local_contact.s = (char*)(tuple + 1);
+	tuple->local_contact.s = (char*)(tuple + 1) + context_size(CONTEXT_B2B_LOGIC);
 	memcpy(tuple->local_contact.s, local_contact.s, local_contact.len);
 	tuple->local_contact.len = local_contact.len;
 
@@ -648,6 +650,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		cb_params.entity = 0;
 		tuple->cbf(&cb_params, B2B_DESTROY_CB);
 	}
+	context_destroy(CONTEXT_B2B_LOGIC, context_of(tuple));
 	if(db_del)
 		b2bl_db_delete(tuple);
 	if(b2bl_htable[hash_index].first == tuple)
