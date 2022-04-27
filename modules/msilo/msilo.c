@@ -946,24 +946,23 @@ static int m_dump(struct sip_msg* msg, str* owner, int* maxmsg)
 		else
 			LM_DBG("sending composed body\n");
 
-			tmb.t_request(&msg_type,  /* Type of the message */
-					&str_vals[1],     /* Request-URI (To) */
-					&str_vals[1],     /* To */
-					&str_vals[0],     /* From */
-					&hdr_str,         /* Optional headers including CRLF */
-					(n<0)?(RES_ROWS(db_res)[i].values[3].nul?NULL:&str_vals[2]):&body_str, /* Message body */
-					(ms_outbound_proxy.s)?&ms_outbound_proxy:0,
-									/* outbound uri */
-					m_tm_callback,    /* Callback function */
-					(void*)(long)mid, /* Callback parameter */
-					NULL
-				);
-			if (maxmsg_i > 0) {
-				LM_DBG("Maximum number of dumped messages: %d\n", maxmsg_i);
-				sent_cnt++;
-				if (sent_cnt >= maxmsg_i)
-					break;
-			}
+		tmb.t_request(&msg_type,  /* Type of the message */
+				&str_vals[1],     /* Request-URI (To) */
+				&str_vals[1],     /* To */
+				&str_vals[0],     /* From */
+				&hdr_str,         /* Optional headers including CRLF */
+				(n<0)?(RES_ROWS(db_res)[i].values[3].nul?NULL:&str_vals[2]):&body_str, /* Message body */
+				(ms_outbound_proxy.s)?&ms_outbound_proxy:0, /* outbound uri */
+				m_tm_callback,    /* Callback function */
+				(void*)(long)mid, /* Callback parameter */
+				NULL
+		);
+		if (maxmsg_i > 0) {
+			LM_DBG("Maximum number of dumped messages: %d\n", maxmsg_i);
+			sent_cnt++;
+			if (sent_cnt >= maxmsg_i)
+				break;
+		}
 	}
 
 done:
