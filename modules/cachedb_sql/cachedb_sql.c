@@ -461,7 +461,7 @@ static int dbcache_fetch_counter(cachedb_con *con,str *attr,int *ret_val)
 			LM_ERR("unknown type of DB user column\n");
 			if (db_res != NULL && CACHEDBSQL_FUNC(con).free_result(CACHEDBSQL_CON(con), db_res) < 0)
 				LM_ERR("failed to freeing result of query\n");
-				return -1;
+			return -1;
 	}
 
 	return 1;
