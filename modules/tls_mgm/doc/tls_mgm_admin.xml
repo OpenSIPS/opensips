@@ -607,6 +607,12 @@ modparam("tls_mgm", "require_cert", "[dom]0")
 			Note: If there is already an existing TLS connection to the remote target,
 			it will be reused and setting this AVP has no effect.
 			</para>
+			<para>
+			Note: You can force a particular domain to be used just for a particular
+			branch by setting the <emphasis>$bavp</emphasis> variable with the same
+			name. When both <emphasis>$bavp</emphasis> and <emphasis>$avp</emphasis>
+			variables are set, the first one takes precedence.
+			</para>
 			<para><emphasis>
 				No default value.
 			</emphasis></para>
@@ -629,6 +635,12 @@ modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
 			<para>
 			Note: If there is already an existing TLS connection to the remote target,
 			it will be reused and setting this AVP has no effect.
+			</para>
+			<para>
+			Note: You can force a particular SIP domain to be used just for a particular
+			branch by setting the <emphasis>$bavp</emphasis> variable with the same
+			name. When both <emphasis>$bavp</emphasis> and <emphasis>$avp</emphasis>
+			variables are set, the first one takes precedence.
 			</para>
 			<para>
 			For the AVP usage example, refer to  <xref linkend="domains-param"/>.

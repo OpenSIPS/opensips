@@ -46,6 +46,7 @@
 static gen_lock_t *extra_lock;
 static struct usr_avp *global_avps = 0;
 static struct usr_avp **crt_avps  = &global_avps;
+static struct usr_avp **crt_bavps;
 
 static map_t avp_map = 0;
 static map_t avp_map_shm = 0;
@@ -614,3 +615,22 @@ struct usr_avp *clone_avp_list(struct usr_avp *old)
 	return a;
 }
 
+
+struct usr_avp** set_bavp_list(struct usr_avp **list)
+{
+	struct usr_avp **foo;
+
+	foo = crt_bavps;
+	crt_bavps = list;
+	return foo;
+}
+
+struct usr_avp** get_bavp_list(void)
+{
+	return crt_bavps;
+}
+
+struct usr_avp** reset_bavp_list(void)
+{
+	return set_bavp_list(NULL);
+}

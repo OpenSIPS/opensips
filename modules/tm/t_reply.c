@@ -311,6 +311,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 	if (trans->uac[branch].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
+	set_bavp_list(&trans->uac[branch].user_avps);
 	backup_list = set_avp_list( &trans->user_avps );
 	if(SEND_PR_BUFFER(&trans->uac[branch].request, ack_buf.s, ack_buf.len)==0){
 		/* successfully sent out */
@@ -321,6 +322,7 @@ static int send_ack(struct sip_msg* rpl, struct cell *trans, int branch)
 		}
 	}
 	set_avp_list(backup_list);
+	reset_bavp_list();
 
 	tcp_no_new_conn = 0;
 

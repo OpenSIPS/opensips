@@ -433,50 +433,63 @@ struct tls_domain *tls_find_client_domain_name(str *name)
 	return d;
 }
 
+static str *tls_find_domain_avp(int domain_avp)
+{
+	struct usr_avp **backup_list, **bavp_list;
+	struct usr_avp *avp = NULL;
+	int_str val;
+	static str ret;
+
+	/* we first check if there is an existing bavp */
+	bavp_list = get_bavp_list();
+	if (bavp_list) {
+		backup_list = set_avp_list(bavp_list);
+		avp = search_first_avp(0, domain_avp, &val, 0);
+		set_avp_list(backup_list);
+	}
+	if (!avp)
+		avp = search_first_avp(0, domain_avp, &val, 0);
+	if (avp) {
+		ret = val.s;
+		return &ret;
+	}
+	return NULL;
+}
+
 /*
  * find TLS client domain
  * return NULL if virtual domain not found
  */
 struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short port)
 {
+	str *domain = NULL;
 	struct tls_domain *dom = NULL;
-	struct usr_avp *tls_dom_avp = NULL, *sip_dom_avp = NULL;
-	int_str val;
 	str match_any_dom = str_init("*");
 	str *sip_domain = &match_any_dom;
 
-	if (tls_client_domain_avp > 0) {
-		tls_dom_avp = search_first_avp(0, tls_client_domain_avp, &val, 0);
-		if (!tls_dom_avp) {
-			if (sip_client_domain_avp > 0) {
-				sip_dom_avp = search_first_avp(0, sip_client_domain_avp, &val, 0);
-				if (sip_dom_avp) {
-					sip_domain = &val.s;
-					LM_DBG("Match TLS domain by sip domain AVP: '%.*s'\n",
-						val.s.len, ZSW(val.s.s));
-				}
-			}
-		} else
-			sip_domain = NULL;  /* search by tls domain name */
-	} else {
+	if (tls_client_domain_avp > 0)
+		domain = tls_find_domain_avp(tls_client_domain_avp);
+	if (!domain) {
 		if (sip_client_domain_avp > 0) {
-			sip_dom_avp = search_first_avp(0, sip_client_domain_avp, &val, 0);
-			if (sip_dom_avp) {
-				sip_domain = &val.s;
+			sip_domain = tls_find_domain_avp(sip_client_domain_avp);
+			if (sip_domain) {
 				LM_DBG("Match TLS domain by sip domain AVP: '%.*s'\n",
-					val.s.len, ZSW(val.s.s));
+					sip_domain->len, ZSW(sip_domain->s));
 			}
 		}
+	} else {
+		LM_DBG("Match TLS domain by tls domain AVP: '%.*s'\n",
+				domain->len, domain->s);
 	}
 
-	if (!sip_domain)
-		dom = tls_find_client_domain_name(&val.s);
+	if (domain)
+		dom = tls_find_client_domain_name(domain);
 	else
 		dom = tls_find_domain_by_filters(ip, port, sip_domain, DOM_FLAG_CLI);
 
 	if (dom)
-			LM_DBG("found TLS client domain: %.*s\n",
-				dom->name.len, dom->name.s);
+		LM_DBG("found TLS client domain: %.*s\n",
+			dom->name.len, dom->name.s);
 
 	return dom;
 }

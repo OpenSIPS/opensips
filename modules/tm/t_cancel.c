@@ -125,6 +125,7 @@ void cancel_branch( struct cell *t, int branch )
 	if (t->uac[branch].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 	backup_list = set_avp_list( &t->user_avps );
+	set_bavp_list(&t->uac[branch].user_avps);
 	if (SEND_BUFFER( crb )==0) {
 		if ( has_tran_tmcbs( t, TMCB_MSG_SENT_OUT) ) {
 			set_extra_tmcb_params( &crb->buffer, &crb->dst);
@@ -134,6 +135,7 @@ void cancel_branch( struct cell *t, int branch )
 	}
 	set_avp_list(backup_list);
 	tcp_no_new_conn = 0;
+	reset_bavp_list();
 
 	/*sets and starts the FINAL RESPONSE timer */
 	start_retr( crb );

@@ -540,11 +540,13 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	if (new_cell->uac[0].br_flags & tcp_no_new_conn_bflag)
 		tcp_no_new_conn = 1;
 
+	set_bavp_list(&new_cell->uac[0].user_avps);
 	if (SEND_BUFFER(request) == -1) {
 		LM_ERR("attempt to send to '%.*s' failed\n",
 			dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 	}
+	reset_bavp_list();
 
 	tcp_no_new_conn = 0;
 

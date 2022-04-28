@@ -120,5 +120,10 @@ int replace_avp(unsigned short flags, int name, int_str val, int index);
 int get_avp_id(str *alias);
 int parse_avp_spec(const str *name, int *avp_name);
 
+/* manipulates bavp lists */
+struct usr_avp** set_bavp_list(struct usr_avp **list);
+struct usr_avp** get_bavp_list(void);
+struct usr_avp** reset_bavp_list(void);
+
 #endif
 

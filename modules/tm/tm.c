@@ -155,7 +155,7 @@ int pv_get_tm_fr_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
 int pv_set_tm_fr_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
 int pv_get_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, pv_value_t*);
 int pv_set_tm_fr_inv_timeout(struct sip_msg*, pv_param_t *, int, pv_value_t*);
-struct usr_avp** get_bavp_list(void);
+static struct usr_avp** pv_get_bavp_list(void);
 
 
 /* module parameteres */
@@ -1757,7 +1757,7 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 	if (!msg || !val)
 		goto error;
 
-	avp_list = get_bavp_list();
+	avp_list = pv_get_bavp_list();
 	if (!avp_list) {
 		pv_get_null(msg, param, val);
 		goto success;
@@ -1902,7 +1902,7 @@ int pv_set_tm_branch_avp(struct sip_msg *msg, pv_param_t *param, int op,
 		goto error;
 	}
 
-	avp_list = get_bavp_list();
+	avp_list = pv_get_bavp_list();
 	if (!avp_list) {
 		LM_DBG("cannot find the branch avp list!\n");
 		return -2;
@@ -1973,7 +1973,7 @@ success:
 }
 
 
-struct usr_avp** get_bavp_list(void)
+static struct usr_avp** pv_get_bavp_list(void)
 {
 	struct cell* t;
 
@@ -2120,7 +2120,4 @@ static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 	res->rs.len = p-buf;
 
 	return 0;
-
 }
-
-
