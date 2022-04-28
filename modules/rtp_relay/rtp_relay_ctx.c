@@ -912,6 +912,8 @@ static void rtp_relay_delete_dlg(struct dlg_cell *dlg,
 	struct rtp_relay_session info;
 	memset(&info, 0, sizeof info);
 	info.callid = &ctx->callid;
+	if (!info.callid->len)
+		info.callid = &ctx->dlg_callid;
 	info.from_tag = &ctx->from_tag;
 	info.to_tag = &ctx->to_tag;
 	info.branch = sess->index;
