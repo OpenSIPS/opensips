@@ -599,6 +599,11 @@ modparam("tls_mgm", "require_cert", "[dom]0")
    remote target, it will be reused and setting this AVP has no
    effect.
 
+   Note: You can force a particular domain to be used just for a
+   particular branch by setting the $bavp variable with the same
+   name. When both $bavp and $avp variables are set, the first one
+   takes precedence.
+
    No default value.
 
    Example 1.16. Set client_tls_domain_avp variable
@@ -614,6 +619,11 @@ modparam("tls_mgm", "client_tls_domain_avp", "tls_match_dom")
    Note: If there is already an existing TLS connection to the
    remote target, it will be reused and setting this AVP has no
    effect.
+
+   Note: You can force a particular SIP domain to be used just for
+   a particular branch by setting the $bavp variable with the same
+   name. When both $bavp and $avp variables are set, the first one
+   takes precedence.
 
    For the AVP usage example, refer to Section 1.9.36,
    “server_domain, client_domain (string)”.
@@ -1518,7 +1528,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 175 55 4817 4876
-   2. Razvan Crainea (@razvancrainea) 80 56 1369 703
+   2. Razvan Crainea (@razvancrainea) 81 57 1415 724
    3. Eseanu Marius Cristian (@eseanucristian) 52 11 4268 321
    4. Liviu Chircu (@liviuchircu) 25 19 170 231
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460
@@ -1552,14 +1562,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Dec 2021
-   2.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3.  Aleksei Vasilev                     Apr 2021 - Apr 2021
-   4.  Maksym Sobolyev (@sobomax)          Mar 2016 - Sep 2020
-   5.  Liviu Chircu (@liviuchircu)         Oct 2015 - Aug 2020
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
-   7.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
-   8.  Razvan Crainea (@razvancrainea)     Sep 2015 - Feb 2020
+   1.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Dec 2021
+   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4.  Aleksei Vasilev                     Apr 2021 - Apr 2021
+   5.  Maksym Sobolyev (@sobomax)          Mar 2016 - Sep 2020
+   6.  Liviu Chircu (@liviuchircu)         Oct 2015 - Aug 2020
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
+   8.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
    9.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
    10. Alexey Vasilyev (@vasilevalex)      Nov 2018 - May 2019
 
@@ -1575,9 +1585,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Dan Pascu
-   (@danpascu), Razvan Crainea (@razvancrainea), Callum Guy
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Dan Pascu (@danpascu), Callum Guy
    (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu Marius
    Cristian (@eseanucristian).
 
