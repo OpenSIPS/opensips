@@ -2307,7 +2307,8 @@ retry:
 				continue;
 			}
 		}
-		sumcut -= node->rn_weight;
+		if (!node->rn_disabled || !was_forced)
+			sumcut -= node->rn_weight;
 		node = node->rn_next;
 	}
 	/* No node list */
