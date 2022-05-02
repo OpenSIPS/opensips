@@ -2707,7 +2707,8 @@ select_rtpe_node(str callid, struct rtpe_set *set)
 				continue;
 			}
 		}
-		sumcut -= node->rn_weight;
+		if (!node->rn_disabled || !was_forced)
+			sumcut -= node->rn_weight;
 		node = node->rn_next;
 	}
 	/* No node list */
