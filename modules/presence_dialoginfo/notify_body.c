@@ -109,14 +109,13 @@ str* dlginfo_agg_nbody(str* pres_user, str* pres_domain, str** body_array, int n
 str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, int partial)
 {
 	int i, j= 0;
-
 	xmlDocPtr  doc = NULL;
 	xmlNodePtr root_node = NULL;
 	xmlNsPtr   namespace = NULL;
-
 	xmlNodePtr p_root= NULL;
 	xmlDocPtr* xml_array ;
 	xmlNodePtr node = NULL;
+	xmlNodePtr next_node = NULL;
 	char *state;
 	int winner_priority = -1, priority ;
 	xmlNodePtr winner_dialog_node = NULL ;
@@ -211,7 +210,8 @@ str* agregate_xmls(str* pres_user, str* pres_domain, str** body_array, int n, in
 				goto error;
 			}
 			if (p_root->children) {
-			for (node = p_root->children; node; node = node->next) {
+			for (node = p_root->children; node; node = next_node) {
+				next_node = node->next;
 				if (node->type == XML_ELEMENT_NODE) {
 					LM_DBG("node type: Element, name: %s\n", node->name);
 					/* we do not copy the node, but unlink it and then add it ot the new node
