@@ -842,7 +842,7 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 		}
 		memcpy( tmp, to->host.s, to->host.len);
 		tmp[to->host.len] = 0;
-		he = resolvehost( to->next->host.s, 0/*no_ip_test*/); // FIXME - do SRV
+		he = resolvehost( tmp, 0/*no_ip_test*/); // FIXME - do SRV
 		pkg_free(tmp);
 		if (he==NULL) {
 			LM_ERR("Could not resolve the destination <%.*s>\n",
