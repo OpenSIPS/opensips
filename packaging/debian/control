@@ -40,8 +40,8 @@ Build-Depends: bison,
                uuid-dev,
                libxml2-dev,
                pkg-config,
-               python,
-               python-dev,
+               python | python-is-python3,
+               python-dev | python-dev-is-python3,
                unixodbc-dev,
                xsltproc,
                zlib1g-dev
@@ -51,7 +51,7 @@ Homepage: https://opensips.org/
 Package: opensips
 Architecture: any
 Multi-Arch: foreign
-Depends: adduser, python, ${misc:Depends}, ${shlibs:Depends}
+Depends: adduser, python | python-is-python3, ${misc:Depends}, ${shlibs:Depends}
 Suggests: opensips-auth-jwt-module,
           opensips-berkeley-module,
           opensips-carrierroute-module,
