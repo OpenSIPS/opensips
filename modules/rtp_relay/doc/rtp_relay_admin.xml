@@ -52,6 +52,13 @@
 		for that specific branch.
 	</para>
 	<para>
+		Starting with &osips; 3.3, branches can be identified based
+		on their participant's to_tag. This features becomes handy when
+		using <emphasis>rtp_relay</emphasis> in B2B mode, where peers
+		can no longer be identified simply by an index. However, this
+		feature works in dialog secenatios as well.
+	</para>
+	<para>
 		The multiple branches behavior is handled differently by the
 		back-end engine, depending on its capabilities. For example,
 		<emphasis>rtpengine</emphasis> is able to natively support calls

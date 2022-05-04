@@ -83,18 +83,14 @@ enum rtp_relay_var_flags {
 
 typedef str rtp_relay_flags[RTP_RELAY_FLAGS_SIZE];
 
-enum rtp_relay_leg_type {
-	RTP_RELAY_LEG_CALLER = 0,
-	RTP_RELAY_LEG_CALLEE = 1
-};
-
 struct rtp_relay_leg {
-	int index;
+	str tag;
 	int ref;
+	int index;
 	unsigned int state;
-	enum rtp_relay_leg_type type;
 	rtp_relay_flags flags;
 	struct list_head list;
+	struct rtp_relay_leg *peer;
 };
 
 struct rtp_relay_sess {
@@ -138,10 +134,8 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 
 struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index);
 
-struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
-		enum rtp_relay_leg_type type, int idx);
-struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
-		enum rtp_relay_leg_type type, int idx);
+struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx, str *tag, int idx);
+struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx, str *tag, int idx);
 
 mi_response_t *mi_rtp_relay_list(const mi_params_t *params,
 								struct mi_handler *async_hdl);
