@@ -853,7 +853,7 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 			LM_BUG("Add the check or SRV support !!\n");
 			return -2;
 		}
-		if ( hostent2su( &su, he, 0/*idx*/, to->port_no )!=0 ) {
+		if ( hostent2su( to_su, he, 0/*idx*/, to->port_no )!=0 ) {
 			LM_ERR("Could translate he to su :-/, bad familly type??\n");
 			return -2;
 		}
