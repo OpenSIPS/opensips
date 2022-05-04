@@ -188,7 +188,7 @@ int ip_addr_is_1918(str *s_ip)
 
 	/* is it an IPv4 address? */
 	if ( (ip=str2ip(s_ip))==NULL )
-		return -1;
+		return 0;
 
 	netaddr = ntohl(ip->u.addr32[0]);
 
@@ -197,7 +197,7 @@ int ip_addr_is_1918(str *s_ip)
 			return 1;
 	}
 
-	return -1;
+	return 0;
 }
 
 

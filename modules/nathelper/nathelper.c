@@ -794,7 +794,7 @@ sdp_1918(struct sip_msg* msg)
 		if (pf != AF_INET || isnulladdr(&ip, pf))
 			return 0;
 
-		ret |= (ip_addr_is_1918(&ip) == 1) ? 1 : 0;
+		ret |= ip_addr_is_1918(&ip);
 	}
 
 	return ret;
@@ -807,7 +807,7 @@ static int
 via_1918(struct sip_msg* msg)
 {
 
-	return (ip_addr_is_1918(&(msg->via1->host)) == 1) ? 1 : 0;
+	return ip_addr_is_1918(&(msg->via1->host));
 }
 
 /*
