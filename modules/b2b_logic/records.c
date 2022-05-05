@@ -54,6 +54,39 @@ int b2bl_register_set_tracer_cb( b2bl_set_tracer_f f,
 	return 0;
 }
 
+struct _b2bl_new_tuple_cb {
+	struct b2bl_cback cb;
+	struct _b2bl_new_tuple_cb *next;
+} *b2bl_new_tuple_list;
+
+int b2bl_register_new_tuple_cb(b2bl_cback_f f, void *param)
+{
+	struct _b2bl_new_tuple_cb *newcb = pkg_malloc(sizeof *newcb);
+	if (!newcb)
+		return -1;
+	memset(newcb, 0, sizeof *newcb);
+	newcb->cb.f = f;
+	newcb->cb.param = param;
+	newcb->next = b2bl_new_tuple_list;
+	b2bl_new_tuple_list = newcb;
+	return 0;
+}
+
+int b2bl_run_new_tuple_cb(str *key)
+{
+	int ret = 0;
+	b2bl_cb_params_t cb_params;
+	struct _b2bl_new_tuple_cb *tcb = b2bl_new_tuple_list;
+
+	memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+	for (; tcb; tcb = tcb->next) {
+		cb_params.param = tcb->cb.param;
+		cb_params.key = key;
+		ret += tcb->cb.f(&cb_params, B2B_NEW_TUPLE_CB);
+	}
+	return ret;
+}
+
 
 static void _print_entity(int index, b2bl_entity_id_t* e, int level)
 {
@@ -348,6 +381,8 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 	if (set_tracer_func && msg->msg_flags&tracer_msg_flag_filter)
 		tuple->tracer = *set_tracer_func();
 
+	b2bl_run_new_tuple_cb(tuple->key);
+
 	LM_DBG("new tuple [%p]->[%.*s]\n", tuple, b2bl_key->len, b2bl_key->s);
 
 	return tuple;
@@ -640,15 +675,16 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 	 * razvanc: if the tuple is not actually deleted, we do not have to call
 	 * the DESTROY callback
 	 */
-	if(db_del && tuple->cbf && tuple->cb_mask&B2B_DESTROY_CB)
+	if(db_del && tuple->cb.f && tuple->cb.mask&B2B_DESTROY_CB)
 	{
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-		cb_params.param = tuple->cb_param;
+		cb_params.param = tuple->cb.param;
 		cb_params.stat = NULL;
 		cb_params.msg = NULL;
 		/* setting it to 0 but it has no meaning in this callback type */
 		cb_params.entity = 0;
-		tuple->cbf(&cb_params, B2B_DESTROY_CB);
+		cb_params.key = tuple->key;
+		tuple->cb.f(&cb_params, B2B_DESTROY_CB);
 	}
 	context_destroy(CONTEXT_B2B_LOGIC, context_of(tuple));
 	if(db_del)

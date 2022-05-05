@@ -90,6 +90,12 @@ struct b2b_ctx_val {
 	struct b2b_ctx_val *next;
 };
 
+struct b2bl_cback {
+	b2bl_cback_f f;
+	void *param;
+	unsigned int mask;
+};
+
 typedef struct b2bl_tuple
 {
 	unsigned int id;
@@ -117,9 +123,7 @@ typedef struct b2bl_tuple
 	int repl_flag;  /* sent/received through entities replication */
 	struct b2b_ctx_val *vals;
 	struct b2b_tracer tracer;
-	b2bl_cback_f cbf;
-	unsigned int cb_mask;
-	void* cb_param;
+	struct b2bl_cback cb;
 }b2bl_tuple_t;
 
 typedef struct b2bl_entry
@@ -225,5 +229,9 @@ void b2bl_db_delete(b2bl_tuple_t* tuple);
 int store_ctx_value(struct b2b_ctx_val **vals, str *name, str *new_val);
 
 int b2bl_register_set_tracer_cb( b2bl_set_tracer_f f, unsigned int msg_flag_filter );
+
+int b2bl_register_new_tuple_cb(b2bl_cback_f f, void *param);
+
+int b2bl_run_new_tuple_cb(str *key);
 
 #endif

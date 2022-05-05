@@ -621,11 +621,11 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	}
 
 	/* call the callback for brigding failure  */
-	cbf = tuple->cbf;
-	if(cbf && (tuple->cb_mask&B2B_REJECT_CB))
+	cbf = tuple->cb.f;
+	if(cbf && (tuple->cb.mask&B2B_REJECT_CB))
 	{
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-		cb_params.param = tuple->cb_param;
+		cb_params.param = tuple->cb.param;
 		local_index = tuple->id;
 		stats.start_time =  entity->stats.start_time;
 		stats.setup_time = get_ticks() - entity->stats.start_time;
@@ -641,6 +641,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 		cb_params.stat = &stats;
 		cb_params.msg = msg;
 		cb_params.entity = entity_no;
+		cb_params.key = tuple->key;
 
 		lock_release(&b2bl_htable[hash_index].lock);
 
@@ -1426,8 +1427,8 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 				entity->stats.start_time = get_ticks();
 				SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 				b2bl_print_tuple(tuple, L_DBG);
-				cbf = tuple->cbf;
-				if(cbf && (tuple->cb_mask&B2B_CONFIRMED_CB))
+				cbf = tuple->cb.f;
+				if(cbf && (tuple->cb.mask&B2B_CONFIRMED_CB))
 				{
 					/* saving the entity key for later sanity check */
 					ekey.s = (char*)pkg_malloc(entity->key.len);
@@ -1440,10 +1441,11 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 					memcpy(ekey.s, entity->key.s, entity->key.len);
 					/* preparing the cb params */
 					memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-					cb_params.param = tuple->cb_param;
+					cb_params.param = tuple->cb.param;
 					cb_params.stat = NULL;
 					cb_params.msg = msg;
 					cb_params.entity = entity->no;
+					cb_params.key = tuple->key;
 
 					lock_release(&b2bl_htable[tuple->hash_index].lock);
 					ret = cbf(&cb_params, B2B_CONFIRMED_CB);
@@ -1848,15 +1850,15 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		goto done;
 	}
 
-	cbf = tuple->cbf;
+	cbf = tuple->cb.f;
 
 	switch (request_id) {
 	case B2B_BYE:
 		entity->disconnected = 1;
-		if(cbf && (tuple->cb_mask&B2B_BYE_CB))
+		if(cbf && (tuple->cb.mask&B2B_BYE_CB))
 		{
 			memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-			cb_params.param = tuple->cb_param;
+			cb_params.param = tuple->cb.param;
 			if(tuple->state != B2B_BRIDGING_STATE)
 				entity->stats.call_time = get_ticks() - entity->stats.start_time;
 			else
@@ -1882,6 +1884,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			cb_params.stat = &stats;
 			cb_params.msg = msg;
 			cb_params.entity = entity->no;
+			cb_params.key = tuple->key;
 
 			lock_release(&b2bl_htable[hash_index].lock);
 			LM_DBG("entity->no = %d\n", entity->no);
@@ -1965,10 +1968,11 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			LM_DBG("ekey [%p]->[%.*s]\n", &ekey, ekey.len, ekey.s);
 			/* preparing the cb params */
 			memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-			cb_params.param = tuple->cb_param;
+			cb_params.param = tuple->cb.param;
 			cb_params.stat = NULL;
 			cb_params.msg = msg;
 			cb_params.entity = entity->no;
+			cb_params.key = tuple->key;
 			lock_release(&b2bl_htable[hash_index].lock);
 
 			LM_DBG("entity->no = %d\n", entity->no);
@@ -3050,9 +3054,9 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Failed to insert new scenario instance record\n");
 		goto error;
 	}
-	tuple->cbf = cbf;
-	tuple->cb_mask = cb_mask;
-	tuple->cb_param = cb_param;
+	tuple->cb.f = cbf;
+	tuple->cb.mask = cb_mask;
+	tuple->cb.param = cb_param;
 
 	/* save tuple in global variable for accesss from local routes */
 	local_ctx_tuple = tuple;
@@ -3532,9 +3536,9 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	new_entities[1] = NULL;
 	new_entities_no = 0;
 
-	tuple->cbf = cbf;
-	tuple->cb_mask = cb_mask;
-	tuple->cb_param = cb_param;
+	tuple->cb.f = cbf;
+	tuple->cb.mask = cb_mask;
+	tuple->cb.param = cb_param;
 
 	if(b2bl_db_mode == WRITE_THROUGH)
 		b2bl_db_insert(tuple);
@@ -3630,9 +3634,9 @@ str* b2bl_bridge_extern(struct b2b_params *init_params,
 		LM_ERR("Failed to insert new scenario instance record\n");
 		return 0;
 	}
-	tuple->cbf = cbf;
-	tuple->cb_mask = cb_mask;
-	tuple->cb_param = cb_param;
+	tuple->cb.f = cbf;
+	tuple->cb.mask = cb_mask;
+	tuple->cb.param = cb_param;
 	tuple->lifetime = 60 + get_ticks();
 
 	local_ctx_tuple = tuple;
@@ -4602,7 +4606,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 		e2 = tuple->bridge_entities[1];
 		e = tuple->bridge_entities[0];
 	}
-	tuple->cbf = 0;
+	tuple->cb.f = 0;
 	if(e2 == NULL)
 	{
 		LM_ERR("entity not found for key 2 [%.*s]\n", key2->len, key2->s);

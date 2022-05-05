@@ -11,6 +11,7 @@
 #define B2B_DESTROY_CB    (1<<2)
 #define B2B_RE_INVITE_CB  (1<<3)
 #define B2B_CONFIRMED_CB  (1<<4)
+#define B2B_NEW_TUPLE_CB  (1<<5)
 
 #define B2B_ERROR_CB_RET          -1
 #define B2B_DROP_MSG_CB_RET        0
@@ -31,6 +32,7 @@ typedef struct b2bl_cb_params
 	b2bl_dlg_stat_t *stat;  /* b2bl_dlg statistics */
 	struct sip_msg* msg;    /* the message being processed */
 	unsigned int entity;    /* the entity for which the callback is invoked */
+	str *key;				/* tuple's key */
 } b2bl_cb_params_t;
 
 typedef int (*b2bl_cback_f)(b2bl_cb_params_t *params, unsigned int b2b_event);

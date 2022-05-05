@@ -2167,8 +2167,15 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 
 	if(!key)
 	{
-		LM_ERR("null key\n");
-		return -1;
+		if (cb_mask != B2B_NEW_TUPLE_CB) {
+			LM_ERR("only B2B_NEW_TUPLE_CB can be used without key!\n");
+			return -1;
+		}
+		if (b2bl_register_new_tuple_cb(cbf, cb_param) < 0) {
+			LM_ERR("cannot register new tuple callback\n");
+			return -1;
+		}
+		return 0;
 	}
 	if(b2bl_parse_key(key, &hash_index, &local_index) < 0)
 	{
@@ -2184,15 +2191,15 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 		LM_ERR("No tuple found\n");
 		goto error;
 	}
-	if(tuple->cbf || tuple->cb_param || tuple->cb_mask)
+	if(tuple->cb.f || tuple->cb.param || tuple->cb.mask)
 	{
 		LM_ERR("callback already registered\n");
 		goto error;
 	}
 
-	tuple->cbf = cbf;
-	tuple->cb_mask = cb_mask;
-	tuple->cb_param = cb_param;
+	tuple->cb.f = cbf;
+	tuple->cb.mask = cb_mask;
+	tuple->cb.param = cb_param;
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
@@ -2263,9 +2270,9 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param,
 		lock_release(&b2bl_htable[hash_index].lock);
 		return -1;
 	}
-	tuple->cbf = cbf;
-	tuple->cb_mask = cb_mask;
-	tuple->cb_param = param;
+	tuple->cb.f = cbf;
+	tuple->cb.mask = cb_mask;
+	tuple->cb.param = param;
 	lock_release(&b2bl_htable[hash_index].lock);
 
 	return 0;
