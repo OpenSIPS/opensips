@@ -31,6 +31,7 @@
 #include "../../ip_addr.h"
 #include "../../parser/hf.h"
 #include "../../ut.h"
+#include "../../lib/osips_malloc.h"
 
 enum msrp_msg_type { MSRP_UNKNOWN=0, MSRP_REQUEST=1, MSRP_REPLY=2};
 
@@ -354,22 +355,24 @@ error:
 }
 
 
-static inline void free_msrp_path(struct msrp_url *list)
+static inline void _free_msrp_path(struct msrp_url *list, osips_free_t free_f)
 {
 	struct msrp_url *url;
 
 	while(list) {
 		url = list;
 		list = list->next;
-		pkg_free(url);
+		free_f(url);
 	}
 }
 
+#define free_msrp_path(list) _free_msrp_path(list, osips_pkg_free)
 
-/* parses a path of multiple MSRL URLs
- * Returns an pkg allocated list of URLs or NULL on error
- */
-static inline struct msrp_url* parse_msrp_path(str *path)
+#define free_msrp_path_shm(path) _free_msrp_path(path, osips_shm_free)
+
+
+static inline struct msrp_url* _parse_msrp_path(str *path,
+	osips_malloc_t malloc_f, osips_free_t free_f)
 {
 	struct msrp_url *url, *it, *list=NULL;
 	char *p, *end;
@@ -382,9 +385,9 @@ static inline struct msrp_url* parse_msrp_path(str *path)
 
 	do {
 
-		url = pkg_malloc( sizeof(struct msrp_url) );
+		url = malloc_f( sizeof(struct msrp_url) );
 		if (url==NULL) {
-			LM_ERR("failed to pkg allocate a new url struct\n");
+			LM_ERR("failed to allocate a new url struct\n");
 			goto error;
 		}
 
@@ -413,9 +416,18 @@ static inline struct msrp_url* parse_msrp_path(str *path)
 
 error:
 	if (url)
-		pkg_free(url);
-	free_msrp_path(list);
+		free_f(url);
+	_free_msrp_path(list, free_f);
 	return NULL;
 }
+
+/* parses a path of multiple MSRL URLs
+ * Returns an pkg allocated list of URLs or NULL on error
+ */
+#define parse_msrp_path(path) _parse_msrp_path(path, osips_pkg_malloc, \
+	osips_pkg_free)
+
+#define parse_msrp_path_shm(path) _parse_msrp_path(path, osips_shm_malloc, \
+	osips_shm_free)
 
 #endif
