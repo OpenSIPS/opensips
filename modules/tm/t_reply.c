@@ -503,6 +503,11 @@ static int _reply( struct cell *trans, struct sip_msg* p_msg,
 		}
 	}
 
+	if (has_tran_tmcbs(trans, TMCB_LOCAL_RESPONSE)) {
+		run_trans_callbacks(TMCB_LOCAL_RESPONSE,
+			trans, p_msg, 0, code);
+	}
+
 	/* check if the UAS retranmission port needs to be updated */
 	if ( (p_msg->msg_flags ^ trans->uas.request->msg_flags) & FL_FORCE_RPORT )
 		su_setport( &trans->uas.response.dst.to, p_msg->rcv.src_port );
@@ -1746,6 +1751,11 @@ static int _reply_with_body( struct cell *trans, unsigned int code, str *text,
 		}
 	} else {
 		body_lump = 0;
+	}
+	if (has_tran_tmcbs(trans, TMCB_LOCAL_RESPONSE)) {
+		set_extra_tmcb_params(body, NULL);
+		run_trans_callbacks(TMCB_LOCAL_RESPONSE,
+			trans, p_msg, 0, code);
 	}
 
 	if(to_tag && to_tag->len) {

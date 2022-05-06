@@ -56,6 +56,7 @@
 #include "../../action.h"
 #include "../../dset.h"
 #include "../../data_lump.h"
+#include "../../parser/parse_methods.h"
 
 #include "ut.h"
 #include "h_table.h"
@@ -176,6 +177,12 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	int buf_len1, sip_msg_len;
 	str h_to, h_from, h_cseq, h_callid;
 
+	/* do not build buffer if callbacks are not needed and
+	 * there are no local routes */
+	if (!has_tran_tmcbs(new_cell, TMCB_LOCAL_REQUEST_OUT) &&
+			!sroutes->local.a)
+		return 0;
+
 	LM_DBG("building sip_msg from buffer\n");
 	sipmsg_buf = *buf; /* remember the buffer used to get the sip_msg */
 	req = buf_to_sip_msg( *buf, *buf_len, dialog);
@@ -192,7 +199,12 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 
 	/* run the route */
 	swap_route_type( backup_route_type, LOCAL_ROUTE);
-	run_top_route( sroutes->local, req);
+	if (sroutes && sroutes->local.a)
+		run_top_route( sroutes->local, req);
+	if (has_tran_tmcbs(new_cell, TMCB_LOCAL_REQUEST_OUT) ) {
+		run_trans_callbacks(TMCB_LOCAL_REQUEST_OUT, new_cell,
+			req, 0, 0);
+	}
 	set_route_type( backup_route_type );
 
 	/* transfer current message context back to t */
@@ -393,7 +405,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	char *buf;
 	int buf_len;
 	int ret, flags;
-	unsigned int hi;
+	unsigned int hi, method_id;
 	struct proxy_l *proxy;
 
 	ret=-1;
@@ -452,6 +464,11 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	 * we might need it later for accessing dialog specific info */
 	if (dialog->dialog_ctx)
 		new_cell->dialog_ctx = dialog->dialog_ctx;
+	if (has_new_local_tmcbs()) {
+		if (parse_method(method->s, method->s + method->len, &method_id) == NULL)
+			method_id = METHOD_UNDEF;
+		run_new_local_callbacks(new_cell, NULL, method_id);
+	}
 
 	/* pass the transaction flags from dialog to transaction */
 	new_cell->flags |= dialog->T_flags;
@@ -505,11 +522,9 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	}
 
 	/* run the local route */
-	if (sroutes==NULL) {
+	if (sroutes==NULL)
 		LM_BUG("running local route/t_uac, but no routes in the process\n");
-	} else if (sroutes->local.a) {
-		run_local_route( new_cell, &buf, &buf_len, dialog, &req, &buf_req);
-	}
+	run_local_route( new_cell, &buf, &buf_len, dialog, &req, &buf_req);
 
 	if (request->buffer.s==NULL) {
 		request->buffer.s = buf;
