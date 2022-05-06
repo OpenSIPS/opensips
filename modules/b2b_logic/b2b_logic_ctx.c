@@ -32,7 +32,7 @@ static b2bl_tuple_t *b2bl_get_tuple(str *key)
 		goto error;
 	return tuple;
 error:
-	LM_BUG("could not find logic tuple %.*s\n", key->len, key->s);
+	LM_BUG("could not find logic tuple [%.*s]\n", key->len, key->s);
 	abort();
 	return NULL;
 }

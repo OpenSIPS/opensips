@@ -2209,6 +2209,23 @@ error:
 	return -1;
 }
 
+static str *b2bl_get_key(void)
+{
+	static str ret;
+	static char buf[MAX_B2BL_KEY];
+	b2bl_tuple_t *tuple = get_ctx_tuple();
+
+	if (!tuple)
+		return NULL;
+
+	ret.s = buf;
+	ret.len = 0;
+
+	ret.len = tuple->key->len;
+	memcpy(ret.s, tuple->key->s, ret.len);
+	return &ret;
+}
+
 
 int b2b_logic_bind(b2bl_api_t* api)
 {
@@ -2224,6 +2241,7 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->terminate_call= b2bl_terminate_call;
 	api->get_stats     = b2bl_get_stats;
 	api->register_cb   = b2bl_register_cb;
+	api->get_key       = b2bl_get_key;
 	api->register_set_tracer_cb = b2bl_register_set_tracer_cb;
 	api->restore_upper_info = b2bl_restore_upper_info;
 

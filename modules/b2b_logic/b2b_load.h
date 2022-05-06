@@ -93,6 +93,8 @@ typedef int (*b2bl_get_stats_f)(str* key, b2bl_dlg_stat_t* stat);
 int b2bl_register_cb(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 typedef int (*b2bl_register_cb_f)(str* key, b2bl_cback_f, void* param, unsigned int cb_mask);
 
+typedef str *(*b2bl_get_key_f)(void);
+
 typedef struct b2b_tracer* (*b2bl_set_tracer_f)(void);
 typedef int (*b2bl_register_set_tracer_cb_f)(b2bl_set_tracer_f cb, unsigned int msg_flag_filter);
 
@@ -108,6 +110,7 @@ typedef struct b2bl_api
 	b2bl_bridge_msg_t bridge_msg;
 	b2bl_get_stats_f get_stats;
 	b2bl_register_cb_f register_cb;
+	b2bl_get_key_f get_key;
 	b2bl_register_set_tracer_cb_f register_set_tracer_cb;
 	b2bl_restore_upper_info_f restore_upper_info;
 

@@ -803,7 +803,7 @@ int b2bl_parse_key(str* key, unsigned int* hash_index,
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index)
 {
-	char buf[15];
+	char buf[MAX_B2BL_KEY];
 	str* b2b_key;
 	int len;
 

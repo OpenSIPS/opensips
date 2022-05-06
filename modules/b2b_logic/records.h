@@ -77,6 +77,7 @@ struct b2bl_new_entity {
 
 #define MAX_B2BL_ENT		3
 #define MAX_BRIDGE_ENT		3
+#define MAX_B2BL_KEY		16
 
 #define B2BL_RT_REQ_CTX 1
 #define B2BL_RT_RPL_CTX 2
