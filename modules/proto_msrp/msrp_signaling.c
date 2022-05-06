@@ -1171,14 +1171,12 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 	struct msrp_url *to;
 	char *p;
 
-	to = ((struct msrp_url*)(req->to_path->parsed));
-
 	cell = shm_malloc( sizeof(struct msrp_cell)
 			 + ident->len
 			 + ( req ? (
 				req->fl.ident.len
 				 + req->from_path->body.len
-				 + to->whole.len
+				 + ((struct msrp_url*)(req->to_path->parsed))->whole.len
 				 + (req->message_id?req->message_id->body.len:0)
 				 + (req->byte_range?req->byte_range->body.len:0)
 				 + (req->failure_report?req->failure_report->body.len:0)
@@ -1206,6 +1204,7 @@ static struct msrp_cell* _build_transaction(struct msrp_msg *req, int hash,
 		cell->from_full.len = req->from_path->body.len;
 		append_string( p, req->from_path->body.s, req->from_path->body.len);
 
+		to = ((struct msrp_url*)(req->to_path->parsed));
 		cell->to_top.s = p;
 		cell->to_top.len = to->whole.len;
 		append_string( p, to->whole.s, to->whole.len );
