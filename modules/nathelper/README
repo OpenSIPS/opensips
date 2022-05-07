@@ -659,10 +659,10 @@ Chapter 3. Contributors
    (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Andrei Dragus,
    Vlad Paiu (@vladpaiu), Henning Westerholt (@henningw), Dan
    Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
-   Klaus Darilion, Sergio Gutierrez, Nils Ohlmeier, Emmanuel Buu,
-   Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq,
-   Laurent Schweizer, Jasper Hafkenscheid (@hafkensite),
-   Konstantin Bokarius, John Riordan, Peter Lemenkov (@lemenkov),
+   Klaus Darilion, Sergio Gutierrez, Peter Lemenkov (@lemenkov),
+   Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman,
+   Jeremie Le Hen, Bayan Towfiq, Laurent Schweizer, Jasper
+   Hafkenscheid (@hafkensite), Konstantin Bokarius, John Riordan,
    Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
    Schubert.
 
@@ -686,14 +686,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2021
-   2.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
-   3.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   5.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2021
+   3.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
+   4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
+   6.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    9.  Shlomi Gutman                       Mar 2018 - Mar 2018
    10. Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
 
