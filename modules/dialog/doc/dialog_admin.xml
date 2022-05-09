@@ -1022,7 +1022,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 		<title>Set <varname>profiles_with_value</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s; repl/b;")
+modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientChannels/s; codecUsed/b;")
 ...
 </programlisting>
 		</example>
