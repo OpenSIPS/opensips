@@ -95,6 +95,32 @@ typedef int (*b2bl_register_cb_f)(str* key, b2bl_cback_f, void* param, unsigned 
 
 typedef str *(*b2bl_get_key_f)(void);
 
+struct b2b_entity_info_t {
+	str key;
+	str callid, fromtag, totag;
+};
+/*
+ * Retrieves information about an entity
+ * Params:
+ *  * key: the key of the b2b logic - if NULL, the current logic is retrieved
+ *  * msg: message to retrieve the peer from
+ *  * entity:
+ *     1: second entity according to the b2b logic
+ *     0: first entity according to the b2b logic
+ *    -1: current entity involved (if exists)
+ *    -2: current entity's peer (if exists)
+ *  * info: structure to filled in with information
+ *
+ *  Returns:
+ *   *  0: structure has been properly filled in
+ *   * -1: internal error
+ *   * -2: no b2b logic tuple available
+ *   * -3: no entity available
+ *   * -4: bad parameters
+ */
+typedef int (*b2bl_get_entity_info_f)(str *key, struct sip_msg *msg, int entity, struct b2b_entity_info_t *info);
+typedef void (*b2bl_release_entity_info_f)(struct b2b_entity_info_t *info);
+
 typedef struct b2b_tracer* (*b2bl_set_tracer_f)(void);
 typedef int (*b2bl_register_set_tracer_cb_f)(b2bl_set_tracer_f cb, unsigned int msg_flag_filter);
 
@@ -113,6 +139,9 @@ typedef struct b2bl_api
 	b2bl_get_key_f get_key;
 	b2bl_register_set_tracer_cb_f register_set_tracer_cb;
 	b2bl_restore_upper_info_f restore_upper_info;
+
+	b2bl_get_entity_info_f get_entity_info;
+	b2bl_release_entity_info_f release_entity_info;
 
 	b2bl_ctx_register_int_f ctx_register_int;
 	b2bl_ctx_register_str_f ctx_register_str;

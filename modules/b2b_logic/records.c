@@ -1016,3 +1016,13 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 
 	return 0;
 }
+
+b2bl_tuple_t *b2bl_get_tuple(str *key)
+{
+	unsigned int hash_index, local_index;
+	if (b2bl_parse_key(key, &hash_index, &local_index) < 0)
+		goto error;
+	return b2bl_search_tuple_safe(hash_index, local_index);
+error:
+	return NULL;
+}

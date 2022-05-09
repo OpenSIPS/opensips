@@ -21,23 +21,17 @@
 #include "records.h"
 #include "b2b_logic_ctx.h"
 
-static b2bl_tuple_t *b2bl_get_tuple(str *key)
+static b2bl_tuple_t *b2bl_ctx_get_tuple(str *key)
 {
-	b2bl_tuple_t *tuple;
-	unsigned int hash_index, local_index;
-	if (b2bl_parse_key(key, &hash_index, &local_index) < 0)
-		goto error;
-	tuple = b2bl_search_tuple_safe(hash_index, local_index);
-	if (!tuple)
-		goto error;
+	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	if (!tuple) {
+		LM_BUG("could not find logic tuple [%.*s]\n", key->len, key->s);
+		abort();
+	}
 	return tuple;
-error:
-	LM_BUG("could not find logic tuple [%.*s]\n", key->len, key->s);
-	abort();
-	return NULL;
 }
 
-static void b2bl_release_tuple(b2bl_tuple_t *tuple)
+static void b2bl_ctx_release_tuple(b2bl_tuple_t *tuple)
 {
 	lock_release(&b2bl_htable[tuple->hash_index].lock);
 }
@@ -60,48 +54,48 @@ int b2bl_ctx_register_ptr(context_destroy_f f)
 
 void b2bl_ctx_put_int(str *key, int pos, int data)
 {
-	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
 	context_put_int(CONTEXT_B2B_LOGIC, context_of(tuple), pos, data);
-	b2bl_release_tuple(tuple);
+	b2bl_ctx_release_tuple(tuple);
 }
 
 void b2bl_ctx_put_str(str *key, int pos, str *data)
 {
-	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
 	context_put_str(CONTEXT_B2B_LOGIC, context_of(tuple), pos, data);
-	b2bl_release_tuple(tuple);
+	b2bl_ctx_release_tuple(tuple);
 }
 
 void b2bl_ctx_put_ptr(str *key, int pos, void *data)
 {
-	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
 	context_put_ptr(CONTEXT_B2B_LOGIC, context_of(tuple), pos, data);
-	b2bl_release_tuple(tuple);
+	b2bl_ctx_release_tuple(tuple);
 }
 
 int b2bl_ctx_get_int(str *key, int pos)
 {
 	int ret;
-	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
 	ret = context_get_int(CONTEXT_B2B_LOGIC, context_of(tuple), pos);
-	b2bl_release_tuple(tuple);
+	b2bl_ctx_release_tuple(tuple);
 	return ret;
 }
 
 str *b2bl_ctx_get_str(str *key, int pos)
 {
 	str *ret;
-	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
 	ret = context_get_str(CONTEXT_B2B_LOGIC, context_of(tuple), pos);
-	b2bl_release_tuple(tuple);
+	b2bl_ctx_release_tuple(tuple);
 	return ret;
 }
 
 void *b2bl_ctx_get_ptr(str *key, int pos)
 {
 	void *ret;
-	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
+	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
 	ret = context_get_ptr(CONTEXT_B2B_LOGIC, context_of(tuple), pos);
-	b2bl_release_tuple(tuple);
+	b2bl_ctx_release_tuple(tuple);
 	return ret;
 }

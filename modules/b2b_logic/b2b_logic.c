@@ -2226,6 +2226,95 @@ static str *b2bl_get_key(void)
 	return &ret;
 }
 
+static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struct b2b_entity_info_t *info)
+{
+	str callid;
+	b2bl_tuple_t *tuple;
+	b2bl_entity_id_t *bentity = NULL;
+
+	if (!info)
+		return -4;
+	memset(info, 0, sizeof *info);
+	if (entity < -2 || entity > 1)
+		return -4;
+
+	if (key)
+		tuple = b2bl_get_tuple(key);
+	else
+		tuple = get_ctx_tuple();
+	if (!tuple)
+		return -2;
+
+	if (entity < 0) {
+		if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
+			if (tuple->bridge_entities[0]) {
+				if (!str_strcmp(&cur_route_ctx.entity_key,
+						&tuple->bridge_entities[0]->key))
+					bentity = tuple->bridge_entities[(entity == -2?1:0)];
+			}
+			if (!bentity && tuple->bridge_entities[1]) {
+				if (!str_strcmp(&cur_route_ctx.entity_key,
+						&tuple->bridge_entities[1]->key))
+					bentity = tuple->bridge_entities[(entity == -2?0:1)];
+			}
+		} else {
+			if (!msg)
+				return -2;
+			if (get_callid(msg, &callid) < 0) {
+				LM_ERR("Failed to get callid from SIP message\n");
+				return -1;
+			}
+			if (tuple->bridge_entities[0] && tuple->bridge_entities[0]->dlginfo) {
+				if (!str_strcmp(&callid,
+						&tuple->bridge_entities[0]->dlginfo->callid))
+					bentity = tuple->bridge_entities[(entity == -2?1:0)];
+			}
+			if (!bentity && tuple->bridge_entities[1] && tuple->bridge_entities[1]->dlginfo) {
+				if (!str_strcmp(&callid,
+						&tuple->bridge_entities[1]->dlginfo->callid))
+					bentity = tuple->bridge_entities[(entity == -2?0:1)];
+			}
+		}
+		/* if we still don't have an entity, most likely we are in a
+		 * client_new callback, with a single server entity */
+		if (entity == -2)
+			bentity = tuple->servers[0];
+
+	} else {
+		bentity = tuple->bridge_entities[entity];
+	}
+	if (!bentity)
+		return -3;
+	if (bentity->key.len && pkg_str_dup(&info->key, &bentity->key) < 0)
+		return -1;
+	if (bentity->dlginfo) {
+		if (bentity->dlginfo->callid.len
+				&& pkg_str_dup(&info->callid, &bentity->dlginfo->callid) < 0)
+			return -1;
+		if (bentity->dlginfo->fromtag.len
+				&& pkg_str_dup(&info->fromtag, &bentity->dlginfo->fromtag) < 0)
+			return -1;
+		if (bentity->dlginfo->totag.len
+				&& pkg_str_dup(&info->totag, &bentity->dlginfo->totag) < 0)
+			return -1;
+	}
+	return 0;
+}
+
+static void b2bl_release_entity_info(struct b2b_entity_info_t *info)
+{
+	if (!info)
+		return;
+	if (info->key.s)
+		pkg_free(info->key.s);
+	if (info->callid.s)
+		pkg_free(info->callid.s);
+	if (info->fromtag.s)
+		pkg_free(info->fromtag.s);
+	if (info->totag.s)
+		pkg_free(info->totag.s);
+}
+
 
 int b2b_logic_bind(b2bl_api_t* api)
 {
@@ -2244,6 +2333,9 @@ int b2b_logic_bind(b2bl_api_t* api)
 	api->get_key       = b2bl_get_key;
 	api->register_set_tracer_cb = b2bl_register_set_tracer_cb;
 	api->restore_upper_info = b2bl_restore_upper_info;
+
+	api->get_entity_info     = b2bl_get_entity_info;
+	api->release_entity_info = b2bl_release_entity_info;
 
 	api->ctx_register_int = b2bl_ctx_register_int;
 	api->ctx_register_str = b2bl_ctx_register_str;

@@ -235,4 +235,6 @@ int b2bl_register_new_tuple_cb(b2bl_cback_f f, void *param);
 
 int b2bl_run_new_tuple_cb(str *key);
 
+b2bl_tuple_t *b2bl_get_tuple(str *key);
+
 #endif
