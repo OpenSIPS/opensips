@@ -44,6 +44,7 @@
 		<name>location</name>
 		<type>string</type>
 		<size>128</size>
+		<null/>
 		<description>SIP URI point to the agent location;
 		All calls for this agents will be sent to this
 		SIP address.</description>
@@ -54,9 +55,29 @@
 		<type>unsigned int</type>
 		<size>10</size>
 		<default>0</default>
-		<description>The login state of the agent;
+		<description>The call login state of the agent;
 		0 - not logged in; 1 - logged in ; Agent will
 		start receiving calls only if logged in.
+		</description>
+	</column>
+
+	<column id="msrp_location">
+		<name>msrp_location</name>
+		<type>string</type>
+		<size>128</size>
+		<null/>
+		<description>MSRP SIP URI point to the agent location;
+		All chat sessions for this agents will be sent to this
+		SIP address.</description>
+	</column>
+
+	<column id="msrp_max_sessions">
+		<name>msrp_max_sessions</name>
+		<type>unsigned int</type>
+		<size>10</size>
+		<default>4</default>
+		<description>How many MSRP/chat sessions the agent
+		can handle in the same time.
 		</description>
 	</column>
 

@@ -25,27 +25,28 @@ Call-Center Module
               1.4.4. wrapup_time (integer)
               1.4.5. queue_pos_param (string)
               1.4.6. reject_on_no_agents (int)
-              1.4.7. cc_agents_table (string)
-              1.4.8. cca_agentid_column (string)
-              1.4.9. cca_location_column (string)
-              1.4.10. cca_skills_column (string)
-              1.4.11. cca_logstate_column (string)
-              1.4.12. cca_wrapuptime_column (string)
-              1.4.13. cca_wrapupend_column (string)
-              1.4.14. cc_flows_table (string)
-              1.4.15. ccf_flowid_column (string)
-              1.4.16. ccf_priority_column (string)
-              1.4.17. ccf_skill_column (string)
-              1.4.18. ccf_cid_column (string)
-              1.4.19. ccf_max_wrapup_column (string)
-              1.4.20. ccf_dissuading_hangup_column (string)
-              1.4.21. ccf_dissuading_onhold_th_column (string)
-              1.4.22. ccf_dissuading_ewt_th_column (string)
-              1.4.23. ccf_dissuading_qsize_th_column (string)
-              1.4.24. ccf_m_welcome_column (string)
-              1.4.25. ccf_m_queue_column (string)
-              1.4.26. ccf_m_dissuading_column (string)
-              1.4.27. ccf_m_flow_id_column (string)
+              1.4.7. chat_dispatch_policy (int)
+              1.4.8. cc_agents_table (string)
+              1.4.9. cca_agentid_column (string)
+              1.4.10. cca_location_column (string)
+              1.4.11. cca_skills_column (string)
+              1.4.12. cca_logstate_column (string)
+              1.4.13. cca_wrapuptime_column (string)
+              1.4.14. cca_wrapupend_column (string)
+              1.4.15. cc_flows_table (string)
+              1.4.16. ccf_flowid_column (string)
+              1.4.17. ccf_priority_column (string)
+              1.4.18. ccf_skill_column (string)
+              1.4.19. ccf_cid_column (string)
+              1.4.20. ccf_max_wrapup_column (string)
+              1.4.21. ccf_dissuading_hangup_column (string)
+              1.4.22. ccf_dissuading_onhold_th_column (string)
+              1.4.23. ccf_dissuading_ewt_th_column (string)
+              1.4.24. ccf_dissuading_qsize_th_column (string)
+              1.4.25. ccf_m_welcome_column (string)
+              1.4.26. ccf_m_queue_column (string)
+              1.4.27. ccf_m_dissuading_column (string)
+              1.4.28. ccf_m_flow_id_column (string)
 
         1.5. Exported Functions
 
@@ -103,30 +104,31 @@ Call-Center Module
    1.4. Set wrapup_time parameter
    1.5. Set queue_pos_param parameter
    1.6. Set reject_on_no_agents parameter
-   1.7. Set cc_agents_table parameter
-   1.8. Set cca_agentid_column parameter
-   1.9. Set cca_location_column parameter
-   1.10. Set cca_skills_column parameter
-   1.11. Set cca_logstate_column parameter
-   1.12. Set cca_wrapuptime_column parameter
-   1.13. Set cca_wrapupend_column parameter
-   1.14. Set cc_flows_table parameter
-   1.15. Set ccf_flowid_column parameter
-   1.16. Set ccf_priority_column parameter
-   1.17. Set ccf_skill_column parameter
-   1.18. Set ccf_cid_column parameter
-   1.19. Set ccf_max_wrapup_column parameter
-   1.20. Set ccf_dissuading_hangup_column parameter
-   1.21. Set ccf_dissuading_onhold_th_column parameter
-   1.22. Set ccf_dissuading_ewt_th_column parameter
-   1.23. Set ccf_dissuading_qsize_th_column parameter
-   1.24. Set ccf_m_welcome_column parameter
-   1.25. Set ccf_m_queue_column parameter
-   1.26. Set ccf_m_dissuading_column parameter
-   1.27. Set ccf_m_flow_id_column parameter
-   1.28. cc_handle_call usage
-   1.29. cc_agent_login usage
-   1.30. $rtpquery Usage
+   1.7. Set chat_dispatch_policy parameter
+   1.8. Set cc_agents_table parameter
+   1.9. Set cca_agentid_column parameter
+   1.10. Set cca_location_column parameter
+   1.11. Set cca_skills_column parameter
+   1.12. Set cca_logstate_column parameter
+   1.13. Set cca_wrapuptime_column parameter
+   1.14. Set cca_wrapupend_column parameter
+   1.15. Set cc_flows_table parameter
+   1.16. Set ccf_flowid_column parameter
+   1.17. Set ccf_priority_column parameter
+   1.18. Set ccf_skill_column parameter
+   1.19. Set ccf_cid_column parameter
+   1.20. Set ccf_max_wrapup_column parameter
+   1.21. Set ccf_dissuading_hangup_column parameter
+   1.22. Set ccf_dissuading_onhold_th_column parameter
+   1.23. Set ccf_dissuading_ewt_th_column parameter
+   1.24. Set ccf_dissuading_qsize_th_column parameter
+   1.25. Set ccf_m_welcome_column parameter
+   1.26. Set ccf_m_queue_column parameter
+   1.27. Set ccf_m_dissuading_column parameter
+   1.28. Set ccf_m_flow_id_column parameter
+   1.29. cc_handle_call usage
+   1.30. cc_agent_login usage
+   1.31. $rtpquery Usage
 
 Chapter 1. Admin Guide
 
@@ -142,6 +144,10 @@ Chapter 1. Admin Guide
    everything except the media playback (for the queue). This part
    must be provided via a third party media server (FreeSwitch,
    Asterisk or others).
+
+   This is actually a Contact Center and it is able to handle both
+   RTP/audio calls and (multiple) MSRP/chat calls, in the same
+   time.
 
 1.2. How it works
 
@@ -218,11 +224,20 @@ Chapter 1. Admin Guide
 1.2.3. Agents
 
    An agent is defined by a unique alphanumerical ID - the main
-   attribute of an agent is its the set of skills and its SIP
-   location. The set of skills will tell what calls to be received
-   (from which flows, based on the skill matching); the location
-   is a SIP URI where to call must be sent in order to be answered
-   by the agent.
+   attribute of an agent is its the set of skills. This set of
+   skills will tell what calls to be received (from which flows,
+   based on the skill matching).
+
+   The agent may provide support for different optional media
+   types, like RTP/audio or MSRP/chat. Each supported media type
+   comes with the maximum supported number of sessions. Of course,
+   for audio the `1` value is hardocded. On the SIP side, each
+   media type comes with a locations. The location is a SIP URI
+   where to calls must be sent in order to be answered by the
+   agent. At least one media type should be defined.
+
+   So, at a certain time, an agent may handle either a single
+   call, either several chat sessions.
 
    Additionally, the agent has a initial logstate - if he is
    logged in or not (being logged in is a must in order to receive
@@ -336,254 +351,282 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 modparam("call_center", "reject_on_no_agents", 0)
 ...
 
-1.4.7. cc_agents_table (string)
+1.4.7. chat_dispatch_policy (int)
+
+   A parameter to tell what should be the policy on dispatching
+   the chat/MSRP sessions to the agents, considering that an agent
+   may handle multiple such sessions/chats in the same time.
+
+   Options are:
+     * balancing - the distribution will try to be even across the
+       agents, but by doing this you may end up waisting chat
+       sessions on agents and call starvation - agents are
+       partially used by chat sessions, so they cannot take calls
+       (of course, if you have mixed agetns with audio/chat)
+     * full-load - the distribution will try to make usage of an
+       agent in the best possible way when comes to chat sessions
+       - once the agent take a chat, all the following chats will
+       be assigned ot him - the idea is to try to be efficient in
+       using the resource/sessions of an agents, to leave as much
+       room as possible for calls. Of course, this may lead to an
+       un-even loading of chat agents - some will be full, others
+       empty.
+
+   Default value is “balancing”.
+
+   Example 1.7. Set chat_dispatch_policy parameter
+...
+modparam("call_center", "chat_dispatch_policy", "balancing")
+...
+
+1.4.8. cc_agents_table (string)
 
    Name to be used for the table holding the agents.
 
    Default value is “cc_agents”.
 
-   Example 1.7. Set cc_agents_table parameter
+   Example 1.8. Set cc_agents_table parameter
 ...
 modparam("call_center", "cc_agents_table", "my_agents")
 ...
 
-1.4.8. cca_agentid_column (string)
+1.4.9. cca_agentid_column (string)
 
    Name to be used for the "agent id" (unique DB id) column in the
    agents table.
 
    Default value is “agentid”.
 
-   Example 1.8. Set cca_agentid_column parameter
+   Example 1.9. Set cca_agentid_column parameter
 ...
 modparam("call_center", "cca_agentid_column", "cid")
 ...
 
-1.4.9. cca_location_column (string)
+1.4.10. cca_location_column (string)
 
    Name to be used for the "location" (SIP URI) column in the
    agents table.
 
    Default value is “agentid”.
 
-   Example 1.9. Set cca_location_column parameter
+   Example 1.10. Set cca_location_column parameter
 ...
 modparam("call_center", "cca_location_column", "sip_uri")
 ...
 
-1.4.10. cca_skills_column (string)
+1.4.11. cca_skills_column (string)
 
    Name to be used for the "skills" (list of skills) column in the
    agents table.
 
    Default value is “skills”.
 
-   Example 1.10. Set cca_skills_column parameter
+   Example 1.11. Set cca_skills_column parameter
 ...
 modparam("call_center", "cca_skills_column", "skills")
 ...
 
-1.4.11. cca_logstate_column (string)
+1.4.12. cca_logstate_column (string)
 
    Name to be used for the "logstate" (original login state)
    column in the agents table.
 
    Default value is “logstate”.
 
-   Example 1.11. Set cca_logstate_column parameter
+   Example 1.12. Set cca_logstate_column parameter
 ...
 modparam("call_center", "cca_logstate_column", "log_state")
 ...
 
-1.4.12. cca_wrapuptime_column (string)
+1.4.13. cca_wrapuptime_column (string)
 
    Name to be used for the "wrapuptime" (per-agent wrapup time)
    column in the agents table.
 
    Default value is “wrapup_time”.
 
-   Example 1.12. Set cca_wrapuptime_column parameter
+   Example 1.13. Set cca_wrapuptime_column parameter
 ...
 modparam("call_center", "cca_wrapuptime_column", "wtime")
 ...
 
-1.4.13. cca_wrapupend_column (string)
+1.4.14. cca_wrapupend_column (string)
 
    Name to be used for the "wrapupend" (timestamp when the wrapup
    ends) column in the agents table.
 
    Default value is “wrapup_end_time”.
 
-   Example 1.13. Set cca_wrapupend_column parameter
+   Example 1.14. Set cca_wrapupend_column parameter
 ...
 modparam("call_center", "cca_wrapupend_column", "wrapup_ends")
 ...
 
-1.4.14. cc_flows_table (string)
+1.4.15. cc_flows_table (string)
 
    Name to be used for the table holding the definition of the
    flows/queues.
 
    Default value is “cc_flows”.
 
-   Example 1.14. Set cc_flows_table parameter
+   Example 1.15. Set cc_flows_table parameter
 ...
 modparam("call_center", "cc_flows_table", "queues")
 ...
 
-1.4.15. ccf_flowid_column (string)
+1.4.16. ccf_flowid_column (string)
 
    Name to be used for the "flow id" (unique DB id) column in the
    flows table.
 
    Default value is “flowid”.
 
-   Example 1.15. Set ccf_flowid_column parameter
+   Example 1.16. Set ccf_flowid_column parameter
 ...
 modparam("call_center", "ccf_flowid_column", "queue_id")
 ...
 
-1.4.16. ccf_priority_column (string)
+1.4.17. ccf_priority_column (string)
 
    Name to be used for the "priority" column in the flows table.
 
    Default value is “priority”.
 
-   Example 1.16. Set ccf_priority_column parameter
+   Example 1.17. Set ccf_priority_column parameter
 ...
 modparam("call_center", "ccf_priority_column", "queue_prio")
 ...
 
-1.4.17. ccf_skill_column (string)
+1.4.18. ccf_skill_column (string)
 
    Name to be used for the "skill" column in the flows table.
 
    Default value is “skill”.
 
-   Example 1.17. Set ccf_skill_column parameter
+   Example 1.18. Set ccf_skill_column parameter
 ...
 modparam("call_center", "ccf_skill_column", "queue_skill")
 ...
 
-1.4.18. ccf_cid_column (string)
+1.4.19. ccf_cid_column (string)
 
    Name to be used for the "caller ID prefix" column in the flows
    table.
 
    Default value is “prependcid”.
 
-   Example 1.18. Set ccf_cid_column parameter
+   Example 1.19. Set ccf_cid_column parameter
 ...
 modparam("call_center", "ccf_cid_column", "queue_cli_prefix")
 ...
 
-1.4.19. ccf_max_wrapup_column (string)
+1.4.20. ccf_max_wrapup_column (string)
 
    Name to be used for the "max limit for wrapup time" column in
    the flows table.
 
    Default value is “max_wrapup_time”.
 
-   Example 1.19. Set ccf_max_wrapup_column parameter
+   Example 1.20. Set ccf_max_wrapup_column parameter
 ...
 modparam("call_center", "ccf_max_wrapup_column", "queue_wrapup")
 ...
 
-1.4.20. ccf_dissuading_hangup_column (string)
+1.4.21. ccf_dissuading_hangup_column (string)
 
    Name to be used for the "hangup after dissuading" column in the
    flows table.
 
    Default value is “dissuading_hangup”.
 
-   Example 1.20. Set ccf_dissuading_hangup_column parameter
+   Example 1.21. Set ccf_dissuading_hangup_column parameter
 ...
 modparam("call_center", "ccf_dissuading_hangup_column", "hangup_on_dissu
 ading")
 ...
 
-1.4.21. ccf_dissuading_onhold_th_column (string)
+1.4.22. ccf_dissuading_onhold_th_column (string)
 
    Name to be used for the "on-hold dissuading threshold" column
    in the flows table.
 
    Default value is “dissuading_onhold_th”.
 
-   Example 1.21. Set ccf_dissuading_onhold_th_column parameter
+   Example 1.22. Set ccf_dissuading_onhold_th_column parameter
 ...
 modparam("call_center", "ccf_dissuading_onhold_th_column", "th_diss_onho
 ld")
 ...
 
-1.4.22. ccf_dissuading_ewt_th_column (string)
+1.4.23. ccf_dissuading_ewt_th_column (string)
 
    Name to be used for the "EWT dissuading threshold" column in
    the flows table.
 
    Default value is “dissuading_ewt_th”.
 
-   Example 1.22. Set ccf_dissuading_ewt_th_column parameter
+   Example 1.23. Set ccf_dissuading_ewt_th_column parameter
 ...
 modparam("call_center", "ccf_dissuading_ewt_th_column", "th_diss_ewt")
 ...
 
-1.4.23. ccf_dissuading_qsize_th_column (string)
+1.4.24. ccf_dissuading_qsize_th_column (string)
 
    Name to be used for the "queue size dissuading threshold"
    column in the flows table.
 
    Default value is “dissuading_qsize_th”.
 
-   Example 1.23. Set ccf_dissuading_qsize_th_column parameter
+   Example 1.24. Set ccf_dissuading_qsize_th_column parameter
 ...
 modparam("call_center", "ccf_dissuading_qsize_th_column", "th_diss_qsize
 ")
 ...
 
-1.4.24. ccf_m_welcome_column (string)
+1.4.25. ccf_m_welcome_column (string)
 
    Name to be used for the "audio message on welcome" column in
    the flows table.
 
    Default value is “message_welcome”.
 
-   Example 1.24. Set ccf_m_welcome_column parameter
+   Example 1.25. Set ccf_m_welcome_column parameter
 ...
 modparam("call_center", "ccf_m_welcome_column", "audio_welcome")
 ...
 
-1.4.25. ccf_m_queue_column (string)
+1.4.26. ccf_m_queue_column (string)
 
    Name to be used for the "audio message on queueing" column in
    the flows table.
 
    Default value is “message_queue”.
 
-   Example 1.25. Set ccf_m_queue_column parameter
+   Example 1.26. Set ccf_m_queue_column parameter
 ...
 modparam("call_center", "ccf_m_queue_column", "audio_queue")
 ...
 
-1.4.26. ccf_m_dissuading_column (string)
+1.4.27. ccf_m_dissuading_column (string)
 
    Name to be used for the "audio message on dissuading" column in
    the flows table.
 
    Default value is “message_dissuading”.
 
-   Example 1.26. Set ccf_m_dissuading_column parameter
+   Example 1.27. Set ccf_m_dissuading_column parameter
 ...
 modparam("call_center", "ccf_m_dissuading_column", "audio_dissuading")
 ...
 
-1.4.27. ccf_m_flow_id_column (string)
+1.4.28. ccf_m_flow_id_column (string)
 
    Name to be used for the "audio message on identifying the flow"
    column in the flows table.
 
    Default value is “message_flow_id”.
 
-   Example 1.27. Set ccf_m_flow_id_column parameter
+   Example 1.28. Set ccf_m_flow_id_column parameter
 ...
 modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
 ...
@@ -621,7 +664,7 @@ modparam("call_center", "ccf_m_flow_id_column", "audio_flow_id")
      * -4 - no agents logged in the flow;
      * -5 - internal error;
 
-   Example 1.28. cc_handle_call usage
+   Example 1.29. cc_handle_call usage
 ...
 if (is_method("INVITE") and !has_totag()) {
         if (!cc_handle_call("tech_support")) {
@@ -642,7 +685,7 @@ if (is_method("INVITE") and !has_totag()) {
      * state (int) - an integer value giving the new state - 0
        means logged off, anything else means logged in.
 
-   Example 1.29. cc_agent_login usage
+   Example 1.30. cc_agent_login usage
 ...
 # log off the 'agentX' agent
 cc_agent_login("agentX",0);
@@ -861,7 +904,7 @@ opensips-cli -x mi cc_reset_stats
      * preagent - the agent is being called.
      * toagent - the agent is in call.
 
-   Example 1.30. $rtpquery Usage
+   Example 1.31. $rtpquery Usage
 ...
         $json(reply) := $rtpquery;
         xlog("Total RTP Stats: $json(reply/totals)\n");

@@ -281,6 +281,8 @@
 		<column><field>agentid</field><type>DB_STR</type></column>
 		<column><field>location</field><type>DB_STR</type></column>
 		<column><field>logstate</field><type>DB_INT</type></column>
+		<column><field>msrp_location</field><type>DB_STR</type></column>
+		<column><field>msrp_max_sessions</field><type>DB_INT</type></column>
 		<column><field>skills</field><type>DB_STR</type></column>
 		<column><field>wrapup_end_time</field><type>DB_INT</type></column>
 		<column><field>wrapup_time</field><type>DB_INT</type></column>
@@ -301,6 +303,7 @@
 		<column><field>rejected</field><type>DB_INT</type></column>
 		<column><field>fstats</field><type>DB_INT</type></column>
 		<column><field>cid</field><type>DB_INT</type></column>
+		<column><field>media</field><type>DB_INT</type></column>
 	</db_table>
 	<!-- Declaration of cc_calls table-->
 	<db_table id="cc_calls">
@@ -308,6 +311,7 @@
 		<db_url_id>mysql</db_url_id>
 		<column><field>id</field><type>DB_INT</type></column>
 		<column><field>state</field><type>DB_INT</type></column>
+		<column><field>media</field><type>DB_INT</type></column>
 		<column><field>ig_cback</field><type>DB_INT</type></column>
 		<column><field>no_rej</field><type>DB_INT</type></column>
 		<column><field>setup_time</field><type>DB_INT</type></column>
@@ -2047,6 +2051,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -2059,6 +2065,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -2074,6 +2082,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -2105,6 +2115,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -2122,6 +2133,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -2142,6 +2154,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -2160,6 +2173,7 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -2179,6 +2193,7 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -2201,6 +2216,7 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>

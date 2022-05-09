@@ -47,9 +47,11 @@
 #define CCF_M_FLOW_ID_COL "message_flow_id"
 
 #define CC_AGENT_TABLE_NAME "cc_agents"
-#define CC_AGENT_TABLE_VERSION  2
+#define CC_AGENT_TABLE_VERSION  3
 #define CCA_AGENTID_COL "agentid"
-#define CCA_LOCATION_ID_COL "location"
+#define CCA_LOCATION_COL "location"
+#define CCA_MSRP_LOCATION_COL "msrp_location"
+#define CCA_MSRP_MAX_SESSIONS_COL "msrp_max_sessions"
 #define CCA_SKILLS_COL "skills"
 #define CCA_LOGSTATE_COL "logstate"
 #define CCA_WRAPUPEND_COL "wrapup_end_time"
@@ -73,10 +75,12 @@
 #define CCC_REJECTED_COL "rejected"
 #define CCC_FSTATS_COL "fstats"
 #define CCC_CID_COL "cid"
+#define CCC_MEDIA_COL "media"
 
 #define CC_CALLS_TABLE_NAME "cc_calls"
-#define CC_CALLS_TABLE_VERSION  2
+#define CC_CALLS_TABLE_VERSION  3
 #define CCQ_STATE_COL       "state"
+#define CCQ_MEDIA_COL       "media"
 #define CCQ_IGCBACK_COL     "ig_cback"
 #define CCQ_NOREJ_COL       "no_rej"
 #define CCQ_SETUP_TIME_COL  "setup_time"
@@ -108,7 +112,9 @@ str ccf_m_flow_id_column		=	str_init(CCF_M_FLOW_ID_COL);
 
 str cc_agent_table_name			=	str_init(CC_AGENT_TABLE_NAME);
 str cca_agentid_column			=	str_init(CCA_AGENTID_COL);
-str cca_location_column			=	str_init(CCA_LOCATION_ID_COL);
+str cca_location_column			=	str_init(CCA_LOCATION_COL);
+str cca_msrp_location_column	=	str_init(CCA_MSRP_LOCATION_COL);
+str cca_msrp_max_sessions_column=	str_init(CCA_MSRP_MAX_SESSIONS_COL);
 str cca_skills_column			=	str_init(CCA_SKILLS_COL);
 str cca_logstate_column			=	str_init(CCA_LOGSTATE_COL);
 str cca_wrapupend_column		=	str_init(CCA_WRAPUPEND_COL);
@@ -131,9 +137,11 @@ str ccc_type_column				=	str_init(CCC_TYPE_COL);
 str ccc_rejected_column			=	str_init(CCC_REJECTED_COL);
 str ccc_fstats_column 			=	str_init(CCC_FSTATS_COL);
 str ccc_cid_column				=	str_init(CCC_CID_COL);
+str ccc_media_column			=	str_init(CCC_MEDIA_COL);
 
 str cc_calls_table_name			=	str_init(CC_CALLS_TABLE_NAME);
 str ccq_state_column			=	str_init(CCQ_STATE_COL);
+str ccq_media_column			=	str_init(CCQ_MEDIA_COL);
 str ccq_ig_cback_column			=	str_init(CCQ_IGCBACK_COL);
 str ccq_no_rej_column			=	str_init(CCQ_NOREJ_COL);
 str ccq_setup_time_column		=	str_init(CCQ_SETUP_TIME_COL);
@@ -146,7 +154,7 @@ str ccq_b2buaid_column			=	str_init(CCQ_B2BUAID_COL);
 str ccq_flow_column				=	str_init(CCQ_FLOW_COL);
 str ccq_agent_column			=	str_init(CCQ_AGENT_COL);
 str ccq_param_column			=	str_init(CCQ_PARAM_COL);
-#define CCQ_COLS_NO  13
+#define CCQ_COLS_NO  14
 
 #define CC_FETCH_ROWS     100
 
@@ -385,43 +393,46 @@ int cc_db_insert_call(struct cc_call *call)
 	columns[0]           = &ccq_state_column;
 	vals[0].type         = DB_INT;
 	vals[0].val.int_val  = call->state;
-	columns[1]           = &ccq_ig_cback_column;
+	columns[0]           = &ccq_media_column;
 	vals[1].type         = DB_INT;
-	vals[1].val.int_val  = call->ign_cback;
-	columns[2]           = &ccq_no_rej_column;
+	vals[1].val.int_val  = call->media;
+	columns[2]           = &ccq_ig_cback_column;
 	vals[2].type         = DB_INT;
-	vals[2].val.int_val  = call->no_rejections;
-	columns[3]           = &ccq_setup_time_column;
+	vals[2].val.int_val  = call->ign_cback;
+	columns[3]           = &ccq_no_rej_column;
 	vals[3].type         = DB_INT;
-	vals[3].val.int_val  = call->setup_time;
-	columns[4]           = &ccq_eta_column;
+	vals[3].val.int_val  = call->no_rejections;
+	columns[4]           = &ccq_setup_time_column;
 	vals[4].type         = DB_INT;
-	vals[4].val.int_val  = call->eta;
-	columns[5]           = &ccq_last_start_column;
+	vals[4].val.int_val  = call->setup_time;
+	columns[5]           = &ccq_eta_column;
 	vals[5].type         = DB_INT;
-	vals[5].val.int_val  = call->last_start;
-	columns[6]           = &ccq_recv_time_column;
+	vals[5].val.int_val  = call->eta;
+	columns[6]           = &ccq_last_start_column;
 	vals[6].type         = DB_INT;
-	vals[6].val.int_val  = call->recv_time;
-	columns[7]           = &ccq_caller_dn_column;
-	vals[7].type         = DB_STR;
-	vals[7].val.str_val  = call->caller_dn;
-	columns[8]           = &ccq_caller_un_column;
+	vals[6].val.int_val  = call->last_start;
+	columns[7]           = &ccq_recv_time_column;
+	vals[7].type         = DB_INT;
+	vals[7].val.int_val  = call->recv_time;
+	columns[8]           = &ccq_caller_dn_column;
 	vals[8].type         = DB_STR;
-	vals[8].val.str_val  = call->caller_un;
-	columns[9]          = &ccq_b2buaid_column;
-	vals[9].type        = DB_STR;
-	vals[9].val.str_val = call->b2bua_id;
-	columns[10]          = &ccq_flow_column;
+	vals[8].val.str_val  = call->caller_dn;
+	columns[9]           = &ccq_caller_un_column;
+	vals[9].type         = DB_STR;
+	vals[9].val.str_val  = call->caller_un;
+	columns[10]          = &ccq_b2buaid_column;
 	vals[10].type        = DB_STR;
-	vals[10].val.str_val = call->flow->id;
-	columns[11]          = &ccq_agent_column;
+	vals[10].val.str_val = call->b2bua_id;
+	columns[11]          = &ccq_flow_column;
 	vals[11].type        = DB_STR;
-	if(call->agent)
-		vals[11].val.str_val = call->agent->id;
-	columns[12]          = &ccq_param_column;
+	vals[11].val.str_val = call->flow->id;
+	columns[12]          = &ccq_agent_column;
 	vals[12].type        = DB_STR;
-	vals[12].val.str_val = call->script_param;
+	if(call->agent)
+		vals[12].val.str_val = call->agent->id;
+	columns[13]          = &ccq_param_column;
+	vals[13].type        = DB_STR;
+	vals[13].val.str_val = call->script_param;
 
 	if (cc_rt_dbf.insert(cc_rt_db_handle, columns, vals, CCQ_COLS_NO) < 0) {
 		LM_ERR("inserting new record in database\n");
@@ -448,18 +459,19 @@ int cc_db_restore_calls( struct cc_data *data)
 	cc_rt_dbf.use_table( cc_rt_db_handle, &cc_calls_table_name);
 
 	columns[0] = &ccq_state_column;
-	columns[1] = &ccq_ig_cback_column;
-	columns[2] = &ccq_no_rej_column;
-	columns[3] = &ccq_setup_time_column;
-	columns[4] = &ccq_eta_column;
-	columns[5] = &ccq_last_start_column;
-	columns[6] = &ccq_recv_time_column;
-	columns[7] = &ccq_caller_dn_column;
-	columns[8] = &ccq_caller_un_column;
-	columns[9] = &ccq_b2buaid_column;
-	columns[10] = &ccq_flow_column;
-	columns[11] = &ccq_agent_column;
-	columns[12] = &ccq_param_column;
+	columns[1] = &ccq_media_column;
+	columns[2] = &ccq_ig_cback_column;
+	columns[3] = &ccq_no_rej_column;
+	columns[4] = &ccq_setup_time_column;
+	columns[5] = &ccq_eta_column;
+	columns[6] = &ccq_last_start_column;
+	columns[7] = &ccq_recv_time_column;
+	columns[8] = &ccq_caller_dn_column;
+	columns[9] = &ccq_caller_un_column;
+	columns[10] = &ccq_b2buaid_column;
+	columns[11] = &ccq_flow_column;
+	columns[12] = &ccq_agent_column;
+	columns[13] = &ccq_param_column;
 
 	if ( cc_rt_dbf.query( cc_rt_db_handle, 0, 0, 0, columns, 0,
 				CCQ_COLS_NO, 0, &res)<0) {
@@ -480,8 +492,8 @@ int cc_db_restore_calls( struct cc_data *data)
 		row = RES_ROWS(res) + i;
 
 		/* FLOW_COL */
-		check_val( ROW_VALUES(row)+10, DB_STRING, 1, 1, "flow");
-		s.s = (char*)VAL_STRING(ROW_VALUES(row)+10);
+		check_val( ROW_VALUES(row)+11, DB_STRING, 1, 1, "flow");
+		s.s = (char*)VAL_STRING(ROW_VALUES(row)+11);
 		s.len = strlen(s.s);
 		flow = get_flow_by_name(data, &s);
 		if (flow==NULL) {
@@ -491,17 +503,17 @@ int cc_db_restore_calls( struct cc_data *data)
 		LM_DBG("using call flow %p\n", flow);
 
 		/* CALLER_DN_COL */
-		check_val( ROW_VALUES(row)+7, DB_STRING, 1, 0, "caller_dn");
-		dn.s = (char*)VAL_STRING(ROW_VALUES(row)+7);
+		check_val( ROW_VALUES(row)+8, DB_STRING, 1, 0, "caller_dn");
+		dn.s = (char*)VAL_STRING(ROW_VALUES(row)+8);
 		dn.len = (dn.s ? strlen(dn.s) : 0);
 		/* CALLER_UN_COL */
-		check_val( ROW_VALUES(row)+8, DB_STRING, 1, 0, "caller_un");
-		un.s = (char*)VAL_STRING(ROW_VALUES(row)+8);
+		check_val( ROW_VALUES(row)+9, DB_STRING, 1, 0, "caller_un");
+		un.s = (char*)VAL_STRING(ROW_VALUES(row)+9);
 		un.len = (un.s ? strlen(un.s) : 0);
 
 		/* SCRIPT_PARAM_COL */
-		check_val( ROW_VALUES(row)+12, DB_STRING, 1, 0, "script param");
-		param.s = (char*)VAL_STRING(ROW_VALUES(row)+12);
+		check_val( ROW_VALUES(row)+13, DB_STRING, 1, 0, "script param");
+		param.s = (char*)VAL_STRING(ROW_VALUES(row)+13);
 		param.len = (param.s ? strlen(param.s) : 0);
 
 		call = new_cc_call(data, flow, &dn, &un, &param);
@@ -511,8 +523,8 @@ int cc_db_restore_calls( struct cc_data *data)
 		}
 
 		/* AGENT_COL */
-		check_val( ROW_VALUES(row)+11, DB_STRING, 0, 0, "agent");
-		s.s = (char*)VAL_STRING(ROW_VALUES(row)+11);
+		check_val( ROW_VALUES(row)+12, DB_STRING, 0, 0, "agent");
+		s.s = (char*)VAL_STRING(ROW_VALUES(row)+12);
 		if(s.s && strlen(s.s)) {
 			s.len = strlen(s.s);
 			/* name of the agent */
@@ -522,34 +534,41 @@ int cc_db_restore_calls( struct cc_data *data)
 				continue;
 			}
 			call->agent = agent;
-			agent->state = CC_AGENT_INCALL;
 			agent->ref_cnt++;
 		}
 
 		/* STATE_COL */
 		check_val( ROW_VALUES(row), DB_INT, 1, 0, "state");
 		call->state = VAL_INT(ROW_VALUES(row));
+		/* MEDIA_COL */
+		check_val( ROW_VALUES(row)+1, DB_INT, 1, 0, "media");
+		call->media = VAL_INT(ROW_VALUES(row)+1);
+		if (agent) {
+			agent->state = (call->media==CC_MEDIA_RTP) ?
+				CC_AGENT_INCALL : CC_AGENT_INCHAT;
+			agent->ongoing_sessions[call->media]++;
+		}
 		/* IGCBACK_COL */
-		check_val( ROW_VALUES(row)+1, DB_INT, 1, 0, "ig_cback");
-		call->ign_cback = VAL_INT(ROW_VALUES(row)+1);
+		check_val( ROW_VALUES(row)+2, DB_INT, 1, 0, "ig_cback");
+		call->ign_cback = VAL_INT(ROW_VALUES(row)+2);
 		/* NOREJ_COL */
-		check_val( ROW_VALUES(row)+2, DB_INT, 1, 0, "no_rej");
-		call->no_rejections = VAL_INT(ROW_VALUES(row)+2);
+		check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "no_rej");
+		call->no_rejections = VAL_INT(ROW_VALUES(row)+3);
 		/* SETUP_TIME_COL */
-		check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "setup_time");
-		call->setup_time = VAL_INT(ROW_VALUES(row)+3);
+		check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "setup_time");
+		call->setup_time = VAL_INT(ROW_VALUES(row)+4);
 		/* ETA_COL  */
-		check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "eta");
-		call->eta = VAL_INT(ROW_VALUES(row)+4);
+		check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "eta");
+		call->eta = VAL_INT(ROW_VALUES(row)+5);
 		/* LAST_START_COL */
-		check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "last_start");
-		call->last_start = VAL_INT(ROW_VALUES(row)+5);
+		check_val( ROW_VALUES(row)+6, DB_INT, 1, 0, "last_start");
+		call->last_start = VAL_INT(ROW_VALUES(row)+6);
 		/* RECV_TIME_COL */
-		check_val( ROW_VALUES(row)+6, DB_INT, 1, 0, "recv_time");
-		call->recv_time = VAL_INT(ROW_VALUES(row)+6);
+		check_val( ROW_VALUES(row)+7, DB_INT, 1, 0, "recv_time");
+		call->recv_time = VAL_INT(ROW_VALUES(row)+7);
 		/* B2BUAID_COL */
-		check_val( ROW_VALUES(row)+9, DB_STRING, 1, 1, "b2buaid");
-		id.s = (char*)VAL_STRING(ROW_VALUES(row)+9);
+		check_val( ROW_VALUES(row)+8, DB_STRING, 1, 1, "b2buaid");
+		id.s = (char*)VAL_STRING(ROW_VALUES(row)+8);
 		if(id.s) {
 			id.len = strlen(id.s);
 			call->b2bua_id.len = id.len;
@@ -592,8 +611,7 @@ int cc_load_db_data( struct cc_data *data)
 	db_row_t* row;
 	int i, j, n;
 	str id,skill,cid;
-	str location;
-	unsigned int priority, wrapup, logstate, wrapup_end_time;
+	unsigned int priority, logstate, wrapup, wrapup_end_time;
 	unsigned int diss_hangup, diss_ewt_th, diss_qsize_th, diss_onhold_th;
 	str messages[MAX_AUDIO];
 
@@ -725,13 +743,15 @@ int cc_load_db_data( struct cc_data *data)
 
 	columns[0] = &cca_agentid_column;
 	columns[1] = &cca_location_column;
-	columns[2] = &cca_skills_column;
-	columns[3] = &cca_logstate_column;
-	columns[4] = &cca_wrapupend_column;
-	columns[5] = &cca_wrapuptime_column;
+	columns[2] = &cca_msrp_location_column;
+	columns[3] = &cca_msrp_max_sessions_column;
+	columns[4] = &cca_logstate_column;
+	columns[5] = &cca_skills_column;
+	columns[6] = &cca_wrapupend_column;
+	columns[7] = &cca_wrapuptime_column;
 
 	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 8, 0, 0 ) < 0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -740,7 +760,7 @@ int cc_load_db_data( struct cc_data *data)
 			return -1;
 		}
 	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, &res)<0) {
+		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 8, 0, &res)<0) {
 			LM_ERR("DB query failed\n");
 			return -1;
 		}
@@ -751,31 +771,50 @@ int cc_load_db_data( struct cc_data *data)
 	n = 0;
 
 	do {
+		struct media_info media[CC_MEDIA_NO];
 		for(i=0; i < RES_ROW_N(res); i++) {
 			row = RES_ROWS(res) + i;
+			memset( media, 0, CC_MEDIA_NO*sizeof(struct media_info) );
 			/* agentID column */
 			check_val( ROW_VALUES(row), DB_STRING, 1, 1, "agentid");
 			id.s = (char*)VAL_STRING(ROW_VALUES(row));
 			id.len = strlen(id.s);
 			/* LOCATION column */
-			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
-			location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
-			location.len = strlen(location.s);
-			/* SKILLS column */
-			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
-			skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
-			skill.len = strlen(skill.s);
+			check_val( ROW_VALUES(row)+1, DB_STRING, 0, 1, "location");
+			if ( !VAL_NULL(ROW_VALUES(row)+1) ) {
+				media[CC_MEDIA_RTP].location.s =
+					(char*)VAL_STRING(ROW_VALUES(row)+1);
+				media[CC_MEDIA_RTP].location.len =
+					strlen(media[CC_MEDIA_RTP].location.s);
+				media[CC_MEDIA_RTP].sessions = 1;
+			}
+			/* MSRP LOCATION column */
+			check_val( ROW_VALUES(row)+2, DB_STRING, 0, 1, "msrp_location");
+			if ( !VAL_NULL(ROW_VALUES(row)+2) ) {
+				media[CC_MEDIA_MSRP].location.s =
+					(char*)VAL_STRING(ROW_VALUES(row)+2);
+				media[CC_MEDIA_MSRP].location.len =
+					strlen(media[CC_MEDIA_MSRP].location.s);
+				/* MAX SESSIONS column */
+				check_val( ROW_VALUES(row)+3, DB_INT, 1, 0,
+					"msrp_max_sessions");
+				media[CC_MEDIA_MSRP].sessions =  VAL_INT(ROW_VALUES(row)+3);
+			}
 			/* LOGSTATE column */
-			check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
-			logstate = VAL_INT(ROW_VALUES(row)+3);
+			check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "logstate");
+			logstate = VAL_INT(ROW_VALUES(row)+4);
+			/* SKILLS column */
+			check_val( ROW_VALUES(row)+5, DB_STRING, 1, 1, "skills");
+			skill.s = (char*)VAL_STRING(ROW_VALUES(row)+5);
+			skill.len = strlen(skill.s);
 			/* WRAPUP_END_TIME column */
-			wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
+			wrapup_end_time = VAL_INT(ROW_VALUES(row)+6);
 			/* WRAPUP_TIME column */
-			check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
-			wrapup = VAL_INT(ROW_VALUES(row)+5);
+			check_val( ROW_VALUES(row)+7, DB_INT, 1, 0, "wrapup time");
+			wrapup = VAL_INT(ROW_VALUES(row)+7);
 
 			/* add agent */
-			if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
+			if (add_cc_agent( data, &id, media, &skill, logstate, wrapup,
 			wrapup_end_time)<0){
 				LM_ERR("failed to add agent %.*s -> skipping\n",
 					id.len,id.s);
@@ -841,10 +880,11 @@ int prepare_cdr(struct cc_call *call, str *un, str *fid , str *aid)
 }
 
 
-int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt, int tt, int pt, int rej, int fst, int cid)
+int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt,
+		int tt, int pt, int rej, int fst, int cid, media_type media)
 {
-	db_key_t columns[11];
-	db_val_t vals[11];
+	db_key_t columns[12];
+	db_val_t vals[12];
 	static db_ps_t my_ps = NULL;
 
 	cc_acc_dbf.use_table( cc_acc_db_handle, &cc_cdrs_table_name);
@@ -860,6 +900,7 @@ int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt, int tt,
 	columns[8] = &ccc_rejected_column;
 	columns[9]= &ccc_fstats_column;
 	columns[10]= &ccc_cid_column;
+	columns[11]= &ccc_cid_column;
 
 	/* caller */
 	vals[0].nul = 0;
@@ -920,8 +961,14 @@ int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt, int tt,
 	vals[10].type = DB_INT;
 	vals[10].val.int_val = cid;
 
+	/* cid */
+	vals[11].nul = 0;
+	vals[11].type = DB_INT;
+	vals[11].val.int_val = (media==CC_MEDIA_RTP)? 1 :
+		((media==CC_MEDIA_MSRP)? 2 : 0) ;
+
 	CON_SET_CURR_PS(cc_acc_db_handle, &my_ps);
-	if (cc_acc_dbf.insert( cc_acc_db_handle, columns, vals, 11) < 0) {
+	if (cc_acc_dbf.insert( cc_acc_db_handle, columns, vals, 12) < 0) {
 		LM_ERR("CDR insert failed\n");
 		return -1;
 	}

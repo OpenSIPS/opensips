@@ -493,7 +493,7 @@ static unsigned long cc_agent_get_att( void *agent_p)
 }
 #endif
 
-int add_cc_agent( struct cc_data *data, str *id, str *location,
+int add_cc_agent( struct cc_data *data, str *id, struct media_info *media,
 				str *skills, unsigned int logstate, unsigned int own_wrapup,
 												unsigned int wrapup_end_time)
 {
@@ -501,7 +501,7 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 	struct sip_uri uri;
 	str skill;
 	char *p;
-	unsigned int n,skill_id;
+	unsigned int i, n,skill_id;
 #ifdef STATISTICS
 	char *name;
 	str s;
@@ -522,21 +522,37 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 		agent->id.s = (char*)(agent+1);
 		memcpy( agent->id.s, id->s, id->len);
 		agent->id.len = id->len;
-		/* location */
-		agent->location.s = (char*)shm_malloc(location->len);
-		if (agent->location.s==NULL) {
-			LM_ERR("not enough shmem for the location of the agent\n");
+		/* locations */
+		if (media[CC_MEDIA_RTP].location.s==NULL && 
+		media[CC_MEDIA_MSRP].location.s==NULL){
+			LM_ERR("agent has neither RTP, nor MSRP locations\n");
 			goto error;
 		}
-		memcpy( agent->location.s, location->s, location->len);
-		agent->location.len = location->len;
-		if (parse_uri( agent->location.s, agent->location.len, &uri)<0) {
-			LM_ERR("location of the agent is not a SIP URI\n");
-			goto error;
+		for (i=0 ; i<CC_MEDIA_NO ; i++ ) {
+			if (media[i].location.s==NULL)
+				continue;
+			agent->media[i].location.s =
+				(char*)shm_malloc(media[i].location.len);
+			if (agent->media[i].location.s==NULL) {
+				LM_ERR("not enough shmem for the %s location of the agent\n",
+					(i==CC_MEDIA_RTP)?"RTP":"MSRP");
+				goto error;
+			}
+			memcpy( agent->media[i].location.s, media[i].location.s,
+				media[i].location.len);
+			agent->media[i].location.len = media[i].location.len ;
+			if (parse_uri( agent->media[i].location.s,
+			agent->media[i].location.len, &uri)<0) {
+				LM_ERR("%s location [%.*s] of the agent is not a SIP URI\n",
+					(i==CC_MEDIA_RTP)?"RTP":"MSRP",
+					media[i].location.len, media[i].location.s);
+				goto error;
+			}
+			agent->media[i].did = uri.user;
+			agent->media[i].sessions = media[i].sessions;
 		}
-		agent->did = uri.user;
 		/* LOG STATE */
-		agent->loged_in = logstate;
+		agent->logged_in = logstate;
 		/* WRAPUP TIME */
 		agent->wrapup_time = (own_wrapup==0)? wrapup_time : own_wrapup;
 		/* set of skills */
@@ -598,28 +614,37 @@ int add_cc_agent( struct cc_data *data, str *id, str *location,
 		data->totalnr_agents++;
 	} else {
 		/* agent already exists -> update only */
-		/* location - needs to be changed ? */
-		if ( agent->location.len!=location->len ||
-			memcmp(agent->location.s,location->s,location->len)!=0 ) {
-			/* set new location */
-			if (agent->location.len < location->len ){
-				shm_free(agent->location.s);
-				agent->location.s = (char*)shm_malloc(location->len);
-				if (agent->location.s==NULL) {
-					LM_ERR("not enough shmem for the location of the agent\n");
+		for (i=0 ; i<CC_MEDIA_NO ; i++ ) {
+			/* location - needs to be changed ? */
+			if ( agent->media[i].location.len!=media[i].location.len ||
+			memcmp(agent->media[i].location.s,media[i].location.s,
+			media[i].location.len)!=0 ) {
+				/* set new location */
+				if (agent->media[i].location.len < media[i].location.len ){
+					shm_free(agent->media[i].location.s);
+					agent->media[i].location.s =
+						(char*)shm_malloc(media[i].location.len);
+					if (agent->media[i].location.s==NULL) {
+						LM_ERR("not enough shmem for the %s location of "
+						"the agent\n", (i==CC_MEDIA_RTP)?"RTP":"MSRP");
+							goto error1;
+					}
+				}
+				memcpy( agent->media[i].location.s, media[i].location.s,
+					media[i].location.len);
+				agent->media[i].location.len = media[i].location.len;
+				if (parse_uri( agent->media[i].location.s,
+				agent->media[i].location.len, &uri)<0) {
+					LM_ERR("%s location [%.*s] of the agent is not a "
+						"SIP URI\n", (i==CC_MEDIA_RTP)?"RTP":"MSRP",
+						media[i].location.len, media[i].location.s);
 					goto error1;
 				}
+				agent->media[i].did = uri.user;
 			}
-			memcpy( agent->location.s, location->s, location->len);
-			agent->location.len = location->len;
-			if (parse_uri( agent->location.s, agent->location.len, &uri)<0) {
-				LM_ERR("location of the agent is not a SIP URI\n");
-				goto error1;
-			}
-			agent->did = uri.user;
 		}
 		/* if logstate changed - move between the lists TODO */
-		if(logstate != agent->loged_in) {
+		if(logstate != agent->logged_in) {
 			agent_switch_login(data, agent, prev_agent);
 		}
 		/* WRAPUP TIME */
@@ -661,8 +686,11 @@ error:
 
 static void free_cc_agent( struct cc_agent *agent)
 {
-	if (agent->location.s)
-		shm_free(agent->location.s);
+	unsigned int i;
+
+	for( i=0 ; i<CC_MEDIA_NO ; i++)
+		if (agent->media[i].location.s)
+			shm_free(agent->media[i].location.s);
 	shm_free(agent);
 }
 
@@ -780,7 +808,7 @@ void free_cc_call(struct cc_data * data, struct cc_call *call)
 
 
 struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
-													unsigned int skill)
+		media_type media, unsigned int skill)
 {
 	struct cc_agent *agent;
 	unsigned int n;
@@ -789,18 +817,38 @@ struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
 	if (agent==NULL) return NULL;
 
 	/* iterate all agents*/
-	do {
-		if(agent->state==CC_AGENT_FREE) {
-			/* iterate all skills of the agent */
-			for( n=0 ; n<agent->no_skills ; n++) {
-				if (agent->skills[n]==skill)
-					return agent;
-			}
-		}
-		/* next agent */
-		agent = agent->next;
-	}while(agent);
 
+	if (media==CC_MEDIA_RTP) {
+		/* for audio calls, we need a 100% free agent */
+		do {
+			if(agent->state==CC_AGENT_FREE) {
+				/* iterate all skills of the agent */
+				for( n=0 ; n<agent->no_skills ; n++) {
+					if (agent->skills[n]==skill)
+						return agent;
+				}
+			}
+			/* next agent */
+			agent = agent->next;
+		}while(agent);
+
+	} else
+	if (media==CC_MEDIA_MSRP) {
+		/* for chat calls, we need an agent with spare sessions */
+		do {
+			if(agent->state==CC_AGENT_FREE || (agent->state==CC_AGENT_INCHAT
+			&& agent->ongoing_sessions[CC_MEDIA_MSRP] <
+			agent->media[CC_MEDIA_MSRP].sessions) ) {
+				/* iterate all skills of the agent */
+				for( n=0 ; n<agent->no_skills ; n++) {
+					if (agent->skills[n]==skill)
+						return agent;
+				}
+			}
+			/* next agent */
+			agent = agent->next;
+		}while(agent);
+	}
 	return NULL;
 }
 
@@ -893,15 +941,15 @@ void clean_cc_old_data(struct cc_data *data)
 
 	/* sync flows and agents (how many agents per flow are logged) */
 	/* iterate all logged agents */
-	data->logedin_agents = 0;
+	data->loggedin_agents = 0;
 	for( agent=data->agents[CC_AG_ONLINE] ; agent ; agent=agent->next ) {
 		/* update last agent */
 		data->last_online_agent = agent;
 
 		/* log_agent_to_flows() must now the call center of the 
 		 * agent to count it as logged in */
-		log_agent_to_flows( data, agent, agent->loged_in);
-		data->logedin_agents++;
+		log_agent_to_flows( data, agent, agent->logged_in);
+		data->loggedin_agents++;
 	}
 }
 
@@ -1044,7 +1092,7 @@ void cc_queue_rmv_call( struct cc_data *data, struct cc_call *call)
 
 
 struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
-													struct cc_agent *agent)
+									struct cc_agent *agent, media_type media)
 {
 	struct cc_call *call_it;
 	unsigned int i;
@@ -1052,13 +1100,16 @@ struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
 	/* interate all the queued calls and see *
 	 * if they mathe the agent (as skills)*/
 	for(call_it=data->queue.first ; call_it ; call_it=call_it->lower_in_queue){
+		/* before taking a call out, be sure that call is fully initialized
+		 * from b2bua point of view (to avoid races) -> check the b2bua id */
+		if (call_it->media!=media && call_it->b2bua_id.len==0)
+			continue;
 		/* check the call skill against the agent skills */
 		for(i=0 ; i<agent->no_skills ; i++) {
-			/* before taking a call out, be sure that call is fully initialized 
-             * from b2bua point of view (to avoid races) -> check the b2bua id */
-			if (call_it->b2bua_id.len!=0 && call_it->flow->skill==agent->skills[i]) {
-				LM_DBG("found call %p for agent %p(%.*s) with skill %d \n",
-					call_it, agent, agent->id.len, agent->id.s,
+			if (call_it->flow->skill==agent->skills[i]) {
+				LM_DBG("found call %p/%d for agent %p(%.*s) with skill %d \n",
+					call_it, call_it->media,
+					agent, agent->id.len, agent->id.s,
 					call_it->flow->skill);
 				/* remove the call from queue */
 				cc_queue_rmv_call( data, call_it);
@@ -1078,6 +1129,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 	static str status_offline_str = str_init("offline");
 	static str status_free_str = str_init("free");
 	static str status_incall_str = str_init("incall");
+	static str status_inchat_str = str_init("inchat");
 	static str status_wrapup_str = str_init("wrapup");
 	static str wrapup_ends_str = str_init("wrapup_ends");
 	static str flow_id_str = str_init("flow_id");
@@ -1100,7 +1152,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 		goto error;
 	}
 
-	if (!agent->loged_in) {
+	if (!agent->logged_in) {
 		txt = &status_offline_str;
 	} else {
 		switch (agent->state) {
@@ -1109,6 +1161,9 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 				break;
 			case CC_AGENT_INCALL:
 				txt = &status_incall_str;
+				break;
+			case CC_AGENT_INCHAT:
+				txt = &status_inchat_str;
 				break;
 			case CC_AGENT_WRAPUP:
 				txt = &status_wrapup_str;
@@ -1131,7 +1186,27 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 
 	if (agent->state==CC_AGENT_INCALL && call) {
 		if (evi_param_add_str(list, &flow_id_str, &call->flow->id) < 0) {
-			LM_ERR("cannot add wrapup time\n");
+			LM_ERR("cannot add flow ID time\n");
+			goto error;
+		}
+	}
+
+	if (agent->state==CC_AGENT_INCHAT && call) {
+		static str sessions_str = str_init("ongoing_sessions");
+		ts = agent->ongoing_sessions[CC_MEDIA_MSRP];
+		if (evi_param_add_int(list, &sessions_str, &ts) < 0) {
+			LM_ERR("cannot add ongoing calls\n");
+			goto error;
+		}
+		if ( agent->wrapup_end_time>get_ticks() ) {
+			ts = (int)time(NULL)+agent->wrapup_end_time-get_ticks();
+			if (evi_param_add_int(list, &wrapup_ends_str, &ts) < 0) {
+				LM_ERR("cannot add wrapup time\n");
+				goto error;
+			}
+		}
+		if (call && evi_param_add_str(list, &flow_id_str, &call->flow->id)<0) {
+			LM_ERR("cannot add flow ID time\n");
 			goto error;
 		}
 	}

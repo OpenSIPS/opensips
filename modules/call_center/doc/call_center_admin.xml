@@ -18,6 +18,10 @@
 	except the media playback (for the queue). This part must be provided via 
 	a third party media server (FreeSwitch, Asterisk or others).
 	</para>
+	<para>
+	This is actually a Contact Center and it is able to handle both
+	RTP/audio calls and (multiple) MSRP/chat calls, in the same time.
+	</para>
 	</section>
 
 	<section>
@@ -31,7 +35,7 @@
 		Each entity has a corresponding table in the database, for 
 		provisioning purposes - the <emphasis>cc_flows</emphasis> and 
 		<emphasis>cc_agents</emphasis> tables, see
-		<ulink url='https://opensips.org/Documentation/Install-DBSchema-1-11#AEN2361'>DB schema</ulink>.
+		<ulink url='https://opensips.org/Documentation/Install-DBSchema--3-3#AEN2656'>DB schema</ulink>.
 		Data is loaded at startup and cached into memory ; runtime reload is 
 		possible via the MI commands (see the <emphasis>cc_reload</emphasis> 
 		command in <xref linkend="exported_mi_functions"/>).
@@ -115,11 +119,22 @@
 		<title>Agents</title>
 		<para>
 		An agent is defined by a unique alphanumerical ID - the main attribute 
-		of an agent is its the set of <emphasis>skills</emphasis> and its SIP
-		<emphasis>location</emphasis>. The set of skills will tell what calls
-		to be received (from which flows, based on the skill matching); the 
-		location is a SIP URI where to call must be sent in order to be 
-		answered by the agent.
+		of an agent is its the set of <emphasis>skills</emphasis>. This set of
+		skills will tell what calls to be received (from which flows, based on
+		the skill matching).
+		</para>
+		<para>
+		The agent may provide support for different optional media types, like
+		RTP/audio or MSRP/chat. Each supported media type comes with the 
+		maximum supported number of sessions. Of course, for audio the `1` 
+		value is hardocded. On the SIP side, each media type comes with a
+		<emphasis>locations</emphasis>. The location is a SIP URI where to 
+		calls must be sent in order to be answered by the agent. At least one 
+		media type should be defined.
+		</para>
+		<para>
+		So, at a certain time, an agent may handle either a single call,
+		either several chat sessions.
 		</para>
 		<para>
 		Additionally, the agent has a initial <emphasis>logstate</emphasis> - 
@@ -309,6 +324,52 @@ modparam("call_center", "queue_pos_param", "cc_pos")
 		<programlisting format="linespecific">
 ...
 modparam("call_center", "reject_on_no_agents", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_chat_dispatch_policy" xreflabel="chat_dispatch_policy">
+		<title><varname>chat_dispatch_policy</varname> (int)</title>
+		<para>
+		A parameter to tell what should be the policy on dispatching the
+		chat/MSRP sessions to the agents, considering that an agent may
+		handle multiple such sessions/chats in the same time.
+		</para>
+		<para>
+		Options are:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para>
+			<emphasis role='bold'>balancing </emphasis> - the distribution
+			will try to be even across the agents, but by doing this you may 
+			end up waisting chat sessions on agents and call starvation -
+			agents are partially used by chat sessions, so they cannot take
+			calls (of course, if you have mixed agetns with audio/chat)
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>full-load</emphasis> - the distribution
+			will try to make usage of an agent in the best possible way when
+			comes to chat sessions - once the agent take a chat, all the
+			following chats will be assigned ot him - the idea is to try to 
+			be efficient in using the resource/sessions of an agents, to leave
+			as much room as possible for calls. Of course, this may lead to an
+			un-even loading of chat agents - some will be full, others empty.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<emphasis>Default value is <quote>balancing</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>chat_dispatch_policy</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "chat_dispatch_policy", "balancing")
 ...
 </programlisting>
 		</example>

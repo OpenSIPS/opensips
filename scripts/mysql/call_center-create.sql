@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('cc_flows','2');
+INSERT INTO version (table_name, table_version) values ('cc_flows','3');
 CREATE TABLE cc_flows (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     flowid CHAR(64) NOT NULL,
@@ -21,8 +21,10 @@ INSERT INTO version (table_name, table_version) values ('cc_agents','2');
 CREATE TABLE cc_agents (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     agentid CHAR(128) NOT NULL,
-    location CHAR(128) NOT NULL,
+    location CHAR(128),
     logstate INT(10) UNSIGNED DEFAULT 0 NOT NULL,
+    msrp_location CHAR(128),
+    msrp_max_sessions INT(10) UNSIGNED DEFAULT 4 NOT NULL,
     skills CHAR(255) NOT NULL,
     wrapup_end_time INT(11) DEFAULT 0 NOT NULL,
     wrapup_time INT(11) DEFAULT 0 NOT NULL,
@@ -42,13 +44,15 @@ CREATE TABLE cc_cdrs (
     call_type INT(11) DEFAULT -1 NOT NULL,
     rejected INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     fstats INT(11) UNSIGNED DEFAULT 0 NOT NULL,
-    cid INT(11) UNSIGNED DEFAULT 0
+    cid INT(11) UNSIGNED DEFAULT 0,
+    media INT(11) DEFAULT 0 NOT NULL
 ) ENGINE=InnoDB;
 
-INSERT INTO version (table_name, table_version) values ('cc_calls','2');
+INSERT INTO version (table_name, table_version) values ('cc_calls','3');
 CREATE TABLE cc_calls (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     state INT(11) NOT NULL,
+    media INT(11) NOT NULL,
     ig_cback INT(11) NOT NULL,
     no_rej INT(11) NOT NULL,
     setup_time INT(11) NOT NULL,

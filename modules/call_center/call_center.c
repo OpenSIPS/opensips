@@ -29,6 +29,7 @@
 #include "../../locking.h"
 #include "../../flags.h"
 #include "../../parser/parse_from.h"
+#include "../../parser/sdp/sdp.h"
 #include "../b2b_logic/b2b_load.h"
 #include "cc_data.h"
 #include "cc_queue.h"
@@ -72,7 +73,8 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param);
+static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
+		str *media_s);
 static int w_agent_login(struct sip_msg *req, str *agent_s, int *state);
 
 static int pv_get_cc_state( struct sip_msg *msg, pv_param_t *param,
@@ -99,10 +101,14 @@ unsigned int wrapup_time = 30;
 str queue_pos_param = {NULL,0};
 /* by default reject new calls if there are no agents logged */
 static int reject_on_no_agents = 1;
+/* default policy for distributing the MSRP/CHAT sessions to agents */
+static int msrp_dispatch_policy = CC_MSRP_POLICY_LB;
+static char *msrp_dispatch_policy_str = NULL;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
 		{{CMD_PARAM_STR, 0,0},
+		 {CMD_PARAM_STR|CMD_PARAM_OPT, 0,0},
 		 {CMD_PARAM_STR|CMD_PARAM_OPT, 0,0},
 		 {0,0,0}},
 		REQUEST_ROUTE},
@@ -120,14 +126,18 @@ static param_export_t mod_params[]={
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
+	{ "chat_dispatch_policy", STR_PARAM, &msrp_dispatch_policy_str },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
 	{ "cc_agents_table",      STR_PARAM, &cc_agent_table_name.s  },
 	{ "cca_agentid_column",   STR_PARAM, &cca_agentid_column.s   },
 	{ "cca_location_column",  STR_PARAM, &cca_location_column.s  },
+	{ "cca_msrp_location_column",    STR_PARAM, &cca_msrp_location_column.s  },
+	{ "cca_msrp_max_sessions_column",STR_PARAM, &cca_msrp_max_sessions_column.s  },
 	{ "cca_skills_column",    STR_PARAM, &cca_skills_column.s    },
 	{ "cca_logstate_column",  STR_PARAM, &cca_logstate_column.s  },
 	{ "cca_wrapupend_column", STR_PARAM, &cca_wrapupend_column.s },
 	{ "cca_wrapuptime_column",STR_PARAM, &cca_wrapuptime_column.s},
+
 	{ "cc_flows_table",       STR_PARAM, &cc_flow_table_name.s             },
 	{ "ccf_flowid_column",    STR_PARAM, &ccf_flowid_column.s              },
 	{ "ccf_priority_column",  STR_PARAM, &ccf_priority_column.s            },
@@ -250,7 +260,7 @@ unsigned long stg_load(unsigned short foo)
 
 	lock_get( data->lock );
 
-	if (data->logedin_agents==0) {
+	if (data->loggedin_agents==0) {
 		lock_release( data->lock );
 		return 0;
 	}
@@ -260,7 +270,7 @@ unsigned long stg_load(unsigned short foo)
 		if (agent->state==CC_AGENT_FREE) free_ag++;
 	}
 
-	load = 100*( get_stat_val(stg_onhold_calls) + data->logedin_agents - free_ag ) / data->logedin_agents;
+	load = 100*( get_stat_val(stg_onhold_calls) + data->loggedin_agents - free_ag ) / data->loggedin_agents;
 
 	lock_release( data->lock );
 
@@ -346,6 +356,13 @@ static int mod_init(void)
 	if (queue_pos_param.s)
 		queue_pos_param.len = strlen(queue_pos_param.s);
 
+	if (msrp_dispatch_policy_str) {
+		if (!strcasecmp(msrp_dispatch_policy_str, "balancing")) {
+			msrp_dispatch_policy = CC_MSRP_POLICY_LB;
+		} else if (!strcasecmp(msrp_dispatch_policy_str, "full-load")) {
+			msrp_dispatch_policy = CC_MSRP_POLICY_FULL_AGENT;
+		}
+	}
 	/* Load B2BUA API */
 	if (load_b2b_logic_api( &b2b_api) != 0) {
 		LM_ERR("Can't load B2B-UA hooks, missing 'b2b_logic' module ?\n");
@@ -501,9 +518,17 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 	if (prev_state==CC_CALL_TOAGENT || prev_state==CC_CALL_PRE_TOAGENT) {
 		/* free the agent */
 		if (stat && stat->call_time && prev_state==CC_CALL_TOAGENT) {
-			call->agent->state = CC_AGENT_WRAPUP;
-			call->agent->wrapup_end_time = get_ticks()
-				+ get_wrapup_time(call->agent, call->flow);
+			if (call->media==CC_MEDIA_RTP) {
+				call->agent->state = CC_AGENT_WRAPUP;
+				call->agent->wrapup_end_time = get_ticks()
+					+ get_wrapup_time(call->agent, call->flow);
+			} else /*MSRP*/ {
+				call->agent->state = CC_AGENT_INCHAT ;
+				call->agent->wrapup_end_time =
+					( (call->agent->wrapup_end_time<get_ticks()) ?
+						get_ticks():call->agent->wrapup_end_time )
+					+ get_wrapup_time(call->agent, call->flow);
+			}
 			call->flow->processed_calls ++;
 			call->flow->avg_call_duration =
 				( ((float)stat->call_time + 
@@ -515,7 +540,10 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 			update_cc_flow_awt(call->flow, stat->start_time - call->recv_time);
 			update_cc_agent_att(call->agent, stat->call_time);
 		} else {
-			call->agent->state = CC_AGENT_FREE;
+			call->agent->state = (call->media==CC_MEDIA_RTP) ?
+				CC_AGENT_FREE :
+				( (call->agent->ongoing_sessions[CC_MEDIA_MSRP]==1) ?
+					CC_AGENT_FREE : CC_AGENT_INCHAT) ;
 			/* update awt for failed calls */
 			update_awt( get_ticks() - call->recv_time );
 			update_cc_flow_awt( call->flow, get_ticks() - call->recv_time );
@@ -523,6 +551,7 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 		/* update end time for agent's wrapup */
 		cc_db_update_agent_wrapup_end(call->agent);
 		agent_raise_event( call->agent, NULL);
+		call->agent->ongoing_sessions[call->media]--;
 		call->agent->ref_cnt--;
 		call->agent = NULL;
 	} else {
@@ -548,8 +577,8 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 	type = (stat==NULL) ? -1 : ((prev_state==CC_CALL_TOAGENT && stat->call_time)? 0 : 1);
 	cc_write_cdr( &un, &fid, &aid, type, call->recv_time,
 		((type==0)? stat->start_time : get_ticks()) - call->recv_time ,
-		(type==0)?stat->call_time:0 , call->setup_time, call->no_rejections, call->fst_flags,
-		call->id);
+		(type==0)?stat->call_time:0 , call->setup_time, call->no_rejections,
+		call->fst_flags, call->id, call->media);
 
 	cc_db_delete_call(call);
 }
@@ -579,12 +608,22 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 	/* prepare CDR */
 	prepare_cdr( call, &un, &fid , &aid);
 
-	call->agent->state = CC_AGENT_WRAPUP;
-	call->agent->wrapup_end_time = get_ticks() +
-				+ get_wrapup_time(call->agent, call->flow);
+	if (call->media==CC_MEDIA_RTP) {
+		call->agent->state = CC_AGENT_WRAPUP;
+		call->agent->wrapup_end_time = get_ticks()
+			+ get_wrapup_time(call->agent, call->flow);
+	} else /*MSRP*/ {
+		call->agent->state = CC_AGENT_INCHAT ;
+		call->agent->wrapup_end_time =
+			( (call->agent->wrapup_end_time<get_ticks()) ?
+				get_ticks():call->agent->wrapup_end_time )
+			+ get_wrapup_time(call->agent, call->flow);
+	}
+
 	/* update end time for agent's wrapup */
 	cc_db_update_agent_wrapup_end(call->agent);
 	agent_raise_event( call->agent, NULL);
+	call->agent->ongoing_sessions[call->media]--;
 	call->agent->ref_cnt--;
 	call->agent = NULL;
 
@@ -615,7 +654,7 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 	/* write CDR */
 	cc_write_cdr( &un, &fid, &aid, -2, call->recv_time,
 		get_ticks() - call->recv_time, 0 , pickup_time, call->no_rejections-1,
-		call->fst_flags, call->id);
+		call->fst_flags, call->id, call->media);
 	cc_db_update_call(call);
 }
 
@@ -817,7 +856,8 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	/* right-side leg of call sent BYE */
 	if (stat->call_time==0 && call->state == CC_CALL_TOAGENT) {
 		LM_INFO("*** AGENT answered and closed immediately %.*s\n",
-			call->agent->location.len, call->agent->location.s);
+			call->agent->media[call->media].location.len,
+			call->agent->media[call->media].location.s);
 		handle_agent_reject(call, 1, stat->setup_time);
 		lock_set_release( data->call_locks, call->lock_idx );
 		cc_call_state = CC_CALL_NONE;
@@ -889,7 +929,7 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 
 		memset(&b2b_params, 0, sizeof b2b_params);
 		b2b_params.e1_type = B2B_CLIENT;
-		b2b_params.e1_to = call->agent->location;
+		b2b_params.e1_to = call->agent->media[call->media].location;
 		b2b_params.e1_from_dname = call->caller_dn;
 		b2b_params.e2_type = B2B_CLIENT;
 		b2b_params.e2_to = *new_leg;
@@ -1005,13 +1045,15 @@ done:
 }
 
 
-static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
+static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
+		str *media_s)
 {
 	struct cc_flow *flow;
 	struct cc_call *call;
 	str leg = {NULL,0};
 	str *dn;
 	int dec;
+	unsigned int media;
 	int ret = -1;
 
 	call = NULL;
@@ -1053,6 +1095,36 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 	}
 	LM_DBG("cid=<%.*s>\n",dn->len,dn->s);
 
+	/* detect the media type */
+	if (media_s && media_s->s && media_s->len) {
+		struct sdp_info *sdp;
+		if ( (sdp=parse_sdp(msg))==NULL ) {
+			LM_ERR("failed to parse the SDP body\n");
+			ret = -6;
+			goto error;
+		}
+		/* TODO - right now we look only at the first session / stream */
+		if (sdp->sessions==NULL || sdp->sessions->streams==NULL) {
+			LM_ERR("no session/stream in the SDP\n");
+			ret = -6;
+			goto error;
+		}
+		media_s = &sdp->sessions->streams->transport;
+	}
+	str _rtp = str_init("RTP");
+	str _msrp = str_init("MSRP");
+	if (str_strstr( media_s, &_rtp))
+		media = CC_MEDIA_RTP;
+	else
+	if (str_strstr( media_s, &_msrp))
+		media = CC_MEDIA_RTP;
+	else {
+		LM_ERR("media [%.*s] is neither RTP, nor MSRP\n",
+			media_s->len, media_s->s);
+		ret = -7;
+		goto error;
+	}
+
 	call = new_cc_call(data, flow, dn, &get_from(msg)->parsed_uri.user, param);
 	if (call==NULL) {
 		LM_ERR("failed to create new call\n");
@@ -1060,6 +1132,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 		goto error;
 	}
 	call->fst_flags |= FSTAT_INCALL;
+	call->media = media;
 
 	/* get estimated wait time */
 	if (flow->logged_agents)
@@ -1069,7 +1142,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 	else
 		call->eta = INT_MAX;
 
-	LM_DBG("avg_call_duration=%.2f queued_calls=%lu logedin_agents=%u\n",
+	LM_DBG("avg_call_duration=%.2f queued_calls=%lu loggedin_agents=%u\n",
 		flow->avg_call_duration, get_stat_val(flow->st_queued_calls),
 		flow->logged_agents);
 
@@ -1150,7 +1223,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 		return -3;
 	}
 
-	if (agent->loged_in != *state) {
+	if (agent->logged_in != *state) {
 
 		if(*state && (agent->state==CC_AGENT_WRAPUP) &&
 			(get_ticks() > agent->wrapup_end_time))
@@ -1163,10 +1236,10 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 		agent_switch_login(data, agent, prev_agent);
 
 		if(*state) {
-			data->logedin_agents++;
+			data->loggedin_agents++;
 			log_agent_to_flows( data, agent, 1);
 		} else {
-			data->logedin_agents--;
+			data->loggedin_agents--;
 			log_agent_to_flows(data, agent, 0);
 		}
 	}
@@ -1180,7 +1253,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 
 static void cc_timer_agents(unsigned int ticks, void* param)
 {
-	struct cc_agent *agent, *prev_agent, *tmp_ag;
+	struct cc_agent *agent, *prev_agent, *tmp_ag, *retake_agent;
 	struct cc_call  *call;
 	str out;
 	str dest;
@@ -1188,62 +1261,100 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 	if (data==NULL || data->agents[CC_AG_ONLINE]==NULL)
 		return;
 
+
+	lock_get( data->lock );
+
+	/* iterate all agents to get update state and evaluate their
+	 * availability */
+	prev_agent = data->agents[CC_AG_ONLINE];
+	agent = data->agents[CC_AG_ONLINE];
+
 	do {
 
-		lock_get( data->lock );
+		//LM_DBG("%.*s , state=%d, wrapup_end_time=%u, ticks=%u, "
+		//		"wrapup=%u\n", agent->id.len, agent->id.s, agent->state,
+		//		agent->wrapup_end_time, ticks, wrapup_time);
+		/* for agents in WRAPUP time, check if expired */
+		if (
+		(agent->state==CC_AGENT_WRAPUP && ticks>agent->wrapup_end_time)
+		  ||
+		(agent->state==CC_AGENT_INCHAT && ticks>agent->wrapup_end_time
+			&& agent->ongoing_sessions[CC_MEDIA_MSRP]==0)
+		) {
+			agent->state = CC_AGENT_FREE;
+			agent_raise_event( agent, NULL);
+			/* move it to the end of the list*/
+			if(data->last_online_agent != agent) {
+				remove_cc_agent(data, agent, prev_agent);
+				if(!data->last_online_agent) {
+					LM_CRIT("last_online_agent NULL\n");
+					if(data->agents[CC_AG_ONLINE] == NULL)
+						data->agents[CC_AG_ONLINE] = agent;
+					else {
+						for (tmp_ag = data->agents[CC_AG_ONLINE]; tmp_ag;
+						tmp_ag= tmp_ag->next)
+						{
+							prev_agent = tmp_ag;
+						}
+						prev_agent->next = agent;
+						agent->next = NULL;
+						data->last_online_agent = agent;
+					}
+				}
+				else {
+						data->last_online_agent->next = agent;
+						agent->next = NULL;
+						data->last_online_agent = agent;
+				}
+				goto next_ag;
+			}
+		}
 
-		prev_agent = data->agents[CC_AG_ONLINE];
-		agent = data->agents[CC_AG_ONLINE];
+next_ag:
+		/* next agent */
+		prev_agent = agent;
+		agent = agent->next;
+	}while(agent);
+
+
+	/* asign calls/chats to the agents */
+	do {
+
+		/* iterate and find one call/chat for each agent */
+		agent = retake_agent ? retake_agent : data->agents[CC_AG_ONLINE];
 		call = NULL;
+		retake_agent = NULL;
 
-		/* iterate all agents*/
 		do {
 
-			//LM_DBG("%.*s , state=%d, wrapup_end_time=%u, ticks=%u, "
-			//		"wrapup=%u\n", agent->id.len, agent->id.s, agent->state,
-			//		agent->wrapup_end_time, ticks, wrapup_time);
-			/* for agents in WRAPUP time, check if expired */
-			if ( (agent->state==CC_AGENT_WRAPUP) &&
-					(ticks > agent->wrapup_end_time )) {
-				agent->state = CC_AGENT_FREE;
-				agent_raise_event( agent, NULL);
-				/* move it to the end of the list*/
-				if(data->last_online_agent != agent) {
-					remove_cc_agent(data, agent, prev_agent);
-					if(!data->last_online_agent) {
-						LM_CRIT("last_online_agent NULL\n");
-						if(data->agents[CC_AG_ONLINE] == NULL)
-							data->agents[CC_AG_ONLINE] = agent;
-						else {
-							for (tmp_ag = data->agents[CC_AG_ONLINE]; tmp_ag; tmp_ag= tmp_ag->next)
-							{
-								prev_agent = tmp_ag;
-							}
-							prev_agent->next = agent;
-							agent->next = NULL;
-							data->last_online_agent = agent;
-						}
-					}
-					else {
-							data->last_online_agent->next = agent;
-							agent->next = NULL;
-							data->last_online_agent = agent;
-					}
-					goto next_ag;
-				}
-			}
+			if (data->queue.calls_no==0)
+				break;
 
 			/* for free agents -> check for calls */
-			if ( (data->queue.calls_no!=0) && (agent->state==CC_AGENT_FREE) ) {
-				call = cc_queue_pop_call_for_agent( data, agent);
+			if (agent->state==CC_AGENT_FREE &&
+			agent->media[CC_MEDIA_RTP].sessions/*0 or 1 here*/) {
+				call = cc_queue_pop_call_for_agent( data, agent, CC_MEDIA_RTP);
 				if (call) {
 					/* found a call for the agent */
 					break;
 				}
 			}
-next_ag:
+
+			/* can the agent take chats? */
+			if ((agent->state==CC_AGENT_FREE || agent->state==CC_AGENT_INCHAT)
+			&& (agent->media[CC_MEDIA_MSRP].sessions >
+				agent->ongoing_sessions[CC_MEDIA_MSRP])
+			) {
+				call = cc_queue_pop_call_for_agent( data, agent,CC_MEDIA_MSRP);
+				if (call) {
+					if (msrp_dispatch_policy == CC_MSRP_POLICY_FULL_AGENT)
+						retake_agent = agent;
+					/* found a chat for the agent */
+					break;
+				}
+			}
+
 			/* next agent */
-			prev_agent = agent;
 			agent = agent->next;
 
 		}while(agent);
@@ -1273,7 +1384,7 @@ next_ag:
 			lock_get( data->lock );
 
 			if(!call->flow->recordings[AUDIO_FLOW_ID].len)
-				dest = agent->location;
+				dest = agent->media[call->media].location;
 			else
 				dest = call->flow->recordings[AUDIO_FLOW_ID];
 
@@ -1294,9 +1405,11 @@ next_ag:
 			}
 
 			/* mark agent as used */
-			agent->state = CC_AGENT_INCALL;
+			agent->state = call->media==CC_MEDIA_RTP ?
+				CC_AGENT_INCALL : CC_AGENT_INCHAT;
 			call->agent = agent;
 			call->agent->ref_cnt++;
+			agent->ongoing_sessions[call->media]++;
 			agent_raise_event( agent, call);
 			update_stat( stg_dist_incalls, 1);
 			update_stat( call->flow->st_dist_incalls, 1);
@@ -1523,6 +1636,7 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 	static str s_free={"free", 4};
 	static str s_wrapup={"wrapup", 6};
 	static str s_incall={"incall", 6};
+	static str s_inchat={"inchat", 6};
 	int i;
 
 	resp = init_mi_result_object(&resp_obj);
@@ -1552,7 +1666,7 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 				agent->ref_cnt) < 0)
 				goto error;
 
-			if(!agent->loged_in) {
+			if(!agent->logged_in) {
 				if (add_mi_string(agent_item, MI_SSTR("Loged in"),
 					MI_SSTR("NO")) < 0)
 					goto error;
@@ -1565,11 +1679,20 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 					case CC_AGENT_FREE:   state = s_free;   break;
 					case CC_AGENT_WRAPUP: state = s_wrapup; break;
 					case CC_AGENT_INCALL: state = s_incall; break;
+					case CC_AGENT_INCHAT: state = s_inchat; break;
 					default: state.s =0;  state.len = 0;
 				}
 				if (add_mi_string(agent_item, MI_SSTR("State"),
 					state.s, state.len) < 0)
 					goto error;
+				if ( (agent->state==CC_AGENT_INCHAT) ) {
+					if (add_mi_number(agent_item, MI_SSTR("Ongoing chats"),
+					agent->ongoing_sessions[CC_MEDIA_MSRP]) < 0)
+						goto error;
+					if (add_mi_number(agent_item, MI_SSTR("Supported chats"),
+					agent->media[CC_MEDIA_MSRP].sessions) < 0)
+						goto error;
+				}
 			}
 		}
 
@@ -1668,14 +1791,14 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	struct cc_agent *agent;
-	int loged_in;
+	int logged_in;
 	struct cc_agent* prev_agent= 0;
 	str agent_id;
 
 	if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len) < 0)
 		return init_mi_param_error();
 
-	if (get_mi_int_param(params, "state", &loged_in) < 0)
+	if (get_mi_int_param(params, "state", &logged_in) < 0)
 		return init_mi_param_error();
 
 	/* block access to data */
@@ -1688,23 +1811,23 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 		return init_mi_error( 404, MI_SSTR("Agent not found"));
 	}
 
-	if (agent->loged_in != loged_in) {
+	if (agent->logged_in != logged_in) {
 
-		if(loged_in && (agent->state==CC_AGENT_WRAPUP) &&
+		if(logged_in && (agent->state==CC_AGENT_WRAPUP) &&
 			(get_ticks() > agent->wrapup_end_time))
 			agent->state = CC_AGENT_FREE;
 
-		if(loged_in && data->agents[CC_AG_ONLINE] == NULL)
+		if(logged_in && data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = agent;
 
 		/* agent event is triggered here */
 		agent_switch_login(data, agent, prev_agent);
 
-		if(loged_in) {
-			data->logedin_agents++;
+		if(logged_in) {
+			data->loggedin_agents++;
 			log_agent_to_flows( data, agent, 1);
 		} else {
-			data->logedin_agents--;
+			data->loggedin_agents--;
 			log_agent_to_flows(data, agent, 0);
 		}
 	}
@@ -1798,6 +1921,18 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 
 		if (add_mi_number(call_item, MI_SSTR("index"), n) < 0)
 			goto error;
+
+		if (call->media==CC_MEDIA_RTP) {
+			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("RTP"))<0)
+				goto error;
+		} else
+		if (call->media==CC_MEDIA_MSRP) {
+			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("MSRP"))<0)
+				goto error;
+		} else {
+			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("--"))<0)
+				goto error;
+		}
 
 		if (add_mi_number(call_item, MI_SSTR("Waiting for"),
 			now-call->last_start) < 0)

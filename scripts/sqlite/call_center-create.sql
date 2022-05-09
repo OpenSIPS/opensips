@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('cc_flows','2');
+INSERT INTO version (table_name, table_version) values ('cc_flows','3');
 CREATE TABLE cc_flows (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     flowid CHAR(64) NOT NULL,
@@ -21,8 +21,10 @@ INSERT INTO version (table_name, table_version) values ('cc_agents','2');
 CREATE TABLE cc_agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     agentid CHAR(128) NOT NULL,
-    location CHAR(128) NOT NULL,
+    location CHAR(128),
     logstate INTEGER DEFAULT 0 NOT NULL,
+    msrp_location CHAR(128),
+    msrp_max_sessions INTEGER DEFAULT 4 NOT NULL,
     skills CHAR(255) NOT NULL,
     wrapup_end_time INTEGER DEFAULT 0 NOT NULL,
     wrapup_time INTEGER DEFAULT 0 NOT NULL,
@@ -42,13 +44,15 @@ CREATE TABLE cc_cdrs (
     call_type INTEGER DEFAULT -1 NOT NULL,
     rejected INTEGER DEFAULT 0 NOT NULL,
     fstats INTEGER DEFAULT 0 NOT NULL,
-    cid INTEGER DEFAULT 0
+    cid INTEGER DEFAULT 0,
+    media INTEGER DEFAULT 0 NOT NULL
 );
 
-INSERT INTO version (table_name, table_version) values ('cc_calls','2');
+INSERT INTO version (table_name, table_version) values ('cc_calls','3');
 CREATE TABLE cc_calls (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     state INTEGER NOT NULL,
+    media INTEGER NOT NULL,
     ig_cback INTEGER NOT NULL,
     no_rej INTEGER NOT NULL,
     setup_time INTEGER NOT NULL,

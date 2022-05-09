@@ -79,6 +79,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -91,6 +93,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -106,6 +110,8 @@
 				<col><field>agentid</field></col>
 				<col><field>location</field></col>
 				<col><field>logstate</field></col>
+				<col><field>msrp_location</field></col>
+				<col><field>msrp_max_sessions</field></col>
 				<col><field>skills</field></col>
 				<col><field>wrapup_end_time</field></col>
 				<col><field>wrapup_time</field></col>
@@ -137,6 +143,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>add</cmd_name>
@@ -154,6 +161,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>update</cmd_name>
@@ -174,6 +182,7 @@
 				<col><field>rejected</field></col>
 				<col><field>fstats</field></col>
 				<col><field>cid</field></col>
+				<col><field>media</field></col>
 			</query_cols>
 		</cmd>
 		<cmd><cmd_name>delete</cmd_name>
@@ -192,6 +201,7 @@
 			<query_cols>
 				<col><field>id</field><link_cmd>update</link_cmd></col>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -211,6 +221,7 @@
 			<cmd_type>DB_INSERT</cmd_type>
 			<query_cols>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>
@@ -233,6 +244,7 @@
 			</clause_cols>
 			<query_cols>
 				<col><field>state</field></col>
+				<col><field>media</field></col>
 				<col><field>ig_cback</field></col>
 				<col><field>no_rej</field></col>
 				<col><field>setup_time</field></col>

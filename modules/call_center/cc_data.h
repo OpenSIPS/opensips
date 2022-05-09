@@ -42,6 +42,10 @@ typedef enum {
 	MAX_AUDIO
 } audio_files;
 
+typedef enum {
+	CC_MSRP_POLICY_LB,
+	CC_MSRP_POLICY_FULL_AGENT
+} msrp_policies;
 
 struct cc_flow {
 	str id;
@@ -81,23 +85,36 @@ struct cc_flow {
 typedef enum {
 	CC_AGENT_FREE,
 	CC_AGENT_WRAPUP,
-	CC_AGENT_INCALL
+	CC_AGENT_INCALL,
+	CC_AGENT_INCHAT
 }agent_state;
 
+typedef enum {
+	CC_MEDIA_RTP,
+	CC_MEDIA_MSRP,
+	CC_MEDIA_NO /* keep this at the end */
+}media_type;
+
+struct media_info {
+	unsigned int sessions;
+	str location; /* sip address*/
+	str did;  /* shorcut for username in sips address */
+};
 
 struct cc_agent {
 	str id;
 	unsigned int is_new;
 	/* configuration data */
-	str location; /* sip address*/
-	str did;  /* shorcut for username in sips address */
-	unsigned int wrapup_time;
+	struct media_info media[CC_MEDIA_NO];
+	/* skills */
 	unsigned int no_skills;
 	unsigned int skills[MAX_SKILLS_PER_AGENT];
+	unsigned int wrapup_time;
 	/* runtime data */
 	int ref_cnt;
 	agent_state state;
-	unsigned int loged_in;
+	unsigned int ongoing_sessions[CC_MEDIA_NO];
+	unsigned int logged_in;
 	/* seconds to the end of wrap up (relative to internal time)*/
 	int wrapup_end_time;
 	/* statistics */
@@ -149,7 +166,7 @@ struct cc_data {
 	/* skills related data */
 	unsigned int last_skill_id;
 	/* tracking data */
-	unsigned int logedin_agents;
+	unsigned int loggedin_agents;
 	float avt_waittime;
 	unsigned long avt_waittime_no;
 	unsigned long totalnr_agents;
@@ -195,6 +212,7 @@ struct cc_call {
 	unsigned int lock_idx;
 	char ign_cback; /* ignore callbacks because agent_free was called */
 	int fst_flags;  /* flow stats flags */
+	media_type media;
 	call_state state; /* call state */
 	call_state prev_state;
 	short ref_cnt; 
@@ -222,7 +240,8 @@ struct cc_call {
 	struct cc_call *prev_list;
 };
 
-#define is_call_in_queue(_data, _call)  ((_call)->lower_in_queue || (_call)->higher_in_queue || \
+#define is_call_in_queue(_data, _call) \
+	((_call)->lower_in_queue || (_call)->higher_in_queue || \
 		(_data->queue.first==_call && _data->queue.last==_call))
 
 struct cc_data* init_cc_data(void);
@@ -237,7 +256,7 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 
 void update_cc_agent_att(struct cc_agent *agent, unsigned long duration);
 
-int add_cc_agent( struct cc_data *data, str *id, str *location,
+int add_cc_agent( struct cc_data *data, str *id, struct media_info *media,
 		str *skills, unsigned int logstate, unsigned int wrapup_time,
 		unsigned int wrapup_end_time);
 
@@ -254,7 +273,7 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
 void free_cc_call(struct cc_data *data, struct cc_call *call);
 
 struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
-		unsigned int skill);
+		media_type media, unsigned int skill);
 
 void log_agent_to_flows(struct cc_data *data, struct cc_agent *agent,
 		int login);
@@ -268,7 +287,7 @@ void clean_cc_unref_data(struct cc_data *data);
 int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top);
 
 struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
-		struct cc_agent *agent);
+		struct cc_agent *agent, media_type media);
 
 void cc_queue_rmv_call( struct cc_data *data, struct cc_call *call);
 
@@ -278,11 +297,11 @@ static inline void remove_cc_agent(struct cc_data* data,
 {
 	struct cc_agent* tmp_agent;
 	if(prev_agent == agent) /* if on top of the list*/
-		data->agents[agent->loged_in] = agent->next;
+		data->agents[agent->logged_in] = agent->next;
 	else
 		prev_agent->next = agent->next;
 
-	if(agent->loged_in && data->last_online_agent == agent) {/* if agent was the last in the list */
+	if(agent->logged_in && data->last_online_agent == agent) {/* if agent was the last in the list */
 		if(data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = NULL;
 		else {
@@ -300,10 +319,11 @@ static inline void remove_cc_agent(struct cc_data* data,
 }
 
 
-static inline void add_cc_agent_top( struct cc_data *data, struct cc_agent *agent)
+static inline void add_cc_agent_top( struct cc_data *data,
+		struct cc_agent *agent)
 {
-	agent->next = data->agents[agent->loged_in];
-	data->agents[agent->loged_in] = agent;
+	agent->next = data->agents[ agent->logged_in ];
+	data->agents[ agent->logged_in ] = agent;
 }
 
 
@@ -312,7 +332,7 @@ static inline void agent_switch_login(struct cc_data* data,
 {
 	/* take out of the current list */
 	remove_cc_agent(data, agent, prev_agent);
-	agent->loged_in ^= 1;
+	agent->logged_in ^= 1;
 	agent_raise_event( agent, NULL);
 	/* add on top of the new one */
 	add_cc_agent_top(data, agent);
