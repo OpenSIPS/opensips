@@ -1316,6 +1316,7 @@ next_ag:
 		agent = agent->next;
 	}while(agent);
 
+	retake_agent = NULL;
 
 	/* asign calls/chats to the agents */
 	do {
@@ -1685,7 +1686,7 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 				if (add_mi_string(agent_item, MI_SSTR("State"),
 					state.s, state.len) < 0)
 					goto error;
-				if ( (agent->state==CC_AGENT_INCHAT) ) {
+				if ( agent->state==CC_AGENT_INCHAT ) {
 					if (add_mi_number(agent_item, MI_SSTR("Ongoing chats"),
 					agent->ongoing_sessions[CC_MEDIA_MSRP]) < 0)
 						goto error;
