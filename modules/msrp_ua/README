@@ -1,0 +1,296 @@
+MSRP UA Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. hash_size (int)
+              1.3.2. cleanup_interval (int)
+              1.3.3. max_duration (integer)
+              1.3.4. my_uri (string)
+
+        1.4. Exported Functions
+
+              1.4.1. msrp_ua_answer(content_types)
+
+        1.5. Exported MI Functions
+
+              1.5.1. msrp_ua_send_message
+              1.5.2. msrp_ua_list_sessions
+              1.5.3. msrp_ua_end_session
+
+        1.6. Exported Events
+
+              1.6.1. E_MSRP_SESSION_NEW
+              1.6.2. E_MSRP_SESSION_END
+              1.6.3. E_MSRP_MSG_RECEIVED
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set hash_size parameter
+   1.2. Set cleanup_interval parameter
+   1.3. max_duration parameter example
+   1.4. my_uri parameter usage
+   1.5. msrp_ua_answer() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements an User Agent capable of establishing
+   messaging sessions using the MSRP(RFC 4976) protocol.
+
+   Through the exported script and MI functions, the module allows
+   OpenSIPS to set up MSRP sessions via SIP and exchange messages
+   as an MSRP endpoint.
+
+   The module makes use of the proto_msrp module for the MSRP
+   protocol stack and the b2b_entities module for the SIP UAC/UAS
+   functionalities.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * proto_msrp
+     * b2b_entities
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. hash_size (int)
+
+   The size of the hash table that stores the MSRP session
+   information. It is the 2 logarithmic value of the real size.
+
+   Default value is “10” (1024 records).
+
+   Example 1.1. Set hash_size parameter
+...
+modparam("msrp_ua", "hash_size", 16)
+...
+
+1.3.2. cleanup_interval (int)
+
+   The interval between full iterations of the sessions table in
+   order to clean up expired MSRP sessions.
+
+   Default value is “60”.
+
+   Example 1.2. Set cleanup_interval parameter
+...
+modparam("msrp_ua", "cleanup_interval", 30)
+...
+
+1.3.3. max_duration (integer)
+
+   The maximum duration of a call. If set to 0, there will be no
+   limitation.
+
+   The default value is 12 * 3600 seconds (12 hours).
+
+   Example 1.3. max_duration parameter example
+...
+modparam("msrp_ua", "max_duration", 7200)
+...
+
+1.3.4. my_uri (string)
+
+   The MSRP URI of the OpenSIPS endpoint. This URI will be
+   advertised in the SDP offer provided to peers when setting up a
+   session and should match one of the MSRP listeners defined in
+   the script.
+
+   The session-id part of the URI should be ommited.
+
+   If the port is not set explicitly, the default value of 2855
+   wil be assumed
+
+   Example 1.4. my_uri parameter usage
+...
+modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
+...
+
+1.4. Exported Functions
+
+1.4.1.  msrp_ua_answer(content_types)
+
+   This functions answers an initial INVITE offering a new MSRP
+   messaging session. After this function is used to initialize
+   the session, the call will be completely handled by the B2B
+   engine.
+
+   Parameters:
+     * content_types (string) - content types adevertised in the
+       accept-types SDP attribute. At least one of the content
+       types in this list must match the types offered by the peer
+       in its SDP offer.
+
+   This function can be used only from a request route.
+
+   Example 1.5. msrp_ua_answer() usage
+...
+if (!has_totag() && is_method("INVITE")) {
+        msrp_ua_answer("text/plain");
+        exit;
+}
+...
+
+1.5. Exported MI Functions
+
+1.5.1.  msrp_ua_send_message
+
+   Sends a new MSRP message to the peer.
+
+   Name: msrp_ua_send_message
+
+   Parameters
+     * session_id (string) - the MSRP session identifier
+       ("session-id" part of the MSRP URI).
+     * mime (string, optional) - MIME content type of this
+       message. If missing, an empty message will be sent.
+     * body (string, optional) - actual message body. If missing,
+       an empty message will be sent.
+
+   MI FIFO Command Format:
+opensips-cli -x mi msrp_ua_send_message \
+        5addd9e7b74fa44fbace68a4fc562293 \
+        text/plain \
+        Hello
+
+1.5.2.  msrp_ua_list_sessions
+
+   Lists information about ongoing MSRP sessions.
+
+   Name: msrp_ua_list_sessions
+
+   Parameters
+     * None.
+
+   MI FIFO Command Format:
+opensips-cli -x mi msrp_ua_list_sessions
+
+1.5.3.  msrp_ua_end_session
+
+   Terminate an ongoing MSRP session.
+
+   Name: msrp_ua_end_session
+
+   Parameters
+     * session_id (string) - the MSRP session identifier
+       ("session-id" part of the MSRP URI).
+
+   MI FIFO Command Format:
+opensips-cli -x mi msrp_ua_end_session \
+        5addd9e7b74fa44fbace68a4fc562293
+
+1.6. Exported Events
+
+1.6.1.  E_MSRP_SESSION_NEW
+
+   This event is triggered when a new MSRP session is successfully
+   established(ACK sent/received).
+
+   Parameters:
+     * from_uri - The URI in the SIP From header of the answered
+       INVITE.
+     * to_uri - The URI in the SIP To header of the answered
+       INVITE.
+     * ruri - The SIP Request URI of the answered INVITE.
+     * session_id - The MSRP session identifier ("session-id" part
+       of the MSRP URI).
+     * content_types - The content types offered by the peer in
+       the accept-types SDP attribute.
+
+1.6.2.  E_MSRP_SESSION_END
+
+   This event is triggered when an ongoing MSRP session is
+   terminted (session expires or BYE is received; terminating a
+   session via the msrp_ua_end_session MI function is not
+   included).
+
+   Parameters:
+     * session_id - The MSRP session identifier ("session-id" part
+       of the MSRP URI).
+
+1.6.3.  E_MSRP_MSG_RECEIVED
+
+   This event is triggered when receiving a new, non-empty MSRP
+   message from the peer.
+
+   Parameters:
+     * session_id - The MSRP session identifier ("session-id" part
+       of the MSRP URI).
+     * content_type - The content type of this message.
+     * body - The actual message body.
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+     Name Commit Activity
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Documentation Copyrights:
+
+   Copyright © 2022 www.opensips-solutions.com

@@ -1,0 +1,352 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements an User Agent capable of establishing messaging
+		sessions using the MSRP(RFC 4976) protocol.
+    </para>
+    <para>
+    	Through the exported script and MI functions, the module allows OpenSIPS
+    	to set up MSRP sessions via SIP and exchange messages as an MSRP endpoint.
+    </para>
+    <para>
+    	The module makes use of the <emphasis>proto_msrp</emphasis> module for
+    	the MSRP protocol stack and the <emphasis>b2b_entities</emphasis> module 
+    	for the SIP UAC/UAS functionalities.
+    </para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>proto_msrp</emphasis></para>
+			</listitem>
+			<listitem>
+				<para><emphasis>b2b_entities</emphasis></para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			The following libraries or applications must be installed 
+			before running &osips; with this module loaded:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>None</emphasis>.
+				</para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+		<section id="param_hash_size" xreflabel="hash_size">
+			<title><varname>hash_size</varname> (int)</title>
+			<para>
+				The size of the hash table that stores the MSRP session
+				information. It is the 2 logarithmic value of the real size.
+			</para>
+			<para>
+			<emphasis>Default value is <quote>10</quote>
+			</emphasis>
+			 (1024 records).
+			</para>
+			<example>
+			<title>Set <varname>hash_size</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("msrp_ua", "hash_size", 16)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_cleanup_interval" xreflabel="cleanup_interval">
+		<title><varname>cleanup_interval</varname> (int)</title>
+		<para>
+			The interval between full iterations of the sessions table
+			in order to clean up expired MSRP sessions.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote>.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cleanup_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_ua", "cleanup_interval", 30)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_max_duration" xreflabel="max_duration">
+		<title><varname>max_duration</varname> (integer)</title>
+		<para>
+		The maximum duration of a call. If set to 0, there will be no limitation.
+		</para>
+		<para>
+		The default value is 12 * 3600 seconds (12 hours).
+		</para>
+		<example>
+		<title>max_duration parameter example</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_ua", "max_duration", 7200)
+...
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_my_uri" xreflabel="my_uri">
+		<title><varname>my_uri</varname> (string)</title>
+		<para>
+		The MSRP URI of the OpenSIPS endpoint. This URI will be advertised in the SDP
+		offer provided to peers when setting up a session and should match one
+		of the MSRP listeners defined in the script.
+		</para>
+		<para>
+		The <emphasis>session-id</emphasis> part of the URI should be ommited.
+		</para>
+		<para>If the port is not set explicitly, the default value of 2855 wil
+		be assumed</para>
+		<example>
+		<title><varname>my_uri</varname> parameter usage</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
+...
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_msrp_ua_answer" xreflabel="msrp_ua_answer()">
+		<title>
+		<function moreinfo="none">msrp_ua_answer(content_types)</function>
+		</title>
+		<para>
+			This functions answers an initial INVITE offering a new MSRP
+			messaging session. After this function is used to initialize the
+			session, the call will be completely handled by the B2B engine.
+		</para>
+		<para>
+			Parameters:
+			<itemizedlist>
+			<listitem><para>
+				<emphasis>content_types</emphasis> (string) - content types
+				adevertised in the <emphasis>accept-types</emphasis> SDP
+				attribute. At least one of the content types in this list must
+				match the types offered by the peer in its SDP offer.
+			</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			This function can be used only from a request route.
+		</para>
+		<example>
+			<title><function>msrp_ua_answer()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE")) {
+	msrp_ua_answer("text/plain");
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+		<section id="mi_msrp_ua_send_message"
+			xreflabel="msrp_ua_send_message">
+		<title>
+		<function moreinfo="none">msrp_ua_send_message</function>
+		</title>
+		<para>
+		Sends a new MSRP message to the peer.
+		</para>
+		<para>
+		Name: <emphasis>msrp_ua_send_message</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>session_id</emphasis> (string) - the MSRP session
+				identifier ("session-id" part of the MSRP URI).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>mime</emphasis> (string, optional) - MIME content
+				type of this message. If missing, an empty message will be sent.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> (string, optional) - actual message
+				body. If missing, an empty message will be sent.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_ua_send_message \
+	5addd9e7b74fa44fbace68a4fc562293 \
+	text/plain \
+	Hello
+		</programlisting>
+		</section>
+
+	<section id="mi_msrp_ua_list_sessions"
+			xreflabel="msrp_ua_list_sessions">
+		<title>
+		<function moreinfo="none">msrp_ua_list_sessions</function>
+		</title>
+		<para>
+		Lists information about ongoing MSRP sessions.
+		</para>
+		<para>
+		Name: <emphasis>msrp_ua_list_sessions</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>None</emphasis>.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_ua_list_sessions
+		</programlisting>
+		</section>
+
+	<section id="mi_msrp_ua_end_session"
+			xreflabel="msrp_ua_end_session">
+		<title>
+		<function moreinfo="none">msrp_ua_end_session</function>
+		</title>
+		<para>
+		Terminate an ongoing MSRP session.
+		</para>
+		<para>
+		Name: <emphasis>msrp_ua_end_session</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>session_id</emphasis> (string) - the MSRP session
+				identifier ("session-id" part of the MSRP URI).
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_ua_end_session \
+	5addd9e7b74fa44fbace68a4fc562293
+		</programlisting>
+		</section>
+
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_MSRP_SESSION_NEW" xreflabel="E_MSRP_SESSION_NEW">
+		<title>
+		<function moreinfo="none">E_MSRP_SESSION_NEW</function>
+		</title>
+		<para>
+			This event is triggered when a new MSRP session is successfully
+			established(ACK sent/received).
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>from_uri</emphasis> - The URI in the SIP From header
+				of the answered INVITE.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_uri</emphasis> - The URI in the SIP To header
+				of the answered INVITE.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ruri</emphasis> - The SIP Request URI of the answered
+				INVITE.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>session_id</emphasis> - The MSRP session identifier
+				("session-id" part of the MSRP URI).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_types</emphasis> - The content types offered
+				by the peer in the <emphasis>accept-types</emphasis> SDP attribute.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_MSRP_SESSION_END" xreflabel="E_MSRP_SESSION_END">
+		<title>
+		<function moreinfo="none">E_MSRP_SESSION_END</function>
+		</title>
+		<para>
+			This event is triggered when an ongoing MSRP session is terminted (session
+			expires or BYE is received; terminating a session via the
+			<emphasis>msrp_ua_end_session</emphasis> MI function is not included).
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>session_id</emphasis> - The MSRP session identifier
+				("session-id" part of the MSRP URI).
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_MSRP_MSG_RECEIVED" xreflabel="E_MSRP_MSG_RECEIVED">
+		<title>
+		<function moreinfo="none">E_MSRP_MSG_RECEIVED</function>
+		</title>
+		<para>
+			This event is triggered when receiving a new, non-empty MSRP message
+			from the peer.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>session_id</emphasis> - The MSRP session identifier
+				("session-id" part of the MSRP URI).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_type</emphasis> - The content type of this message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>body</emphasis> - The actual message body.
+			</para></listitem>
+		</itemizedlist>
+	</section>	
+
+	</section>
+
+</chapter>
+
