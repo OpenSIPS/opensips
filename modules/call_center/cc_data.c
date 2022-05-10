@@ -39,6 +39,7 @@
 extern b2bl_api_t b2b_api;
 
 extern unsigned int wrapup_time;
+extern int msrp_dispatch_policy;
 
 /* events */
 static str agent_event = str_init("E_CALLCENTER_AGENT_REPORT");
@@ -828,7 +829,7 @@ void free_cc_call(struct cc_data * data, struct cc_call *call)
 struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
 		media_type media, unsigned int skill)
 {
-	struct cc_agent *agent;
+	struct cc_agent *agent,*prev_agent;
 	unsigned int n;
 
 	agent = data->agents[CC_AG_ONLINE];
@@ -853,15 +854,20 @@ struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
 	} else
 	if (media==CC_MEDIA_MSRP) {
 		/* for chat calls, we need an agent with spare sessions */
+		prev_agent = agent;
 		do {
 			if ( can_agent_take_chats(agent) ) {
 				/* iterate all skills of the agent */
 				for( n=0 ; n<agent->no_skills ; n++) {
-					if (agent->skills[n]==skill)
+					if (agent->skills[n]==skill) {
+						if (msrp_dispatch_policy == CC_MSRP_POLICY_LB)
+							move_cc_agent_to_end( data, agent, prev_agent);
 						return agent;
+					}
 				}
 			}
 			/* next agent */
+			prev_agent = agent;
 			agent = agent->next;
 		}while(agent);
 	}

@@ -252,8 +252,8 @@ struct cc_call {
 	  ( _agent->state==CC_AGENT_INCHAT \
 	    && _agent->media[CC_MEDIA_MSRP].sessions > \
 	      (_agent->ongoing_sessions[CC_MEDIA_MSRP] + \
-	      /* if agent has ongoing MSRP, keep one channel free here */ \
-	      ((get_ticks() > _agent->wrapup_end_time)?1:0) ) \
+	      /* if agent has ongoing MSRP wrapup, keep one channel free here */ \
+	      ((get_ticks() <= _agent->wrapup_end_time)?1:0) ) \
 	  ) \
 	)
 
@@ -327,6 +327,38 @@ static inline void remove_cc_agent(struct cc_data* data,
 			}
 			else
 				data->last_online_agent = prev_agent;
+		}
+	}
+}
+
+
+static inline void move_cc_agent_to_end( struct cc_data *data,
+		struct cc_agent *agent, struct cc_agent *prev_agent)
+{
+	struct cc_agent *tmp_ag;
+
+	/* move it to the end of the list*/
+	if(data->last_online_agent != agent) {
+		remove_cc_agent(data, agent, prev_agent);
+		if(!data->last_online_agent) {
+			LM_CRIT("last_online_agent NULL\n");
+			if(data->agents[CC_AG_ONLINE] == NULL)
+				data->agents[CC_AG_ONLINE] = agent;
+			else {
+				for (tmp_ag = data->agents[CC_AG_ONLINE]; tmp_ag;
+				tmp_ag= tmp_ag->next)
+				{
+					prev_agent = tmp_ag;
+				}
+				prev_agent->next = agent;
+				agent->next = NULL;
+				data->last_online_agent = agent;
+			}
+		}
+		else {
+			data->last_online_agent->next = agent;
+			agent->next = NULL;
+			data->last_online_agent = agent;
 		}
 	}
 }

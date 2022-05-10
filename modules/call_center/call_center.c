@@ -108,7 +108,7 @@ str queue_pos_param = {NULL,0};
 /* by default reject new calls if there are no agents logged */
 static int reject_on_no_agents = 1;
 /* default policy for distributing the MSRP/CHAT sessions to agents */
-static int msrp_dispatch_policy = CC_MSRP_POLICY_LB;
+int msrp_dispatch_policy = CC_MSRP_POLICY_LB;
 static char *msrp_dispatch_policy_str = NULL;
 /* if calls should be dispatched by internals of the module */
 static int internal_call_dispatching_param = 1;
@@ -218,6 +218,7 @@ static stat_export_t mod_stats[] = {
 	{"ccg_load",                STAT_IS_FUNC,  (stat_var**)stg_load          },
 	{"ccg_distributed_incalls", 0,             &stg_dist_incalls             },
 	{"ccg_answered_incalls" ,   0,             &stg_answ_incalls             },
+	{"ccg_answered_inchats" ,   0,             &stg_answ_inchats             },
 	{"ccg_abandonned_incalls" , 0,             &stg_aban_incalls             },
 	{"ccg_onhold_calls",        STAT_NO_RESET, &stg_onhold_calls             },
 	{"ccg_onhold_chats",        STAT_NO_RESET, &stg_onhold_chats             },
@@ -1171,7 +1172,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 		media = CC_MEDIA_RTP;
 	else
 	if (str_strstr( media_s, &_msrp))
-		media = CC_MEDIA_RTP;
+		media = CC_MEDIA_MSRP;
 	else {
 		LM_ERR("media [%.*s] is neither RTP, nor MSRP\n",
 			media_s->len, media_s->s);
@@ -1322,7 +1323,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 
 static void cc_timer_agents(unsigned int ticks, void* param)
 {
-	struct cc_agent *agent, *prev_agent, *tmp_ag, *retake_agent;
+	struct cc_agent *agent, *prev_agent, *retake_agent;
 	struct cc_call  *call;
 	str out;
 	str dest;
@@ -1352,34 +1353,10 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 		) {
 			agent->state = CC_AGENT_FREE;
 			agent_raise_event( agent, NULL);
+			move_cc_agent_to_end( data, agent, prev_agent);
 			/* move it to the end of the list*/
-			if(data->last_online_agent != agent) {
-				remove_cc_agent(data, agent, prev_agent);
-				if(!data->last_online_agent) {
-					LM_CRIT("last_online_agent NULL\n");
-					if(data->agents[CC_AG_ONLINE] == NULL)
-						data->agents[CC_AG_ONLINE] = agent;
-					else {
-						for (tmp_ag = data->agents[CC_AG_ONLINE]; tmp_ag;
-						tmp_ag= tmp_ag->next)
-						{
-							prev_agent = tmp_ag;
-						}
-						prev_agent->next = agent;
-						agent->next = NULL;
-						data->last_online_agent = agent;
-					}
-				}
-				else {
-						data->last_online_agent->next = agent;
-						agent->next = NULL;
-						data->last_online_agent = agent;
-				}
-				goto next_ag;
-			}
 		}
 
-next_ag:
 		/* next agent */
 		prev_agent = agent;
 		agent = agent->next;
