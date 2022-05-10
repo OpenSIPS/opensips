@@ -22,6 +22,12 @@
 	This is actually a Contact Center and it is able to handle both
 	RTP/audio calls and (multiple) MSRP/chat calls, in the same time.
 	</para>
+	<para>
+	The module provides an internal buit-in dispatching logic (for sending the
+	calls/chats to the agents), but also offers the possibility to use an
+	external logic to do the dispatching
+	(see <xref linkend="mi_cc_dispatch_call_to_agent"/> MI command).
+	</para>
 	</section>
 
 	<section>
@@ -130,7 +136,8 @@
 		value is hardocded. On the SIP side, each media type comes with a
 		<emphasis>locations</emphasis>. The location is a SIP URI where to 
 		calls must be sent in order to be answered by the agent. At least one 
-		media type should be defined.
+		media type should be defined. To specify which media the agent
+		support, just define the corresponding SIP location in his profile.
 		</para>
 		<para>
 		So, at a certain time, an agent may handle either a single call,
@@ -375,6 +382,32 @@ modparam("call_center", "chat_dispatch_policy", "balancing")
 		</example>
 	</section>
 
+	<section id="param_internal_call_dispatching" xreflabel="chat_internal_call_dispatching">
+		<title><varname>internal_call_dispatching</varname> (int)</title>
+		<para>
+		A parameter to tell if the internal/buit-in call dispatching to agent
+		should be used or not. If enabled, the module will automatically
+		dispatch (by itself) the queued/incoming calls to the available agents.
+		If disabled, the module will not do such dispaching by itself and it
+		is expected to use the  <xref linkend="mi_cc_dispatch_call_to_agent"/>
+		MI command to dispatch the queued calls to agents. This allows the
+		implementation of an external, custom dispatching logic. The value of
+		this setting may be changed during runtime via the 
+		<xref linkend="mi_cc_internal_call_dispatching"/> MI command.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>internal_call_dispatching</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "internal_call_dispatching", 0)
+...
+</programlisting>
+		</example>
+	</section>
 
 	<section id="param_cc_agents_table" xreflabel="cc_agents_table">
 		<title><varname>cc_agents_table</varname> (string)</title>
@@ -418,11 +451,11 @@ modparam("call_center", "cca_agentid_column", "cid")
 	<section id="param_cca_location_column" xreflabel="cca_location_column">
 		<title><varname>cca_location_column</varname> (string)</title>
 		<para>
-		Name to be used for the "location" (SIP URI) column in the
-		agents table.
+		Name to be used for the calling/audio "location" (SIP URI) column in 
+		the agents table.
 		</para>
 		<para>
-		<emphasis>Default value is <quote>agentid</quote>.
+		<emphasis>Default value is <quote>location</quote>.
 		</emphasis>
 		</para>
 		<example>
@@ -430,6 +463,46 @@ modparam("call_center", "cca_agentid_column", "cid")
 		<programlisting format="linespecific">
 ...
 modparam("call_center", "cca_location_column", "sip_uri")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_msrp_location_column" xreflabel="cca_msrp_location_column">
+		<title><varname>cca_msrp_location_column</varname> (string)</title>
+		<para>
+		Name to be used for the msrp/chat "location" (SIP URI) column in the
+		agents table.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>msrp_location</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_msrp_location_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_msrp_location_column", "sip_uri")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_cca_msrp_max_sessions_column" xreflabel="cca_msrp_max_sessions_column">
+		<title><varname>cca_msrp_max_sessions_column</varname> (string)</title>
+		<para>
+		Name to be used for the column (in the agents table) holding the 
+		maximum number of chat sessions that can be handled by the agent.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>msrp_max_sessions</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cca_msrp_max_sessions_column</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("call_center", "cca_msrp_max_sessions_column", "max_chats")
 ...
 </programlisting>
 		</example>
@@ -1129,7 +1202,8 @@ opensips-cli -x mi cc_agent_login agentX 0
 		</title>
 		<para>
 		Command to list all the calls in queuing - for each call, the 
-		following attributes will be printed: the flow of the call, for how
+		following attributes will be printed: the call id, the calling
+		user info, the flow of the call, for how
 		long the call is in the queue, the ETW for the call, call priority 
 		and the call skill (inherited from the flow).
 		</para>
@@ -1171,8 +1245,8 @@ opensips-cli -x mi cc_list_flows
 		</title>
 		<para>
 		Command to list all the agents - for each agent, the 
-		following attributes will be printed: agent ID, agent login state and
-		agent state (free, wrapup, incall).
+		following attributes will be printed: agent ID, agent login state,
+		agent state (free, wrapup, incall) and info on ongoing sessions.
 		</para>
 		<para>
 		It takes no parameter.
@@ -1205,6 +1279,80 @@ opensips-cli -x mi cc_list_agents
 opensips-cli -x mi cc_list_agents
 </programlisting>
 	</section>
+
+	<section id="mi_cc_dispatch_call_to_agent" xreflabel="cc_dispatch_call_to_agent">
+		<title>
+		<function moreinfo="none">cc_dispatch_call_to_agent</function>
+		</title>
+		<para>
+		This function sends a given call (from the queue) to a given agent. For
+		the operation to succeed, several conditions must be met:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			the call must be in the queue
+			</para></listitem>
+			<listitem><para>
+			the agent must be logged in
+			</para></listitem>
+			<listitem><para>
+			the agent must support the skill required by the call
+			</para></listitem>
+			<listitem><para>
+			the agent must support the media (RTP/MSRP) requiref by the call
+			</para></listitem>
+			<listitem><para>
+			the agent must have available sessions for the requested media
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		It takes two parameters.
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>call_id</emphasis> - the ID of the call, as provided by
+			the queue listing MI command <xref linkend="mi_cc_list_queue"/>
+			</para></listitem>
+			<listitem><para>
+			<emphasis>agent_id</emphasis> - the ID of the call, as provided by
+			the agents listing MI command <xref linkend="mi_cc_list_agents"/>
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		IMPORTANT: in order to be used, you need to be sure that the internal
+		call dispatching is DISABLED via the
+		<xref linkend="param_internal_call_dispatching"/> module parameter
+		or the <xref linkend="mi_cc_internal_call_dispatching"/> MI command.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi cc_dispatch_call_to_agent B2B452.dee2.33 agentX
+</programlisting>
+	</section>
+
+	<section id="mi_cc_internal_call_dispatching" xreflabel="cc_internal_call_dispatching">
+		<title>
+		<function moreinfo="none">cc_internal_call_dispatching</function>
+		</title>
+		<para>
+		Command to inspect and/or change the 
+		<xref linkend="param_internal_call_dispatching"/> setting
+		</para>
+		<para>
+		It takes one optional parameter <varname>dispatching</varname> if the
+		value of the setting should be changed. A 0 value means disabling
+		the internal dispatching, a non zero means to enable it.
+		</para>
+		<para>
+		MI FIFO Command usage:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi cc_internal_call_dispatching 0
+</programlisting>
+	</section>
+
 
 	<section id="mi_cc_reset_stats" xreflabel="cc_reset_stats">
 		<title>

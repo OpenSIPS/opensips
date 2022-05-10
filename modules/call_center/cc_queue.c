@@ -26,7 +26,7 @@
 extern stat_var *stg_terminated_calls;
 extern stat_var *stg_dist_incalls;
 extern str queue_pos_param;
-
+extern int *internal_call_dispatching;
 
 /* this function must be call under
  *    1) general data lock as it accesses diverent data to calculate the next state
@@ -78,10 +78,13 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 		case CC_CALL_QUEUED:
 			/* search for an available agent */
 			/* if we have a flow_id recording, we push the call in the queue */
-			if (!call->flow->recordings[AUDIO_FLOW_ID].len)
+			if (*internal_call_dispatching==0) {
+				agent = NULL;
+			} else
+			if (!call->flow->recordings[AUDIO_FLOW_ID].len) {
 				agent = get_free_agent_by_skill( data, call->media,
 					call->flow->skill);
-			else
+			} else
 				agent = NULL;
 			if (agent) {
 				/* send it to agent */

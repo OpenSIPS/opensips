@@ -72,6 +72,10 @@ static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_internal_call_dispatching(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 		str *media_s);
@@ -104,6 +108,10 @@ static int reject_on_no_agents = 1;
 /* default policy for distributing the MSRP/CHAT sessions to agents */
 static int msrp_dispatch_policy = CC_MSRP_POLICY_LB;
 static char *msrp_dispatch_policy_str = NULL;
+/* if calls should be dispatched by internals of the module */
+static int internal_call_dispatching_param = 1;
+int *internal_call_dispatching = NULL;
+
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
@@ -128,6 +136,7 @@ static param_export_t mod_params[]={
 	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
 	{ "chat_dispatch_policy", STR_PARAM, &msrp_dispatch_policy_str },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
+	{ "internal_call_dispatching",INT_PARAM, &internal_call_dispatching_param},
 	{ "cc_agents_table",      STR_PARAM, &cc_agent_table_name.s  },
 	{ "cca_agentid_column",   STR_PARAM, &cca_agentid_column.s   },
 	{ "cca_location_column",  STR_PARAM, &cca_location_column.s  },
@@ -187,6 +196,15 @@ static mi_export_t mi_cmds[] = {
 	},
 	{"cc_reset_stats", 0, 0, 0, {
 		{mi_reset_stats, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"cc_dispatch_call_to_agent", 0, 0, 0, {
+		{mi_dispatch_call_to_agent, {"call_id", "agent_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"cc_internal_call_dispatching", 0, 0, 0, {
+		{mi_internal_call_dispatching, {0}},
+		{mi_internal_call_dispatching, {"dispatching", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -363,6 +381,14 @@ static int mod_init(void)
 			msrp_dispatch_policy = CC_MSRP_POLICY_FULL_AGENT;
 		}
 	}
+
+	internal_call_dispatching = (int*)shm_malloc(sizeof(int));
+	if (internal_call_dispatching==NULL) {
+		LM_ERR("Can't allocate shm holder for internal_call_dispatching\n");
+		return -1;
+	}
+	*internal_call_dispatching =  (internal_call_dispatching_param==0) ? 0 : 1;
+
 	/* Load B2BUA API */
 	if (load_b2b_logic_api( &b2b_api) != 0) {
 		LM_ERR("Can't load B2B-UA hooks, missing 'b2b_logic' module ?\n");
@@ -1316,6 +1342,13 @@ next_ag:
 		agent = agent->next;
 	}while(agent);
 
+
+	if (*internal_call_dispatching==0) {
+		lock_release( data->lock );
+		return;
+	}
+
+
 	retake_agent = NULL;
 
 	/* asign calls/chats to the agents */
@@ -1923,6 +1956,10 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 		if (add_mi_number(call_item, MI_SSTR("index"), n) < 0)
 			goto error;
 
+		if (add_mi_string(call_item, MI_SSTR("id"),
+			call->b2bua_id.s, call->b2bua_id.len) < 0)
+			goto error;
+
 		if (call->media==CC_MEDIA_RTP) {
 			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("RTP"))<0)
 				goto error;
@@ -1934,6 +1971,14 @@ static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
 			if (add_mi_string(call_item, MI_SSTR("Media"), MI_SSTR("--"))<0)
 				goto error;
 		}
+
+		if (add_mi_string(call_item, MI_SSTR("Caller username"),
+			call->caller_un.s, call->caller_un.len) < 0)
+			goto error;
+
+		if (add_mi_string(call_item, MI_SSTR("Caller display name"),
+			call->caller_dn.s, call->caller_dn.len) < 0)
+			goto error;
 
 		if (add_mi_number(call_item, MI_SSTR("Waiting for"),
 			now-call->last_start) < 0)
@@ -1977,3 +2022,200 @@ static int pv_get_cc_state( struct sip_msg *msg, pv_param_t *param,
 	res->flags = PV_VAL_STR;
 	return 0;
 }
+
+
+static mi_response_t *mi_internal_call_dispatching(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	int dispatch_val;
+	int ret;
+
+	ret = try_get_mi_int_param(params, "dispatching", &dispatch_val);
+	if (ret<0 && ret!=-1/*MI_PARAM_ERR_MISSING*/)
+		return init_mi_param_error();
+
+	if (ret==0) {
+		/* set the value */
+		*internal_call_dispatching = (dispatch_val==0)? 0 : 1;
+	}
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("dispatching"),
+	*internal_call_dispatching ) < 0)
+		return 0;
+
+	return resp;
+}
+
+
+static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
+		struct mi_handler *async_hdl)
+{
+	struct cc_agent *agent, *prev_agent;
+	struct cc_call *call;
+	str agent_id, call_id;
+	str dest, out;
+	int i;
+
+	if (*internal_call_dispatching!=0)
+		return init_mi_error( 403, MI_SSTR("Internal dispatching is enabled"));
+
+	if (get_mi_string_param(params, "call_id", &call_id.s, &call_id.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len)<0)
+		return init_mi_param_error();
+
+	/* block access to data */
+	lock_get( data->lock );
+
+	/* get the agent */
+	agent = get_agent_by_name( data, &agent_id, &prev_agent);
+	if (agent==NULL) {
+		lock_release( data->lock );
+		return init_mi_error( 404, MI_SSTR("Agent not found"));
+	}
+
+	if (!agent->logged_in) {
+		lock_release( data->lock );
+		return init_mi_error( 404, MI_SSTR("Agent not logged in"));
+	}
+	LM_DBG("found logged-in agent %p(%.*s) in state %d\n",
+		agent, agent->id.len, agent->id.s, agent->state);
+
+	/* search for the call in the queue */
+	for (call=data->queue.first ; call ; call=call->lower_in_queue) {
+		/* match the call id */
+		if ( call->b2bua_id.len==0 || call->b2bua_id.len!=call_id.len ||
+		strncmp(call->b2bua_id.s, call_id.s, call_id.len) )
+			continue;
+	}
+	if (call==NULL) {
+		lock_release( data->lock );
+		return init_mi_error( 404, MI_SSTR("Call not found"));
+	}
+	LM_DBG("found call %p(%.*s), media %d in state %d \n",
+		call, call->b2bua_id.len, call->b2bua_id.s,
+		call->media, call->state);
+
+	/* check the compatibility of the call and agent */
+	for(i=0 ; i<agent->no_skills ; i++) {
+		if (call->flow->skill==agent->skills[i]) {
+			LM_DBG("found matching skill %d\n",
+				call->flow->skill);
+			break;
+		}
+	}
+	if(i==agent->no_skills) {
+		lock_release( data->lock );
+		return init_mi_error( 488, MI_SSTR("Agent has no skill for the call"));
+	}
+	/* check media and agent state */
+	if (call->media==CC_MEDIA_RTP) {
+		/* we need a FREE agent with calling */
+		if (agent->state!=CC_AGENT_FREE ||
+		agent->media[CC_MEDIA_RTP].sessions==0) {
+			lock_release( data->lock );
+			return init_mi_error( 488,
+				MI_SSTR("Agent is not free/audio enabled"));
+		}
+	} else
+	if (call->media==CC_MEDIA_RTP) {
+		/* we need a FREE agent with calling */
+		if ( (agent->state!=CC_AGENT_FREE && agent->state!=CC_AGENT_INCHAT) ||
+		agent->media[CC_MEDIA_RTP].sessions <=
+		agent->ongoing_sessions[CC_MEDIA_RTP] ) {
+			lock_release( data->lock );
+			return init_mi_error( 488,
+				MI_SSTR("Agent is not free/chat enabled"));
+		}
+	} else {
+		lock_release( data->lock );
+		return init_mi_error( 488,
+			MI_SSTR("Unsupported media in call"));
+	}
+
+	/* we have the call and agent, fully compatible
+	 * and with available sessions => marry them :) */
+
+	/* remove the call from queue */
+	cc_queue_rmv_call( data, call);
+	lock_release( data->lock );
+
+
+	/* no locking here */
+
+	lock_set_get( data->call_locks, call->lock_idx );
+	call->ref_cnt--;
+
+	/* is the call state still valid? (as queued) */
+	if(call->state != CC_CALL_QUEUED) {
+		if (call->state==CC_CALL_ENDED && call->ref_cnt==0) {
+			lock_set_release( data->call_locks, call->lock_idx );
+			free_cc_call( data, call);
+		} else {
+			lock_set_release( data->call_locks, call->lock_idx );
+		}
+		return init_mi_error( 404, MI_SSTR("Call not in queue any more"));
+	}
+	LM_DBG("Call %p ref= %d, state= %d\n", call,
+		call->ref_cnt, call->state);
+
+	lock_get( data->lock );
+
+	if(!call->flow->recordings[AUDIO_FLOW_ID].len)
+		dest = agent->media[call->media].location;
+	else
+		dest = call->flow->recordings[AUDIO_FLOW_ID];
+
+	/* make a copy for destination to agent */
+	out.len = OUT_BUF_LEN(dest.len);
+	out.s = out_buf;
+	memcpy( out.s, dest.s, out.len);
+
+	call->prev_state = call->state;
+	if(!call->flow->recordings[AUDIO_FLOW_ID].len) {
+		call->state = CC_CALL_TOAGENT;
+		/* call no longer on wait */
+		LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
+		update_stat( stg_onhold_calls, -1);
+		update_stat( call->flow->st_onhold_calls, -1);
+	}else{
+		call->state = CC_CALL_PRE_TOAGENT;
+	}
+
+	/* mark agent as used */
+	agent->state = call->media==CC_MEDIA_RTP ?
+		CC_AGENT_INCALL : CC_AGENT_INCHAT;
+	call->agent = agent;
+	call->agent->ref_cnt++;
+	agent->ongoing_sessions[call->media]++;
+	agent_raise_event( agent, call);
+	update_stat( stg_dist_incalls, 1);
+	update_stat( call->flow->st_dist_incalls, 1);
+	call->fst_flags |= FSTAT_DIST;
+	update_stat( call->agent->st_dist_incalls, +1);
+
+	/* unlock data */
+	lock_release( data->lock );
+
+	/* send call to selected agent */
+	cc_call_state = call->state;
+	if (set_call_leg( NULL, call, &out)< 0 ) {
+		LM_ERR("failed to set new destination for call\n");
+	}
+	cc_call_state = CC_CALL_NONE;
+	lock_set_release( data->call_locks, call->lock_idx );
+
+	if(cc_db_update_call(call) < 0) {
+		LM_ERR("Failed to update call in database\n");
+	}
+
+	return init_mi_result_ok();
+}
+
