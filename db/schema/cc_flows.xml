@@ -64,6 +64,8 @@
 		<name>prependcid</name>
 		<type>string</type>
 		<size>32</size>
+		<null/>
+		<default><null/></default>
 		<description>Aphanumerical prefix to be added to the
 		caller displayname when sending calls from this flow
 		to agents (so agent - serving muliple flows - can see
@@ -151,6 +153,8 @@
 		<name>message_dissuading</name>
 		<type>string</type>
 		<size>128</size>
+		<null/>
+		<default><null/></default>
 		<description>SIP URI point to a media server; this is
 		used for playing the dissuading message for this
 		flow.</description>
@@ -161,6 +165,7 @@
 		<type>string</type>
 		<size>128</size>
 		<null/>
+		<default><null/></default>
 		<description>SIP URI point to a media server; this is
 		used for playing the name of the flow id to the agent
 		before delivering a call to him.</description>
