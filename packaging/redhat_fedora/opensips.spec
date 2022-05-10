@@ -472,20 +472,17 @@ This module is an implementation of a cache system designed to work with
 MongoDB servers.
 %endif
 
-%package  msrp-relay-module
-Summary:  Implementation of a Relay for the MSRP protocol
+%package  msrp-modules
+Summary:  Implementation of the MSRP protocol
 Group:    System Environment/Daemons
 Requires: %{name} = %{version}-%{release}
 
-%description  msrp-relay-module
+%description  msrp-modules
 OpenSIPS is a very fast and flexible SIP (RFC3261)
 server. Written entirely in C, OpenSIPS can handle thousands calls
 per second even on low-budget hardware.
 .
-This package implements a Relay for the MSRP protocol, according
-to the specifications of RFC 4976. Once loaded, the module will
-automatically forward messages and manage MSRP sessions for the
-MSRP listeners defined in the script.
+This package provides the MSRP protocol support for OpenSIPS.
 
 %package  mysql-module
 Summary:  MySQL database connectivity module for OpenSIPS
@@ -1108,7 +1105,6 @@ fi
 %{_libdir}/opensips/modules/proto_ws.so
 %{_libdir}/opensips/modules/qos.so
 %{_libdir}/opensips/modules/qrouting.so
-%{_libdir}/opensips/modules/proto_msrp.so
 %{_libdir}/opensips/modules/rate_cacher.so
 %{_libdir}/opensips/modules/ratelimit.so
 %{_libdir}/opensips/modules/registrar.so
@@ -1205,7 +1201,6 @@ fi
 %doc docdir/README.proto_ws
 %doc docdir/README.qos
 %doc docdir/README.qrouting
-%doc docdir/README.proto_msrp
 %doc docdir/README.rate_cacher
 %doc docdir/README.ratelimit
 %doc docdir/README.registrar
@@ -1350,9 +1345,13 @@ fi
 %doc docdir/README.cachedb_mongodb
 %endif
 
-%files msrp-relay-module
+%files msrp-modules
 %{_libdir}/opensips/modules/msrp_relay.so
+%{_libdir}/opensips/modules/msrp_ua.so
+%{_libdir}/opensips/modules/proto_msrp.so
 %doc docdir/README.msrp_relay
+%doc docdir/README.msrp_ua
+%doc docdir/README.proto_msrp
 
 %files mysql-module
 %{_libdir}/opensips/modules/db_mysql.so
@@ -1569,8 +1568,8 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: msrp_relay, proto_msrp, status_report, tcp_mgm
-- New packages: msrp-relay-module
+- New modules: msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
+- New packages: msrp-modules
 - Removed modules: b2b_logic_xml
 - Removed packages: b2bua-module
 

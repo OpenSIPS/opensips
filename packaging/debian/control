@@ -69,7 +69,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-ldap-modules,
           opensips-lua-module,
           opensips-memcached-module,
-          opensips-msrp-relay-module,
+          opensips-msrp-modules,
           opensips-mysql-module,
           opensips-mongodb-module,
           opensips-perl-modules,
@@ -741,18 +741,15 @@ Description: JSON Web Tokens authentication module for OpenSIPS
  and two timestamps describing a validation interval. Multiple
  JWT secrets can point to the same JWT profile.
 
-Package: opensips-msrp-relay-module
+Package: opensips-msrp-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
-Description: Implementation of a Relay for the MSRP protocol
+Description: Implementation of the MSRP protocol
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package implements a Relay for the MSRP protocol, according
- to the specifications of RFC 4976. Once loaded, the module will
- automatically forward messages and manage MSRP sessions for the
- MSRP listeners defined in the script.
+ This package provides the MSRP protocol support for OpenSIPS.
