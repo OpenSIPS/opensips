@@ -393,7 +393,7 @@ int cc_db_insert_call(struct cc_call *call)
 	columns[0]           = &ccq_state_column;
 	vals[0].type         = DB_INT;
 	vals[0].val.int_val  = call->state;
-	columns[0]           = &ccq_media_column;
+	columns[1]           = &ccq_media_column;
 	vals[1].type         = DB_INT;
 	vals[1].val.int_val  = call->media;
 	columns[2]           = &ccq_ig_cback_column;
@@ -900,7 +900,7 @@ int cc_write_cdr( str *un, str *fid, str *aid, int type, int rt, int wt,
 	columns[8] = &ccc_rejected_column;
 	columns[9]= &ccc_fstats_column;
 	columns[10]= &ccc_cid_column;
-	columns[11]= &ccc_cid_column;
+	columns[11]= &ccc_media_column;
 
 	/* caller */
 	vals[0].nul = 0;

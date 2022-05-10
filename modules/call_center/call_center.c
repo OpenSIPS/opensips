@@ -1150,7 +1150,7 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 	LM_DBG("cid=<%.*s>\n",dn->len,dn->s);
 
 	/* detect the media type */
-	if (media_s && media_s->s && media_s->len) {
+	if (media_s==NULL || media_s->s==NULL || media_s->len==0) {
 		struct sdp_info *sdp;
 		if ( (sdp=parse_sdp(msg))==NULL ) {
 			LM_ERR("failed to parse the SDP body\n");
