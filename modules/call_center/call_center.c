@@ -1251,12 +1251,19 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 
 	if (agent->logged_in != *state) {
 
-		if(*state && (agent->state==CC_AGENT_WRAPUP) &&
-			(get_ticks() > agent->wrapup_end_time))
-			agent->state = CC_AGENT_FREE;
+		if(*state) {
+			if ( agent->state==CC_AGENT_WRAPUP &&
+			get_ticks() > agent->wrapup_end_time )
+				agent->state = CC_AGENT_FREE;
 
-		if(*state && data->agents[CC_AG_ONLINE] == NULL)
-			data->last_online_agent = agent;
+			if ( agent->state==CC_AGENT_INCHAT &&
+			get_ticks() > agent->wrapup_end_time &&
+			agent->ongoing_sessions[CC_MEDIA_MSRP]==0 )
+				agent->state = CC_AGENT_FREE;
+
+			if(data->agents[CC_AG_ONLINE] == NULL)
+				data->last_online_agent = agent;
+		}
 
 		/* agent event is triggered here */
 		agent_switch_login(data, agent, prev_agent);
@@ -1375,10 +1382,7 @@ next_ag:
 			}
 
 			/* can the agent take chats? */
-			if ((agent->state==CC_AGENT_FREE || agent->state==CC_AGENT_INCHAT)
-			&& (agent->media[CC_MEDIA_MSRP].sessions >
-				agent->ongoing_sessions[CC_MEDIA_MSRP])
-			) {
+			if ( can_agent_take_chats(agent) ){
 				call = cc_queue_pop_call_for_agent( data, agent,CC_MEDIA_MSRP);
 				if (call) {
 					if (msrp_dispatch_policy == CC_MSRP_POLICY_FULL_AGENT)
@@ -2125,11 +2129,9 @@ static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
 				MI_SSTR("Agent is not free/audio enabled"));
 		}
 	} else
-	if (call->media==CC_MEDIA_RTP) {
-		/* we need a FREE agent with calling */
-		if ( (agent->state!=CC_AGENT_FREE && agent->state!=CC_AGENT_INCHAT) ||
-		agent->media[CC_MEDIA_RTP].sessions <=
-		agent->ongoing_sessions[CC_MEDIA_RTP] ) {
+	if (call->media==CC_MEDIA_MSRP) {
+		/* we need an agent with available chatting */
+		if ( !can_agent_take_chats(agent) ) {
 			lock_release( data->lock );
 			return init_mi_error( 488,
 				MI_SSTR("Agent is not free/chat enabled"));

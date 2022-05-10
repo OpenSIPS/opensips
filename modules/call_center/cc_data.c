@@ -836,9 +836,7 @@ struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
 	if (media==CC_MEDIA_MSRP) {
 		/* for chat calls, we need an agent with spare sessions */
 		do {
-			if(agent->state==CC_AGENT_FREE || (agent->state==CC_AGENT_INCHAT
-			&& agent->ongoing_sessions[CC_MEDIA_MSRP] <
-			agent->media[CC_MEDIA_MSRP].sessions) ) {
+			if ( can_agent_take_chats(agent) ) {
 				/* iterate all skills of the agent */
 				for( n=0 ; n<agent->no_skills ; n++) {
 					if (agent->skills[n]==skill)

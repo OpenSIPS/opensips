@@ -244,6 +244,16 @@ struct cc_call {
 	((_call)->lower_in_queue || (_call)->higher_in_queue || \
 		(_data->queue.first==_call && _data->queue.last==_call))
 
+#define can_agent_take_chats( _agent) \
+	( _agent->state==CC_AGENT_FREE || \
+	  ( _agent->state==CC_AGENT_INCHAT \
+	    && _agent->media[CC_MEDIA_MSRP].sessions > \
+	      (_agent->ongoing_sessions[CC_MEDIA_MSRP] + \
+	      /* if agent has ongoing MSRP, keep one channel free here */ \
+	      (get_ticks() > _agent->wrapup_end_time)?1:0) \
+	  ) \
+	)
+
 struct cc_data* init_cc_data(void);
 
 void free_cc_data(struct cc_data *data);
