@@ -250,7 +250,7 @@ struct cc_call {
 	    && _agent->media[CC_MEDIA_MSRP].sessions > \
 	      (_agent->ongoing_sessions[CC_MEDIA_MSRP] + \
 	      /* if agent has ongoing MSRP, keep one channel free here */ \
-	      (get_ticks() > _agent->wrapup_end_time)?1:0) \
+	      ((get_ticks() > _agent->wrapup_end_time)?1:0) ) \
 	  ) \
 	)
 
