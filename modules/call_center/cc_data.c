@@ -321,27 +321,39 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
-		s.s = "ccf_dist_incalls";s.len = 15 ;
+		s.s = "ccf_dist_incalls";s.len = 16 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
 		name, &flow->st_dist_incalls, STAT_SHM_NAME)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
-		s.s = "ccf_answ_incalls";s.len = 15 ;
+		s.s = "ccf_answ_incalls";s.len = 16 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
 		name, &flow->st_answ_incalls, STAT_SHM_NAME)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
-		s.s = "ccf_aban_incalls";s.len = 15 ;
+		s.s = "ccf_answ_inchats";s.len = 16 ;
+		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+		name, &flow->st_answ_inchats, STAT_SHM_NAME)!=0 ) {
+			LM_ERR("failed to add stat variable\n");
+			goto error;
+		}
+		s.s = "ccf_aban_incalls";s.len = 16 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
 		name, &flow->st_aban_incalls, STAT_SHM_NAME)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
-		s.s = "ccf_onhold_calls";s.len = 15 ;
+		s.s = "ccf_onhold_calls";s.len = 16 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_onhold_calls, STAT_SHM_NAME)!=0 ) {
+		name, &flow->st_onhold_calls, STAT_SHM_NAME|STAT_NO_RESET)!=0 ) {
+			LM_ERR("failed to add stat variable\n");
+			goto error;
+		}
+		s.s = "ccf_onhold_chats";s.len = 16 ;
+		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+		name, &flow->st_onhold_chats, STAT_SHM_NAME|STAT_NO_RESET)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}
@@ -587,6 +599,12 @@ int add_cc_agent( struct cc_data *data, str *id, struct media_info *media,
 		s.s = "cca_answ_incalls";s.len = 16 ;
 		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
 		name, &agent->st_answ_incalls, STAT_SHM_NAME)!=0 ) {
+			LM_ERR("failed to add stat variable\n");
+			goto error;
+		}
+		s.s = "cca_answ_inchats";s.len = 16 ;
+		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+		name, &agent->st_answ_inchats, STAT_SHM_NAME)!=0 ) {
 			LM_ERR("failed to add stat variable\n");
 			goto error;
 		}

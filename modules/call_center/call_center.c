@@ -95,8 +95,10 @@ unsigned long stg_free_agents(unsigned short foo);
 stat_var *stg_incalls = 0;
 stat_var *stg_dist_incalls = 0;
 stat_var *stg_answ_incalls = 0;
+stat_var *stg_answ_inchats = 0;
 stat_var *stg_aban_incalls = 0;
 stat_var *stg_onhold_calls = 0;
+stat_var *stg_onhold_chats = 0;
 
 /* a default of 30 secs wrapup time for agents */
 unsigned int wrapup_time = 30;
@@ -218,6 +220,7 @@ static stat_export_t mod_stats[] = {
 	{"ccg_answered_incalls" ,   0,             &stg_answ_incalls             },
 	{"ccg_abandonned_incalls" , 0,             &stg_aban_incalls             },
 	{"ccg_onhold_calls",        STAT_NO_RESET, &stg_onhold_calls             },
+	{"ccg_onhold_chats",        STAT_NO_RESET, &stg_onhold_chats             },
 	{"ccg_free_agents",         STAT_IS_FUNC,  (stat_var**)stg_free_agents   },
 	{0,0,0}
 };
@@ -674,6 +677,10 @@ void handle_agent_reject(struct cc_call* call, int from_customer, int pickup_tim
 		{
 			update_stat( stg_onhold_calls, 1);
 			update_stat( call->flow->st_onhold_calls, 1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_onhold_chats, 1);
+				update_stat( call->flow->st_onhold_chats, 1);
+			}
 		}
 	}
 	cc_call_state = CC_CALL_NONE;
@@ -743,6 +750,10 @@ int b2bl_callback_agent(b2bl_cb_params_t *params, unsigned int event)
 	LM_DBG("** onhold-- Bridging [%p]\n", call);
 	update_stat( stg_onhold_calls, -1);
 	update_stat( call->flow->st_onhold_calls, -1);
+	if (call->media==CC_MEDIA_MSRP) {
+		update_stat( stg_onhold_chats, -1);
+		update_stat( call->flow->st_onhold_chats, -1);
+	}
 
 	LM_DBG("Bridge two calls [%p] - [%p]\n", call, call->agent);
 	cc_call_state = call->state;
@@ -787,6 +798,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 				LM_DBG("** onhold-- Destroy [%p]\n", call);
 				update_stat( stg_onhold_calls, -1);
 				update_stat( call->flow->st_onhold_calls, -1);
+				if (call->media==CC_MEDIA_MSRP) {
+					update_stat( stg_onhold_chats, -1);
+					update_stat( call->flow->st_onhold_chats, -1);
+				}
 			}
 			if (cs == CC_CALL_TOAGENT) {
 				/* call no longer on wait */
@@ -818,6 +833,11 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			update_stat( call->flow->st_answ_incalls, 1);
 			call->fst_flags |= FSTAT_ANSW;
 			update_stat( call->agent->st_answ_incalls, 1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_answ_inchats, 1);
+				update_stat( call->flow->st_answ_inchats, 1);
+				update_stat( call->agent->st_answ_inchats, 1);
+			}
 		}
 	}
 	
@@ -836,6 +856,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 			LM_DBG("** onhold-- BYE from customer [%p]\n", call);
 			update_stat( stg_onhold_calls, -1);
 			update_stat( call->flow->st_onhold_calls, -1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_onhold_chats, -1);
+				update_stat( call->flow->st_onhold_chats, -1);
+			}
 		}
 		/* Abandon: client was not sent to agent yet, or call still ringing
 		 * on agent side
@@ -918,6 +942,10 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		LM_DBG("** onhold-- Direct to agent [%p]\n", call);
 		update_stat( stg_onhold_calls, -1);
 		update_stat( call->flow->st_onhold_calls, -1);
+		if (call->media==CC_MEDIA_MSRP) {
+			update_stat( stg_onhold_chats, -1);
+			update_stat( call->flow->st_onhold_chats, -1);
+		}
 	}
 
 	/* send call to selected destination */
@@ -1197,6 +1225,10 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 		LM_DBG("** onhold++ Not to agent [%p]\n", call);
 		update_stat( stg_onhold_calls, +1);
 		update_stat( flow->st_onhold_calls, +1);
+		if (call->media==CC_MEDIA_MSRP) {
+			update_stat( stg_onhold_chats, +1);
+			update_stat( flow->st_onhold_chats, +1);
+		}
 		dec = 1;
 	}
 
@@ -1207,6 +1239,10 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param,
 			LM_DBG("** onhold-- Error [%p]\n", call);
 			update_stat( stg_onhold_calls, -1);
 			update_stat( flow->st_onhold_calls, -1);
+			if (call->media==CC_MEDIA_MSRP) {
+				update_stat( stg_onhold_chats, -1);
+				update_stat( call->flow->st_onhold_chats, -1);
+			}
 		}
 		pkg_free(leg.s);
 		goto error1;
@@ -1438,6 +1474,10 @@ next_ag:
 				LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
 				update_stat( stg_onhold_calls, -1);
 				update_stat( call->flow->st_onhold_calls, -1);
+				if (call->media==CC_MEDIA_MSRP) {
+					update_stat( stg_onhold_chats, -1);
+					update_stat( call->flow->st_onhold_chats, -1);
+				}
 			}else{
 				call->state = CC_CALL_PRE_TOAGENT;
 			}
@@ -1890,6 +1930,7 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 	data->avt_waittime = 0;
 	reset_stat( stg_dist_incalls );
 	reset_stat( stg_answ_incalls );
+	reset_stat( stg_answ_inchats );
 	reset_stat( stg_aban_incalls );
 
 	/* block access to data */
@@ -1900,8 +1941,8 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 		reset_stat( flow->st_incalls );
 		reset_stat( flow->st_dist_incalls );
 		reset_stat( flow->st_answ_incalls );
+		reset_stat( flow->st_answ_inchats );
 		reset_stat( flow->st_aban_incalls );
-		reset_stat( flow->st_onhold_calls );
 		flow->avg_call_duration = 0;
 		flow->processed_calls = 0;
 		flow->avg_waittime = 0;
@@ -1913,6 +1954,7 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 		for ( agent = data->agents[i] ; agent ; agent = agent->next ) {
 			reset_stat( agent->st_dist_incalls );
 			reset_stat( agent->st_answ_incalls );
+			reset_stat( agent->st_answ_inchats );
 			reset_stat( agent->st_aban_incalls );
 			agent->avg_talktime = 0;
 			agent->avg_talktime_no = 0;
@@ -2187,6 +2229,10 @@ static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
 		LM_DBG("** onhold-- Took out of the queue [%p]\n", call);
 		update_stat( stg_onhold_calls, -1);
 		update_stat( call->flow->st_onhold_calls, -1);
+		if (call->media==CC_MEDIA_MSRP) {
+			update_stat( stg_onhold_chats, -1);
+			update_stat( call->flow->st_onhold_chats, -1);
+		}
 	}else{
 		call->state = CC_CALL_PRE_TOAGENT;
 	}

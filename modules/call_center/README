@@ -773,18 +773,30 @@ cc_agent_login("agentX",0);
 
 1.6.1.5. ccg_answered_incalls
 
-   Total number of calls answered by agents. (counter type)
+   Total number of calls (audio/RTP and chat/MSRP) answered by
+   agents. (counter type)
 
-1.6.1.6. ccg_abandonned_incalls
+1.6.1.6. ccg_answered_inchats
+
+   Total number of chat/MSRP only calls answered by agents.
+   (counter type)
+
+1.6.1.7. ccg_abandonned_incalls
 
    Total number of calls terminated by caller before being
    answered by agents. (counter type)
 
-1.6.1.7. ccg_onhold_calls
+1.6.1.8. ccg_onhold_calls
 
-   Total number of calls in the queues (onhold). (realtime type)
+   Total number of calls (audio/RTP and chat/MSRP) in the queues
+   (onhold). (realtime type)
 
-1.6.1.8. ccg_free_agents
+1.6.1.9. ccg_onhold_chats
+
+   Total number of chat/MSRP only calls in the queues (onhold).
+   (realtime type)
+
+1.6.1.10. ccg_free_agents
 
    Total number of free agents (across all flows). (realtime type)
 
@@ -800,36 +812,46 @@ cc_agent_login("agentX",0);
 
 1.6.2.3. ccf_answ_incalls_flowID
 
-   Nnumber of calls from the flow answered by agents. (counter
-   type)
+   Nnumber of calls (audio/RTP and chat/MSRP) from the flow
+   answered by agents. (counter type)
 
-1.6.2.4. ccf_aban_incalls_flowID
+1.6.2.4. ccf_answ_incalls_flowID
+
+   Nnumber of chat/MSRP only calls from the flow answered by
+   agents. (counter type)
+
+1.6.2.5. ccf_aban_incalls_flowID
 
    Number of calls (from the flow) terminated by caller before
    being answered by agents. (counter type)
 
-1.6.2.5. ccf_onhold_incalls_flowID
+1.6.2.6. ccf_onhold_incalls_flowID
 
-   Number of calls (from the flow) which were put onhold. (counter
-   type)
+   Number of calls (audio/RTP and chat/MSRP) -from the flow- which
+   are onhold. (realtime type)
 
-1.6.2.6. ccf_queued_calls_flowID
+1.6.2.7. ccf_onhold_inchats_flowID
+
+   Number of chat/MSRP only calls -from the flow- which are
+   onhold. (realtime type)
+
+1.6.2.8. ccf_queued_calls_flowID
 
    Number of calls which are queued for this flow. (realtime type)
 
-1.6.2.7. ccf_free_agents_flowID
+1.6.2.9. ccf_free_agents_flowID
 
    Number of free agents serving this flow. (realtime type)
 
-1.6.2.8. ccf_etw_flowID
+1.6.2.10. ccf_etw_flowID
 
    Estimated Time to Wait for this flow. (realtime type)
 
-1.6.2.9. ccf_awt_flowID
+1.6.2.11. ccf_awt_flowID
 
    Avg. Wating Time for this flow. (realtime type)
 
-1.6.2.10. ccg_load_flowID
+1.6.2.12. ccg_load_flowID
 
    The load on the flow (number of queued calls versus number of
    logged agents). (realtime type)
@@ -842,14 +864,20 @@ cc_agent_login("agentX",0);
 
 1.6.3.2. cca_answ_incalls_agentID
 
-   Nnumber of calls answered by the agent. (counter type)
+   Number of calls (audio/RTP and chat/MSRP) answered by the
+   agent. (counter type)
 
-1.6.3.3. cca_aban_incalls_agentID
+1.6.3.3. cca_answ_inchats_agentID
+
+   Number of chat/MSRP only calls answered by the agent. (counter
+   type)
+
+1.6.3.4. cca_aban_incalls_agentID
 
    Number of calls (sent to this agent) terminated by caller
    before being answered by agents. (counter type)
 
-1.6.3.4. cca_att_agentID
+1.6.3.5. cca_att_agentID
 
    Avg. Talk Time for this agent (realtime type)
 

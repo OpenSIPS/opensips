@@ -70,8 +70,10 @@ struct cc_flow {
 	stat_var *st_incalls;
 	stat_var *st_dist_incalls;
 	stat_var *st_answ_incalls;
+	stat_var *st_answ_inchats;
 	stat_var *st_aban_incalls;
 	stat_var *st_onhold_calls;
+	stat_var *st_onhold_chats;
 	stat_var *st_queued_calls;
 	float avg_waittime;
 	unsigned long avg_waittime_no;
@@ -120,6 +122,7 @@ struct cc_agent {
 	/* statistics */
 	stat_var *st_dist_incalls;
 	stat_var *st_answ_incalls;
+	stat_var *st_answ_inchats;
 	stat_var *st_aban_incalls;
 	float avg_talktime;
 	unsigned long avg_talktime_no;

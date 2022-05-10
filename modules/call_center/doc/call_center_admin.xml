@@ -1013,7 +1013,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccg_answered_incalls" xreflabel="ccg_answered_incalls">
 		<title>ccg_answered_incalls</title>
 			<para>
-			Total number of calls answered by agents. (counter type)
+			Total number of calls (audio/RTP and chat/MSRP) answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section id="stat_ccg_answered_inchats" xreflabel="ccg_answered_inchats">
+		<title>ccg_answered_inchats</title>
+			<para>
+			Total number of chat/MSRP only calls answered by agents. (counter type)
 			</para>
 		</section>
 
@@ -1028,7 +1035,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccg_onhold_calls" xreflabel="ccg_onhold_calls">
 		<title>ccg_onhold_calls</title>
 			<para>
-			Total number of calls in the queues (onhold). (realtime type)
+			Total number of calls (audio/RTP and chat/MSRP) in the queues (onhold). (realtime type)
+			</para>
+		</section>
+
+		<section id="stat_ccg_onhold_chats" xreflabel="ccg_onhold_chats">
+		<title>ccg_onhold_chats</title>
+			<para>
+			Total number of chat/MSRP only calls in the queues (onhold). (realtime type)
 			</para>
 		</section>
 
@@ -1059,7 +1073,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccf_answ_incalls_flowID" xreflabel="ccf_answ_incalls_flowID">
 		<title>ccf_answ_incalls_flowID</title>
 			<para>
-			Nnumber of calls from the flow answered by agents. (counter type)
+			Nnumber of calls (audio/RTP and chat/MSRP) from the flow answered by agents. (counter type)
+			</para>
+		</section>
+
+		<section id="stat_ccf_answ_inchats_flowID" xreflabel="ccf_answ_incalls_flowID">
+		<title>ccf_answ_incalls_flowID</title>
+			<para>
+			Nnumber of chat/MSRP only calls from the flow answered by agents. (counter type)
 			</para>
 		</section>
 
@@ -1074,8 +1095,16 @@ cc_agent_login("agentX",0);
 		<section id="stat_ccf_onhold_incalls_flowID" xreflabel="ccf_onhold_incalls_flowID">
 		<title>ccf_onhold_incalls_flowID</title>
 			<para>
-			Number of calls (from the flow) which were put onhold.
-			 (counter type)
+			Number of calls (audio/RTP and chat/MSRP) -from the flow- which are onhold.
+			 (realtime type)
+			</para>
+		</section>
+
+		<section id="stat_ccf_onhold_inchats_flowID" xreflabel="ccf_onhold_inchats_flowID">
+		<title>ccf_onhold_inchats_flowID</title>
+			<para>
+			Number of chat/MSRP only calls -from the flow- which are onhold.
+			 (realtime type)
 			</para>
 		</section>
 
@@ -1128,7 +1157,14 @@ cc_agent_login("agentX",0);
 		<section id="stat_cca_answ_incalls_agentID" xreflabel="cca_answ_incalls_agentID">
 		<title>cca_answ_incalls_agentID</title>
 			<para>
-			Nnumber of calls answered by the agent. (counter type)
+			Number of calls (audio/RTP and chat/MSRP) answered by the agent. (counter type)
+			</para>
+		</section>
+
+		<section id="stat_cca_answ_inchats_agentID" xreflabel="cca_answ_inchats_agentID">
+		<title>cca_answ_inchats_agentID</title>
+			<para>
+			Number of chat/MSRP only calls answered by the agent. (counter type)
 			</para>
 		</section>
 
