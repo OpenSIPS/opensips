@@ -1687,11 +1687,6 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 	mi_item_t *resp_obj;
 	mi_item_t *agents_arr, *agent_item;
 	struct cc_agent *agent;
-	str state;
-	static str s_free={"free", 4};
-	static str s_wrapup={"wrapup", 6};
-	static str s_incall={"incall", 6};
-	static str s_inchat={"inchat", 6};
 	int i;
 
 	resp = init_mi_result_object(&resp_obj);
@@ -1731,21 +1726,43 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 					goto error;
 
 				switch ( agent->state ) {
-					case CC_AGENT_FREE:   state = s_free;   break;
-					case CC_AGENT_WRAPUP: state = s_wrapup; break;
-					case CC_AGENT_INCALL: state = s_incall; break;
-					case CC_AGENT_INCHAT: state = s_inchat; break;
-					default: state.s =0;  state.len = 0;
-				}
-				if (add_mi_string(agent_item, MI_SSTR("State"),
-					state.s, state.len) < 0)
-					goto error;
-				if ( agent->state==CC_AGENT_INCHAT ) {
+				case CC_AGENT_FREE:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("free")) < 0)
+						goto error;
+					break;
+				case CC_AGENT_WRAPUP:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("free")) < 0)
+						goto error;
+					if (add_mi_number(agent_item, MI_SSTR("Wrapup-ends"),
+					agent->wrapup_end_time-get_ticks() ) < 0)
+						goto error;
+					break;
+				case CC_AGENT_INCALL:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("incall")) < 0)
+						goto error;
+					break;
+				case CC_AGENT_INCHAT:
+					if (add_mi_string(agent_item, MI_SSTR("State"),
+					MI_SSTR("inchat")) < 0)
+						goto error;
 					if (add_mi_number(agent_item, MI_SSTR("Ongoing chats"),
 					agent->ongoing_sessions[CC_MEDIA_MSRP]) < 0)
 						goto error;
-					if (add_mi_number(agent_item, MI_SSTR("Supported chats"),
-					agent->media[CC_MEDIA_MSRP].sessions) < 0)
+					if (add_mi_number(agent_item, MI_SSTR("Free chats"),
+					agent->media[CC_MEDIA_MSRP].sessions -
+					agent->ongoing_sessions[CC_MEDIA_MSRP]) < 0)
+						goto error;
+					if (agent->wrapup_end_time>get_ticks())
+						if (add_mi_number(agent_item, MI_SSTR("Wrapup-ends"),
+						agent->wrapup_end_time-get_ticks() ) < 0)
+							goto error;
+					break;
+				default:
+					if (add_mi_number(agent_item, MI_SSTR("State"),
+					agent->state) < 0)
 						goto error;
 				}
 			}
