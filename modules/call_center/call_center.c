@@ -2131,9 +2131,9 @@ static mi_response_t *mi_dispatch_call_to_agent(const mi_params_t *params,
 	/* search for the call in the queue */
 	for (call=data->queue.first ; call ; call=call->lower_in_queue) {
 		/* match the call id */
-		if ( call->b2bua_id.len==0 || call->b2bua_id.len!=call_id.len ||
-		strncmp(call->b2bua_id.s, call_id.s, call_id.len) )
-			continue;
+		if ( call->b2bua_id.len && call->b2bua_id.len==call_id.len &&
+		strncmp(call->b2bua_id.s, call_id.s, call_id.len)==0 )
+			break;
 	}
 	if (call==NULL) {
 		lock_release( data->lock );
