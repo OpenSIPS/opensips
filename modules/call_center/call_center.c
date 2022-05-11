@@ -1323,7 +1323,7 @@ static int w_agent_login(struct sip_msg *req, str *agent_s, int *state)
 
 static void cc_timer_agents(unsigned int ticks, void* param)
 {
-	struct cc_agent *agent, *prev_agent, *retake_agent;
+	struct cc_agent *agent, *prev_agent;
 	struct cc_call  *call;
 	str out;
 	str dest;
@@ -1336,8 +1336,8 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 
 	/* iterate all agents to get update state and evaluate their
 	 * availability */
-	prev_agent = data->agents[CC_AG_ONLINE];
 	agent = data->agents[CC_AG_ONLINE];
+	prev_agent = data->agents[CC_AG_ONLINE];
 
 	do {
 
@@ -1353,8 +1353,10 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 		) {
 			agent->state = CC_AGENT_FREE;
 			agent_raise_event( agent, NULL);
-			move_cc_agent_to_end( data, agent, prev_agent);
 			/* move it to the end of the list*/
+			move_cc_agent_to_end( data, agent, prev_agent);
+			/* re-iterate */
+			agent = prev_agent;
 		}
 
 		/* next agent */
@@ -1369,15 +1371,13 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 	}
 
 
-	retake_agent = NULL;
-
-	/* asign calls/chats to the agents */
+	/* assign calls/chats to the agents */
 	do {
 
 		/* iterate and find one call/chat for each agent */
-		agent = retake_agent ? retake_agent : data->agents[CC_AG_ONLINE];
+		agent = data->agents[CC_AG_ONLINE];
+		prev_agent =  data->agents[CC_AG_ONLINE];
 		call = NULL;
-		retake_agent = NULL;
 
 		do {
 
@@ -1398,14 +1398,15 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 			if ( can_agent_take_chats(agent) ){
 				call = cc_queue_pop_call_for_agent( data, agent,CC_MEDIA_MSRP);
 				if (call) {
-					if (msrp_dispatch_policy == CC_MSRP_POLICY_FULL_AGENT)
-						retake_agent = agent;
+					if (msrp_dispatch_policy == CC_MSRP_POLICY_LB)
+						move_cc_agent_to_end( data, agent, prev_agent);
 					/* found a chat for the agent */
 					break;
 				}
 			}
 
 			/* next agent */
+			prev_agent = agent;
 			agent = agent->next;
 
 		}while(agent);
@@ -1460,7 +1461,7 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 			}
 
 			/* mark agent as used */
-			agent->state = call->media==CC_MEDIA_RTP ?
+			agent->state = (call->media==CC_MEDIA_RTP) ?
 				CC_AGENT_INCALL : CC_AGENT_INCHAT;
 			call->agent = agent;
 			call->agent->ref_cnt++;
@@ -1733,7 +1734,7 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 					break;
 				case CC_AGENT_WRAPUP:
 					if (add_mi_string(agent_item, MI_SSTR("State"),
-					MI_SSTR("free")) < 0)
+					MI_SSTR("wrapup")) < 0)
 						goto error;
 					if (add_mi_number(agent_item, MI_SSTR("Wrapup-ends"),
 					agent->wrapup_end_time-get_ticks() ) < 0)

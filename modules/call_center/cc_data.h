@@ -314,15 +314,17 @@ static inline void remove_cc_agent(struct cc_data* data,
 	else
 		prev_agent->next = agent->next;
 
-	if(agent->logged_in && data->last_online_agent == agent) {/* if agent was the last in the list */
-		if(data->agents[CC_AG_ONLINE] == NULL)
+	if (agent->logged_in && data->last_online_agent == agent) {
+		/* if agent was the last in the list */
+		if (data->agents[CC_AG_ONLINE] == NULL)
 			data->last_online_agent = NULL;
 		else {
-			if(prev_agent == agent) {
+			if (prev_agent == agent) {
 				LM_CRIT("last_online_agent pointer not correct"
 				 "- pointing to the first record in list but next not NULL\n");
 				/* search for the real last */
-				for(tmp_agent= data->agents[CC_AG_ONLINE]; tmp_agent; tmp_agent= tmp_agent->next)
+				for(tmp_agent= data->agents[CC_AG_ONLINE]; tmp_agent;
+				tmp_agent= tmp_agent->next)
 					data->last_online_agent = tmp_agent;
 			}
 			else
