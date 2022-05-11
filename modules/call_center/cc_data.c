@@ -1124,7 +1124,7 @@ struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
 	for(call_it=data->queue.first ; call_it ; call_it=call_it->lower_in_queue){
 		/* before taking a call out, be sure that call is fully initialized
 		 * from b2bua point of view (to avoid races) -> check the b2bua id */
-		if (call_it->media!=media && call_it->b2bua_id.len==0)
+		if ( call_it->media!=media || call_it->b2bua_id.len==0)
 			continue;
 		/* check the call skill against the agent skills */
 		for(i=0 ; i<agent->no_skills ; i++) {
