@@ -1779,18 +1779,18 @@ Status:: 0
      * N gateways loaded (N discarded), N carriers loaded (N
        discarded), N rules loaded (N discarded)
 
-   For separately reporting events related to the state changes
-   for the gateways and carriers, the module provides separate
-   identifiers (still one per partition). Why separate ones? The
-   reports on state changing may be verbous and there is the risk
-   of loose/discard important reports on reloads due to the high
+   For reporting events related to the state changes of the
+   gateways and carriers, the module provides separate identifiers
+   (still one per partition). Why separate ones? The reports on
+   state changing may be verbose and there is the risk of
+   loose/discard important reports on reloads due to the high
    number of logs on state changes;
 
    So, each partition will provide the identified
-   "partion_name;events" for reporting state changes of gateways
+   "partition_name;events" for reporting state changes of gateways
    and carriers, along with the reason of the change. This
    identifiers have a 200 records history before discarding the
-   all ones.
+   old ones.
 
    For how to access and use the Status/Report information, please
    see
