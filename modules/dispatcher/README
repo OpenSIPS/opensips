@@ -84,9 +84,10 @@ dispatcher Module
 
               1.6.1. E_DISPATCHER_STATUS
 
-        1.7. Installation and Running
+        1.7. Provided Status/Report Identifiers
+        1.8. Installation and Running
 
-              1.7.1. OpenSIPS config file
+              1.8.1. OpenSIPS config file
 
    2. Frequently Asked Questions
    3. Contributors
@@ -1234,9 +1235,47 @@ opensips-cli -x mi ds_reload
      * status - active if the destination gets activated or
        inactive if the destination is detected unresponsive.
 
-1.7. Installation and Running
+1.7. Provided Status/Report Identifiers
 
-1.7.1. OpenSIPS config file
+   The module provides the "dispatcher" Status/Report group, where
+   each partition is defined as a separate SR identifier.
+
+   The status of these identifiers reflects the readiness/status
+   of the cached data (if available or not when being loaded from
+   DB):
+     * -2 - no data at all (initial status)
+     * -1 - no data, initial loading in progress
+     * 1 - data loaded, partition ready
+     * 2 - data available, a reload in progress
+
+   In terms of reports/logs, the following events will be
+   reported:
+     * starting DB data loading
+     * DB data loading failed, discarding
+     * DB data loading successfully completed
+     * N destination loaded (N discarded)
+
+   For reporting events related to the state changes of the
+   destinations, the module provides separate identifiers (still
+   one per partition). Why separate ones? The reports on state
+   changing may be verbose and there is the risk of loose/discard
+   important reports on reloads due to the high number of logs on
+   state changes;
+
+   So, each partition will provide the identified
+   "partition_name;events" for reporting state changes of
+   destinations, along with the reason of the change. This
+   identifiers have a 200 records history before discarding the
+   old ones.
+
+   For how to access and use the Status/Report information, please
+   see
+   https://www.opensips.org/Documentation/Interface-StatusReport-3
+   -3.
+
+1.8. Installation and Running
+
+1.8.1. OpenSIPS config file
 
    Next picture displays a sample usage of dispatcher.
 

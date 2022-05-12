@@ -34,6 +34,7 @@
 #include "../../error.h"
 #include "../../trim.h"
 #include "../../route.h"
+#include "../../status_report.h"
 #include "../../mem/mem.h"
 #include "../../mod_fix.h"
 #include "../../db/db.h"
@@ -110,6 +111,10 @@ ds_db_head_t default_db_head = {
 	NULL
 };
 ds_db_head_t *ds_db_heads = NULL;
+
+/* status-report group for dispatcher partitions */
+void *ds_srg=NULL;
+
 
 /* may be used to avoid the undesired loading of the standard table */
 str df_part_override;
@@ -867,6 +872,12 @@ static int mod_init(void)
 		return E_CFG;
 	}
 
+	ds_srg = sr_register_group( CHAR_INT("dispatcher"), 0 /*not public*/);
+	if (ds_srg==NULL) {
+		LM_ERR("failed to create dispatcher group for 'status-report'");
+		return E_UNSPEC;
+	}
+
 	/* Creating partitions from head */
 	ds_db_head_t *head_it = ds_db_heads;
 	while (head_it){
@@ -894,7 +905,7 @@ static int mod_init(void)
 		}
 
 		/* do the actual data load */
-		if (ds_reload_db(partition)!=0) {
+		if (ds_reload_db(partition, 1)!=0) {
 			LM_ERR("failed to load data from DB\n");
 			return -1;
 		}
@@ -1264,17 +1275,21 @@ mi_response_t *ds_mi_set(const mi_params_t *params,
 	if (state==1) {
 		/* set active */
 		ret = ds_set_state(group, &sp, DS_INACTIVE_DST|DS_PROBING_DST,
-			0, partition);
+			0, partition, 1, 0, MI_SSTR("MI command"));
 	} else if (state==2) {
 		/* set probing */
-		ret = ds_set_state(group, &sp, DS_PROBING_DST, 1, partition);
+		ret = ds_set_state(group, &sp, DS_PROBING_DST, 1, partition,
+			1, 0, MI_SSTR("MI command"));
 		if (ret==0)
-			ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 0, partition);
+			ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 0, partition,
+				1, 0, MI_SSTR("MI command"));
 	} else {
 		/* set inactive */
-		ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 1, partition);
+		ret = ds_set_state(group, &sp, DS_INACTIVE_DST, 1, partition,
+			1, 0,MI_SSTR("MI command"));
 		if (ret == 0)
-			ret = ds_set_state(group, &sp, DS_PROBING_DST, 0, partition);
+			ret = ds_set_state(group, &sp, DS_PROBING_DST, 0, partition,
+				1, 0, MI_SSTR("MI command"));
 	}
 
 	if(ret!=0)
@@ -1355,7 +1370,7 @@ mi_response_t *ds_mi_reload(const mi_params_t *params,
 	ds_partition_t *part_it;
 
 	for (part_it = partitions; part_it; part_it = part_it->next)
-		if (ds_reload_db(part_it)<0)
+		if (ds_reload_db(part_it, 0)<0)
 			return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
 
 	if (ds_cluster_id && ds_cluster_sync() < 0)
@@ -1377,7 +1392,7 @@ mi_response_t *ds_mi_reload_1(const mi_params_t *params,
 
 	if (partition == NULL)
 		return init_mi_error(500, MI_SSTR(MI_UNK_PARTITION));
-	if (ds_reload_db(partition) < 0)
+	if (ds_reload_db(partition, 0) < 0)
 		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
 	
 	if (ds_cluster_id && ds_cluster_sync() < 0)

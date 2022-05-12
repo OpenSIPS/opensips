@@ -84,6 +84,9 @@ enum ds_pattern_type {
 
 int init_ds_data(ds_partition_t *partition)
 {
+#define PART_SR_EVENTS_SUFFIX  ";events"
+#define PART_SR_EVENTS_SUFFIX_LEN  (sizeof(PART_SR_EVENTS_SUFFIX)-1)
+
 	partition->data = (ds_data_t**)shm_malloc( sizeof(ds_data_t*) );
 	if (partition->data==NULL) {
 		LM_ERR("failed to allocate data holder in shm\n");
@@ -97,6 +100,33 @@ int init_ds_data(ds_partition_t *partition)
 		LM_CRIT("failed to init reader/writer lock\n");
 		return -1;
 	}
+
+	if (sr_register_identifier( ds_srg, STR2CI(partition->name),
+			SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
+		LM_ERR("failed to register status report identifier\n");
+		return -1;
+	}
+
+	/* status report stuff */
+	partition->sr_events_ident.s = shm_malloc(partition->name.len +
+		PART_SR_EVENTS_SUFFIX_LEN);
+	if (partition->sr_events_ident.s==NULL) {
+		LM_ERR("failed to allocate SR identifier name for events\n");
+		return -1;
+	}
+	memcpy(partition->sr_events_ident.s, partition->name.s,
+		partition->name.len);
+	memcpy(partition->sr_events_ident.s + partition->name.len,
+		PART_SR_EVENTS_SUFFIX , PART_SR_EVENTS_SUFFIX_LEN);
+	partition->sr_events_ident.len = partition->name.len +
+		PART_SR_EVENTS_SUFFIX_LEN;
+
+	if (sr_register_identifier( ds_srg, STR2CI(partition->sr_events_ident),
+			SR_STATUS_READY, NULL, 0, 200 ) ) {
+		LM_ERR("failed to register status report event identifier\n");
+		return -1;
+	}
+
 
 	return 0;
 }
@@ -994,6 +1024,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	db_res_t * res = NULL;
 	db_val_t * values;
 	db_row_t * rows;
+	int discarded_dst=0;
 
 	db_key_t query_cols[8] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
@@ -1020,6 +1051,9 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	}
 	memset( d_data, 0, sizeof(ds_data_t));
 
+	sr_add_report( ds_srg, STR2CI(partition->name),
+		CHAR_INT("starting DB data loading"), 0 /*is_public*/);
+
 	/*select the whole table and all the columns*/
 	if(partition->dbf.query(*partition->db_handle,0,0,0,query_cols,0,nr_cols,
 	0,&res) < 0) {
@@ -1043,6 +1077,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		/* id */
 		if (VAL_NULL(values)) {
 			LM_ERR("ds ID column cannot be NULL -> skipping\n");
+			discarded_dst++;
 			continue;
 		}
 		id = VAL_INT(values);
@@ -1104,6 +1139,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
+			discarded_dst++;
 			continue;
 		} else {
 			cnt++;
@@ -1120,27 +1156,47 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	}
 
 load_done:
+	/* do the reporting */
+	sr_add_report( ds_srg, STR2CI(partition->name),
+		CHAR_INT("DB data loading successfully completed"), 0 /*is_public*/);
+	sr_add_report_fmt( ds_srg, STR2CI(partition->name), 0 /*is_public*/,
+			"%d destinations loaded (%d discarded)",
+		cnt, discarded_dst);
+
 	partition->dbf.free_result(*partition->db_handle, res);
 	return d_data;
 
-error:
-	ds_destroy_data_set( d_data );
-	return NULL;
 error2:
-	ds_destroy_data_set( d_data );
 	partition->dbf.free_result(*partition->db_handle, res);
+error:
+	sr_add_report( ds_srg, STR2CI(partition->name),
+		CHAR_INT("DB data loading failed, discarding"), 0 /*is_public*/);
+	ds_destroy_data_set( d_data );
 	return NULL;
 }
 
 
-int ds_reload_db(ds_partition_t *partition)
+int ds_reload_db(ds_partition_t *partition, int initial)
 {
 	ds_data_t *old_data;
 	ds_data_t *new_data;
 
+	if (initial)
+		sr_set_status( ds_srg, STR2CI(partition->name),
+			SR_STATUS_LOADING_DATA, CHAR_INT("startup data loading"), 0);
+	else
+		sr_set_status( ds_srg, STR2CI(partition->name),
+			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
+
 	new_data = ds_load_data(partition, ds_persistent_state);
 	if (new_data==NULL) {
 		LM_ERR("failed to load the new data, dropping the reload\n");
+		if (initial)
+			sr_set_status( ds_srg, STR2CI(partition->name), SR_STATUS_NO_DATA,
+				CHAR_INT("no data loaded"), 0);
+		else
+			sr_set_status( ds_srg, STR2CI(partition->name), SR_STATUS_READY,
+				CHAR_INT("data available"), 0);
 		return -1;
 	}
 
@@ -1162,6 +1218,9 @@ int ds_reload_db(ds_partition_t *partition)
 
 	/* update the Black Lists with the new gateways */
 	populate_ds_bls( new_data->sets, partition->name);
+
+	sr_set_status( ds_srg, STR2CI(partition->name), SR_STATUS_READY,
+		CHAR_INT("data available"), 0);
 
 	return 0;
 }
@@ -2114,17 +2173,22 @@ int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 	if(mode==1) {
 		/* set as "active" */
 		ret = ds_set_state(group, &avp_value.s,
-				DS_INACTIVE_DST|DS_PROBING_DST, 0, partition);
+				DS_INACTIVE_DST|DS_PROBING_DST, 0, partition,
+				1, 0, MI_SSTR("script function ds_mark()"));
 	} else if(mode==2) {
 		/* set as "probing" */
-		ret = ds_set_state(group, &avp_value.s, DS_PROBING_DST, 1, partition);
+		ret = ds_set_state(group, &avp_value.s, DS_PROBING_DST, 1, partition,
+			1, 0, MI_SSTR("script function ds_mark()"));
 		if (ret == 0) ret = ds_set_state(group, &avp_value.s,
-				DS_INACTIVE_DST, 0, partition);
+				DS_INACTIVE_DST, 0, partition,
+				1, 0, MI_SSTR("script function ds_mark()"));
 	} else {
 		/* set as "inactive" */
-		ret = ds_set_state(group, &avp_value.s, DS_INACTIVE_DST, 1, partition);
+		ret = ds_set_state(group, &avp_value.s, DS_INACTIVE_DST, 1, partition,
+			1, 0, MI_SSTR("script function ds_mark()"));
 		if (ret == 0) ret = ds_set_state(group, &avp_value.s,
-				DS_PROBING_DST, 0, partition);
+			DS_PROBING_DST, 0, partition,
+			1, 0, MI_SSTR("script function ds_mark()"));
 	}
 
 	LM_DBG("mode [%d] grp [%d] dst [%.*s]\n", mode, group, avp_value.s.len,
@@ -2137,15 +2201,18 @@ int ds_mark_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 static str partition_str = str_init("partition");
 static str group_str = str_init("group");
 static str address_str = str_init("address");
+static str reason_str = str_init("reason");
 static str status_str = str_init("status");
 static str inactive_str = str_init("inactive");
 static str active_str = str_init("active");
 
 static void _ds_set_state(ds_set_p set, int idx, str *address, int state,
-	int type, ds_partition_t *partition, int do_repl, int raise_event)
+		int type, ds_partition_t *partition, int do_repl, int raise_event,
+		char *reason_s, int reason_len)
 {
 	evi_params_p list = NULL;
 	int old_flags;
+	str reason = {reason_s, reason_len};
 
 	/* remove the Probing/Inactive-State? Set the fail-count to 0. */
 	if (state == DS_PROBING_DST) {
@@ -2199,8 +2266,17 @@ static void _ds_set_state(ds_set_p set, int idx, str *address, int state,
 			 * disabled <> enabled -> update active info */
 			re_calculate_active_dsts( set );
 
-		if (raise_event && evi_probe_event(dispatch_evi_id)) {
-			if (!(list = evi_get_params()))
+		if (raise_event) {
+
+			sr_add_report_fmt( ds_srg, STR2CI( partition->sr_events_ident),
+				0 /*is_public*/,
+				"DESTINATION <%.*s>, set %d switched to [%.*s] due to %.*s\n",
+				address->len, address->s, set->id,
+				type?inactive_str.len:active_str.len,
+				type?inactive_str.s  :active_str.s,
+				reason.len, reason.s);
+
+			if (!evi_probe_event(dispatch_evi_id) || !(list=evi_get_params()))
 				return;
 
 			if (partition != default_partition &&
@@ -2225,6 +2301,12 @@ static void _ds_set_state(ds_set_p set, int idx, str *address, int state,
 				evi_free_params(list);
 				return;
 			}
+			if (evi_param_add_str(list, &reason_str, &reason)) {
+				LM_ERR("unable to add reason parameter\n");
+				evi_free_params(list);
+				return;
+			}
+
 			if (evi_raise_event(dispatch_evi_id, list)) {
 				LM_ERR("unable to send event\n");
 			}
@@ -2235,8 +2317,9 @@ static void _ds_set_state(ds_set_p set, int idx, str *address, int state,
 	} /* end 'if status changed' */
 }
 
-int ds_set_state_repl(int group, str *address, int state, int type,
-		ds_partition_t *partition, int do_repl, int is_sync)
+int ds_set_state(int group, str *address, int state, int type,
+		ds_partition_t *partition, int do_repl, int is_sync,
+		char *status_s, int status_len)
 {
 	int i=0;
 	ds_set_p idx = NULL;
@@ -2268,22 +2351,23 @@ int ds_set_state_repl(int group, str *address, int state, int type,
 					/* status has changed */
 					if (state & DS_INACTIVE_DST) {
 						_ds_set_state(idx, i, address, DS_INACTIVE_DST, 1,
-							partition, 0, 0);
+							partition, 0, 0, CHAR_INT_NULL);
 						_ds_set_state(idx, i, address, DS_PROBING_DST, 0,
-							partition, 0, 0);
+							partition, 0, 0, CHAR_INT_NULL);
 					} else if (state & DS_PROBING_DST) {
 						_ds_set_state(idx, i, address, DS_PROBING_DST, 1,
-							partition, 0, 0);
+							partition, 0, 0, CHAR_INT_NULL);
 						_ds_set_state(idx, i, address, DS_INACTIVE_DST, 0,
-							partition, 0, 0);
+							partition, 0, 0, CHAR_INT_NULL);
 					} else {  /* set active */
 						_ds_set_state(idx, i, address,
-							DS_INACTIVE_DST|DS_PROBING_DST, 0, partition, 0, 0);
+							DS_INACTIVE_DST|DS_PROBING_DST, 0, partition, 0, 0,
+							CHAR_INT_NULL);
 					}
 				}
 			} else
 				_ds_set_state(idx, i, address, state, type, partition,
-					do_repl, 1);
+					do_repl, 1, status_s, status_len);
 
 			lock_stop_read( partition->lock );
 			return 0;
@@ -2544,8 +2628,9 @@ static void ds_options_callback( struct cell *t, int type,
 		/* Set the according entry back to "Active":
 		 *  remove the Probing/Inactive Flag and reset the failure counter. */
 		if (ds_set_state(cb_param->set_id, &uri,
-					DS_INACTIVE_DST|DS_PROBING_DST|DS_RESET_FAIL_DST, 0,
-					cb_param->partition) != 0)
+			DS_INACTIVE_DST|DS_PROBING_DST|DS_RESET_FAIL_DST, 0,
+			cb_param->partition, 1, 0, MI_SSTR("200 OK probing reply")
+					) != 0)
 		{
 			LM_ERR("Setting the state failed (%.*s, group %d)\n", uri.len,
 					uri.s, cb_param->set_id);
@@ -2558,7 +2643,7 @@ static void ds_options_callback( struct cell *t, int type,
 	(ps->code == 408 || !check_options_rplcode(ps->code)))
 	{
 		if (ds_set_state(cb_param->set_id, &uri, DS_PROBING_DST, 1,
-					cb_param->partition) != 0)
+			cb_param->partition, 1, 0, MI_SSTR("negative probing reply")) != 0)
 		{
 			LM_ERR("Setting the probing state failed (%.*s, group %d)\n",
 					uri.len, uri.s, cb_param->set_id);

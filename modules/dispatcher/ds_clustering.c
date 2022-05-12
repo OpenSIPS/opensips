@@ -133,8 +133,8 @@ static int ds_status_update(bin_packet_t *packet, int is_sync)
 	if (partition == NULL)
 		return -1;
 
-	if (ds_set_state_repl( group, &address, state, type, partition,
-		0 /*no repl*/, is_sync) < 0)
+	if (ds_set_state( group, &address, state, type, partition,
+		0 /*no repl*/, is_sync, MI_SSTR("replicated info")) < 0)
 		return -1;
 
 	return 0;
