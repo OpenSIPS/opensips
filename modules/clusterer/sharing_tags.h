@@ -31,9 +31,12 @@ int shtag_modparam_func(modparam_t type, void *val);
 
 int shtag_init_list(void);
 
+int shtag_init_reporting(void);
+
 void shtag_validate_list(void);
 
-int handle_shtag_active(bin_packet_t *packet, int cluster_id);
+int handle_shtag_active(bin_packet_t *packet, int cluster_id,
+		int source_id);
 
 int send_shtag_active_info(int c_id, str *tag_name, int node_id);
 
@@ -50,7 +53,10 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 /* API functions */
 int shtag_get(str *tag_name, int cluster_id);
 
-int shtag_activate(str *tag_name, int cluster_id);
+int shtag_activate_api(str *tag_name, int cluster_id);
+
+int shtag_activate(str *tag_name, int cluster_id,
+		char *reason_s, int reason_len);
 
 str** shtag_get_all_active(int c_id);
 

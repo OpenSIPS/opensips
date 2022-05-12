@@ -31,6 +31,7 @@
 #include "../../mi/mi.h"
 #include "../../timer.h"
 #include "../../bin_interface.h"
+#include "../../status_report.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -62,6 +63,9 @@ str description_col = str_init("description");
 
 extern db_con_t *db_hdl;
 extern db_func_t dr_dbf;
+
+/* status-report group for clusterer */
+void *cl_srg=NULL;
 
 /* module interface functions */
 static int mod_init(void);
@@ -482,8 +486,15 @@ static int mod_init(void)
 		return -1;
 	}
 
+	cl_srg = sr_register_group( CHAR_INT("clusterer"), 0 /*not public*/);
+	if (cl_srg==NULL) {
+		LM_ERR("failed to create clusterer group for 'status-report'");
+		return -1;
+	}
+
 	/* check if the cluster IDs in the the sharing tag list are valid */
 	shtag_init_list();
+	shtag_init_reporting();
 	shtag_validate_list();
 
 	return 0;
@@ -1367,7 +1378,7 @@ int load_clusterer(struct clusterer_binds *binds)
 	binds->sync_chunk_start = cl_sync_chunk_start;
 	binds->sync_chunk_iter = cl_sync_chunk_iter;
 	binds->shtag_get = shtag_get;
-	binds->shtag_activate = shtag_activate;
+	binds->shtag_activate = shtag_activate_api;
 	binds->shtag_get_all_active = shtag_get_all_active;
 	binds->shtag_register_callback = shtag_register_callback;
 	binds->shtag_get_sync_status = shtag_get_sync_status;

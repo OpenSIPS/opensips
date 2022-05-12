@@ -72,8 +72,10 @@ CLUSTERER Module
               1.8.1. E_CLUSTERER_REQ_RECEIVED
               1.8.2. E_CLUSTERER_RPL_RECEIVED
               1.8.3. E_CLUSTERER_NODE_STATE_CHANGED
+              1.8.4. E_CLUSTERER_SHARING_TAG_CHANGED
 
-        1.9. Usage Example
+        1.9. Provided Status/Report Identifiers
+        1.10. Usage Example
 
    2. Developer Guide
 
@@ -983,7 +985,36 @@ f-repl 1
      * new_state - The new state of the node, with the possible
        values: 0 - down, 1 - up.
 
-1.9. Usage Example
+1.8.4.  E_CLUSTERER_SHARING_TAG_CHANGED
+
+   This event is raised when the state of a sharing tag changes.
+
+   Parameters:
+     * name - The name of the sharing tag.
+     * cluster_id - The cluster ID.
+     * node_id - The ID of the node.
+     * state - The new state of the sharing tag, the possible
+       values: "active" or "backup".
+     * reason - short text describing what triggered the change of
+       the state, like a another node stepping as active, an MI
+       command or script variable.
+
+1.9. Provided Status/Report Identifiers
+
+   The module provides the "clusterer" Status/Report group used so
+   far only for reporting purposes.
+
+   The "sharing_tags" identifier is provided for reporting state
+   changes of the sharing_tags (between active and backup), along
+   with the reason of the change. This identifier have a 200
+   records history before discarding the old ones.
+
+   For how to access and use the Status/Report information, please
+   see
+   https://www.opensips.org/Documentation/Interface-StatusReport-3
+   -3.
+
+1.10. Usage Example
 
    This section provides an usage example for replicating
    ratelimit pipes between two OpenSIPS instances. It uses the

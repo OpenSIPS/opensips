@@ -23,9 +23,12 @@
 #include "../../str.h"
 #include "../../rw_locking.h"
 #include "../../bin_interface.h"
+#include "../../status_report.h"
+#include "../../evi/evi.h"
 #include "clusterer.h"
 #include "node_info.h"
 #include "sharing_tags.h"
+
 
 
 struct n_send_info {
@@ -62,6 +65,13 @@ static struct sharing_tag **shtags_list = NULL;
 static rw_lock_t *shtags_lock = NULL;
 
 static struct shtag_cb *shtag_cb_list=NULL;
+
+static str cl_sh_event = str_init("E_CLUSTERER_SHARING_TAG_CHANGED");
+static event_id_t cl_sh_evi_id;
+
+static str sh_sr_ident = str_init("sharing_tags");
+static str sh_active_str = str_init("active");
+static str sh_backup_str = str_init("backup");
 
 
 int shtag_register_callback(str *tag_name, int c_id, void *param,
@@ -203,19 +213,102 @@ static struct sharing_tag *shtag_get_unsafe(str *tag_name, int c_id)
 
 int shtag_init_list(void)
 {
-	if (shtags_list==NULL) {
-		if ((shtags_list = shm_malloc(sizeof *shtags_list)) == NULL) {
-			LM_CRIT("No more shm memory\n");
-			return -1;
-		}
-		*shtags_list = NULL;
+	if (shtags_list)
+		return 0;
 
-		if ((shtags_lock = lock_init_rw()) == NULL) {
-			LM_CRIT("Failed to init lock\n");
-			return -1;
-		}
+	if ((shtags_list = shm_malloc(sizeof *shtags_list)) == NULL) {
+		LM_CRIT("No more shm memory\n");
+		return -1;
 	}
+	*shtags_list = NULL;
+
+	if ((shtags_lock = lock_init_rw()) == NULL) {
+		LM_CRIT("Failed to init lock\n");
+		return -1;
+	}
+
 	return 0;
+}
+
+
+int shtag_init_reporting(void)
+{
+	if (sr_register_identifier( cl_srg, STR2CI(sh_sr_ident),
+			SR_STATUS_READY, CHAR_INT_NULL, 200 ) ) {
+		LM_ERR("failed to register status report identifier\n");
+		return -1;
+	}
+
+	cl_sh_evi_id = evi_publish_event(cl_sh_event);
+	if (cl_sh_evi_id == EVI_ERROR) {
+		LM_ERR("cannot register %.*s event\n", cl_sh_event.len, cl_sh_event.s);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static void report_shtag_change(str *tag_name, int cluster_id, int state,
+		char *reason_s, int reason_len)
+{
+	static str cl_sh_name_str = str_init("name");
+	static str cl_sh_cluster_str = str_init("cluster");
+	static str cl_sh_state_str = str_init("state");
+	static str cl_sh_reason_str = str_init("reason");
+	evi_params_p list;
+	str *txt, reason;
+
+	if (state==SHTAG_STATE_ACTIVE) {
+		txt = &sh_active_str;
+	} else {
+		txt = &sh_backup_str;
+	}
+
+	reason.s = reason_s;
+	reason.len = reason_len;
+
+	sr_add_report_fmt( cl_srg, STR2CI(sh_sr_ident), 0 /*is_public*/,
+		"TAG <%.*s>, cluster %d, became %.*s due to %.*s",
+		tag_name->len, tag_name->s, cluster_id,
+		txt->len, txt->s, reason.len, reason.s);
+
+	if (cl_sh_evi_id == EVI_ERROR || !evi_probe_event(cl_sh_evi_id))
+		return;
+
+	list = evi_get_params();
+	if (!list) {
+		LM_ERR("cannot create event params\n");
+		return;
+	}
+
+	if (evi_param_add_str(list, &cl_sh_name_str, tag_name) < 0) {
+		LM_ERR("cannot add tag name\n");
+		goto error;
+	}
+
+	if (evi_param_add_int(list, &cl_sh_cluster_str, &cluster_id) < 0) {
+		LM_ERR("cannot add cluster ID\n");
+		goto error;
+	}
+
+	if (evi_param_add_str(list, &cl_sh_state_str, txt) < 0) {
+		LM_ERR("cannot add state\n");
+		goto error;
+	}
+
+	if (evi_param_add_str(list, &cl_sh_reason_str, &reason) < 0) {
+		LM_ERR("cannot add reason\n");
+		goto error;
+	}
+
+	if (evi_raise_event(cl_sh_evi_id, list)) {
+		LM_ERR("unable to send dr event\n");
+	}
+	return;
+
+error:
+	evi_free_params(list);
 }
 
 
@@ -565,7 +658,13 @@ static int shtag_send_active_info(int c_id, str *tag_name, int node_id)
 }
 
 
-int shtag_activate(str *tag_name, int cluster_id)
+int shtag_activate_api(str *tag_name, int cluster_id)
+{
+	return shtag_activate( tag_name, cluster_id, MI_SSTR("internal API call"));
+}
+
+
+int shtag_activate(str *tag_name, int cluster_id, char *reason, int reason_len)
 {
 	struct sharing_tag *tag;
 	int lock_old_flag;
@@ -629,6 +728,9 @@ int shtag_activate(str *tag_name, int cluster_id)
 
 		/* run the callbacks */
 		shtag_run_callbacks( tag_name, SHTAG_STATE_ACTIVE, cluster_id);
+
+		report_shtag_change( tag_name, cluster_id, SHTAG_STATE_ACTIVE,
+			reason, reason_len);
 	} else
 		lock_stop_sw_read(shtags_lock);
 
@@ -711,9 +813,10 @@ static void free_active_msgs_info(struct sharing_tag *tag)
 }
 
 
-int handle_shtag_active(bin_packet_t *packet, int cluster_id)
+int handle_shtag_active(bin_packet_t *packet, int cluster_id, int source_id)
 {
-	str tag_name;
+	char buf[27];
+	str tag_name, reason = {buf,0};
 	struct sharing_tag *tag;
 	int old_state;
 
@@ -739,8 +842,14 @@ int handle_shtag_active(bin_packet_t *packet, int cluster_id)
 
 	lock_stop_write(shtags_lock);
 
-	if (old_state!=SHTAG_STATE_BACKUP)
+	if (old_state!=SHTAG_STATE_BACKUP) {
 		shtag_run_callbacks( &tag_name, SHTAG_STATE_BACKUP, cluster_id);
+
+		reason.len = snprintf( reason.s, 26,
+			"cluster broadcast from %d", source_id);
+		report_shtag_change( &tag_name, cluster_id, SHTAG_STATE_BACKUP,
+			STR2CI(reason) );
+	}
 
 	return 0;
 }
@@ -836,7 +945,7 @@ mi_response_t *shtag_mi_set_active(const mi_params_t *params,
 	}
 	lock_stop_read(cl_list_lock);
 
-	if (shtag_activate( &tag, c_id)<0) {
+	if (shtag_activate( &tag, c_id, MI_SSTR("MI command"))<0) {
 		LM_ERR("Failed set active the tag [%.*s/%d] \n",
 			tag.len, tag.s, c_id);
 		return init_mi_error(500, MI_SSTR("Internal failure when activating "
@@ -927,7 +1036,8 @@ int var_set_sh_tag(struct sip_msg* msg, pv_param_t *param, int op,
 		return 0;
 	}
 
-	if (shtag_activate( &v_name->shtag, v_name->cluster_id)==-1) {
+	if (shtag_activate( &v_name->shtag, v_name->cluster_id, 
+	MI_SSTR("script variable"))==-1) {
 		LM_ERR("failed to set sharing tag <%.*s/%d> to new state %d\n",
 			v_name->shtag.len, v_name->shtag.s, v_name->cluster_id, state);
 		return -1;

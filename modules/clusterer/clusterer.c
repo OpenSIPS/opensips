@@ -1066,7 +1066,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		else if (packet_type == CLUSTERER_MI_CMD)
 			handle_cl_mi_msg(packet);
 		else if (packet_type == CLUSTERER_SHTAG_ACTIVE)
-			handle_shtag_active(packet, cluster_id);
+			handle_shtag_active(packet, cluster_id, source_id);
 		else if (packet_type == CLUSTERER_SYNC_REQ)
 			handle_sync_request(packet, cl, node);
 		else if (packet_type == CLUSTERER_SYNC || packet_type == CLUSTERER_SYNC_END)

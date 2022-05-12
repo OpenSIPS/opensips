@@ -1250,7 +1250,60 @@ $ opensips-cli -x mi clusterer_list_cap
 			</para></listitem>
 		</itemizedlist>
 	</section>
+
+	<section id="event_E_CLUSTERER_SHARING_TAG_CHANGED" xreflabel="E_CLUSTERER_SHARING_TAG_CHANGED">
+		<title>
+		<function moreinfo="none">E_CLUSTERER_SHARING_TAG_CHANGED</function>
+		</title>
+		<para>
+			This event is raised when the state of a sharing tag changes.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>name</emphasis> - The name of the sharing tag.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cluster_id</emphasis> - The cluster ID.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>node_id</emphasis> - The ID of the node.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>state</emphasis> - The new state of the sharing tag,
+				the possible values: "active" or "backup".
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - short text describing what
+				triggered the change of the state, like a another node
+				stepping as active, an MI command or script variable.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
 </section>
+
+<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
+	<title>Provided Status/Report Identifiers</title>
+
+	<para>
+	The module provides the "clusterer" Status/Report group used so
+	far only for reporting purposes.
+	</para>
+	<para>
+	The "sharing_tags" identifier is provided for reporting state changes
+	of the sharing_tags (between active and backup), along with the reason
+	of the change. This identifier have a 200 records history before 
+	discarding the old ones.
+	</para>
+	<para>
+	For how to access and use the Status/Report information, please see
+	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	</para>
+
+</section>
+
+
 
 <section>
 	<title>Usage Example</title>
