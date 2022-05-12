@@ -4,7 +4,7 @@ CREATE TABLE cc_flows (
     flowid VARCHAR(64) NOT NULL,
     priority INTEGER DEFAULT 256 NOT NULL,
     skill VARCHAR(64) NOT NULL,
-    prependcid VARCHAR(32) NOT NULL,
+    prependcid VARCHAR(32) DEFAULT NULL,
     max_wrapup_time INTEGER DEFAULT 0 NOT NULL,
     dissuading_hangup INTEGER DEFAULT 0 NOT NULL,
     dissuading_onhold_th INTEGER DEFAULT 0 NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE cc_flows (
     dissuading_qsize_th INTEGER DEFAULT 0 NOT NULL,
     message_welcome VARCHAR(128) DEFAULT NULL,
     message_queue VARCHAR(128) NOT NULL,
-    message_dissuading VARCHAR(128) NOT NULL,
-    message_flow_id VARCHAR(128),
+    message_dissuading VARCHAR(128) DEFAULT NULL,
+    message_flow_id VARCHAR(128) DEFAULT NULL,
     CONSTRAINT cc_flows_unique_flowid UNIQUE (flowid)
 );
 
@@ -33,7 +33,7 @@ CREATE TABLE cc_agents (
 );
 
 ALTER SEQUENCE cc_agents_id_seq MAXVALUE 2147483647 CYCLE;
-INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
+INSERT INTO version (table_name, table_version) values ('cc_cdrs','2');
 CREATE TABLE cc_cdrs (
     id SERIAL PRIMARY KEY NOT NULL,
     caller VARCHAR(64) NOT NULL,

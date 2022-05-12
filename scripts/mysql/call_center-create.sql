@@ -4,7 +4,7 @@ CREATE TABLE cc_flows (
     flowid CHAR(64) NOT NULL,
     priority INT(11) UNSIGNED DEFAULT 256 NOT NULL,
     skill CHAR(64) NOT NULL,
-    prependcid CHAR(32) NOT NULL,
+    prependcid CHAR(32) DEFAULT NULL,
     max_wrapup_time INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     dissuading_hangup INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     dissuading_onhold_th INT(11) UNSIGNED DEFAULT 0 NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE cc_flows (
     dissuading_qsize_th INT(11) UNSIGNED DEFAULT 0 NOT NULL,
     message_welcome CHAR(128) DEFAULT NULL,
     message_queue CHAR(128) NOT NULL,
-    message_dissuading CHAR(128) NOT NULL,
-    message_flow_id CHAR(128),
+    message_dissuading CHAR(128) DEFAULT NULL,
+    message_flow_id CHAR(128) DEFAULT NULL,
     CONSTRAINT unique_flowid UNIQUE (flowid)
 ) ENGINE=InnoDB;
 
@@ -31,7 +31,7 @@ CREATE TABLE cc_agents (
     CONSTRAINT unique_agentid UNIQUE (agentid)
 ) ENGINE=InnoDB;
 
-INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
+INSERT INTO version (table_name, table_version) values ('cc_cdrs','2');
 CREATE TABLE cc_cdrs (
     id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
     caller CHAR(64) NOT NULL,

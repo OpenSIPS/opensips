@@ -4,7 +4,7 @@ CREATE TABLE cc_flows (
     flowid VARCHAR2(64),
     priority NUMBER(10) DEFAULT 256 NOT NULL,
     skill VARCHAR2(64),
-    prependcid VARCHAR2(32),
+    prependcid VARCHAR2(32) DEFAULT NULL,
     max_wrapup_time NUMBER(10) DEFAULT 0 NOT NULL,
     dissuading_hangup NUMBER(10) DEFAULT 0 NOT NULL,
     dissuading_onhold_th NUMBER(10) DEFAULT 0 NOT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE cc_flows (
     dissuading_qsize_th NUMBER(10) DEFAULT 0 NOT NULL,
     message_welcome VARCHAR2(128) DEFAULT NULL,
     message_queue VARCHAR2(128),
-    message_dissuading VARCHAR2(128),
-    message_flow_id VARCHAR2(128),
+    message_dissuading VARCHAR2(128) DEFAULT NULL,
+    message_flow_id VARCHAR2(128) DEFAULT NULL,
     CONSTRAINT cc_flows_unique_flowid  UNIQUE (flowid)
 );
 
@@ -47,7 +47,7 @@ END cc_agents_tr;
 /
 BEGIN map2users('cc_agents'); END;
 /
-INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
+INSERT INTO version (table_name, table_version) values ('cc_cdrs','2');
 CREATE TABLE cc_cdrs (
     id NUMBER(10) PRIMARY KEY,
     caller VARCHAR2(64),

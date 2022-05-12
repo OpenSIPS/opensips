@@ -10,7 +10,7 @@ carrierfailureroute:2
 carrierroute:3
 cc_agents:2
 cc_calls:3
-cc_cdrs:1
+cc_cdrs:2
 cc_flows:3
 closeddial:1
 clusterer:4
