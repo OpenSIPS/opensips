@@ -47,6 +47,7 @@ extern rw_lock_t *reload_lock;
 struct head_db {
 	str db_url;
 	str partition;
+	str sr_events_ident;  /* SR identifier for enable/disable events */
 	db_func_t db_funcs;
 	db_con_t **db_con;
 	str drd_table; /* drd_table name extracted from database */

@@ -638,6 +638,7 @@ static int check_options_rplcode(int code)
 static str dr_partition_str = str_init("partition");
 static str dr_gwid_str = str_init("gwid");
 static str dr_address_str = str_init("address");
+static str dr_reason_str = str_init("reason");
 static str dr_status_str = str_init("status");
 static str dr_inactive_str = str_init("inactive");
 static str dr_active_str = str_init("active");
@@ -645,10 +646,32 @@ static str dr_disabled_str = str_init("disabled MI");
 static str dr_probing_str = str_init("probing");
 
 
-void dr_raise_event(struct head_db *p, pgw_t *gw)
+void dr_raise_event(struct head_db *p, pgw_t *gw,
+		char *reason_s, int reason_len)
 {
 	evi_params_p list;
-	str *txt;
+	str *txt, reason;
+
+	if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
+		if (gw->flags&DR_DST_STAT_NOEN_FLAG)
+			txt = &dr_disabled_str;
+		else if (gw->flags&DR_DST_PING_DSBL_FLAG)
+			txt = &dr_probing_str;
+		else
+			txt = &dr_inactive_str;
+	} else {
+		txt = &dr_active_str;
+	}
+
+	reason.s = reason_s;
+	reason.len = reason_len;
+
+
+	sr_add_report_fmt( dr_srg, STR2CI( p->sr_events_ident), 0 /*is_public*/,
+		"GW <%.*s>/%.*s switched to [%.*s] due to %.*s\n",
+		gw->id.len, gw->id.s, gw->ip_str.len, gw->ip_str.s,
+		txt->len, txt->s, reason.len, reason.s);
+
 
 	if (dr_evi_id == EVI_ERROR || !evi_probe_event(dr_evi_id))
 		return;
@@ -674,19 +697,13 @@ void dr_raise_event(struct head_db *p, pgw_t *gw)
 		goto error;
 	}
 
-	if (gw->flags&DR_DST_STAT_DSBL_FLAG) {
-		if (gw->flags&DR_DST_STAT_NOEN_FLAG)
-			txt = &dr_disabled_str;
-		else if (gw->flags&DR_DST_PING_DSBL_FLAG)
-			txt = &dr_probing_str;
-		else
-			txt = &dr_inactive_str;
-	} else {
-		txt = &dr_active_str;
-	}
-
 	if (evi_param_add_str(list, &dr_status_str, txt) < 0) {
 		LM_ERR("cannot add state\n");
+		goto error;
+	}
+
+	if (evi_param_add_str(list, &dr_reason_str, &reason) < 0) {
+		LM_ERR("cannot add reason\n");
 		goto error;
 	}
 
@@ -700,13 +717,37 @@ error:
 }
 
 
-static void dr_gw_status_changed(struct head_db *p, pgw_t *gw)
+void dr_raise_cr_event(struct head_db *p, pcr_t *cr,
+		char *reason_s, int reason_len)
+{
+	str *txt, reason;
+
+	if (cr->flags&DR_CR_FLAG_IS_OFF) {
+		txt = &dr_disabled_str;
+	} else {
+		txt = &dr_active_str;
+	}
+
+	reason.s = reason_s;
+	reason.len = reason_len;
+
+	sr_add_report_fmt( dr_srg, STR2CI( p->sr_events_ident), 0 /*is_public*/,
+		"CARRIER <%.*s> switched to [%.*s] due to %.*s\n",
+		cr->id.len, cr->id.s,
+		txt->len, txt->s, reason.len, reason.s);
+
+	return;
+}
+
+
+static void dr_gw_status_changed(struct head_db *p, pgw_t *gw,
+		char *reason, int reason_len)
 {
 	/* do Cluster replication*/
 	replicate_dr_gw_status_event( p, gw);
 
 	/* raise the event */
-	dr_raise_event( p, gw);
+	dr_raise_event( p, gw, reason, reason_len);
 }
 
 
@@ -736,7 +777,8 @@ static int dr_disable(struct sip_msg *req, struct head_db * current_partition)
 		LM_DBG("partition : %.*s\n", current_partition->partition.len,
 				current_partition->partition.s);
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
-		dr_gw_status_changed( current_partition, gw);
+		dr_gw_status_changed( current_partition, gw, 
+			MI_SSTR("script dr_disable"));
 	}
 
 	lock_stop_read( current_partition->ref_lock );
@@ -780,13 +822,15 @@ static void dr_probing_callback( struct cell *t, int type,
 			goto end;
 		gw->flags &= ~DR_DST_STAT_DSBL_FLAG;
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
-		dr_gw_status_changed( current_partition, gw);
+		dr_gw_status_changed( current_partition, gw,
+			MI_SSTR("200 OK probing reply"));
 		goto end;
 	}
 
 	if (code>=400 && (gw->flags&DR_DST_STAT_DSBL_FLAG)==0) {
 		gw->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
-		dr_gw_status_changed( current_partition, gw);
+		dr_gw_status_changed( current_partition, gw,
+			MI_SSTR("negative probing reply"));
 		goto end;
 	}
 
@@ -887,7 +931,8 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 				LM_ERR("unable to execute dialog, disabling destination...\n");
 				if ( (dst->flags&DR_DST_STAT_DSBL_FLAG)==0 ) {
 					dst->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
-					dr_gw_status_changed( it, dst);
+					dr_gw_status_changed( it, dst,
+						MI_SSTR("failure to send probe"));
 				}
 
 				shm_free(params);
@@ -1364,6 +1409,8 @@ static void cleanup_head_db(struct head_db *hd)
 		lock_destroy_rw( ref_lock );
 	if (hd->partition.s)
 		shm_free(hd->partition.s);
+	if (hd->sr_events_ident.s)
+		shm_free(hd->sr_events_ident.s);
 	if (hd->db_url.s)
 		shm_free( hd->db_url.s );
 	if (hd->drd_table.s && hd->drd_table.s != drd_table.s)
@@ -1557,6 +1604,41 @@ void update_cache_info(void)
 		clean_head_cache(free_h);
 	}
 }
+
+
+static int init_partition_status_report(struct head_db *part)
+{
+#define PART_SR_EVENTS_SUFFIX  ";events"
+#define PART_SR_EVENTS_SUFFIX_LEN  (sizeof(PART_SR_EVENTS_SUFFIX)-1)
+
+	if (sr_register_identifier( dr_srg, STR2CI(part->partition),
+			SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
+		LM_ERR("failed to register status report identifier\n");
+		return -1;
+	}
+
+	part->sr_events_ident.s = shm_malloc(part->partition.len +
+		PART_SR_EVENTS_SUFFIX_LEN);
+	if (part->sr_events_ident.s==NULL) {
+		LM_ERR("failed to allocate SR identifier name for events\n");
+		return -1;
+	}
+	memcpy(part->sr_events_ident.s, part->partition.s,
+		part->partition.len);
+	memcpy(part->sr_events_ident.s + part->partition.len,
+		PART_SR_EVENTS_SUFFIX , PART_SR_EVENTS_SUFFIX_LEN);
+	part->sr_events_ident.len = part->partition.len +
+		PART_SR_EVENTS_SUFFIX_LEN;
+
+	if (sr_register_identifier( dr_srg, STR2CI(part->sr_events_ident),
+			SR_STATUS_READY, NULL, 0, 200 ) ) {
+		LM_ERR("failed to register status report event identifier\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 
 static int dr_init(void)
 {
@@ -1936,9 +2018,9 @@ static int dr_init(void)
 		(db_part->db_funcs).close(*db_part->db_con);
 		*db_part->db_con = 0;
 
-		if (sr_register_identifier( dr_srg, STR2CI(db_part->partition),
-				SR_STATUS_NO_DATA, CHAR_INT("no data loaded"), 20 ) ) {
-			LM_ERR("failed to create status report identifier for "
+
+		if (init_partition_status_report( db_part )!=0) {
+			LM_ERR("failed to init status report for "
 				" partition \'%.*s\')\n",
 				db_part->partition.len, db_part->partition.s);
 			goto error_cfg;
@@ -4502,7 +4584,7 @@ static mi_response_t *mi_dr_gw_set_status(struct head_db *current_partition,
 	}
 	if (old_flags!=gw->flags) {
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
-		dr_gw_status_changed( current_partition, gw);
+		dr_gw_status_changed( current_partition, gw, MI_SSTR("MI command"));
 	}
 
 	return init_mi_result_ok();
@@ -4716,6 +4798,7 @@ static mi_response_t *mi_dr_cr_set_status(struct head_db *current_partition,
 	if (old_flags!=cr->flags) {
 		cr->flags |= DR_CR_FLAG_DIRTY;
 		replicate_dr_carrier_status_event( current_partition, cr );
+		dr_raise_cr_event( current_partition, cr, MI_SSTR("MI command"));
 	}
 
 	return init_mi_result_ok();

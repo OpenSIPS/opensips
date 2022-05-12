@@ -41,7 +41,11 @@ static str status_repl_cap = str_init("drouting-status-repl");
 static struct clusterer_binds c_api;
 
 /* implemented in drouting.c */
-void dr_raise_event(struct head_db *p, pgw_t *gw);
+void dr_raise_event(struct head_db *p, pgw_t *gw,
+		char *reason_s, int reason_len);
+void dr_raise_cr_event(struct head_db *p, pcr_t *cr,
+		char *reason_s, int reason_len);
+
 
 extern struct head_db * head_db_start;
 
@@ -184,7 +188,7 @@ static int gw_status_update(bin_packet_t *packet, int raise_event)
 		gw->flags |= DR_DST_STAT_DIRT_FLAG;
 		if (raise_event)
 			/* raise event for the status change */
-			dr_raise_event(part, gw);
+			dr_raise_event(part, gw, MI_SSTR("replicated info"));
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
@@ -219,6 +223,7 @@ static int cr_status_update(bin_packet_t *packet)
 		cr->flags = ((~DR_CR_FLAG_IS_OFF)&cr->flags)|(DR_CR_FLAG_IS_OFF&flags);
 		/* set the DIRTY flag to force flushing to DB */
 		cr->flags |= DR_CR_FLAG_DIRTY;
+		dr_raise_cr_event( part, cr, MI_SSTR("replicated info"));
 		lock_stop_read(part->ref_lock);
 		return 0;
 	}
