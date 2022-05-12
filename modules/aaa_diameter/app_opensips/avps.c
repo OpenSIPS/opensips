@@ -37,7 +37,6 @@
 
 #include "ctype.h"
 
-#include "../peer.h"
 #include "avps.h"
 
 
