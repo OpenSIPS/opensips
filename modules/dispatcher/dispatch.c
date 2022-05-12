@@ -1061,14 +1061,14 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		goto error;
 	}
 
+	cnt = 0;
+
 	nr_rows = RES_ROW_N(res);
 	rows = RES_ROWS(res);
 	if(nr_rows == 0) {
 		LM_WARN("no dispatching data in the db -- empty destination set\n");
 		goto load_done;
 	}
-
-	cnt = 0;
 
 	for(i=0; i<nr_rows; i++) {
 
