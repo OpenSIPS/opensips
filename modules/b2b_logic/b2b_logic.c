@@ -2162,6 +2162,7 @@ error:
 int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 														unsigned int cb_mask)
 {
+	int ret = -1;
 	b2bl_tuple_t* tuple;
 	unsigned int hash_index, local_index;
 
@@ -2183,7 +2184,8 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 		return -1;
 	}
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	if (b2bl_htable[hash_index].locked_by != process_no)
+		lock_get(&b2bl_htable[hash_index].lock);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if(tuple == NULL)
@@ -2197,16 +2199,11 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 		goto error;
 	}
 
-	tuple->cb.f = cbf;
-	tuple->cb.mask = cb_mask;
-	tuple->cb.param = cb_param;
-
-	lock_release(&b2bl_htable[hash_index].lock);
-
-	return 0;
+	ret = 0;
 error:
-	lock_release(&b2bl_htable[hash_index].lock);
-	return -1;
+	if (b2bl_htable[hash_index].locked_by != process_no)
+		lock_release(&b2bl_htable[hash_index].lock);
+	return ret;
 }
 
 static str *b2bl_get_key(void)
