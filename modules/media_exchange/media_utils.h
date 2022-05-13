@@ -52,4 +52,9 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 		str *logic_param, void *param, enum b2b_event_type event_type,
 		bin_packet_t *store, int backend);
 
+str *media_exchange_get_offer_sdp(rtp_ctx ctx, struct dlg_cell *dlg,
+		int mleg, int *release);
+str *media_exchange_get_answer_sdp(rtp_ctx ctx, str *body,
+		int mleg, int *release);
+
 #endif /* _MEDIA_UTILS_H_ */

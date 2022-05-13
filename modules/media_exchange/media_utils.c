@@ -518,3 +518,38 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 	media_dlg.dlg_unref(dlg, 1);
 	return;
 }
+
+str *media_exchange_get_offer_sdp(rtp_ctx ctx, struct dlg_cell *dlg,
+		int mleg, int *release)
+{
+	static str sbody;
+
+	*release = 0;
+	if (ctx) {
+		sbody = dlg->legs[DLG_MEDIA_SESSION_LEG(dlg, mleg)].in_sdp;
+		if (media_rtp.offer(ctx, &media_exchange_name,
+				(mleg == MEDIA_LEG_CALLER?
+				 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
+				&sbody) >= 0) {
+			*release = 1;
+			return &sbody;
+		}
+	}
+
+	sbody = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, mleg));
+	return &sbody;
+}
+
+str *media_exchange_get_answer_sdp(rtp_ctx ctx, str *body,
+		int mleg, int *release)
+{
+	*release = 0;
+	if (ctx && media_rtp.answer(ctx, &media_exchange_name,
+			(mleg == MEDIA_LEG_CALLER?
+			 RTP_RELAY_CALLER:RTP_RELAY_CALLEE),
+			body) >= 0) {
+		*release = 1;
+		return body;
+	}
+	return body;
+}

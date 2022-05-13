@@ -587,7 +587,7 @@ static void media_session_tm_free(struct media_session_tm_param *p)
 
 static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cell *dlg,
 		str *uri, int leg, str *body, str *headers, int nohold,
-		struct media_session_tm_param *p)
+		rtp_ctx ctx, struct media_session_tm_param *p)
 {
 	struct media_session_leg *msl;
 	static client_info_t *ci;
@@ -598,6 +598,7 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 		LM_ERR("cannot create new exchange leg!\n");
 		return -2;
 	}
+	msl->ms->rtp = ctx;
 	if ((ci = media_get_client_info(si, uri, headers, body)) == NULL) {
 		LM_ERR("could not create client!\n");
 		goto destroy;
@@ -637,10 +638,11 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 {
 	struct cell *t = NULL;
 	struct dlg_cell *dlg;
-	str sbody;
 	int req_leg;
 	struct socket_info *si;
 	struct media_session_tm_param *p = NULL;
+	rtp_ctx ctx = NULL;
+	int release = 0;
 
 	/* if we have an indialog re-invite, we need to respond to it after we get
 	 * the SDP - so we need to store the transaction until we have a new body
@@ -668,8 +670,8 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 			leg = MEDIA_LEG_CALLER;
 	}
 	if (!body) {
-		sbody = dlg_get_out_sdp(dlg, req_leg);
-		body = &sbody;
+		ctx = media_rtp.get_ctx_dlg(dlg);
+		body = media_exchange_get_offer_sdp(ctx, dlg, leg, &release);
 	}
 
 	if (!msg->force_send_socket) {
@@ -688,11 +690,15 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 		p = media_session_tm_new(t, req_leg);
 
 	if (handle_media_exchange_from_uri(si, dlg, uri, leg,
-			body, headers, ((nohold && *nohold)?1:0), p) < 0) {
+			body, headers, ((nohold && *nohold)?1:0), ctx, p) < 0) {
+		if (release)
+			pkg_free(body->s);
 		if (p)
 			media_session_tm_free(p);
 		return -3;
 	}
+	if (release)
+		pkg_free(body->s);
 	return 1;
 }
 
@@ -1236,15 +1242,21 @@ static void handle_media_session_negative(struct media_session_leg *msl)
 static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 		str *body, struct media_session_tm_param *p)
 {
-	int ret;
+	int ret, release = 0;
 	str sbody;
 	struct dlg_cell *dlg;
+
+	if (msl->ms->rtp)
+		body = media_exchange_get_answer_sdp(msl->ms->rtp, body,
+				msl->leg, &release);
 
 	dlg = msl->ms->dlg;
 	if (!p) {
 		/* here we were triggered outside of a request - simply reinvite the
 		 * other leg with the new body */
 		ret = media_session_reinvite(msl, MEDIA_SESSION_DLG_LEG(msl), body);
+		if (release)
+			pkg_free(body->s);
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
 			body = media_session_get_hold_sdp(msl);
@@ -1268,6 +1280,8 @@ static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 		/* if we have media on the same leg that triggered the request,
 		 * then we have to send the body to that leg, in reply */
 		ret = media_send_ok(p->t, dlg, p->leg, body);
+		if (release)
+			pkg_free(body->s);
 
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
@@ -1284,6 +1298,8 @@ static int handle_media_session_reply_exchange(struct media_session_leg *msl,
 		/* we have a differet leg, so we need to request in the oposite
 		 * direction */
 		ret = media_session_reinvite(msl, other_leg(dlg, p->leg), body);
+		if (release)
+			pkg_free(body->s);
 		if (!msl->nohold && !media_session_other_leg(msl)) {
 			/* we need to put the other party on hold */
 			body = media_session_get_hold_sdp(msl);
@@ -1501,7 +1517,7 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 	if (!dlg)
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
-	/* check to see if we have an ongong RTP context */
+	/* check to see if we have an onging RTP context */
 	ctx = media_rtp.get_ctx_dlg(dlg);
 	if (!ctx)
 		return init_mi_error(404, MI_SSTR("Media context not found"));
@@ -1529,11 +1545,14 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 	int nohold;
 	int media_leg;
 	str callid, leg, uri;
-	str body, shdrs, *hdrs;
+	str body, shdrs, *hdrs, *pbody;
 	struct dlg_cell *dlg;
 	struct socket_info *si;
 	union sockaddr_union tmp;
+	rtp_ctx ctx = NULL;
+	int release = 0;
 
+	body.s = NULL;
 	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
 		return init_mi_param_error();
 
@@ -1570,16 +1589,22 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
 	if (try_get_mi_string_param(params, "body", &body.s, &body.len) < 0) {
-		/* body not found - need to get the body from dialog */
-		body = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, media_leg));
+		ctx = media_rtp.get_ctx_dlg(dlg);
+		pbody = media_exchange_get_offer_sdp(ctx, dlg, media_leg, &release);
+	} else {
+		pbody = &body;
 	}
 
-	if (handle_media_exchange_from_uri(si, dlg, &uri, media_leg, &body,
-			hdrs, nohold, NULL) < 0) {
+	if (handle_media_exchange_from_uri(si, dlg, &uri, media_leg, pbody,
+			hdrs, nohold, ctx, NULL) < 0) {
 		media_dlg.dlg_unref(dlg, 1);
+		if (release)
+			pkg_free(&body.s);
 		return init_mi_error(500, MI_SSTR("Could not start media session"));
 	}
 
+	if (release)
+		pkg_free(&body.s);
 	/* all good now, unref the dialog as it is reffed by the ms */
 	media_dlg.dlg_unref(dlg, 1);
 	return init_mi_result_ok();
