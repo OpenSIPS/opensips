@@ -51,7 +51,9 @@ static int mod_init(void);
 
 static dep_export_t mod_deps = {
 	{ /* OpenSIPS module dependencies */
-		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
+		{ MOD_TYPE_DEFAULT, "b2b_logic", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
@@ -266,6 +268,7 @@ struct rtp_relay_leg *rtp_relay_new_leg(struct rtp_relay_ctx *ctx,
 	leg->index = idx;
 	leg->ref = 1;
 	list_add(&leg->list, &ctx->legs);
+	LM_RTP_DBG("new leg=%p index=%d\n", leg, idx);
 	return leg;
 }
 
@@ -392,6 +395,10 @@ static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
 			return NULL;
 		}
 		if (route_type == BRANCH_ROUTE || route_type == ONREPLY_ROUTE) {
+			if (parse_to_header(msg) < 0) {
+				LM_ERR("cannot parse To header!\n");
+				return NULL;
+			}
 			if (get_to(msg)->tag_value.len) {
 				/* a sequential should always have a to_tag */
 				tag = get_to(msg)->tag_value;
@@ -400,8 +407,12 @@ static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
 			}
 		} else if (route_type == LOCAL_ROUTE) {
 			/* we always force index 0 for local_route */
-			idx = 0;
+			idx = rtp_relay_get_last_branch(ctx, msg);
 		} else {
+			if (parse_from_header(msg) < 0) {
+				LM_ERR("cannot parse From header!\n");
+				return NULL;
+			}
 			tag = get_from(msg)->tag_value;
 		}
 	}

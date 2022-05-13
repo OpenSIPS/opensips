@@ -98,4 +98,11 @@ static inline int register_rtp_relay(char *name,
 	return func(name, funcs, hooks);
 }
 
+/* macro used for internal debugging */
+#ifdef RTP_RELAY_DEBUG
+#define LM_RTP_DBG(...) LM_DBG("RTP: " __VA_ARGS__);
+#else
+#define LM_RTP_DBG(...)
+#endif
+
 #endif /* _RTP_RELAY_H_ */

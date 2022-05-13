@@ -30,12 +30,14 @@
 #define RTP_RELAY_CTX_STATE_ENGAGED		(1<<0)
 #define RTP_RELAY_CTX_STATE_ESTABLISHED	(1<<1)
 #define RTP_RELAY_CTX_STATE_PENDING		(1<<2)
+#define RTP_RELAY_CTX_STATE_B2B			(1<<3)
 
 #define RTP_RELAY_LEG_DISABLED			(1<<0)
 
 #define RTP_RELAY_SESS_STATE_PENDING	(1<<1)
 #define RTP_RELAY_SESS_STATE_SUCCESS	(1<<2)
 #define RTP_RELAY_SESS_STATE_LATE		(1<<3)
+#define RTP_RELAY_SESS_STATE_ONGOING	(1<<4)
 
 #define rtp_relay_ctx_engaged(_s) ((_s)->state & RTP_RELAY_CTX_STATE_ENGAGED)
 #define rtp_relay_ctx_set_engaged(_s) (_s)->state |= RTP_RELAY_CTX_STATE_ENGAGED
@@ -46,6 +48,10 @@
 #define rtp_relay_ctx_pending(_s) ((_s)->state & RTP_RELAY_CTX_STATE_PENDING)
 #define rtp_relay_ctx_set_pending(_s) (_s)->state |= RTP_RELAY_CTX_STATE_PENDING
 #define rtp_relay_ctx_reset_pending(_s) (_s)->state &= (~RTP_RELAY_CTX_STATE_PENDING)
+
+#define rtp_relay_ctx_b2b(_c) ((_c)->state & RTP_RELAY_CTX_STATE_B2B)
+#define rtp_relay_ctx_set_b2b(_c) (_c)->state |= RTP_RELAY_CTX_STATE_B2B
+
 
 #define rtp_leg_disabled(_l) ((_l)->state & RTP_RELAY_LEG_DISABLED)
 #define rtp_leg_set_disabled(_l, _v) (_l)->state |= ((_v)?RTP_RELAY_LEG_DISABLED:0)
@@ -65,6 +71,10 @@
 #define rtp_sess_late(_s) ((_s)->state & RTP_RELAY_SESS_STATE_LATE)
 #define rtp_sess_set_late(_s) (_s)->state |= RTP_RELAY_SESS_STATE_LATE
 #define rtp_sess_reset_late(_s) (_s)->state &= (~RTP_RELAY_SESS_STATE_LATE)
+
+#define rtp_sess_ongoing(_s) ((_s)->state & RTP_RELAY_SESS_STATE_ONGOING)
+#define rtp_sess_set_ongoing(_s) (_s)->state |= RTP_RELAY_SESS_STATE_ONGOING
+#define rtp_sess_reset_ongoing(_s) (_s)->state &= (~RTP_RELAY_SESS_STATE_ONGOING)
 
 enum rtp_relay_var_flags {
 	RTP_RELAY_FLAGS_FIRST = 0,
@@ -105,6 +115,7 @@ struct rtp_relay_sess {
 struct rtp_relay_ctx {
 	int ref;
 	str callid;
+	int last_branch;
 	str dlg_callid, from_tag, to_tag;
 	str flags, delete;
 	gen_lock_t lock;
@@ -131,6 +142,7 @@ int rtp_relay_ctx_upstream(void);
 
 int rtp_relay_ctx_engage(struct sip_msg *msg,
 		struct rtp_relay_ctx *ctx, struct rtp_relay *relay, int *set);
+int rtp_relay_get_last_branch(struct rtp_relay_ctx *ctx, struct sip_msg *msg);
 
 struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index);
 
@@ -148,5 +160,23 @@ str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type);
 
 #define RTP_RELAY_CTX_LOCK(_c) lock_get(&_c->lock);
 #define RTP_RELAY_CTX_UNLOCK(_c) lock_release(&_c->lock);
+
+#define RTP_RELAY_CTX_REF_UNSAFE(_c, _v) \
+	do { \
+		(_c)->ref += (_v); \
+		LM_DBG("reffing ref=%d for ctx=%p\n", (_c)->ref, (_c)); \
+	} while (0);
+#define RTP_RELAY_CTX_REF(_c) \
+	do { \
+		RTP_RELAY_CTX_LOCK(_c); \
+		RTP_RELAY_CTX_REF_UNSAFE(_c, 1); \
+		RTP_RELAY_CTX_UNLOCK(_c); \
+	} while (0);
+#define RTP_RELAY_CTX_UNREF(_c) \
+	do { \
+		RTP_RELAY_CTX_LOCK(_c); \
+		RTP_RELAY_CTX_REF_UNSAFE(_c, -1); \
+		RTP_RELAY_CTX_UNLOCK(_c); \
+	} while (0);
 
 #endif /* _RTP_RELAY_CTX_H_ */
