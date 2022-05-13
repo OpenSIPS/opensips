@@ -2528,6 +2528,67 @@ error:
 	return NULL;
 }
 
+int rtp_relay_api_offer(rtp_ctx _ctx, str *id,
+		unsigned int flags, str *body)
+{
+	struct rtp_relay_session info;
+	struct rtp_relay_sess *sess;
+	struct rtp_relay_ctx *ctx = _ctx;
+	if (!ctx) {
+		LM_ERR("no context to use!\n");
+		return -1;
+	}
+	sess = ctx->established;
+	if (!sess || !(rtp_relay_ctx_engaged(ctx)) || !sess->relay) {
+		LM_ERR("rtp not established!\n");
+		return -1;
+	}
+	memset(&info, 0, sizeof info);
+	info.branch = sess->index;
+	info.body = body;
+	return rtp_relay_offer(&info, ctx, sess, flags, body);
+}
+
+int rtp_relay_api_answer(rtp_ctx _ctx, str *id,
+		unsigned int flags, str *body)
+{
+	struct rtp_relay_session info;
+	struct rtp_relay_sess *sess;
+	struct rtp_relay_ctx *ctx = _ctx;
+	if (!ctx) {
+		LM_ERR("no context to use!\n");
+		return -1;
+	}
+	sess = ctx->established;
+	if (!sess || !(rtp_relay_ctx_engaged(ctx)) || !sess->relay) {
+		LM_ERR("rtp not established!\n");
+		return -1;
+	}
+	memset(&info, 0, sizeof info);
+	info.branch = sess->index;
+	info.body = body;
+	return rtp_relay_answer(&info, ctx, sess, flags, body);
+}
+
+int rtp_relay_api_delete(rtp_ctx _ctx, str *id, unsigned int flags)
+{
+	struct rtp_relay_session info;
+	struct rtp_relay_sess *sess;
+	struct rtp_relay_ctx *ctx = _ctx;
+	if (!ctx) {
+		LM_ERR("no context to use!\n");
+		return -1;
+	}
+	sess = ctx->established;
+	if (!sess || !(rtp_relay_ctx_engaged(ctx)) || !sess->relay) {
+		LM_ERR("rtp not established!\n");
+		return -1;
+	}
+	memset(&info, 0, sizeof info);
+	info.branch = sess->index;
+	return rtp_relay_delete(&info, ctx, sess, flags);
+}
+
 int rtp_relay_copy_offer(rtp_ctx _ctx, str *id, str *flags,
 		unsigned int copy_flags, unsigned int streams, str *ret_body)
 {

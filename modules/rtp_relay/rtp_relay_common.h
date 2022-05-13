@@ -22,6 +22,9 @@
 #ifndef _RTP_RELAY_COMMON_H_
 #define _RTP_RELAY_COMMON_H_
 
+#define RTP_RELAY_CALLER 0
+#define RTP_RELAY_CALLEE 1
+
 #define RTP_COPY_MODE_SIPREC (1<<0)
 #define RTP_COPY_MODE_DISABLE (1<<1)
 
