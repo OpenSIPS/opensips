@@ -1075,7 +1075,8 @@ struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
 }
 
 #define RTP_RELAY_FLAGS(_l, _f) \
-	(sess->legs[_l]->flags[_f].s?&sess->legs[_l]->flags[_f]:NULL)
+	(sess->legs[_l] && sess->legs[_l]->flags[_f].s? \
+		&sess->legs[_l]->flags[_f]:NULL)
 #define RTP_RELAY_S(_s) ((_s)?(_s)->len:0), ((_s)?(_s)->s:0)
 #define RTP_RELAY_FLAGS_S(_l, _f) RTP_RELAY_S(RTP_RELAY_FLAGS(_l, _f))
 
