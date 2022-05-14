@@ -823,6 +823,7 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 	union sockaddr_union su;
 	struct msrp_cell *cell;
 	void **val;
+	struct msrp_url *url;
 
 	if (from==NULL || to==NULL || hdrs==NULL) {
 		LM_ERR("missing hdrs: from %p / to %p/ hdrs %p\n", from, to, hdrs);
@@ -929,8 +930,16 @@ redo_ident:
 	/* headers
 	 * headers = To-Path CRLF From-Path CRLF 1*( header CRLF )
 	 */
-	len += TO_PATH_PREFIX_LEN + from->len + CRLF_LEN
-		+ FROM_PATH_PREFIX_LEN + to->whole.len + CRLF_LEN;
+	len += FROM_PATH_PREFIX_LEN + from->len + CRLF_LEN
+		+ TO_PATH_PREFIX_LEN + to->whole.len;
+
+	url = to->next;
+	while (url) {
+		len += 1 /* SP */ + url->whole.len;
+		url = url->next;
+	}
+	len += CRLF_LEN;
+
 	/* extra hdrs */
 	for ( i=0 ; i<hdrs_no ; i++)
 		len += hdrs[i].len + CRLF_LEN;
@@ -968,6 +977,12 @@ redo_ident:
 	/* headers */
 	append_string( p, TO_PATH_PREFIX, TO_PATH_PREFIX_LEN);
 	append_string( p, to->whole.s, to->whole.len);
+	to = to->next;
+	while (to) {
+		*(p++) = ' ';
+		append_string( p, to->whole.s, to->whole.len);
+		to = to->next;
+	}
 	append_string( p, CRLF, CRLF_LEN);
 
 	append_string( p, FROM_PATH_PREFIX, FROM_PATH_PREFIX_LEN);
