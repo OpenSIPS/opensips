@@ -885,8 +885,8 @@ modparam("dialog", "flags_column", "flags_c_name")
 
    Example 1.36. Set profiles_with_value parameter
 ...
-modparam("dialog", "profiles_with_value", "caller ; my_profile; share/s;
- repl/b;")
+modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientCh
+annels/s; codecUsed/b;")
 ...
 
 1.6.37. profiles_no_value (string)
@@ -2507,7 +2507,7 @@ Chapter 4. Contributors
    2. Razvan Crainea (@razvancrainea) 254 189 4940 1433
    3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
    4. Vlad Patrascu (@rvlad-patrascu) 169 88 3540 3143
-   5. Liviu Chircu (@liviuchircu) 156 112 2841 1201
+   5. Liviu Chircu (@liviuchircu) 157 113 2842 1202
    6. Dan Pascu (@danpascu) 30 25 233 179
    7. Ovidiu Sas (@ovidiusas) 29 23 487 111
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
@@ -2547,8 +2547,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2022
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2022
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - May 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2022
    3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Nov 2021
    5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jul 2021
@@ -2578,18 +2578,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Zero King
-   (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
-   Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel
-   Cerghit (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu
-   Marius Cristian (@eseanucristian), Norman Brandinger (@NormB),
-   Anca Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
-   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
-   Modroiu.
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
+   Zero King (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
+   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
+   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
+   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
+   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
+   Andy Pyles, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
