@@ -91,18 +91,20 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 
 	/* complete the parsing of the first line */
 
-	if (msg->fl.u.request.method.len >= 3 + 1 + 1 &&
+	if (msg->fl.u.request.method.len >= 3 &&
 	isdigit(msg->fl.u.request.method.s[0]) &&
 	isdigit(msg->fl.u.request.method.s[1]) &&
-	isdigit(msg->fl.u.request.method.s[2]) &&
-	msg->fl.u.request.method.s[3]==' ') {
+	isdigit(msg->fl.u.request.method.s[2])) {
 		/* it looks like a reply */
 		msg->fl.type = MSRP_REPLY;
 		mth =  msg->fl.u.request.method;
 		msg->fl.u.reply.status.s = mth.s;
 		msg->fl.u.reply.status.len = 3;
-		msg->fl.u.reply.reason.s = mth.s + 4;
-		msg->fl.u.reply.reason.len = mth.len - 4;
+		if (msg->fl.u.request.method.len >= 3 + 1 + 1 &&
+			msg->fl.u.request.method.s[3]==' ') {
+			msg->fl.u.reply.reason.s = mth.s + 4;
+			msg->fl.u.reply.reason.len = mth.len - 4;
+		}
 		/* this converstion is risk free as the we already tested
 		 * for a valid number above */
 		str2int( &msg->fl.u.reply.status,
