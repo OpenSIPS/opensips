@@ -51,6 +51,8 @@ mi_response_t *msrpua_mi_list(const mi_params_t *params,
 	struct mi_handler *async_hdl);
 mi_response_t *msrpua_mi_send_msg(const mi_params_t *params,
 	struct mi_handler *async_hdl);
+mi_response_t *msrpua_mi_start_session(const mi_params_t *params,
+	struct mi_handler *async_hdl);
 
 /* proto_msrp binds */
 struct msrp_binds msrp_api;
@@ -63,6 +65,8 @@ str my_msrp_uri_str;
 struct msrp_url my_msrp_uri;
 
 struct socket_info *msrp_sock;
+
+str adv_contact;
 
 int msrpua_sessions_hsize = 10;
 gen_hash_t *msrpua_sessions;
@@ -109,6 +113,7 @@ static param_export_t params[] = {
 	{"cleanup_interval", INT_PARAM, &cleanup_interval},
 	{"max_duration", INT_PARAM, &max_duration},
 	{"my_uri", STR_PARAM, &my_msrp_uri_str},
+	{"advertised_contact", STR_PARAM, &adv_contact.s},
 };
 
 static mi_export_t mi_cmds[] = {
@@ -123,6 +128,10 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ "msrp_ua_list_sessions", 0, 0, 0, {
 		{msrpua_mi_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "msrp_ua_start_session", 0, 0, 0, {
+		{msrpua_mi_start_session, {"content_types", "from_uri", "to_uri", "ruri", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -226,13 +235,16 @@ static int msrpua_evi_init(void)
 	if (evi_sess_types_p == NULL)
 		goto error;
 
-	evi_msg_rcv_sid_p = evi_param_create(evi_sess_params, &evi_msg_rcv_sid_pname);
+	evi_msg_rcv_sid_p = evi_param_create(evi_msg_rcv_params,
+		&evi_msg_rcv_sid_pname);
 	if (evi_msg_rcv_sid_p == NULL)
 		goto error;
-	evi_msg_rcv_ctype_p = evi_param_create(evi_sess_params, &evi_msg_rcv_ctype_pname);
+	evi_msg_rcv_ctype_p = evi_param_create(evi_msg_rcv_params,
+		&evi_msg_rcv_ctype_pname);
 	if (evi_msg_rcv_ctype_p == NULL)
 		goto error;
-	evi_msg_rcv_body_p = evi_param_create(evi_sess_params, &evi_msg_rcv_body_pname);
+	evi_msg_rcv_body_p = evi_param_create(evi_msg_rcv_params,
+		&evi_msg_rcv_body_pname);
 	if (evi_msg_rcv_body_p == NULL)
 		goto error;
 
@@ -252,6 +264,9 @@ static int mod_init(void)
 		LM_ERR("'my_uri' parameter not set\n");
 		return -1;
 	}
+
+	if (adv_contact.s)
+		adv_contact.len = strlen(adv_contact.s);
 	
 	my_msrp_uri_str.len = strlen(my_msrp_uri_str.s);
 
@@ -375,31 +390,6 @@ static void destroy(void)
 	lock_dealloc(sdp_id_lock);
 
 	msrpua_evi_destroy();
-}
-
-static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
-	void *param, int flags)
-{
-	struct msrpua_session *session = (struct msrpua_session *)param;
-	unsigned int hentry;
-
-	hentry = hash_entry(msrpua_sessions, session->session_id);
-	hash_lock(msrpua_sessions, hentry);
-
-	LM_DBG("Received reply [%d] for session [%.*s]\n", msg->REPLY_STATUS,
-		session->session_id.len, session->session_id.s);
-
-	if (msg->REPLY_STATUS < 200)
-		goto end;
-
-	if (session->dlg_state == MSRPUA_DLG_TERM) {
-		LM_DBG("Session terminated\n");
-		msrpua_delete_session(session);
-	}
-
-end:
-	hash_unlock(msrpua_sessions, hentry);
-	return 0;
 }
 
 static inline int msrpua_b2b_reply(int et, str *b2b_key, int method,
@@ -531,10 +521,18 @@ static int match_mime_with_list(str *mime, str *list)
 	if (!src_subtype.s)
 		goto err_mime;
 	src_type.len = src_subtype.s - src_type.s;
-	src_subtype.len = mime->len - src_type.len - 1;
-	if (src_subtype.len == 0)
+	src_subtype.s++;
+
+	if (mime->len - src_type.len - 1 == 0)
 		goto err_mime;
- 
+
+	/* ignore type params */
+	p = q_memchr(src_subtype.s, ';', mime->len - src_type.len - 1);
+	if (p)
+		src_subtype.len = p - src_subtype.s;
+	else
+		src_subtype.len = mime->len - src_type.len - 1;
+
  	if (list->s[0] == '*') {
  		if (list->len != 1)
  			goto err_list;
@@ -649,7 +647,7 @@ static int check_offer_types(str *accept_types, str *peer_accept_types)
 #define SDP_A_PATH_STR "a=path:"
 #define SDP_A_PATH_STR_LEN (sizeof(SDP_A_PATH_STR) - 1)
 
-static str *msrpua_build_sdp(struct msrpua_session *sess)
+static str *msrpua_build_sdp(struct msrpua_session *sess, str *accept_types)
 {
 	static str buf;
 	char *p;
@@ -668,7 +666,7 @@ static str *msrpua_build_sdp(struct msrpua_session *sess)
 		my_msrp_uri.host.len + CRLF_LEN;
 	buf.len += SDP_M_STR_LEN + my_msrp_uri.port.len +
 		(my_msrp_uri.secured ? SDP_M_TLS_STR_LEN:SDP_M_TCP_STR_LEN);
-	buf.len += SDP_A_TYPES_STR_LEN + sess->accept_types.len + CRLF_LEN +
+	buf.len += SDP_A_TYPES_STR_LEN + accept_types->len + CRLF_LEN +
 		SDP_A_PATH_STR_LEN + my_msrp_uri.whole.len + 1 + sess->session_id.len +
 		CRLF_LEN;
 
@@ -713,7 +711,7 @@ static str *msrpua_build_sdp(struct msrpua_session *sess)
 		append_string(p, SDP_M_TCP_STR, SDP_M_TCP_STR_LEN);
 
 	append_string(p, SDP_A_TYPES_STR, SDP_A_TYPES_STR_LEN);
-	append_string(p, sess->accept_types.s, sess->accept_types.len);
+	append_string(p, accept_types->s, accept_types->len);
 	append_string(p, CRLF, CRLF_LEN);
 
 	append_string(p, SDP_A_PATH_STR, SDP_A_PATH_STR_LEN);
@@ -733,15 +731,12 @@ static str *msrpua_build_sdp(struct msrpua_session *sess)
 static int msrpua_update_session(struct msrpua_session *sess,
 	struct sip_msg *msg, int etype)
 {
-	str contact;
 	str peer_accept_types;
 	str peer_path;
 	int code;
 	str reason;
 	str *sdp;
 	int del_sess = 0;
-
-	contact.s = contact_builder(msg->rcv.bind_address, &contact.len);
 
 	if (get_sdp_peer_info(msg, &peer_accept_types, &peer_path) < 0) {
 		LM_ERR("Failed to get peer info from SDP\n");
@@ -752,7 +747,7 @@ static int msrpua_update_session(struct msrpua_session *sess,
 
 	/* match at least one content type from our accept_types 
 	 * with the peer's accept_types */
-	if (check_offer_types(&sess->accept_types, &peer_accept_types) < 0) {
+	if (!check_offer_types(&sess->accept_types, &peer_accept_types)) {
 		LM_ERR("Cannot understand any content type received in the offer\n");
 		code = 488;
 		reason = str_init(REASON_488_STR);
@@ -788,7 +783,7 @@ static int msrpua_update_session(struct msrpua_session *sess,
 
 	sess->sdp_sess_vers++;
 
-	sdp = msrpua_build_sdp(sess);
+	sdp = msrpua_build_sdp(sess, &sess->accept_types);
 	if (!sdp->s) {
 		LM_ERR("Failed to build SDP answer\n");
 		code = 500;
@@ -804,6 +799,8 @@ static int msrpua_update_session(struct msrpua_session *sess,
 		del_sess = 1;
 		goto err;
 	}
+
+	sess->dlg_state = MSRPUA_DLG_CONF;
 
 	pkg_free(sdp->s);
 
@@ -921,10 +918,13 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	case METHOD_INVITE:
 		if (msrpua_update_session(sess, msg, etype) < 0)
 			LM_ERR("Failed to update session on reInvite\n");
+
 		hash_unlock(msrpua_sessions, hentry);
 		break;
 	case METHOD_ACK:
-		if (!(flags & B2B_NOTIFY_FL_ACK_NEG)) {
+		if (!(flags & B2B_NOTIFY_FL_ACK_NEG) &&
+			/* ACK for initial INVITE */
+			sess->sdp_sess_vers == sess->sdp_sess_id) {
 			sess->dlg_state = MSRPUA_DLG_EST;
 
 			if (max_duration)
@@ -958,7 +958,10 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 			487, &str_init("Request Terminated"), NULL) < 0)
 			LM_ERR("Failed to send error reply\n");
 
-		msrpua_delete_session(sess);
+		if (sess->sdp_sess_vers == sess->sdp_sess_id)
+			/* CANCEL for initial INVITE */
+			msrpua_delete_session(sess);
+
 		hash_unlock(msrpua_sessions, hentry);
 		break;
 	case METHOD_BYE:
@@ -972,16 +975,121 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 		}
 
 		msrpua_delete_session(sess);
-		hash_unlock(msrpua_sessions, hentry);
 
 		if (raise_sess_end_event(&sess_id) < 0)
 			LM_ERR("Failed to raise session end event on BYE\n");
 
 		pkg_free(sess_id.s);
+
+		hash_unlock(msrpua_sessions, hentry);
 		break;
 	}
 
 	return 0;
+}
+
+static int msrpua_send_message(str *sess_id, str *mime, str *body);
+
+static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
+	void *param, int flags)
+{
+	struct msrpua_session *sess = (struct msrpua_session *)param;
+	unsigned int hentry;
+	str peer_accept_types;
+	str peer_path;
+	str sess_id;
+
+	hentry = hash_entry(msrpua_sessions, sess->session_id);
+	hash_lock(msrpua_sessions, hentry);
+
+	LM_DBG("Received reply [%d] for session [%.*s]\n", msg->REPLY_STATUS,
+		sess->session_id.len, sess->session_id.s);
+
+	if (msg->REPLY_STATUS < 200) {
+		hash_unlock(msrpua_sessions, hentry);
+		return 0;
+	}
+
+	if (sess->dlg_state == MSRPUA_DLG_TERM) {
+		LM_DBG("Reply for terminated session, deleting entry\n");
+		msrpua_delete_session(sess);
+
+		hash_unlock(msrpua_sessions, hentry);
+		return 0;
+	}
+
+	if (etype == B2B_CLIENT) {
+		if (msg->REPLY_STATUS >= 300) {
+			msrpua_delete_session(sess);
+
+			hash_unlock(msrpua_sessions, hentry);
+		} else { /* 2xx reply */
+			if (get_sdp_peer_info(msg, &peer_accept_types, &peer_path) < 0) {
+				LM_ERR("Failed to get peer info from SDP\n");
+				goto error;
+			}
+
+			/* match at least one content type from our accept_types
+			 * with the peer's accept_types */
+			if (!check_offer_types(&sess->accept_types, &peer_accept_types)) {
+				LM_ERR("Cannot understand any content type received in the offer\n");
+				goto error;
+			}
+
+			if (shm_str_dup(&sess->peer_path, &peer_path) < 0) {
+				LM_ERR("no more shm memory\n");
+				goto error;
+			}
+
+			sess->peer_path_parsed = parse_msrp_path_shm(&sess->peer_path);
+			if (!sess->peer_path_parsed ) {
+				LM_ERR("Failed to parse MSRP peer path\n");
+				goto error;
+			}
+
+			if (msrpua_b2b_request(etype, &sess->b2b_key, &str_init("ACK")) < 0) {
+				LM_ERR("Failed to send ACK for 200 OK\n");
+				goto error;
+			}
+
+			sess->dlg_state = MSRPUA_DLG_EST;
+
+			if (max_duration)
+				sess->lifetime = max_duration + get_ticks();
+			else
+				sess->lifetime = 0;
+
+			if (pkg_str_dup(&sess_id, &sess->session_id) < 0) {
+				LM_ERR("out of pkg memory\n");
+				return 0;
+			}
+
+			hash_unlock(msrpua_sessions, hentry);
+
+			/* the initiating endpoint must issue a SEND request immediately */
+			if (msrpua_send_message(&sess_id, NULL, NULL) < 0) {
+				LM_ERR("Failed to send empty initial message\n");
+				hash_lock(msrpua_sessions, hentry);
+				goto error;
+			}
+
+			if (raise_sess_new_event(msg, &sess_id, &peer_accept_types) < 0)
+				LM_ERR("Failed to raise session new event on ACK\n");
+
+			pkg_free(sess_id.s);
+		}
+	}
+
+	return 0;
+error:
+	if (msrpua_b2b_request(etype, &sess->b2b_key, &str_init("BYE")) < 0)
+		LM_ERR("Failed to send BYE on error\n");
+
+	sess->dlg_state = MSRPUA_DLG_TERM;
+	sess->lifetime = MSRPUA_SESS_DEL_TOUT + get_ticks();
+
+	hash_unlock(msrpua_sessions, hentry);
+	return -1;
 }
 
 static int b2b_server_notify(struct sip_msg *msg, str *key, int type,
@@ -993,20 +1101,35 @@ static int b2b_server_notify(struct sip_msg *msg, str *key, int type,
 		return b2b_notify_request(B2B_SERVER, msg, key, param, flags);
 }
 
-static inline void msrpua_gen_id(char *dest, str *seed)
+static int b2b_client_notify(struct sip_msg *msg, str *key, int type,
+		str *logic_key, void *param, int flags)
 {
-	str md5_src[4];
-	int l;
+	if (type == B2B_REPLY)
+		return b2b_notify_reply(B2B_CLIENT, msg, key, param, flags);
+	else
+		return b2b_notify_request(B2B_CLIENT, msg, key, param, flags);
+}
 
-	md5_src[0] = *seed;
-	md5_src[1].s = int2str(time(NULL), &l);
+static inline void msrpua_gen_id(char *dest, str *src1, str *src2)
+{
+	str md5_src[5];
+	int l;
+	int n = 4;
+
+	md5_src[0].s = int2str(time(NULL), &l);
+	md5_src[0].len = l;
+	md5_src[1].s = int2str(rand(), &l);
 	md5_src[1].len = l;
 	md5_src[2].s = int2str(rand(), &l);
 	md5_src[2].len = l;
-	md5_src[3].s = int2str(rand(), &l);
-	md5_src[3].len = l;
+	md5_src[3] = *src1;
 
-	MD5StringArray(dest, md5_src, 4);
+	if (src2) {
+		n = 5;
+		md5_src[4] = *src2;
+	}
+
+	MD5StringArray(dest, md5_src, n);
 }
 
 /* if successful, returns with the session lock aquired */
@@ -1015,11 +1138,6 @@ static int init_msrpua_session(struct msrpua_session *new, int b2b_type,
 {
 	unsigned int hentry;
 	void **val;
-
-	new->session_id.s = (char*)(new + 1);
-	new->session_id.len = MD5_LEN;
-
-	msrpua_gen_id(new->session_id.s, b2b_key);
 
 	new->b2b_key.s = (char*)(new + 1) + MD5_LEN;
 	new->b2b_key.len = b2b_key->len;
@@ -1092,7 +1210,14 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types)
 	}
 	memset(sess, 0, sizeof *sess);
 
-	contact.s = contact_builder(msg->rcv.bind_address, &contact.len);
+	sess->session_id.s = (char*)(sess + 1);
+	sess->session_id.len = MD5_LEN;
+	msrpua_gen_id(sess->session_id.s, b2b_key, NULL);
+
+	if (adv_contact.s)
+		contact = adv_contact;
+	else
+		contact.s = contact_builder(msg->rcv.bind_address, &contact.len);
 
 	b2b_key = b2b_api.server_new(msg, &contact, b2b_server_notify,
 		&msrpua_mod_name, NULL, NULL, sess, NULL);
@@ -1132,7 +1257,7 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types)
 	sess->sdp_sess_id = n;
 	sess->sdp_sess_vers = n;
 
-	sdp = msrpua_build_sdp(sess);
+	sdp = msrpua_build_sdp(sess, accept_types);
 	if (!sdp->s) {
 		LM_ERR("Failed to build SDP answer\n");
 		code = 500;
@@ -1186,6 +1311,90 @@ static int msrpua_answer(struct sip_msg *msg, str *content_types)
 		return 1;
 }
 
+int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo,
+	void *param)
+{
+	return 0;
+}
+
+static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri, str *ruri)
+{
+	str *b2b_key = NULL;
+	client_info_t ci;
+	static str method_invite = str_init("INVITE");
+	unsigned int hentry;
+	struct msrpua_session *sess;
+	int n;
+	str _ = STR_NULL;
+
+	sess = shm_malloc(sizeof *sess + MD5_LEN + B2B_MAX_KEY_SIZE);
+	if (!sess) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	memset(sess, 0, sizeof *sess);
+
+	sess->session_id.s = (char*)(sess + 1);
+	sess->session_id.len = MD5_LEN;
+	msrpua_gen_id(sess->session_id.s, from_uri, to_uri);
+
+	memset(&ci, 0, sizeof ci);
+	ci.method = method_invite;
+	ci.to_uri = *to_uri;
+	ci.from_uri = *from_uri;
+	ci.req_uri = *ruri;
+
+	if (adv_contact.s) {
+		ci.local_contact = adv_contact;
+	} else {
+		LM_ERR("'advertised_contact' parameter required\n");
+		goto error;
+	}
+
+	lock_get(sdp_id_lock);
+	n = (*next_sdp_id)++;
+	lock_release(sdp_id_lock);
+
+	sess->sdp_sess_id = n;
+	sess->sdp_sess_vers = n;
+
+	ci.body = msrpua_build_sdp(sess, accept_types);
+	if (!ci.body->s) {
+		LM_ERR("Failed to build SDP answer\n");
+		goto error;
+	}
+
+	b2b_key = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+		&msrpua_mod_name, &_, NULL, sess, NULL);
+	if (!b2b_key) {
+		LM_ERR("failed to create new b2b client instance\n");
+		goto error;
+	}
+
+	if (init_msrpua_session(sess, B2B_CLIENT, b2b_key, accept_types,
+		NULL, NULL) < 0) {
+		LM_ERR("Failed to init MSRP UA session\n");
+		goto error;
+	}
+
+	hentry = hash_entry(msrpua_sessions, sess->session_id);
+	hash_unlock(msrpua_sessions, hentry);
+
+	pkg_free(ci.body->s);
+	pkg_free(b2b_key);
+
+	return 0;
+error:
+	if (b2b_key)
+		b2b_api.entity_delete(B2B_CLIENT, b2b_key, NULL, 1, 1);
+	free_msrpua_session(sess);
+	if (b2b_key)
+		pkg_free(b2b_key);
+	if (ci.body)
+		pkg_free(ci.body->s);
+	return -1;
+}
+
 static int msrpua_end_session(str *session_id)
 {
 	unsigned int hentry;
@@ -1205,17 +1414,29 @@ static int msrpua_end_session(str *session_id)
 	}
 	sess = *val;
 
-	if (sess->dlg_state != MSRPUA_DLG_TERM) {
+	if (sess->dlg_state == MSRPUA_DLG_TERM) {
+		hash_unlock(msrpua_sessions, hentry);
+		return 0;
+	}
+
+	if (sess->dlg_state == MSRPUA_DLG_NEW) {
 		if (msrpua_b2b_request(sess->b2b_type, &sess->b2b_key,
-			&str_init("BYE")) < 0) {
-			LM_ERR("Failed to send BYE on error\n");
+			&str_init("CANCEL")) < 0) {
+			LM_ERR("Failed to send CANCEL\n");
 			rc = -1;
 			goto error;
 		}
-
-		sess->dlg_state = MSRPUA_DLG_TERM;
-		sess->lifetime = MSRPUA_SESS_DEL_TOUT + get_ticks();	
+	} else {
+		if (msrpua_b2b_request(sess->b2b_type, &sess->b2b_key,
+			&str_init("BYE")) < 0) {
+			LM_ERR("Failed to send BYE\n");
+			rc = -1;
+			goto error;
+		}
 	}
+
+	sess->dlg_state = MSRPUA_DLG_TERM;
+	sess->lifetime = MSRPUA_SESS_DEL_TOUT + get_ticks();
 
 	hash_unlock(msrpua_sessions, hentry);
 	return 0;
@@ -1264,6 +1485,8 @@ static int handle_msrp_request(struct msrp_msg *req, void *hdl_param)
 
 	if (req->body.len && req->content_type &&
 		!match_mime_with_list(&req->content_type->body, &sess->accept_types)) {
+		LM_DBG("Unacceptable content type: %.*s\n",
+			req->content_type->body.len, req->content_type->body.s);
 		if (t_report && msrp_api.send_reply(msrp_hdl, req, 415, NULL,NULL,0) < 0)
 			LM_ERR("Failed to send reply\n");
 
@@ -1378,7 +1601,7 @@ static int msrpua_send_message(str *sess_id, str *mime, str *body)
 
 	p = hdrs[0].s;
 	append_string(p, MESSAGE_ID_PREFIX, MESSAGE_ID_PREFIX_LEN);
-	msrpua_gen_id(p, &sess->session_id);
+	msrpua_gen_id(p, &sess->session_id, NULL);
 
 	/* Byte-Range: 1-len/len */
 	hdrs[1].len = BYTE_RANGE_PREFIX_LEN;
@@ -1557,6 +1780,31 @@ error:
 	return NULL;
 }
 
+mi_response_t *msrpua_mi_start_session(const mi_params_t *params,
+	struct mi_handler *_)
+{
+	str ct_types;
+	str from_uri, to_uri, ruri;
+
+	if (get_mi_string_param(params, "content_types", &ct_types.s,
+		&ct_types.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "from_uri", &from_uri.s,
+		&from_uri.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "to_uri", &to_uri.s,
+		&to_uri.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "ruri", &ruri.s,
+		&ruri.len) < 0)
+		return init_mi_param_error();
+
+	if (msrpua_init_uac(&ct_types, &from_uri, &to_uri, &ruri) < 0)
+		return init_mi_error(500, MI_SSTR("Failed to start session"));
+
+	return init_mi_result_ok();
+}
+
 static int timer_clean_session(void *param, str key, void *value)
 {
 	struct msrpua_session *sess = (struct msrpua_session *)value;
@@ -1564,7 +1812,11 @@ static int timer_clean_session(void *param, str key, void *value)
 	int raise_ev = 0;
 
 	if (sess->lifetime > 0 && sess->lifetime < get_ticks()) {
-		if (sess->dlg_state < MSRPUA_DLG_TERM) {
+		if (sess->dlg_state == MSRPUA_DLG_NEW) {
+			if (msrpua_b2b_request(sess->b2b_type, &sess->b2b_key,
+				&str_init("CANCEL")) < 0)
+				LM_ERR("Failed to send CANCEL on timeout\n");
+		} else if (sess->dlg_state < MSRPUA_DLG_TERM) {
 			if (msrpua_b2b_request(sess->b2b_type, &sess->b2b_key,
 				&str_init("BYE")) < 0)
 				LM_ERR("Failed to send BYE on timeout\n");

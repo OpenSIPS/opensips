@@ -25,7 +25,7 @@
 #include "../b2b_entities/b2be_load.h"
 
 typedef enum msrpua_dlg_state {
-	MSRPUA_DLG_NEW,   /* New dialog, no reply sent/received yet */
+	MSRPUA_DLG_NEW,   /* New dialog, no final reply sent/received yet */
 	MSRPUA_DLG_CONF,  /* Confirmed dialog, 2xx sent/received */
 	MSRPUA_DLG_EST,   /* Established dialog, ACK sent/received  */
 	MSRPUA_DLG_TERM,  /* Terminated dialog */
