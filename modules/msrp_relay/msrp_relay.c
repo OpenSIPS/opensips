@@ -559,6 +559,8 @@ int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 		void *trans_param, void *hdl_param)
 {
 	struct msrp_url *my_url, *to;
+	static char buf[7] = "000 ";
+	str status = {buf, 7};
 
 	if (rpl) {
 		LM_DBG("Received MSRP reply [%d %.*s]\n", rpl->fl.u.reply.status_no,
@@ -583,11 +585,12 @@ int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 				return 0;
 			}
 		} else {
-			if ((!tran->failure_report.len || str_strcmp(&tran->failure_report,
-				(&str_init(REPORT_NO_STR)))) &&
-				msrp_api.send_report(msrp_hdl, &str_init(STATUS_TIMEOUT_STR),
-				NULL, tran) < 0)
-				LM_ERR("Failed to send REPORT for failure response\n");
+			if (!tran->failure_report.len || str_strcmp(&tran->failure_report,
+				(&str_init(REPORT_NO_STR)))) {
+				rctostr(buf+4, rpl->fl.u.reply.status_no);
+				if (msrp_api.send_report(msrp_hdl, &status, NULL, tran) < 0)
+					LM_ERR("Failed to send REPORT for failure response\n");
+			}
 		}
 	} else {
 		LM_DBG("Timeout for ident=%.*s\n", tran->ident.len, tran->ident.s);
