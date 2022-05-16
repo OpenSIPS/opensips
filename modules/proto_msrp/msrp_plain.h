@@ -22,24 +22,14 @@
 #ifndef _PROTO_MSRP_MSRP_PLAIN_H_
 #define _PROTO_MSRP_MSRP_PLAIN_H_
 
-extern int msrp_send_timeout;
-extern int msrp_max_msg_chunks;
-extern int *msrp_trace_is_on;
-extern int  msrp_trace_filter_route_id;
 
+#include "msrp_common.h"
 
 int proto_msrp_init_listener(struct socket_info *si);
 
 void msrp_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
 
-int msrp_write_on_socket(struct tcp_connection *c, int fd,
-		char *buf, int len);
-
-int proto_msrp_send(struct socket_info* send_sock,
-		char* buf, unsigned int len,
-		union sockaddr_union* to, unsigned int id);
-
-int msrp_read_req(struct tcp_connection* con, int* bytes_read);
+int msrp_read_plain(struct tcp_connection *c, struct msrp_req *r);
 
 #endif

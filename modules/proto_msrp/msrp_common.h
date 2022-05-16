@@ -28,24 +28,21 @@
 #define _PROTO_MSRP_MSRP_COMMON_H_
 
 #include "../../str.h"
+#include "../../socket_info.h"
 #include "../../net/net_tcp.h"
+#include "../../trace_api.h"
+#include "../../net/proto_tcp/tcp_common_defs.h"
+#include "../tls_mgm/api.h"
 #include "msrp_parser.h"
 
-enum msrp_req_errors { MSRP_REQ_INIT, MSRP_REQ_OK, MSRP_READ_ERROR,
-		MSRP_REQ_OVERRUN, MSRP_REQ_BAD };
 enum msrp_req_states { MSRP_START, MSRP_FIRSTLINE_IDENT,
 		MSRP_FIRSTLINE_METHOD,
 		MSRP_HEADERS, MSRP_BODY, MSRP_EOM
 	};
 
-#define MSRP_BUF_SIZE 65536
-
 struct msrp_req{
 	/* reading indicators */
-	char buf[MSRP_BUF_SIZE+1];		/*!< bytes read so far (+0-terminator)*/
-	char* start;					/*!< where the message starts, after all the empty lines are skipped*/
-	char* pos;						/*!< current position in buf */
-	char* parsed;					/*!< last parsed position */
+	struct tcp_req tcp;
 
 	/* parsing fields*/
 	struct msrp_firstline fl;
@@ -54,29 +51,44 @@ struct msrp_req{
 	/* control fields */
 	/* 1 if one req has been fully read, 0 otherwise*/
 	unsigned short complete;
-	enum msrp_req_errors error;
 	enum msrp_req_states state;
 };
+
+extern int msrp_send_timeout;
+extern int msrp_tls_handshake_timeout;
+extern int msrp_max_msg_chunks;
+extern int *msrp_trace_is_on;
+extern int  msrp_trace_filter_route_id;
+extern trace_dest msrp_t_dst;
+extern struct msrp_req msrp_current_req;
+
+extern struct tls_mgm_binds tls_mgm_api;
 
 
 #define init_msrp_req( r, _size) \
 	do{ \
-		(r)->parsed=(r)->start=(r)->buf; \
-		(r)->pos=(r)->buf + (_size); \
-		(r)->error=MSRP_REQ_OK;\
+		(r)->tcp.parsed=(r)->tcp.start=(r)->tcp.buf; \
+		(r)->tcp.pos=(r)->tcp.buf + (_size); \
+		(r)->tcp.error=TCP_REQ_OK;\
 		(r)->state=MSRP_START; \
 		(r)->complete=0; \
 		(r)->body.len=0;(r)->body.s=NULL; \
 		memset( &(r)->fl, 0, sizeof(struct msrp_firstline) ); \
 	}while(0)
 
-extern struct msrp_req msrp_current_req;
+
+#define F_TCP_CONN_TRACED ( 1 << 0 )
+#define TRACE_ON(flags) (msrp_t_dst && (*msrp_trace_is_on) && \
+						!(flags & F_CONN_TRACE_DROPPED))
 
 
 void msrp_brief_parse_msg(struct msrp_req *r);
 
-int msrp_handle_req(struct msrp_req *req,
-		struct tcp_connection *con, int _max_msg_chunks);
+int proto_msrp_send(struct socket_info* send_sock,
+		char* buf, unsigned int len,
+		union sockaddr_union* to, unsigned int id);
+
+int msrp_read_req(struct tcp_connection* con, int* bytes_read);
 
 #endif
 

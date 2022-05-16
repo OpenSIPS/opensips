@@ -28,21 +28,24 @@
 #include "../../sr_module.h"
 #include "../../socket_info.h"
 #include "../../tsend.h"
-#include "../../trace_api.h"  // ??
+#include "../../trace_api.h"
 #include "../../net/api_proto.h"
 #include "../../net/api_proto_net.h"
 #include "../../net/net_tcp.h"
 #include "../../net/net_tcp_report.h"
 #include "../../net/tcp_common.h"
-#include "../../net/trans_trace.h"  // ??
 #include "../../mi/mi.h"
+#include "../tls_mgm/api.h"
 #include "msrp_plain.h"
+#include "msrp_tls.h"
+#include "msrp_common.h"
 #include "msrp_signaling.h"
 #include "msrp_api.h"
 
 static int  mod_init(void);
 static void mod_destroy(void);
 static int  proto_msrp_init(struct proto_info *pi);
+static int  proto_msrps_init(struct proto_info *pi);
 
 static mi_response_t *w_msrp_trace_mi(const mi_params_t *params,
 		struct mi_handler *async_hdl);
@@ -54,23 +57,30 @@ static mi_response_t *w_msrp_trace_mi_1(const mi_params_t *params,
 #define MSRP_TRANS_TRACE_PROTO_ID "net"
 static str trace_destination_name = {NULL, 0};
 static trace_proto_t tprot;
-trace_dest msrp_t_dst;
 
 /* module  tracing parameters */
 static int msrp_trace_is_on_tmp=0;
 static char* trace_filter_route;
 
+struct tls_mgm_binds tls_mgm_api;
+
+int msrp_check_cert_on_reusage = 0;
+
+
 
 static cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_msrp_init, {{0, 0, 0}}, 0},
+	{"proto_init", (cmd_function)proto_msrps_init, {{0, 0, 0}}, 0},
 	{"load_msrp", (cmd_function)load_msrp, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 
 static param_export_t params[] = {
-	{ "msrp_send_timeout",		INT_PARAM, &msrp_send_timeout       },
-	{ "msrp_max_msg_chunks",	INT_PARAM, &msrp_max_msg_chunks },
+	{ "send_timeout",			INT_PARAM, &msrp_send_timeout       },
+	{ "tls_handshake_timeout",	INT_PARAM, &msrp_tls_handshake_timeout  },
+	{ "max_msg_chunks",			INT_PARAM, &msrp_max_msg_chunks },
+	{ "cert_check_on_conn_reusage",	INT_PARAM, &msrp_check_cert_on_reusage },
 	{ "trace_destination",		STR_PARAM, &trace_destination_name.s},
 	{ "trace_on",				INT_PARAM, &msrp_trace_is_on_tmp        },
 	{ "trace_filter_route",		STR_PARAM, &trace_filter_route     },
@@ -132,10 +142,34 @@ static int proto_msrp_init(struct proto_info *pi)
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
 	pi->net.read			= (proto_net_read_f)msrp_read_req;
+	pi->net.conn_init		= NULL;
 	pi->net.report			= msrp_report;
 
 	return 0;
 }
+
+static int proto_msrps_init(struct proto_info *pi)
+{
+	pi->id					= PROTO_MSRPS;
+	pi->name				= "msrps";
+
+	pi->tran.init_listener	= proto_msrp_init_listener;
+	pi->tran.send			= proto_msrp_send;
+	pi->tran.dst_attr		= tcp_conn_fcntl;
+
+	pi->net.flags			= PROTO_NET_USE_TCP;
+	pi->net.read			= (proto_net_read_f)msrp_read_req;
+	pi->net.conn_init		= proto_msrps_conn_init;
+	pi->net.conn_clean		= proto_msrps_conn_clean;
+	if (msrp_check_cert_on_reusage)
+		pi->net.conn_match	= msrps_conn_extra_match;
+	else
+		pi->net.conn_match	= NULL;
+	pi->net.report			= msrps_report;
+
+	return 0;
+}
+
 
 #ifdef MSRP_SELF_TESTING
 #include "msrp_api.h"
@@ -143,13 +177,14 @@ void *self_hdl = NULL;
 
 int self_req_hdl(struct msrp_msg *req, void *param)
 {
-	msrp_fwd_request( self_hdl, req, NULL, 0, NULL);
+	msrp_fwd_request( self_hdl, req, NULL, 0, NULL, NULL);
 	return 0;
 }
 
-int self_rpl_hdl(struct msrp_msg *rpl, struct msrp_cell *tran, void *param)
+int self_rpl_hdl(struct msrp_msg *rpl, struct msrp_cell *tran,
+		void *t_param, void *hdl_param)
 {
-	msrp_fwd_reply( self_hdl, rpl);
+	msrp_fwd_reply( self_hdl, rpl, tran);
 	return 0;
 }
 #endif
@@ -158,6 +193,13 @@ int self_rpl_hdl(struct msrp_msg *rpl, struct msrp_cell *tran, void *param)
 static int mod_init(void)
 {
 	LM_INFO("initializing MSRP-plain protocol\n");
+
+	if ( protos[PROTO_MSRPS].listeners ) {
+		if (load_tls_mgm_api(&tls_mgm_api) != 0){
+			LM_DBG("failed to find tls API - is tls_mgm module loaded?\n");
+			return -1;
+		}
+	}
 
 	if (msrp_init_trans_layer( handle_msrp_timeout )<0) {
 		LM_ERR("failed to init transactional layer\n");

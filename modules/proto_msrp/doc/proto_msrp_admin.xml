@@ -21,6 +21,7 @@
 		<programlisting format="linespecific">
 ...
 socket=msrp:127.0.0.1:65432
+socket=msrps:127.0.0.1:65431
 ...
 </programlisting>
 	</para>
@@ -35,7 +36,9 @@ socket=msrp:127.0.0.1:65432
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>None</emphasis>.
+				<emphasis>tls_mgm</emphasis> - you need to load this module
+				if using MSRPS (secure) sockets. Via this module you will
+				manage the SSL certificates
 			</para>
 			</listitem>
 			</itemizedlist>
@@ -61,7 +64,7 @@ socket=msrp:127.0.0.1:65432
 	<section>
 	<title>Exported Parameters</title>
 	<section>
-		<title><varname>msrp_send_timeout</varname> (integer)</title>
+		<title><varname>send_timeout</varname> (integer)</title>
 		<para>
 		Time in milliseconds after a MSRP connection will be closed if it is
 		not available for blocking writing in this interval (and &osips; wants
@@ -73,16 +76,16 @@ socket=msrp:127.0.0.1:65432
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>msrp_send_timeout</varname> parameter</title>
+		<title>Set <varname>send_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_msrp", "msrp_send_timeout", 200)
+modparam("proto_msrp", "send_timeout", 200)
 ...
 </programlisting>
 		</example>
 	</section>
 	<section>
-		<title><varname>msrp_max_msg_chunks</varname> (integer)</title>
+		<title><varname>max_msg_chunks</varname> (integer)</title>
 		<para>
 			The maximum number of chunks that a SIP message is expected to
 			arrive via MSRP. If a packet is received more fragmented than this,
@@ -97,14 +100,74 @@ modparam("proto_msrp", "msrp_send_timeout", 200)
 		</emphasis>
 		</para>
 		<example>
-		<title>Set <varname>msrp_max_msg_chunks</varname> parameter</title>
+		<title>Set <varname>max_msg_chunks</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_msrp", "msrp_max_msg_chunks", 8)
+modparam("proto_msrp", "max_msg_chunks", 8)
 ...
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_tls_handshake_timeout" xreflabel="tls_handshake_timeout">
+		<title><varname>tls_handshake_timeout</varname> (integer)</title>
+		<para>
+			Sets the timeout (in milliseconds) for the SSL handshake sequence
+			to complete. It may be necessary to increase this value when using
+			a CPU intensive cipher 
+			for the connection to allow time for keys to be generated and 
+			processed.
+		</para>
+		<para>
+			The timeout is invoked during acceptance of a new connection 
+			(inbound) and during the wait period when a new session is being
+			initiated (outbound).
+		</para>
+		<para><emphasis>
+			Default value is 100.
+		</emphasis></para>
+		<example>
+			<title>Set <varname>tls_handshake_timeout</varname> variable</title>
+			<programlisting format="linespecific">
+
+param("proto_msrp", "tls_handshake_timeout", 200) # number of milliseconds
+
+			</programlisting>
+		</example>
+	</section>
+
+
+	<section id="param_cert_check_on_conn_reusage" xreflabel="cert_check_on_conn_reusage">
+		<title><varname>cert_check_on_conn_reusage</varname> (integer)</title>
+		<para>
+		This parameter turns on or off the extra checking/matching of the
+		TLS domain (SSL certificate) when comes to reusing an existing TLS
+		connection. Without this extra check, only IP and port of the
+		connections will be check (in order to re-use an existing connection).
+		With this extra check, the connection to be reused must have the same
+		SSL certificate as the one set for the current signaling operation.
+		</para>
+		<para>
+		This checking is done only when comes to send SIP traffic via TLS and
+		it is applied only against connections that were created / initiated 
+		by OpenSIPS (as TLS client). Any accepte connection (as TLS server)
+		will automatically match (the extra test will be skipped).
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cert_check_on_conn_reusage</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("proto_msrp", "cert_check_on_conn_reusage", 1)
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	<section id="trace-destination">
 		<title><varname>trace_destination</varname> (string)</title>
