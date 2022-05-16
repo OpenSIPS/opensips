@@ -1284,6 +1284,8 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 static inline int rtp_relay_dlg_mi_flags(struct rtp_relay_leg *leg,
 		mi_item_t *obj)
 {
+	if (!leg)
+		return 0;
 	if (leg->tag.len &&
 		add_mi_string(obj, MI_SSTR("tag"),
 			leg->tag.s, leg->tag.len) < 0)
@@ -1573,7 +1575,6 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 		return;
 	}
 
-	rtp_sess_reset_pending(sess);
 	if (rtp_relay_tmb.register_tmcb(msg, 0, TMCB_REQUEST_FWDED,
 				rtp_relay_indlg_tm_req, dlg, 0)!=1)
 		LM_ERR("failed to install TM request callback\n");
@@ -1701,13 +1702,23 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
 		return 1;
 	}
 	/* fill in tag's tag */
-	if (sess->legs[type] &&
-			!sess->legs[type]->tag.len) {
-		if (parse_headers(msg, HDR_TO_F, 0) < 0 || !msg->to || parse_from_header(msg) < 0)
-			LM_ERR("bad request or missing To header\n");
-		else
+	if (sess->legs[type] && sess->legs[type]->tag.len)
+		return 0;
+	if (parse_headers(msg, HDR_TO_F, 0) < 0 || !msg->to || parse_from_header(msg) < 0) {
+		LM_ERR("bad request or missing To header\n");
+		return -1;
+	} else {
+		if (!sess->legs[type]) {
+			sess->legs[type] = rtp_relay_new_leg(ctx,
+					&get_to(msg)->tag_value, sess->index);
+			if (!sess->legs[type]) {
+				LM_ERR("could not create new leg\n");
+				return -1;
+			}
+		} else {
 			shm_str_sync(&sess->legs[type]->tag,
 					&get_to(msg)->tag_value);
+		}
 	}
 	return 0;
 }
@@ -1846,6 +1857,9 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 		}
 		sess = rtp_relay_new_sess(ctx, relay, set,
 				&get_from(msg)->tag_value, index);
+		if (!sess->legs[RTP_RELAY_CALLER])
+			sess->legs[RTP_RELAY_CALLER] = rtp_relay_new_leg(ctx,
+					&get_from(msg)->tag_value, index);
 	} else {
 		leg = rtp_relay_get_peer_leg_ctx(ctx, msg);
 		if (!leg) {
@@ -2531,6 +2545,7 @@ error:
 int rtp_relay_api_offer(rtp_ctx _ctx, str *id,
 		unsigned int flags, str *body)
 {
+	int ret;
 	struct rtp_relay_session info;
 	struct rtp_relay_sess *sess;
 	struct rtp_relay_ctx *ctx = _ctx;
