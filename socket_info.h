@@ -205,7 +205,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	 * must support 4-char arrays for sctp
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
-	if ((len < 2 || len > 4) && len != 7) return -1;
+	if ((len < 2 || len > 5) && len != 7) return -1;
 
 	i=PROTO2UINT(s[0], s[1], s[2]);
 	switch(i){
@@ -254,8 +254,15 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 			}
 			break;
 		case PROTO2UINT('m', 's', 'r'):
-			if(len==4 && (s[3]=='p' || s[3]=='P')) {
-				*proto=PROTO_MSRP; return 0;
+			if(len==4) {
+				if (s[3]=='p' || s[3]=='P') {
+					*proto=PROTO_MSRP; return 0;
+				}
+			} else
+			if(len==5) {
+				if ((s[3]=='p' || s[3]=='P') && (s[4]=='s' || s[4]=='S')) {
+					*proto=PROTO_MSRPS; return 0;
+				}
 			}
 			break;
 		default:
@@ -436,6 +443,14 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'r';
 			*(p++) = 'p';
 			break;
+		case PROTO_MSRPS:
+			*(p++) = 'm';
+			*(p++) = 's';
+			*(p++) = 'r';
+			*(p++) = 'p';
+			*(p++) = 's';
+			break;
+
 		default:
 			LM_CRIT("unsupported proto %d\n", proto);
 	}
@@ -483,6 +498,9 @@ static inline char* proto2upper(int proto, char *p)
 		break;
 	case PROTO_MSRP:
 		p = memcpy(p, STR_L("MSRP")) + sizeof("MSRP")-1;
+		break;
+	case PROTO_MSRPS:
+		p = memcpy(p, STR_L("MSRPS")) + sizeof("MSRPS")-1;
 		break;
 	default:
 		LM_CRIT("unsupported proto %d\n", proto);
