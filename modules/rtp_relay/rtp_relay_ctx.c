@@ -2561,12 +2561,20 @@ int rtp_relay_api_offer(rtp_ctx _ctx, str *id,
 	memset(&info, 0, sizeof info);
 	info.branch = sess->index;
 	info.body = body;
-	return rtp_relay_offer(&info, ctx, sess, flags, body);
+	info.msg = get_dummy_sip_msg();
+	if (!info.msg) {
+		LM_ERR("could not get dummy msg!\n");
+		return -1;
+	}
+	ret = rtp_relay_offer(&info, ctx, sess, flags, body);
+	release_dummy_sip_msg(info.msg);
+	return ret;
 }
 
 int rtp_relay_api_answer(rtp_ctx _ctx, str *id,
 		unsigned int flags, str *body)
 {
+	int ret;
 	struct rtp_relay_session info;
 	struct rtp_relay_sess *sess;
 	struct rtp_relay_ctx *ctx = _ctx;
@@ -2582,11 +2590,19 @@ int rtp_relay_api_answer(rtp_ctx _ctx, str *id,
 	memset(&info, 0, sizeof info);
 	info.branch = sess->index;
 	info.body = body;
-	return rtp_relay_answer(&info, ctx, sess, flags, body);
+	info.msg = get_dummy_sip_msg();
+	if (!info.msg) {
+		LM_ERR("could not get dummy msg!\n");
+		return -1;
+	}
+	ret = rtp_relay_answer(&info, ctx, sess, flags, body);
+	release_dummy_sip_msg(info.msg);
+	return ret;
 }
 
 int rtp_relay_api_delete(rtp_ctx _ctx, str *id, unsigned int flags)
 {
+	int ret;
 	struct rtp_relay_session info;
 	struct rtp_relay_sess *sess;
 	struct rtp_relay_ctx *ctx = _ctx;
@@ -2601,7 +2617,14 @@ int rtp_relay_api_delete(rtp_ctx _ctx, str *id, unsigned int flags)
 	}
 	memset(&info, 0, sizeof info);
 	info.branch = sess->index;
-	return rtp_relay_delete(&info, ctx, sess, flags);
+	info.msg = get_dummy_sip_msg();
+	if (!info.msg) {
+		LM_ERR("could not get dummy msg!\n");
+		return -1;
+	}
+	ret = rtp_relay_delete(&info, ctx, sess, flags);
+	release_dummy_sip_msg(info.msg);
+	return ret;
 }
 
 int rtp_relay_copy_offer(rtp_ctx _ctx, str *id, str *flags,
