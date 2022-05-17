@@ -2650,7 +2650,10 @@ Status:: 0
 	</itemizedlist>
 
 	<para>
-	In terms of reports/logs, the following events will be reported:
+	Reload reporting:
+	</para>
+	<para>
+	In terms of data reloading, the following logs will be reported:
 	</para>
 	<itemizedlist>
 		<listitem><para>
@@ -2666,7 +2669,32 @@ Status:: 0
 		N gateways loaded (N discarded), N carriers loaded (N discarded), N rules loaded (N discarded)
 		</para></listitem>
 	</itemizedlist>
+	<programlisting  format="linespecific">
+    {
+        "Name": "Default",
+        "Reports": [
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "2 gateways loaded (0 discarded), 2 carriers loaded (0 discarded), 1 rules loaded (0 discarded)"
+            }
+        ]
+    }
+	</programlisting>
 
+	<para>
+	GW/Carrier switching reporting:
+	</para>
 	<para>
 	For reporting events related to the state changes of the
 	gateways and carriers, the module provides separate identifiers (still
@@ -2681,6 +2709,23 @@ Status:: 0
 	of the change. This identifiers have a 200 records history before 
 	discarding the old ones.
 	</para>
+	<programlisting>
+    {
+        "Name": "Default;events",
+        "Reports": [
+            {
+                "Timestamp": 1652353976,
+                "Date": "Thu May 12 14:12:56 2022",
+                "Log": "GW &lt;gw1_1&gt;/127.0.1.1 switched to [inactive] due probing reply\n"
+            },
+            {
+                "Timestamp": 1652353976,
+                "Date": "Thu May 12 14:12:56 2022",
+                "Log": "GW &lt;gw2_1&gt;/127.0.1.2 switched to [inactive] due probing reply\n"
+            }
+        ]
+    }
+	</programlisting>
 
 	<para>
 	For how to access and use the Status/Report information, please see

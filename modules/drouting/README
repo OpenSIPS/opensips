@@ -1771,13 +1771,39 @@ Status:: 0
      * 1 - data loaded, partition ready
      * 2 - data available, a reload in progress
 
-   In terms of reports/logs, the following events will be
+   Reload reporting:
+
+   In terms of data reloading, the following logs will be
    reported:
      * starting DB data loading
      * DB data loading failed, discarding
      * DB data loading successfully completed
      * N gateways loaded (N discarded), N carriers loaded (N
        discarded), N rules loaded (N discarded)
+
+    {
+        "Name": "Default",
+        "Reports": [
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652353940,
+                "Date": "Thu May 12 14:12:20 2022",
+                "Log": "2 gateways loaded (0 discarded), 2 carriers load
+ed (0 discarded), 1 rules loaded (0 discarded)"
+            }
+        ]
+    }
+
+   GW/Carrier switching reporting:
 
    For reporting events related to the state changes of the
    gateways and carriers, the module provides separate identifiers
@@ -1791,6 +1817,23 @@ Status:: 0
    and carriers, along with the reason of the change. This
    identifiers have a 200 records history before discarding the
    old ones.
+    {
+        "Name": "Default;events",
+        "Reports": [
+            {
+                "Timestamp": 1652353976,
+                "Date": "Thu May 12 14:12:56 2022",
+                "Log": "GW <gw1_1>/127.0.1.1 switched to [inactive] due
+probing reply\n"
+            },
+            {
+                "Timestamp": 1652353976,
+                "Date": "Thu May 12 14:12:56 2022",
+                "Log": "GW <gw2_1>/127.0.1.2 switched to [inactive] due
+probing reply\n"
+            }
+        ]
+    }
 
    For how to access and use the Status/Report information, please
    see
