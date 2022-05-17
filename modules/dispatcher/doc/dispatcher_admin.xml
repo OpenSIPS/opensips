@@ -1780,7 +1780,10 @@ opensips-cli -x mi ds_reload
 	</itemizedlist>
 
 	<para>
-	In terms of reports/logs, the following events will be reported:
+	Reload reporting:
+	</para>
+	<para>
+	In terms of date reloading, the following events will be reported:
 	</para>
 	<itemizedlist>
 		<listitem><para>
@@ -1796,6 +1799,33 @@ opensips-cli -x mi ds_reload
 		N destination loaded (N discarded)
 		</para></listitem>
 	</itemizedlist>
+	<programlisting  format="linespecific">
+        {
+            "Name": "default",
+            "Reports": [
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "starting DB data loading"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "DB data loading successfully completed"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "2 destinations loaded (0 discarded)"
+                }
+            ]
+        }
+
+	</programlisting>
+
+	<para>
+	Destination switching reporting:
+	</para>
 
 	<para>
 	For reporting events related to the state changes of the
@@ -1811,6 +1841,24 @@ opensips-cli -x mi ds_reload
 	of the change. This identifiers have a 200 records history before 
 	discarding the old ones.
 	</para>
+	<programlisting  format="linespecific">
+        {
+            "Name": "default;events",
+            "Reports": [
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION &lt;sip:127.0.1.1&gt;, set 1 switched to [inactive] due to negative probing reply\n"
+                },
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION &lt;sip:127.0.1.2&gt;, set 1 switched to [inactive] due to negative probing reply\n"
+                }
+            ]
+        },
+
+	</programlisting>
 
 	<para>
 	For how to access and use the Status/Report information, please see

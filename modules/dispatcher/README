@@ -1248,12 +1248,38 @@ opensips-cli -x mi ds_reload
      * 1 - data loaded, partition ready
      * 2 - data available, a reload in progress
 
-   In terms of reports/logs, the following events will be
+   Reload reporting:
+
+   In terms of date reloading, the following events will be
    reported:
      * starting DB data loading
      * DB data loading failed, discarding
      * DB data loading successfully completed
      * N destination loaded (N discarded)
+
+        {
+            "Name": "default",
+            "Reports": [
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "starting DB data loading"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "DB data loading successfully completed"
+                },
+                {
+                    "Timestamp": 1652373212,
+                    "Date": "Thu May 12 19:33:32 2022",
+                    "Log": "2 destinations loaded (0 discarded)"
+                }
+            ]
+        }
+
+
+   Destination switching reporting:
 
    For reporting events related to the state changes of the
    destinations, the module provides separate identifiers (still
@@ -1267,6 +1293,24 @@ opensips-cli -x mi ds_reload
    destinations, along with the reason of the change. This
    identifiers have a 200 records history before discarding the
    old ones.
+        {
+            "Name": "default;events",
+            "Reports": [
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION <sip:127.0.1.1>, set 1 switched
+to [inactive] due to negative probing reply\n"
+                },
+                {
+                    "Timestamp": 1652373308,
+                    "Date": "Thu May 12 19:35:08 2022",
+                    "Log": "DESTINATION <sip:127.0.1.2>, set 1 switched
+to [inactive] due to negative probing reply\n"
+                }
+            ]
+        },
+
 
    For how to access and use the Status/Report information, please
    see
