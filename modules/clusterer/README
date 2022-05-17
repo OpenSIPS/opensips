@@ -1008,6 +1008,24 @@ f-repl 1
    changes of the sharing_tags (between active and backup), along
    with the reason of the change. This identifier have a 200
    records history before discarding the old ones.
+        {
+            "Name": "sharing_tags",
+            "Reports": [
+                {
+                    "Timestamp": 1652367224,
+                    "Date": "Thu May 12 17:53:44 2022",
+                    "Log": "TAG <HA>, cluster 1, became backup due to cl
+uster broadcast from 2"
+                },
+                {
+                    "Timestamp": 1652367326,
+                    "Date": "Thu May 12 17:55:26 2022",
+                    "Log": "TAG <HA>, cluster 1, became active due to MI
+ command"
+                }
+            ]
+        }
+
 
    For how to access and use the Status/Report information, please
    see
