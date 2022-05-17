@@ -189,6 +189,89 @@ modparam("msrp_relay", "calculate_ha1", 1)
 		</example>
 	</section>
 
+		<section id="param_socket_route" xreflabel="param_socket_route">
+		<title><varname>socket_route</varname> (str)</title>
+		<para>
+			The optional name of the script route to be called when
+			start relaying a new MSRP session (upon the first SEND). The
+			purpose of this route is to allow you to select the appropriate
+			outbound socket to be be used for sending out the MSRP request.
+		</para>
+		<para>
+			Inside the route, the following information from the received
+			request will be exposed:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>source network information</emphasis> via the
+			<varname>$si</varname>, <varname>$sp</varname>,
+			<varname>$sP</varname> and <varname>$socket_in</varname>
+			variables.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>destination URL schema</emphasis> via the
+			<xref linkend="param_dst_schema_var"/> variable
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>destination URL host</emphasis> via the
+			<xref linkend="param_dst_host_var"/> variable
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			In this route you should optionally set the desired MSRP(S)
+			outbound socket via the <varname>$socket_out</varname> variable.
+			If none is set, the inbound interface will also be used as
+			outbound if the schema (MSRP versus MSRPS) is the same. If the
+			schema changes, the first socket (matching the out schema) will
+			be used.
+		</para>
+		<para>
+		Default value is <quote>NULL</quote> (none).
+		</para>
+		<example>
+		<title>Set <varname>socket_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_relay", "socket_route", "msrp_routing")
+
+route[msrp_routing] {
+	xlog("MSRP request comming from $si:$sp on $socket_in socket\n");
+	xlog("trying to go to $var(dst_schema)://$var(dst_host)\n");
+
+	$socket_out = "msrp:1.2.3.4:9999";
+}
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_dst_schema_var" xreflabel="dst_schema_var">
+		<title><varname>dst_schema_var</varname> (string)</title>
+		<para>
+		This name of the variable to provide the schema ("msrp" or "msrps")
+		of the destination URL in the socket route. See more on
+		<xref linkend="param_socket_route"/> parameter.
+		</para>
+		<para>
+		Default value is <quote>$var(dst_schema)</quote>.
+		</para>
+		</section>
+
+		<section id="param_dst_host_var" xreflabel="dst_host_var">
+		<title><varname>dst_host_var</varname> (string)</title>
+		<para>
+		This name of the variable to provide the host of the 
+		destination URL in the socket route. See more on 
+		<xref linkend="param_socket_route"/> parameter.
+		</para>
+		<para>
+		Default value is <quote>$var(dst_host)</quote>.
+		</para>
+		</section>
+
 		<section id="param_auth_realm" xreflabel="auth_realm">
 		<title><varname>auth_realm</varname> (string)</title>
 		<para>

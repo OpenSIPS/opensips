@@ -25,6 +25,7 @@
 #include "../../error.h"
 #include "../../lib/hash.h"
 #include "../../timer.h"
+#include "../../net/trans.h"
 
 #include "../auth/api.h"
 #include "../proto_msrp/msrp_api.h"
@@ -63,11 +64,19 @@ int cleanup_interval = 60;
 static char *msrp_auth_route  = DFEAULT_AUTH_ROUTE_NAME;
 int auth_routeid;
 
+static char *msrp_sock_route  = NULL;
+int sock_routeid = -1;
+
 struct msrp_url *my_url_list;
 
 str user_spec_param = str_init("$var(username)");
 str realm_spec_param = str_init("$var(realm)");
 str passwd_spec_param = str_init("$var(password)");
+
+str dschema_spec_param = str_init("$var(dst_schema)");
+str dhost_spec_param = str_init("$var(dst_host)");
+pv_spec_t dschema_spec;
+pv_spec_t dhost_spec;
 
 static int parse_my_uri_param(unsigned int type, void *val);
 
@@ -79,6 +88,9 @@ static param_export_t params[] = {
 	{"realm_var", STR_PARAM, &realm_spec_param.s},
 	{"password_var", STR_PARAM, &passwd_spec_param.s},
 	{"calculate_ha1", INT_PARAM, &auth_calc_ha1},
+	{"socket_route", STR_PARAM, &msrp_sock_route},
+	{"dst_schema_var", STR_PARAM, &dschema_spec_param.s},
+	{"dst_host_var", STR_PARAM, &dhost_spec_param.s},
 	{"auth_realm", STR_PARAM, &default_auth_realm.s},
 	{"auth_expires", INT_PARAM, &auth_expires},
 	{"auth_min_expires", INT_PARAM, &auth_min_expires},
@@ -225,6 +237,29 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (msrp_sock_route==NULL) {
+		sock_routeid = -1;
+	} else {
+		sock_routeid = get_script_route_ID_by_name(msrp_sock_route,
+			sroutes->request, RT_NO);
+		if (sock_routeid < 1) {
+			LM_ERR("SOCKet route <%s> does not exist\n", msrp_sock_route);
+			return -1;
+		}
+
+		dschema_spec_param.len = strlen(dschema_spec_param.s);
+		dhost_spec_param.len = strlen(dhost_spec_param.s);
+
+		if (!pv_parse_spec(&dschema_spec_param, &dschema_spec)) {
+			LM_ERR("failed to parse dst schema spec\n");
+			return -1;
+		}
+		if (!pv_parse_spec(&dhost_spec_param, &dhost_spec)) {
+			LM_ERR("failed to parse dst host spec\n");
+			return -1;
+		}
+	}
+
 	if (msrp_sessions_hsize < 1 || msrp_sessions_hsize > 20) {
 		LM_ERR("hash size should be between 1 and 20\n");
 		return -1;
@@ -311,6 +346,52 @@ static inline int msrp_uri_cmp(struct msrp_url *a, struct msrp_url *b)
 	return 1;
 }
 
+
+static int run_msrp_socket_route(struct receive_info *rcv, char *d_schema_s,
+		str *d_host, struct socket_info **si)
+{
+	pv_value_t pval;
+	struct sip_msg *dummy_msg;
+
+	/* prepare a fake/dummy request */
+	dummy_msg = get_dummy_sip_msg();
+	if(dummy_msg == NULL) {
+		LM_ERR("cannot create new dummy sip request\n");
+		return -1;
+	}
+	dummy_msg->rcv = *rcv;
+
+	pval.flags = PV_VAL_STR;
+	pval.rs.s = d_schema_s;
+	pval.rs.len = strlen(d_schema_s);
+	if (pv_set_value(dummy_msg, &dschema_spec, 0, &pval) < 0) {
+		LM_ERR("Failed to set destination schema var\n");
+		goto error;
+	}
+
+	pval.flags = PV_VAL_STR;
+	pval.rs = *d_host;
+	if (pv_set_value(dummy_msg, &dhost_spec, 0, &pval) < 0) {
+		LM_ERR("Failed to set destination schema var\n");
+		goto error;
+	}
+
+	set_route_type(REQUEST_ROUTE);
+
+	run_top_route(sroutes->request[sock_routeid], dummy_msg);
+
+	*si = dummy_msg->force_send_socket;
+
+	release_dummy_sip_msg(dummy_msg);
+	reset_avps();
+
+	return 0;
+error:
+	release_dummy_sip_msg(dummy_msg);
+	return -1;
+}
+
+
 int handle_msrp_request(struct msrp_msg *req, void *param)
 {
 	int rc;
@@ -323,6 +404,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 	int from_peer = 0;
 	struct msrp_url *my_url;
 	int report = 0;
+	struct socket_info *si;
 
 	LM_DBG("Received MSRP request [%.*s]\n", req->fl.u.request.method.len,
 		req->fl.u.request.method.s);
@@ -441,7 +523,14 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 			hash_unlock(msrp_sessions, hentry);
 		}
 
-		rc = msrp_api.forward_request(msrp_hdl, req, NULL, 0, NULL,to_su,NULL);
+		if (sock_routeid<=0 ||
+		run_msrp_socket_route( &req->rcv,
+			protos[to->next->secured?PROTO_MSRPS:PROTO_MSRP].name,
+			&to->next->host, &si)!=0
+		)
+			si = NULL;
+
+		rc = msrp_api.forward_request(msrp_hdl, req, NULL, 0, si, to_su, NULL);
 		if (rc == 0) {
 			if (mark_peer_conn) {
 				hash_lock(msrp_sessions, hentry);

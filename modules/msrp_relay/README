@@ -20,12 +20,15 @@ MSRP Relay Module
               1.3.5. realm_var (string)
               1.3.6. password_var (string)
               1.3.7. calculate_ha1 (integer)
-              1.3.8. auth_realm (string)
-              1.3.9. auth_expires (int)
-              1.3.10. auth_min_expires (int)
-              1.3.11. auth_max_expires (int)
-              1.3.12. nonce_expire (integer)
-              1.3.13. my_uri (string)
+              1.3.8. socket_route (str)
+              1.3.9. dst_schema_var (string)
+              1.3.10. dst_host_var (string)
+              1.3.11. auth_realm (string)
+              1.3.12. auth_expires (int)
+              1.3.13. auth_min_expires (int)
+              1.3.14. auth_max_expires (int)
+              1.3.15. nonce_expire (integer)
+              1.3.16. my_uri (string)
 
    2. Contributors
 
@@ -52,12 +55,13 @@ MSRP Relay Module
    1.5. realm_var parameter usage
    1.6. password_var parameter usage
    1.7. calculate_ha1 parameter usage
-   1.8. auth_realm parameter usage
-   1.9. Set server_hsize parameter
-   1.10. Set auth_min_expires parameter
-   1.11. Set auth_max_expires parameter
-   1.12. nonce_expire parameter example
-   1.13. my_uri parameter usage
+   1.8. Set socket_route parameter
+   1.9. auth_realm parameter usage
+   1.10. Set server_hsize parameter
+   1.11. Set auth_min_expires parameter
+   1.12. Set auth_max_expires parameter
+   1.13. nonce_expire parameter example
+   1.14. my_uri parameter usage
 
 Chapter 1. Admin Guide
 
@@ -174,7 +178,58 @@ modparam("msrp_relay", "password_var", "$var(msrp_auth_password)")
    Example 1.7. calculate_ha1 parameter usage
 modparam("msrp_relay", "calculate_ha1", 1)
 
-1.3.8. auth_realm (string)
+1.3.8. socket_route (str)
+
+   The optional name of the script route to be called when start
+   relaying a new MSRP session (upon the first SEND). The purpose
+   of this route is to allow you to select the appropriate
+   outbound socket to be be used for sending out the MSRP request.
+
+   Inside the route, the following information from the received
+   request will be exposed:
+     * source network information via the $si, $sp, $sP and
+       $socket_in variables.
+     * destination URL schema via the dst_schema_var variable
+     * destination URL host via the dst_host_var variable
+
+   In this route you should optionally set the desired MSRP(S)
+   outbound socket via the $socket_out variable. If none is set,
+   the inbound interface will also be used as outbound if the
+   schema (MSRP versus MSRPS) is the same. If the schema changes,
+   the first socket (matching the out schema) will be used.
+
+   Default value is “NULL” (none).
+
+   Example 1.8. Set socket_route parameter
+...
+modparam("msrp_relay", "socket_route", "msrp_routing")
+
+route[msrp_routing] {
+        xlog("MSRP request comming from $si:$sp on $socket_in socket\n")
+;
+        xlog("trying to go to $var(dst_schema)://$var(dst_host)\n");
+
+        $socket_out = "msrp:1.2.3.4:9999";
+}
+...
+
+1.3.9. dst_schema_var (string)
+
+   This name of the variable to provide the schema ("msrp" or
+   "msrps") of the destination URL in the socket route. See more
+   on param_socket_route parameter.
+
+   Default value is “$var(dst_schema)”.
+
+1.3.10. dst_host_var (string)
+
+   This name of the variable to provide the host of the
+   destination URL in the socket route. See more on
+   param_socket_route parameter.
+
+   Default value is “$var(dst_host)”.
+
+1.3.11. auth_realm (string)
 
    The realm to be provided in the WWW-Authenticate header when
    the relay automatically challanges an MSRP client.
@@ -183,10 +238,10 @@ modparam("msrp_relay", "calculate_ha1", 1)
    the domain part of the top MSRP URI in the To-Path header of
    the AUTH request.
 
-   Example 1.8. auth_realm parameter usage
+   Example 1.9. auth_realm parameter usage
 modparam("msrp_relay", "auth_realm", "opensips.org")
 
-1.3.9. auth_expires (int)
+1.3.12. auth_expires (int)
 
    The Expires header value to be provided in the 200 OK response
    to an AUTH request, if the client does not explicitly request
@@ -195,12 +250,12 @@ modparam("msrp_relay", "auth_realm", "opensips.org")
 
    Default value is “1800” (1024 records).
 
-   Example 1.9. Set server_hsize parameter
+   Example 1.10. Set server_hsize parameter
 ...
 modparam("msrp_relay", "auth_expires", 600)
 ...
 
-1.3.10. auth_min_expires (int)
+1.3.13. auth_min_expires (int)
 
    The minimum value accepted by the relay in the Expires header,
    if the client provides it in the AUTH request. If the requested
@@ -210,12 +265,12 @@ modparam("msrp_relay", "auth_expires", 600)
 
    If not set, the relay will accept any value.
 
-   Example 1.10. Set auth_min_expires parameter
+   Example 1.11. Set auth_min_expires parameter
 ...
 modparam("msrp_relay", "auth_min_expires", 60)
 ...
 
-1.3.11. auth_max_expires (int)
+1.3.14. auth_max_expires (int)
 
    The maximum value accepted by the relay in the Expires header,
    if the client provides it in the AUTH request. If the requested
@@ -225,12 +280,12 @@ modparam("msrp_relay", "auth_min_expires", 60)
 
    If not set, the relay will accept any value.
 
-   Example 1.11. Set auth_max_expires parameter
+   Example 1.12. Set auth_max_expires parameter
 ...
 modparam("msrp_relay", "auth_max_expires", 60)
 ...
 
-1.3.12. nonce_expire (integer)
+1.3.15. nonce_expire (integer)
 
    Nonces have limited lifetime. After a given period of time
    nonces will be considered invalid. This is to protect replay
@@ -243,10 +298,10 @@ modparam("msrp_relay", "auth_max_expires", 60)
 
    The value is in seconds and default value is 30 seconds.
 
-   Example 1.12. nonce_expire parameter example
+   Example 1.13. nonce_expire parameter example
 modparam("msrp_relay", "nonce_expire", 15)   # Set nonce_expire to 15s
 
-1.3.13. my_uri (string)
+1.3.16. my_uri (string)
 
    MSRP URI of this relay, that will be matched against the first
    URI in the To-Path header of any request or response received.
@@ -262,7 +317,7 @@ modparam("msrp_relay", "nonce_expire", 15)   # Set nonce_expire to 15s
    wil be assumed. The session-id part of the URI should not be
    set
 
-   Example 1.13. my_uri parameter usage
+   Example 1.14. my_uri parameter usage
 modparam("msrp_relay", "my_uri", "msrp://opensips.org:2855;tcp")
 
 Chapter 2. Contributors
