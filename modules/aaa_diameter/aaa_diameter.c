@@ -42,7 +42,7 @@ static int dm_bind_api(aaa_prot *api);
 int fd_log_level = FD_LOG_NOTICE;
 str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
-int dm_reply_timeout = 2000; /* ms */
+int dm_answer_timeout = 2000; /* ms */
 
 static cmd_export_t cmds[]= {
 	{"dm_send_request", (cmd_function)dm_send_request, {
@@ -66,7 +66,7 @@ static param_export_t params[] =
 	{ "fd_log_level",    INT_PARAM, &fd_log_level     },
 	{ "realm",           STR_PARAM, &dm_realm.s       },
 	{ "peer_identity",   STR_PARAM, &dm_peer_identity.s   },
-	{ "reply_timeout",   INT_PARAM, &dm_reply_timeout  },
+	{ "answer_timeout",   INT_PARAM, &dm_answer_timeout  },
 	{ NULL, 0, NULL },
 };
 
@@ -320,7 +320,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	if (rc != 0) {
 		LM_ERR("Diameter request failed, Result-Code: %d\n", res_code);
 		cJSON_Delete(avps);
-		return -1;
+		return rc;
 	}
 
 	cJSON_Delete(avps);

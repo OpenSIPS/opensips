@@ -129,6 +129,143 @@ modparam("aaa_diameter", "peer_identity", "server")
 		</example>
 		</section>
 
+		<section id="param_answer_timeout" xreflabel="answer_timeout">
+		<title><varname>answer_timeout (integer)</varname></title>
+		<para>
+		Time, in milliseconds, after which a <xref linkend="func_dm_send_request"/>
+		function call with no received reply will time out and return a
+		<emphasis role='bold'>-2</emphasis> code.
+		</para>
+		<example>
+		<title>Setting the <varname>answer_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "answer_timeout", 5000)
+
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_dm_send_request" xreflabel="dm_send_request()">
+		<title>
+		<function moreinfo="none">dm_send_request(app_id, cmd_code, avps_json, [res_code_pv])</function>
+		</title>
+		<para>
+		Perform a blocking Diameter request over to the interconnected peer
+		and return the Result-Code AVP value from the reply.
+		</para>
+		<para><emphasis>Parameters</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>app_id</emphasis> (integer) - ID of the application.
+				A custom application must be defined in the dictionary.opensips
+				Diameter configuration file before it can be recognized.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>cmd_code</emphasis> (integer) - ID of the command.  A
+				custom command code, name and AVP requirements must be defined
+				in the dictionary.opensips Diameter configuration file beforehand.
+				body of the HTTP response.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>avps_json</emphasis> (string) - A JSON Array containing
+				the AVPs to include in the message payload.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>res_code_pv</emphasis> (var, optional) - output variable which will
+				retain the Result-Code AVP value from the Diameter Answer.
+				A <emphasis role='bold'>-2</emphasis> result code means that
+				no reply arrived at all within the timeout window.
+			</para></listitem>
+		</itemizedlist>
+
+		<para><emphasis>Return Codes</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis role='bold'>1</emphasis> - Success
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>-1</emphasis> - Internal Error
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>-2</emphasis> - Request timeout
+			(the <xref linkend="param_answer_timeout"/> was exceeded
+			before an Answer could be processed)
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">dictionary.opensips</function> extended syntax</title>
+		<programlisting format="linespecific">
+
+# Example of defining custom Diameter AVPs, Application IDs,
+# Requests and Replies in the "dictionary.opensips" file
+
+ATTRIBUTE out_gw            232 string
+ATTRIBUTE trunk_id          233 string
+
+ATTRIBUTE rated_duration    234 integer
+ATTRIBUTE call_cost         235 integer
+
+APPLICATION 42 My Diameter Application
+
+REQUEST 92001 My-Custom-Request
+{
+	Session-Id | FIXED_HEAD | 1
+	Origin-Host | REQUIRED | 1
+	Origin-Realm | REQUIRED | 1
+	Route-Record | REQUIRED | 1
+	rated_duration | OPTIONAL | 1
+}
+
+ANSWER 92001 My-Custom-Answer
+{
+	Origin-Host | REQUIRED | 1
+	Origin-Realm | REQUIRED | 1
+	Route-Record | REQUIRED | 1
+}
+
+</programlisting>
+		</example>
+
+		<example>
+		<title><function moreinfo="none">dm_send_request</function> usage</title>
+		<programlisting format="linespecific">
+
+# Building an sending an Accounting-Request (271) for the
+# Diameter Accounting application (3)
+$var(payload) = "[
+	{ \"Origin-Host\": \"client.diameter.test\" },
+	{ \"Origin-Realm\": \"diameter.test\" },
+	{ \"Destination-Realm\": \"diameter.test\" },
+	{ \"Sip-From-Tag\": \"dc93-4fba-91db\" },
+	{ \"Sip-To-Tag\": \"ae12-47d6-816a\" },
+	{ \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+	{ \"Sip-Call-Duration\": 6 },
+	{ \"Sip-Call-Setuptime\": 1 },
+	{ \"Sip-Call-Created\": 1652372541 },
+	{ \"Sip-Call-MSDuration\": 5850 },
+	{ \"out_gw\": \"GW-774\" },
+	{ \"cost\": \"10.84\" }
+]";
+
+$var(rc) = dm_send_request(3, 271, $var(payload), $var(res_code));
+xlog("rc: $var(rc), Result-Code: $var(res_code)\n");
+
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 </chapter>
