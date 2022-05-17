@@ -1404,7 +1404,7 @@ static int msrpua_send_message(str *sess_id, str *mime, str *body)
 	hdrs[2] = str_init(FAILURE_REPORT_NO_HDR);
 
 	if (msrp_api.send_request(msrp_hdl, MSRP_METHOD_SEND, &from,
-		sess->peer_path_parsed, &sess->to_su, mime, body, hdrs,
+		sess->peer_path_parsed, msrp_sock, &sess->to_su, mime, body, hdrs,
 		MSRP_HDRS_NO, '$', sess) < 0) {
 		LM_ERR("Failed to send MSRP message\n");
 		goto error;
