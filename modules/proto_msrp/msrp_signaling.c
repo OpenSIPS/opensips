@@ -214,12 +214,11 @@ error:
  *  -3 - internal error
  */
 int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
-	union sockaddr_union *to_su, void *trans_param)
+	struct socket_info *sock, union sockaddr_union *to_su, void *trans_param)
 {
 	char *buf, *p, *s, bk;
 	struct msrp_url *to, *from;
 	union sockaddr_union su;
-	struct socket_info *sock;
 	struct hostent* he;
 	int i, len, hash, idx;
 	char md5[MD5_LEN];
@@ -274,9 +273,16 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 		}
 	}
 	/* pick up the right outbound socket */
+	if (sock) {
+		if ((to->next->secured?1:0)^(sock->proto==PROTO_MSRPS?1:0)) {
+			LM_WARN("forcing socket [%.*s], but the URL requires %s\n",
+				sock->sock_str.len, sock->sock_str.s,
+				to->next->secured?"MSRPS":"MSRP");
+		}
+	} else
 	if (
 	(to->next->secured?1:0)^(req->rcv.bind_address->proto==PROTO_MSRPS?1:0)) {
-		/* IN and OUT are different from the "secured" perspective, so 
+		/* IN and OUT are different from the "secured" perspective, so
 		 * pick the first socket matching the outbound proto */
 		sock = protos[to->next->secured?PROTO_MSRPS:PROTO_MSRP].listeners;
 		if (sock==NULL) {
@@ -286,9 +292,6 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 			return -2;
 		}
 	} else {
-		// TODO - for now we use the same socket (as the received one), but
-		//        it will nice to be able to change it (via script??) in order
-		//        to do traffic bridging between 2 interfaces.
 		sock = req->rcv.bind_address;
 	}
 
@@ -421,7 +424,7 @@ redo_ident:
 	}
 
 	/* now, send it out*/
-	i = msg_send( sock, PROTO_MSRP, to_su , 0 /*conn-id*/, buf, len, NULL);
+	i = msg_send( sock, sock->proto, to_su , 0 /*conn-id*/, buf, len, NULL);
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
 		LM_ERR("failed to fwd MSRP request\n");
@@ -806,7 +809,8 @@ error:
 
 
 int msrp_send_request(void *hdl, enum msrp_method method_id,
-		str *from, struct msrp_url *to, union sockaddr_union *to_su,
+		str *from, struct msrp_url *to,
+		struct socket_info *sock, union sockaddr_union *to_su,
 		str *mime, str *body,
 		str *hdrs, int hdrs_no, char cont_flag,
 		void *trans_param)
@@ -870,6 +874,25 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 		}
 		if ( hostent2su( to_su, he, 0/*idx*/, to->port_no )!=0 ) {
 			LM_ERR("Could translate he to su :-/, bad familly type??\n");
+			return -2;
+		}
+	}
+
+
+	/* pick up the right outbound socket */
+	if (sock) {
+		if ((to->secured?1:0)^(sock->proto==PROTO_MSRPS?1:0)) {
+			LM_WARN("forcing socket [%.*s], but the URL requires %s\n",
+				sock->sock_str.len, sock->sock_str.s,
+				to->secured?"MSRPS":"MSRP");
+		}
+	} else {
+		 /* just pick the first socket matching the outbound proto */
+		sock = protos[to->secured?PROTO_MSRPS:PROTO_MSRP].listeners;
+		if (sock==NULL) {
+			LM_ERR("cannot find outbound interface - the URL requires %s, but"
+				" not such sockets are defined\n",
+				to->secured?"MSRPS":"MSRP");
 			return -2;
 		}
 	}
@@ -1016,10 +1039,7 @@ redo_ident:
 	}
 
 	/* now, send it out*/
-	// TODO - for now we will use all the time the first MSRP socket,
-	//        but for the future it will be nice to be able to control this
-	i = msg_send( NULL, to->secured?PROTO_MSRPS:PROTO_MSRP, to_su,
-		0 /*conn-id*/, buf, len, NULL);
+	i = msg_send( sock, sock->proto, to_su, 0 /*conn-id*/, buf, len, NULL);
 	if (i<0) {
 		/* sending failed, TODO - close the connection */
 		LM_ERR("failed to fwd MSRP request\n");
