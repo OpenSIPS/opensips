@@ -1046,6 +1046,7 @@ fi
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
 %{_libdir}/opensips/modules/b2b_sca.so
+%{_libdir}/opensips/modules/b2b_sdp_demux.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/cachedb_local.so
 %{_libdir}/opensips/modules/cachedb_sql.so
@@ -1145,6 +1146,7 @@ fi
 %doc docdir/README.b2b_entities
 %doc docdir/README.b2b_logic
 %doc docdir/README.b2b_sca
+%doc docdir/README.b2b_sdp_demux
 %doc docdir/README.benchmark
 %doc docdir/README.cachedb_local
 %doc docdir/README.cachedb_sql
@@ -1568,7 +1570,7 @@ fi
 %changelog
 * Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
+- New modules: b2b_sdp_demux, msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
 - New packages: msrp-modules
 - Removed modules: b2b_logic_xml
 - Removed packages: b2bua-module
