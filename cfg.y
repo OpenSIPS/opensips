@@ -430,6 +430,7 @@ extern int cfg_parse_only_routes;
 %token COLON
 %token ANY
 %token ANYCAST
+%token FRAG
 %token SCRIPTVARERR
 %token SCALE_UP_TO
 %token SCALE_DOWN_TO
@@ -635,6 +636,9 @@ listen_id_def:	listen_id					{ IFOR();
 
 socket_def_param: ANYCAST { IFOR();
 					p_tmp.flags |= SI_IS_ANYCAST;
+					}
+				| FRAG { IFOR();
+					p_tmp.flags |= SI_FRAG;
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;

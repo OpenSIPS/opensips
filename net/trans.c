@@ -264,9 +264,10 @@ void print_all_socket_lists(void)
 			continue;
 
 		for (si = protos[i].listeners; si; si = si->next)
-			printf("             %s: %s [%s]:%s%s%s\n", protos[i].name,
+			printf("             %s: %s [%s]:%s%s%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "",
+					si->flags & SI_FRAG ? " allow_fragments" : "",
 					is_anycast(si)? " anycast" : "");
 	}
 }
