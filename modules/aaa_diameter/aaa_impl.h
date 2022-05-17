@@ -95,7 +95,6 @@ struct dm_avp {
 struct dm_cond {
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
-	int count; /* helps solve signal/wait race conditions */
 
 	int rc; /* the Diameter Result-Code AVP value */
 	int is_error;
@@ -105,6 +104,7 @@ int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond);
 extern char *dm_conf_filename;
 extern char *extra_avps_file;
 extern struct _dm_dict dm_dict;
+extern int dm_reply_timeout;
 
 int freeDiameter_init(void);
 
@@ -121,6 +121,8 @@ aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
 int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor);
 int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
+int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
+                      int *res_code);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
 void _dm_destroy_message(aaa_message *msg);
 

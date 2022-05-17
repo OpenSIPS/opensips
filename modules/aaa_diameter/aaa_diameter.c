@@ -36,18 +36,20 @@ char *dm_conf_filename = "freeDiameter.conf";
 char *extra_avps_file;
 
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
-				str *avp_json);
+				str *avp_json, pv_spec_t *res_code_pv);
 static int dm_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
 str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
+int dm_reply_timeout = 2000; /* ms */
 
 static cmd_export_t cmds[]= {
 	{"dm_send_request", (cmd_function)dm_send_request, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_INT,0,0},
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 
 	{"aaa_bind_api", (cmd_function) dm_bind_api, {{0, 0, 0}}, 0},
@@ -64,6 +66,7 @@ static param_export_t params[] =
 	{ "fd_log_level",    INT_PARAM, &fd_log_level     },
 	{ "realm",           STR_PARAM, &dm_realm.s       },
 	{ "peer_identity",   STR_PARAM, &dm_peer_identity.s   },
+	{ "reply_timeout",   INT_PARAM, &dm_reply_timeout  },
 	{ NULL, 0, NULL },
 };
 
@@ -198,11 +201,12 @@ static int dm_bind_api(aaa_prot *api)
 
 
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
-				str *avp_json)
+				str *avp_json, pv_spec_t *res_code_pv)
 {
-	aaa_message *dmsg;
+	aaa_message *dmsg = NULL;
 	struct dict_object *req;
 	cJSON *avps, *_avp;
+	int rc, res_code;
 
 	if (fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
 	      cmd_code, &req, ENOENT) == ENOENT) {
@@ -229,13 +233,13 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	if (avps->type != cJSON_Array) {
 		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
 		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
-		return -1;
+		goto error;
 	}
 
 	dmsg = _dm_create_message(NULL, AAA_CUSTOM, *app_id, *cmd_code);
 	if (!dmsg) {
 		LM_ERR("oom\n");
-		return -1;
+		goto error;
 	}
 
 	for (_avp = avps->child; _avp; _avp = _avp->next) {
@@ -243,7 +247,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 			LM_ERR("bad JSON type in Array: AVPs must be Objects ('%.*s' "
 			       "..., total: %d)\n", avp_json->len > 512 ? 512 : avp_json->len,
 			       avp_json->s, avp_json->len);
-			return -1;
+			goto error;
 		}
 
 		cJSON *avp = _avp->child; // only work with child #0
@@ -256,7 +260,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 		if (!(avp->type & (cJSON_String|cJSON_Number))) {
 			LM_ERR("bad AVP value: only String allowed ('%.*s' ..., key: %s)\n",
 		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp->string);
-			return -1;
+			goto error;
 		}
 
 		if (_isdigit(avp->string[0])) {
@@ -266,7 +270,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 			if (str2int(&st, &code) != 0) {
 				LM_ERR("bad AVP key: cannot start with a digit ('%.*s' ..., key: %s)\n",
 				   avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp->string);
-				return -1;
+				goto error;
 			}
 
 			LM_DBG("AVP:: searching AVP by int: %d\n", code);
@@ -293,22 +297,44 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 			if (dm_avp_add(NULL, dmsg, &my_avp, avp->valuestring,
 			        strlen(avp->valuestring), 0) != 0) {
 				LM_ERR("failed to add AVP %d, aborting request\n", code);
-				return -1;
+				goto error;
 			}
 		} else {
 			LM_DBG("dbg::: AVP %d (name: '%s', int-val: %d)\n", code, name, avp->valueint);
 			if (dm_avp_add(NULL, dmsg, &my_avp, &avp->valueint, -1, 0) != 0) {
 				LM_ERR("failed to add AVP %d, aborting request\n", code);
-				return -1;
+				goto error;
 			}
 		}
 	}
 
-	if (dm_send_message(NULL, dmsg, NULL) != 0) {
-		LM_ERR("failed to queue Diameter request for sending\n");
+	rc = _dm_send_message(NULL, dmsg, NULL, &res_code);
+
+	if (res_code_pv) {
+		pv_value_t val = {STR_NULL, 0, PV_VAL_INT|PV_TYPE_INT};
+		val.ri = res_code;
+		if (pv_set_value(msg, res_code_pv, 0, &val) != 0)
+			LM_ERR("failed to set output res_code pv to %d\n", res_code);
+	}
+
+	if (rc != 0) {
+		LM_ERR("Diameter request failed, Result-Code: %d\n", res_code);
+		cJSON_Delete(avps);
 		return -1;
 	}
 
 	cJSON_Delete(avps);
 	return 1;
+
+error:
+	if (res_code_pv) {
+		pv_value_t val = {STR_NULL, 0, PV_VAL_INT|PV_TYPE_INT};
+		val.ri = -1;
+		if (pv_set_value(msg, res_code_pv, 0, &val) != 0)
+			LM_ERR("failed to set output res_code pv to %d\n", res_code);
+	}
+
+	_dm_destroy_message(dmsg);
+	cJSON_Delete(avps);
+	return -1;
 }

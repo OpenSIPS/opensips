@@ -192,9 +192,7 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 
 	/* signal the blocked SIP worker that the auth result is available! */
 	pthread_mutex_lock(&rpl_cond->mutex);
-	if (rpl_cond->count == 0)
-		pthread_cond_signal(&rpl_cond->cond);
-	rpl_cond->count += 1;
+	pthread_cond_signal(&rpl_cond->cond);
 	pthread_mutex_unlock(&rpl_cond->mutex);
 
 out:
@@ -233,6 +231,8 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 	LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
 	       hdr->msg_code, rc, tid.len, tid.s);
 
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
+
 	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
 	if (!prpl_cond) {
 		LM_ERR("failed to match Transaction_Id %.*s to a pending request\n",
@@ -240,11 +240,18 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		goto out;
 	}
 	rpl_cond = *prpl_cond;
+
+	pthread_mutex_lock(&rpl_cond->mutex);
+	if (!hash_find_key(pending_replies, tid)) {
+		pthread_mutex_unlock(&rpl_cond->mutex);
+		LM_ERR("Transaction_Id %.*s already processed!\n", tid.len, tid.s);
+		goto out;
+	}
+
 	rpl_cond->rc = rc;
 
 	hash_remove_key(pending_replies, tid);
 
-	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
 	if (a) {
 		rpl_cond->is_error = 1;
 		FD_CHECK(fd_msg_avp_hdr(a, &h));
@@ -255,10 +262,7 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 	}
 
 	/* signal the blocked SIP worker that the auth result is available! */
-	pthread_mutex_lock(&rpl_cond->mutex);
-	if (rpl_cond->count == 0)
-		pthread_cond_signal(&rpl_cond->cond);
-	rpl_cond->count += 1;
+	pthread_cond_signal(&rpl_cond->cond);
 	pthread_mutex_unlock(&rpl_cond->mutex);
 
 out:
@@ -1308,7 +1312,8 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
 }
 
 
-int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply)
+int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
+	int *res_code)
 {
 	struct dm_message *dm;
 
@@ -1334,16 +1339,40 @@ int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply)
 	LM_DBG("message queued for sending\n");
 
 	if (req->type == AAA_AUTH || req->type == AAA_CUSTOM) {
-		LM_DBG("awaiting auth reply...\n");
+		struct timespec wait_until;
+		struct timeval now, wait_time, res;
+		int rc;
+
+		gettimeofday(&now, NULL);
+		wait_time.tv_sec = dm_reply_timeout / 1000;
+		wait_time.tv_usec = dm_reply_timeout % 1000 * 1000UL;
+		LM_DBG("awaiting auth reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
+
+		timeradd(&now, &wait_time, &res);
+
+		wait_until.tv_sec = res.tv_sec;
+		wait_until.tv_nsec = res.tv_usec * 1000UL;
 
 		pthread_mutex_lock(&my_reply_cond->mutex);
-		while (my_reply_cond->count == 0)
-			pthread_cond_wait(&my_reply_cond->cond, &my_reply_cond->mutex);
-		my_reply_cond->count -= 1;
+		rc = pthread_cond_timedwait(&my_reply_cond->cond,
+					&my_reply_cond->mutex, &wait_until);
+		if (rc != 0) {
+			LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
+			       "reply\n", rc, strerror(rc));
+			pthread_mutex_unlock(&my_reply_cond->mutex);
+
+			if (res_code)
+				*res_code = -1;
+			return -1;
+		}
+
 		pthread_mutex_unlock(&my_reply_cond->mutex);
 
 		LM_DBG("reply received, Result-Code: %d (%s)\n", my_reply_cond->rc,
 				my_reply_cond->is_error ? "FAILURE" : "SUCCESS");
+
+		if (res_code)
+			*res_code = my_reply_cond->rc;
 		if (my_reply_cond->is_error)
 			return -1;
 	}
@@ -1351,6 +1380,11 @@ int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply)
 	return 0;
 }
 
+
+int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply)
+{
+	return _dm_send_message(_, req, reply, NULL);
+}
 
 void _dm_destroy_message(aaa_message *msg)
 {
