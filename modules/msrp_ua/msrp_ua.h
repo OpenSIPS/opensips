@@ -23,6 +23,7 @@
 #define _MSRP_UA_H_
 
 #include "../b2b_entities/b2be_load.h"
+#include "api.h"
 
 typedef enum msrpua_dlg_state {
 	MSRPUA_DLG_NEW,   /* New dialog, no final reply sent/received yet */
@@ -44,6 +45,7 @@ struct msrpua_session {
 	int sdp_sess_id;
 	int sdp_sess_vers;
 	int lifetime;
+	struct msrp_ua_handler hdl;
 };
 
 #define MSRPUA_SESS_DEL_TOUT 30
