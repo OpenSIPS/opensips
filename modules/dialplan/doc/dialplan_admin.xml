@@ -838,6 +838,43 @@ xlog("'$var(in)' matched against partition '$var(part)'\n")
 		N rules loaded (N discarded)
 		</para></listitem>
 	</itemizedlist>
+	<programlisting  format="linespecific">
+    {
+        "Name": "default",
+        "Reports": [
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652778355,
+                "Date": "Tue May 17 12:05:55 2022",
+                "Log": "5 rules loaded (0 discarded)"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "starting DB data loading"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "DB data loading successfully completed"
+            },
+            {
+                "Timestamp": 1652778405,
+                "Date": "Tue May 17 12:06:45 2022",
+                "Log": "5 rules loaded (0 discarded)"
+            }
+        ]
+    }
+	</programlisting>
 
 	<para>
 	For how to access and use the Status/Report information, please see
