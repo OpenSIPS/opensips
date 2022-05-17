@@ -68,6 +68,7 @@ static struct {
 	struct dict_object * Accounting_Record_Type;
 	struct dict_object * Acct_Session_Id;
 	struct dict_object * Event_Timestamp;
+	struct dict_object * Transaction_Id;
 
 	struct dict_object * Auth_Application_Id;
 	struct dict_object * Auth_Session_State;
@@ -700,14 +701,14 @@ static int os_entry(char *confstring)
 	char *extra_avps_file;
 	int lib_mode;
 
+	CHECK_FCT(register_osips_avps());
+
 	CHECK_FCT(parse_conf_string(confstring, &extra_avps_file, &lib_mode));
 	CHECK_FCT(parse_extra_avps(extra_avps_file));
 	free(extra_avps_file);
 
 	if (lib_mode)
 		return 0;
-
-	CHECK_FCT(register_osips_avps());
 
 	/* Initialize the dictionary objects we use */
 	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Accounting-Record-Number", &dm_dict.Accounting_Record_Number, ENOENT) );

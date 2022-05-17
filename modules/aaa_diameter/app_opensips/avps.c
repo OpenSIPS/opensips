@@ -312,6 +312,24 @@ static int dm_register_custom_sip_avps(void)
 		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
 	}
 
+	/* Transaction-Id */
+	{
+		/*
+			The Transaction-Id AVP (AVP Code 231) is of type UTF8String
+			and represents a unique ID of the transaction, to facilitate
+			reply matching
+		*/
+		struct dict_avp_data data = {
+				231, 					/* Code */
+				0,						/* Vendor */
+				"Transaction-Id",		/* Name */
+				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
+				AVP_FLAG_MANDATORY,			/* Fixed flag values */
+				AVP_TYPE_OCTETSTRING 		/* base type of data */
+				};
+		FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
+	}
+
 	return 0;
 }
 
@@ -439,7 +457,7 @@ int parse_attr_line(char *line, ssize_t len)
 	enum dict_avp_basetype avp_type;
 
 	if (len < attr_len || strncasecmp(p, "ATTRIBUTE", attr_len))
-		goto error;
+		return 1;
 
 	p += attr_len;
 	len -= attr_len;
@@ -508,12 +526,289 @@ error:
 }
 
 
+unsigned int app_ids[64], n_app_ids;
+int parse_app_def(char *line, FILE *fp)
+{
+	unsigned int app_id = -1;
+	int i, len = strlen(line);
+	char *p = line, *newp, *app_name;
+
+	if (n_app_ids >= 64) {
+		printf("ERROR: max allowed Applications reached (64)\n");
+		return -1;
+	}
+
+	if (len < strlen("APPLICATION") || memcmp(p, "APPLICATION", 11))
+		return 1;
+
+	p += 11;
+	len -= 11;
+
+	while (isspace(*p)) { p++; len--; }
+
+	app_id = (unsigned int)strtoul(p, &newp, 10);
+	if (app_id < 0) {
+		printf("ERROR: bad Application ID: '... | %s'\n", p);
+		return -1;
+	}
+
+	len -= newp - p;
+	p = newp;
+
+	while (isspace(*p)) { p++; len--; }
+
+	if (len <= 0) {
+		printf("ERROR: empty Application Name not allowed\n");
+		return -1;
+	}
+
+	app_name = p;
+	p += len - 1;
+
+	while (p > app_name && isspace(*p)) { p--; }
+	*(++p) = '\0';
+
+	struct dict_application_data app_reg = {app_id, app_name};
+	FD_CHECK_dict_new(DICT_APPLICATION, &app_reg, NULL, NULL);
+
+	LOG_DBG("registered Application %d (%s)\n", app_id, app_name);
+
+	/* store the App ID so OpenSIPS can register a reply cb later */
+	for (i = 0; i < n_app_ids; i++)
+		if (app_ids[i] == app_id)
+			return 1;
+
+	app_ids[n_app_ids++] = app_id;
+	return 1;
+}
+
+
+#define CMD_REQUEST 1
+#define CMD_ANSWER  2
+int parse_command_def(char *line, FILE *fp, int cmd_type)
+{
+	struct dict_object *cmd = NULL;
+	unsigned int cmd_code = -1;
+	char *p = line, cmd_name[128 + 1], *avp_name, *bkp, *newp;
+	size_t buflen = strlen(line);
+	int i, len = buflen, cmd_name_len = -1, avp_count = 0;
+	struct {
+		char name[64 + 1];
+		int name_len;
+		enum rule_position pos;
+		int max_repeats;
+	} avps[128];
+
+	switch (cmd_type) {
+	case CMD_REQUEST:
+		if (len < strlen("REQUEST") || memcmp(p, "REQUEST", 7))
+			return 1;
+
+		p += 7;
+		len -= 7;
+		break;
+
+	case CMD_ANSWER:
+		if (len < strlen("ANSWER") || memcmp(p, "ANSWER", 6))
+			return 1;
+
+		p += 6;
+		len -= 6;
+		break;
+	}
+
+	cmd_code = (unsigned int)strtoul(p, &newp, 10);
+	if (cmd_code < 0) {
+		printf("ERROR: bad AVP cmd code: '... | %s'\n", p);
+		return -1;
+	}
+
+	len -= newp - p;
+	p = newp;
+
+	while (isspace(*p)) { p++; len--; }
+
+	bkp = p;
+	p += len - 1;
+
+	while (p > bkp && isspace(*p)) { p--; }
+	p++;
+
+	cmd_name_len = p - bkp;
+	if (cmd_name_len > 128) {
+		printf("ERROR: max Command Name length exceeded (128)\n");
+		return -1;
+	}
+
+	memcpy(cmd_name, bkp, cmd_name_len);
+	cmd_name[cmd_name_len] = '\0';
+
+	LOG_DBG("parsed Cmd-Code %d (%s)\n", cmd_code, cmd_name);
+
+	while (getline(&line, &buflen, fp) >= 0) {
+		p = line;
+		len = strlen(p);
+
+		while (isspace(*p)) { p++; len--; }
+
+		if (*p == '{')
+			continue;
+
+		if (*p == '}' || !strlen(p))
+			goto define_req;
+
+		if (avp_count >= 128) {
+			printf("ERROR: max AVP count exceeded (128)\n");
+			return -1;
+		}
+
+		avp_name = p;
+		while (*p && !isspace(*p)) { p++; len--; }
+		avps[avp_count].name_len = p - avp_name;
+
+		if (avps[avp_count].name_len > 64) {
+			printf("ERROR: AVP max name length exceeded (64)\n");
+			return -1;
+		}
+
+		memcpy(&avps[avp_count].name, avp_name, avps[avp_count].name_len);
+		avps[avp_count].name[avps[avp_count].name_len] = '\0';
+
+		while (isspace(*p)) { p++; len--; }
+
+		if (*p != '|')
+			goto error;
+
+		p++; len--;
+		while (isspace(*p)) { p++; len--; }
+
+		switch (*p) {
+		case 'F':
+			if (len < strlen("FIXED_HEAD") || memcmp(p, "FIXED_HEAD", 10))
+				goto error;
+
+			avps[avp_count].pos = RULE_FIXED_HEAD;
+			p += 10;
+			len -= 10;
+			break;
+
+		case 'R':
+			if (len < strlen("REQUIRED") || memcmp(p, "REQUIRED", 8))
+				goto error;
+
+			avps[avp_count].pos = RULE_REQUIRED;
+			p += 8;
+			len -= 8;
+			break;
+
+		case 'O':
+			if (len < strlen("OPTIONAL") || memcmp(p, "OPTIONAL", 8))
+				goto error;
+
+			avps[avp_count].pos = RULE_OPTIONAL;
+			p += 8;
+			len -= 8;
+			break;
+
+		default:
+			printf("ERROR: bad AVP flag in: '... | %s'\n", p);
+			goto error;
+		}
+
+		while (isspace(*p)) { p++; len--; }
+
+		if (*p != '|')
+			goto error;
+
+		p++; len--;
+		while (isspace(*p)) { p++; len--; }
+
+		avps[avp_count].max_repeats = (int)strtol(p, NULL, 10);
+		if (avps[avp_count].max_repeats < 0) {
+			printf("ERROR: bad AVP max count: '... | %s'\n", p);
+			goto error;
+		}
+
+		LOG_DBG("AVP def: %.*s | %d | %d\n", avps[avp_count].name_len,
+		        avps[avp_count].name, avps[avp_count].pos,
+		        avps[avp_count].max_repeats);
+		avp_count++;
+	}
+
+define_req:
+	LOG_DBG("defining request (%d AVPs in total)...\n", avp_count);
+
+	struct dict_cmd_data req_data = {
+			cmd_code,
+			cmd_name,
+			CMD_FLAG_REQUEST | CMD_FLAG_PROXIABLE
+				| (cmd_type == CMD_REQUEST ? CMD_FLAG_ERROR : 0),	/* Fixed flags */
+			(cmd_type == CMD_REQUEST ? CMD_FLAG_REQUEST : 0)
+				| CMD_FLAG_PROXIABLE	/* Fixed flag values */
+		};
+
+	FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, DICT_COMMAND, &req_data, NULL, &cmd));
+
+	for (i = 0; i < avp_count; i++) {
+		struct dict_rule_data data = {NULL, avps[i].pos,
+			(avps[i].pos == RULE_FIXED_HEAD), -1, avps[i].max_repeats};
+
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
+			DICT_AVP, AVP_BY_NAME, avps[i].name, &data.rule_avp, 0));
+
+		if (!data.rule_avp) {
+			printf("ERROR: failed to locate AVP: %s\n", avps[i].name);
+			return -1;
+		}
+
+		FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+	}
+
+	{
+		/* all custom requests and replies MUST include Transaction-Id */
+		struct dict_rule_data data = {NULL, RULE_REQUIRED, 0, -1, 1};
+
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
+			DICT_AVP, AVP_BY_NAME, "Transaction-Id", &data.rule_avp, 0));
+
+		if (!data.rule_avp) {
+			printf("ERROR: failed to locate Transaction-Id AVP\n");
+			return -1;
+		}
+
+		FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+	}
+
+	/* all replies MUST include a Result-Code */
+	if (cmd_type == CMD_ANSWER) {
+		struct dict_rule_data data = {NULL, RULE_REQUIRED, 0, -1, 1};
+
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
+			DICT_AVP, AVP_BY_NAME, "Result-Code", &data.rule_avp, 0));
+
+		if (!data.rule_avp) {
+			printf("ERROR: failed to locate Result-Code AVP\n");
+			return -1;
+		}
+
+		FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+	}
+
+	return 0;
+
+error:
+	printf("ERROR-2: failed to parse line: %s\n", line);
+	return -1;
+}
+
+
 int parse_extra_avps(const char *extra_avps_file)
 {
 	FILE *fp;
 	char *line = NULL;
 	size_t len = 0;
 	ssize_t read;
+	int answers_needed = 0, rc, ret = 0;
 
 	if (!extra_avps_file)
 		return 0;
@@ -532,14 +827,52 @@ int parse_extra_avps(const char *extra_avps_file)
 		if (*p == '#' || p - line >= read)
 			continue;
 
-		if (parse_attr_line(p, read - (p - line)) == 0)
+		rc = parse_attr_line(p, read - (p - line));
+		if (rc < 0) {
+			ret = -1;
+			goto out;
+		} else if (rc == 0) {
 			continue;
+		}
+
+		rc = parse_app_def(p, fp);
+		if (rc < 0) {
+			ret = -1;
+			goto out;
+		} else if (rc == 0) {
+			continue;
+		}
+
+		rc = parse_command_def(p, fp, CMD_REQUEST);
+		if (rc < 0) {
+			ret = -1;
+			goto out;
+		} else if (rc == 0) {
+			answers_needed++;
+			continue;
+		}
+
+		rc = parse_command_def(p, fp, CMD_ANSWER);
+		if (rc < 0) {
+			ret = -1;
+			goto out;
+		} else if (rc == 0) {
+			answers_needed--;
+			continue;
+		}
 
 		// unknown line... ignoring
 	}
 
+	if (answers_needed > 0) {
+		printf("ERROR: bad config file, at least one Diameter Answer "
+		       "definition is missing\n");
+		ret = -1;
+	}
+
+out:
 	fclose(fp);
 	free(line);
 
-	return 0;
+	return ret;
 }

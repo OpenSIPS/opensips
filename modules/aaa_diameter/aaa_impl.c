@@ -204,6 +204,70 @@ out:
 }
 
 
+static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+{
+	struct msg_hdr *hdr = NULL;
+	struct msg *msg = *_msg;
+	struct avp *a = NULL;
+	struct avp_hdr * h = NULL;
+	int rc;
+	str tid;
+	struct dm_cond **prpl_cond, *rpl_cond;
+
+	FD_CHECK(fd_msg_hdr(msg, &hdr));
+
+	if (hdr->msg_flags & CMD_FLAG_REQUEST) {
+		LM_INFO("received a request?! discarding...\n");
+		goto out;
+	}
+
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Result_Code, &a));
+	FD_CHECK(fd_msg_avp_hdr(a, &h));
+	rc = h->avp_value->u32;
+
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a));
+	FD_CHECK(fd_msg_avp_hdr(a, &h));
+	tid.s = (char *)h->avp_value->os.data;
+	tid.len = (int)h->avp_value->os.len;
+
+	LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
+	       hdr->msg_code, rc, tid.len, tid.s);
+
+	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
+	if (!prpl_cond) {
+		LM_ERR("failed to match Transaction_Id %.*s to a pending request\n",
+		       tid.len, tid.s);
+		goto out;
+	}
+	rpl_cond = *prpl_cond;
+	rpl_cond->rc = rc;
+
+	hash_remove_key(pending_replies, tid);
+
+	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
+	if (a) {
+		rpl_cond->is_error = 1;
+		FD_CHECK(fd_msg_avp_hdr(a, &h));
+		LM_DBG("transaction failed, rc: %d (%.*s)\n",
+			rc, (int)h->avp_value->os.len, h->avp_value->os.data);
+	} else {
+		rpl_cond->is_error = 0;
+	}
+
+	/* signal the blocked SIP worker that the auth result is available! */
+	pthread_mutex_lock(&rpl_cond->mutex);
+	if (rpl_cond->count == 0)
+		pthread_cond_signal(&rpl_cond->cond);
+	rpl_cond->count += 1;
+	pthread_mutex_unlock(&rpl_cond->mutex);
+
+out:
+	FD_CHECK(fd_msg_free(msg));
+	*_msg = NULL;
+	return 0;
+}
+
+
 int dm_register_callbacks(void)
 {
 	struct disp_when data;
@@ -238,6 +302,28 @@ int dm_register_callbacks(void)
 
 		/* Advertise support for the Diameter SIP Application app */
 		FD_CHECK(fd_disp_app_support(data.app, NULL, 0, 1 ));
+	}
+
+	/* custom commands */
+	{
+		int i;
+
+		memset(&data, 0, sizeof data);
+
+		for (i = 0; i < n_app_ids; i++) {
+			/* Initialize the dictionary objects we use */
+			FD_CHECK_dict_search(DICT_APPLICATION, APPLICATION_BY_ID,
+				&app_ids[i], &data.app);
+
+			/* Register the dispatch callback */
+			FD_CHECK(fd_disp_register(dm_custom_cmd_reply,
+					DISP_HOW_APPID, &data, NULL, NULL));
+
+			/* Advertise support for the respective app */
+			FD_CHECK(fd_disp_app_support(data.app, NULL, 0, 1 ));
+
+			LM_DBG("registered a reply callback for App ID %d ...\n", app_ids[i]);
+		}
 	}
 
 	return 0;
@@ -1074,12 +1160,12 @@ int freeDiameter_init(void)
 }
 
 
-int dm_find(aaa_conn *con, aaa_map *map, int op)
+int dm_find(aaa_conn *_, aaa_map *map, int op)
 {
 	struct dict_object *obj;
 
-	if (!con || !map) {
-		LM_ERR("invalid arguments (%p %p)\n", con, map);
+	if (!map) {
+		LM_ERR("NULL map argument\n");
 		return -1;
 	}
 
@@ -1137,7 +1223,8 @@ int dm_find(aaa_conn *con, aaa_map *map, int op)
 }
 
 
-aaa_message *dm_create_message(aaa_conn *con, int msg_type)
+aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
+        unsigned int app_id, unsigned int cmd_code)
 {
 	aaa_message *m;
 	struct dm_message *dm;
@@ -1162,12 +1249,20 @@ aaa_message *dm_create_message(aaa_conn *con, int msg_type)
 	memset(dm, 0, sizeof *dm);
 	INIT_LIST_HEAD(&dm->avps);
 	dm->am = m;
+	dm->app_id = app_id;
+	dm->cmd_code = cmd_code;
 
 	return m;
 }
 
 
-int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
+aaa_message *dm_create_message(aaa_conn *_, int msg_type)
+{
+	return _dm_create_message(_, msg_type, 0, 0);
+}
+
+
+int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor)
 {
 	struct {
@@ -1213,11 +1308,11 @@ int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
 }
 
 
-int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
+int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply)
 {
 	struct dm_message *dm;
 
-	if (!con || !req || !my_reply_cond)
+	if (!req || !my_reply_cond)
 		return -1;
 
 	dm = (struct dm_message *)(req->avpair);
@@ -1238,7 +1333,7 @@ int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **reply)
 
 	LM_DBG("message queued for sending\n");
 
-	if (req->type == AAA_AUTH) {
+	if (req->type == AAA_AUTH || req->type == AAA_CUSTOM) {
 		LM_DBG("awaiting auth reply...\n");
 
 		pthread_mutex_lock(&my_reply_cond->mutex);
@@ -1275,7 +1370,7 @@ void _dm_destroy_message(aaa_message *msg)
 	shm_free(msg);
 }
 
-int dm_destroy_message(aaa_conn *conn, aaa_message *msg)
+int dm_destroy_message(aaa_conn *_, aaa_message *msg)
 {
 	if (!msg)
 		return 0;

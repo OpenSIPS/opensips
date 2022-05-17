@@ -63,12 +63,16 @@ struct _dm_dict {
 	struct dict_object *SIP_AOR;
 	struct dict_object *SIP_Method;
 
+	struct dict_object *Transaction_Id;
 	struct dict_object *Event_Timestamp;
 	struct dict_object *Route_Record;
 };
 
 struct dm_message {
 	aaa_message *am; /* back-reference, useful during cleanup */
+
+	unsigned int app_id;   /* these are used when sending */
+	unsigned int cmd_code; /* custom Diameter requests */
 
 	str sip_method;
 	struct dm_cond *reply_cond; /* the cond to signal on reply arrival */
@@ -110,11 +114,13 @@ int dm_init_sip_application(void);
 int dm_register_osips_avps(void);
 int dm_register_callbacks(void);
 
-int dm_find(aaa_conn *con, aaa_map *map, int op);
-aaa_message *dm_create_message(aaa_conn *con, int msg_type);
-int dm_avp_add(aaa_conn *con, aaa_message *msg, aaa_map *avp, void *val,
+int dm_find(aaa_conn *_, aaa_map *map, int op);
+aaa_message *dm_create_message(aaa_conn *_, int msg_type);
+aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
+        unsigned int app_id, unsigned int cmd_code);
+int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor);
-int dm_send_message(aaa_conn *con, aaa_message *req, aaa_message **_);
+int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
 void _dm_destroy_message(aaa_message *msg);
 

@@ -397,6 +397,77 @@ static int dm_acct(struct dm_message *msg)
 }
 
 
+static int dm_custom_req(struct dm_message *msg)
+{
+	struct msg *dmsg;
+	struct avp *avp;
+	struct dm_avp *dm_avp;
+	struct list_head *it;
+	union avp_value val;
+	struct dict_object *req; /* a custom Diameter request */
+
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
+	      &msg->cmd_code, &req, ENOENT));
+
+	FD_CHECK(fd_msg_new(req, MSGFL_ALLOC_ETEID, &dmsg));
+
+	/* App id */
+	{
+		struct msg_hdr *h;
+		FD_CHECK(fd_msg_hdr(dmsg, &h));
+		h->msg_appl = msg->app_id;
+	}
+
+	list_for_each (it, &msg->avps) {
+		struct dict_object *obj;
+
+		dm_avp = list_entry(it, struct dm_avp, list);
+
+		/* each AVP must be recognized, otherwise we abort the request */
+		FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
+		FD_CHECK(fd_msg_avp_new(obj, 0, &avp));
+
+		memset(&val, 0, sizeof val);
+		if (dm_avp->value.len < 0) {
+			val.u32 = (unsigned int)(unsigned long)dm_avp->value.s;
+			LM_DBG("appending AVP: %s: int(%lu)\n",
+					dm_avp->name.s, (unsigned long)dm_avp->value.s);
+		} else {
+			val.os.data = (unsigned char *)dm_avp->value.s;
+			val.os.len = dm_avp->value.len;
+			LM_DBG("appending AVP: %s: str(%.*s)\n",
+					dm_avp->name.s, dm_avp->value.len, dm_avp->value.s);
+		}
+		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
+		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
+	}
+
+	/* Transaction-Id */
+	{
+		struct timeval now;
+		char tid[16 + 1];
+		str tid_str;
+
+		FD_CHECK(fd_msg_avp_new(dm_dict.Transaction_Id, 0, &avp));
+
+		gettimeofday(&now, NULL);
+		sprintf(tid, "%ld%ld", now.tv_sec, now.tv_usec);
+
+		memset(&val, 0, sizeof val);
+		val.os.data = (unsigned char *)tid;
+		val.os.len = strlen(tid);
+		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
+		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
+
+		tid_str = (str){(char *)val.os.data, val.os.len};
+		FD_CHECK(dm_add_pending_reply(&tid_str, msg->reply_cond));
+	}
+
+	FD_CHECK(fd_msg_send(&dmsg, NULL, NULL));
+	return 0;
+}
+
+
 static inline int diameter_send_msg(struct dm_message *msg)
 {
 	aaa_message *am = msg->am;
@@ -406,6 +477,8 @@ static inline int diameter_send_msg(struct dm_message *msg)
 		return dm_auth(msg);
 	case AAA_ACCT:
 		return dm_acct(msg);
+	case AAA_CUSTOM:
+		return dm_custom_req(msg);
 	default:
 		LM_ERR("unsupported AAA message type (%d), skipping\n", am->type);
 	}
@@ -445,6 +518,8 @@ static int dm_prepare_globals(void)
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "SIP-Method", &dm_dict.SIP_Method, ENOENT));
 
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Transaction-Id", &dm_dict.Transaction_Id, ENOENT));
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Route-Record", &dm_dict.Route_Record, ENOENT));
 

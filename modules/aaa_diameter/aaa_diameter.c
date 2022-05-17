@@ -22,6 +22,7 @@
 
 #include "../../sr_module.h"
 #include "../../lib/list.h"
+#include "../../ut.h"
 
 #include "aaa_impl.h"
 #include "peer.h"
@@ -34,14 +35,22 @@ static void mod_destroy(void);
 char *dm_conf_filename = "freeDiameter.conf";
 char *extra_avps_file;
 
-int aaa_diameter_bind_api(aaa_prot *api);
+static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
+				str *avp_json);
+static int dm_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
 str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
 
 static cmd_export_t cmds[]= {
-	{"aaa_bind_api", (cmd_function) aaa_diameter_bind_api, {{0, 0, 0}}, 0},
+	{"dm_send_request", (cmd_function)dm_send_request, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		ALL_ROUTES},
+
+	{"aaa_bind_api", (cmd_function) dm_bind_api, {{0, 0, 0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -169,7 +178,7 @@ static void mod_destroy(void)
 }
 
 
-int aaa_diameter_bind_api(aaa_prot *api)
+static int dm_bind_api(aaa_prot *api)
 {
 	if (!api)
 		return -1;
@@ -185,4 +194,121 @@ int aaa_diameter_bind_api(aaa_prot *api)
 	api->avp_get = NULL;
 
 	return 0;
+}
+
+
+static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
+				str *avp_json)
+{
+	aaa_message *dmsg;
+	struct dict_object *req;
+	cJSON *avps, *_avp;
+
+	if (fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
+	      cmd_code, &req, ENOENT) == ENOENT) {
+		LM_ERR("unrecognized Request command code: %d\n", *cmd_code);
+		LM_ERR("to fix this, you can define the Request/Answer format in the "
+		       "'extra-avps-file' config file\n");
+		return -1;
+	}
+
+	LM_DBG("found a matching dict entry for command code %d\n", *cmd_code);
+
+	if (!avp_json || !avp_json->s) {
+		LM_ERR("NULL JSON input\n");
+		return -1;
+	}
+
+	avps = cJSON_Parse(avp_json->s);
+	if (!avps) {
+		LM_ERR("failed to parse input JSON ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		return -1;
+	}
+
+	if (avps->type != cJSON_Array) {
+		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		return -1;
+	}
+
+	dmsg = _dm_create_message(NULL, AAA_CUSTOM, *app_id, *cmd_code);
+	if (!dmsg) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
+	for (_avp = avps->child; _avp; _avp = _avp->next) {
+		if (_avp->type != cJSON_Object) {
+			LM_ERR("bad JSON type in Array: AVPs must be Objects ('%.*s' "
+			       "..., total: %d)\n", avp_json->len > 512 ? 512 : avp_json->len,
+			       avp_json->s, avp_json->len);
+			return -1;
+		}
+
+		cJSON *avp = _avp->child; // only work with child #0
+		struct dict_avp_data dm_avp;
+		struct dict_object *obj;
+		char *name;
+		unsigned int code;
+
+		// TODO: allow dict too
+		if (!(avp->type & (cJSON_String|cJSON_Number))) {
+			LM_ERR("bad AVP value: only String allowed ('%.*s' ..., key: %s)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp->string);
+			return -1;
+		}
+
+		if (_isdigit(avp->string[0])) {
+			str st;
+
+			init_str(&st, avp->string);
+			if (str2int(&st, &code) != 0) {
+				LM_ERR("bad AVP key: cannot start with a digit ('%.*s' ..., key: %s)\n",
+				   avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp->string);
+				return -1;
+			}
+
+			LM_DBG("AVP:: searching AVP by int: %d\n", code);
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
+				&code, &obj, ENOENT));
+			FD_CHECK(fd_dict_getval(obj, &dm_avp));
+
+			name = dm_avp.avp_name;
+		} else {
+			LM_DBG("AVP:: searching AVP by string: %s\n", avp->string);
+
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+				avp->string, &obj, ENOENT));
+			FD_CHECK(fd_dict_getval(obj, &dm_avp));
+
+			name = avp->string;
+			code = dm_avp.avp_code;
+		}
+
+		aaa_map my_avp = {.name = name};
+
+		if (avp->type & cJSON_String) {
+			LM_DBG("dbg::: AVP %d (name: '%s', str-val: %s)\n", code, name, avp->valuestring);
+			if (dm_avp_add(NULL, dmsg, &my_avp, avp->valuestring,
+			        strlen(avp->valuestring), 0) != 0) {
+				LM_ERR("failed to add AVP %d, aborting request\n", code);
+				return -1;
+			}
+		} else {
+			LM_DBG("dbg::: AVP %d (name: '%s', int-val: %d)\n", code, name, avp->valueint);
+			if (dm_avp_add(NULL, dmsg, &my_avp, &avp->valueint, -1, 0) != 0) {
+				LM_ERR("failed to add AVP %d, aborting request\n", code);
+				return -1;
+			}
+		}
+	}
+
+	if (dm_send_message(NULL, dmsg, NULL) != 0) {
+		LM_ERR("failed to queue Diameter request for sending\n");
+		return -1;
+	}
+
+	cJSON_Delete(avps);
+	return 1;
 }

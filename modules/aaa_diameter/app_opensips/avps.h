@@ -68,4 +68,7 @@
 int register_osips_avps(void);
 int parse_extra_avps(const char *extra_avps_file);
 
+extern unsigned int app_ids[];
+extern unsigned int n_app_ids;
+
 #endif /* _APP_OPENSIPS_AVPS_H */
