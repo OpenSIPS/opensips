@@ -1565,7 +1565,7 @@ static int handle_msrp_request(struct msrp_msg *req, void *hdl_param)
 	int t_report = 0;
 	struct msrp_ua_handler hdl;
 	int run_cb = 0;
-	int rc;
+	int rc = 0;
 
 	LM_DBG("Received MSRP request [%.*s]\n", req->fl.u.request.method.len,
 		req->fl.u.request.method.s);
