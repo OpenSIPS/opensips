@@ -1,13 +1,22 @@
-	This is a credits-file of people that have contributed with code
-	to the OpenSIPS 3.2 release, sorted by last name.  The fields are:
-	name (N), email (E).
-	Cheers,
-	                                                2021, May 27
+  This is a credits-file of people that have contributed with code
+  to the OpenSIPS 3.3 release, sorted by last name.  The fields are:
+  name (N), email (E).
+  Cheers,
+                                                  2022, May 18
 
 ----------
 
 N: Nick Altmann
-E: nick.altmann@gmail.com
+E: nick@altmann.pro
+
+N: Carsten Bock
+E: carsten@ng-voice.com
+
+N: Norm Brandinger
+E: n.brandinger@gmail.com
+
+N: Bernard Buitenhuis
+E: bernard@buitenhuis.nu
 
 N: John Burke
 E: john@voxtelesys.net
@@ -21,32 +30,17 @@ E: razvan@opensips.org
 N: Walter Doekes
 E: walter+github@wjd.nu
 
-N: Fabian Gast
-E: fgast+git@only640k.net
-
-N: Flavio Goncalves
-E: flavio@voffice.com.br
-
-N: Eric Green
-E: eric.green@onsip.com
+N: Artiom Druz
+E: druz@sima-land.ru
 
 N: Bogdan-Andrei Iancu
 E: bogdan@opensips.org
 
-N: Zero King
-E: l2dy@icloud.com
-
-N: Sergei Lavrov
-E: 7936874+ccppprogrammer@users.noreply.github.com
+N: David Korczynski
+E: david@adalogics.com
 
 N: Peter Lemenkov
 E: lemenkov@gmail.com
-
-N: Sagar Malam
-E: 47811226+sagarmalam@users.noreply.github.com
-
-N: Robert Moss
-E: rmoss@sipnavigator.com
 
 N: Vlad Paiu
 E: vladpaiu@opensips.org
@@ -54,20 +48,17 @@ E: vladpaiu@opensips.org
 N: Vlad Pătrașcu
 E: vladp@opensips.org
 
+N: Petr Písař
+E: ppisar@redhat.com
+
 N: Aron Podrigal
 E: aronp@guaranteedplus.com
-
-N: Andriy Pylypenko
-E: bamby@sippysoft.com
-
-N: Rustam Safargalin
-E: rustam.safargalin@sifox.ru
 
 N: Ovidiu Sas
 E: osas@voipembedded.com
 
 N: Dan Shields
-E: dshields@sorenson.com
+E: me@danshields.me
 
 N: Maksym Sobolyev
 E: sobomax@sippysoft.com
@@ -75,8 +66,8 @@ E: sobomax@sippysoft.com
 N: Alexey Vasilyev
 E: alexei.vasilyev@gmail.com
 
-N: kworm83
+N: Kevin Wormington
 E: 21957311+kworm83@users.noreply.github.com
 
-N: rance
-E: rance@ytel.com
+N: Gang Zhuo
+E: gang.zhuo@gmail.com
