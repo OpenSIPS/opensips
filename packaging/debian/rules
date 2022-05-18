@@ -244,7 +244,7 @@ AUTH_JWT_PKGNAME = opensips-auth-jwt-module
 AUTH_JWT_MODULES = auth_jwt
 AUTH_JWT_MOD_PATH=$(addprefix modules/, $(AUTH_JWT_MODULES))
 MSRP_RELAY_PKGNAME = opensips-msrp-modules
-MSRP_RELAY_MODULES = msrp_relay msrp_ua proto_msrp
+MSRP_RELAY_MODULES = msrp_gateway msrp_relay msrp_ua proto_msrp
 MSRP_RELAY_MOD_PATH=$(addprefix modules/, $(MSRP_RELAY_MODULES))
 
 

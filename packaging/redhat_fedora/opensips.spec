@@ -1348,9 +1348,11 @@ fi
 %endif
 
 %files msrp-modules
+%{_libdir}/opensips/modules/msrp_gateway.so
 %{_libdir}/opensips/modules/msrp_relay.so
 %{_libdir}/opensips/modules/msrp_ua.so
 %{_libdir}/opensips/modules/proto_msrp.so
+%doc docdir/README.msrp_gateway
 %doc docdir/README.msrp_relay
 %doc docdir/README.msrp_ua
 %doc docdir/README.proto_msrp
@@ -1568,9 +1570,9 @@ fi
 
 
 %changelog
-* Tue Aug 17 2021 Nick Altmann <nick@altmann.pro> - 3.3.0-1
+* Wed May 18 2022 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
-- New modules: b2b_sdp_demux, msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
+- New modules: b2b_sdp_demux, msrp_gateway, msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
 - New packages: msrp-modules
 - Removed modules: b2b_logic_xml
 - Removed packages: b2bua-module
