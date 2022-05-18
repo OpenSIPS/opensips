@@ -1,0 +1,193 @@
+MSRP Gateway Module
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. hash_size (int)
+
+        1.4. Exported Functions
+
+              1.4.1. msrp_gw_answer(key, content_types, from, to,
+                      ruri)
+
+              1.4.2. msg_to_msrp(key, content_types)
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Set hash_size parameter
+   1.2. msrp_gw_answer() usage
+   1.3. msg_to_msrp() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module implements a Gateway for translating between Page
+   Mode (SIP MESSAGE method) and Session Mode (MSRP) Instant
+   Messaging.
+
+   The module makes use of the msrp_ua module's API for the MSRP
+   UAC/UAS functionalities.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   The following modules must be loaded before this module:
+     * tm
+     * msrp_ua
+
+1.2.2. External Libraries or Applications
+
+   The following libraries or applications must be installed
+   before running OpenSIPS with this module loaded:
+     * None.
+
+1.3. Exported Parameters
+
+1.3.1. hash_size (int)
+
+   The size of the hash table that stores the gateway session
+   information. It is the 2 logarithmic value of the real size.
+
+   Default value is “10” (1024 records).
+
+   Example 1.1. Set hash_size parameter
+...
+modparam("msrp_gateway", "hash_size", 16)
+...
+
+1.4. Exported Functions
+
+1.4.1.  msrp_gw_answer(key, content_types, from, to, ruri)
+
+   This functions initializes a new gateway session by answering
+   an initial INVITE from the MSRP side SIP session. After running
+   this function the call will be completely handled by the MSRP
+   UA engine and MSRP SEND requests will be automatically
+   translated to SIP MESSAGE requests.
+
+   The SIP From, To, and RURI coordinates for the MESSAGE
+   requests.
+
+   Parameters:
+     * key (string) - gateway session key to be used to correlate
+       the MESSAGE requests with the MSRP side SIP session. A
+       simple example would be to build this key based on the From
+       and To URIs from both sides(from the initial MSRP leg
+       INVITE and SIP MESSAGE requests respectively).
+     * content_types (string) - content types adevertised in the
+       SDP offer on the MSRP side SIP session.
+     * from (string) - From URI to be used for building SIP
+       MESSAGE requests.
+     * to (string) - To URI to be used for building SIP MESSAGE
+       requests.
+     * ruri (string) - Request-URI to be used for building SIP
+       MESSAGE requests.
+
+   This function can be used only from a request route.
+
+   Example 1.2. msrp_gw_answer() usage
+...
+if (!has_totag() && is_method("INVITE")) {
+        msrp_gw_answer($var(corr_key), "text/plain", $fu, $tu, $ru);
+        exit;
+}
+...
+
+1.4.2.  msg_to_msrp(key, content_types)
+
+   This functions translates a SIP MESSAGE request into a MSRP
+   SEND request. The function will initialize a new gateway
+   session and establish the MSRP side SIP session if it is not
+   done so already by a previous call.
+
+   The SIP From, To, and RURI coordinates for the new MSRP side
+   session are taken from the MESSAGE request and mirrored back
+   when translating a MSRP SEND to SIP MESSAGE with
+   msrp_gw_answer.
+
+   Parameters:
+     * key (string) - gateway session key to be used to correlate
+       the MESSAGE requests with the MSRP side SIP session. A
+       simple example would be to build this key based on the From
+       and To URIs from both sides(from the initial MSRP leg
+       INVITE and SIP MESSAGE requests respectively).
+     * content_types (string) - content types adevertised in the
+       SDP offer on the MSRP side SIP session.
+
+   This function can be used only from a request route.
+
+   Example 1.3. msg_to_msrp() usage
+...
+if (is_method("CANCEL")) {
+        msg_to_msrp($var(corr_key), "text/plain");
+        exit;
+}
+...
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+     Name DevScore Commits Lines ++ Lines --
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+     Name Commit Activity
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Documentation Copyrights:
+
+   Copyright © 2022 www.opensips-solutions.com

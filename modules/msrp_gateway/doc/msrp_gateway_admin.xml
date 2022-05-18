@@ -1,0 +1,182 @@
+<!-- Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module implements a Gateway for translating between Page Mode
+		(SIP MESSAGE method) and Session Mode (MSRP) Instant Messaging.
+    </para>
+    <para>
+    	The module makes use of the <emphasis>msrp_ua</emphasis> module's API for
+    	the MSRP UAC/UAS functionalities.
+    </para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>tm</emphasis></para>
+			</listitem>
+			<listitem>
+				<para><emphasis>msrp_ua</emphasis></para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			The following libraries or applications must be installed 
+			before running &osips; with this module loaded:
+			</para>
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>None</emphasis>.
+				</para>
+				</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+		<section id="param_hash_size" xreflabel="hash_size">
+			<title><varname>hash_size</varname> (int)</title>
+			<para>
+				The size of the hash table that stores the gateway session
+				information. It is the 2 logarithmic value of the real size.
+			</para>
+			<para>
+			<emphasis>Default value is <quote>10</quote>
+			</emphasis>
+			 (1024 records).
+			</para>
+			<example>
+			<title>Set <varname>hash_size</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "hash_size", 16)
+...
+		</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_msrp_gw_answer" xreflabel="msrp_gw_answer()">
+		<title>
+		<function moreinfo="none">msrp_gw_answer(key, content_types, from, to, ruri)</function>
+		</title>
+		<para>
+			This functions initializes a new gateway session by answering an initial
+			INVITE from the MSRP side SIP session. After running this function the
+			call will be completely handled by the MSRP UA engine and MSRP SEND
+			requests will be automatically translated to SIP MESSAGE requests.
+		</para>
+		<para>
+			The SIP From, To, and RURI coordinates for the MESSAGE requests.
+		</para>
+		<para>
+			Parameters:
+			<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> (string) - gateway session key to be used
+				to correlate the MESSAGE requests with the MSRP side SIP session.
+				A simple example would be to build this key based on the From and To
+				URIs from both sides(from the initial MSRP leg INVITE and SIP MESSAGE
+				requests respectively).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_types</emphasis> (string) - content types
+				adevertised in the SDP offer on the MSRP side SIP session.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from</emphasis> (string) - From URI to be used for building
+				SIP MESSAGE requests.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to</emphasis> (string) - To URI to be used for building
+				SIP MESSAGE requests.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ruri</emphasis> (string) - Request-URI to be used for building
+				SIP MESSAGE requests.
+			</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			This function can be used only from a request route.
+		</para>
+		<example>
+			<title><function>msrp_gw_answer()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (!has_totag() &amp;&amp; is_method("INVITE")) {
+	msrp_gw_answer($var(corr_key), "text/plain", $fu, $tu, $ru);
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="func_msg_to_msrp" xreflabel="msg_to_msrp()">
+		<title>
+		<function moreinfo="none">msg_to_msrp(key, content_types)</function>
+		</title>
+		<para>
+			This functions translates a SIP MESSAGE request into a MSRP SEND request.
+			The function will initialize a new gateway session and establish the MSRP
+			side SIP session if it is not done so already by a previous call.
+		</para>
+		<para>
+			The SIP From, To, and RURI coordinates for the new MSRP side session are
+			taken from the MESSAGE request and mirrored back when translating a MSRP
+			SEND to SIP MESSAGE with <emphasis>msrp_gw_answer</emphasis>.
+		</para>
+		<para>
+			Parameters:
+			<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> (string) - gateway session key to be used
+				to correlate the MESSAGE requests with the MSRP side SIP session.
+				A simple example would be to build this key based on the From and To
+				URIs from both sides(from the initial MSRP leg INVITE and SIP MESSAGE
+				requests respectively).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>content_types</emphasis> (string) - content types
+				adevertised in the SDP offer on the MSRP side SIP session.
+			</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>
+			This function can be used only from a request route.
+		</para>
+		<example>
+			<title><function>msg_to_msrp()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if (is_method("CANCEL")) {
+	msg_to_msrp($var(corr_key), "text/plain");
+	exit;
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+</chapter>
+
