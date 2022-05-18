@@ -180,6 +180,9 @@ modparam("nathelper", "ping_nated_only", 1)
 		<emphasis>
 			Default value is 1.
 		</emphasis>
+		<emphasis>
+			Maximum allowed value is 8.
+		</emphasis>
 		</para>
 		<example>
 		<title>Set <varname>natping_partitions</varname> parameter</title>
