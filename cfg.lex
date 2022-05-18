@@ -326,6 +326,7 @@ CR			\n
 
 ANY		"any"
 ANYCAST "anycast"
+FRAG "frag"
 
 
 COM_LINE	#
@@ -581,6 +582,7 @@ SPACE		[ ]
 <INITIAL>{CR}		{ count();/* return CR;*/ }
 <INITIAL>{ANY}		{ count(); return ANY; }
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
+<INITIAL>{FRAG}		{ count(); return FRAG; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }
 <INITIAL>{SCALE_DOWN_TO}	{ count(); return SCALE_DOWN_TO; }

@@ -179,6 +179,13 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 		LM_ERR("setsockopt: %s\n", strerror(errno));
 		goto error;
 	}
+
+	if (si->flags & SI_FRAG) {
+		/* no DF */
+		optval = IP_PMTUDISC_DONT;
+		setsockopt(si->socket, IPPROTO_IP, IP_MTU_DISCOVER, (void*)&optval, sizeof(optval));
+	}
+
 	/* tos */
 	optval=tos;
 	if (addr->s.sa_family==AF_INET6){
