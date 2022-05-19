@@ -134,6 +134,27 @@ modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 		</example>
 		</section>
 
+		<section id="param_advertised_contact" xreflabel="advertised_contact">
+		<title><varname>advertised_contact</varname> (string)</title>
+		<para>
+		Contact to be used in the generated SIP requests. For sessions answered
+		by OpenSIPS, if it is not set, it is constructed dynamically from the
+		socket where the initiating request was received.
+		</para>
+		<para>
+		This parameter is mandatory when using the
+		<xref linkend="mi_msrp_ua_start_session"/> MI function.
+		</para>
+		<example>
+		<title><varname>advertised_contact</varname> parameter usage</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_ua", "advertised_contact", "sip:oss@opensips.org")
+...
+</programlisting>
+		</example>
+		</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -213,6 +234,51 @@ opensips-cli -x mi msrp_ua_send_message \
 	5addd9e7b74fa44fbace68a4fc562293 \
 	text/plain \
 	Hello
+		</programlisting>
+		</section>
+
+		<section id="mi_msrp_ua_start_session"
+			xreflabel="msrp_ua_start_session">
+		<title>
+		<function moreinfo="none">msrp_ua_start_session</function>
+		</title>
+		<para>
+		Starts a MSRP session.
+		</para>
+		<para>
+		The <xref linkend="param_advertised_contact"/> is mandatory if this
+		function is used.
+		</para>
+		<para>
+		Name: <emphasis>msrp_ua_start_session</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>content_types</emphasis> (string) - content types
+				adevertised in the <emphasis>accept-types</emphasis> SDP
+				attribute.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from_uri</emphasis> (string) - From URI to be used
+				in the INVITE.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_uri</emphasis> (string) - To URI to be used
+				in the INVITE.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ruri</emphasis> (string) - Request URI and destination
+				of the INVITE.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_ua_start_session \
+	text/plain sip:oss@opensips.org \
+	sip:alice@opensips.org sip:alice@opensips.org
 		</programlisting>
 		</section>
 
