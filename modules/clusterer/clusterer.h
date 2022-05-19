@@ -166,6 +166,8 @@ void do_actions_node_ev(struct cluster_info *clusters, int *select_cluster,
 
 void remove_node(struct cluster_info *cl, struct node_info *node);
 
+unsigned long clusterer_get_num_nodes(int state);
+
 enum clusterer_send_ret send_gen_msg(int cluster_id, int node_id, str *gen_msg,
 										str *exchg_tag, int req_like);
 enum clusterer_send_ret bcast_gen_msg(int cluster_id, str *gen_msg, str *exchg_tag);

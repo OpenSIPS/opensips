@@ -569,6 +569,28 @@ modparam("clusterer", "description_col", "description")
 		</example>
         </section>
 
+		<section id="param_enable_stats" xreflabel="enable_stats">
+			<title><varname>enable_stats</varname> (integer)</title>
+			<para>
+				If the statistics support should be enabled or not. Via statistic
+				variables, the module provide information about the cluster nodes.
+				Set it to zero to disable or to non-zero to enable it.
+			</para>
+			<para>
+				<emphasis>
+					Default value is <quote>1 (enabled)</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>enable_stats</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("clusterer", "enable_stats", 0)
+...
+				</programlisting>
+			</example>
+		</section>
+
         </section>
 
         <section id="exported_functions" xreflabel="exported_functions">

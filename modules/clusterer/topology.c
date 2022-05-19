@@ -916,6 +916,7 @@ int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh)
 			lock_get(neigh->lock);
 		}
 		neigh->next_hop = neigh;
+
 	}
 
 	neigh->link_state = new_ls;
