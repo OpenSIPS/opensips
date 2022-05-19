@@ -1318,10 +1318,6 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 	}
 	memset(sess, 0, sizeof *sess);
 
-	sess->session_id.s = (char*)(sess + 1);
-	sess->session_id.len = MD5_LEN;
-	msrpua_gen_id(sess->session_id.s, b2b_key, NULL);
-
 	if (adv_contact.s)
 		contact = adv_contact;
 	else
@@ -1333,6 +1329,10 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 		LM_ERR("failed to create new b2b server instance\n");
 		goto err;
 	}
+
+	sess->session_id.s = (char*)(sess + 1);
+	sess->session_id.len = MD5_LEN;
+	msrpua_gen_id(sess->session_id.s, b2b_key, NULL);
 
 	if (get_sdp_peer_info(msg, &peer_accept_types, &peer_path) < 0) {
 		LM_ERR("Failed to get peer info from SDP\n");
@@ -1967,6 +1967,9 @@ static int timer_clean_session(void *param, str key, void *value)
 	struct msrp_ua_handler hdl;
 
 	if (sess->lifetime > 0 && sess->lifetime < get_ticks()) {
+		LM_DBG("Timeout for session [%.*s] in state [%d]\n",
+			sess->session_id.len, sess->session_id.s, sess->dlg_state);
+
 		if (sess->dlg_state == MSRPUA_DLG_NEW) {
 			if (msrpua_b2b_request(sess->b2b_type, &sess->b2b_key,
 				&str_init("CANCEL")) < 0)
