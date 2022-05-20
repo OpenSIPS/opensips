@@ -117,8 +117,6 @@ struct module_exports exports = {
 
 static int mod_init(void)
 {
-	return 0;
-
 	LM_INFO("initializing...\n");
 
 	if (msrpgw_sessions_hsize < 1 || msrpgw_sessions_hsize > 20) {
@@ -143,6 +141,8 @@ static int mod_init(void)
 		LM_ERR("can't load TM API\n");
 		return -1;
 	}
+
+	return 0;
 }
 
 static void free_msrpgw_session(void *val)
