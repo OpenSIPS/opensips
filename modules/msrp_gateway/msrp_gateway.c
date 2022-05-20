@@ -397,7 +397,7 @@ static int queue_message(str *body, str *content_type,
 	struct queue_msg_entry *msg;
 
 	msg = shm_malloc(sizeof *msg + body->len + content_type->len);
-	if (msg) {
+	if (!msg) {
 		LM_ERR("no more shm memory\n");
 		return -1;
 	}
@@ -464,6 +464,11 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 		if (msrpua_api.init_uac(content_types, &get_from(msg)->uri,
 			&get_to(msg)->uri, GET_RURI(msg), &msrpua_hdl) < 0) {
 			LM_ERR("Failed to init MSRP UAC\n");
+			goto error;
+		}
+
+		if (queue_message(&body, &msg->content_type->body, sess) < 0) {
+			LM_ERR("Failed to queue message\n");
 			goto error;
 		}
 	} else {
