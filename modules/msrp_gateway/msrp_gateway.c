@@ -34,7 +34,7 @@ struct msrpgw_session {
 	str sipua_from;
 	str sipua_to;
 	str sipua_ruri;
-	str *msrpua_sess_id;
+	str msrpua_sess_id;
 	struct list_head queued_messages; /* list of struct queue_msg_entry */
 };
 
@@ -187,7 +187,7 @@ int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
 	case MSRP_UA_SESS_ESTABLISHED:
 		LM_DBG("SIP session established on MSRP side\n");
 
-		if (shm_str_dup(sess->msrpua_sess_id, params->session_id) < 0) {
+		if (shm_str_dup(&sess->msrpua_sess_id, params->session_id) < 0) {
 			LM_ERR("out of pkg memory\n");
 			goto end;
 		}
@@ -197,7 +197,7 @@ int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
 			msg = list_entry(it, struct queue_msg_entry, list);
 			list_del(&msg->list);
 
-			if (msrpua_api.send_message(sess->msrpua_sess_id,
+			if (msrpua_api.send_message(&sess->msrpua_sess_id,
 				&msg->content_type, &msg->body) < 0)
 				LM_ERR("Failed to send queued message to MSRP side\n");
 
@@ -245,7 +245,7 @@ int msrp_req_cb(struct msrp_msg *req, void *hdl_param)
 	p += CONTENT_TYPE_PREFIX_LEN;
 	memcpy(p, req->content_type->body.s, req->content_type->body.len);
 	p += req->content_type->body.len;
-	memcpy(p, req->content_type->body.s, req->content_type->body.len);
+	memcpy(p, CRLF, CRLF_LEN);
 
 	tmb.t_request(&str_init("MESSAGE"), &sess->sipua_ruri, &sess->sipua_to,
 		&sess->sipua_from, &hdrs, &req->body, NULL, NULL, NULL, NULL);
@@ -464,8 +464,8 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 	} else {
 		sess = *val;
 
-		if (sess->msrpua_sess_id) {
-			if (msrpua_api.send_message(sess->msrpua_sess_id,
+		if (sess->msrpua_sess_id.s) {
+			if (msrpua_api.send_message(&sess->msrpua_sess_id,
 				&msg->content_type->body, &body) < 0) {
 				LM_ERR("Failed to send message to MSRP side\n");
 				goto error;
