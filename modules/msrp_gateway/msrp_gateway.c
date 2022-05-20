@@ -265,7 +265,7 @@ int msrp_rpl_cb(struct msrp_msg *rpl, void *hdl_param)
 }
 
 static struct msrpgw_session *msrpgw_init_session(str *key,
-	str *from, str *to, str *ruri)
+	str *from, str *to, str *ruri, int locked)
 {
 	unsigned int hentry;
 	struct msrpgw_session *sess;
@@ -302,16 +302,20 @@ static struct msrpgw_session *msrpgw_init_session(str *key,
 	INIT_LIST_HEAD(&sess->queued_messages);
 
 	hentry = hash_entry(msrpgw_sessions, *key);
-	hash_lock(msrpgw_sessions, hentry);
+
+	if (!locked)
+		hash_lock(msrpgw_sessions, hentry);
 
 	val = hash_get(msrpgw_sessions, hentry, sess->key);
 	if (!val) {
-		hash_unlock(msrpgw_sessions, hentry);
+		if (!locked)
+			hash_unlock(msrpgw_sessions, hentry);
 		LM_ERR("Failed to allocate new hash entry\n");
 		goto error;
 	}
 	if (*val != NULL) {
-		hash_unlock(msrpgw_sessions, hentry);
+		if (!locked)
+			hash_unlock(msrpgw_sessions, hentry);
 		LM_ERR("Duplicate session key\n");
 		goto error;
 	}
@@ -321,7 +325,8 @@ static struct msrpgw_session *msrpgw_init_session(str *key,
 
 	return sess;
 error:
-	hash_lock(msrpgw_sessions, hentry);
+	if (!locked)
+		hash_unlock(msrpgw_sessions, hentry);
 	free_msrpgw_session(sess);
 	return NULL;
 }
@@ -356,7 +361,7 @@ static int msrpgw_answer(struct sip_msg *msg, str *key, str *content_types,
 		return -1;
 	}
 
-	sess = msrpgw_init_session(key, from, to, ruri);
+	sess = msrpgw_init_session(key, from, to, ruri, 0);
 	if (!sess) {
 		LM_ERR("Failed to init MSRP gateway session\n");
 		return -1;
@@ -443,7 +448,7 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 		/* take from the SIP MESSAGE the To (to become From) and From (to
 		 * become To + RURI) URIs and save them for the SIP UAC */
 		sess = msrpgw_init_session(key, &get_to(msg)->uri, &get_from(msg)->uri,
-			&get_from(msg)->uri);
+			&get_from(msg)->uri, 1);
 		if (!sess) {
 			LM_ERR("Failed to init MSRP gateway session\n");
 			goto error;
