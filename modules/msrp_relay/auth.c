@@ -575,7 +575,7 @@ int handle_msrp_auth_req(struct msrp_msg *req, struct msrp_url *my_url)
 			}
 
 			if (send_auth_200ok(req, &session->session_id, &my_url->host,
-				my_url->port_no, 0/* no TLS for now */, expires) < 0) {
+				my_url->port_no, my_url->secured, expires) < 0) {
 				LM_ERR("Failed to send 200 OK\n");
 				return -1;
 			}
