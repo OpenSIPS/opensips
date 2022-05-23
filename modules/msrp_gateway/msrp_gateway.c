@@ -35,6 +35,8 @@ struct msrpgw_session {
 	str sipua_to;
 	str sipua_ruri;
 	str msrpua_sess_id;
+	unsigned int last_send;
+	unsigned int last_message;
 	struct list_head queued_messages; /* list of struct queue_msg_entry */
 };
 
@@ -52,12 +54,23 @@ struct tm_binds tmb;
 
 static str msrpgw_mod_name = str_init("msrp_gateway");
 
+int cleanup_interval = 60;
+int session_timeout = 12*3600;
+int message_timeout = 2*3600;
+
 static int mod_init(void);
 static void destroy(void);
 
 static int msrpgw_answer(struct sip_msg *msg, str *key, str *content_types,
 	str *from, str *to, str *ruri);
 static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types);
+
+static void clean_msrpgw_sessions(unsigned int ticks,void *param);
+
+mi_response_t *msrpgw_mi_end(const mi_params_t *params,
+	struct mi_handler *_);
+mi_response_t *msrpgw_mi_list(const mi_params_t *_,
+	struct mi_handler *__);
 
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
@@ -72,6 +85,9 @@ static dep_export_t deps = {
 
 static param_export_t params[] = {
 	{"hash_size", INT_PARAM, &msrpgw_sessions_hsize},
+	{"cleanup_interval", INT_PARAM, &cleanup_interval},
+	{"session_timeout", INT_PARAM, &session_timeout},
+	{"message_timeout", INT_PARAM, &message_timeout},
 };
 
 static cmd_export_t cmds[]=
@@ -92,6 +108,18 @@ static cmd_export_t cmds[]=
 	{0,0,{{0,0,0}},0}
 };
 
+static mi_export_t mi_cmds[] = {
+	{ "msrp_gw_end_session", 0, 0, 0, {
+		{msrpgw_mi_end, {"key", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "msrp_gw_list_sessions", 0, 0, 0, {
+		{msrpgw_mi_list, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{EMPTY_MI_EXPORT}
+};
+
 struct module_exports exports = {
 	"msrp_gateway",       /* module name*/
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -103,7 +131,7 @@ struct module_exports exports = {
 	0,          /* exported async functions */
 	params,     /* module parameters */
 	0,          /* exported statistics */
-	0,          /* exported MI functions */
+	mi_cmds,    /* exported MI functions */
 	0,          /* exported pseudo-variables */
 	0,          /* exported transformations */
 	0,          /* extra processes */
@@ -141,6 +169,14 @@ static int mod_init(void)
 		LM_ERR("can't load TM API\n");
 		return -1;
 	}
+
+	if (session_timeout < message_timeout) {
+		LM_ERR("'session_timeout' can't be lower than 'message_timeout'\n");
+		return -1;
+	}
+
+	register_timer("msrpgw-expire", clean_msrpgw_sessions, NULL,
+		cleanup_interval, TIMER_FLAG_DELAY_ON_DELAY);
 
 	return 0;
 }
@@ -232,6 +268,8 @@ int msrp_req_cb(struct msrp_msg *req, void *hdl_param)
 
 	hentry = hash_entry(msrpgw_sessions, sess->key);
 	hash_lock(msrpgw_sessions, hentry);
+
+	sess->last_send = get_ticks();
 
 	hdrs.len = CONTENT_TYPE_PREFIX_LEN + req->content_type->body.len + CRLF_LEN;
 	hdrs.s = pkg_malloc(hdrs.len);
@@ -454,6 +492,8 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 			goto error;
 		}
 
+		sess->last_message = get_ticks();
+
 		memset(&msrpua_hdl, 0, sizeof msrpua_hdl);
 		msrpua_hdl.name = &msrpgw_mod_name;
 		msrpua_hdl.param = sess;
@@ -473,6 +513,8 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 		}
 	} else {
 		sess = *val;
+
+		sess->last_message = get_ticks();
 
 		if (sess->msrpua_sess_id.s) {
 			if (msrpua_api.send_message(&sess->msrpua_sess_id,
@@ -494,4 +536,134 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 error:
 	hash_unlock(msrpgw_sessions, hentry);
 	return -1;
+}
+
+static int timer_clean_session(void *param, str key, void *value)
+{
+	struct msrpgw_session *sess = (struct msrpgw_session *)value;
+	unsigned int send_interval, message_interval;
+
+	send_interval = get_ticks() - sess->last_send;
+	message_interval = get_ticks() - sess->last_message;
+
+	if (send_interval >= session_timeout || message_interval >= session_timeout ||
+		message_interval >= message_timeout) {
+		LM_DBG("[%d] seconds since last MESSAGE, [%d] seconds since last SEND\n",
+			message_interval, send_interval);
+		LM_DBG("Timeout for session [%.*s], \n",
+			sess->key.len, sess->key.s);
+
+		if (msrpua_api.end_session(&sess->msrpua_sess_id) < 0)
+			LM_ERR("Failed to end MSRP UA session [%.*s] on timeout\n",
+				sess->msrpua_sess_id.len, sess->msrpua_sess_id.s);
+		msrpgw_delete_session(sess);
+	}
+
+	return 0;
+}
+
+static void clean_msrpgw_sessions(unsigned int ticks,void *param)
+{
+	hash_for_each_locked(msrpgw_sessions, timer_clean_session, NULL);
+}
+
+mi_response_t *msrpgw_mi_end(const mi_params_t *params,
+	struct mi_handler *_)
+{
+	str key;
+	int rc;
+	unsigned int hentry;
+	struct msrpgw_session *sess;
+	void **val;
+
+	if (get_mi_string_param(params, "key", &key.s, &key.len) < 0)
+		return init_mi_param_error();
+
+	hentry = hash_entry(msrpgw_sessions, key);
+	hash_lock(msrpgw_sessions, hentry);
+
+	val = hash_find(msrpgw_sessions, hentry, key);
+	if (!val) {
+		LM_ERR("session [%.*s] does not exist\n", key.len, key.s);
+		hash_unlock(msrpgw_sessions, hentry);
+		return init_mi_error(404, MI_SSTR("Session doesn't exist"));
+	}
+	sess = *val;
+
+	rc = msrpua_api.end_session(&sess->msrpua_sess_id);
+	msrpgw_delete_session(sess);
+
+	hash_unlock(msrpgw_sessions, hentry);
+
+	if (rc < 0) {
+		LM_ERR("Failed to end MSRP UA session [%.*s]\n",
+			sess->msrpua_sess_id.len, sess->msrpua_sess_id.s);
+
+		return init_mi_error(500, MI_SSTR("Unable to end session"));
+	}
+
+	return init_mi_result_ok();
+}
+
+struct mi_list_params {
+	mi_item_t *resp_arr;
+	int rc;
+};
+
+static int mi_print_session(void *param, str key, void *value)
+{
+	struct msrpgw_session *sess = (struct msrpgw_session *)value;
+	struct mi_list_params *params = (struct mi_list_params *)param;
+	mi_item_t *sess_obj;
+
+	sess_obj = add_mi_object(params->resp_arr, NULL, 0);
+	if (!sess_obj) {
+		params->rc = 1;
+		return 1;
+	}
+
+	if (add_mi_string(sess_obj, MI_SSTR("key"),
+		sess->key.s, sess->key.len) < 0) {
+		params->rc = 1;
+		return 1;
+	}
+
+	if (add_mi_string(sess_obj, MI_SSTR("msg_side_to"),
+		sess->sipua_to.s, sess->sipua_to.len) < 0) {
+		params->rc = 1;
+		return 1;
+	}
+	if (add_mi_string(sess_obj, MI_SSTR("msg_side_ruri"),
+		sess->sipua_ruri.s, sess->sipua_ruri.len) < 0) {
+		params->rc = 1;
+		return 1;
+	}
+
+	if (add_mi_string(sess_obj, MI_SSTR("msrp_ua_session_id"),
+		sess->msrpua_sess_id.s, sess->msrpua_sess_id.len) < 0) {
+		params->rc = 1;
+		return 1;
+	}
+
+	return 0;
+}
+
+mi_response_t *msrpgw_mi_list(const mi_params_t *_,
+	struct mi_handler *__)
+{
+	mi_response_t *resp;
+	struct mi_list_params params = {0};
+
+	resp = init_mi_result_array(&params.resp_arr);
+	if (!resp)
+		return NULL;
+
+	hash_for_each_locked(msrpgw_sessions, mi_print_session, &params);
+	if (params.rc != 0)
+		goto error;
+
+	return resp;
+error:
+	free_mi_response(resp);
+	return NULL;
 }
