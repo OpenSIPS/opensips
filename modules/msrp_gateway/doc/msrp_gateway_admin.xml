@@ -70,6 +70,63 @@ modparam("msrp_gateway", "hash_size", 16)
 			</example>
 		</section>
 
+		<section id="param_cleanup_interval" xreflabel="cleanup_interval">
+		<title><varname>cleanup_interval</varname> (int)</title>
+		<para>
+			The interval between full iterations of the sessions table
+			in order to clean up lingering sessions.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>60</quote>. (seconds)</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>cleanup_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "cleanup_interval", 60)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_session_timeout" xreflabel="session_timeout">
+		<title><varname>session_timeout</varname> (int)</title>
+		<para>
+			Amount of time (in seconds) since last message has been received
+			from either side, after which a session should be terminated.
+		</para>
+		<para>
+		<emphasis>The default value is 12 * 3600 seconds (12 hours).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>session_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "session_timeout", 7200)
+...
+		</programlisting>
+			</example>
+		</section>
+
+		<section id="param_message_timeout" xreflabel="message_timeout">
+		<title><varname>message_timeout</varname> (int)</title>
+		<para>
+			Amount of time (in seconds) since last MESSAGE has been received
+			after which a session should be terminated.
+		</para>
+		<para>
+		<emphasis>The default value is 2 * 3600 seconds (2 hours).</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>message_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_gateway", "message_timeout", 3600)
+...
+		</programlisting>
+			</example>
+		</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
@@ -167,7 +224,7 @@ if (!has_totag() &amp;&amp; is_method("INVITE")) {
 			<title><function>msg_to_msrp()</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_method("CANCEL")) {
+if (is_method("MESSAGE")) {
 	msg_to_msrp($var(corr_key), "text/plain");
 	exit;
 }
@@ -175,6 +232,61 @@ if (is_method("CANCEL")) {
 </programlisting>
 		</example>
 	</section>
+
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+
+	<section id="mi_msrp_gw_list_sessions"
+			xreflabel="msrp_gw_list_sessions">
+		<title>
+		<function moreinfo="none">msrp_gw_list_sessions</function>
+		</title>
+		<para>
+		Lists information about ongoing sessions.
+		</para>
+		<para>
+		Name: <emphasis>msrp_gw_list_sessions</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>None</emphasis>.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_gw_list_sessions
+		</programlisting>
+		</section>
+
+	<section id="mi_msrp_gw_end_session"
+			xreflabel="msrp_gw_end_session">
+		<title>
+		<function moreinfo="none">msrp_gw_end_session</function>
+		</title>
+		<para>
+		Terminate an ongoing session.
+		</para>
+		<para>
+		Name: <emphasis>msrp_gw_end_session</emphasis>
+		</para>
+		<para>Parameters</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> (string) - session key
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi msrp_gw_end_session alice@opensips.org-bob@opensips.org
+		</programlisting>
+		</section>
 
 	</section>
 
