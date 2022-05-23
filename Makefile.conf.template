@@ -58,7 +58,9 @@
 #sngtc= Voice Transcoding using the D-series Sangoma transcoding cards | libsngtc_node
 #siprec= SIP Call Recording to an external/passive recorder | uuid-dev
 #snmpstats= Provides an SNMP management interface to OpenSIPS | NetSNMP v5.3
-#tls_mgm= Provides a TLS interface to manage certificates for OpenSIPS | SSL development library, typically libssl-dev
+#tls_openssl= Implements TLS operations using the OpenSSL libarary | SSL development library, typically libssl-dev
+#tls_mgm= Provides a TLS interface to manage certificates for OpenSIPS |
+#tls_wolfssl= Implements TLS operations using the wolfSSL libarary |
 #xcap= XCAP utility functions for OpenSIPS. | libxml-dev
 #xcap_client= XCAP client for OpenSIPS.It fetches XCAP elements, either documents or part of them, by sending HTTP GET requests | libxml-dev and libcurl-dev
 #xml= Introduces a new type of variable that provides both serialization and de-serialization from XML format. | XML library, libxml2-dev
