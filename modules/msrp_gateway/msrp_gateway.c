@@ -72,6 +72,19 @@ mi_response_t *msrpgw_mi_end(const mi_params_t *params,
 mi_response_t *msrpgw_mi_list(const mi_params_t *_,
 	struct mi_handler *__);
 
+static event_id_t evi_id = EVI_ERROR;
+static str evi_name = str_init("E_MSRP_GW_SETUP_FAILED");
+
+static evi_params_p evi_params;
+static evi_param_p evi_key_p, evi_from_p, evi_to_p, evi_ruri_p,
+	evi_code_p, evi_reason_p;
+static str evi_key_pname = str_init("key");
+static str evi_from_pname = str_init("from_uri");
+static str evi_to_pname = str_init("to_uri");
+static str evi_ruri_pname = str_init("ruri");
+static str evi_code_pname = str_init("code");
+static str evi_reason_pname = str_init("reason");
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "msrp_ua", DEP_ABORT },
@@ -143,6 +156,47 @@ struct module_exports exports = {
 	0           /* reload confirm function */
 };
 
+static int msrpgw_evi_init(void)
+{
+	evi_id = evi_publish_event(evi_name);
+	if (evi_id == EVI_ERROR) {
+		LM_ERR("cannot register event\n");
+		return -1;
+	}
+
+	evi_params = pkg_malloc(sizeof(evi_params_t));
+	if (evi_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(evi_params, 0, sizeof(evi_params_t));
+
+	evi_key_p = evi_param_create(evi_params, &evi_key_pname);
+	if (evi_key_p == NULL)
+		goto error;
+	evi_from_p = evi_param_create(evi_params, &evi_from_pname);
+	if (evi_from_p == NULL)
+		goto error;
+	evi_to_p = evi_param_create(evi_params, &evi_to_pname);
+	if (evi_to_p == NULL)
+		goto error;
+	evi_ruri_p = evi_param_create(evi_params, &evi_ruri_pname);
+	if (evi_ruri_p == NULL)
+		goto error;
+	evi_code_p = evi_param_create(evi_params, &evi_code_pname);
+	if (evi_code_p == NULL)
+		goto error;
+	evi_reason_p = evi_param_create(evi_params, &evi_reason_pname);
+	if (evi_reason_p == NULL)
+		goto error;
+
+	return 0;
+
+error:
+	LM_ERR("cannot create event parameter\n");
+	return -1;
+}
+
 static int mod_init(void)
 {
 	LM_INFO("initializing...\n");
@@ -178,6 +232,11 @@ static int mod_init(void)
 	register_timer("msrpgw-expire", clean_msrpgw_sessions, NULL,
 		cleanup_interval, TIMER_FLAG_DELAY_ON_DELAY);
 
+	if (msrpgw_evi_init() < 0) {
+		LM_ERR("Failed to init events\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -207,6 +266,50 @@ static void msrpgw_delete_session(struct msrpgw_session *sess)
 static void destroy(void)
 {
 	hash_destroy(msrpgw_sessions, free_msrpgw_session);
+
+	evi_free_params(evi_params);
+}
+
+static int raise_failed_event(str *key, str *from, str *to, str *ruri,
+	struct sip_msg *msg)
+{
+	if (evi_param_set_str(evi_key_p, key) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+	if (evi_param_set_str(evi_from_p, from) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+	if (evi_param_set_str(evi_to_p, to) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+	if (evi_param_set_str(evi_ruri_p, ruri) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+
+	if (msg && msg->first_line.type == SIP_REPLY &&
+		msg->REPLY_STATUS >= 300) {
+		if (evi_param_set_int(evi_code_p, &msg->REPLY_STATUS) < 0) {
+			LM_ERR("cannot set event parameter\n");
+			return -1;
+		}
+
+		if (evi_param_set_str(evi_reason_p,
+			&msg->first_line.u.reply.reason) < 0) {
+			LM_ERR("cannot set event parameter\n");
+			return -1;
+		}
+	}
+
+	if (evi_raise_event(evi_id, evi_params) < 0) {
+		LM_ERR("cannot raise event\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
@@ -215,6 +318,8 @@ int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
 	unsigned int hentry;
 	struct list_head *it, *tmp;
 	struct queue_msg_entry *msg;
+	str key = STR_NULL;
+	str from = STR_NULL, to = STR_NULL, ruri = STR_NULL;
 
 	hentry = hash_entry(msrpgw_sessions, sess->key);
 	hash_lock(msrpgw_sessions, hentry);
@@ -243,8 +348,41 @@ int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
 		break;
 	case MSRP_UA_SESS_FAILED:
 		LM_ERR("Failed to establish SIP session on MSRP side\n");
+
+		/* session was created by msg_to_msrp() */
+		if (!list_empty(&sess->queued_messages)) {
+			if (pkg_str_dup(&key, &sess->key) < 0) {
+				LM_ERR("no more pkg memory\n");
+				goto err_fail;
+			}
+			if (pkg_str_dup(&from, &sess->sipua_from) < 0) {
+				LM_ERR("no more pkg memory\n");
+				goto err_fail;
+			}
+			if (pkg_str_dup(&to, &sess->sipua_to) < 0) {
+				LM_ERR("no more pkg memory\n");
+				goto err_fail;
+			}
+			if (pkg_str_dup(&ruri, &sess->sipua_ruri) < 0) {
+				LM_ERR("no more pkg memory\n");
+				goto err_fail;
+			}
+		}
+
 		msrpgw_delete_session(sess);
-		break;
+		hash_unlock(msrpgw_sessions, hentry);
+
+		if (key.s) {
+			if (raise_failed_event(&key, &from, &to, &ruri, params->msg) < 0)
+				LM_ERR("Failed to raise setup failed event\n");
+
+			pkg_free(key.s);
+			pkg_free(from.s);
+			pkg_free(to.s);
+			pkg_free(ruri.s);
+		}
+
+		return 0;
 	case MSRP_UA_SESS_TERMINATED:
 		msrpgw_delete_session(sess);
 		LM_DBG("SIP session terminated on MSRP side\n");
@@ -252,6 +390,19 @@ int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
 	}
 
 end:
+	hash_unlock(msrpgw_sessions, hentry);
+	return 0;
+err_fail:
+	if (key.s)
+		pkg_free(key.s);
+	if (from.s)
+		pkg_free(from.s);
+	if (to.s)
+		pkg_free(to.s);
+	if (ruri.s)
+		pkg_free(ruri.s);
+
+	msrpgw_delete_session(sess);
 	hash_unlock(msrpgw_sessions, hentry);
 	return 0;
 }

@@ -290,5 +290,52 @@ opensips-cli -x mi msrp_gw_end_session alice@opensips.org-bob@opensips.org
 
 	</section>
 
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+
+	<section id="event_E_MSRP_GW_SETUP_FAILED" xreflabel="E_MSRP_GW_SETUP_FAILED">
+		<title>
+		<function moreinfo="none">E_MSRP_GW_SETUP_FAILED</function>
+		</title>
+		<para>
+			This event is triggered when the MSRP side SIP session fails to set up,
+			when using the <emphasis>msg_to_msrp()</emphasis> function.
+		</para>
+		<para>
+			The event can be used to generate a message with the failure description,
+			back on the MESSAGE side.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>key</emphasis> - The session key.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>from_uri</emphasis> - The URI in the SIP From header
+				to use on the MESSAGE side.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>to_uri</emphasis> - The URI in the SIP To header
+				to use on the MESSAGE side.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>ruri</emphasis> - The SIP Request URI to use on the
+				MESSAGE side.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>code</emphasis> - The SIP error code in the negative reply
+				received on the MSRP side. Might be NULL if the MSRP UA session expired
+				before receiving a negative reply.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>reason</emphasis> - The SIP reason string in the negative reply
+				received on the MSRP side. Might be NULL if the MSRP UA session expired
+				before receiving a negative reply.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	</section>
+
 </chapter>
 
