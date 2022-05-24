@@ -869,8 +869,8 @@ static void handle_internal_msg(bin_packet_t *received, int packet_type,
 		handle_cap_update(received, src_node);
 		break;
 	default:
-		LM_WARN("Invalid clusterer binary packet command from node: %d\n",
-			src_node->node_id);
+		LM_WARN("Invalid clusterer binary packet command [%d] from node: %d\n",
+			packet_type, src_node->node_id);
 	}
 }
 
