@@ -543,7 +543,7 @@ mi_response_t *db_get_info(const mi_params_t *params,
             buf,strlen(buf)) < 0)
             goto error;
 
-        dbs_arr = add_mi_array(resp_obj, MI_SSTR("DBS"));
+        dbs_arr = add_mi_array(set_item, MI_SSTR("DBS"));
         if (!dbs_arr)
             goto error;
 
@@ -552,10 +552,10 @@ mi_response_t *db_get_info(const mi_params_t *params,
             if (!db_item)
                 goto error;
 
-            if (add_mi_number(set_item, MI_SSTR("index"), i) < 0)
+            if (add_mi_number(db_item, MI_SSTR("index"), j) < 0)
                 goto error;
 
-            if (add_mi_string(set_item, MI_SSTR("name"),
+            if (add_mi_string(db_item, MI_SSTR("name"),
                 global->set_list[i].db_list[j].db_url.s,
                 global->set_list[i].db_list[j].db_url.len) < 0)
                 goto error;
@@ -564,11 +564,11 @@ mi_response_t *db_get_info(const mi_params_t *params,
             may_use = (global->set_list[i].db_list[j].flags & MAY_USE) ? 1 : 0;
             recon = (global->set_list[i].db_list[j].flags & RERECONNECT) ? 1 :0;
 
-            if (add_mi_number(set_item, MI_SSTR("can"), can_use) < 0)
+            if (add_mi_number(db_item, MI_SSTR("can"), can_use) < 0)
                 goto error;
-            if (add_mi_number(set_item, MI_SSTR("may"), may_use) < 0)
+            if (add_mi_number(db_item, MI_SSTR("may"), may_use) < 0)
                 goto error;
-            if (add_mi_number(set_item, MI_SSTR("r_rec"), recon) < 0)
+            if (add_mi_number(db_item, MI_SSTR("r_rec"), recon) < 0)
                 goto error;
         }
     }
