@@ -38,6 +38,21 @@
 	__FD_CHECK((__call__), (__retok__), __ret__)
 #define FD_CHECK(__call__) _FD_CHECK((__call__), 0)
 
+#define __FD_CHECK_GT(__call__, __retok__, __goto__) \
+	do { \
+		int __ret__; \
+		__ret__ = (__call__); \
+		if (__ret__ > 0) \
+			__ret__ = -__ret__; \
+		if (__ret__ != (__retok__)) { \
+			LM_ERR("error in %s: %d\n", #__call__, __ret__); \
+			goto __goto__; \
+		} \
+	} while (0)
+#define _FD_CHECK_GT(__call__, __retok__) \
+	__FD_CHECK_GT((__call__), (__retok__), out)
+#define FD_CHECK_GT(__call__) _FD_CHECK_GT((__call__), 0)
+
 #define FD_CHECK_dict_new(type, data, parent, ref) \
 	FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, (type), \
 				(data), (parent), (ref)))
@@ -98,6 +113,7 @@ struct dm_cond {
 
 	int rc; /* the Diameter Result-Code AVP value */
 	int is_error;
+	char *rpl_avps_json; /* JSON with all reply AVPs and their values */
 };
 int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond);
 
@@ -122,7 +138,7 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor);
 int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
 int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
-                      int *res_code);
+               char **rpl_avps);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
 void _dm_destroy_message(aaa_message *msg);
 

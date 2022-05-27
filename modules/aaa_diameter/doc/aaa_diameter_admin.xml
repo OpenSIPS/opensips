@@ -152,7 +152,7 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 	<title>Exported Functions</title>
 	<section id="func_dm_send_request" xreflabel="dm_send_request()">
 		<title>
-		<function moreinfo="none">dm_send_request(app_id, cmd_code, avps_json, [res_code_pv])</function>
+		<function moreinfo="none">dm_send_request(app_id, cmd_code, avps_json, [rpl_avps_pv])</function>
 		</title>
 		<para>
 		Perform a blocking Diameter request over to the interconnected peer
@@ -176,10 +176,10 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 				the AVPs to include in the message payload.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>res_code_pv</emphasis> (var, optional) - output variable which will
-				retain the Result-Code AVP value from the Diameter Answer.
-				A <emphasis role='bold'>-2</emphasis> result code means that
-				no reply arrived at all within the timeout window.
+				<emphasis>rpl_avps_pv</emphasis> (var, optional) - output variable which will
+				hold all AVP names from the Diameter Answer along with their values, packed
+				as a JSON Array string.  The "json" module and its <emphasis>$json</emphasis>
+				variable could be used to iterate this array.
 			</para></listitem>
 		</itemizedlist>
 
@@ -221,18 +221,28 @@ APPLICATION 42 My Diameter Application
 
 REQUEST 92001 My-Custom-Request
 {
-	Session-Id | FIXED_HEAD | 1
 	Origin-Host | REQUIRED | 1
 	Origin-Realm | REQUIRED | 1
-	Route-Record | REQUIRED | 1
-	rated_duration | OPTIONAL | 1
+	Destination-Realm | REQUIRED | 1
+	Transaction-Id | REQUIRED | 1
+	Sip-From-Tag | REQUIRED | 1
+	Sip-To-Tag | REQUIRED | 1
+	Acct-Session-Id | REQUIRED | 1
+	Sip-Call-Duration | REQUIRED | 1
+	Sip-Call-Setuptime | REQUIRED | 1
+	Sip-Call-Created | REQUIRED | 1
+	Sip-Call-MSDuration | REQUIRED | 1
+	out_gw | REQUIRED | 1
+	call_cost | REQUIRED | 1
 }
 
 ANSWER 92001 My-Custom-Answer
 {
 	Origin-Host | REQUIRED | 1
 	Origin-Realm | REQUIRED | 1
-	Route-Record | REQUIRED | 1
+	Destination-Realm | REQUIRED | 1
+	Transaction-Id | REQUIRED | 1
+	Result-Code | REQUIRED | 1
 }
 
 </programlisting>
@@ -242,8 +252,8 @@ ANSWER 92001 My-Custom-Answer
 		<title><function moreinfo="none">dm_send_request</function> usage</title>
 		<programlisting format="linespecific">
 
-# Building an sending an Accounting-Request (271) for the
-# Diameter Accounting application (3)
+# Building an sending an My-Custom-Request (92001) for the
+# My Diameter Application (42)
 $var(payload) = "[
 	{ \"Origin-Host\": \"client.diameter.test\" },
 	{ \"Origin-Realm\": \"diameter.test\" },
@@ -259,8 +269,9 @@ $var(payload) = "[
 	{ \"cost\": \"10.84\" }
 ]";
 
-$var(rc) = dm_send_request(3, 271, $var(payload), $var(res_code));
-xlog("rc: $var(rc), Result-Code: $var(res_code)\n");
+$var(rc) = dm_send_request(42, 92001, $var(payload), $var(rpl_avps));
+xlog("rc: $var(rc), AVPs: $var(rpl_avps)\n");
+$json(avps) := $var(rpl_avps);
 
 </programlisting>
 		</example>

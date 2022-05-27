@@ -36,7 +36,7 @@ char *dm_conf_filename = "freeDiameter.conf";
 char *extra_avps_file;
 
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
-				str *avp_json, pv_spec_t *res_code_pv);
+				str *avp_json, pv_spec_t *rpl_avps_pv);
 static int dm_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
@@ -201,12 +201,13 @@ static int dm_bind_api(aaa_prot *api)
 
 
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
-				str *avp_json, pv_spec_t *res_code_pv)
+				str *avp_json, pv_spec_t *rpl_avps_pv)
 {
 	aaa_message *dmsg = NULL;
 	struct dict_object *req;
 	cJSON *avps, *_avp;
-	int rc, res_code;
+	int rc;
+	char *rpl_avps;
 
 	if (fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
 	      cmd_code, &req, ENOENT) == ENOENT) {
@@ -308,17 +309,16 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 		}
 	}
 
-	rc = _dm_send_message(NULL, dmsg, NULL, &res_code);
+	rc = _dm_send_message(NULL, dmsg, NULL, &rpl_avps);
 
-	if (res_code_pv) {
-		pv_value_t val = {STR_NULL, 0, PV_VAL_INT|PV_TYPE_INT};
-		val.ri = res_code;
-		if (pv_set_value(msg, res_code_pv, 0, &val) != 0)
-			LM_ERR("failed to set output res_code pv to %d\n", res_code);
+	if (rpl_avps_pv && rpl_avps) {
+		pv_value_t val = {(str){rpl_avps, strlen(rpl_avps)}, 0, PV_VAL_STR};
+		if (pv_set_value(msg, rpl_avps_pv, 0, &val) != 0)
+			LM_ERR("failed to set output rpl_avps pv to: %s\n", rpl_avps);
 	}
 
 	if (rc != 0) {
-		LM_ERR("Diameter request failed, Result-Code: %d\n", res_code);
+		LM_ERR("Diameter request failed\n");
 		cJSON_Delete(avps);
 		return rc;
 	}
@@ -327,11 +327,10 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	return 1;
 
 error:
-	if (res_code_pv) {
-		pv_value_t val = {STR_NULL, 0, PV_VAL_INT|PV_TYPE_INT};
-		val.ri = -1;
-		if (pv_set_value(msg, res_code_pv, 0, &val) != 0)
-			LM_ERR("failed to set output res_code pv to %d\n", res_code);
+	if (rpl_avps_pv) {
+		pv_value_t val = {STR_NULL, 0, PV_VAL_NULL};
+		if (pv_set_value(msg, rpl_avps_pv, 0, &val) != 0)
+			LM_ERR("failed to set output rpl_avps pv to NULL\n");
 	}
 
 	_dm_destroy_message(dmsg);

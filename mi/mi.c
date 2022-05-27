@@ -46,15 +46,6 @@
 static struct mi_cmd*  mi_cmds = 0;
 static int mi_cmds_no = 0;
 
-static cJSON_Hooks sys_mem_hooks = {
-	.malloc_fn = malloc,
-	.free_fn   = free,
-};
-static cJSON_Hooks shm_mem_hooks = {
-	.malloc_fn = osips_shm_malloc,
-	.free_fn   = osips_shm_free,
-};
-
 void _init_mi_sys_mem_hooks(void)
 {
 	cJSON_InitHooks(&sys_mem_hooks);

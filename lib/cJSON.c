@@ -82,6 +82,16 @@ typedef int cjbool;
 
 static const unsigned char *global_ep = NULL;
 
+cJSON_Hooks sys_mem_hooks = {
+	.malloc_fn = malloc,
+	.free_fn   = free,
+};
+
+cJSON_Hooks shm_mem_hooks = {
+	.malloc_fn = osips_shm_malloc,
+	.free_fn   = osips_shm_free,
+};
+
 int cJSON_NumberIsInt(cJSON *item)
 {
    return ((FABS((double)item->valueint - item->valuedouble) <= DBL_EPSILON) &&

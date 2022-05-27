@@ -204,11 +204,12 @@ out:
 
 static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
+	cJSON *avps = NULL;
 	struct msg_hdr *hdr = NULL;
 	struct msg *msg = *_msg;
-	struct avp *a = NULL;
+	struct avp *a = NULL, *it = NULL;
 	struct avp_hdr * h = NULL;
-	int rc;
+	int rc, i = 0;
 	str tid;
 	struct dm_cond **prpl_cond, *rpl_cond;
 
@@ -219,19 +220,77 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		goto out;
 	}
 
-	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Result_Code, &a));
-	FD_CHECK(fd_msg_avp_hdr(a, &h));
-	rc = h->avp_value->u32;
+	cJSON_InitHooks(&shm_mem_hooks);
+	avps = cJSON_CreateArray();
+	if (!avps) {
+		LM_ERR("oom 1\n");
+		goto out;
+	}
 
-	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a));
-	FD_CHECK(fd_msg_avp_hdr(a, &h));
+	FD_CHECK_GT(fd_msg_browse(msg, MSG_BRW_FIRST_CHILD, &it, NULL));
+
+	LM_DBG("------------ AVP iteration ----------------\n");
+	while (it) {
+		cJSON *item, *val;
+		struct dict_object *obj;
+		struct dict_avp_data dm_avp;
+
+		FD_CHECK_GT(fd_msg_avp_hdr(it, &h));
+
+		FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
+				&h->avp_code, &obj, ENOENT));
+		FD_CHECK_GT(fd_dict_getval(obj, &dm_avp));
+
+		item = cJSON_CreateObject();
+		if (!item) {
+			LM_ERR("oom 2\n");
+			goto out;
+		}
+
+		/* FIXME: there has to be an API-ish way of detecting type, but this works for now */
+		if (h->avp_len >= 12 && h->avp_value->os.len == 0) {
+			/* Integer AVP */
+			LM_DBG("%d. got integer AVP %u, value: %d\n", i, h->avp_code, h->avp_value->i32);
+
+			val = cJSON_CreateNumber((double)h->avp_value->i64);
+			if (!val) {
+				cJSON_Delete(item);
+				LM_ERR("oom 3\n");
+				goto out;
+			}
+		} else {
+			/* Octetstring AVP */
+			LM_DBG("%d. got string AVP %u, value: %.*s %s\n", i, h->avp_code, (int)h->avp_value->os.len, h->avp_value->os.data, h->avp_value->os.data);
+
+			val = cJSON_CreateString((const char *)h->avp_value->os.data);
+			if (!val) {
+				cJSON_Delete(item);
+				LM_ERR("oom 3\n");
+				goto out;
+			}
+		}
+
+		cJSON_AddItemToObject(item, dm_avp.avp_name, val);
+		cJSON_AddItemToArray(avps, item);
+
+		FD_CHECK_GT(fd_msg_browse(it, MSG_BRW_NEXT, &it, NULL));
+		i++;
+	}
+	LM_DBG("------------ END AVP iteration ----------------\n");
+
+	rc = fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a);
+	if (rc != 0) {
+		LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d\n",
+		       hdr->msg_appl, hdr->msg_code);
+		goto out;
+	}
+
+	FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
 	tid.s = (char *)h->avp_value->os.data;
 	tid.len = (int)h->avp_value->os.len;
 
 	LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
 	       hdr->msg_code, rc, tid.len, tid.s);
-
-	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
 
 	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
 	if (!prpl_cond) {
@@ -248,15 +307,23 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		goto out;
 	}
 
-	rpl_cond->rc = rc;
+	if (rpl_cond->rpl_avps_json)
+		shm_free(rpl_cond->rpl_avps_json);
+	rpl_cond->rpl_avps_json = cJSON_PrintUnformatted(avps);
 
 	hash_remove_key(pending_replies, tid);
 
+	fd_msg_search_avp(msg, dm_dict.Error_Message, &a);
 	if (a) {
 		rpl_cond->is_error = 1;
-		FD_CHECK(fd_msg_avp_hdr(a, &h));
-		LM_DBG("transaction failed, rc: %d (%.*s)\n",
-			rc, (int)h->avp_value->os.len, h->avp_value->os.data);
+		rc = fd_msg_avp_hdr(a, &h);
+		if (rc != 0) {
+			pthread_mutex_unlock(&rpl_cond->mutex);
+			goto out;
+		}
+
+		LM_DBG("transaction failed (%.*s)\n",
+			(int)h->avp_value->os.len, h->avp_value->os.data);
 	} else {
 		rpl_cond->is_error = 0;
 	}
@@ -266,6 +333,9 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 	pthread_mutex_unlock(&rpl_cond->mutex);
 
 out:
+	cJSON_Delete(avps);
+	cJSON_InitHooks(NULL);
+
 	FD_CHECK(fd_msg_free(msg));
 	*_msg = NULL;
 	return 0;
@@ -1313,7 +1383,7 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
 
 
 int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
-	int *res_code)
+               char **rpl_avps)
 {
 	struct dm_message *dm;
 
@@ -1361,8 +1431,8 @@ int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
 			       "reply\n", rc, strerror(rc));
 			pthread_mutex_unlock(&my_reply_cond->mutex);
 
-			if (res_code)
-				*res_code = -1;
+			if (rpl_avps)
+				*rpl_avps = NULL;
 			return -2;
 		}
 
@@ -1370,9 +1440,11 @@ int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
 
 		LM_DBG("reply received, Result-Code: %d (%s)\n", my_reply_cond->rc,
 				my_reply_cond->is_error ? "FAILURE" : "SUCCESS");
+		LM_DBG("AVPs: %s\n", my_reply_cond->rpl_avps_json);
 
-		if (res_code)
-			*res_code = my_reply_cond->rc;
+		if (rpl_avps)
+			*rpl_avps = my_reply_cond->rpl_avps_json;
+
 		if (my_reply_cond->is_error)
 			return -1;
 	}
