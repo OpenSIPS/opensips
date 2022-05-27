@@ -87,6 +87,8 @@ typedef int (flush_fn)(unsigned char *buf, int len, void *param);
 
 /* Supply malloc, realloc and free functions to cJSON */
 extern void cJSON_InitHooks(cJSON_Hooks* hooks);
+extern cJSON_Hooks sys_mem_hooks;
+extern cJSON_Hooks shm_mem_hooks;
 
 
 /* Supply a block of JSON, and this returns a cJSON object you can interrogate. Call cJSON_Delete when finished. */

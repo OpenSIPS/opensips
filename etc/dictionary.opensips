@@ -23,7 +23,7 @@ ATTRIBUTE Sip-Call-Duration    227  integer
 ATTRIBUTE Sip-Call-Setuptime   228  integer
 ATTRIBUTE Sip-Call-Created     229  integer
 ATTRIBUTE Sip-Call-MSDuration  230  integer
-ATTRIBUTE Transaction-Id       231  string
+ATTRIBUTE Transaction-Id       231  string     # Proprietary, aaa_diameter
 
 ### Acct-Status-Type Values ###
 VALUE Acct-Status-Type     Start             1         # RFC2866, RADIUS acc
