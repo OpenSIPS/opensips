@@ -503,7 +503,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 114 48 5609 1182
-   2. Vlad Patrascu (@rvlad-patrascu) 5 3 15 9
+   2. Vlad Patrascu (@rvlad-patrascu) 6 4 19 11
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 4 4
    4. Zero King (@l2dy) 3 1 1 1
 
@@ -527,9 +527,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
-   2. Razvan Crainea (@razvancrainea)     Feb 2020 - Jul 2020
-   3. Vlad Patrascu (@rvlad-patrascu)     Mar 2020 - Apr 2020
+   1. Vlad Patrascu (@rvlad-patrascu)     Mar 2020 - Jul 2021
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Apr 2021
+   3. Razvan Crainea (@razvancrainea)     Feb 2020 - Jul 2020
    4. Zero King (@l2dy)                   Mar 2020 - Mar 2020
 
    (1) including any documentation-related commits, excluding

@@ -1577,8 +1577,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 323 190 8922 3624
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 242 148 4208 3614
+   2. Liviu Chircu (@liviuchircu) 331 195 9138 3681
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 245 150 4231 3628
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
    6. Vlad Patrascu (@rvlad-patrascu) 40 22 787 651
@@ -1588,8 +1588,8 @@ Chapter 3. Contributors
    10. Andrei Pelinescu-Onciul 17 13 151 91
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Maksym
-   Sobolyev (@sobomax), Nils Ohlmeier, Eseanu Marius Cristian
-   (@eseanucristian), Walter Doekes (@wdoekes), Ovidiu Sas
+   Sobolyev (@sobomax), Nils Ohlmeier, Walter Doekes (@wdoekes),
+   Eseanu Marius Cristian (@eseanucristian), Ovidiu Sas
    (@ovidiusas), Ionel Cerghit (@ionel-cerghit), Andrei Dragus,
    Anca Vamanu, Alessio Garzi (@Ozzyboshi), Zero King (@l2dy),
    Dusan Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Juha
@@ -1621,11 +1621,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2021
-   3.  Maksym Sobolyev (@sobomax)          Apr 2003 - Feb 2021
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - May 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2021
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2021
+   3.  Walter Doekes (@wdoekes)            Apr 2019 - May 2021
+   4.  Maksym Sobolyev (@sobomax)          Apr 2003 - Feb 2021
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
    6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    8.  Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019

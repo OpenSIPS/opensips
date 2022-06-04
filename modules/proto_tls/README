@@ -323,8 +323,8 @@ modparam("proto_tls", "cert_check_on_conn_reusage", 1)
 
    Example 1.7. Set trace_destination parameter
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
-=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
 
 modparam("proto_tls", "trace_destination", "hep_dest")
 ...
@@ -429,7 +429,7 @@ param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
    disabled, OpenSIPS will block and wait for TLS operations like
    connect and write.
 
-   Default value is 1 (enabled).
+   Default value is 0 (disabled).
 
    Example 1.12. Set tls_async variable
 
@@ -582,10 +582,10 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 57 30 1547 811
-   2. Razvan Crainea (@razvancrainea) 53 33 920 706
+   2. Razvan Crainea (@razvancrainea) 54 34 922 708
    3. Eseanu Marius Cristian (@eseanucristian) 41 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
-   5. Vlad Patrascu (@rvlad-patrascu) 17 11 171 200
+   5. Vlad Patrascu (@rvlad-patrascu) 18 12 172 201
    6. Liviu Chircu (@liviuchircu) 10 7 30 105
    7. Bogdan Chifor 5 2 141 1
    8. Vlad Paiu (@vladpaiu) 4 2 84 3
@@ -615,10 +615,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   2.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2021
-   4.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jan 2021
+   1.  Razvan Crainea (@razvancrainea)     Feb 2015 - Feb 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2021
    5.  Maksym Sobolyev (@sobomax)          Jul 2017 - Sep 2020
    6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7.  Dan Pascu (@danpascu)               Jan 2020 - Jan 2020
@@ -637,9 +637,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Zero King (@l2dy), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Zero
+   King (@l2dy), Liviu Chircu (@liviuchircu), Peter Lemenkov
    (@lemenkov), Ionut Ionita (@ionutrazvanionita), Eseanu Marius
    Cristian (@eseanucristian), Vlad Paiu (@vladpaiu).
 

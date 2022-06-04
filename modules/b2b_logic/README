@@ -60,6 +60,7 @@ B2B_LOGIC
               1.6.1. b2b_trigger_scenario
               1.6.2. b2b_bridge
               1.6.3. b2b_list
+              1.6.4. b2b_terminate_call
 
         1.7. Exported Pseudo-Variables
 
@@ -823,6 +824,19 @@ nsips.org
    MI FIFO Command Format:
         opensips-cli -x mi b2b_list
 
+1.6.4.  b2b_terminate_call
+
+   Terminates an ongoing B2B session.
+
+   Name: b2b_terminate_call
+
+   Parameters:
+     * key : the b2b_logic key or the callid;from-tag;to-tag of
+       one of call legs of the ongoing session.
+
+   MI FIFO Command Format:
+        opensips-cli -x mi b2b_terminate_call 159.0
+
 1.7. Exported Pseudo-Variables
 
 1.7.1.  $b2b_logic.key
@@ -1094,13 +1108,14 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 64 7 2235 2290
+   1. Vlad Patrascu (@rvlad-patrascu) 81 21 2471 2366
    2. Nick Altmann (@nikbyte) 13 9 278 29
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 49 11
    4. Maksym Sobolyev (@sobomax) 4 2 21 21
-   5. Razvan Crainea (@razvancrainea) 3 1 7 8
+   5. Razvan Crainea (@razvancrainea) 4 2 9 11
    6. Liviu Chircu (@liviuchircu) 3 1 2 2
-   7. Zero King (@l2dy) 3 1 1 1
+   7. Aron Podrigal (@ar45) 3 1 1 1
+   8. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1122,13 +1137,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
-   2. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - May 2021
-   3. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
-   4. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   5. Razvan Crainea (@razvancrainea)     Jan 2021 - Jan 2021
-   6. Zero King (@l2dy)                   Dec 2020 - Dec 2020
-   7. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2020
+   1. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Feb 2022
+   2. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
+   3. Razvan Crainea (@razvancrainea)     Jan 2021 - Jul 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
+   5. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
+   6. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   7. Zero King (@l2dy)                   Dec 2020 - Dec 2020
+   8. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2020
 
    (1) including any documentation-related commits, excluding
    merge commits

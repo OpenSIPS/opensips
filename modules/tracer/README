@@ -313,6 +313,8 @@ modparam("tracer", "file_mode", 0644)
           + c - trace onlt the SIP callee side;
        If both C and c flags are missing, tracing of both
        sides/legs is assumed.
+       NOTE these flags are supported only by transactional and
+       dialog tracing
      * correlation_id (string,pvar) a custom SIP correlation ID to
        be forced (normally the SIP Call-ID is used) to correlate
        this traffic (transaction, dialog) with other traffic.
@@ -494,11 +496,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 110 84 1265 861
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 112 86 1276 864
    2. Ionut Ionita (@ionutrazvanionita) 105 52 2676 1887
-   3. Razvan Crainea (@razvancrainea) 62 42 1568 389
+   3. Razvan Crainea (@razvancrainea) 64 44 1572 395
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
-   5. Liviu Chircu (@liviuchircu) 24 21 85 76
+   5. Liviu Chircu (@liviuchircu) 25 22 86 76
    6. Vlad Paiu (@vladpaiu) 20 8 335 528
    7. Vlad Patrascu (@rvlad-patrascu) 16 7 284 333
    8. Henning Westerholt (@henningw) 11 6 146 155
@@ -508,8 +510,9 @@ Chapter 2. Contributors
    All remaining contributors: Dan Pascu (@danpascu), Dusan Klinec
    (@ph4r05), Walter Doekes (@wdoekes), Zero King (@l2dy), Andreas
    Heise, Sergio Gutierrez, Ovidiu Sas (@ovidiusas), Konstantin
-   Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme (@etamme).
+   Bokarius, Iouri Kharon, Peter Lemenkov (@lemenkov), labman000,
+   Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme
+   (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -531,23 +534,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - May 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Apr 2021
-   3.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
-   5.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Eric Tamme (@etamme)                Sep 2017 - Sep 2017
+   1.  labman000                           Mar 2022 - Mar 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Feb 2022
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2021
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2021
+   5.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
+   6.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Dan Pascu (@danpascu)               Nov 2008 - May 2019
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Dusan Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Vlad Paiu
-   (@vladpaiu), Alexandr Dubovikov (@adubovikov), Sergio
-   Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
-   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Eric Tamme (@etamme), Ionut Ionita
+   (@ionutrazvanionita), Dusan Klinec (@ph4r05), Andrei Datcu
+   (@andrei-datcu), Vlad Paiu (@vladpaiu), Alexandr Dubovikov
+   (@adubovikov), Sergio Gutierrez, Daniel-Constantin Mierla
+   (@miconda), Iouri Kharon, Konstantin Bokarius, Edson Gellert
+   Schubert, Henning Westerholt (@henningw), Andreas Heise,
+   Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -556,11 +560,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
-   (@andrei-datcu), Alexandr Dubovikov (@adubovikov),
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Liviu Chircu (@liviuchircu), Ovidiu
+   Sas (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Andrei
+   Datcu (@andrei-datcu), Alexandr Dubovikov (@adubovikov),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw), Elena-Ramona
    Modroiu.

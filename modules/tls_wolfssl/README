@@ -8,24 +8,26 @@ tls_wolfssl Module
         1.1. Overview
         1.2. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.2.1. Compilation
+              1.2.2. OpenSIPS Modules
+              1.2.3. External Libraries or Applications
 
-   2. Contributors
+   2. Frequently Asked Questions
+   3. Contributors
 
-        2.1. By Commit Statistics
-        2.2. By Commit Activity
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
 
-   3. Documentation
+   4. Documentation
 
-        3.1. Contributors
+        4.1. Contributors
 
    List of Tables
 
-   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
           lines added/removed^(3)
 
-   2.2. Most recently active contributors^(1) to this module
+   3.2. Most recently active contributors^(1) to this module
 
 Chapter 1. Admin Guide
 
@@ -41,25 +43,56 @@ Chapter 1. Admin Guide
 
 1.2. Dependencies
 
-1.2.1. OpenSIPS Modules
+1.2.1. Compilation
+
+   The following packages must be installed before compiling this
+   module:
+     * autoconf.
+     * automake.
+     * libtool.
+
+1.2.2. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * None.
 
-1.2.2. External Libraries or Applications
+1.2.3. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-Chapter 2. Contributors
+Chapter 2. Frequently Asked Questions
 
-2.1. By Commit Statistics
+   2.1.
 
-   Table 2.1. Top contributors by DevScore^(1), authored
+   Why do I get the following error when compiling the module?
+    make[1]: Entering directory '/usr/local/src/opensips/modules/tls_wol
+fssl'
+    /bin/sh: 3: ./autogen.sh: not found
+    env: './configure': No such file or directory
+    make[1]: *** [Makefile:15: lib/lib/libwolfssl.a] Error 127
+    make[1]: Leaving directory '/usr/local/src/opensips/modules/tls_wolf
+ssl'
+    make: *** [Makefile:197: modules] Error 2
+
+   If you obtained the OpenSIPS sources by cloning the repository
+   from Github, without using the --recursive option for the git
+   clone command, you did not properly fetch the wolfSSL library
+   code, which is included as a git submodule pointing to the
+   official wolfSSL repository.
+
+   In order to fetch the wolfSSL library code you can run:
+                git submodule update --init
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    3        1       1        1
+   1. Vlad Patrascu (@rvlad-patrascu)    21      15      460       93
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -77,18 +110,20 @@ Chapter 2. Contributors
    (3) ignoring whitespace edits, renamed files and auto-generated
    files
 
-2.2. By Commit Activity
+3.2. By Commit Activity
 
-   Table 2.2. Most recently active contributors^(1) to this module
+   Table 3.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) May 2021 - May 2021
+   1. Vlad Patrascu (@rvlad-patrascu) May 2021 - Jan 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
 
-Chapter 3. Documentation
+Chapter 4. Documentation
 
-3.1. Contributors
+4.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 

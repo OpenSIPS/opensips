@@ -175,8 +175,8 @@ modparam("proto_ws", "ws_max_msg_chunks", 8)
 
    Example 1.4. Set trace_destination parameter
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
-=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
 
 modparam("proto_ws", "trace_destination", "hep_dest")
 ...
@@ -289,11 +289,11 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 93 45 4061 816
+   1. Razvan Crainea (@razvancrainea) 95 47 4067 818
    2. Ionut Ionita (@ionutrazvanionita) 21 14 609 114
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 17 14 123 36
    4. Liviu Chircu (@liviuchircu) 11 8 67 93
-   5. Vlad Patrascu (@rvlad-patrascu) 7 4 95 72
+   5. Vlad Patrascu (@rvlad-patrascu) 8 5 97 74
    6. Vlad Paiu (@vladpaiu) 4 2 3 1
    7. Nick Altmann (@nikbyte) 3 1 4 4
    8. Peter Lemenkov (@lemenkov) 3 1 2 2
@@ -320,11 +320,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - May 2021
-   2.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2021
-   4.  Liviu Chircu (@liviuchircu)         Mar 2015 - Jan 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   1.  Razvan Crainea (@razvancrainea)     Mar 2015 - Jan 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2017 - Apr 2021
+   5.  Liviu Chircu (@liviuchircu)         Mar 2015 - Jan 2020
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Ionut Ionita (@ionutrazvanionita)   Jul 2015 - Apr 2017
    8.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2017
@@ -338,9 +338,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ionut Ionita
    (@ionutrazvanionita).
 
    Documentation Copyrights:

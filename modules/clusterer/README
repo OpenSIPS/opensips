@@ -1239,11 +1239,11 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 322 106 12640 6869
-   2. Liviu Chircu (@liviuchircu) 51 37 627 443
+   1. Vlad Patrascu (@rvlad-patrascu) 327 110 12746 6900
+   2. Liviu Chircu (@liviuchircu) 53 39 630 443
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 24 12 1121 112
-   5. Razvan Crainea (@razvancrainea) 23 17 319 143
+   4. Razvan Crainea (@razvancrainea) 24 18 321 145
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 24 12 1121 112
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
    7. Fabian Gast (@fgast) 4 2 3 3
    8. Gohar Ahmed (@goharahmed) 3 1 6 5
@@ -1272,13 +1272,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - May 2021
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Apr 2021
-   3.  Liviu Chircu (@liviuchircu)         Mar 2016 - Mar 2021
-   4.  kworm83                             Feb 2021 - Feb 2021
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   6.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
-   7.  Razvan Crainea (@razvancrainea)     Nov 2015 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - May 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Feb 2022
+   3.  Liviu Chircu (@liviuchircu)         Mar 2016 - Dec 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - May 2021
+   5.  kworm83                             Feb 2021 - Feb 2021
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   7.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
    8.  Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    10. Ionel Cerghit (@ionel-cerghit)      Dec 2016 - Dec 2016

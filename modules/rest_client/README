@@ -18,11 +18,12 @@ rest_client Module
               1.4.2. connection_timeout (integer)
               1.4.3. connect_poll_interval (integer)
               1.4.4. max_async_transfers (integer)
-              1.4.5. ssl_verifypeer (integer)
-              1.4.6. ssl_verifyhost (integer)
-              1.4.7. ssl_capath (integer)
-              1.4.8. curl_http_version (integer)
-              1.4.9. enable_expect_100 (boolean)
+              1.4.5. max_transfer_size (integer)
+              1.4.6. ssl_verifypeer (integer)
+              1.4.7. ssl_verifyhost (integer)
+              1.4.8. ssl_capath (integer)
+              1.4.9. curl_http_version (integer)
+              1.4.10. enable_expect_100 (boolean)
 
         1.5. Exported Functions
 
@@ -79,21 +80,22 @@ rest_client Module
    1.2. Setting the connection_timeout parameter
    1.3. Setting the connect_poll_interval parameter
    1.4. Setting the max_async_transfers parameter
-   1.5. Setting the ssl_verifypeer parameter
-   1.6. Setting the ssl_verifyhost parameter
-   1.7. Setting the ssl_capath parameter
-   1.8. Setting the curl_http_version parameter
-   1.9. Setting the enable_expect_100 parameter
-   1.10. rest_get usage
-   1.11. rest_post usage
-   1.12. rest_put usage
-   1.13. rest_append_hf usage
-   1.14. rest_init_client_tls usage
-   1.15. async rest_get usage
-   1.16. async rest_post usage
-   1.17. async rest_put usage
-   1.18. rest.escape usage
-   1.19. rest.unescape usage
+   1.5. Setting the max_transfer_size parameter
+   1.6. Setting the ssl_verifypeer parameter
+   1.7. Setting the ssl_verifyhost parameter
+   1.8. Setting the ssl_capath parameter
+   1.9. Setting the curl_http_version parameter
+   1.10. Setting the enable_expect_100 parameter
+   1.11. rest_get usage
+   1.12. rest_post usage
+   1.13. rest_put usage
+   1.14. rest_append_hf usage
+   1.15. rest_init_client_tls usage
+   1.16. async rest_get usage
+   1.17. async rest_post usage
+   1.18. async rest_put usage
+   1.19. rest.escape usage
+   1.20. rest.unescape usage
 
 Chapter 1. Admin Guide
 
@@ -183,7 +185,21 @@ modparam("rest_client", "connect_poll_interval", 2)
 modparam("rest_client", "max_async_transfers", 300)
 ...
 
-1.4.5. ssl_verifypeer (integer)
+1.4.5. max_transfer_size (integer)
+
+   The maximum allowed size of a single transfer (download).
+   Reaching this limit during a transfer will cause the transfer
+   to stop immediately, returning error -10 at script level. A
+   value of 0 will disable the check.
+
+   Default value is “0” (KB).
+
+   Example 1.5. Setting the max_transfer_size parameter
+...
+modparam("rest_client", "max_transfer_size", 64)
+...
+
+1.4.6. ssl_verifypeer (integer)
 
    Set this to 0 in order to disable the verification of the
    remote peer's certificate. Verification is done using a default
@@ -191,12 +207,12 @@ modparam("rest_client", "max_async_transfers", 300)
 
    Default value is “1” (enabled).
 
-   Example 1.5. Setting the ssl_verifypeer parameter
+   Example 1.6. Setting the ssl_verifypeer parameter
 ...
 modparam("rest_client", "ssl_verifypeer", 0)
 ...
 
-1.4.6. ssl_verifyhost (integer)
+1.4.7. ssl_verifyhost (integer)
 
    Set this to 0 in order to disable the verification that the
    remote peer actually corresponds to the server listed in the
@@ -204,22 +220,22 @@ modparam("rest_client", "ssl_verifypeer", 0)
 
    Default value is “1” (enabled).
 
-   Example 1.6. Setting the ssl_verifyhost parameter
+   Example 1.7. Setting the ssl_verifyhost parameter
 ...
 modparam("rest_client", "ssl_verifyhost", 0)
 ...
 
-1.4.7. ssl_capath (integer)
+1.4.8. ssl_capath (integer)
 
    An optional path for CA certificates to be used for host
    verifications.
 
-   Example 1.7. Setting the ssl_capath parameter
+   Example 1.8. Setting the ssl_capath parameter
 ...
 modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
 ...
 
-1.4.8. curl_http_version (integer)
+1.4.9. curl_http_version (integer)
 
    Use a specific HTTP version for all requests. Possible values:
 
@@ -242,12 +258,12 @@ modparam("rest_client", "ssl_capath", "/home/opensips/ca_certificates")
    more details here, where the documentation for this setting was
    inspired (read: pilfered) from
 
-   Example 1.8. Setting the curl_http_version parameter
+   Example 1.9. Setting the curl_http_version parameter
 ...
 modparam("rest_client", "curl_http_version", 3)
 ...
 
-1.4.9. enable_expect_100 (boolean)
+1.4.10. enable_expect_100 (boolean)
 
    Include a "Expect: 100-continue" HTTP header field whenever the
    body size of a POST or PUT request exceeds 1024 bytes. Once
@@ -257,7 +273,7 @@ modparam("rest_client", "curl_http_version", 3)
 
    Default value is “false” (disabled).
 
-   Example 1.9. Setting the enable_expect_100 parameter
+   Example 1.10. Setting the enable_expect_100 parameter
 ...
 modparam("rest_client", "enable_expect_100", true)
 ...
@@ -296,7 +312,7 @@ modparam("rest_client", "enable_expect_100", true)
 
    This function can be used from any route.
 
-   Example 1.10. rest_get usage
+   Example 1.11. rest_get usage
 ...
 # Example of querying a REST service to get the credit of an account
 $var(rc) = rest_get("https://getcredit.org/?account=$fU",
@@ -357,7 +373,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.11. rest_post usage
+   Example 1.12. rest_post usage
 ...
 # Creating a resource using a RESTful service with an HTTP POST request
 $var(rc) = rest_post("https://myserver.org/register_user",
@@ -417,7 +433,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.12. rest_put usage
+   Example 1.13. rest_put usage
 ...
 # Creating/Updating a resource using a RESTful service with an HTTP PUT
 request
@@ -451,7 +467,7 @@ if ($var(rcode) != 200) {
 
    This function can be used from any route.
 
-   Example 1.13. rest_append_hf usage
+   Example 1.14. rest_append_hf usage
 ...
 # Example of querying a REST service requiring additional headers
 
@@ -473,7 +489,7 @@ $var(rc) = rest_get("http://getcredit.org/?account=$fU", $var(credit));
 
    This function can be used from any route.
 
-   Example 1.14. rest_init_client_tls usage
+   Example 1.15. rest_init_client_tls usage
 ...
 rest_init_client_tls("dom1");
 if (!rest_get("https://example.com"))
@@ -490,7 +506,7 @@ if (!rest_get("https://example.com"))
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.15. async rest_get usage
+   Example 1.16. async rest_get usage
 route {
         ...
         async(rest_get("http://getcredit.org/?account=$fU",
@@ -525,7 +541,7 @@ $fU\n");
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.16. async rest_post usage
+   Example 1.17. async rest_post usage
 route {
         ...
         async(rest_post("http://myserver.org/register_user",
@@ -560,7 +576,7 @@ route [resume] {
    suspended until the entire content of the HTTP response is
    available.
 
-   Example 1.17. async rest_put usage
+   Example 1.18. async rest_put usage
 route {
         ...
         async(rest_put("http://myserver.org/users/$fU", $var(userinfo),
@@ -603,7 +619,7 @@ route [resume] {
 
    There are no parameters for this transformation.
 
-   Example 1.18. rest.escape usage
+   Example 1.19. rest.escape usage
 ...
 # This example would produce log entry: "Output: call%40example.com%26sa
 fe%3Dfalse"
@@ -622,7 +638,7 @@ $var(rc) = rest_get("https://call-info.org/?id=$(ci{rest.escape})", $var
 
    There are no parameters for this transformation.
 
-   Example 1.19. rest.unescape usage
+   Example 1.20. rest.unescape usage
 ...
 # This example would produce log entry: "Output: 1+1=2!"
 $var(tmp) = "1%2B1%3D2%21";
@@ -641,7 +657,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 127 71 3521 1614
+   1. Liviu Chircu (@liviuchircu) 129 73 3561 1621
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 17 8 336 345
    4. Razvan Crainea (@razvancrainea) 15 13 41 17
@@ -675,8 +691,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Apr 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Feb 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
    3.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
    5.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020

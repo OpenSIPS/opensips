@@ -28,34 +28,35 @@ mid_registrar Module
               1.5.1. mode (integer)
               1.5.2. contact_id_insertion (integer)
               1.5.3. contact_id_param (string)
-              1.5.4. outgoing_expires (integer)
-              1.5.5. received_avp (string)
-              1.5.6. received_param (string)
-              1.5.7. extra_contact_params_avp (string)
-              1.5.8. attr_avp (string)
-              1.5.9. min_expires (integer)
-              1.5.10. default_expires (integer)
-              1.5.11. max_expires (integer)
-              1.5.12. default_q (integer)
-              1.5.13. tcp_persistent_flag (string)
-              1.5.14. realm_prefix (string)
-              1.5.15. case_sensitive (integer)
-              1.5.16. max_contacts (integer)
-              1.5.17. max_username_len (integer)
-              1.5.18. max_domain_len (integer)
-              1.5.19. max_aor_len (integer)
-              1.5.20. max_contact_len (integer)
-              1.5.21. retry_after (integer)
-              1.5.22. disable_gruu (integer)
-              1.5.23. gruu_secret (string)
-              1.5.24. pn_enable (boolean)
-              1.5.25. pn_providers (string)
-              1.5.26. pn_ct_match_params (string)
-              1.5.27. pn_pnsreg_interval (integer)
-              1.5.28. pn_trigger_interval (integer)
-              1.5.29. pn_skip_pn_interval (integer)
-              1.5.30. pn_refresh_timeout (integer)
-              1.5.31. pn_enable_purr (boolean)
+              1.5.4. at_escape_str (string)
+              1.5.5. outgoing_expires (integer)
+              1.5.6. received_avp (string)
+              1.5.7. received_param (string)
+              1.5.8. extra_contact_params_avp (string)
+              1.5.9. attr_avp (string)
+              1.5.10. min_expires (integer)
+              1.5.11. default_expires (integer)
+              1.5.12. max_expires (integer)
+              1.5.13. default_q (integer)
+              1.5.14. tcp_persistent_flag (string)
+              1.5.15. realm_prefix (string)
+              1.5.16. case_sensitive (integer)
+              1.5.17. max_contacts (integer)
+              1.5.18. max_username_len (integer)
+              1.5.19. max_domain_len (integer)
+              1.5.20. max_aor_len (integer)
+              1.5.21. max_contact_len (integer)
+              1.5.22. retry_after (integer)
+              1.5.23. disable_gruu (integer)
+              1.5.24. gruu_secret (string)
+              1.5.25. pn_enable (boolean)
+              1.5.26. pn_providers (string)
+              1.5.27. pn_ct_match_params (string)
+              1.5.28. pn_pnsreg_interval (integer)
+              1.5.29. pn_trigger_interval (integer)
+              1.5.30. pn_skip_pn_interval (integer)
+              1.5.31. pn_refresh_timeout (integer)
+              1.5.32. pn_enable_purr (boolean)
 
         1.6. Exported Functions
 
@@ -90,37 +91,38 @@ mid_registrar Module
    1.1. Setting the mode module parameter
    1.2. Setting the contact_id_insertion module parameter
    1.3. Setting the contact_id_param module parameter
-   1.4. Setting the outgoing_expires module parameter
-   1.5. Setting the received_avp module parameter
-   1.6. Setting the received_param module parameter
-   1.7. Setting the extra_contact_params_avp module parameter
-   1.8. Set attr_avp parameter
-   1.9. Setting the min_expires module parameter
-   1.10. Setting the default_expires module parameter
-   1.11. Setting the max_expires module parameter
-   1.12. Setting the default_q module parameter
-   1.13. Setting the tcp_persistent_flag module parameter
-   1.14. Setting the realm_prefix module parameter
-   1.15. Setting the case_sensitive module parameter
-   1.16. Set max_contacts parameter
-   1.17. Setting the max_username_len module parameter
-   1.18. Setting the max_domain_len module parameter
-   1.19. Setting the max_aor_len module parameter
-   1.20. Setting the max_contact_len module parameter
-   1.21. Setting the retry_after module parameter
-   1.22. Setting the gruu_secret module parameter
+   1.4. Setting the at_escape_str module parameter
+   1.5. Setting the outgoing_expires module parameter
+   1.6. Setting the received_avp module parameter
+   1.7. Setting the received_param module parameter
+   1.8. Setting the extra_contact_params_avp module parameter
+   1.9. Set attr_avp parameter
+   1.10. Setting the min_expires module parameter
+   1.11. Setting the default_expires module parameter
+   1.12. Setting the max_expires module parameter
+   1.13. Setting the default_q module parameter
+   1.14. Setting the tcp_persistent_flag module parameter
+   1.15. Setting the realm_prefix module parameter
+   1.16. Setting the case_sensitive module parameter
+   1.17. Set max_contacts parameter
+   1.18. Setting the max_username_len module parameter
+   1.19. Setting the max_domain_len module parameter
+   1.20. Setting the max_aor_len module parameter
+   1.21. Setting the max_contact_len module parameter
+   1.22. Setting the retry_after module parameter
    1.23. Setting the gruu_secret module parameter
-   1.24. Setting the pn_enable parameter
-   1.25. Setting the pn_providers parameter
-   1.26. Setting the pn_ct_match_params parameter
-   1.27. Setting the pn_pnsreg_interval parameter
-   1.28. Setting the pn_trigger_interval parameter
-   1.29. Setting the pn_skip_pn_interval parameter
-   1.30. Setting the pn_refresh_timeout parameter
-   1.31. Setting the pn_enable_purr parameter
-   1.32. mid_registrar_save usage
-   1.33. mid_registrar_lookup usage
-   1.34. async pn_process_purr() usage
+   1.24. Setting the gruu_secret module parameter
+   1.25. Setting the pn_enable parameter
+   1.26. Setting the pn_providers parameter
+   1.27. Setting the pn_ct_match_params parameter
+   1.28. Setting the pn_pnsreg_interval parameter
+   1.29. Setting the pn_trigger_interval parameter
+   1.30. Setting the pn_skip_pn_interval parameter
+   1.31. Setting the pn_refresh_timeout parameter
+   1.32. Setting the pn_enable_purr parameter
+   1.33. mid_registrar_save usage
+   1.34. mid_registrar_lookup usage
+   1.35. async pn_process_purr() usage
 
 Chapter 1. Admin Guide
 
@@ -489,17 +491,37 @@ modparam("mid_registrar", "contact_id_param", "ctid")
 # Contact: <sip:liviu@10.0.0.10:5060;ctid=619244948763447138>;expires=18
 0.
 
-1.5.4. outgoing_expires (integer)
+1.5.4. at_escape_str (string)
+
+   Only relevant when in "AoR throttling" mode and with the usrloc
+   use_domain setting enabled. This string represents the escape
+   sequence for the "@" character, which must be included, in one
+   way or another, in mid-registrar's generated Contact URI
+   usernames.
+
+   Setting this parameter to a different value may be useful in
+   situations where the backend registrar is incompatible with the
+   default escape string.
+
+   Default value is “%40”
+
+   Example 1.4. Setting the at_escape_str module parameter
+modparam("mid_registrar", "at_escape_str", "___")
+
+# Example Contact header field generated by mid-registrar:
+# Contact: <sip:zach%40sipdomain.invalid@127.0.0.1:5060>;expires=120
+
+1.5.5. outgoing_expires (integer)
 
    Only relevant in Contact/AOR throttling modes. Sets a minimal
    value for the expiration intervals of egressing contacts.
 
    Default value is 3600 (seconds)
 
-   Example 1.4. Setting the outgoing_expires module parameter
+   Example 1.5. Setting the outgoing_expires module parameter
 modparam("mid_registrar", "outgoing_expires", 3600)
 
-1.5.5. received_avp (string)
+1.5.6. received_avp (string)
 
    The module will store the value of the AVP configured by this
    parameter in the received column of the user location table. It
@@ -514,10 +536,10 @@ Note
 
    Default value is "NULL" (disabled)
 
-   Example 1.5. Setting the received_avp module parameter
+   Example 1.6. Setting the received_avp module parameter
 modparam("mid_registrar", "received_avp", "$avp(rcv)")
 
-1.5.6. received_param (string)
+1.5.7. received_param (string)
 
    The name of the parameter that will be appended to Contacts of
    200 OK replies if the received URI is set by nathelper module.
@@ -529,10 +551,10 @@ Note
 
    Default value is "received"
 
-   Example 1.6. Setting the received_param module parameter
+   Example 1.7. Setting the received_param module parameter
 modparam("mid_registrar", "received_param", "rcv")
 
-1.5.7. extra_contact_params_avp (string)
+1.5.8. extra_contact_params_avp (string)
 
    An AVP specification. This AVP is evaluated during
    mid_registrar_save(): if it holds a valid string, its content
@@ -541,13 +563,13 @@ modparam("mid_registrar", "received_param", "rcv")
 
    Default value is None (not used)
 
-   Example 1.7. Setting the extra_contact_params_avp module
+   Example 1.8. Setting the extra_contact_params_avp module
    parameter
 # NB: AVPs are cleared with every new SIP request
 modparam("mid_registrar", "extra_contact_params_avp", "$avp(extra_ct_par
 ams)")
 
-1.5.8. attr_avp (string)
+1.5.9. attr_avp (string)
 
    AVP to store specific additional information for each
    registration. This information is read from the AVP and stored
@@ -563,7 +585,7 @@ ams)")
 
    Default value is NULL.
 
-   Example 1.8. Set attr_avp parameter
+   Example 1.9. Set attr_avp parameter
 # reading attributes from the attr_pvar when doing parallel forking
 ...
 modparam("mid_registrar", "attr_avp", "$avp(attr)")
@@ -584,7 +606,7 @@ _idx])\n");
 }
 
 
-1.5.9. min_expires (integer)
+1.5.10. min_expires (integer)
 
    The minimum expires value of a Contact, values lower than this
    minimum will be automatically set to the minimum. Value 0
@@ -592,10 +614,10 @@ _idx])\n");
 
    Default value is 10 (seconds)
 
-   Example 1.9. Setting the min_expires module parameter
+   Example 1.10. Setting the min_expires module parameter
 modparam("mid_registrar", "min_expires", 600)
 
-1.5.10. default_expires (integer)
+1.5.11. default_expires (integer)
 
    If the processed message contains neither Expires HFs nor
    expires contact parameters, this value will be used as the
@@ -603,10 +625,10 @@ modparam("mid_registrar", "min_expires", 600)
 
    Default value is 3600 (seconds)
 
-   Example 1.10. Setting the default_expires module parameter
+   Example 1.11. Setting the default_expires module parameter
 modparam("mid_registrar", "default_expires", 1800)
 
-1.5.11. max_expires (integer)
+1.5.12. max_expires (integer)
 
    The maximum expires value of a Contact, values higher than this
    maximum will be automatically set to the maximum. Value 0
@@ -614,10 +636,10 @@ modparam("mid_registrar", "default_expires", 1800)
 
    Default value is 3600 (seconds)
 
-   Example 1.11. Setting the max_expires module parameter
+   Example 1.12. Setting the max_expires module parameter
 modparam("mid_registrar", "max_expires", 7200)
 
-1.5.12. default_q (integer)
+1.5.13. default_q (integer)
 
    Sets the default "q" value for new contacts. Because OpenSIPS
    does not support floating point module parameters, the supplied
@@ -626,10 +648,10 @@ modparam("mid_registrar", "max_expires", 7200)
 
    Default value is 0
 
-   Example 1.12. Setting the default_q module parameter
+   Example 1.13. Setting the default_q module parameter
 modparam("mid_registrar", "default_q", 380)
 
-1.5.13. tcp_persistent_flag (string)
+1.5.14. tcp_persistent_flag (string)
 
    Specifies the message flag to be used to control the module
    behaviour regarding TCP connections. If the flag is set for a
@@ -640,11 +662,11 @@ modparam("mid_registrar", "default_q", 380)
 
    Default value is -1 (not set)
 
-   Example 1.13. Setting the tcp_persistent_flag module parameter
+   Example 1.14. Setting the tcp_persistent_flag module parameter
 modparam("mid_registrar", "tcp_persistent_flag", "TCP_PERSIST_REGISTRATI
 ONS")
 
-1.5.14. realm_prefix (string)
+1.5.15. realm_prefix (string)
 
    In multi-domain user location scenarios ("use_domain" usrloc
    module parameter set to "1"), this parameter denotes a prefix
@@ -662,10 +684,10 @@ ONS")
 
    Default value is NULL (none)
 
-   Example 1.14. Setting the realm_prefix module parameter
+   Example 1.15. Setting the realm_prefix module parameter
 modparam("mid_registrar", "realm_prefix", "sip.")
 
-1.5.15. case_sensitive (integer)
+1.5.16. case_sensitive (integer)
 
    If set to 1, then AOR comparison will be case sensitive (as
    RFC3261 instructs), if set to 0 then AOR comparison will be
@@ -673,10 +695,10 @@ modparam("mid_registrar", "realm_prefix", "sip.")
 
    Default value is 1 (true)
 
-   Example 1.15. Setting the case_sensitive module parameter
+   Example 1.16. Setting the case_sensitive module parameter
 modparam("mid_registrar", "case_sensitive", 0)
 
-1.5.16. max_contacts (integer)
+1.5.17. max_contacts (integer)
 
    The parameter can be used to limit the number of contacts per
    AOR (Address of Record) in the user location database. Value 0
@@ -689,51 +711,51 @@ modparam("mid_registrar", "case_sensitive", 0)
 
    Default value is 0.
 
-   Example 1.16. Set max_contacts parameter
+   Example 1.17. Set max_contacts parameter
 ...
 # Allow no more than 10 contacts per AOR
 modparam("mid_registrar", "max_contacts", 10)
 ...
 
-1.5.17. max_username_len (integer)
+1.5.18. max_username_len (integer)
 
    The maximum length of the "username" part of an
    Address-of-Record SIP URI.
 
    Default value is 64.
 
-   Example 1.17. Setting the max_username_len module parameter
+   Example 1.18. Setting the max_username_len module parameter
 modparam("mid_registrar", "max_username_len", 128)
 
-1.5.18. max_domain_len (integer)
+1.5.19. max_domain_len (integer)
 
    The maximum length of the "domain" part of an Address-of-Record
    SIP URI.
 
    Default value is 64.
 
-   Example 1.18. Setting the max_domain_len module parameter
+   Example 1.19. Setting the max_domain_len module parameter
 modparam("mid_registrar", "max_domain_len", 128)
 
-1.5.19. max_aor_len (integer)
+1.5.20. max_aor_len (integer)
 
    The maximum length of an Address-of-Record SIP URI.
 
    Default value is 256.
 
-   Example 1.19. Setting the max_aor_len module parameter
+   Example 1.20. Setting the max_aor_len module parameter
 modparam("mid_registrar", "max_aor_len", 512)
 
-1.5.20. max_contact_len (integer)
+1.5.21. max_contact_len (integer)
 
    The maximum length of a Contact header field SIP URI.
 
    Default value is 255.
 
-   Example 1.20. Setting the max_contact_len module parameter
+   Example 1.21. Setting the max_contact_len module parameter
 modparam("mid_registrar", "max_contact_len", 512)
 
-1.5.21. retry_after (integer)
+1.5.22. retry_after (integer)
 
    The mid-registrar can generate 5xx replies to registrations in
    various situations. It could, for example, happen when the
@@ -748,29 +770,29 @@ modparam("mid_registrar", "max_contact_len", 512)
 
    Default value is 0 (disabled)
 
-   Example 1.21. Setting the retry_after module parameter
+   Example 1.22. Setting the retry_after module parameter
 modparam("mid_registrar", "retry_after", 30)
 
-1.5.22. disable_gruu (integer)
+1.5.23. disable_gruu (integer)
 
    Globally disable GRUU handling.
 
    Default value is 1 (GRUUs will not be handled)
 
-   Example 1.22. Setting the gruu_secret module parameter
+   Example 1.23. Setting the gruu_secret module parameter
 modparam("mid_registrar", "disable_gruu", 0)
 
-1.5.23. gruu_secret (string)
+1.5.24. gruu_secret (string)
 
    The string that will be used in XORing when generating
    temporary GRUUs.
 
    Default value is "0p3nS1pS"
 
-   Example 1.23. Setting the gruu_secret module parameter
+   Example 1.24. Setting the gruu_secret module parameter
 modparam("mid_registrar", "gruu_secret", "my_secret")
 
-1.5.24. pn_enable (boolean)
+1.5.25. pn_enable (boolean)
 
    Enable SIP Push Notification support (RFC 8599). If enabled,
    Contact header field URIs which include all pn_ct_match_params
@@ -780,12 +802,12 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 
    Default value is false.
 
-   Example 1.24. Setting the pn_enable parameter
+   Example 1.25. Setting the pn_enable parameter
 ...
 modparam("mid_registrar", "pn_enable", true)
 ...
 
-1.5.25. pn_providers (string)
+1.5.26. pn_providers (string)
 
    A list of supported Push Notification providers. While only
    three possible values are defined by RFC 8599 ("apns", "fcm"
@@ -793,12 +815,12 @@ modparam("mid_registrar", "pn_enable", true)
 
    Default value is NULL (not set).
 
-   Example 1.25. Setting the pn_providers parameter
+   Example 1.26. Setting the pn_providers parameter
 ...
 modparam("mid_registrar", "pn_providers", "apns, fcm, webpush")
 ...
 
-1.5.26. pn_ct_match_params (string)
+1.5.27. pn_ct_match_params (string)
 
    The minimally required list of RFC 8599 parameters (custom ones
    are accepted as well) which must be present in a Contact URI
@@ -820,12 +842,12 @@ modparam("mid_registrar", "pn_providers", "apns, fcm, webpush")
 
    Default value is "pn-provider, pn-prid, pn-param".
 
-   Example 1.26. Setting the pn_ct_match_params parameter
+   Example 1.27. Setting the pn_ct_match_params parameter
 ...
 modparam("mid_registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 ...
 
-1.5.27. pn_pnsreg_interval (integer)
+1.5.28. pn_pnsreg_interval (integer)
 
    For devices capable of waking up and refreshing their binding
    on their own (signified by the ";+sip.pnsreg" Contact header
@@ -835,12 +857,12 @@ modparam("mid_registrar", "pn_ct_match_params", "pn-provider, pn-prid")
 
    Default value is 130 (seconds before expiry).
 
-   Example 1.27. Setting the pn_pnsreg_interval parameter
+   Example 1.28. Setting the pn_pnsreg_interval parameter
 ...
 modparam("mid_registrar", "pn_pnsreg_interval", 140)
 ...
 
-1.5.28. pn_trigger_interval (integer)
+1.5.29. pn_trigger_interval (integer)
 
    If a binding refresh REGISTER request from a given SIP endpoint
    does not arrive within at least pn_trigger_interval seconds
@@ -856,12 +878,12 @@ modparam("mid_registrar", "pn_pnsreg_interval", 140)
 
    Default value is 120 (seconds before expiry).
 
-   Example 1.28. Setting the pn_trigger_interval parameter
+   Example 1.29. Setting the pn_trigger_interval parameter
 ...
 modparam("mid_registrar", "pn_trigger_interval", 130)
 ...
 
-1.5.29. pn_skip_pn_interval (integer)
+1.5.30. pn_skip_pn_interval (integer)
 
    Following a successful (re)registration of a contact, this
    setting denotes a time interval, in seconds, during which the
@@ -871,12 +893,12 @@ modparam("mid_registrar", "pn_trigger_interval", 130)
    Default value is 0 seconds (always generate Push
    Notifications).
 
-   Example 1.29. Setting the pn_skip_pn_interval parameter
+   Example 1.30. Setting the pn_skip_pn_interval parameter
 ...
 modparam("mid_registrar", "pn_skip_pn_interval", 10)
 ...
 
-1.5.30. pn_refresh_timeout (integer)
+1.5.31. pn_refresh_timeout (integer)
 
    This timeout starts counting following a mid_registrar_lookup()
    or a pn_process_purr() which triggers a Push Notification. The
@@ -898,12 +920,12 @@ modparam("mid_registrar", "pn_skip_pn_interval", 10)
 
    Default value is 6 seconds.
 
-   Example 1.30. Setting the pn_refresh_timeout parameter
+   Example 1.31. Setting the pn_refresh_timeout parameter
 ...
 modparam("mid_registrar", "pn_refresh_timeout", 10)
 ...
 
-1.5.31. pn_enable_purr (boolean)
+1.5.32. pn_enable_purr (boolean)
 
    Enable the SIP Push Notification mechanism for long-lived
    dialogs. If enabled, the mid_registrar will include a
@@ -924,7 +946,7 @@ modparam("mid_registrar", "pn_refresh_timeout", 10)
 
    Default value is false.
 
-   Example 1.31. Setting the pn_enable_purr parameter
+   Example 1.32. Setting the pn_enable_purr parameter
 ...
 modparam("mid_registrar", "pn_enable_purr", true)
 ...
@@ -1060,7 +1082,7 @@ ownership_tag]]]])
 
    This function can only be used from the request route.
 
-   Example 1.32. mid_registrar_save usage
+   Example 1.33. mid_registrar_save usage
 ...
 if (is_method("REGISTER")) {
         mid_registrar_save("location");
@@ -1212,7 +1234,7 @@ if (is_method("REGISTER")) {
 
    This function can only be used from the request route.
 
-   Example 1.33. mid_registrar_lookup usage
+   Example 1.34. mid_registrar_lookup usage
 ...
         # initial invites from the main registrar - need to look them up
 !
@@ -1257,7 +1279,7 @@ if (is_method("REGISTER")) {
        foreign PURR or offline contact)
      * -1 - Internal Error
 
-   Example 1.34. async pn_process_purr() usage
+   Example 1.35. async pn_process_purr() usage
 route {
         ...
         if (has_totag()) {
@@ -1294,15 +1316,16 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 483 186 15989 10128
-   2. Vlad Patrascu (@rvlad-patrascu) 9 5 74 126
-   3. Razvan Crainea (@razvancrainea) 8 6 19 14
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 5 100 109
+   1. Liviu Chircu (@liviuchircu) 494 194 16281 10196
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 9 6 101 109
+   3. Vlad Patrascu (@rvlad-patrascu) 9 5 74 126
+   4. Razvan Crainea (@razvancrainea) 8 6 19 14
    5. Chad Attermann (@attermann) 7 5 19 5
    6. Dan Pascu (@danpascu) 4 2 4 4
-   7. Maksym Sobolyev (@sobomax) 3 1 2 4
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
-   9. Italo Rossi (@italorossi) 2 1 6 0
+   7. Alexey Vasilyev (@vasilevalex) 3 1 2 5
+   8. Maksym Sobolyev (@sobomax) 3 1 2 4
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Italo Rossi (@italorossi) 2 1 6 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1323,16 +1346,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Jul 2016 - Jan 2021
-   2. Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Nov 2019
-   4. Razvan Crainea (@razvancrainea)     Mar 2017 - Sep 2019
-   5. Dan Pascu (@danpascu)               May 2019 - May 2019
-   6. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7. Italo Rossi (@italorossi)           Jul 2018 - Jul 2018
-   8. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2017 - Jan 2022
+   2.  Liviu Chircu (@liviuchircu)         Jul 2016 - Jan 2022
+   3.  Alexey Vasilyev (@vasilevalex)      Jan 2022 - Jan 2022
+   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   5.  Razvan Crainea (@razvancrainea)     Mar 2017 - Sep 2019
+   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Italo Rossi (@italorossi)           Jul 2018 - Jul 2018
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Chad Attermann (@attermann)         Jun 2017 - Jul 2017
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -54,7 +54,6 @@ Acc Module
               1.6.17. acc_sip_code_column (string)
               1.6.18. acc_sip_reason_column (string)
               1.6.19. acc_time_column (string)
-              1.6.20. acc_created_avp_name (string)
 
         1.7. Exported Pseudo-Variables
 
@@ -118,15 +117,14 @@ Acc Module
    1.17. acc_sip_code_column example
    1.18. acc_sip_reason_column example
    1.19. acc_time_column example
-   1.20. acc_created_avp_name example
-   1.21. do_accounting usage
-   1.22. drop_accounting usage
-   1.23. acc_log_request usage
-   1.24. acc_db_request usage
-   1.25. acc_aaa_request usage
-   1.26. acc_evi_request usage
-   1.27. acc_new_leg usage
-   1.28. acc_load_ctx_from_dlg usage
+   1.20. do_accounting usage
+   1.21. drop_accounting usage
+   1.22. acc_log_request usage
+   1.23. acc_db_request usage
+   1.24. acc_aaa_request usage
+   1.25. acc_evi_request usage
+   1.26. acc_new_leg usage
+   1.27. acc_load_ctx_from_dlg usage
 
 Chapter 1. Admin Guide
 
@@ -611,17 +609,6 @@ modparam("acc", "acc_sip_reason_column", "sip_reason")
    Example 1.19. acc_time_column example
 modparam("acc", "acc_time_column", "time")
 
-1.6.20. acc_created_avp_name (string)
-
-   The name of the openSips avp that will be used to hold the time
-   when the call was created. This time will only be logged on
-   missed calls.
-
-   Default value is "accX_created".
-
-   Example 1.20. acc_created_avp_name example
-modparam("acc", "acc_created_avp_name", "call_created_avp")
-
 1.7. Exported Pseudo-Variables
 
 1.7.1. $acc_extra(tag_name)
@@ -700,7 +687,7 @@ $(acc_leg(caller)[-2])
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.21. do_accounting usage
+   Example 1.20. do_accounting usage
                 ...
                 if (!has_totag()) {
                         if (is_method("INVITE")) {
@@ -745,7 +732,7 @@ y_acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.22. drop_accounting usage
+   Example 1.21. drop_accounting usage
                 ...
                 acc_log_request("403 Destination not allowed");
                 if (!has_totag()) {
@@ -789,7 +776,7 @@ yslog;
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.23. acc_log_request usage
+   Example 1.22. acc_log_request usage
 ...
 acc_log_request("403 Destination not allowed");
 ...
@@ -810,7 +797,7 @@ acc_log_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.24. acc_db_request usage
+   Example 1.23. acc_db_request usage
 ...
 acc_db_request("Some comment", "Some table");
 acc_db_request("$T_reply_code $(<reply>rr)", "acc");
@@ -830,7 +817,7 @@ acc_db_request("$T_reply_code $(<reply>rr)", "acc");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.25. acc_aaa_request usage
+   Example 1.24. acc_aaa_request usage
 ...
 acc_aaa_request("403 Destination not allowed");
 ...
@@ -851,7 +838,7 @@ acc_aaa_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.26. acc_evi_request usage
+   Example 1.25. acc_evi_request usage
 ...
 acc_evi_request("403 Destination not allowed");
 ...
@@ -865,7 +852,7 @@ acc_evi_request("403 Destination not allowed");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and LOCAL_ROUTE.
 
-   Example 1.27. acc_new_leg usage
+   Example 1.26. acc_new_leg usage
 ...
         acc_new_leg();
 ...
@@ -889,7 +876,7 @@ acc_evi_request("403 Destination not allowed");
 
    This function can be used from any type of route.
 
-   Example 1.28. acc_load_ctx_from_dlg usage
+   Example 1.27. acc_load_ctx_from_dlg usage
 ...
 if ( load_dialog_ctx("$var(callid)") ) {
         # we now have the dialog context of the new dialog
@@ -1064,10 +1051,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 222 111 4302 4578
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 223 112 4317 4588
    2. Jan Janak (@janakj) 145 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 139 39 3730 4180
-   4. Razvan Crainea (@razvancrainea) 97 64 2702 635
+   4. Razvan Crainea (@razvancrainea) 98 65 2702 662
    5. Liviu Chircu (@liviuchircu) 62 48 598 549
    6. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
@@ -1105,11 +1092,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2021
-   2.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2021
-   4.  Maksym Sobolyev (@sobomax)          Dec 2003 - Jan 2021
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - May 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2021
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2021
+   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2021
+   4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   5.  Maksym Sobolyev (@sobomax)          Dec 2003 - Jan 2021
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
    7.  Dan Pascu (@danpascu)               Jul 2004 - Sep 2018
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -1133,14 +1120,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter
-   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Razvan
-   Crainea (@razvancrainea), Ryan Bullock (@rrb3942), Irina-Maria
-   Stanescu, Sergio Gutierrez, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Jan Janak (@janakj),
-   Maksym Sobolyev (@sobomax), Elena-Ramona Modroiu.
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
+   Ionita (@ionutrazvanionita), Ryan Bullock (@rrb3942),
+   Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Jan
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

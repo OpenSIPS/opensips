@@ -33,30 +33,29 @@ Dynamic Routing Module
               1.3.10. rule_prefix_avp (str)
               1.3.11. carrier_id_avp (str)
               1.3.12. gw_sock_avp (str)
-              1.3.13. rule_attrs_avp (str)
-              1.3.14. define_blacklist (str)
-              1.3.15. default_group (int)
-              1.3.16. force_dns (int)
-              1.3.17. persistent_state (int)
-              1.3.18. no_concurrent_reload (int)
-              1.3.19. probing_interval (integer)
-              1.3.20. probing_method (string)
-              1.3.21. probing_from (string)
-              1.3.22. probing_reply_codes (string)
-              1.3.23. probing_socket (string)
-              1.3.24. cluster_id (integer)
-              1.3.25. cluster_sharing_tag (string)
-              1.3.26. use_domain (int)
-              1.3.27. drg_user_col (str)
-              1.3.28. drg_domain_col (str)
-              1.3.29. drg_grpid_col (str)
-              1.3.30. use_partitions (int)
-              1.3.31. db_partitions_url (str)
-              1.3.32. db_partitions_table (str)
-              1.3.33. partition_id_pvar (pvar)
-              1.3.34. enable_restart_persistency (int)
-              1.3.35. extra_prefix_chars (str)
-              1.3.36. rule_tables_query (str)
+              1.3.13. define_blacklist (str)
+              1.3.14. default_group (int)
+              1.3.15. force_dns (int)
+              1.3.16. persistent_state (int)
+              1.3.17. no_concurrent_reload (int)
+              1.3.18. probing_interval (integer)
+              1.3.19. probing_method (string)
+              1.3.20. probing_from (string)
+              1.3.21. probing_reply_codes (string)
+              1.3.22. probing_socket (string)
+              1.3.23. cluster_id (integer)
+              1.3.24. cluster_sharing_tag (string)
+              1.3.25. use_domain (int)
+              1.3.26. drg_user_col (str)
+              1.3.27. drg_domain_col (str)
+              1.3.28. drg_grpid_col (str)
+              1.3.29. use_partitions (int)
+              1.3.30. db_partitions_url (str)
+              1.3.31. db_partitions_table (str)
+              1.3.32. partition_id_pvar (pvar)
+              1.3.33. enable_restart_persistency (int)
+              1.3.34. extra_prefix_chars (str)
+              1.3.35. rule_tables_query (str)
 
         1.4. Exported Functions
 
@@ -134,46 +133,45 @@ Dynamic Routing Module
    1.10. Set rule_prefix_avp parameter
    1.11. Set carrier_id_avp parameter
    1.12. Set gw_sock_avp parameter
-   1.13. Set rule_attrs_avp parameter
-   1.14. Set define_blacklist parameter
-   1.15. Set default_group parameter
-   1.16. Set force_dns parameter
-   1.17. Set the persistent_state parameter
-   1.18. Set no_concurrent_reload parameter
-   1.19. Set probing_interval parameter
-   1.20. Set probing_method parameter
-   1.21. Set probing_from parameter
-   1.22. Set probing_reply_codes parameter
-   1.23. Set probing_socket parameter
-   1.24. Set cluster_id parameter
-   1.25. Set cluster_sharing_tag parameter
-   1.26. Set use_domain parameter
-   1.27. Set drg_user_col parameter
-   1.28. Set drg_domain_col parameter
-   1.29. Set drg_grpid_col parameter
-   1.30. Set use_partitions parameter
-   1.31. Set db_partitions_url parameter
-   1.32. Set db_partitions_table parameter
-   1.33. Set partition_id_pvar parameter
-   1.34. Set enable_restart_persistency parameter
-   1.35. Set extra_prefix_chars parameter
-   1.36. Set the rule_tables_query parameter
-   1.37. do_routing usage
-   1.38. route_to_carrier usage
-   1.39. route_to_gw usage
-   1.40. use_next_gw usage
-   1.41. goes_to_gw usage
-   1.42. is_from_gw usage
-   1.43. dr_is_gw usage
-   1.44. dr_disable() usage
-   1.45. dr_match usage
-   1.46. dr_gw_status usage when use_partitions is set to 0
-   1.47. dr_gw_status usage when use_partitionsis set to 1
-   1.48. dr_carrier_status usage when use_partitions is 0
-   1.49. dr_carrier_status usage when use_partitions is 1
-   1.50. dr_reload_status usage when use_partitions is 0
-   1.51. dr_reload_status usage when use_partitions is 1
-   1.52. dr_enable_probing usage
+   1.13. Set define_blacklist parameter
+   1.14. Set default_group parameter
+   1.15. Set force_dns parameter
+   1.16. Set the persistent_state parameter
+   1.17. Set no_concurrent_reload parameter
+   1.18. Set probing_interval parameter
+   1.19. Set probing_method parameter
+   1.20. Set probing_from parameter
+   1.21. Set probing_reply_codes parameter
+   1.22. Set probing_socket parameter
+   1.23. Set cluster_id parameter
+   1.24. Set cluster_sharing_tag parameter
+   1.25. Set use_domain parameter
+   1.26. Set drg_user_col parameter
+   1.27. Set drg_domain_col parameter
+   1.28. Set drg_grpid_col parameter
+   1.29. Set use_partitions parameter
+   1.30. Set db_partitions_url parameter
+   1.31. Set db_partitions_table parameter
+   1.32. Set partition_id_pvar parameter
+   1.33. Set enable_restart_persistency parameter
+   1.34. Set extra_prefix_chars parameter
+   1.35. Set the rule_tables_query parameter
+   1.36. do_routing usage
+   1.37. route_to_carrier usage
+   1.38. route_to_gw usage
+   1.39. use_next_gw usage
+   1.40. goes_to_gw usage
+   1.41. is_from_gw usage
+   1.42. dr_is_gw usage
+   1.43. dr_disable() usage
+   1.44. dr_match usage
+   1.45. dr_gw_status usage when use_partitions is set to 0
+   1.46. dr_gw_status usage when use_partitionsis set to 1
+   1.47. dr_carrier_status usage when use_partitions is 0
+   1.48. dr_carrier_status usage when use_partitions is 1
+   1.49. dr_reload_status usage when use_partitions is 0
+   1.50. dr_reload_status usage when use_partitions is 1
+   1.51. dr_enable_probing usage
 
 Chapter 1. Admin Guide
 
@@ -299,10 +297,13 @@ Chapter 1. Admin Guide
      * id (string)
      * list of gateways with/without weights (string)
        (Ex:“gw1=10,gw4=10” or “gw1,gw2”
-     * flags : 0x1 - use weight for sorting the list and not
-       definition order; 0x2 - use only the first gateway from the
-       carrier (depending on the sorting); 0x4 - disable the usage
-       of this carrier
+     * flags : 0x1 - use only the first gateway from the carrier
+       (depending on the sorting); 0x2 - disable the usage of this
+       carrier
+     * sort algorithm : how the list of the gateways should be
+       sorted before being used, NULL - use the DB given order, W
+       - do weight based re-ordering, Q - do quality based sorting
+       (requires the qrouting module)
      * attributes (not used by DR engine, but only pushed to
        script level when routing to this carrier)
 
@@ -351,12 +352,16 @@ Chapter 1. Admin Guide
        be matched for current rule. Time recurrences are based
        closely on the recurring time intervals from the Internet
        Calendaring and Scheduling Core Object Specification
-       (calendar COS), RFC 2445. The set of attributes used in
+       (calendar COS), RFC 2445. The set of attributes used in a
        routing rule specification is a subset of time recurrence
        attributes.
-     * The value stored in database has the format of:
-       <dtstart>|<duration>|<freq>|<until>|<interval>|<byday>|<bym
-       onthday>|<byyearday>|<byweekno>|<bymonth>
+     * The value stored in database has the basic format of:
+       <timezone>|<dtstart>|<dtend>|<duration>|<freq>|<until>|<int
+       erval>|<byday>|<bymonthday>|<byyearday>|<byweekno>|<bymonth
+       > , identical to the input of the check_time_rec() function
+       of the cfgutils module, including the optional use of
+       logical operators linking multiple such strings into a
+       larger expression.
      * When an attribute is not specified, the corresponding place
        must be left empty, whenever another attribute that follows
        in the list has to be specified.
@@ -602,24 +607,7 @@ modparam("drouting", "gw_sock_avp", '$avp(dr_sock)')
 modparam("drouting", "gw_sock_avp", '$avp(77)')
 ...
 
-1.3.13. rule_attrs_avp (str)
-
-   The name of the avp for storing rule attrs in case they are
-   requested at least once in the script.
-
-   Default value is “$avp(___dr_ru_att__)” if use_partitions
-   parameter is 0 or “$avp(___dr_ru_att__partition_name)” where
-   partition_name is the name of the partition containing the AVP
-   (as fetched from the database) if use_partitions parameter is
-   1.
-
-   Example 1.13. Set rule_attrs_avp parameter
-...
-modparam("drouting", "rule_attrs_avp", '$avp(dr_rule_attr)')
-modparam("drouting", "rule_attrs_avp", '$avp(11)')
-...
-
-1.3.14. define_blacklist (str)
+1.3.13. define_blacklist (str)
 
    Defines a blacklist based on a list of GW types - the blacklist
    will be populated with the IPs (no port, all protocols) of the
@@ -632,7 +620,7 @@ modparam("drouting", "rule_attrs_avp", '$avp(11)')
 
    Default value is “NULL”.
 
-   Example 1.14. Set define_blacklist parameter
+   Example 1.13. Set define_blacklist parameter
 ...
 modparam("drouting", "define_blacklist", 'bl_name= 3,5,25,23')
 modparam("drouting", "define_blacklist", 'list= 4,2')
@@ -640,19 +628,19 @@ modparam("drouting", "define_blacklist", 'pstn:list2 = 5,6')
 modparam("drouting", "define_blacklist", 'pstn:list3 = 7,8')
 ...
 
-1.3.15. default_group (int)
+1.3.14. default_group (int)
 
    Group to be used if the caller (FROM user) is not found in the
    GROUP table.
 
    Default value is “NONE”.
 
-   Example 1.15. Set default_group parameter
+   Example 1.14. Set default_group parameter
 ...
 modparam("drouting", "default_group", 4)
 ...
 
-1.3.16. force_dns (int)
+1.3.15. force_dns (int)
 
    Force DNS resolving of GW/destination names (if not IPs) during
    startup. If not enabled, the GW name will be blindly used
@@ -660,25 +648,25 @@ modparam("drouting", "default_group", 4)
 
    Default value is “1 (enabled)”.
 
-   Example 1.16. Set force_dns parameter
+   Example 1.15. Set force_dns parameter
 ...
 modparam("drouting", "force_dns", 0)
 ...
 
-1.3.17. persistent_state (int)
+1.3.16. persistent_state (int)
 
    Specifies whether the state column should be loaded at startup
    and flushed during runtime or not.
 
    Default value is “1” (enabled).
 
-   Example 1.17. Set the persistent_state parameter
+   Example 1.16. Set the persistent_state parameter
 ...
 # disable all DB operations with the state of a gateway
 modparam("drouting", "persistent_state", 0)
 ...
 
-1.3.18. no_concurrent_reload (int)
+1.3.17. no_concurrent_reload (int)
 
    If enabled, the module will not allow do run multiple dr_reload
    MI commands in parallel (with overlapping) Any new reload will
@@ -692,13 +680,13 @@ modparam("drouting", "persistent_state", 0)
 
    Default value is “0 (disabled)”.
 
-   Example 1.18. Set no_concurrent_reload parameter
+   Example 1.17. Set no_concurrent_reload parameter
 ...
 # do not allow parallel reload operations
 modparam("drouting", "no_concurrent_reload", 1)
 ...
 
-1.3.19. probing_interval (integer)
+1.3.18. probing_interval (integer)
 
    How often (in seconds) the probing of a destination should be
    done. If set to 0, the probing will be disabled as
@@ -706,34 +694,34 @@ modparam("drouting", "no_concurrent_reload", 1)
 
    Default value is “30”.
 
-   Example 1.19. Set probing_interval parameter
+   Example 1.18. Set probing_interval parameter
 ...
 modparam("drouting", "probing_interval", 60)
 ...
 
-1.3.20. probing_method (string)
+1.3.19. probing_method (string)
 
    The SIP method to be used for the probing requests.
 
    Default value is “"OPTIONS"”.
 
-   Example 1.20. Set probing_method parameter
+   Example 1.19. Set probing_method parameter
 ...
 modparam("drouting", "probing_method", "INFO")
 ...
 
-1.3.21. probing_from (string)
+1.3.20. probing_from (string)
 
    The FROM SIP URI to be advertised in the SIP probing requests.
 
    Default value is “"sip:prober@localhost"”.
 
-   Example 1.21. Set probing_from parameter
+   Example 1.20. Set probing_from parameter
 ...
 modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 ...
 
-1.3.22. probing_reply_codes (string)
+1.3.21. probing_reply_codes (string)
 
    A comma separted list of SIP reply codes. The codes defined
    here will be considered as valid reply codes for probing
@@ -741,12 +729,12 @@ modparam("drouting", "probing_from", "sip:pinger@192.168.2.10")
 
    Default value is “NULL”.
 
-   Example 1.22. Set probing_reply_codes parameter
+   Example 1.21. Set probing_reply_codes parameter
 ...
 modparam("drouting", "probing_reply_codes", "501, 403")
 ...
 
-1.3.23. probing_socket (string)
+1.3.22. probing_socket (string)
 
    A socket description [proto:]host[:port] of the local socket
    (which is used by OpenSIPS for SIP traffic) to be used (if
@@ -760,12 +748,12 @@ modparam("drouting", "probing_reply_codes", "501, 403")
 
    Default value is “NULL”.
 
-   Example 1.23. Set probing_socket parameter
+   Example 1.22. Set probing_socket parameter
 ...
 modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 ...
 
-1.3.24. cluster_id (integer)
+1.3.23. cluster_id (integer)
 
    The ID of the cluster the module is part of. The clustering
    support is used in drouting module for two purposes: for
@@ -788,13 +776,13 @@ modparam("drouting", "probing_socket", "udp:192.168.1.100:5060")
 
    Default value is “0 (none)”.
 
-   Example 1.24. Set cluster_id parameter
+   Example 1.23. Set cluster_id parameter
 ...
 # replicate gw/carrier status with all OpenSIPS in cluster ID 9
 modparam("drouting", "cluster_id", 9)
 ...
 
-1.3.25. cluster_sharing_tag (string)
+1.3.24. cluster_sharing_tag (string)
 
    The name of the sharing tag (as defined per clusterer modules)
    to control which node is responsible for perform the
@@ -811,7 +799,7 @@ modparam("drouting", "cluster_id", 9)
 
    Default value is “empty (none)”.
 
-   Example 1.25. Set cluster_sharing_tag parameter
+   Example 1.24. Set cluster_sharing_tag parameter
 ...
 # only the node with the active "vip" sharing tag will perform pinging
 # and broadcast the status changes
@@ -819,55 +807,55 @@ modparam("drouting", "cluster_id", 9)
 modparam("drouting", "cluster_sharing_tag", "vip")
 ...
 
-1.3.26. use_domain (int)
+1.3.25. use_domain (int)
 
    Flag to configure whether to use domain match when querying
    database for user's routing group.
 
    Default value is “1”.
 
-   Example 1.26. Set use_domain parameter
+   Example 1.25. Set use_domain parameter
 ...
 modparam("drouting", "use_domain", 0)
 ...
 
-1.3.27. drg_user_col (str)
+1.3.26. drg_user_col (str)
 
    The name of the column in group db table where the username is
    stored.
 
    Default value is “username”.
 
-   Example 1.27. Set drg_user_col parameter
+   Example 1.26. Set drg_user_col parameter
 ...
 modparam("drouting", "drg_user_col", "user")
 ...
 
-1.3.28. drg_domain_col (str)
+1.3.27. drg_domain_col (str)
 
    The name of the column in group db table where the domain is
    stored.
 
    Default value is “domain”.
 
-   Example 1.28. Set drg_domain_col parameter
+   Example 1.27. Set drg_domain_col parameter
 ...
 modparam("drouting", "drg_domain_col", "host")
 ...
 
-1.3.29. drg_grpid_col (str)
+1.3.28. drg_grpid_col (str)
 
    The name of the column in group db table where the group id is
    stored.
 
    Default value is “groupid”.
 
-   Example 1.29. Set drg_grpid_col parameter
+   Example 1.28. Set drg_grpid_col parameter
 ...
 modparam("drouting", "drg_grpid_col", "grpid")
 ...
 
-1.3.30. use_partitions (int)
+1.3.29. use_partitions (int)
 
    Flag to configure whether to use partitions for routing. If
    this flag is set then the db_partitions_url and
@@ -875,12 +863,12 @@ modparam("drouting", "drg_grpid_col", "grpid")
 
    Default value is “0”.
 
-   Example 1.30. Set use_partitions parameter
+   Example 1.29. Set use_partitions parameter
 ...
 modparam("drouting", "use_partitions", 1)
 ...
 
-1.3.31. db_partitions_url (str)
+1.3.30. db_partitions_url (str)
 
    The url to the database containing partition-specific
    information. (partition-specific information includes partition
@@ -891,25 +879,25 @@ modparam("drouting", "use_partitions", 1)
 
    Default value is “"NULL"”.
 
-   Example 1.31. Set db_partitions_url parameter
+   Example 1.30. Set db_partitions_url parameter
 ...
 modparam("drouting", "db_partitions_url", "mysql://user:password@localho
 st/opensips_partitions")
 ...
 
-1.3.32. db_partitions_table (str)
+1.3.31. db_partitions_table (str)
 
    The name of the table containing partition definitions. To be
    used with use_partitions and db_partitions_url.
 
    Default value is “dr_partitions”.
 
-   Example 1.32. Set db_partitions_table parameter
+   Example 1.31. Set db_partitions_table parameter
 ...
 modparam("drouting", "db_partitions_table", "partition_defs")
 ...
 
-1.3.33. partition_id_pvar (pvar)
+1.3.32. partition_id_pvar (pvar)
 
    Variable which will store the name of the name partition when
    wildcard(*) operatior is used. Use_partitions must be set in
@@ -919,12 +907,12 @@ modparam("drouting", "db_partitions_table", "partition_defs")
 
    Default value is “null(not used)”.
 
-   Example 1.33. Set partition_id_pvar parameter
+   Example 1.32. Set partition_id_pvar parameter
 ...
 modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 ...
 
-1.3.34. enable_restart_persistency (int)
+1.3.33. enable_restart_persistency (int)
 
    Parameter set to enable restart persistency for the Dynamic
    Routing module. When this parameter is set, the drouting module
@@ -940,12 +928,12 @@ modparam("drouting", "partition_id_pvar", "$var(matched_partition)")
 
    Default value is “0 (disabled)”.
 
-   Example 1.34. Set enable_restart_persistency parameter
+   Example 1.33. Set enable_restart_persistency parameter
 ...
 modparam("drouting", "enable_restart_persistency", yes)
 ...
 
-1.3.35. extra_prefix_chars (str)
+1.3.34. extra_prefix_chars (str)
 
    List of ASCII (0-127) characters to be additionally accepted in
    the prefixes. By default only '0' - '9' chars (digits) are
@@ -953,12 +941,12 @@ modparam("drouting", "enable_restart_persistency", yes)
 
    Default value is “NULL”.
 
-   Example 1.35. Set extra_prefix_chars parameter
+   Example 1.34. Set extra_prefix_chars parameter
 ...
 modparam("drouting", "extra_prefix_chars", "#-%")
 ...
 
-1.3.36. rule_tables_query (str)
+1.3.35. rule_tables_query (str)
 
    This parameter offers a dynamic, SQL-based way of building a
    set of dr_rules-compatible table names, to be each loaded and
@@ -973,7 +961,7 @@ modparam("drouting", "extra_prefix_chars", "#-%")
    This parameter may be set multiple times (each definition
    creates a new mapping).
 
-   Example 1.36. Set the rule_tables_query parameter
+   Example 1.35. Set the rule_tables_query parameter
 ...
 # first, set the "dr_rules" table name to the name of your query
 modparam("drouting", "drr_table", "MY_RULES_QUERY")
@@ -1047,7 +1035,7 @@ modparam("drouting", "rule_tables_query", "
        specifing the name of one partition, you can use the "*"
        wildcard sign to force routing over all partitions.
 
-   Example 1.37. do_routing usage
+   Example 1.36. do_routing usage
 ...
 # all groups, sort on order, use_partitions is 0
 do_routing();
@@ -1104,7 +1092,7 @@ do_routing(2, "F", , , $var(gw_attributes));
        "use_partition" module parameter is turned on. Wildcard
        sign is not accepted by the function.
 
-   Example 1.38. route_to_carrier usage
+   Example 1.37. route_to_carrier usage
 ...
 # use_partitions is not set
 if ( route_to_carrier("my_top_carrier, def_carrier", , $var(carrier_att)
@@ -1155,7 +1143,7 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
        "use_partition" module parameter is turned on. Wildcard
        sign is not accepted by the function.
 
-   Example 1.39. route_to_gw usage
+   Example 1.38. route_to_gw usage
 ...
 # use_partitions is not set
 if ( route_to_gw("gw_europe") ) {
@@ -1221,7 +1209,7 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), "my_partition") ) {
        "use_partition" module parameter is turned on. Wildcard
        sign is not accepted by the function.
 
-   Example 1.40. use_next_gw usage
+   Example 1.39. use_next_gw usage
 ...
 # use_partitions is not set
 if (use_next_gw()) {
@@ -1294,7 +1282,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.41. goes_to_gw usage
+   Example 1.40. goes_to_gw usage
 ...
 # use_partitions is not set
 if (goes_to_gw( 1, , $var(gw_attrs))) {
@@ -1350,7 +1338,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.42. is_from_gw usage
+   Example 1.41. is_from_gw usage
 # use_partitions is not set
 # match the source IP (only) against all gateways
 if (is_from_gw(-1, "n")) {
@@ -1407,7 +1395,7 @@ if (is_from_gw(, "c", , "outbound")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.43. dr_is_gw usage
+   Example 1.42. dr_is_gw usage
 # match the SIP URI host within $var(uac) against all gateways
 if (dr_is_gw( $var(uac), , "n")) {
         ...
@@ -1441,7 +1429,7 @@ if (dr_is_gw( $avp(uac), , "n", , "partition")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.44. dr_disable() usage
+   Example 1.43. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -1482,7 +1470,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        to be used. This parameter is to be defined ONLY if the
        "use_partition" module parameter is turned on.
 
-   Example 1.45. dr_match usage
+   Example 1.44. dr_match usage
 ...
 if ( dr_match( 1, "L" , $fU, ,"dids") )
         xlog("Full From Username $fU found in group 1 partition DIDS\n")
@@ -1532,7 +1520,7 @@ if ( dr_match( 1, , $var(did) ) )
             GW (0 - disable, 1 - enable). Only makes sense if
             gw_id is provided.
 
-   Example 1.46. dr_gw_status usage when use_partitions is set to
+   Example 1.45. dr_gw_status usage when use_partitions is set to
    0
 $ opensips-cli -x mi dr_gw_status gw_id=2
 State:: Active
@@ -1542,7 +1530,7 @@ Enabled:: Disabled MI
 $ opensips-cli -x mi dr_gw_status gw_id=3
 Enabled:: Inactive
 
-   Example 1.47. dr_gw_status usage when use_partitionsis set to 1
+   Example 1.46. dr_gw_status usage when use_partitionsis set to 1
 $ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
 State:: Active
 $ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw stat
@@ -1577,14 +1565,14 @@ enabled:: inactive
             carrier (0 - disable, 1 - enable). Only makes sense if
             carrier_id is provided.
 
-   Example 1.48. dr_carrier_status usage when use_partitions is 0
+   Example 1.47. dr_carrier_status usage when use_partitions is 0
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: no
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1 status=1
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: yes
 
-   Example 1.49. dr_carrier_status usage when use_partitions is 1
+   Example 1.48. dr_carrier_status usage when use_partitions is 1
 $ opensips-cli -x mi dr_carrier_status partition_name=my_partition carri
 er_id=CR1
 Enabled:: no
@@ -1606,11 +1594,11 @@ Enabled:: yes
             every partition. Otherwise, the function will list the
             time of the last reload for the given partition.
 
-   Example 1.50. dr_reload_status usage when use_partitions is 0
+   Example 1.49. dr_reload_status usage when use_partitions is 0
 $ opensips-cli -x mi dr_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
-   Example 1.51. dr_reload_status usage when use_partitions is 1
+   Example 1.50. dr_reload_status usage when use_partitions is 1
 $ opensips-cli -x mi dr_reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
@@ -1646,7 +1634,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
    Parameters:
      * status (optional) - 1 - enable, 0 - disable gateway probing
 
-   Example 1.52. dr_enable_probing usage
+   Example 1.51. dr_enable_probing usage
 $ opensips-cli -x mi dr_enable_probing
 Status:: 1
 $ opensips-cli -x mi dr_enable_probing 0
@@ -1692,8 +1680,8 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 375 178 12931 5555
-   2. Liviu Chircu (@liviuchircu) 143 81 2400 2556
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 381 183 13005 5607
+   2. Liviu Chircu (@liviuchircu) 150 87 2438 2625
    3. Razvan Crainea (@razvancrainea) 94 48 1144 2185
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
@@ -1731,8 +1719,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2021
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - May 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2021
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
    3.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    4.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    5.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
@@ -1756,8 +1744,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Nick Altmann (@nikbyte), Razvan Crainea
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Nick Altmann (@nikbyte), Razvan Crainea
    (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Alexey
    Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai

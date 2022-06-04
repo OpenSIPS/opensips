@@ -296,9 +296,8 @@ Chapter 1. Admin Guide
 1.6.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
-     * tls_openssl or tls_wolfssl, depending on the desired TLS
-       library
-     * tls_mgm.
+     * tls_openssl or tls_wolfssl, unless tls_library is set to
+       'none'.
 
 1.6.2. Dependencies of external libraries
 
@@ -362,7 +361,8 @@ socket= tls:1.2.3.4:5061
      * none - do not use any TLS library; this is useful when the
        tls_mgm module is required only for the management of TLS
        certificates and parameters by modules like db_mysql,
-       rabbitmq etc.
+       rabbitmq etc. ( and not for TLS operations by transport
+       modules like proto_tls etc.)
      * openssl - use the openSSL library through the tls_openssl
        module.
      * wolfssl - use the wolfSSL library through the tls_wolfssl
@@ -475,6 +475,10 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
    directory must be in hashed form, as described in the openssl
    documentation for the Hashed Directory Method. The domain part
    represents the name of the TLS domain.
+
+   Note that when using the wolfSSL library, you might get a
+   warning message if some of the certificates in the directory
+   are expired, despite successfully loading the valid ones.
 
    Default value is "/etc/pki/CA/".
 
@@ -1513,7 +1517,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 164 45 4744 4852
+   1. Vlad Patrascu (@rvlad-patrascu) 175 55 4817 4876
    2. Razvan Crainea (@razvancrainea) 80 56 1369 703
    3. Eseanu Marius Cristian (@eseanucristian) 52 11 4268 321
    4. Liviu Chircu (@liviuchircu) 25 19 170 231
@@ -1548,7 +1552,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Dec 2021
    2.  Nick Altmann (@nikbyte)             May 2021 - May 2021
    3.  Aleksei Vasilev                     Apr 2021 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Mar 2016 - Sep 2020

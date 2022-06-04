@@ -146,7 +146,7 @@ Chapter 1. Admin Guide
        for us to postpone the media between the caller and callee
        to play a Recording Indicator message.
      * Cannot handle Recording Sessions initiated by SRS - we do
-       not support the scenario when an SRS suddenly decides to
+       not support the scenario when an SRS suddently decides to
        record a call in the middle of the dialog.
      * OpenSIPS cannot be “queried” for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
@@ -244,9 +244,9 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
      * callee (string, optional) - an XML block containing
        information about the callee. If absent, the To header is
        used to build the value from.
-     * rtpproxy_sock (string, optional) - the RTPProxy socket
-       used for this call. If absent, the rtpproxy module will try
-       to detect the proxy used for the initial call, based on the
+     * rtpproxy_sock (string, optional) - the RTPProxy socket used
+       for this call. If absent, the rtpproxy module will try to
+       detect the proxy used for the initial call, based on the
        default set provisioned in the rtpproxy module.
      * media_ip (string, optional) - the IP that RTPProxy will be
        streaming media from. If absent 127.0.0.1 will be used.
@@ -306,10 +306,11 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 87 46 3579 666
-   2. Vlad Patrascu (@rvlad-patrascu) 13 8 157 137
+   1. Razvan Crainea (@razvancrainea) 89 48 3604 674
+   2. Vlad Patrascu (@rvlad-patrascu) 14 9 159 138
    3. Liviu Chircu (@liviuchircu) 8 6 27 50
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 2
+   5. Norman Brandinger (@NormB) 3 1 4 4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -331,10 +332,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
-   2. Razvan Crainea (@razvancrainea)     Jun 2017 - Jan 2021
-   3. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Apr 2020
-   4. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2019
+   1. Norman Brandinger (@NormB)          Aug 2021 - Aug 2021
+   2. Razvan Crainea (@razvancrainea)     Jun 2017 - Jul 2021
+   3. Vlad Patrascu (@rvlad-patrascu)     Feb 2018 - Jul 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
+   5. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2019
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -343,8 +345,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Liviu Chircu (@liviuchircu).
+   Last edited by: Norman Brandinger (@NormB), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 

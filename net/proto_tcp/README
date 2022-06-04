@@ -232,8 +232,8 @@ modparam("proto_tcp", "tcp_async_local_write_timeout", 100)
 
    Example 1.10. Set trace_destination parameter
 ...
-modparam("proto_hep", "trace_destination", "[hep_dest]10.0.0.2;transport
-=tcp;version=3")
+modparam("proto_hep", "hep_id", "[hep_dest]10.0.0.2;transport=tcp;versio
+n=3")
 
 modparam("proto_tcp", "trace_destination", "hep_dest")
 ...

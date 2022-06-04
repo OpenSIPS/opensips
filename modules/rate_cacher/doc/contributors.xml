@@ -42,6 +42,14 @@
 		<entry align="center">6</entry>
 		<entry align="center">4</entry>
 	</row>
+	<row>
+		<entry>4. </entry>
+		<entry>Artiom Druz</entry>
+		<entry align="center">2</entry>
+		<entry align="center">1</entry>
+		<entry align="center">1</entry>
+		<entry align="center">0</entry>
+	</row>
 	</tbody>
 	</tgroup>
 	</table>
@@ -72,16 +80,21 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Artiom Druz</entry>
+		<entry align="center">Jul 2021 - Jul 2021</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Jan 2021 - Jan 2021</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Mar 2020 - Jul 2020</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jul 2020 - Jul 2020</entry>
 	</row>

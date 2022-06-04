@@ -192,8 +192,7 @@ modparam("nathelper", "ping_nated_only", 1)
    One partition means sending all pingings together. Two
    partitions means to send half pings and second half at a time.
 
-   Default value is 1.
-   Maximum allowed value is 8.
+   Default value is 1. Maximum allowed value is 8.
 
    Example 1.3. Set natping_partitions parameter
 ...
@@ -647,7 +646,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
    2. Maksym Sobolyev (@sobomax) 149 41 3547 4780
-   3. Liviu Chircu (@liviuchircu) 43 34 399 275
+   3. Liviu Chircu (@liviuchircu) 44 35 401 280
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 33 27 158 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
@@ -664,8 +663,8 @@ Chapter 3. Contributors
    Carsten Bock, Shlomi Gutman, Jeremie Le Hen, Bayan Towfiq,
    Laurent Schweizer, Jasper Hafkenscheid (@hafkensite),
    Konstantin Bokarius, John Riordan, Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Edson Gellert
-   Schubert.
+   Walter Doekes (@wdoekes), Elena-Ramona Modroiu, Nick Altmann
+   (@nikbyte), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -687,27 +686,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
-   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Sep 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   5.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Shlomi Gutman                       Mar 2018 - Mar 2018
-   10. Ovidiu Sas (@ovidiusas)             Sep 2010 - Feb 2018
+   1.  Nick Altmann (@nikbyte)             May 2022 - May 2022
+   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2021
+   3.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
+   4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
+   6.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Shlomi Gutman                       Mar 2018 - Mar 2018
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Walter Doekes (@wdoekes), Christophe Sollet (@csollet), Vlad
-   Paiu (@vladpaiu), Anca Vamanu, John Riordan, Emmanuel Buu,
-   Andrei Dragus, Sergio Gutierrez, Klaus Darilion,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Ancuta
-   Onofrei, Marcus Hunger, Carsten Bock, Jeremie Le Hen, Laurent
-   Schweizer, Bayan Towfiq, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu, Jiri Kuthan (@jiriatipteldotorg), Jan Janak (@janakj),
-   Nils Ohlmeier.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Ionut
+   Ionita (@ionutrazvanionita), Walter Doekes (@wdoekes),
+   Christophe Sollet (@csollet), Vlad Paiu (@vladpaiu), Anca
+   Vamanu, John Riordan, Emmanuel Buu, Andrei Dragus, Sergio
+   Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
+   Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
+   (@jiriatipteldotorg), Jan Janak (@janakj), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -716,10 +715,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Jasper Hafkenscheid (@hafkensite), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
-   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
+   Last edited by: Nick Altmann (@nikbyte), Jasper Hafkenscheid
+   (@hafkensite), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
+   (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Walter Doekes (@wdoekes), Christophe
    Sollet (@csollet), Vlad Paiu (@vladpaiu), Maksym Sobolyev
    (@sobomax), Anca Vamanu, Andrei Dragus, Sergio Gutierrez, Klaus

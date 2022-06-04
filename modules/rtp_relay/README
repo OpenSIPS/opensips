@@ -151,12 +151,10 @@ Chapter 1. Admin Guide
    Example 1.1. rtp_relay_engage usage
 ...
 if (is_method("INVITE") && !has_totag()) {
-                xlog("SCRIPT: engaging RTPProxy relay for all branches\n
-");
-                $rtp_relay = "co";
-                $rtp_relay_peer = "co";
-                rtp_relay_engage("rtpproxy");
-        }
+        xlog("SCRIPT: engaging RTPProxy relay for all branches\n");
+        $rtp_relay = "co";
+        $rtp_relay_peer = "co";
+        rtp_relay_engage("rtpproxy");
 }
 ...
 
@@ -305,7 +303,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    51      21      3005     258
+   1. Razvan Crainea (@razvancrainea)    66      34      3084     307
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -327,7 +325,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Apr 2021 - May 2021
+   1. Razvan Crainea (@razvancrainea) Apr 2021 - Jan 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
