@@ -16,6 +16,12 @@ AAA_DIAMETER MODULE
               1.3.1. fd_log_level (integer)
               1.3.2. realm (string)
               1.3.3. peer_identity (string)
+              1.3.4. answer_timeout (integer)
+
+        1.4. Exported Functions
+
+              1.4.1. dm_send_request(app_id, cmd_code, avps_json,
+                      [rpl_avps_pv])
 
    2. Contributors
 
@@ -38,6 +44,9 @@ AAA_DIAMETER MODULE
    1.1. Setting the fd_log_level parameter
    1.2. Setting the realm parameter
    1.3. Setting the peer_identity parameter
+   1.4. Setting the answer_timeout parameter
+   1.5. dictionary.opensips extended syntax
+   1.6. dm_send_request usage
 
 Chapter 1. Admin Guide
 
@@ -114,6 +123,111 @@ modparam("aaa_diameter", "realm", "opensips.org")
 modparam("aaa_diameter", "peer_identity", "server")
 
 
+1.3.4. answer_timeout (integer)
+
+   Time, in milliseconds, after which a dm_send_request() function
+   call with no received reply will time out and return a -2 code.
+
+   Example 1.4. Setting the answer_timeout parameter
+
+modparam("aaa_diameter", "answer_timeout", 5000)
+
+
+1.4. Exported Functions
+
+1.4.1.  dm_send_request(app_id, cmd_code, avps_json, [rpl_avps_pv])
+
+   Perform a blocking Diameter request over to the interconnected
+   peer and return the Result-Code AVP value from the reply.
+
+   Parameters
+     * app_id (integer) - ID of the application. A custom
+       application must be defined in the dictionary.opensips
+       Diameter configuration file before it can be recognized.
+     * cmd_code (integer) - ID of the command. A custom command
+       code, name and AVP requirements must be defined in the
+       dictionary.opensips Diameter configuration file beforehand.
+       body of the HTTP response.
+     * avps_json (string) - A JSON Array containing the AVPs to
+       include in the message payload.
+     * rpl_avps_pv (var, optional) - output variable which will
+       hold all AVP names from the Diameter Answer along with
+       their values, packed as a JSON Array string. The "json"
+       module and its $json variable could be used to iterate this
+       array.
+
+   Return Codes
+     * 1 - Success
+     * -1 - Internal Error
+     * -2 - Request timeout (the answer_timeout was exceeded
+       before an Answer could be processed)
+
+   This function can be used from any route.
+
+   Example 1.5. dictionary.opensips extended syntax
+
+# Example of defining custom Diameter AVPs, Application IDs,
+# Requests and Replies in the "dictionary.opensips" file
+
+ATTRIBUTE out_gw            232 string
+ATTRIBUTE trunk_id          233 string
+
+ATTRIBUTE rated_duration    234 integer
+ATTRIBUTE call_cost         235 integer
+
+APPLICATION 42 My Diameter Application
+
+REQUEST 92001 My-Custom-Request
+{
+        Origin-Host | REQUIRED | 1
+        Origin-Realm | REQUIRED | 1
+        Destination-Realm | REQUIRED | 1
+        Transaction-Id | REQUIRED | 1
+        Sip-From-Tag | REQUIRED | 1
+        Sip-To-Tag | REQUIRED | 1
+        Acct-Session-Id | REQUIRED | 1
+        Sip-Call-Duration | REQUIRED | 1
+        Sip-Call-Setuptime | REQUIRED | 1
+        Sip-Call-Created | REQUIRED | 1
+        Sip-Call-MSDuration | REQUIRED | 1
+        out_gw | REQUIRED | 1
+        call_cost | REQUIRED | 1
+}
+
+ANSWER 92001 My-Custom-Answer
+{
+        Origin-Host | REQUIRED | 1
+        Origin-Realm | REQUIRED | 1
+        Destination-Realm | REQUIRED | 1
+        Transaction-Id | REQUIRED | 1
+        Result-Code | REQUIRED | 1
+}
+
+
+   Example 1.6. dm_send_request usage
+
+# Building an sending an My-Custom-Request (92001) for the
+# My Diameter Application (42)
+$var(payload) = "[
+        { \"Origin-Host\": \"client.diameter.test\" },
+        { \"Origin-Realm\": \"diameter.test\" },
+        { \"Destination-Realm\": \"diameter.test\" },
+        { \"Sip-From-Tag\": \"dc93-4fba-91db\" },
+        { \"Sip-To-Tag\": \"ae12-47d6-816a\" },
+        { \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+        { \"Sip-Call-Duration\": 6 },
+        { \"Sip-Call-Setuptime\": 1 },
+        { \"Sip-Call-Created\": 1652372541 },
+        { \"Sip-Call-MSDuration\": 5850 },
+        { \"out_gw\": \"GW-774\" },
+        { \"cost\": \"10.84\" }
+]";
+
+$var(rc) = dm_send_request(42, 92001, $var(payload), $var(rpl_avps));
+xlog("rc: $var(rc), AVPs: $var(rpl_avps)\n");
+$json(avps) := $var(rpl_avps);
+
+
 Chapter 2. Contributors
 
 2.1. By Commit Statistics
@@ -121,7 +235,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                  Name             DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)    62      17      4279     582
+   1. Liviu Chircu (@liviuchircu)    77      21      5328     684
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

@@ -17,6 +17,7 @@ MSRP UA Module
               1.3.2. cleanup_interval (int)
               1.3.3. max_duration (integer)
               1.3.4. my_uri (string)
+              1.3.5. advertised_contact (string)
 
         1.4. Exported Functions
 
@@ -25,8 +26,9 @@ MSRP UA Module
         1.5. Exported MI Functions
 
               1.5.1. msrp_ua_send_message
-              1.5.2. msrp_ua_list_sessions
-              1.5.3. msrp_ua_end_session
+              1.5.2. msrp_ua_start_session
+              1.5.3. msrp_ua_list_sessions
+              1.5.4. msrp_ua_end_session
 
         1.6. Exported Events
 
@@ -56,7 +58,8 @@ MSRP UA Module
    1.2. Set cleanup_interval parameter
    1.3. max_duration parameter example
    1.4. my_uri parameter usage
-   1.5. msrp_ua_answer() usage
+   1.5. advertised_contact parameter usage
+   1.6. msrp_ua_answer() usage
 
 Chapter 1. Admin Guide
 
@@ -142,6 +145,21 @@ modparam("msrp_ua", "max_duration", 7200)
 modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 ...
 
+1.3.5. advertised_contact (string)
+
+   Contact to be used in the generated SIP requests. For sessions
+   answered by OpenSIPS, if it is not set, it is constructed
+   dynamically from the socket where the initiating request was
+   received.
+
+   This parameter is mandatory when using the
+   msrp_ua_start_session MI function.
+
+   Example 1.5. advertised_contact parameter usage
+...
+modparam("msrp_ua", "advertised_contact", "sip:oss@opensips.org")
+...
+
 1.4. Exported Functions
 
 1.4.1.  msrp_ua_answer(content_types)
@@ -159,7 +177,7 @@ modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 
    This function can be used only from a request route.
 
-   Example 1.5. msrp_ua_answer() usage
+   Example 1.6. msrp_ua_answer() usage
 ...
 if (!has_totag() && is_method("INVITE")) {
         msrp_ua_answer("text/plain");
@@ -189,7 +207,27 @@ opensips-cli -x mi msrp_ua_send_message \
         text/plain \
         Hello
 
-1.5.2.  msrp_ua_list_sessions
+1.5.2.  msrp_ua_start_session
+
+   Starts a MSRP session.
+
+   The advertised_contact is mandatory if this function is used.
+
+   Name: msrp_ua_start_session
+
+   Parameters
+     * content_types (string) - content types adevertised in the
+       accept-types SDP attribute.
+     * from_uri (string) - From URI to be used in the INVITE.
+     * to_uri (string) - To URI to be used in the INVITE.
+     * ruri (string) - Request URI and destination of the INVITE.
+
+   MI FIFO Command Format:
+opensips-cli -x mi msrp_ua_start_session \
+        text/plain sip:oss@opensips.org \
+        sip:alice@opensips.org sip:alice@opensips.org
+
+1.5.3.  msrp_ua_list_sessions
 
    Lists information about ongoing MSRP sessions.
 
@@ -201,7 +239,7 @@ opensips-cli -x mi msrp_ua_send_message \
    MI FIFO Command Format:
 opensips-cli -x mi msrp_ua_list_sessions
 
-1.5.3.  msrp_ua_end_session
+1.5.4.  msrp_ua_end_session
 
    Terminate an ongoing MSRP session.
 
@@ -261,8 +299,9 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    18       1      2060      0
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 31 6 2743 91
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -283,8 +322,9 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                   Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) May 2022 - May 2022
+                     Name                   Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu)     May 2022 - May 2022
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) May 2022 - May 2022
 
    (1) including any documentation-related commits, excluding
    merge commits

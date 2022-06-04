@@ -14,6 +14,9 @@ MSRP Gateway Module
         1.3. Exported Parameters
 
               1.3.1. hash_size (int)
+              1.3.2. cleanup_interval (int)
+              1.3.3. session_timeout (int)
+              1.3.4. message_timeout (int)
 
         1.4. Exported Functions
 
@@ -21,6 +24,15 @@ MSRP Gateway Module
                       ruri)
 
               1.4.2. msg_to_msrp(key, content_types)
+
+        1.5. Exported MI Functions
+
+              1.5.1. msrp_gw_list_sessions
+              1.5.2. msrp_gw_end_session
+
+        1.6. Exported Events
+
+              1.6.1. E_MSRP_GW_SETUP_FAILED
 
    2. Contributors
 
@@ -41,8 +53,11 @@ MSRP Gateway Module
    List of Examples
 
    1.1. Set hash_size parameter
-   1.2. msrp_gw_answer() usage
-   1.3. msg_to_msrp() usage
+   1.2. Set cleanup_interval parameter
+   1.3. Set session_timeout parameter
+   1.4. Set message_timeout parameter
+   1.5. msrp_gw_answer() usage
+   1.6. msg_to_msrp() usage
 
 Chapter 1. Admin Guide
 
@@ -83,6 +98,43 @@ Chapter 1. Admin Guide
 modparam("msrp_gateway", "hash_size", 16)
 ...
 
+1.3.2. cleanup_interval (int)
+
+   The interval between full iterations of the sessions table in
+   order to clean up lingering sessions.
+
+   Default value is “60”. (seconds)
+
+   Example 1.2. Set cleanup_interval parameter
+...
+modparam("msrp_gateway", "cleanup_interval", 60)
+...
+
+1.3.3. session_timeout (int)
+
+   Amount of time (in seconds) since last message has been
+   received from either side, after which a session should be
+   terminated.
+
+   The default value is 12 * 3600 seconds (12 hours).
+
+   Example 1.3. Set session_timeout parameter
+...
+modparam("msrp_gateway", "session_timeout", 7200)
+...
+
+1.3.4. message_timeout (int)
+
+   Amount of time (in seconds) since last MESSAGE has been
+   received after which a session should be terminated.
+
+   The default value is 2 * 3600 seconds (2 hours).
+
+   Example 1.4. Set message_timeout parameter
+...
+modparam("msrp_gateway", "message_timeout", 3600)
+...
+
 1.4. Exported Functions
 
 1.4.1.  msrp_gw_answer(key, content_types, from, to, ruri)
@@ -113,7 +165,7 @@ modparam("msrp_gateway", "hash_size", 16)
 
    This function can be used only from a request route.
 
-   Example 1.2. msrp_gw_answer() usage
+   Example 1.5. msrp_gw_answer() usage
 ...
 if (!has_totag() && is_method("INVITE")) {
         msrp_gw_answer($var(corr_key), "text/plain", $fu, $tu, $ru);
@@ -144,13 +196,64 @@ if (!has_totag() && is_method("INVITE")) {
 
    This function can be used only from a request route.
 
-   Example 1.3. msg_to_msrp() usage
+   Example 1.6. msg_to_msrp() usage
 ...
-if (is_method("CANCEL")) {
+if (is_method("MESSAGE")) {
         msg_to_msrp($var(corr_key), "text/plain");
         exit;
 }
 ...
+
+1.5. Exported MI Functions
+
+1.5.1.  msrp_gw_list_sessions
+
+   Lists information about ongoing sessions.
+
+   Name: msrp_gw_list_sessions
+
+   Parameters
+     * None.
+
+   MI FIFO Command Format:
+opensips-cli -x mi msrp_gw_list_sessions
+
+1.5.2.  msrp_gw_end_session
+
+   Terminate an ongoing session.
+
+   Name: msrp_gw_end_session
+
+   Parameters
+     * key (string) - session key
+
+   MI FIFO Command Format:
+opensips-cli -x mi msrp_gw_end_session alice@opensips.org-bob@opensips.o
+rg
+
+1.6. Exported Events
+
+1.6.1.  E_MSRP_GW_SETUP_FAILED
+
+   This event is triggered when the MSRP side SIP session fails to
+   set up, when using the msg_to_msrp() function.
+
+   The event can be used to generate a message with the failure
+   description, back on the MESSAGE side.
+
+   Parameters:
+     * key - The session key.
+     * from_uri - The URI in the SIP From header to use on the
+       MESSAGE side.
+     * to_uri - The URI in the SIP To header to use on the MESSAGE
+       side.
+     * ruri - The SIP Request URI to use on the MESSAGE side.
+     * code - The SIP error code in the negative reply received on
+       the MSRP side. Might be NULL if the MSRP UA session expired
+       before receiving a negative reply.
+     * reason - The SIP reason string in the negative reply
+       received on the MSRP side. Might be NULL if the MSRP UA
+       session expired before receiving a negative reply.
 
 Chapter 2. Contributors
 
@@ -158,7 +261,8 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-     Name DevScore Commits Lines ++ Lines --
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu)    18       7      1215      16
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -179,7 +283,8 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-     Name Commit Activity
+                   Name                 Commit Activity
+   1. Vlad Patrascu (@rvlad-patrascu) May 2022 - May 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -187,6 +292,8 @@ Chapter 2. Contributors
 Chapter 3. Documentation
 
 3.1. Contributors
+
+   Last edited by: Vlad Patrascu (@rvlad-patrascu).
 
    Documentation Copyrights:
 
