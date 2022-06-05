@@ -155,6 +155,30 @@ modparam("msrp_ua", "advertised_contact", "sip:oss@opensips.org")
 		</example>
 		</section>
 
+		<section id="param_relay_uri" xreflabel="relay_uri">
+		<title><varname>relay_uri</varname> (string)</title>
+		<para>
+		URI of an MSRP relay to use for both accepted and initiated
+		sessions.
+		</para>
+		<para>
+		Credentials for the MSRP client are provided via the
+		<emphasis>uac_auth</emphasis> module by setting the
+		<emphasis>credential</emphasis> module parameter.
+		</para>
+		<para>
+		If not set, no relay will be used.
+		</para>
+		<example>
+		<title><varname>relay_uri</varname> parameter usage</title>
+		<programlisting format="linespecific">
+...
+modparam("msrp_ua", "relay_uri", "msrp://opensips.org:2856;tcp")
+...
+</programlisting>
+		</example>
+		</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
