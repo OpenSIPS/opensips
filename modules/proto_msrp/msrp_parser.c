@@ -178,6 +178,9 @@ int parse_msrp_msg( char* buf, int len, struct msrp_msg *msg)
 			case HDR_AUTHORIZATION_T:
 				link_hdr( authorization, hf);
 				break;
+			case HDR_WWW_AUTHENTICATE_T:
+				link_hdr( www_authenticate, hf);
+				break;
 			case HDR_EXPIRES_T:
 				link_hdr( expires, hf);
 				break;
