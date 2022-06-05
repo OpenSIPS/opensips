@@ -25,6 +25,9 @@
 #include "../b2b_entities/b2be_load.h"
 #include "api.h"
 
+#define MSRPUA_SESS_DEL_TOUT 30
+#define MSRPUA_SESS_SETUP_TOUT 60
+
 typedef enum msrpua_dlg_state {
 	MSRPUA_DLG_NEW,   /* New dialog, no final reply sent/received yet */
 	MSRPUA_DLG_CONF,  /* Confirmed dialog, 2xx sent/received */
@@ -39,6 +42,7 @@ struct msrpua_session {
 	msrpua_dlg_state_t dlg_state;
 	str accept_types;
 	str peer_accept_types;
+	str use_path;
 	str peer_path;
 	struct msrp_url *peer_path_parsed;
 	union sockaddr_union to_su;
@@ -48,7 +52,15 @@ struct msrpua_session {
 	struct msrp_ua_handler hdl;
 };
 
-#define MSRPUA_SESS_DEL_TOUT 30
-#define MSRPUA_SESS_SETUP_TOUT 60
+struct uac_init_params {
+	struct msrpua_session *sess;
+	str from_uri;
+	str to_uri;
+	str ruri;
+};
+
+struct uas_init_params {
+	struct msrpua_session *sess;
+};
 
 #endif

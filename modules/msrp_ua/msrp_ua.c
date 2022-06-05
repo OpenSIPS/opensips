@@ -30,6 +30,8 @@
 #include "../../msg_translator.h"
 #include "../../evi/evi_modules.h"
 #include "../../mi/mi.h"
+#include "../uac_auth/uac_auth.h"
+#include "../../lib/digest_auth/digest_auth.h"
 
 #include "../proto_msrp/msrp_api.h"
 #include "msrp_ua.h"
@@ -76,6 +78,11 @@ gen_hash_t *msrpua_sessions;
 int cleanup_interval = 60;
 int max_duration = 12*3600;
 
+str relay_uri_str;
+struct msrp_url relay_uri;
+
+uac_auth_api_t uac_auth_api;
+
 static str msrpua_mod_name = str_init("msrp_ua");
 
 gen_lock_t *sdp_id_lock;
@@ -116,6 +123,7 @@ static param_export_t params[] = {
 	{"max_duration", INT_PARAM, &max_duration},
 	{"my_uri", STR_PARAM, &my_msrp_uri_str},
 	{"advertised_contact", STR_PARAM, &adv_contact.s},
+	{"relay_uri", STR_PARAM, &relay_uri_str.s},
 };
 
 static mi_export_t mi_cmds[] = {
@@ -151,6 +159,14 @@ static cmd_export_t cmds[]=
 	{0,0,{{0,0,0}},0}
 };
 
+static module_dependency_t *get_deps_relay_uri(param_export_t *param)
+{
+	if (*(int *)param->param_pointer == 0)
+		return NULL;
+
+	return alloc_module_dep(MOD_TYPE_DEFAULT, "uac_auth", DEP_ABORT);
+}
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_msrp"  , DEP_ABORT  },
@@ -158,6 +174,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
+		{ "use_tls", get_deps_relay_uri },
 		{ NULL, NULL },
 	},
 };
@@ -294,6 +311,22 @@ static int mod_init(void)
 		return 1;
 	}
 
+	if (relay_uri_str.s) {
+		relay_uri_str.len = strlen(relay_uri_str.s);
+
+		end = relay_uri_str.s + relay_uri_str.len;
+		p = parse_msrp_url(relay_uri_str.s, end, &relay_uri);
+		if (!p) {
+			LM_ERR("Failed to parse MSRP URI in 'relay_uri' parameter\n");
+			return -1;
+		}
+
+		if(load_uac_auth_api(&uac_auth_api)<0){
+			LM_ERR("can't load UAC_AUTH API, needed for uac_auth()\n");
+			return -1;
+		}
+	}
+
 	/* load MSRP API */
 	if(load_msrp_api(&msrp_api)< 0){
 		LM_ERR("can't load MSRP functions\n");
@@ -357,8 +390,8 @@ static void free_msrpua_session(void *val)
 {
 	struct msrpua_session *sess = (struct msrpua_session *)val;
 
-	if (sess->accept_types.s)
-		shm_free(sess->accept_types.s);
+	if (sess->use_path.s)
+		shm_free(sess->use_path.s);
 
 	if (sess->peer_path.s)
 		shm_free(sess->peer_path.s);
@@ -372,9 +405,10 @@ static void free_msrpua_session(void *val)
 
 static void msrpua_delete_session(struct msrpua_session *sess)
 {
-	LM_DBG("Deleting session [%.*s\n", sess->session_id.len, sess->session_id.s);
+	LM_DBG("Deleting session [%.*s]\n", sess->session_id.len, sess->session_id.s);
 
-	b2b_api.entity_delete(sess->b2b_type, &sess->b2b_key, NULL, 1, 1);
+	if (sess->b2b_key.s)
+		b2b_api.entity_delete(sess->b2b_type, &sess->b2b_key, NULL, 1, 1);
 
 	hash_remove_key(msrpua_sessions, sess->session_id);
 	free_msrpua_session(sess);
@@ -672,6 +706,8 @@ static str *msrpua_build_sdp(struct msrpua_session *sess, str *accept_types)
 	buf.len += SDP_A_TYPES_STR_LEN + accept_types->len + CRLF_LEN +
 		SDP_A_PATH_STR_LEN + my_msrp_uri.whole.len + 1 + sess->session_id.len +
 		CRLF_LEN;
+	if (relay_uri_str.s)
+		buf.len += sess->use_path.len + 1;
 
 	buf.s = pkg_malloc(buf.len);
 	if (!buf.s) {
@@ -718,6 +754,10 @@ static str *msrpua_build_sdp(struct msrpua_session *sess, str *accept_types)
 	append_string(p, CRLF, CRLF_LEN);
 
 	append_string(p, SDP_A_PATH_STR, SDP_A_PATH_STR_LEN);
+	if (relay_uri_str.s) {
+		append_string(p, sess->use_path.s, sess->use_path.len);
+		*(p++) = ' ';
+	}
 	append_string(p, my_msrp_uri.whole.s,
 		my_msrp_uri.whole.len - my_msrp_uri.params.len - 1);
 	*(p++) = '/';
@@ -726,7 +766,45 @@ static str *msrpua_build_sdp(struct msrpua_session *sess, str *accept_types)
 	append_string(p, my_msrp_uri.params.s, my_msrp_uri.params.len);
 	append_string(p, CRLF, CRLF_LEN);
 
+	if (p - buf.s != buf.len) {
+		LM_BUG("computed: %d, but wrote %d\n",buf.len,(int)(p-buf.s));
+		return NULL;
+	}
+
 	return &buf;
+}
+
+static int update_peer_path(struct msrpua_session *sess)
+{
+	str tmp;
+
+	if (pkg_str_dup(&tmp, &sess->peer_path) < 0) {
+		LM_ERR("no more pkg memory\n");
+		return -1;
+	}
+
+	if (shm_str_extend(&sess->peer_path,
+		sess->peer_path.len + sess->use_path.len + 1) != 0) {
+		LM_ERR("no more shm memory\n");
+		goto error;
+	}
+
+	memcpy(sess->peer_path.s, sess->use_path.s, sess->use_path.len);
+	sess->peer_path.s[sess->use_path.len] = ' ';
+	memcpy(sess->peer_path.s + sess->use_path.len + 1, tmp.s, tmp.len);
+
+	pkg_free(tmp.s);
+
+	sess->peer_path_parsed = parse_msrp_path_shm(&sess->peer_path);
+	if (!sess->peer_path_parsed ) {
+		LM_ERR("Failed to parse MSRP peer path\n");
+		return -1;
+	}
+
+	return 0;
+error:
+	pkg_free(tmp.s);
+	return -1;
 }
 
 #define REASON_488_STR "Not Acceptable Here"
@@ -757,12 +835,22 @@ static int msrpua_update_session(struct msrpua_session *sess,
 		goto err_reply;
 	}
 
-	if (shm_str_sync(&sess->peer_path, &peer_path) < 0) {
-		LM_ERR("No more shm memory\n");
-		code = 500;
-		reason = str_init("Internal Server Error");
-		del_sess = 1;
-		goto err_reply;
+	if (relay_uri_str.s) {
+		if (update_peer_path(sess) < 0) {
+			LM_ERR("Failed to update peer path with the relay URI\n");
+			code = 500;
+			reason = str_init("Internal Server Error");
+			del_sess = 1;
+			goto err_reply;
+		}
+	} else {
+		if (shm_str_sync(&sess->peer_path, &peer_path) < 0) {
+			LM_ERR("No more shm memory\n");
+			code = 500;
+			reason = str_init("Internal Server Error");
+			del_sess = 1;
+			goto err_reply;
+		}
 	}
 
 	sess->peer_path_parsed = parse_msrp_path_shm(&sess->peer_path);
@@ -787,7 +875,7 @@ static int msrpua_update_session(struct msrpua_session *sess,
 	sess->sdp_sess_vers++;
 
 	sdp = msrpua_build_sdp(sess, &sess->accept_types);
-	if (!sdp->s) {
+	if (!sdp) {
 		LM_ERR("Failed to build SDP answer\n");
 		code = 500;
 		reason = str_init("Internal Server Error");
@@ -1060,6 +1148,7 @@ static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
 	str sess_id;
 	struct msrp_ua_notify_params cb_params = {0};
 	struct msrp_ua_handler hdl;
+	int len;
 
 	hentry = hash_entry(msrpua_sessions, sess->session_id);
 	hash_lock(msrpua_sessions, hentry);
@@ -1119,10 +1208,25 @@ static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
 				goto error;
 			}
 
-			if (shm_str_dup(&sess->peer_path, &peer_path) < 0) {
+			len = relay_uri_str.s ? peer_path.len + sess->use_path.len + 1 :
+				peer_path.len;
+
+			sess->peer_path.s = shm_malloc(len);
+			if (!sess->peer_path.s) {
 				LM_ERR("no more shm memory\n");
 				goto error;
 			}
+
+			if (relay_uri_str.s) {
+				memcpy(sess->peer_path.s, sess->use_path.s, sess->use_path.len);
+				sess->peer_path.s[sess->use_path.len] = ' ';
+				memcpy(sess->peer_path.s + sess->use_path.len + 1,
+					peer_path.s, peer_path.len);
+			} else {
+				memcpy(sess->peer_path.s, peer_path.s, peer_path.len);
+			}
+
+			sess->peer_path.len = len;
 
 			sess->peer_path_parsed = parse_msrp_path_shm(&sess->peer_path);
 			if (!sess->peer_path_parsed ) {
@@ -1236,65 +1340,247 @@ static inline void msrpua_gen_id(char *dest, str *src1, str *src2)
 }
 
 /* if successful, returns with the session lock aquired */
-static int init_msrpua_session(struct msrpua_session *new, int b2b_type,
-	str *b2b_key, str *accept_types, str *peer_path, str *peer_accept_types,
-	struct msrp_ua_handler *hdl)
+static struct msrpua_session *new_msrpua_session(int b2b_type, str *id_src1,
+	str *id_src2, str *accept_types, struct msrp_ua_handler *hdl)
 {
 	unsigned int hentry;
 	void **val;
+	struct msrpua_session *sess;
 
-	new->b2b_key.s = (char*)(new + 1) + MD5_LEN;
-	new->b2b_key.len = b2b_key->len;
-	memcpy(new->b2b_key.s, b2b_key->s, b2b_key->len);
-
-	new->b2b_type = b2b_type;
-
-	new->lifetime = MSRPUA_SESS_SETUP_TOUT + get_ticks();
-	new->dlg_state = MSRPUA_DLG_NEW;
-
-	if (shm_str_dup(&new->accept_types, accept_types) < 0)
-		return -1;
-
-	if (peer_path) {
-		if (shm_str_dup(&new->peer_path, peer_path) < 0)
-			return -1;
-
-		new->peer_path_parsed = parse_msrp_path_shm(&new->peer_path);
-		if (!new->peer_path_parsed ) {
-			LM_ERR("Failed to parse MSRP peer path\n");
-			return -1;
-		}
+	sess = shm_malloc(sizeof *sess + MD5_LEN + B2B_MAX_KEY_SIZE +
+		accept_types->len);
+	if (!sess) {
+		LM_ERR("no more shm memory\n");
+		return NULL;
 	}
+	memset(sess, 0, sizeof *sess);
 
-	if (peer_accept_types &&
-		shm_str_dup(&new->peer_accept_types, peer_accept_types) < 0)
-		return -1;
+	sess->session_id.s = (char*)(sess + 1);
+	sess->session_id.len = MD5_LEN;
+	msrpua_gen_id(sess->session_id.s, id_src1, id_src2);
 
-	hentry = hash_entry(msrpua_sessions, new->session_id);
+	sess->accept_types.s = (char*)(sess + 1) + MD5_LEN + B2B_MAX_KEY_SIZE;
+	sess->accept_types.len = accept_types->len;
+	memcpy(sess->accept_types.s, accept_types->s, accept_types->len);
+
+	sess->b2b_type = b2b_type;
+	sess->lifetime = MSRPUA_SESS_SETUP_TOUT + get_ticks();
+	sess->dlg_state = MSRPUA_DLG_NEW;
+
+	hentry = hash_entry(msrpua_sessions, sess->session_id);
 	hash_lock(msrpua_sessions, hentry);
 
-	val = hash_get(msrpua_sessions, hentry, new->session_id);
+	val = hash_get(msrpua_sessions, hentry, sess->session_id);
 	if (!val) {
 		hash_unlock(msrpua_sessions, hentry);
 		LM_ERR("Failed to allocate new hash entry\n");
-		return -1;
+		goto error;
 	}
 	if (*val != NULL) {
 		hash_unlock(msrpua_sessions, hentry);
 		LM_ERR("Generated duplicate session-id\n");
-		return -1;
+		goto error;
 	}
-	*val = new;
+	*val = sess;
 
 	if (hdl)
-		new->hdl = *hdl;
+		sess->hdl = *hdl;
 
-	LM_DBG("New MSRP UA session, session_id: %.*s b2b_key: %.*s type: %d\n",
-		new->session_id.len, new->session_id.s,
-		new->b2b_key.len, new->b2b_key.s, b2b_type);
+	LM_DBG("New MSRP UA session [%.*s] type: %d\n",
+		sess->session_id.len, sess->session_id.s, b2b_type);
+
+	return sess;
+error:
+	shm_free(sess);
+	return NULL;
+}
+
+static int init_msrpua_session(struct msrpua_session *sess, str *b2b_key,
+	str *peer_path, str *peer_accept_types)
+{
+	sess->b2b_key.s = (char*)(sess + 1) + MD5_LEN;
+	sess->b2b_key.len = b2b_key->len;
+	memcpy(sess->b2b_key.s, b2b_key->s, b2b_key->len);
+
+	if (peer_path) {
+		if (shm_str_dup(&sess->peer_path, peer_path) < 0)
+			return -1;
+
+		if (!relay_uri_str.s) {
+			sess->peer_path_parsed = parse_msrp_path_shm(&sess->peer_path);
+			if (!sess->peer_path_parsed ) {
+				LM_ERR("Failed to parse MSRP peer path\n");
+				return -1;
+			}
+		}
+	}
+
+	if (peer_accept_types &&
+		shm_str_dup(&sess->peer_accept_types, peer_accept_types) < 0)
+		return -1;
 
 	return 0;
-} 
+}
+
+static str *msrpua_build_auth_hdr(struct msrpua_session *sess,
+	struct msrp_msg *rpl)
+{
+	str *buf;
+	struct authenticate_body *auth_body = NULL;
+	struct uac_credential *crd;
+	struct digest_auth_response response;
+	str _;
+	static struct authenticate_nc_cnonce auth_nc_cnonce;
+
+	if (!rpl->www_authenticate) {
+		LM_ERR("WWW-Authenticate header missing\n");
+		return NULL;
+	}
+
+	if (parse_authenticate_header(rpl->www_authenticate,
+		DAUTH_AHFM_MSKSUP(ALG_MD5), &auth_body) < 0) {
+		LM_ERR("Unable to extract authentication info\n");
+		return NULL;
+	}
+
+	if ((auth_body->flags & QOP_AUTH_INT)) {
+		LM_ERR("Unexpected qop value for MSRP:'auth-int'\n");
+		return NULL;
+	}
+
+	crd = uac_auth_api._lookup_realm(&auth_body->realm);
+	if (!crd) {
+		LM_DBG("no credential for realm \"%.*s\"\n",
+			auth_body->realm.len, auth_body->realm.s);
+		return NULL;
+	}
+
+	if (uac_auth_api._do_uac_auth(&_, &str_init("AUTH"), &relay_uri.whole,
+	    crd, auth_body, &auth_nc_cnonce, &response) != 0) {
+		LM_ERR("Failed in do_uac_auth()\n");
+		return NULL;
+	}
+
+	buf = uac_auth_api._build_authorization_hdr(401, &relay_uri.whole,
+		crd, auth_body, &auth_nc_cnonce, &response);
+	if (!buf) {
+		LM_ERR("failed to build authorization hdr\n");
+		return NULL;
+	}
+
+	/* msrp_api.send_request() will add the CRLF itself */
+	buf->len -= CRLF_LEN;
+
+	return buf;
+}
+
+int msrpua_send_auth(struct msrpua_session *sess, void *init_params,
+	struct msrp_msg *rpl)
+{
+	str from = STR_NULL;
+	char *p;
+	str *auth_hdr = NULL;
+	int hdrs_no = 0;
+
+	from.len = my_msrp_uri.whole.len + 1 + sess->session_id.len;
+	from.s = pkg_malloc(from.len);
+	if (!from.s) {
+		LM_ERR("no more pkg memory\n");
+		goto error;
+	}
+
+	/* build From-Path with current session_id */
+	p = from.s;
+	append_string(p, my_msrp_uri.whole.s,
+		my_msrp_uri.whole.len - my_msrp_uri.params.len - 1);
+	*(p++) = '/';
+	append_string(p, sess->session_id.s, sess->session_id.len);
+	*(p++) = ';';
+	append_string(p, my_msrp_uri.params.s, my_msrp_uri.params.len);
+
+	if (rpl) {
+		auth_hdr = msrpua_build_auth_hdr(sess, rpl);
+		if (!auth_hdr) {
+			LM_ERR("Failed to build Authorization header\n");
+			goto error;
+		}
+		hdrs_no = 1;
+	}
+
+	if (msrp_api.send_request(msrp_hdl, MSRP_METHOD_AUTH, &from, &relay_uri,
+		msrp_sock, NULL, NULL, NULL, auth_hdr, hdrs_no, '$', init_params) < 0) {
+		LM_ERR("Failed to send MSRP request\n");
+		goto error;
+	}
+
+	if (auth_hdr)
+		pkg_free(auth_hdr->s);
+	if (from.s)
+		pkg_free(from.s);
+
+	return 0;
+error:
+	if (auth_hdr)
+		pkg_free(auth_hdr->s);
+	if (from.s)
+		pkg_free(from.s);
+	return -1;
+}
+
+
+
+static int msrpua_start_uas(struct msrpua_session *sess)
+{
+	unsigned int hentry;
+	int n;
+	str *sdp = NULL;
+
+	hentry = hash_entry(msrpua_sessions, sess->session_id);
+
+	lock_get(sdp_id_lock);
+	n = (*next_sdp_id)++;
+	lock_release(sdp_id_lock);
+
+	sess->sdp_sess_id = n;
+	sess->sdp_sess_vers = n;
+
+	sdp = msrpua_build_sdp(sess, &sess->accept_types);
+	if (!sdp) {
+		LM_ERR("Failed to build SDP answer\n");
+		goto err_reply;
+	}
+
+	if (relay_uri_str.s &&
+		update_peer_path(sess) < 0) {
+		LM_ERR("Failed to update peer path with the relay URI\n");
+		goto err_reply;
+	}
+
+	if (msrpua_b2b_reply(B2B_SERVER, &sess->b2b_key, METHOD_INVITE,
+		200, &str_init("OK"), sdp) < 0) {
+		LM_ERR("Failed to send 200 OK\n");
+		goto err;
+	}
+
+	sess->dlg_state = MSRPUA_DLG_CONF;
+
+	pkg_free(sdp->s);
+
+	hash_unlock(msrpua_sessions, hentry);
+	return 0;
+
+err_reply:
+	if (msrpua_b2b_reply(B2B_SERVER, &sess->b2b_key, METHOD_INVITE,
+		500, &str_init("Internal Server Error"), NULL) < 0)
+		LM_ERR("Failed to send error reply\n");
+err:
+	msrpua_delete_session(sess);
+	hash_unlock(msrpua_sessions, hentry);
+
+	if (sdp)
+		pkg_free(sdp->s);
+	return -1;
+}
 
 static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 	struct msrp_ua_handler *hdl)
@@ -1303,20 +1589,25 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 	str contact;
 	unsigned int hentry;
 	struct msrpua_session *sess;
+	struct uas_init_params *p = NULL;
 	str peer_accept_types;
 	str peer_path;
 	int code;
 	str reason;
-	str *sdp;
-	int del_sess = 0;
-	int n;
+	str callid;
 
-	sess = shm_malloc(sizeof *sess + MD5_LEN + B2B_MAX_KEY_SIZE);
-	if (!sess) {
-		LM_ERR("no more shm memory\n");
+	if (get_callid(msg, &callid) < 0) {
+		LM_ERR("Failed to get Call-Id from message\n");
 		return -1;
 	}
-	memset(sess, 0, sizeof *sess);
+
+	sess = new_msrpua_session(B2B_SERVER, &callid, NULL, accept_types, hdl);
+	if (!sess) {
+		LM_ERR("Failed to create new MSRP UA session\n");
+		return -1;
+	}
+
+	hentry = hash_entry(msrpua_sessions, sess->session_id);
 
 	if (adv_contact.s)
 		contact = adv_contact;
@@ -1329,10 +1620,6 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 		LM_ERR("failed to create new b2b server instance\n");
 		goto err;
 	}
-
-	sess->session_id.s = (char*)(sess + 1);
-	sess->session_id.len = MD5_LEN;
-	msrpua_gen_id(sess->session_id.s, b2b_key, NULL);
 
 	if (get_sdp_peer_info(msg, &peer_accept_types, &peer_path) < 0) {
 		LM_ERR("Failed to get peer info from SDP\n");
@@ -1350,64 +1637,54 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 		goto err_reply;
 	}
 
-	if (init_msrpua_session(sess, B2B_SERVER, b2b_key, accept_types,
-		&peer_path, &peer_accept_types, hdl) < 0) {
+	if (init_msrpua_session(sess, b2b_key, &peer_path, &peer_accept_types) < 0) {
 		LM_ERR("Failed to init MSRP UA session\n");
 		code = 500;
 		reason = str_init("Internal Server Error");
 		goto err_reply;
 	}
 
-	lock_get(sdp_id_lock);
-	n = (*next_sdp_id)++;
-	lock_release(sdp_id_lock);
+	if (relay_uri_str.s) {
+		p = shm_malloc(sizeof *p);
+		if (!p) {
+			LM_ERR("no more shm memory\n");
+			code = 500;
+			reason = str_init("Internal Server Error");
+			goto err_reply;
+		}
+		memset(p, 0, sizeof *p);
 
-	sess->sdp_sess_id = n;
-	sess->sdp_sess_vers = n;
+		p->sess = sess;
 
-	sdp = msrpua_build_sdp(sess, accept_types);
-	if (!sdp->s) {
-		LM_ERR("Failed to build SDP answer\n");
-		code = 500;
-		reason = str_init("Internal Server Error");
-		del_sess = 1;
-		goto err_reply;
+		if (msrpua_send_auth(sess, p, NULL) < 0) {
+			LM_ERR("Failed to send AUTH request\n");
+			code = 500;
+			reason = str_init("Internal Server Error");
+			goto err_reply;
+		}
+
+		hash_unlock(msrpua_sessions, hentry);
+
+		pkg_free(b2b_key);
+		return 0;
 	}
 
-	if (msrpua_b2b_reply(B2B_SERVER, b2b_key, METHOD_INVITE,
-		200, &str_init("OK"), sdp) < 0) {
-		LM_ERR("Failed to send 200 OK\n");
-		pkg_free(sdp->s);
-		del_sess = 1;
-		goto err;
-	}
-
-	sess->dlg_state = MSRPUA_DLG_CONF;
-
-	hentry = hash_entry(msrpua_sessions, sess->session_id);
-	hash_unlock(msrpua_sessions, hentry);
-
-	pkg_free(sdp->s);
 	pkg_free(b2b_key);
 
-	return 0;
+	return msrpua_start_uas(sess);
 
 err_reply:
 	if (msrpua_b2b_reply(B2B_SERVER, b2b_key, METHOD_INVITE,
 		code, &reason, NULL) < 0)
 		LM_ERR("Failed to send error reply\n");
-	if (!del_sess)
-		b2b_api.entity_delete(B2B_SERVER, b2b_key, NULL, 1, 1);
 err:
-	if (del_sess) {
-		msrpua_delete_session(sess);
-		hentry = hash_entry(msrpua_sessions, sess->session_id);
-		hash_unlock(msrpua_sessions, hentry);
-	} else {
-		free_msrpua_session(sess);
-	}
+	msrpua_delete_session(sess);
+	hash_unlock(msrpua_sessions, hentry);
+
 	if (b2b_key)
 		pkg_free(b2b_key);
+	if (p)
+		shm_free(p);
 	return -1;
 }
 
@@ -1425,33 +1702,23 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo,
 	return 0;
 }
 
-static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri,
-	str *ruri, struct msrp_ua_handler *hdl)
+static int msrpua_start_uac(struct uac_init_params *params)
 {
 	str *b2b_key = NULL;
 	client_info_t ci;
 	static str method_invite = str_init("INVITE");
 	unsigned int hentry;
-	struct msrpua_session *sess;
 	int n;
 	str _ = STR_NULL;
+	struct msrpua_session *sess = params->sess;
 
-	sess = shm_malloc(sizeof *sess + MD5_LEN + B2B_MAX_KEY_SIZE);
-	if (!sess) {
-		LM_ERR("no more shm memory\n");
-		return -1;
-	}
-	memset(sess, 0, sizeof *sess);
-
-	sess->session_id.s = (char*)(sess + 1);
-	sess->session_id.len = MD5_LEN;
-	msrpua_gen_id(sess->session_id.s, from_uri, to_uri);
+	hentry = hash_entry(msrpua_sessions, sess->session_id);
 
 	memset(&ci, 0, sizeof ci);
 	ci.method = method_invite;
-	ci.to_uri = *to_uri;
-	ci.from_uri = *from_uri;
-	ci.req_uri = *ruri;
+	ci.to_uri = params->to_uri;
+	ci.from_uri = params->from_uri;
+	ci.req_uri = params->ruri;
 
 	if (adv_contact.s) {
 		ci.local_contact = adv_contact;
@@ -1467,8 +1734,8 @@ static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri,
 	sess->sdp_sess_id = n;
 	sess->sdp_sess_vers = n;
 
-	ci.body = msrpua_build_sdp(sess, accept_types);
-	if (!ci.body->s) {
+	ci.body = msrpua_build_sdp(sess, &sess->accept_types);
+	if (!ci.body) {
 		LM_ERR("Failed to build SDP answer\n");
 		goto error;
 	}
@@ -1480,13 +1747,11 @@ static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri,
 		goto error;
 	}
 
-	if (init_msrpua_session(sess, B2B_CLIENT, b2b_key, accept_types,
-		NULL, NULL, hdl) < 0) {
+	if (init_msrpua_session(sess, b2b_key, NULL, NULL) < 0) {
 		LM_ERR("Failed to init MSRP UA session\n");
 		goto error;
 	}
 
-	hentry = hash_entry(msrpua_sessions, sess->session_id);
 	hash_unlock(msrpua_sessions, hentry);
 
 	pkg_free(ci.body->s);
@@ -1494,13 +1759,77 @@ static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri,
 
 	return 0;
 error:
-	if (b2b_key)
-		b2b_api.entity_delete(B2B_CLIENT, b2b_key, NULL, 1, 1);
-	free_msrpua_session(sess);
+	msrpua_delete_session(sess);
+
+	hash_unlock(msrpua_sessions, hentry);
+
 	if (b2b_key)
 		pkg_free(b2b_key);
 	if (ci.body)
 		pkg_free(ci.body->s);
+	return -1;
+}
+
+static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri,
+	str *ruri, struct msrp_ua_handler *hdl)
+{
+	struct uac_init_params params;
+	struct uac_init_params *p = NULL;
+	unsigned int hentry;
+	struct msrpua_session *sess;
+
+	sess = new_msrpua_session(B2B_CLIENT, from_uri, to_uri, accept_types, hdl);
+	if (!sess) {
+		LM_ERR("Failed to create new MSRP UA session\n");
+		return -1;
+	}
+
+	if (relay_uri_str.s) {
+		hentry = hash_entry(msrpua_sessions, sess->session_id);
+
+		p = shm_malloc(sizeof *p + from_uri->len + to_uri->len + ruri->len);
+		if (!p) {
+			LM_ERR("no more shm memory\n");
+			goto error;
+		}
+		memset(p, 0, sizeof *p);
+
+		p->sess = sess;
+
+		p->from_uri.s = (char *)(p + 1);
+		p->from_uri.len = from_uri->len;
+		memcpy(p->from_uri.s, from_uri->s, from_uri->len);
+
+		p->to_uri.s = (char *)(p + 1) + from_uri->len;
+		p->to_uri.len = to_uri->len;
+		memcpy(p->to_uri.s, to_uri->s, to_uri->len);
+
+		p->ruri.s = (char *)(p + 1) + from_uri->len + to_uri->len;
+		p->ruri.len = ruri->len;
+		memcpy(p->ruri.s, ruri->s, ruri->len);
+
+		if (msrpua_send_auth(sess, p, NULL) < 0) {
+			LM_ERR("Failed to send AUTH request\n");
+			goto error;
+
+		}
+
+		hash_unlock(msrpua_sessions, hentry);
+		return 0;
+	}
+
+	params.sess = sess;
+	params.from_uri = *from_uri;
+	params.to_uri = *to_uri;
+	params.ruri = *ruri;
+
+	return msrpua_start_uac(&params);
+
+error:
+	msrpua_delete_session(sess);
+	hash_unlock(msrpua_sessions, hentry);
+	if (p)
+		shm_free(p);
 	return -1;
 }
 
@@ -1641,16 +1970,19 @@ static int handle_msrp_request(struct msrp_msg *req, void *hdl_param)
 		return -1;
 	}
 
-	return 0;	
+	return 0;
 }
 
 static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 	void *trans_param, void *hdl_param)
 {
-	struct msrpua_session *sess = (struct msrpua_session *)trans_param;
+	struct msrpua_session *sess;
 	unsigned int hentry;
 	struct msrp_ua_handler hdl;
 	int run_cb = 0;
+	struct uac_init_params *uac_params = NULL;
+	str sess_id;
+	struct msrp_ua_notify_params cb_params = {0};
 
 	if (rpl)
 		LM_DBG("Received MSRP reply [%d %.*s]\n", rpl->fl.u.reply.status_no,
@@ -1658,20 +1990,87 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 	else
 		LM_DBG("Timeout for ident=%.*s\n", tran->ident.len, tran->ident.s);
 
-	hentry = hash_entry(msrpua_sessions, sess->session_id);
-	hash_lock(msrpua_sessions, hentry);
+	if (tran->method_id == MSRP_METHOD_AUTH) {
+		/* trans_param can be either struct uac_init_params or
+		 * struct uas_init_params but the first member is always
+		 * a struct msrpua_session pointer */
+		uac_params = (struct uac_init_params *)trans_param;
+		sess = uac_params->sess;
 
+		hentry = hash_entry(msrpua_sessions, sess->session_id);
+		hash_lock(msrpua_sessions, hentry);
+
+		if (rpl->fl.u.reply.status_no == 401) {
+			if (msrpua_send_auth(sess, trans_param, rpl) < 0) {
+				LM_ERR("Failed to send AUTH request\n");
+				goto err_failed;
+			}
+
+			hash_unlock(msrpua_sessions, hentry);
+		} else if (rpl->fl.u.reply.status_no == 200) {
+			if (!rpl->use_path) {
+				LM_ERR("'Use-Path' header is missing from 200 OK\n");
+				goto err_failed;
+			}
+			if (shm_str_dup(&sess->use_path, &rpl->use_path->body) < 0) {
+				LM_ERR("no more shm memory\n");
+				goto err_failed;
+			}
+
+			if (sess->b2b_type == B2B_SERVER)
+				msrpua_start_uas(sess);
+			else
+				msrpua_start_uac(uac_params);
+
+			/* entry unlocked by msrpua_start_uac/uas() */
+
+			shm_free(uac_params);
+		} else {  /* other negative replies */
+			goto err_failed;
+		}
+	} else {
+		sess = (struct msrpua_session *)trans_param;
+
+		hentry = hash_entry(msrpua_sessions, sess->session_id);
+		hash_lock(msrpua_sessions, hentry);
+
+		if (sess->hdl.name) {
+			run_cb = 1;
+			hdl = sess->hdl;
+		}
+
+		hash_unlock(msrpua_sessions, hentry);
+
+		if (run_cb)
+			hdl.msrp_rpl_cb(rpl, hdl.param);
+	}
+
+	return 0;
+
+err_failed:
 	if (sess->hdl.name) {
-		run_cb = 1;
+		if (pkg_str_dup(&sess_id, &sess->session_id) < 0) {
+			LM_ERR("out of pkg memory\n");
+			goto err_del;
+		}
+
+		cb_params.event = MSRP_UA_SESS_FAILED;
+		cb_params.session_id = &sess_id;
 		hdl = sess->hdl;
 	}
 
+err_del:
+	msrpua_delete_session(sess);
 	hash_unlock(msrpua_sessions, hentry);
 
-	if (run_cb)
-		hdl.msrp_rpl_cb(rpl, hdl.param);
+	if (cb_params.event) {
+		hdl.notify_cb(&cb_params, hdl.param);
+		pkg_free(sess_id.s);
+	}
 
-	return 0;
+	shm_free(uac_params);
+
+	return -1;
 }
 
 #define MESSAGE_ID_PREFIX "Message-ID: "
