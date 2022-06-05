@@ -825,7 +825,7 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 	void **val;
 	struct msrp_url *url;
 
-	if (from==NULL || to==NULL || hdrs==NULL) {
+	if (from==NULL || to==NULL || (hdrs_no>0 && hdrs==NULL)) {
 		LM_ERR("missing hdrs: from %p / to %p/ hdrs %p\n", from, to, hdrs);
 		return -1;
 	}
