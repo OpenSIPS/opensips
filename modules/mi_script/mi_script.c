@@ -406,7 +406,7 @@ static int mi_script_handle_response(mi_response_t *resp, char **res, int *relea
 
 		tmp = cJSON_GetObjectItem(item, JSONRPC_ERR_MSG_S);
 		if (!tmp)
-			r = "no error message provideded";
+			r = "no error message provided";
 		else
 			r = tmp->valuestring;
 	} else if (res) {
@@ -428,22 +428,27 @@ static int mi_script_handle_sync_response(struct sip_msg *msg,
 		mi_response_t *resp, pv_spec_p r)
 {
 	int ret, release;
-	pv_value_t val;
 	char *res = NULL;
 
 	ret = mi_script_handle_response(resp, (r?&res:NULL), &release);
-	if (res) {
-		val.rs.s = res;
-		val.rs.len = strlen(res);
-		val.flags = PV_VAL_STR;
-	} else {
-		val.rs.s = NULL;
-		val.rs.len = 0;
-		val.flags = PV_VAL_NULL;
+
+	if (r) {
+		pv_value_t val;
+
+		if (res) {
+			val.rs.s = res;
+			val.rs.len = strlen(res);
+			val.flags = PV_VAL_STR;
+		} else {
+			val.rs.s = NULL;
+			val.rs.len = 0;
+			val.flags = PV_VAL_NULL;
+		}
+
+		if (pv_set_value(msg, r, 0, &val) < 0)
+			ret = -3;
 	}
 
-	if (pv_set_value(msg, r, 0, &val) < 0)
-		ret = -3;
 	if (release)
 		cJSON_PurgeString(res);
 	return ret;
