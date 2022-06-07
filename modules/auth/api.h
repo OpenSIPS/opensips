@@ -98,6 +98,12 @@ typedef char *(*build_auth_hf_t)(struct nonce_context *ncp, struct nonce_params 
     const str_const *alg_val, const str_const* _hf_name,  const str_const *opaque);
 
 /*
+ * Build Authentication-Info header field
+ */
+typedef str *(*build_auth_info_hf_t)(str *msg_body, str *method, dig_cred_t *cred,
+	struct digest_auth_credential *auth_data);
+
+/*
  * Strip the beginning of realm
  */
 void strip_realm(str *_realm);
@@ -114,6 +120,7 @@ typedef struct auth_api {
 	calc_HA1_t  calc_HA1;  /* calculate H(A1) as per spec */
 	check_response_t check_response; /* check auth response */
 	build_auth_hf_t build_auth_hf;   /* build {WWW,Proxy}-Authenticate header field */
+	build_auth_info_hf_t build_auth_info_hf; /* build Authentication-Info header */
 } auth_api_t;
 
 

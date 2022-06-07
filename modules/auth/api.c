@@ -366,6 +366,165 @@ static int auth_calc_HA1(const struct calc_HA1_arg *params, HASHHEX *sess_key)
 	return 0;
 }
 
+#define AUTH_INFO_HDR_START       "Authentication-Info: "
+#define AUTH_INFO_HDR_START_LEN   (sizeof(AUTH_INFO_HDR_START)-1)
+
+#define QOP_FIELD_S              "qop="
+#define QOP_FIELD_LEN            (sizeof(QOP_FIELD_S)-1)
+#define NC_FIELD_S               "nc="
+#define NC_FIELD_LEN             (sizeof(NC_FIELD_S)-1)
+#define CNONCE_FIELD_S           "cnonce=\""
+#define CNONCE_FIELD_LEN         (sizeof(CNONCE_FIELD_S)-1)
+#define RSPAUTH_FIELD_S           "rspauth=\""
+#define RSPAUTH_FIELD_LEN         (sizeof(RSPAUTH_FIELD_S)-1)
+#define FIELD_SEPARATOR_S        "\", "
+#define FIELD_SEPARATOR_LEN      (sizeof(FIELD_SEPARATOR_S)-1)
+#define FIELD_SEPARATOR_UQ_S     ", "
+#define FIELD_SEPARATOR_UQ_LEN   (sizeof(FIELD_SEPARATOR_UQ_S)-1)
+
+static int calc_response(str *msg_body, str *method,
+	struct digest_auth_credential *auth_data, dig_cred_t *cred,
+	struct digest_auth_response *response)
+{
+	HASHHEX ha1;
+	HASHHEX ha2;
+	int i, has_ha1;
+	const struct digest_auth_calc *digest_calc;
+	str_const cnonce;
+	str_const nc;
+
+	digest_calc = get_digest_calc(cred->alg.alg_parsed);
+	if (digest_calc == NULL) {
+		LM_ERR("digest algorithm (%d) unsupported\n", cred->alg.alg_parsed);
+		return (-1);
+	}
+
+	/* before actually doing the authe, we check if the received password is
+	   a plain text password or a HA1 value ; we detect a HA1 (in the password
+	   field if: (1) starts with "0x"; (2) len is 32 + 2 (prefix) ; (3) the 32
+	   chars are HEXA values */
+	if (auth_data->passwd.len==(digest_calc->HASHHEXLEN + 2) &&
+	    auth_data->passwd.s[0]=='0' && auth_data->passwd.s[1]=='x') {
+		/* it may be a HA1 - check the actual content */
+		for( has_ha1=1,i=2 ; i<auth_data->passwd.len ; i++ ) {
+			if ( !( (auth_data->passwd.s[i]>='0' && auth_data->passwd.s[i]<='9') ||
+			(auth_data->passwd.s[i]>='a' && auth_data->passwd.s[i]<='f') )) {
+				has_ha1 = 0;
+				break;
+			} else {
+				ha1._start[i-2] = auth_data->passwd.s[i];
+			}
+		}
+		ha1._start[digest_calc->HASHHEXLEN] = 0;
+	} else {
+		has_ha1 = 0;
+	}
+
+	if(cred->qop.qop_parsed >= QOP_AUTH_D && cred->qop.qop_parsed < QOP_OTHER_D)
+	{
+		/* if qop generate nonce-count and cnonce */
+		nc = str_const_init("00000001");
+		cnonce.s = int2str(core_hash(&cred->nonce, NULL, 0),&cnonce.len);
+
+		/* calc response */
+		if (!has_ha1)
+			if (digest_calc->HA1(auth_data, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA1sess != NULL)
+			if (digest_calc->HA1sess(str2const(&cred->nonce), &cnonce, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA2(str2const(msg_body), str2const(method), str2const(&cred->uri),
+		    (cred->qop.qop_parsed >= QOP_AUTHINT_D), &ha2) != 0)
+			return (-1);
+
+		if (digest_calc->response(&ha1, &ha2, str2const(&cred->nonce),
+		    str2const(&cred->qop.qop_str), &nc, &cnonce, response) != 0)
+			return (-1);
+	} else {
+		/* calc response */
+		if (!has_ha1)
+			if (digest_calc->HA1(auth_data, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA1sess != NULL)
+			if (digest_calc->HA1sess(str2const(&cred->nonce), NULL/*cnonce*/, &ha1) != 0)
+				return (-1);
+		if (digest_calc->HA2(str2const(msg_body), str2const(method), str2const(&cred->uri),
+		    0, &ha2) != 0)
+			return (-1);
+
+		if (digest_calc->response(&ha1, &ha2, str2const(&cred->nonce),
+		    NULL/*qop*/, NULL/*nc*/, NULL/*cnonce*/, response) != 0)
+			return (-1);
+	}
+	return (0);
+}
+
+static str *build_auth_info_hf(str *msg_body, str *method, dig_cred_t *cred,
+	struct digest_auth_credential *auth_data)
+{
+	static str buf = STR_NULL;
+	struct digest_auth_response response;
+	int rsp_len;
+	char *p;
+
+	if (calc_response(msg_body, method, auth_data, cred, &response) != 0) {
+		LM_ERR("Failed to calculate response\n");
+		return NULL;
+	}
+
+	rsp_len = response.digest_calc->HASHHEXLEN;
+
+	buf.len = AUTH_INFO_HDR_START_LEN + QOP_FIELD_LEN + cred->qop.qop_str.len +
+		FIELD_SEPARATOR_UQ_LEN + CNONCE_FIELD_LEN + cred->cnonce.len +
+		FIELD_SEPARATOR_LEN + NC_FIELD_LEN + cred->nc.len +
+		FIELD_SEPARATOR_UQ_LEN  + RSPAUTH_FIELD_LEN + rsp_len + 1;
+
+	buf.s = pkg_malloc(buf.len);
+	if (!buf.s) {
+		LM_ERR("no more pgk memory\n");
+		return NULL;
+	}
+
+	p = buf.s;
+	memcpy(p, AUTH_INFO_HDR_START, AUTH_INFO_HDR_START_LEN);
+	p += AUTH_INFO_HDR_START_LEN;
+
+	memcpy(p, QOP_FIELD_S, QOP_FIELD_LEN);
+	p += QOP_FIELD_LEN;
+	memcpy(p, cred->qop.qop_str.s, cred->qop.qop_str.len);
+	p += cred->qop.qop_str.len;
+	memcpy(p, FIELD_SEPARATOR_UQ_S, FIELD_SEPARATOR_UQ_LEN);
+	p += FIELD_SEPARATOR_UQ_LEN;
+
+	memcpy(p, CNONCE_FIELD_S, CNONCE_FIELD_LEN);
+	p += CNONCE_FIELD_LEN;
+	memcpy(p, cred->cnonce.s, cred->cnonce.len);
+	p += cred->cnonce.len;
+	memcpy(p, FIELD_SEPARATOR_S, FIELD_SEPARATOR_LEN);
+	p += FIELD_SEPARATOR_LEN;
+
+	memcpy(p, NC_FIELD_S, NC_FIELD_LEN);
+	p += NC_FIELD_LEN;
+	memcpy(p, cred->nc.s, cred->nc.len);
+	p += cred->nc.len;
+	memcpy(p, FIELD_SEPARATOR_S, FIELD_SEPARATOR_LEN);
+	p += FIELD_SEPARATOR_LEN;
+
+	memcpy(p, RSPAUTH_FIELD_S, RSPAUTH_FIELD_LEN);
+	p += RSPAUTH_FIELD_LEN;
+	response.digest_calc->response_hash_fill(&response,
+		p, buf.len - (p - buf.s));
+	p += rsp_len;
+
+	if (buf.len != p - buf.s) {
+		LM_BUG("computed: %d, but wrote %d\n",buf.len,(int)(p-buf.s));
+		pkg_free(buf.s);
+		return NULL;
+	}
+
+	return &buf;
+}
+
 int bind_auth(auth_api_t* api)
 {
 	if (!api) {
@@ -378,6 +537,7 @@ int bind_auth(auth_api_t* api)
 	api->calc_HA1 = auth_calc_HA1;
 	api->check_response = check_response;
 	api->build_auth_hf = build_auth_hf;
+	api->build_auth_info_hf = build_auth_info_hf;
 
 	get_rpid_avp( &api->rpid_avp, &api->rpid_avp_type );
 
