@@ -2374,6 +2374,9 @@ static int timer_clean_session(void *param, str key, void *value)
 				&str_init("CANCEL")) < 0)
 				LM_ERR("Failed to send CANCEL on timeout\n");
 
+			sess->dlg_state = MSRPUA_DLG_TERM;
+			sess->lifetime = MSRPUA_SESS_DEL_TOUT + get_ticks();
+
 			if (sess->hdl.name) {
 				if (pkg_str_dup(&sess_id, &sess->session_id) < 0) {
 					LM_ERR("no more pkg memory\n");
@@ -2384,12 +2387,17 @@ static int timer_clean_session(void *param, str key, void *value)
 				cb_params.session_id = &sess_id;
 				hdl = sess->hdl;
 			}
+
+			goto end;
 		} else if (sess->dlg_state < MSRPUA_DLG_TERM) {
 			if (msrpua_b2b_request(sess->b2b_type, &sess->b2b_key,
 				&str_init("BYE")) < 0) {
 				LM_ERR("Failed to send BYE on timeout\n");
 				goto del_session;
 			}
+
+			sess->dlg_state = MSRPUA_DLG_TERM;
+			sess->lifetime = MSRPUA_SESS_DEL_TOUT + get_ticks();
 
 			if (sess->dlg_state == MSRPUA_DLG_EST) {
 				if (pkg_str_dup(&sess_id, &sess->session_id) < 0) {
@@ -2416,13 +2424,15 @@ static int timer_clean_session(void *param, str key, void *value)
 				cb_params.session_id = &sess_id;
 				hdl = sess->hdl;
 			}
+
+			goto end;
 		}
 
 del_session:
-		hash_remove_key(msrpua_sessions, key);
-		free_msrpua_session(sess);
+		msrpua_delete_session(sess);
 	}
 
+end:
 	if (raise_ev) {
 		/* TODO: don't raise event/run callback under lock */
 		if (raise_sess_end_event(&sess_id) < 0)
