@@ -92,8 +92,10 @@ static int digest_calc_HA2(const str_const *msg_body, const str_const *method,
 	}
 
 	MD5Init(&Md5Ctx);
-	MD5Update(&Md5Ctx, method->s, method->len);
-	MD5Update(&Md5Ctx, ":", 1);
+	if (method->s) {
+		MD5Update(&Md5Ctx, method->s, method->len);
+		MD5Update(&Md5Ctx, ":", 1);
+	}
 	MD5Update(&Md5Ctx, uri->s, uri->len);
 
 	if (auth_int)

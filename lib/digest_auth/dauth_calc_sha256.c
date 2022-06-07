@@ -94,8 +94,10 @@ static int digest_calc_HA2(const str_const *msg_body, const str_const *method,
 	}
 
 	SHA256_Init(&Sha256Ctx);
-	SHA256_Update(&Sha256Ctx, method->s, method->len);
-	SHA256_Update(&Sha256Ctx, ":", 1);
+	if (method->s) {
+		SHA256_Update(&Sha256Ctx, method->s, method->len);
+		SHA256_Update(&Sha256Ctx, ":", 1);
+	}
 	SHA256_Update(&Sha256Ctx, uri->s, uri->len);
 
 	if (auth_int)

@@ -123,8 +123,10 @@ static int digest_calc_HA2(const str_const *msg_body, const str_const *method,
 	}
 
 	SHA512t256_Init(&Sha512t256Ctx);
-	SHA512t256_Update(&Sha512t256Ctx, method->s, method->len);
-	SHA512t256_Update(&Sha512t256Ctx, ":", 1);
+	if (method->s) {
+		SHA512t256_Update(&Sha512t256Ctx, method->s, method->len);
+		SHA512t256_Update(&Sha512t256Ctx, ":", 1);
+	}
 	SHA512t256_Update(&Sha512t256Ctx, uri->s, uri->len);
 
 	if (auth_int)
