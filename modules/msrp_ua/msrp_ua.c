@@ -174,7 +174,7 @@ static dep_export_t deps = {
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
-		{ "use_tls", get_deps_relay_uri },
+		{ "relay_uri", get_deps_relay_uri },
 		{ NULL, NULL },
 	},
 };
