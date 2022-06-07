@@ -80,7 +80,7 @@
     |            |     |         |
     |            |&lt;----+         |
     |            |(7)setflag     |
-    |            |Dialog flag    |
+    |            |create dialog  |
     |            |Set expire     |
     |            |-----+         |
     |            |     |         |
@@ -316,7 +316,7 @@ route {
 		<programlisting format="linespecific">
 
 ...
-modparam("sst", "sst_flag", 6)
+modparam("sst", "sst_flag", "SST_FLAG")
 modparam("sst", "min_se", 2400) # Must be >= 90
 ...
 
@@ -327,24 +327,11 @@ route {
 		exit;
 	}
 	# track the session timers via the dialog module
-	setflag(6);
+	setflag(SST_FLAG);
 	create_dialog();
   }
 }
 
-... or ...
-
-route {
-  if ($rm=="INVITE") {
-	if (sstCheckMin(0)) {
-		xlog("L_ERR", "Session Timer Too Small, dropping request\n");
-		exit;
-	}
-	# track the session timers via the dialog module
-	setflag(5);
-	setflag(6);
-  }
-}
 ...
 </programlisting>
 		</example>
