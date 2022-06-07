@@ -247,7 +247,8 @@ error:
 	return -1;
 }
 
-static int authorize(struct msrp_msg *req, str *realm, unsigned int *expires)
+static int authorize(struct msrp_msg *req, str *realm, unsigned int *expires,
+	str **auth_info_hdr)
 {
 	int rc;
 	int reply_code;
@@ -262,6 +263,7 @@ static int authorize(struct msrp_msg *req, str *realm, unsigned int *expires)
 	str reply_hdr = {NULL, 0};
 	str reason = {NULL, 0};
 	pv_value_t passwd_pval;
+	struct digest_auth_credential auth_data;
 
 	if (req->expires) {
 		tmp = req->expires->body;
@@ -409,6 +411,19 @@ static int authorize(struct msrp_msg *req, str *realm, unsigned int *expires)
 	}
 
 	if (!auth_api.check_response(cred, &method, &_, &ha1)) {
+		auth_data.realm = cred->realm;
+		auth_data.user = cred->username.whole;
+		auth_data.passwd = passwd_pval.rs;
+
+		*auth_info_hdr = auth_api.build_auth_info_hf(&STR_NULL, &STR_NULL,
+			cred, &auth_data);
+		if (*auth_info_hdr == NULL) {
+			LM_ERR("Failed to build Authentication-Info\n");
+			reply_code = 403;
+			reason = str_init(REASON_SERVER_ERROR_STR);
+			goto err_reply;
+		}
+
 		return AUTHORIZED;
 	} else { 
 		LM_DBG("Failed to check response\n");
@@ -479,10 +494,13 @@ error:
 	return NULL;
 }
 
+#define RPL_200OK_HDRS_NO 3
+
 static int send_auth_200ok(struct msrp_msg *req, str *session_id,
-	str *use_path_host, int use_path_port, int secured, int expires)
+	str *use_path_host, int use_path_port, int secured, int expires,
+	str *auth_info_hdr)
 {
-	str hdrs[2] = {{.s = NULL}, {.s = NULL}};
+	str hdrs[RPL_200OK_HDRS_NO] = {{.s = NULL}};
 	char *p, *tmp;
 	int l;
 
@@ -519,8 +537,10 @@ static int send_auth_200ok(struct msrp_msg *req, str *session_id,
 	if (!hdrs[1].s)
 		goto error;
 
+	hdrs[2] = *auth_info_hdr;
+
 	if (msrp_api.send_reply(msrp_hdl, req, 200, &str_init(REASON_OK_STR),
-		hdrs, 2) < 0) {
+		hdrs, RPL_200OK_HDRS_NO) < 0) {
 		LM_ERR("Failed to send MSRP reply\n");
 		goto error;
 	}
@@ -545,6 +565,7 @@ int handle_msrp_auth_req(struct msrp_msg *req, struct msrp_url *my_url)
 	unsigned int expires;
 	struct msrp_url *to = (struct msrp_url *)req->to_path->parsed;
 	str *realm;
+	str *auth_info_hdr;
 
 	if (default_auth_realm.s)
 		realm = &default_auth_realm;
@@ -557,13 +578,14 @@ int handle_msrp_auth_req(struct msrp_msg *req, struct msrp_url *my_url)
 			return -1;
 		}
 	} else {
-		ret = authorize(req, realm, &expires);
+		ret = authorize(req, realm, &expires, &auth_info_hdr);
 		switch (ret) {
 		case AUTHORIZED:
 			if (req->from_path->parsed == NULL) {
 				req->from_path->parsed = parse_msrp_path(&req->from_path->body);
 				if (req->from_path->parsed == NULL) {
 					LM_ERR("Failed to parse From-Path\n");
+					pkg_free(auth_info_hdr->s);
 					return -1;
 				}
 			}
@@ -571,14 +593,18 @@ int handle_msrp_auth_req(struct msrp_msg *req, struct msrp_url *my_url)
 			session = new_msrp_session(req->from_path->parsed, expires);
 			if (!session) {
 				LM_ERR("Failed to create new MSRP session\n");
+				pkg_free(auth_info_hdr->s);
 				return -1;
 			}
 
 			if (send_auth_200ok(req, &session->session_id, &my_url->host,
-				my_url->port_no, my_url->secured, expires) < 0) {
+				my_url->port_no, my_url->secured, expires, auth_info_hdr) < 0) {
 				LM_ERR("Failed to send 200 OK\n");
+				pkg_free(auth_info_hdr->s);
 				return -1;
 			}
+
+			pkg_free(auth_info_hdr->s);
 
 			LM_DBG("Authorized MSRP client\n");
 			break;
