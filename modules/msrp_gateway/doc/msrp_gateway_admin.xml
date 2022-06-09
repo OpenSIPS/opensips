@@ -142,7 +142,8 @@ modparam("msrp_gateway", "message_timeout", 3600)
 			requests will be automatically translated to SIP MESSAGE requests.
 		</para>
 		<para>
-			The SIP From, To, and RURI coordinates for the MESSAGE requests.
+			The SIP From, To, and RURI coordinates for building MESSAGE requests
+			are passed as parameters to the function.
 		</para>
 		<para>
 			Parameters:
