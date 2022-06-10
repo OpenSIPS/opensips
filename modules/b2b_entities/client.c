@@ -113,7 +113,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	/* create a dummy b2b dialog structure to be inserted in the hash table*/
 	size = sizeof(b2b_dlg_t) + ci->to_uri.len + ci->from_uri.len
-		+ ci->from_dname.len + ci->to_dname.len +
+		+ ci->from_dname.len + ci->to_dname.len + ci->dst_uri.len +
 		from_tag.len + ci->local_contact.len + B2B_MAX_KEY_SIZE +
 		B2BL_MAX_KEY_LEN + mod_name->len;
 
@@ -133,6 +133,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		CONT_COPY(dlg, dlg->to_dname, ci->to_dname);
 	if(ci->from_dname.s)
 		CONT_COPY(dlg, dlg->from_dname, ci->from_dname);
+	if(ci->dst_uri.s)
+		CONT_COPY(dlg, dlg->proxy, ci->dst_uri);
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 	CONT_COPY(dlg, dlg->contact[CALLER_LEG], ci->local_contact);
 
@@ -289,6 +291,9 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	td->rem_uri = dlg->to_uri;
 	td->loc_dname = dlg->from_dname;
 	td->rem_dname = dlg->to_dname;
+
+	if(dlg->proxy.len)
+		td->obp = dlg->proxy;
 
 	if(leg)
 	{
