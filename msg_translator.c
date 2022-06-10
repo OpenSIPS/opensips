@@ -1262,7 +1262,8 @@ unsigned int prep_reassemble_body_parts( struct sip_msg* msg,
 	char *hdr, *it;
 
 	/* set the offset (in the original buffer) at the beginning of the body */
-	orig_offs = msg->body ? msg->body->body.s-msg->buf : msg->len ;
+	orig_offs = (msg->body && msg->body->body.s) ?
+		msg->body->body.s-msg->buf : msg->len ;
 
 	if (msg->body->updated_part_count==0) {
 
@@ -1914,7 +1915,9 @@ static inline void apply_msg_changes(struct sip_msg *msg,
 		*new_offs += max_offset-*orig_offs;
 	} else {
 		/* copy whatever is left in the original buffer (up to the body) */
-		size = (msg->body->body.s - msg->buf) - *orig_offs;
+		size = msg->body->body.s ?
+			((msg->body->body.s - msg->buf) - *orig_offs)  /* msg had body */
+			: (msg->len - *orig_offs);                     /* no body at all */
 		memcpy(new_buf+*new_offs, msg->buf+*orig_offs, size );
 		*new_offs += size;
 		*orig_offs += size;
