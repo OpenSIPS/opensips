@@ -396,7 +396,7 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 		return 0;
 	}
 
-	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+
+	size = sizeof(b2b_dlg_t) + dlg->callid.len+ dlg->from_uri.len+ dlg->to_uri.len+dlg->proxy.len+
 		dlg->tag[0].len + dlg->tag[1].len+ dlg->route_set[0].len+ dlg->route_set[1].len+
 		dlg->contact[0].len+ dlg->contact[1].len+ dlg->ruri.len+
 		dlg->from_dname.len + dlg->to_dname.len + dlg->mod_name.len;
@@ -414,6 +414,8 @@ b2b_dlg_t* b2b_dlg_copy(b2b_dlg_t* dlg)
 
 	if(dlg->ruri.s)
 		CONT_COPY(new_dlg, new_dlg->ruri, dlg->ruri);
+	if(dlg->proxy.s)
+		CONT_COPY(new_dlg, new_dlg->proxy, dlg->proxy);
 	CONT_COPY(new_dlg, new_dlg->callid, dlg->callid);
 	CONT_COPY(new_dlg, new_dlg->from_uri, dlg->from_uri);
 	CONT_COPY(new_dlg, new_dlg->to_uri, dlg->to_uri);
@@ -1400,6 +1402,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 		dlg.to_dname = init_dlg->to_dname;
 		dlg.from_uri = init_dlg->from_uri;
 		dlg.from_dname = init_dlg->from_dname;
+		dlg.proxy = init_dlg->proxy;
 	}
 	else
 	{

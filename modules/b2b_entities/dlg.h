@@ -83,6 +83,7 @@ typedef struct b2b_dlg
 	unsigned int         id;
 	b2b_state_t          state;
 	str                  ruri;
+	str                  proxy;
 	str                  callid;
 	str                  from_uri;
 	str                  from_dname;
