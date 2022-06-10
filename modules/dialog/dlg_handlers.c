@@ -2129,12 +2129,8 @@ after_unlock5:
 
 			dlg_lock (d_table, d_entry);
 
-			if (dlg->legs[dst_leg].last_gen_cseq ||
-			dlg->legs[dst_leg].last_inv_gen_cseq ) {
-				if (dlg->legs[dst_leg].last_inv_gen_cseq)
-					update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
-				else
-					update_val = dlg->legs[dst_leg].last_gen_cseq;
+			if (dlg->legs[dst_leg].last_gen_cseq) {
+				update_val = dlg->legs[dst_leg].last_gen_cseq;
 				dlg_unlock( d_table, d_entry );
 
 				if (update_msg_cseq(req,0,update_val) != 0) {
