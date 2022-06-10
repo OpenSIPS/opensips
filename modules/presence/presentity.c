@@ -630,7 +630,12 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 			}
 			*sent_reply= 1;
 
-			if(publ_notify(presentity, pres_uri, body.s ? &body : 0,
+			/* If we do not have a body to NOTIFY, rely solely on
+			 * the NOTIFY from the DB right below
+			 * Otherwise, expired dialog presentities that gets
+			 * deleted will trigger a NOTIFY with an old state.
+			 */
+			if(body.s && publ_notify(presentity, pres_uri, &body,
 			&presentity->old_etag, rules_doc, NULL, 1, NULL) < 0)
 			{
 				LM_ERR("while sending notify\n");
