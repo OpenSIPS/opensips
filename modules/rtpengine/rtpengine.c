@@ -3780,6 +3780,11 @@ static int rtpengine_api_offer(struct rtp_relay_session *sess, struct rtp_relay_
 	if (!server->node.s) {
 		node = NULL;
 		rset = rtpengine_get_set(server->set);
+		if (!rset) {
+			LM_ERR("no rtpengine set availble!\n");
+			RTPE_STOP_READ();
+			return -1;
+		}
 		server->set = rset->id_set;
 	} else {
 		rset = select_rtpe_set(server->set);
