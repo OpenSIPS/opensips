@@ -217,6 +217,30 @@ ATTRIBUTE trunk_id          233 string
 ATTRIBUTE rated_duration    234 integer
 ATTRIBUTE call_cost         235 integer
 
+ATTRIBUTE Exponent          429 integer32
+ATTRIBUTE Value-Digits      447 integer64
+
+ATTRIBUTE Cost-Unit 424 grouped
+{
+	Value-Digits | REQUIRED | 1
+	Exponent | OPTIONAL | 1
+}
+
+ATTRIBUTE Currency-Code     425 unsigned32
+
+ATTRIBUTE Unit-Value  445 grouped
+{
+	Value-Digits | REQUIRED | 1
+	Exponent | OPTIONAL | 1
+}
+
+ATTRIBUTE Cost-Information  423 grouped
+{
+	Unit-Value | REQUIRED | 1
+	Currency-Code | REQUIRED | 1
+	Cost-Unit | OPTIONAL | 1
+}
+
 APPLICATION 42 My Diameter Application
 
 REQUEST 92001 My-Custom-Request
@@ -234,6 +258,7 @@ REQUEST 92001 My-Custom-Request
 	Sip-Call-MSDuration | REQUIRED | 1
 	out_gw | REQUIRED | 1
 	call_cost | REQUIRED | 1
+	Cost-Information | OPTIONAL | 1
 }
 
 ANSWER 92001 My-Custom-Answer
@@ -266,7 +291,11 @@ $var(payload) = "[
 	{ \"Sip-Call-Created\": 1652372541 },
 	{ \"Sip-Call-MSDuration\": 5850 },
 	{ \"out_gw\": \"GW-774\" },
-	{ \"cost\": \"10.84\" }
+	{ \"cost\": \"10.84\" },
+	{ \"Cost-Information\": [
+		{\"Unit-Value\": [{\"Value-Digits\": 1000}]},
+		{\"Currency-Code\": 35}
+		]}
 ]";
 
 $var(rc) = dm_send_request(42, 92001, $var(payload), $var(rpl_avps));

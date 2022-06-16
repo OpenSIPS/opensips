@@ -54,6 +54,24 @@ extern int dm_store_enumval(const char *name, int value);
 #define LOG_DBG fd_log_debug
 #endif
 
+#define STR_L(s) s, strlen(s)
+#define avp_type2str(t) ( \
+	t == AVP_TYPE_OCTETSTRING ? "string" : \
+	t == AVP_TYPE_UNSIGNED64 ? "unsigned64" : \
+	t == AVP_TYPE_UNSIGNED32 ? "unsigned32" : \
+	t == AVP_TYPE_INTEGER64 ? "integer64" : \
+	t == AVP_TYPE_INTEGER32 ? "integer32" : \
+	t == AVP_TYPE_FLOAT64 ? "float64" : \
+	t == AVP_TYPE_FLOAT32 ? "float32" : \
+	t == AVP_TYPE_GROUPED ? "grouped" : ("unknown?? "#t))
+
+struct dm_avp_def {
+	char name[64 + 1];
+	int name_len;
+	enum rule_position pos;
+	int max_repeats;
+};
+
 static int dm_register_radius_avps(void)
 {
 	int i;
@@ -450,10 +468,97 @@ int register_osips_avps(void)
 }
 
 
-int parse_attr_line(char *line, ssize_t len)
+int parse_avp_def(struct dm_avp_def *avps, int *avp_count, char *line, int len)
 {
-	int attr_len = strlen("ATTRIBUTE"), avp_len, avp_code;
-	char *avp_name, *newp, *p = line, *end = p + len;
+	char *p = line, *avp_name;
+
+	avp_name = p;
+	while (*p && !isspace(*p)) { p++; len--; }
+	avps[*avp_count].name_len = p - avp_name;
+
+	if (avps[*avp_count].name_len > 64) {
+		printf("ERROR: AVP max name length exceeded (64)\n");
+		return -1;
+	}
+
+	memcpy(&avps[*avp_count].name, avp_name, avps[*avp_count].name_len);
+	avps[*avp_count].name[avps[*avp_count].name_len] = '\0';
+
+	while (isspace(*p)) { p++; len--; }
+
+	if (*p != '|')
+		goto error;
+
+	p++; len--;
+	while (isspace(*p)) { p++; len--; }
+
+	switch (*p) {
+	case 'F':
+		if (len < strlen("FIXED_HEAD") || memcmp(p, "FIXED_HEAD", 10))
+			goto error;
+
+		avps[*avp_count].pos = RULE_FIXED_HEAD;
+		p += 10;
+		len -= 10;
+		break;
+
+	case 'R':
+		if (len < strlen("REQUIRED") || memcmp(p, "REQUIRED", 8))
+			goto error;
+
+		avps[*avp_count].pos = RULE_REQUIRED;
+		p += 8;
+		len -= 8;
+		break;
+
+	case 'O':
+		if (len < strlen("OPTIONAL") || memcmp(p, "OPTIONAL", 8))
+			goto error;
+
+		avps[*avp_count].pos = RULE_OPTIONAL;
+		p += 8;
+		len -= 8;
+		break;
+
+	default:
+		printf("ERROR: bad AVP flag in: '... | %s'\n", p);
+		goto error;
+	}
+
+	while (isspace(*p)) { p++; len--; }
+
+	if (*p != '|')
+		goto error;
+
+	p++; len--;
+	while (isspace(*p)) { p++; len--; }
+
+	avps[*avp_count].max_repeats = (int)strtol(p, NULL, 10);
+	if (avps[*avp_count].max_repeats < 0) {
+		printf("ERROR: bad AVP max count: '... | %s'\n", p);
+		goto error;
+	}
+
+	LOG_DBG("AVP def: %.*s | %d | %d\n", avps[*avp_count].name_len,
+	        avps[*avp_count].name, avps[*avp_count].pos,
+	        avps[*avp_count].max_repeats);
+
+	(*avp_count)++;
+	return 0;
+
+error:
+	printf("ERROR: failed to parse line: '%s'\n", line);
+	return -1;
+}
+
+
+int parse_attr_def(char *line, FILE *fp)
+{
+	struct dm_avp_def avps[128];
+	int avp_count = 0;
+	size_t buflen = strlen(line);
+	int i, len = buflen, attr_len = strlen("ATTRIBUTE"), name_len, avp_code;
+	char *name, *nt_name, *newp, *p = line, *end = p + len;
 	enum dict_avp_basetype avp_type;
 
 	if (len < attr_len || strncasecmp(p, "ATTRIBUTE", attr_len))
@@ -466,10 +571,14 @@ int parse_attr_line(char *line, ssize_t len)
 	if (p >= end)
 		goto error;
 
-	avp_name = p; avp_len = 0;
-	while (!isspace(*p)) { p++; len--; avp_len++; }
+	name = p; name_len = 0;
+	while (!isspace(*p)) { p++; len--; name_len++; }
 	if (p >= end)
 		goto error;
+
+	nt_name = malloc(name_len + 1);
+	memcpy(nt_name, name, name_len);
+	nt_name[name_len] = '\0';
 
 	while (isspace(*p)) { p++; len--; }
 	if (p >= end)
@@ -483,26 +592,72 @@ int parse_attr_line(char *line, ssize_t len)
 	p = newp;
 
 	while (isspace(*p)) { p++; len--; }
+
 	if (p >= end) {
 		avp_type = AVP_TYPE_OCTETSTRING;
 	} else {
-		if ((len >= strlen("integer")
-		        && !strncasecmp(p, "integer", strlen("integer"))) ||
-		    (len >= strlen("unsigned32")
-		        && !strncasecmp(p, "unsigned32", strlen("unsigned32"))))
-			avp_type = AVP_TYPE_UNSIGNED32;
-		else if ((len >= strlen("string")
-		        && !strncasecmp(p, "string", strlen("string"))) ||
-		    (len >= strlen("utf8string")
-		        && !strncasecmp(p, "utf8string", strlen("utf8string"))))
+		if ((len >= strlen("utf8string") && !strncasecmp(p, STR_L("utf8string")))
+		        || (len >= strlen("string") && !strncasecmp(p, STR_L("string"))))
 			avp_type = AVP_TYPE_OCTETSTRING;
+		else if ((len >= strlen("unsigned64") && !strncasecmp(p, STR_L("unsigned64"))))
+			avp_type = AVP_TYPE_UNSIGNED64;
+		else if ((len >= strlen("unsigned") && !strncasecmp(p, STR_L("unsigned"))))
+			avp_type = AVP_TYPE_UNSIGNED32;
+		else if ((len >= strlen("integer64") && !strncasecmp(p, STR_L("integer64"))))
+			avp_type = AVP_TYPE_INTEGER64;
+		else if ((len >= strlen("integer") && !strncasecmp(p, STR_L("integer"))))
+			avp_type = AVP_TYPE_INTEGER32;
+		else if ((len >= strlen("float64") && !strncasecmp(p, STR_L("float64"))))
+			avp_type = AVP_TYPE_FLOAT64;
+		else if ((len >= strlen("float") && !strncasecmp(p, STR_L("float"))))
+			avp_type = AVP_TYPE_FLOAT32;
+		else if ((len >= strlen("grouped") && !strncasecmp(p, STR_L("grouped"))))
+			avp_type = AVP_TYPE_GROUPED;
 		else
 			goto error;
 	}
 
-	char *nt_name = malloc(avp_len + 1);
-	memcpy(nt_name, avp_name, avp_len);
-	nt_name[avp_len] = '\0';
+	if (avp_type != AVP_TYPE_GROUPED)
+		goto create_avp;
+
+	/* parse the grouped AVP definition (curly braces part) */
+
+	while (getline(&line, &buflen, fp) >= 0) {
+		p = line;
+		len = strlen(p);
+
+		while (isspace(*p)) { p++; len--; }
+
+		if (*p == '{')
+			continue;
+
+		if (*p == '}' || !strlen(p))
+			goto create_avp;
+
+		if (avp_count >= 128) {
+			printf("ERROR: max AVP count exceeded (128)\n");
+			return -1;
+		}
+
+		if (parse_avp_def(avps, &avp_count, p, len) != 0) {
+			printf("ERROR: failed to parse Grouped sub-AVP line: '%s'\n", line);
+			return -1;
+		}
+	}
+
+create_avp:;
+	struct dict_object *parent, *avp_ref, **pref;
+
+	if (avp_type == AVP_TYPE_OCTETSTRING) {
+		FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &parent);
+		pref = NULL;
+	} else if (avp_type == AVP_TYPE_GROUPED) {
+		parent = NULL;
+		pref = &avp_ref;
+	} else {
+		parent = NULL;
+		pref = NULL;
+	}
 
 	struct dict_avp_data data = {
 		avp_code, 	/* Code */
@@ -512,11 +667,26 @@ int parse_attr_line(char *line, ssize_t len)
 		AVP_FLAG_MANDATORY,			/* Fixed flag values */
 		avp_type 	/* base type of data */
 	};
-	FD_CHECK_dict_new(DICT_AVP, &data, NULL, NULL);
 
-	LOG_DBG("registered custom AVP (%s, code %d, type %s)\n",
-			nt_name, avp_code, avp_type == AVP_TYPE_UNSIGNED32 ?
-				"integer" : "string");
+	FD_CHECK_dict_new(DICT_AVP, &data, parent, pref);
+
+	for (i = 0; i < avp_count; i++) {
+		struct dict_rule_data data = {NULL, avps[i].pos,
+			(avps[i].pos == RULE_FIXED_HEAD), -1, avps[i].max_repeats};
+
+		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
+			DICT_AVP, AVP_BY_NAME, avps[i].name, &data.rule_avp, 0));
+
+		if (!data.rule_avp) {
+			printf("ERROR: failed to locate AVP: %s\n", avps[i].name);
+			return -1;
+		}
+
+		FD_CHECK_dict_new(DICT_RULE, &data, avp_ref, NULL);
+	}
+
+	LOG_DBG("registered custom AVP (%s, code %d, type %s, sub-avps: %d)\n",
+			nt_name, avp_code, avp_type2str(avp_type), avp_count);
 
 	free(nt_name);
 	return 0;
@@ -589,15 +759,10 @@ int parse_command_def(char *line, FILE *fp, int cmd_type)
 {
 	struct dict_object *cmd = NULL;
 	unsigned int cmd_code = -1;
-	char *p = line, cmd_name[128 + 1], *avp_name, *bkp, *newp;
+	char *p = line, cmd_name[128 + 1], *bkp, *newp;
 	size_t buflen = strlen(line);
 	int i, len = buflen, cmd_name_len = -1, avp_count = 0;
-	struct {
-		char name[64 + 1];
-		int name_len;
-		enum rule_position pos;
-		int max_repeats;
-	} avps[128];
+	struct dm_avp_def avps[128];
 
 	switch (cmd_type) {
 	case CMD_REQUEST:
@@ -662,77 +827,10 @@ int parse_command_def(char *line, FILE *fp, int cmd_type)
 			return -1;
 		}
 
-		avp_name = p;
-		while (*p && !isspace(*p)) { p++; len--; }
-		avps[avp_count].name_len = p - avp_name;
-
-		if (avps[avp_count].name_len > 64) {
-			printf("ERROR: AVP max name length exceeded (64)\n");
+		if (parse_avp_def(avps, &avp_count, p, len) != 0) {
+			printf("ERROR: failed to parse Command AVP line: '%s'\n", line);
 			return -1;
 		}
-
-		memcpy(&avps[avp_count].name, avp_name, avps[avp_count].name_len);
-		avps[avp_count].name[avps[avp_count].name_len] = '\0';
-
-		while (isspace(*p)) { p++; len--; }
-
-		if (*p != '|')
-			goto error;
-
-		p++; len--;
-		while (isspace(*p)) { p++; len--; }
-
-		switch (*p) {
-		case 'F':
-			if (len < strlen("FIXED_HEAD") || memcmp(p, "FIXED_HEAD", 10))
-				goto error;
-
-			avps[avp_count].pos = RULE_FIXED_HEAD;
-			p += 10;
-			len -= 10;
-			break;
-
-		case 'R':
-			if (len < strlen("REQUIRED") || memcmp(p, "REQUIRED", 8))
-				goto error;
-
-			avps[avp_count].pos = RULE_REQUIRED;
-			p += 8;
-			len -= 8;
-			break;
-
-		case 'O':
-			if (len < strlen("OPTIONAL") || memcmp(p, "OPTIONAL", 8))
-				goto error;
-
-			avps[avp_count].pos = RULE_OPTIONAL;
-			p += 8;
-			len -= 8;
-			break;
-
-		default:
-			printf("ERROR: bad AVP flag in: '... | %s'\n", p);
-			goto error;
-		}
-
-		while (isspace(*p)) { p++; len--; }
-
-		if (*p != '|')
-			goto error;
-
-		p++; len--;
-		while (isspace(*p)) { p++; len--; }
-
-		avps[avp_count].max_repeats = (int)strtol(p, NULL, 10);
-		if (avps[avp_count].max_repeats < 0) {
-			printf("ERROR: bad AVP max count: '... | %s'\n", p);
-			goto error;
-		}
-
-		LOG_DBG("AVP def: %.*s | %d | %d\n", avps[avp_count].name_len,
-		        avps[avp_count].name, avps[avp_count].pos,
-		        avps[avp_count].max_repeats);
-		avp_count++;
 	}
 
 define_req:
@@ -795,10 +893,6 @@ define_req:
 	}
 
 	return 0;
-
-error:
-	printf("ERROR-2: failed to parse line: %s\n", line);
-	return -1;
 }
 
 
@@ -827,7 +921,7 @@ int parse_extra_avps(const char *extra_avps_file)
 		if (*p == '#' || p - line >= read)
 			continue;
 
-		rc = parse_attr_line(p, read - (p - line));
+		rc = parse_attr_def(p, fp);
 		if (rc < 0) {
 			ret = -1;
 			goto out;

@@ -205,7 +205,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 {
 	aaa_message *dmsg = NULL;
 	struct dict_object *req;
-	cJSON *avps, *_avp;
+	cJSON *avps;
 	int rc;
 	char *rpl_avps;
 
@@ -243,70 +243,11 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 		goto error;
 	}
 
-	for (_avp = avps->child; _avp; _avp = _avp->next) {
-		if (_avp->type != cJSON_Object) {
-			LM_ERR("bad JSON type in Array: AVPs must be Objects ('%.*s' "
-			       "..., total: %d)\n", avp_json->len > 512 ? 512 : avp_json->len,
-			       avp_json->s, avp_json->len);
-			goto error;
-		}
-
-		cJSON *avp = _avp->child; // only work with child #0
-		struct dict_avp_data dm_avp;
-		struct dict_object *obj;
-		char *name;
-		unsigned int code;
-
-		// TODO: allow dict too
-		if (!(avp->type & (cJSON_String|cJSON_Number))) {
-			LM_ERR("bad AVP value: only String allowed ('%.*s' ..., key: %s)\n",
-		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp->string);
-			goto error;
-		}
-
-		if (_isdigit(avp->string[0])) {
-			str st;
-
-			init_str(&st, avp->string);
-			if (str2int(&st, &code) != 0) {
-				LM_ERR("bad AVP key: cannot start with a digit ('%.*s' ..., key: %s)\n",
-				   avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp->string);
-				goto error;
-			}
-
-			LM_DBG("AVP:: searching AVP by int: %d\n", code);
-			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
-				&code, &obj, ENOENT));
-			FD_CHECK(fd_dict_getval(obj, &dm_avp));
-
-			name = dm_avp.avp_name;
-		} else {
-			LM_DBG("AVP:: searching AVP by string: %s\n", avp->string);
-
-			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
-				avp->string, &obj, ENOENT));
-			FD_CHECK(fd_dict_getval(obj, &dm_avp));
-
-			name = avp->string;
-			code = dm_avp.avp_code;
-		}
-
-		aaa_map my_avp = {.name = name};
-
-		if (avp->type & cJSON_String) {
-			LM_DBG("dbg::: AVP %d (name: '%s', str-val: %s)\n", code, name, avp->valuestring);
-			if (dm_avp_add(NULL, dmsg, &my_avp, avp->valuestring,
-			        strlen(avp->valuestring), 0) != 0) {
-				LM_ERR("failed to add AVP %d, aborting request\n", code);
-				goto error;
-			}
-		} else {
-			LM_DBG("dbg::: AVP %d (name: '%s', int-val: %d)\n", code, name, avp->valueint);
-			if (dm_avp_add(NULL, dmsg, &my_avp, &avp->valueint, -1, 0) != 0) {
-				LM_ERR("failed to add AVP %d, aborting request\n", code);
-				goto error;
-			}
-		}
+	if (dm_build_avps(&((struct dm_message *)(dmsg->avpair))->avps,
+	                     avps->child) != 0) {
+		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		goto error;
 	}
 
 	rc = _dm_send_message(NULL, dmsg, NULL, &rpl_avps);
