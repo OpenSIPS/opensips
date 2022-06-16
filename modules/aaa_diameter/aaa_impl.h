@@ -99,11 +99,15 @@ struct dm_message {
 struct dm_avp {
 	struct dict_object *obj;
 	str name;
-	str value;
+	int value_type;
+	union avp_value value;
+
 	int vendor_id;
 
-	struct list_head subavps;
+	struct list_head subavps; /* only relevant for grouped AVPs */
 
+	/* an AVP either links into the Diameter message AVP list or into a grouped
+	 * AVP's list of sub-AVPs */
 	struct list_head list;
 };
 
@@ -136,6 +140,7 @@ aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
         unsigned int app_id, unsigned int cmd_code);
 int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor);
+int dm_build_avps(struct list_head *subavps, cJSON *array);
 int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
 int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
                char **rpl_avps);

@@ -60,6 +60,15 @@
 #define AAA_APP_ACCOUNTING 3
 #define AAA_APP_SIP        6
 
+#define AAA_TYPE_INT32       -1
+#define AAA_TYPE_INT64       -2
+#define AAA_TYPE_UINT32      -3
+#define AAA_TYPE_UINT64      -4
+#define AAA_TYPE_FLOAT32     -5
+#define AAA_TYPE_FLOAT64     -6
+#define AAA_TYPE_GROUPED     -7
+#define AAA_TYPE_OCTETSTRING -8
+
 /* Generic structure for an AVP */
 typedef struct _aaa_map {
 	char *name;

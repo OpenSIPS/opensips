@@ -164,8 +164,8 @@ static int dm_auth(struct dm_message *msg)
 				FD_CHECK(fd_msg_avp_new(dm_dict.SIP_AOR, 0, &avp));
 
 				memset(&val, 0, sizeof val);
-				val.os.data = (unsigned char *)dm_avp->value.s;
-				val.os.len = dm_avp->value.len;
+				val.os.data = (unsigned char *)dm_avp->value.os.data;
+				val.os.len = dm_avp->value.os.len;
 				FD_CHECK(fd_msg_avp_setvalue(avp, &val));
 				FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 				break;
@@ -203,8 +203,10 @@ static int dm_auth(struct dm_message *msg)
 
 		/* we use the SIP Call-ID in order to match
 		 * replies arriving on a separate thread */
-		if (!strcmp(dm_avp->name.s, "Acct-Session-Id"))
-			FD_CHECK(dm_add_pending_reply(&dm_avp->value, msg->reply_cond));
+		if (!strcmp(dm_avp->name.s, "Acct-Session-Id")) {
+			str callid = {(char *)dm_avp->value.os.data, dm_avp->value.os.len};
+			FD_CHECK(dm_add_pending_reply(&callid, msg->reply_cond));
+		}
 
 		if (dm_avp->vendor_id == 0) {
 			FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
@@ -222,15 +224,14 @@ static int dm_auth(struct dm_message *msg)
 
 		memset(&val, 0, sizeof val);
 
-		if (dm_avp->value.len < 0) {
-			/* it's an integer */
-			val.u32 = (unsigned int)(unsigned long)dm_avp->value.s;
+		if (dm_avp->value_type == AAA_TYPE_OCTETSTRING) {
+			val.os.data = (unsigned char *)dm_avp->value.os.data;
+			val.os.len = dm_avp->value.os.len;
 			FD_CHECK(fd_msg_avp_setvalue(avp, &val));
 			FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 		} else {
-			/* it's a string */
-			val.os.data = (unsigned char *)dm_avp->value.s;
-			val.os.len = dm_avp->value.len;
+			/* it's an integer */
+			val.u32 = dm_avp->value.u32;
 			FD_CHECK(fd_msg_avp_setvalue(avp, &val));
 			FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 		}
@@ -315,17 +316,17 @@ static int dm_acct(struct dm_message *msg)
 			if (str_match(&dm_avp->name, _str("Event-Timestamp"))) {
 
 				/* did the upper module pass an UNIX timestamp or NTP bytes? */
-				if (dm_avp->value.len >= 0) {
-					if (dm_avp->value.len != 4) {
+				if (dm_avp->value.os.len >= 0) {
+					if (dm_avp->value.os.len != 4) {
 						LM_BUG("Event-Timestamp must have 4 octets (%d given)",
-						       dm_avp->value.len);
+						       (int)dm_avp->value.os.len);
 						continue;
 					}
 
-					memcpy(bytes, dm_avp->value.s, dm_avp->value.len);
+					memcpy(bytes, dm_avp->value.os.data, dm_avp->value.os.len);
 					have_bytes = 1;
 				} else {
-					ts = (time_t)dm_avp->value.s;
+					ts = (time_t)dm_avp->value.i32;
 					LM_DBG("found Event-Timestamp AVP as UNIX ts: %lu\n", ts);
 					break;
 				}
@@ -378,15 +379,14 @@ static int dm_acct(struct dm_message *msg)
 		FD_CHECK(fd_msg_avp_new(obj, 0, &avp));
 
 		memset(&val, 0, sizeof val);
-		if (dm_avp->value.len < 0) {
-			val.u32 = (unsigned int)(unsigned long)dm_avp->value.s;
-			LM_DBG("appending AVP: %s: int(%lu)\n",
-					dm_avp->name.s, (unsigned long)dm_avp->value.s);
-		} else {
-			val.os.data = (unsigned char *)dm_avp->value.s;
-			val.os.len = dm_avp->value.len;
+		if (dm_avp->value_type == AAA_TYPE_OCTETSTRING) {
+			val.os = dm_avp->value.os;
 			LM_DBG("appending AVP: %s: str(%.*s)\n",
-					dm_avp->name.s, dm_avp->value.len, dm_avp->value.s);
+					dm_avp->name.s, (int)val.os.len, val.os.data);
+		} else {
+			val.i32 = dm_avp->value.i32;
+			LM_DBG("appending AVP: %s: int(%ld)\n",
+					dm_avp->name.s, (long)val.i32);
 		}
 		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
@@ -397,12 +397,59 @@ static int dm_acct(struct dm_message *msg)
 }
 
 
+static int dm_pack_avps(void *root, struct list_head *subavps)
+{
+	struct list_head *it;
+	struct dm_avp *dm_avp;
+	struct avp *subavp;
+	union avp_value val;
+
+	list_for_each (it, subavps) {
+		struct dict_object *obj;
+		struct dict_avp_data savp_data;
+
+		dm_avp = list_entry(it, struct dm_avp, list);
+
+		/* each AVP must be recognized, otherwise we abort the request */
+		FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
+		FD_CHECK(fd_msg_avp_new(obj, 0, &subavp));
+		FD_CHECK(fd_dict_getval(obj, &savp_data));
+
+		memset(&val, 0, sizeof val);
+
+		if (savp_data.avp_basetype == AVP_TYPE_GROUPED) {
+			if (dm_pack_avps(subavp, &dm_avp->subavps) != 0) {
+				LM_ERR("failed to fill in grouped sub-AVP %s (%u)\n",
+				       savp_data.avp_name, savp_data.avp_code);
+				return -1;
+			}
+			LM_DBG("appending AVP: %s (%u): grouped\n",
+					savp_data.avp_name, savp_data.avp_code);
+		} else if (savp_data.avp_basetype == AVP_TYPE_OCTETSTRING) {
+			val.os = dm_avp->value.os;
+			LM_DBG("appending AVP: %s (%u): str(%.*s)\n",
+					savp_data.avp_name, savp_data.avp_code,
+			        (int)val.os.len, val.os.data);
+			FD_CHECK(fd_msg_avp_setvalue(subavp, &val));
+		} else {
+			val = dm_avp->value;
+
+			LM_DBG("appending AVP: %s (%u): numeric(%u)\n",
+					savp_data.avp_name, savp_data.avp_code, val.i32);
+			FD_CHECK(fd_msg_avp_setvalue(subavp, &val));
+		}
+
+		FD_CHECK(fd_msg_avp_add(root, MSG_BRW_LAST_CHILD, subavp));
+	}
+
+	return 0;
+}
+
+
 static int dm_custom_req(struct dm_message *msg)
 {
 	struct msg *dmsg;
 	struct avp *avp;
-	struct dm_avp *dm_avp;
-	struct list_head *it;
 	union avp_value val;
 	struct dict_object *req; /* a custom Diameter request */
 
@@ -418,28 +465,10 @@ static int dm_custom_req(struct dm_message *msg)
 		h->msg_appl = msg->app_id;
 	}
 
-	list_for_each (it, &msg->avps) {
-		struct dict_object *obj;
-
-		dm_avp = list_entry(it, struct dm_avp, list);
-
-		/* each AVP must be recognized, otherwise we abort the request */
-		FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
-		FD_CHECK(fd_msg_avp_new(obj, 0, &avp));
-
-		memset(&val, 0, sizeof val);
-		if (dm_avp->value.len < 0) {
-			val.u32 = (unsigned int)(unsigned long)dm_avp->value.s;
-			LM_DBG("appending AVP: %s: int(%lu)\n",
-					dm_avp->name.s, (unsigned long)dm_avp->value.s);
-		} else {
-			val.os.data = (unsigned char *)dm_avp->value.s;
-			val.os.len = dm_avp->value.len;
-			LM_DBG("appending AVP: %s: str(%.*s)\n",
-					dm_avp->name.s, dm_avp->value.len, dm_avp->value.s);
-		}
-		FD_CHECK(fd_msg_avp_setvalue(avp, &val));
-		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
+	/* include all AVPs from the input JSON */
+	if (dm_pack_avps(dmsg, &msg->avps) != 0) {
+		LM_ERR("failed to pack AVPs\n");
+		return -1;
 	}
 
 	/* Transaction-Id */
