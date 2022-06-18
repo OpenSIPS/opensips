@@ -471,7 +471,7 @@ void set_dlg_state(b2b_dlg_t* dlg, int meth)
 			dlg->state= B2B_TERMINATED;
 			break;
 		case METHOD_ACK:
-			if (dlg->state != B2B_MODIFIED || !dlg->uac_tran)
+			if (dlg->state == B2B_CONFIRMED)
 				dlg->state= B2B_ESTABLISHED;
 			break;
 		default:
