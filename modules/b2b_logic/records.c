@@ -885,7 +885,9 @@ int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs,
 		len += hdrs[i]->len;
 
 	if(init_callid_hdr.len && msg->callid)
-		len+= init_callid_hdr.len + msg->callid->len;
+		len += init_callid_hdr.len +
+			(int)(msg->callid->name.s+msg->callid->len-msg->callid->body.s) +
+			3; /* ": " + \0 */
 
 	if(custom_hdrs && custom_hdrs->s && custom_hdrs->len)
 	{
