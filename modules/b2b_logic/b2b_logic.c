@@ -1613,44 +1613,51 @@ error:
 	return NULL;
 }
 
-/* get current tuple from the b2b_etities context */
-b2bl_tuple_t *get_entities_ctx_tuple(struct b2b_context *ctx)
+static b2bl_tuple_t *ctx_search_tuple(struct b2b_context *ctx, int *locked)
 {
 	b2bl_tuple_t *tuple;
-	unsigned int hash_index, local_index;
 
-	tuple = ctx->data;
+	*locked = 1;
+	if (b2bl_htable[ctx->hash_index].locked_by != process_no)
+		lock_get(&b2bl_htable[ctx->hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(ctx->hash_index, ctx->local_index);
 	if (!tuple) {
-		/* find tuple based on the tuple key from the b2b_etities context */
-		if (b2bl_parse_key(&ctx->b2bl_key, &hash_index, &local_index) < 0) {
-			LM_ERR("Failed to parse key [%.*s]\n", ctx->b2bl_key.len,
-				ctx->b2bl_key.s);
-			return NULL;
-		}
-
-		if (b2bl_htable[hash_index].locked_by != process_no)
-			lock_get(&b2bl_htable[hash_index].lock);
-
-		tuple = b2bl_search_tuple_safe(hash_index, local_index);
-		if (!tuple) {
-			LM_ERR("Tuple [%.*s] not found\n", ctx->b2bl_key.len,
-				ctx->b2bl_key.s);
-			if (b2bl_htable[hash_index].locked_by != process_no)
-				lock_release(&b2bl_htable[hash_index].lock);
-			return NULL;
-		}
-
-		/* save it in context */
-		ctx->data = tuple;
-
-		if (b2bl_htable[hash_index].locked_by != process_no)
-			lock_release(&b2bl_htable[hash_index].lock);
+		LM_ERR("Tuple [%u, %u] not found\n", ctx->hash_index, ctx->local_index);
+		if (b2bl_htable[ctx->hash_index].locked_by != process_no)
+			lock_release(&b2bl_htable[ctx->hash_index].lock);
+		locked = 0;
+		return NULL;
 	}
 
 	return tuple;
 }
 
-b2bl_tuple_t *get_ctx_tuple(void)
+/* get current tuple from the b2b_etities context */
+b2bl_tuple_t *get_entities_ctx_tuple(struct b2b_context *ctx, int *locked)
+{
+	b2bl_tuple_t *tuple;
+
+	if (!ctx->init) {
+		/* find tuple based on the tuple key from the b2b_etities context */
+		if (b2bl_parse_key(&ctx->b2bl_key,
+			&ctx->hash_index, &ctx->local_index) < 0) {
+			LM_ERR("Failed to parse key [%.*s]\n", ctx->b2bl_key.len,
+				ctx->b2bl_key.s);
+			return NULL;
+		}
+
+		tuple = ctx_search_tuple(ctx, locked);
+		if (tuple)
+			ctx->init = 1;
+	} else {
+		tuple = ctx_search_tuple(ctx, locked);
+	}
+
+	return tuple;
+}
+
+b2bl_tuple_t *get_ctx_tuple(int *locked)
 {
 	b2bl_tuple_t *tuple;
 	struct b2b_context *ctx;
@@ -1666,10 +1673,13 @@ b2bl_tuple_t *get_ctx_tuple(void)
 			LM_DBG("b2b_logic key not set in b2b_entities context\n");
 			/* we are in the context of a received message that doesn't
 			 * belonging to an ongoing b2b dialog (yet) */
-			return ctx->data;
+			if (!ctx->init)
+				return NULL;
+			else
+				return ctx_search_tuple(ctx, locked);
 		}
 
-		tuple = get_entities_ctx_tuple(ctx);
+		tuple = get_entities_ctx_tuple(ctx, locked);
 		if (!tuple) {
 			LM_ERR("Failed to get tuple [%.*s] from b2b context\n",
 				ctx->b2bl_key.len, ctx->b2bl_key.s);
@@ -1687,8 +1697,9 @@ b2bl_tuple_t *get_ctx_tuple(void)
 int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
 	b2bl_tuple_t *tuple;
+	int locked = 0;
 
-	tuple = get_ctx_tuple();
+	tuple = get_ctx_tuple(&locked);
 	if (!tuple) {
 		LM_DBG("Unable to get the tuple from the current context\n");
 		return pv_get_null(msg, param, res);
@@ -1697,14 +1708,18 @@ int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	res->flags = PV_VAL_STR;
 	res->rs = *tuple->key;
 
+	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
+		lock_release(&b2bl_htable[tuple->hash_index].lock);
+
 	return 0;
 }
 
 int pv_get_scenario(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
 	b2bl_tuple_t *tuple;
+	int locked = 0;
 
-	tuple = get_ctx_tuple();
+	tuple = get_ctx_tuple(&locked);
 	if (!tuple) {
 		LM_DBG("Unable to get the tuple from the current context\n");
 		return pv_get_null(msg, param, res);
@@ -1712,6 +1727,9 @@ int pv_get_scenario(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 
 	res->flags = PV_VAL_STR;
 	res->rs = *tuple->scenario_id;
+
+	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
+		lock_release(&b2bl_htable[tuple->hash_index].lock);
 
 	return 0;
 }
@@ -1778,14 +1796,15 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	b2b_dlginfo_t dummy_dlginfo;
 	str callid;
 	int i;
+	int locked = 0;
 
-	tuple = get_ctx_tuple();
+	tuple = get_ctx_tuple(&locked);
 	if (!tuple) {
 		LM_ERR("Failed to get the tuple from the current context\n");
 		return pv_get_null(msg, param, res);
 	}
 
-	if (b2bl_htable[tuple->hash_index].locked_by != process_no)
+	if (!locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
 		lock_get(&b2bl_htable[tuple->hash_index].lock);
 
 	curr_entities[0] = tuple->bridge_entities[0];
@@ -2042,7 +2061,7 @@ int pv_parse_ctx_name(pv_spec_p sp, const str *in)
 	return 0;
 }
 
-int get_ctx_vals(struct b2b_ctx_val ***vals, b2bl_tuple_t **tuple)
+int get_ctx_vals(struct b2b_ctx_val ***vals, b2bl_tuple_t **tuple, int *locked)
 {
 	struct b2b_context *ctx;
 
@@ -2054,16 +2073,18 @@ int get_ctx_vals(struct b2b_ctx_val ***vals, b2bl_tuple_t **tuple)
 		}
 
 		if (!ctx->b2bl_key.s) {
-			if (!ctx->data) {
+			if (!ctx->init) {
 				LM_DBG("tuple not created yet\n");
 				/* context values are saved in a temporary global variable */
 				*vals = &local_ctx_vals;
 				return 0;
 			} else {
-				*tuple = ctx->data;
+				*tuple = ctx_search_tuple(ctx, locked);
+				if (*tuple == NULL)
+					return -1;
 			}
 		} else {
-			*tuple = get_entities_ctx_tuple(ctx);
+			*tuple = get_entities_ctx_tuple(ctx, locked);
 			if (*tuple == NULL) {
 				LM_ERR("Failed to get tuple [%.*s] from b2b context\n",
 					ctx->b2bl_key.len, ctx->b2bl_key.s);
@@ -2083,18 +2104,19 @@ int pv_get_ctx(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 {
 	struct b2b_ctx_val **vals;
 	b2bl_tuple_t *tuple = NULL;
+	int locked = 0;
 
 	if (!param || !param->pvn.u.isname.name.s.s) {
 		LM_ERR("Bad parameters!\n");
 		return -1;
 	}
 
-	if (get_ctx_vals(&vals, &tuple) < 0) {
+	if (get_ctx_vals(&vals, &tuple, &locked) < 0) {
 		LM_ERR("Failed to get context values list\n");
 		return pv_get_null(msg, param, res);
 	}
 
-	if (tuple && b2bl_htable[tuple->hash_index].locked_by != process_no)
+	if (tuple && !locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
 		lock_get(&b2bl_htable[tuple->hash_index].lock);
 
 	if (fetch_ctx_value(*vals, &param->pvn.u.isname.name.s, &param->pvv) != 0) {
@@ -2115,18 +2137,19 @@ int pv_set_ctx(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val)
 {
 	struct b2b_ctx_val **ctx_vals = NULL;
 	b2bl_tuple_t *tuple = NULL;
+	int locked = 0;
 
 	if (!param || !param->pvn.u.isname.name.s.s) {
 		LM_ERR("Bad parameters!\n");
 		return -1;
 	}
 
-	if (get_ctx_vals(&ctx_vals, &tuple) < 0) {
+	if (get_ctx_vals(&ctx_vals, &tuple, &locked) < 0) {
 		LM_ERR("Failed to get context values list\n");
 		return -1;
 	}
 
-	if (tuple && b2bl_htable[tuple->hash_index].locked_by != process_no)
+	if (tuple && !locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
 		lock_get(&b2bl_htable[tuple->hash_index].lock);
 
 	if (val==NULL || val->flags&(PV_VAL_NONE|PV_VAL_NULL|PV_VAL_EMPTY)) {
