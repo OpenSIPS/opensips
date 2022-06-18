@@ -1762,6 +1762,9 @@ error:
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index)
 {
+	str reply_text = str_init("Request Timeout");
+	struct to_body *pto;
+
 	if(dlg->prev == NULL)
 	{
 		htable[hash_index].first = dlg->next;
@@ -1782,8 +1785,31 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 	if(dlg->uac_tran)
 		tmb.unref_cell(dlg->uac_tran);
 
-	if(dlg->uas_tran)
+	if(dlg->uas_tran) {
 		tmb.unref_cell(dlg->uas_tran);
+
+		pto = get_to(dlg->uas_tran->uas.request);
+		if (pto == NULL || pto->error != PARSE_OK) {
+			LM_ERR("'To' header COULD NOT be parsed\n");
+		} else {
+			if (tmb.t_reply_with_body(dlg->uas_tran, 408, &reply_text, 0, 0,
+				&pto->tag_value) < 0)
+				LM_ERR("Failed to send 408 reply\n");
+		}
+	}
+
+	if (dlg->update_tran) {
+		tmb.unref_cell(dlg->update_tran);
+
+		pto = get_to(dlg->update_tran->uas.request);
+		if (pto == NULL || pto->error != PARSE_OK) {
+			LM_ERR("'To' header COULD NOT be parsed\n");
+		} else {
+			if (tmb.t_reply_with_body(dlg->update_tran, 408, &reply_text, 0, 0,
+				&pto->tag_value) < 0)
+				LM_ERR("Failed to send 408 reply\n");
+		}
+	}
 
 	if(dlg->ack_sdp.s)
 		shm_free(dlg->ack_sdp.s);
