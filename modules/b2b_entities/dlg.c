@@ -1594,7 +1594,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		{
 			if(code < 300)
 				dlg->state = B2B_CONFIRMED;
-			else if (!dlg->uac_tran)
+			else if (!dlg->uac_tran && dlg->state != B2B_MODIFIED)
 				dlg->state= B2B_TERMINATED;
 			UPDATE_DBFLAG(dlg);
 		}
