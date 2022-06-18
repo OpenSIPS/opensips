@@ -3100,7 +3100,9 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Failed to get b2b context\n");
 		goto error;
 	}
-	ctx->data = tuple;
+	ctx->init = 1;
+	ctx->hash_index = hash_index;
+	ctx->local_index = tuple->id;
 
 	/* if it will not be confirmed -> delete */
 	if (params->init_timeout == 0)
@@ -3442,7 +3444,9 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Failed to get b2b context\n");
 		goto error;
 	}
-	ctx->data = tuple;
+	ctx->init = 1;
+	ctx->hash_index = hash_index;
+	ctx->local_index = tuple->id;
 
 	if (new_entities_no != MAX_BRIDGE_ENT-1) {
 		LM_ERR("Two bridge entities required!\n");
@@ -4937,7 +4941,9 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 		LM_ERR("Failed to get b2b context\n");
 		goto error;
 	}
-	ctx->data = tuple;
+	ctx->init = 1;
+	ctx->hash_index = hash_index;
+	ctx->local_index = local_index;
 
 	if(entity_no!=0 && entity_no!=1)
 	{
