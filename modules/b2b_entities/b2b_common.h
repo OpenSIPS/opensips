@@ -31,7 +31,9 @@
 
 struct b2b_context {
 	str b2bl_key;
-	void *data;
+	unsigned int hash_index;
+	unsigned int local_index;
+	int init;
 };
 
 #endif
