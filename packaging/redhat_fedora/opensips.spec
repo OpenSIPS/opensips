@@ -153,6 +153,21 @@ and two timestamps describing a validation interval. Multiple
 JWT secrets can point to the same JWT profile.
 %endif
 
+%package  auth-modules
+Summary:  Authentication interfaces for OpenSIPS
+Group:    System Environment/Daemons
+Requires: %{name} = %{version}-%{release}
+
+%description  auth-modules
+OpenSIPS is a very fast and flexible SIP (RFC3261)
+server. Written entirely in C, OpenSIPS can handle thousands calls
+per second even on low-budget hardware.
+.
+This package provides the modules that are being used to provide
+SIP authentication in OpenSIPS. It consists of both the
+authentication interface (the auth module), as well as the UAC
+authentication module (uac_auth).
+
 %package  berkeley-bin
 Summary:  Berkeley Database module for OpenSIPS - helper program
 Group:    System Environment/Daemons
@@ -1039,9 +1054,7 @@ fi
 
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
-%{_libdir}/opensips/modules/auth.so
 %{_libdir}/opensips/modules/auth_aaa.so
-%{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/avpops.so
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
@@ -1139,7 +1152,6 @@ fi
 
 %doc docdir/README.acc
 %doc docdir/README.alias_db
-%doc docdir/README.auth
 %doc docdir/README.auth_aaa
 %doc docdir/README.auth_db
 %doc docdir/README.avpops
@@ -1228,7 +1240,6 @@ fi
 %doc docdir/README.tm
 %doc docdir/README.topology_hiding
 %doc docdir/README.uac
-%doc docdir/README.uac_auth
 %doc docdir/README.uac_redirect
 %doc docdir/README.uac_registrant
 %doc docdir/README.userblacklist
@@ -1239,6 +1250,12 @@ fi
 %{_libdir}/opensips/modules/auth_jwt.so
 %doc docdir/README.auth_jwt
 %endif
+
+%files auth-modules
+%{_libdir}/opensips/modules/auth.so
+%{_libdir}/opensips/modules/uac_auth.so
+%doc docdir/README.auth
+%doc docdir/README.uac_auth
 
 %files berkeley-bin
 %{_sbindir}/bdb_recover

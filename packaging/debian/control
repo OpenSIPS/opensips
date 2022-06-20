@@ -53,6 +53,7 @@ Architecture: any
 Multi-Arch: foreign
 Depends: adduser, python | python-is-python3, ${misc:Depends}, ${shlibs:Depends}
 Suggests: opensips-auth-jwt-module,
+          opensips-auth-modules,
           opensips-berkeley-module,
           opensips-carrierroute-module,
           opensips-cgrates-module,
@@ -745,6 +746,7 @@ Package: opensips-msrp-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
+         opensips-auth-modules (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: Implementation of the MSRP protocol
@@ -753,3 +755,19 @@ Description: Implementation of the MSRP protocol
  per second even on low-budget hardware.
  .
  This package provides the MSRP protocol support for OpenSIPS.
+
+Package: opensips-auth-modules
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: Authentication interfaces for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the modules that are being used to provide
+ SIP authentication in OpenSIPS. It consists of both the
+ authentication interface (the auth module), as well as the UAC
+ authentication module (uac_auth).
