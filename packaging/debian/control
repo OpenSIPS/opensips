@@ -79,7 +79,7 @@ Suggests: opensips-auth-jwt-module,
           opensips-postgres-module,
           opensips-presence-modules,
           opensips-prometheus-module,
-          opensips-python-module
+          opensips-python-module,
           opensips-rabbitmq-modules,
           opensips-radius-modules,
           opensips-redis-module,
