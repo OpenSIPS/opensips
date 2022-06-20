@@ -61,21 +61,25 @@ Suggests: opensips-auth-jwt-module,
           opensips-cpl-module,
           opensips-dbhttp-module,
           opensips-dialplan-module,
+          opensips-diameter-module,
           opensips-emergency-module,
           opensips-geoip-module,
           opensips-http-modules,
           opensips-identity-module,
           opensips-jabber-module,
           opensips-json-module,
+          opensips-kafka-module,
           opensips-ldap-modules,
           opensips-lua-module,
           opensips-memcached-module,
+          opensips-mongodb-module,
           opensips-msrp-modules,
           opensips-mysql-module,
-          opensips-mongodb-module,
           opensips-perl-modules,
           opensips-postgres-module,
           opensips-presence-modules,
+          opensips-prometheus-module,
+          opensips-python-module,
           opensips-rabbitmq-modules,
           opensips-radius-modules,
           opensips-redis-module,
@@ -87,10 +91,13 @@ Suggests: opensips-auth-jwt-module,
           opensips-sqlite-module,
           opensips-stir-shaken-module,
           opensips-tls-module,
-          opensips-wss-module,
+          opensips-tls-openssl-module,
+          opensips-tls-wolfssl-module,
           opensips-tlsmgm-module,
           opensips-unixodbc-module,
           opensips-uuid-module,
+          opensips-wss-module,
+          opensips-xml-module,
           opensips-xmlrpc-module,
           opensips-xmpp-module
 Description: very fast and configurable SIP server
@@ -111,200 +118,60 @@ Description: very fast and configurable SIP server
  This package contains the main OpenSIPS binary along with the principal modules
  and support binaries including opensipsmc configuration tool.
 
-Package: opensips-dbg
-Architecture: any
-Multi-Arch: same
-Section: debug
-Depends: opensips (= ${binary:Version}), ${misc:Depends}
-Description: very fast and configurable SIP server [debug symbols]
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package contains the debugging symbols for the OpenSIPS binaries and
- modules. You only need to install it if you need to debug OpenSIPS.
-
-Package: opensips-mysql-module
+Package: opensips-auth-jwt-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
-Description: MySQL database connectivity module for OpenSIPS
+Description: JSON Web Tokens authentication module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the MySQL database driver for OpenSIPS.
+ The module implements authentication over JSON Web Tokens. In
+ some cases ( ie. WebRTC ) the user authenticates on another
+ layer ( other than SIP ), so it makes no sense to
+ double-authenticate it on the SIP layer. Thus, the SIP client
+ will simply present the JWT auth token it received from the
+ server, and pass it on to OpenSIPS which will use that for
+ authentication purposes. It relies on two DB tables, one
+ containing JWT profiles ( a profile name and it's SIP username
+ associated to it ) and one containing JWT secrets. Each secret
+ has a corresponding profile, the KEY used for signing the JWT
+ and two timestamps describing a validation interval. Multiple
+ JWT secrets can point to the same JWT profile.
 
-Package: opensips-postgres-module
+Package: opensips-auth-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
-         postgresql-client,
          ${misc:Depends},
          ${shlibs:Depends}
-Description: PostgreSQL database connectivity module for OpenSIPS
+Description: Authentication interfaces for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the PostgreSQL database driver for OpenSIPS.
+ This package provides the modules that are being used to provide
+ SIP authentication in OpenSIPS. It consists of both the
+ authentication interface (the auth module), as well as the UAC
+ authentication module (uac_auth).
 
-Package: opensips-sqlite-module
+Package: opensips-berkeley-bin
 Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SQLite database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SQLite database driver for OpenSIPS.
-
-Package: opensips-jabber-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Jabber gateway module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SIP to Jabber translator module for OpenSIPS.
-
-Package: opensips-cpl-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: CPL module (CPL interpreter engine) for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a CPL (Call Processing Language) interpreter for
- OpenSIPS, turning OpenSIPS into a CPL server (storage and interpreter).
-
-Package: opensips-radius-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Radius modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the RADIUS driver for the AAA API from OpenSIPS.
-
-Package: opensips-diameter-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Diameter module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a DIAMETER driver for the AAA API from OpenSIPS.
-
-Package: opensips-unixodbc-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: unixODBC database connectivity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the unixODBC database driver for OpenSIPS.
-
-Package: opensips-presence-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SIMPLE presence modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides several OpenSIPS modules for implementing presence
- server and presence user agent for RICH presence, registrar-based presence,
- external triggered presence and XCAP support.
-
-Package: opensips-uuid-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: UUID (Universally Unique Identifier) generator for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a UUID generator for the OpenSIPS script.
-
-Package: opensips-xmlrpc-module
-Architecture: any
+Multi-Arch: foreign
 Depends: opensips (= ${binary:Version}),
-         opensips-http-modules (= ${binary:Version}),
-         ${shlibs:Depends}, ${misc:Depends}
-Multi-Arch: same
-Description: XMLRPC support for OpenSIPS's Management Interface
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the XMLRPC transport implementation for OpenSIPS's
- Management Interface.
-
-Package: opensips-perl-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Perl extensions and database driver for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an interface for OpenSIPS to write Perl extensions and
- the db_perlvdb database driver for OpenSIPS.
-
-Package: opensips-snmpstats-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         snmpd,
          ${misc:Depends},
          ${shlibs:Depends}
-Description: SNMP AgentX subagent module for OpenSIPS
+Description: Berkeley Database module for OpenSIPS - helper program
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the snmpstats module for OpenSIPS. This module acts
- as an AgentX subagent which connects to a master agent.
-
-Package: opensips-xmpp-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: XMPP gateway module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SIP to XMPP IM translator module for OpenSIPS.
-
-Package: opensips-carrierroute-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Carrierroute module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the carrierroute module for OpenSIPS, an integrated
- solution for routing, balancing and blacklisting.
+ This package provides the berkeley database module for OpenSIPS, a
+ high-performance embedded DB kernel. You should normally install
+ opensips-berkeley-module and not this package directly.
 
 Package: opensips-berkeley-module
 Architecture: any
@@ -322,74 +189,68 @@ Description: Berkeley Database module for OpenSIPS
  high-performance embedded DB kernel. All database tables are stored
  in files, no additional server is necessary.
 
-Package: opensips-berkeley-bin
+Package: opensips-carrierroute-module
 Architecture: any
-Multi-Arch: foreign
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Carrierroute module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the carrierroute module for OpenSIPS, an integrated
+ solution for routing, balancing and blacklisting.
+
+Package: opensips-cgrates-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: CGRateS connector for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides a connnector to the CGRateS rating/billing engine.
+
+Package: opensips-compression-module
+Architecture: any
+Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
+         zlib1g,
          ${misc:Depends},
          ${shlibs:Depends}
-Description: Berkeley Database module for OpenSIPS - helper program
+Description: Headers and body compression module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the berkeley database module for OpenSIPS, a
- high-performance embedded DB kernel. You should normally install
- opensips-berkeley-module and not this package directly.
+ This package provides the compression module, that is able to compress
+ SIP headers and body, as  well as shrink the size of a SIP package.
 
-Package: opensips-ldap-modules
+Package: opensips-cpl-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: LDAP modules for OpenSIPS
+Description: CPL module (CPL interpreter engine) for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the ldap and h350 modules for OpenSIPS, enabling LDAP
- queries from the OpenSIPS config and storage of SIP account data in an LDAP
- directory.
+ This package provides a CPL (Call Processing Language) interpreter for
+ OpenSIPS, turning OpenSIPS into a CPL server (storage and interpreter).
 
-Package: opensips-geoip-module
+Package: opensips-dbg
 Architecture: any
 Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
+Section: debug
+Depends: opensips (= ${binary:Version}), ${misc:Depends}
+Description: very fast and configurable SIP server [debug symbols]
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This module is a lightweight wrapper for the MaxMind GeoIP API.
- It adds IP address-to-location lookup capability to OpenSIPS
- scripts. Lookups are executed against the freely-available GeoLite City
- database; and the non-free GeoIP City database is drop-in
- compatible   Lookups are executed against the freely-available GeoLite City
- database; and the non-free GeoIP City database is drop-in compatible
-
-Package: opensips-regex-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: PCRE regexp modules for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a module for matching operations against regular
- expressions using the powerful PCRE library. By default, OpenSIPS support
- sed-like regular expressions; PCRE library brings perl-like regular
- expressions.
-
-Package: opensips-identity-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SIP Identity module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides support for SIP Identity (see RFC 4474).
+ This package contains the debugging symbols for the OpenSIPS binaries and
+ modules. You only need to install it if you need to debug OpenSIPS.
 
 Package: opensips-dbhttp-module
 Architecture: any
@@ -415,87 +276,45 @@ Description: Generic string translation module for OpenSIPS
  translations based on matching and replacement rules. It can be used to
  manipulate R-URI or a PV and to translated to a new format/value.
 
-Package: opensips-memcached-module
+Package: opensips-diameter-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a memcached server
+Description: Diameter module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides an implementation of a cache system designed to work
- with a memcached server. It uses libmemcached client library to connect to
- several memcached servers that store data. It registers the three functions for
- storing, fetching and removing a value to the core memcache management
- interface.
+ This package provides a DIAMETER driver for the AAA API from OpenSIPS.
 
-Package: opensips-json-module
+Package: opensips-emergency-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Support for JSON handling in OpenSIPS script
+Description: Emergency call module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package introduces a new type of variable that provides both
- serialization and de-serialization from JSON format. The script variable
- provides ways to access (from script) objects and arrays to add,replace or
- delete values from the script.
+ The emergency module provides emergency call treatment for OpenSIPS, following
+ the architecture i2 specification of the American entity NENA. (National
+ Emergency Number Association).
 
-Package: opensips-xml-module
+Package: opensips-geoip-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Support for XML documents handling in OpenSIPS script
+Description: IP address-to-location looku (MaxMind GeoIP API) for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package introduces a new type of variable that provides both
- serialization and de-serialization from a XML document. The script variable
- provides ways to access (from script) objects and arrays to add, replace or
- delete values from the script.
-
-Package: opensips-redis-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a Redis server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an implementation of a cache system designed to
- work with a Redis server. It uses hiredis client library to connect
- to either a single Redis server instance, or to a Redis Server inside
- a Redis Cluster. It uses the Key-Value interface exported from the core.
-
-Package: opensips-rabbitmq-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a RabbitMQ server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the implementation of a RabbitMQ client for the Event
- Interface. It is used to send AMQP messages to a RabbitMQ server each time
- the Event Interface triggers an event subscribed for. It also provides a
- module to publish RabbitMQ messages to a RabbitMQ server.
-
-Package: opensips-lua-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Lua extensions for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides an interface for OpenSIPS to utilize Lua extensions.
+ This module is a lightweight wrapper for the MaxMind GeoIP API.
+ It adds IP address-to-location lookup capability to OpenSIPS
+ scripts. Lookups are executed against the freely-available GeoLite City
+ database; and the non-free GeoIP City database is drop-in
+ compatible   Lookups are executed against the freely-available GeoLite City
+ database; and the non-free GeoIP City database is drop-in compatible
 
 Package: opensips-http-modules
 Architecture: any
@@ -512,44 +331,338 @@ Description: HTTP transport layer and Management Interface for OpenSIPS
  This package provides an HTTP transport layer and Management Interface for
  OpenSIPS.
 
-Package: opensips-compression-module
+Package: opensips-identity-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: SIP Identity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides support for SIP Identity (see RFC 4474).
+
+Package: opensips-jabber-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Jabber gateway module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SIP to Jabber translator module for OpenSIPS.
+
+Package: opensips-json-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Support for JSON handling in OpenSIPS script
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package introduces a new type of variable that provides both
+ serialization and de-serialization from JSON format. The script variable
+ provides ways to access (from script) objects and arrays to add,replace or
+ delete values from the script.
+
+Package: opensips-kafka-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Implementation of an Apache Kafka producer
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module is an implementation of an Apache Kafka producer.
+ It serves as a transport backend for the Event Interface and
+ also provides a stand-alone connector to be used from the
+ OpenSIPS script in order to publish messages to Kafka brokers.
+
+Package: opensips-ldap-modules
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: LDAP modules for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the ldap and h350 modules for OpenSIPS, enabling LDAP
+ queries from the OpenSIPS config and storage of SIP account data in an LDAP
+ directory.
+
+Package: opensips-lua-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Lua extensions for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an interface for OpenSIPS to utilize Lua extensions.
+
+Package: opensips-memcached-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Interface module to interact with a memcached server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an implementation of a cache system designed to work
+ with a memcached server. It uses libmemcached client library to connect to
+ several memcached servers that store data. It registers the three functions for
+ storing, fetching and removing a value to the core memcache management
+ interface.
+
+Package: opensips-mongodb-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Interface module to interact with a MongoDB server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module is an implementation of a cache system designed to work with
+ MongoDB servers.
+
+Package: opensips-msrp-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
-         zlib1g,
+         opensips-auth-modules (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
-Description: Headers and body compression module for OpenSIPS
+Description: Implementation of the MSRP protocol
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the compression module, that is able to compress
- SIP headers and body, as  well as shrink the size of a SIP package.
+ This package provides the MSRP protocol support for OpenSIPS.
 
-Package: opensips-emergency-module
+Package: opensips-mysql-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: MySQL database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the MySQL database driver for OpenSIPS.
+
+Package: opensips-perl-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Emergency call module for OpenSIPS
+Description: Perl extensions and database driver for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- The emergency module provides emergency call treatment for OpenSIPS, following
- the architecture i2 specification of the American entity NENA. (National
- Emergency Number Association).
+ This package provides an interface for OpenSIPS to write Perl extensions and
+ the db_perlvdb database driver for OpenSIPS.
 
-Package: opensips-tlsmgm-module
+Package: opensips-postgres-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         postgresql-client,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: PostgreSQL database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the PostgreSQL database driver for OpenSIPS.
+
+Package: opensips-presence-modules
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: TLS management module for OpenSIPS
+Description: SIMPLE presence modules for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides support for TLS management for OpenSIPS.
+ This package provides several OpenSIPS modules for implementing presence
+ server and presence user agent for RICH presence, registrar-based presence,
+ external triggered presence and XCAP support.
+
+Package: opensips-prometheus-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-http-modules (= ${binary:Version}),
+         ${shlibs:Depends}, ${misc:Depends}
+Description: Prometheus Monitoring support for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module provides support in OpenSIPS for the Prometheus
+ (https://prometheus.io/) monitoring tool.
+
+Package: opensips-python-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Python scripting support
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module provides a Python interface to implement your scripting logic.
+
+Package: opensips-rabbitmq-modules
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Interface module to interact with a RabbitMQ server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the implementation of a RabbitMQ client for the Event
+ Interface. It is used to send AMQP messages to a RabbitMQ server each time
+ the Event Interface triggers an event subscribed for. It also provides a
+ module to publish RabbitMQ messages to a RabbitMQ server.
+
+Package: opensips-radius-modules
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Radius modules for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the RADIUS driver for the AAA API from OpenSIPS.
+
+Package: opensips-redis-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Interface module to interact with a Redis server
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides an implementation of a cache system designed to
+ work with a Redis server. It uses hiredis client library to connect
+ to either a single Redis server instance, or to a Redis Server inside
+ a Redis Cluster. It uses the Key-Value interface exported from the core.
+
+Package: opensips-regex-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: PCRE regexp modules for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides a module for matching operations against regular
+ expressions using the powerful PCRE library. By default, OpenSIPS support
+ sed-like regular expressions; PCRE library brings perl-like regular
+ expressions.
+
+Package: opensips-restclient-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: REST client module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the REST client support for OpenSIPS.
+
+Package: opensips-sctp-module
+Architecture: linux-any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: SCTP transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SCTP support for OpenSIPS.
+
+Package: opensips-siprec-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: SIP Call Recording Implementation for the SIPREC Protocol
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module provides the means to Record Calls using the SIPREC protocol.
+
+Package: opensips-snmpstats-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         snmpd,
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: SNMP AgentX subagent module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the snmpstats module for OpenSIPS. This module acts
+ as an AgentX subagent which connects to a master agent.
+
+Package: opensips-sqlite-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: SQLite database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the SQLite database driver for OpenSIPS.
+
+Package: opensips-stir-shaken-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: STIR/SHAKEN support for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
+ Authentication and Verification services in OpenSIPS.
+
+Package: opensips-tls-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}),
+         opensips-tlsmgm-module (= ${binary:Version}),
+         opensips-tls-openssl-module (= ${binary:Version}) | opensips-tls-wolfssl-module (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends}
+Description: TLS transport module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the TLS support for OpenSIPS.
 
 Package: opensips-tls-openssl-module
 Architecture: any
@@ -579,20 +692,38 @@ Description: TLS transport module for OpenSIPS
  .
  This package provides the wolfSSL implementation for TLS in OpenSIPS.
 
-Package: opensips-tls-module
+Package: opensips-tlsmgm-module
 Architecture: any
 Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-tlsmgm-module (= ${binary:Version}),
-         opensips-tls-openssl-module (= ${binary:Version}) | opensips-tls-wolfssl-module (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: TLS transport module for OpenSIPS
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: TLS management module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the TLS support for OpenSIPS.
+ This package provides support for TLS management for OpenSIPS.
+
+Package: opensips-unixodbc-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: unixODBC database connectivity module for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides the unixODBC database driver for OpenSIPS.
+
+Package: opensips-uuid-module
+Architecture: any
+Multi-Arch: same
+Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: UUID (Universally Unique Identifier) generator for OpenSIPS
+ OpenSIPS is a very fast and flexible SIP (RFC3261)
+ server. Written entirely in C, OpenSIPS can handle thousands calls
+ per second even on low-budget hardware.
+ .
+ This package provides a UUID generator for the OpenSIPS script.
 
 Package: opensips-wss-module
 Architecture: any
@@ -609,165 +740,41 @@ Description: WebSocket Secure (WSS) transport module for OpenSIPS
  .
  This package provides the WebSocket Secure (WSS) support for OpenSIPS.
 
-Package: opensips-sctp-module
-Architecture: linux-any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: SCTP transport module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the SCTP support for OpenSIPS.
-
-Package: opensips-restclient-module
+Package: opensips-xml-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: REST client module for OpenSIPS
+Description: Support for XML documents handling in OpenSIPS script
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This package provides the REST client support for OpenSIPS.
+ This package introduces a new type of variable that provides both
+ serialization and de-serialization from a XML document. The script variable
+ provides ways to access (from script) objects and arrays to add, replace or
+ delete values from the script.
 
-Package: opensips-cgrates-module
+Package: opensips-xmlrpc-module
 Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: CGRateS connector for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides a connnector to the CGRateS rating/billing engine.
-
-Package: opensips-mongodb-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Interface module to interact with a MongoDB server
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module is an implementation of a cache system designed to work with
- MongoDB servers.
-
-Package: opensips-siprec-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: SIP Call Recording Implementation for the SIPREC Protocol
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module provides the means to Record Calls using the SIPREC protocol.
-
-Package: opensips-python-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Python scripting support
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module provides a Python interface to implement your scripting logic.
-
-Package: opensips-stir-shaken-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: STIR/SHAKEN support for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This module adds support for implementing STIR/SHAKEN (RFC 8224, RFC 8588)
- Authentication and Verification services in OpenSIPS.
-
-Package: opensips-prometheus-module
-Architecture: any
-Multi-Arch: same
 Depends: opensips (= ${binary:Version}),
          opensips-http-modules (= ${binary:Version}),
          ${shlibs:Depends}, ${misc:Depends}
-Description: Prometheus Monitoring support for OpenSIPS
+Multi-Arch: same
+Description: XMLRPC support for OpenSIPS's Management Interface
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This module provides support in OpenSIPS for the Prometheus
- (https://prometheus.io/) monitoring tool.
+ This package provides the XMLRPC transport implementation for OpenSIPS's
+ Management Interface.
 
-Package: opensips-kafka-module
+Package: opensips-xmpp-module
 Architecture: any
 Multi-Arch: same
 Depends: opensips (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: Implementation of an Apache Kafka producer
+Description: XMPP gateway module for OpenSIPS
  OpenSIPS is a very fast and flexible SIP (RFC3261)
  server. Written entirely in C, OpenSIPS can handle thousands calls
  per second even on low-budget hardware.
  .
- This module is an implementation of an Apache Kafka producer.
- It serves as a transport backend for the Event Interface and
- also provides a stand-alone connector to be used from the
- OpenSIPS script in order to publish messages to Kafka brokers.
-
-Package: opensips-auth-jwt-module
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: JSON Web Tokens authentication module for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- The module implements authentication over JSON Web Tokens. In
- some cases ( ie. WebRTC ) the user authenticates on another
- layer ( other than SIP ), so it makes no sense to
- double-authenticate it on the SIP layer. Thus, the SIP client
- will simply present the JWT auth token it received from the
- server, and pass it on to OpenSIPS which will use that for
- authentication purposes. It relies on two DB tables, one
- containing JWT profiles ( a profile name and it's SIP username
- associated to it ) and one containing JWT secrets. Each secret
- has a corresponding profile, the KEY used for signing the JWT
- and two timestamps describing a validation interval. Multiple
- JWT secrets can point to the same JWT profile.
-
-Package: opensips-msrp-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         opensips-auth-modules (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Implementation of the MSRP protocol
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the MSRP protocol support for OpenSIPS.
-
-Package: opensips-auth-modules
-Architecture: any
-Multi-Arch: same
-Depends: opensips (= ${binary:Version}),
-         ${misc:Depends},
-         ${shlibs:Depends}
-Description: Authentication interfaces for OpenSIPS
- OpenSIPS is a very fast and flexible SIP (RFC3261)
- server. Written entirely in C, OpenSIPS can handle thousands calls
- per second even on low-budget hardware.
- .
- This package provides the modules that are being used to provide
- SIP authentication in OpenSIPS. It consists of both the
- authentication interface (the auth module), as well as the UAC
- authentication module (uac_auth).
+ This package provides the SIP to XMPP IM translator module for OpenSIPS.
