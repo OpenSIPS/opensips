@@ -297,12 +297,12 @@ static int dm_avps2json(void *root, cJSON *avps)
 			break;
 
 		case AVP_TYPE_FLOAT32:
-			LM_DBG("%d. got float32 AVP %u, value: %u\n", i, h->avp_code, h->avp_value->f32);
+			LM_DBG("%d. got float32 AVP %u, value: %f\n", i, h->avp_code, h->avp_value->f32);
 			num_val = (double)h->avp_value->f32;
 			break;
 
 		case AVP_TYPE_FLOAT64:
-			LM_DBG("%d. got float64 AVP %u, value: %lu\n", i, h->avp_code, h->avp_value->f64);
+			LM_DBG("%d. got float64 AVP %u, value: %lf\n", i, h->avp_code, h->avp_value->f64);
 			num_val = h->avp_value->f64;
 			break;
 		}
