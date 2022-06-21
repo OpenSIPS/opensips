@@ -101,12 +101,15 @@ extern str str_event_route;
 extern int route_type;
 
 /**
- * Extract information about the top-level @route_type
+ * Extract the type of the top-level @route_type
  *
  * @type: string representation of the route's type
  * @has_name: whether the top route has a name or not
  */
 void get_top_route_type(str *type, int *has_name);
+
+void get_route_type(int idx, str *type);
+void get_route_name(int idx, str *name);
 
 #define set_route_type(_new_type) \
 	do{\
