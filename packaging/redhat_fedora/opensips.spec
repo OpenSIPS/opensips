@@ -1055,6 +1055,7 @@ fi
 %{_libdir}/opensips/modules/acc.so
 %{_libdir}/opensips/modules/alias_db.so
 %{_libdir}/opensips/modules/auth_aaa.so
+%{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/avpops.so
 %{_libdir}/opensips/modules/b2b_entities.so
 %{_libdir}/opensips/modules/b2b_logic.so
@@ -1144,7 +1145,6 @@ fi
 %{_libdir}/opensips/modules/tm.so
 %{_libdir}/opensips/modules/topology_hiding.so
 %{_libdir}/opensips/modules/uac.so
-%{_libdir}/opensips/modules/uac_auth.so
 %{_libdir}/opensips/modules/uac_redirect.so
 %{_libdir}/opensips/modules/uac_registrant.so
 %{_libdir}/opensips/modules/userblacklist.so
