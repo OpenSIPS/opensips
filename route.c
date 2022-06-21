@@ -1807,6 +1807,42 @@ out_noname:
 }
 
 
+void get_route_type(int idx, str *type)
+{
+	int _;
+
+	if (idx == 0)
+		return get_top_route_type(type, &_);
+	else
+		init_str(type, "route");
+}
+
+
+void get_route_name(int idx, str *name)
+{
+	switch (route_type) {
+	case REQUEST_ROUTE:
+	case ONREPLY_ROUTE:
+	case FAILURE_ROUTE:
+	case BRANCH_ROUTE:
+	case ERROR_ROUTE:
+	case LOCAL_ROUTE:
+	case STARTUP_ROUTE:
+	case TIMER_ROUTE:
+	case EVENT_ROUTE:
+		if (!route_stack[idx] || route_stack[idx][0] == '!')
+			init_str(name, "");
+		else
+			init_str(name, route_stack[idx]);
+		break;
+
+	default:
+		LM_ERR("bad route type: %d\n", route_type);
+		init_str(name, "");
+	}
+}
+
+
 int is_script_func_used( char *name, int param_no)
 {
 	unsigned int i;
