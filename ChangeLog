@@ -1,3 +1,164 @@
+=========================== Release 3.1.10 ==============================
+
+2022-06-18  OpenSIPS  <github at opensips dot org>
+	* [fbc7ee2e0] :
+
+	Rebuild documentation
+
+
+2022-06-17  Liviu Chircu  <liviu at opensips dot org>
+	* [d90897b7b] :
+
+	cachedb_local: Fix missing lock_release() on error case
+	Credits to @ryancaicse for the report in #2714
+	(cherry picked from commit 1e5dd94dbc3ecf9176e1bf88ec032b7773f2d57e)
+
+
+2022-06-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [2812dea93] :
+
+	Fix body re-assembling when adding a new body part to an emptry received body
+	This fixes a regression introduced in b0591d285ad966c2cb13672de8071c03fcba7414
+	Fixes #2823
+	Credits go to @pergolafabio for the detailed reporting
+	(cherry picked from commit a05893a631193a37548cfae292ed7f00f63044e3)
+
+
+2022-05-28  OpenSIPS  <github at opensips dot org>
+	* [aded782cb] :
+
+	Rebuild documentation
+
+
+2022-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [8ab71077b] :
+
+	[db_virtual] fixed the MI db_get output
+	Fix typos leading to bad json structure
+	Reported by @bctff
+	Closes opensips-cli/#94
+	(cherry picked from commit 96d8113e9da6f01dc1222364b80d975284d42336)
+
+
+2022-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [57d2943c9] :
+
+	clusterer: print the command that cannot be parsed
+	(cherry picked from commit 8ba0309d4751ed5670800cf4fb0bdd85d6b6d7be)
+
+
+2022-05-21  OpenSIPS  <github at opensips dot org>
+	* [46b886f48] :
+
+	Rebuild documentation
+
+
+2022-05-18  Nick Altmann  <nick.altmann at gmail dot com>
+	* [36664dee7] :
+
+	Add missed condition for natping_partitions param in nathelper doc
+
+
+2022-05-18  Răzvan Crainea  <razvan at opensips dot org>
+	* [1fb1df8e7] :
+
+	Merge pull request #2783 from svanstone-resilient/patch-1
+	b2b_entities: parse from & to structs if they aren't
+
+
+2022-05-14  OpenSIPS  <github at opensips dot org>
+	* [ed6f5ae0a] :
+
+	Rebuild documentation
+
+
+2022-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [7f7fa4312] :
+
+	dialog docs: Improve "profiles_with_value" example
+	Suggested by Fabien Aunay
+	(cherry picked from commit d148f1dfa5c94418968cab6020d0dc9671023257)
+
+
+2022-05-07  OpenSIPS  <github at opensips dot org>
+	* [2485a9235] :
+
+	Rebuild documentation
+
+
+2022-05-04  Nick Altmann  <nick at altmann dot pro>
+	* [64bed6332] :
+
+	DEB package: add support for ubuntu 22
+
+
+2022-05-04  Liviu Chircu  <liviu at opensips dot org>
+	* [faa9f75f4] :
+
+	Makefile: Fix detection for gcc 11 and higher
+	Context: newer OS'es, e.g. Ubuntu 22.04, ship with gcc 11 nowadays.
+	(cherry picked from commit 7273a3f13a8bb29a4b4da529c2e8c9bc2cc45492)
+
+
+2022-05-04  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [6d1e0dfd3] :
+
+	Merge pull request #2821 from lemenkov/format_security
+	Fix -Werror=format-security
+	(cherry picked from commit 47bfb3e3292a1acca6562427038b25a302d65ff1)
+
+
+2022-05-02  Razvan Crainea  <razvan at opensips dot org>
+	* [e43af5644] :
+
+	rtpproxy+rtpengine: fair election when the first try is disabled
+	When a first attempt to use a rtpproxy/rtpengine node picks a disabled
+	node, the next attempt should not consider the disabled nodes at all.
+	(cherry picked from commit 9d5dd9539d54b2186f31d2447823cae9108b9c31)
+
+
+2022-05-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [1a71fded7] :
+
+	[presence_dialoginfo] Fix aggregating dialoginfo XML
+	Fix the looping when aggregating the dialog info XML documents with multiple dialog elements. The xmlUnlinkNode() function inside the loop is breaking the looping (the "next" member is reset).
+	Credits for reporting and fixing go to Damien Sandras (@dsandras)
+	Closes #2815
+
+	(cherry picked from commit 0cca86fe789d77ea3e2b58326d6f282eb3433544)
+	(cherry picked from commit 4bc9d9603f6612f5b294eb6fa55ab38a474d1ce2)
+
+
+2022-04-23  OpenSIPS  <github at opensips dot org>
+	* [ac202139e] :
+
+	Rebuild documentation
+
+
+2022-04-21  Razvan Crainea  <razvan at opensips dot org>
+	* [51322b93b] :
+
+	tm: use INVITE's AVPs when sending locally generated msgs
+	This allows the TLS_MGM module to pick up the right tls_domain that
+	should be used for sending the ACK/CANCEL message
+	(cherry picked from commit 84c1614ecea5025230b46950408c8343c693ec8b)
+
+
+2022-04-21  Razvan Crainea  <razvan at opensips dot org>
+	* [2fcf0b9ba] :
+
+	rtpengine: fix switching set for rtpengine_play_dtmf
+	Reported by Slava Bendersky, close #2808
+
+
+2022-03-16  svanstone-resilient  <62011179+svanstone-resilient at users.noreply.github dot com>
+	* [c6d85c152] :
+
+	b2b_entities: parse from & to structs if they aren't
+	This fix aims to solve a crash in case the from/to headers are not parsed (yet). We are parsing them in a different structure, to make sure it doesn't overlap with any ongoing processing of the request.
+
+	(Cherry-picked from 3.2 and 5e5fc98ad07889c6d285a913aee7caf769c2878b )
+
 =========================== Release 3.1.9 ==============================
 
 2022-04-20  Liviu Chircu  <liviu at opensips dot org>
