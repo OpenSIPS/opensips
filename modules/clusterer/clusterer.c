@@ -1109,7 +1109,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		return;
 	}
 
-	if (!db_mode && packet_type == CLUSTERER_NODE_DESCRIPTION)
+	if (!db_mode && (packet_type == CLUSTERER_NODE_DESCRIPTION ||
+		packet_type == CLUSTERER_FULL_TOP_UPDATE))
 		lock_start_sw_read(cl_list_lock);
 	else
 		lock_start_read(cl_list_lock);
@@ -1156,7 +1157,8 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	}
 
 exit:
-	if (!db_mode && packet_type == CLUSTERER_NODE_DESCRIPTION)
+	if (!db_mode && (packet_type == CLUSTERER_NODE_DESCRIPTION ||
+		packet_type == CLUSTERER_FULL_TOP_UPDATE))
 		lock_stop_sw_read(cl_list_lock);
 	else
 		lock_stop_read(cl_list_lock);
