@@ -1,3 +1,168 @@
+=========================== Release 3.2.7 ==============================
+
+2022-06-22  Vlad Patrascu  <vladp at opensips dot org>
+	* [205667d85] :
+
+	clusterer: use the proper locking type when we might switch for writing
+	Aquire lock for switchable reading when handling a full topology update,
+	wich might trigger the insert of a new node in the list and thus using
+	the lock switch mechanism.
+	(cherry picked from commit ead6f1fcae3881a15b6ec4e8e6026bdd5d99ecb3)
+
+
+2022-06-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [159ffbbf5] :
+
+	b2b_entities: use the proxy from b2b_client_new() for all requests
+	Fixes #2759
+	(cherry picked from commit ceb1d6a074383bca96df0e7a592719dda52bd60b)
+
+
+2022-06-19  OpenSIPS  <github at opensips dot org>
+	* [56a67f4d9] :
+
+	Rebuild documentation
+
+
+2022-06-14  Razvan Crainea  <razvan at opensips dot org>
+	* [0b38b5425] :
+
+	rtpengine: fix API crash when no set/node is defined
+	(cherry picked from commit 206b3a1d0f3cc899b6076657c9ccb89eeb3f8395)
+
+
+2022-06-12  OpenSIPS  <github at opensips dot org>
+	* [b6211fc99] :
+
+	Rebuild documentation
+
+
+2022-06-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [a05893a63] :
+
+	Fix body re-assembling when adding a new body part to an emptry received body
+	This fixes a regression introduced in b0591d285ad966c2cb13672de8071c03fcba7414
+	Fixes #2823
+	Credits go to @pergolafabio for the detailed reporting
+
+
+2022-06-07  Liviu Chircu  <liviu at opensips dot org>
+	* [40290bc41] :
+
+	mi_script: Fix error log on mi() with NULL output pvars
+	Proper handling for the 2nd parameter NULL case.  Fixes this error:
+
+	Jun  7 06:36:23 [61] ERROR:core:pv_set_value: bad parameters
+	(cherry picked from commit bdc51cee33eb18c42abb37fe432e2c8c033384fa)
+
+
+2022-06-05  OpenSIPS  <github at opensips dot org>
+	* [100cf117d] :
+
+	Rebuild documentation
+
+
+2022-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [6b7559920] :
+
+	[db_virtual] fixed the MI db_get output
+	Fix typos leading to bad json structure
+	Reported by @bctff
+	Closes opensips-cli/#94
+	(cherry picked from commit 96d8113e9da6f01dc1222364b80d975284d42336)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [1628c902a] :
+
+	Properly exclude tls_openssl/wolfssl when using menuconfig
+	(cherry picked from commit 870f19040b2e28d671552ff2d1e62c7661333894)
+
+
+2022-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [4ab4876f6] :
+
+	clusterer: print the command that cannot be parsed
+	(cherry picked from commit 8ba0309d4751ed5670800cf4fb0bdd85d6b6d7be)
+
+
+2022-05-18  Nick Altmann  <nick.altmann at gmail dot com>
+	* [ecaa59672] :
+
+	Add missed condition for natping_partitions param in nathelper doc
+
+
+2022-05-12  Liviu Chircu  <liviu at opensips dot org>
+	* [5582666ba] :
+
+	aaa_diameter: Fix `app_opensips` compilation
+	The "peer.h" import is not available when compiling "app_opensips"
+	within freeDiameter.  Moreover, it's not used anyway, so just remove it.
+	(cherry picked from commit 7c3fef41a22b39d296c97a21ea5aed1d4d5770e7)
+
+
+2022-05-09  Liviu Chircu  <liviu at opensips dot org>
+	* [382597eb9] :
+
+	dialog docs: Improve "profiles_with_value" example
+	Suggested by Fabien Aunay
+	(cherry picked from commit d148f1dfa5c94418968cab6020d0dc9671023257)
+
+
+2022-05-04  Nick Altmann  <nick at altmann dot pro>
+	* [bce846c99] :
+
+	DEB package: add support for ubuntu 22
+
+
+2022-05-04  Liviu Chircu  <liviu at opensips dot org>
+	* [eb415b5e1] :
+
+	Makefile: Fix detection for gcc 11 and higher
+	Context: newer OS'es, e.g. Ubuntu 22.04, ship with gcc 11 nowadays.
+	(cherry picked from commit 7273a3f13a8bb29a4b4da529c2e8c9bc2cc45492)
+
+
+2022-05-04  Bogdan Andrei IANCU  <bogdan at opensips dot org>
+	* [7fea6beda] :
+
+	Merge pull request #2821 from lemenkov/format_security
+	Fix -Werror=format-security
+	(cherry picked from commit 47bfb3e3292a1acca6562427038b25a302d65ff1)
+
+
+2022-05-02  Razvan Crainea  <razvan at opensips dot org>
+	* [4408617e9] :
+
+	rtpproxy+rtpengine: fair election when the first try is disabled
+	When a first attempt to use a rtpproxy/rtpengine node picks a disabled
+	node, the next attempt should not consider the disabled nodes at all.
+	(cherry picked from commit 9d5dd9539d54b2186f31d2447823cae9108b9c31)
+
+
+2022-05-02  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0cca86fe7] :
+
+	[presence_dialoginfo] Fix aggregating dialoginfo XML
+	Fix the looping when aggregating the dialog info XML documents with multiple dialog elements. The xmlUnlinkNode() function inside the loop is breaking the looping (the "next" member is reset).
+	Credits for reporting and fixing go to Damien Sandras (@dsandras)
+
+
+2022-04-21  Razvan Crainea  <razvan at opensips dot org>
+	* [c74c2ef1f] :
+
+	tm: use INVITE's AVPs when sending locally generated msgs
+	This allows the TLS_MGM module to pick up the right tls_domain that
+	should be used for sending the ACK/CANCEL message
+	(cherry picked from commit 84c1614ecea5025230b46950408c8343c693ec8b)
+
+
+2022-04-21  Razvan Crainea  <razvan at opensips dot org>
+	* [b15d63018] :
+
+	rtpengine: fix switching set for rtpengine_play_dtmf
+	Reported by Slava Bendersky, close #2808
+
 =========================== Release 3.2.6 ==============================
 
 2022-04-20  Liviu Chircu  <liviu at opensips dot org>
