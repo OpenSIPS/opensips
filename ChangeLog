@@ -1,3 +1,304 @@
+=========================== Release 3.3.0-rc1 ==============================
+
+2022-06-22  Nick Altmann  <nick at altmann dot pro>
+	* [fdc37a160] :
+
+	DEB package: fix build for ubuntu bionic
+
+
+2022-06-22  Vlad Patrascu  <vladp at opensips dot org>
+	* [778f6b2aa] :
+
+	clusterer: use the proper locking type when we might switch for writing
+	Aquire lock for switchable reading when handling a full topology update,
+	wich might trigger the insert of a new node in the list and thus using
+	the lock switch mechanism.
+	(cherry picked from commit ead6f1fcae3881a15b6ec4e8e6026bdd5d99ecb3)
+
+
+2022-06-21  Liviu Chircu  <liviu at opensips dot org>
+	* [54fc4f184] :
+
+	aaa_diameter: Fix compile warnings
+	(cherry picked from commit 008d4d6b048ad02a7a83075433a891aad3e59766)
+
+
+2022-06-21  Liviu Chircu  <liviu at opensips dot org>
+	* [188e4df21] :
+
+	Complete the support for current route name/type
+	  * $route.type -> equivalent of the former $rT variable (now indexable!)
+	  * $route.name -> new variable, giving the route name (also indexable)
+	(cherry picked from commit 9f2be4765a150cd9dde2b5a52c8cd164a1210d0c)
+
+
+2022-06-21  Nick Altmann  <nick at altmann dot pro>
+	* [0247e50bd] :
+
+	RPM package: fix typo
+
+
+2022-06-20  Nick Altmann  <nick at altmann dot pro>
+	* [0f13bea9b] :
+
+	DEB package: cleanup, make it better readable
+
+
+2022-06-20  Nick Altmann  <nick at altmann dot pro>
+	* [9b6d3e651] :
+
+	Packaging: add opensips-auth-modules subpackage Thanks @razvancrainea for initial patch.
+
+
+2022-06-19  OpenSIPS  <github at opensips dot org>
+	* [a112553ca] :
+
+	Rebuild documentation
+
+
+2022-06-16  Liviu Chircu  <liviu at opensips dot org>
+	* [1e05d6723] :
+
+	aaa_diameter: Add support for Grouped AVPs
+	A Grouped AVP is just a list of other AVPs (possibly including other
+	Grouped AVPs, in a recursive fashion).  This commit adds support for
+	grouped AVPs on all fronts:
+
+	  * in the syntax of the "dictionary.opensips" config file, to allow
+		fully defining grouped AVPs, regardless of their complexity
+	  * in the input JSON passed to dm_send_request()
+	  * in the output JSON returned by dm_send_request()
+	(cherry picked from commit 6ca51091d9c18e93c9dc1cd2549f12bfef79703a)
+
+
+2022-06-14  Razvan Crainea  <razvan at opensips dot org>
+	* [fac1d468e] :
+
+	rtpengine: fix API crash when no set/node is defined
+	(cherry picked from commit 206b3a1d0f3cc899b6076657c9ccb89eeb3f8395)
+
+
+2022-06-12  OpenSIPS  <github at opensips dot org>
+	* [372b489e5] :
+
+	Rebuild documentation
+
+
+2022-06-11  Vlad Patrascu  <vladp at opensips dot org>
+	* [67b4d5dc7] :
+
+	b2b_entities: use the proxy from b2b_client_new() for all requests
+	Fixes #2759
+	(cherry picked from commit ceb1d6a074383bca96df0e7a592719dda52bd60b)
+
+
+2022-06-10  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [c556e25a6] :
+
+	Fix body re-assembling when adding a new body part to an emptry received body
+	This fixes a regression introduced in b0591d285ad966c2cb13672de8071c03fcba7414
+	Fixes #2823
+	Credits go to @pergolafabio for the detailed reporting
+	(cherry picked from commit a05893a631193a37548cfae292ed7f00f63044e3)
+
+
+2022-06-09  Vlad Patrascu  <vladp at opensips dot org>
+	* [3dcfb8445] :
+
+	msrp_gateway docs: fix overview about msrp_gw_answer() params
+	(cherry picked from commit 9cdc27c2295a2fbaab7143d81d641e934b53fc24)
+
+
+2022-06-09  Vlad Patrascu  <vladp at opensips dot org>
+	* [a37040f2f] :
+
+	tm: allow t_new_request() in all route types
+	(cherry picked from commit 09e626b0a59a2e97eaa7e5181ad0196cd8b5a128)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [05016a0da] :
+
+	msrp_ua: fix param name for uac_auth module dependency
+	(cherry picked from commit 87b3866aa10dcd47cfffb0d824d077e94aaefd89)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [ab0dd9d6b] :
+
+	msrp_ua: fix cleanup of expired sessions
+	(cherry picked from commit 8793e524895ad77fd9a9dacbd3911949395a75f5)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [64a3c80e9] :
+
+	msrp_relay: add the Authentication-Info header when authorizing
+	(cherry picked from commit 436f915a29c3917a1854eebfa3b79eaf4889d91e)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [2faaf2886] :
+
+	auth: add API function that builds an Authentication-Info header
+	(cherry picked from commit 2b43d71a46be0bc89497bcfe4c4a2eff817c801d)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [e42047c02] :
+
+	msrp_ua: properly support the use of an MSRP relay
+	(cherry picked from commit d560f054fcf6e17504605ffc0f330148d514be01)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [b156a8f96] :
+
+	proto_msrp: allow no extra headers in msrp_send_request()
+	(cherry picked from commit 53acffe4035df88d2d9f53c0f5f7e9a91cd7e93a)
+
+
+2022-06-07  Vlad Patrascu  <vladp at opensips dot org>
+	* [68245bbcf] :
+
+	proto_msrp: properly support WWW-Authenticate header when parsing
+	(cherry picked from commit b0cb41088b71e2054e27f414c9fe521c8b2c0332)
+
+
+2022-06-07  Liviu Chircu  <liviu at opensips dot org>
+	* [461103d2f] :
+
+	mi_script: Fix error log on mi() with NULL output pvars
+	Proper handling for the 2nd parameter NULL case.  Fixes this error:
+
+	Jun  7 06:36:23 [61] ERROR:core:pv_set_value: bad parameters
+	(cherry picked from commit bdc51cee33eb18c42abb37fe432e2c8c033384fa)
+
+
+2022-06-05  OpenSIPS  <github at opensips dot org>
+	* [fbd3cdcc0] :
+
+	Rebuild documentation
+
+
+2022-05-27  Liviu Chircu  <liviu at opensips dot org>
+	* [cbcdbbc88] :
+
+	aaa_diameter: Rework exposing command results to script
+	The initially exported value of Result-Code AVP integer value was not
+	ideal, as many Diameter exchanges are actual queries, with much more
+	rich data to be returned than just an integer code.
+
+	This commit replaces the "reply_code_pv" parameter of dm_send_request()
+	with "rpl_avps_pv", containing a JSON Array with all AVPs from the
+	Diameter Answer, as well as their values.
+	(cherry picked from commit 526394aa899535c69c43557d301d00958dd36b7d)
+
+
+2022-05-27  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [930e906da] :
+
+	[db_virtual] fixed the MI db_get output
+	Fix typos leading to bad json structure
+	Reported by @bctff
+	Closes opensips-cli/#94
+	(cherry picked from commit 96d8113e9da6f01dc1222364b80d975284d42336)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [1d017d716] :
+
+	Properly exclude tls_openssl/wolfssl when using menuconfig
+	(cherry picked from commit 870f19040b2e28d671552ff2d1e62c7661333894)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [370f7bbfa] :
+
+	msrp_gateway: properly report MSRP leg setup failure
+	Add an event triggered when the SIP session fails to set up on the
+	MSRP side, when using the msg_to_msrp() function. This way, a message
+	describing the failure can be generated on the MESSAGE side from an
+	event route, for example.
+	(cherry picked from commit a3c18a685fbb4e7d563dd0001a2929e5eb3203cf)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [723cd8dc4] :
+
+	msrp_gateway: properly clean up lingering sessions
+	Add a session timeout after which to end a session if no message has
+	been received from either side for that session. Also, add a specific
+	timeout that is triggered by no activity on the MESSAGE side.
+
+	Also add the ability to list and end sessions from the outside, via MI
+	functions.
+	(cherry picked from commit f6fcb187d3945ad08c9995c6f6edd82701515e2b)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [14ba7e9d3] :
+
+	msrp_gateway: fix message queueing during MSRP call setup
+	(cherry picked from commit 80ba45de87e5ad6a92342955665d58c373cbd0e8)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [f40162e30] :
+
+	msrp_gateway: fix deadlock in msg_to_msrp()
+	(cherry picked from commit 3ab6dafc9274f1d6ff594ef8de3be1bd86f7aa0f)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [ccc397869] :
+
+	msrp_gateway: fix several crashes
+	(cherry picked from commit dd173e564a4f8ae29e0de4e57758e26568be7485)
+
+
+2022-05-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [a686d9123] :
+
+	msrp_gateway: fix module init
+	(cherry picked from commit 65005d62046f833b4d2c377f6ddf4e34613e7d73)
+
+
+2022-05-24  Razvan Crainea  <razvan at opensips dot org>
+	* [fa6082d78] :
+
+	clusterer: print the command that cannot be parsed
+	(cherry picked from commit 8ba0309d4751ed5670800cf4fb0bdd85d6b6d7be)
+
+
+2022-05-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [45c934658] :
+
+	msrp_relay: allow msrps URI in Use-Path
+	(cherry picked from commit 171ac784db0b9313cd17add5bf5886f2dc9e86ed)
+
+
+2022-05-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [23a3fdb1a] :
+
+	msrp_ua: fix crash in msrp_ua_answer()
+	(cherry picked from commit 755ddd2fb0a99bdaee0e7d16d71a64185f681943)
+
+
+2022-05-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [1d4aaf141] :
+
+	msrp_ua: add missing docs
+	Document the "advertised_contact" module param and the
+	"msrp_ua_start_session" MI function.
+	(cherry picked from commit 2d698c3f33d1e24c2a60ce7542d64be233b2127d)
+
+
+2022-05-18  Liviu Chircu  <liviu at opensips dot org>
+	* [7b400c11a] :
+
+	Add CREDITS file for 3.3
+
 =========================== Release 3.3.0-beta ==============================
 
 2022-05-18  Liviu Chircu  <liviu at opensips dot org>
