@@ -106,6 +106,7 @@ regex_t* custom_headers_re;
 /* The list of the headers that are passed on the other side by default */
 static str default_headers[HDR_DEFAULT_LEN]=
 {
+   {"Max-Forwards",12},
    {"Content-Type",12},
    {"Supported", 9},
    {"Allow", 5},

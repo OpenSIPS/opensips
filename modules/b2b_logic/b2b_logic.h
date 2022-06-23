@@ -50,7 +50,7 @@
 #define b2b_peer(type) ((type+1)%2)
 
 #define HDR_LST_LEN       32
-#define HDR_DEFAULT_LEN   8
+#define HDR_DEFAULT_LEN   9
 
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01

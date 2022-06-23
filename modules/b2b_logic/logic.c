@@ -286,6 +286,30 @@ int b2b_msg_get_from(struct sip_msg* msg, str* from_uri, str* from_dname)
 	return 0;
 }
 
+int b2b_msg_get_maxfwd(struct sip_msg *msg)
+{
+	str vals;
+	unsigned int valn;
+
+	if (!msg->maxforwards) {
+		if (parse_headers(msg, HDR_MAXFORWARDS_F, 0) == -1) {
+			LM_ERR("parsing MAX_FORWARD header failed!\n");
+			return -1;
+		}
+		if (!msg->maxforwards) {
+			LM_DBG("max_forwards header not found!\n");
+			return -1;
+		}
+	}
+
+	trim_len(vals.len, vals.s, msg->maxforwards->body);
+	if (str2int(&vals, &valn) < 0) {
+		LM_ERR("Failed to parse Max-Forwards value\n");
+		return -1;
+	}
+
+	return valn;
+}
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
 		str* to_uri,str* from_uri,str*from_dname, str* ssid, str* hdrs, struct sip_msg* msg)
@@ -1428,7 +1452,6 @@ error:
 	return -1;
 }
 
-
 int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, str* extra_headers,
 		str* b2bl_key, unsigned int hash_index, unsigned int local_index, int flags)
 {
@@ -1451,6 +1474,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	b2bl_dlg_stat_t stats;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
+	int maxfwd;
 
 	lock_get(&b2bl_htable[hash_index].lock);
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
@@ -1971,6 +1995,9 @@ send_usual_request:
 			req_data.method =&method;
 			req_data.extra_headers =extra_headers->len?extra_headers:NULL;
 			req_data.body =body->len?body:NULL;
+			/* Decrement Max-Forwards value */
+			if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+				req_data.maxfwd = maxfwd;
 			b2bl_htable[hash_index].locked_by = process_no;
 			if(b2b_api.send_request(&req_data) < 0)
 			{
@@ -2772,6 +2799,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	qvalue_t q;
 	str from_tag_gen= {0, 0};
 	str new_body={0, 0};
+	int maxfwd;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
@@ -2868,6 +2896,10 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("cannot parse cseq number\n");
 		goto error;
 	}
+
+	/* Decrement Max-Forwards value */
+	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+		ci.maxfwd = maxfwd;
 
 	b2bl_htable[hash_index].locked_by = process_no;
 
@@ -3323,6 +3355,7 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	int eno = 0;
 	str new_body={0, 0};
 	str *hdrs;
+	int maxfwd;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
 	b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
@@ -3539,6 +3572,10 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 				LM_ERR("cannot parse cseq number\n");
 				goto error;
 			}
+
+			/* Decrement Max-Forwards value */
+			if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+				ci.maxfwd = maxfwd;
 
 			b2bl_htable[hash_index].locked_by = process_no;
 
