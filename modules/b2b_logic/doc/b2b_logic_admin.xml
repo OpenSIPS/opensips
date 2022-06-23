@@ -171,6 +171,7 @@ modparam("b2b_logic", "cleanup_period", 60)
 		from the dialog of one side to the other side. There are a number
 		of headers that are passed by default. They are: 
 		<itemizedlist>
+			<listitem>Max-Forwards (it is decreased by 1)</listitem>
 			<listitem>Content-Type</listitem>
 			<listitem>Supported</listitem>
 			<listitem>Allow</listitem>
