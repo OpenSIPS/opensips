@@ -297,6 +297,30 @@ int b2b_msg_get_from(struct sip_msg* msg, str* from_uri, str* from_dname)
 	return 0;
 }
 
+int b2b_msg_get_maxfwd(struct sip_msg *msg)
+{
+	str vals;
+	unsigned int valn;
+
+	if (!msg->maxforwards) {
+		if (parse_headers(msg, HDR_MAXFORWARDS_F, 0) == -1) {
+			LM_ERR("parsing MAX_FORWARD header failed!\n");
+			return -1;
+		}
+		if (!msg->maxforwards) {
+			LM_DBG("max_forwards header not found!\n");
+			return -1;
+		}
+	}
+
+	trim_len(vals.len, vals.s, msg->maxforwards->body);
+	if (str2int(&vals, &valn) < 0) {
+		LM_ERR("Failed to parse Max-Forwards value\n");
+		return -1;
+	}
+
+	return valn;
+}
 
 b2bl_entity_id_t* b2bl_create_new_entity(enum b2b_entity_type type, str* entity_id,
 		str* to_uri, str *proxy, str* from_uri,str*from_dname, str* ssid, str* hdrs,
@@ -1653,6 +1677,7 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
 	int do_unlock = 0;
+	int maxfwd;
 
 	if (!tuple) {
 		lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
@@ -1720,6 +1745,9 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		req_data.extra_headers =
 			cur_route_ctx.extra_headers->len?cur_route_ctx.extra_headers:NULL;
 		req_data.body =cur_route_ctx.body->len?cur_route_ctx.body:NULL;
+		/* Decrement Max-Forwards value */
+		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+			req_data.maxfwd = maxfwd;
 		b2bl_htable[cur_route_ctx.hash_index].locked_by = process_no;
 		if(b2b_api.send_request(&req_data) < 0)
 		{
@@ -3028,6 +3056,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	str from_tag_gen= {0, 0};
 	str new_body={0, 0};
 	struct sip_uri ct_uri;
+	int maxfwd;
 
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
@@ -3134,6 +3163,10 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("cannot parse cseq number\n");
 		goto error;
 	}
+
+	/* Decrement Max-Forwards value */
+	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+		ci.maxfwd = maxfwd;
 
 	b2bl_htable[hash_index].locked_by = process_no;
 
@@ -3356,6 +3389,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	str *hdrs;
 	struct b2bl_new_entity *new_entity;
 	struct sip_uri ct_uri;
+	int maxfwd;
 
 	if(msg == NULL)
 	{
@@ -3474,6 +3508,10 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.body          = (body.s?&body:NULL);
 	ci.send_sock     = msg->force_send_socket?
 		msg->force_send_socket:msg->rcv.bind_address;
+
+	/* Decrement Max-Forwards value */
+	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+		ci.maxfwd = maxfwd;
 
 	if (new_entity->adv_contact.s) {
 		ci.local_contact = new_entity->adv_contact;
