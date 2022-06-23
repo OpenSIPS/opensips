@@ -67,6 +67,7 @@ typedef struct client_info
 	str* from_tag;
 	str local_contact;
 	unsigned int cseq;
+	unsigned int maxfwd;
 	struct socket_info* send_sock;
 	struct usr_avp *avps;
 }client_info_t;
@@ -87,6 +88,7 @@ typedef struct b2b_req_data
 	str* client_headers;
 	str* body;
 	b2b_dlginfo_t* dlginfo;
+	unsigned int maxfwd;
 	unsigned int no_cb;
 }b2b_req_data_t;
 

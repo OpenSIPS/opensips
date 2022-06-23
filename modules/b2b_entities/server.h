@@ -33,7 +33,7 @@
 
 str* server_new(struct sip_msg*, str* local_contact, b2b_notify_t, str *, str*);
 
-dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg);
+dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg, unsigned int maxfwd);
 
 void b2b_server_tm_cback( struct cell *t, int type, struct tmcb_params *ps);
 

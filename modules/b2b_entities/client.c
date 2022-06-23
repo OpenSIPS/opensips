@@ -199,6 +199,11 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.id.rem_tag.s = 0;
 	td.id.rem_tag.len = 0;
 
+	if (ci->maxfwd > 0) {
+		td.mf_enforced = 1;
+		td.mf_value = ci->maxfwd - 1;
+	}
+
 	td.rem_uri = ci->to_uri;
 	if(ci->req_uri.s)
 		td.rem_target    = ci->req_uri;
@@ -262,7 +267,7 @@ error:
 	return NULL;
 }
 
-dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
+dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
 {
 	dlg_t* td =NULL;
 
@@ -284,6 +289,11 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg)
 	td->rem_uri = dlg->to_uri;
 	td->loc_dname = dlg->from_dname;
 	td->rem_dname = dlg->to_dname;
+
+	if (maxfwd > 0) {
+		td->mf_enforced = 1;
+		td->mf_value = maxfwd - 1;
+	}
 
 	if(leg)
 	{

@@ -163,7 +163,7 @@ int b2b_send_request(b2b_req_data_t*);
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index);
 
-typedef dlg_t* (*build_dlg_f)(b2b_dlg_t* dlg);
+typedef dlg_t* (*build_dlg_f)(b2b_dlg_t* dlg, unsigned int maxfwd);
 
 str* b2b_key_copy_shm(str* b2b_key);
 
