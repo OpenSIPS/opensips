@@ -116,7 +116,7 @@ error:
 }
 
 
-dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg)
+dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg, unsigned int maxfwd)
 {
 	dlg_t* td =NULL;
 
@@ -141,6 +141,11 @@ dlg_t* b2b_server_build_dlg(b2b_dlg_t* dlg)
 	td->rem_uri = dlg->from_uri;
 	td->loc_dname = dlg->to_dname;
 	td->rem_dname = dlg->from_dname;
+
+	if (maxfwd > 0) {
+		td->mf_enforced = 1;
+		td->mf_value = maxfwd - 1;
+	}
 
 	if(dlg->route_set[CALLER_LEG].s && dlg->route_set[CALLER_LEG].len)
 	{
