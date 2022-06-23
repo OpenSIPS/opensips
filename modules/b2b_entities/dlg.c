@@ -1923,9 +1923,9 @@ void shm_free_param(void* param)
 	shm_free(param);
 }
 
-dlg_t* b2b_client_dlg(b2b_dlg_t* dlg)
+dlg_t* b2b_client_dlg(b2b_dlg_t* dlg, unsigned int maxfwd)
 {
-	return b2b_client_build_dlg(dlg, dlg->legs);
+	return b2b_client_build_dlg(dlg, dlg->legs, maxfwd);
 }
 
 void free_tm_dlg(dlg_t* td)
@@ -1937,8 +1937,8 @@ void free_tm_dlg(dlg_t* td)
 	pkg_free(td);
 }
 
-int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
-		str* b2b_key, str* method, str* ehdr, str* body, unsigned int no_cb)
+int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et, str* b2b_key,
+	str* method, str* ehdr, unsigned int maxfwd, str* body, unsigned int no_cb)
 {
 	str* b2b_key_shm = NULL;
 	dlg_t* td = NULL;
@@ -1968,7 +1968,7 @@ int b2b_send_indlg_req(b2b_dlg_t* dlg, enum b2b_entity_type et,
 	}
 
 	/* build structure with dialog information */
-	td = build_dlg(dlg);
+	td = build_dlg(dlg, maxfwd);
 	if(td == NULL)
 	{
 		LM_ERR("Failed to build tm dialog structure, was asked to send [%.*s]"
@@ -2177,7 +2177,8 @@ int b2b_send_request(b2b_req_data_t* req_data)
 			dlg->last_method == METHOD_INVITE)
 	{
 		/* send it ACK so that you can send the new request */
-		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, req_data->body, req_data->no_cb);
+		b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0,
+			req_data->body, req_data->no_cb);
 		dlg->state= B2B_ESTABLISHED;
 	}
 
@@ -2215,14 +2216,16 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		}
 		else
 		{
-			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, req_data->no_cb);
-			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, req_data->body, req_data->no_cb);
+			b2b_send_indlg_req(dlg, et, b2b_key, &ack, &ehdr, 0, 0, req_data->no_cb);
+			ret = b2b_send_indlg_req(dlg, et, b2b_key, &bye, &ehdr, 0, req_data->body,
+				req_data->no_cb);
 			method_value = METHOD_BYE;
 		}
 	}
 	else
 	{
-		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr, req_data->body, req_data->no_cb);
+		ret = b2b_send_indlg_req(dlg, et, b2b_key, method, &ehdr,
+			req_data->maxfwd, req_data->body, req_data->no_cb);
 	}
 
 	if(ret < 0)
@@ -2459,9 +2462,9 @@ int b2b_send_req(b2b_dlg_t* dlg, enum b2b_entity_type etype,
 
 	LM_DBG("start type=%d\n", etype);
 	if(etype== B2B_SERVER)
-		td = b2b_server_build_dlg(dlg);
+		td = b2b_server_build_dlg(dlg, 0);
 	else
-		td = b2b_client_build_dlg(dlg, leg);
+		td = b2b_client_build_dlg(dlg, leg, 0);
 
 	if(td == NULL)
 	{
@@ -2977,7 +2980,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					new_hdr->s = NULL; new_hdr->len = 0;
 
 					b2b_send_indlg_req(dlg, B2B_CLIENT, b2b_key, &t->method,
-							&extra_headers, &body, 0);
+							&extra_headers, 0, &body, 0);
 					pkg_free(extra_headers.s);
 
 					dlg->state = B2B_NEW_AUTH;
