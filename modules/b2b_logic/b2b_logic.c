@@ -2234,16 +2234,24 @@ static str *b2bl_get_key(void)
 {
 	static str ret;
 	static char buf[MAX_B2BL_KEY];
-	b2bl_tuple_t *tuple = get_ctx_tuple();
+	int locked = 0;
+	b2bl_tuple_t *tuple = get_ctx_tuple(&locked);
 
-	if (!tuple)
+	if (!tuple) {
+		if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
+			lock_release(&b2bl_htable[tuple->hash_index].lock);
 		return NULL;
+	}
 
 	ret.s = buf;
 	ret.len = 0;
 
 	ret.len = tuple->key->len;
 	memcpy(ret.s, tuple->key->s, ret.len);
+
+	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
+		lock_release(&b2bl_htable[tuple->hash_index].lock);
+
 	return &ret;
 }
 
@@ -2252,6 +2260,7 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 	str callid;
 	b2bl_tuple_t *tuple;
 	b2bl_entity_id_t *bentity = NULL;
+	int locked = 0;
 
 	if (!info)
 		return -4;
@@ -2259,10 +2268,15 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 	if (entity < -2 || entity > 1)
 		return -4;
 
-	if (key)
+	if (key) {
 		tuple = b2bl_get_tuple(key);
-	else
-		tuple = get_ctx_tuple();
+	} else {
+		tuple = get_ctx_tuple(&locked);
+
+		if (tuple && locked &&
+			b2bl_htable[tuple->hash_index].locked_by != process_no)
+			lock_release(&b2bl_htable[tuple->hash_index].lock);
+	}
 	if (!tuple)
 		return -2;
 
