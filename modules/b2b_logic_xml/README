@@ -795,8 +795,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
-   2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 142 25 13122 583
+   2. Vlad Patrascu (@rvlad-patrascu) 145 26 13185 621
+   3. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 42 35 243 258
    5. Razvan Crainea (@razvancrainea) 39 29 639 210
    6. Liviu Chircu (@liviuchircu) 15 12 55 100
@@ -829,7 +829,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2022
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Apr 2021
    3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
