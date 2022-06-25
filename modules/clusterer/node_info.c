@@ -110,6 +110,11 @@ int add_node_info(node_info_t **new_info, cluster_info_t **cl_list, int *int_val
 		*cl_list = cluster;
 	}
 
+	if (get_node_by_id(cluster, int_vals[INT_VALS_NODE_ID_COL])) {
+		LM_DBG("Node [%d] already exists\n", int_vals[INT_VALS_NODE_ID_COL]);
+		return 0;
+	}
+
 	*new_info = shm_malloc(sizeof **new_info);
 	if (!*new_info) {
 		LM_ERR("no more shm memory\n");
