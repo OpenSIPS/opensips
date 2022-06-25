@@ -994,6 +994,19 @@ search_dialog:
 			return SCB_RUN_ALL;
 		}
 	}
+
+	ctx = b2b_get_context();
+	if (!ctx) {
+		LM_ERR("Failed to get b2b context\n");
+		lock_release(&server_htable[hash_index].lock);
+		return SCB_DROP_MSG;
+	}
+	if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
+		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
+		lock_release(&server_htable[hash_index].lock);
+		return SCB_DROP_MSG;
+	}
+
 	if (method_value == METHOD_PRACK)
 	{
 		lock_release(&table[hash_index].lock);
@@ -1013,18 +1026,6 @@ search_dialog:
 			run_top_route(sroutes->request[req_routeid], msg);
 
 		goto done;
-	}
-
-	ctx = b2b_get_context();
-	if (!ctx) {
-		LM_ERR("Failed to get b2b context\n");
-		lock_release(&server_htable[hash_index].lock);
-		return SCB_DROP_MSG;
-	}
-	if (dlg->param.s && pkg_str_dup(&ctx->b2bl_key, &dlg->param) < 0) {
-		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
-		lock_release(&server_htable[hash_index].lock);
-		return SCB_DROP_MSG;
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
