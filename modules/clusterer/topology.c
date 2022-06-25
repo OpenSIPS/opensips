@@ -698,11 +698,6 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 		lock_switch_read(cl_list_lock, lock_old_flag);
 		return NULL;
 	}
-	if (!new_node) {
-		LM_ERR("Unable to add node info to backing list\n");
-		lock_switch_read(cl_list_lock, lock_old_flag);
-		return NULL;
-	}
 
 	lock_switch_read(cl_list_lock, lock_old_flag);
 
