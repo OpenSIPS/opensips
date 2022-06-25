@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">88</entry>
-		<entry align="center">22</entry>
-		<entry align="center">2964</entry>
-		<entry align="center">2464</entry>
+		<entry align="center">93</entry>
+		<entry align="center">26</entry>
+		<entry align="center">3094</entry>
+		<entry align="center">2509</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -120,18 +120,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">Nov 2020 - Jun 2022</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jan 2021 - May 2022</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Carsten Bock</entry>
 		<entry align="center">Mar 2022 - Apr 2022</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">Nov 2020 - Feb 2022</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -177,7 +177,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Carsten Bock, Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Carsten Bock, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>).</para>
 </section>
 
 </chapter>

@@ -263,6 +263,7 @@ modparam("b2b_logic", "cleanup_period", 60)
    Regexp to search SIP header by names that should be passed from
    the dialog of one side to the other side. There are a number of
    headers that are passed by default. They are:
+     * Max-Forwards (it is decreased by 1)
      * Content-Type
      * Supported
      * Allow
@@ -1234,7 +1235,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 88 22 2964 2464
+   1. Vlad Patrascu (@rvlad-patrascu) 93 26 3094 2509
    2. Razvan Crainea (@razvancrainea) 18 9 589 198
    3. Nick Altmann (@nikbyte) 13 9 278 29
    4. Carsten Bock 12 5 679 23
@@ -1264,9 +1265,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jan 2021 - May 2022
-   2. Carsten Bock                        Mar 2022 - Apr 2022
-   3. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Feb 2022
+   1. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jun 2022
+   2. Razvan Crainea (@razvancrainea)     Jan 2021 - May 2022
+   3. Carsten Bock                        Mar 2022 - Apr 2022
    4. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
    5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
    6. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
@@ -1281,7 +1282,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Carsten Bock, Vlad Patrascu (@rvlad-patrascu),
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Carsten Bock,
    Nick Altmann (@nikbyte).
 
    Documentation Copyrights:
