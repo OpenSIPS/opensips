@@ -711,6 +711,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
 	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
+	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
 
 	if (adv_ct) {
 		ci.local_contact = *adv_ct;
@@ -867,6 +868,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.body          = body;
 			ci.from_tag      = NULL;
 			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
+			ci.maxfwd = bentity0->init_maxfwd;
 
 			if (bentity1->adv_contact.s) {
 				ci.local_contact = bentity1->adv_contact;
@@ -3514,8 +3516,10 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		msg->force_send_socket:msg->rcv.bind_address;
 
 	/* Decrement Max-Forwards value */
-	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0) {
 		ci.maxfwd = maxfwd;
+		tuple->servers[0]->init_maxfwd = maxfwd;
+	}
 
 	if (new_entity->adv_contact.s) {
 		ci.local_contact = new_entity->adv_contact;
@@ -4098,6 +4102,7 @@ int b2bl_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 		ci.body          = tuple->b1_sdp.s?&tuple->b1_sdp:0;
 		ci.cseq          = 1;
 		ci.local_contact = tuple->local_contact;
+		ci.maxfwd = tuple->servers[0]->init_maxfwd;
 
 		b2bl_htable[hash_index].locked_by = process_no;
 
@@ -4884,6 +4889,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	int ret;
 	struct sip_uri ct_uri;
 	str local_contact;
+	int maxfwd;
 
 	if(!msg || !key)
 	{
@@ -5152,6 +5158,9 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	}
 	req_data.client_headers =&bridging_entity->hdrs;
 	req_data.body = &body;
+	/* Decrement Max-Forwards value */
+	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+		req_data.maxfwd = maxfwd;
 	b2bl_htable[hash_index].locked_by = process_no;
 	if(b2b_api.send_request(&req_data) < 0)
 	{
