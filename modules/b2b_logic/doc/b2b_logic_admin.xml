@@ -529,21 +529,17 @@ if(is_method("INVITE") &amp;&amp; !has_totag() &amp;&amp; prepaid_user())
 			<title><function>b2b_bridge_request</function> usage</title>
 		<programlisting format="linespecific">
 ...
-modparam("b2b_entities", "script_req_route", "b2b_request")
-...
-route[b2b_request]
-{
-   # incoming requests from the B2B entities
-   ...
-   if ($ci~="^B2B") { #keep this aligned with b2b_key_prefix
-      # request coming from the UAC side;
-      # the Call-ID carries the B2B key ID
-      if (is_method("BYE") {
-         $var(entity) = 1;
-         b2b_bridge_request($ci,$var(entity));
-      }
-   }
-   ...
+if ($rU == "pickup") {
+    # get the b2b logic key of the parked call for this user
+    cache_fetch("local", "$fU", $var(b2bl_key));
+    cache_remove("local", "$fU");
+
+    if ($var(b2bl_key) != NULL)
+        b2b_bridge_request($var(b2bl_key), 0);
+    else
+        send_reply(481, "Call/Transaction Does Not Exist");
+
+    exit;
 }
 ...
 		</programlisting>
