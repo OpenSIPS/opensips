@@ -618,6 +618,7 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str* from_uri,
 	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
 	if (ci.send_sock) get_local_contact(ci.send_sock, NULL, &ci.local_contact);
 	else ci.local_contact = server_address;
+	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
 
 	if(msg)
 	{
@@ -751,6 +752,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.from_tag      = NULL;
 			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
 			get_local_contact(ci.send_sock, NULL, &ci.local_contact);
+			ci.maxfwd = bentity0->init_maxfwd;
 
 			if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
 			{
@@ -3547,6 +3549,12 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 			goto error2;
 		}
 
+		/* Decrement Max-Forwards value */
+		if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0) {
+			ci.maxfwd = maxfwd;
+			tuple->servers[0]->init_maxfwd = maxfwd;
+		}
+
 		if(b2b_scenario_parse_uri(node_aux, value_content, tuple, msg,
 					&client_to) < 0 || !client_to.s)
 		{
@@ -3901,6 +3909,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		ci.body          = tuple->b1_sdp.s?&tuple->b1_sdp:0;
 		ci.cseq          = 1;
 		ci.local_contact = tuple->local_contact;
+		ci.maxfwd = tuple->servers[0]->init_maxfwd;
 
 		b2bl_htable[hash_index].locked_by = process_no;
 
@@ -4357,6 +4366,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
 	int ret;
+	int maxfwd;
 
 	if(!msg || !key)
 	{
@@ -4558,6 +4568,9 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 	req_data.method =&method_invite;
 	req_data.client_headers =&bridging_entity->hdrs;
 	req_data.body = &body;
+	/* Decrement Max-Forwards value */
+	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0)
+		req_data.maxfwd = maxfwd;
 	b2bl_htable[hash_index].locked_by = process_no;
 	if(b2b_api.send_request(&req_data) < 0)
 	{

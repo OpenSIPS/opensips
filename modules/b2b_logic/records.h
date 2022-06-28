@@ -46,6 +46,7 @@ typedef struct b2bl_entity_id
 	int rejected;
 	int disconnected;
 	int state;
+	int init_maxfwd;
 	unsigned short no;
 	unsigned short sdp_type;
 	enum b2b_entity_type type;
