@@ -1297,21 +1297,44 @@ $ opensips-cli -x mi clusterer_list_cap
 	discarding the old ones.
 	</para>
 	<programlisting  format="linespecific">
+{
+    "Name": "sharing_tags",
+    "Reports": [
         {
-            "Name": "sharing_tags",
-            "Reports": [
-                {
-                    "Timestamp": 1652367224,
-                    "Date": "Thu May 12 17:53:44 2022",
-                    "Log": "TAG &lt;HA&gt;, cluster 1, became backup due to cluster broadcast from 2"
-                },
-                {
-                    "Timestamp": 1652367326,
-                    "Date": "Thu May 12 17:55:26 2022",
-                    "Log": "TAG &lt;HA&gt;, cluster 1, became active due to MI command"
-                }
-            ]
+            "Timestamp": 1652367224,
+            "Date": "Thu May 12 17:53:44 2022",
+            "Log": "TAG &lt;HA&gt;, cluster 1, became backup due to cluster broadcast from 2"
+        },
+        {
+            "Timestamp": 1652367326,
+            "Date": "Thu May 12 17:55:26 2022",
+            "Log": "TAG &lt;HA&gt;, cluster 1, became active due to MI command"
         }
+    ]
+}
+
+	</programlisting>
+	<para>
+	The "node_states" identifier is used for reporting node state changes
+	(in terms of availability). This identifier have a 200 records history before
+	discarding the old ones.
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "node_states",
+    "Reports": [
+        {
+            "Timestamp": 1656489246,
+            "Date": "Wed Jun 29 10:54:06 2022",
+            "Log": "Node [2], cluster [1] is UP"
+        },
+        {
+            "Timestamp": 1656489261,
+            "Date": "Wed Jun 29 10:54:21 2022",
+            "Log": "Node [2], cluster [1] is DOWN"
+        }
+    ]
+}
 
 	</programlisting>
 	<para>

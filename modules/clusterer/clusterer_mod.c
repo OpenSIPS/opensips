@@ -67,6 +67,8 @@ extern db_func_t dr_dbf;
 /* status-report group for clusterer */
 void *cl_srg=NULL;
 
+str node_st_sr_ident = str_init("node_states");
+
 /* module interface functions */
 static int mod_init(void);
 static int child_init(int rank);
@@ -489,6 +491,12 @@ static int mod_init(void)
 	cl_srg = sr_register_group( CHAR_INT("clusterer"), 0 /*not public*/);
 	if (cl_srg==NULL) {
 		LM_ERR("failed to create clusterer group for 'status-report'");
+		return -1;
+	}
+
+	if (sr_register_identifier(cl_srg, STR2CI(node_st_sr_ident),
+			SR_STATUS_READY, CHAR_INT_NULL, 200 ) ) {
+		LM_ERR("failed to register status report identifier\n");
 		return -1;
 	}
 

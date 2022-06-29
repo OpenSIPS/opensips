@@ -146,6 +146,7 @@ extern enum sip_protos clusterer_proto;
 extern str cl_internal_cap;
 extern str cl_extra_cap;
 extern void *cl_srg;
+extern str node_st_sr_ident;
 
 void seed_fb_check_timer(utime_t ticks, void *param);
 
