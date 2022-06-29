@@ -34,6 +34,7 @@
 #include "../../timer.h"
 #include "../../forward.h"
 #include "../../ipc.h"
+#include "../../status_report.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -1527,6 +1528,25 @@ int send_cap_update(node_info_t *dest_node, int require_reply)
 	return 0;
 }
 
+int report_node_state(enum clusterer_event event, int cluster_id, int node_id)
+{
+	if (raise_node_state_ev(event, cluster_id, node_id) < 0) {
+		LM_ERR("Failed to raise node state changed event for: "
+			"cluster_id=%d node_id=%d\n", cluster_id, node_id);
+		return -1;
+	}
+
+	if (sr_add_report_fmt(cl_srg, STR2CI(node_st_sr_ident), 0,
+		"Node [%d], cluster [%d] is %s", node_id, cluster_id,
+		event==CLUSTER_NODE_DOWN ? "DOWN" : "UP") < 0) {
+		LM_ERR("Failed to add SR report for node state change, "
+			"cluster_id=%d, node_id=%d\n", cluster_id, node_id);
+		return -1;
+	}
+
+	return 0;
+}
+
 void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 								int no_clusters)
 {
@@ -1553,11 +1573,9 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					if (cap_it->reg.event_cb)
 						cap_it->reg.event_cb(CLUSTER_NODE_DOWN, node->node_id);
 
-				if (raise_node_state_ev(CLUSTER_NODE_DOWN, cl->cluster_id,
+				if (report_node_state(CLUSTER_NODE_DOWN, cl->cluster_id,
 					node->node_id) < 0)
-					LM_ERR("Failed to raise node state changed event for: "
-						"cluster_id=%d node_id=%d, new_state=node down\n",
-						cl->cluster_id, node->node_id);
+					LM_ERR("Failed to report node state change\n");
 
 				shtag_event_handler(cl->cluster_id, CLUSTER_NODE_DOWN,
 					node->node_id);
@@ -1626,11 +1644,9 @@ void do_actions_node_ev(cluster_info_t *clusters, int *select_cluster,
 					}
 				}
 
-				if (raise_node_state_ev(CLUSTER_NODE_UP, cl->cluster_id,
+				if (report_node_state(CLUSTER_NODE_UP, cl->cluster_id,
 					node->node_id) < 0)
-					LM_ERR("Failed to raise node state changed event for: "
-						"cluster_id=%d node_id=%d, new_state=node up\n",
-						cl->cluster_id, node->node_id);
+					LM_ERR("Failed to report node state change\n");
 
 				shtag_event_handler(cl->cluster_id, CLUSTER_NODE_UP,
 					node->node_id);
