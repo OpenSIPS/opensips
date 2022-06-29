@@ -1339,7 +1339,7 @@ $ opensips-cli -x mi clusterer_list_cap
 	</programlisting>
 	<para>
 	For how to access and use the Status/Report information, please see
-	<ulink url='>https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>https://www.opensips.org/Documentation/Interface-StatusReport-3-3</ulink>.
+	<ulink url='https://www.opensips.org/Documentation/Interface-StatusReport-3-4'>Status/Report Interface documentation</ulink>.
 	</para>
 
 </section>
