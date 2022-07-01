@@ -731,6 +731,11 @@ static void hashT_clean(unsigned int ticks,void *param)
 					p= p->next;
 					continue;
 				}
+				/* the presentity is not expired yet */
+				else if (p->expires + 5 >= now) {
+					p= p->next;
+					continue;
+				}
 
 				LM_DBG("Found expired: uri= %.*s\n", p->pres_uri->len,
 						p->pres_uri->s);
