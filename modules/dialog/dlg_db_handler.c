@@ -487,9 +487,9 @@ void read_dialog_profiles(char *b, int l, struct dlg_cell *dlg,int double_check,
 				continue;
 			}
 		}
-		if (set_dlg_profile( dlg, profile->has_value ? &val : NULL, profile,
-		    is_replicated) < 0 )
-			LM_ERR("failed to add to profile, skipping....\n");
+		if (load_dlg_profile( dlg, profile->has_value ? &val : NULL, profile,
+				      is_replicated, 1) < 0 )
+		  	LM_ERR("failed to add to profile, skipping....\n");
 		next:
 			;
 	} while(p!=end);

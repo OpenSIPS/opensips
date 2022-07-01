@@ -84,6 +84,9 @@ struct dialog_list{
 typedef int (*set_dlg_profile_f)(struct dlg_cell *dlg, str *value,
                         struct dlg_profile_table *profile, char is_replicated);
 
+typedef int (*load_dlg_profile_f)(struct dlg_cell *dlg, str *value,
+                        struct dlg_profile_table *profile, char is_replicated, int no_increment_cached);
+
 typedef int (*unset_dlg_profile_f)(struct dlg_cell *dlg, str *value,
                          struct dlg_profile_table *profile);
 
@@ -111,6 +114,9 @@ struct dlg_profile_table *get_dlg_profile(str *name);
 void destroy_linkers(struct dlg_cell *dlg);
 void destroy_linkers_unsafe(struct dlg_cell *dlg);
 void remove_dlg_prof_table(struct dlg_cell *dlg, char cachedb_dec);
+
+int load_dlg_profile(struct dlg_cell *dlg, str *value,
+		struct dlg_profile_table *profile, char is_replicated, int no_increment_cached);
 
 int set_dlg_profile(struct dlg_cell *dlg, str *value,
 		struct dlg_profile_table *profile, char is_replicated);

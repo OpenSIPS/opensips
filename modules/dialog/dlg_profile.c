@@ -751,7 +751,8 @@ inline static unsigned int calc_hash_profile( str *value, struct dlg_cell *dlg,
 
 
 static int link_dlg_profile(struct dlg_profile_link *linker,
-                            struct dlg_cell *dlg, char is_replicated)
+			    struct dlg_cell *dlg, char is_replicated,
+			    int no_increment_cached)
 {
 	unsigned int hash;
 	map_t p_entry;
@@ -778,8 +779,10 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 				return -1;
 			}
 
-			prof_val_local_inc(dest, &dlg->shtag,
-				profile->repl_type == REPL_PROTOBIN);
+			if (no_increment_cached == 0) {
+				prof_val_local_inc(dest, &dlg->shtag,
+						   profile->repl_type == REPL_PROTOBIN);
+			}
 		}
 		else {
 			if (profile->repl_type == REPL_PROTOBIN && profile_repl_cluster) {
@@ -813,24 +816,26 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 			if (dlg_fill_size(&profile->name) < 0)
 				return -1;
 
-			/* not really interested in the new val */
-			if (cdbf.add(cdbc, &dlg_prof_val_buf, 1,
-						profile_timeout, NULL) < 0) {
-				LM_ERR("cannot insert profile into CacheDB\n");
-				return -1;
-			}
-			/* fill size into name */
-			if (cdbf.add(cdbc, &dlg_prof_size_buf, 1,
-						profile_timeout, NULL) < 0) {
-				LM_ERR("cannot insert size profile into CacheDB\n");
-				return -1;
+			if (no_increment_cached == 0) {
+				/* not really interested in the new val */
+			  	if (cdbf.add(cdbc, &dlg_prof_val_buf, 1,
+					     profile_timeout, NULL) < 0) {
+					LM_ERR("cannot insert profile into CacheDB\n");
+					return -1;
+				}
+				/* fill size into name */
+				if (cdbf.add(cdbc, &dlg_prof_size_buf, 1,
+					     profile_timeout, NULL) < 0) {
+					LM_ERR("cannot insert size profile into CacheDB\n");
+					return -1;
+				}
 			}
 		} else {
 			if (dlg_fill_name(&profile->name) < 0)
 				return -1;
 
 			if (cdbf.add(cdbc, &dlg_prof_noval_buf, 1,
-						profile_timeout, NULL) < 0) {
+				     profile_timeout, NULL) < 0) {
 				LM_ERR("cannot insert profile into CacheDB\n");
 				return -1;
 			}
@@ -853,8 +858,9 @@ static int link_dlg_profile(struct dlg_profile_link *linker,
 }
 
 
-int set_dlg_profile(struct dlg_cell *dlg, str *value,
-						struct dlg_profile_table *profile, char is_replicated)
+int load_dlg_profile(struct dlg_cell *dlg, str *value,
+		     struct dlg_profile_table *profile, char is_replicated,
+		     int no_increment_cached)
 {
 	struct dlg_profile_link *linker;
 
@@ -884,7 +890,7 @@ int set_dlg_profile(struct dlg_cell *dlg, str *value,
 	}
 
 	/* add linker to the dialog and profile */
-	if (link_dlg_profile(linker, dlg, is_replicated) != 0) {
+	if (link_dlg_profile(linker, dlg, is_replicated, no_increment_cached) != 0) {
 		LM_ERR("failed to link dialog profile '%s', ci: %.*s\n",
 		       linker->profile->name.s, dlg->callid.len, dlg->callid.s);
 		shm_free(linker);
@@ -893,6 +899,14 @@ int set_dlg_profile(struct dlg_cell *dlg, str *value,
 
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
 	return 0;
+}
+
+
+int set_dlg_profile(struct dlg_cell *dlg, str *value,
+		    struct dlg_profile_table *profile, char is_replicated)
+
+{
+	return load_dlg_profile(dlg, value, profile, is_replicated, 0);
 }
 
 
