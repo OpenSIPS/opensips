@@ -270,7 +270,7 @@ static unsigned long clusterer_get_num_nodes_up(unsigned short foo)
 
 static unsigned long clusterer_get_num_nodes_down(unsigned short foo)
 {
-	return clusterer_get_num_nodes(LS_DOWN);
+	return clusterer_get_num_nodes(-1) - clusterer_get_num_nodes(LS_UP);
 }
 
 static stat_export_t mod_stats[] = {

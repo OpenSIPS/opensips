@@ -1501,4 +1501,32 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 	efficient and scalable way.
 </para>
 
+<section id="exported_statistics">
+	<title>Exported Statistics</title>
+	<section id="stat_clusterer_nodes" xreflabel="clusterer_nodes">
+		<title>
+			<varname>clusterer_nodes</varname>
+		</title>
+		<para>
+			Returns the total number of cluster nodes.
+		</para>
+	</section>
+	<section id="stat_clusterer_nodes_up" xreflabel="clusterer_nodes_up">
+		<title>
+			<varname>clusterer_nodes_up</varname>
+		</title>
+		<para>
+			Returns the total number of cluster nodes in the UP state.
+		</para>
+	</section>
+	<section id="stat_clusterer_nodes_down" xreflabel="clusterer_nodes_down">
+		<title>
+			<varname>clusterer_nodes_down</varname>
+		</title>
+		<para>
+			Returns the total number of cluster nodes not in the UP state.
+		</para>
+	</section>
+</section>
+
 </chapter>
