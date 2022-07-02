@@ -462,21 +462,17 @@ if(is_method("INVITE") && !has_totag() && prepaid_user())
 
    Example 1.18. b2b_bridge_request usage
 ...
-modparam("b2b_entities", "script_req_route", "b2b_request")
-...
-route[b2b_request]
-{
-   # incoming requests from the B2B entities
-   ...
-   if ($ci~="^B2B") { #keep this aligned with b2b_key_prefix
-      # request coming from the UAC side;
-      # the Call-ID carries the B2B key ID
-      if (is_method("BYE") {
-         $var(entity) = 1;
-         b2b_bridge_request($ci,$var(entity));
-      }
-   }
-   ...
+if ($rU == "pickup") {
+    # get the b2b logic key of the parked call for this user
+    cache_fetch("local", "$fU", $var(b2bl_key));
+    cache_remove("local", "$fU");
+
+    if ($var(b2bl_key) != NULL)
+        b2b_bridge_request($var(b2bl_key), 0);
+    else
+        send_reply(481, "Call/Transaction Does Not Exist");
+
+    exit;
 }
 ...
 
@@ -802,7 +798,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 209 98 9008 2213
    2. Ovidiu Sas (@ovidiusas) 144 101 2915 1129
-   3. Vlad Patrascu (@rvlad-patrascu) 63 31 2507 655
+   3. Vlad Patrascu (@rvlad-patrascu) 65 33 2532 670
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 41 34 233 248
    5. Razvan Crainea (@razvancrainea) 38 28 633 203
    6. Liviu Chircu (@liviuchircu) 15 12 55 100
