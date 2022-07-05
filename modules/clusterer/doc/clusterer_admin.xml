@@ -1284,17 +1284,17 @@ $ opensips-cli -x mi clusterer_list_cap
 </section>
 
 <section id="sr_identifiers" xreflabel="Status/Report Identifiers">
-	<title>Provided Status/Report Identifiers</title>
+	<title>Exported Status/Report Identifiers</title>
 
 	<para>
-	The module provides the "clusterer" Status/Report group used so
-	far only for reporting purposes.
+	The module provides the <emphasis>clusterer</emphasis> Status/Report group.
 	</para>
+	<section id="sr_id_sharing_tags" xreflabel="sharing_tags">
+	<title><varname>sharing_tags</varname></title>
 	<para>
-	The "sharing_tags" identifier is provided for reporting state changes
-	of the sharing_tags (between active and backup), along with the reason
-	of the change. This identifier have a 200 records history before 
-	discarding the old ones.
+	The <emphasis>sharing_tags</emphasis> identifier is provided for reporting state
+	changes of the sharing_tags (between active and backup), along with the reason of
+	the change. This identifier has a 200 records history before discarding the old ones.
 	</para>
 	<programlisting  format="linespecific">
 {
@@ -1314,10 +1314,13 @@ $ opensips-cli -x mi clusterer_list_cap
 }
 
 	</programlisting>
+	</section>
+	<section id="sr_node_states" xreflabel="node_states">
+	<title><varname>node_states</varname></title>
 	<para>
-	The "node_states" identifier is used for reporting node state changes
-	(in terms of availability). This identifier have a 200 records history before
-	discarding the old ones.
+	The <emphasis>node_states</emphasis> identifier is used for reporting node state
+	changes (in terms of availability). This identifier has a 200 records history
+	before discarding the old ones.
 	</para>
 	<programlisting  format="linespecific">
 {
@@ -1337,6 +1340,68 @@ $ opensips-cli -x mi clusterer_list_cap
 }
 
 	</programlisting>
+	</section>
+	<section id="sr_id_cap" xreflabel="cap">
+	<title><varname>cap:[capability_name]</varname></title>
+	<para>
+	Each capability registered to the clusterer module has a corresponding
+	identifier, named <emphasis>cap:[capability_name]</emphasis>, used for
+	providing the status of the data syncing for that capability. This status
+	reflects the progress of the syncing process and can have the following values:
+	<itemizedlist>
+		<listitem><para>
+			<emphasis>-3</emphasis> - not synced
+		</para></listitem>
+		<listitem><para>
+			<emphasis>-2</emphasis> - sync pending (waiting for either a suitable
+			donor node or actual sync data)
+		</para></listitem>
+		<listitem><para>
+			<emphasis>-1</emphasis> - sync in progress
+		</para></listitem>
+		<listitem><para>
+			<emphasis>1</emphasis> - synced (either sync has completed or the
+			capability does not require data syncing at all)
+		</para></listitem>
+	</itemizedlist>
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Readiness": true,
+    "Status": 1,
+    "Details": "synced"
+},
+	</programlisting>
+	<para>
+	The capability identifiers also provide reports regarding the main stages of
+	the sync process. These identifiers have a 200 records history before discarding
+	the old ones.
+	</para>
+	<programlisting  format="linespecific">
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Reports": [
+        {
+            "Timestamp": 1656966903,
+            "Date": "Mon Jul  4 23:35:03 2022",
+            "Log": "Sync requested"
+        },
+        {
+            "Timestamp": 1656966904,
+            "Date": "Mon Jul  4 23:35:04 2022",
+            "Log": "Sync started from node [1]"
+        },
+        {
+            "Timestamp": 1656966906,
+            "Date": "Mon Jul  4 23:35:06 2022",
+            "Log": "Sync completed, received [10000] chunks"
+        }
+    ]
+},
+
+	</programlisting>
+	</section>
 	<para>
 	For how to access and use the Status/Report information, please see
 	<ulink url='https://www.opensips.org/Documentation/Interface-StatusReport-3-3'>Status/Report Interface documentation</ulink>.
