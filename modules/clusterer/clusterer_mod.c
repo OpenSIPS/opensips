@@ -142,6 +142,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 static param_export_t params[] = {
+	{"enable_stats",		INT_PARAM,  &clusterer_enable_stats	},
 	{"db_url",				STR_PARAM,	&clusterer_db_url.s	},
 	{"db_table",			STR_PARAM,	&db_table.s			},
 	{"my_node_id",			INT_PARAM,	&current_id			},
@@ -254,6 +255,31 @@ static dep_export_t deps = {
 	},
 };
 
+/* statistic variables */
+int clusterer_enable_stats = 1;
+
+static unsigned long clusterer_get_num_nodes_total(unsigned short foo)
+{
+	return clusterer_get_num_nodes(-1);
+}
+
+static unsigned long clusterer_get_num_nodes_up(unsigned short foo)
+{
+	return clusterer_get_num_nodes(LS_UP);
+}
+
+static unsigned long clusterer_get_num_nodes_down(unsigned short foo)
+{
+	return clusterer_get_num_nodes(-1) - clusterer_get_num_nodes(LS_UP);
+}
+
+static stat_export_t mod_stats[] = {
+	{"clusterer_nodes",       STAT_IS_FUNC,  (stat_var**)clusterer_get_num_nodes_total },
+	{"clusterer_nodes_up",    STAT_IS_FUNC,  (stat_var**)clusterer_get_num_nodes_up },
+	{"clusterer_nodes_down",  STAT_IS_FUNC,  (stat_var**)clusterer_get_num_nodes_down },
+	{0, 0, 0}
+};
+
 /**
  * module exports
  */
@@ -263,11 +289,11 @@ struct module_exports exports = {
 	MODULE_VERSION,
 	DEFAULT_DLFLAGS,		/* dlopen flags */
 	0,						/* load function */
-	&deps,            		/* OpenSIPS module dependencies */
+	&deps,					/* OpenSIPS module dependencies */
 	cmds,					/* exported functions */
 	0,						/* exported async functions */
 	params,					/* exported parameters */
-	0,						/* exported statistics */
+	mod_stats,				/* exported statistics */
 	mi_cmds,				/* exported MI functions */
 	mod_vars,				/* exported variables */
 	0,						/* exported transformations */
@@ -392,6 +418,10 @@ static int mod_init(void)
 		LM_CRIT("Failed to init lock\n");
 		return -1;
 	}
+
+	/* if statistics are disabled, prevent their registration to core */
+	if (clusterer_enable_stats==0)
+		exports.stats = 0;
 
 	/* data pointer in shm */
 	if (cluster_list == NULL) {

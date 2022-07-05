@@ -21,6 +21,8 @@
 
 #include "node_info.h"
 
+extern int clusterer_enable_stats;
+
 void heartbeats_timer(void);
 node_info_t *get_next_hop_2(node_info_t *dest);
 int get_next_hop(struct node_info *dest);

@@ -1789,3 +1789,23 @@ void remove_node(struct cluster_info *cl, struct node_info *node)
 
 	remove_node_list(cl, node);
 }
+
+unsigned long clusterer_get_num_nodes(int state)
+{
+	cluster_info_t *cl;
+	node_info_t *n_info;
+	unsigned long nodecount = 0;
+
+	lock_start_read(cl_list_lock);
+
+	for (cl = *cluster_list; cl; cl = cl->next) {
+		for (n_info = cl->node_list; n_info; n_info = n_info->next) {
+			if (state < 0 || state == n_info->link_state)
+				nodecount++;
+		}
+	}
+
+	lock_stop_read(cl_list_lock);
+
+	return nodecount;
+}
