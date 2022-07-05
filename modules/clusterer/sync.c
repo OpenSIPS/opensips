@@ -19,6 +19,7 @@
 
 #include "../../rw_locking.h"
 #include "../../ipc.h"
+#include "../../status_report.h"
 
 #include "api.h"
 #include "node_info.h"
@@ -153,6 +154,12 @@ int cl_request_sync(str *capability, int cluster_id)
 			gettimeofday(&lcap->sync_req_time, NULL);
 
 		lock_release(cluster->lock);
+
+		sr_set_status(cl_srg, STR2CI(lcap->reg.sr_id), CAP_SR_SYNC_PENDING,
+			STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNC_PENDING)), 0);
+		if (sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0,
+			"Sync requested"))
+			return -1;
 	} else {
 		LM_DBG("found donor node: %d\n", source_id);
 		rc = send_sync_req(capability, cluster_id, source_id);
@@ -161,8 +168,15 @@ int cl_request_sync(str *capability, int cluster_id)
 			lock_get(cluster->lock);
 			lcap->flags |= CAP_SYNC_PENDING;
 			lock_release(cluster->lock);
-		} else if (rc == CLUSTERER_SEND_ERR)
+		} else if (rc == CLUSTERER_SEND_ERR) {
 			return -1;
+		} else {
+			sr_set_status(cl_srg, STR2CI(lcap->reg.sr_id), CAP_SR_SYNC_PENDING,
+				STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNC_PENDING)), 0);
+			if (sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0,
+				"Sync requested from node [%d]", source_id))
+				return -1;
+		}
 	}
 
 	return 0;
@@ -479,7 +493,7 @@ int ipc_dispatch_buf_pkt(struct buf_bin_pkt *buf_pkt,
 }
 
 void handle_sync_end(cluster_info_t *cluster, struct local_cap *cap,
-	int source_id)
+	int source_id, int no_sync_chunks)
 {
 	struct buf_bin_pkt *buf_pkt, *buf_tmp;
 
@@ -503,6 +517,11 @@ void handle_sync_end(cluster_info_t *cluster, struct local_cap *cap,
 	cap->flags &= ~CAP_SYNC_IN_PROGRESS;
 	cap->flags |= CAP_STATE_OK;
 
+	sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
+		STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
+	sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+		"Sync completed, received [%d] chunks", no_sync_chunks);
+
 	/* inform module that sync is finished; this job is also dispatched */
 	ipc_dispatch_buf_pkt(NULL, &cap->reg, source_id);
 
@@ -517,6 +536,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 	struct local_cap *cap;
 	int data_version;
 	int no_sync_chunks;
+	int was_in_progress = 0;
 
 	if (get_bin_pkg_version(packet) != BIN_SYNC_VERSION) {
 		LM_INFO("discarding sync packet version %d, need version %d\n",
@@ -543,9 +563,18 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 		bin_pop_int(packet, &data_version);
 
 		lock_get(cluster->lock);
+		if (cap->flags & CAP_SYNC_IN_PROGRESS)
+			was_in_progress = 1;
 		/* buffer other types of packets during sync */
 		cap->flags |= CAP_SYNC_IN_PROGRESS;
 		lock_release(cluster->lock);
+
+		if (!was_in_progress) {
+			sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCING,
+				STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCING)), 0);
+			sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+				"Sync started from node [%d]", source_id);
+		}
 
 		/* overwrite packet type with one identifiable by modules */
 		packet->type = SYNC_PACKET_TYPE;
@@ -566,7 +595,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 
 		/* if all chunks have been processed run the sync end actions */
 		if (cap->sync_cur_chunks_cnt == no_sync_chunks)
-			handle_sync_end(cluster, cap, source_id);
+			handle_sync_end(cluster, cap, source_id, no_sync_chunks);
 
 		lock_release(cluster->lock);
 	}
@@ -643,7 +672,7 @@ int update_sync_chunks_cnt(int cluster_id, str *cap_name, int source_id)
 	 * run the sync end actions */
 	if (cap->sync_total_chunks_cnt != 0 &&
 		cap->sync_cur_chunks_cnt == cap->sync_total_chunks_cnt)
-		handle_sync_end(cluster, cap, source_id);
+		handle_sync_end(cluster, cap, source_id, cap->sync_total_chunks_cnt);
 
 	lock_release(cluster->lock);
 

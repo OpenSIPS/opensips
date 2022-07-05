@@ -61,6 +61,9 @@
 #define CAP_DISABLED 0
 #define CAP_ENABLED  1
 
+#define CAP_SR_ID_PREFIX "cap:"
+#define CAP_SR_ID_PREFIX_LEN (sizeof(CAP_SR_ID_PREFIX) - 1)
+
 typedef enum { CLUSTERER_PING, CLUSTERER_PONG,
 				CLUSTERER_LS_UPDATE, CLUSTERER_FULL_TOP_UPDATE,
 				CLUSTERER_UNKNOWN_ID, CLUSTERER_NODE_DESCRIPTION,
@@ -83,8 +86,20 @@ typedef enum {
 	LS_TEMP
 } clusterer_link_state;
 
+enum cap_sr_status {
+	CAP_SR_NOT_SYNCED       = -3,
+	CAP_SR_SYNC_PENDING     = -2,
+	CAP_SR_SYNCING          = -1,
+	CAP_SR_RESERVED	        =  0,
+	CAP_SR_SYNCED           =  1,
+};
+
+#define CAP_SR_STATUS_STR(_cap_sr_status) \
+	cap_sr_details_str[(_cap_sr_status)-CAP_SR_NOT_SYNCED]
+
 struct capability_reg {
 	str name;
+	str sr_id;
 	enum cl_node_match_op sync_cond;
 	cl_packet_cb_f packet_cb;
 	cl_event_cb_f event_cb;
@@ -147,6 +162,7 @@ extern str cl_internal_cap;
 extern str cl_extra_cap;
 extern void *cl_srg;
 extern str node_st_sr_ident;
+extern str cap_sr_details_str[];
 
 void seed_fb_check_timer(utime_t ticks, void *param);
 

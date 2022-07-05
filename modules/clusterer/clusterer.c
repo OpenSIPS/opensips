@@ -56,6 +56,14 @@ extern int node_timeout;
 extern int ping_timeout;
 extern int seed_fb_interval;
 
+str cap_sr_details_str[] = {
+	str_init("not synced"),
+	str_init("sync pending"),
+	str_init("sync in progress"),
+	STR_NULL,
+	str_init("synced")
+};
+
 void seed_fb_check_timer(utime_t ticks, void *param)
 {
 	cluster_info_t *cl;
@@ -82,6 +90,10 @@ void seed_fb_check_timer(utime_t ticks, void *param)
 				(TIME_DIFF(cap->sync_req_time, now) >= seed_fb_interval*1000000)) {
 				cap->flags |= CAP_STATE_OK;
 				cap->flags &= ~CAP_SYNC_PENDING;
+				sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
+					STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
+				if (sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+					"Donor node not found, fallback to synced state"));
 				LM_INFO("No donor found, falling back to synced state\n");
 				/* send update about the state of this capability */
 				send_single_cap_update(cl, cap, 1);
@@ -217,6 +229,12 @@ int mi_cap_set_state(int cluster_id, str *capability, int status)
 		cap->flags &= ~CAP_STATE_ENABLED;
 		cap->flags &= ~CAP_STATE_OK;
 		change = 1;
+
+		sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_NOT_SYNCED,
+			STR2CI(CAP_SR_STATUS_STR(CAP_SR_NOT_SYNCED)), 0);
+		if (sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+			"Capability disabled via MI, revert to not synced state"))
+			return -1;
 	} else if (status == CAP_ENABLED && !(cap->flags & CAP_STATE_ENABLED)) {
 		cap->flags |= CAP_STATE_ENABLED;
 		change = 1;
@@ -1662,6 +1680,7 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 {
 	struct local_cap *new_cl_cap = NULL;
 	cluster_info_t *cluster;
+	int sr_status;
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
@@ -1670,7 +1689,7 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 		return -1;
 	}
 
-	new_cl_cap = shm_malloc(sizeof *new_cl_cap);
+	new_cl_cap = shm_malloc(sizeof *new_cl_cap + cap->len + CAP_SR_ID_PREFIX_LEN);
 	if (!new_cl_cap) {
 		LM_ERR("No more shm memory\n");
 		return -1;
@@ -1679,12 +1698,22 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 	new_cl_cap->reg.name.len = cap->len;
 	new_cl_cap->reg.name.s = cap->s;
+
+	new_cl_cap->reg.sr_id.s = (char *)(new_cl_cap + 1);
+	new_cl_cap->reg.sr_id.len = cap->len + CAP_SR_ID_PREFIX_LEN;
+	memcpy(new_cl_cap->reg.sr_id.s, CAP_SR_ID_PREFIX, CAP_SR_ID_PREFIX_LEN);
+	memcpy(new_cl_cap->reg.sr_id.s + CAP_SR_ID_PREFIX_LEN, cap->s, cap->len);
+
 	new_cl_cap->reg.sync_cond = sync_cond;
 	new_cl_cap->reg.packet_cb = packet_cb;
 	new_cl_cap->reg.event_cb = event_cb;
 
-	if (!startup_sync)
+	if (!startup_sync) {
 		new_cl_cap->flags |= CAP_STATE_OK;
+		sr_status = CAP_SR_SYNCED;
+	} else {
+		sr_status = CAP_SR_NOT_SYNCED;
+	}
 
 	new_cl_cap->flags |= CAP_STATE_ENABLED;
 
@@ -1693,6 +1722,12 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 	bin_register_cb(cap, bin_rcv_mod_packets, &new_cl_cap->reg,
 		sizeof new_cl_cap->reg);
+
+	if (sr_register_identifier(cl_srg, STR2CI(new_cl_cap->reg.sr_id), sr_status,
+		CAP_SR_STATUS_STR(sr_status).s, CAP_SR_STATUS_STR(sr_status).len, 200)) {
+		LM_ERR("failed to register status report identifier\n");
+		return -1;
+	}
 
 	LM_DBG("Registered capability: %.*s\n", cap->len, cap->s);
 
