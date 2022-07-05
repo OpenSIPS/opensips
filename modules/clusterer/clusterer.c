@@ -349,6 +349,7 @@ void seed_fb_check_timer(utime_t ticks, void *param)
 		for (cap = cl->capabilities; cap; cap = cap->next) {
 			lock_get(cl->lock);
 			if (!(cap->flags & CAP_STATE_OK) &&
+				!(cap->flags & CAP_PKT_BUFFERING) &&
 				(cl->current_node->flags & NODE_IS_SEED) &&
 				(TIME_DIFF(cap->sync_req_time, now) >= seed_fb_interval*1000000)) {
 				cap->flags = CAP_STATE_OK;
