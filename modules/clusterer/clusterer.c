@@ -708,6 +708,7 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 	lock_start_read(cl_list_lock);
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
+		lock_stop_read(cl_list_lock);
 		LM_WARN("Unknown cluster id [%d]\n", cluster_id);
 		return 0;
 	}
@@ -716,6 +717,7 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 		ip.af = AF_INET;
 		ip.len = 16;
 		if (inet_pton(AF_INET, ip_str->s, ip.u.addr) <= 0) {
+			lock_stop_read(cl_list_lock);
 			LM_ERR("Invalid IP address\n");
 			return 0;
 		}

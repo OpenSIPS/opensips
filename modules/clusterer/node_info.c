@@ -876,17 +876,17 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_DBG("Cluster id: %d not found!\n", cluster_id);
-		return NULL;
+		goto error;
 	}
 	dest_node = get_node_by_id(cluster, node_id);
 	if (!dest_node) {
 		LM_DBG("Node id: %d no found!\n", node_id);
-		return NULL;
+		goto error;
 	}
 
 	if (get_next_hop(dest_node) == 0) {
 		LM_DBG("No other path to node: %d\n", node_id);
-		return NULL;
+		goto error;
 	}
 
 	lock_get(dest_node->lock);
@@ -894,7 +894,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	if (add_clusterer_node(&ret, dest_node->next_hop) < 0) {
 		lock_release(dest_node->lock);
 		LM_ERR("Failed to allocate next hop\n");
-		return NULL;
+		goto error;
 	}
 
 	lock_release(dest_node->lock);
@@ -902,6 +902,9 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 	lock_stop_read(cl_list_lock);
 
 	return ret;
+error:
+	lock_stop_read(cl_list_lock);
+	return NULL;
 }
 
 void api_free_next_hop(clusterer_node_t *next_hop)
