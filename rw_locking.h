@@ -114,6 +114,10 @@ inline static void lock_destroy_rw(rw_lock_t *_lock)
 		lock_release((_lock)->lock); \
 	} while (0)
 
+/* processes using the "switchable R/W" macros will run serially with each
+ * other, however they will still run in parallel with processes using the
+ * lock_start_read() macro above!
+ */
 #define lock_start_sw_read(_lock) \
 	do { \
 		__label__ again; \
