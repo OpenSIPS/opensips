@@ -55,7 +55,7 @@ ALL_MODPKG_LIST := \
 	REDIS RABBITMQ HTTP COMPRESSION EMERGENCY \
 	PROTO_TLS PROTO_WSS TLS_MGM TLS_OPENSSL TLS_WOLFSSL \
 	REST_CLIENT LUA \
-	SQLITE CGRATES XML SIPREC PYTHON UUID STIR_SHAKEN AUTH_JWT \
+	SQLITE CGRATES XML SIPREC PYTHON UUID STIR_SHAKEN \
 	PROMETHEUS KAFKA
 # add SCTP only on linux systems
 ifeq ($(DEB_HOST_ARCH_OS),linux)
@@ -78,6 +78,10 @@ ifeq ($(shell dpkg-vendor --derives-from Ubuntu && echo yes),yes)
 endif
 ifeq ($(shell test $(MAJOR_RELEASE) -ge $(DIAMETER_RELEASE); echo $$?),0)
 	ALL_MODPKG_LIST += DIAMETER
+endif
+
+ifeq ($(shell test $(MAJOR_RELEASE) -ge $(DIAMETER_RELEASE); echo $$?),0)
+	ALL_MODPKG_LIST += AUTH_JWT
 endif
 
 ifeq ($(shell dpkg-vendor --derives-from Debian && echo yes),yes)
