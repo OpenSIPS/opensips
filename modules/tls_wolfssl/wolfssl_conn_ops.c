@@ -304,6 +304,36 @@ void _wolfssl_tls_conn_clean(struct tcp_connection* c,
 	*tls_dom = d;
 }
 
+static inline void _wolfssl_enforce_max_version(struct tcp_connection *c)
+{
+	int r_vers, wr_vers;
+
+	r_vers = wolfSSL_version(_WOLFSSL_READ_SSL(c->extra_data));
+	wr_vers = wolfSSL_version(_WOLFSSL_WRITE_SSL(c->extra_data));
+	if (r_vers == wr_vers)
+		return;
+
+	switch(r_vers) {
+	case SSL2_VERSION:
+		LM_BUG("SSLv2 should not be supported\n");
+		break;
+	case SSL3_VERSION:
+		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
+			WOLFSSL_OP_NO_TLSv1);
+	case TLS1_VERSION:
+		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
+			WOLFSSL_OP_NO_TLSv1_1);
+	case TLS1_1_VERSION:
+		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
+			WOLFSSL_OP_NO_TLSv1_2);
+	case TLS1_2_VERSION:
+		wolfSSL_set_options(_WOLFSSL_WRITE_SSL(c->extra_data),
+			WOLFSSL_OP_NO_TLSv1_3);
+	case TLS1_3_VERSION:
+		break;
+	}
+}
+
 int _wolfssl_tls_async_connect(struct tcp_connection *con, int fd,
 	int timeout, trace_dest t_dst)
 {
@@ -357,6 +387,8 @@ int _wolfssl_tls_async_connect(struct tcp_connection *con, int fd,
 					errno, strerror(errno));
 				return -1;
 			}
+
+			_wolfssl_enforce_max_version(con);
 
 			return 1;
 		}
@@ -530,6 +562,8 @@ static int _wolfssl_tls_accept(struct tcp_connection *c, short *poll_events)
 			return -1;
 		}
 
+		_wolfssl_enforce_max_version(c);
+
 		LM_DBG("new TLS connection from %s:%d using %s\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
 			wolfSSL_get_cipher_name(ssl));
@@ -635,6 +669,8 @@ static int _wolfssl_tls_connect(struct tcp_connection *c, short *poll_events,
 				errno, strerror(errno));
 			return -1;
 		}
+
+		_wolfssl_enforce_max_version(c);
 
 		LM_DBG("new TLS connection to %s:%d using %s\n",
 			ip_addr2a(&c->rcv.src_ip), c->rcv.src_port,
