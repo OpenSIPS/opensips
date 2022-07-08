@@ -106,13 +106,13 @@ int perl_exec(struct sip_msg* _msg, str* _fnc_s, str* mystr)
 	str pfnc, pparam;
 	char *fnc;
 
-	fnc = pkg_malloc(_fnc_s->len);
+	fnc = pkg_malloc(_fnc_s->len + 1);
 	if (!fnc) {
 		LM_ERR("No more pkg mem!\n");
 		return -1;
 	}
 	memcpy(fnc, _fnc_s->s, _fnc_s->len);
-	fnc[_fnc_s->len] = 0;
+	fnc[_fnc_s->len] = '\0';
 
 	dSP;
 
