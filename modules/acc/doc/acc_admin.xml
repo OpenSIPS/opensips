@@ -805,7 +805,10 @@ $(acc_leg(caller)[-2])
 		</para>
 
 		<para>
-		Meaning of the parameters is as follows:</para>
+		When called multiple times, the function behaves <emphasis>additively</emphasis>.
+		</para>
+		<para>
+			Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>type (string)</emphasis> - the type of accounting you want to do.
@@ -897,6 +900,9 @@ $(acc_leg(caller)[-2])
 			all accounting for that type will be stopped. If called with two arguments
 			normal accounting will still be enabled.</para>
 
+		<para>
+		When called multiple times, the function behaves <emphasis>additively</emphasis>.
+		</para>
 		<para>
 		Meaning of the parameters is as follows:</para>
 		<itemizedlist>
