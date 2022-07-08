@@ -173,6 +173,8 @@ int perl_exec(struct sip_msg* _msg, str* _fnc_s, str* mystr)
 	PUTBACK;
 	FREETMPS;			/* free that return value        */
 	LEAVE;				/* ...and the XPUSHed "mortal" args.*/
+
+	pkg_free(fnc);
 	return retval;
 
 error:
