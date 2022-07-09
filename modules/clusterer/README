@@ -36,6 +36,7 @@ CLUSTERER Module
               1.4.20. sip_addr_col
               1.4.21. flags_col
               1.4.22. description_col
+              1.4.23. enable_stats (integer)
 
         1.5. Exported Functions
 
@@ -74,8 +75,18 @@ CLUSTERER Module
               1.8.3. E_CLUSTERER_NODE_STATE_CHANGED
               1.8.4. E_CLUSTERER_SHARING_TAG_CHANGED
 
-        1.9. Provided Status/Report Identifiers
+        1.9. Exported Status/Report Identifiers
+
+              1.9.1. sharing_tags
+              1.9.2. node_states
+              1.9.3. cap:[capability_name]
+
         1.10. Usage Example
+        1.11. Exported Statistics
+
+              1.11.1. clusterer_nodes
+              1.11.2. clusterer_nodes_up
+              1.11.3. clusterer_nodes_down
 
    2. Developer Guide
 
@@ -133,16 +144,17 @@ CLUSTERER Module
    1.20. Set sip_addr_col parameter
    1.21. Set flags_col parameter
    1.22. Set description_col parameter
-   1.23. cluster_send_req() usage
-   1.24. cluster_send_rpl() usage
-   1.25. cluster_broadcast_req() usage
-   1.26. cluster_check_addr() usage
-   1.27. clusterer_list usage
-   1.28. clusterer_list_topology usage
-   1.29. clusterer_list_cap usage
-   1.30. Example database content - clusterer table
-   1.31. Node A configuration
-   1.32. Node B configuration
+   1.23. Set enable_stats parameter
+   1.24. cluster_send_req() usage
+   1.25. cluster_send_rpl() usage
+   1.26. cluster_broadcast_req() usage
+   1.27. cluster_check_addr() usage
+   1.28. clusterer_list usage
+   1.29. clusterer_list_topology usage
+   1.30. clusterer_list_cap usage
+   1.31. Example database content - clusterer table
+   1.32. Node A configuration
+   1.33. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -537,6 +549,20 @@ modparam("clusterer", "flags_col", "flags")
 modparam("clusterer", "description_col", "description")
 ...
 
+1.4.23. enable_stats (integer)
+
+   If the statistics support should be enabled or not. Via
+   statistic variables, the module provide information about the
+   cluster nodes. Set it to zero to disable or to non-zero to
+   enable it.
+
+   Default value is “1 (enabled)”.
+
+   Example 1.23. Set enable_stats parameter
+...
+modparam("clusterer", "enable_stats", 0)
+...
+
 1.5. Exported Functions
 
 1.5.1.  cluster_send_req(cluster_id, dst_id, msg, [tag])
@@ -569,7 +595,7 @@ modparam("clusterer", "description_col", "description")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.23. cluster_send_req() usage
+   Example 1.24. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req(1, 1, "Check USER: $fU", $var(req_tag));
@@ -613,7 +639,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.24. cluster_send_rpl() usage
+   Example 1.25. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   cluster_send_rpl($param(cluster_id), $param(src_id), $var(my_reply), $
@@ -641,7 +667,7 @@ param(tag));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.25. cluster_broadcast_req() usage
+   Example 1.26. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req($var(cl_id), $var(share_data));
 ...
@@ -663,7 +689,7 @@ cluster_broadcast_req($var(cl_id), $var(share_data));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.26. cluster_check_addr() usage
+   Example 1.27. cluster_check_addr() usage
 ...
 if (cluster_check_addr(1, $si)) {
         ...
@@ -694,7 +720,7 @@ if (cluster_check_addr(1, $si)) {
 
    Parameters:none
 
-   Example 1.27. clusterer_list usage
+   Example 1.28. clusterer_list usage
 $ opensips-cli -x mi clusterer_list
 {
     "Clusters": [
@@ -728,7 +754,7 @@ $ opensips-cli -x mi clusterer_list
 
    Parameters:none
 
-   Example 1.28. clusterer_list_topology usage
+   Example 1.29. clusterer_list_topology usage
 $ opensips-cli -x mi clusterer_list_topology
 {
     "Clusters": [
@@ -845,7 +871,7 @@ opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 
    Parameters:none
 
-   Example 1.29. clusterer_list_cap usage
+   Example 1.30. clusterer_list_cap usage
 $ opensips-cli -x mi clusterer_list_cap
 {
     "Clusters": [
@@ -999,14 +1025,15 @@ f-repl 1
        the state, like a another node stepping as active, an MI
        command or script variable.
 
-1.9. Provided Status/Report Identifiers
+1.9. Exported Status/Report Identifiers
 
-   The module provides the "clusterer" Status/Report group used so
-   far only for reporting purposes.
+   The module provides the clusterer Status/Report group.
 
-   The "sharing_tags" identifier is provided for reporting state
+1.9.1. sharing_tags
+
+   The sharing_tags identifier is provided for reporting state
    changes of the sharing_tags (between active and backup), along
-   with the reason of the change. This identifier have a 200
+   with the reason of the change. This identifier has a 200
    records history before discarding the old ones.
 {
     "Name": "sharing_tags",
@@ -1027,8 +1054,10 @@ oadcast from 2"
 }
 
 
-   The "node_states" identifier is used for reporting node state
-   changes (in terms of availability). This identifier have a 200
+1.9.2. node_states
+
+   The node_states identifier is used for reporting node state
+   changes (in terms of availability). This identifier has a 200
    records history before discarding the old ones.
 {
     "Name": "node_states",
@@ -1045,6 +1074,52 @@ oadcast from 2"
         }
     ]
 }
+
+
+1.9.3. cap:[capability_name]
+
+   Each capability registered to the clusterer module has a
+   corresponding identifier, named cap:[capability_name], used for
+   providing the status of the data syncing for that capability.
+   This status reflects the progress of the syncing process and
+   can have the following values:
+     * -3 - not synced
+     * -2 - sync pending (waiting for either a suitable donor node
+       or actual sync data)
+     * -1 - sync in progress
+     * 1 - synced (either sync has completed or the capability
+       does not require data syncing at all)
+
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Readiness": true,
+    "Status": 1,
+    "Details": "synced"
+},
+
+   The capability identifiers also provide reports regarding the
+   main stages of the sync process. These identifiers have a 200
+   records history before discarding the old ones.
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Reports": [
+        {
+            "Timestamp": 1656966903,
+            "Date": "Mon Jul  4 23:35:03 2022",
+            "Log": "Sync requested"
+        },
+        {
+            "Timestamp": 1656966904,
+            "Date": "Mon Jul  4 23:35:04 2022",
+            "Log": "Sync started from node [1]"
+        },
+        {
+            "Timestamp": 1656966906,
+            "Date": "Mon Jul  4 23:35:06 2022",
+            "Log": "Sync completed, received [10000] chunks"
+        }
+    ]
+},
 
 
    For how to access and use the Status/Report information, please
@@ -1066,7 +1141,7 @@ oadcast from 2"
 
    We insert in the the clusterer table the following:
 
-   Example 1.30. Example database content - clusterer table
+   Example 1.31. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+------------
 -----+----------+----------+-------+-------------+
 | id | cluster_id | node_id | url                  | state | no_ping_ret
@@ -1109,7 +1184,7 @@ ries | priority | sip_addr | flags | description |
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.31. Node A configuration
+   Example 1.32. Node A configuration
 ...
 socket= bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -1125,7 +1200,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.32. Node B configuration
+   Example 1.33. Node B configuration
 ...
 socket= bin:192.168.0.6:5566 # bin listener for Node B
 
@@ -1143,6 +1218,20 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
    Starting the two OpenSIPS instances with the above
    configurations provides your platform the ability to used
    shared ratelimit pipes in a very efficient and scalable way.
+
+1.11. Exported Statistics
+
+1.11.1.  clusterer_nodes
+
+   Returns the total number of cluster nodes.
+
+1.11.2.  clusterer_nodes_up
+
+   Returns the total number of cluster nodes in the UP state.
+
+1.11.3.  clusterer_nodes_down
+
+   Returns the total number of cluster nodes not in the UP state.
 
 Chapter 2. Developer Guide
 
@@ -1306,18 +1395,19 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 340 119 12999 7000
-   2. Liviu Chircu (@liviuchircu) 54 40 636 443
+   1. Vlad Patrascu (@rvlad-patrascu) 345 122 13163 7018
+   2. Liviu Chircu (@liviuchircu) 55 41 645 447
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 28 14 1331 123
    5. Razvan Crainea (@razvancrainea) 24 18 321 145
    6. Ionel Cerghit (@ionel-cerghit) 9 2 250 212
-   7. Fabian Gast (@fgast) 4 2 3 3
-   8. Gohar Ahmed (@goharahmed) 3 1 6 5
-   9. Maksym Sobolyev (@sobomax) 3 1 2 2
-   10. kworm83 3 1 2 2
+   7. Jasper Hafkenscheid 4 2 107 2
+   8. Fabian Gast (@fgast) 4 2 3 3
+   9. Gohar Ahmed (@goharahmed) 3 1 6 5
+   10. Maksym Sobolyev (@sobomax) 3 1 2 2
 
-   All remaining contributors: Peter Lemenkov (@lemenkov).
+   All remaining contributors: kworm83, Peter Lemenkov
+   (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1339,19 +1429,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2022
-   2.  Razvan Crainea (@razvancrainea)     Nov 2015 - May 2022
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - May 2022
-   4.  Liviu Chircu (@liviuchircu)         Mar 2016 - Dec 2021
-   5.  kworm83                             Feb 2021 - Feb 2021
-   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   7.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
-   8.  Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Ionel Cerghit (@ionel-cerghit)      Dec 2016 - Dec 2016
+   1.  Liviu Chircu (@liviuchircu)         Mar 2016 - Jul 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2022
+   3.  Jasper Hafkenscheid                 May 2022 - Jul 2022
+   4.  Razvan Crainea (@razvancrainea)     Nov 2015 - May 2022
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - May 2022
+   6.  kworm83                             Feb 2021 - Feb 2021
+   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   8.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
+   9.  Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Eseanu Marius Cristian
-   (@eseanucristian).
+   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
+   Eseanu Marius Cristian (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1360,10 +1450,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Fabian Gast
-   (@fgast), Razvan Crainea (@razvancrainea), Peter Lemenkov
-   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Jasper
+   Hafkenscheid, Bogdan-Andrei Iancu (@bogdan-iancu), Liviu Chircu
+   (@liviuchircu), Fabian Gast (@fgast), Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Eseanu Marius
+   Cristian (@eseanucristian).
 
    Documentation Copyrights:
 
