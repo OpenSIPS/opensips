@@ -655,6 +655,8 @@ $(acc_leg(caller)[-2])
    want the accounting to take place, and the function will do all
    the work for you.
 
+   When called multiple times, the function behaves additively.
+
    Meaning of the parameters is as follows:
      * type (string) - the type of accounting you want to do. All
        types have to be separated by '|'. The following parameters
@@ -713,6 +715,8 @@ y_acc");
    will be stopped. If called with only one argument all
    accounting for that type will be stopped. If called with two
    arguments normal accounting will still be enabled.
+
+   When called multiple times, the function behaves additively.
 
    Meaning of the parameters is as follows:
      * type (string, optional) - the type of accounting you want
@@ -1055,7 +1059,7 @@ Chapter 3. Contributors
    2. Jan Janak (@janakj) 145 16 5587 5074
    3. Ionut Ionita (@ionutrazvanionita) 139 39 3730 4180
    4. Razvan Crainea (@razvancrainea) 98 65 2702 662
-   5. Liviu Chircu (@liviuchircu) 62 48 598 549
+   5. Liviu Chircu (@liviuchircu) 63 49 604 549
    6. Jiri Kuthan (@jiriatipteldotorg) 56 26 2272 660
    7. Daniel-Constantin Mierla (@miconda) 26 23 115 88
    8. Elena-Ramona Modroiu 24 4 2267 5
@@ -1092,9 +1096,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2021
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2021
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2021
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jul 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2003 - Jul 2021
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jun 2021
    4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    5.  Maksym Sobolyev (@sobomax)          Dec 2003 - Jan 2021
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
@@ -1120,8 +1124,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Vlad
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
    Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Ryan Bullock (@rrb3942),
    Irina-Maria Stanescu, Sergio Gutierrez, Henning Westerholt
