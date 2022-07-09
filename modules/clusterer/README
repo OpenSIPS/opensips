@@ -74,7 +74,12 @@ CLUSTERER Module
               1.8.3. E_CLUSTERER_NODE_STATE_CHANGED
               1.8.4. E_CLUSTERER_SHARING_TAG_CHANGED
 
-        1.9. Provided Status/Report Identifiers
+        1.9. Exported Status/Report Identifiers
+
+              1.9.1. sharing_tags
+              1.9.2. node_states
+              1.9.3. cap:[capability_name]
+
         1.10. Usage Example
 
    2. Developer Guide
@@ -999,14 +1004,15 @@ f-repl 1
        the state, like a another node stepping as active, an MI
        command or script variable.
 
-1.9. Provided Status/Report Identifiers
+1.9. Exported Status/Report Identifiers
 
-   The module provides the "clusterer" Status/Report group used so
-   far only for reporting purposes.
+   The module provides the clusterer Status/Report group.
 
-   The "sharing_tags" identifier is provided for reporting state
+1.9.1. sharing_tags
+
+   The sharing_tags identifier is provided for reporting state
    changes of the sharing_tags (between active and backup), along
-   with the reason of the change. This identifier have a 200
+   with the reason of the change. This identifier has a 200
    records history before discarding the old ones.
 {
     "Name": "sharing_tags",
@@ -1027,8 +1033,10 @@ oadcast from 2"
 }
 
 
-   The "node_states" identifier is used for reporting node state
-   changes (in terms of availability). This identifier have a 200
+1.9.2. node_states
+
+   The node_states identifier is used for reporting node state
+   changes (in terms of availability). This identifier has a 200
    records history before discarding the old ones.
 {
     "Name": "node_states",
@@ -1045,6 +1053,52 @@ oadcast from 2"
         }
     ]
 }
+
+
+1.9.3. cap:[capability_name]
+
+   Each capability registered to the clusterer module has a
+   corresponding identifier, named cap:[capability_name], used for
+   providing the status of the data syncing for that capability.
+   This status reflects the progress of the syncing process and
+   can have the following values:
+     * -3 - not synced
+     * -2 - sync pending (waiting for either a suitable donor node
+       or actual sync data)
+     * -1 - sync in progress
+     * 1 - synced (either sync has completed or the capability
+       does not require data syncing at all)
+
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Readiness": true,
+    "Status": 1,
+    "Details": "synced"
+},
+
+   The capability identifiers also provide reports regarding the
+   main stages of the sync process. These identifiers have a 200
+   records history before discarding the old ones.
+{
+    "Name": "cap:dialog-dlg-repl",
+    "Reports": [
+        {
+            "Timestamp": 1656966903,
+            "Date": "Mon Jul  4 23:35:03 2022",
+            "Log": "Sync requested"
+        },
+        {
+            "Timestamp": 1656966904,
+            "Date": "Mon Jul  4 23:35:04 2022",
+            "Log": "Sync started from node [1]"
+        },
+        {
+            "Timestamp": 1656966906,
+            "Date": "Mon Jul  4 23:35:06 2022",
+            "Log": "Sync completed, received [10000] chunks"
+        }
+    ]
+},
 
 
    For how to access and use the Status/Report information, please
@@ -1306,7 +1360,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 340 119 12999 7000
+   1. Vlad Patrascu (@rvlad-patrascu) 345 122 13163 7018
    2. Liviu Chircu (@liviuchircu) 54 40 636 443
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 28 14 1331 123
@@ -1339,7 +1393,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2022
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2022
    2.  Razvan Crainea (@razvancrainea)     Nov 2015 - May 2022
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - May 2022
    4.  Liviu Chircu (@liviuchircu)         Mar 2016 - Dec 2021
