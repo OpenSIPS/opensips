@@ -167,6 +167,9 @@ int cl_request_sync(str *capability, int cluster_id)
 			/* node was up and ready but in the meantime got disabled or down */
 			lock_get(cluster->lock);
 			lcap->flags |= CAP_SYNC_PENDING;
+
+			if (cluster->current_node->flags & NODE_IS_SEED)
+				gettimeofday(&lcap->sync_req_time, NULL);
 			lock_release(cluster->lock);
 		} else if (rc == CLUSTERER_SEND_ERR) {
 			return -1;
