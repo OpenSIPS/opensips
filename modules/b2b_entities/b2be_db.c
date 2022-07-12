@@ -279,6 +279,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 	int i;
 	dlg_leg_t* leg;
 	b2b_dlg_t* dlg;
+	int cols_no = DB_COLS_NO;
 
 	if (!b2be_dbf.init)
 		return;
@@ -346,6 +347,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 			qvals[20].val.int_val = dlg->last_invite_cseq;
 			qvals[21].val.str_val = dlg->contact[0];
 			qvals[22].val.str_val = dlg->contact[1];
+			cols_no = 23;
 
 			leg = dlg->legs;
 			if(leg) /* there can only be one leg as we do not deal with dialogs in early state */
@@ -354,12 +356,13 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 				qvals[24].val.int_val= leg->cseq;
 				qvals[25].val.str_val= leg->contact;
 				qvals[26].val.str_val= leg->route_set;
+				cols_no = 27;
 			}
 
 			if(dlg->db_flag == INSERTDB_FLAG)
 			{
 				/* insert into database */
-				if(b2be_dbf.insert(b2be_db, qcols, qvals, DB_COLS_NO)< 0)
+				if(b2be_dbf.insert(b2be_db, qcols, qvals, cols_no)< 0)
 				{
 					LM_ERR("Sql insert failed\n");
 					if(!no_lock)
@@ -371,7 +374,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 			{
 				if(b2be_dbf.update(b2be_db, qcols, 0, qvals,
 							qcols+n_start_update, qvals+n_start_update,
-							n_query_update, DB_COLS_NO-n_start_update)< 0)
+							n_query_update, cols_no-n_start_update)< 0)
 				{
 					LM_ERR("Sql update failed\n");
 					if(!no_lock)
