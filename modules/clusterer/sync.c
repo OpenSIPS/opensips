@@ -92,7 +92,6 @@ int cl_request_sync(str *capability, int cluster_id)
 	cluster_info_t *cluster;
 	struct local_cap *lcap;
 	int source_id;
-	int rc;
 
 	LM_DBG("requesting %.*s sync in cluster %d\n",
 	       capability->len, capability->s, cluster_id);
@@ -140,17 +139,16 @@ int cl_request_sync(str *capability, int cluster_id)
 		lock_release(cluster->lock);
 	} else {
 		LM_DBG("found donor node: %d\n", source_id);
-		rc = send_sync_req(capability, cluster_id, source_id);
-		if (rc == CLUSTERER_DEST_DOWN || rc == CLUSTERER_CURR_DISABLED) {
-			/* node was up and ready but in the meantime got disabled or down */
+		if (send_sync_req(capability, cluster_id, source_id) !=
+			CLUSTERER_SEND_SUCCESS) {
+			 /* retry request later */
 			lock_get(cluster->lock);
 			lcap->flags |= CAP_SYNC_PENDING;
 
 			if (cluster->current_node->flags & NODE_IS_SEED)
 				gettimeofday(&lcap->sync_req_time, NULL);
 			lock_release(cluster->lock);
-		} else if (rc == CLUSTERER_SEND_ERR)
-			return -1;
+		}
 	}
 
 	return 0;
