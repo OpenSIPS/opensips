@@ -493,7 +493,7 @@ int ipc_dispatch_buf_pkt(struct buf_bin_pkt *buf_pkt,
 }
 
 void handle_sync_end(cluster_info_t *cluster, struct local_cap *cap,
-	int source_id, int no_sync_chunks)
+	int source_id, int no_sync_chunks, int is_timeout)
 {
 	struct buf_bin_pkt *buf_pkt, *buf_tmp;
 
@@ -515,18 +515,21 @@ void handle_sync_end(cluster_info_t *cluster, struct local_cap *cap,
 
 	/* no more buffered packets to process, stop buffering */
 	cap->flags &= ~CAP_SYNC_IN_PROGRESS;
-	cap->flags |= CAP_STATE_OK;
 
-	sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
-		STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
-	sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
-		"Sync completed, received [%d] chunks", no_sync_chunks);
+	if (!is_timeout) {
+		cap->flags |= CAP_STATE_OK;
 
-	/* inform module that sync is finished; this job is also dispatched */
-	ipc_dispatch_buf_pkt(NULL, &cap->reg, source_id);
+		sr_set_status(cl_srg, STR2CI(cap->reg.sr_id), CAP_SR_SYNCED,
+			STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNCED)), 0);
+		sr_add_report_fmt(cl_srg, STR2CI(cap->reg.sr_id), 0,
+			"Sync completed, received [%d] chunks", no_sync_chunks);
 
-	/* send update about the state of this capability */
-	send_single_cap_update(cluster, cap, 1);
+		/* inform module that sync is finished; this job is also dispatched */
+		ipc_dispatch_buf_pkt(NULL, &cap->reg, source_id);
+
+		/* send update about the state of this capability */
+		send_single_cap_update(cluster, cap, 1);
+	}
 }
 
 void handle_sync_packet(bin_packet_t *packet, int packet_type,
@@ -567,6 +570,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 			was_in_progress = 1;
 		/* buffer other types of packets during sync */
 		cap->flags |= CAP_SYNC_IN_PROGRESS;
+		cap->last_sync_pkt = get_ticks();
 		lock_release(cluster->lock);
 
 		if (!was_in_progress) {
@@ -595,7 +599,7 @@ void handle_sync_packet(bin_packet_t *packet, int packet_type,
 
 		/* if all chunks have been processed run the sync end actions */
 		if (cap->sync_cur_chunks_cnt == no_sync_chunks)
-			handle_sync_end(cluster, cap, source_id, no_sync_chunks);
+			handle_sync_end(cluster, cap, source_id, no_sync_chunks, 0);
 
 		lock_release(cluster->lock);
 	}
@@ -672,7 +676,7 @@ int update_sync_chunks_cnt(int cluster_id, str *cap_name, int source_id)
 	 * run the sync end actions */
 	if (cap->sync_total_chunks_cnt != 0 &&
 		cap->sync_cur_chunks_cnt == cap->sync_total_chunks_cnt)
-		handle_sync_end(cluster, cap, source_id, cap->sync_total_chunks_cnt);
+		handle_sync_end(cluster, cap, source_id, cap->sync_total_chunks_cnt, 0);
 
 	lock_release(cluster->lock);
 
