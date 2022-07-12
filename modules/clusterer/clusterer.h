@@ -37,7 +37,8 @@
 #define DEFAULT_NODE_TIMEOUT 60
 #define DEFAULT_PING_TIMEOUT 1000 /* in milliseconds */
 #define DEFAULT_SEED_FB_INTERVAL 5
-#define SEED_FB_CHECK_INTERVAL 500 /* ms */
+#define DEFAULT_SYNC_TIMEOUT 15
+#define SYNC_CHECK_INTERVAL 500 /* ms */
 #define UPDATE_MAX_PATH_LEN 25
 #define SMALL_MSG 300
 
@@ -116,6 +117,7 @@ struct local_cap {
 	struct buf_bin_pkt *pkt_q_front;
 	struct buf_bin_pkt *pkt_q_back;
 	struct timeval sync_req_time;
+	int last_sync_pkt;
 	int sync_total_chunks_cnt;
 	int sync_cur_chunks_cnt;
 	unsigned int flags;
@@ -164,7 +166,7 @@ extern void *cl_srg;
 extern str node_st_sr_ident;
 extern str cap_sr_details_str[];
 
-void seed_fb_check_timer(utime_t ticks, void *param);
+void sync_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att);
