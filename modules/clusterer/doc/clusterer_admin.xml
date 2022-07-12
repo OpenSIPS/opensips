@@ -345,6 +345,28 @@ modparam("clusterer", "seed_fallback_interval", 10)
 		</example>
         </section>
 
+        <section id="param_sync_timeout" xreflabel="sync_timeout">
+            <title><varname>sync_timeout</varname></title>
+            <para>
+                The inteval, in seconds, since the last sync data packet received
+                after which to consider the sync process as failed and revert the
+                node to the not synced state.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>15</quote>.
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>sync_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "sync_timeout", 5)
+...
+		</programlisting>
+		</example>
+        </section>
+
         <section id="param_sync_packet_max_size" xreflabel="sync_packet_max_size">
             <title><varname>sync_packet_max_size</varname></title>
             <para>

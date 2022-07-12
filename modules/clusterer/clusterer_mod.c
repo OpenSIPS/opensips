@@ -42,6 +42,7 @@ int ping_interval = DEFAULT_PING_INTERVAL;
 int node_timeout = DEFAULT_NODE_TIMEOUT;
 int ping_timeout = DEFAULT_PING_TIMEOUT;
 int seed_fb_interval = DEFAULT_SEED_FB_INTERVAL;
+int sync_timeout = DEFAULT_SYNC_TIMEOUT;
 int current_id = -1;
 int db_mode = 1;
 
@@ -137,6 +138,7 @@ static param_export_t params[] = {
 	{"node_timeout",		INT_PARAM,	&node_timeout		},
 	{"ping_timeout",		INT_PARAM,	&ping_timeout		},
 	{"seed_fallback_interval", INT_PARAM, &seed_fb_interval	},
+	{"sync_timeout",        INT_PARAM,  &sync_timeout		},
 	{"id_col",				STR_PARAM,	&id_col.s			},
 	{"cluster_id_col",		STR_PARAM,	&cluster_id_col.s	},
 	{"node_id_col",			STR_PARAM,	&node_id_col.s		},
@@ -439,8 +441,8 @@ static int mod_init(void)
 		}
 	}
 
-	if (register_utimer("cl-seed-fb-check", seed_fb_check_timer,
-		NULL, SEED_FB_CHECK_INTERVAL*1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
+	if (register_utimer("cl-sync-check", sync_check_timer,
+		NULL, SYNC_CHECK_INTERVAL*1000, TIMER_FLAG_DELAY_ON_DELAY) < 0) {
 		LM_CRIT("Unable to register clusterer seed check timer\n");
 		goto error;
 	}
