@@ -549,7 +549,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 					}
 				} else {
 					/* insert into database */
-					if(b2be_dbf.insert(b2be_db, qcols, qvals, DB_COLS_NO)< 0)
+					if(b2be_dbf.insert(b2be_db, qcols, qvals, cols_no)< 0)
 					{
 						LM_ERR("Sql insert failed\n");
 						if(!no_lock)
@@ -569,7 +569,7 @@ void store_b2b_dlg(b2b_table htable, unsigned int hsize, int type, int no_lock)
 				} else {
 					if(b2be_dbf.update(b2be_db, qcols, 0, qvals,
 								qcols+n_start_update, qvals+n_start_update,
-								n_query_update, DB_COLS_NO-n_start_update)< 0)
+								n_query_update, cols_no-n_start_update)< 0)
 					{
 						LM_ERR("Sql update failed\n");
 						if(!no_lock)
