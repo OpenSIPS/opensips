@@ -54,8 +54,9 @@ extern int ping_interval;
 extern int node_timeout;
 extern int ping_timeout;
 extern int seed_fb_interval;
+extern int sync_timeout;
 
-void seed_fb_check_timer(utime_t ticks, void *param)
+void sync_check_timer(utime_t ticks, void *param)
 {
 	cluster_info_t *cl;
 	struct local_cap *cap;
@@ -75,16 +76,27 @@ void seed_fb_check_timer(utime_t ticks, void *param)
 
 		for (cap = cl->capabilities; cap; cap = cap->next) {
 			lock_get(cl->lock);
+
 			if ((cap->flags & CAP_STATE_ENABLED) &&
-				!(cap->flags & CAP_STATE_OK) &&
-				!(cap->flags & CAP_SYNC_IN_PROGRESS) &&
-				(cl->current_node->flags & NODE_IS_SEED) &&
-				(TIME_DIFF(cap->sync_req_time, now) >= seed_fb_interval*1000000)) {
-				cap->flags |= CAP_STATE_OK;
-				cap->flags &= ~CAP_SYNC_PENDING;
-				LM_INFO("No donor found, falling back to synced state\n");
-				/* send update about the state of this capability */
-				send_single_cap_update(cl, cap, 1);
+				!(cap->flags & CAP_STATE_OK)) {
+				if ((cap->flags & CAP_SYNC_PENDING) &&
+					(cl->current_node->flags & NODE_IS_SEED) &&
+					(TIME_DIFF(cap->sync_req_time, now) >=
+					seed_fb_interval*1000000)) {
+
+					cap->flags |= CAP_STATE_OK;
+					cap->flags &= ~CAP_SYNC_PENDING;
+					LM_INFO("No donor found, falling back to synced state\n");
+					/* send update about the state of this capability */
+					send_single_cap_update(cl, cap, 1);
+
+				} else if ((cap->flags & CAP_SYNC_IN_PROGRESS) &&
+					(get_ticks() - cap->last_sync_pkt >= sync_timeout)) {
+
+					handle_sync_end(cl, cap, 0, 1);
+					LM_INFO("Sync timeout for capability [%.*s], reverting to "
+						"not synced state\n", cap->reg.name.len, cap->reg.name.s);
+				}
 			}
 
 			lock_release(cl->lock);
