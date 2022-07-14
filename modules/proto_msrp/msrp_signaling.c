@@ -821,7 +821,7 @@ int msrp_send_request(void *hdl, enum msrp_method method_id,
 	char *buf, *p, *tmp;
 	struct hostent* he;
 	union sockaddr_union su;
-	struct msrp_cell *cell;
+	struct msrp_cell *cell = NULL;
 	void **val;
 	struct msrp_url *url;
 
