@@ -383,6 +383,11 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 		multi_hosts = 0;
 
 	r = parse_csv_record(_str(id->host));
+	if (!r) {
+		LM_ERR("failed to parse Redis host list: '%s'\n", id->host);
+		return NULL;
+	}
+
 	for (it = r; it; it = it->next) {
 		LM_DBG("parsed Redis host: '%.*s'\n", it->s.len, it->s.s);
 
