@@ -998,8 +998,8 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	struct msrpua_session *sess = (struct msrpua_session *)param;
 	unsigned int hentry;
 	str sess_id, accept_types;
-	struct msrp_ua_notify_params cb_params = {0};
-	struct msrp_ua_handler hdl;
+	struct msrp_ua_notify_params cb_params = {};
+	struct msrp_ua_handler hdl = {};
 	int raise_ev = 0;
 
 	hentry = hash_entry(msrpua_sessions, sess->session_id);
@@ -1146,8 +1146,8 @@ static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
 	str peer_accept_types;
 	str peer_path;
 	str sess_id;
-	struct msrp_ua_notify_params cb_params = {0};
-	struct msrp_ua_handler hdl;
+	struct msrp_ua_notify_params cb_params = {};
+	struct msrp_ua_handler hdl = {};
 	int len;
 
 	hentry = hash_entry(msrpua_sessions, sess->session_id);
@@ -1978,11 +1978,11 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 {
 	struct msrpua_session *sess;
 	unsigned int hentry;
-	struct msrp_ua_handler hdl;
+	struct msrp_ua_handler hdl = {};
 	int run_cb = 0;
 	struct uac_init_params *uac_params = NULL;
 	str sess_id;
-	struct msrp_ua_notify_params cb_params = {0};
+	struct msrp_ua_notify_params cb_params = {};
 
 	if (rpl)
 		LM_DBG("Received MSRP reply [%d %.*s]\n", rpl->fl.u.reply.status_no,
@@ -2362,8 +2362,8 @@ static int timer_clean_session(void *param, str key, void *value)
 	struct msrpua_session *sess = (struct msrpua_session *)value;
 	str sess_id;
 	int raise_ev = 0;
-	struct msrp_ua_notify_params cb_params = {0};
-	struct msrp_ua_handler hdl;
+	struct msrp_ua_notify_params cb_params = {};
+	struct msrp_ua_handler hdl = {};
 
 	if (sess->lifetime > 0 && sess->lifetime < get_ticks()) {
 		LM_DBG("Timeout for session [%.*s] in state [%d]\n",
