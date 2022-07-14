@@ -1754,12 +1754,14 @@ opensips-cli -x mi ds_reload
 
 
 <section id="sr_identifiers" xreflabel="Status/Report Identifiers">
-	<title>Provided Status/Report Identifiers</title>
+	<title>Exported Status/Report Identifiers</title>
 
 	<para>
 	The module provides the "dispatcher" Status/Report group, where each
 	partition is defined as a separate SR identifier.
 	</para>
+	<section id="sr_id_partition_name" xreflabel="partition_name">
+	<title><varname>[partition_name]</varname></title>
 	<para>
 	The status of these identifiers reflects the readiness/status of the 
 	cached data (if available or not when being loaded from DB):
@@ -1822,7 +1824,10 @@ opensips-cli -x mi ds_reload
         }
 
 	</programlisting>
+	</section>
 
+	<section id="sr_id_events" xreflabel="events">
+	<title><varname>[partition_name];events</varname></title>
 	<para>
 	Destination switching reporting:
 	</para>
@@ -1859,6 +1864,7 @@ opensips-cli -x mi ds_reload
         },
 
 	</programlisting>
+	</section>
 
 	<para>
 	For how to access and use the Status/Report information, please see
