@@ -220,10 +220,10 @@ int msrp_fwd_request( void *hdl, struct msrp_msg *req, str *hdrs, int hdrs_no,
 	struct msrp_url *to, *from;
 	union sockaddr_union su;
 	struct hostent* he;
-	int i, len, hash, idx;
+	int i, len, hash = 0, idx = 0;
 	char md5[MD5_LEN];
 	str ident, md5_src[3];
-	struct msrp_cell *cell;
+	struct msrp_cell *cell = NULL;
 	void **val;
 
 	if (req==NULL)
