@@ -1057,7 +1057,6 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 								int src_node_id, str *str_vals, int *int_vals)
 {
 	node_info_t *new_node = NULL;
-	int lock_old_flag;
 
 	str_vals[STR_VALS_FLAGS_COL].s = 0;
 	str_vals[STR_VALS_DESCRIPTION_COL].s = 0;
@@ -1066,15 +1065,10 @@ static node_info_t *add_node(bin_packet_t *received, cluster_info_t *cl,
 	int_vals[INT_VALS_NODE_ID_COL] = src_node_id;
 	int_vals[INT_VALS_STATE_COL] = 1;	/* enabled */
 
-	lock_switch_write(cl_list_lock, lock_old_flag);
-
 	if (add_node_info(&new_node, &cl, int_vals, str_vals) != 0) {
 		LM_ERR("Unable to add node info to backing list\n");
-		lock_switch_read(cl_list_lock, lock_old_flag);
 		return NULL;
 	}
-
-	lock_switch_read(cl_list_lock, lock_old_flag);
 
 	return new_node;
 }
@@ -1848,7 +1842,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		return;
 	}
 
-	lock_start_sw_read(cl_list_lock);
+	lock_start_write(cl_list_lock);
 
 	cl = get_cluster_by_id(cl_id);
 	if (!cl) {
@@ -1876,7 +1870,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 	}
 
 exit:
-	lock_stop_sw_read(cl_list_lock);
+	lock_stop_write(cl_list_lock);
 }
 
 void run_mod_packet_cb(int sender, void *param)
