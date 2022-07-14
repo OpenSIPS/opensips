@@ -197,6 +197,9 @@ struct media_fork_info *media_get_fork_sdp(struct media_session_leg *msl,
 		case MEDIA_LEG_CALLEE:
 			flags = RTP_COPY_LEG_CALLEE;
 			break;
+		default:
+			LM_BUG("unexpected msl->leg value: %d\n", msl->leg);
+			return NULL;
 	}
 
 	if (medianum < 0)
@@ -369,7 +372,7 @@ static void media_exchange_event_received_create(struct dlg_cell *dlg,
 {
 
 	int type, nohold;
-	struct media_fork_info *mf;
+	struct media_fork_info *mf = NULL;
 	unsigned int flags, streams, paused;
 	struct media_session_leg *msl;
 
