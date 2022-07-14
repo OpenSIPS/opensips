@@ -1137,7 +1137,7 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 	db_handlers_t *db_hdls;
 	db_val_t *values;
 	db_res_t *sql_res = NULL;
-	struct queried_key *it;
+	struct queried_key *it = NULL;
 	str entry_id, src_key;
 	int rld_vers, rc;
 
