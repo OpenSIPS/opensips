@@ -414,6 +414,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	req_data.b2b_key = key;
 	req_data.method = &method;
 	b2b_api.send_request(&req_data);
+	LM_INFO("[%.*s] client request %.*s sent\n", key->len, key->s, method.len, method.s);
 delete:
 	b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
 }
@@ -879,6 +880,8 @@ end:
 			req_data.b2b_key = &client->ctx->b2b_key;
 			req_data.method = &method;
 			req_data.body = body;
+			LM_INFO("[%.*s] server request INVITE sent\n",
+					client->ctx->b2b_key.len, client->ctx->b2b_key.s);
 			if (b2b_api.send_request(&req_data) < 0) {
 				LM_ERR("cannot send upstream INVITE\n");
 				code = 500;
@@ -936,6 +939,8 @@ static void b2b_sdp_server_send_bye(struct b2b_sdp_ctx *ctx)
 	req_data.method = &method;
 	if (b2b_api.send_request(&req_data) < 0)
 		LM_ERR("cannot send upstream BYE\n");
+	else
+		LM_INFO("[%.*s] server request BYE sent\n", ctx->b2b_key.len, ctx->b2b_key.s);
 }
 
 static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client)
@@ -988,6 +993,9 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 				req_data.body = body;
 				if (b2b_api.send_request(&req_data) < 0)
 					LM_ERR("cannot send upstream INVITE\n");
+				else
+					LM_INFO("[%.*s] server request INVITE sent\n",
+							ctx->b2b_key.len, ctx->b2b_key.s);
 			} else {
 				lock_release(&ctx->lock);
 			}
@@ -998,6 +1006,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 
 static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body)
 {
+	char *etype = (type==B2B_CLIENT?"client":"server");
 	b2b_rpl_data_t reply_data;
 	str text;
 	init_str(&text, error_text(code));
@@ -1011,6 +1020,7 @@ static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body
 	reply_data.body = body;
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
+	LM_INFO("[%.*s] %s reply %d sent\n", b2b_key->len, b2b_key->s, etype, code);
 
 	return b2b_api.send_reply(&reply_data);
 }
@@ -1141,6 +1151,7 @@ end:
 
 static int b2b_sdp_ack(int type, str *key)
 {
+	char *etype = (type==B2B_CLIENT?"client":"server");
 	str ack = str_init(ACK);
 	struct b2b_req_data req;
 	memset(&req, 0, sizeof(req));
@@ -1148,6 +1159,8 @@ static int b2b_sdp_ack(int type, str *key)
 	req.b2b_key = key;
 	req.method = &ack;
 	req.no_cb = 1; /* do not call callback */
+
+	LM_INFO("[%.*s] %s request ACK sent\n", key->len, key->s, etype);
 
 	return b2b_api.send_request(&req);
 }
@@ -1249,6 +1262,10 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 		}
 		*/
 		lock_release(&client->ctx->lock);
+		LM_INFO("[%.*s][%.*s] %.*s client request received\n",
+				client->ctx->callid.len, client->ctx->callid.s, key->len, key->s,
+				msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
+
 		switch (msg->REQ_METHOD) {
 			case METHOD_ACK:
 				return 0;
@@ -1268,6 +1285,9 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 			LM_ERR("failed to parse CSeq\n");
 			return -1;
 		}
+		LM_INFO("[%.*s][%.*s] client reply %d received for %.*s\n",
+				client->ctx->callid.len, client->ctx->callid.s, key->len, key->s,
+				msg->REPLY_STATUS, get_cseq(msg)->method.len, get_cseq(msg)->method.s);
 
 		switch (get_cseq(msg)->method_id) {
 			case METHOD_INVITE:
@@ -1445,6 +1465,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 		req_data.b2b_key = &client->b2b_key;
 		req_data.method = &method;
 		req_data.body = &client->body;
+		LM_INFO("[%.*s] client request INVITE sent\n", client->b2b_key.len, client->b2b_key.s);
 		if (b2b_api.send_request(&req_data) < 0)
 			LM_ERR("could not send re-INVITE to client!\n");
 	}
@@ -1465,6 +1486,9 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 		return -1;
 	}
 	if (type == B2B_REQUEST) {
+		LM_INFO("[%.*s][%.*s] %.*s server request received\n",
+				ctx->callid.len, ctx->callid.s, key->len, key->s,
+				msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
 		lock_get(&ctx->lock);
 		if (ctx->pending_no) {
 			lock_release(&ctx->lock);
@@ -1492,6 +1516,10 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 			LM_ERR("failed to parse CSeq\n");
 			return -1;
 		}
+		LM_INFO("[%.*s][%.*s] server reply %d received for %.*s\n",
+				ctx->callid.len, ctx->callid.s, key->len, key->s,
+				msg->REPLY_STATUS, get_cseq(msg)->method.len, get_cseq(msg)->method.s);
+
 		switch (get_cseq(msg)->method_id) {
 			case METHOD_INVITE:
 				return b2b_sdp_server_reply_invite(msg, ctx);
