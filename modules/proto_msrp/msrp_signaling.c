@@ -1158,7 +1158,7 @@ static char * _ident_builder( unsigned short hash, unsigned short idx,
 {
 	#define IDENT_BUF_MAX_LEN 20
 	/* format is hash_hexa.idx_hexa.rand_hexa.padding , max 20 chars*/
-	static char ident_s[IDENT_BUF_MAX_LEN + 1];
+	static char ident_s[IDENT_BUF_MAX_LEN + 1 + MD5_LEN /*fix gcc warn*/];
 	unsigned short rnd;
 	int size;
 	char *p;
