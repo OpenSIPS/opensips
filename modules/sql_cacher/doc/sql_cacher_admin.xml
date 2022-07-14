@@ -404,13 +404,15 @@ xlog("host name is: $sql_cached_value(carrier_fr_caching:host_name:2)");
 
 
 	<section id="sr_identifiers" xreflabel="Status/Report Identifiers">
-	<title>Provided Status/Report Identifiers</title>
+	<title>Exported Status/Report Identifiers</title>
 
 	<para>
 	The module provides the "sql_cacher" Status/Report group, where each
 	full cache is defined as a separate SR identifier. NOTE that there
 	are no identifiers created for the on-demand caches.
 	</para>
+	<section id="sr_id_cache_entry_id" xreflabel="cache_entry_id">
+	<title><varname>[cache_entry_id]</varname></title>
 	<para>
 	The status of these identifiers reflects the readiness/status of the 
 	cached data (if available or not when being loaded from DB):
@@ -447,6 +449,7 @@ xlog("host name is: $sql_cached_value(carrier_fr_caching:host_name:2)");
 		N records loaded)
 		</para></listitem>
 	</itemizedlist>
+	</section>
 
 	<para>
 	For how to access and use the Status/Report information, please see
