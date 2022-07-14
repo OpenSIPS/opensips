@@ -117,13 +117,13 @@ struct module_exports exports = {
 static int mod_init(void)
 {
 	/* initialize the data cache */
-	if (!tcp_path_init()) {
+	if (tcp_path_init() != 0) {
 		LM_ERR("failed to init internal structures\n");
 		return -1;
 	}
 
 	/* cache all DB data straight away */
-	if (!tcp_db_init()) {
+	if (tcp_db_init() != 0) {
 		LM_ERR("failed to initialize and/or load DB data\n");
 		return -1;
 	}
