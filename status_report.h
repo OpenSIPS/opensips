@@ -104,6 +104,8 @@ mi_response_t *mi_sr_list_status(const mi_params_t *params,
 mi_response_t *mi_sr_list_reports(const mi_params_t *params,
 		struct mi_handler *async_hdl);
 
+mi_response_t *mi_sr_list_identifiers(const mi_params_t *params,
+		struct mi_handler *async_hdl);
 #endif
 
 

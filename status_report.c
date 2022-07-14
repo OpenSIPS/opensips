@@ -1110,5 +1110,87 @@ error:
 	if (resp)
 		free_mi_response(resp);
 	return 0;
+}
+
+
+mi_response_t *mi_sr_list_identifiers(const mi_params_t *params,
+											struct mi_handler *async_hdl)
+{
+	str group;
+	mi_response_t *resp;
+	mi_item_t *id_arr, *grp_arr, *grp_item;
+	sr_group *srg = NULL;
+	sr_identifier *sri = NULL;
+
+	if (try_get_mi_string_param(params, "group", &group.s, &group.len)==0) {
+
+		/* group provide */
+		if ( (srg=sr_get_group_by_name( group.s, group.len )) == NULL ) {
+			LM_DBG("SR group [%.*s] not found as registered\n",
+				group.len, group.s);
+			return init_mi_error(404, CHAR_INT("Group not found"));
+		}
+
+	}
+
+	lock_start_read( sr_lock );
+
+	if (srg) {
+
+		resp = init_mi_result_object( &grp_item);
+		if (!grp_item)
+			goto error;
+
+		if (add_mi_string( grp_item, CHAR_INT("Group"),
+		srg->name.s, srg->name.len)<0)
+			goto error;
+
+		id_arr = add_mi_array( grp_item,  CHAR_INT("Identifiers"));
+		if (!id_arr)
+			goto error;
+
+		for ( sri=srg->identifiers ; sri ; sri=sri->next ) {
+			if (add_mi_string( id_arr, CHAR_INT("Name"),
+			sri->name.s, sri->name.len ) < 0 )
+				goto error;
+		}
+
+	} else {
+
+		resp = init_mi_result_array( &grp_arr);
+		if (!grp_arr)
+			goto error;
+
+		for ( srg=sr_groups ; srg ; srg=srg->next ) {
+
+			grp_item = add_mi_object(grp_arr, 0, 0);
+			if (!grp_item)
+				goto error;
+
+			if (add_mi_string( grp_item, CHAR_INT("Group"),
+			srg->name.s, srg->name.len)<0)
+				goto error;
+
+			id_arr = add_mi_array( grp_item,  CHAR_INT("Identifiers"));
+			if (!id_arr)
+				goto error;
+
+			for ( sri=srg->identifiers ; sri ; sri=sri->next ) {
+				if (add_mi_string( id_arr, CHAR_INT("Name"),
+				sri->name.s, sri->name.len ) < 0 )
+					goto error;
+			}
+
+		}
+	}
+
+	lock_stop_read( sr_lock );
+
+	return resp;
+error:
+	lock_stop_read( sr_lock );
+	if (resp)
+		free_mi_response(resp);
+	return 0;
 
 }
