@@ -185,6 +185,7 @@ int db_row_decode(db_row_t *row, db_col_t *cols,
 				default:
 					goto error_type;
 				}
+				break;
 
 			case DB_BIGINT:
 				switch (val->type) {

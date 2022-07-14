@@ -262,12 +262,16 @@ int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 	LM_INFO("----------- TCP Path [%d] -------------\n", int_vals[TCPCOL_ID]);
 	LM_INFO("priority: %d\n", path->priority);
 	LM_INFO("proto: %d\n", path->proto);
-	LM_INFO("remote: %s:%u | ANY: %d\n", ip_addr2a(&path->remote_addr.ip),
+	LM_INFO("remote: %s:%u | ANY: %d\n",
+	        path->remote_any ? "NULL" : ip_addr2a(&path->remote_addr.ip),
 	        path->remote_port, path->remote_any);
-	LM_INFO("remote_prefix: %s\n", ip_addr2a(&path->remote_addr.mask));
-	LM_INFO("local: %s:%u\n | ANY: %d", ip_addr2a(&path->local_addr.ip),
+	LM_INFO("remote_prefix: %s\n",
+	        path->remote_any ? "NULL" : ip_addr2a(&path->remote_addr.mask));
+	LM_INFO("local: %s:%u | ANY: %d\n",
+	        path->local_any ? "NULL" : ip_addr2a(&path->local_addr.ip),
 	        path->local_port, path->local_any);
-	LM_INFO("local_prefix: %s\n", ip_addr2a(&path->local_addr.mask));
+	LM_INFO("local_prefix: %s\n",
+	        path->local_any ? "NULL" : ip_addr2a(&path->local_addr.mask));
 	LM_INFO("  %d %d %d\n", path->prof.connect_timeout,
 	          path->prof.con_lifetime, path->prof.msg_read_timeout);
 	LM_INFO("  %d %d %d %d\n", path->prof.send_threshold,
