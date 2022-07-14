@@ -920,6 +920,14 @@ static mi_export_t mi_core_cmds[] = {
 		{EMPTY_MI_RECIPE}
 		}
 	},
+	{ "sr_list_identifiers", "list the identifiers from a group or all",
+	0, 0, {
+		{mi_sr_list_identifiers, {0}},
+		{mi_sr_list_identifiers, {"group",0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+
 	{ "help", "prints information about MI commands usage", 0, 0, {
 		{w_mi_help, {0}},
 		{w_mi_help_1, {"mi_cmd", 0}},
