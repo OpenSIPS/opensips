@@ -2624,12 +2624,14 @@ Status:: 0
 
 
 <section id="sr_identifiers" xreflabel="Status/Report Identifiers">
-	<title>Provided Status/Report Identifiers</title>
+	<title>Exported Status/Report Identifiers</title>
 
 	<para>
 	The module provides the "drouting" Status/Report group, where each
 	routing partition is defined as a separate SR identifier.
 	</para>
+	<section id="sr_id_partition_name" xreflabel="partition_name">
+	<title><varname>[partition_name]</varname></title>
 	<para>
 	The status of these identifiers reflects the readiness/status of the 
 	cached data (if available or not when being loaded from DB):
@@ -2691,7 +2693,10 @@ Status:: 0
         ]
     }
 	</programlisting>
+	</section>
 
+	<section id="sr_id_events" xreflabel="events">
+	<title><varname>[partition_name];events</varname></title>
 	<para>
 	GW/Carrier switching reporting:
 	</para>
@@ -2726,6 +2731,7 @@ Status:: 0
         ]
     }
 	</programlisting>
+	</section>
 
 	<para>
 	For how to access and use the Status/Report information, please see
