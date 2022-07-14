@@ -931,7 +931,6 @@ static void handle_cl_mi_msg(bin_packet_t *packet)
 static void handle_remove_node(bin_packet_t *packet, cluster_info_t *cl)
 {
 	int target_node;
-	int lock_old_flag;
 	node_info_t *node;
 	int ev_actions_cl = 1;
 
@@ -968,9 +967,7 @@ static void handle_remove_node(bin_packet_t *packet, cluster_info_t *cl)
 		return;
 	}
 
-	lock_switch_write(cl_list_lock, lock_old_flag);
 	remove_node(cl, node);
-	lock_switch_read(cl_list_lock, lock_old_flag);
 }
 
 void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
@@ -997,7 +994,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	}
 
 	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
-		lock_start_sw_read(cl_list_lock);
+		lock_start_write(cl_list_lock);
 	else
 		lock_start_read(cl_list_lock);
 
@@ -1092,7 +1089,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 
 exit:
 	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
-		lock_stop_sw_read(cl_list_lock);
+		lock_stop_write(cl_list_lock);
 	else
 		lock_stop_read(cl_list_lock);
 }
@@ -1124,7 +1121,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 
 	if (!db_mode && (packet_type == CLUSTERER_NODE_DESCRIPTION ||
 		packet_type == CLUSTERER_FULL_TOP_UPDATE))
-		lock_start_sw_read(cl_list_lock);
+		lock_start_write(cl_list_lock);
 	else
 		lock_start_read(cl_list_lock);
 
@@ -1172,7 +1169,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 exit:
 	if (!db_mode && (packet_type == CLUSTERER_NODE_DESCRIPTION ||
 		packet_type == CLUSTERER_FULL_TOP_UPDATE))
-		lock_stop_sw_read(cl_list_lock);
+		lock_stop_write(cl_list_lock);
 	else
 		lock_stop_read(cl_list_lock);
 }
