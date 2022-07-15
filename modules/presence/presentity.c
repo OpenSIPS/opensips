@@ -560,7 +560,7 @@ int update_presentity(struct sip_msg* msg, presentity_t* presentity,
 			LM_DBG("pres <%.*s> my turn is %d, current turn is %d\n",pres_uri.len,
 				pres_uri.s, turn, p->current_turn);
 
-			/* wait to get our turn as order of handling pubishs
+			/* wait to get our turn as order of handling publish
 			   (need to wait the ongoing published to terminate
 			   before starting */
 			while (p && turn!=p->current_turn) {
@@ -892,7 +892,7 @@ error:
 }
 
 
-/*  This is just a wrappter over "update_presentity" to be able to export the
+/*  This is just a wrapper over "update_presentity" to be able to export the
  *  function via the internal API - basically provides the "publishing" support
  *  without actually having the PUBLISH SIP request, but directly a presentity
  */
@@ -936,7 +936,7 @@ int pres_htable_restore(void)
 		goto error;
 	}
 
-	/* select the whole tabel and all the columns */
+	/* select the whole table and all the columns */
 	if (DB_CAPABILITY(pa_dbf, DB_CAP_FETCH))
 	{
 		if(pa_dbf.query(pa_db,0,0,0,result_cols, 0,

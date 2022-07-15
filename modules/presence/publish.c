@@ -66,6 +66,7 @@ void presence_raise_event(event_id_t event, presentity_t* presentity)
         static str parameter_eventname_str = { "event", 5 };
         static str parameter_expires_str = { "expires", 7 };
         static str parameter_etag_str = { "etag", 4 };
+        static str parameter_old_etag_str = { "old_etag", 8 };
         static str parameter_body_str = { "body", 4 };
         if (event == EVI_ERROR) {
                 LM_ERR("event not registered %d\n", presence_event_id);
@@ -93,6 +94,11 @@ void presence_raise_event(event_id_t event, presentity_t* presentity)
                 }
                 if (evi_param_add_int(list, &parameter_expires_str, &presentity->expires)) {
                          LM_ERR("unable to add expires parameter\n");
+                         evi_free_params(list);
+                         return;
+                }
+                if (evi_param_add_str(list, &parameter_old_etag_str, &presentity->old_etag)) {
+                         LM_ERR("unable to add old_etag parameter\n");
                          evi_free_params(list);
                          return;
                 }
@@ -148,7 +154,7 @@ static inline void build_extra_hdrs(struct sip_msg* msg, const str* map, str* ex
 		}
 	}
 
-	/* Concatenate found feaders */
+	/* Concatenate found headers */
 	if (len) {
 		p= (char*)pkg_malloc(len);
 		if (p==NULL) {
@@ -273,7 +279,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		pres= (presentity_t*)pkg_malloc(size);
 		if(pres== NULL)
 		{
-			LM_ERR("failde to PKG allocate new presentity\n");
+			LM_ERR("failed to PKG allocate new presentity\n");
 			p[i].p = 0;
 			continue;
 		}
@@ -320,7 +326,7 @@ void msg_presentity_clean(unsigned int ticks,void *interval)
 		if(p[i].p == 0)
 			continue;
 
-		LM_DBG("found expired publish for [user]=%.*s  [domanin]=%.*s\n",
+		LM_DBG("found expired publish for [user]=%.*s  [domain]=%.*s\n",
 			p[i].p->user.len,p[i].p->user.s,
 			p[i].p->domain.len, p[i].p->domain.s);
 
@@ -585,7 +591,7 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 		build_extra_hdrs(msg, event->extra_hdrs, &extra_hdrs);
 
 	/* now we have all the necessary values */
-	/* fill in the filds of the structure */
+	/* fill in the fields of the structure */
 	memset(&presentity, 0, sizeof(presentity_t));
 	presentity.domain = pres_domain;
 	presentity.user   = pres_user;
@@ -604,10 +610,7 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 	presentity.sphere = sphere;
 	presentity.body = body;
 
-	/* send event E_PRESENCE_PUBLISH */
-	presence_raise_event(presence_event_id, &presentity);
-
-	/* querry the database and update or insert */
+	/* query the database and update or insert */
 	if(update_presentity(msg, &presentity, &sent_reply) <0)
 	{
 		LM_ERR("when updating presentity\n");
@@ -615,6 +618,9 @@ int handle_publish(struct sip_msg* msg, str* sender_uri)
 		reply_str = pu_500_rpl;
 		goto error;
 	}
+
+	/* send event E_PRESENCE_PUBLISH */
+	presence_raise_event(presence_event_id, &presentity);
 
 	/* see if this PUBLISH needs to be replicated via cluster */
 	if (is_cluster_federation_enabled() &&
