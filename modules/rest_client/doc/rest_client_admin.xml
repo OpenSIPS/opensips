@@ -304,6 +304,74 @@ modparam("rest_client", "enable_expect_100", true)
 		</example>
 	</section>
 
+	<section id="param_no_concurrent_connects" xreflabel="no_concurrent_connects">
+		<title><varname>no_concurrent_connects</varname> (boolean)</title>
+		<para>
+		Set to <emphasis>true</emphasis> in order to only allow one OpenSIPS
+		worker to connect to a given URL hostname at a time.  While a worker
+		is connecting, all other workers will receive error code
+		<emphasis role='bold'>-4 (already connecting)</emphasis> when attempting
+		to perform any rest_client operation to the same hostname, regardless if
+		the operation is sync or async.
+		</para>
+		<para>
+		For sync transfers, the scope of the worker process serialization
+		extends to the entire cURL transfer (TCP connect + upload + download),
+		as all three phases take place within a single cURL library call.
+		</para>
+		<para>
+		This parameter may be useful in order to prevent system outages caused
+		by concurrent blocking of all OpenSIPS workers on a failed (hanging)
+		HTTP service, with no more free workers being left to process incoming
+		SIP packets.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>false</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>no_concurrent_connects</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "no_concurrent_connects", true)
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_curl_conn_lifetime" xreflabel="curl_conn_lifetime">
+		<title><varname>curl_conn_lifetime</varname> (integer)</title>
+		<para>
+		Only relevant when <xref linkend="param_no_concurrent_connects"/> is enabled.
+		By setting this parameter, script developers can leverage the connection
+		reusage capabilities of libcURL and entirely skip the "no concurrent transfers"
+		logic on a given SIP worker, should that worker already be known to have a TCP
+		connection to the target URL hostname
+		(established by a previous rest_xxx() function call).
+		</para>
+		<para>
+		The parameter denotes the lifetime, in seconds, of TCP connections kept
+		within libcURL for reusage, a setting which is often operating system
+		dependant, and which may also be affected by enabling/disabling keepalives.
+		Consult your operating system's and/or libcurl's documentation for further
+		information on the max lifetime of your cURL TCP connections.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis>0</emphasis> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>curl_conn_lifetime</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("rest_client", "curl_conn_lifetime", true)
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

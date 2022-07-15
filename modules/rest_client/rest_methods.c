@@ -30,8 +30,10 @@
 #include "../../mem/shm_mem.h"
 #include "../../async.h"
 #include "../../lib/list.h"
+#include "../../lib/hash.h"
 #include "../../trace_api.h"
 #include "../../resolve.h"
+#include "../../timer.h"
 
 #include "../tls_mgm/api.h"
 
@@ -66,8 +68,31 @@ extern int _async_resume_retr_itv;
 /* trace parameters for this module */
 #define MAX_HOST_LENGTH 128
 
+#define REST_TRACE_API_MODULE "proto_hep"
 extern int rest_proto_id;
 extern trace_proto_t tprot;
+extern char *rest_id_s;
+
+/**
+ * We cannot use the "parallel transfers" feature of libcurl's multi interface
+ * because that would consume read events from some of its file descriptors that
+ * we also manually add to the OpenSIPS reactor. This may lead to dangling
+ * descriptors in the reactor, as well as some OpenSIPS async routes which
+ * are not triggered.
+ *
+ * To work around this, we can still achieve the desired effect with a pool of
+ * multi handles each doing a single transfer, rather than using 1 multi handle
+ * doing multiple transfers.
+ *
+ * The maximum size of the multi pool is limited to "max_async_transfers"
+ */
+static struct list_head multi_pool;
+static int multi_pool_sz;
+
+static map_t rcl_connections;
+static gen_hash_t *rcl_parallel_connects;
+int no_concurrent_connects;
+int curl_conn_lifetime;
 
 static inline int rest_trace_enabled(void);
 static int trace_rest_message( rest_trace_param_t* tparam );
@@ -77,6 +102,38 @@ int init_sync_handle(void)
 	sync_handle = curl_easy_init();
 	if (!sync_handle) {
 		LM_ERR("init curl handle failed!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int rcl_init_internals(void)
+{
+	INIT_LIST_HEAD(&multi_pool);
+
+	/* try loading the trace api */
+	if (register_trace_type) {
+		rest_proto_id = register_trace_type(rest_id_s);
+		if ( global_trace_api ) {
+			memcpy(&tprot, global_trace_api, sizeof tprot);
+		} else {
+			memset(&tprot, 0, sizeof tprot);
+			if (trace_prot_bind( REST_TRACE_API_MODULE, &tprot))
+				LM_DBG("Can't bind <%s>!\n", REST_TRACE_API_MODULE);
+		}
+	} else {
+		memset(&tprot, 0, sizeof tprot);
+	}
+
+	if (!(rcl_connections = map_create(0))) {
+		LM_ERR("oom 1\n");
+		return -1;
+	}
+
+	if (!(rcl_parallel_connects = hash_init(16))) {
+		LM_ERR("oom 2\n");
 		return -1;
 	}
 
@@ -286,22 +343,6 @@ static inline char del_transfer(int fd)
 	return -1;
 }
 
-/**
- * We cannot use the "parallel transfers" feature of libcurl's multi interface
- * because that would consume read events from some of its file descriptors that
- * we also manually add to the OpenSIPS reactor. This may lead to dangling
- * descriptors in the reactor, as well as some OpenSIPS async routes which
- * are not triggered.
- *
- * To work around this, we can still achieve the desired effect with a pool of
- * multi handles each doing a single transfer, rather than using 1 multi handle
- * doing multiple transfers.
- *
- * The maximum size of the multi pool is limited to "max_async_transfers"
- */
-struct list_head multi_pool;
-static int multi_pool_sz;
-
 static OSS_CURLM *get_multi(void)
 {
 	OSS_CURLM *multi_list;
@@ -460,6 +501,98 @@ cleanup:
 			goto cleanup; \
 		} \
 	} while (0)
+
+
+int rcl_acquire_url(const char *url, char **url_host)
+{
+	CURLU *h = curl_url();
+	char *host;
+	str host_str;
+	int rc, new_connection;
+
+	rc = curl_url_set(h, CURLUPART_URL, url, 0);
+	if (rc != 0) {
+		LM_ERR("failed to parse URL: '%s'\n", url);
+		return RCL_INTERNAL_ERR;
+	}
+
+	rc = curl_url_get(h, CURLUPART_HOST, &host, 0);
+	if (rc != 0) {
+		LM_ERR("failed to extract host from URL: '%s'\n", url);
+		return RCL_INTERNAL_ERR;
+	}
+
+	init_str(&host_str, host);
+	curl_url_cleanup(h);
+
+	if (curl_conn_lifetime) {
+		void **connected_ts;
+
+		connected_ts = map_get(rcl_connections, host_str);
+		if (!connected_ts) {
+			LM_ERR("oom\n");
+			curl_free(host);
+			return RCL_INTERNAL_ERR;
+		}
+
+		if (*connected_ts != 0 && (get_ticks() -
+		        (unsigned int)*(unsigned long *)(*connected_ts) < curl_conn_lifetime)) {
+			new_connection = 0;
+		} else {
+			new_connection = 1;
+		}
+	} else {
+		new_connection = 1;
+	}
+
+	if (new_connection) {
+		unsigned int he = hash_entry(rcl_parallel_connects, host_str);
+
+		hash_lock(rcl_parallel_connects, he);
+		if (hash_find(rcl_parallel_connects, he, host_str)) {
+			// already grabbed
+			hash_unlock(rcl_parallel_connects, he);
+			LM_DBG("a cURL parallel transfer is already taking place for "
+			       "hostname '%s', aborting query\n", host);
+			return RCL_ALREADY_CONNECTING;
+		}
+
+		LM_DBG("acquired parallel transfer lock on hostname '%s'\n", host);
+
+		hash_insert(rcl_parallel_connects, he, host_str, (void *)1);
+		hash_unlock(rcl_parallel_connects, he);
+
+		*url_host = host;
+		return RCL_OK_LOCKED;
+	}
+
+	curl_free(host);
+	return RCL_OK;
+}
+
+
+void rcl_release_url(char *url_host, int update_conn_ts)
+{
+	str host_str = {url_host, strlen(url_host)};
+	unsigned int he = hash_entry(rcl_parallel_connects, host_str);
+
+	hash_lock(rcl_parallel_connects, he);
+	hash_remove(rcl_parallel_connects, he, host_str);
+	hash_unlock(rcl_parallel_connects, he);
+
+	LM_DBG("released parallel transfer lock on hostname '%s'\n", url_host);
+
+	if (update_conn_ts) {
+		void **connected_ts;
+
+		connected_ts = map_get(rcl_connections, host_str);
+		if (connected_ts)
+			*connected_ts = (void *)(unsigned long)get_ticks();
+	}
+
+	curl_free(url_host);
+}
+
 
 static inline char rest_easy_perform(
 			CURL *handle, const char *url, long *out_http_rc)

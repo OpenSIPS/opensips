@@ -35,8 +35,6 @@
 #define BODY_MAX 1024
 #define TRACE_BUF_MAX_SIZE 1024
 
-extern struct list_head multi_pool;
-
 extern long connection_timeout;
 extern long connect_poll_interval;
 extern long connection_timeout_ms;
@@ -48,6 +46,8 @@ extern int ssl_verifypeer;
 extern int ssl_verifyhost;
 
 extern int curl_http_version;
+extern int no_concurrent_connects;
+extern int curl_conn_lifetime;
 
 /* handle for use with synchronous reqs */
 extern CURL *sync_handle;
@@ -60,11 +60,13 @@ enum rest_client_method {
 };
 
 /* return codes for rest_client script functions */
-#define RCL_OK                1
-#define RCL_CONNECT_REFUSED  -1
-#define RCL_CONNECT_TIMEOUT  -2
-#define RCL_TRANSFER_TIMEOUT -3
-#define RCL_INTERNAL_ERR     -10
+#define RCL_OK_LOCKED            2
+#define RCL_OK                   1
+#define RCL_CONNECT_REFUSED     -1
+#define RCL_CONNECT_TIMEOUT     -2
+#define RCL_TRANSFER_TIMEOUT    -3
+#define RCL_ALREADY_CONNECTING  -4
+#define RCL_INTERNAL_ERR       -10
 
 typedef struct _rest_trace_param {
 	str callid;
@@ -119,9 +121,12 @@ typedef struct rest_async_param_ {
 } rest_async_param;
 
 int init_sync_handle(void);
+int rcl_init_internals(void);
 int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
                        char *url, str *body, str *ctype, pv_spec_p body_pv,
                        pv_spec_p ctype_pv, pv_spec_p code_pv);
+int rcl_acquire_url(const char *url, char **url_host);
+void rcl_release_url(char *url_host, int update_conn_ts);
 
 int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
                          char *url, str *req_body, str *req_ctype,
