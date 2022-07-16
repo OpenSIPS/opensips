@@ -27,7 +27,9 @@ SQL Cacher Module
               1.6.1. $sql_cached_value(id{sep}col{sep}key)
 
         1.7. Usage Example
-        1.8. Provided Status/Report Identifiers
+        1.8. Exported Status/Report Identifiers
+
+              1.8.1. [cache_entry_id]
 
    2. Contributors
 
@@ -328,11 +330,13 @@ $avp(nd) = $sql_cached_value(carrier_fr_caching:next_domain:$var(some_id
 xlog("host name is: $sql_cached_value(carrier_fr_caching:host_name:2)");
 ...
 
-1.8. Provided Status/Report Identifiers
+1.8. Exported Status/Report Identifiers
 
    The module provides the "sql_cacher" Status/Report group, where
    each full cache is defined as a separate SR identifier. NOTE
    that there are no identifiers created for the on-demand caches.
+
+1.8.1. [cache_entry_id]
 
    The status of these identifiers reflects the readiness/status
    of the cached data (if available or not when being loaded from
@@ -361,7 +365,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 90 41 3628 1112
+   1. Vlad Patrascu (@rvlad-patrascu) 92 43 3633 1114
    2. Liviu Chircu (@liviuchircu) 22 18 166 115
    3. Razvan Crainea (@razvancrainea) 15 13 25 14
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 7 5 116 21
@@ -394,8 +398,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Feb 2022
-   2.  Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Jan 2022
+   1.  Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Jul 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Feb 2022
    3.  Gang Zhuo                           Nov 2021 - Nov 2021
    4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    5.  Maksym Sobolyev (@sobomax)          Oct 2020 - Jan 2021
@@ -414,9 +418,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Liviu Chircu (@liviuchircu), Peter Lemenkov (@lemenkov).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov).
 
    Documentation Copyrights:
 

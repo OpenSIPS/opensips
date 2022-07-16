@@ -92,7 +92,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu)    23      16      496       93
+   1. Vlad Patrascu (@rvlad-patrascu)    24      17      497       94
    2. Alexey Vasilyev (@vasilevalex)     2        1       11       0
 
    (1) DevScore = author_commits + author_lines_added /

@@ -84,7 +84,11 @@ dispatcher Module
 
               1.6.1. E_DISPATCHER_STATUS
 
-        1.7. Provided Status/Report Identifiers
+        1.7. Exported Status/Report Identifiers
+
+              1.7.1. [partition_name]
+              1.7.2. [partition_name];events
+
         1.8. Installation and Running
 
               1.8.1. OpenSIPS config file
@@ -1235,10 +1239,12 @@ opensips-cli -x mi ds_reload
      * status - active if the destination gets activated or
        inactive if the destination is detected unresponsive.
 
-1.7. Provided Status/Report Identifiers
+1.7. Exported Status/Report Identifiers
 
    The module provides the "dispatcher" Status/Report group, where
    each partition is defined as a separate SR identifier.
+
+1.7.1. [partition_name]
 
    The status of these identifiers reflects the readiness/status
    of the cached data (if available or not when being loaded from
@@ -1278,6 +1284,8 @@ opensips-cli -x mi ds_reload
             ]
         }
 
+
+1.7.2. [partition_name];events
 
    Destination switching reporting:
 
@@ -1475,7 +1483,7 @@ Chapter 3. Contributors
    5. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
    6. Razvan Crainea (@razvancrainea) 38 32 461 120
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
-   8. Vlad Patrascu (@rvlad-patrascu) 17 9 370 234
+   8. Vlad Patrascu (@rvlad-patrascu) 18 10 377 235
    9. Vlad Paiu (@vladpaiu) 16 9 673 33
    10. Henning Westerholt (@henningw) 11 7 93 125
 
@@ -1509,11 +1517,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2022
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2022
-   3.  John Burke (@john08burke)           Feb 2021 - Jan 2022
-   4.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2021
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2022
+   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2022
+   4.  John Burke (@john08burke)           Feb 2021 - Jan 2022
+   5.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2021
    6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    8.  Roman Sevko                         Oct 2019 - Oct 2019
@@ -1538,10 +1546,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), John Burke
-   (@john08burke), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Paiu (@vladpaiu), Roman Sevko, Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Nick
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), John Burke (@john08burke), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Roman Sevko, Peter Lemenkov (@lemenkov), Nick
    Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
    Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Walter
