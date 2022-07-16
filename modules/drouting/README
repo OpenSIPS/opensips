@@ -104,7 +104,11 @@ Dynamic Routing Module
 
               1.6.1. E_DROUTING_STATUS
 
-        1.7. Provided Status/Report Identifiers
+        1.7. Exported Status/Report Identifiers
+
+              1.7.1. [partition_name]
+              1.7.2. [partition_name];events
+
         1.8. Installation
 
    2. Developer Guide
@@ -1758,10 +1762,12 @@ Status:: 0
        if it was disabled from the script or active if the gateway
        is enabled.
 
-1.7. Provided Status/Report Identifiers
+1.7. Exported Status/Report Identifiers
 
    The module provides the "drouting" Status/Report group, where
    each routing partition is defined as a separate SR identifier.
+
+1.7.1. [partition_name]
 
    The status of these identifiers reflects the readiness/status
    of the cached data (if available or not when being loaded from
@@ -1802,6 +1808,8 @@ ed (0 discarded), 1 rules loaded (0 discarded)"
             }
         ]
     }
+
+1.7.2. [partition_name];events
 
    GW/Carrier switching reporting:
 
@@ -1866,7 +1874,7 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 151 88 2452 2584
    3. Razvan Crainea (@razvancrainea) 98 51 1168 2223
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
-   5. Vlad Patrascu (@rvlad-patrascu) 39 18 1092 733
+   5. Vlad Patrascu (@rvlad-patrascu) 40 19 1099 734
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
    7. Andrei Datcu (@andrei-datcu) 20 12 551 134
    8. Ovidiu Sas (@ovidiusas) 15 11 132 70
@@ -1901,10 +1909,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2022
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2022
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2021
-   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Sep 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2022
+   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Mar 2022
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2021
    5.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    6.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    7.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
@@ -1926,9 +1934,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Nick
-   Altmann (@nikbyte), Vlad Patrascu (@rvlad-patrascu), Alexey
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Razvan
+   Crainea (@razvancrainea), Nick Altmann (@nikbyte), Alexey
    Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
    Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai
    Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
