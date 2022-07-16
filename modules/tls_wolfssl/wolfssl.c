@@ -42,6 +42,15 @@
 #include "wolfssl.h"
 #include "wolfssl_api.h"
 
+#if defined __OS_linux
+#include <features.h>
+#if defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 2)
+#define __WOLFSSL_ON_EXIT
+#endif
+#endif
+#endif
+
 static int load_tls_wolfssl(struct wolfssl_binds *binds);
 
 static int mod_init(void);
@@ -134,6 +143,13 @@ static void *oss_realloc(void *ptr, size_t size)
 	return shm_realloc(ptr, size);
 }
 
+#ifdef __WOLFSSL_ON_EXIT
+static void _wolfssl_on_exit(int status, void *param)
+{
+       _exit(status);
+}
+#endif
+
 static int mod_init(void)
 {
 	LM_INFO("initializing tls_wolfssl module\n");
@@ -143,6 +159,10 @@ static int mod_init(void)
 	wolfSSL_Init();
 
 	_wolfssl_init_ssl_methods();
+
+#ifdef __WOLFSSL_ON_EXIT
+       on_exit(_wolfssl_on_exit, NULL);
+#endif
 
 	return 0;
 }
