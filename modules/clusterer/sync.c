@@ -45,7 +45,7 @@ int send_sync_req(str *capability, int cluster_id, int source_id)
 	bin_push_str(&packet, capability);
 	msg_add_trailer(&packet, cluster_id, source_id);
 
-	rc = clusterer_send_msg(&packet, cluster_id, source_id);
+	rc = clusterer_send_msg(&packet, cluster_id, source_id, 1);
 	if (rc == CLUSTERER_SEND_SUCCESS)
 		LM_INFO("Sent sync request for capability '%.*s' to node %d, "
 		        "cluster %d\n", capability->len, capability->s, source_id,
@@ -179,7 +179,9 @@ bin_packet_t *cl_sync_chunk_start(str *capability, int cluster_id, int dst_id,
 			/* send and free the previous packet */
 			msg_add_trailer(sync_packet_snd, cluster_id, dst_id);
 
-			if (clusterer_send_msg(sync_packet_snd, cluster_id, dst_id) < 0)
+			if (clusterer_send_msg(sync_packet_snd, cluster_id, dst_id,
+				1 /* we should be in a SYNC_REQ_RCV callback here so
+				   * already locked*/) < 0)
 				LM_ERR("Failed to send sync packet\n");
 
 			bin_free_packet(sync_packet_snd);
@@ -301,7 +303,8 @@ void send_sync_repl(int sender, void *param)
 		/* send and free the lastly built packet */
 		msg_add_trailer(sync_packet_snd, p->cluster->cluster_id, p->node_id);
 
-		if ((rc = clusterer_send_msg(sync_packet_snd, p->cluster->cluster_id, p->node_id))<0)
+		if ((rc = clusterer_send_msg(sync_packet_snd, p->cluster->cluster_id,
+			p->node_id, 1))<0)
 			LM_ERR("Failed to send sync packet, rc=%d\n", rc);
 
 		bin_free_packet(sync_packet_snd);
@@ -319,7 +322,8 @@ void send_sync_repl(int sender, void *param)
 	bin_push_str(&sync_end_pkt, &p->cap_name);
 	msg_add_trailer(&sync_end_pkt, p->cluster->cluster_id, p->node_id);
 
-	if (clusterer_send_msg(&sync_end_pkt, p->cluster->cluster_id, p->node_id) < 0) {
+	if (clusterer_send_msg(&sync_end_pkt, p->cluster->cluster_id,
+		p->node_id, 1) < 0) {
 		LM_ERR("Failed to send sync end message\n");
 		bin_free_packet(&sync_end_pkt);
 		lock_stop_read(cl_list_lock);

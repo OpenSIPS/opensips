@@ -149,7 +149,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 int get_next_hop(struct node_info *dest);
 int msg_add_trailer(bin_packet_t *packet, int cluster_id, int dst_id);
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
-												int cluster_id, int dst_id);
+	int cluster_id, int dst_id, int locked);
 int send_single_cap_update(struct cluster_info *cluster, struct local_cap *cap,
 							int cap_state);
 
