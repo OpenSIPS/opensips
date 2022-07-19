@@ -646,7 +646,7 @@ static int shtag_send_active_info(int c_id, str *tag_name, int node_id)
 		return CLUSTERER_SEND_ERR;
 
 	msg_add_trailer(&packet, c_id, node_id);
-	if (clusterer_send_msg(&packet, c_id, node_id, 0) !=
+	if (clusterer_send_msg(&packet, c_id, node_id, 0, 1) !=
 		CLUSTERER_SEND_SUCCESS) {
 		bin_free_packet(&packet);
 		return CLUSTERER_SEND_ERR;
