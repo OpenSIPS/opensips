@@ -366,7 +366,7 @@ modparam("rest_client", "no_concurrent_connects", true)
 		<title>Setting the <varname>curl_conn_lifetime</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("rest_client", "curl_conn_lifetime", true)
+modparam("rest_client", "curl_conn_lifetime", 1800)
 ...
 </programlisting>
 		</example>

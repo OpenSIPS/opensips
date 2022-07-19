@@ -502,64 +502,18 @@ cleanup:
 		} \
 	} while (0)
 
-/* at the time of writing, the curl_url_set() API is only available starting
- * with 7.62.0, so please remove the "else" block if you read this in 2027+ */
-#if (LIBCURL_VERSION_NUM >= 0x073e00)
-#define _curl_free curl_free
-#else
-#define _curl_free pkg_free
 
-#define CURLUPART_URL 1
-#define CURLUPART_HOST 2
-
-typedef struct {
-	char *url;
-} CURLU;
-
-static inline CURLU *curl_url(void)
+static inline int rcl_get_url_host(const char *url, char **out_host)
 {
-	CURLU *u = pkg_malloc(sizeof *u);
-
-	if (!u) {
-		LM_ERR("oom\n");
-		return NULL;
-	}
-
-	memset(u, 0, sizeof *u);
-	return u;
-}
-
-static inline int curl_url_set(CURLU *u, int opt, const char *url, int _)
-{
-	if (opt != CURLUPART_URL) {
-		LM_ERR("bad opt: %d\n", opt);
-		return -1;
-	}
-
-	u->url = pkg_strdup(url);
-	if (!u->url) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-static inline int curl_url_get(CURLU *u, int opt, char **out_host, int _)
-{
-	char *p = u->url, *end = p + strlen(p), *ch, *host;
-
-	if (opt != CURLUPART_HOST) {
-		LM_ERR("bad opt: %d\n", opt);
-		return -1;
-	}
+	const char *p = url, *end = p + strlen(p);
+	char *ch, *host;
 
 	while (p < end && isspace(*p))
 		p++;
 	if (p == end)
 		goto bad_url;
 
-	ch = q_memchr(p, '/', end - p);
+	ch = q_memchr((char *)p, '/', end - p);
 	if (!ch || ch + 2 >= end || *(ch + 1) != '/')
 		goto bad_url;
 
@@ -579,7 +533,7 @@ static inline int curl_url_get(CURLU *u, int opt, char **out_host, int _)
 		ch = q_memchr(host, '?', end - host);
 
 	if (!ch)
-		ch = end;
+		ch = (char *)end;
 
 	str host_str = {host, ch - host}, host_dup;
 
@@ -592,42 +546,25 @@ static inline int curl_url_get(CURLU *u, int opt, char **out_host, int _)
 	return 0;
 
 bad_url:
-	LM_ERR("failed to parse URL: '%s'\n", u->url);
+	LM_ERR("failed to parse URL: '%s'\n", url);
 	return -1;
 }
-
-static inline void curl_url_cleanup(CURLU *u)
-{
-	if (!u)
-		return;
-
-	pkg_free(u->url);
-	pkg_free(u);
-}
-#endif
 
 
 int rcl_acquire_url(const char *url, char **url_host)
 {
-	CURLU *h = curl_url();
 	char *host;
 	str host_str;
 	int rc, new_connection;
 
-	rc = curl_url_set(h, CURLUPART_URL, url, 0);
+	rc = rcl_get_url_host(url, &host);
 	if (rc != 0) {
 		LM_ERR("failed to parse URL: '%s'\n", url);
 		return RCL_INTERNAL_ERR;
 	}
-
-	rc = curl_url_get(h, CURLUPART_HOST, &host, 0);
-	if (rc != 0) {
-		LM_ERR("failed to extract host from URL: '%s'\n", url);
-		return RCL_INTERNAL_ERR;
-	}
+	LM_DBG("returned URL host is: '%s'\n", host);
 
 	init_str(&host_str, host);
-	curl_url_cleanup(h);
 
 	if (curl_conn_lifetime) {
 		void **connected_ts;
@@ -635,7 +572,7 @@ int rcl_acquire_url(const char *url, char **url_host)
 		connected_ts = map_get(rcl_connections, host_str);
 		if (!connected_ts) {
 			LM_ERR("oom\n");
-			_curl_free(host);
+			pkg_free(host);
 			return RCL_INTERNAL_ERR;
 		}
 
@@ -670,7 +607,7 @@ int rcl_acquire_url(const char *url, char **url_host)
 		return RCL_OK_LOCKED;
 	}
 
-	_curl_free(host);
+	pkg_free(host);
 	return RCL_OK;
 }
 
@@ -694,7 +631,7 @@ void rcl_release_url(char *url_host, int update_conn_ts)
 			*connected_ts = (void *)(unsigned long)get_ticks();
 	}
 
-	_curl_free(url_host);
+	pkg_free(url_host);
 }
 
 
