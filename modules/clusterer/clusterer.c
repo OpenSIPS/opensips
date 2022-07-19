@@ -314,7 +314,7 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 }
 
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
-	int cluster_id, int dst_node_id, int check_cap)
+	int cluster_id, int dst_node_id, int check_cap, int locked)
 {
 	node_info_t *node;
 	int rc;
@@ -326,19 +326,22 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		LM_ERR("cluster shutdown - cannot send new messages!\n");
 		return CLUSTERER_CURR_DISABLED;
 	}
-	lock_start_read(cl_list_lock);
+	if (!locked)
+		lock_start_read(cl_list_lock);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
 		LM_ERR("Unknown cluster id [%d]\n", cluster_id);
-		lock_stop_read(cl_list_lock);
+		if (!locked)
+			lock_stop_read(cl_list_lock);
 		return CLUSTERER_SEND_ERR;
 	}
 
 	lock_get(cl->current_node->lock);
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
 		lock_release(cl->current_node->lock);
-		lock_stop_read(cl_list_lock);
+		if (!locked)
+			lock_stop_read(cl_list_lock);
 		return CLUSTERER_CURR_DISABLED;
 	}
 	lock_release(cl->current_node->lock);
@@ -346,7 +349,8 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	node = get_node_by_id(cl, dst_node_id);
 	if (!node) {
 		LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
-		lock_stop_read(cl_list_lock);
+		if (!locked)
+			lock_stop_read(cl_list_lock);
 		return CLUSTERER_SEND_ERR;
 	}
 
@@ -379,7 +383,8 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	if (ev_actions_required)
 		do_actions_node_ev(cl, &ev_actions_required, 1);
 
-	lock_stop_read(cl_list_lock);
+	if (!locked)
+		lock_stop_read(cl_list_lock);
 
 	switch (rc) {
 	case  0:
@@ -521,7 +526,7 @@ enum clusterer_send_ret cl_send_to(bin_packet_t *packet, int cluster_id, int nod
 		return CLUSTERER_SEND_ERR;
 	}
 
-	return clusterer_send_msg(packet, cluster_id, node_id, 1);
+	return clusterer_send_msg(packet, cluster_id, node_id, 1, 0);
 }
 
 enum clusterer_send_ret cl_send_all(bin_packet_t *packet, int cluster_id)
@@ -557,7 +562,7 @@ enum clusterer_send_ret send_gen_msg(int cluster_id, int dst_id, str *gen_msg,
 		return CLUSTERER_SEND_ERR;
 	}
 
-	rc = clusterer_send_msg(&packet, cluster_id, dst_id, 0);
+	rc = clusterer_send_msg(&packet, cluster_id, dst_id, 0, 0);
 
 	bin_free_packet(&packet);
 
@@ -612,7 +617,7 @@ enum clusterer_send_ret send_mi_cmd(int cluster_id, int dst_id, str cmd_name,
 	}
 
 	if (dst_id)
-		rc = clusterer_send_msg(&packet, cluster_id, dst_id, 0);
+		rc = clusterer_send_msg(&packet, cluster_id, dst_id, 0, 0);
 	else
 		rc = clusterer_bcast_msg(&packet, cluster_id, NODE_CMP_ANY, 0);
 
