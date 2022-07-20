@@ -205,7 +205,7 @@ void receive_ds_cluster_event(enum clusterer_event ev, int node_id)
 }
 
 int ds_cluster_sync(void) {
-	if (c_api.request_sync(&status_repl_cap, ds_cluster_id) < 0) {
+	if (c_api.request_sync(&status_repl_cap, ds_cluster_id, 0) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
 	}
