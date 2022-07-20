@@ -96,6 +96,8 @@ int cl_request_sync(str *capability, int cluster_id)
 	LM_DBG("requesting %.*s sync in cluster %d\n",
 	       capability->len, capability->s, cluster_id);
 
+	lock_start_read(cl_list_lock);
+
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_ERR("Unknown cluster [%d]\n", cluster_id);
@@ -150,6 +152,8 @@ int cl_request_sync(str *capability, int cluster_id)
 			lock_release(cluster->lock);
 		}
 	}
+
+	lock_stop_read(cl_list_lock);
 
 	return 0;
 }
