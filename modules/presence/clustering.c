@@ -97,7 +97,7 @@ int init_pres_clustering(void)
 	}
 
 	if (cluster_federation == FEDERATION_FULL_SHARING &&
-		c_api.request_sync(&presence_capability, pres_cluster_id) < 0)
+		c_api.request_sync(&presence_capability, pres_cluster_id, 0) < 0)
 		LM_ERR("Sync request failed\n");
 
 	return 0;

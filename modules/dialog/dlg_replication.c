@@ -1162,7 +1162,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 				LM_DBG("Requesting sync for dialogs marked with backup "
 					"sharing tags\n");
 				rc = clusterer_api.request_sync(&dlg_repl_cap,
-					dialog_repl_cluster);
+					dialog_repl_cluster, 1);
 				if (rc < 0)
 					LM_ERR("Failed to send sync request");
 				else if (rc == 1)
@@ -1665,7 +1665,7 @@ mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
 		}
 	}
 
-	rc = clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster);
+	rc = clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 0);
 
 	if (rc < 0)
 		return init_mi_error(400, MI_SSTR("Failed to send sync request"));

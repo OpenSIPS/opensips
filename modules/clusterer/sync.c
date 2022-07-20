@@ -107,19 +107,23 @@ int queue_sync_request(cluster_info_t *cluster, struct local_cap *lcap)
 	return 0;
 }
 
-int cl_request_sync(str *capability, int cluster_id)
+int cl_request_sync(str *capability, int cluster_id, int from_cb)
 {
 	cluster_info_t *cluster;
 	struct local_cap *lcap;
 	int source_id;
+	int rc = -1;
 
 	LM_DBG("requesting %.*s sync in cluster %d\n",
 	       capability->len, capability->s, cluster_id);
 
+	if (!from_cb)
+		lock_start_read(cl_list_lock);
+
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_ERR("Unknown cluster [%d]\n", cluster_id);
-		return -1;
+		goto end;
 	}
 
 	for (lcap = cluster->capabilities; lcap; lcap = lcap->next)
@@ -128,25 +132,28 @@ int cl_request_sync(str *capability, int cluster_id)
 	if (!lcap) {
 		LM_ERR("Request sync for unknown capability: %.*s\n",
 			capability->len, capability->s);
-		return -1;
+		goto end;
 	}
 
 	lock_get(cluster->lock);
 	if (lcap->flags & CAP_SYNC_PENDING) {
 		lock_release(cluster->lock);
 		LM_DBG("Sync request already pending\n");
-		return 0;
+		rc = 0;
+		goto end;
 	}
 	if (lcap->flags & CAP_SYNC_IN_PROGRESS) {
 		lock_release(cluster->lock);
 		LM_DBG("Sync already in progress\n");
-		return 1;
+		rc = 1;
+		goto end;
 	}
 
 	if (!(lcap->flags & CAP_STATE_ENABLED)) {
 		lock_release(cluster->lock);
 		LM_DBG("Capability disabled, skip send sync request\n");
-		return 0;
+		rc = 0;
+		goto end;
 	}
 
 	lcap->sync_total_chunks_cnt = 0;
@@ -176,11 +183,15 @@ int cl_request_sync(str *capability, int cluster_id)
 				STR2CI(CAP_SR_STATUS_STR(CAP_SR_SYNC_PENDING)), 0);
 			if (sr_add_report_fmt(cl_srg, STR2CI(lcap->reg.sr_id), 0,
 				"Sync requested from node [%d]", source_id))
-				return -1;
+				goto end;
 		}
 	}
 
-	return 0;
+	rc = 0;
+end:
+	if (!from_cb)
+		lock_stop_read(cl_list_lock);
+	return rc;
 }
 
 static int no_sync_chunks_sent;
