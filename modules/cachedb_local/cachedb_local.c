@@ -636,7 +636,7 @@ static int mod_init(void)
 		}
 
 		if (rr_persist == RRP_SYNC_FROM_CLUSTER &&
-		    clusterer_api.request_sync(&cache_repl_cap, cluster_id) < 0)
+		    clusterer_api.request_sync(&cache_repl_cap, cluster_id, 0) < 0)
 			LM_ERR("cachedb sync request failed\n");
 
 	}

@@ -355,7 +355,7 @@ int dr_cluster_sync(void)
 	if (!dr_cluster_id)
 		return 0;
 
-	if (c_api.request_sync(&status_repl_cap, dr_cluster_id) < 0) {
+	if (c_api.request_sync(&status_repl_cap, dr_cluster_id, 0) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
 	}

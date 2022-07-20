@@ -68,7 +68,7 @@ int b2be_init_clustering(void)
 		return -1;
 	}
 
-	if (cl_api.request_sync(&entities_repl_cap, b2be_cluster) < 0)
+	if (cl_api.request_sync(&entities_repl_cap, b2be_cluster, 0) < 0)
 		LM_ERR("Sync request failed\n");
 
 	return 0;

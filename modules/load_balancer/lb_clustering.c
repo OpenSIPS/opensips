@@ -162,7 +162,7 @@ void receive_lb_cluster_event(enum clusterer_event ev, int node_id)
 }
 
 int lb_cluster_sync(void) {
-	if (c_api.request_sync(&status_repl_cap, lb_cluster_id) < 0) {
+	if (c_api.request_sync(&status_repl_cap, lb_cluster_id, 0) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
 	}
@@ -200,7 +200,7 @@ int lb_init_cluster(void)
 		lb_cluster_shtag.len = 0;
 	}
 
-	if (c_api.request_sync(&status_repl_cap, lb_cluster_id) < 0) {
+	if (c_api.request_sync(&status_repl_cap, lb_cluster_id, 0) < 0) {
 		LM_ERR("Sync request failed\n");
 		return -1;
 	}
