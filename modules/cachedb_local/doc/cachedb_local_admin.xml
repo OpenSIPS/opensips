@@ -95,8 +95,11 @@
 		<section id="param_cachedb_url" xreflabel="cachedb_url">
 		<title><varname>cachedb_url</varname> (string)</title>
 		<para>
-			URL parameter used to define cachedb_local collections. One collection
-		can belong to multiple URLs, but one URL can have only one collection.
+		URLs of local cache groups to be used used for the script and MI cacheDB
+		operations. The parameter can be set multiple times.
+		</para>
+		<para>
+		One collection can belong to multiple URLs, but one URL can have only one collection.
 		Redefining an URL with the same schema and group name will result in overwriting
 		that URL. Each collection used in URL definition must be defined using
 		<emphasis>cachedb_collection</emphasis> parameter. The collection shall be defined
@@ -138,8 +141,7 @@ cache_store("local:group2", ...)
 			Using this parameter collections(hash tables) and their sizes can be defined. Each
 			collection definition must be separated one from another using ';'. Default size
 			for a hash is 512. The size must be separated from the name of the collection using
-			'='. Every collection that is defined in this parameter <emphasis>SHOULD</emphasis> be
-			used in at least one URL, else you'll receive a WARNING.
+			'='.
 		</para>
 		<para>
 			If clustering is enabled you have to specify which collections you want to replicate
