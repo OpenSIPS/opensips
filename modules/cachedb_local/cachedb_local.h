@@ -58,10 +58,6 @@ typedef struct lcache_col {
 	lcache_htable_t *col_htable;
 	int size;
 
-	/* we need to know somehow if this collection is used or not;
-	 * if not used we'll need to throw an error */
-	int is_used;
-
 	int replicated;
 
 	osips_malloc_f malloc;

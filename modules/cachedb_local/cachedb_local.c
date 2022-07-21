@@ -308,7 +308,6 @@ lcache_con* lcache_new_connection(struct cachedb_id* id)
 	}
 
 	con->col = it;
-	it->is_used = 1;
 
 	return con;
 }
@@ -494,10 +493,6 @@ static int mod_init(void)
 		default_col->col_name.len = sizeof(DEFAULT_COLLECTION_NAME) - 1;
 		default_col->size = (1 << HASH_SIZE_DEFAULT);
 
-		/* the default collection is special; it's always there, it doesn't have
-		 * to be used in order to keep backwards compatibility */
-		default_col->is_used = 1;
-
 		/* link the default collection */
 		default_col->next = lcache_collection;
 		lcache_collection = default_col;
@@ -538,13 +533,6 @@ static int mod_init(void)
 	clean_rpm_cache_old();
 
 	for ( col_it=lcache_collection; col_it; col_it=col_it->next ) {
-		/* check to see if we've got unused collections */
-		if ( !col_it->is_used ) {
-			LM_WARN("collection <%.*s> is not assigned to any url!\n",
-					col_it->col_name.len, col_it->col_name.s);
-			continue;
-		}
-
 		if (!cluster_id && col_it->replicated) {
 			LM_WARN("collection <%.*s> is replicated but no "
 				"'cluster_id' defined!\n",
