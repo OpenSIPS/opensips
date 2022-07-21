@@ -46,9 +46,9 @@ python_exec(struct sip_msg *_msg, str *_method_name_s, str *_mystr_s)
     str mystr;
 
     if (pkg_nt_str_dup(&method_name, _method_name_s) < 0)
-        return -1;
+        goto e0;
     if (_mystr_s && pkg_nt_str_dup(&mystr, _mystr_s) < 0)
-        return -1;
+        goto e1;
 
     PyEval_AcquireLock();
     PyThreadState_Swap(myThreadState);
@@ -123,14 +123,17 @@ python_exec(struct sip_msg *_msg, str *_method_name_s, str *_mystr_s)
     PyThreadState_Swap(NULL);
     PyEval_ReleaseLock();
     
+
+    if (_mystr_s)
+        pkg_free(mystr.s);
     pkg_free(method_name.s);
 
     return rval;
 
 error:
-    pkg_free(method_name.s);
     if (_mystr_s)
         pkg_free(mystr.s);
-
+e1: pkg_free(method_name.s);
+e0:
     return -1;
 }
