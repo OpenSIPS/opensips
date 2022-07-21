@@ -321,6 +321,10 @@ void lcache_destroy(cachedb_con *con)
 	cachedb_do_close(con,lcache_free_connection);
 }
 
+int lcache_is_replicated (cachedb_con *con)
+{
+	return cluster_id ? 1 : 0;
+}
 
 /**
  * init module function
@@ -348,6 +352,7 @@ static int mod_init(void)
 	cde.cdb_func.remove = lcache_htable_remove;
 	cde.cdb_func.add = lcache_htable_add;
 	cde.cdb_func.sub = lcache_htable_sub;
+	cde.cdb_func.is_replicated = lcache_is_replicated;
 
 	cde.cdb_func.capability = CACHEDB_CAP_BINARY_VALUE;
 

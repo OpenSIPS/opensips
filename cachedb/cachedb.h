@@ -144,6 +144,11 @@ typedef struct cachedb_funcs_t {
 	               const cdb_dict_t *pairs);
 	/* TODO: can we also implement these ^ with Redis, or can we adapt them? */
 
+	/* Checks if the database is replicated (in an OpenSIPS cluster).
+	 * Currently only makes sense for cachedb_local
+	 */
+	int (*is_replicated) (cachedb_con *con);
+
 	int capability;
 } cachedb_funcs;
 
