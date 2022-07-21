@@ -154,6 +154,11 @@ typedef struct cachedb_funcs_t {
 		const cdb_dict_t *pairs);
 	int (*map_remove) (cachedb_con *con, const str *key, const str *subkey);
 
+	/* Checks if the database is replicated (in an OpenSIPS cluster).
+	 * Currently only makes sense for cachedb_local
+	 */
+	int (*is_replicated) (cachedb_con *con);
+
 	int capability;
 } cachedb_funcs;
 

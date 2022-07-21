@@ -746,6 +746,13 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 			c_entry->cachedb_url.len, c_entry->cachedb_url.s);
 		return NULL;
 	}
+
+	if (new_db_hdls->cdbf.is_replicated &&
+		new_db_hdls->cdbf.is_replicated(new_db_hdls->cdbcon)) {
+		LM_ERR("Cannot use an OpenSIPS replicated cacheDB\n");
+		return NULL;
+	}
+
 	/* setting and getting a test key in cachedb */
 	if (new_db_hdls->cdbf.set(new_db_hdls->cdbcon, &cdb_test_key, &cdb_test_val,
 		0) < 0) {
