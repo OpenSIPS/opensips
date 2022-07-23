@@ -329,7 +329,7 @@ modparam("rest_client", "no_concurrent_connects", true)
 
    Example 1.12. Setting the curl_conn_lifetime parameter
 ...
-modparam("rest_client", "curl_conn_lifetime", true)
+modparam("rest_client", "curl_conn_lifetime", 1800)
 ...
 
 1.5. Exported Functions
@@ -720,7 +720,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 135 75 3833 1663
+   1. Liviu Chircu (@liviuchircu) 139 77 3952 1741
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 17 8 336 345
    4. Razvan Crainea (@razvancrainea) 15 13 41 17
