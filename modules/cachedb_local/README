@@ -117,15 +117,17 @@ Chapter 1. Admin Guide
 
 1.4.1. cachedb_url (string)
 
-   URL parameter used to define cachedb_local collections. One
-   collection can belong to multiple URLs, but one URL can have
-   only one collection. Redefining an URL with the same schema and
-   group name will result in overwriting that URL. Each collection
-   used in URL definition must be defined using cachedb_collection
-   parameter. The collection shall be defined as a normal
-   database, at the end of the URL as in the examples. In the
-   script the collection shall be identified using the schema and,
-   if exists, the group name.
+   URLs of local cache groups to be used used for the script and
+   MI cacheDB operations. The parameter can be set multiple times.
+
+   One collection can belong to multiple URLs, but one URL can
+   have only one collection. Redefining an URL with the same
+   schema and group name will result in overwriting that URL. Each
+   collection used in URL definition must be defined using
+   cachedb_collection parameter. The collection shall be defined
+   as a normal database, at the end of the URL as in the examples.
+   In the script the collection shall be identified using the
+   schema and, if exists, the group name.
 
    “If no URL defined, the url with no group name and collection
    "default" will be used.”.
@@ -157,8 +159,7 @@ cache_store("local:group2", ...)
    can be defined. Each collection definition must be separated
    one from another using ';'. Default size for a hash is 512. The
    size must be separated from the name of the collection using
-   '='. Every collection that is defined in this parameter SHOULD
-   be used in at least one URL, else you'll receive a WARNING.
+   '='.
 
    If clustering is enabled you have to specify which collections
    you want to replicate with the /r suffix to the collection
@@ -308,8 +309,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 32 10 1155 693
-   2. Liviu Chircu (@liviuchircu) 21 15 126 190
-   3. Vlad Patrascu (@rvlad-patrascu) 21 12 494 204
+   2. Vlad Patrascu (@rvlad-patrascu) 24 15 507 225
+   3. Liviu Chircu (@liviuchircu) 21 15 126 190
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
    5. Anca Vamanu 13 5 739 54
    6. Andrei Dragus 9 4 182 181
@@ -342,7 +343,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Feb 2022
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Jul 2022
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
