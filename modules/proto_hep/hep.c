@@ -647,7 +647,7 @@ static hid_list_p get_hep_id_by_name(str* name, int lock, int ref)
 			lock_release(hid_dyn_lock);
 	}
 
-	LM_INFO("hep id <%.*s> not found!\n", name->len, name->s);
+	LM_DBG("hep id <%.*s> not found\n", name->len, name->s);
 	return NULL;
 }
 
