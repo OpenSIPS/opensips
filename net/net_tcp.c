@@ -440,6 +440,7 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 	unsigned int part;
 	int n;
 	int fd;
+    struct timeval timeout={1,0};
 
 	if (id) {
 		part = id;
@@ -528,6 +529,7 @@ found:
 	}
 	LM_DBG("c= %p, n=%d, Usock=%d\n", c, n, unix_tcp_sock);
 	tmp = c;
+    setsockopt(unix_tcp_sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(struct timeval));
 	n=receive_fd(unix_tcp_sock, &c, sizeof(c), &fd, MSG_WAITALL);
 	if (n<=0){
 		LM_ERR("failed to get fd(receive_fd):"
