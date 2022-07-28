@@ -830,41 +830,9 @@ static int mod_init(void)
 		return -1;
 	}
 
-	/* check params and register to clusterer for dialogs and
-	 * profiles replication */
-	if (dialog_repl_cluster < 0) {
-		LM_ERR("Invalid dialog_replication_cluster, must be 0 or "
-			"a positive cluster id\n");
+	if (dlg_init_clustering() < 0) {
+		LM_ERR("Failed to initialize clustering\n");
 		return -1;
-	}
-	if (profile_repl_cluster < 0) {
-		LM_ERR("Invalid profile_repl_cluster, must be 0 or "
-			"a positive cluster id\n");
-		return -1;
-	}
-
-	if ((dialog_repl_cluster || profile_repl_cluster) &&
-		(load_clusterer_api(&clusterer_api) < 0)) {
-		LM_DBG("failed to load clusterer API - is clusterer module loaded?\n");
-		return -1;
-	}
-
-	if (profile_repl_cluster && clusterer_api.register_capability(
-		&prof_repl_cap, receive_prof_repl, NULL, profile_repl_cluster, 0,
-		NODE_CMP_ANY) < 0) {
-		LM_ERR("Cannot register clusterer callback for profile replication!\n");
-		return -1;
-	}
-
-	if (dialog_repl_cluster) {
-		if (clusterer_api.register_capability(&dlg_repl_cap, receive_dlg_repl,
-				rcv_cluster_event, dialog_repl_cluster, 1, NODE_CMP_ANY) < 0) {
-			LM_ERR("Cannot register clusterer callback for dialog replication!\n");
-			return -1;
-		}
-
-		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 0) < 0)
-			LM_ERR("Sync request failed\n");
 	}
 
 	if ( register_timer( "dlg-timer", dlg_timer_routine, NULL, 1,

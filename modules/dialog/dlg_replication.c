@@ -45,6 +45,8 @@ struct clusterer_binds clusterer_api;
 
 str shtag_dlg_val = str_init("dlgX_shtag");
 
+char *dlg_sync_in_progress;
+
 static int get_shtag_sync_status(struct dlg_cell *dlg);
 
 static struct socket_info * fetch_socket_info(str *addr)
@@ -120,6 +122,56 @@ not_found:
 	return 0;
 }
 
+int dlg_init_clustering(void)
+{
+	/* check params and register to clusterer for dialogs and
+	 * profiles replication */
+	if (dialog_repl_cluster < 0) {
+		LM_ERR("Invalid dialog_replication_cluster, must be 0 or "
+			"a positive cluster id\n");
+		return -1;
+	}
+	if (profile_repl_cluster < 0) {
+		LM_ERR("Invalid profile_repl_cluster, must be 0 or "
+			"a positive cluster id\n");
+		return -1;
+	}
+
+	if ((dialog_repl_cluster || profile_repl_cluster) &&
+		(load_clusterer_api(&clusterer_api) < 0)) {
+		LM_DBG("failed to load clusterer API - is clusterer module loaded?\n");
+		return -1;
+	}
+
+	if (profile_repl_cluster && clusterer_api.register_capability(
+		&prof_repl_cap, receive_prof_repl, NULL, profile_repl_cluster, 0,
+		NODE_CMP_ANY) < 0) {
+		LM_ERR("Cannot register clusterer callback for profile replication!\n");
+		return -1;
+	}
+
+	if (dialog_repl_cluster) {
+		if (clusterer_api.register_capability(&dlg_repl_cap, receive_dlg_repl,
+				rcv_cluster_event, dialog_repl_cluster, 1, NODE_CMP_ANY) < 0) {
+			LM_ERR("Cannot register clusterer callback for dialog replication!\n");
+			return -1;
+		}
+
+		dlg_sync_in_progress = shm_malloc(sizeof *dlg_sync_in_progress);
+		if (*dlg_sync_in_progress) {
+			LM_ERR("no more shm memory!\n");
+			return -1;
+		}
+
+		*dlg_sync_in_progress = 1;
+		if (clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 0) < 0)
+			LM_ERR("Sync request failed\n");
+
+	}
+
+	return 0;
+}
+
 /*  Binary Packet receiving functions   */
 
 /**
@@ -176,8 +228,9 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 			/* unmark dlg as loaded from DB (otherwise it would have been
 			 * dropped later when syncing from cluster is done) */
 			dlg->flags &= ~DLG_FLAG_FROM_DB;
-			if (from_sync)
+			if (from_sync || *dlg_sync_in_progress)
 				dlg->flags |= DLG_FLAG_SYNCED;
+
 			dlg_unlock(d_table, d_entry);
 			return 0;
 		}
@@ -327,6 +380,10 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 
 			return 0;
 		}
+	} else if (*dlg_sync_in_progress) {
+		/* dialogs received after sync started and until SYNC_DONE callback
+		 * is run should never be dropped as if they were "local" dialogs */
+		dlg->flags |= DLG_FLAG_SYNCED;
 	}
 
 	if (dlg_db_mode == DB_MODE_DELAYED) {
@@ -389,7 +446,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 	int timeout, h_entry;
 	str st;
 	struct dlg_entry *d_entry;
-	int rcv_flags, save_new_flag;
+	int rcv_flags, save_new_flag, save_sync_flag;
 	unsigned int h_id;
 	short pkg_ver = get_bin_pkg_version(packet);
 
@@ -490,8 +547,10 @@ int dlg_replicated_update(bin_packet_t *packet)
 	/* make sure an update received immediately after a create can't
 	 * incorrectly erase the DLG_FLAG_NEW before locally writing to DB */
 	save_new_flag = dlg->flags & DLG_FLAG_NEW;
+	save_sync_flag = dlg->flags & DLG_FLAG_SYNCED;
 	dlg->flags = rcv_flags;
-	dlg->flags |= ((save_new_flag ? DLG_FLAG_NEW : 0) | DLG_FLAG_CHANGED);
+	dlg->flags |= ((save_new_flag ? DLG_FLAG_NEW : 0) |
+		(save_sync_flag ? DLG_FLAG_SYNCED : 0) | DLG_FLAG_CHANGED);
 
 	bin_pop_int(packet, &timeout);
 	bin_skip_int(packet, 2);
@@ -1165,6 +1224,8 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 			}
 			dlg_unlock(d_table, &d_table->entries[i]);
 		}
+
+		*dlg_sync_in_progress = 0;
 	} else if (ev == CLUSTER_NODE_UP) {
 		if (cluster_auto_sync) {
 			if ((sync_required = clusterer_api.shtag_sync_all_backup(
@@ -1176,6 +1237,7 @@ void rcv_cluster_event(enum clusterer_event ev, int node_id)
 			if (sync_required) {
 				LM_DBG("Requesting sync for dialogs marked with backup "
 					"sharing tags\n");
+				*dlg_sync_in_progress = 1;
 				rc = clusterer_api.request_sync(&dlg_repl_cap,
 					dialog_repl_cluster, 1);
 				if (rc < 0)
@@ -1678,6 +1740,7 @@ mi_response_t *mi_sync_cl_dlg(const mi_params_t *params,
 		}
 	}
 
+	*dlg_sync_in_progress = 1;
 	rc = clusterer_api.request_sync(&dlg_repl_cap, dialog_repl_cluster, 0);
 
 	if (rc < 0)
