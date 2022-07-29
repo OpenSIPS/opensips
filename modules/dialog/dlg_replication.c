@@ -158,7 +158,7 @@ int dlg_init_clustering(void)
 		}
 
 		dlg_sync_in_progress = shm_malloc(sizeof *dlg_sync_in_progress);
-		if (*dlg_sync_in_progress) {
+		if (!dlg_sync_in_progress) {
 			LM_ERR("no more shm memory!\n");
 			return -1;
 		}
