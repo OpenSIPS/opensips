@@ -1787,7 +1787,7 @@ static int get_shtag_sync_status(struct dlg_cell *dlg)
 
 	if (!dlg->shtag.s || dlg->shtag.len == 0) {
 		LM_DBG("Sharing tag not set\n");
-		return SHTAG_SYNC_NOT_REQUIRED;
+		return SHTAG_SYNC_REQUIRED;
 	}
 
 	if ((rc = clusterer_api.shtag_get_sync_status(&dlg->shtag,
