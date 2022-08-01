@@ -166,6 +166,8 @@ extern void *cl_srg;
 extern str node_st_sr_ident;
 extern str cap_sr_details_str[];
 
+extern int dispatch_jobs;
+
 void sync_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,

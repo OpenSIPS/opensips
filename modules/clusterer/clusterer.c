@@ -57,6 +57,8 @@ extern int ping_timeout;
 extern int seed_fb_interval;
 extern int sync_timeout;
 
+int dispatch_jobs = 1;
+
 str cap_sr_details_str[] = {
 	str_init("not synced"),
 	str_init("sync pending"),
@@ -1398,8 +1400,12 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			lock_stop_read(cl_list_lock);
 			packet->src_id = source_id;
 
-			if (ipc_dispatch_mod_packet(packet, cap, cluster_id) < 0)
-				LM_ERR("Failed to dispatch handling of module packet\n");
+			if (dispatch_jobs) {
+				if (ipc_dispatch_mod_packet(packet, cap, cluster_id) < 0)
+					LM_ERR("Failed to dispatch handling of module packet\n");
+			} else {
+				cap->packet_cb(packet);
+			}
 
 			return;
 		}
