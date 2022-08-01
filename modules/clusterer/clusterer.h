@@ -146,6 +146,8 @@ extern enum sip_protos clusterer_proto;
 extern str cl_internal_cap;
 extern str cl_extra_cap;
 
+extern int dispatch_jobs;
+
 void sync_check_timer(utime_t ticks, void *param);
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
