@@ -54,6 +54,8 @@ extern int ping_timeout;
 extern int seed_fb_interval;
 extern int sync_timeout;
 
+int dispatch_jobs = 1;
+
 static event_id_t ei_req_rcv_id = EVI_ERROR;
 static event_id_t ei_rpl_rcv_id = EVI_ERROR;
 static event_id_t ei_node_state_id = EVI_ERROR;
@@ -2045,8 +2047,12 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			lock_stop_read(cl_list_lock);
 			packet->src_id = source_id;
 
-			if (ipc_dispatch_mod_packet(packet, cap) < 0)
-				LM_ERR("Failed to dispatch handling of module packet\n");
+			if (dispatch_jobs) {
+				if (ipc_dispatch_mod_packet(packet, cap) < 0)
+					LM_ERR("Failed to dispatch handling of module packet\n");
+			} else {
+				cap->packet_cb(packet);
+			}
 
 			return;
 		}

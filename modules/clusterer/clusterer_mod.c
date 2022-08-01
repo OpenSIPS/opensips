@@ -157,6 +157,7 @@ static param_export_t params[] = {
 	{"sharing_tag",			STR_PARAM|USE_FUNC_PARAM,
 		(void*)&shtag_modparam_func},
 	{"sync_packet_size",	INT_PARAM,	&sync_packet_size	},
+	{"dispatch_jobs",		INT_PARAM,	&dispatch_jobs		},
 	{0, 0, 0}
 };
 

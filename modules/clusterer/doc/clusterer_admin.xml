@@ -387,6 +387,37 @@ modparam("clusterer", "sync_packet_max_size", 32765)
 		</example>
         </section>
 
+        <section id="param_dispatch_jobs" xreflabel="dispatch_jobs">
+            <title><varname>dispatch_jobs</varname></title>
+            <para>
+            Enables the dispatching of jobs(processing replicated data packets)
+            from the receiving TCP worker process to free opensips workers
+            (including UDP, timer processes etc.).
+            </para>
+            <para>
+            This generally improves the performance of handling replication packets
+            in high traffic scenarios and should not be disabled.
+            </para>
+            <para>
+            Nevertheless there are cases where the "thundering herd" problem occurs
+            which causes abnormaly high CPU loads. Disabling this dispatching
+            mechanism solves such issues.
+            </para>
+            <para>
+		<emphasis>
+			Default value is <quote>1</quote> (enabled).
+		</emphasis>
+            </para>
+            <example>
+		<title>Set <varname>dispatch_jobs</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("clusterer", "dispatch_jobs", 0)
+...
+		</programlisting>
+		</example>
+        </section>
+
         <section id="param_id_col" xreflabel="id_col">
             <title><varname>id_col</varname></title>
             <para>

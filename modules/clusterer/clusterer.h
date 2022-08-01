@@ -138,6 +138,8 @@ extern enum sip_protos clusterer_proto;
 extern str cl_internal_cap;
 extern str cl_extra_cap;
 
+extern int dispatch_jobs;
+
 void heartbeats_timer(void);
 void sync_check_timer(utime_t ticks, void *param);
 
