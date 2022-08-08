@@ -223,7 +223,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 	str* b2b_key;
 
 	if(!safe)
-		lock_get(&table[hash_index].lock);
+		B2BE_LOCK_GET(table, hash_index);
 
 	dlg->prev = dlg->next = NULL;
 	it = table[hash_index].first;
@@ -247,7 +247,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 	if(b2b_key == NULL)
 	{
 		if(!safe)
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 		LM_ERR("Failed to generate b2b key\n");
 		return NULL;
 	}
@@ -259,7 +259,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 		{
 			LM_ERR("No more shared memory\n");
 			if(!safe)
-				lock_release(&table[hash_index].lock);
+				B2BE_LOCK_RELEASE(table, hash_index);
 			return 0;
 		}
 		memcpy(dlg->tag[CALLEE_LEG].s, b2b_key->s, b2b_key->len);
@@ -270,7 +270,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 		b2be_db_insert(dlg, src);
 
 	if(!safe)
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 
 	return b2b_key;
 }
@@ -510,7 +510,7 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 			callid->len, callid->s, from_tag->len, from_tag->s);
 	/* must search iteratively */
 
-	lock_get(&server_htable[hash_index].lock);
+	B2BE_LOCK_GET(server_htable, hash_index);
 	dlg = server_htable[hash_index].first;
 	while(dlg)
 	{
@@ -585,17 +585,17 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 	}
 
 	if (entity_type == B2B_SERVER)
-		lock_release(&server_htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(server_htable, hash_index);
 	else
-		lock_release(&client_htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(client_htable, hash_index);
 
 	cb->cbf(entity_type, entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid,
 		&dlg->logic_key, dlg->param, event_type, storage, backend);
 
 	if (entity_type == B2B_SERVER)
-		lock_get(&server_htable[hash_index].lock);
+		B2BE_LOCK_GET(server_htable, hash_index);
 	else
-		lock_get(&client_htable[hash_index].lock);
+		B2BE_LOCK_GET(client_htable, hash_index);
 
 	if (cbs_type == B2BCB_TRIGGER_EVENT && event_type != B2B_EVENT_DELETE &&
 		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) > 0) {
@@ -863,7 +863,7 @@ search_dialog:
 			hash_index);
 		if(dlg == NULL)
 		{
-			lock_release(&server_htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			LM_DBG("No dialog found for cancel\n");
 			return SCB_RUN_ALL;
 		}
@@ -871,12 +871,12 @@ search_dialog:
 		ctx = b2b_get_context();
 		if (!ctx) {
 			LM_ERR("Failed to get b2b context\n");
-			lock_release(&server_htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			return SCB_DROP_MSG;
 		}
 		if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 			LM_ERR("Failed to copy b2b_logic key to b2b context\n");
-			lock_release(&server_htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			return SCB_DROP_MSG;
 		}
 
@@ -891,7 +891,7 @@ search_dialog:
 			}
 			else
 				LM_DBG("Error when creating tm transaction\n");
-			lock_release(&server_htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			return SCB_DROP_MSG;
 		}
 
@@ -901,7 +901,7 @@ search_dialog:
 		if(tmb.t_reply(msg, 200, &reply_text) < 0)
 		{
 			LM_ERR("failed to send reply for CANCEL\n");
-			lock_release(&server_htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(server_htable, hash_index);
 			return SCB_RUN_ALL;
 		}
 		tmb.unref_cell(tmb.t_gett());
@@ -964,7 +964,7 @@ search_dialog:
 					hash_index);
 				if(dlg == NULL)
 				{
-					lock_release(&server_htable[hash_index].lock);
+					B2BE_LOCK_RELEASE(server_htable, hash_index);
 					LM_DBG("No dialog found for UPDATE/PRACK\n");
 					return SCB_RUN_ALL;
 				}
@@ -974,7 +974,7 @@ search_dialog:
 
 	if(!dlg)
 	{
-		lock_get(&table[hash_index].lock);
+		B2BE_LOCK_GET(table, hash_index);
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
 			&to_tag, &from_tag, &callid);
 		if(dlg== NULL)
@@ -996,7 +996,7 @@ search_dialog:
 				if (tm_tran && tm_tran!=T_UNDEFINED)
 					tmb.unref_cell(tm_tran);
 			}
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_RUN_ALL;
 		}
 	}
@@ -1004,18 +1004,18 @@ search_dialog:
 	ctx = b2b_get_context();
 	if (!ctx) {
 		LM_ERR("Failed to get b2b context\n");
-		lock_release(&server_htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(server_htable, hash_index);
 		return SCB_DROP_MSG;
 	}
 	if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
-		lock_release(&server_htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(server_htable, hash_index);
 		return SCB_DROP_MSG;
 	}
 
 	if (method_value == METHOD_PRACK)
 	{
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		LM_DBG("Received a PRACK - send 200 reply\n");
 		str reason={"OK", 2};
 		/* send 200 OK and exit */
@@ -1039,7 +1039,7 @@ search_dialog:
 		if(method_value != METHOD_UPDATE)
 		{
 			LM_DBG("I can not accept requests if the state is not confimed\n");
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_DROP_MSG;
 		}
 	}
@@ -1051,7 +1051,7 @@ search_dialog:
 	if(method_value == METHOD_ACK && dlg->state == B2B_ESTABLISHED)
 	{
 		LM_DBG("It is a ACK retransmission, drop\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return SCB_DROP_MSG;
 	}
 
@@ -1060,7 +1060,7 @@ logic_notify:
 
 	if(req_routeid > 0)
 	{
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		run_top_route(sroutes->request[req_routeid], msg);
 		if (b2b_apply_lumps(msg))
 		{
@@ -1082,7 +1082,7 @@ logic_notify:
 				b2b_key = msg->callid->body;
 			}
 		}
-		lock_get(&table[hash_index].lock);
+		B2BE_LOCK_GET(table, hash_index);
 	}
 
 	if(method_value != METHOD_CANCEL)
@@ -1096,7 +1096,7 @@ logic_notify:
 			}
 			else
 				LM_DBG("Error when creating tm transaction\n");
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_DROP_MSG;
 		}
 
@@ -1143,7 +1143,7 @@ logic_notify:
 							tm_tran);
 					}
 					tmb.unref_cell(tm_tran); /* for t_newtran() */
-					lock_release(&table[hash_index].lock);
+					B2BE_LOCK_RELEASE(table, hash_index);
 					return SCB_DROP_MSG;
 				}
 				dlg->uas_tran = tm_tran;
@@ -1171,7 +1171,7 @@ logic_notify:
 		if(logic_key.s == NULL)
 		{
 			LM_ERR("No more private memory\n");
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_RUN_ALL;
 		}
 		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
@@ -1190,14 +1190,14 @@ logic_notify:
 */
 	current_dlg = dlg;
 	dlg_state = dlg->state;
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 
 	b2b_cback(msg, &b2b_key, B2B_REQUEST, logic_key.s?&logic_key:0, dlg->param, b2b_cb_flags);
 
 	if(logic_key.s)
 		pkg_free(logic_key.s);
 
-	lock_get(&table[hash_index].lock);
+	B2BE_LOCK_GET(table, hash_index);
 
 	if(dlg_state>B2B_CONFIRMED)
 	{
@@ -1210,7 +1210,7 @@ logic_notify:
 		if(!aux_dlg)
 		{
 			LM_DBG("Record not found anymore\n");
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return SCB_DROP_MSG;
 		}
 	}
@@ -1236,7 +1236,7 @@ logic_notify:
 			LM_ERR("Failed to update in database\n");
 	}
 
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 
 	if (b2be_cluster) {
 		if (b2b_ev == B2B_EVENT_ACK)
@@ -1560,7 +1560,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		return -1;
 	}
 
-	lock_get(&table[hash_index].lock);
+	B2BE_LOCK_GET(table, hash_index);
 	if(dlginfo == NULL)
 	{
 		dlg = b2b_search_htable(table, hash_index, local_index);
@@ -1573,14 +1573,14 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return -1;
 	}
 
 /*	if(dlg->callid.s == NULL)
 	{
 		LM_DBG("NULL callid. Dialog Information not completed yet\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return 0;
 	}
 */
@@ -1601,14 +1601,14 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			{
 				LM_ERR("Wrong method stored in tm transaction [%.*s]\n",
 					tm_tran->method.len, tm_tran->method.s);
-				lock_release(&table[hash_index].lock);
+				B2BE_LOCK_RELEASE(table, hash_index);
 				return -1;
 			}
 			if(sip_method != method_value)
 			{
 				LM_ERR("Mismatch between the method in tm[%d] and the method to send reply to[%d]\n",
 						sip_method, method_value);
-				lock_release(&table[hash_index].lock);
+				B2BE_LOCK_RELEASE(table, hash_index);
 				return -1;
 			}
 		}
@@ -1619,11 +1619,11 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		if(dlg->last_reply_code == code)
 		{
 			LM_DBG("it is a retransmission - nothing to do\n");
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return 0;
 		}
 		LM_ERR("Tm transaction not saved!\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return -1;
 	}
 
@@ -1634,7 +1634,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			(dlg->state==B2B_CONFIRMED || dlg->state==B2B_ESTABLISHED))
 	{
 		LM_DBG("A retransmission of the reply\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return 0;
 	}
 
@@ -1661,7 +1661,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	if(msg== NULL)
 	{
 		LM_DBG("Transaction not valid anymore\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return 0;
 	}
 
@@ -1714,7 +1714,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	}
 
 	if (b2be_cluster) {
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 
 		if (b2b_ev == B2B_EVENT_CREATE)
 			replicate_entity_create(dlg, et, hash_index, &storage);
@@ -1723,7 +1723,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			replicate_entity_update(dlg, et, hash_index, NULL, B2B_EVENT_UPDATE,
 				&storage);
 	} else {
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 	}
 
 	if (b2b_ev != -1 && storage.buffer.s)
@@ -1858,7 +1858,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		return;
 	}
 
-	lock_get(&table[hash_index].lock);
+	B2BE_LOCK_GET(table, hash_index);
 	if(dlginfo)
 		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
 		&dlginfo->totag, &dlginfo->fromtag, &dlginfo->callid);
@@ -1868,7 +1868,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 	if(dlg== NULL)
 	{
 		LM_ERR("No dialog found\n");
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		return;
 	}
 	LM_DBG("Deleted dlg [%p]->[%.*s] with dlginfo [%p]\n",
@@ -1888,26 +1888,26 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		tmp_dlg.state = B2B_TERMINATED;
 		if (pkg_str_dup(&tmp_dlg.callid, &dlg->callid) < 0) {
 			LM_ERR("oom!\n");
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return;
 		}
 		if (pkg_str_dup(&tmp_dlg.tag[0], &dlg->tag[0]) < 0) {
 			LM_ERR("oom!\n");
 			pkg_free(tmp_dlg.callid.s);
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return;
 		}
 		if (pkg_str_dup(&tmp_dlg.tag[1], &dlg->tag[1]) < 0) {
 			LM_ERR("oom!\n");
 			pkg_free(tmp_dlg.callid.s);
 			pkg_free(tmp_dlg.tag[0].s);
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return;
 		}
 	}
 
 	b2b_delete_record(dlg, table, hash_index);
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 
 	if (trig_ev && b2be_cluster) {
 		replicate_entity_delete(&tmp_dlg, et, hash_index, &storage);
@@ -1938,9 +1938,9 @@ int b2b_entity_exists(enum b2b_entity_type et, str* b2b_key)
 		return 0;
 	}
 
-	lock_get(&table[hash_index].lock);
+	B2BE_LOCK_GET(table, hash_index);
 	dlg = b2b_search_htable(table, hash_index, local_index);
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 
 	return dlg?1:0;
 }
@@ -2138,7 +2138,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		return -1;
 	}
 
-	lock_get(&table[hash_index].lock);
+	B2BE_LOCK_GET(table, hash_index);
 	if(dlginfo == NULL)
 	{
 		dlg = b2b_search_htable(table, hash_index, local_index);
@@ -2159,7 +2159,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 
 	if(dlg->state == B2B_TERMINATED)
 	{
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 		if(method_value==METHOD_BYE || method_value==METHOD_CANCEL) {
 			LM_DBG("Can not send request [%.*s] for entity type [%d] "
 				"for dlg[%p]->[%.*s] in terminated state\n",
@@ -2195,7 +2195,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		{
 			LM_ERR("State [%d] not established, can not send request %.*s, [%.*s]\n",
 				dlg->state, method->len, method->s, b2b_key->len, b2b_key->s);
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 			return -1;
 		}
 	}
@@ -2281,7 +2281,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 			LM_ERR("Failed to update in database\n");
 	}
 
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 
 	if (b2be_cluster) {
 		if (b2b_ev == B2B_EVENT_ACK && dlg->replicated)
@@ -2296,7 +2296,7 @@ int b2b_send_request(b2b_req_data_t* req_data)
 
 	return 0;
 error:
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 	return -1;
 }
 
@@ -2783,7 +2783,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	if(callid.s)
 		dlg_based_search = 1;
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 	if(!dlg_based_search)
 	{
 		dlg = b2b_search_htable(htable, hash_index, local_index);
@@ -2822,19 +2822,19 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 						get_cseq(msg)->method.s,
 				callid.len, callid.s);
 		}
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
 	ctx = b2b_get_context();
 	if (!ctx) {
 		LM_ERR("Failed to get b2b context\n");
-		lock_release(&server_htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(server_htable, hash_index);
 		return;
 	}
 	if (dlg->logic_key.s && pkg_str_dup(&ctx->b2bl_key, &dlg->logic_key) < 0) {
 		LM_ERR("Failed to copy b2b_logic key to b2b context\n");
-		lock_release(&server_htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(server_htable, hash_index);
 		return;
 	}
 
@@ -2868,7 +2868,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				if(leg == NULL)
 				{
 					LM_ERR("Failed to add dialog leg\n");
-					lock_release(&htable[hash_index].lock);
+					B2BE_LOCK_RELEASE(htable, hash_index);
 					return;
 				}
 				if(dlg->callid.s==0 || dlg->callid.len==0)
@@ -2882,7 +2882,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 				pkg_free(leg);
 			}
 
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			return;
 		}
 	}
@@ -2897,7 +2897,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		if(logic_key.s == NULL)
 		{
 			LM_ERR("No more private memory\n");
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			return;
 		}
 		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
@@ -2920,7 +2920,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		{
 			current_dlg = dlg;
 			dlg_state = dlg->state;
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			if(msg == FAKED_REPLY)
 				goto dummy_reply;
 			goto done1;
@@ -2932,7 +2932,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 			LM_DBG("Non final negative reply for reINVITE\n");
 			current_dlg = dlg;
 			dlg_state = dlg->state;
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			if(msg == FAKED_REPLY)
 				goto dummy_reply;
 			goto done1;
@@ -2980,7 +2980,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					{
 						LM_ERR("failed in do_uac_auth()\n");
 						dlg->state = B2B_TERMINATED;
-						lock_release(&htable[hash_index].lock);
+						B2BE_LOCK_RELEASE(htable, hash_index);
 						goto error;
 					}
 					new_hdr = uac_auth_api._build_authorization_hdr(statuscode,
@@ -2990,7 +2990,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					{
 						LM_ERR("failed to build auth hdr\n");
 						dlg->state = B2B_TERMINATED;
-						lock_release(&htable[hash_index].lock);
+						B2BE_LOCK_RELEASE(htable, hash_index);
 						goto error;
 					}
 					LM_DBG("auth is [%.*s]\n", new_hdr->len, new_hdr->s);
@@ -2998,7 +2998,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 							new_hdr, &extra_headers, &body) < 0 ) {
 						LM_ERR("failed to build extra msgs after auth\n");
 						dlg->state = B2B_TERMINATED;
-						lock_release(&htable[hash_index].lock);
+						B2BE_LOCK_RELEASE(htable, hash_index);
 						goto error;
 					}
 					LM_DBG("extra is [%.*s]\n",
@@ -3011,7 +3011,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					pkg_free(extra_headers.s);
 
 					dlg->state = B2B_NEW_AUTH;
-					lock_release(&htable[hash_index].lock);
+					B2BE_LOCK_RELEASE(htable, hash_index);
 
 					/* run the b2b route */
 					if(reply_routeid > 0) {
@@ -3035,7 +3035,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		current_dlg = dlg;
 		dlg_state = dlg->state;
 		UPDATE_DBFLAG(dlg);
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		if(msg == FAKED_REPLY)
 		{
 dummy_reply:
@@ -3299,7 +3299,7 @@ dummy_reply:
 						LM_ERR("Failed to send BYE request\n");
 					}
 
-					lock_release(&htable[hash_index].lock);
+					B2BE_LOCK_RELEASE(htable, hash_index);
 					return;
 				}
 				else
@@ -3329,7 +3329,7 @@ dummy_reply:
 
 					UPDATE_DBFLAG(dlg);
 
-					lock_release(&htable[hash_index].lock);
+					B2BE_LOCK_RELEASE(htable, hash_index);
 
 					if(add_infof && add_infof(logic_key.s?&logic_key:0, b2b_key,
 							etype,&dlginfo, b2b_param)< 0)
@@ -3362,7 +3362,7 @@ done:
 		current_dlg = dlg;
 		dlg_state = dlg->state;
 	}
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 	/* I have to inform the logic that a reply was received */
 done1:
 	/* run the b2b route */
@@ -3389,7 +3389,7 @@ b2b_route:
 
 	if (B2BE_SERIALIZE_STORAGE()) {
 		if (dlg_state == B2B_CONFIRMED && prev_state == B2B_MODIFIED) {
-			lock_get(&htable[hash_index].lock);
+			B2BE_LOCK_GET(htable, hash_index);
 
 			if (dlg->state != B2B_TERMINATED) {
 				b2b_ev = B2B_EVENT_UPDATE;
@@ -3398,7 +3398,7 @@ b2b_route:
 			} else
 				b2b_ev = -1;
 		} else if (b2b_ev == B2B_EVENT_CREATE) {
-			lock_get(&htable[hash_index].lock);
+			B2BE_LOCK_GET(htable, hash_index);
 
 			if (dlg->state != B2B_TERMINATED) {
 				b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
@@ -3415,7 +3415,7 @@ b2b_route:
 	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
 		if (b2b_ev == -1)
-			lock_get(&htable[hash_index].lock);
+			B2BE_LOCK_GET(htable, hash_index);
 
 		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
 		{
@@ -3424,15 +3424,15 @@ b2b_route:
 		}
 		if(!aux_dlg)
 		{
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			return;
 		}
 
 		if (b2be_db_update(dlg, etype) < 0)
 			LM_ERR("Failed to update in database\n");
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 	} else if (b2b_ev != -1)
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 
 	if (b2be_cluster) {
 		if (b2b_ev == B2B_EVENT_UPDATE)
@@ -3459,7 +3459,7 @@ b2b_route:
 
 	return;
 error:
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 error1:
 	if(logic_key.s)
 		pkg_free(logic_key.s);

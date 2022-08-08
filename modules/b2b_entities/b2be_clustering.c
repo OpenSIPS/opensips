@@ -127,10 +127,10 @@ void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 	b2b_table htable = (etype == B2B_SERVER) ? server_htable : client_htable;
 	str storage_cnt_buf;
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 
 	if (dlg->replicated) {
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	} else
 		dlg->replicated = 1;
@@ -138,7 +138,7 @@ void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 	if (bin_init(&packet, &entities_repl_cap, REPL_ENTITY_CREATE,
 		B2BE_BIN_VERSION, 0) != 0) {
 		LM_ERR("Failed to init bin packet\n");
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
@@ -149,12 +149,12 @@ void replicate_entity_create(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 		if (storage_cnt_buf.len > 0 &&  /* content has been pushed */
 			bin_append_buffer(&packet, &storage_cnt_buf) < 0) {
 			LM_ERR("Failed to push the entity storage content into the packet\n");
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			goto end;
 		}
 	}
 
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 
 	rc = cl_api.send_all(&packet, b2be_cluster);
 	switch (rc) {
@@ -187,10 +187,10 @@ void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 	str storage_cnt_buf;
 	int pkt_type;
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 
 	if (dlg->state < B2B_CONFIRMED) {
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
@@ -206,13 +206,13 @@ void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 		break;
 	default:
 		LM_ERR("Bad entity event %d\n", event_type);
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
 	if (bin_init(&packet, &entities_repl_cap, pkt_type, B2BE_BIN_VERSION, 0) < 0) {
 		LM_ERR("Failed to init bin packet\n");
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
@@ -227,13 +227,13 @@ void replicate_entity_update(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 			if (storage_cnt_buf.len > 0 &&
 				bin_append_buffer(&packet, &storage_cnt_buf) < 0) {
 				LM_ERR("Failed to push the entity storage content into the packet\n");
-				lock_release(&htable[hash_index].lock);
+				B2BE_LOCK_RELEASE(htable, hash_index);
 				goto end;
 			}
 		}
 	}
 
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 
 	rc = cl_api.send_all(&packet, b2be_cluster);
 	switch (rc) {
@@ -265,17 +265,17 @@ void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 	b2b_table htable = (etype == B2B_SERVER) ? server_htable : client_htable;
 	str storage_cnt_buf;
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 
 	if (dlg->state != B2B_TERMINATED) {
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
 	if (bin_init(&packet, &entities_repl_cap, REPL_ENTITY_DELETE,
 		B2BE_BIN_VERSION, 0) != 0) {
 		LM_ERR("Failed to init bin packet\n");
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return;
 	}
 
@@ -286,12 +286,12 @@ void replicate_entity_delete(b2b_dlg_t *dlg, int etype, unsigned int hash_index,
 		if (storage_cnt_buf.len > 0 &&
 			bin_append_buffer(&packet, &storage_cnt_buf) < 0) {
 			LM_ERR("Failed to push the entity storage content into the packet\n");
-			lock_release(&htable[hash_index].lock);
+			B2BE_LOCK_RELEASE(htable, hash_index);
 			goto end;
 		}
 	}
 
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 
 	rc = cl_api.send_all(&packet, b2be_cluster);
 	switch (rc) {
@@ -390,7 +390,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 			return -1;
 		}
 
-		lock_get(&htable[h_idx].lock);
+		B2BE_LOCK_GET(htable, h_idx);
 		dlg = b2b_search_htable(htable, h_idx, l_idx);
 		if (dlg) {
 			if (packet->type == SYNC_PACKET_TYPE)
@@ -400,10 +400,10 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 				LM_DBG("Entity [%.*s] already created\n",
 					b2be_key.len, b2be_key.s);
 
-			lock_release(&htable[h_idx].lock);
+			B2BE_LOCK_RELEASE(htable, h_idx);
 			return 0;
 		}
-		lock_release(&htable[h_idx].lock);
+		B2BE_LOCK_RELEASE(htable, h_idx);
 
 		hash_index = h_idx;
 		local_index = l_idx;
@@ -467,7 +467,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	if (leg.tag.s)
 		new_dlg->legs = new_leg;
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 
 	new_key = b2b_htable_insert(htable, new_dlg, hash_index, (time_t)timestamp,
 		type, 1, 1);
@@ -481,7 +481,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 		packet, B2BCB_BACKEND_CLUSTER);
 	htable[hash_index].locked_by = -1;
 
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 
 	pkg_free(new_key);
 
@@ -543,12 +543,12 @@ int receive_entity_update(bin_packet_t *packet)
 		return -1;
 	}
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 
 	dlg = b2b_search_htable(htable, hash_index, local_index);
 	if (!dlg) {
 		LM_DBG("Entity [%.*s] not found\n", b2be_key.len, b2be_key.s);
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 
 		if (packet->type == REPL_ENTITY_UPDATE)
 			return receive_entity_create(packet, &tmp_dlg, type, htable,
@@ -558,7 +558,7 @@ int receive_entity_update(bin_packet_t *packet)
 	}
 
 	if (dlg->state == B2B_TERMINATED) {
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		return 0;
 	}
 
@@ -578,7 +578,7 @@ int receive_entity_update(bin_packet_t *packet)
 	if (b2be_db_mode == WRITE_THROUGH && b2be_db_update(dlg, type) < 0)
 		LM_ERR("Failed to update in database\n");
 
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 
 	return rc;
 }
@@ -613,12 +613,12 @@ int receive_entity_delete(bin_packet_t *packet)
 		return -1;
 	}
 
-	lock_get(&htable[hash_index].lock);
+	B2BE_LOCK_GET(htable, hash_index);
 
 	dlg = b2b_search_htable(htable, hash_index, local_index);
 	if (!dlg) {
 		LM_DBG("Entity [%.*s] not found\n", b2be_key->len, b2be_key->s);
-		lock_release(&htable[hash_index].lock);
+		B2BE_LOCK_RELEASE(htable, hash_index);
 
 		return 0;
 	}
@@ -631,7 +631,7 @@ int receive_entity_delete(bin_packet_t *packet)
 	b2b_entity_db_delete(type, dlg);
 	b2b_delete_record(dlg, htable, hash_index);
 
-	lock_release(&htable[hash_index].lock);
+	B2BE_LOCK_RELEASE(htable, hash_index);
 
 	return 0;
 }
@@ -690,11 +690,11 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 	storage->buffer.s = NULL;
 
 	for (i = 0; i < hsize; i++) {
-		lock_get(&htable[i].lock);
+		B2BE_LOCK_GET(htable, i);
 
 		for (dlg = htable[i].first; dlg; dlg = dlg->next) {
 			if (dlg->state < B2B_CONFIRMED) {
-				lock_release(&htable[i].lock);
+				B2BE_LOCK_RELEASE(htable, i);
 				continue;
 			}
 
@@ -704,7 +704,7 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 			*sync_packet = cl_api.sync_chunk_start(&entities_repl_cap,
 				b2be_cluster, node_id, B2BE_BIN_VERSION);
 			if (!*sync_packet) {
-				lock_release(&htable[i].lock);
+				B2BE_LOCK_RELEASE(htable, i);
 				return -1;
 			}
 
@@ -718,7 +718,7 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 				if (storage_cnt_buf.len > 0 &&  /* content has been pushed */
 					bin_append_buffer(*sync_packet, &storage_cnt_buf) < 0) {
 					LM_ERR("Failed to push the entity storage content into the packet\n");
-					lock_release(&htable[i].lock);
+					B2BE_LOCK_RELEASE(htable, i);
 					return -1;
 				}
 			}
@@ -726,7 +726,7 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 			*free_prev = 1;
 		}
 
-		lock_release(&htable[i].lock);
+		B2BE_LOCK_RELEASE(htable, i);
 	}
 
 	return 0;

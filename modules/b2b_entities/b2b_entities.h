@@ -68,4 +68,23 @@ extern int passthru_prack;
 
 void *b2b_get_context(void);
 
+#ifdef B2B_ENTITIES_LOCK_DBG
+#define B2BE_LOCK_DBG(op, table, index) \
+	LM_INFO("B2B_LOCK %s %s[%d] +%d\n", op, (table==server_htable)?"server":"client", index, __LINE__);
+#else
+#define B2BE_LOCK_DBG(op, table, index)
+#endif
+
+#define B2BE_LOCK_GET(table, hash_index) \
+	do { \
+		lock_get(&table[hash_index].lock); \
+		B2BE_LOCK_DBG("lock", table, hash_index); \
+	} while (0)
+
+#define B2BE_LOCK_RELEASE(table, hash_index) \
+	do { \
+		B2BE_LOCK_DBG("unlock", table, hash_index); \
+		lock_release(&table[hash_index].lock); \
+	} while (0)
+
 #endif

@@ -386,7 +386,7 @@ void check_htable(b2b_table table, int hsize)
 
 	for(i= 0; i< hsize; i++)
 	{
-		lock_get(&table[i].lock);
+		B2BE_LOCK_GET(table, i);
 		dlg = table[i].first;
 		while(dlg)
 		{
@@ -401,7 +401,7 @@ void check_htable(b2b_table table, int hsize)
 			}
 			dlg = dlg_next;
 		}
-		lock_release(&table[i].lock);
+		B2BE_LOCK_RELEASE(table, i);
 	}
 	table->checked = 1;
 }
@@ -545,7 +545,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 		return -1;
 	}
 	if (table[hash_index].locked_by != process_no)
-		lock_get(&table[hash_index].lock);
+		B2BE_LOCK_GET(table, hash_index);
 	else
 		unlock = 0;
 
@@ -554,12 +554,12 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	{
 		LM_ERR("No dialog found\n");
 		if (unlock)
-			lock_release(&table[hash_index].lock);
+			B2BE_LOCK_RELEASE(table, hash_index);
 		return -1;
 	}
 	shm_str_sync(&dlg->logic_key, logic_key);
 	if (unlock)
-		lock_release(&table[hash_index].lock);
+		B2BE_LOCK_RELEASE(table, hash_index);
 
 	if (b2be_cluster && replicate)
 		replicate_entity_update(dlg, type, hash_index, logic_key, -1, NULL);
@@ -594,7 +594,7 @@ str *b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key)
 		table = client_htable;
 	else
 		return NULL; /* to tag and/or callid are not part of this B2B */
-	lock_get(&table[hash_index].lock);
+	B2BE_LOCK_GET(table, hash_index);
 	dlg=b2b_search_htable_dlg(table, hash_index, local_index,
 					to_tag, from_tag, callid);
 	if(dlg){
@@ -620,7 +620,7 @@ str *b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key)
 			(entity_key?entity_key->len:0),
 			(entity_key?entity_key->s:NULL));
 	}
-	lock_release(&table[hash_index].lock);
+	B2BE_LOCK_RELEASE(table, hash_index);
 	return tuple_key;
 }
 
@@ -685,7 +685,7 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 
 	for(i = 0; i< hsize; i++)
 	{
-		lock_get(&htable[i].lock);
+		B2BE_LOCK_GET(htable, i);
 		dlg = htable[i].first;
 		while(dlg)
 		{
@@ -841,11 +841,11 @@ static inline int mi_print_b2be_dlg(mi_item_t *resp_arr, b2b_table htable, unsig
 
 			dlg = dlg->next;
 		}
-		lock_release(&htable[i].lock);
+		B2BE_LOCK_RELEASE(htable, i);
 	}
 	return 0;
 error:
-	lock_release(&htable[i].lock);
+	B2BE_LOCK_RELEASE(htable, i);
 	LM_ERR("failed to add node\n");
 	return -1;
 }
