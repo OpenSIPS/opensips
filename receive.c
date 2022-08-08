@@ -159,6 +159,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	LM_DBG("After parse_msg...\n");
 
 	start_expire_timer(start,execmsgthreshold);
+	/* jumpt to parse_error_reset (not to parse_error) while
+	 * start_expire_timer() is still on */
 
 	/* ... clear branches from previous message */
 	clear_branches();
@@ -170,7 +172,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			/* no via, send back error ? */
 			LM_ERR("no via found in request\n");
 			update_stat( err_reqs, 1);
-			goto parse_error;
+			goto parse_error_reset;
 		}
 		/* check if necessary to add receive?->moved to forward_req */
 		/* check for the alias stuff */
@@ -190,7 +192,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		/* prepare and set a new processing context for this request only if
 		 * no context was set from the upper layers */
 		if (existing_context == NULL)
-			prepare_context( ctx, parse_error );
+			prepare_context( ctx, parse_error_reset );
 		current_processing_ctx = ctx;
 
 		/* execute pre-script callbacks, if any;
@@ -225,7 +227,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 			/* no via, send back error ? */
 			LM_ERR("no via found in reply\n");
 			update_stat( err_rpls, 1);
-			goto parse_error;
+			goto parse_error_reset;
 		}
 
 		/* set reply route type --bogdan*/
@@ -234,7 +236,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		/* prepare and set a new processing context for this reply only if
 		 * no context was set from the upper layers */
 		if (existing_context == NULL)
-			prepare_context( ctx, parse_error );
+			prepare_context( ctx, parse_error_reset );
 		current_processing_ctx = ctx;
 
 		/* execute pre-script callbacks, if any ;
@@ -294,6 +296,8 @@ end:
 	if (in_buff.s != buf)
 		pkg_free(in_buff.s);
 	return 0;
+parse_error_reset:
+	reset_longest_action_list(execmsgthreshold);
 parse_error:
 	exec_parse_err_cb(msg);
 	free_sip_msg(msg);
