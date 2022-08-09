@@ -742,6 +742,8 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 		} else {
 			rtp_sess_set_late(ctx->main);
 		}
+	} else if (body && msg->REQ_METHOD == METHOD_INVITE) {
+		rtp_sess_reset_late(ctx->main);
 	}
 	RTP_RELAY_CTX_UNLOCK(ctx);
 	if (!ret)
