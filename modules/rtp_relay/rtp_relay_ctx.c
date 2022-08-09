@@ -747,7 +747,7 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 	if (!ret)
 		return;
 	if (msg->REQ_METHOD == METHOD_ACK) {
-		if (ctx->main || !rtp_sess_late(ctx->main))
+		if (!ctx->main || !rtp_sess_late(ctx->main))
 			return;
 		memset(&info, 0, sizeof info);
 		info.msg = msg;
