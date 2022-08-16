@@ -83,6 +83,10 @@
 #define DLG_DIR_DOWNSTREAM     1
 #define DLG_DIR_UPSTREAM       2
 
+struct dlg_leg_cseq_map {
+	unsigned int msg, gen;
+	struct dlg_leg_cseq_map *next;
+};
 
 struct dlg_leg {
 	int id;
@@ -102,7 +106,7 @@ struct dlg_leg {
 	str route_uris[64];
 	int nr_uris;
 	unsigned int last_gen_cseq; /* FIXME - think this can be atomic_t to avoid locking */
-	unsigned int last_inv_gen_cseq; /* used when translating ACKs */
+	struct dlg_leg_cseq_map *cseq_maps; /* used when translating ACKs */
 	char reply_received;
 	char reinvite_confirmed;
 	struct socket_info *bind_addr;
