@@ -73,7 +73,7 @@ void media_session_leg_free(struct media_session_leg *msl)
 				msl, msl->ms);
 	}
 	if (msl->b2b_key.s) {
-		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1, 1);
+		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, msl->dlginfo, 1, 1);
 		shm_free(msl->b2b_key.s);
 		msl->b2b_key.s = NULL;
 	}
@@ -81,6 +81,8 @@ void media_session_leg_free(struct media_session_leg *msl)
 	if (msl->params && msl->type == MEDIA_SESSION_TYPE_FORK)
 		shm_free(msl->params);
 		//media_forks_free(msl->params);
+	if (msl->dlginfo)
+		shm_free(msl->dlginfo);
 	shm_free(msl);
 }
 

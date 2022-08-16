@@ -44,6 +44,7 @@ struct media_session_leg {
 	str b2b_key;
 	int nohold;
 	gen_lock_t lock;
+	b2b_dlginfo_t *dlginfo;
 	enum b2b_entity_type b2b_entity;
 	struct media_session_leg *next;
 	void *params;

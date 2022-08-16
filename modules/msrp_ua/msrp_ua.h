@@ -49,6 +49,7 @@ struct msrpua_session {
 	int sdp_sess_id;
 	int sdp_sess_vers;
 	int lifetime;
+	b2b_dlginfo_t *dlginfo;
 	struct msrp_ua_handler hdl;
 };
 

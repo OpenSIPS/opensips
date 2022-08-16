@@ -400,6 +400,9 @@ static void free_msrpua_session(void *val)
 	if (sess->peer_accept_types.s)
 		shm_free(sess->peer_accept_types.s);
 
+	if (sess->dlginfo)
+		shm_free(sess->dlginfo);
+
 	shm_free(sess);
 }
 
@@ -408,7 +411,7 @@ static void msrpua_delete_session(struct msrpua_session *sess)
 	LM_DBG("Deleting session [%.*s]\n", sess->session_id.len, sess->session_id.s);
 
 	if (sess->b2b_key.s)
-		b2b_api.entity_delete(sess->b2b_type, &sess->b2b_key, NULL, 1, 1);
+		b2b_api.entity_delete(sess->b2b_type, &sess->b2b_key, sess->dlginfo, 1, 1);
 
 	hash_remove_key(msrpua_sessions, sess->session_id);
 	free_msrpua_session(sess);
@@ -1699,6 +1702,12 @@ static int msrpua_answer(struct sip_msg *msg, str *content_types)
 int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo,
 	void *param)
 {
+	struct msrpua_session *sess = (struct msrpua_session *)param;
+	sess->dlginfo = b2b_dup_dlginfo(dlginfo);
+	if (!sess->dlginfo) {
+		LM_ERR("could not duplicate b2be dialog info!\n");
+		return -1;
+	}
 	return 0;
 }
 
