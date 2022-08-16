@@ -577,6 +577,9 @@ struct cell* t_lookupOriginalT(  struct sip_msg* p_msg )
 		return cancelled_T;
 
 	/* start searching in the table */
+	if (!p_msg->hash_index)
+		p_msg->hash_index = tm_hash( p_msg->callid->body,
+			get_cseq(p_msg)->number);
 	hash_index = p_msg->hash_index;
 	LM_DBG("searching on hash entry %d\n",hash_index );
 
