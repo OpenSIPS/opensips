@@ -127,14 +127,16 @@ int rcl_init_internals(void)
 		memset(&tprot, 0, sizeof tprot);
 	}
 
-	if (!(rcl_connections = map_create(0))) {
-		LM_ERR("oom 1\n");
-		return -1;
-	}
+	if (no_concurrent_connects) {
+		if (!(rcl_parallel_connects = hash_init(16))) {
+			LM_ERR("oom 2\n");
+			return -1;
+		}
 
-	if (!(rcl_parallel_connects = hash_init(16))) {
-		LM_ERR("oom 2\n");
-		return -1;
+		if (curl_conn_lifetime && !(rcl_connections = map_create(0))) {
+			LM_ERR("oom 1\n");
+			return -1;
+		}
 	}
 
 	return 0;
@@ -623,7 +625,7 @@ void rcl_release_url(char *url_host, int update_conn_ts)
 
 	LM_DBG("released parallel transfer lock on hostname '%s'\n", url_host);
 
-	if (update_conn_ts) {
+	if (curl_conn_lifetime && update_conn_ts) {
 		void **connected_ts;
 
 		connected_ts = map_get(rcl_connections, host_str);
