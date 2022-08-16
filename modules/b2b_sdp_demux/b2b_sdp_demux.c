@@ -213,6 +213,7 @@ struct b2b_sdp_client {
 	str hdrs;
 	str body;
 	str b2b_key;
+	b2b_dlginfo_t *dlginfo;
 	struct b2b_sdp_ctx *ctx;
 	struct list_head streams;
 	struct list_head list;
@@ -416,7 +417,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	b2b_api.send_request(&req_data);
 	LM_INFO("[%.*s] client request %.*s sent\n", key->len, key->s, method.len, method.s);
 delete:
-	b2b_api.entity_delete(B2B_CLIENT, key, NULL, 1, 1);
+	b2b_api.entity_delete(B2B_CLIENT, key, client->dlginfo, 1, 1);
 }
 
 static void b2b_sdp_client_free(void *param)
@@ -439,6 +440,8 @@ static void b2b_sdp_client_free(void *param)
 
 	list_for_each_safe(it, safe, &client->streams)
 		b2b_sdp_stream_free(list_entry(it, struct b2b_sdp_stream, list));
+	if (client->dlginfo)
+		shm_free(client->dlginfo);
 	shm_free(client);
 }
 
@@ -953,7 +956,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	b2b_sdp_client_remove(client);
 	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_sdp_client_release(client, 1);
-	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
+	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, client->dlginfo, 1, 1);
 	lock_get(&ctx->lock);
 
 	switch (b2b_sdp_bye_mode) {
@@ -1203,7 +1206,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 			/* client was not started, thus this is a final negative reply */
 			b2b_sdp_client_release_streams(client);
 			b2b_sdp_client_release(client, 0);
-			b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, NULL, 1, 1);
+			b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, client->dlginfo, 1, 1);
 		}
 	}
 	body = NULL;
@@ -1237,6 +1240,19 @@ release:
 		b2b_sdp_ctx_release(ctx, 1);
 	}
 	return ret;
+}
+
+int b2b_sdp_client_dlginfo(str *logic_key, str *key, int src, b2b_dlginfo_t *info, void *param)
+{
+	struct b2b_sdp_client *client = (struct b2b_sdp_client *)param;
+
+	client->dlginfo = b2b_dup_dlginfo(info);
+	if (!client->dlginfo) {
+		LM_ERR("could not duplicate b2be dialog info!\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
@@ -1601,7 +1617,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		ci.avps = clone_avp_list( *get_avp_list() );
 
 		client->flags |= B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_PENDING;
-		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, NULL,
+		b2b_key = b2b_api.client_new(&ci, b2b_sdp_client_notify, b2b_sdp_client_dlginfo,
 				&b2b_sdp_demux_client_cap, &ctx->callid, NULL,
 				client, b2b_sdp_client_free);
 		if (!b2b_key) {
