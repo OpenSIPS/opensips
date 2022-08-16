@@ -131,7 +131,7 @@ cache_store("local:group2", ...)
 		<section id="param_cache_collections" xreflabel="cache_collections">
 		<title><varname>cache_collections</varname> (string)</title>
 		<para>
-			Using this parameter collections(hash tables) and their sizes can be defined. Each
+			Using this parameter, collections(hash tables) and their sizes can be defined. Each
 			collection definition must be separated one from another using ';'. Default size
 			for a hash is 512. The size must be separated from the name of the collection using
 			'='. Every collection that is defined in this parameter <emphasis>SHOULD</emphasis> be

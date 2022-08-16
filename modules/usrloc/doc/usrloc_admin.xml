@@ -1352,8 +1352,7 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 		<title><varname>pinging_mode</varname> (string)</title>
 		<para>
 		Depending on the <xref linkend="param_cluster_mode"/>, the module
-		can perform contact pinging using one of at most two possible
-		heuristics:
+		can perform contact pinging using one of two possible heuristics:
 		<itemizedlist>
 		<listitem>
 			<para><emphasis role='bold'>"ownership"</emphasis> - this instance
@@ -1362,7 +1361,7 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 				a contact, a node will keep sending pings to that contact as
 				long as it owns the respective tag.  If no shared tag has been
 				specified for a given contact, the default is to assume
-				permanent ownership of the contact and always ping it.
+				permanent ownership of the contact and ping it upon request.
 			</para>
 		</listitem>
 		<listitem>

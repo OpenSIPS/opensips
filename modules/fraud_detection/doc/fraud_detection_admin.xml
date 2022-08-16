@@ -182,7 +182,7 @@ modparam("fraud_detection", "table_name", "my_fraud")
 		<title>Set <quote>rid_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("fraud_detection", "rid_col", "theruleid"")
+modparam("fraud_detection", "rid_col", "theruleid")
 ...
 </programlisting>
 		</example>
@@ -207,7 +207,7 @@ modparam("fraud_detection", "rid_col", "theruleid"")
 		<title>Set <quote>pid_col</quote> parameter</title>
 <programlisting format="linespecific">
 ...
-modparam("fraud_detection", "pid_col", "profile"")
+modparam("fraud_detection", "pid_col", "profile")
 ...
 </programlisting>
 		</example>
