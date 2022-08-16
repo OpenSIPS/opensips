@@ -34,8 +34,6 @@ typedef void tmrec_expr;
 #define PKG_ALLOC    2
 #define TR_BYXXX     4
 
-#define TR_NOVAL ((time_t)-1)
-
 tmrec *tmrec_parse(const char *tr, char alloc_type);
 
 int _tmrec_check(const tmrec *tr, time_t check_time);
@@ -140,6 +138,8 @@ static inline int tz_offset(const char *tz)
 #define FREQ_MONTHLY 2
 #define FREQ_WEEKLY  3
 #define FREQ_DAILY   4
+
+#define TR_NOVAL ((time_t)-1)
 
 typedef struct _tr_byxxx
 {
