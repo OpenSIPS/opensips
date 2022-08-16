@@ -349,7 +349,7 @@ static int auth_calc_HA1(const struct calc_HA1_arg *params, HASHHEX *sess_key)
 			return -1;
 	} else {
 		if (params->creds.ha1->len != digest_calc->HASHHEXLEN) {
-			LM_ERR("Incorrect length if pre-hashed credentials "
+			LM_ERR("Incorrect length of pre-hashed credentials "
 			    "for the algorithm \"%s\": %d expected, %d provided\n",
 			    digest_calc->algorithm_val.s, digest_calc->HASHHEXLEN,
 			    params->creds.ha1->len);

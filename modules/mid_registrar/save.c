@@ -1387,10 +1387,10 @@ update_usrloc:
 			if (reg_mode == MID_REG_THROTTLE_CT) {
 				/* populate extra ct stuff between "insert" and "replicate" */
 				ci->pre_replicate_cb = mid_reg_store_ct_data;
-				memcpy(&ct_data, &(struct mr_ct_data){
+				ct_data = (struct mr_ct_data){
 						mri, &_c->uri, ctmap->expires, e_out,
 						get_act_time(), ci->cseq
-					}, sizeof ct_data);
+					};
 				ci->pre_replicate_info = &ct_data;
 			}
 
@@ -1653,10 +1653,10 @@ update_usrloc:
 			if (reg_mode == MID_REG_THROTTLE_AOR) {
 				/* populate extra ct stuff between "insert" and "replicate" */
 				ci->pre_replicate_cb = mid_reg_store_ct_data;
-				memcpy(&ct_data, &(struct mr_ct_data){
+				ct_data = (struct mr_ct_data){
 						mri, &_c->uri, ctmap->expires, e_out,
 						mri->last_reg_ts, ci->cseq
-					}, sizeof ct_data);
+					};
 				ci->pre_replicate_info = &ct_data;
 			}
 
