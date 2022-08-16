@@ -192,8 +192,8 @@ modparam("stir_shaken", "e164_strict_mode", 1)
 	    not required.
 	    </para>
 	    <para>
-	    If the parameter is set to not required but the header is present in the
-	    message, the Date value will be used as normally to check the freshness (as
+	    If the parameter is set to "not required" but the Date header is present in the
+	    message, the header value will be used as normally to check the freshness (as
 	    configured in the <xref linkend="param_verify_date_freshness"/>
 	    parameter). If the Date header is indeed missing, the value of the
 	    <emphasis>iat</emphasis> claim in the PASSporT will be used instead.
