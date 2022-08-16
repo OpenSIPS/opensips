@@ -782,7 +782,7 @@ void httpd_proc(int rank)
 #if ( MHD_VERSION >= 0x000092800 )
 	struct sockaddr_in6 saddr6;
 	if (ip.s && strcmp(ip.s, "*")) {
-		if (q_memchr(ip.s, ':', strlen(ip.s))) {
+		if (q_memchr(ip.s, ':', ip.len)) {
 			LM_DBG("preparing to listen on IPv6 interface '%s'\n", ip.s);
 			memset(&saddr6, 0, sizeof saddr6);
 

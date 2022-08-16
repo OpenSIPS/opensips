@@ -3382,8 +3382,8 @@ int tr_parse_paramlist(str* in, trans_t *t)
 
 		return 0;
 
-	} else if(str_match(&name, _str("exist"))
-	          || str_match(&name, _str("exists"))) {
+	} else if(str_match(&name, &str_const_init("exist"))
+	          || str_match(&name, &str_const_init("exists"))) {
 		t->subtype = TR_PL_EXIST;
 		if(*p!=TR_PARAM_MARKER)
 		{

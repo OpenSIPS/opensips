@@ -965,7 +965,7 @@ static int fixup_auth_out(void** param)
 
 		if (pv_parse_spec(s, &out_p->var) == NULL) {
 			pkg_free(out_p);
-			LM_ERR("Failed to parese output variable spec\n");
+			LM_ERR("Failed to parse output variable spec\n");
 			return -1;
 		}
 	} else {

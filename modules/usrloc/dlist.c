@@ -888,7 +888,7 @@ int get_domain_ucontacts(udomain_t *d, void *buf, int len, unsigned int flags,
  * \return 0 if everything went OK, otherwise value < 0 is returned
  *
  * \note The structure is NOT created in shared memory so the
- * function must be called before ser forks if it should
+ * function must be called before the fork phase if it should
  * be available to all processes
  */
 static inline int new_dlist(str* _n, dlist_t** _d)
@@ -900,7 +900,7 @@ static inline int new_dlist(str* _n, dlist_t** _d)
 		return -1;
 	}
 
-	/* Domains are created before ser forks,
+	/* Domains are created before the fork phase,
 	 * so we can create them using pkg_malloc
 	 */
 	ptr = (dlist_t*)shm_malloc(sizeof(dlist_t));
