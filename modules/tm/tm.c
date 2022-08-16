@@ -175,6 +175,13 @@ stat_var *tm_trans_5xx;
 stat_var *tm_trans_6xx;
 stat_var *tm_trans_inuse;
 
+stat_var *tm_cluster_reply_tx;
+stat_var *tm_cluster_request_tx;
+stat_var *tm_cluster_cancel_tx;
+stat_var *tm_cluster_reply_rx;
+stat_var *tm_cluster_request_rx;
+stat_var *tm_cluster_cancel_rx;
+
 static dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -330,6 +337,12 @@ static stat_export_t mod_stats[] = {
 	{"5xx_transactions" ,    0,              &tm_trans_5xx   },
 	{"6xx_transactions" ,    0,              &tm_trans_6xx   },
 	{"inuse_transactions" ,  STAT_NO_RESET,  &tm_trans_inuse },
+	{"cluster_reply_sent" ,  0,              &tm_cluster_reply_tx   },
+	{"cluster_request_sent" ,0,              &tm_cluster_request_tx },
+	{"cluster_cancel_sent" , 0,              &tm_cluster_cancel_tx },
+	{"cluster_reply_recv" ,  0,              &tm_cluster_reply_rx   },
+	{"cluster_request_recv" ,0,              &tm_cluster_request_rx },
+	{"cluster_cancel_recv" , 0,              &tm_cluster_cancel_rx },
 	{0,0,0}
 };
 

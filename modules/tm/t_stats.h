@@ -46,6 +46,13 @@ extern stat_var *tm_trans_5xx;
 extern stat_var *tm_trans_6xx;
 extern stat_var *tm_trans_inuse;
 
+extern stat_var *tm_cluster_reply_tx;
+extern stat_var *tm_cluster_request_tx;
+extern stat_var *tm_cluster_cancel_tx;
+extern stat_var *tm_cluster_reply_rx;
+extern stat_var *tm_cluster_request_rx;
+extern stat_var *tm_cluster_cancel_rx;
+
 
 #ifdef STATISTICS
 /* update the statistics regading the final codes of the transactions

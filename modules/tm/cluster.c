@@ -21,6 +21,7 @@
 #include "cluster.h"
 #include "t_lookup.h"
 #include "t_fwd.h"
+#include "t_stats.h"
 #include "../../ut.h"
 #include "../../receive.h"
 #include "../../socket_info.h"
@@ -208,12 +209,21 @@ static void receive_tm_repl(bin_packet_t *packet)
 	TM_BIN_POP(str, &tmp, "message");
 
 	/* only auto-CANCEL is treated differently */
-	if (packet->type == TM_CLUSTER_AUTO_CANCEL) {
+	switch (packet->type) {
+	case TM_CLUSTER_AUTO_CANCEL:
+		if_update_stat(tm_enable_stats, tm_cluster_cancel_rx , 1);
 		if (tm_repl_auto_cancel) {
 			tm_repl_cancel(packet, &tmp, &ri);
 			return;
 		}
 		LM_WARN("auto-CANCEL handling is disabled, but got one auto-CANCEL here!\n");
+		break;
+	case TM_CLUSTER_REQUEST:
+		if_update_stat(tm_enable_stats, tm_cluster_request_rx , 1);
+		break;
+	case TM_CLUSTER_REPLY:
+		if_update_stat(tm_enable_stats, tm_cluster_reply_rx , 1);
+		break;
 	}
 	receive_msg(tmp.s, tmp.len, &ri, NULL, FL_TM_REPLICATED);
 }
@@ -370,6 +380,9 @@ static void *tm_replicate_cancel(struct sip_msg *msg)
 		LM_ERR("Error sending message to cluster: %d\n",
 				tm_repl_cluster);
 		break;
+	case CLUSTERER_SEND_SUCCESS:
+		if_update_stat(tm_enable_stats, tm_cluster_cancel_tx , 1);
+		break;
 	}
 	bin_free_packet(&packet);
 	return NULL; /* dummy return to comply with TM_BIN_PUSH() */
@@ -398,6 +411,9 @@ static void tm_replicate_reply(struct sip_msg *msg, int cid)
 	case CLUSTERER_SEND_ERR:
 		LM_ERR("Error sending message to %d in cluster: %d\n", cid,
 				tm_repl_cluster);
+		break;
+	case CLUSTERER_SEND_SUCCESS:
+		if_update_stat(tm_enable_stats, tm_cluster_reply_tx , 1);
 		break;
 	}
 	bin_free_packet(packet);
@@ -428,6 +444,9 @@ static int tm_replicate_broadcast(struct sip_msg *msg)
 	case CLUSTERER_SEND_ERR:
 		LM_ERR("Error sending message to cluster: %d\n",
 				tm_repl_cluster);
+		break;
+	case CLUSTERER_SEND_SUCCESS:
+		if_update_stat(tm_enable_stats, tm_cluster_request_tx , 1);
 		break;
 	}
 	bin_free_packet(packet);
