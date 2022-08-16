@@ -502,8 +502,8 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 		matches the current time, or a negative value otherwise.
 		</para>
 		<para>
-		For checking something else than the current time, the third parameter will
-		contain the UNIX timestamp of the time to check.
+		For checking some other Unix timestamp than the current one, the second
+		parameter will contain the intended timestamp to check.
 		</para>
 		<para>
 		The syntax of each field is identical to the corresponding field from
@@ -531,8 +531,8 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
 		</listitem>
 		<listitem>
 			<para><emphasis>timestamp (string, optional)</emphasis> - A
-			specific UNIX time to check.  The function simply expects the
-			actual UNIX time here, there is no need to perform any timezone
+			specific Unix time to check.  The function simply expects the
+			actual Unix time here, there is no need to perform any timezone
 			adjustments.
 			</para>
 		</listitem>
@@ -810,21 +810,21 @@ if (!release_dynamic_lock($avp(foo)) {
 		<function moreinfo="none">get_accurate_time(sec, usec, [str_sec_usec])</function>
 		</title>
 		<para>
-		Fetch the current UNIX time epoch with microsecond precision.
+		Fetch the current Unix time epoch with microsecond precision.
 		Optionally, print this value as a floating point number (3rd parameter).
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>sec (int)</emphasis> - the current UNIX timestamp (integer part)
+			<para><emphasis>sec (int)</emphasis> - the current Unix timestamp (integer part)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>usec (int)</emphasis> - the current UNIX timestamp (decimal part)
+			<para><emphasis>usec (int)</emphasis> - the current Unix timestamp (decimal part)
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>str_sec_usec (string, optional)</emphasis> - the current UNIX
+			<para><emphasis>str_sec_usec (string, optional)</emphasis> - the current Unix
 					timestamp as a floating point number (6-digit precision)
 			</para>
 		</listitem>
@@ -838,7 +838,7 @@ if (!release_dynamic_lock($avp(foo)) {
 		<programlisting format="linespecific">
 ...
 get_accurate_time($var(sec), $var(usec));
-xlog("Current UNIX timestamp: $var(sec) s, $var(usec) us\n");
+xlog("Current Unix timestamp: $var(sec) s, $var(usec) us\n");
 ...
 </programlisting>
 		</example>

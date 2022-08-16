@@ -105,7 +105,7 @@ append_to_reply("Foo: $rm at $Ts\r\n");
 		<para>
 		Note: Headers which are added in main route cannot be removed in further routes
 		(e.g. failure routes). So, the idea is not to add there any headers that you
-		might want to remove later. To add headers temporarely use the branch route
+		might want to remove later. To add headers temporarily, use the branch route
 		because the changes you do there are per-branch.
 		</para>
 		<para>

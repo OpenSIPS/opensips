@@ -7,7 +7,7 @@
 		and including the given value to the expiration interval of a
 		newly registered contact.  For example, if this parameter is set to
 		<emphasis>100</emphasis> and a phone registers for 1800 sec, the final
-		expiry will be random number in the [1700, 1900] interval.
+		expiry will be a random number in the [1700, 1900] interval.
 		<para>
 		By randomizing the registration lifetimes of the contacts, the
 		server is better equipped to deal with a post-restart <emphasis>registration
