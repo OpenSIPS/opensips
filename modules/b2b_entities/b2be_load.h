@@ -187,4 +187,35 @@ static inline int load_b2b_api( struct b2b_api *b2b_api)
 	return load_b2b( b2b_api );
 }
 
+static inline b2b_dlginfo_t *b2b_dup_dlginfo(b2b_dlginfo_t *info)
+{
+	b2b_dlginfo_t* dlg = NULL;
+	int size;
+
+	size = sizeof(b2b_dlginfo_t) + info->callid.len;
+	if (info->totag.s)
+		size += info->totag.len;
+	if (info->fromtag.s)
+		size += info->fromtag.len;
+	dlg = shm_malloc(size);
+	if (!dlg)
+		return NULL;
+	memset(dlg, 0, size);
+
+	dlg->callid.s = (char *)(dlg + 1);
+	dlg->callid.len = info->callid.len;
+	memcpy(dlg->callid.s, info->callid.s, dlg->callid.len);
+	if (info->totag.s) {
+		dlg->totag.len = info->totag.len;
+		dlg->totag.s = dlg->callid.s + dlg->callid.len;
+		memcpy(dlg->totag.s, info->totag.s, dlg->totag.len);
+	}
+	if (info->fromtag.s) {
+		dlg->fromtag.len = info->fromtag.len;
+		dlg->fromtag.s = dlg->callid.s + dlg->callid.len + dlg->totag.len;
+		memcpy(dlg->fromtag.s, info->fromtag.s, dlg->fromtag.len);
+	}
+	return dlg;
+}
+
 #endif
