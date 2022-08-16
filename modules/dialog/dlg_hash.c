@@ -165,6 +165,7 @@ error0:
 
 static inline void free_dlg_dlg(struct dlg_cell *dlg)
 {
+	struct dlg_leg_cseq_map *map, *tmp;
 	struct dlg_val *dv;
 	unsigned int i;
 
@@ -203,6 +204,12 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 				shm_free(dlg->legs[i].tmp_out_sdp.s);
 			if (dlg->legs[i].tmp_in_sdp.s)
 				shm_free(dlg->legs[i].tmp_in_sdp.s);
+			/* destroy dialog mappings as well */
+			for (map = dlg->legs[i].cseq_maps; map;) {
+				tmp = map;
+				map = map->next;
+				shm_free(tmp);
+			}
 		}
 		shm_free(dlg->legs);
 	}
