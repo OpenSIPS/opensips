@@ -211,7 +211,7 @@ static int init_cert_validation(void)
 
 	if (ca_list || ca_dir) {
 		if (X509_STORE_load_locations(store, ca_list, ca_dir) != 1) {
-			LM_ERR("Failed to load trustefd CAs\n");
+			LM_ERR("Failed to load trusted CAs\n");
 			return -1;
 		}
 		if (X509_STORE_set_default_paths(store) != 1) {

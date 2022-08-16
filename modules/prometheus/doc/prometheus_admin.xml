@@ -281,7 +281,7 @@ modparam("prometheus", "statistics", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/")
 			module to listen on (default: <emphasis>0.0.0.0:8888</emphasis>).
 		</para>
 		<example>
-		<title>Prometheus Scarpe Config</title>
+		<title>Prometheus Scrape Config</title>
 		<programlisting format="linespecific">
 <![CDATA[
 scrape_configs:

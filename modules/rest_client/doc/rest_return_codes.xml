@@ -26,8 +26,8 @@
 </listitem>
 <listitem>
 	<para><emphasis role='bold'>-4</emphasis> - Already Connecting
-	another OpenSIPS worker is already connecting to this URL hostname.
-	Consult <xref linkend="param_no_concurrent_connects"/> for more info.
+	(another OpenSIPS worker is already connecting to this URL hostname.
+	Consult <xref linkend="param_no_concurrent_connects"/> for more info).
 	</para>
 </listitem>
 <listitem>

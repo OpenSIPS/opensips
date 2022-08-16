@@ -323,7 +323,7 @@ modparam("rtpengine", "db_url",
 			Used when Database URL is provisioned.
 		</para>
 		<para>
-			Default value is <quote>rtpengines</quote>.
+			Default value is <quote>rtpengine</quote>.
 		</para>
 		<example>
 		<title>Set <varname>db_table</varname> parameter</title>
@@ -1405,7 +1405,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 			</itemizedlist>
 			<para>
 			NOTE: if a &rtp; proxy is defined multiple times (in the same or
-			different set), all of its instances will be enabled/disbled IF no set ID is provided.
+			different set), all of its instances will be enabled/disabled IF no set ID is provided.
 			</para>
 			<example>
 			<title>

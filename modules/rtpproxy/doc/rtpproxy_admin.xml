@@ -215,7 +215,7 @@
 		<title>Set <varname>rtpproxy_sock</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-# single rtproxy with specific weight
+# single rtpproxy with specific weight
 modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222=2")
 
 # single rtpproxy with advertised address + weight

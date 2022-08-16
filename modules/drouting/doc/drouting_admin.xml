@@ -1933,7 +1933,7 @@ if (goes_to_gw(1, , $var(gw_attrs), , "my_partition")) {
 
 	<section id="func_is_from_gw" xreflabel="is_from_gw()">
 		<title>
-		<function moreinfo="none">is_from_gw([type], [flag], [gw_attrs_pvar], [carrier_attrs_pvar],  [partition])</function>
+		<function moreinfo="none">is_from_gw([type], [flags], [gw_attrs_pvar], [carrier_attrs_pvar],  [partition])</function>
 		</title>
 		<para>
 		The function checks if the sender of the message (source IP + source
@@ -2052,7 +2052,7 @@ if (is_from_gw(, "c", , , "outbound")) {
 
 	<section id="func_dr_is_gw" xreflabel="dr_is_gw()">
 		<title>
-		<function moreinfo="none">dr_is_gw( sip_uri, [type], [flag], [gw_attrs_pvar], [carrier_attrs_pvar], [partition])</function>
+		<function moreinfo="none">dr_is_gw( sip_uri, [type], [flags], [gw_attrs_pvar], [carrier_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		The function checks if the SIP URI hostname part stored inside the
