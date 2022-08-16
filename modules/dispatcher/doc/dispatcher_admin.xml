@@ -1178,8 +1178,8 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
 		<listitem>
 			<para>
 			<emphasis>max_res (int, optional)</emphasis> - signifies that only a maximum
-			number of destinations shall be included in the specified failover
-			AVP for failover.  This allows having multiple destinations while
+			number of destinations shall be included in the specified failover AVP. 
+			This allows having multiple destinations while
 			also preventing excessive failover attempts in case a number is
 			bound to fail globally.
 			</para>

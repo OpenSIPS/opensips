@@ -616,7 +616,7 @@ modparam("permissions", "info_col", "info_col")
 			This argument represents the port to be matched.
 			Cached address table entry containing port value 0
 			matches any port.
-			Also, a "0" value for the argument can match any port in the
+			Also, a <emphasis>0</emphasis> value for the argument will match any port in the
 			address table.
 			</para>
 		</listitem>

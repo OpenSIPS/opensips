@@ -495,7 +495,7 @@ modparam("mid_registrar", "received_param", "rcv")
 		<para>
 		An AVP specification. This AVP is evaluated during
 		<emphasis><xref linkend="func_mid_registrar_save"/></emphasis>:
-		if it holds a valid string, its content be appended to
+		if it holds a valid string, its content will be appended to
 		<emphasis>each</emphasis> new Contact URI built by the mid-registrar,
 		for the outgoing request.
 		</para>

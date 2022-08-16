@@ -284,7 +284,7 @@ modparam("rtpengine", "db_url",
 			Used when Database URL is provisioned.
 		</para>
 		<para>
-			Default value is <quote>rtpengines</quote>.
+			Default value is <quote>rtpengine</quote>.
 		</para>
 		<example>
 		<title>Set <varname>db_table</varname> parameter</title>
