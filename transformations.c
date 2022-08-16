@@ -3382,7 +3382,8 @@ int tr_parse_paramlist(str* in, trans_t *t)
 
 		return 0;
 
-	} else if(name.len==5 && strncasecmp(name.s, "exist", 5)==0) {
+	} else if(str_match(&name, _str("exist"))
+	          || str_match(&name, _str("exists"))) {
 		t->subtype = TR_PL_EXIST;
 		if(*p!=TR_PARAM_MARKER)
 		{
