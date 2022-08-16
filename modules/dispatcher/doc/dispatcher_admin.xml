@@ -1022,6 +1022,27 @@ modparam("dispatcher", "socket_col", "my_sock")
 		</example>
 	</section>
 
+	<section id="param_probe_mode_col" xreflabel="probe_mode_col">
+		<title><varname>probe_mode_col</varname> (string)</title>
+		<para>
+			The column's name in the database storing the probe_mode (as
+			string) for destination.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>probe_mode</quote>.
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <quote>probe_mode_col</quote> parameter</title>
+<programlisting format="linespecific">
+...
+modparam("dispatcher", "probe_mode_col", "probing")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_fetch_freeswitch_stats" xreflabel="fetch_freeswitch_stats">
 		<title><varname>fetch_freeswitch_stats</varname> (integer)</title>
 		<para>

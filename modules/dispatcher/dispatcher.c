@@ -55,6 +55,7 @@
 #define DS_DEST_PRIO_COL	"priority"
 #define DS_DEST_ATTRS_COL	"attrs"
 #define DS_DEST_DESCRIPTION_COL	"description"
+#define DS_DEST_PROBE_MODE_COL	"probe_mode"
 #define DS_TABLE_NAME 		"dispatcher"
 #define DS_PARTITION_DELIM  ':'
 
@@ -142,6 +143,7 @@ str ds_dest_weight_col= str_init(DS_DEST_WEIGHT_COL);
 str ds_dest_prio_col = str_init(DS_DEST_PRIO_COL);
 str ds_dest_attrs_col = str_init(DS_DEST_ATTRS_COL);
 str ds_dest_description_col = str_init(DS_DEST_DESCRIPTION_COL);
+str ds_dest_probe_mode_col = str_init(DS_DEST_PROBE_MODE_COL);
 
 str ds_setid_pvname   = {NULL, 0};
 pv_spec_t ds_setid_pv;
@@ -284,6 +286,7 @@ static param_export_t params[]={
 	{"priority_col",    STR_PARAM, &ds_dest_prio_col.s},
 	{"attrs_col",       STR_PARAM, &ds_dest_attrs_col.s},
 	{"description_col",       STR_PARAM, &ds_dest_description_col.s},
+	{"probe_mode_col",        STR_PARAM, &ds_dest_probe_mode_col.s},
 	{"dst_avp",         STR_PARAM, &default_db_head.dst_avp.s},
 	{"grp_avp",         STR_PARAM, &default_db_head.grp_avp.s},
 	{"cnt_avp",         STR_PARAM, &default_db_head.cnt_avp.s},

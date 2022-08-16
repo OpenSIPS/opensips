@@ -53,16 +53,7 @@
 #include "ds_bl.h"
 #include "ds_clustering.h"
 
-#define DS_TABLE_VERSION	8
-
-/**
- * in version 8, the "weight" column is given as a string, since it can contain
- * both integer (the weight) or URL definitions (dynamically calculated weight)
- *
- * OpenSIPS retains backwards-compatibility with the former integer column flavor
- */
-#define supported_ds_version(_ver) \
-	(DS_TABLE_VERSION == 8 ? (_ver == 8 || _ver == 7) : _ver == DS_TABLE_VERSION)
+#define DS_TABLE_VERSION	9
 
 extern ds_partition_t *partitions;
 
@@ -184,7 +175,7 @@ void ds_destroy_data(ds_partition_t *partition)
 
 
 int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int state,
-							int weight, int prio, str attrs, str description, ds_data_t *d_data)
+			int weight, int prio, int probe_mode, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
 	ds_set_p  sp = NULL;
@@ -308,6 +299,16 @@ int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int s
 		default:
 			LM_CRIT("BUG: unknown state %d for destination %.*s\n",
 				state, uri.len, uri.s);
+	}
+	switch (probe_mode) {
+		case 0:
+			break;
+		case 1:
+			dp->flags |= DS_PROBING_PERM_DST;
+			break;
+		default:
+			LM_CRIT("BUG: unknown probing_mode %d for destination %.*s\n",
+				probe_mode, uri.len, uri.s);
 	}
 
 	/* Do a DNS-Lookup for the Host-Name: */
@@ -852,8 +853,6 @@ void ds_disconnect_db(ds_partition_t *partition)
 /*initialize and verify DB stuff*/
 int init_ds_db(ds_partition_t *partition)
 {
-	int _ds_table_version;
-
 	if(partition->table_name.s == 0){
 		LM_ERR("invalid database name\n");
 		return -1;
@@ -870,18 +869,9 @@ int init_ds_db(ds_partition_t *partition)
 		return -1;
 	}
 
-	_ds_table_version = db_table_version(&partition->dbf,*partition->db_handle,
-											&partition->table_name);
-	if (_ds_table_version < 0) {
-		LM_ERR("failed to query table version\n");
+	if (db_check_table_version(&partition->dbf,*partition->db_handle,
+			&partition->table_name, DS_TABLE_VERSION) != 0)
 		return -1;
-	} else if (!supported_ds_version(_ds_table_version)) {
-		LM_ERR("invalid version for table '%.*s' (found %d, required %d)\n"
-		    "(use opensips-cli to migrate to latest schema)\n",
-		    partition->table_name.len, partition->table_name.s,
-		    _ds_table_version, DS_TABLE_VERSION );
-		return -1;
-	}
 
 	return 0;
 }
@@ -892,6 +882,7 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 	ds_set_p new_set, old_set;
 	ds_dest_p new_ds, old_ds;
 	int changed;
+	int probe_mode_flags;
 
 	/* search the new sets through the old sets */
 	for ( new_set=new_data->sets ; new_set ; new_set=new_set->next ) {
@@ -913,8 +904,10 @@ static void ds_inherit_state( ds_data_t *old_data , ds_data_t *new_data)
 				strncasecmp(new_ds->uri.s, old_ds->uri.s, old_ds->uri.len)==0 ) {
 					LM_DBG("DST <%.*s> found in old set, copying state\n",
 						new_ds->uri.len,new_ds->uri.s);
-					if (new_ds->flags != old_ds->flags) {
-						new_ds->flags = old_ds->flags;
+					if ((new_ds->flags&(~DS_PROBING_PERM_DST)) != (old_ds->flags&(~DS_PROBING_PERM_DST))) {
+						probe_mode_flags = new_ds->flags & DS_PROBING_PERM_DST;
+						new_ds->flags = old_ds->flags & (~DS_PROBING_PERM_DST);
+						new_ds->flags |= probe_mode_flags;
 						changed = 1;
 					}
 					break;
@@ -1013,10 +1006,11 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 {
 	ds_data_t *d_data;
-	int i, id, nr_rows, cnt, nr_cols = 8;
+	int i, id, nr_rows, cnt, nr_cols = 9;
 	int state;
 	int weight;
 	int prio;
+	int probe_mode;
 	struct socket_info *sock;
 	str uri;
 	str attrs, weight_st;
@@ -1026,9 +1020,10 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 	db_row_t * rows;
 	int discarded_dst=0;
 
-	db_key_t query_cols[8] = {&ds_set_id_col, &ds_dest_uri_col,
+	db_key_t query_cols[9] = {&ds_set_id_col, &ds_dest_uri_col,
 			&ds_dest_sock_col, &ds_dest_weight_col, &ds_dest_attrs_col,
-			&ds_dest_prio_col, &ds_dest_description_col, &ds_dest_state_col};
+			&ds_dest_prio_col, &ds_dest_description_col,
+			&ds_dest_probe_mode_col, &ds_dest_state_col};
 
 	if (!use_state_col)
 		nr_cols--;
@@ -1125,17 +1120,24 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 		else
 			prio = VAL_INT(values+5);
 
+		/* priority */
+		if (VAL_NULL(values+7))
+			probe_mode = 0;
+		else
+			probe_mode = VAL_INT(values+7);
+
 		/* state */
-		if (!use_state_col || VAL_NULL(values+7))
+		if (!use_state_col || VAL_NULL(values+8))
 			/* active state */
 			state = 0;
 		else
-			state = VAL_INT(values+7);
+			state = VAL_INT(values+8);
 
 		get_str_from_dbval( "DESCRIPTION", values+6,
 			0/*not_null*/, 0/*not_empty*/, description, error2);
 
-		if (add_dest2list(id, uri, sock, &weight_st, state, weight, prio, attrs, description, d_data)
+		if (add_dest2list(id, uri, sock, &weight_st, state, weight, prio,
+				probe_mode, attrs, description, d_data)
 		!= 0) {
 			LM_WARN("failed to add destination <%.*s> in group %d\n",
 				uri.len,uri.s,id);
@@ -2639,7 +2641,7 @@ static void ds_options_callback( struct cell *t, int type,
 	/* if we always probe, and we get a timeout
 	 * or a reponse that is not within the allowed
 	 * reply codes, then disable*/
-	if(ds_probing_mode==1 && ps->code != 200 &&
+	if((ds_probing_mode==1 || cb_param->always_probe) && ps->code != 200 &&
 	(ps->code == 408 || !check_options_rplcode(ps->code)))
 	{
 		if (ds_set_state(cb_param->set_id, &uri, DS_PROBING_DST, 1,
@@ -2694,7 +2696,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 				 * the entry has "Probing" set, send a probe: */
 				if ( (!ds_probing_list || in_int_list(ds_probing_list, list->id)==0) &&
 				((list->dlist[j].flags&DS_INACTIVE_DST)==0) &&
-				(ds_probing_mode==1 || (list->dlist[j].flags&DS_PROBING_DST)!=0
+				(ds_probing_mode==1 || (list->dlist[j].flags&(DS_PROBING_DST|DS_PROBING_PERM_DST))!=0
 				))
 				{
 					/* stage 2 of checking, clustering level */
@@ -2744,6 +2746,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 
 					cb_param->partition = partition;
 					cb_param->set_id = list->id;
+					cb_param->always_probe = (list->dlist[j].flags & DS_PROBING_PERM_DST);
 					if (tmb.t_request_within(&ds_ping_method,
 							NULL,
 							NULL,

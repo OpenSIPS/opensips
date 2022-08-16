@@ -43,6 +43,8 @@
 #define DS_RESET_FAIL_DST	4  /* Reset-Failure-Counter */
 #define DS_STATE_DIRTY_DST	8  /* STATE is dirty */
 
+#define DS_PROBING_PERM_DST 16 /* permanently probing if not inactive */
+
 #define DS_PV_ALGO_ID_MARKER   "%i"  /* Marker to indicate where the Set ID should be inserted in the pvar */
 #define DS_PV_ALGO_URI_MARKER  "%u"  /* Marker to indicate where the URI should be inserted in the pvar */
 #define DS_PV_ALGO_MARKER_LEN  2
@@ -161,6 +163,7 @@ typedef struct
 {
 	ds_partition_t *partition;
 	int set_id;
+	int always_probe;
 } ds_options_callback_param_t;
 
 typedef struct _ds_selected_dst
@@ -178,6 +181,7 @@ extern str ds_dest_weight_col;
 extern str ds_dest_prio_col;
 extern str ds_dest_attrs_col;
 extern str ds_dest_description_col;
+extern str ds_dest_probe_mode_col;
 
 extern pv_elem_t * hash_param_model;
 extern str hash_pvar_param;
