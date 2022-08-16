@@ -54,7 +54,7 @@
 	str_const: _Generic(*(_b), \
 	    str: _str_matchCS, \
 	    str_const: _str_matchCC) \
-    )(_a, _b)
+    )((_a), (_b))
 
 /*
  * Params: ([const] str *_a), ([const] str *_b)
@@ -67,7 +67,7 @@
 	str_const: _Generic(*(_b), \
 	    str: _str_casematchCS, \
 	    str_const: _str_casematchCC) \
-    )(_a, _b)
+    )((_a), (_b))
 
 /*
  * Params: ([const] str *_a), ([const] str *_b)
@@ -80,7 +80,7 @@
         str_const: _Generic(*(_b), \
             str: _str_strcmpCS, \
             str_const: _str_strcmpCC) \
-    )(_a, _b)
+    )((_a), (_b))
 #else /* !HAVE_GENERICS */
 #define str2const(_sp) ((str_const *)(void *)(_sp))
 #define escape_user(sin, sout) _escape_user(str2const(sin), sout)
