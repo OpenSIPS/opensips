@@ -32,7 +32,6 @@
 #include "../../parser/contact/contact.h"
 #include "../../parser/contact/parse_contact.h"
 #include "../../parser/parse_rr.h"
-#include "../../parser/parse_cseq.h"
 #include "../../parser/parse_hname2.h"
 #include "../../parser/parser_f.h"
 #include "../tm/tm_load.h"
@@ -1749,6 +1748,74 @@ end:
 	return ret;
 }
 
+static void dlg_leg_push_cseq_map(struct dlg_cell *dlg, unsigned int leg,
+		struct sip_msg *msg)
+{
+	struct dlg_leg_cseq_map *map;
+	unsigned int msg_cseq;
+
+	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
+		!msg->cseq->parsed){
+		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
+		return;
+	}
+	if (str2int(&get_cseq(msg)->number, &msg_cseq) < 0) {
+		LM_ERR("invalid CSeq number [%.*s]\n",
+				get_cseq(msg)->number.len, get_cseq(msg)->number.s);
+		return;
+	}
+	map = shm_malloc(sizeof *map);
+	if (!map) {
+		LM_ERR("oom for cseq map\n");
+		return;
+	}
+	memset(map, 0, sizeof *map);
+	map->msg = msg_cseq;
+	if (dlg->legs[leg].last_gen_cseq)
+		map->gen = dlg->legs[leg].last_gen_cseq;
+	else
+		map->gen = msg_cseq;
+	map->next = dlg->legs[leg].cseq_maps;
+	dlg->legs[leg].cseq_maps = map;
+}
+
+static unsigned int dlg_leg_get_cseq(struct dlg_cell *dlg, unsigned int leg,
+		struct sip_msg *msg)
+{
+	struct dlg_leg_cseq_map *map, *tmp;
+	unsigned int msg_cseq;
+	int distance = 10;
+
+	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
+		!msg->cseq->parsed){
+		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
+		return 0;
+	}
+	if (str2int(&get_cseq(msg)->number, &msg_cseq) < 0) {
+		LM_ERR("invalid CSeq number [%.*s]\n",
+				get_cseq(msg)->number.len, get_cseq(msg)->number.s);
+		return 0;
+	}
+	for (map = dlg->legs[leg].cseq_maps; map; map = map->next) {
+		if (map->msg != msg_cseq)
+			continue;
+		msg_cseq = map->gen; /* value to be returned */
+		/* cleanup older values, since they are no longer needed */
+		for (tmp = map, map = map->next; map && distance > 0;
+				tmp = map, map = map->next, distance--);
+		if (map) {
+			tmp->next = NULL;
+			do {
+				tmp = map;
+				map = map->next;
+				shm_free(tmp);
+			} while (map);
+		}
+		return msg_cseq;
+	}
+	return 0;
+}
+
 static inline void log_bogus_dst_leg(struct dlg_cell *dlg)
 {
 	if (ctx_lastdstleg_get()>=dlg->legs_no[DLG_LEGS_USED])
@@ -2088,7 +2155,7 @@ after_unlock5:
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* save INVITE cseq, in case any requests follow after this
 					( pings or other in-dialog requests until the ACK comes in */
-					dlg->legs[dst_leg].last_inv_gen_cseq = dlg->legs[dst_leg].last_gen_cseq;
+					dlg_leg_push_cseq_map(dlg, dst_leg, req);
 
 					/* Received RE-INVITE where we mangle the CSEQ due to existing pings sent
 					 *
@@ -2107,11 +2174,7 @@ after_unlock5:
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* we did not generate any pings yet - still we need to store the INV cseq,
 					in case there's a race between the ACK for the INVITE and sending of new pings */
-					if (str2int(&((struct cseq_body *)req->cseq->parsed)->number,
-							&dlg->legs[dst_leg].last_inv_gen_cseq) < 0)
-						LM_ERR("invalid INVITE cseq [%.*s]\n",
-								((struct cseq_body *)req->cseq->parsed)->number.len,
-								((struct cseq_body *)req->cseq->parsed)->number.s);
+					dlg_leg_push_cseq_map(dlg, dst_leg, req);
 				}
 
 				dlg_unlock( d_table, d_entry );
@@ -2130,10 +2193,9 @@ after_unlock5:
 			dlg_lock (d_table, d_entry);
 
 			if (dlg->legs[dst_leg].last_gen_cseq ||
-			dlg->legs[dst_leg].last_inv_gen_cseq ) {
-				if (dlg->legs[dst_leg].last_inv_gen_cseq)
-					update_val = dlg->legs[dst_leg].last_inv_gen_cseq;
-				else
+			dlg->legs[dst_leg].cseq_maps) {
+				update_val = dlg_leg_get_cseq(dlg, dst_leg, req);
+				if (update_val == 0)
 					update_val = dlg->legs[dst_leg].last_gen_cseq;
 				dlg_unlock( d_table, d_entry );
 
