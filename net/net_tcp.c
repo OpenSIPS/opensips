@@ -810,8 +810,10 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 			c->async->allocated = protos[si->proto].net.async_chunks;
 			c->async->oldest = 0;
 			c->async->pending = 0;
-		} else
-			LM_WARN("could not allocate async data for con!\n");
+		} else {
+			LM_ERR("could not allocate async data for con!\n");
+			goto error;
+		}
 	}
 
 	tcp_connections_no++;
