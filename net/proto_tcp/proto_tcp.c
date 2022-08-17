@@ -217,8 +217,13 @@ static int proto_tcp_init(struct proto_info *pi)
 	}
 
 	/* without async support, there is nothing to init/clean per conn */
-	if (tcp_async!=0)
+	if (tcp_async!=0) {
+		/* be sure the settings are consistent, like having a minimum 2 value
+		 * if the tcp_async is enbled */
+		if (tcp_async_max_postponed_chunks<=1)
+			tcp_async_max_postponed_chunks = 2;
 		pi->net.async_chunks= tcp_async_max_postponed_chunks;
+	}
 
 	return 0;
 }
