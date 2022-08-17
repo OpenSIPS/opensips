@@ -600,8 +600,8 @@ static void terminate_call(struct cc_call *call, b2bl_dlg_stat_t* stat,
 
 	lock_release( data->lock );
 
-	if (call->setup_time==-1 && stat)
-		call->setup_time = stat->setup_time;
+	if (call->setup_time==-1)
+		call->setup_time = stat ? stat->setup_time : 0;
 
 	/* generate CDR */
 	type = (stat==NULL) ? -1 : ((prev_state==CC_CALL_TOAGENT && stat->call_time)? 0 : 1);
