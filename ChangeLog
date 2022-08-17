@@ -1,3 +1,416 @@
+=========================== Release 3.2.8 ==============================
+
+2022-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0b270ad04] :
+
+	Fix crash in bogus OOM handling while TCP async in enabled.
+	The async support assums the c->async exists all the time, so error if we cannot alloc the c->async struct while creating a new TCP conn
+
+
+2022-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e4f454321] :
+
+	[call_center] avoid a negative setup_time in CDR
+	In the DB schema, the setup_time is an unsigned, and a -1 value was computed while a call was rejected by an agent
+	(cherry picked from commit 9dc28a91c68db792f1df4cf1d6ce8d0faf83ad0e)
+
+
+2022-08-16  Liviu Chircu  <liviu at opensips dot org>
+	* [aaaae0d15] :
+
+	Various code/doc improvements; Var renames; Fix typos
+	(cherry picked from commit 28d87ad30f99abcfaca678955cff6b38bdc2b24f)
+	(cherry picked from commit 2aa0cafcbee13131bdc4793b893530fa8126576c)
+
+
+2022-08-16  Liviu Chircu  <liviu at opensips dot org>
+	* [e0325625c] :
+
+	Fix various doc typos; Improve wording
+	(cherry picked from commit dd7b3da0397fe5ccc9978ec9138a6d4395c3f941)
+	(cherry picked from commit 7cdbc996ee61eae1ed9757c9bb401c67d96b48fd)
+
+
+2022-08-16  Razvan Crainea  <razvan at opensips dot org>
+	* [43f00304a] :
+
+	b2b_entities: provide dlginfo for entity_delete
+	Each module that uses b2b_entities, should duplicate the dlginfo
+	structure and pass it to the entity_delete API call, otherwise wrong
+	entities might be deleted due to mismatches
+	(cherry picked from commit ce19581557c69dafee5095fecce831e2c2d80704)
+
+
+2022-08-14  OpenSIPS  <github at opensips dot org>
+	* [470d780e5] :
+
+	Rebuild documentation
+
+
+2022-08-09  Razvan Crainea  <razvan at opensips dot org>
+	* [7ed3f00e8] :
+
+	rtp_relay: reset late flag for new negotiations
+	(cherry picked from commit 22fe3bef705e3de98b950065bb2a948789c8b3ae)
+
+
+2022-08-09  Razvan Crainea  <razvan at opensips dot org>
+	* [b9a1cb0c9] :
+
+	rtp_relay: fix typo in test for ACK in late
+	(cherry picked from commit 118dcebac717b6a3299407ac152719f38fda5bd4)
+
+
+2022-08-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [56eacbe95] :
+
+	Fix possible bogus exec_msg_threshold reporting
+	Reset the exec_msg_threshold stack (longest found actions) when a parse error is detected (before running the actual scritp). Otherwise we may inherit old records from previous runs
+	(cherry picked from commit e7ed29e50f8dc76717fe38281945aa331958db25)
+
+
+2022-08-07  OpenSIPS  <github at opensips dot org>
+	* [ce5e1c6b7] :
+
+	Rebuild documentation
+
+
+2022-08-01  Vlad Patrascu  <vladp at opensips dot org>
+	* [b93fbafed] :
+
+	clusterer: add ability to disable replication packets dispatching
+	Add a new "dispatch_jobs" modparam which controls whether the processing of
+	replicated packets is dispatched through IPC or not.
+	Disabling the dispatching mechanism prevents high CPU loads caused by
+	the "thundering herd" problem.
+
+	Credits go to Rizwan Syed and Connex Carrier Services for supporting the
+	troubleshooting of this issue.
+	(cherry picked from commit 0c66936f3d343226930042bc463b467d8a62fde3)
+
+
+2022-08-01  Vlad Patrascu  <vladp at opensips dot org>
+	* [a3419dce8] :
+
+	dialog: don't drop synced dialogs with no sharing tag
+	(cherry picked from commit 3e98325e8546bcbfefa15644c4835c72da4c7aee)
+
+
+2022-07-31  OpenSIPS  <github at opensips dot org>
+	* [b2f78b5ab] :
+
+	Rebuild documentation
+
+
+2022-07-29  Vlad Patrascu  <vladp at opensips dot org>
+	* [c5888125f] :
+
+	dialog: fix typo in commit edc90fb
+	(cherry picked from commit 3cebaf73059932183392761a040969efb887bcea)
+
+
+2022-07-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [edc90fb54] :
+
+	dialog: fix incorrectly discarded dialogs after sync
+	Syncing while the donor node is also sending live replication packets
+	may lead to incorrectly discarding some of the newly received dialogs.
+	There were two ways in which new dialogs were actually mistaken as old,
+	"local" dialogs from before syncing:
+	* overwriting the dialog flags when handling a replicated update;
+	* not marking live replicated dialogs received during sync as "new" dialogs.
+	(cherry picked from commit 46e9a53ead0574272609038dc9dbfb92f9087fe4)
+
+
+2022-07-26  Liviu Chircu  <liviu at opensips dot org>
+	* [6aea5c5e2] :
+
+	proto_hep: Fix log message severity (just a debug log)
+	(cherry picked from commit 612e7a1feb28a6aa359b24a6237928c0e06a3605)
+
+
+2022-07-24  OpenSIPS  <github at opensips dot org>
+	* [86c5f3ae2] :
+
+	Rebuild documentation
+
+
+2022-07-22  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [d5f20d862] :
+
+	python: Don't leak memory in python_exec().
+	The bug was introduced in rev 302058d8d38 (April 2019) along
+	with module API cleanup and affects all releases since 3.0.
+
+
+2022-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [6a71c1499] :
+
+	sql_cacher: don't allow usage of a replicated local cache
+	Using a replicated collection for cachedb_local would lead to invalid
+	keys in the cache due to reload version inconsistencies.
+	(cherry picked from commit 1b9662649d2e0606225b5e198a083619d0ca97e1)
+
+
+2022-07-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [99275f6de] :
+
+	clusterer: issue sync request under lock
+	(cherry picked from commit bf178b04ffec9fa22d75fc5266286f93721eec5d)
+
+
+2022-07-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [69031794f] :
+
+	clusterer: fix deadlocks when syncing
+	(cherry picked from commit 652d89fbeffc180aea68e8bdfcac799d53124e6b)
+
+
+2022-07-17  OpenSIPS  <github at opensips dot org>
+	* [d1941d6a9] :
+
+	Rebuild documentation
+
+
+2022-07-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [610420457] :
+
+	tls_wolfssl: disable example applications from library build
+	(cherry picked from commit 6d248c5eebef0abf27c594ed3d587d844fb52262)
+	(cherry picked from commit ab31a563a855fdd582c19afd0f731566568f93ae)
+
+
+2022-07-15  Vlad Patrascu  <vladp at opensips dot org>
+	* [731c8ddca] :
+
+	clusterer: fix possible deadlocks when discovering a new node
+	Use only standard RW locking operations for the global list lock instead of
+	the "switchable" mechanism (aquiring the lock for writing when necessary).
+	(cherry picked from commit e0e9e2f943ca5bd35f653f6e55a89000e8b262e6)
+
+
+2022-07-13  Vlad Patrascu  <vladp at opensips dot org>
+	* [80a7df243] :
+
+	clusterer: queue sync request after all send errors
+	(cherry picked from commit 46e56d4170079eed46686c57986c2ccf5756779e)
+
+
+2022-07-13  Vlad Patrascu  <vladp at opensips dot org>
+	* [5f99dd82e] :
+
+	clusterer: properly compute sync fallback interval in all cases
+	The timestamp of the sync request was not saved when queueing the sync
+	after certain send errors.
+	(cherry picked from commit 816ef38b7c97b811a5822ceab9ebbe81609b1b6b)
+
+
+2022-07-13  Vlad Patrascu  <vladp at opensips dot org>
+	* [0d346f0b6] :
+
+	clusterer: prevent permanent sync in progress state
+	If the sync end marker packet is not received, nodes get stuck in a
+	permanent "sync in progress" state. This commit introduces a timeout,
+	configurable via the "sync_timeout" modparam, after which a node reverts
+	to the not synced state, if no sync data packet is received.
+	(cherry picked from commit 2e5bf28aa91d9cda8304bc19bbba770e83d7cb22)
+
+
+2022-07-12  Razvan Crainea  <razvan at opensips dot org>
+	* [b9c092ede] :
+
+	b2b_entities: fix the right number of rows when leg is missing
+	Thanks go to Norm Brandinger from Five9 for reporting, testing and
+	providing all the help to pinpoint this issue!
+	(cherry picked from commit b005a3795f9a762011f488cb403f2e9bd7a7ade1)
+
+
+2022-07-10  OpenSIPS  <github at opensips dot org>
+	* [69b651f9b] :
+
+	Rebuild documentation
+
+
+2022-07-08  Vlad Patrascu  <vladp at opensips dot org>
+	* [35b29e618] :
+
+	tls_wolfssl: fix differing TLS version for write duplicate struct
+	When using a range of supported TLS versions, the WOLFSSL write duplicate
+	structure uses the highest TLS version set for the context instead of the one
+	actually negociated for the current session. This may lead to errors for TLS
+	write or shutdown operations, for ciphers that are not supported in the
+	TLS version used by the write dup structure.
+
+	Fixes #2729
+
+
+2022-07-08  Liviu Chircu  <liviu at opensips dot org>
+	* [309bc93ba] :
+
+	acc docs: Clarify that do/drop_accounting() can be called multiple times
+
+
+2022-07-08  Liviu Chircu  <liviu at opensips dot org>
+	* [cb9c2d09a] :
+
+	perl: Fix PKG corruption in perl_exec() (off-by-one)
+	(cherry picked from commit d7f9a851149010d1b99aeb9e04339994414c8731)
+
+
+2022-07-08  Liviu Chircu  <liviu at opensips dot org>
+	* [61e07cb53] :
+
+	perl: Fix PKG memory leak in perl_exec()
+	The leak would happen 100% of the time on each perl_exec().
+	(cherry picked from commit 0742814a7f72d99d0de6624acca7f107059f03bf)
+
+
+2022-07-07  Nick Altmann  <nick.altmann at gmail dot com>
+	* [b9c535e36] :
+
+	DEB Packaging: don't build auth_jwt package for old distributives
+
+
+2022-07-05  Vlad Patrascu  <vladp at opensips dot org>
+	* [86915d16b] :
+
+	clusterer: fix seed fallback during sync
+	Do not fall back to the synced state for a capability if syncing is
+	actually in progress.
+	(cherry picked from commit 3960008a14fa75395cc4b49c7e7cae52ac68aed7)
+
+
+2022-07-04  Vlad Patrascu  <vladp at opensips dot org>
+	* [2a1012bcd] :
+
+	xml: fix accessing node value with CDATA sections
+	(cherry picked from commit 4a4248cbfd9c289ea16d68b45d1dbaa8a5daf064)
+
+
+2022-07-03  OpenSIPS  <github at opensips dot org>
+	* [ad4df000f] :
+
+	Rebuild documentation
+
+
+2022-06-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [801e72bbd] :
+
+	b2b_logic docs: fix example for b2b_bridge_request()
+	(cherry picked from commit 75fc8f0388b6505db1717a503a691c68dddd68df)
+
+
+2022-06-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [8eb0c6ff7] :
+
+	b2b_logic: complete the Max-Forwards fix in commit cb6d7fa
+	Also decrease Max-Forwards when bridging, based on the value from the
+	initial INVITE of the server entity, if it's still present in the session.
+	(cherry picked from commit c328eb06d01c52d7d0a1fadd717c59003c4456b8)
+
+
+2022-06-26  OpenSIPS  <github at opensips dot org>
+	* [5cd73cc6c] :
+
+	Rebuild documentation
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [07a6b2e3e] :
+
+	clusterer: make sure a discovered node is not added multiple times
+	Do not insert a new node into the list multiple times when:
+	* receiving multiple CLUSTERER_NODE_DESCRIPTION BIN messages
+	* we receive a CLUSTERER_NODE_DESCRIPTION message and the node also
+	  appears in CLUSTERER_FULL_TOP_UPDATE messages.
+	(cherry picked from commit b8e107517fd032f16f16df242a02474efc2312d2)
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [ef2ac0d8f] :
+
+	b2b_logic_xml: keep compatibility with b2b_context changes
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [fa2145b12] :
+
+	b2b_logic: fix possible crash when init_callid_hdr param is set
+	The crash would occur if the Call-ID header name is received in compact
+	form("i" instead of "Call-ID").
+
+	Thanks to David Escartin from Sonoc for reporting.
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [c7a5f4175] :
+
+	b2b_entities: fix possible shm memory leaks
+	Fix leaking transactions when deleting an entity without sending a final reply.
+
+	Thanks to David Escartin from Sonoc for reporting.
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [ff646336e] :
+
+	b2b_logic: prevent possible crashes when accessing $b2b_logic vars
+	Make sure to always search in the hash for the current tuple instead of relying
+	on a pointer saved in the b2b context. There might be races between processing
+	BYEs and deleting the tuple and running a b2b_logic reply route where we access
+	a $b2b_logic variable.
+
+	Thanks to David Escartin from Sonoc for reporting.
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [e8df85a64] :
+
+	b2b_entities: properly handle negative replies to reINVITEs
+	Do not change the dialog state to terminated as a result of a sending a
+	negative reply to a reINVITE. This would have prevented the forwarding of
+	further requests.
+
+	Thanks to David Escartin from Sonoc for reporting and testing the fix.
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [81cb0903a] :
+
+	b2b_entities: properly handle unexpected ACKs
+	Fixes an issue where a 487 reply is not relayed after an unexpected ACK is
+	received following a CANCEL.
+
+	Thanks to David Escartin from Sonoc for reporting.
+
+
+2022-06-25  Vlad Patrascu  <vladp at opensips dot org>
+	* [082379771] :
+
+	b2b_entities: fix accessing $b2b_logic variables for PRACK requests
+	Fixes #2686
+	(cherry picked from commit 3b6cf1640fc569a721574faaff4132b2e2d7c477)
+
+
+2022-06-23  Vlad Patrascu  <vladp at opensips dot org>
+	* [cb6d7fa7a] :
+
+	b2b_logic: properly decrease value and pass Max-Forwrads header
+	This applies to requests that are effectively "passed" from one entity to its
+	peer such as initial INVITEs handled with b2b_init_request() or requests
+	handled with b2b_pass_request().
+
+	Fixes #2471
+	(cherry picked from commit fa84d8d0e6cf719c0d2c7bd215fa74e5e33e1a2f)
+
+
+2022-06-23  Vlad Patrascu  <vladp at opensips dot org>
+	* [cd52ccc5e] :
+
+	b2b_entities: allow enforcing the Max-Forwards value
+	Related to #2471
+	(cherry picked from commit 404f580026f2bb67cdacf56e1384213643a0505e)
+
 =========================== Release 3.2.7 ==============================
 
 2022-06-22  Vlad Patrascu  <vladp at opensips dot org>
