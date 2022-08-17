@@ -1,3 +1,220 @@
+=========================== Release 3.3.1 ==============================
+
+2022-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [e5377a6a3] :
+
+	Fix crash in bogus OOM handling while TCP async in enabled.
+	The async support assums the c->async exists all the time, so error if we cannot alloc the c->async struct while creating a new TCP conn
+	(cherry picked from commit 0b270ad04db8081bbb829f89fa515fa0c37698c7)
+
+
+2022-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [5dc2ec77b] :
+
+	[call_center] avoid a negative setup_time in CDR
+	In the DB schema, the setup_time is an unsigned, and a -1 value was computed while a call was rejected by an agent
+	(cherry picked from commit 9dc28a91c68db792f1df4cf1d6ce8d0faf83ad0e)
+
+
+2022-08-16  Liviu Chircu  <liviu at opensips dot org>
+	* [2aa0cafcb] :
+
+	Various code/doc improvements; Var renames; Fix typos
+	(cherry picked from commit 28d87ad30f99abcfaca678955cff6b38bdc2b24f)
+
+
+2022-08-16  Liviu Chircu  <liviu at opensips dot org>
+	* [7cdbc996e] :
+
+	Fix various doc typos; Improve wording
+	(cherry picked from commit dd7b3da0397fe5ccc9978ec9138a6d4395c3f941)
+
+
+2022-08-16  Razvan Crainea  <razvan at opensips dot org>
+	* [161c54149] :
+
+	b2b_entities: provide dlginfo for entity_delete
+	Each module that uses b2b_entities, should duplicate the dlginfo
+	structure and pass it to the entity_delete API call, otherwise wrong
+	entities might be deleted due to mismatches
+	(cherry picked from commit ce19581557c69dafee5095fecce831e2c2d80704)
+
+
+2022-08-14  OpenSIPS  <github at opensips dot org>
+	* [bae9ceb35] :
+
+	Rebuild documentation
+
+
+2022-08-09  Razvan Crainea  <razvan at opensips dot org>
+	* [3cc86d722] :
+
+	rtp_relay: reset late flag for new negotiations
+	(cherry picked from commit 22fe3bef705e3de98b950065bb2a948789c8b3ae)
+
+
+2022-08-09  Razvan Crainea  <razvan at opensips dot org>
+	* [b19462dc3] :
+
+	rtp_relay: fix typo in test for ACK in late
+	(cherry picked from commit 118dcebac717b6a3299407ac152719f38fda5bd4)
+
+
+2022-08-08  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
+	* [0925db229] :
+
+	Fix possible bogus exec_msg_threshold reporting
+	Reset the exec_msg_threshold stack (longest found actions) when a parse error is detected (before running the actual scritp). Otherwise we may inherit old records from previous runs
+	(cherry picked from commit e7ed29e50f8dc76717fe38281945aa331958db25)
+
+
+2022-08-07  OpenSIPS  <github at opensips dot org>
+	* [c3c9c159c] :
+
+	Rebuild documentation
+
+
+2022-08-01  Vlad Patrascu  <vladp at opensips dot org>
+	* [9cdcdf238] :
+
+	clusterer: add ability to disable replication packets dispatching
+	Add a new "dispatch_jobs" modparam which controls whether the processing of
+	replicated packets is dispatched through IPC or not.
+	Disabling the dispatching mechanism prevents high CPU loads caused by
+	the "thundering herd" problem.
+
+	Credits go to Rizwan Syed and Connex Carrier Services for supporting the
+	troubleshooting of this issue.
+	(cherry picked from commit 0c66936f3d343226930042bc463b467d8a62fde3)
+
+
+2022-08-01  Vlad Patrascu  <vladp at opensips dot org>
+	* [2bee820e8] :
+
+	dialog: don't drop synced dialogs with no sharing tag
+	(cherry picked from commit 3e98325e8546bcbfefa15644c4835c72da4c7aee)
+
+
+2022-07-31  OpenSIPS  <github at opensips dot org>
+	* [b69963e9a] :
+
+	Rebuild documentation
+
+
+2022-07-29  Vlad Patrascu  <vladp at opensips dot org>
+	* [74c4ee56a] :
+
+	dialog: fix typo in commit 26d0607
+	(cherry picked from commit 3cebaf73059932183392761a040969efb887bcea)
+
+
+2022-07-28  Vlad Patrascu  <vladp at opensips dot org>
+	* [26d060753] :
+
+	dialog: fix incorrectly discarded dialogs after sync
+	Syncing while the donor node is also sending live replication packets
+	may lead to incorrectly discarding some of the newly received dialogs.
+	There were two ways in which new dialogs were actually mistaken as old,
+	"local" dialogs from before syncing:
+	* overwriting the dialog flags when handling a replicated update;
+	* not marking live replicated dialogs received during sync as "new" dialogs.
+	(cherry picked from commit 46e9a53ead0574272609038dc9dbfb92f9087fe4)
+
+
+2022-07-26  Liviu Chircu  <liviu at opensips dot org>
+	* [8aa317126] :
+
+	proto_hep: Fix log message severity (just a debug log)
+	(cherry picked from commit 612e7a1feb28a6aa359b24a6237928c0e06a3605)
+
+
+2022-07-24  OpenSIPS  <github at opensips dot org>
+	* [57e2c8d71] :
+
+	Rebuild documentation
+
+
+2022-07-22  Maksym Sobolyev  <sobomax at sippysoft dot com>
+	* [28a3b2323] :
+
+	python: Don't leak memory in python_exec().
+	The bug was introduced in rev 302058d8d38 (April 2019) along
+	with module API cleanup and affects all releases since 3.0.
+
+
+2022-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [315d1fce9] :
+
+	cachedb_local: fix crashes when cachedb_url modparam is not set
+	This commit fixes crashes when an OpenSIPS module uses a collection that is
+	not explicitly set for any cachedb_url modparam.
+	(cherry picked from commit 92512fc562b09820ae4c2d0fba66659f56a5b3a1)
+
+
+2022-07-21  Vlad Patrascu  <vladp at opensips dot org>
+	* [c0898caaf] :
+
+	sql_cacher: don't allow usage of a replicated local cache
+	Using a replicated collection for cachedb_local would lead to invalid
+	keys in the cache due to reload version inconsistencies.
+	(cherry picked from commit 1b9662649d2e0606225b5e198a083619d0ca97e1)
+
+
+2022-07-20  Vlad Patrascu  <vladp at opensips dot org>
+	* [a0a2cabec] :
+
+	clusterer: issue sync request under lock
+	(cherry picked from commit bf178b04ffec9fa22d75fc5266286f93721eec5d)
+
+
+2022-07-19  Vlad Patrascu  <vladp at opensips dot org>
+	* [ceb96334c] :
+
+	clusterer: fix deadlocks when syncing
+	(cherry picked from commit 652d89fbeffc180aea68e8bdfcac799d53124e6b)
+	(cherry picked from commit 69031794f90285ffae7351dae513f763a3d89ef9)
+
+
+2022-07-17  OpenSIPS  <github at opensips dot org>
+	* [cbc91181d] :
+
+	Rebuild documentation
+
+
+2022-07-16  Vlad Patrascu  <vladp at opensips dot org>
+	* [ab31a563a] :
+
+	tls_wolfssl: disable example applications from library build
+	(cherry picked from commit 6d248c5eebef0abf27c594ed3d587d844fb52262)
+
+
+2022-07-14  Vlad Patrascu  <vladp at opensips dot org>
+	* [4c4e5b4d3] :
+
+	sql_cacher docs: add sections for SR identifiers
+	(cherry picked from commit 21a5534ddcd0686aa5742f0ceea227b93b2e86ff)
+
+
+2022-07-14  Vlad Patrascu  <vladp at opensips dot org>
+	* [4a15cef4c] :
+
+	dialplan docs: add sections for SR identifiers
+	(cherry picked from commit bb96e5be32a8c6b3d648f5fcdbc54b62944681f1)
+
+
+2022-07-14  Vlad Patrascu  <vladp at opensips dot org>
+	* [6dbe472a8] :
+
+	dispatcher docs: add sections for SR identifiers
+	(cherry picked from commit c04a72ede8309b1e7cae1da3200a4eedd784612f)
+
+
+2022-07-14  Vlad Patrascu  <vladp at opensips dot org>
+	* [e48f68bc7] :
+
+	drouting docs: add sections for SR identifiers
+	(cherry picked from commit 3eb20bd09da7c51d94c7e2b7e6d28b17a1a6e3bc)
+
 =========================== Release 3.3.0 ==============================
 
 2022-07-14  Vlad Patrascu <vladp@opensips.org>
