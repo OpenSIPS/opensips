@@ -1486,6 +1486,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 			LM_ERR("could not send re-INVITE to client!\n");
 	}
 	lock_release(&ctx->lock);
+	free_sdp_content(&sdp);
 
 	return 0;
 error:
