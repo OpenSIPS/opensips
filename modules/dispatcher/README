@@ -47,8 +47,9 @@ dispatcher Module
               1.3.32. priority_col (string)
               1.3.33. attrs_col (string)
               1.3.34. socket_col (string)
-              1.3.35. fetch_freeswitch_stats (integer)
-              1.3.36. max_freeswitch_weight (integer)
+              1.3.35. probe_mode_col (string)
+              1.3.36. fetch_freeswitch_stats (integer)
+              1.3.37. max_freeswitch_weight (integer)
 
         1.4. Exported Functions
 
@@ -152,14 +153,15 @@ dispatcher Module
    1.34. Set “priority_col” parameter
    1.35. Set “attrs_col” parameter
    1.36. Set “socket_col” parameter
-   1.37. Set the fetch_freeswitch_load parameter
-   1.38. Set the max_freeswitch_weight parameter
-   1.39. ds_select_dst usage
-   1.40. ds_count usage
-   1.41. ds_is_in_list usage
-   1.42. ds_count usage
+   1.37. Set “probe_mode_col” parameter
+   1.38. Set the fetch_freeswitch_load parameter
+   1.39. Set the max_freeswitch_weight parameter
+   1.40. ds_select_dst usage
+   1.41. ds_count usage
+   1.42. ds_is_in_list usage
    1.43. ds_count usage
-   1.44. OpenSIPS config script - sample dispatcher usage
+   1.44. ds_count usage
+   1.45. OpenSIPS config script - sample dispatcher usage
 
 Chapter 1. Admin Guide
 
@@ -819,7 +821,19 @@ modparam("dispatcher", "attrs_col", "dstattrs")
 modparam("dispatcher", "socket_col", "my_sock")
 ...
 
-1.3.35. fetch_freeswitch_stats (integer)
+1.3.35. probe_mode_col (string)
+
+   The column's name in the database storing the probe_mode (as
+   string) for destination.
+
+   Default value is “probe_mode”.
+
+   Example 1.37. Set “probe_mode_col” parameter
+...
+modparam("dispatcher", "probe_mode_col", "probing")
+...
+
+1.3.36. fetch_freeswitch_stats (integer)
 
    If enabled, FreeSWITCH destinations may have dynamic
    dispatching weights, refreshed at runtime, using the FreeSWITCH
@@ -849,12 +863,12 @@ modparam("dispatcher", "socket_col", "my_sock")
 
    Default value is 0 (disabled).
 
-   Example 1.37. Set the fetch_freeswitch_load parameter
+   Example 1.38. Set the fetch_freeswitch_load parameter
 ...
 modparam("dispatcher", "fetch_freeswitch_stats", 1)
 ...
 
-1.3.36. max_freeswitch_weight (integer)
+1.3.37. max_freeswitch_weight (integer)
 
    The maximum weight of a FreeSWITCH ESL-enabled destination.
    This value is also used during startup/reload, when no stats
@@ -873,7 +887,7 @@ modparam("dispatcher", "fetch_freeswitch_stats", 1)
 
    Default value is 100.
 
-   Example 1.38. Set the max_freeswitch_weight parameter
+   Example 1.39. Set the max_freeswitch_weight parameter
 ...
 modparam("dispatcher", "max_freeswitch_weight", 1000)
 ...
@@ -933,14 +947,14 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
      * partition (string, optional) - name of a DB partition
      * max_res (int, optional) - signifies that only a maximum
        number of destinations shall be included in the specified
-       failover AVP for failover. This allows having multiple
-       destinations while also preventing excessive failover
-       attempts in case a number is bound to fail globally.
+       failover AVP. This allows having multiple destinations
+       while also preventing excessive failover attempts in case a
+       number is bound to fail globally.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
 
-   Example 1.39. ds_select_dst usage
+   Example 1.40. ds_select_dst usage
 ...
 if (!ds_select_dst(1, 0)) {
         xlog("ERROR: no active destinations found!\n");
@@ -1048,7 +1062,7 @@ res));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.40. ds_count usage
+   Example 1.41. ds_count usage
 ...
 if (ds_count(1, "a", $avp(result))) {
         ...
@@ -1085,7 +1099,7 @@ if (ds_count($avp(set), "ip", $avp(result), $avp(partition))) {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.41. ds_is_in_list usage
+   Example 1.42. ds_is_in_list usage
 ...
 if (ds_is_in_list($si, $sp)) {
         # source IP:PORT is in a dispatcher list
@@ -1120,7 +1134,7 @@ t2" partition
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.42. ds_count usage
+   Example 1.43. ds_count usage
 ...
 if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
 ')) {
@@ -1146,7 +1160,7 @@ if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE, TIMER_ROUTE, EVENT_ROUTE
 
-   Example 1.43. ds_count usage
+   Example 1.44. ds_count usage
 ...
 if (ds_push_script_attrs($var(my_attributes),$si , $sp, 1, 'my_partition
 ')) {
@@ -1331,7 +1345,7 @@ to [inactive] due to negative probing reply\n"
 
    Next picture displays a sample usage of dispatcher.
 
-   Example 1.44. OpenSIPS config script - sample dispatcher usage
+   Example 1.45. OpenSIPS config script - sample dispatcher usage
 ...
 #
 # sample config file for dispatcher module
@@ -1477,11 +1491,11 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 161 102 3215 1959
-   2. Liviu Chircu (@liviuchircu) 105 67 1662 1427
+   2. Liviu Chircu (@liviuchircu) 106 68 1664 1429
    3. Daniel-Constantin Mierla (@miconda) 81 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 47 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
-   6. Razvan Crainea (@razvancrainea) 38 32 461 120
+   6. Razvan Crainea (@razvancrainea) 41 33 526 154
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
    8. Vlad Patrascu (@rvlad-patrascu) 19 11 378 236
    9. Vlad Paiu (@vladpaiu) 16 9 673 33
@@ -1517,11 +1531,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2022
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2022
-   4.  John Burke (@john08burke)           Feb 2021 - Jan 2022
-   5.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2021
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Aug 2022
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2022
+   5.  John Burke (@john08burke)           Feb 2021 - Jan 2022
    6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    8.  Roman Sevko                         Oct 2019 - Oct 2019
@@ -1546,9 +1560,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), John Burke (@john08burke), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), John Burke (@john08burke), Vlad Paiu
    (@vladpaiu), Roman Sevko, Peter Lemenkov (@lemenkov), Nick
    Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
    Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita

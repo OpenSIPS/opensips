@@ -196,9 +196,9 @@ modparam("stir_shaken", "e164_strict_mode", 1)
 
    A value of 1 means required and 0 not required.
 
-   If the parameter is set to not required but the header is
-   present in the message, the Date value will be used as normally
-   to check the freshness (as configured in the
+   If the parameter is set to "not required" but the Date header
+   is present in the message, the header value will be used as
+   normally to check the freshness (as configured in the
    verify_date_freshness parameter). If the Date header is indeed
    missing, the value of the iat claim in the PASSporT will be
    used instead.
@@ -409,7 +409,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    58      26      3129     324
-   2. Liviu Chircu (@liviuchircu)        16      12      198       95
+   2. Liviu Chircu (@liviuchircu)        18      14      202       99
    3. Maksym Sobolyev (@sobomax)         4        2       18       18
    4. Razvan Crainea (@razvancrainea)    4        2       8        9
    5. kworm83                            4        2       7        2
@@ -437,12 +437,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Kevin                           Feb 2022 - Feb 2022
-   2. kworm83                         Jan 2022 - Jan 2022
-   3. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Aug 2021
-   4. Razvan Crainea (@razvancrainea) Jan 2021 - Jul 2021
-   5. John Burke (@john08burke)       Apr 2021 - Apr 2021
-   6. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2021
+   1. Liviu Chircu (@liviuchircu)     Nov 2019 - Aug 2022
+   2. Kevin                           Feb 2022 - Feb 2022
+   3. kworm83                         Jan 2022 - Jan 2022
+   4. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Aug 2021
+   5. Razvan Crainea (@razvancrainea) Jan 2021 - Jul 2021
+   6. John Burke (@john08burke)       Apr 2021 - Apr 2021
    7. Maksym Sobolyev (@sobomax)      Jan 2021 - Jan 2021
    8. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
 
@@ -453,8 +453,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 

@@ -361,9 +361,9 @@ modparam("rest_client", "curl_conn_lifetime", 1800)
        If it was, the body_pv will contain partially downloaded
        data, use at your own risk! (we recommend you only use this
        data for logging / debugging purposes)
-     * -4 - Already Connecting another OpenSIPS worker is already
+     * -4 - Already Connecting (another OpenSIPS worker is already
        connecting to this URL hostname. Consult
-       no_concurrent_connects for more info.
+       no_concurrent_connects for more info).
      * -10 - Internal Error (out of memory, unexpected libcurl
        error, etc.)
 
@@ -425,9 +425,9 @@ if ($var(rcode) != 200) {
        If it was, the body_pv will contain partially downloaded
        data, use at your own risk! (we recommend you only use this
        data for logging / debugging purposes)
-     * -4 - Already Connecting another OpenSIPS worker is already
+     * -4 - Already Connecting (another OpenSIPS worker is already
        connecting to this URL hostname. Consult
-       no_concurrent_connects for more info.
+       no_concurrent_connects for more info).
      * -10 - Internal Error (out of memory, unexpected libcurl
        error, etc.)
 
@@ -488,9 +488,9 @@ if ($var(rcode) != 200) {
        If it was, the body_pv will contain partially downloaded
        data, use at your own risk! (we recommend you only use this
        data for logging / debugging purposes)
-     * -4 - Already Connecting another OpenSIPS worker is already
+     * -4 - Already Connecting (another OpenSIPS worker is already
        connecting to this URL hostname. Consult
-       no_concurrent_connects for more info.
+       no_concurrent_connects for more info).
      * -10 - Internal Error (out of memory, unexpected libcurl
        error, etc.)
 
@@ -720,7 +720,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 139 77 3952 1741
+   1. Liviu Chircu (@liviuchircu) 141 79 3961 1748
    2. Ionut Ionita (@ionutrazvanionita) 23 12 663 262
    3. Vlad Patrascu (@rvlad-patrascu) 17 8 336 345
    4. Razvan Crainea (@razvancrainea) 15 13 41 17
@@ -754,7 +754,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Jul 2022
+   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2022
    2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
    3.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020

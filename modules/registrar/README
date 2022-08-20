@@ -412,7 +412,7 @@ modparam("registrar", "received_param", "rcv")
    and including the given value to the expiration interval of a
    newly registered contact. For example, if this parameter is set
    to 100 and a phone registers for 1800 sec, the final expiry
-   will be random number in the [1700, 1900] interval.
+   will be a random number in the [1700, 1900] interval.
 
    By randomizing the registration lifetimes of the contacts, the
    server is better equipped to deal with a post-restart

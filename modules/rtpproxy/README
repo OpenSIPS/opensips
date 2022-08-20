@@ -259,7 +259,7 @@ Chapter 1. Admin Guide
 
    Example 1.1. Set rtpproxy_sock parameter
 ...
-# single rtproxy with specific weight
+# single rtpproxy with specific weight
 modparam("rtpproxy", "rtpproxy_sock", "udp:localhost:22222=2")
 
 # single rtpproxy with advertised address + weight
@@ -977,7 +977,7 @@ Chapter 3. Contributors
    1. Razvan Crainea (@razvancrainea) 253 156 6080 2851
    2. Maksym Sobolyev (@sobomax) 53 7 5009 256
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
-   4. Liviu Chircu (@liviuchircu) 23 18 108 198
+   4. Liviu Chircu (@liviuchircu) 24 19 109 199
    5. Vlad Patrascu (@rvlad-patrascu) 23 8 362 699
    6. Peter Lemenkov (@lemenkov) 7 5 60 59
    7. Ovidiu Sas (@ovidiusas) 7 5 31 22
@@ -1011,9 +1011,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2022
-   2.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
-   3.  Liviu Chircu (@liviuchircu)         Jul 2012 - Sep 2021
+   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - Aug 2022
+   2.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2022
+   3.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
    4.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    5.  Maksym Sobolyev (@sobomax)          Mar 2011 - Jan 2021
    6.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
@@ -1035,11 +1035,12 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Maksym Sobolyev (@sobomax), Zero King (@l2dy),
-   Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
-   Julián Moreno Patiño, Bogdan-Andrei Iancu (@bogdan-iancu),
-   Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas).
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Maksym Sobolyev (@sobomax), Zero King
+   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu
+   Sas (@ovidiusas).
 
    Documentation Copyrights:
 
