@@ -169,7 +169,7 @@ append_to_reply("Foo: $rm at $Ts\r\n");
    Note: Headers which are added in main route cannot be removed
    in further routes (e.g. failure routes). So, the idea is not to
    add there any headers that you might want to remove later. To
-   add headers temporarely use the branch route because the
+   add headers temporarily, use the branch route because the
    changes you do there are per-branch.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
@@ -1040,7 +1040,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 62 34 1914 677
-   2. Liviu Chircu (@liviuchircu) 58 26 799 1504
+   2. Liviu Chircu (@liviuchircu) 59 27 800 1505
    3. Razvan Crainea (@razvancrainea) 44 18 2946 85
    4. Vlad Paiu (@vladpaiu) 9 4 281 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
@@ -1076,9 +1076,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Mar 2022
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2021
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jul 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Mar 2022
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2021
    4.  Dan Pascu (@danpascu)               May 2019 - May 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019

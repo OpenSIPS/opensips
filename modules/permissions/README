@@ -472,7 +472,7 @@ modparam("permissions", "info_col", "info_col")
      * port (int)
        This argument represents the port to be matched. Cached
        address table entry containing port value 0 matches any
-       port. Also, a "0" value for the argument can match any port
+       port. Also, a 0 value for the argument will match any port
        in the address table.
      * proto (string)
        This argument represents the protocol used for transport;
@@ -752,7 +752,7 @@ Chapter 2. Contributors
    2. Juha Heinanen (@juha-h) 61 21 3406 729
    3. Jan Janak (@janakj) 56 21 2871 621
    4. Irina-Maria Stanescu 51 9 1218 1908
-   5. Liviu Chircu (@liviuchircu) 27 17 385 334
+   5. Liviu Chircu (@liviuchircu) 28 18 386 335
    6. Razvan Crainea (@razvancrainea) 24 20 172 114
    7. Daniel-Constantin Mierla (@miconda) 17 11 126 221
    8. Henning Westerholt (@henningw) 15 10 136 148
@@ -787,8 +787,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Sep 2020
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2005 - Sep 2020
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    4.  Razvan Crainea (@razvancrainea)     Jan 2011 - Sep 2019
    5.  Dan Pascu (@danpascu)               Nov 2006 - May 2019

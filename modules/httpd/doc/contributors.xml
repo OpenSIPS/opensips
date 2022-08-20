@@ -37,10 +37,10 @@
 	<row>
 		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">12</entry>
-		<entry align="center">10</entry>
-		<entry align="center">27</entry>
-		<entry align="center">50</entry>
+		<entry align="center">13</entry>
+		<entry align="center">11</entry>
+		<entry align="center">28</entry>
+		<entry align="center">51</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Mar 2014 - Jan 2022</entry>
+		<entry align="center">Mar 2014 - Aug 2022</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>).</para>
 </section>
 
 </chapter>

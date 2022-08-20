@@ -196,9 +196,9 @@ modparam("stir_shaken", "e164_strict_mode", 1)
 
    A value of 1 means required and 0 not required.
 
-   If the parameter is set to not required but the header is
-   present in the message, the Date value will be used as normally
-   to check the freshness (as configured in the
+   If the parameter is set to "not required" but the Date header
+   is present in the message, the header value will be used as
+   normally to check the freshness (as configured in the
    verify_date_freshness parameter). If the Date header is indeed
    missing, the value of the iat claim in the PASSporT will be
    used instead.
@@ -397,7 +397,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    55      25      3005     302
-   2. Liviu Chircu (@liviuchircu)        16      12      198       95
+   2. Liviu Chircu (@liviuchircu)        18      14      201       98
    3. Razvan Crainea (@razvancrainea)    3        1       6        8
    4. Nick Altmann (@nikbyte)            3        1       2        2
    5. John Burke                         2        1       4        0
@@ -423,11 +423,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Aug 2021
-   2. Nick Altmann (@nikbyte)         Jul 2021 - Jul 2021
-   3. Razvan Crainea (@razvancrainea) Jul 2021 - Jul 2021
-   4. John Burke                      Apr 2021 - Apr 2021
-   5. Liviu Chircu (@liviuchircu)     Nov 2019 - Apr 2021
+   1. Liviu Chircu (@liviuchircu)     Nov 2019 - Aug 2022
+   2. Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Aug 2021
+   3. Nick Altmann (@nikbyte)         Jul 2021 - Jul 2021
+   4. Razvan Crainea (@razvancrainea) Jul 2021 - Jul 2021
+   5. John Burke                      Apr 2021 - Apr 2021
    6. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
 
    (1) including any documentation-related commits, excluding
@@ -437,8 +437,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu).
 
    Documentation Copyrights:
 

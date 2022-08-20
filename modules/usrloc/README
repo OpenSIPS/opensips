@@ -1006,14 +1006,14 @@ modparam("usrloc", "latency_event_min_us_delta", 300000)
 1.5.39. pinging_mode (string)
 
    Depending on the cluster_mode, the module can perform contact
-   pinging using one of at most two possible heuristics:
+   pinging using one of two possible heuristics:
      * "ownership" - this instance will only attempt to ping a
        contact if it decides it is the logical owner of the
        contact. If a shared tag is attached to a contact, a node
        will keep sending pings to that contact as long as it owns
        the respective tag. If no shared tag has been specified for
        a given contact, the default is to assume permanent
-       ownership of the contact and always ping it.
+       ownership of the contact and ping it upon request.
      * "cooperation" - the assumption behind this pinging
        heuristic is that all user location cluster nodes are
        symmetrical (possibly front-ended by a SIP traffic
@@ -1577,7 +1577,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 331 195 9138 3681
+   2. Liviu Chircu (@liviuchircu) 333 197 9142 3686
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 244 149 4230 3622
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
@@ -1621,8 +1621,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2021
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2021
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Aug 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2021
    3.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
    5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
