@@ -77,10 +77,10 @@ Dynamic Routing Module
               1.4.5. goes_to_gw( [type], [flags], [gw_attrs_pvar],
                       [partition])
 
-              1.4.6. is_from_gw([type], [flag], [gw_attrs_pvar],
+              1.4.6. is_from_gw([type], [flags], [gw_attrs_pvar],
                       [partition])
 
-              1.4.7. dr_is_gw( sip_uri, [type], [flag],
+              1.4.7. dr_is_gw( sip_uri, [type], [flags],
                       [gw_attrs_pvar], [partition])
 
               1.4.8. dr_disable([partition])
@@ -1297,7 +1297,7 @@ if (goes_to_gw(1, , $var(gw_attrs), "my_partition")) {
 }
 ...
 
-1.4.6.  is_from_gw([type], [flag], [gw_attrs_pvar], [partition])
+1.4.6.  is_from_gw([type], [flags], [gw_attrs_pvar], [partition])
 
    The function checks if the sender of the message (source IP +
    source port) is a gateway from a certain group.
@@ -1352,7 +1352,7 @@ if (is_from_gw(, "c", , "outbound")) {
         ...
 }
 
-1.4.7.  dr_is_gw( sip_uri, [type], [flag], [gw_attrs_pvar],
+1.4.7.  dr_is_gw( sip_uri, [type], [flags], [gw_attrs_pvar],
 [partition])
 
    The function checks if the SIP URI hostname part stored inside
@@ -1681,7 +1681,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 381 183 13005 5607
-   2. Liviu Chircu (@liviuchircu) 150 87 2438 2625
+   2. Liviu Chircu (@liviuchircu) 151 88 2440 2627
    3. Razvan Crainea (@razvancrainea) 94 48 1144 2185
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 39 18 1091 729
@@ -1719,8 +1719,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Nov 2021
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
    4.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    5.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021

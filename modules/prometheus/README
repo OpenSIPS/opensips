@@ -49,7 +49,7 @@ Prometheus Module
    1.5. Set group_label parameter
    1.6. Set group_mode parameter
    1.7. Set statistics parameter
-   1.8. Prometheus Scarpe Config
+   1.8. Prometheus Scrape Config
 
 Chapter 1. Admin Guide
 
@@ -197,7 +197,7 @@ modparam("prometheus", "statistics", "active_dialogs load:")
    config, indicating the IP and port you've configured the httpd
    module to listen on (default: 0.0.0.0:8888).
 
-   Example 1.8. Prometheus Scarpe Config
+   Example 1.8. Prometheus Scrape Config
 
 scrape_configs:
   - job_name: opensips
@@ -214,7 +214,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)    23      11      989      123
-   2. OpenSIPS                           3        1       1        1
+   2. Liviu Chircu (@liviuchircu)        3        1       1        1
+   3. OpenSIPS                           3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -236,8 +237,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) Feb 2021 - Nov 2021
-   2. OpenSIPS                        Feb 2021 - Feb 2021
+   1. Liviu Chircu (@liviuchircu)     Aug 2022 - Aug 2022
+   2. Razvan Crainea (@razvancrainea) Feb 2021 - Nov 2021
+   3. OpenSIPS                        Feb 2021 - Feb 2021
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -246,7 +248,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), OpenSIPS.
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), OpenSIPS.
 
    Documentation Copyrights:
 

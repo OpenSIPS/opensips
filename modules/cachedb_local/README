@@ -148,7 +148,7 @@ cache_store("local:group2", ...)
 
 1.4.2. cache_collections (string)
 
-   Using this parameter collections(hash tables) and their sizes
+   Using this parameter, collections(hash tables) and their sizes
    can be defined. Each collection definition must be separated
    one from another using ';'. Default size for a hash is 512. The
    size must be separated from the name of the collection using
@@ -275,7 +275,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu) 32 10 1155 693
-   2. Liviu Chircu (@liviuchircu) 21 15 126 190
+   2. Liviu Chircu (@liviuchircu) 22 16 127 191
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
    4. Vlad Patrascu (@rvlad-patrascu) 15 11 105 126
    5. Anca Vamanu 13 5 739 54
@@ -309,8 +309,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Jul 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Jul 2022
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020

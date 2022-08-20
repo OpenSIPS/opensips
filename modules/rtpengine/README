@@ -325,7 +325,7 @@ modparam("rtpengine", "db_url",
    The table where the RTPEngines sockets are stored. Used when
    Database URL is provisioned.
 
-   Default value is “rtpengines”.
+   Default value is “rtpengine”.
 
    Example 1.9. Set db_table parameter
 ...
@@ -1206,7 +1206,7 @@ Chapter 3. Contributors
    1. Razvan Crainea (@razvancrainea) 182 89 5426 2908
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. Richard Fuchs 20 2 640 723
-   4. Liviu Chircu (@liviuchircu) 16 12 70 135
+   4. Liviu Chircu (@liviuchircu) 17 13 71 136
    5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
    6. Peter Lemenkov (@lemenkov) 8 6 27 34
    7. Eric Tamme (@etamme) 7 5 42 19
@@ -1239,14 +1239,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
-   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   4.  John Burke (@john08burke)           Jun 2019 - Apr 2021
-   5.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   6.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
-   7.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
-   8.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2020
+   1.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2022
+   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2022
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
+   4.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   5.  John Burke (@john08burke)           Jun 2019 - Apr 2021
+   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   7.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
+   8.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jul 2020
    10. Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020
 
@@ -1262,10 +1262,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Nick Altmann (@nikbyte), Flavio E. Goncalves,
-   Liviu Chircu (@liviuchircu), Razvan Crainea (@razvancrainea),
-   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
+   Last edited by: Liviu Chircu (@liviuchircu), Nick Altmann
+   (@nikbyte), Flavio E. Goncalves, Razvan Crainea
+   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
+   Fuchs.
 
    Documentation Copyrights:
 
