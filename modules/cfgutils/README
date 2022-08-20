@@ -444,8 +444,9 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
    recurrence string matches the current time, or a negative value
    otherwise.
 
-   For checking something else than the current time, the third
-   parameter will contain the UNIX timestamp of the time to check.
+   For checking some other Unix timestamp than the current one,
+   the second parameter will contain the intended timestamp to
+   check.
 
    The syntax of each field is identical to the corresponding
    field from RFC 2445.
@@ -467,8 +468,8 @@ ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
        timezone in which to interpret the time recurrence elements
        (e.g. dtstart, dtend, until). By default, the system time
        zone is used.
-     * timestamp (string, optional) - A specific UNIX time to
-       check. The function simply expects the actual UNIX time
+     * timestamp (string, optional) - A specific Unix time to
+       check. The function simply expects the actual Unix time
        here, there is no need to perform any timezone adjustments.
 
    Additionally, more complex time recurrence strings may be built
@@ -672,14 +673,14 @@ if (!release_dynamic_lock($avp(foo)) {
 
 1.4.19.  get_accurate_time(sec, usec, [str_sec_usec])
 
-   Fetch the current UNIX time epoch with microsecond precision.
+   Fetch the current Unix time epoch with microsecond precision.
    Optionally, print this value as a floating point number (3rd
    parameter).
 
    Meaning of the parameters is as follows:
-     * sec (int) - the current UNIX timestamp (integer part)
-     * usec (int) - the current UNIX timestamp (decimal part)
-     * str_sec_usec (string, optional) - the current UNIX
+     * sec (int) - the current Unix timestamp (integer part)
+     * usec (int) - the current Unix timestamp (decimal part)
+     * str_sec_usec (string, optional) - the current Unix
        timestamp as a floating point number (6-digit precision)
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
@@ -689,7 +690,7 @@ if (!release_dynamic_lock($avp(foo)) {
    Example 1.25. get_accurate_time usage
 ...
 get_accurate_time($var(sec), $var(usec));
-xlog("Current UNIX timestamp: $var(sec) s, $var(usec) us\n");
+xlog("Current Unix timestamp: $var(sec) s, $var(usec) us\n");
 ...
 
 1.5. Exported Asyncronous Functions
@@ -908,7 +909,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 88 39 2903 1482
+   1. Liviu Chircu (@liviuchircu) 89 40 2912 1491
    2. Henning Westerholt (@henningw) 29 18 1088 86
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 22 367 109
    4. Razvan Crainea (@razvancrainea) 20 15 289 79
@@ -943,7 +944,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Mar 2021
+   1.  Liviu Chircu (@liviuchircu)         Sep 2012 - Aug 2022
    2.  Maksym Sobolyev (@sobomax)          Dec 2015 - Jan 2021
    3.  Razvan Crainea (@razvancrainea)     Oct 2010 - Jan 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Oct 2019

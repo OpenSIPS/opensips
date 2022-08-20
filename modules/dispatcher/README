@@ -933,9 +933,9 @@ modparam("dispatcher", "max_freeswitch_weight", 1000)
      * partition (string, optional) - name of a DB partition
      * max_res (int, optional) - signifies that only a maximum
        number of destinations shall be included in the specified
-       failover AVP for failover. This allows having multiple
-       destinations while also preventing excessive failover
-       attempts in case a number is bound to fail globally.
+       failover AVP. This allows having multiple destinations
+       while also preventing excessive failover attempts in case a
+       number is bound to fail globally.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
    FAILURE_ROUTE.
@@ -1477,7 +1477,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 161 102 3215 1959
-   2. Liviu Chircu (@liviuchircu) 105 67 1662 1427
+   2. Liviu Chircu (@liviuchircu) 106 68 1664 1429
    3. Daniel-Constantin Mierla (@miconda) 81 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 47 15 2153 846
    5. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
@@ -1517,9 +1517,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2022
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Mar 2022
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2022
    4.  John Burke (@john08burke)           Feb 2021 - Jan 2022
    5.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2021
    6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
@@ -1546,10 +1546,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), John Burke (@john08burke), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad Paiu
-   (@vladpaiu), Roman Sevko, Peter Lemenkov (@lemenkov), Nick
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), John
+   Burke (@john08burke), Razvan Crainea (@razvancrainea), Vlad
+   Paiu (@vladpaiu), Roman Sevko, Peter Lemenkov (@lemenkov), Nick
    Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
    Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Walter

@@ -358,7 +358,7 @@ modparam("rtpengine", "db_url",
    The table where the RTPEngines sockets are stored. Used when
    Database URL is provisioned.
 
-   Default value is “rtpengines”.
+   Default value is “rtpengine”.
 
    Example 1.11. Set db_table parameter
 ...
@@ -1096,8 +1096,8 @@ pstat(MOS-min-at)[$ft])\r\n");
        provided, only nodes in the provided set will be updated.
 
    NOTE: if a RTP proxy is defined multiple times (in the same or
-   different set), all of its instances will be enabled/disbled IF
-   no set ID is provided.
+   different set), all of its instances will be enabled/disabled
+   IF no set ID is provided.
 
    Example 1.37.  rtpengine_enable usage
 ...
@@ -1246,7 +1246,7 @@ Chapter 3. Contributors
    1. Razvan Crainea (@razvancrainea) 196 100 5750 3001
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. Richard Fuchs 20 2 640 723
-   4. Liviu Chircu (@liviuchircu) 17 13 71 135
+   4. Liviu Chircu (@liviuchircu) 18 14 73 137
    5. Vlad Patrascu (@rvlad-patrascu) 15 7 218 330
    6. John Burke (@john08burke) 13 8 250 69
    7. Peter Lemenkov (@lemenkov) 10 7 27 62
@@ -1279,10 +1279,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2022
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
-   4.  Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2021
+   1.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2022
+   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2022
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
    5.  John Burke (@john08burke)           Jun 2019 - Oct 2021
    6.  Nick Altmann (@nikbyte)             May 2021 - May 2021
    7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
