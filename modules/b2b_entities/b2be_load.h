@@ -194,35 +194,40 @@ static inline int load_b2b_api( struct b2b_api *b2b_api)
 	return load_b2b( b2b_api );
 }
 
-static inline b2b_dlginfo_t *b2b_dup_dlginfo(b2b_dlginfo_t *info)
+static inline b2b_dlginfo_t *b2b_new_dlginfo(str *callid, str *fromtag, str *totag)
 {
 	b2b_dlginfo_t* dlg = NULL;
 	int size;
 
-	size = sizeof(b2b_dlginfo_t) + info->callid.len;
-	if (info->totag.s)
-		size += info->totag.len;
-	if (info->fromtag.s)
-		size += info->fromtag.len;
+	size = sizeof(b2b_dlginfo_t) + callid->len;
+	if (totag && totag->s)
+		size += totag->len;
+	if (fromtag && fromtag->s)
+		size += fromtag->len;
 	dlg = shm_malloc(size);
 	if (!dlg)
 		return NULL;
 	memset(dlg, 0, size);
 
 	dlg->callid.s = (char *)(dlg + 1);
-	dlg->callid.len = info->callid.len;
-	memcpy(dlg->callid.s, info->callid.s, dlg->callid.len);
-	if (info->totag.s) {
-		dlg->totag.len = info->totag.len;
+	dlg->callid.len = callid->len;
+	memcpy(dlg->callid.s, callid->s, callid->len);
+	if (totag->s) {
+		dlg->totag.len = totag->len;
 		dlg->totag.s = dlg->callid.s + dlg->callid.len;
-		memcpy(dlg->totag.s, info->totag.s, dlg->totag.len);
+		memcpy(dlg->totag.s, totag->s, totag->len);
 	}
-	if (info->fromtag.s) {
-		dlg->fromtag.len = info->fromtag.len;
+	if (fromtag->s) {
+		dlg->fromtag.len = fromtag->len;
 		dlg->fromtag.s = dlg->callid.s + dlg->callid.len + dlg->totag.len;
-		memcpy(dlg->fromtag.s, info->fromtag.s, dlg->fromtag.len);
+		memcpy(dlg->fromtag.s, fromtag->s, fromtag->len);
 	}
 	return dlg;
+}
+
+static inline b2b_dlginfo_t *b2b_dup_dlginfo(b2b_dlginfo_t *info)
+{
+	return b2b_new_dlginfo(&info->callid, &info->fromtag, &info->totag);
 }
 
 #endif

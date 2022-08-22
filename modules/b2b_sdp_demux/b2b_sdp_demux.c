@@ -198,7 +198,8 @@ struct b2b_sdp_stream {
 	struct list_head ordered;
 };
 static int b2b_sdp_ack(int type, str *key);
-static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body);
+static int b2b_sdp_reply(str *b2b_key, b2b_dlginfo_t *dlginfo,
+		int type, int method, int code, str *body);
 static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body);
 static struct b2b_sdp_stream *b2b_sdp_stream_raw_new(struct b2b_sdp_client *client,
 		str *disabled_body, int index, int client_index);
@@ -413,6 +414,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	req_data.no_cb = 1; /* do not call callback */
 	req_data.et = B2B_CLIENT;
 	req_data.b2b_key = key;
+	req_data.dlginfo = client->dlginfo;
 	req_data.method = &method;
 	b2b_api.send_request(&req_data);
 	LM_INFO("[%.*s][%.*s] client request %.*s sent\n",
@@ -901,7 +903,7 @@ end:
 		}
 	}
 	if (code)
-		b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, msg->REQ_METHOD, code, rbody);
+		b2b_sdp_reply(&client->b2b_key, client->dlginfo, B2B_CLIENT, msg->REQ_METHOD, code, rbody);
 	return ret;
 }
 
@@ -959,7 +961,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	struct b2b_sdp_ctx *ctx = client->ctx;
 
 	b2b_sdp_client_remove(client);
-	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_BYE, 200, NULL);
+	b2b_sdp_reply(&client->b2b_key, client->dlginfo, B2B_CLIENT, METHOD_BYE, 200, NULL);
 	b2b_sdp_client_release(client, 1);
 	b2b_api.entity_delete(B2B_CLIENT, &client->b2b_key, client->dlginfo, 1, 1);
 	lock_get(&ctx->lock);
@@ -1013,7 +1015,8 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 	return 0;
 }
 
-static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body)
+static int b2b_sdp_reply(str *b2b_key, b2b_dlginfo_t *dlginfo,
+		int type, int method, int code, str *body)
 {
 	char *etype = (type==B2B_CLIENT?"client":"server");
 	b2b_rpl_data_t reply_data;
@@ -1027,6 +1030,7 @@ static int b2b_sdp_reply(str *b2b_key, int type, int method, int code, str *body
 	reply_data.code = code;
 	reply_data.text = &text;
 	reply_data.body = body;
+	reply_data.dlginfo = dlginfo;
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
 	LM_INFO("[%.*s] %s reply %d sent\n", b2b_key->len, b2b_key->s, etype, code);
@@ -1236,11 +1240,11 @@ release:
 	/* avoid sending reply under lock */
 	if (body) {
 		/* we are done - answer the call */
-		if (b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
+		if (b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
 			LM_CRIT("could not answer B2B call!\n");
 		pkg_free(body->s);
 	} else if (ret == -2) {
-		b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 503, NULL);
+		b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, METHOD_INVITE, 503, NULL);
 	}
 	if (ret < 0 && ctx->clients_no == 0) {
 		/* no more remaining clients - terminate the entity as well */
@@ -1433,7 +1437,7 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 		code = msg->REPLY_STATUS;
 	}
 	lock_release(&client->ctx->lock);
-	b2b_sdp_reply(&client->b2b_key, B2B_CLIENT, METHOD_INVITE, code, body);
+	b2b_sdp_reply(&client->b2b_key, client->dlginfo, B2B_CLIENT, METHOD_INVITE, code, body);
 	if (body)
 		free_sdp_content(&sdp);
 	lock_get(&client->ctx->lock);
@@ -1450,7 +1454,7 @@ static int b2b_sdp_server_reply_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx
 
 static int b2b_sdp_server_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 {
-	b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, 200, NULL);
+	b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, msg->REQ_METHOD, 200, NULL);
 	b2b_sdp_ctx_release(ctx, 1);
 	return 0;
 }
@@ -1490,6 +1494,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 		req_data.et = B2B_CLIENT;
 		req_data.b2b_key = &client->b2b_key;
 		req_data.method = &method;
+		req_data.dlginfo = client->dlginfo;
 		req_data.body = &client->body;
 		LM_INFO("[%.*s][%.*s] client request INVITE sent\n", ctx->callid.len, ctx->callid.s,
 				client->b2b_key.len, client->b2b_key.s);
@@ -1501,7 +1506,7 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 
 	return 0;
 error:
-	b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, METHOD_INVITE, 606, NULL);
+	b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, METHOD_INVITE, 606, NULL);
 	return -1;
 }
 
@@ -1521,7 +1526,7 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 		if (ctx->pending_no) {
 			lock_release(&ctx->lock);
 			LM_INFO("we still have pending clients!\n");
-			b2b_sdp_reply(&ctx->b2b_key, B2B_SERVER, msg->REQ_METHOD, 491, NULL);
+			b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, msg->REQ_METHOD, 491, NULL);
 			return -1;
 		}
 		lock_release(&ctx->lock);

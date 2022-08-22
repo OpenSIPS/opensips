@@ -28,6 +28,7 @@
 
 #include "siprec_body.h"
 #include "../dialog/dlg_load.h"
+#include "../b2b_entities/b2be_load.h"
 #include "../tm//tm_load.h"
 #include "../../ut.h"
 
@@ -114,9 +115,7 @@ struct src_sess {
 
 	/* b2b */
 	str b2b_key;
-	str b2b_fromtag;
-	str b2b_totag;
-	str b2b_callid;
+	b2b_dlginfo_t *dlginfo;
 
 #ifdef DBG_SIPREC_HIST
 	struct struct_hist *hist;
