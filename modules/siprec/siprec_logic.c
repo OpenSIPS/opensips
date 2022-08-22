@@ -124,6 +124,7 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 	req.et = B2B_CLIENT;
 	req.b2b_key = &ss->b2b_key;
 	req.method = &bye;
+	req.dlginfo = ss->dlginfo;
 	req.no_cb = 1; /* do not call callback */
 
 	if (srec_b2b.send_request(&req) < 0)
@@ -243,6 +244,7 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type, void *param,
 	req.et = B2B_CLIENT;
 	req.b2b_key = &ss->b2b_key;
 	req.method = &ack;
+	req.dlginfo = ss->dlginfo;
 	req.no_cb = 1; /* do not call callback */
 
 	if (srec_b2b.send_request(&req) < 0) {
@@ -281,6 +283,7 @@ no_recording:
 		req.et = B2B_CLIENT;
 		req.b2b_key = &ss->b2b_key;
 		req.method = &bye;
+		req.dlginfo = ss->dlginfo;
 		req.no_cb = 1; /* do not call callback */
 
 		if (srec_b2b.send_request(&req) < 0)
@@ -310,7 +313,6 @@ int srec_restore_callback(struct src_sess *sess)
 
 static int srec_b2b_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
 {
-	char *tmp;
 	struct src_sess *ss;
 
 	ss = *(struct src_sess **)key->s;
@@ -319,32 +321,11 @@ static int srec_b2b_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* i
 				entity_key->len, entity_key->s);
 		return -1;
 	}
-	tmp = shm_malloc(info->fromtag.len);
-	if (!tmp) {
-		LM_ERR("cannot allocate dialog info fromtag!\n");
+	ss->dlginfo = b2b_dup_dlginfo(info);
+	if (!ss->dlginfo) {
+		LM_ERR("could not duplicate b2b dialog info!\n");
 		return -1;
 	}
-	ss->b2b_fromtag.s = tmp;
-	ss->b2b_fromtag.len = info->fromtag.len;
-	memcpy(ss->b2b_fromtag.s, info->fromtag.s, ss->b2b_fromtag.len);
-
-	tmp = shm_malloc(info->totag.len);
-	if (!tmp) {
-		LM_ERR("cannot allocate dialog info totag!\n");
-		return -1;
-	}
-	ss->b2b_totag.s = tmp;
-	ss->b2b_totag.len = info->totag.len;
-	memcpy(ss->b2b_totag.s, info->totag.s, ss->b2b_totag.len);
-
-	tmp = shm_malloc(info->callid.len);
-	if (!tmp) {
-		LM_ERR("cannot allocate dialog info callid!\n");
-		return -1;
-	}
-	ss->b2b_callid.s = tmp;
-	ss->b2b_callid.len = info->callid.len;
-	memcpy(ss->b2b_callid.s, info->callid.s, ss->b2b_callid.len);
 	return 0;
 }
 
@@ -498,6 +479,7 @@ static int src_update_recording(struct sip_msg *msg, struct src_sess *sess, int 
 		goto error;
 	}
 	req.body = &body;
+	req.dlginfo = sess->dlginfo;
 
 	if (srec_b2b.send_request(&req) < 0)
 		LM_ERR("Cannot end recording session for key %.*s\n",
@@ -546,23 +528,13 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 
 void srec_logic_destroy(struct src_sess *sess)
 {
-	b2b_dlginfo_t info;
 	if (!sess->b2b_key.s)
 		return;
 	shm_free(sess->b2b_key.s);
 
-	info.fromtag = sess->b2b_fromtag;
-	info.totag = sess->b2b_totag;
-	info.callid = sess->b2b_callid;
-	srec_b2b.entity_delete(B2B_CLIENT, &sess->b2b_key,
-			(info.callid.s ? &info: NULL), 1, 1);
-	if (sess->b2b_fromtag.s)
-		shm_free(sess->b2b_fromtag.s);
-	if (sess->b2b_totag.s)
-		shm_free(sess->b2b_totag.s);
-	if (sess->b2b_callid.s)
-		shm_free(sess->b2b_callid.s);
-	sess->b2b_callid.s = sess->b2b_totag.s = sess->b2b_fromtag.s = NULL;
+	srec_b2b.entity_delete(B2B_CLIENT, &sess->b2b_key, sess->dlginfo, 1, 1);
+	if (sess->dlginfo)
+		shm_free(sess->dlginfo);
 	sess->b2b_key.s = NULL;
 }
 
