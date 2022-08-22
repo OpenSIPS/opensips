@@ -260,6 +260,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 			LM_ERR("No more shared memory\n");
 			if(!safe)
 				lock_release(&table[hash_index].lock);
+			pkg_free(b2b_key);
 			return 0;
 		}
 		memcpy(dlg->tag[CALLEE_LEG].s, b2b_key->s, b2b_key->len);
