@@ -464,10 +464,12 @@ static int srs_send_invite(struct src_sess *sess)
 	sess->b2b_key.s = shm_malloc(client->len);
 	if (!sess->b2b_key.s) {
 		LM_ERR("out of shm memory!\n");
+		pkg_free(client);
 		return -1;
 	}
 	memcpy(sess->b2b_key.s, client->s, client->len);
 	sess->b2b_key.len = client->len;
+	pkg_free(client);
 
 	return 0;
 }

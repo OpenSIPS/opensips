@@ -1634,9 +1634,11 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		if (shm_str_dup(&client->b2b_key, b2b_key) < 0) {
 			LM_ERR("could not copy b2b client key\n");
 			/* key is not yet stored, but INVITE sent - terminate it */
+			pkg_free(b2b_key);
 			b2b_sdp_client_terminate(client, b2b_key);
 			return -1;
 		}
+		pkg_free(b2b_key);
 	}
 
 	return 0;
