@@ -333,9 +333,11 @@ static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket
 		LM_ERR("could not copy b2b client key\n");
 		/* key is not yet stored, so cannot be deleted */
 		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1, 1);
+		pkg_free(b2b_key);
 		goto release;
 	}
 	msl->params = mf;
+	pkg_free(b2b_key);
 	msl->b2b_entity = B2B_CLIENT;
 	media_util_release_static();
 	return 1;
@@ -614,8 +616,10 @@ static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cel
 		LM_ERR("could not copy b2b client key\n");
 		/* key is not yet stored, so cannot be deleted */
 		media_b2b.entity_delete(B2B_CLIENT, b2b_key, NULL, 1, 1);
+		pkg_free(b2b_key);
 		goto unref;
 	}
+	pkg_free(b2b_key);
 	msl->b2b_entity = B2B_CLIENT;
 	return 1;
 unref:
