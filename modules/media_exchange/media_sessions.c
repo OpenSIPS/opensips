@@ -251,6 +251,7 @@ int media_session_req(struct media_session_leg *msl, const char *method, str *bo
 	memset(&req, 0, sizeof(req));
 	req.et = msl->b2b_entity;
 	req.b2b_key = &msl->b2b_key;
+	req.dlginfo = msl->dlginfo;
 	req.method = &m;
 	req.body = body;
 	if (body)
@@ -278,6 +279,7 @@ int media_session_rpl(struct media_session_leg *msl,
 	reply_data.code = code;
 	reply_data.text = reason;
 	reply_data.body = body;
+	reply_data.dlginfo = msl->dlginfo;
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
 
