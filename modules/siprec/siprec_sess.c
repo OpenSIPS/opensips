@@ -252,6 +252,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	struct socket_info *si;
 	int p, port, proto, c, label, medianum;
 	int p_type;
+	str from_tag, to_tag;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch siprec info!\n");
@@ -332,30 +333,18 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	}
 	memcpy(sess->b2b_key.s, tmp.s, tmp.len);
 	sess->b2b_key.len = tmp.len;
+	SIPREC_BIN_POP(str, &from_tag);
+	SIPREC_BIN_POP(str, &to_tag);
 	SIPREC_BIN_POP(str, &tmp);
-	sess->b2b_fromtag.s = shm_malloc(tmp.len);
-	if (!sess->b2b_fromtag.s) {
-		LM_ERR("cannot allocate memory for b2b_fromtag!\n");
-		goto error;
+
+	if (tmp.len) {
+		sess->dlginfo = b2b_new_dlginfo(&tmp, &from_tag, &to_tag);
+		if (!sess->dlginfo) {
+			LM_ERR("could not create b2b dlginfo for %.*s/%.*s/%.*s!\n",
+					tmp.len, tmp.s, from_tag.len, from_tag.s, to_tag.len, to_tag.s);
+			goto error;
+		}
 	}
-	memcpy(sess->b2b_fromtag.s, tmp.s, tmp.len);
-	sess->b2b_fromtag.len = tmp.len;
-	SIPREC_BIN_POP(str, &tmp);
-	sess->b2b_totag.s = shm_malloc(tmp.len);
-	if (!sess->b2b_totag.s) {
-		LM_ERR("cannot allocate memory for b2b_totag!\n");
-		goto error;
-	}
-	memcpy(sess->b2b_totag.s, tmp.s, tmp.len);
-	sess->b2b_totag.len = tmp.len;
-	SIPREC_BIN_POP(str, &tmp);
-	sess->b2b_callid.s = shm_malloc(tmp.len);
-	if (!sess->b2b_callid.s) {
-		LM_ERR("cannot allocate memory for b2b_callid!\n");
-		goto error;
-	}
-	memcpy(sess->b2b_callid.s, tmp.s, tmp.len);
-	sess->b2b_callid.len = tmp.len;
 
 	SIPREC_BIN_POP(int, &p);
 	for (; p > 0; p--) {
@@ -484,9 +473,15 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 		SIPREC_BIN_PUSH(str, &empty);
 	SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(ss->uuid));
 	SIPREC_BIN_PUSH(str, &ss->b2b_key);
-	SIPREC_BIN_PUSH(str, &ss->b2b_fromtag);
-	SIPREC_BIN_PUSH(str, &ss->b2b_totag);
-	SIPREC_BIN_PUSH(str, &ss->b2b_callid);
+	if (ss->dlginfo) {
+		SIPREC_BIN_PUSH(str, &ss->dlginfo->fromtag);
+		SIPREC_BIN_PUSH(str, &ss->dlginfo->totag);
+		SIPREC_BIN_PUSH(str, &ss->dlginfo->callid);
+	} else {
+		SIPREC_BIN_PUSH(str, &empty);
+		SIPREC_BIN_PUSH(str, &empty);
+		SIPREC_BIN_PUSH(str, &empty);
+	}
 	SIPREC_BIN_PUSH(int, ss->participants_no);
 
 	for (p = 0; p < ss->participants_no; p++) {

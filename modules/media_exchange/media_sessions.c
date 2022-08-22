@@ -73,13 +73,15 @@ void media_session_leg_free(struct media_session_leg *msl)
 				msl, msl->ms);
 	}
 	if (msl->b2b_key.s) {
-		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, NULL, 1, 1);
+		media_b2b.entity_delete(msl->b2b_entity, &msl->b2b_key, msl->dlginfo, 1, 1);
 		shm_free(msl->b2b_key.s);
 		msl->b2b_key.s = NULL;
 	}
 	LM_DBG("releasing media_session_leg=%p\n", msl);
 	if (msl->params && msl->type == MEDIA_SESSION_TYPE_FORK)
 		media_forks_free(msl->params);
+	if (msl->dlginfo)
+		shm_free(msl->dlginfo);
 	shm_free(msl);
 }
 
@@ -248,6 +250,7 @@ int media_session_req(struct media_session_leg *msl, const char *method, str *bo
 	memset(&req, 0, sizeof(req));
 	req.et = msl->b2b_entity;
 	req.b2b_key = &msl->b2b_key;
+	req.dlginfo = msl->dlginfo;
 	req.method = &m;
 	req.body = body;
 	if (body)
@@ -275,6 +278,7 @@ int media_session_rpl(struct media_session_leg *msl,
 	reply_data.code = code;
 	reply_data.text = reason;
 	reply_data.body = body;
+	reply_data.dlginfo = msl->dlginfo;
 	if (body)
 		reply_data.extra_headers = &content_type_sdp_hdr;
 

@@ -1512,9 +1512,12 @@ terminate:
 
 static int b2b_media_confirm(str* key, str* entity_key, int src, b2b_dlginfo_t* info)
 {
-	/* TODO: copy from info fromtag, totag, callid
 	struct media_session_leg *msl = *(struct media_session_leg **)((str *)key)->s;
-	*/
+	msl->dlginfo = b2b_dup_dlginfo(info);
+	if (!msl->dlginfo) {
+		LM_ERR("could not duplicate b2be dialog info!\n");
+		return -1;
+	}
 	return 0;
 }
 
