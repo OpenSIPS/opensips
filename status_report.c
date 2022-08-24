@@ -577,19 +577,20 @@ int sr_add_report(void *group,
 	} else {
 		idx = (sri->last_report+1) % sri->max_reports;
 	}
-	sri->last_report = idx;
 
-	LM_DBG("adding report to identifier [%.*s] group [%.*s] on idx %d "
-		"[%d,%d]\n", identifier.len, identifier.s,
-		srg->name.len, srg->name.s, idx, sri->first_report, sri->last_report);
-
-	if (idx==sri->first_report && sri->first_report!=sri->last_report) {
+	if (idx==sri->first_report && -1!=sri->last_report) {
 		/* overflow, free the oldest report */
 		shm_free( sri->reports[idx].log.s );
 		sri->reports[idx].log.s = NULL;
 		sri->reports[idx].log.len = 0;
 		sri->first_report = (sri->first_report+1) % sri->max_reports;
 	}
+
+	sri->last_report = idx;
+
+	LM_DBG("adding report to identifier [%.*s] group [%.*s] on idx %d "
+		"[%d,%d]\n", identifier.len, identifier.s,
+		srg->name.len, srg->name.s, idx, sri->first_report, sri->last_report);
 
 	/* copy the report here */
 	sri->reports[idx].log.s = s;
@@ -943,7 +944,7 @@ error:
 static int _mi_list_reports(sr_identifier *sri, mi_item_t *log_arr)
 {
 	mi_item_t *log_item;
-	short i, end;
+	short i, cnt;
 	str date;
 
 	lock_get( &sri->lock );
@@ -954,12 +955,15 @@ static int _mi_list_reports(sr_identifier *sri, mi_item_t *log_arr)
 		return 0;
 	}
 
-	end = (sri->last_report+1) % sri->max_reports;
 
-	LM_DBG("idxes: first=%d, last=%d, end=%d\n",
-		sri->first_report,sri->last_report,end);
+	cnt = sri->last_report - sri->first_report + 1;
+	if (cnt<=0)
+		cnt += sri->max_reports;
 
-	for ( i=sri->first_report ; i!=end ; i=(i+1)%sri->max_reports ) {
+	LM_DBG("idxes: first=%d, last=%d, cnt=%d\n",
+		sri->first_report,sri->last_report,cnt);
+
+	for ( i=sri->first_report ; cnt ; i=(i+1)%sri->max_reports,cnt-- ) {
 
 		log_item = add_mi_object( log_arr, 0, 0);
 		if (log_item==NULL)
