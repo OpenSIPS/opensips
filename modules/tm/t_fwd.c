@@ -1029,7 +1029,7 @@ int t_wait_no_more_branches( struct cell *t)
 	 * number of branches) */
 	for ( b=t->nr_of_outgoings-1; b>=t->first_branch ; b-- ) {
 		if (t->uac[b].flags & T_UAC_IS_PHONY) {
-			t->uac[b].br_flags=t->nr_of_outgoings+1;
+			t->uac[b].br_flags=t->nr_of_outgoings;
 			return 0;
 		}
 	}
@@ -1091,11 +1091,11 @@ int t_inject_branch( struct cell *t, struct sip_msg *msg, int flags)
 		which_cancel( t, &cancel_bm );
 	}
 
-	if (flags&TM_INJECT_FLAG_LAST)
-		t_wait_no_more_branches(t);
-
 	/* generated the new branches, without branch counter reset */
 	rc = t_forward_nonack( t, &faked_req , NULL, 0, 1/*locked*/ );
+
+	if ((rc==1) && (flags&TM_INJECT_FLAG_LAST))
+		t_wait_no_more_branches(t);
 
 	/* do we have to cancel the existing branches before injecting new ones? */
 	if (flags&TM_INJECT_FLAG_CANCEL) {
