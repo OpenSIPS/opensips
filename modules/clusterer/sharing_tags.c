@@ -775,6 +775,9 @@ void shtag_flush_state(int c_id, int node_id)
 		if (!tag->send_active_msg)
 			continue;
 
+		if (tag->cluster_id != c_id)
+			continue;
+
 		/* send repltag active msg to nodes to which we didn't already */
 		for (ni = tag->active_msgs_sent; ni && ni->node_id != node_id;
 			ni = ni->next) ;
