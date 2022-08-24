@@ -541,6 +541,13 @@ struct mi_script_async_job {
 	mi_request_t *req;
 };
 
+static void mi_script_async_job_free(struct mi_script_async_job *job)
+{
+	if (job->msg.s)
+		shm_free(job->msg.s);
+	shm_free(job);
+}
+
 static void mi_script_async_resume_job(int sender, void *param)
 {
 	int ret;
@@ -550,8 +557,9 @@ static void mi_script_async_resume_job(int sender, void *param)
 	do {
 		ret = write(job->fd, &r, sizeof r);
 	} while (ret < 0 && (errno == EINTR || errno == EAGAIN));
-	if (ret < 0)
+	if (ret < 0) {
 		LM_ERR("could not notify resume: %s\n", strerror(errno));
+	}
 }
 
 static void mi_script_async_job(mi_response_t *resp, struct mi_script_async_job *job)
@@ -572,9 +580,7 @@ static void mi_script_async_job(mi_response_t *resp, struct mi_script_async_job 
 
 	if (ipc_send_rpc(job->process_no, mi_script_async_resume_job, job) < 0) {
 		LM_ERR("could not resume async MI command!\n");
-		if (job->msg.s)
-			shm_free(job->msg.s);
-		shm_free(job);
+		mi_script_async_job_free(job);
 	}
 }
 
@@ -654,9 +660,7 @@ static int mi_script_async_resume(int fd,
 			ret = -3;
 	}
 end:
-	if (job->msg.s)
-		shm_free(job->msg.s);
-	shm_free(job);
+	mi_script_async_job_free(job);
 	return ret;
 }
 
