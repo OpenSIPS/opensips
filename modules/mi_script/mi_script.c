@@ -559,6 +559,7 @@ static void mi_script_async_resume_job(int sender, void *param)
 	} while (ret < 0 && (errno == EINTR || errno == EAGAIN));
 	if (ret < 0) {
 		LM_ERR("could not notify resume: %s\n", strerror(errno));
+		mi_script_async_job_free(job);
 	}
 }
 
