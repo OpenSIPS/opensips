@@ -930,7 +930,7 @@ static void handle_cl_gen_msg(bin_packet_t *packet, int cluster_id, int source_i
 	bin_pop_str(packet, &rcv_tag);
 	bin_pop_str(packet, &rcv_msg);
 
-	if (raise_gen_msg_ev(cluster_id, source_id, req_like, &rcv_tag, &rcv_msg)) {
+	if (raise_gen_msg_ev(cluster_id, source_id, req_like, &rcv_msg, &rcv_tag)) {
 		LM_ERR("Failed to raise event for a received generic message!\n");
 		return;
 	}
