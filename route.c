@@ -1475,6 +1475,12 @@ int fix_rls(void)
 		}
 	}
 
+	for(i = 1; i< EVENT_RT_NO; i++)
+		if (sroutes->event[i].a && !module_loaded("event_route")) {
+			LM_ERR("event_route used but 'event_route' module not loaded!\n");
+			return E_CFG;
+		}
+
 
 return 0;
 }
