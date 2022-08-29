@@ -137,6 +137,8 @@ extern str internal_scen_s;
 
 extern struct b2bl_route_ctx cur_route_ctx;
 
+extern str b2bl_mod_name;
+
 extern str requestTerminated;
 
 #define B2B_TOP_HIDING_ID_PTR &top_hiding_scen_s
@@ -176,6 +178,9 @@ static inline int b2b_get_request_id(str* request)
 
 	return -1;
 }
+
+#define get_tracer(_tuple) \
+	( (_tuple)->tracer.f ? &((_tuple)->tracer) : NULL )
 
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info, void *param);
 int b2b_server_notify(struct sip_msg* msg, str* key, int type,
