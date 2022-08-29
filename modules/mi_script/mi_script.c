@@ -551,7 +551,7 @@ static void mi_script_async_job_free(struct mi_script_async_job *job)
 static void mi_script_async_resume_job(int sender, void *param)
 {
 	int ret;
-	unsigned long r;
+	static unsigned long r = 1;
 	struct mi_script_async_job *job = (struct mi_script_async_job *)param;
 	/* just notify the event socket */
 	do {
