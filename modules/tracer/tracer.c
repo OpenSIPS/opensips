@@ -3281,7 +3281,7 @@ static mi_response_t *sip_trace_mi_stop(const mi_params_t *params,
 	hash=it->hash;
 
 	/* search for the previous element */
-	for (prev=NULL, it=(*dyn_trace_list); it && it->next; it = it->next) {
+	for (prev=NULL, it=(*dyn_trace_list); it && it->hash != hash && it->next; it = it->next) {
 		if (it->next->hash == hash)
 			break;
 		else
