@@ -190,7 +190,11 @@ void shutdown_opensips( int status )
 	int i, n, p;
 	int chld_status;
 
-	sr_set_core_status( STATE_TERMINATING, MI_SSTR("shutting down"));
+	/* TODO - temporarily removing this
+	 * in case a mem corruption crash happens, OpenSIPS will get stuck
+	 * in getting the SHM locks in the below function
+	 * sr_set_core_status( STATE_TERMINATING, MI_SSTR("shutting down"));
+	*/
 
 	/* terminate all processes */
 
