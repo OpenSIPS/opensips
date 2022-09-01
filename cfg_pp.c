@@ -169,6 +169,11 @@ int mk_included_file_path(char *line, int line_len, const char *current_dir,
 	char *p = NULL, enclose = 0;
 	int len1, len2, fplen;
 
+	while (line_len > 0 && is_ws(*line)) {
+		line_len--;
+		line++;
+	}
+
 	if (line_len > include_v1.len &&
 	        !memcmp(line, include_v1.s, include_v1.len)) {
 		p = line + include_v1.len;
