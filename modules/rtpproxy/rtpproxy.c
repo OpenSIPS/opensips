@@ -1069,14 +1069,14 @@ mod_init(void)
 
 	rtpp_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
 	list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
-	*rtpp_no = 0;
-	*list_version = 0;
-	my_version = 0;
-
 	if(!rtpp_no || !list_version) {
 		LM_ERR("No more shared memory\n");
 		return -1;
 	}
+	*rtpp_no = 0;
+	*list_version = 0;
+	my_version = 0;
+
 	if (!(rtpp_set_list = (struct rtpp_set_head **)
 		shm_malloc(sizeof(struct rtpp_set_head *)))) {
 		LM_ERR("no more shm mem\n");
