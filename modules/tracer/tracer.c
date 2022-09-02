@@ -1364,22 +1364,25 @@ static void free_trace_info_shm(void *param, int type)
 			info->instances = it->next;
 		shm_free(it);
 	}
-	if (!prev)
+	if ((info->flags & ~TRACE_INFO_STAT) == 0)
 		shm_free(param);
 }
 
 static void free_trace_info_tm(void *param)
 {
+	TRACE_FLAG_UNSET((trace_info_p)param, TRACE_INFO_TRAN);
 	free_trace_info_shm(param, TRACE_TRANSACTION);
 }
 
 static void free_trace_info_b2b(void *param)
 {
+	TRACE_FLAG_UNSET((trace_info_p)param, TRACE_INFO_B2B);
 	free_trace_info_shm(param, TRACE_B2B);
 }
 
 static void free_trace_info_dlg(void *param)
 {
+	TRACE_FLAG_UNSET((trace_info_p)param, TRACE_INFO_DIALOG);
 	free_trace_info_shm(param, TRACE_DIALOG);
 }
 
@@ -1429,15 +1432,17 @@ static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
 
 static struct b2b_tracer* b2b_set_tracer_cb(void)
 {
+	trace_info_p info = GET_TRACER_CONTEXT;
 	static struct b2b_tracer tracer;
 
 	/* as parameter, set the tracing info from the current contect */
-	tracer.param = (void*)GET_TRACER_CONTEXT;
+	tracer.param = (void*)info;
 
 	if (tracer.param==NULL) {
 		tracer.f = NULL;
 		tracer.f_freep = NULL;
 	} else {
+		TRACE_FLAG_SET(info, TRACE_INFO_B2B);
 		tracer.f = trace_b2b_transaction;
 		tracer.f_freep = free_trace_info_b2b;
 	}
@@ -1535,9 +1540,11 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 	/* here also free trace info param because we are sure that
 	 * this callback is ran only once - when dialog gets for
 	 * the first time in DELETED state */
+	TRACE_FLAG_SET(info, TRACE_INFO_DIALOG);
 	if(dlgb.register_dlgcb(dlg,DLGCB_TERMINATED,
 				trace_transaction_dlgcb,info,free_trace_info_dlg)!=0) {
 		LM_ERR("failed to register dialog callback\n");
+		TRACE_FLAG_UNSET(info, TRACE_INFO_DIALOG);
 		return -1;
 	}
 
@@ -1553,7 +1560,6 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 		return -1;
 	}
 
-	TRACE_FLAG_SET(info, TRACE_INFO_DIALOG);
 	return 0;
 }
 
