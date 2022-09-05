@@ -130,6 +130,12 @@ static void srec_dlg_end(struct dlg_cell *dlg, int type, struct dlg_cb_params *_
 	}
 	ss = *_params->param;
 
+	if ((ss->flags & SIPREC_STARTED) == 0) {
+		LM_DBG("sess=%p no longer in progress\n", ss);
+		/* the session was not started, or it had been deleted in the meantime */
+		return;
+	}
+
 	memset(&req, 0, sizeof(req));
 	req.et = B2B_CLIENT;
 	req.b2b_key = &ss->b2b_key;
@@ -149,6 +155,11 @@ static void srec_dlg_sequential(struct dlg_cell *dlg, int type, struct dlg_cb_pa
 	struct src_sess *ss;
 	/* check which participant we are talking about */
 	ss = *_params->param;
+
+	if ((ss->flags & SIPREC_STARTED) == 0) {
+		LM_DBG("sess=%p no longer pending\n", ss);
+		return;
+	}
 
 	SIPREC_LOCK(ss);
 
@@ -256,6 +267,10 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		LM_ERR("cannot find session in parameter!\n");
 		return -1;
 	}
+	if ((ss->flags & SIPREC_STARTED) == 0) {
+		LM_DBG("sess=%p no longer active\n", ss);
+		return 0;
+	}
 	/* for now we only receive replies from SRS */
 	if (type != B2B_REPLY)
 		return srec_b2b_req(msg, ss);
@@ -345,12 +360,15 @@ no_recording:
 	srec_rtp.copy_delete(ss->rtp, &mod_name, &ss->media);
 	srec_logic_destroy(ss);
 
-	/* we finishd everything with the dialog, let it be! */
-	srec_dlg.dlg_ctx_put_ptr(ss->dlg, srec_dlg_idx, NULL);
-	srec_dlg.dlg_unref(ss->dlg, 1);
-	ss->dlg = NULL;
-	srec_hlog(ss, SREC_UNREF, "no recording");
-	SIPREC_UNREF(ss);
+	if (!(ss->flags & SIPREC_DLG_CBS)) {
+		/* if the dialog has already been engaged, then we need to keep the
+		 * reference until the end of the dialog, where it will be cleaned up */
+		srec_dlg.dlg_ctx_put_ptr(ss->dlg, srec_dlg_idx, NULL);
+		srec_dlg.dlg_unref(ss->dlg, 1);
+		ss->dlg = NULL;
+		srec_hlog(ss, SREC_UNREF, "no recording");
+		SIPREC_UNREF(ss);
+	}
 	return ret;
 }
 
@@ -639,6 +657,8 @@ void srec_logic_destroy(struct src_sess *sess)
 	if (sess->dlginfo)
 		shm_free(sess->dlginfo);
 	sess->b2b_key.s = NULL;
+
+	sess->flags &= ~SIPREC_STARTED;
 }
 
 struct src_sess *src_get_session(void)
