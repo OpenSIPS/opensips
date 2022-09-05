@@ -38,7 +38,7 @@
 #include <errno.h>
 
 /*! \brief size of the buffer used for printing the FMT */
-#define DEFAULT_MI_FMT_BUF_SIZE 2048
+#define DEFAULT_MI_FMT_BUF_SIZE 4096
 
 extern char *mi_fmt_buf;
 extern int  mi_fmt_buf_len;
