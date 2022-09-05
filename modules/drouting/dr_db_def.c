@@ -78,7 +78,7 @@ str attrs_drr_col = str_init(ATTRS_DRR_COL);
 /* DR carrier table related defs */
 #define ID_DRC_COL     "id"
 #define CID_DRC_COL    "carrierid"
-#define FLAGS_DRC_COL  "flags"
+#define FLAGS_DRC_COL  "flags2"
 #define SORT_ALG_DRC_COL "sort_alg"
 #define GWLIST_DRC_COL "gwlist"
 #define ATTRS_DRC_COL  "attrs"
