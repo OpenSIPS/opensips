@@ -94,6 +94,9 @@ struct rtpp_set{
 	unsigned int		rtpp_node_count;
 	int 				set_disabled;
 	unsigned int		set_recheck_ticks;
+	int					reload_ver;
+	int					rtpp_socks_idx;
+
 	struct rtpp_node	*rn_first;
 	struct rtpp_node	*rn_last;
 	struct rtpp_set     *rset_next;

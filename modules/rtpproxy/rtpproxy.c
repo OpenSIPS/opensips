@@ -336,8 +336,8 @@ static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
 static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet);
 static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
 
-int connect_rtpproxies();
-int update_rtpp_proxies();
+int connect_rtpproxies(struct rtpp_set *filter);
+int update_rtpp_proxies(struct rtpp_set *filter);
 
 static inline void raise_rtpproxy_event(struct rtpp_node *node, int status);
 
@@ -392,6 +392,9 @@ static unsigned int *rtpp_no = 0;
 static unsigned int *list_version;
 static unsigned int my_version = 0;
 static unsigned int rtpp_number = 0;
+
+/* a map of reload versions for each rtpproxy set, for on-demand reconnects */
+static map_t rtpp_set_versions;
 
 /* DB support for loading proxies */
 static str db_url = {NULL, 0};
@@ -811,6 +814,8 @@ static int rtpproxy_add_rtpproxy_set( char * rtp_proxies, int set_id)
 		}
 		memset(rtpp_list, 0, sizeof(struct rtpp_set));
 		rtpp_list->id_set = my_current_id;
+		rtpp_list->reload_ver = 0;
+		rtpp_list->rtpp_socks_idx = *rtpp_no;
 		new_list = 1;
 	} else {
 		new_list = 0;
@@ -973,8 +978,13 @@ static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
 
 	lock_start_write( nh_lock );
 	if(*rtpp_set_list) {
-		for (it = (*rtpp_set_list)->rset_first; it; it = it->rset_next)
+		LM_DBG("bumping set versions to %d [%d]\n",
+		        (*rtpp_set_list)->rset_first->reload_ver + 1, rtpp_number);
+
+		for (it = (*rtpp_set_list)->rset_first; it; it = it->rset_next) {
 			free_rtpp_nodes(it);
+			it->reload_ver++;
+		}
 	}
 	*rtpp_no = 0;
 	(*list_version)++;
@@ -982,7 +992,7 @@ static mi_response_t *mi_reload_rtpproxies(const mi_params_t *params,
 	if(_add_proxies_from_database() < 0)
 		goto error;
 
-	if (update_rtpp_proxies())
+	if (update_rtpp_proxies(NULL))
 		goto error;
 
 	/* update pointer to default_rtpp_set*/
@@ -1136,6 +1146,12 @@ mod_init(void)
 	*rtpp_no = 0;
 	*list_version = 0;
 	my_version = 0;
+
+	rtpp_set_versions = map_create(0);
+	if (!rtpp_set_versions) {
+		LM_ERR("failed to create 'versions' map\n");
+		return -1;
+	}
 
 	if (!(rtpp_set_list = (struct rtpp_set_head **)
 		shm_malloc(sizeof(struct rtpp_set_head *)))) {
@@ -1364,8 +1380,8 @@ static int mi_child_init(void)
 
 static int _add_proxies_from_database(void) {
 
-	/* select * from rtpproxy_sockets */
-	db_key_t colsToReturn[2];
+	/* select * from rtpproxy_sockets order by set_id */
+	db_key_t colsToReturn[2], order_by = &str_init("set_id");
 	db_res_t *result = NULL;
 	int rowCount = 0;
 	char *rtpp_socket;
@@ -1381,7 +1397,7 @@ static int _add_proxies_from_database(void) {
 		return -1;
 	}
 
-	if(db_functions.query(db_connection, 0, 0, 0,colsToReturn, 0, 2, 0,
+	if(db_functions.query(db_connection, 0, 0, 0,colsToReturn, 0, 2, order_by,
 				&result) < 0) {
 		LM_ERR("Error querying database\n");
 		if(result)
@@ -1447,10 +1463,10 @@ child_init(int rank)
 	mypid = getpid();
 	myrand = rand()%10000;
 
-	return connect_rtpproxies();
+	return connect_rtpproxies(NULL);
 }
 
-int connect_rtpproxies(void)
+int connect_rtpproxies(struct rtpp_set *filter)
 {
 	struct rtpp_set  *rtpp_list;
 	struct rtpp_node *pnode;
@@ -1472,6 +1488,9 @@ int connect_rtpproxies(void)
 	for(rtpp_list = (*rtpp_set_list)->rset_first; rtpp_list != 0;
 		rtpp_list = rtpp_list->rset_next){
 
+		if (filter && filter->id_set != rtpp_list->id_set)
+			continue;
+
 		for (pnode=rtpp_list->rn_first; pnode!=0; pnode = pnode->rn_next){
 			if (pnode->rn_umode == CM_UNIX) {
 				rtpp_socks[pnode->idx] = -1;
@@ -1485,24 +1504,44 @@ int connect_rtpproxies(void)
 			}
 			pnode->rn_disabled = rtpp_test(pnode, 0, 1);
 		}
+
+		/* all nodes in this set are reconnected; mark it accordingly */
+		{
+			void **set_version;
+			str sid;
+
+			sid.s = int2str(rtpp_list->id_set, &sid.len);
+			set_version = map_get(rtpp_set_versions, sid);
+			if (!set_version) {
+				LM_ERR("failed to get set %d version (oom?)\n", rtpp_list->id_set);
+				continue;
+			}
+
+			*set_version = (void *)(long)rtpp_list->reload_ver;
+		}
 	}
 
 	LM_DBG("successfully updated proxy sets\n");
 	return 0;
 }
 
-int update_rtpp_proxies(void) {
+/* Reconnect all rtpproxies in a specific set, or all sets if @set is NULL */
+int update_rtpp_proxies(struct rtpp_set *filter) {
 	int i;
 
 	update_rtpp_notify();
-	LM_DBG("updating list from %d to %d [%d]\n", my_version, *list_version, rtpp_number);
-	my_version = *list_version;
 	for (i = 0; i < rtpp_number; i++) {
-		shutdown(rtpp_socks[i], SHUT_RDWR);
-		close(rtpp_socks[i]);
+		if (!filter ||
+		        (filter->rtpp_socks_idx <= i
+		         && i < filter->rtpp_socks_idx + filter->rtpp_node_count)) {
+			LM_DBG("closing rtpp_socks[%d] | filter_set: %d\n", i,
+			       filter ? filter->id_set : -1);
+			shutdown(rtpp_socks[i], SHUT_RDWR);
+			close(rtpp_socks[i]);
+		}
 	}
 
-	return connect_rtpproxies();
+	return connect_rtpproxies(filter);
 }
 
 void free_rtpp_nodes(struct rtpp_set *list)
@@ -2279,6 +2318,39 @@ static struct rtpp_set * select_rtpp_set(int id_set){
 
 	return rtpp_list;
 }
+
+int rtpp_check_reload_ver(struct rtpp_set *set)
+{
+	void **set_version;
+	str sid;
+
+	if (!set && my_version != *list_version) {
+		int rc = update_rtpp_proxies(NULL);
+
+		if (rc == 0)
+			my_version = *list_version;
+		return rc;
+	}
+
+	sid.s = int2str(set->id_set, &sid.len);
+	set_version = map_get(rtpp_set_versions, sid);
+	if (!set_version) {
+		LM_ERR("failed to get set %d version (oom?)\n", set->id_set);
+		return -1;
+	}
+
+	LM_DBG("set: %d | my ver: %ld | set ver: %d\n", set->id_set,
+	       (long)*set_version, set->reload_ver);
+
+	if ((long)*set_version != set->reload_ver && update_rtpp_proxies(set) < 0) {
+		LM_ERR("failed to update rtpp proxies list in set %d\n", set->id_set);
+		return -1;
+	}
+
+	return 0;
+}
+
+
 /*
  * Main balancing routine. This does not try to keep the same proxy for
  * the call if some proxies were disabled or enabled; proxy death considered
@@ -2294,15 +2366,15 @@ select_rtpp_node(struct sip_msg * msg,
 	int was_forced, sumcut, found, constant_weight_sum;
 	pv_value_t val;
 
-	/* check last list version */
-	if (my_version != *list_version && update_rtpp_proxies() < 0) {
-		LM_ERR("cannot update rtpp proxies list\n");
-		return 0;
-	}
-
 	if (!set) {
 		LM_ERR("no set specified\n");
-		return 0;
+		return NULL;
+	}
+
+	if (rtpp_check_reload_ver(set) != 0) {
+		LM_ERR("cannot update rtpp proxies list (set: %d)\n",
+		       set ? set->id_set : -1);
+		return NULL;
 	}
 
 	/* Most popular case: 1 proxy, nothing to calculate */
@@ -2414,15 +2486,15 @@ struct rtpp_node *get_rtpp_node_from_set(str *node, struct rtpp_set *set, int te
 	return NULL;
 }
 
-struct rtpp_node *get_rtpp_node(str *node)
+struct rtpp_node *get_rtpp_node(str *node, struct rtpp_set *filter)
 {
 	struct rtpp_set *set;
 	struct rtpp_node *rnode;
 
-	/* check last list version */
-	if (my_version != *list_version && update_rtpp_proxies() < 0) {
-		LM_ERR("cannot update rtpp proxies list\n");
-		return 0;
+	if (rtpp_check_reload_ver(filter) != 0) {
+		LM_ERR("cannot update rtpp proxies list (set: %d)\n",
+		       filter ? filter->id_set : -1);
+		return NULL;
 	}
 
 	/* if chosen a specific node, use it! */
@@ -4748,7 +4820,7 @@ static int rtpproxy_api_recording(str *callid, str *from_tag,
 	}
 
 	if (node)
-		rnode = get_rtpp_node(node);
+		rnode = get_rtpp_node(node, NULL);
 	else
 		/* regular selection from the default rtpp set */
 		rnode = select_rtpp_node(NULL, *callid, *default_rtpp_set, NULL, 1);
@@ -4841,7 +4913,7 @@ static int rtpproxy_api_stop_recording(str *callid, str *from_tag,
 	}
 
 	if (node)
-		rnode = get_rtpp_node(node);
+		rnode = get_rtpp_node(node, NULL);
 	else
 		/* regular selection from the default rtpp set */
 		rnode = select_rtpp_node(NULL, *callid, *default_rtpp_set, NULL, 1);
@@ -5040,7 +5112,7 @@ static int rtpproxy_api_offer(struct rtp_relay_session *sess,
 			lock_start_read(nh_lock);
 
 		rset = select_rtpp_set(server->set);
-		args.node = get_rtpp_node(&server->node);
+		args.node = get_rtpp_node(&server->node, rset);
 		/* if we're not using a node, we don't need the lock */
 		if (!args.node && nh_lock)
 			lock_stop_read(nh_lock);
@@ -5103,7 +5175,7 @@ static int rtpproxy_api_answer(struct rtp_relay_session *sess,
 	args.offer = 0;
 
 	if (server->node.s) {
-		args.node = get_rtpp_node(&server->node);
+		args.node = get_rtpp_node(&server->node, rset);
 		if (!args.node) {
 			LM_ERR("Could not use node %.*s for reply!\n",
 					server->node.len, server->node.s);
@@ -5144,7 +5216,7 @@ static int rtpproxy_api_delete(struct rtp_relay_session *sess, struct rtp_relay_
 
 	args.set = rset;
 
-	args.node = get_rtpp_node(&server->node);
+	args.node = get_rtpp_node(&server->node, rset);
 	if (!args.node) {
 		LM_ERR("Could not use node %.*s for delete!\n",
 				server->node.len, server->node.s);
@@ -5716,7 +5788,7 @@ static int rtpproxy_api_copy_answer(struct rtp_relay_session *sess,
 		lock_start_read(nh_lock);
 
 	rset = select_rtpp_set(server->set);
-	args.node = get_rtpp_node(&server->node);
+	args.node = get_rtpp_node(&server->node, rset);
 
 	if (!args.node)
 		args.node = select_rtpp_node(sess->msg,
@@ -5783,7 +5855,7 @@ static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
 		lock_start_read(nh_lock);
 
 	rset = select_rtpp_set(server->set);
-	args.node = get_rtpp_node(&server->node);
+	args.node = get_rtpp_node(&server->node, rset);
 
 	if (!args.node)
 		args.node = select_rtpp_node(sess->msg,
