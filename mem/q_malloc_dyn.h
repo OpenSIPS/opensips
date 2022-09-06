@@ -62,10 +62,9 @@ int qm_split_frag(struct qm_block *qm, struct qm_frag *f,
 		end->check1=END_CHECK_PATTERN1;
 		end->check2=END_CHECK_PATTERN2;
 		/* frag created by malloc, mark it*/
-		n->file=file;
-		n->func=func;
-		n->line=line;
 		n->check=ST_CHECK_PATTERN;
+		qm_dbg_clear(n);
+		qm_dbg_fill(n, file, func, line);
 #endif
 		/* reinsert n in free list*/
 		qm_insert_free(qm, n);
@@ -141,9 +140,7 @@ void *qm_malloc(struct qm_block *qm, unsigned long size,
 			qm->max_real_used=qm->real_used;
 
 #ifdef DBG_MALLOC
-		f->file=file;
-		f->func=func;
-		f->line=line;
+		qm_dbg_fill(f, file, func, line);
 		f->check=ST_CHECK_PATTERN;
 		/*  FRAG_END(f)->check1=END_CHECK_PATTERN1;
 			FRAG_END(f)->check2=END_CHECK_PATTERN2;*/
@@ -200,11 +197,11 @@ void qm_free(struct qm_block *qm, void *p,
 	if (f->u.is_free){
 		LM_CRIT("freeing already freed pointer,"
 				" first free: %s: %s(%ld) - aborting\n",
-				f->file, f->func, f->line);
+				qm_dbg_coords(f));
 		abort();
 	}
 	LM_GEN1( memlog, "freeing frag. %p alloc'ed from %s: %s(%ld)\n",
-			f, f->file, f->func, f->line);
+			f, qm_dbg_coords(f));
 #endif
 
 	size=f->size;
@@ -245,9 +242,7 @@ void qm_free(struct qm_block *qm, void *p,
 	f->size=size;
 	FRAG_END(f)->size=f->size;
 #ifdef DBG_MALLOC
-	f->file=file;
-	f->func=func;
-	f->line=line;
+	qm_dbg_fill(f, file, func, line);
 #endif
 	qm_insert_free(qm, f);
 	qm->fragments -= 1;
@@ -308,7 +303,7 @@ void *qm_realloc(struct qm_block *qm, void *p, unsigned long size,
 	#ifdef DBG_MALLOC
 	qm_debug_frag(qm, f);
 	LM_GEN1( memlog, "realloc'ing frag %p alloc'ed from %s: %s(%ld)\n",
-			f, f->file, f->func, f->line);
+			f, qm_dbg_coords(f));
 	if (f->u.is_free) {
 		LM_CRIT("trying to realloc an already freed "
 				"pointer %p , fragment %p -- aborting\n", p, f);
@@ -434,8 +429,8 @@ void qm_status(struct qm_block *qm)
 
 	for (f = qm->first_frag; f >= qm->first_frag &&
 	        (void *)f < (void *)qm->last_frag_end; f = FRAG_NEXT(f)) {
-		if (!f->u.is_free && f->file)
-			if (dbg_ht_update(allocd, f->file, f->func, f->line, f->size) < 0) {
+		if (!f->u.is_free && f->dbg[0].file)
+			if (dbg_ht_update(allocd, qm_dbg_coords(f), f->size) < 0) {
 				LM_ERR("Unable to update alloc'ed. memory summary\n");
 				dbg_ht_free(allocd);
 				return;
@@ -474,7 +469,7 @@ void qm_status(struct qm_block *qm)
 					LM_GEN1(memdump, "unused fragm.: hash = %3d, fragment %p,"
 						" address %p size %lu, created from %s: %s(%lu)\n",
 					    h, f, (char*)f+sizeof(struct qm_frag), f->size,
-						f->file, f->func, f->line);
+						qm_dbg_coords(f));
 #endif
 				}
 		}

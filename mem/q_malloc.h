@@ -58,6 +58,48 @@
  *                            QM_ROUNDTO from bucket to bucket
  * +1 .... end -  size = 2^k, big buckets */
 
+#ifdef DBG_MALLOC
+#ifndef QM_DBG_MALLOC_HIST
+#define QM_DBG_MALLOC_HIST 1
+#endif
+struct qm_frag_dbg {
+       const char* file;
+       const char* func;
+       unsigned long line;
+};
+
+#define qm_dbg_coords(_frag) \
+       (_frag)->dbg[0].file, (_frag)->dbg[0].func, (_frag)->dbg[0].line
+#else
+#define qm_dbg_coords(_frag)
+#endif
+
+#ifdef DBG_MALLOC
+#if QM_DBG_MALLOC_HIST > 1
+#define qm_dbg_move(_frag) \
+       memmove(&(_frag)->dbg[1], &(_frag)->dbg[0], \
+                       (QM_DBG_MALLOC_HIST - 1) * sizeof(struct qm_frag_dbg))
+#define qm_dbg_clear(_frag) \
+       memset(&(_frag)->dbg[1], 0, \
+                       (QM_DBG_MALLOC_HIST - 1) * sizeof(struct qm_frag_dbg))
+#else /* QM_DBG_MALLOC_HIST */
+#define qm_dbg_move(_frag)
+#define qm_dbg_clear(_frag)
+#endif /* QM_DBG_MALLOC_HIST */
+#define qm_dbg_fill(_frag, _file, _func, _line) \
+       do { \
+               qm_dbg_move(_frag); \
+               (_frag)->dbg[0].file = _file; \
+               (_frag)->dbg[0].func = _func; \
+               (_frag)->dbg[0].line = _line; \
+       } while(0)
+
+#else /* DBG_MALLOC */
+#define qm_dbg_fill(_frag, _file, _func, _line)
+#define qm_dbg_clear(_frag)
+#endif /* DBG_MALLOC */
+
+
 struct qm_frag {
 	unsigned long size;
 	union {
@@ -65,9 +107,7 @@ struct qm_frag {
 		long is_free;
 	} u;
 #ifdef DBG_MALLOC
-	const char *file;
-	const char *func;
-	unsigned long line;
+	struct qm_frag_dbg dbg[QM_DBG_MALLOC_HIST];
 	unsigned long check;
 #endif
 #ifdef SHM_EXTRA_STATS
@@ -158,9 +198,9 @@ unsigned long qm_stats_get_index(void *ptr);
 void qm_stats_set_index(void *ptr, unsigned long idx);
 
 #ifdef DBG_MALLOC
-static inline const char *qm_frag_file(void *p) { return QM_FRAG(p)->file; }
-static inline const char *qm_frag_func(void *p) { return QM_FRAG(p)->func; }
-static inline unsigned long qm_frag_line(void *p) { return QM_FRAG(p)->line; }
+static inline const char *qm_frag_file(void *p) { return QM_FRAG(p)->dbg[0].file; }
+static inline const char *qm_frag_func(void *p) { return QM_FRAG(p)->dbg[0].func; }
+static inline unsigned long qm_frag_line(void *p) { return QM_FRAG(p)->dbg[0].line; }
 #else
 static inline const char *qm_frag_file(void *p) { return NULL; }
 static inline const char *qm_frag_func(void *p) { return NULL; }
