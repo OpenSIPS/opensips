@@ -126,8 +126,8 @@ static  void qm_debug_frag(struct qm_block *qm, struct qm_frag *f)
 				(PREV_FRAG_END(f)->check2!=END_CHECK_PATTERN2) ) ){
 		LM_CRIT(" qm_*: prev. fragm. tail overwritten(%lx, %lx)[%p:%p] (%s, %s:%ld)!\n",
 				PREV_FRAG_END(f)->check1, PREV_FRAG_END(f)->check2, f,
-				(char*)f+sizeof(struct qm_frag), FRAG_PREV(f)->func,
-				FRAG_PREV(f)->file,FRAG_PREV(f)->line);
+				(char*)f+sizeof(struct qm_frag),
+				qm_dbg_coords(FRAG_PREV(f)));
 		abort();
 	}
 }
