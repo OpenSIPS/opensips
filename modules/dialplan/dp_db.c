@@ -266,7 +266,8 @@ int dp_load_db(dp_connection_list_p dp_conn, int initial)
 	lock_start_write( dp_conn->ref_lock );
 
 	if( dp_conn->crt_index != dp_conn->next_index){
-		LM_WARN("a load command already generated, aborting reload...\n");
+		LM_WARN("a load command already in-progress for partition <%.*s>, "
+			"aborting reload...\n", dp_conn->partition.len, dp_conn->partition.s);
 		lock_stop_write( dp_conn->ref_lock );
 		return 0;
 	}
@@ -328,7 +329,8 @@ int dp_load_db(dp_connection_list_p dp_conn, int initial)
 
 
 	if(nr_rows == 0){
-		LM_WARN("no data in the db\n");
+		LM_DBG("no data in the db for partition <%.*s>\n",
+			dp_conn->partition.len, dp_conn->partition.s);
 		goto end;
 	}
 
@@ -338,7 +340,9 @@ int dp_load_db(dp_connection_list_p dp_conn, int initial)
 			values = ROW_VALUES(rows+i);
 
 			if ((rule = build_rule(values)) == NULL) {
-				LM_WARN(" failed to build rule -> skipping\n");
+				LM_WARN(" failed to build rule |%s| in partition <%.*s>"
+					" -> skipping\n", VAL_STRING(values+3),
+					dp_conn->partition.len, dp_conn->partition.s);
 				discarded_rl++;
 				continue;
 			}
@@ -394,6 +398,7 @@ end:
 	return 0;
 
 err1:
+	LM_ERR("DB reload failed on partition <%.*s>\n",dp_conn->partition.len, dp_conn->partition.s);
 
 	lock_start_write( dp_conn->ref_lock );
 
@@ -413,6 +418,8 @@ err1:
 	return -1;
 
 err2:
+	LM_ERR("DB reload failed on partition <%.*s>\n",dp_conn->partition.len, dp_conn->partition.s);
+
 	if(rule)	destroy_rule(rule);
 	destroy_hash(&dp_conn->hash[dp_conn->next_index]);
 	dp_conn->dp_dbf.free_result(*dp_conn->dp_db_handle, res);
