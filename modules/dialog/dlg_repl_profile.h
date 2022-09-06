@@ -120,6 +120,7 @@ static inline struct prof_local_count *get_local_counter(
 		memset(cnt, 0, sizeof *cnt);
 
 		if (shtag->len && shm_str_dup(&cnt->shtag, shtag) < 0) {
+			shm_free(cnt);
 			LM_ERR("oom\n");
 			return NULL;
 		}
