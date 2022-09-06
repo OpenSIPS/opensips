@@ -103,9 +103,11 @@ void debug_detached_timer_list(struct dlg_tl *detached)
 /* assumed to be always called under timer lock */
 void debug_main_timer_list(void)
 {
-	struct dlg_tl *start,*finish;
-	int visited=1;
+	static int visited;
 
+	struct dlg_tl *start,*finish;
+
+	visited++;
 	start = finish = &(d_timer->first);
 	LM_DBG("testing forward loop with visited = %d\n",visited);
 
