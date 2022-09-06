@@ -10,7 +10,7 @@ CREATE TABLE b2b_entities (
     to_dname VARCHAR(64),
     tag0 VARCHAR(64) NOT NULL,
     tag1 VARCHAR(64),
-    callid VARCHAR(64) NOT NULL,
+    callid VARCHAR(128) NOT NULL,
     cseq0 INTEGER NOT NULL,
     cseq1 INTEGER,
     contact0 VARCHAR(255) NOT NULL,
