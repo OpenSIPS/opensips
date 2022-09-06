@@ -53,7 +53,6 @@
     <column>
         <name>sdp</name>
         <type>text</type>
-        <size>&user_len;</size>
         <null/>
         <description>Scenario id</description>
     </column>
