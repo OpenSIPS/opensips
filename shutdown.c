@@ -51,37 +51,6 @@ void cleanup(int show_status)
 
 	/*clean-up*/
 
-	/* hack: force-unlock the shared memory lock(s) in case
-	   		 some process crashed and let it locked; this will
-	   		 allow an almost gracious shutdown */
-	if (0
-#if defined F_MALLOC || defined Q_MALLOC
-		|| mem_lock
-#endif
-#ifdef HP_MALLOC
-		|| mem_locks
-#endif
-	) {
-#if defined HP_MALLOC && (defined F_MALLOC || defined Q_MALLOC)
-		if (mem_allocator_shm == MM_HP_MALLOC ||
-		        mem_allocator_shm == MM_HP_MALLOC_DBG) {
-			int i;
-
-			for (i = 0; i < HP_HASH_SIZE; i++)
-				lock_release(&mem_locks[i]);
-		} else {
-			shm_unlock();
-		}
-#elif defined HP_MALLOC
-		int i;
-
-		for (i = 0; i < HP_HASH_SIZE; i++)
-			lock_release(&mem_locks[i]);
-#else
-		shm_unlock();
-#endif
-	}
-
 	handle_ql_shutdown();
 	destroy_modules();
 	udp_destroy();
@@ -245,6 +214,12 @@ void shutdown_opensips( int status )
 	}
 
 	/* Only one process is running now. Clean up and return overall status */
+
+	/* hack: force-unlock the shared memory lock(s) in case
+		 some process crashed and let it locked; this will
+		 allow an almost gracious shutdown */
+	shm_force_unlock();
+
 	signal(SIGALRM, sig_alarm_abort);
 	alarm(SHUTDOWN_TIMEOUT - i / 100);
 	cleanup(1);
