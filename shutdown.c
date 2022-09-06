@@ -190,7 +190,7 @@ void shutdown_opensips( int status )
 	int i, n, p;
 	int chld_status;
 
-	sr_set_core_status( STATE_TERMINATING, MI_SSTR("shutting down"));
+	sr_set_core_status_terminating();
 
 	/* terminate all processes */
 

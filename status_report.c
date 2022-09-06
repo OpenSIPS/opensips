@@ -702,6 +702,19 @@ int sr_set_core_status(int status, char *txt_s, int txt_len)
 }
 
 
+/* light version of set_core_status, doing no shm, locking or event
+ * operations - such ops are potentially dangerous during shutdonw */
+void sr_set_core_status_terminating( void )
+{
+	sri_core->status = STATE_TERMINATING;
+	/* note: the below assigment will produce a small mem leak in shm
+	 * (for the previously allocated status), but we do not really care
+	 * as we do this only once, at shutdown */
+	sri_core->status_txt.s = "shutting down";
+	sri_core->status_txt.len = 13;
+}
+
+
 int sr_get_core_status(void)
 {
 	return sri_core->status;

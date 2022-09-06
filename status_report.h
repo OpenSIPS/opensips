@@ -82,6 +82,8 @@ enum sr_core_states { STATE_NONE=-100, STATE_TERMINATING=-2,
 
 int sr_set_core_status(int status, char *txt_s, int txt_len);
 
+void sr_set_core_status_terminating( void );
+
 int sr_get_core_status(void);
 
 int sr_add_core_report(char *report_s, int report_len);
