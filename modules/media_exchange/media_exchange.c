@@ -218,10 +218,8 @@ static int mod_init(void)
 	}
 
 
-	if (load_rtp_relay(&media_rtp) != 0) {
-		LM_ERR("rtp_relay module not loaded! Cannot use streaming module\n");
-		return -1;
-	}
+	if (load_rtp_relay(&media_rtp) != 0)
+		LM_DBG("rtp_relay module not loaded! Cannot use streaming module\n");
 
 	if (init_media_sessions() < 0) {
 		LM_ERR("could not initialize media sessions!\n");
@@ -408,7 +406,7 @@ static int media_fork_to_uri(struct sip_msg *msg,
 		LM_ERR("cannot create new exchange leg!\n");
 		return -2;
 	}
-	if (!msl->ms->rtp) {
+	if (!msl->ms->rtp && media_rtp.get_ctx) {
 		msl->ms->rtp = media_rtp.get_ctx();
 		if (!msl->ms->rtp) {
 			LM_ERR("no existing rtp relay context!\n");
@@ -647,6 +645,7 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	struct media_session_tm_param *p = NULL;
 	rtp_ctx ctx = NULL;
 	int release = 0;
+	str sbody;
 
 	/* if we have an indialog re-invite, we need to respond to it after we get
 	 * the SDP - so we need to store the transaction until we have a new body
@@ -674,8 +673,13 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 			leg = MEDIA_LEG_CALLER;
 	}
 	if (!body) {
-		ctx = media_rtp.get_ctx_dlg(dlg);
-		body = media_exchange_get_offer_sdp(ctx, dlg, leg, &release);
+		if (media_rtp.get_ctx_dlg) {
+			ctx = media_rtp.get_ctx_dlg(dlg);
+			body = media_exchange_get_offer_sdp(ctx, dlg, leg, &release);
+		} else {
+			sbody = dlg_get_out_sdp(dlg, req_leg);
+			body = &sbody;
+		}
 	}
 
 	if (!msg->force_send_socket) {
@@ -1493,7 +1497,7 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 	struct socket_info *si;
 	union sockaddr_union tmp;
 	struct media_session_leg *msl;
-	rtp_ctx ctx;
+	rtp_ctx ctx = NULL;
 
 	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
 		return init_mi_param_error();
@@ -1525,9 +1529,11 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
 	/* check to see if we have an onging RTP context */
-	ctx = media_rtp.get_ctx_dlg(dlg);
-	if (!ctx)
-		return init_mi_error(404, MI_SSTR("Media context not found"));
+	if (media_rtp.get_ctx_dlg) {
+		ctx = media_rtp.get_ctx_dlg(dlg);
+		if (!ctx)
+			return init_mi_error(404, MI_SSTR("Media context not found"));
+	}
 
 	msl = media_session_new_leg(dlg, MEDIA_SESSION_TYPE_FORK, media_leg, 0);
 	if (!msl) {
@@ -1596,8 +1602,13 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
 	if (try_get_mi_string_param(params, "body", &body.s, &body.len) < 0) {
-		ctx = media_rtp.get_ctx_dlg(dlg);
-		pbody = media_exchange_get_offer_sdp(ctx, dlg, media_leg, &release);
+		if (media_rtp.get_ctx_dlg) {
+			ctx = media_rtp.get_ctx_dlg(dlg);
+			pbody = media_exchange_get_offer_sdp(ctx, dlg, media_leg, &release);
+		} else {
+			body = dlg_get_out_sdp(dlg, DLG_MEDIA_SESSION_LEG(dlg, media_leg));
+			pbody = &body;
+		}
 	} else {
 		pbody = &body;
 	}
