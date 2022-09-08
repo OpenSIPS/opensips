@@ -518,7 +518,8 @@ void media_exchange_event_received(enum b2b_entity_type et, str *key,
 			break;
 	}
 
-	media_dlg.dlg_unref(dlg, 1);
+	if (dlg)
+		media_dlg.dlg_unref(dlg, 1);
 	return;
 }
 
