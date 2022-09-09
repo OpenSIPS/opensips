@@ -185,7 +185,9 @@ void *sys_malloc(unsigned long, const char *, const char *, unsigned int);
 void *sys_realloc(void *, unsigned long, const char *, const char *, unsigned int);
 void sys_free(void *, const char *, const char *, unsigned int);
 
+#ifndef SYSTEM_MALLOC
 #define SYSTEM_MALLOC
+#endif
 #define pkg_malloc_func sys_malloc
 #define pkg_malloc(s) sys_malloc((s), __FILE__, __FUNCTION__, __LINE__)
 #define func_pkg_relloc sys_realloc
