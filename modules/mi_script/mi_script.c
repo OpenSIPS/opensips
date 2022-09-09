@@ -211,8 +211,11 @@ static mi_request_t *mi_script_parse_request(str *method, str *params,
 			trim_leading(params);
 			p = q_memchr(params->s, ' ', params->len);
 			avp_val.s = *params;
-			if (p)
+			if (p) {
 				avp_val.s.len = p - avp_val.s.s;
+				params->s += avp_val.s.len;
+				params->len -= avp_val.s.len;
+			}
 			if (avp_val.s.len <= 0)
 				break;
 			val = cJSON_CreateStr(avp_val.s.s, avp_val.s.len);
