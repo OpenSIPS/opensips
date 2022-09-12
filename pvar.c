@@ -1630,9 +1630,16 @@ static int pv_get_msg_body(struct sip_msg *msg, pv_param_t *param,
 	if (idx<0) {
 		first_part_by_mime( &sbody->first, neg_index[1], mime );
 		neg_index[0] = neg_index[1];
+
+		if (neg_index[0]==NULL) {
+			LM_DBG("Body part not found for <%d>\n", mime);
+			return pv_get_null(msg, param, res);
+		}
+
 		/*distance=last_body_postition-searched_body_position*/
 		distance -= idx+1;
-		while (neg_index[1]->next) {
+		first_part_by_mime(neg_index[1]->next, neg_index[1], mime);
+		while (neg_index[1]) {
 			if (distance == 0) {
 				first_part_by_mime( neg_index[0]->next, neg_index[0], mime );
 			} else {
