@@ -359,6 +359,11 @@ static int shtag_send_active_info(int c_id, str *tag_name, int node_id)
 	if (bin_push_str(&packet, tag_name) < 0)
 		return CLUSTERER_SEND_ERR;
 
+	if (msg_add_trailer(&packet, c_id, node_id) < 0) {
+		LM_ERR("Failed to add trailer to module's message\n");
+		return CLUSTERER_SEND_ERR;
+	}
+
 	if (clusterer_send_msg(&packet, c_id, node_id, 1) !=
 		CLUSTERER_SEND_SUCCESS) {
 		bin_free_packet(&packet);
