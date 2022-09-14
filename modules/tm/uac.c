@@ -220,7 +220,8 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	if (req->new_uri.s || req->force_send_socket!=dialog->send_sock ||
 	req->dst_uri.len != dialog->hooks.next_hop->len ||
 	memcmp(req->dst_uri.s,dialog->hooks.next_hop->s,req->dst_uri.len) ||
-	(dst_changed=0)!=0 || req->add_rm || should_update_sip_body(req)) {
+	(dst_changed=0)!=0 || req->add_rm || should_update_sip_body(req)
+	|| req->msg_flags&FL_FORCE_LOCAL_RPORT) {
 
 		/* stuff changed in the request, we may need to rebuild, so let's
 		 * evaluate the changes first, mainly if the destination changed */
@@ -249,8 +250,14 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 			}
 		}
 
-		/* if interface change, we need to re-build the via */
-		if (new_send_sock && new_send_sock != dialog->send_sock) {
+		/* if interface change or new VIA related flags were added,
+		 * we need to re-build the via */
+		if ( (new_send_sock && new_send_sock != dialog->send_sock)
+		|| (req->msg_flags&FL_FORCE_LOCAL_RPORT &&
+		/* coding hack to get the new_send_sock set if FL_FORCE_LOCAL_RPORT
+		 * was set (note that new_send_sock gets set only if destination was
+		 * changed, which is not the case here) */
+		(new_send_sock=dialog->send_sock)!=NULL) ) {
 
 			LM_DBG("Interface change in local route -> "
 				"rebuilding via\n");
