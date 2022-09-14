@@ -2322,8 +2322,13 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		run_dlg_script_route( dlg, dlg->rt_on_timeout);
 		/* let's see what happened */
 		if (tl->timeout) {
-			/* dialog is back on the timelist, inheriting the ref count;
-			 * also replicate an update, if some dlg data changed during
+			/* dialog is back on the timelist; the set_dlg_timeout()
+			 * performed a fresh insert into timelist (as we previosly removed
+			 * the dialog from it), so a new ref was added -> right now we
+			 * have 2 refs for timerlist, the old one and new one
+			 * -> get rid of one */
+			unref_dlg(dlg, 1);
+			/* also replicate an update, if some dlg data changed during
 			 * the execution of the on-timeout route */
 			if (dialog_repl_cluster && dlg->flags&DLG_FLAG_VP_CHANGED)
 				replicate_dialog_updated(dlg);
