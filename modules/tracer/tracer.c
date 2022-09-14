@@ -1127,6 +1127,34 @@ static void destroy(void)
 	destroy_dyn_tracing();
 }
 
+static void trace_info_ref(trace_info_p _ti, unsigned int _cnt)
+{
+	if (_ti->ref_lock ) {
+		lock_get(_ti->ref_lock);
+		_ti->ref += _cnt;
+		lock_release(_ti->ref_lock);
+	}
+}
+
+static void trace_info_unref(trace_info_p _ti, unsigned int _cnt)
+{
+	int should_free = 0;
+
+	if (_ti->ref_lock ) {
+		lock_get(_ti->ref_lock);
+		_ti->ref -= _cnt;
+		if (_ti->ref == 0)
+			should_free = 1;
+		lock_release(_ti->ref_lock);
+	}
+
+	if (should_free) {
+		lock_dealloc(_ti->ref_lock);
+		shm_free(_ti);
+	}	
+}
+
+
 
 
 static inline int insert_siptrace(st_db_struct_t *st_db,
@@ -1316,8 +1344,6 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 	trace_info_p info = (trace_info_p)*params->param;
 	int reverte_dir = 0;
 
-	TRACE_FLAG_UNSET(info, TRACE_INFO_TRAN);
-
 	if (dlgb.get_direction()==DLG_DIR_UPSTREAM)
 		reverte_dir = 1;
 
@@ -1364,25 +1390,25 @@ static void free_trace_info_shm(void *param, int type)
 			info->instances = it->next;
 		shm_free(it);
 	}
-	if ((info->flags & ~TRACE_INFO_STAT) == 0)
-		shm_free(param);
+
+	/* TODO - this not 100% handle multiple tracing instances,
+	 * but prevents accessing invalid memory due to refcounting
+	 * simultaneous transactions within the same dialog */
+	trace_info_unref(info,1);
 }
 
 static void free_trace_info_tm(void *param)
 {
-	TRACE_FLAG_UNSET((trace_info_p)param, TRACE_INFO_TRAN);
 	free_trace_info_shm(param, TRACE_TRANSACTION);
 }
 
 static void free_trace_info_b2b(void *param)
 {
-	TRACE_FLAG_UNSET((trace_info_p)param, TRACE_INFO_B2B);
 	free_trace_info_shm(param, TRACE_B2B);
 }
 
 static void free_trace_info_dlg(void *param)
 {
-	TRACE_FLAG_UNSET((trace_info_p)param, TRACE_INFO_DIALOG);
 	free_trace_info_shm(param, TRACE_DIALOG);
 }
 
@@ -1442,7 +1468,7 @@ static struct b2b_tracer* b2b_set_tracer_cb(void)
 		tracer.f = NULL;
 		tracer.f_freep = NULL;
 	} else {
-		TRACE_FLAG_SET(info, TRACE_INFO_B2B);
+		trace_info_ref(info,1);
 		tracer.f = trace_b2b_transaction;
 		tracer.f_freep = free_trace_info_b2b;
 	}
@@ -1468,21 +1494,8 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverse
 	if (msg==NULL)
 		return 0;
 
-	if (TRACE_FLAG_ISSET(info, TRACE_INFO_TRAN)) {
-		LM_DBG("transacton callbacks already registered!\n");
-		return 0;
-	}
-
 	/* context for the request message */
 	SET_TRACER_CONTEXT(info);
-
-	/* CANCEL forms a separate transaction, so it ok to install the
-	 * callback again. */
-	if (msg->REQ_METHOD!=METHOD_CANCEL &&
-	TRACE_FLAG_ISSET(info, TRACE_INFO_TRAN)) {
-		LM_DBG("transaction callbacks already registered!\n");
-		return 0;
-	}
 
 	/* allows catching statelessly forwarded ACK in stateful transactions
 	 * and stateless replies */
@@ -1500,19 +1513,13 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverse
 		return -1;
 	}
 
-	TRACE_FLAG_SET(info, TRACE_INFO_TRAN);
+	trace_info_ref(info,1);
 	return 0;
 }
 
 static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 {
 	struct dlg_cell* dlg;
-
-	/* only register if callbacks were not previously registered */
-	if (TRACE_FLAG_ISSET(info, TRACE_INFO_DIALOG)) {
-		LM_DBG("dialog callbacks already registered!\n");
-		return 0;
-	}
 
 	if (!dlgb.create_dlg || ! dlgb.get_dlg) {
 		LM_ERR("Can't trace dialog! Api not loaded!\n");
@@ -1540,11 +1547,11 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 	/* here also free trace info param because we are sure that
 	 * this callback is ran only once - when dialog gets for
 	 * the first time in DELETED state */
-	TRACE_FLAG_SET(info, TRACE_INFO_DIALOG);
+	trace_info_ref(info,1);
 	if(dlgb.register_dlgcb(dlg,DLGCB_TERMINATED,
 				trace_transaction_dlgcb,info,free_trace_info_dlg)!=0) {
 		LM_ERR("failed to register dialog callback\n");
-		TRACE_FLAG_UNSET(info, TRACE_INFO_DIALOG);
+		trace_info_unref(info,1);
 		return -1;
 	}
 
@@ -1887,6 +1894,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 					pkg_free(instance);
 					return -1;
 				}
+				memset(info, 0, sizeof(trace_info_t));
 			} else {
 				info = shm_malloc(sizeof(trace_info_t));
 				if (!info) {
@@ -1894,8 +1902,22 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 					shm_free(instance);
 					return -1;
 				}
+				memset(info, 0, sizeof(trace_info_t));
+				info->ref_lock = lock_alloc(); 
+				if (!info->ref_lock) {
+					LM_ERR("could not allocate lock!\n");
+					shm_free(instance);
+					shm_free(info);
+					return -1;
+				}
+				if (!lock_init(info->ref_lock)) {
+					lock_dealloc(info->ref_lock);
+					LM_ERR("could not init lock!\n");
+					shm_free(instance);
+					shm_free(info);
+					return -1;
+				}
 			}
-			memset(info, 0, sizeof(trace_info_t));
 			SET_TRACER_CONTEXT(info);
 			info->instances = instance;
 		}
@@ -3632,7 +3654,6 @@ int register_traced_type(char* name)
 
 	return id;
 }
-
 
 static int is_id_traced(int id, trace_instance_p info)
 {
