@@ -144,6 +144,12 @@ typedef struct trace_info {
 	/* connection id correlationg sip message with transport messages */
 	unsigned long long conn_id;
 
+	/* ref cnt of number of uses */ 
+	unsigned int ref;
+
+	/* lock for ref cnt ops */
+	gen_lock_t* ref_lock;
+
 	trace_instance_p instances;
 } trace_info_t, *trace_info_p;
 
