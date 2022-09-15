@@ -371,8 +371,10 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 
 #define case_port( ch, var) \
 	case ch: \
-			 (var)=(var)*10+ch-'0'; \
-			 break
+			(var)=(var)*10+ch-'0'; \
+			if ((var) > USHRT_MAX) \
+				goto error_bad_port; \
+			break
 
 #define still_at_user  \
 						if (found_user==0){ \
@@ -656,7 +658,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	memset(uri, 0, sizeof(struct sip_uri)); /* zero it all, just to be sure*/
 	/*look for sip:, sips: or tel:*/
 	if (len<5) goto error_too_short;
-	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme=(unsigned char)buf[0]+((unsigned char)buf[1]<<8)+
+			((unsigned char)buf[2]<<16)+((unsigned char)buf[3]<<24);
 	scheme|=0x20202020;
 	if (scheme==SIP_SCH){
 		uri->type=SIP_URI_T;
@@ -1609,7 +1612,7 @@ error_bad_host:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_port:
-	LM_ERR("bad port in uri (error at char %c in"
+	LM_ERR("bad port in uri (error at char '%c' in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
 			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
 			len, ZSW(buf), len);

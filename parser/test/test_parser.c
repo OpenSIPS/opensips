@@ -47,6 +47,11 @@ void test_parse_uri(void)
 	ok(!u.user.s, "puri-0.5");
 	ok(u.user.len == 0, "puri-0.6");
 
+	ok(!parse_uri(STR_L("sip:test@atlanta.org:0"), &u), "puri-0.7");
+	ok(!parse_uri(STR_L("sip:test@atlanta.org:65535"), &u), "puri-0.8");
+	ok(parse_uri(STR_L("sip:test@atlanta.org:65536"), &u), "puri-0.9");
+	ok(parse_uri(STR_L("sip:test@atlanta.org:55555555555555555555"), &u), "puri-0.10");
+
 	in = *_str("sip:alice@atlanta.org;user=phone");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-1");
 	ok(str_match(&u.user_param, const_str("user=phone")), "puri-2");
