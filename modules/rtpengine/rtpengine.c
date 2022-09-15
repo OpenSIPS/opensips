@@ -369,6 +369,15 @@ static str rtpengine_notify_sock;
 static str rtpengine_notify_event_name = str_init("E_RTPENGINE_NOTIFICATION");
 static event_id_t rtpengine_notify_event = EVI_ERROR;
 
+static str rtpengine_status_event_name = str_init("E_RTPENGINE_STATUS");
+static event_id_t rtpengine_status_event = EVI_ERROR;
+static evi_params_p rtpengine_status_event_params;
+static str rtpengine_status_event_socket_s = str_init("socket");
+static str rtpengine_status_event_status_s = str_init("status");
+static evi_param_p rtpengine_status_event_socket;
+static evi_param_p rtpengine_status_event_status;
+static inline void raise_rtpengine_status_event(struct rtpe_node *node);
+
 /* array with the sockets used by rtpengine (per process)*/
 static int *rtpe_socks = 0;
 static str db_url = {NULL, 0};
@@ -1096,6 +1105,7 @@ static mi_response_t *mi_enable_rtp_proxy(const mi_params_t *params,
 					crt_rtpe->rn_recheck_ticks =
 						enable? MI_MIN_RECHECK_TICKS : MI_MAX_RECHECK_TICKS;
 					crt_rtpe->rn_disabled = enable?0:1;
+					raise_rtpengine_status_event(crt_rtpe);
 				}
 			}
 		}
@@ -1238,6 +1248,7 @@ static mi_response_t *mi_teardown_call(const mi_params_t *params,
  */
 void rtpengine_timer(unsigned int ticks, void *param)
 {
+  int disabled;
   struct rtpe_set *rtpe_list;
   struct rtpe_node *crt_rtpe;
 
@@ -1248,9 +1259,13 @@ void rtpengine_timer(unsigned int ticks, void *param)
   for(rtpe_list = (*rtpe_set_list)->rset_first; rtpe_list != NULL;
 					rtpe_list = rtpe_list->rset_next){
 		for(crt_rtpe = rtpe_list->rn_first; crt_rtpe != NULL;
-						crt_rtpe = crt_rtpe->rn_next){      
-      if (crt_rtpe->rn_disabled && crt_rtpe->rn_recheck_ticks <= get_ticks())
+						crt_rtpe = crt_rtpe->rn_next){
+      if (crt_rtpe->rn_disabled && crt_rtpe->rn_recheck_ticks <= get_ticks()) {
+		disabled = crt_rtpe->rn_disabled;
         crt_rtpe->rn_disabled = rtpe_test(crt_rtpe, 0, 1);
+		if (crt_rtpe->rn_disabled != disabled)
+			raise_rtpengine_status_event(crt_rtpe);
+	  }
     }
   }
   RTPE_STOP_READ();
@@ -1319,6 +1334,29 @@ mod_init(void)
 		}
 	} else
 		exports.procs = NULL;
+
+	rtpengine_status_event = evi_publish_event(rtpengine_status_event_name);
+	if (rtpengine_status_event == EVI_ERROR) {
+		LM_ERR("cannot register RTPEngine Status event\n");
+		return -1;
+	}
+
+	rtpengine_status_event_params = pkg_malloc(sizeof(evi_params_t));
+	if (rtpengine_status_event_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(rtpengine_status_event_params, 0, sizeof(evi_params_t));
+	if ((rtpengine_status_event_socket = evi_param_create(rtpengine_status_event_params,
+				&rtpengine_status_event_socket_s)) == NULL) {
+		LM_ERR("could not create RTPEngine Status socket param\n");
+		return -1;
+	}
+	if ((rtpengine_status_event_status = evi_param_create(rtpengine_status_event_params,
+				&rtpengine_status_event_status_s)) == NULL) {
+		LM_ERR("could not create RTPEngine Status status param\n");
+		return -1;
+	}
 
 	if(db_url.s == NULL) {
 		/* storing the list of rtp proxy sets in shared memory*/
@@ -2613,6 +2651,7 @@ badproxy:
 	LM_ERR("proxy <%s> does not respond, disable it\n", node->rn_url.s);
 	node->rn_disabled = 1;
 	node->rn_recheck_ticks = get_ticks() + rtpengine_disable_tout;
+	raise_rtpengine_status_event(node);
 
 	return NULL;
 }
@@ -4075,4 +4114,33 @@ static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 		return -1;
 	else
 		return 1;
+}
+
+static inline void raise_rtpengine_status_event(struct rtpe_node *node)
+{
+	static str status_connected = str_init("active");
+	static str status_disconnected = str_init("inactive");
+
+	if (rtpengine_status_event == EVI_ERROR) {
+		LM_ERR("event  %.*s not registered (%d)\n", rtpengine_status_event_name.len,
+				rtpengine_status_event_name.s, rtpengine_status_event);
+		return;
+	}
+	if (!evi_probe_event(rtpengine_status_event)) {
+		LM_DBG("no %.*s event subscriber!\n", rtpengine_status_event_name.len,
+				rtpengine_status_event_name.s);
+		return;
+	}
+
+	if (evi_param_set_str(rtpengine_status_event_socket, &node->rn_url) < 0) {
+		LM_ERR("cannot set rtpengine status set parameter\n");
+		return;
+	}
+	if (evi_param_set_str(rtpengine_status_event_status, node->rn_disabled?
+					&status_disconnected:&status_connected) < 0) {
+		LM_ERR("cannot set rtpengine status parameter\n");
+		return;
+	}
+	if (evi_raise_event(rtpengine_status_event, rtpengine_status_event_params))
+		LM_ERR("unable to send event\n");
 }

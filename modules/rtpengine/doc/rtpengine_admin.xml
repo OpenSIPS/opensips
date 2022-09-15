@@ -373,6 +373,31 @@ modparam("rtpengine", "set_column", "set_new")
 
 	</section>
 
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_E_RTPENGINE_STATUS" xreflabel="E_RTPENGINE_STATUS">
+		<title>
+		<function moreinfo="none">E_RTPENGINE_STATUS</function>
+		</title>
+		<para>
+			This event is raised when a RTPEngine server changes it's status to
+			active/inactive.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>socket</emphasis> - the socket that identifies the
+				RTPEngine instance.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - <emphasis>active</emphasis> if
+				the RTPEngine instance responds to probing or
+				<emphasis>inactive</emphasis> if the instance was deactivated.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
 	<section>
 	<title>Exported Functions</title>
 	<section id="func_rtpengine_use_set" xreflabel="rtpengine_use_set()">
