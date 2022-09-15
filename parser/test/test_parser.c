@@ -47,10 +47,19 @@ void test_parse_uri(void)
 	ok(!u.user.s, "puri-0.5");
 	ok(u.user.len == 0, "puri-0.6");
 
-	ok(!parse_uri(STR_L("sip:test@atlanta.org:0"), &u), "puri-0.7");
-	ok(!parse_uri(STR_L("sip:test@atlanta.org:65535"), &u), "puri-0.8");
-	ok(parse_uri(STR_L("sip:test@atlanta.org:65536"), &u), "puri-0.9");
-	ok(parse_uri(STR_L("sip:test@atlanta.org:55555555555555555555"), &u), "puri-0.10");
+	/* URI port parsing tests, with or w/o a username */
+	ok(!parse_uri(STR_L("sip:localhost@atlanta.org:0"), &u), "puri-0.7");
+	ok(!parse_uri(STR_L("sip:localhost@atlanta.org:65535"), &u), "puri-0.8");
+	ok(parse_uri(STR_L("sip:localhost@atlanta.org:65536"), &u), "puri-0.9");
+	ok(parse_uri(STR_L("sip:localhost@atlanta.org:55555555555555555555"), &u), "puri-0.10");
+	ok(!parse_uri(STR_L("sip:localhost:0@atlanta.org"), &u), "puri-0.11");
+	ok(!parse_uri(STR_L("sip:localhost:65535@atlanta.org"), &u), "puri-0.12");
+	ok(!parse_uri(STR_L("sip:localhost:65536@atlanta.org"), &u), "puri-0.13");
+	ok(!parse_uri(STR_L("sip:localhost:5555555555555@atlanta.org"), &u), "puri-0.14");
+	ok(!parse_uri(STR_L("sip:localhost:0"), &u), "puri-0.15");
+	ok(!parse_uri(STR_L("sip:localhost:65535"), &u), "puri-0.16");
+	ok(parse_uri(STR_L("sip:localhost:65536"), &u), "puri-0.17");
+	ok(parse_uri(STR_L("sip:localhost:55555555555"), &u), "puri-0.18");
 
 	in = *_str("sip:alice@atlanta.org;user=phone");
 	ok(parse_uri(in.s, in.len, &u) == 0, "puri-1");
