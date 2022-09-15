@@ -1604,20 +1604,20 @@ error_too_short:
 error_bad_char:
 	LM_ERR("bad char '%c' in state %d"
 			" parsed: <%.*s> (%d) / <%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
-			len, ZSW(buf), len);
+			p < end ? *p : *(buf+len-1), state, (int)(p-buf), ZSW(buf),
+			(int)(p-buf), len, ZSW(buf), len);
 	goto error_exit;
 error_bad_host:
 	LM_ERR("bad host in uri (error at char %c in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
-			len, ZSW(buf), len);
+			p < end ? *p : *(buf+len-1), state, (int)(p-buf), ZSW(buf),
+			(int)(p-buf), len, ZSW(buf), len);
 	goto error_exit;
 error_bad_port:
 	LM_ERR("bad port in uri (error at char '%c' in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
-			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
-			len, ZSW(buf), len);
+			p < end ? *p : *(buf+len-1), state, (int)(p-buf), ZSW(buf),
+			(int)(p-buf), len, ZSW(buf), len);
 	goto error_exit;
 error_bad_uri:
 	LM_ERR("bad uri, state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
