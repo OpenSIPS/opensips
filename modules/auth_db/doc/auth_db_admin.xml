@@ -261,12 +261,13 @@ modparam("auth_db", "domain_column", "domain")
 	<section id="param_password_column" xreflabel="password_column">
 		<title><varname>password_column</varname> (string)</title>
 		<para>
-		This is the name of the column in a 'SUBSCRIBER' like table holding
-		the passwords. Passwords can be
-		either stored as plain text or pre-calculated HA1 strings. HA1 strings
-		are MD5 hashes of username, password and realm. HA1 strings are more
-		safe because the server doesn't need to know plaintext passwords and
-		they cannot be obtained from HA1 strings.
+		This is the name of the column in a <emphasis>"subscriber"</emphasis>
+		like table holding MD5 HA1 hash strings or plaintext passwords.  An MD5 HA1
+		hash is an MD5 hash of username, password and realm.  Storing hashes in the
+		DB (as opposed to passwords directly) is much more secure, because the
+		server does not need to know plaintext passwords and because it is
+		computationally infeasible for an attacker to reverse-obtain a password
+		from an HA1 string.
 		</para>
 		<para>
 		Default value is <quote>ha1</quote>.
