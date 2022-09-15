@@ -369,10 +369,13 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	int i;
 #endif
 
-#define case_port( ch, var) \
+#define case_port( ch, var, ovf_check1, ovf_check2) \
 	case ch: \
-			 (var)=(var)*10+ch-'0'; \
-			 break
+			if (ovf_check1) \
+				(var)=(var)*10+ch-'0'; \
+			if (ovf_check2 && (var) > USHRT_MAX) \
+				goto error_bad_port; \
+			break
 
 #define still_at_user  \
 						if (found_user==0){ \
@@ -656,7 +659,8 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	memset(uri, 0, sizeof(struct sip_uri)); /* zero it all, just to be sure*/
 	/*look for sip:, sips: or tel:*/
 	if (len<5) goto error_too_short;
-	scheme=buf[0]+(buf[1]<<8)+(buf[2]<<16)+(buf[3]<<24);
+	scheme=(unsigned char)buf[0]+((unsigned char)buf[1]<<8)+
+			((unsigned char)buf[2]<<16)+((unsigned char)buf[3]<<24);
 	scheme|=0x20202020;
 	if (scheme==SIP_SCH){
 		uri->type=SIP_URI_T;
@@ -775,16 +779,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						found_user=1; /*  there is no user part */
 						s=p+1;
 						break;
-					case_port('0', port_no);
-					case_port('1', port_no);
-					case_port('2', port_no);
-					case_port('3', port_no);
-					case_port('4', port_no);
-					case_port('5', port_no);
-					case_port('6', port_no);
-					case_port('7', port_no);
-					case_port('8', port_no);
-					case_port('9', port_no);
+					case_port('0', port_no, port_no < INT_MAX / 10, 0);
+					case_port('1', port_no, port_no < INT_MAX / 10, 0);
+					case_port('2', port_no, port_no < INT_MAX / 10, 0);
+					case_port('3', port_no, port_no < INT_MAX / 10, 0);
+					case_port('4', port_no, port_no < INT_MAX / 10, 0);
+					case_port('5', port_no, port_no < INT_MAX / 10, 0);
+					case_port('6', port_no, port_no < INT_MAX / 10, 0);
+					case_port('7', port_no, port_no < INT_MAX / 10, 0);
+					case_port('8', port_no, port_no < INT_MAX / 10, 0);
+					case_port('9', port_no, port_no < INT_MAX / 10, 0);
 					case '[':
 					case ']':
 					case ':':
@@ -870,16 +874,16 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 						state=URI_HEADERS;
 						s=p+1;
 						break;
-					case_port('0', port_no);
-					case_port('1', port_no);
-					case_port('2', port_no);
-					case_port('3', port_no);
-					case_port('4', port_no);
-					case_port('5', port_no);
-					case_port('6', port_no);
-					case_port('7', port_no);
-					case_port('8', port_no);
-					case_port('9', port_no);
+					case_port('0', port_no, 1, 1);
+					case_port('1', port_no, 1, 1);
+					case_port('2', port_no, 1, 1);
+					case_port('3', port_no, 1, 1);
+					case_port('4', port_no, 1, 1);
+					case_port('5', port_no, 1, 1);
+					case_port('6', port_no, 1, 1);
+					case_port('7', port_no, 1, 1);
+					case_port('8', port_no, 1, 1);
+					case_port('9', port_no, 1, 1);
 					case '&':
 					case '@':
 					case ':':
@@ -1350,6 +1354,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 		case URI_PASSWORD:
 			/* this is the port, it can't be the passwd */
 			if (found_user) goto error_bad_port;
+			if (port_no > USHRT_MAX) goto error_bad_port;
 			uri->port.s=s;
 			uri->port.len=p-s;
 			uri->port_no=port_no;
@@ -1609,7 +1614,7 @@ error_bad_host:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bad_port:
-	LM_ERR("bad port in uri (error at char %c in"
+	LM_ERR("bad port in uri (error at char '%c' in"
 			" state %d) parsed: <%.*s>(%d) /<%.*s> (%d)\n",
 			*p, state, (int)(p-buf), ZSW(buf), (int)(p-buf),
 			len, ZSW(buf), len);
