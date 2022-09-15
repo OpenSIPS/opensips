@@ -115,6 +115,8 @@ csv_record *__parse_csv_record(const str *_in, enum csv_flags parse_flags,
 	return record;
 
 rfc_4180_parsing:
+	parse_flags |= CSV_DUP_FIELDS;
+
 	if (in.len >= 2 && in.s[in.len - 2] == '\r' && in.s[in.len - 1] == '\n')
 		in.len -= 2;
 
@@ -179,9 +181,12 @@ matched_quote:
 			*c = '\0';
 			field.len = c - field.s;
 
-			if (!push_csv_field(&field, last, parse_flags & (~CSV_DUP_FIELDS)))
+			if (!push_csv_field(&field, last, parse_flags)) {
+				free_f(field.s);
 				goto oom;
+			}
 
+			free_f(field.s);
 			last = &(*last)->next;
 
 			if (ch == lim - 1)
