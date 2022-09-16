@@ -1306,6 +1306,12 @@ module_stm:	LOADMODULE STRING	{ IFOR();
 						"can't set", $5, $3);
 				}
 			}
+		| MODPARAM LPAREN STRING COMMA STRING COMMA folded_string RPAREN { IFOR();
+				if (set_mod_param_regex($3, $5, STR_PARAM, $7) != 0) {
+					yyerrorf("Parameter <%s> not found in module <%s> - "
+						"can't set", $5, $3);
+				}
+			}
 		| MODPARAM LPAREN STRING COMMA STRING COMMA snumber RPAREN { IFOR();
 				if (set_mod_param_regex($3, $5, INT_PARAM, (void*)$7) != 0) {
 					yyerrorf("Parameter <%s> not found in module <%s> - "
