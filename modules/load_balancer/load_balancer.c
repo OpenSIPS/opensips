@@ -771,13 +771,10 @@ void set_dst_state_from_rplcode( int id, int code)
 
 static void lb_prob_handler(unsigned int ticks, void* param)
 {
-	lock_start_read( ref_lock );
-
 	/* do probing */
 	lb_do_probing(*curr_data);
-
-	lock_stop_read( ref_lock );
 }
+
 
 static void lb_update_max_loads(unsigned int ticks, void *param)
 {
