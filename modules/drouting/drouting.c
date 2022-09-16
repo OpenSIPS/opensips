@@ -844,12 +844,20 @@ end:
 
 static void dr_prob_handler(unsigned int ticks, void* param)
 {
-	static char buff[1000] = {"sip:"};
+	struct gw_prob_pack {
+		/* IMPORTANT, this member must be the first, as we use its pointer
+		 * to free the whole structure here */
+		param_prob_callback_t params;
+
+		struct socket_info *sock;
+		str uri;
+
+		struct gw_prob_pack *next;
+	};
 	/* do probing */
 	pgw_t *dst;
-	param_prob_callback_t *params;
+	struct gw_prob_pack *pack, *pack_last, *pack_head;
 	dlg_t *dlg;
-	str uri;
 	int nodes_no, node_idx=-1;
 	unsigned int h;
 
@@ -874,6 +882,8 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 	while( it!=NULL ) {
 		if (it->rdata==NULL)
 			return;
+
+		pack_last = pack_head = NULL;
 
 		lock_start_read( it->ref_lock );
 
@@ -905,45 +915,70 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 					continue;
 			}
 
-			memcpy(buff + 4, dst->ip_str.s, dst->ip_str.len);
-			uri.s = buff;
-			uri.len = dst->ip_str.len + 4;
+			/* build its pack, so we can build and send the prob later */
+			pack = shm_malloc(sizeof(struct gw_prob_pack)+4+dst->ip_str.len);
+			if( params==0 ) {
+				LM_ERR("no more shm memory!\n");
+				/* send whatever probs we have so far */
+				break;
+			}
+
+			pack->uri.s = (char*)(pack+1);
+			memcpy(pack->uri.s, "sip:", 4);
+			memcpy(pack->uri.s+4, dst->ip_str.s, dst->ip_str.len);
+			pack->uri.len = dst->ip_str.len + 4;
+
+			pack->sock = dst->sock;
+
+			pack->params._id = dst->_id;
+			pack->params.current_partition = it;
+
+			if (pack_head==NULL) {
+				pack_head = pack_last = pack;
+			} else {
+				pack_last->next = pack;
+				pack_last = pack;
+			}
+		}
+
+		lock_stop_read( it->ref_lock );
+
+
+		/* now send all the probs, outside the lock */
+		for( pack = pack_head ; pack ; pack=pack->next ) {
 
 			/* Execute the Dialog using the "request"-Method of the
 			 * TM-Module.*/
-			if (dr_tmb.new_auto_dlg_uac(&dr_probe_from, &uri, NULL, NULL,
-			     dst->sock?dst->sock:dr_probe_sock, &dlg)!=0) {
+			if (dr_tmb.new_auto_dlg_uac(&dr_probe_from, &pack->uri,
+			  NULL, NULL,
+			  pack->sock?pack->sock:dr_probe_sock, &dlg)!=0) {
 				LM_ERR("failed to create new TM dlg\n");
 				continue;
 			}
 			dlg->state = DLG_CONFIRMED;
 
-			params = shm_malloc(sizeof(param_prob_callback_t));
-			if( params==0 ) {
-				LM_ERR("no more shm memory!\n");
-				return;
-			}
-			params->_id = dst->_id;
-			params->current_partition = it;
-
 			if (dr_tmb.t_request_within(&dr_probe_method, NULL, NULL, dlg,
-			dr_probing_callback, (void*)params, osips_shm_free)<0) {
+			dr_probing_callback, (void*)pack, osips_shm_free)<0) {
 				LM_ERR("unable to execute dialog, disabling destination...\n");
-				if ( (dst->flags&DR_DST_STAT_DSBL_FLAG)==0 ) {
+				lock_start_read( it->ref_lock );
+				dst = get_gw_by_internal_id( it->rdata->pgw_tree,
+					pack->params._id);
+				if ( dst && (dst->flags&DR_DST_STAT_DSBL_FLAG)==0 ) {
 					dst->flags |= DR_DST_STAT_DSBL_FLAG|DR_DST_STAT_DIRT_FLAG;
 					dr_gw_status_changed( it, dst,
 						MI_SSTR("failure to send probe"));
 				}
+				lock_stop_read( it->ref_lock );
 
-				shm_free(params);
+				shm_free(pack);
 			}
 			dr_tmb.free_dlg(dlg);
 
 		}
 
-		lock_stop_read( it->ref_lock );
 		it = it->next;
 	}
+	/* done with all partitions */
 }
 
 
