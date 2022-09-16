@@ -917,7 +917,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 
 			/* build its pack, so we can build and send the prob later */
 			pack = shm_malloc(sizeof(struct gw_prob_pack)+4+dst->ip_str.len);
-			if( params==0 ) {
+			if( pack==0 ) {
 				LM_ERR("no more shm memory!\n");
 				/* send whatever probs we have so far */
 				break;
