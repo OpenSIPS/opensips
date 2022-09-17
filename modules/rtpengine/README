@@ -28,58 +28,62 @@ rtpengine Module
               1.4.12. socket_column (string)
               1.4.13. set_column (string)
 
-        1.5. Exported Functions
+        1.5. Exported Events
 
-              1.5.1. rtpengine_use_set(setid)
-              1.5.2. rtpengine_offer([flags[, sock_var[,
+              1.5.1. E_RTPENGINE_STATUS
+
+        1.6. Exported Functions
+
+              1.6.1. rtpengine_use_set(setid)
+              1.6.2. rtpengine_offer([flags[, sock_var[,
                       sdp_pvar[, body]]]])
 
-              1.5.3. rtpengine_answer([flags[, sock_pvar[,
+              1.6.3. rtpengine_answer([flags[, sock_pvar[,
                       sdp_pvar[, body]]]])
 
-              1.5.4. rtpengine_delete([flags[, sock_var]])
-              1.5.5. rtpengine_manage([flags[, sock_var[,
+              1.6.4. rtpengine_delete([flags[, sock_var]])
+              1.6.5. rtpengine_manage([flags[, sock_var[,
                       sdp_var[, body]]]])
 
-              1.5.6. rtpengine_start_recording([flags [,
+              1.6.6. rtpengine_start_recording([flags [,
                       sock_var]])
 
-              1.5.7. rtpengine_stop_recording([flags [,
+              1.6.7. rtpengine_stop_recording([flags [,
                       sock_var]])
 
-              1.5.8. rtpengine_play_media(flags, [duration_spec[,
+              1.6.8. rtpengine_play_media(flags, [duration_spec[,
                       sock_var[, sockvar]]])
 
-              1.5.9. rtpengine_stop_media([flags[, sockvar]])
-              1.5.10. rtpengine_block_media([flags[, sockvar]])
-              1.5.11. rtpengine_unblock_media([flags[, sockvar]])
-              1.5.12. rtpengine_block_dtmf([flags[, sockvar]])
-              1.5.13. rtpengine_unblock_dtmf([flags[, sockvar]])
-              1.5.14. rtpengine_start_forwarding([flags[,
+              1.6.9. rtpengine_stop_media([flags[, sockvar]])
+              1.6.10. rtpengine_block_media([flags[, sockvar]])
+              1.6.11. rtpengine_unblock_media([flags[, sockvar]])
+              1.6.12. rtpengine_block_dtmf([flags[, sockvar]])
+              1.6.13. rtpengine_unblock_dtmf([flags[, sockvar]])
+              1.6.14. rtpengine_start_forwarding([flags[,
                       sockvar]])
 
-              1.5.15. rtpengine_stop_forwarding([flags[,
+              1.6.15. rtpengine_stop_forwarding([flags[,
                       sockvar]])
 
-              1.5.16. rtpengine_play_dtmf(code, [flags[,
+              1.6.16. rtpengine_play_dtmf(code, [flags[,
                       sockvar]])
 
-        1.6. Exported Pseudo-Variables
+        1.7. Exported Pseudo-Variables
 
-              1.6.1. $rtpstat
-              1.6.2. $rtpstat(STAT)[index]
-              1.6.3. $rtpquery
+              1.7.1. $rtpstat
+              1.7.2. $rtpstat(STAT)[index]
+              1.7.3. $rtpquery
 
-        1.7. Exported MI Functions
+        1.8. Exported MI Functions
 
-              1.7.1. rtpengine_enable
-              1.7.2. rtpengine_show
-              1.7.3. rtpengine_reload
-              1.7.4. teardown
+              1.8.1. rtpengine_enable
+              1.8.2. rtpengine_show
+              1.8.3. rtpengine_reload
+              1.8.4. teardown
 
-        1.8. Exported Events
+        1.9. Exported Events
 
-              1.8.1. E_RTPENGINE_NOTIFICATION
+              1.9.1. E_RTPENGINE_NOTIFICATION
 
    2. Frequently Asked Questions
    3. Contributors
@@ -387,9 +391,21 @@ modparam("rtpengine", "socket_column", "sock")
 modparam("rtpengine", "set_column", "set_new")
 ...
 
-1.5. Exported Functions
+1.5. Exported Events
 
-1.5.1.  rtpengine_use_set(setid)
+1.5.1.  E_RTPENGINE_STATUS
+
+   This event is raised when a RTPEngine server changes it's
+   status to active/inactive.
+
+   Parameters:
+     * socket - the socket that identifies the RTPEngine instance.
+     * status - active if the RTPEngine instance responds to
+       probing or inactive if the instance was deactivated.
+
+1.6. Exported Functions
+
+1.6.1.  rtpengine_use_set(setid)
 
    Sets the ID of the RTP proxy set to be used for the next
    rtpengine_delete(), rtpengine_offer(), rtpengine_answer() or
@@ -404,7 +420,7 @@ rtpengine_use_set(2);
 rtpengine_offer();
 ...
 
-1.5.2.  rtpengine_offer([flags[, sock_var[, sdp_pvar[, body]]]])
+1.6.2.  rtpengine_offer([flags[, sock_var[, sdp_pvar[, body]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on INVITE for the cases the SDPs are in
@@ -711,7 +727,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 ");
 ...
 
-1.5.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])
+1.6.3.  rtpengine_answer([flags[, sock_pvar[, sdp_pvar[, body]]]])
 
    Rewrites SDP body to ensure that media is passed through an RTP
    proxy. To be invoked on 200 OK for the cases the SDPs are in
@@ -727,7 +743,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 
    See rtpengine_offer() function example above for examples.
 
-1.5.4.  rtpengine_delete([flags[, sock_var]])
+1.6.4.  rtpengine_delete([flags[, sock_var]])
 
    Tears down the RTPProxy session for the current call.
 
@@ -742,7 +758,7 @@ rtpengine_offer("... codec-mask-PCMA codec-strip-opus transcode-opus ...
 rtpengine_delete();
 ...
 
-1.5.5.  rtpengine_manage([flags[, sock_var[, sdp_var[, body]]]])
+1.6.5.  rtpengine_manage([flags[, sock_var[, sdp_var[, body]]]])
 
    Manage the RTPProxy session - it combines the functionality of
    rtpengine_offer(), rtpengine_answer() and rtpengine_delete(),
@@ -770,7 +786,7 @@ rtpengine_delete();
 rtpengine_manage();
 ...
 
-1.5.6.  rtpengine_start_recording([flags [, sock_var]])
+1.6.6.  rtpengine_start_recording([flags [, sock_var]])
 
    This function will send a signal to the RTP proxy to record the
    RTP stream on the RTP proxy.
@@ -790,7 +806,7 @@ rtpengine_manage();
 rtpengine_start_recording();
 ...
 
-1.5.7.  rtpengine_stop_recording([flags [, sock_var]])
+1.6.7.  rtpengine_stop_recording([flags [, sock_var]])
 
    This function will send a signal to the RTP proxy to stop
    recording the RTP stream on the RTP proxy.
@@ -810,7 +826,7 @@ rtpengine_start_recording();
 rtpengine_stop_recording();
 ...
 
-1.5.8.  rtpengine_play_media(flags, [duration_spec[, sock_var[,
+1.6.8.  rtpengine_play_media(flags, [duration_spec[, sock_var[,
 sockvar]]])
 
    This function will start playing a media file to one of the
@@ -858,7 +874,7 @@ e.wav");
 }
 ...
 
-1.5.9.  rtpengine_stop_media([flags[, sockvar]])
+1.6.9.  rtpengine_stop_media([flags[, sockvar]])
 
    This function will stop playing a media file previously started
    by a rtpengine_play_media() call. The meaning of its parameters
@@ -875,7 +891,7 @@ if (is_method("INVITE") && $rs == 200)
         rtpengine_stop_media();
 ...
 
-1.5.10.  rtpengine_block_media([flags[, sockvar]])
+1.6.10.  rtpengine_block_media([flags[, sockvar]])
 
    This function will block the media sent from one of the
    endpoints. The direction to be blocked is controled by the
@@ -888,7 +904,7 @@ if (is_method("INVITE") && $rs == 200)
 rtpengine_block_media();
 ...
 
-1.5.11.  rtpengine_unblock_media([flags[, sockvar]])
+1.6.11.  rtpengine_unblock_media([flags[, sockvar]])
 
    This function will resume/unblock the media sent from one of
    the endpoints. The direction to be blocked is controled by the
@@ -901,7 +917,7 @@ rtpengine_block_media();
 rtpengine_unblock_media();
 ...
 
-1.5.12.  rtpengine_block_dtmf([flags[, sockvar]])
+1.6.12.  rtpengine_block_dtmf([flags[, sockvar]])
 
    This function will block the DTMF media sent from one of the
    endpoints. The direction to be blocked is controled by the
@@ -914,7 +930,7 @@ rtpengine_unblock_media();
 rtpengine_block_dtmf();
 ...
 
-1.5.13.  rtpengine_unblock_dtmf([flags[, sockvar]])
+1.6.13.  rtpengine_unblock_dtmf([flags[, sockvar]])
 
    This function will resume/unblock the DTMF media sent from one
    of the endpoints. The direction to be blocked is controled by
@@ -927,7 +943,7 @@ rtpengine_block_dtmf();
 rtpengine_unblock_dtmf();
 ...
 
-1.5.14.  rtpengine_start_forwarding([flags[, sockvar]])
+1.6.14.  rtpengine_start_forwarding([flags[, sockvar]])
 
    This function will start forwarding the media to a TLS
    destination specified in the tls-send-to parmeter of RTPEngine.
@@ -942,7 +958,7 @@ rtpengine_unblock_dtmf();
 rtpengine_start_forwarding();
 ...
 
-1.5.15.  rtpengine_stop_forwarding([flags[, sockvar]])
+1.6.15.  rtpengine_stop_forwarding([flags[, sockvar]])
 
    This function will stop forwarding of the media previously
    started using the rtpengine_start_forwarding() function.
@@ -954,7 +970,7 @@ rtpengine_start_forwarding();
 rtpengine_stop_forwarding();
 ...
 
-1.5.16.  rtpengine_play_dtmf(code, [flags[, sockvar]])
+1.6.16.  rtpengine_play_dtmf(code, [flags[, sockvar]])
 
    This function instructs RTP to send the DTMF code to the
    participant of the call. The code can be a digit (“0-9”) or a
@@ -975,9 +991,9 @@ rtpengine_stop_forwarding();
 rtpengine_play_dtmf("0"); # send the 0 code upstream
 ...
 
-1.6. Exported Pseudo-Variables
+1.7. Exported Pseudo-Variables
 
-1.6.1. $rtpstat
+1.7.1. $rtpstat
 
    Returns the RTP statistics from the RTP proxy. The RTP
    statistics from the RTP proxy are provided as a string and it
@@ -988,7 +1004,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
     append_hf("X-RTP-Statistics: $rtpstat\r\n");
 ...
 
-1.6.2. $rtpstat(STAT)[index]
+1.7.2. $rtpstat(STAT)[index]
 
    Returnes one of the pre-fined statistics listed below:
      * MOS-average - without an index, it returns the average MOS
@@ -1065,7 +1081,7 @@ rtpengine_play_dtmf("0"); # send the 0 code upstream
 pstat(MOS-min-at)[$ft])\r\n");
 ...
 
-1.6.3. $rtpquery
+1.7.3. $rtpquery
 
    Does a Query command to the RTP proxy and returns the answer in
    a JSON format. You can use this variable to fetch arbitrary
@@ -1082,9 +1098,9 @@ pstat(MOS-min-at)[$ft])\r\n");
         xlog("Total RTP Stats: $json(reply/totals)\n");
 ...
 
-1.7. Exported MI Functions
+1.8. Exported MI Functions
 
-1.7.1. rtpengine_enable
+1.8.1. rtpengine_enable
 
    Enables/disables a RTP proxy.
 
@@ -1108,7 +1124,7 @@ $ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
 1 setid=3
 ...
 
-1.7.2. rtpengine_show
+1.8.2. rtpengine_show
 
    Displays all the RTP proxies and their information: set and
    status (disabled or not, weight and recheck_ticks).
@@ -1120,7 +1136,7 @@ $ opensips-cli -x mi rtpengine_enable url=udp:192.168.2.133:8081 enable=
 $ opensips-cli -x mi rtpengine_show
 ...
 
-1.7.3. rtpengine_reload
+1.8.3. rtpengine_reload
 
    Reloads all rtpengine sets from the database. Used only when
    the “db_url” parameter is set.
@@ -1132,7 +1148,7 @@ $ opensips-cli -x mi rtpengine_show
 $ opensips-cli -x mi rtpengine_reload
 ...
 
-1.7.4. teardown
+1.8.4. teardown
 
    Terminates the SIP dialog by the SIP Call-ID given as
    parameter.
@@ -1151,9 +1167,9 @@ $ opensips-cli -x mi teardown Y2IwYjQ2YmE2ZDg5MWVkNDNkZGIwZjAzNGM1ZDY0ZD
 Q
 ...
 
-1.8. Exported Events
+1.9. Exported Events
 
-1.8.1.  E_RTPENGINE_NOTIFICATION
+1.9.1.  E_RTPENGINE_NOTIFICATION
 
    This event is raised when a notification is received from
    RTPengine.
@@ -1243,7 +1259,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 196 100 5750 3001
+   1. Razvan Crainea (@razvancrainea) 198 101 5844 3002
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. Richard Fuchs 20 2 640 723
    4. Liviu Chircu (@liviuchircu) 18 14 73 137
@@ -1279,8 +1295,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2022
-   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jun 2022
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Sep 2022
+   2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Aug 2022
    3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
    5.  John Burke (@john08burke)           Jun 2019 - Oct 2021
@@ -1302,8 +1318,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), John Burke (@john08burke), Nick Altmann
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), John Burke (@john08burke), Nick Altmann
    (@nikbyte), Flavio E. Goncalves, Peter Lemenkov (@lemenkov),
    Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
    (@bogdan-iancu), Richard Fuchs.
