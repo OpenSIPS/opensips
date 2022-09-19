@@ -659,8 +659,10 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	memset(uri, 0, sizeof(struct sip_uri)); /* zero it all, just to be sure*/
 	/*look for sip:, sips: or tel:*/
 	if (len<5) goto error_too_short;
-	scheme=(unsigned char)buf[0]+((unsigned char)buf[1]<<8)+
-			((unsigned char)buf[2]<<16)+((unsigned char)buf[3]<<24);
+	scheme=(unsigned)(unsigned char)buf[0]
+			+ (((unsigned)(unsigned char)buf[1])<<8)
+			+ (((unsigned)(unsigned char)buf[2])<<16)
+			+ (((unsigned)(unsigned char)buf[3])<<24);
 	scheme|=0x20202020;
 	if (scheme==SIP_SCH){
 		uri->type=SIP_URI_T;
