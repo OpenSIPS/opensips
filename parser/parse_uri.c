@@ -357,7 +357,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 	str* param_val; /* current param val */
 	str user;
 	str password;
-	int port_no;
+	unsigned int port_no;
 	register char* p;
 	char* end;
 	char* pass;
@@ -372,7 +372,7 @@ int parse_uri(char* buf, int len, struct sip_uri* uri)
 #define case_port( ch, var, ovf_check1, ovf_check2) \
 	case ch: \
 			if (ovf_check1) \
-				(var)=(var)*10+ch-'0'; \
+				(var)=(var)*10+(ch-'0'); \
 			if (ovf_check2 && (var) > USHRT_MAX) \
 				goto error_bad_port; \
 			break
