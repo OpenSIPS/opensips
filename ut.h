@@ -770,20 +770,24 @@ static inline int strno2int(const str *val, unsigned int *mask )
 
 /*
  * Make a copy of a str structure using shm_malloc
+ *
+ * Return: 0 on success, -1 on failure
  */
-static inline int shm_str_dup(str* dst, const str* src)
-{
-	dst->s = shm_malloc(src->len);
-	if (!dst->s) {
-		LM_ERR("no shared memory left\n");
-		dst->len = 0;
-		return -1;
-	}
-
-	memcpy(dst->s, src->s, src->len);
-	dst->len = src->len;
-	return 0;
-}
+#define shm_str_dup(/* str* */_dst_, /* str* */_src_) \
+	({ \
+		int __ret__; \
+		(_dst_)->s = shm_malloc((_src_)->len); \
+		if (!(_dst_)->s) { \
+			LM_ERR("no shared memory left\n"); \
+			(_dst_)->len = 0; \
+			__ret__ = -1; \
+		} else { \
+			memcpy((_dst_)->s, (_src_)->s, (_src_)->len); \
+			(_dst_)->len = (_src_)->len; \
+			__ret__ = 0; \
+		} \
+	 __ret__; \
+	 })
 
 
 /*
@@ -867,50 +871,49 @@ static inline char *shm_strdup(const char *str)
  *
  * Return: 0 on success, -1 on failure
  */
-static inline int shm_str_extend(str *in, int size)
-{
-	char *p;
-
-	/* do not check for !in->s here, as it's better
-	 * to crash sooner on a corrupt @in string (e.g. {NULL, 172}) */
-	if (in->len < size) {
-		p = shm_realloc(in->s, size);
-		if (!p) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-
-		in->s = p;
-		in->len = size;
-	}
-
-	return 0;
-}
+#define shm_str_extend(/* str* */_in_, /* int */_size_) \
+	({ \
+		int __ret__ = 0; \
+		/* do not check for !in->s here, as it's better \
+		 * to crash sooner on a corrupt @in string (e.g. {NULL, 172}) */ \
+		if ((_in_)->len < (_size_)) { \
+			char *_p_ = shm_realloc((_in_)->s, _size_); \
+			if (!_p_) { \
+				LM_ERR("oom\n"); \
+				__ret__ = -1; \
+			} else { \
+				(_in_)->s = _p_; \
+				(_in_)->len = _size_; \
+			} \
+		} \
+		__ret__; \
+	 })
 
 
 /*
  * Ensure "dst" matches the content of "src" without leaking memory
  *
  * Note: if you just want to dup a string, use "shm_str_dup()" instead
+ * Return: 0 on success, -1 on failure
  */
-static inline int shm_str_sync(str* dst, const str* src)
-{
-	if (ZSTRP(src)) {
-		if (dst->s)
-			shm_free(dst->s);
-		memset(dst, 0, sizeof *dst);
-		return 0;
-	}
-
-	if (shm_str_extend(dst, src->len) != 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-
-	memcpy(dst->s, src->s, src->len);
-	dst->len = src->len;
-	return 0;
-}
+#define shm_str_sync(/* str* */_dst_, /* str* */_src_) \
+	({ \
+		int __ret__; \
+		if ((str *)(_src_) == (str *)NULL || !(_src_)->s || (_src_)->len == 0) { \
+			if ((_dst_)->s) \
+				shm_free((_dst_)->s); \
+			memset((_dst_), 0, sizeof *(_dst_)); \
+			__ret__ = 0; \
+		} else if (shm_str_extend(_dst_, (_src_)->len) != 0) { \
+			LM_ERR("oom\n"); \
+			__ret__ = -1; \
+		} else { \
+			memcpy((_dst_)->s, (_src_)->s, (_src_)->len); \
+			(_dst_)->len = (_src_)->len; \
+			__ret__ = 0; \
+		} \
+	__ret__; \
+	})
 
 
 static inline void shm_str_clean(str* dst)
