@@ -1306,6 +1306,8 @@ void destroy_b2b_htables(void)
 				aux = dlg->next;
 				if(dlg->tag[CALLEE_LEG].s)
 					shm_free(dlg->tag[CALLEE_LEG].s);
+				if (b2be_db_mode == WRITE_BACK && dlg->storage.s)
+					shm_free(dlg->storage.s);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
 				if (dlg->logic_key.s)
@@ -1804,6 +1806,9 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 		shm_free(dlg->tag[CALLEE_LEG].s);
 
 	b2b_delete_legs(&dlg->legs);
+
+	if (b2be_db_mode == WRITE_BACK && dlg->storage.s)
+		shm_free(dlg->storage.s);
 
 	if(dlg->uac_tran)
 		tmb.unref_cell(dlg->uac_tran);
