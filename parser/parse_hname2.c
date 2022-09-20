@@ -207,7 +207,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 	if (p>=end)
 		goto error;
 	p = skip_ws(p, end);
-	if (*p != ':')
+	if (p >= end || *p != ':')
 		goto error;
 	/* hdr type, name should be already set at this point */
 	return (p+1);
@@ -227,7 +227,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 		case '\t':
 			/* consume spaces to the end of name */
 			p = skip_ws( p+1, end);
-			if (*p != ':')
+			if (p >= end || *p != ':')
 				goto error;
 			return (p+1);
 		/* default: it seems the hdr name continues, fall to "other" */
@@ -248,7 +248,7 @@ char* parse_hname2(char* begin, char* end, struct hdr_field* hdr)
 			case '\t':
 				hdr->name.len = p - hdr->name.s;
 				p = skip_ws(p+1, end);
-				if (*p != ':')
+				if (p >= end || *p != ':')
 					goto error;
 				return (p+1);
 		}
