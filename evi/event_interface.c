@@ -511,6 +511,8 @@ static int evi_print_subscriber(mi_item_t *subs_obj, evi_subs_p subs)
 {
 	evi_reply_sock *sock;
 	str socket;
+	long now;
+	int expiry_countdown;
 
 	if (!subs || !subs->trans_mod || !subs->trans_mod->print) {
 		LM_ERR("subscriber does not have a print method exported\n");
@@ -533,9 +535,11 @@ static int evi_print_subscriber(mi_item_t *subs_obj, evi_subs_p subs)
 			subs->trans_mod->proto.len, subs->trans_mod->proto.s,
 			socket.len, socket.s) < 0)
 		return -1;
-
+	
 	if (sock->flags & EVI_EXPIRE) {
-		if (add_mi_number(subs_obj, MI_SSTR("expire"), sock->expire) < 0)
+		now = time(0);
+		expiry_countdown = sock->expire - (now - subs->reply_sock->subscription_time);
+		if (add_mi_number(subs_obj, MI_SSTR("expire"), expiry_countdown) < 0)
 			return -1;
 	} else {
 		if (add_mi_string(subs_obj, MI_SSTR("expire"), MI_SSTR("never")) < 0)
