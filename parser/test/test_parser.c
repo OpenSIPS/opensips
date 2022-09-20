@@ -143,10 +143,40 @@ void test_parse_uri(void)
 	ok(str_match(&u.pn_purr_val, const_str("t")), "puri-43");
 }
 
+static const struct tts {
+	const unsigned char tmsg[32];
+	int tres;
+} tset[] = {
+	{
+		/* test for read overflows on EoH parsing */
+		{'e', ' ', 255, 255, 255, 255, ' ', ' ', ' ', ' ', ' ', 255, '\n', 255, 255, ' ', ' '},
+		-1,
+	},
+
+	{{0}, 0},
+};
+
+void test_parse_msg(void)
+{
+	int i;
+
+	for (i = 0; tset[i].tmsg[0]; i++) {
+		struct sip_msg msg;
+
+		memset(&msg, 0, sizeof msg);
+		msg.buf = (char *)tset[i].tmsg;
+		msg.len = strlen(msg.buf);
+
+		ok(parse_msg(msg.buf, msg.len, &msg) == tset[i].tres, "parse-msg-0");
+	}
+}
+
+
 void test_parser(void)
 {
+	test_parse_uri();
+	test_parse_msg();
 	test_parse_qop_val();
 	test_parse_fcaps();
-	test_parse_uri();
 	test_parse_authenticate_body();
 }
