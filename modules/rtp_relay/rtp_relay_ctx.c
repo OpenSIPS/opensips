@@ -41,8 +41,8 @@ static int rtp_relay_ctx_idx = -1;
 static rw_lock_t *rtp_relay_contexts_lock;
 static struct list_head *rtp_relay_contexts;
 
-#define RTP_RELAY_GET_MSG_CTX() ((struct rtp_relay_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
-		current_processing_ctx, rtp_relay_ctx_idx))
+#define RTP_RELAY_GET_MSG_CTX() (current_processing_ctx?(struct rtp_relay_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
+		current_processing_ctx, rtp_relay_ctx_idx):NULL)
 #define RTP_RELAY_PUT_CTX(_p) context_put_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, rtp_relay_ctx_idx, (_p))
 #define RTP_RELAY_GET_TM_CTX(_t) (rtp_relay_tmb.t_ctx_get_ptr(_t, rtp_relay_tm_ctx_idx))
@@ -121,7 +121,7 @@ static struct rtp_relay_ctx *rtp_relay_get_dlg_ctx(void)
 {
 	struct dlg_cell *dlg;
 
-	if (rtp_relay_dlg_ctx_idx == -1)
+	if (rtp_relay_dlg_ctx_idx == -1 || !current_processing_ctx)
 		return NULL;
 
 	dlg = rtp_relay_dlg.get_dlg();
@@ -133,7 +133,7 @@ static struct rtp_relay_ctx *rtp_relay_get_b2b_ctx(void)
 {
 	str *key;
 
-	if (rtp_relay_b2b_ctx_idx == -1)
+	if (rtp_relay_b2b_ctx_idx == -1 || !current_processing_ctx)
 		return NULL;
 
 	key = rtp_relay_b2b.get_key();
