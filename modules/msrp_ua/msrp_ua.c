@@ -810,16 +810,57 @@ error:
 	return -1;
 }
 
+static int msrpua_update_send_200ok(struct msrpua_session *sess, int etype)
+{
+	int code;
+	str reason;
+	str *sdp;
+
+	sess->sdp_sess_vers++;
+
+	sdp = msrpua_build_sdp(sess, &sess->accept_types);
+	if (!sdp) {
+		LM_ERR("Failed to build SDP answer\n");
+		code = 500;
+		reason = str_init("Internal Server Error");
+		goto err_reply;
+	}
+
+	if (msrpua_b2b_reply(etype, &sess->b2b_key, METHOD_INVITE,
+		200, &str_init("OK"), sdp) < 0) {
+		LM_ERR("Failed to send 200 OK\n");
+		pkg_free(sdp->s);
+		goto err;
+	}
+
+	sess->dlg_state = MSRPUA_DLG_CONF;
+
+	pkg_free(sdp->s);
+
+	return 0;
+
+err_reply:
+	if (msrpua_b2b_reply(etype, &sess->b2b_key, METHOD_INVITE,
+		code, &reason, NULL) < 0) {
+		LM_ERR("Failed to send error reply\n");
+	}
+err:
+	if (msrpua_b2b_request(etype, &sess->b2b_key, &str_init("BYE")) < 0)
+		LM_ERR("Failed to send BYE on error\n");
+	msrpua_delete_session(sess);
+
+	return -1;
+}
+
 #define REASON_488_STR "Not Acceptable Here"
 
 static int msrpua_update_session(struct msrpua_session *sess,
-	struct sip_msg *msg, int etype)
+	struct sip_msg *msg, int etype, int is_reinvite)
 {
 	str peer_accept_types;
 	str peer_path;
 	int code;
 	str reason;
-	str *sdp;
 	int del_sess = 0;
 
 	if (get_sdp_peer_info(msg, &peer_accept_types, &peer_path) < 0) {
@@ -875,38 +916,17 @@ static int msrpua_update_session(struct msrpua_session *sess,
 		goto err_reply;
 	}
 
-	sess->sdp_sess_vers++;
-
-	sdp = msrpua_build_sdp(sess, &sess->accept_types);
-	if (!sdp) {
-		LM_ERR("Failed to build SDP answer\n");
-		code = 500;
-		reason = str_init("Internal Server Error");
-		del_sess = 1;
-		goto err_reply;
-	}
-
-	if (msrpua_b2b_reply(etype, &sess->b2b_key, METHOD_INVITE,
-		200, &str_init("OK"), sdp) < 0) {
-		LM_ERR("Failed to send 200 OK\n");
-		pkg_free(sdp->s);
-		del_sess = 1;
-		goto err;
-	}
-
-	sess->dlg_state = MSRPUA_DLG_CONF;
-
-	pkg_free(sdp->s);
-
-	return 0;
+	if (is_reinvite)
+		return msrpua_update_send_200ok(sess, etype);
+	else
+		return 0;
 
 err_reply:
-	if (msrpua_b2b_reply(etype, &sess->b2b_key, METHOD_INVITE,
+	if (is_reinvite && msrpua_b2b_reply(etype, &sess->b2b_key, METHOD_INVITE,
 		code, &reason, NULL) < 0) {
 		LM_ERR("Failed to send error reply\n");
 		del_sess = 1;
 	}
-err:
 	if (del_sess) {
 		if (msrpua_b2b_request(etype, &sess->b2b_key, &str_init("BYE")) < 0)
 			LM_ERR("Failed to send BYE on error\n");
@@ -1004,6 +1024,7 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	struct msrp_ua_notify_params cb_params = {};
 	struct msrp_ua_handler hdl = {};
 	int raise_ev = 0;
+	str body;
 
 	hentry = hash_entry(msrpua_sessions, sess->session_id);
 	hash_lock(msrpua_sessions, hentry);
@@ -1013,8 +1034,15 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 
 	switch (msg->REQ_METHOD) {
 	case METHOD_INVITE:
-		if (msrpua_update_session(sess, msg, etype) < 0)
-			LM_ERR("Failed to update session on reInvite\n");
+		if (get_body(msg, &body) == 0 && body.len == 0) {
+			/* no SDP -> late negociation */
+
+			if (msrpua_update_send_200ok(sess, etype) < 0)
+				LM_ERR("Failed to send 200 OK on reInvite with no SDP\n");
+		} else {
+			if (msrpua_update_session(sess, msg, etype, 1) < 0)
+				LM_ERR("Failed to update session on reInvite\n");
+		}
 
 		hash_unlock(msrpua_sessions, hentry);
 		break;
@@ -1057,6 +1085,21 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 
 			pkg_free(sess_id.s);
 			pkg_free(accept_types.s);
+		} else if (!(flags & B2B_NOTIFY_FL_ACK_NEG)) {
+			/* ACK for reINVITE */
+
+			if (get_body(msg, &body) == 0 && body.len == 0) {
+				/* no SDP -> no late negociation, just update state */
+				sess->dlg_state = MSRPUA_DLG_EST;
+			} else {
+				/* ACK with SDP -> update session */
+				if (msrpua_update_session(sess, msg, etype, 0) < 0)
+					LM_ERR("Failed to update session on ACK for reInvite\n");
+
+				sess->dlg_state = MSRPUA_DLG_EST;
+			}
+
+			hash_unlock(msrpua_sessions, hentry);
 		} else {
 			hash_unlock(msrpua_sessions, hentry);
 		}
