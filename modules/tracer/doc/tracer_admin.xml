@@ -311,7 +311,7 @@ modparam("tracer", "file_mode", 0644)
 		</title>
 		<para>This function has replaced the <emphasis>sip_trace()</emphasis> in &osips; 3.0.</para>
 		<para>
-			Store or replocate current processed SIP message, transaction / dialog or B2B session.
+			Store or replicate current processed SIP message, transaction / dialog or B2B session.
 			It is stored in the form prior applying chages made to it. The traced_user_avp
 			parameter is now an argument to trace() function. Since version 2.2, this function
 			also catches internally generated replies in stateless mode(sl_send_reply(...)).
