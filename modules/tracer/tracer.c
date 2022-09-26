@@ -2017,7 +2017,7 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 			msg->REQ_METHOD == METHOD_INVITE && !trace_has_totag(msg)) {
 		LM_DBG("tracing dialog!\n");
 	} else if (trace_flags == TRACE_DIALOG) {
-		LM_DBG("can't trace dialog! Will try to trace transaction\n");
+		LM_WARN("can't trace dialog! Will try to trace transaction\n");
 		trace_flags = TRACE_TRANSACTION;
 	}
 
@@ -2025,7 +2025,7 @@ static int trace_w(struct sip_msg *msg, tlist_elem_p list,
 	msg->first_line.type == SIP_REQUEST) {
 		LM_DBG("tracing transaction!\n");
 	} else if (trace_flags == TRACE_TRANSACTION) {
-		LM_DBG("can't trace transaction! Will trace only this message!\n");
+		LM_WARN("can't trace transaction! Will trace only this message!\n");
 		trace_flags = TRACE_MESSAGE;
 	}
 
