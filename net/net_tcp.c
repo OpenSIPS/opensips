@@ -1725,6 +1725,8 @@ int tcp_init(void)
 			break;
 		}
 
+	tcp_init_con_profiles();
+
 	if (tcp_disabled)
 		return 0;
 
@@ -1745,8 +1747,6 @@ int tcp_init(void)
 			auto_scaling_enabled = 1;
 		}
 	}
-
-	tcp_init_con_profiles();
 
 	tcp_workers_max_no = (s_profile && (tcp_workers_no<s_profile->max_procs)) ?
 		s_profile->max_procs : tcp_workers_no ;
