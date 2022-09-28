@@ -541,7 +541,9 @@ static void apply_socket_commands(void)
 	fs_evs *sock;
 	int rc;
 
+#ifdef EXTRA_DEBUG
 	LM_DBG("applying FS socket commands\n");
+#endif
 
 	lock_start_write(sockets_esl_lock);
 	list_for_each_safe(_, __, fs_sockets_esl) {
@@ -576,7 +578,9 @@ void fs_conn_mgr_loop(int proc_no)
 {
 	fs_api_set_proc_no();
 
+#ifdef EXTRA_DEBUG
 	LM_DBG("size: %d, method: %d\n", reactor_size, io_poll_method);
+#endif
 
 	if (init_worker_reactor("FS Manager", RCT_PRIO_MAX) != 0) {
 		LM_BUG("failed to init FS reactor");
