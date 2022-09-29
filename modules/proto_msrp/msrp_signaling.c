@@ -1086,7 +1086,7 @@ int msrp_init_trans_layer(handle_trans_timeout_f *timout_f)
 	int i;
 
 	/* limit the timeout to 30 secs */
-	if (msrp_ident_hash_size>30) {
+	if (msrp_ident_timeout>30) {
 		LM_WARN("ident timeout too big (%d), limiting to 30\n",
 			msrp_ident_timeout);
 		msrp_ident_timeout = 30;
