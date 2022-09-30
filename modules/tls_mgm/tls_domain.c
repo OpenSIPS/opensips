@@ -475,6 +475,8 @@ struct tls_domain *tls_find_client_domain(struct ip_addr *ip, unsigned short por
 			if (sip_domain) {
 				LM_DBG("Match TLS domain by sip domain AVP: '%.*s'\n",
 					sip_domain->len, ZSW(sip_domain->s));
+			} else {
+				sip_domain = &match_any_dom;
 			}
 		}
 	} else {
