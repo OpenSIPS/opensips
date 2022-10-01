@@ -123,7 +123,8 @@ int evi_raise_event(event_id_t id, evi_params_t* params)
 	set_avp_list(bak_avps);
 
 	return status;
-}/* this function checks the subscribers of an event and remove them if 
+}
+/* this function checks the subscribers of an event and remove them if 
 they are past their expiry - dont want to print expired events as well */
 void evi_remove_expired_subs(event_id_t id) {
 	evi_subs_p subs, prev;
@@ -576,7 +577,6 @@ static int evi_print_subscriber(mi_item_t *subs_obj, evi_subs_p subs)
 			subs->trans_mod->proto.len, subs->trans_mod->proto.s,
 			socket.len, socket.s) < 0)
 		return -1;
-	
 	if (sock->flags & EVI_EXPIRE) {
 		now = time(0);
 		/* calculate the remaining time for the subscriber to be expired */
