@@ -479,7 +479,8 @@ endofheader:
 
 parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
-		*tmp,status, (int)(tmp-buffer), ZSW(buffer));
+	    tmp < end? *tmp : *(buffer+strlen(buffer)-1),status,
+	    (int)(tmp-buffer), ZSW(buffer));
 error:
 	if (param) pkg_free(param);
 	free_to_params(to_b);
@@ -816,7 +817,8 @@ endofheader:
 
 parse_error:
 	LM_ERR("unexpected char [%c] in status %d: <<%.*s>> .\n",
-		*tmp,status, (int)(tmp-buffer), buffer);
+	    tmp < end? *tmp : *(buffer+strlen(buffer)-1),
+	    status, (int)(tmp-buffer), buffer);
 error:
 	first_b->error=PARSE_ERROR;
 	free_to_params(first_b);
