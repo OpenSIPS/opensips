@@ -143,16 +143,22 @@ void test_parse_uri(void)
 }
 
 static const struct tts {
-	const unsigned char tmsg[32];
+	const char *tmsg;
 	int tres;
 } tset[] = {
 	{
 		/* test for read overflows on EoH parsing */
-		{'e', ' ', 255, 255, 255, 255, ' ', ' ', ' ', ' ', ' ', 255, '\n', 255, 255, ' ', ' '},
+		"e \xff\xff\xff\xff     \xff\n\xff\xff  ",
 		-1,
 	},
 
-	{{0}, 0},
+	{
+		/* test for read overflows on To header param parsing */
+		"d  \x02\x80\0\nt\0:G;150=\"a8",
+		-1,
+	},
+
+	{"\0", 0},
 };
 
 void test_parse_msg(void)
