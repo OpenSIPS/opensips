@@ -2025,7 +2025,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 
 	<section id="func_dr_match" xreflabel="dr_match()">
 		<title>
-		<function moreinfo="none">dr_match([groupID], [flags], number, [rule_attrs_pvar], [partition])</function>
+		<function moreinfo="none">dr_match(groupID, [flags], number, [rule_attrs_pvar], [partition])</function>
 		</title>
 		<para>
 		The function tries to match/check the given number against the
@@ -2065,6 +2065,11 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 				</para>
 			</listitem>
 			</itemizedlist>
+		</listitem>
+		<listitem>
+			<para>
+			<emphasis role='bold'>number</emphasis> (string) - the number to check
+			</para>
 		</listitem>
 		<listitem>
 			<para>
