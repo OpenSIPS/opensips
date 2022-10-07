@@ -242,13 +242,13 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	number = 0;
 	while (p<end && *p>='0' && *p<='9') {
 		/* do not actually cause an integer overflow, as it is UB! --liviu */
-		if (number > 214748363) {
-			LM_ERR("integer overflow risk at pos %d in len number [%.*s]\n",
+		if (number >= INT_MAX/10) {
+			LM_ERR("integer overflow risk at pos %d in length value [%.*s]\n",
 				(int)(p-buffer),(int)(end-buffer), buffer);
-			return 0;
+			return NULL;
 		}
 
-		number = number*10 + (*p)-'0';
+		number = number*10 + ((*p)-'0');
 		size ++;
 		p++;
 	}
@@ -268,7 +268,7 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	return p;
 error:
 	LM_ERR("parse error near char [%d][%c]\n",*p,*p);
-	return 0;
+	return NULL;
 }
 
 
