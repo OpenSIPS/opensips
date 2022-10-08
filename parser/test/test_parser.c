@@ -151,11 +151,13 @@ static const struct tts {
 		/* test for read overflows on EoH parsing */
 		"e \xff\xff\xff\xff     \xff\n\xff\xff  ",
 		-1,
-	},
-
-	{
+	}, {
 		/* test for read overflows on To header param parsing */
 		"d  \x02\x80\0\nt\0:G;150=\"a8",
+		-1,
+	}, {
+		/* test for read overflows on bad header body (no \n ending) */
+		"m  r\nu:c \x1b\r   : ]",
 		-1,
 	},
 
@@ -173,7 +175,7 @@ void test_parse_msg(void)
 		msg.buf = (char *)tset[i].tmsg;
 		msg.len = strlen(msg.buf);
 
-		ok(parse_msg(msg.buf, msg.len, &msg) == tset[i].tres, "parse-msg-0");
+		ok(parse_msg(msg.buf, msg.len, &msg) == tset[i].tres, "parse-msg-t%d", i);
 	}
 }
 
