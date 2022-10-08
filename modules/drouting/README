@@ -83,7 +83,7 @@ Dynamic Routing Module
                       [gw_attrs_pvar], [partition])
 
               1.4.8. dr_disable([partition])
-              1.4.9. dr_match([groupID], [flags], number,
+              1.4.9. dr_match(groupID, [flags], number,
                       [rule_attrs_pvar], [partition])
 
         1.5. Exported MI Functions
@@ -1408,7 +1408,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 }
 ...
 
-1.4.9.  dr_match([groupID], [flags], number, [rule_attrs_pvar],
+1.4.9.  dr_match(groupID, [flags], number, [rule_attrs_pvar],
 [partition])
 
    The function tries to match/check the given number against the
@@ -1429,6 +1429,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
           + L - Do strict length matching over the prefix -
             actually DR engine will do full number matching and
             not prefix matching anymore.
+     * number (string) - the number to check
      * rule_attrs_pvar (var, optional) - a writable variable which
        will be populated with the attributes of the matched
        dynamic routing rule.
@@ -1647,7 +1648,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 379 181 12950 5588
-   2. Liviu Chircu (@liviuchircu) 133 75 2135 2415
+   2. Liviu Chircu (@liviuchircu) 134 76 2141 2416
    3. Razvan Crainea (@razvancrainea) 93 47 1144 2182
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 38 17 1090 728
@@ -1684,7 +1685,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2022
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Nov 2021
    3.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
    4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2020
