@@ -88,7 +88,7 @@ Dynamic Routing Module
                       [partition])
 
               1.4.8. dr_disable([partition])
-              1.4.9. dr_match([groupID], [flags], number,
+              1.4.9. dr_match(groupID, [flags], number,
                       [rule_attrs_pvar], [partition])
 
         1.5. Exported MI Functions
@@ -1546,7 +1546,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 }
 ...
 
-1.4.9.  dr_match([groupID], [flags], number, [rule_attrs_pvar],
+1.4.9.  dr_match(groupID, [flags], number, [rule_attrs_pvar],
 [partition])
 
    The function tries to match/check the given number against the
@@ -1567,6 +1567,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
           + L - Do strict length matching over the prefix -
             actually DR engine will do full number matching and
             not prefix matching anymore.
+     * number (string) - the number to check
      * rule_attrs_pvar (var, optional) - a writable variable which
        will be populated with the attributes of the matched
        dynamic routing rule.
@@ -1871,7 +1872,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 407 199 13779 5806
-   2. Liviu Chircu (@liviuchircu) 152 89 2454 2586
+   2. Liviu Chircu (@liviuchircu) 154 90 2460 2587
    3. Razvan Crainea (@razvancrainea) 98 51 1168 2223
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 41 20 1100 735
@@ -1909,8 +1910,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Sep 2022
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Aug 2022
+   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Sep 2022
    3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
    4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2021
    5.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
