@@ -470,10 +470,16 @@ int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
 	struct dlg_leg *leg;
 	rr_t *head = NULL, *rrp;
 
+	/*
+	 * we should not limit the number of dialog legs to the number of tm
+	 * branches, as for a single branch, we can have multiple legs (resulted
+	 * due to parallel forking) downstream.
+	 *
 	if (leg_idx >= MAX_BRANCHES) {
 		LM_WARN("invalid callee leg index (branch id part): %d\n", leg_idx);
 		return -1;
 	}
+	*/
 
 	if (ensure_leg_array(leg_idx + 1, dlg) != 0)
 		return -1;
