@@ -40,6 +40,7 @@ struct msrpua_session {
 	str b2b_key;
 	enum b2b_entity_type b2b_type;
 	msrpua_dlg_state_t dlg_state;
+	str ruri;
 	str accept_types;
 	str peer_accept_types;
 	str use_path;

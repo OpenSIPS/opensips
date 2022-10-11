@@ -403,6 +403,9 @@ static void free_msrpua_session(void *val)
 	if (sess->dlginfo)
 		shm_free(sess->dlginfo);
 
+	if (sess->ruri.s)
+		shm_free(sess->ruri.s);
+
 	shm_free(sess);
 }
 
@@ -935,7 +938,7 @@ err_reply:
 	return -1;
 }
 
-static int raise_sess_new_event(struct sip_msg *msg, str *sess_id,
+static int raise_sess_new_event(struct sip_msg *msg, str *sess_id, str *ruri,
 	str *accept_types)
 {
 	if (parse_from_header(msg) < 0) {
@@ -955,7 +958,7 @@ static int raise_sess_new_event(struct sip_msg *msg, str *sess_id,
 		LM_ERR("cannot set event parameter\n");
 		return -1;
 	}
-	if (evi_param_set_str(evi_sess_ruri_p, GET_RURI(msg)) < 0) {
+	if (evi_param_set_str(evi_sess_ruri_p, ruri) < 0) {
 		LM_ERR("cannot set event parameter\n");
 		return -1;
 	}
@@ -1077,11 +1080,16 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 			hash_unlock(msrpua_sessions, hentry);
 
 			if (!cb_params.event) {
-				if (raise_sess_new_event(msg, &sess_id, &accept_types) < 0)
+				if (raise_sess_new_event(msg, &sess_id, &sess->ruri,
+					&accept_types) < 0)
 					LM_ERR("Failed to raise session new event on ACK\n");
 			} else {
 				hdl.notify_cb(&cb_params, hdl.param);
 			}
+
+			/* we only needed the ruri for the E_MSRP_SESSION_NEW event params */
+			shm_free(sess->ruri.s);
+			sess->ruri.s = NULL;
 
 			pkg_free(sess_id.s);
 			pkg_free(accept_types.s);
@@ -1309,11 +1317,16 @@ static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
 			}
 
 			if (!cb_params.event) {
-				if (raise_sess_new_event(msg, &sess_id, &peer_accept_types) < 0)
+				if (raise_sess_new_event(msg, &sess_id, &sess->ruri,
+					&peer_accept_types) < 0)
 					LM_ERR("Failed to raise session new event on ACK\n");
 			} else {
 				hdl.notify_cb(&cb_params, hdl.param);
 			}
+
+			/* we only needed the ruri for the E_MSRP_SESSION_NEW event params */
+			shm_free(sess->ruri.s);
+			sess->ruri.s = NULL;
 
 			pkg_free(sess_id.s);
 		}
@@ -1387,7 +1400,7 @@ static inline void msrpua_gen_id(char *dest, str *src1, str *src2)
 
 /* if successful, returns with the session lock aquired */
 static struct msrpua_session *new_msrpua_session(int b2b_type, str *id_src1,
-	str *id_src2, str *accept_types, struct msrp_ua_handler *hdl)
+	str *id_src2, str *ruri, str *accept_types, struct msrp_ua_handler *hdl)
 {
 	unsigned int hentry;
 	void **val;
@@ -1413,6 +1426,9 @@ static struct msrpua_session *new_msrpua_session(int b2b_type, str *id_src1,
 	sess->lifetime = MSRPUA_SESS_SETUP_TOUT + get_ticks();
 	sess->dlg_state = MSRPUA_DLG_NEW;
 
+	if (shm_str_dup(&sess->ruri, ruri) < 0)
+		goto error;
+
 	hentry = hash_entry(msrpua_sessions, sess->session_id);
 	hash_lock(msrpua_sessions, hentry);
 
@@ -1437,6 +1453,8 @@ static struct msrpua_session *new_msrpua_session(int b2b_type, str *id_src1,
 
 	return sess;
 error:
+	if (sess->ruri.s)
+		shm_free(sess->ruri.s);
 	shm_free(sess);
 	return NULL;
 }
@@ -1647,7 +1665,8 @@ static int msrpua_init_uas(struct sip_msg *msg, str *accept_types,
 		return -1;
 	}
 
-	sess = new_msrpua_session(B2B_SERVER, &callid, NULL, accept_types, hdl);
+	sess = new_msrpua_session(B2B_SERVER, &callid, NULL, GET_RURI(msg),
+		accept_types, hdl);
 	if (!sess) {
 		LM_ERR("Failed to create new MSRP UA session\n");
 		return -1;
@@ -1830,7 +1849,8 @@ static int msrpua_init_uac(str *accept_types, str *from_uri, str *to_uri,
 	unsigned int hentry;
 	struct msrpua_session *sess;
 
-	sess = new_msrpua_session(B2B_CLIENT, from_uri, to_uri, accept_types, hdl);
+	sess = new_msrpua_session(B2B_CLIENT, from_uri, to_uri, ruri, accept_types,
+		hdl);
 	if (!sess) {
 		LM_ERR("Failed to create new MSRP UA session\n");
 		return -1;
