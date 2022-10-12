@@ -99,7 +99,17 @@ unsigned int get_next_msg_no(void)
 int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		context_p existing_context, unsigned int msg_flags)
 {
+	#define reset_global_context() \
+		do {\
+			if (!current_processing_ctx) { \
+				ctx = NULL; \
+			} else { \
+				context_destroy(CONTEXT_GLOBAL, ctx); \
+				current_processing_ctx = NULL; \
+			} \
+		} while (0)
 	static context_p ctx = NULL;
+
 	struct sip_msg* msg;
 	struct timeval start;
 	int rc, old_route_type;
@@ -153,6 +163,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 				prepare_context( ctx, parse_error );
 			current_processing_ctx = ctx;
 			run_error_route(msg, 1);
+			reset_global_context();
 		}
 		goto parse_error;
 	}
@@ -275,15 +286,8 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 	}
 
 end:
+	reset_global_context();
 
-	/* if someone else set the context, then we should also "release" the
-	 * static ctx. */
-	if (current_processing_ctx == NULL)
-		ctx = NULL;
-	else
-		context_destroy(CONTEXT_GLOBAL, ctx);
-
-	current_processing_ctx = NULL;
 	__stop_expire_timer( start, execmsgthreshold, "msg processing",
 		msg->buf, msg->len, 0, slow_msgs);
 	reset_longest_action_list(execmsgthreshold);
