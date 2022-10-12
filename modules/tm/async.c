@@ -89,8 +89,9 @@ int t_resume_async(int fd, void *param, int was_timeout)
 		LM_DBG("resuming without a fd, transaction %p \n", t);
 
 	if (current_processing_ctx) {
-		LM_CRIT("BUG - a context already set!\n");
-		abort();
+		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
+		        current_processing_ctx);
+		current_processing_ctx = NULL;
 	}
 
 	/* prepare for resume route, by filling in a phony UAC structure to
