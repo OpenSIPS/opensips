@@ -471,10 +471,10 @@ route[tls_filter] {
 		<example>
 			<title>Set <varname>tls_handshake_timeout</varname> variable</title>
 			<programlisting format="linespecific">
-
-param("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
-
-			</programlisting>
+...
+modparam("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -493,10 +493,10 @@ param("proto_tls", "tls_handshake_timeout", 200) # number of milliseconds
 		<example>
 			<title>Set <varname>tls_send_timeout</varname> variable</title>
 			<programlisting format="linespecific">
-
-param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
-
-			</programlisting>
+...
+modparam("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+...
+</programlisting>
 		</example>
 	</section>
 
@@ -514,10 +514,10 @@ param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
 		<example>
 			<title>Set <varname>tls_async</varname> variable</title>
 			<programlisting format="linespecific">
-
-param("proto_tls", "tls_async", 1) # enable async TLS
-
-			</programlisting>
+...
+modparam("proto_tls", "tls_async", 1) # enable async TLS
+...
+</programlisting>
 		</example>
 	</section>
 
