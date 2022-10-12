@@ -77,6 +77,7 @@ static void register_context_destroy(context_destroy_f f,
 	count++;
 }
 
+/* Note: @ctx will *not* be freed! */
 void context_destroy(enum osips_context ctxtype, context_p ctx)
 {
 	int f = 0;
@@ -146,6 +147,7 @@ void clear_global_context(void)
 {
 	if (current_processing_ctx) {
 		context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+		context_free(current_processing_ctx);
 		current_processing_ctx = NULL;
 	}
 }
