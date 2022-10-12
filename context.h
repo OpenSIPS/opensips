@@ -89,6 +89,7 @@ void clear_global_context(void);
 
 /*
  * destroys a context by calling each callback registered
+ * Note: @ctx will *not* be freed!
  */
 void context_destroy(enum osips_context type, context_p ctx);
 
