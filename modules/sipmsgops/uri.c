@@ -188,13 +188,14 @@ int ruri_del_param(struct sip_msg* _msg, str* _param)
 			if (end_len)
 				memcpy(new_uri.s + begin_len, param_tok.s + param_tok.len, end_len);
 
-			if (set_ruri(_msg, &new_uri) == 1) {
+			if (set_ruri(_msg, &new_uri) < 0) {
 				pkg_free(new_uri.s);
-				return  1;
-			} else {
-				pkg_free(new_uri.s);
+				LM_ERR("failed to set new R-URI\n");
 				return -1;
 			}
+
+			pkg_free(new_uri.s);
+			return 1;
 		}
 	}
 

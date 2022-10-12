@@ -563,15 +563,18 @@ ruri_add_param("nat=yes");
 		<function moreinfo="none">ruri_del_param(param)</function>
 		</title>
 		<para>
-		Delete a parameter from the RURI being given the key(key=value);
+		Delete a parameter, its value and any leading ";" from the Request-URI of the current SIP message.
 		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
-			<para><emphasis>param (string)</emphasis> - key of the parameter to be removed/
+			<para><emphasis>param (string)</emphasis> - the parameter to be removed
 			</para>
 		</listitem>
 		</itemizedlist>
+		<para>
+		Returns <emphasis role='bold'>1</emphasis> on a successful deletion or <emphasis role='bold'>-1</emphasis> otherwise.
+		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE,
 		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
