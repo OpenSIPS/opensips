@@ -2011,18 +2011,22 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 	}
 
 	if (iniface.len != 0 && outiface.len != 0) {
-		bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &iniface);
-		if (!bitem) {
-			err = "no more memory";
-			goto error;
+		if (ng_flags->direction) {
+			bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &iniface);
+			if (!bitem) {
+				err = iniface.s;
+				goto error;
+			}
+			BCHECK(bencode_list_add(ng_flags->direction, bitem));
+			bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &outiface);
+			if (!bitem) {
+				err = "no more memory";
+				goto error;
+			}
+			BCHECK(bencode_list_add(ng_flags->direction, bitem));
+		} else {
+			LM_DBG("cannot set interfaces for non-offer/answer commands\n");
 		}
-		BCHECK(bencode_list_add(ng_flags->direction, bitem));
-		bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &outiface);
-		if (!bitem) {
-			err = "no more memory";
-			goto error;
-		}
-		BCHECK(bencode_list_add(ng_flags->direction, bitem));
 	} else if (iniface.len) {
 		LM_ERR("in-iface value without out-iface\n");
 		return -1;
