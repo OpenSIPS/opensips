@@ -412,18 +412,23 @@ int rtp_relay_ctx_upstream(void)
 	return rtp_relay_dlg.get_direction() == DLG_DIR_UPSTREAM;
 }
 
-struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
+struct rtp_relay_sess *rtp_relay_get_sess_index(struct rtp_relay_ctx *ctx, int index)
 {
 	struct list_head *it;
 	struct rtp_relay_sess *sess;
-	if (index == RTP_RELAY_ALL_BRANCHES)
-		return ctx->main;
+
 	list_for_each(it, &ctx->sessions) {
 		sess = list_entry(it, struct rtp_relay_sess, list);
 		if (sess->index == index)
 			return sess;
 	}
 	return NULL;
+}
+
+struct rtp_relay_sess *rtp_relay_get_sess(struct rtp_relay_ctx *ctx, int index)
+{
+	struct rtp_relay_sess *sess = rtp_relay_get_sess_index(ctx, index);
+	return sess?sess:rtp_relay_get_sess_index(ctx, RTP_RELAY_ALL_BRANCHES);
 }
 
 static struct rtp_relay_sess *rtp_relay_sess_empty(void)
@@ -1022,13 +1027,9 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 		return -3; /* nothing to do */
 	memset(&info, 0, sizeof info);
 	info.body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
-	if (!info.body) {
+	if (!info.body)
 		rtp_sess_set_late(sess);
-		return 1;
-	}
-	info.msg = msg;
-	info.branch = sess->index;
-	return rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_OFFER, NULL);
+	return 1;
 }
 
 static mi_response_t *mi_rtp_relay_params(const mi_params_t *params,
