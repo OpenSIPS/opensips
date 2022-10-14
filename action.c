@@ -223,7 +223,7 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 			return -1;
 		}
 		memset( ctx, 0, context_size(CONTEXT_GLOBAL));
-		current_processing_ctx = ctx;
+		set_global_context(ctx);
 	}
 
 	/* the recursion support allows run_top_route() to be freely called from
@@ -264,7 +264,7 @@ int run_top_route(struct script_route sr, struct sip_msg* msg)
 	if (ctx && current_processing_ctx) {
 		context_destroy(CONTEXT_GLOBAL, ctx);
 		context_free(ctx);
-		current_processing_ctx = NULL;
+		set_global_context(NULL);
 	}
 
 	return ret;

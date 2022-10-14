@@ -91,7 +91,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	if (current_processing_ctx) {
 		LM_CRIT("BUG - a context is already set (%p), overwriting it...\n",
 		        current_processing_ctx);
-		current_processing_ctx = NULL;
+		set_global_context(NULL);
 	}
 
 	/* prepare for resume route, by filling in a phony UAC structure to
@@ -112,7 +112,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	}
 
 	/* enviroment setting */
-	current_processing_ctx = ctx->msg_ctx;
+	set_global_context(ctx->msg_ctx);
 	backup_t = get_t();
 	backup_e2eack_t = get_e2eack_t();
 	backup_cancelled_t = get_cancelled_t();
@@ -208,7 +208,7 @@ restore:
 	bind_address = backup_si;
 
 	free_faked_req( &faked_req, t);
-	current_processing_ctx = NULL;
+	set_global_context(NULL);
 
 	return 0;
 }
@@ -320,7 +320,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 	ctx->cancelled_t = get_cancelled_t();
 	ctx->e2eack_t = get_e2eack_t();
 
-	current_processing_ctx = NULL;
+	set_global_context(NULL);
 	set_t(T_UNDEFINED);
 	reset_cancelled_t();
 	reset_e2eack_t();
@@ -340,7 +340,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 			LM_ERR("failed to add async FD to reactor -> act in sync mode\n");
 		 	/* as attaching to reactor failed, we have to run in sync mode,
 			 * so we have to restore the environment -- razvanc */
-			current_processing_ctx = ctx->msg_ctx;
+			set_global_context(ctx->msg_ctx);
 			set_t(t);
 			set_cancelled_t(ctx->cancelled_t);
 			set_e2eack_t(ctx->e2eack_t);

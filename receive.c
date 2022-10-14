@@ -105,7 +105,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 				ctx = NULL; \
 			} else { \
 				context_destroy(CONTEXT_GLOBAL, ctx); \
-				current_processing_ctx = NULL; \
+				set_global_context(NULL); \
 			} \
 		} while (0)
 	static context_p ctx = NULL;
@@ -161,7 +161,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		if ( msg->first_line.type==SIP_REQUEST && sroutes->error.a!=NULL ) {
 			if (existing_context == NULL)
 				prepare_context( ctx, parse_error );
-			current_processing_ctx = ctx;
+			set_global_context(ctx);
 			run_error_route(msg, 1);
 			reset_global_context();
 		}
@@ -203,7 +203,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		 * no context was set from the upper layers */
 		if (existing_context == NULL)
 			prepare_context( ctx, parse_error_reset );
-		current_processing_ctx = ctx;
+		set_global_context(ctx);
 
 		/* execute pre-script callbacks, if any;
 		 * if some of the callbacks said not to continue with
@@ -247,7 +247,7 @@ int receive_msg(char* buf, unsigned int len, struct receive_info* rcv_info,
 		 * no context was set from the upper layers */
 		if (existing_context == NULL)
 			prepare_context( ctx, parse_error_reset );
-		current_processing_ctx = ctx;
+		set_global_context(ctx);
 
 		/* execute pre-script callbacks, if any ;
 		 * if some of the callbacks said not to continue with

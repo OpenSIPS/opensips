@@ -148,7 +148,7 @@ int run_dlg_script_route(struct dlg_cell *dlg, int rt_idx)
 		*new_ctx = NULL;
 	else
 		context_destroy(CONTEXT_GLOBAL, *new_ctx);
-	current_processing_ctx = old_ctx;
+	set_global_context(old_ctx);
 
 	/* remove all added AVP and restore the original list */
 	set_avp_list( old_avps );
@@ -2451,7 +2451,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 				context_destroy(CONTEXT_GLOBAL, *new_ctx);
 
 			/* reset the processing context */
-			current_processing_ctx = old_ctx;
+			set_global_context(old_ctx);
 			release_dummy_sip_msg(fake_msg);
 		}
 

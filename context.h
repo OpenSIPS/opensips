@@ -63,6 +63,8 @@ enum osips_context_val {
 #define context_size(enum_ctx) (context_sizes[enum_ctx])
 
 extern context_p current_processing_ctx;
+#define set_global_context(__ctx) current_processing_ctx = __ctx
+
 extern unsigned int context_sizes[];
 extern unsigned int type_sizes[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];
 extern unsigned int type_offsets[CONTEXT_COUNT][CONTEXT_COUNT_TYPE];

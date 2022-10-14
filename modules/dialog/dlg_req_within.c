@@ -258,7 +258,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 					*new_ctx = NULL;
 				else
 					context_destroy(CONTEXT_GLOBAL, *new_ctx);
-				current_processing_ctx = old_ctx;
+				set_global_context(old_ctx);
 				release_dummy_sip_msg(fake_msg);
 			} /* no CB run in case of failure FIXME */
 		} else {
@@ -394,7 +394,7 @@ static inline int send_leg_bye(struct dlg_cell *cell, int dst_leg, int src_leg,
 		*new_ctx = NULL;
 	else
 		context_destroy(CONTEXT_GLOBAL, *new_ctx);
-	current_processing_ctx = old_ctx;
+	set_global_context(old_ctx);
 
 	if(result < 0){
 		LM_ERR("failed to send the BYE request\n");
@@ -631,7 +631,7 @@ int send_leg_msg(struct dlg_cell *dlg,str *method,int src_leg,int dst_leg,
 		*new_ctx = NULL;
 	else
 		context_destroy(CONTEXT_GLOBAL, *new_ctx);
-	current_processing_ctx = old_ctx;
+	set_global_context(old_ctx);
 
 	/* update the cseq, so we can be ready to generate other sequential
 	 * messages on other nodes too */

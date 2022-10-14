@@ -79,7 +79,7 @@ static inline int push_new_processing_context( struct dlg_cell *dlg,
 	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
 
 	/* set the new CTX as current one */
-	current_processing_ctx = my_ctx;
+	set_global_context(my_ctx);
 
 	/* store the value from the newly created context */
 	*new_ctx = &my_ctx;

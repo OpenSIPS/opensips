@@ -386,7 +386,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 		}
 	}
 	memset( my_ctx, 0, context_size(CONTEXT_GLOBAL) );
-	current_processing_ctx = my_ctx;
+	set_global_context(my_ctx);
 	/* set the T context too */
 	set_t( t );
 
@@ -409,7 +409,7 @@ inline static void final_response_handler( struct timer_link *fr_tl )
 	else
 		context_destroy(CONTEXT_GLOBAL, my_ctx);
 	/* switch back to the old context */
-	current_processing_ctx = old_ctx;
+	set_global_context(old_ctx);
 	/* reset the T context */
 	init_t();
 

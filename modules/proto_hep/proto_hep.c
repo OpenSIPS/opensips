@@ -621,13 +621,13 @@ static inline int hep_handle_req(struct tcp_req *req,
 			/* run hep callbacks; set the current processing context
 			 * to hep context; this way callbacks will have all the data
 			 * needed */
-			current_processing_ctx = ctx;
+			set_global_context(ctx);
 			ret=run_hep_cbs();
 			if (ret < 0) {
 				LM_ERR("failed to run hep callbacks\n");
 				goto error_free_hep;
 			}
-			current_processing_ctx = NULL;
+			set_global_context(NULL);
 
 			msg_len = hep_ctx->h.u.hepv3.payload_chunk.chunk.length-
 											sizeof(hep_chunk_t);
@@ -891,13 +891,13 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	/* run hep callbacks; set the current processing context
 	 * to hep context; this way callbacks will have all the data
 	 * needed */
-	current_processing_ctx = ctx;
+	set_global_context(ctx);
 	ret=run_hep_cbs();
 	if (ret < 0) {
 		LM_ERR("failed to run hep callbacks\n");
 		return -1;
 	}
-	current_processing_ctx = NULL;
+	set_global_context(NULL);
 
 	if (hep_ctx->h.version == 3) {
 		/* HEPv3 */
