@@ -702,7 +702,6 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 		/* now I have finnished the BRIDGING scenario -> mark this in the record */
 		if(tuple->bridge_entities[2] == NULL)
 		{
-
 			/* if there was a renew SDP type, we have to challenge the first
 			 * entity again with an invite, just to update its SDP info */
 			if (bentity0->sdp_type == B2BL_SDP_RENEW)
@@ -794,7 +793,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 
 #define BUF_LEN  128
 
-int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
+int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 	struct sip_msg* msg)
 {
 	b2b_req_data_t req_data;
@@ -805,7 +804,7 @@ int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 	static str hdrs = {buf, 0};
 
 	if (msg && msg->first_line.type != SIP_REPLY) {
-		LM_ERR("process_bridge_notify works only with replies!\n");
+		LM_ERR("send_bridge_notify works only with replies!\n");
 		return -1;
 	}
 
@@ -905,7 +904,7 @@ static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 	return new_br_ent;
 }
 
-int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
+int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	str *provmedia_uri, struct b2b_bridge_params *params)
 {
 	b2bl_tuple_t *tuple;
@@ -970,9 +969,9 @@ int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 		goto done;
 
 	if (params->flags & B2BL_BR_FLAG_NOTIFY && entity)
-		process_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
+		send_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
 
-	if (process_bridge_action(msg, tuple, cur_route_ctx.hash_index,
+	if (b2bl_bridge(msg, tuple, cur_route_ctx.hash_index,
 		old_entity, new_br_ent, provmedia_uri, params->lifetime) < 0) {
 		LM_ERR("Failed to process bridge action\n");
 		goto done;
@@ -1009,7 +1008,7 @@ done:
  *	 that this scenario is currently taking place
  *	*/
 
-int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
+int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	unsigned hash_index, b2bl_entity_id_t *old_entity,
 	struct b2bl_new_entity *new_br_ent[2], str *provmedia_uri, int lifetime)
 {
@@ -1209,7 +1208,7 @@ error:
 	return -1;
 }
 
-str* b2bl_bridge_extern(struct b2b_params *init_params,
+str* b2bl_init_extern(struct b2b_params *init_params,
 	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
 	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
 {
@@ -1259,7 +1258,7 @@ str* b2bl_bridge_extern(struct b2b_params *init_params,
 	if (e2_id)
 		e2.id = *e2_id;
 
-	if (process_bridge_action(NULL, tuple, hash_index, NULL, new_br_ent,
+	if (b2bl_bridge(NULL, tuple, hash_index, NULL, new_br_ent,
 		NULL, 0) < 0) {
 		LM_ERR("Failed to process bridge action\n");
 		goto error;
@@ -1281,7 +1280,7 @@ error:
 	return 0;
 }
 
-int b2bl_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
+int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 	int entity_no)
 {
 	b2bl_tuple_t* tuple;
@@ -1464,7 +1463,7 @@ error:
 	return -1;
 }
 
-static struct b2bl_new_entity *b2b_client_new(struct sip_msg *msg, str *id,
+static struct b2bl_new_entity *tmp_client_new(struct sip_msg *msg, str *id,
 	str *dest_uri, str *proxy, pv_spec_t *hnames, pv_spec_t *hvals, str *from_dname)
 {
 	unsigned short type;
@@ -1559,7 +1558,7 @@ error:
 	return NULL;
 }
 
-int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params, 
+int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	str *ent1, pv_spec_t *ent1_hnames, pv_spec_t *ent1_hvals,
 	str *ent2, pv_spec_t *ent2_hnames, pv_spec_t *ent2_hvals)
 {
@@ -1627,7 +1626,7 @@ int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params,
 		(e1_dname ? e1_dname->s : 0)
 		);
 
-	new_br_ent[0] = b2b_client_new(msg, e1_id, e1_to, e1_proxy, ent1_hnames, ent1_hvals, e1_dname);
+	new_br_ent[0] = tmp_client_new(msg, e1_id, e1_to, e1_proxy, ent1_hnames, ent1_hvals, e1_dname);
 	if (!new_br_ent[0]) {
 		LM_ERR("Failed to create entity 1\n");
 		rc = -1;
@@ -1674,7 +1673,7 @@ int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params,
 		);
 
 
-	new_br_ent[1] = b2b_client_new(msg, e2_id, e2_to, e2_proxy, ent2_hnames, ent2_hvals, e2_dname);
+	new_br_ent[1] = tmp_client_new(msg, e2_id, e2_to, e2_proxy, ent2_hnames, ent2_hvals, e2_dname);
 	if (!new_br_ent[1]) {
 		LM_ERR("Failed to create entity 2\n");
 		rc = -1;
@@ -1756,7 +1755,7 @@ int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params,
 						LM_DBG("Found entity\n");
 						tuple->bridge_flags = B2BL_BR_FLAG_NOTIFY | B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR;
 						tuple->bridge_initiator = cur_tuple->bridge_entities[remote_tuple_party];
-						process_bridge_notify(cur_tuple->bridge_entities[remote_tuple_party], remote_tuple_hash_index, NULL);
+						send_bridge_notify(cur_tuple->bridge_entities[remote_tuple_party], remote_tuple_hash_index, NULL);
 					}
 				}
 				lock_release(&b2bl_htable[remote_tuple_hash_index].lock);
@@ -1775,7 +1774,7 @@ int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params,
 					LM_DBG("Found entity\n");
 					tuple->bridge_flags = B2BL_BR_FLAG_NOTIFY | B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR;
 					tuple->bridge_initiator = entity;
-					process_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
+					send_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
 				}
 			}
 			lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
@@ -1783,7 +1782,7 @@ int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params,
 	}
 	LM_DBG("Flags: %u (NOTIFY: %u)\n", tuple->bridge_flags, B2BL_BR_FLAG_NOTIFY);
 
-	if (process_bridge_action(msg, tuple, hash_index, NULL, new_br_ent,
+	if (b2bl_bridge(msg, tuple, hash_index, NULL, new_br_ent,
 		NULL, 0) < 0) {
 		LM_ERR("Failed to process bridge action\n");
 		goto error;

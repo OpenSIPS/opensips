@@ -718,7 +718,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			entity == (tuple->bridge_entities[2]?tuple->bridge_entities[2]:tuple->bridge_entities[1]) &&
 			tuple->bridge_flags & B2BL_BR_FLAG_NOTIFY && tuple->bridge_initiator != 0)
 		{
-			process_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
+			send_bridge_notify(tuple->bridge_initiator, cur_route_ctx.hash_index, msg);
 			if(statuscode == 200 || !(tuple->bridge_flags & B2BL_BR_FLAG_RETURN_AFTER_FAILURE))
 			{
 				if (!(tuple->bridge_flags & B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR)) {
@@ -2684,7 +2684,7 @@ error:
 }
 
 
-str *init_request(struct sip_msg *msg, struct b2b_params *init_params,
+str *b2bl_init_request(struct sip_msg *msg, struct b2b_params *init_params,
 	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask, str* custom_hdrs)
 {
 	str* key;
@@ -2720,7 +2720,7 @@ str *init_request(struct sip_msg *msg, struct b2b_params *init_params,
 	return key;
 }
 
-str* internal_init_scenario(struct sip_msg* msg, str *scen_name,
+str* b2bl_api_init(struct sip_msg* msg, str *scen_name,
 	b2bl_init_params_t *scen_params, b2bl_cback_f cbf, void* cb_param,
 	unsigned int cb_mask, str* custom_hdrs)
 {
@@ -2771,9 +2771,9 @@ str* internal_init_scenario(struct sip_msg* msg, str *scen_name,
 			new_entities_no = 2;
 		}
 
-		return init_request(msg, &init_params, cbf, cb_param, cb_mask, custom_hdrs);
+		return b2bl_init_request(msg, &init_params, cbf, cb_param, cb_mask, custom_hdrs);
 	} else {
-		return b2bl_bridge_extern(&init_params, scen_params, NULL, NULL,
+		return b2bl_init_extern(&init_params, scen_params, NULL, NULL,
 			cbf, cb_param, cb_mask);
 	}
 
@@ -2791,7 +2791,7 @@ error:
 }
 
 
-int b2b_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
+int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
 	void *req_routeid, void *reply_routeid, str *init_body, str *init_body_type)
 {
 	str* key;
@@ -2846,7 +2846,7 @@ int b2b_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_param
 		(unsigned long)reply_routeid : global_reply_rtid;
 
 	/* call the scenario init processing function */
-	key = init_request(msg, init_params, 0, NULL, 0, cust_headers);
+	key = b2bl_init_request(msg, init_params, 0, NULL, 0, cust_headers);
 	if(key) ret = 1;
 
 	return ret;

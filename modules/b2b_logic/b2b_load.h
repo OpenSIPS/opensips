@@ -75,7 +75,7 @@ typedef int (*b2bl_bridge_f)(str* key, str* new_uri, str *new_proxy,
 int b2bl_terminate_call(str* key);
 typedef int (*b2bl_terminate_call_t)(str* key);
 
-int b2bl_bridge(str* key,str* new_uri, str *new_proxy, str* new_from_dname,
+int b2bl_api_bridge(str* key,str* new_uri, str *new_proxy, str* new_from_dname,
 	int entity_no);
 int b2bl_set_state(str* key, int state);
 
@@ -156,7 +156,7 @@ typedef struct b2bl_api
 	b2bl_ctx_get_ptr_f ctx_get_ptr;
 }b2bl_api_t;
 
-str* internal_init_scenario(struct sip_msg* msg, str *scen_name,
+str* b2bl_api_init(struct sip_msg* msg, str *scen_name,
 	b2bl_init_params_t *scen_params, b2bl_cback_f cbf, void* param,
 	unsigned int cb_mask, str* custom_hdrs);
 

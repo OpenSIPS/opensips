@@ -79,7 +79,7 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 static void b2bl_clean(unsigned int ticks, void* param);
 static void b2bl_db_timer_update(unsigned int ticks, void* param);
 
-int b2b_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
+int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
 	void *req_routeid, void *reply_routeid, str *init_body, str *init_body_type);
 int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 	pv_spec_t *hnames, pv_spec_t *hvals);
@@ -90,9 +90,9 @@ int b2b_pass_request(struct sip_msg *msg);
 int b2b_delete_entity(struct sip_msg *msg);
 int b2b_end_dlg_leg(struct sip_msg *msg);
 int b2b_send_reply(struct sip_msg *msg, int *code, str *reason, str *headers, str *body);
-int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no,
+int  b2bl_script_bridge_msg(struct sip_msg* msg, str *key, int *entity_no,
 	str *adv_contact);
-int b2b_bridge_extern(struct sip_msg* msg, str *id, str * params, 
+int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	str *ent1, pv_spec_t *ent1_hnames, pv_spec_t *ent1_hvals,
 	str *ent2, pv_spec_t *ent2_hnames, pv_spec_t *ent2_hvals);	
 
@@ -186,7 +186,7 @@ struct b2b_ctx_val *local_ctx_vals;
 
 static cmd_export_t cmds[]=
 {
-	{"b2b_init_request", (cmd_function)b2b_init_request, {
+	{"b2b_init_request", (cmd_function)b2bl_script_init_request, {
 		{CMD_PARAM_STR, fixup_init_id, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_init_flags, fixup_free_init_flags},
@@ -226,14 +226,14 @@ static cmd_export_t cmds[]=
 		{0,0,0}		
 		},
 		REQUEST_ROUTE},
-	{"b2b_bridge", (cmd_function)b2b_scenario_bridge, {
+	{"b2b_bridge", (cmd_function)b2b_script_bridge, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_bridge_flags, fixup_free_init_flags}, {0,0,0}},
 		REQUEST_ROUTE},
-	{"b2b_trigger_scenario", (cmd_function)b2b_bridge_extern, {
+	{"b2b_trigger_scenario", (cmd_function)script_trigger_scenario, {
 		{CMD_PARAM_STR,fixup_init_id,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,
 			0, 0},
@@ -245,7 +245,7 @@ static cmd_export_t cmds[]=
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
 		{0,0,0}},
 		REQUEST_ROUTE},
-	{"b2b_bridge_request", (cmd_function)b2b_bridge_request, {
+	{"b2b_bridge_request", (cmd_function)b2bl_script_bridge_msg, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -1118,7 +1118,7 @@ mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 			}
 		}
 
-	if (b2bl_bridge_extern(&init_params, &scen_params, e1_id, e2_id,
+	if (b2bl_init_extern(&init_params, &scen_params, e1_id, e2_id,
 		0, 0, 0) == NULL) {
 		resp = init_mi_error(500, MI_SSTR("Failed to initialize scenario"));
 		goto end;
@@ -1134,7 +1134,7 @@ end:
 	return resp;
 }
 
-int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no,
+int  b2bl_script_bridge_msg(struct sip_msg* msg, str *key, int *entity_no,
 	str *adv_contact)
 {
 	if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
@@ -1146,7 +1146,7 @@ int  b2b_bridge_request(struct sip_msg* msg, str *key, int *entity_no,
 	return b2bl_bridge_msg(msg, key, *entity_no, adv_contact);
 }
 
-static int b2bl_bridge_msg_w(struct sip_msg* msg, str* key, int entity_no)
+static int b2bl_api_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
 	return b2bl_bridge_msg(msg, key, entity_no, NULL);
 }
@@ -2164,10 +2164,10 @@ int b2b_logic_bind(b2bl_api_t* api)
 		LM_ERR("Invalid parameter value\n");
 		return -1;
 	}
-	api->init          = internal_init_scenario;
-	api->bridge        = b2bl_bridge;
+	api->init          = b2bl_api_init;
+	api->bridge        = b2bl_api_bridge;
 	api->bridge_2calls = b2bl_bridge_2calls;
-	api->bridge_msg    = b2bl_bridge_msg_w;
+	api->bridge_msg    = b2bl_api_bridge_msg;
 	api->terminate_call= b2bl_terminate_call;
 	api->get_stats     = b2bl_get_stats;
 	api->register_cb   = b2bl_register_cb;

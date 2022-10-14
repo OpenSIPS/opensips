@@ -20,10 +20,10 @@
 
 mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	int entity_no, str *prov_media);
-int b2b_scenario_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
+int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	str *provmedia_uri, struct b2b_bridge_params *params);
 
-int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
+int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 	struct sip_msg* msg);
 int process_bridge_negreply(b2bl_tuple_t* tuple,
 	unsigned int hash_index, b2bl_entity_id_t* entity, struct sip_msg* msg);
@@ -32,3 +32,10 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	str* body, b2bl_tuple_t* tuple, unsigned int hash_index,
 	b2bl_entity_id_t* entity);
+
+int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
+	unsigned hash_index, b2bl_entity_id_t *old_entity,
+	struct b2bl_new_entity *new_br_ent[2], str *provmedia_uri, int lifetime);
+str* b2bl_init_extern(struct b2b_params *init_params,
+	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
+	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
