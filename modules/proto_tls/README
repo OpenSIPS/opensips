@@ -396,10 +396,10 @@ route[tls_filter] {
    Default value is 100.
 
    Example 1.10. Set tls_handshake_timeout variable
-
-param("proto_tls", "tls_handshake_timeout", 200) # number of millisecond
-s
-
+...
+modparam("proto_tls", "tls_handshake_timeout", 200) # number of millisec
+onds
+...
 
 1.5.11. tls_send_timeout (integer)
 
@@ -412,9 +412,9 @@ s
    Default value is 100.
 
    Example 1.11. Set tls_send_timeout variable
-
-param("proto_tls", "tls_send_timeout", 200) # number of milliseconds
-
+...
+modparam("proto_tls", "tls_send_timeout", 200) # number of milliseconds
+...
 
 1.6. Exported MI Functions
 
@@ -521,7 +521,7 @@ Chapter 3. Contributors
    2. Razvan Crainea (@razvancrainea) 44 27 630 641
    3. Eseanu Marius Cristian (@eseanucristian) 41 5 55 2133
    4. Ionut Ionita (@ionutrazvanionita) 35 14 1232 576
-   5. Vlad Patrascu (@rvlad-patrascu) 12 9 88 94
+   5. Vlad Patrascu (@rvlad-patrascu) 13 10 96 102
    6. Liviu Chircu (@liviuchircu) 10 7 30 105
    7. Bogdan Chifor 5 2 141 1
    8. Vlad Paiu (@vladpaiu) 4 2 84 3
@@ -551,7 +551,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2022
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2015 - Apr 2021
    3.  Razvan Crainea (@razvancrainea)     Feb 2015 - Jul 2020
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
