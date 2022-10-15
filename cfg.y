@@ -1541,7 +1541,7 @@ startup_route_stm:  ROUTE_STARTUP LBRACE actions RBRACE {
 
 timer_route_stm:  ROUTE_TIMER LBRACK route_name COMMA NUMBER RBRACK LBRACE actions RBRACE {
 						i_tmp = 0;
-						while(sroutes->timer[i_tmp].a!=0 && i_tmp<TIMER_RT_NO){
+						while(i_tmp<TIMER_RT_NO && sroutes->timer[i_tmp].a!=0){
 							i_tmp++;
 						}
 						if(i_tmp == TIMER_RT_NO) {
