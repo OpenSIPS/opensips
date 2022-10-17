@@ -1135,7 +1135,7 @@ logic_notify:
 
 				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
 				{
-					if(dlg->uas_tran->uas.request)
+					if(method_value != METHOD_BYE && dlg->uas_tran->uas.request)
 					/* there is another transaction for which no reply
 					 * was sent out */
 					{
