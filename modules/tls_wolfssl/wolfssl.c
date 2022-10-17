@@ -25,10 +25,17 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
+#ifdef WOLFSSL_FIPS_ENABLED
+#include <execinfo.h>
+#endif
+
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
 #include <wolfssl/wolfcrypt/wc_port.h>
+#ifdef WOLFSSL_FIPS_ENABLED
+#include <wolfssl/wolfcrypt/fips_test.h>
+#endif
 
 #include "../../dprint.h"
 #include "../../mem/shm_mem.h"
@@ -161,12 +168,33 @@ static void _wolfssl_on_exit(int status, void *param)
 
 static int mod_init(void)
 {
+#ifdef WOLFSSL_FIPS_ENABLED
+	int rc;
+#endif
+
 	LM_INFO("initializing tls_wolfssl module\n");
 	LM_INFO("wolfSSL version: %s\n", wolfSSL_lib_version());
 
 	wolfSSL_SetAllocators(oss_malloc, oss_free, oss_realloc);
-	wolfSSL_Init();
 
+#ifdef WOLFSSL_FIPS_ENABLED
+	wc_SetSeed_Cb(wc_GenerateSeed);
+
+	rc = wolfCrypt_GetStatus_fips();
+	if (rc != 0) {
+        LM_ERR("wolfCrypt_GetStatus_fips() failed: %s\n",
+			wc_GetErrorString(rc));
+        return -1;
+    }
+
+	if ((rc = wolfSSL_Init()) != WOLFSSL_SUCCESS) {
+		LM_ERR("Failed to initialize wolfSSL library: %s\n",
+			wc_GetErrorString(rc));
+		return -1;
+	}
+#else
+    wolfSSL_Init();
+#endif
 	_wolfssl_init_ssl_methods();
 
 	_wolfssl_show_ciphers();
