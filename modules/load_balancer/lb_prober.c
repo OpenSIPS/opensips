@@ -102,6 +102,7 @@ void lb_do_probing(struct lb_data *data)
 		pack->uri.s = (char*)(pack+1);
 		memcpy(pack->uri.s, dst->uri.s, dst->uri.len);
 		pack->uri.len = dst->uri.len;
+		pack->next = NULL;
 
 		pack->params.id = dst->id;
 
@@ -117,7 +118,9 @@ void lb_do_probing(struct lb_data *data)
 	lock_stop_read( ref_lock );
 
 	/* now send all the probs, outside the lock */
-	for( pack = pack_head ; pack ; pack=pack->next ) {
+	for( pack = pack_head ; pack ; pack=pack_last ) {
+
+		pack_last = pack->next;
 
 		if (lb_tmb.t_request( &lb_probe_method, &pack->uri, &pack->uri,
 		&lb_probe_from, NULL, NULL, NULL, lb_probing_callback,
