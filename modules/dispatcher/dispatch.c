@@ -2585,6 +2585,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 						pack_last->next = pack;
 						pack_last = pack;
 					}
+					pack->next = NULL;
 
 				}
 			}
@@ -2593,7 +2594,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 		lock_stop_read( partition->lock );
 
 		/* now send all the probs, outside the lock */
-		for( pack = pack_head ; pack ; pack=pack->next ) {
+		for( pack = pack_head ; pack ; pack=pack_last ) {
+
+			pack_last = pack->next;
 
 			/* Execute the Dialog using the "request"-Method of the
 			 * TM-Module.*/
