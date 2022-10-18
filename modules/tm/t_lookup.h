@@ -104,6 +104,7 @@ typedef int (*tislocal_f)(struct sip_msg*);
 typedef int (*tnewtran_f)(struct sip_msg*);
 typedef int (*tget_ti_f)(struct sip_msg*, unsigned int*, unsigned int*);
 typedef int (*tlookup_ident_f)(struct cell**, unsigned int, unsigned int);
+typedef int (*tlookup_callid_f)(struct cell** trans, str callid, str cseq);
 
 int t_is_local(struct sip_msg*);
 int t_get_trans_ident(struct sip_msg* p_msg,
