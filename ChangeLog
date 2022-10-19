@@ -1,3 +1,586 @@
+=========================== Release 3.2.9 ==============================
+
+2022-10-16  OpenSIPS  <github@opensips.org>
+        * [5db8b4b81] :
+
+        Rebuild documentation
+
+
+2022-10-13  Razvan Crainea  <razvan@opensips.org>
+        * [51aa2a8bc] :
+
+        rtpengine: do not specify interfaces for non-offer/answer
+
+        Avoid getting bogus `no more memory` errors when trying to specify in
+        in/out interface when `direction` node is NULL.
+
+        Close #2880
+
+        (cherry picked from commit bbb6f313bba3fdb7f32f80140ceb9c8dff1e8f1b)
+
+
+2022-10-13  Razvan Crainea  <razvan@opensips.org>
+        * [d030bfa74] :
+
+        fix engaging rtp_relay in branch route
+
+        Close #2879
+
+
+2022-10-12  Vlad Patrascu  <vladp@opensips.org>
+        * [b53931a5d] :
+
+        proto_tls docs: fix typos in modparam examples
+
+        (cherry picked from commit 4d0df03e04d6d0c2c8a550e71f4ce5e5cbf2465c)
+
+
+2022-10-12  Liviu Chircu  <liviu@opensips.org>
+        * [94b374043] :
+
+        context API: Fix ctx cleanup API; Document context_destroy() behavior
+
+        Although this patch fixes a memory leak in clear_global_context(), this
+        function is not being used at all.
+
+        (cherry picked from commit 02e1177714b91fa8b7e29f0162c8e9385767f6b1)
+
+
+2022-10-12  Liviu Chircu  <liviu@opensips.org>
+        * [6b6551ac7] :
+
+        Fix global msg context leakage in error_route
+
+        While commit b5bcf046 fixed an issue with missing contexts during
+        error_route, it was missed that the "parse_error" label does *not* free
+        up the global context.
+
+        The effects of this bug were mostly hidden, affecting only opensips.cfg
+        scripts which employ the "error_route", causing a slow PKG memory leak,
+        proportional to the amount of bad SIP received.  Moreover, if these
+        scripts also use async(), they may occassionally run into a quick
+        abort() in t_resume_async(), due to a context being already set (BUG).
+
+        (cherry picked from commit 43ee34bbbb48cfcfe02217b03ef72726c01cc83e)
+
+
+2022-10-12  Liviu Chircu  <liviu@opensips.org>
+        * [fcd765665] :
+
+        async(): Attempt to recover from abort() state
+
+        It seems the "if" condition at the start of t_resume_async() is
+        actually reachable under the right circumstances and causes an
+        immediate program crash.
+
+        As an intermediate improvement until the source of the issue is found,
+        try to simply overwrite the unexpected context, if one is found.  A
+        small memory leak coupled with a CRITICAL log message is preferable to
+        an instant, forced crash.
+
+        (cherry picked from commit 7167bec5b6379ba1a6762501391133deaf5ba80d)
+
+
+2022-10-12  Liviu Chircu  <liviu@opensips.org>
+        * [2b4b96e90] :
+
+        sipmsgops: Fix ruri_del_param() return value on success
+
+        The issue was that set_ruri() actually returns 0/-1, not 1/0 as the
+        developer expected.
+
+        Also update docs to reflect the function's return code meaning.
+
+        (cherry picked from commit eea215278c479a22434aefd651c95b2ad777ecc1)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [204092b41] :
+
+        parse_msg(): Fix heap buffer overflow edge-case (OSS-Fuzz)
+
+        This patch fixes a SIP message parsing error log which could lead to an
+        unsafe printing of a non-NULL terminated string.  Fortunately, the
+        OpenSIPS PKG memory allocator minimizes the severity of this overflow,
+        thanks to its pre-allocated, large chunk of heap memory.
+
+        Severity: Low
+        Fixes OSS-Fuzz#52204
+
+        (cherry picked from commit 2a6f8c67aa15ebf507cc9ff2bd881d771858fed7)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [1d314b2ad] :
+
+        parse_content_length(): Fix integer overflow edge-case (OSS-Fuzz)
+
+        This completes commit 7cab422e2f, where it was still possible to cause
+        an integer overflow even after the fix, with input such as 2147483609,
+        due to missing parentheses in the number equation.
+
+        Fixes OSS-Fuzz#52112
+
+        (cherry picked from commit 837263b47dcb33909b109b5cc050c1ab4a6c64a2)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [9aa1033b9] :
+
+        parse_to_param(): Rework previous fix (OSS-Fuzz)
+
+        Invoking strlen() on a non NULL-terminated buffer is equally bad,
+        possibly even worse.  Instead, simply rely on the @end parameter being
+        correct, which is an assumption already made by the current code of the
+        function.
+
+        Fixes OSS-Fuzz#41073
+
+        (cherry picked from commit 51b908f8fde0aa2eac8dbcfff319281625d6f3f2)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [bab0ab5dc] :
+
+        parse_to_param(): Fix out-of-bounds read edge-case (OSS-Fuzz)
+
+        Severity: Low
+        Fixes OSS-Fuzz#41073
+
+        (cherry picked from commit 90aa25e64f36b22fbcae9aae910257b43f81641f)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [ff17c3686] :
+
+        Fix rare UB on left-shift signed int overflow
+
+        By default, most commonly used compilers *define* some behaviour when
+        this overflow occurs, such that the program will continue normally,
+        without any negative consequences.
+
+        Severity: Minor
+        Fixes OSS-Fuzz#40201
+
+        (cherry picked from commit 2ba963b0c5e2b6705a3f28ce44e57b248988a103)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [973b04d88] :
+
+        parse_msg(): Fix out-of-bounds read edge-case (OSS-Fuzz)
+
+        Also add a unit test suite for parse_msg().
+
+        Severity: low
+        Fixes OSS-Fuzz#39802
+
+        (cherry picked from commit 66898d8208d158d95a27f1a76078a29bd1e08d7e)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [7e12f00dc] :
+
+        parse_uri: Parse the port into an unsigned integer (OSS-Fuzz)
+
+        Fixes OSS-Fuzz#51605
+
+        (cherry picked from commit b4a72a5f96f5726afa48854ad0850fe14f78909d)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [c46af85ca] :
+
+        parse_uri: Complete the fix for undefined bitwise left-shift (OSS-Fuzz)
+
+        The default auto-cast to (int) is not enough, as a value such as
+        255 << 24 can still overflow the 31 value bits...
+
+        Fixes OSS-Fuzz#51542
+
+        (cherry picked from commit e0d90ec107484051e6c769056036447361c5724d)
+
+
+2022-10-10  Liviu Chircu  <liviu@opensips.org>
+        * [0c2e70058] :
+
+        lib/csv: Fix some memleak corner-cases (reported by OSS-Fuzz)
+
+        Fixes OSS-Fuzz#39925
+
+        (cherry picked from commit ff34d213cad9c2b24460aecc206520bac5411bdc)
+
+
+2022-10-10  Razvan Crainea  <razvan@opensips.org>
+        * [35e2ed8bb] :
+
+        dialog: do not corelate the number of legs with branches
+
+        For a single transaction branch, we may have multiple dialog legs
+        resulted by forking downstream.
+
+        Thanks go to Rizwan Syed and Jonathan Hulme from ConnexCS for reporting,
+        providing testing environment and support the troubleshooting and fix!
+
+        (cherry picked from commit 1b944d21229e3f598e31a1d946e56e6098026ac8)
+
+
+2022-10-09  OpenSIPS  <github@opensips.org>
+        * [5f7a2c249] :
+
+        Rebuild documentation
+
+
+2022-10-05  Liviu Chircu  <liviu@opensips.org>
+        * [c058d8982] :
+
+        drouting: Fix dr_match() docs
+
+        * the groupID is actually mandatory
+        * add missing "number" docs
+
+        (cherry picked from commit a5236a863b9522ee2e7a5ed53bca4fbb51c2c234)
+
+
+2022-10-02  OpenSIPS  <github@opensips.org>
+        * [1452da6ab] :
+
+        Rebuild documentation
+
+
+2022-09-28  Liviu Chircu  <liviu@opensips.org>
+        * [fa80bdf1a] :
+
+        freeswitch: If-guard some verbose DBG logs
+
+        Suggested by @NormB
+
+        (cherry picked from commit 6ec8ddec144ce133a365bdc8a095a1f267376f58)
+
+
+2022-09-25  OpenSIPS  <github@opensips.org>
+        * [b24366609] :
+
+        Rebuild documentation
+
+
+2022-09-20  Vlad Patrascu  <vladp@opensips.org>
+        * [6266d0cd6] :
+
+        b2b_entities: fix shm memory leak
+
+        For the write back db mode, the entity storage data was only freed after
+        inserting/updating the entity in the database. This would lead to memory
+        leaks if the entity was deleted before the DB timer task had a chance
+        to be run.
+
+        Thanks go to Norm Brandinger from Five9 for reporting!
+
+        (cherry picked from commit aee014beb78be050bd2272ee0080a6f8063d9ec0)
+
+
+2022-09-18  OpenSIPS  <github@opensips.org>
+        * [5e42e9422] :
+
+        Rebuild documentation
+
+
+2022-09-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [54d8ff7c2] :
+
+        [TCP] fix init TCP support for auto-scalled procs
+
+        When starting the TCP Main proc, be sure we initialize the MAIN<>Worker communication sockets also for the procs to be potentially scaled in the future.
+        `pt[n].unix_sock` is valid only for running procs (not for the "autoscale to-be"), so use the `pt[n].tcp_socks_holder[0]` holder (valid for all procs, running or not).
+        Thanks go to Yury Kirsanov and Slava Bendersky for reporting and helping with the troubleshooting.
+
+        (cherry picked from commit d7a4bf8f134d3d2cd761f528e6963445c9ef9b06)
+
+
+2022-09-16  Razvan Crainea  <razvan@opensips.org>
+        * [cf353bf61] :
+
+        mi_script: fix value of parameters provided through AVP
+
+        (cherry picked from commit d6e91459d3fb3fd8e8278561242af56047f51e16)
+
+
+2022-09-15  Liviu Chircu  <liviu@opensips.org>
+        * [c32349f48] :
+
+        parse_uri: Avoid dereferencing invalid memory on error logging
+
+        (cherry picked from commit 99c9a828dd80f2874e89a520150565fa9e9162c7)
+        (cherry picked from commit 7df9ff7176497c3109ac0648f381aad751ec90dd)
+
+
+2022-09-15  Liviu Chircu  <liviu@opensips.org>
+        * [b54947624] :
+
+        parse_uri: Fix some UB corner-cases (reported by OSS-Fuzz)
+
+        * possible bitwise left shift with a negative value (UB)
+        * possible integer overflow, due to multiplication (UB)
+
+        Fixes OSS-Fuzz#48273
+
+        (cherry picked from commit cf95355290c64e2693f88d17e3830405f97962d9)
+        (cherry picked from commit 7cc624275e6a98322a235062327f2469725dfbb2)
+
+
+2022-09-15  Liviu Chircu  <liviu@opensips.org>
+        * [1ddbcf3f9] :
+
+        auth_db: Update docs on "password_column"
+
+        (cherry picked from commit b57c53db1ec7938aa477663e581898fe134f91b9)
+
+
+2022-09-14  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [570c0aafa] :
+
+        [tm] fix adding rport in local route
+
+        Force the VIA rebuild if add_local_rport() (for adding rport param to VIA) was called from local route
+
+        Closes #2833
+
+        (cherry picked from commit c85d93c7a3c3e9177d4621163295816b77bcdddc)
+
+
+2022-09-14  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c3de32c06] :
+
+        [dialog] fix bad unref leading to dialog leaking
+
+        When using the dlg_on_timeout to set a new timeout for the dialog, due to the timer related operations (re-inserting in the list), an extra ref cnt happens. If not unref'ed, the dialog will stay (as terminated) forever in memory.
+
+        Closes #2788
+
+        (cherry picked from commit 4062de45d0ccfe62bb4f9475f6320d2726349bab)
+
+
+2022-09-13  Liviu Chircu  <liviu@opensips.org>
+        * [ccfdb699b] :
+
+        clusterer: Always broadcast a packet after shtag activation
+
+        Due to network outages, it is currently possible for both sharing tags
+        of an Active/Backup pair to end up in ACTIVE state.  This patch makes it
+        so a "cluster_shtag_set_active" MI command always broadcasts (forces)
+        the ACTIVE state onto all neighbours, thus fixing the incorrect,
+        post-outage state of the tags.
+
+        Credits to @bogdan-iancu and @rvlad-patrascu for their contributions to
+        this fix!
+
+        (cherry picked from commit 77c24e2122ea6f66f251349e05984cfbdef9166c)
+
+
+2022-09-12  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [52a401875] :
+
+        Merge pull request #2885 from john08burke/multipart_crash
+
+        pvar: fix crash when parsing multi-part body with negative index
+        (cherry picked from commit cd853142daa005c20f54cfb93ae99d48ba1e510c)
+
+
+2022-09-11  OpenSIPS  <github@opensips.org>
+        * [bf1cf0516] :
+
+        Rebuild documentation
+
+
+2022-09-09  Liviu Chircu  <liviu@opensips.org>
+        * [819f7c62e] :
+
+        mem.h: Avoid warnings when explicitly defining -DSYSTEM_MALLOC
+
+        (cherry picked from commit a11f9c74064bd5ec79445e7042d85f151672d038)
+
+
+2022-09-09  Razvan Crainea  <razvan@opensips.org>
+        * [d4a05448c] :
+
+        mi_script: fix infinite loop where there are multiple params
+
+        (cherry picked from commit 34ce451c664a3f51299cccbc263a8fb1bca214c7)
+
+
+2022-09-08  Vlad Patrascu  <vladp@opensips.org>
+        * [806d0c469] :
+
+        Add QM_DBG_MALLOC_HIST flag to Makefile.conf template
+
+        (cherry picked from commit 4c748b3f8380185ed74ed8ea37e9e9e9470b685f)
+
+
+2022-09-08  Razvan Crainea  <razvan@opensips.org>
+        * [a93ce0afb] :
+
+        media_exchange: make sure we do not unreference NULL dlg
+
+        (cherry picked from commit 581a4b8e5b9575fb63c631886b58b051797f2642)
+
+
+2022-09-06  Vlad Patrascu  <vladp@opensips.org>
+        * [bc3e62f7e] :
+
+        mem/q_malloc: add support for debug history
+
+        By setting a size via the QM_DBG_MALLOC_HIST define, we now keep a
+        history of the file, func, line debug information in each fragment.
+
+
+2022-09-06  Liviu Chircu  <liviu@opensips.org>
+        * [c5708b4c3] :
+
+        dialog: Fix crash in debugging function (debug_main_timer_list())
+
+        DBG:dialog:debug_main_timer_list: testing forward loop with visited = 1
+        DBG:dialog:debug_main_timer_list: testing backward loop with visited = 2
+        DBG:dialog:insert_dlg_timer_unsafe: inserting 0x7f303dba8d80 for 7205
+        DBG:dialog:debug_main_timer_list: testing forward loop with visited = 1
+        ERROR:dialog:debug_main_timer_list: Detected something wrong with main timer list on forward linking for entry 0x7f303dba8d80
+        DBG:core:handle_sigs: OpenSIPS exit status = 134
+        INFO:core:handle_sigs: child process 139408 exited by a signal 6
+        (cherry picked from commit 4c6a8ec5d4ac6e0faceaa5e0acb6863d992f59a7)
+
+
+2022-09-06  Liviu Chircu  <liviu@opensips.org>
+        * [d6215c1fa] :
+
+        dialog: Fix shm memleak on OOM error case
+
+        (cherry picked from commit 6d03091833a0ee9a9d1294b0aff87a7435c60bf4)
+
+
+2022-09-05  Liviu Chircu  <liviu@opensips.org>
+        * [2f58ffa93] :
+
+        rtpproxy: Fix bad error handling on rare OOM case
+
+        (cherry picked from commit d2cec34346fea49a98b5c5d33ae20044e47eec69)
+
+
+2022-09-04  OpenSIPS  <github@opensips.org>
+        * [d8b60dca3] :
+
+        Rebuild documentation
+
+
+2022-09-01  Liviu Chircu  <liviu@opensips.org>
+        * [a37fab2d5] :
+
+        Cfg Parser: Allow whitespace before the "include_file" statement
+
+        Fixes #2892
+
+
+2022-08-30  Razvan Crainea  <razvan@opensips.org>
+        * [80179471c] :
+
+        tracer: fix trace_stop removal from list
+
+        Fix the way we detect the previous element when removing from list
+        Before this change, if there were multiple elements in the list, they
+        were leaking due to the bad handling of the list removal.
+
+        (cherry picked from commit dae9817b313cb98ed3d4d449064c64c9a4ac7cd8)
+
+
+2022-08-29  Razvan Crainea  <razvan@opensips.org>
+        * [81c2e7509] :
+
+        mi_script: force a positive value in eventfd
+
+        Thanks go to Suchi Sahoo from Five9 for reporting it
+
+        (cherry picked from commit b2c6ce6551f6469e559599bfc47d314186755f36)
+
+
+2022-08-28  OpenSIPS  <github@opensips.org>
+        * [22c7c5824] :
+
+        Rebuild documentation
+
+
+2022-08-26  Vlad Patrascu  <vladp@opensips.org>
+        * [9d41bfce8] :
+
+        Throw startup error if event_route can never be run
+
+        OpenSIPS would start without any error or warning if an event_route
+        is used but the 'event_route' module is not loaded.
+
+        (cherry picked from commit bb9bd920feb712cf8ec0c32d4e418056fae8cc81)
+
+
+2022-08-25  Vlad Patrascu  <vladp@opensips.org>
+        * [c6cc088ff] :
+
+        clusterer: fix parameters for E_CLUSTERER_REQ_RECEIVED event
+
+        Fixes #2899
+
+
+2022-08-24  Razvan Crainea  <razvan@opensips.org>
+        * [698baa104] :
+
+        clusterer: advertise tag's active state only in defined cluster
+
+        Thanks go to Vlad Patrascu for brainstorming this!
+
+        (cherry picked from commit d741f1875cb2b01e6deb96ae2235e23e029dc35f)
+
+
+2022-08-24  Razvan Crainea  <razvan@opensips.org>
+        * [401c6069c] :
+
+        mi_script: fix previous commit
+
+        This is the commit that actually resolves the memory leak
+
+        Thanks go to @liviuc for reporting this
+
+        (cherry picked from commit ad02392053f8fb79f74886ca67f536202e24f1cc)
+
+
+2022-08-24  Razvan Crainea  <razvan@opensips.org>
+        * [f010ce818] :
+
+        mi_script: prevent leak on write error case
+
+        Thanks go to Suchi Sahoo from Five9 for reporting it
+
+        (cherry picked from commit 443fdf90e635b48debcf71449e6c72754e3b24c7)
+
+
+2022-08-22  Razvan Crainea  <razvan@opensips.org>
+        * [0e3b40245] :
+
+        b2b_entities: free key returned by client_new
+
+        prevent pkg leak of b2b_key returned by client_new
+
+        (cherry picked from commit 60043ae3713052614e535371c100a3668c47af8f)
+
+
+2022-08-22  Razvan Crainea  <razvan@opensips.org>
+        * [a518e41c0] :
+
+        b2b*: consider dlginfo for requests an replies as well
+
+        (cherry picked from commit 7aa2007300fac85645bb4edaea3085557aae7923)
+
+
+2022-08-21  OpenSIPS  <github@opensips.org>
+        * [de731a22b] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.2.8 ==============================
 
 2022-08-17  Bogdan-Andrei Iancu  <bogdan at opensips dot org>
