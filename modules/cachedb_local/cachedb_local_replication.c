@@ -205,7 +205,8 @@ int receive_sync_request(int node_id)
                                         bin_push_str(sync_packet, &col->col_name);
                                         bin_push_str(sync_packet, &data->attr);
                                         bin_push_str(sync_packet, &data->value);
-                                        bin_push_int(sync_packet, data->expires);
+                                        bin_push_int(sync_packet, data->expires ?
+                                                data->expires - get_ticks() : 0);
                                 }
                                 data = data->next;
                         }
