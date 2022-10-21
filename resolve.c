@@ -704,7 +704,7 @@ int resolv_blacklist_init(void)
 	str name = str_init(DNS_REVOLVER_BL_NAME);
 
 	if (!disable_dns_blacklist) {
-		failover_bl = create_bl_head( DNS_REVOLVER_BL_ID,
+		failover_bl = create_bl_head(_str("dns"),
 			BL_DO_EXPIRE|BL_BY_DEFAULT, 0, 0, &name);
 		if (failover_bl==NULL) {
 			LM_ERR("failed to create blacklist\n");

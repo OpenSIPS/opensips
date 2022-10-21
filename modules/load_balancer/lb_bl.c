@@ -122,7 +122,7 @@ int init_lb_bls(void)
 		blacklists[i] = NULL;
 
 		/* create backlist for it */
-		lbbl->bl = create_bl_head( 131131, 0/*flags*/, NULL, NULL, &name);
+		lbbl->bl = create_bl_head(_str("load_balancer"), 0/*flags*/, NULL, NULL, &name);
 		if (lbbl->bl == NULL) {
 			LM_ERR("CREATE bl <%.*s> failed.\n", name.len, name.s);
 			shm_free(lbbl);

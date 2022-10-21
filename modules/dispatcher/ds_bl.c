@@ -126,7 +126,7 @@ int init_ds_bls(void)
 		} while(p != NULL);
 
 		/* create backlist for it */
-		dsbl->bl = create_bl_head( 313131, 0/*flags*/, NULL, NULL, &name);
+		dsbl->bl = create_bl_head(_str("dispatcher"), 0/*flags*/, NULL, NULL, &name);
 		if (dsbl->bl == NULL) {
 			LM_ERR("CREATE bl <%.*s> failed.\n", name.len, name.s);
 			shm_free(dsbl);

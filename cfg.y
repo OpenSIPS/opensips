@@ -679,7 +679,7 @@ multi_string: 	STRING {  IFOR(); $$=new_string($1); }
 		| STRING multi_string { IFOR(); $$=new_string($1); $$->next=$2; }
 		;
 
-blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+blst_elem: LPAREN any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				IFOR(pkg_free($4));
 				s_tmp.s=$8;
 				s_tmp.len=strlen($8);
@@ -687,7 +687,7 @@ blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 					yyerror("failed to add backlist element\n");YYABORT;
 				}
 			}
-		| NOT  LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
+		| NOT LPAREN any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 				IFOR(pkg_free($5));
 				s_tmp.s=$9;
 				s_tmp.len=strlen($9);
@@ -696,6 +696,76 @@ blst_elem: LPAREN  any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 					yyerror("failed to add backlist element\n");YYABORT;
 				}
 			}
+		| LPAREN any_proto COMMA ipnet COMMA port RPAREN {
+				IFOR(pkg_free($4));
+				if (add_rule_to_list(&bl_head,&bl_tail,$4,NULL,$6,$2,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT LPAREN any_proto COMMA ipnet COMMA port RPAREN {
+				IFOR(pkg_free($5));
+				if (add_rule_to_list(&bl_head,&bl_tail,$5,NULL,
+				$7,$3,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| LPAREN any_proto COMMA ipnet RPAREN {
+				IFOR(pkg_free($4));
+				if (add_rule_to_list(&bl_head,&bl_tail,$4,NULL,0,$2,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT LPAREN any_proto COMMA ipnet RPAREN {
+				IFOR(pkg_free($5));
+				if (add_rule_to_list(&bl_head,&bl_tail,$5,NULL,
+				0,$3,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| LPAREN ipnet COMMA port RPAREN {
+				IFOR(pkg_free($2));
+				if (add_rule_to_list(&bl_head,&bl_tail,$2,NULL,$4,PROTO_NONE,0)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| NOT LPAREN ipnet COMMA port RPAREN {
+				IFOR(pkg_free($3));
+				if (add_rule_to_list(&bl_head,&bl_tail,$3,NULL,
+				$5,PROTO_NONE,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| LPAREN ipnet RPAREN {
+				IFOR(pkg_free($2));
+				if (add_rule_to_list(&bl_head,&bl_tail,$2,NULL,0,PROTO_NONE,0)) {
+					yyerror("failed to add backlist element\n"); YYABORT;
+				}
+			}
+		| NOT LPAREN ipnet RPAREN {
+				IFOR(pkg_free($3));
+				if (add_rule_to_list(&bl_head,&bl_tail,$3,NULL,
+				0,PROTO_NONE,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		| ipnet {
+				IFOR(pkg_free($1));
+				if (add_rule_to_list(&bl_head,&bl_tail,$1,NULL,0,PROTO_NONE,0)) {
+					yyerror("failed to add backlist element\n"); YYABORT;
+				}
+			}
+		| NOT ipnet {
+				IFOR(pkg_free($2));
+				if (add_rule_to_list(&bl_head,&bl_tail,$2,NULL,
+				0,PROTO_NONE,BLR_APPLY_CONTRARY)) {
+					yyerror("failed to add backlist element\n");YYABORT;
+				}
+			}
+		;
+
+blst_def: COLON LBRACE blst_elem_list RBRACE
+		| COLON LBRACE RBRACE
+		|
 		;
 
 blst_elem_list: blst_elem_list COMMA blst_elem {}
@@ -1255,10 +1325,10 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 										disable_dns_blacklist=$3;
 									}
 		| DISABLE_DNS_BLACKLIST error { yyerror("boolean value expected"); }
-		| DST_BLACKLIST EQUAL ID COLON LBRACE blst_elem_list RBRACE { IFOR();
+		| DST_BLACKLIST EQUAL ID blst_def { IFOR();
 				s_tmp.s = $3;
 				s_tmp.len = strlen($3);
-				if (create_bl_head( BL_CORE_ID, BL_READONLY_LIST,
+				if (create_bl_head(_str("script"), BL_READONLY_LIST,
 				    bl_head, bl_tail, &s_tmp)==0) {
 					yyerror("failed to create blacklist\n");
 					YYABORT;
