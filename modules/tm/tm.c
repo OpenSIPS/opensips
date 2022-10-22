@@ -128,6 +128,7 @@ static int w_t_new_request(struct sip_msg* msg, str *method,
 static int t_wait_for_new_branches(struct sip_msg* msg,
 			unsigned int* br_to_wait);
 static int w_t_wait_no_more_branches(struct sip_msg* msg);
+static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text, str* callid, str* cseq);
 
 struct sip_msg* tm_pv_context_request(struct sip_msg* msg);
 struct sip_msg* tm_pv_context_reply(struct sip_msg* msg);
@@ -271,6 +272,12 @@ static cmd_export_t cmds[]={
 		{{0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|FAILURE_ROUTE},
 	{"t_anycast_replicate", (cmd_function)tm_anycast_replicate, {{0,0,0}},
+		REQUEST_ROUTE},
+	{"t_reply_by_callid", (cmd_function)t_reply_by_callid, {
+		{CMD_PARAM_INT, fixup_reply_code, 0},
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"load_tm", (cmd_function)load_tm, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
@@ -1608,6 +1615,33 @@ static int w_t_wait_no_more_branches(struct sip_msg* msg)
 
 	return 1;
 }
+
+
+static int t_reply_by_callid(struct sip_msg* msg, unsigned int* code, str* text, str* callid, str* cseq_number)
+{
+	struct cell *trans;
+	int n;
+
+	if (!callid && msg->callid==NULL && ((parse_headers(msg, HDR_CALLID_F, 0) ==-1) || (msg->callid==NULL)) ) {
+		/* could not get callid */
+		return -2;
+	}
+
+	if (!cseq_number && !msg->cseq && ((parse_headers(msg, HDR_CSEQ_F, 0) == -1) || !msg->cseq)) {
+		/* could not get cseq */
+		return -3;
+	}
+
+	if(t_lookup_callid( &trans, callid ? *callid : msg->callid->body, cseq_number ? *cseq_number : get_cseq(msg)->number) < 0) {
+		/* transaction not found */
+		return -4;
+	}
+
+	n = t_reply_with_body( trans, *code, text, 0, 0, 0);
+
+	return n;
+}
+
 
 /******************** pseudo-variable functions *************************/
 
