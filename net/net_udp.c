@@ -182,8 +182,18 @@ int udp_init_listener(struct socket_info *si, int status_flags)
 
 	if (si->flags & SI_FRAG) {
 		/* no DF */
+#if defined(IP_MTU_DISCOVER)
 		optval = IP_PMTUDISC_DONT;
 		setsockopt(si->socket, IPPROTO_IP, IP_MTU_DISCOVER, (void*)&optval, sizeof(optval));
+#else
+#if defined(IP_DONTFRAG)
+		optval = 1;
+		setsockopt(si->socket, IPPROTO_IP, IP_DONTFRAG, (void*)&optval, sizeof(optval));
+#else
+		LM_ERR("DF flag is not supported by your system\n");
+		goto error;
+#endif
+#endif
 	}
 
 	/* tos */
