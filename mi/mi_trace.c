@@ -364,7 +364,7 @@ int parse_mi_cmd_bwlist(int id, char* bw_string, int len)
 		return -1;
 	}
 
-	if ( (tok_end - bw_string) >= len || tok_end + 1 == 0) {
+	if ( (tok_end - bw_string) >= len || tok_end[1] == '\0') {
 		LM_ERR("no command in list!\n");
 		return -1;
 	}
