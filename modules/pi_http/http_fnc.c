@@ -2827,7 +2827,10 @@ int ph_run_pi_cmd(int mod, int cmd,
 		case 0:
 			LM_ERR("no record on clause key [%.*s]\n",
 				command->c_keys[0]->len, command->c_keys[0]->s);
-			if(c_vals) pkg_free(c_vals); c_vals = NULL;
+			if(c_vals) {
+				pkg_free(c_vals);
+				c_vals = NULL;
+			}
 			goto finish_page;
 		case 1:
 			LM_DBG("got [%d] rows for key [%.*s]\n",
