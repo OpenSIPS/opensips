@@ -1,44 +1,12 @@
-# $Id$
-#
 # perl module makefile
 #
 # 
 # WARNING: do not run this directly, it should be run by the master Makefile
 
 include ../../Makefile.defs
-auto_gen=
 NAME=perl.so
-LIBS=
 
-# define it (or export this) to the dir where xsubpp is on your system (if
-# not on the default path.
-#PERLBINDIR=
-
-ifeq ($(CC_NAME), gcc)
-	DEFS+=-Wno-unused -Wno-redundant-decls
-endif
-ifeq ($(CC_NAME), clang)
-	DEFS+=-Wno-unused -Wno-redundant-decls
-endif
-
-ifeq ($(PERLLDOPTS),)
-	LIBS+=$(shell perl -MExtUtils::Embed -e ldopts)
-else
-	LIBS+=$(PERLLDOPTS)
-endif
-
-ifeq ($(PERLCCOPTS),)
-	DEFS+=$(shell perl -MExtUtils::Embed -e ccopts)
-else
-	DEFS+=$(PERLCCOPTS)
-endif
-
-# if perl requires _FORTIFY_SOURCE, we need to enable optimizations
-ifneq (,$(findstring -D_FORTIFY_SOURCE,$(DEFS)))
-	DEFS+=-O2
-endif
-
-include ../../Makefile.modules
+include ../../lib/modules.mk/perl.mk
 
 PODFILES=opensipsxs.xs
 PODFILES+=$(shell find lib/perl -name *.pm)
