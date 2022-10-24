@@ -1,6 +1,9 @@
 #
 # WARNING: do not run this directly, it should be included by other Makefiles
 
+# Needed to build with openssl 3.x
+DEFS += -Wno-deprecated-declarations
+
 ifeq ($(CROSS_COMPILE),)
 SSL_BUILDER=$(shell \
 	if pkg-config --exists libssl; then \

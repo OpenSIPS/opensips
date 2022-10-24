@@ -12,6 +12,8 @@ setup_qemu() {
 	sudo ln -sf "/usr/${ARCH1}-linux-${ARCH2}" "/etc/qemu-binfmt/${ARCH1}"
 }
 
+COMPILER_VER=`echo "${COMPILER}" | sed -e 's|[a-z]*-||'`
+
 case "${COMPILER}" in
 gcc)
 	export CC="${COMPILER}"
@@ -62,35 +64,20 @@ clang-i386-cross)
 	PRE_INSTALL_CMD="sudo dpkg --add-architecture i386"
 	PKGS="${PKGS} clang llvm-dev libc6-dev:i386 libstdc++6:i386 lib32gcc-7-dev"
 	;;
-gcc-9)
+gcc-*)
 	export CC="${COMPILER}"
-	export AR="gcc-ar-9"
-	export RANLIB="gcc-ranlib-9"
-	export GCOV_CMD="gcov-9"
+	export AR="gcc-ar-${COMPILER_VER}"
+	export RANLIB="gcc-ranlib-${COMPILER_VER}"
+	export GCOV_CMD="gcov-${COMPILER_VER}"
 	PRE_INSTALL_CMD="enable_ubuntu_toolchain_test"
-	PKGS="${PKGS} gcc-9 g++-9"
+	PKGS="${PKGS} gcc-${COMPILER_VER} g++-${COMPILER_VER}"
 	;;
-gcc-10)
+clang-*)
 	export CC="${COMPILER}"
-	export AR="gcc-ar-10"
-	export RANLIB="gcc-ranlib-10"
-	export GCOV_CMD="gcov-10"
-	PRE_INSTALL_CMD="enable_ubuntu_toolchain_test"
-	PKGS="${PKGS} gcc-10 g++-10"
-	;;
-clang-9)
-	export CC="${COMPILER}"
-	export AR="llvm-ar-9"
-	export RANLIB="llvm-ranlib-9"
-	export GCOV_CMD="llvm-cov-9 gcov"
-	PKGS="${PKGS} clang-9 llvm-9-dev libc++-9-dev libc++abi-9-dev"
-	;;
-clang-10)
-	export CC="${COMPILER}"
-	export AR="llvm-ar-10"
-	export RANLIB="llvm-ranlib-10"
-	export GCOV_CMD="llvm-cov-10 gcov"
-	PKGS="${PKGS} clang-10 llvm-10-dev libc++-10-dev libc++abi-10-dev"
+	export AR="llvm-ar-${COMPILER_VER}"
+	export RANLIB="llvm-ranlib-${COMPILER_VER}"
+	export GCOV_CMD="llvm-cov-${COMPILER_VER} gcov"
+	PKGS="${PKGS} clang-${COMPILER_VER} llvm-${COMPILER_VER}-dev libc++-${COMPILER_VER}-dev libc++abi-${COMPILER_VER}-dev"
 	;;
 *)
 	printf 'COMPILER="%s" is unknown / unsupported\n' "${COMPILER}" 1>&2
