@@ -555,7 +555,6 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	struct sip_uri   uri;
 	struct usr_avp   **avp_list;
 	struct usr_avp   *avp;
-	unsigned short   name_type;
 	int              avp_name;
 	int_str          i_s;
 	str              uuid;
@@ -566,7 +565,6 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 	str *sn;
 
 	s0 = s1 = s2 = NULL;
-	name_type = 0;
 	if (!((sp->opd&AVPOPS_VAL_PVAR)||(sp->opd&AVPOPS_VAL_STR))) {
 		LM_CRIT("invalid flag combination (%d/%d)\n", sp->opd, sp->ops);
 		goto error;
@@ -657,10 +655,8 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 			}
 			if(xvalue.flags&PV_TYPE_INT)
 			{
-				name_type = 0;
 				avp_name = xvalue.ri;
 			} else {
-				name_type = AVP_NAME_STR;
 				avp_name = -1;
 			}
 			if(xvalue.flags&PV_VAL_STR)
@@ -686,17 +682,12 @@ int ops_dbstore_avps (struct sip_msg* msg, struct fis_param *sp,
 				goto error;
 			}
 		} else {
-			name_type = dbp->a.u.sval.pvp.pvn.u.isname.type;
 			avp_name = dbp->a.u.sval.pvp.pvn.u.isname.name.n;
 		}
 	} else {
 		LM_WARN("TODO: avp is not a dynamic name <%.*s> name is %d\n", dbp->sa.len, dbp->sa.s, avp_name);
 		avp_name = -1;
 	}
-
-	/* set the script flags */
-	if(dbp->a.type==AVPOPS_VAL_PVAR)
-		name_type |= dbp->a.u.sval.pvp.pvn.u.isname.type&0xff00;
 
 	/* set uuid/(username and domain) fields */
 
