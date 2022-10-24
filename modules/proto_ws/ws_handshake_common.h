@@ -392,7 +392,7 @@ error:
 
 static int ws_server_handshake(struct tcp_connection *con)
 {
-	int bytes, total_bytes = 0;
+	int bytes;
 	long size = 0;
 	int msg_len;
 	char *msg_buf;
@@ -426,7 +426,6 @@ static int ws_server_handshake(struct tcp_connection *con)
 			goto error;
 		}
 
-		total_bytes+=bytes;
 		/* eof check:
 		 * is EOF if eof on fd and r.  not complete yet,
 		 * if r. is complete we might have a second unparsed
