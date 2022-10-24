@@ -267,7 +267,7 @@ int xj_wlist_get(xj_wlist jwl, xj_jkey jkey, xj_jkey *p)
 		{
 			if(pos >= 0)
 				lock_set_release(jwl->sems, pos);
-				lock_set_release(jwl->sems, i);
+			lock_set_release(jwl->sems, i);
 #ifdef XJ_EXTRA_DEBUG
 			LM_DBG("entry already exists for <%.*s> in the"
 				" pool of <%d> [%d]\n",jkey->id->len, jkey->id->s,
