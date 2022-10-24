@@ -2150,6 +2150,11 @@ static int rtp_relay_reinvite_reply(struct sip_msg *msg,
 		return -1;
 	}
 
+	if (msg == NULL || msg == FAKED_REPLY) {
+		/* we only care about actual replies */
+		goto error;
+	}
+
 	switch (tmp->state) {
 		case RTP_RELAY_TMP_OFFER:
 			pbody = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
