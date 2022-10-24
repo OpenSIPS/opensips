@@ -390,13 +390,11 @@ int tcp_async_write(struct tcp_connection* con,int fd)
 static int tsend_stream_async(struct tcp_connection *c,
 		int fd, char* buf, unsigned int len, int timeout)
 {
-	int written;
 	int n;
 	struct pollfd pf;
 
 	pf.fd=fd;
 	pf.events=POLLOUT;
-	written=0;
 
 again:
 	n=send(fd, buf, len,0);
@@ -410,7 +408,6 @@ again:
 			goto poll_loop;
 	}
 
-	written+=n;
 	if (n < len) {
 		/* partial write */
 		buf += n;

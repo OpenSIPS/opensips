@@ -64,12 +64,11 @@ void memcpy_watchers(str_lst_t *dest, str_lst_t *src, unsigned int size)
 	str_lst_t *from = src;
 	str_lst_t *to = dest;
 	char *p;
-	unsigned int len, total_len=0;
+	unsigned int len;
 
 	p = (char *)to;
 	while (from) {
 		len = sizeof(str_lst_t) + from->watcher.len;
-		total_len += len;
 		if (len > size) {
 			LM_CRIT("buffer overflow\n");
 			return;
