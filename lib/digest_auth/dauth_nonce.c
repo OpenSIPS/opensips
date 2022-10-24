@@ -244,7 +244,11 @@ int dauth_noncer_init(struct nonce_context *pub)
 		LM_ERR("EVP_EncryptInit_ex() failed\n");
 		goto e0;
 	}
-	DASSERT(EVP_CIPHER_CTX_key_length(self->ectx) == pub->secret.len);
+	if (EVP_CIPHER_CTX_key_length(self->ectx) != pub->secret.len) {
+                LM_ERR("Length of secret has to be %d characters\n",
+                    EVP_CIPHER_CTX_key_length(self->ectx));
+                goto e0;
+        }
 	EVP_CIPHER_CTX_set_padding(self->ectx, 0);
 	if (EVP_DecryptInit_ex(self->dctx, EVP_aes_256_ecb(), NULL,  key, NULL) != 1) {
 		LM_ERR("EVP_DecryptInit_ex() failed\n");
