@@ -555,7 +555,7 @@ int cr_do_route(struct sip_msg * _msg, void *_carrier,
 		goto unlock_and_out;
 	}
 
-	if (rewrite_uri_recursor(rt->tree, prefix_matching, flags, &dest, _msg, rewrite_user, (enum hash_source)_hsrc, _halg, _dstavp) != 0) {
+	if (rewrite_uri_recursor(rt->tree, prefix_matching, flags, &dest, _msg, rewrite_user, (enum hash_source)(intptr_t)_hsrc, _halg, _dstavp) != 0) {
 		/* this is not necessarily an error, rewrite_recursor does already some error logging */
 		LM_INFO("rewrite_uri_recursor doesn't complete, uri %.*s, carrier %d, domain %d\n", prefix_matching->len,
 			prefix_matching->s, carrier_id, domain_id);
