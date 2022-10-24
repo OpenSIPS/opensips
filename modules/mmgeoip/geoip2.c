@@ -106,7 +106,7 @@ char *check_short_fields(char *field)
 	return NULL;
 }
 
-int geoip2_get_field(lookup_res_t ip_data, char *field, char *buf)
+int geoip2_get_field(lookup_res_t ip_data, char *field, char buf[256])
 {
 	char *path_arr[MAX_PATH_DEPTH+1];
 	int i = 0;
