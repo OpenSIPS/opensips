@@ -22,6 +22,7 @@
  */
 
 
+#include <stdint.h>
 #include <stdlib.h>
 #include "../../dprint.h"
 #include "../../mem/mem.h"
@@ -110,7 +111,7 @@ int insert_drcb(struct dr_head_cbl **dr_cb_list, struct dr_callback *cb,
 int register_dr_cb(enum drcb_types type, dr_cb f, void *param,
                    dr_param_free_cb ff)
 {
-	sort_cb_type alg = (sort_cb_type)param;
+	sort_cb_type alg = (sort_cb_type)(intptr_t)param;
 	struct dr_callback *cb;
 
 	cb = pkg_malloc(sizeof *cb);
