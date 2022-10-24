@@ -21,6 +21,10 @@ else
 	INSTALLMIBDIR = $(cfg_prefix)/share/snmp/mibs
 endif 
 
+ifeq ($(CC_NAME), clang)
+	DEFS := $(filter-out -flto%,$(DEFS)) -Wno-ignored-optimization-argument
+endif
+
 CFLAGS+=
 auto_gen=
 NAME=snmpstats.so
