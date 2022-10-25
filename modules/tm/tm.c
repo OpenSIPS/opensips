@@ -1603,7 +1603,7 @@ static int w_t_wait_no_more_branches(struct sip_msg* msg)
 		return -1;
 	}
 
-	if (t_wait_no_more_branches(t)<0)
+	if (t_wait_no_more_branches(t, 0)<0)
 		return -1;
 
 	return 1;
