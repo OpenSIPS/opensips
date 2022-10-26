@@ -2835,11 +2835,6 @@ static int pv_set_avp(struct sip_msg* msg, pv_param_t *param,
 			destroy_avps(name_type, avp_name, 1);
 		else
 		{
-			if(idx < 0)
-			{
-				LM_ERR("Index with negative value\n");
-				return -1;
-			}
 			destroy_index_avp(name_type, avp_name, idx);
 		}
 		return 0;
