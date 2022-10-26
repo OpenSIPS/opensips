@@ -99,6 +99,7 @@ struct usr_avp *search_index_avp(unsigned short flags,
 
 /* free functions */
 void reset_avps( );
+int  count_avps(unsigned short flags, int name);
 void destroy_avp( struct usr_avp *avp);
 void destroy_index_avp( unsigned short flags, int name, int index);
 int  destroy_avps( unsigned short flags, int name, int all);
