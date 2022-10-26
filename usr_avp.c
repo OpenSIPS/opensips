@@ -202,8 +202,14 @@ int replace_avp(unsigned short flags, int name, int_str val, int index)
 	struct usr_avp* avp_new, *avp_del;
 
 	if(index < 0) {
-		LM_ERR("Index with negative value\n");
-		return -1;
+		/* convert negative index to 0+ */
+		int pidx = count_avps(flags, name) + index;
+		if (pidx < 0) {
+			LM_DBG("AVP with the specified index (%d) not found\n", index);
+			return -1;
+		}
+
+		index = pidx;
 	}
 
 	avp_del = search_index_avp(flags, name, 0, index);
@@ -416,6 +422,17 @@ void destroy_index_avp( unsigned short flags, int name, int index)
 {
 	struct usr_avp *avp = NULL;
 
+	if(index < 0) {
+		/* convert negative index to 0+ */
+		int pidx = count_avps(flags, name) + index;
+		if (pidx < 0) {
+			LM_DBG("AVP with the specified index (%d) not found\n", index);
+			return;
+		}
+
+		index = pidx;
+	}
+
 	avp = search_index_avp(flags, name, 0, index);
 	if(avp== NULL) {
 		LM_DBG("AVP with the specified index not found\n");
@@ -423,6 +440,17 @@ void destroy_index_avp( unsigned short flags, int name, int index)
 	}
 
 	destroy_avp( avp );
+}
+
+int count_avps(unsigned short flags, int name)
+{
+	struct usr_avp *avp = NULL;
+	int n = 0;
+
+	while ((avp=search_first_avp(flags, name, 0, avp)))
+		n++;
+
+	return n;
 }
 
 void destroy_avp_list_bulk( struct usr_avp **list )
