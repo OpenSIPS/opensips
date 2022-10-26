@@ -49,13 +49,18 @@ static int fixup_mflag(void** param);
 static int fixup_bflag(void** param);
 static int fixup_qvalue(void** param);
 static int fixup_f_send_sock(void** param);
+static int fixup_blacklist_name(void** param);
 static int fixup_blacklist(void** param);
+static int fixup_blacklist_ip(void** param);
+static int fixup_blacklist_free(void** param);
 static int fixup_check_wrvar(void** param);
 static int fixup_avp_list(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_event_name(void** param);
 static int fixup_format_string(void** param);
 static int fixup_nt_string(void** param);
+static int fixup_nt_str(void** param);
+static int fixup_nt_str_free(void** param);
 
 static int w_forward(struct sip_msg *msg, struct proxy_l *dest);
 static int w_send(struct sip_msg *msg, struct proxy_l *dest, str *headers);
@@ -228,6 +233,37 @@ static cmd_export_t core_cmds[]={
 		ALL_ROUTES},
 	{"unuse_blacklist", (cmd_function)w_unuse_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{"check_blacklist", (cmd_function)w_check_blacklist, {
+		{CMD_PARAM_STR, fixup_blacklist, 0},
+		{CMD_PARAM_STR, fixup_blacklist_ip, fixup_blacklist_free}, /* ip */
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* port */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_blacklist_proto, 0}, /* proto */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_nt_str, fixup_nt_str_free}, /* pattern */
+		{0,0,0}},
+		ALL_ROUTES},
+	{"add_blacklist_rule", (cmd_function)w_add_blacklist_rule, {
+		{CMD_PARAM_STR, fixup_blacklist_name, 0},
+		{CMD_PARAM_STR, fixup_blacklist_net, fixup_blacklist_net_free}, /* ip */
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* port */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_blacklist_proto, 0}, /* proto */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_nt_str, fixup_nt_str_free}, /* pattern */
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* expire */
+		{0,0,0}},
+		ALL_ROUTES},
+	{"del_blacklist_rule", (cmd_function)w_del_blacklist_rule, {
+		{CMD_PARAM_STR, fixup_blacklist_name, 0},
+		{CMD_PARAM_STR, fixup_blacklist_net, fixup_blacklist_net_free}, /* ip */
+		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* port */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_blacklist_proto, 0}, /* proto */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
+			fixup_nt_str, fixup_nt_str_free}, /* pattern */
+		{0,0,0}},
 		ALL_ROUTES},
 	{"cache_store", (cmd_function)w_cache_store, {
 		{CMD_PARAM_STR, 0, 0},
@@ -449,21 +485,47 @@ error:
 	return E_BAD_ADDRESS;
 }
 
+static int fixup_blacklist_name(void** param)
+{
+	str *s = (str*)*param;
+	*param = get_bl_head_by_name(s);
+	if (!*param) {
+		LM_ERR("blacklist %.*s not configured\n", s->len, s->s);
+		return E_CFG;
+	}
+	return 0;
+}
+
 static int fixup_blacklist(void** param)
 {
 	str *s = (str*)*param;
 
-	if (!str_strcasecmp(s, _str("all")))
+	if (!str_strcasecmp(s, _str("all"))) {
 		*param = NULL;
-	else {
-		*param = get_bl_head_by_name(s);
-		if (!*param) {
-			LM_ERR("[UN]USE_BLACKLIST - list "
-				"%.*s not configured\n", s->len, s->s);
-			return E_CFG;
-		}
+		return 0;
+	} else {
+		return fixup_blacklist_name(param);
 	}
+}
 
+static int fixup_blacklist_free(void** param)
+{
+	pkg_free(*param);
+	return 0;
+}
+
+static int fixup_blacklist_ip(void** param)
+{
+	str *s = (str*)*param;
+	struct ip_addr *ip_pkg;
+	struct ip_addr *ip = str2ip(s);
+	if (!ip)
+		return E_BAD_ADDRESS;
+	ip_pkg = pkg_malloc(sizeof *ip_pkg);
+	if (!ip_pkg)
+		return E_OUT_OF_MEM;
+	memcpy(ip_pkg, ip, sizeof *ip_pkg);
+	*param = ip_pkg;
 	return 0;
 }
 
@@ -544,6 +606,32 @@ static int fixup_nt_string(void** param)
 	return 0;
 }
 
+static int fixup_nt_str(void** param)
+{
+	str *s = (str*)*param;
+	str *s_nt;
+
+	s_nt = pkg_malloc(sizeof *s_nt + (s?s->len:0) + 1);
+	if (!s_nt)
+		return E_OUT_OF_MEM;
+	s_nt->s = (char *)(s_nt + 1);
+	if (s) {
+		s_nt->len = s->len;
+		memcpy(s_nt->s, s->s, s->len);
+	} else {
+		s_nt->len = 0;
+	}
+	s_nt->s[s_nt->len] = '\0';
+
+	*param = s_nt;
+	return 0;
+}
+
+static int fixup_nt_str_free(void** param)
+{
+	pkg_free(((str *)*param)->s);
+	return 0;
+}
 
 static int w_forward(struct sip_msg *msg, struct proxy_l *dest)
 {

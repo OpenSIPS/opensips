@@ -99,5 +99,24 @@ static inline int check_blacklists( unsigned short proto,
 	return check_against_blacklist(&ip, &body, port, proto);
 }
 
+
+struct bl_net_flags {
+	struct net ipnet;
+	unsigned int flags;
+};
+
+int fixup_blacklist_proto(void** param);
+int fixup_blacklist_net(void** param);
+int fixup_blacklist_net_free(void** param);
+
+int w_check_blacklist(struct sip_msg *msg, struct bl_head *head,
+		struct ip_addr *ip, int *port, unsigned short _proto, str *_pattern);
+int w_add_blacklist_rule(struct sip_msg *msg, struct bl_head *head,
+		struct bl_net_flags *_nf, int *_port, unsigned short _proto,
+		str *_pattern, int *_exp);
+int w_del_blacklist_rule(struct sip_msg *msg, struct bl_head *head,
+		struct bl_net_flags *_nf, int *_port, unsigned short _proto,
+		str *_pattern);
+
 #endif /* _BLACKLST_H */
 

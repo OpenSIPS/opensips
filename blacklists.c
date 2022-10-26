@@ -1174,3 +1174,105 @@ static mi_response_t *mi_del_blacklist_rule(const mi_params_t *params,
 
 	return init_mi_result_ok();
 }
+
+int w_check_blacklist(struct sip_msg *msg, struct bl_head *head,
+		struct ip_addr *ip, int *_port, unsigned short _proto, str *_pattern)
+{
+	int ret, idx;
+	unsigned short port = (_port?*_port:0);
+
+	if (head) {
+		/* we need to check against a specific list */
+		idx = head - blst_heads;
+		ret = check_against_rule_list(ip, _pattern, port, _proto, idx);
+	} else {
+		/* if we do not have a head, we check against all enabled */
+		ret = check_against_blacklist(ip, _pattern, port, _proto);
+	}
+	return ret ?1:-1;
+}
+
+int fixup_blacklist_proto(void** param)
+{
+	int proto = PROTO_NONE;
+	str *s = (str*)*param;
+	if (s && parse_proto((unsigned char *)s->s, s->len, &proto) < 0)
+		return E_BAD_PROTO;
+
+	*param = (void *)(unsigned long)proto;
+	return 0;
+}
+
+int fixup_blacklist_net(void** param)
+{
+	str *s = (str*)*param;
+	str tmp = *s;
+	struct bl_net_flags *nf = pkg_malloc(sizeof *nf);
+	if (!nf)
+		return E_OUT_OF_MEM;
+	trim(&tmp);
+	if (tmp.s[0] == '!') {
+		nf->flags = BLR_APPLY_CONTRARY;
+		tmp.s++;
+		tmp.len--;
+		trim(&tmp);
+	}
+
+	if (parse_ip_net(tmp.s, tmp.len, &nf->ipnet) < 0) {
+		pkg_free(nf);
+		return E_BAD_ADDRESS;
+	}
+	*param = nf;
+	return 0;
+}
+
+int fixup_blacklist_net_free(void** param)
+{
+	pkg_free(*param);
+	return 0;
+}
+
+int w_add_blacklist_rule(struct sip_msg *msg, struct bl_head *head,
+		struct bl_net_flags *nf, int *_port, unsigned short _proto,
+		str *_pattern, int *_exp)
+{
+	struct bl_rule *list = NULL;
+	unsigned short port = (_port?*_port:0);
+
+	if (head->flags & BL_READONLY_LIST) {
+		LM_ERR("cannot modify read-only blacklist!\n");
+		return -1;
+	}
+
+	if (_exp && *_exp && !(head->flags & BL_DO_EXPIRE)) {
+		LM_ERR("blacklist does not support expiring rules!\n");
+		return -1;
+	}
+
+	if (add_rule_to_list(&list, &list, &nf->ipnet, _pattern,
+			port, _proto, nf->flags) != 0) {
+		LM_ERR("cannot build blacklist rule!\n");
+		return -1;
+	}
+	if (add_list_to_head(head, list, list, 0, (_exp?*_exp:0)) < 0) {
+		LM_ERR("cannot add blacklist rule!\n");
+		return -1;
+	}
+	return 1;
+}
+
+int w_del_blacklist_rule(struct sip_msg *msg, struct bl_head *head,
+		struct bl_net_flags *nf, int *_port, unsigned short _proto,
+		str *_pattern)
+{
+	unsigned short port = (_port?*_port:0);
+
+	if (head->flags & BL_READONLY_LIST) {
+		LM_ERR("cannot modify read-only blacklist!\n");
+		return -1;
+	}
+	if (del_rule_from_list(head, &nf->ipnet,
+			_pattern, port, _proto, nf->flags) != 0)
+		return -1;
+	return 1;
+}
