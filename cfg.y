@@ -270,6 +270,8 @@ extern int cfg_parse_only_routes;
 %token WHILE
 %token FOR
 %token IN
+%token READONLY
+%token EXPIRE
 %token NULLV
 %token XDBG
 %token XLOG
@@ -464,6 +466,7 @@ extern int cfg_parse_only_routes;
 %type <strval> route_name
 %type <intval> route_name_var
 %type <intval> route_param
+%type <intval> blst_flag blst_flags
 %type <strval> folded_string
 %type <multistr> multi_string
 
@@ -766,6 +769,15 @@ blst_elem: LPAREN any_proto COMMA ipnet COMMA port COMMA STRING RPAREN {
 blst_def: COLON LBRACE blst_elem_list RBRACE
 		| COLON LBRACE RBRACE
 		|
+		;
+
+blst_flag: READONLY { $$ = BL_READONLY_LIST; }
+		 | EXPIRE { $$ = BL_DO_EXPIRE; }
+		 | DEFAULT { $$ = BL_BY_DEFAULT; }
+		 ;
+
+blst_flags: blst_flags COMMA blst_flag { $$ = $1 | $3; }
+		| blst_flag {}
 		;
 
 blst_elem_list: blst_elem_list COMMA blst_elem {}
@@ -1325,6 +1337,16 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 										disable_dns_blacklist=$3;
 									}
 		| DISABLE_DNS_BLACKLIST error { yyerror("boolean value expected"); }
+		| DST_BLACKLIST EQUAL ID SLASH blst_flags blst_def { IFOR();
+				s_tmp.s = $3;
+				s_tmp.len = strlen($3);
+				if (create_bl_head(_str("script"), $5,
+				    bl_head, bl_tail, &s_tmp)==0) {
+					yyerror("failed to create blacklist\n");
+					YYABORT;
+				}
+				bl_head = bl_tail = NULL;
+				}
 		| DST_BLACKLIST EQUAL ID blst_def { IFOR();
 				s_tmp.s = $3;
 				s_tmp.len = strlen($3);

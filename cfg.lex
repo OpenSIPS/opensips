@@ -137,6 +137,8 @@ WHILE			"while"
 FOR             "for"
 IN              "in"
 XDBG			"xdbg"
+READONLY		"read-only"|"readonly"
+EXPIRE			"expire"
 PV_PRINT_BUF_SIZE	"pv_print_buf_size"
 XLOG_BUF_SIZE	"xlog_buf_size"
 XLOG_FORCE_COLOR	"xlog_force_color"
@@ -372,6 +374,8 @@ SPACE		[ ]
 <INITIAL>{WHILE}	{ count(); yylval.strval=yytext; return WHILE; }
 <INITIAL>{FOR}		{ count(); yylval.strval=yytext; return FOR; }
 <INITIAL>{IN}		{ count(); yylval.strval=yytext; return IN; }
+<INITIAL>{READONLY}	{ count(); yylval.strval=yytext; return READONLY; }
+<INITIAL>{EXPIRE}	{ count(); yylval.strval=yytext; return EXPIRE; }
 
 <INITIAL>{PPTOK_LINE}  { count(); BEGIN(PPTOK_LINE); }
 <INITIAL>{PPTOK_FILEBEG}  { count(); BEGIN(PPTOK_FILEBEG); }
