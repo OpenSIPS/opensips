@@ -611,7 +611,7 @@ int dlg_replicated_delete(bin_packet_t *packet)
 		DLG_BIN_POP(int, packet, h_id, malformed);
 
 		h_entry = dlg_hash(&call_id);
-		dlg = lookup_dlg(h_entry, h_id);
+		dlg = lookup_dlg(h_entry, h_id, 1);
 	} else {
 		dlg = get_dlg(&call_id, &from_tag, &to_tag, &dir, &dst_leg);
 	}

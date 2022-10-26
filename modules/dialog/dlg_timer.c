@@ -30,6 +30,9 @@
 struct dlg_timer *d_timer = 0;
 dlg_timer_handler timer_hdl = 0;
 
+struct dlg_timer *ddel_timer = 0;
+dlg_timer_handler del_timer_hdl = 0;
+
 struct dlg_ping_timer *ping_timer=0;
 struct dlg_reinvite_ping_timer *reinvite_ping_timer=0;
 str options_str=str_init("OPTIONS");
@@ -45,37 +48,49 @@ extern int options_ping_interval;
  */
 #define FAKE_DIALOG_TL ((struct dlg_tl*)-1)
 
-int init_dlg_timer( dlg_timer_handler hdl )
+static int _init_gen_dlg_timer(struct dlg_timer **timer)
 {
-	d_timer = (struct dlg_timer*)shm_malloc(sizeof(struct dlg_timer));
-	if (d_timer==0) {
+	*timer = (struct dlg_timer*)shm_malloc(sizeof(struct dlg_timer));
+	if (*timer==0) {
 		LM_ERR("no more shm mem\n");
 		return -1;
 	}
-	memset( d_timer, 0, sizeof(struct dlg_timer) );
+	memset( *timer, 0, sizeof(struct dlg_timer) );
 
-	d_timer->first.next = d_timer->first.prev = &(d_timer->first);
+	(*timer)->first.next = (*timer)->first.prev = &((*timer)->first);
 
-	d_timer->lock = lock_alloc();
-	if (d_timer->lock==0) {
+	(*timer)->lock = lock_alloc();
+	if ((*timer)->lock==0) {
 		LM_ERR("failed to alloc lock\n");
 		goto error0;
 	}
 
-	if (lock_init(d_timer->lock)==0) {
+	if (lock_init( (*timer)->lock)==0) {
 		LM_ERR("failed to init lock\n");
 		goto error1;
 	}
 
-	timer_hdl = hdl;
 	return 0;
 error1:
-	lock_dealloc(d_timer->lock);
+	lock_dealloc((*timer)->lock);
 error0:
-	shm_free(d_timer);
-	d_timer = 0;
+	shm_free(*timer);
+	*timer = 0;
 	return -1;
 }
+
+int init_dlg_timer(dlg_timer_handler hdl )
+{
+	timer_hdl = hdl;
+	return _init_gen_dlg_timer( &d_timer );
+}
+
+int init_dlg_del_timer(dlg_timer_handler hdl )
+{
+	del_timer_hdl = hdl;
+	return _init_gen_dlg_timer( &ddel_timer );
+}
+
 
 #ifdef EXTRA_DEBUG
 #define tl_get_dlg(_tl_)  ((struct dlg_cell*)((char *)(_tl_)- \
@@ -101,14 +116,14 @@ void debug_detached_timer_list(struct dlg_tl *detached)
 }
 
 /* assumed to be always called under timer lock */
-void debug_main_timer_list(void)
+void debug_gen_timer_list( struct dlg_timer *timer )
 {
 	static int visited;
 
 	struct dlg_tl *start,*finish;
 
 	visited++;
-	start = finish = &(d_timer->first);
+	start = finish = &(timer->first);
 	LM_DBG("testing forward loop with visited = %d\n",visited);
 
 	/* check the main list is circular in both directions from start to end,
@@ -127,7 +142,7 @@ void debug_main_timer_list(void)
 	}
 
 	visited++;
-	start = &(d_timer->first);
+	start = &(timer->first);
 
 	LM_DBG("testing backward loop with visited = %d\n",visited);
 
@@ -220,29 +235,38 @@ void destroy_ping_timer(void)
 }
 
 
-void destroy_dlg_timer(void)
+static void _destroy_gen_dlg_timer(struct dlg_timer **timer)
 {
-	if (d_timer==0)
+	if (*timer==0)
 		return;
 
-	lock_destroy(d_timer->lock);
-	lock_dealloc(d_timer->lock);
+	lock_destroy((*timer)->lock);
+	lock_dealloc((*timer)->lock);
 
-	shm_free(d_timer);
-	d_timer = 0;
+	shm_free(*timer);
+	*timer = 0;
+}
+
+void destroy_dlg_timer(void)
+{
+	_destroy_gen_dlg_timer( &d_timer );
+}
+
+void destroy_dlg_del_timer(void)
+{
+	_destroy_gen_dlg_timer( &ddel_timer );
 }
 
 
-
-static inline void insert_dlg_timer_unsafe(struct dlg_tl *tl)
+static inline void insert_gen_timer_unsafe(struct dlg_timer *timer, struct dlg_tl *tl)
 {
 	struct dlg_tl* ptr;
 
 #ifdef EXTRA_DEBUG
-	debug_main_timer_list();
+	debug_gen_timer_list( timer );
 #endif
 
-	for(ptr = d_timer->first.prev; ptr != &d_timer->first ; ptr = ptr->prev) {
+	for(ptr = timer->first.prev; ptr != &(timer->first) ; ptr = ptr->prev) {
 		if ( ptr->timeout <= tl->timeout )
 			break;
 	}
@@ -254,7 +278,7 @@ static inline void insert_dlg_timer_unsafe(struct dlg_tl *tl)
 	tl->next->prev = tl;
 
 #ifdef EXTRA_DEBUG
-	debug_main_timer_list();
+	debug_gen_timer_list( timer );
 #endif
 }
 
@@ -270,11 +294,38 @@ int insert_dlg_timer(struct dlg_tl *tl, int interval)
 	}
 	tl->timeout = get_ticks()+interval;
 
-	insert_dlg_timer_unsafe( tl );
+	insert_gen_timer_unsafe( d_timer, tl );
 
 	lock_release( d_timer->lock);
 
 	return 0;
+}
+
+
+int insert_attempt_dlg_del_timer(struct dlg_tl *tl, int interval)
+{
+	lock_get( ddel_timer->lock);
+
+	if (tl->prev==NULL) {
+		if (tl->next) {
+			/* prev is null, next not -> tl was in timer, but removed */
+			lock_release( ddel_timer->lock);
+			LM_DBG("TL found to be removed from timer\n");
+			return -2;
+		} else {
+			/* prev and next are null -> tl is not in timer */
+			tl->timeout = get_ticks()+interval;
+			insert_gen_timer_unsafe( ddel_timer, tl );
+			lock_release( ddel_timer->lock);
+			LM_DBG("TL was just inserted into timer\n");
+			return 0;
+		}
+	}
+
+	/* prev and next are both set -> it should be in timer */
+
+		LM_DBG("TL found already in timer\n");
+	return -1;
 }
 
 void unsafe_insert_ping_timer(struct dlg_ping_list *node,int new_timeout)
@@ -417,14 +468,14 @@ int insert_reinvite_ping_timer(struct dlg_cell* dlg)
 static inline void remove_dlg_timer_unsafe(struct dlg_tl *tl)
 {
 #ifdef EXTRA_DEBUG
-	debug_main_timer_list();
+	debug_gen_timer_list( d_timer );
 #endif
 
 	tl->prev->next = tl->next;
 	tl->next->prev = tl->prev;
 
 #ifdef EXTRA_DEBUG
-	debug_main_timer_list();
+	debug_gen_timer_list( d_timer );
 #endif
 }
 
@@ -523,30 +574,30 @@ int update_dlg_timer( struct dlg_tl *tl, int timeout )
 	}
 
 	tl->timeout = get_ticks()+timeout;
-	insert_dlg_timer_unsafe( tl );
+	insert_gen_timer_unsafe( d_timer, tl );
 
 	lock_release( d_timer->lock);
 	return ret;
 }
 
-static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
+static inline struct dlg_tl* _get_gen_expired_dlgs(struct dlg_timer *timer, unsigned int time)
 {
 	struct dlg_tl *tl , *end, *ret;
 
-	lock_get( d_timer->lock);
+	lock_get( timer->lock);
 
-	if (d_timer->first.next==&(d_timer->first)
-	|| d_timer->first.next->timeout > time ) {
-		lock_release( d_timer->lock);
+	if (timer->first.next==&(timer->first)
+	|| timer->first.next->timeout > time ) {
+		lock_release( timer->lock);
 		return FAKE_DIALOG_TL;
 	}
 
 #ifdef EXTRA_DEBUG
-	debug_main_timer_list();
+	debug_gen_timer_list( timer );
 #endif
 
-	end = &d_timer->first;
-	tl = d_timer->first.next;
+	end = &timer->first;
+	tl = timer->first.next;
 	LM_DBG("start with tl=%p tl->prev=%p tl->next=%p (%d) at %d "
 		"and end with end=%p end->prev=%p end->next=%p\n",
 		tl,tl->prev,tl->next,tl->timeout,time,
@@ -559,24 +610,24 @@ static inline struct dlg_tl* get_expired_dlgs(unsigned int time)
 		tl=tl->next;
 	}
 	LM_DBG("end with tl=%p tl->prev=%p tl->next=%p and "
-		"d_timer->first.next->prev=%p\n",
-		tl,tl->prev,tl->next,d_timer->first.next->prev);
+		"timer->first.next->prev=%p\n",
+		tl,tl->prev,tl->next,timer->first.next->prev);
 
-	if (tl==end && d_timer->first.next->prev) {
+	if (tl==end && timer->first.next->prev) {
 		LM_DBG("no dialog to return\n");
 		ret = FAKE_DIALOG_TL;
 	} else {
-		ret = d_timer->first.next;
+		ret = timer->first.next;
 		tl->prev->next = FAKE_DIALOG_TL;
-		d_timer->first.next = tl;
-		tl->prev = &d_timer->first;
+		timer->first.next = tl;
+		tl->prev = &timer->first;
 	}
 
 #ifdef EXTRA_DEBUG
-	debug_main_timer_list();
+	debug_gen_timer_list( timer );
 #endif
 
-	lock_release( d_timer->lock);
+	lock_release( timer->lock);
 
 #ifdef EXTRA_DEBUG
 	debug_detached_timer_list(ret);
@@ -588,7 +639,7 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 {
 	struct dlg_tl *tl, *ctl;
 
-	tl = get_expired_dlgs( ticks );
+	tl = _get_gen_expired_dlgs( d_timer, ticks );
 
 	while (tl != FAKE_DIALOG_TL) {
 		ctl = tl;
@@ -597,6 +648,20 @@ void dlg_timer_routine(unsigned int ticks , void * attr)
 		ctl->next = FAKE_DIALOG_TL;
 		LM_DBG("tl=%p next=%p\n", ctl, tl);
 		timer_hdl( ctl );
+	}
+
+	if (dlg_del_delay==0)
+		return;
+
+	tl = _get_gen_expired_dlgs( ddel_timer, ticks );
+
+	while (tl != FAKE_DIALOG_TL) {
+		ctl = tl;
+		tl = tl->next;
+		/* keep dialog as expired (next is still set) */
+		ctl->next = FAKE_DIALOG_TL;
+		LM_DBG("DEL tl=%p next=%p\n", ctl, tl);
+		del_timer_hdl( ctl );
 	}
 }
 

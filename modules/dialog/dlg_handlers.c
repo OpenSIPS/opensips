@@ -1889,7 +1889,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				return;
 			}
 
-			dlg = lookup_dlg( h_entry, h_id);
+			dlg = lookup_dlg( h_entry, h_id, 0);
 			if (dlg==0) {
 				LM_DBG("unable to find dialog for %.*s "
 					"with route param '%.*s'\n",
@@ -1981,6 +1981,46 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		dlg_set_tm_dialog_ctx(dlg, t);
 
 	/* run actions for the transition */
+	if (new_state==DLG_STATE_DELETED && old_state==DLG_STATE_DELETED) {
+		/* a request after dialog termination */
+
+		/* within dialog request */
+		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0, 1);
+
+		/* update the cseq */
+		dlg_lock (d_table,d_entry);
+		if (dlg->legs[dst_leg].last_gen_cseq) {
+
+			update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+			dlg_unlock (d_table,d_entry);
+
+			if (update_msg_cseq(req,0,update_val) != 0)
+				LM_ERR("failed to update BYE msg cseq\n");
+
+			msg_cseq = &((struct cseq_body *)req->cseq->parsed)->number;
+
+			final_cseq = shm_malloc(msg_cseq->len + 1);
+			if (final_cseq == 0) {
+				LM_ERR("no more shm mem\n");
+				goto after_unlock5;
+			}
+
+			memcpy(final_cseq,msg_cseq->s,msg_cseq->len);
+			final_cseq[msg_cseq->len] = 0;
+
+			if ( d_tmb.register_tmcb( req, 0, TMCB_RESPONSE_FWDED,
+			fix_final_cseq,
+			(void*)final_cseq, free_final_cseq)<0 ) {
+				LM_ERR("failed to register TMCB (2)\n");
+			}
+		}
+		else
+			dlg_unlock (d_table,d_entry);
+
+		return;
+	}
+
+
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
 	old_state!=DLG_STATE_DELETED) {
 
@@ -2470,6 +2510,42 @@ void dlg_ontimeout(struct dlg_tl *tl)
 	return;
 }
 
+#define get_dlg_del_tl_payload(_tl_)  ((struct dlg_cell*)((char *)(_tl_)- \
+		(unsigned long)(&((struct dlg_cell*)0)->del_tl)))
+
+/* This timer handler is triggered when the done with "waiting" after the
+ * dialog got into the TERMINATED state (to be deleted). Take care as 
+ * the dialog may or not be ref counted here (and still in hash)
+ */
+void dlg_ondelete(struct dlg_tl *tl)
+{
+	/* just removed from del timer, it already has the marker, so it will 
+	 * not be subject to another adding */
+	/* del timer - unlocked */
+	/* dlg cell  - unlocked */
+	struct dlg_entry *d_entry;
+	struct dlg_cell *dlg;
+
+	dlg = get_dlg_del_tl_payload(tl);
+
+	d_entry = &(d_table->entries[dlg->h_entry]);
+
+	dlg_lock( d_table, d_entry);
+
+	LM_DBG("delete handler for dlg %p, ref=%d\n",dlg, dlg->ref);
+
+	if (dlg->ref<=0) {
+		/* dlg not ref'ed, so safe to destroy.*/
+		LM_DBG("destroying dlg %p\n",dlg);
+		unlink_unsafe_dlg( d_entry, dlg);
+		destroy_dlg(dlg);
+	} /* if the dialog is still ref'ed, it will be destroyed when 
+	   * the ref gets to 0 (and del timer waiting is already done) */
+
+	dlg_unlock( d_table, d_entry);
+}
+
+
 #define ROUTE_STR "Route: "
 #define CRLF "\r\n"
 #define ROUTE_LEN (sizeof(ROUTE_STR) - 1)
@@ -2847,7 +2923,7 @@ int terminate_dlg(const str *callid, unsigned int h_entry, unsigned int h_id,
 	if (callid)
 		dlg = get_dlg_by_callid(callid, 1);
 	else
-		dlg = lookup_dlg(h_entry, h_id);
+		dlg = lookup_dlg(h_entry, h_id, 1);
 
 	if(!dlg)
 		return 0;

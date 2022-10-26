@@ -30,11 +30,21 @@
 	the create_dialog() function, with or without parameter.
 	</para>
 	<para>
-	The dialog is automatically destroyed when a <quote>BYE</quote> is
+	The dialog is automatically terminated when a <quote>BYE</quote> is
 	received. In case of no <quote>BYE</quote>, the dialog lifetime is
 	controlled via the default timeout (see <quote>default_timeout</quote>
 	- <xref linkend="param_default_timeout"/>) and custom timeout (see
 	<quote>$DLG_timeout</quote> - <xref linkend="pv_DLG_timeout"/>).
+	</para>
+	<para>
+	Once terminated, the in-memory dialog may be destroyed right away or, 
+	depending on the <quote>delete_delay</quote>
+	- <xref linkend="param_delete_delay"/>) setting, it may be kept for a
+	while in memory, in a read-only state (no action, no changes, nothing).
+	This delaying may be used to help with the routing of late in-dialog
+	request that may be received after the dialog terminted (like late BYE's
+	due retransmissions, cross BYE requests, auth'ed BYE request, slow ACK on
+	re-INVITEs, etc).
 	</para>
 	</section>
 
@@ -387,6 +397,29 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 		<programlisting format="linespecific">
 ...
 modparam("dialog", "dlg_match_mode", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
+<section id="param_delete_delay" xreflabel="delete_delay">
+		<title><varname>delete_delay</varname> (integer)</title>
+		<para>
+			The interval (seconds) to delay a dialog deletion / removal from
+			memory AFTER its termination. Once terminated, the dialog will
+			be kept in a read only state (no action, no changes), but it will
+			still be able to match and route late in-dialog requests.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>0</quote> (disabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>delete_delay</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("dialog", "delete_delay", 10)
 ...
 </programlisting>
 		</example>

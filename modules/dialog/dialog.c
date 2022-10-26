@@ -73,6 +73,7 @@ int dlg_bulk_del_no = 1; /* delete one by one */
 int seq_match_mode = SEQ_MATCH_FALLBACK;
 int options_ping_interval = 30;      /* seconds */
 int reinvite_ping_interval = 300;    /* seconds */
+int dlg_del_delay = 0;               /* in seconds, default off */
 str dlg_extra_hdrs = {NULL,0};
 int race_condition_timeout = 5; /* seconds until call termination is triggered,
 					after 200OK -> CANCEL race detection */
@@ -286,6 +287,7 @@ static param_export_t mod_params[]={
 	{ "default_timeout",       INT_PARAM, &default_timeout          },
 	{ "options_ping_interval", INT_PARAM, &options_ping_interval    },
 	{ "reinvite_ping_interval",INT_PARAM, &reinvite_ping_interval   },
+	{ "delete_delay",          INT_PARAM, &dlg_del_delay            },
 	{ "dlg_extra_hdrs",        STR_PARAM, &dlg_extra_hdrs.s         },
 	{ "dlg_match_mode",        INT_PARAM, &seq_match_mode           },
 	{ "db_url",                STR_PARAM, &db_url.s                 },
@@ -858,6 +860,11 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (init_dlg_del_timer(dlg_ondelete )!=0) {
+		LM_ERR("cannot init delete timer list\n");
+		return -1;
+	}
+
 	if (init_dlg_ping_timer()!=0) {
 		LM_ERR("cannot init ping timer\n");
 		return -1;
@@ -960,6 +967,7 @@ static void mod_destroy(void)
 	dlg_db_mode = DB_MODE_NONE;
 	destroy_dlg_table();
 	destroy_dlg_timer();
+	destroy_dlg_del_timer();
 	destroy_ping_timer();
 	destroy_dlg_callbacks( DLGCB_CREATED|DLGCB_LOADED );
 	destroy_dlg_handlers();
