@@ -236,16 +236,22 @@ void destroy_black_lists(void)
 static inline void delete_expired(struct bl_head *elem, unsigned int ticks)
 {
 	struct bl_rule *p, *q;
+	struct bl_rule *last_no_expire;
 
 	p = q = 0;
 
 	/* get list for write */
 	lock_start_write(elem->lock);
 
-	if (!elem->first)
+	if (!elem->first || elem->last->expire_end == 0)
 		goto done;
 
-	for (q = 0, p = elem->first; p; q = p, p = p->next)
+	for (last_no_expire = 0, p = elem->first;
+			p && p->expire_end == 0;
+			last_no_expire = p, p = p->next);
+
+	/* p continues from where it as left */
+	for (q = 0; p; q = p, p = p->next)
 		if (p->expire_end > ticks)
 			break;
 
@@ -254,13 +260,24 @@ static inline void delete_expired(struct bl_head *elem, unsigned int ticks)
 
 	if (!p) {
 		/* remove everything */
-		q = elem->first;
-		elem->first = elem->last = NULL;
+		if (last_no_expire) {
+			q = last_no_expire->next;
+			elem->last = last_no_expire;
+			last_no_expire->next = NULL;
+		} else {
+			q = elem->first;
+			elem->first = elem->last = NULL;
+		}
 	} else {
 		/* remove up to p */
 		q->next = NULL;
-		q = elem->first;
-		elem->first = p;
+		if (last_no_expire) {
+			q = last_no_expire->next;
+			last_no_expire->next = p;
+		} else {
+			q = elem->first;
+			elem->first = p;
+		}
 	}
 
 done:
@@ -485,14 +502,13 @@ int add_list_to_head(struct bl_head *head,
 
 	/* for expiring lists, sets the timeout */
 	if (head->flags & BL_DO_EXPIRE) {
-		if (expire_limit==0) {
-			LM_CRIT("expire is zero!!!\n");
-			return -1;
+		if (expire_limit!=0) {
+			expire_end = get_ticks() + expire_limit;
+			for (p = first; p; p = p->next)
+				p->expire_end = expire_end;
+		} else {
+			LM_DBG("expire is zero - rule never expires\n");
 		}
-		expire_end = get_ticks() + expire_limit;
-
-		for (p = first; p; p = p->next)
-			p->expire_end = expire_end;
 	}
 
 	/* truncate? -> just do reload */
@@ -506,24 +522,37 @@ int add_list_to_head(struct bl_head *head,
 	if (!first)
 		goto done;
 
+	/* the list is built as it follows:
+	 * - rules that do not expire are always first
+	 * - rules that expire are oredered based on their expiration time
+	 */
+
 	if (!head->first) {
 		head->last  = last;
 		head->first = first;
 	} else if (!(head->flags & BL_DO_EXPIRE)) {
 		head->last->next = first;
 		head->last = last;
-	} else if (head->first->expire_end >= expire_end) {
+	} else if (expire_end == 0) {
+		/* non-expiry rules are always first */
 		last->next = head->first;
 		head->first = first;
-	} else if (head->last->expire_end <= expire_end) {
-		head->last->next = first;
-		head->last = last;
 	} else {
-		for (p = head->first; ; p = p->next)
-			if (p->next->expire_end >= expire_end)
-				break;
-		last->next = p->next;
-		p->next = first;
+		/* find first element with expiration */
+		for (p = head->first;
+			p->next && p->next->expire_end == 0;
+			p = p->next);
+		if (p == head->last || head->last->expire_end <= expire_end) {
+			/* no expiration rules, add at last */
+			head->last->next = first;
+			head->last = last;
+		} else {
+			for (;; p = p->next)
+				if (p->next->expire_end >= expire_end)
+					break;
+			last->next = p->next;
+			p->next = first;
+		}
 	}
 
 done:
@@ -685,10 +714,9 @@ static int mi_print_blacklist_rule(mi_item_t *rule_item,
 			return -1;
 	}
 
-	if (expire) {
-		if (add_mi_number(rule_item, MI_SSTR("Expire"), blr->expire_end) < 0)
-			return -1;
-	}
+	if (expire && blr->expire_end && add_mi_number(rule_item,
+			MI_SSTR("Expire"), (blr->expire_end - get_ticks())) < 0)
+		return -1;
 	return 0;
 }
 
