@@ -1991,17 +1991,45 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	struct ip_addr to_ip;
 	trace_instance_p instance;
+	struct to_body from_b;
+	str from_tag;
 
-	if(parse_from_header(msg)==-1 || msg->from==NULL || get_from(msg)==NULL)
-	{
-		LM_ERR("cannot parse FROM header\n");
-		goto error;
-	}
+	if (msg->msg_flags&FL_SHM_CLONE) {
+		/* this is an in shm-mem cloned msg,
+		 * so do not do direct parsing on it ; keep in mind that the hdrs are
+		 * already parsed/found, so we may need to parse here only
+		 * their body/payload */
+		if (msg->from) {
+			if (get_from(msg)) {
+				from_tag = get_from(msg)->tag_value;
+			} else {
+				parse_to( msg->from->body.s,
+					msg->from->body.s+msg->from->body.len+1, &from_b);
+				if (from_b.error == PARSE_ERROR) {
+					from_tag.s = NULL;
+					from_tag.s = 0;
+				} else {
+					from_tag = from_b.tag_value;
+					free_to_params(&from_b);
+				}
+			}
+		} else {
+			from_tag.s = NULL;
+			from_tag.s = 0;
+		}
+	} else {
+		if(parse_from_header(msg)==-1||msg->from==NULL||get_from(msg)==NULL)
+		{
+			LM_ERR("cannot parse FROM header\n");
+			goto error;
+		}
+		from_tag = get_from(msg)->tag_value;
 
-	if(parse_headers(msg, HDR_CALLID_F, 0)!=0)
-	{
-		LM_ERR("cannot parse call-id\n");
-		return;
+		if(parse_headers(msg, HDR_CALLID_F, 0)!=0)
+		{
+			LM_ERR("cannot parse call-id\n");
+			return;
+		}
 	}
 
 	LM_DBG("trace msg out \n");
@@ -2075,8 +2103,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 
 	db_vals[11].val.string_val = "out";
 
-	db_vals[12].val.str_val.s = get_from(msg)->tag_value.s;
-	db_vals[12].val.str_val.len = get_from(msg)->tag_value.len;
+	db_vals[12].val.str_val = from_tag;
 
 	for (instance = info->instances; instance; instance = instance->next) {
 		if (save_siptrace(msg, db_keys,db_vals, instance, info->conn_id) < 0) {
