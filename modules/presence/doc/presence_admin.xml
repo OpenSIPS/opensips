@@ -991,6 +991,9 @@ opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
 				<emphasis>etag</emphasis> - the entity tag
 			</para></listitem>
 			<listitem><para>
+				<emphasis>old_etag</emphasis> - the entity tag to be refreshed
+			</para></listitem>
+			<listitem><para>
 				<emphasis>body</emphasis> - the body of the
 					PUBLISH request
 			</para></listitem>
