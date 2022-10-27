@@ -11,7 +11,7 @@
 	and may be used to change behaviour of server based on value of the flags.
 	Example:
 	<programlisting format="linespecific">
-	if (is_gflag("1")) {
+	if (is_gflag(1)) {
 		t_relay("udp:10.0.0.1:5060");
 	} else {
 		t_relay("udp:10.0.0.2:5060");
