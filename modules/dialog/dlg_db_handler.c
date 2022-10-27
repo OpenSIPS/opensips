@@ -771,7 +771,8 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 				if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
 					LM_ERR("No more shm memory\n");
 			} else if (rc == -1)
-				LM_ERR("Failed to get dlg value for sharing tag\n");
+				LM_ERR("Failed to get dlg value for sharing tag %.*s(%p)\n",
+				       tag_name.len, tag_name.s, tag_name.s);
 
 			if (dlg_db_mode == DB_MODE_DELAYED) {
 				/* to be later removed by timer */
@@ -1469,7 +1470,8 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 	/* save sharing tag name as dlg val */
 	if (cell->shtag.s && store_dlg_value_unsafe(cell, &shtag_dlg_val,
 		&cell->shtag) < 0)
-		LM_ERR("Failed to store sharing tag name as dlg val\n");
+		LM_ERR("Failed to store sharing tag %.*s(%p) as dlg val\n",
+		       cell->shtag.len, cell->shtag.s, cell->shtag.s);
 
 	if (on_shutdown || (db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED))) {
 		if (cell->vals==NULL) {
@@ -1964,7 +1966,8 @@ static int sync_dlg_db_mem(void)
 					if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
 						LM_ERR("No more shm memory\n");
 				} else if (rc == -1)
-					LM_ERR("Failed to get dlg value for sharing tag\n");
+					LM_ERR("Failed to get dlg value for sharing tag %.*s(%p)\n",
+					       tag_name.len, tag_name.s, tag_name.s);
 
 				if (dlg_db_mode == DB_MODE_DELAYED) {
 					/* to be later removed by timer */

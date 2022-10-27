@@ -142,7 +142,8 @@ static inline void remove_local_counter(struct prof_local_count **list,
 		(shtag->len != cnt->shtag.len || memcmp(shtag->s, cnt->shtag.s, shtag->len));
 		cnt_prev = cnt, cnt = cnt->next) ;
 	if (!cnt) {
-		LM_ERR("Failed to decrement profile counter, shtag not found\n");
+		LM_ERR("Failed to decrement profile counter, shtag %.*s(%p) not found\n",
+		       shtag->len, shtag->s, shtag->s);
 		return;
 	}
 

@@ -203,7 +203,8 @@ static struct sharing_tag *shtag_get_unsafe(str *tag_name, int c_id)
 		tag && (tag->cluster_id!=c_id || str_strcmp(&tag->name, tag_name));
 		tag = tag->next);
 	if (!tag && !(tag = shtag_create(tag_name, c_id))) {
-		LM_ERR("Failed to create sharing tag\n");
+		LM_ERR("Failed to create sharing tag %.*s(%p)\n",
+		       tag_name->len, tag_name->s, tag_name->s);
 		return NULL;
 	}
 
@@ -407,7 +408,8 @@ static struct sharing_tag *__shtag_get_safe(str *tag_name, int c_id)
 	if (!tag) {
 		lock_switch_write(shtags_lock, lock_old_flag);
 		if ((tag = shtag_create(tag_name, c_id)) == NULL) {
-			LM_ERR("Failed to create sharing tag\n");
+			LM_ERR("Failed to create sharing tag %.*s(%p)\n",
+			       tag_name->len, tag_name->s, tag_name->s);
 			lock_switch_read(shtags_lock, lock_old_flag);
 			lock_stop_sw_read(shtags_lock);
 			return NULL;

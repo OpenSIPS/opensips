@@ -354,7 +354,8 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 		if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
 			LM_ERR("No more shm memory\n");
 	} else if (rc == -1)
-		LM_ERR("Failed to get dlg value for sharing tag\n");
+		LM_ERR("Failed to get dlg value for sharing tag %.*s(%p)\n",
+		       tag_name.len, tag_name.s, tag_name.s);
 
 	dlg->locked_by = 0;
 
@@ -790,7 +791,8 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 
    /* save sharing tag name as dlg val */
 	if (dlg->shtag.s && store_dlg_value_unsafe(dlg, &shtag_dlg_val, &dlg->shtag) < 0)
-		LM_ERR("Failed to store sharing tag name as dlg val\n");
+		LM_ERR("Failed to store sharing tag %.*s(%p) as dlg val\n",
+		       dlg->shtag.len, dlg->shtag.s, dlg->shtag.s);
 
 	vars = write_dialog_vars(dlg->vals);
 	profiles = write_dialog_profiles(dlg->profile_links);
