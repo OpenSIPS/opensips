@@ -178,7 +178,7 @@ fetch_urecord:
 
 		aor_uri = &branch_uris[idx];
 		LM_DBG("getting contacts from aor [%.*s] "
-		       "in branch %d\n", aor.len, aor.s, idx);
+		       "in branch %d\n", aor_uri->len, aor_uri->s, idx);
 
 		if (extract_aor(aor_uri, &aor, NULL, &call_id, reg_use_domain) < 0) {
 			LM_ERR("failed to extract address of record for branch uri\n");
