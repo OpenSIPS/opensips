@@ -700,18 +700,34 @@ static b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 	client_info_t ci;
 	str* client_id;
 	b2bl_entity_id_t* entity;
+	b2bl_entity_id_t* bentity;
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = method_invite;
-	ci.to_uri        = *to_uri;
 	ci.dst_uri       = *proxy;
 	ci.from_uri      = *from_uri;
 	ci.extra_headers = tuple->extra_headers;
 	ci.client_headers= hdrs;
 	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
 	ci.from_tag      = NULL;
-	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
+	bentity          = tuple->bridge_entities[2]?tuple->bridge_entities[2]:tuple->bridge_entities[1];
+	ci.send_sock     = bentity->force_send_socket?bentity->force_send_socket:msg->rcv.bind_address;
 	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
+
+	char* delim;
+	delim = str_strstr(to_uri, _str(";transport="));
+	if (delim) {
+		delim += 14;
+	} else {
+		delim = str_strstr(to_uri, _str(";"));
+	}
+	if (delim) {
+		ci.req_uri = *to_uri;
+		ci.to_uri.s = to_uri->s;
+		ci.to_uri.len = delim-to_uri->s;
+	} else {
+		ci.to_uri = *to_uri;
+	}
 
 	if (adv_ct) {
 		ci.local_contact = *adv_ct;
@@ -841,8 +857,31 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				bentity1->to_uri.s, bentity1->proxy.len, bentity1->proxy.s);
 			memset(&ci, 0, sizeof(client_info_t));
 			ci.method        = method_invite;
-			ci.to_uri        = bentity1->to_uri;
 			ci.dst_uri       = bentity1->proxy;
+
+			str to_uri;
+			to_uri.s = (char*)shm_malloc(bentity1->to_uri.len);
+			if(to_uri.s == NULL)
+			{
+				LM_ERR("No more memory\n");
+				return -1;
+			}
+
+			char* delim;
+			str_cpy(&to_uri, &bentity1->to_uri);
+			delim = str_strstr(&to_uri, _str(";transport="));
+			if (delim) {
+				delim += 14;
+			} else {
+				delim = str_strstr(&to_uri, _str(";"));
+			}
+			if (delim) {
+				to_uri.len = delim-to_uri.s;
+				ci.to_uri = to_uri;
+				ci.req_uri = bentity1->to_uri;
+			} else {
+				ci.to_uri = bentity1->to_uri;
+			}
 
 			/* it matters if the entity is server or client */
 			if(bentity0->type == B2B_CLIENT)
@@ -867,7 +906,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			ci.extra_headers = extra_headers;
 			ci.body          = body;
 			ci.from_tag      = NULL;
-			ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
+			ci.send_sock     = bentity1->force_send_socket?bentity1->force_send_socket:msg->rcv.bind_address;
 			ci.maxfwd = bentity0->init_maxfwd;
 
 			if (bentity1->adv_contact.s) {
@@ -2831,6 +2870,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 				LM_ERR("Failed to create new b2b entity\n");
 				goto error;
 			}
+			entity->force_send_socket = msg?(msg->force_send_socket?msg->force_send_socket:0):0;
 		} else
 			entity = old_entity;
 

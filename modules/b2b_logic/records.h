@@ -55,6 +55,7 @@ typedef struct b2bl_entity_id
 	struct b2bl_entity_id* peer;
 	struct b2bl_entity_id* prev;
 	struct b2bl_entity_id* next;
+	struct socket_info* force_send_socket;
 }b2bl_entity_id_t;
 
 struct b2bl_new_entity {
