@@ -107,6 +107,7 @@ static int fixup_free_avp_subst_p1(void** param);
 static int fixup_free_avp_subst_p2(void** param);
 static int fixup_free_pvname_list(void** param);
 static int fixup_free_avp_dbparam(void** param);
+static int fixup_avp_shuffle_name(void** param);
 
 static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
 static int w_dbload_avps(struct sip_msg* msg, void* source,
@@ -121,6 +122,7 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
                                 str* query, void* dest, void* url);
 static int w_delete_avps(struct sip_msg* msg, void* param);
 static int w_copy_avps(struct sip_msg* msg, void* name1, void *name2);
+static int w_shuffle_avps(struct sip_msg* msg, void* param);
 static int w_pushto_avps(struct sip_msg* msg, void* destination, void *param);
 static int w_check_avps(struct sip_msg* msg, void* param, void *check);
 static int w_op_avps(struct sip_msg* msg, char* param, char *op);
@@ -180,6 +182,11 @@ static cmd_export_t cmds[] = {
 	{"avp_copy",   (cmd_function)w_copy_avps,  {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_copy_p1, fixup_free_pkg},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_copy_p2, fixup_free_pkg}, {0, 0, 0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
+		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
+
+	{"avp_shuffle",   (cmd_function)w_shuffle_avps,  {
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_shuffle_name, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -843,6 +850,44 @@ err_free:
 	return E_UNSPEC;
 }
 
+static int fixup_avp_shuffle_name(void** param)
+{
+	struct fis_param *ap=NULL;
+	char *s;
+	str cpy;
+
+	if (pkg_nt_str_dup(&cpy, (str *)*param) < 0) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+	s = cpy.s;
+
+	ap = avpops_parse_pvar(s);
+	if (ap==0)
+	{
+		LM_ERR("unable to get"
+			" pseudo-variable in param \n");
+		goto err_free;
+	}
+	if (ap->u.sval.type!=PVT_AVP)
+	{
+		LM_ERR("bad param; expected : $avp(name)\n");
+		goto err_free;
+	}
+	ap->opd|=AVPOPS_VAL_PVAR;
+	ap->type = AVPOPS_VAL_PVAR;
+
+	*param=(void*)ap;
+	pkg_free(cpy.s);
+
+	return 0;
+
+err_free:
+	pkg_free(cpy.s);
+	pkg_free(ap);
+	return E_UNSPEC;
+}
+
 static int fixup_pushto_avp(void** param, int param_no)
 {
 	struct fis_param *ap = NULL;
@@ -1483,6 +1528,11 @@ static int w_copy_avps(struct sip_msg* msg, void* name1, void *name2)
 {
 	return ops_copy_avp ( msg, (struct fis_param*)name1,
 								(struct fis_param*)name2);
+}
+
+static int w_shuffle_avps(struct sip_msg* msg, void* param)
+{
+	return ops_shuffle_avp ( msg, (struct fis_param*)param);
 }
 
 static int w_pushto_avps(struct sip_msg* msg, void* destination, void *param)

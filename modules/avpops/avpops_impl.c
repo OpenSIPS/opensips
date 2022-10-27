@@ -1027,6 +1027,49 @@ error:
 	return -1;
 }
 
+int ops_shuffle_avp( struct sip_msg* msg, struct fis_param* src)
+{
+	struct usr_avp *src_avp, *rnd_avp;
+	struct usr_avp *temp_avp = NULL;
+	int_str src_val, rnd_val;
+	unsigned short avp_type;
+	int avp_name;
+	int n, rnd_idx;
+
+	/* get avp src name */
+	if(avpops_get_aname(msg, src, &avp_name, &avp_type)!=0)
+	{
+		LM_ERR("failed to get src AVP name\n");
+		goto error;
+	}
+
+	/* count AVPs */
+	n = 0;
+	while ((temp_avp=search_first_avp(avp_type, avp_name, NULL, temp_avp)) != 0)
+		n++;
+
+	/* randomize AVPs */
+	for ( ; n>1; n-- ) {
+		rnd_idx = random() % n;
+		if (rnd_idx == (n-1))
+			continue;
+
+		LM_DBG("swapping [%d] <--> [%d]\n", (n-1), rnd_idx);
+
+		src_avp = search_index_avp(avp_type, avp_name, &src_val, (n-1));
+		rnd_avp = search_index_avp(avp_type, avp_name, &rnd_val, rnd_idx);
+
+		if ( replace_avp(avp_type|(rnd_avp->flags&AVP_VAL_STR), avp_name, rnd_val, (n-1))==-1 ||
+					replace_avp(avp_type|(src_avp->flags&AVP_VAL_STR), avp_name, src_val, rnd_idx)==-1 ) {
+			LM_ERR("failed to swap avp\n");
+			goto error;
+		}
+	}
+
+	return 1;
+error:
+	return -1;
+}
 
 #define STR_BUF_SIZE  1024
 static char str_buf[STR_BUF_SIZE];

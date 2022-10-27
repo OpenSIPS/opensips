@@ -187,7 +187,7 @@ struct usr_avp *search_index_avp(unsigned short flags,
 {
 	struct usr_avp *avp = NULL;
 
-	while ( (avp=search_first_avp( flags, name, 0, avp))!=0 ) {
+	while ( (avp=search_first_avp( flags, name, val, avp))!=0 ) {
 		if( index == 0 ){
 			return avp;
 		}
