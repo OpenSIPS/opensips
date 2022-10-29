@@ -23,51 +23,52 @@ dialog Module
               1.6.5. default_timeout (integer)
               1.6.6. dlg_extra_hdrs (string)
               1.6.7. dlg_match_mode (integer)
-              1.6.8. db_url (string)
-              1.6.9. db_mode (integer)
-              1.6.10. db_update_period (integer)
-              1.6.11. options_ping_interval (integer)
-              1.6.12. reinvite_ping_interval (integer)
-              1.6.13. table_name (string)
-              1.6.14. call_id_column (string)
-              1.6.15. from_uri_column (string)
-              1.6.16. from_tag_column (string)
-              1.6.17. to_uri_column (string)
-              1.6.18. to_tag_column (string)
-              1.6.19. from_cseq_column (string)
-              1.6.20. to_cseq_column (string)
-              1.6.21. from_route_column (string)
-              1.6.22. to_route_column (string)
-              1.6.23. from_contact_column (string)
-              1.6.24. to_contact_column (string)
-              1.6.25. from_sock_column (string)
-              1.6.26. to_sock_column (string)
-              1.6.27. dlg_id_column (string)
-              1.6.28. state_column (string)
-              1.6.29. start_time_column (string)
-              1.6.30. timeout_column (string)
-              1.6.31. profiles_column (string)
-              1.6.32. vars_column (string)
-              1.6.33. sflags_column (string)
-              1.6.34. mflags_column (string)
-              1.6.35. flags_column (string)
-              1.6.36. profiles_with_value (string)
-              1.6.37. profiles_no_value (string)
-              1.6.38. db_flush_vals_profiles (int)
-              1.6.39. timer_bulk_del_no (int)
-              1.6.40. race_condition_timeout (int)
-              1.6.41. cachedb_url (string)
-              1.6.42. profile_value_prefix (string)
-              1.6.43. profile_no_value_prefix (string)
-              1.6.44. profile_size_prefix (string)
-              1.6.45. profile_timeout (int)
-              1.6.46. dialog_replication_cluster (int)
-              1.6.47. profile_replication_cluster (int)
-              1.6.48. replicate_profiles_buffer (string)
-              1.6.49. replicate_profiles_check (string)
-              1.6.50. replicate_profiles_timer (string)
-              1.6.51. replicate_profiles_expire (string)
-              1.6.52. cluster_auto_sync (string)
+              1.6.8. delete_delay (integer)
+              1.6.9. db_url (string)
+              1.6.10. db_mode (integer)
+              1.6.11. db_update_period (integer)
+              1.6.12. options_ping_interval (integer)
+              1.6.13. reinvite_ping_interval (integer)
+              1.6.14. table_name (string)
+              1.6.15. call_id_column (string)
+              1.6.16. from_uri_column (string)
+              1.6.17. from_tag_column (string)
+              1.6.18. to_uri_column (string)
+              1.6.19. to_tag_column (string)
+              1.6.20. from_cseq_column (string)
+              1.6.21. to_cseq_column (string)
+              1.6.22. from_route_column (string)
+              1.6.23. to_route_column (string)
+              1.6.24. from_contact_column (string)
+              1.6.25. to_contact_column (string)
+              1.6.26. from_sock_column (string)
+              1.6.27. to_sock_column (string)
+              1.6.28. dlg_id_column (string)
+              1.6.29. state_column (string)
+              1.6.30. start_time_column (string)
+              1.6.31. timeout_column (string)
+              1.6.32. profiles_column (string)
+              1.6.33. vars_column (string)
+              1.6.34. sflags_column (string)
+              1.6.35. mflags_column (string)
+              1.6.36. flags_column (string)
+              1.6.37. profiles_with_value (string)
+              1.6.38. profiles_no_value (string)
+              1.6.39. db_flush_vals_profiles (int)
+              1.6.40. timer_bulk_del_no (int)
+              1.6.41. race_condition_timeout (int)
+              1.6.42. cachedb_url (string)
+              1.6.43. profile_value_prefix (string)
+              1.6.44. profile_no_value_prefix (string)
+              1.6.45. profile_size_prefix (string)
+              1.6.46. profile_timeout (int)
+              1.6.47. dialog_replication_cluster (int)
+              1.6.48. profile_replication_cluster (int)
+              1.6.49. replicate_profiles_buffer (string)
+              1.6.50. replicate_profiles_check (string)
+              1.6.51. replicate_profiles_timer (string)
+              1.6.52. replicate_profiles_expire (string)
+              1.6.53. cluster_auto_sync (string)
 
         1.7. Exported Functions
 
@@ -186,75 +187,76 @@ dialog Module
    1.5. Set default_timeout parameter
    1.6. Set dlf_extra_hdrs parameter
    1.7. Set dlg_match_mode parameter
-   1.8. Set db_url parameter
-   1.9. Set db_mode parameter
-   1.10. Set db_update_period parameter
-   1.11. Set options_ping_interval parameter
-   1.12. Set reinvite_ping_interval parameter
-   1.13. Set table_name parameter
-   1.14. Set call_id_column parameter
-   1.15. Set from_uri_column parameter
-   1.16. Set from_tag_column parameter
-   1.17. Set to_uri_column parameter
-   1.18. Set to_tag_column parameter
-   1.19. Set from_cseq_column parameter
-   1.20. Set to_cseq_column parameter
-   1.21. Set from_route_column parameter
-   1.22. Set to_route_column parameter
-   1.23. Set from_contact_column parameter
-   1.24. Set to_contact_column parameter
-   1.25. Set from_sock_column parameter
-   1.26. Set to_sock_column parameter
-   1.27. Set dlg_id_column parameter
-   1.28. Set state_column parameter
-   1.29. Set start_time_column parameter
-   1.30. Set timeout_column parameter
-   1.31. Set profiles_column parameter
-   1.32. Set vars_column parameter
-   1.33. Set sflags_column parameter
-   1.34. Set mflags_column parameter
-   1.35. Set flags_column parameter
-   1.36. Set profiles_with_value parameter
-   1.37. Set profiles_no_value parameter
-   1.38. Set db_flush_vals_profiles parameter
-   1.39. Set timer_bulk_del_no parameter
-   1.40. Set race_condition_timeout parameter
-   1.41. Set cachedb_url parameter
-   1.42. Set profile_value_prefix parameter
-   1.43. Set profile_no_value_prefix parameter
-   1.44. Set profile_size_prefix parameter
-   1.45. Set profile_timeout parameter
-   1.46. Set dialog_replication_cluster parameter
-   1.47. Set profile_replication_cluster parameter
-   1.48. Set replicate_profiles_buffer parameter
-   1.49. Set replicate_profiles_check parameter
-   1.50. Set replicate_profiles_timer parameter
-   1.51. Set replicate_profiles_expire parameter
-   1.52. Set cluster_auto_sync parameter
-   1.53. create_dialog() usage
-   1.54. match_dialog() usage
-   1.55. validate_dialog() usage
-   1.56. fix_route_dialog() usage
-   1.57. get_dialog_info usage
-   1.58. get_dialog_vals usage
+   1.8. Set delete_delay parameter
+   1.9. Set db_url parameter
+   1.10. Set db_mode parameter
+   1.11. Set db_update_period parameter
+   1.12. Set options_ping_interval parameter
+   1.13. Set reinvite_ping_interval parameter
+   1.14. Set table_name parameter
+   1.15. Set call_id_column parameter
+   1.16. Set from_uri_column parameter
+   1.17. Set from_tag_column parameter
+   1.18. Set to_uri_column parameter
+   1.19. Set to_tag_column parameter
+   1.20. Set from_cseq_column parameter
+   1.21. Set to_cseq_column parameter
+   1.22. Set from_route_column parameter
+   1.23. Set to_route_column parameter
+   1.24. Set from_contact_column parameter
+   1.25. Set to_contact_column parameter
+   1.26. Set from_sock_column parameter
+   1.27. Set to_sock_column parameter
+   1.28. Set dlg_id_column parameter
+   1.29. Set state_column parameter
+   1.30. Set start_time_column parameter
+   1.31. Set timeout_column parameter
+   1.32. Set profiles_column parameter
+   1.33. Set vars_column parameter
+   1.34. Set sflags_column parameter
+   1.35. Set mflags_column parameter
+   1.36. Set flags_column parameter
+   1.37. Set profiles_with_value parameter
+   1.38. Set profiles_no_value parameter
+   1.39. Set db_flush_vals_profiles parameter
+   1.40. Set timer_bulk_del_no parameter
+   1.41. Set race_condition_timeout parameter
+   1.42. Set cachedb_url parameter
+   1.43. Set profile_value_prefix parameter
+   1.44. Set profile_no_value_prefix parameter
+   1.45. Set profile_size_prefix parameter
+   1.46. Set profile_timeout parameter
+   1.47. Set dialog_replication_cluster parameter
+   1.48. Set profile_replication_cluster parameter
+   1.49. Set replicate_profiles_buffer parameter
+   1.50. Set replicate_profiles_check parameter
+   1.51. Set replicate_profiles_timer parameter
+   1.52. Set replicate_profiles_expire parameter
+   1.53. Set cluster_auto_sync parameter
+   1.54. create_dialog() usage
+   1.55. match_dialog() usage
+   1.56. validate_dialog() usage
+   1.57. fix_route_dialog() usage
+   1.58. get_dialog_info usage
    1.59. get_dialog_vals usage
    1.60. get_dialog_vals usage
-   1.61. load_dialog_ctx usage
-   1.62. set_dlg_profile usage
-   1.63. unset_dlg_profile usage
-   1.64. is_in_profile usage
-   1.65. get_profile_size usage
-   1.66. set_dlg_flag usage
-   1.67. test_and_set_dlg_flag usage
-   1.68. reset_dlg_flag usage
-   1.69. is_dlg_flag_set usage
-   1.70. store_dlg_value usage
-   1.71. fetch_dlg_value usage
-   1.72. set_dlg_sharing_tag usage
-   1.73. dlg_on_answer usage
-   1.74. dlg_on_timeout usage
-   1.75. dlg_on_hangup usage
-   1.76. dlg_send_sequential usage to convert DTMF codes
+   1.61. get_dialog_vals usage
+   1.62. load_dialog_ctx usage
+   1.63. set_dlg_profile usage
+   1.64. unset_dlg_profile usage
+   1.65. is_in_profile usage
+   1.66. get_profile_size usage
+   1.67. set_dlg_flag usage
+   1.68. test_and_set_dlg_flag usage
+   1.69. reset_dlg_flag usage
+   1.70. is_dlg_flag_set usage
+   1.71. store_dlg_value usage
+   1.72. fetch_dlg_value usage
+   1.73. set_dlg_sharing_tag usage
+   1.74. dlg_on_answer usage
+   1.75. dlg_on_timeout usage
+   1.76. dlg_on_hangup usage
+   1.77. dlg_send_sequential usage to convert DTMF codes
 
 Chapter 1. Admin Guide
 
@@ -280,10 +282,20 @@ Chapter 1. Admin Guide
    must call the create_dialog() function, with or without
    parameter.
 
-   The dialog is automatically destroyed when a “BYE” is received.
-   In case of no “BYE”, the dialog lifetime is controlled via the
-   default timeout (see “default_timeout” - default_timeout) and
-   custom timeout (see “$DLG_timeout” - $DLG_timeout).
+   The dialog is automatically terminated when a “BYE” is
+   received. In case of no “BYE”, the dialog lifetime is
+   controlled via the default timeout (see “default_timeout” -
+   default_timeout) and custom timeout (see “$DLG_timeout” -
+   $DLG_timeout).
+
+   Once terminated, the in-memory dialog may be destroyed right
+   away or, depending on the “delete_delay” - delete_delay)
+   setting, it may be kept for a while in memory, in a read-only
+   state (no action, no changes, nothing). This delaying may be
+   used to help with the routing of late in-dialog request that
+   may be received after the dialog terminted (like late BYE's due
+   retransmissions, cross BYE requests, auth'ed BYE request, slow
+   ACK on re-INVITEs, etc).
 
 1.3. Dialog profiling
 
@@ -516,7 +528,22 @@ modparam("dialog", "dlg_extra_hdrs", "Hint: credit expired\r\n")
 modparam("dialog", "dlg_match_mode", 0)
 ...
 
-1.6.8. db_url (string)
+1.6.8. delete_delay (integer)
+
+   The interval (seconds) to delay a dialog deletion / removal
+   from memory AFTER its termination. Once terminated, the dialog
+   will be kept in a read only state (no action, no changes), but
+   it will still be able to match and route late in-dialog
+   requests.
+
+   Default value is “0” (disabled).
+
+   Example 1.8. Set delete_delay parameter
+...
+modparam("dialog", "delete_delay", 10)
+...
+
+1.6.9. db_url (string)
 
    If you want to store the information about the dialogs in a
    database a database url must be specified.
@@ -524,13 +551,13 @@ modparam("dialog", "dlg_match_mode", 0)
    Default value is
    “mysql://opensips:opensipsrw@localhost/opensips”.
 
-   Example 1.8. Set db_url parameter
+   Example 1.9. Set db_url parameter
 ...
 modparam("dialog", "db_url", "dbdriver://username:password@dbhost/dbname
 ")
 ...
 
-1.6.9. db_mode (integer)
+1.6.10. db_mode (integer)
 
    Describe how to push into the DB the dialogs' information from
    memory.
@@ -546,12 +573,12 @@ modparam("dialog", "db_url", "dbdriver://username:password@dbhost/dbname
 
    Default value is “0”.
 
-   Example 1.9. Set db_mode parameter
+   Example 1.10. Set db_mode parameter
 ...
 modparam("dialog", "db_mode", 1)
 ...
 
-1.6.10. db_update_period (integer)
+1.6.11. db_update_period (integer)
 
    The interval (seconds) at which to update dialogs' information
    if you chose to store the dialogs' info at a given interval. A
@@ -560,12 +587,12 @@ modparam("dialog", "db_mode", 1)
 
    Default value is “60”.
 
-   Example 1.10. Set db_update_period parameter
+   Example 1.11. Set db_update_period parameter
 ...
 modparam("dialog", "db_update_period", 120)
 ...
 
-1.6.11. options_ping_interval (integer)
+1.6.12. options_ping_interval (integer)
 
    The interval (seconds) at which OpenSIPS will generate
    in-dialog OPTIONS pings for one or both of the involved
@@ -573,12 +600,12 @@ modparam("dialog", "db_update_period", 120)
 
    Default value is “30”.
 
-   Example 1.11. Set options_ping_interval parameter
+   Example 1.12. Set options_ping_interval parameter
 ...
 modparam("dialog", "options_ping_interval", 20)
 ...
 
-1.6.12. reinvite_ping_interval (integer)
+1.6.13. reinvite_ping_interval (integer)
 
    The interval (seconds) at which OpenSIPS will generate
    in-dialog Re-INVITE pings for one or both of the involved
@@ -596,285 +623,285 @@ modparam("dialog", "options_ping_interval", 20)
 
    Default value is “300”.
 
-   Example 1.12. Set reinvite_ping_interval parameter
+   Example 1.13. Set reinvite_ping_interval parameter
 ...
 modparam("dialog", "reinvite_ping_interval", 600)
 ...
 
-1.6.13. table_name (string)
+1.6.14. table_name (string)
 
    If you want to store the information about the dialogs in a
    database a table name must be specified.
 
    Default value is “dialog”.
 
-   Example 1.13. Set table_name parameter
+   Example 1.14. Set table_name parameter
 ...
 modparam("dialog", "table_name", "my_dialog")
 ...
 
-1.6.14. call_id_column (string)
+1.6.15. call_id_column (string)
 
    The column's name in the database to store the dialogs' callid.
 
    Default value is “callid”.
 
-   Example 1.14. Set call_id_column parameter
+   Example 1.15. Set call_id_column parameter
 ...
 modparam("dialog", "call_id_column", "callid_c_name")
 ...
 
-1.6.15. from_uri_column (string)
+1.6.16. from_uri_column (string)
 
    The column's name in the database to store the caller's sip
    address.
 
    Default value is “from_uri”.
 
-   Example 1.15. Set from_uri_column parameter
+   Example 1.16. Set from_uri_column parameter
 ...
 modparam("dialog", "from_uri_column", "from_uri_c_name")
 ...
 
-1.6.16. from_tag_column (string)
+1.6.17. from_tag_column (string)
 
    The column's name in the database to store the From tag from
    the Invite request.
 
    Default value is “from_tag”.
 
-   Example 1.16. Set from_tag_column parameter
+   Example 1.17. Set from_tag_column parameter
 ...
 modparam("dialog", "from_tag_column", "from_tag_c_name")
 ...
 
-1.6.17. to_uri_column (string)
+1.6.18. to_uri_column (string)
 
    The column's name in the database to store the calee's sip
    address.
 
    Default value is “to_uri”.
 
-   Example 1.17. Set to_uri_column parameter
+   Example 1.18. Set to_uri_column parameter
 ...
 modparam("dialog", "to_uri_column", "to_uri_c_name")
 ...
 
-1.6.18. to_tag_column (string)
+1.6.19. to_tag_column (string)
 
    The column's name in the database to store the To tag from the
    200 OK response to the Invite request, if present.
 
    Default value is “to_tag”.
 
-   Example 1.18. Set to_tag_column parameter
+   Example 1.19. Set to_tag_column parameter
 ...
 modparam("dialog", "to_tag_column", "to_tag_c_name")
 ...
 
-1.6.19. from_cseq_column (string)
+1.6.20. from_cseq_column (string)
 
    The column's name in the database to store the cseq from caller
    side.
 
    Default value is “caller_cseq”.
 
-   Example 1.19. Set from_cseq_column parameter
+   Example 1.20. Set from_cseq_column parameter
 ...
 modparam("dialog", "from_cseq_column", "from_cseq_c_name")
 ...
 
-1.6.20. to_cseq_column (string)
+1.6.21. to_cseq_column (string)
 
    The column's name in the database to store the cseq from callee
    side.
 
    Default value is “callee_cseq”.
 
-   Example 1.20. Set to_cseq_column parameter
+   Example 1.21. Set to_cseq_column parameter
 ...
 modparam("dialog", "to_cseq_column", "to_cseq_c_name")
 ...
 
-1.6.21. from_route_column (string)
+1.6.22. from_route_column (string)
 
    The column's name in the database to store the route records
    from caller side (proxy to caller).
 
    Default value is “caller_route_set”.
 
-   Example 1.21. Set from_route_column parameter
+   Example 1.22. Set from_route_column parameter
 ...
 modparam("dialog", "from_route_column", "from_route_c_name")
 ...
 
-1.6.22. to_route_column (string)
+1.6.23. to_route_column (string)
 
    The column's name in the database to store the route records
    from callee side (proxy to callee).
 
    Default value is “callee_route_set”.
 
-   Example 1.22. Set to_route_column parameter
+   Example 1.23. Set to_route_column parameter
 ...
 modparam("dialog", "to_route_column", "to_route_c_name")
 ...
 
-1.6.23. from_contact_column (string)
+1.6.24. from_contact_column (string)
 
    The column's name in the database to store the caller's contact
    uri.
 
    Default value is “caller_contact”.
 
-   Example 1.23. Set from_contact_column parameter
+   Example 1.24. Set from_contact_column parameter
 ...
 modparam("dialog", "from_contact_column", "from_contact_c_name")
 ...
 
-1.6.24. to_contact_column (string)
+1.6.25. to_contact_column (string)
 
    The column's name in the database to store the callee's contact
    uri.
 
    Default value is “callee_contact”.
 
-   Example 1.24. Set to_contact_column parameter
+   Example 1.25. Set to_contact_column parameter
 ...
 modparam("dialog", "to_contact_column", "to_contact_c_name")
 ...
 
-1.6.25. from_sock_column (string)
+1.6.26. from_sock_column (string)
 
    The column's name in the database to store the information
    about the local interface receiving the traffic from caller.
 
    Default value is “caller_sock”.
 
-   Example 1.25. Set from_sock_column parameter
+   Example 1.26. Set from_sock_column parameter
 ...
 modparam("dialog", "from_sock_column", "from_sock_c_name")
 ...
 
-1.6.26. to_sock_column (string)
+1.6.27. to_sock_column (string)
 
    The column's name in the database to store information about
    the local interface receiving the traffic from callee.
 
    Default value is “callee_sock”.
 
-   Example 1.26. Set to_sock_column parameter
+   Example 1.27. Set to_sock_column parameter
 ...
 modparam("dialog", "to_sock_column", "to_sock_c_name")
 ...
 
-1.6.27. dlg_id_column (string)
+1.6.28. dlg_id_column (string)
 
    The column's name in the database to store the dialogs' id
    information.
 
    Default value is “dlg_id”.
 
-   Example 1.27. Set dlg_id_column parameter
+   Example 1.28. Set dlg_id_column parameter
 ...
 modparam("dialog", "dlg_id_column", "dlg_id_c_name")
 ...
 
-1.6.28. state_column (string)
+1.6.29. state_column (string)
 
    The column's name in the database to store the dialogs' state
    information.
 
    Default value is “state”.
 
-   Example 1.28. Set state_column parameter
+   Example 1.29. Set state_column parameter
 ...
 modparam("dialog", "state_column", "state_c_name")
 ...
 
-1.6.29. start_time_column (string)
+1.6.30. start_time_column (string)
 
    The column's name in the database to store the dialogs' start
    time information.
 
    Default value is “start_time”.
 
-   Example 1.29. Set start_time_column parameter
+   Example 1.30. Set start_time_column parameter
 ...
 modparam("dialog", "start_time_column", "start_time_c_name")
 ...
 
-1.6.30. timeout_column (string)
+1.6.31. timeout_column (string)
 
    The column's name in the database to store the dialogs'
    timeout.
 
    Default value is “timeout”.
 
-   Example 1.30. Set timeout_column parameter
+   Example 1.31. Set timeout_column parameter
 ...
 modparam("dialog", "timeout_column", "timeout_c_name")
 ...
 
-1.6.31. profiles_column (string)
+1.6.32. profiles_column (string)
 
    The column's name in the database to store the dialogs'
    profiles.
 
    Default value is “profiles”.
 
-   Example 1.31. Set profiles_column parameter
+   Example 1.32. Set profiles_column parameter
 ...
 modparam("dialog", "profiles_column", "profiles_c_name")
 ...
 
-1.6.32. vars_column (string)
+1.6.33. vars_column (string)
 
    The column's name in the database to store the dialogs' vars.
 
    Default value is “vars”.
 
-   Example 1.32. Set vars_column parameter
+   Example 1.33. Set vars_column parameter
 ...
 modparam("dialog", "vars_column", "vars_c_name")
 ...
 
-1.6.33. sflags_column (string)
+1.6.34. sflags_column (string)
 
    The column's name in the database to store the dialogs' script
    flags.
 
    Default value is “script_flags”.
 
-   Example 1.33. Set sflags_column parameter
+   Example 1.34. Set sflags_column parameter
 ...
 modparam("dialog", "sflags_column", "sflags_c_name")
 ...
 
-1.6.34. mflags_column (string)
+1.6.35. mflags_column (string)
 
    The column's name in the database to store the dialogs' module
    flags.
 
    Default value is “module_flags”.
 
-   Example 1.34. Set mflags_column parameter
+   Example 1.35. Set mflags_column parameter
 ...
 modparam("dialog", "mflags_column", "mflags_c_name")
 ...
 
-1.6.35. flags_column (string)
+1.6.36. flags_column (string)
 
    The column's name in the database to store the dialogs' flags.
 
    Default value is “flags”.
 
-   Example 1.35. Set flags_column parameter
+   Example 1.36. Set flags_column parameter
 ...
 modparam("dialog", "flags_column", "flags_c_name")
 ...
 
-1.6.36. profiles_with_value (string)
+1.6.37. profiles_with_value (string)
 
    List of names for profiles with values. Flags /b or /s allow
    sharing profiles between OpenSIPS instances using the clusterer
@@ -882,13 +909,13 @@ modparam("dialog", "flags_column", "flags_c_name")
 
    Default value is “empty”.
 
-   Example 1.36. Set profiles_with_value parameter
+   Example 1.37. Set profiles_with_value parameter
 ...
 modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientCh
 annels/s; codecUsed/b;")
 ...
 
-1.6.37. profiles_no_value (string)
+1.6.38. profiles_no_value (string)
 
    List of names for profiles without values. Flags /b or /s allow
    sharing profiles between OpenSIPS instances using the clusterer
@@ -896,13 +923,13 @@ annels/s; codecUsed/b;")
 
    Default value is “empty”.
 
-   Example 1.37. Set profiles_no_value parameter
+   Example 1.38. Set profiles_no_value parameter
 ...
 modparam("dialog", "profiles_no_value", "inbound ; outbound ; shared/s;
 repl/b;")
 ...
 
-1.6.38. db_flush_vals_profiles (int)
+1.6.39. db_flush_vals_profiles (int)
 
    Pushes dialog values, profiles and flags into the database
    along with other dialog state information (see db_mode 1 and
@@ -910,24 +937,24 @@ repl/b;")
 
    Default value is “empty”.
 
-   Example 1.38. Set db_flush_vals_profiles parameter
+   Example 1.39. Set db_flush_vals_profiles parameter
 ...
 modparam("dialog", "db_flush_vals_profiles", 1)
 ...
 
-1.6.39. timer_bulk_del_no (int)
+1.6.40. timer_bulk_del_no (int)
 
    The number of dialogs that should be attempted to be deleted at
    the same time ( a single query ) from the DB back-end.
 
    Default value is “1”.
 
-   Example 1.39. Set timer_bulk_del_no parameter
+   Example 1.40. Set timer_bulk_del_no parameter
 ...
 modparam("dialog", "timer_bulk_del_no", 10)
 ...
 
-1.6.40. race_condition_timeout (int)
+1.6.41. race_condition_timeout (int)
 
    If dialog is created using the 'E' flag, and a SIP Race
    condition happens, then the dialog will be terminated after
@@ -936,24 +963,24 @@ modparam("dialog", "timer_bulk_del_no", 10)
 
    Default value is “5” seconds.
 
-   Example 1.40. Set race_condition_timeout parameter
+   Example 1.41. Set race_condition_timeout parameter
 ...
 modparam("dialog", "race_condition_timeout", 1)
 ...
 
-1.6.41. cachedb_url (string)
+1.6.42. cachedb_url (string)
 
    Enables distributed dialog profiles and specifies the backend
    that should be used by the CacheDB interface.
 
    Default value is “empty”.
 
-   Example 1.41. Set cachedb_url parameter
+   Example 1.42. Set cachedb_url parameter
 ...
 modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
 ...
 
-1.6.42. profile_value_prefix (string)
+1.6.43. profile_value_prefix (string)
 
    Specifies what prefix should be added to the profiles with
    value when they are inserted into CacheDB backed. This is only
@@ -961,12 +988,12 @@ modparam("dialog", "cachedb_url", "redis://127.0.0.1:6379")
 
    Default value is “dlg_val_”.
 
-   Example 1.42. Set profile_value_prefix parameter
+   Example 1.43. Set profile_value_prefix parameter
 ...
 modparam("dialog", "profile_value_prefix", "dlgv_")
 ...
 
-1.6.43. profile_no_value_prefix (string)
+1.6.44. profile_no_value_prefix (string)
 
    Specifies what prefix should be added to the profiles without
    value when they are inserted into CacheDB backed. This is only
@@ -974,12 +1001,12 @@ modparam("dialog", "profile_value_prefix", "dlgv_")
 
    Default value is “dlg_noval_”.
 
-   Example 1.43. Set profile_no_value_prefix parameter
+   Example 1.44. Set profile_no_value_prefix parameter
 ...
 modparam("dialog", "profile_no_value_prefix", "dlgnv_")
 ...
 
-1.6.44. profile_size_prefix (string)
+1.6.45. profile_size_prefix (string)
 
    Specifies what prefix should be added to the entity that holds
    the profiles with value size in CacheDB backed. This is only
@@ -987,12 +1014,12 @@ modparam("dialog", "profile_no_value_prefix", "dlgnv_")
 
    Default value is “dlg_size_”.
 
-   Example 1.44. Set profile_size_prefix parameter
+   Example 1.45. Set profile_size_prefix parameter
 ...
 modparam("dialog", "profile_size_prefix", "dlgs_")
 ...
 
-1.6.45. profile_timeout (int)
+1.6.46. profile_timeout (int)
 
    Specifies how long a dialog profile should be kept in the
    CacheDB until it expires. This is only used when distributed
@@ -1000,12 +1027,12 @@ modparam("dialog", "profile_size_prefix", "dlgs_")
 
    Default value is “86400”.
 
-   Example 1.45. Set profile_timeout parameter
+   Example 1.46. Set profile_timeout parameter
 ...
 modparam("dialog", "profile_timeout", "43200")
 ...
 
-1.6.46. dialog_replication_cluster (int)
+1.6.47. dialog_replication_cluster (int)
 
    Specifies the cluster ID for dialog replication using the
    clusterer module. This enables sending and receiving all the
@@ -1014,12 +1041,12 @@ modparam("dialog", "profile_timeout", "43200")
 
    Default value is “0” (no replication).
 
-   Example 1.46. Set dialog_replication_cluster parameter
+   Example 1.47. Set dialog_replication_cluster parameter
 ...
 modparam("dialog", "dialog_replication_cluster", 1)
 ...
 
-1.6.47. profile_replication_cluster (int)
+1.6.48. profile_replication_cluster (int)
 
    Specifies the cluster ID for profile replication using the
    clusterer module. This enables sending and receiving the
@@ -1027,12 +1054,12 @@ modparam("dialog", "dialog_replication_cluster", 1)
 
    Default value is “0” (no replication).
 
-   Example 1.47. Set profile_replication_cluster parameter
+   Example 1.48. Set profile_replication_cluster parameter
 ...
 modparam("dialog", "profile_replication_cluster", 1)
 ...
 
-1.6.48. replicate_profiles_buffer (string)
+1.6.49. replicate_profiles_buffer (string)
 
    Used to specify the length of the buffer used by the binary
    replication, in bytes. Usually this should be big enough to
@@ -1042,12 +1069,12 @@ modparam("dialog", "profile_replication_cluster", 1)
 
    Default value is 1400 bytes.
 
-   Example 1.48. Set replicate_profiles_buffer parameter
+   Example 1.49. Set replicate_profiles_buffer parameter
 ...
 modparam("dialog", "replicate_profiles_buffer", 500)
 ...
 
-1.6.49. replicate_profiles_check (string)
+1.6.50. replicate_profiles_check (string)
 
    Timer in seconds, used to specify how often the module should
    check whether old, replicated profiles values are obsolete and
@@ -1056,24 +1083,24 @@ modparam("dialog", "replicate_profiles_buffer", 500)
 
    Default value is 10 s.
 
-   Example 1.49. Set replicate_profiles_check parameter
+   Example 1.50. Set replicate_profiles_check parameter
 ...
 modparam("dialog", "replicate_profiles_check", 100)
 ...
 
-1.6.50. replicate_profiles_timer (string)
+1.6.51. replicate_profiles_timer (string)
 
    Timer in milliseconds, used to specify how often the module
    should replicate its profiles to the other instances.
 
    Default value is 200 ms.
 
-   Example 1.50. Set replicate_profiles_timer parameter
+   Example 1.51. Set replicate_profiles_timer parameter
 ...
 modparam("dialog", "replicate_profiles_timer", 100)
 ...
 
-1.6.51. replicate_profiles_expire (string)
+1.6.52. replicate_profiles_expire (string)
 
    Timer in seconds, used to specify when the profiles counters
    received from a different instance should no longer be taken
@@ -1082,12 +1109,12 @@ modparam("dialog", "replicate_profiles_timer", 100)
 
    Default value is 10 s.
 
-   Example 1.51. Set replicate_profiles_expire parameter
+   Example 1.52. Set replicate_profiles_expire parameter
 ...
 modparam("dialog", "replicate_profiles_expire", 10)
 ...
 
-1.6.52. cluster_auto_sync (string)
+1.6.53. cluster_auto_sync (string)
 
    Specifies whether to automatically issue a sync request (for
    dialogs marked with a sharing tag in backup state) when a node
@@ -1095,7 +1122,7 @@ modparam("dialog", "replicate_profiles_expire", 10)
 
    Default value is 1 (enabled).
 
-   Example 1.52. Set cluster_auto_sync parameter
+   Example 1.53. Set cluster_auto_sync parameter
 ...
 modparam("dialog", "cluster_auto_sync", 0)
 ...
@@ -1136,7 +1163,7 @@ modparam("dialog", "cluster_auto_sync", 0)
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.53. create_dialog() usage
+   Example 1.54. create_dialog() usage
 ...
 create_dialog();
 ...
@@ -1175,7 +1202,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.54. match_dialog() usage
+   Example 1.55. match_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1210,7 +1237,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.55. validate_dialog() usage
+   Example 1.56. validate_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1232,7 +1259,7 @@ create_dialog("B");
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.56. fix_route_dialog() usage
+   Example 1.57. fix_route_dialog() usage
 ...
     if (has_totag()) {
         loose_route();
@@ -1273,7 +1300,7 @@ create_dialog("B");
 
    This function can be used from ALL ROUTES.
 
-   Example 1.57. get_dialog_info usage
+   Example 1.58. get_dialog_info usage
 ...
 if ( get_dialog_info("callee",$avp(callee_array),"caller",$fu,$var(dlg_n
 o)) ) {
@@ -1319,7 +1346,7 @@ $dlg_val(callee) = $ru;
 
    This function can be used from any type of route.
 
-   Example 1.58. get_dialog_vals usage
+   Example 1.59. get_dialog_vals usage
 ...
 if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
         xlog("the call $var(callid) has the variables:\n);
@@ -1355,7 +1382,7 @@ als)[$var(i)])'\n");
 
    This function can be used from any type of route.
 
-   Example 1.59. get_dialog_vals usage
+   Example 1.60. get_dialog_vals usage
 ...
 if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
         xlog("Caller $fU has $avp(dlg_no) other calls \n);
@@ -1394,7 +1421,7 @@ if ( get_dialogs_by_val("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 
    This function can be used from any type of route.
 
-   Example 1.60. get_dialog_vals usage
+   Example 1.61. get_dialog_vals usage
 ...
 if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
  {
@@ -1430,7 +1457,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 
    This function can be used from any type of route.
 
-   Example 1.61. load_dialog_ctx usage
+   Example 1.62. load_dialog_ctx usage
 ...
 if (load_dialog_ctx("$var(callid)")) {
         xlog("The dialog '$var(callid)' already has a duration "
@@ -1474,7 +1501,7 @@ if (load_dialog_ctx("$var(callid)")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.62. set_dlg_profile usage
+   Example 1.63. set_dlg_profile usage
 ...
 set_dlg_profile("inbound_call");
 set_dlg_profile("caller",$fu);
@@ -1496,7 +1523,7 @@ set_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.63. unset_dlg_profile usage
+   Example 1.64. unset_dlg_profile usage
 ...
 unset_dlg_profile("inbound_call");
 unset_dlg_profile("caller",$fu);
@@ -1524,7 +1551,7 @@ unset_dlg_profile("caller",$fu);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.64. is_in_profile usage
+   Example 1.65. is_in_profile usage
 ...
 if (is_in_profile("inbound_call")) {
         log("this request belongs to a inbound call\n");
@@ -1555,7 +1582,7 @@ if (is_in_profile("caller","XX")) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.65. get_profile_size usage
+   Example 1.66. get_profile_size usage
 modparam("dialog", "profiles_no_value", "inboundCalls")
 modparam("dialog", "profiles_with_value", "caller")
 ...
@@ -1581,7 +1608,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.66. set_dlg_flag usage
+   Example 1.67. set_dlg_flag usage
 ...
 set_dlg_flag(3);
 ...
@@ -1600,7 +1627,7 @@ set_dlg_flag(3);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.67. test_and_set_dlg_flag usage
+   Example 1.68. test_and_set_dlg_flag usage
 ...
 test_and_set_dlg_flag(3, 0);
 ...
@@ -1620,7 +1647,7 @@ test_and_set_dlg_flag(3, 0);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.68. reset_dlg_flag usage
+   Example 1.69. reset_dlg_flag usage
 ...
 reset_dlg_flag(16);
 ...
@@ -1640,7 +1667,7 @@ reset_dlg_flag(16);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.69. is_dlg_flag_set usage
+   Example 1.70. is_dlg_flag_set usage
 ...
 if (is_dlg_flag_set(16)) {
         xlog("dialog flag 16 is set\n");
@@ -1667,7 +1694,7 @@ if (is_dlg_flag_set(16)) {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.70. store_dlg_value usage
+   Example 1.71. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip",$si);
 store_dlg_value("account type","prepaid");
@@ -1695,7 +1722,7 @@ $dlg_val(account_type) = "prepaid";
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.71. fetch_dlg_value usage
+   Example 1.72. fetch_dlg_value usage
 ...
 fetch_dlg_value("inv_src_ip",$avp(2));
 fetch_dlg_value("account type",$var(account));
@@ -1721,7 +1748,7 @@ $var(account) = $dlg_val(account_type);
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.72. set_dlg_sharing_tag usage
+   Example 1.73. set_dlg_sharing_tag usage
 ...
 set_dlg_sharing_tag("vip1");
 ...
@@ -1746,7 +1773,7 @@ set_dlg_sharing_tag("vip1");
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.73. dlg_on_answer usage
+   Example 1.74. dlg_on_answer usage
 ...
 create_dialog();
 dlg_on_answer("dlg_answered");
@@ -1781,7 +1808,7 @@ route[dlg_answered] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.74. dlg_on_timeout usage
+   Example 1.75. dlg_on_timeout usage
 ...
 create_dialog();
 $DLG_timeout=120;
@@ -1815,7 +1842,7 @@ route[dlg_timeout] {
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
 
-   Example 1.75. dlg_on_hangup usage
+   Example 1.76. dlg_on_hangup usage
 ...
 create_dialog();
 dlg_on_hangup("dlg_hangup");
@@ -1849,7 +1876,7 @@ route[dlg_hangup] {
 
    This function can be used from ANY route.
 
-   Example 1.76. dlg_send_sequential usage to convert DTMF codes
+   Example 1.77. dlg_send_sequential usage to convert DTMF codes
 ...
 event_route[E_RTPPROXY_DTMF] {
     if (load_dialog_ctx("$param(id)", "did")) {
@@ -2487,11 +2514,11 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 438 277 12835 3413
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 442 278 13094 3468
    2. Razvan Crainea (@razvancrainea) 263 197 4974 1497
    3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
    4. Vlad Patrascu (@rvlad-patrascu) 185 99 3831 3269
-   5. Liviu Chircu (@liviuchircu) 164 120 2864 1217
+   5. Liviu Chircu (@liviuchircu) 167 122 2890 1237
    6. Ovidiu Sas (@ovidiusas) 32 25 494 120
    7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
@@ -2533,8 +2560,8 @@ Chapter 4. Contributors
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Oct 2022
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2022
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Sep 2022
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Oct 2022
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2022
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2022
    5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
    6.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Sep 2021
@@ -2564,18 +2591,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
-   Zero King (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
-   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
-   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
-   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
-   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
-   Andy Pyles, Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Zero King
+   (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
+   Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel
+   Cerghit (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu
+   Marius Cristian (@eseanucristian), Norman Brandinger (@NormB),
+   Anca Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
+   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

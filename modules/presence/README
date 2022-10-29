@@ -714,6 +714,7 @@ opensips-cli -x mi pres_expose presence ^sip:10\.0\.5\.[0-9]*
      * event - the type of the event published
      * expires - the expire value of the publish
      * etag - the entity tag
+     * old_etag - the entity tag to be refreshed
      * body - the body of the PUBLISH request
 
 1.7.2.  E_PRESENCE_EXPOSED
@@ -1048,10 +1049,11 @@ Chapter 3. Contributors
    Schubert, Stanislaw Pitucha, Damien Sandras (@dsandras), Kobi
    Eshun (@ekobi), Dusan Klinec (@ph4r05), Angel Marin, Klaus
    Darilion, Carlos Oliva, Sergio Gutierrez, Kennard White,
-   Elena-Ramona Modroiu, Vasil Kolev, Benny Prijono, James
-   Criscuolo, Peter Lemenkov (@lemenkov), Vallimamod Abdullah,
-   UnixDev, Denis Bilenko, Julián Moreno Patiño, Maksym Sobolyev
-   (@sobomax), John Riordan, Julien Blache.
+   Elena-Ramona Modroiu, Jasper Hafkenscheid, Vasil Kolev, Benny
+   Prijono, James Criscuolo, Peter Lemenkov (@lemenkov),
+   Vallimamod Abdullah, UnixDev, Denis Bilenko, Julián Moreno
+   Patiño, Maksym Sobolyev (@sobomax), John Riordan, Julien
+   Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1074,25 +1076,25 @@ Chapter 3. Contributors
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
    1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2021
-   5.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   7.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
-   8.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. James Criscuolo                     Mar 2016 - Mar 2016
+   2.  Jasper Hafkenscheid                 Jul 2022 - Jul 2022
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jun 2021
+   6.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   8.  Ovidiu Sas (@ovidiusas)             Sep 2010 - Sep 2020
+   9.  Dan Pascu (@danpascu)               Nov 2007 - Feb 2020
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
-   (@ph4r05), Carlos Oliva, Damien Sandras (@dsandras), Vlad Paiu
-   (@vladpaiu), Saúl Ibarra Corretgé (@saghul), Anca Vamanu,
-   Vallimamod Abdullah, Kennard White, Stanislaw Pitucha, Angel
-   Marin, John Riordan, Vasil Kolev, UnixDev, Sergio Gutierrez,
-   Kobi Eshun (@ekobi), Klaus Darilion, Denis Bilenko, Henning
-   Westerholt (@henningw), Juha Heinanen (@juha-h),
-   Daniel-Constantin Mierla (@miconda), Edson Gellert Schubert,
-   Julien Blache, Benny Prijono, Elena-Ramona Modroiu.
+   All remaining contributors: James Criscuolo, Julián Moreno
+   Patiño, Dusan Klinec (@ph4r05), Carlos Oliva, Damien Sandras
+   (@dsandras), Vlad Paiu (@vladpaiu), Saúl Ibarra Corretgé
+   (@saghul), Anca Vamanu, Vallimamod Abdullah, Kennard White,
+   Stanislaw Pitucha, Angel Marin, John Riordan, Vasil Kolev,
+   UnixDev, Sergio Gutierrez, Kobi Eshun (@ekobi), Klaus Darilion,
+   Denis Bilenko, Henning Westerholt (@henningw), Juha Heinanen
+   (@juha-h), Daniel-Constantin Mierla (@miconda), Edson Gellert
+   Schubert, Julien Blache, Benny Prijono, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1101,10 +1103,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Walter Doekes (@wdoekes), Dan Pascu
-   (@danpascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Last edited by: Jasper Hafkenscheid, Ovidiu Sas (@ovidiusas),
+   Vlad Patrascu (@rvlad-patrascu), Walter Doekes (@wdoekes), Dan
+   Pascu (@danpascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
    Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Anca
    Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
    Darilion, Henning Westerholt (@henningw), Daniel-Constantin
