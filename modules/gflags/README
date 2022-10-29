@@ -58,7 +58,7 @@ Chapter 1. Admin Guide
    gflags module (global flags) keeps a bitmap of flags in shared
    memory and may be used to change behaviour of server based on
    value of the flags. Example:
-        if (is_gflag("1")) {
+        if (is_gflag(1)) {
                 t_relay("udp:10.0.0.1:5060");
         } else {
                 t_relay("udp:10.0.0.2:5060");
@@ -219,7 +219,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 40 30 422 325
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 41 31 423 326
    2. Daniel-Constantin Mierla (@miconda) 14 12 42 22
    3. Liviu Chircu (@liviuchircu) 12 10 27 57
    4. Razvan Crainea (@razvancrainea) 10 8 26 24
@@ -254,11 +254,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   3.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Apr 2019
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2022
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2021
+   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Anca Vamanu                         Sep 2009 - Sep 2009
    8.  Richard Revels                      Aug 2008 - Aug 2008
@@ -276,10 +276,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu),
-   Richard Revels, Daniel-Constantin Mierla (@miconda), Konstantin
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Richard
+   Revels, Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Klaus Darilion.
 
