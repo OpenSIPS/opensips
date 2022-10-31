@@ -192,36 +192,14 @@ int b2b_add_dlginfo(str* key, str* entity_key, int src, b2b_dlginfo_t* dlginfo, 
 
 int msg_add_dlginfo(b2bl_entity_id_t* entity, struct sip_msg* msg, str* totag)
 {
-	str callid, fromtag;
-	b2b_dlginfo_t dlginfo;
-
-	if( msg->callid==NULL || msg->callid->body.s==NULL)
+	b2b_dlginfo_t *dlginfo = b2b_fill_dlginfo(msg, totag);
+	if (!dlginfo)
 	{
-		LM_ERR("failed to parse callid header\n");
+		LM_ERR("cannot fill dlginfo!\n");
 		return -1;
 	}
-	callid = msg->callid->body;
 
-	if (msg->from->parsed == NULL)
-	{
-		if ( parse_from_header( msg )<0 )
-		{
-			LM_ERR("cannot parse From header\n");
-			return -1;
-		}
-	}
-	fromtag = ((struct to_body*)msg->from->parsed)->tag_value;
-
-	if (totag)
-		dlginfo.totag  = *totag;
-	else {
-		dlginfo.totag.s = 0;
-		dlginfo.totag.len = 0;
-	}
-	dlginfo.callid = callid;
-	dlginfo.fromtag= fromtag;
-
-	if(entity_add_dlginfo(entity, &dlginfo) < 0)
+	if(entity_add_dlginfo(entity, dlginfo) < 0)
 	{
 		LM_ERR("Failed to add dialoginfo\n");
 		return -1;

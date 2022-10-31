@@ -197,7 +197,7 @@ struct b2b_sdp_stream {
 	struct list_head list;
 	struct list_head ordered;
 };
-static int b2b_sdp_ack(int type, str *key);
+static int b2b_sdp_ack(int type, str *key, b2b_dlginfo_t *dlginfo);
 static int b2b_sdp_reply(str *b2b_key, b2b_dlginfo_t *dlginfo,
 		int type, int method, int code, str *body);
 static int b2b_sdp_client_sync(struct b2b_sdp_client *client, str *body);
@@ -229,6 +229,7 @@ struct b2b_sdp_ctx {
 	time_t sess_id;
 	str sess_ip;
 	gen_lock_t lock;
+	b2b_dlginfo_t *dlginfo;
 	struct list_head clients;
 	struct list_head streams;
 	struct list_head contexts;
@@ -545,6 +546,8 @@ static void b2b_sdp_ctx_free(void *param)
 		return;
 	if (ctx->b2b_key.s)
 		shm_free(ctx->b2b_key.s);
+	if (ctx->dlginfo)
+		shm_free(ctx->dlginfo);
 	shm_free(ctx->sess_ip.s);
 	shm_free(ctx);
 }
@@ -885,7 +888,9 @@ end:
 			req_data.b2b_key = &client->ctx->b2b_key;
 			req_data.method = &method;
 			req_data.body = body;
-			LM_INFO("[%.*s] server request INVITE sent\n",
+			req_data.dlginfo = client->ctx->dlginfo;
+			LM_INFO("[%.*s][%.*s] server request INVITE sent\n",
+					client->ctx->callid.len, client->ctx->callid.s,
 					client->ctx->b2b_key.len, client->ctx->b2b_key.s);
 			if (b2b_api.send_request(&req_data) < 0) {
 				LM_ERR("cannot send upstream INVITE\n");
@@ -942,6 +947,7 @@ static void b2b_sdp_server_send_bye(struct b2b_sdp_ctx *ctx)
 	req_data.et = B2B_SERVER;
 	req_data.b2b_key = &ctx->b2b_key;
 	req_data.method = &method;
+	req_data.dlginfo = ctx->dlginfo;
 	if (b2b_api.send_request(&req_data) < 0)
 		LM_ERR("cannot send upstream BYE\n");
 	else
@@ -996,6 +1002,7 @@ static int b2b_sdp_client_bye(struct sip_msg *msg, struct b2b_sdp_client *client
 				req_data.b2b_key = &ctx->b2b_key;
 				req_data.method = &method;
 				req_data.body = body;
+				req_data.dlginfo = ctx->dlginfo;
 				if (b2b_api.send_request(&req_data) < 0)
 					LM_ERR("cannot send upstream INVITE\n");
 				else
@@ -1156,7 +1163,7 @@ end:
 	return ret;
 }
 
-static int b2b_sdp_ack(int type, str *key)
+static int b2b_sdp_ack(int type, str *key, b2b_dlginfo_t *dlginfo)
 {
 	char *etype = (type==B2B_CLIENT?"client":"server");
 	str ack = str_init(ACK);
@@ -1165,6 +1172,7 @@ static int b2b_sdp_ack(int type, str *key)
 	req.et = type;
 	req.b2b_key = key;
 	req.method = &ack;
+	req.dlginfo = dlginfo;
 	req.no_cb = 1; /* do not call callback */
 
 	LM_INFO("[%.*s] %s request ACK sent\n", key->len, key->s, etype);
@@ -1181,8 +1189,9 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 	/* only ACK if not fake reply, or not a dummy message as
 	 * built in the dlg.c tm callback */
 	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300) {
-		if (b2b_sdp_ack(B2B_CLIENT, &client->b2b_key) < 0)
-			LM_ERR("Cannot ack recording session for key %.*s\n",
+		if (b2b_sdp_ack(B2B_CLIENT, &client->b2b_key, client->dlginfo) < 0)
+			LM_ERR("[%.*s] Cannot ack session for key %.*s\n",
+					client->ctx->callid.len, client->ctx->callid.s,
 					client->b2b_key.len, client->b2b_key.s);
 	}
 
@@ -1233,11 +1242,11 @@ release:
 	/* avoid sending reply under lock */
 	if (body) {
 		/* we are done - answer the call */
-		if (b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
+		if (b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER, METHOD_INVITE, 200, body) < 0)
 			LM_CRIT("could not answer B2B call!\n");
 		pkg_free(body->s);
 	} else if (ret == -2) {
-		b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, METHOD_INVITE, 503, NULL);
+		b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER, METHOD_INVITE, 503, NULL);
 	}
 	if (ret < 0 && ctx->clients_no == 0) {
 		/* no more remaining clients - terminate the entity as well */
@@ -1257,6 +1266,15 @@ int b2b_sdp_client_dlginfo(str *logic_key, str *key, int src, b2b_dlginfo_t *inf
 	}
 
 	return 0;
+}
+
+static b2b_dlginfo_t *b2b_sdp_server_dlginfo(struct sip_msg *msg, str * b2b_key)
+{
+	b2b_dlginfo_t *info = b2b_fill_dlginfo(msg, b2b_key);
+	if (!info)
+		return NULL;
+
+	return b2b_dup_dlginfo(info);
 }
 
 static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
@@ -1387,7 +1405,7 @@ static int b2b_sdp_server_reply_invite(struct sip_msg *msg, struct b2b_sdp_ctx *
 	/* re-INVITE failed - reply the same code to the client
 	 * that started the challenging */
 	if (msg != FAKED_REPLY && msg->REPLY_STATUS < 300)
-		if (b2b_sdp_ack(B2B_SERVER, &ctx->b2b_key) < 0)
+		if (b2b_sdp_ack(B2B_SERVER, &ctx->b2b_key, ctx->dlginfo) < 0)
 			LM_ERR("Cannot ack recording session for server key %.*s\n",
 					ctx->b2b_key.len, ctx->b2b_key.s);
 
@@ -1447,7 +1465,8 @@ static int b2b_sdp_server_reply_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx
 
 static int b2b_sdp_server_bye(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 {
-	b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, msg->REQ_METHOD, 200, NULL);
+	b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER,
+			msg->REQ_METHOD, 200, NULL);
 	b2b_sdp_ctx_release(ctx, 1);
 	return 0;
 }
@@ -1495,7 +1514,8 @@ static int b2b_sdp_server_invite(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
 
 	return 0;
 error:
-	b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, METHOD_INVITE, 606, NULL);
+	b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER,
+			METHOD_INVITE, 606, NULL);
 	return -1;
 }
 
@@ -1515,7 +1535,8 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 		if (ctx->pending_no) {
 			lock_release(&ctx->lock);
 			LM_INFO("we still have pending clients!\n");
-			b2b_sdp_reply(&ctx->b2b_key, NULL, B2B_SERVER, msg->REQ_METHOD, 491, NULL);
+			b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER,
+					msg->REQ_METHOD, 491, NULL);
 			return -1;
 		}
 		lock_release(&ctx->lock);
@@ -1597,6 +1618,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		b2b_api.entity_delete(B2B_SERVER, b2b_key, NULL, 1, 1);
 		return -1;
 	}
+	ctx->dlginfo = b2b_sdp_server_dlginfo(msg, b2b_key);
 	/* we need to wait for all pending clients */
 	ctx->pending_no = ctx->clients_no;
 
