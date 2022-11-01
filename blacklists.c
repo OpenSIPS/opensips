@@ -852,7 +852,7 @@ static int mi_bl_get_extra(const mi_params_t *params,
 
 	switch (try_get_mi_string_param(params, "proto", &proto_str.s, &proto_str.len)) {
 		case -1:
-			proto = PROTO_NONE;
+			*proto = PROTO_NONE;
 			break;
 		case 0:
 			if (parse_proto((unsigned char *)proto_str.s,
@@ -868,7 +868,7 @@ static int mi_bl_get_extra(const mi_params_t *params,
 	}
 	switch (try_get_mi_int_param(params, "port", &tmp)) {
 		case -1:
-			port = 0;
+			*port = 0;
 			break;
 		case 0:
 			*port = tmp;
