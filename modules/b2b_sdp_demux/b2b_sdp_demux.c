@@ -220,7 +220,11 @@ struct b2b_sdp_client {
 	struct list_head list;
 };
 
+#define B2B_SDP_CTX_STARTED		(1<<0)
+#define B2B_SDP_CTX_CANCELLED	(1<<1)
+
 struct b2b_sdp_ctx {
+	unsigned int flags;
 	str callid;
 	str b2b_key;
 	int clients_no;
@@ -1240,6 +1244,7 @@ static int b2b_sdp_client_reply_invite(struct sip_msg *msg, struct b2b_sdp_clien
 		body = b2b_sdp_mux_body(ctx);
 		if (!body)
 			LM_CRIT("could not build to B2B server body!\n");
+		ctx->flags |= B2B_SDP_CTX_STARTED;
 	}
 
 release:
@@ -1317,6 +1322,9 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 			case METHOD_BYE:
 				return b2b_sdp_client_bye(msg, client);
 		}
+		LM_INFO("[%.*s][%.*s] client request message %.*s not handled\n",
+				client->ctx->callid.len, client->ctx->callid.s, key->len, key->s,
+				msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
 		LM_ERR("request message %.*s not handled\n", msg->REQ_METHOD_S.len,
 				msg->REQ_METHOD_S.s);
 	} else {
@@ -1336,8 +1344,9 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 			case METHOD_INVITE:
 				return b2b_sdp_client_reply_invite(msg, client);
 		}
-		LM_ERR("reply message %d for %.*s not handled\n", msg->REPLY_STATUS,
-				get_cseq(msg)->method.len, get_cseq(msg)->method.s);
+		LM_ERR("[%.*s][%.*s] client reply message %d for %.*s not handled\n",
+				client->ctx->callid.len, client->ctx->callid.s, key->len, key->s,
+				msg->REPLY_STATUS, get_cseq(msg)->method.len, get_cseq(msg)->method.s);
 	}
 	return -1;
 }
@@ -1528,6 +1537,15 @@ error:
 	return -1;
 }
 
+static int b2b_sdp_server_cancel(struct sip_msg *msg, struct b2b_sdp_ctx *ctx)
+{
+	/* respond to the initial INVITE */
+	b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER,
+			METHOD_INVITE, 487, NULL);
+	b2b_sdp_ctx_release(ctx, 0);
+	return 0;
+}
+
 static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 		str *logic_key, void *param, int flags)
 {
@@ -1541,7 +1559,15 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 				ctx->callid.len, ctx->callid.s, key->len, key->s,
 				msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
 		lock_get(&ctx->lock);
-		if (ctx->pending_no) {
+		if (msg->REQ_METHOD == METHOD_CANCEL) {
+			if (ctx->flags & B2B_SDP_CTX_CANCELLED) {
+				LM_DBG("[%.*s][%.*s] already canceled\n",
+						ctx->callid.len, ctx->callid.s, key->len, key->s);
+				lock_release(&ctx->lock);
+				return 0;
+			}
+			ctx->flags |= B2B_SDP_CTX_CANCELLED;
+		} else if (ctx->pending_no) {
 			lock_release(&ctx->lock);
 			LM_INFO("we still have pending clients!\n");
 			b2b_sdp_reply(&ctx->b2b_key, ctx->dlginfo, B2B_SERVER,
@@ -1556,9 +1582,12 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 				return b2b_sdp_server_invite(msg, ctx);
 			case METHOD_BYE:
 				return b2b_sdp_server_bye(msg, ctx);
+			case METHOD_CANCEL:
+				return b2b_sdp_server_cancel(msg, ctx);
 		}
-		LM_ERR("request message %.*s not handled\n", msg->REQ_METHOD_S.len,
-				msg->REQ_METHOD_S.s);
+		LM_ERR("[%.*s][%.*s] server request message %.*s not handled\n",
+				ctx->callid.len, ctx->callid.s, key->len, key->s,
+				msg->REQ_METHOD_S.len, msg->REQ_METHOD_S.s);
 	} else {
 		/* not interested in provisional replies */
 		if (msg->REPLY_STATUS < 200)
@@ -1578,7 +1607,8 @@ static int b2b_sdp_server_notify(struct sip_msg *msg, str *key, int type,
 			case METHOD_BYE:
 				return b2b_sdp_server_reply_bye(msg, ctx);
 		}
-		LM_ERR("reply message %d for %.*s not handled\n", msg->REPLY_STATUS,
+		LM_ERR("[%.*s][%.*s] server reply message %d for %.*s not handled\n",
+				ctx->callid.len, ctx->callid.s, key->len, key->s, msg->REPLY_STATUS,
 				get_cseq(msg)->method.len, get_cseq(msg)->method.s);
 	}
 	return -1;
@@ -1870,6 +1900,8 @@ static void b2b_sdp_server_event_received_create(str *key, bin_packet_t *store)
 		LM_INFO("cannot create new context!\n");
 		return;
 	}
+	/* only started dialogs end up here */
+	ctx->flags |= B2B_SDP_CTX_STARTED;
 	bin_pop_str(store, &tmp);
 	if (shm_str_sync(&ctx->sess_ip, &tmp) < 0) {
 		LM_ERR("could not duplicate session ip!\n");
