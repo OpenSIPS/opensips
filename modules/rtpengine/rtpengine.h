@@ -29,6 +29,11 @@
 #include "bencode.h"
 #include "../../str.h"
 
+/* flags for set, node, and socket management */
+#define RTPE_TEARDOWN_NODE    (1<<0)
+#define RTPE_TEARDOWN_SET     (1<<1)
+#define RTPE_TEARDOWN_SOCKETS (1<<2)
+
 struct rtpe_node {
 	unsigned int		idx;			/* overall index */
 	str					rn_url;			/* unparsed, deletable */
@@ -37,6 +42,7 @@ struct rtpe_node {
 	int					rn_disabled;	/* found unaccessible? */
 	unsigned			rn_weight;		/* for load balancing */
 	unsigned int		rn_recheck_ticks;
+	int					rn_flags;
 	struct rtpe_node	*rn_next;
 };
 
@@ -47,6 +53,7 @@ struct rtpe_set{
 	unsigned int		rtpe_node_count;
 	int 				set_disabled;
 	unsigned int		set_recheck_ticks;
+	int 				set_flags;
 	struct rtpe_node	*rn_first;
 	struct rtpe_node	*rn_last;
 	struct rtpe_set     *rset_next;
@@ -56,6 +63,20 @@ struct rtpe_set{
 struct rtpe_set_head{
 	struct rtpe_set		*rset_first;
 	struct rtpe_set		*rset_last;
+};
+
+
+struct rtpe_version{
+	unsigned int version;
+	int version_flags;
+	struct rtpe_version *version_next;
+};
+
+
+struct rtpe_version_head{
+	unsigned int version_count;
+	struct rtpe_version *version_first;
+	struct rtpe_version *version_last;
 };
 
 #define RTPENGINE_TABLE_VERSION 1
