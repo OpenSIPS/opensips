@@ -158,6 +158,10 @@ static const struct tts {
 		/* test for read overflows on bad header body (no \n ending) */
 		"m  r\nu:c \x1b\r   : ]",
 		-1,
+	}, {
+		/* test for read overflow on Via header (the @end pointer) */
+		"Q e  M\nV:SIP/2.0  /1P 4rr;TT;TT;TT;TT;TT;TT;T\xd2;TT;",
+		-1,
 	},
 
 	{"\0", 0},
