@@ -125,7 +125,11 @@ fetch_urecord:
 	if (rc > 0) {
 		LM_DBG("'%.*s' Not found in usrloc\n", aor.len, ZSW(aor.s));
 		ul.unlock_udomain(d, &aor);
-		return LOOKUP_NO_RESULTS;
+
+		if ((flags & REG_BRANCH_AOR_LOOKUP_FLAG) && idx < nbranches)
+			goto next_aor;
+
+		goto done;
 	}
 
 	print_urecord(r);
@@ -176,6 +180,7 @@ fetch_urecord:
 		ul.release_urecord(r, 0);
 		ul.unlock_udomain(d, &aor);
 
+	next_aor:
 		aor_uri = &branch_uris[idx];
 		LM_DBG("getting contacts from aor [%.*s] "
 		       "in branch %d\n", aor_uri->len, aor_uri->s, idx);
@@ -196,8 +201,10 @@ done:
 	else if (have_pn_cts)
 		ret = LOOKUP_PN_SENT;
 
-	ul.release_urecord(r, 0);
-	ul.unlock_udomain(d, &aor);
+	if (r) {
+		ul.release_urecord(r, 0);
+		ul.unlock_udomain(d, &aor);
+	}
 out_cleanup:
 	if (flags & REG_LOOKUP_UAFILTER_FLAG)
 		regfree(&ua_re);
