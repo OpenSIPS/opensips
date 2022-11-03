@@ -595,9 +595,6 @@ static int evi_print_subscriber(mi_item_t *subs_obj, evi_subs_p subs)
 	} else {
 		if (add_mi_string(subs_obj, MI_SSTR("expire"), MI_SSTR("never")) < 0)
 			return -1;
-		/* If an event is never expired then its timeout should be never as well*/
-		if (add_mi_string(subs_obj, MI_SSTR("ttl"), MI_SSTR("never")) < 0)
-			return -1;
 	}
 	/* XXX - does subscription time make sense? */
 
