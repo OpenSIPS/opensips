@@ -578,18 +578,25 @@ static int evi_print_subscriber(mi_item_t *subs_obj, evi_subs_p subs)
 			socket.len, socket.s) < 0)
 		return -1;
 	if (sock->flags & EVI_EXPIRE) {
+		/* indicate the expiration time used for the event*/
+		if (add_mi_number(subs_obj, MI_SSTR("expire"), sock->expire) < 0)
+				return -1;
 		now = time(0);
 		/* calculate the remaining time for the subscriber to be expired */
 		expiry_countdown = sock->expire - (now - subs->reply_sock->subscription_time);
 		if (expiry_countdown > 0) {
-			if (add_mi_number(subs_obj, MI_SSTR("expire"), expiry_countdown) < 0)
+			if (add_mi_number(subs_obj, MI_SSTR("ttl"), expiry_countdown) < 0)
+				return -1;
+		}else{
+			/* Mark event as expired if time-to-expire is reached*/
+			if (add_mi_string(subs_obj, MI_SSTR("ttl"), MI_SSTR("expired")) < 0)
 				return -1;
 		}
-		/* Mark event as expired if time-to-expire is reached*/
-		if (add_mi_string(subs_obj, MI_SSTR("expire"), MI_SSTR("expired")) < 0)
-			return -1;
 	} else {
 		if (add_mi_string(subs_obj, MI_SSTR("expire"), MI_SSTR("never")) < 0)
+			return -1;
+		/* If an event is never expired then its timeout should be never as well*/
+		if (add_mi_string(subs_obj, MI_SSTR("ttl"), MI_SSTR("never")) < 0)
 			return -1;
 	}
 	/* XXX - does subscription time make sense? */
