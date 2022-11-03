@@ -21,6 +21,7 @@
 #include <tap.h>
 
 #include "../../../dprint.h"
+#include "../../../dset.h"
 #include "../../../test/ut.h"
 #include "../../../parser/parse_methods.h"
 #include "../../../parser/msg_parser.h"
@@ -110,6 +111,33 @@ static void test_lookup(void)
 
 	/* the PN contact should just trigger a PN without becoming a branch */
 	ok(str_match(&msg.new_uri, &ct2), "lookup-7: R-URI is ct2");
+
+	/* test the "r" flag (branch lookup) */
+	{
+		str aor2 = str_init("bob"), aor3 = str_init("carol");
+
+		ul.lock_udomain(d, &aor2);
+		ok(ul.insert_urecord(d, &aor2, &r, 0) == 0, "create AoR 2");
+		ul.unlock_udomain(d, &aor2);
+
+		ul.lock_udomain(d, &aor3);
+		ok(ul.insert_urecord(d, &aor3, &r, 0) == 0, "create AoR 3");
+		fill_ucontact_info(&ci);
+		ci.methods = METHOD_UNDEF;
+		ok(ul.insert_ucontact(r, &ct2, &ci, NULL, 1, &c) == 0, "insert Contact for AoR 3");
+		ul.unlock_udomain(d, &aor3);
+
+		/* ensure the AoR expansion process doesn't stop on a non-existing AoR */
+		str ruri1 = str_init("sip:FOOBAR@foobar.com");
+		ok(append_branch(NULL, &ruri1, NULL, NULL, 1, 0, NULL) == 1, "append AoR-2");
+
+		str ruri2 = str_init("sip:carol@foobar.com");
+		ok(append_branch(NULL, &ruri2, NULL, NULL, 1, 0, NULL) == 1, "append AoR-3");
+
+		set_ruri(&msg, &aor_ruri);
+		ok(reg_lookup(&msg, d, _str("r"), NULL) == LOOKUP_OK, "lookup-8");
+		ok(get_nr_branches() == 1, "get-nr-branches");
+	}
 }
 
 
