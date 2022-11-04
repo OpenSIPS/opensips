@@ -150,6 +150,11 @@ static int mod_init(void)
 	*flat_rotate = time(0);
 	local_timestamp = *flat_rotate;
 
+	if (!(rotate_lock = lock_init_rw())) {
+		LM_ERR("oom\n");
+		return -1;
+	}
+
 	/* parse prefix and suffix */
 	if (flat_suffix_s.s && (flat_suffix_s.len=strlen(flat_suffix_s.s))!=0) {
 		if (pv_parse_format(&flat_suffix_s, &flat_suffix) < 0) {
