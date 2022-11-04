@@ -339,9 +339,9 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 
 	lock_start_read(rotate_lock);
 
-	if (local_timestamp < *flat_rotate) {
+	if (my_rotate < *flat_rotate) {
 		flat_rotate_logs();
-		local_timestamp = *flat_rotate;
+		my_rotate = *flat_rotate;
 	}
 
 	if ( !h || !CON_TAIL(h) || (f=CON_FILE(h))==NULL ) {
