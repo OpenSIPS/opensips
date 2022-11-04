@@ -73,12 +73,10 @@ str flat_prefix_s = {0,0};
 pv_elem_t *flat_prefix = NULL;
 
 /*
- * Timestamp of the last log rotation request from
- * the FIFO interface
+ * Counter for the last log rotation request from the MI interface
  */
-time_t* flat_rotate;
-
-time_t local_timestamp;
+unsigned long long *flat_rotate;
+unsigned long long my_rotate;
 
 /*
  * Flatstore database module interface
@@ -141,14 +139,12 @@ static int mod_init(void)
 		return -1;
 	}
 
-	flat_rotate = (time_t*)shm_malloc(sizeof(time_t));
+	flat_rotate = shm_malloc(sizeof *flat_rotate);
 	if (!flat_rotate) {
 		LM_ERR("no shared memory left\n");
 		return -1;
 	}
-
-	*flat_rotate = time(0);
-	local_timestamp = *flat_rotate;
+	*flat_rotate = 0;
 
 	if (!(rotate_lock = lock_init_rw())) {
 		LM_ERR("oom\n");
@@ -176,7 +172,7 @@ static int mod_init(void)
 
 static void mod_destroy(void)
 {
-	if (flat_rotate) shm_free(flat_rotate);
+	shm_free(flat_rotate);
 }
 
 

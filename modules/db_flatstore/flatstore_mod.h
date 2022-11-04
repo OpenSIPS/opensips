@@ -51,17 +51,16 @@ extern char* flat_delimiter;
 
 
 /*
- * The timestamp of log rotation request from
- * the FIFO interface
+ * Counter for the last log rotation request from the MI interface
  */
-extern time_t* flat_rotate;
+extern unsigned long long *flat_rotate;
 
 
 /*
- * Local timestamp marking the time of the
+ * Local counter marking the time of the
  * last log rotation in the process
  */
-extern time_t local_timestamp;
+extern unsigned long long my_rotate;
 
 
 /*
