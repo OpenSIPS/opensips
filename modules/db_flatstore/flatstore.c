@@ -36,6 +36,7 @@
 #include "../../dprint.h"
 #include "flat_pool.h"
 #include "flat_con.h"
+#include "flat_mi.h"
 #include "flatstore_mod.h"
 #include "flatstore.h"
 
@@ -336,6 +337,8 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 	str aux;
 	char * begin = flat_iov_buf.s;
 
+	lock_start_read(rotate_lock);
+
 	if (local_timestamp < *flat_rotate) {
 		flat_rotate_logs();
 		local_timestamp = *flat_rotate;
@@ -343,12 +346,12 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 
 	if ( !h || !CON_TAIL(h) || (f=CON_FILE(h))==NULL ) {
 		LM_ERR("uninitialized connection\n");
-		return -1;
+		goto out_err;
 	}
 
 	if (flat_prepare_iovec(n) < 0) {
 		LM_ERR("cannot insert row\n");
-		return -1;
+		goto out_err;
 	}
 
 	FLAT_LOCK(f);
@@ -427,7 +430,7 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 
 	if (auxl < 0) {
 		LM_ERR("unable to write to file: %s - %d\n", strerror(errno), errno);
-		return -1;
+		goto out_err;
 	}
 
 	/* XXX does this make sense any more? */
@@ -436,6 +439,10 @@ int flat_db_insert(const db_con_t* h, const db_key_t* k, const db_val_t* v,
 	}
 	FLAT_UNLOCK(f);
 
-
+	lock_stop_read(rotate_lock);
 	return 0;
+
+out_err:
+	lock_stop_read(rotate_lock);
+	return -1;
 }
