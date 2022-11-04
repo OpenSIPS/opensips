@@ -23,10 +23,18 @@
 #include "flatstore_mod.h"
 #include "flat_mi.h"
 
+/* helps ensure that there are no more pending writes on the old (rotated)
+ * files, thus avoiding race conditions with external readers */
+rw_lock_t *rotate_lock;
+
 mi_response_t *mi_flat_rotate_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	*flat_rotate = time(0);
+	time_t now = time(NULL);
+
+	lock_start_write(rotate_lock);
+	*flat_rotate = now;
+	lock_stop_write(rotate_lock);
 
 	return init_mi_result_ok();
 }
