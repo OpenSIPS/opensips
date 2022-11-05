@@ -36,6 +36,14 @@
 	</row>
 	<row>
 		<entry>3. </entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
+		<entry align="center">25</entry>
+		<entry align="center">17</entry>
+		<entry align="center">647</entry>
+		<entry align="center">102</entry>
+	</row>
+	<row>
+		<entry>4. </entry>
 		<entry>Richard Fuchs</entry>
 		<entry align="center">20</entry>
 		<entry align="center">2</entry>
@@ -43,7 +51,7 @@
 		<entry align="center">723</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">18</entry>
 		<entry align="center">14</entry>
@@ -51,20 +59,12 @@
 		<entry align="center">137</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">15</entry>
 		<entry align="center">7</entry>
 		<entry align="center">218</entry>
 		<entry align="center">330</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
-		<entry align="center">13</entry>
-		<entry align="center">8</entry>
-		<entry align="center">250</entry>
-		<entry align="center">69</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -143,13 +143,13 @@
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Jun 2014 - Apr 2022</entry>
+		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
+		<entry align="center">Jun 2019 - Apr 2022</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
-		<entry>John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>)</entry>
-		<entry align="center">Jun 2019 - Oct 2021</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Jun 2014 - Apr 2022</entry>
 	</row>
 	<row>
 		<entry>6. </entry>
