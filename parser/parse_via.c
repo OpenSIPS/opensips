@@ -742,7 +742,7 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 
  find_value:
 	tmp++;
-	for(;*tmp;tmp++){
+	for(;tmp<end;tmp++){
 		switch(*tmp){
 			case ' ':
 			case '\t':
@@ -909,6 +909,9 @@ static /*inline*/ char* parse_via_param(char* p, char* end,
 						goto parse_error;
 				}
 				break;
+			case '\0':
+				break;
+
 			default:
 				switch(state){
 					case F_VALUE:
