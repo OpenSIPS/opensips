@@ -163,16 +163,18 @@ static const struct tts {
 		/* test for read overflow on Via header (the @end pointer) */
 		"Q e  M\nV:SIP/2.0  /1P 4rr;TT;TT;TT;TT;TT;TT;T\xd2;TT;",
 		-1,
+	}, {
+		/* test for read overflow on Via header param (the @end pointer) */
+		"A  !\nV:SIP/2.0/? M;recEIVeD\n ",
+		-1,
 	},
-
-	{"\0", 0},
 };
 
 void test_parse_msg(void)
 {
 	int i;
 
-	for (i = 0; tset[i].tmsg[0]; i++) {
+	for (i = 0; i < sizeof tset/sizeof *tset; i++) {
 		struct sip_msg msg;
 
 		memset(&msg, 0, sizeof msg);
