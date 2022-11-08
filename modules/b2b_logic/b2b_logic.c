@@ -96,6 +96,10 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	str *ent1, pv_spec_t *ent1_hnames, pv_spec_t *ent1_hvals,
 	str *ent2, pv_spec_t *ent2_hnames, pv_spec_t *ent2_hvals);	
 
+str* b2bl_init_extern(struct b2b_params *init_params,
+	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
+	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
+
 int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_scenario(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_parse_entity_name(pv_spec_p sp, const str *in);

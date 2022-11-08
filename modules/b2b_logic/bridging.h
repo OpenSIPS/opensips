@@ -36,6 +36,3 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	unsigned hash_index, b2bl_entity_id_t *old_entity,
 	struct b2bl_new_entity *new_br_ent[2], str *provmedia_uri, int lifetime);
-str* b2bl_init_extern(struct b2b_params *init_params,
-	b2bl_init_params_t *scen_params, str *e1_id, str *e2_id,
-	b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask);
