@@ -80,7 +80,7 @@ static void b2bl_clean(unsigned int ticks, void* param);
 static void b2bl_db_timer_update(unsigned int ticks, void* param);
 
 int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
-	void *req_routeid, void *reply_routeid, str *init_body, str *init_body_type);
+	void *req_routeid, void *reply_routeid);
 int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 	pv_spec_t *hnames, pv_spec_t *hvals);
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
@@ -139,7 +139,6 @@ static str default_headers[HDR_DEFAULT_LEN]=
    {"Require", 7},
    {"RSeq", 4},
 };
-int use_init_sdp = 0;
 int contact_user = 0;
 unsigned int max_duration = 12*3600;
 
@@ -195,9 +194,7 @@ static cmd_export_t cmds[]=
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_init_flags, fixup_free_init_flags},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route ,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route ,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_server_new", (cmd_function)b2bl_server_new, {
 		{CMD_PARAM_STR,0,0},
@@ -268,7 +265,6 @@ static param_export_t params[]=
 	{"script_reply_route",    STR_PARAM,          &script_reply_route        },
 	{"custom_headers",  STR_PARAM,                &custom_headers.s          },
 	{"custom_headers_regexp", STR_PARAM,          &custom_headers_regexp.s   },
-	{"use_init_sdp",    INT_PARAM,                &use_init_sdp              },
 	{"contact_user",    INT_PARAM,                &contact_user              },
 	{"db_url",          STR_PARAM,                &db_url.s                  },
 	{"cachedb_url",     STR_PARAM, 				  &cdb_url.s         		 },
@@ -850,9 +846,6 @@ static int fixup_init_flags(void** param)
 				break;
 			case 'p':
 				init_params->flags |= B2BL_FLAG_TRANSPARENT_TO;
-				break;
-			case 's':
-				init_params->flags |= B2BL_FLAG_USE_INIT_SDP;
 				break;
 			default:
 				LM_WARN("unknown option `%c'\n", s->s[st]);

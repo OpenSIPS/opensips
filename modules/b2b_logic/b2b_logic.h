@@ -53,7 +53,6 @@
 /* B2BL_FLAGS constants */
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
 #define		B2BL_FLAG_TRANSPARENT_TO	0x02
-#define		B2BL_FLAG_USE_INIT_SDP		0x04
 
 /* B2BL_BR_FLAGS constants */
 #define B2BL_BR_FLAG_NOTIFY			0x01
@@ -88,8 +87,6 @@ struct b2b_params
 	int req_routeid;
 	int reply_routeid;
 	str *id;
-	str *init_body;
-	str *init_body_type;
 };
 
 struct b2b_bridge_params
@@ -111,7 +108,6 @@ enum pv_entity_field {
 extern str custom_headers_lst[HDR_LST_LEN];
 extern regex_t* custom_headers_re;
 extern int custom_headers_lst_len;
-extern int use_init_sdp;
 extern int contact_user;
 extern str server_address;
 extern pv_elem_t *server_address_pve;

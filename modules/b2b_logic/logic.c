@@ -2864,7 +2864,7 @@ error:
 
 
 int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
-	void *req_routeid, void *reply_routeid, str *init_body, str *init_body_type)
+	void *req_routeid, void *reply_routeid)
 {
 	str* key;
 	str auth_header;
@@ -2899,19 +2899,7 @@ int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *in
 		}
 	}
 
-	if (init_body && !init_body_type) {
-		LM_ERR("Missing init_sdp content type!\n");
-		return -1;
-	}
-	if (init_body_type && !init_body) {
-		LM_ERR("Missing init_sdp body!\n");
-		return -1;
-	}
-
 	init_params->id = id;
-	init_params->init_body = init_body;
-	init_params->init_body_type = init_body_type;
-
 	init_params->req_routeid = req_routeid ?
 		(unsigned long)req_routeid : global_req_rtid;
 	init_params->reply_routeid = reply_routeid ?

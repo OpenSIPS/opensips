@@ -70,7 +70,6 @@ struct b2bl_new_entity {
 
 #define B2BL_SDP_NORMAL     0
 #define B2BL_SDP_LATE       1
-#define B2BL_SDP_RENEW      2
 
 #define NO_UPDATEDB_FLAG    0
 #define UPDATEDB_FLAG       1
@@ -104,7 +103,6 @@ typedef struct b2bl_tuple
 	unsigned int hash_index;
 	str* key;
 	str *scenario_id;
-	str init_sdp;
 	int state;
 	int req_routeid;
 	int reply_routeid;
