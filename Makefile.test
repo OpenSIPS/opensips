@@ -6,6 +6,9 @@ endif
 
 .PHONY: test unit_tests system_tests
 
+include Makefile.openssl
+misclibs=lib/digest_auth/libdigest_auth.a
+
 ensure_test_defs:
 	@! grep -q '^DEFS+= -DUNIT_TESTS' Makefile.conf && \
 		echo '\nDEFS+= -DUNIT_TESTS' >> Makefile.conf && \
