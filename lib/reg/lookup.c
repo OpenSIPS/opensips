@@ -67,7 +67,7 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d, const str *sflags, str *aor_
 	if (!req->callid) {
 		LM_ERR("bad %.*s request (missing Call-ID header)\n",
 		       req->REQ_METHOD_S.len, req->REQ_METHOD_S.s);
-		return -1;
+		return LOOKUP_ERROR;
 	}
 
 	if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
