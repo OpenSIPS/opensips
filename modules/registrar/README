@@ -61,7 +61,9 @@ registrar Module
               1.4.6. is_contact_registered(domain
                       ,[AOR],[contact],[callid])
 
-              1.4.7. is_ip_registered(domain ,[AOR],IPvar)
+              1.4.7. is_ip_registered(domain
+                      ,[AOR],IPvar,[PORTvar])
+
               1.4.8. add_sock_hdr(hdr_name)
 
         1.5. Exported Asynchronous Functions
@@ -1184,14 +1186,14 @@ if(is_method("INVITE")) {
 }
 ...
 
-1.4.7.  is_ip_registered(domain ,[AOR],IPvar)
+1.4.7.  is_ip_registered(domain ,[AOR],IPvar,[PORTvar])
 
    The function returns true if there is at least one contact that
-   has been registered from the IP in the IPvar variable. The IP
-   is matched against the received host, if it exists, or the
-   contact host otherwise. This function does not modify the
-   message being process. This function replaces the old
-   "is_other_contact" function.
+   has been registered from the IP in the IPvar variable ( and
+   from the optional PORTvar variable ). The IP is matched against
+   the received host, if it exists, or the contact host otherwise.
+   This function does not modify the message being process. This
+   function replaces the old "is_other_contact" function.
 
    Meaning of the parameters is as follows:
      * domain (static string) - Name of table that should be used
@@ -1203,6 +1205,11 @@ if(is_method("INVITE")) {
        against the contact host or the received host (see above).
        If the IPvar is an AVP containing multiple values/IPs, then
        all the values are checked.
+     * PORTvar (var, optional) - the variable containing the port
+       to be matched against the contact host or the received host
+       (see above). If the IPvar is an AVP containing multiple
+       values/IPs, then the PORTvar is expected to contain the
+       same number of entries, and all the values are checked.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, ONREPLY_ROUTE, LOCAL_ROUTE.

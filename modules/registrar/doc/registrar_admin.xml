@@ -997,12 +997,13 @@ if(is_method("INVITE")) {
 
 	<section id="func_is_ip_registered" xreflabel="is_ip_registered()">
 		<title>
-		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar)</function>
+		<function moreinfo="none">is_ip_registered(domain ,[AOR],IPvar,[PORTvar])</function>
 		</title>
 		<para>
 			The function returns true if there is at least one contact that has
-			been registered from the IP in the IPvar variable. The IP is matched
-			against the received host, if it exists, or the contact host otherwise.
+			been registered from the IP in the IPvar variable ( and from the optional
+			PORTvar variable ). 
+			The IP is matched against the received host, if it exists, or the contact host otherwise.
 			This function does not modify the message being process. This function
 		replaces the old "is_other_contact" function.
 		</para>
@@ -1027,6 +1028,14 @@ if(is_method("INVITE")) {
 				the contact host or the received host (see above). If the
 				<emphasis>IPvar</emphasis> is an AVP containing multiple values/IPs,
 				then all the values are checked.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>PORTvar (var, optional)</emphasis> - the variable containing the port to be
+			       	matched against the contact host or the received host (see above). If the
+				<emphasis>IPvar</emphasis> is an AVP containing multiple values/IPs, then the PORTvar
+				is expected to contain the same number of entries, and all the values are checked.
 			</para>
 		</listitem>
 

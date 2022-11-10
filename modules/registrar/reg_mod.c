@@ -179,7 +179,8 @@ static cmd_export_t cmds[] = {
 	{"is_ip_registered", (cmd_function)is_ip_registered, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_VAR,0,0}, {0,0,0}},
+		{CMD_PARAM_VAR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{0,0,{{0,0,0}},0}
 };

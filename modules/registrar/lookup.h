@@ -74,5 +74,5 @@ int is_contact_registered(struct sip_msg* _m, void *_d, str* _a,
  * IPs comes from:
  * - the IPs avp given as a third parameter
  */
-int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *spec);
+int is_ip_registered(struct sip_msg* _m, void* _d, str* _a, pv_spec_t *ip_spec, pv_spec_t *port_spec);
 #endif /* LOOKUP_H */
