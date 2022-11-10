@@ -47,7 +47,7 @@ static int digest_calc_HA1(const struct digest_auth_credential *crd,
 
 	Sha256Ctx = EVP_MD_CTX_new();
 
-	EVP_DigestInit_ex2(Sha256Ctx, EVP_sha256(), NULL);
+	EVP_DigestInit(Sha256Ctx, EVP_sha256());
 	EVP_DigestUpdate(Sha256Ctx, crd->user.s, crd->user.len);
 	EVP_DigestUpdate(Sha256Ctx, ":", 1);
 	EVP_DigestUpdate(Sha256Ctx, crd->realm.s, crd->realm.len);
@@ -70,7 +70,7 @@ static int digest_calc_HA1sess(const str_const *nonce, const str_const *cnonce,
 
 	Sha256Ctx = EVP_MD_CTX_new();
 
-	EVP_DigestInit_ex2(Sha256Ctx, EVP_sha256(), NULL);
+	EVP_DigestInit(Sha256Ctx, EVP_sha256());
 	EVP_DigestUpdate(Sha256Ctx, sess_key->SHA256, HASHHEXLEN_SHA256);
 	EVP_DigestUpdate(Sha256Ctx, ":", 1);
 	EVP_DigestUpdate(Sha256Ctx, nonce->s, nonce->len);
@@ -101,7 +101,7 @@ static int digest_calc_HA2(const str_const *msg_body, const str_const *method,
 
 	Sha256Ctx = EVP_MD_CTX_new();
 
-	EVP_DigestInit_ex2(Sha256Ctx, EVP_sha256(), NULL);
+	EVP_DigestInit(Sha256Ctx, EVP_sha256());
 	if (method->s) {
 		EVP_DigestUpdate(Sha256Ctx, method->s, method->len);
 		EVP_DigestUpdate(Sha256Ctx, ":", 1);
@@ -130,7 +130,7 @@ static int _digest_calc_response(const HASHHEX *ha1, const HASHHEX *ha2,
 
 	Sha256Ctx = EVP_MD_CTX_new();
 
-	EVP_DigestInit_ex2(Sha256Ctx, EVP_sha256(), NULL);
+	EVP_DigestInit(Sha256Ctx, EVP_sha256());
 	EVP_DigestUpdate(Sha256Ctx, ha1->SHA256, HASHHEXLEN_SHA256);
 	EVP_DigestUpdate(Sha256Ctx, ":", 1);
 	EVP_DigestUpdate(Sha256Ctx, nonce->s, nonce->len);
