@@ -6,8 +6,11 @@ endif
 
 .PHONY: test unit_tests system_tests
 
-include Makefile.openssl
-misclibs=lib/digest_auth/libdigest_auth.a
+# TODO: We cannot declare these here, as they would be linked in OpenSIPS all
+# the time; instead, we should find a way to link it only when unit tests are
+# run
+#include Makefile.openssl
+#misclibs=lib/digest_auth/libdigest_auth.a
 
 ensure_test_defs:
 	@! grep -q '^DEFS+= -DUNIT_TESTS' Makefile.conf && \
