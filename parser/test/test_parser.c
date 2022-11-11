@@ -167,6 +167,10 @@ static const struct tts {
 		/* test for read overflow on Via header param (the @end pointer) */
 		"A  !\nV:SIP/2.0/? M;recEIVeD\n ",
 		-1,
+	}, {
+		/* test for read overflow on Content-Length parsing error (@end) */
+		"v D \xd7\r\xeeV:1\r\nl:5\r*",
+		-1,
 	},
 };
 

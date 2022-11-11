@@ -267,7 +267,8 @@ char* parse_content_length( char* buffer, char* end, int* length)
 	*length = number;
 	return p;
 error:
-	LM_ERR("parse error near char [%d][%c]\n",*p,*p);
+	LM_ERR("parse error at pos %ld, dec-char: %d, start/p/end: %p/%p/%p\n",
+	       p - buffer, p < end && (end-buffer) ? *p:-1, buffer, p, end);
 	return NULL;
 }
 
