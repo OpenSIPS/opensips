@@ -33,9 +33,21 @@
 #include "../../timer.h"
 #include "../b2b_entities/b2be_load.h"
 
-#define B2B_BRIDGING_STATE      -1
-#define B2B_CANCEL_STATE        -2
-#define B2B_NOTDEF_STATE        -3
+enum b2b_tuple_state {
+	B2B_INIT_STATE,
+
+	/* tmp state when bridging with B2BL_BR_FLAG_HOLD */
+	B2B_BRIDGING_HOLD_STATE,
+	/* tmp state when bridging with B2BL_BR_FLAG_RENEW_SDP */
+	B2B_BRIDGING_INIT_SDP_STATE,
+	/* main bridging state */
+	B2B_BRIDGING_STATE,
+
+	B2B_CANCEL_STATE
+};
+
+#define IS_BRIDGING_STATE(state) \
+	(state>=B2B_BRIDGING_HOLD_STATE && state <=B2B_BRIDGING_STATE)
 
 #define B2B_TOP_HIDING_SCENARY "top hiding"
 #define B2B_TOP_HIDING_SCENARY_LEN  strlen("top hiding")
@@ -54,10 +66,15 @@
 #define		B2BL_FLAG_TRANSPARENT_AUTH	0x01
 #define		B2BL_FLAG_TRANSPARENT_TO	0x02
 
-/* B2BL_BR_FLAGS constants */
-#define B2BL_BR_FLAG_NOTIFY			0x01
-#define B2BL_BR_FLAG_RETURN_AFTER_FAILURE	0x02
-#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR	0x04
+/* tuple bridge flags */
+#define B2BL_BR_FLAG_NOTIFY                        (1<<0)
+#define B2BL_BR_FLAG_RETURN_AFTER_FAILURE          (1<<1)
+#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR  (1<<2)
+#define B2BL_BR_FLAG_HOLD                          (1<<3)
+#define B2BL_BR_FLAG_RENEW_SDP                     (1<<4)
+#define B2BL_BR_FLAG_PROV_MEDIA                    (1<<5)
+#define B2BL_BR_FLAG_NO_OLD_ENT                    (1<<6)
+
 
 /* modes to write in db */
 #define NO_DB         0

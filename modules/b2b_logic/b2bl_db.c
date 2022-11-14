@@ -36,7 +36,6 @@
 #define B2BL_FETCH_SIZE  128
 static str str_key_col         = str_init("si_key");
 static str str_scenario_col    = str_init("scenario");
-static str str_sdp_col         = str_init("sdp");
 static str str_sstate_col      = str_init("sstate");
 static str str_lifetime_col    = str_init("lifetime");
 static str str_e1_type_col     = str_init("e1_type");
@@ -44,18 +43,20 @@ static str str_e1_sid_col      = str_init("e1_sid");
 static str str_e1_to_col       = str_init("e1_to");
 static str str_e1_from_col     = str_init("e1_from");
 static str str_e1_key_col      = str_init("e1_key");
+static str str_e1_sdp_col      = str_init("e1_sdp");
 static str str_e2_type_col     = str_init("e2_type");
 static str str_e2_sid_col      = str_init("e2_sid");
 static str str_e2_to_col       = str_init("e2_to");
 static str str_e2_from_col     = str_init("e2_from");
 static str str_e2_key_col      = str_init("e2_key");
+static str str_e2_sdp_col      = str_init("e2_sdp");
 static str str_e3_type_col     = str_init("e3_type");
 static str str_e3_sid_col      = str_init("e3_sid");
 static str str_e3_to_col       = str_init("e3_to");
 static str str_e3_from_col     = str_init("e3_from");
 static str str_e3_key_col      = str_init("e3_key");
 
-#define DB_COLS_NO  20
+#define DB_COLS_NO  21
 static db_key_t qcols[DB_COLS_NO];
 static db_val_t qvals[DB_COLS_NO];
 static int n_query_update;
@@ -69,23 +70,23 @@ void b2bl_db_init(void)
 	qvals[0].type = DB_STR;
 	qcols[1]      = &str_scenario_col;
 	qvals[1].type = DB_STR;
-	qcols[2]      = &str_sdp_col;
-	qvals[2].type = DB_STR;
-	n_query_update= 3;
-	qcols[3]      = &str_sstate_col;
-	qvals[3].type = DB_INT;
-	qcols[4]     = &str_lifetime_col;
+	n_query_update= 2;
+	qcols[2]      = &str_sstate_col;
+	qvals[2].type = DB_INT;
+	qcols[3]     = &str_lifetime_col;
+	qvals[3].type= DB_INT;
+	qcols[4]     = &str_e1_type_col;
 	qvals[4].type= DB_INT;
-	qcols[5]     = &str_e1_type_col;
-	qvals[5].type= DB_INT;
-	qcols[6]     = &str_e1_sid_col;
+	qcols[5]     = &str_e1_sid_col;
+	qvals[5].type= DB_STR;
+	qcols[6]     = &str_e1_to_col;
 	qvals[6].type= DB_STR;
-	qcols[7]     = &str_e1_to_col;
+	qcols[7]     = &str_e1_from_col;
 	qvals[7].type= DB_STR;
-	qcols[8]     = &str_e1_from_col;
+	qcols[8]     = &str_e1_key_col;
 	qvals[8].type= DB_STR;
-	qcols[9]     = &str_e1_key_col;
-	qvals[9].type= DB_STR;
+	qcols[9]      = &str_e1_sdp_col;
+	qvals[9].type = DB_STR;
 	qcols[10]     = &str_e2_type_col;
 	qvals[10].type= DB_INT;
 	qcols[11]     = &str_e2_sid_col;
@@ -96,16 +97,18 @@ void b2bl_db_init(void)
 	qvals[13].type= DB_STR;
 	qcols[14]     = &str_e2_key_col;
 	qvals[14].type= DB_STR;
-	qcols[15]     = &str_e3_type_col;
-	qvals[15].type= DB_INT;
-	qcols[16]     = &str_e3_sid_col;
-	qvals[16].type= DB_STR;
-	qcols[17]     = &str_e3_to_col;
+	qcols[15]      = &str_e2_sdp_col;
+	qvals[15].type = DB_STR;
+	qcols[16]     = &str_e3_type_col;
+	qvals[16].type= DB_INT;
+	qcols[17]     = &str_e3_sid_col;
 	qvals[17].type= DB_STR;
-	qcols[18]     = &str_e3_from_col;
+	qcols[18]     = &str_e3_to_col;
 	qvals[18].type= DB_STR;
-	qcols[19]     = &str_e3_key_col;
+	qcols[19]     = &str_e3_from_col;
 	qvals[19].type= DB_STR;
+	qcols[20]     = &str_e3_key_col;
+	qvals[20].type= DB_STR;
 }
 
 static inline str *get_b2bl_map_key(str *tuple_key)
@@ -231,24 +234,24 @@ void b2b_logic_dump(int no_lock)
 				} else {
 					qvals[1].val.str_val = *tuple->scenario_id;
 				}
-
-				qvals[2].val.str_val = tuple->sdp;
 			}
 
-			qvals[3].val.int_val  = tuple->state;
-			qvals[4].val.int_val = tuple->lifetime - get_ticks() + (int)time(NULL);
-			qvals[5].val.int_val = tuple->bridge_entities[0]->type;
-			qvals[6].val.str_val = tuple->bridge_entities[0]->scenario_id;
-			qvals[7].val.str_val = tuple->bridge_entities[0]->to_uri;
-			qvals[8].val.str_val = tuple->bridge_entities[0]->from_uri;
-			qvals[9].val.str_val = tuple->bridge_entities[0]->key;
+			qvals[2].val.int_val  = tuple->state;
+			qvals[3].val.int_val = tuple->lifetime - get_ticks() + (int)time(NULL);
+			qvals[4].val.int_val = tuple->bridge_entities[0]->type;
+			qvals[5].val.str_val = tuple->bridge_entities[0]->scenario_id;
+			qvals[6].val.str_val = tuple->bridge_entities[0]->to_uri;
+			qvals[7].val.str_val = tuple->bridge_entities[0]->from_uri;
+			qvals[8].val.str_val = tuple->bridge_entities[0]->key;
+			qvals[9].val.str_val = tuple->bridge_entities[0]->out_sdp;
 			qvals[10].val.int_val = tuple->bridge_entities[1]->type;
 			qvals[11].val.str_val = tuple->bridge_entities[1]->scenario_id;
 			qvals[12].val.str_val = tuple->bridge_entities[1]->to_uri;
 			qvals[13].val.str_val = tuple->bridge_entities[1]->from_uri;
 			qvals[14].val.str_val = tuple->bridge_entities[1]->key;
+			qvals[15].val.str_val = tuple->bridge_entities[1]->in_sdp;
 
-			n_insert_cols = 15;
+			n_insert_cols = 16;
 
 			if(tuple->bridge_entities[2])
 			{
@@ -369,7 +372,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 
 
 	shm_tuple = b2bl_insert_new(NULL, hash_index, &init_params,
-			(tuple->sdp.s?&tuple->sdp:NULL), NULL, local_index,
+			NULL, local_index,
 			&b2bl_key, UPDATEDB_FLAG, TUPLE_NO_REPL);
 	if(shm_tuple == NULL)
 	{
@@ -414,7 +417,25 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 			LM_ERR("Failed to create entity %d\n", i);
 			goto error;
 		}
+		
 		shm_tuple->bridge_entities[i]= entity;
+
+		if (i==0) {
+			if (shm_str_dup(&shm_tuple->bridge_entities[0]->out_sdp,
+				&tuple->bridge_entities[0]->out_sdp) < 0)
+				goto error;
+			if (shm_str_dup(&shm_tuple->bridge_entities[1]->in_sdp,
+				&tuple->bridge_entities[0]->out_sdp) < 0)
+				goto error;
+		} else if (i==1) {
+			if (shm_str_dup(&shm_tuple->bridge_entities[1]->in_sdp,
+				&tuple->bridge_entities[1]->in_sdp) < 0)
+				goto error;
+			if (shm_str_dup(&shm_tuple->bridge_entities[0]->in_sdp,
+				&tuple->bridge_entities[0]->in_sdp) < 0)
+				goto error;
+		}
+
 		/* put the pointer in clients or servers array */
 		// FIXME: check if the restore logic is ok
 		if(tuple->bridge_entities[i]->type == B2B_SERVER)
@@ -472,34 +493,35 @@ static int load_tuple(int_str_t *vals)
 		tuple.scenario_id = B2B_INTERNAL_ID_PTR;
 	}
 	memset(bridge_entities, 0, 3*sizeof(b2bl_entity_id_t));
-	if(vals[2].s.s)
-		tuple.sdp = vals[2].s;
-	tuple.state = vals[3].i;
+
+	tuple.state = vals[2].i;
 	_time = (int)time(NULL);
-	if (vals[4].i <= _time)
+	if (vals[3].i <= _time)
 		tuple.lifetime = 1;
 	else
-		tuple.lifetime=vals[4].i - _time + get_ticks();
+		tuple.lifetime=vals[3].i - _time + get_ticks();
 
-	bridge_entities[0].type  = vals[5].i;
-	bridge_entities[0].scenario_id = vals[6].s;
-	bridge_entities[0].to_uri = vals[7].s;
-	bridge_entities[0].from_uri = vals[8].s;
-	bridge_entities[0].key = vals[9].s;
+	bridge_entities[0].type  = vals[4].i;
+	bridge_entities[0].scenario_id = vals[5].s;
+	bridge_entities[0].to_uri = vals[6].s;
+	bridge_entities[0].from_uri = vals[7].s;
+	bridge_entities[0].key = vals[8].s;
+	bridge_entities[0].out_sdp = vals[9].s;
 
 	bridge_entities[1].type = vals[10].i;
 	bridge_entities[1].scenario_id = vals[11].s;
 	bridge_entities[1].to_uri = vals[12].s;
 	bridge_entities[1].from_uri = vals[13].s;
 	bridge_entities[1].key = vals[14].s;
+	bridge_entities[1].in_sdp = vals[15].s;
 
-	if(vals[19].s.s)
+	if(vals[20].s.s)
 	{
-		bridge_entities[2].type = vals[15].i;
-		bridge_entities[2].scenario_id = vals[16].s;
-		bridge_entities[2].to_uri = vals[17].s;
-		bridge_entities[2].from_uri = vals[18].s;
-		bridge_entities[2].key = vals[19].s;
+		bridge_entities[2].type = vals[16].i;
+		bridge_entities[2].scenario_id = vals[17].s;
+		bridge_entities[2].to_uri = vals[18].s;
+		bridge_entities[2].from_uri = vals[19].s;
+		bridge_entities[2].key = vals[20].s;
 	}
 
 	tuple.bridge_entities[0] = &bridge_entities[0];
@@ -579,13 +601,11 @@ int b2b_logic_restore_db(void)
 			vals[1].s.s = (char*)row_vals[1].val.string_val;
 			vals[1].s.len = vals[1].s.s?strlen(vals[1].s.s):0;
 
-			vals[2].s.s = (char*)row_vals[2].val.string_val;
-			vals[2].s.len = vals[2].s.s?strlen(vals[2].s.s):0;
+			vals[2].i = row_vals[2].val.int_val;
 			vals[3].i = row_vals[3].val.int_val;
-			vals[4].i = row_vals[4].val.int_val;
 
-			vals[5].i = row_vals[5].val.int_val;
-			vals[6].s.s = (char*)row_vals[6].val.string_val;
+			vals[4].i = row_vals[4].val.int_val;
+			vals[5].s.s = (char*)row_vals[5].val.string_val;
 			vals[6].s.len = vals[6].s.s?strlen(vals[6].s.s):0;
 			vals[7].s.s = (char*)row_vals[7].val.string_val;
 			vals[7].s.len = vals[7].s.s?strlen(vals[7].s.s):0;
@@ -603,20 +623,22 @@ int b2b_logic_restore_db(void)
 			vals[13].s.len = vals[13].s.s?strlen(vals[13].s.s):0;
 			vals[14].s.s  = (char*)row_vals[14].val.string_val;
 			vals[14].s.len = vals[14].s.s?strlen(vals[14].s.s):0;
+			vals[15].s.s  = (char*)row_vals[15].val.string_val;
+			vals[15].s.len = vals[15].s.s?strlen(vals[15].s.s):0;
 
-			if(row_vals[15].val.string_val) {
-				vals[15].i = row_vals[15].val.int_val;
-				vals[16].s.s = (char*)row_vals[16].val.string_val;
-				vals[16].s.len = vals[16].s.s?strlen(vals[16].s.s):0;
+			if(row_vals[16].val.string_val) {
+				vals[16].i = row_vals[16].val.int_val;
 				vals[17].s.s = (char*)row_vals[17].val.string_val;
 				vals[17].s.len = vals[17].s.s?strlen(vals[17].s.s):0;
 				vals[18].s.s = (char*)row_vals[18].val.string_val;
 				vals[18].s.len = vals[18].s.s?strlen(vals[18].s.s):0;
 				vals[19].s.s = (char*)row_vals[19].val.string_val;
 				vals[19].s.len = vals[19].s.s?strlen(vals[19].s.s):0;
+				vals[20].s.s = (char*)row_vals[20].val.string_val;
+				vals[20].s.len = vals[20].s.s?strlen(vals[20].s.s):0;
 			} else {
 				/* just mark 'e3_key' field as null for load_tuple() */
-				vals[19].s.s = NULL;
+				vals[21].s.s = NULL;
 			}
 
 			if (load_tuple(vals) < 0)
@@ -766,10 +788,9 @@ void b2bl_db_insert(b2bl_tuple_t* tuple)
 		qvals[1].val.str_val = *tuple->scenario_id;
 	}
 
-	qvals[2].val.str_val = tuple->sdp;
-	qvals[3].val.int_val = tuple->state;
-	qvals[4].val.int_val= tuple->lifetime - get_ticks() + (int)time(NULL);
-	ci = 5;
+	qvals[2].val.int_val = tuple->state;
+	qvals[3].val.int_val= tuple->lifetime - get_ticks() + (int)time(NULL);
+	ci = 4;
 
 	for(i = 0; i< 3; i++)
 	{
@@ -780,6 +801,10 @@ void b2bl_db_insert(b2bl_tuple_t* tuple)
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->to_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->from_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->key;
+		if (i == 0)
+			qvals[ci++].val.str_val = tuple->bridge_entities[0]->out_sdp;
+		else if (i == 1)
+			qvals[ci++].val.str_val = tuple->bridge_entities[1]->in_sdp;
 	}
 
 	if (cdb_url.s) {
@@ -839,7 +864,7 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 
 	qvals[3].val.int_val  = tuple->state;
 	qvals[4].val.int_val = tuple->lifetime -get_ticks() + (int)time(NULL);
-	ci = 5;
+	ci = 4;
 
 	for(i = 0; i< 3; i++)
 	{
@@ -850,6 +875,10 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->to_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->from_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->key;
+		if (i == 0)
+			qvals[ci++].val.str_val = tuple->bridge_entities[0]->out_sdp;
+		else if (i == 1)
+			qvals[ci++].val.str_val = tuple->bridge_entities[1]->in_sdp;
 		LM_DBG("UPDATE %.*s\n", qvals[ci-1].val.str_val.len, qvals[ci-1].val.str_val.s);
 	}
 

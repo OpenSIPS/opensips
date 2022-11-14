@@ -143,7 +143,7 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int level)
 
 /* Function that inserts a new b2b_logic record - the lock remains taken */
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
-	struct b2b_params *init_params, str* body, str* custom_hdrs, int local_index,
+	struct b2b_params *init_params, str* custom_hdrs, int local_index,
 	str** b2bl_key_s, int db_flag, int repl_flag)
 {
 	b2bl_tuple_t *it, *prev_it;
@@ -244,7 +244,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 		tuple->extra_headers->len = custom_hdrs->len;
 	}
 
-	tuple->state = B2B_NOTDEF_STATE;
+	tuple->state = B2B_INIT_STATE;
 
 	if (repl_flag != TUPLE_REPL_RECV)
 		lock_get(&b2bl_htable[hash_index].lock);
@@ -337,11 +337,9 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 
 	return tuple;
 error:
-	if (tuple) {
-		if (tuple->sdp.s)
-			shm_free(tuple->sdp.s);
+	if (tuple)
 		shm_free(tuple);
-	}
+
 	if (repl_flag != TUPLE_REPL_RECV)
 		lock_release(&b2bl_htable[hash_index].lock);
 	return 0;
@@ -517,6 +515,11 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
+
+	if (entity->in_sdp.s)
+		shm_free(entity->in_sdp.s);
+	if (entity->out_sdp.s)
+		shm_free(entity->out_sdp.s);
 
 	for(i = 0; i< MAX_BRIDGE_ENT; i++)
 		if(tuple->bridge_entities[i] == entity)
@@ -694,12 +697,6 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 
 	if(tuple->extra_headers)
 		shm_free(tuple->extra_headers);
-
-	if(tuple->b1_sdp.s)
-		shm_free(tuple->b1_sdp.s);
-
-	if (tuple->sdp.s && tuple->sdp.s != tuple->b1_sdp.s)
-		shm_free(tuple->sdp.s);
 
 	while (tuple->vals) {
 		v = tuple->vals;

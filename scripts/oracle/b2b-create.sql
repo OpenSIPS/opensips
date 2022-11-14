@@ -42,24 +42,25 @@ BEGIN map2users('b2b_entities'); END;
 /
 CREATE INDEX ORA_b2b_entities_param  ON b2b_entities (param);
 
-INSERT INTO version (table_name, table_version) values ('b2b_logic','4');
+INSERT INTO version (table_name, table_version) values ('b2b_logic','5');
 CREATE TABLE b2b_logic (
     id NUMBER(10) PRIMARY KEY,
     si_key VARCHAR2(64),
     scenario VARCHAR2(64),
     sstate NUMBER(10),
-    sdp CLOB,
     lifetime NUMBER(10) DEFAULT 0 NOT NULL,
     e1_type NUMBER(10),
     e1_sid VARCHAR2(64),
     e1_from VARCHAR2(255),
     e1_to VARCHAR2(255),
     e1_key VARCHAR2(64),
+    e1_sdp CLOB,
     e2_type NUMBER(10),
     e2_sid VARCHAR2(64),
     e2_from VARCHAR2(255),
     e2_to VARCHAR2(255),
     e2_key VARCHAR2(64),
+    e2_sdp CLOB,
     e3_type NUMBER(10),
     e3_sid VARCHAR2(64),
     e3_from VARCHAR2(255),

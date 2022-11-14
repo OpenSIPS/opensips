@@ -124,18 +124,19 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
 				<col><field>e1_sid</field></col>
 				<col><field>e1_from</field></col>
 				<col><field>e1_to</field></col>
 				<col><field>e1_key</field></col>
+				<col><field>e1_sdp</field></col>
 				<col><field>e2_type</field></col>
 				<col><field>e2_sid</field></col>
 				<col><field>e2_from</field></col>
 				<col><field>e2_to</field></col>
 				<col><field>e2_key</field></col>
+				<col><field>e2_sdp</field></col>
 				<col><field>e3_type</field></col>
 				<col><field>e3_sid</field></col>
 				<col><field>e3_from</field></col>
@@ -150,18 +151,19 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
 				<col><field>e1_sid</field></col>
 				<col><field>e1_from</field></col>
 				<col><field>e1_to</field></col>
 				<col><field>e1_key</field></col>
+				<col><field>e1_sdp</field></col>
 				<col><field>e2_type</field></col>
 				<col><field>e2_sid</field></col>
 				<col><field>e2_from</field></col>
 				<col><field>e2_to</field></col>
 				<col><field>e2_key</field></col>
+				<col><field>e2_sdp</field></col>
 				<col><field>e3_type</field></col>
 				<col><field>e3_sid</field></col>
 				<col><field>e3_from</field></col>
@@ -179,18 +181,19 @@
 				<col><field>si_key</field></col>
 				<col><field>scenario</field></col>
 				<col><field>sstate</field></col>
-				<col><field>sdp</field></col>
 				<col><field>lifetime</field></col>
 				<col><field>e1_type</field></col>
 				<col><field>e1_sid</field></col>
 				<col><field>e1_from</field></col>
 				<col><field>e1_to</field></col>
 				<col><field>e1_key</field></col>
+				<col><field>e1_sdp</field></col>
 				<col><field>e2_type</field></col>
 				<col><field>e2_sid</field></col>
 				<col><field>e2_from</field></col>
 				<col><field>e2_to</field></col>
 				<col><field>e2_key</field></col>
+				<col><field>e2_sdp</field></col>
 				<col><field>e3_type</field></col>
 				<col><field>e3_sid</field></col>
 				<col><field>e3_from</field></col>

@@ -453,34 +453,26 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 	LM_DBG("%p\n", tuple);
 }
 
-b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
-	b2bl_tuple_t* tuple, str* ssid, str* hdrs, str *adv_ct, struct sip_msg* msg)
+b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
+	str *ssid, str *adv_ct, struct sip_msg *msg)
 {
-	client_info_t ci;
 	str* client_id;
 	b2bl_entity_id_t* entity;
+	struct sip_uri ct_uri;
 
-	memset(&ci, 0, sizeof(client_info_t));
-	ci.method        = method_invite;
-	ci.to_uri        = *to_uri;
-	ci.dst_uri       = *proxy;
-	ci.from_uri      = *from_uri;
-	ci.extra_headers = tuple->extra_headers;
-	ci.client_headers= hdrs;
-	ci.body          = (tuple->sdp.s?&tuple->sdp:NULL);
-	ci.from_tag      = NULL;
-	ci.send_sock     = msg?(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
-	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
+	ci->method = method_invite;
+	ci->send_sock = msg ?
+		(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
 
 	if (adv_ct) {
-		ci.local_contact = *adv_ct;
+		ci->local_contact = *adv_ct;
 	} else {
 		if (server_address.len > 0)
 		{
-			if (pv_printf_s(msg, server_address_pve, &ci.local_contact) != 0)
+			if (pv_printf_s(msg, server_address_pve, &ci->local_contact) != 0)
 			{
 				LM_WARN("Failed to build contact from server address\n");
-				if (ci.send_sock) get_local_contact(ci.send_sock, NULL, &ci.local_contact);
+				if (ci->send_sock) get_local_contact(ci->send_sock, NULL, &ci->local_contact);
 				else
 				{
 					LM_ERR("Failed to build contact from send socket\n");
@@ -490,7 +482,15 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 		}
 		else
 		{
-			if (ci.send_sock) get_local_contact(ci.send_sock, NULL, &ci.local_contact);
+			if (ci->send_sock) {
+				memset(&ct_uri, 0, sizeof(struct sip_uri));
+				if (contact_user && parse_uri(ci->from_uri.s, ci->from_uri.len, &ct_uri) < 0) {
+					LM_ERR("Not a valid sip uri [%.*s]\n", ci->from_uri.len, ci->from_uri.s);
+					return NULL;
+				}
+
+				get_local_contact(ci->send_sock, &ct_uri.user, &ci->local_contact);
+			}
 			else
 			{
 				LM_ERR("Failed to build contact from send socket and no server address defined\n");
@@ -501,18 +501,16 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 
 	if(msg)
 	{
-		if (str2int( &(get_cseq(msg)->number), &ci.cseq)!=0 )
+		if (str2int( &(get_cseq(msg)->number), &ci->cseq)!=0 )
 		{
 			LM_ERR("cannot parse cseq number\n");
 			return NULL;
 		}
 	}
 
-	LM_DBG("Send Invite without a body to a new client entity\n");
-
 	b2bl_htable[tuple->hash_index].locked_by = process_no;
 
-	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+	client_id = b2b_api.client_new(ci, b2b_client_notify, b2b_add_dlginfo,
 			&b2bl_mod_name, tuple->key, get_tracer(tuple), NULL, NULL);
 
 	b2bl_htable[tuple->hash_index].locked_by = -1;
@@ -523,8 +521,8 @@ b2bl_entity_id_t* b2bl_new_client(str* to_uri, str *proxy, str* from_uri,
 		return NULL;
 	}
 	/* save the client_id in the structure */
-	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci.to_uri, 0,
-		&ci.from_uri, 0, ssid, hdrs, adv_ct, 0);
+	entity = b2bl_create_new_entity(B2B_CLIENT, client_id, &ci->to_uri, 0,
+		&ci->from_uri, 0, ssid, ci->client_headers, adv_ct, 0);
 	if(entity == NULL)
 	{
 		LM_ERR("failed to create new client entity\n");
@@ -698,7 +696,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 
 	peer = entity->peer;
 
-	if (tuple->state == B2B_BRIDGING_STATE) {
+	if (IS_BRIDGING_STATE(tuple->state)) {
 		LM_DBG("Received a reply [%d] while in BRIDGING scenario\n",
 			statuscode);
 
@@ -758,7 +756,6 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			goto done;
 		}
 
-		/* if a reply with 200 OK -> we have two possibilities- either the first 200OK or the final */
 		if(process_bridge_200OK(msg, tuple->extra_headers,
 					(cur_route_ctx.body->s?cur_route_ctx.body:0), tuple,
 					tuple->hash_index, entity)< 0)
@@ -877,6 +874,15 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 					goto done;
 				}
 
+				if (shm_str_sync(&entity->in_sdp, cur_route_ctx.body) < 0) {
+					LM_ERR("Failed to save SDP\n");
+					goto error;
+				}
+				if (shm_str_sync(&peer->out_sdp, cur_route_ctx.body) < 0) {
+					LM_ERR("Failed to save SDP\n");
+					goto error;
+				}
+
 				entity->state = B2BL_ENT_CONFIRMED;
 				peer->state = B2BL_ENT_CONFIRMED;
 				entity->stats.setup_time = get_ticks() - entity->stats.start_time;
@@ -956,7 +962,19 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			}
 		}
 		else
-		{	/* if reINVITE and 481 or 408 reply */
+		{
+			if (statuscode>=200 && statuscode < 300) {
+				if (shm_str_sync(&entity->in_sdp, cur_route_ctx.body) < 0) {
+					LM_ERR("Failed to save SDP\n");
+					goto error;
+				}
+				if (shm_str_sync(&peer->out_sdp, cur_route_ctx.body) < 0) {
+					LM_ERR("Failed to save SDP\n");
+					goto error;
+				}
+			}
+
+			/* if reINVITE and 481 or 408 reply */
 			SEND_REPLY_TO_PEER_OR_GOTO_DONE;
 			if(statuscode==481 || statuscode==408)
 			{
@@ -1320,7 +1338,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		{
 			memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 			cb_params.param = tuple->cb.param;
-			if(tuple->state != B2B_BRIDGING_STATE)
+			if(!IS_BRIDGING_STATE(tuple->state))
 				entity->stats.call_time = get_ticks() - entity->stats.start_time;
 			else
 				entity->stats.call_time = 0;
@@ -1390,7 +1408,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				goto send_usual_request;
 		}
 
-		if(tuple->state == B2B_BRIDGING_STATE)
+		if(IS_BRIDGING_STATE(tuple->state))
 		{
 			LM_DBG("Scenario is in bridging state\n");
 			if(process_bridge_bye(msg, tuple, hash_index, entity) < 0)
@@ -1479,6 +1497,16 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			}
 
 		}
+
+		if (shm_str_sync(&entity->in_sdp, body) < 0) {
+			LM_ERR("Failed to save SDP\n");
+			goto error;
+		}
+		if (peer && shm_str_sync(&peer->out_sdp, body) < 0) {
+			LM_ERR("Failed to save SDP\n");
+			goto error;
+		}
+
 		break;
 
 	case B2B_ACK:
@@ -1499,7 +1527,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		}
 		goto send_usual_request;
 	} else {
-		if(tuple->state != B2B_NOTDEF_STATE && peer)
+		if(tuple->state == B2B_INIT_STATE && peer && request_id == B2B_INVITE)
 			peer->sdp_type = body->len ? B2BL_SDP_NORMAL : B2BL_SDP_LATE;
 
 		cur_route_ctx.entity_type = src;
@@ -2141,7 +2169,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	hash_index = core_hash(&to_uri, &from_uri, b2bl_hsize);
 	b2bl_htable[hash_index].flags = params->flags;
-	tuple = b2bl_insert_new(msg, hash_index, params, NULL,
+	tuple = b2bl_insert_new(msg, hash_index, params,
 				custom_hdrs, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
 	if(tuple== NULL)
 	{
@@ -2193,6 +2221,11 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 	tuple->servers[0]->type = B2B_SERVER;
 	tuple->servers[0]->no = 0;
+
+	if (shm_str_dup(&tuple->servers[0]->in_sdp, &body) < 0) {
+		LM_ERR("Failed to save SDP\n");
+		goto error;
+	}
 
 	if(b2b_extra_headers(msg, b2bl_key, custom_hdrs, &extra_headers)< 0)
 	{
@@ -2268,6 +2301,11 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	client_entity->no = 1;
 	client_entity->peer = tuple->servers[0];
 	tuple->clients[0] = client_entity;
+
+	if (shm_str_dup(&client_entity->out_sdp, &body) < 0) {
+		LM_ERR("Failed to save SDP\n");
+		goto error;
+	}
 
 	for( idx=0 ; (uri.s=get_branch(idx,&uri.len,&q,0,0,0,0))!=0 ; idx++ )
 	{
@@ -2453,7 +2491,7 @@ str* b2bl_init_extern(struct b2b_params *init_params,
 		scen_params->e1_to.s, scen_params->e2_to.len, scen_params->e2_to.s);
 
 	tuple = b2bl_insert_new(NULL, hash_index, init_params,
-		NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
+		NULL, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");
@@ -2555,7 +2593,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 
 	/* create new scenario instance record */
-	tuple = b2bl_insert_new(msg, hash_index, init_params, body.s?&body:NULL,
+	tuple = b2bl_insert_new(msg, hash_index, init_params,
 		custom_hdrs, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
 	if(tuple== NULL)
 	{
@@ -2622,6 +2660,11 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	}
 	pkg_free(server_id);
 	tuple->servers[0]->type = B2B_SERVER;
+
+	if (shm_str_dup(&tuple->servers[0]->in_sdp, &body) < 0) {
+		LM_ERR("Failed to save SDP\n");
+		goto error;
+	}
 
 	new_entity = NULL;
 
@@ -2706,6 +2749,11 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	client_entity->no = eno++;
 	tuple->bridge_entities[1] = tuple->clients[0];
+
+	if (shm_str_dup(&client_entity->out_sdp, &body) < 0) {
+		LM_ERR("Failed to save SDP\n");
+		goto error;
+	}
 
 	tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 	tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
@@ -3132,7 +3180,7 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	hash_index = core_hash(e1_to, e2_to, b2bl_hsize);
 
 	tuple = b2bl_insert_new(msg, hash_index, &init_params,
-		NULL, NULL, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
+		NULL, -1, &b2bl_key, INSERTDB_FLAG, TUPLE_NO_REPL);
 	if(tuple== NULL)
 	{
 		LM_ERR("Failed to insert new scenario instance record\n");

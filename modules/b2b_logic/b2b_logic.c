@@ -50,7 +50,7 @@
 #include "entity_storage.h"
 #include "bridging.h"
 
-#define TABLE_VERSION 4
+#define TABLE_VERSION 5
 
 /** Functions declarations */
 static int mod_init(void);
@@ -898,6 +898,12 @@ static int fixup_bridge_flags(void** param)
 				break;
 			case 'f':
 				bridge_params->flags |= B2BL_BR_FLAG_RETURN_AFTER_FAILURE;
+				break;
+			case 'h':
+				bridge_params->flags |= B2BL_BR_FLAG_HOLD;
+				break;
+			case 'r':
+				bridge_params->flags |= B2BL_BR_FLAG_RENEW_SDP;
 				break;
 			default:
 				LM_WARN("unknown option `%c'\n", s->s[st]);

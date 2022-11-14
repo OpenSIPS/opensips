@@ -97,7 +97,7 @@ static void pack_tuple(b2bl_tuple_t* tuple, bin_packet_t *storage, int repl_new)
 		else
 			bin_push_str(storage, tuple->scenario_id);
 
-		bin_push_str(storage, &tuple->sdp);
+		bin_push_str(storage, &tuple->bridge_entities[0]->out_sdp);
 		bin_push_str(storage, tuple->extra_headers);
 	} else
 		bin_push_int(storage, REPL_TUPLE_UPDATE);
@@ -289,7 +289,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 			init_params.reply_routeid = global_reply_rtid;
 
 			tuple = b2bl_insert_new(NULL, hash_index, &init_params,
-				tuple_sdp.s ? &tuple_sdp : NULL, &extra_headers,
+				&extra_headers,
 				local_index, &b2bl_key, INSERTDB_FLAG, TUPLE_REPL_RECV);
 			if (!tuple) {
 				LM_ERR("Failed to insert new tuple\n");

@@ -43,6 +43,8 @@ typedef struct b2bl_entity_id
 	str from_dname;
 	str hdrs;
 	str adv_contact;
+	str in_sdp;
+	str out_sdp;
 	b2b_dlginfo_t* dlginfo;
 	int rejected;
 	int disconnected;
@@ -103,7 +105,7 @@ typedef struct b2bl_tuple
 	unsigned int hash_index;
 	str* key;
 	str *scenario_id;
-	int state;
+	enum b2b_tuple_state state;
 	int req_routeid;
 	int reply_routeid;
 	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
@@ -117,8 +119,6 @@ typedef struct b2bl_tuple
 	struct b2bl_tuple* prev;
 	unsigned int lifetime;
 	str local_contact;
-	str sdp;
-	str b1_sdp; /* used for multiple attempts to bridge the first entity */
 	int db_flag;
 	int repl_flag;  /* sent/received through entities replication */
 	struct b2b_ctx_val *vals;
@@ -176,7 +176,7 @@ static inline int bridge_get_entityno(b2bl_tuple_t* tuple, b2bl_entity_id_t* ent
 void b2bl_print_tuple(b2bl_tuple_t* tuple, int log_level);
 
 b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
-	struct b2b_params *init_params, str* body, str* custom_hdrs, int local_index,
+	struct b2b_params *init_params, str* custom_hdrs, int local_index,
 	str** b2bl_key_s, int db_flag, int repl_flag);
 
 str* b2bl_generate_key(unsigned int hash_index, unsigned int local_index);
