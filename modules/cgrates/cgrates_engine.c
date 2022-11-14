@@ -34,9 +34,10 @@ static void cgrc_reconn_rpc(int sender, void *p);
 
 static int cgrc_reconn(struct cgr_conn *c)
 {
-	if (cgrc_conn(c) >= 0 && c == c->engine->default_con)
+	int ret = cgrc_conn(c);
+	if (ret >= 0 && c == c->engine->default_con)
 		return cgrc_start_listen(c);
-	return -1;
+	return ret;
 }
 
 #ifdef HAVE_TIMER_FD
