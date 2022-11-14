@@ -2469,8 +2469,8 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		if (ng_flags.flags)
 			flags_exist = 1;
 		bencode_dictionary_get_str(ng_flags.dict, "call-id", &ng_flags.call_id);
-		bencode_dictionary_get_str(ng_flags.dict, "from_tag", &ng_flags.from_tag);
-		bencode_dictionary_get_str(ng_flags.dict, "to_tag", &ng_flags.to_tag);
+		bencode_dictionary_get_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
+		bencode_dictionary_get_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
 	}
 	if (op == OP_OFFER || op == OP_ANSWER) {
 		if (!flags_exist)
@@ -2533,7 +2533,8 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	if (ng_flags.rtcp_mux && ng_flags.rtcp_mux->child)
 		bencode_dictionary_add(ng_flags.dict, "rtcp-mux", ng_flags.rtcp_mux);
 
-	bencode_dictionary_add_str(ng_flags.dict, "call-id", &ng_flags.call_id);
+	if (!extra_dict)
+		bencode_dictionary_add_str(ng_flags.dict, "call-id", &ng_flags.call_id);
 
 	if (ng_flags.via) {
 		if (ng_flags.via == 1 || ng_flags.via == 2)
@@ -2585,14 +2586,15 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_MEDIA ||
 			op == OP_BLOCK_DTMF || op == OP_UNBLOCK_DTMF ||
 			op == OP_START_FORWARD || op == OP_STOP_FORWARD) {
-		if (ng_flags.directional)
+		if (ng_flags.directional && !extra_dict)
 			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
 	} else if (ng_flags.directional
 		|| (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))))
 	{
-		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
+		if (!extra_dict)
+			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
 		if (op != OP_START_MEDIA && op != OP_STOP_MEDIA) {
 			/* no need of to-tag if we are just playing media */
 			if (ng_flags.to && ng_flags.to_tag.s && ng_flags.to_tag.len)
@@ -2604,8 +2606,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			err = "No to-tag present";
 			goto error;
 		}
-		bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.to_tag);
-		bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.from_tag);
+		if (!extra_dict) {
+			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.to_tag);
+			bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.from_tag);
+		}
 	}
 
 	bencode_dictionary_add_string(ng_flags.dict, "command", command_strings[op]);
@@ -4355,7 +4359,7 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		bencode_dictionary_add_str(dict, "via-branch", &viabranch);
 	}
 	if (copy_ctx && ((str *)copy_ctx)->len)
-		bencode_dictionary_add_str(dict, "to_tag", copy_ctx);
+		bencode_dictionary_add_str(dict, "to-tag", copy_ctx);
 	if (copy_flags & RTP_COPY_MODE_SIPREC) {
 		list = bencode_list(&bencbuf);
 		bencode_dictionary_add(dict, "flags", list);
@@ -4365,9 +4369,9 @@ static bencode_item_t *rtpengine_api_copy_op(struct rtp_relay_session *sess,
 		list = bencode_list(&bencbuf);
 		bencode_list_add_string(list, "all");
 	} else if (copy_flags & RTP_COPY_LEG_CALLER && sess->from_tag) {
-		bencode_dictionary_add_str(dict, "from_tag", sess->from_tag);
+		bencode_dictionary_add_str(dict, "from-tag", sess->from_tag);
 	} else if (sess->to_tag) {
-		bencode_dictionary_add_str(dict, "from_tag", sess->to_tag);
+		bencode_dictionary_add_str(dict, "from-tag", sess->to_tag);
 	}
 	msg = (sess->msg?sess->msg:get_dummy_sip_msg());
 	ret = rtpe_function_call_ok(&bencbuf, msg, op, flags, body,
