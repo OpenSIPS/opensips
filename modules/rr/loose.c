@@ -232,10 +232,13 @@ static inline int is_myself(struct sip_uri* _uri)
 	int ret;
 	unsigned short port;
 	unsigned short proto;
+	str *host;
 
 	port = get_uri_port(_uri, &proto);
+	host = (_uri->maddr.s && _uri->maddr_val.s) ?
+		&_uri->maddr_val : &_uri->host;
 
-	ret = check_self(&_uri->host, port, proto);
+	ret = check_self( host, port, proto);
 	if (ret < 0) return 0;
 
 #ifdef ENABLE_USER_CHECK
