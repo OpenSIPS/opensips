@@ -22,6 +22,7 @@
 #include "../../locking.h"
 #include "../../lib/list.h"
 
+#include "ul_mod.h"
 #include "ul_timer.h"
 #include "ul_evi.h"
 #include "ul_mi.h"
@@ -90,6 +91,9 @@ void start_refresh_timer(ucontact_t *ct)
 {
 	struct list_head *el, *_;
 	ucontact_t *c;
+
+	if (!have_mem_storage())
+		return;
 
 	lock_get(ul_refresh_lock);
 	if (!list_empty(&ct->refresh_list))
