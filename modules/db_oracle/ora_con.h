@@ -98,4 +98,9 @@ sword db_oracle_reconnect(ora_con_t* con);
  */
 const char* db_oracle_error(ora_con_t* con, sword status);
 
+/*
+ * Does the error code indicate that the connection has been lost
+ */
+int db_oracle_connection_lost(sword errcode);
+
 #endif /* ORA_CON_H */
