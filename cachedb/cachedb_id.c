@@ -44,6 +44,7 @@ static int dupl_string(char** dst, const char* begin, const char* end)
 
 	*dst = pkg_malloc(end - begin + 1);
 	if ((*dst) == NULL) {
+		LM_ERR("pkg malloc failed on %p/%p\n", begin, end);
 		return -1;
 	}
 
@@ -81,7 +82,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 	};
 
 	enum state st;
-	unsigned int len, i, ipv6_flag=0;
+	unsigned int len, i, ipv6_flag=0, multi_hosts=0;
 	char* begin;
 	char* prev_token,*start_host=NULL,*start_prev=NULL,*ptr;
 
@@ -159,11 +160,15 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 			switch(url->s[i]) {
 			case '@':
 				st = ST_HOST;
+				multi_hosts = 0;
 				if (dupl_string(&id->username, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
 				break;
 
 			case ':':
+				if (multi_hosts)
+					continue;
+
 				st = ST_PASS_PORT;
 				if (dupl_string(&prev_token, begin, url->s + i) < 0) goto err;
 				start_prev = begin;
@@ -180,6 +185,10 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				begin = url->s + i + 1;
 				st = ST_DB;
 				break;
+
+			case ',':
+				multi_hosts = 1;
+				break;
 			}
 			break;
 
@@ -190,6 +199,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				id->username = prev_token;
 				if (dupl_string(&id->password, begin, url->s + i) < 0) goto err;
 				begin = url->s + i + 1;
+				start_host = begin;
 				break;
 
 			case '/':
@@ -200,6 +210,10 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				break;
 
 			case ',':
+				/* password could have a "," -> do a look-ahead to confirm */
+				if (q_memchr(url->s + i, '@', len - i))
+					continue;
+
 				st=ST_HOST;
 				start_host=start_prev;
 				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
@@ -236,6 +250,10 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				if (dupl_string(&id->host, ptr, url->s + i - ipv6_flag) < 0) goto err;
 				begin = url->s + i + 1;
 				st = ST_DB;
+				break;
+
+			case ',':
+				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
 				break;
 			}
 			break;
@@ -286,11 +304,23 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		}
 	}
 
-	if (st == ST_PORT) {
+	LM_DBG("final st: %d, begin: %s, start_host: %s\n", st, begin, start_host);
+
+	if (multi_hosts)
+		id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
+
+	if (st == ST_PORT || st == ST_PASS_PORT) {
+		int rc;
 		if (url->s + i - begin == 0)
 			goto err;
 
-		id->port = str2s(begin, url->s + i - begin, 0);
+		id->port = str2s(begin, url->s + i - begin, &rc);
+		if (rc != 0)
+			goto err;
+
+		if (prev_token && !id->host)
+			id->host = prev_token;
+
 		return 0;
 	}
 
@@ -300,11 +330,24 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		return 0;
 	}
 
-	if (st == ST_USER_HOST && begin == url->s+url->len) {
-		/* Not considered an error - to cope with modules that
-		 * offer cacheDB functionality backed up by OpenSIPS mem */
-		id->flags |= CACHEDB_ID_NO_URL;
-		LM_DBG("Just scheme, no actual url\n");
+	if (st == ST_HOST || st == ST_USER_HOST) {
+		if (begin == url->s+url->len) {
+			if (st == ST_USER_HOST) {
+				/* Not considered an error - to cope with modules that
+				 * offer cacheDB functionality backed up by OpenSIPS mem */
+				id->flags |= CACHEDB_ID_NO_URL;
+				LM_DBG("Just scheme, no actual url\n");
+				return 0;
+			} else {
+				goto err;
+			}
+		}
+
+		if (start_host)
+			begin = start_host;
+
+		if (begin < url->s + len &&
+				dupl_string(&id->host, begin, url->s + len) < 0) goto err;
 		return 0;
 	}
 

@@ -688,37 +688,202 @@ static void test_cachedb_backends(void)
 
 static void test_cachedb_url(void)
 {
+#define CDB_PARSE(__url) db = new_cachedb_id(_str(__url)); if (!ok(db != NULL)) return;
 	struct cachedb_id *db;
 
 	/* invalid URLs */
 	ok(!new_cachedb_id(_str("d:g://@")));
 	ok(!new_cachedb_id(_str("d:g://u:@")));
+	ok(!new_cachedb_id(_str("d:g://u:p")));
 	ok(!new_cachedb_id(_str("d:g://u:p@")));
-	ok(!new_cachedb_id(_str("d:g://u:p@h")));
 	ok(!new_cachedb_id(_str("d:g://u:p@h:")));
 
-	db = new_cachedb_id(_str("redis:group1://:devxxxxxx@172.31.180.127:6379"));
-	if (!ok(db != NULL))
-	        return;
+	CDB_PARSE("redis:group1://");
+	ok(db->flags == CACHEDB_ID_NO_URL);
 	ok(!strcmp(db->scheme, "redis"));
 	ok(!strcmp(db->group_name, "group1"));
-	ok(!strcmp(db->username, ""));
-	ok(!strcmp(db->password, "devxxxxxx"));
+	ok(!db->username);
+	ok(!db->password);
+	ok(!db->host);
+	ok(db->port == 0);
+	ok(!db->database);
+	ok(!db->extra_options);
+
+	CDB_PARSE("redis:group1://172.31.180.127");
+	ok(db->flags == 0);
+	ok(!strcmp(db->scheme, "redis"));
+	ok(!strcmp(db->group_name, "group1"));
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "172.31.180.127"));
+	ok(db->port == 0);
+	ok(!db->database);
+	ok(!db->extra_options);
+
+	CDB_PARSE("redis:group1://172.31.180.127:6379");
+	ok(db->flags == 0);
+	ok(!strcmp(db->scheme, "redis"));
+	ok(!strcmp(db->group_name, "group1"));
+	ok(!db->username);
+	ok(!db->password);
 	ok(!strcmp(db->host, "172.31.180.127"));
 	ok(db->port == 6379);
 	ok(!db->database);
 	ok(!db->extra_options);
 
-	db = new_cachedb_id(_str("redis:group1://:devxxxxxx@172.31.180.127:6379/"));
-	if (!ok(db != NULL))
-	        return;
+	CDB_PARSE("redis:group1://user@172.31.180.127:6379");
+	ok(db->flags == 0);
+	ok(!strcmp(db->username, "user"));
+	ok(!db->password);
+	ok(!strcmp(db->host, "172.31.180.127"));
 	ok(db->port == 6379);
 	ok(!db->database);
 	ok(!db->extra_options);
 
-	db = new_cachedb_id(_str("redis:group1://:devxxxxxx@172.31.180.127:6379/d?x=1&q=2"));
-	if (!ok(db != NULL))
-	        return;
+	CDB_PARSE("redis:group1://:pwd@172.31.180.127:6379");
+	ok(db->flags == 0);
+	ok(!strcmp(db->scheme, "redis"));
+	ok(!strcmp(db->group_name, "group1"));
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "172.31.180.127"));
+	ok(db->port == 6379);
+	ok(!db->database);
+	ok(!db->extra_options);
+
+	CDB_PARSE("redis:group1://user:@172.31.180.127:6379");
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, ""));
+	ok(!strcmp(db->host, "172.31.180.127"));
+	ok(db->port == 6379);
+
+	CDB_PARSE("redis:group1://:pwd@172.31.180.127:6379/");
+	ok(db->flags == 0);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(db->port == 6379);
+	ok(!db->database);
+	ok(!db->extra_options);
+
+	CDB_PARSE("redis:group1://:pwd@172.31.180.127:6379/d?x=1&q=2");
+	ok(db->flags == 0);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(db->port == 6379);
 	ok(!strcmp(db->database, "d"));
 	ok(!strcmp(db->extra_options, "x=1&q=2"));
+
+	/* multiple hosts tests */
+
+	CDB_PARSE("redis:group1://h1,h2,h3");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2,h3"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://h1:1,h2:22,h3:333");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1:1,h2:22,h3:333"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://h1,h2:22,h3:333");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2:22,h3:333"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://h1,h2:22,h3");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2:22,h3"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://h1,h2,h3:333");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2,h3:333"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://h1,h2,h3:333/");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2,h3:333"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://user@h1,h2,h3");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2,h3"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://user:pwd@h1,h2,h3");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "h1,h2,h3"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://:pwd@h1,h2,h3");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "h1,h2,h3"));
+	ok(db->port == 0);
+	ok(!db->database);
+
+	CDB_PARSE("redis:group1://h1,h2,h3/db");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!db->username);
+	ok(!db->password);
+	ok(!strcmp(db->host, "h1,h2,h3"));
+	ok(db->port == 0);
+	ok(!strcmp(db->database, "db"));
+
+	CDB_PARSE("redis:group1://user:pwd@h1,h2,h3/db");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "h1,h2,h3"));
+	ok(db->port == 0);
+	ok(!strcmp(db->database, "db"));
+
+	CDB_PARSE("redis:ha://localhost,host_a:6380,host_b:6381,host_c/db");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->host, "localhost,host_a:6380,host_b:6381,host_c"));
+	ok(!strcmp(db->database, "db"));
+	ok(db->port == 0);
+
+	CDB_PARSE("redis:group1://:pwd@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
+
+	/* special chars in password */
+
+	CDB_PARSE("redis:group1://:,pwd,foo,@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, ",pwd,foo,"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
 }

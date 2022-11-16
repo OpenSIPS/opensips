@@ -64,7 +64,7 @@ static const char* db_oracle_errorinfo(ora_con_t* con)
 			(OraText*)errbuf, sizeof(errbuf),
 			OCI_HTYPE_ERROR) != OCI_SUCCESS) errbuf[0] = '\0';
 	else if (db_oracle_connection_lost(errcd)) {
-		LM_ERR("conneciom dropped\n");
+		LM_ERR("connection dropped\n");
 		db_oracle_disconnect(con);
 	}
 
