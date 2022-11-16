@@ -694,6 +694,7 @@ static void test_cachedb_url(void)
 	/* invalid URLs */
 	ok(!new_cachedb_id(_str("d:g://@")));
 	ok(!new_cachedb_id(_str("d:g://u:@")));
+	ok(!new_cachedb_id(_str("d:g://u:p")));
 	ok(!new_cachedb_id(_str("d:g://u:p@")));
 	ok(!new_cachedb_id(_str("d:g://u:p@h:")));
 
@@ -872,6 +873,16 @@ static void test_cachedb_url(void)
 	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
 	ok(!strcmp(db->username, ""));
 	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
+
+	/* special chars in password */
+
+	CDB_PARSE("redis:group1://:,pwd,foo,@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, ",pwd,foo,"));
 	ok(!strcmp(db->host, "h1,h2,h3:6379"));
 	ok(!strcmp(db->database, "d"));
 	ok(db->port == 0);
