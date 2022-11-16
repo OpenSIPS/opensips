@@ -63,7 +63,17 @@ static const char* db_oracle_errorinfo(ora_con_t* con)
 	if (OCIErrorGet(con->errhp, 1, NULL, &errcd,
 			(OraText*)errbuf, sizeof(errbuf),
 			OCI_HTYPE_ERROR) != OCI_SUCCESS) errbuf[0] = '\0';
-	else switch (errcd) {
+	else if (db_oracle_connection_lost(errcd)) {
+		LM_ERR("connection dropped\n");
+		db_oracle_disconnect(con);
+	}
+
+	return errbuf;
+}
+
+int db_oracle_connection_lost(sword errcode)
+{
+	switch (errcode) {
 	case 28:	/* your session has been killed */
 	case 30:	/* session ID does not exists */
 	case 31:	/* session marked for kill */
@@ -113,13 +123,10 @@ static const char* db_oracle_errorinfo(ora_con_t* con)
 	case 12561:	/* tns unknown error */
 	case 12608:	/* tns send timeount */
 	case 12609:	/* tns receive timeount */
-	    LM_ERR("conneciom dropped\n");
-	    db_oracle_disconnect(con);
-	default:
-		break;
+		return 1;
 	}
 
-	return errbuf;
+	return 0;
 }
 
 const char* db_oracle_error(ora_con_t* con, sword status)
