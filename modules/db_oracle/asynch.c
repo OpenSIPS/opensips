@@ -189,9 +189,9 @@ sword begin_timelimit(ora_con_t* con, int connect)
 }
 
 
-static sword remap_status(ora_con_t* con, sword status)
+static sword remap_status(ora_con_t* con, sword status, sword *errcode)
 {
-	sword code;
+	sword code = 0;
 
 	if (   status == OCI_ERROR
 	    && OCIErrorGet(con->errhp, 1, NULL, &code,
@@ -200,6 +200,7 @@ static sword remap_status(ora_con_t* con, sword status)
 	{
 		status = OCI_STILL_EXECUTING;
 	}
+	if (errcode) *errcode = code;
 	return status;
 }
 
@@ -214,7 +215,7 @@ int wait_timelimit(ora_con_t* con, sword status)
 	if (!cur_asynch_mode)
 		return 0;
 
-	if (remap_status(con, status) != OCI_STILL_EXECUTING)
+	if (remap_status(con, status, NULL) != OCI_STILL_EXECUTING)
 		return 0;
 
 	gettimeofday(&cur, NULL);
@@ -230,12 +231,12 @@ int wait_timelimit(ora_con_t* con, sword status)
 int done_timelimit(ora_con_t* con, sword status)
 {
 	int ret = 0;
+	sword code;
 
 	if (!cur_asynch_mode)
 		return 0;
 
-	if (remap_status(con, status) == OCI_STILL_EXECUTING) {
-		sword code;
+	if (remap_status(con, status, &code) == OCI_STILL_EXECUTING) {
 
 		status = OCIBreak(con->svchp, con->errhp);
 		if (status != OCI_SUCCESS)
@@ -255,6 +256,9 @@ int done_timelimit(ora_con_t* con, sword status)
 				db_oracle_error(con, status));
 		db_oracle_disconnect(con);
 		++ret;
+	} else if (db_oracle_connection_lost(code)) {
+		db_oracle_disconnect(con);
+		cur_asynch_mode = 0;
 	} else {
 		status = change_mode(con);
 		if (status != OCI_SUCCESS) {
