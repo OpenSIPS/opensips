@@ -210,6 +210,10 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 				break;
 
 			case ',':
+				/* password could have a "," -> do a look-ahead to confirm */
+				if (q_memchr(url->s + i, '@', len - i))
+					continue;
+
 				st=ST_HOST;
 				start_host=start_prev;
 				id->flags |= CACHEDB_ID_MULTIPLE_HOSTS;
