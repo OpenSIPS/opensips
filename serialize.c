@@ -355,7 +355,7 @@ int next_branches( struct sip_msg *msg)
 
 		if (!val.s.s) {
 			LM_ERR("invalid avp value\n");
-			continue;
+			goto next_avp;
 		}
 
 		p = val.s.s;
@@ -389,6 +389,7 @@ int next_branches( struct sip_msg *msg)
 			goto error1;
 		}
 
+	next_avp:
 		last_parallel_fork = (avp->flags & Q_FLAG);
 		prev = avp;
 		avp = search_next_avp(avp, &val);
