@@ -281,7 +281,7 @@ int next_branches( struct sip_msg *msg)
 	qvalue_t q;
 	str uri, dst_uri, path, path_dst;
 	char *p;
-	unsigned int flags;
+	unsigned int flags, last_parallel_fork;
 	int rval;
 
 	if (route_type != REQUEST_ROUTE && route_type != FAILURE_ROUTE ) {
@@ -355,15 +355,13 @@ int next_branches( struct sip_msg *msg)
 				path.len, path.s,
 				q, flags, avp->flags);
 
-
-	if (avp->flags & Q_FLAG) {
-		destroy_avp(avp);
-		goto done;
-	}
-
+	last_parallel_fork = (avp->flags & Q_FLAG);
 	prev = avp;
-	avp = search_next_avp(prev, &val);
+	avp = search_next_avp(avp, &val);
 	destroy_avp(prev);
+
+	if (last_parallel_fork)
+		goto done;
 
 	/* Append branches until out of branches or Q_FLAG is set */
 	while (avp != NULL) {
@@ -404,19 +402,18 @@ int next_branches( struct sip_msg *msg)
 			goto error1;
 		}
 
-		if (avp->flags & Q_FLAG) {
-			destroy_avp(avp);
-			goto done;
-		}
-
+		last_parallel_fork = (avp->flags & Q_FLAG);
 		prev = avp;
-		avp = search_next_avp(prev, &val);
+		avp = search_next_avp(avp, &val);
 		destroy_avp(prev);
+
+		if (last_parallel_fork)
+			goto done;
 	}
 
 	return 2;
 done:
-	return (search_next_avp(avp, NULL)==NULL)?2:1;
+	return avp ? 1 : 2;
 error1:
 	destroy_avp(avp);
 error:
