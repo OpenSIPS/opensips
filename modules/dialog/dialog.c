@@ -1419,6 +1419,8 @@ static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 	/* dlg found - NOTE you have a ref! */
 	LM_DBG("dialog found, fetching all variable\n");
 
+	dlg_lock_dlg( dlg );
+
 	/* iterate the list with all the dlg variables */
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
 
@@ -1434,6 +1436,7 @@ static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 			if ( pv_set_value( msg, v_val, 0, &val)<0 ) {
 				LM_ERR("failed to add new value in dlg val list, ignoring\n");
 				/* better exit here, as we will desync the lists */
+				dlg_unlock_dlg( dlg );
 				unref_dlg(dlg, 1);
 				return -1;
 			}
@@ -1441,6 +1444,7 @@ static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 
 	}
 
+	dlg_unlock_dlg( dlg );
 	unref_dlg(dlg, 1);
 
 	return 1;
