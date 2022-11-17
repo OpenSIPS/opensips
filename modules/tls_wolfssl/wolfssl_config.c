@@ -255,28 +255,45 @@ static int set_dh_params_db(WOLFSSL_CTX * ctx, str *blob)
 	return 0;
 }
 
-static int set_ec_params(WOLFSSL_CTX * ctx, const char* curve_name)
+static int set_ec_params(WOLFSSL_CTX * ctx, enum tls_method method,
+	int is_server, char *curve_name)
 {
 	int curve = 0;
-	if (curve_name) {
-		curve = wolfSSL_OBJ_txt2nid(curve_name);
-	}
-	if (curve > 0) {
-		WOLFSSL_EC_KEY *ecdh = wolfSSL_EC_KEY_new_by_curve_name(curve);
-		if (! ecdh) {
-			LM_ERR("unable to create EC curve\n");
+
+	if (is_server) {
+		if (curve_name)
+			curve = wolfSSL_OBJ_txt2nid(curve_name);
+		if (curve > 0) {
+			WOLFSSL_EC_KEY *ecdh = wolfSSL_EC_KEY_new_by_curve_name(curve);
+			if (!ecdh) {
+				LM_ERR("unable to create EC curve\n");
+				return -1;
+			}
+			if (1 != wolfSSL_SSL_CTX_set_tmp_ecdh (ctx, ecdh)) {
+				LM_ERR("unable to set tmp_ecdh\n");
+				return -1;
+			}
+			wolfSSL_EC_KEY_free(ecdh);
+		} else {
+			LM_ERR("unable to find the EC curve\n");
 			return -1;
 		}
-		if (1 != wolfSSL_SSL_CTX_set_tmp_ecdh (ctx, ecdh)) {
-			LM_ERR("unable to set tmp_ecdh\n");
-			return -1;
+	} else {
+		if (method == TLS_USE_TLSv1_3) {
+			if (wolfSSL_CTX_set1_groups_list(ctx, curve_name) ==
+				WOLFSSL_FAILURE) {
+				LM_ERR("Failed to set EC curve\n");
+				return -1;
+			}
+		} else {
+			if (wolfSSL_CTX_set1_curves_list(ctx, curve_name) ==
+				WOLFSSL_FAILURE) {
+				LM_ERR("Failed to set EC curve\n");
+				return -1;
+			}
 		}
-		wolfSSL_EC_KEY_free(ecdh);
 	}
-	else {
-		LM_ERR("unable to find the EC curve\n");
-		return -1;
-	}
+
 	return 0;
 }
 
@@ -503,7 +520,8 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 
 	if (!d->tls_ec_curve)
 		LM_NOTICE("No EC curve defined\n");
-	else if (set_ec_params(d->ctx, d->tls_ec_curve) < 0)
+	else if (set_ec_params(d->ctx, d->method, d->flags & DOM_FLAG_SRV,
+		d->tls_ec_curve) < 0)
 		goto end;
 
 	if (d->ciphers_list != 0 &&
