@@ -1853,6 +1853,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		avp_val.s = *b2bl_key;
 		if(add_avp(AVP_VAL_STR|b2bl_key_avp_type, b2bl_key_avp_name, avp_val)!=0)
 		{
+			lock_release(&b2bl_htable[hash_index].lock);
 			LM_ERR("failed to build b2bl_key avp\n");
 			return -1;
 		}
