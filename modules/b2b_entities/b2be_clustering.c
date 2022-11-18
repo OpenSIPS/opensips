@@ -472,6 +472,7 @@ int receive_entity_create(bin_packet_t *packet, b2b_dlg_t *dlg, int type,
 	new_key = b2b_htable_insert(htable, new_dlg, hash_index, (time_t)timestamp,
 		type, 1, 1);
 	if (new_key == NULL) {
+		B2BE_LOCK_RELEASE(htable, hash_index);
 		LM_ERR("Failed to insert new record\n");
 		goto error;
 	}
