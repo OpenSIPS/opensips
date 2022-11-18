@@ -842,7 +842,6 @@ int sca_bridge_request(struct sip_msg* msg, str* shared_line)
 	lock_get(&b2b_sca_htable[hash_index].lock);
 	record = b2b_sca_search_record_safe(hash_index, shared_line);
 	if (record == NULL) {
-		lock_release(&b2b_sca_htable[hash_index].lock);
 		LM_ERR("record not found for shared line [%.*s] on hash index [%d]\n",
 			shared_line->len, shared_line->s, hash_index);
 		// FIXME:
