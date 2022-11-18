@@ -1656,6 +1656,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 
 	if(parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
+		B2BE_LOCK_RELEASE(table, hash_index);
 		LM_ERR("Failed to parse headers\n");
 		return 0;
 	}
@@ -1663,6 +1664,7 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	pto = get_to(msg);
 	if (pto == NULL || pto->error != PARSE_OK)
 	{
+		B2BE_LOCK_RELEASE(table, hash_index);
 		LM_ERR("'To' header COULD NOT parsed\n");
 		return 0;
 	}
