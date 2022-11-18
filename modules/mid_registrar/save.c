@@ -2276,6 +2276,7 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 	return 2;
 }
 
+/* compute the maximum (e, e_out) diff, in seconds, across all contacts */
 static int calc_max_ct_diff(urecord_t *urec)
 {
 	ucontact_t *ct;
@@ -2341,7 +2342,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	ucontact_info_t *ci;
 	ucontact_t *c;
 	contact_t *ct;
-	int e_out, vct = 0;
+	int e_out, vct = 0, deregisters_only = 1;
 	unsigned int last_reg_ts;
 	int_str_t *value;
 
@@ -2414,6 +2415,9 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 				}
 				continue;
 			}
+
+			deregisters_only = 0;
+
 			LM_DBG("found >> [ %ld, %ld ], e=%d, e_out=%d\n",
 			       c->expires_in, c->expires_out, e, e_out);
 
@@ -2458,6 +2462,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 			if (e == 0)
 				continue;
 
+			deregisters_only = 0;
+
 			if (_sctx->max_contacts && vct >= _sctx->max_contacts) {
 				if (!(_sctx->flags & REG_SAVE_FORCE_REG_FLAG)) {
 					LM_INFO("AOR <%.*s> is already at max contacts (%d)\n",
@@ -2500,12 +2506,17 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 		/* ignore contacts with duplicate / lower cseq (ret == -2) */
 	}
 
-	max_diff = calc_max_ct_diff(urec);
+	if (!deregisters_only) {
+		max_diff = calc_max_ct_diff(urec);
 
-	LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
-	       max_diff, last_reg_ts + max_diff, get_act_time());
-	if (max_diff < 0 || last_reg_ts + max_diff <= get_act_time())
+		LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
+		       max_diff, last_reg_ts + max_diff, get_act_time());
+		if (max_diff < 0 || last_reg_ts + max_diff <= get_act_time())
+			return 1;
+	} else if (ctno >= 2 && !urec->contacts) {
+		/* this REGISTER deleted all contacts (2+)! We must forward it */
 		return 1;
+	}
 
 	return 2;
 }
