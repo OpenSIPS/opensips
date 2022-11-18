@@ -2933,7 +2933,10 @@ db_async_store(db_val_t* vals, db_key_t* keys, int num_keys,
 	async_status = ASYNC_NO_IO;
 
 	return 1;
+
 no_buffer:
+	if (HAVE_SHARED_QUERIES)
+		RELEASE_QUERY_LOCK(crt_as_query);
 	LM_ERR("buffer size exceeded\n");
 	return -1;
 }
