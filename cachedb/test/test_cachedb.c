@@ -879,6 +879,14 @@ static void test_cachedb_url(void)
 
 	/* special chars in password */
 
+	CDB_PARSE("redis:group1://user:,pwd,foo,@h1,h2,h3:6379/d");
+	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
+	ok(!strcmp(db->username, "user"));
+	ok(!strcmp(db->password, ",pwd,foo,"));
+	ok(!strcmp(db->host, "h1,h2,h3:6379"));
+	ok(!strcmp(db->database, "d"));
+	ok(db->port == 0);
+
 	CDB_PARSE("redis:group1://:,pwd,foo,@h1,h2,h3:6379/d");
 	ok(db->flags == CACHEDB_ID_MULTIPLE_HOSTS);
 	ok(!strcmp(db->username, ""));
