@@ -97,7 +97,6 @@ static void pack_tuple(b2bl_tuple_t* tuple, bin_packet_t *storage, int repl_new)
 		else
 			bin_push_str(storage, tuple->scenario_id);
 
-		bin_push_str(storage, &tuple->bridge_entities[0]->out_sdp);
 		bin_push_str(storage, tuple->extra_headers);
 	} else
 		bin_push_int(storage, REPL_TUPLE_UPDATE);
@@ -139,11 +138,14 @@ static void pack_entity(b2bl_tuple_t* tuple, enum b2b_entity_type entity_type,
 		bin_push_str(storage, &entity->from_uri);
 		bin_push_str(storage, &entity->from_dname);
 		bin_push_str(storage, &entity->hdrs);
+		bin_push_str(storage, &entity->out_sdp);
 
 		bin_push_str(storage, &entity->dlginfo->callid);
 		bin_push_str(storage, &entity->dlginfo->fromtag);
 		bin_push_str(storage, &entity->dlginfo->totag);
 	}
+
+	bin_push_str(storage, &entity->out_sdp);
 
 	bin_push_int(storage, entity->stats.start_time);
 	bin_push_int(storage, entity->stats.setup_time);
@@ -239,7 +241,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	b2bl_tuple_t *tuple = NULL, *old_tuple;
 	int tuple_repl_type;
 	str scenario_id;
-	str tuple_sdp;
+	str sdp;
 	str extra_headers;
 	int lifetime;
 	b2b_dlginfo_t dlginfo;
@@ -265,12 +267,10 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	case REPL_TUPLE_NEW:
 		if (!old_tuple) {
 			bin_pop_str(storage, &scenario_id);
-
-			bin_pop_str(storage, &tuple_sdp);
 			bin_pop_str(storage, &extra_headers);
 		} else {
 			LM_DBG("Tuple [%.*s] already created\n", b2bl_key->len, b2bl_key->s);
-			bin_skip_str(storage, 3);
+			bin_skip_str(storage, 2);
 		}
 
 		if (old_tuple) {
@@ -348,6 +348,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	bin_pop_str(storage, &from_uri);
 	bin_pop_str(storage, &from_dname);
 	bin_pop_str(storage, &hdrs);
+	bin_pop_str(storage, &sdp);
 
 	entity = b2bl_create_new_entity(entity_type, entity_key, &to_uri, &proxy,
 		&from_uri, &from_dname, &entity_sid, &hdrs, NULL, NULL);
@@ -378,6 +379,22 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		goto error;
 	}
 	tuple->bridge_entities[entity->no] = entity;
+
+	if (shm_str_sync(&entity->out_sdp, &sdp) < 0)
+		goto error;
+
+	if (tuple_repl_type == REPL_TUPLE_NEW &&
+		((entity->no == 0 && tuple->bridge_entities[1]) ||
+		(entity->no == 1 && tuple->bridge_entities[0])))  {
+		/* when the last entity of a new tuple is received,
+		 * mirror the in SDP with the out SDP of the other entity */
+		if (shm_str_sync(&tuple->bridge_entities[0]->in_sdp,
+			&tuple->bridge_entities[1]->out_sdp) < 0)
+			goto error;
+		if (shm_str_sync(&tuple->bridge_entities[1]->in_sdp,
+			&tuple->bridge_entities[0]->out_sdp) < 0)
+			goto error;
+	}
 
 	if (tuple->bridge_entities[1])
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
@@ -431,6 +448,7 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 	b2bl_tuple_t* tuple = NULL;
 	int tuple_repl_type;
 	int lifetime;
+	str sdp;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
 
 	LM_DBG("Received UPDATE event for entity [%.*s]\n",
@@ -471,6 +489,8 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 		goto error;
 	}
 
+	bin_pop_str(storage, &sdp);
+
 	bin_pop_int(storage, &entity->stats.start_time);
 	bin_pop_int(storage, &entity->stats.setup_time);
 	bin_pop_int(storage, &entity->stats.call_time);
@@ -488,6 +508,11 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 		tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 	if (tuple->bridge_entities[0])
 		tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
+
+	if (shm_str_sync(&entity->out_sdp, &sdp) < 0)
+		goto error;
+	if (entity->peer && shm_str_sync(&entity->peer->in_sdp, &sdp) < 0)
+		goto error;
 
 	entity->state = B2BL_ENT_CONFIRMED;
 
@@ -650,10 +675,10 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 				LM_ERR("Failed to unpack context values\n");
 			break;
 		case REPL_TUPLE_NEW:
-			bin_skip_str(storage, 8);
+			bin_skip_str(storage, 2);
 			/* fall through */
 		case REPL_TUPLE_UPDATE:
-			bin_skip_int(storage, 3);
+			bin_skip_int(storage, 2);
 			if (unpack_context_vals(tuple, storage) < 0)
 				LM_ERR("Failed to unpack context values\n");
 			break;

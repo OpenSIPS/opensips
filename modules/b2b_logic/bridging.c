@@ -232,9 +232,6 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		b2bl_htable[hash_index].locked_by = -1;
 
 		local_ctx_tuple = NULL;
-
-		b2bl_htable[hash_index].locked_by = -1;;
-		lock_release(&b2bl_htable[hash_index].lock);
 	} else {
 		if (bridging_start_new_ent(tuple, bridging_entity, entity, NULL, 0) < 0) {
 			LM_ERR("Failed to start bridging with new entity\n");
@@ -245,6 +242,9 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	}
 
 	tuple->state = B2B_BRIDGING_STATE;
+
+	b2bl_htable[hash_index].locked_by = -1;;
+	lock_release(&b2bl_htable[hash_index].lock);
 
 	return init_mi_result_ok();
 
@@ -1155,9 +1155,9 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 		ci.from_uri = peer_ent->to_uri;
 
 		if (new_ent->from_dname.s)
-			ci.from_uri = new_ent->from_dname;
+			ci.from_dname = new_ent->from_dname;
 		else
-			ci.from_uri = peer_ent->from_dname;
+			ci.from_dname = peer_ent->from_dname;
 	} else {
 		if (new_ent->from_uri.s)
 			ci.from_uri = new_ent->from_uri;
@@ -1169,8 +1169,6 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 		else
 			ci.from_dname = peer_ent->from_dname;
 	}
-
-	LM_DBG("XXX ci.from_uri=%.*s\n", ci.from_uri.len, ci.from_uri.s);
 
 	ci.client_headers = &new_ent->hdrs;
 	ci.body = body;

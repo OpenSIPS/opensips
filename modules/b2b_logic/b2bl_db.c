@@ -249,7 +249,7 @@ void b2b_logic_dump(int no_lock)
 			qvals[12].val.str_val = tuple->bridge_entities[1]->to_uri;
 			qvals[13].val.str_val = tuple->bridge_entities[1]->from_uri;
 			qvals[14].val.str_val = tuple->bridge_entities[1]->key;
-			qvals[15].val.str_val = tuple->bridge_entities[1]->in_sdp;
+			qvals[15].val.str_val = tuple->bridge_entities[1]->out_sdp;
 
 			n_insert_cols = 16;
 
@@ -420,22 +420,6 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 		
 		shm_tuple->bridge_entities[i]= entity;
 
-		if (i==0) {
-			if (shm_str_dup(&shm_tuple->bridge_entities[0]->out_sdp,
-				&tuple->bridge_entities[0]->out_sdp) < 0)
-				goto error;
-			if (shm_str_dup(&shm_tuple->bridge_entities[1]->in_sdp,
-				&tuple->bridge_entities[0]->out_sdp) < 0)
-				goto error;
-		} else if (i==1) {
-			if (shm_str_dup(&shm_tuple->bridge_entities[1]->in_sdp,
-				&tuple->bridge_entities[1]->in_sdp) < 0)
-				goto error;
-			if (shm_str_dup(&shm_tuple->bridge_entities[0]->in_sdp,
-				&tuple->bridge_entities[0]->in_sdp) < 0)
-				goto error;
-		}
-
 		/* put the pointer in clients or servers array */
 		// FIXME: check if the restore logic is ok
 		if(tuple->bridge_entities[i]->type == B2B_SERVER)
@@ -453,6 +437,20 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 				shm_tuple->clients[0] = entity;
 		}
 	}
+
+	if (shm_str_dup(&shm_tuple->bridge_entities[0]->out_sdp,
+		&tuple->bridge_entities[0]->out_sdp) < 0)
+		goto error;
+	if (shm_str_dup(&shm_tuple->bridge_entities[0]->in_sdp,
+		&tuple->bridge_entities[1]->out_sdp) < 0)
+		goto error;
+	if (shm_str_dup(&shm_tuple->bridge_entities[1]->out_sdp,
+		&tuple->bridge_entities[1]->out_sdp) < 0)
+		goto error;
+	if (shm_str_dup(&shm_tuple->bridge_entities[1]->in_sdp,
+		&tuple->bridge_entities[0]->out_sdp) < 0)
+		goto error;
+
 	if(shm_tuple->bridge_entities[1])
 		shm_tuple->bridge_entities[1]->peer = shm_tuple->bridge_entities[0];
 	if(shm_tuple->bridge_entities[0])
@@ -513,7 +511,7 @@ static int load_tuple(int_str_t *vals)
 	bridge_entities[1].to_uri = vals[12].s;
 	bridge_entities[1].from_uri = vals[13].s;
 	bridge_entities[1].key = vals[14].s;
-	bridge_entities[1].in_sdp = vals[15].s;
+	bridge_entities[1].out_sdp = vals[15].s;
 
 	if(vals[20].s.s)
 	{
@@ -606,6 +604,8 @@ int b2b_logic_restore_db(void)
 
 			vals[4].i = row_vals[4].val.int_val;
 			vals[5].s.s = (char*)row_vals[5].val.string_val;
+			vals[5].s.len = vals[5].s.s?strlen(vals[5].s.s):0;
+			vals[6].s.s = (char*)row_vals[6].val.string_val;
 			vals[6].s.len = vals[6].s.s?strlen(vals[6].s.s):0;
 			vals[7].s.s = (char*)row_vals[7].val.string_val;
 			vals[7].s.len = vals[7].s.s?strlen(vals[7].s.s):0;
@@ -729,11 +729,11 @@ int b2b_logic_restore_cdb(void)
 
 		get_val_from_dict(0, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(1, 1, &pair->val.val.dict, vals);
-		get_val_from_dict(2, 1, &pair->val.val.dict, vals);
+		get_val_from_dict(2, 0, &pair->val.val.dict, vals);
 		get_val_from_dict(3, 0, &pair->val.val.dict, vals);
-		get_val_from_dict(4, 0, &pair->val.val.dict, vals);
 
-		get_val_from_dict(5, 0, &pair->val.val.dict, vals);
+		get_val_from_dict(4, 0, &pair->val.val.dict, vals);
+		get_val_from_dict(5, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(6, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(7, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(8, 1, &pair->val.val.dict, vals);
@@ -744,12 +744,13 @@ int b2b_logic_restore_cdb(void)
 		get_val_from_dict(12, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(13, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(14, 1, &pair->val.val.dict, vals);
+		get_val_from_dict(15, 1, &pair->val.val.dict, vals);
 
-		get_val_from_dict(15, 0, &pair->val.val.dict, vals);
-		get_val_from_dict(16, 1, &pair->val.val.dict, vals);
+		get_val_from_dict(16, 0, &pair->val.val.dict, vals);
 		get_val_from_dict(17, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(18, 1, &pair->val.val.dict, vals);
 		get_val_from_dict(19, 1, &pair->val.val.dict, vals);
+		get_val_from_dict(20, 1, &pair->val.val.dict, vals);
 
 		if (load_tuple(vals) < 0) {
 			cdb_free_rows(&res);
@@ -801,10 +802,8 @@ void b2bl_db_insert(b2bl_tuple_t* tuple)
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->to_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->from_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->key;
-		if (i == 0)
-			qvals[ci++].val.str_val = tuple->bridge_entities[0]->out_sdp;
-		else if (i == 1)
-			qvals[ci++].val.str_val = tuple->bridge_entities[1]->in_sdp;
+		if (i<2)
+			qvals[ci++].val.str_val = tuple->bridge_entities[i]->out_sdp;
 	}
 
 	if (cdb_url.s) {
@@ -875,10 +874,8 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->to_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->from_uri;
 		qvals[ci++].val.str_val = tuple->bridge_entities[i]->key;
-		if (i == 0)
-			qvals[ci++].val.str_val = tuple->bridge_entities[0]->out_sdp;
-		else if (i == 1)
-			qvals[ci++].val.str_val = tuple->bridge_entities[1]->in_sdp;
+		if (i<2)
+			qvals[ci++].val.str_val = tuple->bridge_entities[i]->out_sdp;
 		LM_DBG("UPDATE %.*s\n", qvals[ci-1].val.str_val.len, qvals[ci-1].val.str_val.s);
 	}
 
