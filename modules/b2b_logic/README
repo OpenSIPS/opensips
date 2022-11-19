@@ -1110,7 +1110,7 @@ Chapter 3. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 49 11
    4. Maksym Sobolyev (@sobomax) 4 2 21 21
    5. Razvan Crainea (@razvancrainea) 4 2 9 11
-   6. Liviu Chircu (@liviuchircu) 3 1 2 2
+   6. Liviu Chircu (@liviuchircu) 4 2 3 2
    7. Aron Podrigal (@ar45) 3 1 1 1
    8. Zero King (@l2dy) 3 1 1 1
 
@@ -1134,14 +1134,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Oct 2022
-   2. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
-   3. Razvan Crainea (@razvancrainea)     Jan 2021 - Jul 2021
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
-   5. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
-   6. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
-   7. Zero King (@l2dy)                   Dec 2020 - Dec 2020
-   8. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2020
+   1. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
+   2. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Oct 2022
+   3. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
+   4. Razvan Crainea (@razvancrainea)     Jan 2021 - Jul 2021
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
+   6. Nick Altmann (@nikbyte)             Feb 2021 - May 2021
+   7. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   8. Zero King (@l2dy)                   Dec 2020 - Dec 2020
 
    (1) including any documentation-related commits, excluding
    merge commits
