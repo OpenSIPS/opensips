@@ -129,7 +129,7 @@ static int fixup_whitelist_compress(void**);
 static int fixup_whitelist_free(void **);
 static int fixup_mc_compact_flags(void **);
 
-static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, int* flags_p);
+static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, void* flags_p);
 static int mc_compact_cb(char** buf, struct mc_compact_args* mc_compact_args, int, int*);
 
 static int mc_compress(struct sip_msg* msg, int* algo, int* flags,
@@ -466,7 +466,7 @@ static int fixup_mc_compact_flags(void **param)
 {
 	str *s = (str *) *param;
 	int st;
-	long flags = 0;
+	unsigned long flags = 0;
 
 	if (s) {
 		for (st = 0; st < s->len; st++) {
@@ -478,8 +478,9 @@ static int fixup_mc_compact_flags(void **param)
 						LM_WARN("unknown option `%c'\n", s->s[st]);
 			}
 		}
-		*param = (void *) flags;
 	}
+
+	*param = (void *)flags;
 	return 0;
 }
 
@@ -623,7 +624,7 @@ error:
  * 3) Headers which not in whitelist will be removed
  * 4) Unnecessary sdp body codec attributes lower than 96 removed
  */
-static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, int* flags_p)
+static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, void* flags_p)
 {
 	struct mc_compact_args *mc_compact_args_p;
 
@@ -643,7 +644,7 @@ static int mc_compact(struct sip_msg* msg, mc_whitelist_p wh_list, int* flags_p)
 		goto error;
 	}
 
-	mc_compact_args_p->flags = *flags_p;
+	mc_compact_args_p->flags = (unsigned int)(unsigned long)flags_p;
 	SET_GLOBAL_CTX(compact_ctx_pos, (void*)mc_compact_args_p);
 
 	/* register stateless callbacks */
