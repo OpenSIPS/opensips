@@ -64,7 +64,7 @@ struct mc_comp_args {
 
 struct mc_compact_args {
 	mc_whitelist_p wh_list;
-	int flags;
+	unsigned int flags;
 };
 
 #endif
