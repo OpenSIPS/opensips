@@ -34,7 +34,8 @@
 #include "../b2b_entities/b2be_load.h"
 
 enum b2b_tuple_state {
-	B2B_INIT_STATE,
+	/* initial bridge state */
+	B2B_INIT_BRIDGING_STATE,
 
 	/* tmp state when bridging with B2BL_BR_FLAG_HOLD */
 	B2B_BRIDGING_HOLD_STATE,
@@ -42,6 +43,8 @@ enum b2b_tuple_state {
 	B2B_BRIDGING_INIT_SDP_STATE,
 	/* main bridging state */
 	B2B_BRIDGING_STATE,
+
+	B2B_BRIDGED_STATE,
 
 	B2B_CANCEL_STATE
 };

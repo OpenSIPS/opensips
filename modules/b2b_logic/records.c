@@ -244,7 +244,7 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 		tuple->extra_headers->len = custom_hdrs->len;
 	}
 
-	tuple->state = B2B_INIT_STATE;
+	tuple->state = B2B_INIT_BRIDGING_STATE;
 
 	if (repl_flag != TUPLE_REPL_RECV)
 		lock_get(&b2bl_htable[hash_index].lock);

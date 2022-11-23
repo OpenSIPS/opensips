@@ -318,7 +318,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 				tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 
 				/* Disable bridging state */
-				tuple->state = B2B_INIT_STATE;
+				tuple->state = B2B_BRIDGED_STATE;
 				tuple->bridge_initiator = 0;
 
 				return 1; // Don't delete tuple
@@ -348,7 +348,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 			tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 
 			/* Disable bridging state */
-			tuple->state = B2B_INIT_STATE;
+			tuple->state = B2B_BRIDGED_STATE;
 			tuple->bridge_initiator = 0;
 
 			return 1; // Don't delete tuple
@@ -669,7 +669,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 			tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 
-			tuple->state = B2B_INIT_STATE;
+			tuple->state = B2B_BRIDGED_STATE;
 			LM_DBG("Finished the bridging\n");
 
 			return 0;
@@ -861,7 +861,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			}
 
 			/* bridging scenario should be done */
-			tuple->state = B2B_INIT_STATE;
+			tuple->state = B2B_BRIDGED_STATE;
 			LM_DBG("Finished the bridging\n");
 		}
 		else
@@ -1530,6 +1530,9 @@ error:
 	return -1;
 }
 
+int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
+	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
+
 int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 	int entity_no)
 {
@@ -1538,6 +1541,7 @@ int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 	struct sip_uri uri;
 	unsigned int hash_index, local_index;
 	b2b_rpl_data_t rpl_data;
+	struct b2bl_new_entity new_ent;
 
 	if(!key || !new_dst)
 	{
@@ -1574,6 +1578,24 @@ int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 	}
 
 	local_ctx_tuple = tuple;
+
+	if (tuple->state == B2B_INIT_BRIDGING_STATE) {
+		memset(&new_ent, 0, sizeof new_ent);
+		new_ent.dest_uri = *new_dst;
+		new_ent.proxy = *new_proxy;
+		new_ent.from_dname = *new_from_dname;
+
+		if (retry_init_bridge(NULL, tuple, tuple->bridge_entities[1],
+			&new_ent) < 0) {
+			LM_ERR("Failed to retry initial bridge\n");
+			goto error;
+		}
+
+		local_ctx_tuple = NULL;
+		lock_release(&b2bl_htable[hash_index].lock);
+
+		return 0;
+	}
 
 	// FIXME: we may have no server at some point in time
 	if(tuple->servers[0] == NULL)
