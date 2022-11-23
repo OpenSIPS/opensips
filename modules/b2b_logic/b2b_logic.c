@@ -1185,7 +1185,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 		LM_DBG("Next scenario state is [%d]\n", state);
 		xmlFree(attr.s);
 	}
-	tuple->next_scenario_state = state;
+	tuple->scenario_state = state;
 
 	xml_node =  xmlNodeGetChildByName(scenario_struct->init_node, "bridge");
 	if(xml_node == NULL)
@@ -1460,7 +1460,7 @@ static mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		entity->peer = bridging_entity;
 	}
 
-	tuple->scenario_state = B2B_BRIDGING_STATE;
+	tuple->state = B2B_BRIDGING_STATE;
 	bridging_entity->state = 0;
 	bridging_entity->sdp_type = B2BL_SDP_LATE;
 

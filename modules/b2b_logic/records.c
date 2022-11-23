@@ -199,7 +199,6 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 		}
 	}
 
-
 	/* copy the function parameters that customize the scenario */
 	memset(tuple->scenario_params, 0, MAX_SCENARIO_PARAMS* sizeof(str));
 	if(scenario && args)
@@ -223,6 +222,8 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg,
 			tuple->scenario_params[i].len = args[i]->len;
 		}
 	}
+
+	tuple->state = B2B_INIT_BRIDGING_STATE;
 	tuple->scenario_state = B2B_NOTDEF_STATE;
 
 	if (repl_flag != TUPLE_REPL_RECV)

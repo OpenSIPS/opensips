@@ -83,6 +83,7 @@ typedef struct b2bl_tuple
 	str scenario_params[MAX_SCENARIO_PARAMS];
 	int scenario_state;
 	int next_scenario_state;
+	int state;
 	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
 	b2bl_entity_id_t* clients[MAX_B2BL_ENT];
 	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];

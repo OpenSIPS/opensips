@@ -454,7 +454,7 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 {
 	tuple->to_del = 1;
 	tuple->lifetime = 30 + get_ticks();
-	tuple->scenario_state = B2B_CANCEL_STATE;
+	tuple->state = B2B_CANCEL_STATE;
 	LM_DBG("%p\n", tuple);
 }
 
@@ -542,7 +542,7 @@ int process_bridge_negreply(b2bl_tuple_t* tuple,
 	{
 		case 0:
 			/* mark that the first step of the bridging failed */
-			tuple->scenario_state = B2B_NONE;
+			tuple->state = B2B_CANCEL_STATE;
 			break;
 		case 1: break;
 		default:
@@ -711,14 +711,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			}
 			b2bl_htable[hash_index].locked_by = -1;
 			/* mark the scenario as completed */
-			if(tuple->next_scenario_state>= 0)
-			{
-				tuple->scenario_state = tuple->next_scenario_state;
-				tuple->next_scenario_state = 0;
-				LM_DBG("Updated tuple state = %d\n", tuple->scenario_state);
-			}
-			else
-				tuple->scenario_state = B2B_NOTDEF_STATE;
+			tuple->state = B2B_BRIDGED_STATE;
 			LM_DBG("Finished the bridging\n");
 		} else if(bentity1->type == B2B_CLIENT && bentity1->state!=B2BL_ENT_CONFIRMED)
 		{
@@ -914,15 +907,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				bentity0->sdp_type = B2BL_SDP_NORMAL;
 			} else {
 				/* bridging scenario should be done */
-
-				if(tuple->next_scenario_state>= 0)
-				{
-					tuple->scenario_state = tuple->next_scenario_state;
-					tuple->next_scenario_state = 0;
-					LM_DBG("Updated tuple state = %d\n", tuple->scenario_state);
-				}
-				else
-					tuple->scenario_state = B2B_NOTDEF_STATE;
+				tuple->state = B2B_BRIDGED_STATE;
 				LM_DBG("Finished the bridging\n");
 			}
 		}
@@ -1062,6 +1047,126 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 	return -5;
 }
 
+int run_init_negreply_cb(struct sip_msg *msg, b2bl_tuple_t *tuple,
+	unsigned int hash_index, unsigned int local_index, b2bl_entity_id_t *entity)
+{
+	b2bl_cback_f cbf = NULL;
+	str ekey= {NULL, 0};
+	b2bl_cb_params_t cb_params;
+	b2bl_dlg_stat_t stats;
+	int ret;
+	int entity_no;
+	int etype;
+
+	/* call the callback for brigding failure  */
+	cbf = tuple->cbf;
+	if(cbf && (tuple->cb_mask&B2B_REJECT_CB))
+	{
+		etype = entity->type;
+		entity_no = bridge_get_entityno(tuple, entity);
+
+		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
+		cb_params.param = tuple->cb_param;
+		stats.start_time =  entity->stats.start_time;
+		stats.setup_time = get_ticks() - entity->stats.start_time;
+		stats.key.s = NULL; stats.key.len = 0;
+		cb_params.stat = &stats;
+		ekey.s = (char*)pkg_malloc(entity->key.len);
+		if(ekey.s == NULL)
+		{
+			LM_ERR("No more memory\n");
+			return -1;
+		}
+		memcpy(ekey.s, entity->key.s, entity->key.len);
+		ekey.len = entity->key.len;
+		cb_params.msg = msg;
+		cb_params.entity = entity_no;
+
+		lock_release(&b2bl_htable[hash_index].lock);
+
+		ret = cbf(&cb_params, B2B_REJECT_CB);
+		LM_DBG("ret = %d\n", ret);
+
+		lock_get(&b2bl_htable[hash_index].lock);
+		/* must search the tuple again
+		 * you can't know what might have happened with it */
+		if (0!=post_cb_sanity_check(&tuple, hash_index,
+			local_index, &entity, etype, &ekey))
+		{
+			pkg_free(ekey.s);
+			return 1;
+		}
+		pkg_free(ekey.s);
+
+		if(ret == B2B_DROP_MSG_CB_RET)
+		{
+			/* drop the negative reply */
+			if(entity_no == 1)
+				b2bl_delete_entity(entity, tuple, hash_index, 1);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int retry_init_bridge(b2bl_tuple_t* tuple, b2bl_entity_id_t *entity,
+	str *dest_uri, str *hdrs)
+{
+	str *client_id= NULL;
+	str method = {INVITE, INVITE_LEN};
+	b2bl_entity_id_t* client_entity = NULL;
+	client_info_t ci;
+
+	memset(&ci, 0, sizeof(client_info_t));
+	ci.method        = method;
+	ci.req_uri       = *dest_uri;
+	ci.to_uri        = tuple->bridge_entities[0]->to_uri;
+	ci.from_uri      = tuple->bridge_entities[0]->from_uri;
+	ci.from_dname    = tuple->bridge_entities[0]->from_dname;
+	ci.extra_headers = tuple->extra_headers;
+	ci.client_headers= hdrs;
+	ci.body          = &tuple->b1_sdp;
+	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
+
+	ci.local_contact = tuple->local_contact;
+
+	b2bl_htable[tuple->hash_index].locked_by = process_no;
+
+	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
+			&b2bl_mod_name, tuple->key);
+
+
+	b2bl_htable[tuple->hash_index].locked_by = -1;
+
+	if(client_id == NULL)
+	{
+		LM_ERR("failed to create new b2b client instance\n");
+		goto error;
+	}
+
+	client_entity = b2bl_create_new_entity(B2B_CLIENT, client_id,
+		dest_uri, 0, 0, 0, hdrs, 0);
+	if(client_entity == NULL)
+	{
+		LM_ERR("failed to create new client entity\n");
+		pkg_free(client_id);
+		goto error;
+	}
+	pkg_free(client_id);
+
+	if (0 != b2bl_add_client(tuple, client_entity))
+		goto error;
+	client_entity->no = 1;
+	tuple->bridge_entities[1] = tuple->clients[0];
+
+	tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
+	tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
+
+	return 0;
+error:
+	return -1;
+}
 
 #define SEND_REPLY_TO_PEER_OR_GOTO_DONE				\
 do{								\
@@ -1174,7 +1279,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	* tell the server side to send a reply also */
 
 	if((scenario &&
-			scenario->reply_rules) || tuple->scenario_state == B2B_BRIDGING_STATE)
+			scenario->reply_rules) || tuple->state == B2B_BRIDGING_STATE)
 	{
 		if(tuple->scenario_state == B2B_BRIDGING_STATE) /* if in a predefined state */
 		{
@@ -1272,10 +1377,16 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 					}
 					else
 					{
-						SEND_REPLY_TO_PEER_OR_GOTO_DONE;
-						LM_DBG("Negative reply [%d] - delete[%p]\n",
-							statuscode, tuple);
-						b2b_mark_todel(tuple);
+						ret = run_init_negreply_cb(msg, tuple, hash_index,
+							local_index, entity);
+						if (ret == -1) {
+							goto error;
+						} else if (ret == 0) {
+							SEND_REPLY_TO_PEER_OR_GOTO_DONE;
+							LM_DBG("Negative reply [%d] - delete[%p]\n",
+								statuscode, tuple);
+							b2b_mark_todel(tuple);
+						}
 					}
 					b2bl_print_tuple(tuple, L_DBG);
 				}
@@ -1344,6 +1455,9 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 						b2b_mark_todel(tuple);
 						goto done;
 					}
+
+					/* initial bridging is done */
+					tuple->state = B2B_BRIDGED_STATE;
 
 					entity->state = B2BL_ENT_CONFIRMED;
 					peer->state = B2BL_ENT_CONFIRMED;
@@ -1573,7 +1687,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		{
 			memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
 			cb_params.param = tuple->cb_param;
-			if(tuple->scenario_state != B2B_BRIDGING_STATE)
+			if(tuple->state != B2B_BRIDGING_STATE)
 				entity->stats.call_time = get_ticks() - entity->stats.start_time;
 			else
 				entity->stats.call_time = 0;
@@ -1642,7 +1756,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				goto send_usual_request;
 		}
 
-		if(tuple->scenario_state == B2B_BRIDGING_STATE)
+		if(tuple->state == B2B_BRIDGING_STATE)
 		{
 			LM_DBG("Scenario is in bridging state\n");
 			if(process_bridge_bye(msg, tuple, hash_index, entity) < 0)
@@ -1882,7 +1996,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				goto send_usual_request;
 			}
 			/* save next state */
-			tuple->next_scenario_state = state;
+			tuple->scenario_state = state;
 		}
 		else
 		{
@@ -1968,7 +2082,7 @@ send_usual_request:
 		switch (request_id)
 		{
 		case B2B_CANCEL:
-			tuple->scenario_state = B2B_CANCEL_STATE;
+			tuple->state = B2B_CANCEL_STATE;
 			break;
 
 		case B2B_BYE:
@@ -2702,7 +2816,7 @@ entity_search_done:
 	}
 	/* save the pointers to the bridged entities ;
 	 * the first (index 0) is the one we sent the first message ( reInvite or Invite)*/
-	tuple->scenario_state = B2B_BRIDGING_STATE;
+	tuple->state = B2B_BRIDGING_STATE;
 
 	/* extract the lifetime if one is defined */
 	lft_node = xmlNodeGetChildByName(bridge_node, "lifetime");
@@ -3416,6 +3530,15 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 	}
 	tuple->lifetime = 60 + get_ticks();
 
+	tuple->b1_sdp.s	= (char*)shm_malloc(body.len);
+	if(tuple->b1_sdp.s == NULL)
+	{
+		LM_ERR("No more memory\n");
+		goto error;
+	}
+	memcpy(tuple->b1_sdp.s, body.s, body.len);
+	tuple->b1_sdp.len = body.len;
+
 	/* save tuple in global variable for accesss from local routes */
 	local_ctx_tuple = tuple;
 
@@ -3450,7 +3573,6 @@ str* b2b_process_scenario_init(b2b_scenario_t* scenario_struct,
 		xmlFree(state_attr.s);
 
 		tuple->scenario_state = scenario_state;
-		tuple->next_scenario_state = scenario_state;
 	}
 
 	/* go through the document and create the described entities */
@@ -3822,6 +3944,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	client_info_t ci;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
+	str hdrs;
 
 	if(!key || !new_dst)
 	{
@@ -3859,6 +3982,25 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 
 	local_ctx_tuple = tuple;
 
+	if (tuple->state == B2B_INIT_BRIDGING_STATE) {
+		if (pkg_str_dup(&hdrs, &tuple->bridge_entities[1]->hdrs) < 0) {
+			LM_ERR("no more pkg memory\n");
+			goto error;
+		}
+		if (retry_init_bridge(tuple, tuple->bridge_entities[1], new_dst,
+			&hdrs) < 0) {
+			LM_ERR("Failed to retry initial bridge\n");
+			pkg_free(hdrs.s);
+			goto error;
+		}
+		pkg_free(hdrs.s);
+
+		local_ctx_tuple = NULL;
+		lock_release(&b2bl_htable[hash_index].lock);
+
+		return 0;
+	}
+
 	// FIXME: we may have no server at some point in time
 	if(tuple->servers[0] == NULL)
 	{
@@ -3894,7 +4036,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 	else
 		LM_DBG("No peer found\n");
 
-	if(tuple->scenario_state == B2B_BRIDGING_STATE &&
+	if(tuple->state == B2B_BRIDGING_STATE &&
 			tuple->bridge_entities[0]== tuple->servers[0] &&
 			tuple->servers[0]->state== B2BL_ENT_CONFIRMED)
 	{
@@ -3950,7 +4092,7 @@ int b2bl_bridge(str* key, str* new_dst, str* new_from_dname, int entity_no)
 		}
 		LM_DBG("Created new client entity [%.*s]\n", new_dst->len, new_dst->s);
 
-		tuple->scenario_state = B2B_BRIDGING_STATE;
+		tuple->state = B2B_BRIDGING_STATE;
 		memset(&req_data, 0, sizeof(b2b_req_data_t));
 		PREP_REQ_DATA(tuple->servers[0]);
 		req_data.method =&method_invite;
@@ -4082,10 +4224,7 @@ int b2bl_set_state(str* key, int state)
 		return -1;
 	}
 
-	if(tuple->scenario_state == B2B_BRIDGING_STATE)
-		tuple->next_scenario_state = state;
-	else
-		tuple->scenario_state = state;
+	tuple->scenario_state = state;
 
 	lock_release(&b2bl_htable[hash_index].lock);
 
@@ -4291,7 +4430,7 @@ int b2bl_bridge_2calls(str* key1, str* key2)
 	b2bl_htable[hash_index].locked_by = -1;
 	e1->sdp_type = B2BL_SDP_LATE;
 	e1->state = 0;
-	tuple->scenario_state = B2B_BRIDGING_STATE;
+	tuple->state = B2B_BRIDGING_STATE;
 	if(max_duration)
 		tuple->lifetime = get_ticks() + max_duration;
 	else
