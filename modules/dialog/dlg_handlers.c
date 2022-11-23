@@ -391,7 +391,7 @@ static inline void dlg_release_cloned_leg(struct dlg_cell *dlg)
 }
 
 static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
-				struct dlg_cell *dlg,str *mangled_from,str *mangled_to)
+				struct dlg_cell *dlg,str *mangled_from,str *mangled_to, long *leg_idx)
 {
 	str tag,contact,rr_set;
 	unsigned int skip_rrs, cseq_no;
@@ -424,6 +424,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 		 * false positivie - when tag.s = NULL, len is 0 - CID #40640 */
 		if ( dlg->legs[leg].tag.len==tag.len &&
 		strncmp(dlg->legs[leg].tag.s,tag.s,tag.len)==0 ) {
+			*leg_idx = leg;
 			/* we have a match -> branch already known... */
 			LM_DBG("branch with tag <%.*s> already exists\n",tag.len,tag.s);
 			goto routing_info;
@@ -442,9 +443,11 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 		}
 	}
 
+	*leg_idx = leg;
+
 	/* save callee's tag and cseq */
 	LM_DBG("new branch with tag <%.*s>, leg_idx=%d\n", tag.len, tag.s, leg);
-	if (update_leg_info(leg, dlg, rpl, &tag,extract_mangled_fromuri(mangled_from),
+	if (update_leg_info(leg, dlg, rpl, &tag, extract_mangled_fromuri(mangled_from),
 				extract_mangled_touri(mangled_to)) !=0) {
 		LM_ERR("could not add further info to the dialog\n");
 		dlg_release_cloned_leg(dlg);
@@ -518,6 +521,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	req = param->req;
 
 	if (type==TMCB_RESPONSE_FWDED) {
+		long leg_idx = -1;
 		/* this callback is under transaction lock (by TM), so it is save
 		   to operate at write level, but we need to take care on write-read
 		   conflicts -bogdan */
@@ -540,13 +544,13 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 						LM_CRIT("extract_ftc_hdrs ok but no to extracted : [%.*s]\n",req_out_buff->len,req_out_buff->s);
 				}
 			}
-			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to);
+			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to, &leg_idx);
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
 		}
 		/* The state does not change, but the msg is mutable in this callback*/
 		run_dlg_callbacks(DLGCB_RESPONSE_FWDED, dlg, rpl,
-			DLG_DIR_UPSTREAM, NULL, 0, 1);
+			DLG_DIR_UPSTREAM, (void *)leg_idx, 0, 1);
 		return;
 	}
 	if (type==TMCB_TRANS_CANCELLED) {

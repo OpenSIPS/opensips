@@ -148,11 +148,15 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
 #define DLGCB_EARLY           (1<<7)
 
 /*
- * Gives access to all actually-received-from-the-network, non-100 replies
+ * Gives access to all replies (except 100 Trying and internal 408 Timeout)
  * to the initial INVITE of the current dialog which are to be forwarded
  * upstream.  The decision to forward these replies has already been made
  * and this is a last chance to alter their contents before they end up on
  * the network.
+ *
+ * Params:
+ *   - (long)params->dlg_data will hold the callee leg index (including legs
+ *     from parallel forking or extra downstream legs), or -1 on a local reply
  *
  * SIP signaling: initial INVITE
  * Registration:  per-dialog, "dlg" must be given
