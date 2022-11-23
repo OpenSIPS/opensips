@@ -135,7 +135,7 @@ static int mc_compact_cb(char** buf, struct mc_compact_args* mc_compact_args, in
 static int mc_compress(struct sip_msg* msg, int* algo, int* flags,
 		mc_whitelist_p wh_list);
 int mc_compress_cb(char** buf, void* param, int type, int* olen);
-static inline int mc_ndigits(int x);
+static inline unsigned int mc_ndigits(int x);
 static inline void parse_algo_hdr(struct hdr_field* algo_hdr, int* algo, int* b64_required);
 
 static int mc_decompress(struct sip_msg*);
@@ -1019,14 +1019,16 @@ free_mem:
 /*
  *
  */
-static inline int mc_ndigits(int x)
+static inline unsigned int mc_ndigits(int x)
 {
-	if (x == 0)
-		return 1;
+	unsigned int n = 0;
 
-	if (x > 10)
-		return 1 + mc_ndigits(x/10);
-	else return 1;
+	while (x >= 10) {
+		x /= 10;
+		n++;
+	}
+
+	return n + 1;
 }
 
 /*
