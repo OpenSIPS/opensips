@@ -33,9 +33,17 @@
 #include "../../timer.h"
 #include "../b2b_entities/b2be_load.h"
 
-#define B2B_BRIDGING_STATE      -1
-#define B2B_CANCEL_STATE        -2
-#define B2B_NOTDEF_STATE        -3
+enum b2b_tuple_state {
+	/* initial bridge state */
+	B2B_INIT_BRIDGING_STATE,
+
+	/* main bridging state */
+	B2B_BRIDGING_STATE,
+
+	B2B_BRIDGED_STATE,
+
+	B2B_CANCEL_STATE
+};
 
 #define B2B_TOP_HIDING_SCENARY "top hiding"
 #define B2B_TOP_HIDING_SCENARY_LEN  strlen("top hiding")
