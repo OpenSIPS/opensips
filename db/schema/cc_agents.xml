@@ -9,7 +9,7 @@
 
 <table id="cc_agents" xmlns:db="http://docbook.org/ns/docbook">
 	<name>cc_agents</name>
-	<version>2</version>
+	<version>3</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Call Center module to store
