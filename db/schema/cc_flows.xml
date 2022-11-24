@@ -9,7 +9,7 @@
 
 <table id="cc_flows" xmlns:db="http://docbook.org/ns/docbook">
 	<name>cc_flows</name>
-	<version>3</version>
+	<version>2</version>
 	<type db="mysql">&MYSQL_TABLE_TYPE;</type>
 	<description>
 		<db:para>This table is used by the Call Center module to store
