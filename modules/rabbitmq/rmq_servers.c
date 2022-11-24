@@ -563,7 +563,7 @@ no_value:
 				retries = RMQ_DEFAULT_RETRIES;
 			} else {
 				LM_DBG("[%.*s] %d number of retries in case of error\n",
-						cid.len, cid.s, heartbeat);
+						cid.len, cid.s, retries);
 			}
 			break;
 		case RMQP_IMM:
