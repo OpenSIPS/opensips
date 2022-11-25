@@ -36,7 +36,7 @@
 
 struct rtpe_node {
 	unsigned int		idx;			/* overall index */
-	str					rn_url;			/* unparsed, deletable */
+	str					rn_url;			/* unparsed, deletable, NULL-term */
 	int					rn_umode;
 	char				*rn_address;	/* substring of rn_url */
 	int					rn_disabled;	/* found unaccessible? */

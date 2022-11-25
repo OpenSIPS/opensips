@@ -4071,7 +4071,7 @@ static void rtpengine_notify_process(int rank)
 	union sockaddr_union ss;
 	char buffer[RTPENGINE_DGRAM_BUF];
 
-	p = strrchr(rtpengine_notify_sock.s, ':');
+	p = q_memchr(rtpengine_notify_sock.s, ':', rtpengine_notify_sock.len);
 	if (!p) {
 		LM_ERR("no port specified in notification socket %.*s!\n",
 				rtpengine_notify_sock.len, rtpengine_notify_sock.s);
