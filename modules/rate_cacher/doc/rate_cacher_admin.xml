@@ -89,7 +89,7 @@ modparam("rate_cacher", "vendors_db_table", "my_vendors_view")
 	</section>
 
 	<section id="vendors_hash_size" xreflabel="vendors_hash_size">
-		<title><varname>vendors_hash_size</varname> (str)</title>
+		<title><varname>vendors_hash_size</varname> (int)</title>
 		<para>
 		The size of the hash table internally used to keep the vendors. A
 		larger table is much faster but consumes more memory. The hash size
@@ -151,7 +151,7 @@ modparam("rate_cacher", "clients_db_table", "my_clients_view")
 	</section>
 
 	<section id="clients_hash_size" xreflabel="clients_hash_size">
-		<title><varname>clients_hash_size</varname> (str)</title>
+		<title><varname>clients_hash_size</varname> (int)</title>
 		<para>
 		The size of the hash table internally used to keep the clients. A
 		larger table is much faster but consumes more memory. The hash size
