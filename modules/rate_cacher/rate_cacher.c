@@ -130,7 +130,7 @@ static param_export_t params[] = {
 	{ "vendors_hash_size",		INT_PARAM,	&carr_hash_size},
 	{ "clients_db_url",		STR_PARAM,	&accounts_db_url.s},
 	{ "clients_db_table",		STR_PARAM,	&acc_db_table.s},
-	{ "cients_hash_size",		INT_PARAM,	&acc_hash_size},
+	{ "clients_hash_size",		INT_PARAM,	&acc_hash_size},
 	{ "rates_db_url",		STR_PARAM,	&rates_db_url.s},
 	{ "rates_db_table",		STR_PARAM,	&ratesheets_db_table.s},
 	{ 0,				0,		0}
