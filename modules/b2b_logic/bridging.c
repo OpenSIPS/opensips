@@ -21,6 +21,7 @@
 #include "../../parser/parse_uri.h"
 #include "../presence/utils_func.h"
 #include "../../parser/sdp/sdp.h"
+#include "../../parser/parse_methods.h"
 
 #include "entity_storage.h"
 #include "records.h"
@@ -61,6 +62,9 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	str *body, struct sip_msg *msg, int set_maxfwd);
 static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
 	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body);
+
+int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
+	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
 
 mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 							int entity_no, str *prov_media)
@@ -1140,6 +1144,118 @@ done:
 	return rc;
 }
 
+int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
+{
+	b2bl_tuple_t *tuple;
+	b2bl_entity_id_t *entity;
+	str method;
+	int statuscode;
+	unsigned int method_value;
+	b2bl_entity_id_t** entity_head = NULL;
+
+	if (!(cur_route_ctx.flags & B2BL_RT_RPL_CTX)) {
+		LM_ERR("The 'b2b_bridge_retry' function can only be used from the "
+			"b2b_logic dedicated reply route\n");
+		return -1;
+	}
+
+	lock_get(&b2bl_htable[cur_route_ctx.hash_index].lock);
+
+	tuple = b2bl_search_tuple_safe(cur_route_ctx.hash_index,
+		cur_route_ctx.local_index);
+	if(tuple == NULL)
+	{
+		LM_ERR("B2B logic record not found\n");
+		goto error;
+	}
+
+	entity = b2bl_search_entity(tuple, &cur_route_ctx.entity_key,
+		cur_route_ctx.entity_type, &entity_head);
+	if(entity == NULL)
+	{
+		LM_ERR("No b2b_key match found [%.*s], src=%d\n",
+			cur_route_ctx.entity_key.len, cur_route_ctx.entity_key.s,
+			cur_route_ctx.entity_type);
+		goto error;
+	}
+
+	LM_DBG("b2b_entity key = %.*s\n",
+		cur_route_ctx.entity_key.len, cur_route_ctx.entity_key.s);
+
+	method = get_cseq(msg)->method;
+	if(parse_method(method.s, method.s+method.len, &method_value) == NULL)
+	{
+		LM_ERR("Failed to parse method\n");
+		goto error;
+	}
+	if (method_value != METHOD_INVITE) {
+		LM_ERR("The 'b2b_bridge_retry' function can only be used for"
+			"replies to INVITES\n");
+		goto error;
+	}
+
+	statuscode = msg->first_line.u.reply.statuscode;
+	if (statuscode <= 300) {
+		LM_ERR("The 'b2b_bridge_retry' function can only be used for"
+			"negative replies\n");
+		goto error;
+	}
+
+	if (entity != tuple->bridge_entities[1]) {
+		LM_ERR("The 'b2b_bridge_retry' function can only be used for"
+			"negative replies from the second entity\n");
+		goto error;
+	}
+
+	if (new_entities[0] && str_strcmp(new_ent_str, &new_entities[0]->id)) {
+		LM_ERR("Unknown client entity %.*s\n", new_ent_str->len, new_ent_str->s);
+		goto error;
+	}
+
+	local_ctx_tuple = tuple;
+
+	if (IS_BRIDGING_STATE(tuple->state)) {
+		b2bl_delete_entity(entity, tuple, tuple->hash_index, 1);
+
+		entity = b2bl_create_new_entity( B2B_CLIENT, 0, &new_entities[0]->dest_uri,
+			&new_entities[0]->proxy, 0, &new_entities[0]->from_dname,
+			0,0,0,0);
+		if(entity == NULL)
+		{
+			LM_ERR("Failed to create new b2b entity\n");
+			goto error;
+		}
+		LM_DBG("Created new client entity [%.*s]\n",
+			new_entities[0]->dest_uri.len, new_entities[0]->dest_uri.s);
+
+		if (bridging_start_new_ent(tuple, tuple->bridge_entities[0], entity,
+			NULL, 0) < 0) {
+			LM_ERR("Failed to start bridging with new entity\n");
+			goto error;
+		}
+
+		tuple->state = B2B_BRIDGING_STATE;
+	} else if (tuple->state == B2B_INIT_BRIDGING_STATE) {
+		if (retry_init_bridge(msg, tuple, entity,
+			new_entities[0]) < 0) {
+			LM_ERR("Failed to retry initial bridge\n");
+			goto error;
+		}
+	} else {
+		LM_ERR("Unable to retry bridge for tuple in state: %d\n", tuple->state);
+		goto error;
+	}
+
+	lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
+
+	return 1;
+
+error:
+	local_ctx_tuple = NULL;
+	lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
+	return -1;
+}
+
 static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *peer_ent, b2bl_entity_id_t *new_ent,
 	str *body, struct sip_msg *msg, int set_maxfwd)
@@ -1529,9 +1645,6 @@ error1:
 error:
 	return -1;
 }
-
-int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
-	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
 
 int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 	int entity_no)

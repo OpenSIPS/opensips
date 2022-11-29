@@ -234,6 +234,10 @@ static cmd_export_t cmds[]=
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_bridge_flags, fixup_free_init_flags}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"b2b_bridge_retry", (cmd_function)b2b_script_bridge_retry, {
+		{CMD_PARAM_STR,0,0},
+		{0,0,0}},
+		REQUEST_ROUTE},
 	{"b2b_trigger_scenario", (cmd_function)script_trigger_scenario, {
 		{CMD_PARAM_STR,fixup_init_id,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,

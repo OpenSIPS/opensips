@@ -22,6 +22,7 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	int entity_no, str *prov_media);
 int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 	str *provmedia_uri, struct b2b_bridge_params *params);
+int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str);
 
 int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 	struct sip_msg* msg);

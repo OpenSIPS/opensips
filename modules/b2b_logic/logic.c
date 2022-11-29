@@ -965,18 +965,10 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 					if (ret == -1) {
 						goto error;
 					} else if (ret == 0) {
-						if (new_entities[0]) {
-							if (retry_init_bridge(msg, tuple, entity,
-								new_entities[0]) < 0) {
-								LM_ERR("Failed to retry initial bridge\n");
-								goto error;
-							}
-						} else {
-							SEND_REPLY_TO_PEER_OR_GOTO_DONE;
-							LM_DBG("Negative reply [%d] - delete[%p]\n",
-								statuscode, tuple);
-							b2b_mark_todel(tuple);
-						}
+						SEND_REPLY_TO_PEER_OR_GOTO_DONE;
+						LM_DBG("Negative reply [%d] - delete[%p]\n",
+							statuscode, tuple);
+						b2b_mark_todel(tuple);
 					}
 				}
 				b2bl_print_tuple(tuple, L_DBG);
@@ -3621,12 +3613,6 @@ int b2bl_server_new(struct sip_msg *msg, str *id, str *adv_contact,
 int b2bl_client_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 	 str *from_dname, str *adv_contact, pv_spec_t *hnames, pv_spec_t *hvals)
 {
-	if (cur_route_ctx.flags & B2BL_RT_RPL_CTX) {
-		LM_ERR("The 'b2b_client_new' function cannot be used from the "
-			"b2b_logic dedicated reply routes\n");
-		return -1;
-	}
-
 	return b2bl_entity_new(msg, id, dest_uri, proxy, B2B_CLIENT,
 		hnames, hvals, from_dname, adv_contact);
 }
