@@ -49,8 +49,21 @@ static char from_tag[FROM_TAG_LEN + 1];
 static void generate_tag(str* tag, str* src, str* callid)
 {
 	int len;
+	str srcs[4];
+	struct timeval tv;
+	pid_t pid = getpid();
 
-	MD5StringArray(from_tag, src, 1);
+	gettimeofday(&tv, NULL);
+
+	srcs[0] = *src;
+	srcs[1].s = (char *)&tv.tv_sec;
+	srcs[1].len = sizeof(tv.tv_sec);
+	srcs[2].s = (char *)&tv.tv_usec;
+	srcs[2].len = sizeof(tv.tv_usec);
+	srcs[3].s = (char *)&pid;
+	srcs[3].len = sizeof(pid);
+
+	MD5StringArray(from_tag, srcs, 4);
 	len = MD5_LEN;
 
 	/* calculate from tag from callid */
