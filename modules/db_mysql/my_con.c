@@ -74,6 +74,7 @@ int db_mysql_connect(struct my_con* ptr)
 				LM_ERR("TLS domain: %.*s not found\n",
 					tls_domain_name->len, tls_domain_name->s);
 				mysql_close(ptr->con);
+				ptr->init = 0;
 				return -1;
 			}
 		}
@@ -121,6 +122,7 @@ int db_mysql_connect(struct my_con* ptr)
 		LM_ERR("driver error(%d): %s\n",
 			mysql_errno(ptr->con), mysql_error(ptr->con));
 		mysql_close(ptr->con);
+		ptr->init = 0;
 		return -1;
 	}
 
@@ -196,7 +198,8 @@ void db_mysql_free_connection(struct pool_con* con)
 	if (_c->res) mysql_free_result(_c->res);
 	if (_c->id) free_db_id(_c->id);
 	if (_c->con) {
-		mysql_close(_c->con);
+		if (_c->init)
+			mysql_close(_c->con);
 		pkg_free(_c->con);
 	}
 	pkg_free(_c);
