@@ -1,0 +1,60 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "master", "1.11", "2.1" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: "46 20 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ cpp, python ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Packages (cpp)
+        if: ${{ matrix.language == 'cpp' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes flex bison libsqlite3-dev libsctp-dev libradcli-dev libhiredis-dev unixodbc-dev libconfuse-dev libmysqlclient-dev libexpat1-dev libxml2-dev libpq-dev zlib1g-dev libperl-dev libsnmp-dev libdb-dev libldap2-dev libcurl4-gnutls-dev libgeoip-dev libpcre3-dev libmemcached-dev libmicrohttpd-dev librabbitmq-dev liblua5.1-0-dev libncurses5-dev libjson-c-dev uuid-dev
+
+      - name: Before Index (cpp)
+        if: ${{ matrix.language == 'cpp' }}
+        run: |
+          export FASTER=1 && echo "FASTER=$FASTER" >> $GITHUB_ENV
+          export NICER=0 && echo "NICER=$NICER" >> $GITHUB_ENV
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+        if: ${{ matrix.language == 'python' }}
+
+      - name: Build cpp
+        if: ${{ matrix.language == 'cpp' }}
+        run: make exclude_modules="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase cachedb_mongodb auth_jwt" all
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{ matrix.language }}"
