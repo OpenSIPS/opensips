@@ -1238,14 +1238,14 @@ int run_init_negreply_cb(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	int etype;
 
 	/* call the callback for brigding failure  */
-	cbf = tuple->cbf;
-	if(cbf && (tuple->cb_mask&B2B_REJECT_CB))
+	cbf = tuple->cb.f;
+	if(cbf && (tuple->cb.mask&B2B_REJECT_CB))
 	{
 		etype = entity->type;
 		entity_no = bridge_get_entityno(tuple, entity);
 
 		memset(&cb_params, 0, sizeof(b2bl_cb_params_t));
-		cb_params.param = tuple->cb_param;
+		cb_params.param = tuple->cb.param;
 		stats.start_time =  entity->stats.start_time;
 		stats.setup_time = get_ticks() - entity->stats.start_time;
 		stats.key.s = NULL; stats.key.len = 0;
@@ -1338,7 +1338,7 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	b2bl_htable[tuple->hash_index].locked_by = process_no;
 
 	client_id = b2b_api.client_new(&ci, b2b_client_notify, b2b_add_dlginfo,
-			&b2bl_mod_name, tuple->key, get_tracer(tuple));
+			&b2bl_mod_name, tuple->key, get_tracer(tuple), NULL, NULL);
 
 
 	b2bl_htable[tuple->hash_index].locked_by = -1;
