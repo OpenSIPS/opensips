@@ -1,3 +1,517 @@
+=========================== Release 3.1.13 ==============================
+
+2022-12-10  OpenSIPS  <github@opensips.org>
+        * [85d0e3bc9] :
+
+        Rebuild documentation
+
+
+2022-12-07  Liviu Chircu  <liviu@opensips.org>
+        * [e948b6e0b] :
+
+        db_mysql: Do not read freed PKG memory after 1st failed reconnect
+
+        During db_mysql_connect(), make sure to reset the "init" status after
+        free'ing ptr->con.  Per MySQL 5.7 docs on mysql_close():
+
+            "Closes a previously opened connection.
+        	... Do not use the handler after it has been closed."
+
+        (cherry picked from commit d616ed3f979100639ed43e45fd3123ccba787535)
+
+
+2022-12-05  Razvan Crainea  <razvan@opensips.org>
+        * [060b72b24] :
+
+        b2b_entities: add more entropy to from_tag generation
+
+        The initial from-tag generation cosisted of an md5 hash over the From
+        URI. Thus, if you would have generating client requests to the same
+        entity (such as a media server), you would always get the same from-tag
+        for all those requests.
+        The current patch adds more entropy when generating the from_tag, such
+        as the current timestamp (expressed in milliseconds) along with the
+        process pid.
+
+        (cherry picked from commit b003891b468d5730fd68b445331735a92c770bce)
+
+
+2022-12-03  OpenSIPS  <github@opensips.org>
+        * [cdc64cdf0] :
+
+        Rebuild documentation
+
+
+2022-11-28  Callum  <callum.guy@x-on.co.uk>
+        * [0cba1fc58] :
+
+        rate_cacher: :bug: fix parameter types
+
+        (cherry picked from commit c8219a87024ef864f22a368dd84516cc617abb06)
+
+
+2022-11-28  Callum  <callum.guy@x-on.co.uk>
+        * [218ced666] :
+
+        rate_cacher: :bug: fix parameter typo
+
+        (cherry picked from commit 0ec0936bac2dbf6ca6c930b5e76ae147a0ad4245)
+
+
+2022-11-26  OpenSIPS  <github@opensips.org>
+        * [ca439171e] :
+
+        Rebuild documentation
+
+
+2022-11-25  Liviu Chircu  <liviu@opensips.org>
+        * [bd493f60a] :
+
+        rtpengine: Fix possible startup crash in notification process
+
+        When the "notification_sock" modparam was set, the process responsible
+        for notifications would start by scanning a non-NULL terminated string
+        past the end boundary, sometimes leading to a crash on startup.
+
+        Fixes #2947
+
+        (cherry picked from commit cb59a84fcccc4ee34a1c1ddbd4fd09cc0c5834a0)
+
+
+2022-11-24  Liviu Chircu  <liviu@opensips.org>
+        * [c59785707] :
+
+        rabbitmq: Fix bogus debug log
+
+        Credits to Nick Altmann for the report!
+
+        (cherry picked from commit aaeaf245733cedea540912442a6782325926db11)
+
+
+2022-11-24  Liviu Chircu  <liviu@opensips.org>
+        * [471b31cf6] :
+
+        compression: Fix math bug leading to bad Content-Length
+
+        Fix an edge-case in mc_ndigits() causing Content-Length values starting
+        with "10..." to be incorrectly counted.  (e.g. "107" produced 2, not 3).
+
+        This bug affected both mc_compact() and mc_compress().
+
+        (cherry picked from commit 37213d245c63e426a16004ab161823bd5c2cc1ec)
+
+
+2022-11-23  Razvan Crainea  <razvan@opensips.org>
+        * [402272821] :
+
+        siprec: unref failed dialogs
+
+        Close #2674
+
+        (cherry picked from commit e3c74a39df0fd5f5b58679183ade8eee2e0749f6)
+
+
+2022-11-19  OpenSIPS  <github@opensips.org>
+        * [74d09741e] :
+
+        Rebuild documentation
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [538cbdf08] :
+
+        mid_registrar: Fix occasional undesired De-REGISTER forwarding in mode 2
+
+        If the timings were aligned in a specific way, the mid-registrar (in AoR
+        throttling mode) would actually forward a De-REGISTER downstream even
+        though it had at least 1+ healthy remaining contacts after having
+        applied the De-REGISTER locally.  This would cause some degree of
+        service loss, as the remaining UAs were registered on the mid-reg, but
+        not on the backend.
+
+        Many thanks to Carlos Cruz Luengo (@cruzccl) and @ryan-netizen for an
+        accurate report, as well as helping come up with the fix!
+
+        Fixes #2615
+
+        (cherry picked from commit 502f1ab66257628f06bee7bf8ea4564ab5e8a160)
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [5fe2f1095] :
+
+        sipcapture: Fix missing lock release on "buffer too small" errors
+
+        Many thanks to Ryan Caicse (@ryancaicse) for reporting this bug!
+
+        (cherry picked from commit 9f0fe53744ebf16467b61e9b59da5396bb356896)
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [4a18a0a61] :
+
+        b2b_entities: Fix missing lock release on OOM error case
+
+        Many thanks to Ryan Caicse (@ryancaicse) for reporting this bug!
+
+        (cherry picked from commit 43ffc3d445afc9842afda9caf23e90a0564ffff3)
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [1dc964318] :
+
+        b2b_logic: Fix missing lock release on OOM error case
+
+        Many thanks to Ryan Caicse (@ryancaicse) for reporting this bug!
+
+        (cherry picked from commit b5646bdcf8d1681d894b73af63257c2f0257d4fe)
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [8efeafb13] :
+
+        b2b_entities: Fix missing macro in previous commit
+
+        (cherry picked from commit 2b807ad0cf08c15b1947d38674eb001fd64fd1f4)
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [b27c91594] :
+
+        b2b_entities: Fix missing lock release on SIP parsing errors
+
+        Many thanks to Ryan Caicse (@ryancaicse) for reporting this bug!
+
+        (cherry picked from commit a379e9367989e6f731c3c4ab1a3ed97d3c53e287)
+
+
+2022-11-18  Liviu Chircu  <liviu@opensips.org>
+        * [ae59f85e5] :
+
+        b2b_sca: Fix double lock release on error case
+
+        Many thanks to Ryan Caicse (@ryancaicse) for reporting this bug!
+
+        (cherry picked from commit 4bdbaf222761a74a8fff03bce7afe758742ec3e0)
+
+
+2022-11-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [166212ef7] :
+
+        [dialog] fix missing locking in  get_dlg_vals()
+
+        Iterating the list of dlg vals must be done under lock
+
+        (cherry picked from commit 728eff0a551c4eac3bc90d0cfac08de5a1280058)
+
+
+2022-11-17  Liviu Chircu  <liviu@opensips.org>
+        * [79381233a] :
+
+        next_branches(): Fix infinite looping during error handling
+
+        If someone has actually taken the time to corrupt the internal
+        "$avp(serial_branch)" AVP, do not perform the "infinite while loop dance"
+        and correctly progress to the next AVP.
+
+        (cherry picked from commit 244cc92919c1cd6b3bf6a52bd4325b0268c88c76)
+
+
+2022-11-17  Liviu Chircu  <liviu@opensips.org>
+        * [e5739be82] :
+
+        next_branches(): Fix bugs leading to READ on freed shared memory
+
+        This patch fixes two code paths leading to the @avp pointer being freed,
+        after which the dangling pointer is read afterwards by the
+        search_next_avp() function at the "done" goto label.  This will work
+        99% of the time, until the 1% where it won't (crash and burn!).
+
+        Many thanks to Richard Revels (@rrevels-bw) and Sebastien Couture for
+        an accurate report, as well as their involvement in troubleshooting!
+
+        Fixes #2446
+        Fixes #2950
+
+        (cherry picked from commit 578fc2907374477449313c36e4fc3287701de800)
+
+
+2022-11-16  Liviu Chircu  <liviu@opensips.org>
+        * [a8e16576c] :
+
+        CacheDB: Allow "," in URL passwords
+
+        Many thanks to @xuxin010033 for the report!
+
+        Fixes #2786
+
+        (cherry picked from commit f904694120ae6bea23bd12c14becd353a8071962)
+
+
+2022-11-16  Liviu Chircu  <liviu@opensips.org>
+        * [d31a0d09d] :
+
+        CacheDB: Fix URL parser bugs with multiple hosts
+
+        Although support for CACHEDB_ID_MULTIPLE_HOSTS has been in there for a
+        long time, URLs such as "redis:ha://h1,h2,h3:6379" were not correctly
+        parsed.
+
+        (cherry picked from commit bacb776cc90d8532d58f360e276a00977da15fad)
+
+
+2022-11-16  Gang Zhuo  <gang.zhuo@gmail.com>
+        * [73fe193d9] :
+
+        [db_oracle] Do not change asynch mode when connection lost.
+
+        The sessions may be ended due to a network error,
+        and change OCI_ATTR_NONBLOCKING_MODE attribute with no session
+        will cause "ORA-03126: network driver does not support non-blocking
+        operations" error.
+
+        In the case, the function done_timelimit will failed with ORA-03126 error.
+        The error is not considered as a connection loss,
+        and subsequent operations will always throw this error,
+        and the lost connection never reconnect.
+
+        (cherry picked from commit a5657831f9b216168d2dc974b96e4474e15ff15a)
+
+
+2022-11-15  Liviu Chircu  <liviu@opensips.org>
+        * [d656d48bb] :
+
+        usrloc: Avoid PN-related timer processing in "SQL/CacheDB Only" modes
+
+        Since the "PN trigger" logic described in RFC 8599 is currently strongly
+        tied to holding in-memory contacts, avoid any crashes or other
+        side-effects when running in "CacheDB Only" or "SQL Only" together with
+        PN support by simply avoiding linking contacts into the "PN trigger"
+        timer list.
+
+        Fixes #2902
+
+        (cherry picked from commit 60c1d54f9193e8fca733eb1d0fe92fd60ffe7a27)
+
+
+2022-11-15  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [9c5575279] :
+
+        [rr] Fix handling on maddr param in RURI
+
+        If present in RURI, maddr value should be considered (instead of host part) for testing if RURI points (as domain) to OpenSIPS or not (the is_myselg() test)
+
+        (cherry picked from commit f3cb92df91edd7e472c7c5cb4a2692a0585fad62)
+
+
+2022-11-12  OpenSIPS  <github@opensips.org>
+        * [114862b32] :
+
+        Rebuild documentation
+
+
+2022-11-08  Liviu Chircu  <liviu@opensips.org>
+        * [846132178] :
+
+        parse_via_param(): Fix out-of-bounds read edge-case (OSS-Fuzz)
+
+        Similar to 5e9f72d3d, but for the parse_via_param() function.
+
+        Severity: Low
+        Fixes OSS-Fuzz#53080
+
+        (cherry picked from commit 6135ff05d0897342ca5c81585cef5a650eae67b9)
+
+
+2022-11-08  Liviu Chircu  <liviu@opensips.org>
+        * [06da52b00] :
+
+        db_flatstore: Fix another race condition around MI 'flat_rotate'
+
+        This race condition was related to invoking 'flat_rotate' 2+ times
+        during the same second (UNIX timestamp).  Due to the way the
+        timestamping logic was implemented, this could lead to files NOT being
+        rotated at all on the 2nd 'flat_rotate', which falls in the same second.
+
+        Although very rare, this race condition could lead to massive CDR loss,
+        since all CDRs between 2nd and 3rd 'flat_rotate' commands have a great
+        chance of being fully lost (unread and discarded).
+
+        (cherry picked from commit e180b1536e89e7bc8d6e2dd3264786e8531c71d7)
+
+
+2022-11-08  Liviu Chircu  <liviu@opensips.org>
+        * [569e336c8] :
+
+        db_flatstore: Fix missing CDRs due to 'flat_rotate' race conditions
+
+        This commit simply adds R/W locking around the 'flat_rotate' MI command,
+        and all the SIP worker processes.  The race condition was as follows:
+
+        * SIP worker checks the 'flat_rotate' stamp and proceeds to write CDR
+        * 'flat_rotate' is ran (timestamp++)
+        * external process scans & fully reads the rotated file (with deletion
+           to follow later as well, but this is irrelevant)
+        * SIP worker finally writes the CDR using flushed/vector'ed I/O
+           (too late at this point, CDR is forever lost)
+
+        (cherry picked from commit d3b1463ee115a8b7d4d6b9658c8b07b9ef3d0549)
+
+
+2022-11-08  Liviu Chircu  <liviu@opensips.org>
+        * [8e4f97f11] :
+
+        parse_via(): Fix out-of-bounds read edge-case (OSS-Fuzz)
+
+        This patch fixes a possible off-by-one read overflow while parsing the
+        Via buffer.  Even so, the error was mostly harmless, as the supplied
+        buffer is typically much larger and is guaranteed to be NULL-terminated
+        (see udp_read_req(), for example).
+
+        Severity: Low
+        Fixes OSS-Fuzz#52326
+
+        (cherry picked from commit 5e9f72d3d90e8fc9cb20578a95c891631b4d91da)
+
+
+2022-11-05  OpenSIPS  <github@opensips.org>
+        * [e36404610] :
+
+        Rebuild documentation
+
+
+2022-11-04  Liviu Chircu  <liviu@opensips.org>
+        * [8e17ae3d1] :
+
+        registrar: Add a unit test for lookup("r")
+
+        Related to #2917
+
+        (cherry picked from commit 02ddcc6cc52e6c27d27870447c4df7a352508a75)
+
+
+2022-11-04  Liviu Chircu  <liviu@opensips.org>
+        * [9800b21b4] :
+
+        registrars: Fix an edge-case with lookup("r")
+
+        This fixes a bug where the registrar library would return
+        E_LOOKUP_NO_RESULTS upon encountering an AoR with 0 contacts, instead of
+        continuing to walk the branches and expand the remaining AoRs.
+
+        Many thanks to @MayamaTakeshi for a detailed bug report!
+        Fixes #2917
+
+        (cherry picked from commit 9ac7739ef02079a22de6beb776d6a1628a4458cb)
+
+
+2022-11-03  Răzvan Crainea  <razvan@opensips.org>
+        * [8aca6740d] :
+
+        Merge pull request #2919 from goharahmed/eventExpiry
+
+        EVI: Event subscribers expiry enhancements
+        (cherry picked from commit 3ddd19ea2a34cdc25ac43f3785bccab9ad0d42f9)
+
+
+2022-10-29  OpenSIPS  <github@opensips.org>
+        * [5b98ef082] :
+
+        Rebuild documentation
+
+
+2022-10-27  Liviu Chircu  <liviu@opensips.org>
+        * [86207d5be] :
+
+        dialog: Fix shtag restoration when loading from DB
+
+        This fixes a hanging dialog profiles bug on the backup box (NULL shtag),
+        in specific scenarios with dialogs + sharing tags, profiles with
+        value and dialog + profile replication clusters (whole enchilada).
+
+        In such cases, after restarting the backup box with active dialogs in
+        the DB, it would end up with forever-hanging dialog profiles in memory,
+        which would be continuously broadcasted to all cluster nodes,
+        effectively adding (doubling) unnecessary counters to the overall limit.
+
+        Credits to Vlad Pătrașcu for helping troubleshoot this bug!
+
+        (cherry picked from commit d77a9c52c2becdd451ef19ec9b586d7152aa8884)
+        (cherry picked from commit ab1e5d4a31e5a4d601ea1a7cef7a427d7e508ccf)
+
+
+2022-10-27  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [6059abea5] :
+
+        [gflags] fix wrong quotes in example
+
+        Credits go to Karsten Wemheuer
+
+        (cherry picked from commit 5945746b09b480dd0b7f8ea4b3584e4521bdac3a)
+
+
+2022-10-27  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [d28001aee] :
+
+        Merge pull request #2914 from MayamaTakeshi/reg_lookup_log_correction
+
+        Corrected 'getting contacts' log
+
+        (cherry picked from commit 9be68bf34f8d1d54708a6a3de8f689e1e91288fc)
+
+
+2022-10-27  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4dcb3084e] :
+
+        [tracer] avoid parsing the shm cloned SIP msg
+
+        The TM TMCB_MSG_SENT_OUT callback may be called when doing a retransmission for a locally generated request. If for the original sending, a pkg malloc'ed sip_msg is passed to TMCB_MSG_SENT_OUT callback, for the retransmissions the shm cloned sip_msg is passed. As the 'tracer' callback (on TMCB_MSG_SENT_OUT) requires some FROM hdr parsing (to get the from tag), it should NOT parse directly on the shm cloned SIP msg as it will tain the shm sip_msg with pkg pointers -> better do a local parsing (not attached to the sip_msg) of the FROM HDR.
+        This issue was leading to pkg leaking (of the parsed FROM hdr in the shm cloned sip_msg) or it a crash if using failure route from the local route.
+
+        Note: this is specific to using tracer module from the local route.
+        Closes  #2728
+
+        (cherry picked from commit 4eabea8a9eb0a08909854722972cd35164557c76)
+
+
+2022-10-26  Liviu Chircu  <liviu@opensips.org>
+        * [ced7b4cf1] :
+
+        Allow writing to AVPs with negative index
+
+        This includes both SET and DELETE operations, for example:
+            $(avp(foo)[-1]) = NULL;
+            $(avp(foo)[-1]) = "42";
+
+        (cherry picked from commit df362fb231fc42735f6aedcbdb8f036a72a98f2e)
+
+
+2022-10-25  ihsinme  <ihsinme@gmail.com>
+        * [540254648] :
+
+        Fix for access due to low memory.
+
+        If you check after a memory access, then you always have access from outside. with stricter control of memory boundaries, this can lead to an abnormal termination of the program.
+
+        (cherry picked from commit 9ed1485938944ae47f58ac081facb4470c30c47e)
+
+
+2022-10-22  OpenSIPS  <github@opensips.org>
+        * [15ef14a89] :
+
+        Rebuild documentation
+
+
+2022-10-21  Vlad Patrascu  <vladp@opensips.org>
+        * [849ebc919] :
+
+        cachedb_local: fix expiration of keys received through cluster sync
+
+        Credits to Kingsley Tart from CallTracks for reporting.
+
+        (cherry picked from commit d0c4fc48c7d46ac3588e540574a5a32b3d61992b)
+
+
 =========================== Release 3.1.12 ==============================
 
 2022-10-15  OpenSIPS  <github@opensips.org>
