@@ -442,22 +442,99 @@ error2:
 	return -1;
 }
 
+static pv_value_t *route_params_expand(struct sip_msg *msg,
+	void *params, int params_no)
+{
+	str tmp;
+	int index;
+	pv_value_t *route_vals, *res;
+	action_elem_p actions = (action_elem_p)params;
+
+	route_vals = pkg_malloc(params_no * sizeof(*route_vals));
+	if (!route_vals) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+
+	for (index = 0; index < params_no; index++) {
+		res = &route_vals[index];
+		switch (actions[index].type)
+		{
+			case STRING_ST:
+				res->rs.s = actions[index].u.string;
+				res->rs.len = strlen(res->rs.s);
+				res->flags = PV_VAL_STR;
+				break;
+
+			case NUMBER_ST:
+				res->ri = actions[index].u.number;
+				res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+				break;
+
+			case SCRIPTVAR_ST:
+				if(pv_get_spec_value(msg, (pv_spec_p)actions[index].u.data, res)==0)
+				{
+					if (res->flags & PV_VAL_STR) {
+						/* but we need to duplicate the string */
+						if (pkg_str_dup(&tmp, &res->rs) == 0) {
+							res->rs.s = tmp.s;
+							res->flags |= PV_VAL_PKG;
+							break;
+						} else {
+							LM_ERR("cannot duplicate param value\n");
+						}
+					} else {
+						break;
+					}
+				} else {
+					LM_ERR("cannot get spec value\n");
+				}
+				/* fallback */
+
+			default:
+				LM_ALERT("BUG: invalid parameter type %d\n",
+						actions[index].type);
+				/* fallback */
+			case NULLV_ST:
+				res->rs.s = NULL;
+				res->rs.len = res->ri = 0;
+				res->flags = PV_VAL_NULL;
+				break;
+		}
+	}
+	return route_vals;
+}
+
+static void route_params_release(pv_value_t *params, int params_no)
+{
+	int p;
+	for (p = 0; p < params_no; p++) {
+		if (params[p].flags & PV_VAL_PKG)
+			pkg_free(params[p].rs.s);
+	}
+	pkg_free(params);
+}
+
 
 /* function used to get parameter from a route scope */
 static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
-		pv_value_t *res, void *params, void *extra)
+		pv_value_t *res, void *_params, void *_extra)
 {
 	int index;
 	pv_value_t tv;
-	action_elem_p actions = (action_elem_p)params;
-	int params_no = (int)(unsigned long)extra;
+	pv_value_t *params = (pv_value_t *)_params;
+	int params_no = (int)(unsigned long)_extra;
+
+	if (params_no <= 0) {
+		LM_DBG("route without parameters\n");
+		return pv_get_null(msg, ip, res);
+	}
 
 	if(ip->pvn.type==PV_NAME_INTSTR)
 	{
 		if (ip->pvn.u.isname.type != 0)
 		{
-			LM_ERR("$param expects an integer index here.  Strings "
-			       "(named parameters) are only accepted within event_route\n");
+			LM_ERR("route $param variable accepts only integer indexes\n");
 			return -1;
 		}
 		index = ip->pvn.u.isname.name.n;
@@ -499,42 +576,10 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 
 	/* the parameters start at 0, whereas the index starts from 1 */
 	index--;
-	switch (actions[index].type)
-	{
-	case NULLV_ST:
-		res->rs.s = NULL;
-		res->rs.len = res->ri = 0;
-		res->flags = PV_VAL_NULL;
-		break;
-
-	case STRING_ST:
-		res->rs.s = actions[index].u.string;
-		res->rs.len = strlen(res->rs.s);
-		res->flags = PV_VAL_STR;
-		break;
-
-	case NUMBER_ST:
-		res->rs.s = sint2str(actions[index].u.number, &res->rs.len);
-		res->ri = actions[index].u.number;
-		res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-		break;
-
-	case SCRIPTVAR_ST:
-		route_rec_level--;
-		if(pv_get_spec_value(msg, (pv_spec_p)actions[index].u.data, res)!=0)
-		{
-			LM_ERR("cannot get spec value\n");
-			route_rec_level++;
-			return -1;
-		}
-		route_rec_level++;
-		break;
-
-	default:
-		LM_ALERT("BUG: invalid parameter type %d\n",
-				actions[index].type);
-		return -1;
-	}
+	*res = params[index];
+	res->flags &= ~PV_VAL_PKG; /* not interested in this flag */
+	if (res->flags & PV_VAL_INT)
+		res->rs.s = int2str(res->ri, &res->rs.len);
 
 	return 0;
 }
@@ -581,6 +626,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	acmd_export_t *acmd;
 	void* cmdp[MAX_CMD_PARAMS];
 	pv_value_t tmp_vals[MAX_CMD_PARAMS];
+	pv_value_t *route_p;
 	str sval;
 
 	/* reset the value of error to E_UNSPEC so avoid unknowledgable
@@ -736,9 +782,16 @@ int do_action(struct action* a, struct sip_msg* msg)
 					ret=E_BUG;
 					break;
 				}
-				route_params_push_level(sroutes->request[i].name, a->elem[2].u.data,
-						(void*)(unsigned long)a->elem[1].u.number, route_param_get);
+				len = a->elem[1].u.number;
+				route_p = route_params_expand(msg, a->elem[2].u.data, len);
+				if (!route_p) {
+					LM_ERR("could not expand route params!\n");
+					ret=E_OUT_OF_MEM;
+				}
+				route_params_push_level(sroutes->request[i].name,
+						route_p, (void *)(unsigned long)len, route_param_get);
 				return_code=run_actions(sroutes->request[i].a, msg);
+				route_params_release(route_p, len);
 				route_params_pop_level();
 			} else {
 				route_params_push_level(sroutes->request[i].name, NULL, 0, route_param_get);
