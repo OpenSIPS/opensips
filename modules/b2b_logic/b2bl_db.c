@@ -638,7 +638,7 @@ int b2b_logic_restore_db(void)
 				vals[20].s.len = vals[20].s.s?strlen(vals[20].s.s):0;
 			} else {
 				/* just mark 'e3_key' field as null for load_tuple() */
-				vals[21].s.s = NULL;
+				vals[20].s.s = NULL;
 			}
 
 			if (load_tuple(vals) < 0)
