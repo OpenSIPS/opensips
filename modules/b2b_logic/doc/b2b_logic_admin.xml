@@ -241,32 +241,6 @@ modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 	</programlisting>
 		</example>
 	</section>
-
-	<section id="param_use_init_sdp" xreflabel="use_init_sdp">
-		<title><varname>use_init_sdp</varname> (int)</title>
-		<para>
-		This parameter modifies the behaviour of the B2BUA when bridging
-		and a provisional media uri is set. For playing media while the callee
-		answers (that is connecting the caller to a media server), the bridging
-		with the callee must start by sending an Invite to it. The correct way
-		is to send an Invite without a body in this case, but it has been observed
-		that not many gateways support this. So, the solution is to use the sdp
-		received in the first Invite from the caller and put it as the body for this
-		invite. By setting this parameter, this behavior is enabled.
-		You can also set use_init_sdp per session and overwrite this global value.
-		</para>
-		<para>
-		<emphasis>Default value is <quote>0</quote>.</emphasis>
-		</para>
-		<example>
-		<title>Set <varname></varname> parameter</title>
-		<programlisting format="linespecific">
-...
-modparam("b2b_logic", "use_init_sdp", 1)
-...
-	</programlisting>
-		</example>
-	</section>
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (str)</title>
 		<para>
@@ -569,10 +543,6 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 					<listitem><para>
 					<emphasis>p</emphasis> - Preserve To: header.
 					</para></listitem>
-					<listitem><para>
-					<emphasis>s</emphasis> - Use init SDP (as described in the
-					<xref linkend="param_use_init_sdp"/> modparam) for this session.
-					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
 			<listitem><para>
@@ -586,14 +556,6 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 				to be called when replies belonging to this B2B session are received. This
 				parameter will override the global <xref linkend="param_script_reply_route"/>
 				modparam for this particular B2B session.
-			</para></listitem>
-			<listitem><para>
-				<emphasis>init_sdp_body (string, optional)</emphasis> - SDP body to use
-				as init SDP (see the <xref linkend="param_use_init_sdp"/> modparam).
-			</para></listitem>
-			<listitem><para>
-				<emphasis>init_sdp_ctype (string, optional)</emphasis> - Content type to use
-				for the init SDP (see the <xref linkend="param_use_init_sdp"/> modparam).
 			</para></listitem>
 		</itemizedlist>
 	<para>
@@ -736,8 +698,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 		<para>
 			This function bridges two entities, in the context of an existing B2B session
 			(the initial entities are already connected). At least one of the two entities
-			has to be a new client entity. If an existing entity is provided, the first step
-			will be to send it a reINVITE.
+			has to be a new client entity.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -772,6 +733,16 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 					<emphasis>f</emphasis> - Rollback call to state before bridging in case of transfer
 					failed, don't hangup the call (default behaviour).
 					</para></listitem>
+					<listitem><para>
+					<emphasis>h</emphasis> - Put the old entity on hold before bridging it to the
+					new entity.
+					</para></listitem>
+					<listitem><para>
+					<emphasis>r</emphasis> - Do not attempt late SDP negociation with the new entity.
+					Start the bridging by first contacting the new entity using the initial SDP received
+					from the old entity. After the new entity answers, send a reINVITE without body to
+					the old entity. Use the current SDP received in this new answer from the old entity to trigger a renegociation with the new entity.
+					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
@@ -787,6 +758,44 @@ route[b2b_logic_request] {
    b2b_client_new("client2", $hdr(Refer-To));
 
    b2b_bridge("peer", "client2");
+}
+...
+		</programlisting>
+		</example>
+	</section>
+
+	<section id="func_b2b_bridge_retry" xreflabel="b2b_bridge_retry()">
+		<title>
+		<function moreinfo="none">b2b_bridge_retry(new_entity)</function>
+		</title>
+		<para>
+			This function can be used to retry a failed bridging action by contacting
+			a new destination. A new client entity must be created before running this
+			function with <xref linkend="func_b2b_client_new"/>.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>entity1 (string)</emphasis> - ID of the new entity to bridge.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from the b2b_logic reply route.
+		</para>
+		<example>
+			<title><function>b2b_bridge</function> usage</title>
+		<programlisting format="linespecific">
+...
+route[b2b_logic_reply] {
+   ...
+   if ($b2b_logic.entity(id) == "client1" &amp;&amp; $rm == "INVITE" &amp;&amp; $rs >= 300) {
+      b2b_client_new("client_retry", "sip:alice@opensips.org");
+
+      b2b_bridge_retry("client_retry");
+   } else {
+      b2b_handle_reply();
+   }
+   ...
 }
 ...
 		</programlisting>
