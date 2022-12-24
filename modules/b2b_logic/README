@@ -20,20 +20,19 @@ B2B_LOGIC
               1.4.4. cleanup_period (int)
               1.4.5. custom_headers_regexp (str)
               1.4.6. custom_headers (str)
-              1.4.7. use_init_sdp (int)
-              1.4.8. db_url (str)
-              1.4.9. cachedb_url (str)
-              1.4.10. cachedb_key_prefix (string)
-              1.4.11. update_period (int)
-              1.4.12. max_duration (int)
-              1.4.13. contact_user (int)
-              1.4.14. b2bl_from_spec_param (string)
-              1.4.15. server_address (str)
-              1.4.16. init_callid_hdr (str)
-              1.4.17. db_mode (int)
-              1.4.18. db_table (str)
-              1.4.19. b2bl_th_init_timeout (int)
-              1.4.20. b2bl_early_update (int)
+              1.4.7. db_url (str)
+              1.4.8. cachedb_url (str)
+              1.4.9. cachedb_key_prefix (string)
+              1.4.10. update_period (int)
+              1.4.11. max_duration (int)
+              1.4.12. contact_user (int)
+              1.4.13. b2bl_from_spec_param (string)
+              1.4.14. server_address (str)
+              1.4.15. init_callid_hdr (str)
+              1.4.16. db_mode (int)
+              1.4.17. db_table (str)
+              1.4.18. b2bl_th_init_timeout (int)
+              1.4.19. b2bl_early_update (int)
 
         1.5. Exported Functions
 
@@ -51,15 +50,16 @@ B2B_LOGIC
               1.5.4. b2b_bridge(entity1, entity2, [provmedia_uri],
                       [flags])
 
-              1.5.5. b2b_pass_request()
-              1.5.6. b2b_handle_reply()
-              1.5.7. b2b_send_reply(code, reason[, headers[,
+              1.5.5. b2b_bridge_retry(new_entity)
+              1.5.6. b2b_pass_request()
+              1.5.7. b2b_handle_reply()
+              1.5.8. b2b_send_reply(code, reason[, headers[,
                       body]])
 
-              1.5.8. b2b_delete_entity()
-              1.5.9. b2b_end_dlg_leg()
-              1.5.10. b2b_bridge_request(b2bl_key,entity_no)
-              1.5.11. b2b_trigger_scenario(scenario, [params],
+              1.5.9. b2b_delete_entity()
+              1.5.10. b2b_end_dlg_leg()
+              1.5.11. b2b_bridge_request(b2bl_key,entity_no)
+              1.5.12. b2b_trigger_scenario(scenario, [params],
                       peer1, [extra_headers_peer1],
                       [extra_headers_contents_peer1], peer2
                       [extra_headers_peer2],
@@ -114,24 +114,24 @@ B2B_LOGIC
    1.4. Set cleanup_period parameter
    1.5. Set parameter
    1.6. Set parameter
-   1.7. Set parameter
-   1.8. Set db_url parameter
-   1.9. Set cachedb_url parameter
-   1.10. Set cachedb_key_prefix parameter
-   1.11. Set update_period parameter
-   1.12. Set max_duration parameter
-   1.13. Set contact_user parameter
-   1.14. Set b2bl_from_spec_param parameter
-   1.15. Set server_address parameter
-   1.16. Set server_address parameter using Pseudo-Variables
-   1.17. Set init_callid_hdr parameter
-   1.18. Set db_mode parameter
-   1.19. Set db_table parameter
-   1.20. Set b2bl_th_init_timeout parameter
-   1.21. Set b2bl_early_update parameter
-   1.22. b2b_init_request usage
-   1.23. b2b_server_new usage
-   1.24. b2b_client_new usage
+   1.7. Set db_url parameter
+   1.8. Set cachedb_url parameter
+   1.9. Set cachedb_key_prefix parameter
+   1.10. Set update_period parameter
+   1.11. Set max_duration parameter
+   1.12. Set contact_user parameter
+   1.13. Set b2bl_from_spec_param parameter
+   1.14. Set server_address parameter
+   1.15. Set server_address parameter using Pseudo-Variables
+   1.16. Set init_callid_hdr parameter
+   1.17. Set db_mode parameter
+   1.18. Set db_table parameter
+   1.19. Set b2bl_th_init_timeout parameter
+   1.20. Set b2bl_early_update parameter
+   1.21. b2b_init_request usage
+   1.22. b2b_server_new usage
+   1.23. b2b_client_new usage
+   1.24. b2b_bridge usage
    1.25. b2b_bridge usage
    1.26. b2b_pass_request usage
    1.27. b2b_handle_reply usage
@@ -315,70 +315,49 @@ modparam("b2b_logic", "custom_headers_regexp", "/^x-/i")
 modparam("b2b_logic", "custom_headers", "User-Agent;Date")
 ...
 
-1.4.7. use_init_sdp (int)
-
-   This parameter modifies the behaviour of the B2BUA when
-   bridging and a provisional media uri is set. For playing media
-   while the callee answers (that is connecting the caller to a
-   media server), the bridging with the callee must start by
-   sending an Invite to it. The correct way is to send an Invite
-   without a body in this case, but it has been observed that not
-   many gateways support this. So, the solution is to use the sdp
-   received in the first Invite from the caller and put it as the
-   body for this invite. By setting this parameter, this behavior
-   is enabled. You can also set use_init_sdp per session and
-   overwrite this global value.
-
-   Default value is “0”.
-
-   Example 1.7. Set parameter
-...
-modparam("b2b_logic", "use_init_sdp", 1)
-...
-
-1.4.8. db_url (str)
+1.4.7. db_url (str)
 
    Database URL.
 
-   Example 1.8. Set db_url parameter
+   Example 1.7. Set db_url parameter
 ...
 modparam("b2b_logic", "db_url", "mysql://opensips:opensipsrw@127.0.0.1/o
 pensips")
 ...
 
-1.4.9. cachedb_url (str)
+1.4.8. cachedb_url (str)
 
    URL of a NoSQL database to be used. Only Redis is supported at
    the moment.
 
-   Example 1.9. Set cachedb_url parameter
+   Example 1.8. Set cachedb_url parameter
 ...
 modparam("b2b_logic", "cachedb_url", "redis://localhost:6379/")
 ...
 
-1.4.10. cachedb_key_prefix (string)
+1.4.9. cachedb_key_prefix (string)
 
    Prefix to use for every key set in the NoSQL database.
 
    Default value is “b2bl$”.
 
-   Example 1.10. Set cachedb_key_prefix parameter
+   Example 1.9. Set cachedb_key_prefix parameter
 ...
 modparam("b2b_logic", "cachedb_key_prefix", "b2b")
 ...
 
-1.4.11. update_period (int)
+1.4.10. update_period (int)
 
    The time interval at which to update the info in database.
 
    Default value is “100”.
 
-   Example 1.11. Set update_period parameter
+   Example 1.10. Set update_period parameter
 ...
 modparam("b2b_logic", "update_period", 60)
 ...
 
-1.4.12. max_duration (int)
+1.4.11. max_duration (int)
 
    The maximum duration of a call.
 
@@ -386,30 +365,30 @@ modparam("b2b_logic", "update_period", 60)
 
    If you set it to 0, there will be no limitation.
 
-   Example 1.12. Set max_duration parameter
+   Example 1.11. Set max_duration parameter
 ...
 modparam("b2b_logic", "max_duration", 7200)
 ...
 
-1.4.13. contact_user (int)
+1.4.12. contact_user (int)
 
    If set to 1, adds user from From: header to generated Contact:
 
    Default value is “0”.
 
-   Example 1.13. Set contact_user parameter
+   Example 1.12. Set contact_user parameter
 ...
 modparam("b2b_logic", "contact_user", 1)
 ...
 
-1.4.14. b2bl_from_spec_param (string)
+1.4.13. b2bl_from_spec_param (string)
 
    The name of the pseudo variable for storing the new “From”
    header. The PV must be set before calling “b2b_init_request”.
 
    Default value is “NULL” (disabled).
 
-   Example 1.14. Set b2bl_from_spec_param parameter
+   Example 1.13. Set b2bl_from_spec_param parameter
 ...
 modparam("b2b_logic", "b2bl_from_spec_param", "$var(b2bl_from)")
 ...
@@ -422,7 +401,7 @@ route{
         ...
 }
 
-1.4.15. server_address (str)
+1.4.14. server_address (str)
 
    The IP address of the machine that will be used as Contact in
    the generated messages. This is compulsory only when OpenSIPS
@@ -432,31 +411,31 @@ route{
    socket will be used to send all the requests, replies for that
    session. This parameter support Pseudo-Variables.
 
-   Example 1.15. Set server_address parameter
+   Example 1.14. Set server_address parameter
 ...
 modparam("b2b_logic", "server_address", "sip:sa@10.10.10.10:5060")
 ...
 
-   Example 1.16. Set server_address parameter using
+   Example 1.15. Set server_address parameter using
    Pseudo-Variables
 ...
 modparam("b2b_logic", "server_address", "sip:$socket_in(advertised_ip):$
 socket_in(advertised_port)")
 ...
 
-1.4.16. init_callid_hdr (str)
+1.4.15. init_callid_hdr (str)
 
    The module offers the possibility to insert the original callid
    in a header in the generated Invites. If you want this, set
    this parameter to the name of the header in which to insert the
    original callid.
 
-   Example 1.17. Set init_callid_hdr parameter
+   Example 1.16. Set init_callid_hdr parameter
 ...
 modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 ...
 
-1.4.17. db_mode (int)
+1.4.16. db_mode (int)
 
    The B2B modules have support for the 3 type of database storage
 
@@ -468,34 +447,34 @@ modparam("b2b_logic", "init_callid_hdr", "Init-CallID")
 
    Default value is “2” (WRITE BACK).
 
-   Example 1.18. Set db_mode parameter
+   Example 1.17. Set db_mode parameter
 ...
 modparam("b2b_logic", "db_mode", 1)
 ...
 
-1.4.18. db_table (str)
+1.4.17. db_table (str)
 
    Name of the database table to be used
 
    Default value is “b2b_logic”
 
-   Example 1.19. Set db_table parameter
+   Example 1.18. Set db_table parameter
 ...
 modparam("b2b_logic", "db_table", "some_table_name")
 ...
 
-1.4.19. b2bl_th_init_timeout (int)
+1.4.18. b2bl_th_init_timeout (int)
 
    Call setup timeout for topology hiding scenario.
 
    Default value is “60”
 
-   Example 1.20. Set b2bl_th_init_timeout parameter
+   Example 1.19. Set b2bl_th_init_timeout parameter
 ...
 modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 ...
 
-1.4.20. b2bl_early_update (int)
+1.4.19. b2bl_early_update (int)
 
    Allow bridging of calls in early stage by issuing a "UPDATE"
    request
@@ -506,7 +485,7 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 
    Default value is “0” Do not bridge dialogs in early stage
 
-   Example 1.21. Set b2bl_early_update parameter
+   Example 1.20. Set b2bl_early_update parameter
 ...
 modparam("b2b_logic", "b2bl_early_update", 1)
 ...
@@ -538,8 +517,6 @@ modparam("b2b_logic", "b2bl_early_update", 1)
             passes your 401 or 407 authentication request to
             destination server.
           + p - Preserve To: header.
-          + s - Use init SDP (as described in the use_init_sdp
-            modparam) for this session.
      * req_route (string, optional) - name of the script route to
        be called when requests belonging to this B2B session are
        received. This parameter will override the global
@@ -549,10 +526,6 @@ modparam("b2b_logic", "b2bl_early_update", 1)
        received. This parameter will override the global
        script_reply_route modparam for this particular B2B
        session.
-     * init_sdp_body (string, optional) - SDP body to use as init
-       SDP (see the use_init_sdp modparam).
-     * init_sdp_ctype (string, optional) - Content type to use for
-       the init SDP (see the use_init_sdp modparam).
 
    This function can be used from REQUEST_ROUTE.
 
@@ -565,7 +538,7 @@ Note
    correctly routed, but the SIP pacakge may be invalid (as
    Contact, Via, etc).
 
-   Example 1.22. b2b_init_request usage
+   Example 1.21. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user()) {
    ...
@@ -602,7 +575,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.23. b2b_server_new usage
+   Example 1.22. b2b_server_new usage
 ...
 if(is_method("INVITE") && !has_totag()) {
    b2b_server_new("server1", $avp(b2b_hdrs), $avp(b2b_hdr_bodies));
@@ -639,7 +612,7 @@ if(is_method("INVITE") && !has_totag()) {
    This function can be used from REQUEST_ROUTE and the b2b_logic
    request routes.
 
-   Example 1.24. b2b_client_new usage
+   Example 1.23. b2b_client_new usage
 ...
 b2b_client_new("client1", "sip:alice@opensips.org");
 ...
@@ -649,8 +622,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
    This function bridges two entities, in the context of an
    existing B2B session (the initial entities are already
    connected). At least one of the two entities has to be a new
-   client entity. If an existing entity is provided, the first
-   step will be to send it a reINVITE.
+   client entity.
 
    Parameters:
      * entity1 (string) - ID of the first entity to bridge; the
@@ -672,10 +644,19 @@ b2b_client_new("client1", "sip:alice@opensips.org");
           + f - Rollback call to state before bridging in case of
             transfer failed, don't hangup the call (default
             behaviour).
+          + h - Put the old entity on hold before bridging it to
+            the new entity.
+          + r - Do not attempt late SDP negociation with the new
+            entity. Start the bridging by first contacting the new
+            entity using the initial SDP received from the old
+            entity. After the new entity answers, send a reINVITE
+            without body to the old entity. Use the current SDP
+            received in this new answer from the old entity to
+            trigger a renegociation with the new entity.
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.25. b2b_bridge usage
+   Example 1.24. b2b_bridge usage
 ...
 route[b2b_logic_request] {
    ...
@@ -685,7 +666,34 @@ route[b2b_logic_request] {
 }
 ...
 
-1.5.5.  b2b_pass_request()
+1.5.5.  b2b_bridge_retry(new_entity)
+
+   This function can be used to retry a failed bridging action by
+   contacting a new destination. A new client entity must be
+   created before running this function with b2b_client_new().
+
+   Parameters:
+     * entity1 (string) - ID of the new entity to bridge.
+
+   This function can be used from the b2b_logic reply route.
+
+   Example 1.25. b2b_bridge usage
+...
+route[b2b_logic_reply] {
+   ...
+   if ($b2b_logic.entity(id) == "client1" && $rm == "INVITE" && $rs >= 3
+00) {
+      b2b_client_new("client_retry", "sip:alice@opensips.org");
+
+      b2b_bridge_retry("client_retry");
+   } else {
+      b2b_handle_reply();
+   }
+   ...
+}
+...
+
+1.5.6.  b2b_pass_request()
 
    This function passes a request belonging to an existing B2B
    session to the peer entity. The function should be called for
@@ -705,7 +713,7 @@ route[b2b_logic_request] {
    }
 ...
 
-1.5.6.  b2b_handle_reply()
+1.5.7.  b2b_handle_reply()
 
    This function processes the received reply by taking the
    appropriate actions for the current state of the ongoing B2B
@@ -723,7 +731,7 @@ route[b2b_logic_reply] {
 }
 ...
 
-1.5.7.  b2b_send_reply(code, reason[, headers[, body]])
+1.5.8.  b2b_send_reply(code, reason[, headers[, body]])
 
    This function sends a reply to the entity that sent the current
    request.
@@ -746,7 +754,7 @@ route[b2b_logic_request] {
 }
 ...
 
-1.5.8.  b2b_delete_entity()
+1.5.9.  b2b_delete_entity()
 
    This function deletes the entity that sent the current request.
 
@@ -763,7 +771,7 @@ route[b2b_logic_request] {
 }
 ...
 
-1.5.9.  b2b_end_dlg_leg()
+1.5.10.  b2b_end_dlg_leg()
 
    This function sends a BYE request to the entity that sent the
    current request. It is not required to also call
@@ -782,7 +790,7 @@ route[b2b_logic_request] {
 }
 ...
 
-1.5.10.  b2b_bridge_request(b2bl_key,entity_no)
+1.5.11.  b2b_bridge_request(b2bl_key,entity_no)
 
    This function will bridge an initial INVITE with one of the
    particapnts from an existing b2b session.
@@ -810,7 +818,7 @@ if ($rU == "pickup") {
 }
 ...
 
-1.5.11.  b2b_trigger_scenario(scenario, [params], peer1,
+1.5.12.  b2b_trigger_scenario(scenario, [params], peer1,
 [extra_headers_peer1], [extra_headers_contents_peer1], peer2
 [extra_headers_peer2], [extra_headers_contents_peer2])
 
@@ -1231,7 +1239,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 96 28 3116 2525
+   1. Vlad Patrascu (@rvlad-patrascu) 200 38 7458 6175
    2. Razvan Crainea (@razvancrainea) 19 10 593 224
    3. Nick Altmann (@nikbyte) 14 10 346 36
    4. Carsten Bock 12 5 679 23
@@ -1261,10 +1269,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
-   2. Razvan Crainea (@razvancrainea)     Jan 2021 - Oct 2022
-   3. Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
-   4. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jun 2022
+   1. Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Dec 2022
+   2. Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
+   3. Razvan Crainea (@razvancrainea)     Jan 2021 - Oct 2022
+   4. Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
    5. Carsten Bock                        Mar 2022 - Apr 2022
    6. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
    7. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - May 2021
