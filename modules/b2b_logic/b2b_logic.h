@@ -39,14 +39,14 @@
 
 enum b2b_tuple_state {
 	/* initial bridge state */
-	B2B_INIT_BRIDGING_STATE = -1,
+	B2B_INIT_BRIDGING_STATE,
 
 	/* main bridging state */
-	B2B_BRIDGING_STATE = -2,
+	B2B_BRIDGING_STATE,
 
-	B2B_BRIDGED_STATE = -3,
+	B2B_BRIDGED_STATE,
 
-	B2B_CANCEL_STATE = -4
+	B2B_CANCEL_STATE
 };
 
 #define B2B_TOP_HIDING_SCENARY "top hiding"

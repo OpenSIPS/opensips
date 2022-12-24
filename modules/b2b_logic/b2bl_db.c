@@ -205,8 +205,8 @@ void b2b_logic_dump(int no_lock)
 			}
 
 
-			qvals[8].val.int_val  = tuple->scenario_state;
-			qvals[9].val.int_val  = tuple->state;
+			qvals[8].val.int_val  = tuple->scenario_state * 10 + tuple->state;
+			qvals[9].val.int_val  = tuple->next_scenario_state;
 			qvals[10].val.int_val = tuple->lifetime - get_ticks() + (int)time(NULL);
 			qvals[11].val.int_val = tuple->bridge_entities[0]->type;
 			qvals[12].val.str_val = tuple->bridge_entities[0]->scenario_id;
@@ -290,6 +290,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple, str* params[])
 	}
 	shm_tuple->lifetime = tuple->lifetime;
 	lock_release(&b2bl_htable[hash_index].lock);
+	shm_tuple->next_scenario_state= tuple->next_scenario_state;
 	shm_tuple->scenario_state= tuple->scenario_state;
 	shm_tuple->state= tuple->state;
 
@@ -468,8 +469,9 @@ int b2b_logic_restore(void)
 				tuple.sdp.s =(char*)row_vals[7].val.string_val;
 				tuple.sdp.len = strlen(tuple.sdp.s);
 			}
-			tuple.scenario_state     =row_vals[8].val.int_val;
-			tuple.state=row_vals[9].val.int_val;
+			tuple.scenario_state     =row_vals[8].val.int_val / 10;
+			tuple.state=row_vals[8].val.int_val % 10;
+			tuple.next_scenario_state=row_vals[9].val.int_val;
 			_time = (int)time(NULL);
 			if (row_vals[10].val.int_val <= _time)
 				tuple.lifetime = 1;
@@ -574,8 +576,8 @@ void b2bl_db_insert(b2bl_tuple_t* tuple)
 	qvals[5].val.str_val = tuple->scenario_params[3];
 	qvals[6].val.str_val = tuple->scenario_params[4];
 	qvals[7].val.str_val = tuple->sdp;
-	qvals[8].val.int_val = tuple->scenario_state;
-	qvals[9].val.int_val = tuple->state;
+	qvals[8].val.int_val = tuple->scenario_state * 10 + tuple->state;
+	qvals[9].val.int_val = tuple->next_scenario_state;
 	qvals[10].val.int_val= tuple->lifetime - get_ticks() + (int)time(NULL);
 	ci = 11;
 
@@ -615,8 +617,8 @@ void b2bl_db_update(b2bl_tuple_t* tuple)
 
 	qvals[0].val.str_val = *tuple->key;
 
-	qvals[8].val.int_val  = tuple->scenario_state;
-	qvals[9].val.int_val  = tuple->state;
+	qvals[8].val.int_val  = tuple->scenario_state * 10 + tuple->state;
+	qvals[9].val.int_val  = tuple->next_scenario_state;
 	qvals[10].val.int_val = tuple->lifetime -get_ticks() + (int)time(NULL);
 	ci = 11;
 

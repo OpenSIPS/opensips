@@ -106,8 +106,8 @@ static void pack_tuple(b2bl_tuple_t* tuple, bin_packet_t *storage, int repl_new)
 	} else
 		bin_push_int(storage, REPL_TUPLE_UPDATE);
 
-	bin_push_int(storage, tuple->scenario_state);
-	bin_push_int(storage, tuple->state);
+	bin_push_int(storage, tuple->scenario_state * 10 + tuple->state);
+	bin_push_int(storage, tuple->next_scenario_state);
 
 	bin_push_int(storage, tuple->lifetime > 0 ?
 		(tuple->lifetime - get_ticks()) : 0);
@@ -248,6 +248,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	str tuple_sdp;
 	str extra_headers;
 	int lifetime;
+	int state;
 	b2b_dlginfo_t dlginfo;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
 	str entity_sid, to_uri, from_uri, from_dname, hdrs;
@@ -301,8 +302,10 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 			}
 		}
 
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->state);
+		bin_pop_int(storage, &state);
+		tuple->scenario_state = state / 10;
+		tuple->state = state % 10;
+		bin_pop_int(storage, &tuple->next_scenario_state);
 
 		bin_pop_int(storage, &lifetime);
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -319,8 +322,10 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		}
 		tuple = old_tuple;
 
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->state);
+		bin_pop_int(storage, &state);
+		tuple->scenario_state = state / 10;
+		tuple->state = state % 10;
+		bin_pop_int(storage, &tuple->next_scenario_state);
 
 		bin_pop_int(storage, &lifetime);
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -436,6 +441,7 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 	b2bl_tuple_t* tuple = NULL;
 	int tuple_repl_type;
 	int lifetime;
+	int state;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
 
 	LM_DBG("Received UPDATE event for entity [%.*s]\n",
@@ -460,8 +466,10 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 		goto error;
 	}
 
-	bin_pop_int(storage, &tuple->scenario_state);
-	bin_pop_int(storage, &tuple->state);
+	bin_pop_int(storage, &state);
+	tuple->scenario_state = state / 10;
+	tuple->state = state % 10;
+	bin_pop_int(storage, &tuple->next_scenario_state);
 	bin_pop_int(storage, &lifetime);
 
 	tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -518,6 +526,7 @@ static void receive_entity_ack(enum b2b_entity_type entity_type,
 	b2bl_tuple_t* tuple = NULL;
 	int tuple_repl_type;
 	int lifetime;
+	int state;
 
 	LM_DBG("Received ACK event for entity [%.*s]\n",
 		entity_key->len, entity_key->s);
@@ -543,8 +552,10 @@ static void receive_entity_ack(enum b2b_entity_type entity_type,
 		return;
 	}
 
-	bin_pop_int(storage, &tuple->scenario_state);
-	bin_pop_int(storage, &tuple->state);
+	bin_pop_int(storage, &state);
+	tuple->scenario_state = state / 10;
+	tuple->state = state % 10;
+	bin_pop_int(storage, &tuple->next_scenario_state);
 	bin_pop_int(storage, &lifetime);
 
 	tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;
@@ -562,6 +573,7 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 	b2bl_tuple_t* tuple = NULL;
 	int tuple_repl_type;
 	int lifetime;
+	int state;
 	b2bl_entity_id_t *entity = NULL, **entity_head = NULL;
 	int i;
 
@@ -588,8 +600,10 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 
 	switch (tuple_repl_type) {
 	case REPL_TUPLE_UPDATE:
-		bin_pop_int(storage, &tuple->scenario_state);
-		bin_pop_int(storage, &tuple->state);
+		bin_pop_int(storage, &state);
+		tuple->scenario_state = state / 10;
+		tuple->state = state % 10;
+		bin_pop_int(storage, &tuple->next_scenario_state);
 		bin_pop_int(storage, &lifetime);
 
 		tuple->lifetime = lifetime ? get_ticks() + lifetime : 0;

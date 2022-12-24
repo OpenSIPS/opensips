@@ -1185,7 +1185,7 @@ str* b2bl_bridge_extern(str* scenario_name, str* args[],
 		LM_DBG("Next scenario state is [%d]\n", state);
 		xmlFree(attr.s);
 	}
-	tuple->scenario_state = state;
+	tuple->next_scenario_state = state;
 
 	xml_node =  xmlNodeGetChildByName(scenario_struct->init_node, "bridge");
 	if(xml_node == NULL)
