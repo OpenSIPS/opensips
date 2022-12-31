@@ -598,13 +598,22 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		event = DLG_EVENT_TDEL;
 	} else if (param->code<200) {
 		event = DLG_EVENT_RPL1xx;
-		ctx_lastdstleg_set(DLG_CALLER_LEG);
+        
+        if (current_processing_ctx) {
+            ctx_lastdstleg_set(DLG_CALLER_LEG);
+        }
 	} else if (param->code<300) {
 		event = DLG_EVENT_RPL2xx;
-		ctx_lastdstleg_set(DLG_CALLER_LEG);
+        
+        if (current_processing_ctx) {
+            ctx_lastdstleg_set(DLG_CALLER_LEG);
+        }
 	} else {
 		event = DLG_EVENT_RPL3xx;
-		ctx_lastdstleg_set(DLG_CALLER_LEG);
+        
+        if (current_processing_ctx) {
+            ctx_lastdstleg_set(DLG_CALLER_LEG);
+        }
 	}
 
 	next_state_dlg(dlg, event, DLG_DIR_UPSTREAM, &old_state, &new_state,
