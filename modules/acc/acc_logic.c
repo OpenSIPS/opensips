@@ -220,7 +220,7 @@ acc_ctx_t* try_fetch_ctx(void)
 	struct cell* t;
 	struct dlg_cell* dlg;
 
-	if ((ret = ACC_GET_CTX()) == NULL) {
+	if (current_processing_ctx && (ret = ACC_GET_CTX()) == NULL) {
 		if (!tmb.t_gett || (t = tmb.t_gett()) == T_UNDEFINED)
 			t = NULL;
 
