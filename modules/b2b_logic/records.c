@@ -80,10 +80,10 @@ void b2bl_print_tuple(b2bl_tuple_t* tuple, int level)
 
 	if(tuple)
 	{
-		LM_GEN1(level, "[%p]->[%.*s] to_del=[%d] lifetime=[%d]"
+		LM_GEN1(level, "[%p]->[%.*s] to_del=[%d] lifetime=[%d] state=[%d]"
 			" bridge_entities[%p][%p][%p]\n",
 			tuple, tuple->key->len, tuple->key->s,
-			tuple->to_del, tuple->lifetime,
+			tuple->to_del, tuple->lifetime, tuple->state,
 			tuple->bridge_entities[0], tuple->bridge_entities[1],
 			tuple->bridge_entities[2]);
 		for (index = 0; index < MAX_B2BL_ENT; index++)
