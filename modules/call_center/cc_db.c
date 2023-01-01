@@ -585,7 +585,7 @@ error:
 }
 
 
-int cc_load_db_data( struct cc_data *data)
+int cc_load_db_data( struct cc_data *data, str *flow_name)
 {
 	db_key_t columns[13];
 	db_res_t* res;
@@ -623,10 +623,25 @@ int cc_load_db_data( struct cc_data *data)
 			return -1;
 		}
 	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 13, 0, &res)<0) {
-			LM_ERR("DB query failed\n");
-			return -1;
-		}
+        if (flow_name) {
+            db_key_t    cond_keys[]         = {&ccf_flowid_column};
+            db_op_t     cond_ops[]          = {OP_EQ};
+            db_val_t    cond_vals[1];
+                        cond_vals[0].type           = DB_STR;
+                        cond_vals[0].nul            = 0;
+                        cond_vals[0].val.str_val    = *flow_name;
+            
+            if ( cc_dbf.query( cc_db_handle, cond_keys, cond_ops, cond_vals, columns, 1, 13, 0, &res)<0) {
+                LM_ERR("DB query failed\n");
+                return -1;
+            }
+        }
+        else {
+            if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 13, 0, &res)<0) {
+                LM_ERR("DB query failed\n");
+                return -1;
+            }
+        }
 	}
 
 	LM_DBG("%d records found in %.*s\n",
@@ -719,82 +734,227 @@ int cc_load_db_data( struct cc_data *data)
 
 	cc_dbf.free_result(cc_db_handle, res);
 	res = 0;
+    
 
+    if (n > 0) { //load agents only when flow exist
+        cc_dbf.use_table( cc_db_handle, &cc_agent_table_name);
 
-	cc_dbf.use_table( cc_db_handle, &cc_agent_table_name);
+        columns[0] = &cca_agentid_column;
+        columns[1] = &cca_location_column;
+        columns[2] = &cca_skills_column;
+        columns[3] = &cca_logstate_column;
+        columns[4] = &cca_wrapupend_column;
+        columns[5] = &cca_wrapuptime_column;
 
-	columns[0] = &cca_agentid_column;
-	columns[1] = &cca_location_column;
-	columns[2] = &cca_skills_column;
-	columns[3] = &cca_logstate_column;
-	columns[4] = &cca_wrapupend_column;
-	columns[5] = &cca_wrapuptime_column;
+        if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
+            if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
+                LM_ERR("DB query failed\n");
+                return -1;
+            }
+            if(cc_dbf.fetch_result( cc_db_handle, &res, CC_FETCH_ROWS)<0) {
+                LM_ERR("Error fetching rows\n");
+                return -1;
+            }
+        } else {
+            if (flow_name) {
+                char raw_query_buf[400];
+                str raw_query;
+                
+                sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, CAST(GROUP_CONCAT(cc_skills.skill) AS CHAR(255)) AS skills, `%.*s`, `%.*s`, `%.*s` "
+                                        "FROM %.*s "
+                                        "INNER JOIN cc_skills "
+                                        "ON cc_skills.agentid = %.*s.agentid "
+                                        "WHERE cc_skills.skill = \"%.*s\" "
+                                        "GROUP BY %.*s.agentid ",
+                    cc_agent_table_name.len, cc_agent_table_name.s,
+                    cca_agentid_column.len, cca_agentid_column.s,
+                    cca_location_column.len, cca_location_column.s,
+                    cca_logstate_column.len, cca_logstate_column.s,
+                    cca_wrapupend_column.len, cca_wrapupend_column.s,
+                    cca_wrapuptime_column.len, cca_wrapuptime_column.s,
+                    cc_agent_table_name.len, cc_agent_table_name.s,
+                    cc_agent_table_name.len, cc_agent_table_name.s,
+                    skill.len, skill.s,
+                    cc_agent_table_name.len, cc_agent_table_name.s);
+                
+                raw_query.s = raw_query_buf;
+                raw_query.len = strlen(raw_query_buf);
+                
+                if ( cc_dbf.raw_query( cc_db_handle, &raw_query, &res)<0) {
+                    LM_ERR("DB query failed\n");
+                    return -1;
+                }
+            }
+            else {
+                char raw_query_buf[400];
+                str raw_query;
+                
+                sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, CAST(GROUP_CONCAT(cc_skills.skill) AS CHAR(255)) AS skills, `%.*s`, `%.*s`, `%.*s` "
+                                        "FROM %.*s "
+                                        "INNER JOIN cc_skills "
+                                        "ON cc_skills.agentid = %.*s.agentid "
+                                        "GROUP BY %.*s.agentid",
+                    cc_agent_table_name.len, cc_agent_table_name.s,
+                    cca_agentid_column.len, cca_agentid_column.s, 
+                    cca_location_column.len, cca_location_column.s,
+                    cca_logstate_column.len, cca_logstate_column.s,
+                    cca_wrapupend_column.len, cca_wrapupend_column.s,
+                    cca_wrapuptime_column.len, cca_wrapuptime_column.s,
+                    cc_agent_table_name.len, cc_agent_table_name.s,
+                    cc_agent_table_name.len, cc_agent_table_name.s,
+                    cc_agent_table_name.len, cc_agent_table_name.s);
+                
+                raw_query.s = raw_query_buf;
+                raw_query.len = strlen(raw_query_buf);
+                
+                if ( cc_dbf.raw_query( cc_db_handle, &raw_query, &res)<0) {
+                    LM_ERR("DB query failed\n");
+                    return -1;
+                }
+            }
+        }
 
-	if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
-			LM_ERR("DB query failed\n");
-			return -1;
-		}
-		if(cc_dbf.fetch_result( cc_db_handle, &res, CC_FETCH_ROWS)<0) {
-			LM_ERR("Error fetching rows\n");
-			return -1;
-		}
-	} else {
-		if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, &res)<0) {
-			LM_ERR("DB query failed\n");
-			return -1;
-		}
-	}
+        LM_DBG("%d records found in %.*s\n",
+            RES_ROW_N(res), cc_agent_table_name.len,cc_agent_table_name.s );
+        n = 0;
 
-	LM_DBG("%d records found in %.*s\n",
-		RES_ROW_N(res), cc_agent_table_name.len,cc_agent_table_name.s );
-	n = 0;
+        do {
+            for(i=0; i < RES_ROW_N(res); i++) {
+                row = RES_ROWS(res) + i;
+                /* agentID column */
+                check_val( ROW_VALUES(row), DB_STRING, 1, 1, "agentid");
+                id.s = (char*)VAL_STRING(ROW_VALUES(row));
+                id.len = strlen(id.s);
+                /* LOCATION column */
+                check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
+                location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
+                location.len = strlen(location.s);
+                /* SKILLS column */
+                check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
+                skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
+                skill.len = strlen(skill.s);
+                /* LOGSTATE column */
+                check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
+                logstate = VAL_INT(ROW_VALUES(row)+3);
+                /* WRAPUP_END_TIME column */
+                wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
+                /* WRAPUP_TIME column */
+                check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
+                wrapup = VAL_INT(ROW_VALUES(row)+5);
 
-	do {
-		for(i=0; i < RES_ROW_N(res); i++) {
-			row = RES_ROWS(res) + i;
-			/* agentID column */
-			check_val( ROW_VALUES(row), DB_STRING, 1, 1, "agentid");
-			id.s = (char*)VAL_STRING(ROW_VALUES(row));
-			id.len = strlen(id.s);
-			/* LOCATION column */
-			check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
-			location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
-			location.len = strlen(location.s);
-			/* SKILLS column */
-			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
-			skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
-			skill.len = strlen(skill.s);
-			/* LOGSTATE column */
-			check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
-			logstate = VAL_INT(ROW_VALUES(row)+3);
-			/* WRAPUP_END_TIME column */
-			wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
-			/* WRAPUP_TIME column */
-			check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
-			wrapup = VAL_INT(ROW_VALUES(row)+5);
+                /* add agent */
+                if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
+                wrapup_end_time)<0){
+                    LM_ERR("failed to add agent %.*s -> skipping\n",
+                        id.len,id.s);
+                    continue;
+                }
+                n++;
+            }
+            if (DB_CAPABILITY( cc_dbf, DB_CAP_FETCH)) {
+                if(cc_dbf.fetch_result(cc_db_handle, &res, CC_FETCH_ROWS)<0) {
+                    LM_ERR( "fetching rows (1)\n");
+                    return -1;
+                }
+            } else {
+                break;
+            }
+        } while(RES_ROW_N(res)>0);
 
-			/* add agent */
-			if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
-			wrapup_end_time)<0){
-				LM_ERR("failed to add agent %.*s -> skipping\n",
-					id.len,id.s);
-				continue;
-			}
-			n++;
-		}
-		if (DB_CAPABILITY( cc_dbf, DB_CAP_FETCH)) {
-			if(cc_dbf.fetch_result(cc_db_handle, &res, CC_FETCH_ROWS)<0) {
-				LM_ERR( "fetching rows (1)\n");
-				return -1;
-			}
-		} else {
-			break;
-		}
-	} while(RES_ROW_N(res)>0);
+        cc_dbf.free_result(cc_db_handle, res);
+        res = 0;
+    }
 
-	cc_dbf.free_result(cc_db_handle, res);
-	res = 0;
+	return 0;
+error:
+	if (res)
+		cc_dbf.free_result(cc_db_handle, res);
+	return -1;
+}
+
+int cc_load_db_agent_data( struct cc_data *data, str *agent_id)
+{
+	db_res_t* res;
+	db_row_t* row;
+	int i, n;
+	str id,skill;
+	str location;
+	unsigned int wrapup, logstate, wrapup_end_time;
+
+    char raw_query_buf[400];
+    str raw_query;
+    
+    sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, CAST(GROUP_CONCAT(cc_skills.skill) AS CHAR(255)) AS skills, `%.*s`, `%.*s`, `%.*s` "
+                            "FROM %.*s "
+                            "INNER JOIN cc_skills "
+                            "ON cc_skills.agentid = %.*s.agentid "
+                            "WHERE `%.*s`.agentid = \"%.*s\" "
+                            "GROUP BY %.*s.agentid",
+        cc_agent_table_name.len, cc_agent_table_name.s,
+        cca_agentid_column.len, cca_agentid_column.s, 
+        cca_location_column.len, cca_location_column.s,
+        cca_logstate_column.len, cca_logstate_column.s,
+        cca_wrapupend_column.len, cca_wrapupend_column.s,
+        cca_wrapuptime_column.len, cca_wrapuptime_column.s,
+        cc_agent_table_name.len, cc_agent_table_name.s,
+        cc_agent_table_name.len, cc_agent_table_name.s,
+        cc_agent_table_name.len, cc_agent_table_name.s,
+        agent_id->len, agent_id->s,
+        cc_agent_table_name.len, cc_agent_table_name.s);
+    
+    raw_query.s = raw_query_buf;
+    raw_query.len = strlen(raw_query_buf);
+    
+    LM_DBG("%s", raw_query_buf);
+    
+    if ( cc_dbf.raw_query( cc_db_handle, &raw_query, &res)<0) {
+        LM_ERR("DB query failed\n");
+        return -1;
+    }
+
+    LM_DBG("%d records found in %.*s\n",
+        RES_ROW_N(res), cc_agent_table_name.len,cc_agent_table_name.s );
+    n = 0;
+
+    for(i=0; i < RES_ROW_N(res); i++) {
+        row = RES_ROWS(res) + i;
+        /* agentID column */
+        check_val( ROW_VALUES(row), DB_STRING, 1, 1, "agentid");
+        id.s = (char*)VAL_STRING(ROW_VALUES(row));
+        id.len = strlen(id.s);
+        /* LOCATION column */
+        check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
+        location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
+        location.len = strlen(location.s);
+        /* SKILLS column */
+        check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
+        skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
+        skill.len = strlen(skill.s);
+        /* LOGSTATE column */
+        check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
+        logstate = VAL_INT(ROW_VALUES(row)+3);
+        /* WRAPUP_END_TIME column */
+        wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
+        /* WRAPUP_TIME column */
+        check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
+        wrapup = VAL_INT(ROW_VALUES(row)+5);
+
+        /* add agent */
+        if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
+        wrapup_end_time)<0){
+            LM_ERR("failed to add agent %.*s -> skipping\n",
+                id.len,id.s);
+            continue;
+        }
+        n++;
+    }
+    
+    if (n <= 0) { //non-existed agent, delete in memory
+        clean_cc_data_by_agent(data, agent_id);
+    }
+
+    cc_dbf.free_result(cc_db_handle, res);
+    res = 0;
 
 	return 0;
 error:
@@ -954,3 +1114,26 @@ void cc_db_update_agent_wrapup_end(struct cc_agent* agent)
 	}
 }
 
+void cc_db_update_agent_logstate(str* agent_id, int loged_in)
+{
+	db_key_t columns[2];
+	db_val_t vals[2];
+    db_op_t  ops[] = {OP_EQ, OP_NEQ};
+
+	columns[0] = &cca_agentid_column;
+	columns[1] = &cca_logstate_column;
+
+	vals[0].nul = 0;
+	vals[0].type = DB_STR;
+	vals[0].val.str_val = *agent_id;
+
+	vals[1].nul = 0;
+	vals[1].type = DB_INT;
+	vals[1].val.int_val = loged_in;
+
+	cc_dbf.use_table( cc_db_handle, &cc_agent_table_name);
+
+	if (cc_dbf.update(cc_db_handle, columns, ops, vals, columns + 1, vals + 1, 2, 1) < 0) {
+		LM_ERR("Agent update logstate failed\n");
+	}
+}

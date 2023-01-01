@@ -60,7 +60,8 @@ int cc_connect_rt_db(const str *rt_db_url);
 void cc_close_db(void);
 void cc_close_rt_db(void);
 
-int cc_load_db_data( struct cc_data *data);
+int cc_load_db_data( struct cc_data *data, str *flow_name);
+int cc_load_db_agent_data( struct cc_data *data, str *agent_id);
 
 int cc_write_cdr( str *un, str *fid, str *aid, int type,
 		int rt, int wt, int tt , int pt, int rej, int fst, int cid);
@@ -72,6 +73,7 @@ int cc_db_update_call(struct cc_call *call);
 int cc_db_delete_call(struct cc_call *call);
 int cc_db_restore_calls( struct cc_data *data);
 void cc_db_update_agent_wrapup_end(struct cc_agent* agent);
+void cc_db_update_agent_logstate(str* agent_id, int loged_in);
 int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event);
 
 #endif

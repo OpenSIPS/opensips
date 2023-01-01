@@ -264,6 +264,12 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call);
 
 void clean_cc_old_data(struct cc_data *data);
 
+void clean_cc_old_data_by_flow(struct cc_data *data, str *flow_name);
+
+void clean_cc_data_by_agent(struct cc_data *data, str *agent_id);
+
+void clean_cc_all_data(struct cc_data *data);
+
 void clean_cc_unref_data(struct cc_data *data);
 
 int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top);

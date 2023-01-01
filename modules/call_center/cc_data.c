@@ -918,6 +918,132 @@ void clean_cc_old_data(struct cc_data *data)
 	}
 }
 
+void clean_cc_old_data_by_flow(struct cc_data *data, str *flow_name)
+{
+	struct cc_flow  *flow,  **prv_flow;
+    struct cc_agent *agent;
+
+	/* clean old flows */
+	flow = data->flows;
+	prv_flow = &(data->flows);
+	while(flow) {
+        flow->logged_agents = 0;
+        if (flow_name->len==flow->id.len && memcmp( flow_name->s, flow->id.s, flow_name->len)==0) {
+            if (flow->is_new) {
+                flow->is_new = 0;
+                prv_flow = &(flow->next);
+                flow = flow->next;
+            } else {
+                *prv_flow = flow->next;
+                if (flow->ref_cnt==0) {
+                    free_cc_flow(flow);
+                } else {
+                    /* put in a cleanup list */
+                    flow->next = data->old_flows; 
+                    data->old_flows = flow;
+                }
+                flow = (*prv_flow);
+            }
+        }
+        else {
+            prv_flow = &(flow->next);
+            flow = flow->next;
+        }
+	}
+    
+    /* sync flows and agents (how many agents per flow are logged) */
+	/* iterate all logged agents */
+	data->logedin_agents = 0;
+	for( agent=data->agents[CC_AG_ONLINE] ; agent ; agent=agent->next ) {
+		/* update last agent */
+		data->last_online_agent = agent;
+
+		/* log_agent_to_flows() must now the call center of the 
+		 * agent to count it as logged in */
+		log_agent_to_flows( data, agent, agent->loged_in);
+		data->logedin_agents++;
+	}
+}
+
+void clean_cc_data_by_agent(struct cc_data *data, str *agent_id)
+{
+	struct cc_agent *agent, **prv_agent;
+	int i;
+
+	/* clean data of agent */
+	for(i= 0; i< 2; i++) {
+		agent = data->agents[i];
+		prv_agent = &data->agents[i];
+		while(agent) {
+            if (agent_id->len==agent->id.len && memcmp( agent_id->s, agent->id.s, agent_id->len)==0) {
+                *prv_agent = agent->next;
+                if (agent->ref_cnt==0) {
+                    free_cc_agent(agent);
+                } else {
+                    agent->next = data->old_agents;
+                    data->old_agents = agent;
+                }
+                agent = (*prv_agent);
+                data->totalnr_agents--;
+            }
+            else {
+                prv_agent = &(agent->next);
+                agent = agent->next;
+            }
+		}
+	}
+}
+
+void clean_cc_all_data(struct cc_data *data)
+{
+	struct cc_skill *skill, **prv_skill;
+	struct cc_agent *agent, **prv_agent;
+	struct cc_flow  *flow,  **prv_flow;
+	int i;
+
+	/* clean skills */
+	skill = data->skills_map;
+	prv_skill = &(data->skills_map);
+	while(skill) {
+        *prv_skill = skill->next;
+        free_cc_skill(skill);
+        skill = (*prv_skill);
+	}
+
+	/* clean agents */
+	for(i= 0; i< 2; i++) {
+		agent = data->agents[i];
+		prv_agent = &data->agents[i];
+		while(agent) {
+            *prv_agent = agent->next;
+            if (agent->ref_cnt==0) {
+                free_cc_agent(agent);
+            } else {
+                agent->next = data->old_agents;
+                data->old_agents = agent;
+            }
+            agent = (*prv_agent);
+            data->totalnr_agents--;
+		}
+	}
+
+	/* clean flows */
+	flow = data->flows;
+	prv_flow = &(data->flows);
+	while(flow) {
+		flow->logged_agents = 0;
+        *prv_flow = flow->next;
+        if (flow->ref_cnt==0) {
+            free_cc_flow(flow);
+        } else {
+            /* put in a cleanup list */
+            flow->next = data->old_flows; 
+            data->old_flows = flow;
+        }
+        flow = (*prv_flow);
+	}
+}
+
 
 void clean_cc_unref_data(struct cc_data *data)
 {

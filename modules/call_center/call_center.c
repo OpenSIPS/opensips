@@ -57,6 +57,14 @@ static int mi_child_init();
 
 static mi_response_t *mi_cc_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_load_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_load_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_reload_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_reload_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 static mi_response_t *mi_cc_list_flows(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_cc_list_queue(const mi_params_t *params,
@@ -68,6 +76,10 @@ static mi_response_t *mi_cc_list_agents(const mi_params_t *params,
 static mi_response_t *mi_cc_list_calls(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_get_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_cc_get_flow(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param);
@@ -94,6 +106,8 @@ unsigned int wrapup_time = 30;
 str queue_pos_param = {NULL,0};
 /* by default reject new calls if there are no agents logged */
 static int reject_on_no_agents = 1;
+/* by default load all flow and agent to memory on start */
+static int dynamic_load = 0;
 
 static cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
@@ -115,6 +129,7 @@ static param_export_t mod_params[]={
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
 	{ "wrapup_time",          INT_PARAM, &wrapup_time          },
 	{ "reject_on_no_agents",  INT_PARAM, &reject_on_no_agents  },
+    { "dynamic_load",         INT_PARAM, &dynamic_load         },
 	{ "queue_pos_param",      STR_PARAM, &queue_pos_param.s    },
 	{ "cc_agents_table",      STR_PARAM, &cc_agent_table_name.s  },
 	{ "cca_agentid_column",   STR_PARAM, &cca_agentid_column.s   },
@@ -150,6 +165,22 @@ static mi_export_t mi_cmds[] = {
 		{mi_cc_reload, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
+    {"cc_load_flow", 0, 0, 0, {
+		{mi_cc_load_flow, {"flow_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+    {"cc_load_agent", 0, 0, 0, {
+		{mi_cc_load_agent, {"agent_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+    {"cc_reload_flow", 0, 0, 0, {
+		{mi_cc_reload_flow, {"flow_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+    {"cc_reload_agent", 0, 0, 0, {
+		{mi_cc_reload_agent, {"agent_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
 	{"cc_agent_login", 0, 0, 0, {
 		{mi_agent_login, {"agent_id", "state", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -172,6 +203,14 @@ static mi_export_t mi_cmds[] = {
 	},
 	{"cc_reset_stats", 0, 0, 0, {
 		{mi_reset_stats, {0}},
+		{EMPTY_MI_RECIPE}}
+	},
+    {"cc_get_flow", 0, 0, 0, {
+		{mi_cc_get_flow, {"flow_id", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{"cc_get_agent", 0, 0, 0, {
+		{mi_cc_get_agent, {"agent_id", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -383,11 +422,13 @@ static int mod_init(void)
 	}
 
 	/* load data */
-	if ( cc_load_db_data( data )!=0 ) {
-		LM_CRIT("failed to load callcenter data\n");
-		return -1;
-	}
-	clean_cc_old_data(data);
+    if (!dynamic_load) {
+        if ( cc_load_db_data( data, NULL )!=0 ) {
+            LM_CRIT("failed to load callcenter data\n");
+            return -1;
+        }
+        clean_cc_old_data(data);
+    }
 
 	/* restore calls */
 	if ( cc_db_restore_calls( data )!=0 ) {
@@ -997,9 +1038,20 @@ static int w_handle_call(struct sip_msg *msg, str *flow_name, str *param)
 	/* get the flow ID */
 	flow = get_flow_by_name(data, flow_name);
 	if (flow==NULL) {
-		LM_ERR("flow <%.*s> does not exists\n", flow_name->len, flow_name->s);
-		ret = -3;
-		goto error;
+        if (cc_load_db_data(data, flow_name) < 0) {
+            LM_CRIT("failed to dynamic load flow data from call handler\n");
+        }
+        else {
+            clean_cc_old_data_by_flow(data, flow_name);
+        }
+        
+        flow = get_flow_by_name(data, flow_name);
+        
+        if (flow == NULL) {
+            LM_ERR("flow <%.*s> does not exists\n", flow_name->len, flow_name->s);
+            ret = -3;
+            goto error;
+        }
 	}
 	LM_DBG("using call flow %p\n", flow);
 
@@ -1389,23 +1441,179 @@ static void cc_timer_cleanup(unsigned int ticks, void* param)
 static mi_response_t *mi_cc_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	int ret;
+	int ret = 0;
 
 	LM_INFO("\"cc_reload\" MI command received!\n");
 
 	/* block access to data */
 	lock_get( data->lock );
 
-	/* do the update */
-	ret = cc_load_db_data( data );
-	if (ret<0) {
-		LM_CRIT("failed to load CC data\n");
-	}
+    if (!dynamic_load) {
+        ret = cc_load_db_data( data, NULL );
+        if (ret<0) {
+            LM_CRIT("failed to load CC data\n");
+        }
 
-	clean_cc_old_data(data);
+        clean_cc_old_data(data);
+    }
+    else {
+        clean_cc_all_data(data);
+    }
 
 	/* release the readers */
 	lock_release( data->lock );
+
+	if (ret==0)
+		return init_mi_result_ok();
+	else
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
+}
+
+static mi_response_t *mi_cc_load_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int ret;
+    str flow_id;
+
+	LM_INFO("\"cc_load_flow\" MI command received!\n");
+
+	if (get_mi_string_param(params, "flow_id", &flow_id.s, &flow_id.len) < 0) {
+        return init_mi_param_error();
+    }
+    
+    /* block access to data */
+	lock_get( data->lock );
+    
+    ret = cc_load_db_data(data, &flow_id);
+    if (ret<0) {
+        LM_CRIT("failed to load flow data\n");
+    }
+    clean_cc_old_data_by_flow(data, &flow_id);
+
+	/* release the readers */
+	lock_release( data->lock );
+
+	if (ret==0)
+		return init_mi_result_ok();
+	else
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
+}
+
+static mi_response_t *mi_cc_reload_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int ret = 0;
+    str flow_id;
+    struct cc_flow *flow;
+
+	LM_INFO("\"cc_reload_flow\" MI command received!\n");
+
+	if (get_mi_string_param(params, "flow_id", &flow_id.s, &flow_id.len) < 0) {
+        return init_mi_param_error();
+    }
+    
+    flow = get_flow_by_name(data, &flow_id);
+    if (flow) {
+        /* block access to data */
+        lock_get( data->lock );
+        
+        ret = cc_load_db_data(data, &flow_id);
+        if (ret<0) {
+            LM_CRIT("failed to load flow data\n");
+        }
+        clean_cc_old_data_by_flow(data, &flow_id);
+
+        /* release the readers */
+        lock_release( data->lock );
+    }
+
+	if (ret==0)
+		return init_mi_result_ok();
+	else
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
+}
+
+static mi_response_t *mi_cc_load_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int ret;
+    str agent_id;
+    struct cc_agent *agent, *prev_agent= 0;
+
+	LM_INFO("\"cc_load_agent\" MI command received!\n");
+
+	/* do the update */
+    if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len) < 0) {
+        return init_mi_param_error();
+    }
+
+	agent = get_agent_by_name( data, &agent_id, &prev_agent);
+    //logout agent from flow first
+    if (agent && agent->loged_in) {
+        log_agent_to_flows( data, agent, 0);
+    }
+    
+    /* block access to data */
+	lock_get( data->lock );
+    
+    ret = cc_load_db_agent_data(data, &agent_id);
+    if (ret<0) {
+        LM_CRIT("failed to load agent data\n");
+    }
+
+	/* release the readers */
+	lock_release( data->lock );
+    
+    agent = get_agent_by_name( data, &agent_id, &prev_agent);
+    //login agent to flow to update flow counter
+    if (agent && agent->loged_in) {
+        log_agent_to_flows( data, agent, agent->loged_in);
+    }
+
+	if (ret==0)
+		return init_mi_result_ok();
+	else
+		return init_mi_error(500, MI_SSTR("Failed to reload"));
+}
+
+static mi_response_t *mi_cc_reload_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int ret = 0;
+    str agent_id;
+    struct cc_agent *agent, *prev_agent= 0;
+
+	LM_INFO("\"cc_reload_agent\" MI command received!\n");
+
+	/* do the update */
+    if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len) < 0) {
+        return init_mi_param_error();
+    }
+
+	agent = get_agent_by_name( data, &agent_id, &prev_agent);
+    if (agent) {
+        //logout agent from flow first
+        if (agent->loged_in) {
+            log_agent_to_flows( data, agent, 0);
+        }
+        
+        /* block access to data */
+        lock_get( data->lock );
+        
+        ret = cc_load_db_agent_data(data, &agent_id);
+        if (ret<0) {
+            LM_CRIT("failed to load agent data\n");
+        }
+
+        /* release the readers */
+        lock_release( data->lock );
+        
+        agent = get_agent_by_name( data, &agent_id, &prev_agent);
+        //login agent to flow to update flow counter
+        if (agent && agent->loged_in) {
+            log_agent_to_flows( data, agent, agent->loged_in);
+        }
+    }
 
 	if (ret==0)
 		return init_mi_result_ok();
@@ -1642,16 +1850,25 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 
 	/* block access to data */
 	lock_get( data->lock );
+    
+    if (dynamic_load) {
+        // save agent logstate to database
+        cc_db_update_agent_logstate(&agent_id, loged_in);
+    }
 
 	/* name of the agent */
 	agent = get_agent_by_name( data, &agent_id, &prev_agent);
 	if (agent==NULL) {
 		lock_release( data->lock );
-		return init_mi_error( 404, MI_SSTR("Agent not found"));
+        if (!dynamic_load) {
+            return init_mi_error( 404, MI_SSTR("Agent not found"));
+        }
+        else {
+            return init_mi_result_ok();
+        }
 	}
 
 	if (agent->loged_in != loged_in) {
-
 		if(loged_in && (agent->state==CC_AGENT_WRAPUP) &&
 			(get_ticks() > agent->wrapup_end_time))
 			agent->state = CC_AGENT_FREE;
@@ -1792,4 +2009,142 @@ error:
 	return NULL;
 }
 
+static mi_response_t *mi_cc_get_flow(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	struct cc_flow *flow;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *flows_arr, *flow_item;
+    str flow_id;
 
+	if (get_mi_string_param(params, "flow_id", &flow_id.s, &flow_id.len) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+    
+    flows_arr = add_mi_array(resp_obj, MI_SSTR("Flows"));
+	if (!flows_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
+    
+    flow_item = add_mi_object(flows_arr, NULL, 0);
+    if (!flow_item)
+        goto error;
+    
+    /* block access to data */
+	lock_get( data->lock );
+        
+    flow = get_flow_by_name(data, &flow_id);
+
+    if (flow) {
+        if (add_mi_string(flow_item, MI_SSTR("id"),
+            flow->id.s, flow->id.len) < 0)
+            goto error;
+
+        if (add_mi_number(flow_item, MI_SSTR("Avg Call Duration"),
+            flow->avg_call_duration) < 0)
+            goto error;
+
+        if (add_mi_number(flow_item, MI_SSTR("Processed Calls"),
+            flow->processed_calls) < 0)
+            goto error;
+
+        if (add_mi_number(flow_item, MI_SSTR("Logged Agents"),
+            flow->logged_agents) < 0)
+            goto error;
+
+        if (add_mi_number(flow_item, MI_SSTR("Ongoing Calls"),
+            flow->ongoing_calls) < 0)
+            goto error;
+
+        if (add_mi_number(flow_item, MI_SSTR("Ref Calls"),
+            flow->ref_cnt) < 0)
+            goto error;
+    }
+
+	lock_release( data->lock );
+
+	return resp;
+
+error:
+	lock_release( data->lock );
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *mi_cc_get_agent(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *agent_item, *agents_arr;
+	struct cc_agent *agent, *prev_agent;
+	str state;
+	static str s_free={"free", 4};
+	static str s_wrapup={"wrapup", 6};
+	static str s_incall={"incall", 6};
+    str agent_id;
+
+	if (get_mi_string_param(params, "agent_id", &agent_id.s, &agent_id.len) < 0)
+		return init_mi_param_error();
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+    
+    agents_arr = add_mi_array(resp_obj, MI_SSTR("Agents"));
+	if (!agents_arr) {
+		free_mi_response(resp);
+		return 0;
+	}
+    
+    agent_item = add_mi_object(agents_arr, NULL, 0);
+    if (!agent_item)
+        goto error;
+    
+    /* block access to data */
+	lock_get( data->lock );
+    
+    agent = get_agent_by_name(data, &agent_id, &prev_agent);
+    
+    if (agent) {
+        if (add_mi_string(agent_item, MI_SSTR("id"),
+            agent->id.s, agent->id.len) < 0)
+            goto error;
+
+        if (add_mi_number(agent_item, MI_SSTR("Ref"),
+            agent->ref_cnt) < 0)
+            goto error;
+
+        if(!agent->loged_in) {
+            if (add_mi_string(agent_item, MI_SSTR("Loged in"),
+                MI_SSTR("NO")) < 0)
+                goto error;
+        } else {
+            if (add_mi_string(agent_item, MI_SSTR("Loged in"),
+                MI_SSTR("YES")) < 0)
+                goto error;
+
+            switch ( agent->state ) {
+                case CC_AGENT_FREE:   state = s_free;   break;
+                case CC_AGENT_WRAPUP: state = s_wrapup; break;
+                case CC_AGENT_INCALL: state = s_incall; break;
+                default: state.s =0;  state.len = 0;
+            }
+            if (add_mi_string(agent_item, MI_SSTR("State"),
+                state.s, state.len) < 0)
+                goto error;
+        }
+    }
+
+	lock_release( data->lock );
+
+	return resp;
+
+error:
+	lock_release( data->lock );
+	free_mi_response(resp);
+	return 0;
+}

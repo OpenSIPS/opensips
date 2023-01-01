@@ -23,10 +23,17 @@ CREATE TABLE cc_agents (
     agentid CHAR(128) NOT NULL,
     location CHAR(128) NOT NULL,
     logstate INT(10) UNSIGNED DEFAULT 0 NOT NULL,
-    skills CHAR(255) NOT NULL,
     wrapup_end_time INT(11) DEFAULT 0 NOT NULL,
     wrapup_time INT(11) DEFAULT 0 NOT NULL,
     CONSTRAINT unique_agentid UNIQUE (agentid)
+) ENGINE=InnoDB;
+
+INSERT INTO version (table_name, table_version) values ('cc_skills','1');
+CREATE TABLE cc_skills (
+    id INT(10) UNSIGNED AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    agentid CHAR(128) NOT NULL,
+    skill CHAR(64) NOT NULL,
+    CONSTRAINT unique_agentid_skill UNIQUE (agentid, skill)
 ) ENGINE=InnoDB;
 
 INSERT INTO version (table_name, table_version) values ('cc_cdrs','1');
@@ -65,4 +72,5 @@ CREATE TABLE cc_calls (
 ) ENGINE=InnoDB;
 
 CREATE INDEX b2buaid_idx ON cc_calls (b2buaid);
+CREATE INDEX skill_idx ON cc_skills (skill);
 
