@@ -1560,15 +1560,24 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 				}
 				else
 				{
-					ret = run_init_negreply_cb(msg, tuple, entity);
-					if (ret == -1) {
-						goto error;
-					} else if (ret == 0) {
-						SEND_REPLY_TO_PEER_OR_GOTO_DONE;
-						LM_DBG("Negative reply [%d] - delete[%p]\n",
-							statuscode, tuple);
-						b2b_mark_todel(tuple);
-					}
+                    /* this may be a 487 reply because an entity has sent CANCEL */
+                    if (tuple->state == B2B_CANCEL_STATE && statuscode == 487) {
+                        SEND_REPLY_TO_PEER_OR_GOTO_DONE;
+                        LM_DBG("Terminated (due to CANCEL request) reply [%d] - delete[%p]\n",
+                            statuscode, tuple);
+                        b2b_mark_todel(tuple);
+                    }
+                    else {
+                        ret = run_init_negreply_cb(msg, tuple, entity);
+                        if (ret == -1) {
+                            goto error;
+                        } else if (ret == 0) {
+                            SEND_REPLY_TO_PEER_OR_GOTO_DONE;
+                            LM_DBG("Negative reply [%d] - delete[%p]\n",
+                                statuscode, tuple);
+                            b2b_mark_todel(tuple);
+                        }
+                    }
 				}
 				b2bl_print_tuple(tuple, L_DBG);
 			}
