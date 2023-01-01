@@ -62,6 +62,7 @@ struct cc_flow {
 	unsigned long processed_calls;
 	unsigned int logged_agents;
 	unsigned int ongoing_calls;
+    struct cc_agent *last_selected_agent; //round-robin cursor to pick an agent for a call
 	/* statistics */
 	stat_var *st_incalls;
 	stat_var *st_dist_incalls;
@@ -254,7 +255,7 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
 void free_cc_call(struct cc_data *data, struct cc_call *call);
 
 struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
-		unsigned int skill);
+		struct cc_flow *flow);
 
 void log_agent_to_flows(struct cc_data *data, struct cc_agent *agent,
 		int login);
@@ -297,6 +298,14 @@ static inline void remove_cc_agent(struct cc_data* data,
 				data->last_online_agent = prev_agent;
 		}
 	}
+    
+    if (agent->loged_in) { // update if agent was the cursor of any flow
+        struct cc_flow *flow;
+        for(flow=data->flows; flow; flow=flow->next) {
+            if (agent == flow->last_selected_agent)
+                flow->last_selected_agent = prev_agent;
+        }
+    }
 }
 
 

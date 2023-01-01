@@ -780,26 +780,39 @@ void free_cc_call(struct cc_data * data, struct cc_call *call)
 
 
 struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
-													unsigned int skill)
+													struct cc_flow *flow)
 {
 	struct cc_agent *agent;
 	unsigned int n;
 
-	agent = data->agents[CC_AG_ONLINE];
-	if (agent==NULL) return NULL;
+	if (flow->last_selected_agent == NULL || !flow->last_selected_agent->loged_in) {
+        flow->last_selected_agent = data->agents[CC_AG_ONLINE];
+    }
+	if (flow->last_selected_agent == NULL) return NULL;
 
-	/* iterate all agents*/
-	do {
+	/* iterate from cursor the end of agent list*/
+    for(agent = flow->last_selected_agent->next; agent; agent = agent->next) {
 		if(agent->state==CC_AGENT_FREE) {
 			/* iterate all skills of the agent */
 			for( n=0 ; n<agent->no_skills ; n++) {
-				if (agent->skills[n]==skill)
+				if (agent->skills[n]==flow->skill)
+                    flow->last_selected_agent = agent;
 					return agent;
 			}
 		}
-		/* next agent */
-		agent = agent->next;
-	}while(agent);
+	}
+    
+    /* iterate from start of agent list to cursor */
+    for(agent = data->agents[CC_AG_ONLINE]; agent && agent != flow->last_selected_agent->next; agent = agent->next) {
+		if(agent->state==CC_AGENT_FREE) {
+			/* iterate all skills of the agent */
+			for( n=0 ; n<agent->no_skills ; n++) {
+				if (agent->skills[n]==flow->skill)
+                    flow->last_selected_agent = agent;
+					return agent;
+			}
+		}
+	};
 
 	return NULL;
 }

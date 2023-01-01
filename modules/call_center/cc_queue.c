@@ -79,7 +79,7 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 			/* search for an available agent */
 			/* if we have a flow_id recording, we push the call in the queue */
 			if (!call->flow->recordings[AUDIO_FLOW_ID].len)
-				agent = get_free_agent_by_skill( data, call->flow->skill);
+				agent = get_free_agent_by_skill( data, call->flow);
 			else
 				agent = NULL;
 			if (agent) {
