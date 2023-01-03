@@ -1403,8 +1403,7 @@ out_free:
 static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 											unsigned int leg)
 {
-	str contact;
-	char *tmp;
+	str contact, new_ct, old_ct;
 	int ret = 0;
 	contact_t *ct = NULL;
 
@@ -1427,28 +1426,33 @@ static inline int dlg_update_contact(struct dlg_cell *dlg, struct sip_msg *msg,
 		contact = ((contact_body_t *)msg->contact->parsed)->contacts->uri;
 	}
 
-	if (dlg->legs[leg].contact.s) {
-		/* if the same contact, don't do anything */
-		if (dlg->legs[leg].contact.len == contact.len &&
-				strncmp(dlg->legs[leg].contact.s, contact.s, contact.len) == 0) {
-			LM_DBG("Using the same contact <%.*s> for dialog %p on leg %d\n",
-					contact.len, contact.s, dlg, leg);
-			goto end;
-		}
-		dlg->flags |= DLG_FLAG_CHANGED;
-		LM_DBG("Replacing old contact <%.*s> for dialog %p on leg %d\n",
-				dlg->legs[leg].contact.len, dlg->legs[leg].contact.s, dlg, leg);
-		tmp = shm_realloc(dlg->legs[leg].contact.s, contact.len);
-	} else
-		tmp = shm_malloc(contact.len);
-	if (!tmp) {
+	/* if the same contact, don't do anything */
+	if (dlg->legs[leg].contact.s &&
+			str_match(&contact, &dlg->legs[leg].contact)) {
+		LM_DBG("Using the same contact <%.*s> for dialog %p on leg %d\n",
+		       contact.len, contact.s, dlg, leg);
+		goto end;
+	}
+
+	LM_DBG("Replacing old contact <%.*s> for dialog %p on leg %d\n",
+			dlg->legs[leg].contact.len, dlg->legs[leg].contact.s, dlg, leg);
+
+	if (shm_str_dup(&new_ct, &contact) < 0) {
 		LM_ERR("not enough memory for new contact!\n");
 		ret = -1;
 		goto end;
 	}
-	dlg->legs[leg].contact.s = tmp;
-	dlg->legs[leg].contact.len = contact.len;
-	memcpy(dlg->legs[leg].contact.s, contact.s, contact.len);
+
+	dlg->flags |= DLG_FLAG_CHANGED;
+
+	/* this cb may run in parallel! (e.g. 2 x 200 OK to 2 x mid-dlg UPDATEs) */
+	dlg_lock_dlg(dlg);
+	old_ct = dlg->legs[leg].contact;
+	dlg->legs[leg].contact = new_ct;
+	dlg_unlock_dlg(dlg);
+
+	shm_free(old_ct.s);
+
 	LM_DBG("Updated contact to <%.*s> for dialog %p on leg %d\n",
 			contact.len, contact.s, dlg, leg);
 	ret = 1;
