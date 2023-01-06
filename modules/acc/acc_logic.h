@@ -33,11 +33,11 @@
 #include "../tm/t_hooks.h"
 #include "../dialog/dlg_cb.h"
 
-#define DO_ACC_NONE (0)
-#define DO_ACC_LOG  (1<<(0*8))
-#define DO_ACC_AAA  (1<<(1*8))
-#define DO_ACC_DB   (1<<(2*8))
-#define DO_ACC_EVI  ((unsigned long long)1<<(4*8))
+#define DO_ACC_NONE (0ULL)
+#define DO_ACC_LOG  (1ULL<<(0*8))
+#define DO_ACC_AAA  (1ULL<<(1*8))
+#define DO_ACC_DB   (1ULL<<(2*8))
+#define DO_ACC_EVI  (1ULL<<(4*8))
 #define DO_ACC_ERR  ((unsigned long long)-1)
 
 #define DO_ACC        (1<<0) /* generic accouting flag - internal only */

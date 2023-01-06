@@ -1381,10 +1381,10 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 	return 1;
 }
 
-int w_drop_acc(struct sip_msg* msg, unsigned long long *type,
+int w_drop_acc(struct sip_msg* msg, unsigned long long *types,
 			unsigned long long *flags)
 {
-	unsigned long long flag_mask;
+	unsigned long long flag_mask, _types, _flags;
 
 	acc_ctx_t* acc_ctx=try_fetch_ctx();
 
@@ -1394,9 +1394,10 @@ int w_drop_acc(struct sip_msg* msg, unsigned long long *type,
 		return -1;
 	}
 
-	flag_mask = (type ? *type : DO_ACC_LOG | DO_ACC_AAA | DO_ACC_DB | DO_ACC_EVI) *
-		(flags ? *flags : ALL_ACC_FLAGS);
+	_types = (types ? *types : DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI);
+	_flags = (flags ? *flags : ALL_ACC_FLAGS);
 
+	flag_mask = _types + _types * _flags;
 	reset_flags(acc_ctx->flags, flag_mask);
 
 	return 1;
