@@ -54,6 +54,13 @@ struct msrpua_session {
 	struct msrp_ua_handler hdl;
 };
 
+struct msrpua_trans_param {
+	struct msrpua_session *sess;
+	str message_id;
+	str byte_range;
+	int timeout;
+};
+
 struct uac_init_params {
 	struct msrpua_session *sess;
 	str from_uri;

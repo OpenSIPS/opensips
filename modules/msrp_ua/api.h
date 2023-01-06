@@ -62,7 +62,14 @@ typedef int (*init_uac_f)(str *accept_types, str *from_uri, str *to_uri,
 
 typedef int (*end_session_f)(str *session_id);
 
-typedef int (*send_message_f)(str *session_id, str *mime, str *body);
+enum msrp_failure_report_type {
+	MSRP_FAILURE_REPORT_YES,
+	MSRP_FAILURE_REPORT_PARTIAL,
+	MSRP_FAILURE_REPORT_NO
+};
+
+typedef int (*send_message_f)(str *session_id, str *mime, str *body,
+	enum msrp_failure_report_type failure_report, int success_report);
 
 struct msrp_ua_binds {
 	init_uas_f init_uas;

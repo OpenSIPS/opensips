@@ -339,7 +339,7 @@ int msrpua_notify_cb(struct msrp_ua_notify_params *params, void *hdl_param)
 			list_del(&msg->list);
 
 			if (msrpua_api.send_message(&sess->msrpua_sess_id,
-				&msg->content_type, &msg->body) < 0)
+				&msg->content_type, &msg->body, MSRP_FAILURE_REPORT_NO, 0) < 0)
 				LM_ERR("Failed to send queued message to MSRP side\n");
 
 			shm_free(msg);
@@ -669,7 +669,7 @@ static int msg_to_msrp(struct sip_msg *msg, str *key, str *content_types)
 
 		if (sess->msrpua_sess_id.s) {
 			if (msrpua_api.send_message(&sess->msrpua_sess_id,
-				&msg->content_type->body, &body) < 0) {
+				&msg->content_type->body, &body, MSRP_FAILURE_REPORT_NO, 0) < 0) {
 				LM_ERR("Failed to send message to MSRP side\n");
 				goto error;
 			}

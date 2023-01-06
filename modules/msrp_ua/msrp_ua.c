@@ -92,20 +92,26 @@ static event_id_t evi_sess_new_id = EVI_ERROR;
 static event_id_t evi_sess_end_id = EVI_ERROR;
 
 static event_id_t evi_msg_rcv_id = EVI_ERROR;
+static event_id_t evi_report_id = EVI_ERROR;
 
 static str evi_sess_new_name = str_init("E_MSRP_SESSION_NEW");
 static str evi_sess_end_name = str_init("E_MSRP_SESSION_END");
 
 static str evi_msg_rcv_name = str_init("E_MSRP_MSG_RECEIVED");
+static str evi_report_name = str_init("E_MSRP_REPORT_RECEIVED");
 
 static evi_params_p evi_sess_params;
 
 static evi_params_p evi_msg_rcv_params;
+static evi_params_p evi_report_params;
 
 static evi_param_p evi_sess_from_p, evi_sess_to_p, evi_sess_ruri_p,
 	evi_sess_sid_p, evi_sess_types_p;
 
 static evi_param_p evi_msg_rcv_sid_p, evi_msg_rcv_ctype_p, evi_msg_rcv_body_p;
+
+static evi_param_p evi_report_sid_p, evi_report_msgid_p, evi_report_status_p,
+	evi_report_brange_p;
 
 static str evi_sess_from_pname = str_init("from_uri");
 static str evi_sess_to_pname = str_init("to_uri");
@@ -116,6 +122,11 @@ static str evi_sess_types_pname = str_init("content_types");
 static str evi_msg_rcv_sid_pname = str_init("session_id");
 static str evi_msg_rcv_ctype_pname = str_init("content_type");
 static str evi_msg_rcv_body_pname = str_init("body");
+
+static str evi_report_sid_pname = str_init("session_id");
+static str evi_report_msgid_pname = str_init("message_id");
+static str evi_report_status_pname = str_init("status");
+static str evi_report_brange_pname = str_init("byte_range");
 
 static param_export_t params[] = {
 	{"hash_size", INT_PARAM, &msrpua_sessions_hsize},
@@ -129,7 +140,14 @@ static param_export_t params[] = {
 static mi_export_t mi_cmds[] = {
 	{ "msrp_ua_send_message", 0, 0, 0, {
 		{msrpua_mi_send_msg, {"session_id", 0}},
+		{msrpua_mi_send_msg, {"session_id", "failure_report", 0}},
+		{msrpua_mi_send_msg, {"session_id", "success_report", 0}},
+		{msrpua_mi_send_msg, {"session_id", "failure_report", "success_report", 0}},
 		{msrpua_mi_send_msg, {"session_id", "mime", "body", 0}},
+		{msrpua_mi_send_msg, {"session_id", "mime", "body", "failure_report", 0}},
+		{msrpua_mi_send_msg, {"session_id", "mime", "body", "success_report", 0}},
+		{msrpua_mi_send_msg, {"session_id", "mime", "body",
+			"failure_report", "success_report", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "msrp_ua_end_session", 0, 0, 0, {
@@ -224,6 +242,11 @@ static int msrpua_evi_init(void)
 		LM_ERR("cannot register event\n");
 		return -1;
 	}
+	evi_report_id = evi_publish_event(evi_report_name);
+	if (evi_report_id == EVI_ERROR) {
+		LM_ERR("cannot register event\n");
+		return -1;
+	}
 
 	evi_sess_params = pkg_malloc(sizeof(evi_params_t));
 	if (evi_sess_params == NULL) {
@@ -238,6 +261,13 @@ static int msrpua_evi_init(void)
 		return -1;
 	}
 	memset(evi_msg_rcv_params, 0, sizeof(evi_params_t));
+
+	evi_report_params = pkg_malloc(sizeof(evi_params_t));
+	if (evi_report_params == NULL) {
+		LM_ERR("no more pkg mem\n");
+		return -1;
+	}
+	memset(evi_report_params, 0, sizeof(evi_params_t));
 
 	evi_sess_from_p = evi_param_create(evi_sess_params, &evi_sess_from_pname);
 	if (evi_sess_from_p == NULL)
@@ -266,6 +296,23 @@ static int msrpua_evi_init(void)
 	evi_msg_rcv_body_p = evi_param_create(evi_msg_rcv_params,
 		&evi_msg_rcv_body_pname);
 	if (evi_msg_rcv_body_p == NULL)
+		goto error;
+
+	evi_report_sid_p = evi_param_create(evi_report_params,
+		&evi_report_sid_pname);
+	if (evi_report_sid_p == NULL)
+		goto error;
+	evi_report_msgid_p = evi_param_create(evi_report_params,
+		&evi_report_msgid_pname);
+	if (evi_report_msgid_p == NULL)
+		goto error;
+	evi_report_status_p = evi_param_create(evi_report_params,
+		&evi_report_status_pname);
+	if (evi_report_status_p == NULL)
+		goto error;
+	evi_report_brange_p = evi_param_create(evi_report_params,
+		&evi_report_brange_pname);
+	if (evi_report_brange_p == NULL)
 		goto error;
 
 	return 0;
@@ -1018,6 +1065,33 @@ static int raise_msg_rcv_event(str *sess_id, str *ctype, str *body)
 	return 0;
 }
 
+static int raise_report_event(str *sess_id, str *msgid, str *status, str *brange)
+{
+	if (evi_param_set_str(evi_report_sid_p, sess_id) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+	if (msgid && evi_param_set_str(evi_report_msgid_p, msgid) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+	if (evi_param_set_str(evi_report_status_p, status) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+	if (brange && evi_param_set_str(evi_report_brange_p, brange) < 0) {
+		LM_ERR("cannot set event parameter\n");
+		return -1;
+	}
+
+	if (evi_raise_event(evi_report_id, evi_report_params) < 0) {
+		LM_ERR("cannot raise event\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	void *param, int flags)
 {
@@ -1190,7 +1264,8 @@ static int b2b_notify_request(int etype, struct sip_msg *msg, str *key,
 	return 0;
 }
 
-static int msrpua_send_message(str *sess_id, str *mime, str *body);
+static int msrpua_send_message(str *sess_id, str *mime, str *body,
+	enum msrp_failure_report_type failure_report, int success_report);
 
 static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
 	void *param, int flags)
@@ -1310,7 +1385,8 @@ static int b2b_notify_reply(int etype, struct sip_msg *msg, str *key,
 			hash_unlock(msrpua_sessions, hentry);
 
 			/* the initiating endpoint must issue a SEND request immediately */
-			if (msrpua_send_message(&sess_id, NULL, NULL) < 0) {
+			if (msrpua_send_message(&sess_id, NULL, NULL,
+				MSRP_FAILURE_REPORT_NO, 0) < 0) {
 				LM_ERR("Failed to send empty initial message\n");
 				hash_lock(msrpua_sessions, hentry);
 				goto error;
@@ -1957,44 +2033,13 @@ error:
 
 #define REPORT_STATUS_OK "000 200 OK"
 
-static int handle_msrp_request(struct msrp_msg *req, void *hdl_param)
+static int handle_msrp_send(struct msrp_msg *req, struct msrpua_session *sess,
+	unsigned int hentry, int t_report)
 {
-	unsigned int hentry;
-	struct msrpua_session *sess;
-	void **val;
-	struct msrp_url *to;
-	int t_report = 0;
+	struct msrp_url *to = (struct msrp_url *)req->to_path->parsed;
 	struct msrp_ua_handler hdl;
 	int run_cb = 0;
 	int rc = 0;
-
-	LM_DBG("Received MSRP request [%.*s]\n", req->fl.u.request.method.len,
-		req->fl.u.request.method.s);
-
-	/* not interested in other methods for now */
-	if (req->fl.u.request.method_id != MSRP_METHOD_SEND)
-		return 0;
-
-	if (!req->failure_report || !str_match((&str_init("no")),
-		&req->failure_report->body))
-		t_report = 1;
-
-	to = (struct msrp_url *)req->to_path->parsed;
-	hentry = hash_entry(msrpua_sessions, to->session);
-
-	hash_lock(msrpua_sessions, hentry);
-
-	val = hash_find(msrpua_sessions, hentry, to->session);
-	if (!val) {
-		hash_unlock(msrpua_sessions, hentry);
-		LM_ERR("Invalid URI, session does not exist\n");
-
-		if (t_report && msrp_api.send_reply(msrp_hdl, req, 481, NULL,NULL,0) < 0)
-			LM_ERR("Failed to send reply\n");
-
-		return -1;
-	}
-	sess = *val;
 
 	if (req->body.len && req->content_type &&
 		!match_mime_with_list(&req->content_type->body, &sess->accept_types)) {
@@ -2045,6 +2090,81 @@ static int handle_msrp_request(struct msrp_msg *req, void *hdl_param)
 	return 0;
 }
 
+static int handle_msrp_report(struct msrp_msg *req, struct msrpua_session *sess,
+	unsigned int hentry)
+{
+	struct msrp_url *to = (struct msrp_url *)req->to_path->parsed;
+	struct msrp_ua_handler hdl;
+	int run_cb = 0;
+	str status_str;
+
+	if (sess->hdl.name) {
+		run_cb = 1;
+		hdl = sess->hdl;
+	}
+
+	hash_unlock(msrpua_sessions, hentry);
+
+	if (run_cb) {
+		hdl.msrp_req_cb(req, hdl.param);
+	} else {
+		status_str.s = req->status->body.s + 4; /* skip the "000" namespace */
+		status_str.len = req->status->body.len - 4;
+		if (raise_report_event(&to->session, &req->message_id->body,
+			&status_str, &req->byte_range->body) < 0) {
+			LM_ERR("Failed to raise report received event\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int handle_msrp_request(struct msrp_msg *req, void *hdl_param)
+{
+	unsigned int hentry;
+	struct msrpua_session *sess;
+	void **val;
+	struct msrp_url *to;
+	int t_report = 0;
+
+	LM_DBG("Received MSRP request [%.*s]\n", req->fl.u.request.method.len,
+		req->fl.u.request.method.s);
+
+	if (req->fl.u.request.method_id == MSRP_METHOD_REPORT) {
+		t_report = 0;
+	} else if (req->fl.u.request.method_id == MSRP_METHOD_SEND) {
+		if (!req->failure_report || !str_match((&str_init("no")),
+			&req->failure_report->body))
+			t_report = 1;
+	} else {
+		LM_DBG("Unknown MSRP method\n");
+		return 0;
+	}
+
+	to = (struct msrp_url *)req->to_path->parsed;
+	hentry = hash_entry(msrpua_sessions, to->session);
+
+	hash_lock(msrpua_sessions, hentry);
+
+	val = hash_find(msrpua_sessions, hentry, to->session);
+	if (!val) {
+		hash_unlock(msrpua_sessions, hentry);
+		LM_ERR("Invalid URI, session does not exist\n");
+
+		if (t_report && msrp_api.send_reply(msrp_hdl, req, 481, NULL,NULL,0) < 0)
+			LM_ERR("Failed to send reply\n");
+
+		return -1;
+	}
+	sess = *val;
+
+	if (req->fl.u.request.method_id == MSRP_METHOD_REPORT)
+		return handle_msrp_report(req, sess, hentry);
+	else
+		return handle_msrp_send(req, sess, hentry, t_report);
+}
+
 static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 	void *trans_param, void *hdl_param)
 {
@@ -2053,7 +2173,9 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 	struct msrp_ua_handler hdl = {};
 	int run_cb = 0;
 	struct uac_init_params *uac_params = NULL;
+	struct msrpua_trans_param *params;
 	str sess_id;
+	str status_str;
 	struct msrp_ua_notify_params cb_params = {};
 
 	if (rpl)
@@ -2101,7 +2223,8 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 			goto err_failed;
 		}
 	} else {
-		sess = (struct msrpua_session *)trans_param;
+		params = (struct msrpua_trans_param *)trans_param;
+		sess = params->sess;
 
 		hentry = hash_entry(msrpua_sessions, sess->session_id);
 		hash_lock(msrpua_sessions, hentry);
@@ -2109,12 +2232,56 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 		if (sess->hdl.name) {
 			run_cb = 1;
 			hdl = sess->hdl;
+		} else if (!rpl || rpl->fl.u.reply.status_no != 200) {
+			if (pkg_str_dup(&sess_id, &sess->session_id) < 0) {
+				LM_ERR("out of pkg memory\n");
+				shm_free(params);
+				return -1;
+			}
+
+			if (rpl) {
+				status_str.len = rpl->fl.u.reply.status.len +
+					rpl->fl.u.reply.reason.len + 1;
+				status_str.s = pkg_malloc(status_str.len);
+				if (!status_str.s) {
+					LM_ERR("no more pkg memory\n");
+					pkg_free(sess_id.s);
+					shm_free(params);
+					return -1;
+				}
+				memcpy(status_str.s, rpl->fl.u.reply.status.s,
+					rpl->fl.u.reply.status.len);
+				if (rpl->fl.u.reply.reason.len) {
+					status_str.s[rpl->fl.u.reply.status.len] = ' ';
+					memcpy(status_str.s + rpl->fl.u.reply.status.len + 1,
+						rpl->fl.u.reply.reason.s, rpl->fl.u.reply.reason.len);
+				}
+			} else {
+				status_str = str_init("408");
+			}
 		}
 
 		hash_unlock(msrpua_sessions, hentry);
 
-		if (run_cb)
+		if (run_cb) {
 			hdl.msrp_rpl_cb(rpl, hdl.param);
+		} else if (!rpl || rpl->fl.u.reply.status_no != 200) {
+			if (raise_report_event(&sess_id, &params->message_id, &status_str,
+				&params->byte_range) < 0) {
+				LM_ERR("Failed to raise report received event\n");
+				pkg_free(sess_id.s);
+				if (rpl)
+					pkg_free(status_str.s);
+				shm_free(params);
+				return -1;
+			}
+
+			pkg_free(sess_id.s);
+			if (rpl)
+				pkg_free(status_str.s);
+		}
+
+		shm_free(params);
 	}
 
 	return 0;
@@ -2149,19 +2316,24 @@ err_del:
 #define MESSAGE_ID_PREFIX_LEN (sizeof(MESSAGE_ID_PREFIX) - 1)
 #define BYTE_RANGE_PREFIX "Byte-Range: 1-"
 #define BYTE_RANGE_PREFIX_LEN (sizeof(BYTE_RANGE_PREFIX) - 1)
+
 #define FAILURE_REPORT_NO_HDR "Failure-Report: no"
-#define BYTE_RANGE_PREFIX_LEN (sizeof(BYTE_RANGE_PREFIX) - 1)
+#define FAILURE_REPORT_PARTIAL_HDR "Failure-Report: partial"
+#define SUCCESS_REPORT_YES_HDR "Success-Report: yes"
 
-#define MSRP_HDRS_NO 3
+#define MSRP_HDRS_MAX_NO 4
 
-static int msrpua_send_message(str *sess_id, str *mime, str *body)
+static int msrpua_send_message(str *sess_id, str *mime, str *body,
+	enum msrp_failure_report_type failure_report, int success_report)
 {
 	unsigned int hentry;
 	struct msrpua_session *sess;
+	struct msrpua_trans_param *trans_param;
 	void **val;
 	int rc = -1;
+	int hdrs_no = 0;
 	str from = {0};
-	str hdrs[MSRP_HDRS_NO] = {{0}};
+	str hdrs[MSRP_HDRS_MAX_NO] = {{0}};
 	char *p;
 	str blen;
 
@@ -2215,6 +2387,8 @@ static int msrpua_send_message(str *sess_id, str *mime, str *body)
 	append_string(p, MESSAGE_ID_PREFIX, MESSAGE_ID_PREFIX_LEN);
 	msrpua_gen_id(p, &sess->session_id, NULL);
 
+	hdrs_no++;
+
 	/* Byte-Range: 1-len/len */
 	hdrs[1].len = BYTE_RANGE_PREFIX_LEN;
 	if (body) {
@@ -2236,11 +2410,39 @@ static int msrpua_send_message(str *sess_id, str *mime, str *body)
 	*(p++) = '/';
 	append_string(p, blen.s, blen.len);
 
-	hdrs[2] = str_init(FAILURE_REPORT_NO_HDR);
+	hdrs_no++;
+
+	if (failure_report == MSRP_FAILURE_REPORT_NO)
+		hdrs[hdrs_no++] = str_init(FAILURE_REPORT_NO_HDR);
+	else if (failure_report == MSRP_FAILURE_REPORT_PARTIAL)
+		hdrs[hdrs_no++] = str_init(FAILURE_REPORT_PARTIAL_HDR);
+
+	if (success_report)
+		hdrs[hdrs_no++] = str_init(SUCCESS_REPORT_YES_HDR);
+
+	trans_param = shm_malloc(sizeof *trans_param + hdrs[0].len + hdrs[1].len);
+	if (!trans_param) {
+		LM_ERR("no more shm memory\n");
+		goto error;
+	}
+	memset(trans_param, 0, sizeof *trans_param);
+
+	trans_param->sess = sess;
+
+	trans_param->message_id.s = (char *)(trans_param + 1);
+	trans_param->message_id.len = hdrs[0].len;
+	memcpy(trans_param->message_id.s, hdrs[0].s, hdrs[0].len);
+	trans_param->byte_range.s = (char *)(trans_param + 1) +
+		trans_param->message_id.len;
+	trans_param->byte_range.len = hdrs[1].len;
+	memcpy(trans_param->byte_range.s, hdrs[1].s, hdrs[1].len);
+
+	if (failure_report == MSRP_FAILURE_REPORT_YES)
+		trans_param->timeout = 1;
 
 	if (msrp_api.send_request(msrp_hdl, MSRP_METHOD_SEND, &from,
 		sess->peer_path_parsed, msrp_sock, &sess->to_su, mime, body, hdrs,
-		MSRP_HDRS_NO, '$', sess) < 0) {
+		hdrs_no, '$', trans_param) < 0) {
 		LM_ERR("Failed to send MSRP message\n");
 		goto error;
 	}
@@ -2268,6 +2470,8 @@ mi_response_t *msrpua_mi_send_msg(const mi_params_t *params,
 	str sess_id;
 	str mime;
 	str body;
+	str failure_param, success_param;
+	int failure_report, success_report;
 	int rc;
 
 	if (get_mi_string_param(params, "session_id", &sess_id.s, &sess_id.len) < 0)
@@ -2292,7 +2496,47 @@ mi_response_t *msrpua_mi_send_msg(const mi_params_t *params,
 			return init_mi_param_error();
 	}
 
-	rc = msrpua_send_message(&sess_id, mime.s ? &mime:NULL, body.s ? &body:NULL);
+	switch (try_get_mi_string_param(params, "failure_report",
+		&failure_param.s, &failure_param.len)) {
+		case 0:
+			if (str_match((&str_init("no")), &failure_param))
+				failure_report = MSRP_FAILURE_REPORT_NO;
+			else if (str_match((&str_init("yes")), &failure_param))
+				failure_report = MSRP_FAILURE_REPORT_YES;
+			else if (str_match((&str_init("partial")), &failure_param))
+				failure_report = MSRP_FAILURE_REPORT_PARTIAL;
+			else
+				return init_mi_error(500,
+					MI_SSTR("Unacceptable value for Failure-Report"));
+
+			break;
+		case -1:
+			failure_report = MSRP_FAILURE_REPORT_YES;
+			break;
+		default:
+			return init_mi_param_error();
+	}
+	switch (try_get_mi_string_param(params, "success_report",
+		&success_param.s, &success_param.len)) {
+		case 0:
+			if (str_match((&str_init("no")), &success_param))
+				success_report = 0;
+			else if (str_match((&str_init("yes")), &success_param))
+				success_report = 1;
+			else
+				return init_mi_error(500,
+					MI_SSTR("Unacceptable value for Success-Report"));
+
+			break;
+		case -1:
+			success_report = 0;
+			break;
+		default:
+			return init_mi_param_error();
+	}
+
+	rc = msrpua_send_message(&sess_id, mime.s ? &mime:NULL, body.s ? &body:NULL,
+		failure_report, success_report);
 	if (rc < 0)
 		return init_mi_error(500, MI_SSTR("Failed to send message"));
 	else if (rc == 1)

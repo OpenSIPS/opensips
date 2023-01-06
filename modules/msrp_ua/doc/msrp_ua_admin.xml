@@ -249,15 +249,31 @@ if (!has_totag() &amp;&amp; is_method("INVITE")) {
 				<emphasis>body</emphasis> (string, optional) - actual message
 				body. If missing, an empty message will be sent.
 			</para></listitem>
+			<listitem><para>
+				<emphasis>success_report</emphasis> (string, optional) - string
+				indicating whether to request an MSRP Success Report. Possible
+				values are <emphasis>yes</emphasis> or <emphasis>no</emphasis>.
+				If the parameter is missing or is set to "no" the SEND request
+				will not include a Success-Report header.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>failure_report</emphasis> (string, optional) - string
+				indicating whether to request an MSRP Failure Report. Possible
+				values are <emphasis>yes</emphasis>, <emphasis>no</emphasis> or
+				<emphasis>partial</emphasis>, as specified in MSRP.
+				If the parameter is missing or is set to "yes" the SEND request
+				will not include a Failure-Report header. Note that if the header
+				field is not present, the receving MSRP endpoint must treat it the
+				same as a Failure-Report header with a value of "yes".
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 opensips-cli -x mi msrp_ua_send_message \
-	5addd9e7b74fa44fbace68a4fc562293 \
-	text/plain \
-	Hello
+	session_id=5addd9e7b74fa44fbace68a4fc562293 \
+	mime=text/plain body=Hello success_report=yes
 		</programlisting>
 		</section>
 
@@ -418,8 +434,8 @@ opensips-cli -x mi msrp_ua_end_session \
 		<function moreinfo="none">E_MSRP_MSG_RECEIVED</function>
 		</title>
 		<para>
-			This event is triggered when receiving a new, non-empty MSRP message
-			from the peer.
+			This event is triggered when receiving a new, non-empty MSRP SEND
+			request from the peer.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
@@ -432,6 +448,44 @@ opensips-cli -x mi msrp_ua_end_session \
 			</para></listitem>
 			<listitem><para>
 				<emphasis>body</emphasis> - The actual message body.
+			</para></listitem>
+		</itemizedlist>
+	</section>
+
+	<section id="event_E_MSRP_REPORT_RECEIVED" xreflabel="E_MSRP_REPORT_RECEIVED">
+		<title>
+		<function moreinfo="none">E_MSRP_REPORT_RECEIVED</function>
+		</title>
+		<para>
+			This event is triggered when:
+			<itemizedlist>
+				<listitem><para>
+				a MSRP REPORT request is received
+				</para></listitem>
+				<listitem><para>
+				a failure transaction response is received
+				</para></listitem>
+				<listitem><para>
+				a local timeout for a SEND request occured.
+				</para></listitem>
+			</itemizedlist>
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>session_id</emphasis> - The MSRP session identifier
+				("session-id" part of the MSRP URI).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>message_id</emphasis> - The value of the Message-ID
+				header field.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>status</emphasis> - The value of the Status header field.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>byte_range</emphasis> - The value of the Byte-Range header
+				field.
 			</para></listitem>
 		</itemizedlist>
 	</section>	
