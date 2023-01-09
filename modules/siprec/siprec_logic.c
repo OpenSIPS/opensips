@@ -186,7 +186,6 @@ int srec_register_callbacks(struct src_sess *sess)
 	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_TERMINATED|DLGCB_EXPIRED|DLGCB_FAILED,
 			srec_dlg_end, sess, dlg_src_unref_session)){
 		LM_ERR("cannot register callback for dialog termination\n");
-		srec_hlog(ss, SREC_UNREF, "error registering callback for terminating");
 		return -1;
 	}
 
