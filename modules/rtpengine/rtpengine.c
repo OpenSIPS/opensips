@@ -2484,6 +2484,7 @@ send_rtpe_command(struct rtpe_node *node, bencode_item_t *dict, int *outlen)
 	if (IOV_MAX < OSIP_IOV_MAX)
 		max_vcnt = IOV_MAX;
 #endif
+	vcnt++; /* add the cookie */
 
 	if (vcnt > max_vcnt) {
 		int i, vec_len = 0;
