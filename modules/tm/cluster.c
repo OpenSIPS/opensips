@@ -207,6 +207,8 @@ static void receive_tm_repl(bin_packet_t *packet)
 	memcpy((char *)&ri.src_ip, tmp.s, tmp.len);
 	TM_BIN_POP(int, &ri.src_port, "src port");
 	TM_BIN_POP(str, &tmp, "message");
+	/* we need to substract the '\0' termination from message len */
+	tmp.len--;
 
 	/* only auto-CANCEL is treated differently */
 	switch (packet->type) {
@@ -322,7 +324,7 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 	TM_BIN_PUSH(str, &tmp, "src host");
 	TM_BIN_PUSH(int, msg->rcv.src_port, "src port");
 	tmp.s = msg->buf;
-	tmp.len = msg->len + 1; /* XXX: add null terminator */
+	tmp.len = msg->len + 1; /* XXX: add '\0' terminator - receive_msg expects it */
 	TM_BIN_PUSH(str, &tmp, "message");
 
 	return &packet;
