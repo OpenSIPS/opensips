@@ -1679,7 +1679,7 @@ endif
 
 
 ## Unit Testing - required extensions
-ifeq (1,$(shell grep -c '^\DEFS+= -DUNIT_TESTS' Makefile.conf))
+ifneq (,$(findstring UNIT_TESTS, $(DEFS)))
 DEFS := $(DEFS) -DUNIT_TESTS
 LIBS := $(LIBS) -ltap
 test_src := $(shell find . -wholename "*/test/*\.c" | grep -v "^./modules/")
