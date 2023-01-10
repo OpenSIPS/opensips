@@ -32,7 +32,10 @@
 #include "../../locking.h"
 #include "../../hash_func.h"
 #include "../../parser/msg_parser.h"
+#include "../../map.h"
 
+
+#define CC_SKILL_MAX_SIZE 65 //it is 64 in db designed
 
 typedef enum {
 	AUDIO_WELCOME,
@@ -42,13 +45,18 @@ typedef enum {
 	MAX_AUDIO
 } audio_files;
 
+struct cc_rel {
+    str id; // can be flowid or agentid
+    struct cc_rel* next;
+    struct cc_rel** prev; // 2 direction linked list to help remove item in O(1)
+};
 
 struct cc_flow {
 	str id;
 	unsigned int is_new;
 	/* configuration data */
 	unsigned int priority;
-	unsigned int skill;
+	str skill;
 	unsigned int max_wrapup;
 	unsigned int diss_hangup;
 	unsigned int diss_ewt_th;
@@ -62,7 +70,7 @@ struct cc_flow {
 	unsigned long processed_calls;
 	unsigned int logged_agents;
 	unsigned int ongoing_calls;
-    struct cc_agent *last_selected_agent; //round-robin cursor to pick an agent for a call
+    struct cc_rel *last_selected_agent; //round-robin cursor to pick an agent for a call
 	/* statistics */
 	stat_var *st_incalls;
 	stat_var *st_dist_incalls;
@@ -72,19 +80,18 @@ struct cc_flow {
 	stat_var *st_queued_calls;
 	float avg_waittime;
 	unsigned long avg_waittime_no;
+    struct cc_rel *online_agents; //linked list of online agent relationship
+    map_t agents; //AVL tree of all agent relationship (cc_rel)
 
 	struct cc_flow *next;
 };
 
-
-#define MAX_SKILLS_PER_AGENT 32
 
 typedef enum {
 	CC_AGENT_FREE,
 	CC_AGENT_WRAPUP,
 	CC_AGENT_INCALL
 }agent_state;
-
 
 struct cc_agent {
 	str id;
@@ -93,8 +100,6 @@ struct cc_agent {
 	str location; /* sip address*/
 	str did;  /* shorcut for username in sips address */
 	unsigned int wrapup_time;
-	unsigned int no_skills;
-	unsigned int skills[MAX_SKILLS_PER_AGENT];
 	/* runtime data */
 	int ref_cnt;
 	agent_state state;
@@ -107,6 +112,7 @@ struct cc_agent {
 	stat_var *st_aban_incalls;
 	float avg_talktime;
 	unsigned long avg_talktime_no;
+    struct cc_rel *flows;
 
 	struct cc_agent *next;
 };
@@ -120,35 +126,19 @@ struct cc_list {
 };
 
 
-struct cc_skill {
-	str name;
-	unsigned int id;
-	unsigned int is_new;
-	struct cc_skill *next;
-};
-
-
 #define CC_AG_OFFLINE 0
 #define CC_AG_ONLINE  1
 
 struct cc_data {
 	gen_lock_t *lock;
-	/* sub-structures */
-	struct cc_flow *flows;
-	struct cc_agent *agents[2];
-	struct cc_agent *last_online_agent;
-	struct cc_skill *skills_map;
+	map_t flows; //flows AVL
+	map_t agents; //agents AVL
 	struct cc_list queue;
 	struct cc_list list;
-	/* old data */
-	struct cc_flow *old_flows;
-	struct cc_agent *old_agents;
 	/* call related data */
 	gen_lock_set_t *call_locks;
 	unsigned int next_lock_to_use;
 	struct cc_call *calls;
-	/* skills related data */
-	unsigned int last_skill_id;
 	/* tracking data */
 	unsigned int logedin_agents;
 	float avt_waittime;
@@ -213,9 +203,12 @@ struct cc_call {
 	/* b2b agent id */
 	str b2bua_agent_id;
 	/* flow the call belong to */
-	struct cc_flow *flow;
+	//struct cc_flow *flow;
+    str flow;
+    unsigned int priority;
 	/* agent taking this call  */
-	struct cc_agent *agent;
+	//struct cc_agent *agent;
+    str agent;
 	/* queue-ing link */
 	struct cc_call *higher_in_queue;
 	struct cc_call *lower_in_queue;
@@ -230,8 +223,6 @@ struct cc_data* init_cc_data(void);
 
 void free_cc_data(struct cc_data *data);
 
-str* get_skill_by_id(struct cc_data *data, unsigned int id);
-
 int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		str *cid, int max_wrapup, int diss_hangup, int diss_ewt_th,
 		int diss_qsize_th, int diss_onhold_th, str *recordings );
@@ -239,13 +230,12 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 void update_cc_agent_att(struct cc_agent *agent, unsigned long duration);
 
 int add_cc_agent( struct cc_data *data, str *id, str *location,
-		str *skills, unsigned int logstate, unsigned int wrapup_time,
+		unsigned int logstate, unsigned int wrapup_time,
 		unsigned int wrapup_end_time);
 
 void update_cc_flow_awt(struct cc_flow *flow, unsigned long duration);
 
-struct cc_agent* get_agent_by_name(struct cc_data *data, str *name,
-		struct cc_agent **prev_agent);
+struct cc_agent* get_agent_by_name(struct cc_data *data, str *name);
 
 struct cc_flow *get_flow_by_name(struct cc_data *data, str *name);
 
@@ -254,23 +244,24 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
 
 void free_cc_call(struct cc_data *data, struct cc_call *call);
 
-struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
+struct cc_agent* get_free_agent(struct cc_data *data,
 		struct cc_flow *flow);
+
+int link_agent_to_flow(struct cc_data *data, struct cc_agent *agent, struct cc_flow *flow);
+
+void unlink_agent_from_flows(struct cc_data *data, struct cc_agent *agent);
+
+void log_agent_to_flow(struct cc_data *data, struct cc_agent *agent,
+		struct cc_flow* flow, int login);
 
 void log_agent_to_flows(struct cc_data *data, struct cc_agent *agent,
 		int login);
 
 void agent_raise_event(struct cc_agent *agent, struct cc_call *call);
 
-void clean_cc_old_data(struct cc_data *data);
-
-void clean_cc_old_data_by_flow(struct cc_data *data, str *flow_name);
-
-void clean_cc_data_by_agent(struct cc_data *data, str *agent_id);
-
-void clean_cc_all_data(struct cc_data *data);
-
 void clean_cc_unref_data(struct cc_data *data);
+
+void clean_cc_data(struct cc_data *data);
 
 int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top);
 
@@ -279,57 +270,13 @@ struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
 
 void cc_queue_rmv_call( struct cc_data *data, struct cc_call *call);
 
-
-static inline void remove_cc_agent(struct cc_data* data, 
-		struct cc_agent* agent, struct cc_agent* prev_agent)
+static inline void agent_switch_login(struct cc_data* data, struct cc_agent* agent)
 {
-	struct cc_agent* tmp_agent;
-	if(prev_agent == agent) /* if on top of the list*/
-		data->agents[agent->loged_in] = agent->next;
-	else
-		prev_agent->next = agent->next;
-
-	if(agent->loged_in && data->last_online_agent == agent) {/* if agent was the last in the list */
-		if(data->agents[CC_AG_ONLINE] == NULL)
-			data->last_online_agent = NULL;
-		else {
-			if(prev_agent == agent) {
-				LM_CRIT("last_online_agent pointer not correct"
-				 "- pointing to the first record in list but next not NULL\n");
-				/* search for the real last */
-				for(tmp_agent= data->agents[CC_AG_ONLINE]; tmp_agent; tmp_agent= tmp_agent->next)
-					data->last_online_agent = tmp_agent;
-			}
-			else
-				data->last_online_agent = prev_agent;
-		}
-	}
-    
-    if (agent->loged_in) { // update if agent was the cursor of any flow
-        struct cc_flow *flow;
-        for(flow=data->flows; flow; flow=flow->next) {
-            if (agent == flow->last_selected_agent)
-                flow->last_selected_agent = prev_agent;
-        }
-    }
-}
-
-
-static inline void add_cc_agent_top( struct cc_data *data, struct cc_agent *agent)
-{
-	agent->next = data->agents[agent->loged_in];
-	data->agents[agent->loged_in] = agent;
-}
-
-
-static inline void agent_switch_login(struct cc_data* data, 
-			struct cc_agent* agent, struct cc_agent* prev_agent)
-{
-	/* take out of the current list */
-	remove_cc_agent(data, agent, prev_agent);
 	agent->loged_in ^= 1;
 	agent_raise_event( agent, NULL);
-	/* add on top of the new one */
-	add_cc_agent_top(data, agent);
 }
+
+int cc_set_call_agent(struct cc_data *data, struct cc_call* call, struct cc_agent* agent);
+
+void free_cc_call_agent(struct cc_data *data, struct cc_call* call);
 #endif

@@ -41,92 +41,98 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 	int pos = -1;
 	int len;
 	char *s;
-
-	switch (call->state) {
-		case CC_CALL_NONE:
-			/* next should be welcome msg if any */
-			if ( call->flow->recordings[ AUDIO_WELCOME ].len  ) {
-				LM_DBG("selecting WELCOME\n");
-				out = &(call->flow->recordings[ AUDIO_WELCOME ]);
-				state = CC_CALL_WELCOME;
-				break;
-			}
-			/* no Welcome message -> got for queue/agent  */
-		case CC_CALL_WELCOME:
-			/* next should be dissuading, if the case and if any */
-			if (call->flow->diss_ewt_th && call->eta > call->flow->diss_ewt_th
-			&& call->flow->recordings[AUDIO_DISSUADING].len ) {
-				/* callback/dissuading message */
-				LM_DBG("selecting DISSUADING on EWT\n");
-				out = &(call->flow->recordings[ AUDIO_DISSUADING ]);
-				state = call->flow->diss_hangup ?
-					CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
-				break;
-			} else
-			if (call->flow->diss_qsize_th &&
-			call->flow->diss_qsize_th <= data->queue.calls_no &&
-			call->flow->recordings[AUDIO_DISSUADING].len ) {
-				/* callback/dissuading message */
-				LM_DBG("selecting DISSUADING on QUEUE SIZE\n");
-				out = &(call->flow->recordings[ AUDIO_DISSUADING ]);
-				state = call->flow->diss_hangup ?
-					CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
-				break;
-			} 
-			/* got for queue/agent */
-		case CC_CALL_DISSUADING1:
-		case CC_CALL_QUEUED:
-			/* search for an available agent */
-			/* if we have a flow_id recording, we push the call in the queue */
-			if (!call->flow->recordings[AUDIO_FLOW_ID].len)
-				agent = get_free_agent_by_skill( data, call->flow);
-			else
-				agent = NULL;
-			if (agent) {
-				/* send it to agent */
-				LM_DBG("selecting AGENT %p (%.*s)\n",agent,
-					agent->id.len, agent->id.s);
-				if(call->flow->recordings[AUDIO_FLOW_ID].len) {
-					out = &call->flow->recordings[AUDIO_FLOW_ID];
-					state = CC_CALL_PRE_TOAGENT;
-					LM_DBG("moved to PRE_TOAGENT from %d\n", call->state);
-				}
-				else {
-					state = CC_CALL_TOAGENT;
-					out = &agent->location;
-					LM_DBG("moved to TOAGENT from %d, out=%p\n", call->state, out);
-				}
-				/* mark agent as used */
-				agent->state = CC_AGENT_INCALL;
-				call->agent = agent;
-				call->agent->ref_cnt++;
-				update_stat( stg_dist_incalls, 1);
-				update_stat( call->flow->st_dist_incalls, 1);
-				call->fst_flags |= FSTAT_DIST;
-				update_stat( call->agent->st_dist_incalls, +1);
-				break;
-			} else {
-				/* put it into queue */
-				LM_DBG("selecting QUEUE\n");
-				out = &(call->flow->recordings[AUDIO_QUEUE]);
-				state = CC_CALL_QUEUED;
-				if(call->state == CC_CALL_QUEUED) {
-					LM_DBG("State is already queued %p\n", call);
-					break;
-				}
-				/* add it to queue */
-				pos = cc_queue_push_call( data, call, 0);
-			}
-			break;
-		case CC_CALL_DISSUADING2:
-		case CC_CALL_TOAGENT:
-		case CC_CALL_ENDED:
-			LM_DBG("selecting END\n");
-			call->state = CC_CALL_ENDED;
-			return 0;
-		default:
-			LM_CRIT("Bogus state [%p] [%d]\n", call, call->state);
-	}
+    struct cc_flow *flow;
+    
+    flow = get_flow_by_name(data, &(call->flow));
+    if (!flow) {
+        LM_DBG("flow %.*s does not exists, it may be deleted\n", call->flow.len, call->flow.s);
+    }
+    else {
+        switch (call->state) {
+            case CC_CALL_NONE:
+                /* next should be welcome msg if any */
+                if ( flow->recordings[ AUDIO_WELCOME ].len  ) {
+                    LM_DBG("selecting WELCOME\n");
+                    out = &(flow->recordings[ AUDIO_WELCOME ]);
+                    state = CC_CALL_WELCOME;
+                    break;
+                }
+                /* no Welcome message -> got for queue/agent  */
+            case CC_CALL_WELCOME:
+                /* next should be dissuading, if the case and if any */
+                if (flow->diss_ewt_th && call->eta > flow->diss_ewt_th
+                && flow->recordings[AUDIO_DISSUADING].len ) {
+                    /* callback/dissuading message */
+                    LM_DBG("selecting DISSUADING on EWT\n");
+                    out = &(flow->recordings[ AUDIO_DISSUADING ]);
+                    state = flow->diss_hangup ?
+                        CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
+                    break;
+                } else
+                if (flow->diss_qsize_th &&
+                flow->diss_qsize_th <= data->queue.calls_no &&
+                flow->recordings[AUDIO_DISSUADING].len ) {
+                    /* callback/dissuading message */
+                    LM_DBG("selecting DISSUADING on QUEUE SIZE\n");
+                    out = &(flow->recordings[ AUDIO_DISSUADING ]);
+                    state = flow->diss_hangup ?
+                        CC_CALL_DISSUADING2 : CC_CALL_DISSUADING1;
+                    break;
+                } 
+                /* got for queue/agent */
+            case CC_CALL_DISSUADING1:
+            case CC_CALL_QUEUED:
+                /* search for an available agent */
+                /* if we have a flow_id recording, we push the call in the queue */
+                if (!flow->recordings[AUDIO_FLOW_ID].len)
+                    agent = get_free_agent( data, flow);
+                else
+                    agent = NULL;
+                if (agent) {
+                    /* send it to agent */
+                    LM_DBG("selecting AGENT %p (%.*s)\n",agent,
+                        agent->id.len, agent->id.s);
+                    if(flow->recordings[AUDIO_FLOW_ID].len) {
+                        out = &flow->recordings[AUDIO_FLOW_ID];
+                        state = CC_CALL_PRE_TOAGENT;
+                        LM_DBG("moved to PRE_TOAGENT from %d\n", call->state);
+                    }
+                    else {
+                        state = CC_CALL_TOAGENT;
+                        out = &agent->location;
+                        LM_DBG("moved to TOAGENT from %d, out=%p\n", call->state, out);
+                    }
+                    /* mark agent as used */
+                    agent->state = CC_AGENT_INCALL;
+                    cc_set_call_agent(data, call, agent);
+                    update_stat( stg_dist_incalls, 1);
+                    update_stat( flow->st_dist_incalls, 1);
+                    call->fst_flags |= FSTAT_DIST;
+                    update_stat( agent->st_dist_incalls, +1);
+                    break;
+                } else {
+                    /* put it into queue */
+                    LM_DBG("selecting QUEUE\n");
+                    out = &(flow->recordings[AUDIO_QUEUE]);
+                    state = CC_CALL_QUEUED;
+                    if(call->state == CC_CALL_QUEUED) {
+                        LM_DBG("State is already queued %p\n", call);
+                        break;
+                    }
+                    /* add it to queue */
+                    pos = cc_queue_push_call( data, call, 0);
+                }
+                break;
+            case CC_CALL_DISSUADING2:
+            case CC_CALL_TOAGENT:
+            case CC_CALL_ENDED:
+                LM_DBG("selecting END\n");
+                call->state = CC_CALL_ENDED;
+                return 0;
+            default:
+                LM_CRIT("Bogus state [%p] [%d]\n", call, call->state);
+        }
+    }
 
 	if (out) {
 		/* compute the new SIP URI */

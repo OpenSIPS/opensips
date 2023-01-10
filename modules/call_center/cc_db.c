@@ -91,6 +91,10 @@
 #define CCQ_PARAM_COL       "script_param"
 #define CCQ_QID_COL         "qid"
 
+#define CC_SKILL_TABLE_NAME "cc_skills"
+#define CCS_AGENTID_COL     "agentid"
+#define CCS_SKILL_COL       "skill"
+
 str cc_flow_table_name			=	str_init(CC_FLOW_TABLE_NAME);
 str ccf_flowid_column			=	str_init(CCF_FLOWID_COL);
 str ccf_priority_column			=	str_init(CCF_PRIORITY_ID_COL);
@@ -146,6 +150,10 @@ str ccq_b2buaid_column			=	str_init(CCQ_B2BUAID_COL);
 str ccq_flow_column				=	str_init(CCQ_FLOW_COL);
 str ccq_agent_column			=	str_init(CCQ_AGENT_COL);
 str ccq_param_column			=	str_init(CCQ_PARAM_COL);
+
+str cc_skill_table_name         =   str_init(CC_SKILL_TABLE_NAME);
+str ccs_agentid_column			=	str_init(CCS_AGENTID_COL);
+str ccs_skill_column			=	str_init(CCS_SKILL_COL);
 #define CCQ_COLS_NO  13
 
 #define CC_FETCH_ROWS     100
@@ -354,8 +362,8 @@ int cc_db_update_call(struct cc_call *call)
 	uvals[3].val.int_val = call->last_start;
 	ucols[4]             = &ccq_agent_column;
 	uvals[4].type        = DB_STR;
-	if(call->agent)
-		uvals[4].val.str_val = call->agent->id;
+	if(call->agent.len)
+		uvals[4].val.str_val = call->agent;
 
 	if( cc_rt_dbf.update(cc_rt_db_handle, qcols, 0, qvals,
 			ucols, uvals, 1, 5)<0) 
@@ -414,11 +422,11 @@ int cc_db_insert_call(struct cc_call *call)
 	vals[9].val.str_val = call->b2bua_id;
 	columns[10]          = &ccq_flow_column;
 	vals[10].type        = DB_STR;
-	vals[10].val.str_val = call->flow->id;
+	vals[10].val.str_val = call->flow;
 	columns[11]          = &ccq_agent_column;
 	vals[11].type        = DB_STR;
-	if(call->agent)
-		vals[11].val.str_val = call->agent->id;
+	if(call->agent.len)
+		vals[11].val.str_val = call->agent;
 	columns[12]          = &ccq_param_column;
 	vals[12].type        = DB_STR;
 	vals[12].val.str_val = call->script_param;
@@ -441,7 +449,6 @@ int cc_db_restore_calls( struct cc_data *data)
 	struct cc_call *call;
 	int i;
 	struct cc_agent *agent = NULL;
-	struct cc_agent *prev;
 	str dn, un, param;
 	str id;
 
@@ -516,14 +523,13 @@ int cc_db_restore_calls( struct cc_data *data)
 		if(s.s && strlen(s.s)) {
 			s.len = strlen(s.s);
 			/* name of the agent */
-			agent = get_agent_by_name(data, &s, &prev);
+			agent = get_agent_by_name(data, &s);
 			if (agent==NULL) {
 				LM_ERR("Agent <%.*s> does not exists\n", s.len, s.s);
 				continue;
 			}
-			call->agent = agent;
+            cc_set_call_agent(data, call, agent);
 			agent->state = CC_AGENT_INCALL;
-			agent->ref_cnt++;
 		}
 
 		/* STATE_COL */
@@ -591,11 +597,16 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
 	db_res_t* res;
 	db_row_t* row;
 	int i, j, n;
-	str id,skill,cid;
+	str id,cid,skill,flowid;
 	str location;
 	unsigned int priority, wrapup, logstate, wrapup_end_time;
 	unsigned int diss_hangup, diss_ewt_th, diss_qsize_th, diss_onhold_th;
 	str messages[MAX_AUDIO];
+    struct cc_agent *agent;
+    struct cc_flow *flow;
+    char skill_buf[CC_SKILL_MAX_SIZE];
+
+    skill.s = skill_buf;
 
 	cc_dbf.use_table( cc_db_handle, &cc_flow_table_name);
 
@@ -660,8 +671,8 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
 			priority = VAL_INT(ROW_VALUES(row)+1);
 			/* SKILL column */
 			check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skill");
-			skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
-			skill.len = strlen(skill.s);
+			strncpy(skill.s, (char*)VAL_STRING(ROW_VALUES(row)+2), CC_SKILL_MAX_SIZE - 1);
+            skill.len = strlen(skill.s);
 			/* CID column */
 			check_val( ROW_VALUES(row)+3, DB_STRING, 0, 0, "prependcid");
 			if (VAL_NULL(ROW_VALUES(row)+3)) {
@@ -741,10 +752,9 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
 
         columns[0] = &cca_agentid_column;
         columns[1] = &cca_location_column;
-        columns[2] = &cca_skills_column;
-        columns[3] = &cca_logstate_column;
-        columns[4] = &cca_wrapupend_column;
-        columns[5] = &cca_wrapuptime_column;
+        columns[2] = &cca_logstate_column;
+        columns[3] = &cca_wrapupend_column;
+        columns[4] = &cca_wrapuptime_column;
 
         if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
             if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
@@ -760,12 +770,10 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
                 char raw_query_buf[400];
                 str raw_query;
                 
-                sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, CAST(GROUP_CONCAT(cc_skills.skill) AS CHAR(255)) AS skills, `%.*s`, `%.*s`, `%.*s` "
+                sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, `%.*s`, `%.*s`, `%.*s` "
                                         "FROM %.*s "
                                         "INNER JOIN cc_skills "
-                                        "ON cc_skills.agentid = %.*s.agentid "
-                                        "WHERE cc_skills.skill = \"%.*s\" "
-                                        "GROUP BY %.*s.agentid ",
+                                        "ON cc_skills.agentid = %.*s.agentid AND cc_skills.skill = \"%.*s\"",
                     cc_agent_table_name.len, cc_agent_table_name.s,
                     cca_agentid_column.len, cca_agentid_column.s,
                     cca_location_column.len, cca_location_column.s,
@@ -774,8 +782,7 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
                     cca_wrapuptime_column.len, cca_wrapuptime_column.s,
                     cc_agent_table_name.len, cc_agent_table_name.s,
                     cc_agent_table_name.len, cc_agent_table_name.s,
-                    skill.len, skill.s,
-                    cc_agent_table_name.len, cc_agent_table_name.s);
+                    skill.len, skill.s);
                 
                 raw_query.s = raw_query_buf;
                 raw_query.len = strlen(raw_query_buf);
@@ -786,28 +793,7 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
                 }
             }
             else {
-                char raw_query_buf[400];
-                str raw_query;
-                
-                sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, CAST(GROUP_CONCAT(cc_skills.skill) AS CHAR(255)) AS skills, `%.*s`, `%.*s`, `%.*s` "
-                                        "FROM %.*s "
-                                        "INNER JOIN cc_skills "
-                                        "ON cc_skills.agentid = %.*s.agentid "
-                                        "GROUP BY %.*s.agentid",
-                    cc_agent_table_name.len, cc_agent_table_name.s,
-                    cca_agentid_column.len, cca_agentid_column.s, 
-                    cca_location_column.len, cca_location_column.s,
-                    cca_logstate_column.len, cca_logstate_column.s,
-                    cca_wrapupend_column.len, cca_wrapupend_column.s,
-                    cca_wrapuptime_column.len, cca_wrapuptime_column.s,
-                    cc_agent_table_name.len, cc_agent_table_name.s,
-                    cc_agent_table_name.len, cc_agent_table_name.s,
-                    cc_agent_table_name.len, cc_agent_table_name.s);
-                
-                raw_query.s = raw_query_buf;
-                raw_query.len = strlen(raw_query_buf);
-                
-                if ( cc_dbf.raw_query( cc_db_handle, &raw_query, &res)<0) {
+                if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 5, 0, &res)<0) {
                     LM_ERR("DB query failed\n");
                     return -1;
                 }
@@ -829,24 +815,118 @@ int cc_load_db_data( struct cc_data *data, str *flow_name)
                 check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
                 location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
                 location.len = strlen(location.s);
-                /* SKILLS column */
-                check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
-                skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
-                skill.len = strlen(skill.s);
                 /* LOGSTATE column */
-                check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
-                logstate = VAL_INT(ROW_VALUES(row)+3);
+                check_val( ROW_VALUES(row)+2, DB_INT, 1, 0, "logstate");
+                logstate = VAL_INT(ROW_VALUES(row)+2);
                 /* WRAPUP_END_TIME column */
-                wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
+                wrapup_end_time = VAL_INT(ROW_VALUES(row)+3);
                 /* WRAPUP_TIME column */
-                check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
-                wrapup = VAL_INT(ROW_VALUES(row)+5);
+                check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "wrapup time");
+                wrapup = VAL_INT(ROW_VALUES(row)+4);
 
                 /* add agent */
-                if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
+                if (add_cc_agent( data, &id, &location, logstate, wrapup,
                 wrapup_end_time)<0){
                     LM_ERR("failed to add agent %.*s -> skipping\n",
                         id.len,id.s);
+                    continue;
+                }
+                n++;
+            }
+            if (DB_CAPABILITY( cc_dbf, DB_CAP_FETCH)) {
+                if(cc_dbf.fetch_result(cc_db_handle, &res, CC_FETCH_ROWS)<0) {
+                    LM_ERR( "fetching rows (1)\n");
+                    return -1;
+                }
+            } else {
+                break;
+            }
+        } while(RES_ROW_N(res)>0);
+
+        cc_dbf.free_result(cc_db_handle, res);
+        res = 0;
+    }
+    
+    if (n > 0) { //load skills data only when agents and flows is not empty
+        cc_dbf.use_table( cc_db_handle, &cc_skill_table_name);
+
+        columns[0] = &ccs_agentid_column;
+
+        if (0/*DB_CAPABILITY(cc_dbf, DB_CAP_FETCH))*/) {
+            if ( cc_dbf.query( cc_db_handle, 0, 0, 0, columns, 0, 6, 0, 0 ) < 0) {
+                LM_ERR("DB query failed\n");
+                return -1;
+            }
+            if(cc_dbf.fetch_result( cc_db_handle, &res, CC_FETCH_ROWS)<0) {
+                LM_ERR("Error fetching rows\n");
+                return -1;
+            }
+        } else {
+            if (flow_name) {
+                db_key_t    cond_keys[]         = {&ccs_skill_column};
+                db_op_t     cond_ops[]          = {OP_EQ};
+                db_val_t    cond_vals[1];
+                            cond_vals[0].type           = DB_STR;
+                            cond_vals[0].nul            = 0;
+                            cond_vals[0].val.str_val    = skill;
+                
+                if ( cc_dbf.query( cc_db_handle, cond_keys, cond_ops, cond_vals, columns, 1, 1, 0, &res)<0) {
+                    LM_ERR("DB query failed\n");
+                    return -1;
+                }
+            }
+            else {
+                char raw_query_buf[400];
+                str raw_query;
+                
+                sprintf(raw_query_buf, "SELECT skills.`%.*s`, flows.`%.*s` "
+                                        "FROM %.*s AS skills "
+                                        "INNER JOIN %.*s AS flows "
+                                        "ON flows.skill = skills.skill",
+                    ccs_agentid_column.len, ccs_agentid_column.s,
+                    ccf_flowid_column.len, ccf_flowid_column.s,
+                    cc_skill_table_name.len, cc_skill_table_name.s,
+                    cc_flow_table_name.len, cc_flow_table_name.s);
+                
+                raw_query.s = raw_query_buf;
+                raw_query.len = strlen(raw_query_buf);
+                
+                if ( cc_dbf.raw_query( cc_db_handle, &raw_query, &res)<0) {
+                    LM_ERR("DB query failed\n");
+                    return -1;
+                }
+            }
+        }
+
+        LM_DBG("%d records found in %.*s\n",
+            RES_ROW_N(res), cc_skill_table_name.len,cc_skill_table_name.s );
+        n = 0;
+
+        do {
+            for(i=0; i < RES_ROW_N(res); i++) {
+                row = RES_ROWS(res) + i;
+                /* agentID column */
+                check_val( ROW_VALUES(row), DB_STRING, 1, 1, "agentid");
+                id.s = (char*)VAL_STRING(ROW_VALUES(row));
+                id.len = strlen(id.s);
+                /* FLOWID column */
+                if (flow_name) {
+                    flowid.s = flow_name->s;
+                    flowid.len = flow_name->len;
+                }
+                else {
+                    check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "flowid");
+                    flowid.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
+                    flowid.len = strlen(flowid.s);
+                }
+
+                /* link agent & flow by skills */
+                agent = get_agent_by_name(data, &id);
+                flow = get_flow_by_name(data, &flowid);
+                if (link_agent_to_flow(data, agent, flow)<0){
+                    LM_ERR("failed to link agent %.*s to flow %.*s -> skipping\n",
+                        id.len,id.s,
+                        flowid.len, flowid.s);
                     continue;
                 }
                 n++;
@@ -874,40 +954,30 @@ error:
 
 int cc_load_db_agent_data( struct cc_data *data, str *agent_id)
 {
+    db_key_t columns[13];
 	db_res_t* res;
 	db_row_t* row;
 	int i, n;
-	str id,skill;
+	str id;
 	str location;
 	unsigned int wrapup, logstate, wrapup_end_time;
 
-    char raw_query_buf[400];
-    str raw_query;
+    cc_dbf.use_table( cc_db_handle, &cc_agent_table_name);
+
+    columns[0] = &cca_agentid_column;
+    columns[1] = &cca_location_column;
+    columns[2] = &cca_logstate_column;
+    columns[3] = &cca_wrapupend_column;
+    columns[4] = &cca_wrapuptime_column;
     
-    sprintf(raw_query_buf, "SELECT `%.*s`.`%.*s`, `%.*s`, CAST(GROUP_CONCAT(cc_skills.skill) AS CHAR(255)) AS skills, `%.*s`, `%.*s`, `%.*s` "
-                            "FROM %.*s "
-                            "INNER JOIN cc_skills "
-                            "ON cc_skills.agentid = %.*s.agentid "
-                            "WHERE `%.*s`.agentid = \"%.*s\" "
-                            "GROUP BY %.*s.agentid",
-        cc_agent_table_name.len, cc_agent_table_name.s,
-        cca_agentid_column.len, cca_agentid_column.s, 
-        cca_location_column.len, cca_location_column.s,
-        cca_logstate_column.len, cca_logstate_column.s,
-        cca_wrapupend_column.len, cca_wrapupend_column.s,
-        cca_wrapuptime_column.len, cca_wrapuptime_column.s,
-        cc_agent_table_name.len, cc_agent_table_name.s,
-        cc_agent_table_name.len, cc_agent_table_name.s,
-        cc_agent_table_name.len, cc_agent_table_name.s,
-        agent_id->len, agent_id->s,
-        cc_agent_table_name.len, cc_agent_table_name.s);
+    db_key_t    cond_keys[]         = {&cca_agentid_column};
+    db_op_t     cond_ops[]          = {OP_EQ};
+    db_val_t    cond_vals[1];
+                cond_vals[0].type           = DB_STR;
+                cond_vals[0].nul            = 0;
+                cond_vals[0].val.str_val    = *agent_id;
     
-    raw_query.s = raw_query_buf;
-    raw_query.len = strlen(raw_query_buf);
-    
-    LM_DBG("%s", raw_query_buf);
-    
-    if ( cc_dbf.raw_query( cc_db_handle, &raw_query, &res)<0) {
+    if ( cc_dbf.query( cc_db_handle, cond_keys, cond_ops, cond_vals, columns, 1, 5, 0, &res)<0) {
         LM_ERR("DB query failed\n");
         return -1;
     }
@@ -926,31 +996,23 @@ int cc_load_db_agent_data( struct cc_data *data, str *agent_id)
         check_val( ROW_VALUES(row)+1, DB_STRING, 1, 1, "location");
         location.s = (char*)VAL_STRING(ROW_VALUES(row)+1);
         location.len = strlen(location.s);
-        /* SKILLS column */
-        check_val( ROW_VALUES(row)+2, DB_STRING, 1, 1, "skills");
-        skill.s = (char*)VAL_STRING(ROW_VALUES(row)+2);
-        skill.len = strlen(skill.s);
         /* LOGSTATE column */
-        check_val( ROW_VALUES(row)+3, DB_INT, 1, 0, "logstate");
-        logstate = VAL_INT(ROW_VALUES(row)+3);
+        check_val( ROW_VALUES(row)+2, DB_INT, 1, 0, "logstate");
+        logstate = VAL_INT(ROW_VALUES(row)+2);
         /* WRAPUP_END_TIME column */
-        wrapup_end_time = VAL_INT(ROW_VALUES(row)+4);
+        wrapup_end_time = VAL_INT(ROW_VALUES(row)+3);
         /* WRAPUP_TIME column */
-        check_val( ROW_VALUES(row)+5, DB_INT, 1, 0, "wrapup time");
-        wrapup = VAL_INT(ROW_VALUES(row)+5);
+        check_val( ROW_VALUES(row)+4, DB_INT, 1, 0, "wrapup time");
+        wrapup = VAL_INT(ROW_VALUES(row)+4);
 
         /* add agent */
-        if (add_cc_agent( data, &id, &location, &skill, logstate, wrapup,
+        if (add_cc_agent( data, &id, &location, logstate, wrapup,
         wrapup_end_time)<0){
             LM_ERR("failed to add agent %.*s -> skipping\n",
                 id.len,id.s);
             continue;
         }
         n++;
-    }
-    
-    if (n <= 0) { //non-existed agent, delete in memory
-        clean_cc_data_by_agent(data, agent_id);
     }
 
     cc_dbf.free_result(cc_db_handle, res);
@@ -978,18 +1040,18 @@ int prepare_cdr(struct cc_call *call, str *un, str *fid , str *aid)
 		p += un->len;
 	}
 
-	fid->len = CDR_ITEM_LEN(call->flow->id.len);
+	fid->len = CDR_ITEM_LEN(call->flow.len);
 	fid->s = p;
 	if (fid->len) {
-		memcpy( p, call->flow->id.s, fid->len );
+		memcpy( p, call->flow.s, fid->len );
 		p += fid->len;
 	}
 
-	if (call->agent) {
-		aid->len = CDR_ITEM_LEN(call->agent->id.len);
+	if (call->agent.len) {
+		aid->len = CDR_ITEM_LEN(call->agent.len);
 		aid->s = p;
 		if (aid->len) {
-			memcpy( p, call->agent->id.s, aid->len );
+			memcpy( p, call->agent.s, aid->len );
 			p += aid->len;
 		}
 	} else {

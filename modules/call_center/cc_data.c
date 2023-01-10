@@ -44,62 +44,10 @@ extern unsigned int wrapup_time;
 static str agent_event = str_init("E_CALLCENTER_AGENT_REPORT");
 static event_id_t agent_evi_id;
 
-static void free_cc_flow( struct cc_flow *flow);
-static void free_cc_agent( struct cc_agent *agent);
+static void free_cc_flow( void *ptr);
+static void free_cc_agent( void *ptr);
 unsigned long cc_flow_free_agents( void *flow);
-
-
-unsigned int get_skill_id(struct cc_data *data, str *name)
-{
-	struct cc_skill *skill;
-
-	/* search to see if exists */
-	for ( skill=data->skills_map ; skill ; skill=skill->next ) {
-		if ( (skill->name.len==name->len) &&
-		(memcmp(skill->name.s,name->s,name->len)==0) )
-			return skill->id;
-	}
-
-	/* none found, allocate a new one */
-	skill = (struct cc_skill*)shm_malloc( sizeof(struct cc_skill)+name->len );
-	if (skill==NULL) {
-		LM_ERR("no enough shm mem for a new skill map\n");
-		return 0;
-	}
-
-	skill->is_new = 1;
-	skill->name.s = (char*)(skill+1);
-	skill->name.len = name->len;
-	memcpy( skill->name.s , name->s, name->len);
-
-	skill->id = ++(data->last_skill_id);
-
-	/* link it */
-	skill->next = data->skills_map;
-	data->skills_map = skill;
-
-	return skill->id;
-}
-
-
-str* get_skill_by_id(struct cc_data *data, unsigned int id)
-{
-	struct cc_skill *skill;
-
-	/* search to see if exists */
-	for ( skill=data->skills_map ; skill ; skill=skill->next ) {
-		if (skill->id==id)
-			return &skill->name;
-	}
-
-	return NULL;
-}
-
-
-void free_cc_skill(struct cc_skill *skill)
-{
-	shm_free(skill);
-}
+static void free_cc_rel(void *ptr);
 
 
 struct cc_data* init_cc_data(void)
@@ -138,6 +86,9 @@ struct cc_data* init_cc_data(void)
 		LM_ERR("cannot register %.*s event\n", agent_event.len, agent_event.s);
 		goto error;
 	}
+    
+    data->flows = map_create(AVLMAP_SHARED);
+    data->agents = map_create(AVLMAP_SHARED);
 
 	return data;
 error:
@@ -148,10 +99,6 @@ error:
 
 void free_cc_data(struct cc_data *data)
 {
-	struct cc_flow *flow, *f_flow;
-	struct cc_agent *agent,*f_agent;
-	int i;
-
 	if (data) {
 		/* lock */
 		if (data->lock) {
@@ -163,19 +110,9 @@ void free_cc_data(struct cc_data *data)
 			lock_set_dealloc( data->call_locks );
 		}
 		/* flows */
-		for( flow=data->flows ; flow ; ) {
-			f_flow = flow;
-			flow = flow->next;
-			free_cc_flow( f_flow );
-		}
+        map_destroy(data->flows, free_cc_flow);
 		/* agents */
-		for(i = 0; i< 2; i++) {
-			for( agent=data->agents[i] ; agent ; ) {
-				f_agent = agent;
-				agent = agent->next;
-				free_cc_agent( f_agent );
-			}
-		}
+        map_destroy(data->agents, free_cc_agent);
 		shm_free(data);
 	}
 }
@@ -183,32 +120,23 @@ void free_cc_data(struct cc_data *data)
 
 struct cc_flow *get_flow_by_name(struct cc_data *data, str *name)
 {
-	struct cc_flow *flow;
-
-	for( flow=data->flows ; flow ; flow=flow->next ) {
-		if (name->len==flow->id.len && 
-		memcmp( name->s, flow->id.s, name->len)==0)
-			return flow;
-	}
-
-	return NULL;
+	void** ptr = map_find(data->flows, *name);
+    
+    if (ptr) {
+        return (struct cc_flow*)*ptr;
+    }
+    
+    return NULL;
 }
 
 
-struct cc_agent* get_agent_by_name(struct cc_data *data, str *name, struct cc_agent **prev_agent)
+struct cc_agent* get_agent_by_name(struct cc_data *data, str *name)
 {
-	struct cc_agent *agent;
-	int i;
-
-	for(i = 0; i< 2; i++) {
-		*prev_agent = data->agents[i];
-		for( agent=data->agents[i] ; agent ; agent=agent->next ) {
-			if (name->len==agent->id.len && 
-				memcmp( name->s, agent->id.s, name->len)==0)
-				return agent;
-			*prev_agent = agent;
-		}
-	}
+	void** ptr = map_find(data->agents, *name);
+    
+    if (ptr) {
+        return (struct cc_agent*)*ptr;
+    }
 	return NULL;
 }
 
@@ -251,228 +179,166 @@ int add_cc_flow( struct cc_data *data, str *id, int priority, str *skill,
 		str *cid, int max_wrapup, int diss_hangup, int diss_ewt_th, 
 		int diss_qsize_th, int diss_onhold_th, str *recordings )
 {
-	struct cc_flow *flow, *prev_flow;
+	struct cc_flow *flow, *dup_flow;
 	unsigned int i;
-	unsigned int skill_id;
 #ifdef STATISTICS
 	char *name;
 	str s;
 #endif
 
-	/* is the flow a new one? - search by ID */
-	flow = get_flow_by_name( data, id);
-
-	if (flow==NULL) {
-		/* new flow -> create and populate one */
-		flow = (struct cc_flow*)shm_malloc(sizeof(struct cc_flow)+id->len);
-		if (flow==NULL) {
-			LM_ERR("not enough shmem for a new flow\n");
-			goto error;
-		}
-		memset( flow, 0, sizeof(struct cc_flow) );
-		/* id */
-		flow->id.s = (char*)(flow+1);
-		memcpy( flow->id.s, id->s, id->len);
-		flow->id.len = id->len;
-		/* priority */
-		flow->priority = priority;
-		/* max wrapup time */
-		flow->max_wrapup = max_wrapup;
-		/* dissuading related options */
-		flow->diss_hangup = diss_hangup;
-		flow->diss_ewt_th = diss_ewt_th;
-		flow->diss_qsize_th = diss_qsize_th;
-		flow->diss_onhold_th = diss_onhold_th;
-		/* skill */
-		flow->skill = get_skill_id( data, skill );
-		if (flow->skill==0) {
-			LM_ERR("cannot get skill id\n");
-			goto error;
-		}
-		/* cid */
-		if (cid && cid->s && cid->len) {
-			flow->cid.s = (char*)shm_malloc(cid->len);
-			if (flow->cid.s==NULL) {
-				LM_ERR("not enough shmem for the cid of the flow\n");
-				goto error;
-			}
-			memcpy( flow->cid.s, cid->s, cid->len);
-			flow->cid.len = cid->len;
-		}
-		/* audio messages */
-		for( i=0 ; i<MAX_AUDIO ; i++ ) {
-			if (recordings[i].s && recordings[i].len) {
-				flow->recordings[i].s = (char*)shm_malloc(recordings[i].len);
-				if (flow->recordings[i].s==NULL) {
-					LM_ERR("not enough shmem for the message %d of the flow\n",
-						i);
-					goto error;
-				}
-				memcpy( flow->recordings[i].s, recordings[i].s,
-					recordings[i].len);
-				flow->recordings[i].len = recordings[i].len;
-			}
-		}
+    /* new flow -> create and populate one */
+    flow = (struct cc_flow*)shm_malloc(sizeof(struct cc_flow) + id->len);
+    if (flow==NULL) {
+        LM_ERR("not enough shmem for a new flow\n");
+        goto error;
+    }
+    memset( flow, 0, sizeof(struct cc_flow) );
+    /* id */
+    flow->id.s = (char*)(flow+1);
+    memcpy( flow->id.s, id->s, id->len);
+    flow->id.len = id->len;
+    /* priority */
+    flow->priority = priority;
+    /* max wrapup time */
+    flow->max_wrapup = max_wrapup;
+    /* dissuading related options */
+    flow->diss_hangup = diss_hangup;
+    flow->diss_ewt_th = diss_ewt_th;
+    flow->diss_qsize_th = diss_qsize_th;
+    flow->diss_onhold_th = diss_onhold_th;
+    /* skill */
+    flow->skill.s = (char*)shm_malloc(skill->len);
+    if (flow->skill.s == NULL) {
+        LM_ERR("not enough shmem for the skill of the flow\n");
+        goto error;
+    }
+    memcpy(flow->skill.s, skill->s, skill->len);
+    flow->skill.len = skill->len;
+    /* cid */
+    if (cid && cid->s && cid->len) {
+        flow->cid.s = (char*)shm_malloc(cid->len);
+        if (flow->cid.s==NULL) {
+            LM_ERR("not enough shmem for the cid of the flow\n");
+            goto error;
+        }
+        memcpy( flow->cid.s, cid->s, cid->len);
+        flow->cid.len = cid->len;
+    }
+    /* audio messages */
+    for( i=0 ; i<MAX_AUDIO ; i++ ) {
+        if (recordings[i].s && recordings[i].len) {
+            flow->recordings[i].s = (char*)shm_malloc(recordings[i].len);
+            if (flow->recordings[i].s==NULL) {
+                LM_ERR("not enough shmem for the message %d of the flow\n",
+                    i);
+                goto error;
+            }
+            memcpy( flow->recordings[i].s, recordings[i].s,
+                recordings[i].len);
+            flow->recordings[i].len = recordings[i].len;
+        }
+    }
+    
+    flow->online_agents = NULL;
+    flow->agents = map_create(AVLMAP_SHARED);
+    
 #ifdef STATISTICS
-		/* statistics */
-		s.s = "ccf_incalls";s.len = 11 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_dist_incalls";s.len = 15 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_dist_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_answ_incalls";s.len = 15 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_answ_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_aban_incalls";s.len = 15 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_aban_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_onhold_calls";s.len = 15 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_onhold_calls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_queued_calls";s.len = 16 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &flow->st_queued_calls, STAT_SHM_NAME|STAT_NO_RESET)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_etw";s.len = 7 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
-		name, (stat_var **)cc_flow_get_etw, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow, 0)!=0) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_awt";s.len = 7 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
-		name, (stat_var **)cc_flow_get_awt, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow, 0)!=0) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_load";s.len = 8 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
-		name, (stat_var **)cc_flow_get_load, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow, 0)!=0) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "ccf_free_agents";s.len = 15 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
-		name, (stat_var **)cc_flow_free_agents, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)flow, 0)!=0) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
+    /* statistics */
+    s.s = "ccf_incalls";s.len = 11 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &flow->st_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_dist_incalls";s.len = 15 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &flow->st_dist_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_answ_incalls";s.len = 15 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &flow->st_answ_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_aban_incalls";s.len = 15 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &flow->st_aban_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_onhold_calls";s.len = 15 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &flow->st_onhold_calls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_queued_calls";s.len = 16 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &flow->st_queued_calls, STAT_SHM_NAME|STAT_NO_RESET)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_etw";s.len = 7 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
+    name, (stat_var **)cc_flow_get_etw, STAT_SHM_NAME|STAT_IS_FUNC,
+    (void*)flow, 0)!=0) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_awt";s.len = 7 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
+    name, (stat_var **)cc_flow_get_awt, STAT_SHM_NAME|STAT_IS_FUNC,
+    (void*)flow, 0)!=0) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_load";s.len = 8 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
+    name, (stat_var **)cc_flow_get_load, STAT_SHM_NAME|STAT_IS_FUNC,
+    (void*)flow, 0)!=0) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "ccf_free_agents";s.len = 15 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
+    name, (stat_var **)cc_flow_free_agents, STAT_SHM_NAME|STAT_IS_FUNC,
+    (void*)flow, 0)!=0) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
 #endif
 
-		flow->is_new = 1;
-		/* insert the new flow in the list */
-		flow->next = data->flows;
-		data->flows = flow;
-	} else {
-		/* flow already exists -> update */
-		/* priority */
-		flow->priority = priority;
-		/* max wrapup time */
-		flow->max_wrapup = max_wrapup;
-		/* dissuading related options */
-		flow->diss_hangup = diss_hangup;
-		flow->diss_ewt_th = diss_ewt_th;
-		flow->diss_qsize_th = diss_qsize_th;
-		flow->diss_onhold_th = diss_onhold_th;
-		/* skill - needs to be changed ? */
-		skill_id = get_skill_id(data,skill);
-		if (skill_id==0) {
-			LM_ERR("cannot get skill id\n");
-			goto error1;
-		}
-		flow->skill = skill_id;
-		/* cid - needs to be changed ? */
-		if ( flow->cid.len && ( cid->len==0 ||
-		cid->len>flow->cid.len || memcmp(flow->cid.s,cid->s,cid->len)!=0) ) {
-			shm_free(flow->cid.s); flow->cid.s = NULL; flow->cid.len = 0 ;
-		}
-		if (flow->cid.s==NULL && cid->len!=0) {
-			flow->cid.s = (char*)shm_malloc(cid->len);
-			if (flow->cid.s==NULL) {
-				LM_ERR("not enough shmem for the cid of the flow\n");
-				goto error1;
-			}
-		}
-		if (flow->cid.s) {
-			memcpy( flow->cid.s, cid->s, cid->len);
-			flow->cid.len = cid->len;
-		}
-		/* audio messages */
-		for( i=0 ; i<MAX_AUDIO ; i++ ) {
-			if ( flow->recordings[i].len && ( recordings[i].len==0 ||
-			recordings[i].len>flow->recordings[i].len ||
-			memcmp(flow->recordings[i].s,recordings[i].s,recordings[i].len)
-			) ) {
-				shm_free(flow->recordings[i].s); flow->recordings[i].s = NULL;
-				flow->recordings[i].len = 0 ;
-			}
-			if (flow->recordings[i].s==NULL && recordings[i].len!=0) {
-				flow->recordings[i].s = (char*)shm_malloc(recordings[i].len);
-				if (flow->recordings[i].s==NULL) {
-					LM_ERR("not enough shmem for the message of the flow\n");
-					goto error1;
-				}
-			}
-			if (flow->recordings[i].s) {
-				memcpy( flow->recordings[i].s, recordings[i].s,
-					recordings[i].len);
-				flow->recordings[i].len = recordings[i].len;
-			}
-		}
-		flow->is_new = 1;
-
-	}
+    if ((dup_flow = map_put(data->flows, flow->id, flow))) {
+        free_cc_flow(dup_flow);
+    }
 
 	return 0;
 
-error1:
-	if(data->flows == flow)
-		data->flows = flow->next;
-	else
-	for(prev_flow=data->flows; prev_flow; prev_flow=prev_flow->next)
-		if(prev_flow->next == flow) {
-			prev_flow->next = flow->next;
-			break;
-		}
 error:
 	if (flow)
 		free_cc_flow(flow);
 	return -1;
 }
 
-
-static void free_cc_flow( struct cc_flow *flow)
+static void free_cc_flow( void *ptr)
 {
 	int i;
+    struct cc_flow *flow = (struct cc_flow*)ptr;
 
 	if (flow->cid.s)
 		shm_free(flow->cid.s);
+    if (flow->skill.s) {
+        shm_free(flow->skill.s);
+    }
 	for( i=0 ; i<MAX_AUDIO ; i++ ) {
 		if (flow->recordings[i].s)
 			shm_free(flow->recordings[i].s);
 	}
+    
+    //free the agent AVL
+    map_destroy(flow->agents, free_cc_rel);
 	shm_free(flow);
 }
 
@@ -494,164 +360,88 @@ static unsigned long cc_agent_get_att( void *agent_p)
 #endif
 
 int add_cc_agent( struct cc_data *data, str *id, str *location,
-				str *skills, unsigned int logstate, unsigned int own_wrapup,
+				unsigned int logstate, unsigned int own_wrapup,
 												unsigned int wrapup_end_time)
 {
-	struct cc_agent *agent, *prev_agent= 0;
+	struct cc_agent *agent, *dup_agent;
 	struct sip_uri uri;
-	str skill;
-	char *p;
-	unsigned int n,skill_id;
 #ifdef STATISTICS
 	char *name;
 	str s;
 #endif
 
-	/* is the agent a new one? - search by ID */
-	agent = get_agent_by_name( data, id, &prev_agent);
-
-	if (agent==NULL) {
-		/* new agent -> create and populate one */
-		agent = (struct cc_agent*)shm_malloc(sizeof(struct cc_agent)+id->len);
-		if (agent==NULL) {
-			LM_ERR("not enough shmem for a new agent\n");
-			goto error;
-		}
-		memset( agent, 0, sizeof(struct cc_agent) );
-		/* id */
-		agent->id.s = (char*)(agent+1);
-		memcpy( agent->id.s, id->s, id->len);
-		agent->id.len = id->len;
-		/* location */
-		agent->location.s = (char*)shm_malloc(location->len);
-		if (agent->location.s==NULL) {
-			LM_ERR("not enough shmem for the location of the agent\n");
-			goto error;
-		}
-		memcpy( agent->location.s, location->s, location->len);
-		agent->location.len = location->len;
-		if (parse_uri( agent->location.s, agent->location.len, &uri)<0) {
-			LM_ERR("location of the agent is not a SIP URI\n");
-			goto error;
-		}
-		agent->did = uri.user;
-		/* LOG STATE */
-		agent->loged_in = logstate;
-		/* WRAPUP TIME */
-		agent->wrapup_time = (own_wrapup==0)? wrapup_time : own_wrapup;
-		/* set of skills */
-		if (skills && skills->len) {
-			p = skills->s;
-			while (p) {
-				skill.s = p;
-				p = q_memchr(skill.s, ',', skills->s+skills->len-skill.s);
-				skill.len = p?(p-skill.s):(skills->s+skills->len-skill.s);
-				trim(&skill);
-				if (skill.len) {
-					skill_id = get_skill_id(data,&skill);
-					if (skill_id==0) {
-						LM_ERR("cannot get skill id\n");
-						goto error;
-					}
-					n = agent->no_skills++; 
-					agent->skills[n] = skill_id;
-				}
-				if(p)
-					p++;
-			}
-		}
-		/* statistics */
+    /* new agent -> create and populate one */
+    agent = (struct cc_agent*)shm_malloc(sizeof(struct cc_agent)+id->len);
+    if (agent==NULL) {
+        LM_ERR("not enough shmem for a new agent\n");
+        goto error;
+    }
+    memset( agent, 0, sizeof(struct cc_agent) );
+    /* id */
+    agent->id.s = (char*)(agent+1);
+    memcpy( agent->id.s, id->s, id->len);
+    agent->id.len = id->len;
+    /* location */
+    agent->location.s = (char*)shm_malloc(location->len);
+    if (agent->location.s==NULL) {
+        LM_ERR("not enough shmem for the location of the agent\n");
+        goto error;
+    }
+    memcpy( agent->location.s, location->s, location->len);
+    agent->location.len = location->len;
+    if (parse_uri( agent->location.s, agent->location.len, &uri)<0) {
+        LM_ERR("location of the agent is not a SIP URI\n");
+        goto error;
+    }
+    agent->did = uri.user;
+    /* LOG STATE */
+    agent->loged_in = logstate;
+    /* WRAPUP TIME */
+    agent->wrapup_time = (own_wrapup==0)? wrapup_time : own_wrapup;
+    
+    agent->flows = NULL;
+    
+    /* statistics */
 #ifdef STATISTICS
-		s.s = "cca_dist_incalls";s.len = 16 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &agent->st_dist_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "cca_answ_incalls";s.len = 16 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &agent->st_answ_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "cca_aban_incalls";s.len = 16 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
-		name, &agent->st_aban_incalls, STAT_SHM_NAME)!=0 ) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
-		s.s = "cca_att";s.len = 7 ;
-		if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
-		name, (stat_var **)cc_agent_get_att, STAT_SHM_NAME|STAT_IS_FUNC,
-		(void*)agent, 0)!=0) {
-			LM_ERR("failed to add stat variable\n");
-			goto error;
-		}
+    s.s = "cca_dist_incalls";s.len = 16 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &agent->st_dist_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "cca_answ_incalls";s.len = 16 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &agent->st_answ_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "cca_aban_incalls";s.len = 16 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat("call_center",
+    name, &agent->st_aban_incalls, STAT_SHM_NAME)!=0 ) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
+    s.s = "cca_att";s.len = 7 ;
+    if ( (name=build_stat_name( &s, id->s))==0 || register_stat2("call_center",
+    name, (stat_var **)cc_agent_get_att, STAT_SHM_NAME|STAT_IS_FUNC,
+    (void*)agent, 0)!=0) {
+        LM_ERR("failed to add stat variable\n");
+        goto error;
+    }
 #endif
-		if (wrapup_end_time && (wrapup_end_time > (int)time(NULL))) {
-			agent->state = CC_AGENT_WRAPUP;
-			agent->wrapup_end_time = wrapup_end_time - startup_time;
-		}
-		agent->is_new = 1;
-		/* link the agent */
-		add_cc_agent_top(data, agent);
-		data->totalnr_agents++;
-	} else {
-		/* agent already exists -> update only */
-		/* location - needs to be changed ? */
-		if ( agent->location.len!=location->len ||
-			memcmp(agent->location.s,location->s,location->len)!=0 ) {
-			/* set new location */
-			if (agent->location.len < location->len ){
-				shm_free(agent->location.s);
-				agent->location.s = (char*)shm_malloc(location->len);
-				if (agent->location.s==NULL) {
-					LM_ERR("not enough shmem for the location of the agent\n");
-					goto error1;
-				}
-			}
-			memcpy( agent->location.s, location->s, location->len);
-			agent->location.len = location->len;
-			if (parse_uri( agent->location.s, agent->location.len, &uri)<0) {
-				LM_ERR("location of the agent is not a SIP URI\n");
-				goto error1;
-			}
-			agent->did = uri.user;
-		}
-		/* if logstate changed - move between the lists TODO */
-		if(logstate != agent->loged_in) {
-			agent_switch_login(data, agent, prev_agent);
-		}
-		/* WRAPUP TIME */
-		agent->wrapup_time = (own_wrapup==0)? wrapup_time : own_wrapup;
-		/* skills - needs to be changed ? */
-		agent->no_skills = 0;
-		if (skills && skills->len) {
-			p = skills->s;
-			while (p) {
-				skill.s = p;
-				p = q_memchr(skill.s, ',', skills->s+skills->len-skill.s);
-				skill.len = p?(p-skill.s):(skills->s+skills->len-skill.s);
-				trim(&skill);
-				if (skill.len) {
-					skill_id = get_skill_id(data,&skill);
-					if (skill_id==0) {
-						LM_ERR("cannot get skill id\n");
-						goto error1;
-					}
-					n = agent->no_skills++; 
-					agent->skills[n] = skill_id;
-				}
-				if(p)
-					p++;
-			}
-		}
-		agent->is_new = 1;
-	}
+    if (wrapup_end_time && (wrapup_end_time > (int)time(NULL))) {
+        agent->state = CC_AGENT_WRAPUP;
+        agent->wrapup_end_time = wrapup_end_time - startup_time;
+    }    
+    
+    if ((dup_agent = map_put(data->agents, agent->id, agent))) {
+        free_cc_agent(dup_agent);
+    }
+    else {
+        data->totalnr_agents++;
+    }
 
 	return 0;
-error1:
-	remove_cc_agent(data, agent, prev_agent);
 error:
 	if (agent)
 		free_cc_agent(agent);
@@ -659,10 +449,20 @@ error:
 }
 
 
-static void free_cc_agent( struct cc_agent *agent)
+static void free_cc_agent( void *ptr)
 {
+    struct cc_agent *agent = (struct cc_agent *)ptr;
+    struct cc_rel *rel, *tmp_rel;
 	if (agent->location.s)
 		shm_free(agent->location.s);
+    
+    rel = agent->flows;
+    while (rel) {
+        tmp_rel = rel->next;
+        shm_free(rel);
+        rel = tmp_rel;
+    }
+    
 	shm_free(agent);
 }
 
@@ -709,7 +509,8 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
 
 	/* new call structure */
 	call = (struct cc_call*)shm_malloc( sizeof(struct cc_call) +
-		(dn?dn->len:0) + (un?un->len:0) + (param?param->len:0) );
+		(dn?dn->len:0) + (un?un->len:0) + (param?param->len:0) +
+        flow->id.len);
 	if (call==NULL) {
 		LM_ERR("no more shm mem for a new call\n");
 		return NULL;
@@ -742,8 +543,13 @@ struct cc_call* new_cc_call(struct cc_data *data, struct cc_flow *flow,
 	call->setup_time = -1;
 
 	/* attache to flow */
-	call->flow = flow;
-	flow->ref_cnt++;
+    call->flow.s = p;
+    call->flow.len = flow->id.len;
+    memcpy(p, flow->id.s, flow->id.len);
+    p += flow->id.len;
+    
+    call->priority = flow->priority;
+    
 	LM_DBG("created call %p\n", call);
 
 	/* attache a lock */
@@ -766,8 +572,7 @@ void free_cc_call(struct cc_data * data, struct cc_call *call)
 	lock_release( data->lock );
 
 	LM_DBG("free call %p, [%.*s]\n", call, call->b2bua_id.len, call->b2bua_id.s);
-	if (call->flow)
-		call->flow->ref_cnt--;
+	free_cc_call_agent(data, call);
 
 	if(call->b2bua_id.s)
 		shm_free(call->b2bua_id.s);
@@ -779,38 +584,36 @@ void free_cc_call(struct cc_data * data, struct cc_call *call)
 }
 
 
-struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
-													struct cc_flow *flow)
+struct cc_agent* get_free_agent(struct cc_data *data, struct cc_flow *flow)
 {
 	struct cc_agent *agent;
-	unsigned int n;
+    struct cc_rel *rel;
 
-	if (flow->last_selected_agent == NULL || !flow->last_selected_agent->loged_in) {
-        flow->last_selected_agent = data->agents[CC_AG_ONLINE];
+	if (flow->last_selected_agent == NULL) {
+        flow->last_selected_agent = flow->online_agents;
+    } else {
+        agent = get_agent_by_name(data, &flow->last_selected_agent->id);
+        if (!agent || !agent->loged_in) {
+            flow->last_selected_agent = flow->online_agents;
+        }
     }
 	if (flow->last_selected_agent == NULL) return NULL;
 
 	/* iterate from cursor the end of agent list*/
-    for(agent = flow->last_selected_agent->next; agent; agent = agent->next) {
-		if(agent->state==CC_AGENT_FREE) {
-			/* iterate all skills of the agent */
-			for( n=0 ; n<agent->no_skills ; n++) {
-				if (agent->skills[n]==flow->skill)
-                    flow->last_selected_agent = agent;
-					return agent;
-			}
+    for(rel = flow->last_selected_agent->next; rel; rel = rel->next) {
+        agent = get_agent_by_name(data, &(rel->id));
+		if (agent && agent->state == CC_AGENT_FREE) {
+			flow->last_selected_agent = rel;
+            return agent;
 		}
 	}
     
     /* iterate from start of agent list to cursor */
-    for(agent = data->agents[CC_AG_ONLINE]; agent && agent != flow->last_selected_agent->next; agent = agent->next) {
-		if(agent->state==CC_AGENT_FREE) {
-			/* iterate all skills of the agent */
-			for( n=0 ; n<agent->no_skills ; n++) {
-				if (agent->skills[n]==flow->skill)
-                    flow->last_selected_agent = agent;
-					return agent;
-			}
+    for(rel = flow->online_agents; rel && rel != flow->last_selected_agent->next; rel = rel->next) {
+        agent = get_agent_by_name(data, &(rel->id));
+		if (agent && agent->state==CC_AGENT_FREE) {
+			flow->last_selected_agent = rel;
+			return agent;
 		}
 	};
 
@@ -818,267 +621,130 @@ struct cc_agent* get_free_agent_by_skill(struct cc_data *data,
 }
 
 
-void log_agent_to_flows(struct cc_data *data, struct cc_agent *agent, int login)
-{
-	unsigned int i;
-	struct cc_flow *flow;
-
-	LM_DBG("login %d agent %.*s\n", login, agent->id.len, agent->id.s);
-	/* iterate all skills of the agent */
-	for( i=0 ; i<agent->no_skills ; i++) {
-		//LM_DBG(" agent  skill is %d (%d)\n", agent->skills[i],i);
-		/* iterate all flows */
-		for( flow=data->flows ; flow ; flow=flow->next ) {
-			//LM_DBG("chekcing flow %.*s with skill %d\n", flow->id.len, flow->id.s, flow->skill);
-			if (agent->skills[i]==flow->skill)
-				flow->logged_agents = flow->logged_agents + (login?1:-1);
-		}
-	}
-}
-
-
-void clean_cc_old_data(struct cc_data *data)
-{
-	struct cc_skill *skill, **prv_skill;
-	struct cc_agent *agent, **prv_agent;
-	struct cc_flow  *flow,  **prv_flow;
-	int i;
-
-	/* clean old skills */
-	skill = data->skills_map;
-	prv_skill = &(data->skills_map);
-	while(skill) {
-		if (skill->is_new) {
-			skill->is_new = 0;
-			prv_skill = &(skill->next);
-			skill = skill->next;
-		} else {
-			*prv_skill = skill->next;
-			free_cc_skill(skill);
-			skill = (*prv_skill);
-		}
-	}
-
-	/* clean old agents */
-	for(i= 0; i< 2; i++) {
-		agent = data->agents[i];
-		prv_agent = &data->agents[i];
-		while(agent) { 
-			if (agent->is_new) {
-				agent->is_new = 0;
-				prv_agent = &(agent->next);
-				agent = agent->next;
-			} else {
-				*prv_agent = agent->next;
-				if (agent->ref_cnt==0) {
-					free_cc_agent(agent);
-				} else {
-					agent->next = data->old_agents;
-					data->old_agents = agent;
-				}
-				agent = (*prv_agent);
-				data->totalnr_agents--;
-			}
-		}
-	}
-
-	/* clean old flows */
-	flow = data->flows;
-	prv_flow = &(data->flows);
-	while(flow) {
-		flow->logged_agents = 0;
-		if (flow->is_new) {
-			flow->is_new = 0;
-			prv_flow = &(flow->next);
-			flow = flow->next;
-		} else {
-			*prv_flow = flow->next;
-			if (flow->ref_cnt==0) {
-				free_cc_flow(flow);
-			} else {
-				/* put in a cleanup list */
-				flow->next = data->old_flows; 
-				data->old_flows = flow;
-			}
-			flow = (*prv_flow);
-		}
-	}
-
-	/* sync flows and agents (how many agents per flow are logged) */
-	/* iterate all logged agents */
-	data->logedin_agents = 0;
-	for( agent=data->agents[CC_AG_ONLINE] ; agent ; agent=agent->next ) {
-		/* update last agent */
-		data->last_online_agent = agent;
-
-		/* log_agent_to_flows() must now the call center of the 
-		 * agent to count it as logged in */
-		log_agent_to_flows( data, agent, agent->loged_in);
-		data->logedin_agents++;
-	}
-}
-
-void clean_cc_old_data_by_flow(struct cc_data *data, str *flow_name)
-{
-	struct cc_flow  *flow,  **prv_flow;
-    struct cc_agent *agent;
-
-	/* clean old flows */
-	flow = data->flows;
-	prv_flow = &(data->flows);
-	while(flow) {
-        flow->logged_agents = 0;
-        if (flow_name->len==flow->id.len && memcmp( flow_name->s, flow->id.s, flow_name->len)==0) {
-            if (flow->is_new) {
-                flow->is_new = 0;
-                prv_flow = &(flow->next);
-                flow = flow->next;
-            } else {
-                *prv_flow = flow->next;
-                if (flow->ref_cnt==0) {
-                    free_cc_flow(flow);
-                } else {
-                    /* put in a cleanup list */
-                    flow->next = data->old_flows; 
-                    data->old_flows = flow;
-                }
-                flow = (*prv_flow);
-            }
+void log_agent_to_flow(struct cc_data *data, struct cc_agent *agent, struct cc_flow *flow, int login) {
+    struct cc_rel *rel;
+    void ** ptr;
+    
+    flow->logged_agents = flow->logged_agents + (login?1:-1);
+    
+    ptr = map_find(flow->agents, agent->id);
+    if (!ptr) {
+        LM_ERR("Agent %.*s is not linked to flow %.*s\n", agent->id.len, agent->id.s, flow->id.len, flow->id.s);
+        return;
+    }
+    rel = (struct cc_rel*)*ptr;
+            
+    if (login) {
+        if (rel->next || rel->prev) {
+            LM_DBG("Agent %.*s is already logged in to flow %.*s, ignore duplication login", agent->id.len, agent->id.s, flow->id.len, flow->id.s);
         }
         else {
-            prv_flow = &(flow->next);
-            flow = flow->next;
+            rel->next = flow->online_agents;
+            if (flow->online_agents) flow->online_agents->prev = &(rel->next);
+            flow->online_agents = rel;
+            rel->prev = &(flow->online_agents);
         }
-	}
+    }
+    else {
+        //remove agent from online list of the flow
+        *rel->prev = rel->next;
+        if (flow->last_selected_agent == rel) {
+            flow->last_selected_agent = rel->next;
+        }        
+        rel->prev = NULL;
+        rel->next = NULL;
+    }
+}
+
+
+void log_agent_to_flows(struct cc_data *data, struct cc_agent *agent, int login)
+{
+	struct cc_flow *flow;
+    struct cc_rel *rel;
+
+	LM_DBG("login %d agent %.*s\n", login, agent->id.len, agent->id.s);
+	
+    for( rel=agent->flows ; rel ; rel=rel->next ) {
+        //LM_DBG("chekcing flow %.*s with skill %d\n", flow->id.len, flow->id.s, flow->skill);
+        flow = get_flow_by_name(data, &(rel->id));
+        if (flow) {
+            log_agent_to_flow(data, agent, flow, login);
+        }
+    }
+}
+
+int link_agent_to_flow(struct cc_data *data, struct cc_agent *agent, struct cc_flow *flow) {
+    struct cc_rel *rel;
     
-    /* sync flows and agents (how many agents per flow are logged) */
-	/* iterate all logged agents */
-	data->logedin_agents = 0;
-	for( agent=data->agents[CC_AG_ONLINE] ; agent ; agent=agent->next ) {
-		/* update last agent */
-		data->last_online_agent = agent;
-
-		/* log_agent_to_flows() must now the call center of the 
-		 * agent to count it as logged in */
-		log_agent_to_flows( data, agent, agent->loged_in);
-		data->logedin_agents++;
-	}
-}
-
-void clean_cc_data_by_agent(struct cc_data *data, str *agent_id)
-{
-	struct cc_agent *agent, **prv_agent;
-	int i;
-
-	/* clean data of agent */
-	for(i= 0; i< 2; i++) {
-		agent = data->agents[i];
-		prv_agent = &data->agents[i];
-		while(agent) {
-            if (agent_id->len==agent->id.len && memcmp( agent_id->s, agent->id.s, agent_id->len)==0) {
-                *prv_agent = agent->next;
-                if (agent->ref_cnt==0) {
-                    free_cc_agent(agent);
-                } else {
-                    agent->next = data->old_agents;
-                    data->old_agents = agent;
-                }
-                agent = (*prv_agent);
-                data->totalnr_agents--;
-            }
-            else {
-                prv_agent = &(agent->next);
-                agent = agent->next;
-            }
-		}
-	}
-}
-
-void clean_cc_all_data(struct cc_data *data)
-{
-	struct cc_skill *skill, **prv_skill;
-	struct cc_agent *agent, **prv_agent;
-	struct cc_flow  *flow,  **prv_flow;
-	int i;
-
-	/* clean skills */
-	skill = data->skills_map;
-	prv_skill = &(data->skills_map);
-	while(skill) {
-        *prv_skill = skill->next;
-        free_cc_skill(skill);
-        skill = (*prv_skill);
-	}
-
-	/* clean agents */
-	for(i= 0; i< 2; i++) {
-		agent = data->agents[i];
-		prv_agent = &data->agents[i];
-		while(agent) {
-            *prv_agent = agent->next;
-            if (agent->ref_cnt==0) {
-                free_cc_agent(agent);
-            } else {
-                agent->next = data->old_agents;
-                data->old_agents = agent;
-            }
-            agent = (*prv_agent);
-            data->totalnr_agents--;
-		}
-	}
-
-	/* clean flows */
-	flow = data->flows;
-	prv_flow = &(data->flows);
-	while(flow) {
-		flow->logged_agents = 0;
-        *prv_flow = flow->next;
-        if (flow->ref_cnt==0) {
-            free_cc_flow(flow);
-        } else {
-            /* put in a cleanup list */
-            flow->next = data->old_flows; 
-            data->old_flows = flow;
+    if (flow && agent) {
+        // allocate a single relation for a single agent,
+        // this will be added to online list if agent is online
+        rel = (struct cc_rel*)shm_malloc(sizeof(struct cc_rel) + agent->id.len);
+        rel->id.s = (char*)(rel + 1);
+        memcpy(rel->id.s, agent->id.s, agent->id.len);
+        rel->id.len = agent->id.len;
+        rel->next = NULL;
+        rel->prev = NULL;
+        
+        // add agent to flow AVL
+        map_put(flow->agents, agent->id, rel);
+        
+        // add flow relation to agent object
+        rel = (struct cc_rel*)shm_malloc(sizeof(struct cc_rel) + flow->id.len);
+        rel->id.s = (char*)(rel + 1);
+        memcpy(rel->id.s, flow->id.s, flow->id.len);
+        rel->id.len = flow->id.len;
+        rel->next = agent->flows;
+        agent->flows = rel;
+        
+        // log agent in
+        if (agent->loged_in) {
+            log_agent_to_flow(data, agent, flow, 1);
         }
-        flow = (*prv_flow);
-	}
+        
+        return 0;
+    }
+    
+    return -1;
+}
+
+void unlink_agent_from_flows(struct cc_data *data, struct cc_agent *agent) {
+    struct cc_rel *rel, *tmp_rel;
+    struct cc_flow *flow;
+    
+    rel = agent->flows;
+    while (rel) {
+        flow = get_flow_by_name(data, &(rel->id));
+        
+        // log out
+        if (agent->loged_in) {
+            log_agent_to_flow(data, agent, flow, 0);
+        }
+        
+        // unlink
+        if (flow) {
+            map_remove(flow->agents, agent->id);
+        }
+        
+        tmp_rel = rel->next;
+        shm_free(rel);
+        rel = tmp_rel;
+    }
 }
 
 
 void clean_cc_unref_data(struct cc_data *data)
 {
-	struct cc_agent *agent, **prv_agent;
-	struct cc_flow  *flow,  **prv_flow;
-
-	/* clean unref flows */
-	flow = data->old_flows;
-	prv_flow = &(data->old_flows);
-	while(flow) {
-		if (flow->ref_cnt!=0) {
-			prv_flow = &(flow->next);
-			flow = flow->next;
-		} else {
-			*prv_flow = flow->next;
-			free_cc_flow(flow);
-			flow = (*prv_flow);
-		}
-	}
-
-	/* clean unref agents */
-	agent = data->old_agents;
-	prv_agent = &(data->old_agents);
-	while(agent) {
-		if (agent->ref_cnt!=0) {
-			prv_agent = &(agent->next);
-			agent = agent->next;
-		} else {
-			*prv_agent = agent->next;
-			free_cc_agent(agent);
-			agent = (*prv_agent);
-		}
-	}
-
+    //not useful anymore
 	return;
+}
+
+void clean_cc_data(struct cc_data *data) {
+    map_destroy(data->flows, free_cc_flow);
+    map_destroy(data->agents, free_cc_agent);
+    
+    data->flows = map_create(AVLMAP_SHARED);
+    data->agents = map_create(AVLMAP_SHARED);
 }
 
 
@@ -1096,6 +762,7 @@ int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 {
 	struct cc_call *call_it;
 	int n = 0;
+    struct cc_flow *flow;
 
 	LM_DBG(" QUEUE - adding call %p \n",call);
 	if ( is_call_in_queue(data, call) ) {
@@ -1109,7 +776,7 @@ int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 	} else {
 		/* search (priority based) the place in queue */
 		for(call_it=data->queue.last ; call_it ; call_it=call_it->higher_in_queue){
-			if (call_it->flow->priority <= call->flow->priority)
+			if (call_it->priority <= call->priority)
 				break;
 			n++;
 		}
@@ -1139,7 +806,10 @@ int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 		data->queue.first = call;
 	}
 	data->queue.calls_no++;
-	update_stat( call->flow->st_queued_calls, +1 );
+    
+    flow = get_flow_by_name(data, &(call->flow));
+    
+	if (flow) update_stat( flow->st_queued_calls, +1 );
 	
 	LM_DBG("adding call on pos %d (already %d calls), l=%p h=%p\n",
 		n, data->queue.calls_no,
@@ -1156,6 +826,8 @@ int cc_queue_push_call(struct cc_data *data, struct cc_call *call, int top)
 
 void cc_queue_rmv_call( struct cc_data *data, struct cc_call *call)
 {
+    struct cc_flow *flow;
+    
 	LM_DBG(" QUEUE - removing call %p \n",call);
 	if ( !is_call_in_queue(data, call) ) { 
 		LM_CRIT(" QUEUE - call not in queue l=%p, h=%p\n",
@@ -1177,7 +849,14 @@ void cc_queue_rmv_call( struct cc_data *data, struct cc_call *call)
 	}
 	call->lower_in_queue = call->higher_in_queue = NULL;
 	data->queue.calls_no--;
-	update_stat( call->flow->st_queued_calls, -1 );
+    
+    flow = get_flow_by_name(data, &(call->flow));
+    if (flow==NULL) {
+        LM_ERR("flow <%.*s> does not exists, it may be deleted\n", call->flow.len, call->flow.s);
+    }
+    else {
+        update_stat( flow->st_queued_calls, -1 );
+    }
 }
 
 
@@ -1186,24 +865,21 @@ struct cc_call *cc_queue_pop_call_for_agent(struct cc_data *data,
 													struct cc_agent *agent)
 {
 	struct cc_call *call_it;
-	unsigned int i;
+    struct cc_flow *flow;
 
 	/* interate all the queued calls and see *
 	 * if they mathe the agent (as skills)*/
 	for(call_it=data->queue.first ; call_it ; call_it=call_it->lower_in_queue){
-		/* check the call skill against the agent skills */
-		for(i=0 ; i<agent->no_skills ; i++) {
-			/* before taking a call out, be sure that call is fully initialized 
-             * from b2bua point of view (to avoid races) -> check the b2bua id */
-			if (call_it->b2bua_id.len!=0 && call_it->flow->skill==agent->skills[i]) {
-				LM_DBG("found call %p for agent %p(%.*s) with skill %d \n",
-					call_it, agent, agent->id.len, agent->id.s,
-					call_it->flow->skill);
-				/* remove the call from queue */
-				cc_queue_rmv_call( data, call_it);
-				return call_it;
-			}
-		}
+        /* before taking a call out, be sure that call is fully initialized 
+         * from b2bua point of view (to avoid races) -> check the b2bua id */
+        flow = get_flow_by_name(data, &(call_it->flow));
+        if (call_it->b2bua_id.len!=0 && flow && map_find(flow->agents, agent->id)) {
+            LM_DBG("found call %p for agent %p(%.*s) \n",
+                call_it, agent, agent->id.len, agent->id.s);
+            // remove the call from queue
+            cc_queue_rmv_call( data, call_it);
+            return call_it;
+        }
 	}
 
 	return NULL;
@@ -1269,7 +945,7 @@ void agent_raise_event(struct cc_agent *agent, struct cc_call *call)
 	}
 
 	if (agent->state==CC_AGENT_INCALL && call) {
-		if (evi_param_add_str(list, &flow_id_str, &call->flow->id) < 0) {
+		if (evi_param_add_str(list, &flow_id_str, &call->flow) < 0) {
 			LM_ERR("cannot add wrapup time\n");
 			goto error;
 		}
@@ -1285,4 +961,33 @@ error:
 	evi_free_params(list);
 }
 
+void free_cc_call_agent(struct cc_data *data, struct cc_call* call) {
+    if (call->agent.s) {
+        shm_free(call->agent.s);
+        call->agent.s = NULL;
+        call->agent.len = 0;
+    }
+}
+
+int cc_set_call_agent(struct cc_data *data, struct cc_call* call, struct cc_agent* agent) {
+    if (call->agent.len < agent->id.len) {
+        free_cc_call_agent(data, call);
+        call->agent.s = (char*)shm_malloc(agent->id.len);
+        if (!call->agent.s) {
+            return -1;
+        }
+        call->agent.len = agent->id.len;
+        memcpy(call->agent.s, agent->id.s, agent->id.len);
+    }
+    else {
+        memcpy(call->agent.s, agent->id.s, agent->id.len);
+        call->agent.len = agent->id.len;
+    }
+    
+    return 0;
+}
+
+void free_cc_rel(void *ptr) {
+    shm_free(ptr);
+}
 

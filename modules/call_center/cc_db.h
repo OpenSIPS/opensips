@@ -49,6 +49,10 @@ extern str ccf_m_queue_column;
 extern str ccf_m_dissuading_column;
 extern str ccf_m_flow_id_column;
 
+extern str cc_skill_table_name;
+extern str ccs_agentid_column;
+extern str ccs_skill_column;
+
 int init_cc_db(const str *db_url);
 int init_cc_acc_db(const str *acc_db_url);
 int init_cc_rt_db(const str *rt_db_url);
