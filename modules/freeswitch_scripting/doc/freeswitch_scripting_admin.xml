@@ -300,14 +300,14 @@ modparam("freeswitch_scripting", "fs_subscribe", ":ClueCon@10.0.0.11:8021?DTMF,B
 ...
 	# ESL socket 10.0.0.10 is defined in the database (password "ClueCon")
 	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", "10.0.0.10", "$var(response)");
-	if (!$var(rc)) {
+	if ($var(rc) &lt; 0) {
 		xlog("failed to execute ESL command ($var(rc))\n");
 		return -1;
 	}
 ...
 	# ESL socket 10.0.0.10 is new, we must specify a password
 	$var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", $var(response));
-	if (!$var(rc)) {
+	if ($var(rc) &lt; 0) {
 		xlog("failed to execute ESL command ($var(rc))\n");
 		return -1;
 	}
