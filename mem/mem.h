@@ -145,7 +145,7 @@ inline static void *pkg_malloc_func(unsigned long size,
 	return PKG_MALLOC_(mem_block, size, file, function, line);
 }
 
-inline static void* pkg_realloc_func(void *ptr, unsigned int size,
+inline static void* pkg_realloc_func(void *ptr, unsigned long size,
 		const char* file, const char* function, unsigned int line)
 {
 	return PKG_REALLOC(mem_block, ptr, size, file, function, line);
@@ -166,7 +166,7 @@ inline static void *pkg_malloc_func(unsigned long size)
 	return PKG_MALLOC_(mem_block, size);
 }
 
-inline static void* pkg_realloc_func(void *ptr, unsigned int size)
+inline static void* pkg_realloc_func(void *ptr, unsigned long size)
 {
 	return PKG_REALLOC(mem_block, ptr, size);
 }
