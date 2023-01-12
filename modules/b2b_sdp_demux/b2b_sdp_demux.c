@@ -551,7 +551,7 @@ static void b2b_sdp_ctx_release(struct b2b_sdp_ctx *ctx, int replicate)
 	list_del(&ctx->contexts);
 	lock_stop_write(b2b_sdp_contexts_lock);
 	if (ctx->b2b_key.s)
-		b2b_api.entity_delete(B2B_SERVER, &ctx->b2b_key, NULL, 1, replicate);
+		b2b_api.entity_delete(B2B_SERVER, &ctx->b2b_key, ctx->dlginfo, 1, replicate);
 }
 
 static void b2b_sdp_ctx_free(void *param)
@@ -1692,13 +1692,13 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		LM_ERR("could not create b2b sdp demux server!\n");
 		return -1;
 	}
+	ctx->dlginfo = b2b_sdp_server_dlginfo(msg, b2b_key);
 	if (shm_str_dup(&ctx->b2b_key, b2b_key) < 0) {
 		LM_ERR("could not copy b2b server key\n");
 		/* key is not yet stored, so cannot be deleted */
-		b2b_api.entity_delete(B2B_SERVER, b2b_key, NULL, 1, 1);
+		b2b_api.entity_delete(B2B_SERVER, b2b_key, ctx->dlginfo, 1, 1);
 		return -1;
 	}
-	ctx->dlginfo = b2b_sdp_server_dlginfo(msg, b2b_key);
 	/* we need to wait for all pending clients */
 	ctx->pending_no = ctx->clients_no;
 
