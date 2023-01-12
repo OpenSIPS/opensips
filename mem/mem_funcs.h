@@ -24,7 +24,7 @@
 #ifdef DBG_MALLOC
 typedef void *(*osips_malloc_f) (unsigned long size,
                       const char *file, const char *func, unsigned int line);
-typedef void *(*osips_realloc_f) (void *ptr, unsigned int size,
+typedef void *(*osips_realloc_f) (void *ptr, unsigned long size,
                       const char *file, const char *func, unsigned int line);
 typedef void (*osips_free_f) (void *ptr,
                       const char *file, const char *func, unsigned int line);
@@ -36,7 +36,7 @@ typedef void (*osips_free_f) (void *ptr,
 		__FILE__, __FUNCTION__, __LINE__ )
 #else
 typedef void *(*osips_malloc_f) (unsigned long size);
-typedef void *(*osips_realloc_f) (void *ptr, unsigned int size);
+typedef void *(*osips_realloc_f) (void *ptr, unsigned long size);
 typedef void (*osips_free_f) (void *ptr);
 #define func_malloc(_func, _size) (_func)(_size)
 #define func_realloc(_func, _ptr, _size) (_func)(_ptr, _size)
