@@ -363,8 +363,8 @@ inline static void* _shm_malloc_bulk(unsigned long size,
 	return p;
 }
 
-inline static void* _shm_realloc(void *ptr, unsigned int size, 
-		const char* file, const char* function, int line )
+inline static void* _shm_realloc(void *ptr, unsigned long size,
+		const char* file, const char* function, unsigned int line )
 {
 	void *p;
 
@@ -398,8 +398,8 @@ inline static void* _shm_realloc(void *ptr, unsigned int size,
 	return p;
 }
 
-inline static void* _shm_realloc_unsafe(void *ptr, unsigned int size, 
-		const char* file, const char* function, int line )
+inline static void* _shm_realloc_unsafe(void *ptr, unsigned long size,
+		const char* file, const char* function, unsigned int line )
 {
 	void *p;
 
@@ -590,7 +590,7 @@ inline static void* shm_malloc_bulk(unsigned long size)
 }
 
 #define shm_realloc_func shm_realloc
-inline static void* shm_realloc(void *ptr, unsigned int size)
+inline static void* shm_realloc(void *ptr, unsigned long size)
 {
 	void *p;
 
@@ -625,7 +625,7 @@ inline static void* shm_realloc(void *ptr, unsigned int size)
 }
 
 #define shm_realloc_func_unsafe shm_realloc_unsafe
-inline static void* shm_realloc_unsafe(void *ptr, unsigned int size)
+inline static void* shm_realloc_unsafe(void *ptr, unsigned long size)
 {
 	void *p;
 #ifdef SHM_EXTRA_STATS
