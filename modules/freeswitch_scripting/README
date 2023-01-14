@@ -238,7 +238,7 @@ eCon")
         $var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123
 456789}user/1010 9386\njob-uuid: foobar", "10.0.0.10", "$var(response)")
 ;
-        if (!$var(rc)) {
+        if ($var(rc) < 0) {
                 xlog("failed to execute ESL command ($var(rc))\n");
                 return -1;
         }
@@ -247,7 +247,7 @@ eCon")
         $var(rc) = freeswitch_esl("bgapi originate {origination_uuid=123
 456789}user/1010 9386\njob-uuid: foobar", ":ClueCon@10.0.0.10", $var(res
 ponse));
-        if (!$var(rc)) {
+        if ($var(rc) < 0) {
                 xlog("failed to execute ESL command ($var(rc))\n");
                 return -1;
         }
@@ -322,7 +322,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 45 24 1923 274
+   1. Liviu Chircu (@liviuchircu) 46 25 1925 276
    2. Vlad Patrascu (@rvlad-patrascu) 8 3 137 124
    3. Razvan Crainea (@razvancrainea) 5 3 3 1
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 4 2
@@ -348,7 +348,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Dec 2017 - Jan 2021
+   1. Liviu Chircu (@liviuchircu)         Dec 2017 - Jan 2023
    2. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Mar 2020
    3. Razvan Crainea (@razvancrainea)     May 2019 - Sep 2019
    4. Vlad Patrascu (@rvlad-patrascu)     Jan 2019 - Apr 2019
