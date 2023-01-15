@@ -1599,7 +1599,7 @@ int reply_received( struct sip_msg  *p_msg )
 		/* run block - first per branch and then global one */
 		if ( t->uac[branch].on_reply &&
 		(run_top_route(sroutes->onreply[t->uac[branch].on_reply],p_msg)
-		&ACT_FL_DROP) && (msg_status<200) ) {
+		&ACT_FL_DROP) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
 				UNLOCK_REPLIES( t );
@@ -1609,7 +1609,7 @@ int reply_received( struct sip_msg  *p_msg )
 			goto done;
 		}
 		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply],p_msg)
-		&ACT_FL_DROP) && (msg_status<200) ) {
+		&ACT_FL_DROP) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
 				UNLOCK_REPLIES( t );
