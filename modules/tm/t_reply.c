@@ -1605,7 +1605,7 @@ int reply_received( struct sip_msg  *p_msg )
 				UNLOCK_REPLIES( t );
 				set_avp_list( backup_list );
 			}
-			LM_DBG("dropping provisional reply %d\n", msg_status);
+			LM_DBG("dropping reply %d\n", msg_status);
 			goto done;
 		}
 		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply],p_msg)
@@ -1615,7 +1615,7 @@ int reply_received( struct sip_msg  *p_msg )
 				UNLOCK_REPLIES( t );
 				set_avp_list( backup_list );
 			}
-			LM_DBG("dropping provisional reply %d\n", msg_status);
+			LM_DBG("dropping reply %d\n", msg_status);
 			goto done;
 		}
 		set_route_type(old_route_type);
