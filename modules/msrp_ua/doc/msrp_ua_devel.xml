@@ -1,0 +1,231 @@
+<!-- Module Developer's Guide -->
+
+<chapter>
+	<title>&develguide;</title>
+
+	<section id="devel_overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+	In order to answer a SIP session carying MSRP the <xref linkend="func_init_uas"/>
+	function should be used. Conversely for starting a MSRP call as a UAC, one
+	can use the <xref linkend="func_init_uac"/> function.
+	</para>
+	<para>
+	After initializing the session with either of the above functions, the SIP call
+	will be further handled by the module and notifications regarding significant SIP
+	level events and received MSRP requests and responses will be delivered via
+	registering callback functions.
+    </para>
+    <para>
+    MSRP SEND requests can be sent with the <xref linkend="func_send_message"/> function
+    after the sessions is established, which will be signaled by the
+    <emphasis>msrp_ua_notify_cb_f</emphasis> callback with the
+    <emphasis>MSRP_UA_SESS_ESTABLISHED</emphasis> event.
+    </para>
+    <para>
+    Received MSRP requests, transaction responses and local send timeouts will be
+    signaled via the <emphasis>msrp_ua_req_cb_f</emphasis> and
+    <emphasis>msrp_ua_rpl_cb_f</emphasis> callbacks.
+    </para>
+	</section>
+
+	<section>
+	<title>Available Functions</title>
+
+	<section id="func_init_uas" xreflabel="init_uas()">
+		<title>
+		<function moreinfo="none">init_uas(msg, accept_types, hdl)</function>
+		</title>
+		<para>
+        This function will intialize a MSRP UA session based on a received SIP
+        INVITE.
+		</para>
+        <para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+            <listitem>
+                <para><emphasis>struct sip_msg *msg</emphasis> - the SIP message
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>str *accept_types</emphasis> - the value of the
+                "accept-types" attribute to include in the SDP offer.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>struct msrp_ua_handler *hdl</emphasis> - handler
+                structure used to register the callbacks for SIP level and MSRP
+                level notifications.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <example>
+		<title><function>struct msrp_ua_handler</function> structure</title>
+<programlisting format="linespecific">
+struct msrp_ua_handler {
+	/* name of this registration */
+	str *name;
+	/* parameter to be passed to msrp_req_cb and msrp_rpl_cb callbacks */
+	void *param;
+	/* callback for SIP level notifications */
+	msrp_ua_notify_cb_f notify_cb;
+	/* callback for receving MSRP requests */
+	msrp_ua_req_cb_f msrp_req_cb;
+	/* callback for receving MSRP responses */
+	msrp_ua_rpl_cb_f msrp_rpl_cb;
+};
+</programlisting>
+		</example>
+		<example>
+		<title><function>msrp_ua_notify_cb_f</function> prototype</title>
+<programlisting format="linespecific">
+typedef int (*msrp_ua_notify_cb_f)(struct msrp_ua_notify_params *params,
+	void *hdl_param);
+</programlisting>
+		</example>
+		<example>
+		<title><function>struct msrp_ua_notify_params</function> structure</title>
+<programlisting format="linespecific">
+struct msrp_ua_notify_params {
+	/* event type */
+	enum msrp_ua_event_type event;
+	/* SIP message */
+	struct sip_msg *msg;
+	/* SDP "accept-types" attribute in case of MSRP_UA_SESS_ESTABLISHED event */
+	str *accept_types;
+	/* MSRP UA session ID */
+	str *session_id;
+};
+</programlisting>
+		</example>
+		<example>
+		<title><function>enum msrp_ua_event_type</function></title>
+<programlisting format="linespecific">
+enum msrp_ua_event_type {
+	/* session established (ACK sent/received) */
+	MSRP_UA_SESS_ESTABLISHED = 1,
+	/* failed to establish session (negative reply/timeout etc.) */
+	MSRP_UA_SESS_FAILED,
+	/* BYE received/sent(in case of session timeout) */
+	MSRP_UA_SESS_TERMINATED
+};
+</programlisting>
+		</example>
+		<example>
+		<title><function>msrp_ua_req_cb_f</function> prototype</title>
+<programlisting format="linespecific">
+typedef int (*msrp_ua_req_cb_f)(struct msrp_msg *req, void *hdl_param);
+</programlisting>
+		</example>
+		<example>
+		<title><function>msrp_ua_rpl_cb_f</function> prototype</title>
+<programlisting format="linespecific">
+/* an MSRP transaction timeout will be signaled by calling this callback
+ * with a NULL rpl parameter */
+typedef int (*msrp_ua_rpl_cb_f)(struct msrp_msg *rpl, void *hdl_param);
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_init_uac" xreflabel="init_uac()">
+		<title>
+		<function moreinfo="none">init_uac(accept_types, from_uri, to_uri, ruri, hdl)</function>
+		</title>
+		<para>
+        This function will intialize a MSRP UA session by sending a SIP INVITE to
+        a destination.
+		</para>
+        <para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+            <listitem>
+                <para><emphasis>str *accept_types</emphasis> - the value of the
+                "accept-types" attribute to include in the SDP offer.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>str *from_uri</emphasis> - URI to use in the From
+                header of the INVITE.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>str *to_uri</emphasis> - URI to use in the To
+                header of the INVITE.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>str *ruri</emphasis> - Request URI to use in the for
+                the INVITE.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>struct msrp_ua_handler *hdl</emphasis> - handler
+                structure used to register the callbacks for SIP level and MSRP
+                level notifications.
+                </para>
+            </listitem>
+        </itemizedlist>
+    </section>
+
+    <section id="func_end_session" xreflabel="end_session()">
+		<title>
+		<function moreinfo="none">end_session(session_id)</function>
+		</title>
+		<para>
+        This function terminates an MSRP session.
+		</para>
+        <para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+            <listitem>
+                <para><emphasis>str *session_id</emphasis> - MSRP UA session ID.
+                </para>
+            </listitem>
+        </itemizedlist>
+    </section>
+
+    <section id="func_send_message" xreflabel="send_message()">
+		<title>
+		<function moreinfo="none">send_message(session_id, mime, body, failure_report, success_report)</function>
+		</title>
+		<para>
+        This functions sends an MSRP SEND request to the peer.
+		</para>
+        <para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+            <listitem>
+                <para><emphasis>str *session_id</emphasis> - MSRP UA session ID.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>str *mime</emphasis> - MIME content
+				type of this message. If NULL, an empty message will be sent.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>str *body</emphasis> - actual message
+				body. If NULL, an empty message will be sent.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>enum msrp_failure_report_type failure_report</emphasis> -
+                MSRP Failure Report type - yes, no or partial.
+                </para>
+            </listitem>
+            <listitem>
+                <para><emphasis>int success_report</emphasis> - indication whether to
+                request an MSRP Failure Report or not.
+                </para>
+            </listitem>
+        </itemizedlist>
+        <example>
+		<title><function>enum msrp_failure_report_type</function></title>
+<programlisting format="linespecific">
+enum msrp_failure_report_type {
+	MSRP_FAILURE_REPORT_YES,
+	MSRP_FAILURE_REPORT_PARTIAL,
+	MSRP_FAILURE_REPORT_NO
+};
+</programlisting>
+		</example>
+    </section>
+
+	</section>
+</chapter>

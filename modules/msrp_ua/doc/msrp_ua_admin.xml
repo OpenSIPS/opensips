@@ -11,13 +11,41 @@
 		sessions using the MSRP(RFC 4976) protocol.
     </para>
     <para>
-    	Through the exported script and MI functions, the module allows OpenSIPS
-    	to set up MSRP sessions via SIP and exchange messages as an MSRP endpoint.
+		Through an internal API and exported script and MI functions, the module
+		allows OpenSIPS to set up MSRP sessions via SIP and exchange messages as
+		an MSRP endpoint.
     </para>
     <para>
     	The module makes use of the <emphasis>proto_msrp</emphasis> module for
     	the MSRP protocol stack and the <emphasis>b2b_entities</emphasis> module 
     	for the SIP UAC/UAS functionalities.
+    </para>
+	</section>
+
+	<section id="usage_script_external" xreflabel="Usage from Script and External API">
+	<title>Usage from Script and External API</title>
+	<para>
+	In order to start a SIP call carying MSRP from OpenSIPS you can use the
+	<xref linkend="mi_msrp_ua_start_session"/> MI function. Alternatively, to
+	answer a SIP session with MSRP you can use the
+	<xref linkend="func_msrp_ua_answer"/> script function.
+	</para>
+	<para>
+	When a UAC or UAS session is successfully established(ACK sent/received) the
+	<xref linkend="event_E_MSRP_SESSION_NEW"/> event is triggered. After this point,
+	you may receive MSRP messages or Reports, signaled by the
+	<xref linkend="event_E_MSRP_MSG_RECEIVED"/> and
+	<xref linkend="event_E_MSRP_REPORT_RECEIVED"/> events.
+    </para>
+    <para>
+    Note that the <emphasis>E_MSRP_REPORT_RECEIVED</emphasis> event covers both actual MSRP
+    REPORT requests as well as negative MSRP transaction responses and local send
+    timeouts(which should be treated the same as a received timeout transaction
+    response).
+    </para>
+    <para>
+    You can send MSRP messages to the peer with the
+    <xref linkend="mi_msrp_ua_send_message"/> MI function.
     </para>
 	</section>
 
