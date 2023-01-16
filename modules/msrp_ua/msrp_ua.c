@@ -2224,8 +2224,14 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 		}
 	} else {
 		params = (struct msrpua_trans_param *)trans_param;
-		sess = params->sess;
 
+		if (!rpl && !params->timeout) {
+			/* not interested in the transaction timeout */
+			shm_free(params);
+			return 0;
+		}
+
+		sess = params->sess;
 		hentry = hash_entry(msrpua_sessions, sess->session_id);
 		hash_lock(msrpua_sessions, hentry);
 
