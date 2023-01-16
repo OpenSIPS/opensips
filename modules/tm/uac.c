@@ -402,6 +402,7 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	int ret, flags;
 	unsigned int hi;
 	struct proxy_l *proxy;
+	struct tm_callback *it;
 
 	ret=-1;
 
@@ -589,6 +590,15 @@ error1:
 	remove_from_hash_table_unsafe(new_cell);
 	UNLOCK_HASH(hi);
 error2:
+	/* if we set a callback, prevent any eventual release function to run
+	 * and let the upper layer to take care of distoying the callback params
+	 * or any resources it passed here. */
+	if (cb && release_func)
+		for(it=new_cell->tmcb_hl.first ; it ; it=it->next)
+			if (it->callback==cb) {
+				it->release=NULL;
+				break;
+			}
 	free_cell(new_cell);
 error3:
 	free_proxy( proxy );
