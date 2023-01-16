@@ -2072,6 +2072,9 @@ static int handle_msrp_reply(struct msrp_msg *rpl, struct msrp_cell *tran,
 		hentry = hash_entry(msrpua_sessions, sess->session_id);
 		hash_lock(msrpua_sessions, hentry);
 
+		if (!rpl)
+			goto err_failed;
+
 		if (rpl->fl.u.reply.status_no == 401) {
 			if (msrpua_send_auth(sess, trans_param, rpl) < 0) {
 				LM_ERR("Failed to send AUTH request\n");
