@@ -1417,9 +1417,11 @@ static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
 {
 	trace_info_p info = (trace_info_p)param;
 	struct cell *t = (struct cell*)trans;
-
-	/* context for the request message */
-	SET_TRACER_CONTEXT( info );
+    
+    /* context for the request message */
+    if (current_processing_ctx) { // There may be no context if b2bl is called in timer job
+        SET_TRACER_CONTEXT( info );
+    }
 
 	if (t==T_UNDEFINED) {
 		/* Negative hop-by-hop ACK shouldn't be here */
