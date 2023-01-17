@@ -15,6 +15,7 @@ addons:
       - libmysqlclient-dev
       - libexpat1-dev
       - libxml2-dev
+      - libphonenumber-dev
       - libpq-dev
       - zlib1g-dev
       - libperl-dev
