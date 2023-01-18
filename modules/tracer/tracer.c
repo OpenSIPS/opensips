@@ -1422,6 +1422,11 @@ static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
     if (current_processing_ctx) { // There may be no context if b2bl is called in timer job
         SET_TRACER_CONTEXT( info );
     }
+    
+    if (info==NULL || info->instances==NULL) {
+        LM_BUG("No trace instances to process\n");
+		return 0;
+    }
 
 	if (t==T_UNDEFINED) {
 		/* Negative hop-by-hop ACK shouldn't be here */
