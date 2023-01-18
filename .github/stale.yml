@@ -5,7 +5,6 @@ daysUntilStale: 15
 daysUntilClose: 30
 # Issues with these labels will never be considered stale
 exemptLabels:
-  - fixed
   - improvement
   - low-priority
   - high-priority
