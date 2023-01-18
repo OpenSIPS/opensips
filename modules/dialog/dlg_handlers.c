@@ -435,7 +435,7 @@ static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
 
 	/* has the downstream element forked an extra branch starting from ours?
 	 * Treat these extra branches exactly the same (a callee leg) */
-	if (leg_is_answered(&dlg->legs[leg])) {
+	if (leg < dlg->legs_no[DLG_LEGS_ALLOCED] && leg_is_answered(&dlg->legs[leg])) {
 		leg = dlg_clone_callee_leg(dlg, leg);
 		if (leg < 0) {
 			LM_ERR("failed to add callee leg!\n");
