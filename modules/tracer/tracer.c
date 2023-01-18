@@ -1541,15 +1541,19 @@ static int trace_dialog(struct sip_msg *msg, trace_info_p info)
 		LM_ERR("Can't trace dialog! Api not loaded!\n");
 		return -1;
 	}
+    
+    // get current dialog first before create a new one
+    dlg=dlgb.get_dlg();
+    if (!dlg) {
+        if (dlgb.create_dlg(msg, 0)<1) {
+            LM_ERR("failed to create dialog!\n");
+            return -1;
+        }
+        dlg=dlgb.get_dlg();
+    }
 
-	if (dlgb.create_dlg(msg, 0)<1) {
-		LM_ERR("failed to create dialog!\n");
-		return -1;
-	}
-
-	dlg=dlgb.get_dlg();
 	if (dlg==NULL) {
-		LM_CRIT("BUG: no dialog found after create dialog\n");
+		LM_CRIT("BUG: no dialog found\n");
 		return -1;
 	}
 
