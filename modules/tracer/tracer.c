@@ -153,6 +153,7 @@ static void trace_tm_in(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_in_rev(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_out_rev(struct cell* t, int type, struct tmcb_params *ps);
+static void trace_tm_deleted(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_msg_out(struct sip_msg* req, str  *buffer,
 		struct socket_info* send_sock, int proto, union sockaddr_union *to,
 		trace_info_p info, int leg_flag);
@@ -1515,8 +1516,14 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverse
 	}
 
 	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT,
-	reverse_dir?trace_tm_out_rev:trace_tm_out, info, free_trace_info_tm) <=0) {
+	reverse_dir?trace_tm_out_rev:trace_tm_out, info, 0) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
+		return -1;
+	}
+    
+    if(tmb.register_tmcb( msg, 0, TMCB_TRANS_DELETED,
+	trace_tm_deleted, info, free_trace_info_tm) <=0) {
+		LM_ERR("can't register TM DELETED callback\n");
 		return -1;
 	}
 
@@ -2857,6 +2864,12 @@ static void trace_tm_out_rev(struct cell* t, int type, struct tmcb_params *ps)
 		/* an outpoing reply (local or relaied) */
 		trace_onreply_out( t, type, ps, TRACE_C_CALLEE);
 	}
+}
+
+static void trace_tm_deleted(struct cell* t, int type, struct tmcb_params *ps)
+{
+    LM_DBG("TM deleted triggered req=%p\n",ps->req);
+    // do nothing
 }
 
 static int mi_tid_dyn_filters(tlist_dyn_elem_p tid_el, mi_item_t *dest_item)
