@@ -149,6 +149,8 @@ typedef struct trace_info {
 
 	/* lock for ref cnt ops */
 	gen_lock_t* ref_lock;
+    
+    char has_trace_b2b;
 
 	trace_instance_p instances;
 } trace_info_t, *trace_info_p;

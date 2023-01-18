@@ -1472,7 +1472,7 @@ static struct b2b_tracer* b2b_set_tracer_cb(void)
 	/* as parameter, set the tracing info from the current contect */
 	tracer.param = (void*)info;
 
-	if (tracer.param==NULL) {
+	if (tracer.param==NULL || !info->has_trace_b2b) {
 		tracer.f = NULL;
 		tracer.f_freep = NULL;
 	} else {
@@ -1492,6 +1492,8 @@ static int trace_b2b(struct sip_msg *msg, trace_info_p info)
 	 * install the tracing callback into the B2B logic
 	 */
 	msg->msg_flags |= FL_USE_SIPTRACE;
+    
+    info->has_trace_b2b = 1;
 
 	return 0;
 }
