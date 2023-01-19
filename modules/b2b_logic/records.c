@@ -467,6 +467,19 @@ int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple)
 	return found;
 }
 
+void b2bl_free_entity(b2bl_entity_id_t *entity)
+{
+	if(entity->dlginfo)
+		shm_free(entity->dlginfo);
+
+	if (entity->in_sdp.s)
+		shm_free(entity->in_sdp.s);
+	if (entity->out_sdp.s)
+		shm_free(entity->out_sdp.s);
+
+	shm_free(entity);
+}
+
 void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head,
 	unsigned int hash_index)
 {
@@ -475,9 +488,7 @@ void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head
 	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 0, 1);
 	b2bl_htable[hash_index].locked_by = -1;
 	LM_DBG("destroying dlginfo=[%p]\n", entity->dlginfo);
-	if(entity->dlginfo)
-		shm_free(entity->dlginfo);
-	shm_free(entity);
+	b2bl_free_entity(entity);
 
 	return;
 }
@@ -513,14 +524,6 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
 	}
 
-	if(entity->dlginfo)
-		shm_free(entity->dlginfo);
-
-	if (entity->in_sdp.s)
-		shm_free(entity->in_sdp.s);
-	if (entity->out_sdp.s)
-		shm_free(entity->out_sdp.s);
-
 	for(i = 0; i< MAX_BRIDGE_ENT; i++)
 		if(tuple->bridge_entities[i] == entity)
 			tuple->bridge_entities[i] = NULL;
@@ -542,7 +545,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 
 	LM_INFO("delete tuple [%.*s], entity [%.*s]\n",
 			tuple->key->len, tuple->key->s, entity->key.len, entity->key.s);
-	shm_free(entity);
+	b2bl_free_entity(entity);
 
 	/* for debuging */
 	b2bl_print_tuple(tuple, L_DBG);
@@ -664,9 +667,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0, 1);
 				b2bl_htable[hash_index].locked_by = -1;
 			}
-			if(e->dlginfo)
-				shm_free(e->dlginfo);
-			shm_free(e);
+			b2bl_free_entity(e);
 		}
 		e = tuple->clients[index];
 		if (e)
@@ -676,9 +677,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0, 1);
 				b2bl_htable[hash_index].locked_by = -1;
 			}
-			if(e->dlginfo)
-				shm_free(e->dlginfo);
-			shm_free(e);
+			b2bl_free_entity(e);
 		}
 	}
 	/* clean up all entities in b2b_entities from db */

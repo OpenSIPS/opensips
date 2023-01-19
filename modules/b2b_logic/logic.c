@@ -1004,10 +1004,8 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 						b2bl_htable[tuple->hash_index].locked_by = -1;
 						LM_DBG("destroying dlginfo=[%p]\n",
 								e->dlginfo);
-						if(e->dlginfo)
-							shm_free(e->dlginfo);
 						ent = e->next;
-						shm_free(e);
+						b2bl_free_entity(e);
 						e = ent;
 					}
 					*entity_head = entity;

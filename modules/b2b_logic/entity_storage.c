@@ -432,11 +432,9 @@ error:
 	if (tuple && !old_tuple)
 		b2bl_delete(tuple, hash_index, 0, 0);
 	lock_release(&b2bl_htable[hash_index].lock);
-	if (entity) {
-		if (entity->dlginfo)
-			shm_free(entity->dlginfo);
-		shm_free(entity);
-	}
+	if (entity)
+		b2bl_free_entity(entity);
+
 	LM_ERR("Failed to process received entity [%.*s]\n",
 		entity_key->len, entity_key->s);
 }

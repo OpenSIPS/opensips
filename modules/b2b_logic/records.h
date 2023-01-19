@@ -207,6 +207,7 @@ void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head
 int b2bl_drop_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple);
 void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 	unsigned int hash_index, int b2be_del1);
+void b2bl_free_entity(b2bl_entity_id_t *entity);
 
 int b2b_extra_headers(struct sip_msg* msg, str* b2bl_key, str* custom_hdrs, str* extra_headers);
 
