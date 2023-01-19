@@ -666,7 +666,7 @@ static inline char* print_request_uri(char* w, str* method, dlg_t* dialog, struc
 static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 {
 	t->to.s = w;
-	t->to.len = TO_LEN + dialog->rem_uri.len + CRLF_LEN;
+	t->to.len = TO_LEN + dialog->rem_uri.len + 2 + CRLF_LEN;
 
 	append_string(w, TO, TO_LEN);
 
@@ -676,18 +676,9 @@ static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 		*(w++) = ' ';
 	}
 
-	if(dialog->rem_dname.len || dialog->id.rem_tag.len) {
-		t->to.len +=1;
-		*(w++) = '<';
-	}
-
+	*(w++) = '<';
 	append_string(w, dialog->rem_uri.s, dialog->rem_uri.len);
-
-	if(dialog->rem_dname.len || dialog->id.rem_tag.len) {
-		t->to.len +=1;
-		*(w++) = '>';
-	}
-
+	*(w++) = '>';
 
 	if (dialog->id.rem_tag.len) {
 		t->to.len += TOTAG_LEN + dialog->id.rem_tag.len ;
@@ -706,7 +697,7 @@ static inline char* print_to(char* w, dlg_t* dialog, struct cell* t)
 static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 {
 	t->from.s = w;
-	t->from.len = FROM_LEN + dialog->loc_uri.len + CRLF_LEN;
+	t->from.len = FROM_LEN + dialog->loc_uri.len + 2 + CRLF_LEN;
 
 	append_string(w, FROM, FROM_LEN);
 
@@ -716,17 +707,9 @@ static inline char* print_from(char* w, dlg_t* dialog, struct cell* t)
 		*(w++) = ' ';
 	}
 
-	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
-		t->from.len +=1;
-		*(w++) = '<';
-	}
-
+	*(w++) = '<';
 	append_string(w, dialog->loc_uri.s, dialog->loc_uri.len);
-
-	if(dialog->loc_dname.len || dialog->id.loc_tag.len) {
-		t->from.len += 1;
-		*(w++) = '>';
-	}
+	*(w++) = '>';
 
 	if (dialog->id.loc_tag.len) {
 		t->from.len += FROMTAG_LEN + dialog->id.loc_tag.len;
@@ -819,15 +802,13 @@ char* build_uac_req(str* method, str* headers, str* body, dlg_t* dialog,
 		+ (dialog->rem_dname.len ? dialog->rem_dname.len+1 : 0)
 		+ dialog->rem_uri.len
 		+ (dialog->id.rem_tag.len ? TOTAG_LEN + dialog->id.rem_tag.len : 0)
-		+ (dialog->rem_dname.len || dialog->id.rem_tag.len ? 2 : 0)
-		+ CRLF_LEN;
+		+ 2 /* <> for URI */ + CRLF_LEN;
 	/* From */
 	*len += FROM_LEN
 		+ (dialog->loc_dname.len ? dialog->loc_dname.len+1 : 0)
 		+ dialog->loc_uri.len
 		+ (dialog->id.loc_tag.len ? FROMTAG_LEN + dialog->id.loc_tag.len : 0)
-		+ (dialog->loc_dname.len || dialog->id.loc_tag.len ? 2 : 0)
-		+ CRLF_LEN;
+		+ 2 /* <> for URI */ + CRLF_LEN;
 	/* Call-ID */
 	*len += CALLID_LEN + dialog->id.call_id.len + CRLF_LEN;
 	/* CSeq */
