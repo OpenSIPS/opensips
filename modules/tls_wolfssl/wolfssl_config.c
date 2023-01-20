@@ -434,9 +434,10 @@ static int load_ca_dir(WOLFSSL_CTX * ctx, char *directory)
 {
 	int rc;
 
-	if ((rc = wolfSSL_CTX_load_verify_locations(ctx, 0, directory)) !=
+	if ((rc = wolfSSL_CTX_load_verify_locations_ex(ctx, 0, directory,
+		WOLFSSL_LOAD_FLAG_IGNORE_ERR)) !=
 		SSL_SUCCESS) {
-		LM_WARN("unable to load ca directory '%s' (ret=%d)\n", directory, rc);
+		LM_ERR("unable to load ca directory '%s' (ret=%d)\n", directory, rc);
 		return -1;
 	}
 
@@ -447,7 +448,6 @@ static int load_ca_dir(WOLFSSL_CTX * ctx, char *directory)
 int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 {
 	int verify_mode = 0;
-	int rc = -1;
 	int ret = -1;
 
 	if (d->method_str.s && tls_get_method(&d->method_str, &d->method,
@@ -544,18 +544,15 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 		goto end;
 
 	if (!(d->flags & DOM_FLAG_DB) || init_flags & TLS_DOM_CA_FILE_FL) {
-		if (d->ca.s && (rc = load_ca(d->ctx, d->ca.s)) < 0)
+		if (d->ca.s && load_ca(d->ctx, d->ca.s) < 0)
 			goto end;
 	} else {
-		if ((rc = load_ca_db(d->ctx, &d->ca)) < 0)
+		if (load_ca_db(d->ctx, &d->ca) < 0)
 			goto end;
 	}
 
-	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0 &&
-		rc == -1) {
-		LM_ERR("No CA loaded\n");
+	if (d->ca_directory && load_ca_dir(d->ctx, d->ca_directory) < 0)
 		goto end;
-	}
 
 	ret = 0;
 end:

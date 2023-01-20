@@ -425,11 +425,6 @@ modparam("tls_mgm", "ca_list", "[dom]/mycerts/certs/ca_list.pem")
 			<emphasis>Hashed Directory Method</emphasis>. The domain part
 			represents the name of the TLS domain.
 			</para>
-			<para>
-			Note that when using the <emphasis>wolfSSL</emphasis> library, you might
-			get a warning message if some of the certificates in the directory are expired,
-			despite successfully loading the valid ones.
-			</para>
 			<para><emphasis>
 				Default value is "/etc/pki/CA/".
 			</emphasis></para>
