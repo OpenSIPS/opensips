@@ -328,6 +328,7 @@ static int get_extra_id(struct sip_msg* msg, str *id_str);
 static int update_rtpengines(int);
 static int _add_rtpengine_from_database(void);
 static int rtpengine_set_store(modparam_t type, void * val);
+static int rtpengine_set_notify(modparam_t type, void * val);
 static int rtpengine_add_rtpengine_set( char * rtp_proxies, int set_id);
 
 static int mod_init(void);
@@ -680,8 +681,7 @@ static param_export_t params[] = {
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
 	{"rtpengine_retr",         INT_PARAM, &rtpengine_retr         },
 	{"rtpengine_tout",         INT_PARAM, &rtpengine_tout         },
-  {"rtpengine_timer_interval", INT_PARAM, &rtpengine_timer_interval},
-	{"notification_sock",      STR_PARAM, &rtpengine_notify_sock.s},
+	{"rtpengine_timer_interval", INT_PARAM, &rtpengine_timer_interval},
 	{"extra_id_pv",            STR_PARAM, &extra_id_pv_param.s },
 	{"setid_avp",              STR_PARAM, &setid_avp_param },
 	{"error_pv",               STR_PARAM, &err_pv_param },
@@ -689,6 +689,8 @@ static param_export_t params[] = {
 	{"db_table",               STR_PARAM, &db_table.s             },
 	{"socket_column",          STR_PARAM, &db_rtpe_sock_col.s        },
 	{"set_column",             STR_PARAM, &db_rtpe_set_col.s         },
+	{"notification_sock",      STR_PARAM|USE_FUNC_PARAM,
+									(void *)rtpengine_set_notify},
 	{0, 0, 0}
 };
 
@@ -728,7 +730,8 @@ static dep_export_t deps = {
 };
 
 static proc_export_t procs[] = {
-	{"RTPEngine notification receiver",  0,  0, rtpengine_notify_process, 1, 0},
+	{"RTPEngine notification receiver",  0,  0, rtpengine_notify_process, 1,
+		PROC_FLAG_INITCHILD},
 	{0,0,0,0,0,0}
 };
 
@@ -747,7 +750,7 @@ struct module_exports exports = {
 	mi_cmds,     /* exported MI functions */
 	mod_pvs,     /* exported pseudo-variables */
 	0,			 /* exported transformations */
-	procs,       /* extra processes */
+	0,			 /* extra processes */
 	mod_preinit,
 	mod_init,
 	0,           /* reply processing */
@@ -929,6 +932,28 @@ static int add_rtpengine_version(int flags)
 	(*rtpe_versions)->version_last = pversion;
 	(*rtpe_versions)->version_count++;
 
+	return 0;
+}
+
+static int rtpengine_set_notify(modparam_t type, void * val)
+{
+	char * p;
+
+	p = (char* )val;
+
+	if(p==0 || *p=='\0'){
+		return 0;
+	}
+	rtpengine_notify_sock.s = p;
+	rtpengine_notify_sock.len = strlen(rtpengine_notify_sock.s);
+	LM_DBG("starting notification listener on %.*s\n",
+			rtpengine_notify_sock.len, rtpengine_notify_sock.s);
+	rtpengine_notify_event = evi_publish_event(rtpengine_notify_event_name);
+	if (rtpengine_notify_event == EVI_ERROR) {
+		LM_ERR("cannot register RTPEngine Notification socket\n");
+		return -1;
+	}
+	exports.procs = procs;
 	return 0;
 }
 
@@ -1501,17 +1526,6 @@ mod_init(void)
 		return -1;
 	}
 	*rtpe_set_list = 0;
-	if (rtpengine_notify_sock.s) {
-		rtpengine_notify_sock.len = strlen(rtpengine_notify_sock.s);
-		LM_DBG("starting notification listener on %.*s\n",
-				rtpengine_notify_sock.len, rtpengine_notify_sock.s);
-		rtpengine_notify_event = evi_publish_event(rtpengine_notify_event_name);
-		if (rtpengine_notify_event == EVI_ERROR) {
-			LM_ERR("cannot register RTPEngine Notification socket\n");
-			return -1;
-		}
-	} else
-		exports.procs = NULL;
 
 	rtpengine_status_event = evi_publish_event(rtpengine_status_event_name);
 	if (rtpengine_status_event == EVI_ERROR) {
