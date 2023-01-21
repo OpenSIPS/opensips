@@ -6,53 +6,67 @@ MSRP UA Module
    1. Admin Guide
 
         1.1. Overview
-        1.2. Dependencies
+        1.2. Usage from Script and External API
+        1.3. Dependencies
 
-              1.2.1. OpenSIPS Modules
-              1.2.2. External Libraries or Applications
+              1.3.1. OpenSIPS Modules
+              1.3.2. External Libraries or Applications
 
-        1.3. Exported Parameters
+        1.4. Exported Parameters
 
-              1.3.1. hash_size (int)
-              1.3.2. cleanup_interval (int)
-              1.3.3. max_duration (integer)
-              1.3.4. my_uri (string)
-              1.3.5. advertised_contact (string)
-              1.3.6. relay_uri (string)
+              1.4.1. hash_size (int)
+              1.4.2. cleanup_interval (int)
+              1.4.3. max_duration (integer)
+              1.4.4. my_uri (string)
+              1.4.5. advertised_contact (string)
+              1.4.6. relay_uri (string)
 
-        1.4. Exported Functions
+        1.5. Exported Functions
 
-              1.4.1. msrp_ua_answer(content_types)
+              1.5.1. msrp_ua_answer(content_types)
 
-        1.5. Exported MI Functions
+        1.6. Exported MI Functions
 
-              1.5.1. msrp_ua_send_message
-              1.5.2. msrp_ua_start_session
-              1.5.3. msrp_ua_list_sessions
-              1.5.4. msrp_ua_end_session
+              1.6.1. msrp_ua_send_message
+              1.6.2. msrp_ua_start_session
+              1.6.3. msrp_ua_list_sessions
+              1.6.4. msrp_ua_end_session
 
-        1.6. Exported Events
+        1.7. Exported Events
 
-              1.6.1. E_MSRP_SESSION_NEW
-              1.6.2. E_MSRP_SESSION_END
-              1.6.3. E_MSRP_MSG_RECEIVED
-              1.6.4. E_MSRP_REPORT_RECEIVED
+              1.7.1. E_MSRP_SESSION_NEW
+              1.7.2. E_MSRP_SESSION_END
+              1.7.3. E_MSRP_MSG_RECEIVED
+              1.7.4. E_MSRP_REPORT_RECEIVED
 
-   2. Contributors
+   2. Developer Guide
 
-        2.1. By Commit Statistics
-        2.2. By Commit Activity
+        2.1. Overview
+        2.2. Available Functions
 
-   3. Documentation
+              2.2.1. init_uas(msg, accept_types, hdl)
+              2.2.2. init_uac(accept_types, from_uri, to_uri,
+                      ruri, hdl)
 
-        3.1. Contributors
+              2.2.3. end_session(session_id)
+              2.2.4. send_message(session_id, mime, body,
+                      failure_report, success_report)
+
+   3. Contributors
+
+        3.1. By Commit Statistics
+        3.2. By Commit Activity
+
+   4. Documentation
+
+        4.1. Contributors
 
    List of Tables
 
-   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+   3.1. Top contributors by DevScore^(1), authored commits^(2) and
           lines added/removed^(3)
 
-   2.2. Most recently active contributors^(1) to this module
+   3.2. Most recently active contributors^(1) to this module
 
    List of Examples
 
@@ -63,6 +77,13 @@ MSRP UA Module
    1.5. advertised_contact parameter usage
    1.6. relay_uri parameter usage
    1.7. msrp_ua_answer() usage
+   2.1. struct msrp_ua_handler structure
+   2.2. msrp_ua_notify_cb_f prototype
+   2.3. struct msrp_ua_notify_params structure
+   2.4. enum msrp_ua_event_type
+   2.5. msrp_ua_req_cb_f prototype
+   2.6. msrp_ua_rpl_cb_f prototype
+   2.7. enum msrp_failure_report_type
 
 Chapter 1. Admin Guide
 
@@ -71,31 +92,51 @@ Chapter 1. Admin Guide
    This module implements an User Agent capable of establishing
    messaging sessions using the MSRP(RFC 4976) protocol.
 
-   Through the exported script and MI functions, the module allows
-   OpenSIPS to set up MSRP sessions via SIP and exchange messages
-   as an MSRP endpoint.
+   Through an internal API and exported script and MI functions,
+   the module allows OpenSIPS to set up MSRP sessions via SIP and
+   exchange messages as an MSRP endpoint.
 
    The module makes use of the proto_msrp module for the MSRP
    protocol stack and the b2b_entities module for the SIP UAC/UAS
    functionalities.
 
-1.2. Dependencies
+1.2. Usage from Script and External API
 
-1.2.1. OpenSIPS Modules
+   In order to start a SIP call carying MSRP from OpenSIPS you can
+   use the msrp_ua_start_session MI function. Alternatively, to
+   answer a SIP session with MSRP you can use the msrp_ua_answer()
+   script function.
+
+   When a UAC or UAS session is successfully established(ACK
+   sent/received) the E_MSRP_SESSION_NEW event is triggered. After
+   this point, you may receive MSRP messages or Reports, signaled
+   by the E_MSRP_MSG_RECEIVED and E_MSRP_REPORT_RECEIVED events.
+
+   Note that the E_MSRP_REPORT_RECEIVED event covers both actual
+   MSRP REPORT requests as well as negative MSRP transaction
+   responses and local send timeouts(which should be treated the
+   same as a received timeout transaction response).
+
+   You can send MSRP messages to the peer with the
+   msrp_ua_send_message MI function.
+
+1.3. Dependencies
+
+1.3.1. OpenSIPS Modules
 
    The following modules must be loaded before this module:
      * proto_msrp
      * b2b_entities
 
-1.2.2. External Libraries or Applications
+1.3.2. External Libraries or Applications
 
    The following libraries or applications must be installed
    before running OpenSIPS with this module loaded:
      * None.
 
-1.3. Exported Parameters
+1.4. Exported Parameters
 
-1.3.1. hash_size (int)
+1.4.1. hash_size (int)
 
    The size of the hash table that stores the MSRP session
    information. It is the 2 logarithmic value of the real size.
@@ -107,7 +148,7 @@ Chapter 1. Admin Guide
 modparam("msrp_ua", "hash_size", 16)
 ...
 
-1.3.2. cleanup_interval (int)
+1.4.2. cleanup_interval (int)
 
    The interval between full iterations of the sessions table in
    order to clean up expired MSRP sessions.
@@ -119,7 +160,7 @@ modparam("msrp_ua", "hash_size", 16)
 modparam("msrp_ua", "cleanup_interval", 30)
 ...
 
-1.3.3. max_duration (integer)
+1.4.3. max_duration (integer)
 
    The maximum duration of a call. If set to 0, there will be no
    limitation.
@@ -131,7 +172,7 @@ modparam("msrp_ua", "cleanup_interval", 30)
 modparam("msrp_ua", "max_duration", 7200)
 ...
 
-1.3.4. my_uri (string)
+1.4.4. my_uri (string)
 
    The MSRP URI of the OpenSIPS endpoint. This URI will be
    advertised in the SDP offer provided to peers when setting up a
@@ -148,7 +189,7 @@ modparam("msrp_ua", "max_duration", 7200)
 modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 ...
 
-1.3.5. advertised_contact (string)
+1.4.5. advertised_contact (string)
 
    Contact to be used in the generated SIP requests. For sessions
    answered by OpenSIPS, if it is not set, it is constructed
@@ -163,7 +204,7 @@ modparam("msrp_ua", "my_uri", "msrp://opensips.org:2855;tcp")
 modparam("msrp_ua", "advertised_contact", "sip:oss@opensips.org")
 ...
 
-1.3.6. relay_uri (string)
+1.4.6. relay_uri (string)
 
    URI of an MSRP relay to use for both accepted and initiated
    sessions.
@@ -178,9 +219,9 @@ modparam("msrp_ua", "advertised_contact", "sip:oss@opensips.org")
 modparam("msrp_ua", "relay_uri", "msrp://opensips.org:2856;tcp")
 ...
 
-1.4. Exported Functions
+1.5. Exported Functions
 
-1.4.1.  msrp_ua_answer(content_types)
+1.5.1.  msrp_ua_answer(content_types)
 
    This functions answers an initial INVITE offering a new MSRP
    messaging session. After this function is used to initialize
@@ -203,9 +244,9 @@ if (!has_totag() && is_method("INVITE")) {
 }
 ...
 
-1.5. Exported MI Functions
+1.6. Exported MI Functions
 
-1.5.1.  msrp_ua_send_message
+1.6.1.  msrp_ua_send_message
 
    Sends a new MSRP message to the peer.
 
@@ -237,7 +278,7 @@ opensips-cli -x mi msrp_ua_send_message \
         session_id=5addd9e7b74fa44fbace68a4fc562293 \
         mime=text/plain body=Hello success_report=yes
 
-1.5.2.  msrp_ua_start_session
+1.6.2.  msrp_ua_start_session
 
    Starts a MSRP session.
 
@@ -257,7 +298,7 @@ opensips-cli -x mi msrp_ua_start_session \
         text/plain sip:oss@opensips.org \
         sip:alice@opensips.org sip:alice@opensips.org
 
-1.5.3.  msrp_ua_list_sessions
+1.6.3.  msrp_ua_list_sessions
 
    Lists information about ongoing MSRP sessions.
 
@@ -269,7 +310,7 @@ opensips-cli -x mi msrp_ua_start_session \
    MI FIFO Command Format:
 opensips-cli -x mi msrp_ua_list_sessions
 
-1.5.4.  msrp_ua_end_session
+1.6.4.  msrp_ua_end_session
 
    Terminate an ongoing MSRP session.
 
@@ -283,9 +324,9 @@ opensips-cli -x mi msrp_ua_list_sessions
 opensips-cli -x mi msrp_ua_end_session \
         5addd9e7b74fa44fbace68a4fc562293
 
-1.6. Exported Events
+1.7. Exported Events
 
-1.6.1.  E_MSRP_SESSION_NEW
+1.7.1.  E_MSRP_SESSION_NEW
 
    This event is triggered when a new MSRP session is successfully
    established(ACK sent/received).
@@ -301,7 +342,7 @@ opensips-cli -x mi msrp_ua_end_session \
      * content_types - The content types offered by the peer in
        the accept-types SDP attribute.
 
-1.6.2.  E_MSRP_SESSION_END
+1.7.2.  E_MSRP_SESSION_END
 
    This event is triggered when an ongoing MSRP session is
    terminted (session expires or BYE is received; terminating a
@@ -312,7 +353,7 @@ opensips-cli -x mi msrp_ua_end_session \
      * session_id - The MSRP session identifier ("session-id" part
        of the MSRP URI).
 
-1.6.3.  E_MSRP_MSG_RECEIVED
+1.7.3.  E_MSRP_MSG_RECEIVED
 
    This event is triggered when receiving a new, non-empty MSRP
    SEND request from the peer.
@@ -323,7 +364,7 @@ opensips-cli -x mi msrp_ua_end_session \
      * content_type - The content type of this message.
      * body - The actual message body.
 
-1.6.4.  E_MSRP_REPORT_RECEIVED
+1.7.4.  E_MSRP_REPORT_RECEIVED
 
    This event is triggered when:
      * a MSRP REPORT request is received
@@ -337,14 +378,148 @@ opensips-cli -x mi msrp_ua_end_session \
      * status - The value of the Status header field.
      * byte_range - The value of the Byte-Range header field.
 
-Chapter 2. Contributors
+Chapter 2. Developer Guide
 
-2.1. By Commit Statistics
+2.1. Overview
 
-   Table 2.1. Top contributors by DevScore^(1), authored
+   In order to answer a SIP session carying MSRP the init_uas()
+   function should be used. Conversely for starting a MSRP call as
+   a UAC, one can use the init_uac() function.
+
+   After initializing the session with either of the above
+   functions, the SIP call will be further handled by the module
+   and notifications regarding significant SIP level events and
+   received MSRP requests and responses will be delivered via
+   registering callback functions.
+
+   MSRP SEND requests can be sent with the send_message() function
+   after the sessions is established, which will be signaled by
+   the msrp_ua_notify_cb_f callback with the
+   MSRP_UA_SESS_ESTABLISHED event.
+
+   Received MSRP requests, transaction responses and local send
+   timeouts will be signaled via the msrp_ua_req_cb_f and
+   msrp_ua_rpl_cb_f callbacks.
+
+2.2. Available Functions
+
+2.2.1.  init_uas(msg, accept_types, hdl)
+
+   This function will intialize a MSRP UA session based on a
+   received SIP INVITE.
+
+   Meaning of the parameters is as follows:
+     * struct sip_msg *msg - the SIP message
+     * str *accept_types - the value of the "accept-types"
+       attribute to include in the SDP offer.
+     * struct msrp_ua_handler *hdl - handler structure used to
+       register the callbacks for SIP level and MSRP level
+       notifications.
+
+   Example 2.1. struct msrp_ua_handler structure
+struct msrp_ua_handler {
+        /* name of this registration */
+        str *name;
+        /* parameter to be passed to msrp_req_cb and msrp_rpl_cb callbac
+ks */
+        void *param;
+        /* callback for SIP level notifications */
+        msrp_ua_notify_cb_f notify_cb;
+        /* callback for receving MSRP requests */
+        msrp_ua_req_cb_f msrp_req_cb;
+        /* callback for receving MSRP responses */
+        msrp_ua_rpl_cb_f msrp_rpl_cb;
+};
+
+   Example 2.2. msrp_ua_notify_cb_f prototype
+typedef int (*msrp_ua_notify_cb_f)(struct msrp_ua_notify_params *params,
+        void *hdl_param);
+
+   Example 2.3. struct msrp_ua_notify_params structure
+struct msrp_ua_notify_params {
+        /* event type */
+        enum msrp_ua_event_type event;
+        /* SIP message */
+        struct sip_msg *msg;
+        /* SDP "accept-types" attribute in case of MSRP_UA_SESS_ESTABLIS
+HED event */
+        str *accept_types;
+        /* MSRP UA session ID */
+        str *session_id;
+};
+
+   Example 2.4. enum msrp_ua_event_type
+enum msrp_ua_event_type {
+        /* session established (ACK sent/received) */
+        MSRP_UA_SESS_ESTABLISHED = 1,
+        /* failed to establish session (negative reply/timeout etc.) */
+        MSRP_UA_SESS_FAILED,
+        /* BYE received/sent(in case of session timeout) */
+        MSRP_UA_SESS_TERMINATED
+};
+
+   Example 2.5. msrp_ua_req_cb_f prototype
+typedef int (*msrp_ua_req_cb_f)(struct msrp_msg *req, void *hdl_param);
+
+   Example 2.6. msrp_ua_rpl_cb_f prototype
+/* an MSRP transaction timeout will be signaled by calling this callback
+ * with a NULL rpl parameter */
+typedef int (*msrp_ua_rpl_cb_f)(struct msrp_msg *rpl, void *hdl_param);
+
+2.2.2.  init_uac(accept_types, from_uri, to_uri, ruri, hdl)
+
+   This function will intialize a MSRP UA session by sending a SIP
+   INVITE to a destination.
+
+   Meaning of the parameters is as follows:
+     * str *accept_types - the value of the "accept-types"
+       attribute to include in the SDP offer.
+     * str *from_uri - URI to use in the From header of the
+       INVITE.
+     * str *to_uri - URI to use in the To header of the INVITE.
+     * str *ruri - Request URI to use in the for the INVITE.
+     * struct msrp_ua_handler *hdl - handler structure used to
+       register the callbacks for SIP level and MSRP level
+       notifications.
+
+2.2.3.  end_session(session_id)
+
+   This function terminates an MSRP session.
+
+   Meaning of the parameters is as follows:
+     * str *session_id - MSRP UA session ID.
+
+2.2.4.  send_message(session_id, mime, body, failure_report,
+success_report)
+
+   This functions sends an MSRP SEND request to the peer.
+
+   Meaning of the parameters is as follows:
+     * str *session_id - MSRP UA session ID.
+     * str *mime - MIME content type of this message. If NULL, an
+       empty message will be sent.
+     * str *body - actual message body. If NULL, an empty message
+       will be sent.
+     * enum msrp_failure_report_type failure_report - MSRP Failure
+       Report type - yes, no or partial.
+     * int success_report - indication whether to request an MSRP
+       Failure Report or not.
+
+   Example 2.7. enum msrp_failure_report_type
+enum msrp_failure_report_type {
+        MSRP_FAILURE_REPORT_YES,
+        MSRP_FAILURE_REPORT_PARTIAL,
+        MSRP_FAILURE_REPORT_NO
+};
+
+Chapter 3. Contributors
+
+3.1. By Commit Statistics
+
+   Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 48 12 3758 284
+   1. Vlad Patrascu (@rvlad-patrascu) 54 16 4038 293
    2. Razvan Crainea (@razvancrainea) 3 1 11 1
    3. Liviu Chircu (@liviuchircu) 3 1 8 8
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 1 1
@@ -365,9 +540,9 @@ Chapter 2. Contributors
    (3) ignoring whitespace edits, renamed files and auto-generated
    files
 
-2.2. By Commit Activity
+3.2. By Commit Activity
 
-   Table 2.2. Most recently active contributors^(1) to this module
+   Table 3.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
    1. Vlad Patrascu (@rvlad-patrascu)     May 2022 - Jan 2023
    2. Razvan Crainea (@razvancrainea)     Aug 2022 - Aug 2022
@@ -377,9 +552,9 @@ Chapter 2. Contributors
    (1) including any documentation-related commits, excluding
    merge commits
 
-Chapter 3. Documentation
+Chapter 4. Documentation
 
-3.1. Contributors
+4.1. Contributors
 
    Last edited by: Vlad Patrascu (@rvlad-patrascu).
 
