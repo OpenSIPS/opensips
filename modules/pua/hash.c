@@ -116,7 +116,7 @@ htable_t* new_htable(void)
 			LM_ERR("No more share memory\n");
 			goto error;
 		}
-		H->p_records[i].entity->next= NULL;
+		memset(H->p_records[i].entity, 0, sizeof(ua_pres_t));
 	}
 	return H;
 
@@ -412,14 +412,14 @@ unsigned long insert_htable(ua_pres_t* presentity, int mem_only)
 
 	presentity->db_flag= mem_only ? NO_UPDATEDB_FLAG : INSERTDB_FLAG;
 	presentity->next= p->next;
-	if(p->next)
-	{
-		presentity->local_index = p->next->local_index + 1;
-	}
-	else
-		presentity->local_index = 0;
-
 	p->next= presentity;
+
+	p->local_index++;
+	/* local_index cannot be larger than half long, to be sure it will
+	 * not overflow the pres_id */
+	if (p->local_index == (1<<(sizeof(long)/2)))
+		p->local_index = 0;
+	presentity->local_index = p->local_index;
 
 	pres_id = PRES_HASH_ID(presentity);
 
