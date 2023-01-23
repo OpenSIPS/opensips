@@ -797,8 +797,10 @@ static void dlg_update_out_sdp(struct dlg_cell *dlg, int in_leg, int out_leg, st
 
 	if (get_body(msg,&sdp) < 0) {
 		LM_ERR("Failed to extract SDP \n");
-		sdp.s = NULL;
-		sdp.len = 0;
+		return;
+	} else if (sdp.len == 0) {
+		LM_DBG("no outbound SDP to update\n");
+		return;
 	}
 
 	dlg_lock_dlg(dlg);
