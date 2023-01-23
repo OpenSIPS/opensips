@@ -62,7 +62,8 @@
 
 #define MAX_FORWARD  70
 
-#define PRES_HASH_ID(presentity)(HASH_SIZE*presentity->local_index + presentity->hash_index)
+#define PRES_HASH_ID(presentity) \
+	(HASH_SIZE*(long)presentity->local_index + presentity->hash_index)
 
 typedef struct publ
 {
