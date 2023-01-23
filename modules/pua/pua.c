@@ -216,10 +216,10 @@ static int mod_init(void)
 		HASH_SIZE= 512;
 	else {
 		/* must fit in half of "long" when building the pres_id */
-		if ( HASH_SIZE > (sizeof(long)/2) ) {
+		if ( HASH_SIZE > (sizeof(long)*8/2) ) {
 			LM_WARN("hash_size %d too large, limiting to max allowed %d\n",
-				HASH_SIZE, (int)(sizeof(long)/2) );
-			HASH_SIZE = (sizeof(long)/2);
+				HASH_SIZE, (int)(sizeof(long)*8/2) );
+			HASH_SIZE = (sizeof(long)*8/2);
 		}
 		HASH_SIZE = 1<<HASH_SIZE;
 	}
