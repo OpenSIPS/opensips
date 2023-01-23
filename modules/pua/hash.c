@@ -417,7 +417,7 @@ unsigned long insert_htable(ua_pres_t* presentity, int mem_only)
 	p->local_index++;
 	/* local_index cannot be larger than half long, to be sure it will
 	 * not overflow the pres_id */
-	if (p->local_index == (1<<(sizeof(long)/2)))
+	if (p->local_index == (((unsigned long)1)<<(sizeof(long)*8/2))-1)
 		p->local_index = 0;
 	presentity->local_index = p->local_index;
 
