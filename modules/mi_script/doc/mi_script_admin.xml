@@ -239,7 +239,15 @@ modparam("mi_stream", "trace_bwlist", "w: sip_trace")
 					only makes sense if the <emphasis>params_avp</emphasis>
 					is set, and has to contain the same number
 					of values as there are parameters.
-				</para></listitem>
+				</para>
+				<para>
+					To specify <emphasis>array values</emphasis>, enclose your
+					space-separated array elements in the <emphasis>__array()</emphasis>
+					pseudo-function call.  For example:
+					<emphasis>"__array(HEARTBEAT BACKGROUND_JOB)"</emphasis>
+
+				</para>
+			</listitem>
 			</itemizedlist>
 		</para>
 		<example>
@@ -289,6 +297,18 @@ $avp(vals) = "SEARCH_FOR_THIS_CALLID";
 $avp(params) = "from_tag";
 $avp(vals) = "SEARCH_FOR_THIS_FROM_TAG";
 mi("dlg_list", $var(dlg), $avp(params), $avp(vals));
+...
+</programlisting>
+		</example>
+		<example>
+		<title><function>mi</function> without return, with an array parameter value</title>
+		<programlisting format="linespecific">
+...
+$avp(params) = "freeswitch_url";
+$avp(vals) = "fs://:ClueCon@192.168.20.8:8021";
+$avp(params) = "events";
+$avp(vals) = "__array(HEARTBEAT BACKGROUND_JOB)";
+mi("fs_subscribe", , $avp(params), $avp(vals));
 ...
 </programlisting>
 		</example>

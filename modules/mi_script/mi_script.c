@@ -244,10 +244,41 @@ static mi_request_t *mi_script_parse_request(str *method, str *params,
 				LM_ERR("missing attribute\n");
 				goto error;
 			}
-			if (a_avp->flags & AVP_VAL_STR)
-				val = cJSON_CreateStr(avp_val_v.s.s, avp_val_v.s.len);
-			else
+			if (a_avp->flags & AVP_VAL_STR) {
+				if (avp_val_v.s.len >= strlen("__array()")
+				    && avp_val_v.s.s[avp_val_v.s.len-1] == ')'
+				    && !memcmp(avp_val_v.s.s, STR_L("__array("))) {
+
+					val = cJSON_CreateArray();
+					if (!val) {
+						LM_ERR("oom\n");
+						goto error;
+					}
+
+					char *p = avp_val_v.s.s + strlen("__array("),
+						 *end = avp_val_v.s.s + avp_val_v.s.len - 1, *arg;
+					do {
+						cJSON *arr_val;
+
+						for (arg = p; p < end && *p != ' '; p++) ;
+
+						arr_val = cJSON_CreateStr(arg, p - arg);
+						if (!arr_val) {
+							cJSON_Delete(val);
+							LM_ERR("oom\n");
+							goto error;
+						}
+
+						cJSON_AddItemToArray(val, arr_val);
+					} while (++p < end);
+
+				} else {
+					val = cJSON_CreateStr(avp_val_v.s.s, avp_val_v.s.len);
+				}
+			} else {
 				val = cJSON_CreateNumber(avp_val_v.n);
+			}
+
 			/* avp is always null terminated */
 			cJSON_AddItemToObject(req->params, avp_val.s.s, val);
 		} else {
