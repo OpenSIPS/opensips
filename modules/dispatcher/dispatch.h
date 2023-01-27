@@ -158,6 +158,8 @@ typedef struct
 {
 	ds_partition_t *partition;
 	int set_id;
+	str uri; /* Note: the URI string is allocated together with
+	          * this structure, so no need of separate freeing */
 } ds_options_callback_param_t;
 
 typedef struct _ds_selected_dst
