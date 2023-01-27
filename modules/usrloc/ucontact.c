@@ -967,11 +967,22 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
                     const struct ct_match *match, char skip_replication)
 {
 	int ret, persist_kv_store = 1;
+	ul_cb_extra extra;
+
+	memset(&extra, 0, sizeof extra);
+
+	if (exists_ulcb_type(UL_CONTACT_UPDATE)) {
+		extra.contact_update.prev_proto = _c->next_hop.proto;
+		extra.contact_update.prev_port = _c->next_hop.port;
+		pkg_str_dup(&extra.contact_update.prev_name, &_c->next_hop.name);
+	}
 
 	/* we have to update memory in any case, but database directly
 	 * only in sql_wmode SQL_WRITE_THROUGH */
 	if (mem_update_ucontact(_c, _ci) < 0) {
 		LM_ERR("failed to update memory\n");
+		if (extra.contact_update.prev_name.s)
+			pkg_free(extra.contact_update.prev_name.s);
 		return -1;
 	}
 
@@ -991,7 +1002,9 @@ int update_ucontact(struct urecord* _r, ucontact_t* _c, ucontact_info_t* _ci,
 	if (exists_ulcb_type(UL_CONTACT_UPDATE))
 	{
 		LM_DBG("exists callback for type= UL_CONTACT_UPDATE\n");
-		run_ul_callbacks( UL_CONTACT_UPDATE, _c);
+		run_ul_callbacks( UL_CONTACT_UPDATE, _c, &extra);
+		if (extra.contact_update.prev_name.s)
+			pkg_free(extra.contact_update.prev_name.s);
 	}
 
 	if (have_mem_storage())

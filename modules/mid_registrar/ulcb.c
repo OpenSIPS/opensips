@@ -222,7 +222,7 @@ static int unregister_record(urecord_t *r)
 	return send_unregister(from, to, ruri, callid, last_cseq, obp, ct);
 }
 
-void mid_reg_ct_event(void *binding, ul_cb_type type)
+void mid_reg_ct_event(void *binding, ul_cb_type type, ul_cb_extra *_)
 {
 	ucontact_t *c = (ucontact_t *)binding;
 	int_str_t *skip_dereg;
@@ -246,7 +246,7 @@ void mid_reg_ct_event(void *binding, ul_cb_type type)
 	}
 }
 
-void mid_reg_aor_event(void *binding, ul_cb_type type)
+void mid_reg_aor_event(void *binding, ul_cb_type type, ul_cb_extra *_)
 {
 	urecord_t *r = (urecord_t *)binding;
 	int_str_t *skip_dereg;

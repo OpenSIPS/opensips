@@ -250,7 +250,7 @@ static inline int nodb_timer(urecord_t* _r)
 		if (!VALID_CONTACT(ptr, act_time)) {
 			/* run callbacks for EXPIRE event */
 			if (exists_ulcb_type(UL_CONTACT_EXPIRE))
-				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr);
+				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
 				ptr->aor->len, ZSW(ptr->aor->s),
@@ -284,7 +284,7 @@ static inline int ALLOW_UNUSED wt_timer(urecord_t* _r)
 		if (!VALID_CONTACT(ptr, act_time)) {
 			/* run callbacks for EXPIRE event */
 			if (exists_ulcb_type(UL_CONTACT_EXPIRE)) {
-				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr);
+				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 			}
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
@@ -327,7 +327,7 @@ static inline int wb_timer(urecord_t* _r,query_list_t **ins_list)
 		if (!VALID_CONTACT(ptr, act_time)) {
 			/* run callbacks for EXPIRE event */
 			if (exists_ulcb_type(UL_CONTACT_EXPIRE)) {
-				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr);
+				run_ul_callbacks( UL_CONTACT_EXPIRE, ptr, NULL);
 			}
 
 			LM_DBG("Binding '%.*s','%.*s' has expired\n",
@@ -619,7 +619,7 @@ int cdb_flush_urecord(urecord_t *_r)
 		if (!VALID_CONTACT(ct, act_time)) {
 			/* run callbacks for DELETE event */
 			if (exists_ulcb_type(UL_CONTACT_DELETE))
-				run_ul_callbacks(UL_CONTACT_DELETE, ct);
+				run_ul_callbacks(UL_CONTACT_DELETE, ct, NULL);
 
 			LM_DBG("deleting AoR: %.*s, Contact: %.*s.\n",
 				ct->aor->len, ZSW(ct->aor->s),
@@ -827,7 +827,7 @@ void release_urecord(urecord_t* _r, char skip_replication)
 			return;
 
 		if (exists_ulcb_type(UL_AOR_DELETE))
-			run_ul_callbacks(UL_AOR_DELETE, _r);
+			run_ul_callbacks(UL_AOR_DELETE, _r, NULL);
 
 		if (!skip_replication && location_cluster) {
 			if (cluster_mode == CM_FEDERATION_CACHEDB &&
@@ -881,10 +881,10 @@ int insert_ucontact(urecord_t* _r, str* _contact, ucontact_info_t* _ci,
 		replicate_ucontact_insert(_r, _contact, *_c, match);
 
 	if (exists_ulcb_type(UL_CONTACT_INSERT))
-		run_ul_callbacks(UL_CONTACT_INSERT, *_c);
+		run_ul_callbacks(UL_CONTACT_INSERT, *_c, NULL);
 
 	if (!first_contact && exists_ulcb_type(UL_AOR_UPDATE))
-		run_ul_callbacks(UL_AOR_UPDATE, _r);
+		run_ul_callbacks(UL_AOR_UPDATE, _r, NULL);
 
 	if (sql_wmode == SQL_WRITE_THROUGH) {
 		if (persist_urecord_kv_store(_r) != 0)
@@ -911,10 +911,10 @@ int delete_ucontact(urecord_t* _r, struct ucontact* _c,
 		replicate_ucontact_delete(_r, _c, match);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE))
-		run_ul_callbacks(UL_CONTACT_DELETE, _c);
+		run_ul_callbacks(UL_CONTACT_DELETE, _c, NULL);
 
 	if (exists_ulcb_type(UL_AOR_UPDATE))
-		run_ul_callbacks(UL_AOR_UPDATE, _r);
+		run_ul_callbacks(UL_AOR_UPDATE, _r, NULL);
 
 	LM_DBG("deleting contact '%.*s'\n", _c->c.len, _c->c.s);
 

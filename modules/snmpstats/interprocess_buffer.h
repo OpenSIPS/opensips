@@ -99,7 +99,7 @@ int setInterprocessBuffersAlarm(void);
  * any race conditions between this function and the consumeInterprocessBuffer()
  * function.
  */
-void handleContactCallbacks(void *binding, ul_cb_type type);
+void handleContactCallbacks(void *binding, ul_cb_type type, ul_cb_extra *_);
 
 
 /* Interprocess Buffer consumption Function.  This function will iterate over

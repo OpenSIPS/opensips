@@ -46,6 +46,15 @@ typedef enum ul_cb_types {
 	ULCB_MAX              = ((1<<8)-1),
 } ul_cb_type;
 
+typedef union ul_cb_extra {
+	struct {
+		unsigned short prev_proto;
+		unsigned short prev_port;
+		str prev_name;
+	} contact_update;
+} ul_cb_extra;
+
+
 #define is_contact_cb(type) \
 	(type & \
 	(UL_CONTACT_INSERT|UL_CONTACT_UPDATE|UL_CONTACT_DELETE|UL_CONTACT_EXPIRE))
@@ -59,8 +68,9 @@ typedef enum ul_cb_types {
  * @binding: depending on the registered type,
  *             it should be casted to either (ucontact_t *) or (urecord_t *)
  * @type:    type of the callback
+ * @extra:   extra parameters provided for each type of callback
  */
-typedef void (ul_cb) (void *binding, ul_cb_type type);
+typedef void (ul_cb) (void *binding, ul_cb_type type, ul_cb_extra *extra);
 
 
 struct ul_callback {
@@ -103,7 +113,7 @@ int register_ulcb(ul_cb_type types, ul_cb f);
  *    - an (ucontact_t *) for contact callbacks
  *    - an (urecord_t *) for AoR callbacks
  */
-static inline void run_ul_callbacks(ul_cb_type type, void *binding)
+static inline void run_ul_callbacks(ul_cb_type type, void *binding, ul_cb_extra *extra)
 {
 	struct list_head *_;
 	struct ul_callback *cbp;
@@ -115,9 +125,9 @@ static inline void run_ul_callbacks(ul_cb_type type, void *binding)
 			       binding, type, cbp->types, cbp->id);
 
 			if (is_contact_cb(type)) {
-				cbp->callback(binding, type);
+				cbp->callback(binding, type, extra);
 			} else if (is_aor_cb(type)) {
-				cbp->callback(binding, type);
+				cbp->callback(binding, type, extra);
 			}
 		}
 	}

@@ -443,7 +443,7 @@ typedef struct usrloc_api {
 	 * Return: 0 (success), negative otherwise
 	 */
 	int (*register_ulcb) (ul_cb_type types,
-	                      void (*cb) (void *binding, ul_cb_type type));
+	                      void (*cb) (void *binding, ul_cb_type type, ul_cb_extra *extra));
 } usrloc_api_t;
 
 

@@ -1208,7 +1208,7 @@ int delete_ucontact_from_coords(udomain_t *d, ucontact_coords ct_coords,
 		replicate_ucontact_delete(r, c, NULL);
 
 	if (exists_ulcb_type(UL_CONTACT_DELETE)) {
-		run_ul_callbacks( UL_CONTACT_DELETE, c);
+		run_ul_callbacks( UL_CONTACT_DELETE, c, NULL);
 	}
 
 	if (st_delete_ucontact(c) > 0) {

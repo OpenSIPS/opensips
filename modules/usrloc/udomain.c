@@ -1176,7 +1176,7 @@ int mem_timer_udomain(udomain_t* _d)
 			if (ptr->no_clear_ref <= 0 && ptr->contacts == NULL)
 			{
 				if (exists_ulcb_type(UL_AOR_EXPIRE))
-					run_ul_callbacks(UL_AOR_EXPIRE, ptr);
+					run_ul_callbacks(UL_AOR_EXPIRE, ptr, NULL);
 
 				if (location_cluster) {
 					if (cluster_mode == CM_FEDERATION_CACHEDB &&
@@ -1379,7 +1379,7 @@ int insert_urecord(udomain_t* _d, str* _aor, struct urecord** _r,
 	}
 
 	if (exists_ulcb_type(UL_AOR_INSERT))
-		run_ul_callbacks(UL_AOR_INSERT, *_r);
+		run_ul_callbacks(UL_AOR_INSERT, *_r, NULL);
 
 	return 0;
 }
