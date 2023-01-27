@@ -418,7 +418,7 @@ static void b2b_sdp_client_end(struct b2b_sdp_client *client, str *key, int send
 			key->len, key->s, method.len, method.s);
 }
 
-static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
+static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key, int del)
 {
 	int send_cancel = 0;
 	if (!key || key->len == 0) {
@@ -434,7 +434,7 @@ static void b2b_sdp_client_terminate(struct b2b_sdp_client *client, str *key)
 	}
 	client->flags &= ~(B2B_SDP_CLIENT_EARLY|B2B_SDP_CLIENT_STARTED);
 	lock_release(&client->ctx->lock);
-	if (!send_cancel)
+	if (!send_cancel && del)
 		b2b_api.entity_delete(B2B_CLIENT, key, client->dlginfo, 1, 1);
 }
 
@@ -463,22 +463,27 @@ static void b2b_sdp_client_free(void *param)
 	shm_free(client);
 }
 
-static void b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
+static int b2b_sdp_client_release(struct b2b_sdp_client *client, int lock)
 {
 	struct b2b_sdp_ctx *ctx = client->ctx;
+	int del = 0;
 
 	if (lock)
 		lock_get(&ctx->lock);
-	list_del(&client->list);
-	ctx->clients_no--;
+	if (list_is_valid(&client->list)) {
+		list_del(&client->list);
+		ctx->clients_no--;
+		del = 1;
+	}
 	if (lock)
 		lock_release(&ctx->lock);
+	return del;
 }
 
 static void b2b_sdp_client_delete(struct b2b_sdp_client *client)
 {
-	b2b_sdp_client_release(client, 1);
-	b2b_sdp_client_terminate(client, &client->b2b_key);
+	int del = b2b_sdp_client_release(client, 1);
+	b2b_sdp_client_terminate(client, &client->b2b_key, del);
 }
 
 static struct b2b_sdp_ctx *b2b_sdp_ctx_new(str *callid)
@@ -1736,7 +1741,7 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 		if (shm_str_dup(&client->b2b_key, b2b_key) < 0) {
 			LM_ERR("could not copy b2b client key\n");
 			/* key is not yet stored, but INVITE sent - terminate it */
-			b2b_sdp_client_terminate(client, b2b_key);
+			b2b_sdp_client_terminate(client, b2b_key, 1);
 			pkg_free(b2b_key);
 			return -1;
 		}

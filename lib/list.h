@@ -266,5 +266,14 @@ static inline int list_size(struct list_head *head)
 	return count;
 }
 
+/**
+ * list_is_valid - checks if an element is in a valid list
+ * @entry: the element to check
+ * in an undefined state.
+ */
+#define list_is_valid(entry) \
+	((entry)->next != LIST_POISON1 && (entry)->prev != LIST_POISON2)
+
+
 
 #endif /* __OSS_LIST_H */
