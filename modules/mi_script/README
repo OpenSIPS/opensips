@@ -54,7 +54,8 @@ MI script Module
    1.6. mi with return
    1.7. mi without return but with indexed params
    1.8. mi with return and named parameters
-   1.9. async mi call usage
+   1.9. mi without return, with an array parameter value
+   1.10. async mi call usage
 
 Chapter 1. Admin Guide
 
@@ -203,6 +204,9 @@ modparam("mi_stream", "trace_bwlist", "w: sip_trace")
        parameter only makes sense if the params_avp is set, and
        has to contain the same number of values as there are
        parameters.
+       To specify array values, enclose your space-separated array
+       elements in the __array() pseudo-function call. For
+       example: "__array(HEARTBEAT BACKGROUND_JOB)"
 
    Example 1.4. mi without params
 ...
@@ -239,6 +243,15 @@ $avp(vals) = "SEARCH_FOR_THIS_FROM_TAG";
 mi("dlg_list", $var(dlg), $avp(params), $avp(vals));
 ...
 
+   Example 1.9. mi without return, with an array parameter value
+...
+$avp(params) = "freeswitch_url";
+$avp(vals) = "fs://:ClueCon@192.168.20.8:8021";
+$avp(params) = "events";
+$avp(vals) = "__array(HEARTBEAT BACKGROUND_JOB)";
+mi("fs_subscribe", , $avp(params), $avp(vals));
+...
+
 1.6. Exported Asyncronous Functions
 
 1.6.1.  mi(command, [ret_var [,params_avp[, vals_avp]]])
@@ -252,7 +265,7 @@ mi("dlg_list", $var(dlg), $avp(params), $avp(vals));
    NOTE: currently MI commands run asynchronously cannot be traced
    through hep.
 
-   Example 1.9. async mi call usage
+   Example 1.10. async mi call usage
 ...
 xlog("reload starting\n");
 async(mi("dr_reload"), after_reload);
@@ -270,7 +283,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)    17       6      1112      13
-   2. Liviu Chircu (@liviuchircu)        3        1       7        2
+   2. Liviu Chircu (@liviuchircu)        4        2       61       5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -292,8 +305,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) May 2021 - Sep 2022
-   2. Liviu Chircu (@liviuchircu)     Jun 2022 - Jun 2022
+   1. Liviu Chircu (@liviuchircu)     Jun 2022 - Jan 2023
+   2. Razvan Crainea (@razvancrainea) May 2021 - Sep 2022
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -302,7 +315,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea).
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 
