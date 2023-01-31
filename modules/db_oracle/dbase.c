@@ -320,7 +320,9 @@ bind_err:
 	}
 
 ora_err:
-	LM_ERR("driver: %s\n", db_oracle_error(con, status));
+	/* Print notice level error information when attempting to reconnect. */
+	LM_GEN(((pass == -1 && !con->connected) ? L_NOTICE : L_ERR),
+		"driver: %s\n", db_oracle_error(con, status));
 stop_exec:
 	if (stmthp)
 		OCIHandleFree(stmthp, OCI_HTYPE_STMT);
