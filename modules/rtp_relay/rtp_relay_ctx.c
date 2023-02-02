@@ -464,8 +464,7 @@ static struct rtp_relay_leg *rtp_relay_get_peer_leg_ctx(struct rtp_relay_ctx *ct
 	struct rtp_relay_leg *leg;
 	struct b2b_entity_info_t info;
 
-	if (rtp_relay_dlg_ctx_idx != -1) {
-		dlg = rtp_relay_dlg.get_dlg();
+	if (rtp_relay_dlg_ctx_idx != -1 && (dlg = rtp_relay_dlg.get_dlg()) != NULL) {
 		if (rtp_relay_dlg.get_direction() == DLG_DIR_UPSTREAM) {
 			tag = &dlg->legs[DLG_CALLER_LEG].tag;
 		} else {
