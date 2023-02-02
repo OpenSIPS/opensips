@@ -18,9 +18,10 @@
  */
 
 #define _XOPEN_SOURCE
+#define _DEFAULT_SOURCE /* for timegm() */
+#define _BSD_SOURCE /* for timegm() */
 #include <stdlib.h>
 #include <string.h>
-#define __USE_MISC /* for timegm() */
 #include <time.h>
 
 #include <lua.h>
