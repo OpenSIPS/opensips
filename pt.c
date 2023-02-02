@@ -22,6 +22,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#include "lib/dbg/profiling.h"
 #include "mem/shm_mem.h"
 #include "net/net_tcp.h"
 #include "net/net_udp.h"
@@ -295,6 +297,8 @@ int internal_fork(char *proc_desc, unsigned int flags,
 		/* set uid and pid */
 		process_no = new_idx;
 		pt[process_no].pid = getpid();
+		_ProfilerStart(pt[process_no].pid, proc_desc);
+
 		pt[process_no].flags |= flags;
 		pt[process_no].type = type;
 		/* activate its load & pkg statistics */

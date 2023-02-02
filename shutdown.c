@@ -26,6 +26,7 @@
 #include <signal.h>
 #include <unistd.h>
 
+#include "lib/dbg/profiling.h"
 #include "config.h"
 #include "dprint.h"
 #include "daemonize.h"
@@ -146,6 +147,7 @@ static void rpc_process_terminate(int sender_id, void *code)
 	LM_DBG("Process %d exiting with code %d...\n",
 		process_no, (int)(long)code);
 
+	_ProfilerStop();
 	exit( (int)(long)code );
 }
 
@@ -212,6 +214,8 @@ void shutdown_opensips( int status )
 		LM_DBG("force termination for all processes\n");
 		kill_all_children(SIGKILL);
 	}
+
+	_ProfilerStop();
 
 	/* Only one process is running now. Clean up and return overall status */
 

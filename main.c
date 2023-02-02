@@ -147,6 +147,7 @@
 #include "net/trans.h"
 
 #include "test/unit_tests.h"
+#include "lib/dbg/profiling.h"
 
 #include "ssl_tweaks.h"
 
@@ -290,6 +291,8 @@ static int main_loop(void)
 		 * of course, we will need the read-end, here in the main proc */
 		last_check = get_uticks();
 	}
+
+	_ProfilerStart(0, "attendant");
 
 	for(;;){
 			handle_sigs();
@@ -930,5 +933,6 @@ error:
 	cleanup(0);
 error00:
 	LM_NOTICE("Exiting....\n");
+	_ProfilerStop();
 	return ret;
 }
