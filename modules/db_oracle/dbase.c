@@ -64,7 +64,7 @@ static const char* db_oracle_errorinfo(ora_con_t* con)
 			(OraText*)errbuf, sizeof(errbuf),
 			OCI_HTYPE_ERROR) != OCI_SUCCESS) errbuf[0] = '\0';
 	else if (db_oracle_connection_lost(errcd)) {
-		LM_ERR("connection dropped\n");
+		LM_DBG("connection dropped\n");
 		db_oracle_disconnect(con);
 	}
 
@@ -320,7 +320,9 @@ bind_err:
 	}
 
 ora_err:
-	LM_ERR("driver: %s\n", db_oracle_error(con, status));
+	/* Print notice level error information when attempting to reconnect. */
+	LM_GEN(((pass == -1 && !con->connected) ? L_NOTICE : L_ERR),
+		"driver: %s\n", db_oracle_error(con, status));
 stop_exec:
 	if (stmthp)
 		OCIHandleFree(stmthp, OCI_HTYPE_STMT);
