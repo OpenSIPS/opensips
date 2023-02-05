@@ -1797,6 +1797,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	b2bl_entity_id_t** entity_head = NULL;
 	int_str avp_val;
 	int locked = 0;
+	int routeid;
 
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
 	{
@@ -1880,11 +1881,13 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			goto error;
 		}
 
+		routeid = tuple->reply_routeid;
+
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
 
 		cur_route_ctx.flags |= B2BL_RT_RPL_CTX;
-		run_top_route(sroutes->request[tuple->reply_routeid], msg);
+		run_top_route(sroutes->request[routeid], msg);
 		cur_route_ctx.flags &= ~B2BL_RT_RPL_CTX;
 
 		pkg_free(cur_route_ctx.entity_key.s);
@@ -1892,14 +1895,21 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 
 done:
 	if (tuple && cur_route_ctx.flags & B2BL_RT_DO_UPDATE) {
-		if (!locked) {
+		if (b2bl_db_mode != NO_DB && !locked) {
 			lock_get(&b2bl_htable[hash_index].lock);
 			locked = 1;
+
+			tuple = b2bl_search_tuple_safe(hash_index, local_index);
+			if(!tuple) {
+				LM_DBG("B2B logic record not found anymore\n");
+				lock_release(&b2bl_htable[hash_index].lock);
+				return 0;
+			}
 		}
 
 		if(b2bl_db_mode == WRITE_THROUGH)
 			b2bl_db_update(tuple);
-		else
+		else if (b2bl_db_mode == WRITE_BACK)
 			UPDATE_DBFLAG(tuple);
 	}
 	if (locked)
@@ -2031,6 +2041,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 	b2bl_dlg_stat_t stats;
 	b2b_rpl_data_t rpl_data;
 	int locked = 0;
+	int routeid;
 
 	lock_get(&b2bl_htable[hash_index].lock);
 	locked = 1;
@@ -2345,11 +2356,13 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			}
 		}
 
+		routeid = tuple->req_routeid;
+
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
 
 		cur_route_ctx.flags = B2BL_RT_REQ_CTX;
-		run_top_route(sroutes->request[tuple->req_routeid], msg);
+		run_top_route(sroutes->request[routeid], msg);
 		cur_route_ctx.flags &= ~B2BL_RT_REQ_CTX;
 
 		pkg_free(cur_route_ctx.entity_key.s);
@@ -2366,13 +2379,20 @@ send_usual_request:
 done:
 	if(tuple && cur_route_ctx.flags & B2BL_RT_DO_UPDATE)
 	{
-		if (!locked) {
+		if (b2bl_db_mode != NO_DB && !locked) {
 			lock_get(&b2bl_htable[hash_index].lock);
 			locked = 1;
+
+			tuple = b2bl_search_tuple_safe(hash_index, local_index);
+			if(!tuple) {
+				LM_DBG("B2B logic record not found anymore\n");
+				lock_release(&b2bl_htable[hash_index].lock);
+				return 0;
+			}
 		}
 		if(b2bl_db_mode == WRITE_THROUGH)
 			b2bl_db_update(tuple);
-		else
+		else if (b2bl_db_mode == WRITE_BACK)
 			UPDATE_DBFLAG(tuple);
 	}
 	if (locked)
