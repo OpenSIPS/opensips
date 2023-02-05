@@ -49,6 +49,9 @@
 
 #define B2B_NOTIFY_FL_TERMINATED (1<<0)
 #define B2B_NOTIFY_FL_ACK_NEG    (1<<1)
+/* entity has been terminated on the spot when receiving a BYE request
+ * while another transaction was ongoing(no final reply sent) */
+#define B2B_NOTIFY_FL_TERM_BYE   (1<<2)
 
 enum b2b_entity_type {B2B_SERVER=0, B2B_CLIENT, B2B_NONE};
 
