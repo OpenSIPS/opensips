@@ -33,6 +33,11 @@
 #include "b2b_logic.h"
 #include "b2b_load.h"
 
+/* flags used for terminating an entity after it's peer
+ * has already been terminated from b2b_entities; see B2B_NOTIFY_FL_TERM_BYE */
+#define ENTITY_FL_TERM_BYE       (1<<0)
+#define ENTITY_FL_REPLY_RECEIVED (1<<1)
+
 typedef struct b2bl_entity_id
 {
 	str scenario_id;
@@ -48,6 +53,8 @@ typedef struct b2bl_entity_id
 	int disconnected;
 	int state;
 	int init_maxfwd;
+	unsigned int flags;
+	unsigned int last_rcv_code;
 	unsigned short no;
 	unsigned short sdp_type;
 	enum b2b_entity_type type;

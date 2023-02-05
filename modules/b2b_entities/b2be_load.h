@@ -50,6 +50,9 @@
 
 #define B2B_NOTIFY_FL_TERMINATED (1<<0)
 #define B2B_NOTIFY_FL_ACK_NEG    (1<<1)
+/* entity has been terminated on the spot when receiving a BYE request
+ * while another transaction was ongoing(no final reply sent) */
+#define B2B_NOTIFY_FL_TERM_BYE   (1<<2)
 
 #define B2B_MAX_PREFIX_LEN    5
 #define B2B_MAX_KEY_SIZE	(B2B_MAX_PREFIX_LEN+4+10+10+INT2STR_MAX_LEN)
