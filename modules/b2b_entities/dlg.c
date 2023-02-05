@@ -1084,6 +1084,19 @@ logic_notify:
 			}
 		}
 		lock_get(&table[hash_index].lock);
+
+		/* check if the dialog has not be deleted while not holding the lock */
+		for(aux_dlg = table[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
+		{
+			if(aux_dlg == dlg)
+				break;
+		}
+		if(!aux_dlg)
+		{
+			LM_DBG("Record not found anymore\n");
+			lock_release(&table[hash_index].lock);
+			return SCB_DROP_MSG;
+		}
 	}
 
 	if(method_value != METHOD_CANCEL)
