@@ -62,11 +62,7 @@ deps_gen += $(MEM_STATS_HDR)
 auto_gen += mem/mem_stats.c
 endif
 
-ifneq (,$(findstring DBG_STRUCT_HIST,$(DEFS)))
 dbg_objs=lib/dbg/struct_hist.c
-else
-dbg_objs=
-endif
 
 include Makefile.sources
 include Makefile.defs

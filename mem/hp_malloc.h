@@ -267,6 +267,8 @@ static inline unsigned long hp_frag_line(void *p) { return 0; }
 #endif
 #endif
 
+unsigned long hp_get_dbg_pool_size(unsigned int hist_size);
+
 void hp_status(struct hp_block *hpb);
 #if !defined INLINE_ALLOC && defined DBG_MALLOC
 void hp_status_dbg(struct hp_block *hpb);

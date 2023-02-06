@@ -235,4 +235,6 @@ static inline unsigned long qm_get_frags(struct qm_block *qm)
 }
 #endif /* STATISTICS */
 
+unsigned long qm_get_dbg_pool_size(unsigned int hist_size);
+
 #endif

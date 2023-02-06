@@ -34,9 +34,8 @@
 #include "tcp_conn.h"
 #include "tcp_passfd.h"
 #include "net_tcp_report.h"
-#include "net_tcp_dbg.h"
 #include "trans.h"
-
+#include "net_tcp_dbg.h"
 
 /*!< the FD currently used by the process to communicate with TCP MAIN*/
 static int _my_fd_to_tcp_main = -1;

@@ -107,6 +107,16 @@ gen_lock_t *mem_locks;
 static void* shm_mempool=INVALID_MAP;
 void *shm_block;
 
+#ifdef DBG_MALLOC
+gen_lock_t *mem_dbg_lock;
+unsigned long shm_dbg_pool_size;
+static void* shm_dbg_mempool=INVALID_MAP;
+void *shm_dbg_block;
+
+struct struct_hist_list *shm_hist;
+int shm_skip_sh_log = 1;
+#endif
+
 /*
  * - the memory fragmentation pattern of OpenSIPS
  * - holds the total number of shm_mallocs requested for each
@@ -581,6 +591,74 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 	return 0;
 }
 
+#ifdef DBG_MALLOC
+int shm_dbg_mem_init_mallocs(void* mempool, unsigned long pool_size)
+{
+
+#ifdef INLINE_ALLOC
+#if defined F_MALLOC
+	shm_dbg_block = fm_malloc_init(mempool, pool_size, "shm_dbg");
+#elif defined Q_MALLOC
+#ifdef DBG_MALLOC
+	shm_dbg_block = qm_malloc_init(mempool, pool_size, "shm_dbg");
+#endif
+#elif defined HP_MALLOC
+	shm_dbg_block = hp_shm_malloc_init(mempool, pool_size, "shm_dbg");
+#endif
+#else
+	if (mem_allocator_shm == MM_NONE)
+		mem_allocator_shm = mem_allocator;
+
+	switch (mem_allocator_shm) {
+#ifdef F_MALLOC
+	case MM_F_MALLOC:
+	case MM_F_MALLOC_DBG:
+		shm_dbg_block = fm_malloc_init(mempool, pool_size, "shm_dbg");
+		break;
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+	case MM_Q_MALLOC_DBG:
+		shm_dbg_block = qm_malloc_init(mempool, pool_size, "shm_dbg");
+		break;
+#endif
+#ifdef HP_MALLOC
+	case MM_HP_MALLOC:
+	case MM_HP_MALLOC_DBG:
+		shm_dbg_block = hp_shm_malloc_init(mempool, pool_size, "shm_dbg");
+		break;
+#endif
+	default:
+		LM_ERR("current build does not include support for "
+		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
+		return -1;
+	}
+#endif
+
+	if (!shm_dbg_block){
+		LM_CRIT("could not initialize debug shared malloc\n");
+		shm_mem_destroy();
+		return -1;
+	}
+
+	mem_dbg_lock = shm_dbg_malloc_unsafe(sizeof *mem_dbg_lock);
+	if (!mem_dbg_lock) {
+		LM_CRIT("could not allocate the shm dbg lock\n");
+		shm_mem_destroy();
+		return -1;
+	}
+
+	if (!lock_init(mem_dbg_lock)) {
+		LM_CRIT("could not initialize lock\n");
+		shm_mem_destroy();
+		return -1;
+	}
+
+	LM_DBG("success\n");
+
+	return 0;
+}
+#endif
 
 int shm_mem_init(void)
 {
@@ -619,6 +697,75 @@ int shm_mem_init(void)
 	return shm_mem_init_mallocs(shm_mempool, shm_mem_size);
 }
 
+#ifdef DBG_MALLOC
+int shm_dbg_mem_init(void)
+{
+	int fd_dbg = -1;
+
+	#ifndef USE_ANON_MMAP
+	fd_dbg=open("/dev/zero", O_RDWR);
+	if (fd_dbg==-1){
+		LM_CRIT("could not open /dev/zero: %s\n", strerror(errno));
+		return -1;
+	}
+	#endif
+
+	#ifdef INLINE_ALLOC
+	#if defined F_MALLOC
+	shm_dbg_pool_size = fm_get_dbg_pool_size(shm_memlog_size);
+	#elif defined Q_MALLOC
+	shm_dbg_pool_size = qm_get_dbg_pool_size(shm_memlog_size);
+	#elif defined HP_MALLOC
+	shm_dbg_pool_size = hp_get_dbg_pool_size(shm_memlog_size);
+	#endif
+	#else
+	switch (mem_allocator_shm) {
+	#ifdef F_MALLOC
+	case MM_F_MALLOC:
+	case MM_F_MALLOC_DBG:
+		shm_dbg_pool_size = fm_get_dbg_pool_size(shm_memlog_size);
+		break;
+	#endif
+	#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+	case MM_Q_MALLOC_DBG:
+		shm_dbg_pool_size = qm_get_dbg_pool_size(shm_memlog_size);
+		break;
+	#endif
+	#ifdef HP_MALLOC
+	case MM_HP_MALLOC:
+	case MM_HP_MALLOC_DBG:
+		shm_dbg_pool_size = hp_get_dbg_pool_size(shm_memlog_size);
+		break;
+	#endif
+	default:
+		LM_ERR("current build does not include support for "
+		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
+		return -1;
+	}
+	#endif
+
+	LM_DBG("Debug SHM pool size: %.2lf GB\n",
+		(double)shm_dbg_pool_size / 1024 / 1024 / 1024);
+
+	shm_dbg_mempool = shm_getmem(fd_dbg, NULL, shm_dbg_pool_size);
+
+	#ifndef USE_ANON_MMAP
+	close(fd_dbg);
+	#endif
+
+	if (shm_dbg_mempool == INVALID_MAP) {
+		LM_CRIT("could not attach shared memory segment: %s\n",
+				strerror(errno));
+		/* destroy segment*/
+		shm_mem_destroy();
+		return -1;
+	}
+
+	return shm_dbg_mem_init_mallocs(shm_dbg_mempool, shm_dbg_pool_size);
+}
+#endif
+
 mi_response_t *mi_shm_check(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -656,7 +803,7 @@ mi_response_t *mi_shm_check(const mi_params_t *params,
 	return NULL;
 }
 
-void init_shm_post_yyparse(void)
+int init_shm_post_yyparse(void)
 {
 #ifdef HP_MALLOC
 	if (mem_allocator_shm == MM_HP_MALLOC ||
@@ -683,24 +830,24 @@ void init_shm_post_yyparse(void)
 		p = (stat_var *)&memory_mods_stats[0].fragments;
 		if (register_stat(STAT_PREFIX "default", "fragments", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
-			return;
+			return -1;
 		}
 		p = (stat_var *)&memory_mods_stats[0].memory_used;
 		if (register_stat(STAT_PREFIX "default", "memory_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
-			return;
+			return -1;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].real_used;
 		if (register_stat(STAT_PREFIX "default", "real_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
-			return;
+			return -1;
 		}
 
 		p = (stat_var *)&memory_mods_stats[0].max_real_used;
 		if (register_stat(STAT_PREFIX "default", "max_real_used", &p, STAT_NOT_ALLOCATED)!=0 ) {
 			LM_CRIT("can't add stat variable");
-			return;
+			return -1;
 		}
 
 
@@ -717,31 +864,43 @@ void init_shm_post_yyparse(void)
 			p = (stat_var *)&memory_mods_stats[i].fragments;
 			if (register_stat(full_name, "fragments", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 				LM_CRIT("can't add stat variable");
-				return;
+				return -1;
 			}
 
 			p = (stat_var *)&memory_mods_stats[i].memory_used;
 			if (register_stat(full_name, "memory_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 				LM_CRIT("can't add stat variable");
-				return;
+				return -1;
 			}
 
 			p = (stat_var *) &memory_mods_stats[i].real_used;
 			if (register_stat(full_name, "real_used", &p, STAT_NO_RESET|STAT_NOT_ALLOCATED)!=0 ) {
 				LM_CRIT("can't add stat variable");
-				return;
+				return -1;
 			}
 
 			p = (stat_var *) &memory_mods_stats[i].max_real_used;
 			if (register_stat(full_name, "max_real_used", &p, STAT_NOT_ALLOCATED) != 0) {
 				LM_CRIT("can't add stat variable");
-				return;
+				return -1;
 			}
 			i--;
 		}
 	}
 #endif
 
+#ifdef DBG_MALLOC
+	if (shm_memlog_size) {
+		shm_hist = _shl_init("shm hist", shm_memlog_size, 0, 1,
+			shm_dbg_malloc_func);
+		if (!shm_hist) {
+			LM_ERR("oom\n");
+			return -1;
+		}
+	}
+#endif
+
+	return 0;
 }
 
 void shm_mem_destroy(void)
@@ -845,6 +1004,19 @@ void shm_mem_destroy(void)
 	}
 	shm_relmem(shm_mempool, shm_mem_size);
 	shm_mempool=INVALID_MAP;
+
+#ifdef DBG_MALLOC
+	if (shm_memlog_size) {
+		if (mem_dbg_lock) {
+			LM_DBG("destroying the shared debug memory lock\n");
+			lock_destroy(mem_dbg_lock); /* we don't need to dealloc it*/
+			mem_dbg_lock = NULL;
+		}
+
+		shm_relmem(shm_dbg_mempool, shm_dbg_pool_size);
+		shm_dbg_mempool=INVALID_MAP;
+	}
+#endif
 
 #ifndef SHM_MMAP
 	if (shm_shmid!=-1) {

@@ -179,4 +179,6 @@ static inline unsigned long fm_get_frags(struct fm_block *fm)
 }
 #endif /*STATISTICS*/
 
+unsigned long fm_get_dbg_pool_size(unsigned int hist_size);
+
 #endif

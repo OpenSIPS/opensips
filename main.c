@@ -651,8 +651,14 @@ try_again:
 		goto error00;
 	}
 
+	if (shm_memlog_size && init_dbg_shm_mallocs()==-1)
+		goto error;
+
 	/* shm statistics, module stat groups, memory warming */
-	init_shm_post_yyparse();
+	if (init_shm_post_yyparse() != 0) {
+		LM_ERR("failed to init SHM memory\n");
+		return ret;
+	}
 
 	if (config_check>1 && check_rls()!=0) {
 		LM_ERR("bad function call in config file\n");
@@ -810,6 +816,9 @@ try_again:
 		LM_CRIT("could not initialize timer, exiting...\n");
 		goto error;
 	}
+
+	if (shm_memlog_size)
+		shm_mem_enable_dbg();
 
 	/* init IPC */
 	if (init_ipc()<0){

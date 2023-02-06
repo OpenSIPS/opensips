@@ -36,6 +36,8 @@
 #include "mem_dbg_hash.h"
 #endif
 
+#include "../lib/dbg/struct_hist.h"
+
 #define MIN_FRAG_SIZE	ROUNDTO
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
 #define frag_is_free(_f) ((_f)->prev)
@@ -113,6 +115,14 @@ void fm_stats_set_index(void *ptr, unsigned long idx)
 	FM_FRAG(ptr)->statistic_index = idx;
 }
 #endif
+
+unsigned long fm_get_dbg_pool_size(unsigned int hist_size)
+{
+	return ROUNDUP(sizeof(struct fm_block)) + FRAG_OVERHEAD +
+		FRAG_OVERHEAD + 56 /* sizeof(struct struct_hist_list) */ + 2 * hist_size *
+		(FRAG_OVERHEAD + 88 /* sizeof(struct struct_hist) */ +
+		FRAG_OVERHEAD + sizeof(struct struct_hist_action));
+}
 
 static inline void fm_insert_free(struct fm_block *fm, struct fm_frag *frag)
 {

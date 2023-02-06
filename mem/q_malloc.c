@@ -33,6 +33,8 @@
 #include "mem_dbg_hash.h"
 #endif
 
+#include "../lib/dbg/struct_hist.h"
+
 /*useful macros*/
 #define FRAG_END(f)  \
 	((struct qm_frag_end*)(void *)((char*)(f)+sizeof(struct qm_frag)+ \
@@ -60,8 +62,6 @@
 #define ROUNDUP(s)		(((s)%QM_ROUNDTO)?((s)+QM_ROUNDTO)/QM_ROUNDTO*QM_ROUNDTO:(s))
 #define ROUNDDOWN(s)	(((s)%QM_ROUNDTO)?((s)-QM_ROUNDTO)/QM_ROUNDTO*QM_ROUNDTO:(s))
 */
-
-
 
 	/* finds the hash value for s, s=QM_ROUNDTO multiple*/
 #define GET_HASH(s)   ( ((unsigned long)(s)<=Q_MALLOC_OPTIMIZE)?\
@@ -146,6 +146,14 @@ void qm_stats_set_index(void *ptr, unsigned long idx) {
 	QM_FRAG(ptr)->statistic_index = idx;
 }
 #endif
+
+unsigned long qm_get_dbg_pool_size(unsigned int hist_size)
+{
+	return ROUNDUP(sizeof(struct qm_block)) + FRAG_OVERHEAD +
+		FRAG_OVERHEAD + 56 /* sizeof(struct struct_hist_list) */ + 2 * hist_size *
+		(FRAG_OVERHEAD + 88 /* sizeof(struct struct_hist) */ +
+		FRAG_OVERHEAD + sizeof(struct struct_hist_action));
+}
 
 static inline void qm_insert_free(struct qm_block *qm, struct qm_frag *frag)
 {

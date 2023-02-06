@@ -64,6 +64,8 @@
 
 #include "../../net/trans_trace.h"
 
+#include "../../net/net_tcp_dbg.h"
+
 /*
  * Open questions:
  *

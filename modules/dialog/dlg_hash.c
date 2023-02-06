@@ -118,7 +118,7 @@ int init_dlg_table(unsigned int size)
 		goto error0;
 	}
 
-#if defined(DBG_STRUCT_HIST) && defined(DBG_DIALOG)
+#if defined(DBG_DIALOG)
 	dlg_hist = shl_init("dialog hist", 10000, 0);
 	if (!dlg_hist) {
 		LM_ERR("oom\n");
@@ -314,7 +314,7 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 
 	memset(dlg, 0, len);
 
-#if defined(DBG_STRUCT_HIST) && defined(DBG_DIALOG)
+#if defined(DBG_DIALOG)
 	dlg->hist = sh_push(dlg, dlg_hist);
 	if (!dlg->hist) {
 		LM_ERR("oom\n");

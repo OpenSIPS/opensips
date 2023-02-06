@@ -52,11 +52,18 @@ void cleanup(int show_status)
 
 	/*clean-up*/
 
+#ifdef DBG_MALLOC
+	if (shm_memlog_size && mem_dbg_lock)
+		shm_dbg_unlock();
+#endif
+
 	handle_ql_shutdown();
 	destroy_modules();
 	udp_destroy();
 	tcp_destroy();
 	destroy_timer();
+	if (shm_memlog_size)
+		shm_mem_disable_dbg();
 	destroy_stats_collector();
 	destroy_script_cb();
 	pv_free_extra_list();

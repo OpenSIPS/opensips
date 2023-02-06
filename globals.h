@@ -119,6 +119,7 @@ extern int is_pre_daemon;
 
 extern int memlog;  /*!< debugging level for printing memory debugs */
 extern int memdump; /*!< debugging level for dumping memory status */
+extern unsigned int shm_memlog_size;
 extern int execmsgthreshold;  /*!< Maximum number of microseconds a SIP msg processing can last
 						before triggering Warning log */
 extern int execdnsthreshold;

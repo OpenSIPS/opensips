@@ -21,16 +21,41 @@
 #ifndef __NET_TCP_DBG__
 #define __NET_TCP_DBG__
 
-#if defined(DBG_TCPCON) && !defined(DBG_STRUCT_HIST)
-#	warning "DBG_TCPCON is useless without DBG_STRUCT_HIST"
-#	undef DBG_TCPCON
-#	include "../lib/dbg/struct_hist.h"
-#elif !defined(DBG_TCPCON) && defined(DBG_STRUCT_HIST)
-#	undef DBG_STRUCT_HIST
-#	include "../lib/dbg/struct_hist.h"
-#	define DBG_STRUCT_HIST
+#ifdef DBG_TCPCON
+#include "../lib/dbg/struct_hist.h"
 #else
-#	include "../lib/dbg/struct_hist.h"
+
+#ifdef shl_init
+#undef shl_init
 #endif
+#define shl_init(...) NULL
+
+#ifdef shl_destroy
+#undef shl_destroy
+#endif
+#define shl_destroy(...)
+
+#ifdef sh_push
+#undef sh_push
+#endif
+#define sh_push(...) NULL
+
+#ifdef sh_unref
+#undef sh_unref
+#endif
+#define sh_unref(...)
+
+#define _sh_log(...) ({0;})
+
+#ifdef sh_log
+#undef sh_log
+#endif
+#define sh_log _sh_log
+
+#ifdef sh_flush
+#undef sh_flush
+#endif
+#define sh_flush(...)
+#endif /* DBG_TCPCON */
 
 #endif /* __NET_TCP_DBG__ */

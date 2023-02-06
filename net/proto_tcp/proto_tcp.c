@@ -40,6 +40,7 @@
 #include "../../socket_info.h"
 #include "../../tsend.h"
 #include "../../trace_api.h"
+#include "../../net/net_tcp_dbg.h"
 
 #include "tcp_common_defs.h"
 #include "proto_tcp_handler.h"

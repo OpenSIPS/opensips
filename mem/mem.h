@@ -205,5 +205,6 @@ void sys_free(void *, const char *, const char *, unsigned int);
 
 int init_pkg_mallocs();
 int init_shm_mallocs();
+int init_dbg_shm_mallocs();
 
 #endif

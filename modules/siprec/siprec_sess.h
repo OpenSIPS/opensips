@@ -34,16 +34,11 @@
 
 #define srec_hlog(_params ...)
 #ifdef DBG_SIPREC_HIST
-#ifdef DBG_STRUCT_HIST
 #include  "../../lib/dbg/struct_hist.h"
 #undef srec_hlog
 #define srec_hlog(_sess, _verb, _msg) \
 	 sh_log((_sess)->hist, _verb, _msg " (ref=%d)", (_sess)->ref)
 extern struct struct_hist_list *srec_hist;
-#else
-#warning "'DBG_SIPREC_HIST' flag not possible, because 'DBG_STRUCT_HIST' is not on"
-#undef DBG_SIPREC_HIST
-#endif
 #endif
 
 #define SIPREC_SESSION_VERSION 2

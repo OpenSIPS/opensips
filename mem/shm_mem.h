@@ -201,6 +201,10 @@ extern gen_lock_t* mem_lock;
 extern gen_lock_t* rpmem_lock;
 #endif
 
+#ifdef DBG_MALLOC
+extern gen_lock_t* mem_dbg_lock;
+#endif
+
 #ifdef HP_MALLOC
 extern gen_lock_t* mem_locks;
 extern gen_lock_t* rpmem_locks;
@@ -208,16 +212,19 @@ extern gen_lock_t* rpmem_locks;
 
 extern enum osips_mm mem_allocator_shm;
 
-
 #define INVALID_MAP ((void *)-1)
 int shm_mem_init(); /* calls shm_getmem & shm_mem_init_mallocs */
+
+#ifdef DBG_MALLOC
+int shm_dbg_mem_init(void);
+#endif
 
 /*
  * must be called after the statistics engine is initialized
  *	- updates the atomic shm statistics with proper values
  *	- performs memory warming with HP_MALLOC
  */
-void init_shm_post_yyparse(void);
+int init_shm_post_yyparse(void);
 void *shm_getmem(int, void *, unsigned long);   /* allocates the memory (mmap or sysv shmap) */
 void shm_relmem(void *, unsigned long); /* deallocates the memory allocated by shm_getmem() */
 void shm_mem_destroy();
@@ -291,16 +298,91 @@ inline static void shm_threshold_check(void)
 #define shm_unlock()  lock_release(mem_lock)
 #endif
 
+#ifdef DBG_MALLOC
+#define shm_dbg_lock()    lock_get(mem_dbg_lock)
+#define shm_dbg_unlock()  lock_release(mem_dbg_lock)
+#endif
+
 #ifdef SHM_EXTRA_STATS
 	#define PASTER(_x, _y) _x ## _y
 	#define VAR_STAT(_n) PASTER(_n, _mem_stat)
 #endif
+
+#include "shm_mem_dbg.h"
 
 #ifdef DBG_MALLOC
 
 	#ifdef __SUNPRO_C
 			#define __FUNCTION__ ""  /* gcc specific */
 	#endif
+
+inline static void* _shm_dbg_malloc(unsigned long size,
+	const char *file, const char *function, unsigned int line )
+{
+	void *p;
+
+	shm_dbg_lock();
+
+	p = SHM_MALLOC(shm_dbg_block, size, file, function, line);
+
+	shm_dbg_unlock();
+
+	return p;
+}
+
+inline static void* _shm_dbg_malloc_unsafe(unsigned long size,
+	const char *file, const char *function, unsigned int line )
+{
+	void *p;
+
+	p = SHM_MALLOC(shm_dbg_block, size, file, function, line);
+
+	return p;
+}
+
+inline static void* _shm_dbg_realloc(void *ptr, unsigned long size,
+		const char* file, const char* function, unsigned int line )
+{
+	void *p;
+
+	shm_dbg_lock();
+
+	p = SHM_REALLOC(shm_dbg_block, ptr, size, file, function, line);
+
+	shm_dbg_unlock();
+
+	return p;
+}
+
+inline static void _shm_dbg_free(void *ptr,
+		const char* file, const char* function, unsigned int line)
+{
+	shm_dbg_lock();
+
+	SHM_FREE(shm_dbg_block, ptr, file, function, line);
+
+	shm_dbg_unlock();
+}
+
+#define shm_dbg_malloc_func _shm_dbg_malloc
+#define shm_dbg_malloc( _size ) _shm_dbg_malloc((_size), \
+	__FILE__, __FUNCTION__, __LINE__ )
+
+#define shm_dbg_malloc_unsafe_func _shm_dbg_malloc_unsafe
+#define shm_dbg_malloc_unsafe( _size ) _shm_dbg_malloc_unsafe((_size), \
+	__FILE__, __FUNCTION__, __LINE__ )
+
+#define shm_dbg_realloc_func _shm_dbg_realloc
+#define shm_dbg_realloc( _ptr, _size ) _shm_dbg_realloc( (_ptr), (_size), \
+	__FILE__, __FUNCTION__, __LINE__ )
+
+#define shm_dbg_free_func _shm_dbg_free
+#define shm_dbg_free( _ptr ) _shm_dbg_free( (_ptr), \
+	__FILE__, __FUNCTION__, __LINE__ )
+
+#define shm_malloc_func _shm_malloc
+#define shm_realloc_func _shm_realloc
+#define shm_free_func _shm_free
 
 inline static void* _shm_malloc(unsigned long size,
 	const char *file, const char *function, unsigned int line )
@@ -313,6 +395,8 @@ inline static void* _shm_malloc(unsigned long size,
 	shm_threshold_check();
 
 	shm_unlock();
+
+	DBG_SHM_ALLOC(SH_SHM_MALLOC);
 
 	#ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -352,6 +436,8 @@ inline static void* _shm_malloc_bulk(unsigned long size,
 	p = SHM_MALLOC(shm_block, size, file, function, line);
 	shm_threshold_check();
 
+	DBG_SHM_ALLOC(SH_SHM_MALLOC);
+
 	#ifdef SHM_EXTRA_STATS
 	if (p) {
 		unsigned long size_f = shm_frag_size(p);
@@ -382,6 +468,8 @@ inline static void* _shm_realloc(void *ptr, unsigned long size,
 	shm_threshold_check();
 
 	shm_unlock();
+
+	DBG_SHM_ALLOC(SH_SHM_REALLOC);
 
 	#ifdef SHM_EXTRA_STATS
 	if (p) {
@@ -432,6 +520,8 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned long size,
 inline static void _shm_free(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
+	int size;
+
 	shm_lock();
 
 	#ifdef SHM_EXTRA_STATS
@@ -445,10 +535,14 @@ inline static void _shm_free(void *ptr,
 		}
 	#endif
 
+	if (ptr)
+		size = ((struct qm_frag *)((char *)ptr - sizeof (struct qm_frag)))->size;
+
 	SHM_FREE(shm_block, ptr, file, function, line);
 	shm_threshold_check();
 
 	shm_unlock();
+	DBG_SHM_FREE();
 }
 
 inline static void _shm_free_unsafe(void *ptr,
@@ -473,6 +567,8 @@ inline static void _shm_free_unsafe(void *ptr,
 inline static void _shm_free_bulk(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
+	int size;
+
 	#ifdef SHM_EXTRA_STATS
 		if (shm_stats_get_index(ptr) !=  VAR_STAT(MOD_NAME)) {
 				update_module_stats(-shm_frag_size(ptr), -(shm_frag_size(ptr) + shm_frag_overhead), -1, shm_stats_get_index(ptr));
@@ -484,10 +580,14 @@ inline static void _shm_free_bulk(void *ptr,
 		}
 	#endif
 
+	if (ptr)
+		size = ((struct qm_frag *)((char *)ptr - sizeof (struct qm_frag)))->size;
+
 	SHM_FREE(shm_block, ptr, file, function, line);
 	shm_threshold_check();
-}
 
+	DBG_SHM_FREE();
+}
 
 #define shm_malloc_func _shm_malloc
 #define shm_malloc( _size ) _shm_malloc((_size), \

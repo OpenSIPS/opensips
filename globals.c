@@ -92,6 +92,7 @@ int check_via =  0;
 /* debugging level for memory stats */
 int memlog = L_DBG + 11;
 int memdump = L_DBG + 10;
+unsigned int shm_memlog_size = 0;
 /* debugging in case msg processing takes. too long disabled by default */
 int execmsgthreshold = 0;
 /* debugging in case dns takes too long. disabled by default */

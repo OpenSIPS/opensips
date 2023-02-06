@@ -40,6 +40,8 @@
 #include "mem_dbg_hash.h"
 #endif
 
+#include "../lib/dbg/struct_hist.h"
+
 #define MIN_FRAG_SIZE	ROUNDTO
 
 /* only perform a split if the resulting free fragment is at least this size */
@@ -209,6 +211,14 @@ void hp_stats_set_index(void *ptr, unsigned long idx)
 	HP_FRAG(ptr)->statistic_index = idx;
 }
 #endif
+
+unsigned long hp_get_dbg_pool_size(unsigned int hist_size)
+{
+	return ROUNDUP(sizeof(struct hp_block)) + FRAG_OVERHEAD +
+		FRAG_OVERHEAD + 56 /* sizeof(struct struct_hist_list) */ + 2 * hist_size *
+		(FRAG_OVERHEAD + 88 /* sizeof(struct struct_hist) */ +
+		FRAG_OVERHEAD + sizeof(struct struct_hist_action));
+}
 
 #if 0
 /* walk through all fragments and write them to the log.  Useful for dev */

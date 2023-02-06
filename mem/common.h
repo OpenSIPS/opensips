@@ -25,6 +25,7 @@
 
 extern void *mem_block;
 extern void *shm_block;
+extern void *shm_dbg_block;
 extern void *rpm_block;
 
 #include "meminfo.h"
