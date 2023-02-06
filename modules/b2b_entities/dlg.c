@@ -1092,6 +1092,19 @@ logic_notify:
 			}
 		}
 		B2BE_LOCK_GET(table, hash_index);
+
+		/* check if the dialog has not be deleted while not holding the lock */
+		for(aux_dlg = table[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
+		{
+			if(aux_dlg == dlg)
+				break;
+		}
+		if(!aux_dlg)
+		{
+			LM_DBG("Record not found anymore\n");
+			B2BE_LOCK_RELEASE(table, hash_index);
+			return SCB_DROP_MSG;
+		}
 	}
 
 	if(method_value != METHOD_CANCEL)
