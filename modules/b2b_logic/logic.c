@@ -799,6 +799,32 @@ do{								\
 	b2bl_htable[cur_route_ctx.hash_index].locked_by = -1;	\
 }while(0)
 
+static int ack_and_term_entity(b2bl_tuple_t *tuple, b2bl_entity_id_t *entity,
+	unsigned int statuscode)
+{
+	b2b_req_data_t req_data;
+
+	if (statuscode >= 200 && statuscode < 300) {
+		memset(&req_data, 0, sizeof(b2b_req_data_t));
+		PREP_REQ_DATA(entity);
+		req_data.method = &str_init("ACK");
+		b2bl_htable[tuple->hash_index].locked_by = process_no;
+		b2b_api.send_request(&req_data);
+		b2bl_htable[tuple->hash_index].locked_by = -1;
+	}
+
+	memset(&req_data, 0, sizeof(b2b_req_data_t));
+	PREP_REQ_DATA(entity);
+	req_data.method = &str_init("BYE");
+	b2bl_htable[tuple->hash_index].locked_by = process_no;
+	b2b_api.send_request(&req_data);
+	b2bl_htable[tuple->hash_index].locked_by = -1;
+
+	entity->disconnected = 1;
+
+	return 0;
+}
+
 int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2bl_entity_id_t *entity, b2bl_entity_id_t **entity_head)
 {
@@ -930,6 +956,16 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	if(!peer)
 	{
 		LM_DBG("No peer found\n");
+		goto done;
+	}
+
+	if (peer->flags & ENTITY_FL_TERM_BYE) {
+		/* if not already terminated in BYE processing */
+		if (!entity->disconnected) {
+			ack_and_term_entity(tuple, entity, statuscode);
+			b2b_mark_todel(tuple);
+		}
+
 		goto done;
 	}
 
@@ -1155,6 +1191,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	}
 
 done:
+
 	if (tuple)
 		cur_route_ctx.flags |= B2BL_RT_DO_UPDATE;
 done1:
@@ -1215,6 +1252,11 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			LM_ERR("failed to build b2bl_key avp\n");
 			return -1;
 		}
+	}
+
+	if (msg->first_line.u.reply.statuscode >= 200) {
+		entity->flags |= ENTITY_FL_REPLY_RECEIVED;
+		entity->last_rcv_code = msg->first_line.u.reply.statuscode;
 	}
 
 	/* if a disconnected entity -> do nothing */
@@ -1370,6 +1412,8 @@ int _b2b_pass_request(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			LM_ERR("Sending request failed [%.*s]\n", peer->key.len, peer->key.s);
 		}
 		b2bl_htable[cur_route_ctx.hash_index].locked_by = -1;
+		if (request_id != B2B_ACK)
+			peer->flags &= ~ENTITY_FL_REPLY_RECEIVED;
 		peer = peer->next;
 	}
 
@@ -1465,6 +1509,9 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 				LM_DBG("ACK for a negative reply\n");
 				break;
 			case B2B_BYE:
+				if (flags & B2B_NOTIFY_FL_TERM_BYE)
+					break;
+
 				/* BYE already sent to this entity but we got no reply */
 				memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
 				PREP_RPL_DATA(entity);
@@ -1499,6 +1546,19 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 
 	switch (request_id) {
 	case B2B_BYE:
+		if (flags & B2B_NOTIFY_FL_TERM_BYE) {
+			entity->flags |= ENTITY_FL_TERM_BYE;
+
+			/* if peer has already received a reply, terminate entity here */
+			if (peer && !peer->disconnected &&
+				(peer->flags & ENTITY_FL_REPLY_RECEIVED)) {
+				ack_and_term_entity(tuple, peer, peer->last_rcv_code);
+				b2b_mark_todel(tuple);
+			}
+
+			goto done;
+		}
+
 		entity->disconnected = 1;
 		if(cbf && (tuple->cb.mask&B2B_BYE_CB))
 		{

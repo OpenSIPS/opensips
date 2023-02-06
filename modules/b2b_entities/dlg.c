@@ -1139,17 +1139,46 @@ logic_notify:
 					/* there is another transaction for which no reply
 					 * was sent out */
 					{
-						/* send reply */
-						LM_DBG("Received another request when the previous "
-							"one was in process\n");
-						str text = str_init("Request Pending");
-						if(tmb.t_reply_with_body( tm_tran, 491,
-						&text, 0, 0, &to_tag) < 0)
-						{
-							LM_ERR("failed to send reply with tm\n");
+						if (method_value != METHOD_BYE) {
+							/* send reply */
+							LM_DBG("Received another request when the previous "
+								"one was in process\n");
+							str text = str_init("Request Pending");
+							if(tmb.t_reply_with_body( tm_tran, 491,
+							&text, 0, 0, &to_tag) < 0)
+							{
+								LM_ERR("failed to send reply with tm\n");
+							}
+							LM_DBG("Sent reply [491] and unreffed the cell %p\n",
+								tm_tran);
+						} else {
+							LM_DBG("Received BYE while another request "
+								"was in process\n");
+							str text_ok = str_init("OK");
+							if(tmb.t_reply_with_body( tm_tran, 200,
+							&text_ok, 0, 0, &to_tag) < 0)
+							{
+								LM_ERR("failed to send reply with tm\n");
+							}
+							LM_DBG("Sent reply [200] and unreffed the cell %p\n",
+								tm_tran);
+							tmb.unref_cell(tm_tran);
+
+							str text_term = str_init("Request Terminated");
+							if(tmb.t_reply_with_body(dlg->uas_tran, 487,
+							&text_term, 0, 0, &to_tag) < 0)
+							{
+								LM_ERR("failed to send reply with tm\n");
+							}
+							LM_DBG("Sent reply [487] and unreffed the cell %p\n",
+								dlg->uas_tran);
+
+							tmb.unref_cell(dlg->uas_tran);
+							dlg->uas_tran = NULL;
+
+							b2b_cb_flags |= B2B_NOTIFY_FL_TERM_BYE;
+							goto run_cb;
 						}
-						LM_DBG("Sent reply [491] and unreffed the cell %p\n",
-							tm_tran);
 					}
 					tmb.unref_cell(tm_tran); /* for t_newtran() */
 					B2BE_LOCK_RELEASE(table, hash_index);
@@ -1172,6 +1201,8 @@ logic_notify:
 				tmb.unref_cell(tm_tran);
 		}
 	}
+
+run_cb:
 
 	b2b_cback = dlg->b2b_cback;
 	if(dlg->logic_key.s)
