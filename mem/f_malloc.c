@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "f_malloc.h"
 #include "../dprint.h"
@@ -40,6 +41,7 @@
 #define FRAG_OVERHEAD	(sizeof(struct fm_frag))
 #define frag_is_free(_f) ((_f)->prev)
 
+#define FRAG_PREV(f) ((f)->pf)
 #define FRAG_NEXT(f) \
 	((struct fm_frag *)((char *)(f) + sizeof(struct fm_frag) + (f)->size))
 
@@ -216,9 +218,13 @@ struct fm_block *fm_malloc_init(char *address, unsigned long size, char *name)
 	/* init initial fragment*/
 	fm->first_frag->size=size-init_overhead;
 	fm->last_frag->size=0;
+	fm->last_frag->pf=fm->first_frag;
 
 	fm->last_frag->prev=NULL;
 	fm->first_frag->prev=NULL;
+
+	assert(((char *)fm->first_frag + sizeof *fm->first_frag + fm->first_frag->size)
+				== (char *)fm->last_frag);
 
 	/* link initial fragment into the free list*/
 
