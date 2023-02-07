@@ -301,18 +301,20 @@ int internal_fork(char *proc_desc, unsigned int flags,
 
 		pt[process_no].flags |= flags;
 		pt[process_no].type = type;
-		/* activate its load & pkg statistics */
-		pt[process_no].load_rt->flags &= (~STAT_HIDDEN);
-		pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
-		pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
-		#ifdef PKG_MALLOC
-		pt[process_no].pkg_total->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_used->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_rused->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_mused->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_free->flags &= (~STAT_HIDDEN);
-		pt[process_no].pkg_frags->flags &= (~STAT_HIDDEN);
-		#endif
+		/* activate its load & pkg statistics, but only if IPC present */
+		if ( (flags & OSS_PROC_NO_IPC)==0 ) {
+			pt[process_no].load_rt->flags &= (~STAT_HIDDEN);
+			pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
+			pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
+			#ifdef PKG_MALLOC
+			pt[process_no].pkg_total->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_used->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_rused->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_mused->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_free->flags &= (~STAT_HIDDEN);
+			pt[process_no].pkg_frags->flags &= (~STAT_HIDDEN);
+			#endif
+		}
 		/* each children need a unique seed */
 		seed_child(seed);
 		init_log_level();
