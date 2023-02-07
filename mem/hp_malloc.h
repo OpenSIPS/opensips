@@ -243,7 +243,6 @@ void *hp_rpm_realloc(struct hp_block *, void *p, unsigned long size);
 void *hp_rpm_realloc_unsafe(struct hp_block *, void *p, unsigned long size);
 #endif
 
-#ifdef SHM_EXTRA_STATS
 static inline unsigned long hp_frag_size(void *p)
 {
 	if (!p)
@@ -252,6 +251,7 @@ static inline unsigned long hp_frag_size(void *p)
 	return HP_FRAG(p)->size;
 }
 
+#ifdef SHM_EXTRA_STATS
 void hp_stats_core_init(struct hp_block *hp, int core_index);
 unsigned long hp_stats_get_index(void *ptr);
 void hp_stats_set_index(void *ptr, unsigned long idx);

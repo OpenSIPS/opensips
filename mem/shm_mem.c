@@ -144,11 +144,14 @@ void (*shm_stats_core_init)(void *blk, int core_index);
 unsigned long (*shm_stats_get_index)(void *ptr);
 void (*shm_stats_set_index)(void *ptr, unsigned long idx);
 int shm_frag_overhead;
-unsigned long (*shm_frag_size)(void *p);
 const char *(*shm_frag_file)(void *p);
 const char *(*shm_frag_func)(void *p);
 unsigned long (*shm_frag_line)(void *p);
 #endif
+#endif
+
+#ifndef INLINE_ALLOC
+unsigned long (*shm_frag_size)(void *p);
 #endif
 
 static str shm_usage_str = { "usage", 5 };
@@ -308,7 +311,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_stats_get_index = fm_stats_get_index;
 		shm_stats_set_index = fm_stats_set_index;
 		shm_frag_overhead = FM_FRAG_OVERHEAD;
-		shm_frag_size = fm_frag_size;
 		shm_frag_file = fm_frag_file;
 		shm_frag_func = fm_frag_func;
 		shm_frag_line = fm_frag_line;
@@ -321,7 +323,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_stats_get_index = qm_stats_get_index;
 		shm_stats_set_index = qm_stats_set_index;
 		shm_frag_overhead = QM_FRAG_OVERHEAD;
-		shm_frag_size = qm_frag_size;
 		shm_frag_file = qm_frag_file;
 		shm_frag_func = qm_frag_func;
 		shm_frag_line = qm_frag_line;
@@ -334,7 +335,6 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		shm_stats_get_index = hp_stats_get_index;
 		shm_stats_set_index = hp_stats_set_index;
 		shm_frag_overhead = HP_FRAG_OVERHEAD;
-		shm_frag_size = hp_frag_size;
 		shm_frag_file = hp_frag_file;
 		shm_frag_func = hp_frag_func;
 		shm_frag_line = hp_frag_line;
@@ -346,6 +346,31 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 		return -1;
 	}
 #endif
+
+	switch (mem_allocator_shm) {
+#ifdef F_MALLOC
+	case MM_F_MALLOC:
+	case MM_F_MALLOC_DBG:
+		shm_frag_size = fm_frag_size;
+		break;
+#endif
+#ifdef Q_MALLOC
+	case MM_Q_MALLOC:
+	case MM_Q_MALLOC_DBG:
+		shm_frag_size = qm_frag_size;
+		break;
+#endif
+#ifdef HP_MALLOC
+	case MM_HP_MALLOC:
+	case MM_HP_MALLOC_DBG:
+		shm_frag_size = hp_frag_size;
+		break;
+#endif
+	default:
+		LM_ERR("current build does not include support for "
+		       "selected allocator (%s)\n", mm_str(mem_allocator_shm));
+		return -1;
+	}
 
 	switch (mem_allocator_shm) {
 #ifdef F_MALLOC

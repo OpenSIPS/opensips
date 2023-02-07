@@ -128,7 +128,6 @@ void fm_status_dbg(struct fm_block *);
 #endif
 void fm_info(struct fm_block *, struct mem_info *);
 
-#ifdef SHM_EXTRA_STATS
 static inline unsigned long fm_frag_size(void *p)
 {
 	if (!p)
@@ -137,6 +136,7 @@ static inline unsigned long fm_frag_size(void *p)
 	return FM_FRAG(p)->size;
 }
 
+#ifdef SHM_EXTRA_STATS
 void fm_stats_core_init(struct fm_block *fm, int core_index);
 unsigned long fm_stats_get_index(void *ptr);
 void fm_stats_set_index(void *ptr, unsigned long idx);

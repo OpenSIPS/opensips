@@ -63,7 +63,6 @@
 #define shm_stats_get_index fm_stats_get_index
 #define shm_stats_set_index fm_stats_set_index
 #define shm_frag_overhead FM_FRAG_OVERHEAD
-#define shm_frag_size fm_frag_size
 #define shm_frag_file fm_frag_file
 #define shm_frag_func fm_frag_func
 #define shm_frag_line fm_frag_line
@@ -72,7 +71,6 @@
 #define shm_stats_get_index qm_stats_get_index
 #define shm_stats_set_index qm_stats_set_index
 #define shm_frag_overhead QM_FRAG_OVERHEAD
-#define shm_frag_size qm_frag_size
 #define shm_frag_file qm_frag_file
 #define shm_frag_func qm_frag_func
 #define shm_frag_line qm_frag_line
@@ -81,7 +79,6 @@
 #define shm_stats_get_index hp_stats_get_index
 #define shm_stats_set_index hp_stats_set_index
 #define shm_frag_overhead HP_FRAG_OVERHEAD
-#define shm_frag_size hp_frag_size
 #define shm_frag_file hp_frag_file
 #define shm_frag_func hp_frag_func
 #define shm_frag_line hp_frag_line
@@ -91,11 +88,22 @@ extern void (*shm_stats_core_init)(void *blk, int core_index);
 extern unsigned long (*shm_stats_get_index)(void *ptr);
 extern void (*shm_stats_set_index)(void *ptr, unsigned long idx);
 extern int shm_frag_overhead;
-extern unsigned long (*shm_frag_size)(void *p);
 extern const char *(*shm_frag_file)(void *p);
 extern const char *(*shm_frag_func)(void *p);
 extern unsigned long (*shm_frag_line)(void *p);
 #endif
+#endif
+
+#ifdef INLINE_ALLOC
+#ifdef F_MALLOC
+#define shm_frag_size fm_frag_size
+#elif defined Q_MALLOC
+#define shm_frag_size qm_frag_size
+#elif defined HP_MALLOC
+#define shm_frag_size hp_frag_size
+#endif
+#else
+extern unsigned long (*shm_frag_size)(void *p);
 #endif
 
 int set_shm_mm(const char *mm_name);
@@ -536,7 +544,7 @@ inline static void _shm_free(void *ptr,
 	#endif
 
 	if (ptr)
-		size = ((struct qm_frag *)((char *)ptr - sizeof (struct qm_frag)))->size;
+		size = shm_frag_size(ptr);
 
 	SHM_FREE(shm_block, ptr, file, function, line);
 	shm_threshold_check();
@@ -581,7 +589,7 @@ inline static void _shm_free_bulk(void *ptr,
 	#endif
 
 	if (ptr)
-		size = ((struct qm_frag *)((char *)ptr - sizeof (struct qm_frag)))->size;
+		size = shm_frag_size(ptr);
 
 	SHM_FREE(shm_block, ptr, file, function, line);
 	shm_threshold_check();

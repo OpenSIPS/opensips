@@ -184,7 +184,6 @@ void qm_info(struct qm_block*, struct mem_info*);
  */
 int qm_mem_check(struct qm_block *qm);
 
-#ifdef SHM_EXTRA_STATS
 static inline unsigned long qm_frag_size(void *p)
 {
 	if (!p)
@@ -193,6 +192,7 @@ static inline unsigned long qm_frag_size(void *p)
 	return QM_FRAG(p)->size;
 }
 
+#ifdef SHM_EXTRA_STATS
 void qm_stats_core_init(struct qm_block *qm, int core_index);
 unsigned long qm_stats_get_index(void *ptr);
 void qm_stats_set_index(void *ptr, unsigned long idx);
