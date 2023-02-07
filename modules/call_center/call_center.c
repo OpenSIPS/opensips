@@ -898,8 +898,13 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 		lock_set_release( data->call_locks, call->lock_idx );
 		return 1;
 	}
+    
+    if (event == B2B_RE_INVITE_CB) {
+        lock_set_release( data->call_locks, call->lock_idx );
+		return 1;
+    }
 
-	/* we are not interested in B2B_RE_INVITE_CB and B2B_CONFIRMED_CB
+	/* we are not interested in B2B_CONFIRMED_CB
 	 * events, just in the BYEs from media/agent side */
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
