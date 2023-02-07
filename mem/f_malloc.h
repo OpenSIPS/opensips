@@ -64,6 +64,9 @@ struct fm_frag {
 		long reserved;
 	} u;
 	struct fm_frag **prev;
+
+	struct fm_frag *pf; /* previous "physical" frag */
+
 #ifdef DBG_MALLOC
 	const char *file;
 	const char *func;
