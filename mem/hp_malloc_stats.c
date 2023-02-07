@@ -31,6 +31,7 @@
 
 #include "sys/time.h"
 
+#include "../dprint.h"
 #include "../lock_ops.h"
 #include "hp_malloc.h"
 #include "hp_malloc_stats.h"
