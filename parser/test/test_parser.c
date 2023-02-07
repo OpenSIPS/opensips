@@ -171,6 +171,10 @@ static const struct tts {
 		/* test for read overflow on Content-Length parsing error (@end) */
 		"v D \xd7\r\xeeV:1\r\nl:5\r*",
 		-1,
+	}, {
+		/* test for read overflow during Content-Length ws trimming (@end) */
+		"abcde J    \x09:5\nL\x09:\x09\n",
+		-1,
 	},
 };
 
