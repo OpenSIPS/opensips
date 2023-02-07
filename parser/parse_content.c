@@ -227,18 +227,18 @@ char str_contenttype[50];
 char* parse_content_length( char* buffer, char* end, int* length)
 {
 	int number;
-	char *p;
-	int  size;
+	char *p, *numstart;
 
 	p = buffer;
 	/* search the beginning of the number */
-	while ( p<end && (*p==' ' || *p=='\t' || (*p=='\r' && *(p+1)=='\n') ||
-	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
+	while ( p<end && (*p==' ' || *p=='\t'
+	              || (*p=='\r' && p+1<end && *(p+1)=='\n')
+	              || (*p=='\n' && p+1<end && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
 	if (p==end)
 		goto error;
 	/* parse the number */
-	size = 0;
+	numstart = p;
 	number = 0;
 	while (p<end && *p>='0' && *p<='9') {
 		/* do not actually cause an integer overflow, as it is UB! --liviu */
@@ -249,19 +249,19 @@ char* parse_content_length( char* buffer, char* end, int* length)
 		}
 
 		number = number*10 + ((*p)-'0');
-		size ++;
 		p++;
 	}
-	if (p==end || size==0)
+	if (p==end || p==numstart)
 		goto error;
+
 	/* now we should have only spaces at the end */
-	while ( p<end && (*p==' ' || *p=='\t' ||
-	(*p=='\n' && (*(p+1)==' '||*(p+1)=='\t')) ))
+	while ( p<end && (*p==' ' || *p=='\t'
+	              || (*p=='\n' && p+1<end && (*(p+1)==' '||*(p+1)=='\t')) ))
 		p++;
 	if (p==end)
 		goto error;
 	/* the header ends proper? */
-	if ( (*(p++)!='\n') && (*(p-1)!='\r' || *(p++)!='\n' ) )
+	if ( (*(p++)!='\n') && (*(p-1)!='\r' || p==end || *(p++)!='\n' ) )
 		goto error;
 
 	*length = number;
