@@ -46,6 +46,8 @@
 
 #include "replace.h"
 
+int uac_replace_flags = -1;
+
 extern str uac_passwd;
 extern int restore_mode;
 extern str rr_from_param;
