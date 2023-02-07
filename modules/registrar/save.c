@@ -1121,16 +1121,17 @@ int _remove_ip_port(struct sip_msg *msg, str *ip, int *port, void *udomain, str*
 	/* no AOR help, go through ALL registered AORs :( */
 	for(i=0; i<dom->size; i++) {
 		ul.lock_ulslot( dom, i);
-		for ( map_first( dom->table[i].records, &it);
-			iterator_is_valid(&it);
-			iterator_next(&it) ) {
 
+		map_first(dom->table[i].records, &it);
+		while (iterator_is_valid(&it)) {
 			dest = iterator_val(&it);
-			if( dest == NULL ) {
+			if (!dest) {
 				LM_ERR("Failed to get urecord\n");
 				goto error_unlock;
 			}
-			record =( urecord_t * ) *dest;
+
+			record = (urecord_t *)*dest;
+			iterator_next(&it);
 
 			if (_remove_ip_port_urecord(record,ip,port) != 0) {
 				LM_ERR("Failed to remove contacts \n");
