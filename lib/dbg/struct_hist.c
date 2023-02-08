@@ -134,7 +134,7 @@ struct struct_hist *_sh_push(void *obj, struct struct_hist_list *list, int refs,
 {
 	struct struct_hist *sh, *last;
 
-	if (!obj || !list)
+	if (!list)
 		return NULL;
 
 	sh = func_malloc(malloc_f, sizeof *sh);
