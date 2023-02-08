@@ -40,6 +40,7 @@
 #include "../../error.h"
 #include "../../context.h"
 #include "../../pvar.h"
+#include "../../route.h"
 #include "../../mem/mem.h"
 #include "../../parser/parse_from.h"
 #include "../tm/tm_load.h"
@@ -435,8 +436,9 @@ static int w_replace_from(struct sip_msg* msg, str* dsp, str* uri)
 	LM_DBG("dsp=%p (len=%d) , uri=%p (len=%d)\n",
 		dsp,dsp?dsp->len:0,uri,uri?uri->len:0);
 
-	context_put_int(CONTEXT_GLOBAL, current_processing_ctx,
-	                uac_replace_flags, (int)(flags|UAC_INUSE_REPLACE_FROM));
+	if (route_type == REQUEST_ROUTE && !route_stack[route_stack_start])
+		context_put_int(CONTEXT_GLOBAL, current_processing_ctx,
+		                uac_replace_flags, (int)(flags|UAC_INUSE_REPLACE_FROM));
 
 	return (replace_uri(msg, dsp, uri, msg->from, 0)==0)?1:-1;
 }
@@ -470,8 +472,9 @@ static int w_replace_to(struct sip_msg* msg, str *dsp, str *uri)
 		return -1;
 	}
 
-	context_put_int(CONTEXT_GLOBAL, current_processing_ctx,
-	                uac_replace_flags, (int)(flags|UAC_INUSE_REPLACE_TO));
+	if (route_type == REQUEST_ROUTE && !route_stack[route_stack_start])
+		context_put_int(CONTEXT_GLOBAL, current_processing_ctx,
+		                uac_replace_flags, (int)(flags|UAC_INUSE_REPLACE_TO));
 
 	return (replace_uri(msg, dsp, uri, msg->to, 1)==0)?1:-1;
 }
