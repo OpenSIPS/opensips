@@ -434,12 +434,14 @@ inline static int get_body(struct sip_msg *msg, str *body)
 	body->len = msg->buf + msg->len - body->s;
 
 	/* double check the len against content-length hdr
-	   (if present, it must be already parsed) */
+	   (if present, it must be already parsed);
+	   NOTE that the CT hdr may be missing if using UDP, so 
+	   we do not consider its missing an err case */
 	if (msg->content_length) {
 		ct_len = get_content_length( msg );
 		if (ct_len<body->len)
 			body->len = ct_len;
-	} else {
+	} else if (msg->rcv.proto!=PROTO_UDP) {
 		/* no ct -> no body */
 		body->s = NULL;
 		body->len = 0;

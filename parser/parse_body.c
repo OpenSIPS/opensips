@@ -592,15 +592,6 @@ str *get_body_part(struct sip_msg *msg, unsigned int type, unsigned int subtype)
 	str body;
 	struct body_part *p;
 
-	if(parse_headers(msg, HDR_CONTENTLENGTH_F,0) < 0) {
-		LM_ERR("cannot parse cseq header\n");
-		return NULL;
-	}
-
-	body.len = get_content_length(msg);
-	if (!body.len)
-		return NULL;
-
 	if (parse_sip_body(msg)<0 || msg->body==NULL) {
 		LM_DBG("cannot parse body\n");
 		return NULL;
