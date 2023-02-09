@@ -188,7 +188,7 @@ struct socket_info* get_send_socket(struct sip_msg *msg,
 			}
 			/* default logic for all protos */
 		default:
-			/* we don't really now the sending address (we can find it out,
+			/* we don't really know the sending address (we can find it out,
 			 * but we'll need also to see if we listen on it, and if yes on
 			 * which port -> too complicated*/
 			send_sock = (to->s.sa_family==AF_INET) ?
