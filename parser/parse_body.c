@@ -589,7 +589,6 @@ int should_update_sip_body(struct sip_msg *msg)
 
 str *get_body_part(struct sip_msg *msg, unsigned int type, unsigned int subtype)
 {
-	str body;
 	struct body_part *p;
 
 	if (parse_sip_body(msg)<0 || msg->body==NULL) {
