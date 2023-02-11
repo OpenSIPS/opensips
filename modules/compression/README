@@ -289,10 +289,11 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 7 5 24 38
    4. Vlad Patrascu (@rvlad-patrascu) 6 4 8 11
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   6. Julián Moreno Patiño 3 1 2 2
-   7. Peter Lemenkov (@lemenkov) 3 1 1 1
-   8. Ryan Bullock (@rrb3942) 2 1 1 0
-   9. Zero King (@l2dy) 2 1 0 5
+   6. Ryan Bullock 3 1 4 4
+   7. Julián Moreno Patiño 3 1 2 2
+   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   9. Ryan Bullock (@rrb3942) 2 1 1 0
+   10. Zero King (@l2dy) 2 1 0 5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -313,16 +314,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2022
-   2. Razvan Crainea (@razvancrainea)     Dec 2014 - Jul 2020
-   3. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2019
-   6. Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
-   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
-   9. Julián Moreno Patiño                Feb 2016 - Feb 2016
+                      Name                   Commit Activity
+   1.  Ryan Bullock                        Jan 2023 - Jan 2023
+   2.  Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2022
+   3.  Razvan Crainea (@razvancrainea)     Dec 2014 - Jul 2020
+   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2019
+   7.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
    (1) including any documentation-related commits, excluding
    merge commits
