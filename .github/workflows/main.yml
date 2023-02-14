@@ -23,7 +23,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-20.04, ubuntu-18.04]
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
         include:
           - os: ubuntu-18.04
@@ -36,6 +36,20 @@ jobs:
             compiler: 'gcc-arm32-cross'
           - os: ubuntu-18.04
             compiler: 'gcc-arm64-cross'
+          - os: ubuntu-22.04
+            compiler: 'gcc'
+          - os: ubuntu-22.04
+            compiler: 'clang'
+          - os: ubuntu-22.04
+            compiler: 'gcc-11'
+          - os: ubuntu-22.04
+            compiler: 'gcc-12'
+          - os: ubuntu-22.04
+            compiler: 'clang-11'
+          - os: ubuntu-22.04
+            compiler: 'clang-12'
+          - os: ubuntu-22.04
+            compiler: 'clang-13'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
