@@ -42,7 +42,7 @@ struct sl_binds slb;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
   {"lua_exec", (cmd_function)siplua_exec, {
     {CMD_PARAM_STR,0,0},
     {CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},

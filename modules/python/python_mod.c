@@ -55,7 +55,7 @@ static param_export_t params[]={
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
     {"python_exec", (cmd_function)python_exec, {
         {CMD_PARAM_STR,0,0},
         {CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},

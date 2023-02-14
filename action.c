@@ -622,7 +622,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	pv_value_t val;
 	struct timeval start;
 	int end_time;
-	cmd_export_t *cmd = NULL;
+	const cmd_export_t *cmd = NULL;
 	acmd_export_t *acmd;
 	void* cmdp[MAX_CMD_PARAMS];
 	pv_value_t tmp_vals[MAX_CMD_PARAMS];
@@ -1026,7 +1026,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case CMD_T:
 			if (a->elem[0].type != CMD_ST ||
-				((cmd = (cmd_export_t*)a->elem[0].u.data) == NULL)) {
+				((cmd = (const cmd_export_t*)a->elem[0].u.data) == NULL)) {
 				LM_ALERT("BUG in module call\n");
 				break;
 			}

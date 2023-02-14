@@ -74,12 +74,12 @@ struct acmd_export_ {
 typedef struct cmd_export_  cmd_export_t;
 typedef struct acmd_export_ acmd_export_t;
 
-cmd_export_t* find_cmd_export_t(char* name, int flags);
-int check_cmd_call_params(cmd_export_t *cmd, action_elem_t *elems, int no_params);
+const cmd_export_t* find_cmd_export_t(const char* name, int flags);
+int check_cmd_call_params(const cmd_export_t *cmd, action_elem_t *elems, int no_params);
 int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params);
 
-cmd_export_t* find_core_cmd_export_t(char* name, int flags);
-cmd_export_t* find_mod_cmd_export_t(char* name, int flags);
-acmd_export_t* find_mod_acmd_export_t(char* name);
+const cmd_export_t* find_core_cmd_export_t(const char* name, int flags);
+const cmd_export_t* find_mod_cmd_export_t(const char* name, int flags);
+const acmd_export_t* find_mod_acmd_export_t(const char* name);
 
 #endif /* _CORE_CMDS_H_ */

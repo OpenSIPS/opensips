@@ -127,7 +127,7 @@ static param_export_t params[] = {
 };
 
 
-static module_dependency_t *get_deps_compression(param_export_t *param)
+static module_dependency_t *get_deps_compression(const param_export_t *param)
 {
 	int do_compression= *(int *)param->param_pointer;
 

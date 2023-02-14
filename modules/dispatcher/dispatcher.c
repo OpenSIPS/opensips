@@ -318,7 +318,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
+static module_dependency_t *get_deps_ds_ping_interval(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;
@@ -326,7 +326,7 @@ static module_dependency_t *get_deps_ds_ping_interval(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
 }
 
-static module_dependency_t *get_deps_fetch_fs_load(param_export_t *param)
+static module_dependency_t *get_deps_fetch_fs_load(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= 0)
 		return NULL;

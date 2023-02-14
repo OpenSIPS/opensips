@@ -224,7 +224,7 @@ int pn_cfg_validate(void)
 }
 
 
-struct module_dependency *pn_get_deps(param_export_t *param)
+struct module_dependency *pn_get_deps(const param_export_t *param)
 {
 	int pn_is_on = *(int *)param->param_pointer;
 

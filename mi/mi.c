@@ -85,7 +85,7 @@ static inline struct mi_cmd* lookup_mi_cmd_id(int id,char *name, int len)
 }
 
 
-int register_mi_mod( char *mod_name, mi_export_t *mis)
+int register_mi_mod(const char *mod_name, const mi_export_t *mis)
 {
 	int ret;
 	int i;
@@ -123,7 +123,7 @@ int init_mi_child(void)
 
 
 int register_mi_cmd(char *name, char *help, unsigned int flags,
-		mi_child_init_f in, mi_recipe_t *recipes, char* mod_name)
+		mi_child_init_f in, const mi_recipe_t *recipes, const char* mod_name)
 {
 	struct mi_cmd *cmds;
 	int id;
@@ -253,7 +253,7 @@ char *mi_get_req_method(mi_request_t *req)
 	return req->method->valuestring;
 }
 
-static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params)
+static int match_named_params(const mi_recipe_t *recipe, mi_item_t *req_params)
 {
 	mi_item_t *param;
 	int i;
@@ -270,7 +270,7 @@ static int match_named_params(mi_recipe_t *recipe, mi_item_t *req_params)
 	return 1;
 }
 
-static int match_no_params(mi_recipe_t *recipe, mi_item_t *req_params)
+static int match_no_params(const mi_recipe_t *recipe, mi_item_t *req_params)
 {
 	mi_item_t *param;
 	int i, j;
@@ -282,10 +282,10 @@ static int match_no_params(mi_recipe_t *recipe, mi_item_t *req_params)
 	return i == j;
 }
 
-static mi_recipe_t *get_cmd_recipe(mi_recipe_t *recipes, mi_item_t *req_params,
+static const mi_recipe_t *get_cmd_recipe(const mi_recipe_t *recipes, mi_item_t *req_params,
 								int pos_params, int *params_err)
 {
-	mi_recipe_t *match = NULL;
+	const mi_recipe_t *match = NULL;
 	int i;
 
 	for (i = 0; recipes[i].cmd; i++) {
@@ -338,7 +338,7 @@ mi_response_t *handle_mi_request(mi_request_t *req, struct mi_cmd *cmd,
 							struct mi_handler *async_hdl)
 {
 	mi_response_t *resp;
-	mi_recipe_t *cmd_recipe;
+	const mi_recipe_t *cmd_recipe;
 	mi_params_t cmd_params;
 	int params_err = -1;
 	int pos_params;

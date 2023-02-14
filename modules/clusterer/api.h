@@ -317,7 +317,7 @@ static inline int load_clusterer_api(struct clusterer_binds *binds) {
 }
 
 /* function used to add dependencies to clusterer module */
-static inline module_dependency_t *get_deps_clusterer(param_export_t *param)
+static inline module_dependency_t *get_deps_clusterer(const param_export_t *param)
 {
 	int cluster_id = *(int *)param->param_pointer;
 

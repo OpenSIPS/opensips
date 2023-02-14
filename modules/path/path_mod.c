@@ -85,7 +85,7 @@ static param_export_t params[] = {
 	{ 0, 0, 0 }
 };
 
-static module_dependency_t *get_deps_use_received(param_export_t *param)
+static module_dependency_t *get_deps_use_received(const param_export_t *param)
 {
 	if (! *(int *)param->param_pointer)
 		return NULL;

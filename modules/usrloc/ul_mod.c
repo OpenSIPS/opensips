@@ -290,7 +290,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static module_dependency_t *get_deps_db_mode(param_export_t *param)
+static module_dependency_t *get_deps_db_mode(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer <= NO_DB)
 		return NULL;
@@ -298,7 +298,7 @@ static module_dependency_t *get_deps_db_mode(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
-static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
+static module_dependency_t *get_deps_wmode_preset(const param_export_t *param)
 {
 	char *haystack = *(char **)param->param_pointer;
 
@@ -311,7 +311,7 @@ static module_dependency_t *get_deps_wmode_preset(param_export_t *param)
 	return NULL;
 }
 
-static module_dependency_t *get_deps_rr_persist(param_export_t *param)
+static module_dependency_t *get_deps_rr_persist(const param_export_t *param)
 {
 	if (!strcasecmp(*(char **)param->param_pointer, "load-from-sql"))
 		return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);

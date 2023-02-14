@@ -187,12 +187,12 @@ msg_getHeader(msgobject *self, PyObject *args)
 }
 
 static int py_do_action(struct sip_msg* msg, struct action *act,
-    cmd_export_t *cmd, int *retval)
+    const cmd_export_t *cmd, int *retval)
 {
     void* cmdp[MAX_CMD_PARAMS];
     pv_value_t tmp_vals[MAX_CMD_PARAMS];
     int i;
-    struct cmd_param *param;
+    const struct cmd_param *param;
     gparam_p gp;
 
     if (fix_cmd(cmd->params, act->elem) < 0) {
@@ -235,10 +235,10 @@ msg_call_function(msgobject *self, PyObject *args)
     int i, rval;
     char *fname;
     char *pargs[MAX_CMD_PARAMS];
-    cmd_export_t *fexport;
+    const cmd_export_t *fexport;
     struct action *act;
     action_elem_t elems[MAX_ACTION_ELEMS];
-    struct cmd_param *param;
+    const struct cmd_param *param;
     int n = 0;
     str s;
     pv_spec_t *specs[MAX_CMD_PARAMS];
@@ -299,7 +299,7 @@ msg_call_function(msgobject *self, PyObject *args)
     }
 
     elems[0].type = CMD_ST;
-    elems[0].u.data = fexport;
+    elems[0].u.data_const = fexport;
 
     for (param=fexport->params, i=1; param->flags; param++, i++) {
         if (!pargs[i-1])

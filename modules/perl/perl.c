@@ -87,7 +87,7 @@ mi_response_t *perl_mi_reload(const mi_params_t *params,
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"perl_exec_simple", (cmd_function)perl_exec_simple, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},

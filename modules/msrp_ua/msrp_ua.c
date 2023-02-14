@@ -177,7 +177,7 @@ static cmd_export_t cmds[]=
 	{0,0,{{0,0,0}},0}
 };
 
-static module_dependency_t *get_deps_relay_uri(param_export_t *param)
+static module_dependency_t *get_deps_relay_uri(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;

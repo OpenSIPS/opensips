@@ -108,7 +108,7 @@ typedef struct trans_extra_ {
 	struct trans_extra_ *next;
 } trans_extra_t;
 
-int register_trans_mod(char *mod_name, trans_export_t *tr_exports);
+int register_trans_mod(const char *mod_name, const trans_export_t *tr_exports);
 void tr_free_extra_list(void);
 
 int run_transformations(struct sip_msg *msg, trans_t *tr, pv_value_t *val);

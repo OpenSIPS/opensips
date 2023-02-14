@@ -140,7 +140,7 @@ int register_builtin_modules(void)
 
 /* registers a module,  register_f= module register  functions
  * returns <0 on error, 0 on success */
-int register_module(struct module_exports* e, char* path, void* handle)
+int register_module(const struct module_exports* e, char* path, void* handle)
 {
 	int ret;
 	struct sr_module* mod;
@@ -197,7 +197,7 @@ error:
 }
 
 
-static inline int version_control(struct module_exports* exp, char *path)
+static inline int version_control(const struct module_exports* exp, char *path)
 {
 	if ( !exp->version ) {
 		LM_CRIT("BUG - version not defined in module <%s>\n", path );
@@ -231,7 +231,7 @@ int sr_load_module(char* path)
 	void* handle;
 	unsigned int moddlflags;
 	char* error;
-	struct module_exports* exp;
+	const struct module_exports* exp;
 	struct sr_module* t;
 
 	/* load module */
@@ -250,7 +250,7 @@ int sr_load_module(char* path)
 	}
 
 	/* import module interface */
-	exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
+	exp = (const struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
 	if ( (error =(char*)dlerror())!=0 ){
 		LM_ERR("load_module: %s\n", error);
 		goto error1;
@@ -264,7 +264,7 @@ int sr_load_module(char* path)
 			LM_ERR("could not open module <%s>: %s\n", path, dlerror() );
 			goto error;
 		}
-		exp = (struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
+		exp = (const struct module_exports*)dlsym(handle, DLSYM_PREFIX "exports");
 		if ( (error =(char*)dlerror())!=0 ){
 			LM_ERR("failed to load module : %s\n", error);
 			goto error1;
@@ -424,9 +424,9 @@ int load_module(char* name)
  * 0 if not found
  * flags parameter is OR value of all flags that must match
  */
-cmd_function find_export(char* name, int flags)
+cmd_function find_export(const char* name, int flags)
 {
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	cmd = find_mod_cmd_export_t(name, flags);
 	if (cmd==0)
@@ -439,10 +439,10 @@ cmd_function find_export(char* name, int flags)
 
 /* Searches the module list for the "name" cmd_export_t structure.
  */
-cmd_export_t* find_mod_cmd_export_t(char* name, int flags)
+const cmd_export_t* find_mod_cmd_export_t(const char* name, int flags)
 {
 	struct sr_module* t;
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->cmds; cmd && cmd->name; cmd++){
@@ -462,10 +462,10 @@ cmd_export_t* find_mod_cmd_export_t(char* name, int flags)
 
 /* Searches the module list for the "name" acmd_export_t structure.
  */
-acmd_export_t* find_mod_acmd_export_t(char* name)
+const acmd_export_t* find_mod_acmd_export_t(const char* name)
 {
 	struct sr_module* t;
-	acmd_export_t* cmd;
+	const acmd_export_t* cmd;
 
 	for(t=modules;t;t=t->next){
 		for(cmd=t->exports->acmds; cmd && cmd->name; cmd++){
@@ -485,10 +485,10 @@ acmd_export_t* find_mod_acmd_export_t(char* name)
  * "mod" or 0 if not found
  * flags parameter is OR value of all flags that must match
  */
-cmd_function find_mod_export(char* mod, char* name, int flags)
+cmd_function find_mod_export(const char* mod, const char* name, int flags)
 {
 	struct sr_module* t;
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	for (t = modules; t; t = t->next) {
 		if (strcmp(t->exports->name, mod) == 0) {
@@ -510,10 +510,10 @@ cmd_function find_mod_export(char* mod, char* name, int flags)
 
 
 
-void* find_param_export(char* mod, char* name, modparam_t type)
+void* find_param_export(const char* mod, const char* name, modparam_t type)
 {
 	struct sr_module* t;
-	param_export_t* param;
+	const param_export_t* param;
 
 	for(t = modules; t; t = t->next) {
 		if (strcmp(mod, t->exports->name) == 0) {

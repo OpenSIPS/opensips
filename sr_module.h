@@ -136,7 +136,7 @@ struct sr_module{
 	int init_done;
 	int init_child_done;
 	int destroy_done;
-	struct module_exports* exports;
+	const struct module_exports* exports;
 
 	/* modules which must be initialized before this module */
 	struct sr_module_dep *sr_deps_init;
@@ -149,38 +149,38 @@ struct sr_module{
 
 
 struct module_exports{
-	char* name;                     /*!< null terminated module name */
+	const char* name;               /*!< null terminated module name */
 	enum module_type type;
-	char *version;                  /*!< module version */
-	char *compile_flags;            /*!< compile flags used on the module */
+	const char *version;            /*!< module version */
+	const char *compile_flags;      /*!< compile flags used on the module */
 	unsigned int dlflags;           /*!< flags for dlopen */
 
 	load_function load_f;           /*!< function called immediately after a
 	                                   module was loaded by dlopen */
 
-	dep_export_t *deps;             /*!< module and modparam dependencies */
+	const dep_export_t *deps;       /*!< module and modparam dependencies */
 
 
-	cmd_export_t* cmds;             /*!< null terminated array of the exported
+	const cmd_export_t* cmds;       /*!< null terminated array of the exported
 	                                   commands */
-	acmd_export_t* acmds;           /*!< null terminated array of the exported
+	const acmd_export_t* acmds;     /*!< null terminated array of the exported
 	                                   async commands */
-	param_export_t* params;         /*!< null terminated array of the exported
+	const param_export_t* params;   /*!< null terminated array of the exported
 	                                   module parameters */
 
-	stat_export_t* stats;           /*!< null terminated array of the exported
+	const stat_export_t* stats;     /*!< null terminated array of the exported
 	                                   module statistics */
 
-	mi_export_t* mi_cmds;           /*!< null terminated array of the exported
+	const mi_export_t* mi_cmds;     /*!< null terminated array of the exported
 	                                   MI functions */
 
-	pv_export_t* items;             /*!< null terminated array of the exported
+	const pv_export_t* items;       /*!< null terminated array of the exported
 	                                   module items (pseudo-variables) */
 
-	trans_export_t* trans;          /*!< null terminated array of the exported
+	const trans_export_t* trans;    /*!< null terminated array of the exported
 	                                   module transformations */
 
-	proc_export_t* procs;           /*!< null terminated array of the additional
+	const proc_export_t* procs;     /*!< null terminated array of the additional
 	                                   processes reqired by the module */
 
 	preinit_function preinit_f;     /*!< Pre-Initialization function */
@@ -201,10 +201,10 @@ void set_mpath(const char *new_mpath);
 extern struct sr_module* modules; /*!< global module list*/
 
 int register_builtin_modules();
-int register_module(struct module_exports*, char*,  void*);
+int register_module(const struct module_exports*, char*,  void*);
 int load_module(char* name);
-cmd_function find_export(char* name, int flags);
-cmd_function find_mod_export(char* mod, char* name, int flags);
+cmd_function find_export(const char* name, int flags);
+cmd_function find_mod_export(const char* mod, const char* name, int flags);
 void destroy_modules();
 int init_child(int rank);
 int init_modules(void);
@@ -215,7 +215,7 @@ int init_modules_deps(void);
  * address in memory
  * If there is no such parameter, NULL is returned
  */
-void* find_param_export(char* mod, char* name, modparam_t type);
+void* find_param_export(const char* mod, const char* name, modparam_t type);
 
 /* modules function prototypes:
  * struct module_exports* mod_register(); (type module_register)

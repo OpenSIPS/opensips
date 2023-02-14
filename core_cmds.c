@@ -122,7 +122,7 @@ static int w_script_trace(struct sip_msg *msg, int *log_level,
 					pv_elem_t *fmt_string, void *info_str);
 static int w_is_myself(struct sip_msg *msg, str *host, int *port);
 
-static cmd_export_t core_cmds[]={
+static const cmd_export_t core_cmds[]={
 	{"forward", (cmd_function)w_forward, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_forward_dest, fixup_free_destination}, {0,0,0}},
@@ -345,9 +345,9 @@ static cmd_export_t core_cmds[]={
 };
 
 
-cmd_export_t* find_core_cmd_export_t(char* name, int flags)
+const cmd_export_t* find_core_cmd_export_t(const char* name, int flags)
 {
-	cmd_export_t* cmd;
+	const cmd_export_t* cmd;
 
 	for(cmd=core_cmds; cmd && cmd->name; cmd++){
 		if((strcmp(name, cmd->name)==0)&&((cmd->flags & flags) == flags)){

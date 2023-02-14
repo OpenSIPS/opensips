@@ -571,7 +571,7 @@ error:
 	return -1;
 }
 
-int register_stat2( char *module, char *name, stat_var **pvar,
+int register_stat2(const char *module, char *name, stat_var **pvar,
 					unsigned short flags, void *ctx, int unsafe)
 {
 	str smodule, sname;
@@ -595,7 +595,7 @@ int register_dynamic_stat( str *name, stat_var **pvar)
 	return __register_dynamic_stat (NULL, name, pvar);
 }
 
-int __register_module_stats(char *module, stat_export_t *stats, int unsafe)
+int __register_module_stats(const char *module, const stat_export_t *stats, int unsafe)
 {
 	int ret;
 

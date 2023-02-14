@@ -52,7 +52,7 @@
 #include "compat.h"
 
 #if 0
-static void siplua_moduleFunc_free(const char *func, cmd_export_t *exp_func_struct,
+static void siplua_moduleFunc_free(const char *func, const cmd_export_t *exp_func_struct,
 				   action_elem_t *elems, int nargs);
 #endif
 
@@ -749,12 +749,12 @@ static int l_siplua_add_lump_rpl(lua_State *L)
 }
 
 static int lua_do_action(lua_State *L, struct sip_msg* msg,
-  struct action *act, cmd_export_t *cmd, int *retval)
+  struct action *act, const cmd_export_t *cmd, int *retval)
 {
   void* cmdp[MAX_CMD_PARAMS];
   pv_value_t tmp_vals[MAX_CMD_PARAMS];
   int i;
-  struct cmd_param *param;
+  const struct cmd_param *param;
   gparam_p gp;
 
   if (fix_cmd(cmd->params, act->elem) < 0) {
@@ -796,14 +796,14 @@ static int l_siplua_moduleFunc(lua_State *L)
   struct sipapi_object *o;
   const char *func;
   int n, nargs;
-  cmd_export_t *exp_func_struct;
+  const cmd_export_t *exp_func_struct;
   action_elem_t elems[MAX_ACTION_ELEMS];
   const char *msg;
   int i;
   struct action *act;
   int retval, rc;
   pv_spec_t *specs[MAX_CMD_PARAMS];
-  struct cmd_param *param;
+  const struct cmd_param *param;
   char *largs[MAX_CMD_PARAMS];
   str s;
 
@@ -820,7 +820,7 @@ static int l_siplua_moduleFunc(lua_State *L)
     return luaL_error(L, "function '%s' called, but not available", func);
 
   elems[0].type = CMD_ST;
-  elems[0].u.data = exp_func_struct;
+  elems[0].u.data_const = exp_func_struct;
 
   for (i = 0; i < nargs; ++i) {
     if (lua_isnil(L, 3 + i)) {

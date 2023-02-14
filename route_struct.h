@@ -101,7 +101,10 @@ typedef struct action_elem_ {
 	union {
 		long number;
 		char* string;
-		void* data;
+                union {
+			void* data;
+			const void* data_const;
+		};
 		str s;
 		pv_spec_t* item;
 	} u;

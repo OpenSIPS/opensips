@@ -84,12 +84,12 @@ typedef struct mi_recipe_ {
 
 struct mi_cmd {
 	int id;
-	str module;
+	str_const module;
 	str name;
 	str help;
 	mi_child_init_f *init_f;
 	unsigned int flags;
-	mi_recipe_t *recipes;
+	const mi_recipe_t *recipes;
 
 	volatile unsigned char* trace_mask;
 };
@@ -115,9 +115,9 @@ typedef struct mi_request_ {
 
 
 int register_mi_cmd(char *name, char *help, unsigned int flags,
-		mi_child_init_f in, mi_recipe_t *recipes, char* mod_name);
+		mi_child_init_f in, const mi_recipe_t *recipes, const char* mod_name);
 
-int register_mi_mod(char *mod_name, mi_export_t *mis);
+int register_mi_mod(const char *mod_name, const mi_export_t *mis);
 
 int init_mi_child();
 

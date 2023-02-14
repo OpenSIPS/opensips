@@ -99,7 +99,7 @@ static param_export_t params[] = {
  * functions are used from the script - we do a small trick here and
  * hook on the 'aaa_url' mandatory  param to run the check, even if the
  * param value is not involved in the test */
-static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+static module_dependency_t *get_deps_aaa_url(const param_export_t *param)
 {
 	if (is_script_func_used("aaa_www_authorize", -1) ||
 	is_script_func_used("aaa_proxy_authorize", -1) )

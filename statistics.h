@@ -132,7 +132,7 @@ void destroy_stats_collector();
 #define register_stat(_mod,_name,_pvar,_flags) \
 		register_stat2(_mod,_name,_pvar,_flags, NULL, 0)
 
-int register_stat2( char *module, char *name, stat_var **pvar,
+int register_stat2(const char *module, char *name, stat_var **pvar,
 		unsigned  short flags, void* context, int unsafe);
 
 int register_dynamic_stat( str *name, stat_var **pvar);
@@ -141,7 +141,7 @@ int __register_dynamic_stat( str *group, str *name, stat_var **pvar);
 #define register_module_stats(mod, stats) \
 	__register_module_stats(mod, stats, 0)
 
-int __register_module_stats(char *module, stat_export_t *stats, int unsafe);
+int __register_module_stats(const char *module, const stat_export_t *stats, int unsafe);
 
 int clone_pv_stat_name(const str *name, str *clone);
 

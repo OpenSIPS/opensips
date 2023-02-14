@@ -290,7 +290,7 @@ static stat_export_t siptrace_stats[] = {
 };
 #endif
 
-static module_dependency_t *get_deps_hep(param_export_t *param)
+static module_dependency_t *get_deps_hep(const param_export_t *param)
 {
 	tlist_elem_p it;
 

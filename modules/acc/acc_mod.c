@@ -230,7 +230,7 @@ static param_export_t params[] = {
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_aaa_url(param_export_t *param)
+static module_dependency_t *get_deps_aaa_url(const param_export_t *param)
 {
 	char *aaa_url = *(char **)param->param_pointer;
 
@@ -240,7 +240,7 @@ static module_dependency_t *get_deps_aaa_url(param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_AAA, NULL, DEP_WARN);
 }
 
-static module_dependency_t *get_deps_detect_dir(param_export_t *param)
+static module_dependency_t *get_deps_detect_dir(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;

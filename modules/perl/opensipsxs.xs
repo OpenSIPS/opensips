@@ -201,12 +201,12 @@ SV *getStringFromURI(SV *self, enum xs_uri_members what) {
 
 
 static int perl_do_action(struct sip_msg* msg, struct action *act,
-    cmd_export_t *cmd, int *retval)
+    const cmd_export_t *cmd, int *retval)
 {
     void* cmdp[MAX_CMD_PARAMS];
     pv_value_t tmp_vals[MAX_CMD_PARAMS];
     int i;
-    struct cmd_param *param;
+    const struct cmd_param *param;
     gparam_p gp;
 
     if (fix_cmd(cmd->params, act->elem) < 0) {
@@ -254,11 +254,11 @@ static int perl_do_action(struct sip_msg* msg, struct action *act,
 
 int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 {
-	cmd_export_t *exp_func_struct;
+	const cmd_export_t *exp_func_struct;
 	struct action *act;
 	action_elem_t elems[MAX_ACTION_ELEMS];
 	int i, n = 0;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	str s;
 	pv_spec_t *specs[MAX_CMD_PARAMS];
 	int rval;
@@ -299,7 +299,7 @@ int moduleFunc(struct sip_msg *m, char *func, char **pargs, int *retval)
 	}
 
 	elems[0].type = CMD_ST;
-	elems[0].u.data = exp_func_struct;
+	elems[0].u.data_const = exp_func_struct;
 
 	for (param=exp_func_struct->params, i=1; param->flags; param++, i++) {
 		if (!pargs[i-1])

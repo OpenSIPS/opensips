@@ -80,7 +80,7 @@ static pv_export_t pvars[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static module_dependency_t *get_deps_dialog(param_export_t *param)
+static module_dependency_t *get_deps_dialog(const param_export_t *param)
 {
 	int force = *(int *)param->param_pointer;
 

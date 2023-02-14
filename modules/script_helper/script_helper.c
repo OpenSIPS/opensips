@@ -60,7 +60,7 @@ static param_export_t params[] =
 	{ NULL, 0, NULL },
 };
 
-static module_dependency_t *get_deps_use_dialog(param_export_t *param)
+static module_dependency_t *get_deps_use_dialog(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;

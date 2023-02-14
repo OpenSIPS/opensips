@@ -95,7 +95,7 @@ module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name
 }
 
 
-module_dependency_t *get_deps_sqldb_url(param_export_t *param)
+module_dependency_t *get_deps_sqldb_url(const param_export_t *param)
 {
 	char *db_url = *(char **)param->param_pointer;
 
@@ -109,7 +109,7 @@ module_dependency_t *get_deps_sqldb_url(param_export_t *param)
 }
 
 
-module_dependency_t *get_deps_cachedb_url(param_export_t *param)
+module_dependency_t *get_deps_cachedb_url(const param_export_t *param)
 {
 	char *cdb_url = *(char **)param->param_pointer;
 
@@ -120,7 +120,7 @@ module_dependency_t *get_deps_cachedb_url(param_export_t *param)
 }
 
 
-static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep,
+static int add_module_dependency(struct sr_module *mod, const module_dependency_t *dep,
 								 char *script_param)
 {
 	struct sr_module_dep *md;
@@ -161,12 +161,12 @@ static int add_module_dependency(struct sr_module *mod, module_dependency_t *dep
 /*
  * register all OpenSIPS module dependencies of a single module parameter
  */
-int add_modparam_dependencies(struct sr_module *mod, param_export_t *param)
+int add_modparam_dependencies(struct sr_module *mod, const param_export_t *param)
 {
 	struct sr_module_dep *it, *tmp;
 	module_dependency_t *md;
-	modparam_dependency_t *mpd;
-	struct module_dependency *(*get_deps_f)(param_export_t *param) = NULL;
+	const modparam_dependency_t *mpd;
+	struct module_dependency *(*get_deps_f)(const param_export_t *param) = NULL;
 
 	if (!mod->exports->deps)
 		return 0;
@@ -217,7 +217,7 @@ int add_modparam_dependencies(struct sr_module *mod, param_export_t *param)
  */
 int add_module_dependencies(struct sr_module *mod)
 {
-	module_dependency_t *md;
+	const module_dependency_t *md;
 
 	for (md = mod->exports->deps->md; md->mod_type != MOD_TYPE_NULL; md++) {
 		if (add_module_dependency(mod, md, NULL) != 0) {

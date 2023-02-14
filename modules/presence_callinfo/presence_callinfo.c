@@ -84,7 +84,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static module_dependency_t *get_deps_dialog_support(param_export_t *param)
+static module_dependency_t *get_deps_dialog_support(const param_export_t *param)
 {
 	int no_dialog_support = *(int *)param->param_pointer;
 

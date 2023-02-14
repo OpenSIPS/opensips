@@ -145,10 +145,10 @@ int check_cmd(struct cmd_param *params, action_elem_t *elems)
 	return 0;
 }
 
-int fix_cmd(struct cmd_param *params, action_elem_t *elems)
+int fix_cmd(const struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	gparam_p gp = NULL;
 	int ret;
 	pv_elem_t *pve;
@@ -330,11 +330,11 @@ error:
 	return ret;
 }
 
-int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
+int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 				action_elem_t *elems, void **cmdp, pv_value_t *tmp_vals)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	gparam_p gp;
 	regex_t *re = NULL;
 	int ret;
@@ -487,10 +487,10 @@ int get_cmd_fixups(struct sip_msg* msg, struct cmd_param *params,
 	return 0;
 }
 
-int free_cmd_fixups(struct cmd_param *params, action_elem_t *elems, void **cmdp)
+int free_cmd_fixups(const struct cmd_param *params, action_elem_t *elems, void **cmdp)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	gparam_p gp;
 
 	for (param=params, i=1; param->flags; param++, i++) {

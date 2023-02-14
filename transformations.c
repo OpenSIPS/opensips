@@ -83,7 +83,7 @@ static trans_export_t core_trans[] = {
 	{{0,0}, 0, 0}
 };
 
-int tr_add_extra(trans_export_t *e)
+int tr_add_extra(const trans_export_t *e)
 {
 	trans_extra_t *tr_extra;
 	int i;
@@ -121,7 +121,7 @@ int tr_add_extra(trans_export_t *e)
 	return 0;
 }
 
-int register_trans_mod(char *mod_name, trans_export_t *tr_exports)
+int register_trans_mod(const char *mod_name, const trans_export_t *tr_exports)
 {
 	int i;
 

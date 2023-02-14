@@ -126,7 +126,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static module_dependency_t *get_deps_restore_mode(param_export_t *param)
+static module_dependency_t *get_deps_restore_mode(const param_export_t *param)
 {
 	char *mode = *(char **)param->param_pointer;
 

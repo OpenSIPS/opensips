@@ -78,13 +78,13 @@ struct rtp_relay {
 	char _name_s[0];
 };
 
-typedef int (*reg_rtp_relay_f)(char *, struct rtp_relay_funcs *,
+typedef int (*reg_rtp_relay_f)(const char *, struct rtp_relay_funcs *,
 		struct rtp_relay_hooks *hooks);
 struct rtp_relay *rtp_relay_get(str *name);
 int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs,
 		struct rtp_relay_hooks *hooks);
 
-static inline int register_rtp_relay(char *name,
+static inline int register_rtp_relay(const char *name,
 		struct rtp_relay_funcs *funcs, struct rtp_relay_hooks *hooks)
 {
 	reg_rtp_relay_f func;

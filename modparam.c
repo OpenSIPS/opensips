@@ -41,7 +41,7 @@
 int set_mod_param_regex(char* regex, char* name, modparam_t type, void* val)
 {
 	struct sr_module* t;
-	param_export_t* param;
+	const param_export_t* param;
 	regex_t preg;
 	int mod_found, param_found, len;
 	char* reg;

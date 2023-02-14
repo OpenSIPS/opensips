@@ -74,7 +74,7 @@ static param_export_t mod_params[] = {
 	{0,0,0}
 };
 
-static module_dependency_t *get_deps_use_tls(param_export_t *param)
+static module_dependency_t *get_deps_use_tls(const param_export_t *param)
 {
 	if (*(int *)param->param_pointer == 0)
 		return NULL;

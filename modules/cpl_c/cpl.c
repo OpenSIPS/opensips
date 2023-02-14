@@ -172,7 +172,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static module_dependency_t *get_deps_lookup_domain(param_export_t *param)
+static module_dependency_t *get_deps_lookup_domain(const param_export_t *param)
 {
 	char *domain = *(char **)param->param_pointer;
 	if (!domain || strlen(domain) == 0)

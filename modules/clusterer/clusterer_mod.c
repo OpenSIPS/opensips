@@ -236,7 +236,7 @@ static pv_export_t mod_vars[] = {
 };
 
 
-static module_dependency_t *get_deps_db_mode(param_export_t *param)
+static module_dependency_t *get_deps_db_mode(const param_export_t *param)
 {
 	int db_mode = *(int *)param->param_pointer;
 

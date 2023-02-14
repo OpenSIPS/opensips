@@ -5135,7 +5135,7 @@ static int pv_init_extra_list(void)
 	return 0;
 }
 
-static int pv_add_extra(pv_export_t *e)
+static int pv_add_extra(const pv_export_t *e)
 {
 	char *p;
 	const str *in;
@@ -5211,7 +5211,7 @@ done:
 	return 0;
 }
 
-int register_pvars_mod(char *mod_name, pv_export_t *items)
+int register_pvars_mod(const char *mod_name, const pv_export_t *items)
 {
 	int ret;
 	int i;

@@ -89,7 +89,7 @@ typedef struct modparam_dependency {
 	char *script_param; /* module parameter at script level */
 
 	/* return value must be allocated in pkg memory! */
-	struct module_dependency *(*get_deps_f)(param_export_t *param);
+	struct module_dependency *(*get_deps_f)(const param_export_t *param);
 } modparam_dependency_t;
 
 
@@ -113,8 +113,8 @@ module_dependency_t *_alloc_module_dep(enum module_type mod_type, char *mod_name
  *	- imposes a generic MOD_TYPE_SQLDB dependency only when the URL is set
  *	  (strlen(url) > 0)
  */
-module_dependency_t *get_deps_sqldb_url(param_export_t *param);
-module_dependency_t *get_deps_cachedb_url(param_export_t *param);
+module_dependency_t *get_deps_sqldb_url(const param_export_t *param);
+module_dependency_t *get_deps_cachedb_url(const param_export_t *param);
 
 /* core level structures and functions */
 struct sr_module_dep {
@@ -127,7 +127,7 @@ struct sr_module_dep {
 	struct sr_module_dep *next;
 };
 
-int add_modparam_dependencies(struct sr_module *mod, param_export_t *param);
+int add_modparam_dependencies(struct sr_module *mod, const param_export_t *param);
 int add_module_dependencies(struct sr_module *mod);
 
 int solve_module_dependencies(struct sr_module *modules);

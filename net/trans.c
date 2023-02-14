@@ -61,7 +61,7 @@ int trans_load(void)
 {
 	int id;
 	struct sr_module *mod;
-	cmd_export_t *cmd;
+	const cmd_export_t *cmd;
 	int found_all = 0;
 	int found_proto;
 	api_proto_init abind;
