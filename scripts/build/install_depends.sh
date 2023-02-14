@@ -29,6 +29,8 @@ fi
 sudo apt-get update -y
 sudo apt-get -y install ${PKGS}
 
+sudo find / -name unixodbc.h -type f
+
 if [ ! -z "${POST_INSTALL_CMD}" ]
 then
 	${POST_INSTALL_CMD}
