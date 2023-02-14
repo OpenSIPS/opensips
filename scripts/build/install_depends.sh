@@ -19,6 +19,13 @@ then
 	${PRE_INSTALL_CMD}
 fi
 
+if [ "${BUILD_OS}" != ubuntu-18.04 ]
+then
+  sudo gem install apt-spy2
+  sudo apt-spy2 check --strict
+  sudo apt-spy2 fix --commit --strict
+fi
+
 sudo apt-get update -y
 sudo apt-get -y install ${PKGS}
 
