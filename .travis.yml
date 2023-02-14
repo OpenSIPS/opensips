@@ -10,7 +10,8 @@ addons:
       - libsctp-dev
       - libradcli-dev
       - libhiredis-dev
-      - unixodbc-dev
+      - unixodbc=2.3.7
+      - unixodbc-dev=2.3.7
       - libconfuse-dev
       - libmysqlclient-dev
       - libexpat1-dev
