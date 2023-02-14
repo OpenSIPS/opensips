@@ -59,7 +59,7 @@ mi_response_t *mi_fs_list(const mi_params_t *params,
 mi_response_t *mi_fs_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"freeswitch_esl", (cmd_function)fs_esl, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -68,7 +68,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{ "db_url",                 STR_PARAM,                       &db_url.s },
 	{ "db_table",               STR_PARAM,                    &fss_table.s },
 	{ "db_col_username",        STR_PARAM,                 &fss_col_user.s },
@@ -81,7 +81,7 @@ static param_export_t mod_params[] = {
 };
 
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "fs_subscribe", 0,0,0,{
 		{mi_fs_subscribe, {"freeswitch_url", "events", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -101,7 +101,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "freeswitch", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

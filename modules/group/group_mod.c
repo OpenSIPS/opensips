@@ -115,7 +115,7 @@ aaa_map vals[V_MAX];
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"aaa_is_user_in", (cmd_function)aaa_is_user_in, {
 		{CMD_PARAM_STR, aaa_is_user_fixup, 0},
 		{CMD_PARAM_STR, check_aaaurl_fixup, 0}, {0,0,0}},
@@ -134,7 +134,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"aaa_url", 	  STR_PARAM, &aaa_proto_url.s},
 	{"db_url",        STR_PARAM, &db_url.s       },
 	{"table",         STR_PARAM, &table.s        },
@@ -149,7 +149,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_AAA, NULL, DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },

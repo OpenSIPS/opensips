@@ -78,7 +78,7 @@ void localcache_clean(unsigned int ticks,void *param);
 static int parse_collections(unsigned int type, void *val);
 static int store_urls(unsigned int type, void *val);
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cache_clean_period", INT_PARAM, &cache_clean_period },
 	{ "exec_threshold",     INT_PARAM, &local_exec_threshold },
 	{ "cache_collections",  STR_PARAM|USE_FUNC_PARAM, (void *)parse_collections },
@@ -89,7 +89,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static cmd_export_t cmds[]= {
+static const cmd_export_t cmds[]= {
 	{"cache_remove_chunk",        (cmd_function)remove_chunk_f, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -97,7 +97,7 @@ static cmd_export_t cmds[]= {
 	{0,0,{{0,0,0}},0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "cache_remove_chunk", 0, 0, 0, {
 		{mi_cache_remove_chunk_1, {"glob", 0}},
 		{mi_cache_remove_chunk_2, {"glob", "collection", 0}},
@@ -106,7 +106,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0},
 	},

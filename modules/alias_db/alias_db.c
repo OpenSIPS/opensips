@@ -67,7 +67,7 @@ db_con_t* db_handle;   /* Database connection handle */
 db_func_t adbf;  /* DB functions */
 
 /* Exported functions */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"alias_db_lookup", (cmd_function)alias_db_lookup, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, alias_flags_fixup ,0}, {0,0,0}},
@@ -82,7 +82,7 @@ static cmd_export_t cmds[] = {
 };
 
 /* Exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",              STR_PARAM, &db_url.s        },
 	{"user_column",         STR_PARAM, &user_column.s   },
 	{"domain_column",       STR_PARAM, &domain_column.s },
@@ -93,7 +93,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

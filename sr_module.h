@@ -108,14 +108,14 @@ typedef int (*mod_proc_wrapper)();
 
 
 struct param_export_ {
-	char* name;             /*!< null terminated param. name */
+	const char* name;       /*!< null terminated param. name */
 	modparam_t type;        /*!< param. type */
 	void* param_pointer;    /*!< pointer to the param. memory location */
 };
 
 
 struct proc_export_ {
-	char *name;
+	const char *name;
 	mod_proc_wrapper pre_fork_function;
 	mod_proc_wrapper post_fork_function;
 	mod_proc function;
@@ -124,14 +124,14 @@ struct proc_export_ {
 };
 
 typedef struct dep_export_ {
-	module_dependency_t md[MAX_MOD_DEPS];
-	modparam_dependency_t mpd[];
+	const module_dependency_t md[MAX_MOD_DEPS];
+	const modparam_dependency_t mpd[];
 } dep_export_t;
 
 typedef struct proc_export_ proc_export_t;
 
 struct sr_module{
-	char* path;
+	const char* path;
 	void* handle;
 	int init_done;
 	int init_child_done;

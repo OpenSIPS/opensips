@@ -52,7 +52,7 @@ int parse_dlg_flags(modparam_t type, void *val);
 
 int mod_init(void);
 
-static param_export_t params[] =
+static const param_export_t params[] =
 {
 	{ "sequential_route", STR_PARAM, &seq_route },
 	{ "use_dialog", INT_PARAM, &use_dialog },
@@ -68,7 +68,7 @@ static module_dependency_t *get_deps_use_dialog(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "rr", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "sl", DEP_ABORT },

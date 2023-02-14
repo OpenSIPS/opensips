@@ -54,13 +54,13 @@ static callback_list* cb_list = NULL;
 static int udp_port = SIP_PORT;
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_udp_init, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "udp_port",    INT_PARAM,   &udp_port   },
 	{0, 0, 0}
 };

@@ -185,7 +185,7 @@ int latency_event_min_us;
 /*! \brief
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"ul_bind_usrloc", (cmd_function)bind_usrloc, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -193,7 +193,7 @@ static cmd_export_t cmds[] = {
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"contact_id_column",   STR_PARAM,&contactid_col.s   },
 	{"user_column",        STR_PARAM, &user_col.s        },
 	{"domain_column",      STR_PARAM, &domain_col.s      },
@@ -246,12 +246,12 @@ static param_export_t params[] = {
 };
 
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"registered_users" ,  STAT_IS_FUNC, (stat_var**)get_number_of_users  },
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_USRLOC_RM, 0, 0, mi_child_init, {
 		{mi_usrloc_rm_aor, {"table_name", "aor", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -319,7 +319,7 @@ static module_dependency_t *get_deps_rr_persist(const param_export_t *param)
 	return NULL;
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

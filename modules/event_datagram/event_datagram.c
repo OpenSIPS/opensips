@@ -91,7 +91,7 @@ struct module_exports exports= {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_udp = {
+static const evi_export_t trans_export_udp = {
 	UDP_STR,					/* transport module name */
 	datagram_raise,				/* raise function */
 	datagram_parse_udp,			/* parse function */
@@ -101,7 +101,7 @@ static evi_export_t trans_export_udp = {
 	DGRAM_UDP_FLAG				/* flags */
 };
 
-static evi_export_t trans_export_unix = {
+static const evi_export_t trans_export_unix = {
 	UNIX_STR,					/* transport module name */
 	datagram_raise,				/* raise function */
 	datagram_parse_unix,		/* parse function */

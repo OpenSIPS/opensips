@@ -490,7 +490,7 @@ static str hep_str={hepbuf, 0};
 /*! \brief
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"sip_capture", (cmd_function)sip_capture, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, sip_capture_fix_table, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
@@ -524,7 +524,7 @@ static cmd_export_t cmds[] = {
 	{0, 0, {{0, 0, 0}}, 0}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"sip_capture",    (acmd_function)async_sip_capture, {
 		{CMD_PARAM_STR | CMD_PARAM_OPT, sip_capture_async_fix_table, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
@@ -546,7 +546,7 @@ static proc_export_t procs[] = {
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",			STR_PARAM, &db_url.s            },
 	{"table_name",       		STR_PARAM, &table_name.s	},
 	{"rtcp_table_name",			STR_PARAM, &rtcp_table_name.s	},
@@ -608,7 +608,7 @@ static param_export_t params[] = {
 /*! \brief
  * MI commands
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "sip_capture", 0, 0, 0, {
 		{sip_capture_mi, {0}},
 		{sip_capture_mi_1, {"capture_mode", 0}},
@@ -622,7 +622,7 @@ static mi_export_t mi_cmds[] = {
 stat_var* sipcapture_req;
 stat_var* sipcapture_rpl;
 
-stat_export_t sipcapture_stats[] = {
+static const stat_export_t sipcapture_stats[] = {
 	{"captured_requests" ,  0,  &sipcapture_req  },
 	{"captured_replies"  ,  0,  &sipcapture_rpl  },
 	{0,0,0}
@@ -641,7 +641,7 @@ static module_dependency_t *get_deps_hep(const param_export_t *param)
 
 
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -655,7 +655,7 @@ static dep_export_t deps = {
  /**
  * pseudo-variables
  */
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{{"hep_net", sizeof("hep_net")-1}, 1201, pv_get_hep_net, 0,
 		pv_parse_hep_net_name, 0, 0, 0},
 	{{"HEPVERSION", sizeof("HEPVERSION")-1}, 1202, pv_get_hep_version, 0,

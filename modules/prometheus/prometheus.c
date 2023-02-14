@@ -60,7 +60,7 @@ static int prom_stats_param( modparam_t type, void* val);
 static int prom_labels_param( modparam_t type, void* val);
 
 /* module parameters */
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"root",        STR_PARAM, &prom_http_root.s},
 	{"prefix",      STR_PARAM, &prom_prefix.s},
 	{"delimiter",   STR_PARAM, &prom_delimiter.s},
@@ -72,7 +72,7 @@ static param_export_t mi_params[] = {
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "httpd", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

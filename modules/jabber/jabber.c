@@ -132,7 +132,7 @@ void destroy(void);
  * Exported functions
  */
 /*
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"jab_send_message",       (cmd_function)xj_send_message,
 			0, 0, 0, REQUEST_ROUTE},
 	{"jab_join_jconf",         (cmd_function)xj_join_jconf,
@@ -153,7 +153,7 @@ static cmd_export_t cmds[] = {
 };
 */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"jab_send_message",(cmd_function)xj_send_message, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"jab_join_jconf",(cmd_function)xj_join_jconf, {{0,0,0}},
@@ -176,7 +176,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",     STR_PARAM, &db_url.s  },
 	{"jaddress",   STR_PARAM, &jaddress  },
 	{"aliases",    STR_PARAM, &jaliases  },
@@ -194,7 +194,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_SQLDB,   NULL, DEP_ABORT },

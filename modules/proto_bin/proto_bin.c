@@ -63,12 +63,12 @@ static int bin_async_local_write_timeout = 10;
 #define _bin_common_current_req  bin_current_req
 #include "bin_common.h"
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_bin_init, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "bin_port",                        INT_PARAM, &bin_port               },
 	{ "bin_send_timeout",                INT_PARAM, &bin_send_timeout       },
 	{ "bin_max_msg_chunks",              INT_PARAM, &bin_max_msg_chunks     },

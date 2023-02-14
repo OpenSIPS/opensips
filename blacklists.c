@@ -62,7 +62,7 @@ static mi_response_t *mi_del_blacklist_rule(const mi_params_t *params,
 											struct mi_handler *async_hdl);
 
 
-static mi_export_t mi_bl_cmds[] = {
+static const mi_export_t mi_bl_cmds[] = {
 	{ "list_blacklists", "lists all the defined (static or learned) blacklists", 0, 0, {
 		{mi_print_blacklists, {0}},
 		{mi_print_blacklists, {"name", 0}},

@@ -32,7 +32,7 @@ static void mod_destroy(void);
 int use_tls;
 struct tls_mgm_binds tls_api;
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"connection_id", STR_PARAM|USE_FUNC_PARAM, (void *)rmq_conn_add},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
 	{"retry_timeout", INT_PARAM, &rmq_retry_timeout},
@@ -40,7 +40,7 @@ static param_export_t params[] = {
 	{0,0,0}
 };
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{ "RabbitMQ Consumer", 0, 0, rmq_cons_process, 1,
 		PROC_FLAG_HAS_IPC },
 	{ 0, 0, 0, 0, 0, 0 },
@@ -55,7 +55,7 @@ static module_dependency_t *get_deps_use_tls(const param_export_t *param)
 }
 
 /* modules dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

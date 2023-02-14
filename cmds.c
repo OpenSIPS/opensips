@@ -63,9 +63,9 @@ int check_cmd_call_params(const cmd_export_t *cmd, action_elem_t *elems, int no_
 }
 
 /* simillar function to check_cmd_call_params but for async cmds */
-int check_acmd_call_params(acmd_export_t *acmd, action_elem_t *elems, int no_params)
+int check_acmd_call_params(const acmd_export_t *acmd, action_elem_t *elems, int no_params)
 {
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	int n=0, m=0, i;
 
 	for (param=acmd->params; param->flags; param++, n++)

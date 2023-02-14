@@ -112,7 +112,7 @@ static int acc_hash_size = 256;
 static int add_carrier(str *carrier,int safe);
 static int add_client(str *accountid,int safe);
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -124,7 +124,7 @@ static dep_export_t deps = {
 	},
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "vendors_db_url",		STR_PARAM,	&carriers_db_url.s},
 	{ "vendors_db_table",		STR_PARAM,	&carr_db_table.s},
 	{ "vendors_hash_size",		INT_PARAM,	&carr_hash_size},
@@ -136,7 +136,7 @@ static param_export_t params[] = {
 	{ 0,				0,		0}
 };
 
-static mi_export_t mi_cmds [] = {
+static const mi_export_t mi_cmds [] = {
 	{ "rc_addVendor",             0, 0, 0, {
 		{mi_add_carrier, {"name",  0}},
 		{EMPTY_MI_RECIPE}}
@@ -180,7 +180,7 @@ static mi_export_t mi_cmds [] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"get_client_price", (cmd_function)script_get_client_price, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT, 0, 0},

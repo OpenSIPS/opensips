@@ -96,13 +96,13 @@ struct tm_binds tmb;
 /** TM callback function */
 void inv_callback( struct cell *t, int type, struct tmcb_params *ps);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"imc_manager",(cmd_function)imc_manager, {{0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"db_url",				STR_PARAM, &db_url.s},
 	{"hash_size",			INT_PARAM, &imc_hash_size},
 	{"imc_cmd_start_char",	STR_PARAM, &imc_cmd_start_str.s},
@@ -117,14 +117,14 @@ static param_export_t params[]={
 
 stat_var* imc_active_rooms;
 
-static stat_export_t imc_stats[] = {
+static const stat_export_t imc_stats[] = {
 	{"active_rooms" ,  0,  &imc_active_rooms  },
 	{0,0,0}
 };
 
 #endif
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "imc_list_rooms", 0, 0, 0, {
 		{imc_mi_list_rooms, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -136,7 +136,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

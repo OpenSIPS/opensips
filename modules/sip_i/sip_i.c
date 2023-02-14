@@ -59,12 +59,12 @@ int tr_isup_parse(str* in, trans_t *t);
 int tr_isup_eval(struct sip_msg *msg, tr_param_t *tp, int subtype,
 		pv_value_t *val);
 
-static trans_export_t trans[] = {
-	{str_init("isup"), tr_isup_parse, tr_isup_eval},
+static const trans_export_t trans[] = {
+	{str_const_init("isup"), tr_isup_parse, tr_isup_eval},
 	{{0,0},0,0}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
 		0, 0, 0, 0, 0},
 	{{"isup_param", sizeof("isup_param") - 1}, 1000, pv_get_isup_param,
@@ -74,7 +74,7 @@ static pv_export_t mod_items[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"add_isup_part", (cmd_function)add_isup_part_cmd, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
@@ -87,7 +87,7 @@ static str isup_mime = str_init(ISUP_MIME_S);
 static str country_code = str_init(DEFAULT_COUNTRY_CODE);
 static str default_part_headers = str_init(DEFAULT_PART_HEADERS);
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"param_subfield_separator", STR_PARAM, &param_subf_sep.s},
 	{"isup_mime_str", STR_PARAM, &isup_mime.s},
 	{"country_code", STR_PARAM, &country_code.s},

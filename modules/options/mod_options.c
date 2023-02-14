@@ -58,7 +58,7 @@ static int opt_reply(struct sip_msg* _msg);
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"options_reply", (cmd_function)opt_reply, {{0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
@@ -67,7 +67,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"accept",     STR_PARAM, &acpt_s.s},
 	{"accept_encoding", STR_PARAM, &acpt_enc_s.s},
 	{"accept_language", STR_PARAM, &acpt_lan_s.s},
@@ -75,7 +75,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

@@ -146,7 +146,7 @@ static mi_response_t *mi_call_hold(const mi_params_t *params,
 static mi_response_t *mi_call_unhold(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -156,7 +156,7 @@ static dep_export_t deps = {
 	},
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{ "call_blind_replace", (cmd_function)call_blind_replace, {
 		{CMD_PARAM_STR,0,0}, {CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -194,13 +194,13 @@ static int calling_mode_func(modparam_t type, void *val)
 	return 0;
 }
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"mode", STR_PARAM|INT_PARAM|USE_FUNC_PARAM, (void*)calling_mode_func},
 	{"match_param", STR_PARAM, &call_match_param.s},
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "call_transfer", 0, 0, 0, {
 		{mi_call_blind_transfer, {"callid", "leg", "destination", 0}},
 		{mi_call_attended_transfer,

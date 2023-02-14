@@ -63,7 +63,7 @@ static int media_send_ok(struct cell *t, struct dlg_cell *dlg,
 static int media_send_fail(struct cell *t, struct dlg_cell *dlg, int leg);
 
 /* modules dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
@@ -77,7 +77,7 @@ static dep_export_t deps = {
 };
 
 /* exported commands */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"media_exchange_from_uri",(cmd_function)media_exchange_from_uri, {
 		{CMD_PARAM_STR,0,0}, /* uri */
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_media_leg,0}, /* leg */
@@ -122,11 +122,11 @@ static cmd_export_t cmds[] = {
 };
 
 /* exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "media_fork_from_call_to_uri", 0, 0, 0, {
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", 0}},
 		{mi_media_fork_from_call_to_uri, {"callid", "uri", "leg", 0}},

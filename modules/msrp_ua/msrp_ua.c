@@ -128,7 +128,7 @@ static str evi_report_msgid_pname = str_init("message_id");
 static str evi_report_status_pname = str_init("status");
 static str evi_report_brange_pname = str_init("byte_range");
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"hash_size", INT_PARAM, &msrpua_sessions_hsize},
 	{"cleanup_interval", INT_PARAM, &cleanup_interval},
 	{"max_duration", INT_PARAM, &max_duration},
@@ -137,7 +137,7 @@ static param_export_t params[] = {
 	{"relay_uri", STR_PARAM, &relay_uri_str.s},
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "msrp_ua_send_message", 0, 0, 0, {
 		{msrpua_mi_send_msg, {"session_id", 0}},
 		{msrpua_mi_send_msg, {"session_id", "failure_report", 0}},
@@ -167,7 +167,7 @@ static mi_export_t mi_cmds[] = {
 
 static int msrpua_answer(struct sip_msg *msg, str *content_types);
 
-static cmd_export_t cmds[]=
+static const cmd_export_t cmds[]=
 {
 	{"msrp_ua_answer", (cmd_function)msrpua_answer, {
 		{CMD_PARAM_STR, 0, 0},
@@ -185,7 +185,7 @@ static module_dependency_t *get_deps_relay_uri(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "uac_auth", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_msrp"  , DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },

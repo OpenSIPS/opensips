@@ -98,7 +98,7 @@ int tls_ctx_set_pkey_file(void *ctx, char *pkey_file);
 gen_lock_t *tls_global_lock;
 #endif
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"load_tls_openssl", (cmd_function)load_tls_openssl,
 		{{0,0,0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}

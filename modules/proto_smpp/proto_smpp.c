@@ -75,7 +75,7 @@ extern int smpp_send_timeout;
 
 str db_url = {NULL, 0};
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)smpp_init, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"send_smpp_message", (cmd_function)send_smpp_msg, {
@@ -89,7 +89,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"smpp_port", INT_PARAM, &smpp_port},
 	{"smpp_max_msg_chunks", INT_PARAM, &smpp_max_msg_chunks},
 	{"smpp_send_timeout", INT_PARAM, &smpp_send_timeout},

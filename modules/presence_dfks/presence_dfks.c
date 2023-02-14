@@ -108,19 +108,19 @@ static char *type_nodes[MAX_FEATURES_NO] = {NULL,
 static char *type_values[MAX_FEATURES_NO] = {NULL,
 	TYPE_VAL_FWD_CFA, TYPE_VAL_FWD_CFB, TYPE_VAL_FWD_CFNA};
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"dfks", sizeof("dfks")-1}, 1000, pv_get_dfks, pv_set_dfks,
 		pv_parse_dfks_name, 0, 0, 0},
 	  { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"get_route", STR_PARAM, &dfks_get_route},
 	{"set_route", STR_PARAM, &dfks_set_route},
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "dfks_set_feature", 0, 0, 0, {
 		{mi_dfks_set, {"presentity", "feature", "status", 0}},
 		{mi_dfks_set, {"presentity", "feature", "status", "values", 0}},
@@ -131,7 +131,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "presence", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

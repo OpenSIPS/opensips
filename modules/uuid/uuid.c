@@ -48,12 +48,12 @@ static int w_uuid(struct sip_msg *msg, pv_spec_t *out_var, int *vers_param, str 
 static int pv_get_uuid(struct sip_msg *msg, pv_param_t *param,
 						pv_value_t *res);
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{{"uuid", sizeof("uuid")-1}, 1000, pv_get_uuid, 0, 0, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"uuid", (cmd_function)w_uuid, {
 		{CMD_PARAM_VAR, fixup_check_var,0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0},

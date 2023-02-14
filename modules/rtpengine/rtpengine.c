@@ -415,7 +415,7 @@ static struct dlg_binds dlgb;
 
 static pv_elem_t *extra_id_pv = NULL;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"rtpengine_use_set", (cmd_function)set_rtpengine_set_f, {
 		{CMD_PARAM_INT, fixup_set_id, fixup_free_set_id}, {0,0,0}},
 		ALL_ROUTES},
@@ -666,7 +666,7 @@ static int pv_rtpengine_index(pv_spec_p sp, const str *in)
 	return 0;
 }
 
-static pv_export_t mod_pvs[] = {
+static const pv_export_t mod_pvs[] = {
 	{{"rtpstat", (sizeof("rtpstat")-1)}, /* RTP-Statistics */
 		1000, pv_get_rtpstat_f, 0, pv_parse_rtpstat,
 		pv_rtpengine_index, pv_rtpengine_stats_used, 0},
@@ -675,7 +675,7 @@ static pv_export_t mod_pvs[] = {
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"rtpengine_sock",         STR_PARAM|USE_FUNC_PARAM,
 				 (void*)rtpengine_set_store          },
 	{"rtpengine_disable_tout", INT_PARAM, &rtpengine_disable_tout },
@@ -694,7 +694,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_ENABLE_RTP_ENGINE, 0, 0, 0, {
 		{mi_enable_rtp_proxy, {"url", "enable", 0}},
 		{mi_enable_rtp_proxy, {"url", "enable", "setid", 0}},
@@ -716,7 +716,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
@@ -729,7 +729,7 @@ static dep_export_t deps = {
 	},
 };
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"RTPEngine notification receiver",  0,  0, rtpengine_notify_process, 1,
 		PROC_FLAG_INITCHILD},
 	{0,0,0,0,0,0}

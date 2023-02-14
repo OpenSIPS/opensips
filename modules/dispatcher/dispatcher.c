@@ -206,7 +206,7 @@ static int mi_child_init(void);
 static int set_partition_arguments(unsigned int type, void * val);
 static int set_probing_list(unsigned int type, void * val);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"ds_select_dst",    (cmd_function)w_ds_select_dst, {
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT, 0, 0},
@@ -274,7 +274,7 @@ static cmd_export_t cmds[] = {
 };
 
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"partition",       STR_PARAM | USE_FUNC_PARAM, (void*)&set_partition_arguments},
 	{"db_url",          STR_PARAM, &default_db_head.db_url.s},
 	{"table_name",      STR_PARAM, &default_db_head.table_name.s},
@@ -334,7 +334,7 @@ static module_dependency_t *get_deps_fetch_fs_load(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "freeswitch", DEP_ABORT);
 }
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "ds_set_state", 0, 0, 0, {
 		{ds_mi_set, {"state", "group", "address", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -359,7 +359,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

@@ -50,13 +50,13 @@ static str stream_print(evi_reply_sock *sock);
 /**
  * module process
  */
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"event_stream Sender",  0,  0, stream_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"reliable_mode",	INT_PARAM, &stream_reliable_mode},
 	{"event_param",		STR_PARAM, &stream_event_param},
 	{"timeout",			INT_PARAM, &stream_timeout},
@@ -92,7 +92,7 @@ struct module_exports exports = {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_stream = {
+static const evi_export_t trans_export_stream = {
 	TCP_STR,					/* transport module name */
 	stream_raise,				/* raise function */
 	stream_parse,				/* parse function */

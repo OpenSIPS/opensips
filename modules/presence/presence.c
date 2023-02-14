@@ -150,7 +150,7 @@ static str presence_exposed_event = str_init("E_PRESENCE_EXPOSED");
 event_id_t presence_event_id = EVI_ERROR;
 event_id_t exposed_event_id = EVI_ERROR;
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"handle_publish",  (cmd_function)handle_publish, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_presence,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -163,7 +163,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "db_url",                 STR_PARAM, &db_url.s},
 	{ "presentity_table",       STR_PARAM, &presentity_table.s},
 	{ "active_watchers_table",  STR_PARAM, &active_watchers_table.s},
@@ -190,7 +190,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	// refreshWatchers is a deprecated alias for refresh_watchers. To be removed later.
 	{ "refreshWatchers", 0,0,0, {
 		{mi_refresh_watchers, {"presentity_uri", "event", "refresh_type", 0}},
@@ -221,7 +221,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },

@@ -99,7 +99,7 @@ static inline int fixup_bm_timer(void** param);
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"bm_start_timer", (cmd_function)bm_start_timer, {
 		{CMD_PARAM_STR, fixup_bm_timer, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
@@ -116,7 +116,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"enable",      INT_PARAM, &bm_enable_global},
 	{"granularity", INT_PARAM, &bm_granularity},
 	{"loglevel",    INT_PARAM, &bm_loglevel},
@@ -138,7 +138,7 @@ mi_response_t *mi_bm_loglevel(const mi_params_t *params,
 mi_response_t *mi_bm_poll_results(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "bm_enable_global", 0,0,0, {
 		{mi_bm_enable_global, {"enable", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -165,7 +165,7 @@ static mi_export_t mi_cmds[] = {
 static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"BM_time_diff", sizeof("BM_time_diff")-1}, 1000, bm_get_time_diff, 0,
 		0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }

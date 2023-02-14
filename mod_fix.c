@@ -79,10 +79,10 @@ static inline gparam_p alloc_gp(void)
 	return gp;
 }
 
-int check_cmd(struct cmd_param *params, action_elem_t *elems)
+int check_cmd(const struct cmd_param *params, action_elem_t *elems)
 {
 	int i;
-	struct cmd_param *param;
+	const struct cmd_param *param;
 	pv_elem_t *pve;
 
 	for (param=params, i=1; param->flags; param++, i++) {

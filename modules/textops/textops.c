@@ -85,7 +85,7 @@ static int fixup_free_substre(void** param);
 
 static int mod_init(void);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"search", (cmd_function)search_f, {
 		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},

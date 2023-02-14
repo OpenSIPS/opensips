@@ -127,7 +127,7 @@ char *mp_ctid_insertion = "ct-param";
 str ctid_param = str_init("ctid");
 str at_escape_str = str_init("%40");
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"mid_registrar_save", (cmd_function)mid_reg_save, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
@@ -143,12 +143,12 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	pn_async_cmds,
 	{0,0,{{0,0,0}}}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{ "mode",                 INT_PARAM, &reg_mode },
 	{ "default_expires",      INT_PARAM, &default_expires },
 	{ "min_expires",          INT_PARAM, &min_expires },
@@ -178,7 +178,7 @@ static param_export_t mod_params[] = {
 	{ 0,0,0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "usrloc",    DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT  },

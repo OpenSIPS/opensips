@@ -54,13 +54,13 @@ unsigned short pwd_avp_type=0;
 
 
 /** Exported functions */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"load_uac_auth", (cmd_function)uac_auth_bind, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
 
 /** Exported parameters */
-static param_export_t params[]= {
+static const param_export_t params[]= {
 	{"credential",          STR_PARAM|USE_FUNC_PARAM, (void*)&add_credential },
 	{"auth_username_avp",   STR_PARAM,                &auth_username_avp     },
 	{"auth_realm_avp",      STR_PARAM,                &auth_realm_avp        },

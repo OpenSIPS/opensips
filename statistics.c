@@ -67,7 +67,7 @@ static mi_response_t *w_mi_list_stats_1(const mi_params_t *params,
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static mi_export_t mi_stat_cmds[] = {
+static const mi_export_t mi_stat_cmds[] = {
 	{ "get_statistics",
 		"prints the statistics (all, group or one) realtime values.", 0, 0, {
 		{mi_get_stats, {"statistics", 0}},

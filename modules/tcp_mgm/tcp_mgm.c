@@ -35,7 +35,7 @@ static int mod_init(void);
 static int child_init(int rank);
 static void mod_destroy(void);
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",   STR_PARAM, &tcp_db_url.s},
 	{"db_table", STR_PARAM, &tcp_db_table.s},
 	{"id_col",              STR_PARAM, &tcp_mgm_cols[0].name.s},
@@ -61,14 +61,14 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "tcp_reload", "re-cache all TCP profiles from the database", 0, 0, {
 		{tcp_mi_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -80,7 +80,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

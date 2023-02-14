@@ -130,7 +130,7 @@ static char* hash_file = NULL;
 int lock_pool_size = 32;
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"rand_set_prob", (cmd_function)set_prob, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE|
@@ -212,7 +212,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 #ifdef HAVE_TIMER_FD
 	{"sleep", (acmd_function)async_sleep, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}}},
@@ -223,7 +223,7 @@ static acmd_export_t acmds[] = {
 };
 
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"initial_probability", INT_PARAM, &initial},
 	{"hash_file",           STR_PARAM, &hash_file},
 	{"shv_hash_size",       INT_PARAM, &shv_hash_size},
@@ -233,7 +233,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ FIFO_SET_PROB, 0, 0, 0, {
 		{mi_set_prob, {"prob_proc", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -266,7 +266,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"RANDOM", sizeof("RANDOM")-1}, 1000, pv_get_random_val, 0,
 		0, 0, 0, 0 },
 	{ {"shv", (sizeof("shv")-1)}, 1001, pv_get_shvar,

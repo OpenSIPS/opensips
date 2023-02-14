@@ -99,7 +99,7 @@ static proc_export_t mi_procs[] = {
 };
 
 
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"children_count",      INT_PARAM,    &mi_procs[0].no           },
 	{"socket_name",         STR_PARAM,    &mi_socket                },
 	{"socket_timeout",      INT_PARAM,    &mi_socket_timeout        },

@@ -80,7 +80,7 @@ static int pv_get_xml(struct sip_msg*,  pv_param_t*, pv_value_t*);
 static int pv_parse_xml_name(pv_spec_p , const str *);
 
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"xml", sizeof("xml")-1}, PVT_XML, pv_get_xml, pv_set_xml,
 		pv_parse_xml_name, 0, 0, 0},
 	  { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }

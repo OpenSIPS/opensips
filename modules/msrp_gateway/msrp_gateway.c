@@ -85,7 +85,7 @@ static str evi_ruri_pname = str_init("ruri");
 static str evi_code_pname = str_init("code");
 static str evi_reason_pname = str_init("reason");
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "msrp_ua", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
@@ -96,14 +96,14 @@ static dep_export_t deps = {
 	},
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"hash_size", INT_PARAM, &msrpgw_sessions_hsize},
 	{"cleanup_interval", INT_PARAM, &cleanup_interval},
 	{"session_timeout", INT_PARAM, &session_timeout},
 	{"message_timeout", INT_PARAM, &message_timeout},
 };
 
-static cmd_export_t cmds[]=
+static const cmd_export_t cmds[]=
 {
 	{"msrp_gw_answer", (cmd_function)msrpgw_answer, {
 		{CMD_PARAM_STR, 0, 0},
@@ -121,7 +121,7 @@ static cmd_export_t cmds[]=
 	{0,0,{{0,0,0}},0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "msrp_gw_end_session", 0, 0, 0, {
 		{msrpgw_mi_end, {"key", 0}},
 		{EMPTY_MI_RECIPE}}

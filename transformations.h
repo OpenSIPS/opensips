@@ -98,7 +98,7 @@ typedef struct trans_ {
 typedef int (*tr_parse_f)(str *in, trans_t *t);
 
 typedef struct trans_export_ {
-	str name;
+	str_const name;
 	tr_parse_f parse_func;
 	tr_eval_f eval_func;
 } trans_export_t;

@@ -85,12 +85,12 @@ trace_proto_t tprot;
 
 static int *trace_is_on;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_bins_init, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "tls_trace", 0, 0, 0, {
 		{tls_trace_mi, {0}},
 		{tls_trace_mi_1, {"trace_mode", 0}},
@@ -100,7 +100,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "bins_port",                       INT_PARAM, &bins_port              },
 	{ "bins_send_timeout",               INT_PARAM, &bins_send_tout         },
 	{ "bins_max_msg_chunks",             INT_PARAM, &bins_max_msg_chunks    },
@@ -117,7 +117,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },

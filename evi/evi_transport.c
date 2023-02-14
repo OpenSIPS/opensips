@@ -36,7 +36,7 @@ static int evi_trans_mods_size = 0;
 
 /* functions used by the transport modules */
 
-int register_event_mod(evi_export_t *ev)
+int register_event_mod(const evi_export_t *ev)
 {
 	evi_trans_t *trans_mod;
 
@@ -108,7 +108,7 @@ int get_trans_mod_no(void)
 }
 
 /* Returns the transport export */
-evi_export_t* get_trans_mod(str* tran)
+const evi_export_t* get_trans_mod(str* tran)
 {
 	str t;
 	char *p;

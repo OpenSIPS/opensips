@@ -60,7 +60,7 @@ struct virtual_socket {
 
 struct sub_socket {
 	str sock_str;
-	evi_export_t *trans_mod;
+	const evi_export_t *trans_mod;
 	evi_reply_sock *sock;
 
 	gen_lock_t *lock;

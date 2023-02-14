@@ -88,7 +88,7 @@ static str database_url = {NULL, 0};
 void *dp_srg = NULL;
 
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "partition",		STR_PARAM|USE_FUNC_PARAM,
 				(void*)dp_set_partition},
 	{ "db_url",		STR_PARAM,	&default_dp_db_url.s},
@@ -106,7 +106,7 @@ static param_export_t mod_params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "dp_reload", 0, 0, mi_child_init, {
 		{mi_reload_rules, {0}},
 		{mi_reload_rules_1, {"partition", 0}},
@@ -125,7 +125,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"dp_translate", (cmd_function)dp_translate_f,
 		{ {CMD_PARAM_INT, NULL, NULL},
 		  {CMD_PARAM_STR, NULL, NULL},
@@ -140,7 +140,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_WARN },
 		{ MOD_TYPE_NULL, NULL, 0 },

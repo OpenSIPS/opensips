@@ -56,7 +56,7 @@ unsigned int db_http_timeout = 30000; /* Default is 30 seconds */
 /*
  * MySQL database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",         (cmd_function)db_http_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -64,7 +64,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"SSL", INT_PARAM  ,&use_ssl},
 	{"cap_raw_query", INT_PARAM  ,&cap_raw_query},
 	{"cap_replace", INT_PARAM  , &cap_replace},

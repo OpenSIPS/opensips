@@ -47,7 +47,7 @@ static int mod_init(void);
 /*
  * PostgreSQL database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",     (cmd_function)db_postgres_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -59,7 +59,7 @@ int use_tls = 0;
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"exec_query_threshold", INT_PARAM, &db_postgres_exec_query_threshold},
 	{"max_db_queries", INT_PARAM, &max_db_queries},
 	{"timeout", INT_PARAM, &pq_timeout},
@@ -75,7 +75,7 @@ static module_dependency_t *get_deps_use_tls(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

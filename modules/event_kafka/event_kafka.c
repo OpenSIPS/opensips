@@ -52,17 +52,17 @@ static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
 
 struct list_head *kafka_brokers;
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"Kafka worker",  0,  0, kafka_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"broker_id", STR_PARAM|USE_FUNC_PARAM, (void *)add_script_broker},
 	{0,0,0}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"kafka_publish",(cmd_function)kafka_publish, {
 		{CMD_PARAM_STR, fixup_broker, 0},
 		{CMD_PARAM_STR, 0, 0},
@@ -97,7 +97,7 @@ struct module_exports exports = {
 };
 
 /* exported functions for core event interface */
-static evi_export_t trans_export_kafka = {
+static const evi_export_t trans_export_kafka = {
 	KAFKA_STR,					/* transport module name */
 	kafka_evi_raise,			/* raise function */
 	kafka_evi_parse,			/* parse function */

@@ -125,12 +125,12 @@ static mi_response_t *wss_trace_mi_1(const mi_params_t *params,
 
 static int wss_port = WSS_DEFAULT_PORT;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_wss_init, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	/* XXX: should we drop the ws prefix? */
 	{ "wss_port",           INT_PARAM, &wss_port           },
 	{ "wss_max_msg_chunks", INT_PARAM, &wss_max_msg_chunks },
@@ -146,7 +146,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -156,7 +156,7 @@ static dep_export_t deps = {
 	},
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "wss_trace", 0, 0, 0, {
 		{wss_trace_mi, {0}},
 		{wss_trace_mi_1, {"trace_mode", 0}},

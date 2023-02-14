@@ -91,7 +91,7 @@ int _wolfssl_tls_var_validity(int ind, void *ssl, str *res);
 
 int ssl_versions[SSL_VERSIONS_SIZE];
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"load_tls_wolfssl", (cmd_function)load_tls_wolfssl,
 		{{0,0,0}}, ALL_ROUTES},
 	{0,0,{{0,0,0}},0}

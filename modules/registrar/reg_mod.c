@@ -138,7 +138,7 @@ struct sig_binds sigb;
 struct tm_binds tmb;
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"save", (cmd_function)save, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -185,7 +185,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	pn_async_cmds,
 	{0,0,{{0,0,0}}}
 };
@@ -193,7 +193,7 @@ static acmd_export_t acmds[] = {
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"default_expires",    INT_PARAM, &default_expires       },
 	{"default_q",          INT_PARAM, &default_q             },
 	{"case_sensitive",     INT_PARAM, &case_sensitive        },
@@ -221,7 +221,7 @@ static param_export_t params[] = {
 
 
 /*! \brief We expose internal variables via the statistic framework below.*/
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"max_expires",       STAT_NO_RESET, &max_expires_stat        },
 	{"max_contacts",      STAT_NO_RESET, &max_contacts_stat       },
 	{"default_expire",    STAT_NO_RESET, &default_expire_stat     },
@@ -230,7 +230,7 @@ static stat_export_t mod_stats[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "usrloc",    DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT  },

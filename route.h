@@ -140,9 +140,9 @@ int get_script_route_ID_by_name(char *name,
 int get_script_route_ID_by_name_str(str *name,
 		struct script_route *sr, int size);
 
-int is_script_func_used( char *name, int param_no);
+int is_script_func_used(const char *name, int param_no);
 
-int is_script_async_func_used( char *name, int param_no);
+int is_script_async_func_used(const char *name, int param_no);
 
 
 void push(struct action* a, struct action** head);

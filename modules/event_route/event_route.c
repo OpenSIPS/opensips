@@ -55,13 +55,13 @@ static str scriptroute_print(evi_reply_sock *sock);
 /**
  *  * module process
  *   */
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{0,0,0,0,0,0}
 };
 /**
  * module exported functions
  */
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
@@ -95,7 +95,7 @@ struct module_exports exports= {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_scriptroute = {
+static const evi_export_t trans_export_scriptroute = {
 	SCRIPTROUTE_NAME_STR,	/* transport module name */
 	scriptroute_raise,		/* raise function */
 	scriptroute_parse,		/* parse function */

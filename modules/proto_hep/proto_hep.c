@@ -91,7 +91,7 @@ static int hep_current_proto;
 
 union sockaddr_union local_su;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_hep_init_udp, {{0,0,0}}, 0},
 	{"proto_init", (cmd_function)proto_hep_init_tcp, {{0,0,0}}, 0},
 	{"load_hep", (cmd_function)bind_proto_hep, {{0,0,0}}, 0},
@@ -106,7 +106,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "hep_port",                        INT_PARAM, &hep_port				},
 	{ "hep_send_timeout",                INT_PARAM, &hep_send_timeout		},
 	{ "hep_max_msg_chunks",              INT_PARAM, &hep_max_msg_chunks     },
@@ -138,7 +138,7 @@ static module_dependency_t *get_deps_compression(const param_export_t *param)
 
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

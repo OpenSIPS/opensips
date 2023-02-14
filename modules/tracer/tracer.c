@@ -212,7 +212,7 @@ static int process_dyn_tracing(struct sip_msg *msg, void *param);
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"trace", (cmd_function)trace_w, {
 		{CMD_PARAM_STR, fixup_tid, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_sflags, 0},
@@ -228,7 +228,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"trace_id",           STR_PARAM|USE_FUNC_PARAM, parse_trace_id},
 	{"date_column",        STR_PARAM, &date_column.s        },
 	{"callid_column",      STR_PARAM, &callid_column.s      },
@@ -253,7 +253,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "trace", 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{sip_trace_mi, {0}},
 		{sip_trace_mi_tid,  {"id", 0}},
@@ -283,7 +283,7 @@ static mi_export_t mi_cmds[] = {
 stat_var* siptrace_req;
 stat_var* siptrace_rpl;
 
-static stat_export_t siptrace_stats[] = {
+static const stat_export_t siptrace_stats[] = {
 	{"traced_requests" ,  0,  &siptrace_req  },
 	{"traced_replies"  ,  0,  &siptrace_rpl  },
 	{0,0,0}
@@ -304,7 +304,7 @@ static module_dependency_t *get_deps_hep(const param_export_t *param)
 }
 
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

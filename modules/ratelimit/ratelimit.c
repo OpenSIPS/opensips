@@ -122,7 +122,7 @@ static int pv_get_rl_count(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_parse_rl_count(pv_spec_p sp, const str *in);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"rl_check", (cmd_function)w_rl_check, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_INT,0,0},
@@ -140,7 +140,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "timer_interval",		INT_PARAM,	&rl_timer_interval		},
 	{ "expire_time",		INT_PARAM,	&rl_expire_time			},
 	{ "hash_size",			INT_PARAM,	&rl_hash_size			},
@@ -166,7 +166,7 @@ static param_export_t params[] = {
 #define RLH5 "Params: none ; Shows the status of the other SIP instances."
 #define RLH6 "Params: pipe ; Dumps the details of a (SBT) pipe. "
 
-static mi_export_t mi_cmds [] = {
+static const mi_export_t mi_cmds [] = {
 	{"rl_list", RLH1, 0, 0, {
 		{mi_stats, {0}},
 		{mi_stats_1, {"pipe", 0}},
@@ -193,13 +193,13 @@ static mi_export_t mi_cmds [] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"rl_count", sizeof("rl_count")-1}, 1010, pv_get_rl_count, 0,
 		 pv_parse_rl_count, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

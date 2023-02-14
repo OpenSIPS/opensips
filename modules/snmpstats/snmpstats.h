@@ -87,7 +87,7 @@ static int  mod_child_init(int rank);
 static void mod_destroy(void);
 
 
-static proc_export_t mod_procs[] = {
+static const proc_export_t mod_procs[] = {
 	{"SNMP AgentX",  0,  0, agentx_child, 1 , 0},
 	{0,0,0,0,0,0}
 };
@@ -97,7 +97,7 @@ static proc_export_t mod_procs[] = {
  * This structure defines the SNMPStats parameters that can be configured
  * through the opensips.cfg configuration file.
  */
-static param_export_t mod_params[] =
+static const param_export_t mod_params[] =
 {
 	{ "sipEntityType",          STR_PARAM|USE_FUNC_PARAM,
 			(void *)handleSipEntityType       },
@@ -116,7 +116,7 @@ static param_export_t mod_params[] =
 	{ 0,0,0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "usrloc", DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },

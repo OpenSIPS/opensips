@@ -111,7 +111,7 @@ static int w_qr_enable_dst(struct sip_msg *_,
 
 static int qr_fix_xstat(void **param);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"qr_set_xstat", (cmd_function)w_qr_set_xstat,
 		{ {CMD_PARAM_INT, NULL, NULL},
 		  {CMD_PARAM_STR, NULL, NULL},
@@ -142,7 +142,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",                  STR_PARAM, &db_url.s},
 	{"table_name",              STR_PARAM, &qr_profiles_table.s},
 	{"algorithm",               STR_PARAM, &qr_algorithm_s},
@@ -162,7 +162,7 @@ static param_export_t params[] = {
 #define HLP1 "Params: [partition [, rule_id [, dst_name]]]; List QR statistics"
 #define HLP2 "Params: [partition] rule_id dst_name; Remove a gateway/carrier from routing"
 #define HLP3 "Params: [partition] rule_id dst_name; Re-introduce a gateway/carrier into routing"
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "qr_status", HLP1, 0, NULL, {
 		{mi_qr_status_0, {NULL}},
 		{mi_qr_status_1, {QR_PARAM_PART, NULL}},
@@ -190,7 +190,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },

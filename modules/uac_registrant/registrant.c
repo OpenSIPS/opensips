@@ -135,7 +135,7 @@ typedef struct reg_tm_cb {
 }reg_tm_cb_t;
 
 /** Exported parameters */
-static param_export_t params[]= {
+static const param_export_t params[]= {
 	{"hash_size",		INT_PARAM,			&reg_hsize},
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
@@ -159,7 +159,7 @@ static param_export_t params[]= {
 
 
 /** MI commands */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "reg_list", 0, 0, 0, {
 		{mi_reg_list, {0}},
 		{mi_reg_list_record, {"aor", "contact", "registrar", 0}},
@@ -181,7 +181,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_ABORT },

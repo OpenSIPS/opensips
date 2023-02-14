@@ -63,26 +63,26 @@ static void destroy(void);
 
 
 
-// static cmd_export_t cmds[]=
+// static const cmd_export_t cmds[]=
 // {
 // 	{"pua_set_publish", (cmd_function)pua_set_publish, 0, 0, 0, REQUEST_ROUTE},
 // 	{0, 0, 0, 0, 0, 0}
 // };
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"pua_set_publish", (cmd_function)pua_set_publish, {{0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"default_domain",   STR_PARAM, &default_domain.s   },
 	{"entity_prefix",    STR_PARAM, &pres_prefix.s      },
 	{"presence_server",  STR_PARAM, &presence_server.s  },
 	{0,                  0,         0                   }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT },

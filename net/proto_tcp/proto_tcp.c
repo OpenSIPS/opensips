@@ -125,13 +125,13 @@ static int tcp_crlf_drop = 0;
 static int tcp_parallel_handling = 0;
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tcp_init, {{0, 0, 0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "tcp_port",                        INT_PARAM, &tcp_port               },
 	{ "tcp_send_timeout",                INT_PARAM, &tcp_send_timeout       },
 	{ "tcp_max_msg_chunks",              INT_PARAM, &tcp_max_msg_chunks     },
@@ -152,7 +152,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "tcp_trace", 0, 0, 0, {
 		{w_tcp_trace_mi, {0}},
 		{w_tcp_trace_mi_1, {"trace_mode", 0}},
@@ -163,7 +163,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 /* module dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 }

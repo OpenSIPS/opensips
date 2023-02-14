@@ -182,7 +182,7 @@ stat_var *tm_cluster_reply_rx;
 stat_var *tm_cluster_request_rx;
 stat_var *tm_cluster_cancel_rx;
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -193,7 +193,7 @@ static dep_export_t deps = {
 };
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"t_newtran", (cmd_function)w_t_newtran, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"t_reply", (cmd_function)w_pv_t_reply, {
@@ -276,7 +276,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"ruri_matching",             INT_PARAM,
 		&ruri_matching},
 	{"via1_matching",             INT_PARAM,
@@ -325,7 +325,7 @@ static param_export_t params[]={
 };
 
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"received_replies" ,    0,              &tm_rcv_rpls    },
 	{"relayed_replies" ,     0,              &tm_rld_rpls    },
 	{"local_replies" ,       0,              &tm_loc_rpls    },
@@ -350,7 +350,7 @@ static stat_export_t mod_stats[] = {
 /**
  * pseudo-variables exported by TM module
  */
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"T_branch_idx", sizeof("T_branch_idx")-1}, 900,
 		pv_get_tm_branch_idx, NULL, NULL, NULL, NULL, 0 },
 	{ {"T_reply_code", sizeof("T_reply_code")-1}, 901,
@@ -372,7 +372,7 @@ static pv_export_t mod_items[] = {
 };
 
 
-static mi_export_t mi_cmds [] = {
+static const mi_export_t mi_cmds [] = {
 	{ MI_TM_UAC, 0, MI_ASYNC_RPL_FLAG|MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_tm_uac_dlg_1, {"method", "ruri", "headers", 0}},
 		{mi_tm_uac_dlg_2, {"method", "ruri", "headers", "next_hop", 0}},

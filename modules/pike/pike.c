@@ -78,13 +78,13 @@ event_id_t pike_event_id = EVI_ERROR;
 /* status/repport group */
 void *pike_srg;
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"pike_check_req", (cmd_function)pike_check_req, {{0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"sampling_time_unit",    INT_PARAM,  &time_unit},
 	{"reqs_density_per_unit", INT_PARAM,  &max_reqs},
 	{"remove_latency",        INT_PARAM,  &timeout},
@@ -93,7 +93,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds [] = {
+static const mi_export_t mi_cmds [] = {
 	{MI_PIKE_LIST, "lists the nodes in the pike tree", 0, 0, {
 		{mi_pike_list, {0}},
 		{EMPTY_MI_RECIPE}}

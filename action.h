@@ -72,8 +72,8 @@ void run_error_route(struct sip_msg* msg, int force_reset);
 			__script_trace(class, action, msg, file, line); \
 	} while (0)
 
-void __script_trace(char *class, char *action, struct sip_msg *msg,
-		char *file, int line);
+void __script_trace(const char *class, const char *action, struct sip_msg *msg,
+		const char *file, int line);
 
 typedef int (*param_getf_t)(struct sip_msg*, pv_param_t*, pv_value_t*, void *, void *);
 

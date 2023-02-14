@@ -169,7 +169,7 @@ mi_response_t *mi_update_subscriptions(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"rls_handle_subscribe",     (cmd_function)rls_handle_subscribe, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"rls_handle_notify",        (cmd_function)rls_handle_notify, {{0,0,0}},
@@ -177,7 +177,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "contact_user",           STR_PARAM, &contact_user.s             },
 	{ "presence_server",        STR_PARAM, &presence_server.s          },
 	{ "rlsubs_table",           STR_PARAM, &rlsubs_table.s             },
@@ -193,7 +193,7 @@ static param_export_t params[]={
 	{  0,                       0,              0                       }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "rls_update_subscriptions", 0, 0, 0, {
 		{mi_update_subscriptions, {"presentity_uri", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -201,7 +201,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",        DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },

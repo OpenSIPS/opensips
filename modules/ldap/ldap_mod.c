@@ -87,13 +87,13 @@ static int w_ldap_result_check(struct sip_msg* msg, str* attr_name,
 str ldap_config = str_init(DEF_LDAP_CONFIG);
 static dictionary* config_vals = NULL;
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"ldap_search", (acmd_function)w_ldap_search_async, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}}},
 	{0,0,{{0,0,0}}}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"ldap_search", (cmd_function)w_ldap_search, {
 		{CMD_PARAM_STR, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
@@ -127,7 +127,7 @@ static cmd_export_t cmds[] = {
 /*
 * Exported parameters
 */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 
 	{"config_file",                    STR_PARAM, &ldap_config.s},
 	{"max_async_connections",          INT_PARAM, &max_async_connections},

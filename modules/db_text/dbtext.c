@@ -60,7 +60,7 @@ int dbt_bind_api(const str* mod, db_func_t *dbb);
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api", (cmd_function)dbt_bind_api, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
@@ -68,14 +68,14 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_mode", INT_PARAM, &db_mode},
 	{0, 0, 0}
 };
 
 
 /** MI commands */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{"dbt_dump", 0, 0, 0, {
 		{mi_dbt_dump, {0}},
 		{EMPTY_MI_RECIPE}}

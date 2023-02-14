@@ -70,7 +70,7 @@ static str MI_HTTP_U_METHOD_REASON = str_init("500 Unexpected method! Only GET i
 
 
 /* module parameters */
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"root",   STR_PARAM, &http_root.s},
 	{"http_method", INT_PARAM, &http_method},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
@@ -78,7 +78,7 @@ static param_export_t mi_params[] = {
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "httpd", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

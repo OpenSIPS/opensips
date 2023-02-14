@@ -84,7 +84,7 @@ str presence_server = {NULL, 0};
 
 
 /** Exported functions */
-static cmd_export_t cmds[]=
+static const cmd_export_t cmds[]=
 {
 	{"sca_init_request"  ,(cmd_function)sca_init_request, {
 		{CMD_PARAM_INT,0,0}, {0,0,0}},
@@ -96,7 +96,7 @@ static cmd_export_t cmds[]=
 };
 
 /** Exported parameters */
-static param_export_t params[]=
+static const param_export_t params[]=
 {
 	{"hash_size",				INT_PARAM,&b2b_sca_hsize			},
 	{"presence_server",			STR_PARAM,&presence_server.s			},
@@ -162,7 +162,7 @@ static param_export_t params[]=
 };
 
 /** MI commands */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "sca_list", 0,0,0,{
 		{mi_sca_list, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -170,7 +170,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "pua",       DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "b2b_logic", DEP_ABORT },

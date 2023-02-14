@@ -1107,8 +1107,8 @@ static int fix_actions(struct action* a)
 {
 	struct action *t;
 	int ret;
-	cmd_export_t* cmd;
-	acmd_export_t* acmd;
+	const cmd_export_t* cmd;
+	const acmd_export_t* acmd;
 	str s;
 	pv_elem_t *model=NULL;
 	xl_level_p xlp;
@@ -1262,7 +1262,7 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case CMD_T:
-				cmd = (cmd_export_t*)t->elem[0].u.data;
+				cmd = (const cmd_export_t*)t->elem[0].u.data_const;
 				LM_DBG("fixing %s, %s:%d\n", cmd->name, t->file, t->line);
 
 				if ((ret = fix_cmd(cmd->params, t->elem)) < 0) {
@@ -1295,7 +1295,7 @@ static int fix_actions(struct action* a)
 				}
 				break;
 			case AMODULE_T:
-				acmd = (acmd_export_t*)t->elem[0].u.data;
+				acmd = (const acmd_export_t*)t->elem[0].u.data_const;
 				LM_DBG("fixing async %s, %s:%d\n", acmd->name, t->file, t->line);
 
 				if ((ret = fix_cmd(acmd->params, t->elem)) < 0) {
@@ -1522,7 +1522,7 @@ static int check_expr(struct expr* exp, int r_type);
 static int check_actions(struct action *a, int r_type)
 {
 	struct action *aitem;
-	cmd_export_t  *fct;
+	const cmd_export_t  *fct;
 	int n;
 
 	for( ; a ; a=a->next ) {
@@ -1571,7 +1571,7 @@ static int check_actions(struct action *a, int r_type)
 				break;
 			case CMD_T:
 				/* do check :D */
-				fct = (cmd_export_t*)(a->elem[0].u.data);
+				fct = (const cmd_export_t*)(a->elem[0].u.data_const);
 				if ( (fct->flags&r_type)!=r_type ) {
 					rcheck_status = -1;
 					LM_ERR("script function "
@@ -1859,7 +1859,7 @@ void get_route_name(int idx, str *name)
 }
 
 
-int is_script_func_used( char *name, int param_no)
+int is_script_func_used(const char *name, int param_no)
 {
 	unsigned int i;
 
@@ -1908,7 +1908,7 @@ int is_script_func_used( char *name, int param_no)
 	return 0;
 }
 
-int is_script_async_func_used( char *name, int param_no)
+int is_script_async_func_used(const char *name, int param_no)
 {
 	unsigned int i;
 

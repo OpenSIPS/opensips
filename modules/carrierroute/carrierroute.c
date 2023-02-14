@@ -139,7 +139,7 @@ static int hash_fixup(void ** param);
 
 
 /************* Module Exports **********************************************/
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"cr_user_carrier",          (cmd_function)cr_load_user_carrier, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -172,7 +172,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]= {
+static const param_export_t params[]= {
 	{"db_url",                     STR_PARAM, &db_url.s },
 	{"db_table",                   STR_PARAM, &db_table.s },
 	{"db_failure_table",           STR_PARAM, &db_failure_table.s },
@@ -213,7 +213,7 @@ static param_export_t params[]= {
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "cr_reload_routes", 0, 0, 0, {
 		{reload_fifo, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -245,7 +245,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

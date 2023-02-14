@@ -97,7 +97,7 @@ extern unsigned int counted_max_processes;
 extern int _termination_in_progress;
 
 int   init_multi_proc_support();
-void  set_proc_attrs( char *fmt, ...);
+void  set_proc_attrs(const char *fmt, ...);
 int   count_init_child_processes(void);
 int   count_child_processes(void);
 
@@ -114,7 +114,7 @@ int   count_child_processes(void);
 #define is_process_running(_idx) \
 	( (pt[_idx].flags&OSS_PROC_IS_RUNNING)?1:0 )
 
-pid_t internal_fork(char *proc_desc, unsigned int flags,
+pid_t internal_fork(const char *proc_desc, unsigned int flags,
 		enum process_type type);
 
 /* return processes pid */

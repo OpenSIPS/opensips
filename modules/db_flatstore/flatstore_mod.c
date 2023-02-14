@@ -81,7 +81,7 @@ unsigned long long my_rotate;
 /*
  * Flatstore database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",    (cmd_function)db_flat_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -89,7 +89,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"flush", INT_PARAM, &flat_flush},
 	{"delimiter", STR_PARAM, &flat_delimiter},
 	{"suffix", STR_PARAM, &flat_suffix_s.s},
@@ -100,7 +100,7 @@ static param_export_t params[] = {
 
 
 #define MI_FLAT_HELP "Params: none ; Rotates the logging file."
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_FLAT_ROTATE, MI_FLAT_HELP, 0, 0, {
 		{mi_flat_rotate_cmd, {0}},
 		{EMPTY_MI_RECIPE}}

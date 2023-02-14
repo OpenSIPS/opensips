@@ -368,7 +368,7 @@ static event_id_t dr_evi_id;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"do_routing", (cmd_function)w_do_routing,
 		{ {CMD_PARAM_INT|CMD_PARAM_OPT, NULL, NULL},
 		  {CMD_PARAM_STR|CMD_PARAM_OPT, fix_flags, NULL},
@@ -467,7 +467,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"use_partitions",    INT_PARAM, &use_partitions    },
 	{"db_partitions_url",    STR_PARAM, &db_partitions_url.s },
 	{"db_partitions_table", STR_PARAM, &db_partitions_table.s },
@@ -532,7 +532,7 @@ static param_export_t params[] = {
 	"value greater than 0. Disables probing of gateways if parameter"\
 "value is 0. With no parameter, returns current probing status"
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "dr_reload", HLP1, 0, 0, {
 		{dr_reload_cmd, {0}},
 		{dr_reload_cmd_1, {"partition_name", 0}},
@@ -584,7 +584,7 @@ static module_dependency_t *get_deps_probing_interval(const param_export_t *para
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tm", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

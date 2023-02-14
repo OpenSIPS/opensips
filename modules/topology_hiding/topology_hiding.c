@@ -51,7 +51,7 @@ int w_topology_hiding(struct sip_msg *req, str *flags_s);
 int w_topology_hiding_match(struct sip_msg *req, void *seq_match_mode_val);
 static int pv_topo_callee_callid(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"topology_hiding",(cmd_function)w_topology_hiding, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -62,7 +62,7 @@ static cmd_export_t cmds[]={
 };
 
 /* Exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "force_dialog",                INT_PARAM, &force_dialog                },
 	{ "th_passed_contact_uri_params",STR_PARAM, &topo_hiding_ct_params.s     },
 	{ "th_passed_contact_params",    STR_PARAM, &topo_hiding_ct_hdr_params.s },
@@ -74,7 +74,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static pv_export_t pvars[] = {
+static const pv_export_t pvars[] = {
 	{ {"TH_callee_callid",  sizeof("TH_callee_callid")-1}, 1000,
 		pv_topo_callee_callid,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
@@ -90,7 +90,7 @@ static module_dependency_t *get_deps_dialog(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "dialog", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },

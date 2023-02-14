@@ -68,7 +68,7 @@ int msrp_check_cert_on_reusage = 0;
 
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_msrp_init, {{0, 0, 0}}, 0},
 	{"proto_init", (cmd_function)proto_msrps_init, {{0, 0, 0}}, 0},
 	{"load_msrp", (cmd_function)load_msrp, {{0,0,0}}, 0},
@@ -76,7 +76,7 @@ static cmd_export_t cmds[] = {
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "send_timeout",			INT_PARAM, &msrp_send_timeout       },
 	{ "tls_handshake_timeout",	INT_PARAM, &msrp_tls_handshake_timeout  },
 	{ "max_msg_chunks",			INT_PARAM, &msrp_max_msg_chunks },
@@ -87,7 +87,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "msrp_trace", 0, 0, 0, {
 		{w_msrp_trace_mi, {0}},
 		{w_msrp_trace_mi_1, {"trace_mode", 0}},
@@ -98,7 +98,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 /* module dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 }

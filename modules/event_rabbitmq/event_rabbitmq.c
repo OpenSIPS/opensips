@@ -61,13 +61,13 @@ static void rmq_free(evi_reply_sock *sock);
 static str rmq_print(evi_reply_sock *sock);
 
 /* sending process */
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"RabbitMQ sender",  0,  0, rmq_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
 	{"use_tls", INT_PARAM, &use_tls},
@@ -83,7 +83,7 @@ static module_dependency_t *get_deps_use_tls(const param_export_t *param)
 }
 
 /* modules dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -123,7 +123,7 @@ struct module_exports exports= {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_rmq = {
+static const evi_export_t trans_export_rmq = {
 	RMQ_STR,					/* transport module name */
 	rmq_raise,					/* raise function */
 	rmq_parse,					/* parse function */

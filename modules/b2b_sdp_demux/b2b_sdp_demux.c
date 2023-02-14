@@ -29,7 +29,7 @@
 #include "../../msg_translator.h"
 #include "../../rw_locking.h"
 
-static dep_export_t mod_deps = {
+static const dep_export_t mod_deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -66,7 +66,7 @@ static void b2b_sdp_client_event_received(enum b2b_entity_type et, str *key,
 		str *logic_key, void *param, enum b2b_event_type event_type,
 		bin_packet_t *store, int backend);
 
-static cmd_export_t mod_cmds[] = {
+static const cmd_export_t mod_cmds[] = {
 	{"b2b_sdp_demux", (cmd_function)b2b_sdp_demux, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0},
@@ -144,7 +144,7 @@ static int b2b_sdp_parse_bye_mode(unsigned int type, void *val)
 	return 0;
 }
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "client_bye_mode", STR_PARAM|USE_FUNC_PARAM, b2b_sdp_parse_bye_mode },
 	{ 0,                 0,                        0                       }
 };

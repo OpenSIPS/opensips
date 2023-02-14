@@ -71,7 +71,7 @@ static int suppress_event_name = 0;
 static str file_permissions;
 static mode_t file_permissions_oct;
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "evi_flat_rotate", "rotates the files the module dumps events into", 0,0,{
 		{mi_rotate, {"path_to_file", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -79,7 +79,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"max_open_sockets",INT_PARAM, &initial_capacity},
 	{"delimiter",STR_PARAM, &delimiter.s},
 	{"file_permissions", STR_PARAM, &file_permissions.s},
@@ -110,7 +110,7 @@ struct module_exports exports= {
 	0							/* reload confirm function */
 };
 
-static evi_export_t trans_export_flat = {
+static const evi_export_t trans_export_flat = {
 	FLAT_STR,					/* transport module name */
 	flat_raise,					/* raise function */
 	flat_parse,					/* parse function */

@@ -121,7 +121,7 @@ module_dependency_t *get_deps_cachedb_url(const param_export_t *param)
 
 
 static int add_module_dependency(struct sr_module *mod, const module_dependency_t *dep,
-								 char *script_param)
+								 const char *script_param)
 {
 	struct sr_module_dep *md;
 	int len;

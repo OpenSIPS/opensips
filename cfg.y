@@ -132,7 +132,6 @@ static void yyerror(char* s);
 static void yyerrorf(char* fmt, ...);
 static char* tmp;
 static int i_tmp, rc;
-static void* cmd_tmp;
 static struct socket_id* lst_tmp;
 static int rt;  /* Type of route block for find_export */
 static str s_tmp;
@@ -2148,31 +2147,31 @@ route_param: STRING {
 	;
 
 async_func: ID LPAREN RPAREN {
-				cmd_tmp=(void*)find_mod_acmd_export_t($1);
-				if (cmd_tmp==0){
+				const acmd_export_t* acmd_tmp=find_mod_acmd_export_t($1);
+				if (acmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
 					$$=0;
 				}else{
-					if (check_acmd_call_params(cmd_tmp,elems,0)<0) {
+					if (check_acmd_call_params(acmd_tmp,elems,0)<0) {
 						yyerrorf("too few parameters "
 							"for command <%s>\n", $1);
 						$$=0;
 					} else {
 						elems[0].type = ACMD_ST;
-						elems[0].u.data = cmd_tmp;
+						elems[0].u.data_const = acmd_tmp;
 						mk_action_($$, AMODULE_T, 1, elems);
 					}
 				}
 			}
 			| ID LPAREN func_param RPAREN {
-				cmd_tmp=(void*)find_mod_acmd_export_t($1);
-				if (cmd_tmp==0){
+				const acmd_export_t* acmd_tmp=find_mod_acmd_export_t($1);
+				if (acmd_tmp==0){
 					yyerrorf("unknown async command <%s>, "
 						"missing loadmodule?", $1);
 					$$=0;
 				}else{
-					rc = check_acmd_call_params(cmd_tmp,elems,$3);
+					rc = check_acmd_call_params(acmd_tmp,elems,$3);
 					switch (rc) {
 					case -1:
 						yyerrorf("too few parameters "
@@ -2191,7 +2190,7 @@ async_func: ID LPAREN RPAREN {
 						break;
 					default:
 						elems[0].type = ACMD_ST;
-						elems[0].u.data = cmd_tmp;
+						elems[0].u.data_const = acmd_tmp;
 						mk_action_($$, AMODULE_T, $3+1, elems);
 					}
 				}
@@ -2272,7 +2271,7 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| ROUTE LPAREN error RPAREN { $$=0; yyerror("bad route"
 						"argument"); }
 		| ID LPAREN RPAREN	{
-								cmd_tmp=(void*)find_cmd_export_t($1, rt);
+								const cmd_export_t* cmd_tmp=find_cmd_export_t($1, rt);
 								if (cmd_tmp==0){
 									if (find_cmd_export_t($1, 0)) {
 										yyerrorf("Command <%s> cannot be "
@@ -2289,13 +2288,13 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 										$$=0;
 									} else {
 										elems[0].type = CMD_ST;
-										elems[0].u.data = cmd_tmp;
+										elems[0].u.data_const = cmd_tmp;
 										mk_action_($$, CMD_T, 1, elems);
 									}
 								}
 							}
 		| ID LPAREN func_param RPAREN	{
-								cmd_tmp=(void*)find_cmd_export_t($1, rt);
+								const cmd_export_t* cmd_tmp=find_cmd_export_t($1, rt);
 								if (cmd_tmp==0){
 									if (find_cmd_export_t($1, 0)) {
 										yyerrorf("Command <%s> cannot be "
@@ -2325,7 +2324,7 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 										break;
 									default:
 										elems[0].type = CMD_ST;
-										elems[0].u.data = cmd_tmp;
+										elems[0].u.data_const = cmd_tmp;
 										mk_action_($$, CMD_T, $3+1, elems);
 									}
 								}

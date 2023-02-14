@@ -95,13 +95,13 @@ struct tm_binds tmb;
 uac_auth_api_t uac_auth_api;
 
 /** Exported functions */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"load_b2b",  (cmd_function)b2b_entities_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
 /** Exported parameters */
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "server_hsize",          INT_PARAM,    &server_hsize       },
 	{ "client_hsize",          INT_PARAM,    &client_hsize       },
 	{ "script_req_route",      STR_PARAM,    &script_req_route   },
@@ -118,7 +118,7 @@ static param_export_t params[]={
 	{ 0,                       0,            0                   }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "b2be_list", 0,0,0,{
 		{mi_b2be_list, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -126,7 +126,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "uac_auth", DEP_WARN  },

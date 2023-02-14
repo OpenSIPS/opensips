@@ -69,7 +69,7 @@ gen_lock_t *queries_lock;
 void *sql_srg = NULL;
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"spec_delimiter", STR_PARAM, &spec_delimiter.s},
 	{"pvar_delimiter", STR_PARAM, &pvar_delimiter.s},
 	{"columns_delimiter", STR_PARAM, &columns_delimiter.s},
@@ -80,13 +80,13 @@ static param_export_t mod_params[] = {
 	{0,0,0}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{{"sql_cached_value", sizeof("sql_cached_value") - 1}, 1000,
 		pv_get_sql_cached_value, 0, pv_parse_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "sql_cacher_reload", "reload the SQL database into the cache", 0, 0, {
 		{mi_reload_1, {"id", 0}},
 		{mi_reload_2, {"id", "key", 0}},
@@ -95,7 +95,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_CACHEDB, NULL, DEP_ABORT },

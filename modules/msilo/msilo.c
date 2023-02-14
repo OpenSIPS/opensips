@@ -169,7 +169,7 @@ static void m_tm_callback( struct cell *t, int type, struct tmcb_params *ps);
 
 /* commands wrappers and fixups */
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"m_store",  (cmd_function)m_store, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
@@ -181,7 +181,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "db_url",           STR_PARAM, &ms_db_url.s             },
 	{ "db_table",         STR_PARAM, &ms_db_table.s           },
 	{ "from_address",     STR_PARAM, &ms_from.s                 },
@@ -220,7 +220,7 @@ stat_var* ms_failed_msgs;
 stat_var* ms_dumped_rmds;
 stat_var* ms_failed_rmds;
 
-static stat_export_t msilo_stats[] = {
+static const stat_export_t msilo_stats[] = {
 	{"stored_messages" ,  0,  &ms_stored_msgs  },
 	{"dumped_messages" ,  0,  &ms_dumped_msgs  },
 	{"failed_messages" ,  0,  &ms_failed_msgs  },
@@ -230,7 +230,7 @@ static stat_export_t msilo_stats[] = {
 };
 #endif
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_SQLDB,   NULL, DEP_ABORT },

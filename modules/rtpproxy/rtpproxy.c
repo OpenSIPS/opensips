@@ -426,7 +426,7 @@ static event_id_t rtpproxy_dtmf_event = EVI_ERROR;
 
 rw_lock_t *nh_lock=NULL;
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"rtpproxy_unforce", (cmd_function)unforce_rtp_proxy_f, {
 		{CMD_PARAM_INT | CMD_PARAM_OPT, fixup_set_id, fixup_free_set_id},
 		{CMD_PARAM_VAR | CMD_PARAM_OPT, 0, 0}, {0,0,0}},
@@ -500,7 +500,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"nortpproxy_str",        STR_PARAM, &nortpproxy_str.s        },
 	{"rtpproxy_sock",         STR_PARAM|USE_FUNC_PARAM,
 	                         (void*)rtpproxy_set_store            },
@@ -521,7 +521,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_ENABLE_RTP_PROXY, 0, 0, 0, {
 		{mi_enable_rtp_proxy_1, {"url", "enable", 0}},
 		{mi_enable_rtp_proxy_2, {"url", "enable", "setid", 0}},
@@ -538,13 +538,13 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"RTPP notification receiver",  0,  0, notification_listener_process, 1,
 		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT},
 	{0,0,0,0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",     DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },

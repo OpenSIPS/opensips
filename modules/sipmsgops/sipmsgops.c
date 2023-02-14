@@ -116,7 +116,7 @@ static int change_reply_status_f(struct sip_msg* msg, int* code, str* reason);
 
 static int mod_init(void);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"append_to_reply",  (cmd_function)append_to_reply_f, {
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ERROR_ROUTE},

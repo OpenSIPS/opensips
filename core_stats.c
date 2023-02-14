@@ -59,7 +59,7 @@ stat_var* bad_msg_hdr;
 stat_var* slow_msgs;
 
 
-stat_export_t core_stats[] = {
+const stat_export_t core_stats[] = {
 	{"rcv_requests" ,         0,  &rcv_reqs              },
 	{"rcv_replies" ,          0,  &rcv_rpls              },
 	{"fwd_requests" ,         0,  &fwd_reqs              },
@@ -94,7 +94,7 @@ static unsigned long net_get_wb_tls(unsigned short foo)
 	return get_total_bytes_waiting(PROTO_TLS);
 }
 
-stat_export_t net_stats[] = {
+const stat_export_t net_stats[] = {
 	{"waiting_udp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_udp    },
 	{"waiting_tcp" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tcp    },
 	{"waiting_tls" ,    STAT_IS_FUNC,  (stat_var**)net_get_wb_tls    },

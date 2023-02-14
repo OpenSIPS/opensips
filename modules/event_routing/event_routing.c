@@ -70,12 +70,12 @@ struct tm_binds ebr_tmb;
 
 
 /* exported module parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{0, 0, 0}
 };
 
 /* exported module functions (to script) */
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"notify_on_event", (cmd_function)notify_on_event, {
 		{CMD_PARAM_STR, fix_event_name, 0},
 		{CMD_PARAM_VAR, fixup_check_avp, 0},
@@ -87,7 +87,7 @@ static cmd_export_t cmds[]={
 };
 
 /* exported module async functions (to script) */
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"wait_for_event",  (acmd_function)wait_for_event, {
 		{CMD_PARAM_STR, fix_event_name, 0},
 		{CMD_PARAM_VAR, fixup_check_avp, 0},
@@ -95,7 +95,7 @@ static acmd_export_t acmds[] = {
 	{0,0,{{0,0,0}}}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",        DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -154,7 +154,7 @@ struct module_exports exports= {
 /**
  * exported functions for core event interface
  */
-static evi_export_t evi_backend_ebr = {
+static const evi_export_t evi_backend_ebr = {
 	/* the name of the exported EVI backend*/
 	str_init(EVI_ROUTING_NAME),
 	/* function called for dispatching an event via backend */

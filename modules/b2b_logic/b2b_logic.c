@@ -187,7 +187,7 @@ b2bl_tuple_t *local_ctx_tuple;
  * MI cmd, when the tuple is not created yet */
 struct b2b_ctx_val *local_ctx_vals;
 
-static cmd_export_t cmds[]=
+static const cmd_export_t cmds[]=
 {
 	{"b2b_init_request", (cmd_function)b2bl_script_init_request, {
 		{CMD_PARAM_STR, fixup_init_id, 0},
@@ -260,7 +260,7 @@ static cmd_export_t cmds[]=
 };
 
 /** Exported parameters */
-static param_export_t params[]=
+static const param_export_t params[]=
 {
 	{"hash_size",       INT_PARAM,                &b2bl_hsize                },
 	{"cleanup_period",  INT_PARAM,                &b2b_clean_period          },
@@ -287,7 +287,7 @@ static param_export_t params[]=
 	{0,                    0,                          0                     }
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{{"b2b_logic.key", sizeof("b2b_logic.key") - 1}, 1000, pv_get_b2bl_key,
 		0, 0, 0, 0, 0},
 	{{"b2b_logic.scenario", sizeof("b2b_logic.scenario") - 1}, 1000,
@@ -299,7 +299,7 @@ static pv_export_t mod_items[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{"b2b_trigger_scenario", 0, 0, 0, {
 		{mi_trigger_scenario, {"scenario_id", "entity1", "entity2", 0}},
 		{mi_trigger_scenario, {"scenario_id", "entity1", "entity2", "context", 0}},
@@ -323,7 +323,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "b2b_entities", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

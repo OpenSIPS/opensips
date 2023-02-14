@@ -38,7 +38,7 @@ SV* vdbmod;
 /*
  * Perl virtual database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_use_table",	(cmd_function)perlvdb_use_table, {{0,0,0}},0},
 	{"db_init",			(cmd_function)perlvdb_db_init, {{0,0,0}},0},
 	{"db_close",		(cmd_function)perlvdb_db_close, {{0,0,0}},0},
@@ -53,11 +53,11 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "perl", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

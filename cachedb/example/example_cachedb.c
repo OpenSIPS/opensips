@@ -56,13 +56,13 @@ cachedb_funcs cdbf;
 /* Actual connection to the Cache/DB back-end */
 cachedb_con *con;
 
-static cmd_export_t cmds[]=
+static const cmd_export_t cmds[]=
 {
 	{"process_msg",  (cmd_function)process_msg,  0, 0, 0, REQUEST_ROUTE},
 	{0,0,0,0,0,0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cachedb_url",                 STR_PARAM, &cachedb_url.s},
 	{0,0,0}
 };

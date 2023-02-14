@@ -48,7 +48,7 @@ struct db_sqlite_extension_list *extension_list=0;
 /*
  * MySQL database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api", (cmd_function)db_sqlite_bind_api, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -56,7 +56,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"alloc_limit", INT_PARAM, &db_sqlite_alloc_limit},
 	{"load_extension", STR_PARAM|USE_FUNC_PARAM,
 								(void *)db_sqlite_add_extension},

@@ -44,7 +44,7 @@ str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
 int dm_answer_timeout = 2000; /* ms */
 
-static cmd_export_t cmds[]= {
+static const cmd_export_t cmds[]= {
 	{"dm_send_request", (cmd_function)dm_send_request, {
 		{CMD_PARAM_INT,0,0},
 		{CMD_PARAM_INT,0,0},
@@ -56,12 +56,12 @@ static cmd_export_t cmds[]= {
 	{0,0,{{0,0,0}},0}
 };
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{ "diameter-peer", NULL, NULL, diameter_peer_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
-static param_export_t params[] =
+static const param_export_t params[] =
 {
 	{ "fd_log_level",    INT_PARAM, &fd_log_level     },
 	{ "realm",           STR_PARAM, &dm_realm.s       },
@@ -70,7 +70,7 @@ static param_export_t params[] =
 	{ NULL, 0, NULL },
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "fd_log_level", 0, 0, 0, {
 		{NULL, {"log_level", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -78,7 +78,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

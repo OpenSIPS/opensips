@@ -81,7 +81,7 @@ mi_response_t *mi_show_stats(const mi_params_t *params,
 mi_response_t *mi_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"check_fraud", (cmd_function)check_fraud, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0},
@@ -90,7 +90,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"db_url",                      STR_PARAM, &db_url.s},
 	{"use_utc_time",                INT_PARAM, &mp_use_utc_time},
 	{"table_name",                  STR_PARAM, &table_name.s},
@@ -113,7 +113,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "show_fraud_stats", "print current stats for a particular user", 0, 0, {
 		{mi_show_stats, {"user", "prefix", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -125,7 +125,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{
 		{MOD_TYPE_SQLDB, NULL, DEP_ABORT},
 		{MOD_TYPE_DEFAULT, "drouting", DEP_ABORT},

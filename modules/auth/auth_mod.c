@@ -119,7 +119,7 @@ int disable_nonce_check = 0;
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"www_challenge", (cmd_function)www_challenge, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,fixup_qop,0},
@@ -151,7 +151,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"secret",              STR_PARAM, &sec_param          },
 	{"nonce_expire",        INT_PARAM, &nonce_expire       },
 	{"rpid_prefix",         STR_PARAM, &rpid_prefix.s      },
@@ -165,7 +165,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "signaling", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

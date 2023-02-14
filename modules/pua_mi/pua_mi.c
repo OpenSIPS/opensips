@@ -59,7 +59,7 @@ str presence_server= {0, 0};
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "pua_publish", 0,MI_ASYNC_RPL_FLAG,0,{
 		{mi_pua_publish_1, {"presentity_uri", "expires", "event_package", 0}},	
 		{mi_pua_publish_2, {"presentity_uri", "expires", "event_package",
@@ -89,12 +89,12 @@ static mi_export_t mi_cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"presence_server",	 STR_PARAM, &presence_server.s	},
 	{0,							 0,			0			}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "pua", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

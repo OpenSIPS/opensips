@@ -45,7 +45,7 @@ PyObject *format_exc_obj;
 PyThreadState *myThreadState;
 
 /** module parameters */
-static param_export_t params[]={
+static const param_export_t params[]={
     {"script_name",        STR_PARAM, &script_name.s },
     {"mod_init_function",  STR_PARAM, &mod_init_fname.s },
     {"child_init_method",  STR_PARAM, &child_init_mname.s },

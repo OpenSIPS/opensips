@@ -109,7 +109,7 @@ static struct dlginfo_cb_params * build_cb_param(int flags,
 		struct to_body *entity_p, struct to_body *peer_p);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"dialoginfo_set", (cmd_function)dialoginfo_set, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -122,7 +122,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"include_callid",      INT_PARAM, &include_callid },
 	{"include_localremote", INT_PARAM, &include_localremote },
 	{"include_tags",        INT_PARAM, &include_tags },
@@ -136,7 +136,7 @@ static param_export_t params[]={
 	{0, 0, 0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "pua",    DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },

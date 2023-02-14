@@ -124,16 +124,16 @@ static int sngtc_caller_answer(struct sip_msg *msg);
 
 static int sng_logger(int level, char *fmt, ...);
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{ "sangoma_worker", NULL, NULL, sangoma_worker_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ 0, 0, 0 }
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"sngtc_offer", (cmd_function)sngtc_offer, {{0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
 	{"sngtc_caller_answer", (cmd_function)sngtc_caller_answer, {{0,0,0}},
@@ -145,7 +145,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

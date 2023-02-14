@@ -58,7 +58,7 @@ int db_mysql_bind_api(const str* mod, db_func_t *dbb);
 /*
  * MySQL database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"db_bind_api",         (cmd_function)db_mysql_bind_api,      {{0, 0, 0}}, 0},
 	{0, 0, {{0, 0, 0}}, 0}
 };
@@ -70,7 +70,7 @@ int use_tls;
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"timeout_interval", INT_PARAM, &db_mysql_timeout_interval},
 	{"exec_query_threshold", INT_PARAM, &db_mysql_exec_query_threshold},
 	{"max_db_retries", INT_PARAM, &max_db_retries},
@@ -88,7 +88,7 @@ static module_dependency_t *get_deps_use_tls(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "tls_mgm", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

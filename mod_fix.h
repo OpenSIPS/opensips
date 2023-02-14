@@ -45,7 +45,7 @@ typedef struct _gparam
 
 struct cmd_param;
 
-int check_cmd(struct cmd_param *params, action_elem_t *elems);
+int check_cmd(const struct cmd_param *params, action_elem_t *elems);
 int fix_cmd(const struct cmd_param *params, action_elem_t *elems);
 int get_cmd_fixups(struct sip_msg* msg, const struct cmd_param *params,
 				action_elem_t *elems, void **cmdp, pv_value_t *tmp_val);

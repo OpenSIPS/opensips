@@ -177,7 +177,7 @@ int pv_get_dlg_json(struct sip_msg *msg, pv_param_t *param,
 int pv_get_dlg_ctx_json(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"create_dialog", (cmd_function)w_create_dialog, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -279,7 +279,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "enable_stats",          INT_PARAM, &dlg_enable_stats         },
 	{ "hash_size",             INT_PARAM, &dlg_hash_size            },
 	{ "log_profile_hash_size", INT_PARAM, &log_profile_hash_size    },
@@ -339,7 +339,7 @@ static param_export_t mod_params[]={
 };
 
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"active_dialogs" ,     STAT_NO_RESET,  &active_dlgs       },
 	{"early_dialogs",       STAT_NO_RESET,  &early_dlgs        },
 	{"processed_dialogs" ,  0,              &processed_dlgs    },
@@ -355,7 +355,7 @@ static stat_export_t mod_stats[] = {
 };
 
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "dlg_list", 0, MI_NAMED_PARAMS_ONLY, 0, {
 		{mi_print_dlgs, {0}},
 		{mi_print_dlgs_1, {"callid", 0}},
@@ -431,7 +431,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"DLG_count",  sizeof("DLG_count")-1},     1000, pv_get_dlg_count,
 		0,                 0, 0, 0, 0 },
 	{ {"DLG_lifetime",sizeof("DLG_lifetime")-1}, 1000, pv_get_dlg_lifetime,
@@ -470,7 +470,7 @@ static module_dependency_t *get_deps_db_mode(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		/* since dialog registers a tm "unref" callback, tm must destroy 1st */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT|DEP_REVERSE_DESTROY },

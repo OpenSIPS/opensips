@@ -129,7 +129,7 @@ static int w_op_avps(struct sip_msg* msg, char* param, char *op);
 static int w_subst(struct sip_msg* msg, char* src, char *subst);
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"avp_db_query", (acmd_function)w_async_dbquery_avps, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND, fixup_pvname_list, fixup_free_pvname_list},
@@ -140,7 +140,7 @@ static acmd_export_t acmds[] = {
 /*! \brief
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"avp_print", (cmd_function)w_print_avps, {{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
@@ -226,7 +226,7 @@ static cmd_export_t cmds[] = {
 /*! \brief
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",            STR_PARAM|USE_FUNC_PARAM, (void*)add_db_url },
 	{"avp_table",         STR_PARAM, &db_table.s      },
 	{"use_domain",        INT_PARAM, &use_domain      },
@@ -240,7 +240,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

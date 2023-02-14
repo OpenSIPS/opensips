@@ -309,7 +309,7 @@ int evi_event_subscribe(str event_name,
 {
 	evi_subs_t *subscriber = NULL;
 	evi_event_p event;
-	evi_export_t *trans_mod = NULL;
+	const evi_export_t *trans_mod = NULL;
 	evi_reply_sock *sock;
 
 	event = evi_get_event(&event_name);
@@ -648,7 +648,7 @@ error:
 
 static evi_subs_p evi_get_subscriber(evi_event_p event, str sock_str)
 {
-	evi_export_t * trans_mod;
+	const evi_export_t * trans_mod;
 	evi_subs_p subscriber = NULL;
 	evi_reply_sock * sock;
 

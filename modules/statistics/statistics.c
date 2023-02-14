@@ -140,7 +140,7 @@ static int w_stat_iter_next(struct sip_msg *msg, pv_spec_t *key, pv_spec_t *val,
 struct list_head script_iters;
 static OSIPS_LIST_HEAD(series_profiles);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"update_stat", (cmd_function)w_update_stat, {
 		{CMD_PARAM_STR, fixup_stat, fixup_free_stat},
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
@@ -169,7 +169,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "variable",  STR_PARAM|USE_FUNC_PARAM, (void*)reg_param_stat },
 	{ "stat_groups",  STR_PARAM|USE_FUNC_PARAM, (void*)reg_stat_group },
 	{ "stat_series_profile",  STR_PARAM|USE_FUNC_PARAM, (void*)reg_stat_series_profile },
@@ -177,7 +177,7 @@ static param_export_t mod_params[]={
 };
 
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"stat",     sizeof("stat")-1},      1100, pv_get_stat,
 		pv_set_stat,    pv_parse_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }

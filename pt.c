@@ -170,7 +170,7 @@ int init_multi_proc_support(void)
 }
 
 
-void set_proc_attrs( char *fmt, ...)
+void set_proc_attrs(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -233,7 +233,7 @@ void reset_process_slot( int p_id )
  * Returns, on success, the ID (non zero) in the process table of the
  * newly forked procees.
  * */
-int internal_fork(char *proc_desc, unsigned int flags,
+int internal_fork(const char *proc_desc, unsigned int flags,
 												enum process_type type)
 {
 	int new_idx;

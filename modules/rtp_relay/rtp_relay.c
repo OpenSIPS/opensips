@@ -49,7 +49,7 @@ static int fixup_rtp_relay(void **param);
 static int mod_preinit(void);
 static int mod_init(void);
 
-static dep_export_t mod_deps = {
+static const dep_export_t mod_deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_SILENT },
@@ -60,7 +60,7 @@ static dep_export_t mod_deps = {
 	},
 };
 
-static cmd_export_t mod_cmds[] = {
+static const cmd_export_t mod_cmds[] = {
 	{"rtp_relay_engage", (cmd_function)rtp_relay_engage, {
 		{CMD_PARAM_STR, fixup_rtp_relay, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0},
@@ -73,7 +73,7 @@ static cmd_export_t mod_cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "rtp_relay_list", 0, 0, 0, {
 		{mi_rtp_relay_list, {0}},
 		{mi_rtp_relay_list, {"engine", 0}},
@@ -114,11 +114,11 @@ static mi_export_t mi_cmds[] = {
 };
 
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{0, 0, 0}
 };
 
-static pv_export_t mod_pvars[] = {
+static const pv_export_t mod_pvars[] = {
 	{ str_init("rtp_relay"), 2004, pv_get_rtp_relay_var, pv_set_rtp_relay_var,
 		pv_parse_rtp_relay_var, pv_parse_rtp_relay_index, 0, 0},
 	{ str_init("rtp_relay_peer"), 2005, pv_get_rtp_relay_var,

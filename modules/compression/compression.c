@@ -155,12 +155,12 @@ static str body_in  = {NULL, 0},
 	   hdr_out  = {NULL, 0},
 	   buf_out  = {NULL, 0};
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "compression_level", INT_PARAM, &mc_level},
 	{0,0,0}
 };
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"mc_compact",	  (cmd_function)mc_compact, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_whitelist_compact, fixup_whitelist_free},

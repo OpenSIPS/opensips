@@ -70,16 +70,16 @@ static int __crt_tr_bufs, __crt_tr_link;
 
 trans_extra_t *tr_extra_list;
 
-static trans_export_t core_trans[] = {
-	{str_init("s"), tr_parse_string, tr_eval_string},
-	{str_init("uri"), tr_parse_uri, tr_eval_uri},
-	{str_init("via"), tr_parse_via, tr_eval_via},
-	{str_init("param"), tr_parse_paramlist, tr_eval_paramlist},
-	{str_init("nameaddr"), tr_parse_nameaddr, tr_eval_nameaddr},
-	{str_init("ip"), tr_parse_ip, tr_eval_ip},
-	{str_init("csv"), tr_parse_csv, tr_eval_csv},
-	{str_init("sdp"), tr_parse_sdp, tr_eval_sdp},
-	{str_init("re"), tr_parse_re, tr_eval_re},
+static const trans_export_t core_trans[] = {
+	{str_const_init("s"), tr_parse_string, tr_eval_string},
+	{str_const_init("uri"), tr_parse_uri, tr_eval_uri},
+	{str_const_init("via"), tr_parse_via, tr_eval_via},
+	{str_const_init("param"), tr_parse_paramlist, tr_eval_paramlist},
+	{str_const_init("nameaddr"), tr_parse_nameaddr, tr_eval_nameaddr},
+	{str_const_init("ip"), tr_parse_ip, tr_eval_ip},
+	{str_const_init("csv"), tr_parse_csv, tr_eval_csv},
+	{str_const_init("sdp"), tr_parse_sdp, tr_eval_sdp},
+	{str_const_init("re"), tr_parse_re, tr_eval_re},
 	{{0,0}, 0, 0}
 };
 
@@ -2603,7 +2603,7 @@ char* parse_transformation(str *in, trans_t **tr)
 	trans_t *t = NULL;
 	trans_t *t0 = NULL;
 	str s;
-	trans_export_t *tr_export;
+	const trans_export_t *tr_export;
 	trans_extra_t *tr_extra;
 	int i, nesting_level = 0;
 

@@ -210,13 +210,13 @@ static int tls_async_write(struct tcp_connection* con,int fd);
 static int proto_tls_conn_init(struct tcp_connection* c);
 static void proto_tls_conn_clean(struct tcp_connection* c);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"proto_init", (cmd_function)proto_tls_init, {{0, 0, 0}}, 0},
 	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "tls_port",              INT_PARAM,         &tls_port_no               },
 	{ "tls_crlf_pingpong",     INT_PARAM,         &tls_crlf_pingpong         },
 	{ "tls_crlf_drop",         INT_PARAM,         &tls_crlf_drop             },
@@ -237,7 +237,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tls_mgm"  , DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "proto_hep", DEP_SILENT },
@@ -248,7 +248,7 @@ static dep_export_t deps = {
 	},
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "tls_trace", 0, 0, 0, {
 		{tls_trace_mi, {0}},
 		{tls_trace_mi_1, {"trace_mode", 0}},

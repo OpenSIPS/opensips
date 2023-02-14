@@ -198,14 +198,14 @@ static AVP_Param media_relay_avp = {str_init(MEDIA_RELAY_AVP_SPEC), -1, 0};
 // The AVP where the ICE candidate priority is stored (if defined)
 static AVP_Param ice_candidate_avp = {str_init(ICE_CANDIDATE_AVP_SPEC), -1, 0};
 
-static cmd_export_t commands[] = {
+static const cmd_export_t commands[] = {
     {"engage_media_proxy", (cmd_function)EngageMediaProxy, {{0, 0, 0}}, REQUEST_ROUTE},
     {"use_media_proxy",    (cmd_function)UseMediaProxy,    {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {"end_media_session",  (cmd_function)EndMediaSession,  {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {0, 0, {{0, 0, 0}}, 0}
 };
 
-static param_export_t parameters[] = {
+static const param_export_t parameters[] = {
     {"disable",            INT_PARAM, &mediaproxy_disabled},
     {"mediaproxy_socket",  STR_PARAM, &(mediaproxy_socket.name)},
     {"mediaproxy_timeout", INT_PARAM, &(mediaproxy_socket.timeout)},
@@ -216,7 +216,7 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
     // OpenSIPS module dependencies
     {
         {MOD_TYPE_DEFAULT, "tm",     DEP_SILENT},

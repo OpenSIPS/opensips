@@ -68,7 +68,7 @@ int parse_alternate_port(modparam_t type, void *val);
 /*
  * Exported parameters ip, port
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"primary_ip",      STR_PARAM | USE_FUNC_PARAM,  parse_primary_ip     },
 	{"primary_port",    STR_PARAM | USE_FUNC_PARAM,  parse_primary_port   },
 	{"alternate_ip",    STR_PARAM | USE_FUNC_PARAM,  parse_alternate_ip   },
@@ -78,7 +78,7 @@ static param_export_t params[] = {
 };
 
 /* Extra proces for listening loop */
-static proc_export_t mod_procs[] = {
+static const proc_export_t mod_procs[] = {
 	{"Stun loop",  0,  0, stun_loop, 1 , 0},
 	{0,0,0,0,0,0}
 };

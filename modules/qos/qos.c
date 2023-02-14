@@ -52,7 +52,7 @@ struct dlg_binds dialog_st;
 struct dlg_binds *dlg_binds = &dialog_st;
 
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"load_qos", (cmd_function)load_qos, {{0,0,0}},0},
 	{0,0,{{0,0,0}},0}
 };
@@ -60,12 +60,12 @@ static cmd_export_t cmds[] = {
 /*
  * Script parameters
  */
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "qos_flag",		STR_PARAM, &qos_flag_str},
 	{ 0,0,0 }
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

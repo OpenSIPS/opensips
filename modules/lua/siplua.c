@@ -55,7 +55,7 @@ static const cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
   { "luafilename", STR_PARAM, &luafilename},
   { "lua_user_debug", INT_PARAM, &lua_user_debug},
   { "lua_allocator", STR_PARAM, &lua_allocator},
@@ -63,7 +63,7 @@ static param_export_t params[] = {
   { 0, 0, 0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
   { "watch", 0,0,0, {
     {siplua_mi_watch, {0}},
     {siplua_mi_watch_2, {"action", "extension", 0}},

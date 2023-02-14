@@ -51,17 +51,17 @@ static void destroy(void);
 add_event_t pres_add_event;
 
 /* module exported commands */
-static cmd_export_t cmds[] =
+static const cmd_export_t cmds[] =
 {
     {0, 0, {{0, 0, 0}}, 0}
 };
 
 /* module exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
     {0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "presence", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

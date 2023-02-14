@@ -35,7 +35,7 @@
 #define DEFAULT_EXPIRE	3600
 
 typedef struct evi_subscriber {
-	evi_export_t* trans_mod;			/* transport module */
+	const evi_export_t* trans_mod;		/* transport module */
 	evi_reply_sock* reply_sock;		/* reply socket */
 	struct evi_subscriber *next;		/* next subscriber */
 } evi_subs_t, *evi_subs_p;
@@ -70,7 +70,7 @@ mi_response_t *w_mi_raise_event(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 /* returns the transport export */
-evi_export_t* get_trans_mod(str* tran);
+const evi_export_t* get_trans_mod(str* tran);
 
 /* returns the transport modules number */
 int get_trans_mod_no(void);

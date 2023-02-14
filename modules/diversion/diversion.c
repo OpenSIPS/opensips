@@ -62,7 +62,7 @@ static int mod_init(void);
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"add_diversion",    (cmd_function)add_diversion, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -74,7 +74,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"suffix", STR_PARAM, &suffix.s},
 	{0, 0, 0}
 };

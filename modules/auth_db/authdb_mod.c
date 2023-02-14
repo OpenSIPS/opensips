@@ -115,7 +115,7 @@ int skip_version_check      = 0; /* skips version check for custom db */
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"www_authorize", (cmd_function)www_authorize, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, auth_fixup_table, 0}, {0,0,0}},
@@ -146,7 +146,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",            STR_PARAM, &db_url.s            },
 	{"user_column",       STR_PARAM, &user_column.s       },
 	{"domain_column",     STR_PARAM, &domain_column.s     },
@@ -164,7 +164,7 @@ static param_export_t params[] = {
 };
 
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "auth", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

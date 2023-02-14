@@ -118,7 +118,7 @@ static int parsed_ctx_idx =-1;
 
 static X509_STORE *store;
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
 	{"ca_list", STR_PARAM, &ca_list},
@@ -130,13 +130,13 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{{"identity", sizeof("identity") - 1}, 1000, pv_get_identity,
 		0, pv_parse_identity_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"stir_shaken_auth", (cmd_function)w_stir_auth, {
 		{CMD_PARAM_STR, fixup_attest, 0},
 		{CMD_PARAM_STR, 0, 0},

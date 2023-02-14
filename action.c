@@ -623,7 +623,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 	struct timeval start;
 	int end_time;
 	const cmd_export_t *cmd = NULL;
-	acmd_export_t *acmd;
+	const acmd_export_t *acmd;
 	void* cmdp[MAX_CMD_PARAMS];
 	pv_value_t tmp_vals[MAX_CMD_PARAMS];
 	pv_value_t *route_p;
@@ -1026,7 +1026,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case CMD_T:
 			if (a->elem[0].type != CMD_ST ||
-				((cmd = (const cmd_export_t*)a->elem[0].u.data) == NULL)) {
+				((cmd = (const cmd_export_t*)a->elem[0].u.data_const) == NULL)) {
 				LM_ALERT("BUG in module call\n");
 				break;
 			}
@@ -1057,7 +1057,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			 * second param - a NUMBER_ST pointing to resume route
 			 * third param - an optional NUMBER_ST with a timeout */
 			aitem = (struct action *)(a->elem[0].u.data);
-			acmd = (acmd_export_t *)aitem->elem[0].u.data;
+			acmd = (const acmd_export_t *)aitem->elem[0].u.data_const;
 
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
@@ -1090,7 +1090,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 			/* first param - an ACTIONS_ST containing an ACMD_ST
 			 * second param - an optional NUMBER_ST pointing to an end route */
 			aitem = (struct action *)(a->elem[0].u.data);
-			acmd = (acmd_export_t *)aitem->elem[0].u.data;
+			acmd = (const acmd_export_t *)aitem->elem[0].u.data_const;
 
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
 			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
@@ -1228,8 +1228,8 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
  * @msg - mandatory, sip message
  * @line - line in script
  */
-void __script_trace(char *class, char *action, struct sip_msg *msg,
-														char *file, int line)
+void __script_trace(const char *class, const char *action, struct sip_msg *msg,
+  const char *file, int line)
 {
 	str val;
 

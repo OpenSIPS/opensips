@@ -78,7 +78,7 @@ static int w_compare_exp(struct sip_msg *msg, str *exp1, str *exp2, pv_spec_t *r
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"math_eval", (cmd_function)w_evaluate_exp, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,0,0}, {0,0,0}},
@@ -120,7 +120,7 @@ static cmd_export_t cmds[] = {
 /**
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"decimal_digits", INT_PARAM, &decimal_digits},
 	{0, 0, 0}
 };

@@ -764,7 +764,7 @@ static mi_response_t *w_reload_routes(const mi_params_t *params,
 
 
 
-static mi_export_t mi_core_cmds[] = {
+static const mi_export_t mi_core_cmds[] = {
 	{ "uptime", "prints various time information about OpenSIPS - "
 		"when it started to run, for how long it runs", 0, init_mi_uptime, {
 		{mi_uptime, {0}},

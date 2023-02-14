@@ -84,7 +84,7 @@ static int store_urls( modparam_t type, void* val);
 /*
  * Virtual database module interface
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
     {"db_bind_api", (cmd_function)db_virtual_bind_api, {{0,0,0}},0},
     {0,0,{{0,0,0}},0}
 };
@@ -92,7 +92,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
         //{"db_file",                 STR_PARAM, &db_file.s},
         {"db_probe_time",           INT_PARAM, &db_probe_time},
         {"db_max_consec_retrys",    INT_PARAM, &db_max_consec_retrys},
@@ -102,7 +102,7 @@ static param_export_t params[] = {
 /*
  * MI
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
     {"db_get", 0, 0, 0, {
         {db_get_info, {0}},
         {EMPTY_MI_RECIPE}}
@@ -116,7 +116,7 @@ static mi_export_t mi_cmds[] = {
     {EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_SILENT },
 		{ MOD_TYPE_NULL, NULL, 0 },

@@ -69,7 +69,7 @@ static union sockaddr_union* sv_socket = NULL;
 
 
 /* module parameters */
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"root",      STR_PARAM, &http_root.s},
 	{"trace_destination", STR_PARAM, &trace_destination_name.s},
 	{"trace_bwlist",        STR_PARAM,    &mi_trace_bwlist_s  },
@@ -77,7 +77,7 @@ static param_export_t mi_params[] = {
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "httpd", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

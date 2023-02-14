@@ -66,7 +66,7 @@ struct rr_binds path_rrb;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"add_path", (cmd_function)add_path, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
@@ -79,7 +79,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"use_received", INT_PARAM, &use_received },
 	{"enable_double_path", INT_PARAM, &enable_double_path },
 	{ 0, 0, 0 }
@@ -93,7 +93,7 @@ static module_dependency_t *get_deps_use_received(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "rr", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

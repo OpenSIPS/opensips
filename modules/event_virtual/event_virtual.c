@@ -50,7 +50,7 @@ static gen_lock_t *global_lock;
 static gen_lock_t *rrobin_lock;
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"failover_timeout", INT_PARAM, &failover_timeout},
 	{0,0,0}
 };
@@ -78,7 +78,7 @@ struct module_exports exports = {
 	0					/* reload confirm function */
 };
 
-static evi_export_t trans_export_virtual = {
+static const evi_export_t trans_export_virtual = {
 	VIRT_STR,					/* transport module name */
 	virtual_raise,					/* raise function */
 	virtual_parse,					/* parse function */

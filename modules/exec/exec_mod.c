@@ -62,7 +62,7 @@ inline static void exec_shutdown(void);
  * Exported functions
  */
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"exec", (acmd_function)w_async_exec, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -72,7 +72,7 @@ static acmd_export_t acmds[] = {
 	{0,0,{{0,0,0}}}
 };
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"exec", (cmd_function)w_exec, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
@@ -86,7 +86,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"time_to_kill", INT_PARAM, &time_to_kill},
 	{"setvars",      INT_PARAM, &setvars     },
 	{0, 0, 0}

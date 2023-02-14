@@ -236,7 +236,7 @@ static const cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"natping_interval",		 INT_PARAM, &natping_interval      },
 	{"ping_nated_only",          INT_PARAM, &ping_nated_only       },
 	{"nortpproxy_str",           STR_PARAM, &nortpproxy_str.s      },
@@ -260,7 +260,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{MI_SET_NATPING_STATE, 0, 0, 0, {
 		{mi_enable_natping, {0}},
 		{mi_enable_natping_1, {"status", 0}},
@@ -277,7 +277,7 @@ static module_dependency_t *get_deps_natping_interval(const param_export_t *para
 	return alloc_module_dep(MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

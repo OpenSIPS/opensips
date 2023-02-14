@@ -82,7 +82,7 @@ static void mod_destroy(void);
 static int initial=0;
 static unsigned int *gflags=0;
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"set_gflag",    (cmd_function)set_gflag, {
 		{CMD_PARAM_INT, fixup_gflags, 0}, {0,0,0}}, ALL_ROUTES},
 	{"reset_gflag",  (cmd_function)reset_gflag, {
@@ -92,12 +92,12 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"initial", INT_PARAM, &initial},
 	{0,0,0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ FIFO_SET_GFLAG, 0, 0, 0, {
 		{mi_set_gflag, {"bitmask", 0}},
 		{EMPTY_MI_RECIPE}}

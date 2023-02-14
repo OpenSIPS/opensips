@@ -108,7 +108,7 @@ int jwt_credentials_n           = 0; /* Number of credentials in the list */
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"jwt_db_authorize", (cmd_function)jwt_db_authorize, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_outvar, 0},
@@ -129,7 +129,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_mode",           INT_PARAM, &jwt_db_mode                 },
 	{"db_url",            STR_PARAM, &db_url.s                },
 	{"profiles_table",    STR_PARAM, &profiles_table.s        },
@@ -146,7 +146,7 @@ static param_export_t params[] = {
 };
 
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

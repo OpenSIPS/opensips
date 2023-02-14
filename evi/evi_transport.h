@@ -97,7 +97,7 @@ typedef struct evi_export_ {
 
 /* transport list */
 typedef struct evi_trans_ {
-	evi_export_t *module;
+	const evi_export_t *module;
 	struct evi_trans_ *next;
 } evi_trans_t;
 
@@ -110,7 +110,7 @@ typedef struct evi_trans_ {
  * Returns:
  *  - 0 if successful or negative on error
  */
-int register_event_mod(evi_export_t *ev);
+int register_event_mod(const evi_export_t *ev);
 
 /*
  * Used to build the payload of an event

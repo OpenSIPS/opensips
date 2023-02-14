@@ -35,7 +35,7 @@ static int w_add_report(struct sip_msg *msg, void *srg,
 	str *report);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"sr_set_status", (cmd_function)w_set_status, {
 		{CMD_PARAM_STR, fixup_sr_group, 0},
 		{CMD_PARAM_INT, 0, 0}, {0,0,0},
@@ -48,7 +48,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "script_sr_group",  STR_PARAM|USE_FUNC_PARAM, (void*)add_sr_group },
 	{ 0,0,0 }
 };

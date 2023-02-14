@@ -48,7 +48,7 @@ static int mi_script_func(struct sip_msg *msg, str *m,
 static int mi_script_async_func(struct sip_msg *msg, async_ctx *ctx,
 		str *m, pv_spec_p r, pv_spec_p p, pv_spec_p v);
 
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"trace_destination",	STR_PARAM,	&trace_destination_name.s},
 	{"trace_bwlist",		STR_PARAM,	&mi_trace_bwlist_s},
 	{"pretty_printing",		INT_PARAM,	&mi_script_pp},
@@ -65,7 +65,7 @@ static int fixup_check_avp(void** param)
 	return 0;
 }
 
-static cmd_export_t mod_cmds[] = {
+static const cmd_export_t mod_cmds[] = {
 	{"mi", (cmd_function)mi_script_func, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, 0, 0},
@@ -76,7 +76,7 @@ static cmd_export_t mod_cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static acmd_export_t mod_acmds[] = {
+static const acmd_export_t mod_acmds[] = {
 	{"mi", (acmd_function)mi_script_async_func, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, 0, 0},

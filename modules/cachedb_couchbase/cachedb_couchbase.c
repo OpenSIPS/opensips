@@ -56,7 +56,7 @@ int set_connection(unsigned int type, void *val)
 	return cachedb_store_url(&couchbase_script_urls,(char *)val);
 }
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cachedb_url",	STR_PARAM|USE_FUNC_PARAM,	(void *)&set_connection},
 	{ "timeout",		INT_PARAM,					&couch_timeout_usec },
 	{ "lazy_connect",       INT_PARAM,                                      &couch_lazy_connect },

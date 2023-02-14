@@ -53,7 +53,7 @@ static int jrpc_connect_timeout = JSONRPC_DEFAULT_TIMEOUT;
 static int jrpc_write_timeout = JSONRPC_DEFAULT_TIMEOUT;
 static int jrpc_read_timeout = JSONRPC_DEFAULT_TIMEOUT;
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "connect_timeout",	INT_PARAM,	&jrpc_connect_timeout },
 	{ "write_timeout",		INT_PARAM,	&jrpc_write_timeout },
 	{ "read_timeout",		INT_PARAM,	&jrpc_read_timeout },
@@ -61,7 +61,7 @@ static param_export_t params[]={
 };
 
 /* modules dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
@@ -71,7 +71,7 @@ static dep_export_t deps = {
 };
 
 /* exported commands */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"jsonrpc_request",			(cmd_function)jrpc_request, {
 		{CMD_PARAM_STR, fixup_jsonrpc_dest, 0},
 		{CMD_PARAM_STR,0,0},

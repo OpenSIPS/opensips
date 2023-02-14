@@ -44,7 +44,7 @@ static int siprec_pause_rec(struct sip_msg *msg);
 static int siprec_resume_rec(struct sip_msg *msg);
 
 /* modules dependencies */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
@@ -59,7 +59,7 @@ static dep_export_t deps = {
 };
 
 /* exported commands */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"siprec_start_recording",(cmd_function)siprec_start_rec, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
@@ -71,12 +71,12 @@ static cmd_export_t cmds[] = {
 };
 
 /* exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"skip_failover_codes",	STR_PARAM, &skip_failover_codes.s },
 	{0, 0, 0}
 };
 
-static pv_export_t vars[] = {
+static const pv_export_t vars[] = {
 	{ {"siprec", sizeof("siprec")-1}, 1000,
 		pv_get_siprec, pv_set_siprec, pv_parse_siprec,
 		0, 0, 0 },

@@ -82,7 +82,7 @@ static int pv_get_cgr_reply(struct sip_msg *msg, pv_param_t *param,
 
 OSIPS_LIST_HEAD(cgrates_engines);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"cgrates_acc", (cmd_function)w_cgr_acc, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_flags, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_dlg_loaded, 0},
@@ -101,7 +101,7 @@ static cmd_export_t cmds[] = {
 	{0,0,{{0,0,0}},0}
 };
 
-static pv_export_t pvars[] = {
+static const pv_export_t pvars[] = {
 	{ str_init("cgr"), 2003, w_pv_get_cgr, w_pv_set_cgr,
 		pv_parse_cgr, pv_parse_idx_cgr, 0, 0},
 	{ str_init("cgr_opt"), 2004, w_pv_get_cgr_opt, w_pv_set_cgr_opt,
@@ -111,7 +111,7 @@ static pv_export_t pvars[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-static acmd_export_t acmds[] = {
+static const acmd_export_t acmds[] = {
 	{"cgrates_auth", (acmd_function)w_acgr_auth, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
@@ -122,7 +122,7 @@ static acmd_export_t acmds[] = {
 	{0,0,{{0,0,0}}}
 };
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"cgrates_engine", STR_PARAM|USE_FUNC_PARAM,
 		(void*)cgrates_set_engine },
 	{"bind_ip", STR_PARAM, &cgre_bind_ip.s },
@@ -132,7 +132,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "dialog", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

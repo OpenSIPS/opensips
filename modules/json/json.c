@@ -119,7 +119,7 @@ static int pv_add_json ( pv_param_t* , json_t * );
 static int expand_tag_list( struct sip_msg*, json_tag *);
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"json_link",    (cmd_function)json_bind, {
 		{CMD_PARAM_VAR, fixup_json_bind, 0},
 		{CMD_PARAM_VAR, fixup_json_bind, 0}, {0,0,0}},
@@ -128,7 +128,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static pv_export_t mod_items[] = {
+static const pv_export_t mod_items[] = {
 	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
 		pv_set_json, pv_parse_json_name, pv_parse_json_index, 0, 0},
 	{ {"json_compact",  sizeof("json_compact")-1}, PVT_JSON, pv_get_json_compact,

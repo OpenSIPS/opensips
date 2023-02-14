@@ -75,7 +75,7 @@ struct subs_htable *subs_htable;
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"emergency_call", (cmd_function) emergency_call, {{0, 0, 0}},
 		REQUEST_ROUTE | BRANCH_ROUTE },
 	{"failure", (cmd_function) failure, {{0, 0, 0}},
@@ -88,7 +88,7 @@ static cmd_export_t cmds[] = {
  * Exported parameters
  */
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{ "emergency_codes", STR_PARAM | USE_FUNC_PARAM, (void *) &set_codes},
 	{ "timer_interval", INT_PARAM, &timer_interval},
 	{ "db_url", STR_PARAM, &db_url.s},
@@ -109,7 +109,7 @@ static param_export_t params[] = {
 /*
  * Module parameter variables
  */
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

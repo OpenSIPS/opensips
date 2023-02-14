@@ -66,7 +66,7 @@ int mi_trace_mod_id = -1;
 char* mi_trace_bwlist_s;
 
 
-static param_export_t mi_params[] = {
+static const param_export_t mi_params[] = {
 	{"fifo_name",             STR_PARAM, &mi_fifo},
 	{"fifo_mode",             INT_PARAM, &mi_fifo_mode},
 	{"fifo_group",            STR_PARAM, &mi_fifo_gid_s},
@@ -81,7 +81,7 @@ static param_export_t mi_params[] = {
 };
 
 
-static proc_export_t mi_procs[] = {
+static const proc_export_t mi_procs[] = {
 	{"MI FIFO",  0,  0,  fifo_process,  1 ,
 		PROC_FLAG_INITCHILD|PROC_FLAG_HAS_IPC|PROC_FLAG_NEEDS_SCRIPT },
 	{0,0,0,0,0,0}

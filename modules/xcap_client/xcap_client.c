@@ -83,20 +83,20 @@ str xcap_db_table = {NULL, 0};
 
 void query_xcap_update(unsigned int ticks, void* param);
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "periodical_query",       INT_PARAM,         &periodical_query },
 	{ "query_period",           INT_PARAM,         &query_period     },
 	{    0,                     0,                      0            }
 };
 
 
-static cmd_export_t  cmds[]=
+static const cmd_export_t cmds[]=
 {
 	{"bind_xcap_client",  (cmd_function)bind_xcap_client,  {{0, 0, 0}},        0},
 	{ 0, 0, {{0, 0, 0}}, 0}
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "refreshXcapDoc", 0, 0, 0, {
 		{refreshXcapDoc, {"doc_uri", "port", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -104,7 +104,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "xcap", DEP_ABORT },
 		{ MOD_TYPE_SQLDB,   NULL,   DEP_SILENT },

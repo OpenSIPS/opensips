@@ -115,7 +115,7 @@ static int internal_call_dispatching_param = 1;
 int *internal_call_dispatching = NULL;
 
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"cc_handle_call", (cmd_function)w_handle_call,
 		{{CMD_PARAM_STR, 0,0},
 		 {CMD_PARAM_STR|CMD_PARAM_OPT, 0,0},
@@ -130,7 +130,7 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "db_url",               STR_PARAM, &db_url.s             },
 	{ "acc_db_url",           STR_PARAM, &acc_db_url.s         },
 	{ "rt_db_url",            STR_PARAM, &rt_db_url.s          },
@@ -171,7 +171,7 @@ static param_export_t mod_params[]={
 	{ 0,0,0 }
 };
 
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{"cc_reload", 0, 0, mi_child_init, {
 		{mi_cc_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -212,7 +212,7 @@ static mi_export_t mi_cmds[] = {
 	{EMPTY_MI_EXPORT}
 };
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"ccg_incalls",             0,             &stg_incalls                  },
 	{"ccg_awt",                 STAT_IS_FUNC,  (stat_var**)stg_awt           },
 	{"ccg_load",                STAT_IS_FUNC,  (stat_var**)stg_load          },
@@ -226,7 +226,7 @@ static stat_export_t mod_stats[] = {
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "b2b_logic", DEP_ABORT },
 		{ MOD_TYPE_SQLDB,   NULL,        DEP_ABORT },
@@ -237,7 +237,7 @@ static dep_export_t deps = {
 	},
 };
 
-static pv_export_t mod_pvars[] = {
+static const pv_export_t mod_pvars[] = {
 	{ {"cc_state",  sizeof("cc_state")-1},     1000, pv_get_cc_state,
 		0,                 0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }

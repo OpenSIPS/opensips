@@ -72,7 +72,7 @@ char *contact_flds_separator = DEFAULT_SEPARATOR;
 
 
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"contact_flds_separator",STR_PARAM,&contact_flds_separator},
 	{0, 0, 0}
 };	/* perhaps I should add pre-compiled expressions */
@@ -83,7 +83,7 @@ static param_export_t params[] = {
  * Exported functions
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"sdp_mangle_ip",   (cmd_function)sdp_mangle_ip, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},

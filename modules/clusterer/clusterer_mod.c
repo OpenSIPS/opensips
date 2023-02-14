@@ -112,7 +112,7 @@ int cmd_check_addr(struct sip_msg *msg, int *cluster_id, str *ip_str,
  * Exported functionsu
  */
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"load_clusterer",  (cmd_function)load_clusterer, {{0,0,0}}, 0},
 	{"cluster_broadcast_req", (cmd_function)cmd_broadcast_req, {
 		{CMD_PARAM_INT,0,0},
@@ -142,7 +142,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"enable_stats",		INT_PARAM,  &clusterer_enable_stats	},
 	{"db_url",				STR_PARAM,	&clusterer_db_url.s	},
 	{"db_table",			STR_PARAM,	&db_table.s			},
@@ -177,7 +177,7 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */	
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ "clusterer_reload", "reloads stored data from the database", 0,0,{
 		{clusterer_reload, {0}},
 		{EMPTY_MI_RECIPE}}
@@ -229,7 +229,7 @@ static mi_export_t mi_cmds[] = {
 };
 
 
-static pv_export_t mod_vars[] = {
+static const pv_export_t mod_vars[] = {
 	{ {"cluster.sh_tag", sizeof("cluster.sh_tag")-1}, 1000, var_get_sh_tag,
 		var_set_sh_tag,  var_parse_sh_tag_name , 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
@@ -246,7 +246,7 @@ static module_dependency_t *get_deps_db_mode(const param_export_t *param)
 	return alloc_module_dep(MOD_TYPE_SQLDB, NULL, DEP_ABORT);
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "proto_bin",  DEP_SILENT },
 		{ MOD_TYPE_DEFAULT, "proto_bins", DEP_SILENT },
@@ -276,7 +276,7 @@ static unsigned long clusterer_get_num_nodes_down(unsigned short foo)
 	return clusterer_get_num_nodes(-1) - clusterer_get_num_nodes(LS_UP);
 }
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"clusterer_nodes",       STAT_IS_FUNC,  (stat_var**)clusterer_get_num_nodes_total },
 	{"clusterer_nodes_up",    STAT_IS_FUNC,  (stat_var**)clusterer_get_num_nodes_up },
 	{"clusterer_nodes_down",  STAT_IS_FUNC,  (stat_var**)clusterer_get_num_nodes_down },

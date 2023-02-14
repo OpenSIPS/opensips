@@ -119,7 +119,7 @@ module_dependency_t *get_deps_cachedb_url(const param_export_t *param);
 /* core level structures and functions */
 struct sr_module_dep {
 	struct sr_module *mod;
-	char *script_param;
+	const char *script_param;
 	enum module_type mod_type;
 	unsigned int type;
 	str dep;

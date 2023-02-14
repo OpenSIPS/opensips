@@ -94,7 +94,7 @@ static int cfg_validate(void);
 static int uac_does_replace = 0;
 
 /* Exported functions */
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"uac_replace_from",  (cmd_function)w_replace_from, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_replace_disp_uri, fixup_free_s},
 		{CMD_PARAM_STR, 0, 0},
@@ -117,7 +117,7 @@ static cmd_export_t cmds[]={
 
 
 /* Exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"rr_from_store_param", STR_PARAM,                &rr_from_param.s       },
 	{"rr_to_store_param",   STR_PARAM,                &rr_to_param.s         },
 	{"restore_mode",        STR_PARAM,                &restore_mode_str      },
@@ -139,7 +139,7 @@ static module_dependency_t *get_deps_restore_mode(const param_export_t *param)
 	return NULL;
 }
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",       DEP_ABORT  },
 		{ MOD_TYPE_DEFAULT, "dialog",   DEP_SILENT },

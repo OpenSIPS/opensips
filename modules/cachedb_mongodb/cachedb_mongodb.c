@@ -56,7 +56,7 @@ int set_connection(unsigned int type, void *val)
 	return cachedb_store_url(&mongodb_script_urls,(char *)val);
 }
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{ "cachedb_url",   STR_PARAM|USE_FUNC_PARAM, (void *)&set_connection},
 	{ "exec_threshold", INT_PARAM, &mongo_exec_threshold },
 	{ "compat_mode_3.0", INT_PARAM, &compat_mode_30 },
@@ -64,7 +64,7 @@ static param_export_t params[]={
 	{0,0,0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 
 		/* tls_mgm must init TLS first, since it also sets custom alloc func */

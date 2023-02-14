@@ -66,7 +66,7 @@ stat_var *sent_rpls;
 stat_var *sent_err_rpls;
 stat_var *rcv_acks;
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"sl_send_reply",(cmd_function)w_sl_send_reply, {	
 		{CMD_PARAM_INT,fixup_sl_send_reply,0},
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
@@ -78,13 +78,13 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[]={
+static const param_export_t mod_params[]={
 	{ "enable_stats",  INT_PARAM, &sl_enable_stats },
 	{ 0,0,0 }
 };
 
 
-static stat_export_t mod_stats[] = {
+static const stat_export_t mod_stats[] = {
 	{"1xx_replies" ,       0,  &tx_1xx_rpls    },
 	{"2xx_replies" ,       0,  &tx_2xx_rpls    },
 	{"3xx_replies" ,       0,  &tx_3xx_rpls    },

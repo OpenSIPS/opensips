@@ -48,12 +48,12 @@ static int mod_init(void);
 extern int fs_api_init(void);
 int fs_api_wait_init(void);
 
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"fs_bind", (cmd_function)fs_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"event_heartbeat_interval", INT_PARAM,         &event_heartbeat_interval},
 	{"esl_connect_timeout",      INT_PARAM,               &fs_connect_timeout},
 	{"esl_cmd_timeout",          INT_PARAM,                  &esl_cmd_timeout},
@@ -61,13 +61,13 @@ static param_export_t mod_params[] = {
 	{0, 0, 0}
 };
 
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{ "FS Manager", NULL, fs_api_wait_init, fs_conn_mgr_loop, 1,
 		PROC_FLAG_HAS_IPC },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},

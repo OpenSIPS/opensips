@@ -95,7 +95,7 @@ int port_override_name, transport_override_name, domain_prefix_name,
 /*
  * Exported functions
  */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"dp_can_connect",  (cmd_function)dp_can_connect, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"dp_apply_policy", (cmd_function)dp_apply_policy, {{0,0,0}},
@@ -106,7 +106,7 @@ static cmd_export_t cmds[] = {
 /*
  * Exported parameters
  */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"db_url",                    STR_PARAM, &db_url.s                   },
 	{"dp_table",                  STR_PARAM, &domainpolicy_table.s       },
 	{"dp_col_rule",               STR_PARAM, &domainpolicy_col_rule.s    },
@@ -122,7 +122,7 @@ static param_export_t params[] = {
 	{0, 0, 0}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_SQLDB, NULL, DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },

@@ -56,13 +56,13 @@ static str xmlrpc_print(evi_reply_sock *sock);
 /**
  * module process
  */
-static proc_export_t procs[] = {
+static const proc_export_t procs[] = {
 	{"XML-RPC sender",  0,  0, xmlrpc_process, 1, 0},
 	{0,0,0,0,0,0}
 };
 
 /* module parameters */
-static param_export_t mod_params[] = {
+static const param_export_t mod_params[] = {
 	{"use_struct_param",		INT_PARAM, &xmlrpc_struct_on},
 	{0,0,0}
 };
@@ -96,7 +96,7 @@ struct module_exports exports = {
 /**
  * exported functions for core event interface
  */
-static evi_export_t trans_export_xmlrpc = {
+static const evi_export_t trans_export_xmlrpc = {
 	XMLRPC_STR,					/* transport module name */
 	xmlrpc_raise,				/* raise function */
 	xmlrpc_parse,				/* parse function */

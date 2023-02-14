@@ -79,7 +79,7 @@ str presence_server= {0, 0};
 static int mod_init(void);
 static int child_init(int);
 
-static cmd_export_t cmds[]={
+static const cmd_export_t cmds[]={
 	{"pua_xmpp_notify", (cmd_function)Notify2Xmpp, {{0,0,0}},
 		REQUEST_ROUTE},
 	{"pua_xmpp_req_winfo", (cmd_function)request_winfo, {
@@ -89,13 +89,13 @@ static cmd_export_t cmds[]={
 	{0,0,{{0,0,0}},0}
 };
 
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"server_address",		STR_PARAM,	&server_address.s},
 	{"presence_server",		STR_PARAM,	&presence_server},
 	{0,						0,			0				}
 };
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm",   DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "xmpp", DEP_ABORT },

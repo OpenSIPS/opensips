@@ -80,7 +80,7 @@ pv_spec_t dhost_spec;
 
 static int parse_my_uri_param(unsigned int type, void *val);
 
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"hash_size", INT_PARAM, &msrp_sessions_hsize},
 	{"cleanup_interval", INT_PARAM, &cleanup_interval},
 	{"auth_route", STR_PARAM, &msrp_auth_route},

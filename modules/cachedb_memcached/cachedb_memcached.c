@@ -73,7 +73,7 @@ static void destroy(void);
 mem_server * servers;
 
 /** module parameters */
-static param_export_t params[]={
+static const param_export_t params[]={
 	{"cachedb_url",        STR_PARAM|USE_FUNC_PARAM, (void*)&mc_set_connection },
 	{"exec_threshold",     INT_PARAM,                &memcache_exec_threshold  },
 	{0,0,0}

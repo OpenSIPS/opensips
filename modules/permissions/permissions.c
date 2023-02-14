@@ -90,7 +90,7 @@ static int child_init(int rank);
 static int mi_address_child_init();
 
 /* Exported functions */
-static cmd_export_t cmds[] = {
+static const cmd_export_t cmds[] = {
 	{"check_address", (cmd_function)check_addr,
 		{ {CMD_PARAM_INT, NULL, NULL},
 		  {CMD_PARAM_STR, NULL, NULL},
@@ -145,7 +145,7 @@ static cmd_export_t cmds[] = {
 
 
 /* Exported parameters */
-static param_export_t params[] = {
+static const param_export_t params[] = {
 	{"default_allow_file", STR_PARAM, &default_allow_file},
 	{"default_deny_file",  STR_PARAM, &default_deny_file },
 	{"check_all_branches", INT_PARAM, &check_all_branches},
@@ -168,7 +168,7 @@ static param_export_t params[] = {
 /*
  * Exported MI functions
  */
-static mi_export_t mi_cmds[] = {
+static const mi_export_t mi_cmds[] = {
 	{ MI_ADDRESS_RELOAD, 0, 0, mi_address_child_init, {
 		{mi_address_reload, {0}},
 		{mi_address_reload_1, {"partition", 0}},

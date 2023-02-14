@@ -223,14 +223,14 @@ static NatTest NAT_Tests[] = {
     {NTNone,           NULL}
 };
 
-static cmd_export_t commands[] = {
+static const cmd_export_t commands[] = {
     {"nat_keepalive",   (cmd_function)NAT_Keepalive, {{0, 0, 0}}, REQUEST_ROUTE},
     {"fix_contact",     (cmd_function)FixContact,    {{0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {"client_nat_test", (cmd_function)ClientNatTest, {{CMD_PARAM_INT, 0, 0}, {0, 0, 0}}, REQUEST_ROUTE | ONREPLY_ROUTE | FAILURE_ROUTE | BRANCH_ROUTE | LOCAL_ROUTE},
     {0, 0, {{0, 0, 0}}, 0}
 };
 
-static param_export_t parameters[] = {
+static const param_export_t parameters[] = {
     {"keepalive_interval",       INT_PARAM, &keepalive_interval},
     {"keepalive_method",         STR_PARAM, &keepalive_params.method},
     {"keepalive_from",           STR_PARAM, &keepalive_params.from},
@@ -241,7 +241,7 @@ static param_export_t parameters[] = {
     {0, 0, 0}
 };
 
-static pv_export_t pvars[] = {
+static const pv_export_t pvars[] = {
     {str_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
     {str_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
     {str_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
@@ -249,7 +249,7 @@ static pv_export_t pvars[] = {
 };
 
 #ifdef STATISTICS
-static stat_export_t statistics[] = {
+static const stat_export_t statistics[] = {
     {"keepalive_endpoints",  STAT_NO_RESET, &keepalive_endpoints},
     {"registered_endpoints", STAT_NO_RESET, &registered_endpoints},
     {"subscribed_endpoints", STAT_NO_RESET, &subscribed_endpoints},
@@ -258,7 +258,7 @@ static stat_export_t statistics[] = {
 };
 #endif
 
-static dep_export_t deps = {
+static const dep_export_t deps = {
     // OpenSIPS module dependencies
     {
         {MOD_TYPE_DEFAULT, "sl",     DEP_ABORT},
