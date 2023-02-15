@@ -1298,18 +1298,16 @@ extern int tcp_timeout_send;
 			tcp_dbg = get_time_diff(&(begin)); \
 	} while(0)
 
-
+/* Note: limited to a max time diff of 2147 * 10^6 useconds! */
 static inline int get_time_diff(struct timeval *begin)
 {
 	struct timeval end;
-	long seconds,useconds,mtime;
 
-	gettimeofday(&end,NULL);
-	seconds  = end.tv_sec  - begin->tv_sec;
-	useconds = end.tv_usec - begin->tv_usec;
-	mtime = ((seconds) * 1000000 + useconds);
+	gettimeofday(&end, NULL);
 
-	return mtime;
+	/* difference is returned in microseconds */
+	return (long long)(end.tv_sec*1000000 + end.tv_usec)
+	         - (long long)(begin->tv_sec*1000000 + begin->tv_usec);
 }
 
 #define reset_longest_action_list(threshold) \
