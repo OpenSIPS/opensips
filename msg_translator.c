@@ -2179,6 +2179,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 		if (via_params && !extra_params.len) {
 			/* if no other parameters were added yet, consider via_params */
 			extra_params.len = via_params->len;
+			id_len = via_params->len;
 			/* otherwise, the via_params were already copied in the id block */
 		}
 		extra_params.len += RPORT_LEN-1; /* last char in RPORT define is '='
