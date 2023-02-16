@@ -77,8 +77,8 @@ void *b2b_get_context(void);
 
 #define B2BE_LOCK_GET(table, hash_index) \
 	do { \
-		lock_get(&table[hash_index].lock); \
 		B2BE_LOCK_DBG("lock", table, hash_index); \
+		lock_get(&table[hash_index].lock); \
 	} while (0)
 
 #define B2BE_LOCK_RELEASE(table, hash_index) \
