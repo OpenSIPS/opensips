@@ -1310,6 +1310,35 @@ static inline int get_time_diff(struct timeval *begin)
 	         - (long long)(begin->tv_sec*1000000 + begin->tv_usec);
 }
 
+static inline unsigned long long get_clock_diff(struct timespec *begin)
+{
+    struct timespec end;
+
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    return (end.tv_sec - begin->tv_sec) * 1000000000ULL
+             + (end.tv_nsec - begin->tv_nsec);
+}
+
+#define __clock_check_diff(__loglv__, start_tmspec, maxdf, fmt, ...) \
+	do { \
+		unsigned long long _diff_ns = get_clock_diff(start_tmspec); \
+		if (_diff_ns > (maxdf)) \
+			LM_GEN(__loglv__, "time spent: %0.*lfs " fmt "\n", 3, \
+			       (_diff_ns)/1e9, __VA_ARGS__); \
+	} while (0)
+#define _clock_check_diff(start_tmspec, maxdf, fmt, ...) \
+	__clock_check_diff(L_NOTICE, start_tmspec, maxdf, fmt, __VA_ARGS__)
+
+/**
+ * clock_check_diff() - measure code execution time relative to the @begin
+ *       timespec; print notice msg if the difference was exceeded
+ * @maxdf (unsigned long long) - the maximum accepted execution time
+ * @fmt (char *) - extra format string + variable # of arguments
+ */
+#define clock_check_diff(maxdf, fmt, ...) \
+	_clock_check_diff(&begin, maxdf, fmt, __VA_ARGS__)
+
 #define reset_longest_action_list(threshold) \
 	do { \
 		if ((threshold)) { \
