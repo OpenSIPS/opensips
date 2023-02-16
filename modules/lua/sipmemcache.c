@@ -84,7 +84,7 @@ static int l_sipmemcache_server_add(lua_State *L)
     {
 		s.len = strlen(port);
 		s.s = (char *)port;
-		if (str2int(&s, (unsigned int *)&_port) < 0 || _port > IPPORT_MAX) {
+		if (str2int(&s, (unsigned int *)&_port) < 0 || _port > USHRT_MAX) {
 			lua_pushboolean(L, 0);
 		} else {
 			lua_pushboolean(L, 1);
