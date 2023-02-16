@@ -3477,7 +3477,7 @@ b2b_route:
 	current_dlg = 0;
 	if(b2be_db_mode == WRITE_THROUGH && dlg_state>B2B_CONFIRMED)
 	{
-		if (b2b_ev == -1)
+		if (b2b_ev == -1 && lock_taken != 1)
 			B2BE_LOCK_GET(htable, hash_index);
 
 		for(aux_dlg = htable[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
