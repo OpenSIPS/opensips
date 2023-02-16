@@ -474,7 +474,7 @@ static pv_value_t *route_params_expand(struct sip_msg *msg,
 			case SCRIPTVAR_ST:
 				if(pv_get_spec_value(msg, (pv_spec_p)actions[index].u.data, res)==0)
 				{
-					if (res->flags & PV_VAL_STR) {
+					if (pvv_is_str(res)) {
 						/* but we need to duplicate the string */
 						if (pkg_str_dup(&tmp, &res->rs) == 0) {
 							res->rs.s = tmp.s;
@@ -578,8 +578,6 @@ static int route_param_get(struct sip_msg *msg,  pv_param_t *ip,
 	index--;
 	*res = params[index];
 	res->flags &= ~PV_VAL_PKG; /* not interested in this flag */
-	if (res->flags & PV_VAL_INT)
-		res->rs.s = int2str(res->ri, &res->rs.len);
 
 	return 0;
 }
