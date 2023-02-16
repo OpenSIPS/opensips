@@ -323,8 +323,15 @@ static bin_packet_t *tm_replicate_packet(struct sip_msg *msg, int type)
 	tmp.len = sizeof(struct ip_addr);
 	TM_BIN_PUSH(str, &tmp, "src host");
 	TM_BIN_PUSH(int, msg->rcv.src_port, "src port");
-	tmp.s = msg->buf;
-	tmp.len = msg->len + 1; /* XXX: add '\0' terminator - receive_msg expects it */
+
+	/* XXX: Check if the buffer has a null terminator, if not add '\0' terminator - receive_msg expects it */
+	if (msg->buf[msg->len] == '\0') {
+		tmp.s = msg->buf;
+		tmp.len = msg->len;
+	} else {
+		tmp.s = msg->buf;
+		tmp.len = msg->len + 1;
+	}
 	TM_BIN_PUSH(str, &tmp, "message");
 
 	return &packet;
