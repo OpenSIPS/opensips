@@ -1212,7 +1212,7 @@ int redis_map_set(cachedb_con *con, const str *key, const str *subkey,
 	struct list_head *_;
 	static str valbuf;
 	int offset = 0;
-	char *int_buf;
+	char *int_buf = NULL;
 	int len;
 	int rc;
 	redisReply *reply;
