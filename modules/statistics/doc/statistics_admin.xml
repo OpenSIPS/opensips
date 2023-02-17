@@ -408,13 +408,13 @@ timer_route [clear_packet_stats, 7200] {
 		<programlisting format="linespecific">
 ...
 # account failed calls
-update_stat_series("perc_1h", "ASR_1h", "-1");
+update_stat_series("perc_1h", "ASR_1h", -1);
 
 # account successful calls
-update_stat_series("perc_1h", "ASR_1h", "1");
+update_stat_series("perc_1h", "ASR_1h", 1);
 
 # compute average PDD
-update_stat_series("avg", "PDD", "$var(pdd_ms)");
+update_stat_series("avg", "PDD", $var(pdd_ms));
 ...
 </programlisting>
 		</example>
