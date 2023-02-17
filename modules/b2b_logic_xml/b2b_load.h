@@ -97,7 +97,7 @@ typedef struct b2bl_api
 	b2bl_restore_upper_info_f restore_upper_info;
 }b2bl_api_t;
 
-str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
+str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
 		b2bl_cback_f, void* param, unsigned int cb_mask, str* custom_hdrs);
 
 typedef int(*load_b2bl_f)( b2bl_api_t *api );
