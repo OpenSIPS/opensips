@@ -1531,8 +1531,8 @@ Chapter 3. Contributors
    6. Dan Pascu (@danpascu) 17 13 90 176
    7. Ionut Ionita (@ionutrazvanionita) 16 9 383 169
    8. Ionel Cerghit (@ionel-cerghit) 8 1 494 109
-   9. Alexey Vasilyev (@vasilevalex) 4 2 33 19
-   10. Maksym Sobolyev (@sobomax) 4 2 4 18
+   9. Maksym Sobolyev (@sobomax) 5 3 9 23
+   10. Alexey Vasilyev (@vasilevalex) 4 2 33 19
 
    All remaining contributors: Callum Guy (@spacetourist), Aleksei
    Vasilev, Fabian Gast (@fgast), Nick Altmann (@nikbyte), Ovidiu
@@ -1558,11 +1558,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Jan 2023
-   2.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
-   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   4.  Aleksei Vasilev                     Apr 2021 - Apr 2021
-   5.  Maksym Sobolyev (@sobomax)          Mar 2016 - Sep 2020
+   1.  Maksym Sobolyev (@sobomax)          Mar 2016 - Feb 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Jan 2023
+   3.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
+   4.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   5.  Aleksei Vasilev                     Apr 2021 - Apr 2021
    6.  Liviu Chircu (@liviuchircu)         Oct 2015 - Aug 2020
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
    8.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020

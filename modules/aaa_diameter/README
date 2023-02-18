@@ -265,6 +265,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                  Name             DevScore Commits Lines ++ Lines --
    1. Liviu Chircu (@liviuchircu)    88      23      5917     954
+   2. Maksym Sobolyev (@sobomax)     3        1       5        5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -286,7 +287,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                  Name               Commit Activity
-   1. Liviu Chircu (@liviuchircu) May 2021 - Jun 2022
+   1. Maksym Sobolyev (@sobomax)  Feb 2023 - Feb 2023
+   2. Liviu Chircu (@liviuchircu) May 2021 - Jun 2022
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -222,8 +222,8 @@ Chapter 2. Contributors
    9. Anca Vamanu 3 1 14 18
    10. Vallimamod Abdullah 3 1 4 3
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Vlad
-   Patrascu (@rvlad-patrascu).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Peter
+   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -245,18 +245,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - May 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2020
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
-   6.  shiningstarj                        Oct 2015 - Oct 2015
-   7.  Walter Doekes (@wdoekes)            Apr 2010 - Mar 2014
-   8.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Jan 2013
-   9.  Anca Vamanu                         Dec 2010 - Dec 2010
-   10. Vallimamod Abdullah                 Oct 2010 - Oct 2010
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2009 - May 2022
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2020
+   4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2017
+   7.  shiningstarj                        Oct 2015 - Oct 2015
+   8.  Walter Doekes (@wdoekes)            Apr 2010 - Mar 2014
+   9.  Ovidiu Sas (@ovidiusas)             Oct 2010 - Jan 2013
+   10. Anca Vamanu                         Dec 2010 - Dec 2010
 
-   All remaining contributors: Angel Marin, Klaus Darilion.
+   All remaining contributors: Vallimamod Abdullah, Angel Marin,
+   Klaus Darilion.
 
    (1) including any documentation-related commits, excluding
    merge commits

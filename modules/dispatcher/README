@@ -1505,11 +1505,12 @@ Chapter 3. Contributors
    (@ionel-cerghit), Elena-Ramona Modroiu, John Burke
    (@john08burke), Klaus Darilion, Anca Vamanu, Jarrod Baumann
    (@jarrodb), Walter Doekes (@wdoekes), Nick Altmann (@nikbyte),
-   Jan Janak (@janakj), Andrei Pelinescu-Onciul, Peter Lemenkov
-   (@lemenkov), Stanislaw Pitucha, Federico Cabiddu, Konstantin
-   Bokarius, Andreas Granig, John Riordan, Aron Podrigal (@ar45),
-   Julián Moreno Patiño, Kevin McAllister, Roman Sevko, UnixDev,
-   David Sanders, Edson Gellert Schubert.
+   Jan Janak (@janakj), Maksym Sobolyev (@sobomax), Andrei
+   Pelinescu-Onciul, Peter Lemenkov (@lemenkov), Stanislaw
+   Pitucha, Federico Cabiddu, Konstantin Bokarius, Andreas Granig,
+   John Riordan, Aron Podrigal (@ar45), Julián Moreno Patiño,
+   Kevin McAllister, Roman Sevko, UnixDev, David Sanders, Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1531,27 +1532,27 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2023
-   2.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2022
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   5.  John Burke (@john08burke)           Feb 2021 - Jan 2022
-   6.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   8.  Roman Sevko                         Oct 2019 - Oct 2019
-   9.  Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
-   10. Ionel Cerghit (@ionel-cerghit)      Jul 2015 - Jun 2016
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2023
+   3.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2022
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   6.  John Burke (@john08burke)           Feb 2021 - Jan 2022
+   7.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   9.  Roman Sevko                         Oct 2019 - Oct 2019
+   10. Nick Altmann (@nikbyte)             Mar 2012 - Mar 2018
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Julián Moreno Patiño, Jarrod Baumann (@jarrodb), Ovidiu Sas
-   (@ovidiusas), David Sanders, Aron Podrigal (@ar45), Andrei
-   Datcu (@andrei-datcu), Walter Doekes (@wdoekes), Stanislaw
-   Pitucha, Anca Vamanu, John Riordan, UnixDev, Kevin McAllister,
-   Klaus Darilion, Carsten Bock, Daniel-Constantin Mierla
-   (@miconda), Henning Westerholt (@henningw), Konstantin
-   Bokarius, Edson Gellert Schubert, Federico Cabiddu,
-   Elena-Ramona Modroiu, Andreas Granig, Andrei Pelinescu-Onciul,
-   Jan Janak (@janakj).
+   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
+   Ionut Ionita (@ionutrazvanionita), Julián Moreno Patiño, Jarrod
+   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), David Sanders,
+   Aron Podrigal (@ar45), Andrei Datcu (@andrei-datcu), Walter
+   Doekes (@wdoekes), Stanislaw Pitucha, Anca Vamanu, John
+   Riordan, UnixDev, Kevin McAllister, Klaus Darilion, Carsten
+   Bock, Daniel-Constantin Mierla (@miconda), Henning Westerholt
+   (@henningw), Konstantin Bokarius, Edson Gellert Schubert,
+   Federico Cabiddu, Elena-Ramona Modroiu, Andreas Granig, Andrei
+   Pelinescu-Onciul, Jan Janak (@janakj).
 
    (1) including any documentation-related commits, excluding
    merge commits

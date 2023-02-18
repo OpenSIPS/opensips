@@ -340,9 +340,9 @@ Chapter 2. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 24 20 143 88
    4. Liviu Chircu (@liviuchircu) 15 13 80 53
    5. Vlad Patrascu (@rvlad-patrascu) 9 6 82 72
-   6. Alexey Vasilyev (@vasilevalex) 4 2 3 15
-   7. Peter Lemenkov (@lemenkov) 4 2 2 2
-   8. Maksym Sobolyev (@sobomax) 3 1 2 2
+   6. Maksym Sobolyev (@sobomax) 5 3 7 7
+   7. Alexey Vasilyev (@vasilevalex) 4 2 3 15
+   8. Peter Lemenkov (@lemenkov) 4 2 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -364,9 +364,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Dec 2021
-   2. Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2021
-   3. Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   1. Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Dec 2021
+   3. Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2021
    4. Liviu Chircu (@liviuchircu)         Mar 2015 - May 2020
    5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2020
    6. Peter Lemenkov (@lemenkov)          Jun 2018 - Jan 2020

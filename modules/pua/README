@@ -525,11 +525,12 @@ Chapter 3. Contributors
 
    All remaining contributors: Vlad Paiu (@vladpaiu), Juha
    Heinanen (@juha-h), Walter Doekes (@wdoekes), Denis Bilenko,
-   Vallimamod Abdullah, Alex Hermann, Damien Sandras (@dsandras),
-   Sergio Gutierrez, Konstantin Bokarius, Elena-Ramona Modroiu,
-   John Riordan, Peter Lemenkov (@lemenkov), Dusan Klinec
-   (@ph4r05), UnixDev, Zero King (@l2dy), Stanislaw Pitucha, Dan
-   Pascu (@danpascu), Julien Blache.
+   Vallimamod Abdullah, Alex Hermann, Maksym Sobolyev (@sobomax),
+   Damien Sandras (@dsandras), Sergio Gutierrez, Konstantin
+   Bokarius, Elena-Ramona Modroiu, John Riordan, Peter Lemenkov
+   (@lemenkov), Dusan Klinec (@ph4r05), UnixDev, Zero King
+   (@l2dy), Stanislaw Pitucha, Dan Pascu (@danpascu), Julien
+   Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -551,24 +552,25 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Jan 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
-   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
-   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   9.  Damien Sandras (@dsandras)          Sep 2013 - Sep 2013
-   10. Saúl Ibarra Corretgé (@saghul)      Oct 2012 - Aug 2013
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2007 - Jan 2023
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2021
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2021
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2016
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   10. Damien Sandras (@dsandras)          Sep 2013 - Sep 2013
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
-   Vallimamod Abdullah, Alex Hermann, Stanislaw Pitucha, Walter
-   Doekes (@wdoekes), John Riordan, UnixDev, Sergio Gutierrez,
-   Denis Bilenko, Henning Westerholt (@henningw), Dan Pascu
-   (@danpascu), Daniel-Constantin Mierla (@miconda), Juha Heinanen
-   (@juha-h), Konstantin Bokarius, Edson Gellert Schubert, Julien
-   Blache, Elena-Ramona Modroiu.
+   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
+   Vlad Paiu (@vladpaiu), Anca Vamanu, Vallimamod Abdullah, Alex
+   Hermann, Stanislaw Pitucha, Walter Doekes (@wdoekes), John
+   Riordan, UnixDev, Sergio Gutierrez, Denis Bilenko, Henning
+   Westerholt (@henningw), Dan Pascu (@danpascu),
+   Daniel-Constantin Mierla (@miconda), Juha Heinanen (@juha-h),
+   Konstantin Bokarius, Edson Gellert Schubert, Julien Blache,
+   Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

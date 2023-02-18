@@ -136,11 +136,12 @@ Chapter 2. Contributors
    6. Vlad Patrascu (@rvlad-patrascu) 5 3 14 7
    7. Ovidiu Sas (@ovidiusas) 4 2 14 2
    8. Peter Lemenkov (@lemenkov) 4 2 5 4
-   9. Konstantin Bokarius 3 1 2 5
-   10. Elena-Ramona Modroiu 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 3 1 4 4
+   10. Konstantin Bokarius 3 1 2 5
 
-   All remaining contributors: Juha Heinanen (@juha-h), Walter
-   Doekes (@wdoekes), Edson Gellert Schubert, Julien Blache.
+   All remaining contributors: Elena-Ramona Modroiu, Juha Heinanen
+   (@juha-h), Walter Doekes (@wdoekes), Edson Gellert Schubert,
+   Julien Blache.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -162,19 +163,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2023
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2007 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Mar 2014
-   7.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
-   8.  Anca Vamanu                         Nov 2006 - Oct 2009
-   9.  Daniel-Constantin Mierla (@miconda) Dec 2006 - Mar 2008
-   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jan 2023
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2007 - Apr 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Mar 2014
+   8.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2010
+   9.  Anca Vamanu                         Nov 2006 - Oct 2009
+   10. Daniel-Constantin Mierla (@miconda) Dec 2006 - Mar 2008
 
-   All remaining contributors: Edson Gellert Schubert, Juha
-   Heinanen (@juha-h), Julien Blache, Elena-Ramona Modroiu.
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Juha Heinanen (@juha-h), Julien Blache, Elena-Ramona
+   Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

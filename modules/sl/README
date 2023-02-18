@@ -204,12 +204,12 @@ Chapter 2. Contributors
    7. Henning Westerholt (@henningw) 7 5 12 12
    8. Razvan Crainea (@razvancrainea) 7 5 12 11
    9. Vlad Patrascu (@rvlad-patrascu) 7 4 30 83
-   10. Elena-Ramona Modroiu 3 2 65 0
+   10. Maksym Sobolyev (@sobomax) 4 2 8 8
 
-   All remaining contributors: Jeffrey Magder, Maksym Sobolyev
-   (@sobomax), Andreas Heise, Konstantin Bokarius, Anca Vamanu,
-   Ionut Ionita (@ionutrazvanionita), Peter Lemenkov (@lemenkov),
-   Edson Gellert Schubert.
+   All remaining contributors: Elena-Ramona Modroiu, Jeffrey
+   Magder, Andreas Heise, Konstantin Bokarius, Anca Vamanu, Ionut
+   Ionita (@ionutrazvanionita), Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -231,7 +231,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Nov 2019
    3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019

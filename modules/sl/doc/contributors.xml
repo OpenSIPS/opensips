@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Elena-Ramona Modroiu</entry>
-		<entry align="center">3</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
 		<entry align="center">2</entry>
-		<entry align="center">65</entry>
-		<entry align="center">0</entry>
+		<entry align="center">8</entry>
+		<entry align="center">8</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Jeffrey Magder, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andreas Heise, Konstantin Bokarius, Anca Vamanu, Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Elena-Ramona Modroiu, Jeffrey Magder, Andreas Heise, Konstantin Bokarius, Anca Vamanu, Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Oct 2020 - Oct 2020</entry>
+		<entry align="center">Oct 2020 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>

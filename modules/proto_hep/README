@@ -355,10 +355,11 @@ Chapter 3. Contributors
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 26 19 384 170
    4. Liviu Chircu (@liviuchircu) 18 15 81 92
    5. Vlad Patrascu (@rvlad-patrascu) 7 4 36 84
-   6. Nick Altmann (@nikbyte) 3 1 2 2
-   7. Dan Pascu (@danpascu) 3 1 1 1
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
-   9. Walter Doekes (@wdoekes) 3 1 1 1
+   6. Maksym Sobolyev (@sobomax) 4 2 4 4
+   7. Nick Altmann (@nikbyte) 3 1 2 2
+   8. Dan Pascu (@danpascu) 3 1 1 1
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Walter Doekes (@wdoekes) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -379,16 +380,17 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
-   2. Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2021
-   4. Walter Doekes (@wdoekes)            May 2020 - May 2020
-   5. Razvan Crainea (@razvancrainea)     Nov 2015 - Jan 2020
-   6. Dan Pascu (@danpascu)               May 2019 - May 2019
-   7. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
+                      Name                   Commit Activity
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
+   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2021
+   5.  Walter Doekes (@wdoekes)            May 2020 - May 2020
+   6.  Razvan Crainea (@razvancrainea)     Nov 2015 - Jan 2020
+   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
 
    (1) including any documentation-related commits, excluding
    merge commits

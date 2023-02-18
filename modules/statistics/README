@@ -293,13 +293,13 @@ timer_route [clear_packet_stats, 7200] {
    Example 1.8. update_stat_series usage
 ...
 # account failed calls
-update_stat_series("perc_1h", "ASR_1h", "-1");
+update_stat_series("perc_1h", "ASR_1h", -1);
 
 # account successful calls
-update_stat_series("perc_1h", "ASR_1h", "1");
+update_stat_series("perc_1h", "ASR_1h", 1);
 
 # compute average PDD
-update_stat_series("avg", "PDD", "$var(pdd_ms)");
+update_stat_series("avg", "PDD", $var(pdd_ms));
 ...
 
 1.7. Exported Pseudo-Variables
@@ -333,19 +333,19 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 33 20 1037 227
-   2. Liviu Chircu (@liviuchircu) 26 18 515 158
+   2. Liviu Chircu (@liviuchircu) 27 19 518 161
    3. Razvan Crainea (@razvancrainea) 19 12 680 18
    4. Daniel-Constantin Mierla (@miconda) 11 9 22 18
    5. Vlad Patrascu (@rvlad-patrascu) 9 4 97 201
    6. Vlad Paiu (@vladpaiu) 5 2 144 1
    7. Anca Vamanu 4 2 14 16
-   8. Henning Westerholt (@henningw) 4 2 4 4
-   9. Ionut Ionita (@ionutrazvanionita) 3 1 17 1
-   10. Ovidiu Sas (@ovidiusas) 3 1 15 2
+   8. Maksym Sobolyev (@sobomax) 4 2 5 5
+   9. Henning Westerholt (@henningw) 4 2 4 4
+   10. Ionut Ionita (@ionutrazvanionita) 3 1 17 1
 
-   All remaining contributors: Konstantin Bokarius, Maksym
-   Sobolyev (@sobomax), Julián Moreno Patiño, Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Konstantin
+   Bokarius, Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
+   Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -367,9 +367,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
-   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Feb 2021
-   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2023
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Feb 2021
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2006 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -389,11 +389,11 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu
-   (@vladpaiu), Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Paiu (@vladpaiu), Ovidiu Sas (@ovidiusas), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
 
    Documentation Copyrights:
 

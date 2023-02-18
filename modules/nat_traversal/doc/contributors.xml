@@ -84,24 +84,24 @@
 	</row>
 	<row>
 		<entry>9. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">7</entry>
+		<entry align="center">7</entry>
+	</row>
+	<row>
+		<entry>10. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">3</entry>
 		<entry align="center">6</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>David Sanders</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">8</entry>
-		<entry align="center">6</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Stéphane Alnet (<ulink url="https://github.com/shimaore">@shimaore</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Sergio Gutierrez, Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: David Sanders, Stéphane Alnet (<ulink url="https://github.com/shimaore">@shimaore</ulink>), Sergio Gutierrez, Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Jan 2021 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Apr 2022</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>)</entry>
 		<entry align="center">Mar 2022 - Mar 2022</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jan 2021 - Jan 2021</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

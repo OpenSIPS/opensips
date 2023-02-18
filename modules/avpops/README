@@ -718,12 +718,12 @@ Chapter 2. Contributors
 
    All remaining contributors: Andrei Pelinescu-Onciul, Anca
    Vamanu, Norman Brandinger (@NormB), Vlad Patrascu
-   (@rvlad-patrascu), Klaus Darilion, John Burke (@john08burke),
-   Andrey Vorobiev, Olle E. Johansson, Kennard White, Julián
-   Moreno Patiño, Konstantin Bokarius, Walter Doekes (@wdoekes),
-   Andreas Granig, Peter Lemenkov (@lemenkov), Sergio Gutierrez,
-   Edson Gellert Schubert, Ovidiu Sas (@ovidiusas), Maksym
-   Sobolyev (@sobomax).
+   (@rvlad-patrascu), Maksym Sobolyev (@sobomax), Klaus Darilion,
+   John Burke (@john08burke), Andrey Vorobiev, Olle E. Johansson,
+   Kennard White, Julián Moreno Patiño, Konstantin Bokarius,
+   Walter Doekes (@wdoekes), Andreas Granig, Peter Lemenkov
+   (@lemenkov), Sergio Gutierrez, Edson Gellert Schubert, Ovidiu
+   Sas (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -745,7 +745,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Oct 2022
+   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
    2.  John Burke (@john08burke)           Jun 2022 - Jun 2022
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
    4.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020

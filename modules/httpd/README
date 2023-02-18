@@ -277,10 +277,11 @@ Chapter 3. Contributors
    6. Ionut Ionita (@ionutrazvanionita) 8 6 65 21
    7. Fabian Gast (@fgast) 4 1 150 3
    8. Stephane Alnet 3 1 39 3
-   9. Stas Kobzar 3 1 2 2
-   10. Dusan Klinec (@ph4r05) 3 1 1 1
+   9. Maksym Sobolyev (@sobomax) 3 1 4 4
+   10. Stas Kobzar 3 1 2 2
 
-   All remaining contributors: Peter Lemenkov (@lemenkov).
+   All remaining contributors: Dusan Klinec (@ph4r05), Peter
+   Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -302,18 +303,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
-   2.  Razvan Crainea (@razvancrainea)     Mar 2015 - Oct 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
-   4.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Stas Kobzar                         Feb 2015 - Feb 2015
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
+   3.  Razvan Crainea (@razvancrainea)     Mar 2015 - Oct 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2013 - Aug 2021
+   5.  Fabian Gast (@fgast)                Aug 2020 - Aug 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Ovidiu Sas (@ovidiusas)             Jan 2012 - Jan 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Feb 2017
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Stephane Alnet.
+   All remaining contributors: Stas Kobzar, Stephane Alnet.
 
    (1) including any documentation-related commits, excluding
    merge commits

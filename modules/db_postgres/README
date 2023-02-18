@@ -180,7 +180,7 @@ Chapter 2. Contributors
    10. Vlad Paiu (@vladpaiu) 9 7 102 34
 
    All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Ancuta Onofrei, Norman Brandinger, Maksym Sobolyev (@sobomax),
+   Ancuta Onofrei, Maksym Sobolyev (@sobomax), Norman Brandinger,
    Andrei Pelinescu-Onciul, Dusan Klinec (@ph4r05), Eseanu Marius
    Cristian (@eseanucristian), Ruslan Bukin, Ryan Bullock
    (@rrb3942), Konstantin Bokarius, Razvan Pistolea, Aron
@@ -207,24 +207,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
-   2.  Norman Brandinger (@NormB)          Aug 2006 - Oct 2021
-   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
-   4.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   5.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   7.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
-   8.  Vlad Paiu (@vladpaiu)               Jan 2011 - Feb 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Jarrod Baumann (@jarrodb)           Mar 2016 - Mar 2016
+   1.  Maksym Sobolyev (@sobomax)          Apr 2004 - Feb 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Oct 2021
+   3.  Norman Brandinger (@NormB)          Aug 2006 - Oct 2021
+   4.  Razvan Crainea (@razvancrainea)     Oct 2011 - Sep 2019
+   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   6.  Liviu Chircu (@liviuchircu)         Sep 2012 - May 2019
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   8.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
+   9.  Vlad Paiu (@vladpaiu)               Jan 2011 - Feb 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Aron
-   Podrigal, Eseanu Marius Cristian (@eseanucristian), Razvan
-   Pistolea, Ruslan Bukin, Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Ancuta Onofrei, Klaus Darilion, Norman
-   Brandinger, Maksym Sobolyev (@sobomax), Jan Janak (@janakj),
-   Greg Fausak, Andrei Pelinescu-Onciul.
+   All remaining contributors: Jarrod Baumann (@jarrodb), Dusan
+   Klinec (@ph4r05), Aron Podrigal, Eseanu Marius Cristian
+   (@eseanucristian), Razvan Pistolea, Ruslan Bukin, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Ancuta Onofrei,
+   Klaus Darilion, Norman Brandinger, Jan Janak (@janakj), Greg
+   Fausak, Andrei Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding
    merge commits

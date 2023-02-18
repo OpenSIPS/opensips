@@ -313,9 +313,10 @@ Chapter 2. Contributors
 
    All remaining contributors: Anca Vamanu, Christophe Sollet
    (@csollet), Ionut Ionita (@ionutrazvanionita), Damien Sandras
-   (@dsandras), Konstantin Bokarius, Dan Pascu (@danpascu),
-   Ezequiel Lovelle (@lovelle), Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert, Elena-Ramona Modroiu.
+   (@dsandras), Maksym Sobolyev (@sobomax), Konstantin Bokarius,
+   Dan Pascu (@danpascu), Ezequiel Lovelle (@lovelle), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Elena-Ramona
+   Modroiu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -337,22 +338,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Mar 2008 - Jun 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2020
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
-   8.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
-   9.  Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
-   10. Andrei Datcu (@andrei-datcu)        Jul 2014 - Jul 2014
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Ovidiu Sas (@ovidiusas)             Mar 2008 - Jun 2022
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - May 2020
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   5.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Oct 2016 - Oct 2016
+   9.  Vlad Paiu (@vladpaiu)               Jun 2011 - Feb 2015
+   10. Ezequiel Lovelle (@lovelle)         Oct 2014 - Oct 2014
 
-   All remaining contributors: Damien Sandras (@dsandras),
-   Christophe Sollet (@csollet), Anca Vamanu, Henning Westerholt
-   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu),
-   Elena-Ramona Modroiu, Ron Winacott.
+   All remaining contributors: Andrei Datcu (@andrei-datcu),
+   Damien Sandras (@dsandras), Christophe Sollet (@csollet), Anca
+   Vamanu, Henning Westerholt (@henningw), Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Dan Pascu (@danpascu), Elena-Ramona Modroiu, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits

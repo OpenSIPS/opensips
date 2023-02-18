@@ -76,7 +76,7 @@
 	</row>
 	<row>
 		<entry>8. </entry>
-		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">2</entry>
@@ -84,24 +84,24 @@
 	</row>
 	<row>
 		<entry>9. </entry>
+		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+	</row>
+	<row>
+		<entry>10. </entry>
 		<entry>Boris Ratner</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
 		<entry align="center">129</entry>
 		<entry align="center">46</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Julián Moreno Patiño</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">8</entry>
-		<entry align="center">8</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Julián Moreno Patiño, Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Alexey Vasilyev (<ulink url="https://github.com/vasilevalex">@vasilevalex</ulink>), Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Mar 2021 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Feb 2012 - Feb 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Nov 2012 - Oct 2022</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Feb 2012 - Aug 2021</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Mar 2021 - Mar 2021</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

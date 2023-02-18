@@ -391,7 +391,8 @@ Chapter 2. Contributors
    6. Sergio Gutierrez 3 1 19 1
    7. Ovidiu Sas (@ovidiusas) 3 1 13 11
    8. Anca Vamanu 3 1 6 3
-   9. Marius Zbihlei 2 1 2 0
+   9. Maksym Sobolyev (@sobomax) 3 1 3 3
+   10. Marius Zbihlei 2 1 2 0
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -412,16 +413,17 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
-   4. Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
-   5. Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
-   6. Marius Zbihlei                      Sep 2010 - Sep 2010
-   7. Iñaki Baz Castillo                  Feb 2009 - Jul 2010
-   8. Anca Vamanu                         Sep 2009 - Sep 2009
-   9. Sergio Gutierrez                    Feb 2009 - Feb 2009
+                      Name                   Commit Activity
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Apr 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   6.  Ovidiu Sas (@ovidiusas)             Jan 2013 - Jan 2013
+   7.  Marius Zbihlei                      Sep 2010 - Sep 2010
+   8.  Iñaki Baz Castillo                  Feb 2009 - Jul 2010
+   9.  Anca Vamanu                         Sep 2009 - Sep 2009
+   10. Sergio Gutierrez                    Feb 2009 - Feb 2009
 
    (1) including any documentation-related commits, excluding
    merge commits

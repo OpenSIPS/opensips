@@ -381,11 +381,11 @@ Chapter 2. Contributors
 
    All remaining contributors: Elena-Ramona Modroiu, Henning
    Westerholt (@henningw), Ovidiu Sas (@ovidiusas), Anca Vamanu,
-   Marc Haisenko, Andreas Heise, Klaus Darilion, Vlad Paiu
-   (@vladpaiu), Andreas Granig, Hugues Mitonneau, Konstantin
-   Bokarius, Saúl Ibarra Corretgé (@saghul), Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert, Maksym Sobolyev
-   (@sobomax), Christophe Sollet (@csollet).
+   Maksym Sobolyev (@sobomax), Marc Haisenko, Andreas Heise, Klaus
+   Darilion, Vlad Paiu (@vladpaiu), Andreas Granig, Hugues
+   Mitonneau, Konstantin Bokarius, Saúl Ibarra Corretgé (@saghul),
+   Peter Lemenkov (@lemenkov), Edson Gellert Schubert, Christophe
+   Sollet (@csollet).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -407,24 +407,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Sep 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Anca Vamanu                         Oct 2008 - May 2011
-   7.  Ovidiu Sas (@ovidiusas)             Dec 2010 - Jan 2011
-   8.  Christophe Sollet (@csollet)        Dec 2010 - Dec 2010
-   9.  Vlad Paiu (@vladpaiu)               Oct 2010 - Oct 2010
-   10. Andrei Dragus                       Jul 2009 - Aug 2010
+   1.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Sep 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2002 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   7.  Anca Vamanu                         Oct 2008 - May 2011
+   8.  Ovidiu Sas (@ovidiusas)             Dec 2010 - Jan 2011
+   9.  Christophe Sollet (@csollet)        Dec 2010 - Dec 2010
+   10. Vlad Paiu (@vladpaiu)               Oct 2010 - Oct 2010
 
-   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
-   Hugues Mitonneau, Andreas Granig, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   All remaining contributors: Andrei Dragus, Saúl Ibarra Corretgé
+   (@saghul), Hugues Mitonneau, Andreas Granig, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Henning Westerholt (@henningw), Juha Heinanen (@juha-h),
    Andreas Heise, Klaus Darilion, Marc Haisenko, Elena-Ramona
-   Modroiu, Andrei Pelinescu-Onciul, Jan Janak (@janakj), Maksym
-   Sobolyev (@sobomax), Jiri Kuthan (@jiriatipteldotorg).
+   Modroiu, Andrei Pelinescu-Onciul, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg).
 
    (1) including any documentation-related commits, excluding
    merge commits

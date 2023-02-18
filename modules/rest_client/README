@@ -729,9 +729,9 @@ Chapter 2. Contributors
    7. Agalya Ramachandran (@AgalyaR) 6 2 354 1
    8. Callum Guy (@spacetourist) 6 2 281 8
    9. Ryan Bullock (@rrb3942) 5 2 91 77
-   10. John Burke (@john08burke) 3 1 21 21
+   10. Maksym Sobolyev (@sobomax) 4 2 7 7
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), Peter
+   All remaining contributors: John Burke (@john08burke), Peter
    Lemenkov (@lemenkov), Andrey Vorobiev (@andrey-vorobiev).
 
    (1) DevScore = author_commits + author_lines_added /
@@ -754,10 +754,10 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2022
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
-   3.  John Burke (@john08burke)           Apr 2021 - Apr 2021
-   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2020
+   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - Aug 2022
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2021
+   4.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    5.  Callum Guy (@spacetourist)          Jan 2020 - Jan 2020
    6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2019
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019

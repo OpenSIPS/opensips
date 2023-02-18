@@ -444,9 +444,10 @@ Chapter 3. Contributors
    10. Jiri Kuthan (@jiriatipteldotorg) 4 2 8 6
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Konstantin Bokarius, Razvan Pistolea, Chris Heiser, Norman
-   Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Dusan Klinec (@ph4r05), Andrei Pelinescu-Onciul.
+   Konstantin Bokarius, Maksym Sobolyev (@sobomax), Razvan
+   Pistolea, Chris Heiser, Norman Brandinger (@NormB), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Dusan Klinec
+   (@ph4r05), Andrei Pelinescu-Onciul.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -468,22 +469,22 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
-   5.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   8.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
-   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
-   10. Razvan Pistolea                     Jul 2009 - Jul 2009
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2022
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
+   6.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Sergey Khripchenko (@shripchenko)   Aug 2015 - Aug 2015
+   10. Ionut Ionita (@ionutrazvanionita)   Jan 2015 - Feb 2015
 
-   All remaining contributors: Henning Westerholt (@henningw),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Chris
-   Heiser, Edson Gellert Schubert, Norman Brandinger (@NormB), Jan
-   Janak (@janakj), Jiri Kuthan (@jiriatipteldotorg), Andrei
-   Pelinescu-Onciul.
+   All remaining contributors: Razvan Pistolea, Henning Westerholt
+   (@henningw), Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Chris Heiser, Edson Gellert Schubert, Norman
+   Brandinger (@NormB), Jan Janak (@janakj), Jiri Kuthan
+   (@jiriatipteldotorg), Andrei Pelinescu-Onciul.
 
    (1) including any documentation-related commits, excluding
    merge commits

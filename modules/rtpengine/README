@@ -1278,10 +1278,9 @@ Chapter 3. Contributors
    9. Nick Altmann (@nikbyte) 6 4 43 2
    10. Ovidiu Sas (@ovidiusas) 5 3 37 7
 
-   All remaining contributors: Zero King (@l2dy), Rob Gagnon
-   (@rgagnon24), Flavio E. Goncalves, Dan Pascu (@danpascu),
-   Maksym Sobolyev (@sobomax), Oliver Severin Mulelid-Tynes
-   (@olivermt).
+   All remaining contributors: Maksym Sobolyev (@sobomax), Zero
+   King (@l2dy), Rob Gagnon (@rgagnon24), Flavio E. Goncalves, Dan
+   Pascu (@danpascu), Oliver Severin Mulelid-Tynes (@olivermt).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1303,13 +1302,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jan 2023
-   2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2022
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   4.  John Burke (@john08burke)           Jun 2019 - Apr 2022
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
-   6.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jan 2023
+   3.  Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2022
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   5.  John Burke (@john08burke)           Jun 2019 - Apr 2022
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
+   7.  Nick Altmann (@nikbyte)             May 2021 - May 2021
    8.  Flavio E. Goncalves                 Oct 2020 - Oct 2020
    9.  Zero King (@l2dy)                   Mar 2020 - Sep 2020
    10. Ovidiu Sas (@ovidiusas)             Jun 2020 - Jun 2020

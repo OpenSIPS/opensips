@@ -194,10 +194,10 @@ Chapter 3. Contributors
    7. Henning Westerholt (@henningw) 5 3 3 27
    8. Saúl Ibarra Corretgé (@saghul) 4 2 74 11
    9. Konstantin Bokarius 3 1 3 5
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   10. Maksym Sobolyev (@sobomax) 3 1 2 2
 
-   All remaining contributors: Edson Gellert Schubert, Andreas
-   Heise, Vlad Paiu (@vladpaiu).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
+   Gellert Schubert, Andreas Heise, Vlad Paiu (@vladpaiu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -219,19 +219,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Vlad Paiu (@vladpaiu)               Jun 2012 - Jun 2012
-   7.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Jun 2012
-   8.  Henning Westerholt (@henningw)      Apr 2007 - May 2008
-   9.  Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
-   10. Konstantin Bokarius                 Mar 2008 - Mar 2008
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  Vlad Paiu (@vladpaiu)               Jun 2012 - Jun 2012
+   8.  Saúl Ibarra Corretgé (@saghul)      May 2012 - Jun 2012
+   9.  Henning Westerholt (@henningw)      Apr 2007 - May 2008
+   10. Daniel-Constantin Mierla (@miconda) Oct 2005 - Mar 2008
 
-   All remaining contributors: Edson Gellert Schubert, Andreas
-   Heise, Jan Janak (@janakj).
+   All remaining contributors: Konstantin Bokarius, Edson Gellert
+   Schubert, Andreas Heise, Jan Janak (@janakj).
 
    (1) including any documentation-related commits, excluding
    merge commits

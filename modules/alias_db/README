@@ -274,9 +274,9 @@ Chapter 3. Contributors
    9. Vladimir Romanov 4 1 227 51
    10. Sergey Khripchenko (@shripchenko) 3 1 18 22
 
-   All remaining contributors: Sergio Gutierrez, Konstantin
-   Bokarius, Anca Vamanu, Dusan Klinec (@ph4r05), Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert.
+   All remaining contributors: Sergio Gutierrez, Maksym Sobolyev
+   (@sobomax), Konstantin Bokarius, Anca Vamanu, Dusan Klinec
+   (@ph4r05), Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -298,20 +298,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   8.  Sergey Khripchenko (@shripchenko)   Sep 2015 - Sep 2015
-   9.  Anca Vamanu                         Sep 2009 - Sep 2009
-   10. Vladimir Romanov                    May 2009 - May 2009
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   9.  Sergey Khripchenko (@shripchenko)   Sep 2015 - Sep 2015
+   10. Anca Vamanu                         Sep 2009 - Sep 2009
 
-   All remaining contributors: Sergio Gutierrez, Henning
-   Westerholt (@henningw), Elena-Ramona Modroiu, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert.
+   All remaining contributors: Vladimir Romanov, Sergio Gutierrez,
+   Henning Westerholt (@henningw), Elena-Ramona Modroiu,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert.
 
    (1) including any documentation-related commits, excluding
    merge commits

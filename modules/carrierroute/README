@@ -1228,14 +1228,13 @@ Chapter 2. Contributors
    6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
    7. Liviu Chircu (@liviuchircu) 17 11 132 206
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
-   9. Carsten Bock 3 1 64 15
-   10. Bob Atkins 3 1 29 1
+   9. Maksym Sobolyev (@sobomax) 4 2 5 5
+   10. Carsten Bock 3 1 64 15
 
-   All remaining contributors: Julián Moreno Patiño, Ovidiu Sas
-   (@ovidiusas), Sergio Gutierrez, Iouri Kharon, UnixDev, Zero
-   King (@l2dy), ihsinme, Maksym Sobolyev (@sobomax), Peter
-   Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert
-   Schubert.
+   All remaining contributors: Bob Atkins, Julián Moreno Patiño,
+   Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Iouri Kharon,
+   UnixDev, Zero King (@l2dy), ihsinme, Peter Lemenkov
+   (@lemenkov), Walter Doekes (@wdoekes), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1257,7 +1256,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Oct 2022
+   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
    2.  ihsinme                             Feb 2022 - Feb 2022
    3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020

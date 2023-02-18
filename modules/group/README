@@ -376,8 +376,9 @@ Chapter 2. Contributors
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
    Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Dan Pascu
-   (@danpascu), Sergio Gutierrez, Konstantin Bokarius, Norman
-   Brandinger (@NormB), UnixDev, Anca Vamanu.
+   (@danpascu), Sergio Gutierrez, Konstantin Bokarius, Maksym
+   Sobolyev (@sobomax), Norman Brandinger (@NormB), UnixDev, Anca
+   Vamanu.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -399,18 +400,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2021
-   2.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - May 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Mar 2020
-   6.  Dan Pascu (@danpascu)               Oct 2007 - Apr 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
-   9.  Anca Vamanu                         Sep 2009 - Sep 2009
-   10. UnixDev                             Feb 2009 - Feb 2009
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2021
+   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - May 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Oct 2007 - Apr 2019
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Irina-Maria Stanescu                Aug 2009 - Dec 2009
+   10. Anca Vamanu                         Sep 2009 - Sep 2009
 
-   All remaining contributors: Sergio Gutierrez, Henning
+   All remaining contributors: UnixDev, Sergio Gutierrez, Henning
    Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Norman Brandinger
    (@NormB), Jan Janak (@janakj), Andrei Pelinescu-Onciul, Jiri

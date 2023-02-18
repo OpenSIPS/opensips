@@ -1382,15 +1382,15 @@ Chapter 5. Contributors
    4. Liviu Chircu (@liviuchircu) 20 17 62 73
    5. Vlad Patrascu (@rvlad-patrascu) 20 10 264 408
    6. Daniel-Constantin Mierla (@miconda) 19 14 164 125
-   7. Julien Blache 4 1 80 64
-   8. Edson Gellert Schubert 4 1 0 141
-   9. Ionut Ionita (@ionutrazvanionita) 3 1 100 7
-   10. Ancuta Onofrei 3 1 27 40
+   7. Maksym Sobolyev (@sobomax) 5 3 10 42
+   8. Julien Blache 4 1 80 64
+   9. Edson Gellert Schubert 4 1 0 141
+   10. Ionut Ionita (@ionutrazvanionita) 3 1 100 7
 
-   All remaining contributors: Konstantin Bokarius, Boris Ratner,
-   Julián Moreno Patiño, Klaus Darilion, Maksym Sobolyev
-   (@sobomax), Fabian Gast (@fgast), Peter Lemenkov (@lemenkov),
-   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu).
+   All remaining contributors: Ancuta Onofrei, Konstantin
+   Bokarius, Boris Ratner, Julián Moreno Patiño, Klaus Darilion,
+   Fabian Gast (@fgast), Peter Lemenkov (@lemenkov), Ovidiu Sas
+   (@ovidiusas), Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1412,7 +1412,7 @@ Chapter 5. Contributors
 
    Table 5.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Oct 2022
+   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
    2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2022
    3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2020
    4.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020

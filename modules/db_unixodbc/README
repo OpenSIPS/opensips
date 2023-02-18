@@ -171,9 +171,9 @@ Chapter 3. Contributors
    10. Anonymous 3 1 4 3
 
    All remaining contributors: Konstantin Bokarius, Alex Massover,
-   Razvan Pistolea, Norman Brandinger (@NormB), Peter Lemenkov
-   (@lemenkov), Edson Gellert Schubert, Vlad Paiu (@vladpaiu),
-   Carsten Bock.
+   Maksym Sobolyev (@sobomax), Razvan Pistolea, Norman Brandinger
+   (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
+   Vlad Paiu (@vladpaiu), Carsten Bock.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -195,21 +195,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2005 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jul 2011
-   7.  Razvan Pistolea                     Jul 2009 - Jul 2009
-   8.  Alex Massover                       Mar 2009 - Mar 2009
-   9.  Carsten Bock                        May 2008 - May 2008
-   10. Henning Westerholt (@henningw)      May 2007 - May 2008
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2005 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  Vlad Paiu (@vladpaiu)               Jul 2011 - Jul 2011
+   8.  Razvan Pistolea                     Jul 2009 - Jul 2009
+   9.  Alex Massover                       Mar 2009 - Mar 2009
+   10. Carsten Bock                        May 2008 - May 2008
 
-   All remaining contributors: Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert, Anca
-   Vamanu, Elena-Ramona Modroiu, Norman Brandinger (@NormB),
-   Anonymous, Marco Lorrai.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Anca Vamanu, Elena-Ramona Modroiu, Norman
+   Brandinger (@NormB), Anonymous, Marco Lorrai.
 
    (1) including any documentation-related commits, excluding
    merge commits

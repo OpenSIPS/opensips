@@ -84,24 +84,24 @@
 	</row>
 	<row>
 		<entry>9. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">3</entry>
+		<entry align="center">1</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+	</row>
+	<row>
+		<entry>10. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
 		<entry align="center">1</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>)</entry>
-		<entry align="center">2</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">0</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,58 +128,58 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Feb 2023</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Ryan Bullock</entry>
 		<entry align="center">Jan 2023 - Jan 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Apr 2018 - Nov 2022</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
 		<entry align="center">Dec 2014 - Apr 2022</entry>
 	</row>
 	<row>
-		<entry>4. </entry>
+		<entry>5. </entry>
 		<entry>Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>)</entry>
 		<entry align="center">Nov 2021 - Apr 2022</entry>
 	</row>
 	<row>
-		<entry>5. </entry>
+		<entry>6. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Dec 2014 - Jul 2020</entry>
 	</row>
 	<row>
-		<entry>6. </entry>
+		<entry>7. </entry>
 		<entry>Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>)</entry>
 		<entry align="center">Mar 2020 - Mar 2020</entry>
 	</row>
 	<row>
-		<entry>7. </entry>
+		<entry>8. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - Apr 2019</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>)</entry>
 		<entry align="center">Mar 2019 - Mar 2019</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">Jun 2018 - Jun 2018</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
-		<entry align="center">Nov 2014 - Nov 2016</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Julián Moreno Patiño.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Julián Moreno Patiño.</para>
 	<para>
 	    <emphasis>(1) including any documentation-related commits, excluding merge commits</emphasis>
 	</para>

@@ -2559,15 +2559,15 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Nov 2022
-   5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
-   6.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Sep 2021
-   7.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
-   8.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   9.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
+   1.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Nov 2022
+   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
+   7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Sep 2021
+   8.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
+   9.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
    10. sergei lavrov                       Dec 2020 - Dec 2020
 
    All remaining contributors: Zero King (@l2dy), Dan Pascu

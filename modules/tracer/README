@@ -509,10 +509,11 @@ Chapter 2. Contributors
 
    All remaining contributors: Dan Pascu (@danpascu), Walter
    Doekes (@wdoekes), Peter Lemenkov (@lemenkov), Dusan Klinec
-   (@ph4r05), Zero King (@l2dy), Andreas Heise, Nick Altmann
-   (@nikbyte), Sergio Gutierrez, Ovidiu Sas (@ovidiusas),
-   Konstantin Bokarius, Iouri Kharon, Edson Gellert Schubert,
-   Elena-Ramona Modroiu, Eric Tamme (@etamme).
+   (@ph4r05), Maksym Sobolyev (@sobomax), Zero King (@l2dy),
+   Andreas Heise, Nick Altmann (@nikbyte), Sergio Gutierrez,
+   Ovidiu Sas (@ovidiusas), Konstantin Bokarius, Iouri Kharon,
+   Edson Gellert Schubert, Elena-Ramona Modroiu, Eric Tamme
+   (@etamme).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -534,24 +535,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2022
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
-   3.  Vlad Paiu (@vladpaiu)               Jun 2011 - Sep 2022
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2022
-   5.  Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
-   6.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
-   7.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
-   8.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
-   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   10. Dan Pascu (@danpascu)               Nov 2008 - May 2019
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2022
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Sep 2022
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2022
+   6.  Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
+   7.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
+   8.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
+   9.  Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   10. Zero King (@l2dy)                   Mar 2020 - Mar 2020
 
-   All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Eric Tamme (@etamme), Ionut Ionita (@ionutrazvanionita), Dusan
-   Klinec (@ph4r05), Andrei Datcu (@andrei-datcu), Alexandr
-   Dubovikov (@adubovikov), Sergio Gutierrez, Daniel-Constantin
-   Mierla (@miconda), Iouri Kharon, Konstantin Bokarius, Edson
-   Gellert Schubert, Henning Westerholt (@henningw), Andreas
-   Heise, Elena-Ramona Modroiu.
+   All remaining contributors: Dan Pascu (@danpascu), Vlad
+   Patrascu (@rvlad-patrascu), Eric Tamme (@etamme), Ionut Ionita
+   (@ionutrazvanionita), Dusan Klinec (@ph4r05), Andrei Datcu
+   (@andrei-datcu), Alexandr Dubovikov (@adubovikov), Sergio
+   Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

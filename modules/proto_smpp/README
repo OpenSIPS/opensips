@@ -463,7 +463,8 @@ Chapter 2. Contributors
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 3
    6. Vlad Patrascu (@rvlad-patrascu) 4 2 10 13
    7. Zero King (@l2dy) 3 1 4 2
-   8. Nick Altmann (@nikbyte) 3 1 1 1
+   8. Maksym Sobolyev (@sobomax) 3 1 2 2
+   9. Nick Altmann (@nikbyte) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -485,14 +486,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Liviu Chircu (@liviuchircu)         May 2020 - Apr 2022
-   2. Nick Altmann (@nikbyte)             May 2021 - May 2021
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
-   4. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5. Razvan Crainea (@razvancrainea)     Jan 2019 - Jan 2020
-   6. Vlad Paiu (@vladpaiu)               May 2019 - Sep 2019
-   7. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
-   8. Victor Ciurel (@victor-ciurel)      Sep 2017 - Jan 2019
+   1. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2. Liviu Chircu (@liviuchircu)         May 2020 - Apr 2022
+   3. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
+   5. Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   6. Razvan Crainea (@razvancrainea)     Jan 2019 - Jan 2020
+   7. Vlad Paiu (@vladpaiu)               May 2019 - Sep 2019
+   8. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
+   9. Victor Ciurel (@victor-ciurel)      Sep 2017 - Jan 2019
 
    (1) including any documentation-related commits, excluding
    merge commits

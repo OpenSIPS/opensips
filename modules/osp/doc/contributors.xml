@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Konstantin Bokarius, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), fabriziopicconi, Andreas Granig, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ralf Zerres, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Konstantin Bokarius, fabriziopicconi, Andreas Granig, Ezequiel Lovelle (<ulink url="https://github.com/lovelle">@lovelle</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ralf Zerres, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Jun 2011 - Jan 2021</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Sep 2020 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Sep 2020 - Sep 2020</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Jun 2011 - Jan 2021</entry>
 	</row>
 	<row>
 		<entry>3. </entry>

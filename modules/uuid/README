@@ -123,7 +123,8 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu)    8        4      368       4
    2. John Burke (@john08burke)          5        3       63       15
    3. Razvan Crainea (@razvancrainea)    4        2       2        1
-   4. Norman Brandinger (@NormB)         3        1       1        1
+   4. Maksym Sobolyev (@sobomax)         3        1       2        2
+   5. Norman Brandinger (@NormB)         3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -145,10 +146,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Norman Brandinger (@NormB)      Aug 2021 - Aug 2021
-   2. Vlad Patrascu (@rvlad-patrascu) Jun 2019 - Feb 2021
-   3. John Burke (@john08burke)       Feb 2021 - Feb 2021
-   4. Razvan Crainea (@razvancrainea) Aug 2019 - Sep 2019
+   1. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   2. Norman Brandinger (@NormB)      Aug 2021 - Aug 2021
+   3. Vlad Patrascu (@rvlad-patrascu) Jun 2019 - Feb 2021
+   4. John Burke (@john08burke)       Feb 2021 - Feb 2021
+   5. Razvan Crainea (@razvancrainea) Aug 2019 - Sep 2019
 
    (1) including any documentation-related commits, excluding
    merge commits

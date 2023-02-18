@@ -619,8 +619,8 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Paiu (@vladpaiu)              30       3      3167      1
-   2. Callum                             4        2       3        3
-   3. Maksym Sobolyev (@sobomax)         3        1       14       14
+   2. Maksym Sobolyev (@sobomax)         4        2       18       18
+   3. Callum                             4        2       3        3
    4. Razvan Crainea (@razvancrainea)    3        1       6        4
    5. Artiom Druz                        2        1       1        0
 
@@ -644,9 +644,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Callum                          Nov 2022 - Nov 2022
-   2. Artiom Druz                     Jul 2021 - Jul 2021
-   3. Maksym Sobolyev (@sobomax)      Jan 2021 - Jan 2021
+   1. Maksym Sobolyev (@sobomax)      Jan 2021 - Feb 2023
+   2. Callum                          Nov 2022 - Nov 2022
+   3. Artiom Druz                     Jul 2021 - Jul 2021
    4. Vlad Paiu (@vladpaiu)           Mar 2020 - Jul 2020
    5. Razvan Crainea (@razvancrainea) Jul 2020 - Jul 2020
 

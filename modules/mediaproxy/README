@@ -365,10 +365,10 @@ Chapter 2. Contributors
 
    All remaining contributors: Eric Tamme (@etamme), Marcus
    Hunger, Sergio Gutierrez, Alexey Vasilyev (@vasilevalex), Jan
-   Janak (@janakj), Konstantin Bokarius, Julián Moreno Patiño,
-   Klaus Darilion, Peter Lemenkov (@lemenkov), Edson Gellert
-   Schubert, Adrian Georgescu, Elena-Ramona Modroiu, Sergio
-   Gutierrez.
+   Janak (@janakj), Maksym Sobolyev (@sobomax), Konstantin
+   Bokarius, Julián Moreno Patiño, Klaus Darilion, Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert, Adrian Georgescu,
+   Elena-Ramona Modroiu, Sergio Gutierrez.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -390,23 +390,23 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   3.  Dan Pascu (@danpascu)               Mar 2004 - Aug 2019
-   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   9.  Eric Tamme (@etamme)                Jul 2014 - Jul 2014
-   10. Saúl Ibarra Corretgé (@saghul)      Mar 2010 - Dec 2013
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   4.  Dan Pascu (@danpascu)               Mar 2004 - Aug 2019
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2005 - Apr 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
+   10. Eric Tamme (@etamme)                Jul 2014 - Jul 2014
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Sergio
-   Gutierrez, Sergio Gutierrez, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Henning Westerholt (@henningw), Marcus Hunger, Klaus Darilion,
-   Elena-Ramona Modroiu, Andrei Pelinescu-Onciul, Jan Janak
-   (@janakj), Adrian Georgescu.
+   All remaining contributors: Saúl Ibarra Corretgé (@saghul),
+   Vlad Paiu (@vladpaiu), Sergio Gutierrez, Sergio Gutierrez,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Henning Westerholt (@henningw), Marcus
+   Hunger, Klaus Darilion, Elena-Ramona Modroiu, Andrei
+   Pelinescu-Onciul, Jan Janak (@janakj), Adrian Georgescu.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -193,8 +193,9 @@ Chapter 2. Contributors
    4. Liviu Chircu (@liviuchircu) 11 9 60 60
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 29 9
    6. Eseanu Marius Cristian (@eseanucristian) 4 2 1 5
-   7. Nick Altmann (@nikbyte) 3 1 4 4
-   8. Peter Lemenkov (@lemenkov) 3 1 1 1
+   7. Maksym Sobolyev (@sobomax) 3 1 6 6
+   8. Nick Altmann (@nikbyte) 3 1 4 4
+   9. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -216,14 +217,15 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                         Name                     Commit Activity
-   1. Liviu Chircu (@liviuchircu)              Mar 2016 - Apr 2022
-   2. Vlad Patrascu (@rvlad-patrascu)          May 2017 - Oct 2021
-   3. Razvan Crainea (@razvancrainea)          Aug 2015 - Aug 2021
-   4. Nick Altmann (@nikbyte)                  May 2021 - May 2021
-   5. Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2017 - Apr 2021
-   6. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
-   7. Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Dec 2016
-   8. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
+   1. Maksym Sobolyev (@sobomax)               Feb 2023 - Feb 2023
+   2. Liviu Chircu (@liviuchircu)              Mar 2016 - Apr 2022
+   3. Vlad Patrascu (@rvlad-patrascu)          May 2017 - Oct 2021
+   4. Razvan Crainea (@razvancrainea)          Aug 2015 - Aug 2021
+   5. Nick Altmann (@nikbyte)                  May 2021 - May 2021
+   6. Bogdan-Andrei Iancu (@bogdan-iancu)      Mar 2017 - Apr 2021
+   7. Peter Lemenkov (@lemenkov)               Jun 2018 - Jun 2018
+   8. Ionel Cerghit (@ionel-cerghit)           Jul 2015 - Dec 2016
+   9. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul 2015
 
    (1) including any documentation-related commits, excluding
    merge commits

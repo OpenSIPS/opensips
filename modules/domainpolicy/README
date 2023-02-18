@@ -516,11 +516,11 @@ Chapter 2. Contributors
    5. Daniel-Constantin Mierla (@miconda) 10 8 19 21
    6. Henning Westerholt (@henningw) 6 4 25 25
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 6 4
-   8. Konstantin Bokarius 3 1 2 5
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. UnixDev 3 1 1 1
+   8. Maksym Sobolyev (@sobomax) 3 1 3 3
+   9. Konstantin Bokarius 3 1 2 5
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
-   All remaining contributors: Edson Gellert Schubert.
+   All remaining contributors: UnixDev, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -542,18 +542,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2021
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2020
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
-   6.  UnixDev                             Feb 2009 - Feb 2009
-   7.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
-   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
-   10. Henning Westerholt (@henningw)      Jul 2007 - Jan 2008
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2021
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2020
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   7.  UnixDev                             Feb 2009 - Feb 2009
+   8.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
+   9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   10. Edson Gellert Schubert              Feb 2008 - Feb 2008
 
-   All remaining contributors: Klaus Darilion.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Klaus Darilion.
 
    (1) including any documentation-related commits, excluding
    merge commits

@@ -775,12 +775,12 @@ Chapter 4. Contributors
    6. Vlad Paiu (@vladpaiu) 5 3 7 5
    7. Walter Doekes (@wdoekes) 5 3 3 3
    8. Jeremy Martinez (@JeremyMartinez51) 5 2 193 1
-   9. Ezequiel Lovelle (@lovelle) 4 2 3 3
-   10. Anca Vamanu 3 1 20 9
+   9. Maksym Sobolyev (@sobomax) 4 2 6 6
+   10. Ezequiel Lovelle (@lovelle) 4 2 3 3
 
-   All remaining contributors: Andrei Dragus, James Van Vleet,
-   Dusan Klinec (@ph4r05), Peter Lemenkov (@lemenkov), Zero King
-   (@l2dy), agree.
+   All remaining contributors: Anca Vamanu, Andrei Dragus, James
+   Van Vleet, Dusan Klinec (@ph4r05), Peter Lemenkov (@lemenkov),
+   Zero King (@l2dy), agree.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -802,20 +802,20 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Oct 2010 - Oct 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Oct 2022
-   3.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
-   4.  agree                               Jan 2022 - Jan 2022
-   5.  Liviu Chircu (@liviuchircu)         Sep 2012 - Sep 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Jeremy Martinez (@JeremyMartinez51) Feb 2017 - Feb 2017
-   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   10. Sergey Khripchenko (@shripchenko)   Oct 2014 - Oct 2015
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Oct 2010 - Oct 2022
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2009 - Oct 2022
+   4.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
+   5.  agree                               Jan 2022 - Jan 2022
+   6.  Liviu Chircu (@liviuchircu)         Sep 2012 - Sep 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Jeremy Martinez (@JeremyMartinez51) Feb 2017 - Feb 2017
+   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
 
-   All remaining contributors: Ezequiel Lovelle (@lovelle), Walter
-   Doekes (@wdoekes), Vlad Paiu (@vladpaiu), Andrei Dragus, James
-   Van Vleet, Anca Vamanu.
+   All remaining contributors: Sergey Khripchenko (@shripchenko),
+   Ezequiel Lovelle (@lovelle), Walter Doekes (@wdoekes), Vlad
+   Paiu (@vladpaiu), Andrei Dragus, James Van Vleet, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits

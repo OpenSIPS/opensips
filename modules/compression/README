@@ -296,10 +296,11 @@ Chapter 2. Contributors
    6. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 4 2
    7. Ryan Bullock 3 1 4 4
    8. Julián Moreno Patiño 3 1 2 2
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. Ryan Bullock (@rrb3942) 2 1 1 0
+   9. Maksym Sobolyev (@sobomax) 3 1 2 2
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
-   All remaining contributors: Zero King (@l2dy).
+   All remaining contributors: Ryan Bullock (@rrb3942), Zero King
+   (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -321,18 +322,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ryan Bullock                        Jan 2023 - Jan 2023
-   2.  Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2022
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2022
-   4.  Aron Podrigal (@ar45)               Nov 2021 - Apr 2022
-   5.  Razvan Crainea (@razvancrainea)     Dec 2014 - Jul 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Ionut Ionita (@ionutrazvanionita)   Nov 2014 - Nov 2016
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Ryan Bullock                        Jan 2023 - Jan 2023
+   3.  Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2022
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2014 - Apr 2022
+   5.  Aron Podrigal (@ar45)               Nov 2021 - Apr 2022
+   6.  Razvan Crainea (@razvancrainea)     Dec 2014 - Jul 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Ryan Bullock (@rrb3942)             Mar 2019 - Mar 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Julián Moreno Patiño.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Julián Moreno Patiño.
 
    (1) including any documentation-related commits, excluding
    merge commits

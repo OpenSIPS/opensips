@@ -981,9 +981,9 @@ Chapter 3. Contributors
    9. Vlad Patrascu (@rvlad-patrascu) 9 6 68 65
    10. Ancuta Onofrei 9 1 206 318
 
-   All remaining contributors: Dan Pascu (@danpascu), Henning
-   Westerholt (@henningw), Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Konstantin Bokarius, Maksym Sobolyev (@sobomax),
+   All remaining contributors: Maksym Sobolyev (@sobomax), Dan
+   Pascu (@danpascu), Henning Westerholt (@henningw), Ovidiu Sas
+   (@ovidiusas), Vlad Paiu (@vladpaiu), Konstantin Bokarius,
    fabriziopicconi, Andreas Granig, Ezequiel Lovelle (@lovelle),
    Julián Moreno Patiño, Peter Lemenkov (@lemenkov), Ralf Zerres,
    Edson Gellert Schubert.
@@ -1008,8 +1008,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   2.  Maksym Sobolyev (@sobomax)          Sep 2020 - Sep 2020
+   1.  Maksym Sobolyev (@sobomax)          Sep 2020 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Apr 2020
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Dan Pascu (@danpascu)               Nov 2008 - Jul 2019

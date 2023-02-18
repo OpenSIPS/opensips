@@ -492,15 +492,15 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 181 94 6839 1860
-   2. Vlad Patrascu (@rvlad-patrascu) 94 54 3002 896
+   2. Vlad Patrascu (@rvlad-patrascu) 95 55 3004 898
    3. Razvan Crainea (@razvancrainea) 71 57 684 456
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 51 44 424 150
-   5. Ovidiu Sas (@ovidiusas) 51 39 853 291
+   4. Ovidiu Sas (@ovidiusas) 53 41 855 293
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) 51 44 424 150
    6. Liviu Chircu (@liviuchircu) 19 15 90 126
    7. Vlad Paiu (@vladpaiu) 6 4 74 47
    8. Carsten Bock 6 4 66 40
    9. Nick Altmann (@nikbyte) 6 3 166 29
-   10. Maksym Sobolyev (@sobomax) 4 2 20 13
+   10. Maksym Sobolyev (@sobomax) 5 3 24 17
 
    All remaining contributors: Stanislaw Pitucha, Peter Lemenkov
    (@lemenkov), Ionut Ionita (@ionutrazvanionita), @DMOsipov,
@@ -527,16 +527,16 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Dec 2010 - Dec 2022
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2022
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Aug 2022
-   5.  Carsten Bock                        Mar 2022 - Apr 2022
-   6.  Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
-   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Mar 2021
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   9.  @DMOsipov                           Mar 2016 - Mar 2016
-   10. Ovidiu Sas (@ovidiusas)             Nov 2010 - Mar 2016
+   1.  Ovidiu Sas (@ovidiusas)             Nov 2010 - Feb 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Feb 2023
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Dec 2022
+   5.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2022
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2009 - Aug 2022
+   7.  Carsten Bock                        Mar 2022 - Apr 2022
+   8.  Nick Altmann (@nikbyte)             Jan 2013 - Feb 2022
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   10. @DMOsipov                           Mar 2016 - Mar 2016
 
    All remaining contributors: Ionut Ionita (@ionutrazvanionita),
    Walter Doekes (@wdoekes), Vlad Paiu (@vladpaiu), Ryan Bullock

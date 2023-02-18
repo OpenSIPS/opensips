@@ -141,9 +141,11 @@ Chapter 2. Contributors
    5. Vlad Patrascu (@rvlad-patrascu) 4 2 3 2
    6. Aron Podrigal (@ar45) 3 1 10 1
    7. Daniel Fussia 3 1 4 22
-   8. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
-   9. Eric Green 3 1 1 10
-   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+   8. Maksym Sobolyev (@sobomax) 3 1 2 2
+   9. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 2 1
+   10. Eric Green 3 1 1 10
+
+   All remaining contributors: Peter Lemenkov (@lemenkov).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -165,16 +167,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2021
-   2.  Liviu Chircu (@liviuchircu)         May 2016 - Mar 2021
-   3.  Eric Green                          Aug 2020 - Aug 2020
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Ionut Ionita (@ionutrazvanionita)   Apr 2015 - Feb 2017
-   8.  Daniel Fussia                       Jun 2016 - Jun 2016
-   9.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
-   10. Aron Podrigal (@ar45)               Nov 2015 - Nov 2015
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Aug 2015 - Nov 2021
+   3.  Liviu Chircu (@liviuchircu)         May 2016 - Mar 2021
+   4.  Eric Green                          Aug 2020 - Aug 2020
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ionut Ionita (@ionutrazvanionita)   Apr 2015 - Feb 2017
+   9.  Daniel Fussia                       Jun 2016 - Jun 2016
+   10. Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
+
+   All remaining contributors: Aron Podrigal (@ar45).
 
    (1) including any documentation-related commits, excluding
    merge commits

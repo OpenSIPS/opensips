@@ -182,10 +182,10 @@ Chapter 2. Contributors
    7. Elena-Ramona Modroiu 4 2 4 4
    8. Ancuta Onofrei 3 1 10 11
    9. Jan Janak (@janakj) 3 1 7 7
-   10. Konstantin Bokarius 3 1 2 5
+   10. Maksym Sobolyev (@sobomax) 3 1 3 3
 
-   All remaining contributors: Peter Lemenkov (@lemenkov), Edson
-   Gellert Schubert.
+   All remaining contributors: Konstantin Bokarius, Peter Lemenkov
+   (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -207,18 +207,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Nov 2012 - Sep 2019
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   5.  Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
-   6.  Daniel-Constantin Mierla (@miconda) Jul 2006 - Mar 2008
-   7.  Konstantin Bokarius                 Mar 2008 - Mar 2008
-   8.  Edson Gellert Schubert              Feb 2008 - Feb 2008
-   9.  Ancuta Onofrei                      Sep 2007 - Sep 2007
-   10. Elena-Ramona Modroiu                Jul 2005 - Oct 2005
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   2.  Razvan Crainea (@razvancrainea)     Nov 2012 - Sep 2019
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2019
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   6.  Liviu Chircu (@liviuchircu)         Jul 2014 - Jun 2018
+   7.  Daniel-Constantin Mierla (@miconda) Jul 2006 - Mar 2008
+   8.  Konstantin Bokarius                 Mar 2008 - Mar 2008
+   9.  Edson Gellert Schubert              Feb 2008 - Feb 2008
+   10. Ancuta Onofrei                      Sep 2007 - Sep 2007
 
-   All remaining contributors: Jan Janak (@janakj), Nils Ohlmeier.
+   All remaining contributors: Elena-Ramona Modroiu, Jan Janak
+   (@janakj), Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits

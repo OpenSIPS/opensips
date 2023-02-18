@@ -505,13 +505,13 @@ Chapter 2. Contributors
    7. Vlad Patrascu (@rvlad-patrascu) 11 8 117 111
    8. Andrei Pelinescu-Onciul 9 7 107 60
    9. Jiri Kuthan (@jiriatipteldotorg) 7 2 372 25
-   10. Elena-Ramona Modroiu 5 3 105 15
+   10. Maksym Sobolyev (@sobomax) 6 4 8 10
 
-   All remaining contributors: Eric Tamme (@etamme), Dan Pascu
-   (@danpascu), Maksym Sobolyev (@sobomax), Nick Altmann
-   (@nikbyte), Ovidiu Sas (@ovidiusas), Konstantin Bokarius, Jesus
-   Rodrigues, Norman Brandinger (@NormB), Andreas Granig, Ionel
-   Cerghit (@ionel-cerghit), Julián Moreno Patiño, Peter Lemenkov
+   All remaining contributors: Elena-Ramona Modroiu, Eric Tamme
+   (@etamme), Dan Pascu (@danpascu), Nick Altmann (@nikbyte),
+   Ovidiu Sas (@ovidiusas), Konstantin Bokarius, Jesus Rodrigues,
+   Norman Brandinger (@NormB), Andreas Granig, Ionel Cerghit
+   (@ionel-cerghit), Julián Moreno Patiño, Peter Lemenkov
    (@lemenkov), UnixDev, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -534,8 +534,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
-   2.  Maksym Sobolyev (@sobomax)          Feb 2017 - Oct 2020
+   1.  Maksym Sobolyev (@sobomax)          Feb 2017 - Feb 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2020
    3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Jul 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Aug 2002 - Apr 2019

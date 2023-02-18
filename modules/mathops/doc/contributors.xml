@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+		<entry align="center">2</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Julián Moreno Patiño</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">3</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>)</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
@@ -83,19 +91,11 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">2</entry>
 		<entry align="center">1</entry>
 		<entry align="center">88</entry>
-		<entry align="center">0</entry>
-	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">1</entry>
-		<entry align="center">1</entry>
-		<entry align="center">0</entry>
 		<entry align="center">0</entry>
 	</row>
 	</tbody>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
-		<entry align="center">Jan 2022 - Jan 2022</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Jan 2021 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jan 2021 - Jan 2021</entry>
+		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
+		<entry align="center">Jan 2022 - Jan 2022</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
