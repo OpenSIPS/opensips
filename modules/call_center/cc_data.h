@@ -216,6 +216,8 @@ struct cc_call {
 	struct cc_call *prev_list;
 };
 
+#define RURI_PARAM_FID ";cc_fid="
+
 #define is_call_in_queue(_data, _call)  ((_call)->lower_in_queue || (_call)->higher_in_queue || \
 		(_data->queue.first==_call && _data->queue.last==_call))
 

@@ -1378,9 +1378,14 @@ static void cc_timer_agents(unsigned int ticks, void* param)
 				dest = flow->recordings[AUDIO_FLOW_ID];
 
 			// make a copy for destination to agent
-			out.len = OUT_BUF_LEN(dest.len);
+			out.len = OUT_BUF_LEN(dest.len + (flow ? (strlen(RURI_PARAM_FID) + flow->id.len) : 0));
 			out.s = out_buf;
-			memcpy( out.s, dest.s, out.len);
+			memcpy( out.s, dest.s, dest.len < out.len ? dest.len : out.len);
+            // append flow id to RURI
+            if (flow && dest.len + strlen(RURI_PARAM_FID) + flow->id.len <= out.len) {
+                memcpy(out.s + dest.len, RURI_PARAM_FID, strlen(RURI_PARAM_FID));
+                memcpy(out.s + dest.len + strlen(RURI_PARAM_FID), flow->id.s, flow->id.len);
+            }
 			
 			call->prev_state = call->state;
 			if(!flow || !flow->recordings[AUDIO_FLOW_ID].len) {

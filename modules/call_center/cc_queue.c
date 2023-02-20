@@ -141,7 +141,7 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 			s = int2str((unsigned long)pos, &len);
 		else
 			s = NULL;
-		leg->s = (char*)pkg_malloc(out->len+(s?(queue_pos_param.len+len+2):0));
+		leg->s = (char*)pkg_malloc(out->len+(s?(queue_pos_param.len+len+2):0) + strlen(RURI_PARAM_FID) + call->flow.len);
 		if (leg->s) {
 			leg->len = out->len;
 			memcpy(leg->s,out->s,out->len);
@@ -153,6 +153,12 @@ int cc_call_state_machine(struct cc_data *data, struct cc_call *call,
 				memcpy(leg->s+leg->len, s, len);
 				leg->len += len;
 			}
+            // append flow id to RURI
+            memcpy(leg->s+leg->len, RURI_PARAM_FID, strlen(RURI_PARAM_FID));
+            leg->len += strlen(RURI_PARAM_FID);
+            memcpy(leg->s+leg->len, call->flow.s, call->flow.len);
+            leg->len += call->flow.len;
+            
 			call->prev_state = call->state;
 			call->state = state;
 			return 0;
