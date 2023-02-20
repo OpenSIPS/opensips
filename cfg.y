@@ -1055,7 +1055,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| XLOG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| XLOG_FORCE_COLOR EQUAL error { yyerror("boolean value expected"); }
 		| XLOG_PRINT_LEVEL EQUAL error { yyerror("number expected"); }
-		| XLOG_LEVEL EQUAL NUMBER { IFOR();
+		| XLOG_LEVEL EQUAL snumber { IFOR();
 							*xlog_level = $3; }
 		| XLOG_LEVEL EQUAL error { yyerror("number expected"); }
 		| SOCKET EQUAL socket_def { IFOR();
