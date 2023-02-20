@@ -271,7 +271,7 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ MI_USRLOC_ADD, 0, 0, mi_child_init, {
 		{mi_usrloc_add, {"table_name", "aor", "contact", "expires", "q",
-						 "unsused", "flags", "cflags", "methods", 0}},
+						 "flags", "cflags", "methods", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ MI_USRLOC_SHOW_CONTACT, 0, 0, mi_child_init, {
@@ -404,7 +404,7 @@ static int mod_init(void)
 }
 
 
-static void ul_rpc_data_load(int sender_id, void *unsused)
+static void ul_rpc_data_load(int sender_id, void *_)
 {
 	dlist_t* ptr;
 

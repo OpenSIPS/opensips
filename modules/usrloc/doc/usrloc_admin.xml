@@ -1567,38 +1567,36 @@ modparam("usrloc", "contact_refresh_timer", true)
 		<para>Parameters: </para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>table name</emphasis> - table where the contact
-				will be added (Ex: location).
+				<emphasis>table name (string)</emphasis> - table where the contact
+				will be added (Ex: "location").
 			</para></listitem>
 			<listitem><para>
-				<emphasis>aor</emphasis> - user AOR in username[@domain]
+				<emphasis>aor (string) </emphasis> - user AOR in username[@domain]
 				format (domain must be supplied only if use_domain option
 				is on).
 			</para></listitem>
 			<listitem><para>
-				<emphasis>contact</emphasis> - contact string to be added
+				<emphasis>contact (string)</emphasis> - Contact URI to be added
 			</para></listitem>
 			<listitem><para>
-				<emphasis>expires</emphasis> - expires value of the contact
+				<emphasis>expires (int)</emphasis> - expires value of the contact
 			</para></listitem>
 			<listitem><para>
-				<emphasis>q</emphasis> - Q value of the contact
+				<emphasis>q (string)</emphasis> - Q value of the contact
 			</para></listitem>
 			<listitem><para>
-				<emphasis>unused</emphasis> - unused attribute (kept for
-				backword compatibility)
-			</para></listitem>
-			<listitem><para>
-				<emphasis>flags</emphasis> - internal USRLOC flags of the
+				<emphasis>flags (int)</emphasis> - internal USRLOC flags of the
 				contact
 			</para></listitem>
 			<listitem><para>
-				<emphasis>cflags</emphasis> - per branch flags of the
+				<emphasis>cflags (int)</emphasis> - per branch flags of the
 				contact
 			</para></listitem>
 			<listitem><para>
-				<emphasis>methods</emphasis> - mask with supported requests
-				of the contact
+				<emphasis>methods (int)</emphasis> - bitmask with supported requests
+				of the contact.  To whitelist all SIP methods, simply use the
+				value <emphasis role='bold'>32767</emphasis>. For a breakdown
+				of each method's value, see the "request_method" internal enum.
 			</para></listitem>
 		</itemizedlist>
 	</section>
