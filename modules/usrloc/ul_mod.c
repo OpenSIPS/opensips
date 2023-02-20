@@ -271,6 +271,10 @@ static mi_export_t mi_cmds[] = {
 	},
 	{ MI_USRLOC_ADD, 0, 0, mi_child_init, {
 		{mi_usrloc_add, {"table_name", "aor", "contact", "expires", "q",
+						 "flags", "cflags", "methods", 0}},
+
+		// this recipe is only for BW-compat -- see "unsused" (removed in 3.4+)
+		{mi_usrloc_add, {"table_name", "aor", "contact", "expires", "q",
 						 "unsused", "flags", "cflags", "methods", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
