@@ -45,7 +45,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.2.10
+Version:  3.2.11
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
