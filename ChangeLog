@@ -1,3 +1,746 @@
+=========================== Release 3.3.4 ==============================
+
+2023-02-21  Vlad Patrascu  <vladp@opensips.org>
+        * [2da0e7ed3] :
+
+        b2b_entities: remove no-op and improve code clarity
+
+        Related to #3011
+
+        (cherry picked from commit 4b3ff72b7fd76afb884fdd6488802d1ffe2bc4fa)
+
+
+2023-02-21  Ovidiu Sas  <osas@voipembedded.com>
+        * [fed7cd84e] :
+
+        b2b_entities: don't try to get the lock if the l;ock was alredy taken
+          - closes #3011
+          - this part of the code should be reviewed and cleaned up or clarity
+
+        (cherry picked from commit a7eb936241b6187a94416aae4f05314cecd915cd)
+
+
+2023-02-20  Liviu Chircu  <liviu@opensips.org>
+        * [3bd9e9b60] :
+
+        xlog_level: Do not abort startup on a negative value
+
+        (cherry picked from commit 16472ab84d4f35f408bde121e033e9664d992124)
+
+
+2023-02-20  Liviu Chircu  <liviu@opensips.org>
+        * [af4d6a036] :
+
+        usrloc: Remove bogus "unsused" parameter to MI 'ul_add'; Improve docs
+
+        (cherry picked from commit 227f2c82d9f2d43f632e9a865f54fd8b0605659c)
+
+
+2023-02-19  OpenSIPS  <github@opensips.org>
+        * [15fab1fd4] :
+
+        Rebuild documentation
+
+
+2023-02-17  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [d517229bc] :
+
+        Revert "ci: add cifuzz integration"
+
+        This reverts commit 60e1d3a76e249a81e4a9810cf5b7550a86cda9e5.
+
+        As discussed with Liviu, the decision to keep CiFuzz in master
+        branch was an intentional one, so stil with it.
+
+
+2023-02-17  Liviu Chircu  <liviu@opensips.org>
+        * [bb6af4e48] :
+
+        statistics docs: Fix quoted integers in function call example
+
+        Credits to Fabien Aunay for the report!
+
+        (cherry picked from commit 31f526555ee9ba22ba1ee702a3c5994a133e6d38)
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [4ea965626] :
+
+        Initialize variable to avoid issue compiling with gcc on
+        ubuntu-22.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [65fbee568] :
+
+        IPPORT_MAX -> USHRT_MAX.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [1fba70721] :
+
+        Don't pass unsigned short * into a function that expects
+        unsigned int *. This fixes the following error building with
+        gcc on ubuntu-22:
+
+        sipmemcache.c: In function `l_sipmemcache_server_add`:
+        ../../ut.h:685:13: error: array subscript `unsigned int[0]` is partly outside array bounds of `in_port_t[1]` {aka `short unsigned int[1]`} [-Werror=array-bounds]
+          685 |         *_r = 0;
+              |         ~~~~^~~
+        sipmemcache.c:72:13: note: while referencing `iport`
+           72 |   in_port_t iport = 0;
+              |             ^~~~~
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [b0b0646b6] :
+
+        Remove comparison that is always "true".
+
+        Reported by:    gcc-12
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [8da3af71a] :
+
+        Fix logical condition that would otherwise always be "false".
+
+        Reported by:	gcc-12
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [a93e9ce76] :
+
+        Add missing {} as reported by the gcc-11.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [d57d3cca4] :
+
+        o Set -Wno-compound-token-split-by-macro needed to get things
+          building up with clang > 11.
+
+        o Unify common code in the perl modules to fix db_perlvdb
+          as well with clang > 11.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [7132b4dfe] :
+
+        Make identation match compiler behaviour. This fixes build with
+        gcc-11.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [096f05fb3] :
+
+        Make geoip2_get_field() function declaration match prototype.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [ff26c7205] :
+
+        Cast void * to int first before we can it to enum. This is
+        to fix the build on clang-11.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [4f5380a65] :
+
+        GC variables that is set but never used. This breaks builds with
+        latest clang.
+
+
+2023-02-16  David Korczynski  <david@adalogics.com>
+        * [2e144079c] :
+
+        ci: add cifuzz integration
+
+        Add cifuzz integration so oss-fuzz fuzzers are run 600 secs each PR
+
+        Signed-off-by: David Korczynski <david@adalogics.com>
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [49bc08a26] :
+
+        o Add ubuntu-22.04 builds.
+
+        o Add gcc-11, gcc-12, clang-11, clang-12 and clang-13.
+
+        o actions/checkout@v2 -> actions/checkout@v3.
+
+
+2023-02-16  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [8a5e6ac51] :
+
+        Fix unixodbc & friends to 2.3.7 to fix recent build issues on GH
+        Actions.
+
+
+2023-02-16  Liviu Chircu  <liviu@opensips.org>
+        * [3c1037114] :
+
+        route params: Fix regression in 8761ce6d20
+
+        The patch assumed that variables with PV_VAL_INT|PV_TYPE_INT have
+        symmetric values (e.g. 5 and "5"), whereas this is not always the case
+        (e.g. 1 and "INVITE", returned by $rm) and would proceed to duplicate
+        the output buffer as a int2str() buffer, for safety purposes.
+
+        The fix is to avoid the duplication completely (i.e. do not overwrite
+        "INVITE" with "1"), thanks to the route params array string buffers
+        having a sufficiently large lifetime in order to be safely returned to
+        the calling code asking for the route parameter.
+
+        (cherry picked from commit 6b9e140f6576ba66be6f74e686a5fd33c0a16603)
+
+
+2023-02-12  OpenSIPS  <github@opensips.org>
+        * [620b278ad] :
+
+        Rebuild documentation
+
+
+2023-02-08  Liviu Chircu  <liviu@opensips.org>
+        * [bf0b37d3f] :
+
+        parse_content_length(): Fix out-of-bounds read edge-case (OSS-Fuzz)
+
+        This patch fixes several off-by-one read overflows while parsing a bad
+        Content-Length header.  Similar to a008e7c23, the error was mostly
+        harmless, as the supplied buffer is typically much larger in the runtime
+        usage of parse_msg().
+
+        Severity: Low
+        Fixes OSS-Fuzz#53397
+
+        (cherry picked from commit e060fe93429b6da665a4d4210a49876b43223a17)
+
+
+2023-02-08  Liviu Chircu  <liviu@opensips.org>
+        * [4c7730657] :
+
+        struct hist: Also record the history for "NULL" objects
+
+        While the history of a "NULL" object isn't much of a rich/useful piece
+        of information, allowing it may help prevent errors in some cases, due
+        to "sh_push()" returning an unexpected NULL value => crash.
+
+        (cherry picked from commit cad9bd0b6c210f303f42d6687643b3c0e48aa87c)
+
+
+2023-02-08  Liviu Chircu  <liviu@opensips.org>
+        * [8f56c9df1] :
+
+        uac: Fix regression in 3d6a4bb67
+
+        A bug was introduced, where uac_replace_xxx() cannot be called anymore
+        per each branch. This commit fixes the bug, by also ignoring multi-calls
+        within a single branch_route -- there is simply too much state to keep,
+        only for the sake of detecting an issue rooted in the "lumps" mechanism.
+
+        (cherry picked from commit 19bda5af83e7245307caf5fe0097f72ed4c591b2)
+
+
+2023-02-07  Liviu Chircu  <liviu@opensips.org>
+        * [e829caee4] :
+
+        Fix ARM-32 compile warning
+
+        (cherry picked from commit ecd5676867443f63c6d568281807cf71dae40c61)
+
+
+2023-02-07  Liviu Chircu  <liviu@opensips.org>
+        * [cb7699b12] :
+
+        parse_content_length(): Fix out-of-bounds read edge-case (OSS-Fuzz)
+
+        This patch fixes a possible off-by-one read overflow while parsing a bad
+        Content-Length header.  The error was mostly harmless, as the supplied
+        buffer is typically much larger and is stored in PKG memory.
+
+        Severity: Low
+        Fixes OSS-Fuzz#53199
+
+        (cherry picked from commit a008e7c2385bcd83de2f9ab155ed8a9452bf3c5c)
+
+
+2023-02-07  Vlad Patrascu  <vladp@opensips.org>
+        * [06d130f82] :
+
+        mem: fix compilation if HP_MALLOC is defined and Q_MALLOC is not
+
+        (cherry picked from commit f602982156b6ff6b83cd7e57e5e42e02f0b37dc4)
+
+
+2023-02-07  Liviu Chircu  <liviu@opensips.org>
+        * [7aca62d7c] :
+
+        uac: Add basic detection for multiple uac_replace_xxx() calls
+
+        This patch adds a lightweight detection of multiple calls to
+        uac_replace_from() or uac_replace_to() during the processing of a SIP
+        request, using an int bitmask stored in the current SIP message context.
+        Returning an error helps avoid producing a bad SIP From/To header, with
+        doubled URIs due to doubled lumps, etc.
+
+        Still, to compromise between safety and performance, the case where
+        multiple uac_replace_xxx() get called during a failure_route is not
+        detected, as this would require extra TMCB_ON_FAILURE callback, which is
+        a bit of overkill just for the sake of scripting QoL...
+
+        Fixes #2720
+
+        (cherry picked from commit 3d6a4bb67ce6294449fc4f5d0f386fd207754337)
+
+
+2023-02-07  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [813a91168] :
+
+        Avoid publishing pkg and load stats for procs with no IPC
+
+        If IPC is not supported by a process, the pkg stats cannot be collected from it. Also such process is not able to compute internal load.
+
+        (cherry picked from commit cd191d4b2ce9ab65764c14031b1faa5ae7272df3)
+
+
+2023-02-07  Liviu Chircu  <liviu@opensips.org>
+        * [fc5859d89] :
+
+        registrar: Fix possible crash in remove_ip_port()
+
+        The release_urecord() function may actually delete the AoR on the spot,
+        including the map_t node which the iterator is currently at!  This was
+        causing an invalid SHM memory read when calling iterator_next(),
+        potentially running into a crash.
+
+        The fix is to advance the iterator ahead of time, before the
+        release_urecord() call.
+
+        Fixes #2954
+
+        (cherry picked from commit a117dc8dc5d9eab24d2bc646fb70e6afbaaced94)
+
+
+2023-02-06  Vlad Patrascu  <vladp@opensips.org>
+        * [19fa678ff] :
+
+        b2b_logic: fix crashes due to dangling tuple pointer
+
+        Make sure to not access a tuple that might have been freed while not
+        holding the lock.
+
+        Many thanks to David Escartin from Sonoc for the help in troubleshooting
+        this issue!
+
+        (cherry picked from commit 1225b0191afdf0a36e14bf47f5cac908e5af5603)
+
+
+2023-02-06  Vlad Patrascu  <vladp@opensips.org>
+        * [80b28ae71] :
+
+        b2b_entities: fix crashes after running the script request route
+
+        After releasing the lock and running the script request route, check
+        if the dialog has not been deleted in the meantime.
+
+        Credits to David Escartin from Sonoc for reporting.
+
+        (cherry picked from commit 65a8da41f58ba3179c62c83a2d710651c97b36ca)
+
+
+2023-02-06  Vlad Patrascu  <vladp@opensips.org>
+        * [4a4e7f5ef] :
+
+        b2b_entities: properly handle BYE while another request is pending
+
+        Instead of rejecting the BYE with 491, first complete the transactions on the
+        UAS side with 200 OK for the BYE and 487 for the other pending transaction.
+        Also, mark the tuple for deletion at b2b_logic level and send a BYE to
+        the peer entity after completing any UAC transcations on this side.
+
+        Credits to David Escartin from Sonoc for reporting.
+
+        (cherry picked from commit da6975f065ad848ceb8d8f65b0f09d1efc2bca37)
+
+
+2023-02-06  Ryan Bullock  <ryan@piratel.com>
+        * [224da225d] :
+
+        Use msg_flags instead of script level flags. Prevents unintentional collision with script flags which could cause calls to mc_compact and mc_compress to fail.
+
+        (cherry picked from commit 0cfb7c3b4dcb71fe26ed788bc7c94c56476b720d)
+
+
+2023-02-05  OpenSIPS  <github@opensips.org>
+        * [28f0fc9a4] :
+
+        Rebuild documentation
+
+
+2023-02-02  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1a104d6b5] :
+
+        [tcp layer] avoid locking and events while shutdown
+
+        Upon shutdown, when all the TCP conns are destroyed, do not use any locking (we are in single process mode any how) and do not raise any disconnect events (false events here)
+
+        (cherry picked from commit f953b30c42f84f5709bbc125ddf016d499f55485)
+
+
+2023-02-02  Razvan Crainea  <razvan@opensips.org>
+        * [cf593ab84] :
+
+        rtp_relay: fix leg dialog detection in local_route
+
+        When both dialog and b2b_logic modules are used with rtp_relay, we shoud
+        be prepared for a non-existing dialog in requests.
+
+        Reported by @devoxy1 on GitHub in ticket #2952
+
+        (cherry picked from commit 627e52a81585b591ce6854adcba8348c9eacc4e6)
+
+
+2023-02-02  Razvan Crainea  <razvan@opensips.org>
+        * [e6d763840] :
+
+        lua: proper include for timegm
+
+        Thanks go to Jonathan Wakely (@jwakely on GitHub) for reporting it.
+        Close #3005
+
+        (cherry picked from commit acf0c149503b034955557020ea1ad89713cded12)
+
+
+2023-01-31  Vlad Patrascu  <vladp@opensips.org>
+        * [7e572dea6] :
+
+        msrp_ua: fix crash for AUTH transaction timeout
+
+        (cherry picked from commit 39c5e31281f042d79dc47eba38f9a4eb477bad37)
+
+
+2023-01-31  Vlad Patrascu  <vladp@opensips.org>
+        * [2db919d1c] :
+
+        tls_wolfssl: complete fix in commit 77f5f5a
+
+        This also ignores errors due to bad path, same as openssl does by default.
+
+        (cherry picked from commit d919285009aae706539b9874ed551fe4ceecd9c3)
+
+
+2023-01-31  Vlad Patrascu  <vladp@opensips.org>
+        * [56a15b32d] :
+
+        tls_wolfssl: ignore invalid CAs when setting ca_dir
+
+        This will align the behavior of opensips when using wolfssl or openssl.
+
+        Credits to @benceszigeti for suggesting the solution.
+
+        Closes #2955
+
+        (cherry picked from commit 77f5f5a0a248575a26ffc8052dc44f509aa2e6e1)
+
+
+2023-01-31  Vlad Patrascu  <vladp@opensips.org>
+        * [8a1331259] :
+
+        tls_wolfssl: update wolfssl library to version 5.4.0
+
+        (cherry picked from commit f0c34ddbbac497f336fa5f8d769117abd2239ec5)
+
+
+2023-01-31  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [92cb2c76d] :
+
+        [pua] Fix silly mixing of bits versus bytes in sizeof()
+
+        Related to ed8bf4d47a5302b74006ce0312797928fc843e98
+
+        (cherry picked from commit 5610c03fb14ada7e28f4a05b3928020883bf0773)
+
+
+2023-01-31  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f755eee59] :
+
+        [pua] force pres_id a unsigned_int during calculation
+
+        To avoid any issues due to "singed" overflowing
+
+        (cherry picked from commit ac99224ef22ece40e3dcd11417712db84d910bb7)
+
+
+2023-01-31  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [bd5f7da2a] :
+
+        [pua] fix the computing of presentity ID (pres_id)
+
+        - be sure the hash size does not overflow (on user setting), as it has to fit on half long size
+        - when computing pres_id, be sure to cast to long to avoid premature overflow
+        - when incrementing local_index, be sure it does no overflow half long size
+
+        (cherry picked from commit ed8bf4d47a5302b74006ce0312797928fc843e98)
+
+
+2023-01-31  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [596755f0e] :
+
+        [dispatcher] Fix hackish extraction of TO URI upon pinging
+
+        Better use the URI stored in callback params, rather then using the hackish way of extracting the URI from the T-stored To hdr.
+
+        This is a side effect of 9af1926
+        Reported by @denyspozniak
+        Closes #3000
+
+        (cherry picked from commit e7aeb9723c70e57b472293027135fd2e80d461d9)
+
+
+2023-01-31  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [9705834ab] :
+
+        [dispatcher] fix chaining and freeing of probing packs
+
+        Some probing packs may be freed before ending circulating the list (if the prob sending fails), so we need to take care of the linking.
+
+        (cherry picked from commit c6bcd8435c5b3a648efc28a7173a43653257eb40)
+
+
+2023-01-31  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [d65f37ed0] :
+
+        [dispatcher] Improve probing by sending the probs outside locking
+
+        Collect the data under locking, move the OPTIONs probing outside the locking, to be sure that any potential blocking on SIP level sending is not leading to lock starvation.
+        Simialar to 4c7a7a83f93b18eefe4de1fe13c67f9d7561e6a3 (drouting)
+        Related to #2438
+
+        (cherry picked from commit 8139e2799ee8d39e9cc99a189f2b2baa2eb0c39d)
+
+
+2023-01-29  OpenSIPS  <github@opensips.org>
+        * [5ba505924] :
+
+        Rebuild documentation
+
+
+2023-01-27  Razvan Crainea  <razvan@opensips.org>
+        * [132e817e7] :
+
+        b2b_sdp_demux: fix BYE concurrency from both upstream and downstream
+
+        Thanks go to Suchi Sahoo from Five9 for reporting it
+
+        (cherry picked from commit 8f3c6a179d1cab30ab9a65f2fd9f23489736cd9b)
+
+
+2023-01-27  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [5b888200f] :
+
+        Relax qop validation: according to the RFC8760 if the qop
+        is not provided, the qop=auth should be assumed.
+
+        Issue:	#2995
+        (cherry picked from commit 6f8af86728f278d72d472a85cef7079cd0b54aed)
+
+
+2023-01-26  Liviu Chircu  <liviu@opensips.org>
+        * [c0e1311eb] :
+
+        mi_script: Add support for array parameters
+
+        (cherry picked from commit fb686b8ca22baadd23dff5672c2df43e73e2e2d5)
+
+
+2023-01-25  Razvan Crainea  <razvan@opensips.org>
+        * [60d46c7e0] :
+
+        route: pass parameters as values
+
+        When calling route(NAME, $pv, ...), expand the `$pv` before running the
+        route - this way the parameter is passed as value, rather than
+        reference, which could lead to some unexpected behavior.
+
+        (cherry picked from commit 8761ce6d2089915f18db6ae21677a690a6958bac)
+
+
+2023-01-23  Razvan Crainea  <razvan@opensips.org>
+        * [13a79336c] :
+
+        tm: remove cluster received '\0' from buffer len
+
+        When sending a message through cluster, the tm module adds a '\0'
+        terminator to the message - that is because receive_msg expects it.
+        However, this character should not be part of the message lenght.
+
+        Reported by Denys Pozniak on mailing lists.
+
+        (cherry picked from commit 81e9b14a16acd284469d8958c57dcece69699a85)
+
+
+2023-01-23  Razvan Crainea  <razvan@opensips.org>
+        * [50b176ebb] :
+
+        dialog: do not remove SDP if no SDP is provided
+
+        (cherry picked from commit d92f870ca34c551aa01a7a5531d0cca4e304ce27)
+
+
+2023-01-22  OpenSIPS  <github@opensips.org>
+        * [aeeb97e4e] :
+
+        Rebuild documentation
+
+
+2023-01-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [56a5a3977] :
+
+        Fix building TO / FROM hdr via t_uac()
+
+        t_uac() gets URIs as values for TO / FROM, so these URIs may contain URI params. If those URIs are placed into headers without <> enclosing, their params will become header params :(
+        So, to be sure, let's enclose the URIs all the time.
+
+        Closes 2843
+
+        (cherry picked from commit 9af192693f419751ff3fc704d5286274752171b1)
+
+
+2023-01-18  truong.hua  <truong.hua@youthdev.net>
+        * [330561b0e] :
+
+        Fix crash when restore b2b with tracer enabled due to NULL msg
+
+        (cherry picked from commit abec071cf81576ac84e4af1914f3bcc64cee4789)
+
+
+2023-01-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [38fe92cb2] :
+
+        [tm] fixed double freeing on t_uac() callback param
+
+        If the t_uac() fails after the transaction was created (like it fails while trying to send the buffer out on the network), a double free will be done on the eventual callback func params: (1) via the released function attached to the completion callback (this will be automatically done upon free_cell() and (2) when t_uac() returns failure to the upper layer.
+
+        The fix is NOT to free the param if the t_uac() returns error. So even if the transaction was created, remove the release function on the callback func params, to prevent the free (1), and to allow the upper layer to do its own cleanup.
+
+        (cherry picked from commit 8448551cc4c1b6d4069790e54a149f4ffd0b4c47)
+
+
+2023-01-15  OpenSIPS  <github@opensips.org>
+        * [1dd733fec] :
+
+        Rebuild documentation
+
+
+2023-01-13  Vlad Patrascu  <vladp@opensips.org>
+        * [adc2402c6] :
+
+        tests: properly support malloc tests for any available allocator
+
+        (cherry picked from commit 23eb399abc901e45180ef712d86eb10b8d9291e8)
+
+
+2023-01-12  Vlad Patrascu  <vladp@opensips.org>
+        * [c4741cb31] :
+
+        mem: align all prototypes for realloc functions
+
+        (cherry picked from commit 379dadab58f5c3c77707259710625cd3558168f9)
+
+
+2023-01-12  Razvan Crainea  <razvan@opensips.org>
+        * [97af5223d] :
+
+        b2b_sdp_demux: consider dlginfo when removing server entity
+
+        If dlginfo is not considered when the entity is removed, it might very
+        well remove a different entity with a similar index & hash, (but
+        different timestamp).
+
+        Thanks go to Suchi Sahoo from Five9 for reporting it
+
+        (cherry picked from commit 99587fcaf1bc521bc5870052608e100a4624de60)
+
+
+2023-01-10  Liviu Chircu  <liviu@opensips.org>
+        * [0caec8872] :
+
+        freeswitch_scripting docs: Fix rc checks in examples
+
+        (cherry picked from commit 76c18ce1ad9edf70ea12dd1b3fb26b43a6b12ffc)
+
+
+2023-01-10  Liviu Chircu  <liviu@opensips.org>
+        * [1f13945b7] :
+
+        Makefile.test: Fix linking with multiple -DUNIT_TESTS
+
+        Credits to Vlad Pătrașcu for the report!
+
+
+2023-01-09  Razvan Crainea  <razvan@opensips.org>
+        * [65f6194cb] :
+
+        rtpengine: add the cookie len to the iovec buffers
+
+        This fixes rtpengine from sending the appropriate dictionary end 'e' in
+        the buffer sent over the network.
+        Thanks go to @ankogan on GitHub for reporting it.
+        Close #2985
+
+        (cherry picked from commit 99d14dad58554a39adf1b75167aeae8fd3863884)
+
+
+2023-01-09  Razvan Crainea  <razvan@opensips.org>
+        * [6580f4bad] :
+
+        siprec: remove broken unref logging
+
+        (cherry picked from commit 26e2ca958c2bdfca1577c5fbb3ffa1acb3bdaea3)
+
+
+2023-01-08  OpenSIPS  <github@opensips.org>
+        * [894110739] :
+
+        Rebuild documentation
+
+
+2023-01-06  Liviu Chircu  <liviu@opensips.org>
+        * [354c41b9a] :
+
+        acc: Fix drop_accounting() (do not be a NOOP!)
+
+        The bug here was that `drop_accounting()` was building its bitmask as:
+
+            flag_mask = types * flags;
+
+        ... whereas it should have done the same as in `do_accounting()`:
+
+            flag_mask = types + types * flags;
+                        -------
+        		^ the actual acc types to reset were missing!
+
+        (cherry picked from commit 211a63c9b2ccac346dfc57bca2ede71d286e9989)
+
+
+2023-01-04  Liviu Chircu  <liviu@opensips.org>
+        * [837cbbcb3] :
+
+        dialog: Fix a race condition on mid-dlg Contact updates
+
+        The "contact update on mid-dialog 2xx reply" logic may be invoked in
+        parallel, in case two simultaneous UPDATE transactions are being
+        processed, for example.  This patch adds locking, to prevent a possible
+        abort due to "double free" while updating the Contact.
+
+        Also fix a small bug where the dialog is still flagged with
+        DLG_FLAG_CHANGED, despite the malloc() failing during Contact update.
+
+        (cherry picked from commit 7dfe2857eef8e109e2c984867eb5e80193f220e1)
+
+
 =========================== Release 3.3.3 ==============================
 
 2022-12-18  OpenSIPS  <github@opensips.org>
