@@ -1,6 +1,6 @@
 PKG=OpenSIPS
 ARCH=sparc
-VERSION="3.1.13"
+VERSION="3.1.14"
 CATEGORY=application
 EMAIL=bogdan@opensips.org
 NAME= OpenSIPS is a very fast and flexible SIP (RFC3261) server
