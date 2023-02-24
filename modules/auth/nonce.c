@@ -98,7 +98,7 @@ static inline int hex2integer(char* _s)
 void calc_nonce(char* _nonce, int _expires, int _index, str* _secret)
 {
 	MD5_CTX ctx;
-	unsigned char bin[16];
+	char bin[16];
 	unsigned int offset = 8;
 
 	MD5Init(&ctx);

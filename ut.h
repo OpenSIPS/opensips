@@ -431,7 +431,7 @@ inline static int hexstr2int(char *c, int len, unsigned int *val)
 
 /* double output length assumed ; does NOT zero-terminate */
 inline static int string2hex(
-	/* input */ unsigned char *str, int len,
+	/* input */ const char *str, int len,
 	/* output */ char *hex )
 {
 	int orig_len;
