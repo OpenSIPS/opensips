@@ -528,7 +528,7 @@ inline static void* _shm_realloc_unsafe(void *ptr, unsigned long size,
 inline static void _shm_free(void *ptr,
 		const char* file, const char* function, unsigned int line)
 {
-	int size;
+	int size = -1;
 
 	shm_lock();
 
@@ -550,7 +550,7 @@ inline static void _shm_free(void *ptr,
 	shm_threshold_check();
 
 	shm_unlock();
-	DBG_SHM_FREE();
+	DBG_SHM_FREE(file, function, line, size);
 }
 
 inline static void _shm_free_unsafe(void *ptr,
@@ -594,7 +594,7 @@ inline static void _shm_free_bulk(void *ptr,
 	SHM_FREE(shm_block, ptr, file, function, line);
 	shm_threshold_check();
 
-	DBG_SHM_FREE();
+	DBG_SHM_FREE(file, function, line, size);
 }
 
 #define shm_malloc_func _shm_malloc

@@ -41,7 +41,7 @@
 				shm_skip_sh_log = 0; \
 			} \
 		} while (0)
-	#define DBG_SHM_FREE() \
+	#define DBG_SHM_FREE(file, function, line, size) \
 		do { \
 			struct struct_hist *hist; \
 			if (!shm_skip_sh_log && ptr) { \
