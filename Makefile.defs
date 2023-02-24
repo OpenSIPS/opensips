@@ -1411,7 +1411,8 @@ endif
 DEFAULT_YACC=bison
 
 # on solaris add -lxnet (e.g. LIBS= -lxnet)
-LIBS= -ldl -lresolv
+_SAVE_LIBS := $(LIBS)
+LIBS+= -ldl -lresolv
 
 #os specific stuff
 ifeq ($(OS), linux)
@@ -1493,7 +1494,7 @@ ifeq  ($(OS), solaris)
 	DEFAULT_YACC=yacc
 
 ifeq ($(CC_NAME), suncc)
-	LIBS= -fast -ldl -lresolv
+	LIBS= $(_SAVE_LIBS) -fast -ldl -lresolv
 endif
 	OLD_SOLARIS= $(shell echo "$(OSREL)" | \
 				sed -e 's/^5\.[0-6][^0-9]*$$/yes/' )
@@ -1511,7 +1512,7 @@ ifeq ($(OS), freebsd)
 		-DHAVE_SCHED_YIELD -DHAVE_MSGHDR_MSG_CONTROL \
 		-DHAVE_CONNECT_ECONNRESET_BUG -DHAVE_TIMEGM \
 		-DHAVE_NETINET_IN_SYSTM
-	LIBS=  #dlopen is in libc
+	LIBS=  $(_SAVE_LIBS) #resolver & dlopen is in libc
 	ifneq ($(found_lock_method), yes)
 		DEFS+= -DUSE_PTHREAD_MUTEX  # try pthread sems
 		found_lock_method=yes
