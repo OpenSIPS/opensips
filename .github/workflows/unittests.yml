@@ -75,6 +75,7 @@ jobs:
       - name: Build test harness
         run: |
           make Makefile.conf
+          sed -i.bak '/-DCC_O0/d' Makefile.conf
           echo 'DEFS+= -I$(shell pwd)/../libtap' >> Makefile.conf
           echo 'LIBS+= -L$(TOP_SRCDIR)/../libtap' >> Makefile.conf
           sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"
