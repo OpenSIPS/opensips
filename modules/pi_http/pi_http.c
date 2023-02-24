@@ -41,7 +41,7 @@ extern ph_framework_t *ph_framework_data;
 
 /* module functions */
 static int mod_init();
-static int child_init();
+static int child_init(int);
 static int destroy(void);
 int ph_answer_to_connection (void *cls, void *connection,
 		const char *url, const char *method,
