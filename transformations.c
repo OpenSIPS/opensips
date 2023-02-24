@@ -375,7 +375,7 @@ int tr_eval_string(struct sip_msg *msg, tr_param_t *tp, int subtype,
 			val->flags = PV_VAL_STR;
 			val->ri = 0;
 			val->rs.s = _tr_buffer;
-			val->rs.len = string2hex(sha_buf, sha_hash_len, _tr_buffer);
+			val->rs.len = string2hex((char *)sha_buf, sha_hash_len, _tr_buffer);
 			_tr_buffer[sha_hash_len*2] = '\0';
 			break;
 		case TR_S_CRC32:
