@@ -64,7 +64,7 @@ int run_unit_tests(void)
 		test_lib_csv();
 		test_parser();
 		test_ut();
-		//test_lib_digest_auth();
+		test_lib_digest_auth();
 
 	/* module tests */
 	} else {
