@@ -25,6 +25,7 @@
 #include "../../pt.h"
 #include "../../lib/list.h"
 #include "../../mem/mem_funcs.h"
+#include "../../mem/shm_mem.h"
 #include "../../lib/osips_malloc.h"
 
 #include "test_malloc.h"
@@ -49,7 +50,7 @@ static osips_free_t    FREE;
 #define HPT_OPS             100000
 
 static unsigned int pkg_frag_overhead;
-static unsigned int shm_frag_overhead;
+int shm_frag_overhead __attribute__((weak));
 
 static long hpt_my_used = 0;
 static long mallocs, reallocs, frees;
