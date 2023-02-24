@@ -138,7 +138,7 @@ int unescape_xml(char *dst, const char *src, int src_len)
 void compute_md5(char *dst, const char *src, int src_len)
 {
 	MD5_CTX context;
-	unsigned char digest[16];
+	char digest[16];
 	MD5Init (&context);
   	MD5Update (&context, src, src_len);
 	MD5Final (digest, &context);

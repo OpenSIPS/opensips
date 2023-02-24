@@ -46,7 +46,7 @@
 void MD5StringArray(char *dest, str src[], unsigned int size)
 {
 	MD5_CTX context;
-	unsigned char digest[16];
+	char digest[16];
 	int i, len;
 	char *tmp;
 
@@ -77,8 +77,8 @@ int MD5File(char *dest, const char *file_name)
 
 	MD5_CTX context;
 	FILE *input;
-	unsigned char buffer[32768];
-	unsigned char hash[16];
+	char buffer[32768];
+	char hash[16];
 	unsigned int counter, size;
 
 	struct stat stats;
