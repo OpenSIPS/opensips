@@ -4590,7 +4590,7 @@ error:
 int pv_parse_format(const str *in, pv_elem_p *el)
 {
 	char *p, *p0;
-	int n = 0;
+	/*int n = 0;*/
 	pv_elem_p e, e0;
 	str s;
 
@@ -4624,7 +4624,7 @@ int pv_parse_format(const str *in, pv_elem_p *el)
 			goto error;
 		}
 		memset(e, 0, sizeof(pv_elem_t));
-		n++;
+		/*n++;*/
 		if(*el == NULL)
 			*el = e;
 		if(e0)
