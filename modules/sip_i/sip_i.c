@@ -759,7 +759,7 @@ int get_param_pval(int isup_params_idx, int subfield_idx, int byte_idx,
 		} else {	/* else print param as hex representation */
 			pv_tr_res_buf[0] = '0';
 			pv_tr_res_buf[1] = 'x';
-			string2hex(p->val, p->len, pv_tr_res_buf + 2);
+			string2hex((const char *)p->val, p->len, pv_tr_res_buf + 2);
 			res->flags = PV_VAL_STR;
 			res->rs.len = 2 * p->len + 2;
 			res->rs.s = pv_tr_res_buf;
@@ -856,7 +856,7 @@ int get_param_pval_str(int isup_params_idx, int subfield_idx,
 	/* no aliases, print whole param as hex */
 	pv_tr_res_buf[0] = '0';
 	pv_tr_res_buf[1] = 'x';
-	string2hex(p->val, p->len, pv_tr_res_buf + 2);
+	string2hex((const char *)p->val, p->len, pv_tr_res_buf + 2);
 	res->flags = PV_VAL_STR;
 	res->rs.len = 2 * p->len + 2;
 	res->rs.s = pv_tr_res_buf;

@@ -1547,7 +1547,7 @@ static int recv_smpp_msg(smpp_header_t *header, smpp_deliver_sm_t *body,
 
 	if (body->data_coding == SMPP_CODING_UCS2) {
 		memset(sms_body,0,2*MAX_SMS_CHARACTERS);
-		body_str.len = string2hex((unsigned char *)body->short_message,
+		body_str.len = string2hex((char *)body->short_message,
 		body->sm_length,sms_body);
 
 		body_str.s = sms_body;
