@@ -1,0 +1,100 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Unit Tests
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on all push or pull request events
+  push:
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build_and_test:
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.os }}
+    env:
+      COMPILER: ${{ matrix.compiler }}
+      BUILD_OS: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
+        include:
+          #- os: ubuntu-18.04
+          #  compiler: 'gcc-i386-cross'
+          #- os: ubuntu-18.04
+          #  compiler: 'clang-i386-cross'
+          #- os: ubuntu-18.04
+          #  compiler: 'gcc-mips64-cross'
+          #- os: ubuntu-18.04
+          #  compiler: 'gcc-arm32-cross'
+          #- os: ubuntu-18.04
+          #  compiler: 'gcc-arm64-cross'
+          - os: ubuntu-22.04
+            compiler: 'gcc'
+          - os: ubuntu-22.04
+            compiler: 'clang'
+          - os: ubuntu-22.04
+            compiler: 'gcc-11'
+          - os: ubuntu-22.04
+            compiler: 'gcc-12'
+          - os: ubuntu-22.04
+            compiler: 'clang-11'
+          - os: ubuntu-22.04
+            compiler: 'clang-12'
+          - os: ubuntu-22.04
+            compiler: 'clang-13'
+          - os: ubuntu-22.04
+            compiler: 'clang-14'
+          - os: ubuntu-22.04
+            compiler: 'clang-15'
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sh -x scripts/build/install_depends.sh
+
+      - name: Get libtap
+        run: git clone https://github.com/zorgnax/libtap.git ../libtap
+
+      - name: Build libtap
+        run: |
+          make -C ../libtap CFLAGS="-O1 -fPIE -fPIC" libtap.a
+
+      - name: Build test harness
+        run: |
+          make Makefile.conf
+          echo 'DEFS+= -I$(shell pwd)/../libtap' >> Makefile.conf
+          echo 'LIBS+= -L$(TOP_SRCDIR)/../libtap' >> Makefile.conf
+          sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"
+
+      - name: Run tests
+        run: script unit_tests.log -c 'make DEFS_EXTRA_OPTS="-DUNIT_TESTS" test'
+
+      - name: Notify slack fail
+        if: failure() && github.repository == 'OpenSIPS/opensips'
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        uses: voxmedia/github-action-slack-notify-build@v1
+        with:
+          channel: devel
+          status: FAILED
+          color: danger
+
+      - name: Collect test logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_tests-logs_${{ matrix.os }}_${{ matrix.compiler }}
+          path: |
+            unit_tests.log
