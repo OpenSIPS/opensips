@@ -50,6 +50,10 @@ jobs:
             compiler: 'clang-12'
           - os: ubuntu-22.04
             compiler: 'clang-13'
+          - os: ubuntu-22.04
+            compiler: 'clang-14'
+          - os: ubuntu-22.04
+            compiler: 'clang-15'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -58,10 +62,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: before_install
+      - name: Install dependencies
         run: sh -x scripts/build/install_depends.sh
 
-      - name: script
+      - name: Build
         run: sh -x scripts/build/do_build.sh
 
       - name: Notify slack fail
