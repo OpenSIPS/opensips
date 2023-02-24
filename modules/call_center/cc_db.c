@@ -584,7 +584,7 @@ int cc_load_db_data( struct cc_data *data)
 	db_key_t columns[13];
 	db_res_t* res;
 	db_row_t* row;
-	int i, j, n;
+	int i, j;
 	str id,skill,cid;
 	str location;
 	unsigned int priority, wrapup, logstate, wrapup_end_time;
@@ -625,7 +625,6 @@ int cc_load_db_data( struct cc_data *data)
 
 	LM_DBG("%d records found in %.*s\n",
 		RES_ROW_N(res), cc_flow_table_name.len,cc_flow_table_name.s );
-	n = 0;
 
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
@@ -699,7 +698,6 @@ int cc_load_db_data( struct cc_data *data)
 					id.len,id.s);
 				continue;
 			}
-			n++;
 		}
 		if (DB_CAPABILITY( cc_dbf, DB_CAP_FETCH)) {
 			if(cc_dbf.fetch_result(cc_db_handle, &res, CC_FETCH_ROWS)<0) {
@@ -742,7 +740,6 @@ int cc_load_db_data( struct cc_data *data)
 
 	LM_DBG("%d records found in %.*s\n",
 		RES_ROW_N(res), cc_agent_table_name.len,cc_agent_table_name.s );
-	n = 0;
 
 	do {
 		for(i=0; i < RES_ROW_N(res); i++) {
@@ -775,7 +772,6 @@ int cc_load_db_data( struct cc_data *data)
 					id.len,id.s);
 				continue;
 			}
-			n++;
 		}
 		if (DB_CAPABILITY( cc_dbf, DB_CAP_FETCH)) {
 			if(cc_dbf.fetch_result(cc_db_handle, &res, CC_FETCH_ROWS)<0) {
