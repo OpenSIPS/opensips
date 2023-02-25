@@ -165,15 +165,15 @@ Chapter 3. Contributors
    4. Daniel-Constantin Mierla (@miconda) 20 15 221 140
    5. Liviu Chircu (@liviuchircu) 18 10 136 313
    6. Razvan Crainea (@razvancrainea) 10 8 63 26
-   7. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
-   8. Anca Vamanu 4 1 89 103
-   9. Elena-Ramona Modroiu 3 1 37 1
-   10. Anonymous 3 1 4 3
+   7. Maksym Sobolyev (@sobomax) 4 2 4 4
+   8. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
+   9. Anca Vamanu 4 1 89 103
+   10. Elena-Ramona Modroiu 3 1 37 1
 
-   All remaining contributors: Konstantin Bokarius, Alex Massover,
-   Maksym Sobolyev (@sobomax), Razvan Pistolea, Norman Brandinger
-   (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert Schubert,
-   Vlad Paiu (@vladpaiu), Carsten Bock.
+   All remaining contributors: Anonymous, Konstantin Bokarius,
+   Alex Massover, Razvan Pistolea, Norman Brandinger (@NormB),
+   Peter Lemenkov (@lemenkov), Edson Gellert Schubert, Vlad Paiu
+   (@vladpaiu), Carsten Bock.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

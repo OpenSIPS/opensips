@@ -461,9 +461,9 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 9 7 49 37
    4. Vlad Paiu (@vladpaiu) 8 5 234 37
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 3
-   6. Vlad Patrascu (@rvlad-patrascu) 4 2 10 13
-   7. Zero King (@l2dy) 3 1 4 2
-   8. Maksym Sobolyev (@sobomax) 3 1 2 2
+   6. Maksym Sobolyev (@sobomax) 5 3 3 4
+   7. Vlad Patrascu (@rvlad-patrascu) 4 2 10 13
+   8. Zero King (@l2dy) 3 1 4 2
    9. Nick Altmann (@nikbyte) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /

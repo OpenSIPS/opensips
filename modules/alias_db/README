@@ -271,12 +271,13 @@ Chapter 3. Contributors
    6. Elena-Ramona Modroiu 5 3 92 39
    7. Walter Doekes (@wdoekes) 5 3 7 7
    8. Vlad Patrascu (@rvlad-patrascu) 5 2 38 88
-   9. Vladimir Romanov 4 1 227 51
-   10. Sergey Khripchenko (@shripchenko) 3 1 18 22
+   9. Maksym Sobolyev (@sobomax) 4 2 3 5
+   10. Vladimir Romanov 4 1 227 51
 
-   All remaining contributors: Sergio Gutierrez, Maksym Sobolyev
-   (@sobomax), Konstantin Bokarius, Anca Vamanu, Dusan Klinec
-   (@ph4r05), Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
+   All remaining contributors: Sergey Khripchenko (@shripchenko),
+   Sergio Gutierrez, Konstantin Bokarius, Anca Vamanu, Dusan
+   Klinec (@ph4r05), Peter Lemenkov (@lemenkov), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

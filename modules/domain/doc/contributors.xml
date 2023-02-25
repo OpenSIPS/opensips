@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Elena-Ramona Modroiu, Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), <ulink url="https://github.com/coxx">@coxx</ulink>, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Konstantin Bokarius, Klaus Darilion, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, Andreas Granig, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Edson Gellert Schubert, Elena-Ramona Modroiu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Jiri Kuthan (<ulink url="https://github.com/jiriatipteldotorg">@jiriatipteldotorg</ulink>), <ulink url="https://github.com/coxx">@coxx</ulink>, Konstantin Bokarius, Klaus Darilion, Anca Vamanu, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, Andreas Granig, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

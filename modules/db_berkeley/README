@@ -461,11 +461,11 @@ Chapter 2. Contributors
    7. Daniel-Constantin Mierla (@miconda) 10 8 47 30
    8. Vlad Patrascu (@rvlad-patrascu) 6 4 34 28
    9. Andrei Dragus 5 1 135 103
-   10. Jan Janak (@janakj) 3 1 4 2
+   10. Maksym Sobolyev (@sobomax) 4 2 5 5
 
-   All remaining contributors: Maksym Sobolyev (@sobomax),
-   Konstantin Bokarius, Razvan Pistolea, Walter Doekes (@wdoekes),
-   Peter Lemenkov (@lemenkov), Edson Gellert Schubert, Ovidiu Sas
+   All remaining contributors: Jan Janak (@janakj), Konstantin
+   Bokarius, Razvan Pistolea, Walter Doekes (@wdoekes), Peter
+   Lemenkov (@lemenkov), Edson Gellert Schubert, Ovidiu Sas
    (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /

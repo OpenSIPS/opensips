@@ -68,6 +68,14 @@
 	</row>
 	<row>
 		<entry>7. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">4</entry>
+		<entry align="center">4</entry>
+	</row>
+	<row>
+		<entry>8. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -75,7 +83,7 @@
 		<entry align="center">3</entry>
 	</row>
 	<row>
-		<entry>8. </entry>
+		<entry>9. </entry>
 		<entry>Anca Vamanu</entry>
 		<entry align="center">4</entry>
 		<entry align="center">1</entry>
@@ -83,25 +91,17 @@
 		<entry align="center">103</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
+		<entry>10. </entry>
 		<entry>Elena-Ramona Modroiu</entry>
 		<entry align="center">3</entry>
 		<entry align="center">1</entry>
 		<entry align="center">37</entry>
 		<entry align="center">1</entry>
 	</row>
-	<row>
-		<entry>10. </entry>
-		<entry>Anonymous</entry>
-		<entry align="center">3</entry>
-		<entry align="center">1</entry>
-		<entry align="center">4</entry>
-		<entry align="center">3</entry>
-	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Konstantin Bokarius, Alex Massover, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Razvan Pistolea, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Carsten Bock.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Anonymous, Konstantin Bokarius, Alex Massover, Razvan Pistolea, Norman Brandinger (<ulink url="https://github.com/NormB">@NormB</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Carsten Bock.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

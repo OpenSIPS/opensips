@@ -168,8 +168,8 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 8 6 12 29
    3. Vlad Patrascu (@rvlad-patrascu) 8 4 27 140
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
-   5. Peter Lemenkov (@lemenkov) 4 2 2 2
-   6. Maksym Sobolyev (@sobomax) 3 1 2 2
+   5. Maksym Sobolyev (@sobomax) 4 2 2 3
+   6. Peter Lemenkov (@lemenkov) 4 2 2 2
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

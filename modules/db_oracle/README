@@ -151,9 +151,9 @@ Chapter 2. Contributors
    9. Gang Zhuo 4 2 4 2
    10. Vlad Patrascu (@rvlad-patrascu) 4 2 3 3
 
-   All remaining contributors: fabriziopicconi, Ovidiu Sas
-   (@ovidiusas), Sergio Gutierrez, Julián Moreno Patiño, Maksym
-   Sobolyev (@sobomax), Razvan Pistolea.
+   All remaining contributors: Maksym Sobolyev (@sobomax),
+   fabriziopicconi, Ovidiu Sas (@ovidiusas), Sergio Gutierrez,
+   Julián Moreno Patiño, Razvan Pistolea.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

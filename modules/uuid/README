@@ -122,8 +122,8 @@ Chapter 2. Contributors
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    8        4      368       4
    2. John Burke (@john08burke)          5        3       63       15
-   3. Razvan Crainea (@razvancrainea)    4        2       2        1
-   4. Maksym Sobolyev (@sobomax)         3        1       2        2
+   3. Maksym Sobolyev (@sobomax)         4        2       4        4
+   4. Razvan Crainea (@razvancrainea)    4        2       2        1
    5. Norman Brandinger (@NormB)         3        1       1        1
 
    (1) DevScore = author_commits + author_lines_added /

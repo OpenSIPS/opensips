@@ -333,7 +333,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)   128      64      5620     1081
-   2. Maksym Sobolyev (@sobomax)         4        2       7        7
+   2. Maksym Sobolyev (@sobomax)         5        3       7        8
    3. Vlad Paiu (@vladpaiu)              2        1       5        0
 
    (1) DevScore = author_commits + author_lines_added /

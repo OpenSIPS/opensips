@@ -202,14 +202,14 @@ Chapter 3. Contributors
    5. Liviu Chircu (@liviuchircu) 13 10 45 69
    6. Daniel-Constantin Mierla (@miconda) 8 6 15 14
    7. Henning Westerholt (@henningw) 6 4 45 50
-   8. Dan Pascu (@danpascu) 4 2 3 3
-   9. Ovidiu Sas (@ovidiusas) 3 2 6 0
-   10. Kennard White 3 1 27 11
+   8. Maksym Sobolyev (@sobomax) 4 2 4 4
+   9. Dan Pascu (@danpascu) 4 2 3 3
+   10. Ovidiu Sas (@ovidiusas) 3 2 6 0
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Walter
-   Doekes (@wdoekes), Konstantin Bokarius, Maksym Sobolyev
-   (@sobomax), Peter Lemenkov (@lemenkov), UnixDev, Zero King
-   (@l2dy), Edson Gellert Schubert, Denis Bilenko, Vlad Patrascu
+   All remaining contributors: Kennard White, Vlad Paiu
+   (@vladpaiu), Walter Doekes (@wdoekes), Konstantin Bokarius,
+   Peter Lemenkov (@lemenkov), UnixDev, Zero King (@l2dy), Edson
+   Gellert Schubert, Denis Bilenko, Vlad Patrascu
    (@rvlad-patrascu).
 
    (1) DevScore = author_commits + author_lines_added /

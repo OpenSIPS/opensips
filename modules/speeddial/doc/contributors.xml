@@ -76,6 +76,14 @@
 	</row>
 	<row>
 		<entry>8. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">4</entry>
+		<entry align="center">2</entry>
+		<entry align="center">4</entry>
+		<entry align="center">5</entry>
+	</row>
+	<row>
+		<entry>9. </entry>
 		<entry>Elena-Ramona Modroiu</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
@@ -83,16 +91,8 @@
 		<entry align="center">1</entry>
 	</row>
 	<row>
-		<entry>9. </entry>
-		<entry>Sergio Gutierrez</entry>
-		<entry align="center">4</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-		<entry align="center">2</entry>
-	</row>
-	<row>
 		<entry>10. </entry>
-		<entry>Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>)</entry>
+		<entry>Sergio Gutierrez</entry>
 		<entry align="center">4</entry>
 		<entry align="center">2</entry>
 		<entry align="center">2</entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Anca Vamanu, Andrei Pelinescu-Onciul, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Konstantin Bokarius, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Anca Vamanu, Andrei Pelinescu-Onciul, Konstantin Bokarius, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

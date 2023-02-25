@@ -717,13 +717,12 @@ Chapter 2. Contributors
    10. Kobi Eshun (@ekobi) 7 1 300 146
 
    All remaining contributors: Andrei Pelinescu-Onciul, Anca
-   Vamanu, Norman Brandinger (@NormB), Vlad Patrascu
-   (@rvlad-patrascu), Maksym Sobolyev (@sobomax), Klaus Darilion,
-   John Burke (@john08burke), Andrey Vorobiev, Olle E. Johansson,
-   Kennard White, Julián Moreno Patiño, Konstantin Bokarius,
-   Walter Doekes (@wdoekes), Andreas Granig, Peter Lemenkov
-   (@lemenkov), Sergio Gutierrez, Edson Gellert Schubert, Ovidiu
-   Sas (@ovidiusas).
+   Vamanu, Maksym Sobolyev (@sobomax), Norman Brandinger (@NormB),
+   Vlad Patrascu (@rvlad-patrascu), Klaus Darilion, John Burke
+   (@john08burke), Andrey Vorobiev, Olle E. Johansson, Kennard
+   White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes
+   (@wdoekes), Andreas Granig, Peter Lemenkov (@lemenkov), Sergio
+   Gutierrez, Edson Gellert Schubert, Ovidiu Sas (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

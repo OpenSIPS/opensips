@@ -401,13 +401,12 @@ Chapter 3. Contributors
    6. Vlad Patrascu (@rvlad-patrascu) 6 3 49 73
    7. Boris Ratner 4 2 38 5
    8. Anca Vamanu 4 2 5 3
-   9. Matt Lehner 3 1 32 3
-   10. Авдиенко Михаил 3 1 7 17
+   9. Maksym Sobolyev (@sobomax) 4 2 4 4
+   10. Matt Lehner 3 1 32 3
 
-   All remaining contributors: Alex Massover, Maksym Sobolyev
-   (@sobomax), Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
-   Walter Doekes (@wdoekes), Zero King (@l2dy), Dan Pascu
-   (@danpascu).
+   All remaining contributors: Авдиенко Михаил, Alex Massover,
+   Julián Moreno Patiño, Peter Lemenkov (@lemenkov), Walter Doekes
+   (@wdoekes), Zero King (@l2dy), Dan Pascu (@danpascu).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

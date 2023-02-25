@@ -343,11 +343,11 @@ Chapter 3. Contributors
    7. Vlad Patrascu (@rvlad-patrascu) 8 6 73 52
    8. Jiri Kuthan (@jiriatipteldotorg) 6 3 257 0
    9. Jarrod Baumann (@jarrodb) 5 3 111 22
-   10. Henning Westerholt (@henningw) 4 2 2 2
+   10. Maksym Sobolyev (@sobomax) 4 2 3 4
 
-   All remaining contributors: Elena-Ramona Modroiu, Ancuta
-   Onofrei, Konstantin Bokarius, Julián Moreno Patiño, Maksym
-   Sobolyev (@sobomax), Jesus Rodrigues, Norman Brandinger
+   All remaining contributors: Henning Westerholt (@henningw),
+   Elena-Ramona Modroiu, Ancuta Onofrei, Konstantin Bokarius,
+   Julián Moreno Patiño, Jesus Rodrigues, Norman Brandinger
    (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /

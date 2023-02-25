@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Andrea Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Aron Rosenberg, John Riordan, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Konstantin Bokarius, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert, Stanislaw Pitucha.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Andrea Giordana, Ancuta Onofrei, Elena-Ramona Modroiu, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Aron Rosenberg, John Riordan, Konstantin Bokarius, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Sergio Gutierrez, UnixDev, Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Edson Gellert Schubert, Stanislaw Pitucha.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>

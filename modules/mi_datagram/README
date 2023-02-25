@@ -308,11 +308,11 @@ Chapter 3. Contributors
    6. Daniel-Constantin Mierla (@miconda) 9 7 18 16
    7. Ionut Ionita (@ionutrazvanionita) 8 4 252 25
    8. Henning Westerholt (@henningw) 5 3 9 11
-   9. Klaus Darilion 3 1 4 4
-   10. Walter Doekes (@wdoekes) 3 1 4 4
+   9. Maksym Sobolyev (@sobomax) 4 2 1 2
+   10. Klaus Darilion 3 1 4 4
 
-   All remaining contributors: Julián Moreno Patiño, Konstantin
-   Bokarius, Dusan Klinec (@ph4r05), Maksym Sobolyev (@sobomax),
+   All remaining contributors: Walter Doekes (@wdoekes), Julián
+   Moreno Patiño, Konstantin Bokarius, Dusan Klinec (@ph4r05),
    Peter Lemenkov (@lemenkov), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /

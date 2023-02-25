@@ -284,7 +284,7 @@ Chapter 2. Contributors
                    Name               DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea)    17       6      1112      13
    2. Liviu Chircu (@liviuchircu)        4        2       61       5
-   3. Maksym Sobolyev (@sobomax)         3        1       3        3
+   3. Maksym Sobolyev (@sobomax)         4        2       3        4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

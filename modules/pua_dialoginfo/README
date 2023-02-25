@@ -533,8 +533,8 @@ Chapter 2. Contributors
    10. Vlad Paiu (@vladpaiu) 4 2 29 15
 
    All remaining contributors: Walter Doekes (@wdoekes), Stanislaw
-   Pitucha, Peter Lemenkov (@lemenkov), Maksym Sobolyev
-   (@sobomax), Zero King (@l2dy), Aron Podrigal (@ar45).
+   Pitucha, Maksym Sobolyev (@sobomax), Peter Lemenkov
+   (@lemenkov), Zero King (@l2dy), Aron Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

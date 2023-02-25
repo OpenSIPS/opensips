@@ -375,9 +375,9 @@ Chapter 2. Contributors
    10. Edson Gellert Schubert 5 1 0 206
 
    All remaining contributors: Jiri Kuthan (@jiriatipteldotorg),
-   Peter Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Dan Pascu
-   (@danpascu), Sergio Gutierrez, Konstantin Bokarius, Maksym
-   Sobolyev (@sobomax), Norman Brandinger (@NormB), UnixDev, Anca
+   Maksym Sobolyev (@sobomax), Peter Lemenkov (@lemenkov), Walter
+   Doekes (@wdoekes), Dan Pascu (@danpascu), Sergio Gutierrez,
+   Konstantin Bokarius, Norman Brandinger (@NormB), UnixDev, Anca
    Vamanu.
 
    (1) DevScore = author_commits + author_lines_added /

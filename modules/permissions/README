@@ -761,12 +761,12 @@ Chapter 2. Contributors
 
    All remaining contributors: Andrei Pelinescu-Onciul, Dan Pascu
    (@danpascu), Miklos Tirpak, Ancuta Onofrei, Saúl Ibarra
-   Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg),
-   Elena-Ramona Modroiu, Maksym Sobolyev (@sobomax), Peter
-   Lemenkov (@lemenkov), Dusan Klinec (@ph4r05), Anca Vamanu,
-   wuhanck, Konstantin Bokarius, Norman Brandinger (@NormB),
-   UnixDev, Andreas Granig, Baptiste Cholley, Julián Moreno
-   Patiño, Edson Gellert Schubert.
+   Corretgé (@saghul), Jiri Kuthan (@jiriatipteldotorg), Maksym
+   Sobolyev (@sobomax), Elena-Ramona Modroiu, Peter Lemenkov
+   (@lemenkov), Dusan Klinec (@ph4r05), Anca Vamanu, wuhanck,
+   Konstantin Bokarius, Norman Brandinger (@NormB), UnixDev,
+   Andreas Granig, Baptiste Cholley, Julián Moreno Patiño, Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted

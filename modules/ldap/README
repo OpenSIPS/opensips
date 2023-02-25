@@ -1352,13 +1352,13 @@ Chapter 3. Contributors
    5. Daniel-Constantin Mierla (@miconda) 12 9 84 83
    6. Vlad Patrascu (@rvlad-patrascu) 12 3 155 420
    7. Liviu Chircu (@liviuchircu) 11 9 19 60
-   8. Razvan Pistolea 4 1 39 66
-   9. Anca Vamanu 3 1 14 14
-   10. Dusan Klinec (@ph4r05) 3 1 6 3
+   8. Maksym Sobolyev (@sobomax) 5 3 5 8
+   9. Razvan Pistolea 4 1 39 66
+   10. Anca Vamanu 3 1 14 14
 
-   All remaining contributors: Petr Písař, Henning Westerholt
-   (@henningw), Maksym Sobolyev (@sobomax), Konstantin Bokarius,
-   Peter Lemenkov (@lemenkov), Zero King (@l2dy), Edson Gellert
+   All remaining contributors: Dusan Klinec (@ph4r05), Petr Písař,
+   Henning Westerholt (@henningw), Konstantin Bokarius, Peter
+   Lemenkov (@lemenkov), Zero King (@l2dy), Edson Gellert
    Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
