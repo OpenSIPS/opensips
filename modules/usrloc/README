@@ -1120,17 +1120,19 @@ modparam("usrloc", "contact_refresh_timer", true)
    Adds a new contact for an user AOR.
 
    Parameters:
-     * table name - table where the contact will be added (Ex:
-       location).
-     * aor - user AOR in username[@domain] format (domain must be
-       supplied only if use_domain option is on).
-     * contact - contact string to be added
-     * expires - expires value of the contact
-     * q - Q value of the contact
-     * unused - unused attribute (kept for backword compatibility)
-     * flags - internal USRLOC flags of the contact
-     * cflags - per branch flags of the contact
-     * methods - mask with supported requests of the contact
+     * table name (string) - table where the contact will be added
+       (Ex: "location").
+     * aor (string) - user AOR in username[@domain] format (domain
+       must be supplied only if use_domain option is on).
+     * contact (string) - Contact URI to be added
+     * expires (int) - expires value of the contact
+     * q (string) - Q value of the contact
+     * flags (int) - internal USRLOC flags of the contact
+     * cflags (int) - per branch flags of the contact
+     * methods (int) - bitmask with supported requests of the
+       contact. To whitelist all SIP methods, simply use the value
+       32767. For a breakdown of each method's value, see the
+       "request_method" internal enum.
 
 1.7.6.  ul_show_contact
 
@@ -1577,7 +1579,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 334 198 9146 3686
+   2. Liviu Chircu (@liviuchircu) 335 199 9162 3700
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 244 149 4230 3622
    4. Daniel-Constantin Mierla (@miconda) 40 29 544 308
    5. Ionut Ionita (@ionutrazvanionita) 40 24 1099 413
@@ -1621,7 +1623,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2022
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Feb 2023
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Nov 2021
    3.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
    4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - May 2020
