@@ -9,19 +9,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-#include "../parser/sdp/sdp.h"
+#include "parser/sdp/sdp.h"
 
-#include "../cachedb/test/test_cachedb.h"
-#include "../lib/test/test_csv.h"
-#include "../mem/test/test_malloc.h"
-#include "../str.h"
+#include "cachedb/test/test_cachedb.h"
+#include "lib/test/test_csv.h"
+#include "mem/test/test_malloc.h"
+#include "str.h"
 
-#include "../context.h"
-#include "../dprint.h"
-#include "../globals.h"
-#include "../lib/list.h"
-#include "../sr_module.h"
-#include "../sr_module_deps.h"
+#include "context.h"
+#include "dprint.h"
+#include "globals.h"
+#include "lib/list.h"
+#include "sr_module.h"
+#include "sr_module_deps.h"
 
 int LLVMFuzzerTestOneInput(const char *data, size_t size) {
   ensure_global_context();

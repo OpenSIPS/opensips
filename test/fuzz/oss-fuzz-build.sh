@@ -40,6 +40,7 @@ rm main.o
 mkdir objects && find . -name "*.o" -exec cp {} ./objects/ \;
 ar -r libopensips.a ./objects/*.o
 
-$CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_msg_parser.o ./libopensips.a  -ldl -lresolv -o $OUT/fuzz_msg_parser
-$CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_uri_parser.o ./libopensips.a  -ldl -lresolv -o $OUT/fuzz_uri_parser
-$CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_csv_parser.o ./libopensips.a  -ldl -lresolv -o $OUT/fuzz_csv_parser
+for fuzn in msg uri csv
+do
+  $CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_${fuzn}_parser.o -I. libopensips.a  -ldl -lresolv -o $OUT/fuzz_${fuzn}_parser
+done
