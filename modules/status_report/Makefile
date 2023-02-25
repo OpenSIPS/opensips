@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=status_report.so
-LIBS= 
 
 include ../../Makefile.modules

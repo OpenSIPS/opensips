@@ -10,6 +10,6 @@ include ../../Makefile.defs
 auto_gen=
 NAME=compression.so
 
-LIBS= -lz
+LIBS += -lz
 
 include ../../Makefile.modules

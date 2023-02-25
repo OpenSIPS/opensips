@@ -5,7 +5,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=dialog.so
-LIBS= 
 
 # dialog ref counting troubleshooting support
 #DEFS+= -DDBG_DIALOG

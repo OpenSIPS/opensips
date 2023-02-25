@@ -8,6 +8,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=domainpolicy.so
-LIBS=
 
 include ../../Makefile.modules

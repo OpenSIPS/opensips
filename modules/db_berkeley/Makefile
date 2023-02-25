@@ -29,10 +29,10 @@ ifeq ($(IS_BSD), yes)
 else
 	DB_LIB=ldb
 endif
-LIBS=-L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib
+LIBS += -L$(LOCALBASE)/lib -L$(SYSBASE)/lib -L$(LOCALBASE)/BerkeleyDB.4.6/lib
 endif
 
-LIBS+=-$(DB_LIB)
+LIBS += -$(DB_LIB)
 
 include ../../Makefile.modules
 

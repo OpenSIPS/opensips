@@ -7,7 +7,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=proto_ws.so
-LIBS=
 
 #ALLOCATOR_VER = 104
 #

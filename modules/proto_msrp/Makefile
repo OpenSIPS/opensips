@@ -7,7 +7,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=proto_msrp.so
-LIBS=
 
 include ../../Makefile.modules
 

@@ -4,6 +4,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=tcp_mgm.so
-LIBS=
 
 include ../../Makefile.modules

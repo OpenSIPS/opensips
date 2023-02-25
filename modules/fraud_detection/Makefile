@@ -6,6 +6,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=fraud_detection.so
-LIBS=
 
 include ../../Makefile.modules

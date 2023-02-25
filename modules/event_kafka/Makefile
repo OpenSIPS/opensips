@@ -16,7 +16,7 @@ ifneq ($(KAFKA_BUILDER),)
 endif
 else
 	DEFS+=-I$(LOCALBASE)/include
-	LIBS=-L$(LOCALBASE)/lib -lrdkafka
+	LIBS+=-L$(LOCALBASE)/lib -lrdkafka
 endif
 
 include ../../Makefile.modules

@@ -29,7 +29,7 @@ LIBS += $(shell $(MYSQLCFG) --libs) -lmemcached $(LIB_LUA)
 
 ifneq ($(CROSS_COMPILE),)
 DEFS += -I$(LOCALBASE)/include/memcached
-LIBS = -L$(LOCALBASE)/lib $(LIBS)
+LIBS += -L$(LOCALBASE)/lib $(LIBS)
 endif
 
 include ../../Makefile.modules

@@ -21,7 +21,7 @@ ifeq ($(HAS_PGCFG),YES)
 
 	# use autodetection
 	DEFS += -I$(shell pg_config --includedir)
-	LIBS = -L$(shell pg_config --libdir) -lpq
+	LIBS += -L$(shell pg_config --libdir) -lpq
 
 else
 
@@ -30,7 +30,7 @@ else
 	DEFS +=-I$(LOCALBASE)/include -I$(LOCALBASE)/pgsql/include \
 		 -I$(SYSBASE)/include/pgsql -I$(SYSBASE)/include/postgresql \
 		 -I$(SYSBASE)/include/postgresql/8.0 -I$(SYSBASE)/postgres/8.4/include
-	LIBS=-L$(LOCALBASE)/lib -L$(LOCALBASE)/pgsql/lib -L$(LOCALBASE)/lib/pgsql \
+	LIBS += -L$(LOCALBASE)/lib -L$(LOCALBASE)/pgsql/lib -L$(LOCALBASE)/lib/pgsql \
 		 -lpq
 
 endif

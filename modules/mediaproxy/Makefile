@@ -8,7 +8,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mediaproxy.so
-LIBS=
 
 include ../../Makefile.modules
 

@@ -12,6 +12,5 @@ endif
 include ../../Makefile.defs
 auto_gen=
 NAME=ratelimit.so
-LIBS= 
 
 include ../../Makefile.modules

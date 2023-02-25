@@ -2,8 +2,6 @@
 # not on the default path.
 #PERLBINDIR=
 
-LIBS=
-
 ifeq ($(CC_NAME), gcc)
 	DEFS+=-Wno-unused -Wno-redundant-decls
 endif

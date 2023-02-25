@@ -3,7 +3,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=rtp_relay.so
-LIBS=
 
 include ../../Makefile.modules
 

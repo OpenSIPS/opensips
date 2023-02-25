@@ -9,7 +9,6 @@ include ../../Makefile.defs
 
 auto_gen=
 NAME=speeddial.so
-LIBS=
 DEFS+=
 
 include ../../Makefile.modules

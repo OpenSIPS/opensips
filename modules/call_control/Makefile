@@ -8,7 +8,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=call_control.so
-LIBS=
 
 include ../../Makefile.modules
 

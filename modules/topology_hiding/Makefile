@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=topology_hiding.so
-LIBS= 
 
 include ../../Makefile.modules

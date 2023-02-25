@@ -10,10 +10,10 @@ auto_gen=
 NAME=cachedb_memcached.so
 
 ifeq ($(CROSS_COMPILE),)
-LIBS=-lmemcached
+LIBS += -lmemcached
 else
 DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib -lmemcached
+LIBS += -L$(LOCALBASE)/lib -lmemcached
 endif
 
 include ../../Makefile.modules

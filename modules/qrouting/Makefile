@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=qrouting.so
-LIBS= 
 
 include ../../Makefile.modules

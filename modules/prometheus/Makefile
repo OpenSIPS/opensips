@@ -3,6 +3,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=prometheus.so
-LIBS=
 
 include ../../Makefile.modules

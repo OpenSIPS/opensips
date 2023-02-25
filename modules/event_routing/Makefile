@@ -4,7 +4,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=event_routing.so
-LIBS=
 
 include ../../Makefile.modules
 

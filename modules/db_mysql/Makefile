@@ -20,7 +20,7 @@ ifeq ($(HAS_MYSQLCFG),YES)
 
 	# use autodetection
 	DEFS += $(shell mysql_config --include)
-	LIBS = $(shell mysql_config --libs)
+	LIBS += $(shell mysql_config --libs)
 	LIBS += -dl -Bsymbolic
 
 else
@@ -32,7 +32,7 @@ else
 
 	# libmysqlclient locations on RH/Suse, Solaris /OpenBSD, FreeBSD
 	# (Debian does the right thing and puts it in /usr/lib)
-	LIBS=-L$(SYSBASE)/lib/mysql -L$(LOCALBASE)/lib -L$(LOCALBASE)/lib/mysql \
+	LIBS += -L$(SYSBASE)/lib/mysql -L$(LOCALBASE)/lib -L$(LOCALBASE)/lib/mysql \
 		-L$(LOCALBASE)/mysql/lib/mysql/ \
 		-L$(LOCALBASE)/mysql/lib \
 		-L$(SYSBASE)/lib64/mysql \

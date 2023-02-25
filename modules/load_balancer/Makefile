@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=load_balancer.so
-LIBS= 
 
 include ../../Makefile.modules

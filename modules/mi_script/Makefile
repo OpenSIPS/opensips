@@ -3,6 +3,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mi_script.so
-LIBS=
 
 include ../../Makefile.modules

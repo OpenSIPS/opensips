@@ -7,6 +7,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=presence_callinfo.so
-LIBS=
 
 include ../../Makefile.modules

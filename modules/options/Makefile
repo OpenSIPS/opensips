@@ -9,6 +9,5 @@ include ../../Makefile.defs
 
 auto_gen=
 NAME=options.so
-LIBS=
 
 include ../../Makefile.modules

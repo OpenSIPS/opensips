@@ -16,14 +16,14 @@ HAS_BUILDER = $(shell if which curl-config >/dev/null 2>/dev/null;then echo YES;
 ifeq ($(HAS_BUILDER),YES)
 	# use autodetection
 	DEFS += $(shell curl-config --cflags)
-	LIBS = $(shell curl-config --libs)
+	LIBS += $(shell curl-config --libs)
 else
-	LIBS = -lcurl
+	LIBS += -lcurl
 endif
 else
 	# use standard know paths
 	DEFS +=-I$(LOCALBASE)/include
-	LIBS =-L$(LOCALBASE)/lib -lcurl
+	LIBS +=-L$(LOCALBASE)/lib -lcurl
 endif 
 
 LIBS += -dl -Bsymbolic

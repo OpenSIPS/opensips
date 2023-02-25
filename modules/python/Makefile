@@ -19,10 +19,10 @@ PYTHON_LDFLAGS=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.
 PYTHON_LDLIB=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_config_var('LDLIBRARY'))" | sed 's/^lib\(python.*\)\.so/\1/'}
 PYTHON_INCDIR=${shell ${PYTHON} -c "import distutils.sysconfig;print(distutils.sysconfig.get_python_inc())"}
 
-LIBS=-L${PYTHON_LIBDIR} ${PYTHON_LDFLAGS} -l${PYTHON_LDLIB}
+LIBS += -L${PYTHON_LIBDIR} ${PYTHON_LDFLAGS} -l${PYTHON_LDLIB}
 
 ifeq ($(OS), freebsd)
-LIBS+=-pthread
+LIBS += -pthread
 endif
 
 DEFS+=-I${PYTHON_INCDIR}

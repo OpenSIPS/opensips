@@ -8,6 +8,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=mi_datagram.so
-LIBS=
 
 include ../../Makefile.modules

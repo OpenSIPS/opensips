@@ -3,6 +3,6 @@
 include ../../Makefile.defs
 auto_gen =
 NAME     = sngtc.so
-LIBS     = -lsngtc_node
+LIBS += -lsngtc_node
 
 include ../../Makefile.modules

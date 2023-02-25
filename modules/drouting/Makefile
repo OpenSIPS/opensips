@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=drouting.so
-LIBS= 
 
 include ../../Makefile.modules

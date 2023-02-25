@@ -8,6 +8,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=auth_db.so
-LIBS=
 
 include ../../Makefile.modules

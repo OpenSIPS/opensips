@@ -7,6 +7,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=permissions.so
-LIBS=
 
 include ../../Makefile.modules

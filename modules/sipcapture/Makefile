@@ -8,7 +8,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=sipcapture.so
-LIBS=
 
 include ../../Makefile.modules
 

@@ -8,6 +8,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=exec.so
-LIBS=
 
 include ../../Makefile.modules

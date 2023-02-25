@@ -10,13 +10,13 @@ ifeq ($(CROSS_COMPILE),)
 ifeq ($(HAS_BUILDER),YES)
 	# use autodetection
 	DEFS += $(shell net-snmp-config --cflags)
-	LIBS = $(shell net-snmp-config --netsnmp-agent-libs --external-agent-libs)
+	LIBS += $(shell net-snmp-config --netsnmp-agent-libs --external-agent-libs)
 	INSTALLMIBDIR = $(cfg_prefix)$(shell net-snmp-config --prefix)/share/snmp/mibs
 endif
 else
 	# use standard know paths
 	DEFS +=-I$(LOCALBASE)/include
-	LIBS =-L$(LOCALBASE)/lib -lnetsnmpmibs -lnetsnmpagent \
+	LIBS +=-L$(LOCALBASE)/lib -lnetsnmpmibs -lnetsnmpagent \
 		-lnetsnmphelpers -lnetsnmp
 	INSTALLMIBDIR = $(cfg_prefix)/share/snmp/mibs
 endif 

@@ -44,9 +44,9 @@ else
 endif
 
 ifeq ($(CROSS_COMPILE),)
-LIBS=$(GEOIP_LIB)
+LIBS += $(GEOIP_LIB)
 else
-LIBS=-L$(LOCALBASE)/lib $(GEOIP_LIB)
+LIBS += -L$(LOCALBASE)/lib $(GEOIP_LIB)
 DEFS+=-I$(LOCALBASE)/include
 endif
 

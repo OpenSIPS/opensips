@@ -5,10 +5,10 @@ auto_gen=
 NAME=cachedb_cassandra.so
 
 ifeq ($(CROSS_COMPILE),)
-LIBS=-lcassandra
+LIBS += -lcassandra
 else
 DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib -lcassandra
+LIBS += -L$(LOCALBASE)/lib -lcassandra
 endif
 
 include ../../Makefile.modules

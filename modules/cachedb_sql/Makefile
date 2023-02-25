@@ -8,6 +8,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=cachedb_sql.so
-LIBS=
 
 include ../../Makefile.modules

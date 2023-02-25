@@ -5,6 +5,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=script_helper.so
-LIBS= 
 
 include ../../Makefile.modules

@@ -9,7 +9,5 @@ include ../../Makefile.defs
 
 auto_gen=
 NAME=alias_db.so
-LIBS=
-DEFS+=
 
 include ../../Makefile.modules

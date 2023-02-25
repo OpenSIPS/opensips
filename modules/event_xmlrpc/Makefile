@@ -8,7 +8,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=event_xmlrpc.so
-LIBS=
 
 include ../../Makefile.modules
 

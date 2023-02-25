@@ -5,7 +5,6 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=event_route.so
-LIBS=
 
 include ../../Makefile.modules
 

@@ -16,7 +16,7 @@ endif
 
 ifeq ($(RABBITMQ_BUILDER),)
 	DEFS+=-I$(LOCALBASE)/include
-	LIBS=-L$(LOCALBASE)/lib -lrabbitmq
+	LIBS += -L$(LOCALBASE)/lib -lrabbitmq
 else
 	DEFS += $(shell $(RABBITMQ_BUILDER) --cflags)
 	LIBS += $(shell $(RABBITMQ_BUILDER) --libs)

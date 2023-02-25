@@ -8,6 +8,5 @@
 include ../../Makefile.defs
 auto_gen=
 NAME=tracer.so
-LIBS=
 
 include ../../Makefile.modules

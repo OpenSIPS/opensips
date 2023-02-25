@@ -17,10 +17,10 @@ ifeq ($(HAVE_REDIS_SSL), HAVE_REDIS_SSL)
 endif
 
 ifeq ($(CROSS_COMPILE),)
-LIBS+=-lhiredis
+LIBS += -lhiredis
 else
 DEFS+=-I$(LOCALBASE)/include
-LIBS=-L$(LOCALBASE)/lib -lhiredis
+LIBS += -L$(LOCALBASE)/lib -lhiredis
 endif
 
 include ../../Makefile.modules
