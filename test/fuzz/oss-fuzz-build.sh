@@ -42,5 +42,5 @@ ar -r libopensips.a ./objects/*.o
 
 for fuzn in msg uri csv
 do
-  $CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_${fuzn}_parser.o -I. libopensips.a  -ldl -lresolv -o $OUT/fuzz_${fuzn}_parser
+  $CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_${fuzn}_parser.o libopensips.a  -ldl -lresolv -o $OUT/fuzz_${fuzn}_parser
 done
