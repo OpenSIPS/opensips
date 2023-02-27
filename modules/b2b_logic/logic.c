@@ -5361,6 +5361,13 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	b2bl_print_tuple(tuple, L_DBG);
 
 	b2b_api.apply_lumps(msg);
+    
+    if (b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
+	b2b_msg_get_to(msg, &to_uri, b2bl_htable[hash_index].flags)< 0)
+	{
+		LM_ERR("Failed to get to or from from the message\n");
+		goto error;
+	}
 
 	if (!adv_ct) {
 		memset(&ct_uri, 0, sizeof(struct sip_uri));
@@ -5407,12 +5414,6 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	LM_DBG("Contact: %.*s\n", contact.len, contact.s);
 
 	/* create server entity from Invite */
-	if (b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||
-	b2b_msg_get_to(msg, &to_uri, b2bl_htable[hash_index].flags)< 0)
-	{
-		LM_ERR("Failed to get to or from from the message\n");
-		goto error;
-	}
 	server_id = b2b_api.server_new(msg, adv_ct ? adv_ct : &local_contact,
 			b2b_server_notify, &b2bl_mod_name, tuple->key,
 			get_tracer(tuple), NULL, NULL);
