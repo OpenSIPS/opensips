@@ -1,0 +1,4 @@
+if [ -e /tmp/docker_opensips.cid ]
+then
+  exec docker exec -w /work --env COMPILER --env BUILD_OS `cat /tmp/docker_opensips.cid` sh -x "${0}" "${@}"
+fi

@@ -6,6 +6,7 @@ addons:
     packages:
       - flex
       - bison
+      - make
       - libsqlite3-dev
       - libsctp-dev
       - libradcli-dev
