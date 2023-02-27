@@ -629,9 +629,7 @@ inline static void _shm_free_bulk(void *ptr,
 #define shm_free_bulk( _ptr ) _shm_free_bulk( (_ptr), \
 	__FILE__, __FUNCTION__, __LINE__ )
 
-#ifndef	HP_MALLOC
 extern unsigned long long *shm_hash_usage;
-#endif
 
 #else /*DBG_MALLOC*/
 

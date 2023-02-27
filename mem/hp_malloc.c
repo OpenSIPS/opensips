@@ -33,6 +33,7 @@
 #include "../globals.h"
 #include "../statistics.h"
 #include "../locking.h"
+#include "../mem/shm_mem.h"
 
 #include "hp_malloc.h"
 
@@ -101,8 +102,6 @@ static unsigned int optimized_put_indexes[HP_HASH_SIZE];
 			optimized_put_indexes[___hash]; \
 	}) : \
 	HP_LINEAR_HASH_SIZE + big_hash_idx((s)) - HP_MALLOC_OPTIMIZE_FACTOR + 1)
-
-extern unsigned long *shm_hash_usage;
 
 /*
  * adaptive image of OpenSIPS's memory usage during runtime
