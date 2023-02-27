@@ -228,7 +228,7 @@ sparc64_macros= __sparcv9 __sparc_v9__
 
 arm_macros= __arm__ __thumb__
 arm6_macros= __ARM_ARCH_6__
-arm7_macros= __ARM_ARCH_7__
+arm7_macros= __ARM_ARCH_7__ __ARM_ARCH_7A__
 
 arm64_macros= __AARCH64EL__
 
