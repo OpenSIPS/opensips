@@ -85,7 +85,7 @@ jobs:
           sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"
 
       - name: Run tests
-        run: script unit_tests.log -c 'make DEFS_EXTRA_OPTS="-DUNIT_TESTS" test'
+        run: script -e unit_tests.log -c 'make DEFS_EXTRA_OPTS="-DUNIT_TESTS" test'
 
       - name: Notify slack fail
         if: failure() && github.repository == 'OpenSIPS/opensips'
