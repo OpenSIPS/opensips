@@ -56,7 +56,8 @@ static inline void _ProfilerStop(void)
 	ProfilerStop();
 
 	LM_NOTICE("STOP profiling in process %s (%d)\n",
-	          pt[process_no].desc, pt[process_no].pid);
+	          pt ? pt[process_no].desc : "<none>",
+	          pt ? pt[process_no].pid : -1);
 }
 #else
 	#define ProfilerStart(...)
