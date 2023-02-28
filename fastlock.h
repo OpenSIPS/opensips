@@ -136,6 +136,7 @@ inline static int tsl(volatile int* lock)
 	asm volatile(
 			"ldrex   %0, [%2] \n\t"
 			"cmp     %0, #0 \n\t"
+			"it      eq \n\t"
 			"strexeq %0, %1, [%2] \n\t"
 #ifndef NOSMP
 #if defined(__CPU_arm7)
@@ -144,7 +145,7 @@ inline static int tsl(volatile int* lock)
 			"mcr p15, #0, r1, c7, c10, #5\n\t"
 #endif
 #endif
-			: "=&r" (val) : "r"(1), "r" (lock) : "memory"
+			: "=&r" (val) : "r"(1), "r" (lock) : "cc", "memory"
 	);
 #elif defined(__CPU_ppc) || defined(__CPU_ppc64)
 	asm volatile(
