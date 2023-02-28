@@ -459,7 +459,7 @@ static int qr_parse_extra_stats(void)
 			continue;
 		} else if (stat->s.len > QR_MAX_STAT_NAME_LEN) {
 			LM_ERR("stat name too long (%.*s), use max %lu chars\n",
-			       stat->s.len, stat->s.s, QR_MAX_STAT_NAME_LEN);
+			       stat->s.len, stat->s.s, (unsigned long)QR_MAX_STAT_NAME_LEN);
 			return -1;
 		}
 

@@ -933,7 +933,7 @@ static char * load_file(char * filename)
 	bread = fread(string, 1, fsize, f);
 	if (bread == 0 || ferror(f))
 		LM_ERR("error while reading from %s (bytes read: %lu)\n",
-				filename, bread);
+				filename, (unsigned long)bread);
 	fclose(f);
 
 	string[fsize] = 0;

@@ -2771,7 +2771,7 @@ fallback_failed:
 				_new_size *sizeof(unsigned short) ); \
 			if (_buf==NULL) { \
 				LM_ERR("no more pkg mem (needed  %ld)\n", \
-					_new_size*sizeof(unsigned short));\
+					(long)_new_size*sizeof(unsigned short));\
 				_old_size = 0; \
 				goto _error;\
 			}\

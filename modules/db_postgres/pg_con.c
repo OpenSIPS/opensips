@@ -196,7 +196,7 @@ int db_postgres_connect(struct pg_con* ptr)
 		/* The value is considered to be a connection string, rather than just a database name, */
 		/* if it contains an equal sign (=) or it begins with a URI scheme designator. */
 		/* Only the first occurrence of dbname is treated in this way; any subsequent dbname parameter is processed as a plain database name. */
-		LM_DBG("connection string (%ld): %s\n", strlen(copy), copy);
+		LM_DBG("connection string (%ld): %s\n", (long)strlen(copy), copy);
 		PSQL_PARAM("dbname", copy);
 	}
 

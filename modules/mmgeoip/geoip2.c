@@ -179,7 +179,7 @@ int geoip2_get_field(lookup_res_t ip_data, char *field, char buf[256])
 		len = sprintf(buf, "%d", entry_data.int32);
 		break;
 	case MMDB_DATA_TYPE_UINT64:
-		len = sprintf(buf, "%lu", entry_data.uint64);
+		len = sprintf(buf, "%llu", (unsigned long long)entry_data.uint64);
 		break;
 	case MMDB_DATA_TYPE_BOOLEAN:
 		if (entry_data.boolean)
