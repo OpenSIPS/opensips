@@ -12,4 +12,4 @@ fi
 
 sudo apt-get update
 sudo apt-get install -y qemu-user-static
-docker run --cidfile /tmp/docker_opensips.cid -d --restart=always --platform linux/${DOCKR_PLATFORM} -v `pwd`:/work ${DOCKR_BASE} sleep infinity
+docker run --cidfile /tmp/docker_opensips.cid -d --restart=always --platform linux/${DOCKR_PLATFORM} -v `pwd`:`pwd` ${DOCKR_BASE} sleep infinity
