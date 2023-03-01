@@ -56,23 +56,13 @@ jobs:
         run: sh -x scripts/build/install_depends.sh
 
       - name: Get libtap
-        run: git clone https://github.com/zorgnax/libtap.git ../libtap
+        run: git clone https://github.com/zorgnax/libtap.git lib/libtap
 
       - name: Build libtap
-        run: |
-          make -C ../libtap CFLAGS="-O1 -fPIE -fPIC" libtap.a
+        run: sh -x scripts/build/build_libtap.sh lib/libtap
 
       - name: Build test harness
-        run: |
-          make Makefile.conf
-          sed -i.bak '/-DCC_O0/d' Makefile.conf
-          echo 'DEFS+= -I$(shell pwd)/../libtap' >> Makefile.conf
-          echo 'LIBS+= -L$(TOP_SRCDIR)/../libtap' >> Makefile.conf
-          if [ "${BUILD_OS}" == "ubuntu-22.04" ]; then \
-            echo 'DEFS+= -flto' >> Makefile.conf; \
-            echo 'LIBS+= -flto' >> Makefile.conf; \
-          fi
-          sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"
+        run: sh -x scripts/build/build_test_harness.sh lib/libtap
 
       - name: Run tests
         env:
