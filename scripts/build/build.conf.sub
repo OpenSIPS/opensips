@@ -81,31 +81,35 @@ gcc-arm64-cross)
 	PKGS="`exclude_pkgs 2.3.7` gcc-aarch64-linux-gnu libc-dev-arm64-cross qemu-user-static"
 	;;
 gcc-arm32-qemu-cross)
-	export CC="gcc"
+	export CC="/usr/lib/ccache/gcc"
+	export CCACHE_DIR="`pwd`/ccache"
 	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm/v7"
-	PKGS="`exclude_pkgs 2.3.7` gcc g++"
+	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
 	;;
 clang-arm32-qemu-cross)
-	export CC="clang"
+	export CC="/usr/lib/ccache/clang"
+	export CCACHE_DIR="`pwd`/ccache"
 	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm/v7"
-	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev"
+	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
         ;;
 gcc-arm64-qemu-cross)
-	export CC="gcc"
+	export CC="/usr/lib/ccache/gcc"
+	export CCACHE_DIR="`pwd`/ccache"
 	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm64/v8"
-	PKGS="`exclude_pkgs 2.3.7` gcc g++"
+	PKGS="`exclude_pkgs 2.3.7` gcc g++ ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
 	;;
 clang-arm64-qemu-cross)
-	export CC="clang"
+	export CC="/usr/lib/ccache/clang"
+	export CCACHE_DIR="`pwd`/ccache"
 	DOCKR_BASE="ubuntu"
 	DOCKR_PLATFORM="arm64/v8"
-	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev"
+	PKGS="`exclude_pkgs 2.3.7` clang llvm-dev ccache"
 	EXCLUDE_MODULES_ADD="db_unixodbc"
 	;;
 clang)

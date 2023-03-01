@@ -33,6 +33,16 @@ jobs:
         with:
           submodules: recursive
 
+      # Cache the compiler cache
+      - name: Cache the compiler cache
+        uses: actions/cache@v3
+        if: endsWith(matrix.compiler, '-qemu-cross')
+        with:
+          path: ccache
+          key: ccache-${{ matrix.os }}-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-${{ matrix.os }}-${{ matrix.compiler }}
+
       - name: Start Docker container
         if: endsWith(matrix.compiler, '-cross')
         run: sh -x scripts/build/start_container.sh
