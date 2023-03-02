@@ -23,27 +23,35 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-20.04]
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
+        os: [ubuntu-20.04]
         include:
-          - os: ubuntu-22.04
-            compiler: 'gcc'
-          - os: ubuntu-22.04
-            compiler: 'clang'
-          - os: ubuntu-22.04
-            compiler: 'gcc-11'
-          - os: ubuntu-22.04
-            compiler: 'gcc-12'
-          - os: ubuntu-22.04
-            compiler: 'clang-11'
-          - os: ubuntu-22.04
-            compiler: 'clang-12'
-          - os: ubuntu-22.04
-            compiler: 'clang-13'
-          - os: ubuntu-22.04
-            compiler: 'clang-14'
-          - os: ubuntu-22.04
-            compiler: 'clang-15'
+          - compiler: 'gcc'
+            os: ubuntu-22.04
+          - compiler: 'clang'
+            os: ubuntu-22.04
+          - compiler: 'gcc-11'
+            os: ubuntu-22.04
+          - compiler: 'gcc-12'
+            os: ubuntu-22.04
+          - compiler: 'clang-11'
+            os: ubuntu-22.04
+          - compiler: 'clang-12'
+            os: ubuntu-22.04
+          - compiler: 'clang-13'
+            os: ubuntu-22.04
+          - compiler: 'clang-14'
+            os: ubuntu-22.04
+          - compiler: 'clang-15'
+            os: ubuntu-22.04
+          - compiler: 'gcc-arm64-qemu-cross'
+            os: ubuntu-22.04
+          - compiler: 'gcc-arm32-qemu-cross'
+            os: ubuntu-22.04
+          - compiler: 'clang-arm64-qemu-cross'
+            os: ubuntu-22.04
+          - compiler: 'clang-arm32-qemu-cross'
+            os: ubuntu-22.04
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -52,17 +60,38 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Cache the compiler cache
+        uses: actions/cache@v3
+        if: endsWith(matrix.compiler, '-qemu-cross')
+        with:
+          path: ccache
+          key: ccache-ut-${{ matrix.os }}-${{ matrix.compiler }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-ut-${{ matrix.os }}-${{ matrix.compiler }}
+
+      - name: Start Docker container
+        if: endsWith(matrix.compiler, '-cross')
+        run: sh -x scripts/build/start_container.sh
+
       - name: Install dependencies
         run: sh -x scripts/build/install_depends.sh
 
       - name: Get libtap
         run: git clone https://github.com/zorgnax/libtap.git lib/libtap
 
+      - name: Zero out compiler cache stats
+        if: endsWith(matrix.compiler, '-qemu-cross')
+        run: scripts/build/zero_ccache_stats.sh
+
       - name: Build libtap
         run: sh -x scripts/build/build_libtap.sh lib/libtap
 
       - name: Build test harness
         run: sh -x scripts/build/build_test_harness.sh lib/libtap
+
+      - name: Print compiler cache stats
+        if: endsWith(matrix.compiler, '-qemu-cross')
+        run: scripts/build/print_ccache_stats.sh
 
       - name: Run tests
         env:

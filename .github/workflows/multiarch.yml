@@ -50,8 +50,16 @@ jobs:
       - name: Install dependencies
         run: sh -x scripts/build/install_depends.sh
 
+      - name: Zero out compiler cache stats
+        if: endsWith(matrix.compiler, '-qemu-cross')
+        run: scripts/build/zero_ccache_stats.sh
+
       - name: Build
         run: sh -x scripts/build/do_build.sh
+
+      - name: Print compiler cache stats
+        if: endsWith(matrix.compiler, '-qemu-cross')
+        run: scripts/build/print_ccache_stats.sh
 
       - name: Notify slack fail
         if: failure() && github.repository == 'OpenSIPS/opensips'
