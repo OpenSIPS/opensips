@@ -862,7 +862,7 @@ static int eval_elem(struct expr* e, struct sip_msg* msg, pv_value_t *val)
 					{
 						if(val!=NULL)
 							memcpy(val, &lval, sizeof(pv_value_t));
-						if(lval.flags&PV_VAL_STR)
+						if(pvv_is_str(&lval))
 						{
 							if(!((lval.flags&PV_VAL_PKG)
 									|| (lval.flags&PV_VAL_SHM)))
