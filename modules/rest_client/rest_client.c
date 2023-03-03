@@ -57,8 +57,8 @@ unsigned int max_transfer_size = 10240; /* KB (10MB) */
  * curl_multi_perform() may indicate a "try again" response even
  * when resuming transfers with pending data
  */
-int _async_resume_retr_timeout = 500000; /* us */
-int _async_resume_retr_itv = 100; /* us */
+int _async_resume_retr_timeout; /* us; equal to @curl_timeout */
+int _async_resume_retr_itv = 500; /* us */
 
 /* libcurl enables these by default */
 int ssl_verifypeer = 1;
@@ -240,6 +240,7 @@ static int mod_init(void)
 	LM_DBG("Initializing...\n");
 
 	connection_timeout_ms = connection_timeout * 1000L;
+	_async_resume_retr_timeout = curl_timeout * 1000000U;
 
 	if (connect_poll_interval < 0) {
 		LM_ERR("Bad connect_poll_interval (%ldms), setting to 20ms\n",
