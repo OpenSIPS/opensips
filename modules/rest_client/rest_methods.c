@@ -882,7 +882,8 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		 * server body download will be performed within this loop, blocking */
 
 		mrc = curl_multi_perform(multi_handle, &running);
-		LM_DBG("perform result: %d, running: %d\n", mrc, running);
+		LM_DBG("perform result: %d, running: %d (break: %d)\n", mrc, running,
+			mrc != CURLM_CALL_MULTI_PERFORM && (mrc != CURLM_OK || !running));
 
 		if (mrc != CURLM_CALL_MULTI_PERFORM &&
 		     (mrc != CURLM_OK || !running))
