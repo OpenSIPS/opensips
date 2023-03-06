@@ -371,8 +371,8 @@ modparam("clusterer", "sync_timeout", 5)
 		</example>
         </section>
 
-        <section id="param_sync_packet_max_size" xreflabel="sync_packet_max_size">
-            <title><varname>sync_packet_max_size</varname></title>
+        <section id="param_sync_packet_size" xreflabel="sync_packet_size">
+            <title><varname>sync_packet_size</varname></title>
             <para>
                 The maximum size of the BIN packets sent while doing data synchronization. This is only a suggested value as the actual size of the packets may be slightly larger.
             </para>
@@ -382,10 +382,10 @@ modparam("clusterer", "sync_timeout", 5)
 		</emphasis>
             </para>
             <example>
-		<title>Set <varname>sync_packet_max_size</varname> parameter</title>
+		<title>Set <varname>sync_packet_size</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("clusterer", "sync_packet_max_size", 32765)
+modparam("clusterer", "sync_packet_size", 32765)
 ...
 		</programlisting>
 		</example>
