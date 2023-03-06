@@ -32,7 +32,12 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 #include "b2be_load.h"
+#include "ua_api.h"
 
+str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* logic_key,
+		struct ua_sess_init_params *init_params, struct b2b_tracer *tracer,
+		void *param, b2b_param_free_cb free_param);
 str* client_new(client_info_t* ci, b2b_notify_t b2b_cback,
 		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* param,
 		struct b2b_tracer*, void *, b2b_param_free_cb);

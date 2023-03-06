@@ -687,7 +687,7 @@ static int load_entity(int_str_t *vals)
 		LM_ERR("Failed to create new dialog structure\n");
 		return -1;
 	}
-	b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index, ts, type, 1, 0);
+	b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index, ts, type, 1, 0, 0);
 	if(b2b_key == NULL)
 	{
 		LM_ERR("Failed to insert new record\n");

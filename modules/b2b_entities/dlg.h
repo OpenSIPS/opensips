@@ -76,6 +76,7 @@ typedef struct b2b_dlg_leg {
 #define UPDATEDB_FLAG       1
 #define INSERTDB_FLAG       2
 
+struct ua_sess_t_list;
 
 /** Definitions for structures used for storing dialogs */
 typedef struct b2b_dlg
@@ -112,6 +113,8 @@ typedef struct b2b_dlg
 	unsigned int         last_reply_code;
 	int                  db_flag;
 	int                  replicated;
+	unsigned int         ua_flags;
+	struct ua_sess_t_list *ua_timer_list;
 	struct b2b_tracer   *tracer;
 	void                *param;
 	b2b_param_free_cb    free_param;
@@ -141,7 +144,7 @@ extern b2b_table client_htable;
 void print_b2b_dlg(b2b_dlg_t *dlg);
 
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
-		time_t timestamp, int src, int safe, int db_insert);
+	time_t timestamp, int src, int safe, int db_insert, unsigned int ua_timeout);
 
 b2b_dlg_t* b2b_htable_search_safe(str callid, str to_tag, str from_tag);
 
@@ -159,8 +162,10 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 
 int b2b_prescript_f(struct sip_msg *msg, void* param);
 
+int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t*);
 int b2b_send_reply(b2b_rpl_data_t*);
 
+int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t*);
 int b2b_send_request(b2b_req_data_t*);
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index);

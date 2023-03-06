@@ -38,18 +38,9 @@
 #include "dlg.h"
 #include "b2b_entities.h"
 
-/**
- * Function to create a new server entity
- *	msg: SIP message
- *	b2b_cback: callback function to notify the logic about a change in dialog
- *	param: the parameter that will be used when calling b2b_cback function
- *
- *	Return value: the dialog key allocated in private memory
- *	*/
-
-str* server_new(struct sip_msg* msg, str* local_contact,
-		b2b_notify_t b2b_cback, str *mod_name, str* logic_key,
-		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
+str* _server_new(struct sip_msg* msg, str* local_contact, b2b_notify_t b2b_cback,
+	str *mod_name, str* logic_key, struct ua_sess_init_params *ua_init_params,
+	struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
 {
 	b2b_dlg_t* dlg;
 	unsigned int hash_index;
@@ -71,6 +62,7 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 	dlg->param = param;
 	dlg->free_param = free_param;
 	dlg->tracer = tracer;
+	dlg->ua_flags = ua_init_params?ua_init_params->flags:0;
 
 	/* get the pointer to the tm transaction to store it the tuple record */
 	dlg->uas_tran = tmb.t_gett();
@@ -103,11 +95,29 @@ str* server_new(struct sip_msg* msg, str* local_contact,
 
 	/* add the record in hash table */
 	dlg->db_flag = INSERTDB_FLAG;
-	return b2b_htable_insert(server_htable, dlg, hash_index, 0, B2B_SERVER, 0, 1);
+	return b2b_htable_insert(server_htable, dlg, hash_index, 0, B2B_SERVER, 0, 1,
+		ua_init_params?ua_init_params->timeout:0);
 error:
 	if(dlg)
 		shm_free(dlg);
 	return NULL;
+}
+
+/**
+ * Function to create a new server entity
+ *	msg: SIP message
+ *	b2b_cback: callback function to notify the logic about a change in dialog
+ *	param: the parameter that will be used when calling b2b_cback function
+ *
+ *	Return value: the dialog key allocated in private memory
+ *	*/
+
+str* server_new(struct sip_msg* msg, str* local_contact,
+		b2b_notify_t b2b_cback, str *mod_name, str* logic_key,
+		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
+{
+	return _server_new(msg, local_contact, b2b_cback, mod_name, logic_key, NULL,
+		tracer, param, free_param);
 }
 
 

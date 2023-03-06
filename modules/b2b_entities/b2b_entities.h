@@ -68,6 +68,10 @@ extern int passthru_prack;
 
 void *b2b_get_context(void);
 
+int mi_print_b2be_all_dlgs(mi_item_t *resp_arr, b2b_table htable,
+	unsigned int hsize, int ua_sessions);
+int mi_print_b2be_dlg(b2b_dlg_t* dlg, mi_item_t *to);
+
 #ifdef B2B_ENTITIES_LOCK_DBG
 #define B2BE_LOCK_DBG(op, table, index) \
 	LM_INFO("B2B_LOCK %s %s[%d] +%d\n", op, (table==server_htable)?"server":"client", index, __LINE__);

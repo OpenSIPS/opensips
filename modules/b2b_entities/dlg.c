@@ -47,6 +47,7 @@
 #include "b2b_entities.h"
 #include "b2be_db.h"
 #include "b2be_clustering.h"
+#include "ua_api.h"
 
 #define BUF_LEN              65535
 
@@ -217,7 +218,7 @@ b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
 
 /* this is only called by server new */
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
-	time_t timestamp, int src, int safe, int db_insert)
+	time_t timestamp, int src, int safe, int db_insert, unsigned int ua_timeout)
 {
 	b2b_dlg_t * it, *prev_it= NULL;
 	str* b2b_key;
@@ -265,6 +266,19 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 		}
 		memcpy(dlg->tag[CALLEE_LEG].s, b2b_key->s, b2b_key->len);
 		dlg->tag[CALLEE_LEG].len = b2b_key->len;
+	}
+
+	if (dlg->ua_flags&UA_FL_IS_UA_ENTITY) {
+		if (ua_timeout == 0)
+			ua_timeout = ua_default_timeout;
+		dlg->ua_timer_list = insert_ua_sess_tl(b2b_key, ua_timeout);
+		if (!dlg->ua_timer_list) {
+			LM_ERR("Failed to insert into timer list\n");
+			if(!safe)
+				B2BE_LOCK_RELEASE(table, hash_index);
+			pkg_free(b2b_key);
+			return 0;
+		}
 	}
 
 	if(db_insert && b2be_db_mode == WRITE_THROUGH)
@@ -698,7 +712,6 @@ int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name)
 	return 0;
 }
 
-
 int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 {
 	str b2b_key;
@@ -724,6 +737,8 @@ int b2b_prescript_f(struct sip_msg *msg, void *uparam)
 	bin_packet_t storage;
 	struct b2b_context *ctx;
 	int b2b_cb_flags = 0;
+	unsigned int ua_flags = 0;
+	int ua_ev_type = -1;
 
 	/* check if a b2b request */
 	if (parse_headers(msg, HDR_EOH_F, 0) < 0)
@@ -1243,12 +1258,37 @@ run_cb:
 */
 	current_dlg = dlg;
 	dlg_state = dlg->state;
+
+	ua_flags = dlg->ua_flags;
+
 	B2BE_LOCK_RELEASE(table, hash_index);
 
-	b2b_cback(msg, &b2b_key, B2B_REQUEST, logic_key.s?&logic_key:0, dlg->param, b2b_cb_flags);
+	if (ua_flags&UA_FL_IS_UA_ENTITY) {
+		switch (method_value) {
+		case METHOD_ACK:
+			if (ua_flags & UA_FL_REPORT_ACK)
+				ua_ev_type = UA_SESS_EV_UPDATED;
+			break;
+		case METHOD_BYE:
+		case METHOD_CANCEL:
+			ua_ev_type = UA_SESS_EV_TERMINATED;
+			break;
+		default:
+			ua_ev_type = UA_SESS_EV_UPDATED;
+		}
 
-	if(logic_key.s)
-		pkg_free(logic_key.s);
+		if (ua_ev_type != -1 && raise_ua_sess_event(&b2b_key, etype, ua_ev_type,
+			ua_flags, msg) < 0) {
+			LM_ERR("Failed to raise E_UA_SESSION event\n");
+			return SCB_DROP_MSG;
+		}
+	} else {
+		b2b_cback(msg, &b2b_key, B2B_REQUEST, logic_key.s?&logic_key:0,
+			dlg->param, b2b_cb_flags);
+
+		if(logic_key.s)
+			pkg_free(logic_key.s);
+	}
 
 	B2BE_LOCK_GET(table, hash_index);
 
@@ -1301,6 +1341,17 @@ run_cb:
 
 	if (b2b_ev != -1 && storage.buffer.s)
 		bin_free_packet(&storage);
+
+	if ((ua_flags&UA_FL_IS_UA_ENTITY) && dlg_state == B2B_TERMINATED) {
+		if (ua_send_reply(etype, &b2b_key, METHOD_BYE, 200, &str_init("OK"),
+			NULL, NULL, NULL) < 0) {
+			LM_ERR("Failed to send 200 OK reply\n");
+			return SCB_DROP_MSG;
+		}
+
+		if (ua_entity_delete(etype, &b2b_key, b2be_db_mode == WRITE_BACK, 1) < 0)
+			LM_ERR("Failed to delete UA session\n");
+	}
 
 done:
 
@@ -1551,16 +1602,7 @@ b2b_dlg_t* b2b_new_dlg(struct sip_msg* msg, str* local_contact,
 	return shm_dlg;
 }
 
-/*
- *	Function to send a reply inside a b2b dialog
- *	et      : entity type - it can be B2B_SEVER or B2B_CLIENT
- *	b2b_key : the key to identify the dialog
- *	code  : the status code for the reply
- *	text  : the reason phrase for the reply
- *	body    : the body to be included in the request(optional)
- *	extra_headers  : the extra headers to be included in the request(optional)
- * */
-int b2b_send_reply(b2b_rpl_data_t* rpl_data)
+int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 {
 	enum b2b_entity_type et = rpl_data->et;
 	str* b2b_key = rpl_data->b2b_key;
@@ -1570,7 +1612,6 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	b2b_dlginfo_t* dlginfo = rpl_data->dlginfo;
 
 	unsigned int hash_index, local_index;
-	b2b_dlg_t* dlg;
 	str* to_tag = NULL;
 	struct cell* tm_tran;
 	struct sip_msg* msg;
@@ -1615,21 +1656,23 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 		return -1;
 	}
 
-	B2BE_LOCK_GET(table, hash_index);
-	if(dlginfo == NULL)
-	{
-		dlg = b2b_search_htable(table, hash_index, local_index);
-	}
-	else
-	{
-		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-		&fromtag, &totag, &dlginfo->callid);
-	}
-	if(dlg== NULL)
-	{
-		LM_ERR("No dialog found\n");
-		B2BE_LOCK_RELEASE(table, hash_index);
-		return -1;
+	if (!dlg) {
+		B2BE_LOCK_GET(table, hash_index);
+		if(dlginfo == NULL)
+		{
+			dlg = b2b_search_htable(table, hash_index, local_index);
+		}
+		else
+		{
+			dlg = b2b_search_htable_dlg(table, hash_index, local_index,
+			&fromtag, &totag, &dlginfo->callid);
+		}
+		if(dlg== NULL)
+		{
+			LM_ERR("No dialog found\n");
+			B2BE_LOCK_RELEASE(table, hash_index);
+			return -1;
+		}
 	}
 
 /*	if(dlg->callid.s == NULL)
@@ -1829,6 +1872,20 @@ error:
 		tmb.unref_cell(tm_tran);
 	}
 	return -1;
+}
+
+/*
+ *	Function to send a reply inside a b2b dialog
+ *	et      : entity type - it can be B2B_SEVER or B2B_CLIENT
+ *	b2b_key : the key to identify the dialog
+ *	code  : the status code for the reply
+ *	text  : the reason phrase for the reply
+ *	body    : the body to be included in the request(optional)
+ *	extra_headers  : the extra headers to be included in the request(optional)
+ * */
+int b2b_send_reply(b2b_rpl_data_t* rpl_data)
+{
+	return _b2b_send_reply(NULL, rpl_data);
 }
 
 void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index)
@@ -2147,19 +2204,7 @@ error:
 	return -1;
 }
 
-
-
-/*
- *	Function to send a request inside a b2b dialog
- *	et      : entity type - it can be B2B_SEVER or B2B_CLIENT
- *	b2b_key : the key to identify the dialog
- *	method  : the method for the request
- *	extra_headers  : the extra headers to be included in the request(optional)
- *	body    : the body to be included in the request(optional)
- *	dlginfo : extra params for matching the dialog
- *	no_cb   : no callback required
- * */
-int b2b_send_request(b2b_req_data_t* req_data)
+int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 {
 	enum b2b_entity_type et = req_data->et;
 	str* b2b_key = req_data->b2b_key;
@@ -2167,7 +2212,6 @@ int b2b_send_request(b2b_req_data_t* req_data)
 	b2b_dlginfo_t* dlginfo = req_data->dlginfo;
 
 	unsigned int hash_index, local_index;
-	b2b_dlg_t* dlg;
 	str ehdr = {NULL, 0};
 	b2b_table table;
 	str totag={NULL,0}, fromtag={NULL, 0};
@@ -2198,21 +2242,23 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		return -1;
 	}
 
-	B2BE_LOCK_GET(table, hash_index);
-	if(dlginfo == NULL)
-	{
-		dlg = b2b_search_htable(table, hash_index, local_index);
-	}
-	else
-	{
-		dlg = b2b_search_htable_dlg(table, hash_index, local_index,
-				&totag, &fromtag, &dlginfo->callid);
-	}
-	if(dlg== NULL)
-	{
-		LM_ERR("No dialog found for b2b key [%.*s] and dlginfo=[%p]\n",
-			b2b_key->len, b2b_key->s, dlginfo);
-		goto error;
+	if (!dlg) {
+		B2BE_LOCK_GET(table, hash_index);
+		if(dlginfo == NULL)
+		{
+			dlg = b2b_search_htable(table, hash_index, local_index);
+		}
+		else
+		{
+			dlg = b2b_search_htable_dlg(table, hash_index, local_index,
+					&totag, &fromtag, &dlginfo->callid);
+		}
+		if(dlg== NULL)
+		{
+			LM_ERR("No dialog found for b2b key [%.*s] and dlginfo=[%p]\n",
+				b2b_key->len, b2b_key->s, dlginfo);
+			goto error;
+		}
 	}
 
 	parse_method(method->s, method->s+method->len, &method_value);
@@ -2358,6 +2404,21 @@ int b2b_send_request(b2b_req_data_t* req_data)
 error:
 	B2BE_LOCK_RELEASE(table, hash_index);
 	return -1;
+}
+
+/*
+ *	Function to send a request inside a b2b dialog
+ *	et      : entity type - it can be B2B_SEVER or B2B_CLIENT
+ *	b2b_key : the key to identify the dialog
+ *	method  : the method for the request
+ *	extra_headers  : the extra headers to be included in the request(optional)
+ *	body    : the body to be included in the request(optional)
+ *	dlginfo : extra params for matching the dialog
+ *	no_cb   : no callback required
+ * */
+int b2b_send_request(b2b_req_data_t* req_data)
+{
+	return _b2b_send_request(NULL, req_data);
 }
 
 dlg_leg_t* b2b_find_leg(b2b_dlg_t* dlg, str to_tag)
@@ -2716,6 +2777,9 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	struct b2b_context *ctx;
 	int b2b_cb_flags = 0;
 	unsigned int reqmask;
+	unsigned int ua_flags = 0;
+	int ua_ev_type = -1;
+	int ua_auto_ack = 0;
 
 	to_hdr_parsed.param_lst = from_hdr_parsed.param_lst = NULL;
 
@@ -2964,6 +3028,8 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 		memcpy(logic_key.s, dlg->logic_key.s, dlg->logic_key.len);
 		logic_key.len = dlg->logic_key.len;
 	}
+
+	ua_flags = dlg->ua_flags;
 
 	LM_DBG("Received reply [%d] for dialog [%p], method [%.*s]\n",
 		statuscode, dlg, t->method.len, t->method.s);
@@ -3244,6 +3310,8 @@ dummy_reply:
 			new_dlg->add_dlginfo = dlg->add_dlginfo;
 			new_dlg->last_method = dlg->last_method;
 			new_dlg->tracer = dlg->tracer;
+			new_dlg->ua_timer_list = dlg->ua_timer_list;
+			new_dlg->ua_flags = dlg->ua_flags;
 
 //			dlg = b2b_search_htable(htable, hash_index, local_index);
 			if(dlg->prev)
@@ -3385,6 +3453,8 @@ dummy_reply:
 					current_dlg = dlg;
 					dlg_state = dlg->state;
 
+					ua_auto_ack = 1;
+
 					if (B2BE_SERIALIZE_STORAGE())
 						b2b_ev = B2B_EVENT_CREATE;
 
@@ -3409,6 +3479,8 @@ dummy_reply:
 		{
 			LM_DBG("switched the state CONFIRMED [%p]\n", dlg);
 			dlg->state = B2B_CONFIRMED;
+
+			ua_auto_ack = 1;
 		}
 		else
 		if(dlg->state == B2B_CONFIRMED)
@@ -3435,12 +3507,28 @@ done1:
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}
 
-	b2b_cback(msg, b2b_key, B2B_REPLY, logic_key.s?&logic_key:0, b2b_param, b2b_cb_flags);
-	if(logic_key.s)
-	{
-		pkg_free(logic_key.s);
-		logic_key.s = NULL;
+	if (ua_flags&(UA_FL_IS_UA_ENTITY|UA_FL_REPORT_REPLIES)) {
+		if (statuscode < 200)
+			ua_ev_type = UA_SESS_EV_EARLY;
+		else if (statuscode >= 200 && statuscode < 300)
+			ua_ev_type = UA_SESS_EV_ANSWERED;
+		else
+			ua_ev_type = UA_SESS_EV_REJECTED;
+
+		if (raise_ua_sess_event(b2b_key, etype, ua_ev_type, ua_flags, msg) < 0) {
+			LM_ERR("Failed to raise E_UA_SESSION event\n");
+			goto error1;
+		}
+	} else {
+		b2b_cback(msg, b2b_key, B2B_REPLY, logic_key.s?&logic_key:0,
+			b2b_param, b2b_cb_flags);
+		if(logic_key.s)
+		{
+			pkg_free(logic_key.s);
+			logic_key.s = NULL;
+		}
 	}
+
 	if (msg == &dummy_msg) {
 		free_lump_list(msg->add_rm);
 		free_lump_list(msg->body_lumps);
@@ -3520,6 +3608,22 @@ b2b_route:
 
 	if (b2b_ev != -1 && storage.buffer.s)
 		bin_free_packet(&storage);
+
+	if (ua_flags&UA_FL_IS_UA_ENTITY) {
+		if (ua_auto_ack && !(ua_flags&UA_FL_DISABLE_AUTO_ACK)) {
+			if (ua_send_request(etype, b2b_key, &str_init("ACK"),
+				NULL, NULL, NULL, 0) < 0) {
+				LM_ERR("Failed to send ACK request\n");
+				return;
+			}
+		}
+
+		if (dlg_state == B2B_TERMINATED) {
+			if (ua_entity_delete(etype, b2b_key,
+				b2be_db_mode == WRITE_BACK, 1) < 0)
+				LM_ERR("Failed to delete UA session\n");
+		}
+	}
 
 	return;
 error:

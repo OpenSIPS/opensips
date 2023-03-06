@@ -30,7 +30,11 @@
 #include "../../parser/msg_parser.h"
 #include "dlg.h"
 #include "b2be_load.h"
+#include "ua_api.h"
 
+str* _server_new(struct sip_msg* msg, str* local_contact, b2b_notify_t b2b_cback,
+	str *mod_name, str* logic_key, struct ua_sess_init_params *ua_init_params,
+	struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param);
 str* server_new(struct sip_msg*, str* local_contact, b2b_notify_t, str *,
 		str*, struct b2b_tracer*, void *, b2b_param_free_cb);
 

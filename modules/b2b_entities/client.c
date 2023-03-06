@@ -77,24 +77,11 @@ static void generate_tag(str* tag, str* src, str* callid)
 	LM_DBG("from_tag = %.*s\n", tag->len, tag->s);
 }
 
-/**
- * Function to create a new client entity a send send an initial message
- *	method  : the method of the message
- *	to_uri  : the destination URI
- *	from_uri: the source URI
- *	extra_headers: the extra headers to be added in the request
- *	b2b_cback : callback function to notify the logic about a change in dialog
- *	logic_key : the logic identifier
- *	tracer    : structure used to instruct how the client should be traced
- *	param     : optional, the parameter that will be used when calling b2b_cback function
- *	free_param: an optional function to free the parameter
- *
- *	Return value: dialog key allocated in private memory
- *	*/
 #define HASH_SIZE 1<<23
-str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
+str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* logic_key,
-		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
+		struct ua_sess_init_params *init_params, struct b2b_tracer *tracer,
+		void *param, b2b_param_free_cb free_param)
 {
 	int result;
 	b2b_dlg_t* dlg;
@@ -107,7 +94,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	str from_tag;
 	str random_info = {0, 0};
 
-	if(ci == NULL || b2b_cback == NULL || logic_key == NULL)
+	if(ci == NULL || (!init_params && (b2b_cback == NULL || logic_key == NULL)))
 	{
 		LM_ERR("Wrong parameters.\n");
 		return NULL;
@@ -147,7 +134,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	CONT_COPY(dlg, dlg->tag[CALLER_LEG], from_tag);
 	CONT_COPY(dlg, dlg->contact[CALLER_LEG], ci->local_contact);
 
-	if(logic_key->s && shm_str_dup(&dlg->logic_key, logic_key) < 0) {
+	if(logic_key && logic_key->s && shm_str_dup(&dlg->logic_key, logic_key) < 0) {
 		LM_ERR("not enough shm memory\n");
 		goto error;
 	}
@@ -156,6 +143,7 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	dlg->free_param = free_param;
 	dlg->add_dlginfo = add_dlginfo;
 	dlg->tracer = tracer;
+	dlg->ua_flags = init_params?init_params->flags:0;
 
 	CONT_COPY(dlg, dlg->mod_name, (*mod_name));
 
@@ -175,7 +163,8 @@ str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	/* callid must have the special format */
 	dlg->db_flag = NO_UPDATEDB_FLAG;
-	callid = b2b_htable_insert(client_htable, dlg, hash_index, 0, B2B_CLIENT, 0, 0);
+	callid = b2b_htable_insert(client_htable, dlg, hash_index, 0, B2B_CLIENT, 0, 0,
+		init_params?init_params->timeout:0);
 	if(callid == NULL)
 	{
 		LM_ERR("Inserting new record in hash table failed\n");
@@ -281,6 +270,28 @@ error:
 	if(callid)
 		pkg_free(callid);
 	return NULL;
+}
+
+/**
+ * Function to create a new client entity a send send an initial message
+ *	method  : the method of the message
+ *	to_uri  : the destination URI
+ *	from_uri: the source URI
+ *	extra_headers: the extra headers to be added in the request
+ *	b2b_cback : callback function to notify the logic about a change in dialog
+ *	logic_key : the logic identifier
+ *	tracer    : structure used to instruct how the client should be traced
+ *	param     : optional, the parameter that will be used when calling b2b_cback function
+ *	free_param: an optional function to free the parameter
+ *
+ *	Return value: dialog key allocated in private memory
+ *	*/
+str* client_new(client_info_t* ci,b2b_notify_t b2b_cback,
+		b2b_add_dlginfo_t add_dlginfo, str *mod_name, str* logic_key,
+		struct b2b_tracer *tracer, void *param, b2b_param_free_cb free_param)
+{
+	return _client_new(ci, b2b_cback, add_dlginfo, mod_name, logic_key, 0,
+		tracer, param, free_param);
 }
 
 dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
