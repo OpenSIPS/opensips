@@ -775,7 +775,7 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->rcv.src_port=su_getport(su);
 	c->rcv.bind_address = si;
 	c->rcv.dst_ip = si->address;
-	su_size = sockaddru_len(local_su);
+	su_size = sockaddru_len(*su);
 	if (getsockname(sock, (struct sockaddr *)&local_su, &su_size)<0) {
 		LM_ERR("failed to get info on received interface/IP %d/%s\n",
 			errno, strerror(errno));
