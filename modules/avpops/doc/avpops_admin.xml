@@ -496,7 +496,9 @@ avp_db_delete("$ru", "$avp(1)", 3);
 				<quote>$avp(1);$avp(2);...</quote>. If the result consists of
 				multiple rows, then multiple AVPs with corresponding names will
 				be added. The value type of the AVP (string or integer) will
-				be derived from the type of the columns.
+				be derived from the type of the columns. If the value in the
+				database is <emphasis>NULL</emphasis>, the returned avp will
+				be a string with the <emphasis>&lt;null&gt;</emphasis> value.
 				</para>
 			</listitem>
 			<listitem>
