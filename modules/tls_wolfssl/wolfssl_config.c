@@ -435,7 +435,8 @@ static int load_ca_dir(WOLFSSL_CTX * ctx, char *directory)
 	int rc;
 
 	if ((rc = wolfSSL_CTX_load_verify_locations_ex(ctx, 0, directory,
-		WOLFSSL_LOAD_FLAG_IGNORE_ERR|WOLFSSL_LOAD_FLAG_IGNORE_BAD_PATH_ERR)) !=
+		WOLFSSL_LOAD_FLAG_IGNORE_ERR|WOLFSSL_LOAD_FLAG_IGNORE_BAD_PATH_ERR|
+		WOLFSSL_LOAD_FLAG_IGNORE_ZEROFILE)) !=
 		SSL_SUCCESS) {
 		LM_ERR("unable to load ca directory '%s' (ret=%d)\n", directory, rc);
 		return -1;
