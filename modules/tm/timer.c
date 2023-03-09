@@ -1086,7 +1086,10 @@ static void unlink_timers( struct cell *t )
 void timer_routine(unsigned int ticks , void *set)
 {
 	struct timer_link *tl, *tmp_tl;
+	struct timespec begin;
 	int                id;
+
+	clock_gettime(CLOCK_REALTIME, &begin);
 
 	lock_start_write( timertable[(long)set].ex_lock );
 
@@ -1111,6 +1114,10 @@ void timer_routine(unsigned int ticks , void *set)
 		}
 	}
 	lock_stop_write( timertable[(long)set].ex_lock );
+
+	clock_check_diff((double)TM_TIMER_ITV_S*1e9 * TM_TIMER_LOAD_WARN,
+	    "now at %d%%+ capacity, inuse_transactions: %lu", (int)(TM_TIMER_LOAD_WARN*100),
+	    (unsigned long)get_stat_val(tm_trans_inuse));
 }
 
 
@@ -1118,7 +1125,10 @@ void timer_routine(unsigned int ticks , void *set)
 void utimer_routine(utime_t uticks , void *set)
 {
 	struct timer_link *tl, *tmp_tl;
+	struct timespec begin;
 	int                id;
+
+	clock_gettime(CLOCK_REALTIME, &begin);
 
 	lock_start_write( timertable[(long)set].ex_lock );
 
@@ -1139,5 +1149,9 @@ void utimer_routine(utime_t uticks , void *set)
 		}
 	}
 	lock_stop_write( timertable[(long)set].ex_lock );
+
+	clock_check_diff((double)TM_UTIMER_ITV_US*1000 * TM_TIMER_LOAD_WARN,
+	    "now at %d%%+ capacity, inuse_transactions: %lu", (int)(TM_TIMER_LOAD_WARN*100),
+	    (unsigned long)get_stat_val(tm_trans_inuse));
 }
 

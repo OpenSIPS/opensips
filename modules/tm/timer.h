@@ -32,6 +32,10 @@
 #include "../../rw_locking.h"
 #include "lock.h"
 
+#define TM_TIMER_ITV_S   1U
+#define TM_UTIMER_ITV_US (100U*1000U)
+#define TM_TIMER_LOAD_WARN .75
+
 #define MIN_TIMER_VALUE  2
 
 /* identifiers of timer lists;*/

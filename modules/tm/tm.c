@@ -862,12 +862,12 @@ static int mod_init(void)
 	/* register the timer functions */
 	for ( set=0 ; set<timer_sets ; set++ ) {
 		if (register_timer( "tm-timer", timer_routine,
-		(void*)(long)set, 1, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
+		(void*)(long)set, TM_TIMER_ITV_S, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
 			LM_ERR("failed to register timer for set %d\n",set);
 			return -1;
 		}
 		if (register_utimer( "tm-utimer", utimer_routine,
-		(void*)(long)set, 100*1000, TIMER_FLAG_DELAY_ON_DELAY)<0) {
+		(void*)(long)set, TM_UTIMER_ITV_US, TIMER_FLAG_DELAY_ON_DELAY)<0) {
 			LM_ERR("failed to register utimer for set %d\n",set);
 			return -1;
 		}
