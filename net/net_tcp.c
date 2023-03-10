@@ -1218,10 +1218,8 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			sh_log(tcpconn->hist, TCP_UNREF, "tcpworker release write, (%d)", tcpconn->refcnt);
 			tcpconn_put(tcpconn);
 			break;
-		case ASYNC_WRITE:
+		case ASYNC_WRITE_TCPW:
 			tcp_c->busy--;
-			/* fall through*/
-		case ASYNC_WRITE2:
 			if (tcpconn->state==S_CONN_BAD){
 				sh_log(tcpconn->hist, TCP_UNREF, "tcpworker async write bad, (%d)", tcpconn->refcnt);
 				tcpconn_destroy(tcpconn);
@@ -1233,13 +1231,11 @@ inline static int handle_tcp_worker(struct tcp_worker* tcp_c, int fd_i)
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
-		case CONN_ERROR:
+		case CONN_ERROR_TCPW:
 		case CONN_DESTROY:
 		case CONN_EOF:
 			/* WARNING: this will auto-dec. refcnt! */
 			tcp_c->busy--;
-			/* fall through*/
-		case CONN_ERROR2:
 			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
 				(tcpconn->s!=-1)){
 				reactor_del_all( tcpconn->s, -1, IO_FD_CLOSING);
@@ -1335,8 +1331,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 		goto end;
 	}
 	switch(cmd){
-		case CONN_ERROR:
-		case CONN_ERROR2:
+		case CONN_ERROR_GENW:
 			/* remove from reactor only if the fd exists, and it wasn't
 			 * removed before */
 			if ((tcpconn->flags & F_CONN_REMOVED) != F_CONN_REMOVED &&
@@ -1388,8 +1383,7 @@ inline static int handle_worker(struct process_table* p, int fd_i)
 			reactor_add_writer( tcpconn->s, F_TCPCONN, RCT_PRIO_NET, tcpconn);
 			tcpconn->flags&=~F_CONN_REMOVED_WRITE;
 			break;
-		case ASYNC_WRITE:
-		case ASYNC_WRITE2:
+		case ASYNC_WRITE_GENW:
 			if (tcpconn->state==S_CONN_BAD){
 				tcpconn->lifetime=0;
 				break;
