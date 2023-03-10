@@ -273,6 +273,7 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 	int uac_flag, i, ret;
 	struct dlg_cell *dlg = NULL;
 	pv_value_t val;
+	int_str isval;
 
 	/* consistency check! in AUTO mode, do NOT allow URI changing
 	 * in sequential request */
@@ -392,7 +393,9 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 		if (ret < 0) {
 			if (ret == -2) {
 				/* the call wasn't in branch route - store in dlg */
-				if (dlg_api.store_dlg_value(dlg, rr_param, &body->uri) < 0) {
+				isval.s = body->uri;
+				if (dlg_api.store_dlg_value(dlg, rr_param, &isval,
+					DLG_VAL_TYPE_STR) < 0) {
 					LM_ERR("cannot store value\n");
 					goto error;
 				}
@@ -409,8 +412,10 @@ int replace_uri( struct sip_msg *msg, str *display, str *uri,
 				}
 			}
 		}
+		isval.s = *uri;
 		if (dlg_api.store_dlg_value(dlg,
-					to ? &rr_to_param_new : &rr_from_param_new, uri) < 0) {
+					to ? &rr_to_param_new : &rr_from_param_new, &isval,
+					DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("cannot store new uri value\n");
 			goto error;
 		}
@@ -641,11 +646,12 @@ failed:
 
 void dlg_restore_callback(struct dlg_cell* dlg, int type, struct dlg_cb_params * params)
 {
-	str val;
+	int_str val;
+	int val_type;
 
 	/* check if the UAC corresponding values are present */
 
-	if ( dlg_api.fetch_dlg_value( dlg, &rr_to_param_new, &val, 0)==0 ) {
+	if ( dlg_api.fetch_dlg_value( dlg, &rr_to_param_new, &val_type, &val, 0)==0 ) {
 		/* TO variable found -> TO URI changed */
 		LM_DBG("UAC TO related DLG vals found -> installing callback\n");
 		if ( dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
@@ -654,7 +660,7 @@ void dlg_restore_callback(struct dlg_cell* dlg, int type, struct dlg_cb_params *
 		}
 	}
 
-	if ( dlg_api.fetch_dlg_value( dlg, &rr_from_param_new, &val, 0)==0 ) {
+	if ( dlg_api.fetch_dlg_value( dlg, &rr_from_param_new, &val_type, &val, 0)==0 ) {
 		/* FROM variable found -> FROM URI changed */
 		LM_DBG("UAC FROM related DLG vals found -> installing callback\n");
 		if ( dlg_api.register_dlgcb(dlg, DLGCB_REQ_WITHIN|DLGCB_TERMINATED,
@@ -676,9 +682,10 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 	struct hdr_field *old_hdr;
 	str *rr_param;
 	str old_uri;
-	str new_uri;
+	int_str new_uri;
 	int to, flag;
 	char *p;
+	int val_type;
 
 	if (!dlg || !_params || _params->direction == DLG_DIR_NONE || !_params->msg)
 		return;
@@ -724,22 +731,22 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 				" with the original headers\n", to ? "TO" : "FROM");
 	}
 
-	if (dlg_api.fetch_dlg_value(dlg, rr_param, &new_uri, 0) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, rr_param, &val_type, &new_uri, 0) < 0) {
 		LM_DBG("<%.*s> param not found\n", rr_param->len, rr_param->s);
 		return;
 	}
 
 	LM_DBG("decoded uris are: new=[%.*s] old=[%.*s]\n",
-		new_uri.len, new_uri.s, old_uri.len, old_uri.s);
+		new_uri.s.len, new_uri.s.s, old_uri.len, old_uri.s);
 
 	/* duplicate the decoded value */
-	p = pkg_malloc( new_uri.len);
+	p = pkg_malloc( new_uri.s.len);
 	if (!p) {
 		LM_ERR("no more pkg mem\n");
 		return;
 	}
-	memcpy( p, new_uri.s, new_uri.len);
-	new_uri.s = p;
+	memcpy( p, new_uri.s.s, new_uri.s.len);
+	new_uri.s.s = p;
 
 	/* trim away any <, > (the replacement URI always includes them) */
 	if (_params->direction == DLG_DIR_DOWNSTREAM)
@@ -754,7 +761,7 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 		goto free;
 	}
 
-	if (insert_new_lump_after( l, new_uri.s, new_uri.len, 0)==0) {
+	if (insert_new_lump_after( l, new_uri.s.s, new_uri.s.len, 0)==0) {
 		LM_ERR("insert new lump failed\n");
 		goto free;
 	}
@@ -771,7 +778,7 @@ static void replace_callback(struct dlg_cell *dlg, int type,
 	return;
 
 free:
-	pkg_free(new_uri.s);
+	pkg_free(new_uri.s.s);
 }
 
 
@@ -847,6 +854,7 @@ int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
 	struct dlg_cell *dlg = NULL;
 	unsigned int code = 0;
 	pv_value_t value;
+	int_str isval;
 
 	if (!dlg_api.get_dlg)
 		goto not_moved;
@@ -868,7 +876,8 @@ int move_bavp_dlg( struct sip_msg *msg, str* rr_param, pv_spec_t *store_spec)
 			LM_DBG("bug - invalid bavp type\n");
 			goto not_moved;
 		}
-		if (dlg_api.store_dlg_value(dlg, rr_param, &value.rs) < 0) {
+		isval.s = value.rs;
+		if (dlg_api.store_dlg_value(dlg, rr_param, &isval, DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("cannot store value\n");
 			return -1;
 		}

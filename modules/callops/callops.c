@@ -350,12 +350,16 @@ static inline void call_transfer_raise(struct dlg_cell *dlg, str *callid, str *r
 	/* XXX: old leg is caller or callee, so it should be safe to use a buffer
 	 * of 6 bytes */
 	char buf[sizeof("caller")];
-	str old_leg = str_init(buf);
+	int_str old_leg;
+	int val_type;
 
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &old_leg, 1) < 0)
-		init_str(&old_leg, "unknown");
+	old_leg.s = str_init(buf);
 
-	RAISE_CALL_EVENT(TRANSFER, &dlg->callid, &old_leg,
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &val_type,
+		&old_leg, 1) < 0)
+		init_str(&old_leg.s, "unknown");
+
+	RAISE_CALL_EVENT(TRANSFER, &dlg->callid, &old_leg.s,
 			callid, ruri, state, status, NULL);
 }
 
@@ -363,6 +367,7 @@ static void call_transfer_reply(struct cell *t, int type, struct tmcb_params *ps
 {
 	str status, new_callid, state;
 	struct dlg_cell *dlg = *ps->param;
+	int_str isval;
 
 	/* not interested in provisional replies, are we? */
 	if (ps->code < 200)
@@ -389,7 +394,9 @@ static void call_transfer_reply(struct cell *t, int type, struct tmcb_params *ps
 		init_str(&new_callid, "unknown");
 
 	call_transfer_raise(dlg, &new_callid, call_get_ruri(ps->req), &state, &status);
-	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
+	isval.s = empty_str;
+	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
+		DLG_VAL_TYPE_STR);
 }
 
 /* expects the old_dlg to be reffed by the get_dlg* function
@@ -400,21 +407,27 @@ static int call_blind_transfer(struct sip_msg *msg, struct dlg_cell *old_dlg,
 	static str state = str_init("start");
 	static str failure = str_init("fail");
 	str *dst = call_get_ruri(msg);
-	str tmp;
+	int_str tmp;
+	int val_type;
 
 	/* we have the previous callid - check to see if we have a leg */
 	if (old_leg) {
 		/* replacing the current old leg */
-		call_dlg_api.store_dlg_value(old_dlg, &call_transfer_param, old_leg);
-	} else if (call_dlg_api.fetch_dlg_value(old_dlg, &call_transfer_param, &tmp, 0) < 0) {
+		tmp.s = *old_leg;
+		call_dlg_api.store_dlg_value(old_dlg, &call_transfer_param, &tmp,
+			DLG_VAL_TYPE_STR);
+	} else if (call_dlg_api.fetch_dlg_value(old_dlg, &call_transfer_param, &val_type,
+		&tmp, 0) < 0) {
 		LM_DBG("call %.*s is not being transfered\n", old_dlg->callid.len, old_dlg->callid.s);
-		init_str(&tmp, "unknown");
-		old_leg = &tmp;
+		init_str(&tmp.s, "unknown");
+		old_leg = &tmp.s;
 	} else {
-		old_leg = &tmp;
+		old_leg = &tmp.s;
 	}
 	/* we also need to "notice" him the callid that is replacing it */
-	call_dlg_api.store_dlg_value(old_dlg, &call_transfer_callid_param, new_callid);
+	tmp.s = *new_callid;
+	call_dlg_api.store_dlg_value(old_dlg, &call_transfer_callid_param, &tmp,
+		DLG_VAL_TYPE_STR);
 
 	RAISE_CALL_EVENT(TRANSFER, &old_dlg->callid, old_leg, new_callid,
 			dst, &state, &empty_str, NULL);
@@ -435,9 +448,11 @@ static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
 	struct replaces_body rpl;
 	struct dlg_cell *init_dlg;
 	struct dlg_cell *rpl_dlg;
-	str rpl_leg, init_callid;
+	str rpl_leg;
 	str *ruri;
 	int ret;
+	int val_type;
+	int_str init_callid, isval;
 
 	/* if we have a Replaces header, this means that we have an attended transfer */
 	if (parse_headers(msg, HDR_REPLACES_F, 0) < 0 || !msg->replaces)
@@ -479,14 +494,15 @@ static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
 
 	/* check if we are aware of the other leg being transfered */
 	if (call_dlg_api.fetch_dlg_value(rpl_dlg, &call_transfer_callid_param,
-			&init_callid, 0) >= 0) {
+			&val_type, &init_callid, 0) >= 0) {
 		/* search the initial dialog */
-		init_dlg = call_dlg_api.get_dlg_by_callid(&init_callid, 1);
+		init_dlg = call_dlg_api.get_dlg_by_callid(&init_callid.s, 1);
 		if (init_dlg) {
 			/* indicate that the current dialog is being replaced */
 			call_transfer_raise(init_dlg, &dlg->callid, ruri, &state, &empty_str);
+			isval.s = dlg->callid;
 			call_dlg_api.store_dlg_value(init_dlg,
-					&call_transfer_callid_param, &dlg->callid);
+					&call_transfer_callid_param, &isval, DLG_VAL_TYPE_STR);
 			if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT,
 					call_transfer_reply,
 					init_dlg, call_transfer_dlg_unref) <= 0) {
@@ -495,14 +511,18 @@ static int call_attended_transfer(struct dlg_cell *dlg, struct sip_msg *msg)
 			}
 		} else {
 			LM_WARN("previous dialog %.*s was not found\n",
-					init_callid.len, init_callid.s);
+					init_callid.s.len, init_callid.s.s);
 		}
 	} else {
 		LM_ERR("could not find the transfered callid\n");
 	}
 
-	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_param, &rpl_leg);
-	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_callid_param, &dlg->callid);
+	isval.s = rpl_leg;
+	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_param, &isval,
+		DLG_VAL_TYPE_STR);
+	isval.s = dlg->callid;
+	call_dlg_api.store_dlg_value(rpl_dlg, &call_transfer_callid_param, &isval,
+		DLG_VAL_TYPE_STR);
 	RAISE_CALL_EVENT(TRANSFER, &rpl.callid_val, &rpl_leg, &dlg->callid, ruri,
 			&state, &empty_str, NULL);
 	if (call_tm_api.register_tmcb(msg, 0, TMCB_RESPONSE_OUT, call_transfer_reply,
@@ -685,13 +705,17 @@ static int mi_call_async_reply(struct sip_msg *msg, int status, void *param)
 static int mi_call_transfer_reply(struct sip_msg *msg, int status, void *param)
 {
 	struct dlg_cell *dlg = call_dlg_api.get_dlg();
+	int_str isval;
 
 	if (dlg) {
 		if (status < 200)
 			return 0;
-		if (status >= 300)
+		if (status >= 300) {
 			/* transfer failed - we need to cleanup our transfer status */
-			call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
+			isval.s = empty_str;
+			call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
+				DLG_VAL_TYPE_STR);
+		}
 	} else {
 		LM_WARN("could not get current dialog!\n");
 	}
@@ -730,8 +754,9 @@ static int call_handle_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 	str retry = str_init("Retry-After: 1 (not found)\n");
 	str state = str_init("notify");
 	int status_code;
-	str new_callid;
+	int_str new_callid;
 	str status;
+	int val_type;
 
 	if (msg->REQ_METHOD != METHOD_NOTIFY)
 		return -2;
@@ -754,14 +779,15 @@ static int call_handle_notify(struct dlg_cell *dlg, struct sip_msg *msg)
 		goto reply;
 
 	status_code = 480;
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_callid_param, &new_callid, 0) < 0) {
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_callid_param, &val_type,
+		&new_callid, 0) < 0) {
 		add_lump_rpl(msg, retry.s, retry.len, LUMP_RPL_HDR);
 		goto reply;
 	}
 	status.len -= SIP_VERSION_LEN;
 	status.s += SIP_VERSION_LEN;
 	trim(&status);
-	call_transfer_raise(dlg, &new_callid, &empty_str, &state, &status);
+	call_transfer_raise(dlg, &new_callid.s, &empty_str, &state, &status);
 
 	status_code = 200;
 
@@ -812,10 +838,12 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 {
 	static str refer = str_init("REFER");
 	mi_response_t *ret = NULL;
-	str callid, leg, dst, tleg;
+	str callid, leg, dst;
 	struct dlg_cell *dlg;
 	str *refer_hdr = NULL;
 	int caller = 0;
+	int val_type;
+	int_str tleg, isval;
 
 	if (get_mi_string_param(params, "callid", &callid.s, &callid.len) < 0)
 		return init_mi_param_error();
@@ -837,14 +865,17 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 		return init_mi_error(404, MI_SSTR("Dialog not found"));
 
 	/* check to see if the call is already in a transfer process */
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
-			tleg.len >= 0) {
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &val_type, &tleg,
+		0) >= 0 &&
+			tleg.s.len >= 0) {
 		LM_INFO("%.*s is already transfering %.*s\n",
-				callid.len, callid.s, tleg.len, tleg.s);
+				callid.len, callid.s, tleg.s.len, tleg.s.s);
 		ret = init_mi_error(491, MI_SSTR("Request Pending"));
 		goto unref;
 	}
-	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &leg);
+	isval.s = leg;
+	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
+		DLG_VAL_TYPE_STR);
 
 	refer_hdr = call_dlg_get_blind_refer_to(dlg, &dst);
 	if (!refer_hdr)
@@ -862,7 +893,9 @@ static mi_response_t *mi_call_blind_transfer(const mi_params_t *params,
 			(caller?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL, refer_hdr,
 			mi_call_transfer_reply, async_hdl) < 0) {
 		LM_ERR("could not send the transfer message!\n");
-		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
+		isval.s = empty_str;
+		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
+			DLG_VAL_TYPE_STR);
 		goto end;
 	}
 
@@ -882,11 +915,13 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 {
 	static str refer = str_init("REFER");
 	mi_response_t *ret = NULL;
-	str callidA, legA, callidB, legB, tleg;
+	str callidA, legA, callidB, legB;
 	struct dlg_cell *dlgA, *dlgB = NULL;
 	str *refer_hdr, *dst;
 	int callerA = 0, callerB = 0;
 	str fromtag, totag, sdst;
+	int_str tleg, isval;
+	int val_type;
 
 
 	if (get_mi_string_param(params, "callid",
@@ -963,10 +998,11 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 	}
 
 	/* check to see if the call is already in a transfer process */
-	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &tleg, 0) >= 0 &&
-			tleg.len >= 0) {
+	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &val_type,
+		&tleg, 0) >= 0 &&
+			tleg.s.len >= 0) {
 		LM_INFO("%.*s is already transfering %.*s\n",
-				callidA.len, callidA.s, tleg.len, tleg.s);
+				callidA.len, callidA.s, tleg.s.len, tleg.s.s);
 		ret = init_mi_error(491, MI_SSTR("Request Pending"));
 		goto unrefA;
 	}
@@ -979,14 +1015,18 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 
 	if (dlgB) {
 		/* we also need to store in B the fact that is being replaced by A */
-		if (call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &callidA) < 0) {
+		isval.s = callidA;
+		if (call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param,
+			&isval, DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("can not store that A(%.*s) is replacing B(%.*s)\n",
 					callidA.len, callidA.s, callidB.len, callidB.s);
 			goto unrefA;
 		}
 	}
 
-	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &legA);
+	isval.s = legA;
+	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &isval, 
+		DLG_VAL_TYPE_STR);
 	/* register callbacks for handling notifies - does not matter if this
 	 * fails, its not like we won't transfer if we don't get the notifications
 	 * - some devices don't even send the :) */
@@ -998,9 +1038,11 @@ static mi_response_t *mi_call_attended_transfer(const mi_params_t *params,
 			(callerA?DLG_CALLER_LEG:callee_idx(dlgA)), NULL, NULL, refer_hdr,
 			mi_call_transfer_reply, async_hdl) < 0) {
 		LM_ERR("could not send the transfer message!\n");
+		isval.s = empty_str;
 		call_dlg_api.store_dlg_value((dlgB?dlgB:dlgA),
-				&call_transfer_callid_param, &empty_str);
-		call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &empty_str);
+				&call_transfer_callid_param, &isval, DLG_VAL_TYPE_STR);
+		call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &isval,
+			DLG_VAL_TYPE_STR);
 		goto end;
 	}
 
@@ -1104,15 +1146,17 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
 {
 	int ret;
 	unsigned int param;
-	str body, tmp;
+	str body;
 	str invite = str_init("INVITE");
 	str ct = str_init("application/sdp");
 	str action = str_init("hold");
 	str state = str_init("start");
 	str *legstr = call_hold_leg_str(leg);
+	int_str tmp;
+	int val_type;
 
-	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &tmp, 0) >= 0 &&
-			tmp.len != 0) {
+	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &val_type, &tmp, 0) >= 0 &&
+			tmp.s.len != 0) {
 		LM_DBG("call leg %d already on hold\n", leg);
 		return 0;
 	}
@@ -1123,14 +1167,14 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
 		return 1; /* nothing to do */
 
 	if (leg == DLG_CALLER_LEG) {
-		init_str(&tmp, "caller");
+		init_str(&tmp.s, "caller");
 		param = 0x0;
 	} else {
-		init_str(&tmp, "callee");
+		init_str(&tmp.s, "callee");
 		param = 0x1;
 	}
 
-	RAISE_CALL_EVENT(HOLD, &dlg->callid, &tmp, &action, &state, NULL);
+	RAISE_CALL_EVENT(HOLD, &dlg->callid, &tmp.s, &action, &state, NULL);
 
 	/* send it out */
 	ret = call_dlg_api.send_indialog_request(dlg, &invite, leg, &body, &ct,
@@ -1138,18 +1182,19 @@ static int call_put_leg_onhold(struct dlg_cell *dlg, int leg)
 	pkg_free(body.s);
 	if (ret < 0) {
 		init_str(&state, "fail");
-		RAISE_CALL_EVENT(HOLD, &dlg->callid, &tmp, &action, &state, NULL);
+		RAISE_CALL_EVENT(HOLD, &dlg->callid, &tmp.s, &action, &state, NULL);
 		LM_ERR("could not send re-INVITE for leg %d\n", leg);
 		return -1;
 	}
-	if (call_dlg_api.store_dlg_value(dlg, legstr, &action) < 0)
+	tmp.s = action;
+	if (call_dlg_api.store_dlg_value(dlg, legstr, &tmp, DLG_VAL_TYPE_STR) < 0)
 		LM_WARN("cannot store streams for leg %d - cannot unhold properly!\n", leg);
 	return 1;
 }
 
 static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
 {
-	str marker, body;
+	str body;
 	str invite = str_init("INVITE");
 	str ct = str_init("application/sdp");
 	str *legstr;
@@ -1157,12 +1202,14 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
 	unsigned int param;
 	str action = str_init("unhold");
 	str state = str_init("start");
+	int_str marker, isval;
+	int val_type;
 
 	legstr = call_hold_leg_str(leg);
 
 	/* frist, check to see if the call was on hold */
-	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &marker, 0) < 0
-			|| marker.len == 0) {
+	if (call_dlg_api.fetch_dlg_value(dlg, legstr, &val_type, &marker, 0) < 0
+			|| marker.s.len == 0) {
 		LM_DBG("leg %d is not on hold!\n", leg);
 		return 0;
 	}
@@ -1186,7 +1233,8 @@ static int call_resume_leg_onhold(struct dlg_cell *dlg, int leg)
 		return -1;
 	}
 	/* mark the dialog that it is not on hold */
-	call_dlg_api.store_dlg_value(dlg, legstr, &empty_str);
+	isval.s = empty_str;
+	call_dlg_api.store_dlg_value(dlg, legstr, &isval, DLG_VAL_TYPE_STR);
 	return 1;
 }
 
@@ -1321,9 +1369,10 @@ static int fixup_leg(void **param)
 static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 {
 	int ret = -1;
-	str tleg;
 	str *refer_hdr;
 	static str refer = str_init("REFER");
+	int_str tleg, isval;
+	int val_type;
 
 	struct dlg_cell *dlg = call_dlg_api.get_dlg();
 	if (!dlg) {
@@ -1337,17 +1386,18 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 	}
 
 	/* check to see if the call is already in a transfer process */
-	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &tleg, 0) >= 0 &&
-			tleg.len >= 0) {
+	if (call_dlg_api.fetch_dlg_value(dlg, &call_transfer_param, &val_type,
+		&tleg, 0) >= 0 &&
+			tleg.s.len >= 0) {
 		LM_INFO("%.*s is already transfering %.*s\n",
-				dlg->callid.len, dlg->callid.s, tleg.len, tleg.s);
+				dlg->callid.len, dlg->callid.s, tleg.s.len, tleg.s.s);
 		return -1;
 	}
 	if (leg == DLG_CALLER_LEG)
-		init_str(&tleg, "caller");
+		init_str(&tleg.s, "caller");
 	else
-		init_str(&tleg, "callee");
-	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &tleg);
+		init_str(&tleg.s, "callee");
+	call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &tleg, DLG_VAL_TYPE_STR);
 
 	refer_hdr = call_dlg_get_blind_refer_to(dlg, dst);
 	if  (call_match_mode != CALL_MATCH_MANUAL) {
@@ -1362,7 +1412,9 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 			(leg == DLG_CALLER_LEG?DLG_CALLER_LEG:callee_idx(dlg)), NULL, NULL,
 			refer_hdr, mi_call_transfer_reply, NULL) < 0) {
 		LM_ERR("could not send the transfer message!\n");
-		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &empty_str);
+		isval.s = empty_str;
+		call_dlg_api.store_dlg_value(dlg, &call_transfer_param, &isval,
+			DLG_VAL_TYPE_STR);
 	} else {
 		ret = 1; /* success */
 	}
@@ -1373,12 +1425,13 @@ static int w_call_blind_transfer(struct sip_msg *req, int leg, str *dst)
 static int w_call_attended_transfer(struct sip_msg *req, int leg,
 		str *callidB, int legB, str *dst)
 {
-	str tleg;
 	str fromtag, totag, legA;
 	str *refer_hdr;
 	static str refer = str_init("REFER");
 	struct dlg_cell *dlgB;
 	int ret = -1;
+	int val_type;
+	int_str tleg, isval;
 
 	struct dlg_cell *dlgA = call_dlg_api.get_dlg();
 	if (!dlgA) {
@@ -1398,10 +1451,10 @@ static int w_call_attended_transfer(struct sip_msg *req, int leg,
 	}
 
 	/* check to see if the call is already in a transfer process */
-	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &tleg, 0) >= 0 &&
-			tleg.len >= 0) {
+	if (call_dlg_api.fetch_dlg_value(dlgA, &call_transfer_param, &val_type,
+		&tleg, 0) >= 0 && tleg.s.len >= 0) {
 		LM_INFO("%.*s is already transferring %.*s\n",
-				dlgA->callid.len, dlgA->callid.s, tleg.len, tleg.s);
+				dlgA->callid.len, dlgA->callid.s, tleg.s.len, tleg.s.s);
 		goto unref;
 	}
 
@@ -1421,7 +1474,9 @@ static int w_call_attended_transfer(struct sip_msg *req, int leg,
 	if (!refer_hdr)
 		goto unref;
 
-	if (call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &dlgA->callid) < 0) {
+	isval.s = dlgA->callid;
+	if (call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &isval,
+		DLG_VAL_TYPE_STR) < 0) {
 		LM_ERR("can not store that A(%.*s) is replacing B(%.*s)\n",
 				dlgA->callid.len, dlgA->callid.s, callidB->len, callidB->s);
 		goto end;
@@ -1431,7 +1486,8 @@ static int w_call_attended_transfer(struct sip_msg *req, int leg,
 	else
 		init_str(&legA, "callee");
 
-	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &legA);
+	isval.s = legA;
+	call_dlg_api.store_dlg_value(dlgA, &call_transfer_param, &isval, DLG_VAL_TYPE_STR);
 	/* register callbacks for handling notifies - does not matter if this
 	 * fails, its not like we won't transfer if we don't get the notifications
 	 * - some devices don't even send the :) */
@@ -1443,8 +1499,9 @@ static int w_call_attended_transfer(struct sip_msg *req, int leg,
 			(leg == DLG_CALLER_LEG?DLG_CALLER_LEG:callee_idx(dlgA)), NULL, NULL,
 			refer_hdr, mi_call_transfer_reply, NULL) < 0) {
 		LM_ERR("could not send the transfer message!\n");
-		call_dlg_api.store_dlg_value(dlgB,
-				&call_transfer_callid_param, &empty_str);
+		isval.s = empty_str;
+		call_dlg_api.store_dlg_value(dlgB, &call_transfer_callid_param, &isval,
+			DLG_VAL_TYPE_STR);
 		goto end;
 	}
 	ret = 1;

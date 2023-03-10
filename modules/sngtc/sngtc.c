@@ -262,11 +262,13 @@ free_mem:
 void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
                           struct dlg_cb_params *params)
 {
-	str info_ptr;
+	int_str info_ptr;
+	int val_type;
 	struct sngtc_info *info;
 	int rc;
 
-	rc = dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &info_ptr, 0);
+	rc = dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &val_type,
+		&info_ptr, 0);
 
 	if (rc == -1) {
 		LM_ERR("failed to fetch caller sdp\n");
@@ -276,7 +278,7 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 
 	LM_DBG("freeing the sdp buffer\n");
 
-	info = *(struct sngtc_info **)info_ptr.s;
+	info = *(struct sngtc_info **)info_ptr.s.s;
 	LM_DBG("Info ptr: %p\n", info);
 
 	free_transcoding_sessions(info->sessions);
@@ -288,7 +290,8 @@ void sngtc_dlg_terminated(struct dlg_cell *dlg, int type,
 
 	shm_free(info);
 
-	if (dlg_binds.store_dlg_value(dlg, &dlg_key_sngtc_info, NULL) < 0)
+	if (dlg_binds.store_dlg_value(dlg, &dlg_key_sngtc_info, NULL,
+		DLG_VAL_TYPE_NONE) < 0)
 		LM_ERR("failed to clear dlg val with caller sdp\n");
 }
 
@@ -425,7 +428,7 @@ static int sng_logger(int level, char *fmt, ...)
 int store_sngtc_info(struct dlg_cell *dlg, str *body)
 {
 	struct sngtc_info *info;
-	str st;
+	int_str st;
 
 	/* duplicate the body in shm and store the pointer in the dialog */
 	info = shm_malloc(sizeof(*info));
@@ -446,10 +449,11 @@ int store_sngtc_info(struct dlg_cell *dlg, str *body)
 	info->caller_sdp.len = body->len; /* SDP parser needs starting CRLF */
 	memcpy(info->caller_sdp.s, body->s, info->caller_sdp.len);
 
-	st.s   = (void *)&info;
-	st.len = sizeof(void *);
-	LM_DBG("storing info ptr: %p\n", (void *) st.s);
-	if (dlg_binds.store_dlg_value(dlg, &dlg_key_sngtc_info, &st) != 0) {
+	st.s.s   = (void *)&info;
+	st.s.len = sizeof(void *);
+	LM_DBG("storing info ptr: %p\n", (void *) st.s.s);
+	if (dlg_binds.store_dlg_value(dlg, &dlg_key_sngtc_info, &st,
+		DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to store msg body in dialog\n");
 		goto exit;
 	}
@@ -481,7 +485,9 @@ static int sngtc_offer(struct sip_msg *msg)
 	struct lump *lump;
 	struct dlg_cell *dlg;
 	struct sngtc_info *info = NULL;
-	str body, totag, st;
+	str body, totag;
+	int_str st;
+	int val_type;
 
 	if (dlg_binds.create_dlg(msg, 0) < 0) {
 		LM_ERR("failed to create dialog\n");
@@ -502,7 +508,8 @@ static int sngtc_offer(struct sip_msg *msg)
 	totag = get_to(msg)->tag_value;
 
 	/* INVITE retransmissions will skip this part */
-	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &st, 0) != 0) {
+	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &val_type,
+		&st, 0) != 0) {
 
 		if (store_sngtc_info(dlg, &body) != 0) {
 			LM_ERR("failed to create sngtc info struct\n");
@@ -520,7 +527,7 @@ static int sngtc_offer(struct sip_msg *msg)
 
 	/* for re-INVITES, just recreate the struct sngtc_info */
 	} else if (totag.s && totag.len != 0) {
-		info = *(struct sngtc_info **)(st.s);
+		info = *(struct sngtc_info **)(st.s.s);
 
 		free_transcoding_sessions(info->sessions);
 		if (info->caller_sdp.s)
@@ -1238,6 +1245,8 @@ static int sngtc_callee_answer(struct sip_msg *msg)
 	sdp_info_t sdp;
 	str *sdp_ptr;
 	int rc;
+	int_str isval;
+	int val_type;
 
 	LM_DBG("sngtc_callee_answer\n");
 
@@ -1248,12 +1257,13 @@ static int sngtc_callee_answer(struct sip_msg *msg)
 	}
 
 	/* get the pointer to the SDP body of the caller */
-	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &dst, 0) != 0) {
+	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &val_type,
+		&isval, 0) != 0) {
 		LM_ERR("failed to fetch caller sdp\n");
 		return SNGTC_ERR;
 	}
 
-	info = *(struct sngtc_info **)(dst.s);
+	info = *(struct sngtc_info **)(isval.s);
 	sdp_ptr = &info->caller_sdp;
 
 	LM_DBG("ptrs: %p %p\n", sdp_ptr, info->caller_sdp.s);
@@ -1334,6 +1344,8 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 	struct lump *lump;
 	struct sngtc_info *info;
 	int len;
+	int_str isval;
+	int val_type;
 
 	LM_DBG("processing ACK\n");
 
@@ -1349,12 +1361,13 @@ static int sngtc_caller_answer(struct sip_msg *msg)
 	}
 
 	/* get the SDP body from the INVITE which was mangled at 200 OK */
-	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &body, 0) != 0) {
+	if (dlg_binds.fetch_dlg_value(dlg, &dlg_key_sngtc_info, &val_type,
+		&isval, 0) != 0) {
 		LM_ERR("failed to fetch caller sdp\n");
 		return SNGTC_ERR;
 	}
 
-	info = *(struct sngtc_info **)(body.s);
+	info = *(struct sngtc_info **)(isval.s.s);
 
 	/* duplicate the SDP in pkg mem for the lumps mechanism */
 	if (pkg_str_dup(&body, &info->modified_caller_sdp) != 0) {

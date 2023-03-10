@@ -596,9 +596,10 @@ static void acc_merge_contexts(struct dlg_cell *dlg, int type,
 void acc_update_ctx_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params)
 {
-	str flags_s;
+	int_str flags_s;
 	acc_ctx_t* ctx = (acc_ctx_t *)(*_params->param);
 	unsigned long long flags;
+	int val_type;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch message flags\n");
@@ -611,9 +612,9 @@ void acc_update_ctx_callback(struct dlg_cell *dlg, int type,
 		return;
 	}
 
-	flags_s.s = (char *)&flags;
-	flags_s.len = sizeof(flags);
-	if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 1) < 0) {
+	flags_s.s.s = (char *)&flags;
+	flags_s.s.len = sizeof(flags);
+	if (dlg_api.fetch_dlg_value(dlg, &flags_str, &val_type, &flags_s, 1) < 0) {
 		LM_DBG("flags were not saved in dialog\n");
 		return;
 	}
@@ -627,26 +628,27 @@ void acc_update_ctx_callback(struct dlg_cell *dlg, int type,
 
 void acc_loaded_callback(struct dlg_cell *dlg, int type,
 			struct dlg_cb_params *_params) {
-		str flags_s, table_s, created_s;
+		int_str flags_s, table_s, created_s;
 		acc_ctx_t* ctx;
 		time_t created;
 		unsigned long long flags;
+		int val_type;
 
 		if (!dlg) {
 			LM_ERR("null dialog - cannot fetch message flags\n");
 			return;
 		}
 
-		flags_s.s = (char *)&flags;
-		flags_s.len = sizeof(flags);
-		if (dlg_api.fetch_dlg_value(dlg, &flags_str, &flags_s, 1) < 0) {
+		flags_s.s.s = (char *)&flags;
+		flags_s.s.len = sizeof(flags);
+		if (dlg_api.fetch_dlg_value(dlg, &flags_str, &val_type, &flags_s, 1) < 0) {
 			LM_DBG("flags were not saved in dialog\n");
 			return;
 		}
 
-		created_s.s = (char *)&created;
-		created_s.len = sizeof(created);
-		if (dlg_api.fetch_dlg_value(dlg, &created_str, &created_s, 1) < 0) {
+		created_s.s.s = (char *)&created;
+		created_s.s.len = sizeof(created);
+		if (dlg_api.fetch_dlg_value(dlg, &created_str, &val_type, &created_s, 1) < 0) {
 			LM_DBG("created time was not saved in dialog\n");
 			return;
 		}
@@ -667,18 +669,18 @@ void acc_loaded_callback(struct dlg_cell *dlg, int type,
 
 		/* restore accounting table if db accounting is used */
 		if (is_db_acc_on(ctx->flags)) {
-			if (dlg_api.fetch_dlg_value(dlg, &table_str, &table_s, 0) < 0) {
+			if (dlg_api.fetch_dlg_value(dlg, &table_str, &val_type, &table_s, 0) < 0) {
 				LM_DBG("table was not saved in dialog\n");
 				return;
 			}
 
-			if ((ctx->acc_table.s=shm_malloc(table_s.len)) == NULL) {
+			if ((ctx->acc_table.s=shm_malloc(table_s.s.len)) == NULL) {
 				LM_ERR("no more shm!\n");
 				return;
 			}
 
-			memcpy(ctx->acc_table.s, table_s.s, table_s.len);
-			ctx->acc_table.len = table_s.len;
+			memcpy(ctx->acc_table.s, table_s.s.s, table_s.s.len);
+			ctx->acc_table.len = table_s.s.len;
 		}
 
 
@@ -903,10 +905,10 @@ static void acc_dlg_ended(struct dlg_cell *dlg, int type,
 static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
-	str flags_s;
+	int_str flags_s;
 	acc_ctx_t* ctx;
-
-	str created_s;
+	int_str isval;
+	int_str created_s;
 
 	if (!_params) {
 		LM_ERR("not enough info!\n");
@@ -927,25 +929,26 @@ static void acc_dlg_onwrite(struct dlg_cell *dlg, int type,
 		return;
 	}
 
-	flags_s.s = (char*)(&ctx->flags);
-	flags_s.len = sizeof(unsigned long long);
+	flags_s.s.s = (char*)(&ctx->flags);
+	flags_s.s.len = sizeof(unsigned long long);
 
 	/* store flags into dlg */
-	if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s) < 0) {
+	if ( dlg_api.store_dlg_value(dlg, &flags_str, &flags_s, DLG_VAL_TYPE_STR) < 0) {
 		LM_ERR("cannot store flag value into dialog\n");
 		return;
 	}
 
-	created_s.s = (char*)(&ctx->created);
-	created_s.len = sizeof(time_t);
+	created_s.s.s = (char*)(&ctx->created);
+	created_s.s.len = sizeof(time_t);
 
-	if ( dlg_api.store_dlg_value(dlg,&created_str,&created_s) < 0) {
+	if ( dlg_api.store_dlg_value(dlg,&created_str,&created_s,DLG_VAL_TYPE_STR) < 0) {
 		LM_ERR("cannot store created value!\n");
 		return;
 	}
 
 	if (is_db_acc_on(ctx->flags) && ctx->acc_table.s && ctx->acc_table.len) {
-		if ( dlg_api.store_dlg_value(dlg, &table_str, &ctx->acc_table) < 0) {
+		isval.s = ctx->acc_table;
+		if ( dlg_api.store_dlg_value(dlg, &table_str, &isval, DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("cannot store table name into dialog\n");
 			return;
 		}

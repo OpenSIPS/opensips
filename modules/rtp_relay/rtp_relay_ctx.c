@@ -779,7 +779,7 @@ rtp_copy_ctx *rtp_copy_ctx_new(struct rtp_relay_ctx *ctx, str *id)
 static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params)
 {
-	str buffer;
+	int_str buffer;
 	str str_empty = str_init("");
 	bin_packet_t packet;
 	struct list_head *it;
@@ -841,10 +841,11 @@ static void rtp_relay_store_callback(struct dlg_cell *dlg, int type,
 	RTP_RELAY_BIN_PUSH(str, &ctx->to_tag);
 	RTP_RELAY_BIN_PUSH(str, &ctx->flags);
 	RTP_RELAY_BIN_PUSH(str, &ctx->delete);
-	bin_get_buffer(&packet, &buffer);
+	bin_get_buffer(&packet, &buffer.s);
 	bin_free_packet(&packet);
 
-	if (rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, &buffer) < 0)
+	if (rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, &buffer,
+		DLG_VAL_TYPE_STR) < 0)
 		LM_WARN("rtp relay ctx was not saved in dialog\n");
 }
 #undef RTP_RELAY_BIN_PUSH
@@ -862,7 +863,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 {
 	str tag;
 	str tmp;
-	str buffer;
+	int_str buffer;
 	unsigned int state;
 	int index, set, ltype;
 	bin_packet_t packet;
@@ -872,17 +873,19 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	struct rtp_relay_ctx *ctx = NULL;
 	struct rtp_relay_leg *leg = NULL;
 	rtp_copy_ctx *copy_ctx;
+	int val_type;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch rtp relay info!\n");
 		return;
 	}
 
-	if (rtp_relay_dlg.fetch_dlg_value(dlg, &rtp_relay_dlg_name, &buffer, 0) < 0) {
+	if (rtp_relay_dlg.fetch_dlg_value(dlg, &rtp_relay_dlg_name, &val_type,
+		&buffer, 0) < 0) {
 		LM_DBG("no rtp relay context in dialog\n");
 		return;
 	}
-	bin_init_buffer(&packet, buffer.s, buffer.len);
+	bin_init_buffer(&packet, buffer.s.s, buffer.s.len);
 
 	if (get_bin_pkg_version(&packet) != RTP_RELAY_CTX_VERSION) {
 		LM_ERR("invalid serialization version (%d != %d)\n",
@@ -955,7 +958,8 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 		shm_str_dup(&ctx->delete, &tmp);
 
 	/* all good now - delete the dialog variable as it is useless */
-	rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, NULL);
+	rtp_relay_dlg.store_dlg_value(dlg, &rtp_relay_dlg_name, NULL,
+		DLG_VAL_TYPE_NONE);
 
 	ctx->established = sess;
 	if (rtp_relay_dlg_callbacks(dlg, ctx, NULL) < 0)

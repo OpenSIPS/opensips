@@ -248,7 +248,8 @@ int src_add_participant(struct src_sess *sess, str *aor, str *name,
 void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params)
 {
-	str buf;
+	int_str buf;
+	int val_type;
 	struct src_sess *sess = NULL;
 	struct srs_node *node = NULL;
 	bin_packet_t packet;
@@ -276,12 +277,12 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		return;
 	}
 
-	if (srec_dlg.fetch_dlg_value(dlg, &srec_dlg_name, &buf, 0) < 0) {
+	if (srec_dlg.fetch_dlg_value(dlg, &srec_dlg_name, &val_type, &buf, 0) < 0) {
 		LM_DBG("cannot fetch siprec info from the dialog\n");
 		return;
 	}
 
-	bin_init_buffer(&packet, buf.s, buf.len);
+	bin_init_buffer(&packet, buf.s.s, buf.s.len);
 
 	if (get_bin_pkg_version(&packet) != SIPREC_SESSION_VERSION) {
 		LM_ERR("invalid serialization version (%d != %d)\n",
@@ -459,7 +460,7 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	bin_packet_t packet;
 	struct src_sess *ss;
 	int p, c;
-	str buffer;
+	int_str buffer;
 	struct list_head *l;
 	struct srs_sdp_stream *s;
 
@@ -523,10 +524,10 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 			SIPREC_BIN_PUSH(str, SIPREC_SERIALIZE(s->uuid));
 		}
 	}
-	bin_get_buffer(&packet, &buffer);
+	bin_get_buffer(&packet, &buffer.s);
 	bin_free_packet(&packet);
 
-	if (srec_dlg.store_dlg_value(dlg, &srec_dlg_name, &buffer) < 0) {
+	if (srec_dlg.store_dlg_value(dlg, &srec_dlg_name, &buffer, DLG_VAL_TYPE_STR) < 0) {
 		LM_DBG("ctx was not saved in dialog\n");
 		return;
 	}

@@ -850,7 +850,7 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 }
 
 
-struct dlg_cell* get_dlg_by_val(str *attr, str *val)
+struct dlg_cell* get_dlg_by_val(struct sip_msg *msg, str *attr, pv_spec_t *val)
 {
 	struct dlg_entry *d_entry;
 	struct dlg_cell  *dlg;
@@ -867,7 +867,7 @@ struct dlg_cell* get_dlg_by_val(str *attr, str *val)
 			LM_DBG("dlg in state %d to check\n",dlg->state);
 			if ( dlg->state>DLG_STATE_CONFIRMED )
 				continue;
-			if (check_dlg_value_unsafe( dlg, attr, val)==0) {
+			if (check_dlg_value_unsafe(msg, dlg, attr, val)==0) {
 				ref_dlg_unsafe( dlg, 1);
 				dlg_unlock( d_table, d_entry);
 				return dlg;
@@ -1477,30 +1477,39 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 
 			/* print dlg values -> iterate the list */
 			for( dv=dlg->vals ; dv ; dv=dv->next) {
-				/* escape non-printable chars */
-				p = pkg_realloc(dlg_val_buf, 4 * dv->val.len + 1);
-				if (!p) {
-					LM_ERR("not enough mem to allocate: %d\n", dv->val.len);
-					continue;
-				}
-				for (i = 0, j = 0; i < dv->val.len; i++) {
-					if (dv->val.s[i] < 0x20 || dv->val.s[i] >= 0x7F) {
-						p[j++] = '\\';
-						switch ((unsigned char)dv->val.s[i]) {
-						case 0x8: p[j++] = 'b'; break;
-						case 0x9: p[j++] = 't'; break;
-						case 0xA: p[j++] = 'n'; break;
-						case 0xC: p[j++] = 'f'; break;
-						case 0xD: p[j++] = 'r'; break;
-						default:
-							p[j++] = 'x';
-							j += snprintf(&p[j], 3, "%02x",
-									(unsigned char)dv->val.s[i]);
-							break;
-						}
-					} else {
-						p[j++] = dv->val.s[i];
+				if (dv->type == DLG_VAL_TYPE_STR) {
+					/* escape non-printable chars */
+					p = pkg_realloc(dlg_val_buf, 4 * dv->val.s.len + 1);
+					if (!p) {
+						LM_ERR("not enough mem to allocate: %d\n", dv->val.s.len);
+						continue;
 					}
+					for (i = 0, j = 0; i < dv->val.s.len; i++) {
+						if (dv->val.s.s[i] < 0x20 || dv->val.s.s[i] >= 0x7F) {
+							p[j++] = '\\';
+							switch ((unsigned char)dv->val.s.s[i]) {
+							case 0x8: p[j++] = 'b'; break;
+							case 0x9: p[j++] = 't'; break;
+							case 0xA: p[j++] = 'n'; break;
+							case 0xC: p[j++] = 'f'; break;
+							case 0xD: p[j++] = 'r'; break;
+							default:
+								p[j++] = 'x';
+								j += snprintf(&p[j], 3, "%02x",
+										(unsigned char)dv->val.s.s[i]);
+								break;
+							}
+						} else {
+							p[j++] = dv->val.s.s[i];
+						}
+					}
+				} else {
+					values_item = add_mi_object(values_arr, NULL, 0);
+					if (!values_item)
+						goto error;
+					if (add_mi_number(values_item,dv->name.s,dv->name.len,
+						dv->val.n) < 0)
+						goto error;
 				}
 
 				values_item = add_mi_object(values_arr, NULL, 0);
@@ -1508,8 +1517,6 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 					goto error;
 				if (add_mi_string(values_item,dv->name.s,dv->name.len,p,j) < 0)
 					goto error;
-
-				dlg_val_buf = p;
 			}
 		}
 
@@ -1757,6 +1764,7 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 	int shtag_state = 1, db_update = 0;
 	mi_item_t *did_param_arr;
 	int i, no_dids;
+	int_str isval;
 
 	if ( d_table == NULL)
 		goto not_found;
@@ -1799,7 +1807,8 @@ mi_response_t *mi_push_dlg_var(const mi_params_t *params,
 			}
 		}
 
-		if (store_dlg_value( dlg, &dlg_var_name, &dlg_var_value)!=0) {
+		isval.s = dlg_var_value;
+		if (store_dlg_value( dlg, &dlg_var_name, &isval, DLG_VAL_TYPE_STR)!=0) {
 			LM_ERR("failed to store dialog values <%.*s>:<%.*s>\n",
 			dlg_var_name.len,dlg_var_name.s,
 			dlg_var_value.len,dlg_var_value.s);

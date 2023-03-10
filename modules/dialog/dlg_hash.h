@@ -416,7 +416,7 @@ struct dlg_cell* lookup_dlg( unsigned int h_entry, unsigned int h_id,
 struct dlg_cell* get_dlg(str *callid, str *ftag, str *ttag,
 		unsigned int *dir, unsigned int *dst_leg);
 
-struct dlg_cell* get_dlg_by_val(str *attr, str *val);
+struct dlg_cell* get_dlg_by_val(struct sip_msg *msg, str *attr, pv_spec_t *val);
 
 struct dlg_cell* get_dlg_by_callid(const str *callid, int active_only);
 

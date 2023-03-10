@@ -62,7 +62,7 @@ int cgr_acc_init(void)
 
 static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 {
-	str ctxstr;
+	int_str ctxstr;
 	struct cgr_acc_ctx *ctx = shm_malloc(sizeof(*ctx));
 	if (!ctx) {
 		LM_ERR("cannot create acc context\n");
@@ -70,8 +70,8 @@ static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 	}
 	memset(ctx, 0, sizeof(*ctx));
 	LM_DBG("new acc ctx=%p\n", ctx);
-	ctxstr.len = sizeof(ctx);
-	ctxstr.s = (char *)&ctx;
+	ctxstr.s.len = sizeof(ctx);
+	ctxstr.s.s = (char *)&ctx;
 
 	lock_get(cgrates_contexts_lock);
 	list_add(&ctx->link, cgrates_contexts);
@@ -80,7 +80,7 @@ static inline struct cgr_acc_ctx *cgr_new_acc_ctx(struct dlg_cell *dlg)
 	ctx->ref_no = 1;
 	CGR_REF_DBG(ctx, "init");
 	lock_init(&ctx->ref_lock);
-	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr))
+	if (cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr, DLG_VAL_TYPE_STR))
 		LM_ERR("cannot store context in dialog!\n");
 	return ctx;
 }
@@ -114,7 +114,8 @@ static inline struct cgr_acc_ctx *cgr_get_acc_ctx(void)
 struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 {
 	struct cgr_acc_ctx *acc_ctx;
-	str ctxstr;
+	int_str ctxstr;
+	int val_type;
 	struct cgr_kv *kv;
 	struct list_head *l, *sl;
 	struct list_head *t, *st;
@@ -132,13 +133,13 @@ struct cgr_acc_ctx *cgr_tryget_acc_ctx(void)
 	if (!dlg) /* dialog not found yet, moving later */
 		return NULL;
 	/* search for the accounting ctx */
-	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &ctxstr, 0) < 0)
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_ctx_str, &val_type, &ctxstr, 0) < 0)
 		return NULL;
-	if (ctxstr.len != sizeof(struct cgr_acc_ctx *)) {
-		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.len);
+	if (ctxstr.s.len != sizeof(struct cgr_acc_ctx *)) {
+		LM_BUG("Invalid ctx pointer size %d\n", ctxstr.s.len);
 		return NULL;
 	}
-	acc_ctx = *(struct cgr_acc_ctx **)ctxstr.s;
+	acc_ctx = *(struct cgr_acc_ctx **)ctxstr.s.s;
 	if (!acc_ctx) /* nothing to do now */
 		return NULL;
 
@@ -185,7 +186,7 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 	struct list_head *l;
 	struct list_head *t;
 	struct dlg_cell *dlg;
-	str ctxstr;
+	int_str ctxstr;
 
 	LM_DBG("release acc ctx=%p\n", ctx);
 	/* remove all elements */
@@ -201,10 +202,11 @@ static inline void cgr_free_acc_ctx(struct cgr_acc_ctx *ctx)
 
 	shm_free(ctx);
 	ctx = 0;
-	ctxstr.len = sizeof(ctx);
-	ctxstr.s = (char *)&ctx;
+	ctxstr.s.len = sizeof(ctx);
+	ctxstr.s.s = (char *)&ctx;
 	dlg = cgr_dlgb.get_dlg();
-	if (dlg && cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr) < 0)
+	if (dlg && cgr_dlgb.store_dlg_value(dlg, &cgr_ctx_str, &ctxstr,
+		DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("cannot reset context in dialog %p!\n", dlg);
 }
 
@@ -667,6 +669,7 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 	int sessions_no = 0, i;
 	str buf;
 	char *p;
+	int_str isval;
 
 	/* no need to dump variables for deleted, since these have already been processed */
 	if (dlg->state == DLG_STATE_DELETED)
@@ -857,7 +860,8 @@ static void cgr_dlg_onwrite(struct dlg_cell *dlg, int type,
 		LM_BUG("length mismatch between computed and result: %d != %d\n",
 				buf.len, (int)(p - buf.s));
 
-	if (cgr_dlgb.store_dlg_value(dlg, &cgr_serial_str, &buf) < 0)
+	isval.s = buf;
+	if (cgr_dlgb.store_dlg_value(dlg, &cgr_serial_str, &isval, DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("cannot store the serialized context value!\n");
 
 	pkg_free(buf.s);
@@ -1114,14 +1118,15 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 	char *p, *end;
 	int sessions_no, kvs_no;
 	time_t start_time;
-	str buf;
+	int_str buf;
+	int val_type;
 
 	if (!dlg) {
 		LM_ERR("null dialog - cannot fetch message flags\n");
 		return;
 	}
 
-	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_serial_str, &buf, 0) < 0) {
+	if (cgr_dlgb.fetch_dlg_value(dlg, &cgr_serial_str, &val_type, &buf, 0) < 0) {
 		LM_DBG("ctx was not saved in dialog\n");
 		return;
 	}
@@ -1137,8 +1142,8 @@ void cgr_loaded_callback(struct dlg_cell *dlg, int type,
 	INIT_LIST_HEAD(ctx->sessions);
 	LM_DBG("loading from dialog acc ctx=%p\n", ctx);
 
-	p = buf.s;
-	end = buf.s + buf.len;
+	p = buf.s.s;
+	end = buf.s.s + buf.s.len;
 	CGR_CTX_COPY(&ctx->start_time, sizeof(ctx->start_time), "start_time");
 	CGR_CTX_COPY(&ctx->answer_time, sizeof(ctx->answer_time), "answer_time");
 	CGR_CTX_COPY(&sessions_no, sizeof(sessions_no), "sessions_no");

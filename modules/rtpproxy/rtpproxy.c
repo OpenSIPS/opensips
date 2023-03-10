@@ -2711,19 +2711,20 @@ static void engage_callback(struct dlg_cell *dlg, int type,
 static void engage_close_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *_params)
 {
-	str value;
+	int_str value;
 	struct rtpp_args args;
 	static nh_set_param_t param;
+	int val_type;
 
 	if (!dlg || !_params)
 		return;
 	LM_DBG("engage close called\n");
 
-	if (dlg_api.fetch_dlg_value(dlg, &param3_name, &value, 0) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, &param3_name, &val_type, &value, 0) < 0) {
 		LM_DBG("third param not found\n");
 		param.v.int_set = default_rtpp_set_no;
 	} else {
-		param.v.int_set = *(int *)(value.s);
+		param.v.int_set = *(int *)(value.s.s);
 	}
 	param.t = NH_VAL_SET_UNDEF;
 	args.callid = dlg->callid;
@@ -2766,6 +2767,7 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 	unsigned int set_found = 0;
 	pv_value_t val1, val2, val3;
 	str param3_val;
+	int_str isval;
 
 	if (!msg || !dlg || msg->first_line.type != SIP_REPLY)
 		goto not_moved;
@@ -2796,7 +2798,9 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 	/* only move branch avps if a final response has come */
 	if (code >= 200 && code < 300) {
 		if (flags_found) {
-			if (dlg_api.store_dlg_value(dlg, &param1_name, &val1.rs) < 0) {
+			isval.s = val1.rs;
+			if (dlg_api.store_dlg_value(dlg, &param1_name, &isval,
+				DLG_VAL_TYPE_STR) < 0) {
 				LM_ERR("cannot store value\n");
 				goto error;
 			}
@@ -2809,7 +2813,9 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 			rval1->s = val1.rs.s;
 		}
 		if (ip_found) {
-			if (dlg_api.store_dlg_value(dlg, &param2_name, &val2.rs) < 0) {
+			isval.s = val2.rs;
+			if (dlg_api.store_dlg_value(dlg, &param2_name, &isval,
+				DLG_VAL_TYPE_STR) < 0) {
 				LM_ERR("cannot store value\n");
 				goto error;
 			}
@@ -2826,7 +2832,9 @@ static int move_bavp2dlg(struct sip_msg *msg, struct dlg_cell *dlg, str *rval1, 
 			/* Store Set ID INT value correcty in dlg */
 			param3_val.s = (char*)&val3.ri;
 			param3_val.len = sizeof(unsigned int);
-			if (dlg_api.store_dlg_value(dlg, &param3_name, &param3_val) < 0) {
+			isval.s = param3_val;
+			if (dlg_api.store_dlg_value(dlg, &param3_name, &isval,
+				DLG_VAL_TYPE_STR) < 0) {
 				LM_ERR("cannot store setid value\n");
 				goto error;
 			}
@@ -2880,10 +2888,13 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 {
 	int offer = 1;
 	int setid;
-	str param1_val,param2_val,value;
+	str param1_val,param2_val;
 	int method_id, has_sdp, alloc = 0;
 	int moved;
 	static nh_set_param_t param = { .t = NH_VAL_SET_UNDEF };
+	int_str value;
+	int val_type;
+
 	LM_DBG("engage callback called\n");
 
 	if (!msg)
@@ -2914,7 +2925,7 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	}
 
 	/* check to see if this is a late negotiation */
-	if (dlg_api.fetch_dlg_value(dlg, &late_name, &value, 0) < 0)
+	if (dlg_api.fetch_dlg_value(dlg, &late_name, &val_type, &value, 0) < 0)
 		offer = 0;
 	has_sdp = has_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 
@@ -2936,14 +2947,16 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 			goto done;
 		/* late negotiation */
 		/* delete the value, to make sure we don't re-engage late again */
-		dlg_api.store_dlg_value(dlg, &late_name, NULL);
+		dlg_api.store_dlg_value(dlg, &late_name, NULL, DLG_VAL_TYPE_NONE);
 	} else {
 		/* sequential request without SDP */
 		if (!has_sdp) {
 			if (msg->first_line.type == SIP_REQUEST &&
 					(method_id == METHOD_INVITE ||  method_id == METHOD_UPDATE)) {
 				/* indicate there's an ongoing late negociation happening */
-				if (dlg_api.store_dlg_value(dlg, &late_name, &late_name) < 0) {
+				value.s = late_name;
+				if (dlg_api.store_dlg_value(dlg, &late_name, &value,
+					DLG_VAL_TYPE_NONE) < 0) {
 					LM_ERR("cannot store late_negotiation param into dialog\n");
 					goto error;
 				}
@@ -2964,40 +2977,40 @@ static int engage_force_rtpproxy(struct dlg_cell *dlg, struct sip_msg *msg)
 	/* don't have them, try to get them from the dialog */
 	if (moved == 0) {
 		/* nothing moved - the values should be in dialog already */
-		if (dlg_api.fetch_dlg_value(dlg, &param1_name, &value, 0) >= 0) {
-			param1_val.s = pkg_malloc(value.len + 1);
+		if (dlg_api.fetch_dlg_value(dlg, &param1_name, &val_type, &value, 0) >= 0) {
+			param1_val.s = pkg_malloc(value.s.len + 1);
 			if (!param1_val.s) {
 				LM_ERR("no more pkg mem\n");
 				goto error;
 			}
 			alloc = 1;
-			memcpy(param1_val.s, value.s, value.len);
-			param1_val.s[value.len] = '\0';
-			param1_val.len = value.len;
+			memcpy(param1_val.s, value.s.s, value.s.len);
+			param1_val.s[value.s.len] = '\0';
+			param1_val.len = value.s.len;
 		} else {
 			LM_DBG("flags param not found\n");
 			param1_val.s = NULL;
 		}
-		if (dlg_api.fetch_dlg_value(dlg, &param2_name, &value, 0) >= 0) {
-			param2_val.s = pkg_malloc(value.len + 1);
+		if (dlg_api.fetch_dlg_value(dlg, &param2_name, &val_type, &value, 0) >= 0) {
+			param2_val.s = pkg_malloc(value.s.len + 1);
 			if (!param2_val.s) {
 				LM_ERR("no more pkg mem\n");
 				goto error;
 			}
 			alloc = 1;
-			memcpy(param2_val.s, value.s, value.len);
-			param2_val.s[value.len] = '\0';
-			param2_val.len = value.len;
+			memcpy(param2_val.s, value.s.s, value.s.len);
+			param2_val.s[value.s.len] = '\0';
+			param2_val.len = value.s.len;
 		} else {
 			LM_DBG("ip param not found\n");
 			param2_val.s = NULL;
 		}
 
-		if (dlg_api.fetch_dlg_value(dlg, &param3_name, &value, 0) < 0) {
+		if (dlg_api.fetch_dlg_value(dlg, &param3_name, &val_type, &value, 0) < 0) {
 			LM_DBG("third param not found\n");
 			setid = default_rtpp_set_no;
 		} else {
-			setid = *(int *)(value.s);
+			setid = *(int *)(value.s.s);
 		}
 
 		LM_DBG("fetched: param1 <%s> param2 <%s> set <%d> - offer? %s\n",
@@ -3041,6 +3054,7 @@ engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 	struct dlg_cell *dlg;
 	struct rtpp_set *set = NULL;
 	pv_value_t val1, val2;
+	int_str isval;
 
 	LM_DBG("engage called from script 1:%p 2:%p 3:%p 4:%p\n",
 			param1, param2, param3, param4);
@@ -3093,7 +3107,8 @@ engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 			return -1;
 		}
 	} else {
-		if (dlg_api.store_dlg_value(dlg, &late_name, &late_name) < 0) {
+		isval.s = late_name;
+		if (dlg_api.store_dlg_value(dlg, &late_name, &isval, DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("cannot store late_negotiation param into dialog\n");
 			return -1;
 		}
@@ -3149,18 +3164,24 @@ engage_rtp_proxy5_f(struct sip_msg *msg, str *param1, str *param2,
 
 		LM_DBG("stored values in bavp\n");
 	} else {
-		if ( param1 && dlg_api.store_dlg_value(dlg, &param1_name, &param1_val) < 0) {
+		isval.s = param1_val;
+		if ( param1 && dlg_api.store_dlg_value(dlg, &param1_name, &isval,
+			DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("cannot store flags param into dialog\n");
 			return -1;
 		}
-		if ( param2 && dlg_api.store_dlg_value(dlg, &param2_name, &param2_val) < 0) {
+		isval.s = param2_val;
+		if ( param2 && dlg_api.store_dlg_value(dlg, &param2_name, &isval,
+			DLG_VAL_TYPE_STR) < 0) {
 			LM_ERR("cannot store ip param into dialog\n");
 			return -1;
 		}
 		if (param3) {
 			param2_val.s = (char*)&set->id_set;
 			param2_val.len = sizeof(unsigned int);
-			if (dlg_api.store_dlg_value(dlg, &param3_name, &param2_val) < 0) {
+			isval.s = param2_val;
+			if (dlg_api.store_dlg_value(dlg, &param3_name, &isval,
+				DLG_VAL_TYPE_STR) < 0) {
 				LM_ERR("cannot store set param into dialog\n");
 				return -1;
 			}

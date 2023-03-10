@@ -137,12 +137,12 @@ static int fixup_leg(void **param);
 static int w_set_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_reset_dlg_flag(struct sip_msg *msg, void *mask);
 static int w_is_dlg_flag_set(struct sip_msg *msg, void *mask);
-static int w_store_dlg_value(struct sip_msg *msg, str *name, str *val);
+static int w_store_dlg_value(struct sip_msg *msg, str *name, pv_spec_t *val);
 int w_fetch_dlg_value(struct sip_msg *msg, str *name, pv_spec_t *result);
 static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
-		str *key, str *key_val, pv_spec_t *number_val);
+		str *key, pv_spec_t *key_val, pv_spec_t *number_val);
 static int w_get_dlg_jsons_by_val(struct sip_msg *msg,
-		str *attr, str *attr_val, pv_spec_t *out, pv_spec_t *number_val);
+		str *attr, pv_spec_t *attr_val, pv_spec_t *out, pv_spec_t *number_val);
 static int w_get_dlg_jsons_by_profile(struct sip_msg *msg,
 		str *attr, str *attr_val, pv_spec_t *out, pv_spec_t *number_val);
 static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
@@ -213,7 +213,7 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"store_dlg_value",(cmd_function)w_store_dlg_value, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_VAR,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fetch_dlg_value",(cmd_function)w_fetch_dlg_value, {
 		{CMD_PARAM_STR,0,0},
@@ -227,7 +227,7 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_VAR,fixup_check_avp,0},
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
 		ALL_ROUTES},
 	{"get_dialog_vals",(cmd_function)w_get_dlg_vals, {
@@ -237,7 +237,7 @@ static const cmd_export_t cmds[]={
 		ALL_ROUTES},
 	{"get_dialogs_by_val",(cmd_function)w_get_dlg_jsons_by_val, {
 		{CMD_PARAM_STR,0,0},
-		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR,0,0},
 		{CMD_PARAM_VAR,fixup_check_avp,0},
 		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
 		ALL_ROUTES},
@@ -1296,14 +1296,33 @@ static int w_tsl_dlg_flag(struct sip_msg *msg, int *_idx, int *_val)
 }
 
 
-static int w_store_dlg_value(struct sip_msg *msg, str *name, str *val)
+static int w_store_dlg_value(struct sip_msg *msg, str *name, pv_spec_t *val)
 {
 	struct dlg_cell *dlg;
+	int_str isval;
+	pv_value_t pval;
+	int type;
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
 
-	return (store_dlg_value( dlg, name, val)==0)?1:-1;
+	if (pv_get_spec_value(msg, val, &pval) < 0) {
+		LM_ERR("Failed to get value from variable\n");
+		return -1;
+	}
+
+	if (pvv_is_int(&pval)) {
+		isval.n = pval.ri;
+		type = DLG_VAL_TYPE_INT;
+	} else if (pvv_is_str(&pval)) {
+		isval.s = pval.rs;
+		type = DLG_VAL_TYPE_STR;
+	} else {
+		LM_ERR("Bad variable type\n");
+		return -1;
+	}
+
+	return (store_dlg_value( dlg, name, &isval, type)==0)?1:-1;
 }
 
 
@@ -1311,17 +1330,26 @@ int w_fetch_dlg_value(struct sip_msg *msg, str *name, pv_spec_t *result)
 {
 	struct dlg_cell *dlg;
 	pv_value_t value;
+	int type;
+	int_str isval;
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
 
-	if (fetch_dlg_value( dlg, name, &value.rs, 0) ) {
+	if (fetch_dlg_value(dlg, name, &type, &isval, 0) ) {
 		LM_DBG("failed to fetch dialog value <%.*s>\n",
 			((str*)name)->len, ((str*)name)->s);
 		return -1;
 	}
 
-	value.flags = PV_VAL_STR;
+	if (type == DLG_VAL_TYPE_STR) {
+		value.rs = isval.s;
+		value.flags = PV_VAL_STR;
+	} else {
+		value.ri = isval.n;
+		value.flags = PV_VAL_INT|PV_TYPE_INT;
+	}
+
 	if (pv_set_value(msg, result, 0, &value) != 0) {
 		LM_ERR("failed to set the fetched dlg value!\n");
 		return -1;
@@ -1332,7 +1360,7 @@ int w_fetch_dlg_value(struct sip_msg *msg, str *name, pv_spec_t *result)
 
 
 static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
-			str *key, str *key_val, pv_spec_t *number_val)
+			str *key, pv_spec_t *key_val, pv_spec_t *number_val)
 {
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
@@ -1340,6 +1368,8 @@ static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
 	int n;
 	unsigned int h;
 	unsigned short aux;
+	int type;
+	int_str isval;
 
 	/* go through all hash entries (entire table) */
 
@@ -1356,21 +1386,28 @@ static int w_get_dlg_info(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
 			if ( dlg->state>DLG_STATE_CONFIRMED )
 				continue;
 
-			if (check_dlg_value_unsafe( dlg, key, key_val)==0) {
+			if (check_dlg_value_unsafe(msg, dlg, key, key_val)==0) {
 				LM_DBG("dialog found, fetching variable\n");
 
 				/* XXX - in lack of an unsafe version of fetch_dlg_value */ 
 				aux = dlg->locked_by;
 				dlg->locked_by = process_no;
-				
-				if (fetch_dlg_value( dlg, attr, &val.rs, 0) ) {
+
+				if (fetch_dlg_value( dlg, attr, &type, &isval, 0) ) {
 					dlg->locked_by = aux;
 					dlg_unlock( d_table, d_entry);
 					LM_ERR("failed to fetch dialog value <%.*s>\n",
 						(attr)->len, (attr)->s);
 					return -1;
 				} else {
-					val.flags = PV_VAL_STR;
+					if (type == DLG_VAL_TYPE_STR) {
+						val.rs = isval.s;
+						val.flags = PV_VAL_STR;
+					} else {
+						val.ri = isval.n;
+						val.flags = PV_VAL_INT|PV_TYPE_INT;
+					}
+
 					if (attr_val->setf( msg, &attr_val->pvp, 0, &val )!=0) {
 						LM_ERR("Failed to set out pvar \n");
 						dlg->locked_by = aux;
@@ -1434,9 +1471,14 @@ static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 		if ( pv_set_value( msg, v_name, 0, &val)<0 ) {
 			LM_ERR("failed to add new name in dlg val list, ignoring\n");
 		} else {
-			/* add value to AVP */
-			val.flags = PV_VAL_STR;
-			val.rs = dv->val;
+			if (dv->type == DLG_VAL_TYPE_STR) {
+				/* add value to AVP */
+				val.flags = PV_VAL_STR;
+				val.rs = dv->val.s;
+			} else {
+				val.flags = PV_VAL_INT|PV_TYPE_INT;
+				val.ri = dv->val.n;
+			}
 			if ( pv_set_value( msg, v_val, 0, &val)<0 ) {
 				LM_ERR("failed to add new value in dlg val list, ignoring\n");
 				/* better exit here, as we will desync the lists */
@@ -1778,6 +1820,8 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 	struct dlg_val* dv;
 	char *p;
 	int i,j,k,len;
+	int intlen;
+	char *intbuf;
 
 	/* I know, this sucks.
 
@@ -1864,44 +1908,67 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 
 		k=0;
 		for( dv=dlg->vals ; dv ; dv=dv->next) {
-			for (i = 0, j = 0; i < dv->val.len; i++) {
-				if (dv->val.s[i] < 0x20 || dv->val.s[i] >= 0x7F) {
-					goto next_val;
+			if (dv->type == DLG_VAL_TYPE_STR)
+				for (i = 0, j = 0; i < dv->val.s.len; i++) {
+					if (dv->val.s.s[i] < 0x20 || dv->val.s.s[i] >= 0x7F) {
+						goto next_val;
+					}
 				}
-			}
-			
+
 			if (k!=0) {
 				*p++ = ','; 
 				DEC_AND_CHECK_LEN(len,1);
 			}
 			k++;
 
-			DEC_AND_CHECK_LEN(len, 1 + dv->name.len + 3 + dv->val.len + 1);
-			*p++='"';
+			if (dv->type == DLG_VAL_TYPE_STR) {
+				DEC_AND_CHECK_LEN(len, 1 + dv->name.len + 3 + dv->val.s.len + 1);
+				*p++='"';
 
-			for (it = dv->name.s, end = it + dv->name.len; it < end; it++)
-				if (*it == '"') {
-					DEC_AND_CHECK_LEN(len, 1);
-					*p++='\\';
-					*p++='"';
-				} else {
-					*p++=*it;
-				}
+				for (it = dv->name.s, end = it + dv->name.len; it < end; it++)
+					if (*it == '"') {
+						DEC_AND_CHECK_LEN(len, 1);
+						*p++='\\';
+						*p++='"';
+					} else {
+						*p++=*it;
+					}
 
-			*p++='"';
-			*p++=':';
-			*p++='"';
+				*p++='"';
+				*p++=':';
+				*p++='"';
 
-			for (it = dv->val.s, end = it + dv->val.len; it < end; it++)
-				if (*it == '"') {
-					DEC_AND_CHECK_LEN(len, 1);
-					*p++='\\';
-					*p++='"';
-				} else {
-					*p++=*it;
-				}
+				for (it = dv->val.s.s, end = it + dv->val.s.len; it < end; it++)
+					if (*it == '"') {
+						DEC_AND_CHECK_LEN(len, 1);
+						*p++='\\';
+						*p++='"';
+					} else {
+						*p++=*it;
+					}
 
-			*p++='"';
+				*p++='"';
+			} else {
+				intbuf = sint2str(dv->val.n, &intlen);
+
+				DEC_AND_CHECK_LEN(len, 1 + dv->name.len + 2 + intlen);
+				*p++='"';
+
+				for (it = dv->name.s, end = it + dv->name.len; it < end; it++)
+					if (*it == '"') {
+						DEC_AND_CHECK_LEN(len, 1);
+						*p++='\\';
+						*p++='"';
+					} else {
+						*p++=*it;
+					}
+
+				*p++='"';
+				*p++=':';
+
+				memcpy(p,intbuf,intlen);
+				p += intlen;
+			}
 next_val:;
 		}
 
@@ -2036,7 +2103,7 @@ int pv_get_dlg_ctx_json(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
-static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, str *attr_val,
+static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, pv_spec_t *attr_val,
 			pv_spec_t *out, pv_spec_t *number_val)
 {
 	struct dlg_cell *dlg;
@@ -2062,7 +2129,7 @@ static int w_get_dlg_jsons_by_val(struct sip_msg *msg, str *attr, str *attr_val,
 			if ( dlg->state>DLG_STATE_CONFIRMED )
 				continue;
 
-			if (check_dlg_value_unsafe( dlg, attr, attr_val)==0) {
+			if (check_dlg_value_unsafe(msg, dlg, attr, attr_val)==0) {
 				LM_DBG("dialog found, fetching variable\n");
 
 				if ((out_json = dlg_get_json_out(dlg,1,&out_len)) == NULL) {

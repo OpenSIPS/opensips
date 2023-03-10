@@ -178,11 +178,12 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	struct dlg_cell *dlg = NULL;
 	struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
-	str tag_name;
+	int_str tag_name;
 	unsigned int h_id;
 	unsigned int state;
 	unsigned int start_ts;
 	short pkg_ver = get_bin_pkg_version(packet);
+	int dlg_val_type;
 
 	LM_DBG("Received replicated dialog!\n");
 
@@ -350,12 +351,15 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 
 	dlg->locked_by = process_no;
 
-	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &tag_name, 0)) == 0) {
-		if (shm_str_dup(&dlg->shtag, &tag_name) < 0)
+	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &dlg_val_type, &tag_name, 0)) == 0) {
+		if (dlg_val_type != DLG_VAL_TYPE_STR) {
+			LM_ERR("Bad dialog value type\n");
+		} else if (shm_str_dup(&dlg->shtag, &tag_name.s) < 0) {
 			LM_ERR("No more shm memory\n");
+		}
 	} else if (rc == -1)
-		LM_ERR("Failed to get dlg value for sharing tag %.*s(%p)\n",
-		       tag_name.len, tag_name.s, tag_name.s);
+		LM_ERR("Failed to get dlg value for sharing tag %.*s\n",
+		       tag_name.s.len, tag_name.s.s);
 
 	dlg->locked_by = 0;
 
@@ -749,6 +753,7 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 {
 	int callee_leg;
 	str *vars, *profiles;
+	int_str isval;
 
 	callee_leg = callee_idx(dlg);
 
@@ -790,7 +795,9 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, NULL, 1, 1);
 
    /* save sharing tag name as dlg val */
-	if (dlg->shtag.s && store_dlg_value_unsafe(dlg, &shtag_dlg_val, &dlg->shtag) < 0)
+	isval.s = dlg->shtag;
+	if (dlg->shtag.s && store_dlg_value_unsafe(dlg, &shtag_dlg_val, &isval,
+		DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("Failed to store sharing tag %.*s(%p) as dlg val\n",
 		       dlg->shtag.len, dlg->shtag.s, dlg->shtag.s);
 

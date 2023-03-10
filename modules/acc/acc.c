@@ -1470,16 +1470,16 @@ static void complete_dlg_values(str *stored_values,str *val_arr,short nr_vals)
 /* stores core values and leg values into dlg */
 int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 {
-	str bytes;
+	int_str bytes;
 
 	if ( build_core_dlg_values(dlg, req) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
 
-	bytes.s = cdr_buf.s;
-	bytes.len = cdr_data_len;
-	if ( dlg_api.store_dlg_value(dlg, &core_str, &bytes) < 0) {
+	bytes.s.s = cdr_buf.s;
+	bytes.s.len = cdr_data_len;
+	if ( dlg_api.store_dlg_value(dlg, &core_str, &bytes, DLG_VAL_TYPE_STR) < 0) {
 		LM_ERR("cannot store core values into dialog\n");
 		return -1;
 	}
@@ -1492,16 +1492,16 @@ int store_core_leg_values(struct dlg_cell *dlg, struct sip_msg *req)
 int store_extra_values(extra_value_t* values, str *values_str,
 		struct dlg_cell *dlg)
 {
-	str bytes;
+	int_str bytes;
 
 	if ( build_extra_dlg_values(values) < 0) {
 		LM_ERR("cannot build core value string\n");
 		return -1;
 	}
 
-	bytes.s = cdr_buf.s;
-	bytes.len = cdr_data_len;
-	if ( dlg_api.store_dlg_value(dlg, values_str, &bytes) < 0) {
+	bytes.s.s = cdr_buf.s;
+	bytes.s.len = cdr_data_len;
+	if ( dlg_api.store_dlg_value(dlg, values_str, &bytes, DLG_VAL_TYPE_STR) < 0) {
 		LM_ERR("cannot store core values into dialog\n");
 		return -1;
 	}
@@ -1511,7 +1511,7 @@ int store_extra_values(extra_value_t* values, str *values_str,
 
 int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
 {
-	str bytes;
+	int_str bytes;
 
 	if (ctx == NULL || values_str == NULL) {
 		LM_ERR("bad usage!\n");
@@ -1523,9 +1523,9 @@ int store_leg_values(acc_ctx_t* ctx, str* values_str, struct dlg_cell *dlg)
 		return -1;
 	}
 
-	bytes.s = cdr_buf.s;
-	bytes.len = cdr_data_len;
-	if (dlg_api.store_dlg_value(dlg, values_str, &bytes) < 0) {
+	bytes.s.s = cdr_buf.s;
+	bytes.s.len = cdr_data_len;
+	if (dlg_api.store_dlg_value(dlg, values_str, &bytes, DLG_VAL_TYPE_STR) < 0) {
 		LM_ERR("cannot store dialog string\n");
 		return -1;
 	}
@@ -1636,6 +1636,9 @@ struct dlg_cell *create_acc_dlg(struct sip_msg* req)
 /* gets core values from dlg and stores them into val_arr array */
 static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *start)
 {
+	int_str isval;
+	int val_type;
+
 	if (!start || !buffer) {
 		LM_ERR("invalid parameters\n");
 		return -1;
@@ -1643,11 +1646,13 @@ static int prebuild_core_arr(struct dlg_cell *dlg, str *buffer, struct timeval *
 	buffer->len = 0;
 	buffer->s = 0;
 
+	isval.s = *buffer;
 	/* fetching core string values */
-	if (dlg_api.fetch_dlg_value(dlg, &core_str, buffer, 1) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, &core_str, &val_type, &isval, 1) < 0) {
 		LM_ERR("cannot fetch core string value\n");
 		return -1;
 	}
+	*buffer = isval.s;
 
 	complete_dlg_values(buffer, val_arr, ACC_CORE_LEN+1);
 	memcpy(start, val_arr[ACC_CORE_LEN].s, val_arr[ACC_CORE_LEN].len);
@@ -1690,23 +1695,24 @@ static int restore_extra(struct dlg_cell* dlg,
 			str *type_str, acc_ctx_t* ctx)
 {
 	int extra_len;
-	str buffer;
+	int_str buffer;
+	int val_type;
 
 	if (ctx == NULL) {
 		LM_ERR("bad call!\n");
 		return -1;
 	}
 
-	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 0) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, type_str, &val_type, &buffer, 0) < 0) {
 		LM_ERR("cannot fetch <%.*s> value from dialog!\n",
 				type_str->len, type_str->s);
 		return -1;
 	}
 
 	/* jump over the total length */
-	extra_len = GET_LEN(buffer.s);
-	buffer.s += 2;
-	buffer.len -= 2;
+	extra_len = GET_LEN(buffer.s.s);
+	buffer.s.s += 2;
+	buffer.s.len -= 2;
 
 	if (extra_len != extra_tgs_len) {
 		LM_WARN("extra tags were added/removed since last run!"
@@ -1720,7 +1726,7 @@ static int restore_extra(struct dlg_cell* dlg,
 		return -1;
 	}
 
-	if (restore_extra_from_str(ctx->extra_values, &buffer, extra_len) < 0) {
+	if (restore_extra_from_str(ctx->extra_values, &buffer.s, extra_len) < 0) {
 		LM_ERR("failed to restore extra values!\n");
 		free_extra_array(ctx->extra_values, extra_len);
 		return -1;
@@ -1733,21 +1739,22 @@ static int restore_legs(struct dlg_cell* dlg,
 			str *type_str, acc_ctx_t* ctx)
 {
 	short extra_len, i;
-	str buffer;
+	int_str buffer;
+	int val_type;
 
 	if (ctx == NULL) {
 		LM_ERR("bad call!\n");
 		return -1;
 	}
 
-	if (dlg_api.fetch_dlg_value(dlg, type_str, &buffer, 0) < 0) {
+	if (dlg_api.fetch_dlg_value(dlg, type_str, &val_type, &buffer, 0) < 0) {
 		LM_ERR("cannot fetch <%.*s> value from dialog!\n",
 				type_str->len, type_str->s);
 		return -1;
 	}
 
-	ctx->legs_no = GET_LEN(buffer.s+2);
-	extra_len = GET_LEN(buffer.s);
+	ctx->legs_no = GET_LEN(buffer.s.s+2);
+	extra_len = GET_LEN(buffer.s.s);
 
 	if (extra_len != leg_tgs_len) {
 		LM_WARN("tags were added/removed since last run! won't restore values!\n");
@@ -1768,11 +1775,11 @@ static int restore_legs(struct dlg_cell* dlg,
 		}
 	}
 
-	buffer.s += 4;
-	buffer.len -=4;
+	buffer.s.s += 4;
+	buffer.s.len -=4;
 
 	for (i=0; i<ctx->legs_no; i++) {
-		if (restore_extra_from_str(ctx->leg_values[i], &buffer, extra_len) < 0) {
+		if (restore_extra_from_str(ctx->leg_values[i], &buffer.s, extra_len) < 0) {
 			LM_ERR("failed to restore leg values!\n");
 			goto error;
 		}

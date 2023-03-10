@@ -189,7 +189,12 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 	str callid, *ttag, *ftag;
 	str name_d, name_u, mute_var;
 	int branch, n, expire;
-	str mute_val = {NULL,0};
+	int_str mute_val;
+	int_str isval;
+	int val_type;
+
+	mute_val.s = STR_NULL;
+	isval.s = STR_NULL;
 
 	param = (struct dlginfo_cb_params*)(*_params->param);
 	peer = &(param->peer);
@@ -227,22 +232,25 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 
 		/* try to see if there are any muting settings per branch */
 		build_branch_mute_var_name( branch, &mute_var );
-		if (dlg_api.fetch_dlg_value(dlg, &mute_var, &mute_val, 1)== 0) {
-			if (mute_val.len!=2) {/* we expect a new letters string */
-				pkg_free(mute_val.s);
-				mute_val.s=NULL;
-				mute_val.len=0;
+		if (dlg_api.fetch_dlg_value(dlg, &mute_var, &val_type, &mute_val, 1)== 0) {
+			if (mute_val.s.len!=2) {/* we expect a new letters string */
+				pkg_free(mute_val.s.s);
+				mute_val.s.s=NULL;
+				mute_val.s.len=0;
 			} else {
 				LM_DBG("per-branch mute information was found as [%.*s]\n",
-					mute_val.len, mute_val.s);
+					mute_val.s.len, mute_val.s.s);
 			}
 		}
 
 		/* try to see if there is any custom callee per branch */
 		build_branch_callee_var_names( branch, &name_d, &name_u);
-		if (dlg_api.fetch_dlg_value(dlg, &name_u, &custom.uri, 1)== 0) {
+		if (dlg_api.fetch_dlg_value(dlg, &name_u, &val_type, &isval, 1)== 0) {
+			custom.uri = isval.s;
+			isval.s = STR_NULL;
 			/* there is a custom URI for the branch, check for display too */
-			dlg_api.fetch_dlg_value(dlg, &name_d, &custom.display, 1);
+			dlg_api.fetch_dlg_value(dlg, &name_d, &val_type, &isval, 1);
+			custom.display = isval.s;
 			peer = &custom;
 			LM_DBG("per-branch callee/peer information was found\n");
 		}
@@ -253,18 +261,18 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		entity->uri.len, entity->uri.s,
 		peer->display.len, peer->display.s,
 		peer->uri.len, peer->uri.s,
-		mute_val.len, mute_val.s);
+		mute_val.s.len, mute_val.s.s);
 
 	/* depending on the reply code, see what to publish */
 	if (_params->code<180 && _params->code>=100) {
 
 		expire = t->uac[branch].request.fr_timer.time_out - get_ticks();
 		if (publish_on_trying) {
-			if (should_publish_A( param->flags, mute_val))
+			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish("trying", entity, peer,
 					&callid, branch, 1, expire,
 					ftag, ttag);
-			if (should_publish_B( param->flags, mute_val))
+			if (should_publish_B( param->flags, mute_val.s))
 				dialog_publish("trying", peer, entity,
 					&callid, branch, 0, expire,
 					ttag, ftag);
@@ -285,12 +293,12 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 
 		if (n) {
 			expire = t->uac[branch].request.fr_timer.time_out - get_ticks();
-			if (should_publish_A( param->flags, mute_val))
+			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish(caller_confirmed?"confirmed":"early",
 					entity, peer,
 					&callid, branch, 1, expire,
 					ftag, ttag);
-			if (should_publish_B( param->flags, mute_val))
+			if (should_publish_B( param->flags, mute_val.s))
 				dialog_publish("early", peer, entity,
 					&callid, branch, 0, expire,
 					ttag, ftag);
@@ -310,11 +318,11 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 		lock_release(&t->reply_mutex);
 
 		if (n) {
-			if (should_publish_A( param->flags, mute_val))
+			if (should_publish_A( param->flags, mute_val.s))
 				dialog_publish("terminated", entity, peer,
 					&callid, branch, 1, 0,
 					ftag, ttag);
-			if (should_publish_B( param->flags, mute_val))
+			if (should_publish_B( param->flags, mute_val.s))
 				dialog_publish("terminated", peer, entity,
 					&callid, branch, 0, 0,
 					ttag, ftag);
@@ -324,7 +332,7 @@ __tm_sendpublish(struct cell *t, int type, struct tmcb_params *_params)
 
 	if (custom.uri.s) pkg_free(custom.uri.s);
 	if (custom.display.s) pkg_free(custom.display.s);
-	if (mute_val.s) pkg_free(mute_val.s);
+	if (mute_val.s.s) pkg_free(mute_val.s.s);
 }
 
 
@@ -336,11 +344,15 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 	struct dlginfo_cb_params *param;
 	struct dlginfo_part *peer, *entity, custom;
 	struct sip_msg* msg = _params->msg;
-	str *ftag, *ttag, s;
+	str *ftag, *ttag;
 	str name_d, name_u, mute_var;
 	int branch, expire;
 	char *state;
-	str mute_val = {NULL,0};
+	int_str mute_val;
+	int_str isval;
+	int val_type;
+
+	mute_val.s = STR_NULL;
 
 	if (!_params->is_active)
 		return;
@@ -370,20 +382,21 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 		 * is available here */
 		branch = tm_api.get_branch_index();
 
-		s.s = int2str((uint64_t)branch, &s.len);
-		if (dlg_api.store_dlg_value(dlg, &dlg_branch_var, &s)< 0) {
+		isval.s.s = int2str((uint64_t)branch, &isval.s.len);
+		if (dlg_api.store_dlg_value(dlg, &dlg_branch_var, &isval,
+			DLG_VAL_TYPE_STR)< 0) {
 			LM_ERR("Failed to store wining branch in dialog\n");
 		}
 
 		LM_DBG("stored branch is %d\n", branch);
 
 	} else {
-
-		if (dlg_api.fetch_dlg_value(dlg, &dlg_branch_var, &s, 0)< 0) {
+		isval.s = STR_NULL;
+		if (dlg_api.fetch_dlg_value(dlg, &dlg_branch_var, &val_type, &isval, 0)< 0) {
 			LM_ERR("Failed to retrieve wining branch from dialog\n");
 			branch = 0;
 		} else {
-			if (str2int(&s, (unsigned int*)&branch)<0)
+			if (str2int(&isval.s, (unsigned int*)&branch)<0)
 				branch = 0;
 		}
 
@@ -393,23 +406,27 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 
 	/* try to see if there are any muting settings per branch */
 	build_branch_mute_var_name( branch, &mute_var );
-	if (dlg_api.fetch_dlg_value(dlg, &mute_var, &mute_val, 1)== 0) {
-		if (mute_val.len!=2) {/* we expect a new letters string */
-			pkg_free(mute_val.s);
-			mute_val.s=NULL;
-			mute_val.len=0;
+	if (dlg_api.fetch_dlg_value(dlg, &mute_var, &val_type, &mute_val, 1)== 0) {
+		if (mute_val.s.len!=2) {/* we expect a new letters string */
+			pkg_free(mute_val.s.s);
+			mute_val.s.s=NULL;
+			mute_val.s.len=0;
 		} else {
 			LM_DBG("per-branch mute information was found as [%.*s]\n",
-				mute_val.len, mute_val.s);
+				mute_val.s.len, mute_val.s.s);
 		}
 	}
 
 	memset( &custom, 0, sizeof(custom) );
 	if (param->flags & DLG_PUB_B) {
 		build_branch_callee_var_names( branch, &name_d, &name_u);
-		if (dlg_api.fetch_dlg_value(dlg, &name_u, &custom.uri, 1)== 0) {
+		isval.s = STR_NULL;
+		if (dlg_api.fetch_dlg_value(dlg, &name_u, &val_type, &isval, 1)== 0) {
+			custom.uri = isval.s;
+			isval.s = STR_NULL;
 			/* there is a custom URI for the branch, check for display too */
-			dlg_api.fetch_dlg_value(dlg, &name_d, &custom.display, 1);
+			dlg_api.fetch_dlg_value(dlg, &name_d, &val_type, &isval, 1);
+			custom.display = isval.s;
 			peer = &custom;
 			LM_DBG("per-branch callee/peer information was found\n");
 		}
@@ -436,20 +453,20 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 	case DLGCB_TERMINATED:
 	case DLGCB_EXPIRED:
 
-		if (should_publish_A( param->flags, mute_val))
+		if (should_publish_A( param->flags, mute_val.s))
 			dialog_publish(state, entity, peer,
 				&(dlg->callid), branch, 1, expire, ftag, ttag);
-		if (should_publish_B( param->flags, mute_val))
+		if (should_publish_B( param->flags, mute_val.s))
 			dialog_publish(state, peer, entity,
 				&(dlg->callid), branch, 0, expire,  ttag, ftag);
 		break;
 
 	case DLGCB_CONFIRMED:
 
-		if (should_publish_A( param->flags, mute_val))
+		if (should_publish_A( param->flags, mute_val.s))
 			dialog_publish("confirmed", entity, peer,
 				&(dlg->callid), branch, 1, dlg->lifetime, ftag, ttag);
-		if (should_publish_B( param->flags, mute_val))
+		if (should_publish_B( param->flags, mute_val.s))
 			dialog_publish("confirmed", peer, entity,
 				&(dlg->callid), branch, 0, dlg->lifetime, ttag, ftag);
 		break;
@@ -459,7 +476,7 @@ __dialog_sendpublish(struct dlg_cell *dlg, int type,
 
 	if (custom.uri.s) pkg_free(custom.uri.s);
 	if (custom.display.s) pkg_free(custom.display.s);
-	if (mute_val.s) pkg_free(mute_val.s);
+	if (mute_val.s.s) pkg_free(mute_val.s.s);
 }
 
 
@@ -482,13 +499,15 @@ static void __build_param_var(char idx, str *name)
 static int __save_dlg_param(struct dlg_cell *dlg, char idx, str *val)
 {
 	str name;
+	int_str isval;
 
 	if (val==NULL || val->len==0)
 		return 0;
 
 	__build_param_var(idx, &name);
 
-	if (dlg_api.store_dlg_value(dlg, &name, val)< 0) {
+	isval.s = *val;
+	if (dlg_api.store_dlg_value(dlg, &name, &isval, DLG_VAL_TYPE_STR)< 0) {
 		LM_ERR("Failed to store param %d with value [%.*s]\n",
 			idx, val->len, val->s);
 		return -1;
@@ -528,11 +547,18 @@ __dump_dlginfo(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 static int __restore_dlg_param(struct dlg_cell *dlg, char idx, str *val)
 {
 	str name;
+	int val_type;
+	int_str isval;
+	int rc;
 
 	__build_param_var(idx, &name);
 
+	isval.s = *val;
 	/* returns 0 if var found */
-	return dlg_api.fetch_dlg_value(dlg, &name, val, 1);
+	rc = dlg_api.fetch_dlg_value(dlg, &name, &val_type, &isval, 1);
+	*val = isval.s;
+
+	return rc;
 }
 
 
@@ -1049,6 +1075,7 @@ int set_branch_callee(struct sip_msg* msg, str* callee)
 	int branch, len;
 	str name_u, name_d;
 	char *c_buf;
+	int_str isval;
 
 	dlg = dlg_api.get_dlg();
 
@@ -1084,12 +1111,15 @@ int set_branch_callee(struct sip_msg* msg, str* callee)
 			name_d.len, name_d.s, to_b.display.len, to_b.display.s,
 			name_u.len, name_u.s, to_b.uri.len, to_b.uri.s);
 
-		if (dlg_api.store_dlg_value(dlg, &name_u, &to_b.uri)< 0) {
+		isval.s = to_b.uri;
+		if (dlg_api.store_dlg_value(dlg, &name_u, &isval, DLG_VAL_TYPE_STR)< 0) {
 			LM_ERR("Failed to store display for branch %d\n",branch);
 			return -1;
 		}
+		if (to_b.display.len)
+			isval.s = to_b.display;
 		if (dlg_api.store_dlg_value(dlg, &name_d,
-		to_b.display.len?&to_b.display:NULL)< 0) {
+		to_b.display.len?&isval:NULL, DLG_VAL_TYPE_STR)< 0) {
 			LM_ERR("Failed to store URI for branch %d\n",branch);
 			return -1;
 		}
@@ -1099,11 +1129,11 @@ int set_branch_callee(struct sip_msg* msg, str* callee)
 
 	} else {
 
-		if (dlg_api.store_dlg_value(dlg, &name_d, NULL)< 0) {
+		if (dlg_api.store_dlg_value(dlg, &name_d, NULL, DLG_VAL_TYPE_NONE)< 0) {
 			LM_ERR("Failed to remove display for branch %d\n",branch);
 			return -1;
 		}
-		if (dlg_api.store_dlg_value(dlg, &name_u, NULL)< 0) {
+		if (dlg_api.store_dlg_value(dlg, &name_u, NULL, DLG_VAL_TYPE_NONE)< 0) {
 			LM_ERR("Failed to remove URI for branch %d\n",branch);
 			return -1;
 		}
@@ -1141,6 +1171,7 @@ int set_mute_branch(struct sip_msg* msg, str* parties)
 	str mute_var;
 	char buf[2];
 	str val = {buf,2};
+	int_str isval;
 
 	dlg = dlg_api.get_dlg();
 
@@ -1160,7 +1191,8 @@ int set_mute_branch(struct sip_msg* msg, str* parties)
 	LM_DBG("storing muting setting [%.*s]->[%.*s]\n",
 		mute_var.len, mute_var.s, val.len, val.s);
 
-	if (dlg_api.store_dlg_value(dlg, &mute_var, &val)< 0) {
+	isval.s = val;
+	if (dlg_api.store_dlg_value(dlg, &mute_var, &isval, DLG_VAL_TYPE_STR)< 0) {
 		LM_ERR("Failed to store mute flags for branch %d\n",branch);
 		return -1;
 	}

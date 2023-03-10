@@ -1673,7 +1673,7 @@ create_dialog("B");
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>key_val (string)</emphasis> - the value of the dialog
+			<para><emphasis>key_val (var)</emphasis> - the value of the dialog
 			variable that is used as key in searching the target dialog.
 			</para>
 		</listitem>
@@ -1786,7 +1786,7 @@ if ( get_dialog_vals($avp(d_names),$avp(d_vals),$var(callid)) ) {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>value (string)</emphasis> - the value of the above dialog val
+			<para><emphasis>value (var)</emphasis> - the value of the above dialog val
 			</para>
 		</listitem>
 		<listitem>
@@ -2268,8 +2268,8 @@ if (is_dlg_flag_set(16)) {
 		<function moreinfo="none">store_dlg_value(name,val)</function>
 		</title>
 		<para>
-		Attaches to the dialog the value <emphasis>val</emphasis> under the
-		name <emphasis>name</emphasis>. The values attached to dialogs are
+		Attaches to the dialog the value from the variable <emphasis>val</emphasis>
+		under the name <emphasis>name</emphasis>. The values attached to dialogs are
 		dialog persistent and they can be accessed (read and write) for all
 		requests belonging to the dialog.
 		</para>
@@ -2279,7 +2279,7 @@ if (is_dlg_flag_set(16)) {
 				<emphasis>name (string)</emphasis>
 			</para></listitem>
 			<listitem><para>
-				<emphasis>val (string)</emphasis>
+				<emphasis>val (var)</emphasis>
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2299,7 +2299,7 @@ if (is_dlg_flag_set(16)) {
 		<programlisting format="linespecific">
 ...
 store_dlg_value("inv_src_ip",$si);
-store_dlg_value("account type","prepaid");
+store_dlg_value("account type",$var(account));
 # or
 $dlg_val(account_type) = "prepaid";
 ...
@@ -3334,8 +3334,8 @@ event_route[E_RTPPROXY_DTMF] {
 			<title><varname>$dlg_val(name)</varname></title>
 			<para>
 			This is a read/write variable that allows access to the dialog
-			attribute named <emphasis>name</emphasis>.
-			This PV will be available only for sequential requests,
+			attribute named <emphasis>name</emphasis>. It can hold a string or
+			integer value. This PV will be available only for sequential requests,
 			after doing loose_route().
 			</para>
 			<para>
