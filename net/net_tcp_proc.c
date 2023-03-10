@@ -52,13 +52,14 @@ extern struct struct_hist_list *con_hist;
 #define tcpconn_release_error(_conn, _writer, _reason) \
 	do { \
 		tcp_trigger_report( _conn, TCP_REPORT_CLOSE, _reason);\
-		tcpconn_release( _conn, CONN_ERROR, _writer);\
+		tcpconn_release( _conn, CONN_ERROR_TCPW, _writer, 1/*as TCP worker*/);\
 	}while(0)
 
 
 
 
-static void tcpconn_release(struct tcp_connection* c, long state,int writer)
+static void tcpconn_release(struct tcp_connection* c, long state, int writer,
+															int as_tcp_worker)
 {
 	long response[2];
 
@@ -82,7 +83,7 @@ static void tcpconn_release(struct tcp_connection* c, long state,int writer)
 	response[0]=(long)c;
 	response[1]=state;
 
-	if (send_all((tcpmain_sock==-1)?unix_tcp_sock:tcpmain_sock, response,
+	if (send_all( as_tcp_worker?tcpmain_sock:unix_tcp_sock, response,
 	sizeof(response))<=0)
 		LM_ERR("send_all failed state=%ld con=%p\n", state, c);
 }
@@ -98,11 +99,11 @@ void tcp_conn_release(struct tcp_connection* c, int pending_data)
 	if (c->state==S_CONN_BAD) {
 		c->lifetime=0;
 		/* CONN_ERROR will auto-dec refcnt => we must not call tcpconn_put !!*/
-		tcpconn_release(c, CONN_ERROR2,1);
+		tcpconn_release(c, CONN_ERROR_GENW, 1, 0 /*not TCP, but GEN worker*/);
 		return;
 	}
 	if (pending_data) {
-		tcpconn_release(c, ASYNC_WRITE2,1);
+		tcpconn_release(c, ASYNC_WRITE_GENW, 1, 0 /*not TCP, but GEN worker*/);
 		return;
 	}
 	tcpconn_put(c);
@@ -156,7 +157,7 @@ static void tcp_receive_timeout(void)
 				tcpconn_release_error(con, 0, "Read timeout with"
 					"incomplete SIP message");
 			else
-				tcpconn_release(con, CONN_RELEASE,0);
+				tcpconn_release(con, CONN_RELEASE, 0,  1 /*as TCP proc*/);
 		}
 	}
 }
@@ -281,25 +282,31 @@ again:
 				/* save FD which is valid in context of this TCP worker */
 				con->fd=s;
 			} else if (rw & IO_WATCH_WRITE) {
-				LM_DBG("Received con for async write %p ref = %d\n",con,con->refcnt);
+				LM_DBG("Received con for async write %p ref = %d\n",
+					con, con->refcnt);
 				lock_get(&con->write_lock);
 				resp = protos[con->type].net.write( (void*)con, s );
 				lock_release(&con->write_lock);
 				if (resp<0) {
 					ret=-1; /* some error occurred */
 					con->state=S_CONN_BAD;
-					sh_log(con->hist, TCP_SEND2MAIN, "handle write, err, state: %d, att: %d",
-					       con->state, con->msg_attempts);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle write, err, state: %d, att: %d",
+						con->state, con->msg_attempts);
 					tcpconn_release_error(con, 1,"Write error");
 					break;
 				} else if (resp==1) {
-					sh_log(con->hist, TCP_SEND2MAIN, "handle write, async, state: %d, att: %d",
-					       con->state, con->msg_attempts);
-					tcpconn_release(con, ASYNC_WRITE,1);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle write, async, state: %d, att: %d",
+						con->state, con->msg_attempts);
+					tcpconn_release(con, ASYNC_WRITE_TCPW, 1,
+						1 /*as TCP proc*/);
 				} else {
-					sh_log(con->hist, TCP_SEND2MAIN, "handle write, ok, state: %d, att: %d",
-					       con->state, con->msg_attempts);
-					tcpconn_release(con, CONN_RELEASE_WRITE,1);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle write, ok, state: %d, att: %d",
+						con->state, con->msg_attempts);
+					tcpconn_release(con, CONN_RELEASE_WRITE, 1,
+						1/*as TCP proc*/);
 				}
 				ret = 0;
 				/* we always close the socket received for writing */
@@ -318,8 +325,9 @@ again:
 					tcpconn_listrm(tcp_conn_lst, con, c_next, c_prev);
 					con->proc_id = -1;
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
-					sh_log(con->hist, TCP_SEND2MAIN, "handle read, err, resp: %d, att: %d",
-					       resp, con->msg_attempts);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle read, err, resp: %d, att: %d",
+						resp, con->msg_attempts);
 					tcpconn_release_error(con, 0, "Read error");
 				} else if (con->state==S_CONN_EOF) {
 					reactor_del_all( con->fd, idx, IO_FD_CLOSING );
@@ -329,11 +337,12 @@ again:
 					if (con->fd!=-1) { close(con->fd); con->fd = -1; }
 					tcp_trigger_report( con, TCP_REPORT_CLOSE,
 						"EOF received");
-					sh_log(con->hist, TCP_SEND2MAIN, "handle read, EOF, resp: %d, att: %d",
-					       resp, con->msg_attempts);
-					tcpconn_release(con, CONN_EOF,0);
+					sh_log(con->hist, TCP_SEND2MAIN,
+						"handle read, EOF, resp: %d, att: %d",
+						resp, con->msg_attempts);
+					tcpconn_release(con, CONN_EOF, 0,  1 /*as TCP proc*/);
 				} else {
-					//tcpconn_release(con, CONN_RELEASE);
+					//tcpconn_release(con, CONN_RELEASE,  1 /*as TCP proc*/);
 					/* keep the connection for now */
 					break;
 				}
