@@ -1293,7 +1293,7 @@ create_dialog("B");
        pushing values from all matched dialogs.
      * key (string) - name of a dialog variable to be used a
        search key (when looking after the target dialog)
-     * key_val (string) - the value of the dialog variable that is
+     * key_val (var) - the value of the dialog variable that is
        used as key in searching the target dialog.
      * no_dlgs (var) - the total number of dialogs containing the
        key variable
@@ -1374,7 +1374,7 @@ als)[$var(i)])'\n");
    Meaning of the parameters is as follows:
      * name (string) - the name of the dialog variable used for
        the lookup
-     * value (string) - the value of the above dialog val
+     * value (var) - the value of the above dialog val
      * out_avp (var) - the AVP which will be populated will the
        dialog JSONs for all the matched calls
      * dlg_no (var) - the out var which will contain the total
@@ -1676,14 +1676,14 @@ if (is_dlg_flag_set(16)) {
 
 1.7.19.  store_dlg_value(name,val)
 
-   Attaches to the dialog the value val under the name name. The
-   values attached to dialogs are dialog persistent and they can
-   be accessed (read and write) for all requests belonging to the
-   dialog.
+   Attaches to the dialog the value from the variable val under
+   the name name. The values attached to dialogs are dialog
+   persistent and they can be accessed (read and write) for all
+   requests belonging to the dialog.
 
    Parameters:
      * name (string)
-     * val (string)
+     * val (var)
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1697,7 +1697,7 @@ if (is_dlg_flag_set(16)) {
    Example 1.71. store_dlg_value usage
 ...
 store_dlg_value("inv_src_ip",$si);
-store_dlg_value("account type","prepaid");
+store_dlg_value("account type",$var(account));
 # or
 $dlg_val(account_type) = "prepaid";
 ...
@@ -2369,8 +2369,9 @@ GIwZjAzNGM1ZDY
 1.10.11. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
-   attribute named name. This PV will be available only for
-   sequential requests, after doing loose_route().
+   attribute named name. It can hold a string or integer value.
+   This PV will be available only for sequential requests, after
+   doing loose_route().
 
    NULL will be returned if there is no dialog for the request.
 
@@ -2517,7 +2518,7 @@ Chapter 4. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 443 279 13098 3468
    2. Razvan Crainea (@razvancrainea) 264 198 4978 1499
    3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
-   4. Vlad Patrascu (@rvlad-patrascu) 186 100 3833 3271
+   4. Vlad Patrascu (@rvlad-patrascu) 194 102 4246 3432
    5. Liviu Chircu (@liviuchircu) 169 124 2920 1255
    6. Ovidiu Sas (@ovidiusas) 32 25 494 120
    7. Dan Pascu (@danpascu) 30 25 233 179
@@ -2559,8 +2560,8 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Feb 2023
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
+   2.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
    3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
    4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Nov 2022
@@ -2591,8 +2592,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Razvan
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Razvan
    Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Zero King
    (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
    Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel

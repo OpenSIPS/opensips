@@ -284,8 +284,8 @@ Chapter 3. Contributors
    3. Razvan Crainea (@razvancrainea) 29 22 485 148
    4. Liviu Chircu (@liviuchircu) 24 16 299 290
    5. Daniel-Constantin Mierla (@miconda) 15 11 138 88
-   6. Maksym Sobolyev (@sobomax) 10 3 168 294
-   7. Vlad Patrascu (@rvlad-patrascu) 9 4 127 161
+   6. Vlad Patrascu (@rvlad-patrascu) 10 5 150 175
+   7. Maksym Sobolyev (@sobomax) 10 3 168 294
    8. Vlad Paiu (@vladpaiu) 8 5 243 18
    9. Andreas Heise 7 3 105 129
    10. Edson Gellert Schubert 5 1 0 201
@@ -315,11 +315,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2020
-   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
+   2.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2020
+   5.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
    8.  Vlad Paiu (@vladpaiu)               Aug 2011 - Sep 2015
