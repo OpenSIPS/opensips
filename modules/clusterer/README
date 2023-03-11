@@ -26,7 +26,7 @@ CLUSTERER Module
               1.4.10. node_timeout
               1.4.11. seed_fallback_interval
               1.4.12. sync_timeout
-              1.4.13. sync_packet_max_size
+              1.4.13. sync_packet_size
               1.4.14. dispatch_jobs
               1.4.15. id_col
               1.4.16. cluster_id_col
@@ -121,7 +121,7 @@ CLUSTERER Module
    1.10. Set node_timeout parameter
    1.11. Set seed_fallback_interval parameter
    1.12. Set sync_timeout parameter
-   1.13. Set sync_packet_max_size parameter
+   1.13. Set sync_packet_size parameter
    1.14. Set dispatch_jobs parameter
    1.15. Set id_col parameter
    1.16. Set cluster_id_col parameter
@@ -418,7 +418,7 @@ modparam("clusterer", "seed_fallback_interval", 10)
 modparam("clusterer", "sync_timeout", 5)
 ...
 
-1.4.13. sync_packet_max_size
+1.4.13. sync_packet_size
 
    The maximum size of the BIN packets sent while doing data
    synchronization. This is only a suggested value as the actual
@@ -426,9 +426,9 @@ modparam("clusterer", "sync_timeout", 5)
 
    Default value is “65535”.
 
-   Example 1.13. Set sync_packet_max_size parameter
+   Example 1.13. Set sync_packet_size parameter
 ...
-modparam("clusterer", "sync_packet_max_size", 32765)
+modparam("clusterer", "sync_packet_size", 32765)
 ...
 
 1.4.14. dispatch_jobs
@@ -1215,7 +1215,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 277 105 10266 5336
+   1. Vlad Patrascu (@rvlad-patrascu) 278 106 10270 5340
    2. Liviu Chircu (@liviuchircu) 53 39 634 449
    3. Eseanu Marius Cristian (@eseanucristian) 45 10 3142 534
    4. Razvan Crainea (@razvancrainea) 25 19 324 145
@@ -1246,9 +1246,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
      Name Commit Activity
-   1. Liviu Chircu (@liviuchircu) Mar 2016 - Sep 2022
-   2. Razvan Crainea (@razvancrainea) Nov 2015 - Aug 2022
-   3. Vlad Patrascu (@rvlad-patrascu) Jul 2016 - Aug 2022
+   1. Vlad Patrascu (@rvlad-patrascu) Jul 2016 - Mar 2023
+   2. Liviu Chircu (@liviuchircu) Mar 2016 - Sep 2022
+   3. Razvan Crainea (@razvancrainea) Nov 2015 - Aug 2022
    4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - May 2021
    5. kworm83 Feb 2021 - Feb 2021
    6. Fabian Gast (@fgast) Nov 2018 - Jul 2020
