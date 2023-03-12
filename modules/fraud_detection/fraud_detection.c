@@ -47,6 +47,8 @@ extern str prefix_col;
 extern str start_h_col;
 extern str end_h_col;
 extern str days_col;
+extern str cps_thresh_warn_col;
+extern str cps_thresh_crit_col;
 extern str cpm_thresh_warn_col;
 extern str cpm_thresh_crit_col;
 extern str calldur_thresh_warn_col;
@@ -58,6 +60,7 @@ extern str concalls_thresh_crit_col;
 extern str seqcalls_thresh_warn_col;
 extern str seqcalls_thresh_crit_col;
 
+static str cps_name = str_init("calls-per-second");
 static str cpm_name = str_init("calls-per-minute");
 static str total_calls_name = str_init("total-calls");
 static str concurrent_calls_name = str_init("concurrent-calls");
@@ -100,6 +103,8 @@ static param_export_t params[]={
 	{"start_h_col",                 STR_PARAM, &start_h_col.s},
 	{"end_h_col",                   STR_PARAM, &end_h_col.s},
 	{"days_col",                    STR_PARAM, &days_col.s},
+	{"cps_thresh_warn_col",         STR_PARAM, &cps_thresh_warn_col.s},
+	{"cps_thresh_crit_col",         STR_PARAM, &cps_thresh_crit_col.s},
 	{"cpm_thresh_warn_col",         STR_PARAM, &cpm_thresh_warn_col.s},
 	{"cpm_thresh_crit_col",         STR_PARAM, &cpm_thresh_crit_col.s},
 	{"calldur_thresh_warn_col",     STR_PARAM, &calldur_thresh_warn_col.s},
@@ -171,6 +176,8 @@ static void set_lengths(void)
 	start_h_col.len = strlen(start_h_col.s);
 	end_h_col.len = strlen(end_h_col.s);
 	days_col.len = strlen(days_col.s);
+	cps_thresh_warn_col.len = strlen(cps_thresh_warn_col.s);
+	cps_thresh_crit_col.len = strlen(cps_thresh_crit_col.s);
 	cpm_thresh_warn_col.len = strlen(cpm_thresh_warn_col.s);
 	cpm_thresh_crit_col.len = strlen(cpm_thresh_crit_col.s);
 	calldur_thresh_warn_col.len = strlen(calldur_thresh_warn_col.s);
@@ -318,6 +325,7 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 
 	if (se->stats.last_matched_time == 0 || se->stats.last_matched_rule != rule->id
 			|| then.tm_yday != now.tm_yday || then.tm_year != now.tm_year) {
+		se->stats.cps = 0;
 		se->stats.cpm = 0;
 		se->stats.total_calls = 0;
 		se->stats.concurrent_calls = 0;
@@ -347,6 +355,36 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 
 	se->stats.last_matched_rule = rule->id;
 	++se->stats.total_calls;
+
+	/* Calls per FRD_SECS_PER_WINDOW_1 CUSTOM */
+	if (nowt - se->stats.last_matched_time >= 1 * FRD_SECS_PER_WINDOW_1 || itv_reset) {
+		/* outside the range of t0 + 2*WINDOW_SIZE; we can't use any of the
+		 * data since they are too old */
+		se->stats.cps = 0;
+		memset(se->stats.calls_window_1, 0,
+				sizeof(unsigned short) * FRD_SECS_PER_WINDOW_1);
+		se->stats.last_matched_time = nowt;
+	}
+	else if (nowt - se->stats.last_matched_time >= FRD_SECS_PER_WINDOW_1) {
+		/* more than t0 + WINDOW_SIZE but less than 2 * WINDOW_SIZE
+		 * we can consider calls from t0 + (now - WINDOW_SIZE)
+		 * all cals from t0 to t0 + (now - WINDOW_SIZE) shall be invalidated */
+		unsigned int old_matched_time = se->stats.last_matched_time;
+
+		se->stats.last_matched_time = nowt - FRD_SECS_PER_WINDOW_1 + 1;
+
+		/*interval [old_last_matched_time; current_last_matched_time) shall
+		 * be invalidated */
+		unsigned int i = (se->stats.last_matched_time - 1) % FRD_SECS_PER_WINDOW_1;
+		unsigned int j = (old_matched_time - 1) % FRD_SECS_PER_WINDOW_1;
+		for (;i != j; i = (i - 1 + FRD_SECS_PER_WINDOW_1) % FRD_SECS_PER_WINDOW_1) {
+			se->stats.cps -= se->stats.calls_window_1[i];
+			se->stats.calls_window_1[i] = 0;
+		}
+	} else {
+		/* less than t0 + WINDOW_SIZE; all we need to do is to increase
+		 * the number of calls for nowt */
+	}
 
 	/* Calls per FRD_SECS_PER_WINDOW */
 	if (nowt - se->stats.last_matched_time >= 2 * FRD_SECS_PER_WINDOW || itv_reset) {
@@ -378,6 +416,8 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		 * the number of calls for nowt */
 	}
 
+	++se->stats.cps;
+	se->stats.calls_window_1[nowt % FRD_SECS_PER_WINDOW_1]++;
 	++se->stats.cpm;
 	se->stats.calls_window[nowt % FRD_SECS_PER_WINDOW]++;
 
@@ -394,10 +434,12 @@ static int check_fraud(struct sip_msg *msg, str *user, str *number, int *pid)
 		rc = rc_ ## type ## _thr;\
 	}
 
-	if CHECK_AND_RAISE(cpm, critical)
+	if CHECK_AND_RAISE(cps, critical)
+	else if CHECK_AND_RAISE(cpm, critical)
 	else if CHECK_AND_RAISE(total_calls, critical)
 	else if CHECK_AND_RAISE(concurrent_calls, critical)
 	else if CHECK_AND_RAISE(seq_calls, critical)
+	else if CHECK_AND_RAISE(cps, warning)
 	else if CHECK_AND_RAISE(cpm, warning)
 	else if CHECK_AND_RAISE(total_calls, warning)
 	else if CHECK_AND_RAISE(concurrent_calls, warning)
@@ -480,6 +522,8 @@ mi_response_t *mi_show_stats(const mi_params_t *params,
 
 	lock_get(&se->lock);
 
+	if (add_mi_number(resp_obj, MI_SSTR("cps"), se->stats.cps) < 0)
+		goto add_error;
 	if (add_mi_number(resp_obj, MI_SSTR("cpm"), se->stats.cpm) < 0)
 		goto add_error;
 	if (add_mi_number(resp_obj, MI_SSTR("total_calls"),

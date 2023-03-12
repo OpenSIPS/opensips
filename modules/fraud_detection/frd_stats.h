@@ -33,9 +33,13 @@
 
 #define FRD_USER_HASH_SIZE 1024
 #define FRD_PREFIX_HASH_SIZE 8
+/* MINUTE WINDOW*/
 #define FRD_SECS_PER_WINDOW 60
+/* SECOND WINDOW*/
+#define FRD_SECS_PER_WINDOW_1 1
 
 typedef struct {
+	unsigned int cps;
 	unsigned int cpm;
 	unsigned int total_calls;
 	unsigned int concurrent_calls;
@@ -46,6 +50,7 @@ typedef struct {
 	unsigned int last_matched_rule;
 	time_t last_matched_time;
 	unsigned short calls_window[FRD_SECS_PER_WINDOW];
+	unsigned short calls_window_1[FRD_SECS_PER_WINDOW_1];
 } frd_stats_t;
 
 typedef struct _frd_hash_item {
@@ -66,7 +71,8 @@ typedef struct {
 } frd_threshold_t;
 
 typedef struct {
-	frd_threshold_t cpm_thr, call_duration_thr, total_calls_thr,
+	frd_threshold_t cps_thr, cpm_thr,
+					call_duration_thr, total_calls_thr,
 					concurrent_calls_thr, seq_calls_thr;
 } frd_thresholds_t;
 

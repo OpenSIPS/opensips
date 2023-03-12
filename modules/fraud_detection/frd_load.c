@@ -40,6 +40,8 @@
 #define FRD_START_H_COL               "start_hour"
 #define FRD_END_H_COL                 "end_hour"
 #define FRD_DAYS_COL                  "daysoftheweek"
+#define FRD_CPS_THRESH_WARN_COL       "cps_warning"
+#define FRD_CPS_THRESH_CRIT_COL       "cps_critical"
 #define FRD_CPM_THRESH_WARN_COL       "cpm_warning"
 #define FRD_CPM_THRESH_CRIT_COL       "cpm_critical"
 #define FRD_CALLDUR_THRESH_WARN_COL   "call_duration_warning"
@@ -61,6 +63,8 @@ str prefix_col = str_init(FRD_PREFIX_COL);
 str start_h_col = str_init(FRD_START_H_COL);
 str end_h_col = str_init(FRD_END_H_COL);
 str days_col = str_init(FRD_DAYS_COL);
+str cps_thresh_warn_col = str_init(FRD_CPS_THRESH_WARN_COL);
+str cps_thresh_crit_col = str_init(FRD_CPS_THRESH_CRIT_COL);
 str cpm_thresh_warn_col = str_init(FRD_CPM_THRESH_WARN_COL);
 str cpm_thresh_crit_col = str_init(FRD_CPM_THRESH_CRIT_COL);
 str calldur_thresh_warn_col = str_init(FRD_CALLDUR_THRESH_WARN_COL);
@@ -290,11 +294,14 @@ static int frd_load_data(dr_head_p drp, free_list_t **fl)
 	db_val_t *values;
 
 	db_key_t query_cols[] = {
-		&rid_col, &pid_col, &prefix_col, &start_h_col, &end_h_col, &days_col,
-		&cpm_thresh_warn_col, &cpm_thresh_crit_col, &calldur_thresh_warn_col,
-		&calldur_thresh_crit_col, &totalc_thresh_warn_col, &totalc_thresh_crit_col,
-		&concalls_thresh_warn_col, &concalls_thresh_crit_col, &seqcalls_thresh_warn_col,
-		&seqcalls_thresh_crit_col
+		&rid_col, &pid_col, &prefix_col,
+		&start_h_col, &end_h_col, &days_col,
+		&cps_thresh_warn_col, &cps_thresh_crit_col,
+		&cpm_thresh_warn_col, &cpm_thresh_crit_col,
+		&calldur_thresh_warn_col, &calldur_thresh_crit_col,
+		&totalc_thresh_warn_col, &totalc_thresh_crit_col,
+		&concalls_thresh_warn_col, &concalls_thresh_crit_col,
+		&seqcalls_thresh_warn_col, &seqcalls_thresh_crit_col
 	};
 
 	if (db_handle == NULL) {
