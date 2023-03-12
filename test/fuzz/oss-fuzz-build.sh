@@ -16,9 +16,21 @@
 #
 ################################################################################
 
+set -e
+
+MAKE="${MAKE:-"make"}"
+SED="${SED:-"sed"}"
+LIBS="${LIBS:-"-ldl -lresolv"}"
+OUT="${OUT:-"`pwd`"}"
+LIB_FUZZING_ENGINE="${LIB_FUZZING_ENGINE:-""}"
+CC="${CC:-"cc"}"
+CFLAGS="${CFLAGS:-""}"
+
+${MAKE} Makefile.conf
+
 # disable all custom memory allocators, use system malloc instead
-sed -i '
-  s/^#\?\(DEFS+= -DPKG_MALLOC\)/DEFS+= -DSYSTEM_MALLOC/g
+${SED} -i '
+  s/^#*DEFS+= -DPKG_MALLOC/DEFS+= -DSYSTEM_MALLOC/g
   s/^\(DEFS+= -DUSE_MCAST\)/#\1/g
   s/^\(DEFS+= -DF_MALLOC\)/#\1/g
   s/^\(DEFS+= -DQ_MALLOC\)/#\1/g
@@ -26,21 +38,21 @@ sed -i '
   s/^\(DEFS+= -DDBG_MALLOC\)/#\1/g
   s/^\(DEFS+= -DDBG_MALLOC\)/#\1/g
   s/^#\(DEFS+= -DFUZZ_BUILD\)/\1/g
-  ' Makefile.conf.template
+  ' Makefile.conf
 
-# disable update_stat() calls in the parser, since they rely on SHM
-sed -i '/update_stat.*bad_URIs/d' parser/parse_uri.c
-sed -i '/update_stat.*bad_msg_hdr/d' parser/msg_parser.c
+if [ -z "${LIB_FUZZING_ENGINE}" ]
+then
+  echo 'DEFS+=-DFUZZ_STANDALONE' >> Makefile.conf
+fi
 
-cp ./test/fuzz/fuzz_*.c ./parser/
+ln -sf `pwd`/test/fuzz/fuzz_*.c ./parser/
 
-make static
+${MAKE} static
 
-rm main.o
-mkdir objects && find . -name "*.o" -exec cp {} ./objects/ \;
-ar -r libopensips.a ./objects/*.o
+rm -f main.o libopensips.a
+ar -cr libopensips.a `find . -name "*.o" | grep -v '/fuzz_.*.o$'`
 
-for fuzn in msg uri csv
+for fuzn in msg_parser uri_parser csv_parser core_funcs
 do
-  $CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_${fuzn}_parser.o libopensips.a  -ldl -lresolv -o $OUT/fuzz_${fuzn}_parser
+  $CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_${fuzn}.o libopensips.a  ${LIBS} -o $OUT/fuzz_${fuzn}
 done

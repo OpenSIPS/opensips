@@ -16,12 +16,13 @@ limitations under the License.
 #include "../ut.h"
 #include "../lib/csv.h"
 
-#include "../context.h"
 #include "../dprint.h"
 #include "../globals.h"
 #include "../lib/list.h"
 #include "../sr_module.h"
 #include "../sr_module_deps.h"
+
+#include "../test/fuzz/fuzz_standalone.h"
 
 int LLVMFuzzerTestOneInput(const char *data, size_t size) {
   // Ensure we have one byte for the "decider" variable
@@ -31,8 +32,6 @@ int LLVMFuzzerTestOneInput(const char *data, size_t size) {
   int decider = data[0];
   data++;
   size--;
-
-  ensure_global_context();
 
   char *new_str = (char *)malloc(size + 1);
   if (new_str == NULL) {

@@ -23,9 +23,9 @@ limitations under the License.
 #include "../sr_module.h"
 #include "../sr_module_deps.h"
 
+#include "../test/fuzz/fuzz_standalone.h"
+
 int LLVMFuzzerTestOneInput(const char *data, size_t size) {
-  ensure_global_context();
-  struct sip_uri u;
 
   if (size <= 1) {
     return 0;
