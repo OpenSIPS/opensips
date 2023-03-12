@@ -1632,7 +1632,7 @@ error_headers:
 			len, ZSW(buf), len);
 	goto error_exit;
 error_bug:
-	LM_CRIT("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
+	LM_ERR("bad state %d parsed: <%.*s> (%d) / <%.*s> (%d)\n",
 			 state, (int)(p-buf), ZSW(buf), (int)(p-buf), len, ZSW(buf), len);
 error_exit:
 	ser_error=E_BAD_URI;

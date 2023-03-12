@@ -1712,7 +1712,7 @@ parse_again:
 						state=saved_state;
 						break;
 					default:
-						LM_CRIT("on <%c>, state=%d\n",*tmp, state);
+						LM_ERR("on <%c>, state=%d\n",*tmp, state);
 						goto parse_error;
 				}
 			break;
@@ -1800,7 +1800,7 @@ parse_again:
 						state=saved_state;
 						goto endofheader;
 					default:
-						LM_CRIT("on <%c>\n",*tmp);
+						LM_ERR("on <%c>\n",*tmp);
 						goto parse_error;
 				}
 			break;
@@ -1845,7 +1845,7 @@ parse_again:
 					case P_COMMENT: /*everything is allowed in a comment*/
 						break;
 					default:
-						LM_CRIT("on <%c> state %d\n", *tmp, state);
+						LM_ERR("on <%c> state %d\n", *tmp, state);
 						goto parse_error;
 				}
 				break;
@@ -1901,7 +1901,7 @@ parse_again:
 						break;
 
 					default:
-						LM_CRIT("on <%c> state %d\n", *tmp, state);
+						LM_ERR("on <%c> state %d\n", *tmp, state);
 						goto parse_error;
 				}
 			break;
@@ -1949,7 +1949,7 @@ parse_again:
 					case P_COMMENT: /*everything is allowed in a comment*/
 						break;
 					default:
-						LM_CRIT("on <%c> state %d\n",*tmp, state);
+						LM_ERR("on <%c> state %d\n",*tmp, state);
 						goto  parse_error;
 				}
 			break;
@@ -1998,7 +1998,7 @@ parse_again:
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LM_CRIT("on <%c> state %d\n", *tmp, state);
+						LM_ERR("on <%c> state %d\n", *tmp, state);
 						goto  parse_error;
 				}
 			break;
@@ -2038,7 +2038,7 @@ parse_again:
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LM_CRIT("on <%c> state %d\n", *tmp, state);
+						LM_ERR("on <%c> state %d\n", *tmp, state);
 						goto  parse_error;
 				}
 				break;
@@ -2211,7 +2211,7 @@ parse_again:
 						/*previous=crlf and now !=' '*/
 						goto endofheader;
 					default:
-						LM_CRIT("invalid char <%c> in state %d\n",*tmp, state);
+						LM_ERR("invalid char <%c> in state %d\n",*tmp, state);
 						goto parse_error;
 				}
 
