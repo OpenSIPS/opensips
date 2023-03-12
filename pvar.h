@@ -226,6 +226,10 @@ typedef struct _pv_export {
 	int iparam;                    /*!< parameter for the init function */
 } pv_export_t;
 
+#ifdef FUZZ_BUILD
+extern const pv_export_t _pv_names_table[];
+#endif
+
 typedef struct _pv_elem
 {
 	str text;

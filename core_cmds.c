@@ -122,7 +122,10 @@ static int w_script_trace(struct sip_msg *msg, int *log_level,
 					pv_elem_t *fmt_string, void *info_str);
 static int w_is_myself(struct sip_msg *msg, str *host, int *port);
 
-static const cmd_export_t core_cmds[]={
+#ifndef FUZZ_BUILD
+static
+#endif
+const cmd_export_t core_cmds[]={
 	{"forward", (cmd_function)w_forward, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_forward_dest, fixup_free_destination}, {0,0,0}},

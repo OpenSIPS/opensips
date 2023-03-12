@@ -74,6 +74,10 @@ struct acmd_export_ {
 typedef struct cmd_export_  cmd_export_t;
 typedef struct acmd_export_ acmd_export_t;
 
+#ifdef FUZZ_BUILD
+extern const cmd_export_t core_cmds[];
+#endif
+
 const cmd_export_t* find_cmd_export_t(const char* name, int flags);
 int check_cmd_call_params(const cmd_export_t *cmd, action_elem_t *elems, int no_params);
 int check_acmd_call_params(const acmd_export_t *acmd, action_elem_t *elems, int no_params);

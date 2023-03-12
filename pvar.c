@@ -3855,7 +3855,10 @@ static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *
 /**
  * the table with core pseudo-variables
  */
-static const pv_export_t _pv_names_table[] = {
+#ifndef FUZZ_BUILD
+static
+#endif
+const pv_export_t _pv_names_table[] = {
 	{str_init("avp"), PVT_AVP, pv_get_avp, pv_set_avp,
 		pv_parse_avp_name, pv_parse_avp_index, 0, 0},
 	{str_init("hdr"), PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
