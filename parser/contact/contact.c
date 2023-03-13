@@ -148,8 +148,8 @@ static inline int skip_name(str* _s)
 
 				if (*p == ':') {
 					if (last_wsp) {
-						_s->s = last_wsp;
 						_s->len -= last_wsp - _s->s + 1;
+						_s->s = last_wsp;
 					}
 					return 0;
 				}
