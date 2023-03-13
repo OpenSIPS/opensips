@@ -271,14 +271,13 @@ int parse_contacts(str* _s, contact_t** _c)
 	}
 
  error:
-	if (c) pkg_free(c);
+	if (c) free_contacts(&c);
 	free_contacts(_c); /* Free any contacts created so far */
 	return -1;
 
  ok:
 	c->len = _s->s - c->name.s;
 	if (last) {last->next=c;} else {*_c = c;}
-	last = c;
 	return 0;
 }
 
