@@ -1985,7 +1985,7 @@ static void tcp_process_graceful_terminate(int sender, void *param)
 }
 
 
-/* counts the number of TPC processes to start with; this number may 
+/* counts the number of TCP processes to start with; this number may
  * change during runtime due auto-scaling */
 int tcp_count_processes(unsigned int *extra)
 {
@@ -1996,7 +1996,7 @@ int tcp_count_processes(unsigned int *extra)
 
 
 	if (s_profile && extra) {
-		/* how many can be forked over th number of procs to start with ?*/
+		/* how many can be forked over the number of procs to start with ?*/
 		if (s_profile->max_procs > tcp_workers_no)
 			*extra = s_profile->max_procs - tcp_workers_no;
 	}
