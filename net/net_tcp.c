@@ -161,7 +161,10 @@ extern void handle_sigs(void);
 
 static inline int init_sock_keepalive(int s, struct tcp_conn_profile *prof)
 {
-	int optval, ka;
+	int ka;
+#if defined(HAVE_TCP_KEEPINTVL) || defined(HAVE_TCP_KEEPIDLE) || defined(HAVE_TCP_KEEPCNT)
+	int optval;
+#endif
 
 	if (prof->keepinterval || prof->keepidle || prof->keepcount)
 		ka = 1; /* force on */
