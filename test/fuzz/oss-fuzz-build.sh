@@ -55,4 +55,8 @@ ar -cr libopensips.a `find . -name "*.o" | grep -v '/fuzz_.*.o$'`
 for fuzn in msg_parser uri_parser csv_parser core_funcs
 do
   $CC $CFLAGS $LIB_FUZZING_ENGINE ./parser/fuzz_${fuzn}.o libopensips.a  ${LIBS} -o $OUT/fuzz_${fuzn}
+  if [ -e test/fuzz/fuzz_${fuzn}.dict ]
+  then
+    cp test/fuzz/fuzz_${fuzn}.dict $OUT
+  fi
 done
