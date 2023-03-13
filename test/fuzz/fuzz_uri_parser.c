@@ -37,4 +37,5 @@ int LLVMFuzzerTestOneInput(const char *data, size_t size) {
   parse_uri(STR_L(new_str), &u);
 
   free(new_str);
+  return (0);
 }
