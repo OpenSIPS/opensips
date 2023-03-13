@@ -764,7 +764,7 @@ try_again:
 			}
 		}
 		if (tcp_count_processes(NULL)!=0) {
-			if (tcp_workers_no!=2) {
+			if (tcp_workers_no>2) {
 				LM_NOTICE("setting TCP children to 2 (found %d)\n",
 					tcp_workers_no);
 				tcp_workers_no = 2;
