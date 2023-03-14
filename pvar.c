@@ -628,7 +628,7 @@ static int pv_get_xuri_attr(struct sip_msg *msg, struct sip_uri *parsed_uri,
 		if(parsed_uri->transport_val.s==NULL) {
 			get_uri_port(parsed_uri, &proto);
 			proto_s.s = protos[proto].name;
-			proto_s.len = strlen(proto_s.s);
+			proto_s.len = proto_s.s ? strlen(proto_s.s) : 0;
 			return pv_get_strintval(msg, param, res, &proto_s, (int)proto);
 		}
 		return pv_get_strintval(msg, param, res, &parsed_uri->transport_val,
@@ -1486,7 +1486,7 @@ static int pv_get_dsturi_attr(struct sip_msg *msg, pv_param_t *param,
 		if(uri.transport_val.s==NULL) {
 			get_uri_port(&uri, &proto);
 			proto_s.s = protos[proto].name;
-			proto_s.len = strlen(proto_s.s);
+			proto_s.len = proto_s.s ? strlen(proto_s.s) : 0;
 			return pv_get_strintval(msg, param, res, &proto_s, (int)proto);
 		}
 		return pv_get_strintval(msg, param, res, &uri.transport_val,
