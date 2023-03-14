@@ -38,7 +38,7 @@
  * protocols, because we never know what kind of traffic we receive and have
  * to print its name
  */
-struct proto_info protos[PROTO_LAST - PROTO_NONE] = {
+struct proto_info protos[PROTO_LAST - PROTO_NONE + 1] = {
 	{ .name = NULL,  .default_rfc_port = 0 }, /* PROTO_NONE */
 
 	{ .name = "udp",  .default_rfc_port = 5060 }, /* PROTO_UDP */
