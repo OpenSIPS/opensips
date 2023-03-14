@@ -71,7 +71,7 @@ int route_build_buffer(str *event_name, evi_reply_sock *sock,
 	buf->event.len = event_name->len;
 	memcpy(buf->event.s, event_name->s, event_name->len);
 
-	if (params) {
+	if (params && param_no) {
 		buf_param = (evi_param_p)(buf->event.s + buf->event.len);
 		buf->params.first = buf_param;
 		s = (char*)(buf_param + param_no);
