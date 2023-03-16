@@ -229,7 +229,7 @@ auth_result_t pre_auth(struct sip_msg* _m, str* _realm, hdr_types_t _hftype,
 		goto stalenonce;
 	}
 	qop_type_t qop = dcp->qop.qop_parsed;
-	if (qop == QOP_UNSPEC_D) {
+	if (qop == QOP_UNSPEC_D && np.qop != QOP_UNSPEC_D) {
 		/*
 		 * RFC8760: If the "qop" parameter is not specified, then
 		 * the default value is "auth".
