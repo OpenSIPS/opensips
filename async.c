@@ -155,6 +155,7 @@ int async_launch_resume(int fd, void *param)
 {
 	struct sip_msg *req;
 	async_launch_ctx *ctx = (async_launch_ctx *)param;
+	int bk_rt;
 
 	LM_DBG("resume for a launch job\n");
 
@@ -222,9 +223,10 @@ run_route:
 
 	if (ctx->report_route!=-1) {
 		LM_DBG("runinng report route for a launch job\n");
-		set_route_type( REQUEST_ROUTE );
+		swap_route_type( bk_rt, REQUEST_ROUTE);
 		run_top_route( sroutes->request[ctx->report_route], req);
 
+		set_route_type( bk_rt );
 		/* remove all added AVP */
 		reset_avps( );
 	}
@@ -248,6 +250,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
 	async_launch_ctx *ctx;
 	int fd;
+	int bk_rt;
 
 	/* run the function (the action) and get back from it the FD,
 	 * resume function and param */
@@ -335,11 +338,12 @@ report:
 		return -1;
 	}
 
-	set_route_type( REQUEST_ROUTE );
 	bak_avps = set_avp_list(&report_avps);
+	swap_route_type( bk_rt, REQUEST_ROUTE);
 
 	run_top_route( sroutes->request[report_route], req);
 
+	set_route_type( bk_rt );
 	destroy_avp_list(&report_avps);
 	set_avp_list(bak_avps);
 
