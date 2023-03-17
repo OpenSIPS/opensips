@@ -2014,11 +2014,6 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	if (tcp_disabled)
 		return 0;
 
-	if (tcp_workers_no > tcp_workers_max_no)
-		LM_BUG("can't run more TCP workers than the amount we allocated memory for: "
-			"tcp_workers_no=%d > tcp_workers_max_no=%d",
-			tcp_workers_no, tcp_workers_max_no);
-
 	/* estimate max fd. no:
 	 * 1 tcp send unix socket/all_proc,
 	 *  + 1 udp sock/udp proc + 1 tcp_worker sock/tcp worker*
