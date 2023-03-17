@@ -174,6 +174,7 @@ int async_launch_resume(int fd, void *param)
 {
 	struct sip_msg *req;
 	async_launch_ctx *ctx = (async_launch_ctx *)param;
+	int bk_rt;
 
 	LM_DBG("resume for a launch job\n");
 
@@ -244,13 +245,14 @@ run_route:
 			" route <%s>, param [%.*s]\n",
 			sroutes->request[ctx->report_route].name, 
 			ctx->report_route_param.len, ctx->report_route_param.s);
-		set_route_type( REQUEST_ROUTE );
 		if (ctx->report_route_param.s)
 			route_params_push_level(
 				sroutes->request[ctx->report_route].name, 
 				&ctx->report_route_param, NULL,
 				launch_route_param_get);
+		swap_route_type( bk_rt, REQUEST_ROUTE);
 		run_top_route( sroutes->request[ctx->report_route], req);
+		set_route_type( bk_rt );
 		if (ctx->report_route_param.s)
 			route_params_pop_level();
 
@@ -277,6 +279,7 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
 	async_launch_ctx *ctx;
 	int fd = -1;
+	int bk_rt;
 
 	/* run the function (the action) and get back from it the FD,
 	 * resume function and param */
@@ -374,11 +377,12 @@ report:
 		return -1;
 	}
 
-	set_route_type( REQUEST_ROUTE );
 	bak_avps = set_avp_list(&report_avps);
+	swap_route_type( bk_rt, REQUEST_ROUTE);
 
 	run_top_route( sroutes->request[report_route], req);
 
+	set_route_type( bk_rt );
 	destroy_avp_list(&report_avps);
 	set_avp_list(bak_avps);
 
