@@ -1237,10 +1237,10 @@ Chapter 3. Contributors
    4. Carsten Bock 12 5 679 23
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 49 11
    6. Maksym Sobolyev (@sobomax) 4 2 21 21
-   7. Liviu Chircu (@liviuchircu) 4 2 3 2
-   8. Aron Podrigal (@ar45) 3 1 1 1
-   9. Zero King (@l2dy) 3 1 1 1
-   10. truong.hua 3 1 1 1
+   7. truong.hua 4 2 8 7
+   8. Liviu Chircu (@liviuchircu) 4 2 3 2
+   9. Aron Podrigal (@ar45) 3 1 1 1
+   10. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1262,8 +1262,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Feb 2023
-   2.  truong.hua                          Jan 2023 - Jan 2023
+   1.  truong.hua                          Jan 2023 - Feb 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Feb 2023
    3.  Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
    4.  Razvan Crainea (@razvancrainea)     Jan 2021 - Oct 2022
    5.  Carsten Bock                        Mar 2022 - Apr 2022
