@@ -342,6 +342,7 @@ int main(int argc, char** argv)
 	int ret;
 	unsigned int seed;
 	int rfd;
+	int want_tcp_workers_no;
 
 	/*init*/
 	ret=-1;
@@ -764,10 +765,12 @@ try_again:
 			}
 		}
 		if (tcp_count_processes(NULL)!=0) {
-			if (tcp_workers_no!=2) {
-				LM_NOTICE("setting TCP children to 2 (found %d)\n",
+			want_tcp_workers_no = (tcp_workers_max_no>=2) ? 2 : tcp_workers_max_no;
+			if (tcp_workers_no != want_tcp_workers_no) {
+				LM_NOTICE("setting TCP children to %d (found %d)\n",
+					want_tcp_workers_no,
 					tcp_workers_no);
-				tcp_workers_no = 2;
+				tcp_workers_no = want_tcp_workers_no;
 			}
 		}
 
