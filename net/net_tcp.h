@@ -32,6 +32,8 @@
 
 #define TCP_PARTITION_SIZE 32
 
+extern int tcp_workers_max_no;
+
 /**************************** Control functions ******************************/
 
 /* initializes the TCP structures */
