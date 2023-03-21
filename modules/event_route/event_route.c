@@ -304,7 +304,7 @@ int event_route_param_get(struct sip_msg *msg, pv_param_t *ip,
 		for (index = 1; it && index != tv.ri; it = it->next, index++);
 		if (!it) {
 			LM_WARN("Parameter %d not found for event %.*s - max %d\n",
-					tv.ri, event_name->len, event_name->s, index);
+					tv.ri, event_name->len, event_name->s, index-1);
 			return pv_get_null(msg, ip, res);
 		}
 	} else {
