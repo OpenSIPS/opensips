@@ -139,6 +139,8 @@
  *            (osas)
  */
 
+#define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #ifndef __USE_BSD
@@ -325,6 +327,9 @@ int update_rtpp_proxies();
 
 static inline void raise_rtpproxy_event(struct rtpp_node *node, int status);
 
+#if !defined(POLLRDHUP)
+#define POLLRDHUP 0
+#endif
 
 static struct {
 	const char *s;
@@ -2128,12 +2133,12 @@ send_rtpp_command(struct rtpp_node *node, struct iovec *v, int vcnt)
 		}
 	} else {
 		fds[0].fd = rtpp_socks[node->idx];
-		fds[0].events = POLLIN;
+		fds[0].events = POLLIN | POLLRDHUP;
 		fds[0].revents = 0;
 		/* Drain input buffer */
 		while ((poll(fds, 1, 0) == 1) &&
 		    ((fds[0].revents & POLLIN) != 0)) {
-			if (fds[0].revents & (POLLERR|POLLNVAL)) {
+			if (fds[0].revents & (POLLERR|POLLNVAL|POLLRDHUP)) {
 				LM_ERR("error on rtpproxy socket %d!\n", rtpp_socks[node->idx]);
 				break;
 			}
