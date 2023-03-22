@@ -1041,7 +1041,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 	<section id="param_profiles_with_value" xreflabel="profiles_with_value">
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
-			List of names for profiles with values. Flags
+			List of names (alphanumerical) for profiles with values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1064,7 +1064,7 @@ modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientChannels/s
 	<section id="param_profiles_no_value" xreflabel="profiles_no_value">
 		<title><varname>profiles_no_value</varname> (string)</title>
 		<para>
-			List of names for profiles without values. Flags
+			List of names (alphanumerical) for profiles without values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1913,7 +1913,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) ) {
 if (load_dialog_ctx("$var(callid)")) {
 	xlog("The dialog '$var(callid)' already has a duration "
 	     "of $DLG_lifetime seconds\n");
-	if (is_in_profile("inbound_call"))
+	if (is_in_profile("inboundCall"))
 		xlog("this dialog is an inbound call\n");
 	unload_dialog_ctx();
 }
@@ -1979,7 +1979,7 @@ if (load_dialog_ctx("$var(callid)")) {
 		<title><function>set_dlg_profile</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_dlg_profile("inbound_call");
+set_dlg_profile("inboundCall");
 set_dlg_profile("caller",$fu);
 ...
 </programlisting>
@@ -2020,7 +2020,7 @@ set_dlg_profile("caller",$fu);
 		<title><function>unset_dlg_profile</function> usage</title>
 		<programlisting format="linespecific">
 ...
-unset_dlg_profile("inbound_call");
+unset_dlg_profile("inboundCall");
 unset_dlg_profile("caller",$fu);
 ...
 </programlisting>
@@ -2065,7 +2065,7 @@ unset_dlg_profile("caller",$fu);
 		<title><function>is_in_profile</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_in_profile("inbound_call")) {
+if (is_in_profile("inboundCall")) {
 	log("this request belongs to a inbound call\n");
 }
 ...
@@ -2822,7 +2822,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_get_size inbound_calls
+		opensips-cli -x mi profile_get_size inboundCalls
 		</programlisting>
 		</section>
 
@@ -2856,7 +2856,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_list_dlgs inbound_calls
+		opensips-cli -x mi profile_list_dlgs inboundCalls
 		</programlisting>
 		</section>
 
@@ -2882,7 +2882,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_get_values inbound_calls
+		opensips-cli -x mi profile_get_values inboundCalls
 		</programlisting>
 		</section>
 		<section id="mi_profile_end_dlgs" xreflabel="profile_end_dlgs">
@@ -2908,7 +2908,7 @@ event_route[E_RTPPROXY_DTMF] {
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
-		opensips-cli -x mi profile_end_dlgs inbound_calls
+		opensips-cli -x mi profile_end_dlgs inboundCalls
 		</programlisting>
 		</section>
 		<section id="mi_dlg_db_sync" xreflabel="dlg_db_sync">
