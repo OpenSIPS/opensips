@@ -119,8 +119,8 @@ int init_multi_proc_support(void)
 		/* reset fds to prevent bogus ops */
 		pt[i].unix_sock = -1;
 		pt[i].pid = -1;
-		pt[i].ipc_pipe[0] = pt[i].ipc_pipe[1] = -1;
-		pt[i].ipc_sync_pipe[0] = pt[i].ipc_sync_pipe[1] = -1;
+		pt[i].ipc_pipe = -1;
+		pt[i].ipc_sync_pipe = -1;
 	}
 
 	/* create the load-related stats (initially marked as hidden */
@@ -235,8 +235,8 @@ void reset_process_slot( int p_id )
 	pt[p_id].desc[0] = 0;
 	pt[p_id].flags = 0;
 
-	pt[p_id].ipc_pipe[0] = pt[p_id].ipc_pipe[1] = -1;
-	pt[p_id].ipc_sync_pipe[0] = pt[p_id].ipc_sync_pipe[1] = -1;
+	pt[p_id].ipc_pipe = -1;
+	pt[p_id].ipc_sync_pipe = -1;
 	pt[p_id].unix_sock = -1;
 
 	pt[p_id].log_level = pt[p_id].default_log_level = 0; /*not really needed*/
@@ -257,6 +257,63 @@ void reset_process_slot( int p_id )
 	#endif
 }
 
+static int close_unused_pipes(int proc_no, int idx, int is_parent)
+{
+	int *fd;
+
+	fd = &pt[proc_no].ipc_pipe_holder[idx];
+	if (is_parent || *fd != -1) {
+		if (close(*fd) != 0) {
+			LM_BUG("failed to close pt[%d].ipc_pipe_holder[%d]"
+			    " = %d, errno = %d\n", proc_no, idx, *fd, errno);
+			return -1;
+		}
+		if (is_parent)
+			*fd = -1;
+	}
+	fd = &pt[proc_no].ipc_sync_pipe_holder[idx];
+	if (is_parent || *fd != -1) {
+		if (close(*fd) != 0) {
+			LM_BUG("failed to close pt[%d].ipc_sync_pipe_holder[%d]"
+			    " = %d, errno = %d\n", proc_no, idx, *fd, errno);
+			return -1;
+		}
+		if (is_parent)
+			*fd = -1;
+	}
+	return 0;
+}
+
+static int setup_child_ipc_pipes(int proc_no)
+{
+	int fd1, fd2, eval = 0;
+
+	fd2 = pt[proc_no].ipc_pipe;
+	if (fd2 != -1) {
+		fd1 = pt[proc_no].ipc_pipe_holder[0];
+		if (dup2(fd1, fd2) < 0) {
+			LM_BUG("failed to dup2(%d, pt[%d].ipc_pipe"
+			    " = %d), errno = %d\n", fd1, proc_no, fd2,
+			    errno);
+			eval = -1;
+		}
+	}
+	fd2 = pt[proc_no].ipc_sync_pipe;
+	if (fd2 != -1) {
+		fd1 = pt[proc_no].ipc_sync_pipe_holder[0];
+		if (dup2(fd1, fd2) < 0) {
+			LM_BUG("failed to dup2(%d, pt[%d].ipc_sync_pipe"
+			    " = %d), errno = %d\n", fd1, proc_no, fd2,
+			    errno);
+			eval = -1;
+		}
+	}
+	for (int i = 0; i < counted_max_processes; i++) {
+		if (close_unused_pipes(i, 0, 0) != 0)
+			eval = -1;
+	}
+	return eval;
+}
 
 enum {CHLD_STARTING, CHLD_OK, CHLD_FAILED};
 
@@ -268,6 +325,9 @@ static __attribute__((__noreturn__)) void child_startup_failed(void)
 
 static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
 {
+	if (setup_child_ipc_pipes(process_no) != 0)
+		return -1;
+
 	init_log_level();
 
 	tcp_connect_proc_to_tcp_main(process_no, 1);
@@ -317,18 +377,16 @@ int internal_fork(const struct internal_fork_params *ifpp)
 	/* set the IPC pipes */
 	if ( (ifpp->flags & OSS_PROC_NO_IPC) ) {
 		/* advertise no IPC to the rest of the procs */
-		pt[new_idx].ipc_pipe[0] = -1;
-		pt[new_idx].ipc_pipe[1] = -1;
-		pt[new_idx].ipc_sync_pipe[0] = -1;
-		pt[new_idx].ipc_sync_pipe[1] = -1;
-		/* NOTE: the IPC fds will remain open in the other processes,
-		 * but they will not be known */
+		pt[new_idx].ipc_pipe = -1;
+		pt[new_idx].ipc_sync_pipe = -1;
+		for (int i = 0; i < 2; i++) {
+			if (close_unused_pipes(new_idx, i, 1) != 0)
+				return -1;
+		}
 	} else {
 		/* activate the IPC pipes */
-		pt[new_idx].ipc_pipe[0]=pt[new_idx].ipc_pipe_holder[0];
-		pt[new_idx].ipc_pipe[1]=pt[new_idx].ipc_pipe_holder[1];
-		pt[new_idx].ipc_sync_pipe[0]=pt[new_idx].ipc_sync_pipe_holder[0];
-		pt[new_idx].ipc_sync_pipe[1]=pt[new_idx].ipc_sync_pipe_holder[1];
+		pt[new_idx].ipc_pipe=pt[new_idx].ipc_pipe_holder[1];
+		pt[new_idx].ipc_sync_pipe=pt[new_idx].ipc_sync_pipe_holder[1];
 	}
 
 	pt[new_idx].pid = 0;
@@ -402,6 +460,11 @@ int internal_fork(const struct internal_fork_params *ifpp)
 			goto child_is_down;
 		}
 		pt[new_idx].flags |= OSS_PROC_IS_RUNNING;
+		if ( (ifpp->flags & OSS_PROC_NO_IPC)==0 ) {
+			/* close the child's end of the pipes */
+			if (close_unused_pipes(new_idx, 0, 1) != 0)
+				return -1;
+		}
 		tcp_connect_proc_to_tcp_main( new_idx, 0);
 		return new_idx;
 child_is_down:
@@ -475,10 +538,8 @@ int count_child_processes(void)
 void dynamic_process_final_exit(void)
 {
 	/* prevent any more IPC */
-	pt[process_no].ipc_pipe[0] = -1;
-	pt[process_no].ipc_pipe[1] = -1;
-	pt[process_no].ipc_sync_pipe[0] = -1;
-	pt[process_no].ipc_sync_pipe[1] = -1;
+	pt[process_no].ipc_pipe = -1;
+	pt[process_no].ipc_sync_pipe = -1;
 
 	/* clear the per-process connection from the DB queues */
 	ql_force_process_disconnect(process_no);
