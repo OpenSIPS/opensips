@@ -44,10 +44,6 @@
 
 #include "rtpproxy.h"
 
-#if !defined(AF_LOCAL)
-#define AF_LOCAL AF_UNIX
-#endif
-
 #define BUF_LEN				255
 
 int *rtpp_notify_process_no;
@@ -186,7 +182,7 @@ static struct rtpp_node *rtpproxy_get_node(union sockaddr_union *rtpp_info)
 			rtpp_list = rtpp_list->rset_next) {
 		for(crt_rtpp = rtpp_list->rn_first; crt_rtpp != NULL;
 						crt_rtpp = crt_rtpp->rn_next) {
-			if (crt_rtpp->rn_umode == CM_UNIX)
+			if (crt_rtpp->rn_umode == CM_UNIX || crt_rtpp->rn_umode == CM_CUNIX)
 				continue;
 			if (compare_sa(&crt_rtpp->addr.s, &rtpp_info->s) == 0) {
 				if (nh_lock)

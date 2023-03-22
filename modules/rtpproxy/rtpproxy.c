@@ -191,14 +191,6 @@
 
 #define NH_TABLE_VERSION  0
 
-#if !defined(AF_LOCAL)
-#define	AF_LOCAL AF_UNIX
-#endif
-#if !defined(PF_LOCAL)
-#define	PF_LOCAL PF_UNIX
-#endif
-
-
 #define DEFAULT_RTPP_SET_ID		0
 
 #define MI_ENABLE_RTP_PROXY			"rtpproxy_enable"
@@ -729,6 +721,9 @@ static int add_rtpproxy_socks(struct rtpp_set * rtpp_list,
 		} else if (strncasecmp(pnode->rn_address, "unix:", 5) == 0) {
 			pnode->rn_umode = CM_UNIX;
 			pnode->rn_address += 5;
+		} else if (strncasecmp(pnode->rn_address, "cunix:", 6) == 0) {
+			pnode->rn_umode = CM_CUNIX;
+			pnode->rn_address += 6;
 		}
 
 		if (rtpp_list->rn_first == NULL) {
