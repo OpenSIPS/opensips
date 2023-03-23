@@ -89,6 +89,10 @@ struct process_table {
 
 	/* the load statistic of this process */
 	struct proc_load_info load;
+
+	/* synchronization during fork */
+	gen_lock_t startup_lock;
+	int startup_result;
 };
 
 

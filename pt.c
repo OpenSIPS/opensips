@@ -229,6 +229,12 @@ void reset_process_slot( int p_id )
 }
 
 
+static __attribute__((__noreturn__)) void child_startup_failed(void)
+{
+	lock_release(&pt[process_no].startup_lock);
+	exit(1);
+}
+
 /* This function is to be called only by the main process!
  * Returns, on success, the ID (non zero) in the process table of the
  * newly forked procees.
@@ -282,11 +288,18 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 	}
 
 	pt[new_idx].pid = 0;
-	pt[new_idx].flags = OSS_PROC_IS_RUNNING;
+	pt[new_idx].startup_result = -1;
+
+	if (lock_init(&pt[new_idx].startup_lock) == NULL) {
+		LM_CRIT("failed to init startup lock for process %d", new_idx);
+		return -1;
+	}
+	lock_get(&pt[new_idx].startup_lock);
 
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
 				errno, strerror(errno));
+		lock_destroy(&pt[new_idx].startup_lock);
 		reset_process_slot( new_idx );
 		return -1;
 	}
@@ -294,10 +307,15 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 	if (pid==0){
 		/* child process */
 		is_main = 0; /* a child is not main process */
-		/* set uid and pid */
+		/* set uid */
 		process_no = new_idx;
-		pt[process_no].pid = getpid();
-		_ProfilerStart(pt[process_no].pid, proc_desc);
+		/* set attributes, pid etc */
+		set_proc_attrs(proc_desc);
+
+		if (_ProfilerStart(pt[process_no].pid, proc_desc) != 0) {
+			LM_CRIT("failed to start profiler for process %d", process_no);
+			child_startup_failed();
+		}
 
 		pt[process_no].flags |= flags;
 		pt[process_no].type = type;
@@ -319,8 +337,6 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 		seed_child(seed);
 		init_log_level();
 
-		/* set attributes */
-		set_proc_attrs(proc_desc);
 		tcp_connect_proc_to_tcp_main( process_no, 1);
 
 		/* free the script if not needed */
@@ -328,9 +344,19 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 			free_route_lists(sroutes);
 			sroutes = NULL;
 		}
+		pt[process_no].startup_result = 0;
+		lock_release(&pt[process_no].startup_lock);
 		return 0;
 	}else{
 		/* parent process */
+		/* wait for the child to complete the start-up */
+		lock_get(&pt[new_idx].startup_lock);
+		lock_destroy(&pt[new_idx].startup_lock);
+		if (pt[new_idx].startup_result != 0) {
+			LM_CRIT("failed to initialize child process %d\n", new_idx);
+			reset_process_slot( new_idx );
+			return -1;
+		}
 		/* Do not set PID for child in the main process. Let the child do
 		 * that as this will act as a marker to tell us that the init 
 		 * sequance of the child proc was completed.
