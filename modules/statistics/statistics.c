@@ -235,7 +235,7 @@ static int fixup_stat(void** param)
 {
 	struct stat_param *sp;
 	str sname, group;
-	int grp_idx __attribute__((unused));
+	int grp_idx = -1;
 
 	sp = (struct stat_param *)pkg_malloc(sizeof(struct stat_param));
 	if (sp==NULL) {
@@ -316,7 +316,7 @@ static int w_update_stat(struct sip_msg *msg, struct stat_param *sp, int *n)
 {
 	stat_var *stat;
 	str name, group;
-	int grp_idx __attribute__((unused));
+	int grp_idx = -1;
 
 	/* update with 0 value makes no sense */
 	if (*n==0)
@@ -364,7 +364,7 @@ static int w_reset_stat(struct sip_msg *msg, struct stat_param* sp)
 {
 	stat_var *stat;
 	str group, name;
-	int grp_idx __attribute__((unused));
+	int grp_idx = -1;
 
 	if (sp->type==STAT_PARAM_TYPE_STAT) {
 		/* we have the statistic */
@@ -461,7 +461,7 @@ static inline int get_stat_name(struct sip_msg* msg, pv_name_t *name,
 {
 	pv_value_t pv_val;
 	str sname, group;
-	int grp_idx __attribute__((unused));
+	int grp_idx = -1;
 
 	/* is the statistic found ? */
 	if (name->type==PV_NAME_INTSTR) {
