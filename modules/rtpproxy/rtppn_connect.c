@@ -62,7 +62,7 @@ out:
 int connect_rtpp_node(struct rtpp_node *pnode)
 {
 	int n, s;
-	char *cp, *hostname;
+	char *cp, *hostname = NULL;
 	struct addrinfo hints, *res;
 	struct sockaddr_un sau;
 
