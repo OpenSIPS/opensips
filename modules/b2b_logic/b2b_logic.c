@@ -1110,7 +1110,7 @@ struct to_body* get_b2bl_from(struct sip_msg* msg)
 }
 
 
-str* b2bl_bridge_extern(str* scenario_name, str* args[],
+str* b2bl_bridge_extern(str* scenario_name, str* args[5],
 		b2bl_cback_f cbf, void* cb_param, unsigned int cb_mask)
 {
 	b2b_scenario_t* scenario_struct;

@@ -5,6 +5,8 @@
 #include "../b2b_entities/b2b_common.h"
 #include "../b2b_entities/b2be_load.h"
 
+#define MAX_SCENARIO_PARAMS     10
+
 #define B2B_BYE_CB        (1<<0)
 #define B2B_REJECT_CB     (1<<1)
 #define B2B_DESTROY_CB    (1<<2)
@@ -97,7 +99,7 @@ typedef struct b2bl_api
 	b2bl_restore_upper_info_f restore_upper_info;
 }b2bl_api_t;
 
-str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[5],
+str* internal_init_scenario(struct sip_msg* msg, str* name, str* args[MAX_SCENARIO_PARAMS],
 		b2bl_cback_f, void* param, unsigned int cb_mask, str* custom_hdrs);
 
 typedef int(*load_b2bl_f)( b2bl_api_t *api );

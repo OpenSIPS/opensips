@@ -33,8 +33,6 @@
 #include "../../timer.h"
 #include "../b2b_entities/b2be_load.h"
 
-#define MAX_SCENARIO_PARAMS     10
-
 #define B2B_NOTDEF_STATE -1
 
 enum b2b_tuple_state {
