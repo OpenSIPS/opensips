@@ -135,7 +135,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
 	struct socket_info *caller_sock, *callee_sock;
-	struct dlg_entry *d_entry;
+	struct dlg_entry *d_entry = NULL;
 	str tag_name;
 	unsigned int h_id;
 	unsigned int state;
@@ -348,13 +348,15 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	return 0;
 
 pre_linking_error:
-	dlg_unlock(d_table, d_entry);
+	if (d_entry != NULL)
+		dlg_unlock(d_table, d_entry);
 	if (dlg)
 		destroy_dlg(dlg);
 	return -1;
 
 error:
-	dlg_unlock(d_table, d_entry);
+	if (d_entry != NULL)
+		dlg_unlock(d_table, d_entry);
 	if (dlg)
 		unref_dlg(dlg, 1);
 
