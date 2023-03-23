@@ -29,16 +29,17 @@
 
 #ifdef PROFILING
 #include <gperftools/profiler.h>
-static inline void _ProfilerStart(pid_t pid, const char *proc_desc)
+static inline int _ProfilerStart(pid_t pid, const char *proc_desc)
 {
 	char fname[50];
+	int rval;
 
 	LM_NOTICE("START profiling in process %s (%d)\n",
 	          proc_desc, pid);
 
 	if (pid == 0) {
-		ProfilerStart("gperf-attendant.prof");
-		return;
+		rval = ProfilerStart("gperf-attendant.prof") == 0 ? -1 : 0;
+		return rval;
 	}
 
 	if (!strcmp(proc_desc, "UDP receiver"))
@@ -48,7 +49,7 @@ static inline void _ProfilerStart(pid_t pid, const char *proc_desc)
 	else
 		sprintf(fname, "gperf-%d.prof", getpid());
 
-	ProfilerStart(fname);
+	return ProfilerStart(fname) == 0 ? -1 : 0;
 }
 
 static inline void _ProfilerStop(void)
@@ -60,8 +61,8 @@ static inline void _ProfilerStop(void)
 	          pt ? pt[process_no].pid : -1);
 }
 #else
+static inline int _ProfilerStart(pid_t pid, const char *proc_desc) { return 0; }
 	#define ProfilerStart(...)
-	#define _ProfilerStart(...)
 	#define ProfilerStop(...)
 	#define _ProfilerStop(...)
 #endif

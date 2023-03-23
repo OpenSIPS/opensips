@@ -292,7 +292,10 @@ static int main_loop(void)
 		last_check = get_uticks();
 	}
 
-	_ProfilerStart(0, "attendant");
+	if (_ProfilerStart(0, "attendant") != 0) {
+		LM_ERR("failed to start profiling\n");
+		goto error;
+	}
 
 	for(;;){
 			handle_sigs();
