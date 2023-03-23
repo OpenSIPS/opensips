@@ -72,13 +72,13 @@ extern str disabled_column;
 
 struct dp_param_list;
 
-int init_db_data();
+int init_db_data(dp_connection_list_p);
 //int dp_connect_db(dp_connection_list_p conn, dp_head_p head);
 struct dp_connection_list * dp_add_connection(dp_head_p head );
 struct dp_connection_list * dp_get_connections(void);
 struct dp_connection_list * dp_get_connection(str * partition);
 struct dp_connection_list * dp_get_default_connection();
 int dp_connect_db(dp_connection_list_p conn);
-void dp_disconnect_db();
+void dp_disconnect_db(dp_connection_list_p);
 
 #endif
