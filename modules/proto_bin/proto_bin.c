@@ -241,13 +241,11 @@ static int add_write_chunk(struct tcp_connection *con,char *buf,int len,
 static int async_tsend_stream(struct tcp_connection *c,
 		int fd, char* buf, unsigned int len, int timeout)
 {
-	int written;
 	int n;
 	struct pollfd pf;
 
 	pf.fd=fd;
 	pf.events=POLLOUT;
-	written=0;
 
 again:
 	n=send(fd, buf, len,0);
@@ -262,7 +260,6 @@ again:
 			goto poll_loop;
 	}
 
-	written+=n;
 	if (n < len) {
 		/* partial write */
 		buf += n;
