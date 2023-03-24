@@ -141,7 +141,7 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 }
 
 int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
-                 enum sip_protos proto, struct tcp_conn_profile *prof)
+                 enum sip_protos proto, struct tcp_conn_profile *prof, enum si_flags flags)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -153,7 +153,7 @@ int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
 		goto error;
 	}
 
-	if (tcp_init_sock_opt(s, prof)<0){
+	if (tcp_init_sock_opt(s, prof, flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
@@ -161,7 +161,8 @@ int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
 	if (src) {
 		my_name_len = sockaddru_len(*src);
 		memcpy( &my_name, src, my_name_len);
-		su_setport( &my_name, 0);
+		if (!(flags & SI_REUSEPORT))
+			su_setport( &my_name, 0);
 		if (bind(s, &my_name.s, my_name_len )!=0) {
 			LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
 			goto error;
@@ -187,7 +188,7 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 	struct tcp_connection* con;
 	int s;
 
-	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof);
+	s = tcp_sync_connect_fd(&send_sock->su, server, send_sock->proto, prof, send_sock->flags);
 	if (s < 0)
 		return NULL;
 
@@ -231,14 +232,15 @@ int tcp_async_connect(struct socket_info* send_sock,
 		return -1;
 	}
 
-	if (tcp_init_sock_opt(fd, prof)<0){
+	if (tcp_init_sock_opt(fd, prof, send_sock->flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		goto error;
 	}
 
 	my_name_len = sockaddru_len(send_sock->su);
 	memcpy( &my_name, &send_sock->su, my_name_len);
-	su_setport( &my_name, 0);
+	if (!(send_sock->flags & SI_REUSEPORT))
+		su_setport( &my_name, 0);
 	if (bind(fd, &my_name.s, my_name_len )!=0) {
 		LM_ERR("bind failed (%d) %s\n", errno,strerror(errno));
 		goto error;

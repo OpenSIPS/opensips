@@ -433,6 +433,7 @@ extern int cfg_parse_only_routes;
 %token ANY
 %token ANYCAST
 %token FRAG
+%token REUSE_PORT
 %token SCRIPTVARERR
 %token SCALE_UP_TO
 %token SCALE_DOWN_TO
@@ -642,6 +643,9 @@ socket_def_param: ANYCAST { IFOR();
 					}
 				| FRAG { IFOR();
 					p_tmp.flags |= SI_FRAG;
+					}
+				| REUSE_PORT { IFOR();
+					p_tmp.flags |= SI_REUSEPORT;
 					}
 				| USE_WORKERS NUMBER { IFOR();
 					p_tmp.workers=$2;
