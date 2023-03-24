@@ -23,19 +23,9 @@ jobs:
 
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-18.04]
+        os: [ubuntu-20.04]
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
         include:
-          - os: ubuntu-18.04
-            compiler: 'gcc-i386-cross'
-          - os: ubuntu-18.04
-            compiler: 'clang-i386-cross'
-          - os: ubuntu-18.04
-            compiler: 'gcc-mips64-cross'
-          - os: ubuntu-18.04
-            compiler: 'gcc-arm32-cross'
-          - os: ubuntu-18.04
-            compiler: 'gcc-arm64-cross'
           - os: ubuntu-22.04
             compiler: 'gcc'
           - os: ubuntu-22.04
@@ -50,6 +40,10 @@ jobs:
             compiler: 'clang-12'
           - os: ubuntu-22.04
             compiler: 'clang-13'
+          - os: ubuntu-22.04
+            compiler: 'clang-14'
+          - os: ubuntu-22.04
+            compiler: 'clang-15'
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -58,10 +52,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: before_install
+      - name: Install dependencies
         run: sh -x scripts/build/install_depends.sh
 
-      - name: script
+      - name: Build
         run: sh -x scripts/build/do_build.sh
 
       - name: Notify slack fail
