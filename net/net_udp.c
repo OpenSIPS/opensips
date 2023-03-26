@@ -375,9 +375,13 @@ static int fork_dynamic_udp_process(void *si_filter)
 {
 	struct socket_info *si = (struct socket_info*)si_filter;
 	int p_id;
+	const struct internal_fork_params ifp_udp_rcv = {
+		.proc_desc = "UDP receiver",
+		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_UDP,
+	};
 
-	if ((p_id=internal_fork( "UDP receiver",
-	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0) {
+	if ((p_id=internal_fork(&ifp_udp_rcv))<0) {
 		LM_CRIT("cannot fork UDP process\n");
 		return(-1);
 	} else if (p_id==0) {
@@ -454,6 +458,11 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 	struct socket_info *si;
 	int p_id;
 	int i,p;
+	const struct internal_fork_params ifp_udp_rcv = {
+		.proc_desc = "UDP receiver",
+		.flags = OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_UDP,
+	};
 
 	if (udp_disabled)
 		return 0;
@@ -473,8 +482,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 
 			for (i=0;i<si->workers;i++) {
 				(*chd_rank)++;
-				if ( (p_id=internal_fork( "UDP receiver",
-				OSS_PROC_NEEDS_SCRIPT, TYPE_UDP))<0 ) {
+				if ( (p_id=internal_fork(&ifp_udp_rcv))<0 ) {
 					LM_CRIT("cannot fork UDP process\n");
 					goto error;
 				} else if (p_id==0) {

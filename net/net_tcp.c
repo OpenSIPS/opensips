@@ -1932,6 +1932,11 @@ static int fork_dynamic_tcp_process(void *foo)
 {
 	int p_id;
 	int r;
+	const struct internal_fork_params ifp_sr_tcp = {
+		.proc_desc = "SIP receiver TCP",
+		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_TCP,
+	};
 
 	/* search for free slot in the TCP workers table */
 	for( r=0 ; r<tcp_workers_max_no ; r++ )
@@ -1944,8 +1949,7 @@ static int fork_dynamic_tcp_process(void *foo)
 		return -1;
 	}
 
-	if((p_id=internal_fork("SIP receiver TCP",
-	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_TCP))<0){
+	if((p_id=internal_fork(&ifp_sr_tcp))<0){
 		LM_ERR("cannot fork dynamic TCP worker process\n");
 		return(-1);
 	}else if (p_id==0){
@@ -2030,6 +2034,11 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	int r, n, p_id;
 	int reader_fd[2]; /* for comm. with the tcp workers read  */
 	struct socket_info *si;
+	const struct internal_fork_params ifp_sr_tcp = {
+		.proc_desc = "SIP receiver TCP",
+		.flags = OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_TCP,
+	};
 
 	if (tcp_disabled)
 		return 0;
@@ -2062,7 +2071,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	/* start the TCP workers */
 	for(r=0; r<tcp_workers_no; r++){
 		(*chd_rank)++;
-		p_id=internal_fork("SIP receiver TCP", OSS_PROC_NEEDS_SCRIPT,TYPE_TCP);
+		p_id=internal_fork(&ifp_sr_tcp);
 		if (p_id<0){
 			LM_ERR("fork failed\n");
 			goto error;
@@ -2118,12 +2127,17 @@ error:
 int tcp_start_listener(void)
 {
 	int p_id;
+	const struct internal_fork_params ifp_tcp_main = {
+		.proc_desc = "TCP main",
+		.flags = 0,
+		.type = TYPE_NONE,
+	};
 
 	if (tcp_disabled)
 		return 0;
 
 	/* start the TCP manager process */
-	if ( (p_id=internal_fork( "TCP main", 0, TYPE_NONE))<0 ) {
+	if ( (p_id=internal_fork(&ifp_tcp_main))<0 ) {
 		LM_CRIT("cannot fork tcp main process\n");
 		goto error;
 	}else if (p_id==0){

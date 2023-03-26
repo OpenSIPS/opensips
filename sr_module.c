@@ -826,8 +826,12 @@ int start_module_procs(void)
 				else
 				if ( (m->exports->procs[n].flags&PROC_FLAG_HAS_IPC)==0)
 					flags |= OSS_PROC_NO_IPC;
-				x = internal_fork( m->exports->procs[n].name, flags,
-					TYPE_MODULE );
+				struct internal_fork_params ifp = {
+					.proc_desc = m->exports->procs[n].name,
+					.flags = flags,
+					.type = TYPE_MODULE,
+				};
+				x = internal_fork(&ifp);
 				if (x<0) {
 					LM_ERR("failed to fork process \"%s\"/%d for module %s\n",
 						m->exports->procs[n].name, l, m->exports->name);

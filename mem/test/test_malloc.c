@@ -177,13 +177,23 @@ static void hpt_free(unsigned int frag_overhead)
 static void _test_malloc(int procs, unsigned int frag_overhead)
 {
 	int i;
-	int my_pid = 0;
+	int my_pid = 0, child_pid;
 
 	update_stat(workers, +1);
 
 	for (i = 1; i < procs; i++) {
 		update_stat(workers, +1);
-		if (internal_fork("malloc test", OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD, TYPE_NONE) == 0) {
+		const struct internal_fork_params ifp_th = {
+			.proc_desc = "malloc test",
+			.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
+			.type = TYPE_NONE,
+		};
+
+		child_pid = internal_fork(&ifp_th);
+		if (child_pid < 0)
+			exit(-1);
+
+		if (child_pid == 0) {
 			my_pid = i;
 			printf("forked extra test worker #%d!\n", i);
 			break;

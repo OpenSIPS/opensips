@@ -118,8 +118,13 @@ int   count_child_processes(void);
 #define is_process_running(_idx) \
 	( (pt[_idx].flags&OSS_PROC_IS_RUNNING)?1:0 )
 
-pid_t internal_fork(const char *proc_desc, unsigned int flags,
-		enum process_type type);
+struct internal_fork_params {
+	const char *proc_desc;
+	unsigned int flags;
+	enum process_type type;
+};
+
+pid_t internal_fork(const struct internal_fork_params *params);
 
 /* return processes pid */
 inline static int my_pid(void)

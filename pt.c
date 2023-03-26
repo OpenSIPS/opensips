@@ -239,8 +239,7 @@ static __attribute__((__noreturn__)) void child_startup_failed(void)
  * Returns, on success, the ID (non zero) in the process table of the
  * newly forked procees.
  * */
-int internal_fork(const char *proc_desc, unsigned int flags,
-												enum process_type type)
+int internal_fork(const struct internal_fork_params *ifpp)
 {
 	int new_idx;
 	pid_t pid;
@@ -261,7 +260,7 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 
 	seed = rand();
 
-	LM_DBG("forking new process \"%s\" on slot %d\n", proc_desc, new_idx);
+	LM_DBG("forking new process \"%s\" on slot %d\n", ifpp->proc_desc, new_idx);
 
 	/* set TCP communication */
 	if (tcp_activate_comm_proc_socks(new_idx)<0){
@@ -271,7 +270,7 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 	}
 
 	/* set the IPC pipes */
-	if ( (flags & OSS_PROC_NO_IPC) ) {
+	if ( (ifpp->flags & OSS_PROC_NO_IPC) ) {
 		/* advertise no IPC to the rest of the procs */
 		pt[new_idx].ipc_pipe[0] = -1;
 		pt[new_idx].ipc_pipe[1] = -1;
@@ -292,7 +291,7 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 	atomic_init(&pt[new_idx].startup_result, CHLD_STARTING);
 
 	if ( (pid=fork())<0 ){
-		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
+		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",ifpp->proc_desc,
 				errno, strerror(errno));
 		reset_process_slot( new_idx );
 		return -1;
@@ -304,17 +303,17 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 		/* set uid */
 		process_no = new_idx;
 		/* set attributes, pid etc */
-		set_proc_attrs(proc_desc);
+		set_proc_attrs(ifpp->proc_desc);
 
-		if (_ProfilerStart(pt[process_no].pid, proc_desc) != 0) {
+		if (_ProfilerStart(pt[process_no].pid, ifpp->proc_desc) != 0) {
 			LM_CRIT("failed to start profiler for process %d", process_no);
 			child_startup_failed();
 		}
 
-		pt[process_no].flags |= flags;
-		pt[process_no].type = type;
+		pt[process_no].flags |= ifpp->flags;
+		pt[process_no].type = ifpp->type;
 		/* activate its load & pkg statistics, but only if IPC present */
-		if ( (flags & OSS_PROC_NO_IPC)==0 ) {
+		if ( (ifpp->flags & OSS_PROC_NO_IPC)==0 ) {
 			pt[process_no].load_rt->flags &= (~STAT_HIDDEN);
 			pt[process_no].load_1m->flags &= (~STAT_HIDDEN);
 			pt[process_no].load_10m->flags &= (~STAT_HIDDEN);
@@ -334,7 +333,7 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 		tcp_connect_proc_to_tcp_main( process_no, 1);
 
 		/* free the script if not needed */
-		if (!(flags&OSS_PROC_NEEDS_SCRIPT) && sroutes) {
+		if (!(ifpp->flags&OSS_PROC_NEEDS_SCRIPT) && sroutes) {
 			free_route_lists(sroutes);
 			sroutes = NULL;
 		}

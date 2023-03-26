@@ -605,6 +605,17 @@ static void run_timer_process_jif(void)
 int start_timer_processes(void)
 {
 	int id;
+	const struct internal_fork_params
+	    ifp_tk = {
+		.proc_desc = "time_keeper",
+		.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
+		.type = TYPE_NONE,
+	    },
+	    ifp_timer = {
+		.proc_desc = "timer",
+		.flags = OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
+		.type = TYPE_NONE,
+	};
 
 	/*
 	 * A change of the way timers were run. In the pre-1.5 times,
@@ -617,9 +628,7 @@ int start_timer_processes(void)
 	 * on jiffies for its timeouts got called from the timer thread and
 	 * was unable to detect timeouts.
 	 */
-
-	if ( (id=internal_fork("time_keeper",
-	OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD, TYPE_NONE))<0 ) {
+	if ( (id=internal_fork(&ifp_tk))<0 ) {
 		LM_CRIT("cannot fork time keeper process\n");
 		goto error;
 	} else if (id==0) {
@@ -631,8 +640,7 @@ int start_timer_processes(void)
 	}
 
 	/* fork a timer-trigger process */
-	if ( (id=internal_fork("timer", OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD,
-	TYPE_NONE))<0 ) {
+	if ( (id=internal_fork(&ifp_timer))<0 ) {
 		LM_CRIT("cannot fork timer process\n");
 		goto error;
 	} else if (id==0) {
@@ -724,9 +732,13 @@ error:
 static int fork_dynamic_timer_process(void *si_filter)
 {
 	int p_id;
+	const struct internal_fork_params ifp_th = {
+		.proc_desc = "Timer handler",
+		.flags = OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_TIMER,
+	};
 
-	if ((p_id=internal_fork( "Timer handler",
-	OSS_PROC_DYNAMIC|OSS_PROC_NEEDS_SCRIPT, TYPE_TIMER))<0){
+	if ((p_id=internal_fork(&ifp_th))<0){
 		LM_CRIT("cannot fork Timer handler process\n");
 		return -1;
 	} else if (p_id==0) {
@@ -791,6 +803,11 @@ static void timer_process_graceful_terminate(int sender, void *param)
 int start_timer_extra_processes(int *chd_rank)
 {
 	int i, p_id;
+	const struct internal_fork_params ifp_th = {
+		.proc_desc = "Timer handler",
+		.flags = OSS_PROC_NEEDS_SCRIPT,
+		.type = TYPE_TIMER,
+	};
 
 	if (auto_scaling_enabled && s_profile &&
 	create_process_group( TYPE_TIMER, NULL, s_profile ,
@@ -801,8 +818,7 @@ int start_timer_extra_processes(int *chd_rank)
 	for( i=0 ; i<timer_workers_no ; i++ ) {
 
 		(*chd_rank)++;
-		if ( (p_id=internal_fork( "Timer handler", OSS_PROC_NEEDS_SCRIPT,
-		TYPE_TIMER))<0 ) {
+		if ( (p_id=internal_fork(&ifp_th))<0 ) {
 			LM_CRIT("cannot fork Timer handler process\n");
 			return -1;
 		} else if (p_id==0) {
