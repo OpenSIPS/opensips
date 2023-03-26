@@ -124,7 +124,14 @@ struct internal_fork_params {
 	enum process_type type;
 };
 
+struct internal_fork_handler {
+        const char *desc;
+        int (*on_child_init)(const struct internal_fork_params *);
+        struct internal_fork_handler *_next;
+};
+
 pid_t internal_fork(const struct internal_fork_params *params);
+void register_fork_handler(struct internal_fork_handler *h);
 
 /* return processes pid */
 inline static int my_pid(void)

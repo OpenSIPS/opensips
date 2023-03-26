@@ -202,8 +202,13 @@ static int main_loop(void)
 	int* startup_done = NULL;
 	utime_t last_check = 0;
 	int rc;
+	static struct internal_fork_handler profiling_handler = {
+		.desc = "_ProfilerStart_child()",
+		.on_child_init = _ProfilerStart_child,
+	};
 
 	chd_rank=0;
+	register_fork_handler(&profiling_handler);
 
 	if (start_module_procs()!=0) {
 		LM_ERR("failed to fork module processes\n");

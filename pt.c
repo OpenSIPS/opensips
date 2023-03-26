@@ -48,6 +48,37 @@ unsigned int counted_max_processes = 0;
 /* flag per process to control the termination stages */
 int _termination_in_progress = 0;
 
+static int internal_fork_child_setup(const struct internal_fork_params *);
+
+static struct internal_fork_handler default_fh = {
+	.desc = "internal_fork_child_setup()",
+	.on_child_init = internal_fork_child_setup,
+};
+
+static struct internal_fork_handler *_fork_handlers = &default_fh;
+
+/* Register handlers to be invoked after internal_fork()
+ * to do various per-subsystem setup / cleanup tasks.
+ * Takes a reference to a "stable" structure (i.e. static or
+ * malloc'ed) which has to be alive until the last internal_fork()
+ * is called. */
+void register_fork_handler(struct internal_fork_handler *h)
+{
+	struct internal_fork_handler *hp;
+
+	if (is_main == 0) {
+		LM_BUG("buggy call from non-main process!!!\n");
+		abort();
+	}
+	if (h->_next != NULL) {
+		LM_BUG("buggy call h->_next != NULL!!!\n");
+		abort();
+	}
+
+	for (hp = _fork_handlers; hp->_next != NULL; hp = hp->_next)
+		continue;
+	hp->_next = h;
+};
 
 static unsigned long count_running_processes(void *x)
 {
@@ -235,6 +266,20 @@ static __attribute__((__noreturn__)) void child_startup_failed(void)
 	exit(1);
 }
 
+static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
+{
+	init_log_level();
+
+	tcp_connect_proc_to_tcp_main(process_no, 1);
+
+	/* free the script if not needed */
+	if (!(ifpp->flags & OSS_PROC_NEEDS_SCRIPT) && sroutes) {
+		free_route_lists(sroutes);
+		sroutes = NULL;
+	}
+	return 0;
+}
+
 /* This function is to be called only by the main process!
  * Returns, on success, the ID (non zero) in the process table of the
  * newly forked procees.
@@ -298,17 +343,13 @@ int internal_fork(const struct internal_fork_params *ifpp)
 	}
 
 	if (pid==0){
+		const struct internal_fork_handler *cfhp;
 		/* child process */
 		is_main = 0; /* a child is not main process */
 		/* set uid */
 		process_no = new_idx;
 		/* set attributes, pid etc */
 		set_proc_attrs(ifpp->proc_desc);
-
-		if (_ProfilerStart(pt[process_no].pid, ifpp->proc_desc) != 0) {
-			LM_CRIT("failed to start profiler for process %d", process_no);
-			child_startup_failed();
-		}
 
 		pt[process_no].flags |= ifpp->flags;
 		pt[process_no].type = ifpp->type;
@@ -328,14 +369,13 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		}
 		/* each children need a unique seed */
 		seed_child(seed);
-		init_log_level();
 
-		tcp_connect_proc_to_tcp_main( process_no, 1);
-
-		/* free the script if not needed */
-		if (!(ifpp->flags&OSS_PROC_NEEDS_SCRIPT) && sroutes) {
-			free_route_lists(sroutes);
-			sroutes = NULL;
+		for (cfhp = _fork_handlers; cfhp != NULL; cfhp = cfhp->_next) {
+			if (cfhp->on_child_init(ifpp) != 0) {
+				LM_CRIT("failed to run %s for process %d\n", cfhp->desc,
+				    process_no);
+				child_startup_failed();
+			}
 		}
 		atomic_store(&pt[process_no].startup_result, CHLD_OK);
 		return 0;
