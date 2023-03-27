@@ -2129,17 +2129,17 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 
 	<section id="func_set_dlg_flag" xreflabel="set_dlg_flag()">
 		<title>
-		<function moreinfo="none">set_dlg_flag(idx)</function>
+		<function moreinfo="none">set_dlg_flag(flag)</function>
 		</title>
 		<para>
-		Sets the dialog flag index <emphasis>idx</emphasis> to true. The dialog
+		Sets the dialog flag named <emphasis>flag</emphasis> to true. The dialog
 		flags are dialog persistent and they can be accessed (set and test)
 		for all requests belonging to the dialog.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2154,7 +2154,7 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 		<title><function>set_dlg_flag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-set_dlg_flag(3);
+set_dlg_flag("MY_DLG_FLAG");
 ...
 </programlisting>
 		</example>
@@ -2162,16 +2162,16 @@ set_dlg_flag(3);
 
 	<section id="func_test_and_set_dlg_flag" xreflabel="test_and_set_dlg_flag()">
 		<title>
-		<function moreinfo="none">test_and_set_dlg_flag(idx, value)</function>
+		<function moreinfo="none">test_and_set_dlg_flag(flag, value)</function>
 		</title>
 		<para>
-		Atomically checks if the dialog flag index <emphasis>idx</emphasis> is
+		Atomically checks if the dialog flag named <emphasis>flag</emphasis> is
 		equal to <emphasis>value</emphasis>. If true, changes the value with the
 		opposite one. This operation is done under the dialog lock.
 		</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>value (int)</emphasis> - The value should be 0 (false) or 1 (true).
@@ -2189,7 +2189,7 @@ set_dlg_flag(3);
 		<title><function>test_and_set_dlg_flag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-test_and_set_dlg_flag(3, 0);
+test_and_set_dlg_flag("MY_DLG_FLAG", 0);
 ...
 </programlisting>
 		</example>
@@ -2197,17 +2197,17 @@ test_and_set_dlg_flag(3, 0);
 
 	<section id="func_reset_dlg_flag" xreflabel="reset_dlg_flag()">
 		<title>
-		<function moreinfo="none">reset_dlg_flag(idx)</function>
+		<function moreinfo="none">reset_dlg_flag(flag)</function>
 		</title>
 		<para>
-		Resets the dialog flag index <emphasis>idx</emphasis> to false.
+		Resets the dialog flag named <emphasis>flag</emphasis> to false.
 		The dialog flags are dialog persistent and they can be accessed
 		(set and test) for all requests belonging to the dialog.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2222,7 +2222,7 @@ test_and_set_dlg_flag(3, 0);
 		<title><function>reset_dlg_flag</function> usage</title>
 		<programlisting format="linespecific">
 ...
-reset_dlg_flag(16);
+reset_dlg_flag("MY_DLG_FLAG");
 ...
 </programlisting>
 		</example>
@@ -2230,17 +2230,17 @@ reset_dlg_flag(16);
 
 	<section id="func_is_dlg_flag_set" xreflabel="is_dlg_flag_set()">
 		<title>
-		<function moreinfo="none">is_dlg_flag_set(idx)</function>
+		<function moreinfo="none">is_dlg_flag_set(flag)</function>
 		</title>
 		<para>
-		Returns true if the dialog flag index <emphasis>idx</emphasis> is set.
+		Returns true if the dialog flag named <emphasis>flag</emphasis> is set.
 		The dialog flags are dialog persistent and they can be accessed
 		(set and test) for all requests belonging to the dialog.
 		</para>
 		<para>Parameters:</para>
 		<itemizedlist>
 			<listitem><para>
-				<emphasis>idx (int)</emphasis> - The flag index can be between 0 and 31.
+				<emphasis>flag (string, static)</emphasis> - The flag name.
 			</para></listitem>
 		</itemizedlist>
 		<para>
@@ -2255,8 +2255,8 @@ reset_dlg_flag(16);
 		<title><function>is_dlg_flag_set</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (is_dlg_flag_set(16)) {
-	xlog("dialog flag 16 is set\n");
+if (is_dlg_flag_set("MY_DLG_FLAG")) {
+	xlog("dialog flag MY_DLG_FLAG is set\n");
 }
 ...
 </programlisting>
@@ -3210,7 +3210,7 @@ event_route[E_RTPPROXY_DTMF] {
 		<section id="pv_DLG_flags" xreflabel="$DLG_flags">
 			<title><varname>$DLG_flags</varname></title>
 			<para>
-			Returns the dialog flags array (as a single integer value)
+			Returns the dialog flags (as a list of flag names separted by space)
 			of the dialog corresponding to the processed sequential request.
 			This PV will be available only for sequential requests,
 			after doing loose_route().

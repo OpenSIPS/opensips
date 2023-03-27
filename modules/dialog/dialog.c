@@ -147,7 +147,7 @@ static int w_get_dlg_jsons_by_profile(struct sip_msg *msg,
 		str *attr, str *attr_val, pv_spec_t *out, pv_spec_t *number_val);
 static int w_get_dlg_vals(struct sip_msg *msg, pv_spec_t *v_name,
 		pv_spec_t *v_val, str *callid);
-static int w_tsl_dlg_flag(struct sip_msg *msg, int *_idx, int *_val);
+static int w_tsl_dlg_flag(struct sip_msg *msg, void *_idx, int *_val);
 static int w_set_dlg_shtag(struct sip_msg *msg, str *shtag);
 static int load_dlg_ctx(struct sip_msg *msg, str *callid, void* lmode);
 static int unload_dlg_ctx(struct sip_msg *msg);
@@ -199,17 +199,17 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
 		REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"set_dlg_flag", (cmd_function)w_set_dlg_flag, {
-		{CMD_PARAM_INT,fixup_dlg_flag,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC,fixup_dlg_flag,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"test_and_set_dlg_flag",(cmd_function)w_tsl_dlg_flag, {
-		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC,fixup_dlg_flag,0},
 		{CMD_PARAM_INT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"reset_dlg_flag", (cmd_function)w_reset_dlg_flag, {
-		{CMD_PARAM_INT,fixup_dlg_flag,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC,fixup_dlg_flag,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"is_dlg_flag_set",(cmd_function)w_is_dlg_flag_set, {
-		{CMD_PARAM_INT,fixup_dlg_flag,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_STATIC,fixup_dlg_flag,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"store_dlg_value",(cmd_function)w_store_dlg_value, {
 		{CMD_PARAM_STR,0,0},
@@ -531,19 +531,12 @@ static int fixup_check_avp(void** param)
 
 static int fixup_dlg_flag(void** param)
 {
-	int val = *(int*)*param;
-
-	if (val<0) {
-		LM_ERR("Negative index\n");
-		return E_CFG;
-	}
-	if (val>=8*sizeof(unsigned int) ) {
-		LM_ERR("flag index too high <%u> (max=%u)\n",
-			val, (unsigned int)(8*sizeof(unsigned int)-1) );
+	if ((*param = (void*)(long)fixup_flag(FLAG_TYPE_DIALOG, (str*)*param)) ==
+		(void*)(long)NAMED_FLAG_ERROR) {
+		LM_ERR("Fixup flag failed!\n");
 		return E_CFG;
 	}
 
-	*param=(void *)(1UL<<val);
 	return 0;
 }
 
@@ -1285,14 +1278,15 @@ static int w_is_dlg_flag_set(struct sip_msg *msg, void *mask)
 	return (dlg->user_flags&((unsigned int)(unsigned long)mask))?1:-1;
 }
 
-static int w_tsl_dlg_flag(struct sip_msg *msg, int *_idx, int *_val)
+static int w_tsl_dlg_flag(struct sip_msg *msg, void *mask, int *_val)
 {
 	struct dlg_cell *dlg;
 
 	if ( (dlg=get_current_dialog())==NULL )
 		return -2;
 
-	return test_and_set_dlg_flag(dlg, *_idx, *_val);
+	return test_and_set_dlg_flag(dlg, (unsigned int)(unsigned long)mask,
+		(unsigned int)*_val);
 }
 
 
@@ -1573,8 +1567,6 @@ int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param,
 int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	int l = 0;
-	char *ch = NULL;
 	struct dlg_cell *dlg;
 
 	if(res==NULL)
@@ -1583,13 +1575,10 @@ int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())==NULL )
 		return pv_get_null( msg, param, res);
 
-	res->ri = dlg->user_flags;
-	ch = int2str( (unsigned long)res->ri, &l);
+	res->rs = bitmask_to_flag_list(FLAG_TYPE_DIALOG,
+		dlg->user_flags);
 
-	res->rs.s = ch;
-	res->rs.len = l;
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	res->flags = PV_VAL_STR;
 
 	return 0;
 }
@@ -1710,17 +1699,18 @@ int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param,
 	if ( (dlg=get_current_dialog())==NULL )
 		return -1;
 
-	if (val==NULL) {
+	if (val==NULL || val->flags & PV_VAL_NULL) {
 		dlg->user_flags = 0;
 		return 0;
 	}
 
-	if (!(val->flags&PV_VAL_INT)){
-		LM_ERR("assigning non-int value to dialog flags\n");
+	if (!(val->flags&PV_VAL_STR)){
+		LM_ERR("assigning non-string value to dialog flags\n");
 		return -1;
 	}
 
-	dlg->user_flags = val->ri;
+	dlg->user_flags = flag_list_to_bitmask(str2const(&val->rs),
+		FLAG_TYPE_DIALOG, FLAG_DELIM, 0);
 
 	return 0;
 }
@@ -1822,6 +1812,7 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 	int i,j,k,len;
 	int intlen;
 	char *intbuf;
+	str flag_list;
 
 	/* I know, this sucks.
 
@@ -1832,11 +1823,13 @@ static char *dlg_get_json_out(struct dlg_cell *dlg,int ctx,int *out_len)
 	memset(dlg_info,0,DLG_CTX_JSON_BUFF_SIZE);
 	len = DLG_CTX_JSON_BUFF_SIZE;
 
+	flag_list = bitmask_to_flag_list(FLAG_TYPE_DIALOG, dlg->user_flags);
+
 	p=dlg_info;
-	i=snprintf(dlg_info,len,"{\"ID\":\"%llu\",\"state\":\"%d\",\"user_flags\":\"%d\",\"callid\":\"%.*s\",\"timestart\":\"%d\",\"timeout\":\"%d\",\"from_uri\":\"%.*s\",\"to_uri\":\"%.*s\"",
+	i=snprintf(dlg_info,len,"{\"ID\":\"%llu\",\"state\":\"%d\",\"user_flags\":\"%.*s\",\"callid\":\"%.*s\",\"timestart\":\"%d\",\"timeout\":\"%d\",\"from_uri\":\"%.*s\",\"to_uri\":\"%.*s\"",
 		(((long long unsigned)dlg->h_entry)<<(8*sizeof(int)))+dlg->h_id,
 		dlg->state,
-		dlg->user_flags,
+		flag_list.len, flag_list.s,
 		dlg->callid.len,dlg->callid.s,
 		dlg->start_ts,
 		dlg->tl.timeout?((unsigned int)time(0) + dlg->tl.timeout - get_ticks()):0,

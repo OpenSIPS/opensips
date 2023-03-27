@@ -191,7 +191,7 @@ cdb_ctdict2info(const cdb_dict_t *ct_fields, str *contact)
 				break;
 			case 'f':
 				ci.cflags = flag_list_to_bitmask(str2const(&pair->val.val.st),
-				                                 FLAG_TYPE_BRANCH, FLAG_DELIM);
+				                                 FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
 				break;
 			case 'o':
 				*contact = pair->val.val.st;
@@ -328,7 +328,7 @@ static inline ucontact_info_t* dbrow2info(db_val_t *vals, str *contact)
 		flags.len = strlen(flags.s);
 		LM_DBG("flag str: '%.*s'\n", flags.len, flags.s);
 
-		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM);
+		ci.cflags = flag_list_to_bitmask(&flags, FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
 
 		LM_DBG("set flags: %d\n", ci.cflags);
 	}

@@ -1,4 +1,4 @@
-INSERT INTO version (table_name, table_version) values ('dialog','11');
+INSERT INTO version (table_name, table_version) values ('dialog','12');
 CREATE TABLE dialog (
     dlg_id BIGINT PRIMARY KEY NOT NULL,
     callid VARCHAR(255) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE dialog (
     timeout INTEGER NOT NULL,
     vars BYTEA DEFAULT NULL,
     profiles TEXT DEFAULT NULL,
-    script_flags INTEGER DEFAULT 0 NOT NULL,
+    script_flags VARCHAR(255) DEFAULT NULL,
     module_flags INTEGER DEFAULT 0 NOT NULL,
     flags INTEGER DEFAULT 0 NOT NULL,
     rt_on_answer VARCHAR(64) DEFAULT NULL,

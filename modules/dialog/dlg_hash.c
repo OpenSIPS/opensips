@@ -1341,6 +1341,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 	mi_item_t *callees_arr, *values_arr, *profiles_arr;
 	mi_item_t *context_obj, *callee_item, *values_item, *profiles_item;
 	str *did = dlg_get_did(dlg);
+	str flag_list;
 
 	if (add_mi_string(dialog_obj, MI_SSTR("ID"), did->s, did->len) < 0)
 		goto error;
@@ -1350,7 +1351,10 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 
 	if (add_mi_number(dialog_obj, MI_SSTR("state"), dlg->state) < 0)
 		goto error;
-	if (add_mi_number(dialog_obj, MI_SSTR("user_flags"), dlg->user_flags) < 0)
+
+	flag_list = bitmask_to_flag_list(FLAG_TYPE_DIALOG, dlg->user_flags);
+	if (add_mi_string(dialog_obj, MI_SSTR("user_flags"),
+		flag_list.s, flag_list.len) < 0)
 		goto error;
 
 	_ts = (time_t)dlg->start_ts;

@@ -211,7 +211,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 				continue;
 
 			dbflags = flag_list_to_bitmask(&flag_list,
-			                FLAG_TYPE_BRANCH, FLAG_DELIM);
+			                FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
 
 			LM_DBG("masks: param: %d --- %d :db\n", flags, dbflags);
 
@@ -428,7 +428,7 @@ skip_coords:
 
 			case 'f':
 				cflags = flag_list_to_bitmask(str2const(&pair->val.val.st),
-				                              FLAG_TYPE_BRANCH, FLAG_DELIM);
+				                              FLAG_TYPE_BRANCH, FLAG_DELIM, 0);
 				cols_needed &= ~COL_CFLAGS;
 				break;
 

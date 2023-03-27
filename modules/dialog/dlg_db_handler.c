@@ -576,6 +576,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	int_str tag_name;
 	int rc;
 	int dlg_val_type;
+	str_const flag_list;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -721,7 +722,9 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 
 			/* script flags */
 			if (!VAL_NULL(values+19)) {
-				dlg->user_flags = VAL_INT(values+19);
+				GET_STR_VALUE(flag_list, values, 19, 0, 0);
+				dlg->user_flags = flag_list_to_bitmask(&flag_list,
+					FLAG_TYPE_DIALOG, FLAG_DELIM, 1);
 			}
 
 			/* module flags */
@@ -1083,14 +1086,14 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 
 		VAL_TYPE(values+8) = VAL_TYPE(values+11) = VAL_TYPE(values+12) =
 		VAL_TYPE(values+15) =VAL_TYPE(values+16) = VAL_TYPE(values+17) =
-		VAL_TYPE(values+20) = VAL_TYPE(values+21) = DB_INT;
+		VAL_TYPE(values+21) = DB_INT;
 
 		VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 		VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 		VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
-		VAL_TYPE(values+22) = VAL_TYPE(values+23) = VAL_TYPE(values+24) =
-		VAL_TYPE(values+25) = DB_STR;
+		VAL_TYPE(values+20) = VAL_TYPE(values+22) = VAL_TYPE(values+23) =
+		VAL_TYPE(values+24) = VAL_TYPE(values+25) = DB_STR;
 		VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
 		DB_STRING;
 		VAL_TYPE(values+18) = DB_BLOB;
@@ -1158,11 +1161,10 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		/* save only dialog's state and timeout */
 		VAL_TYPE(values) = DB_BIGINT;
 		VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+15) =
-		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+20) =
-		VAL_TYPE(values+21) = DB_INT;
+		VAL_TYPE(values+16) = VAL_TYPE(values+17) = VAL_TYPE(values+21) = DB_INT;
 
 		VAL_TYPE(values+13) = VAL_TYPE(values+14) = VAL_TYPE(values+19) =
-		VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
+		VAL_TYPE(values+22) = VAL_TYPE(values+23) = VAL_TYPE(values+20) = DB_STR;
 		VAL_TYPE(values+18) = DB_BLOB;
 
 		/* lock the entry */
@@ -1199,7 +1201,7 @@ int update_dialog_dbinfo(struct dlg_cell * cell)
 		VAL_TYPE(values) = DB_BIGINT;
 		VAL_TYPE(values+18) = DB_BLOB;
 		VAL_TYPE(values+19) = DB_STR;
-		VAL_TYPE(values+20) = DB_INT;
+		VAL_TYPE(values+20) = DB_STR;
 		VAL_TYPE(values+21) = DB_INT;
 
 		/* lock the entry */
@@ -1556,6 +1558,7 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 {
 	str *s;
 	int_str val;
+	str flag_list;
 
 	LM_DBG("DLG vals and profiles should %s[%x:%d]\n",
 			(db_flush_vp && (cell->flags & DLG_FLAG_VP_CHANGED)) ?
@@ -1599,12 +1602,13 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 				SET_STR_VALUE(vals+1, *s);
 			}
 		}
-		SET_INT_VALUE(vals+2,  cell->user_flags);
+		flag_list = bitmask_to_flag_list(FLAG_TYPE_DIALOG, cell->user_flags);
+		SET_STR_VALUE(vals+2,  flag_list);
 		SET_INT_VALUE(vals+3,  cell->mod_flags);
 	} else {
 		VAL_NULL(vals) = 1;
 		VAL_NULL(vals+1) = 1;
-		SET_INT_VALUE(vals+2,  0);
+		VAL_NULL(vals+2) = 1;
 		SET_INT_VALUE(vals+3,  0);
 	}
 
@@ -1647,15 +1651,14 @@ void dialog_update_db(unsigned int ticks, void *do_lock)
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_TYPE(values+8) =
 	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
-	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)=
-	VAL_TYPE(values+25) = DB_INT;
+	VAL_TYPE(values+20) = VAL_TYPE(values+24)= VAL_TYPE(values+25) = DB_INT;
 
 	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-	VAL_TYPE(values+22) = DB_STR;
+	VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
 
 	VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
 	DB_STRING;
@@ -1865,6 +1868,7 @@ static int sync_dlg_db_mem(void)
 	int_str tag_name;
 	int rc;
 	int dlg_val_type;
+	str_const flag_list;
 
 	res = 0;
 	if((nr_rows = select_entire_dialog_table(&res,&no_rows)) < 0)
@@ -2007,7 +2011,9 @@ static int sync_dlg_db_mem(void)
 
 				/* script flags */
 				if (!VAL_NULL(values+19)) {
-					dlg->user_flags = VAL_INT(values+19);
+					GET_STR_VALUE(flag_list, values, 19, 0, 0);
+					dlg->user_flags = flag_list_to_bitmask(&flag_list,
+						FLAG_TYPE_DIALOG, FLAG_DELIM, 1);
 				}
 
 				/* module flags */
@@ -2358,15 +2364,14 @@ static int restore_dlg_db(void)
 	VAL_TYPE(values) = DB_BIGINT;
 	VAL_TYPE(values+8) =
 	VAL_TYPE(values+15) = VAL_TYPE(values+16) = VAL_TYPE(values+19) =
-	VAL_TYPE(values+20) = VAL_TYPE(values+23) = VAL_TYPE(values+24)=
-	VAL_TYPE(values+25) = DB_INT;
+	VAL_TYPE(values+20) = VAL_TYPE(values+24) = VAL_TYPE(values+25) = DB_INT;
 
 	VAL_TYPE(values+1) = VAL_TYPE(values+2) = VAL_TYPE(values+3) =
 	VAL_TYPE(values+4) = VAL_TYPE(values+5) = VAL_TYPE(values+6) =
 	VAL_TYPE(values+7) = VAL_TYPE(values+9) = VAL_TYPE(values+10) =
 	VAL_TYPE(values+11) = VAL_TYPE(values+12) = VAL_TYPE(values+13) =
 	VAL_TYPE(values+14) = VAL_TYPE(values+17) = VAL_TYPE(values+18) =
-	VAL_TYPE(values+22) = DB_STR;
+	VAL_TYPE(values+22) = VAL_TYPE(values+23) = DB_STR;
 
 	VAL_TYPE(values+26) = VAL_TYPE(values+27) = VAL_TYPE(values+28) =
 	DB_STRING;

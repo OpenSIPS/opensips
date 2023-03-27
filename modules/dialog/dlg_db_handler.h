@@ -59,7 +59,7 @@
 #define DIALOG_TABLE_TOTAL_COL_NO	29
 
 #define DIALOG_TABLE_NAME		"dialog"
-#define DLG_TABLE_VERSION		11
+#define DLG_TABLE_VERSION		12
 
 /*every minute the dialogs' information will be refreshed*/
 #define DB_DEFAULT_UPDATE_PERIOD	60
