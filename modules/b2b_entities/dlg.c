@@ -2768,7 +2768,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	static struct authenticate_nc_cnonce auth_nc_cnonce;
 	struct digest_auth_response response;
 	str *new_hdr;
-	char status_buf[INT2STR_MAX_LEN];
+	char dummy_fl_buf[7/*SIP/2.0*/ + 1 + 3/*statuscode*/ + 1 + 7/*Timeout*/];
 	static str sdp_ct = str_init("Content-Type: application/sdp\r\n");
 	int old_route_type;
 	bin_packet_t storage;
@@ -3169,12 +3169,23 @@ dummy_reply:
 			memset(&dummy_msg, 0, sizeof(struct sip_msg));
 			dummy_msg.id = 1;
 			dummy_msg.first_line.type = SIP_REPLY;
-			dummy_msg.first_line.u.reply.statuscode = statuscode;
-			dummy_msg.first_line.u.reply.status.s =
-				int2bstr( statuscode, status_buf,
-				&dummy_msg.first_line.u.reply.status.len);
-			dummy_msg.first_line.u.reply.reason.s = "Timeout";
+
+			memcpy(dummy_fl_buf, "SIP/2.0", 7);
+			dummy_msg.first_line.u.reply.version.s = dummy_fl_buf;
+			dummy_msg.first_line.u.reply.version.len = 7;
+			dummy_fl_buf[7] = ' ';
+
+			rctostr(dummy_fl_buf+8, statuscode);
+			dummy_msg.first_line.u.reply.status.s = dummy_fl_buf+8;
+			dummy_msg.first_line.u.reply.status.len = 3;
+			dummy_fl_buf[11] = ' ';
+
+			memcpy(dummy_fl_buf, "Timeout", 7);
+			dummy_msg.first_line.u.reply.reason.s = dummy_fl_buf+12;
 			dummy_msg.first_line.u.reply.reason.len = 7;
+
+			dummy_msg.first_line.u.reply.statuscode = statuscode;
+
 			memset(&cb, 0, sizeof(struct cseq_body));
 			memset(&cseq, 0, sizeof(struct hdr_field));
 			cb.method = t->method;
