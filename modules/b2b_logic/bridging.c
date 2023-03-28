@@ -992,9 +992,13 @@ static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 	b2bl_entity_id_t *e;
 	int i;
 
-	if (cur_entity && !str_strcmp(ent_str, const_str("this"))) {
+	if (!str_strcmp(ent_str, const_str("this"))) {
+		if (!cur_entity) {
+			LM_ERR("Current entity not found anymore\n");
+			return NULL;
+		}
 		*old_ent = cur_entity;
-	} else if (cur_entity && !str_strcmp(ent_str, const_str("peer"))) {
+	} else if (!str_strcmp(ent_str, const_str("peer"))) {
 		*old_ent = b2bl_search_entity(tuple, &cur_route_ctx.peer_key,
 			cur_route_ctx.peer_type, &entity_head);
 		if(*old_ent == NULL)
@@ -1094,11 +1098,13 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 
 	new_br_ent[0] = get_ent_to_bridge(tuple, entity, br_ent1_str, &e);
 
-
 	if (e)
 		old_entity = e;
-	else if (!new_br_ent[0])
+	else if (!new_br_ent[0]) {
+		LM_ERR("Failed to get entity to bridge: %.*s\n", br_ent1_str->len,
+			br_ent1_str->s);
 		goto done;
+	}
 
 	e = NULL;
 	new_br_ent[1] = get_ent_to_bridge(tuple, entity, br_ent2_str, &e);
@@ -1108,8 +1114,11 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 			LM_ERR("At least one new client entity required for bridging\n");
 		else
 			old_entity = e;
-	} else if (!new_br_ent[1])
+	} else if (!new_br_ent[1]) {
+		LM_ERR("Failed to get entity to bridge: %.*s\n", br_ent2_str->len,
+			br_ent2_str->s);
 		goto done;
+	}
 
 	if (params->flags & B2BL_BR_FLAG_NOTIFY && entity)
 		send_bridge_notify(entity, cur_route_ctx.hash_index, NULL);
