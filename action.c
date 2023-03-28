@@ -455,6 +455,7 @@ static pv_value_t *route_params_expand(struct sip_msg *msg,
 		LM_ERR("oom\n");
 		return NULL;
 	}
+	memset(route_vals, 0, params_no * sizeof(*route_vals));
 
 	for (index = 0; index < params_no; index++) {
 		res = &route_vals[index];
@@ -468,7 +469,7 @@ static pv_value_t *route_params_expand(struct sip_msg *msg,
 
 			case NUMBER_ST:
 				res->ri = actions[index].u.number;
-				res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+				res->flags = PV_VAL_INT|PV_TYPE_INT;
 				break;
 
 			case SCRIPTVAR_ST:
