@@ -887,10 +887,6 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			statuscode);
 
 		/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
-		/* extract the method from Cseq header */
-
-		if(method_value == METHOD_NOTIFY) goto done1; /* Silently ignore reply on NOTIFY */
-
 		if(method_value != METHOD_INVITE)
 		{
 			LM_ERR("Wrong scenario state [B2B_BRIDGING_STATE] for this"

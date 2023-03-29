@@ -954,6 +954,7 @@ int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(entity);
 	req_data.method = &method_notify;
+	req_data.no_cb = 1;
 	req_data.client_headers = &entity->hdrs;
 	req_data.body = 0;
 	if (!msg) {
