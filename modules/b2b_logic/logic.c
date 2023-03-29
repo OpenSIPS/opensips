@@ -639,6 +639,7 @@ int process_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index, str
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(entity);
 	req_data.method = &method_notify;
+	req_data.no_cb = 1;
 	req_data.client_headers = &entity->hdrs;
 	req_data.body = 0;
 	if (!msg) {
@@ -1487,10 +1488,6 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 			statuscode);
 
 		/* if the scenario state is B2B_BRIDGING_STATE -> we should have a reply for INVITE */
-		/* extract the method from Cseq header */
-
-		if(method_value == METHOD_NOTIFY) goto done1; /* Silently ignore reply on NOTIFY */
-
 		if(method_value != METHOD_INVITE)
 		{
 			LM_ERR("Wrong scenario state [B2B_BRIDGING_STATE] for this"
