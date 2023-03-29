@@ -470,6 +470,11 @@ static pv_value_t *route_params_expand(struct sip_msg *msg,
 			case NUMBER_ST:
 				res->ri = actions[index].u.number;
 				res->flags = PV_VAL_INT|PV_TYPE_INT;
+				tmp.s = sint2str(res->ri, &tmp.len);
+				if (pkg_str_dup(&res->rs, &tmp) == 0)
+					res->flags |= PV_VAL_STR|PV_VAL_PKG;
+				else
+					LM_ERR("cannot duplicate param value\n");
 				break;
 
 			case SCRIPTVAR_ST:
