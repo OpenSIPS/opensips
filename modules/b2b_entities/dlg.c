@@ -1095,32 +1095,24 @@ logic_notify:
 
 	if(method_value != METHOD_CANCEL)
 	{
-		ret = tmb.t_newtran(msg);
-		if(ret < 1 && method_value != METHOD_ACK)
-		{
-			if(ret== 0)
-			{
-				LM_DBG("It is a retransmission, drop\n");
-			}
-			else
-				LM_DBG("Error when creating tm transaction\n");
-			lock_release(&table[hash_index].lock);
-			return SCB_DROP_MSG;
-		}
-
-		tm_tran = tmb.t_gett();
-
-		/* if a valid transaction was created, trace it
-		   NOTE that the end2end ACK forms a separate transaction
-		   (even if TM will return a NULL transaction) and
-		   we will trace it as standalone request, while a negative hop-by-hop ACK
-		   (part of INVITE transaction) we will get T_UNDEFINED, so not to be traced
-		*/
-		if (tm_tran != T_UNDEFINED)
-			b2b_run_tracer(dlg, msg, tm_tran);
-
 		if(method_value != METHOD_ACK)
 		{
+			ret = tmb.t_newtran(msg);
+			if (ret < 1)
+			{
+				if(ret== 0)
+				{
+					LM_DBG("It is a retransmission, drop\n");
+				}
+				else
+					LM_DBG("Error when creating tm transaction\n");
+				B2BE_LOCK_RELEASE(table, hash_index);
+				return SCB_DROP_MSG;
+			}
+			tm_tran = tmb.t_gett();
+			if (tm_tran != T_UNDEFINED)
+				b2b_run_tracer(dlg, msg, tm_tran);
+
 			if(method_value == METHOD_UPDATE)
 			{
 				dlg->update_tran = tm_tran;
@@ -1189,15 +1181,37 @@ logic_notify:
 		}
 		else
 		{
-			if(!tm_tran || tm_tran==T_UNDEFINED) {
-				tm_tran = tmb.t_get_e2eackt();
-				if (!tm_tran || tm_tran==T_UNDEFINED)
-					/* ACK for a negative reply */
-					b2b_cb_flags |= B2B_NOTIFY_FL_ACK_NEG;
+			if (dlg->uas_tran) {
+				tmb.t_release_trans(dlg->uas_tran);
+				tmb.unref_cell(dlg->uas_tran);
+				dlg->uas_tran = NULL;
 			}
 
-			if(tm_tran && tm_tran!=T_UNDEFINED)
-				tmb.unref_cell(tm_tran);
+			ret = tmb.t_newtran(msg);
+			if (ret >= 0) {
+				tm_tran = tmb.t_gett();
+				/* if a valid transaction was created, trace it
+				   NOTE that the end2end ACK forms a separate transaction
+				   (even if TM will return a NULL transaction) and
+				   we will trace it as standalone request, while a negative hop-by-hop ACK
+				   (part of INVITE transaction) we will get T_UNDEFINED, so not to be traced
+				   */
+				if (tm_tran && tm_tran != T_UNDEFINED)
+					b2b_run_tracer(dlg, msg, tm_tran);
+				/* we got an ACK - we need to fetch its initial transaction */
+				if(!tm_tran || tm_tran==T_UNDEFINED)
+					tm_tran = tmb.t_get_e2eackt();
+
+				if(!tm_tran || tm_tran==T_UNDEFINED) {
+					tm_tran = tmb.t_get_e2eackt();
+					if (!tm_tran || tm_tran==T_UNDEFINED)
+						/* ACK for a negative reply */
+						b2b_cb_flags |= B2B_NOTIFY_FL_ACK_NEG;
+				}
+
+				if(tm_tran && tm_tran!=T_UNDEFINED)
+					tmb.unref_cell(tm_tran);
+			}
 		}
 	}
 
@@ -1682,12 +1696,13 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			else if (!dlg->uac_tran && dlg->state != B2B_MODIFIED)
 				dlg->state= B2B_TERMINATED;
 			UPDATE_DBFLAG(dlg);
+		} else {
+			LM_DBG("Reset transaction- send final reply [%p], uas_tran=0\n", dlg);
+			if(sip_method == METHOD_UPDATE)
+				dlg->update_tran = NULL;
+			else
+				dlg->uas_tran = NULL;
 		}
-		LM_DBG("Reset transaction- send final reply [%p], uas_tran=0\n", dlg);
-		if(sip_method == METHOD_UPDATE)
-			dlg->update_tran = NULL;
-		else
-			dlg->uas_tran = NULL;
 	}
 
 	msg = tm_tran->uas.request;
@@ -1792,8 +1807,12 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 	}
 	if(code >= 200)
 	{
-		LM_DBG("Sent reply [%d] and unreffed the cell %p\n", code, tm_tran);
-		tmb.unref_cell(tm_tran);
+		if (sip_method != METHOD_INVITE) {
+			LM_DBG("Sent reply [%d] and unreffed the cell %p\n", code, tm_tran);
+			tmb.unref_cell(tm_tran);
+		} else {
+			LM_DBG("Sent reply [%d] without unreffing the cell %p\n", code, tm_tran);
+		}
 	}
 	else
 	{
@@ -1804,7 +1823,12 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 error:
 	if(code >= 200)
 	{
-		tmb.unref_cell(tm_tran);
+		if (sip_method != METHOD_INVITE) {
+			LM_DBG("Sent reply [%d] and unreffed the cell %p\n", code, tm_tran);
+			tmb.unref_cell(tm_tran);
+		} else {
+			LM_DBG("Sent reply [%d] without unreffing the cell %p\n", code, tm_tran);
+		}
 	}
 	return -1;
 }
