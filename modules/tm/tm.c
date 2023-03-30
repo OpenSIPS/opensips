@@ -647,6 +647,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->t_set_remote_t = t_set_remote_t;
 
 	tmb->t_lookup_original_t = t_lookupOriginalT;
+	tmb->t_release_trans = t_release_transaction;
 	tmb->unref_cell = t_unref_cell;
 	tmb->ref_cell = t_ref_cell;
 	tmb->t_setkr = set_kr;
