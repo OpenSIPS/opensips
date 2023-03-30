@@ -205,6 +205,10 @@ int  t_add_transaction( struct sip_msg* p_msg  );
 int t_release_transaction( struct cell *trans );
 
 
+
+typedef int (*treleasetrans_f)( struct cell *trans );
+
+
 int get_ip_and_port_from_uri( str* uri , unsigned int *param_ip,
 	unsigned int *param_port);
 
