@@ -1112,7 +1112,7 @@ logic_notify:
 				}
 				else
 					LM_DBG("Error when creating tm transaction\n");
-				B2BE_LOCK_RELEASE(table, hash_index);
+				lock_release(&table[hash_index].lock);
 				return SCB_DROP_MSG;
 			}
 			tm_tran = tmb.t_gett();
