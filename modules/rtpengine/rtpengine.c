@@ -2458,7 +2458,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	struct ng_flags_parse ng_flags;
 	bencode_item_t *item, *resp;
 	str viabranch, error;
-	int ret, flags_exist = 0;
+	int ret, flags_exist = 0, callid_exist = 0, from_tag_exist = 0, to_tag_exist = 0;
 	struct rtpe_node *node;
 	char *cp, *err = NULL;
 	pv_value_t val;
@@ -2485,6 +2485,12 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		bencode_dictionary_get_str(ng_flags.dict, "call-id", &ng_flags.call_id);
 		bencode_dictionary_get_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
 		bencode_dictionary_get_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
+		if (ng_flags.call_id.len)
+			callid_exist = 1;
+		if (ng_flags.from_tag.len)
+			from_tag_exist = 1;
+		if (ng_flags.to_tag.len)
+			to_tag_exist = 1;
 	}
 	if (op == OP_OFFER || op == OP_ANSWER) {
 		if (!flags_exist)
@@ -2547,7 +2553,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 	if (ng_flags.rtcp_mux && ng_flags.rtcp_mux->child)
 		bencode_dictionary_add(ng_flags.dict, "rtcp-mux", ng_flags.rtcp_mux);
 
-	if (!extra_dict)
+	if (!callid_exist)
 		bencode_dictionary_add_str(ng_flags.dict, "call-id", &ng_flags.call_id);
 
 	if (ng_flags.via) {
@@ -2600,18 +2606,18 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_MEDIA ||
 			op == OP_BLOCK_DTMF || op == OP_UNBLOCK_DTMF ||
 			op == OP_START_FORWARD || op == OP_STOP_FORWARD) {
-		if (ng_flags.directional && !extra_dict)
+		if (ng_flags.directional && !from_tag_exist)
 			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
 	} else if (ng_flags.directional
 		|| (msg && ((msg->first_line.type == SIP_REQUEST && op != OP_ANSWER)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_DELETE)
 		|| (msg->first_line.type == SIP_REPLY && op == OP_ANSWER))))
 	{
-		if (!extra_dict)
+		if (!from_tag_exist)
 			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.from_tag);
 		if (op != OP_START_MEDIA && op != OP_STOP_MEDIA) {
 			/* no need of to-tag if we are just playing media */
-			if (ng_flags.to && ng_flags.to_tag.s && ng_flags.to_tag.len)
+			if (ng_flags.to && ng_flags.to_tag.s && ng_flags.to_tag.len && !to_tag_exist && !extra_dict)
 				bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.to_tag);
 		}
 	}
@@ -2620,10 +2626,10 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 			err = "No to-tag present";
 			goto error;
 		}
-		if (!extra_dict) {
+		if (!from_tag_exist)
 			bencode_dictionary_add_str(ng_flags.dict, "from-tag", &ng_flags.to_tag);
+		if (!to_tag_exist && !extra_dict)
 			bencode_dictionary_add_str(ng_flags.dict, "to-tag", &ng_flags.from_tag);
-		}
 	}
 
 	bencode_dictionary_add_string(ng_flags.dict, "command", command_strings[op]);
