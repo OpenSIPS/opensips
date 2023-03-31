@@ -453,12 +453,47 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 	LM_DBG("%p\n", tuple);
 }
 
+int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact)
+{
+	struct sip_uri ct_uri;
+	struct socket_info *send_sock = msg ?
+		(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
+
+	if (server_address.len) {
+		if (pv_printf_s(msg, server_address_pve, local_contact) != 0) {
+			LM_WARN("Failed to print format string from 'server_address'\n");
+
+			if (msg) {
+				get_local_contact(send_sock, NULL, local_contact);
+			} else {
+				LM_ERR("No current SIP message, "
+					"failed to build Contact from send socket\n");
+				return -1;
+			}
+		}
+	} else {
+		if (msg) {
+			memset(&ct_uri, 0, sizeof(struct sip_uri));
+			if (contact_user && parse_uri(from_uri->s, from_uri->len, &ct_uri) < 0) {
+				LM_ERR("Not a valid sip uri [%.*s]\n", from_uri->len, from_uri->s);
+				return -1;
+			}
+
+			get_local_contact(send_sock, &ct_uri.user, local_contact);
+		} else {
+			LM_ERR("'server_address' not defined and no current SIP message\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
 b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
 	str *ssid, str *adv_ct, struct sip_msg *msg)
 {
 	str* client_id;
 	b2bl_entity_id_t* entity;
-	struct sip_uri ct_uri;
 
 	ci->method = method_invite;
 	ci->send_sock = msg ?
@@ -466,37 +501,9 @@ b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
 
 	if (adv_ct) {
 		ci->local_contact = *adv_ct;
-	} else {
-		if (server_address.len > 0)
-		{
-			if (pv_printf_s(msg, server_address_pve, &ci->local_contact) != 0)
-			{
-				LM_WARN("Failed to build contact from server address\n");
-				if (ci->send_sock) get_local_contact(ci->send_sock, NULL, &ci->local_contact);
-				else
-				{
-					LM_ERR("Failed to build contact from send socket\n");
-					return NULL;
-				}
-			}
-		}
-		else
-		{
-			if (ci->send_sock) {
-				memset(&ct_uri, 0, sizeof(struct sip_uri));
-				if (contact_user && parse_uri(ci->from_uri.s, ci->from_uri.len, &ct_uri) < 0) {
-					LM_ERR("Not a valid sip uri [%.*s]\n", ci->from_uri.len, ci->from_uri.s);
-					return NULL;
-				}
-
-				get_local_contact(ci->send_sock, &ct_uri.user, &ci->local_contact);
-			}
-			else
-			{
-				LM_ERR("Failed to build contact from send socket and no server address defined\n");
-				return NULL;
-			}
-		}	
+	} else if (b2b_get_local_contact(msg, &ci->from_uri, &ci->local_contact) < 0) {
+		LM_ERR("Failed to build Contact\n");
+		return NULL;
 	}
 
 	if(msg)
@@ -2806,7 +2813,6 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	int eno = 0;
 	str *hdrs;
 	struct b2bl_new_entity *new_entity;
-	struct sip_uri ct_uri;
 	int maxfwd;
 
 	if(msg == NULL)
@@ -2942,14 +2948,9 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	if (new_entity->adv_contact.s) {
 		ci.local_contact = new_entity->adv_contact;
-	} else {
-		memset(&ct_uri, 0, sizeof(struct sip_uri));
-		if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0)
-		{
-			LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
-			goto error;
-		}
-		get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+	} else if (b2b_get_local_contact(msg, &ci.from_uri, &ci.local_contact) < 0) {
+		LM_ERR("Failed to get local contact\n");
+		goto error;
 	}
 
 	/* grab all AVPs from the server side */

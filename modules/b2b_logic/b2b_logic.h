@@ -205,4 +205,6 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type,
 		str *logic_key, void* param, int flags);
 void b2bl_db_init(void);
 
+int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact);
+
 #endif

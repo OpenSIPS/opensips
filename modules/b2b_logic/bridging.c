@@ -56,7 +56,7 @@ int b2b_msg_get_to(struct sip_msg* msg, str* to_uri, int flags);
 int b2b_msg_get_maxfwd(struct sip_msg *msg);
 
 static int bridging_start_new_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
-	b2bl_entity_id_t *new_entity, str *body, int replace);
+	b2bl_entity_id_t *new_entity, str *body, struct sip_msg* msg, int replace);
 static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *peer_ent, b2bl_entity_id_t *new_ent,
 	str *body, struct sip_msg *msg, int set_maxfwd);
@@ -237,7 +237,7 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 
 		local_ctx_tuple = NULL;
 	} else {
-		if (bridging_start_new_ent(tuple, bridging_entity, entity, NULL, 0) < 0) {
+		if (bridging_start_new_ent(tuple, bridging_entity, entity, NULL, NULL, 0) < 0) {
 			LM_ERR("Failed to start bridging with new entity\n");
 			goto error;
 		}
@@ -545,7 +545,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 				/* connect the new entity but using the initial SDP from
 				 * the old entity for now */
 				if (bridging_start_new_ent(tuple, bentity0, bentity1,
-					&bentity0->in_sdp, 1) < 0) {
+					&bentity0->in_sdp, msg, 1) < 0) {
 					LM_ERR("Failed to start bridging with new entity\n");
 					return -1;
 				}
@@ -565,7 +565,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			} else {
 				/* connect the new entity with late sdp */
 				if (bridging_start_new_ent(tuple, bentity0, bentity1,
-					NULL, 1) < 0) {
+					NULL, msg, 1) < 0) {
 					LM_ERR("Failed to start bridging with new entity\n");
 					return -1;
 				}
@@ -1239,7 +1239,7 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 			new_entities[0]->dest_uri.len, new_entities[0]->dest_uri.s);
 
 		if (bridging_start_new_ent(tuple, tuple->bridge_entities[0], entity,
-			NULL, 0) < 0) {
+			NULL, msg, 0) < 0) {
 			LM_ERR("Failed to start bridging with new entity\n");
 			goto error;
 		}
@@ -1314,13 +1314,13 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 }
 
 static int bridging_start_new_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
-	b2bl_entity_id_t *new_entity, str *body, int replace)
+	b2bl_entity_id_t *new_entity, str *body, struct sip_msg* msg, int replace)
 {
 	b2bl_entity_id_t *entity;
 
 	LM_DBG("Send Invite to new entity\n");
 
-	entity = bridging_new_client(tuple, old_entity, new_entity, body, NULL, 1);
+	entity = bridging_new_client(tuple, old_entity, new_entity, body, msg, 1);
 	if (!entity)
 		return -1;
 
@@ -1585,7 +1585,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 				/* connect the new entity but using the initial SDP from
 				 * the old entity for now */
 				if (bridging_start_new_ent(tuple, old_entity, bridge_entities[1],
-					&old_entity->in_sdp, 0) < 0) {
+					&old_entity->in_sdp, msg, 0) < 0) {
 					LM_ERR("Failed to start bridging with new entity\n");
 					goto error;
 				}
@@ -1606,7 +1606,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 			} else {
 				/* connect the new entity with late sdp */
 				if (bridging_start_new_ent(tuple, old_entity, bridge_entities[1],
-					NULL, 0) < 0) {
+					NULL, msg, 0) < 0) {
 					LM_ERR("Failed to start bridging with new entity\n");
 					goto error;
 				}
@@ -1765,7 +1765,7 @@ int b2bl_api_bridge(str* key, str* new_dst, str *new_proxy, str* new_from_dname,
 	LM_DBG("Created new client entity [%.*s]\n", new_dst->len, new_dst->s);
 
 	if (bridging_start_new_ent(tuple, tuple->servers[0], entity,
-		NULL, 0) < 0) {
+		NULL, NULL, 0) < 0) {
 		LM_ERR("Failed to start bridging with new entity\n");
 		goto error;
 	}
@@ -2021,13 +2021,12 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	b2bl_entity_id_t *old_entity;
 	b2bl_entity_id_t *entity;
 	str* server_id;
-	str body = {0, 0}, new_body = {0, 0}, contact = {0, 0};
+	str body = {0, 0}, new_body = {0, 0};
 	str to_uri={NULL,0}, from_uri, from_dname;
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
 	int update = 0;
 	int ret;
-	struct sip_uri ct_uri;
 	str local_contact;
 	int maxfwd;
 
@@ -2199,49 +2198,10 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 		goto error;
 	}
 
-	if (!adv_ct) {
-		memset(&ct_uri, 0, sizeof(struct sip_uri));
-		if (contact_user && parse_uri(to_uri.s, to_uri.len, &ct_uri) < 0) {
-			LM_ERR("Not a valid sip uri [%.*s]\n", to_uri.len, to_uri.s);
-			goto error;
-		}
-
-		if (get_local_contact(msg->rcv.bind_address, &ct_uri.user, &local_contact) < 0)
-		{
-			LM_ERR("Failed to get received address\n");
-			local_contact = tuple->local_contact;
-		}
-	}
-
-	if (server_address.len > 0)
-	{
-		if (pv_printf_s(msg, server_address_pve, &contact) != 0)
-		{
-			LM_WARN("Failed to build contact from server address\n");
-			if (!msg || get_local_contact(msg->rcv.bind_address, NULL, &contact) < 0)
-			{
-				LM_ERR("Failed to build contact from received address\n");
-				goto error;
-			}
-		}
-	}
-	else
-	{
-		if(msg)
-		{
-			if (get_local_contact(msg->rcv.bind_address, NULL, &contact) < 0)
-			{
-				LM_ERR("Failed to build contact from received address\n");
-				goto error;
-			}
-		}
-	}
-	if (contact.len <= 0)
-	{
-		LM_ERR("Unable to define contact\n");
+	if (!adv_ct && b2b_get_local_contact(msg, &to_uri, &local_contact) < 0) {
+		LM_ERR("Failed to get local contact\n");
 		goto error;
 	}
-	LM_DBG("Contact: %.*s\n", contact.len, contact.s);
 
 	/* create server entity from Invite */
 	server_id = b2b_api.server_new(msg, adv_ct ? adv_ct : &local_contact,
