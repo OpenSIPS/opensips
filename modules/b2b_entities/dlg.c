@@ -1122,9 +1122,8 @@ logic_notify:
 				dlg->uas_tran = NULL;
 			}
 
-				if(tm_tran && tm_tran!=T_UNDEFINED)
-					tmb.unref_cell(tm_tran);
-			}
+			if(tm_tran && tm_tran!=T_UNDEFINED)
+				tmb.unref_cell(tm_tran);
 		}
 	}
 
