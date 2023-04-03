@@ -699,6 +699,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			entity->sdp_type = B2BL_SDP_NORMAL;
 			entity->no =1;
 			tuple->bridge_entities[1] = entity;
+			bentity1 = entity;
 			if (0 != b2bl_add_client(tuple, entity))
 				return -1;
 		} else if (bentity1->type == B2B_CLIENT &&
