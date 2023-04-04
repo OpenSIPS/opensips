@@ -351,8 +351,14 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 			tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 			tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 
-			/* Disable bridging state */
-			tuple->state = B2B_BRIDGED_STATE;
+			/* renegotiate the SDP between the remainging entites */
+			if (bridging_start_old_ent(tuple, tuple->bridge_entities[0],
+				tuple->bridge_entities[1], NULL, NULL) < 0) {
+				LM_ERR("Failed to start bridging with old entity\n");
+				return -1;
+			}
+
+			tuple->state = B2B_BRIDGING_STATE;
 			tuple->bridge_initiator = 0;
 
 			return 1; // Don't delete tuple
@@ -703,11 +709,10 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			if (0 != b2bl_add_client(tuple, entity))
 				return -1;
 		} else if (bentity1->type == B2B_CLIENT &&
-			bentity1->state==B2BL_ENT_CONFIRMED &&
-			(tuple->bridge_flags & B2BL_BR_FLAG_RENEW_SDP) &&
-			tuple->bridge_entities[2] == NULL) {
+			bentity1->state==B2BL_ENT_CONFIRMED) {
 			/* send reInvite to second entity as it is already connected
-			 * after the B2B_BRIDGING_INIT_SDP_STATE state */
+			 * (after the B2B_BRIDGING_INIT_SDP_STATE state or after
+			   a SDP renewal was triggered because of a rollback) */
 
 			bentity0->state = B2BL_ENT_CONFIRMED;
 
