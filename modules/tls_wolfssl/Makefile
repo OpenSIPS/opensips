@@ -2,6 +2,8 @@ include ../../Makefile.defs
 auto_gen=
 NAME=tls_wolfssl.so
 
+DEFS+=-DWOLFSSL_QT
+
 ifeq ($(WOLFSSL_FIPS_ENABLED),)
 	LIBS=-L./lib/lib/ -lwolfssl -lm
 	DEFS+=-I./lib/include/
