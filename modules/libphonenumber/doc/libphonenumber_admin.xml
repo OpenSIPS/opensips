@@ -1,0 +1,1188 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module allows parsing, formatting, and validating international phone numbers using the
+		<ulink url="https://github.com/google/libphonenumber">
+		<citetitle>libphonenumber</citetitle></ulink> libarary.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>None</emphasis>.
+			</para>
+			</listitem>
+			</itemizedlist>
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		&osips; libphonenumber support requires the following packages:
+		<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>libphonenumber7</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>libphonenumber-dev</emphasis>
+			</para>
+			</listitem>
+		</itemizedlist>
+		</para>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<section id="func_convert_alpha_characters_in_number" xreflabel="convert_alpha_characters_in_number()">
+			<title>
+			<function moreinfo="none">convert_alpha_characters_in_number(number, out)</function>
+			</title>
+			<para>
+			Converts all alpha characters in a number to their respective digits on a keypad, but retains
+			existing formatting.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format" xreflabel="format()">
+			<title>
+			<function moreinfo="none">format(number, format, out, [default_region])</function>
+			</title>
+			<para>
+			Formats a phone number in the specified format using default rules. Note that this does not
+			promise to produce a phone number that the user can dial from where they are - although we do
+			format in either 'national' or 'international' format depending on what the client asks for, we
+			do not currently support a more abbreviated format, such as for users in the same "area" who
+			could potentially dial the number without area code. Note that if the phone number has a
+			country calling code of 0 or an otherwise invalid country calling code, we cannot work out
+			which formatting rules to apply so we return the national significant number with no formatting
+			applied.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>format</emphasis> (integer):
+				</para>
+				<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>0</emphasis> &#8211; E164
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>1</emphasis> &#8211; International
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>2</emphasis> &#8211; National
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>3</emphasis> &#8211; RFC3966
+					</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format_in_original_format" xreflabel="format_in_original_format()">
+			<title>
+			<function moreinfo="none">format_in_original_format(number, region_calling_from, out, [default_region])</function>
+			</title>
+			<para>
+			Formats a phone number using the original phone number format (e.g. INTERNATIONAL or NATIONAL)
+			that the number is parsed from. Otherwise the number will be formatted in NATIONAL format.
+			</para>
+			<para>
+			Note this method guarantees no digit will be inserted, removed or modified as a result of
+			formatting.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region_calling_from</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format_national_number_with_carrier_code" xreflabel="format_national_number_with_carrier_code()">
+			<title>
+			<function moreinfo="none">format_national_number_with_carrier_code(number, carrier_code, out, [default_region])</function>
+			</title>
+			<para>
+			Formats a phone number in national format for dialing using the carrier as specified in the
+			<varname>carrier_code</varname>. If <varname>carrier_code</varname>
+			contains an empty string, returns the number in national format without any carrier code.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>carrier_code</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format_national_number_with_preferred_carrier_code" xreflabel="format_national_number_with_preferred_carrier_code()">
+			<title>
+			<function moreinfo="none">format_national_number_with_preferred_carrier_code(number, preferred_carrier_code, out, [default_region])</function>
+			</title>
+			<para>
+			Formats a phone number in national format for dialing using the carrier as specified in the
+			<varname>preferred_carrier_code</varname>.
+			</para>
+			<para>
+			Use <varname>format_national_number_with_carrier_code</varname> instead if the carrier code passed in
+			should take precedence over the number's <varname>preferred_carrier_code</varname> when formatting.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>preferred_carrier_code</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format_number_for_mobile_dialing" xreflabel="format_number_for_mobile_dialing()">
+			<title>
+			<function moreinfo="none">format_number_for_mobile_dialing(number, region_calling_from, with_formatting, out, [default_region])</function>
+			</title>
+			<para>
+			Returns a number formatted in such a way that it can be dialed from a mobile phone in a
+			specific region. If the number cannot be reached from the region (e.g. some countries block
+			toll-free numbers from being called outside of the country), the function returns <emphasis role='bold'>-1</emphasis>.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region_calling_from</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>with_formatting</emphasis> (integer):
+				</para>
+				<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>0</emphasis> &#8211; False
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>1</emphasis> &#8211; True
+					</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format_out_of_country_calling_number" xreflabel="format_out_of_country_calling_number()">
+			<title>
+			<function moreinfo="none">format_out_of_country_calling_number(number, calling_from, out, [default_region])</function>
+			</title>
+			<para>
+			Formats a phone number for out-of-country dialing purposes. If no <varname>calling_from</varname> is
+			supplied, we format the number in its INTERNATIONAL format. If the country calling code is the
+			same as that of the region where the number is from, then NATIONAL formatting will be applied.
+			</para>
+			<para>
+			If the number itself has a country calling code of zero or an otherwise invalid country
+			calling code, then we return the number with no formatting applied.
+			</para>
+			<para>
+			Note this function takes care of the case for calling inside of NANPA and between Russia and
+			Kazakhstan (who share the same country calling code). In those cases, no international prefix
+			is used. For regions which have multiple international prefixes, the number in its
+			INTERNATIONAL format will be returned instead.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>calling_from</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_format_out_of_country_keeping_alpha_chars" xreflabel="format_out_of_country_keeping_alpha_chars()">
+			<title>
+			<function moreinfo="none">format_out_of_country_keeping_alpha_chars(number, calling_from, out, [default_region])</function>
+			</title>
+			<para>
+			Formats a phone number for out-of-country dialing purposes.
+			</para>
+			<para>
+			Note that in this version, if the number was entered originally using alpha characters and
+			this version of the number is stored in raw_input, this representation of the number will be
+			used rather than the digit representation. Grouping information, as specified by characters
+			such as "-" and " ", will be retained.
+			</para>
+			<para>
+			Caveats:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				This will not produce good results if the country calling code is both present in the raw
+				input _and_ is the start of the national number. This is not a problem in the regions
+				which typically use alpha numbers.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				This will also not produce good results if the raw input has any grouping information
+				within the first three digits of the national number, and if the function needs to strip
+				preceding digits/words in the raw input before these digits. Normally people group the
+				first three digits together so this is not a huge problem - and will be fixed if it
+				proves to be so.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>calling_from</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_country_code_for_region" xreflabel="get_country_code_for_region()">
+			<title>
+			<function moreinfo="none">get_country_code_for_region(region_code, out)</function>
+			</title>
+			<para>
+			Returns the country calling code for a specific region. For example, this would be 1 for the
+			United States, and 64 for New Zealand.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region_code</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_country_mobile_token" xreflabel="get_country_mobile_token()">
+			<title>
+			<function moreinfo="none">get_country_mobile_token(country_calling_code, out)</function>
+			</title>
+			<para>
+			Returns the mobile token for the provided country calling code if it has one, otherwise
+			returns <emphasis role='bold'>-1</emphasis>. A mobile token is a number inserted before the area code when dialing
+			a mobile number from that country from abroad.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>country_calling_code</emphasis> (integer)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_length_of_geographical_area_code" xreflabel="get_length_of_geographical_area_code()">
+			<title>
+			<function moreinfo="none">get_length_of_geographical_area_code(number, out, [default_region])</function>
+			</title>
+			<para>
+			Gets the length of the geographical area code from the
+			PhoneNumber object passed in, so that clients could use it
+			to split a national significant number into geographical area code and subscriber number. It
+			works in such a way that the resultant subscriber number should be diallable, at least on some
+			devices.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_length_of_national_destination_code" xreflabel="get_length_of_national_destination_code()">
+			<title>
+			<function moreinfo="none">get_length_of_national_destination_code(number, out, [default_region])</function>
+			</title>
+			<para>
+			Gets the length of the national destination code (NDC) from the
+			PhoneNumber object passed in, so that clients could use it
+			to split a national significant number into NDC and subscriber number. The NDC of a phone
+			number is normally the first group of digit(s) right after the country calling code when the
+			number is formatted in the international format, if there is a subscriber number part that
+			follows.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_national_significant_number" xreflabel="get_national_significant_number()">
+			<title>
+			<function moreinfo="none">get_national_significant_number(number, out, [default_region])</function>
+			</title>
+			<para>
+			Gets the national significant number of a phone number. Note a national significant number
+			doesn't contain a national prefix or any formatting.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_ndd_prefix_for_region" xreflabel="get_ndd_prefix_for_region()">
+			<title>
+			<function moreinfo="none">get_ndd_prefix_for_region(region_code, strip_non_digits, out)</function>
+			</title>
+			<para>
+			Returns the national dialling prefix for a specific region. For example, this would be 1 for
+			the United States, and 0 for New Zealand. Set stripNonDigits to true to strip symbols like "~"
+			(which indicates a wait for a dialling tone) from the prefix returned. If no national prefix is
+			present, we return null.
+			</para>
+			<para>
+			Warning: Do not use this method for do-your-own formatting - for some regions, the
+			national dialling prefix is used only for certain types of numbers. Use the library's
+			formatting functions to prefix the national prefix when required.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region_code</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>strip_non_digits</emphasis> (integer):
+				</para>
+				<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>0</emphasis> &#8211; False
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>1</emphasis> &#8211; True
+					</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_number_type" xreflabel="get_number_type()">
+			<title>
+			<function moreinfo="none">get_number_type(number, out, default_region)</function>
+			</title>
+			<para>
+			Gets the type of a valid phone number.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var):
+				</para>
+				<itemizedlist>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>-1</emphasis> &#8211; Parsing error
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>0</emphasis> &#8211; Fixed line
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>1</emphasis> &#8211; Mobile
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>2</emphasis> &#8211; Fixed line or mobile
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>3</emphasis> &#8211; Toll free
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>4</emphasis> &#8211; Premium rate
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>5</emphasis> &#8211; Shared cost
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>6</emphasis> &#8211; VoIP
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>7</emphasis> &#8211; Personal number
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>8</emphasis> &#8211; Pager
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>9</emphasis> &#8211; UAN
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>10</emphasis> &#8211; Voicemail
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					 <emphasis role='bold'>11</emphasis> &#8211; Unknown
+					</para>
+				</listitem>
+				</itemizedlist>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_region_code_for_country_code" xreflabel="get_region_code_for_country_code()">
+			<title>
+			<function moreinfo="none">get_region_code_for_country_code(country_code, out)</function>
+			</title>
+			<para>
+			Returns the region code that matches the specific country calling code. In the case of no
+			region code being found, ZZ will be returned. In the case of multiple regions, the one
+			designated in the metadata as the "main" region for this calling code will be returned. If the
+			countryCallingCode entered is valid but doesn't match a specific region (such as in the case of
+			non-geographical calling codes like 800) the value "001" will be returned (corresponding to
+			the value for World in the UN M.49 schema).
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>country_code</emphasis> (integer)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_get_region_code_for_number" xreflabel="get_region_code_for_number()">
+			<title>
+			<function moreinfo="none">get_region_code_for_number(number, out, [default_region])</function>
+			</title>
+			<para>
+			Returns the region where a phone number is from. This could be used for geocoding at the region
+			level. Only guarantees correct results for valid, full numbers (not short-codes, or invalid
+			numbers).
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_alpha_number" xreflabel="is_alpha_number()">
+			<title>
+			<function moreinfo="none">is_alpha_number(number)</function>
+			</title>
+			<para>
+			Checks if the number is a valid vanity (alpha) number such as 800 MICROSOFT. A valid vanity
+			number will start with at least 3 digits and will have three or more alpha characters. This
+			does not do region-specific checks.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; true: <emphasis role='bold'>1</emphasis>, false: <emphasis role='bold'>-1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_nanpa_country" xreflabel="is_nanpa_country()">
+			<title>
+			<function moreinfo="none">is_nanpa_country(region_code)</function>
+			</title>
+			<para>
+			Checks if this is a region under the North American Numbering Plan Administration (NANPA).
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region_code</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; true: <emphasis role='bold'>1</emphasis>, false: <emphasis role='bold'>-1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_number_match" xreflabel="is_number_match()">
+			<title>
+			<function moreinfo="none">is_number_match(number1, number2, [default_region1], [default_region2)</function>
+			</title>
+			<para>
+			Takes two phone numbers and compares them for equality.
+			</para>
+			<para>
+			Returns EXACT_MATCH if the country_code, NSN, presence of a leading zero for Italian numbers
+			and any extension present are the same.
+			</para>
+			<para>
+			Returns NSN_MATCH if either or both has no region specified, and the NSNs and extensions are
+			the same.
+			</para>
+			<para>
+			Returns SHORT_NSN_MATCH if either or both has no region specified, or the region specified is
+			the same, and one NSN could be a shorter version of the other number. This includes the case
+			where one has an extension specified, and the other does not.
+			</para>
+			<para>
+			Returns NO_MATCH otherwise.
+			For example, the numbers +1 345 657 1234 and 657 1234 are a SHORT_NSN_MATCH.
+			The numbers +1 345 657 1234 and 345 657 are a NO_MATCH.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number1</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number2</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region1</emphasis> (string, optional) &#8211; for <varname>number1</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region2</emphasis> (string, optional) &#8211; for <varname>number2</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer):
+				<itemizedlist>
+				<listitem>
+					<para>
+					<emphasis role='bold'>-1</emphasis> &#8211; Invalid number
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>1</emphasis> &#8211; No match
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>2</emphasis> &#8211; Short NSN match
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>3</emphasis> &#8211; NSN match
+					</para>
+				</listitem>
+				<listitem>
+					<para>
+					<emphasis role='bold'>4</emphasis> &#8211; Exact match
+					</para>
+				</listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_possible_number" xreflabel="is_possible_number()">
+			<title>
+			<function moreinfo="none">is_possible_number(number, [default_region])</function>
+			</title>
+			<para>
+			This function returns true if the number is either a possible fully-qualified number
+			(containing the area code and country code), or if the number could be a possible local number
+			(with a country code, but missing an area code). Local numbers are considered possible if they
+			could be possibly dialled in this format: if the area code is needed for a call to connect, the
+			number is not considered possible without it.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; true: <emphasis role='bold'>1</emphasis>, false: <emphasis role='bold'>-1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_possible_number_for_string" xreflabel="is_possible_number_for_string()">
+			<title>
+			<function moreinfo="none">is_possible_number_for_string(number, region_dialing_from)</function>
+			</title>
+			<para>
+			Checks whether a phone number is a possible number given a number in the
+			form of a string, and the country where the number could be dialed from.
+			It provides a more lenient check than <varname>is_valid_number</varname>. See
+			<varname>is_possible_number</varname> for details.
+			</para>
+			<para>
+			This method first parses the number, then invokes
+			<varname>is_possible_number</varname> with the resultant parsed phone number.
+			</para>
+			<para>
+			<varname>region_dialing_from</varname> represents the region that we are expecting the number
+			to be dialed from. Note this is different from the region where the number
+			belongs. For example, the number +1 650 253 0000 is a number that belongs
+			to US. When written in this form, it could be dialed from any region. When
+			it is written as 00 1 650 253 0000, it could be dialed from any region
+			which uses an international dialling prefix of 00. When it is written as
+			650 253 0000, it could only be dialed from within the US, and when written
+			as 253 0000, it could only be dialed from within a smaller area in the US
+			(Mountain View, CA, to be more specific).
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region_dialing_from</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; true: <emphasis role='bold'>1</emphasis>, false: <emphasis role='bold'>-1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_valid_number" xreflabel="is_valid_number()">
+			<title>
+			<function moreinfo="none">is_valid_number(number, [default_region])</function>
+			</title>
+			<para>
+			Tests whether a phone number matches a valid pattern. Note this doesn't
+			verify the number is actually in use, which is impossible to tell by just
+			looking at a number itself.
+			It only verifies whether the parsed, canonicalised number is valid: not
+			whether a particular series of digits entered by the user is diallable from
+			the region provided when parsing. For example, the number +41 (0) 78 927
+			2696 can be parsed into a number with country code "41" and national
+			significant number "789272696". This is valid, while the original string
+			is not diallable.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; true: <emphasis role='bold'>1</emphasis>, false: <emphasis role='bold'>-1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_is_valid_number_for_region" xreflabel="is_valid_number_for_region()">
+			<title>
+			<function moreinfo="none">is_valid_number_for_region(number, region, [default_region])</function>
+			</title>
+			<para>
+			Tests whether a phone number is valid for a certain region. Note this
+			doesn't verify the number is actually in use, which is impossible to tell
+			by just looking at a number itself. If the country calling code is not the
+			same as the country calling code for the region, this immediately exits
+			with false. After this, the specific number pattern rules for the region
+			are examined.
+			This is useful for determining for example whether a particular number is
+			valid for Canada, rather than just a valid NANPA number.
+			Warning: In most cases, you want to use IsValidNumber instead. For
+			example, this method will mark numbers from British Crown dependencies
+			such as the Isle of Man as invalid for the region "GB" (United Kingdom),
+			since it has its own region code, "IM", which may be undesirable.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>region</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>default_region</emphasis> (string, optional) &#8211; for <varname>number</varname>. Default value: <emphasis role='bold'>"ZZ"</emphasis>.
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; true: <emphasis role='bold'>1</emphasis>, false: <emphasis role='bold'>-1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_normalize_diallable_chars_only" xreflabel="normalize_diallable_chars_only()">
+			<title>
+			<function moreinfo="none">normalize_diallable_chars_only(number, out)</function>
+			</title>
+			<para>
+			Normalizes a string of characters representing a phone number. This strips
+			all characters which are not diallable on a mobile phone keypad (including
+			all non-ASCII digits).
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+		<section id="func_normalize_digits_only" xreflabel="normalize_digits_only()">
+			<title>
+			<function moreinfo="none">normalize_digits_only(number, out)</function>
+			</title>
+			<para>
+			Normalizes a string of characters representing a phone number. This
+			converts wide-ascii and arabic-indic numerals to European numerals, and
+			strips punctuation and alpha characters.
+			</para>
+			<para>
+			<emphasis role='bold'>Parameters, and return value:</emphasis>
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>
+				<emphasis role='bold'>number</emphasis> (string)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>out</emphasis> (var)
+				</para>
+			</listitem>
+			<listitem>
+				<para>
+				<emphasis role='bold'>Return value</emphasis> (integer) &#8211; invalid input: <emphasis role='bold'>-1</emphasis>, success: <emphasis role='bold'>1</emphasis>.
+				</para>
+			</listitem>
+			</itemizedlist>
+		</section>
+	</section>
+
+</chapter>
