@@ -941,7 +941,9 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 			}
 		}
 
-		pack_last->next = NULL;
+		if(pack_last) {
+			pack_last->next = NULL;
+		}
 
 		lock_stop_read( it->ref_lock );
 
