@@ -229,6 +229,13 @@ static int mod_init(void)
 		/* Otherwise use the parameter's value */
 		ncp->secret.s = sec_param;
 		ncp->secret.len = strlen(sec_param);
+
+		if (ncp->secret.len != AUTH_SECRET_LEN) {
+			LM_ERR("bad secret length, must be exactly 32 bytes"
+				" (256-bit AES key), given: %d (changed in OpenSIPS 3.2+)\n",
+				ncp->secret.len);
+			return -1;
+		}
 	}
 
 	if (dauth_noncer_init(ncp) < 0) {
