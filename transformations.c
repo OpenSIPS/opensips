@@ -2472,7 +2472,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 	}
 
 	/* check if there is an index set */
-	if (tp && (tp->type != TR_NA_PARAM || tp->next)) {
+	if (tp && (subtype != TR_NA_PARAM || tp->next)) {
 		/* we do have an index */
 		switch (tp->type) {
 			case TR_PARAM_NUMBER:
@@ -2489,8 +2489,7 @@ int tr_eval_nameaddr(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				index = v.ri;
 				break;
 			default:
-				LM_ERR("invalid index type: %d; integer expected\n",
-						tp->type);
+				LM_ERR("unsupported index type: %d\n", tp->type);
 				goto error;
 		}
 		tp = tp->next;
