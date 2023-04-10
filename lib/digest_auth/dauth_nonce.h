@@ -27,6 +27,8 @@
 #include "../../str.h"
 #include <time.h>
 
+#define AUTH_SECRET_LEN 32
+
 struct nonce_context {
         str_const secret; /* secret phrase used to generate nonce */
         int nonce_len;

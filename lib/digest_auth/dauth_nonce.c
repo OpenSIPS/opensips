@@ -39,14 +39,13 @@
 
 #include "dauth_nonce.h"
 
-#define RAND_SECRET_LEN 32
 /*
  * Length of nonce string in bytes
  */
 #define NONCE_LEN       44
 
 _Static_assert((NONCE_LEN * 6) % 8 == 0, "NONCE_LEN should not be padded");
-_Static_assert((NONCE_LEN * 6) / 8 >= RAND_SECRET_LEN, "NONCE_LEN is too small");
+_Static_assert((NONCE_LEN * 6) / 8 >= AUTH_SECRET_LEN, "NONCE_LEN is too small");
 
 struct nonce_context_priv {
 	struct nonce_context pub;
@@ -65,10 +64,10 @@ struct nonce_payload {
 	uint64_t expires_usec:20;
 } __attribute__((__packed__));
 
-_Static_assert(sizeof(struct nonce_payload) <= RAND_SECRET_LEN / 2,
+_Static_assert(sizeof(struct nonce_payload) <= AUTH_SECRET_LEN / 2,
     "struct nonce_payload is too big");
-_Static_assert(RAND_SECRET_LEN % sizeof(uint64_t) == 0,
-    "RAND_SECRET_LEN is not multiple of sizeof(uint64_t)");
+_Static_assert(AUTH_SECRET_LEN % sizeof(uint64_t) == 0,
+    "AUTH_SECRET_LEN is not multiple of sizeof(uint64_t)");
 
 static int Base64Encode(const str_const *message, char* b64buffer);
 static int Base64Decode(const str_const *b64message, unsigned char* obuffer);
@@ -98,16 +97,16 @@ int calc_nonce(const struct nonce_context *pub, char* _nonce,
     const struct nonce_params *npp)
 {
 	struct nonce_context_priv *self = (typeof(self))pub;
-	unsigned char ebin[RAND_SECRET_LEN + 1];
+	unsigned char ebin[AUTH_SECRET_LEN + 1];
 	int rc, elen;
-	unsigned char dbin[RAND_SECRET_LEN], *bp;
+	unsigned char dbin[AUTH_SECRET_LEN], *bp;
 	unsigned char *riv = dbin;
 
-	rc = RAND_bytes(riv, RAND_SECRET_LEN / 2);
+	rc = RAND_bytes(riv, AUTH_SECRET_LEN / 2);
 	if (rc != 1)
 		return -1;
 
-	bp = dbin + RAND_SECRET_LEN / 2;
+	bp = dbin + AUTH_SECRET_LEN / 2;
 	struct nonce_payload npl;
 	memset(&npl, 0, sizeof(npl));
 	npl.expires_sec = npp->expires.tv_sec;
@@ -119,8 +118,8 @@ int calc_nonce(const struct nonce_context *pub, char* _nonce,
 	bp += sizeof(npl);
 	memset(bp, 0, sizeof(dbin) - (bp - dbin));
 
-	bp = dbin + RAND_SECRET_LEN / 2;
-	xor_bufs(bp, bp, dbin, RAND_SECRET_LEN / 2);
+	bp = dbin + AUTH_SECRET_LEN / 2;
+	xor_bufs(bp, bp, dbin, AUTH_SECRET_LEN / 2);
 
 	elen = 0;
 	rc = EVP_EncryptUpdate(self->ectx, ebin, &elen, dbin, sizeof(dbin));
@@ -140,10 +139,10 @@ int decr_nonce(const struct nonce_context *pub, const str_const * _n,
     struct nonce_params *npp)
 {
 	struct nonce_context_priv *self = (typeof(self))pub;
-	unsigned char bin[RAND_SECRET_LEN + 1];
+	unsigned char bin[AUTH_SECRET_LEN + 1];
 	const unsigned char *bp;
 	unsigned char *wbp;
-	unsigned char dbin[RAND_SECRET_LEN];
+	unsigned char dbin[AUTH_SECRET_LEN];
 	int rc;
 
 	if (_n->len != NONCE_LEN)
@@ -153,12 +152,12 @@ int decr_nonce(const struct nonce_context *pub, const str_const * _n,
 		return -1;
 	int dlen = 0;
 	bp = (const unsigned char *)bin;
-	rc = EVP_DecryptUpdate(self->dctx, dbin, &dlen, bp, RAND_SECRET_LEN);
+	rc = EVP_DecryptUpdate(self->dctx, dbin, &dlen, bp, AUTH_SECRET_LEN);
 	if (rc != 1 || dlen != sizeof(dbin))
 		return -1;
 
-	wbp = dbin + RAND_SECRET_LEN / 2;
-	xor_bufs(wbp, wbp, dbin, RAND_SECRET_LEN / 2);
+	wbp = dbin + AUTH_SECRET_LEN / 2;
+	xor_bufs(wbp, wbp, dbin, AUTH_SECRET_LEN / 2);
 
 	bp = (const unsigned char *)wbp;
 	struct nonce_payload npl;
@@ -208,21 +207,21 @@ int generate_random_secret(struct nonce_context *pub)
 	struct nonce_context_priv *self = (typeof(self))pub;
 	int rc;
 
-	self->sec_rand = (char*)pkg_malloc(RAND_SECRET_LEN);
+	self->sec_rand = (char*)pkg_malloc(AUTH_SECRET_LEN);
 	if (!self->sec_rand) {
 		LM_ERR("no pkg memory left\n");
 		goto e0;
 	}
 
 	/* the generator is seeded from the core */
-	rc = RAND_bytes((unsigned char *)self->sec_rand, RAND_SECRET_LEN);
+	rc = RAND_bytes((unsigned char *)self->sec_rand, AUTH_SECRET_LEN);
 	if(rc != 1) {
 		LM_ERR("RAND_bytes() failed, error = %lu\n", ERR_get_error());
 		goto e1;
 	}
 
 	pub->secret.s = self->sec_rand;
-	pub->secret.len = RAND_SECRET_LEN;
+	pub->secret.len = AUTH_SECRET_LEN;
 
 	/*LM_DBG("Generated secret: '%.*s'\n", pub->secret.len, pub->secret.s); */
 
@@ -347,5 +346,5 @@ static int Base64Decode(const str_const *b64message, unsigned char* obuffer)
 
         rval = EVP_DecodeBlock(obuffer, (const unsigned char *)b64message->s,
             b64message->len);
-        return (rval == (RAND_SECRET_LEN + 1)) ? 0 : -1;
+        return (rval == (AUTH_SECRET_LEN + 1)) ? 0 : -1;
 }
