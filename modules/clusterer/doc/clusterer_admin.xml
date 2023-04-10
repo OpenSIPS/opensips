@@ -184,7 +184,7 @@ modparam("clusterer", "db_table", "clusterer")
 			clusterer engine, like dialog or presence.
 			</para>
 			<para>
-			Note that ohter tags may be dynamically learned during runtime via 
+			Note that other tags may be dynamically learned during runtime via 
 			clustering communication with other nodes.
 			</para>
 			<para>
