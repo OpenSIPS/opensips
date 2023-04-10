@@ -339,7 +339,7 @@ static int jsonrpc_handle_cmd(union sockaddr_union *dst, char *cmd, int *id,
 	}
 
 	aux = cJSON_GetObjectItem(obj, "error");
-	if (aux) {
+	if (aux && aux->type!=cJSON_NULL) {
 		/* return the entire error */
 		vret->rs.s = cJSON_Print(aux);
 		vret->rs.len = strlen(vret->rs.s);
