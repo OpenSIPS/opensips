@@ -66,6 +66,8 @@ static mi_response_t *w_mi_list_stats_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reset_stats(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_reset_all_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 static const mi_export_t mi_stat_cmds[] = {
 	{ "get_statistics",
@@ -83,6 +85,11 @@ static const mi_export_t mi_stat_cmds[] = {
 	},
 	{ "reset_statistics", "resets the value of a statistic variable", 0, 0, {
 		{mi_reset_stats, {"statistics", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "reset_all_statistics", "resets the value of all resetable variables", 0, 0, {
+		{mi_reset_all_stats, {0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},
@@ -958,6 +965,47 @@ static mi_response_t *mi_reset_stats(const mi_params_t *params,
 
 	if (!found)
 		return init_mi_error(404, MI_SSTR("Statistics Not Found"));
+
+	return init_mi_result_ok();
+}
+
+static mi_response_t *mi_reset_all_stats(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int i;
+	stat_var *stat;
+
+	if (collector==NULL)
+		return 0;
+
+	/* static stats */
+	for (i=0;i<STATS_HASH_SIZE;i++) {
+		for( stat=collector->hstats[i] ; stat ; stat=stat->hnext ) {
+			if ( !stat_is_hidden(stat)) {
+				reset_stat( stat );
+			}
+		}
+	}
+
+	/* dynamic stats */
+	lock_start_read((rw_lock_t *)collector->rwl);
+	for (i=0;i<STATS_HASH_SIZE;i++) {
+		for( stat=collector->dy_hstats[i] ; stat ; stat=stat->hnext ) {
+			if ( !stat_is_hidden(stat)) {
+				reset_stat( stat );
+			}
+		}
+	}
+	lock_stop_read((rw_lock_t *)collector->rwl);
+
+	/* module stats */
+	for( i=0 ; i<collector->mod_no ; i++ ) {
+		for( stat=collector->amodules[i].head ; stat ; stat=stat->hnext ) {
+			if ( !stat_is_hidden(stat)) {
+				reset_stat( stat );
+			}
+		}
+	}
 
 	return init_mi_result_ok();
 }
