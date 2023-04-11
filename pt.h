@@ -28,6 +28,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "atomic.h"
 #include "pt_load.h"
 
 #define MAX_PT_DESC	128
@@ -91,8 +92,7 @@ struct process_table {
 	struct proc_load_info load;
 
 	/* synchronization during fork */
-	gen_lock_t startup_lock;
-	int startup_result;
+	atomic_t startup_result;
 };
 
 

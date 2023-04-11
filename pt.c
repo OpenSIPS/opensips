@@ -20,6 +20,7 @@
  */
 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -181,9 +182,6 @@ void set_proc_attrs(const char *fmt, ...)
 
 	/* pid */
 	pt[process_no].pid=getpid();
-
-	/* for sure the process is running */
-	pt[process_no].flags |= OSS_PROC_IS_RUNNING;
 }
 
 
@@ -229,9 +227,11 @@ void reset_process_slot( int p_id )
 }
 
 
+enum {CHLD_STARTING, CHLD_OK, CHLD_FAILED};
+
 static __attribute__((__noreturn__)) void child_startup_failed(void)
 {
-	lock_release(&pt[process_no].startup_lock);
+	atomic_store(&pt[process_no].startup_result, CHLD_FAILED);
 	exit(1);
 }
 
@@ -288,18 +288,12 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 	}
 
 	pt[new_idx].pid = 0;
-	pt[new_idx].startup_result = -1;
 
-	if (lock_init(&pt[new_idx].startup_lock) == NULL) {
-		LM_CRIT("failed to init startup lock for process %d", new_idx);
-		return -1;
-	}
-	lock_get(&pt[new_idx].startup_lock);
+	atomic_init(&pt[new_idx].startup_result, CHLD_STARTING);
 
 	if ( (pid=fork())<0 ){
 		LM_CRIT("cannot fork \"%s\" process (%d: %s)\n",proc_desc,
 				errno, strerror(errno));
-		lock_destroy(&pt[new_idx].startup_lock);
 		reset_process_slot( new_idx );
 		return -1;
 	}
@@ -344,25 +338,37 @@ int internal_fork(const char *proc_desc, unsigned int flags,
 			free_route_lists(sroutes);
 			sroutes = NULL;
 		}
-		pt[process_no].startup_result = 0;
-		lock_release(&pt[process_no].startup_lock);
+		atomic_store(&pt[process_no].startup_result, CHLD_OK);
 		return 0;
 	}else{
 		/* parent process */
-		/* wait for the child to complete the start-up */
-		lock_get(&pt[new_idx].startup_lock);
-		lock_destroy(&pt[new_idx].startup_lock);
-		if (pt[new_idx].startup_result != 0) {
-			LM_CRIT("failed to initialize child process %d\n", new_idx);
-			reset_process_slot( new_idx );
-			return -1;
+		/* wait for the child to complete the critical sectoin of the
+		 * start-up */
+		while (atomic_load(&pt[new_idx].startup_result) == CHLD_STARTING) {
+			int status;
+			pid_t result = waitpid(pid, &status, WNOHANG);
+			if (result < 0) {
+				if (errno == EINTR)
+					continue;
+				goto child_is_down;
+			}
+			if (result == 0) {
+				// Child has not exited yet
+				continue;
+			}
+			// Child has exited, oops
+			goto child_is_down;
 		}
-		/* Do not set PID for child in the main process. Let the child do
-		 * that as this will act as a marker to tell us that the init 
-		 * sequance of the child proc was completed.
-		 * pt[new_idx].pid = pid; */
+		if (atomic_load(&pt[new_idx].startup_result) != CHLD_OK) {
+			goto child_is_down;
+		}
+		pt[new_idx].flags |= OSS_PROC_IS_RUNNING;
 		tcp_connect_proc_to_tcp_main( new_idx, 0);
 		return new_idx;
+child_is_down:
+		LM_CRIT("failed to initialize child process %d\n", new_idx);
+		reset_process_slot( new_idx );
+		return -1;
 	}
 }
 
