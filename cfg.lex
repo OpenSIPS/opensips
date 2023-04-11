@@ -328,8 +328,9 @@ DOT			\.
 CR			\n
 
 ANY		"any"
-ANYCAST "anycast"
-FRAG "frag"
+ANYCAST	("anycast"|"ANYCAST")
+FRAG	("frag"|"FRAG")
+REUSE_PORT	("reuse_port"|"REUSE_PORT")
 
 
 COM_LINE	#
@@ -588,6 +589,7 @@ SPACE		[ ]
 <INITIAL>{CR}		{ count();/* return CR;*/ }
 <INITIAL>{ANY}		{ count(); return ANY; }
 <INITIAL>{ANYCAST}	{ count(); return ANYCAST; }
+<INITIAL>{REUSE_PORT}	{ count(); return REUSE_PORT; }
 <INITIAL>{FRAG}		{ count(); return FRAG; }
 <INITIAL>{SLASH}	{ count(); return SLASH; }
 <INITIAL>{SCALE_UP_TO}		{ count(); return SCALE_UP_TO; }

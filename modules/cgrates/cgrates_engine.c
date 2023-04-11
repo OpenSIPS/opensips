@@ -270,7 +270,7 @@ static int cgrc_conn(struct cgr_conn *c)
 
 	tcp_con_get_profile(&c->engine->su, src_su, PROTO_TCP, &prof);
 
-	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof);
+	s = tcp_sync_connect_fd(src_su, &c->engine->su, PROTO_TCP, &prof, 0);
 	if (s < 0) {
 		LM_ERR("cannot connect to %.*s:%d\n", c->engine->host.len,
 				c->engine->host.s, c->engine->port);

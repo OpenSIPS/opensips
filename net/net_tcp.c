@@ -206,11 +206,24 @@ static inline int init_sock_keepalive(int s, struct tcp_conn_profile *prof)
 	return 0;
 }
 
+static inline void set_sock_reuseport(int s)
+{
+	int yes = 1;
+
+	if (setsockopt(s,SOL_SOCKET,SO_REUSEPORT,&yes,sizeof(yes))<0){
+		LM_WARN("setsockopt failed to set SO_REUSEPORT: %s\n",
+			strerror(errno));
+	}
+	if (setsockopt(s,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes))<0){
+		LM_WARN("setsockopt failed to set SO_REUSEADDR: %s\n",
+			strerror(errno));
+	}
+}
 
 /*! \brief Set all socket/fd options:  disable nagle, tos lowdelay,
  * non-blocking
  * \return -1 on error */
-int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof)
+int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof, enum si_flags socketflags)
 {
 	int flags;
 	int optval;
@@ -235,6 +248,8 @@ int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof)
 	}
 
 	init_sock_keepalive(s, prof);
+	if (socketflags & SI_REUSEPORT)
+		set_sock_reuseport(s);
 
 	/* non-blocking */
 	flags=fcntl(s, F_GETFL);
@@ -363,6 +378,8 @@ int tcp_init_listener(struct socket_info *si)
 	}
 
 	init_sock_keepalive(si->socket, &tcp_con_df_profile);
+	if (si->flags & SI_REUSEPORT)
+		set_sock_reuseport(si->socket);
 	if (bind(si->socket, &addr->s, sockaddru_len(*addr))==-1){
 		LM_ERR("bind(%x, %p, %d) on %s:%d : %s\n",
 				si->socket, &addr->s,
@@ -1071,7 +1088,7 @@ static inline int handle_new_connect(struct socket_info* si)
 	}
 
 	tcp_con_get_profile(&su, &si->su, si->proto, &prof);
-	if (tcp_init_sock_opt(new_sock, &prof)<0){
+	if (tcp_init_sock_opt(new_sock, &prof, si->flags)<0){
 		LM_ERR("tcp_init_sock_opt failed\n");
 		close(new_sock);
 		return 1; /* success, because the accept was successful */
