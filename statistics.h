@@ -34,11 +34,7 @@
 #ifndef _STATISTICS_H_
 #define _STATISTICS_H_
 
-#ifdef HAVE_STDATOMIC
-#include <stdatomic.h>
-#else
 #include "atomic.h"
-#endif
 
 #include "hash_func.h"
 
@@ -59,11 +55,7 @@
 #ifdef NO_ATOMIC_OPS
 typedef unsigned int stat_val;
 #else
-# ifdef HAVE_STDATOMIC
-typedef _Atomic(unsigned long) stat_val;
-# else
 typedef atomic_t stat_val;
-# endif
 #endif
 
 typedef unsigned long (*stat_function)(void *);

@@ -34,13 +34,9 @@
  * \brief Statistics support
  */
 
-#ifdef HAVE_STDATOMIC
-#include <stdatomic.h>
-#else
-#include "atomic.h"
-#endif
 #include <string.h>
 
+#include "atomic.h"
 #include "mem/shm_mem.h"
 #include "mem/rpm_mem.h"
 #include "mi/mi.h"

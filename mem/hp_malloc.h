@@ -26,7 +26,6 @@
 
 #include <sys/time.h>
 
-#include "../statistics.h"
 #include "../config.h"
 #include "../globals.h"
 #include "common.h"
@@ -39,15 +38,6 @@
 struct hp_frag;
 struct hp_frag_lnk;
 struct hp_block;
-
-#ifndef HP_MALLOC_FAST_STATS
-extern stat_var *shm_used;
-extern stat_var *shm_rused;
-extern stat_var *shm_frags;
-#endif
-extern stat_var *rpm_used;
-extern stat_var *rpm_rused;
-extern stat_var *rpm_frags;
 
 #include "hp_malloc_stats.h"
 #include "meminfo.h"
@@ -70,6 +60,17 @@ extern stat_var *rpm_frags;
 #define HP_EXTRA_HASH_SIZE (HP_LINEAR_HASH_SIZE * SHM_MAX_SECONDARY_HASH_SIZE)
 
 #define HP_TOTAL_HASH_SIZE (HP_HASH_SIZE + HP_EXTRA_HASH_SIZE)
+
+#include "../statistics.h"
+
+#ifndef HP_MALLOC_FAST_STATS
+extern stat_var *shm_used;
+extern stat_var *shm_rused;
+extern stat_var *shm_frags;
+#endif
+extern stat_var *rpm_used;
+extern stat_var *rpm_rused;
+extern stat_var *rpm_frags;
 
 /* get the fragment which corresponds to a pointer */
 #define HP_FRAG(p) \

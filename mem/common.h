@@ -39,6 +39,16 @@ extern void *rpm_block;
 #define INLINE_ALLOC
 #endif
 
+enum osips_mm {
+	MM_NONE,
+	MM_F_MALLOC,
+	MM_Q_MALLOC,
+	MM_HP_MALLOC,
+	MM_F_MALLOC_DBG,
+	MM_Q_MALLOC_DBG,
+	MM_HP_MALLOC_DBG,
+};
+
 #if defined F_MALLOC
 #include "f_malloc.h"
 #endif
@@ -55,16 +65,6 @@ extern int mem_warming_enabled;
 extern char *mem_warming_pattern_file;
 extern int mem_warming_percentage;
 extern enum osips_mm mem_allocator;
-
-enum osips_mm {
-	MM_NONE,
-	MM_F_MALLOC,
-	MM_Q_MALLOC,
-	MM_HP_MALLOC,
-	MM_F_MALLOC_DBG,
-	MM_Q_MALLOC_DBG,
-	MM_HP_MALLOC_DBG,
-};
 
 /* returns -1 if @mm_name is unrecognized */
 int set_global_mm(const char *mm_name);
