@@ -216,7 +216,8 @@ static mi_export_t mi_cmds[] = {
 	{ "call_unhold", 0, 0, 0, {
 		{mi_call_unhold, {"callid", 0}},
 		{EMPTY_MI_RECIPE}}
-	}
+	},
+	{EMPTY_MI_EXPORT}
 };
 
 struct module_exports exports= {
