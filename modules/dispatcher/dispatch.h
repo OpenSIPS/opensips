@@ -59,6 +59,7 @@
 
 
 extern int ds_persistent_state;
+extern int ds_inherit_dst_state;
 
 typedef struct _ds_dest
 {

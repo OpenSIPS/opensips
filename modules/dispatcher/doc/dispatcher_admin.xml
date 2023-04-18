@@ -659,6 +659,27 @@ modparam("dispatcher", "persistent_state", 0)
 		</example>
 	</section>
 
+	<section id="param_ds_inherit_dst_state" xreflabel="ds_inherit_dst_state">
+		<title><varname>ds_inherit_dst_state</varname> (int)</title>
+		<para>
+		Specifies whether the <emphasis>state</emphasis> 
+		should be inherit from old state when ds_reload or not.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>1</quote> (enabled).
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>ds_inherit_dst_state</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# disable all DB operations with the state of a destination
+modparam("dispatcher", "ds_inherit_dst_state", 0)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_cluster_id" xreflabel="cluster_id">
 		<title><varname>cluster_id</varname> (integer)</title>
 		<para>
@@ -1699,4 +1720,3 @@ opensips-cli -x mi ds_reload
 	</section>
 	</section>
 </chapter>
-
