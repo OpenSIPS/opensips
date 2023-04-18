@@ -1697,8 +1697,10 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
 	struct rtp_relay_session info;
 	memset(&info, 0, sizeof info);
 	info.msg = msg;
-	if (msg->REPLY_STATUS >= 300) {
+	if (msg == FAKED_REPLY || msg->REPLY_STATUS >= 300) {
 		if (!rtp_sess_late(sess)) {
+			if (msg == FAKED_REPLY)
+				info.msg = NULL;
 			rtp_relay_delete(&info, ctx, sess, type);
 		} else {
 			/* nothing to do */
