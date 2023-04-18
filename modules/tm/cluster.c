@@ -489,7 +489,7 @@ int tm_reply_replicate(struct sip_msg *msg)
 	return 1;
 }
 
-static int tm_existing_trans(struct sip_msg *msg)
+static int tm_existing_ack_trans(struct sip_msg *msg)
 {
 	struct cell *t = get_t();
 	if (t == T_UNDEFINED) {
@@ -505,6 +505,28 @@ static int tm_existing_trans(struct sip_msg *msg)
 	}
 	return 0;
 }
+
+static int tm_existing_invite_trans(struct sip_msg *msg)
+{
+	struct cell *t = get_cancelled_t();
+	if (t == T_UNDEFINED) {
+		/* parse needed hdrs*/
+		if (check_transaction_quadruple(msg)==0) {
+			LM_ERR("too few headers\n");
+			return 0; /*drop request!*/
+		}
+		if (!msg->hash_index)
+			msg->hash_index = tm_hash(msg->callid->body,get_cseq(msg)->number);
+		/* performe lookup */
+		t = t_lookupOriginalT(msg);
+	}
+	if (t) {
+		LM_DBG("transaction already present here, no need to replicate\n");
+		return 1;
+	}
+	return 0;
+}
+
 
 /**
  * Replicates a message within a cluster
@@ -531,7 +553,9 @@ int tm_anycast_replicate(struct sip_msg *msg)
 		LM_DBG("message already replicated, shouldn't have got here\n");
 		return -2;
 	}
-	if (tm_existing_trans(msg))
+	if (msg->REQ_METHOD == METHOD_CANCEL && tm_existing_invite_trans(msg))
+		return -1;
+	if (msg->REQ_METHOD == METHOD_ACK && tm_existing_ack_trans(msg))
 		return -1;
 
 	/* we are currently doing auto-CANCEL only for 3261 transactions */
@@ -552,7 +576,7 @@ int tm_anycast_cancel(struct sip_msg *msg)
 	if (!tm_repl_auto_cancel || !tm_repl_cluster)
 		return -1;
 
-	if (!tm_existing_trans(msg))
+	if (!tm_existing_invite_trans(msg))
 		return tm_replicate_cancel(msg)? 0: -2;
 	else if (t_relay_to(msg, NULL, 0) < 0) {
 		LM_ERR("cannot handle auto-CANCEL here - send to script!\n");
