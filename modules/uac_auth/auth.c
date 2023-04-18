@@ -240,6 +240,7 @@ int do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd
 	const struct digest_auth_calc *digest_calc;
 	str_const cnonce;
 	str_const nc;
+	str_const qop;
 
 	digest_calc = get_digest_calc(auth->algorithm);
 	if (digest_calc == NULL) {
@@ -285,8 +286,13 @@ int do_uac_auth(str *msg_body, str *method, str *uri, struct uac_credential *crd
 		    !(auth->flags&QOP_AUTH), &ha2) != 0)
 			return (-1);
 
+		if (auth->flags & QOP_AUTH) {
+			qop = str_const_init(QOP_AUTH_STR);
+		} else {
+			qop = str_const_init(QOP_AUTHINT_STR);
+		}
 		if (digest_calc->response(&ha1, &ha2, str2const(&auth->nonce),
-		    str2const(&auth->qop), &nc, &cnonce, response) != 0)
+		    &qop, &nc, &cnonce, response) != 0)
 			return (-1);
 		auth_nc_cnonce->nc = nc;
 		auth_nc_cnonce->cnonce = cnonce;
