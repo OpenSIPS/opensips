@@ -1,3 +1,526 @@
+=========================== Release 3.2.12 ==============================
+
+2023-04-19  Liviu Chircu  <liviu@opensips.org>
+        * [f91a4aa0c] :
+
+        F_MALLOC: Add LHS coalescing on free() operations
+
+        This is a continuation/rework of commit fb9a3777, which intended to
+        address the de-fragmentation issues where performance would drop.
+        Unfortunately, there were still memory allocation / releasing patterns
+        which still lead to heavy fragmentation.  For example, an MI "dlg_list"
+        command, which allocates fragments from Left -> Right as the dialog list
+        is walked:
+
+            Chunk-1  Chunk-2  Chunk-3 ... Chunk-N
+
+        After building the MI output, the chunks were also freed Left -> Right.
+        Due to the former allocator logic of RHS-only coalescing, the coalescing
+        would never happen!  In some cases, this could lead to fragmentation of
+        an indefinite amount of memory, given enough time (e.g., even 8 GB PKG).
+
+        This patch adds LHS coalescing to F_MALLOC, such that when "Chunk-2" is
+        freed, in the above example, the allocator tries to merge it with both
+        "Chunk-1" and "Chunk-3" before exiting the free() function (depending on
+        the state of chunks 1 and 3, this could mean 0, 1 or 2 coalescings).
+
+        This F_MALLOC patch was stress-tested using the mem/test/ testing suite.
+
+        Many thanks to @fedkis and @ankogan for helping troubleshoot the issue
+        and also test the current version of this patch!
+        Fixes #2726
+
+        (cherry picked from commit bdaaf60b2c42681da70f095468c2df1b8dfa8c3e)
+
+
+2023-04-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [ddaf6ea35] :
+
+        [acc] fix leaking of AAA request for CDRs
+
+        Closes #3019
+        Credits go to @medeanwz
+
+        (cherry picked from commit 8be536447664c34548df7b5ab154d45c19a1c126)
+
+
+2023-04-18  Razvan Crainea  <razvan@opensips.org>
+        * [444cd6b3d] :
+
+        tm: proper matching of transaction for auto-CANCEL handling
+
+        (cherry picked from commit c8458a3c166679ef56c6af2017256216d3d4ad8b)
+
+
+2023-04-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [0db4e2596] :
+
+        [callops] Fix bad MI array termination
+
+        Closes #3057
+
+        (cherry picked from commit 2d6dbf7ecbb9f1ad14ff68b15aa650a497b04c9b)
+
+
+2023-04-18  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [7af4b673d] :
+
+        Merge pull request #3060 from purecloudlabs/hotfix/fix-qop-value-for-md5-hashing
+
+        uac_auth: fix qop-value for MD5 hashing
+
+        (cherry picked from commit 24ba63a411d46aaf060feda33593785ff9233f2e)
+
+
+2023-04-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [d59d43370] :
+
+        Fix strange `"error":null` JSON node
+
+        An `error` node with NULL value does not make much of a sense, but let's try to handle it.
+        Closes #3047
+
+        (cherry picked from commit 1a8f8e47bf3badc68927fbb573b1e78c596d2055)
+
+
+2023-04-10  Liviu Chircu  <liviu@opensips.org>
+        * [a1903b1c1] :
+
+        auth: Avoid abort() if len(secret) is not 32 bytes
+
+        Before OpenSIPS 3.2, the "secret" modparam supported random-length
+        strings, to be hashed into an MD5 computation when generating the nonce.
+
+        Starting with 3.2 and the new AES-CBC based nonce generation algorithm,
+        the "secret" has been restricted to 32-bytes only, however OpenSIPS
+        would assert() -> abort() on startup without displaying any helper error
+        if the user supplied a different-length secret.
+
+        Many thanks to @thuroc for an accurate report on the assert() issue!
+
+        Fixes #3043
+
+        (cherry picked from commit 00a19ede805577c29ae8b65af8a0cb81fc583209)
+
+
+2023-04-10  Liviu Chircu  <liviu@opensips.org>
+        * [e386c10fd] :
+
+        event_route: Fix off-by-one error in some $param warning log
+
+        (cherry picked from commit d4b03b7d0b828c0f7ecd6061cda882a560d6a216)
+
+
+2023-04-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [0680e263c] :
+
+        Fix doc typo
+
+        Closes #3048
+
+        (cherry picked from commit d8b28e4cd00b4678feed491929bd1df42a70e096)
+
+
+2023-04-06  Razvan Crainea  <razvan@opensips.org>
+        * [e89e5fc9b] :
+
+        rtp_relay: proper check remaining sessions for failed branches
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [409c22a2e] :
+
+        b2b_entities: fix cherry-pick merge in previous commit
+
+        (cherry picked from commit 789893166e2bf1020f23eaf29d01fde2ab4224d6)
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [0e4197ee5] :
+
+        b2b_entities: match e2e ACK according to dlg, not transaction
+
+        This change presumes that uas_tran is no longer reset on 200 OK, but kept in
+        memory until the ACK comes in.
+
+        (cherry picked from commit 11f685ffae7f651004d349ada32579f260fa63ca)
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [1205184eb] :
+
+        tm: expose t_release_transaction in API
+
+        (cherry picked from commit 66bc6fd8f3e82f02919e27a8d728c09b0aa3615e)
+
+
+2023-03-30  Vlad Patrascu  <vladp@opensips.org>
+        * [39724fd71] :
+
+        b2b_logic: ignore replies to NOTIFYs sent while bridging
+
+        This will get rid of the races between the processing of the replies for the
+        NOTIFY and the subsequent BYE sent to the bridge initiator. The entity
+        might be already deleted as a result of handling the 200 OK for the BYE
+        before we try to do a lookup again for handling the NOTIFY reply. These
+        races would not produce any significant negative effects but OpenSIPS
+        would log unnecessary 'No b2b_key match found' errors.
+
+        (cherry picked from commit a72cfbeda919eca0020d34e33c844cc3b49a3b71)
+
+
+2023-03-30  Vlad Patrascu  <vladp@opensips.org>
+        * [d47503c52] :
+
+        b2b_logic: fix a bridging issue when using the 'peer' identifier
+
+        Don't fail the bridging action when using the 'peer' identifier for the
+        b2b_bridge() function and the current entity is already deleted.
+
+        (cherry picked from commit 266e5524ad11732912d6e990d499aedf25ea1eed)
+
+
+2023-03-30  Vlad Patrascu  <vladp@opensips.org>
+        * [53b0a53ea] :
+
+        b2b_logic: fix crash when sending NOTIFY for local timeout
+
+        This commit fixes a crash when using the 'n' flag of the b2b_bridge()
+        function, and a local timeout occurs. The crash was caused by improperly
+        setting the first line of the the dummy SIP message built by the b2b_entities
+        module.
+
+        (cherry picked from commit 312cdd4da1a1a23429b7e2a47c0889795c50c8a3)
+
+
+2023-03-29  Razvan Crainea  <razvan@opensips.org>
+        * [688365067] :
+
+        params: duplicate INT value as string
+
+        This prevents errors raised when comparing the INT with STR
+
+        (cherry picked from commit 89b7c8d5c84bcf131da3554480ed2573e28c5825)
+
+
+2023-03-28  Razvan Crainea  <razvan@opensips.org>
+        * [5392ea0d1] :
+
+        params: initialize expanded parameters
+
+        Also, do not indicate that an INT also has a STR value if it doesn't,
+        because other functions might try to evaluate it; and combined with the
+        lack of initialization, it might end up reading whatever leftovers are
+        in the `.rs` field, posibly leading to a crash.
+
+        Many thanks to Nick Altmann for reporting this and Liviu Chircu for
+        testing and support :)
+
+        (cherry picked from commit 16f5212d865fd75ca6f519381358e031ca9a10e2)
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [435561e67] :
+
+        Get rid of the ubuntu-18.04, add clang-14 and clang-15.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [a23bae73a] :
+
+        GC unused variable.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [f9f9abcb6] :
+
+        clang-15 fix: make child_init() prototype match actual function.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [e57592664] :
+
+        clang15 fix: define function prototype properly.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [69737a8e4] :
+
+        clang 15 fix: get rid of variable that is set but not used.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [fdd4f76ae] :
+
+        Fix prototype for lcache_htable_destroy() to match implementation.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [a07ae74c4] :
+
+        Fix build with clang 15: get rid of the 30-year old PROTO_LIST
+        hack to deal with some prehistoric compilers. Switch public
+        API to use char *, not unsigned char *, which is kinda pointless.
+        Also make arguments const where appropriate.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [b6f00e89f] :
+
+        Set POLLRDHUP on Linux when polling rtpproxy's socket to drain
+        any unclaimed data. This seems to be necessary on TCP sockets
+        otherwise poll() appears to hang indefinitely if rtpproxy has been
+        terminated despite timeout being set to 0 (i.e. don't block).
+
+        With this flag set the disconnect is properly detected and socket
+        is re-connected after configured timeout.
+
+
+2023-03-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [1e9c49250] :
+
+        Merge pull request #3038 from okhowang/tracer-leak
+
+        tracer: Don't modify shm msg in trace_onreply_out
+        (cherry picked from commit 9c2d99de6c40c53dc1419fe237b23d8b956bd647)
+
+
+2023-03-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [c312b5a7c] :
+
+        Merge pull request #3012 from purecloudlabs/bug/rport_param_corrupts_via_header
+
+        add_local_rport script function corrupts VIA header params
+
+        (cherry picked from commit 8f41fccfa19a0a8070b48b4cd8caeb0a4a78e3fd)
+
+
+2023-03-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [108ac960a] :
+
+        [dialog] fix bad examples with invalid profile name
+
+        The name of a dialog profile is an alphanumerical string. Make this clear in the doc and also fix the broken examples.
+
+        (cherry picked from commit a6ef1968887696da8932a8350e532af8f7f9be44)
+
+
+2023-03-20  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [3b0cb05cb] :
+
+        Fix skip_name() to not generate strings with bogus length.
+        Discovered by OSS-Fuzz.
+
+
+2023-03-20  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [df9fb6324] :
+
+        Fix a pkg memory leak: when parsing of the Contact fails, free
+        all associated parameters that have been parsed so far, not just
+        the contact structure itself. Reported by OSS-Fuzz.
+
+
+2023-03-20  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [f75381b4a] :
+
+        Expect that protos[proto].name can be NULL.
+
+
+2023-03-20  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [60491604a] :
+
+        Fix off-by-one error allocating space for protos[]. Reported by
+        OSS-Fuzz.
+
+
+2023-03-20  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [d7db1eadd] :
+
+        If we did not request qop to start with when challenging then
+        no additional work needs to be done after receiving authentication
+        with no qop.
+
+        Reported by:	efes99999@gmail.com, callum.guy@x-on.co.uk, gshepard@sangoma.com
+
+
+2023-03-19  OpenSIPS  <github@opensips.org>
+        * [c0f4acc6f] :
+
+        Rebuild documentation
+
+
+2023-03-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [444f0264f] :
+
+        [async] fix setting restoring type route after running report route for launch()
+
+        Fixes #3034
+
+        (cherry picked from commit c0af4fe6a4cd3c1119d765320f8a1b2e5d4dc9b5)
+
+
+2023-03-16  Vlad Pătrașcu  <vladp@opensips.org>
+        * [89d03ea9a] :
+
+        Merge pull request #3018 from doopage/3.2-fix-b2b-null-to_uri
+
+        Fix NULL to_uri due to b2b_msg_get_to is called after accessing to_uri
+
+2023-03-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [8c1f10c7e] :
+
+        Merge pull request #3020 from nexbridge/temp
+
+        Fix bug in weight-based sort
+
+        (cherry picked from commit 48c051fc16f4d83bf176d1eefe1df642882b6b88)
+
+
+2023-03-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a162879b7] :
+
+        Revert "Update drouting.c"
+
+        This reverts commit bf4c8a9426a6211993acf342136a87bc0847c890.
+
+
+2023-03-16  nexbridge  <13848887+nexbridge@users.noreply.github.com>
+        * [bf4c8a942] :
+
+        Update drouting.c
+
+        In weight_based_sort() function:
+
+        - Changed RAND_MAX to RAND_MAX + 1 to make sure that quotient is always less than 1
+        - Changed float to double to avoid rounding errors, particularly when the value of rand() nears RAND_MAX and thus the quotient could round to 1
+
+        (cherry picked from commit 6ef8168a8de88d04512b3aa6bb888ac3794fb142)
+
+
+2023-03-14  Razvan Crainea  <razvan@opensips.org>
+        * [3d107a0a8] :
+
+        event_route: fix crash when raising with no params
+
+        When raising an event using `raise_event` with AVP values that are not
+        correctly populated, it triggers a corner case in the event_route
+        module: the module "serializes" the parameters just after the event,
+        hence, if there is no expanded parameter, the first parameter ends up
+        pointing to a bogus value, resulting in a crash.
+
+        This commit fixes this corner case by treating  it (0 expanded
+        parameters) just as if there no parameters passed at all.
+
+        Many thanks to David Escartin from Sonoc for the help in troubleshooting
+        this issue!
+
+        (cherry picked from commit 7f845994b1ba43f8ffc0c0bdc6c9b8065a935955)
+
+
+2023-03-12  OpenSIPS  <github@opensips.org>
+        * [377c67df0] :
+
+        Rebuild documentation
+
+
+2023-03-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b1f580e41] :
+
+        Fix race in TCP Main <> TCP Worker communication
+
+        As a TCP worker has 2 comm channels (one TCP worker specific and one worker generic) to TCP Main, be sure we have a consistent communication (over the 2 channels) between the TCP worker and TCP main.
+        The actual fixed race: the TCP workers creates a new TCP conn (and sends this event as TCP worker to Main) and when trying to write to the conn it fails (and sends back a bad-conn event to Main, but as generic worker) - the 2 events are delivered via different comm channels, so their order may be lost, reasulting to bogus behavior
+
+        (cherry picked from commit bfb62212ea4b4895b3174653b11d33e7ecb92751)
+
+
+2023-03-08  Vlad Patrascu  <vladp@opensips.org>
+        * [e9cc77282] :
+
+        clusterer docs: fix module parameter name
+
+        (cherry picked from commit 3b577388089f405dc633bfc3184ce0fcab3f21a5)
+
+
+2023-03-07  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [ee0467ef6] :
+
+        Fix what seems to be a typo, calling sockaddru_len() on unitialized
+        local structure is likely to produce bogus result causing getsockname()
+        to fail silently and produce no useable address. This error has
+        been masked on Linux, since Linux has no sa_len structure and the
+        sockaddru_len() in that case defaults to sizeof(struct sockaddr_in)
+        unless local_su happens to have s.sa_family==AF_INET6. This however
+        means that IPv6 has been somewhat broken for TCP & TLS.
+
+
+2023-03-07  Vlad Patrascu  <vladp@opensips.org>
+        * [3f61bbe09] :
+
+        tls_wolfssl: fix regression in commit 77f5f5a
+
+        The wolfSSL_CTX_load_verify_locations_ex() function would still return
+        an error when no valid CA certificate was found in the directory.
+        Since before commit 77f5f5a, opensips startup would not fail when
+        wolfSSL_CTX_load_verify_locations_ex() would return an error, the change
+        in the above commit would constitute a regression for cases where no valid
+        certificate is found in the directory.
+
+        This commit brings the wolfssl behavior further in line with openssl.
+
+        (cherry picked from commit 9999d313733d0731941374526e8a2db030819c38)
+
+
+2023-03-07  Razvan Crainea  <razvan@opensips.org>
+        * [912530b5a] :
+
+        avpops: document the returned value in case of NULL
+
+        Due to the fact that an AVP cannot contain `NULL` values, we cannot
+        store `NULL` database values in AVPs. Hence, we store the `<null>` value
+        This commit simply documents the behavior, as reported in #3027
+
+        (cherry picked from commit fc35f7308efd6d2623e36adf048911be86b7b749)
+
+
+2023-03-06  Liviu Chircu  <liviu@opensips.org>
+        * [89080a3ea] :
+
+        rest_client: Improve async() handling in "delayed 200 OK" scenarios
+
+        In case the 200 OK reply or its body take several seconds to arrive, do
+        not break the loop prematurely due to a 500ms hardcoded loop timeout and
+        re-use the configurable "curl_timeout" modparam as loop timeout instead.
+
+        (cherry picked from commit 532d8e83726f96f8e8d2c493a1e7cb0f54615869)
+
+
+2023-03-05  OpenSIPS  <github@opensips.org>
+        * [adc5c85c7] :
+
+        Rebuild documentation
+
+
+2023-02-28  Razvan Crainea  <razvan@opensips.org>
+        * [e8170abbd] :
+
+        media_exchange: properly handle internally generated timeouts
+
+        (cherry picked from commit de5347c29071bbb91e3c1509333c6e8cc9e981e4)
+
+
+2023-02-27  truong.hua  <truong.hua@youthdev.net>
+        * [33bf27722] :
+
+        Fix NULL to_uri due to b2b_msg_get_to is called after accessing to_uri in case of adv_ct is not set, so contact uri can not be parsed if advertise_contact is not provided
+
+
+2023-02-26  OpenSIPS  <github@opensips.org>
+        * [0726e126c] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.2.11 ==============================
 
 2023-02-21  Vlad Patrascu  <vladp@opensips.org>
