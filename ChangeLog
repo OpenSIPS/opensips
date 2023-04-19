@@ -1,3 +1,579 @@
+=========================== Release 3.1.15 ==============================
+
+2023-04-19  Liviu Chircu  <liviu@opensips.org>
+        * [74237cb88] :
+
+        F_MALLOC: Add LHS coalescing on free() operations
+
+        This is a continuation/rework of commit fb9a3777, which intended to
+        address the de-fragmentation issues where performance would drop.
+        Unfortunately, there were still memory allocation / releasing patterns
+        which still lead to heavy fragmentation.  For example, an MI "dlg_list"
+        command, which allocates fragments from Left -> Right as the dialog list
+        is walked:
+
+            Chunk-1  Chunk-2  Chunk-3 ... Chunk-N
+
+        After building the MI output, the chunks were also freed Left -> Right.
+        Due to the former allocator logic of RHS-only coalescing, the coalescing
+        would never happen!  In some cases, this could lead to fragmentation of
+        an indefinite amount of memory, given enough time (e.g., even 8 GB PKG).
+
+        This patch adds LHS coalescing to F_MALLOC, such that when "Chunk-2" is
+        freed, in the above example, the allocator tries to merge it with both
+        "Chunk-1" and "Chunk-3" before exiting the free() function (depending on
+        the state of chunks 1 and 3, this could mean 0, 1 or 2 coalescings).
+
+        This F_MALLOC patch was stress-tested using the mem/test/ testing suite.
+
+        Many thanks to @fedkis and @ankogan for helping troubleshoot the issue
+        and also test the current version of this patch!
+        Fixes #2726
+
+        (cherry picked from commit bdaaf60b2c42681da70f095468c2df1b8dfa8c3e)
+
+
+2023-04-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1bef00985] :
+
+        [acc] fix leaking of AAA request for CDRs
+
+        Closes #3019
+        Credits go to @medeanwz
+
+        (cherry picked from commit 8be536447664c34548df7b5ab154d45c19a1c126)
+
+
+2023-04-18  Razvan Crainea  <razvan@opensips.org>
+        * [f134f18ba] :
+
+        tm: proper matching of transaction for auto-CANCEL handling
+
+        (cherry picked from commit c8458a3c166679ef56c6af2017256216d3d4ad8b)
+
+
+2023-04-18  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f366511c4] :
+
+        [callops] Fix bad MI array termination
+
+        Closes #3057
+
+        (cherry picked from commit 2d6dbf7ecbb9f1ad14ff68b15aa650a497b04c9b)
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [f0aeb3a75] :
+
+        b2b_entities: fix cherry-pick merge in previous commit (part 2)
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [3e76bd436] :
+
+        b2b_entities: fix cherry-pick merge in previous commit
+
+        (cherry picked from commit 789893166e2bf1020f23eaf29d01fde2ab4224d6)
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [537243aa2] :
+
+        b2b_entities: match e2e ACK according to dlg, not transaction
+
+        This change presumes that uas_tran is no longer reset on 200 OK, but kept in
+        memory until the ACK comes in.
+
+        (cherry picked from commit 11f685ffae7f651004d349ada32579f260fa63ca)
+
+
+2023-03-31  Razvan Crainea  <razvan@opensips.org>
+        * [20bc99022] :
+
+        tm: expose t_release_transaction in API
+
+        (cherry picked from commit 66bc6fd8f3e82f02919e27a8d728c09b0aa3615e)
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [08a489ee6] :
+
+        Enable GH Actions.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [33377365d] :
+
+        clang-15 fix: make child_init() prototype match actual function.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [7f59fbed8] :
+
+        clang15 fix: define function prototype properly.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [88031b0d2] :
+
+        clang 15 fix: get rid of variable that is set but not used.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [567ebaf1d] :
+
+        Fix prototype for lcache_htable_destroy() to match implementation.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [ad4767c34] :
+
+        Fix build with clang 15: get rid of the 30-year old PROTO_LIST
+        hack to deal with some prehistoric compilers. Switch public
+        API to use char *, not unsigned char *, which is kinda pointless.
+        Also make arguments const where appropriate.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [9edb5e8ba] :
+
+        GC unused variable.
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [33f4ae5f2] :
+
+        uac_auth: fix gcc uninitialized warning
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [06ab1d88f] :
+
+        Add missing {} as reported by the gcc-11.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [11164c3af] :
+
+        Make geoip2_get_field() function declaration match prototype.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [de4432ab7] :
+
+        Move the same openssl make-foo code that has been copied and
+        pasted around into a central location and include it from
+        there.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [242239659] :
+
+        Don't pass unsigned short * into a function that expects
+        unsigned int *. This fixes the following error building with
+        gcc on ubuntu-22:
+
+        sipmemcache.c: In function `l_sipmemcache_server_add`:
+        ../../ut.h:685:13: error: array subscript `unsigned int[0]` is partly outside array bounds of `in_port_t[1]` {aka `short unsigned int[1]`} [-Werror=array-bounds]
+          685 |         *_r = 0;
+              |         ~~~~^~~
+        sipmemcache.c:72:13: note: while referencing `iport`
+           72 |   in_port_t iport = 0;
+              |             ^~~~~
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [6389c3602] :
+
+        Remove comparison that is always "true".
+
+        Reported by:    gcc-12
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [4537c208c] :
+
+        freeswitch: fix string maipulation warnings in esl
+
+        (cherry picked from commit 7bc88e2d029e664149609b093bba3d9bc76fce79)
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [1ead9e9a5] :
+
+        Filter out -ffat-lto-objects option not supported on clang.
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [1338cd2d4] :
+
+        python: remove deprecated PyEval_InitThreads call since python v3.7
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [51d176aca] :
+
+        GC unused variable.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [c15fe1e45] :
+
+        Remove bogus __attribute__((unused)), make sure grp_idx is always initialized.
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [42160008c] :
+
+        tracer: replace un-necessary strncpy with memcpy
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [1f70da1b2] :
+
+        Make identation match compiler behaviour. This fixes build with
+        gcc-11.
+
+
+2023-03-23  Liviu Chircu  <liviu@opensips.org>
+        * [9998a33f0] :
+
+        jabber: Fix off-by-one strncpy() error
+
+        warning: ‘__builtin_strncpy’ output truncated before terminating nul
+        copying as many bytes from a string as its length [-Wstringop-truncation]
+          106 |   return __builtin___strncpy_chk (__dest, __src, __len, __bo...
+              |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...
+        xjab_wlist.c: In function ‘xj_wlist_set_aliases’:
+        xjab_wlist.c:455:34: note: length computed here
+          455 |   i = jwl->aliases->proxy->len = strlen(pa);
+              |                                  ^~~~~~~~~~
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [4d81a402a] :
+
+        Fix warning converting from int to float with Clang 10, i.e:
+
+        resolve.c:1454:34: error: implicit conversion from 'int' to 'float' changes value from 2147483647 to 2147483648 [-Werror,-Wimplicit-int-float-conversion]
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [e4238cf08] :
+
+        Fix Clang 9 warning:
+
+          http_fnc.c:679:22: error: adding 'int' to a string does not append to the string
+
+
+2023-03-23  Ovidiu Sas  <osas@voipembedded.com>
+        * [815e5d512] :
+
+        cachedb_sql: fix warning: this `if` clause does not guard... [-Wmisleading-indentation]
+
+        msilo: fix warning: this `else` clause does not guard... [-Wmisleading-indentation]
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [37164f502] :
+
+        Fix logical condition that would otherwise always be "false".
+
+        Reported by:	gcc-12
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [b1dc064a0] :
+
+        Make b2bl_bridge_extern() and internal_init_scenario()
+        implementationis match prototype.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [0cd6fa09e] :
+
+        o Set -Wno-compound-token-split-by-macro needed to get things
+          building up with clang > 11.
+
+        o Unify common code in the perl modules to fix db_perlvdb
+          as well with clang > 11.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [cf5bf6f7c] :
+
+        Cast void * to int first before we can it to enum. This is
+        to fix the build on clang-11.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [05a52ed35] :
+
+        GC variables that is set but never used. This breaks builds with
+        latest clang.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [66ff76c3e] :
+
+        Fix logic error picked up by Cang 10:
+
+        b2b_logic.c:1789:14: error: overlapping comparisons always evaluate to false [-Werror,-Wtautological-overlap-compare]
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [9c6ddf097] :
+
+        nathelper: prevent memory overwritten during pinging
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [efd0d365c] :
+
+        ldap: prevent possible buffer overflow
+
+        Fixes Coverity CID #40879
+
+
+2023-03-23  Razvan Crainea  <razvan@opensips.org>
+        * [1bf7abf61] :
+
+        ldap: fix copying value in smaller buffers
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [9921c38d8] :
+
+        Fix unitialized use in some case:
+
+        dlg_replication.c:157:2: error: variable 'd_entry' is used uninitialized whenever 'if' condition is true [-Werror,-Wsometimes-uninitialized]
+                DLG_BIN_POP(int, packet, state, pre_linking_error);
+                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        dlg_replication.c:74:7: note: expanded from macro 'DLG_BIN_POP'
+                        if (bin_pop_ ## _type(_p, (str *)&_field) != 0) { \
+                            ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        <scratch space>:69:1: note: expanded from here
+        bin_pop_int
+        ^
+        dlg_replication.c:351:22: note: uninitialized use occurs here
+                dlg_unlock(d_table, d_entry);
+
+
+2023-03-23  Liviu Chircu  <liviu@opensips.org>
+        * [74142030b] :
+
+        ldap: Fix possible buffer overflow
+
+        If gcc says "2050 chars can overflow a 2049 buffer", gcc is definitely
+        not wrong...
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [df0ca08f8] :
+
+        Make identation consistent to not upset Clang 10:
+
+        parser/parse_privacy.c:161:2: error: misleading indentation; statement is not part of the previous 'if' [-Werror,-Wmisleading-indentation]
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [4097ca527] :
+
+        Set POLLRDHUP on Linux when polling rtpproxy's socket to drain
+        any unclaimed data. This seems to be necessary on TCP sockets
+        otherwise poll() appears to hang indefinitely if rtpproxy has been
+        terminated despite timeout being set to 0 (i.e. don't block).
+
+        With this flag set the disconnect is properly detected and socket
+        is re-connected after configured timeout.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [9f6b7fcd1] :
+
+        Fix skip_name() to not generate strings with bogus length.
+        Discovered by OSS-Fuzz.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [9e99320b0] :
+
+        Fix a pkg memory leak: when parsing of the Contact fails, free
+        all associated parameters that have been parsed so far, not just
+        the contact structure itself. Reported by OSS-Fuzz.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [042ca31fd] :
+
+        Expect that protos[proto].name can be NULL.
+
+
+2023-03-23  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [c69513f78] :
+
+        Fix off-by-one error allocating space for protos[]. Reported by
+        OSS-Fuzz.
+
+
+2023-03-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [371dd7d6a] :
+
+        Merge pull request #3038 from okhowang/tracer-leak
+
+        tracer: Don't modify shm msg in trace_onreply_out
+        (cherry picked from commit 9c2d99de6c40c53dc1419fe237b23d8b956bd647)
+
+
+2023-03-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [2d674b026] :
+
+        Merge pull request #3012 from purecloudlabs/bug/rport_param_corrupts_via_header
+
+        add_local_rport script function corrupts VIA header params
+
+        (cherry picked from commit 8f41fccfa19a0a8070b48b4cd8caeb0a4a78e3fd)
+
+
+2023-03-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [faa484618] :
+
+        [dialog] fix bad examples with invalid profile name
+
+        The name of a dialog profile is an alphanumerical string. Make this clear in the doc and also fix the broken examples.
+
+        (cherry picked from commit a6ef1968887696da8932a8350e532af8f7f9be44)
+
+
+2023-03-18  OpenSIPS  <github@opensips.org>
+        * [e7f0bca42] :
+
+        Rebuild documentation
+
+
+2023-03-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [0accad485] :
+
+        [async] fix setting restoring type route after running report route for launch()
+
+        Fixes #3034
+
+        (cherry picked from commit c0af4fe6a4cd3c1119d765320f8a1b2e5d4dc9b5)
+        (cherry picked from commit 444f0264f5608c0a496fcc01a52ff4592328cda9)
+
+
+2023-03-16  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [48530dbd4] :
+
+        Merge pull request #3020 from nexbridge/temp
+
+        Fix bug in weight-based sort
+
+        (cherry picked from commit 48c051fc16f4d83bf176d1eefe1df642882b6b88)
+
+
+2023-03-14  Razvan Crainea  <razvan@opensips.org>
+        * [c7bfcc201] :
+
+        event_route: fix crash when raising with no params
+
+        When raising an event using `raise_event` with AVP values that are not
+        correctly populated, it triggers a corner case in the event_route
+        module: the module "serializes" the parameters just after the event,
+        hence, if there is no expanded parameter, the first parameter ends up
+        pointing to a bogus value, resulting in a crash.
+
+        This commit fixes this corner case by treating  it (0 expanded
+        parameters) just as if there no parameters passed at all.
+
+        Many thanks to David Escartin from Sonoc for the help in troubleshooting
+        this issue!
+
+        (cherry picked from commit 7f845994b1ba43f8ffc0c0bdc6c9b8065a935955)
+
+
+2023-03-11  OpenSIPS  <github@opensips.org>
+        * [43e5dfb2c] :
+
+        Rebuild documentation
+
+
+2023-03-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [aaba23571] :
+
+        Fix race in TCP Main <> TCP Worker communication
+
+        As a TCP worker has 2 comm channels (one TCP worker specific and one worker generic) to TCP Main, be sure we have a consistent communication (over the 2 channels) between the TCP worker and TCP main.
+        The actual fixed race: the TCP workers creates a new TCP conn (and sends this event as TCP worker to Main) and when trying to write to the conn it fails (and sends back a bad-conn event to Main, but as generic worker) - the 2 events are delivered via different comm channels, so their order may be lost, reasulting to bogus behavior
+
+        (cherry picked from commit bfb62212ea4b4895b3174653b11d33e7ecb92751)
+        (cherry picked from commit b1f580e4184562ce943ce428660becd1e48238b8)
+
+
+2023-03-08  Vlad Patrascu  <vladp@opensips.org>
+        * [fd8bc5b00] :
+
+        clusterer docs: fix module parameter name
+
+        (cherry picked from commit 3b577388089f405dc633bfc3184ce0fcab3f21a5)
+
+
+2023-03-07  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [a289e491a] :
+
+        Fix what seems to be a typo, calling sockaddru_len() on unitialized
+        local structure is likely to produce bogus result causing getsockname()
+        to fail silently and produce no useable address. This error has
+        been masked on Linux, since Linux has no sa_len structure and the
+        sockaddru_len() in that case defaults to sizeof(struct sockaddr_in)
+        unless local_su happens to have s.sa_family==AF_INET6. This however
+        means that IPv6 has been somewhat broken for TCP & TLS.
+
+
+2023-03-07  Razvan Crainea  <razvan@opensips.org>
+        * [91592bba7] :
+
+        avpops: document the returned value in case of NULL
+
+        Due to the fact that an AVP cannot contain `NULL` values, we cannot
+        store `NULL` database values in AVPs. Hence, we store the `<null>` value
+        This commit simply documents the behavior, as reported in #3027
+
+        (cherry picked from commit fc35f7308efd6d2623e36adf048911be86b7b749)
+
+
+2023-03-06  Liviu Chircu  <liviu@opensips.org>
+        * [8342f35b8] :
+
+        rest_client: Improve async() handling in "delayed 200 OK" scenarios
+
+        In case the 200 OK reply or its body take several seconds to arrive, do
+        not break the loop prematurely due to a 500ms hardcoded loop timeout and
+        re-use the configurable "curl_timeout" modparam as loop timeout instead.
+
+        (cherry picked from commit 532d8e83726f96f8e8d2c493a1e7cb0f54615869)
+
+
+2023-03-04  OpenSIPS  <github@opensips.org>
+        * [163a6a8f4] :
+
+        Rebuild documentation
+
+
+2023-02-28  Razvan Crainea  <razvan@opensips.org>
+        * [935725b0f] :
+
+        media_exchange: properly handle internally generated timeouts
+
+        (cherry picked from commit de5347c29071bbb91e3c1509333c6e8cc9e981e4)
+
+
+2023-02-25  OpenSIPS  <github@opensips.org>
+        * [7d11f8b21] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.1.14 ==============================
 
 2023-02-21  Vlad Patrascu  <vladp@opensips.org>
