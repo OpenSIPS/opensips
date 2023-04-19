@@ -1047,6 +1047,8 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 error:
 	if (locked)
 		accX_unlock(&ctx->lock);
+	if (send)
+		proto.destroy_aaa_message(conn, send);
 	if (core_s.s)
 		pkg_free(core_s.s);
 	if (extra_s.s)
