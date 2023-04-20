@@ -16,22 +16,6 @@
 		If the dialog module is loaded and a dialog can be created, 
 		then the auto mode can be done more efficiently.
 		</para>
-		<para>
-		Known limitations in this version:
-		</para>
-		<itemizedlist>
-			<listitem>
-			<para>
-				authentication does not support qop auth-int, just qop auth;
-			</para>
-			</listitem>
-			<listitem>
-			<para>
-				CSeq not increased during authentication - the response 
-				may be rejected.
-			</para>
-			</listitem>
-		</itemizedlist>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -290,7 +274,7 @@ uac_restore_from();
 			</example>
 		</section>
 
-		<section id="func_uac_auth" xreflabel="uac_auth()">
+		<section id="func_uac_auth" xreflabel="uac_auth([algs])">
 			<title>
 				<function moreinfo="none">uac_auth()</function>
 			</title>
@@ -303,6 +287,24 @@ uac_restore_from();
 			or via AVPs).
 			</para>
 			<para>
+			As optional parameter, the function may receive a list of auth
+			algorithms to be considered / supported during authentication:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para>MD5, MD5-sess</para>
+			</listitem>
+			<listitem>
+				<para>SHA-256, SHA-256-sess (may be missing, depends on lib support)</para>
+			</listitem>
+			<listitem>
+				<para>SHA-512-256, SHA-512-256-sess (may be missing, depends on lib support)</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			Note that the CSeq is automatically increased during authentication.
+			</para>
+			<para>
 			This function can be used from FAILURE_ROUTE.
 			</para>
 			<example>
@@ -310,6 +312,20 @@ uac_restore_from();
 				<programlisting format="linespecific">
 ...
 uac_auth();
+...
+failure_route[check_auth] {
+    ...
+    if ($T_reply_code==407) {
+        if (uac_auth("MD5,MD5-sess")) {
+            # auth is succesful, just relay
+            t_relay();
+            exit;
+        }
+        # auth failed (no credentials maybe)
+        # so continue handling the 407 reply
+    }
+    ...
+}
 ...
 				</programlisting>
 			</example>
