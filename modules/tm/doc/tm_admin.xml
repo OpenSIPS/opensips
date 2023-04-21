@@ -2180,6 +2180,59 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			Number of transactions existing in memory at current time.
 			</para>
 		</section>
+		<section id="stat_retransmission_req_T1_1" xreflabel="retransmission_req_T1_1">
+		<title>retransmission_req_T1_1</title>
+			<para>
+			Number of request retransmissions due to T1 1 timer,
+			the first retransmission interval (typical 500ms).
+			</para>
+		</section>
+		<section id="stat_retransmission_req_T1_2" xreflabel="retransmission_req_T1_2">
+		<title>retransmission_req_T1_2</title>
+			<para>
+			Number of request retransmissions due to T1 2 timer,
+			the second retransmission interval (typical 1s).
+			</para>
+		</section>
+		<section id="stat_retransmission_req_T1_3" xreflabel="retransmission_req_T1_3">
+		<title>retransmission_req_T1_3</title>
+			<para>
+			Number of request retransmissions due to T1 3 timer,
+			the third retransmission interval (typical 2s).
+			</para>
+		</section>
+		<section id="stat_retransmission_req_T2" xreflabel="retransmission_req_T2">
+		<title>retransmission_req_T2</title>
+			<para>
+			Number of request retransmissions due to T2 ,
+			the final retransmission interval (typical 4s).
+			</para>
+		</section>
+		<section id="stat_retransmission_rpl_T2" xreflabel="retransmission_rpl_T2">
+		<title>retransmission_rpl_T2</title>
+			<para>
+			Number of reply retransmissions, all done with the same 
+			retransmission interval T2, typical 4s.
+			</para>
+		</section>
+		<section id="stat_timeout_finalresponse" xreflabel="timeout_finalresponse">
+		<title>timeout_finalresponse</title>
+			<para>
+			Number of transactional timeouts without receiving any kind of reply (not
+			even provisional) from the B side. Such timeouts indicate a 
+			communication / reachability issue. Note: a single transaction may count
+			multiple such timeouts due forking.
+			</para>
+		</section>
+		<section id="stat_timeout_finalresponse_inc" xreflabel="timeout_finalresponse">
+		<title>timeout_finalresponse</title>
+			<para>
+			Number of transactional INVITE timeouts without receiving a FINAL reply
+			(provisional may be received) from the B side. Such timeouts indicate a 
+			"not answer" event and it is not a signalling issue.
+			Note: a single transaction may count multiple such timeouts due forking.
+			</para>
+		</section>
 	</section>
 
 </chapter>

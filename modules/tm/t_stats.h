@@ -46,6 +46,14 @@ extern stat_var *tm_trans_5xx;
 extern stat_var *tm_trans_6xx;
 extern stat_var *tm_trans_inuse;
 
+extern stat_var *tm_retran_req_T11;
+extern stat_var *tm_retran_req_T12;
+extern stat_var *tm_retran_req_T13;
+extern stat_var *tm_retran_req_T2;
+extern stat_var *tm_retran_rpl_T2;
+extern stat_var *tm_timeout_fr;
+extern stat_var *tm_timeout_fr_inv;
+
 extern stat_var *tm_cluster_reply_tx;
 extern stat_var *tm_cluster_request_tx;
 extern stat_var *tm_cluster_cancel_tx;

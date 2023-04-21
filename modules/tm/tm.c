@@ -175,6 +175,14 @@ stat_var *tm_trans_5xx;
 stat_var *tm_trans_6xx;
 stat_var *tm_trans_inuse;
 
+stat_var *tm_retran_req_T11;
+stat_var *tm_retran_req_T12;
+stat_var *tm_retran_req_T13;
+stat_var *tm_retran_req_T2;
+stat_var *tm_retran_rpl_T2;
+stat_var *tm_timeout_fr;
+stat_var *tm_timeout_fr_inv;
+
 stat_var *tm_cluster_reply_tx;
 stat_var *tm_cluster_request_tx;
 stat_var *tm_cluster_cancel_tx;
@@ -343,6 +351,13 @@ static const stat_export_t mod_stats[] = {
 	{"cluster_reply_recv" ,  0,              &tm_cluster_reply_rx   },
 	{"cluster_request_recv" ,0,              &tm_cluster_request_rx },
 	{"cluster_cancel_recv" , 0,              &tm_cluster_cancel_rx },
+	{"retransmission_req_T1_1"   , 0,        &tm_retran_req_T11 },
+	{"retransmission_req_T1_2"   , 0,        &tm_retran_req_T12 },
+	{"retransmission_req_T1_3"   , 0,        &tm_retran_req_T13 },
+	{"retransmission_req_T2"     , 0,        &tm_retran_req_T2 },
+	{"retransmission_rpl_T2"     , 0,        &tm_retran_rpl_T2 },
+	{"timeout_finalresponse"     , 0,        &tm_timeout_fr },
+	{"timeout_finalresponse_inv" , 0,        &tm_timeout_fr_inv },
 	{0,0,0}
 };
 
