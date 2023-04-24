@@ -68,11 +68,10 @@ extern int noisy_ctimer;
 
 /* t_relay_to flags */
 #define TM_T_RELAY_repl_FLAG          (1<<0) /* replicated */
-#define TM_T_RELAY_not_used           (1<<1)
-#define TM_T_RELAY_noerr_FLAG         (1<<2)
-#define TM_T_RELAY_nodnsfo_FLAG       (1<<3)
-#define TM_T_RELAY_reason_FLAG        (1<<4)
-#define TM_T_RELAY_do_cancel_dis_FLAG (1<<5)
+#define TM_T_RELAY_noerr_FLAG         (1<<1)
+#define TM_T_RELAY_nodnsfo_FLAG       (1<<2)
+#define TM_T_RELAY_reason_FLAG        (1<<3)
+#define TM_T_RELAY_do_cancel_dis_FLAG (1<<4)
 
 
 /* send a private buffer: utilize a retransmission structure

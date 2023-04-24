@@ -61,6 +61,7 @@
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
 #include "../../pvar.h"
+#include "../../mod_fix.h"
 
 #include "sip_msg.h"
 #include "h_table.h"
@@ -210,10 +211,10 @@ static const cmd_export_t cmds[]={
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_replicate", (cmd_function)w_t_replicate, {
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_INT | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, flag_fixup, 0}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_relay", (cmd_function)w_t_relay, {
-		{CMD_PARAM_INT|CMD_PARAM_OPT, flag_fixup, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, flag_fixup, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_phostport2proxy,fixup_free_proxy},
 		{0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
@@ -504,10 +505,20 @@ static int fixup_broute(void** param)
 	return 0;
 }
 
+static str t_relay_flag_names[] = {
+	str_init("no-auto-477"),     /* TM_T_RELAY_noerr_FLAG */
+	str_init("no-dns-failover"), /* TM_T_RELAY_nodnsfo_FLAG */
+	str_init("pass-reason-hdr"), /* TM_T_RELAY_reason_FLAG */
+	str_init("allow-no-cancel"), /* TM_T_RELAY_do_cancel_dis_FLAG */
+	STR_NULL
+};
 
 static int flag_fixup(void** param)
 {
-	*param = (void*)((unsigned long int)(*(unsigned int*)*param)<<1);
+	if (fixup_named_flags(param, t_relay_flag_names, NULL, NULL) < 0)
+		return -1;
+
+	*param = (void*)((unsigned long)((unsigned int)(unsigned long)*param)<<1);
 	return 0;
 }
 

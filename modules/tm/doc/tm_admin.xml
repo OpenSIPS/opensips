@@ -885,17 +885,12 @@ modparam("tm", "cluster_auto_cancel", no)
 		The function may take two optional parameters.
 		</para>
 		<para>
-		The first parameter is a number representing a set of flags for 
-		controlling the internal behaviour. The flags may be given in decimal 
-		or hexa format; supported flags are:
+		The first parameter is a comma separated list of string flags for
+		controlling the internal behaviour. The supported flags are:
 		</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>0x01</emphasis> - deprecated, not used any more
-				</para>
-			</listitem>
-			<listitem>
-				<para><emphasis>0x02</emphasis> - do not internally generate
+				<para><emphasis>no-auto-477</emphasis> - do not internally generate
 				and send a "477 Send failed (477/TM)" SIP reply in case of a
 				global forwarding failure (i.e. forwarding for each branch has
 				failed due to internal errors, bad R-URI, bad message, lack of
@@ -914,19 +909,19 @@ modparam("tm", "cluster_auto_cancel", no)
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>0x04</emphasis> - disable the DNS failover
+				<para><emphasis>no-dns-failover</emphasis> - disable the DNS failover
 				for the transaction. Only first IP will be used. It disables
 				the failover both at transport and transaction level.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>0x08</emphasis> - If the request is a CANCEL,
+				<para><emphasis>pass-reason-hdr</emphasis> - If the request is a CANCEL,
 				trust and pass further the Reason header from the received
 				CANCEL - shortly, will propagate the Reason header.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>0x10</emphasis> - Allows OpenSIPS to inspect
+				<para><emphasis>allow-no-cancel</emphasis> - Allows OpenSIPS to inspect
 				and follow the Content-Disposition "no-cancel" indication (if
 				present). As per RFC3841, section 9.1, the TM module may be 
 				instructed not to cancel all ongoing branches when a 2xx reply
@@ -1775,9 +1770,10 @@ t_relay();
 				<emphasis>uri (string)</emphasis>
 			</para></listitem>
 			<listitem><para>
-				<emphasis>flags (int, optional)</emphasis> - a set of flags for 
+				<emphasis>flags (string, optional)</emphasis> - a set of flags for
 				controlling the internal behaviour - for description see the above 
-				<quote>t_relay([flags])</quote> function. Note that only 0x4 is 
+				<quote>t_relay([flags])</quote> function. Note that only
+				<emphasis>no-dns-failover</emphasis> is
 				applicable here.
 			</para></listitem>
 		</itemizedlist>
