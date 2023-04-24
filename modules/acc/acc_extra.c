@@ -87,7 +87,7 @@ void init_acc_extra(void)
 	/* ugly trick to get the address of the static buffer */
 	static_detector[0] = int2str( (unsigned long)3, &i) + i;
 	/* remember directly the static buffer returned by ip_addr2a()*/
-	static_detector[1] = _ip_addr_A_buff;
+	static_detector[1] = _ip_addr_A_buffs[0];
 }
 
 
