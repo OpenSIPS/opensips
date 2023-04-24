@@ -110,7 +110,10 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define STORE_BRANCH_CTID \
 	(sipping_flag && (rm_on_to_flag || sipping_latency_flag))
 
-static int nat_uac_test_f(struct sip_msg* msg, int *tests);
+static int fixup_flags_uac_test(void** param);
+static int fixup_flags_sdp(void** param);
+
+static int nat_uac_test_f(struct sip_msg* msg, void *tests);
 static int fix_nated_contact_f(struct sip_msg* msg, str *params);
 static int fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip,
 						str *new_sdp_lines);
@@ -221,12 +224,12 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_sdp",      (cmd_function)fix_nated_sdp_f, {
-		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,fixup_flags_sdp,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"nat_uac_test",       (cmd_function)nat_uac_test_f, {
-		{CMD_PARAM_INT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,fixup_flags_uac_test,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"fix_nated_register", (cmd_function)fix_nated_register_f,
 		{{0,0,0}}, REQUEST_ROUTE},
@@ -848,16 +851,32 @@ contact_rport(struct sip_msg* msg)
 
 }
 
+static str nat_uac_test_flag_names[] =
+{
+	str_init("private-contact"),       /* NAT_UAC_TEST_C_1918 */
+	str_init("diff-ip-src-via"),       /* NAT_UAC_TEST_V_RCVD */
+	str_init("private-via"),           /* NAT_UAC_TEST_V_1918 */
+	str_init("private-sdp"),           /* NAT_UAC_TEST_S_1918 */
+	str_init("diff-port-src-via"),     /* NAT_UAC_TEST_RPORT */
+	str_init("diff-ip-src-contact"),   /* NAT_UAC_TEST_C_RCVD */
+	str_init("diff-port-src-contact"), /* NAT_UAC_TEST_C_RPORT */
+	STR_NULL
+};
 
-
+static int fixup_flags_uac_test(void** param)
+{
+	return fixup_named_flags(param, nat_uac_test_flag_names, NULL, NULL);
+}
 
 static int
-nat_uac_test_f(struct sip_msg* msg, int *tests)
+nat_uac_test_f(struct sip_msg* msg, void *flags)
 {
+	unsigned int tests = (unsigned int)(unsigned long)flags;
+
 	/* return true if any of the NAT-UAC tests holds */
 
 	/* test if the source port is different from the port in Via */
-	if ((*tests & NAT_UAC_TEST_RPORT) &&
+	if ((tests & NAT_UAC_TEST_RPORT) &&
 		 (msg->rcv.src_port!=(msg->via1->port?msg->via1->port:SIP_PORT)) ){
 		return 1;
 	}
@@ -865,35 +884,35 @@ nat_uac_test_f(struct sip_msg* msg, int *tests)
 	 * test if source address of signaling is different from
 	 * address advertised in Via
 	 */
-	if ((*tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
+	if ((tests & NAT_UAC_TEST_V_RCVD) && received_test(msg))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in Contact
 	 * header field
 	 */
-	if ((*tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
+	if ((tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in SDP body
 	 */
-	if ((*tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
+	if ((tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses top Via
 	 */
-	if ((*tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
+	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
 		return 1;
 	/*
 	 * test if source address of signaling is different from
 	 * address advertised in Contact
 	 */
-	if ((*tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
+	if ((tests & NAT_UAC_TEST_C_RCVD) && contact_rcv(msg))
 		return 1;
 	/*
 	 * test if source port of signaling is different from
 	 * port advertised in Contact
 	 */
-	if ((*tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
+	if ((tests & NAT_UAC_TEST_C_RPORT) && contact_rport(msg))
 		return 1;
 
 	/* no test succeeded */
@@ -1101,6 +1120,20 @@ replace_sdp_ip(struct sip_msg* msg, str *org_body, char *line, str *ip, int forc
 	return 0;
 }
 
+static str fix_nated_sdp_flag_names[] =
+{
+	str_init("add-dir-active"),    /* ADD_ADIRECTION */
+	str_init("rewrite-media-ip"),  /* FIX_MEDIP */
+	str_init("add-no-rtpproxy"),   /* ADD_ANORTPPROXY */
+	str_init("rewrite-origin-ip"), /* FIX_ORGIP */
+	str_init("rewrite-null-ips"),  /* FORCE_NULL_ADDR */
+	STR_NULL
+};
+
+static int fixup_flags_sdp(void** param)
+{
+	return fixup_named_flags(param, fix_nated_sdp_flag_names, NULL, NULL);
+}
 
 static int
 fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)

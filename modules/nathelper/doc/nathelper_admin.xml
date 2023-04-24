@@ -640,33 +640,33 @@ if (search("User-Agent: Cisco ATA.*") {
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>flags (int)</emphasis> - the value may be a bitwise OR of
+			<emphasis>flags (string)</emphasis> - the value may be a CSV of
 			the following flags:
 			</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>0x01</emphasis> - adds
+					<para><emphasis>add-dir-active</emphasis> - adds
 					<quote>a=direction:active</quote> SDP line;
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x02</emphasis> - rewrite media
+					<para><emphasis>rewrite-media-ip</emphasis> - rewrite media
 					&ip; address (c=) with source address of the message
 					or the provided IP address (the provided IP address takes
 					precedence over the source address).</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x04</emphasis> - adds
+					<para><emphasis>add-no-rtpproxy</emphasis> - adds
 						<quote>a=nortpproxy:yes</quote> SDP line;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x08</emphasis> - rewrite IP from
+					<para><emphasis>rewrite-origin-ip</emphasis> - rewrite IP from
 					origin description (o=) with source address of the message
 					or the provided IP address (the provided IP address takes
 					precedence over the source address).</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>0x10</emphasis> - force rewrite of
+					<para><emphasis>rewrite-null-ips</emphasis> - force rewrite of
 					null media IP and/or origin IP address.
 					Without this flag, null IPs are left untouched.</para>
 				</listitem>
@@ -770,40 +770,40 @@ fix_nated_register();
 			Tries to guess if client's request originated behind a nat.
 			The parameter determines what heuristics is used.
 		</para>
-		<para>Meaning of the <emphasis>flags (int)</emphasis> parameter
+		<para>Meaning of the <emphasis>flags (string)</emphasis> parameter
 		is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>1</emphasis> -  Contact header field is searched
+			<emphasis>ct</emphasis> -  Contact header field is searched
 			for occurrence of RFC1918 / RFC6598 addresses.
 			</para></listitem>
 			<listitem><para>
-			<emphasis>2</emphasis> -  the "received" test is used: address
+			<emphasis>si-via</emphasis> -  the "received" test is used: address
 			in Via is compared against source IP address of signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>4</emphasis> -  Top Most VIA is searched
+			<emphasis>via</emphasis> -  Top Most VIA is searched
 			for occurrence of RFC1918 / RFC6598 addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>8</emphasis> -  SDP is searched for occurrence of
+			<emphasis>sdp</emphasis> -  SDP is searched for occurrence of
 			RFC1918 / RFC6598 addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>16</emphasis> -  test if the source port is different
+			<emphasis>sp-via</emphasis> -  test if the source port is different
 			from the port in Via
 			</para></listitem>
 			<listitem><para>
-			<emphasis>32</emphasis> -  address in Contact is compared against
+			<emphasis>si-ct</emphasis> -  address in Contact is compared against
 			source IP address of signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>64</emphasis> -  Port in Contact is compared against
+			<emphasis>sp-ct</emphasis> -  Port in Contact is compared against
 			source port of signaling
 			</para></listitem>
 		</itemizedlist>
 		<para>
-		All flags can be bitwise combined, the test returns true if any of
+		A CSV of the above flags can be provided, the test returns true if any of
 		the tests identified a NAT.
 		</para>
 		<para>
