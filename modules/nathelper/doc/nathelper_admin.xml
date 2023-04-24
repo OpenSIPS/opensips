@@ -801,6 +801,11 @@ fix_nated_register();
 			<emphasis>sp-ct</emphasis> -  Port in Contact is compared against
 			source port of signaling
 			</para></listitem>
+			<listitem><para>
+			<emphasis>rfc6333</emphasis> - also include RFC 6333 addresses in the
+			checks for <emphasis>ct</emphasis>, <emphasis>via</emphasis> and
+			<emphasis>sdp</emphasis> flags.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 		A CSV of the above flags can be provided, the test returns true if any of

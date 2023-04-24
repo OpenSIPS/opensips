@@ -772,7 +772,7 @@ test_private_contact(struct sip_msg *msg)
     if (!get_contact_uri(msg, &uri, &contact))
         return False;
 
-    return ip_addr_is_1918(&(uri.host));
+    return ip_addr_is_1918(&(uri.host), 0);
 }
 
 
@@ -780,7 +780,7 @@ test_private_contact(struct sip_msg *msg)
 static Bool
 test_private_via(struct sip_msg *msg)
 {
-    return ip_addr_is_1918(&(msg->via1->host));
+    return ip_addr_is_1918(&(msg->via1->host), 0);
 }
 
 

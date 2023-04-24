@@ -180,7 +180,7 @@ void print_ip(char* prefix, struct ip_addr* ip, char* suffix);
 void stdout_print_ip(struct ip_addr* ip);
 void print_net(struct net* net);
 
-int ip_addr_is_1918(str *s_ip);
+int ip_addr_is_1918(str *s_ip, int check_rfc_6333);
 
 #ifdef USE_MCAST
 /*! \brief Returns 1 if the given address is a multicast address */

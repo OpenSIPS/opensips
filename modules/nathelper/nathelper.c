@@ -93,6 +93,7 @@ static int sipping_latency_flag = -1;  /* by the code imported by sip_pinger*/
 #define	NAT_UAC_TEST_RPORT	0x10
 #define	NAT_UAC_TEST_C_RCVD	0x20
 #define	NAT_UAC_TEST_C_RPORT	0x40
+#define	NAT_UAC_TEST_RFC_6333	0x80
 
 #define MI_SET_NATPING_STATE		"nh_enable_ping"
 #define MI_DEFAULT_NATPING_STATE	1
@@ -747,14 +748,14 @@ fix_nated_contact_f(struct sip_msg* msg, str *params)
  * test for occurrence of RFC1918 / RFC6598 IP address in Contact HF
  */
 static int
-contact_1918(struct sip_msg* msg)
+contact_1918(struct sip_msg* msg, int check_rfc_6333)
 {
 	struct sip_uri uri;
 	struct hdr_field *hdr;
 	contact_t* c;
 
 	for( hdr=NULL,c=NULL ; get_contact_uri(msg, &uri, &c, &hdr)==0 ; )
-		if ( ip_addr_is_1918(&(uri.host)) == 1) return 1;
+		if ( ip_addr_is_1918(&(uri.host), check_rfc_6333) == 1) return 1;
 
 	return 0;
 }
@@ -763,7 +764,7 @@ contact_1918(struct sip_msg* msg)
  * test for occurrence of RFC1918 / RFC6598 IP address in SDP
  */
 static int
-sdp_1918(struct sip_msg* msg)
+sdp_1918(struct sip_msg* msg, int check_rfc_6333)
 {
 	str body, ip;
 	int pf;
@@ -797,7 +798,7 @@ sdp_1918(struct sip_msg* msg)
 		if (pf != AF_INET || isnulladdr(&ip, pf))
 			return 0;
 
-		ret |= ip_addr_is_1918(&ip);
+		ret |= ip_addr_is_1918(&ip, check_rfc_6333);
 	}
 
 	return ret;
@@ -807,10 +808,10 @@ sdp_1918(struct sip_msg* msg)
  * test for occurrence of RFC1918 / RFC6598 IP address in top Via
  */
 static int
-via_1918(struct sip_msg* msg)
+via_1918(struct sip_msg* msg, int check_rfc_6333)
 {
 
-	return ip_addr_is_1918(&(msg->via1->host));
+	return ip_addr_is_1918(&(msg->via1->host), check_rfc_6333);
 }
 
 /*
@@ -860,6 +861,7 @@ static str nat_uac_test_flag_names[] =
 	str_init("diff-port-src-via"),     /* NAT_UAC_TEST_RPORT */
 	str_init("diff-ip-src-contact"),   /* NAT_UAC_TEST_C_RCVD */
 	str_init("diff-port-src-contact"), /* NAT_UAC_TEST_C_RPORT */
+	str_init("carrier-grade-nat"),     /* NAT_UAC_TEST_RFC_6333 */
 	STR_NULL
 };
 
@@ -872,6 +874,10 @@ static int
 nat_uac_test_f(struct sip_msg* msg, void *flags)
 {
 	unsigned int tests = (unsigned int)(unsigned long)flags;
+	int check_rfc_6333 = 0;
+
+	if (tests & NAT_UAC_TEST_RFC_6333)
+		check_rfc_6333 = 1;
 
 	/* return true if any of the NAT-UAC tests holds */
 
@@ -890,17 +896,17 @@ nat_uac_test_f(struct sip_msg* msg, void *flags)
 	 * test for occurrences of RFC1918 / RFC6598 addresses in Contact
 	 * header field
 	 */
-	if ((tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg)>0))
+	if ((tests & NAT_UAC_TEST_C_1918) && (contact_1918(msg, check_rfc_6333)>0))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses in SDP body
 	 */
-	if ((tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg))
+	if ((tests & NAT_UAC_TEST_S_1918) && sdp_1918(msg, check_rfc_6333))
 		return 1;
 	/*
 	 * test for occurrences of RFC1918 / RFC6598 addresses top Via
 	 */
-	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg))
+	if ((tests & NAT_UAC_TEST_V_1918) && via_1918(msg, check_rfc_6333))
 		return 1;
 	/*
 	 * test if source address of signaling is different from
