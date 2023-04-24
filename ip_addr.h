@@ -383,20 +383,25 @@ static inline int hostent2su( union sockaddr_union* su,
 
 /*! \brief maximum size of a str returned by ip_addr2a (including \\0') */
 #define IP_ADDR_MAX_STR_SIZE 40 /* 1234:5678:9012:3456:7890:1234:5678:9012\0 */
+#define IP_ADDR2STR_BUF_NO 4
 
 /*! \brief fast ip_addr -> string converter;
  * it uses an internal buffer
  */
-extern char _ip_addr_A_buff[IP_ADDR_MAX_STR_SIZE];
+extern char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
 static inline char* ip_addr2a(struct ip_addr* ip)
 {
+	static unsigned int it = 0;
 	int offset;
 	register unsigned char a,b,c;
 	register unsigned char d;
 	register unsigned short hex4;
 	int r;
+	char *_ip_addr_A_buff;
 	#define HEXDIG(x) (((x)>=10)?(x)-10+'A':(x)+'0')
 
+	if ((++it)==IP_ADDR2STR_BUF_NO) it = 0;
+	_ip_addr_A_buff = _ip_addr_A_buffs[it];
 
 	offset=0;
 	switch(ip->af){
