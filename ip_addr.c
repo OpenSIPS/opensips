@@ -38,7 +38,7 @@
 #include "dprint.h"
 #include "mem/mem.h"
 
-char _ip_addr_A_buff[IP_ADDR_MAX_STR_SIZE];
+char _ip_addr_A_buffs[IP_ADDR2STR_BUF_NO][IP_ADDR_MAX_STR_SIZE];
 
 struct net* mk_net(struct ip_addr* ip, struct ip_addr* mask)
 {
