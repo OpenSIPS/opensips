@@ -72,9 +72,9 @@ enum b2b_tuple_state {
 /* tuple bridge flags */
 #define B2BL_BR_FLAG_NOTIFY                        (1<<0)
 #define B2BL_BR_FLAG_RETURN_AFTER_FAILURE          (1<<1)
-#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR  (1<<2)
-#define B2BL_BR_FLAG_HOLD                          (1<<3)
-#define B2BL_BR_FLAG_RENEW_SDP                     (1<<4)
+#define B2BL_BR_FLAG_HOLD                          (1<<2)
+#define B2BL_BR_FLAG_RENEW_SDP                     (1<<3)
+#define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR  (1<<4)
 #define B2BL_BR_FLAG_PROV_MEDIA                    (1<<5)
 #define B2BL_BR_FLAG_NO_OLD_ENT                    (1<<6)
 

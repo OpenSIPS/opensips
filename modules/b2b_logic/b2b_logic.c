@@ -42,6 +42,7 @@
 #include "../../timer.h"
 #include "../../pt.h"
 #include "../../lib/csv.h"
+#include "../../mod_fix.h"
 
 #include "records.h"
 #include "b2b_logic.h"
@@ -814,11 +815,23 @@ static int child_init(int rank)
 	return 0;
 }
 
+static str init_request_flags[] =
+{
+	str_init("transparent-auth"), /* B2BL_FLAG_TRANSPARENT_AUTH */
+	str_init("preserve-to"),      /* B2BL_FLAG_TRANSPARENT_TO */
+	STR_NULL
+};
+static str init_request_kv_flags[] =
+{
+	str_init("setup-timeout"),
+	STR_NULL
+};
+
 static int fixup_init_flags(void** param)
 {
 	str *s = (str*)*param;
-	int st;
 	struct b2b_params *init_params;
+	str flag_vals[1] = {STR_NULL};
 
 	init_params = pkg_malloc(sizeof	*init_params);
 	if (!init_params) {
@@ -829,32 +842,28 @@ static int fixup_init_flags(void** param)
 
 	init_params->init_timeout = b2bl_th_init_timeout;
 
+	if (!s) {
+		*param = (void*)init_params;
+		return 0;
+	}
+
+	if (fixup_named_flags(param, init_request_flags, init_request_kv_flags,
+		flag_vals) < 0) {
+		LM_ERR("Failed to parse flags\n");
+		return -1;
+	}
+
+	init_params->flags = (unsigned int)(unsigned long)(void*)*param;
 	*param = (void*)init_params;
 
-	if (!s)
-		return 0;
-
-	for( st=0 ; st< s->len ; st++ ) {
-		switch (s->s[st])
-		{
-			case 't':
-				init_params->init_timeout = 0;
-				while (st<s->len-1 && isdigit(s->s[st+1])) {
-					init_params->init_timeout =
-						init_params->init_timeout*10 + s->s[st+1] - '0';
-					st++;
-				}
-				break;
-			case 'a':
-				init_params->flags |= B2BL_FLAG_TRANSPARENT_AUTH;
-				break;
-			case 'p':
-				init_params->flags |= B2BL_FLAG_TRANSPARENT_TO;
-				break;
-			default:
-				LM_WARN("unknown option `%c'\n", s->s[st]);
+	if (flag_vals[0].s) {
+		if (str2int(&flag_vals[0], &init_params->init_timeout) < 0) {
+			LM_ERR("timeout is not an integer\n");
+			return -1;
 		}
 	}
+
+	LM_DBG("DDD flags=%d lifetime=%d\n", init_params->flags, init_params->init_timeout);
 
 	return 0;
 }
@@ -867,11 +876,25 @@ static int fixup_free_init_flags(void** param)
 	return 0;
 }
 
+static str bridge_flags[] =
+{
+	str_init("notify"),          /* B2BL_BR_FLAG_NOTIFY */
+	str_init("rollback-failed"), /* B2BL_BR_FLAG_RETURN_AFTER_FAILURE */
+	str_init("hold"),            /* B2BL_BR_FLAG_HOLD */
+	str_init("no-late-sdp"),     /* B2BL_BR_FLAG_RENEW_SDP */
+	STR_NULL
+};
+static str bridge_kv_flags[] =
+{
+	str_init("max_duration"),
+	STR_NULL
+};
+
 static int fixup_bridge_flags(void** param)
 {
 	str *s = (str*)*param;
-	int st;
 	struct b2b_bridge_params *bridge_params;
+	str flag_vals[1] = {STR_NULL};
 
 	bridge_params = pkg_malloc(sizeof *bridge_params);
 	if (!bridge_params) {
@@ -880,37 +903,23 @@ static int fixup_bridge_flags(void** param)
 	}
 	memset(bridge_params, 0, sizeof *bridge_params);
 
-	bridge_params->lifetime = 0;
+	if (!s) {
+		*param = (void*)bridge_params;
+		return 0;
+	}
 
+	if (fixup_named_flags(param, bridge_flags, bridge_kv_flags, flag_vals) < 0) {
+		LM_ERR("Failed to parse flags\n");
+		return -1;
+	}
+
+	bridge_params->flags = (unsigned int)(unsigned long)(void*)*param;
 	*param = (void*)bridge_params;
 
-	if (!s)
-		return 0;
-
-	for( st=0 ; st< s->len ; st++ ) {
-		switch (s->s[st])
-		{
-			case 't':
-				while (st<s->len-1 && isdigit(s->s[st+1])) {
-					bridge_params->lifetime =
-						bridge_params->lifetime*10 + s->s[st+1] - '0';
-					st++;
-				}
-				break;
-			case 'n':
-				bridge_params->flags |= B2BL_BR_FLAG_NOTIFY;
-				break;
-			case 'f':
-				bridge_params->flags |= B2BL_BR_FLAG_RETURN_AFTER_FAILURE;
-				break;
-			case 'h':
-				bridge_params->flags |= B2BL_BR_FLAG_HOLD;
-				break;
-			case 'r':
-				bridge_params->flags |= B2BL_BR_FLAG_RENEW_SDP;
-				break;
-			default:
-				LM_WARN("unknown option `%c'\n", s->s[st]);
+	if (flag_vals[0].s) {
+		if (str2int(&flag_vals[0], &bridge_params->lifetime) < 0) {
+			LM_ERR("duration is not an integer\n");
+			return -1;
 		}
 	}
 

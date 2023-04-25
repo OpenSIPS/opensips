@@ -530,18 +530,19 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 				scripting or dedicated routes are required.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>flags (string, optional)</emphasis> - meanings of the flags is as follows:
+				<emphasis>flags (string, optional)</emphasis> - CSV list of the following flags:
 				<itemizedlist>
 					<listitem><para>
-					<emphasis>t[nn]</emphasis> - Call setup timeout. 0 sets timeout to max_duration value.
-					Example: t300.
+					<emphasis>setup-timeout=[nn]</emphasis> - Call setup timeout. 0 sets
+					timeout to max_duration value. Example: "setup-timeout=300".
 					</para></listitem>
 					<listitem><para>
-					<emphasis>a</emphasis> - Transparent authentication. In this mode b2b passes your 401
-					or 407 authentication request to destination server.
+					<emphasis>transparent-auth</emphasis> - Transparent authentication.
+					In this mode b2b passes your 401 or 407 authentication request to
+					destination server.
 					</para></listitem>
 					<listitem><para>
-					<emphasis>p</emphasis> - Preserve To: header.
+					<emphasis>preserve-to</emphasis> - Preserve To: header.
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
@@ -717,31 +718,33 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 				media server to be connected with the caller while the callee answers.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>flags (string, optional)</emphasis> - meanings of the flags is as follows:
+				<emphasis>flags (string, optional)</emphasis> - CSV list of the following flags:
 				<itemizedlist>
 					<listitem><para>
-					<emphasis>t[nn]</emphasis> - Maximum duration of the B2B
+					<emphasis>max_duration=[nn]</emphasis> - Maximum duration of the B2B
 					session. If the lifetime expires, the B2BUA will send BYE messages to both
-					ends and delete the record.
-					Example: t300.
+					ends and delete the record. Example: "max_duration=300".
 					</para></listitem>
 					<listitem><para>
-					<emphasis>n</emphasis> - Enable rfc3515 NOTIFY to inform the agent sending the
-					REFER of the status of the reference.
+					<emphasis>notify</emphasis> - Enable rfc3515 NOTIFY to inform the agent
+					sending the REFER of the status of the reference.
 					</para></listitem>
 					<listitem><para>
-					<emphasis>f</emphasis> - Rollback call to state before bridging in case of transfer
-					failed, don't hangup the call (default behaviour).
+					<emphasis>rollback-failed</emphasis> - Rollback call to state before
+					bridging in case of transfer failed, don't hangup the call
+					(default behaviour).
 					</para></listitem>
 					<listitem><para>
-					<emphasis>h</emphasis> - Put the old entity on hold before bridging it to the
-					new entity.
+					<emphasis>hold</emphasis> - Put the old entity on hold before bridging
+					it to the new entity.
 					</para></listitem>
 					<listitem><para>
-					<emphasis>r</emphasis> - Do not attempt late SDP negociation with the new entity.
-					Start the bridging by first contacting the new entity using the initial SDP received
-					from the old entity. After the new entity answers, send a reINVITE without body to
-					the old entity. Use the current SDP received in this new answer from the old entity to trigger a renegociation with the new entity.
+					<emphasis>no-late-sdp</emphasis> - Do not attempt late SDP negociation
+					with the new entity. Start the bridging by first contacting the new entity
+					using the initial SDP received from the old entity. After the new entity
+					answers, send a reINVITE without body to the old entity. Use the current
+					SDP received in this new answer from the old entity to trigger a
+					renegociation with the new entity.
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
