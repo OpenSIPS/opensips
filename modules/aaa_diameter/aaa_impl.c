@@ -231,7 +231,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 		struct dict_object *obj;
 		struct dict_avp_data dm_avp;
 		int int_type = 1;
-		double num_val;
+		double num_val = 0;
 
 		FD_CHECK_GT(fd_msg_avp_hdr(it, &h));
 
