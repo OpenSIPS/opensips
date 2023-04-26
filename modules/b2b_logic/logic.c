@@ -3415,7 +3415,7 @@ str *b2b_scenario_hdrs(xmlNodePtr client_node, b2bl_tuple_t* tuple)
 				goto next;
 			}
 			b2b_hdrs_buf.s = tmp_buf;
-			b2b_hdrs_buf_len += len;
+			b2b_hdrs_buf_len = b2b_hdrs_buf.len + len;
 		}
 		memcpy(b2b_hdrs_buf.s + b2b_hdrs_buf.len, name_value.s, name_value.len);
 		b2b_hdrs_buf.len += name_value.len;
