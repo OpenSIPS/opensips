@@ -613,8 +613,8 @@ static inline int add_contacts(struct sip_msg* _m, contact_t* _c,
  * Process REGISTER request and save it's contacts
  */
 #define is_cflag_set(_name) ((sctx.flags)&(_name))
-int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
-				str* uri, str* _owtag)
+int save_aux(struct sip_msg* _m, str* forced_binding, void* _d,
+	struct save_flags *flags, str* uri, str* _owtag)
 {
 	struct save_ctx  sctx;
 	contact_t* c;
@@ -628,8 +628,13 @@ int save_aux(struct sip_msg* _m, str* forced_binding, void* _d, str* flags_s,
 	sctx.min_expires = min_expires;
 	sctx.max_expires = max_expires;
 	sctx.max_contacts = max_contacts;
-	if ( flags_s )
-		reg_parse_save_flags( flags_s, &sctx);
+	if (flags) {
+		sctx.flags = flags->flags;
+		sctx.max_contacts = flags->max_contacts;
+		sctx.min_expires = flags->min_expires;
+		sctx.max_expires = flags->max_expires;
+		sctx.cmatch = flags->cmatch;
+	}
 
 	if (route_type == ONREPLY_ROUTE)
 		sctx.flags |= REG_SAVE_NOREPLY_FLAG;
@@ -717,7 +722,7 @@ return_minus_one:
 }
 
 #define MAX_FORCED_BINDING_LEN 256
-int save(struct sip_msg* _m, void* _d, str* _f, str* _s, str* _owtag)
+int save(struct sip_msg* _m, void* _d, void* _f, str* _s, str* _owtag)
 {
 	struct sip_msg* msg = _m;
 	struct cell* t = NULL;

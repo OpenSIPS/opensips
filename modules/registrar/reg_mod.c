@@ -83,6 +83,10 @@ static int cfg_validate(void);
 
 /*! \brief Fixup functions */
 static int domain_fixup(void** param);
+static int save_flags_fixup(void** param);
+static int save_flags_fixup_free(void** param);
+static int lookup_flags_fixup(void** param);
+static int lookup_flags_fixup_free(void** param);
 
 /*! \brief Functions */
 static int add_sock_hdr(struct sip_msg* msg, str *str);
@@ -141,7 +145,7 @@ struct tm_binds tmb;
 static const cmd_export_t cmds[] = {
 	{"save", (cmd_function)save, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, save_flags_fixup, save_flags_fixup_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE},
@@ -160,7 +164,7 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 	{"lookup", (cmd_function)reg_lookup, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, lookup_flags_fixup, lookup_flags_fixup_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE},
 	{"add_sock_hdr", (cmd_function)add_sock_hdr, {
@@ -425,6 +429,25 @@ static int domain_fixup(void** param)
 	return 0;
 }
 
+static int save_flags_fixup(void **param)
+{
+	return reg_fixup_save_flags(param);
+}
+
+static int save_flags_fixup_free(void **param)
+{
+	return reg_fixup_free_save_flags(param);
+}
+
+static int lookup_flags_fixup(void **param)
+{
+	return reg_fixup_lookup_flags(param);
+}
+
+static int lookup_flags_fixup_free(void **param)
+{
+	return reg_fixup_free_lookup_flags(param);
+}
 
 static void mod_destroy(void)
 {

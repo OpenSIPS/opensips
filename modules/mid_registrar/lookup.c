@@ -47,26 +47,22 @@
 	}
 
 
-int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri)
+int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
+	struct lookup_flags *lookup_flags, str *uri)
 {
 	struct sip_uri puri;
-	unsigned int flags;
+	unsigned int flags = 0;
 	int ret = LOOKUP_ERROR, pos, ruri_is_pushed = 0;
-	int regexp_flags = 0, max_latency = 0;
 	uint64_t contact_id;
 	str aor;
 	ucontact_t *ct;
 	urecord_t *r;
-	regex_t ua_re;
 
 	if (reg_mode == MID_REG_THROTTLE_AOR)
-		return lookup(req, d, sflags, uri, 0, mid_reg_update_aor);
+		return lookup(req, d, lookup_flags, uri, 0, mid_reg_update_aor);
 
-	if (parse_lookup_flags(sflags, &flags, &ua_re, &regexp_flags,
-	                       &max_latency) != 0) {
-		LM_ERR("failed to parse flags: %.*s\n", sflags->len, sflags->s);
-		return LOOKUP_ERROR;
-	}
+	if (lookup_flags)
+		flags = lookup_flags->flags;
 
 	ruri_is_pushed = flags & REG_LOOKUP_NO_RURI_FLAG;
 

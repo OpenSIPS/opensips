@@ -29,7 +29,9 @@
 #define __MID_REG_LOOKUP_
 
 #include "../../parser/msg_parser.h"
+#include "../../lib/reg/lookup.h"
 
-int mid_reg_lookup(struct sip_msg *req, udomain_t *d, str *sflags, str *uri);
+int mid_reg_lookup(struct sip_msg *req, udomain_t *d,
+	struct lookup_flags *lookup_flags, str *uri);
 
 #endif /* __MID_REG_LOOKUP_ */

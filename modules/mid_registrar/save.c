@@ -2521,7 +2521,7 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	return 2;
 }
 
-int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
+int mid_reg_save(struct sip_msg *msg, udomain_t *d, struct save_flags *flags,
                           str *to_uri, int *expires, str *owtag)
 {
 	urecord_t *r = NULL;
@@ -2543,8 +2543,13 @@ int mid_reg_save(struct sip_msg *msg, udomain_t *d, str *flags_str,
 
 	LM_DBG("saving to %.*s...\n", d->name->len, d->name->s);
 
-	if (flags_str)
-		reg_parse_save_flags(flags_str, &sctx);
+	if (flags) {
+		sctx.flags = flags->flags;
+		sctx.max_contacts = flags->max_contacts;
+		sctx.min_expires = flags->min_expires;
+		sctx.max_expires = flags->max_expires;
+		sctx.cmatch = flags->cmatch;
+	}
 
 	if (parse_reg_headers(msg) != 0) {
 		LM_ERR("failed to parse req headers\n");

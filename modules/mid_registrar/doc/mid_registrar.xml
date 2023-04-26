@@ -16,6 +16,7 @@
 <!ENTITY pn_async_func SYSTEM "../../../lib/reg/doc/pn_async_func.xml">
 <!ENTITY lookup_flags SYSTEM "../../../lib/reg/doc/lookup_flags.xml">
 <!ENTITY lookup_retcodes SYSTEM "../../../lib/reg/doc/lookup_retcodes.xml">
+<!ENTITY save_common_flags SYSTEM "../../../lib/reg/doc/save_common_flags.xml">
 
 <!-- Include general documentation entities -->
 <!ENTITY % docentities SYSTEM "../../../doc/entities.xml">

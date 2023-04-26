@@ -46,7 +46,17 @@ struct save_ctx {
 	int star;
 };
 
+struct save_flags {
+	unsigned int flags;
+	unsigned int max_contacts;
+	unsigned int min_expires;
+	unsigned int max_expires;
+	struct ct_match cmatch;
+	/* the 'match_params' field from cmatch will point to this field */
+	str_list match_params;
+};
 
-void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx);
+int reg_fixup_free_save_flags(void** param);
+int reg_fixup_save_flags(void** param);
 
 #endif

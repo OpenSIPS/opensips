@@ -485,33 +485,16 @@ modparam("registrar", "disable_gruu", 0)
 			the following flags:
 			</para>
 			<itemizedlist>
+				&save_common_flags;
 				<listitem>
-					<para><emphasis>'m' (Memory only)</emphasis> - save the
-					contacts only in memory cache without no DB operation;
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'r' (no Reply)</emphasis> - do not
-					generate a SIP reply to the current REGISTER request.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'s' (Socket header)</emphasis> -  look
-					into REGISTER request for a header which contains a socket
+					<para><emphasis>'socket-header'</emphasis> -
+					look into REGISTER request for a header which contains a socket
 					description (proto:IP:port). This socket info will be
 					stored by register instead of the received socket info.
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'cnn' (max Contacts)</emphasis> -  this
-					flag can be used to limit the number of contacts for this
-					AOR (Address of Record) in the user location database.
-					Value 0 disables the check. This parameter overrides the
-					global "max_contacts" module parameter.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'e(int)' (minimum expires)</emphasis> -  this
+					<para><emphasis>'min-expires=[int]'</emphasis> -  this
 					flag can be used to set minimum register expiration time.
 					Values lower than this minimum will be automatically set
 					to the minimum. Value 0 disables the checking.
@@ -520,87 +503,12 @@ modparam("registrar", "disable_gruu", 0)
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'E(int)' (maximum expires)</emphasis> -  this
+					<para><emphasis>'max-expires=[int]'</emphasis> -  this
 					flag can be used to set maximum register expiration time.
 					Values higher than this maximum will be automatically set
 					to the maximum. Value 0 disables the checking.
 					This parameter overrides the global
 					<xref linkend="param_max_expires"/> module parameter.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'f' (force registration)</emphasis> - this
-					flag can be used to force the registration of NEW contacts
-					even if the maximum number of contacts is reached. In such
-					a case, older contacts will be removed to make space to the
-					new ones, without exceeding the maximum allowed number.
-					This flag makes sense only if "cxx" is used.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'o' (Only request contacts)</emphasis> -
-					Only include the REGISTER request's Contacts in the 200 OK
-					reply, in case the registration is successful.  While this
-					is against RFC 3261, it may be useful in certain scenarios.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'Mxx' (contact Matching mode)</emphasis> -
-					How the matching should be performed between the uploaded
-					contacts (by the currently handled REGISTER) and the
-					already know contacts (in memory or DB). This options will
-					be used only for the current operation and can be:
-					<itemizedlist>
-					<listitem>
-						<para><emphasis>'M0'</emphasis> - contact URI matching
-						only</para>
-					</listitem>
-					<listitem>
-						<para><emphasis>'M1'</emphasis> - contact URI and
-						SIP Call-ID matching</para>
-					</listitem>
-					<listitem>
-						<para><emphasis>'M&lt;param_name&gt;'</emphasis> - only
-						the value of the given URI param will be used for
-						matching (for example M&lt;rinstance&gt;)</para>
-					</listitem>
-					</itemizedlist>
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p0' (Path support - 'off' mode)</emphasis>
-					The Path header is saved into usrloc, but is never
-					included in the reply.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p1' (Path support - lazy mode)</emphasis>
-					The Path header is saved into usrloc, but is only included
-					in the reply if path support is indicated in the
-					registration request by the <quote>path</quote> option
-					of the <quote>Supported</quote> header.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'p2' (Path support - strict mode)</emphasis>
-					The path header is only saved into usrloc, if path support
-					is indicated in the registration request by the
-					<quote>path</quote> option of the <quote>Supported</quote>
-					header. If no path support is indicated, the request is
-					rejected with <quote>420 - Bad Extension</quote> and the
-					header <quote>Unsupported: path</quote> is included in
-					the reply along with the received <quote>Path</quote>
-					header. This mode is the one recommended by RFC-3327.
-					</para>
-				</listitem>
-				<listitem>
-					<para><emphasis>'v' (path receiVed)</emphasis> if set,
-					the <quote>received</quote> parameter of the first Path
-					URI of a registration is set as received-uri and the NAT
-					branch flag is set for this contact. This is useful if
-					the registrar is placed behind a SIP loadbalancer, which
-					passes the nat'ed UAC address as <quote>received</quote>
-					parameter in it's Path uri.
 					</para>
 				</listitem>
 			</itemizedlist>
@@ -642,13 +550,13 @@ save("location");
 ...
 # save into 'location', do not update DB, max 5 contacts per AOR,
 # use default AOR (TO URI)
-save("location","mc5");
+save("location","memory-only, max-contacts=5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","",$fu);
 ...
 # save into 'location', no DB update, force registration, take AOR from AVP
-save("location","mr", $avp(aor));
+save("location","memory-only, no-reply", $avp(aor));
 ...
 # save into 'location', mark the contacts with the "vip" ownership tag and
 # replicate these contacts to the backup node, which does not currently own "vip"

@@ -21,95 +21,111 @@
 #include <ctype.h>
 
 #include "../../dprint.h"
+#include "../../mod_fix.h"
 #include "common.h"
 
+static str save_flag_names[] = {
+	str_init("memory-only"),           /* REG_SAVE_MEMORY_FLAG */
+	str_init("no-reply"),              /* REG_SAVE_NOREPLY_FLAG */
+	str_init("socket-header"),         /* REG_SAVE_SOCKET_FLAG */
+	str_init("path-strict"),           /* REG_SAVE_PATH_STRICT_FLAG */
+	str_init("path-lazy"),             /* REG_SAVE_PATH_LAZY_FLAG */
+	str_init("path-off"),              /* REG_SAVE_PATH_OFF_FLAG */
+	str_init("path-received"),         /* REG_SAVE_PATH_RECEIVED_FLAG */
+	str_init("force-registration"),    /* REG_SAVE_FORCE_REG_FLAG */
+	str_init("only-request-contacts"), /* REG_SAVE_REQ_CT_ONLY_FLAG */
+	STR_NULL
+};
 
-void reg_parse_save_flags(str *flags_s, struct save_ctx *sctx)
+#define SAVE_KV_FLAGS_NO 4
+
+static str save_kv_flag_names[] = {
+	str_init("max-contacts"),
+	str_init("min-expires"),
+	str_init("max-expires"),
+	str_init("matching-mode"),
+	STR_NULL
+};
+
+int reg_fixup_save_flags(void** param)
 {
-	static str_list mp;
-	int st, max_ct;
+	struct save_flags *save_flags;
+	str flag_vals[SAVE_KV_FLAGS_NO];
+	str_list *mp;
+	char *p;
 
-	for( st=0 ; st< flags_s->len ; st++ ) {
-		switch (flags_s->s[st]) {
-			case 'm': sctx->flags |= REG_SAVE_MEMORY_FLAG; break;
-			case 'o': sctx->flags |= REG_SAVE_REQ_CT_ONLY_FLAG; break;
-			case 'r': sctx->flags |= REG_SAVE_NOREPLY_FLAG; break;
-			case 's': sctx->flags |= REG_SAVE_SOCKET_FLAG; break;
-			case 'v': sctx->flags |= REG_SAVE_PATH_RECEIVED_FLAG; break;
-			case 'f': sctx->flags |= REG_SAVE_FORCE_REG_FLAG; break;
-			case 'c':
-				max_ct = 0;
-				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					max_ct = max_ct * 10 + flags_s->s[st+1] - '0';
-					st++;
-				}
+	save_flags = pkg_malloc(sizeof *save_flags);
+	if (!save_flags) {
+		LM_ERR("out of pkg memory\n");
+		return -1;
+	}
+	memset(save_flags, 0, sizeof *save_flags);
 
-				if (max_ct)
-					sctx->max_contacts = max_ct;
-				break;
-			case 'e':
-				sctx->min_expires = 0;
-				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					sctx->min_expires = sctx->min_expires*10 +
-						flags_s->s[st+1] - '0';
-					st++;
-				}
-				break;
-			case 'E':
-				sctx->max_expires = 0;
-				while (st<flags_s->len-1 && isdigit(flags_s->s[st+1])) {
-					sctx->max_expires = sctx->max_expires*10 +
-						flags_s->s[st+1] - '0';
-					st++;
-				}
-				break;
-			case 'p':
-				if (st<flags_s->len-1) {
-					st++;
-					if (flags_s->s[st]=='2')
-						sctx->flags |= REG_SAVE_PATH_STRICT_FLAG;
-					else if (flags_s->s[st]=='1')
-						sctx->flags |= REG_SAVE_PATH_LAZY_FLAG;
-					else if (flags_s->s[st]=='0')
-						sctx->flags |= REG_SAVE_PATH_OFF_FLAG;
-					else
-						LM_ERR("invalid value for PATH 'p' param, "
-							"discarding trailing <%c>\n", flags_s->s[st]);
-				}
-				break;
-			case 'M':
-				if (st<flags_s->len-1) {
-					st++;
-					if (flags_s->s[st]=='0')
-						sctx->cmatch.mode = CT_MATCH_CONTACT_ONLY;
-					else if (flags_s->s[st]=='1')
-						sctx->cmatch.mode = CT_MATCH_CONTACT_CALLID;
-					else if (flags_s->s[st]=='<' && st<flags_s->len-3) {
-						st++;
-						mp.s.s = flags_s->s + st;
-						while (st<flags_s->len-1 && flags_s->s[st+1]!='>')
-							st++;
-						if (st<flags_s->len-1 && flags_s->s[st+1]=='>') {
-							mp.s.len = flags_s->s + st + 1
-								 - mp.s.s;
+	if (fixup_named_flags(param, save_flag_names, save_kv_flag_names,
+		flag_vals) < 0) {
+		LM_ERR("Failed to parse flags\n");
+		return -1;
+	}
 
-							sctx->cmatch.match_params = &mp;
-							sctx->cmatch.mode = CT_MATCH_PARAMS;
-							st++;
-						} else {
-							LM_ERR("invalid format for MATCH 'M' param, "
-								"discarding trailing '%.*s'\n",
-								(int)(flags_s->s + st - mp.s.s), mp.s.s);
-							mp.s.s = NULL;
-						}
-					} else {
-						LM_ERR("invalid value for MATCH 'M' param, "
-							"discarding trailing <%c>\n", flags_s->s[st]);
-					}
-				}
-				break;
-			default:
-				LM_WARN("unsupported flag %c \n",flags_s->s[st]);
+	save_flags->flags = (unsigned int)(unsigned long)(void*)*param;
+	*param = (void*)save_flags;
+
+	/* max-contacts */
+	if (flag_vals[0].s) {
+		if (str2int(&flag_vals[0], &save_flags->max_contacts) < 0) {
+			LM_ERR("value is not an integer\n");
+			return -1;
 		}
 	}
+	/* min-expires */
+	if (flag_vals[1].s) {
+		if (str2int(&flag_vals[1], &save_flags->min_expires) < 0) {
+			LM_ERR("value is not an integer\n");
+			return -1;
+		}
+	}
+	/* max-expires */
+	if (flag_vals[2].s) {
+		if (str2int(&flag_vals[2], &save_flags->max_expires) < 0) {
+			LM_ERR("value is not an integer\n");
+			return -1;
+		}
+	}
+	/* matching-mode */
+	if (flag_vals[3].s) {
+		p = flag_vals[3].s;
+		if (*p=='0')
+			save_flags->cmatch.mode = CT_MATCH_CONTACT_ONLY;
+		else if (*p=='1')
+			save_flags->cmatch.mode = CT_MATCH_CONTACT_CALLID;
+		else if (*p=='<' && flag_vals[3].len >= 3) {
+			p++;
+			mp = &save_flags->match_params;
+			save_flags->cmatch.match_params = mp;
+			mp->s.s = p;
+			while (p<flag_vals[3].s+flag_vals[3].len && *(p+1)!='>')
+				p++;
+			if (p<flag_vals[3].s+flag_vals[3].len && *(p+1)=='>') {
+				mp->s.len = p + 1 - mp->s.s;
+
+				save_flags->cmatch.mode = CT_MATCH_PARAMS;
+			} else {
+				LM_ERR("invalid format for 'matching-mode' param"
+					"discarding trailing '%.*s'\n", (int)(p - mp->s.s), mp->s.s);
+				mp->s.s = NULL;
+			}
+		} else {
+			LM_ERR("invalid value for 'matching-mode' param, "
+				"discarding trailing <%c>\n", *p);
+		}
+	}
+
+	return 0;
+}
+
+int reg_fixup_free_save_flags(void** param)
+{
+	if (*param)
+		pkg_free(*param);
+	return 0;
 }

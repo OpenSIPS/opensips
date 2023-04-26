@@ -108,6 +108,10 @@ static int cfg_validate(void);
 
 static int domain_fixup(void** param);
 static int fix_out_expires(void **out_exp);
+static int save_flags_fixup(void** param);
+static int save_flags_fixup_free(void** param);
+static int lookup_flags_fixup(void** param);
+static int lookup_flags_fixup_free(void** param);
 
 int solve_avp_defs(void);
 
@@ -130,14 +134,14 @@ str at_escape_str = str_init("%40");
 static const cmd_export_t cmds[] = {
 	{"mid_registrar_save", (cmd_function)mid_reg_save, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, save_flags_fixup, save_flags_fixup_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fix_out_expires, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"mid_registrar_lookup", (cmd_function)mid_reg_lookup, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, 0 ,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, lookup_flags_fixup, lookup_flags_fixup_free},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
@@ -271,6 +275,25 @@ static int fix_out_expires(void **out_exp)
 	return 0;
 }
 
+static int save_flags_fixup(void **param)
+{
+	return reg_fixup_save_flags(param);
+}
+
+static int save_flags_fixup_free(void **param)
+{
+	return reg_fixup_free_save_flags(param);
+}
+
+static int lookup_flags_fixup(void **param)
+{
+	return reg_fixup_lookup_flags(param);
+}
+
+static int lookup_flags_fixup_free(void **param)
+{
+	return reg_fixup_free_lookup_flags(param);
+}
 
 static int mid_reg_pre_script(struct sip_msg *foo, void *bar)
 {
