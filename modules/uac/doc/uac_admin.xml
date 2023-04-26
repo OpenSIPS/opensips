@@ -305,6 +305,15 @@ uac_restore_from();
 			<para>
 			This function can be used from FAILURE_ROUTE.
 			</para>
+			<para>
+				<emphasis>NOTE: </emphasis> when used without dialog support, the
+				<emphasis>uac_auth()</emphasis> function cannot be used for authenticating
+				in-dialog requests, as there is no mechanism to store the CSeq changes that
+				are required for ensuring the correctness of the dialog. The only exception are
+				<emphasis>BYE</emphasis> messages, which are the last messages within a call,
+				hence no further adjustments are needed. The function can still be used for
+				authenticating the initial INVITE though.
+			</para>
 			<example>
 				<title><function>uac_auth</function> usage</title>
 				<programlisting format="linespecific">
