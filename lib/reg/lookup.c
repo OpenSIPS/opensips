@@ -459,6 +459,8 @@ int reg_fixup_lookup_flags(void** param)
 	}
 	memset(lookup_flags, 0, sizeof *lookup_flags);
 
+	memset(flag_vals, 0, sizeof flag_vals);
+
 	if (fixup_named_flags(param, lookup_flag_names, lookup_kv_flag_names,
 		flag_vals) < 0) {
 		LM_ERR("Failed to parse flags\n");

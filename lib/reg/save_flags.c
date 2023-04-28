@@ -61,6 +61,8 @@ int reg_fixup_save_flags(void** param)
 	}
 	memset(save_flags, 0, sizeof *save_flags);
 
+	memset(flag_vals, 0, sizeof flag_vals);
+
 	if (fixup_named_flags(param, save_flag_names, save_kv_flag_names,
 		flag_vals) < 0) {
 		LM_ERR("Failed to parse flags\n");
