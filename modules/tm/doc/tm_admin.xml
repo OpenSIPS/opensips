@@ -890,7 +890,8 @@ modparam("tm", "cluster_auto_cancel", no)
 		</para>
 		<itemizedlist>
 			<listitem>
-				<para><emphasis>no-auto-477</emphasis> - do not internally generate
+				<para><emphasis>no-auto-477</emphasis> - (old
+				<emphasis>0x02</emphasis> flag) do not internally generate
 				and send a "477 Send failed (477/TM)" SIP reply in case of a
 				global forwarding failure (i.e. forwarding for each branch has
 				failed due to internal errors, bad R-URI, bad message, lack of
@@ -909,19 +910,22 @@ modparam("tm", "cluster_auto_cancel", no)
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>no-dns-failover</emphasis> - disable the DNS failover
+				<para><emphasis>no-dns-failover</emphasis> - (old
+				<emphasis>0x04</emphasis> flag) disable the DNS failover
 				for the transaction. Only first IP will be used. It disables
 				the failover both at transport and transaction level.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>pass-reason-hdr</emphasis> - If the request is a CANCEL,
+				<para><emphasis>pass-reason-hdr</emphasis> - (old
+				<emphasis>0x08</emphasis> flag) If the request is a CANCEL,
 				trust and pass further the Reason header from the received
 				CANCEL - shortly, will propagate the Reason header.
 				</para>
 			</listitem>
 			<listitem>
-				<para><emphasis>allow-no-cancel</emphasis> - Allows OpenSIPS to inspect
+				<para><emphasis>allow-no-cancel</emphasis> - (old
+				<emphasis>0x10</emphasis> flag) Allows OpenSIPS to inspect
 				and follow the Content-Disposition "no-cancel" indication (if
 				present). As per RFC3841, section 9.1, the TM module may be 
 				instructed not to cancel all ongoing branches when a 2xx reply
