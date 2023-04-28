@@ -487,14 +487,16 @@ modparam("registrar", "disable_gruu", 0)
 			<itemizedlist>
 				&save_common_flags;
 				<listitem>
-					<para><emphasis>'socket-header'</emphasis> -
-					look into REGISTER request for a header which contains a socket
+					<para><emphasis>'socket-header'</emphasis> - (old
+					<emphasis>s</emphasis> flag) look into REGISTER request
+					for a header which contains a socket
 					description (proto:IP:port). This socket info will be
 					stored by register instead of the received socket info.
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'min-expires=[int]'</emphasis> -  this
+					<para><emphasis>'min-expires=[int]'</emphasis> - (old
+					<emphasis>e</emphasis> flag) this
 					flag can be used to set minimum register expiration time.
 					Values lower than this minimum will be automatically set
 					to the minimum. Value 0 disables the checking.
@@ -503,7 +505,8 @@ modparam("registrar", "disable_gruu", 0)
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>'max-expires=[int]'</emphasis> -  this
+					<para><emphasis>'max-expires=[int]'</emphasis> - (old
+					<emphasis>E</emphasis> flag) this
 					flag can be used to set maximum register expiration time.
 					Values higher than this maximum will be automatically set
 					to the maximum. Value 0 disables the checking.
