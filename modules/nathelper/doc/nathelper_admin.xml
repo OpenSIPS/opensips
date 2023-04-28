@@ -645,28 +645,33 @@ if (search("User-Agent: Cisco ATA.*") {
 			</para>
 			<itemizedlist>
 				<listitem>
-					<para><emphasis>add-dir-active</emphasis> - adds
+					<para><emphasis>add-dir-active</emphasis> - (old
+					<emphasis>0x01</emphasis> flag) adds
 					<quote>a=direction:active</quote> SDP line;
 					</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>rewrite-media-ip</emphasis> - rewrite media
+					<para><emphasis>rewrite-media-ip</emphasis> - (old
+					<emphasis>0x02</emphasis> flag) rewrite media
 					&ip; address (c=) with source address of the message
 					or the provided IP address (the provided IP address takes
 					precedence over the source address).</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>add-no-rtpproxy</emphasis> - adds
+					<para><emphasis>add-no-rtpproxy</emphasis> - (old
+					<emphasis>0x04</emphasis> flag) adds
 						<quote>a=nortpproxy:yes</quote> SDP line;</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>rewrite-origin-ip</emphasis> - rewrite IP from
+					<para><emphasis>rewrite-origin-ip</emphasis> - (old
+					<emphasis>0x08</emphasis> flag) rewrite IP from
 					origin description (o=) with source address of the message
 					or the provided IP address (the provided IP address takes
 					precedence over the source address).</para>
 				</listitem>
 				<listitem>
-					<para><emphasis>rewrite-null-ips</emphasis> - force rewrite of
+					<para><emphasis>rewrite-null-ips</emphasis> - (old
+					<emphasis>0x10</emphasis> flag) force rewrite of
 					null media IP and/or origin IP address.
 					Without this flag, null IPs are left untouched.</para>
 				</listitem>
@@ -774,36 +779,40 @@ fix_nated_register();
 		is as follows:</para>
 		<itemizedlist>
 			<listitem><para>
-			<emphasis>ct</emphasis> -  Contact header field is searched
-			for occurrence of RFC1918 / RFC6598 addresses.
+			<emphasis>private-contact</emphasis> - (old <emphasis>1</emphasis> flag)
+			Contact header field is searched for occurrence of RFC1918 / RFC6598
+			addresses.
 			</para></listitem>
 			<listitem><para>
-			<emphasis>si-via</emphasis> -  the "received" test is used: address
-			in Via is compared against source IP address of signaling
+			<emphasis>diff-ip-src-via</emphasis> - (old <emphasis>2</emphasis> flag)
+			the "received" test is used: address in Via is compared against source
+			IP address of signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>via</emphasis> -  Top Most VIA is searched
-			for occurrence of RFC1918 / RFC6598 addresses
+			<emphasis>private-via</emphasis> - (old <emphasis>4</emphasis> flag)
+			Top Most VIA is searched for occurrence of RFC1918 / RFC6598 addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>sdp</emphasis> -  SDP is searched for occurrence of
-			RFC1918 / RFC6598 addresses
+			<emphasis>private-sdp</emphasis> - (old <emphasis>8</emphasis> flag)
+			SDP is searched for occurrence of RFC1918 / RFC6598 addresses
 			</para></listitem>
 			<listitem><para>
-			<emphasis>sp-via</emphasis> -  test if the source port is different
-			from the port in Via
+			<emphasis>diff-port-src-via</emphasis> - (old <emphasis>16</emphasis>
+			flag) test if the source port is different from the port in Via
 			</para></listitem>
 			<listitem><para>
-			<emphasis>si-ct</emphasis> -  address in Contact is compared against
-			source IP address of signaling
+			<emphasis>diff-ip-src-contact</emphasis> - (old <emphasis>32</emphasis>
+			flag) address in Contact is compared against source IP address of
+			signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>sp-ct</emphasis> -  Port in Contact is compared against
-			source port of signaling
+			<emphasis>diff-port-src-contact</emphasis> - (old <emphasis>64</emphasis>
+			flag) Port in Contact is compared against source port of signaling
 			</para></listitem>
 			<listitem><para>
-			<emphasis>rfc6333</emphasis> - also include RFC 6333 addresses in the
-			checks for <emphasis>ct</emphasis>, <emphasis>via</emphasis> and
+			<emphasis>carrier-grade-nat</emphasis> - (old <emphasis>128</emphasis>
+			flag) also include RFC 6333 addresses in the checks for
+			<emphasis>ct</emphasis>, <emphasis>via</emphasis> and
 			<emphasis>sdp</emphasis> flags.
 			</para></listitem>
 		</itemizedlist>
