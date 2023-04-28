@@ -1141,7 +1141,7 @@ error2:
 }
 
 
-int ds_reload_db(ds_partition_t *partition)
+int ds_reload_db(ds_partition_t *partition, int is_inherit_state)
 {
 	ds_data_t *old_data;
 	ds_data_t *new_data;
@@ -1164,7 +1164,10 @@ int ds_reload_db(ds_partition_t *partition)
 	if (old_data) {
 		/* copy the state of the destinations from the old set
 		 * (for the matching ids) */
-		ds_inherit_state( old_data, new_data);
+		if (is_inherit_state == INHERIT_STATE_YES) {
+			ds_inherit_state( old_data, new_data);
+		}
+		
 		ds_destroy_data_set( old_data );
 	}
 
