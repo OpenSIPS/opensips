@@ -61,6 +61,10 @@
 #define MI_FULL_LISTING (1<<0)
 
 
+#define INHERIT_STATE_YES 1
+#define INHERIT_STATE_NO 0
+
+
 extern int ds_persistent_state;
 
 typedef struct _ds_dest
@@ -211,7 +215,7 @@ extern void *ds_srg;
 int init_ds_db(ds_partition_t *partition);
 int ds_connect_db(ds_partition_t *partition);
 void ds_disconnect_db(ds_partition_t *partition);
-int ds_reload_db(ds_partition_t *partition, int initial);
+int ds_reload_db(ds_partition_t *partition, int initial, int is_inherit_state);
 
 int init_ds_data(ds_partition_t *partition);
 void ds_destroy_data(ds_partition_t *partition);
