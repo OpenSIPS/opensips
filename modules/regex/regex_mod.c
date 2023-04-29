@@ -326,7 +326,7 @@ static int load_pcres(int action)
 			i++;
 			/* Check if there are more patterns than the max value */
 			if (i >= max_groups) {
-        i--;
+				i--;
 				LM_ERR("max_groups: %d exceeded, continuing without processing subsequent groups\n", max_groups);
 				break;
 			}
