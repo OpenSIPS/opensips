@@ -42,6 +42,7 @@ static int dm_bind_api(aaa_prot *api);
 int fd_log_level = FD_LOG_NOTICE;
 str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
+static str dm_aaa_url = {NULL, 0};
 int dm_answer_timeout = 2000; /* ms */
 
 static const cmd_export_t cmds[]= {
@@ -65,7 +66,8 @@ static const param_export_t params[] =
 {
 	{ "fd_log_level",    INT_PARAM, &fd_log_level     },
 	{ "realm",           STR_PARAM, &dm_realm.s       },
-	{ "peer_identity",   STR_PARAM, &dm_peer_identity.s   },
+	{ "peer_identity",   STR_PARAM, &dm_peer_identity.s  },
+	{ "aaa_url",         STR_PARAM, &dm_aaa_url.s        },
 	{ "answer_timeout",   INT_PARAM, &dm_answer_timeout  },
 	{ NULL, 0, NULL },
 };
@@ -132,6 +134,14 @@ int mod_init(void)
 	if (dm_init_peer() != 0) {
 		LM_ERR("failed to init the local Diameter peer\n");
 		return -1;
+	}
+
+	if (dm_aaa_url.s) {
+		dm_aaa_url.len = strlen(dm_aaa_url.s);
+		if (!dm_init_prot(&dm_aaa_url)) {
+			LM_ERR("failed to init Diameter AAA connection\n");
+			return -1;
+		}
 	}
 
 	return 0;
