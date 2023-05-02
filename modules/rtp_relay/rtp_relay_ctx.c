@@ -515,7 +515,7 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 	}
 	ret = sess->relay->binds.delete(info, &sess->server,
 			RTP_RELAY_FLAGS(RTP_RELAY_OFFER, RTP_RELAY_FLAGS_SELF),
-			RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_PEER));
+			/* RTP_RELAY_FLAGS(RTP_RELAY_ANSWER, RTP_RELAY_FLAGS_PEER) */ NULL);
 	if (ret < 0)
 		return -1;
 	rtp_sess_reset_pending(sess);
