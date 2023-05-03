@@ -368,9 +368,6 @@ static int mod_init( void )
 		}
 	}
 
-	/* init the extra engine */
-	init_acc_extra();
-
 	/* ----------- SYSLOG INIT SECTION ----------- */
 	acc_log_init();
 

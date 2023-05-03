@@ -67,8 +67,6 @@ typedef str tag_t;
 #define MAX_ACC_BUFS  3
 
 
-void init_acc_extra();
-
 int parse_acc_extra(modparam_t type, void* val);
 
 int build_acc_extra_array(int tags_len, extra_value_t** array_p);
