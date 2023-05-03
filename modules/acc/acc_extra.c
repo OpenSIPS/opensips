@@ -73,22 +73,7 @@ extern tag_t* leg_tags;
 
 static const str tag_delim = str_init("->");
 
-/* here we copy the strings returned by int2str (which uses a static buffer) */
-static char int_buf[MAX_ACC_BUFS][INT2STR_MAX_LEN*MAX_ACC_INT_BUF];
-
-static char* static_detector[2] = {NULL,NULL};
-
 typedef struct acc_extra** (*str2bkend)(str*);
-
-
-void init_acc_extra(void)
-{
-	int i;
-	/* ugly trick to get the address of the static buffer */
-	static_detector[0] = int2str( (unsigned long)3, &i) + i;
-	/* remember directly the static buffer returned by ip_addr2a()*/
-	static_detector[1] = _ip_addr_A_buffs[0];
-}
 
 
 /*
@@ -528,14 +513,13 @@ int extra2int( struct acc_extra *extra, int *attrs )
 int extra2strar( extra_value_t* values, str *val_arr, int idx)
 {
 	int n;
-	int r;
 
 	if (idx < 0 || idx > MAX_ACC_BUFS-2 /* last one is for legs */) {
 		LM_ERR("Invalid buffer index %d - maximum %d\n", idx, MAX_ACC_BUFS-2);
 		return 0;
 	}
 
-	for( n=0,r=0 ; n < extra_tgs_len ; n++) {
+	for( n=0 ; n < extra_tgs_len ; n++) {
 		/* get the value */
 		/* check for overflow */
 		if (n==MAX_ACC_EXTRA) {
@@ -549,15 +533,7 @@ int extra2strar( extra_value_t* values, str *val_arr, int idx)
 			val_arr[n].len = 0;
 		} else {
 			/* set the value into the acc buffer */
-			if (values[n].value.s+values[n].value.len==static_detector[0] ||
-			values[n].value.s==static_detector[1]) {
-				val_arr[n].s = int_buf[idx] + r*INT2STR_MAX_LEN;
-				val_arr[n].len = values[n].value.len;
-				memcpy(val_arr[n].s, values[n].value.s, values[n].value.len);
-				r++;
-			} else {
-				val_arr[n] = values[n].value;
-			}
+			val_arr[n] = values[n].value;
 		}
 	}
 
