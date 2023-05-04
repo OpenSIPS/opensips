@@ -348,7 +348,9 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ "ds_reload", 0, 0, mi_child_init, {
 		{ds_mi_reload, {0}},
+		{ds_mi_reload, {"inherit_state", 0}},
 		{ds_mi_reload_1, {"partition", 0}},
+		{ds_mi_reload_1, {"partition", "inherit_state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "ds_push_script_attrs", 0, 0, 0, {
@@ -908,7 +910,7 @@ static int mod_init(void)
 		}
 
 		/* do the actual data load */
-		if (ds_reload_db(partition, 1)!=0) {
+		if (ds_reload_db(partition, 1, INHERIT_STATE_YES)!=0) {
 			LM_ERR("failed to load data from DB\n");
 			return -1;
 		}
@@ -1371,9 +1373,26 @@ mi_response_t *ds_mi_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	ds_partition_t *part_it;
+	str inherit_state;
+	int is_inherit_state = INHERIT_STATE_YES;
+
+	if (get_mi_string_param(params, "inherit_state", &inherit_state.s, &inherit_state.len) >= 0) {
+		LM_DBG("inherit_state is: %s \n", inherit_state.s);
+
+		if (inherit_state.s[0] == '0' || inherit_state.s[0] == 'n' || inherit_state.s[0] == 'N') {
+			is_inherit_state = INHERIT_STATE_NO;
+		}
+		else if (inherit_state.s[0] == '1' || inherit_state.s[0] == 'y' || inherit_state.s[0] == 'Y') {
+			is_inherit_state = INHERIT_STATE_YES;
+		} else {
+			LM_WARN("inherit_state values was not recognized, ignored \n");
+		}
+	}
+
+	LM_DBG("is_inherit_state is: %d \n", is_inherit_state);
 
 	for (part_it = partitions; part_it; part_it = part_it->next)
-		if (ds_reload_db(part_it, 0)<0)
+		if (ds_reload_db(part_it, 0, is_inherit_state)<0)
 			return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
 
 	if (ds_cluster_id && ds_cluster_sync() < 0)
@@ -1387,15 +1406,32 @@ mi_response_t *ds_mi_reload_1(const mi_params_t *params,
 {
 	ds_partition_t *partition;
 	str partname;
+	str inherit_state;
+	int is_inherit_state = INHERIT_STATE_YES;
 
 	if (get_mi_string_param(params, "partition", &partname.s, &partname.len) < 0)
-		return init_mi_param_error();
+        return init_mi_param_error();
+	
+	if (get_mi_string_param(params, "inherit_state", &inherit_state.s, &inherit_state.len) >= 0) {
+		LM_DBG("inherit_state is: %s \n", inherit_state.s);
+
+		if (inherit_state.s[0] == '0' || inherit_state.s[0] == 'n' || inherit_state.s[0] == 'N') {
+			is_inherit_state = INHERIT_STATE_NO;
+		}
+		else if (inherit_state.s[0] == '1' || inherit_state.s[0] == 'y' || inherit_state.s[0] == 'Y') {
+			is_inherit_state = INHERIT_STATE_YES;
+		} else {
+			LM_WARN("inherit_state values was not recognized, ignored \n");
+		}
+	}
+
+	LM_DBG("is_inherit_state is: %d \n", is_inherit_state);
 
 	partition = find_partition_by_name(&partname);
 
 	if (partition == NULL)
 		return init_mi_error(500, MI_SSTR(MI_UNK_PARTITION));
-	if (ds_reload_db(partition, 0) < 0)
+	if (ds_reload_db(partition, 0, is_inherit_state) < 0)
 		return init_mi_error(500, MI_SSTR(MI_ERR_RELOAD));
 	
 	if (ds_cluster_id && ds_cluster_sync() < 0)
