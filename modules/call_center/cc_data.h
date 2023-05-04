@@ -82,7 +82,7 @@ struct cc_flow {
 };
 
 
-#define MAX_SKILLS_PER_AGENT 32
+#define MAX_SKILLS_PER_AGENT 64
 
 typedef enum {
 	CC_AGENT_FREE,
