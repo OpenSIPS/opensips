@@ -1873,6 +1873,7 @@ static mi_response_t *mi_agent_login(const mi_params_t *params,
 
 	if (get_mi_int_param(params, "state", &logged_in) < 0)
 		return init_mi_param_error();
+	logged_in = logged_in ? 1 : 0;
 
 	/* block access to data */
 	lock_get( data->lock );
