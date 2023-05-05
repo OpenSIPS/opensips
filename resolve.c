@@ -1881,8 +1881,18 @@ do_srv:
 	}
 
 	he = do_srv_lookup( tmp, port, dn);
-	if (he)
+	if (he) {
+		/* we need to check TLS certificates against the original requested
+		 * hostname, not the name from the SRV record */
+		if (name->len >= MAX_DNS_NAME) {
+			LM_ERR("domain name too long\n");
+			return 0;
+		}
+		memcpy(tmp, name->s, name->len);
+		tmp[name->len] = '\0';
+		he->h_name = tmp;
 		return he;
+	}
 
 	LM_DBG("no valid SRV record found for %s, trying A record lookup...\n",
 		tmp);
