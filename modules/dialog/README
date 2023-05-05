@@ -93,10 +93,10 @@ dialog Module
               1.7.12. unset_dlg_profile(profile,[value])
               1.7.13. is_in_profile(profile,[value])
               1.7.14. get_profile_size(profile,[value],size)
-              1.7.15. set_dlg_flag(idx)
-              1.7.16. test_and_set_dlg_flag(idx, value)
-              1.7.17. reset_dlg_flag(idx)
-              1.7.18. is_dlg_flag_set(idx)
+              1.7.15. set_dlg_flag(flag)
+              1.7.16. test_and_set_dlg_flag(flag, value)
+              1.7.17. reset_dlg_flag(flag)
+              1.7.18. is_dlg_flag_set(flag)
               1.7.19. store_dlg_value(name,val)
               1.7.20. fetch_dlg_value(name,val)
               1.7.21. set_dlg_sharing_tag(tag_name)
@@ -903,9 +903,9 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 1.6.37. profiles_with_value (string)
 
-   List of names for profiles with values. Flags /b or /s allow
-   sharing profiles between OpenSIPS instances using the clusterer
-   module or a CacheDB backend, respectively.
+   List of names (alphanumerical) for profiles with values. Flags
+   /b or /s allow sharing profiles between OpenSIPS instances
+   using the clusterer module or a CacheDB backend, respectively.
 
    Default value is “empty”.
 
@@ -917,9 +917,10 @@ annels/s; codecUsed/b;")
 
 1.6.38. profiles_no_value (string)
 
-   List of names for profiles without values. Flags /b or /s allow
-   sharing profiles between OpenSIPS instances using the clusterer
-   module or a CacheDB backend, respectively.
+   List of names (alphanumerical) for profiles without values.
+   Flags /b or /s allow sharing profiles between OpenSIPS
+   instances using the clusterer module or a CacheDB backend,
+   respectively.
 
    Default value is “empty”.
 
@@ -1462,7 +1463,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 if (load_dialog_ctx("$var(callid)")) {
         xlog("The dialog '$var(callid)' already has a duration "
              "of $DLG_lifetime seconds\n");
-        if (is_in_profile("inbound_call"))
+        if (is_in_profile("inboundCall"))
                 xlog("this dialog is an inbound call\n");
         unload_dialog_ctx();
 }
@@ -1503,7 +1504,7 @@ if (load_dialog_ctx("$var(callid)")) {
 
    Example 1.63. set_dlg_profile usage
 ...
-set_dlg_profile("inbound_call");
+set_dlg_profile("inboundCall");
 set_dlg_profile("caller",$fu);
 ...
 
@@ -1525,7 +1526,7 @@ set_dlg_profile("caller",$fu);
 
    Example 1.64. unset_dlg_profile usage
 ...
-unset_dlg_profile("inbound_call");
+unset_dlg_profile("inboundCall");
 unset_dlg_profile("caller",$fu);
 ...
 
@@ -1553,7 +1554,7 @@ unset_dlg_profile("caller",$fu);
 
    Example 1.65. is_in_profile usage
 ...
-if (is_in_profile("inbound_call")) {
+if (is_in_profile("inboundCall")) {
         log("this request belongs to a inbound call\n");
 }
 ...
@@ -1593,14 +1594,14 @@ get_profile_size("caller", $fu, $var(size));
 xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 ...
 
-1.7.15.  set_dlg_flag(idx)
+1.7.15.  set_dlg_flag(flag)
 
-   Sets the dialog flag index idx to true. The dialog flags are
+   Sets the dialog flag named flag to true. The dialog flags are
    dialog persistent and they can be accessed (set and test) for
    all requests belonging to the dialog.
 
    Parameters:
-     * idx (int) - The flag index can be between 0 and 31.
+     * flag (string, static) - The flag name.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1610,15 +1611,15 @@ xlog("currently, the user $fu has $var(size) active outgoing calls\n");
 
    Example 1.67. set_dlg_flag usage
 ...
-set_dlg_flag(3);
+set_dlg_flag("MY_DLG_FLAG");
 ...
 
-1.7.16.  test_and_set_dlg_flag(idx, value)
+1.7.16.  test_and_set_dlg_flag(flag, value)
 
-   Atomically checks if the dialog flag index idx is equal to
+   Atomically checks if the dialog flag named flag is equal to
    value. If true, changes the value with the opposite one. This
    operation is done under the dialog lock.
-     * idx (int) - The flag index can be between 0 and 31.
+     * flag (string, static) - The flag name.
      * value (int) - The value should be 0 (false) or 1 (true).
 
    NOTE: the dialog must be created before using this function
@@ -1629,17 +1630,17 @@ set_dlg_flag(3);
 
    Example 1.68. test_and_set_dlg_flag usage
 ...
-test_and_set_dlg_flag(3, 0);
+test_and_set_dlg_flag("MY_DLG_FLAG", 0);
 ...
 
-1.7.17.  reset_dlg_flag(idx)
+1.7.17.  reset_dlg_flag(flag)
 
-   Resets the dialog flag index idx to false. The dialog flags are
-   dialog persistent and they can be accessed (set and test) for
-   all requests belonging to the dialog.
+   Resets the dialog flag named flag to false. The dialog flags
+   are dialog persistent and they can be accessed (set and test)
+   for all requests belonging to the dialog.
 
    Parameters:
-     * idx (int) - The flag index can be between 0 and 31.
+     * flag (string, static) - The flag name.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1649,17 +1650,17 @@ test_and_set_dlg_flag(3, 0);
 
    Example 1.69. reset_dlg_flag usage
 ...
-reset_dlg_flag(16);
+reset_dlg_flag("MY_DLG_FLAG");
 ...
 
-1.7.18.  is_dlg_flag_set(idx)
+1.7.18.  is_dlg_flag_set(flag)
 
-   Returns true if the dialog flag index idx is set. The dialog
+   Returns true if the dialog flag named flag is set. The dialog
    flags are dialog persistent and they can be accessed (set and
    test) for all requests belonging to the dialog.
 
    Parameters:
-     * idx (int) - The flag index can be between 0 and 31.
+     * flag (string, static) - The flag name.
 
    NOTE: the dialog must be created before using this function
    (use create_dialog() function before).
@@ -1669,8 +1670,8 @@ reset_dlg_flag(16);
 
    Example 1.70. is_dlg_flag_set usage
 ...
-if (is_dlg_flag_set(16)) {
-        xlog("dialog flag 16 is set\n");
+if (is_dlg_flag_set("MY_DLG_FLAG")) {
+        xlog("dialog flag MY_DLG_FLAG is set\n");
 }
 ...
 
@@ -2041,7 +2042,7 @@ GIwZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_get_size inbound_calls
+                opensips-cli -x mi profile_get_size inboundCalls
 
 1.9.5. profile_list_dlgs
 
@@ -2062,7 +2063,7 @@ GIwZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_list_dlgs inbound_calls
+                opensips-cli -x mi profile_list_dlgs inboundCalls
 
 1.9.6. profile_get_values
 
@@ -2077,7 +2078,7 @@ GIwZjAzNGM1ZDY
      * profile - name of the profile to list the dialog for.
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_get_values inbound_calls
+                opensips-cli -x mi profile_get_values inboundCalls
 
 1.9.7. profile_end_dlgs
 
@@ -2094,7 +2095,7 @@ GIwZjAzNGM1ZDY
        only the dialogs with the specified value
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_end_dlgs inbound_calls
+                opensips-cli -x mi profile_end_dlgs inboundCalls
 
 1.9.8. dlg_db_sync
 
@@ -2286,10 +2287,10 @@ GIwZjAzNGM1ZDY
 
 1.10.4. $DLG_flags
 
-   Returns the dialog flags array (as a single integer value) of
-   the dialog corresponding to the processed sequential request.
-   This PV will be available only for sequential requests, after
-   doing loose_route().
+   Returns the dialog flags (as a list of flag names separted by
+   space) of the dialog corresponding to the processed sequential
+   request. This PV will be available only for sequential
+   requests, after doing loose_route().
 
    NULL will be returned if there is no dialog for the request.
 

@@ -30,7 +30,7 @@ cfgutils Module
               1.4.10. set_count(var_to_count, ret_var)
               1.4.11. set_select_weight(int_list_var)
               1.4.12. ts_usec_delta(t1_sec, t1_usec, t2_sec,
-                      t2_usec, delta)
+                      t2_usec, [delta_str], [delta_int])
 
               1.4.13. check_time_rec(time_string, [timestamp])
               1.4.14. get_static_lock(key)
@@ -424,18 +424,23 @@ set_count($avp(dids), $var(num_dids));
 $var(next_gw_idx) = set_select_weight($avp(gw_success_rates));
 ...
 
-1.4.12.  ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, delta)
+1.4.12.  ts_usec_delta(t1_sec, t1_usec, t2_sec, t2_usec, [delta_str],
+[delta_int])
 
-   This function returns the difference between two timestamps,
-   specified in seconds and microseconds. The result is returned
-   in the last parameter, expressed in microseconds.
+   This function returns the absolute difference between the two
+   given timestamps. The result is expressed as microseconds and
+   can be returned as either string or integer.
+
+   WARNING: when using delta_int, the function will return error
+   code -1 in case the difference overflows the signed integer
+   holder! (i.e. a diff of ~35 minutes or more)
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
 
    Example 1.18. ts_usec_delta usage
 ...
-ts_usec_delta($var(t1s), 300, 10, $var(t2ms), $var(result));
+ts_usec_delta($var(t1s), 300, 10, $var(t2us), $var(diff_str));
 ...
 
 1.4.13.  check_time_rec(time_string, [timestamp])

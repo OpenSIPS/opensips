@@ -66,12 +66,6 @@ Chapter 1. Admin Guide
    If the dialog module is loaded and a dialog can be created,
    then the auto mode can be done more efficiently.
 
-   Known limitations in this version:
-     * authentication does not support qop auth-int, just qop
-       auth;
-     * CSeq not increased during authentication - the response may
-       be rejected.
-
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules
@@ -220,11 +214,44 @@ uac_restore_from();
    credentials provided by the uac_auth module (static or via
    AVPs).
 
+   As optional parameter, the function may receive a list of auth
+   algorithms to be considered / supported during authentication:
+     * MD5, MD5-sess
+     * SHA-256, SHA-256-sess (may be missing, depends on lib
+       support)
+     * SHA-512-256, SHA-512-256-sess (may be missing, depends on
+       lib support)
+
+   Note that the CSeq is automatically increased during
+   authentication.
+
    This function can be used from FAILURE_ROUTE.
+
+   NOTE: when used without dialog support, the uac_auth() function
+   cannot be used for authenticating in-dialog requests, as there
+   is no mechanism to store the CSeq changes that are required for
+   ensuring the correctness of the dialog. The only exception are
+   BYE messages, which are the last messages within a call, hence
+   no further adjustments are needed. The function can still be
+   used for authenticating the initial INVITE though.
 
    Example 1.8. uac_auth usage
 ...
 uac_auth();
+...
+failure_route[check_auth] {
+    ...
+    if ($T_reply_code==407) {
+        if (uac_auth("MD5,MD5-sess")) {
+            # auth is succesful, just relay
+            t_relay();
+            exit;
+        }
+        # auth failed (no credentials maybe)
+        # so continue handling the 407 reply
+    }
+    ...
+}
 ...
 
 Chapter 2. Frequently Asked Questions

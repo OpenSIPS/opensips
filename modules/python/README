@@ -106,9 +106,13 @@ Chapter 1. Admin Guide
        available only for requests
      * set_dst_uri() - sets the destination URI of the message;
        available only for requests
-     * getHeader() - returns the header of a message the
-       destination address (OpenSIPS address) of the message
-     * call_function() - calls a function from the script
+     * getHeader() - returns the header of a message
+     * call_function() - calls built-in script function or
+       function exported by other module
+     * get_pseudoVar(name) - returns the value of the the
+       pseudo-variable specified by the name as Unicode string.
+     * set_pseudoVar(name, value) - sets pseudo-variable using
+       Unicode string value.
 
 1.2. Dependencies
 
@@ -163,7 +167,7 @@ modparam("python", "child_init_method", "child_initializer")
 
 1.4.1.  python_exec(method_name [, extra_args])
 
-   Thhis function is used to execute a method from the Python
+   This function is used to execute a method from the Python
    module loaded.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,

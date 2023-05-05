@@ -103,6 +103,13 @@ tm Module
               1.7.9. 5xx_transactions
               1.7.10. 6xx_transactions
               1.7.11. inuse_transactions
+              1.7.12. retransmission_req_T1_1
+              1.7.13. retransmission_req_T1_2
+              1.7.14. retransmission_req_T1_3
+              1.7.15. retransmission_req_T2
+              1.7.16. retransmission_rpl_T2
+              1.7.17. timeout_finalresponse
+              1.7.18. timeout_finalresponse
 
    2. Developer Guide
 
@@ -750,15 +757,14 @@ modparam("tm", "cluster_auto_cancel", no)
 
    The function may take two optional parameters.
 
-   The first parameter is a number representing a set of flags for
-   controlling the internal behaviour. The flags may be given in
-   decimal or hexa format; supported flags are:
-     * 0x01 - deprecated, not used any more
-     * 0x02 - do not internally generate and send a "477 Send
-       failed (477/TM)" SIP reply in case of a global forwarding
-       failure (i.e. forwarding for each branch has failed due to
-       internal errors, bad R-URI, bad message, lack of network
-       reachability, etc.).
+   The first parameter is a comma separated list of string flags
+   for controlling the internal behaviour. The supported flags
+   are:
+     * no-auto-477 - (old 0x02 flag) do not internally generate
+       and send a "477 Send failed (477/TM)" SIP reply in case of
+       a global forwarding failure (i.e. forwarding for each
+       branch has failed due to internal errors, bad R-URI, bad
+       message, lack of network reachability, etc.).
        This flag only applies if the transaction was not
        previously created by t_newtran(). When a global forwarding
        failure occurs, no SIP request is relayed and therefore no
@@ -766,19 +772,22 @@ modparam("tm", "cluster_auto_cancel", no)
        failure_route, if one is set.
        Useful if you want to implement a failover logic for when
        none of the currently created branches can be forwarded to.
-     * 0x04 - disable the DNS failover for the transaction. Only
-       first IP will be used. It disables the failover both at
-       transport and transaction level.
-     * 0x08 - If the request is a CANCEL, trust and pass further
-       the Reason header from the received CANCEL - shortly, will
-       propagate the Reason header.
-     * 0x10 - Allows OpenSIPS to inspect and follow the
-       Content-Disposition "no-cancel" indication (if present). As
-       per RFC3841, section 9.1, the TM module may be instructed
-       not to cancel all ongoing branches when a 2xx reply is
-       received. It will keep the pending branches ongoing until
-       (1) all branches will receive a final reply or (2) the
-       transactionhits the timeout.
+     * no-dns-failover - (old 0x04 flag) disable the DNS failover
+       for the transaction. Only first IP will be used. It
+       disables the failover both at transport and transaction
+       level.
+     * pass-reason-hdr - (old 0x08 flag) If the request is a
+       CANCEL, trust and pass further the Reason header from the
+       received CANCEL - shortly, will propagate the Reason
+       header.
+     * allow-no-cancel - (old 0x10 flag) Allows OpenSIPS to
+       inspect and follow the Content-Disposition "no-cancel"
+       indication (if present). As per RFC3841, section 9.1, the
+       TM module may be instructed not to cancel all ongoing
+       branches when a 2xx reply is received. It will keep the
+       pending branches ongoing until (1) all branches will
+       receive a final reply or (2) the transactionhits the
+       timeout.
 
    The second parameter is a string representing an outbound proxy
    (a fixed destination) where the message should be sent. The
@@ -1305,10 +1314,10 @@ t_relay();
 
    Parameters:
      * uri (string)
-     * flags (int, optional) - a set of flags for controlling the
-       internal behaviour - for description see the above
-       “t_relay([flags])” function. Note that only 0x4 is
-       applicable here.
+     * flags (string, optional) - a set of flags for controlling
+       the internal behaviour - for description see the above
+       “t_relay([flags])” function. Note that only no-dns-failover
+       is applicable here.
 
    This functions can be used from REQUEST_ROUTE.
 
@@ -1545,6 +1554,46 @@ NVITE"
 1.7.11. inuse_transactions
 
    Number of transactions existing in memory at current time.
+
+1.7.12. retransmission_req_T1_1
+
+   Number of request retransmissions due to T1 1 timer, the first
+   retransmission interval (typical 500ms).
+
+1.7.13. retransmission_req_T1_2
+
+   Number of request retransmissions due to T1 2 timer, the second
+   retransmission interval (typical 1s).
+
+1.7.14. retransmission_req_T1_3
+
+   Number of request retransmissions due to T1 3 timer, the third
+   retransmission interval (typical 2s).
+
+1.7.15. retransmission_req_T2
+
+   Number of request retransmissions due to T2 , the final
+   retransmission interval (typical 4s).
+
+1.7.16. retransmission_rpl_T2
+
+   Number of reply retransmissions, all done with the same
+   retransmission interval T2, typical 4s.
+
+1.7.17. timeout_finalresponse
+
+   Number of transactional timeouts without receiving any kind of
+   reply (not even provisional) from the B side. Such timeouts
+   indicate a communication / reachability issue. Note: a single
+   transaction may count multiple such timeouts due forking.
+
+1.7.18. timeout_finalresponse
+
+   Number of transactional INVITE timeouts without receiving a
+   FINAL reply (provisional may be received) from the B side. Such
+   timeouts indicate a "not answer" event and it is not a
+   signalling issue. Note: a single transaction may count multiple
+   such timeouts due forking.
 
 Chapter 2. Developer Guide
 

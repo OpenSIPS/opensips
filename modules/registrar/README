@@ -792,71 +792,78 @@ modparam("registrar", "pn_enable_purr", true)
        If database is used then this must be name of the table
        which stores the contacts.
      * flags (string, optional) - string of the following flags:
-          + 'm' (Memory only) - save the contacts only in memory
-            cache without no DB operation;
-          + 'r' (no Reply) - do not generate a SIP reply to the
-            current REGISTER request.
-          + 's' (Socket header) - look into REGISTER request for a
-            header which contains a socket description
-            (proto:IP:port). This socket info will be stored by
-            register instead of the received socket info.
-          + 'cnn' (max Contacts) - this flag can be used to limit
-            the number of contacts for this AOR (Address of
-            Record) in the user location database. Value 0
-            disables the check. This parameter overrides the
-            global "max_contacts" module parameter.
-          + 'e(int)' (minimum expires) - this flag can be used to
-            set minimum register expiration time. Values lower
-            than this minimum will be automatically set to the
-            minimum. Value 0 disables the checking. This parameter
-            overrides the global min_expires module parameter.
-          + 'E(int)' (maximum expires) - this flag can be used to
-            set maximum register expiration time. Values higher
-            than this maximum will be automatically set to the
-            maximum. Value 0 disables the checking. This parameter
-            overrides the global max_expires module parameter.
-          + 'f' (force registration) - this flag can be used to
-            force the registration of NEW contacts even if the
-            maximum number of contacts is reached. In such a case,
-            older contacts will be removed to make space to the
-            new ones, without exceeding the maximum allowed
-            number. This flag makes sense only if "cxx" is used.
-          + 'o' (Only request contacts) - Only include the
-            REGISTER request's Contacts in the 200 OK reply, in
-            case the registration is successful. While this is
-            against RFC 3261, it may be useful in certain
-            scenarios.
-          + 'Mxx' (contact Matching mode) - How the matching
+          + 'memory-only' - (old m flag) save the contacts only in
+            memory cache without no DB operation;
+          + 'no-reply' - (old r flag) do not generate a SIP reply
+            to the current REGISTER request.
+          + 'max-contacts=[int]' - (old c flag) this flag can be
+            used to limit the number of contacts for this AOR
+            (Address of Record) in the user location database.
+            Value 0 disables the check. This parameter overrides
+            the global "max_contacts" module parameter.
+          + 'force-registration' - (old f flag) this flag can be
+            used to force the registration of NEW contacts even if
+            the maximum number of contacts is reached. In such a
+            case, older contacts will be removed to make space to
+            the new ones, without exceeding the maximum allowed
+            number. This flag makes sense only if "max-contacts"
+            is used.
+          + 'matching-mode=[val]' - (old M flag) How the matching
             should be performed between the uploaded contacts (by
             the currently handled REGISTER) and the already know
             contacts (in memory or DB). This options will be used
             only for the current operation and can be:
-               o 'M0' - contact URI matching only
-               o 'M1' - contact URI and SIP Call-ID matching
-               o 'M<param_name>' - only the value of the given URI
+               o '0' - contact URI matching only
+               o '1' - contact URI and SIP Call-ID matching
+               o '<param_name>' - only the value of the given URI
                  param will be used for matching (for example
-                 M<rinstance>)
-          + 'p0' (Path support - 'off' mode) The Path header is
-            saved into usrloc, but is never included in the reply.
-          + 'p1' (Path support - lazy mode) The Path header is
-            saved into usrloc, but is only included in the reply
-            if path support is indicated in the registration
-            request by the “path” option of the “Supported”
-            header.
-          + 'p2' (Path support - strict mode) The path header is
-            only saved into usrloc, if path support is indicated
-            in the registration request by the “path” option of
-            the “Supported” header. If no path support is
-            indicated, the request is rejected with “420 - Bad
-            Extension” and the header “Unsupported: path” is
-            included in the reply along with the received “Path”
-            header. This mode is the one recommended by RFC-3327.
-          + 'v' (path receiVed) if set, the “received” parameter
-            of the first Path URI of a registration is set as
-            received-uri and the NAT branch flag is set for this
-            contact. This is useful if the registrar is placed
-            behind a SIP loadbalancer, which passes the nat'ed UAC
-            address as “received” parameter in it's Path uri.
+                 <rinstance>)
+          + 'path-off' - (old p0 flag) (Path support - 'off' mode)
+            - The Path header is saved into usrloc, but is never
+            included in the reply.
+          + 'path-lazy' - (old p1 flag) (Path support - lazy mode)
+            The Path header is saved into usrloc, but is only
+            included in the reply if path support is indicated in
+            the registration request by the “path” option of the
+            “Supported” header.
+          + 'path-strict' - (old p2 flag) (Path support - strict
+            mode) - The path header is only saved into usrloc, if
+            path support is indicated in the registration request
+            by the “path” option of the “Supported” header. If no
+            path support is indicated, the request is rejected
+            with “420 - Bad Extension” and the header
+            “Unsupported: path” is included in the reply along
+            with the received “Path” header. This mode is the one
+            recommended by RFC-3327.
+          + 'path-received' - (old v flag) if set, the “received”
+            parameter of the first Path URI of a registration is
+            set as received-uri and the NAT branch flag is set for
+            this contact. This is useful if the registrar is
+            placed behind a SIP loadbalancer, which passes the
+            nat'ed UAC address as “received” parameter in it's
+            Path uri.
+          + 'only-request-contacts' - (old o flag) Only include
+            the REGISTER request's Contacts in the 200 OK reply,
+            in case the registration is successful. While this is
+            against RFC 3261, it may be useful in certain
+            scenarios.
+          + 'socket-header' - (old s flag) look into REGISTER
+            request for a header which contains a socket
+            description (proto:IP:port). This socket info will be
+            stored by register instead of the received socket
+            info.
+          + 'min-expires=[int]' - (old e flag) this flag can be
+            used to set minimum register expiration time. Values
+            lower than this minimum will be automatically set to
+            the minimum. Value 0 disables the checking. This
+            parameter overrides the global min_expires module
+            parameter.
+          + 'max-expires=[int]' - (old E flag) this flag can be
+            used to set maximum register expiration time. Values
+            higher than this maximum will be automatically set to
+            the maximum. Value 0 disables the checking. This
+            parameter overrides the global max_expires module
+            parameter.
        This parameter is a string composed of a set of flags.
      * aor (string, optional) - a custom AOR; if missing, the AOR
        will be taken from the default place - the TO header URI.
@@ -883,14 +890,14 @@ save("location");
 ...
 # save into 'location', do not update DB, max 5 contacts per AOR,
 # use default AOR (TO URI)
-save("location","mc5");
+save("location","memory-only, max-contacts=5");
 ...
 # save into 'location', no flags, use as AOR the FROM URI
 save("location","",$fu);
 ...
 # save into 'location', no DB update, force registration, take AOR from
 AVP
-save("location","mr", $avp(aor));
+save("location","memory-only, no-reply", $avp(aor));
 ...
 # save into 'location', mark the contacts with the "vip" ownership tag a
 nd
@@ -975,10 +982,10 @@ remove("location", "sip:bob@atlanta.com", , , "<urn:uuid:e5e68d40-f08a-4
    Example 1.32. remove_ip_port usage
 ...
 # remove all contacts behind 8.8.8.8 port 43213
-remove("8.8.8.8",43213,"location");
+remove_ip_port("8.8.8.8",43213,"location");
 ...
 # remove only bob's contacts behind the 8.8.8.8:43213 host
-remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
+remove_ip_port("8.8.8.8",43213,"location","sip:bob@atlanta.com");
 ...
 
 1.4.4.  lookup(domain [, flags [, aor]])
@@ -998,8 +1005,8 @@ remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
      * domain (static string) - Name of table that should be used
        for the lookup.
      * flags (string, optional)
-          + 'b' (no Branches) - this flag controls how the
-            lookup() function processes multiple contacts. If
+          + 'no-branches' - (old b flag) this flag controls how
+            the lookup() function processes multiple contacts. If
             there are multiple contacts for the given username in
             usrloc and this flag is not set, Request-URI will be
             overwritten with the highest-q rated contact and the
@@ -1007,13 +1014,13 @@ remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
             later used by tm for forking. If the flag is set, only
             Request-URI will be overwritten with the highest-q
             rated contact and the rest will be left unprocessed.
-          + 'B' (to Branches only) - this flags forces all found
-            contacts to be uploaded only as branches (in the
-            destination set) and not at all in the R-URI of the
-            current message. Using this option allows the lookup()
-            function to also be used in the context of a SIP
-            reply.
-          + 'r' (bRanch lookup) - this flag enables searching
+          + 'to-branches-only' - (old B flag) this flags forces
+            all found contacts to be uploaded only as branches (in
+            the destination set) and not at all in the R-URI of
+            the current message. Using this option allows the
+            lookup() function to also be used in the context of a
+            SIP reply.
+          + 'branch' - (old r flag) this flag enables searching
             through existing branches for aor's and expanding them
             to contacts. For example, you have got AOR A in your
             ruri but you also want to forward your calls to AOR B.
@@ -1022,31 +1029,33 @@ remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
             expand AOR B to contacts, which will be put back into
             the branches. The AOR's that were in branches before
             the function call shall be removed.
-            WARNING: if you want this flag activated, the 'b' (no
-            Branches) flag must not be set, because by setting
+            WARNING: if you want this flag activated, the
+            'no-branches' flag must not be set, because by setting
             that flag you won't allow lookup() to write in a
             branch.
-          + 'm' (Method filtering) - setting this flag will enable
-            contact filtering based on the supported methods
-            listed in the "Allow" header field during
+          + 'method-filtering' - (old m flag) setting this flag
+            will enable contact filtering based on the supported
+            methods listed in the "Allow" header field during
             registration. Contacts which did not present an
             "Allow" header field during registration are assumed
             to support all standard SIP methods.
-          + 'u' (User-Agent filtering) - this flag enables regexp
-            filtering by user-agent. It's useful with enabled
-            append_branches parameter. Regexp must follow the 'u'
-            flag and must use format like 'u/regexp/'.
-          + 'i' (Case insensitive search) - this flag enables case
-            insensitive filtering for the 'u' flag.
-          + 'e' (Use extended regexp) - this flag enables using of
-            extended regexp format for the 'u' flag.
-          + 'g' (Global lookup) - this flag is only relevant with
-            federated user location clustering. If set, the
-            lookup() function will not only perform the classic
-            in-memory "search-AoR-and-push-branches" operation,
-            but will also perform a metadata lookup and append an
-            additional branch for each returned result. The
-            "in-memory branches" correspond to local contacts
+          + 'ua-filtering=[val]' (old u flag) (User-Agent
+            filtering) - this flag enables regexp filtering by
+            user-agent. It's useful with enabled append_branches
+            parameter. The value must use the format '/regexp/'.
+          + 'case-insensitive' (old i flag) - this flag enables
+            case insensitive filtering for the 'ua-filtering'
+            flag.
+          + 'extended-regexp' - (old e flag) this flag enables
+            using of extended regexp format for the 'ua-filtering'
+            flag.
+          + 'global' (old g flag) (Global lookup) - this flag is
+            only relevant with federated user location clustering.
+            If set, the lookup() function will not only perform
+            the classic in-memory "search-AoR-and-push-branches"
+            operation, but will also perform a metadata lookup and
+            append an additional branch for each returned result.
+            The "in-memory branches" correspond to local contacts
             (current location), while the "metadata branches"
             correspond to contacts available on one or more of the
             remaining locations of the platform.
@@ -1058,14 +1067,15 @@ remove("8.8.8.8",43213,"location","sip:bob@atlanta.com");
             information:
                o the AoR (e.g. "vladimir@federation-cluster")
                o the home IP (e.g. "10.0.0.223")
-          + 'yXXXXX' (Max pinging latency) - maximally accepted
-            contact pinging latency (microseconds). Contacts of an
-            AoR with a higher latency will be discarded during
-            lookup().
-          + 'Y' (Sort by pinging latency) - contacts will be
+          + 'max-ping-latency=[int]' - (old y flag) maximally
+            accepted contact pinging latency (microseconds).
+            Contacts of an AoR with a higher latency will be
+            discarded during lookup().
+          + 'sort-by-latency' - (old Y flag) contacts will be
             picked in ascending order of their last successful
             pinging latency (fastest ping -> slowest ping). This
-            flag may work together with the "y" flag.
+            flag may work together with the "max-ping-latency"
+            flag.
      * AOR (string, optional) - AOR to lookup for; if missing, the
        RURI is used as AOR;
 

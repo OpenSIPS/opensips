@@ -479,21 +479,23 @@ if (search("User-Agent: Cisco ATA.*") {
    "a=oldoip" for old origin ip and "a=oldcip" for old meda ip.
 
    Meaning of the parameters is as follows:
-     * flags (int) - the value may be a bitwise OR of the
-       following flags:
-          + 0x01 - adds “a=direction:active” SDP line;
-          + 0x02 - rewrite media IP address (c=) with source
-            address of the message or the provided IP address (the
-            provided IP address takes precedence over the source
-            address).
-          + 0x04 - adds “a=nortpproxy:yes” SDP line;
-          + 0x08 - rewrite IP from origin description (o=) with
-            source address of the message or the provided IP
-            address (the provided IP address takes precedence over
-            the source address).
-          + 0x10 - force rewrite of null media IP and/or origin IP
-            address. Without this flag, null IPs are left
-            untouched.
+     * flags (string) - the value may be a CSV of the following
+       flags:
+          + add-dir-active - (old 0x01 flag) adds
+            “a=direction:active” SDP line;
+          + rewrite-media-ip - (old 0x02 flag) rewrite media IP
+            address (c=) with source address of the message or the
+            provided IP address (the provided IP address takes
+            precedence over the source address).
+          + add-no-rtpproxy - (old 0x04 flag) adds
+            “a=nortpproxy:yes” SDP line;
+          + rewrite-origin-ip - (old 0x08 flag) rewrite IP from
+            origin description (o=) with source address of the
+            message or the provided IP address (the provided IP
+            address takes precedence over the source address).
+          + rewrite-null-ips - (old 0x10 flag) force rewrite of
+            null media IP and/or origin IP address. Without this
+            flag, null IPs are left untouched.
      * ip_address (string, optional) - IP to be used for rewriting
        SDP. If not specified, the received signalling IP will be
        used. NOTE: For the IP to be used, you need to use 0x02 or
@@ -558,24 +560,27 @@ fix_nated_register();
    Tries to guess if client's request originated behind a nat. The
    parameter determines what heuristics is used.
 
-   Meaning of the flags (int) parameter is as follows:
-     * 1 - Contact header field is searched for occurrence of
-       RFC1918 / RFC6598 addresses.
-     * 2 - the "received" test is used: address in Via is compared
-       against source IP address of signaling
-     * 4 - Top Most VIA is searched for occurrence of RFC1918 /
-       RFC6598 addresses
-     * 8 - SDP is searched for occurrence of RFC1918 / RFC6598
-       addresses
-     * 16 - test if the source port is different from the port in
-       Via
-     * 32 - address in Contact is compared against source IP
-       address of signaling
-     * 64 - Port in Contact is compared against source port of
+   Meaning of the flags (string) parameter is as follows:
+     * private-contact - (old 1 flag) Contact header field is
+       searched for occurrence of RFC1918 / RFC6598 addresses.
+     * diff-ip-src-via - (old 2 flag) the "received" test is used:
+       address in Via is compared against source IP address of
        signaling
+     * private-via - (old 4 flag) Top Most VIA is searched for
+       occurrence of RFC1918 / RFC6598 addresses
+     * private-sdp - (old 8 flag) SDP is searched for occurrence
+       of RFC1918 / RFC6598 addresses
+     * diff-port-src-via - (old 16 flag) test if the source port
+       is different from the port in Via
+     * diff-ip-src-contact - (old 32 flag) address in Contact is
+       compared against source IP address of signaling
+     * diff-port-src-contact - (old 64 flag) Port in Contact is
+       compared against source port of signaling
+     * carrier-grade-nat - (old 128 flag) also include RFC 6333
+       addresses in the checks for ct, via and sdp flags.
 
-   All flags can be bitwise combined, the test returns true if any
-   of the tests identified a NAT.
+   A CSV of the above flags can be provided, the test returns true
+   if any of the tests identified a NAT.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.

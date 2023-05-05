@@ -509,14 +509,14 @@ modparam("b2b_logic", "b2bl_early_update", 1)
        simple pass-through of messages from one side to another,
        and no additional scripting or dedicated routes are
        required.
-     * flags (string, optional) - meanings of the flags is as
-       follows:
-          + t[nn] - Call setup timeout. 0 sets timeout to
-            max_duration value. Example: t300.
-          + a - Transparent authentication. In this mode b2b
-            passes your 401 or 407 authentication request to
-            destination server.
-          + p - Preserve To: header.
+     * flags (string, optional) - CSV list of the following flags:
+          + setup-timeout=[nn] - Call setup timeout. 0 sets
+            timeout to max_duration value. Example:
+            "setup-timeout=300".
+          + transparent-auth - Transparent authentication. In this
+            mode b2b passes your 401 or 407 authentication request
+            to destination server.
+          + preserve-to - Preserve To: header.
      * req_route (string, optional) - name of the script route to
        be called when requests belonging to this B2B session are
        received. This parameter will override the global
@@ -634,25 +634,25 @@ b2b_client_new("client1", "sip:alice@opensips.org");
      * provmedia_uri (string, optional) - URI of the provisional
        media server to be connected with the caller while the
        callee answers.
-     * flags (string, optional) - meanings of the flags is as
-       follows:
-          + t[nn] - Maximum duration of the B2B session. If the
-            lifetime expires, the B2BUA will send BYE messages to
-            both ends and delete the record. Example: t300.
-          + n - Enable rfc3515 NOTIFY to inform the agent sending
-            the REFER of the status of the reference.
-          + f - Rollback call to state before bridging in case of
-            transfer failed, don't hangup the call (default
-            behaviour).
-          + h - Put the old entity on hold before bridging it to
-            the new entity.
-          + r - Do not attempt late SDP negociation with the new
-            entity. Start the bridging by first contacting the new
-            entity using the initial SDP received from the old
-            entity. After the new entity answers, send a reINVITE
-            without body to the old entity. Use the current SDP
-            received in this new answer from the old entity to
-            trigger a renegociation with the new entity.
+     * flags (string, optional) - CSV list of the following flags:
+          + max_duration=[nn] - Maximum duration of the B2B
+            session. If the lifetime expires, the B2BUA will send
+            BYE messages to both ends and delete the record.
+            Example: "max_duration=300".
+          + notify - Enable rfc3515 NOTIFY to inform the agent
+            sending the REFER of the status of the reference.
+          + rollback-failed - Rollback call to state before
+            bridging in case of transfer failed, don't hangup the
+            call (default behaviour).
+          + hold - Put the old entity on hold before bridging it
+            to the new entity.
+          + no-late-sdp - Do not attempt late SDP negociation with
+            the new entity. Start the bridging by first contacting
+            the new entity using the initial SDP received from the
+            old entity. After the new entity answers, send a
+            reINVITE without body to the old entity. Use the
+            current SDP received in this new answer from the old
+            entity to trigger a renegociation with the new entity.
 
    This function can be used from the b2b_logic request routes.
 

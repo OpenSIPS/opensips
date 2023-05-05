@@ -309,7 +309,7 @@ modparam("clusterer", "db_table", "clusterer")
    state) by any module build on top of clusterer engine, like
    dialog or presence.
 
-   Note that ohter tags may be dynamically learned during runtime
+   Note that other tags may be dynamically learned during runtime
    via clustering communication with other nodes.
 
    The format for this value is “tag_name / cluster_id =
