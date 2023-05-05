@@ -683,6 +683,13 @@ int add_cc_agent( struct cc_data *data, str *id, struct media_info *media,
 		if (skills && skills->len) {
 			p = skills->s;
 			while (p) {
+				if (agent->no_skills==MAX_SKILLS_PER_AGENT) {
+					LM_WARN("too many skills (%d) for the agent <%.*s>, "
+						"discarding <%.*s>\n",
+						agent->no_skills, agent->id.len, agent->id.s,
+						(int)(skills->s+skills->len-p), p);
+					break;
+				}
 				skill.s = p;
 				p = q_memchr(skill.s, ',', skills->s+skills->len-skill.s);
 				skill.len = p?(p-skill.s):(skills->s+skills->len-skill.s);
@@ -690,11 +697,13 @@ int add_cc_agent( struct cc_data *data, str *id, struct media_info *media,
 				if (skill.len) {
 					skill_id = get_skill_id(data,&skill);
 					if (skill_id==0) {
-						LM_ERR("cannot get skill id\n");
-						goto error1;
+						LM_WARN("unknown skill <%.*s>  for the agent <%.*s>,"
+							"discarding\n",
+							skill.len, skill.s, agent->id.len, agent->id.s);
+					} else {
+						n = agent->no_skills++; 
+						agent->skills[n] = skill_id;
 					}
-					n = agent->no_skills++; 
-					agent->skills[n] = skill_id;
 				}
 				if(p)
 					p++;
