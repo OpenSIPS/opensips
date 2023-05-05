@@ -69,6 +69,7 @@ static struct {
 	struct dict_object * Acct_Session_Id;
 	struct dict_object * Event_Timestamp;
 	struct dict_object * Transaction_Id;
+	struct dict_object * Session_Id;
 
 	struct dict_object * Auth_Application_Id;
 	struct dict_object * Auth_Session_State;
@@ -726,6 +727,7 @@ static int os_entry(char *confstring)
 	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Acct-Session-Id", &dm_dict.Acct_Session_Id, ENOENT) );
 	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Event-Timestamp", &dm_dict.Event_Timestamp, ENOENT) );
 	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Transaction-Id", &dm_dict.Transaction_Id, ENOENT) );
+	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Session-Id", &dm_dict.Session_Id, ENOENT) );
 
 	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Auth-Application-Id", &dm_dict.Auth_Application_Id, ENOENT) );
 	CHECK_FCT( fd_dict_search( fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME, "Auth-Session-State", &dm_dict.Auth_Session_State, ENOENT) );

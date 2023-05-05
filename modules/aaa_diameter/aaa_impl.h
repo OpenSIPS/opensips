@@ -79,6 +79,7 @@ struct _dm_dict {
 	struct dict_object *SIP_Method;
 
 	struct dict_object *Transaction_Id;
+	struct dict_object *Session_Id;
 	struct dict_object *Event_Timestamp;
 	struct dict_object *Route_Record;
 };

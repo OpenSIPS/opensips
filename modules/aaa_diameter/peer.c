@@ -448,10 +448,13 @@ static int dm_pack_avps(void *root, struct list_head *subavps)
 
 static int dm_custom_req(struct dm_message *msg)
 {
+	str tid_str;
 	struct msg *dmsg;
 	struct avp *avp;
+	struct avp_hdr *h;
 	union avp_value val;
 	struct dict_object *req; /* a custom Diameter request */
+	int rc;
 
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
 	      &msg->cmd_code, &req, ENOENT));
@@ -470,12 +473,13 @@ static int dm_custom_req(struct dm_message *msg)
 		LM_ERR("failed to pack AVPs\n");
 		return -1;
 	}
-
-	/* Transaction-Id */
-	{
+	/* check if we already have a Session-Id in the message - if so, use it! */
+	rc = fd_msg_search_avp(dmsg, dm_dict.Session_Id, &avp);
+	if (rc != 0) {
+		/* Transaction-Id */
 		struct timeval now;
 		char tid[16 + 1];
-		str tid_str;
+		LM_DBG("No Session-Id in Answer, forcing Transaction-Id\n");
 
 		FD_CHECK(fd_msg_avp_new(dm_dict.Transaction_Id, 0, &avp));
 
@@ -489,8 +493,11 @@ static int dm_custom_req(struct dm_message *msg)
 		FD_CHECK(fd_msg_avp_add(dmsg, MSG_BRW_LAST_CHILD, avp));
 
 		tid_str = (str){(char *)val.os.data, val.os.len};
-		FD_CHECK(dm_add_pending_reply(&tid_str, msg->reply_cond));
+	} else {
+		FD_CHECK(fd_msg_avp_hdr(avp, &h));
+		tid_str = (str){(char *)h->avp_value->os.data, h->avp_value->os.len};
 	}
+	FD_CHECK(dm_add_pending_reply(&tid_str, msg->reply_cond));
 
 	FD_CHECK(fd_msg_send(&dmsg, NULL, NULL));
 	return 0;
@@ -549,6 +556,8 @@ static int dm_prepare_globals(void)
 
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Transaction-Id", &dm_dict.Transaction_Id, ENOENT));
+	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+	      "Session-Id", &dm_dict.Session_Id, ENOENT));
 	FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
 	      "Route-Record", &dm_dict.Route_Record, ENOENT));
 

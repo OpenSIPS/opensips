@@ -962,33 +962,43 @@ define_req:
 	}
 
 	{
-		/* all custom requests and replies MUST include Transaction-Id */
+		/* all custom requests and replies MUST include Transaction-Id
+		 * but only if they they don't require a Session-Id already */
 		struct dict_rule_data data = {NULL, RULE_REQUIRED, 0, -1, 1};
 
 		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
-			DICT_AVP, AVP_BY_NAME, "Transaction-Id", &data.rule_avp, 0));
-
+			DICT_AVP, AVP_BY_NAME, "Session-Id", &data.rule_avp, 0));
 		if (!data.rule_avp) {
-			printf("ERROR: failed to locate Transaction-Id AVP\n");
-			return -1;
-		}
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
+				DICT_AVP, AVP_BY_NAME, "Transaction-Id", &data.rule_avp, 0));
 
-		FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+			if (!data.rule_avp) {
+				printf("ERROR: failed to locate Transaction-Id AVP\n");
+				return -1;
+			}
+
+			FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+		}
 	}
 
-	/* all replies MUST include a Result-Code */
+	/* all replies MUST include a Result-Code
+	 * but only if they they don't require an Experimental-Result already */
 	if (cmd_type == CMD_ANSWER) {
 		struct dict_rule_data data = {NULL, RULE_REQUIRED, 0, -1, 1};
 
 		FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
-			DICT_AVP, AVP_BY_NAME, "Result-Code", &data.rule_avp, 0));
-
+			DICT_AVP, AVP_BY_NAME, "Experimental-Result", &data.rule_avp, 0));
 		if (!data.rule_avp) {
-			printf("ERROR: failed to locate Result-Code AVP\n");
-			return -1;
-		}
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict,
+				DICT_AVP, AVP_BY_NAME, "Result-Code", &data.rule_avp, 0));
 
-		FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+			if (!data.rule_avp) {
+				printf("ERROR: failed to locate Result-Code AVP\n");
+				return -1;
+			}
+
+			FD_CHECK_dict_new(DICT_RULE, &data, cmd, NULL);
+		}
 	}
 
 	return 0;

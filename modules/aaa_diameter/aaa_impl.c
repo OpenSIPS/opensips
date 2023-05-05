@@ -374,19 +374,31 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		goto out;
 	}
 
-	rc = fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a);
+	rc = fd_msg_search_avp(msg, dm_dict.Session_Id, &a);
 	if (rc != 0) {
-		LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d\n",
+		LM_DBG("Missing Session-Id AVP in Diameter Answer %d/%d, looking for Transaction-Id\n",
 		       hdr->msg_appl, hdr->msg_code);
-		goto out;
+		rc = fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a);
+		if (rc != 0) {
+			LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d\n",
+				   hdr->msg_appl, hdr->msg_code);
+			goto out;
+		}
+
+		FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
+		tid.s = (char *)h->avp_value->os.data;
+		tid.len = (int)h->avp_value->os.len;
+
+		LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
+			   hdr->msg_code, rc, tid.len, tid.s);
+	} else {
+		FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
+		tid.s = (char *)h->avp_value->os.data;
+		tid.len = (int)h->avp_value->os.len;
+
+		LM_DBG("%d/%d reply %d, Session-Id: %.*s\n", hdr->msg_appl,
+			   hdr->msg_code, rc, tid.len, tid.s);
 	}
-
-	FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
-	tid.s = (char *)h->avp_value->os.data;
-	tid.len = (int)h->avp_value->os.len;
-
-	LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
-	       hdr->msg_code, rc, tid.len, tid.s);
 
 	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
 	if (!prpl_cond) {
