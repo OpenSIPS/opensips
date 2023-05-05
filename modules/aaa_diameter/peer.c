@@ -411,7 +411,7 @@ static int dm_pack_avps(void *root, struct list_head *subavps)
 		dm_avp = list_entry(it, struct dm_avp, list);
 
 		/* each AVP must be recognized, otherwise we abort the request */
-		FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME, dm_avp->name.s, &obj);
+		FD_CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, dm_avp->name.s, &obj);
 		FD_CHECK(fd_msg_avp_new(obj, 0, &subavp));
 		FD_CHECK(fd_dict_getval(obj, &savp_data));
 
