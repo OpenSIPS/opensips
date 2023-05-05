@@ -94,7 +94,7 @@ struct module_exports exports =
 	"aaa_diameter",   /* module's name */
 	MOD_TYPE_AAA,     /* class of this module */
 	MODULE_VERSION,
-	DEFAULT_DLFLAGS,  /* dlopen flags */
+	RTLD_NOW | RTLD_GLOBAL,  /* dlopen flags */
 	NULL,             /* load function */
 	&deps,            /* OpenSIPS module dependencies */
 	cmds,             /* exported functions */
