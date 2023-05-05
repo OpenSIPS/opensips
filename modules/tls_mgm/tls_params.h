@@ -57,6 +57,8 @@ int tlsp_set_verify(modparam_t type, void *val);
 
 int tlsp_set_require(modparam_t type, void *val);
 
+int tlsp_set_verify_hostname(modparam_t type, void *val);
+
 int tlsp_set_crl_check(modparam_t type, void *val);
 
 int tlsp_set_certificate(modparam_t type, void *val);

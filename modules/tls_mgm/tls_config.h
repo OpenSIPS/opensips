@@ -38,13 +38,14 @@
 #include "tls_config_helper.h"
 #include "../../str.h"
 
-#define TLS_TABLE_VERSION 3
+#define TLS_TABLE_VERSION 4
 
 extern int      tls_default_method;
 
 extern int      tls_verify_client_cert;
 extern int      tls_verify_server_cert;
 extern int      tls_require_client_cert;
+extern int      tls_verify_hostname;
 extern int	    crl_check_all;
 extern char    *tls_cert_file;
 extern char    *tls_pkey_file;
@@ -63,6 +64,7 @@ extern str     match_domain_col;
 extern str     method_col;
 extern str     verify_cert_col;
 extern str     require_cert_col;
+extern str     verify_hostname_col;
 extern str     certificate_col;
 extern str     pk_col;
 extern str     crl_check_col;

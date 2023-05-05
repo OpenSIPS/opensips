@@ -221,11 +221,13 @@ int openssl_tls_conn_init(struct tcp_connection* c, struct tls_domain *tls_dom)
 		return -1;
 	}
 
-	param = SSL_get0_param(c->extra_data);
-	X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-	if (!X509_VERIFY_PARAM_set1_host(param, c->hostname, strlen(c->hostname))) {
-		LM_ERR("failed to set hostname for SSL context\n");
-		return -1;
+	if (tls_dom->verify_hostname) {
+		param = SSL_get0_param(c->extra_data);
+		X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+		if (!X509_VERIFY_PARAM_set1_host(param, c->hostname, strlen(c->hostname))) {
+			LM_ERR("failed to set hostname for SSL context\n");
+			return -1;
+		}
 	}
 
 	/* put pointers to the tcp_connection and tls_domain structs
