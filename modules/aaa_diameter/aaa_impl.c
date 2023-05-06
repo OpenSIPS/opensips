@@ -1548,6 +1548,7 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 	struct dict_object *obj;
 	char *name;
 	unsigned int code;
+	str st;
 
 	for (_avp = array; _avp; _avp = _avp->next) {
 		if (_avp->type != cJSON_Object) {
@@ -1563,14 +1564,8 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 			goto error;
 		}
 
-		if (_isdigit(avp->string[0])) {
-			str st;
-
-			init_str(&st, avp->string);
-			if (str2int(&st, &code) != 0) {
-				LM_ERR("bad AVP key: cannot start with a digit (%s)\n", avp->string);
-				goto error;
-			}
+		init_str(&st, avp->string);
+		if (str2int(&st, &code) == 0) {
 
 			LM_DBG("AVP:: searching AVP by int: %d\n", code);
 			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
