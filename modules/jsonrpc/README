@@ -186,7 +186,7 @@ Chapter 2. Contributors
    1. Razvan Crainea (@razvancrainea) 16 7 931 11
    2. Liviu Chircu (@liviuchircu) 6 4 16 32
    3. Vlad Patrascu (@rvlad-patrascu) 6 2 33 128
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 3 1
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 4 2
    5. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
@@ -209,9 +209,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Mar 2018 - Nov 2019
-   2. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2018 - Apr 2019
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2018 - Apr 2023
+   2. Razvan Crainea (@razvancrainea)     Mar 2018 - Nov 2019
+   3. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
    4. Liviu Chircu (@liviuchircu)         Apr 2018 - Nov 2018
    5. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 

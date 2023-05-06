@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>)</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">5</entry>
 		<entry align="center">3</entry>
-		<entry align="center">5</entry>
-		<entry align="center">14</entry>
+		<entry align="center">7</entry>
+		<entry align="center">7</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Parantido Julius De Rica (<ulink url="https://github.com/Parantido">@Parantido</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Paul Wise, Sergio Gutierrez, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Rudy Pedraza, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, David Sanders.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Parantido Julius De Rica (<ulink url="https://github.com/Parantido">@Parantido</ulink>), Paul Wise, Sergio Gutierrez, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Rudy Pedraza, Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), UnixDev, David Sanders.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,13 +128,13 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
-		<entry align="center">Jul 2012 - Mar 2022</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Jan 2021 - Mar 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jan 2021 - Jan 2021</entry>
+		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
+		<entry align="center">Jul 2012 - Mar 2022</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
