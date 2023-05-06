@@ -286,7 +286,8 @@ Chapter 3. Contributors
    10. Peter Lemenkov (@lemenkov) 4 2 3 3
 
    All remaining contributors: Dusan Klinec (@ph4r05), Ryan
-   Bullock (@rrb3942), Julián Moreno Patiño, Zero King (@l2dy).
+   Bullock (@rrb3942), Julián Moreno Patiño, Maksym Sobolyev
+   (@sobomax), Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -308,19 +309,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Oct 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
-   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   5.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
-   7.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
-   8.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   1.  Maksym Sobolyev (@sobomax)          Mar 2023 - Mar 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Oct 2022
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
+   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   8.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
+   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ryan Bullock (@rrb3942), Vlad Paiu
-   (@vladpaiu), Andrei Dragus, Anca Vamanu.
+   All remaining contributors: Dusan Klinec (@ph4r05), Ryan
+   Bullock (@rrb3942), Vlad Paiu (@vladpaiu), Andrei Dragus, Anca
+   Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits

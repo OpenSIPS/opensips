@@ -222,6 +222,14 @@ uac_restore_from();
 
    This function can be used from FAILURE_ROUTE.
 
+   NOTE: when used without dialog support, the uac_auth() function
+   cannot be used for authenticating in-dialog requests, as there
+   is no mechanism to store the CSeq changes that are required for
+   ensuring the correctness of the dialog. The only exception are
+   BYE messages, which are the last messages within a call, hence
+   no further adjustments are needed. The function can still be
+   used for authenticating the initial INVITE though.
+
    Example 1.8. uac_auth usage
 ...
 uac_auth();
@@ -281,7 +289,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 126 74 4175 1059
    2. Ovidiu Sas (@ovidiusas) 33 7 371 1346
-   3. Razvan Crainea (@razvancrainea) 29 22 485 148
+   3. Razvan Crainea (@razvancrainea) 31 23 494 148
    4. Liviu Chircu (@liviuchircu) 23 15 267 298
    5. Daniel-Constantin Mierla (@miconda) 15 11 138 88
    6. Vlad Patrascu (@rvlad-patrascu) 9 4 127 161
@@ -315,9 +323,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2020
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2020
-   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Sep 2020
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2020
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
@@ -338,9 +346,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu Sas
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu Sas
    (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona
    Modroiu.

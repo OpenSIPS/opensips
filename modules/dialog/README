@@ -877,9 +877,9 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 1.6.36. profiles_with_value (string)
 
-   List of names for profiles with values. Flags /b or /s allow
-   sharing profiles between OpenSIPS instances using the clusterer
-   module or a CacheDB backend, respectively.
+   List of names (alphanumerical) for profiles with values. Flags
+   /b or /s allow sharing profiles between OpenSIPS instances
+   using the clusterer module or a CacheDB backend, respectively.
 
    Default value is “empty”.
 
@@ -891,9 +891,10 @@ annels/s; codecUsed/b;")
 
 1.6.37. profiles_no_value (string)
 
-   List of names for profiles without values. Flags /b or /s allow
-   sharing profiles between OpenSIPS instances using the clusterer
-   module or a CacheDB backend, respectively.
+   List of names (alphanumerical) for profiles without values.
+   Flags /b or /s allow sharing profiles between OpenSIPS
+   instances using the clusterer module or a CacheDB backend,
+   respectively.
 
    Default value is “empty”.
 
@@ -1445,7 +1446,7 @@ if ( get_dialogs_by_profile("caller",$fU,$avp(dlg_jsons),$avp(dlg_no)) )
 if (load_dialog_ctx("$var(callid)")) {
         xlog("The dialog '$var(callid)' already has a duration "
              "of $DLG_lifetime seconds\n");
-        if (is_in_profile("inbound_call"))
+        if (is_in_profile("inboundCall"))
                 xlog("this dialog is an inbound call\n");
         unload_dialog_ctx();
 }
@@ -1486,7 +1487,7 @@ if (load_dialog_ctx("$var(callid)")) {
 
    Example 1.62. set_dlg_profile usage
 ...
-set_dlg_profile("inbound_call");
+set_dlg_profile("inboundCall");
 set_dlg_profile("caller",$fu);
 ...
 
@@ -1508,7 +1509,7 @@ set_dlg_profile("caller",$fu);
 
    Example 1.63. unset_dlg_profile usage
 ...
-unset_dlg_profile("inbound_call");
+unset_dlg_profile("inboundCall");
 unset_dlg_profile("caller",$fu);
 ...
 
@@ -1536,7 +1537,7 @@ unset_dlg_profile("caller",$fu);
 
    Example 1.64. is_in_profile usage
 ...
-if (is_in_profile("inbound_call")) {
+if (is_in_profile("inboundCall")) {
         log("this request belongs to a inbound call\n");
 }
 ...
@@ -2024,7 +2025,7 @@ GIwZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_get_size inbound_calls
+                opensips-cli -x mi profile_get_size inboundCalls
 
 1.9.5. profile_list_dlgs
 
@@ -2045,7 +2046,7 @@ GIwZjAzNGM1ZDY
      * value (optional)- string value to toughen the check;
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_list_dlgs inbound_calls
+                opensips-cli -x mi profile_list_dlgs inboundCalls
 
 1.9.6. profile_get_values
 
@@ -2060,7 +2061,7 @@ GIwZjAzNGM1ZDY
      * profile - name of the profile to list the dialog for.
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_get_values inbound_calls
+                opensips-cli -x mi profile_get_values inboundCalls
 
 1.9.7. profile_end_dlgs
 
@@ -2077,7 +2078,7 @@ GIwZjAzNGM1ZDY
        only the dialogs with the specified value
 
    MI FIFO Command Format:
-                opensips-cli -x mi profile_end_dlgs inbound_calls
+                opensips-cli -x mi profile_end_dlgs inboundCalls
 
 1.9.8. dlg_db_sync
 
@@ -2503,7 +2504,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 440 279 12842 3416
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 441 280 12852 3426
    2. Razvan Crainea (@razvancrainea) 255 190 4944 1435
    3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
    4. Vlad Patrascu (@rvlad-patrascu) 169 88 3540 3143
@@ -2522,10 +2523,11 @@ Chapter 4. Contributors
    Michel Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis
    Paquette, Andrei Datcu (@andrei-datcu), Jeffrey Magder, Ron
    Winacott, Andy Pyles, Julián Moreno Patiño, Konstantin
-   Bokarius, Alex Massover, Damien Sandras (@dsandras), Alex
-   Hermann, Dusan Klinec (@ph4r05), Norman Brandinger (@NormB),
-   Peter Lemenkov (@lemenkov), UnixDev, Eliot Gable, Ryan Bullock
-   (@rrb3942), Edson Gellert Schubert.
+   Bokarius, Maksym Sobolyev (@sobomax), Alex Massover, Damien
+   Sandras (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05),
+   Norman Brandinger (@NormB), Peter Lemenkov (@lemenkov),
+   UnixDev, Eliot Gable, Ryan Bullock (@rrb3942), Edson Gellert
+   Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2547,29 +2549,30 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Nov 2022
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2022
-   5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
-   6.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
-   7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
-   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   9.  Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Maksym Sobolyev (@sobomax)          Mar 2023 - Mar 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Mar 2023
+   3.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jan 2022
+   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
+   7.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
+   8.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
+   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   10. Dan Pascu (@danpascu)               Dec 2007 - Aug 2019
 
-   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
-   Jarrod Baumann (@jarrodb), Ionut Ionita (@ionutrazvanionita),
-   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Walter Doekes
-   (@wdoekes), Eseanu Marius Cristian (@eseanucristian), Andrei
-   Datcu (@andrei-datcu), Norman Brandinger (@NormB), Damien
-   Sandras (@dsandras), Ryan Bullock (@rrb3942), Anca Vamanu, Alex
-   Massover, Andrei Dragus, John Riordan, Hugues Mitonneau,
-   Richard Revels, UnixDev, Alex Hermann, Henning Westerholt
-   (@henningw), Carsten Bock, Klaus Darilion, Daniel-Constantin
-   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Jerome Martin, Tavis Paquette, Michel Bensoussan, Eliot Gable,
-   Andy Pyles, Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
+   All remaining contributors: Peter Lemenkov (@lemenkov), Ionel
+   Cerghit (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut
+   Ionita (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Walter Doekes (@wdoekes), Eseanu Marius Cristian
+   (@eseanucristian), Andrei Datcu (@andrei-datcu), Norman
+   Brandinger (@NormB), Damien Sandras (@dsandras), Ryan Bullock
+   (@rrb3942), Anca Vamanu, Alex Massover, Andrei Dragus, John
+   Riordan, Hugues Mitonneau, Richard Revels, UnixDev, Alex
+   Hermann, Henning Westerholt (@henningw), Carsten Bock, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Jerome Martin, Tavis
+   Paquette, Michel Bensoussan, Eliot Gable, Andy Pyles,
+   Elena-Ramona Modroiu, Jeffrey Magder, Ron Winacott.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -2578,18 +2581,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu),
-   Zero King (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Ionut Ionita
-   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
-   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
-   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
-   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
-   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
-   Andy Pyles, Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
+   Patrascu (@rvlad-patrascu), Vlad Paiu (@vladpaiu), Zero King
+   (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
+   Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel
+   Cerghit (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu
+   Marius Cristian (@eseanucristian), Norman Brandinger (@NormB),
+   Anca Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
+   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 

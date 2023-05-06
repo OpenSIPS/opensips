@@ -555,8 +555,9 @@ Chapter 3. Contributors
 
    All remaining contributors: Zero King (@l2dy), Parantido Julius
    De Rica (@Parantido), Paul Wise, Sergio Gutierrez, Vlad Paiu
-   (@vladpaiu), Rudy Pedraza, Juha Heinanen (@juha-h), Peter
-   Lemenkov (@lemenkov), UnixDev, David Sanders.
+   (@vladpaiu), Maksym Sobolyev (@sobomax), Rudy Pedraza, Juha
+   Heinanen (@juha-h), Peter Lemenkov (@lemenkov), UnixDev, David
+   Sanders.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -577,23 +578,23 @@ Chapter 3. Contributors
 3.2. By Commit Activity
 
    Table 3.2. Most recently active contributors^(1) to this module
-     Name Commit Activity
-   1. Liviu Chircu (@liviuchircu) Jul 2012 - Mar 2022
-   2. Zero King (@l2dy) Mar 2020 - Mar 2020
-   3. Razvan Crainea (@razvancrainea) Dec 2010 - Sep 2019
-   4. Vlad Patrascu (@rvlad-patrascu) May 2017 - Apr 2019
-   5. Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2019
-   6. Peter Lemenkov (@lemenkov) Jun 2018 - Jun 2018
-   7. Ovidiu Sas (@ovidiusas) Sep 2008 - Nov 2015
-   8. Ionut Ionita (@ionutrazvanionita) Jul 2014 - Nov 2015
-   9. David Sanders Sep 2015 - Sep 2015
-   10. Eseanu Marius Cristian (@eseanucristian) Jul 2015 - Jul
-   2015
+                      Name                   Commit Activity
+   1.  Maksym Sobolyev (@sobomax)          Mar 2023 - Mar 2023
+   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Mar 2022
+   3.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   4.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Ovidiu Sas (@ovidiusas)             Sep 2008 - Nov 2015
+   9.  Ionut Ionita (@ionutrazvanionita)   Jul 2014 - Nov 2015
+   10. David Sanders                       Sep 2015 - Sep 2015
 
-   All remaining contributors: Parantido Julius De Rica
-   (@Parantido), Vlad Paiu (@vladpaiu), Rudy Pedraza, Sergio
-   Gutierrez, Paul Wise, Anca Vamanu, Andrei Dragus, UnixDev, Juha
-   Heinanen (@juha-h), Henning Westerholt (@henningw).
+   All remaining contributors: Eseanu Marius Cristian
+   (@eseanucristian), Parantido Julius De Rica (@Parantido), Vlad
+   Paiu (@vladpaiu), Rudy Pedraza, Sergio Gutierrez, Paul Wise,
+   Anca Vamanu, Andrei Dragus, UnixDev, Juha Heinanen (@juha-h),
+   Henning Westerholt (@henningw).
 
    (1) including any documentation-related commits, excluding
    merge commits

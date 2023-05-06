@@ -515,8 +515,8 @@ Chapter 2. Contributors
    10. Edson Gellert Schubert 8 1 0 412
 
    All remaining contributors: Andrei Pelinescu-Onciul, Juha
-   Heinanen (@juha-h), Dan Pascu (@danpascu), Maksym Sobolyev
-   (@sobomax), Zero King (@l2dy), Sergio Gutierrez, Anatoly
+   Heinanen (@juha-h), Maksym Sobolyev (@sobomax), Dan Pascu
+   (@danpascu), Zero King (@l2dy), Sergio Gutierrez, Anatoly
    Pidruchny, Konstantin Bokarius, Vlad Paiu (@vladpaiu), Peter
    Lemenkov (@lemenkov), Walter Doekes (@wdoekes), Nils Ohlmeier,
    Dusan Klinec (@ph4r05).
@@ -541,9 +541,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Jan 2021
-   3.  Maksym Sobolyev (@sobomax)          Jan 2005 - Oct 2020
+   1.  Maksym Sobolyev (@sobomax)          Jan 2005 - Feb 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2002 - Jan 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Sep 2019
