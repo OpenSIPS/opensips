@@ -866,14 +866,15 @@ Chapter 2. Contributors
    3. Liviu Chircu (@liviuchircu) 16 13 59 81
    4. Razvan Crainea (@razvancrainea) 9 7 11 6
    5. Saúl Ibarra Corretgé (@saghul) 9 5 188 102
-   6. Vlad Patrascu (@rvlad-patrascu) 6 4 25 14
+   6. Vlad Patrascu (@rvlad-patrascu) 7 5 27 16
    7. Vlad Paiu (@vladpaiu) 5 3 12 14
    8. Maksym Sobolyev (@sobomax) 5 3 7 8
    9. Anca Vamanu 4 2 12 1
    10. Peter Lemenkov (@lemenkov) 4 2 3 6
 
    All remaining contributors: David Sanders, Stéphane Alnet
-   (@shimaore), Sergio Gutierrez, Alexey Vasilyev (@vasilevalex).
+   (@shimaore), okhowang, Sergio Gutierrez, Alexey Vasilyev
+   (@vasilevalex).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -895,19 +896,20 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   3.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
-   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
-   6.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
-   9.  Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
-   10. David Sanders                       Oct 2014 - Oct 2014
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   2.  okhowang                            Mar 2023 - Mar 2023
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   5.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - Apr 2020
+   7.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2019
+   8.  Dan Pascu (@danpascu)               May 2008 - Aug 2019
+   9.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2018
+   10. Saúl Ibarra Corretgé (@saghul)      Aug 2011 - Nov 2014
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Anca Vamanu,
-   Stéphane Alnet (@shimaore), Sergio Gutierrez.
+   All remaining contributors: David Sanders, Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Stéphane Alnet (@shimaore), Sergio
+   Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits

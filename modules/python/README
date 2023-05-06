@@ -191,6 +191,7 @@ Chapter 2. Contributors
    4. Liviu Chircu (@liviuchircu) 8 6 30 61
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 6 4 36 48
    6. Peter Lemenkov (@lemenkov) 4 2 2 2
+   7. importos 3 1 104 4
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -214,10 +215,11 @@ Chapter 2. Contributors
                      Name                   Commit Activity
    1. Maksym Sobolyev (@sobomax)          Dec 2009 - Feb 2023
    2. Razvan Crainea (@razvancrainea)     Mar 2015 - Jan 2021
-   3. Liviu Chircu (@liviuchircu)         Jul 2014 - Jan 2020
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
-   5. Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2019
-   6. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
+   3. importos                            Nov 2020 - Nov 2020
+   4. Liviu Chircu (@liviuchircu)         Jul 2014 - Jan 2020
+   5. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2019
+   6. Peter Lemenkov (@lemenkov)          Jun 2018 - Oct 2019
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -226,9 +228,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea).
+   Last edited by: importos, Vlad Patrascu (@rvlad-patrascu),
+   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Razvan
+   Crainea (@razvancrainea).
 
    Documentation Copyrights:
 

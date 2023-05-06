@@ -1631,14 +1631,14 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1072 622 21654 16673
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1074 623 21745 16673
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 128 98 1931 843
-   6. Liviu Chircu (@liviuchircu) 106 80 1241 883
+   5. Razvan Crainea (@razvancrainea) 130 100 1964 846
+   6. Liviu Chircu (@liviuchircu) 107 81 1261 885
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
-   8. Vlad Patrascu (@rvlad-patrascu) 38 16 881 801
+   8. Vlad Patrascu (@rvlad-patrascu) 40 18 916 826
    9. Anca Vamanu 37 19 778 651
    10. Vlad Paiu (@vladpaiu) 26 23 170 57
 
@@ -1677,11 +1677,11 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Mar 2004 - Feb 2023
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jan 2023
-   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jan 2023
-   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2022
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2022
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Apr 2023
+   3.  Razvan Crainea (@razvancrainea)     Jul 2010 - Apr 2023
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2023
+   5.  Maksym Sobolyev (@sobomax)          Mar 2004 - Feb 2023
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
    7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    8.  Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
@@ -1710,16 +1710,16 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Liviu Chircu (@liviuchircu), Vlad
-   Patrascu (@rvlad-patrascu), Fabian Gast (@fgast), Alexey
-   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Nick
-   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
-   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
-   Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Liviu
+   Chircu (@liviuchircu), Fabian Gast (@fgast), Alexey Vasilyev
+   (@vasilevalex), Peter Lemenkov (@lemenkov), Nick Altmann
+   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
+   Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Dan Pascu (@danpascu), Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 
