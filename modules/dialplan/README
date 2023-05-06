@@ -621,13 +621,13 @@ Chapter 3. Contributors
    7. Ovidiu Sas (@ovidiusas) 16 13 144 37
    8. Vlad Patrascu (@rvlad-patrascu) 10 6 157 115
    9. Eseanu Marius Cristian (@eseanucristian) 5 3 114 47
-   10. Henning Westerholt (@henningw) 5 3 5 14
+   10. Maksym Sobolyev (@sobomax) 5 3 6 6
 
-   All remaining contributors: Zero King (@l2dy), Parantido Julius
-   De Rica (@Parantido), Maksym Sobolyev (@sobomax), Paul Wise,
-   Sergio Gutierrez, Vlad Paiu (@vladpaiu), Rudy Pedraza, Juha
-   Heinanen (@juha-h), Peter Lemenkov (@lemenkov), UnixDev, David
-   Sanders.
+   All remaining contributors: Henning Westerholt (@henningw),
+   Zero King (@l2dy), Parantido Julius De Rica (@Parantido), Paul
+   Wise, Sergio Gutierrez, Vlad Paiu (@vladpaiu), Rudy Pedraza,
+   Juha Heinanen (@juha-h), Peter Lemenkov (@lemenkov), UnixDev,
+   David Sanders.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -649,10 +649,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - May 2022
-   3.  Liviu Chircu (@liviuchircu)         Jul 2012 - Mar 2022
-   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Mar 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2008 - May 2022
+   4.  Liviu Chircu (@liviuchircu)         Jul 2012 - Mar 2022
    5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6.  Razvan Crainea (@razvancrainea)     Dec 2010 - Sep 2019
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

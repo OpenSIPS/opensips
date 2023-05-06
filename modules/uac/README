@@ -66,12 +66,6 @@ Chapter 1. Admin Guide
    If the dialog module is loaded and a dialog can be created,
    then the auto mode can be done more efficiently.
 
-   Known limitations in this version:
-     * authentication does not support qop auth-int, just qop
-       auth;
-     * CSeq not increased during authentication - the response may
-       be rejected.
-
 1.2. Dependencies
 
 1.2.1. OpenSIPS Modules
@@ -220,11 +214,44 @@ uac_restore_from();
    credentials provided by the uac_auth module (static or via
    AVPs).
 
+   As optional parameter, the function may receive a list of auth
+   algorithms to be considered / supported during authentication:
+     * MD5, MD5-sess
+     * SHA-256, SHA-256-sess (may be missing, depends on lib
+       support)
+     * SHA-512-256, SHA-512-256-sess (may be missing, depends on
+       lib support)
+
+   Note that the CSeq is automatically increased during
+   authentication.
+
    This function can be used from FAILURE_ROUTE.
+
+   NOTE: when used without dialog support, the uac_auth() function
+   cannot be used for authenticating in-dialog requests, as there
+   is no mechanism to store the CSeq changes that are required for
+   ensuring the correctness of the dialog. The only exception are
+   BYE messages, which are the last messages within a call, hence
+   no further adjustments are needed. The function can still be
+   used for authenticating the initial INVITE though.
 
    Example 1.8. uac_auth usage
 ...
 uac_auth();
+...
+failure_route[check_auth] {
+    ...
+    if ($T_reply_code==407) {
+        if (uac_auth("MD5,MD5-sess")) {
+            # auth is succesful, just relay
+            t_relay();
+            exit;
+        }
+        # auth failed (no credentials maybe)
+        # so continue handling the 407 reply
+    }
+    ...
+}
 ...
 
 Chapter 2. Frequently Asked Questions
@@ -279,9 +306,9 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 126 74 4175 1059
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 128 75 4208 1076
    2. Ovidiu Sas (@ovidiusas) 33 7 371 1346
-   3. Razvan Crainea (@razvancrainea) 29 22 485 148
+   3. Razvan Crainea (@razvancrainea) 31 23 494 148
    4. Liviu Chircu (@liviuchircu) 24 16 299 290
    5. Daniel-Constantin Mierla (@miconda) 15 11 138 88
    6. Vlad Patrascu (@rvlad-patrascu) 9 4 127 161
@@ -315,10 +342,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2023
-   2.  Maksym Sobolyev (@sobomax)          Mar 2021 - Mar 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Jun 2020
-   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2023
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Feb 2023
+   4.  Maksym Sobolyev (@sobomax)          Mar 2021 - Mar 2021
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
@@ -338,9 +365,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Ovidiu Sas
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu), Ovidiu Sas
    (@ovidiusas), Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Jesus Rodrigues, Elena-Ramona
    Modroiu.

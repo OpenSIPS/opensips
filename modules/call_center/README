@@ -1086,15 +1086,16 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 106 42 6753 504
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 109 44 6780 511
    2. Razvan Crainea (@razvancrainea) 40 30 791 154
    3. Vlad Patrascu (@rvlad-patrascu) 18 9 287 314
    4. Liviu Chircu (@liviuchircu) 14 11 72 89
    5. Walter Doekes (@wdoekes) 4 2 1 2
    6. Peter Lemenkov (@lemenkov) 4 2 1 1
    7. Vlad Paiu (@vladpaiu) 3 1 13 4
-   8. Dusan Klinec (@ph4r05) 3 1 1 1
-   9. Zero King (@l2dy) 3 1 1 1
+   8. Maksym Sobolyev (@sobomax) 3 1 1 5
+   9. Dusan Klinec (@ph4r05) 3 1 1 1
+   10. Zero King (@l2dy) 3 1 1 1
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1115,16 +1116,17 @@ Chapter 4. Contributors
 4.2. By Commit Activity
 
    Table 4.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - Aug 2022
-   2. Razvan Crainea (@razvancrainea)     Mar 2014 - Jun 2021
-   3. Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   4. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
-   5. Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
-   6. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7. Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
-   8. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
-   9. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2014 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Mar 2014 - Jun 2021
+   4.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jan 2021
+   6.  Liviu Chircu (@liviuchircu)         Jun 2014 - May 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2018
+   9.  Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   10. Vlad Paiu (@vladpaiu)               Mar 2014 - Mar 2014
 
    (1) including any documentation-related commits, excluding
    merge commits
