@@ -151,6 +151,8 @@ struct dlg_cell
 	unsigned int         initial_t_hash_index;
 	unsigned int         initial_t_label;
 	unsigned int         replicated; /* indicates if the dialog is replicated */
+	unsigned int         del_delay; /* if any custom delay should be done
+	                                 * when deleting this dialog */
 	struct dlg_tl        tl;
 	struct dlg_tl        del_tl;
 	struct dlg_ping_list *pl;
@@ -330,8 +332,9 @@ void destroy_dlg(struct dlg_cell *dlg);
 		if ((_dlg)->ref<=0) { \
 			/* dlg good to be destried, but be sure it went first
 			 * via the delete timer */ \
-			if (dlg_del_delay==0 || \
-			insert_attempt_dlg_del_timer(&_dlg->del_tl, dlg_del_delay)==-2) {\
+			if ((dlg_del_delay==0 && (_dlg)->del_delay==0) ||    \
+			insert_attempt_dlg_del_timer(&_dlg->del_tl,        \
+			(_dlg)->del_delay?(_dlg)->del_delay:dlg_del_delay)==-2) {\
 				/* no delay on del or not in del timer anymore -> destroy */ \
 				LM_DBG("Destroying dialog %p\n",_dlg); \
 				unlink_unsafe_dlg( _d_entry, _dlg);\
