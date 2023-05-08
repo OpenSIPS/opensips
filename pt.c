@@ -286,7 +286,7 @@ static int close_unused_pipes(int proc_no, int idx, int is_parent)
 
 static int setup_child_ipc_pipes(int proc_no)
 {
-	int i, fd1, fd2, eval = 0;
+	int fd1, fd2, eval = 0;
 
 	fd2 = pt[proc_no].ipc_pipe;
 	if (fd2 != -1) {
@@ -308,7 +308,7 @@ static int setup_child_ipc_pipes(int proc_no)
 			eval = -1;
 		}
 	}
-	for (i = 0; i < counted_max_processes; i++) {
+	for (int i = 0; i < counted_max_processes; i++) {
 		if (close_unused_pipes(i, 0, 0) != 0)
 			eval = -1;
 	}
@@ -346,7 +346,7 @@ static int internal_fork_child_setup(const struct internal_fork_params *ifpp)
  * */
 int internal_fork(const struct internal_fork_params *ifpp)
 {
-	int new_idx, i;
+	int new_idx;
 	pid_t pid;
 	unsigned int seed;
 
@@ -379,7 +379,7 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		/* advertise no IPC to the rest of the procs */
 		pt[new_idx].ipc_pipe = -1;
 		pt[new_idx].ipc_sync_pipe = -1;
-		for (i = 0; i < 2; i++) {
+		for (int i = 0; i < 2; i++) {
 			if (close_unused_pipes(new_idx, i, 1) != 0)
 				return -1;
 		}
