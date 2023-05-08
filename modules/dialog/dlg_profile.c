@@ -954,6 +954,65 @@ found:
 	return 1;
 }
 
+/*Unset all values set for a dialog on a profile*/
+int unset_dlg_profile_all_values(struct dlg_cell *dlg, struct dlg_profile_table *profile)
+{
+	struct dlg_profile_link *linker;
+	struct dlg_profile_link *linker_prev;
+	struct dlg_entry *d_entry;
+	int found = -1;
+
+	/* get current dialog */
+	if (dlg==NULL) {
+		LM_ERR("dialog was not yet created - script error\n");
+		return -1;
+	}
+
+	/* check the dialog linkers */
+	d_entry = &d_table->entries[dlg->h_entry];
+	/* lock dialog (if not already locked via a callback triggering)*/
+	if (dlg->locked_by!=process_no)
+		dlg_lock( d_table, d_entry);
+
+	linker = dlg->profile_links;
+	linker_prev = NULL;
+	while (linker) {
+		if (linker->profile==profile) {
+			found = 1;
+
+			/* Take the linker to remove and advance linker for next iter */
+			struct dlg_profile_link *tmp = linker;
+			linker = linker->next;
+
+			/* Fixup list integrity */
+			if (linker_prev == NULL) {
+				dlg->profile_links = linker;
+			} else {
+				linker_prev->next = linker;
+			}
+
+			/* Dealloc linker */
+			dlg->flags |= DLG_FLAG_VP_CHANGED;
+			destroy_linker(tmp, dlg, 1);
+			shm_free(tmp);
+
+			if (profile->has_value==0) {
+				break;
+			}
+
+			/* keep searching to remove all instances */
+			continue;
+		}
+
+		linker_prev = linker;
+		linker = linker->next;
+	}
+
+	if (dlg->locked_by!=process_no)
+		dlg_unlock( d_table, d_entry);
+
+	return found;
+}
 
 int is_dlg_in_profile(struct dlg_cell *dlg, struct dlg_profile_table *profile,
 																str *value)

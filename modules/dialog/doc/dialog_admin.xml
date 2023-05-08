@@ -1951,7 +1951,7 @@ if (load_dialog_ctx("$var(callid)")) {
 
 	<section id="func_set_dlg_profile" xreflabel="set_dlg_profile()">
 		<title>
-		<function moreinfo="none">set_dlg_profile(profile,[value])</function>
+		<function moreinfo="none">set_dlg_profile(profile,[value],[remove_value])</function>
 		</title>
 		<para>
 		Inserts the current dialog into a profile. Note that if the profile does
@@ -1975,6 +1975,12 @@ if (load_dialog_ctx("$var(callid)")) {
 			profile must support values.
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>remove_value (string, optional)</emphasis> - optional profile value
+				to remove before setting the new value. If it is an empty string ("") all values for the profile
+				will be removed before setting the new value.
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
@@ -1987,6 +1993,12 @@ if (load_dialog_ctx("$var(callid)")) {
 set_dlg_profile("inboundCall");
 set_dlg_profile("caller",$fu);
 ...
+#Set a new value while removing an old value
+set_dlg_profile("caller",$fu,$var(old_fu));
+...
+#Set a new value while removing all old values
+set_dlg_profile("caller",$fu,"");
+...
 </programlisting>
 		</example>
 	</section>
@@ -1994,7 +2006,7 @@ set_dlg_profile("caller",$fu);
 
 	<section id="func_unset_dlg_profile" xreflabel="unset_dlg_profile()">
 		<title>
-		<function moreinfo="none">unset_dlg_profile(profile,[value])</function>
+		<function moreinfo="none">unset_dlg_profile(profile,[value],[remove_all])</function>
 		</title>
 		<para>
 		Removes the current dialog from a profile.
@@ -2013,7 +2025,8 @@ set_dlg_profile("caller",$fu);
 		<listitem>
 			<para><emphasis>value (string, optional)</emphasis> - string value to
 			define the belonging of the dialog to the profile - note that the
-			profile must support values.
+			profile must support values. If set to an empty string ("") all values for
+			the profile will be removed.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -2027,6 +2040,9 @@ set_dlg_profile("caller",$fu);
 ...
 unset_dlg_profile("inboundCall");
 unset_dlg_profile("caller",$fu);
+...
+#Remove all values in a profile
+unset_dlg_profile("caller","");
 ...
 </programlisting>
 		</example>
