@@ -534,7 +534,7 @@ int parse_avp_def(struct dm_avp_def *avps, int *avp_count, char *line, int len)
 	while (isspace(*p)) { p++; len--; }
 
 	avps[*avp_count].max_repeats = (int)strtol(p, NULL, 10);
-	if (avps[*avp_count].max_repeats < 0) {
+	if (avps[*avp_count].max_repeats < -1) {
 		printf("ERROR: bad AVP max count: '... | %s'\n", p);
 		goto error;
 	}
