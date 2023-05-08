@@ -1605,6 +1605,47 @@ list_hdr_add_option("Supported", "optionX");
 		</example>
 	</section>
 
+	<section id="get_glob_headers_values" xreflabel="get_glob_headers_values()">
+		<title>
+		<function moreinfo="none">get_glob_headers_values(hdr_name_glob, hdr_names_avp,hdr_vals_avp)</function>
+		</title>
+		<para>
+		Populates the hdr_names_avp and hdr_vals_avp AVPs with all the header names and values that match the hdr_name_glob pattern.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+		<para><emphasis>hdr_name_glob (string)</emphasis> - the glob pattern for matching the header names
+		</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>hdr_names_avp (var)</emphasis> - the AVP which will get populated with all the header names that match the glob pattern
+		</para>
+		</listitem>
+		<listitem>
+		<para><emphasis>hdr_vals_avp (var)</emphasis> - the AVP which will get populated with all the header values corresponding to the header names that match the glob pattern
+		</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		<para>
+			The function returns true if at least 1 header was found that matches the glob pattern and false if no match is found.
+		</para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>get_glob_headers_values</function> usage</title>
+		<programlisting format="linespecific">
+...
+       if (get_glob_headers_values("X-*",$avp(names),$avp(values))) {
+           xlog("All X- names are $(avp(names)[*]) and X- vals are $(avp(values)[*])\n");
+       }
+...
+</programlisting>
+		</example>
+	</section>
+
 
 	</section>
 	<section>

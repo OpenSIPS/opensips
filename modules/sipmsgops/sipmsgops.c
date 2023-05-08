@@ -83,6 +83,7 @@
 static int remove_hf(struct sip_msg* msg, int_str_t* hf);
 static int remove_hf_re(struct sip_msg* msg, regex_t* re);
 static int remove_hf_glob(struct sip_msg* msg, str* pattern);
+static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* names, pv_spec_t *vals);
 static int remove_hf_match_f(struct sip_msg* msg, void* pattern, int is_regex);
 static int is_present_hf(struct sip_msg* msg, void* _match_hf);
 static int append_to_reply_f(struct sip_msg* msg, str* key);
@@ -291,6 +292,12 @@ static const cmd_export_t cmds[]={
 	{"is_uri_user_e164", (cmd_function)is_uri_user_e164, {
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|LOCAL_ROUTE},
+	{"get_glob_headers_values",   (cmd_function)get_glob_headers_values, {
+		{CMD_PARAM_STR, 0, 0},
+	        {CMD_PARAM_VAR, 0, 0},
+	        {CMD_PARAM_VAR, 0, 0},
+		{0, 0, 0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 
 	{0,0,{{0,0,0}},0}
 };
@@ -1984,3 +1991,58 @@ static int list_hdr_remove_option(struct sip_msg *msg, void *hdr, str *option)
 	return list_hdr_remove_val(msg, (int_str_t *)hdr, option);
 }
 
+static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* names, pv_spec_t *vals)
+{
+	struct hdr_field *hf;
+	int cnt=0;
+	char tmp;
+	pv_value_t val;
+
+	if (names->type != PVT_AVP) {
+		LM_ERR("AVP needed for names pvar \n");
+		return -1;
+	}
+
+	if (vals->type != PVT_AVP) {
+		LM_ERR("AVP needed for vals pvar \n");
+		return -1;
+	}
+
+
+	/* we need to be sure we have seen all HFs */
+	if (parse_headers(msg, HDR_EOH_F, 0)!=0) {
+		LM_ERR("failed to parse SIP message\n");
+		return -1;
+	}
+	for (hf=msg->headers; hf; hf=hf->next) {
+		tmp = *(hf->name.s+hf->name.len);
+		*(hf->name.s+hf->name.len) = 0;
+		#ifdef FNM_CASEFOLD
+		if(fnmatch(pattern->s, hf->name.s, FNM_CASEFOLD) !=0 ){
+		#else
+		if(fnmatch(pattern->s, hf->name.s, 0) !=0 ){
+		#endif
+			*(hf->name.s+hf->name.len) = tmp;
+			continue;
+		}
+
+		*(hf->name.s+hf->name.len) = tmp;
+
+		val.rs = hf->name;
+		val.flags = PV_VAL_STR;
+		if (pv_set_value( msg, names, 0, &val)!=0) {
+			LM_ERR("failed to set the result to script var\n");
+			return -1;
+		}
+
+		val.rs = hf->body;
+		val.flags = PV_VAL_STR;
+		if (pv_set_value( msg, vals, 0, &val)!=0) {
+			LM_ERR("failed to set the result to script var\n");
+			return -1;
+		}
+
+		cnt++;
+	}
+	return cnt==0 ? -1 : 1;
+}
