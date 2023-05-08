@@ -30,6 +30,7 @@
 #include "../../ip_addr.h"      /* struct socket_info */
 #include "../../str.h"          /* str */
 #include "../../trim.h"
+#include "../../reactor_proc.h"
 
 #include "stun.h"
 
@@ -79,7 +80,7 @@ static const param_export_t params[] = {
 
 /* Extra proces for listening loop */
 static const proc_export_t mod_procs[] = {
-	{"Stun loop",  0,  0, stun_loop, 1 , 0},
+	{"STUN Server",  0,  0, stun_loop, 1 , PROC_FLAG_HAS_IPC},
 	{0,0,0,0,0,0}
 };
 
@@ -349,78 +350,83 @@ static int stun_mod_init(void)
 }
 
 
-void stun_loop(int rank)
+static int stun_callback(int fd, void *sock, int was_timeout)
 {
-	fd_set read_set, all_set;
-	int maxfd = -1;
-	int nready;
-	char buffer[65536];
-	str msg;
+	static char buffer[65536];
 	unsigned int clientAddrLen;
 	struct receive_info ri;
-	int i;
-	struct stun_socket *sock;
+	str msg;
 
-	FD_ZERO(&all_set);
-
-	if (!use_listeners_as_primary) {
-		if (grep2)
-			socket_sets->sock2->sockfd = grep2->socket;
-		else
-			FD_SET(socket_sets->sock2->sockfd, &all_set);
-
-		if (grep3)
-			socket_sets->sock3->sockfd = grep3->socket;
-		else
-			FD_SET(socket_sets->sock3->sockfd, &all_set);
-	} else {
-		for (i = 0; i < no_socket_sets; i++) {
-			maxfd = MAX(maxfd,
-				MAX(socket_sets[i].sock2->sockfd, socket_sets[i].sock3->sockfd));
-
-			FD_SET(socket_sets[i].sock2->sockfd, &all_set);
-			FD_SET(socket_sets[i].sock3->sockfd, &all_set);
-		}
-	}
-
-	if(grep4)
-		sockfd4 = grep4->socket;
-	else
-		FD_SET(sockfd4, &all_set);
-
-	maxfd = MAX(maxfd, sockfd4);
+	LM_DBG("Stun request received on fd %d\n",fd);
 
 	/* this will never change as buffer is fixed */
 	msg.s = buffer;
 	memset( &ri, 0, sizeof(ri) );
 
-	for(;;){
-		LM_DBG("READING\n");
-		read_set = all_set;
+	clientAddrLen = sizeof(struct sockaddr);
+	msg.len = recvfrom( fd, buffer, 65536, 0,
+		(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
 
-		nready = select(maxfd+1, &read_set, NULL, NULL, NULL);
-		if (nready < 0) {
-			if (errno != EINTR)
-				LM_ERR("error in select %d(%s)\n", errno, strerror(errno));
-			continue;
-		}
+	receive( fd, &ri, &msg, sock);
+	return 0;
+}
 
-		for (sock = created_sockets; sock; sock = sock->next)
-			if(FD_ISSET(sock->sockfd, &read_set)){
-				clientAddrLen = sizeof(struct sockaddr);
-				msg.len = recvfrom(sock->sockfd, buffer, 65536, 0,
-					(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
-				receive(sock->sockfd, &ri, &msg, sock);
-			}
 
-		if(FD_ISSET(sockfd4, &read_set)){
-			clientAddrLen = sizeof(struct sockaddr);
-			msg.len = recvfrom(sockfd4, buffer, 65536, 0,
-				(struct sockaddr *) &ri.src_su.sin, &clientAddrLen);
-			receive(sockfd4, &ri, &msg, NULL);
-		}
+void stun_loop(int rank)
+{
+	int i;
 
+	if (reactor_proc_init( "STUN server" )<0) {
+		LM_ERR("failed to init the STUN server reactor\n");
+		return;
 	}
+
+	if (!use_listeners_as_primary) {
+		if (grep2)
+			socket_sets->sock2->sockfd = grep2->socket;
+		else {
+			if (reactor_proc_add_fd( socket_sets->sock2->sockfd,
+			stun_callback, socket_sets->sock2)<0) {
+				LM_CRIT("failed to add STUN listen socket to reactor\n");
+				return;
+			}
+		}
+		if (grep3)
+			socket_sets->sock3->sockfd = grep3->socket;
+		else{
+			if (reactor_proc_add_fd( socket_sets->sock3->sockfd,
+			stun_callback, socket_sets->sock3)<0) {
+				LM_CRIT("failed to add STUN listen socket to reactor\n");
+				return;
+			}
+		}
+	} else {
+		for (i = 0; i < no_socket_sets; i++) {
+			if (reactor_proc_add_fd( socket_sets[i].sock2->sockfd,
+			stun_callback, socket_sets[i].sock2)<0) {
+				LM_CRIT("failed to add STUN listen socket to reactor\n");
+				return;
+			}
+			if (reactor_proc_add_fd( socket_sets[i].sock3->sockfd,
+			stun_callback, socket_sets[i].sock3)<0) {
+				LM_CRIT("failed to add STUN listen socket to reactor\n");
+				return;
+			}
+		}
+	}
+
+	if(grep4)
+		sockfd4 = grep4->socket;
+	else {
+		if (reactor_proc_add_fd( sockfd4, stun_callback, NULL)<0) {
+			LM_CRIT("failed to add STUN listen socket to reactor\n");
+			return;
+		}
+	}
+
+	reactor_proc_loop();
+
+	/* we get here only if the "loop"-ing failed to start*/
 }
 
 static int child_init(int rank){
