@@ -2318,6 +2318,17 @@ if ( dr_match( 1, , $var(did) ) )
 			<listitem>
 				<para>
 					if <varname>use_partition</varname> is set to 0 - all routing rules will be reloaded.
+
+					<itemizedlist>
+						<listitem><para>
+							<emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the gateway , default is y.
+							<itemizedlist>
+								<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
+								<listitem><para> <quote>y</quote>: inherit state </para></listitem>
+							</itemizedlist>
+						</para></listitem>
+					</itemizedlist>
+					
 				</para>
 			</listitem>
 			<listitem>
@@ -2329,6 +2340,15 @@ if ( dr_match( 1, , $var(did) ) )
 							all the partitions will be reloaded, otherwise just the partition given as parameter will be reloaded.
 						</para></listitem>
 					</itemizedlist>
+
+					<listitem><para>
+							<emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the gateway , default is y.
+							<itemizedlist>
+								<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
+								<listitem><para> <quote>y</quote>: inherit state </para></listitem>
+							</itemizedlist>
+					</para></listitem>
+
 				</para>
 			</listitem>
 		</itemizedlist>
@@ -2760,4 +2780,3 @@ Status:: 0
 </section>
 
 </chapter>
-

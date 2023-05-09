@@ -535,7 +535,9 @@ static const param_export_t params[] = {
 static const mi_export_t mi_cmds[] = {
 	{ "dr_reload", HLP1, 0, 0, {
 		{dr_reload_cmd, {0}},
+		{dr_reload_cmd, {"inherit_state", 0}},
 		{dr_reload_cmd_1, {"partition_name", 0}},
+		{dr_reload_cmd_1, {"partition_name", "inhert_state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dr_gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
@@ -1132,7 +1134,8 @@ static inline int uses_rule_table_query(const struct head_db *dbh, str *query)
  */
 
 static inline int dr_reload_data_head(struct head_db *hd,
-                           str *part_name, int initial)
+                           str *part_name, int initial,
+						   const int is_inherit_state)
 {
 	db_con_t* db_hdl = *hd->db_con;
 	db_func_t *dr_dbf = &hd->db_funcs;
@@ -1266,36 +1269,38 @@ static inline int dr_reload_data_head(struct head_db *hd,
 
 	/* destroy old data */
 	if (old_data) {
-		/* copy the state of gw/cr from old data */
-		/* interate new gws and search them into old data */
-		for (map_first(new_data->pgw_tree, &it);
-				iterator_is_valid(&it); iterator_next(&it)) {
-			dest = iterator_val(&it);
-			if(dest==NULL)
-				break;
+		if (is_inherit_state) {
+			/* copy the state of gw/cr from old data */
+			/* interate new gws and search them into old data */
+			for (map_first(new_data->pgw_tree, &it);
+					iterator_is_valid(&it); iterator_next(&it)) {
+				dest = iterator_val(&it);
+				if(dest==NULL)
+					break;
 
-			gw=(pgw_t *)*dest;
+				gw=(pgw_t *)*dest;
 
-			old_gw = get_gw_by_id( old_data->pgw_tree, &gw->id);
-			if (old_gw) {
-				gw->flags &= ~DR_DST_STAT_MASK;
-				gw->flags |= old_gw->flags&DR_DST_STAT_MASK;
+				old_gw = get_gw_by_id( old_data->pgw_tree, &gw->id);
+				if (old_gw) {
+					gw->flags &= ~DR_DST_STAT_MASK;
+					gw->flags |= old_gw->flags&DR_DST_STAT_MASK;
+				}
 			}
-		}
-		/* interate new crs and search them into old data */
-		for (map_first(new_data->carriers_tree, &it);
-				iterator_is_valid(&it); iterator_next(&it)) {
-			dest = iterator_val(&it);
-			if(dest==NULL)
-				break;
+			/* interate new crs and search them into old data */
+			for (map_first(new_data->carriers_tree, &it);
+					iterator_is_valid(&it); iterator_next(&it)) {
+				dest = iterator_val(&it);
+				if(dest==NULL)
+					break;
 
-			cr=(pcr_t *)*dest;
+				cr=(pcr_t *)*dest;
 
 
-			old_cr = get_carrier_by_id( old_data->carriers_tree, &cr->id);
-			if (old_cr) {
-				cr->flags &= ~DR_CR_FLAG_IS_OFF;
-				cr->flags |= old_cr->flags&DR_CR_FLAG_IS_OFF;
+				old_cr = get_carrier_by_id( old_data->carriers_tree, &cr->id);
+				if (old_cr) {
+					cr->flags &= ~DR_CR_FLAG_IS_OFF;
+					cr->flags |= old_cr->flags&DR_CR_FLAG_IS_OFF;
+				}
 			}
 		}
 
@@ -1331,13 +1336,13 @@ error:
 	return ret;
 }
 
-static inline int dr_reload_data(int initial)
+static inline int dr_reload_data(int initial, const int is_inherit_state)
 {
 	struct head_db *part;
 	int ret_val = 0;
 
 	for (part = head_db_start; part; part = part->next)
-		if (dr_reload_data_head(part, &part->partition, initial) < 0)
+		if (dr_reload_data_head(part, &part->partition, initial, is_inherit_state) < 0)
 			ret_val = -1;
 
 	/* make the new list the main list used by qrouting */
@@ -2212,7 +2217,7 @@ static int db_connect_head(struct head_db *x) {
  * so triggerable via IPC */
 static void rpc_dr_reload_data(int sender_id, void *unused)
 {
-	dr_reload_data(1);
+	dr_reload_data(1, 1);
 
 	dr_cluster_sync();
 }
@@ -2324,12 +2329,34 @@ static mi_response_t *mi_dr_get_partition(const mi_params_t *params,
 	return NULL;
 }
 
+static inline int get_inherit_state (const mi_params_t *params) {
+	str inherit_state;
+	int is_inherit_state = 1; // default is inhert old state
+
+	if (get_mi_string_param(params, "inherit_state", &inherit_state.s, &inherit_state.len) >= 0) {
+		LM_DBG("inherit_state is: %s \n", inherit_state.s);
+
+		if (inherit_state.s[0] == '0' || inherit_state.s[0] == 'n' || inherit_state.s[0] == 'N') {
+			is_inherit_state = 0;
+		}
+		else if (inherit_state.s[0] == '1' || inherit_state.s[0] == 'y' || inherit_state.s[0] == 'Y') {
+			is_inherit_state = 1;
+		} else {
+			LM_WARN("inherit_state values was not recognized, ignored, use default 1\n");
+		}
+	}
+
+	return is_inherit_state;
+}
+
 mi_response_t *dr_reload_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	LM_INFO("dr_reload MI command received!\n");
 
-	if (dr_reload_data(0) != 0) {
+	int is_inherit_state = get_inherit_state(params);
+
+	if (dr_reload_data(0, is_inherit_state) != 0) {
 		LM_CRIT("failed to load routing data\n");
 		return init_mi_error(500, MI_SSTR("Failed to reload"));
 	}
@@ -2347,12 +2374,13 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 	mi_response_t *resp;
 
 	LM_INFO("dr_reload MI command received!\n");
+	int is_inherit_state = get_inherit_state(params);
 
 	resp = mi_dr_get_partition(params, &part);
 	if (resp)
 		return resp;
 
-	switch (dr_reload_data_head(part, &part->partition, 0)) {
+	switch (dr_reload_data_head(part, &part->partition, 0, is_inherit_state)) {
 		case 0:
 			/* all good, fallback to reloading */
 			break;
