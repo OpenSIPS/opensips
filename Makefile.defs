@@ -470,9 +470,9 @@ INSTALL_MAN ?= $(INSTALL) -m 644
 
 
 ifeq ($(VERSIONTYPE),)
-VERSIONTYPE = $(shell if [ -d ".svn" ]; then \
+VERSIONTYPE = $(shell if [ -d "${TOP_SRCDIR}/.svn" ]; then \
 			  		echo "svn"; \
-				elif [ -d ".git" ]; then \
+				elif [ -d "${TOP_SRCDIR}/.git" ]; then \
 					echo "git"; \
 				fi )
 endif
@@ -496,7 +496,7 @@ ifneq ($(VERSIONTYPE),)
   endif
 
   ifeq ($(THISREVISION),)
-  THISREVISION = $(shell if [ -f main.c -a -f Makefile.defs ] ; then \
+  THISREVISION = $(shell if [ -f ${TOP_SRCDIR}/main.c -a -f ${TOP_SRCDIR}/Makefile.defs ] ; then \
 				if [ -x "$(GETVERSION)" ] ; then \
 					$(GETVERSION) $(GETVERSIONOPTS) ;\
 				fi ;\
@@ -504,9 +504,9 @@ ifneq ($(VERSIONTYPE),)
   endif
 else
   # git is the default versioning method
-  VERSIONTYPE = $(shell [ -f ".gitrevision" ] && echo "git")
+  VERSIONTYPE = $(shell [ -f "${TOP_SRCDIR}/.gitrevision" ] && echo "git")
   ifneq ($(VERSIONTYPE),)
-    THISREVISION = $(shell cat .gitrevision)
+    THISREVISION = $(shell cat ${TOP_SRCDIR}/.gitrevision)
   endif
   OLDREVISION = "$(THISREVISION)"
 endif
