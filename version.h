@@ -186,5 +186,11 @@
 	USE_PTHREAD_MUTEX_STR USE_UMUTEX_STR USE_POSIX_SEM_STR \
 	USE_SYSV_SEM_STR DBG_LOCK_STR
 
+struct scm_version {
+	const char *type;	/*!< VERSIONTYPE we've compiled with */
+	const char *rev;	/*!< THISREVISION we've compiled with */
+};
+
+extern const struct scm_version core_scm_ver;
 
 #endif

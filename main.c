@@ -172,6 +172,11 @@ static char* flags=OPENSIPS_COMPILE_FLAGS;
 static int user_id = 0;
 static int group_id = 0;
 
+const struct scm_version core_scm_ver = {
+	.type = VERSIONTYPE,
+	.rev = THISREVISION
+};
+
 /**
  * Print compile-time constants
  */
@@ -186,7 +191,7 @@ static void print_ct_constants(void)
 		BUF_SIZE );
 	printf("poll method support: %s.\n", poll_support);
 #ifdef VERSIONTYPE
-	printf("%s revision: %s\n", VERSIONTYPE, THISREVISION);
+	printf("%s revision: %s\n", core_scm_ver.type, core_scm_ver.rev);
 #endif
 }
 

@@ -25,8 +25,7 @@
  *
  */
 
-#if !defined(_FUZZ_STANDALONE_H)
-#define _FUZZ_STANDALONE_H
+#pragma once
 
 #include <assert.h>
 #if defined(FUZZ_STANDALONE)
@@ -38,6 +37,9 @@
 #include "../../context.h"
 #include "../../core_stats.h"
 #include "../../dset.h"
+
+/* Dummy */
+const struct scm_version core_scm_ver;
 
 #if defined(__linux__)
 static int optreset; /* Not present in linux */
@@ -117,4 +119,3 @@ main(int argc, char *argv[])
     return (0);
 }
 #endif /* FUZZ_STANDALONE */
-#endif /* _FUZZ_STANDALONE_H */
