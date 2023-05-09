@@ -97,10 +97,12 @@ typedef int (*mod_proc_wrapper)();
 
 #define OPENSIPS_DLFLAGS	RTLD_NOW
 
-#define MODULE_VERSION \
-	OPENSIPS_FULL_VERSION, \
-	OPENSIPS_COMPILE_FLAGS
-
+#define MODULE_VERSION { \
+	.version = OPENSIPS_FULL_VERSION, \
+	.compile_flags = OPENSIPS_COMPILE_FLAGS, \
+	.scm.type = VERSIONTYPE, \
+	.scm.rev = THISREVISION \
+}
 
 #define PROC_FLAG_INITCHILD    (1<<0)
 #define PROC_FLAG_HAS_IPC      (1<<1)
@@ -151,8 +153,11 @@ struct sr_module{
 struct module_exports{
 	const char* name;               /*!< null terminated module name */
 	enum module_type type;
-	const char *version;            /*!< module version */
-	const char *compile_flags;      /*!< compile flags used on the module */
+	const struct {
+		const char *version;    /*!< module version */
+		const char *compile_flags;/*!< compile flags used on the module */
+		struct scm_version scm; /*< SCM version info */
+	} ver_info;
 	unsigned int dlflags;           /*!< flags for dlopen */
 
 	load_function load_f;           /*!< function called immediately after a

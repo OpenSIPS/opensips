@@ -199,28 +199,51 @@ error:
 
 static inline int version_control(const struct module_exports* exp, char *path)
 {
-	if ( !exp->version ) {
+	const char *hint = "(try `make clean all modules' and reinstall everything)";
+	const char *scm_nm = "version control system";
+	if ( !exp->ver_info.version ) {
 		LM_CRIT("BUG - version not defined in module <%s>\n", path );
 		return 0;
 	}
-	if ( !exp->compile_flags ) {
+	if ( !exp->ver_info.compile_flags ) {
 		LM_CRIT("BUG - compile flags not defined in module <%s>\n", path );
 		return 0;
 	}
-
-	if (strcmp(OPENSIPS_FULL_VERSION, exp->version)==0){
-		if (strcmp(OPENSIPS_COMPILE_FLAGS, exp->compile_flags)==0)
-			return 1;
-		else {
-			LM_ERR("module compile flags mismatch for %s "
-				" \ncore: %s \nmodule: %s\n",
-				exp->name, OPENSIPS_COMPILE_FLAGS, exp->compile_flags);
-			return 0;
-		}
+	if ( !exp->ver_info.scm.type ) {
+		LM_CRIT("BUG - %s type not defined in module <%s> %s\n",
+			scm_nm, path, hint );
+		return 0;
 	}
-	LM_ERR("module version mismatch for %s; core: %s; module: %s\n",
-		exp->name, OPENSIPS_FULL_VERSION, exp->version );
-	return 0;
+	if ( !exp->ver_info.scm.rev ) {
+		LM_CRIT("BUG - %s revision not defined in module <%s> %s\n",
+			scm_nm, path, hint );
+		return 0;
+	}
+
+	if (strcmp(OPENSIPS_FULL_VERSION, exp->ver_info.version)!=0) {
+		LM_CRIT("module version mismatch for %s; core: %s; module: %s\n",
+			exp->name, OPENSIPS_FULL_VERSION, exp->ver_info.version );
+		return 0;
+	}
+	if (strcmp(OPENSIPS_COMPILE_FLAGS, exp->ver_info.compile_flags)!=0) {
+		LM_CRIT("module compile flags mismatch for %s "
+			" \ncore: %s \nmodule: %s\n", exp->name,
+			OPENSIPS_COMPILE_FLAGS, exp->ver_info.compile_flags);
+		return 0;
+	}
+	if (strcmp(core_scm_ver.type, exp->ver_info.scm.type) != 0) {
+		LM_CRIT("module %s type mismatch for %s "
+			" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
+			core_scm_ver.type, exp->ver_info.scm.type, hint);
+		return 0;
+	}
+	if (strcmp(core_scm_ver.rev, exp->ver_info.scm.rev) != 0) {
+		LM_CRIT("module %s revision mismatch for %s "
+			" \ncore: %s \nmodule: %s %s\n", scm_nm, exp->name,
+			core_scm_ver.rev, exp->ver_info.scm.rev, hint);
+		return 0;
+	}
+	return 1;
 }
 
 
@@ -255,6 +278,10 @@ int sr_load_module(char* path)
 		LM_ERR("load_module: %s\n", error);
 		goto error1;
 	}
+	/* version control */
+	if (!version_control(exp, path)) {
+		exit(1);
+	}
 	if(exp->dlflags!=DEFAULT_DLFLAGS && exp->dlflags!=OPENSIPS_DLFLAGS) {
 		moddlflags = exp->dlflags;
 		dlclose(handle);
@@ -269,11 +296,6 @@ int sr_load_module(char* path)
 			LM_ERR("failed to load module : %s\n", error);
 			goto error1;
 		}
-	}
-
-	/* version control */
-	if (!version_control(exp, path)) {
-		exit(0);
 	}
 
 	if (exp->load_f && exp->load_f() < 0) {
