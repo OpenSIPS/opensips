@@ -269,7 +269,7 @@ static int main_loop(void)
 	/* main process left */
 	is_main=1;
 	set_proc_attrs("attendant");
-	pt[process_no].flags |= OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
+	pt[process_no].flags |= OSS_PROC_IS_RUNNING|OSS_PROC_NO_IPC|OSS_PROC_NO_LOAD;
 
 	if (testing_framework) {
 		if (init_child(1) < 0) {
