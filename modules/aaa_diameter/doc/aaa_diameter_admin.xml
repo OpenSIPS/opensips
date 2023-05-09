@@ -129,6 +129,33 @@ modparam("aaa_diameter", "peer_identity", "server")
 		</example>
 		</section>
 
+		<section id="param_aaa_url" xreflabel="aaa_url">
+		<title><varname>aaa_url (string)</varname></title>
+		<para>
+			URL of the diameter client: the configuration file, with an optional
+			extra-avps-file, where the Diameter client is configured.
+		</para>
+		<para>
+			By default, the connection is not created.
+		</para>
+		<example>
+		<title>Setting the <varname>aaa_url</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf")
+
+</programlisting>
+		</example>
+		<example>
+		<title>Setting the <varname>aaa_url</varname> parameter</title> with an extra AVPs file.
+		<programlisting format="linespecific">
+
+modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf;extra-avps-file:dictionary.opensips")
+
+</programlisting>
+		</example>
+		</section>
+
 		<section id="param_answer_timeout" xreflabel="answer_timeout">
 		<title><varname>answer_timeout (integer)</varname></title>
 		<para>

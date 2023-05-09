@@ -235,8 +235,17 @@ static int dm_avps2json(void *root, cJSON *avps)
 
 		FD_CHECK_GT(fd_msg_avp_hdr(it, &h));
 
-		FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
-				&h->avp_code, &obj, ENOENT));
+		if (h->avp_flags & AVP_FLAG_VENDOR) {
+			struct dict_avp_request ar;
+			memset(&ar, 0, sizeof ar);
+			ar.avp_code = h->avp_code;
+			ar.avp_vendor = h->avp_vendor;
+			FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE_AND_VENDOR,
+					&ar, &obj, ENOENT));
+		} else {
+			FD_CHECK_GT(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
+					&h->avp_code, &obj, ENOENT));
+		}
 		FD_CHECK_GT(fd_dict_getval(obj, &dm_avp));
 
 		item = cJSON_CreateObject();
@@ -256,7 +265,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 				goto out;
 			}
 
-			if (dm_avps2json(&it, val) != 0) {
+			if (dm_avps2json(it, val) != 0) {
 				cJSON_Delete(val);
 				LM_ERR("failed to encode Grouped AVP as JSON string (AVP: %s, code: %u)\n",
 				       dm_avp.avp_name, dm_avp.avp_code);
@@ -365,19 +374,31 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		goto out;
 	}
 
-	rc = fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a);
+	rc = fd_msg_search_avp(msg, dm_dict.Session_Id, &a);
 	if (rc != 0) {
-		LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d\n",
+		LM_DBG("Missing Session-Id AVP in Diameter Answer %d/%d, looking for Transaction-Id\n",
 		       hdr->msg_appl, hdr->msg_code);
-		goto out;
+		rc = fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a);
+		if (rc != 0) {
+			LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d\n",
+				   hdr->msg_appl, hdr->msg_code);
+			goto out;
+		}
+
+		FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
+		tid.s = (char *)h->avp_value->os.data;
+		tid.len = (int)h->avp_value->os.len;
+
+		LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
+			   hdr->msg_code, rc, tid.len, tid.s);
+	} else {
+		FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
+		tid.s = (char *)h->avp_value->os.data;
+		tid.len = (int)h->avp_value->os.len;
+
+		LM_DBG("%d/%d reply %d, Session-Id: %.*s\n", hdr->msg_appl,
+			   hdr->msg_code, rc, tid.len, tid.s);
 	}
-
-	FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
-	tid.s = (char *)h->avp_value->os.data;
-	tid.len = (int)h->avp_value->os.len;
-
-	LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
-	       hdr->msg_code, rc, tid.len, tid.s);
 
 	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
 	if (!prpl_cond) {
@@ -432,6 +453,7 @@ out:
 int dm_register_callbacks(void)
 {
 	struct disp_when data;
+	struct dict_object *vendor_dict;
 
 	/* accounting */
 	{
@@ -474,16 +496,26 @@ int dm_register_callbacks(void)
 		for (i = 0; i < n_app_ids; i++) {
 			/* Initialize the dictionary objects we use */
 			FD_CHECK_dict_search(DICT_APPLICATION, APPLICATION_BY_ID,
-				&app_ids[i], &data.app);
+				&app_defs[i].id, &data.app);
 
 			/* Register the dispatch callback */
 			FD_CHECK(fd_disp_register(dm_custom_cmd_reply,
 					DISP_HOW_APPID, &data, NULL, NULL));
 
-			/* Advertise support for the respective app */
-			FD_CHECK(fd_disp_app_support(data.app, NULL, 0, 1 ));
+			if (app_defs[i].vendor != (unsigned int)-1) {
+				FD_CHECK_dict_search(DICT_VENDOR, VENDOR_BY_ID,
+						&app_defs[i].vendor, &vendor_dict);
+			} else {
+				vendor_dict = NULL;
+			}
 
-			LM_DBG("registered a reply callback for App ID %d ...\n", app_ids[i]);
+			/* Advertise support for the respective app */
+			FD_CHECK(fd_disp_app_support(data.app,
+						vendor_dict,
+						(app_defs[i].auth?1:0),
+						(app_defs[i].auth?0:1)));
+
+			LM_DBG("registered a reply callback for App ID %d ...\n", app_defs[i].id);
 		}
 	}
 
@@ -1516,6 +1548,7 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 	struct dict_object *obj;
 	char *name;
 	unsigned int code;
+	str st;
 
 	for (_avp = array; _avp; _avp = _avp->next) {
 		if (_avp->type != cJSON_Object) {
@@ -1531,14 +1564,8 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 			goto error;
 		}
 
-		if (_isdigit(avp->string[0])) {
-			str st;
-
-			init_str(&st, avp->string);
-			if (str2int(&st, &code) != 0) {
-				LM_ERR("bad AVP key: cannot start with a digit (%s)\n", avp->string);
-				goto error;
-			}
+		init_str(&st, avp->string);
+		if (str2int(&st, &code) == 0) {
 
 			LM_DBG("AVP:: searching AVP by int: %d\n", code);
 			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_CODE,
@@ -1549,7 +1576,7 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 		} else {
 			LM_DBG("AVP:: searching AVP by string: %s\n", avp->string);
 
-			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME,
+			FD_CHECK(fd_dict_search(fd_g_config->cnf_dict, DICT_AVP, AVP_BY_NAME_ALL_VENDORS,
 				avp->string, &obj, ENOENT));
 			FD_CHECK(fd_dict_getval(obj, &dm_avp));
 

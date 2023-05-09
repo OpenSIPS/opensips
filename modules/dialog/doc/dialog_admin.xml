@@ -411,6 +411,11 @@ modparam("dialog", "dlg_match_mode", 0)
 			still be able to match and route late in-dialog requests.
 		</para>
 		<para>
+			This global value may be per-call changed via the DLG_del_delay
+			<quote>$DLG_del_delay</quote> (<xref linkend="pv_DLG_del_delay"/>)
+			script variable.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>0</quote> (disabled).
 		</emphasis>
@@ -3309,6 +3314,23 @@ event_route[E_RTPPROXY_DTMF] {
 				number of seconds until the dialog expiration.
 			</para>
 		</section>
+
+		<section id="pv_DLG_del_delay" xreflabel="$DLG_del_delay">
+			<title><varname>$DLG_del_delay</varname></title>
+			<para>
+				Used to set the dialog deletion delay (in seconds) for the
+				current dialog (in a per-call manner). When read, the variable
+				returns the number of seconds that were set for the call or
+				the default value ( see the
+				<quote>delete_delay</quote> - <xref linkend="param_delete_delay"/>)
+				module param) for the delete delaying.
+			</para>
+			<para>
+				The variable must be used when the context of a dialog is
+				available in script.
+			</para>
+		</section>
+
 
 		<section id="pv_DLG_json" xreflabel="$DLG_json">
 			<title><varname>$DLG_json</varname></title>

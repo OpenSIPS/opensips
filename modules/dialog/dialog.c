@@ -164,13 +164,18 @@ static int dlg_send_sequential(struct sip_msg* msg, str *method, int leg,
 int pv_get_dlg_lifetime(struct sip_msg *msg,pv_param_t *param,pv_value_t *res);
 int pv_get_dlg_status(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_flags(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
-int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
+int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
+int pv_get_dlg_deldelay(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_did(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_get_dlg_end_reason(struct sip_msg *msg, pv_param_t *param, pv_value_t *res);
 int pv_set_dlg_flags(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param, int op,
+		pv_value_t *val);
+int pv_set_dlg_deldelay(struct sip_msg *msg, pv_param_t *param, int op,
 		pv_value_t *val);
 int pv_get_dlg_json(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
@@ -454,6 +459,8 @@ static const pv_export_t mod_items[] = {
 		pv_get_dlg_json, 0,  0, 0, 0, 0 },
 	{ {"DLG_ctx_json",        sizeof("DLG_ctx_json")-1},       1000,
 		pv_get_dlg_ctx_json, 0,  0, 0, 0, 0 },
+	{ {"DLG_del_delay",     sizeof("DLG_del_delay")-1},       1000,
+		pv_get_dlg_deldelay, pv_set_dlg_deldelay,  0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1623,6 +1630,35 @@ int pv_get_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
+int pv_get_dlg_deldelay(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	int l = 0;
+	char *ch = NULL;
+	struct dlg_cell *dlg;
+
+	if(res==NULL)
+		return -1;
+
+	if ( (dlg=get_current_dialog())!=NULL ) {
+			l = dlg->del_delay;
+			if (l==0)
+				l = dlg_del_delay;
+	} else {
+		return pv_get_null( msg, param, res);
+	}
+
+	res->ri = l;
+
+	ch = int2str( (unsigned long)res->ri, &l);
+	res->rs.s = ch;
+	res->rs.len = l;
+
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+
+	return 0;
+}
+
 int pv_get_dlg_dir(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
@@ -1792,6 +1828,43 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 
 	return 0;
 }
+
+int pv_set_dlg_deldelay(struct sip_msg *msg, pv_param_t *param,
+		int op, pv_value_t *val)
+{
+	struct dlg_cell *dlg;
+	int delay;
+
+	if (val==NULL || val->flags & PV_VAL_NULL) {
+		LM_ERR("cannot assign dialog timeout to NULL\n");
+		return -1;
+	}
+
+	if (!(val->flags&PV_VAL_INT)){
+		/* try parsing the string */
+		if (str2sint(&val->rs, &delay) < 0) {
+			LM_ERR("assigning non-int value to dialog del delay\n");
+			return -1;
+		}
+	} else {
+		delay = val->ri;
+	}
+
+	if (delay < 0) {
+		LM_ERR("cannot set a negative timeout\n");
+		return -1;
+	}
+
+	if ((dlg = get_current_dialog()) != NULL) {
+		dlg->del_delay = delay;
+	} else {
+		LM_ERR("dialog not found - have you created it?\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 
 #define DLG_CTX_JSON_BUFF_SIZE 8192
 #define DEC_AND_CHECK_LEN(_curr,_size)			\

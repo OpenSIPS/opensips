@@ -321,10 +321,9 @@ int insert_attempt_dlg_del_timer(struct dlg_tl *tl, int interval)
 			return 0;
 		}
 	}
-
+	lock_release( ddel_timer->lock);
 	/* prev and next are both set -> it should be in timer */
-
-		LM_DBG("TL found already in timer\n");
+	LM_DBG("TL found already in timer\n");
 	return -1;
 }
 

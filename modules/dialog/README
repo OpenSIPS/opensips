@@ -146,9 +146,10 @@ dialog Module
               1.10.6. $DLG_did
               1.10.7. $DLG_end_reason
               1.10.8. $DLG_timeout
-              1.10.9. $DLG_json
-              1.10.10. $DLG_ctx_json
-              1.10.11. $dlg_val(name)
+              1.10.9. $DLG_del_delay
+              1.10.10. $DLG_json
+              1.10.11. $DLG_ctx_json
+              1.10.12. $dlg_val(name)
 
         1.11. Exported Events
 
@@ -535,6 +536,9 @@ modparam("dialog", "dlg_match_mode", 0)
    will be kept in a read only state (no action, no changes), but
    it will still be able to match and route late in-dialog
    requests.
+
+   This global value may be per-call changed via the DLG_del_delay
+   “$DLG_del_delay” ($DLG_del_delay) script variable.
 
    Default value is “0” (disabled).
 
@@ -2347,7 +2351,18 @@ GIwZjAzNGM1ZDY
    NULL will be returned if there is no dialog for the request,
    otherwise the number of seconds until the dialog expiration.
 
-1.10.9. $DLG_json
+1.10.9. $DLG_del_delay
+
+   Used to set the dialog deletion delay (in seconds) for the
+   current dialog (in a per-call manner). When read, the variable
+   returns the number of seconds that were set for the call or the
+   default value ( see the “delete_delay” - delete_delay) module
+   param) for the delete delaying.
+
+   The variable must be used when the context of a dialog is
+   available in script.
+
+1.10.10. $DLG_json
 
    The variable is read-only and exposes a JSON variable
    containing all the information that the dlg_list MI function
@@ -2356,7 +2371,7 @@ GIwZjAzNGM1ZDY
    NULL will be returned if there is no dialog for the request,
    otherwise the JSON will be returned.
 
-1.10.10. $DLG_ctx_json
+1.10.11. $DLG_ctx_json
 
    The variable is read-only and exposes a JSON variable
    containing all the information that the dlg_list_ctx MI
@@ -2367,7 +2382,7 @@ GIwZjAzNGM1ZDY
    NULL will be returned if there is no dialog for the request,
    otherwise the JSON will be returned.
 
-1.10.11. $dlg_val(name)
+1.10.12. $dlg_val(name)
 
    This is a read/write variable that allows access to the dialog
    attribute named name. It can hold a string or integer value.
