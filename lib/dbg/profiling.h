@@ -45,6 +45,8 @@ static inline int _ProfilerStart(pid_t pid, const char *proc_desc)
 
 	if (!strcmp(proc_desc, "UDP receiver"))
 		sprintf(fname, "gperf-udp-%d.prof", getpid());
+	else if (!strcmp(proc_desc, "SIP receiver TCP"))
+		sprintf(fname, "gperf-tcp-%d.prof", getpid());
 	else if (!strcmp(proc_desc, "Timer handler"))
 		sprintf(fname, "gperf-timer-%d.prof", getpid());
 	else
