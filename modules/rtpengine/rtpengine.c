@@ -335,7 +335,6 @@ static int mod_init(void);
 static int mod_preinit(void);
 static int child_init(int);
 static void mod_destroy(void);
-static int mi_child_init(void);
 
 /* Pseudo-Variables */
 static int pv_get_rtpstat_f(struct sip_msg *, pv_param_t *, pv_value_t *);
@@ -704,7 +703,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_show_rtpengines, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ MI_RELOAD_RTP_ENGINES, 0, 0, mi_child_init, {
+	{ MI_RELOAD_RTP_ENGINES, 0, 0, 0, {
 		{mi_reload_rtpengines, {0}},
 		{mi_reload_rtpengines, {"type", 0}},
 		{EMPTY_MI_RECIPE}}
@@ -1684,34 +1683,6 @@ mod_init(void)
 	return 0;
 }
 
-static int mi_child_init(void)
-{
-	if(child_init(myrank) < 0)
-	{
-		LM_ERR("Failed to initial rtpp socks\n");
-		return -1;
-	}
-
-	if(!db_url.s)
-		return 0;
-
-	if (db_functions.init==0)
-	{
-		LM_CRIT("database not bound\n");
-		return -1;
-	}
-
-	db_connection = db_functions.init(&db_url);
-	if(db_connection == NULL) {
-		LM_ERR("Failed to connect to database\n");
-		return -1;
-	}
-
-	LM_DBG("Database connection opened successfully\n");
-
-	return 0;
-}
-
 static inline int rtpengine_connect_node(struct rtpe_node *pnode)
 {
 	int n;
@@ -1824,8 +1795,7 @@ static int connect_rtpengines(int force_test)
 	return 0;
 }
 
-static int
-child_init(int rank)
+static int child_init(int rank)
 {
 	mypid = getpid();
 	myrand = rand()%10000;
@@ -1835,8 +1805,20 @@ child_init(int rank)
 	if (rank == PROC_MODULE)
 		myrank = 0;
 
-	if(*rtpe_set_list==NULL )
-		return 0;
+	if (db_url.s) {
+		if (!db_functions.init) {
+			LM_CRIT("database not bound\n");
+			return -1;
+		}
+
+		db_connection = db_functions.init(&db_url);
+		if (!db_connection) {
+			LM_ERR("Failed to connect to database\n");
+			return -1;
+		}
+
+		LM_DBG("Database connection opened successfully\n");
+	}
 
 	/* Iterate known RTP proxies - create sockets */
 	return connect_rtpengines(1);
