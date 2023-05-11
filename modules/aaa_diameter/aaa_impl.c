@@ -275,10 +275,10 @@ static int dm_avps2json(void *root, cJSON *avps)
 			break;
 
 		case AVP_TYPE_OCTETSTRING:
-			LM_DBG("%d. got string AVP %u, value: %.*s %s\n", i, h->avp_code, (int)h->avp_value->os.len, h->avp_value->os.data, h->avp_value->os.data);
+			LM_DBG("%d. got string AVP %u, len: %d, value: %.*s\n", i, h->avp_code, (int)h->avp_value->os.len, (int)h->avp_value->os.len, h->avp_value->os.data);
 			int_type = 0;
 
-			val = cJSON_CreateString((const char *)h->avp_value->os.data);
+			val = cJSON_CreateStr((const char *)h->avp_value->os.data, (int)h->avp_value->os.len);
 			if (!val) {
 				LM_ERR("oom 4\n");
 				goto out;
