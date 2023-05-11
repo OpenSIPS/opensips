@@ -55,7 +55,7 @@ static inline int _ProfilerStart(pid_t pid, const char *proc_desc)
 	return ProfilerStart(fname) == 0 ? -1 : 0;
 }
 
-static int _ProfilerStart_child(const struct internal_fork_params *ifpp)
+static inline int _ProfilerStart_child(const struct internal_fork_params *ifpp)
 {
 	if (_ProfilerStart(pt[process_no].pid, ifpp->proc_desc) != 0) {
 		LM_CRIT("failed to start profiler for process %d", process_no);
