@@ -60,11 +60,6 @@
 
 #define MI_FULL_LISTING (1<<0)
 
-
-#define INHERIT_STATE_YES 1
-#define INHERIT_STATE_NO 0
-
-
 extern int ds_persistent_state;
 
 typedef struct _ds_dest

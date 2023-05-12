@@ -2329,32 +2329,12 @@ static mi_response_t *mi_dr_get_partition(const mi_params_t *params,
 	return NULL;
 }
 
-static inline int get_inherit_state (const mi_params_t *params) {
-	str inherit_state;
-	int is_inherit_state = 1; // default is inhert old state
-
-	if (get_mi_string_param(params, "inherit_state", &inherit_state.s, &inherit_state.len) >= 0) {
-		LM_DBG("inherit_state is: %s \n", inherit_state.s);
-
-		if (inherit_state.s[0] == '0' || inherit_state.s[0] == 'n' || inherit_state.s[0] == 'N') {
-			is_inherit_state = 0;
-		}
-		else if (inherit_state.s[0] == '1' || inherit_state.s[0] == 'y' || inherit_state.s[0] == 'Y') {
-			is_inherit_state = 1;
-		} else {
-			LM_WARN("inherit_state values was not recognized, ignored, use default 1\n");
-		}
-	}
-
-	return is_inherit_state;
-}
-
 mi_response_t *dr_reload_cmd(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	LM_INFO("dr_reload MI command received!\n");
+	int is_inherit_state = get_mi_bool_like_param(params, "inherit_state", 1);
 
-	int is_inherit_state = get_inherit_state(params);
+	LM_INFO("dr_reload MI command received!\n");
 
 	if (dr_reload_data(0, is_inherit_state) != 0) {
 		LM_CRIT("failed to load routing data\n");
@@ -2372,9 +2352,9 @@ mi_response_t *dr_reload_cmd_1(const mi_params_t *params,
 {
 	struct head_db *part;
 	mi_response_t *resp;
+	int is_inherit_state = get_mi_bool_like_param(params, "inherit_state", 1);
 
 	LM_INFO("dr_reload MI command received!\n");
-	int is_inherit_state = get_inherit_state(params);
 
 	resp = mi_dr_get_partition(params, &part);
 	if (resp)
