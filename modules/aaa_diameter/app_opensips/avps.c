@@ -621,7 +621,7 @@ int parse_attr_def(char *line, FILE *fp)
 	/* skip over the type */
 	while (len > 0 && !isspace(*p)) { p++; len--; }
 
-	if (len > 0) {
+	if (len > 0 && *p != '\r' && *p != '\n') {
 		vendor_id = strtol(p, &newp, 10);
 		if (vendor_id < 0)
 			goto error;
