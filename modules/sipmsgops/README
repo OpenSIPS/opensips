@@ -52,6 +52,8 @@ sipmsgops Module
               1.3.37. list_hdr_has_option(hdr_name, option)
               1.3.38. list_hdr_add_option(hdr_name, option)
               1.3.39. list_hdr_remove_option(hdr_name, option)
+              1.3.40. get_glob_headers_values(hdr_name_glob,
+                      hdr_names_avp,hdr_vals_avp)
 
         1.4. Known Limitations
 
@@ -114,6 +116,7 @@ sipmsgops Module
    1.39. list_hdr_has_option usage
    1.40. list_hdr_add_option usage
    1.41. list_hdr_remove_option usage
+   1.42. get_glob_headers_values usage
 
 Chapter 1. Admin Guide
 
@@ -1067,6 +1070,35 @@ if (list_hdr_has_option("Supported", "100rel"))
     list_hdr_remove_option("Supported", "100rel");
 list_hdr_add_option("Supported", "optionX");
 
+1.3.40.  get_glob_headers_values(hdr_name_glob,
+hdr_names_avp,hdr_vals_avp)
+
+   Populates the hdr_names_avp and hdr_vals_avp AVPs with all the
+   header names and values that match the hdr_name_glob pattern.
+
+   Meaning of the parameters is as follows:
+     * hdr_name_glob (string) - the glob pattern for matching the
+       header names
+     * hdr_names_avp (var) - the AVP which will get populated with
+       all the header names that match the glob pattern
+     * hdr_vals_avp (var) - the AVP which will get populated with
+       all the header values corresponding to the header names
+       that match the glob pattern
+
+   The function returns true if at least 1 header was found that
+   matches the glob pattern and false if no match is found.
+
+   This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+   FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+
+   Example 1.42. get_glob_headers_values usage
+...
+       if (get_glob_headers_values("X-*",$avp(names),$avp(values))) {
+           xlog("All X- names are $(avp(names)[*]) and X- vals are $(avp
+(values)[*])\n");
+       }
+...
+
 1.4. Known Limitations
 
    Search functions are applied to the current message so
@@ -1085,7 +1117,7 @@ Chapter 2. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 68 38 2118 693
    2. Liviu Chircu (@liviuchircu) 59 27 809 1510
    3. Razvan Crainea (@razvancrainea) 47 20 2949 87
-   4. Vlad Paiu (@vladpaiu) 9 4 281 68
+   4. Vlad Paiu (@vladpaiu) 11 5 384 68
    5. Mihai Tiganus (@tallicamike) 6 3 155 28
    6. Maksym Sobolyev (@sobomax) 5 3 2 3
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 49 13
@@ -1119,22 +1151,22 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Feb 2023
-   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
-   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2021
-   5.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   7.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
-   8.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
-   9.  Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
-   10. Ovidiu Sas (@ovidiusas)             Feb 2018 - Feb 2018
+   1.  Vlad Paiu (@vladpaiu)               Feb 2012 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2012 - Feb 2023
+   4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   5.  Razvan Crainea (@razvancrainea)     Feb 2012 - Aug 2021
+   6.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   8.  Alexey Vasilyev (@vasilevalex)      Jan 2019 - Jan 2019
+   9.  Fabian Gast (@fgast)                Nov 2018 - Nov 2018
+   10. Peter Lemenkov (@lemenkov)          Jan 2013 - Jun 2018
 
-   All remaining contributors: Jarrod Baumann (@jarrodb), Julián
-   Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ezequiel
-   Lovelle (@lovelle), Vlad Paiu (@vladpaiu), Mihai Tiganus
-   (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte), Walter
-   Doekes (@wdoekes).
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Jarrod
+   Baumann (@jarrodb), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ezequiel Lovelle (@lovelle), Mihai
+   Tiganus (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte),
+   Walter Doekes (@wdoekes).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1143,12 +1175,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Fabian
-   Gast (@fgast), Peter Lemenkov (@lemenkov), Ovidiu Sas
-   (@ovidiusas), Julián Moreno Patiño, Razvan Crainea
-   (@razvancrainea), Mihai Tiganus (@tallicamike), Vlad Paiu
-   (@vladpaiu), Boris Ratner, Nick Altmann (@nikbyte).
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
+   Patrascu (@rvlad-patrascu), Fabian Gast (@fgast), Peter
+   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Julián Moreno
+   Patiño, Razvan Crainea (@razvancrainea), Mihai Tiganus
+   (@tallicamike), Boris Ratner, Nick Altmann (@nikbyte).
 
    Documentation Copyrights:
 

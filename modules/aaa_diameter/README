@@ -16,7 +16,8 @@ AAA_DIAMETER MODULE
               1.3.1. fd_log_level (integer)
               1.3.2. realm (string)
               1.3.3. peer_identity (string)
-              1.3.4. answer_timeout (integer)
+              1.3.4. aaa_url (string)
+              1.3.5. answer_timeout (integer)
 
         1.4. Exported Functions
 
@@ -44,9 +45,11 @@ AAA_DIAMETER MODULE
    1.1. Setting the fd_log_level parameter
    1.2. Setting the realm parameter
    1.3. Setting the peer_identity parameter
-   1.4. Setting the answer_timeout parameter
-   1.5. dictionary.opensips extended syntax
-   1.6. dm_send_request usage
+   1.4. Setting the aaa_url parameter
+   1.5. Setting the aaa_url parameter
+   1.6. Setting the answer_timeout parameter
+   1.7. dictionary.opensips extended syntax
+   1.8. dm_send_request usage
 
 Chapter 1. Admin Guide
 
@@ -123,12 +126,32 @@ modparam("aaa_diameter", "realm", "opensips.org")
 modparam("aaa_diameter", "peer_identity", "server")
 
 
-1.3.4. answer_timeout (integer)
+1.3.4. aaa_url (string)
+
+   URL of the diameter client: the configuration file, with an
+   optional extra-avps-file, where the Diameter client is
+   configured.
+
+   By default, the connection is not created.
+
+   Example 1.4. Setting the aaa_url parameter
+
+modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf")
+
+
+   Example 1.5. Setting the aaa_url parameter
+   with an extra AVPs file.
+
+modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf;e
+xtra-avps-file:dictionary.opensips")
+
+
+1.3.5. answer_timeout (integer)
 
    Time, in milliseconds, after which a dm_send_request() function
    call with no received reply will time out and return a -2 code.
 
-   Example 1.4. Setting the answer_timeout parameter
+   Example 1.6. Setting the answer_timeout parameter
 
 modparam("aaa_diameter", "answer_timeout", 5000)
 
@@ -164,7 +187,7 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 
    This function can be used from any route.
 
-   Example 1.5. dictionary.opensips extended syntax
+   Example 1.7. dictionary.opensips extended syntax
 
 # Example of defining custom Diameter AVPs, Application IDs,
 # Requests and Replies in the "dictionary.opensips" file
@@ -229,7 +252,7 @@ ANSWER 92001 My-Custom-Answer
 }
 
 
-   Example 1.6. dm_send_request usage
+   Example 1.8. dm_send_request usage
 
 # Building an sending an My-Custom-Request (92001) for the
 # My Diameter Application (42)
@@ -263,9 +286,10 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                 Name             DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)    89      24      5918     955
-   2. Maksym Sobolyev (@sobomax)     3        1       5        5
+                   Name               DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)        89      24      5918     955
+   2. Razvan Crainea (@razvancrainea)    11       8      233       35
+   3. Maksym Sobolyev (@sobomax)         3        1       5        5
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -286,9 +310,10 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                 Name               Commit Activity
-   1. Liviu Chircu (@liviuchircu) May 2021 - Apr 2023
-   2. Maksym Sobolyev (@sobomax)  Feb 2023 - Feb 2023
+                   Name                 Commit Activity
+   1. Razvan Crainea (@razvancrainea) May 2023 - May 2023
+   2. Liviu Chircu (@liviuchircu)     May 2021 - Apr 2023
+   3. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -297,7 +322,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu).
 
    Documentation Copyrights:
 
