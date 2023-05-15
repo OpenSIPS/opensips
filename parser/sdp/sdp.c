@@ -234,6 +234,17 @@ void set_sdp_payload_fmtp(sdp_payload_attr_t *payload_attr, str *fmtp_string )
 	return;
 }
 
+int set_sdp_payload_custom_attr(sdp_payload_attr_t *payload_attr, str *attr )
+{
+	if (payload_attr->custom_attrs_size == MAX_CUSTOM_ATTRS-1) {
+		LM_DBG("Max custom a= attrs reached \n");
+		return -1;
+	}
+
+	payload_attr->custom_attrs[payload_attr->custom_attrs_size++] = *attr;
+	return 1;
+}
+
 /*
  * Getters ....
  */
@@ -372,7 +383,7 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 	int is_rtp;
 	char *bodylimit;
 	char *v1p, *o1p, *m1p, *m2p, *c1p, *c2p, *a1p, *a2p, *b1p;
-	str tmpstr1;
+	str tmpstr1,custom_attr;
 	int stream_num, payloadnum, pf;
 	sdp_session_cell_t *session;
 	sdp_stream_cell_t *stream;
@@ -594,8 +605,15 @@ int parse_sdp_session(str *sdp_body, int session_num, str *cnt_disp, sdp_info_t*
 				a1p = stream->max_size.s + stream->max_size.len;
 			} else if (extract_path(&tmpstr1, &stream->path) == 0) {
 				a1p = stream->path.s + stream->path.len;
-			/*} else { */
-			/*	LM_DBG("else: `%.*s'\n", tmpstr1.len, tmpstr1.s); */
+			} else {
+				if (parse_payload_attr && extract_custom_a_attr(&tmpstr1,&rtp_payload,&custom_attr) == 0) {
+					LM_DBG("extracted attr [%.*s] for payload [%.*s]\n",custom_attr.len,custom_attr.s,rtp_payload.len,rtp_payload.s);
+					a1p = custom_attr.s + custom_attr.len;
+					payload_attr = (sdp_payload_attr_t*)get_sdp_payload4payload(stream, &rtp_payload);
+					set_sdp_payload_custom_attr(payload_attr, &custom_attr);
+				} else {
+					LM_DBG("else: parse_payload_attr ? %d `%.*s'\n",parse_payload_attr, tmpstr1.len, tmpstr1.s);
+				}
 			}
 
 			tmpstr1.s = a2p;

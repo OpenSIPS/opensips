@@ -37,6 +37,7 @@
 
 int extract_field(str *body, str *value, str field);
 int extract_rtpmap(str *body, str *rtpmap_payload, str *rtpmap_encoding, str *rtpmap_clockrate, str *rtpmap_parmas);
+int extract_custom_a_attr(str *body, str *payload, str *value);
 int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string );
 int extract_ptime(str *body, str *ptime);
 int extract_sendrecv_mode(str *body, str *sendrecv_mode, int *is_on_hold);
