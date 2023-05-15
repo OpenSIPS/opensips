@@ -288,8 +288,17 @@ extern int cfg_parse_only_routes;
 %token LOGPREFIX
 %token LOGSTDOUT
 %token LOGSTDERROR
+%token STDERROR_ENABLED
+%token SYSLOG_ENABLED
+%token STDERROR_LEVEL_FILTER
+%token SYSLOG_LEVEL_FILTER
+%token STDERROR_FORMAT
+%token SYSLOG_FORMAT
+%token LOG_JSON_BUF_SIZE
 %token LOGFACILITY
+%token SYSLOG_FACILITY
 %token LOGNAME
+%token SYSLOG_NAME
 %token AVP_ALIASES
 %token LISTEN
 %token SOCKET
@@ -843,7 +852,18 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		| ABORT_ON_ASSERT EQUAL error  { yyerror("boolean value expected"); }
 		| DEBUG_MODE EQUAL NUMBER  { IFOR();
 			debug_mode=$3;
-			if (debug_mode) { *log_level = L_DBG;log_stderr=1;}
+			if (debug_mode) {
+				*log_level = L_DBG;
+				stderr_enabled=1;
+				syslog_enabled=0;
+
+				s_tmp.s=STDERR_CONSUMER_NAME;
+				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, 0);
+				s_tmp.s=SYSLOG_CONSUMER_NAME;
+				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, 1);
+			}
 			}
 		| DEBUG_MODE EQUAL error
 			{ yyerror("boolean value expected for debug_mode"); }
@@ -851,20 +871,123 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			/* may be useful when integrating 3rd party libraries */
 			{ IFOR(); log_stdout=$3; }
 		| LOGSTDOUT EQUAL error { yyerror("boolean value expected"); }
-		| LOGSTDERROR EQUAL NUMBER
+		| LOGSTDERROR EQUAL NUMBER {
+			IFOR();
+			warn("'log_stderror' is deprecated, use 'stderror_enabled' and/or"
+				"'syslog_enabled' instead");
+			if (!config_check && !debug_mode) {
+				if ($3) {
+					stderr_enabled=1;
+					syslog_enabled=0;
+				} else {
+					stderr_enabled=0;
+					syslog_enabled=1;
+				}
+
+				s_tmp.s=STDERR_CONSUMER_NAME;
+				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, !$3);
+				s_tmp.s=SYSLOG_CONSUMER_NAME;
+				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, $3);
+			}
+			}
+		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
+		| STDERROR_ENABLED EQUAL NUMBER {
 			/* in config-check or debug mode we force logging
 			 * to standard error */
-			{ IFOR(); if (!config_check && !debug_mode) log_stderr=$3; }
-		| LOGSTDERROR EQUAL error { yyerror("boolean value expected"); }
+			IFOR();
+			if (!config_check && !debug_mode) {
+				stderr_enabled=$3;
+				s_tmp.s=STDERR_CONSUMER_NAME;
+				s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, !$3);
+			}
+			}
+		| STDERROR_ENABLED EQUAL error { yyerror("boolean value expected"); }
+		| SYSLOG_ENABLED EQUAL NUMBER {
+			IFOR();
+			/* in config-check or debug mode we force logging
+			 * to standard error */
+			if (!config_check && !debug_mode) {
+				syslog_enabled=$3;
+				s_tmp.s=SYSLOG_CONSUMER_NAME;
+				s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+				set_log_consumer_mute_state(&s_tmp, !$3);
+			}
+			}
+		| SYSLOG_ENABLED EQUAL error { yyerror("boolean value expected"); }
+		| STDERROR_LEVEL_FILTER EQUAL snumber {
+			IFOR();
+			s_tmp.s=STDERR_CONSUMER_NAME;
+			s_tmp.len=strlen(STDERR_CONSUMER_NAME);
+			set_log_consumer_level_filter(&s_tmp, $3);
+			}
+		| STDERROR_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
+		| SYSLOG_LEVEL_FILTER EQUAL snumber {
+			IFOR();
+			s_tmp.s=SYSLOG_CONSUMER_NAME;
+			s_tmp.len=strlen(SYSLOG_CONSUMER_NAME);
+			set_log_consumer_level_filter(&s_tmp, $3);
+			}
+		| SYSLOG_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
+		| STDERROR_FORMAT EQUAL STRING { IFOR();
+			s_tmp.s = $3;
+			s_tmp.len = strlen($3);
+			if ((i_tmp = parse_log_format(&s_tmp)) < 0) {
+				yyerror("unknown log format");
+			} else {
+				if (i_tmp != LOG_FORMAT_PLAIN && init_log_json_buf(0) < 0) {
+					yyerror("failed to allocate json log buffer");
+					YYABORT;
+				}
+
+				stderr_log_format = i_tmp;
+			}
+			}
+		| SYSLOG_FORMAT EQUAL STRING { IFOR();
+			s_tmp.s = $3;
+			s_tmp.len = strlen($3);
+			if ((i_tmp = parse_log_format(&s_tmp)) < 0) {
+				yyerror("unknown log format");
+			} else {
+				if (i_tmp != LOG_FORMAT_PLAIN && init_log_json_buf(0) < 0) {
+					yyerror("failed to allocate json log buffer");
+					YYABORT;
+				}
+
+				syslog_log_format = i_tmp;
+			}
+			}
+		| LOG_JSON_BUF_SIZE EQUAL NUMBER {
+			IFOR();
+			xlog_buf_size = $3;
+			if (init_log_json_buf(1) < 0) {
+				yyerror("failed to realloc json log buffer");
+				YYABORT;
+			}
+			}
 		| LOGFACILITY EQUAL ID { IFOR();
+			warn("'log_facility' is deprecated, use 'syslog_facility' instead");
 			if ( (i_tmp=str2facility($3))==-1)
 				yyerror("bad facility (see syslog(3) man page)");
 			if (!config_check)
 				log_facility=i_tmp;
 			}
 		| LOGFACILITY EQUAL error { yyerror("ID expected"); }
-		| LOGNAME EQUAL STRING { IFOR(); log_name=$3; }
+		| SYSLOG_FACILITY EQUAL ID { IFOR();
+			if ( (i_tmp=str2facility($3))==-1)
+				yyerror("bad facility (see syslog(3) man page)");
+			if (!config_check)
+				log_facility=i_tmp;
+			}
+		| SYSLOG_FACILITY EQUAL error { yyerror("ID expected"); }
+		| LOGNAME EQUAL STRING { IFOR();
+			warn("'log_name' is deprecated, use 'syslog_name' instead");
+			log_name=$3; }
 		| LOGNAME EQUAL error { yyerror("string value expected"); }
+		| SYSLOG_NAME EQUAL STRING { IFOR(); log_name=$3; }
+		| SYSLOG_NAME EQUAL error { yyerror("string value expected"); }
 		| DNS EQUAL NUMBER   { IFOR(); received_dns|= ($3)?DO_DNS:0; }
 		| DNS EQUAL error { yyerror("boolean value expected"); }
 		| REV_DNS EQUAL NUMBER { IFOR(); received_dns|= ($3)?DO_REV_DNS:0; }

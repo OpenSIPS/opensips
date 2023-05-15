@@ -445,7 +445,7 @@ int pv_get_color(struct sip_msg *msg, pv_param_t *param,
 	char* end;
 	str s;
 
-	if(log_stderr==0 && xlog_force_color==0)
+	if(xlog_force_color==0)
 	{
 		s.s = "";
 		s.len = 0;

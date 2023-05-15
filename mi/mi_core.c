@@ -477,7 +477,95 @@ static mi_response_t *w_xlog_level_1(const mi_params_t *params,
 	return resp;
 }
 
+static mi_response_t *w_log_level_filter_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str consumer;
+	int level_filter;
 
+	if (get_mi_string_param(params, "consumer", &consumer.s, &consumer.len) < 0)
+		return init_mi_param_error();
+
+	if (get_log_consumer_level_filter(&consumer, &level_filter) < 0)
+		return init_mi_error(404, MI_SSTR("Unknown log consumer"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("Log level filter"), level_filter) < 0)
+		goto error;
+
+	return resp;
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *w_log_level_filter_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str consumer;
+	int level_filter;
+
+	if (get_mi_string_param(params, "consumer", &consumer.s, &consumer.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "level_filter", &level_filter) < 0)
+		return init_mi_param_error();
+
+	if (set_log_consumer_level_filter(&consumer, level_filter))
+		return init_mi_error(404, MI_SSTR("Unknown log consumer"));
+
+	return init_mi_result_ok();
+}
+
+static mi_response_t *w_log_mute_state_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	mi_item_t *resp_obj;
+	str consumer;
+	int mute_state;
+
+	if (get_mi_string_param(params, "consumer", &consumer.s, &consumer.len) < 0)
+		return init_mi_param_error();
+
+	if (get_log_consumer_mute_state(&consumer, &mute_state) < 0)
+		return init_mi_error(404, MI_SSTR("Unknown log consumer"));
+
+	resp = init_mi_result_object(&resp_obj);
+	if (!resp)
+		return 0;
+
+	if (add_mi_number(resp_obj, MI_SSTR("mute state"), mute_state) < 0)
+		goto error;
+
+	return resp;
+error:
+	free_mi_response(resp);
+	return 0;
+}
+
+static mi_response_t *w_log_mute_state_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str consumer;
+	int mute_state;
+
+	if (get_mi_string_param(params, "consumer", &consumer.s, &consumer.len) < 0)
+		return init_mi_param_error();
+
+	if (get_mi_int_param(params, "mute_state", &mute_state) < 0)
+		return init_mi_param_error();
+
+	if (set_log_consumer_mute_state(&consumer, mute_state))
+		return init_mi_error(404, MI_SSTR("Unknown log consumer"));
+
+	return init_mi_result_ok();
+}
 
 static mi_response_t *mi_cachestore(const 	mi_params_t *params, unsigned int expire)
 {
@@ -815,6 +903,20 @@ static const mi_export_t mi_core_cmds[] = {
 		0, 0, {
 		{w_xlog_level, 	{0}},
 		{w_xlog_level_1, {"level", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "log_level_filter", "gets/sets the per consumer log level filter",
+		0, 0, {
+		{w_log_level_filter_1, {"consumer", 0}},
+		{w_log_level_filter_2, {"consumer", "level_filter", 0}},
+		{EMPTY_MI_RECIPE}
+		}
+	},
+	{ "log_mute_state", "mute/unmute a log consumer",
+		0, 0, {
+		{w_log_mute_state_1, {"consumer", 0}},
+		{w_log_mute_state_2, {"consumer", "mute_state", 0}},
 		{EMPTY_MI_RECIPE}
 		}
 	},

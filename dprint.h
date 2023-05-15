@@ -52,6 +52,9 @@
 
 #include <syslog.h>
 #include <time.h>
+#include <stdarg.h>
+
+#include "str.h"
 
 #define L_ALERT -3	/*!< Alert level */
 #define L_CRIT  -2	/*!< Critical level */
@@ -68,13 +71,21 @@
 	#define DP_PREFIX  "%s [%d] "
 #endif
 
-#define DP_ALERT_TEXT    "ALERT:"
-#define DP_CRIT_TEXT     "CRITICAL:"
-#define DP_ERR_TEXT      "ERROR:"
-#define DP_WARN_TEXT     "WARNING:"
-#define DP_NOTICE_TEXT   "NOTICE:"
-#define DP_INFO_TEXT     "INFO:"
-#define DP_DBG_TEXT      "DBG:"
+#define DP_ALERT_STR    "ALERT"
+#define DP_CRIT_STR     "CRITICAL"
+#define DP_ERR_STR      "ERROR"
+#define DP_WARN_STR     "WARNING"
+#define DP_NOTICE_STR   "NOTICE"
+#define DP_INFO_STR     "INFO"
+#define DP_DBG_STR      "DBG"
+
+#define DP_ALERT_TEXT    DP_ALERT_STR ":"
+#define DP_CRIT_TEXT     DP_CRIT_STR ":"
+#define DP_ERR_TEXT      DP_ERR_STR ":"
+#define DP_WARN_TEXT     DP_WARN_STR ":"
+#define DP_NOTICE_TEXT   DP_NOTICE_STR ":"
+#define DP_INFO_TEXT     DP_INFO_STR ":"
+#define DP_DBG_TEXT      DP_DBG_STR ":"
 
 #define DP_ALERT_PREFIX  DP_PREFIX "%s" DP_ALERT_TEXT
 #define DP_CRIT_PREFIX   DP_PREFIX "%s" DP_CRIT_TEXT
@@ -94,14 +105,31 @@
 	#undef NO_LOG
 #endif
 
+#define MAX_LOG_CONS_NO 2
+
+#define STDERR_CONSUMER_NAME "stderror"
+#define SYSLOG_CONSUMER_NAME "syslog"
+
+#define LOG_PLAIN_NAME    "plain_text"
+#define LOG_JSON_NAME     "json"
+#define LOG_JSON_CEE_NAME "json_cee"
+
+enum log_format {
+	LOG_FORMAT_PLAIN,
+	LOG_FORMAT_JSON,
+	LOG_FORMAT_JSON_CEE
+};
+
 /* vars:*/
 
 extern int *log_level;
 extern char *log_prefix;
-extern int log_stdout, log_stderr;
+extern int log_stdout;
+extern int stderr_enabled, syslog_enabled;
 extern int log_facility;
 extern char* log_name;
 extern char ctime_buf[];
+extern enum log_format stderr_log_format, syslog_log_format;
 
 /*
  * must be called after init_multi_proc_support()
@@ -112,9 +140,24 @@ int init_log_level(void);
 /* must be called once, before the "pt" process table is freed */
 void cleanup_log_level(void);
 
+int init_log_cons_table(void);
+
+int init_log_json_buf(int realloc);
+
+int set_log_consumer_mute_state(str *name, int state);
+int get_log_consumer_mute_state(str *name, int *state);
+
+int set_log_consumer_level_filter(str *name, int level);
+int get_log_consumer_level_filter(str *name, int *level_filter);
+
+int parse_log_format(str *format);
+
 int dp_my_pid(void);
 
-void dprint (char* format, ...);
+void stderr_dprint_tmp(char *format, ...);
+
+void dprint(int log_level, int facility, char *module, const char *func,
+	char *stderr_fmt, char *syslog_fmt, char *format, ...);
 
 int str2facility(char *s);
 
@@ -140,6 +183,37 @@ static inline char* dp_time(void)
 	ctime_buf[19] = 0; /* remove year*/
 
 	return ctime_buf+4;  /* remove name of day*/
+}
+
+static inline char *dp_log_level_str(int log_level)
+{
+	char *level_str;
+
+	switch (log_level) {
+	case L_ALERT:
+		level_str = DP_ALERT_STR;
+		break;
+	case L_CRIT:
+		level_str = DP_CRIT_STR;
+		break;
+	case L_ERR:
+		level_str = DP_ERR_STR;
+		break;
+	case L_WARN:
+		level_str = DP_WARN_STR;
+		break;
+	case L_NOTICE:
+		level_str = DP_NOTICE_STR;
+		break;
+	case L_INFO:
+		level_str = DP_INFO_STR;
+		break;
+	case L_DBG:
+	default:
+		level_str = DP_DBG_STR;
+	}
+
+	return level_str;
 }
 
 #define is_printable(_level)  (((int)(*log_level)) >= ((int)(_level)))
@@ -186,73 +260,52 @@ static inline char* dp_time(void)
 		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
 		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ": "
 
-		#define MY_DPRINT( _prefix, _fmt, ...) \
-				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
-						dp_my_pid(), log_prefix __VA_ARGS__ ) \
-
-		#define MY_SYSLOG( _log_level, _prefix, _fmt, ...) \
-				syslog( (_log_level)|log_facility, "%s" _prefix \
-							LOG_PREFIX _fmt, log_prefix __VA_ARGS__);\
+		#define MY_DPRINT(_log_level, _log_facility, _stderr_prefix, \
+					_syslog_prefix, _fmt, ...) \
+				dprint(_log_level, _log_facility, \
+					LOG_PREFIX_UTIL(MOD_NAME), NULL, \
+					_stderr_prefix LOG_PREFIX _fmt, \
+					"%s" _prefix LOG_PREFIX _fmt, \
+					_fmt, \
+					dp_time(), dp_my_pid(), log_prefix __VA_ARGS__ ) \
 
 		#define LM_GEN(_lev, fmt, ...) \
 			do { \
 				if (is_printable(_lev)){ \
-					if (log_stderr) { \
-						switch(_lev){ \
-						case L_CRIT: \
-							MY_DPRINT(DP_CRIT_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						case L_ALERT: \
-							MY_DPRINT(DP_ALERT_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						case L_ERR: \
-							MY_DPRINT(DP_ERR_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						case L_WARN: \
-							MY_DPRINT(DP_WARN_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						case L_NOTICE: \
-							MY_DPRINT(DP_NOTICE_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						case L_INFO: \
-							MY_DPRINT(DP_INFO_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						case L_DBG: \
-							MY_DPRINT(DP_DBG_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						default: \
-							if (_lev > L_DBG) \
-								MY_DPRINT(DP_DBG_PREFIX, fmt __VA_ARGS__);\
-							break; \
-						} \
-					} else { \
-						switch(_lev){ \
-						case L_CRIT: \
-							MY_SYSLOG(LOG_CRIT, DP_CRIT_TEXT, fmt __VA_ARGS__);\
-							break; \
-						case L_ALERT: \
-							MY_SYSLOG(LOG_ALERT, DP_ALERT_TEXT, fmt __VA_ARGS__);\
-							break; \
-						case L_ERR: \
-							MY_SYSLOG(LOG_ERR, DP_ERR_TEXT, fmt __VA_ARGS__);\
-							break; \
-						case L_WARN: \
-							MY_SYSLOG(LOG_WARNING, DP_WARN_TEXT, fmt __VA_ARGS__);\
-							break; \
-						case L_NOTICE: \
-							MY_SYSLOG(LOG_NOTICE, DP_NOTICE_TEXT, fmt __VA_ARGS__);\
-							break; \
-						case L_INFO: \
-							MY_SYSLOG(LOG_INFO, DP_INFO_TEXT, fmt __VA_ARGS__);\
-							break; \
-						case L_DBG: \
-							MY_SYSLOG(LOG_DEBUG, DP_DBG_TEXT, fmt __VA_ARGS__);\
-							break; \
-						default: \
-							if (_lev > L_DBG) \
-								MY_SYSLOG(LOG_DEBUG, DP_DBG_TEXT, fmt __VA_ARGS__);\
-							break; \
-						} \
+					switch(_lev){ \
+					case L_CRIT: \
+						MY_DPRINT(L_CRIT, log_facility, DP_CRIT_PREFIX, \
+							DP_CRIT_TEXT, fmt __VA_ARGS__); \
+						break; \
+					case L_ALERT: \
+						MY_DPRINT(L_ALERT, log_facility, DP_ALERT_PREFIX, \
+							DP_ALERT_TEXT, fmt __VA_ARGS__); \
+						break; \
+					case L_ERR: \
+						MY_DPRINT(L_ERR, log_facility, DP_ERR_PREFIX, \
+							DP_ERR_TEXT, fmt __VA_ARGS__); \
+						break; \
+					case L_WARN: \
+						MY_DPRINT(L_WARN, log_facility, DP_WARN_PREFIX, \
+							DP_WARN_TEXT, fmt __VA_ARGS__); \
+						break; \
+					case L_NOTICE: \
+						MY_DPRINT(L_NOTICE, log_facility, DP_NOTICE_PREFIX, \
+							DP_NOTICE_TEXT, fmt __VA_ARGS__); \
+						break; \
+					case L_INFO: \
+						MY_DPRINT(L_INFO, log_facility, DP_INFO_PREFIX, \
+							DP_INFO_TEXT, fmt __VA_ARGS__); \
+						break; \
+					case L_DBG: \
+						MY_DPRINT(L_DBG, log_facility, DP_DBG_PREFIX, \
+							DP_DBG_TEXT, fmt __VA_ARGS__); \
+						break; \
+					default: \
+						if (_lev > L_DBG) \
+							MY_DPRINT(L_DBG, log_facility, DP_DBG_PREFIX, \
+							DP_DBG_TEXT, fmt __VA_ARGS__); \
+						break; \
 					} \
 				} \
 			}while(0)
@@ -263,112 +316,62 @@ static inline char* dp_time(void)
 		#define LM_GEN2( _facility, _lev, fmt, ...) \
 			do { \
 				if (is_printable(_lev)){ \
-					if (log_stderr) \
-						dprint( DP_PREFIX "%s" fmt, dp_time(), \
-							dp_my_pid(), log_prefix __VA_ARGS__ ); \
-					else { \
-						switch(_lev){ \
-							case L_CRIT: \
-								syslog(LOG_CRIT|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-							case L_ALERT: \
-								syslog(LOG_ALERT|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-							case L_ERR: \
-								syslog(LOG_ERR|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-							case L_WARN: \
-								syslog(LOG_WARNING|_facility, "%s" fmt, log_prefix __VA_ARGS__);\
-								break; \
-							case L_NOTICE: \
-								syslog(LOG_NOTICE|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-							case L_INFO: \
-								syslog(LOG_INFO|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-							case L_DBG: \
-								syslog(LOG_DEBUG|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-							default: \
-								if (_lev > L_DBG) \
-									syslog(LOG_DEBUG|_facility, "%s" fmt, log_prefix __VA_ARGS__); \
-								break; \
-						} \
-					} \
+					dprint(_lev, _facility, NULL, NULL, \
+						DP_PREFIX "%s" fmt, "%s" fmt, fmt, \
+						dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
 				} \
 			}while(0)
 
-		#define LM_ALERT( ...) \
+		#define LM_ALERT( fmt, ...) \
 			do { \
-				if (is_printable(L_ALERT)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_ALERT_PREFIX __VA_ARGS__);\
-					else \
-						MY_SYSLOG( LOG_ALERT, DP_ALERT_TEXT __VA_ARGS__);\
-				} \
+				if (is_printable(L_ALERT)) \
+					MY_DPRINT(L_ALERT, log_facility, DP_ALERT_PREFIX, \
+						DP_ALERT_TEXT, fmt __VA_ARGS__); \
 			}while(0)
 
-		#define LM_CRIT( ...) \
+		#define LM_CRIT( fmt, ...) \
 			do { \
-				if (is_printable(L_CRIT)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_CRIT_PREFIX __VA_ARGS__);\
-					else \
-						MY_SYSLOG( LOG_CRIT, DP_CRIT_TEXT __VA_ARGS__);\
-				} \
+				if (is_printable(L_CRIT)) \
+					MY_DPRINT(L_CRIT, log_facility, DP_CRIT_PREFIX, \
+						DP_CRIT_TEXT, fmt __VA_ARGS__); \
 			}while(0)
 
-		#define LM_ERR( ...) \
+		#define LM_ERR( fmt, ...) \
 			do { \
-				if (is_printable(L_ERR)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_ERR_PREFIX __VA_ARGS__);\
-					else \
-						MY_SYSLOG( LOG_ERR, DP_ERR_TEXT __VA_ARGS__);\
-				} \
+				if (is_printable(L_ERR)) \
+					MY_DPRINT(L_ERR, log_facility, DP_ERR_PREFIX, \
+						DP_ERR_TEXT, fmt __VA_ARGS__); \
 			}while(0)
 
-		#define LM_WARN( ...) \
+		#define LM_WARN( fmt, ...) \
 			do { \
-				if (is_printable(L_WARN)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_WARN_PREFIX __VA_ARGS__);\
-					else \
-						MY_SYSLOG( LOG_WARNING, DP_WARN_TEXT __VA_ARGS__);\
-				} \
+				if (is_printable(L_WARN)) \
+					MY_DPRINT(L_WARN, log_facility, DP_WARN_PREFIX, \
+						DP_WARN_TEXT, fmt __VA_ARGS__); \
 			}while(0)
 
-		#define LM_NOTICE( ...) \
+		#define LM_NOTICE( fmt, ...) \
 			do { \
-				if (is_printable(L_NOTICE)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_NOTICE_PREFIX __VA_ARGS__);\
-					else \
-						MY_SYSLOG( LOG_NOTICE, DP_NOTICE_TEXT __VA_ARGS__);\
-				} \
+				if (is_printable(L_NOTICE)) \
+					MY_DPRINT(L_NOTICE, log_facility, DP_NOTICE_PREFIX, \
+						DP_NOTICE_TEXT, fmt __VA_ARGS__); \
 			}while(0)
 
-		#define LM_INFO( ...) \
+		#define LM_INFO( fmt, ...) \
 			do { \
-				if (is_printable(L_INFO)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_INFO_PREFIX __VA_ARGS__);\
-					else \
-						MY_SYSLOG( LOG_INFO, DP_INFO_TEXT __VA_ARGS__);\
-				} \
+				if (is_printable(L_INFO)) \
+					MY_DPRINT(L_INFO, log_facility, DP_INFO_PREFIX, \
+						DP_INFO_TEXT, fmt __VA_ARGS__); \
 			}while(0)
 
 		#ifdef NO_DEBUG
-			#define LM_DBG( ...)
+			#define LM_DBG( fmt, ...)
 		#else
-			#define LM_DBG( ...) \
+			#define LM_DBG( fmt, ...) \
 				do { \
-					if (is_printable(L_DBG)){ \
-						if (log_stderr)\
-							MY_DPRINT( DP_DBG_PREFIX __VA_ARGS__);\
-						else \
-							MY_SYSLOG( LOG_DEBUG, DP_DBG_TEXT __VA_ARGS__);\
-					} \
+					if (is_printable(L_DBG)) \
+						MY_DPRINT(L_DBG, log_facility, DP_DBG_PREFIX, \
+							DP_DBG_TEXT, fmt __VA_ARGS__); \
 				}while(0)
 		#endif /*NO_DEBUG*/
 
@@ -378,73 +381,52 @@ static inline char* dp_time(void)
 		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
 		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ":%s: "
 
-		#define MY_DPRINT( _prefix, _fmt, args...) \
-				dprint( _prefix LOG_PREFIX _fmt, dp_time(), \
-					dp_my_pid(), log_prefix, __DP_FUNC, ## args) \
-
-		#define MY_SYSLOG( _log_level, _prefix, _fmt, args...) \
-				syslog( (_log_level)|log_facility, \
-							"%s" _prefix LOG_PREFIX _fmt, log_prefix, __DP_FUNC, ##args);\
+		#define MY_DPRINT(_log_level, _log_facility, _stderr_prefix, \
+					_syslog_prefix, _fmt, args...) \
+				dprint(_log_level, _log_facility, \
+					LOG_PREFIX_UTIL(MOD_NAME), __DP_FUNC, \
+					_stderr_prefix LOG_PREFIX _fmt, \
+					"%s" _syslog_prefix LOG_PREFIX _fmt, \
+					_fmt, \
+					dp_time(), dp_my_pid(), log_prefix, __DP_FUNC, ## args) \
 
 		#define LM_GEN(_lev, fmt, args...) \
 			do { \
 				if (is_printable(_lev)){ \
-					if (log_stderr) { \
-						switch(_lev){ \
-						case L_CRIT: \
-							MY_DPRINT(DP_CRIT_PREFIX, fmt, ##args);\
-							break; \
-						case L_ALERT: \
-							MY_DPRINT(DP_ALERT_PREFIX, fmt, ##args);\
-							break; \
-						case L_ERR: \
-							MY_DPRINT(DP_ERR_PREFIX, fmt, ##args);\
-							break; \
-						case L_WARN: \
-							MY_DPRINT(DP_WARN_PREFIX, fmt, ##args);\
-							break; \
-						case L_NOTICE: \
-							MY_DPRINT(DP_NOTICE_PREFIX, fmt, ##args);\
-							break; \
-						case L_INFO: \
-							MY_DPRINT(DP_INFO_PREFIX, fmt, ##args);\
-							break; \
-						case L_DBG: \
-							MY_DPRINT(DP_DBG_PREFIX, fmt, ##args);\
-							break; \
-						default: \
-							if (_lev > L_DBG) \
-								MY_DPRINT(DP_DBG_PREFIX, fmt, ##args);\
-							break; \
-						} \
-					} else { \
-						switch(_lev){ \
-						case L_CRIT: \
-							MY_SYSLOG(LOG_CRIT, DP_CRIT_TEXT, fmt, ##args);\
-							break; \
-						case L_ALERT: \
-							MY_SYSLOG(LOG_ALERT, DP_ALERT_TEXT, fmt, ##args);\
-							break; \
-						case L_ERR: \
-							MY_SYSLOG(LOG_ERR, DP_ERR_TEXT, fmt, ##args);\
-							break; \
-						case L_WARN: \
-							MY_SYSLOG(LOG_WARNING, DP_WARN_TEXT, fmt, ##args);\
-							break; \
-						case L_NOTICE: \
-							MY_SYSLOG(LOG_NOTICE, DP_NOTICE_TEXT, fmt, ##args);\
-							break; \
-						case L_INFO: \
-							MY_SYSLOG(LOG_INFO, DP_INFO_TEXT, fmt, ##args);\
-							break; \
-						case L_DBG: \
-							MY_SYSLOG(LOG_DEBUG, DP_DBG_TEXT, fmt, ##args);\
-							break; \
-						default: \
-							if (_lev > L_DBG) \
-								MY_SYSLOG(LOG_DEBUG, DP_DBG_TEXT, fmt, ##args);\
-							break; \
-						} \
+					switch(_lev){ \
+					case L_CRIT: \
+						MY_DPRINT(L_CRIT, log_facility, DP_CRIT_PREFIX, \
+							DP_CRIT_TEXT, fmt, ##args); \
+						break; \
+					case L_ALERT: \
+						MY_DPRINT(L_ALERT, log_facility, DP_ALERT_PREFIX, \
+							DP_ALERT_TEXT, fmt, ##args); \
+						break; \
+					case L_ERR: \
+						MY_DPRINT(L_ERR, log_facility, DP_ERR_PREFIX, \
+							DP_ERR_TEXT, fmt, ##args); \
+						break; \
+					case L_WARN: \
+						MY_DPRINT(L_WARN, log_facility, DP_WARN_PREFIX, \
+							DP_WARN_TEXT, fmt, ##args); \
+						break; \
+					case L_NOTICE: \
+						MY_DPRINT(L_NOTICE, log_facility, DP_NOTICE_PREFIX, \
+							DP_NOTICE_TEXT, fmt, ##args); \
+						break; \
+					case L_INFO: \
+						MY_DPRINT(L_INFO, log_facility, DP_INFO_PREFIX, \
+							DP_INFO_TEXT, fmt, ##args); \
+						break; \
+					case L_DBG: \
+						MY_DPRINT(L_DBG, log_facility, DP_DBG_PREFIX, \
+							DP_DBG_TEXT, fmt, ##args); \
+						break; \
+					default: \
+						if (_lev > L_DBG) \
+							MY_DPRINT(L_DBG, log_facility, DP_DBG_PREFIX, \
+								DP_DBG_TEXT, fmt, ##args); \
+						break; \
 					} \
 				} \
 			}while(0)
@@ -455,99 +437,52 @@ static inline char* dp_time(void)
 		#define LM_GEN2( _facility, _lev, fmt, args...) \
 			do { \
 				if (is_printable(_lev)){ \
-					if (log_stderr) \
-						dprint( DP_PREFIX "%s" fmt, dp_time(), \
-							dp_my_pid(), log_prefix, ## args); \
-					else { \
-						switch(_lev){ \
-							case L_CRIT: \
-								syslog(LOG_CRIT|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-							case L_ALERT: \
-								syslog(LOG_ALERT|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-							case L_ERR: \
-								syslog(LOG_ERR|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-							case L_WARN: \
-								syslog(LOG_WARNING|_facility, "%s" fmt, log_prefix, ##args);\
-								break; \
-							case L_NOTICE: \
-								syslog(LOG_NOTICE|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-							case L_INFO: \
-								syslog(LOG_INFO|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-							case L_DBG: \
-								syslog(LOG_DEBUG|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-							default: \
-								if (_lev > L_DBG) \
-									syslog(LOG_DEBUG|_facility, "%s" fmt, log_prefix, ##args); \
-								break; \
-						} \
-					} \
+					dprint(_lev, _facility, NULL, NULL, \
+						DP_PREFIX "%s" fmt, "%s" fmt, fmt, \
+						dp_time(), dp_my_pid(), log_prefix, ## args); \
 				} \
 			}while(0)
 
 		#define LM_ALERT( fmt, args...) \
 			do { \
-				if (is_printable(L_ALERT)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_ALERT_PREFIX, fmt, ##args);\
-					else \
-						MY_SYSLOG( LOG_ALERT, DP_ALERT_TEXT, fmt, ##args);\
-				} \
+				if (is_printable(L_ALERT)) \
+					MY_DPRINT(L_ALERT, log_facility, DP_ALERT_PREFIX, \
+						DP_ALERT_TEXT, fmt, ##args); \
 			}while(0)
 
 		#define LM_CRIT( fmt, args...) \
 			do { \
-				if (is_printable(L_CRIT)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_CRIT_PREFIX, fmt, ##args);\
-					else \
-						MY_SYSLOG( LOG_CRIT, DP_CRIT_TEXT, fmt, ##args);\
-				} \
+				if (is_printable(L_CRIT)) \
+					MY_DPRINT(L_CRIT, log_facility, DP_CRIT_PREFIX, \
+						DP_CRIT_TEXT, fmt, ##args); \
 			}while(0)
 
 		#define LM_ERR( fmt, args...) \
 			do { \
-				if (is_printable(L_ERR)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_ERR_PREFIX, fmt, ##args);\
-					else \
-						MY_SYSLOG( LOG_ERR, DP_ERR_TEXT, fmt, ##args);\
-				} \
+				if (is_printable(L_ERR)) \
+					MY_DPRINT(L_ERR, log_facility, DP_ERR_PREFIX, \
+						DP_ERR_TEXT, fmt, ##args); \
 			}while(0)
 
 		#define LM_WARN( fmt, args...) \
 			do { \
-				if (is_printable(L_WARN)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_WARN_PREFIX, fmt, ##args);\
-					else \
-						MY_SYSLOG( LOG_WARNING, DP_WARN_TEXT, fmt, ##args);\
-				} \
+				if (is_printable(L_WARN)) \
+					MY_DPRINT(L_WARN, log_facility, DP_WARN_PREFIX, \
+						DP_WARN_TEXT, fmt, ##args); \
 			}while(0)
 
 		#define LM_NOTICE( fmt, args...) \
 			do { \
-				if (is_printable(L_NOTICE)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_NOTICE_PREFIX, fmt, ##args);\
-					else \
-						MY_SYSLOG( LOG_NOTICE, DP_NOTICE_TEXT, fmt, ##args);\
-				} \
+				if (is_printable(L_NOTICE)) \
+					MY_DPRINT(L_NOTICE, log_facility, DP_NOTICE_PREFIX, \
+						DP_NOTICE_TEXT, fmt, ##args); \
 			}while(0)
 
 		#define LM_INFO( fmt, args...) \
 			do { \
-				if (is_printable(L_INFO)){ \
-					if (log_stderr)\
-						MY_DPRINT( DP_INFO_PREFIX, fmt, ##args);\
-					else \
-						MY_SYSLOG( LOG_INFO, DP_INFO_TEXT, fmt, ##args);\
-				} \
+				if (is_printable(L_INFO)) \
+					MY_DPRINT(L_INFO, log_facility, DP_INFO_PREFIX, \
+						DP_INFO_TEXT, fmt, ##args); \
 			}while(0)
 
 		#ifdef NO_DEBUG
@@ -555,12 +490,9 @@ static inline char* dp_time(void)
 		#else
 			#define LM_DBG( fmt, args...) \
 				do { \
-					if (is_printable(L_DBG)){ \
-						if (log_stderr)\
-							MY_DPRINT( DP_DBG_PREFIX, fmt, ##args);\
-						else \
-							MY_SYSLOG( LOG_DEBUG, DP_DBG_TEXT, fmt, ##args);\
-					} \
+					if (is_printable(L_DBG)) \
+						MY_DPRINT(L_DBG, log_facility, DP_DBG_PREFIX, \
+							DP_DBG_TEXT, fmt, ##args); \
 				}while(0)
 		#endif /*NO_DEBUG*/
 	#endif /*SUN_PRO_C*/

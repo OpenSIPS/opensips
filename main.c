@@ -343,8 +343,6 @@ error:
  */
 int main(int argc, char** argv)
 {
-	/* configure by default logging to syslog */
-	int cfg_log_stderr = 1;
 	int c,r;
 	char *tmp;
 	int tmp_len;
@@ -466,7 +464,6 @@ int main(int argc, char** argv)
 					if (config_check==3)
 						break;
 					config_check |= 1;
-					cfg_log_stderr=1; /* force stderr logging */
 					break;
 			case 'm':
 			case 'M':
@@ -519,9 +516,6 @@ int main(int argc, char** argv)
 					break;
 			case 'F':
 					no_daemon_mode=1;
-					break;
-			case 'E':
-					cfg_log_stderr=1;
 					break;
 			case 'N':
 					tcp_workers_no=strtol(optarg, &tmp, 10);
@@ -602,8 +596,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-	log_stderr = cfg_log_stderr;
-
 	/* seed the prng, try to use /dev/urandom if possible */
 	/* no debugging information is logged, because the standard
 	   log level prior the config file parsing is L_NOTICE */
@@ -645,6 +637,11 @@ try_again:
 	 * --andrei */
 	if (init_shm_mallocs()==-1)
 		goto error;
+
+	if (init_log_cons_table() < 0) {
+		LM_ERR("Failed to initialize logging consumers table\n");
+		goto error;
+	}
 
 	if (init_stats_collector() < 0) {
 		LM_ERR("failed to initialize statistics\n");
@@ -756,9 +753,15 @@ try_again:
 			LM_NOTICE("disabling daemon mode (found enabled)\n");
 			no_daemon_mode = 1;
 		}
-		if (log_stderr==0) {
+		if (stderr_enabled==0) {
 			LM_NOTICE("enabling logging to standard error (found disabled)\n");
-			log_stderr = 1;
+			stderr_enabled = 1;
+			set_log_consumer_mute_state(&str_init(STDERR_CONSUMER_NAME), 0);
+		}
+		if (syslog_enabled) {
+			LM_NOTICE("disabling logging to syslog (found enabled)\n");
+			syslog_enabled = 0;
+			set_log_consumer_mute_state(&str_init(SYSLOG_CONSUMER_NAME), 1);
 		}
 		if (*log_level < L_DBG && (!testing_framework ||
 		                           !strcmp(testing_module, "core"))) {

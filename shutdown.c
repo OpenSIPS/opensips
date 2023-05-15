@@ -237,6 +237,6 @@ void shutdown_opensips( int status )
 	alarm(0);
 	signal(SIGALRM, SIG_IGN);
 
-	dprint("Thank you for running " NAME "\n");
+	stderr_dprint_tmp("Thank you for running " NAME "\n");
 	exit( status );
 }

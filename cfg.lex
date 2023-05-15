@@ -210,8 +210,17 @@ LOGLEVEL	log_level
 LOGPREFIX	log_prefix
 LOGSTDOUT	log_stdout
 LOGSTDERROR	log_stderror
+STDERROR_ENABLED	stderror_enabled
+SYSLOG_ENABLED	    syslog_enabled
+STDERROR_LEVEL_FILTER	stderror_level_filter
+SYSLOG_LEVEL_FILTER	    syslog_level_filter
+STDERROR_FORMAT stderror_log_format
+SYSLOG_FORMAT   syslog_log_format
+LOG_JSON_BUF_SIZE	"log_json_buf_size"
 LOGFACILITY	log_facility
+SYSLOG_FACILITY	syslog_facility
 LOGNAME		log_name
+SYSLOG_NAME	syslog_name
 LISTEN		listen
 SOCKET		socket
 MEMGROUP	mem-group
@@ -418,9 +427,19 @@ SPACE		[ ]
 <INITIAL>{LOGLEVEL} { count(); yylval.strval=yytext; return LOGLEVEL; }
 <INITIAL>{LOGPREFIX} { count(); yylval.strval=yytext; return LOGPREFIX; }
 <INITIAL>{LOGSTDOUT}	{ yylval.strval=yytext; return LOGSTDOUT; }
-<INITIAL>{LOGSTDERROR}	{ yylval.strval=yytext; return LOGSTDERROR; }
+<INITIAL>{LOGSTDERROR} { yylval.strval=yytext; return LOGSTDERROR; }
+<INITIAL>{STDERROR_ENABLED}	{ yylval.strval=yytext; return STDERROR_ENABLED; }
+<INITIAL>{SYSLOG_ENABLED}	{ yylval.strval=yytext; return SYSLOG_ENABLED; }
+<INITIAL>{STDERROR_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return STDERROR_LEVEL_FILTER; }
+<INITIAL>{SYSLOG_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return SYSLOG_LEVEL_FILTER; }
+<INITIAL>{STDERROR_FORMAT} { count(); yylval.strval=yytext; return STDERROR_FORMAT; }
+<INITIAL>{SYSLOG_FORMAT} { count(); yylval.strval=yytext; return SYSLOG_FORMAT; }
+<INITIAL>{LOG_JSON_BUF_SIZE}	{	count(); yylval.strval=yytext;
+									return LOG_JSON_BUF_SIZE; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
+<INITIAL>{SYSLOG_FACILITY}	{ yylval.strval=yytext; return SYSLOG_FACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }
+<INITIAL>{SYSLOG_NAME}	{ yylval.strval=yytext; return SYSLOG_NAME; }
 <INITIAL>{LISTEN}	{ count(); yylval.strval=yytext; return LISTEN; }
 <INITIAL>{SOCKET}	{ count(); yylval.strval=yytext; return SOCKET; }
 <INITIAL>{MEMGROUP}	{ count(); yylval.strval=yytext; return MEMGROUP; }

@@ -354,12 +354,6 @@ int daemonize(char* name, int * own_pgid)
 			strerror(errno));
 		/* continue, leave it open */
 	};
-	/* close stderr only if not to be used */
-	if (!log_stderr && (freopen("/dev/null", "w", stderr)==0)){
-		LM_WARN("unable to replace stderr with /dev/null: %s\n",
-			strerror(errno));
-		/* continue, leave it open */
-	};
 
 	/* close any open file descriptors */
 	closelog();
@@ -372,7 +366,7 @@ int daemonize(char* name, int * own_pgid)
 			close(r);
 	}
 
-	if (!log_stderr)
+	if (syslog_enabled)
 		openlog(name, LOG_PID|LOG_CONS, log_facility);
 		/* LOG_CONS, LOG_PERRROR ? */
 
