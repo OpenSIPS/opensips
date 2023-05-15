@@ -278,26 +278,29 @@ void ipc_handle_job(int fd)
 	ipc_job job;
 	int n;
 
-	/* read one IPC job from the pipe; even if the read is blocking,
-	 * we are here triggered from the reactor, on a READ event, so 
-	 * we shouldn;t ever block */
-	n = read(fd, &job, sizeof(job) );
-	if (n==-1) {
-		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+	//Process all jobs until handle is drained
+	while (1) {
+		/* read one IPC job from the pipe; even if the read is blocking,
+		 * we are here triggered from the reactor, on a READ event, so 
+		 * we shouldn;t ever block */
+		n = read(fd, &job, sizeof(job) );
+		if (n==-1) {
+			if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+				return;
+			LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
 			return;
-		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
-		return;
-	}
+		}
 
-	LM_DBG("received job type %d[%s] from process %d\n",
-		job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
+		LM_DBG("received job type %d[%s] from process %d\n",
+			job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
 
-	/* custom handling for RPC type */
-	if (job.handler_type==ipc_rpc_type) {
-		((ipc_rpc_f*)job.payload1)( job.snd_proc, job.payload2);
-	} else {
-		/* generic registered type */
-		ipc_handlers[job.handler_type].func( job.snd_proc, job.payload1);
+		/* custom handling for RPC type */
+		if (job.handler_type==ipc_rpc_type) {
+			((ipc_rpc_f*)job.payload1)( job.snd_proc, job.payload2);
+		} else {
+			/* generic registered type */
+			ipc_handlers[job.handler_type].func( job.snd_proc, job.payload1);
+		}
 	}
 
 	return;

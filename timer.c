@@ -856,32 +856,35 @@ void handle_timer_job(void)
 	struct os_timer *t;
 	ssize_t l;
 
-	/* read one "os_timer" pointer from the pipe (non-blocking) */
-	l = read( timer_fd_out, &t, sizeof(t) );
-	if (l==-1) {
-		if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+	/* Read events until epipe is empty */
+	while(1) {
+		/* read one "os_timer" pointer from the pipe (non-blocking) */
+		l = read( timer_fd_out, &t, sizeof(t) );
+		if (l==-1) {
+			if (errno==EAGAIN || errno==EINTR || errno==EWOULDBLOCK )
+				return;
+			LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
 			return;
-		LM_ERR("read failed:[%d] %s\n", errno, strerror(errno));
-		return;
-	}
+		}
 
-	/* run the handler */
-	if (t->flags&TIMER_FLAG_IS_UTIMER) {
+		/* run the handler */
+		if (t->flags&TIMER_FLAG_IS_UTIMER) {
 
-		if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
-			LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
-				t->label, *ijiffies-t->trigger_time);
-		t->u.utimer_f( t->time , t->t_param);
-		t->trigger_time = 0;
+			if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
+				LM_WARN("utimer job <%s> has a %lld us delay in execution\n",
+					t->label, *ijiffies-t->trigger_time);
+			t->u.utimer_f( t->time , t->t_param);
+			t->trigger_time = 0;
 
-	} else {
+		} else {
 
-		if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
-			LM_WARN("timer job <%s> has a %lld us delay in execution\n",
-				t->label, *ijiffies-t->trigger_time);
-		t->u.timer_f( (unsigned int)t->time , t->t_param);
-		t->trigger_time = 0;
+			if (t->trigger_time<(*ijiffies-ITIMER_TICK) )
+				LM_WARN("timer job <%s> has a %lld us delay in execution\n",
+					t->label, *ijiffies-t->trigger_time);
+			t->u.timer_f( (unsigned int)t->time , t->t_param);
+			t->trigger_time = 0;
 
+		}
 	}
 
 	return;

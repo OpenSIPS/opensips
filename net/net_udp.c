@@ -292,8 +292,11 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 
 	switch(fm->type){
 		case F_UDP_READ:
-			n = protos[((struct socket_info*)fm->data)->proto].net.
-				read( fm->data /*si*/, &read);
+			do {
+				n = protos[((struct socket_info*)fm->data)->proto].net.
+					read( fm->data /*si*/, &read);
+			//Continue reading packets until we get an error
+			} while (n == 0);
 			break;
 		case F_TIMER_JOB:
 			handle_timer_job();
@@ -327,11 +330,15 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	post_run_handle_script_reload();
 
 	pt_become_idle();
+
+	if (n == 1) {
+		n = 0;
+	}
 	return n;
 }
 
 
-int udp_proc_reactor_init( struct socket_info *si )
+int udp_proc_reactor_init( struct socket_info *si, int si_rank )
 {
 
 	/* create the reactor for UDP proc */
@@ -359,9 +366,18 @@ int udp_proc_reactor_init( struct socket_info *si )
 	}
 
 	/* init: start watching the SIP UDP fd */
-	if (reactor_add_reader( si->socket, F_UDP_READ, RCT_PRIO_NET, si)<0) {
-		LM_CRIT("failed to add UDP listen socket to reactor\n");
-		goto error;
+	//First child per socket becomes 'Master', will wake on every event
+	if (si_rank == 0) {
+		if (reactor_add_reader( si->socket, F_UDP_READ, RCT_PRIO_NET, si)<0) {
+			LM_CRIT("failed to add UDP listen socket to reactor\n");
+			goto error;
+		}
+	} else {
+		//Subsequent processes are helpers, only one should be woken to help at a time
+		if (reactor_add_reader_exclusive( si->socket, F_UDP_READ, RCT_PRIO_NET, si)<0) {
+			LM_CRIT("failed to add UDP listen socket to reactor\n");
+			goto error;
+		}
 	}
 
 	return 0;
@@ -393,7 +409,9 @@ static int fork_dynamic_udp_process(void *si_filter)
 		bind_address=si; /* shortcut */
 		/* we first need to init the reactor to be able to add fd
 		 * into it in child_init routines */
-		if (udp_proc_reactor_init(si) < 0 ||
+		/* Since this is in addition to the master process, si_rank should be > 0 to enable
+		 * exlusive polling with EPOLL */
+		if (udp_proc_reactor_init(si, 1) < 0 ||
 		init_child(10000/*FIXME*/) < 0) {
 			goto error;
 		}
@@ -494,7 +512,7 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 					bind_address=si; /* shortcut */
 					/* we first need to init the reactor to be able to add fd
 					 * into it in child_init routines */
-					if (udp_proc_reactor_init(si) < 0 ||
+					if (udp_proc_reactor_init(si, i) < 0 ||
 							init_child(*chd_rank) < 0) {
 						report_failure_status();
 						if (*chd_rank == 1 && startup_done)
