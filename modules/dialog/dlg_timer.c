@@ -904,7 +904,17 @@ void dlg_options_routine(unsigned int ticks , void * attr)
 		shm_free(it);
 		it = curr;
 
-		init_dlg_term_reason(dlg,"Ping Timeout",sizeof("Ping Timeout")-1);
+		if (dlg->legs[DLG_CALLER_LEG].reply_received == DLG_PING_FAIL) {
+			init_dlg_term_reason(dlg, MI_SSTR("Caller Ping Timeout"));
+		} else if (dlg->legs[callee_idx(dlg)].reply_received == DLG_PING_FAIL) {
+			init_dlg_term_reason(dlg, MI_SSTR("Callee Ping Timeout"));
+		} else {
+			LM_WARN("Ping Timeout: flags[%u] caller rr[%u] callee rr[%u]\n",
+					dlg->flags,
+					dlg->legs[DLG_CALLER_LEG].reply_received,
+					dlg->legs[callee_idx(dlg)].reply_received);
+			init_dlg_term_reason(dlg, MI_SSTR("Ping Timeout"));
+		}
 		/* FIXME - maybe better not to send BYE both ways as we know for
 		 * sure one end in down . */
 		dlg_end_dlg(dlg,0,1);
@@ -1001,7 +1011,17 @@ void dlg_reinvite_routine(unsigned int ticks , void * attr)
 		shm_free(it);
 		it = curr;
 
-		init_dlg_term_reason(dlg,"ReINVITE Ping Timeout",sizeof("ReINVITE Ping Timeout")-1);
+		if (dlg->legs[DLG_CALLER_LEG].reinvite_confirmed == DLG_PING_FAIL) {
+			init_dlg_term_reason(dlg, MI_SSTR("Caller ReINVITE Ping Timeout"));
+		} else if (dlg->legs[callee_idx(dlg)].reinvite_confirmed == DLG_PING_FAIL) {
+			init_dlg_term_reason(dlg, MI_SSTR("Callee ReINVITE Ping Timeout"));
+		} else {
+			LM_WARN("Ping Timeout: flags[%u] caller rc[%u] callee rc[%u]\n",
+					dlg->flags,
+					dlg->legs[DLG_CALLER_LEG].reinvite_confirmed,
+					dlg->legs[callee_idx(dlg)].reinvite_confirmed);
+			init_dlg_term_reason(dlg, MI_SSTR("ReINVITE Ping Timeout"));
+		}
 		/* FIXME - maybe better not to send BYE both ways as we know for
 		 * sure one end in down . */
 		dlg_end_dlg(dlg,0,1);
