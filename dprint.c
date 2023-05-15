@@ -122,11 +122,11 @@ int dp_my_pid(void)
 
 int parse_log_format(str *format)
 {
-	if (str_match(format, &str_init(LOG_PLAIN_NAME)))
+	if (str_match(format, (&str_init(LOG_PLAIN_NAME))))
 		return LOG_FORMAT_PLAIN;
-	else if (str_match(format, &str_init(LOG_JSON_NAME)))
+	else if (str_match(format, (&str_init(LOG_JSON_NAME))))
 		return LOG_FORMAT_JSON;
-	else if (str_match(format, &str_init(LOG_JSON_CEE_NAME)))
+	else if (str_match(format, (&str_init(LOG_JSON_CEE_NAME))))
 		return LOG_FORMAT_JSON_CEE;
 	else
 		return -1;
