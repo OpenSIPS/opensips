@@ -638,11 +638,6 @@ try_again:
 	if (init_shm_mallocs()==-1)
 		goto error;
 
-	if (init_log_cons_table() < 0) {
-		LM_ERR("Failed to initialize logging consumers table\n");
-		goto error;
-	}
-
 	if (init_stats_collector() < 0) {
 		LM_ERR("failed to initialize statistics\n");
 		goto error;
@@ -669,6 +664,11 @@ try_again:
 	if (init_shm_post_yyparse() != 0) {
 		LM_ERR("failed to init SHM memory\n");
 		return ret;
+	}
+
+	if (init_log_cons_shm_table() < 0) {
+		LM_ERR("Failed to initialize shm log consumers table\n");
+		goto error;
 	}
 
 	if (config_check>1 && check_rls()!=0) {

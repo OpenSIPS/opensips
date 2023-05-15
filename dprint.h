@@ -140,7 +140,7 @@ int init_log_level(void);
 /* must be called once, before the "pt" process table is freed */
 void cleanup_log_level(void);
 
-int init_log_cons_table(void);
+int init_log_cons_shm_table(void);
 
 int init_log_json_buf(int realloc);
 

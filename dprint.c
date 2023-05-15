@@ -64,23 +64,25 @@ int log_json_buf_size = 8192;
 
 static void stderr_dprint(int log_level, int facility, char *module, const char *func,
 	char *format, va_list ap);
+static void syslog_dprint(int log_level, int facility, char *module, const char *func,
+	char *format, va_list ap);
 
 static void stderr_pre_fmt_func(log_print_f gen_print_func, int log_level,
 	int facility, char *module, const char *func,
 	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap);
+static void syslog_pre_fmt_func(log_print_f gen_print_func, int log_level,
+	int facility, char *module, const char *func,
+	char *stderr_plain_fmt, char *syslog_plain_fmt, char *format, va_list ap);
 
-/* stderrr consumer to be used until the shm consumer table is alloc'ed
- * and properly init with the default consumers */
-static struct log_consumer_t default_stderr_cons = {
-	str_init(STDERR_CONSUMER_NAME),
-	stderr_dprint,
-	stderr_pre_fmt_func,
-	0,
-	0,
+/* static consumer table to be used until a shm one is alloc'ed;
+ * only stderror is enabled initially */
+static struct log_consumer_t default_log_consumers[2] ={
+	{str_init(STDERR_CONSUMER_NAME), stderr_dprint, stderr_pre_fmt_func, 0, 0},
+	{str_init(SYSLOG_CONSUMER_NAME), syslog_dprint, syslog_pre_fmt_func, 0, 1}
 };
 
-struct log_consumer_t *log_consumers = &default_stderr_cons;
-int log_consumers_no = 1;
+struct log_consumer_t *log_consumers = default_log_consumers;
+int log_consumers_no = 2;
 
 static char* str_fac[]={"LOG_AUTH","LOG_CRON","LOG_DAEMON",
 					"LOG_KERN","LOG_LOCAL0","LOG_LOCAL1",
@@ -471,7 +473,8 @@ int init_log_json_buf(int realloc)
 	return 0;
 }
 
-int init_log_cons_table(void)
+/* replaces the default consumer table with a shm allocated one */
+int init_log_cons_shm_table(void)
 {
 	struct log_consumer_t *cons;
 
@@ -482,24 +485,10 @@ int init_log_cons_table(void)
 	}
 	memset(cons, 0, MAX_LOG_CONS_NO * sizeof(struct log_consumer_t));
 
-	/* replace the temporary stderr consumer */
-	init_str(&cons[0].name, STDERR_CONSUMER_NAME);
-	cons[0].gen_print_func = stderr_dprint;
-	cons[0].pre_fmt_print_func = stderr_pre_fmt_func;
-	/* defaults at this point (script not parsed yet) */
-	cons[0].level_filter = 0;
-	cons[0].muted = !stderr_enabled;
-
-	/* init the syslog consumer */
-	init_str(&cons[1].name, SYSLOG_CONSUMER_NAME);
-	cons[1].gen_print_func = syslog_dprint;
-	cons[1].pre_fmt_print_func = syslog_pre_fmt_func;
-	/* defaults at this point (script not parsed yet) */
-	cons[1].level_filter = 0;
-	cons[1].muted = !syslog_enabled;
+	cons[0] = log_consumers[0];
+	cons[1] = log_consumers[1];
 
 	log_consumers = cons;
-	log_consumers_no = 2;
 
 	return 0;
 }
