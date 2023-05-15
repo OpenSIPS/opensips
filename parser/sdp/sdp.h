@@ -44,6 +44,7 @@ typedef struct sdp_attr {
 	str value;
 } sdp_attr_t;
 
+#define MAX_CUSTOM_ATTRS 16
 typedef struct sdp_payload_attr {
 	struct sdp_payload_attr *next;
 	/**< payload index inside stream */
@@ -53,6 +54,8 @@ typedef struct sdp_payload_attr {
 	str rtp_clock;
 	str rtp_params;
 	str fmtp_string;
+	str custom_attrs[MAX_CUSTOM_ATTRS];
+	int custom_attrs_size;
 } sdp_payload_attr_t;
 
 typedef struct sdp_stream_cell {

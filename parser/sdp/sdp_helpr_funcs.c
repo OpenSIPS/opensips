@@ -126,6 +126,71 @@ int extract_rtpmap(str *body,
 	return 0;
 }
 
+int extract_custom_a_attr(str *body, str *payload, str *value)
+{
+	char *cp, *p;
+	int len,i;
+
+	/* a=<format> <format specific parameters> */
+	/* 10 for good luck ? */
+	if (body->len < 10) {
+		LM_DBG("Too small body \n");
+		return -1;
+	}
+
+	if (body->s[0] != 'a' && body->s[1] != '=') {
+		LM_DBG("We are not pointing to an a= attribute =>`%.*s'\n", body->len, body->s);
+		return -1;
+	}
+
+	i=0;
+	p=body->s;
+	while (i<body->len) {
+		if (*p == ':')
+			break;
+		p++;
+		i++;
+	}
+
+	if (i==body->len) {
+		/* no payload found */
+		LM_DBG("no payload ID\n");
+		return -1;
+	}
+
+	/* payload ID starts after : */
+	payload->s = p+1;
+	payload->len = eat_line(payload->s, body->s + body->len -
+		payload->s) - payload->s;
+	trim_len(payload->len, payload->s, *payload);
+	len = payload->len;
+
+	/* */
+	cp = eat_token_end(payload->s, payload->s + payload->len);
+	payload->len = cp - payload->s;
+	if (payload->len <= 0 || cp == payload->s) {
+		LM_ERR("no encoding \n");
+		return -1;
+	}
+
+	len -= payload->len;
+	value->s = cp;
+	cp = eat_space_end(value->s, value->s + len);
+	len -= cp - value->s;
+	if (len <= 0 || cp == value->s) {
+		LM_ERR("no value in a= line \n");
+		return -1;
+	}
+
+	value->s = cp;
+
+	value->len = eat_line(value->s, body->s + body->len -
+		value->s) - value->s;
+	trim_len(value->len, value->s, *value);
+
+	return 0;
+}
+
 int extract_fmtp( str *body, str *fmtp_payload, str *fmtp_string )
 {
 	char *cp, *cp1;

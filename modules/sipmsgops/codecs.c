@@ -386,32 +386,32 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 {
 	static sdp_payload_attr_t static_payloads[] = {
 	/* as per http://www.iana.org/assignments/rtp-parameters/rtp-parameters.xml */
-	{ NULL,0,{ "0",1},{"PCMU",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 0 - PCMU/8000  */
-	{ NULL,0,{ "3",1},{ "GSM",3},{ "8000",4},{NULL,0},{NULL,0} },   /* 3 -  GSM/8000  */
-	{ NULL,0,{ "4",1},{"G723",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 4 - G723/8000  */
-	{ NULL,0,{ "5",1},{"DVI4",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 5 - DVI4/8000  */
-	{ NULL,0,{ "6",1},{"DVI4",4},{"16000",5},{NULL,0},{NULL,0} },   /* 6 - DVI4/16000 */
-	{ NULL,0,{ "7",1},{ "LPC",3},{ "8000",4},{NULL,0},{NULL,0} },   /* 7 -  LPC/8000  */
-	{ NULL,0,{ "8",1},{"PCMA",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 8 - PCMA/8000  */
-	{ NULL,0,{ "9",1},{"G722",4},{ "8000",4},{NULL,0},{NULL,0} },   /* 9 - G722/8000  */
-	{ NULL,0,{"10",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0} },   /*10 -  L16/44100 */
-	{ NULL,0,{"11",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0} },   /*11 -  L16/44100 */
-	{ NULL,0,{"12",2},{"QCELP",5},{"8000",4},{NULL,0},{NULL,0} },   /*12 -QCELP/8000  */
-	{ NULL,0,{"13",2},{  "CN",2},{ "8000",4},{NULL,0},{NULL,0} },   /*13 -   CN/8000  */
-	{ NULL,0,{"14",2},{ "MPA",3},{"90000",5},{NULL,0},{NULL,0} },   /*14 -  MPA/90000 */
-	{ NULL,0,{"15",2},{"G728",4},{ "8000",4},{NULL,0},{NULL,0} },   /*15 - G728/8000  */
-	{ NULL,0,{"16",2},{"DVI4",4},{"11025",5},{NULL,0},{NULL,0} },   /*16 - DVI4/11025 */
-	{ NULL,0,{"17",2},{"DVI4",4},{"22050",5},{NULL,0},{NULL,0} },   /*17 - DVI4/22050 */
-	{ NULL,0,{"18",2},{"G729",4},{ "8000",4},{NULL,0},{NULL,0} },   /*18 - G729/8000  */
-	{ NULL,0,{"25",2},{"CelB",4},{ "8000",4},{NULL,0},{NULL,0} },   /*25 - CelB/8000  */
-	{ NULL,0,{"26",2},{"JPEG",4},{"90000",5},{NULL,0},{NULL,0} },   /*26 - JPEG/90000 */
-	{ NULL,0,{"28",2},{  "nv",2},{"90000",5},{NULL,0},{NULL,0} },   /*28 -   nv/90000 */
-	{ NULL,0,{"31",2},{"H261",4},{"90000",5},{NULL,0},{NULL,0} },   /*31 - H261/90000 */
-	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0} },   /*32 -  MPV/90000 */
-	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0} },   /*33 - MP2T/90000 */
-	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0} },   /*34 - H263/90000 */
-	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0} },   /*T38- fax        */
-	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0} }
+	{ NULL,0,{ "0",1},{"PCMU",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 0 - PCMU/8000  */
+	{ NULL,0,{ "3",1},{ "GSM",3},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 3 -  GSM/8000  */
+	{ NULL,0,{ "4",1},{"G723",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 4 - G723/8000  */
+	{ NULL,0,{ "5",1},{"DVI4",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 5 - DVI4/8000  */
+	{ NULL,0,{ "6",1},{"DVI4",4},{"16000",5},{NULL,0},{NULL,0},{},0 },   /* 6 - DVI4/16000 */
+	{ NULL,0,{ "7",1},{ "LPC",3},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 7 -  LPC/8000  */
+	{ NULL,0,{ "8",1},{"PCMA",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 8 - PCMA/8000  */
+	{ NULL,0,{ "9",1},{"G722",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 9 - G722/8000  */
+	{ NULL,0,{"10",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0 },   /*10 -  L16/44100 */
+	{ NULL,0,{"11",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0 },   /*11 -  L16/44100 */
+	{ NULL,0,{"12",2},{"QCELP",5},{"8000",4},{NULL,0},{NULL,0},{},0 },   /*12 -QCELP/8000  */
+	{ NULL,0,{"13",2},{  "CN",2},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*13 -   CN/8000  */
+	{ NULL,0,{"14",2},{ "MPA",3},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*14 -  MPA/90000 */
+	{ NULL,0,{"15",2},{"G728",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*15 - G728/8000  */
+	{ NULL,0,{"16",2},{"DVI4",4},{"11025",5},{NULL,0},{NULL,0},{},0 },   /*16 - DVI4/11025 */
+	{ NULL,0,{"17",2},{"DVI4",4},{"22050",5},{NULL,0},{NULL,0},{},0 },   /*17 - DVI4/22050 */
+	{ NULL,0,{"18",2},{"G729",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*18 - G729/8000  */
+	{ NULL,0,{"25",2},{"CelB",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*25 - CelB/8000  */
+	{ NULL,0,{"26",2},{"JPEG",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*26 - JPEG/90000 */
+	{ NULL,0,{"28",2},{  "nv",2},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*28 -   nv/90000 */
+	{ NULL,0,{"31",2},{"H261",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*31 - H261/90000 */
+	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*32 -  MPV/90000 */
+	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*33 - MP2T/90000 */
+	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*34 - H263/90000 */
+	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0},{},0 },   /*T38- fax        */
+	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0},{},0 }
 	};
 	sdp_payload_attr_t *payload;
 	char *cur, *tmp, *buff, temp;
@@ -533,7 +533,6 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 				if( op == DELETE && !is_static )
 				{
 					/* find the full 'a=...' entry */
-
 					if( delete_sdp_line( msg, payload->rtp_enc.s, cell) < 0 )
 					{
 						LM_ERR("Unable to add delete lump for a=\n");
@@ -546,6 +545,16 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 						LM_ERR("Unable to add delete lump for a=\n");
 						ret = -1;
 						goto end;
+					}
+
+					for (i=0;i<payload->custom_attrs_size;i++) {
+						LM_DBG("also deleting attribute [%.*s] belonging to codec to be deleted\n",payload->custom_attrs[i].len,payload->custom_attrs[i].s);
+						if( delete_sdp_line( msg, payload->custom_attrs[i].s, cell) < 0 )
+						{
+							LM_ERR("Unable to add delete lump for a=\n");
+							ret = -1;
+							goto end;
+						}
 					}
 				}
 
