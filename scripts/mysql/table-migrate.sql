@@ -38,7 +38,7 @@ IF @c1 = 1 AND @c2 = 1 THEN
 			(id, setid, destination, socket, state, probe_mode,
 				weight, priority, attrs, description)
 			SELECT
-			id, setid, destination, socket, state, 0
+			id, setid, destination, socket, state, 0,
 				weight, priority, attrs, description
 			FROM ', old_db, '.', tb_name);
 	ELSE
