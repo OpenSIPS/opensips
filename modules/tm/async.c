@@ -35,8 +35,9 @@
 typedef struct _async_tm_ctx {
 	/* generic async context - MUST BE FIRST */
 	async_ctx  async;
-	/* the script route to be used to continue after the resume function */
-	int resume_route;
+	/* the script route to be used to continue after the resume function;
+	 * this is a reference in shm mem, that needs separated free */
+	struct script_route_ref *resume_route;
 	/* the type of the route where the suspend was done */
 	int route_type;
 	/* the processing context for the handled message */
@@ -57,12 +58,12 @@ extern int return_code; /* from action.c, return code */
 
 
 
-static inline void run_resume_route( int resume_route, struct sip_msg *msg,
-															int run_post_cb)
+static inline void run_resume_route( struct script_route_ref * resume_route,
+							struct sip_msg *msg, int run_post_cb)
 {
 	/* run the resume route and if it ends the msg handling (no other aysnc
 	 * started), run the post script callbacks. */
-	if ( (run_top_route(sroutes->request[resume_route], msg) & ACT_FL_TBCONT) == 0 )
+	if ( (run_top_route(sroutes->request[resume_route->idx], msg) & ACT_FL_TBCONT) == 0 )
 		if (run_post_cb)
 			exec_post_req_cb(msg);
 }
@@ -182,11 +183,18 @@ route:
 		close(fd);
 
 	/* run the resume_route (some type as the original one) */
-	swap_route_type(route, ctx->route_type);
-	run_resume_route( ctx->resume_route, &faked_req, 1);
-	set_route_type(route);
+	if (!ref_script_route_check_and_update(ctx->resume_route)) {
+		LM_ERR("resume route [%s] not present in cfg anymore\n",
+			ctx->resume_route->name.s);
+	} else {
+		swap_route_type(route, ctx->route_type);
+		run_resume_route( ctx->resume_route, &faked_req, 1);
+		set_route_type(route);
+	}
 
 	/* no need for the context anymore */
+	if (ctx->resume_route)
+		shm_free(ctx->resume_route);
 	shm_free(ctx);
 
 	/* free also the processing ctx if still set
@@ -214,7 +222,8 @@ restore:
 }
 
 
-int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
+int t_handle_async(struct sip_msg *msg, struct action* a,
+										struct script_route_ref *resume_route,
 										unsigned int timeout, void **params)
 {
 	async_tm_ctx *ctx = NULL;
@@ -311,7 +320,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 		goto sync;
 	}
 
-	ctx->resume_route = resume_route;
+	ctx->resume_route = dup_ref_script_route_in_shm(resume_route, 0);
+	if (!ref_script_route_is_valid(ctx->resume_route)) {
+		LM_ERR("failed dup resume route -> act in sync mode\n");
+		goto sync;
+	}
 	ctx->route_type = route_type;
 	ctx->msg_ctx = current_processing_ctx;
 	ctx->t = t;
@@ -363,6 +376,8 @@ sync:
 			close(fd);
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* get rid of the context, useless at this point further */
+	if (ctx->resume_route)
+		shm_free(ctx->resume_route);
 	shm_free(ctx);
 	/* run the resume route in sync mode */
 	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
@@ -375,7 +390,11 @@ failure:
 	return_code = -1;
 resume:
 	/* get rid of the context, useless at this point further */
-	if (ctx) shm_free(ctx);
+	if (ctx) {
+		if (ctx->resume_route)
+			shm_free(ctx->resume_route);
+		shm_free(ctx);
+	}
 	/* run the resume route */
 	run_resume_route( resume_route, msg, (route_type!=REQUEST_ROUTE)?0:1);
 	/* the triggering route is terminated and whole script ended */

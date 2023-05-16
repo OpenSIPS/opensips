@@ -133,10 +133,10 @@ int t_get_picked_branch();
 /* set which 'reply' structure to take if only negative
    replies arrive
 */
-void t_on_negative( unsigned int go_to );
-unsigned int get_on_negative();
-void t_on_reply( unsigned int go_to );
-unsigned int get_on_reply();
+void t_on_negative( struct script_route_ref *ref );
+struct script_route_ref *get_on_negative();
+void t_on_reply( struct script_route_ref *ref );
+struct script_route_ref *get_on_reply();
 
 /* Retransmits the last sent inbound reply.
  * Returns  -1 - error

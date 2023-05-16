@@ -68,26 +68,32 @@
 #define NO_BODY_CLONE_MARKER ((struct sip_msg_body*)-1)
 
 /* route to execute for the branches */
-static int goto_on_branch;
+static struct script_route_ref *goto_on_branch;
 int _tm_branch_index = 0;
 
-void t_on_branch( unsigned int go_to )
+void t_on_branch( struct script_route_ref *ref )
 {
 	struct cell *t = get_t();
+	struct script_route_ref **holder;
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
-	if (route_type==BRANCH_ROUTE || !t || t==T_UNDEFINED )
-		goto_on_branch=go_to;
-	else
-		t->on_branch = go_to;
+	holder = (!t || t==T_UNDEFINED ) ? &goto_on_branch : &t->on_branch ;
+
+	/* if something already set, free it first */
+	if (*holder)
+		shm_free( *holder );
+
+	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
 }
 
 
-unsigned int get_on_branch(void)
+struct script_route_ref *get_on_branch(void)
 {
-	return goto_on_branch;
+	struct script_route_ref *ref = goto_on_branch;
+	goto_on_branch = NULL;
+	return ref;
 }
 
 
@@ -154,7 +160,7 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 
 	/* run branch route, if any; run it before RURI's DNS lookup
 	 * to allow to be changed --bogdan */
-	if (t->on_branch) {
+	if ( ref_script_route_check_and_update(t->on_branch)) {
 		/* need to pkg_malloc the dst_uri */
 		if ( request->dst_uri.s && request->dst_uri.len>0 ) {
 			if ( (p=pkg_malloc(request->dst_uri.len))==0 ) {
@@ -185,7 +191,8 @@ static inline int pre_print_uac_request( struct cell *t, int branch,
 		swap_route_type( backup_route_type, BRANCH_ROUTE);
 
 		_tm_branch_index = branch;
-		if(run_top_route(sroutes->branch[t->on_branch],request)&ACT_FL_DROP){
+		if (run_top_route( sroutes->branch[t->on_branch->idx],request)
+		&ACT_FL_DROP) {
 			LM_DBG("dropping branch <%.*s>\n", request->new_uri.len,
 					request->new_uri.s);
 			_tm_branch_index = 0;

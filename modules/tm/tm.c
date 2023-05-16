@@ -95,6 +95,7 @@ static int fixup_cancel_branch(void** param);
 static int fixup_froute(void** param);
 static int fixup_rroute(void** param);
 static int fixup_broute(void** param);
+static int free_fixup_Xroute(void** param);
 static int fixup_inject_source(void **param);
 static int fixup_inject_flags(void **param);
 static int fixup_reply_code(void **param);
@@ -219,13 +220,13 @@ static const cmd_export_t cmds[]={
 		{0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE},
 	{"t_on_failure", (cmd_function)w_t_on_negative, {
-		{CMD_PARAM_STR, fixup_froute, 0}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_froute, free_fixup_Xroute}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_reply", (cmd_function)w_t_on_reply, {
-		{CMD_PARAM_STR, fixup_rroute, 0}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_rroute, free_fixup_Xroute}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"t_on_branch", (cmd_function)w_t_on_branch, {
-		{CMD_PARAM_STR, fixup_broute, 0}, {0,0,0}},
+		{CMD_PARAM_STR, fixup_broute, free_fixup_Xroute}, {0,0,0}},
 		REQUEST_ROUTE | FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"t_check_status", (cmd_function)t_check_status, {
 		{CMD_PARAM_REGEX, 0, 0}, {0,0,0}},
@@ -452,19 +453,27 @@ struct module_exports exports= {
 
 
 /**************************** fixup functions ******************************/
+static int free_fixup_Xroute(void** param)
+{
+	if (*param)
+		unref_script_route( (struct script_route_ref *)*param );
+	return 0;
+}
+
+
 static int fixup_froute(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-			sroutes->failure, FAILURE_RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->failure, FAILURE_RT_NO, FAILURE_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("failure route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
@@ -472,17 +481,17 @@ static int fixup_froute(void** param)
 
 static int fixup_rroute(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-		sroutes->onreply, ONREPLY_RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->onreply, ONREPLY_RT_NO, ONREPLY_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("onreply route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
@@ -490,17 +499,17 @@ static int fixup_rroute(void** param)
 
 static int fixup_broute(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-		sroutes->branch, BRANCH_RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->branch, BRANCH_RT_NO, BRANCH_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("branch route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
@@ -1181,21 +1190,21 @@ static int w_t_newtran( struct sip_msg* p_msg)
 
 static int w_t_on_negative( struct sip_msg* msg, void *go_to)
 {
-	t_on_negative( (unsigned int )(long) go_to );
+	t_on_negative( (struct script_route_ref*) go_to );
 	return 1;
 }
 
 
 static int w_t_on_reply( struct sip_msg* msg, void *go_to)
 {
-	t_on_reply( (unsigned int )(long) go_to );
+	t_on_reply( (struct script_route_ref*) go_to );
 	return 1;
 }
 
 
 static int w_t_on_branch( struct sip_msg* msg, void *go_to)
 {
-	t_on_branch( (unsigned int )(long) go_to );
+	t_on_branch( (struct script_route_ref*) go_to );
 	return 1;
 }
 

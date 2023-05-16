@@ -112,9 +112,9 @@ char *tm_tag_suffix;
 static int picked_branch=-1;
 
 /* where to go if there is no positive reply */
-static int goto_on_negative=0;
+static struct script_route_ref *goto_on_negative = NULL;
 /* where to go on receipt of reply */
-static int goto_on_reply=0;
+static struct script_route_ref *goto_on_reply = NULL;
 
 /* currently processed branch */
 extern int _tm_branch_index;
@@ -138,46 +138,56 @@ int t_get_picked_branch(void)
 */
 
 
-void t_on_negative( unsigned int go_to )
+void t_on_negative( struct script_route_ref *ref )
 {
 	struct cell *t = get_t();
+	struct script_route_ref **holder;
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
-	if (!t || t==T_UNDEFINED )
-		goto_on_negative=go_to;
-	else
-		t->on_negative = go_to;
+	holder = (!t || t==T_UNDEFINED ) ? &goto_on_negative : &t->on_negative ;
+
+	/* if something already set, free it first */
+	if (*holder)
+		shm_free( *holder );
+
+	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
 }
 
 
-void t_on_reply( unsigned int go_to )
+void t_on_reply( struct script_route_ref *ref  )
 {
 	struct cell *t = get_t();
+
+	struct script_route_ref **holder;
 
 	/* in MODE_REPLY and MODE_ONFAILURE T will be set to current transaction;
 	 * in MODE_REQUEST T will be set only if the transaction was already
 	 * created; if not -> use the static variable */
-	if (!t || t==T_UNDEFINED ) {
-		goto_on_reply=go_to;
-	} else {
-		if (route_type==BRANCH_ROUTE) {
-			t->uac[_tm_branch_index].on_reply = go_to;
-		} else {
-			t->on_reply = go_to;
-		}
-	}
+	holder = (!t || t==T_UNDEFINED ) ? &goto_on_reply :
+		( route_type==BRANCH_ROUTE ?
+			&t->uac[_tm_branch_index].on_reply : &t->on_reply );
+
+	/* if something already set, free it first */
+	if (*holder)
+		shm_free( *holder );
+
+	*holder = ref ? dup_ref_script_route_in_shm( ref, 0) : NULL;
 }
 
 
-unsigned int get_on_negative(void)
+struct script_route_ref *get_on_negative(void)
 {
-	return goto_on_negative;
+	struct script_route_ref *ref = goto_on_negative;
+	goto_on_negative = NULL;
+	return ref;
 }
-unsigned int get_on_reply(void)
+struct script_route_ref *get_on_reply(void)
 {
-	return goto_on_reply;
+	struct script_route_ref *ref = goto_on_reply;
+	goto_on_reply = NULL;
+	return ref;
 }
 
 void tm_init_tags(void)
@@ -571,7 +581,7 @@ static inline int run_failure_handlers(struct cell *t)
 	static struct sip_msg faked_req;
 	struct sip_msg *shmem_msg;
 	struct ua_client *uac;
-	int on_failure;
+	struct script_route_ref *on_failure;
 	int old_route_type;
 
 	shmem_msg = t->uas.request;
@@ -579,14 +589,17 @@ static inline int run_failure_handlers(struct cell *t)
 
 	/* failure_route for a local UAC? */
 	if (!shmem_msg || REQ_LINE(shmem_msg).method_value==METHOD_CANCEL ) {
-		LM_WARN("no UAC or CANCEL support (%d, %d) \n",
-				t->on_negative, t->tmcb_hl.reg_types);
+		LM_WARN("no UAC or CANCEL support (%s, %d) \n",
+				ref_script_route_name(t->on_negative), t->tmcb_hl.reg_types);
 		return 0;
 	}
 
 	/* don't start faking anything if we don't have to */
-	if ( !has_tran_tmcbs( t, TMCB_ON_FAILURE) && !t->on_negative ) {
-		LM_WARN("no negative handler (%d, %d)\n",t->on_negative,
+	if ( !ref_script_route_check_and_update(t->on_negative) &&
+	!has_tran_tmcbs( t, TMCB_ON_FAILURE) ) {
+		LM_WARN("no failure route (%s/%d), callbacks (%d)\n",
+			ref_script_route_name(t->on_negative),
+			ref_script_route_idx(t->on_negative),
 			t->tmcb_hl.reg_types);
 		return 1;
 	}
@@ -603,17 +616,17 @@ static inline int run_failure_handlers(struct cell *t)
 		run_trans_callbacks( TMCB_ON_FAILURE, t, &faked_req,
 				uac->reply, uac->last_received);
 	}
-	if (t->on_negative) {
+	if (ref_script_route_is_valid(t->on_negative)) {
 		/* update flags in transaction if changed by callbacks */
 		shmem_msg->flags = faked_req.flags;
 		/* avoid recursion -- if failure_route forwards, and does not
 		 * set next failure route, failure_route will not be reentered
 		 * on failure */
 		on_failure = t->on_negative;
-		t->on_negative=0;
+		t_on_negative(NULL);
 		/* run a reply_route action if some was marked */
 		swap_route_type(old_route_type, FAILURE_ROUTE);
-		run_top_route(sroutes->failure[on_failure], &faked_req);
+		run_top_route(sroutes->failure[on_failure->idx], &faked_req);
 		set_route_type(old_route_type);
 	}
 
@@ -1604,8 +1617,8 @@ int reply_received( struct sip_msg  *p_msg )
 
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
 		/* run block - first per branch and then global one */
-		if ( t->uac[branch].on_reply &&
-		(run_top_route(sroutes->onreply[t->uac[branch].on_reply],p_msg)
+		if ( ref_script_route_check_and_update(t->uac[branch].on_reply) &&
+		(run_top_route(sroutes->onreply[t->uac[branch].on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
@@ -1615,7 +1628,8 @@ int reply_received( struct sip_msg  *p_msg )
 			LM_DBG("dropping provisional reply %d\n", msg_status);
 			goto done;
 		}
-		if(t->on_reply && (run_top_route(sroutes->onreply[t->on_reply],p_msg)
+		if ( ref_script_route_check_and_update(t->on_reply) &&
+		(run_top_route(sroutes->onreply[t->on_reply->idx],p_msg)
 		&ACT_FL_DROP) && (msg_status<200) ) {
 			set_route_type(old_route_type);
 			if (onreply_avp_mode) {
