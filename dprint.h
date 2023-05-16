@@ -131,6 +131,7 @@ extern char* log_name;
 extern char ctime_buf[];
 extern enum log_format stderr_log_format, syslog_log_format;
 extern int log_json_buf_size;
+extern int log_msg_buf_size;
 
 /*
  * must be called after init_multi_proc_support()
@@ -144,6 +145,7 @@ void cleanup_log_level(void);
 int init_log_cons_shm_table(void);
 
 int init_log_json_buf(int realloc);
+int init_log_msg_buf(int realloc);
 
 int set_log_consumer_mute_state(str *name, int state);
 int get_log_consumer_mute_state(str *name, int *state);

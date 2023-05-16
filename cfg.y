@@ -296,6 +296,7 @@ extern int cfg_parse_only_routes;
 %token STDERROR_FORMAT
 %token SYSLOG_FORMAT
 %token LOG_JSON_BUF_SIZE
+%token LOG_MSG_BUF_SIZE
 %token LOGFACILITY
 %token SYSLOG_FACILITY
 %token LOGNAME
@@ -938,9 +939,15 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			if ((i_tmp = parse_log_format(&s_tmp)) < 0) {
 				yyerror("unknown log format");
 			} else {
-				if (i_tmp != LOG_FORMAT_PLAIN && init_log_json_buf(0) < 0) {
-					yyerror("failed to allocate json log buffer");
-					YYABORT;
+				if (i_tmp != LOG_FORMAT_PLAIN) {
+					if (init_log_json_buf(0) < 0) {
+						yyerror("failed to allocate json log buffer");
+						YYABORT;
+					}
+					if (init_log_msg_buf(0) < 0) {
+						yyerror("failed to allocate msg log buffer");
+						YYABORT;
+					}
 				}
 
 				stderr_log_format = i_tmp;
@@ -952,9 +959,15 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			if ((i_tmp = parse_log_format(&s_tmp)) < 0) {
 				yyerror("unknown log format");
 			} else {
-				if (i_tmp != LOG_FORMAT_PLAIN && init_log_json_buf(0) < 0) {
-					yyerror("failed to allocate json log buffer");
-					YYABORT;
+				if (i_tmp != LOG_FORMAT_PLAIN) {
+					if (init_log_json_buf(0) < 0) {
+						yyerror("failed to allocate json log buffer");
+						YYABORT;
+					}
+					if (init_log_msg_buf(0) < 0) {
+						yyerror("failed to allocate msg log buffer");
+						YYABORT;
+					}
 				}
 
 				syslog_log_format = i_tmp;
@@ -969,6 +982,15 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 			}
 		| LOG_JSON_BUF_SIZE EQUAL error { yyerror("number expected"); }
+		| LOG_MSG_BUF_SIZE EQUAL NUMBER {
+			IFOR();
+			log_msg_buf_size = $3;
+			if (init_log_msg_buf(1) < 0) {
+				yyerror("failed to realloc msg log buffer");
+				YYABORT;
+			}
+			}
+		| LOG_MSG_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| LOGFACILITY EQUAL ID { IFOR();
 			warn("'log_facility' is deprecated, use 'syslog_facility' instead");
 			if ( (i_tmp=str2facility($3))==-1)

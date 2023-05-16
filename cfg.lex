@@ -217,6 +217,7 @@ SYSLOG_LEVEL_FILTER	    syslog_level_filter
 STDERROR_FORMAT stderror_log_format
 SYSLOG_FORMAT   syslog_log_format
 LOG_JSON_BUF_SIZE	"log_json_buf_size"
+LOG_MSG_BUF_SIZE    "log_msg_buf_size"
 LOGFACILITY	log_facility
 SYSLOG_FACILITY	syslog_facility
 LOGNAME		log_name
@@ -436,6 +437,8 @@ SPACE		[ ]
 <INITIAL>{SYSLOG_FORMAT} { count(); yylval.strval=yytext; return SYSLOG_FORMAT; }
 <INITIAL>{LOG_JSON_BUF_SIZE}	{	count(); yylval.strval=yytext;
 									return LOG_JSON_BUF_SIZE; }
+<INITIAL>{LOG_MSG_BUF_SIZE}    {	count(); yylval.strval=yytext;
+									return LOG_MSG_BUF_SIZE; }
 <INITIAL>{LOGFACILITY}	{ yylval.strval=yytext; return LOGFACILITY; }
 <INITIAL>{SYSLOG_FACILITY}	{ yylval.strval=yytext; return SYSLOG_FACILITY; }
 <INITIAL>{LOGNAME}	{ yylval.strval=yytext; return LOGNAME; }

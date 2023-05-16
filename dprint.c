@@ -60,7 +60,9 @@ char *log_prefix = "";
 static int *default_log_level;
 
 static char *log_json_buf = NULL;
-int log_json_buf_size = 8192;
+int log_json_buf_size = 6144;
+static char *log_msg_buf = NULL;
+int log_msg_buf_size = 4096;
 
 static void stderr_dprint(int log_level, int facility, char *module, const char *func,
 	char *format, va_list ap);
@@ -180,6 +182,79 @@ void stderr_dprint_tmp(char *format, ...)
 
 #define DP_JSON_MSG_END       "\"}"
 
+static int log_escape_json_buf(char *src, int src_len, char *dst, int dst_max_len)
+{
+	int i, j = 0;
+	int rlen = 0;
+
+	/* calculate the required length in the dst buffer */
+	for (i=0; i<src_len; i++) {
+		rlen++;
+
+		switch (src[i]) {
+		case '\\':
+		case '\"':
+		case '\b':
+		case '\f':
+		case '\n':
+		case '\r':
+		case '\t':
+			rlen++;  /* +1 for the backslash */
+		    break;
+		default:
+			if (src[i] < 32)
+				rlen += 6;  /* +6 for \uXXXX */
+		}
+	}
+
+	if (rlen>dst_max_len) {
+		stderr_dprint_tmp("error: buffer too small! needed: %d\n", rlen);
+		return -1;
+	} else if (rlen == src_len) {
+		/* nothing needs to be escaped */
+		memcpy(dst, src, src_len);
+		return src_len;
+	}
+
+	for (i=0; i<src_len; i++) {
+		if (src[i] > 31 && src[i] != '\\' && src[i] != '\"') {
+			dst[j++] = src[i];
+		} else {
+			dst[j++] = '\\';
+
+			switch (src[i]) {
+			case '\\':
+				dst[j++] = '\\';
+				break;
+			case '\"':
+				dst[j++] = '\"';
+				break;
+			case '\b':
+				dst[j++] = 'b';
+				break;
+			case '\f':
+				dst[j++] = 'f';
+				break;
+			case '\n':
+				dst[j++] = 'n';
+				break;
+			case '\r':
+				dst[j++] = 'r';
+				break;
+			case '\t':
+				dst[j++] = 't';
+				break;
+			default:
+				/* escape and print as unicode codepoint */
+				sprintf(dst+j, "u%04x", src[i]);
+				j += 5;
+			}
+		}
+	}
+
+	return j;
+}
+
 static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefix,
 	char *level, char *module, const char *func, char *format, va_list ap)
 {
@@ -203,7 +278,7 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 	}
 
 	if (len >= buf->len) {
-		stderr_dprint_tmp("error: buffer too small!\n");
+		stderr_dprint_tmp("error: buffer too small! needed: %d\n", len);
 		return -1;
 	}
 
@@ -266,30 +341,30 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 			append_string_st(p, DP_JSON_MSG_KEY);
 	}
 
-	l = vsnprintf(p, buf->len - len - S_LEN(DP_JSON_MSG_END) - 1, format, ap);
+	l = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);
 	if (l < 0) {
 		stderr_dprint_tmp("error: vsnprintf() failed!\n");
 		return -1;
 	}
-	if (l>=buf->len - len - S_LEN(DP_JSON_MSG_END) - 1) {
-		stderr_dprint_tmp("warning: log message truncated\n");
-		l = buf->len - len - S_LEN(DP_JSON_MSG_END) - 1;
+	if (l >= log_msg_buf_size) {
+		stderr_dprint_tmp("warning: buffer too small, log message truncated\n");
+		l = log_msg_buf_size;
+	}
+
+	l = log_escape_json_buf(log_msg_buf, l, p,
+		buf->len - len - S_LEN(DP_JSON_MSG_END) - 1);
+	if (l < 0) {
+		stderr_dprint_tmp("error: failed to escape log message!\n",l);
+		return -1;
 	}
 
 	p += l;
 	len += l;
 
-	/* try to strip \n from the end of the "message" field */
-	if (*(p-1) == '\n') {
-		*(p-1) = '\0';
-		p--;
-		len--;
-	}
-
 	append_string_st(p, DP_JSON_MSG_END);
 	*p = '\0';
 
-	return len; /* return length printed excluding the final \0 */
+	return len;
 }
 
 static void stderr_dprint(int log_level, int facility, char *module, const char *func,
@@ -465,6 +540,25 @@ int init_log_json_buf(int realloc)
 	} else if (!log_json_buf) {
 		log_json_buf = pkg_malloc(log_json_buf_size+1);
 		if (!log_json_buf) {
+			LM_ERR("no pkg memory left\n");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+int init_log_msg_buf(int realloc)
+{
+	if (realloc && log_msg_buf) {
+		log_msg_buf = pkg_realloc(log_msg_buf, log_msg_buf_size+1);
+		if (!log_msg_buf) {
+			LM_ERR("no pkg memory left\n");
+			return -1;
+		}
+	} else if (!log_msg_buf) {
+		log_msg_buf = pkg_malloc(log_msg_buf_size+1);
+		if (!log_msg_buf) {
 			LM_ERR("no pkg memory left\n");
 			return -1;
 		}
