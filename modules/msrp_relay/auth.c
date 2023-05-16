@@ -199,6 +199,12 @@ static int run_msrp_auth_route(str *realm, str *user, pv_value_t *passwd_pval)
 	pv_value_t pval;
 	struct sip_msg *dummy_msg;
 
+	if (!ref_script_route_is_valid(auth_route_ref)) {
+		LM_ERR("auth route [%s] does not exist in cfg\n",
+			auth_route_ref->name.s);
+		return -1;
+	}
+
 	/* prepare a fake/dummy request */
 	dummy_msg = get_dummy_sip_msg();
 	if(dummy_msg == NULL) {
@@ -222,7 +228,7 @@ static int run_msrp_auth_route(str *realm, str *user, pv_value_t *passwd_pval)
 
 	set_route_type(REQUEST_ROUTE);
 
-	run_top_route(sroutes->request[auth_routeid], dummy_msg);
+	run_top_route(sroutes->request[auth_route_ref->idx], dummy_msg);
 
 	if (pv_get_spec_value(dummy_msg, &passwd_spec, passwd_pval) < 0) {
 		LM_ERR("Failed to get value from password var\n");

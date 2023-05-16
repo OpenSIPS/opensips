@@ -772,7 +772,7 @@ int run_route_algo(struct sip_msg *msg, int rt_idx,ds_dest_p entry)
 int ds_route_algo(struct sip_msg *msg, ds_set_p set, 
 		ds_dest_p **sorted_set,	int ds_use_default)
 {
-	int i, j, k, end_idx, cnt, rt_idx, fret;
+	int i, j, k, end_idx, cnt, fret;
 	ds_dest_p *sset;
 
 	if (!set) {
@@ -780,9 +780,8 @@ int ds_route_algo(struct sip_msg *msg, ds_set_p set,
 		return -1;
 	}
 
-	if ((rt_idx = get_script_route_ID_by_name(algo_route_param.s,
-	sroutes->request, RT_NO)) == -1) {
-		LM_ERR("Invalid route parameter \n");
+	if (!ref_script_route_is_valid(algo_route)) {
+		LM_ERR("Undefined route <%s>, failing\n", algo_route->name.s);
 		return -1;
 	}
 
@@ -806,7 +805,7 @@ int ds_route_algo(struct sip_msg *msg, ds_set_p set,
 			continue;
 		}
 
-		fret = run_route_algo(msg, rt_idx, &set->dlist[i]);
+		fret = run_route_algo(msg, algo_route->idx, &set->dlist[i]);
 		set->dlist[i].route_algo_value = fret;
 
 		/* search the proper position */
@@ -1851,8 +1850,8 @@ int ds_select_dst(struct sip_msg *msg, ds_select_ctl_p ds_select_ctl,
 			ds_id = 0;
 		break;
 		case 10:
-			if (algo_route_param.s == NULL || algo_route_param.len == 0) {
-				LM_ERR("No hash_route param provided \n");
+			if (!ref_script_route_is_valid(algo_route)) {
+				LM_ERR("No algo_route param provided or not defined\n");
 				goto error;
 			}
 			if (ds_route_algo(msg, idx, &sorted_set, ds_flags&DS_USE_DEFAULT)

@@ -69,8 +69,8 @@ pres_ev_t *dfks_event;
 
 static char *dfks_get_route = DEFAULT_GET_ROUTE_NAME;
 static char *dfks_set_route = DEFAULT_SET_ROUTE_NAME;
-static int dfks_get_route_idx;
-static int dfks_set_route_idx;
+static struct script_route_ref *dfks_get_route_ref;
+static struct script_route_ref *dfks_set_route_ref;
 
 static struct dfks_ctx feature_ctx;
 
@@ -200,15 +200,15 @@ static int mod_init(void)
 {
 	bind_presence_t bind_presence;
 
-	dfks_get_route_idx = get_script_route_ID_by_name(dfks_get_route,
-		sroutes->request, RT_NO);
-	if (dfks_get_route_idx == -1) {
+	dfks_get_route_ref = ref_script_route_by_name(dfks_get_route,
+		sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if (!ref_script_route_is_valid(dfks_get_route_ref)) {
 		LM_ERR("GET route <%s> not defined in the script\n", dfks_get_route);
 		return -1;
 	}
-	dfks_set_route_idx = get_script_route_ID_by_name(dfks_set_route,
-		sroutes->request, RT_NO);
-	if (dfks_set_route_idx == -1) {
+	dfks_set_route_ref = ref_script_route_by_name(dfks_set_route,
+		sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if (!ref_script_route_is_valid(dfks_set_route_ref)) {
 		LM_ERR("SET route <%s> not defined in the script\n", dfks_set_route);
 		return -1;
 	}
@@ -419,9 +419,14 @@ static int pv_get_dfks(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	return 0;
 }
 
-static int run_dfks_route(int route_idx)
+static int run_dfks_route(struct script_route_ref * route_ref)
 {
 	struct sip_msg *req;
+
+	if (!ref_script_route_is_valid(route_ref)){
+		LM_ERR("Route [%s] does not exist in script\n", route_ref->name.s);
+		return -1;
+	}
 
 	/* prepare a fake/dummy request */
 	req = get_dummy_sip_msg();
@@ -433,10 +438,10 @@ static int run_dfks_route(int route_idx)
 	set_route_type(REQUEST_ROUTE);
 
 	LM_DBG("Running DFKS %s route for feature <%.*s> presentity <%.*s>\n",
-		route_idx == dfks_get_route_idx ? "GET" : "SET",
+		route_ref == dfks_get_route_ref ? "GET" : "SET",
 		feature_names[feature_ctx.idx].len, feature_names[feature_ctx.idx].s,
 		feature_ctx.pres_uri.len, feature_ctx.pres_uri.s);
-	run_top_route(sroutes->request[route_idx], req);
+	run_top_route(sroutes->request[route_ref->idx], req);
 
 	release_dummy_sip_msg(req);
 
@@ -553,7 +558,7 @@ static str *build_full_notify(str *pres_uri, str *content_type)
 		memset(feature_ctx.values, 0, MAX_VALUES_NO * sizeof(str));
 		feature_ctx.idx = i;
 		feature_ctx.pres_uri = *pres_uri;
-		run_dfks_route(dfks_get_route_idx);
+		run_dfks_route(dfks_get_route_ref);
 
 		if (feature_ctx.assigned && feature_ctx.notify) {
 			doc = build_feature_doc(i);
@@ -817,7 +822,7 @@ static str *build_feature_notify(str *pres_uri, int feature_idx, int from_subs,
 		feature_ctx.param = *param;
 	}
 
-	run_dfks_route(dfks_set_route_idx);
+	run_dfks_route(dfks_set_route_ref);
 
 	if (!feature_ctx.notify)
 		goto end;

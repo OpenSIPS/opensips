@@ -153,6 +153,7 @@ static int load_dlg_ctx(struct sip_msg *msg, str *callid, void* lmode);
 static int unload_dlg_ctx(struct sip_msg *msg);
 
 static int fixup_route(void** param);
+static int free_fixup_route(void** param);
 static int dlg_on_timeout(struct sip_msg* msg, void *route_id);
 static int dlg_on_answer(struct sip_msg* msg, void *route_id);
 static int dlg_on_hangup(struct sip_msg* msg, void *route_id);
@@ -265,13 +266,13 @@ static const cmd_export_t cmds[]={
 	{"unload_dialog_ctx",(cmd_function)unload_dlg_ctx,
 		{{0,0,0}}, ALL_ROUTES},
 	{"dlg_on_timeout", (cmd_function)dlg_on_timeout, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, free_fixup_route}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"dlg_on_answer", (cmd_function)dlg_on_answer, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, free_fixup_route}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"dlg_on_hangup", (cmd_function)dlg_on_hangup, {
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, free_fixup_route}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE},
 	{"dlg_send_sequential", (cmd_function)dlg_send_sequential, {
 		{CMD_PARAM_STR, 0, 0},
@@ -557,18 +558,26 @@ static int fixup_mmode(void **param)
 
 static int fixup_route(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str( (str*)*param,
-		sroutes->request, RT_NO);
-	if (rt==-1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long int)rt;
+	*param = (void*)rt;
 
+	return 0;
+}
+
+
+static int free_fixup_route(void** param)
+{
+	if (*param)
+		unref_script_route( (struct script_route_ref *)*param );
 	return 0;
 }
 
@@ -2434,7 +2443,7 @@ static int unload_dlg_ctx(struct sip_msg *msg)
 }
 
 
-static int dlg_on_timeout(struct sip_msg* msg, void *route_id)
+static int dlg_on_timeout(struct sip_msg* msg, void *ref)
 {
 	struct dlg_cell *dlg;
 
@@ -2454,14 +2463,17 @@ static int dlg_on_timeout(struct sip_msg* msg, void *route_id)
 	/* if the parameter was missing, we get a NULL route_id, which
 	 * translate into a 0 rt_on_timeout, which translates into a reset */
 
-	dlg->rt_on_timeout = (unsigned int)(unsigned long)route_id;
+	if (dlg->rt_on_timeout)
+		shm_free( dlg->rt_on_timeout );
+	dlg->rt_on_timeout = ref ? dup_ref_script_route_in_shm
+		( (struct script_route_ref *)ref, 0) : NULL;
 
 	dlg_unlock_dlg(dlg);
 	return 1;
 }
 
 
-static int dlg_on_answer(struct sip_msg* msg, void *route_id)
+static int dlg_on_answer(struct sip_msg* msg, void *ref)
 {
 	struct dlg_cell *dlg;
 
@@ -2481,14 +2493,17 @@ static int dlg_on_answer(struct sip_msg* msg, void *route_id)
 	/* if the parameter was missing, we get a NULL route_id, which
 	 * translate into a 0 rt_on_timeout, which translates into a reset */
 
-	dlg->rt_on_answer = (unsigned int)(unsigned long)route_id;
+	if (dlg->rt_on_answer)
+		shm_free( dlg->rt_on_answer );
+	dlg->rt_on_answer = ref ? dup_ref_script_route_in_shm
+		( (struct script_route_ref *)ref, 0) : NULL;
 
 	dlg_unlock_dlg(dlg);
 	return 1;
 }
 
 
-static int dlg_on_hangup(struct sip_msg* msg, void *route_id)
+static int dlg_on_hangup(struct sip_msg* msg, void *ref)
 {
 	struct dlg_cell *dlg;
 
@@ -2508,7 +2523,10 @@ static int dlg_on_hangup(struct sip_msg* msg, void *route_id)
 	/* if the parameter was missing, we get a NULL route_id, which
 	 * translate into a 0 rt_on_timeout, which translates into a reset */
 
-	dlg->rt_on_hangup = (unsigned int)(unsigned long)route_id;
+	if (dlg->rt_on_hangup)
+		shm_free( dlg->rt_on_hangup );
+	dlg->rt_on_hangup = ref ? dup_ref_script_route_in_shm
+		( (struct script_route_ref *)ref, 0) : NULL;
 
 	dlg_unlock_dlg(dlg);
 	return 1;

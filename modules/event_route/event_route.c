@@ -45,12 +45,13 @@ static int child_init(int rank);
  * exported functions
  */
 static evi_reply_sock* scriptroute_parse(str socket);
+static void scriptroute_free(evi_reply_sock *sock);
 static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 	evi_reply_sock *sock, evi_params_t *params, evi_async_ctx_t *async_ctx);
 static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2);
 static str scriptroute_print(evi_reply_sock *sock);
 
-#define SR_SOCK_ROUTE(_s) ((int)(unsigned long)(_s->params))
+#define SR_SOCK_ROUTE(_s) ((struct script_route_ref *)(_s->params))
 
 /**
  *  * module process
@@ -100,7 +101,7 @@ static const evi_export_t trans_export_scriptroute = {
 	scriptroute_raise,		/* raise function */
 	scriptroute_parse,		/* parse function */
 	scriptroute_match,		/* sockets match function */
-	0,						/* no free function */
+	scriptroute_free,		/* no free function */
 	scriptroute_print,		/* socket print function */
 	SCRIPTROUTE_FLAG		/* flags */
 };
@@ -190,28 +191,18 @@ static int scriptroute_match(evi_reply_sock *sock1, evi_reply_sock *sock2)
 static evi_reply_sock* scriptroute_parse(str socket)
 {
 	evi_reply_sock *sock = NULL;
-	static char *dummy_buffer = 0, *name;
-	int idx;
+	struct script_route_ref *ref;
 
 	if (!socket.len || !socket.s) {
 		LM_ERR("no socket specified\n");
 		return NULL;
 	}
 
-	/* try to normalize the route name */
-	name = pkg_realloc(dummy_buffer, socket.len + 1);
-	if (!name) {
-		LM_ERR("no more pkg memory\n");
-		return NULL;
-	}
-	memcpy(name, socket.s, socket.len);
-	name[socket.len] = '\0';
-	dummy_buffer = name;
-
 	/* try to "resolve" the name of the route */
-	idx = get_script_route_ID_by_name(name,sroutes->event,EVENT_RT_NO);
-	if (idx < 0) {
-		LM_ERR("cannot find route %s\n", name);
+	ref = ref_script_route_by_name_str( &socket, sroutes->event, EVENT_RT_NO,
+		EVENT_ROUTE, 1 /*in_shm*/);
+	if (!ref_script_route_is_valid(ref)) {
+		LM_ERR("cannot find route %.*s\n", socket.len, socket.s);
 		return NULL;
 	}
 
@@ -224,18 +215,27 @@ static evi_reply_sock* scriptroute_parse(str socket)
 
 	sock->address.s = (char *)(sock + 1);
 
-	memcpy(sock->address.s, name, socket.len+1);
+	memcpy(sock->address.s, socket.s, socket.len);
 	sock->address.len = socket.len;
+	sock->address.s[socket.len] = 0;
 
-	sock->params = (void *)(unsigned long)idx;
+	sock->params = (void *)ref;
 	sock->flags |= EVI_PARAMS;
 
-	LM_DBG("route is <%.*s> idx %d\n", sock->address.len, sock->address.s, idx);
+	LM_DBG("route is <%.*s> idx %d\n", sock->address.len, sock->address.s,
+		ref->idx);
 	sock->flags |= EVI_ADDRESS;
 
 	sock->flags |= SCRIPTROUTE_FLAG;
 
 	return sock;
+}
+
+static void scriptroute_free(evi_reply_sock *sock)
+{
+	/* free the script route reference */
+	if (sock && sock->params)
+		shm_free(sock->params);
 }
 
 static str scriptroute_print(evi_reply_sock *sock)
@@ -368,7 +368,10 @@ static int scriptroute_raise(struct sip_msg *msg, str* ev_name,
 		LM_ERR("failed to serialize event route triggering\n");
 		return -1;
 	}
-	buf->ev_route_id = SR_SOCK_ROUTE(sock);
+	/* this below is just to force an update of ther reference, before 
+	 * dupping it. If not, we will be stuck with the original reference */
+	if (ref_script_route_check_and_update( SR_SOCK_ROUTE(sock) )) {}
+	buf->ev_route = dup_ref_script_route_in_shm( SR_SOCK_ROUTE(sock), 1);
 
 	if (route_send(buf) < 0)
 		return -1;

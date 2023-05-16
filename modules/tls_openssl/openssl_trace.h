@@ -104,10 +104,10 @@ static inline int trace_tls( struct tcp_connection* conn, SSL* ctx,
 	if ( !conn || !TLS_TRACE_IS_ON(conn) || !(data=conn->proto_data) )
 		return 0;
 
-	if ( data->trace_route_id != -1 ) {
-		check_trace_route( data->trace_route_id, conn );
+	if ( data->trace_route_ref ) {
+		check_trace_route( data->trace_route_ref, conn );
 		/* avoid doing this multiple times */
-		data->trace_route_id = -1;
+		data->trace_route_ref = NULL;
 	}
 
 	/* check if tracing is deactivated from the route for this connection */

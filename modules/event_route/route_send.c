@@ -125,13 +125,19 @@ static void route_received(int sender, void *param)
 	struct sip_msg* req;
 	route_send_t *route_s = (route_send_t *)param;
 
+	if (!ref_script_route_check_and_update(route_s->ev_route)){
+		LM_ERR("event route [%.s] no longer available in script\n",
+			route_s->ev_route->name.s);
+		goto cleanup;
+	}
+
 	req = get_dummy_sip_msg();
 	if(req == NULL) {
 		LM_ERR("cannot create new dummy sip request\n");
-		return;
+		goto cleanup;
 	}
 
-	route_run(sroutes->event[route_s->ev_route_id], req,
+	route_run(sroutes->event[route_s->ev_route->idx], req,
 		&route_s->params, &route_s->event);
 
 	release_dummy_sip_msg(req);
@@ -139,6 +145,9 @@ static void route_received(int sender, void *param)
 	/* remove all added AVP - here we use all the time the default AVP list */
 	reset_avps( );
 
+cleanup:
+	if (route_s->ev_route)
+		shm_free(route_s->ev_route);
 	shm_free(route_s);
 }
 

@@ -668,8 +668,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		run_dlg_callbacks(DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM,
 			NULL, 0, 1);
 
-		if (dlg->rt_on_answer) {
-			run_dlg_script_route( dlg, dlg->rt_on_answer);
+		if (ref_script_route_check_and_update(dlg->rt_on_answer)) {
+			run_dlg_script_route( dlg, dlg->rt_on_answer->idx);
 			/* also replicate an update, if some dlg data changed during
 			 * the execution of the on-timeout route */
 			if (dialog_repl_cluster && dlg->flags&DLG_FLAG_VP_CHANGED)
@@ -2034,8 +2034,8 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	if (event==DLG_EVENT_REQBYE && new_state==DLG_STATE_DELETED &&
 	old_state!=DLG_STATE_DELETED) {
 
-		if (dlg->rt_on_hangup)
-			run_dlg_script_route( dlg, dlg->rt_on_hangup);
+		if (ref_script_route_check_and_update(dlg->rt_on_hangup))
+			run_dlg_script_route( dlg, dlg->rt_on_hangup->idx);
 
 		/*destroy profile linkers */
 		destroy_linkers(dlg);
@@ -2402,7 +2402,8 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		/* if we are backup for a dialog with on-timeout route, wait 10 mins
 		 * more to see what decision the active takes, otherwise just expire
 		 * the dialog. We this self prolonging only once! */
-		if (!do_expire_actions && dlg->rt_on_timeout
+		if (!do_expire_actions
+		&& ref_script_route_check_and_update(dlg->rt_on_timeout)
 		&& dlg->state<DLG_STATE_DELETED
 		&& !(dlg->flags&DLG_FLAG_SELF_EXTENDED_TIMEOUT)) {
 			LM_DBG("self prolonging with 10 mins to see what the active"
@@ -2424,13 +2425,14 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		}
 	}
 
-	if (do_expire_actions && dlg->rt_on_timeout
+	if (do_expire_actions
+	&& ref_script_route_check_and_update(dlg->rt_on_timeout)
 	&& dlg->state<DLG_STATE_DELETED) {
 		struct dlg_tl bk_tl = *tl;
 		/* allow the dialog to be re-inserted in the timer list */
 		tl->next = tl->prev = NULL;
 		/* run the on_timeout route - only the active server will do this */
-		run_dlg_script_route( dlg, dlg->rt_on_timeout);
+		run_dlg_script_route( dlg, dlg->rt_on_timeout->idx);
 		/* let's see what happened */
 		if (tl->timeout) {
 			/* dialog is back on the timelist; the set_dlg_timeout()

@@ -285,8 +285,8 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 			else
 				init_params.id = &scenario_id;
 
-			init_params.req_routeid = global_req_rtid;
-			init_params.reply_routeid = global_reply_rtid;
+			init_params.req_route = global_req_rt_ref;
+			init_params.reply_route = global_reply_rt_ref;
 
 			tuple = b2bl_insert_new(NULL, hash_index, &init_params,
 				&extra_headers,

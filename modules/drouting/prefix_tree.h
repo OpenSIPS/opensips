@@ -129,7 +129,7 @@ typedef struct rt_info_ {
 	/* timerec says when the rule is on */
 	tmrec_expr *time_rec;
 	/* script route to be executed */
-	char* route_idx;
+	struct script_route_ref *route_ref;
 	/* opaque string with rule attributes */
 	str attrs;
 	/* array of pointers into the PSTN gw list */

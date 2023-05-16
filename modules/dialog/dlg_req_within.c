@@ -219,8 +219,8 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 		LM_DBG("removing dialog with h_entry %u and h_id %u\n",
 			dlg->h_entry, dlg->h_id);
 
-		if (dlg->rt_on_hangup)
-			run_dlg_script_route( dlg, dlg->rt_on_hangup);
+		if (ref_script_route_check_and_update(dlg->rt_on_hangup))
+			run_dlg_script_route( dlg, dlg->rt_on_hangup->idx);
 
 		/*destroy linkers */
 		destroy_linkers(dlg);

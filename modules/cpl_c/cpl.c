@@ -79,7 +79,7 @@ static char* proxy_route   = NULL;
 struct cpl_enviroment    cpl_env = {
 		0, /* no cpl logging */
 		0, /* recurse proxy level is 0 */
-		0, /* no script route to be run before proxy */
+		NULL, /* no script route to be run before proxy */
 		0, /* user part is not case sensitive */
 		{0,0},   /* no domain prefix to be ignored */
 		{-1,-1}, /* communication pipe to aux_process */
@@ -281,9 +281,9 @@ static int cpl_init(void)
 	LM_INFO("initializing...\n");
 
 	if (proxy_route && proxy_route[0]) {
-		cpl_env.proxy_route = get_script_route_ID_by_name( proxy_route,
-				sroutes->request, RT_NO);
-		if (cpl_env.proxy_route==-1) {
+		cpl_env.proxy_route = ref_script_route_by_name( proxy_route,
+				sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(cpl_env.proxy_route)) {
 			LM_ERR("route <%s> does not exist\n",proxy_route);
 			return -1;
 		}

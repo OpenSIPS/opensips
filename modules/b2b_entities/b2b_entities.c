@@ -63,8 +63,8 @@ unsigned int server_hsize = 9;
 unsigned int client_hsize = 9;
 static char* script_req_route;
 static char* script_reply_route;
-int req_routeid  = -1;
-int reply_routeid = -1;
+struct script_route_ref *req_route_ref  = NULL;
+struct script_route_ref *reply_route_ref = NULL;
 str db_url;
 str b2be_cdb_url;
 str cdb_key_prefix = str_init("b2be$");
@@ -488,9 +488,9 @@ static int mod_init(void)
 
 	if (script_req_route)
 	{
-		req_routeid = get_script_route_ID_by_name( script_req_route,
-			sroutes->request, RT_NO);
-		if (req_routeid < 1)
+		req_route_ref = ref_script_route_by_name( script_req_route,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(req_route_ref))
 		{
 			LM_ERR("route <%s> does not exist\n",script_req_route);
 			return -1;
@@ -499,9 +499,9 @@ static int mod_init(void)
 
 	if (script_reply_route)
 	{
-		reply_routeid = get_script_route_ID_by_name( script_reply_route,
-			sroutes->request, RT_NO);
-		if (reply_routeid < 1)
+		reply_route_ref = ref_script_route_by_name( script_reply_route,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(reply_route_ref))
 		{
 			LM_ERR("route <%s> does not exist\n",script_reply_route);
 			return -1;

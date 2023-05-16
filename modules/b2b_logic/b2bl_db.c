@@ -367,8 +367,8 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 
 	memset(&init_params, 0, sizeof init_params);
 	init_params.id = tuple->scenario_id;
-	init_params.req_routeid = global_req_rtid;
-	init_params.reply_routeid = global_reply_rtid;
+	init_params.req_route = global_req_rt_ref;
+	init_params.reply_route = global_reply_rt_ref;
 
 
 	shm_tuple = b2bl_insert_new(NULL, hash_index, &init_params,

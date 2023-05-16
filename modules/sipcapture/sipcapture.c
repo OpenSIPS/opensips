@@ -446,10 +446,8 @@ int bpf_on = 0;
 char* hep_route=0;
 str hep_route_s;
 
-#define HEP_NO_ROUTE -1
-#define HEP_SIP_ROUTE 0
-static char* hep_route_name=NULL;
-static int hep_route_id=HEP_SIP_ROUTE;
+static char* hep_route_name="sip";
+static struct script_route_ref *hep_route_ref=NULL;
 
 str raw_socket_listen = { 0, 0 };
 str raw_interface = { 0, 0 };
@@ -716,14 +714,15 @@ static int parse_hep_route(char *val)
 
 	if ( route_name.len == hep_no_route.len &&
 			strncasecmp(route_name.s, hep_no_route.s, hep_no_route.len ) == 0) {
-		hep_route_id = HEP_NO_ROUTE;
+		hep_route_ref = NULL;
 	} else if ( route_name.len == hep_sip_route.len &&
 			strncasecmp(route_name.s, hep_sip_route.s, hep_sip_route.len ) == 0) {
-		hep_route_id = HEP_SIP_ROUTE;
+		hep_route_ref = ref_script_route_by_name( "0",
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
 	} else {
-		hep_route_id=get_script_route_ID_by_name( route_name.s,
-			sroutes->request, RT_NO);
-		if ( hep_route_id == -1 ) {
+		hep_route_ref = ref_script_route_by_name( route_name.s,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if ( !ref_script_route_is_valid(hep_route_ref) ) {
 			LM_ERR("route <%s> not defined!\n", route_name.s);
 			return -1;
 		}
@@ -775,11 +774,9 @@ static int mod_init(void) {
 			return -1;
 		}
 
-		if (hep_route_name != NULL) {
-			if ( parse_hep_route(hep_route_name) < 0 ) {
-				LM_ERR("bad hep route name %s\n", hep_route_name);
-				return -1;
-			}
+		if ( parse_hep_route(hep_route_name) < 0 ) {
+			LM_ERR("bad hep route name %s\n", hep_route_name);
+			return -1;
 		}
 
 		set_rtcp_keys();
@@ -787,7 +784,7 @@ static int mod_init(void) {
 		/* db_url is mandatory if sip_capture is used */
 		if (((is_script_func_used("sip_capture", -1) ||
 				is_script_async_func_used("sip_capture", -1)) ||
-				hep_route_id == HEP_NO_ROUTE) ||
+				hep_route_ref == NULL) ||
 			(is_script_func_used("report_capture", -1) ||
 				is_script_async_func_used("report_capture", -1))) {
 			init_db_url(db_url, 0);
@@ -1061,7 +1058,7 @@ static int cfg_validate(void)
 		/* db_url is mandatory if sip_capture is used */
 		if (((is_script_func_used("sip_capture", -1) ||
 				is_script_async_func_used("sip_capture", -1)) ||
-				hep_route_id == HEP_NO_ROUTE) ||
+				hep_route_ref == NULL) ||
 			(is_script_func_used("report_capture", -1) ||
 				is_script_async_func_used("report_capture", -1)))
 		{
@@ -2394,7 +2391,7 @@ int hep_msg_received(void)
 		return 0;
 	}
 
-	if ( hep_route_id == HEP_NO_ROUTE ) {
+	if ( hep_route_ref == NULL ) {
 		memset(&msg, 0, sizeof(struct sip_msg));
 
 		switch (h->version) {
@@ -2438,7 +2435,8 @@ int hep_msg_received(void)
 
 		/* don't go through the main route */
 		return HEP_SCRIPT_SKIP;
-	} else if (hep_route_id > HEP_SIP_ROUTE) {
+	} else if (ref_script_route_is_valid(hep_route_ref) &&
+	hep_route_ref->idx > 0 /*default req route*/) {
 
 		/* builds a dummy message */
 		p_msg = get_dummy_sip_msg();
@@ -2451,7 +2449,7 @@ int hep_msg_received(void)
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route( sroutes->request[hep_route_id], p_msg);
+		run_top_route( sroutes->request[hep_route_ref->idx], p_msg);
 
 		/* free possible loaded avps */
 		reset_avps();

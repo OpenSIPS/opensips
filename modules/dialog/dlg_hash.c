@@ -226,6 +226,13 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 	if (dlg->terminate_reason.s)
 		shm_free(dlg->terminate_reason.s);
 
+	if (dlg->rt_on_answer)
+		shm_free(dlg->rt_on_answer);
+	if (dlg->rt_on_hangup)
+		shm_free(dlg->rt_on_hangup);
+	if (dlg->rt_on_timeout)
+		shm_free(dlg->rt_on_timeout);
+
 #ifdef DBG_DIALOG
 	sh_log(dlg->hist, DLG_DESTROY, "ref %d", dlg->ref);
 	sh_unref(dlg->hist);

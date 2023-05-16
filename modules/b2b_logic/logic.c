@@ -1289,7 +1289,8 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 	cur_route_ctx.flags = (flags & B2B_NOTIFY_FL_TERMINATED) ?
 		B2BL_RT_ENTITY_TERM : 0;
 
-	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR || tuple->reply_routeid <= 0) {
+	if (!ref_script_route_check_and_update(tuple->reply_route)
+	|| tuple->scenario_id == B2B_TOP_HIDING_ID_PTR) {
 		if (_b2b_handle_reply(msg, tuple, entity, entity_head) < 0)
 			goto error;
 	} else {
@@ -1299,7 +1300,7 @@ int b2b_logic_notify_reply(int src, struct sip_msg* msg, str* key, str* body, st
 			goto error;
 		}
 
-		routeid = tuple->reply_routeid;
+		routeid = tuple->reply_route->idx;
 
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
@@ -1758,7 +1759,8 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		break;
 	}
 
-	if (tuple->scenario_id == B2B_TOP_HIDING_ID_PTR || tuple->req_routeid <= 0) {
+	if (!ref_script_route_check_and_update(tuple->req_route)
+	|| tuple->scenario_id == B2B_TOP_HIDING_ID_PTR) {
 		if(request_id == B2B_BYE)
 		{
 			/* even though I don;t receive a reply,
@@ -1784,7 +1786,7 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 			}
 		}
 
-		routeid = tuple->req_routeid;
+		routeid = tuple->req_route->idx;
 
 		lock_release(&b2bl_htable[hash_index].lock);
 		locked = 0;
@@ -3155,7 +3157,7 @@ error:
 
 
 int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
-	void *req_routeid, void *reply_routeid)
+	void *req_route_ref, void *reply_route_ref)
 {
 	str* key;
 	str auth_header;
@@ -3191,10 +3193,10 @@ int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *in
 	}
 
 	init_params->id = id;
-	init_params->req_routeid = req_routeid ?
-		(unsigned long)req_routeid : global_req_rtid;
-	init_params->reply_routeid = reply_routeid ?
-		(unsigned long)reply_routeid : global_reply_rtid;
+	init_params->req_route = req_route_ref ?
+		(struct script_route_ref *)req_route_ref : global_req_rt_ref;
+	init_params->reply_route = reply_route_ref ?
+		(struct script_route_ref *)reply_route_ref : global_reply_rt_ref;
 
 	/* call the scenario init processing function */
 	key = b2bl_init_request(msg, init_params, 0, NULL, 0, cust_headers);
@@ -3324,8 +3326,8 @@ int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 
 	memset(&init_params, 0, sizeof init_params);
 	init_params.id = id;
-	init_params.req_routeid = global_req_rtid;
-	init_params.reply_routeid = global_reply_rtid;
+	init_params.req_route = global_req_rt_ref;
+	init_params.reply_route = global_reply_rt_ref;
 
 	list1 = parse_csv_record(ent1);
 	if (!list1) {

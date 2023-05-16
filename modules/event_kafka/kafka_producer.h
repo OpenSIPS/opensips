@@ -62,7 +62,7 @@ typedef struct _evi_job_data {
 
 typedef struct _script_job_data {
 	kafka_broker_t *broker;
-	int report_rt_idx;
+	struct script_route_ref *report_rt;
 } script_job_data_t;
 
 typedef struct _kafka_job {

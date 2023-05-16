@@ -325,8 +325,14 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 
 	tuple->hash_index = hash_index;
 
-	tuple->req_routeid = init_params->req_routeid;
-	tuple->reply_routeid = init_params->reply_routeid;
+	tuple->req_route =
+		dup_ref_script_route_in_shm( init_params->req_route, 0);
+	tuple->reply_route =
+		dup_ref_script_route_in_shm( init_params->reply_route, 0);
+	if (!tuple->req_route || !tuple->reply_route) {
+		LM_ERR("failed to duplicate script route references\n");
+		goto error;
+	}
 
 	if (set_tracer_func && msg && msg->msg_flags&tracer_msg_flag_filter)
 		tuple->tracer = *set_tracer_func();
@@ -337,8 +343,13 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 
 	return tuple;
 error:
-	if (tuple)
+	if (tuple) {
+		if(tuple->req_route)
+			shm_free(tuple->req_route);
+		if(tuple->reply_route)
+			shm_free(tuple->reply_route);
 		shm_free(tuple);
+	}
 
 	if (repl_flag != TUPLE_REPL_RECV)
 		lock_release(&b2bl_htable[hash_index].lock);
@@ -705,6 +716,11 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 
 	if (tuple->tracer.param && tuple->tracer.f_freep)
 		tuple->tracer.f_freep( tuple->tracer.param );
+
+	if(tuple->req_route)
+		shm_free(tuple->req_route);
+	if(tuple->reply_route)
+		shm_free(tuple->reply_route);
 
 	shm_free(tuple);
 }

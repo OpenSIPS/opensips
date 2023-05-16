@@ -103,10 +103,10 @@ static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
 		}\
 	}while(0);
 
-#define SET_ROUTE_VALUE(_val, _idx) \
+#define SET_ROUTE_VALUE(_val, _ref) \
 	do {\
-		if (_idx) { \
-			VAL_STRING((_val)) = sroutes->request[_idx].name;\
+		if (_ref) { \
+			VAL_STRING((_val)) = (_ref)->name.s;\
 			VAL_NULL((_val)) = 0;\
 		} else {\
 			VAL_STRING((_val)) = NULL;\
@@ -138,9 +138,9 @@ static inline void set_final_update_cols(db_val_t *, struct dlg_cell *, int);
 			str __s;\
 			__s.s = VAL_STR((_values)+ (_index)).s;\
 			__s.len = strlen(VAL_STR((_values)+ (_index)).s);\
-			(_res) =  get_script_route_ID_by_name_str( &__s, \
-				sroutes->request, RT_NO);\
-			if ((_res)==-1) { \
+			(_res) = ref_script_route_by_name_str( &__s, \
+				sroutes->request, RT_NO, REQUEST_ROUTE, 1);\
+			if (!ref_script_route_is_valid(_res)) { \
 				LM_WARN("loaded <%.*s> route not found " \
 				"in the script\n", __s.len, __s.s); \
 				(_res) = 0; \

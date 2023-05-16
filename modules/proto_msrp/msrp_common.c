@@ -36,7 +36,7 @@
 #include "msrp_tls.h"
 
 int *msrp_trace_is_on;
-int  msrp_trace_filter_route_id = -1;
+struct script_route_ref *msrp_trace_filter_route = NULL;
 trace_dest msrp_t_dst;
 
 struct msrp_req msrp_current_req;
@@ -463,7 +463,7 @@ int msrp_read_req(struct tcp_connection* con, int* bytes_read)
 			ip_addr2a( &con->rcv.dst_ip ), con->rcv.dst_port );
 
 		if ( TRACE_ON( con->flags ) &&
-					check_trace_route( msrp_trace_filter_route_id, con) ) {
+					check_trace_route( msrp_trace_filter_route, con) ) {
 			if ( tcpconn2su( con, &src_su, &dst_su) < 0 ) {
 				LM_ERR("can't create su structures for tracing!\n");
 			} else {
@@ -613,7 +613,7 @@ int proto_msrp_send(struct socket_info* send_sock,
 		}
 
 		if ( TRACE_ON( c->flags ) &&
-				check_trace_route( msrp_trace_filter_route_id, c) ) {
+				check_trace_route( msrp_trace_filter_route, c) ) {
 			c->proto_flags |= F_TCP_CONN_TRACED;
 			if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 				LM_ERR("can't create su structures for tracing!\n");

@@ -383,7 +383,7 @@ void kafka_report_status(int sender, void *param)
 
 		job_data->evi_async_ctx.status_cb(job_data->evi_async_ctx.cb_param,
 			p->status);
-	} else {
+	} else if (ref_script_route_check_and_update(job_data->report_rt)) {
 		script_job_data_t *job_data = (script_job_data_t *)p->job->data;
 		struct sip_msg *req;
 		struct usr_avp **old_avps;
@@ -403,7 +403,7 @@ void kafka_report_status(int sender, void *param)
 		old_avps = set_avp_list(&report_avps);
 
 		set_route_type(REQUEST_ROUTE);
-		run_top_route(sroutes->request[job_data->report_rt_idx], req);
+		run_top_route(sroutes->request[job_data->report_rt->idx], req);
 
 		set_avp_list(old_avps);
 		destroy_avp_list(&report_avps);
@@ -412,6 +412,8 @@ void kafka_report_status(int sender, void *param)
 	}
 
 free:
+	if (job_data->report_rt)
+		shm_free(job_data->report_rt);
 	shm_free(p->job);
 	shm_free(p);
 }
@@ -423,7 +425,7 @@ static int kafka_dispatch_report(kafka_job_t *job, enum evi_status status)
 	if ((job->type == KAFKA_JOB_EVI &&
 		((evi_job_data_t *)job->data)->evi_async_ctx.status_cb == NULL) ||
 		(job->type == KAFKA_JOB_SCRIPT &&
-		((script_job_data_t *)job->data)->report_rt_idx == -1))
+		((script_job_data_t *)job->data)->report_rt == NULL))
 		/* no reporting required */
 		return 1;
 

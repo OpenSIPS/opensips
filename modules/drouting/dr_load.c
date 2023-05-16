@@ -700,7 +700,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 						int_vals[INT_VALS_RULE_ID_DRR_COL]);
 					continue;
 				}
-				/* set the script route ID */
+				/* set the script route name */
 				if ( VAL_NULL(ROW_VALUES(row)+5) ||
 				((str_vals[STR_VALS_ROUTEID_DRR_COL]=
 					(char*)VAL_STRING(ROW_VALUES(row)+5))==NULL ) ||

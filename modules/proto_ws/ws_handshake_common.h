@@ -1652,10 +1652,10 @@ static int trace_ws( struct tcp_connection* conn, trans_trace_event event, str* 
 			!WS_TRACE_IS_ON(conn) || ! (d = conn->proto_data) )
 		return 0;
 
-	if ( d->trace_route_id != -1 ) {
-		check_trace_route( d->trace_route_id, conn );
+	if ( ref_script_route_is_valid(d->trace_route_ref) ) {
+		check_trace_route( d->trace_route_ref, conn );
 		/* avoid doing this multiple times */
-		d->trace_route_id = -1;
+		d->trace_route_ref = NULL;
 	}
 
 	/* check if tracing is deactivated from the route for this connection */

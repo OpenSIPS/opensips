@@ -206,9 +206,13 @@ int pike_check_req(struct sip_msg *msg)
 
 
 
-int run_pike_route( struct sip_msg *msg, void *rt ) {
+int run_pike_route( struct sip_msg *msg, void *rt )
+{
+	if (!ref_script_route_is_valid((struct script_route_ref *)rt))
+		return SCB_RUN_ALL;
+
 	/* the check was dropped */
-	if ( run_top_route( sroutes->request[(int)(long)rt], msg)&ACT_FL_DROP)
+	if ( run_top_route( sroutes->request[((struct script_route_ref *)rt)->idx], msg)&ACT_FL_DROP)
 		return SCB_RUN_ALL;
 
 	/* run the check */

@@ -104,8 +104,8 @@ struct b2b_params
 {
 	unsigned int flags;
 	unsigned int init_timeout;
-	int req_routeid;
-	int reply_routeid;
+	struct script_route_ref *req_route;
+	struct script_route_ref *reply_route;
 	str *id;
 };
 
@@ -144,8 +144,8 @@ extern str b2bl_dbtable;
 extern char* b2bl_db_buf;
 extern int b2bl_db_mode;
 extern unsigned int b2bl_th_init_timeout;
-extern int global_req_rtid;
-extern int global_reply_rtid;
+extern struct script_route_ref *global_req_rt_ref;
+extern struct script_route_ref *global_reply_rt_ref;
 extern int b2b_early_update;
 
 extern str top_hiding_scen_s;

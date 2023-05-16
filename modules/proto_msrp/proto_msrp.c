@@ -235,9 +235,9 @@ static int mod_init(void)
 
 	*msrp_trace_is_on = msrp_trace_is_on_tmp;
 	if ( trace_filter_route ) {
-		msrp_trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route, sroutes->request,
-				RT_NO);
+		msrp_trace_filter_route =
+			ref_script_route_by_name( trace_filter_route, sroutes->request,
+				RT_NO, REQUEST_ROUTE, 0);
 	}
 
 #ifdef MSRP_SELF_TESTING

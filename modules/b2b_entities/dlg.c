@@ -1052,8 +1052,8 @@ search_dialog:
 			tmb.unref_cell(tm_tran);
 
 		/* No need to apply lumps */
-		if(req_routeid > 0)
-			run_top_route(sroutes->request[req_routeid], msg);
+		if(ref_script_route_is_valid(req_route_ref))
+			run_top_route(sroutes->request[req_route_ref->idx], msg);
 
 		goto done;
 	}
@@ -1082,10 +1082,10 @@ search_dialog:
 logic_notify:
 	etype = (table==server_htable?B2B_SERVER:B2B_CLIENT);
 
-	if(req_routeid > 0)
+	if(ref_script_route_is_valid(req_route_ref))
 	{
 		B2BE_LOCK_RELEASE(table, hash_index);
-		run_top_route(sroutes->request[req_routeid], msg);
+		run_top_route(sroutes->request[req_route_ref->idx], msg);
 		if (b2b_apply_lumps(msg))
 		{
 			if (parse_from_header(msg) < 0)
@@ -3165,10 +3165,10 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 					B2BE_LOCK_RELEASE(htable, hash_index);
 
 					/* run the b2b route */
-					if(reply_routeid > 0) {
+					if(ref_script_route_is_valid(reply_route_ref)) {
 						msg->flags = t->uac[0].br_flags;
 						swap_route_type(old_route_type, ONREPLY_ROUTE);
-						run_top_route(sroutes->request[reply_routeid], msg);
+						run_top_route(sroutes->request[reply_route_ref->idx], msg);
 						set_route_type(old_route_type);
 						b2b_apply_lumps(msg);
 					}
@@ -3534,10 +3534,10 @@ done:
 	/* I have to inform the logic that a reply was received */
 done1:
 	/* run the b2b route */
-	if(reply_routeid > 0) {
+	if(ref_script_route_is_valid(reply_route_ref)) {
 		msg->flags = t->uac[0].br_flags;
 		swap_route_type(old_route_type, ONREPLY_ROUTE);
-		run_top_route(sroutes->request[reply_routeid], msg);
+		run_top_route(sroutes->request[reply_route_ref->idx], msg);
 		set_route_type(old_route_type);
 		if (msg != FAKED_REPLY) b2b_apply_lumps(msg);
 	}

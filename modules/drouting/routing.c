@@ -311,7 +311,7 @@ build_rt_info(
 	int priority,
 	tmrec_expr *trec,
 	/* script routing table index */
-	char *route_idx,
+	char *route_name,
 	/* list of destinations indexes */
 	char* dstlst,
 	char* sort_alg,
@@ -332,7 +332,7 @@ build_rt_info(
 	sort_cb_type alg;
 
 	rt = (rt_info_t*)func_malloc(mf, sizeof(rt_info_t) +
-		(attrs?strlen(attrs):0) + (route_idx?strlen(route_idx)+1:0) );
+		(attrs?strlen(attrs):0) );
 	if (rt==NULL) {
 		LM_ERR("no more mem(1)\n");
 		goto err_exit;
@@ -343,7 +343,6 @@ build_rt_info(
 	rt->priority = priority;
 	rt->time_rec = trec;
 
-	rt->route_idx = route_idx;
 	alg = dr_get_sort_alg(sort_alg[0]);
 	rt->sort_alg = alg;
 
@@ -352,9 +351,16 @@ build_rt_info(
 		rt->attrs.len = strlen(attrs);
 		memcpy(rt->attrs.s,attrs,rt->attrs.len);
 	}
-	if (route_idx && strlen(route_idx)) {
-		rt->route_idx = ((char*)(rt+1)) + rt->attrs.len;
-		strcpy(rt->route_idx, route_idx);
+	if (route_name && strlen(route_name)) {
+		rt->route_ref = ref_script_route_by_name( route_name, sroutes->request,
+			RT_NO, REQUEST_ROUTE, 1/*in_shm*/);
+		if (rt->route_ref==NULL)
+			LM_ERR("failed to get ref to route <%s>, ignoring it\n",
+				route_name);
+		else if (rt->route_ref->idx==-1) {
+			LM_WARN("route <%s> not found for now, not running it\n",
+				route_name);
+		}
 	}
 
 	if ( dstlst && dstlst[0]!=0 ) {
@@ -406,6 +412,8 @@ err_exit:
 		if (NULL!=rt->pgwl)
 			func_free(ff, rt->pgwl);
 		func_free(ff, rt);
+		if (rt->route_ref)
+			shm_free( rt->route_ref );
 	}
 	return NULL;
 }

@@ -74,15 +74,15 @@ do { \
 	str __s; \
 	DLG_BIN_POP(str, _packet, __s, _pre_linking_error);\
 	if (__s.len) {\
-		_dlg->rt_ ## _type = get_script_route_ID_by_name_str( &__s, \
-			sroutes->request, RT_NO); \
-		if (_dlg->rt_ ## _type==-1) { \
+		_dlg->rt_ ## _type = ref_script_route_by_name_str( &__s, \
+			sroutes->request, RT_NO, REQUEST_ROUTE, 1); \
+		if (!ref_script_route_is_valid( _dlg->rt_ ## _type)) { \
 			LM_WARN("replicated <%.*s>  ## _type route not found " \
 				"in the script\n", __s.len, __s.s); \
-			_dlg->rt_ ## _type = 0; \
+			_dlg->rt_ ## _type = NULL; \
 		} \
 	} else \
-		_dlg->rt_ ## _type = 0; \
+		_dlg->rt_ ## _type = NULL; \
 } while(0)
 
 static struct dlg_cell *lookup_dlg_unsafe(unsigned int h_entry, unsigned int h_id)
@@ -739,11 +739,8 @@ malformed:
 
 #define DLG_BIN_PUSH_ROUTE(_packet, _dlg, _type) \
 do { \
-	str __s; \
 	if (_dlg->rt_ ## _type>0) { \
-		__s.s = sroutes->request[_dlg->rt_ ## _type].name; \
-		__s.len = strlen(__s.s); \
-		bin_push_str(_packet, &__s); \
+		bin_push_str(_packet, &_dlg->rt_ ## _type->name); \
 	} else { \
 		bin_push_str(_packet, NULL); \
 	} \

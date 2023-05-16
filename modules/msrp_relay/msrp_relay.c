@@ -62,10 +62,10 @@ gen_hash_t *msrp_sessions;
 int cleanup_interval = 60;
 
 static char *msrp_auth_route  = DFEAULT_AUTH_ROUTE_NAME;
-int auth_routeid;
+struct script_route_ref *auth_route_ref = NULL;
 
 static char *msrp_sock_route  = NULL;
-int sock_routeid = -1;
+struct script_route_ref *sock_route_ref = NULL;
 
 struct msrp_url *my_url_list;
 
@@ -205,9 +205,9 @@ static int mod_init(void)
 	if (init_digest_auth() < 0)
 		return -1;
 
-	auth_routeid = get_script_route_ID_by_name(msrp_auth_route,
-		sroutes->request, RT_NO);
-	if (auth_routeid < 1) {
+	auth_route_ref = ref_script_route_by_name(msrp_auth_route,
+		sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if (!ref_script_route_is_valid(auth_route_ref)) {
 		LM_ERR("AUTH route <%s> does not exist\n", msrp_auth_route);
 		return -1;
 	}
@@ -238,11 +238,11 @@ static int mod_init(void)
 	}
 
 	if (msrp_sock_route==NULL) {
-		sock_routeid = -1;
+		sock_route_ref = NULL;
 	} else {
-		sock_routeid = get_script_route_ID_by_name(msrp_sock_route,
-			sroutes->request, RT_NO);
-		if (sock_routeid < 1) {
+		sock_route_ref = ref_script_route_by_name(msrp_sock_route,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(sock_route_ref)) {
 			LM_ERR("SOCKet route <%s> does not exist\n", msrp_sock_route);
 			return -1;
 		}
@@ -378,7 +378,7 @@ static int run_msrp_socket_route(struct receive_info *rcv, char *d_schema_s,
 
 	set_route_type(REQUEST_ROUTE);
 
-	run_top_route(sroutes->request[sock_routeid], dummy_msg);
+	run_top_route(sroutes->request[sock_route_ref->idx], dummy_msg);
 
 	*si = dummy_msg->force_send_socket;
 
@@ -523,7 +523,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 			hash_unlock(msrp_sessions, hentry);
 		}
 
-		if (sock_routeid<=0 ||
+		if (ref_script_route_is_valid(sock_route_ref) ||
 		run_msrp_socket_route( &req->rcv,
 			protos[to->next->secured?PROTO_MSRPS:PROTO_MSRP].name,
 			&to->next->host, &si)!=0

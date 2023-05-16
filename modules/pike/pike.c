@@ -133,7 +133,7 @@ struct module_exports exports= {
 
 static int pike_init(void)
 {
-	int rt;
+	struct script_route_ref *rt;
 
 	LM_INFO("initializing...\n");
 
@@ -178,15 +178,16 @@ static int pike_init(void)
 		TIMER_FLAG_DELAY_ON_DELAY );
 
 	if (pike_route_s && *pike_route_s) {
-		rt = get_script_route_ID_by_name(pike_route_s,sroutes->request,RT_NO);
-		if (rt<1) {
+		rt = ref_script_route_by_name( pike_route_s, sroutes->request,
+			RT_NO, REQUEST_ROUTE, 0);
+		if ( !ref_script_route_is_valid(rt) ) {
 			LM_ERR("route <%s> does not exist\n",pike_route_s);
 			return -1;
 		}
 
 		/* register the script callback to get all requests and replies */
 		if (register_script_cb( run_pike_route ,
-		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)(long)rt )!=0 ) {
+		PARSE_ERR_CB|REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, (void*)rt )!=0 ) {
 			LM_ERR("failed to register script callbacks\n");
 			goto error3;
 		}

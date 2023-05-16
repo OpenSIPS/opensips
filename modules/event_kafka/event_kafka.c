@@ -47,8 +47,9 @@ static int add_script_broker(modparam_t type, void * val);
 
 static int fixup_broker(void **param);
 static int fixup_report_route(void **param);
+static int free_report_route(void **param);
 static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
-	str *msg, str *key, void *report_rt_p);
+	str *msg, str *key, void *report_rt);
 
 struct list_head *kafka_brokers;
 
@@ -68,7 +69,7 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_STATIC,
-			fixup_report_route, 0}, {0,0,0}},
+			fixup_report_route, free_report_route}, {0,0,0}},
 		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
@@ -709,31 +710,31 @@ static int fixup_broker(void **param)
 
 static int fixup_report_route(void **param)
 {
-	int route_idx;
-	str name;
+	struct script_route_ref *rt;
 
-	if (pkg_nt_str_dup(&name, (str*)*param) < 0) {
-		LM_ERR("oom!\n");
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
+		LM_ERR("report route <%.*s> does not exist\n",
+			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	route_idx = get_script_route_ID_by_name(name.s, sroutes->request, RT_NO);
-	if (route_idx==-1) {
-		LM_ERR("report route <%s> not defined in script\n", (char*)*param);
-		return -1;
-	}
-
-	pkg_free(name.s);
-
-	*param = (void*)(long)route_idx;
+	*param = (void*)rt;
 
 	return 0;
 }
 
-static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
-	str *msg, str *key, void *report_rt_p)
+static int free_report_route(void** param)
 {
-	int report_rt_idx = report_rt_p ? (int)(long)report_rt_p : -1;
+	if (*param)
+		unref_script_route( (struct script_route_ref *)*param );
+	return 0;
+}
+
+static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
+	str *msg, str *key, void *report_rt)
+{
 	kafka_job_t *job;
 
 	job = shm_malloc(sizeof *job + msg->len + key->len + sizeof(script_job_data_t));
@@ -757,7 +758,8 @@ static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
 
 	job->data = (void*)((char *)(job + 1) + msg->len + key->len);
 	((script_job_data_t *)job->data)->broker = broker;
-	((script_job_data_t *)job->data)->report_rt_idx = report_rt_idx;
+	((script_job_data_t *)job->data)->report_rt = report_rt==NULL ? NULL :
+		dup_ref_script_route_in_shm((struct script_route_ref *ref)report_rt,0);
 
 	if (kafka_send_job(job) < 0) {
 		LM_ERR("cannot send job to worker\n");

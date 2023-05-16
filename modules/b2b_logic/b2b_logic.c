@@ -63,6 +63,7 @@ static int fixup_bridge_flags(void** param);
 static int fixup_init_id(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_route(void** param);
+static int free_fixup_route(void** param);
 static mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_b2b_bridge_2(const mi_params_t *params,
@@ -118,8 +119,8 @@ b2bl_table_t b2bl_htable;
 unsigned int b2bl_hsize = 10;
 static char* script_req_route;
 static char* script_reply_route;
-int global_req_rtid  = -1;
-int global_reply_rtid = -1;
+struct script_route_ref *global_req_rt_ref  = NULL;
+struct script_route_ref *global_reply_rt_ref = NULL;
 unsigned int b2b_clean_period = 100;
 unsigned int b2b_update_period = 100;
 str custom_headers = {0, 0};
@@ -194,8 +195,8 @@ static const cmd_export_t cmds[]=
 		{CMD_PARAM_STR, fixup_init_id, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL,
 			fixup_init_flags, fixup_free_init_flags},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, 0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route ,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route, free_fixup_route},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_route ,free_fixup_route}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_server_new", (cmd_function)b2bl_server_new, {
 		{CMD_PARAM_STR,0,0},
@@ -397,18 +398,18 @@ static int mod_init(void)
 	}
 
 	if (script_req_route) {
-		global_req_rtid = get_script_route_ID_by_name(script_req_route,
-			sroutes->request, RT_NO);
-		if (global_req_rtid < 1) {
+		global_req_rt_ref = ref_script_route_by_name(script_req_route,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(global_req_rt_ref)) {
 			LM_ERR("route <%s> does not exist\n", script_req_route);
 			return -1;
 		}
 	}
 
 	if (script_reply_route) {
-		global_reply_rtid = get_script_route_ID_by_name(script_reply_route,
-			sroutes->request, RT_NO);
-		if (global_reply_rtid < 1) {
+		global_reply_rt_ref = ref_script_route_by_name(script_reply_route,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(global_reply_rt_ref) < 1) {
 			LM_ERR("route <%s> does not exist\n",script_reply_route);
 			return -1;
 		}
@@ -939,19 +940,29 @@ static int fixup_init_id(void** param)
 
 static int fixup_route(void** param)
 {
-	int rt;
+	struct script_route_ref *rt;
 
-	rt = get_script_route_ID_by_name_str((str*)*param, sroutes->request, RT_NO);
-	if (rt == -1) {
+	rt = ref_script_route_by_name_str( (str*)*param,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+	if ( !ref_script_route_is_valid(rt) ) {
 		LM_ERR("route <%.*s> does not exist\n",
 			((str*)*param)->len, ((str*)*param)->s);
 		return -1;
 	}
 
-	*param = (void*)(unsigned long)rt;
+	*param = (void*)rt;
 
 	return 0;
 }
+
+
+static int free_fixup_route(void** param)
+{
+	if (*param)
+		unref_script_route( (struct script_route_ref *)*param );
+	return 0;
+}
+
 
 static int fixup_check_avp(void** param)
 {
@@ -1051,8 +1062,8 @@ mi_response_t *mi_trigger_scenario(const mi_params_t *params,
 
 	memset(&init_params, 0, sizeof init_params);
 	init_params.id = &scenario_id;
-	init_params.req_routeid = global_req_rtid;
-	init_params.reply_routeid = global_reply_rtid;
+	init_params.req_route = global_req_rt_ref;
+	init_params.reply_route = global_reply_rt_ref;
 
 	memset(&scen_params, 0, sizeof scen_params);
 	scen_params.e1_type = B2B_CLIENT;

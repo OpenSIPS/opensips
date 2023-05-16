@@ -62,7 +62,8 @@
 /** parameters */
 static str pvar_algo_param = str_init("");
 str hash_pvar_param = {NULL, 0};
-str algo_route_param = {NULL, 0};
+static str algo_route_param = {NULL, 0};
+struct script_route_ref *algo_route = NULL;
 
 pv_elem_t * hash_param_model = NULL;
 
@@ -869,8 +870,13 @@ static int mod_init(void)
 	pvar_algo_param.len = strlen(pvar_algo_param.s);
 	if (pvar_algo_param.len)
 		ds_pvar_parse_pattern(pvar_algo_param);
-	if (algo_route_param.s)
-		algo_route_param.len = strlen(algo_route_param.s);
+	if (algo_route_param.s) {
+		algo_route = ref_script_route_by_name( algo_route_param.s,
+			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
+		if (!ref_script_route_is_valid(algo_route))
+			LM_WARN("algorithm route <%s> not found, ignoring this for now\n",
+				algo_route_param.s);
+	}
 
 	if (init_ds_bls()!=0) {
 		LM_ERR("failed to init DS blacklists\n");

@@ -243,7 +243,7 @@ static int proto_bins_conn_init(struct tcp_connection* c)
 		data->dest  = t_dst;
 		data->net_trace_proto_id = net_trace_proto_id;
 		data->trace_is_on = trace_is_on;
-		data->trace_route_id = -1;
+		data->trace_route_ref = NULL;
 
 		c->proto_data = data;
 	} else {

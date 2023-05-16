@@ -191,7 +191,7 @@ extern str ds_dest_probe_mode_col;
 
 extern pv_elem_t * hash_param_model;
 extern str hash_pvar_param;
-extern str algo_route_param;
+extern struct script_route_ref *algo_route;
 
 extern str ds_setid_pvname;
 extern pv_spec_t ds_setid_pv;

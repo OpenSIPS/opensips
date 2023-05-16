@@ -168,9 +168,9 @@ struct dlg_cell
 	struct dlg_val       *vals;
 	str                  shtag;
 
-	int                  rt_on_answer;
-	int                  rt_on_timeout;
-	int                  rt_on_hangup;
+	struct script_route_ref  *rt_on_answer;
+	struct script_route_ref  *rt_on_timeout;
+	struct script_route_ref  *rt_on_hangup;
 
 #ifdef DBG_DIALOG
 	struct struct_hist   *hist;

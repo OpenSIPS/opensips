@@ -113,8 +113,8 @@ typedef struct b2bl_tuple
 	str* key;
 	str *scenario_id;
 	enum b2b_tuple_state state;
-	int req_routeid;
-	int reply_routeid;
+	struct script_route_ref *req_route;
+	struct script_route_ref *reply_route;
 	b2bl_entity_id_t* servers[MAX_B2BL_ENT];
 	b2bl_entity_id_t* clients[MAX_B2BL_ENT];
 	b2bl_entity_id_t* bridge_entities[MAX_BRIDGE_ENT];

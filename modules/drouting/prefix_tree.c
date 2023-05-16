@@ -359,6 +359,8 @@ free_rt_info(
 		func_free(f, rl->pgwl);
 	if(NULL!=rl->time_rec)
 		tmrec_expr_free(rl->time_rec);
+	if (rl->route_ref)
+		shm_free(rl->route_ref);
 	func_free(f, rl);
 	return;
 }

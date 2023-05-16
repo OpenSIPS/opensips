@@ -29,7 +29,7 @@ extern auth_api_t auth_api;
 extern struct msrp_binds msrp_api;
 extern void *msrp_hdl;
 
-extern int auth_routeid;
+extern struct script_route_ref *auth_route_ref;
 
 extern struct msrp_url *my_url_list;
 
