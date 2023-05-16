@@ -409,7 +409,7 @@ static int mod_init(void)
 	if (script_reply_route) {
 		global_reply_rt_ref = ref_script_route_by_name(script_reply_route,
 			sroutes->request, RT_NO, REQUEST_ROUTE, 0);
-		if (!ref_script_route_is_valid(global_reply_rt_ref) < 1) {
+		if (!ref_script_route_is_valid(global_reply_rt_ref)) {
 			LM_ERR("route <%s> does not exist\n",script_reply_route);
 			return -1;
 		}
