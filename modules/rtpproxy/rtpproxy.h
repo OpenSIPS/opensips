@@ -41,7 +41,7 @@ struct rtpproxy_vcmd;
 #define AF_LOCAL AF_UNIX
 #endif
 
-enum comm_modes {CM_UNIX = 0, CM_CUNIX, CM_UDP, CM_TCP, CM_UDP6, CM_TCP6};
+enum comm_modes {CM_UNIX = 0, CM_CUNIX, CM_RTPIO, CM_UDP, CM_TCP, CM_UDP6, CM_TCP6};
 
 struct rtpp_node {
 	unsigned int		idx;			/* overall index */
@@ -57,7 +57,8 @@ struct rtpp_node {
 	struct rtpp_node	*rn_next;
 };
 
-#define CM_STREAM(ndp) ((ndp)->rn_umode == CM_TCP || (ndp)->rn_umode == CM_TCP6 || (ndp)->rn_umode == CM_CUNIX)
+#define CM_STREAM(ndp) ((ndp)->rn_umode == CM_TCP || (ndp)->rn_umode == CM_TCP6 || \
+    (ndp)->rn_umode == CM_CUNIX || (ndp)->rn_umode == CM_RTPIO)
 
 /* Supported version of the RTP proxy command protocol */
 #define	SUP_CPROTOVER	20040107
