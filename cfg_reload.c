@@ -261,7 +261,7 @@ static void routes_reload_per_proc(int sender, void *param)
 		free_route_lists(parsed_sr);
 		pkg_free(parsed_sr);
 	}
-	parsed_sr = new_sroutes_holder();
+	parsed_sr = new_sroutes_holder( 1 );
 	if (parsed_sr==NULL) {
 		LM_ERR("failed to allocate a new script routes holder\n");
 		fclose(cfg);
@@ -372,7 +372,7 @@ int reload_routing_script(void)
 	srr_ctx->seq_no = srr_ctx->next_seq_no++;
 	lock_release( &srr_ctx->lock );
 
-	sr = new_sroutes_holder();
+	sr = new_sroutes_holder( 0 );
 	if (sr==NULL) {
 		LM_ERR("failed to allocate a new script routes holder\n");
 		goto error;

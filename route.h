@@ -166,7 +166,7 @@ void get_route_name(int idx, str *name);
 	((_ref)?(_ref)->idx:-1)
 
 
-struct os_script_routes* new_sroutes_holder(void);
+struct os_script_routes* new_sroutes_holder( int inc_ver );
 
 void free_route_lists(struct os_script_routes *sr);
 

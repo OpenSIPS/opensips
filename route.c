@@ -99,9 +99,9 @@ str str_event_route   = str_init("event_route");
 /*!
  * \brief Allocates and initializes a new routing list holder
  */
-struct os_script_routes* new_sroutes_holder(void)
+struct os_script_routes* new_sroutes_holder( int inc_ver )
 {
-	static unsigned int sr_version = 0;
+	static unsigned int sr_version = 1;
 	struct os_script_routes *sr;
 
 	sr = (struct os_script_routes *) pkg_malloc
@@ -115,7 +115,7 @@ struct os_script_routes* new_sroutes_holder(void)
 	sr->request[DEFAULT_RT].name = "0";
 	sr->onreply[DEFAULT_RT].name = "0";
 
-	sr->version = ++sr_version;
+	sr->version = inc_ver ? ++sr_version : sr_version ;
 
 	return sr;
 }

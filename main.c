@@ -442,7 +442,7 @@ int main(int argc, char** argv)
 	if (init_pkg_mallocs()==-1)
 		goto error00;
 
-	if ( (sroutes=new_sroutes_holder())==NULL )
+	if ( (sroutes=new_sroutes_holder(0))==NULL )
 		goto error00;
 
 	/* we want to be sure that from now on, all the floating numbers are 
