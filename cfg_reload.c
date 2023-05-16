@@ -489,6 +489,8 @@ int reload_routing_script(void)
 
 	send_cmd_to_all_procs( routes_switch_per_proc );
 
+	register_route_timers();
+
 	/* ready for a new reload :) */
 	reset_script_reload_ctx();
 
