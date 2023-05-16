@@ -37,6 +37,7 @@
  * special defines enabled (mainly sys/types.h) */
 #include "reactor.h"
 #include "pt_load.h"
+#include "locking.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -71,6 +72,10 @@ static utime_t       *ijiffies=0;
 static unsigned short timer_id=0;
 static int            timer_pipe[2];
 static struct scaling_profile *s_profile=NULL;
+
+static gen_lock_t      *tr_list_lock = NULL;
+static struct os_timer **tr_timer_list = NULL;
+static struct os_timer **tr_timer_pending = NULL;
 
 int timer_fd_out = -1 ;
 char *timer_auto_scaling_profile = NULL;
@@ -151,6 +156,33 @@ int init_timer(void)
 		auto_scaling_enabled = 1;
 	}
 
+	/* lock to protect the list of timer task for timer routes */
+	tr_list_lock = lock_alloc();
+	if (tr_list_lock==0) {
+		LM_ERR("failed to alloc lock\n");
+		return E_UNSPEC;
+	}
+
+	if (lock_init(tr_list_lock)==0) {
+		LM_ERR("failed to init lock\n");
+		return E_UNSPEC;
+	}
+
+	tr_timer_list = (struct os_timer**)shm_malloc(sizeof(struct os_timer*));
+	if (tr_timer_list==NULL) {
+		LM_ERR("failed to alloc timer holder\n");
+		return E_UNSPEC;
+	}
+	*tr_timer_list = NULL;
+
+	tr_timer_pending = (struct os_timer**)shm_malloc(sizeof(struct os_timer*));
+	if (tr_timer_pending==NULL) {
+		LM_ERR("failed to alloc timer pending holder\n");
+		return E_UNSPEC;
+	}
+	*tr_timer_pending = NULL;
+
+
 	return 0;
 }
 
@@ -229,15 +261,29 @@ int register_utimer(char *label, utimer_function f, void* param,
 }
 
 
+struct timer_route_param {
+	unsigned int idx;
+	unsigned int version;
+};
+
 void route_timer_f(unsigned int ticks, void* param)
 {
-	struct script_timer_route *tr = (struct script_timer_route *)param;
-	struct script_route sr = {tr->name, tr->a};
+	struct timer_route_param *tr=(struct timer_route_param *)param;
+	struct script_route sr;
 	struct sip_msg *req;
 	int old_route_type;
 
+	if (tr->version!=sroutes->version) {
+		LM_WARN("timer route triggering received for an old cfg version "
+			"%d<>%d\n",tr->version, sroutes->version);
+		return;
+	}
+
+	sr.name = sroutes->timer[tr->idx].name;
+	sr.a = sroutes->timer[tr->idx].a;
+
 	if(sr.a == NULL) {
-		LM_ERR("NULL actions for timer_route '%s'\n", sr.name);
+		LM_ERR("NULL actions for timer_route '%s'/%d\n", sr.name, tr->idx);
 		return;
 	}
 
@@ -259,28 +305,70 @@ void route_timer_f(unsigned int ticks, void* param)
 }
 
 
+/* the function will check the timer routes from the current process,
+ * so be carefull where you are running it from */
 int register_route_timers(void)
 {
-	struct os_timer* t;
+	struct timer_route_param *tr_param;
+	struct os_timer *t, *p;
 	int i;
 
-	if(sroutes->timer[0].a == NULL)
-		return 0;
-
-	/* register the routes */
-	for(i = 0; i< TIMER_RT_NO; i++)
-	{
-		if(sroutes->timer[i].a == NULL)
-			return 0;
-		t = new_os_timer( "timer_route", 0, route_timer_f, &sroutes->timer[i],
-				sroutes->timer[i].interval);
-		if (t==NULL)
-			return E_OUT_OF_MEM;
-
-		/* insert it into the list*/
-		t->next = timer_list;
-		timer_list = t;
+#define move_to_pending( _t) \
+	while(_t) { \
+		p = (_t)->next; \
+		if ((_t)->trigger_time) { \
+			(_t)->next = *tr_timer_pending; \
+			*tr_timer_pending = (_t); \
+		} else { \
+			shm_free( (_t)->t_param ); \
+			shm_free( (_t) ); \
+		} \
+		(_t) = p; \
 	}
+
+	lock_get(tr_list_lock);
+
+	/* handle the pending list, remove whatever already finished,
+	 * otherwise put back into pending */
+	t = *tr_timer_pending;
+	*tr_timer_pending = NULL;
+	move_to_pending( t);
+
+	/* handle the existing list -> free if done or move to pending if
+	 * the job is still under execution (for sure triggering cannot be
+	 * done anymore as the have the lock here) */
+	t = *tr_timer_list;
+	move_to_pending( t);
+	*tr_timer_list = NULL;
+
+	/* convert timer routes to jobs */
+	for(i = 0; i<TIMER_RT_NO && sroutes->timer[i].a ; i++)
+	{
+		LM_DBG("registering timer route [%s] at %d secs\n",
+			sroutes->timer[i].name, sroutes->timer[i].interval);
+
+		tr_param = (struct timer_route_param*)
+			shm_malloc( sizeof(struct timer_route_param) );
+		if (tr_param==NULL) {
+			LM_ERR("no more mem, skipping route timer [%s]\n",
+				sroutes->timer[i].name);
+		} else {
+			tr_param->idx = i;
+			tr_param->version = sroutes->version;
+			t = new_os_timer( "timer_route", 0, route_timer_f, (void*)tr_param,
+				sroutes->timer[i].interval);
+			if (t==NULL) {
+				LM_ERR("no more mem, skipping route timer [%s]\n",
+					sroutes->timer[i].name);
+			} else {
+				/* insert it into the list*/
+				t->next = *tr_timer_list;
+				*tr_timer_list = t;
+			}
+		}
+	}
+
+	lock_release(tr_list_lock);
 
 	return 1;
 }
@@ -459,21 +547,11 @@ static void run_timer_process( void )
 			compute_wait_with_drift(comp_tv);
 			tv = comp_tv;
 			select( 0, 0, 0, 0, &tv);
+
 			timer_ticker( timer_list);
-
-			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
-					0 : *ijiffies-ij - ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec);
-		}
-
-	} else
-	if (timer_list==NULL) {
-		/* only UTIMERs, ticking at UTIMER_TICK */
-		for( ; ; ) {
-			ij = *ijiffies;
-			compute_wait_with_drift(comp_tv);
-			tv = comp_tv;
-			select( 0, 0, 0, 0, &tv);
-			utimer_ticker( utimer_list);
+			lock_get(tr_list_lock);
+			timer_ticker( *tr_timer_list);
+			lock_release(tr_list_lock);
 
 			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
 					0 : *ijiffies-ij - ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec);
@@ -488,6 +566,9 @@ static void run_timer_process( void )
 			tv = comp_tv;
 			select( 0, 0, 0, 0, &tv);
 			timer_ticker( timer_list);
+			lock_get(tr_list_lock);
+			timer_ticker( *tr_timer_list);
+			lock_release(tr_list_lock);
 			utimer_ticker( utimer_list);
 
 			drift += ((utime_t)comp_tv.tv_sec*1000000+comp_tv.tv_usec > (*ijiffies-ij)) ?
@@ -504,6 +585,9 @@ static void run_timer_process( void )
 			utimer_ticker(utimer_list);
 			if (cnt==multiple) {
 				timer_ticker(timer_list);
+				lock_get(tr_list_lock);
+				timer_ticker( *tr_timer_list);
+				lock_release(tr_list_lock);
 				cnt = 0;
 			}
 

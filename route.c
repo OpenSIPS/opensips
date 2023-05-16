@@ -99,6 +99,7 @@ str str_event_route   = str_init("event_route");
  */
 struct os_script_routes* new_sroutes_holder(void)
 {
+	static unsigned int sr_version = 0;
 	struct os_script_routes *sr;
 
 	sr = (struct os_script_routes *) pkg_malloc
@@ -111,6 +112,8 @@ struct os_script_routes* new_sroutes_holder(void)
 
 	sr->request[DEFAULT_RT].name = "0";
 	sr->onreply[DEFAULT_RT].name = "0";
+
+	sr->version = ++sr_version;
 
 	return sr;
 }
