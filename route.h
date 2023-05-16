@@ -69,6 +69,8 @@ struct os_script_routes {
 	struct script_timer_route timer[TIMER_RT_NO];
 	/* event route */
 	struct script_route event[EVENT_RT_NO];
+	/* script version (due to reload) */
+	unsigned int version;
 };
 
 
