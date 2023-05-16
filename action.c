@@ -1058,13 +1058,13 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case ASYNC_T:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
-			 * second param - a NUMBER_ST pointing to resume route
+			 * second param - a ROUTE_REF_ST pointing to resume route
 			 * third param - an optional NUMBER_ST with a timeout */
 			aitem = (struct action *)(a->elem[0].u.data);
 			acmd = (const acmd_export_t *)aitem->elem[0].u.data_const;
 
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
-			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
+			a->elem[1].type!=ROUTE_REF_ST || aitem->type!=AMODULE_T) {
 				LM_ALERT("BUG in async expression "
 				         "(is the 'tm' module loaded?)\n");
 			} else {
@@ -1077,7 +1077,8 @@ int do_action(struct action* a, struct sip_msg* msg)
 					break;
 				}
 
-				ret = async_script_start_f(msg, aitem, a->elem[1].u.number,
+				ret = async_script_start_f(msg, aitem,
+					(struct script_route_ref*)a->elem[1].u.data,
 					(unsigned int)a->elem[2].u.number, cmdp);
 				if (ret>=0)
 					action_flags |= ACT_FL_TBCONT;
@@ -1092,17 +1093,17 @@ int do_action(struct action* a, struct sip_msg* msg)
 			break;
 		case LAUNCH_T:
 			/* first param - an ACTIONS_ST containing an ACMD_ST
-			 * second param - an optional NUMBER_ST pointing to an end route */
+			 * second param - an optional ROUTE_REF_ST pointing to an end route */
 			aitem = (struct action *)(a->elem[0].u.data);
 			acmd = (const acmd_export_t *)aitem->elem[0].u.data_const;
 
 			if (async_script_start_f==NULL || a->elem[0].type!=ACTIONS_ST ||
-			a->elem[1].type!=NUMBER_ST || aitem->type!=AMODULE_T) {
+			a->elem[1].type!=ROUTE_REF_ST || aitem->type!=AMODULE_T) {
 				LM_ALERT("BUG in launch expression\n");
 			} else {
 				script_trace("launch", acmd->name, msg, a->file, a->line);
-				/* NOTE that the routeID (a->elem[1].u.number) is set to 
-				 * -1 if no reporting route is set */
+				/* NOTE that the routeID (a->elem[1].u.data) is set to 
+				 * NULL if no reporting route is set */
 
 				if ((ret = get_cmd_fixups(msg, acmd->params, aitem->elem,
 					cmdp, tmp_vals)) < 0) {
@@ -1117,10 +1118,12 @@ int do_action(struct action* a, struct sip_msg* msg)
 						break;
 					}
 
-					ret = async_script_launch( msg, aitem, a->elem[1].u.number,
+					ret = async_script_launch( msg, aitem,
+						(struct script_route_ref*)a->elem[1].u.data,
 						&sval, cmdp);
 				} else {
-					ret = async_script_launch( msg, aitem, a->elem[1].u.number,
+					ret = async_script_launch( msg, aitem,
+						(struct script_route_ref*)a->elem[1].u.data,
 						NULL, cmdp);
 				}
 

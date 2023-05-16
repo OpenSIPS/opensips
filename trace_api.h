@@ -33,7 +33,7 @@
 #define TRACE_INADDR_LOOPBACK2 ((in_addr_t) 0x0200007f) /* Inet 127.0.0.2  */
 
 #define TRACE_PROTO_COMMON \
-	int trace_route_id; \
+	struct script_route_ref *trace_route_ref; \
 	int* trace_is_on; \
 	trace_proto_t* tprot; \
 	trace_dest dest; \

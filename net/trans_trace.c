@@ -211,12 +211,13 @@ int tcpconn2su( struct tcp_connection* c, union sockaddr_union* src_su,
 }
 
 
-int check_trace_route( int route_id, struct tcp_connection* conn)
+int check_trace_route( struct script_route_ref* rt_ref,
+												struct tcp_connection* conn)
 {
 	struct sip_msg *req;
 
 	/* route not set */
-	if ( route_id == -1 )
+	if ( !ref_script_route_is_valid(rt_ref) )
 		return 1;
 
 	req = get_dummy_sip_msg();
@@ -231,7 +232,7 @@ int check_trace_route( int route_id, struct tcp_connection* conn)
 	memcpy( &req->rcv, &conn->rcv, sizeof( struct receive_info ));
 
 	/* run given hep route */
-	if (run_top_route(sroutes->request[route_id], req) & ACT_FL_DROP){
+	if (run_top_route(sroutes->request[rt_ref->idx], req) & ACT_FL_DROP){
 		conn->flags |= F_CONN_TRACE_DROPPED;
 		release_dummy_sip_msg(req);
 		return 0;

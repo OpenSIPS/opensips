@@ -200,9 +200,15 @@ void free_action_list( struct action *a)
 	if (a==NULL)
 		return;
 
-	for( i=0 ; i<MAX_ACTION_ELEMS ; i++)
+	if (a->type==ASYNC_T || a->type==LAUNCH_T)
+		/* unref the resume route */
+		unref_script_route
+			( (struct script_route_ref*)(a->elem[1].u.data) );
+
+	for( i=0 ; i<MAX_ACTION_ELEMS ; i++) {
 		if (a->elem[i].type)
 			free_action_elem( &a->elem[i] );
+	}
 
 	if (a->next)
 		free_action_list(a->next);

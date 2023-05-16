@@ -70,7 +70,32 @@ struct os_script_routes {
 	struct script_timer_route timer[TIMER_RT_NO];
 	/* event route */
 	struct script_route event[EVENT_RT_NO];
+	/* script version (due to reload) */
+	unsigned int version;
 };
+
+
+struct script_route_ref {
+	/* the name of the route, kept both with len and null terminated */
+	/* the actual string is allocated together with this map structure */
+	str name;
+	/* the index of the route in the script_route array
+	 * it is set to -1 if the route does not exist anymore */
+	int idx;
+	/* type of route */
+	int type;
+	union {
+		/* how many times this script route was referentiated
+		 * by opensips code (by looking the name) */
+		unsigned int refcnt;
+		/* script version */
+		unsigned int version;
+	} u;
+	/* linking into per-process list of ref's. this is not used
+	 * if the ref resides in SHM */
+	struct script_route_ref *next;
+};
+
 
 extern struct os_script_routes *sroutes;
 
@@ -124,6 +149,23 @@ void get_route_name(int idx, str *name);
 
 #define is_route_type(_type) (route_type==_type)
 
+#define ref_script_route_is_valid(_ref) \
+	((_ref)!=NULL && (_ref)->idx!=-1)
+
+#define ref_script_route_check_and_update(_ref) \
+	((_ref)!=NULL && (\
+		((_ref)->u.version==sroutes->version)\
+		||\
+		(update_script_route_ref(_ref)==0 && ((_ref)->u.version=sroutes->version))\
+	) && (_ref)->idx!=-1)
+
+#define ref_script_route_name(_ref) \
+	((_ref)?(_ref)->name.s:"n/a")
+
+#define ref_script_route_idx(_ref) \
+	((_ref)?(_ref)->idx:-1)
+
+
 struct os_script_routes* new_sroutes_holder(void);
 
 void free_route_lists(struct os_script_routes *sr);
@@ -139,6 +181,25 @@ int get_script_route_ID_by_name(char *name,
 
 int get_script_route_ID_by_name_str(str *name,
 		struct script_route *sr, int size);
+
+struct script_route_ref * ref_script_route_by_name(char *name,
+		struct script_route *sr, int size,
+		int type, int in_shm);
+
+struct script_route_ref * ref_script_route_by_name_str(str *name,
+		struct script_route *sr, int size,
+		int type, int in_shm);
+
+void unref_script_route(struct script_route_ref *ref);
+
+int update_script_route_ref(struct script_route_ref *ref);
+
+void update_all_script_route_refs(void);
+
+struct script_route_ref *dup_ref_script_route_in_shm(
+		struct script_route_ref *ref, int from_shm);
+
+void print_script_route_refs(void);
 
 int is_script_func_used(const char *name, int param_no);
 

@@ -141,6 +141,7 @@ static pv_spec_t *spec;
 static pv_elem_t *elem;
 static struct bl_rule *bl_head = 0;
 static struct bl_rule *bl_tail = 0;
+static struct script_route_ref *rt_ref = NULL;
 
 action_elem_t elems[MAX_ACTION_ELEMS];
 static action_elem_t route_elems[MAX_ACTION_ELEMS];
@@ -2474,32 +2475,36 @@ cmd:	 ASSERT LPAREN exp COMMA STRING RPAREN	 {
 		| XLOG LPAREN STRING COMMA folded_string RPAREN {
 				mk_action2($$, XLOG_T, STR_ST, STR_ST, $3, $5); }
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action2($$, ASYNC_T, ACTIONS_ST, NUMBER_ST,
-						$3, (void*)(long)i_tmp);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action2($$, ASYNC_T, ACTIONS_ST, ROUTE_REF_ST,
+						$3, (void*)rt_ref);
 				}
 		| ASYNC_TOKEN LPAREN async_func COMMA route_name COMMA NUMBER RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action3($$, ASYNC_T, ACTIONS_ST, NUMBER_ST, NUMBER_ST,
-						$3, (void*)(long)i_tmp, (void*)(long)$7);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action3($$, ASYNC_T, ACTIONS_ST, ROUTE_REF_ST, NUMBER_ST,
+						$3, (void*)rt_ref, (void*)(long)$7);
 				}
 		| LAUNCH_TOKEN LPAREN async_func COMMA route_name COMMA STRING RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action3($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST, STRING_ST,
-						$3, (void*)(long)i_tmp, $7);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action3($$, LAUNCH_T, ACTIONS_ST, ROUTE_REF_ST, STRING_ST,
+						$3, (void*)rt_ref, $7);
 				}
 		| LAUNCH_TOKEN LPAREN async_func COMMA route_name RPAREN {
-				i_tmp = get_script_route_idx( $5, sroutes->request, RT_NO, 0);
-				if (i_tmp==-1) yyerror("too many script routes");
-				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
-						$3, (void*)(long)i_tmp);
+				rt_ref = ref_script_route_by_name( $5, sroutes->request,
+					RT_NO, REQUEST_ROUTE, 0);
+				if (rt_ref==NULL) yyerror("fail to create route reference");
+				mk_action2($$, LAUNCH_T, ACTIONS_ST, ROUTE_REF_ST,
+						$3, (void*)rt_ref);
 				}
 		| LAUNCH_TOKEN LPAREN async_func RPAREN {
-				mk_action2($$, LAUNCH_T, ACTIONS_ST, NUMBER_ST,
-						$3, (void*)(long)-1);
+				mk_action2($$, LAUNCH_T, ACTIONS_ST, ROUTE_REF_ST,
+						$3, (void*)NULL);
 				}
 	;
 

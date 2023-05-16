@@ -154,117 +154,6 @@ static inline void reset_script_reload_ctx(void)
 }
 
 
-static int reindex_new_sroutes(struct script_route *new_sr,
-						struct script_route *old_sr, int size, int has_zero)
-{
-	static char *deleted_route_name = "_X_deleted_Y_";
-	struct script_route *my_sr;
-	int i, n, adding_idx;
-
-	/* devel only
-	for(i=0+(has_zero?0:1) ; i<size && old_sr[i].name ; i++)
-		LM_DBG("OLD [%d] is [%s]\n",i,old_sr[i].name);
-	for(i=0+(has_zero?0:1) ; i<size && new_sr[i].name ; i++)
-		LM_DBG("NEW [%d] is [%s]\n",i,new_sr[i].name);*/
-
-	my_sr = (struct script_route*)pkg_malloc(size*sizeof(struct script_route));
-	if (my_sr==NULL) {
-		LM_ERR("failed to allocate pkg mem (needing %zu)\n",
-			size*sizeof(struct script_route));
-		return -1;
-	}
-	memset( my_sr, 0, size*sizeof(struct script_route));
-	/* iterate the old set of route and try to correlate the entries with the
-	 * new set of routes - the idea is to try to preserv the indexes */
-	if (has_zero) {
-		my_sr[0] = new_sr[0];
-		new_sr[0].name = NULL;
-		new_sr[0].a = NULL;
-	}
-	for ( i=1 ; i<size && old_sr[i].name ; i++) {
-		if (old_sr[i].name == deleted_route_name) {
-			/* simply preserve the index of old deleted routes */
-			my_sr[i] = old_sr[i];
-		} else {
-			n = get_script_route_ID_by_name( old_sr[i].name, new_sr, size);
-			if (n==-1) {
-				/* route was removed in the new set , set the dummy one here */
-				my_sr[i].name = deleted_route_name;
-				my_sr[i].a = pkg_malloc( sizeof(struct action) );
-				if (my_sr[i].a==NULL) {
-					LM_ERR("failed to allocate dummy EXIT action\n");
-					pkg_free(my_sr);
-					return -1;
-				}
-				my_sr[i].a->type = EXIT_T;
-			} else {
-				/* copy new route definition over the original index*/
-				my_sr[i] = new_sr[n];
-				new_sr[n].name = deleted_route_name;
-				new_sr[n].a = NULL;
-			}
-		}
-	}
-	adding_idx = i;
-
-	/* now see what is left in new set and not re-mapped to the old set 
-	 * (basically the newly defined routes */
-	for ( i=1 ; i<size ; i++) {
-		if (new_sr[i].name==deleted_route_name || new_sr[i].name==NULL)
-			continue;
-		if (adding_idx==size) {
-			LM_ERR("too many routes, cannot re-index newly defined routes "
-				"after reload\n");
-			pkg_free(my_sr);
-			return -1;
-		}
-		my_sr[adding_idx++] = new_sr[i];
-	}
-
-	/* copy the re-indexed set of routes as the new set of routes */
-	memcpy( new_sr, my_sr, size*sizeof(struct script_route));
-	pkg_free(my_sr);
-	/* devel only
-	for(i=0+(has_zero?0:1) ; i<size && new_sr[i].name ; i++)
-		LM_DBG("END NEW [%d] is [%s]\n",i,new_sr[i].name);
-	*/
-	return 0;
-}
-
-
-static int reindex_all_new_sroutes(struct os_script_routes *new_srs,
-											struct os_script_routes *old_srs)
-{
-	if (reindex_new_sroutes( new_srs->request, old_srs->request,
-	RT_NO, 1)<0) {
-		LM_ERR("failed to re-index the request routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->onreply, old_srs->onreply,
-	ONREPLY_RT_NO, 1)<0) {
-		LM_ERR("failed to re-index the on_reply routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->failure, old_srs->failure,
-	FAILURE_RT_NO, 0)<0) {
-		LM_ERR("failed to re-index the on_failure routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->branch, old_srs->branch,
-	BRANCH_RT_NO, 0)<0) {
-		LM_ERR("failed to re-index the branch routes\n");
-		return -1;
-	}
-	if (reindex_new_sroutes( new_srs->event, old_srs->event,
-	EVENT_RT_NO, 0)<0) {
-		LM_ERR("failed to re-index the branch routes\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-
 static inline void send_cmd_to_all_procs(ipc_rpc_f *rpc)
 {
 	int i;
@@ -392,11 +281,6 @@ static void routes_reload_per_proc(int sender, void *param)
 	fclose(cfg);
 	cfg_parse_only_routes = 0;
 
-	if (reindex_all_new_sroutes( sroutes, sr_bk)<0) {
-		LM_ERR("re-indexing routes failed, abording\n");
-		goto error;
-	}
-
 	if (fix_rls()<0) {
 		LM_ERR("fixing routes failed, abording\n");
 		goto error;
@@ -462,6 +346,10 @@ static void routes_switch_per_proc(int sender, void *param)
 	/* swap the old route set with the new parsed set */
 	sroutes = parsed_sr;
 	parsed_sr = NULL;
+
+	/* update all the ref to script routes */
+	update_all_script_route_refs();
+	print_script_route_refs();
 }
 
 

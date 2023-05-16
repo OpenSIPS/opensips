@@ -27,6 +27,7 @@
 #ifndef _ASYNC_H_
 #define _ASYNC_H_
 
+#include "route.h"
 #include "route_struct.h"
 #include "parser/msg_parser.h"
 
@@ -74,7 +75,8 @@ extern int async_status;
           -1 some error happened and the async call did not happened.
  */
 typedef int (async_script_start_function)
-	(struct sip_msg *msg, struct action* a , int resume_route,
+	(struct sip_msg *msg, struct action* a,
+	struct script_route_ref *resume_route,
 	unsigned int timeout, void **params);
 
 /* Handles periodic progress (data arrival) on behalf of the contained,
@@ -140,7 +142,8 @@ int async_fd_resume(int fd, void *param);
 /******** functions related to async launch *******/
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-		int report_route, str *report_route_param, void **params);
+		struct script_route_ref *report_route,
+		str *report_route_param, void **params);
 
 /* @fd is always valid */
 int async_launch_resume(int fd, void *param);

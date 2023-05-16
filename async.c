@@ -45,8 +45,8 @@ async_script_resume_function *async_script_resume_f = NULL;
 typedef struct _async_launch_ctx {
 	/* generic async context - MUST BE FIRST */
 	async_ctx  async;
-	/* the ID of the report script route (-1 if none) */
-	int report_route;
+	/* ref to the report script route (NULL if none) */
+	struct script_route_ref *report_route;
 	str report_route_param;
 } async_launch_ctx;
 
@@ -240,18 +240,18 @@ run_route:
 	if (async_status == ASYNC_DONE_CLOSE_FD)
 		close(fd);
 
-	if (ctx->report_route!=-1) {
+	if (ref_script_route_check_and_update(ctx->report_route)) {
 		LM_DBG("runinng report route for a launch job,"
 			" route <%s>, param [%.*s]\n",
-			sroutes->request[ctx->report_route].name, 
+			ctx->report_route->name.s,
 			ctx->report_route_param.len, ctx->report_route_param.s);
 		if (ctx->report_route_param.s)
 			route_params_push_level(
-				sroutes->request[ctx->report_route].name, 
+				sroutes->request[ctx->report_route->idx].name, 
 				&ctx->report_route_param, NULL,
 				launch_route_param_get);
 		swap_route_type( bk_rt, REQUEST_ROUTE);
-		run_top_route( sroutes->request[ctx->report_route], req);
+		run_top_route( sroutes->request[ctx->report_route->idx], req);
 		set_route_type( bk_rt );
 		if (ctx->report_route_param.s)
 			route_params_pop_level();
@@ -261,6 +261,8 @@ run_route:
 	}
 
 	/* no need for the context anymore */
+	if (ctx->report_route)
+		shm_free(ctx->report_route);
 	shm_free(ctx);
 	LM_DBG("done with a launch job\n");
 
@@ -273,7 +275,8 @@ restore:
 
 
 int async_script_launch(struct sip_msg *msg, struct action* a,
-					int report_route, str *report_route_param, void **params)
+								struct script_route_ref *report_route,
+								str *report_route_param, void **params)
 {
 	struct sip_msg *req;
 	struct usr_avp *report_avps = NULL, **bak_avps = NULL;
@@ -331,7 +334,12 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 	}
 
 	/* ctx is to be used from this point further */
-	ctx->report_route = report_route;
+
+	ctx->report_route = dup_ref_script_route_in_shm( report_route, 0);
+	if (!ref_script_route_is_valid(ctx->report_route)) {
+		LM_ERR("failed dup resume route -> act in sync mode\n");
+		goto sync;
+	}
 
 	if (report_route_param) {
 		ctx->report_route_param.s = (char *)(ctx+1);
@@ -366,8 +374,10 @@ sync:
 	} while(async_status==ASYNC_CONTINUE||async_status==ASYNC_CHANGE_FD);
 	/* the IO completed, so report now */
 report:
+	if (ctx->report_route)
+		shm_free(ctx->report_route);
 	shm_free(ctx);
-	if (report_route==-1)
+	if (report_route==NULL)
 		return 1;
 
 	/* run the report route inline */
@@ -380,7 +390,7 @@ report:
 	bak_avps = set_avp_list(&report_avps);
 	swap_route_type( bk_rt, REQUEST_ROUTE);
 
-	run_top_route( sroutes->request[report_route], req);
+	run_top_route( sroutes->request[report_route->idx], req);
 
 	set_route_type( bk_rt );
 	destroy_avp_list(&report_avps);

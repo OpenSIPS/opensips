@@ -85,7 +85,7 @@ trace_proto_t tprot;
 /* module  tracing parameters */
 static int trace_is_on_tmp=0, *trace_is_on;
 static char* trace_filter_route;
-static int trace_filter_route_id = -1;
+static struct script_route_ref* trace_filter_route_ref = NULL;
 /**/
 
 extern int unix_tcp_sock;
@@ -261,9 +261,9 @@ static int mod_init(void)
 
 	*trace_is_on = trace_is_on_tmp;
 	if ( trace_filter_route ) {
-		trace_filter_route_id =
-			get_script_route_ID_by_name( trace_filter_route, sroutes->request,
-				RT_NO);
+		trace_filter_route_ref =
+			ref_script_route_by_name( trace_filter_route,
+				sroutes->request, RT_NO, REQUEST_ROUTE, 0 );
 	}
 
 	return 0;
@@ -429,7 +429,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 
 				/* trace the message */
 				if ( TRACE_ON( c->flags ) &&
-						check_trace_route( trace_filter_route_id, c) ) {
+						check_trace_route( trace_filter_route_ref, c) ) {
 					if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 						LM_ERR("can't create su structures for tracing!\n");
 					} else {
@@ -459,7 +459,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			/* our first connect attempt succeeded - go ahead as normal */
 			/* trace the attempt */
 			if (  TRACE_ON( c->flags ) &&
-					check_trace_route( trace_filter_route_id, c) ) {
+					check_trace_route( trace_filter_route_ref, c) ) {
 				c->proto_flags |= F_TCP_CONN_TRACED;
 				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 					LM_ERR("can't create su structures for tracing!\n");
@@ -477,7 +477,7 @@ static int proto_tcp_send(struct socket_info* send_sock,
 			}
 
 			if ( TRACE_ON( c->flags ) &&
-					check_trace_route( trace_filter_route_id, c) ) {
+					check_trace_route( trace_filter_route_ref, c) ) {
 				c->proto_flags |= F_TCP_CONN_TRACED;
 				if ( tcpconn2su( c, &src_su, &dst_su) < 0 ) {
 					LM_ERR("can't create su structures for tracing!\n");
@@ -661,7 +661,7 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 			ip_addr2a( &con->rcv.dst_ip ), con->rcv.dst_port );
 
 		if ( TRACE_ON( con->flags ) &&
-					check_trace_route( trace_filter_route_id, con) ) {
+					check_trace_route( trace_filter_route_ref, con) ) {
 			if ( tcpconn2su( con, &src_su, &dst_su) < 0 ) {
 				LM_ERR("can't create su structures for tracing!\n");
 			} else {
