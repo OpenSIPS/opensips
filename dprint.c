@@ -59,7 +59,7 @@ char *log_prefix = "";
 /* used when resetting the logging level of this process */
 static int *default_log_level;
 
-char *log_json_buf = NULL;
+static char *log_json_buf = NULL;
 int log_json_buf_size = 8192;
 
 static void stderr_dprint(int log_level, int facility, char *module, const char *func,

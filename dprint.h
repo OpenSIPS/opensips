@@ -130,6 +130,7 @@ extern int log_facility;
 extern char* log_name;
 extern char ctime_buf[];
 extern enum log_format stderr_log_format, syslog_log_format;
+extern int log_json_buf_size;
 
 /*
  * must be called after init_multi_proc_support()

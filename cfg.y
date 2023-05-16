@@ -962,12 +962,13 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 		| LOG_JSON_BUF_SIZE EQUAL NUMBER {
 			IFOR();
-			xlog_buf_size = $3;
+			log_json_buf_size = $3;
 			if (init_log_json_buf(1) < 0) {
 				yyerror("failed to realloc json log buffer");
 				YYABORT;
 			}
 			}
+		| LOG_JSON_BUF_SIZE EQUAL error { yyerror("number expected"); }
 		| LOGFACILITY EQUAL ID { IFOR();
 			warn("'log_facility' is deprecated, use 'syslog_facility' instead");
 			if ( (i_tmp=str2facility($3))==-1)
