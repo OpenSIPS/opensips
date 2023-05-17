@@ -1350,7 +1350,8 @@ route{
 		<programlisting format="linespecific">
   # ----------- global configuration parameters ------------------------
   log_level=3
-  log_stderror=no
+  stderror_enabled=no
+  syslog_enabled=yes
 
   check_via=no
   dns=no

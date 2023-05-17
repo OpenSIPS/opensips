@@ -189,7 +189,7 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 			When the uri is <emphasis>syslog</emphasis>, it has to follow the following
 			format: <emphasis>syslog[:FACILITY[:LEVEL]]</emphasis>. The default
 			facility and levels are the ones used by &osips;
-			(<emphasis>log_facility</emphasis> and <emphasis>log_level</emphasis>).
+			(<emphasis>syslog_facility</emphasis> and <emphasis>log_level</emphasis>).
 			These can be tuned using
 			<xref linkend="param_syslog_default_facility"/> and
 			<xref linkend="param_syslog_default_level"/> parameters.
@@ -247,7 +247,7 @@ modparam("tracer", "trace_id",
 		</para>
 		<para>
 		<emphasis>
-			Default value is the value of <emphasis>log_facility</emphasis>.
+			Default value is the value of <emphasis>syslog_facility</emphasis>.
 		</emphasis>
 		</para>
 		<example>
