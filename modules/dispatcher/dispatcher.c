@@ -916,7 +916,7 @@ static int mod_init(void)
 		}
 
 		/* do the actual data load */
-		if (ds_reload_db(partition, 1, INHERIT_STATE_YES)!=0) {
+		if (ds_reload_db(partition, 1, 1)!=0) {
 			LM_ERR("failed to load data from DB\n");
 			return -1;
 		}
@@ -1379,21 +1379,7 @@ mi_response_t *ds_mi_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
 	ds_partition_t *part_it;
-	str inherit_state;
-	int is_inherit_state = INHERIT_STATE_YES;
-
-	if (get_mi_string_param(params, "inherit_state", &inherit_state.s, &inherit_state.len) >= 0) {
-		LM_DBG("inherit_state is: %s \n", inherit_state.s);
-
-		if (inherit_state.s[0] == '0' || inherit_state.s[0] == 'n' || inherit_state.s[0] == 'N') {
-			is_inherit_state = INHERIT_STATE_NO;
-		}
-		else if (inherit_state.s[0] == '1' || inherit_state.s[0] == 'y' || inherit_state.s[0] == 'Y') {
-			is_inherit_state = INHERIT_STATE_YES;
-		} else {
-			LM_WARN("inherit_state values was not recognized, ignored \n");
-		}
-	}
+	int is_inherit_state = get_mi_bool_like_param(params, "inherit_state", 1);
 
 	LM_DBG("is_inherit_state is: %d \n", is_inherit_state);
 
@@ -1412,24 +1398,10 @@ mi_response_t *ds_mi_reload_1(const mi_params_t *params,
 {
 	ds_partition_t *partition;
 	str partname;
-	str inherit_state;
-	int is_inherit_state = INHERIT_STATE_YES;
+	int is_inherit_state = get_mi_bool_like_param(params, "inherit_state", 1);
 
 	if (get_mi_string_param(params, "partition", &partname.s, &partname.len) < 0)
         return init_mi_param_error();
-	
-	if (get_mi_string_param(params, "inherit_state", &inherit_state.s, &inherit_state.len) >= 0) {
-		LM_DBG("inherit_state is: %s \n", inherit_state.s);
-
-		if (inherit_state.s[0] == '0' || inherit_state.s[0] == 'n' || inherit_state.s[0] == 'N') {
-			is_inherit_state = INHERIT_STATE_NO;
-		}
-		else if (inherit_state.s[0] == '1' || inherit_state.s[0] == 'y' || inherit_state.s[0] == 'Y') {
-			is_inherit_state = INHERIT_STATE_YES;
-		} else {
-			LM_WARN("inherit_state values was not recognized, ignored \n");
-		}
-	}
 
 	LM_DBG("is_inherit_state is: %d \n", is_inherit_state);
 

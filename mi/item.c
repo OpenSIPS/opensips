@@ -470,6 +470,31 @@ int get_mi_string_param(const mi_params_t *params, char *name,
 	return -1;
 }
 
+
+int get_mi_bool_like_param(const mi_params_t *params, char *name,
+					int default_value)
+{
+	str tmp;
+
+	if (get_mi_string_param(params, name, &tmp.s, &tmp.len) < 0) {
+		return default_value;
+	}
+
+	if (tmp.len != 1) {
+		return default_value;
+	}
+
+	if (tmp.s[0] == '0' || tmp.s[0] == 'n' || tmp.s[0] == 'N') {
+		return 0;
+	}
+	
+	if (tmp.s[0] == '1' || tmp.s[0] == 'y' || tmp.s[0] == 'Y') {
+		return 1;
+	}
+
+	return default_value;
+}
+
 int try_get_mi_array_param(const mi_params_t *params, char *name,
 					mi_item_t **value, int *no_items)
 {

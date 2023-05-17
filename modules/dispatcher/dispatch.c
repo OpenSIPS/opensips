@@ -1213,7 +1213,7 @@ int ds_reload_db(ds_partition_t *partition, int initial, int is_inherit_state)
 	if (old_data) {
 		/* copy the state of the destinations from the old set
 		 * (for the matching ids) */
-		if (is_inherit_state == INHERIT_STATE_YES) {
+		if (is_inherit_state) {
 			ds_inherit_state( old_data, new_data);
 		}
 		
