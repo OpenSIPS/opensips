@@ -86,6 +86,10 @@ static struct log_consumer_t default_log_consumers[2] ={
 struct log_consumer_t *log_consumers = default_log_consumers;
 int log_consumers_no = 2;
 
+int log_event_enabled = 0;
+static str evi_log_name = str_init("E_CORE_LOG");
+static event_id_t evi_log_id;
+
 static char* str_fac[]={"LOG_AUTH","LOG_CRON","LOG_DAEMON",
 					"LOG_KERN","LOG_LOCAL0","LOG_LOCAL1",
 					"LOG_LOCAL2","LOG_LOCAL3","LOG_LOCAL4","LOG_LOCAL5",
@@ -456,6 +460,110 @@ static void syslog_dprint(int log_level, int facility, char *module, const char 
 	}
 }
 
+static str evi_time_str = str_init("time");
+static str evi_pid_str = str_init("pid");
+static str evi_level_str = str_init("level");
+static str evi_module_str = str_init("module");
+static str evi_func_str = str_init("function");
+static str evi_prefix_str = str_init("prefix");
+static str evi_msg_str = str_init("message");
+
+static void event_dprint(int log_level, int facility, char *module, const char *func,
+	char *format, va_list ap)
+{
+	evi_params_p list = NULL;
+	str s;
+	int n;
+	static char in_progress = 0;
+
+	/* prevent reentry from the same process */
+	if (in_progress)
+		return;
+
+	in_progress = 1;
+
+	if (!evi_probe_event(evi_log_id)) {
+		in_progress = 0;
+		return;
+	}
+
+	if (!(list = evi_get_params())) {
+		in_progress = 0;
+		return;
+	}
+
+	init_str(&s, dp_time());
+	if (evi_param_add_str(list, &evi_time_str, &s)) {
+		stderr_dprint_tmp("error: unable to add event parameter\n");
+		goto end_free;
+	}
+	n = dp_my_pid();
+	if (evi_param_add_int(list, &evi_pid_str, &n)) {
+		stderr_dprint_tmp("error: unable to add event parameter\n");
+		goto end_free;
+	}
+	init_str(&s, dp_log_level_str(log_level));
+	if (evi_param_add_str(list, &evi_level_str, &s)) {
+		stderr_dprint_tmp("error: unable to add event parameter\n");
+		goto end_free;
+	}
+
+	if (module && func) {
+		init_str(&s, module);
+		if (evi_param_add_str(list, &evi_module_str, &s)) {
+			stderr_dprint_tmp("error: unable to add event parameter\n");
+			goto end_free;
+		}
+		init_str(&s, func);
+		if (evi_param_add_str(list, &evi_func_str, &s)) {
+			stderr_dprint_tmp("error: unable to add event parameter\n");
+			goto end_free;
+		}
+	}
+
+	init_str(&s, log_prefix);
+	if (s.len) {
+		if (evi_param_add_str(list, &evi_prefix_str, &s)) {
+			stderr_dprint_tmp("error: unable to add event parameter\n");
+			goto end_free;
+		}
+	}
+
+	s.len = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);
+	if (s.len < 0) {
+		stderr_dprint_tmp("error: vsnprintf() failed!\n");
+		goto end_free;
+	}
+	if (s.len>=log_msg_buf_size) {
+		stderr_dprint_tmp("warning: log message truncated\n");
+		s.len = log_msg_buf_size;
+	}
+
+	/* try to strip \n from the end of the "message" param */
+	if (log_msg_buf[s.len-1] == '\n') {
+		log_msg_buf[s.len-1] = '\0';
+		s.len--;
+	}
+
+	s.s = log_msg_buf;
+	if (evi_param_add_str(list, &evi_msg_str, &s)) {
+		stderr_dprint_tmp("error: unable to add event parameter\n");
+		goto end_free;
+	}
+
+	if (evi_raise_event(evi_log_id, list)) {
+		stderr_dprint_tmp("error: unable to raise '%.*s' event\n",
+			evi_log_name.len, evi_log_name.s);
+	}
+
+	in_progress = 0;
+
+	return;
+end_free:
+	evi_free_params(list);
+	in_progress = 0;
+}
+
 /* generic consumer that registers to the log interface */
 static void gen_consumer_pre_fmt_func(log_print_f gen_print_func, int log_level,
 	int facility, char *module, const char *func,
@@ -587,6 +695,29 @@ int init_log_cons_shm_table(void)
 	return 0;
 }
 
+int init_log_event_cons(void)
+{
+	evi_log_id = evi_publish_event(evi_log_name);
+	if (evi_log_id == EVI_ERROR) {
+		LM_ERR("cannot register '%.*s' event\n",
+			evi_log_name.len, evi_log_name.s);
+		return -1;
+	}
+
+	log_msg_buf = pkg_malloc(log_msg_buf_size+1);
+	if (!log_msg_buf) {
+		LM_ERR("no pkg memory left\n");
+		return -1;
+	}
+
+	if (register_log_consumer(EVENT_CONSUMER_NAME, event_dprint, 0, 1) < 0) {
+		LM_ERR("Failed to register 'event' log consumer\n");
+		return -1;
+	}
+
+	return 0;
+}
+
 static struct log_consumer_t *get_log_consumer_by_name(str *name)
 {
 	int i;
@@ -656,6 +787,22 @@ int get_log_consumer_mute_state(str *name, int *state)
 	*state = cons->muted;
 
 	return 0;
+}
+
+int set_log_event_cons_cfg_state(void)
+{
+	if (set_log_consumer_mute_state(&str_init(EVENT_CONSUMER_NAME),
+		!log_event_enabled) < 0) {
+		LM_ERR("Failed to set mute state for event consumer\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+void distroy_log_event_cons(void)
+{
+	set_log_consumer_mute_state(&str_init(EVENT_CONSUMER_NAME), 1);
 }
 
 int init_log_level(void)

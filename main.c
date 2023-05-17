@@ -302,6 +302,11 @@ static int main_loop(void)
 		last_check = get_uticks();
 	}
 
+	if (set_log_event_cons_cfg_state() < 0) {
+		LM_ERR("Failed to set the config state for event consumer\n");
+		goto error;
+	}
+
 	if (_ProfilerStart(0, "attendant") != 0) {
 		LM_ERR("failed to start profiling\n");
 		goto error;
@@ -933,6 +938,11 @@ try_again:
 
 	if (init_log_level() != 0) {
 		LM_ERR("failed to init logging levels\n");
+		goto error;
+	}
+
+	if (init_log_event_cons() < 0) {
+		LM_ERR("Failed to initialize log event consumer\n");
 		goto error;
 	}
 

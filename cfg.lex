@@ -212,6 +212,7 @@ LOGSTDOUT	log_stdout
 LOGSTDERROR	log_stderror
 STDERROR_ENABLED	stderror_enabled
 SYSLOG_ENABLED	    syslog_enabled
+LOG_EVENT_ENABLED	log_event_enabled
 STDERROR_LEVEL_FILTER	stderror_level_filter
 SYSLOG_LEVEL_FILTER	    syslog_level_filter
 STDERROR_FORMAT stderror_log_format
@@ -431,6 +432,7 @@ SPACE		[ ]
 <INITIAL>{LOGSTDERROR} { yylval.strval=yytext; return LOGSTDERROR; }
 <INITIAL>{STDERROR_ENABLED}	{ yylval.strval=yytext; return STDERROR_ENABLED; }
 <INITIAL>{SYSLOG_ENABLED}	{ yylval.strval=yytext; return SYSLOG_ENABLED; }
+<INITIAL>{LOG_EVENT_ENABLED}	{ yylval.strval=yytext; return LOG_EVENT_ENABLED; }
 <INITIAL>{STDERROR_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return STDERROR_LEVEL_FILTER; }
 <INITIAL>{SYSLOG_LEVEL_FILTER}	{ count(); yylval.strval=yytext; return SYSLOG_LEVEL_FILTER; }
 <INITIAL>{STDERROR_FORMAT} { count(); yylval.strval=yytext; return STDERROR_FORMAT; }

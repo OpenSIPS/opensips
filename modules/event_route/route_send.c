@@ -125,6 +125,9 @@ static void route_received(int sender, void *param)
 	struct sip_msg* req;
 	route_send_t *route_s = (route_send_t *)param;
 
+	/* supppress any logs, in case we are handling the E_CORE_LOG event */
+	set_proc_log_level(L_ALERT-1);
+
 	if (!ref_script_route_check_and_update(route_s->ev_route)){
 		LM_ERR("event route [%.s] no longer available in script\n",
 			route_s->ev_route->name.s);
@@ -149,6 +152,8 @@ cleanup:
 	if (route_s->ev_route)
 		shm_free(route_s->ev_route);
 	shm_free(route_s);
+
+	reset_proc_log_level();
 }
 
 

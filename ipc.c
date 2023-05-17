@@ -289,8 +289,12 @@ void ipc_handle_job(int fd)
 		return;
 	}
 
+	/* we shouldn't print any logs, in case we are handling
+	 * an event_route IPC job for the E_CORE_LOG event */
+	/*
 	LM_DBG("received job type %d[%s] from process %d\n",
 		job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
+	*/
 
 	/* custom handling for RPC type */
 	if (job.handler_type==ipc_rpc_type) {

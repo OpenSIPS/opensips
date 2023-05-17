@@ -632,14 +632,20 @@ static int handle_io(struct fd_map *fm, int idx, int event_type)
 
 	switch (fm->type) {
 	case F_KAFKA_JOB:
+		/* supppress any logs, in case we are handling the E_CORE_LOG event */
+		set_proc_log_level(L_ALERT-1);
+
 		job = kafka_receive_job();
 		if (!job) {
 			LM_ERR("Cannot receive job\n");
+			reset_proc_log_level();
 			return 0;
 		}
 
 		if (kafka_handle_job(job) != 0)
 			shm_free(job);
+
+		reset_proc_log_level();
 		break;
 	case F_KAFKA_EVENT:
 		prod = (kafka_producer_t *)fm->data;

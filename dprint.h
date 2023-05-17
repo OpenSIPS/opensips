@@ -105,10 +105,11 @@
 	#undef NO_LOG
 #endif
 
-#define MAX_LOG_CONS_NO 2
+#define MAX_LOG_CONS_NO 3
 
 #define STDERR_CONSUMER_NAME "stderror"
 #define SYSLOG_CONSUMER_NAME "syslog"
+#define EVENT_CONSUMER_NAME  "event"
 
 #define LOG_PLAIN_NAME    "plain_text"
 #define LOG_JSON_NAME     "json"
@@ -126,6 +127,7 @@ extern int *log_level;
 extern char *log_prefix;
 extern int log_stdout;
 extern int stderr_enabled, syslog_enabled;
+extern int log_event_enabled;
 extern int log_facility;
 extern char* log_name;
 extern char ctime_buf[];
@@ -147,6 +149,10 @@ int init_log_cons_shm_table(void);
 int init_log_json_buf(int realloc);
 int init_log_msg_buf(int realloc);
 
+int init_log_event_cons();
+int set_log_event_cons_cfg_state(void);
+void distroy_log_event_cons();
+
 int set_log_consumer_mute_state(str *name, int state);
 int get_log_consumer_mute_state(str *name, int *state);
 
@@ -154,7 +160,6 @@ int set_log_consumer_level_filter(str *name, int level);
 int get_log_consumer_level_filter(str *name, int *level_filter);
 
 int parse_log_format(str *format);
-
 int dp_my_pid(void);
 
 void stderr_dprint_tmp(char *format, ...);

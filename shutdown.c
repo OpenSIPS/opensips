@@ -170,6 +170,8 @@ void shutdown_opensips( int status )
 
 	sr_set_core_status_terminating();
 
+	distroy_log_event_cons();
+
 	/* terminate all processes */
 
 	/* first we try to terminate the processes via the IPC channel */

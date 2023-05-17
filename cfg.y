@@ -291,6 +291,7 @@ extern int cfg_parse_only_routes;
 %token LOGSTDERROR
 %token STDERROR_ENABLED
 %token SYSLOG_ENABLED
+%token LOG_EVENT_ENABLED
 %token STDERROR_LEVEL_FILTER
 %token SYSLOG_LEVEL_FILTER
 %token STDERROR_FORMAT
@@ -919,6 +920,16 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			}
 			}
 		| SYSLOG_ENABLED EQUAL error { yyerror("boolean value expected"); }
+		| LOG_EVENT_ENABLED EQUAL NUMBER {
+			IFOR();
+			if ($3) {
+				if (init_log_msg_buf(0) < 0) {
+					yyerror("failed to allocate msg log buffer");
+					YYABORT;
+				}
+			}
+			log_event_enabled=$3; }
+		| LOG_EVENT_ENABLED EQUAL error { yyerror("boolean value expected"); }
 		| STDERROR_LEVEL_FILTER EQUAL snumber {
 			IFOR();
 			s_tmp.s=STDERR_CONSUMER_NAME;
