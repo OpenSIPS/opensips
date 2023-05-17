@@ -89,7 +89,7 @@
 		<programlisting format="linespecific">
 		...
 		if (!cgrates_auth("$fU", "$rU")) {
-			sl_send_reply("403", "Forbidden");
+			sl_send_reply(403, "Forbidden");
 			exit;
 		}
 		xlog("Call is allowed to run $cgr_ret seconds\n");
@@ -662,7 +662,7 @@ modparam("cgrates", "compat_mode", 1)
 			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
 			$cgr(AttributeIDs) := '["+5551234"]'; # treat as array
 			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
+				sl_send_reply(403, "Forbidden");
 				exit;
 			}
 		}
@@ -679,7 +679,7 @@ modparam("cgrates", "compat_mode", 1)
 			$cgr_opt(Tenant) = $fd; # set the From domain as a tenant
 			$cgr(RequestType) = "*prepaid"; # do prepaid accounting
 			if (!cgrates_auth("$fU", "$rU")) {
-				sl_send_reply("403", "Forbidden");
+				sl_send_reply(403, "Forbidden");
 				exit;
 			}
 
@@ -848,7 +848,7 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: code=$cgr_ret!\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 	...
@@ -923,7 +923,7 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: code=$cgr_ret!\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 	...
@@ -948,7 +948,7 @@ route [auth_reply]
 {
 	if ($rc &lt; 0) {
 		xlog("Call not authorized: MaxUsage=$cgr_ret(MaxUsage)!\n");
-		send_reply("403", "Forbidden");
+		send_reply(403, "Forbidden");
 		exit;
 	}
 	...

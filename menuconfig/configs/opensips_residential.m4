@@ -428,7 +428,7 @@ ifelse(ENABLE_TCP, `yes', ifelse(ENABLE_TLS, `yes', `
 	',`') 
 
 	# do lookup with method filtering
-	if (!lookup("location","m")) {
+	if (!lookup("location", "method-filtering")) {
 		ifelse(USE_AUTH,`yes',`if (!db_does_uri_exist("$ru","subscriber")) {
 			send_reply(420,"Bad Extension");
 			exit;

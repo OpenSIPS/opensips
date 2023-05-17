@@ -322,7 +322,7 @@ i]");
 n");
         }
 
-        if (!lookup("location","m")) {
+        if (!lookup("location", "method-filtering")) {
                 switch ($retcode) {
                         case -1:
                         case -3:

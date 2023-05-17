@@ -762,15 +762,15 @@ remove_ip_port("8.8.8.8",43213,"location","sip:bob@atlanta.com");
 ...
 lookup("location");  # simple lookup
    #or
-lookup("location","m"); # lookup with method filtering
+lookup("location", "method-filtering"); # lookup with method filtering
    #or
-lookup("location","r"); #lookup with aor branch search;
-						#all contacts except the first one shall be put
-						#in the branches
+lookup("location", "branch"); # lookup with aor branch search;
+						# all contacts except the first one shall be put
+						# in the branches
    #or
-lookup("location","u/phone/i"); # lookup with user-agent filtering
+lookup("location", "ua-filtering=/phone/i"); # lookup with user-agent filtering
    #or
-lookup("location","",$var(aor)); # simple lookup with AOR from var
+lookup("location", "", $var(aor)); # simple lookup with AOR from var
 switch ($retcode) {
     case -1:
     case -3:

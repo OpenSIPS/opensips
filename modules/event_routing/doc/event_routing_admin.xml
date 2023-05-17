@@ -318,7 +318,7 @@ route[handle_call]
         # reject incoming call as we will generate an back call
         # from the original call (Alice to Bob)
         t_newtran();
-        send_reply(480,"Gone");
+        send_reply(480, "Gone");
 
         # raise the pickup custom event
         # with pickup group 1 and picker being Charlie (caller)
@@ -335,7 +335,7 @@ route[handle_call]
         ## (Alice calls Bob)
 
         # apply user location
-        if (!lookup("location","m")) {
+        if (!lookup("location", "method-filtering")) {
             send_reply(404, "Not Found");
             exit;
         }

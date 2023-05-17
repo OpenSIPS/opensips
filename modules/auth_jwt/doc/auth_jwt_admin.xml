@@ -343,12 +343,12 @@ modparam("auth_jwt", "load_credentials", "$avp(extra_jwt_info)=my_extra_column")
 		<programlisting format="linespecific">
 ...
 if (!jwt_db_authorize("$avp(my_jwt_token)", $avp(decoded_token), $avp(sip_username) )) {
-	send_reply("401","Unauthorized");
+	send_reply(401,"Unauthorized");
 	exit;
 } else {
 	xlog("Succesful JWT auth - $avp(decoded_token) \n");
 	if ($fU != $avp(sip_username)) {
-		send_reply("403","Forbidden AUTH ID");
+		send_reply(403,"Forbidden AUTH ID");
 		exit;
 	}	
 }
@@ -411,7 +411,7 @@ if (!jwt_db_authorize("$avp(my_jwt_token)", $avp(decoded_token), $avp(sip_userna
 		<programlisting format="linespecific">
 ...
 if (!jwt_script_authorize("$avp(my_jwt_token)",$avp(pub_key), $avp(decoded_token))) {
-	send_reply("401","Unauthorized");
+	send_reply(401,"Unauthorized");
 	exit;
 } else {
 	xlog("Succesful JWT auth - $avp(decoded_token) \n");

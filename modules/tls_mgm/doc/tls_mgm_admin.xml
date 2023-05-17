@@ -1410,7 +1410,7 @@ route{
 
   # initial sanity checks
   if (!mf_process_maxfwd_header("10")) {
-      send_reply("483","Too Many Hops");
+      send_reply(483,"Too Many Hops");
       exit;
   };
 
@@ -1426,13 +1426,13 @@ route{
           };
           if ($au!=$fU) {
               xlog("FROM hdr Cheating attempt in INVITE\n");
-              send_reply("403",
+              send_reply(403,
                   "That is ugly -- use From=id next time (OB)");
               exit;
           };
       }; # non-REGISTER from other domain
   } else if ( is_method("INVITE") &amp;&amp; !is_myself("$rd") ) {
-      send_reply("403", "No relaying");
+      send_reply(403, "No relaying");
       exit;
   };
 
@@ -1484,7 +1484,7 @@ route{
       };
       if ($au!=$tU) {
           xlog("TO hdr Cheating attempt\n");
-          send_reply("403", "That is ugly -- use To=id in REGISTERs");
+          send_reply(403, "That is ugly -- use To=id in REGISTERs");
           exit;
       };
       # it is an authenticated request, update Contact database now
@@ -1497,7 +1497,7 @@ route{
   # native SIP destinations are handled using USRLOC DB
   if (!lookup("location")) {
       # handle user which was not found
-      send_reply("404", "Not Found");
+      send_reply(404, "Not Found");
       exit;
   };
 
