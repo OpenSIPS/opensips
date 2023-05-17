@@ -377,17 +377,22 @@ void kafka_report_status(int sender, void *param)
 {
 	struct kafka_report_param *p =
 		(struct kafka_report_param *)param;
+	script_job_data_t *job_data;
 
 	if (p->job->type == KAFKA_JOB_EVI) {
 		evi_job_data_t *job_data = (evi_job_data_t *)p->job->data;
 
 		job_data->evi_async_ctx.status_cb(job_data->evi_async_ctx.cb_param,
 			p->status);
-	} else if (ref_script_route_check_and_update(job_data->report_rt)) {
-		script_job_data_t *job_data = (script_job_data_t *)p->job->data;
+	} else {
 		struct sip_msg *req;
 		struct usr_avp **old_avps;
 		struct usr_avp *report_avps;
+
+		job_data = (script_job_data_t *)p->job->data;
+
+		if (!ref_script_route_check_and_update(job_data->report_rt))
+			goto free;
 
 		req = get_dummy_sip_msg();
 		if (!req) {
@@ -412,7 +417,7 @@ void kafka_report_status(int sender, void *param)
 	}
 
 free:
-	if (job_data->report_rt)
+	if (p->job->type == KAFKA_JOB_SCRIPT && job_data->report_rt)
 		shm_free(job_data->report_rt);
 	shm_free(p->job);
 	shm_free(p);

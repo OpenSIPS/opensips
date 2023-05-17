@@ -759,7 +759,7 @@ static int kafka_publish(struct sip_msg *sip_msg, kafka_broker_t *broker,
 	job->data = (void*)((char *)(job + 1) + msg->len + key->len);
 	((script_job_data_t *)job->data)->broker = broker;
 	((script_job_data_t *)job->data)->report_rt = report_rt==NULL ? NULL :
-		dup_ref_script_route_in_shm((struct script_route_ref *ref)report_rt,0);
+		dup_ref_script_route_in_shm((struct script_route_ref *)report_rt,0);
 
 	if (kafka_send_job(job) < 0) {
 		LM_ERR("cannot send job to worker\n");
