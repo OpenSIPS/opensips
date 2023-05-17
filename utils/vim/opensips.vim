@@ -21,7 +21,7 @@ syn keyword osAction loadmodule modparam async launch
 syn keyword specialOperand yes no true false enable disable on off NULL null
 syn keyword specialOperand UDP TCP TLS SCTP WS WSS HEP_TCP HEP_UDP INET inet INET6 inet6
 
-syn keyword osGlobalParam xlog_level log_level memdump memlog log_stderror log_facility log_name
+syn keyword osGlobalParam xlog_level log_level memdump memlog stderror_enabled syslog_enabled syslog_facility syslog_name
 syn keyword osGlobalParam debug_mode udp_workers auto_aliases listen mpath tcp_workers
 syn keyword osGlobalParam disable_tcp disable_tls check_via dns rev_dns
 syn keyword osGlobalParam tcp_send_timeout tcp_connect_timeout tcp_no_new_conn_bflag
