@@ -1881,6 +1881,66 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 		</example>
 	</section>
 
+	<section id="func_t_reply_by_callid" xreflabel="t_reply_by_callid()">
+		<title>
+		<function moreinfo="none">t_reply_by_callid(code, reason_phrase, [callid], [cseq])</function>
+		</title>
+		<para>
+		This function is used to send a reply to an existing INVITE
+		transaction. The usual use case is when OpenSIPS is used as an UAS
+		and when an INVITE is receveid, it is "parked" locally on
+		OpenSIPS by replying to it with
+		<quote>t_reply(180, "Ringing")</quote> or 
+		<quote>t_reply(183, "Session Progress")</quote>
+		and later we need to handle CANCEL or BYE for it and send
+		'487 Request Terminated' to the original INVITE transaction.
+		</para>
+		<para>
+		The callid and cseq used to identify the transaction
+		will be obtained from the current messsage being processed.
+		But they can be passed explicitly so that for example we can
+		handle a BYE where the cseq must be the cseq
+		of the INVITE minus one.
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function>t_reply_by_callid</function> usage</title>
+		<programlisting format="linespecific">
+...
+route{
+	if($rU == "LOCAL_PARK") {
+		if(is_method("INVITE")) {
+			$T_fr_timeout = 10;
+			$T_fr_inv_timeout = 10;
+			append_to_reply("Contact: sip:LOCAL_PARK@$socket_in(ip):$socket_in(port)\r\n");
+			t_reply(180, "Ringing");
+			t_wait_for_new_branches();
+		} else if(is_method("CANCEL")) {
+			if(!t_reply_by_callid(487, "Request Terminated")) {
+				sl_send_reply(481, "Call Leg/Transaction Does Not Exist");
+			} else {
+				sl_send_reply(200, "OK");
+			}
+		} else if(is_method("BYE")) {
+			$var(prev_cseq) = ($(cs{s.int}) - 1);
+			if(!t_reply_by_callid(487, "Request Terminated", , $var(prev_cseq))) {
+				sl_send_reply(481, "Call Leg/Transaction Does Not Exist");
+			} else {
+				sl_send_reply(200, "OK");
+			}
+		} else if(is_method("ACK")) {
+			t_relay();
+		}
+		exit;
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_pseudo_variables" xreflabel="Exported Pseudo-Variables">
