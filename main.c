@@ -209,7 +209,8 @@ static int main_loop(void)
 	int rc;
 	static struct internal_fork_handler profiling_handler = {
 		.desc = "_ProfilerStart_child()",
-		.on_child_init = _ProfilerStart_child,
+		.post_fork.in_child = _ProfilerStart_child,
+		.post_fork.in_parent = _ProfilerStart_parent,
 	};
 
 	chd_rank=0;
@@ -304,11 +305,6 @@ static int main_loop(void)
 
 	if (set_log_event_cons_cfg_state() < 0) {
 		LM_ERR("Failed to set the config state for event consumer\n");
-		goto error;
-	}
-
-	if (_ProfilerStart(0, "attendant") != 0) {
-		LM_ERR("failed to start profiling\n");
 		goto error;
 	}
 
@@ -964,6 +960,11 @@ try_again:
 	 * so we open all first*/
 	if (do_suid(user_id, group_id)==-1)
 		goto error;
+
+	if (run_post_fork_handlers()<0) {
+		LM_ERR("failed to init post-fork handlers\n");
+		goto error;
+	}
 
 	ret = main_loop();
 

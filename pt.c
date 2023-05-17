@@ -52,7 +52,7 @@ static int internal_fork_child_setup(const struct internal_fork_params *);
 
 static struct internal_fork_handler default_fh = {
 	.desc = "internal_fork_child_setup()",
-	.on_child_init = internal_fork_child_setup,
+	.post_fork.in_child = internal_fork_child_setup,
 };
 
 static struct internal_fork_handler *_fork_handlers = &default_fh;
@@ -371,7 +371,9 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		seed_child(seed);
 
 		for (cfhp = _fork_handlers; cfhp != NULL; cfhp = cfhp->_next) {
-			if (cfhp->on_child_init(ifpp) != 0) {
+			if (cfhp->post_fork.in_child == NULL)
+				continue;
+			if (cfhp->post_fork.in_child(ifpp) != 0) {
 				LM_CRIT("failed to run %s for process %d\n", cfhp->desc,
 				    process_no);
 				child_startup_failed();
@@ -385,6 +387,7 @@ int internal_fork(const struct internal_fork_params *ifpp)
 		 * start-up */
 		while (atomic_load(&pt[new_idx].startup_result) == CHLD_STARTING) {
 			int status;
+			sched_yield();
 			pid_t result = waitpid(pid, &status, WNOHANG);
 			if (result < 0) {
 				if (errno == EINTR)
@@ -492,4 +495,20 @@ void dynamic_process_final_exit(void)
 
 	/* the process slot in the proc table will be purge on SIGCHLD by main */
 	exit(0);
+}
+
+int run_post_fork_handlers(void)
+{
+	const struct internal_fork_handler *cfhp;
+
+	for (cfhp = _fork_handlers; cfhp != NULL; cfhp = cfhp->_next) {
+		if (cfhp->post_fork.in_parent == NULL)
+			continue;
+		if (cfhp->post_fork.in_parent() != 0) {
+			LM_CRIT("failed to run %s for process %d\n", cfhp->desc,
+			    process_no);
+			return (-1);
+		}
+	}
+	return (0);
 }
