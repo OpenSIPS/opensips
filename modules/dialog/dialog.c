@@ -123,7 +123,7 @@ static int w_match_dialog(struct sip_msg *msg, void *seq_match_mode_val);
 static int api_match_dialog(struct sip_msg *msg, int _seq_match_mode);
 static int w_validate_dialog(struct sip_msg*);
 static int w_fix_route_dialog(struct sip_msg*);
-static int w_set_dlg_profile(struct sip_msg *msg, str *prof_name, str *value, str *remove_value);
+static int w_set_dlg_profile(struct sip_msg *msg, str *prof_name, str *value, int *clear_values);
 static int w_unset_dlg_profile(struct sip_msg *msg, str *prof_name, str *value);
 static int w_is_in_profile(struct sip_msg *msg, str *prof_name, str *value);
 static int w_get_profile_size(struct sip_msg *msg, str *prof_name,
@@ -189,7 +189,7 @@ static const cmd_export_t cmds[]={
 	{"set_dlg_profile", (cmd_function)w_set_dlg_profile, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
 	{"unset_dlg_profile", (cmd_function)w_unset_dlg_profile, {
 		{CMD_PARAM_STR,0,0},
@@ -1127,7 +1127,7 @@ static int w_fix_route_dialog(struct sip_msg *req)
 }
 
 
-static int w_set_dlg_profile(struct sip_msg *msg, str *prof_name, str *value, str *remove_value)
+static int w_set_dlg_profile(struct sip_msg *msg, str *prof_name, str *value, int *clear_values)
 {
 	struct dlg_cell *dlg;
 	struct dlg_profile_table *profile;
@@ -1149,15 +1149,10 @@ static int w_set_dlg_profile(struct sip_msg *msg, str *prof_name, str *value, st
 			return -1;	
 		}
 
-		if (remove_value) {
-			if (remove_value->len == 0) {
-				if (unset_dlg_profile_all_values(dlg, profile) < 0) {
-					LM_DBG("dialog not found in profile %.*s\n",
-							prof_name->len, prof_name->s);
-				}
-			} else if (unset_dlg_profile( dlg, remove_value, profile) < 0) {
-				LM_WARN("dialog not found in profile %.*s with value %.*s\n",
-						prof_name->len, prof_name->s, remove_value->len, remove_value->s);
+		if (clear_values && *clear_values) {
+			if (unset_dlg_profile_all_values(dlg, profile) < 0) {
+				LM_DBG("dialog not found in profile %.*s\n",
+				       prof_name->len, prof_name->s);
 			}
 		}
 
@@ -1193,11 +1188,6 @@ static int w_unset_dlg_profile(struct sip_msg *msg, str *prof_name, str *value)
 
 	if (profile->has_value) {
 		if (!value) {
-			LM_WARN("missing value\n");
-			return -1;
-		}
-
-		if (value->len == 0) {
 			if (unset_dlg_profile_all_values(dlg, profile) < 0) {
 				LM_DBG("dialog not found in profile %.*s\n",
 						prof_name->len, prof_name->s);

@@ -1951,7 +1951,7 @@ if (load_dialog_ctx("$var(callid)")) {
 
 	<section id="func_set_dlg_profile" xreflabel="set_dlg_profile()">
 		<title>
-		<function moreinfo="none">set_dlg_profile(profile,[value],[remove_value])</function>
+		<function moreinfo="none">set_dlg_profile(profile, [value], [clear_values])</function>
 		</title>
 		<para>
 		Inserts the current dialog into a profile. Note that if the profile does
@@ -1976,9 +1976,9 @@ if (load_dialog_ctx("$var(callid)")) {
 			</para>
 		</listitem>
 		<listitem>
-			<para><emphasis>remove_value (string, optional)</emphasis> - optional profile value
-				to remove before setting the new value. If it is an empty string ("") all values for the profile
-				will be removed before setting the new value.
+			<para><emphasis>clear_values (boolean, optional)</emphasis> - if set to
+				<emphasis>true</emphasis> (1), all values of the profile will be cleared
+				before setting the given value.  Default: <emphasis>false</emphasis>.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -1991,13 +1991,12 @@ if (load_dialog_ctx("$var(callid)")) {
 		<programlisting format="linespecific">
 ...
 set_dlg_profile("inboundCall");
-set_dlg_profile("caller",$fu);
-...
-#Set a new value while removing an old value
-set_dlg_profile("caller",$fu,$var(old_fu));
-...
-#Set a new value while removing all old values
-set_dlg_profile("caller",$fu,"");
+
+# Set a new value (all other values are kept intact)
+set_dlg_profile("caller", $fu);
+
+# Set a new value while removing all previous values
+set_dlg_profile("caller", $fu, true);
 ...
 </programlisting>
 		</example>
@@ -2006,7 +2005,7 @@ set_dlg_profile("caller",$fu,"");
 
 	<section id="func_unset_dlg_profile" xreflabel="unset_dlg_profile()">
 		<title>
-		<function moreinfo="none">unset_dlg_profile(profile,[value],[remove_all])</function>
+		<function moreinfo="none">unset_dlg_profile(profile, [value])</function>
 		</title>
 		<para>
 		Removes the current dialog from a profile.
@@ -2025,8 +2024,10 @@ set_dlg_profile("caller",$fu,"");
 		<listitem>
 			<para><emphasis>value (string, optional)</emphasis> - string value to
 			define the belonging of the dialog to the profile - note that the
-			profile must support values. If set to an empty string ("") all values for
-			the profile will be removed.
+			profile must support values.
+			</para>
+			<para>NEW in 3.4: for profiles with value, by omitting this parameter
+				you can now clear all values of the given profile.
 			</para>
 		</listitem>
 		</itemizedlist>
@@ -2039,10 +2040,10 @@ set_dlg_profile("caller",$fu,"");
 		<programlisting format="linespecific">
 ...
 unset_dlg_profile("inboundCall");
-unset_dlg_profile("caller",$fu);
+unset_dlg_profile("caller", $fu);
 ...
-#Remove all values in a profile
-unset_dlg_profile("caller","");
+# Remove all values in a profile
+unset_dlg_profile("caller");
 ...
 </programlisting>
 		</example>
