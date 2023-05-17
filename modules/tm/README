@@ -72,6 +72,7 @@ tm Module
 
               1.4.21. t_flush_flags()
               1.4.22. t_anycast_replicate()
+              1.4.23  t_reply_by_callid()
 
         1.5. Exported Pseudo-Variables
 
@@ -180,6 +181,7 @@ tm Module
    1.42. t_write_req/unix usage
    1.43. t_flush_flags usage
    1.44. t_anycast_replicate usage
+   1.45. t_reply_by_callid usage
 
 Chapter 1. Admin Guide
 
@@ -1379,6 +1381,58 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
         t_anycast_replicate();
         exit;
 }
+...
+
+1.4.23. t_reply_by_callid(code, reason_phrase, [callid], [cseq])
+
+   This function is used to send a reply to
+   an existing INVITE transaction.
+   The usual use case is when opensips is used as an UAS
+   and when an INVITE is receveid, it is "parked" locally on
+   opensips by replying to it with
+   t_reply(180, "Ringing" or t_reply(183, "Session Progress")
+   and later we need to handle CANCEL or BYE for it and send
+   '487 Request Terminated' to the original INVITE transaction.
+
+   The callid and cseq used to identify the transaction
+   will be obtained from the current messsage being processed.
+   But they can be passed explicitly so that for example we can
+   handle a BYE where the cseq must be the cseq
+   of the INVITE minus one.
+
+   This function can be used from REQUEST_ROUTE.
+
+   Example 1.45. t_reply_by_callid usage
+...
+
+route{
+	if($rU == "LOCAL_PARK") {
+		if(is_method("INVITE")) {
+			$T_fr_timeout = 10;
+			$T_fr_inv_timeout = 10;
+			append_to_reply("Contact: sip:LOCAL_PARK@$socket_in(ip):$socket_in(port)\r\n");
+			t_reply(180, "Ringing");
+			t_wait_for_new_branches();
+		} else if(is_method("CANCEL")) {
+			if(!t_reply_by_callid(487, "Request Terminated")) {
+				sl_send_reply(481, "Call Leg/Transaction Does Not Exist");
+			} else {
+				sl_send_reply(200, "OK");
+			}
+		} else if(is_method("BYE")) {
+			$var(prev_cseq) = ($(cs{s.int}) - 1);
+			if(!t_reply_by_callid(487, "Request Terminated", , $var(prev_cseq))) {
+				sl_send_reply(481, "Call Leg/Transaction Does Not Exist");
+			} else {
+				sl_send_reply(200, "OK");
+			}
+		} else if(is_method("ACK")) {
+			t_relay();
+		}
+		exit;
+	}
+}
+
 ...
 
 1.5. Exported Pseudo-Variables
