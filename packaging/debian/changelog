@@ -1,11 +1,11 @@
-opensips (3.4.0-beta) beta; urgency=low
+opensips (3.4.0-beta-1) beta; urgency=low
 
   * Major Public Release.
 
  -- Liviu Chircu <liviu@opensips.org>  Wed, 17 May 2023 16:06:38 +0300
 
 
-opensips (3.3.0-dev-1) stable; urgency=low
+opensips (3.3.0-1) stable; urgency=low
 
   * Minor Public Release.
 

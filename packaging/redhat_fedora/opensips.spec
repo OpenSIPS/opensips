@@ -1587,6 +1587,9 @@ fi
 
 
 %changelog
+* Thu May 18 2023 Nick Altmann <nick@altmann.pro> - 3.4.0-1
+- Specification updated for opensips 3.4
+
 * Wed May 18 2022 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
 - New modules: b2b_sdp_demux, msrp_gateway, msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
