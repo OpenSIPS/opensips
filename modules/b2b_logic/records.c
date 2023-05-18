@@ -325,13 +325,21 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 
 	tuple->hash_index = hash_index;
 
-	tuple->req_route =
-		dup_ref_script_route_in_shm( init_params->req_route, 0);
-	tuple->reply_route =
-		dup_ref_script_route_in_shm( init_params->reply_route, 0);
-	if (!tuple->req_route || !tuple->reply_route) {
-		LM_ERR("failed to duplicate script route references\n");
-		goto error;
+	if (init_params->req_route) {
+		tuple->req_route =
+			dup_ref_script_route_in_shm( init_params->req_route, 0);
+		if (!tuple->req_route) {
+			LM_ERR("failed to duplicate script route reference\n");
+			goto error;
+		}
+	}
+	if (init_params->reply_route) {
+		tuple->reply_route =
+			dup_ref_script_route_in_shm( init_params->reply_route, 0);
+		if (!tuple->reply_route) {
+			LM_ERR("failed to duplicate script route reference\n");
+			goto error;
+		}
 	}
 
 	if (set_tracer_func && msg && msg->msg_flags&tracer_msg_flag_filter)
