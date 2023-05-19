@@ -87,6 +87,7 @@ struct log_consumer_t *log_consumers = default_log_consumers;
 int log_consumers_no = 2;
 
 int log_event_enabled = 0;
+int log_event_level_filter = 0;
 static str evi_log_name = str_init("E_CORE_LOG");
 static event_id_t evi_log_id;
 
@@ -710,7 +711,8 @@ int init_log_event_cons(void)
 		return -1;
 	}
 
-	if (register_log_consumer(EVENT_CONSUMER_NAME, event_dprint, 0, 1) < 0) {
+	if (register_log_consumer(EVENT_CONSUMER_NAME, event_dprint,
+		log_event_level_filter, 1) < 0) {
 		LM_ERR("Failed to register 'event' log consumer\n");
 		return -1;
 	}
