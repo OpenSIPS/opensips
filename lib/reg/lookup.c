@@ -73,7 +73,8 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d,
 
 	if (lookup_flags) {
 		flags = lookup_flags->flags;
-		ua_re = &lookup_flags->ua_re;
+		if (lookup_flags->ua_re_is_set)
+			ua_re = &lookup_flags->ua_re;
 		max_latency = lookup_flags->max_latency;
 	}
 
@@ -509,6 +510,8 @@ int reg_fixup_lookup_flags(void** param)
 			return -1;
 		}
 		*(p + re_len) = '/';
+
+		lookup_flags->ua_re_is_set = 1;
 	}
 
 	/* max-ping-latency */
