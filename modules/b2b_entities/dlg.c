@@ -218,7 +218,7 @@ b2b_dlg_t* b2b_search_htable(b2b_table table, unsigned int hash_index,
 
 /* this is only called by server new */
 str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
-	time_t timestamp, int src, int safe, int db_insert, unsigned int ua_timeout)
+	str *init_b2b_key, int src, int safe, int db_insert, unsigned int ua_timeout)
 {
 	b2b_dlg_t * it, *prev_it= NULL;
 	str* b2b_key;
@@ -243,14 +243,18 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 		prev_it->next = dlg;
 		dlg->prev = prev_it;
 	}
-	/* if an insert in server_htable -> copy the b2b_key in the to_tag */
-	b2b_key = b2b_generate_key(hash_index, dlg->id, timestamp);
-	if(b2b_key == NULL)
-	{
-		if(!safe)
-			B2BE_LOCK_RELEASE(table, hash_index);
-		LM_ERR("Failed to generate b2b key\n");
-		return NULL;
+	if (!init_b2b_key) {
+		/* if an insert in server_htable -> copy the b2b_key in the to_tag */
+		b2b_key = b2b_generate_key(hash_index, dlg->id);
+		if(b2b_key == NULL)
+		{
+			if(!safe)
+				B2BE_LOCK_RELEASE(table, hash_index);
+			LM_ERR("Failed to generate b2b key\n");
+			return NULL;
+		}
+	} else {
+		b2b_key = init_b2b_key;
 	}
 
 	if(src == B2B_SERVER)
@@ -261,8 +265,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 			LM_ERR("No more shared memory\n");
 			if(!safe)
 				B2BE_LOCK_RELEASE(table, hash_index);
-			pkg_free(b2b_key);
-			return 0;
+			goto err_free;
 		}
 		memcpy(dlg->tag[CALLEE_LEG].s, b2b_key->s, b2b_key->len);
 		dlg->tag[CALLEE_LEG].len = b2b_key->len;
@@ -276,8 +279,7 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 			LM_ERR("Failed to insert into timer list\n");
 			if(!safe)
 				B2BE_LOCK_RELEASE(table, hash_index);
-			pkg_free(b2b_key);
-			return 0;
+			goto err_free;
 		}
 	}
 
@@ -288,13 +290,16 @@ str* b2b_htable_insert(b2b_table table, b2b_dlg_t* dlg, int hash_index,
 		B2BE_LOCK_RELEASE(table, hash_index);
 
 	return b2b_key;
+err_free:
+	if (!init_b2b_key)
+		pkg_free(b2b_key);
+	return NULL;
 }
 
 /* key format : B2B.hash_index.local_index.timestamp.random *
  */
 
-int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index,
-	uint64_t *timestamp)
+int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index)
 {
 	char* p;
 	str s;
@@ -340,40 +345,20 @@ int b2b_parse_key(str* key, unsigned int* hash_index, unsigned int* local_index,
 		return -1;
 	}
 
-	if (timestamp) {
-	        s.s = p+1;
-	        // There might be a random number after timestamp, we want to ignore it.
-		p= strchr(s.s, '.');
-		if (p != NULL) {
-		    s.len= p - s.s;
-		} else {
-		    s.len = key->len - (s.s - key->s);
-		}
-		if(str2int64(&s, timestamp) < 0)
-		{
-			LM_DBG("Could not extract timestamp [%.*s] from key [%.*s]\n", s.len, s.s, key->len, key->s);
-			return -1;
-		}
-
-		LM_DBG("hash_index = [%d] - local_index = [%d] - timestamp = %ld\n",
-			*hash_index, *local_index, (time_t)*timestamp);
-	} else {
-		/* we do not really care about the third part of the key */
-		LM_DBG("hash_index = [%d]  - local_index= [%d]\n", *hash_index, *local_index);
-	}
+	/* we do not really care about the last parts of the key */
+	LM_DBG("hash_index = [%d]  - local_index= [%d]\n", *hash_index, *local_index);
 
 	return 0;
 }
 
-str* b2b_generate_key(unsigned int hash_index, unsigned int local_index,
-	time_t timestamp)
+str* b2b_generate_key(unsigned int hash_index, unsigned int local_index)
 {
 	char buf[B2B_MAX_KEY_SIZE];
 	str* b2b_key;
 	int len;
 
 	len = sprintf(buf, "%s.%d.%d.%ld.%d", b2b_key_prefix.s, hash_index, local_index,
-		      timestamp ? timestamp : startup_time+get_ticks(), rand());
+		startup_time+get_ticks(), rand());
 
 	b2b_key = (str*)pkg_malloc(sizeof(str)+ len);
 	if(b2b_key== NULL)
@@ -959,7 +944,7 @@ search_dialog:
 	b2b_key = to_tag;
 	/* check if the to tag has the b2b key format -> meaning
 	 * that it is a server request */
-	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index,NULL)>=0)
+	if(b2b_key.s && b2b_parse_key(&b2b_key, &hash_index, &local_index)>=0)
 	{
 		LM_DBG("Received a b2b server request [%.*s]\n",
 					msg->first_line.u.request.method.len,
@@ -971,7 +956,7 @@ search_dialog:
 		/* check if the callid is in b2b format -> meaning
 		 * that this is a client request */
 		b2b_key = msg->callid->body;
-		if(b2b_parse_key(&b2b_key, &hash_index, &local_index, NULL) >= 0)
+		if(b2b_parse_key(&b2b_key, &hash_index, &local_index) >= 0)
 		{
 			LM_DBG("received a b2b client request [%.*s]\n",
 				msg->first_line.u.request.method.len,
@@ -1670,7 +1655,7 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	}
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return -1;
@@ -1999,7 +1984,7 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 		table = client_htable;
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return;
@@ -2079,7 +2064,7 @@ int b2b_entity_exists(enum b2b_entity_type et, str* b2b_key)
 		table = client_htable;
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return 0;
@@ -2266,7 +2251,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 	}
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
@@ -2834,7 +2819,7 @@ void b2b_tm_cback(struct cell *t, b2b_table htable, struct tmcb_params *ps)
 	msg = ps->rpl;
 	b2b_key = (str*)*ps->param;
 
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL)< 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index)< 0)
 	{
 		LM_ERR("Failed to parse b2b logic key [%.*s]\n",b2b_key->len,b2b_key->s);
 		return;

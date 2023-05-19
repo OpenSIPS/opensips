@@ -163,7 +163,7 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 
 	/* callid must have the special format */
 	dlg->db_flag = NO_UPDATEDB_FLAG;
-	callid = b2b_htable_insert(client_htable, dlg, hash_index, 0, B2B_CLIENT, 0, 0,
+	callid = b2b_htable_insert(client_htable, dlg, hash_index, NULL, B2B_CLIENT, 0, 0,
 		init_params?init_params->timeout:0);
 	if(callid == NULL)
 	{

@@ -604,7 +604,6 @@ static int load_entity(int_str_t *vals)
 	int port, proto;
 	b2b_table htable;
 	int type;
-	uint64_t ts = 0;
 
 	memset(&dlg, 0, sizeof(b2b_dlg_t));
 
@@ -614,8 +613,9 @@ static int load_entity(int_str_t *vals)
 
 	if(type == B2B_SERVER)/* extract hash and local index */
 	{
+		b2b_key = &vals[2].s;
 		htable = server_htable;
-		if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index, &ts) < 0)
+		if(b2b_parse_key(&dlg.tag[1], &hash_index, &local_index) < 0)
 		{
 			LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.tag[1].len, dlg.tag[1].s);
 			return -1;
@@ -631,9 +631,10 @@ static int load_entity(int_str_t *vals)
 	}
 	else
 	{
+		b2b_key = &vals[3].s;
 		htable = client_htable;
 
-		if(b2b_parse_key(&dlg.callid, &hash_index, &local_index, NULL) < 0)
+		if(b2b_parse_key(&dlg.callid, &hash_index, &local_index) < 0)
 		{
 			LM_ERR("Wrong format for b2b key [%.*s]\n", dlg.callid.len, dlg.callid.s);
 			return -1;
@@ -687,13 +688,11 @@ static int load_entity(int_str_t *vals)
 		LM_ERR("Failed to create new dialog structure\n");
 		return -1;
 	}
-	b2b_key= b2b_htable_insert(htable,shm_dlg,hash_index, ts, type, 1, 0, 0);
-	if(b2b_key == NULL)
+	if (!b2b_htable_insert(htable,shm_dlg,hash_index, b2b_key, type, 1, 0, 0))
 	{
 		LM_ERR("Failed to insert new record\n");
 		return -1;
 	}
-	pkg_free(b2b_key);
 
 	if (vals[14].s.len) {
 		if (shm_str_dup(&shm_dlg->storage, &vals[14].s) < 0) {

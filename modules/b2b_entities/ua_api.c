@@ -556,7 +556,7 @@ int ua_send_reply(int et, str *b2b_key, int method, int code, str *reason,
 	b2b_dlg_t *dlg = NULL;
 	unsigned int hash_index, local_index;
 
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
@@ -613,7 +613,7 @@ int ua_send_request(int et, str *b2b_key, str *method, str *body,
 	b2b_dlg_t *dlg = NULL;
 	unsigned int hash_index, local_index;
 
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", b2b_key->len, b2b_key->s);
 		return -1;
@@ -667,7 +667,7 @@ int ua_entity_delete(int et, str* b2b_key, int db_del, int remove_tl)
 	b2b_dlg_t* dlg;
 
 	/* parse the key and find the position in hash table */
-	if(b2b_parse_key(b2b_key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(b2b_key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key\n");
 		return -1;
@@ -1143,7 +1143,7 @@ mi_response_t *b2b_ua_session_list(const mi_params_t *params,
 	}
 
 	if (key.s) {
-		if(b2b_parse_key(&key, &hash_index, &local_index, NULL) < 0)
+		if(b2b_parse_key(&key, &hash_index, &local_index) < 0)
 		{
 			LM_ERR("Wrong format for b2b key [%.*s]\n", key.len, key.s);
 			return init_mi_error(400, MI_SSTR("Bad format for b2b key"));
