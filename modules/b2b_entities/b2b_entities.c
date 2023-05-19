@@ -668,7 +668,7 @@ int b2b_restore_logic_info(enum b2b_entity_type type, str* key,
 	{
 		table = client_htable;
 	}
-	if(b2b_parse_key(key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", key->len, key->s);
 		return -1;
@@ -707,7 +707,7 @@ int b2b_update_b2bl_param(enum b2b_entity_type type, str* key,
 	{
 		table = client_htable;
 	}
-	if(b2b_parse_key(key, &hash_index, &local_index, NULL) < 0)
+	if(b2b_parse_key(key, &hash_index, &local_index) < 0)
 	{
 		LM_ERR("Wrong format for b2b key [%.*s]\n", key->len, key->s);
 		return -1;
@@ -756,9 +756,9 @@ str *b2b_get_b2bl_key(str* callid, str* from_tag, str* to_tag, str* entity_key)
 	}
 	/* check if the to tag has the b2b key format
 	 * -> meaning that it is a server request */
-	if(b2b_parse_key(to_tag, &hash_index, &local_index, NULL)>=0)
+	if(b2b_parse_key(to_tag, &hash_index, &local_index)>=0)
 		table = server_htable;
-	else if (b2b_parse_key(callid, &hash_index, &local_index, NULL)>=0)
+	else if (b2b_parse_key(callid, &hash_index, &local_index)>=0)
 		table = client_htable;
 	else
 		return NULL; /* to tag and/or callid are not part of this B2B */
