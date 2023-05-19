@@ -294,6 +294,7 @@ extern int cfg_parse_only_routes;
 %token LOG_EVENT_ENABLED
 %token STDERROR_LEVEL_FILTER
 %token SYSLOG_LEVEL_FILTER
+%token LOG_EVENT_LEVEL_FILTER
 %token STDERROR_FORMAT
 %token SYSLOG_FORMAT
 %token LOG_JSON_BUF_SIZE
@@ -944,6 +945,9 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			set_log_consumer_level_filter(&s_tmp, $3);
 			}
 		| SYSLOG_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
+		| LOG_EVENT_LEVEL_FILTER EQUAL NUMBER { IFOR();
+							log_event_level_filter = $3; }
+		| LOG_EVENT_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
 		| STDERROR_FORMAT EQUAL STRING { IFOR();
 			s_tmp.s = $3;
 			s_tmp.len = strlen($3);
