@@ -57,6 +57,6 @@ struct save_flags {
 };
 
 int reg_fixup_free_save_flags(void** param);
-int reg_fixup_save_flags(void** param);
+int reg_fixup_save_flags(void** param, struct save_flags *default_flags);
 
 #endif

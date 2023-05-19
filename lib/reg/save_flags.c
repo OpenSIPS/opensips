@@ -47,7 +47,7 @@ static str save_kv_flag_names[] = {
 	STR_NULL
 };
 
-int reg_fixup_save_flags(void** param)
+int reg_fixup_save_flags(void** param, struct save_flags *default_flags)
 {
 	struct save_flags *save_flags;
 	str flag_vals[SAVE_KV_FLAGS_NO];
@@ -59,9 +59,8 @@ int reg_fixup_save_flags(void** param)
 		LM_ERR("out of pkg memory\n");
 		return -1;
 	}
-	memset(save_flags, 0, sizeof *save_flags);
 
-	memset(flag_vals, 0, sizeof flag_vals);
+	*save_flags = *default_flags;
 
 	if (fixup_named_flags(param, save_flag_names, save_kv_flag_names,
 		flag_vals) < 0) {

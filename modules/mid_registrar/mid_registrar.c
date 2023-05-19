@@ -277,7 +277,13 @@ static int fix_out_expires(void **out_exp)
 
 static int save_flags_fixup(void **param)
 {
-	return reg_fixup_save_flags(param);
+	struct save_flags default_flags;
+
+	memset(&default_flags, 0, sizeof default_flags);
+	default_flags.cmatch.mode = CT_MATCH_NONE;
+	default_flags.max_contacts = max_contacts;
+
+	return reg_fixup_save_flags(param, &default_flags);
 }
 
 static int save_flags_fixup_free(void **param)
