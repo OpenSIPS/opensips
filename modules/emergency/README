@@ -354,7 +354,7 @@ modparam("emergency","emergency_call_server",“124.78.29.123:5060”)
 
     if (failure()) {
         if (!t_relay()) {
-           send_reply("500","Internal Error");
+           send_reply(500,"Internal Error");
         };
         exit;
     }
@@ -370,7 +370,7 @@ Chapter 2. Contributors
    1. Evandro Villaron (@evillaron) 149 9 10947 3011
    2. Robison Tesini (@rtesini) 61 1 3116 2038
    3. Razvan Crainea (@razvancrainea) 25 16 329 336
-   4. Liviu Chircu (@liviuchircu) 18 12 133 187
+   4. Liviu Chircu (@liviuchircu) 19 13 134 188
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 11 9 52 52
    6. Peter Lemenkov (@lemenkov) 5 3 38 17
    7. Maksym Sobolyev (@sobomax) 4 2 15 15
@@ -401,9 +401,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   2.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   3.  Liviu Chircu (@liviuchircu)         Mar 2015 - Oct 2020
+   1.  Liviu Chircu (@liviuchircu)         Mar 2015 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    4.  Zero King (@l2dy)                   Mar 2020 - Aug 2020
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2015 - Mar 2020
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020

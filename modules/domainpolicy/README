@@ -286,11 +286,11 @@ dp_can_connect();
 switch(retcode) {
         case -2:
                 xlog("L_INFO","Errors during the DP evaluation\n");
-                sl_send_reply("404", "We can't connect you.");
+                sl_send_reply(404, "We can't connect you.");
                 break;
         case -1:
                 xlog("L_INFO","We can't connect to that domain\n");
-                sl_send_reply("404", "We can't connect you.");
+                sl_send_reply(404, "We can't connect you.");
                 break;
         case 1:
                 xlog("L_INFO","We found matching policy records\n");
@@ -512,7 +512,7 @@ Chapter 2. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 22 16 178 217
    2. Klaus Darilion 21 1 2456 0
    3. Razvan Crainea (@razvancrainea) 13 9 60 180
-   4. Liviu Chircu (@liviuchircu) 11 8 37 62
+   4. Liviu Chircu (@liviuchircu) 12 9 39 64
    5. Daniel-Constantin Mierla (@miconda) 10 8 19 21
    6. Henning Westerholt (@henningw) 6 4 25 25
    7. Vlad Patrascu (@rvlad-patrascu) 4 2 6 4
@@ -542,12 +542,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Nov 2021
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2006 - Mar 2020
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  UnixDev                             Feb 2009 - Feb 2009
    8.  Daniel-Constantin Mierla (@miconda) Nov 2006 - Mar 2008
    9.  Konstantin Bokarius                 Mar 2008 - Mar 2008
@@ -563,8 +563,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Last edited by: Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Klaus Darilion.
 

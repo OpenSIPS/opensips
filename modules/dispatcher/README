@@ -1495,7 +1495,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 165 105 3304 2011
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 167 106 3320 2022
    2. Liviu Chircu (@liviuchircu) 106 68 1664 1429
    3. Daniel-Constantin Mierla (@miconda) 81 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 47 15 2153 846
@@ -1509,13 +1509,13 @@ Chapter 3. Contributors
    All remaining contributors: Carsten Bock, Ionel Cerghit
    (@ionel-cerghit), Elena-Ramona Modroiu, John Burke
    (@john08burke), Klaus Darilion, Maksym Sobolyev (@sobomax),
-   Anca Vamanu, Jarrod Baumann (@jarrodb), Walter Doekes
+   Anca Vamanu, Jarrod Baumann (@jarrodb), wangdd, Walter Doekes
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
    Andrei Pelinescu-Onciul, Peter Lemenkov (@lemenkov), Stanislaw
-   Pitucha, wangdd, Federico Cabiddu, Konstantin Bokarius, Andreas
-   Granig, John Riordan, Aron Podrigal (@ar45), Julián Moreno
-   Patiño, Kevin McAllister, Roman Sevko, UnixDev, David Sanders,
-   Edson Gellert Schubert.
+   Pitucha, Federico Cabiddu, Konstantin Bokarius, Andreas Granig,
+   John Riordan, Aron Podrigal (@ar45), Julián Moreno Patiño,
+   Kevin McAllister, Roman Sevko, UnixDev, David Sanders, Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1537,9 +1537,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  wangdd                              Apr 2023 - Apr 2023
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Jan 2023
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2023
+   2.  wangdd                              Apr 2023 - May 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2022
    5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022

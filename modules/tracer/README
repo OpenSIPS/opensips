@@ -178,8 +178,8 @@ modparam("tracer", "trace_local_ip", "10.1.1.1")
 
    When the uri is syslog, it has to follow the following format:
    syslog[:FACILITY[:LEVEL]]. The default facility and levels are
-   the ones used by OpenSIPS (log_facility and log_level). These
-   can be tuned using syslog_default_facility and
+   the ones used by OpenSIPS (syslog_facility and log_level).
+   These can be tuned using syslog_default_facility and
    syslog_default_level parameters.
 
    One can declare multiple types of tracing under the same trace
@@ -224,7 +224,7 @@ modparam("tracer", "trace_id",
    When syslog tracing is used, this parameter specifies the log
    facility to write traces to.
 
-   Default value is the value of log_facility.
+   Default value is the value of syslog_facility.
 
    Example 1.4. Set syslog_default_facility parameter
 ...
@@ -502,7 +502,7 @@ Chapter 2. Contributors
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
    5. Liviu Chircu (@liviuchircu) 24 21 85 76
    6. Vlad Paiu (@vladpaiu) 23 9 394 560
-   7. Vlad Patrascu (@rvlad-patrascu) 16 7 284 333
+   7. Vlad Patrascu (@rvlad-patrascu) 17 8 286 335
    8. Henning Westerholt (@henningw) 11 6 146 155
    9. Andrei Datcu (@andrei-datcu) 11 5 284 135
    10. Alexandr Dubovikov (@adubovikov) 7 1 500 4
@@ -535,25 +535,24 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  okhowang                            Mar 2023 - Mar 2023
-   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2022
-   4.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
-   5.  Vlad Paiu (@vladpaiu)               Jun 2011 - Sep 2022
-   6.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2022
-   7.  Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
-   8.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
-   9.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
-   10. Ovidiu Sas (@ovidiusas)             Mar 2020 - Mar 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   2.  okhowang                            Mar 2023 - Mar 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Oct 2022
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
+   6.  Vlad Paiu (@vladpaiu)               Jun 2011 - Sep 2022
+   7.  Razvan Crainea (@razvancrainea)     Jun 2011 - Sep 2022
+   8.  Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
+   9.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
+   10. Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
 
-   All remaining contributors: Zero King (@l2dy), Dan Pascu
-   (@danpascu), Vlad Patrascu (@rvlad-patrascu), Eric Tamme
-   (@etamme), Ionut Ionita (@ionutrazvanionita), Dusan Klinec
-   (@ph4r05), Andrei Datcu (@andrei-datcu), Alexandr Dubovikov
-   (@adubovikov), Sergio Gutierrez, Daniel-Constantin Mierla
-   (@miconda), Iouri Kharon, Konstantin Bokarius, Edson Gellert
-   Schubert, Henning Westerholt (@henningw), Andreas Heise,
-   Elena-Ramona Modroiu.
+   All remaining contributors: Ovidiu Sas (@ovidiusas), Zero King
+   (@l2dy), Dan Pascu (@danpascu), Eric Tamme (@etamme), Ionut
+   Ionita (@ionutrazvanionita), Dusan Klinec (@ph4r05), Andrei
+   Datcu (@andrei-datcu), Alexandr Dubovikov (@adubovikov), Sergio
+   Gutierrez, Daniel-Constantin Mierla (@miconda), Iouri Kharon,
+   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   (@henningw), Andreas Heise, Elena-Ramona Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -562,10 +561,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Peter Lemenkov (@lemenkov), Nick Altmann
-   (@nikbyte), Razvan Crainea (@razvancrainea), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Liviu Chircu (@liviuchircu), Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Ionut Ionita
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
+   (@lemenkov), Nick Altmann (@nikbyte), Razvan Crainea
+   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
+   Chircu (@liviuchircu), Ovidiu Sas (@ovidiusas), Ionut Ionita
    (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Alexandr
    Dubovikov (@adubovikov), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt

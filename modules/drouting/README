@@ -1592,10 +1592,20 @@ if ( dr_match( 1, , $var(did) ) )
    Command to reload routing rules from database.
      * if use_partition is set to 0 - all routing rules will be
        reloaded.
+          + inherit_state (optional) : whether inherit old state
+            of the gateway , default is y.
+               o “n”: no inherit state
+               o “y”: inherit state
      * if use_partition is set to 1, the parameters are:
           + partition_name (optional) - if not provided all the
             partitions will be reloaded, otherwise just the
             partition given as parameter will be reloaded.
+       <listitem>
+       inherit_state (optional) : whether inherit old state of the
+       gateway , default is y.
+          + “n”: no inherit state
+          + “y”: inherit state
+       </listitem>
 
    MI FIFO Command Format:
                 opensips-cli -x mi dr_reload part_1
@@ -1871,7 +1881,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 407 199 13779 5806
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 408 200 13802 5820
    2. Liviu Chircu (@liviuchircu) 154 90 2460 2587
    3. Razvan Crainea (@razvancrainea) 99 52 1169 2224
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
@@ -1884,11 +1894,11 @@ Chapter 3. Contributors
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Anca
    Vamanu, Nick Altmann (@nikbyte), Jeremy Martinez
-   (@JeremyMartinez51), nexbridge, Dusan Klinec (@ph4r05), Walter
-   Doekes (@wdoekes), MayamaTakeshi, Matt Lehner, Julián Moreno
-   Patiño, Sergio Gutierrez, Le Roy Christophe, Peter Lemenkov
-   (@lemenkov), Alexey Vasilyev (@vasilevalex), Ozzyboshi, Aron
-   Podrigal (@ar45).
+   (@JeremyMartinez51), wangdd, nexbridge, Dusan Klinec (@ph4r05),
+   Walter Doekes (@wdoekes), MayamaTakeshi, Matt Lehner, Julián
+   Moreno Patiño, Sergio Gutierrez, Le Roy Christophe, Peter
+   Lemenkov (@lemenkov), Alexey Vasilyev (@vasilevalex),
+   Ozzyboshi, Aron Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1910,24 +1920,25 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  MayamaTakeshi                       Apr 2023 - Apr 2023
-   2.  nexbridge                           Feb 2023 - Mar 2023
-   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
-   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2022
-   5.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Sep 2022
-   7.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
-   8.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
-   9.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
-   10. Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2023
+   2.  wangdd                              May 2023 - May 2023
+   3.  MayamaTakeshi                       Apr 2023 - Apr 2023
+   4.  nexbridge                           Feb 2023 - Mar 2023
+   5.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
+   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2022
+   7.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   8.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
+   9.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
+   10. Walter Doekes (@wdoekes)            May 2014 - Apr 2021
 
-   All remaining contributors: Vlad Paiu (@vladpaiu), Alexey
-   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ovidiu Sas
-   (@ovidiusas), Jeremy Martinez (@JeremyMartinez51), Le Roy
-   Christophe, Ionut Ionita (@ionutrazvanionita), Ozzyboshi,
-   Julián Moreno Patiño, Dusan Klinec (@ph4r05), Mihai Tiganus
-   (@tallicamike), Andrei Datcu (@andrei-datcu), Matt Lehner, Anca
-   Vamanu, Andrei Dragus, Sergio Gutierrez.
+   All remaining contributors: Aron Podrigal (@ar45), Vlad Paiu
+   (@vladpaiu), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
+   (@lemenkov), Ovidiu Sas (@ovidiusas), Jeremy Martinez
+   (@JeremyMartinez51), Le Roy Christophe, Ionut Ionita
+   (@ionutrazvanionita), Ozzyboshi, Julián Moreno Patiño, Dusan
+   Klinec (@ph4r05), Mihai Tiganus (@tallicamike), Andrei Datcu
+   (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
+   Sergio Gutierrez.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1936,13 +1947,14 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Nick Altmann (@nikbyte), Alexey
-   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai
-   Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
-   Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
+   Last edited by: wangdd, Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Nick Altmann
+   (@nikbyte), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
+   (@vladpaiu), Mihai Tiganus (@tallicamike), Andrei Datcu
+   (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
+   Sergio Gutierrez.
 
    Documentation Copyrights:
 
