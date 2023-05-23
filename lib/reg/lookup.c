@@ -518,7 +518,8 @@ int reg_fixup_lookup_flags(void** param)
 	if (flag_vals[1].s) {
 		if (str2int(&flag_vals[1],
 			(unsigned int*)&lookup_flags->max_latency) < 0) {
-			LM_ERR("value is not an integer\n");
+			LM_ERR("max-ping-latency [%.*s] value is not an integer\n",
+				flag_vals[1].len, flag_vals[1].s);
 			return -1;
 		}
 
