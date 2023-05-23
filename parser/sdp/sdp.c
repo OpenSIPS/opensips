@@ -234,15 +234,19 @@ void set_sdp_payload_fmtp(sdp_payload_attr_t *payload_attr, str *fmtp_string )
 	return;
 }
 
-int set_sdp_payload_custom_attr(sdp_payload_attr_t *payload_attr, str *attr )
+void set_sdp_payload_custom_attr(sdp_payload_attr_t *payload_attr, str *attr )
 {
+	if (payload_attr == NULL) {
+		LM_DBG("No payload_attr\n");
+		return;
+	}
 	if (payload_attr->custom_attrs_size == MAX_CUSTOM_ATTRS-1) {
 		LM_DBG("Max custom a= attrs reached \n");
-		return -1;
+		return;
 	}
 
 	payload_attr->custom_attrs[payload_attr->custom_attrs_size++] = *attr;
-	return 1;
+	return;
 }
 
 /*
