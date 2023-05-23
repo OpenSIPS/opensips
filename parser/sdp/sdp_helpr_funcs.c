@@ -178,7 +178,7 @@ int extract_custom_a_attr(str *body, str *payload, str *value)
 	cp = eat_space_end(value->s, value->s + len);
 	len -= cp - value->s;
 	if (len <= 0 || cp == value->s) {
-		LM_ERR("no value in a= line \n");
+		LM_DBG("no value in a= line \n");
 		return -1;
 	}
 
