@@ -74,21 +74,24 @@ int reg_fixup_save_flags(void** param, struct save_flags *default_flags)
 	/* max-contacts */
 	if (flag_vals[0].s) {
 		if (str2int(&flag_vals[0], &save_flags->max_contacts) < 0) {
-			LM_ERR("value is not an integer\n");
+			LM_ERR("max-contacts [%.*s] value is not an integer\n",
+				flag_vals[0].len, flag_vals[0].s);
 			return -1;
 		}
 	}
 	/* min-expires */
 	if (flag_vals[1].s) {
 		if (str2int(&flag_vals[1], &save_flags->min_expires) < 0) {
-			LM_ERR("value is not an integer\n");
+			LM_ERR("min-expires [%.*s] value is not an integer\n",
+				flag_vals[1].len, flag_vals[1].s);
 			return -1;
 		}
 	}
 	/* max-expires */
 	if (flag_vals[2].s) {
 		if (str2int(&flag_vals[2], &save_flags->max_expires) < 0) {
-			LM_ERR("value is not an integer\n");
+			LM_ERR("min-expires [%.*s] value is not an integer\n",
+				flag_vals[2].len, flag_vals[2].s);
 			return -1;
 		}
 	}
