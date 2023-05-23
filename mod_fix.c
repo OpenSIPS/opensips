@@ -551,6 +551,12 @@ int fixup_named_flags(void** param, str *flag_names, str *kv_flag_names,
 		return -1;
 	}
 
+	if (kv_flag_names)
+		for (i = 0; kv_flag_names[i].s ; i++) {
+			kv_flag_vals[i].s = NULL;
+			kv_flag_vals[i].len = 0;
+		}
+
 	for (rec = list; rec; rec = rec->next) {
 		if (flag_names) {
 			for (i = 0; flag_names[i].s && !str_match(&rec->s, &flag_names[i]);
