@@ -1030,23 +1030,30 @@ search_dialog:
 
 	if (method_value == METHOD_PRACK)
 	{
-		B2BE_LOCK_RELEASE(table, hash_index);
-		LM_DBG("Received a PRACK - send 200 reply\n");
-		str reason={"OK", 2};
-		/* send 200 OK and exit */
-		tmb.t_newtran( msg );
-		tm_tran = tmb.t_gett();
-		if (dlg)
-			b2b_run_tracer(dlg, msg, tm_tran);
-		tmb.t_reply(msg, 200, &reason);
-		if(tm_tran && tm_tran!=T_UNDEFINED)
-			tmb.unref_cell(tm_tran);
+		if (passthru_prack) {
+			// If we are asked to passthrough PRACKs, let's make sure the other leg is notified
+			goto logic_notify;
+		}
+		else
+		{
+			B2BE_LOCK_RELEASE(table, hash_index);
+			LM_DBG("Received a PRACK - send 200 reply\n");
+			str reason={"OK", 2};
+			/* send 200 OK and exit */
+			tmb.t_newtran( msg );
+			tm_tran = tmb.t_gett();
+			if (dlg)
+				b2b_run_tracer(dlg, msg, tm_tran);
+			tmb.t_reply(msg, 200, &reason);
+			if(tm_tran && tm_tran!=T_UNDEFINED)
+				tmb.unref_cell(tm_tran);
 
-		/* No need to apply lumps */
-		if(ref_script_route_is_valid(req_route_ref))
-			run_top_route(sroutes->request[req_route_ref->idx], msg);
+		        /* No need to apply lumps */
+		        if(ref_script_route_is_valid(req_route_ref))
+			        run_top_route(sroutes->request[req_route_ref->idx], msg);
 
-		goto done;
+			goto done;
+		}
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -1133,7 +1140,15 @@ logic_notify:
 			if (tm_tran != T_UNDEFINED)
 				b2b_run_tracer(dlg, msg, tm_tran);
 
-			if(method_value == METHOD_UPDATE)
+
+			if (method_value == METHOD_PRACK)
+			{
+				/* Because PRACK transactions are separate from whatever UAS is dealing with now (PRACKs can come before
+				   INVITE is answered and will have new CSeq), we need to make sure we store it for when we get response for it. */
+				dlg->prack_tran = tm_tran;
+				dlg->cseq[CALLEE_LEG]++;
+			}
+			else if(method_value == METHOD_UPDATE)
 			{
 				dlg->update_tran = tm_tran;
 			}
@@ -1410,6 +1425,8 @@ void destroy_b2b_htables(void)
 					shm_free(dlg->storage.s);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
+				if(dlg->prack_headers.s)
+					shm_free(dlg->prack_headers.s);
 				if (dlg->logic_key.s)
 					shm_free(dlg->logic_key.s);
 				if (dlg->free_param)
@@ -1433,6 +1450,8 @@ void destroy_b2b_htables(void)
 				b2b_delete_legs(&dlg->legs);
 				if(dlg->ack_sdp.s)
 					shm_free(dlg->ack_sdp.s);
+				if(dlg->prack_headers.s)
+					shm_free(dlg->prack_headers.s);
 				if (dlg->logic_key.s)
 					shm_free(dlg->logic_key.s);
 				if (dlg->free_param)
@@ -1692,7 +1711,9 @@ int _b2b_send_reply(b2b_dlg_t* dlg, b2b_rpl_data_t* rpl_data)
 	else
 		local_contact = dlg->contact[CALLEE_LEG];
 
-	if(sip_method == METHOD_UPDATE)
+	if(sip_method == METHOD_PRACK) {
+		tm_tran = dlg->prack_tran;
+	} else if (sip_method == METHOD_UPDATE)
 		tm_tran = dlg->update_tran;
 	else
 	{
@@ -1928,6 +1949,9 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 	if (b2be_db_mode == WRITE_BACK && dlg->storage.s)
 		shm_free(dlg->storage.s);
 
+	if(dlg->prack_tran)
+		tmb.unref_cell(dlg->prack_tran);
+
 	if(dlg->uac_tran)
 		tmb.unref_cell(dlg->uac_tran);
 
@@ -1962,6 +1986,9 @@ void b2b_delete_record(b2b_dlg_t* dlg, b2b_table htable, unsigned int hash_index
 
 	if(dlg->ack_sdp.s)
 		shm_free(dlg->ack_sdp.s);
+
+	if(dlg->prack_headers.s)
+		shm_free(dlg->prack_headers.s);
 
 	if (dlg->free_param)
 		dlg->free_param(dlg->param);
@@ -2302,6 +2329,17 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 	{
 		LM_ERR("Failed to complete extra headers\n");
 		goto error;
+	}
+
+
+	if (method_value == METHOD_PRACK && dlg->prack_headers.s)
+	{
+
+	    memmove(ehdr.s + dlg->prack_headers.len, ehdr.s, ehdr.len);
+	    memcpy(ehdr.s, dlg->prack_headers.s, dlg->prack_headers.len);
+	    ehdr.len = ehdr.len + dlg->prack_headers.len;
+
+	    LM_ERR("METHOD_PRACK ehdr %d[%.*s]\n", ehdr.len ,ehdr.len, ehdr.s);
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -3378,51 +3416,63 @@ dummy_reply:
 					}
 					UPDATE_DBFLAG(dlg);
 				}
-				if (!passthru_prack)
+
+				/* PRACK handling
+				   If "Require: 100rel" header is set, there are couple ways we can handle this:
+				   If passthru_prack is set, we'll store the RAck header for when a response PRACK comes.
+				   Otherwise, we'll send a PRACK ourselves. */
+				hdr = get_header_by_static_name( msg, "Require");
+				while(hdr)
 				{
-					/* PRACK handling */
-					/* if the provisional reply contains a
-					* Require: 100rel header -> send PRACK */
-					hdr = get_header_by_static_name( msg, "Require");
-					while(hdr)
-					{
-						LM_DBG("Found require hdr\n");
-						parse_supported_body(&(hdr->body), &reqmask);
-						if (reqmask & F_SUPPORTED_100REL) {
-							LM_DBG("Found 100rel header\n");
-							break;
-						}					
-						hdr = hdr->sibling;
+					LM_DBG("Found require hdr\n");
+					parse_supported_body(&(hdr->body), &reqmask);
+					if (reqmask & F_SUPPORTED_100REL) {
+						LM_DBG("Found 100rel header\n");
+						break;
 					}
-					if(hdr)
+					hdr = hdr->sibling;
+				}
+				if(hdr)
+				{
+					str method={"PRACK", 5};
+					str extra_headers;
+					char buf[128];
+					str rseq, cseq;
+					hdr = get_header_by_static_name( msg, "RSeq");
+					if(!hdr)
 					{
-						str method={"PRACK", 5};
-						str extra_headers;
-						char buf[128];
-						str rseq, cseq;
-
-						hdr = get_header_by_static_name( msg, "RSeq");
-						if(!hdr)
-						{
-							LM_ERR("RSeq header not found\n");
-							goto error;
+						LM_ERR("RSeq header not found\n");
+						goto error;
+					}
+					rseq = hdr->body;
+					cseq = msg->cseq->body;
+					trim_trailing(&rseq);
+					trim_trailing(&cseq);
+					sprintf(buf, "RAck: %.*s %.*s\r\n",
+							rseq.len, rseq.s, cseq.len, cseq.s);
+					extra_headers.s = buf;
+					extra_headers.len = strlen(buf);
+					if (passthru_prack)
+					{
+						/* Store the RAck header for when a response PRACK comes */
+						if (dlg->prack_headers.s) {
+							shm_free(dlg->prack_headers.s);
 						}
-						rseq = hdr->body;
-						cseq = msg->cseq->body;
-						trim_trailing(&rseq);
-						trim_trailing(&cseq);
-						sprintf(buf, "RAck: %.*s %.*s\r\n",
-								rseq.len, rseq.s, cseq.len, cseq.s);
-						extra_headers.s = buf;
-						extra_headers.len = strlen(buf);
-
+						dlg->prack_headers.s = shm_malloc(extra_headers.len);
+						memcpy(dlg->prack_headers.s, extra_headers.s, extra_headers.len);
+						dlg->prack_headers.len = extra_headers.len;
+						LM_ERR("dlg->prack_headers %d[%.*s]\n", dlg->prack_headers.len ,dlg->prack_headers.len, dlg->prack_headers.s);
+					}
+					else
+					{
+					        /* Let's respond with a PRACK straight away */
 						if(dlg->callid.s==0 || dlg->callid.len==0)
 							dlg->callid = msg->callid->body;
 						if(b2b_send_req(dlg, etype, leg, &method, &extra_headers, 0) < 0)
 						{
 							LM_ERR("Failed to send PRACK\n");
 						}
-					}
+				       }
 				}
 				goto done;
 			}
