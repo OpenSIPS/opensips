@@ -181,6 +181,7 @@ static const param_export_t mod_params[]={
 static const mi_export_t mi_cmds[] = {
 	{ "lb_reload", 0, 0, mi_child_init, {
 		{mi_lb_reload, {0}},
+		{mi_lb_reload, {"inherit_state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "lb_resize", 0, 0, 0, {
@@ -313,7 +314,7 @@ static void lb_inherit_state(struct lb_data *old_data,struct lb_data *new_data)
 }
 
 
-static inline int lb_reload_data( void )
+static inline int lb_reload_data(const int is_inherit_state)
 {
 	struct lb_data *new_data;
 	struct lb_data *old_data;
@@ -336,7 +337,9 @@ static inline int lb_reload_data( void )
 	if (old_data) {
 		/* copy the state of the destinations from the old set
 		 * (for the matching ids) */
-		lb_inherit_state( old_data, new_data);
+		if (is_inherit_state)
+			lb_inherit_state( old_data, new_data);
+
 		free_lb_data( old_data );
 	}
 
@@ -393,7 +396,7 @@ static int mod_init(void)
 	}
 
 	/* load data */
-	if ( lb_reload_data()!=0 ) {
+	if ( lb_reload_data(1)!=0 ) {
 		LM_CRIT("failed to load load-balancing data\n");
 		return -1;
 	}
@@ -827,9 +830,11 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 mi_response_t *mi_lb_reload(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
+	int is_inherit_state = get_mi_bool_like_param(params, "inherit_state", 1);
+
 	LM_INFO("\"lb_reload\" MI command received!\n");
 
-	if ( lb_reload_data()!=0 ) {
+	if ( lb_reload_data(is_inherit_state)!=0 ) {
 		LM_CRIT("failed to load load balancing data\n");
 		goto error;
 	}

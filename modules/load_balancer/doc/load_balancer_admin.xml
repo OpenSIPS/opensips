@@ -913,11 +913,23 @@ if (lb_is_destination($si,$sp) ) {
 		<para>
 		Trigers the reload of the load balancing data from the DB.
 		</para>
+		
+		<itemizedlist>
+			<listitem><para><emphasis>inherit_state</emphasis> (optional) : whether inherit old state of the destination , default is y. </para>
+				<itemizedlist>
+					<listitem><para> <quote>n</quote>: no inherit state </para></listitem>
+					<listitem><para> <quote>y</quote>: inherit state </para></listitem>
+				</itemizedlist>
+			</listitem>
+			
+		</itemizedlist>
+
 		<para>
 		MI FIFO Command Format:
 		</para>
 		<programlisting  format="linespecific">
 		opensips-cli -x mi lb_reload
+		opensips-cli -x mi lb_reload inherit_state=n
 		</programlisting>
 		</section>
 
@@ -1028,4 +1040,3 @@ enable:: yes
 
 
 </chapter>
-
