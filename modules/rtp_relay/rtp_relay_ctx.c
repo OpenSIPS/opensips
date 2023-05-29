@@ -1003,6 +1003,10 @@ int rtp_relay_ctx_preinit(void)
 	if (load_b2b_logic_api(&rtp_relay_b2b)==0) {
 		rtp_relay_b2b_ctx_idx = rtp_relay_b2b.ctx_register_ptr(rtp_relay_b2b_end);
 	}
+	if (rtp_relay_dlg_ctx_idx < 0 && rtp_relay_b2b_ctx_idx < 0) {
+		LM_ERR("nor dialog not b2b modules loaded - cannot use this module!\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -1848,6 +1852,10 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 	}
 
 	if (route_type != LOCAL_ROUTE) {
+		if (rtp_relay_dlg_ctx_idx < 0) {
+			LM_ERR("dialog module not loaded - failed to engage\n");
+			return -1;
+		}
 		if (!rtp_relay_ctx_engaged(ctx)) {
 
 			/* handles the replies to the original INVITE */
