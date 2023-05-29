@@ -404,6 +404,10 @@ rtpengine_offer();
 				&rtp; proxy at the moment!</emphasis>
 				</para></listitem>
 				<listitem><para>
+				<emphasis>via-branch-param=...</emphasis> - provide a custom value for the
+				<emphasis>via-branch</emphasis> param.
+				</para></listitem>
+				<listitem><para>
 				<emphasis>call-id</emphasis> - provide a custom Call-ID for the session. If
 				missing, the Call-Id of the request/reply is used.
 				</para></listitem>
