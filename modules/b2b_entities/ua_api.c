@@ -1035,16 +1035,9 @@ mi_response_t *b2b_ua_mi_reply(const mi_params_t *params,
 		return init_mi_param_error();
 	if (get_mi_int_param(params, "code", &code) < 0)
 		return init_mi_param_error();
-
-	switch (try_get_mi_string_param(params, "reason", &reason.s, &reason.len)) {
-	case 0:
-		break;
-	case -1:
-		reason.s = NULL;
-		break;
-	default:
+	if (get_mi_string_param(params, "reason", &reason.s, &reason.len) < 0)
 		return init_mi_param_error();
-	}
+
 	switch (try_get_mi_string_param(params, "body", &body.s, &body.len)) {
 	case 0:
 		break;
@@ -1077,9 +1070,8 @@ mi_response_t *b2b_ua_mi_reply(const mi_params_t *params,
 
 	parse_method(method.s, method.s+method.len, &method_value);
 
-	if (ua_send_reply(B2B_NONE, &key, method_value, code,
-		reason.s?&reason:NULL, body.s?&body:NULL,
-		content_type.s?&content_type:NULL,
+	if (ua_send_reply(B2B_NONE, &key, method_value, code, &reason,
+		body.s?&body:NULL, content_type.s?&content_type:NULL,
 		extra_headers.s?&extra_headers:NULL) < 0) {
 		LM_ERR("Failed to send reply\n");
 		return init_mi_error(500, MI_SSTR("Failed to send reply"));
