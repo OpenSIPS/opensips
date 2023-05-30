@@ -864,8 +864,6 @@ static int fixup_init_flags(void** param)
 		}
 	}
 
-	LM_DBG("DDD flags=%d lifetime=%d\n", init_params->flags, init_params->init_timeout);
-
 	return 0;
 }
 
