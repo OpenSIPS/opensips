@@ -160,7 +160,7 @@ static const mi_export_t mi_cmds[] = {
 		{mi_b2be_list, {0}},
 		{EMPTY_MI_RECIPE}}
 	},
-	{ "ua_session_start", 0, 0, 0, {
+	{ "ua_session_client_start", 0, 0, 0, {
 		{b2b_ua_session_client_start, {UA_START_MI_PARAMS, 0}},
 		{b2b_ua_session_client_start, {UA_START_MI_PARAMS, "proxy", 0}},
 		{b2b_ua_session_client_start, {UA_START_MI_PARAMS, "body", 0}},
