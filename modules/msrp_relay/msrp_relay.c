@@ -523,7 +523,7 @@ int handle_msrp_request(struct msrp_msg *req, void *param)
 			hash_unlock(msrp_sessions, hentry);
 		}
 
-		if (ref_script_route_is_valid(sock_route_ref) ||
+		if (!ref_script_route_is_valid(sock_route_ref) ||
 		run_msrp_socket_route( &req->rcv,
 			protos[to->next->secured?PROTO_MSRPS:PROTO_MSRP].name,
 			&to->next->host, &si)!=0
