@@ -42,10 +42,12 @@
 #define UA_FL_DISABLE_AUTO_ACK (1<<3)
 #define UA_FL_PROVIDE_HDRS     (1<<4)
 #define UA_FL_PROVIDE_BODY     (1<<5)
+#define UA_FL_SUPPRESS_NEW     (1<<6)
 
 #define UA_SESSION_DEFAULT_TIMEOUT (60 * 60 * 12)
 
 enum ua_sess_event_type {
+	UA_SESS_EV_NEW,
 	UA_SESS_EV_EARLY,
 	UA_SESS_EV_ANSWERED,
 	UA_SESS_EV_REJECTED,

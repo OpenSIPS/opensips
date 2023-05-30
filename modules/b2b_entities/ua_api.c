@@ -153,6 +153,7 @@ static int get_all_headers(struct sip_msg *msg, str *hdrs)
 
 /* indexed with the values from enum ua_sess_event_type */
 static str event_type_str[] = {
+	str_init("NEW"),
 	str_init("EARLY"),
 	str_init("ANSWERED"),
 	str_init("REJECTED"),
@@ -464,6 +465,9 @@ static struct ua_sess_init_params *ua_parse_flags(str *s)
 			break;
 		case 'b':
 			params->flags |= UA_FL_PROVIDE_BODY;
+			break;
+		case 'n':
+			params->flags |= UA_FL_SUPPRESS_NEW;
 			break;
 		default:
 			LM_WARN("unknown option `%c'\n", s->s[st]);
@@ -799,6 +803,13 @@ int b2b_ua_server_init(struct sip_msg *msg, pv_spec_t *key_spec,
 			LM_ERR("Unable to set tag pvar\n");
 			goto error;
 		}
+	}
+
+	if (!(init_params->flags&UA_FL_SUPPRESS_NEW) &&
+		raise_ua_sess_event(key_ret, B2B_SERVER, UA_SESS_EV_NEW,
+		init_params->flags, msg) < 0) {
+		LM_ERR("Failed to raise E_UA_SESSION event\n");
+		goto error;
 	}
 
 	pkg_free(key_ret);
