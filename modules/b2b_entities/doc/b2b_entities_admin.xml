@@ -714,7 +714,7 @@ opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIO
 				<emphasis>code </emphasis> - reply code
 			</para></listitem>
 			<listitem><para>
-				<emphasis>reason (optional)</emphasis> - reply reason string
+				<emphasis>reason</emphasis> - reply reason string
 			</para></listitem>
 			<listitem><para>
 				<emphasis>body (optional)</emphasis> - body to include in the

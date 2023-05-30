@@ -153,7 +153,7 @@ static const param_export_t params[]={
 /* mandatory parameters */
 #define UA_START_MI_PARAMS "ruri", "to", "from"
 #define UA_UPDATE_MI_PARAMS "key", "method"
-#define UA_REPLY_MI_PARAMS "key", "method", "code"
+#define UA_REPLY_MI_PARAMS "key", "method", "code", "reason"
 
 static const mi_export_t mi_cmds[] = {
 	{ "b2be_list", 0,0,0,{
@@ -250,15 +250,10 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ "ua_session_reply", 0, 0, 0, {
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, 0}},
-		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "reason", 0}},
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "body", 0}},
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "extra_headers", 0}},
-		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "reason", "body", 0}},
-		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "reason", "extra_headers", 0}},
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "body", "content_type", 0}},
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "body", "extra_headers", 0}},
-		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "reason", "body", "content_type", 0}},
-		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "reason", "body", "extra_headers", 0}},
 		{b2b_ua_mi_reply, {UA_REPLY_MI_PARAMS, "body", "content_type",
 			"extra_headers", 0}},
 		{EMPTY_MI_RECIPE}}
