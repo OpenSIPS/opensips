@@ -522,6 +522,10 @@ int main(int argc, char** argv)
 			case 'F':
 					no_daemon_mode=1;
 					break;
+			case 'E':
+					LM_ERR("-E option deprecated since 3.4, set \"stderror_enabled=yes\" "
+					    "at the script level instead\n");
+					goto error00;
 			case 'N':
 					tcp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
