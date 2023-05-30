@@ -374,6 +374,11 @@ static inline int hostent2su( union sockaddr_union* su,
 								unsigned short   port )
 {
 	memset(su, 0, sizeof(union sockaddr_union)); /*needed on freebsd*/
+
+	/* copy the hostname into the sockaddr_union */
+	strncpy(su->h.hostname, he->h_name, sizeof(su->h.hostname)-1);
+	su->h.hostname[sizeof(su->h.hostname)-1] = 0;
+
 	su->s.sa_family=he->h_addrtype;
 	switch(he->h_addrtype){
 	case	AF_INET6:
