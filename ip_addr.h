@@ -80,10 +80,19 @@ struct net{
 	struct ip_addr mask;
 };
 
+union sockaddr_union_no_hostname{
+	struct sockaddr     s;
+	struct sockaddr_in  sin;
+	struct sockaddr_in6 sin6;
+};
 union sockaddr_union{
-		struct sockaddr     s;
-		struct sockaddr_in  sin;
-		struct sockaddr_in6 sin6;
+	struct sockaddr     s;
+	struct sockaddr_in  sin;
+	struct sockaddr_in6 sin6;
+	struct {
+		union sockaddr_union_no_hostname _padding;
+		char hostname[256];
+	} h;
 };
 
 
