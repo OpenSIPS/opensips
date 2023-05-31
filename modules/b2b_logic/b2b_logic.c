@@ -832,7 +832,7 @@ static int fixup_init_flags(void** param)
 {
 	str *s = (str*)*param;
 	struct b2b_params *init_params;
-	str flag_vals[1] = {STR_NULL};
+	str flag_vals[1];
 
 	init_params = pkg_malloc(sizeof	*init_params);
 	if (!init_params) {
@@ -893,7 +893,7 @@ static int fixup_bridge_flags(void** param)
 {
 	str *s = (str*)*param;
 	struct b2b_bridge_params *bridge_params;
-	str flag_vals[1] = {STR_NULL};
+	str flag_vals[1];
 
 	bridge_params = pkg_malloc(sizeof *bridge_params);
 	if (!bridge_params) {
