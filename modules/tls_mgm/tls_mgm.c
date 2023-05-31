@@ -1257,20 +1257,6 @@ static int load_private_key_db(SSL_CTX * ctx, str *blob)
 	return 0;
 }
 
-static void destroy_tls_dom(struct tls_domain *d)
-{
-	int i;
-	if (d->ctx) {
-		for (i = 0; i < d->ctx_no; i++)
-			if (d->ctx[i])
-				SSL_CTX_free(d->ctx[i]);
-		shm_free(d->ctx);
-	}
-	lock_destroy(d->lock);
-	lock_dealloc(d->lock);
-	shm_free(d);
-}
-
 static int init_tls_dom(struct tls_domain *d)
 {
 	int cert_from_file = 0;
@@ -1504,7 +1490,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			destroy_tls_dom(tmp);
+			tls_free_domain(tmp);
 
 			if (!db)
 				return -1;
@@ -1554,7 +1540,7 @@ static int init_tls_domains(struct tls_domain **dom)
 
 			tmp = d;
 			d = d->next;
-			destroy_tls_dom(tmp);
+			tls_free_domain(tmp);
 
 			if (!db)
 				return -1;
