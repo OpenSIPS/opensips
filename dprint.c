@@ -64,6 +64,8 @@ int log_json_buf_size = 6144;
 static char *log_msg_buf = NULL;
 int log_msg_buf_size = 4096;
 
+str log_cee_hostname;
+
 static void stderr_dprint(int log_level, int facility, char *module, const char *func,
 	char *format, va_list ap);
 static void syslog_dprint(int log_level, int facility, char *module, const char *func,
@@ -151,6 +153,38 @@ void stderr_dprint_tmp(char *format, ...)
 	va_end(ap);
 }
 
+int init_log_cee_hostname(void)
+{
+	struct addrinfo hints, *info = NULL;
+	char hostname[HOST_NAME_MAX+1];
+	int rc;
+	str cname;
+
+	if (log_cee_hostname.s)
+		return 0;
+
+	gethostname (hostname, HOST_NAME_MAX);
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_CANONNAME;
+
+	rc = getaddrinfo(hostname, 0, &hints, &info);
+	if (!rc && info) {
+		init_str(&cname, info->ai_canonname);
+		if (pkg_str_dup(&log_cee_hostname, &cname) < 0) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+	}
+
+	if (info)
+		freeaddrinfo(info);
+
+	return 0;
+}
+
 #define append_string(_d,_s,_len) \
 	do{\
 		memcpy((_d),(_s),(_len));\
@@ -177,13 +211,18 @@ void stderr_dprint_tmp(char *format, ...)
 #define DP_JSON_MSG_QT_KEY    "\", \"message\": \""
 #define DP_JSON_MSG_KEY       ", \"message\": \""
 
-#define DP_JSON_CEE_TIME_KEY  "@cee: {\"time\": \""
-#define DP_JSON_CEE_PID_KEY   "\", \"proc!id\": "
-#define DP_JSON_CEE_LEVEL_KEY ", \"pri\": \""
-#define DP_JSON_CEE_MODULE_KEY "\", \"subsys\": \""
-#define DP_JSON_CEE_FUNC_KEY      "\", \"native!function\": \""
-#define DP_JSON_CEE_MSG_QT_KEY    "\", \"msg\": \""
-#define DP_JSON_CEE_MSG_KEY       ", \"msg\": \""
+#define DP_JSON_CEE_AT_PREFIX    "@cee: "
+#define DP_JSON_CEE_TIME_KEY     "{\"time\": \""
+#define DP_JSON_CEE_PID_KEY      "\", \"proc\": {\"id\": \""
+#define DP_JSON_CEE_LEVEL_KEY    "\"}, \"pri\": \""
+#define DP_JSON_CEE_MODULE_KEY   "\", \"subsys\": \""
+#define DP_JSON_CEE_FUNC_KEY     "\", \"native\": {\"function\": \""
+#define DP_JSON_CEE_PREFIX_KEY   "\", \"log_prefix\": \""
+#define DP_JSON_CEE_PREFIX_O_KEY "\"}, \"native\": {\"log_prefix\": \""
+#define DP_JSON_CEE_MSG_KEY      "\"}, \"msg\": \""
+#define DP_JSON_CEE_PNAME_KEY    "\", \"pname\": \""
+#define DP_JSON_CEE_PNAME_VAL    "opensips"
+#define DP_JSON_CEE_HOST_KEY     "\", \"hostname\": \""
 
 #define DP_JSON_MSG_END       "\"}"
 
@@ -260,26 +299,47 @@ static int log_escape_json_buf(char *src, int src_len, char *dst, int dst_max_le
 	return j;
 }
 
-static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefix,
-	char *level, char *module, const char *func, char *format, va_list ap)
+enum log_json_format {
+	LOG_JSON_SCHEMA_BASIC,
+	LOG_JSON_SCHEMA_CEE,
+	LOG_JSON_SCHEMA_CEE_PREFIX  /* for syslog, JSON prefixed with "@cee: " */
+};
+
+static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
+	int pid, char *prefix, char *level, char *module, const char *func,
+	char *format, va_list ap)
 {
 	char *p, *tmp;
-	int len;
+	int len = 0, rlen;
 	int l;
 
-	if (is_cee) {
-		len = S_LEN(DP_JSON_CEE_TIME_KEY) + strlen(time) + S_LEN(DP_JSON_CEE_PID_KEY) +
-			INT2STR_MAX_LEN + S_LEN(DP_JSON_CEE_LEVEL_KEY) + strlen(level);
-		len += module && func ? S_LEN(DP_JSON_CEE_MODULE_KEY) + strlen(module) +
-			S_LEN(DP_JSON_CEE_FUNC_KEY) + strlen(func) : 0;
-		len += S_LEN(DP_JSON_MSG_QT_KEY) + S_LEN(DP_JSON_MSG_END) + 1;
+	if (json_fmt > LOG_JSON_SCHEMA_BASIC) {
+		if (json_fmt == LOG_JSON_SCHEMA_CEE_PREFIX) {
+			rlen = S_LEN(DP_JSON_CEE_PNAME_KEY) + (log_name ? strlen(log_name) :
+				S_LEN(DP_JSON_CEE_PNAME_VAL)) + S_LEN(DP_JSON_CEE_HOST_KEY) +
+				log_cee_hostname.len + S_LEN(DP_JSON_MSG_END) + 1;
+
+			len = S_LEN(DP_JSON_CEE_AT_PREFIX);
+		} else {
+			rlen = S_LEN(DP_JSON_MSG_END) + 1;
+		}
+
+		len += S_LEN(DP_JSON_CEE_TIME_KEY) + strlen(time) +
+			S_LEN(DP_JSON_CEE_PID_KEY) + INT2STR_MAX_LEN +
+			(module && func ? S_LEN(DP_JSON_CEE_LEVEL_KEY) + strlen(level) +
+			S_LEN(DP_JSON_CEE_MODULE_KEY) + strlen(module) +
+			S_LEN(DP_JSON_CEE_FUNC_KEY) + strlen(func) : 0) +
+			S_LEN(DP_JSON_CEE_PREFIX_O_KEY) + strlen(prefix) +
+			S_LEN(DP_JSON_MSG_KEY) + rlen;
 	} else {
+		rlen = S_LEN(DP_JSON_MSG_END) + 1;
+
 		len = S_LEN(DP_JSON_TIME_KEY) + strlen(time) + S_LEN(DP_JSON_PID_KEY) +
-			INT2STR_MAX_LEN + S_LEN(DP_JSON_LEVEL_KEY) + strlen(level);
-		len += module && func ? S_LEN(DP_JSON_MODULE_KEY) + strlen(module) +
-			S_LEN(DP_JSON_FUNC_KEY) + strlen(func) : 0;
-		len += S_LEN(DP_JSON_PREFIX_QT_KEY) + strlen(prefix) +
-			S_LEN(DP_JSON_MSG_QT_KEY) + S_LEN(DP_JSON_MSG_END) + 1;
+			INT2STR_MAX_LEN + S_LEN(DP_JSON_LEVEL_KEY) + strlen(level) +
+			(module && func ? S_LEN(DP_JSON_MODULE_KEY) + strlen(module) +
+			S_LEN(DP_JSON_FUNC_KEY) + strlen(func) : 0) +
+			S_LEN(DP_JSON_PREFIX_QT_KEY) + strlen(prefix) +
+			S_LEN(DP_JSON_MSG_QT_KEY) + rlen;
 	}
 
 	if (len >= buf->len) {
@@ -290,7 +350,10 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 	len = 0;
 	p = buf->s;
 
-	if (is_cee) {
+	if (json_fmt > LOG_JSON_SCHEMA_BASIC) {
+		if (json_fmt == LOG_JSON_SCHEMA_CEE_PREFIX)
+			append_string_st(p, DP_JSON_CEE_AT_PREFIX);
+
 		append_string_st(p, DP_JSON_CEE_TIME_KEY);
 		append_string(p, time, strlen(time));
 
@@ -309,10 +372,15 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 			append_string(p, func, strlen(func));
 		}
 
-		if (module && func)
-			append_string_st(p, DP_JSON_CEE_MSG_QT_KEY);
-		else
-			append_string_st(p, DP_JSON_CEE_MSG_KEY);
+		if (strlen(prefix) != 0) {
+			if (module && func)
+				append_string_st(p, DP_JSON_CEE_PREFIX_KEY);
+			else
+				append_string_st(p, DP_JSON_CEE_PREFIX_O_KEY);
+			append_string(p, prefix, strlen(prefix)-1/*skip the ':'*/);
+		}
+
+		append_string_st(p, DP_JSON_CEE_MSG_KEY);
 	} else {
 		append_string_st(p, DP_JSON_TIME_KEY);
 		append_string(p, time, strlen(time));
@@ -337,7 +405,7 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 				append_string_st(p, DP_JSON_PREFIX_QT_KEY);
 			else
 				append_string_st(p, DP_JSON_PREFIX_KEY);
-			append_string(p, prefix, strlen(prefix));
+			append_string(p, prefix, strlen(prefix)-1/*skip the ':'*/);
 		}
 
 		if ((module && func) || strlen(prefix) != 0)
@@ -357,7 +425,7 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 	}
 
 	l = log_escape_json_buf(log_msg_buf, l, p,
-		buf->len - len - S_LEN(DP_JSON_MSG_END) - 1);
+		buf->len - len - rlen - 1);
 	if (l < 0) {
 		stderr_dprint_tmp("error: failed to escape log message!\n",l);
 		return -1;
@@ -366,7 +434,21 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 	p += l;
 	len += l;
 
-	append_string_st(p, DP_JSON_MSG_END);
+	if (json_fmt == LOG_JSON_SCHEMA_BASIC) {
+		append_string_st(p, DP_JSON_MSG_END);
+	} else {
+		append_string_st(p, DP_JSON_CEE_PNAME_KEY);
+		if (log_name)
+			append_string(p, log_name, strlen(log_name));
+		else
+			append_string_st(p, DP_JSON_CEE_PNAME_VAL);
+
+		append_string_st(p, DP_JSON_CEE_HOST_KEY);
+		append_string(p, log_cee_hostname.s, log_cee_hostname.len);
+
+		append_string_st(p, DP_JSON_MSG_END);
+	}
+
 	*p = '\0';
 
 	return len;
@@ -388,7 +470,8 @@ static void stderr_dprint(int log_level, int facility, char *module, const char 
 		if (module && func)
 			va_arg(ap, char *);
 
-		if ((len = log_print_json(&buf, stderr_log_format==LOG_FORMAT_JSON_CEE,
+		if ((len = log_print_json(&buf, stderr_log_format==LOG_FORMAT_JSON_CEE ?
+			LOG_JSON_SCHEMA_CEE : LOG_JSON_SCHEMA_BASIC,
 			time, pid, prefix, dp_log_level_str(log_level), module, func,
 			format, ap)) < 0) {
 			stderr_dprint_tmp("error: failed to print JSON log!\n");
@@ -444,7 +527,8 @@ static void syslog_dprint(int log_level, int facility, char *module, const char 
 		if (module && func)
 			va_arg(ap, char *);
 
-		if ((len = log_print_json(&buf, syslog_log_format==LOG_FORMAT_JSON_CEE,
+		if ((len = log_print_json(&buf, syslog_log_format==LOG_FORMAT_JSON_CEE ?
+			LOG_JSON_SCHEMA_CEE_PREFIX : LOG_JSON_SCHEMA_BASIC,
 			time, pid, prefix, dp_log_level_str(log_level), module, func,
 			format, ap)) < 0) {
 			stderr_dprint_tmp("error: failed to print JSON log!\n");

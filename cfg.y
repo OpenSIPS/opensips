@@ -963,6 +963,11 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 						yyerror("failed to allocate msg log buffer");
 						YYABORT;
 					}
+
+					if (i_tmp == LOG_FORMAT_JSON_CEE && init_log_cee_hostname() < 0) {
+						yyerror("failed to allocate hostname buffer");
+						YYABORT;
+					}
 				}
 
 				stderr_log_format = i_tmp;
@@ -981,6 +986,11 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 					}
 					if (init_log_msg_buf(0) < 0) {
 						yyerror("failed to allocate msg log buffer");
+						YYABORT;
+					}
+
+					if (i_tmp == LOG_FORMAT_JSON_CEE && init_log_cee_hostname() < 0) {
+						yyerror("failed to allocate hostname buffer");
 						YYABORT;
 					}
 				}
