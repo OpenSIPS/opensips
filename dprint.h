@@ -136,6 +136,8 @@ extern int log_event_level_filter;
 extern int log_json_buf_size;
 extern int log_msg_buf_size;
 
+extern str log_cee_hostname;
+
 /*
  * must be called after init_multi_proc_support()
  * must be called once for each OpenSIPS process
@@ -149,6 +151,8 @@ int init_log_cons_shm_table(void);
 
 int init_log_json_buf(int realloc);
 int init_log_msg_buf(int realloc);
+
+int init_log_cee_hostname(void);
 
 int init_log_event_cons();
 int set_log_event_cons_cfg_state(void);
