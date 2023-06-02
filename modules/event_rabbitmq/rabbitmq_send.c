@@ -541,8 +541,9 @@ void rmq_process(int rank)
 	rmq_init_reader();
 	rmq_send_t * rmqs;
 
-	/* supppress any logs, in case we are handling the E_CORE_LOG event */
-	set_proc_log_level(L_ALERT-1);
+	/* suppress the E_CORE_LOG event for new logs while handling
+	 * the event itself */
+	suppress_proc_log_event();
 
 	/* waiting for commands */
 	for (;;) {
@@ -580,5 +581,5 @@ end:
 			shm_free(rmqs);
 	}
 
-	reset_proc_log_level();
+	reset_proc_log_event();
 }

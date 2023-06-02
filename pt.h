@@ -75,6 +75,9 @@ struct process_table {
 	int log_level;
 	/* used when resetting the log level */
 	int default_log_level;
+	/* used for suppressing the E_CORE_LOG event for new logs while handling
+	 * the event itself */
+	int suppress_log_event;
 
 	/* statistics of this process - they do not change during runtime,
 	 * even when the proc is terminated or respawn - we just hide/unhide */
