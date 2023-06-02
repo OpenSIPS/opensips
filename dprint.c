@@ -559,21 +559,22 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 	evi_params_p list = NULL;
 	str s;
 	int n;
-	static char in_progress = 0;
+	int suppressed;
 
-	/* prevent reentry from the same process */
-	if (in_progress)
+	suppressed = pt[process_no].suppress_log_event;
+
+	if (suppressed)
 		return;
 
-	in_progress = 1;
+	pt[process_no].suppress_log_event = 1;
 
 	if (!evi_probe_event(evi_log_id)) {
-		in_progress = 0;
+		pt[process_no].suppress_log_event = suppressed;
 		return;
 	}
 
 	if (!(list = evi_get_params())) {
-		in_progress = 0;
+		pt[process_no].suppress_log_event = suppressed;
 		return;
 	}
 
@@ -641,12 +642,12 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 			evi_log_name.len, evi_log_name.s);
 	}
 
-	in_progress = 0;
+	pt[process_no].suppress_log_event = suppressed;
 
 	return;
 end_free:
 	evi_free_params(list);
-	in_progress = 0;
+	pt[process_no].suppress_log_event = suppressed;
 }
 
 /* generic consumer that registers to the log interface */
@@ -948,4 +949,12 @@ void set_proc_log_level(int level)
 	__set_proc_log_level(process_no, level);
 }
 
+void suppress_proc_log_event(void)
+{
+	pt[process_no].suppress_log_event = 1;
+}
 
+void reset_proc_log_event(void)
+{
+	pt[process_no].suppress_log_event = 0;
+}

@@ -187,6 +187,12 @@ void set_proc_log_level(int level);
 /* changes the logging level to the default value for the current process */
 void reset_proc_log_level(void);
 
+/* suppress the E_CORE_LOG event for new logs (useful when handling the event
+ * itself in an event consumer) */
+void suppress_proc_log_event(void);
+
+void reset_proc_log_event(void);
+
 static inline char* dp_time(void)
 {
 	time_t ltime;

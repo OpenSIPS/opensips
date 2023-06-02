@@ -661,19 +661,20 @@ static int handle_io(struct fd_map *fm, int idx, int event_type)
 
 	switch (fm->type) {
 		case F_EV_JSONRPC_CMD:
-			/* supppress any logs, in case we are handling the E_CORE_LOG event */
-			set_proc_log_level(L_ALERT-1);
+			/* suppress the E_CORE_LOG event for new logs while handling
+			 * the event itself */
+			suppress_proc_log_event();
 
 			jsonrpcs = stream_receive();
 			if (!jsonrpcs) {
 				LM_ERR("invalid receive jsonrpc command\n");
-				reset_proc_log_level();
+				reset_proc_log_event();
 				return -1;
 			}
 
 			handle_new_stream(jsonrpcs);
 
-			reset_proc_log_level();
+			reset_proc_log_event();
 			break;
 		case F_EV_JSONRPC_RPL:
 			con = (struct stream_con *)fm->data;
