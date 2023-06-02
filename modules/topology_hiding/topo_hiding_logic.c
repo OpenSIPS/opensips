@@ -349,6 +349,36 @@ static struct lump* delete_existing_contact(struct sip_msg *msg, int del_hdr)
 	return lump;
 }
 
+static inline int topo_ct_param_len(str *name, str *val, int should_quote)
+{
+	int len = 1 /* ; */ + name->len;
+	if (val->len) {
+		if (should_quote && should_quote_contact_param_value(val))
+			len += 2; /* quotes */
+		len += 1 /* = */ + val->len;
+	}
+	return len;
+}
+
+static char * topo_ct_param_copy(char *buf, str *name, str *val, int should_quote)
+{
+	*buf++ = ';';
+	memcpy(buf, name->s, name->len);
+	buf += name->len;
+	if (val->len) {
+		*buf++ = '=';
+		if (should_quote)
+			should_quote = should_quote_contact_param_value(val);
+		if (should_quote)
+			*buf++ = '"';
+		memcpy(buf, val->s, val->len);
+		buf += val->len;
+		if (should_quote)
+			*buf++ = '"';
+	}
+	return buf;
+}
+
 static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, int leg)
 {
 	char *prefix=NULL,*suffix=NULL,*p,*p_init,*ct_username=NULL;
@@ -448,16 +478,8 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 				for (el=th_param_list;el;el=el->next) {
 					/* we just iterate over the unknown params */
 					for (i=0;i<ctu.u_params_no;i++) {
-						if (el->param_name.len == ctu.u_name[i].len &&
-						(memcmp(el->param_name.s,ctu.u_name[i].s,
-						       el->param_name.len) == 0)) {
-							if (ctu.u_val[i].len)
-								suffix_len += 1 /* ; */ + ctu.u_name[i].len +
-								ctu.u_val[i].len + 1; /* = and value */
-							else
-								suffix_len += 1 /* ; */ + ctu.u_name[i].len;
-						}
-
+						if (str_match(&el->param_name, &ctu.u_name[i]))
+							suffix_len += topo_ct_param_len(&ctu.u_name[i], &ctu.u_val[i], 0);
 					}
 				}
 			}
@@ -472,14 +494,8 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 		} else {
 			for (el=th_hdr_param_list;el;el=el->next) {
 				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
-					if (it->name.len == el->param_name.len &&
-					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
-						if (it->body.len)
-							suffix_len += 1 /* ; */ + it->name.len +
-							it->body.len + 1; /* = and value */
-						else
-							suffix_len += 1 /* ; */ + it->name.len;
-					}
+					if (str_match(&el->param_name, &it->name))
+						suffix_len += topo_ct_param_len(&it->name, &it->body, 1);
 				}
 			}
 		}
@@ -553,18 +569,8 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 		for (el=th_param_list;el;el=el->next) {
 			/* we just iterate over the unknown params */
 			for (i=0;i<ctu.u_params_no;i++) {
-				if (el->param_name.len == ctu.u_name[i].len &&
-				memcmp(el->param_name.s,ctu.u_name[i].s,
-				       el->param_name.len) == 0) {
-					*p++ = ';';
-					memcpy(p,ctu.u_name[i].s,ctu.u_name[i].len);
-					p+=ctu.u_name[i].len;
-					if (ctu.u_val[i].len) {
-						*p++ = '=';
-						memcpy(p,ctu.u_val[i].s,ctu.u_val[i].len);
-						p+=ctu.u_val[i].len;
-					}
-				}
+				if (str_match(&el->param_name, &ctu.u_name[i]))
+					p = topo_ct_param_copy(p, &ctu.u_name[i], &ctu.u_val[i], 0);
 			}
 		}
 	}
@@ -578,17 +584,8 @@ static int topo_dlg_replace_contact(struct sip_msg* msg, struct dlg_cell* dlg, i
 		} else {
 			for (el=th_hdr_param_list;el;el=el->next) {
 				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
-					if (it->name.len == el->param_name.len &&
-					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
-						*p++ = ';';
-						memcpy(p,it->name.s,it->name.len);
-						p += it->name.len;
-						if (it->body.len) {
-							*p++ = '=';
-							memcpy(p,it->body.s,it->body.len);
-							p += it->body.len;
-						}
-					}
+					if (str_match(&el->param_name, &it->name))
+						p = topo_ct_param_copy(p, &it->name, &it->body, 1);
 				}
 			}
 		}
@@ -1620,16 +1617,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 				for (el=th_param_list;el;el=el->next) {
 					/* we just iterate over the unknown params */
 					for (i=0;i<ctu.u_params_no;i++) {
-						if (el->param_name.len == ctu.u_name[i].len &&
-						(memcmp(el->param_name.s,ctu.u_name[i].s,
-						       el->param_name.len) == 0)) {
-							if (ctu.u_val[i].len)
-								total_len += 1 /* ; */ + ctu.u_name[i].len +
-								ctu.u_val[i].len + 1; /* = and value */
-							else
-								total_len += 1 /* ; */ + ctu.u_name[i].len;
-						}
-
+						if (str_match(&el->param_name, &ctu.u_name[i]))
+							suffix_len += topo_ct_param_len(&ctu.u_name[i], &ctu.u_val[i], 0);
 					}
 				}
 			}
@@ -1644,14 +1633,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 		} else {
 			for (el=th_hdr_param_list;el;el=el->next) {
 				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
-					if (it->name.len == el->param_name.len &&
-					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
-						if (it->body.len)
-							total_len += 1 /* ; */ + it->name.len +
-							it->body.len + 1; /* = and value */
-						else
-							total_len += 1 /* ; */ + it->name.len;
-					}
+					if (str_match(&el->param_name, &it->name))
+						suffix_len += topo_ct_param_len(&it->name, &it->body, 1);
 				}
 			}
 		}
@@ -1703,18 +1686,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 		for (el=th_param_list;el;el=el->next) {
 			/* we just iterate over the unknown params */
 			for (i=0;i<ctu.u_params_no;i++) {
-				if (el->param_name.len == ctu.u_name[i].len &&
-				memcmp(el->param_name.s,ctu.u_name[i].s,
-				       el->param_name.len) == 0) {
-					*s++ = ';';
-					memcpy(s,ctu.u_name[i].s,ctu.u_name[i].len);
-					s+=ctu.u_name[i].len;
-					if (ctu.u_val[i].len) {
-						*s++ = '=';
-						memcpy(s,ctu.u_val[i].s,ctu.u_val[i].len);
-						s+=ctu.u_val[i].len;
-					}
-				}
+				if (str_match(&el->param_name, &ctu.u_name[i]))
+					s = topo_ct_param_copy(s, &ctu.u_name[i], &ctu.u_val[i], 0);
 			}
 		}
 	}
@@ -1727,17 +1700,8 @@ static char* build_encoded_contact_suffix(struct sip_msg* msg,int *suffix_len)
 		} else {
 			for (el=th_hdr_param_list;el;el=el->next) {
 				for (it=((contact_body_t *)msg->contact->parsed)->contacts->params;it;it=it->next) {
-					if (it->name.len == el->param_name.len &&
-					(memcmp(it->name.s,el->param_name.s,it->name.len) == 0)) {
-						*s++ = ';';
-						memcpy(s,it->name.s,it->name.len);
-						s += it->name.len;
-						if (it->body.len) {
-							*s++ = '=';
-							memcpy(s,it->body.s,it->body.len);
-							s += it->body.len;
-						}
-					}
+					if (str_match(&el->param_name, &it->name))
+						s = topo_ct_param_copy(s, &it->name, &it->body, 1);
 				}
 			}
 		}

@@ -30,6 +30,7 @@
 #include "../../dprint.h"
 #include "../../trim.h"      /* trim_leading */
 #include "../../errinfo.h"      /* trim_leading */
+#include "../../ut.h"        /* _isalnum */
 #include "parse_contact.h"
 
 
@@ -224,4 +225,30 @@ int contact_iterator(contact_t** c, struct sip_msg* msg, contact_t* prev)
 		*c = cb->contacts;
 		return 0;
 	}
+}
+
+int should_quote_contact_param_value(str *val)
+{
+	char *p, *end = val->s + val->len;
+	for (p = val->s; p < end; p++) {
+		if (_isalnum(*p))
+			continue;
+		switch (*p) {
+			/* token chars */
+			case '-':
+			case '.':
+			case '!':
+			case '%':
+			case '*':
+			case '_':
+			case '+':
+			case '`':
+			case '\'':
+			case '~':
+				break;
+			default:
+				return 1;
+		}
+	}
+	return 0;
 }
