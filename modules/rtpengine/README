@@ -442,6 +442,8 @@ rtpengine_offer();
             the full call, breaking the subsequent “answer” for
             the new branch. This flag is only supported by the
             Sipwise rtpengine RTP proxy at the moment!
+          + via-branch-param=... - provide a custom value for the
+            via-branch param.
           + call-id - provide a custom Call-ID for the session. If
             missing, the Call-Id of the request/reply is used.
           + from-tag - provide a custom from-tag for the session.
@@ -1262,7 +1264,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 206 107 5923 3055
+   1. Razvan Crainea (@razvancrainea) 207 108 5927 3055
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. John Burke (@john08burke) 25 17 647 102
    4. Liviu Chircu (@liviuchircu) 20 16 91 173

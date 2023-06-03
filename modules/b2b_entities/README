@@ -364,6 +364,9 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
             the E_UA_SESSION event.
           + b - provide the body of the SIP request/reply in the
             E_UA_SESSION event.
+          + n - do not trigger the E_UA_SESSION event (with
+            event_type NEW) for initial INVITES handled with this
+            function.
 
    This function can be used from REQUEST_ROUTE.
 
@@ -528,7 +531,7 @@ od=OPTIONS
      * key - b2b entity key of the UA session.
      * method - name of the SIP method that is replied to.
      * code - reply code
-     * reason (optional) - reply reason string
+     * reason - reply reason string
      * body (optional) - body to include in the SIP message
      * extra_headers (optional) - extra headers to include in the
        SIP message
@@ -588,6 +591,8 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
      * entity_type - indicates whether this is a UAS or UAc
        entity.
      * event_type - the type of event:
+          + NEW - for initial INVITE requests, handled with the
+            ua_session_server_init() function.
           + EARLY - for 1xx provisional responses
           + ANSWERED - for 2xx successful responses
           + REJECTED - for 3xx-6xx failure responses
@@ -791,7 +796,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 181 94 6839 1860
-   2. Vlad Patrascu (@rvlad-patrascu) 120 58 5331 1087
+   2. Vlad Patrascu (@rvlad-patrascu) 124 61 5362 1107
    3. Razvan Crainea (@razvancrainea) 72 58 720 468
    4. Ovidiu Sas (@ovidiusas) 53 41 855 293
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 52 45 442 168
