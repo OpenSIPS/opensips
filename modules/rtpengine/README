@@ -408,6 +408,8 @@ rtpengine_offer();
             the full call, breaking the subsequent “answer” for
             the new branch. This flag is only supported by the
             Sipwise rtpengine RTP proxy at the moment!
+          + via-branch-param=... - provide a custom value for the
+            via-branch param.
           + call-id - provide a custom Call-ID for the session. If
             missing, the Call-Id of the request/reply is used.
           + from-tag - provide a custom from-tag for the session.
@@ -1203,7 +1205,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 184 91 5432 2909
+   1. Razvan Crainea (@razvancrainea) 185 92 5436 2909
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 31 17 423 595
    3. Richard Fuchs 20 2 640 723
    4. Liviu Chircu (@liviuchircu) 18 14 73 138
@@ -1239,7 +1241,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - Jan 2023
+   1.  Razvan Crainea (@razvancrainea)     Jun 2014 - May 2023
    2.  Liviu Chircu (@liviuchircu)         Jul 2014 - Nov 2022
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2014 - Apr 2022
    4.  Nick Altmann (@nikbyte)             May 2021 - May 2021
@@ -1262,11 +1264,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Nick Altmann
-   (@nikbyte), Flavio E. Goncalves, Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Richard
-   Fuchs.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Nick Altmann (@nikbyte), Flavio E. Goncalves,
+   Peter Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
+   Bogdan-Andrei Iancu (@bogdan-iancu), Richard Fuchs.
 
    Documentation Copyrights:
 
