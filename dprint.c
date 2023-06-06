@@ -251,7 +251,7 @@ static int log_escape_json_buf(char *src, int src_len, char *dst, int dst_max_le
 	}
 
 	if (rlen>dst_max_len) {
-		stderr_dprint_tmp("error: buffer too small! needed: %d\n", rlen);
+		stderr_dprint_tmp_err("buffer too small! needed: %d\n", rlen);
 		return -1;
 	} else if (rlen == src_len) {
 		/* nothing needs to be escaped */
@@ -340,7 +340,7 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 	}
 
 	if (len >= buf->len) {
-		stderr_dprint_tmp("error: buffer too small! needed: %d\n", len);
+		stderr_dprint_tmp_err("buffer too small! needed: %d\n", len);
 		return -1;
 	}
 
@@ -410,18 +410,18 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 
 	l = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);
 	if (l < 0) {
-		stderr_dprint_tmp("error: vsnprintf() failed!\n");
+		stderr_dprint_tmp_err("vsnprintf() failed!\n");
 		return -1;
 	}
 	if (l >= log_msg_buf_size) {
-		stderr_dprint_tmp("warning: buffer too small, log message truncated\n");
+		stderr_dprint_tmp_err("warning: buffer too small, log message truncated\n");
 		l = log_msg_buf_size;
 	}
 
 	l = log_escape_json_buf(log_msg_buf, l, p,
 		buf->len - len - rlen - 1);
 	if (l < 0) {
-		stderr_dprint_tmp("error: failed to escape log message!\n",l);
+		stderr_dprint_tmp_err("failed to escape log message!\n",l);
 		return -1;
 	}
 
@@ -468,7 +468,7 @@ static void stderr_dprint(int log_level, int facility, char *module, const char 
 			LOG_JSON_SCHEMA_CEE : LOG_JSON_SCHEMA_BASIC,
 			time, pid, prefix, dp_log_level_str(log_level), module, func,
 			format, ap)) < 0) {
-			stderr_dprint_tmp("error: failed to print JSON log!\n");
+			stderr_dprint_tmp_err("failed to print JSON log!\n");
 			return;
 		}
 
@@ -525,7 +525,7 @@ static void syslog_dprint(int log_level, int facility, char *module, const char 
 			LOG_JSON_SCHEMA_CEE_PREFIX : LOG_JSON_SCHEMA_BASIC,
 			time, pid, prefix, dp_log_level_str(log_level), module, func,
 			format, ap)) < 0) {
-			stderr_dprint_tmp("error: failed to print JSON log!\n");
+			stderr_dprint_tmp_err("failed to print JSON log!\n");
 			return;
 		}
 
@@ -547,7 +547,7 @@ static str evi_func_str = str_init("function");
 static str evi_prefix_str = str_init("prefix");
 static str evi_msg_str = str_init("message");
 
-static void event_dprint(int log_level, int facility, char *module, const char *func,
+static void event_dprint(int level, int facility, char *module, const char *func,
 	char *format, va_list ap)
 {
 	evi_params_p list = NULL;
@@ -574,29 +574,29 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 
 	init_str(&s, dp_time());
 	if (evi_param_add_str(list, &evi_time_str, &s)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
 	n = dp_my_pid();
 	if (evi_param_add_int(list, &evi_pid_str, &n)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
-	init_str(&s, dp_log_level_str(log_level));
+	init_str(&s, dp_log_level_str(level));
 	if (evi_param_add_str(list, &evi_level_str, &s)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
 
 	if (module && func) {
 		init_str(&s, module);
 		if (evi_param_add_str(list, &evi_module_str, &s)) {
-			stderr_dprint_tmp("error: unable to add event parameter\n");
+			LM_ERR("unable to add event parameter\n");
 			goto end_free;
 		}
 		init_str(&s, func);
 		if (evi_param_add_str(list, &evi_func_str, &s)) {
-			stderr_dprint_tmp("error: unable to add event parameter\n");
+			LM_ERR("unable to add event parameter\n");
 			goto end_free;
 		}
 	}
@@ -604,18 +604,18 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 	init_str(&s, log_prefix);
 	if (s.len) {
 		if (evi_param_add_str(list, &evi_prefix_str, &s)) {
-			stderr_dprint_tmp("error: unable to add event parameter\n");
+			LM_ERR("unable to add event parameter\n");
 			goto end_free;
 		}
 	}
 
 	s.len = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);
 	if (s.len < 0) {
-		stderr_dprint_tmp("error: vsnprintf() failed!\n");
+		LM_ERR("vsnprintf() failed!\n");
 		goto end_free;
 	}
 	if (s.len>=log_msg_buf_size) {
-		stderr_dprint_tmp("warning: log message truncated\n");
+		LM_WARN("log message truncated\n");
 		s.len = log_msg_buf_size;
 	}
 
@@ -627,12 +627,12 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 
 	s.s = log_msg_buf;
 	if (evi_param_add_str(list, &evi_msg_str, &s)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
 
 	if (evi_raise_event(evi_log_id, list)) {
-		stderr_dprint_tmp("error: unable to raise '%.*s' event\n",
+		LM_ERR("unable to raise '%.*s' event\n",
 			evi_log_name.len, evi_log_name.s);
 	}
 
