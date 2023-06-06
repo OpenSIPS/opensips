@@ -279,6 +279,9 @@ static inline char *dp_log_level_str(int log_level)
 		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
 		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ": "
 
+		#define stderr_dprint_tmp_err(fmt, ...) \
+				stderr_dprint_tmp(DP_ERR_PREFIX LOG_PREFIX fmt __VA_ARGS__)
+
 		#define MY_DPRINT(_log_level, _log_facility, _stderr_prefix, \
 					_syslog_prefix, _fmt, ...) \
 				dprint(_log_level, _log_facility, \
@@ -439,6 +442,10 @@ static inline char *dp_log_level_str(int log_level)
 		#define LOG_PREFIX_UTIL2(_n) #_n
 		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
 		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ":%s: "
+
+		#define stderr_dprint_tmp_err(_fmt, args...) \
+				stderr_dprint_tmp(DP_ERR_PREFIX LOG_PREFIX _fmt, \
+				dp_time(), dp_my_pid(), log_prefix, __DP_FUNC, ## args) \
 
 		#define MY_DPRINT(_log_level, _log_facility, _stderr_prefix, \
 					_syslog_prefix, _fmt, args...) \
