@@ -206,10 +206,8 @@ int init_log_cee_hostname(void)
 #define DP_JSON_LEVEL_KEY     ", \"level\": \""
 #define DP_JSON_MODULE_KEY    "\", \"module\": \""
 #define DP_JSON_FUNC_KEY      "\", \"function\": \""
-#define DP_JSON_PREFIX_QT_KEY "\", \"prefix\": \""
-#define DP_JSON_PREFIX_KEY    ", \"prefix\": \""
-#define DP_JSON_MSG_QT_KEY    "\", \"message\": \""
-#define DP_JSON_MSG_KEY       ", \"message\": \""
+#define DP_JSON_PREFIX_KEY    "\", \"prefix\": \""
+#define DP_JSON_MSG_KEY       "\", \"message\": \""
 
 #define DP_JSON_CEE_AT_PREFIX    "@cee: "
 #define DP_JSON_CEE_TIME_KEY     "{\"time\": \""
@@ -218,8 +216,9 @@ int init_log_cee_hostname(void)
 #define DP_JSON_CEE_MODULE_KEY   "\", \"subsys\": \""
 #define DP_JSON_CEE_FUNC_KEY     "\", \"native\": {\"function\": \""
 #define DP_JSON_CEE_PREFIX_KEY   "\", \"log_prefix\": \""
-#define DP_JSON_CEE_PREFIX_O_KEY "\"}, \"native\": {\"log_prefix\": \""
-#define DP_JSON_CEE_MSG_KEY      "\"}, \"msg\": \""
+#define DP_JSON_CEE_PREFIX_O_KEY "\", \"native\": {\"log_prefix\": \""
+#define DP_JSON_CEE_MSG_B_KEY    "\"}, \"msg\": \""
+#define DP_JSON_CEE_MSG_KEY      "\", \"msg\": \""
 #define DP_JSON_CEE_PNAME_KEY    "\", \"pname\": \""
 #define DP_JSON_CEE_PNAME_VAL    "opensips"
 #define DP_JSON_CEE_HOST_KEY     "\", \"hostname\": \""
@@ -326,7 +325,8 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 
 		len += S_LEN(DP_JSON_CEE_TIME_KEY) + strlen(time) +
 			S_LEN(DP_JSON_CEE_PID_KEY) + INT2STR_MAX_LEN +
-			(module && func ? S_LEN(DP_JSON_CEE_LEVEL_KEY) + strlen(level) +
+			S_LEN(DP_JSON_CEE_LEVEL_KEY) + strlen(level) +
+			(module && func ?
 			S_LEN(DP_JSON_CEE_MODULE_KEY) + strlen(module) +
 			S_LEN(DP_JSON_CEE_FUNC_KEY) + strlen(func) : 0) +
 			S_LEN(DP_JSON_CEE_PREFIX_O_KEY) + strlen(prefix) +
@@ -338,8 +338,8 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 			INT2STR_MAX_LEN + S_LEN(DP_JSON_LEVEL_KEY) + strlen(level) +
 			(module && func ? S_LEN(DP_JSON_MODULE_KEY) + strlen(module) +
 			S_LEN(DP_JSON_FUNC_KEY) + strlen(func) : 0) +
-			S_LEN(DP_JSON_PREFIX_QT_KEY) + strlen(prefix) +
-			S_LEN(DP_JSON_MSG_QT_KEY) + rlen;
+			S_LEN(DP_JSON_PREFIX_KEY) + strlen(prefix) +
+			S_LEN(DP_JSON_MSG_KEY) + rlen;
 	}
 
 	if (len >= buf->len) {
@@ -361,10 +361,10 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 		tmp = int2str(pid, &l);
 		append_string(p, tmp, l);
 
-		if (module && func) {
-			append_string_st(p, DP_JSON_CEE_LEVEL_KEY);
-			append_string(p, level, strlen(level));
+		append_string_st(p, DP_JSON_CEE_LEVEL_KEY);
+		append_string(p, level, strlen(level));
 
+		if (module && func) {
 			append_string_st(p, DP_JSON_CEE_MODULE_KEY);
 			append_string(p, module, strlen(module));
 
@@ -380,7 +380,10 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 			append_string(p, prefix, strlen(prefix)-1/*skip the ':'*/);
 		}
 
-		append_string_st(p, DP_JSON_CEE_MSG_KEY);
+		if ((module && func) || strlen(prefix) != 0)
+			append_string_st(p, DP_JSON_CEE_MSG_B_KEY);
+		else
+			append_string_st(p, DP_JSON_CEE_MSG_KEY);
 	} else {
 		append_string_st(p, DP_JSON_TIME_KEY);
 		append_string(p, time, strlen(time));
@@ -389,10 +392,10 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 		tmp = int2str(pid, &l);
 		append_string(p, tmp, l);
 
-		if (module && func) {
-			append_string_st(p, DP_JSON_LEVEL_KEY);
-			append_string(p, level, strlen(level));
+		append_string_st(p, DP_JSON_LEVEL_KEY);
+		append_string(p, level, strlen(level));
 
+		if (module && func) {
 			append_string_st(p, DP_JSON_MODULE_KEY);
 			append_string(p, module, strlen(module));
 
@@ -401,17 +404,11 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 		}
 
 		if (strlen(prefix) != 0) {
-			if (module && func)
-				append_string_st(p, DP_JSON_PREFIX_QT_KEY);
-			else
-				append_string_st(p, DP_JSON_PREFIX_KEY);
+			append_string_st(p, DP_JSON_PREFIX_KEY);
 			append_string(p, prefix, strlen(prefix)-1/*skip the ':'*/);
 		}
 
-		if ((module && func) || strlen(prefix) != 0)
-			append_string_st(p, DP_JSON_MSG_QT_KEY);
-		else
-			append_string_st(p, DP_JSON_MSG_KEY);
+		append_string_st(p, DP_JSON_MSG_KEY);
 	}
 
 	l = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);

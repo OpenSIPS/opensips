@@ -335,9 +335,49 @@ static inline char *dp_log_level_str(int log_level)
 		#define LM_GEN2( _facility, _lev, fmt, ...) \
 			do { \
 				if (is_printable(_lev)){ \
-					dprint(_lev, _facility, NULL, NULL, \
-						DP_PREFIX "%s" fmt, "%s" fmt, fmt, \
-						dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+					switch(_lev){ \
+					case L_CRIT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_CRIT_PREFIX fmt, "%s" DP_CRIT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_ALERT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ALERT_PREFIX fmt, "%s" DP_ALERT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_ERR: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ERR_PREFIX fmt, "%s" DP_ERR_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_WARN: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_WARN_PREFIX fmt, "%s" DP_WARN_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_NOTICE: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_NOTICE_PREFIX fmt, "%s" DP_NOTICE_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_INFO: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_INFO_PREFIX fmt, "%s" DP_INFO_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_DBG: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					default: \
+						if (_lev > L_DBG) \
+							dprint(_lev, _facility, NULL, NULL, \
+								DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+								dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					} \
 				} \
 			}while(0)
 
@@ -456,9 +496,49 @@ static inline char *dp_log_level_str(int log_level)
 		#define LM_GEN2( _facility, _lev, fmt, args...) \
 			do { \
 				if (is_printable(_lev)){ \
-					dprint(_lev, _facility, NULL, NULL, \
-						DP_PREFIX "%s" fmt, "%s" fmt, fmt, \
-						dp_time(), dp_my_pid(), log_prefix, ## args); \
+					switch(_lev){ \
+					case L_CRIT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_CRIT_PREFIX fmt, "%s" DP_CRIT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_ALERT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ALERT_PREFIX fmt, "%s" DP_ALERT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_ERR: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ERR_PREFIX fmt, "%s" DP_ERR_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_WARN: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_WARN_PREFIX fmt, "%s" DP_WARN_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_NOTICE: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_NOTICE_PREFIX fmt, "%s" DP_NOTICE_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_INFO: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_INFO_PREFIX fmt, "%s" DP_INFO_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_DBG: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					default: \
+						if (_lev > L_DBG) \
+							dprint(_lev, _facility, NULL, NULL, \
+							DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					} \
 				} \
 			}while(0)
 
