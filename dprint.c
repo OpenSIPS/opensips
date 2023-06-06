@@ -313,15 +313,12 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 	int l;
 
 	if (json_fmt > LOG_JSON_SCHEMA_BASIC) {
-		if (json_fmt == LOG_JSON_SCHEMA_CEE_PREFIX) {
-			rlen = S_LEN(DP_JSON_CEE_PNAME_KEY) + (log_name ? strlen(log_name) :
-				S_LEN(DP_JSON_CEE_PNAME_VAL)) + S_LEN(DP_JSON_CEE_HOST_KEY) +
-				log_cee_hostname.len + S_LEN(DP_JSON_MSG_END) + 1;
+		rlen = S_LEN(DP_JSON_CEE_PNAME_KEY) + (log_name ? strlen(log_name) :
+			S_LEN(DP_JSON_CEE_PNAME_VAL)) + S_LEN(DP_JSON_CEE_HOST_KEY) +
+			log_cee_hostname.len + S_LEN(DP_JSON_MSG_END) + 1;
 
+		if (json_fmt == LOG_JSON_SCHEMA_CEE_PREFIX)
 			len = S_LEN(DP_JSON_CEE_AT_PREFIX);
-		} else {
-			rlen = S_LEN(DP_JSON_MSG_END) + 1;
-		}
 
 		len += S_LEN(DP_JSON_CEE_TIME_KEY) + strlen(time) +
 			S_LEN(DP_JSON_CEE_PID_KEY) + INT2STR_MAX_LEN +
@@ -339,7 +336,7 @@ static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
 			(module && func ? S_LEN(DP_JSON_MODULE_KEY) + strlen(module) +
 			S_LEN(DP_JSON_FUNC_KEY) + strlen(func) : 0) +
 			S_LEN(DP_JSON_PREFIX_KEY) + strlen(prefix) +
-			S_LEN(DP_JSON_MSG_KEY) + rlen;
+			S_LEN(DP_JSON_CEE_MSG_B_KEY) + rlen;
 	}
 
 	if (len >= buf->len) {
