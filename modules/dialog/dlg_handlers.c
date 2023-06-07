@@ -187,6 +187,40 @@ static inline int add_dlg_rr_param(struct sip_msg *req, struct dlg_cell *dlg)
 }
 
 
+static void dlg_leg_push_cseq_map(struct dlg_cell *dlg, unsigned int leg,
+	struct sip_msg *msg)
+{
+	struct dlg_leg_cseq_map *map;
+	unsigned int msg_cseq;
+
+	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
+		!msg->cseq->parsed){
+		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
+		return;
+	}
+	if (str2int(&get_cseq(msg)->number, &msg_cseq) < 0) {
+		LM_ERR("invalid CSeq number [%.*s]\n",
+				get_cseq(msg)->number.len, get_cseq(msg)->number.s);
+		return;
+	}
+	map = shm_malloc(sizeof *map);
+	if (!map) {
+		LM_ERR("oom for cseq map\n");
+		return;
+	}
+	memset(map, 0, sizeof *map);
+	map->msg = msg_cseq;
+	if (dlg->legs[leg].last_gen_cseq) {
+		map->gen = dlg->legs[leg].last_gen_cseq;
+		LM_DBG("storing cseq [%d] in slot [%d] for leg [%d] from last_gen_cseq\n", map->gen, msg_cseq, leg);
+	} else {
+		map->gen = msg_cseq;
+		LM_DBG("storing cseq [%d] in slot [%d] for leg [%d] from msg\n", map->gen, msg_cseq, leg);
+	}
+	map->next = dlg->legs[leg].cseq_maps;
+	dlg->legs[leg].cseq_maps = map;
+}
+
 
 static inline void get_routing_info(struct sip_msg *msg, int is_req,
 							unsigned int *skip_rrs, str *contact, str *rr_set)
@@ -390,7 +424,7 @@ static inline void dlg_release_cloned_leg(struct dlg_cell *dlg)
 	dlg->legs_no[DLG_LEGS_USED]--;
 }
 
-static inline void push_reply_in_dialog(struct sip_msg *rpl, struct cell* t,
+static inline void push_reply_in_dialog(struct sip_msg *req, struct sip_msg *rpl, struct cell* t,
 				struct dlg_cell *dlg,str *mangled_from,str *mangled_to, long *leg_idx)
 {
 	str tag,contact,rr_set;
@@ -467,6 +501,7 @@ routing_info:
 			if (str2int( &(get_cseq(rpl)->number), &cseq_no) < 0) {
 				LM_ERR("Failed to convert cseq to integer \n");
 			} else {
+				LM_DBG("last_gen_cseq = cseq_no [%d] for method id [%d]\n", cseq_no, get_cseq(rpl)->method_id);
 				dlg->legs[dlg->legs_no[DLG_LEG_200OK]].last_gen_cseq = cseq_no;
 			}
 		}
@@ -544,7 +579,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 						LM_CRIT("extract_ftc_hdrs ok but no to extracted : [%.*s]\n",req_out_buff->len,req_out_buff->s);
 				}
 			}
-			push_reply_in_dialog( rpl, t, dlg,&mangled_from,&mangled_to, &leg_idx);
+			push_reply_in_dialog( req, rpl, t, dlg,&mangled_from,&mangled_to, &leg_idx);
 		} else {
 			LM_DBG("dialog replied from script - cannot get callee info\n");
 		}
@@ -946,11 +981,11 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 		struct tmcb_params *ps)
 {
-	struct sip_msg *rpl;
+	struct sip_msg *req, *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
 
-	if(ps == NULL || ps->rpl == NULL) {
+	if(ps == NULL || ps->req == NULL || ps->rpl == NULL) {
 			LM_ERR("Wrong tmcb params\n");
 			return;
 	}
@@ -959,6 +994,7 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 			return;
 	}
 
+	req = ps->req;
 	rpl = ps->rpl;
 	statuscode = ps->code;
 	dlg = *(ps->param);
@@ -969,6 +1005,15 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 	}
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (statuscode == 401 || statuscode ==407) {
+		dlg->legs[DLG_CALLER_LEG].last_gen_cseq++;
+		LM_DBG("incrementing last_gen_cseq to [%d] for leg[%d]\n", dlg->legs[DLG_CALLER_LEG].last_gen_cseq, DLG_CALLER_LEG);
+	}
+	if (get_cseq(req)->method_id == METHOD_INVITE) {
+		LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], INVITE)\n", DLG_CALLER_LEG);
+		dlg_leg_push_cseq_map(dlg, DLG_CALLER_LEG, req);
+	}
 
 	if (statuscode >= 200 && statuscode < 300)
 		dlg_update_contact(dlg, rpl, DLG_CALLER_LEG);
@@ -977,11 +1022,11 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 		struct tmcb_params *ps)
 {
-	struct sip_msg *rpl;
+	struct sip_msg *req, *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
 
-	if(ps == NULL || ps->rpl == NULL) {
+	if(ps == NULL || ps->req == NULL || ps->rpl == NULL) {
 			LM_ERR("Wrong tmcb params\n");
 			return;
 	}
@@ -990,6 +1035,7 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 			return;
 	}
 
+	req = ps->req;
 	rpl = ps->rpl;
 	statuscode = ps->code;
 	dlg = *(ps->param);
@@ -1000,6 +1046,11 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 	}
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if (get_cseq(req)->method_id == METHOD_INVITE) {
+		LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], INVITE)\n", callee_idx(dlg));
+		dlg_leg_push_cseq_map(dlg, callee_idx(dlg), req);
+	}
 
 	if (statuscode >= 200 && statuscode < 300)
 		dlg_update_contact(dlg, rpl, callee_idx(dlg));
@@ -1014,6 +1065,9 @@ static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
 	if (shutdown_done || dlg==0)
 		return;
 
+	LM_DBG("update_msg_cseq(param->rpl,%.*s,0)\n",
+		((dlg_cseq_wrapper *)*param->param)->cseq.len,
+		((dlg_cseq_wrapper *)*param->param)->cseq.s);
 	if (update_msg_cseq((struct sip_msg *)param->rpl,&((dlg_cseq_wrapper *)*param->param)->cseq,0) != 0)
 		LM_ERR("failed to update CSEQ in msg\n");
 
@@ -1055,6 +1109,9 @@ static void dlg_seq_down_onreply_mod_cseq(struct cell* t, int type,
 	if (shutdown_done || dlg==0)
 		return;
 
+	LM_DBG("update_msg_cseq(param->rpl,%.*s,0)\n",
+		((dlg_cseq_wrapper *)*param->param)->cseq.len,
+		((dlg_cseq_wrapper *)*param->param)->cseq.s);
 	if (update_msg_cseq((struct sip_msg *)param->rpl,&((dlg_cseq_wrapper *)*param->param)->cseq,0) != 0)
 		LM_ERR("failed to update CSEQ in msg\n");
 
@@ -1081,6 +1138,7 @@ static void fix_final_cseq(struct cell *t,int type,
 	cseq.s = (char *)(*param->param);
 	cseq.len = strlen(cseq.s);
 
+	LM_DBG("update_msg_cseq(param->rpl,%.*s,0)\n", cseq.len, cseq.s);
 	if (update_msg_cseq((struct sip_msg *)param->rpl,&cseq,0) != 0)
 		LM_ERR("failed to update CSEQ in msg\n");
 
@@ -1751,42 +1809,12 @@ static inline int switch_cseqs(struct dlg_cell *dlg,unsigned int leg_no)
 	memcpy( prev_cseq->s, r_cseq->s, r_cseq->len );
 	prev_cseq->len = r_cseq->len;
 
-	LM_DBG("prev_cseq = %.*s for leg %d\n",prev_cseq->len,prev_cseq->s,leg_no);
+	LM_DBG("prev_cseq=[%.*s] for leg [%d]\n",
+		prev_cseq->len, prev_cseq->s,leg_no);
 	ret = 0;
 end:
 	dlg_unlock_dlg(dlg);
 	return ret;
-}
-
-static void dlg_leg_push_cseq_map(struct dlg_cell *dlg, unsigned int leg,
-		struct sip_msg *msg)
-{
-	struct dlg_leg_cseq_map *map;
-	unsigned int msg_cseq;
-
-	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
-		!msg->cseq->parsed){
-		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
-		return;
-	}
-	if (str2int(&get_cseq(msg)->number, &msg_cseq) < 0) {
-		LM_ERR("invalid CSeq number [%.*s]\n",
-				get_cseq(msg)->number.len, get_cseq(msg)->number.s);
-		return;
-	}
-	map = shm_malloc(sizeof *map);
-	if (!map) {
-		LM_ERR("oom for cseq map\n");
-		return;
-	}
-	memset(map, 0, sizeof *map);
-	map->msg = msg_cseq;
-	if (dlg->legs[leg].last_gen_cseq)
-		map->gen = dlg->legs[leg].last_gen_cseq;
-	else
-		map->gen = msg_cseq;
-	map->next = dlg->legs[leg].cseq_maps;
-	dlg->legs[leg].cseq_maps = map;
 }
 
 static unsigned int dlg_leg_get_cseq(struct dlg_cell *dlg, unsigned int leg,
@@ -1821,8 +1849,10 @@ static unsigned int dlg_leg_get_cseq(struct dlg_cell *dlg, unsigned int leg,
 				shm_free(tmp);
 			} while (map);
 		}
+		LM_DBG("found cseq [%d] in map for leg [%d]\n", msg_cseq, leg);
 		return msg_cseq;
 	}
+	LM_DBG("no cseq found in map for leg [%d]\n", leg);
 	return 0;
 }
 
@@ -1958,6 +1988,10 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 				req->callid->body.len, req->callid->body.s);
 			return;
 		}
+		LM_DBG("get_dlg => dst_leg=[%d]\n", dst_leg);
+	}
+	else {
+		LM_DBG("match_dialog => dst_leg=[%d]\n", dst_leg);
 	}
 	update_sequential_sdp(dlg, req,
 			dst_leg == DLG_CALLER_LEG? callee_idx(dlg): DLG_CALLER_LEG);
@@ -1993,7 +2027,6 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	/* run actions for the transition */
 	if (new_state==DLG_STATE_DELETED && old_state==DLG_STATE_DELETED) {
 		/* a request after dialog termination */
-
 		/* within dialog request */
 		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0, 1);
 
@@ -2001,9 +2034,14 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		dlg_lock (d_table,d_entry);
 		if (dlg->legs[dst_leg].last_gen_cseq) {
 
+			LM_DBG("last_gen_cseq is [%d]\n",
+				dlg->legs[dst_leg].last_gen_cseq);
 			update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+			LM_DBG("incrementing last_gen_cseq to [%d]\n",
+				dlg->legs[dst_leg].last_gen_cseq);
 			dlg_unlock (d_table,d_entry);
 
+			LM_DBG("update_msg_cseq(BYE,NULL,%d)\n", update_val);
 			if (update_msg_cseq(req,0,update_val) != 0)
 				LM_ERR("failed to update BYE msg cseq\n");
 
@@ -2053,7 +2091,11 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 		dlg_lock (d_table,d_entry);
 		if (dlg->legs[dst_leg].last_gen_cseq) {
 
+			LM_DBG("last_gen_cseq is [%d]\n",
+				dlg->legs[dst_leg].last_gen_cseq);
 			update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+			LM_DBG("incrementing last_gen_cseq to [%d]\n",
+				dlg->legs[dst_leg].last_gen_cseq);
 			dlg_unlock (d_table,d_entry);
 
 			if (update_msg_cseq(req,0,update_val) != 0)
@@ -2201,10 +2243,15 @@ after_unlock5:
 
 			if (dlg->legs[dst_leg].last_gen_cseq) {
 
+				LM_DBG("last_gen_cseq is [%d]\n",
+					dlg->legs[dst_leg].last_gen_cseq);
 				update_val = ++(dlg->legs[dst_leg].last_gen_cseq);
+				LM_DBG("incrementing last_gen_cseq to [%d]\n",
+					dlg->legs[dst_leg].last_gen_cseq);
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* save INVITE cseq, in case any requests follow after this
 					( pings or other in-dialog requests until the ACK comes in */
+					LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], [INVITE])\n", dst_leg);
 					dlg_leg_push_cseq_map(dlg, dst_leg, req);
 
 					/* Received RE-INVITE where we mangle the CSEQ due to existing pings sent
@@ -2216,6 +2263,8 @@ after_unlock5:
 
 				dlg_unlock( d_table, d_entry );
 
+				LM_DBG("nonACK req [%d],NULL,%d)\n",
+					req->first_line.u.request.method_value, update_val);
 				if (update_msg_cseq(req,0,update_val) != 0) {
 					LM_ERR("failed to update sequential request msg cseq\n");
 					ok = 0;
@@ -2224,6 +2273,7 @@ after_unlock5:
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
 					/* we did not generate any pings yet - still we need to store the INV cseq,
 					in case there's a race between the ACK for the INVITE and sending of new pings */
+					LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], [INVITE])\n", dst_leg);
 					dlg_leg_push_cseq_map(dlg, dst_leg, req);
 				}
 
@@ -2244,9 +2294,16 @@ after_unlock5:
 
 			if (dlg->legs[dst_leg].last_gen_cseq ||
 			dlg->legs[dst_leg].cseq_maps) {
+				LM_DBG("dlg_leg_get_cseq(dlg, [%d], req)\n", dst_leg);
 				update_val = dlg_leg_get_cseq(dlg, dst_leg, req);
-				if (update_val == 0)
+				if (update_val == 0) {
+					LM_DBG("dlg->legs[%d].last_gen_cseq=[%d]\n",
+						dst_leg, dlg->legs[dst_leg].last_gen_cseq);
 					update_val = dlg->legs[dst_leg].last_gen_cseq;
+				}
+				else {
+					LM_DBG("update_val=[%d]\n", update_val);
+				}
 				dlg_unlock( d_table, d_entry );
 
 				if (update_msg_cseq(req,0,update_val) != 0) {
@@ -2261,6 +2318,8 @@ after_unlock5:
 
 			dlg_lock( d_table, d_entry);
 			if (dlg->legs[dst_leg].last_gen_cseq) {
+				LM_DBG("last_gen_cseq is [%d]\n",
+					dlg->legs[dst_leg].last_gen_cseq);
 				/* ref the dialog as registered into the transaction callback.
 				 * unref will be done when the callback will be destroyed */
 				ref_dlg_unsafe( dlg, 1);
