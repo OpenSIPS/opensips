@@ -25,7 +25,6 @@
  * \brief OpenSIPS Debug console print functions
  */
 
-
 #include "dprint.h"
 #include "log_interface.h"
 #include "globals.h"
@@ -34,6 +33,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <strings.h>
+
+#if !defined(HOST_NAME_MAX)
+#define HOST_NAME_MAX 255
+#endif
 
 /* used internally by the log interface */
 typedef void (*log_print_pre_fmt_f)(log_print_f gen_print_func, int log_level,
