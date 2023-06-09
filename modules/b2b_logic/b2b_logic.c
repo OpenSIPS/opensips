@@ -42,6 +42,7 @@
 #include "../../timer.h"
 #include "../../pt.h"
 #include "../../lib/csv.h"
+#include "../../context.h"
 
 #include "records.h"
 #include "b2b_logic.h"
@@ -165,6 +166,8 @@ str b2bl_mod_name = str_init("b2b_logic");
 
 str top_hiding_scen_s;
 str internal_scen_s;
+
+int new_ent_1_ctx_idx, new_ent_2_ctx_idx;
 
 /* used to identify the current tuple in local_route, in the context of a request
  * that is not triggerd by a received message from an ongoing b2b dialog */
@@ -585,6 +588,9 @@ next_hdr:
 		LM_ERR("could not register entity event received callback!\n");
 		return -1;
 	}
+
+	new_ent_1_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, new_ent_ctx_destroy);
+	new_ent_2_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, new_ent_ctx_destroy);
 
 	return 0;
 }
