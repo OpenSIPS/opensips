@@ -66,9 +66,6 @@ extern struct b2b_ctx_val *local_ctx_vals;
 extern int req_routeid;
 extern int reply_routeid;
 
-struct b2bl_new_entity *new_entities[MAX_BRIDGE_ENT-1];
-int new_entities_no;
-
 struct b2bl_route_ctx cur_route_ctx;
 
 struct to_body* get_b2bl_from(struct sip_msg* msg);
@@ -84,6 +81,29 @@ static str method_cancel= {CANCEL, CANCEL_LEN};
 static str ok = str_init("OK");
 static str notAcceptable = str_init("Not Acceptable");
 str requestTerminated = str_init("Request Terminated");
+
+int get_new_entities(struct b2bl_new_entity **entity1,
+	struct b2bl_new_entity **entity2)
+{
+	if (!current_processing_ctx) {
+		LM_ERR("no current processing ctx!\n");
+		*entity1 = NULL;
+		*entity2 = NULL;
+		return -1;
+	}
+
+	*entity1 = context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+		new_ent_1_ctx_idx);
+	*entity2 = context_get_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+		new_ent_2_ctx_idx);
+
+	return 0;
+}
+
+void new_ent_ctx_destroy(void *e)
+{
+	pkg_free(e);
+}
 
 int entity_add_dlginfo(b2bl_entity_id_t* entity, b2b_dlginfo_t* dlginfo)
 {
@@ -773,13 +793,8 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 	tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 
-	pkg_free(new_entities[0]);
-	new_entities[0] = NULL;
-
 	return 0;
 error:
-	pkg_free(new_entities[0]);
-	new_entities[0] = NULL;
 	return -1;
 }
 
@@ -2815,6 +2830,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	int eno = 0;
 	str *hdrs;
 	struct b2bl_new_entity *new_entity;
+	struct b2bl_new_entity *e1, *e2;
 	int maxfwd;
 
 	if(msg == NULL)
@@ -2872,15 +2888,20 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	ctx->hash_index = hash_index;
 	ctx->local_index = tuple->id;
 
-	if (new_entities_no != MAX_BRIDGE_ENT-1) {
+	if (get_new_entities(&e1, &e2) < 0) {
+		LM_ERR("Failed to get new bridging entities from context\n");
+		return NULL;
+	}
+
+	if (!e1 && !e2) {
 		LM_ERR("Two bridge entities required!\n");
 		goto error;
 	}
 
-	if (new_entities[0]->type == B2B_SERVER)
-		new_entity = new_entities[0];
-	else if (new_entities[1]->type == B2B_SERVER)
-		new_entity = new_entities[1];
+	if (e1->type == B2B_SERVER)
+		new_entity = e1;
+	else if (e2->type == B2B_SERVER)
+		new_entity = e2;
 	else {
 		LM_ERR("Server entity required\n");
 		goto error;
@@ -2918,10 +2939,10 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	new_entity = NULL;
 
-	if (new_entities[0]->type == B2B_CLIENT)
-		new_entity = new_entities[0];
-	else if (new_entities[1]->type == B2B_CLIENT)
-		new_entity = new_entities[1];
+	if (e1->type == B2B_CLIENT)
+		new_entity = e1;
+	else if (e2->type == B2B_CLIENT)
+		new_entity = e2;
 	else {
 		LM_ERR("Client entity required\n");
 		goto error;
@@ -3003,12 +3024,6 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	tuple->bridge_entities[0]->peer = tuple->bridge_entities[1];
 	tuple->bridge_entities[1]->peer = tuple->bridge_entities[0];
 
-	pkg_free(new_entities[0]);
-	pkg_free(new_entities[1]);
-	new_entities[0] = NULL;
-	new_entities[1] = NULL;
-	new_entities_no = 0;
-
 	tuple->cb.f = cbf;
 	tuple->cb.mask = cb_mask;
 	tuple->cb.param = cb_param;
@@ -3032,16 +3047,6 @@ error:
 	}
 	if(to_uri.s)
 		pkg_free(to_uri.s);
-
-	if (new_entities[0]) {
-		pkg_free(new_entities[0]);
-		new_entities[0] = NULL;
-	}
-	if (new_entities[1]) {
-		pkg_free(new_entities[1]);
-		new_entities[1] = NULL;
-	}
-	new_entities_no = 0;
 
 	local_ctx_tuple = NULL;
 
@@ -3090,6 +3095,7 @@ str* b2bl_api_init(struct sip_msg* msg, str *scen_name,
 	unsigned int cb_mask, str* custom_hdrs)
 {
 	struct b2b_params init_params;
+	struct b2bl_new_entity *new_ent;
 
 	if (b2bl_key_avp_name >= 0)
 		destroy_avps( b2bl_key_avp_type, b2bl_key_avp_name, 1);
@@ -3111,29 +3117,33 @@ str* b2bl_api_init(struct sip_msg* msg, str *scen_name,
 		}
 
 		if (init_params.id == B2B_INTERNAL_ID_PTR) {
-			new_entities[0] = pkg_malloc(sizeof(struct b2bl_new_entity));
-			if (!new_entities[0]) {
+			new_ent = pkg_malloc(sizeof(struct b2bl_new_entity));
+			if (!new_ent) {
 				LM_ERR("No more pkg memory!\n");
 				goto error;
 			}
-			memset(new_entities[0], 0, sizeof(struct b2bl_new_entity));
+			memset(new_ent, 0, sizeof(struct b2bl_new_entity));
 
-			new_entities[0]->type = scen_params->e1_type;
-			new_entities[0]->dest_uri = scen_params->e1_to;
-			new_entities[0]->from_dname = scen_params->e1_from_dname;
+			new_ent->type = scen_params->e1_type;
+			new_ent->dest_uri = scen_params->e1_to;
+			new_ent->from_dname = scen_params->e1_from_dname;
 
-			new_entities[1] = pkg_malloc(sizeof(struct b2bl_new_entity));
-			if (!new_entities[1]) {
+			context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+				new_ent_1_ctx_idx, new_ent);
+
+			new_ent = pkg_malloc(sizeof(struct b2bl_new_entity));
+			if (!new_ent) {
 				LM_ERR("No more pkg memory!\n");
 				goto error;
 			}
-			memset(new_entities[1], 0, sizeof(struct b2bl_new_entity));
+			memset(new_ent, 0, sizeof(struct b2bl_new_entity));
 
-			new_entities[1]->type = scen_params->e2_type;
-			new_entities[1]->dest_uri = scen_params->e2_to;
-			new_entities[1]->from_dname = scen_params->e2_from_dname;
+			new_ent->type = scen_params->e2_type;
+			new_ent->dest_uri = scen_params->e2_to;
+			new_ent->from_dname = scen_params->e2_from_dname;
 
-			new_entities_no = 2;
+			context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+				new_ent_2_ctx_idx, new_ent);
 		}
 
 		return b2bl_init_request(msg, &init_params, cbf, cb_param, cb_mask, custom_hdrs);
@@ -3143,15 +3153,6 @@ str* b2bl_api_init(struct sip_msg* msg, str *scen_name,
 	}
 
 error:
-	if (new_entities[0]) {
-		pkg_free(new_entities[0]);
-		new_entities[0] = NULL;
-	}
-	if (new_entities[1]) {
-		pkg_free(new_entities[1]);
-		new_entities[1] = NULL;
-	}
-	new_entities_no = 0;
 	return NULL;
 }
 
@@ -3211,11 +3212,6 @@ static struct b2bl_new_entity *tmp_client_new(struct sip_msg *msg, str *id,
 	unsigned short type;
 	struct b2bl_new_entity *entity;
 	struct sip_uri sip_uri;
-
-	if (new_entities_no == MAX_BRIDGE_ENT-1) {
-		LM_ERR("New bridge entities already created!\n");
-		return NULL;
-	}
 
 	if (hnames && !hvals) {
 		LM_ERR("header names without values!\n");
@@ -3540,6 +3536,8 @@ error:
 		b2bl_htable[hash_index].locked_by = -1;
 		lock_release(&b2bl_htable[hash_index].lock);
 	}
+	local_ctx_tuple = NULL;
+end:
 	if (new_br_ent[0]) {
 		pkg_free(new_br_ent[0]);
 		new_br_ent[0] = NULL;
@@ -3547,9 +3545,7 @@ error:
 	if (new_br_ent[1]) {
 		pkg_free(new_br_ent[1]);
 		new_br_ent[1] = NULL;
-	}	
-	local_ctx_tuple = NULL;
-end:
+	}
 	if (list1)
 		free_csv_record(list1);
 	if (list2)
@@ -3565,11 +3561,16 @@ int b2bl_entity_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 	str *adv_contact)
 {
 	unsigned short type;
-	struct b2bl_new_entity *entity;
+	struct b2bl_new_entity *entity, *e1, *e2;
 	struct sip_uri sip_uri;
 	unsigned int size;
 
-	if (new_entities_no == MAX_BRIDGE_ENT-1) {
+	if (get_new_entities(&e1, &e2) < 0) {
+		LM_ERR("Failed to get new bridging entities from context\n");
+		return -1;
+	}
+
+	if (e1 && e2) {
 		LM_ERR("New bridge entities already created!\n");
 		return -1;
 	}
@@ -3666,7 +3667,15 @@ int b2bl_entity_new(struct sip_msg *msg, str *id, str *dest_uri, str *proxy,
 
 	entity->type = etype;
 
-	new_entities[new_entities_no++] = entity;
+	if (!e1) {
+		context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+			new_ent_1_ctx_idx, entity);
+		LM_DBG("First new entity [%.*s] saved in context\n", id->len, id->s);
+	} else {
+		context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx,
+			new_ent_2_ctx_idx, entity);
+		LM_DBG("Second new entity [%.*s] saved in context\n", id->len, id->s);
+	}
 
 	return 1;
 error:

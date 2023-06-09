@@ -236,4 +236,7 @@ int b2bl_run_new_tuple_cb(str *key);
 
 b2bl_tuple_t *b2bl_get_tuple(str *key);
 
+int get_new_entities(struct b2bl_new_entity **entity1,
+	struct b2bl_new_entity **entity2);
+
 #endif

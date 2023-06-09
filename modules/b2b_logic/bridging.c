@@ -31,8 +31,6 @@
 
 extern b2bl_tuple_t *local_ctx_tuple;
 extern struct b2b_ctx_val *local_ctx_vals;
-extern struct b2bl_new_entity *new_entities[MAX_BRIDGE_ENT-1];
-extern int new_entities_no;
 
 static str method_bye   = {BYE, BYE_LEN};
 static str method_notify= {NOTIFY, NOTIFY_LEN};
@@ -994,7 +992,7 @@ int send_bridge_notify(b2bl_entity_id_t *entity, unsigned int hash_index,
 static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 	b2bl_entity_id_t *cur_entity, str *ent_str, b2bl_entity_id_t **old_ent)
 {
-	struct b2bl_new_entity *new_br_ent = NULL;
+	struct b2bl_new_entity *new_br_ent = NULL, *e1, *e2;
 	b2bl_entity_id_t** entity_head = NULL;
 	b2bl_entity_id_t *e;
 	int i;
@@ -1043,13 +1041,16 @@ static struct b2bl_new_entity *get_ent_to_bridge(b2bl_tuple_t *tuple,
 			}
 		}
 		if (!*old_ent) {
+			if (get_new_entities(&e1, &e2) < 0) {
+				LM_ERR("Failed to get new bridging entities from context\n");
+				return NULL;
+			}
+
 			/* must be a new entity created with b2b_client_new() */
-			if (new_entities[0] && new_entities[0]->type == B2B_CLIENT &&
-				!str_strcmp(ent_str, &new_entities[0]->id))
-				new_br_ent = new_entities[0];
-			else if (new_entities[1] && new_entities[1]->type == B2B_CLIENT &&
-				!str_strcmp(ent_str, &new_entities[1]->id))
-				new_br_ent = new_entities[1];
+			if (e1 && e1->type == B2B_CLIENT && !str_strcmp(ent_str, &e1->id))
+				new_br_ent = e1;
+			else if (e2 && e2->type == B2B_CLIENT && !str_strcmp(ent_str, &e2->id))
+				new_br_ent = e2;
 			else
 				LM_ERR("Unknown bridge entity: %.*s\n", ent_str->len, ent_str->s);
 		}
@@ -1098,7 +1099,11 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 		}
 	}
 
-	if (new_entities_no == 0) {
+	if (get_new_entities(&new_br_ent[0], &new_br_ent[1]) < 0) {
+		LM_ERR("Failed to get new bridging entities from context\n");
+		goto done;
+	}
+	if (!new_br_ent[0] && !new_br_ent[1]) {
 		LM_ERR("At least one new client entity required for bridging\n");
 		goto done;
 	}
@@ -1147,16 +1152,6 @@ int b2b_script_bridge(struct sip_msg *msg, str *br_ent1_str, str *br_ent2_str,
 done:
 	lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
 
-	if (new_entities[0]) {
-		pkg_free(new_entities[0]);
-		new_entities[0] = NULL;
-	}
-	if (new_entities[1]) {
-		pkg_free(new_entities[1]);
-		new_entities[1] = NULL;
-	}
-	new_entities_no = 0;
-
 	return rc;
 }
 
@@ -1168,6 +1163,7 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 	int statuscode;
 	unsigned int method_value;
 	b2bl_entity_id_t** entity_head = NULL;
+	struct b2bl_new_entity *e1, *e2;
 
 	if (!(cur_route_ctx.flags & B2BL_RT_RPL_CTX)) {
 		LM_ERR("The 'b2b_bridge_retry' function can only be used from the "
@@ -1223,7 +1219,16 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 		goto error;
 	}
 
-	if (new_entities[0] && str_strcmp(new_ent_str, &new_entities[0]->id)) {
+	if (get_new_entities(&e1, &e2) < 0) {
+		LM_ERR("Failed to get new bridging entities from context\n");
+		goto error;
+	}
+	if (!e1) {
+		LM_ERR("A new client entity is required for bridge retry\n");
+		goto error;
+	}
+
+	if (str_strcmp(new_ent_str, &e1->id)) {
 		LM_ERR("Unknown client entity %.*s\n", new_ent_str->len, new_ent_str->s);
 		goto error;
 	}
@@ -1233,8 +1238,8 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 	if (IS_BRIDGING_STATE(tuple->state)) {
 		b2bl_delete_entity(entity, tuple, tuple->hash_index, 1);
 
-		entity = b2bl_create_new_entity( B2B_CLIENT, 0, &new_entities[0]->dest_uri,
-			&new_entities[0]->proxy, 0, &new_entities[0]->from_dname,
+		entity = b2bl_create_new_entity( B2B_CLIENT, 0, &e1->dest_uri,
+			&e1->proxy, 0, &e1->from_dname,
 			0,0,0,0);
 		if(entity == NULL)
 		{
@@ -1242,7 +1247,7 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 			goto error;
 		}
 		LM_DBG("Created new client entity [%.*s]\n",
-			new_entities[0]->dest_uri.len, new_entities[0]->dest_uri.s);
+			e1->dest_uri.len, e1->dest_uri.s);
 
 		if (bridging_start_new_ent(tuple, tuple->bridge_entities[0], entity,
 			NULL, msg, 0) < 0) {
@@ -1252,8 +1257,7 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 
 		tuple->state = B2B_BRIDGING_STATE;
 	} else if (tuple->state == B2B_INIT_BRIDGING_STATE) {
-		if (retry_init_bridge(msg, tuple, entity,
-			new_entities[0]) < 0) {
+		if (retry_init_bridge(msg, tuple, entity, e1) < 0) {
 			LM_ERR("Failed to retry initial bridge\n");
 			goto error;
 		}
