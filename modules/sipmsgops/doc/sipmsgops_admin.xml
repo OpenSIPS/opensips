@@ -68,7 +68,7 @@
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE, ERROR_ROUTE.
+		BRANCH_ROUTE and ERROR_ROUTE.
 		</para>
 		<example>
 		<title><function>append_to_reply</function> usage</title>
@@ -110,7 +110,7 @@ append_to_reply("Foo: $rm at $Ts\r\n");
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>append_hf</function> usage</title>
@@ -140,7 +140,7 @@ append_hf("From-username: $fU\r\n", "Call-ID");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>insert_hf</function> usage</title>
@@ -175,7 +175,7 @@ insert_hf("To-username: $tU\r\n");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>insert_hf</function> usage</title>
@@ -210,8 +210,8 @@ insert_hf("To-username: $tU\r\n", "Call-ID");
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
+		and BRANCH_ROUTE.
 		</para>
 		<example>
 		<title><function>append_urihf</function> usage</title>
@@ -246,7 +246,7 @@ append_urihf("CC-Diversion: ", "\r\n");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>is_present_hf</function> usage</title>
@@ -303,7 +303,7 @@ if (is_present_hf("From")) log(1, "From HF Present");
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE.
+		BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>append_time</function> usage</title>
@@ -349,7 +349,7 @@ append_time();
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE, and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>is_method</function> usage</title>
@@ -387,7 +387,7 @@ if(is_method("OPTION|UPDATE"))
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>remove_hf</function> usage</title>
@@ -423,7 +423,7 @@ if(remove_hf("User-Agent"))
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>remove_hf_re</function> usage</title>
@@ -456,7 +456,7 @@ remove_hf_re("^X-g.+[0-9]");
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>remove_hf_glob</function> usage</title>
@@ -627,7 +627,8 @@ ruri_tel2sip();
 		</listitem>
 		</itemizedlist>
 		<para>
-		This function can be used from REQUEST_ROUTE and FAILURE_ROUTE.
+		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE
+		and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>is_uri_user_e164</function> usage</title>
@@ -659,7 +660,7 @@ if (is_uri_user_e164($avp(uri)) {
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>has_body_part</function> usage</title>
@@ -698,7 +699,7 @@ if(has_body_part("application/sdp"))
 
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>is_audio_on_hold</function> usage</title>
@@ -735,7 +736,7 @@ if(is_audio_on_hold())
 		</para>
    		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
-		FAILURE_ROUTE and BRANCH_ROUTE.
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
 		</para>
 		<example>
 		<title><function>is_privacy</function> usage</title>
