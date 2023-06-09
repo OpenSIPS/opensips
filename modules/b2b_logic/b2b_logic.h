@@ -143,6 +143,8 @@ extern int b2b_early_update;
 extern str top_hiding_scen_s;
 extern str internal_scen_s;
 
+extern int new_ent_1_ctx_idx, new_ent_2_ctx_idx;
+
 extern struct b2bl_route_ctx cur_route_ctx;
 
 extern str requestTerminated;
@@ -191,5 +193,9 @@ int b2b_server_notify(struct sip_msg* msg, str* key, int type,
 int b2b_client_notify(struct sip_msg* msg, str* key, int type,
 		str *logic_key, void* param, int flags);
 void b2bl_db_init(void);
+
+int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact);
+
+void new_ent_ctx_destroy(void *e);
 
 #endif
