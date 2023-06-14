@@ -204,7 +204,7 @@ static const cmd_export_t cmds[]={
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
 		{CMD_PARAM_VAR,fixup_check_var,0}, {0,0,0}},
-		REQUEST_ROUTE| FAILURE_ROUTE | ONREPLY_ROUTE | BRANCH_ROUTE},
+		ALL_ROUTES},
 	{"set_dlg_flag", (cmd_function)w_set_dlg_flag, {
 		{CMD_PARAM_STR|CMD_PARAM_STATIC,fixup_dlg_flag,0}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|ONREPLY_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
