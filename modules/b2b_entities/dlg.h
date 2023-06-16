@@ -107,6 +107,7 @@ typedef struct b2b_dlg
 	struct cell*         uac_tran;
 	struct cell*         uas_tran;
 	struct cell*         update_tran;
+	struct cell*         prack_tran;
 	struct cell*         cancel_tm_tran;
 	dlg_leg_t*           legs;
 	struct socket_info*  send_sock;
@@ -118,6 +119,7 @@ typedef struct b2b_dlg
 	struct b2b_tracer   *tracer;
 	void                *param;
 	b2b_param_free_cb    free_param;
+	str                  prack_headers;
 }b2b_dlg_t;
 
 typedef struct b2b_entry
