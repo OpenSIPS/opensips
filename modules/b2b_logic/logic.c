@@ -3358,6 +3358,13 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	struct sip_uri ct_uri;
 	int maxfwd;
 
+	if (!str_match((_str("INVITE")), &msg->first_line.u.request.method)) {
+		LM_ERR("Scenario must be initialized on INVITE but got method: %.*s\n",
+			msg->first_line.u.request.method.len,
+			msg->first_line.u.request.method.s);
+		return NULL;
+	}
+
 	if(b2b_msg_get_from(msg, &from_uri, &from_dname)< 0 ||  b2b_msg_get_to(msg, &to_uri, params->flags)< 0)
 	{
 		LM_ERR("Failed to get to or from from the message\n");
@@ -3697,6 +3704,13 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	if(msg == NULL)
 	{
 		LM_ERR("NO SIP message\n");
+		goto error;
+	}
+
+	if (!str_match(&method, &msg->first_line.u.request.method)) {
+		LM_ERR("Scenario must be initialized on INVITE but got method: %.*s\n",
+			msg->first_line.u.request.method.len,
+			msg->first_line.u.request.method.s);
 		goto error;
 	}
 
