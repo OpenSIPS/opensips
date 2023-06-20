@@ -537,7 +537,7 @@ static const mi_export_t mi_cmds[] = {
 		{dr_reload_cmd, {0}},
 		{dr_reload_cmd, {"inherit_state", 0}},
 		{dr_reload_cmd_1, {"partition_name", 0}},
-		{dr_reload_cmd_1, {"partition_name", "inhert_state", 0}},
+		{dr_reload_cmd_1, {"partition_name", "inherit_state", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{ "dr_gw_status", HLP2, MI_NAMED_PARAMS_ONLY, 0, {
