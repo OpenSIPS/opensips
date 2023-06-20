@@ -1874,7 +1874,13 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		info->instances = instance;
 	}
 
-	if (trace_flags==TRACE_B2B) {
+	if (info->instances->next) {
+		/* this is not the first instance to be added, which means
+		 * we need only to add the instance to the list (already done above).
+		 * All the tracing callbacks are already present (set when the first
+		 * tracing instance was created), so nothing to do from this
+		 * perspective */
+	} else if (trace_flags==TRACE_B2B) {
 		if (trace_b2b(msg, info) < 0) {
 			LM_ERR("trace b2b failed!\n");
 			return -1;
