@@ -54,11 +54,27 @@
 #define ROUNDUP(s)		(((s)+(ROUNDTO-1))&ROUNDTO_MASK)
 #define ROUNDDOWN(s)	((s)&ROUNDTO_MASK)
 
-/* finds the hash value for s, s=ROUNDTO multiple*/
-#define GET_HASH(s)   ( ((unsigned long)(s)<=F_MALLOC_OPTIMIZE)?\
+/**
+ * The @inc is tied to the exponential, non-optimized buckets
+ * (e.g. indexes 2049 ... 2100 with FACTOR = 14UL), where it allows us to fully
+ * drop the slow fragment sorted insertion algorithm for *huge* speed gains, by
+ * always returning anywhere up to 4x (previously 2x) required frag size than
+ * requested...
+ *    For example:
+ *      - malloc(18K) -> now you always get a frag of 32K+ size, but instantly!
+ *      - malloc(37K) -> now you always get a frag of 64K+ size, but instantly!
+ *
+ * Finally, the extra fragment size is *not* wasted, thanks to splitting!
+ *
+ * A possible disadvantage of this approach is that it will make allocating
+ * more than 50% of the remaining free memory pool in a single allocation even
+ * harder than before (borderline impossible now)...
+ */
+#define _GET_HASH(s, inc) ( ((unsigned long)(s)<=F_MALLOC_OPTIMIZE)?\
 							(unsigned long)(s)/ROUNDTO: \
 							F_MALLOC_OPTIMIZE/ROUNDTO+big_hash_idx((s))- \
-								F_MALLOC_OPTIMIZE_FACTOR+1 )
+								F_MALLOC_OPTIMIZE_FACTOR + 1 + (inc))
+#define GET_HASH(s) _GET_HASH(s, 0)
 
 #define UN_HASH(h)	( ((unsigned long)(h)<=(F_MALLOC_OPTIMIZE/ROUNDTO))?\
 						(unsigned long)(h)*ROUNDTO: \
@@ -133,13 +149,6 @@ static inline void fm_insert_free(struct fm_block *fm, struct fm_frag *frag)
 
 	hash=GET_HASH(frag->size);
 	f=&(fm->free_hash[hash].first);
-	if (frag->size > F_MALLOC_OPTIMIZE){ /* because of '<=' in GET_HASH,
-											(different from 0.8.1[24] on
-											 purpose --andrei ) */
-		for(; *f; f=&((*f)->u.nxt_free)){
-			if (frag->size <= (*f)->size) break;
-		}
-	}
 
 	/*insert it here*/
 	frag->prev = f;
