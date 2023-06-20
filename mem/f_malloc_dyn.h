@@ -111,11 +111,12 @@ void *fm_malloc(struct fm_block *fm, unsigned long size,
 
 	/*search for a suitable free frag*/
 
-	for(hash=GET_HASH(size);hash<F_HASH_SIZE;hash++){
-		frag=fm->free_hash[hash].first;
-		for( ; frag; frag = frag->u.nxt_free )
-			if ( frag->size >= size ) goto found;
-		/* try in a bigger bucket */
+	for (hash = _GET_HASH(size, +1); hash < F_HASH_SIZE; ++hash) {
+		if (!fm->free_hash[hash].first)
+			continue; /* try in a bigger bucket */
+
+		frag = fm->free_hash[hash].first;
+		goto found;
 	}
 	/* not found, bad! */
 
