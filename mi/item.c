@@ -476,21 +476,17 @@ int get_mi_bool_like_param(const mi_params_t *params, char *name,
 {
 	str tmp;
 
-	if (get_mi_string_param(params, name, &tmp.s, &tmp.len) < 0) {
+	if (try_get_mi_string_param(params, name, &tmp.s, &tmp.len) != 0)
 		return default_value;
-	}
 
-	if (tmp.len != 1) {
+	if (tmp.len != 1)
 		return default_value;
-	}
 
-	if (tmp.s[0] == '0' || tmp.s[0] == 'n' || tmp.s[0] == 'N') {
+	if (tmp.s[0] == '0' || tmp.s[0] == 'n' || tmp.s[0] == 'N')
 		return 0;
-	}
 	
-	if (tmp.s[0] == '1' || tmp.s[0] == 'y' || tmp.s[0] == 'Y') {
+	if (tmp.s[0] == '1' || tmp.s[0] == 'y' || tmp.s[0] == 'Y')
 		return 1;
-	}
 
 	return default_value;
 }
