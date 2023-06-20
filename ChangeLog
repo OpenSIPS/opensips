@@ -1,3 +1,407 @@
+=========================== Release 3.4.0-rc1 ==============================
+
+2023-06-20  Liviu Chircu  <liviu@opensips.org>
+        * [723bc9cb3] :
+
+        F_MALLOC: Optimize the free() operation
+
+        Commit bdaaf60b2c introduced a side-effect of gradually moving the
+        fragment "action" towards the exponential, non-optimized hash table
+        buckets (i.e. buckets 2049 ... 2100).  Here, the fragments were inserted
+        in a sorted fashion, with the sorted-insert algorithm costing a O(N)
+        iteration on each free operation instead of a simple O(1).
+
+        Consequently, the user experience of this effect is that "dr_reload"
+        operations were stalling for 12 minutes (coming up from 24 seconds!),
+        when working with large rule sets (millions of rules).  Interestingly
+        enough, the stalling was not due to the caching phase -- malloc() --
+        rather due to the cleanup phase, when clearing the old rules -- free()!
+
+        To address this issue:
+
+        * we drop the sorted insertion completely for buckets 2049 ... 2100, and
+            simply do a list prepend operation: O(1), as with the others
+        * we make all allocation requests from these buckets return the next
+           bucket (!!), thus guarantee'ing our requested fragment.  Examples:
+
+              malloc(18K) -> now you always get a 32K+ frag, but instantly!
+              malloc(37K) -> now you always get a 64K+ frag, but instantly!
+        * this does not make F_MALLOC more wasteful, since the extra frag
+          space gets split anyway into a new fragment, with the two eventually
+          coalescing together again thanks to commit bdaaf60b2c
+
+        (cherry picked from commit e6b4de51298eb78aef097cbfd1c34ada17b9b78f)
+
+
+2023-06-20  Liviu Chircu  <liviu@opensips.org>
+        * [073ce6bf7] :
+
+        drouting: Fix 'inherit_reload' related errors on MI reloads
+
+        Related to e871882cb6.  Be silent about "MI param not found" errors, in
+        case the function was _meant_ to be called without those parameters.
+
+        (cherry picked from commit 47fbe3627640d60166e794dac3d0dcec1c7727a6)
+
+
+2023-06-20  Vlad Patrascu  <vladp@opensips.org>
+        * [7e014926a] :
+
+        cachedb_mongodb: fix regression in commit 69ed4f7
+
+        Loading the cachedb_mongodb module alongside the tls_openssl module, but
+        before tls_mgm would cause a crash. This is a result of the OpenSIPS versus
+        mongoc library openssl initialization issues (initially fixed in commit
+        298bf6b). Commit 69ed4f7 split all the openssl related code from the tls_mgm
+        module into a new tls_openssl module but some openssl initialization bypasses
+        from the cachedb_mongodb module were left to depend on loading the tls_mgm
+        module (instead of the new tls_openssl module).
+
+        Fixes #3072
+
+        (cherry picked from commit ce177c133724ca913d9e4b0ab12fe30eb44e4561)
+
+
+2023-06-20  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1b00ed9f3] :
+
+        [tracer] fix bogus multiple tracing
+
+        When calling the trace() function multiple times from script (to do tracing via different backends), be sure and install all the tracing callbacks (in TM, dialog) only first time.
+        Reported by @gmaruzz
+        Closes #3082
+
+        (cherry picked from commit 18ccdbe0efbf327c88026dd9006513a06dd4a348)
+
+
+2023-06-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e73cb3b90] :
+
+        [uac_registrant] fix passing wrong context to authenticated REGISTER
+
+        When sending the authenticating REGISTER, be sure a new context is provided. This will avoid the usage of the context belonging to the first (challenged) REGISTER. This mixup of the context was breaking the tracing of these REGISTER requests via local route.
+
+        (cherry picked from commit c64766a8526c3953bd5adf45030a29a9aacb4550)
+
+
+2023-06-16  Vlad Patrascu  <vladp@opensips.org>
+        * [deeefa7cb] :
+
+        b2b_logic: prevent initializing B2B session on non-INVITEs
+
+        This prevents crashes when the b2b_init_request() function is used on
+        methods other than INVITE or from other routes than request routes where
+        the INVITE SIP message is visible.
+
+        Related to #3102
+
+        (cherry picked from commit 8c0a9e0ae48841e27d4b1e803b584f5de0c3419b)
+
+
+2023-06-16  Vlad Pătrașcu  <vladp@opensips.org>
+        * [b4d591c3a] :
+
+        Merge pull request #3103 from Giedriusj1/master
+
+        Improve passthru_prack behaviour so it actually passes through PRACKs
+
+        (cherry picked from commit 1e8efb7d8e7951c6441ccadd0e50109222ef98f2)
+
+
+2023-06-14  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [73f00edc3] :
+
+        [dialog] fix too strict restrictions for get_profile_size()
+
+        The function does not require any existing dialog context, so it can be used from any route
+
+        (cherry picked from commit a5f85013ea9156410a48614079105a7c5b41fe8e)
+
+
+2023-06-09  Vlad Patrascu  <vladp@opensips.org>
+        * [7680b58e2] :
+
+        logging: complete fix in commit a4bf044
+
+        (cherry picked from commit 1e5fbeca529a3c22c909dc09431bf37ba3493017)
+
+
+2023-06-09  Vlad Patrascu  <vladp@opensips.org>
+        * [3c1c5c7ff] :
+
+        logging: improve the format of the logging interface's own errors
+
+        Align the format of the error logs from the consumers printing functions
+        with the rest of the plain stderror logs. For the event consumer, the
+        error logs can be sent as normally to the rest of the consumers
+        (stderror and syslog).
+
+        (cherry picked from commit 91c264abd63bfe200d0cf0f15aa300c5d1b4c799)
+
+
+2023-06-09  Vlad Patrascu  <vladp@opensips.org>
+        * [5d55e51bd] :
+
+        b2b_logic: fix issues when new entities are unused
+
+        New entities created with b2b_server_new() or b2b_client_new() functions would
+        leak if they were not eventually used by a b2b_init_request() call. This would
+        lead to pkg memory leaks and bogus errors from successive calls to
+        b2b_init_request().
+
+        Also, fix an entity memory leak when using the b2b_bridge_retry() function
+        for a tuple that is in a non-initial bridging state (eg. triggered by
+        b2b_bridge_request()).
+
+        (cherry picked from commit c84fe372c50becc177f57732ff087da53b71be0f)
+
+
+2023-06-09  Răzvan Crainea  <razvan@opensips.org>
+        * [d14793bd5] :
+
+        Merge pull request #3104 from purecloudlabs/hotfix/sipmsgops-allowed-routes
+
+        sipmsgops: fix allowed routes for exported functions
+        (cherry picked from commit 14e1eab55b67992e4493602248628777d7d6d9a9)
+
+
+2023-06-06  Vlad Patrascu  <vladp@opensips.org>
+        * [59d4ff600] :
+
+        logging: fix print buffers length check for JSON CEE format
+
+        (cherry picked from commit d148232fe2f1b4d7222c091c345702391aecfebf)
+
+
+2023-06-06  Vlad Patrascu  <vladp@opensips.org>
+        * [9e0acc3d5] :
+
+        logging: print log level in xlog() messages
+
+        (cherry picked from commit e18662aa96aceb0cb304e5153e57a70914a8b6f2)
+
+
+2023-06-06  Vlad Patrascu  <vladp@opensips.org>
+        * [55835b775] :
+
+        logging: improve E_CORE_LOG suppression mechanism
+
+        Do not stop all logs, to any logging consumer, from being printed when
+        handling the E_CORE_LOG event in the event consumers. Only suppress the
+        triggering of the event itself.
+
+        This also fixes the blocking of OpenSIPS when xlog() is used from the
+        event_route.
+
+        (cherry picked from commit a4bf0442640ba4ef52035de0908166f55182afe8)
+
+
+2023-06-02  Razvan Crainea  <razvan@opensips.org>
+        * [e23be5d19] :
+
+        topology_hiding: properly quote contact hdr params
+
+        Thanks go to @manojmth for reporting this on GitHub
+
+        Close #3090
+
+        (cherry picked from commit e767b87123191b9f44db004e3a33b25982724672)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [ff34e6171] :
+
+        Use the fixup_named_flags() function consistently
+
+        Always let the fixup_named_flags() function internally set the values to
+        NULL for unused key-value flags.
+
+        (cherry picked from commit 6bab367f038a1a4be2313fc6f1427b943db21f2f)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [a8a4e3d5e] :
+
+        Update the -h help message regarding the -E option deprecation
+
+        (cherry picked from commit a050cc581802aea42fb2bbe6def4645ac94333f4)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [bf506aeaa] :
+
+        logging: revise the JSON CEE format
+
+        * Add the "@cee:" prefix only for the syslog consumer.
+        * Add the "hostname" and "pname" CEE mandatory fields.
+        * Use nested objects for the function and PID fields instead of the
+          "proc!id" and "native!function" notation.
+        * Change the PID field to string instead of number data type.
+        * Add the "log_prefix" field.
+
+        (cherry picked from commit 61ecc1047ba89c428ec58ec2d1f87a9ea3fc316a)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [7c0daedb0] :
+
+        b2b_entities: trigger the E_UA_SESSION event for initial INVITEs
+
+        Add ability to trigger the E_UA_SESSION event, with the 'NEW' event
+        type, for initial INVITES handled with the ua_session_server_init().
+        This can also be suppressed with the 'n' flag.
+
+        (cherry picked from commit fb5b35866740e6a0509341cca698684a02b3b968)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [a89ff2445] :
+
+        b2b_entities: rename ua_session_start to ua_session_client_start
+
+        Rename the ua_session_start MI command as originally inteded.
+
+        (cherry picked from commit 3102318223b3babf76ee6b8ed090f8d824aa2c80)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [98b068c9b] :
+
+        b2b_entities: make 'reason' param mandatory for ua_session_reply
+
+        Omiting the 'reason' parameter for the ua_session_reply MI command would
+        cause a crash in the tm module.
+
+        (cherry picked from commit 19b6d3e940c074c05c37cac049241fdd2b8c119f)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [6223edac6] :
+
+        b2b_logic: remove leftover debugging log
+
+        (cherry picked from commit 28471600b813c869d1c49e52df05961d2363e9ea)
+
+
+2023-05-31  Vlad Patrascu  <vladp@opensips.org>
+        * [1cb5a4f8e] :
+
+        msrp_relay: fix check for running the socket_route
+
+        (cherry picked from commit a2f2ec64580f98e0332b4925a48ee85217a03491)
+
+
+2023-05-31  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [1467a11a7] :
+
+        Restore -E option, which has became core(5) implementation after
+        incomplete removal in b3644964573d7. Instead of dumping core,
+        print error message directing user to the "stderror_enabled=yes"
+        at the script level.
+
+
+2023-05-29  Razvan Crainea  <razvan@opensips.org>
+        * [8bafdd078] :
+
+        rtp_relay: avoid crash when dialog/b2b not loaded
+
+        (cherry picked from commit e00300c46178eb0e22d3bc062b6fc0abf63ca9fb)
+
+
+2023-05-29  Razvan Crainea  <razvan@opensips.org>
+        * [4c0418a78] :
+
+        rtpengine: add docs for via-branch-param
+
+        (cherry picked from commit 96eac0be302228cc59a0dce8d463e2b3972417c0)
+
+
+2023-05-24  Razvan Crainea  <razvan@opensips.org>
+        * [3d63a85c0] :
+
+        sdp: fix crash in SDP parsing
+
+        Introduced in commit 7743524
+
+        (cherry picked from commit dbceae2d20e03749ab68ff57837b187ed5225bfb)
+
+
+2023-05-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [68f3653c9] :
+
+        Improved error logging on parsing KV flags for lookup()
+
+        (cherry picked from commit 397e1daa1cf4c619aa848405d93ba86194ca1629)
+
+
+2023-05-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1c96fb510] :
+
+        Improved error logging on parsing KV flags for save()
+
+        (cherry picked from commit f9cade9d756a5ab916df3824748ecd4c2c34eda2)
+
+
+2023-05-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e6dd878a5] :
+
+        fix uninitalized returned list of KV flags
+
+        closes #3100
+
+        (cherry picked from commit 1668bc3f0f249f690fe5479a859ad0de988ab928)
+
+
+2023-05-19  Vlad Patrascu  <vladp@opensips.org>
+        * [69f5f824b] :
+
+        [mid_]registrar: fix default flag values for lookup() and save()
+
+        The default values for unset flags were not properly set if any other flags
+        were provided to the save()/lookup() functions.
+
+        Fixes #3097
+
+        (cherry picked from commit 89f947b690f54d17425235d0e6d5c3cb00f9d37a)
+
+
+2023-05-19  Vlad Patrascu  <vladp@opensips.org>
+        * [4c1b9a5ce] :
+
+        b2b_entities: fix incorrect entity key after loading from DB
+
+        Do not generate a new random part for the entity key when loading from
+        DB.
+
+        (cherry picked from commit 168808757d45af6ce098e123b1524f2a7d367cd6)
+
+
+2023-05-19  Vlad Patrascu  <vladp@opensips.org>
+        * [99c9d66d8] :
+
+        logging: expose missing level filter param for event consumer
+
+        (cherry picked from commit a9401510f5c6091f7721a5c19abe495af0d30881)
+
+
+2023-05-18  Vlad Patrascu  <vladp@opensips.org>
+        * [692a680ef] :
+
+        b2b_logic: fix crash if no B2B routes are set
+
+        This fixes a crash when the 'script_req_route'/'script_reply_route'
+        module parameters are not set and b2b_init_request() is called with no
+        route parameters.
+
+        (cherry picked from commit 94acb11f567117ef3baa095c01c8ef1bab00aecb)
+
+
+2023-05-18  Nick Altmann  <nick@altmann.pro>
+        * [c9a4f4ba7] :
+
+        Set version number for apt and yum builds
+
+
 =========================== Release 3.4.0-beta ==============================
 
 2023-05-17  Liviu Chircu  <liviu at opensips dot org>
