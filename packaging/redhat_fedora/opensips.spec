@@ -45,7 +45,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.2.12
+Version:  3.2.13
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1556,6 +1556,9 @@ fi
 
 
 %changelog
+* Wed Jun 21 2023 Liviu Chircu <liviu@opensips.org> - 3.2.13-1
+- OpenSIPS minor stable release: 3.2.13-1
+
 * Thu May 27 2021 Nick Altmann <nick@altmann.pro> - 3.2.0-1
 - Specification updated for opensips 3.2
 - New modules: aaa_diameter, b2b_logic, event_kafka, prometeus, rtp_relay, tls_openssl, tls_wolfssl
