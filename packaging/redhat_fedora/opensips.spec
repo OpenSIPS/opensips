@@ -45,7 +45,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.3.5
+Version:  3.3.6
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1587,6 +1587,9 @@ fi
 
 
 %changelog
+* Wed Jun 21 2023 Liviu Chircu <liviu@opensips.org> - 3.3.6-1
+- OpenSIPS minor stable release: 3.3.6-1
+
 * Wed May 18 2022 Nick Altmann <nick@altmann.pro> - 3.3.0-1
 - Specification updated for opensips 3.3
 - New modules: b2b_sdp_demux, msrp_gateway, msrp_relay, msrp_ua, proto_msrp, status_report, tcp_mgm
