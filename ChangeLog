@@ -1,3 +1,191 @@
+=========================== Release 3.1.16 ==============================
+
+2023-06-21  Liviu Chircu  <liviu@opensips.org>
+        * [e8c0da5d1] :
+
+        F_MALLOC: Optimize the free() operation
+
+        Commit bdaaf60b2c introduced a side-effect of gradually moving the
+        fragment "action" towards the exponential, non-optimized hash table
+        buckets (i.e. buckets 2049 ... 2100).  Here, the fragments were inserted
+        in a sorted fashion, with the sorted-insert algorithm costing a O(N)
+        iteration on each free operation instead of a simple O(1).
+
+        Consequently, the user experience of this effect is that "dr_reload"
+        operations were stalling for 12 minutes (coming up from 24 seconds!),
+        when working with large rule sets (millions of rules).  Interestingly
+        enough, the stalling was not due to the caching phase -- malloc() --
+        rather due to the cleanup phase, when clearing the old rules -- free()!
+
+        To address this issue:
+
+        * we drop the sorted insertion completely for buckets 2049 ... 2100, and
+            simply do a list prepend operation: O(1), as with the others
+        * we make all allocation requests from these buckets return the next
+           bucket (!!), thus guarantee'ing our requested fragment.  Examples:
+
+              malloc(18K) -> now you always get a 32K+ frag, but instantly!
+              malloc(37K) -> now you always get a 64K+ frag, but instantly!
+        * this does not make F_MALLOC more wasteful, since the extra frag
+          space gets split anyway into a new fragment, with the two eventually
+          coalescing together again thanks to commit bdaaf60b2c
+
+        (cherry picked from commit e6b4de51298eb78aef097cbfd1c34ada17b9b78f)
+
+
+2023-06-21  Vlad Patrascu  <vladp@opensips.org>
+        * [7c7c4fb0b] :
+
+        lua: fix opensips lua API docs
+
+        (cherry picked from commit a53ba3d0d696ef56684a03b7bbf4a4e8474c3e33)
+
+
+2023-06-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c64766a85] :
+
+        [uac_registrant] fix passing wrong context to authenticated REGISTER
+
+        When sending the authenticating REGISTER, be sure a new context is provided. This will avoid the usage of the context belonging to the first (challenged) REGISTER. This mixup of the context was breaking the tracing of these REGISTER requests via local route.
+
+
+2023-06-10  OpenSIPS  <github@opensips.org>
+        * [324fbde1c] :
+
+        Rebuild documentation
+
+
+2023-06-09  Răzvan Crainea  <razvan@opensips.org>
+        * [d4763f9a3] :
+
+        Merge pull request #3104 from purecloudlabs/hotfix/sipmsgops-allowed-routes
+
+        sipmsgops: fix allowed routes for exported functions
+        (cherry picked from commit 14e1eab55b67992e4493602248628777d7d6d9a9)
+
+
+2023-06-03  OpenSIPS  <github@opensips.org>
+        * [3077cb965] :
+
+        Rebuild documentation
+
+
+2023-06-02  Razvan Crainea  <razvan@opensips.org>
+        * [c5a7ab77d] :
+
+        topology_hiding: properly quote contact hdr params
+
+        Thanks go to @manojmth for reporting this on GitHub
+
+        Close #3090
+
+        (cherry picked from commit e767b87123191b9f44db004e3a33b25982724672)
+        (cherry picked from commit 881fdeff1a03a477a93f1b75769e295bdd109a16)
+
+
+2023-05-31  Razvan Crainea  <razvan@opensips.org>
+        * [2f9b6282f] :
+
+        tls: remove from map when destroying
+
+        This prevents a crash that was generated at runtime due to the fact that
+        although the domain was destroyed, it was still referenced in the map
+
+
+2023-05-20  OpenSIPS  <github@opensips.org>
+        * [c71411572] :
+
+        Rebuild documentation
+
+
+2023-05-17  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [18504bc5a] :
+
+        Merge remote-tracking branch 'origin/regex_max_groups_segfault'
+
+        (cherry picked from commit e09eb58ac63c63da7e00c918de0e132649f01b6a)
+
+
+2023-05-07  OpenSIPS  <github@opensips.org>
+        * [e012e8288] :
+
+        Rebuild documentation
+
+
+2023-05-05  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [04ea077f4] :
+
+        [call_center] fix skill overflow on refreshing agents via MI
+
+        Completes 6617ecc805520961642c16ac1e6c5a49787af2ab
+
+        (cherry picked from commit d4db20087ce162e9ea5cb6c4662c2f4c1ac4d31f)
+
+
+2023-05-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [279b2114a] :
+
+        [call_center] fix overflowing the per-agent array of skills
+
+        As the array of skills is pre-allocated inside the agent struct, be sure you do not overflow it when populating the agent's skills (from DB).
+        Also, the logstate/logged_in value for an agent is read from DB or MI and it must be forced to 0/1 values, as it is later used as index. Yet another overflow fixed here.
+
+        (cherry picked from commit 6617ecc805520961642c16ac1e6c5a49787af2ab)
+        (cherry picked from commit d38c9dfe3dfc4354a9049edf6e6e96b2ed07b2b6)
+
+
+2023-05-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [10d53b312] :
+
+        [acc] removed old workaround multiple int2str() in acc_extra
+
+        Since 2.3 we actually do not need this, as each acc_extra is individually set into its own buffer.
+        Related to 6c0b37f907d30749266e2deca3c9ccc475dd32e4
+
+        (cherry picked from commit 54b03a17276439a24a81d7f55e6d43c92f22637e)
+
+
+2023-05-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a2686d1e6] :
+
+        [acc] workaround for compiling issue
+
+        Related to 0ff82562bd74a177184b1e179c3a607446c47b78
+        We need to review this logic (of static_detector) as it looks to be broken as it is now.
+
+        (cherry picked from commit 6c0b37f907d30749266e2deca3c9ccc475dd32e4)
+
+
+2023-05-03  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [2efff58d3] :
+
+        Fix logging multiple IPs in the same time
+
+        Use a multiple static rotating buffers for convering the IPs to str, so that we can print multiple IPs in the same time.
+        Closes #3062
+        Reported by @jes
+
+        (cherry picked from commit 0ff82562bd74a177184b1e179c3a607446c47b78)
+
+
+2023-04-26  Vlad Pătrașcu  <vladp@opensips.org>
+        * [c88b87589] :
+
+        Merge pull request #3065 from Ellipsis753/patch-1
+
+        Fix buffer overflow in b2b_logic
+
+        (cherry picked from commit cdb5d49865d6e1c70f330b6519ff8c500bfcef8e)
+
+
+2023-04-26  Razvan Crainea  <razvan@opensips.org>
+        * [aaaa19c24] :
+
+        uac: specify in-dialog auth without dialog limitations in docs
+
+        (cherry picked from commit c44566adb7b3d63bc3340fed66cac7d3a821d26d)
+
+
 =========================== Release 3.1.15 ==============================
 
 2023-04-19  Liviu Chircu  <liviu@opensips.org>
