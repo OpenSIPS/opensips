@@ -72,6 +72,19 @@
       </para>
     </section>
     <section>
+      <title>isMyself(host, port)</title>
+      <para>
+      Test if the host and optionally the port represent one of the addresses
+      that OpenSIPS listens on.
+      </para>
+    </section>
+    <section>
+      <title>grepSockInfo(host, port)</title>
+      <para>
+      Similar to isMyself(), but without taking a look into the aliases.
+      </para>
+    </section>
+    <section>
       <title>getURI_User(msg)</title>
       <para>
       Returns the user of the To URI.
@@ -84,7 +97,7 @@
       </para>
     </section>
     <section>
-      <title>getHeader(header)</title>
+      <title>getHeader(msg, header)</title>
       <para>
       Returns the value of the specified header.
       </para>
@@ -96,7 +109,13 @@
       </para>
     </section>
     <section>
-      <title>moduleFunc(msg, function, args1, args2)</title>
+      <title>getRoute(msg)</title>
+      <para>
+      Returns a table with the Route header.
+      </para>
+    </section>
+    <section>
+      <title>moduleFunc(msg, function, args1, args2, ...)</title>
       <para>
       You can pass arguments to this function.
       </para>
@@ -126,19 +145,19 @@
       </para>
     </section>
     <section>
-      <title>AVP_get(msg, name)</title>
+      <title>AVP_get(name)</title>
       <para>
       Returns an AVP variable.
       </para>
     </section>
     <section>
-      <title>AVP_set(msg, name, value)</title>
+      <title>AVP_set(name, value)</title>
       <para>
       Defines an AVP variable.
       </para>
     </section>
     <section>
-      <title>AVP_destroy(msg, name)</title>
+      <title>AVP_destroy(name)</title>
       <para>
       Destroys an AVP variable.
       </para>
@@ -150,7 +169,25 @@
       </para>
     </section>
     <section>
-      <title>add_lump_rpl</title>
+      <title>pseudoVarSet(msg, variable, value)</title>
+      <para>
+      Sets the value of a pseudoVar.
+      </para>
+    </section>
+    <section>
+      <title>scriptVarGet(variable)</title>
+      <para>
+      Returns a script variable.
+      </para>
+    </section>
+    <section>
+      <title>scriptVarSet(variable, value)</title>
+      <para>
+      Sets the value of a script variable.
+      </para>
+    </section>
+    <section>
+      <title>add_lump_rpl(msg, header)</title>
       <para>
       Add header to the reply.
       </para>
