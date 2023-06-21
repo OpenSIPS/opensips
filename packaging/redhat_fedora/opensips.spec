@@ -37,7 +37,7 @@
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips
-Version:  3.1.15
+Version:  3.1.16
 Release:  1%{?dist}
 License:  GPLv2+
 Group:    System Environment/Daemons
@@ -1443,6 +1443,9 @@ fi
 
 
 %changelog
+* Wed Jun 21 2023 Liviu Chircu <liviu@opensips.org> - 3.1.16-1
+- OpenSIPS minor stable release: 3.1.16-1
+
 * Tue Feb 11 2020 Nick Altmann <nick.altmann@gmail.com> - 3.1.0-1
 - Specification updated for opensips 3.1
 - New modules: callops, media_exchange, presence_dfks, qrouting,
