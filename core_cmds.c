@@ -54,6 +54,7 @@ static int fixup_check_wrvar(void** param);
 static int fixup_avp_list(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_event_name(void** param);
+static int fixup_event_name_subs(void** param);
 static int fixup_format_string(void** param);
 static int fixup_nt_string(void** param);
 
@@ -274,7 +275,7 @@ static cmd_export_t core_cmds[]={
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_avp, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"subscribe_event", (cmd_function)w_subscribe_event, {
-		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR, fixup_event_name_subs, 0},
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
@@ -515,6 +516,23 @@ static int fixup_event_name(void** param)
 	}
 
 	*param = (void*)(long)ev_id;
+	return 0;
+}
+
+static int fixup_event_name_subs(void** param)
+{
+	str *s = (str*)*param;
+	event_id_t ev_id;
+
+	ev_id = evi_get_id(s);
+	if (ev_id == EVI_ERROR) {
+		ev_id = evi_publish_event(*s);
+		if (ev_id == EVI_ERROR) {
+			LM_ERR("cannot subscribe event\n");
+			return E_UNSPEC;
+		}
+	}
+
 	return 0;
 }
 
