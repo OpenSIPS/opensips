@@ -57,6 +57,7 @@ static cmd_export_t cmds[] = {
  */
 static param_export_t params[] = {
   { "luafilename", STR_PARAM, &luafilename},
+  /* deprecated param, will have no effect */
   { "lua_user_debug", INT_PARAM, &lua_user_debug},
   { "lua_allocator", STR_PARAM, &lua_allocator},
   { "lua_auto_reload", INT_PARAM, &lua_auto_reload},
