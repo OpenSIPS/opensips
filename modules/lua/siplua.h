@@ -20,7 +20,6 @@
 #ifndef SIPLUA_H_
 # define SIPLUA_H_
 
-extern int lua_user_debug;
 extern int lua_auto_reload;
 
 extern struct sl_binds slb;
