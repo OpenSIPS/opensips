@@ -50,7 +50,6 @@ void siplua_log(int lev, const char *format, ...)
 {
   va_list ap;
   char *ret;
-  int priority;
   int rc;
 
   if (!format)
