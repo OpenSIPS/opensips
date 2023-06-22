@@ -29,13 +29,6 @@
       </para>
     </section>
     <section>
-      <title>setUserDebug</title>
-      <para>
-      Enable or disable the xlog feature.
-      Disabled, the xlog function has no effect.
-      </para>
-    </section>
-    <section>
       <title>WarnMissingFreeFixup</title>
       <para>
       Dynamically change the variable warn_missing_free_fixup.
