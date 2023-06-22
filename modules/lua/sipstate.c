@@ -318,7 +318,7 @@ static const struct luaL_Reg siplua_state_mylib [] =
 static void siplua_register_state_cclosures(lua_State *L)
 {
   lua_pushglobaltable(L);
-  luaL_openlib(L, "opensips", siplua_state_mylib, 0);
+  luaL_openlib(L, NULL, siplua_state_mylib, 0);
   lua_remove(L, -1);
 }
 
