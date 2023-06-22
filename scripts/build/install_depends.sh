@@ -4,7 +4,7 @@ set -e
 
 . $(dirname $0)/dockerize.sub
 
-PKGS="`grep -A 35 packages: .travis.yml  | grep -e '^ *[-]' | awk '{print $2}'`"
+PKGS="`cat "$(dirname $0)/apt_requirements.txt"`"
 
 . $(dirname $0)/build.conf.sub
 
