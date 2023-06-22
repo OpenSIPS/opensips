@@ -50,35 +50,18 @@ void siplua_log(int lev, const char *format, ...)
 {
   va_list ap;
   char *ret;
-  int priority;
   int rc;
 
   if (!format)
     return;
-  if (!(is_printable(lev) | lua_user_debug))
-    return;
+
   va_start(ap, format);
   rc = vasprintf(&ret, format, ap);
   va_end(ap);
   if (rc < 0)
     return;
   LM_GEN1(lev, "siplua: %s", ret);
-  if (lua_user_debug)
-    {
-      switch (lev)
-	{
-	case L_ALERT: priority = LOG_ALERT; break;
-	case L_CRIT: priority = LOG_CRIT; break;
-	case L_ERR: priority = LOG_ERR; break;
-	case L_WARN: priority = LOG_WARNING; break;
-	case L_NOTICE: priority = LOG_NOTICE; break;
-	case L_INFO: priority = LOG_INFO; break;
-	case L_DBG: priority = LOG_DEBUG; break;
-	default: /* should not happen, no execution path permits it */
-	  priority = LOG_ERR;
-	}
-      syslog(LOG_USER | priority, "siplua: %s", ret);
-    }
+
   free(ret);
 }
 
