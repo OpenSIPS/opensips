@@ -24,6 +24,7 @@
 #define _DIALOG_DLG_HASH_H_
 
 #include "../../locking.h"
+#include "../../rw_locking.h"
 #include "../../context.h"
 #include "../../mi/mi.h"
 #include "../../lib/dbg/struct_hist.h"
@@ -140,9 +141,11 @@ struct dlg_cell
 	unsigned int         lifetime;
 	unsigned short       lifetime_dirty; /* 1 if lifetime timer should
 	                                      * be updated */
-	unsigned short       locked_by;   /* holds the ID of the process locking
-	                                   * the dialog (if the case) while
-	                                   * calling a callback */
+
+	/* holds the ID of the process holding the dialog bucket lock (or 0)
+	 * when either working with .profile_links list or running dlg callbacks */
+	unsigned short       locked_by;
+
 	unsigned int         start_ts;    /* start time  (absolute UNIX ts)*/
 	unsigned int         flags;
 	unsigned int         from_rr_nb;
@@ -166,6 +169,7 @@ struct dlg_cell
 	struct dlg_head_cbl  cbs;
 	struct dlg_profile_link *profile_links;
 	struct dlg_val       *vals;
+	rw_lock_t            *vals_lock;
 	str                  shtag;
 
 	struct script_route_ref  *rt_on_answer;

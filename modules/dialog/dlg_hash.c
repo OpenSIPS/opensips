@@ -235,10 +235,13 @@ static inline void free_dlg_dlg(struct dlg_cell *dlg)
 
 #ifdef DBG_DIALOG
 	sh_log(dlg->hist, DLG_DESTROY, "ref %d", dlg->ref);
-	sh_unref(dlg->hist);
-	dlg->hist = NULL;
+	if (dlg->hist) {
+		sh_unref(dlg->hist);
+		dlg->hist = NULL;
+	}
 #endif
 
+	lock_destroy_rw(dlg->vals_lock);
 	shm_free(dlg);
 }
 
@@ -321,17 +324,23 @@ struct dlg_cell* build_new_dlg( str *callid, str *from_uri, str *to_uri,
 
 	memset(dlg, 0, len);
 
+	dlg->vals_lock = lock_init_rw();
+	if (!dlg->vals_lock) {
+		LM_ERR("oom\n");
+		shm_free(dlg);
+		return NULL;
+	}
+
 #if defined(DBG_DIALOG)
 	dlg->hist = sh_push(dlg, dlg_hist);
 	if (!dlg->hist) {
 		LM_ERR("oom\n");
-		shm_free(dlg);
+		free_dlg_dlg(dlg);
 		return NULL;
 	}
 #endif
 
 	dlg->state = DLG_STATE_UNCONFIRMED;
-
 	dlg->h_entry = dlg_hash( callid);
 
 	LM_DBG("new dialog %p (c=%.*s,f=%.*s,t=%.*s,ft=%.*s) on hash %u\n",
@@ -874,7 +883,7 @@ struct dlg_cell* get_dlg_by_val(struct sip_msg *msg, str *attr, pv_spec_t *val)
 			LM_DBG("dlg in state %d to check\n",dlg->state);
 			if ( dlg->state>DLG_STATE_CONFIRMED )
 				continue;
-			if (check_dlg_value_unsafe(msg, dlg, attr, val)==0) {
+			if (check_dlg_value(msg, dlg, attr, val, 1)==0) {
 				ref_dlg_unsafe( dlg, 1);
 				dlg_unlock( d_table, d_entry);
 				return dlg;
@@ -1481,10 +1490,14 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 		if (!context_obj)
 			goto error;
 
+		lock_start_read(dlg->vals_lock);
+
 		if (dlg->vals) {
 			values_arr = add_mi_array(context_obj, MI_SSTR("values"));
-			if (!values_arr)
+			if (!values_arr) {
+				lock_stop_read(dlg->vals_lock);
 				goto error;
+			}
 
 			/* print dlg values -> iterate the list */
 			for( dv=dlg->vals ; dv ; dv=dv->next) {
@@ -1516,10 +1529,16 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 					}
 
 					values_item = add_mi_object(values_arr, NULL, 0);
-					if (!values_item)
+					if (!values_item) {
+						lock_stop_read(dlg->vals_lock);
 						goto error;
-					if (add_mi_string(values_item,dv->name.s,dv->name.len,p,j) < 0)
+					}
+
+					if (add_mi_string(values_item,dv->name.s,dv->name.len,p,j) < 0) {
+						lock_stop_read(dlg->vals_lock);
 						goto error;
+					}
+
 				} else {
 					values_item = add_mi_object(values_arr, NULL, 0);
 					if (!values_item)
@@ -1530,6 +1549,8 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 				}
 			}
 		}
+
+		lock_stop_read(dlg->vals_lock);
 
 		/* print dlg profiles */
 		if (dlg->profile_links) {

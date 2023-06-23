@@ -60,9 +60,10 @@ int store_dlg_value_unsafe(struct dlg_cell *dlg, str *name, int_str *val, int ty
 
 int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 	int *type, int_str *out_val, int val_has_buf);
+int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
+	int *type, int_str *out_val, int val_has_buf);
 
-int check_dlg_value_unsafe(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
-	pv_spec_t *val);
-
+int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
+	pv_spec_t *val, int lock_vals);
 
 #endif
