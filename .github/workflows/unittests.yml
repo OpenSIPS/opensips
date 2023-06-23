@@ -74,7 +74,9 @@ jobs:
         run: sh -x scripts/build/start_container.sh
 
       - name: Install dependencies
-        run: sh -x scripts/build/install_depends.sh
+        run: |
+          sh -x scripts/build/reset_sources.sh
+          sh -x scripts/build/install_depends.sh
 
       - name: Get libtap
         run: git clone https://github.com/zorgnax/libtap.git lib/libtap
