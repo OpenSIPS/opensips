@@ -53,6 +53,52 @@ static const str uri_type_names[7] = {
 	str_init("urn:nena:service")
 };
 
+struct uri_match_part uri_match_parts[] = {
+	{ str_const_init("type"), URI_MATCH_TYPE },
+	{ str_const_init("user"), URI_MATCH_USER },
+	{ str_const_init("password"), URI_MATCH_PASSWD },
+	{ str_const_init("host"), URI_MATCH_HOST },
+	{ str_const_init("port"), URI_MATCH_PORT },
+	{ str_const_init("transport"), URI_MATCH_TRANSPORT },
+	{ str_const_init("ttl"), URI_MATCH_TTL },
+	{ str_const_init("userparam"), URI_MATCH_USERPARAM },
+	{ str_const_init("maddr"), URI_MATCH_MADDR },
+	{ str_const_init("method"), URI_MATCH_METHOD },
+	{ str_const_init("lr"), URI_MATCH_LR },
+	{ str_const_init("r2"), URI_MATCH_R2 },
+	{ str_const_init("all"), URI_MATCH_ALL },
+};
+
+enum uri_match_flags parse_uri_options(str *options_str)
+{
+	enum uri_match_flags flags = URI_MATCH_NONE;
+	char *p, *e;
+	str *s = options_str;
+	int i;
+
+	if (options_str == NULL || options_str->s == NULL || options_str->len == 0) {
+		return flags;
+	}
+	e = s->s + strlen(s->s);
+	while (s->s < e) {
+		p = strchr(s->s, ';');
+		s->len = (p ? (p - s->s) : strlen(s->s));
+		str_trim_spaces_lr(*s);
+		/* check if this is among the possible options */
+		for(i = 0; i< (sizeof(uri_match_parts)/sizeof(uri_match_parts[0])); i++) {
+			if (s->len == uri_match_parts[i].name.len &&
+					strncasecmp(s->s, uri_match_parts[i].name.s,
+						uri_match_parts[i].name.len) == 0)
+				flags |= uri_match_parts[i].flag;
+		}
+		if (p)
+			s->s = p + 1;
+		else
+			break;
+	}
+	return flags;
+}
+
 char* uri_type2str(const uri_type type, char *result)
 {
 	if (type == ERROR_URI_T)
@@ -1853,5 +1899,91 @@ int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 headers_check:
 	 /* XXX Do we really care ? */
 	compare_uri_val(headers,strncasecmp);
+	return 0;
+}
+
+/* Compare 2 SIP URIs by parts according to opts
+ *
+ * Return value : 0 if URIs match
+ *				  1 if URIs don't match
+ *				 -1 if errors have occurred
+ */
+int compare_uris_parts(str *raw_uri_a, str *raw_uri_b, enum uri_match_flags opts)
+{
+	#define UNESCAPED_BUF_LEN 1024
+	char unescaped_a[UNESCAPED_BUF_LEN], unescaped_b[UNESCAPED_BUF_LEN];
+
+	str unescaped_userA={unescaped_a, UNESCAPED_BUF_LEN};
+	str unescaped_userB={unescaped_b, UNESCAPED_BUF_LEN};
+
+	struct sip_uri first;
+	struct sip_uri second;
+
+	if ( (!raw_uri_a) || (!raw_uri_b) )
+	{
+		LM_ERR("Provide either a raw form of a SIP URI\n");
+		return -1;
+	}
+
+	/* maybe we're lucky and straight-forward comparison succeeds */
+	if ((opts & URI_MATCH_ALL) && (raw_uri_a->len == raw_uri_b->len))
+		if (strncasecmp(raw_uri_a->s,raw_uri_b->s,raw_uri_a->len) == 0)
+		{
+			LM_DBG("straight-forward URI match\n");
+			return 0;
+		}
+
+	if (parse_uri(raw_uri_a->s,raw_uri_a->len,&first) < 0)
+	{
+		LM_ERR("Failed to parse first URI\n");
+		return -1;
+	}
+
+	if (parse_uri(raw_uri_b->s,raw_uri_b->len,&second) < 0)
+	{
+		LM_ERR("Failed to parse second URI\n");
+		return -1;
+	}
+
+	if (opts & URI_MATCH_TYPE)
+		if (first.type != second.type)
+		{
+			LM_DBG("Different uri types\n");
+			return 1;
+		}
+
+	if (unescape_user(&first.user, &unescaped_userA) < 0 ||
+			unescape_user(&second.user, &unescaped_userB) < 0) {
+		LM_ERR("Failed to unescape user!\n");
+		return -1;
+	}
+
+	first.user = unescaped_userA;
+	second.user = unescaped_userB;
+
+	if (opts & URI_MATCH_USER)
+		compare_uri_val(user,strncmp);
+	if (opts & URI_MATCH_PASSWD)
+		compare_uri_val(passwd,strncmp);
+	if (opts & URI_MATCH_HOST)
+		compare_uri_val(host,strncasecmp);
+	if (opts & URI_MATCH_PORT)
+		compare_uri_val(port,strncmp);
+
+	if (opts & URI_MATCH_TRANSPORT)
+		compare_uri_val(transport_val,strncasecmp);
+	if (opts & URI_MATCH_TTL)
+		compare_uri_val(ttl_val,strncasecmp);
+	if (opts & URI_MATCH_USERPARAM)
+		compare_uri_val(user_param_val,strncasecmp);
+	if (opts & URI_MATCH_MADDR)
+		compare_uri_val(maddr_val,strncasecmp);
+	if (opts & URI_MATCH_METHOD)
+		compare_uri_val(method_val,strncasecmp);
+	if (opts & URI_MATCH_LR)
+		compare_uri_val(lr_val,strncasecmp);
+	if (opts & URI_MATCH_R2)
+		compare_uri_val(r2_val,strncasecmp);
+
 	return 0;
 }

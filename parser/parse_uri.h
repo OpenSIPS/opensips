@@ -42,6 +42,35 @@
 #define URN_NENA_SERVICE_STR 	":nena:service:"
 #define URN_NENA_SERVICE_STR_LEN	(sizeof(URN_NENA_SERVICE_STR) - 1)
 
+/* The possible values of the URI parts used for compare URIs
+ */
+enum uri_match_flags {
+	URI_MATCH_NONE      = 0,
+	URI_MATCH_TYPE      = (1<<0),
+	URI_MATCH_USER      = (1<<1),
+	URI_MATCH_PASSWD    = (1<<2),
+	URI_MATCH_HOST      = (1<<3),
+	URI_MATCH_PORT      = (1<<4),
+	URI_MATCH_TRANSPORT = (1<<5),
+	URI_MATCH_TTL       = (1<<6),
+	URI_MATCH_USERPARAM = (1<<7),
+	URI_MATCH_MADDR     = (1<<8),
+	URI_MATCH_METHOD    = (1<<9),
+	URI_MATCH_LR        = (1<<10),
+	URI_MATCH_R2        = (1<<11),
+	URI_MATCH_ALL       = (URI_MATCH_TYPE | URI_MATCH_USER | URI_MATCH_PASSWD | URI_MATCH_HOST | URI_MATCH_PORT | URI_MATCH_TRANSPORT |
+						  URI_MATCH_TTL | URI_MATCH_USERPARAM | URI_MATCH_MADDR | URI_MATCH_METHOD | URI_MATCH_LR | URI_MATCH_R2),
+};
+struct uri_match_part {
+	str_const name;
+	enum uri_match_flags flag;
+};
+
+/* options_str= options to match Contact URI for uac_registrant
+ * returns: binary flags to match URI
+ */
+enum uri_match_flags parse_uri_options(str *options_str);
+
 /* buf= pointer to beginning of uri (sip:x@foo.bar:5060;a=b?h=i)
  * len= len of uri
  * returns: fills uri & returns <0 on error or 0 if ok
@@ -69,6 +98,7 @@ int parse_sip_msg_uri(struct sip_msg* msg);
 int parse_orig_ruri(struct sip_msg* msg);
 int compare_uris(str *raw_uri_a,struct sip_uri* parsed_uri_a,
 					str *raw_uri_b,struct sip_uri *parsed_uri_b);
+int compare_uris_parts(str *raw_uri_a, str *raw_uri_b, enum uri_match_flags opts);
 static inline int get_uri_param_val(const struct sip_uri *uri,
                                     const str *param, str *val);
 static inline int get_uri_param_idx(const str *param,

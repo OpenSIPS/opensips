@@ -110,6 +110,8 @@ uac_auth_api_t uac_auth_api;
 
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
+enum uri_match_flags match_contact = URI_MATCH_NONE;
+str match_contact_str = str_init("all");
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
@@ -140,6 +142,7 @@ static const param_export_t params[]= {
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
 	{"enable_clustering",	INT_PARAM,			&enable_clustering},
+	{"match_contact",	STR_PARAM,			&match_contact_str.s},
 	{"db_url",		STR_PARAM,			&db_url.s},
 	{"table_name",		STR_PARAM,			&reg_table_name.s},
 	{"registrar_column",	STR_PARAM,			&registrar_column.s},
@@ -257,6 +260,11 @@ static int mod_init(void)
 		LM_ERR("Failed to initialize registrant hash table\n");
 		return -1;
 	}
+
+	if(match_contact_str.s)	{
+		match_contact = parse_uri_options(&match_contact_str);
+	}
+	LM_DBG("Match contact value: [%d]\n", (unsigned)match_contact);
 
 	reg_table_name.len = strlen(reg_table_name.s);
 	registrar_column.len = strlen(registrar_column.s);
@@ -481,8 +489,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		contact = ((contact_body_t*)msg->contact->parsed)->contacts;
 		while (contact) {
 			/* Check for binding */
-			if (contact->uri.len==rec->contact_uri.len &&
-				strncmp(contact->uri.s,rec->contact_uri.s,contact->uri.len)==0){
+			if (compare_uris_parts(&contact->uri, &rec->contact_uri, match_contact) == 0) {
 				if (contact->expires && contact->expires->body.len) {
 					if (str2int(&contact->expires->body, &exp)<0) {
 						LM_ERR("Unable to extract expires from [%.*s]"
