@@ -20,6 +20,8 @@ then
 fi
 
 sudo apt-get update -y
+sudo apt-get -y remove libmemcached11 libpq5
+sudo apt-get -y autoremove
 sudo apt-get -y --allow-downgrades install ${PKGS}
 
 if [ ! -z "${POST_INSTALL_CMD}" ]
