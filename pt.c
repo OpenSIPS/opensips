@@ -22,7 +22,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <sched.h>
 #include <stdio.h>
 
 #include "lib/dbg/profiling.h"
