@@ -394,8 +394,6 @@ void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 		p = read_pair( p, end, &name, &val);
 		if (p==NULL) break;
 
-		if (val.len==0) continue;
-
 		LM_DBG("new var found  <%.*s>=<%.*s>\n",name.len,name.s,val.len,val.s);
 
 		/* add the variable */
