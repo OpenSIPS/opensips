@@ -317,6 +317,10 @@ int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 					return 0;
 				}
 				break;
+			} else {  /* DLG_VAL_TYPE_INT */
+				LM_DBG("var found with val <%d>!\n",dv->val.n);
+				if (pval.ri == dv->val.n)
+					return 0;
 			}
 		}
 	}
