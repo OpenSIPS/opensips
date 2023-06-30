@@ -677,9 +677,9 @@ static int tcp_read_req(struct tcp_connection* con, int* bytes_read)
 
 	if (con->con_req) {
 		req=con->con_req;
-		LM_DBG("Using the per connection buff \n");
+		LM_DBG("Using the per connection buff for conn %p\n",con);
 	} else {
-		LM_DBG("Using the global ( per process ) buff \n");
+		LM_DBG("Using the global ( per process ) buff for conn %p\n",con);
 		init_tcp_req(&tcp_current_req, 0);
 		req=&tcp_current_req;
 	}
@@ -742,7 +742,7 @@ again:
 			goto error;
 	}
 
-	LM_DBG("tcp_read_req end\n");
+	LM_DBG("tcp_read_req end for conn %p, req is %p\n",con,con->con_req);
 done:
 	if (bytes_read) *bytes_read=total_bytes;
 	/* connection will be released */
