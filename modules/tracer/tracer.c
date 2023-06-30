@@ -1397,6 +1397,11 @@ static void free_trace_info_shm(void *param, int type)
 	trace_info_unref(info,1);
 }
 
+static void unref_trace_info(void *param)
+{
+	trace_info_unref(param, 1);
+}
+
 static void free_trace_info_tm(void *param)
 {
 	free_trace_info_shm(param, TRACE_TRANSACTION);
@@ -1441,14 +1446,16 @@ static int trace_b2b_transaction(struct sip_msg* msg, void *trans, void* param)
 	/* arm transaction callbacks for futher tracing*/
 
 	if(tmb.register_tmcb( NULL, t, TMCB_MSG_MATCHED_IN,
-	trace_tm_in, info, 0) <=0) {
+	trace_tm_in, info, unref_trace_info) <=0) {
 		LM_ERR("can't register TM MATCH IN callback\n");
 		return -1;
 	}
 
+	trace_info_ref(info, 2);
 	if(tmb.register_tmcb( NULL, t, TMCB_MSG_SENT_OUT,
-	trace_tm_out, info, 0) <=0) {
+	trace_tm_out, info, unref_trace_info) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
+		trace_info_unref(info, 2);
 		return -1;
 	}
 
@@ -1502,18 +1509,19 @@ static int trace_transaction(struct sip_msg* msg, trace_info_p info, int reverse
 	msg->msg_flags |= FL_USE_SIPTRACE;
 
 	if(tmb.register_tmcb( msg, 0, TMCB_MSG_MATCHED_IN,
-	reverse_dir?trace_tm_in_rev:trace_tm_in, info, 0) <=0) {
+	reverse_dir?trace_tm_in_rev:trace_tm_in, info, unref_trace_info) <=0) {
 		LM_ERR("can't register TM MATCH IN callback\n");
 		return -1;
 	}
 
+	trace_info_ref(info, 2);
 	if(tmb.register_tmcb( msg, 0, TMCB_MSG_SENT_OUT,
 	reverse_dir?trace_tm_out_rev:trace_tm_out, info, free_trace_info_tm) <=0) {
 		LM_ERR("can't register TM SEND OUT callback\n");
+		trace_info_unref(info, 2);
 		return -1;
 	}
 
-	trace_info_ref(info,1);
 	return 0;
 }
 
