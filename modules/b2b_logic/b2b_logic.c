@@ -600,11 +600,12 @@ void b2bl_db_timer_update(unsigned int ticks, void* param)
 	b2b_logic_dump(0);
 }
 
-static void term_entity(b2bl_entity_id_t *entity, int hash_index)
+static void term_entity(b2bl_entity_id_t *entity, int hash_index, str *key)
 {
 	str bye = {BYE, BYE_LEN};
 	b2b_req_data_t req_data;
 	b2b_rpl_data_t rpl_data;
+	struct b2b_context *ctx;
 
 	if (entity->type == B2B_SERVER &&
 		entity->state != B2BL_ENT_CONFIRMED) {
@@ -628,12 +629,22 @@ static void term_entity(b2bl_entity_id_t *entity, int hash_index)
 				entity->key.s);
 		b2bl_htable[hash_index].locked_by = -1;
 	} else {
-		memset(&req_data, 0, sizeof(b2b_req_data_t));
-		PREP_REQ_DATA(entity);
-		req_data.method =&bye;
-		b2bl_htable[hash_index].locked_by = process_no;
-		b2b_api.send_request(&req_data);
-		b2bl_htable[hash_index].locked_by = -1;
+		if ( key && ( !push_new_global_context() ||
+		(ctx=b2b_api.get_context())==NULL ||
+		pkg_str_dup(&ctx->b2bl_key, key)==0 )
+		) {
+			LM_ERR("preparing ctx for request failed, entity [%.*s]\n",
+				entity->key.len, entity->key.s);
+		} else {
+			memset(&req_data, 0, sizeof(b2b_req_data_t));
+			PREP_REQ_DATA(entity);
+			req_data.method =&bye;
+			b2bl_htable[hash_index].locked_by = process_no;
+			b2b_api.send_request(&req_data);
+			b2bl_htable[hash_index].locked_by = -1;
+			if (key)
+				pop_pushed_global_context();
+		}
 	}
 }
 
@@ -659,10 +670,10 @@ void b2bl_clean(unsigned int ticks, void* param)
 				if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 				{
 					if(!tuple->bridge_entities[0]->disconnected)
-						term_entity(tuple->bridge_entities[0], i);
+						term_entity(tuple->bridge_entities[0], i, tuple->key);
 
 					if(!tuple->bridge_entities[1]->disconnected)
-						term_entity(tuple->bridge_entities[1], i);
+						term_entity(tuple->bridge_entities[1], i, tuple->key);
 				}
 				b2bl_delete(tuple, i, 1, tuple->repl_flag != TUPLE_REPL_RECV);
 			}
@@ -1077,12 +1088,12 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 	if(tuple->bridge_entities[0] && tuple->bridge_entities[1] && !tuple->to_del)
 	{
 		if(!tuple->bridge_entities[0]->disconnected) {
-			term_entity(tuple->bridge_entities[0], hash_index);
+			term_entity(tuple->bridge_entities[0], hash_index, &key);
 			tuple->bridge_entities[0]->disconnected = 1;
 		}
 
 		if(!tuple->bridge_entities[1]->disconnected) {
-			term_entity(tuple->bridge_entities[1], hash_index);
+			term_entity(tuple->bridge_entities[1], hash_index, &key);
 			tuple->bridge_entities[1]->disconnected = 1;
 		}
 	}
