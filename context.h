@@ -84,6 +84,12 @@ context_p context_alloc(enum osips_context type);
 int ensure_global_context(void);
 
 
+/* pushes or pops a context level from internal stack
+ */
+int push_new_global_context(void);
+int pop_pushed_global_context(void);
+
+
 /* free and reset the global context */
 void clear_global_context(void);
 
