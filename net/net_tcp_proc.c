@@ -69,14 +69,6 @@ static void tcpconn_release(struct tcp_connection* c, long state, int writer,
 			c, state, c->fd, c->id);
 	LM_DBG(" extra_data %p\n", c->extra_data);
 
-	/* if we are in a writer context, do not touch the buffer contain read packets per connection
-	might be in a completely different process
-	even if in our process we shouldn't touch it, since it might currently be in use, when we've read multiple SIP messages in one try*/
-	if (!writer && c->con_req) {
-		pkg_free(c->con_req);
-		c->con_req = NULL;
-	}
-
 	/* release req & signal the parent */
 	if (!writer)
 		c->proc_id = -1;
