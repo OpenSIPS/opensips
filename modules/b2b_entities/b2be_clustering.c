@@ -564,9 +564,12 @@ int receive_entity_update(bin_packet_t *packet)
 		unpack_update_fields(packet, dlg);
 
 		htable[hash_index].locked_by = process_no;
-		b2b_run_cb(dlg, hash_index, type, B2BCB_RECV_EVENT,
+		if ((rc = b2b_run_cb(dlg, hash_index, type, B2BCB_RECV_EVENT,
 			packet->type == REPL_ENTITY_UPDATE ? B2B_EVENT_UPDATE : B2B_EVENT_ACK,
-			packet, B2BCB_BACKEND_CLUSTER);
+			packet, B2BCB_BACKEND_CLUSTER)) != 0) {
+			lock_release(&htable[hash_index].lock);
+			return rc == -1 ? -1 : 0;
+		}
 		htable[hash_index].locked_by = -1;
 	} else {
 		rc = recv_b2bl_param_update(packet, dlg);
@@ -589,6 +592,7 @@ int receive_entity_delete(bin_packet_t *packet)
 	str *b2be_key;
 	b2b_table htable;
 	str callid, tag0, tag1;
+	int rc;
 
 	bin_pop_int(packet, &type);
 	bin_pop_str(packet, &tag0);
@@ -622,8 +626,12 @@ int receive_entity_delete(bin_packet_t *packet)
 	}
 
 	htable[hash_index].locked_by = process_no;
-	b2b_run_cb(dlg, hash_index, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE, packet,
-		B2BCB_BACKEND_CLUSTER);
+	if ((rc = b2b_run_cb(dlg, hash_index, type, B2BCB_RECV_EVENT, B2B_EVENT_DELETE,
+		packet, B2BCB_BACKEND_CLUSTER)) != 0) {
+		htable[hash_index].locked_by = -1;
+		lock_release(&htable[hash_index].lock);
+		return rc == -1 ? -1 : 0;
+	}
 	htable[hash_index].locked_by = -1;
 
 	b2b_entity_db_delete(type, dlg);
@@ -684,6 +692,7 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 	int i;
 	b2b_dlg_t *dlg;
 	str storage_cnt_buf;
+	int rc;
 
 	storage->buffer.s = NULL;
 
@@ -706,8 +715,15 @@ static int pack_entities_sync(bin_packet_t **sync_packet, int node_id,
 				return -1;
 			}
 
-			b2b_run_cb(dlg, i, etype, B2BCB_TRIGGER_EVENT, B2B_EVENT_CREATE,
+			rc = b2b_run_cb(dlg, i, etype, B2BCB_TRIGGER_EVENT, B2B_EVENT_CREATE,
 				storage, serialize_backend);
+			if (rc == -1) {
+				lock_release(&htable[i].lock);
+				return -1;
+			} else if (rc == 1) {
+				lock_release(&htable[i].lock);
+				continue;
+			}
 
 			bin_pack_entity(*sync_packet, dlg, etype);
 
