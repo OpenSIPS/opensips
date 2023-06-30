@@ -525,11 +525,13 @@ b2b_dlg_t* b2bl_search_iteratively(str* callid, str* from_tag, str* ruri,
 	return dlg;
 }
 
-void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
+int b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 	int cbs_type, int event_type, bin_packet_t *storage, int backend)
 {
 	struct b2b_callback *cb;
 	str st;
+	b2b_dlg_t *aux_dlg;
+	b2b_table table = entity_type == B2B_SERVER ? server_htable:client_htable;
 
 	/* search for the callback registered by the module that
 	 * this entity belongs to */
@@ -547,17 +549,17 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 	if (cbs_type == B2BCB_TRIGGER_EVENT) {
 		if (!cb) {
 			storage->buffer.s = NULL;
-			return;
+			return 0;
 		}
 
 		if (bin_init(storage, &storage_cap, B2BE_STORAGE_BIN_TYPE,
 			B2BE_STORAGE_BIN_VERS, 0) < 0) {
 			LM_ERR("Failed to init entity storage buffer\n");
-			return;
+			return -1;
 		}
 	} else {  /* B2BCB_RECV_EVENT */
 		if (!cb)
-			return;
+			return 0;
 
 		if (bin_get_content_pos(storage, &st) > 0) {
 			if (b2be_db_mode != NO_DB && event_type != B2B_EVENT_DELETE) {
@@ -570,7 +572,7 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 						shm_free(dlg->storage.s);
 					if (shm_str_dup(&dlg->storage, &st) < 0) {
 						LM_ERR("oom!\n");
-						return;
+						return -1;
 					}
 				}
 			}
@@ -579,18 +581,24 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 		}
 	}
 
-	if (entity_type == B2B_SERVER)
-		lock_release(&server_htable[hash_index].lock);
-	else
-		lock_release(&client_htable[hash_index].lock);
+	lock_release(&table[hash_index].lock);
 
 	cb->cbf(entity_type, entity_type == B2B_SERVER ? &dlg->tag[1] : &dlg->callid,
 		&dlg->param, event_type, storage, backend);
 
-	if (entity_type == B2B_SERVER)
-		lock_get(&server_htable[hash_index].lock);
-	else
-		lock_get(&client_htable[hash_index].lock);
+	lock_get(&table[hash_index].lock);
+
+	/* search the dialog */
+	for(aux_dlg = table[hash_index].first; aux_dlg; aux_dlg = aux_dlg->next)
+	{
+		if(aux_dlg == dlg)
+			break;
+	}
+	if(!aux_dlg)
+	{
+		LM_DBG("Record not found anymore\n");
+		return 1;
+	}
 
 	if (cbs_type == B2BCB_TRIGGER_EVENT && event_type != B2B_EVENT_DELETE &&
 		b2be_db_mode != NO_DB && bin_get_content_start(storage, &st) > 0) {
@@ -601,10 +609,12 @@ void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 				shm_free(dlg->storage.s);
 			if (shm_str_dup(&dlg->storage, &st) < 0) {
 				LM_ERR("oom!\n");
-				return;
+				return -1;
 			}
 		}
 	}
+
+	return 0;
 }
 
 static void run_create_cb_all(struct b2b_callback *cb, int etype)
@@ -1026,7 +1036,7 @@ search_dialog:
 		if(req_routeid > 0)
 			run_top_route(sroutes->request[req_routeid], msg);
 
-		goto done;
+		return SCB_DROP_MSG;
 	}
 
 	if(dlg->state < B2B_CONFIRMED)
@@ -1272,13 +1282,15 @@ run_cb:
 		if (dlg_state == B2B_ESTABLISHED) {
 			b2b_ev = B2B_EVENT_ACK;
 
-			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend);
+			if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend) != 0)
+				goto done;
 		} else if (dlg_state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
 
-			b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-				&storage, serialize_backend);
+			if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend) != 0)
+				goto done;
 		}
 	}
 
@@ -1303,7 +1315,7 @@ run_cb:
 		bin_free_packet(&storage);
 
 done:
-
+	lock_release(&table[hash_index].lock);
 	return SCB_DROP_MSG;
 }
 
@@ -1749,12 +1761,14 @@ int b2b_send_reply(b2b_rpl_data_t* rpl_data)
 			 * callbacks is not neccesary unless we have replication */
 			b2be_cluster) {
 			b2b_ev = B2B_EVENT_CREATE;
-			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+			if (b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend) != 0)
+				goto error;
 		} else if (prev_state == B2B_MODIFIED && dlg->state == B2B_CONFIRMED) {
 			b2b_ev = B2B_EVENT_UPDATE;
-			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+			if (b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend) != 0)
+				goto error;
 		}
 	}
 
@@ -1932,8 +1946,11 @@ void b2b_entity_delete(enum b2b_entity_type et, str* b2b_key,
 
 	if (B2BE_SERIALIZE_STORAGE() && replicate) {
 		trig_ev = 1;
-		b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, B2B_EVENT_DELETE,
-			&storage, serialize_backend);
+		if (b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT,
+			B2B_EVENT_DELETE, &storage, serialize_backend) != 0) {
+			lock_release(&table[hash_index].lock);
+			return;
+		}
 	}
 
 	if(db_del)
@@ -2297,13 +2314,15 @@ int b2b_send_request(b2b_req_data_t* req_data)
 		if (dlg->state == B2B_ESTABLISHED) {
 			if (b2be_db_mode != NO_DB || dlg->replicated) {
 				b2b_ev = B2B_EVENT_ACK;
-				b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-					serialize_backend);
+				if (b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT,
+					b2b_ev, &storage, serialize_backend) != 0)
+					goto error;
 			}
 		} else if (dlg->state == B2B_TERMINATED) {
 			b2b_ev = B2B_EVENT_DELETE;
-			b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev, &storage,
-				serialize_backend);
+			if (b2b_run_cb(dlg, hash_index, et, B2BCB_TRIGGER_EVENT, b2b_ev,
+				&storage, serialize_backend) != 0)
+				goto error;
 		}
 	}
 
@@ -3426,15 +3445,21 @@ b2b_route:
 
 			if (dlg->state != B2B_TERMINATED) {
 				b2b_ev = B2B_EVENT_UPDATE;
-				b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-					&storage, serialize_backend);
+				if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT,
+					b2b_ev, &storage, serialize_backend) != 0) {
+					lock_release(&htable[hash_index].lock);
+					return;
+				}
 			} else
 				b2b_ev = -1;
 		} else if (b2b_ev == B2B_EVENT_CREATE) {
 
 			if (dlg->state != B2B_TERMINATED) {
-				b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT, b2b_ev,
-					&storage, serialize_backend);
+				if (b2b_run_cb(dlg, hash_index, etype, B2BCB_TRIGGER_EVENT,
+					b2b_ev, &storage, serialize_backend) != 0) {
+					lock_release(&htable[hash_index].lock);
+					return;
+				}
 
 				if (b2be_db_mode == WRITE_THROUGH)
 					b2be_db_insert(dlg, etype);
