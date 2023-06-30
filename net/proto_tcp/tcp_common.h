@@ -449,7 +449,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (req != &_tcp_common_current_req) {
 			/* if we no longer need this tcp_req
 			 * we can free it now */
-			pkg_free(req);
+			shm_free(req);
 			con->con_req = NULL;
 		}
 	} else {
@@ -469,8 +469,8 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (req == &_tcp_common_current_req) {
 			/* let's duplicate this - most likely another conn will come in */
 
-			LM_DBG("We didn't manage to read a full request\n");
-			con->con_req = pkg_malloc(sizeof(struct tcp_req));
+			LM_ERR("We didn't manage to read a full request on con %p\n",con);
+			con->con_req = shm_malloc(sizeof(struct tcp_req));
 			if (con->con_req == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");
 				goto error;
