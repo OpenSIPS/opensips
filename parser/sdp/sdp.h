@@ -56,6 +56,9 @@ typedef struct sdp_payload_attr {
 	str fmtp_string;
 	str custom_attrs[MAX_CUSTOM_ATTRS];
 	int custom_attrs_size;
+	/* payload pointing to this one via apt= 
+	 * SEE RFC 4588 */
+	struct sdp_payload_attr* linked_payload;
 } sdp_payload_attr_t;
 
 typedef struct sdp_stream_cell {
