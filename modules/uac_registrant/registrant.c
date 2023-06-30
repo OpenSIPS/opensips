@@ -765,7 +765,6 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 {
 	int result, expires_len;
 	reg_tm_cb_t *cb_param;
-	context_p old_ctx;
 	char *p, *expires;
 
 	/* Allocate space for tm callback params */
@@ -812,8 +811,7 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 	LM_DBG("extra_hdrs=[%p][%d]->[%.*s]\n",
 		extra_hdrs.s, extra_hdrs.len, extra_hdrs.len, extra_hdrs.s);
 
-	old_ctx = current_processing_ctx;
-	if ( (current_processing_ctx = context_alloc(CONTEXT_GLOBAL))==NULL ) {
+	if ( !push_new_global_context() ) {
 
 		LM_ERR("failed to alloc new ctx in pkg\n");
 		result = 0;
@@ -833,11 +831,8 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 			(void *)cb_param,	/* callback param */
 			osips_shm_free);	/* function to release the parameter */
 
-		clear_global_context();
-
+		pop_pushed_global_context();
 	}
-
-	current_processing_ctx = old_ctx;  /* restore prev context */
 
 	if (result < 1)
 		shm_free(cb_param);
