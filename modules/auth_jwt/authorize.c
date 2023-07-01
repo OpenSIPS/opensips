@@ -270,6 +270,7 @@ int jwt_script_authorize(struct sip_msg* _msg, str* jwt_token, str* key,
 	}
 
 	/* decoded the JWT - we can push to out */
+	pv_val.flags = PV_VAL_STR;
 	pv_val.rs.s =  jwt_dump_str(jwt,0);
 	pv_val.rs.len = strlen(pv_val.rs.s);
 	if (pv_set_value(_msg,decoded_jwt,0,&pv_val) != 0) {
