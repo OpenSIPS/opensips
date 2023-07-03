@@ -1795,6 +1795,9 @@ int preserve_reg_caps(cluster_info_t *new_info)
 					LM_ERR("Failed to duplicate capabilities info\n");
 					return -1;
 				}
+
+				update_shtags_sync_status_cap(cl->cluster_id,
+					new_cl->capabilities);
 			}
 
 	return 0;
