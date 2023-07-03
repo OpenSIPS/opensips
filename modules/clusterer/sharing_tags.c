@@ -594,6 +594,29 @@ int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
 	return 0;
 }
 
+void update_shtags_sync_status_cap(int cluster_id, struct local_cap *new_caps)
+{
+	struct sharing_tag *tag;
+	struct shtag_sync_status *status;
+	struct local_cap *cap;
+
+	lock_start_write(shtags_lock);
+
+	for (tag = *shtags_list; tag; tag = tag->next) {
+		if (tag->cluster_id != cluster_id)
+			continue;
+
+		for (status=tag->sync_status; status; status=status->next)
+			for (cap = new_caps; cap; cap = cap->next)
+				if (!str_strcmp(&cap->reg.name, &status->capability->reg.name)) {
+					status->capability = cap;
+					break;
+				}
+	}
+
+	lock_stop_write(shtags_lock);
+}
+
 int shtag_sync_all_backup(int cluster_id, str *capability)
 {
 	struct sharing_tag *tag;
