@@ -990,14 +990,17 @@ The timer task was scheduled before a drift adjustement
 	_ijiffies = *ijiffies;
 	/* if we read from the queue after or while a drift was detecte
 	 *  -> take the drift value into consideration too */
-	_ijiffies_extra = (t->trigger_time > *ijiffies_drift_base) ? 0 : *ijiffies_drift;
+	_ijiffies_extra =
+		(t->trigger_time > *ijiffies_drift_base) ? 0 : *ijiffies_drift;
 
 	/* run the handler */
 	if (t->flags&TIMER_FLAG_IS_UTIMER) {
 
 		if (t->trigger_time<(_ijiffies-_ijiffies_extra-ITIMER_TICK) ) {
-			LM_WARN("utimer job <%s> has a %lld us delay in execution: trigger_time=%lld ijiffies=%lld ijiffies_extra=%lld\n",
-				t->label, _ijiffies-t->trigger_time-_ijiffies_extra, t->trigger_time, _ijiffies, _ijiffies_extra);
+			LM_WARN("utimer job <%s> has a %lld us delay in execution: "
+				"trigger_time=%lld ijiffies=%lld ijiffies_extra=%lld\n",
+				t->label, _ijiffies-t->trigger_time-_ijiffies_extra,
+				t->trigger_time, _ijiffies, _ijiffies_extra);
 		}
 
 		t->u.utimer_f( t->time , t->t_param);
@@ -1006,8 +1009,10 @@ The timer task was scheduled before a drift adjustement
 	} else {
 
 		if (t->trigger_time<(_ijiffies-_ijiffies_extra-ITIMER_TICK) ) {
-			LM_WARN("timer job <%s> has a %lld us delay in execution trigger_time=%lld ijiffies=%lld ijiffies_extra=%lld\n",
-				t->label, _ijiffies-t->trigger_time-_ijiffies_extra, t->trigger_time, _ijiffies, _ijiffies_extra);
+			LM_WARN("timer job <%s> has a %lld us delay in execution: "
+				"trigger_time=%lld ijiffies=%lld ijiffies_extra=%lld\n",
+				t->label, _ijiffies-t->trigger_time-_ijiffies_extra,
+				t->trigger_time, _ijiffies, _ijiffies_extra);
 		}
 
 		t->u.timer_f( (unsigned int)t->time , t->t_param);
