@@ -64,6 +64,8 @@ int shtag_set_sync_status(str *tag_name, int cluster_id, str *capability,
 
 int shtag_sync_all_backup(int cluster_id, str *capability);
 
+void update_shtags_sync_status_cap(int cluster_id, struct local_cap *new_caps);
+
 /* script vars related functions */
 int var_get_sh_tag(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res);
 
