@@ -21,6 +21,7 @@
 #include "records.h"
 #include "b2b_logic_ctx.h"
 
+/* The function will return with the lock aquired if successful */
 static b2bl_tuple_t *b2bl_ctx_get_tuple(str *key)
 {
 	b2bl_tuple_t *tuple = b2bl_get_tuple(key);
