@@ -232,8 +232,6 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 		b2bl_htable[hash_index].locked_by = process_no;
 		b2b_api.send_request(&req_data);
 		b2bl_htable[hash_index].locked_by = -1;
-
-		local_ctx_tuple = NULL;
 	} else {
 		if (bridging_start_new_ent(tuple, bridging_entity, entity, NULL, NULL, 0) < 0) {
 			LM_ERR("Failed to start bridging with new entity\n");
@@ -244,6 +242,8 @@ mi_response_t *mi_b2b_bridge(const mi_params_t *params,
 	}
 
 	tuple->state = B2B_BRIDGING_STATE;
+
+	local_ctx_tuple = NULL;
 
 	b2bl_htable[hash_index].locked_by = -1;;
 	lock_release(&b2bl_htable[hash_index].lock);
@@ -1265,6 +1265,8 @@ int b2b_script_bridge_retry(struct sip_msg *msg, str *new_ent_str)
 		LM_ERR("Unable to retry bridge for tuple in state: %d\n", tuple->state);
 		goto error;
 	}
+
+	local_ctx_tuple = NULL;
 
 	lock_release(&b2bl_htable[cur_route_ctx.hash_index].lock);
 
