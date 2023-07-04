@@ -2277,6 +2277,7 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 	b2bl_tuple_t *tuple;
 	b2bl_entity_id_t *bentity = NULL;
 	int locked = 0;
+	int rc = -1;
 
 	if (!info)
 		return -4;
@@ -2286,12 +2287,14 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 
 	if (key) {
 		tuple = b2bl_get_tuple(key);
+		if (tuple)
+			locked = 1;
 	} else {
 		tuple = get_ctx_tuple(&locked);
 
-		if (tuple && locked &&
+		if (tuple && !locked &&
 			b2bl_htable[tuple->hash_index].locked_by != process_no)
-			lock_release(&b2bl_htable[tuple->hash_index].lock);
+			lock_get(&b2bl_htable[tuple->hash_index].lock);
 	}
 	if (!tuple)
 		return -2;
@@ -2309,11 +2312,13 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 					bentity = tuple->bridge_entities[(entity == -2?0:1)];
 			}
 		} else {
-			if (!msg)
-				return -2;
+			if (!msg) {
+				rc = -2;
+				goto end;
+			}
 			if (get_callid(msg, &callid) < 0) {
 				LM_ERR("Failed to get callid from SIP message\n");
-				return -1;
+				goto end;
 			}
 			if (tuple->bridge_entities[0] && tuple->bridge_entities[0]->dlginfo) {
 				if (!str_strcmp(&callid,
@@ -2334,22 +2339,29 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 	} else {
 		bentity = tuple->bridge_entities[entity];
 	}
-	if (!bentity)
-		return -3;
+	if (!bentity) {
+		rc = -3;
+		goto end;
+	}
 	if (bentity->key.len && pkg_str_dup(&info->key, &bentity->key) < 0)
-		return -1;
+		goto end;
 	if (bentity->dlginfo) {
 		if (bentity->dlginfo->callid.len
 				&& pkg_str_dup(&info->callid, &bentity->dlginfo->callid) < 0)
-			return -1;
+			goto end;
 		if (bentity->dlginfo->fromtag.len
 				&& pkg_str_dup(&info->fromtag, &bentity->dlginfo->fromtag) < 0)
-			return -1;
+			goto end;
 		if (bentity->dlginfo->totag.len
 				&& pkg_str_dup(&info->totag, &bentity->dlginfo->totag) < 0)
-			return -1;
+			goto end;
 	}
-	return 0;
+
+	rc = 0;
+end:
+	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
+		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	return rc;
 }
 
 static void b2bl_release_entity_info(struct b2b_entity_info_t *info)
