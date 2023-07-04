@@ -111,10 +111,11 @@ str *b2bl_ctx_get_str(str *key, int pos)
 {
 	str *ret;
 	b2bl_tuple_t *tuple = b2bl_ctx_get_tuple(key);
+	static str nullstr = {0,0};
 
 	if (!tuple) {
 		LM_ERR("Failed to retrieve data from b2b logic context\n");
-		return &STR_NULL;
+		return &nullstr;
 	}
 
 	ret = context_get_str(CONTEXT_B2B_LOGIC, context_of(tuple), pos);
