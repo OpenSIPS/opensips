@@ -94,6 +94,8 @@ void cleanup(int show_status)
 			shm_status();
 	}
 
+	cleanup_log_cons_shm_table();
+
 	/* zero all shmem alloc vars that we still use */
 	shm_mem_destroy();
 	if (pid_file) unlink(pid_file);

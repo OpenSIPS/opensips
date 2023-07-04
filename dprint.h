@@ -148,6 +148,7 @@ int init_log_level(void);
 void cleanup_log_level(void);
 
 int init_log_cons_shm_table(void);
+void cleanup_log_cons_shm_table(void);
 
 int init_log_json_buf(int realloc);
 int init_log_msg_buf(int realloc);
