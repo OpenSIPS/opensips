@@ -3774,7 +3774,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	if (get_new_entities(&e1, &e2) < 0) {
 		LM_ERR("Failed to get new bridging entities from context\n");
-		return NULL;
+		goto error;
 	}
 
 	if (!e1 && !e2) {
