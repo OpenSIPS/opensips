@@ -1772,6 +1772,7 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 	trace_info_t stack_info;
 	trace_instance_t stack_instance;
 	trace_instance_p instance=NULL;
+	str s;
 
 	if (trace_attrs != NULL)
 		extra_len += trace_attrs->len;
@@ -1906,15 +1907,23 @@ static int sip_trace_handle(struct sip_msg *msg, tlist_elem_p el,
 		info->conn_id = 0;
 	}
 
-	/* trace the current message only if:
-	 *  (a) per-message tracing was requests
-	 *  or
-	 *  (b) we are not in LOCAL route (UAC trans do not have IN msg) */
-	if (trace_flags!=TRACE_B2B &&
-	(trace_flags == TRACE_MESSAGE || route_type != LOCAL_ROUTE)) {
-		if (sip_trace_instance(msg, instance, info->conn_id,TRACE_C_CALLER)<0){
-			LM_ERR("sip trace failed!\n");
-			return -1;
+	/* should we trace the current message ? */
+	if (trace_flags!=TRACE_B2B) {
+		/* if per-message from local route -> trace it as an out REQ !! */
+		if (trace_flags == TRACE_MESSAGE && route_type == LOCAL_ROUTE) {
+			s.s = msg->buf;
+			s.len = msg->len;
+			trace_msg_out( msg, &s, msg->rcv.bind_address, msg->rcv.proto,
+				&tmb.t_gett()->uac[0].request.dst.to, info, TRACE_C_CALLEE);
+		} else
+		/* otherwise trace only if per-message or not in local route
+		 * (UAC trans do not have IN msg) */
+		if (trace_flags == TRACE_MESSAGE || route_type != LOCAL_ROUTE) {
+			if (sip_trace_instance(msg, instance, info->conn_id,
+			TRACE_C_CALLER)<0){
+				LM_ERR("sip trace failed!\n");
+				return -1;
+			}
 		}
 	}
 
