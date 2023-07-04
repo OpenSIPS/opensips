@@ -143,7 +143,7 @@ void do_update_load(void);
 void pid_setpoint_limit(int);
 
 /* timer */
-void rl_timer(unsigned int, void *);
+void rl_timer(utime_t, void *);
 void rl_timer_repl(utime_t, void *);
 
 /* cachedb functions */
