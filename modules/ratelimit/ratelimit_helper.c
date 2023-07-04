@@ -432,7 +432,7 @@ end:
 }
 
 /* timer housekeeping, invoked each timer interval to reset counters */
-void rl_timer(unsigned int ticks, void *param)
+void rl_timer(utime_t uticks, void *param)
 {
 	unsigned int i = 0;
 	map_iterator_t it, del;

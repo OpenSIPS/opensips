@@ -384,8 +384,8 @@ static int mod_init(void)
 	}
 
 	/* register timer to reset counters */
-	if (register_timer("rl-timer", rl_timer, NULL,
-	rl_timer_interval, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
+	if (register_utimer("rl-timer", rl_timer, NULL,
+	rl_timer_interval*1000*1000U, TIMER_FLAG_DELAY_ON_DELAY) < 0 ) {
 		LM_ERR("could not register timer function\n");
 		return -1;
 	}
