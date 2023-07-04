@@ -308,6 +308,9 @@ struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 				if (ip_addr_cmp(ip6, &si->address))
 					goto found; /* match */
 				else
+				if (si->adv_name_str.len && ip_addr_cmp(ip6,&si->adv_address))
+					goto found;
+				else
 					continue; /* no match, but this is an ipv6 address
 								 so no point in trying ipv4 */
 			}
@@ -715,6 +718,24 @@ int fix_socket_list(struct socket_info **list)
 				goto error;
 			}
 			hostent2ip_addr(&si->adv_address, he, 0); /*convert to ip_addr */
+
+			if (si->adv_address.af == AF_INET6 /* translates to IPv6 */
+			&& str2ip6(&si->adv_name_str)!=NULL /* it's an actual IP */
+			&& si->adv_name_str.s[0]!='['  )    /* not enclosed */
+			{
+				tmp = pkg_malloc( si->adv_name_str.len +2 );
+				if (tmp==NULL) {
+					LM_ERR("failed to convert advertized IPv6 "
+						"to enclosed format\n");
+					goto error;
+				}
+				tmp[0] = '[';
+				memcpy( tmp+1, si->adv_name_str.s, si->adv_name_str.len);
+				tmp[si->adv_name_str.len+1] = ']';
+				pkg_free(si->adv_name_str.s);
+				si->adv_name_str.s = tmp;
+				si->adv_name_str.len += 2;
+			}
 
 			/* build and set string encoding for the adv socket info
 			 * This is usefful for the usrloc module when it's generating
