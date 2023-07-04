@@ -778,6 +778,24 @@ int init_log_cons_shm_table(void)
 	return 0;
 }
 
+void cleanup_log_cons_shm_table(void)
+{
+	struct log_consumer_t *cons = log_consumers;
+
+	log_consumers = default_log_consumers;
+	log_consumers_no = 2;
+
+	/* even if we are reusing the static default_log_consumers table,
+	 * inherit the latest settings for the consumers */
+	log_consumers[0].level_filter = cons[0].level_filter;
+	log_consumers[0].muted = cons[0].muted;
+
+	log_consumers[1].level_filter = cons[1].level_filter;
+	log_consumers[1].muted = cons[1].muted;
+
+	shm_free(cons);
+}
+
 int init_log_event_cons(void)
 {
 	evi_log_id = evi_publish_event(evi_log_name);
