@@ -64,6 +64,7 @@ static struct list_head *rtp_relay_contexts;
 
 static str rtp_relay_dlg_name = str_init("_rtp_relay_ctx_");
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx, str *to_tag);
+static void rtp_relay_dlg_req_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx);
 static void rtp_relay_ctx_release(void *param);
 
 /* pvar handing */
@@ -960,6 +961,7 @@ static void rtp_relay_loaded_callback(struct dlg_cell *dlg, int type,
 	ctx->established = sess;
 	if (rtp_relay_dlg_callbacks(dlg, ctx, NULL) < 0)
 		goto error;
+	rtp_relay_dlg_req_callbacks(dlg, ctx);
 
 	return;
 error:
@@ -1533,7 +1535,7 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 {
 	struct rtp_relay_session info;
 	struct sip_msg *msg = params->msg;
-	struct rtp_relay_ctx *ctx = RTP_RELAY_GET_DLG_CTX(dlg);
+	struct rtp_relay_ctx *ctx = *params->param;
 	struct rtp_relay_sess *sess;
 	str *body;
 	int ret, ltype;
@@ -1602,6 +1604,21 @@ static void rtp_relay_fill_dlg(struct rtp_relay_ctx *ctx, str *dlg_callid,
 		LM_ERR("could not store to tag in context\n");
 }
 
+static void rtp_relay_dlg_req_callbacks(struct dlg_cell *dlg, struct rtp_relay_ctx *ctx)
+{
+	if (!dlg) {
+		dlg = rtp_relay_dlg.get_dlg();
+		if (!dlg) {
+			LM_ERR("call engage after creating dialog!\n");
+			return;
+		}
+	}
+	if (rtp_relay_dlg.register_dlgcb(dlg,
+			DLGCB_REQ_WITHIN,
+			rtp_relay_indlg, ctx, NULL) != 0)
+		LM_ERR("could not register request within dlg callback!\n");
+}
+
 static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
 		struct rtp_relay_ctx *ctx, str *to_tag)
 {
@@ -1621,12 +1638,6 @@ static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
 		goto error;
 	}
 
-	if (rtp_relay_dlg.register_dlgcb(dlg,
-			DLGCB_REQ_WITHIN,
-			rtp_relay_indlg, NULL, NULL) != 0) {
-		LM_ERR("could not register request within dlg callback!\n");
-		goto error;
-	}
 	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_WRITE_VP,
 			rtp_relay_store_callback, NULL, NULL))
 		LM_WARN("cannot register callback for rtp relay serialization! "
@@ -1746,6 +1757,11 @@ static int rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_msg *ms
 		} else if (rtp_sess_late(sess)) {
 			LM_WARN("no SDP in final reply of late negotiation\n");
 			return -1;
+		} else if (msg->REPLY_STATUS < 300 && !rtp_sess_success(sess)) {
+			/* we have a session which was established on a provisioning -
+			 * mark it as established */
+			rtp_relay_sess_success(ctx, sess, t, msg);
+			return 1;
 		} else {
 			LM_WARN("final reply without SDP - cannot complete negotiation!\n");
 			return -1;
@@ -1865,6 +1881,7 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 				LM_ERR("failed to install TM reply callback\n");
 				return -1;
 			}
+			rtp_relay_dlg_req_callbacks(NULL, ctx);
 			rtp_relay_ctx_set_engaged(ctx);
 		}
 		sess = rtp_relay_new_sess(ctx, relay, set,
