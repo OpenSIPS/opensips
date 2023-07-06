@@ -573,15 +573,21 @@ int tm_anycast_replicate(struct sip_msg *msg)
  */
 int tm_anycast_cancel(struct sip_msg *msg)
 {
+	struct cell *t;
 	if (!tm_repl_auto_cancel || !tm_repl_cluster)
 		return -1;
 
 	if (!tm_existing_invite_trans(msg))
 		return tm_replicate_cancel(msg)? 0: -2;
-	else if (t_relay_to(msg, NULL, 0) < 0) {
+	t = get_cancelled_t();
+	if (t!=NULL && t!=T_UNDEFINED)
+		t_unref_cell(t);
+
+	if (t_relay_to(msg, NULL, 0) < 0) {
 		LM_ERR("cannot handle auto-CANCEL here - send to script!\n");
 		return -1;
 	}
+	t_unref(msg);
 
 	return 0;
 }
