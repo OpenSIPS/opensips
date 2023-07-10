@@ -88,6 +88,8 @@ static int pv_get_tm_ruri(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 static int pv_get_t_id(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
+static int pv_get_tm_branch_reply_code(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res);
 
 /* fixup functions */
 static int fixup_local_replied(void** param);
@@ -392,6 +394,9 @@ static const pv_export_t mod_items[] = {
 		NULL, NULL, NULL, 0 },
 	{ {"T_id",         sizeof("T_id")-1},         906,
 		pv_get_t_id, NULL, NULL, NULL, NULL, 0 },
+	{ {"T_branch_last_reply_code", sizeof("T_branch_last_reply_code")-1}, 907,
+		pv_get_tm_branch_reply_code, NULL,
+		NULL, pv_parse_index, NULL, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -1747,6 +1752,43 @@ static int pv_get_tm_reply_code(struct sip_msg *msg, pv_param_t *param,
 	}
 
 	LM_DBG("reply code is <%d>\n",code);
+
+	res->rs.s = int2str( code, &res->rs.len);
+
+	res->ri = code;
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
+static int pv_get_tm_branch_reply_code(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	struct cell *t;
+	int code;
+	int branch;
+	int idxf;
+
+	if(msg==NULL || res==NULL)
+		return -1;
+
+	/* first get the transaction */
+	if (!(t = get_t()) || t == T_UNDEFINED)
+		return pv_get_null(msg, param, res);
+
+	if (param->pvi.type != 0) {
+		if(pv_get_spec_index(msg, param, &branch, &idxf)!=0 ||
+				idxf == PV_IDX_APPEND || idxf == PV_IDX_APPEND) {
+			LM_ERR("invalid index\n");
+			return -1;
+		}
+	} else {
+		branch = _tm_branch_index;
+	}
+
+	/* it is not our job to find a proper branch, if not explicit asked for */
+	code = t->uac[branch].last_received;
+
+	LM_DBG("reply code for branch %d is <%d>\n", branch, code);
 
 	res->rs.s = int2str( code, &res->rs.len);
 

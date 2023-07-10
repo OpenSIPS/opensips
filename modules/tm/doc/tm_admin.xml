@@ -2029,6 +2029,14 @@ route{
 			returned.
 			</para>
 		</section>
+		<section id="pv_T_branch_last_reply_code" xreflabel="$T_branch_last_reply_code">
+		<title>$T_branch_last_reply_code</title>
+			<para>
+				<emphasis>$T_branch_last_reply_code</emphasis> - returns the last reply
+				code received for a branch specified as parameter. If no parameter is
+				specified, the last reply for the current branch is retrieved.
+			</para>
+		</section>
 
 	</section>
 
