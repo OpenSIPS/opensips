@@ -1307,6 +1307,7 @@ nh_timer(unsigned int ticks, void *timer_idx)
 	str c;
 	str opt;
 	str path;
+	str received;
 	union sockaddr_union to;
 	struct hostent *he;
 	struct socket_info* send_sock;
@@ -1369,9 +1370,15 @@ nh_timer(unsigned int ticks, void *timer_idx)
 
 			c.s = (char*)cp + sizeof(c.len);
 			cp = (char*)cp + sizeof(c.len) + c.len;
+
+			memcpy(&received.len, cp, sizeof(received.len));
+			received.s = received.len ? ((char*)cp + sizeof(received.len)) : NULL;
+			cp = (char*)cp + sizeof(received.len) + received.len;
+
 			memcpy(&path.len, cp, sizeof(path.len));
 			path.s = path.len ? ((char*)cp + sizeof(path.len)) : NULL;
 			cp = (char*)cp + sizeof(path.len) + path.len;
+
 			memcpy(&send_sock, cp, sizeof(send_sock));
 			cp = (char*)cp + sizeof(send_sock);
 			memcpy(&flags, cp, sizeof(flags));

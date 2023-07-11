@@ -124,8 +124,8 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	db_val_t *val;
 	int i, no_rows = 10;
 	time_t now;
-	char *p, *p1;
-	int port, proto, p_len, p1_len;
+	char *p, *p1, *r;
+	int port, proto, p_len, p1_len,r_len;
 	unsigned int dbflags;
 	int needed;
 	int shortage = 0;
@@ -219,17 +219,21 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			if ((dbflags & flags) != flags)
 				continue;
 
-			/* received */
-			p = (char*)VAL_STRING(ROW_VALUES(row));
-			if (VAL_NULL(ROW_VALUES(row)) || !p || !p[0]) {
-				/* contact */
-				p = (char*)VAL_STRING(ROW_VALUES(row) + 1);
-				if (VAL_NULL(ROW_VALUES(row) + 1) || !p || *p == '\0') {
-					LM_ERR("empty contact -> skipping\n");
-					continue;
-				}
+			/* contact */
+			p = (char*)VAL_STRING(ROW_VALUES(row) + 1);
+			if (VAL_NULL(ROW_VALUES(row) + 1) || !p || *p == '\0') {
+				LM_ERR("empty contact -> skipping\n");
+				continue;
 			}
 			p_len = strlen(p);
+
+			/* received */
+			r = (char*)VAL_STRING(ROW_VALUES(row));
+			if (VAL_NULL(ROW_VALUES(row)) || !r || *r == '\0') {
+				r = NULL;
+				r_len = 0;
+			} else 
+				r_len = strlen(r);
 
 			/* path */
 			p1 = (char*)VAL_STRING(ROW_VALUES(row) + 4);
@@ -242,7 +246,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			/* contact id*/
 			contact_id = VAL_BIGINT(ROW_VALUES(row) + 5);
 
-			needed = (int)(p_len + sizeof p_len + p1_len + sizeof p1_len +
+			needed = (int)(p_len + sizeof p_len + r_len + sizeof r_len + p1_len + sizeof p1_len +
 			               sizeof sock + sizeof dbflags + sizeof next_hop);
 
 			if (pack_coords)
@@ -261,12 +265,19 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 			 * start, so we can revert this record if needed. */
 			record_start = buf;
 
-			/* write received/contact */
+			/* write contact */
 			memcpy(buf, &p_len, sizeof p_len);
 			buf += sizeof p_len;
 			memcpy(buf, p, p_len);
 			p = buf; /* point to to-be-kept copy of p */
 			buf += p_len;
+
+			/* write received */
+			memcpy(buf, &r_len, sizeof r_len);
+			buf += sizeof r_len;
+			memcpy(buf, r, r_len);
+			r = buf; /* point to to-be-kept copy of r */
+			buf += r_len;
 
 			/* write path */
 			memcpy(buf, &p1_len, sizeof p1_len);
@@ -290,6 +301,12 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 				if (parse_uri(uri.s, uri.len, &puri) < 0) {
 					LM_ERR("failed to parse path URI of next hop: '%.*s'\n",
 					        p1_len, p1);
+					return -1;
+				}
+			} else if (r_len > 0) { 
+				if (parse_uri(r, r_len, &puri) < 0) {
+					LM_ERR("failed to parse contact of next hop: '%.*s'\n",
+					        r_len, r);
 					return -1;
 				}
 			} else {
@@ -463,8 +480,8 @@ skip_coords:
 	if (!ZSTR(received))
 		ct_uri = received;
 
-	needed = (int)(sizeof ct_uri.len + ct_uri.len + sizeof path.len + path.len
-	               + sizeof sock + sizeof cflags + sizeof next_hop);
+	needed = (int)(sizeof ct_uri.len + ct_uri.len + sizeof received.len + received.len +
+		sizeof path.len + path.len + sizeof sock + sizeof cflags + sizeof next_hop);
 
 	if (pack_coords)
 		needed += sizeof(ucontact_coords);
@@ -477,6 +494,12 @@ skip_coords:
 	memcpy(cp, ct_uri.s, ct_uri.len);
 	ct_uri.s = cp; /* point into to-be-kept buffer */
 	cp += ct_uri.len;
+
+	memcpy(cp, &received.len, sizeof received.len);
+	cp += sizeof received.len;
+	memcpy(cp, received.s, received.len);
+	received.s = cp; /* point into to-be-kept buffer */
+	cp += received.len;
 
 	memcpy(cp, &path.len, sizeof path.len);
 	cp += sizeof path.len;
@@ -494,7 +517,10 @@ skip_coords:
 	{
 		str next_hop_uri;
 		if (ZSTR(path)) {
-			next_hop_uri = ct_uri;
+			if (!ZSTR(received))
+				next_hop_uri = received;
+			else
+				next_hop_uri = ct_uri;
 		} else {
 			if (get_path_dst_uri(&path, &next_hop_uri) < 0) {
 				LM_ERR("failed to get dst_uri for Path\n");
@@ -719,9 +745,8 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 				if (pinging_mode == PMD_OWNERSHIP && !_is_my_ucontact(c))
 					continue;
 
-				needed = (int)((c->received.s?
-							(sizeof(c->received.len) + c->received.len):
-							(sizeof(c->c.len) + c->c.len)) +
+				needed = (int)((sizeof(c->c.len) + c->c.len) +
+						sizeof(c->received.len) + c->received.len +
 						sizeof(c->path.len) + c->path.len +
 						sizeof(c->sock) + sizeof(c->cflags) +
 						sizeof(c->next_hop));
@@ -732,26 +757,24 @@ get_domain_mem_ucontacts(udomain_t *d,void *buf, int *len, unsigned int flags,
 					struct proxy_l next_hop;
 					memcpy(&next_hop, &c->next_hop, sizeof(c->next_hop));
 
-					if (c->received.s) {
-						memcpy(cp,&c->received.len,sizeof(c->received.len));
-						cp = (char*)cp + sizeof(c->received.len);
-						memcpy(cp, c->received.s, c->received.len);
+					memcpy(cp,&c->c.len,sizeof(c->c.len));
+					cp = (char*)cp + sizeof(c->c.len);
+					memcpy(cp, c->c.s, c->c.len);
+					if (c->path.len == 0 && c->received.len == 0)
+						/* c->next_hop.name is relative to c->c
+						 * (a potentially fragile assumption) */
+						next_hop.name.s = cp + (c->next_hop.name.s - c->c.s);
+					cp = (char*)cp + c->c.len;
+
+					memcpy(cp, &c->received.len, sizeof(c->received.len));
+					cp = (char*)cp + sizeof(c->received.len);
+					memcpy(cp,c->received.s,c->received.len);
+					if (c->received.len != 0)
 						/* next_hop host needs to skip the 'sip:[...@]' part
 						 * of the uri; it's already relative to c->received
 						 * (a potentially fragile assumption) */
-						if (c->path.len == 0)
-							next_hop.name.s = cp + (c->next_hop.name.s - c->received.s);
-						cp = (char*)cp + c->received.len;
-					} else {
-						memcpy(cp,&c->c.len,sizeof(c->c.len));
-						cp = (char*)cp + sizeof(c->c.len);
-						memcpy(cp, c->c.s, c->c.len);
-						if (c->path.len == 0)
-							/* c->next_hop.name is relative to c->c
-							 * (a potentially fragile assumption) */
-							next_hop.name.s = cp + (c->next_hop.name.s - c->c.s);
-						cp = (char*)cp + c->c.len;
-					}
+						next_hop.name.s = cp + (c->next_hop.name.s - c->received.s);
+					cp = (char*)cp + c->received.len;
 					memcpy(cp, &c->path.len, sizeof(c->path.len));
 					cp = (char*)cp + sizeof(c->path.len);
 					memcpy(cp, c->path.s, c->path.len);
@@ -853,16 +876,16 @@ int get_all_ucontacts(void *buf, int len, unsigned int flags,
  * Information is packed into the buffer as follows:
  *
  * +------------+----------+---------+-------+------------+--------+--------+---------------+
- * |int         |char[]    |int      |char[] |socket_info*|unsigned|proxy_l |uint64         |
- * +============+==========+=========+=======+============+========+========+===============+
- * |contact1.len|contact1.s|path1.len|path1.s|sock1       |dbflags |next_hop|contact_coords1|
- * +------------+----------+---------+-------+------------+--------+--------+---------------+
- * |contact2.len|contact2.s|path2.len|path2.s|sock2       |dbflags |next_hop|contact_coords2|
- * +------------+----------+---------+-------+------------+--------+--------+---------------+
- * |........................................................................................|
- * +------------+----------+---------+-------+------------+--------+--------+---------------+
- * |contactN.len|contactN.s|pathN.len|pathN.s|sockN       |dbflags |next_hop|contact_coordsN|
- * +------------+----------+---------+-------+------------+--------+--------+---------------+
+ * |int         |char[]    |int          |char[]     |int      |char[]  |socket_info*|unsigned|proxy_l |uint64         |
+ * +============+==========+=============+===========+=========+========+============+========+========+===============+
+ * |contact1.len|contact1.s|received1.len|received1.s|path1.len|path1.s |sock1       |dbflags |next_hop|contact_coords1|
+ * +------------+----------+-------------+-----------+---------+--------+------------+--------+--------+---------------+
+ * |contact2.len|contact2.s|received1.len|received1.s|path2.len|path2.s |sock2       |dbflags |next_hop|contact_coords2|
+ * +------------+----------+-------------+-----------+---------+--------+------------+--------+--------+---------------+
+ * |...................................................................................................................|
+ * +------------+----------+-------------+-----------+---------+--------+------------+--------+--------+---------------+
+ * |contactN.len|contactN.s|receivedN.len|receivedN.s|pathN.len|pathN.s |sockN       |dbflags |next_hop|contact_coordsN|
+ * +------------+----------+-------------+-----------+---------+--------+------------+--------+--------+---------------+
  * |000000000000|
  * +------------+
  *
