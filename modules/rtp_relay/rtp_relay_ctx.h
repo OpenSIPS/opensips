@@ -116,6 +116,7 @@ struct rtp_relay_ctx {
 	int ref;
 	str callid;
 	int last_branch;
+	unsigned dlg_id, dlg_entry;
 	str dlg_callid, from_tag, to_tag;
 	str flags, delete;
 	gen_lock_t lock;
@@ -157,6 +158,7 @@ mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
 str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type);
+int rtp_relay_get_dlg_ids(str *callid, unsigned int *h_entry, unsigned int *h_id);
 
 #define RTP_RELAY_CTX_LOCK(_c) lock_get(&_c->lock);
 #define RTP_RELAY_CTX_UNLOCK(_c) lock_release(&_c->lock);

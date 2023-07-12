@@ -93,7 +93,7 @@ static int rtp_relay_delete(struct rtp_relay_session *info,
 static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
 		struct sip_msg *msg, struct rtp_relay_sess *sess, int type);
 static void rtp_relay_fill_dlg(struct rtp_relay_ctx *ctx, str *dlg_callid,
-		str *callid, str *from_tag, str *to_tag);
+		unsigned id, unsigned entry, str *callid, str *from_tag, str *to_tag);
 static void rtp_relay_delete_ctx(struct rtp_relay_ctx *ctx,
 		struct rtp_relay_sess *sess, int leg);
 
@@ -676,7 +676,7 @@ static void rtp_relay_b2b_tm_req(struct cell* t, int type, struct tmcb_params *p
 	/* force the to&from tags */
 	if (!ctx->from_tag.len) {
 		/* to-tag is always the B2B key */
-		rtp_relay_fill_dlg(ctx, rtp_relay_b2b.get_key(), NULL, &dummy_from_tag, &dummy_to_tag);
+		rtp_relay_fill_dlg(ctx, rtp_relay_b2b.get_key(), 0, 0, NULL, &dummy_from_tag, &dummy_to_tag);
 	}
 
 	/* register our own callback to be able to answer the session */
@@ -1596,8 +1596,10 @@ static void rtp_relay_indlg(struct dlg_cell* dlg, int type, struct dlg_cb_params
 }
 
 static void rtp_relay_fill_dlg(struct rtp_relay_ctx *ctx, str *dlg_callid,
-		str *callid, str *from_tag, str *to_tag)
+		unsigned id, unsigned entry, str *callid, str *from_tag, str *to_tag)
 {
+	ctx->dlg_id = id;
+	ctx->dlg_entry = entry;
 	if (dlg_callid && !ctx->dlg_callid.len && shm_str_sync(&ctx->dlg_callid, dlg_callid) < 0)
 		LM_ERR("could not store dialog callid in context\n");
 	if (callid && !ctx->callid.len &&  shm_str_sync(&ctx->callid, callid) < 0)
@@ -1628,7 +1630,8 @@ static int rtp_relay_dlg_callbacks(struct dlg_cell *dlg,
 {
 	if (rtp_relay_dlg_ctx_idx == -1)
 		return 0;
-	rtp_relay_fill_dlg(ctx, &dlg->callid, NULL, &dlg->legs[DLG_CALLER_LEG].tag,
+	rtp_relay_fill_dlg(ctx, &dlg->callid, dlg->h_id, dlg->h_entry,
+			NULL, &dlg->legs[DLG_CALLER_LEG].tag,
 			(to_tag?to_tag:&dlg->legs[callee_idx(dlg)].tag));
 
 	if (rtp_relay_dlg.register_dlgcb(dlg, DLGCB_MI_CONTEXT,
@@ -2333,7 +2336,7 @@ static mi_response_t *rtp_relay_update_async(struct rtp_async_param *p)
 
 	list_for_each_safe(it, safe, &p->contexts) {
 		tmp = list_entry(it, struct rtp_relay_tmp, list);
-		dlg = rtp_relay_dlg.get_dlg_by_callid(&tmp->ctx->dlg_callid, 0);
+		dlg = rtp_relay_dlg.get_dlg_by_ids(tmp->ctx->dlg_entry, tmp->ctx->dlg_id, 0);
 		if (!dlg) {
 			LM_BUG("could not find dialog!\n");
 			rtp_relay_release_tmp(tmp, 0);
@@ -2814,4 +2817,27 @@ str *rtp_relay_get_sdp(struct rtp_relay_session *sess, int type)
 	return (dlg->legs[leg].tmp_in_sdp.s?
 			&dlg->legs[leg].tmp_in_sdp:
 			&dlg->legs[leg].in_sdp);
+}
+
+int rtp_relay_get_dlg_ids(str *callid, unsigned int *h_entry, unsigned int *h_id)
+{
+	int found = 0;
+	struct list_head *it;
+	struct rtp_relay_ctx *ctx;
+
+	lock_start_read(rtp_relay_contexts_lock);
+	list_for_each(it, rtp_relay_contexts) {
+		ctx = list_entry(it, struct rtp_relay_ctx, list);
+		if ((ctx->callid.len && !str_strcmp(&ctx->callid, callid)) ||
+			(!ctx->callid.len && !str_strcmp(&ctx->dlg_callid, callid))) {
+			*h_entry = ctx->dlg_entry;
+			*h_id = ctx->dlg_id;
+			found = 1;
+			LM_DBG("found dlg_entry=%u dlg_id=%u for callid=%.*s\n",
+					ctx->dlg_entry, ctx->dlg_id, callid->len, callid->s);
+			break;
+		}
+	}
+	lock_stop_read(rtp_relay_contexts_lock);
+	return found;
 }
