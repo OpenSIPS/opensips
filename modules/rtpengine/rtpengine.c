@@ -412,6 +412,8 @@ static struct tm_binds tmb;
 
 static struct dlg_binds dlgb;
 
+static struct rtp_relay_hooks rtp_relay;
+
 static pv_elem_t *extra_id_pv = NULL;
 
 static const cmd_export_t cmds[] = {
@@ -1417,7 +1419,8 @@ error:
 static mi_response_t *mi_teardown_call(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	str callid;
+	str callid, *pcallid = NULL;
+	unsigned int h_entry = 0, h_id = 0;
 
 	if (dlgb.terminate_dlg == NULL)
 		return init_mi_error(500, MI_SSTR("Dialog module not loaded"));
@@ -1427,7 +1430,10 @@ static mi_response_t *mi_teardown_call(const mi_params_t *params,
 	if(callid.s == NULL || callid.len ==0)
 		return init_mi_error(400, MI_SSTR("Empty callid"));
 
-	if (dlgb.terminate_dlg(&callid, 0, 0, _str("MI Termination")) < 0)
+	/* try to "resolve" the callid first through rtp_relay */
+	if (rtp_relay.get_dlg_ids(&callid, &h_entry, &h_id) == 0)
+		pcallid = &callid; /* search for callid, if dialog was not found */
+	if (dlgb.terminate_dlg(pcallid, h_entry, h_id, _str("MI Termination")) < 0)
 		return init_mi_error(500, MI_SSTR("Failed to terminate dialog"));
 
 	return init_mi_result_ok();
@@ -1468,8 +1474,6 @@ void rtpengine_timer(unsigned int ticks, void *param)
 
 /* hack to get the rtpengine node used for the offer */
 static pv_spec_t media_pvar;
-
-static struct rtp_relay_hooks rtp_relay;
 
 static int mod_preinit(void)
 {
