@@ -407,6 +407,8 @@ struct dlg_cell* get_dlg_by_callid(const str *callid, int active_only);
 
 struct dlg_cell* get_dlg_by_did(str *did, int active_only);
 
+struct dlg_cell* get_dlg_by_ids(unsigned int h_entry, unsigned int h_id, int active_only);
+
 struct dlg_cell *get_dlg_by_dialog_id(str *dialog_id);
 
 int get_dlg_direction(void);
