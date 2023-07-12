@@ -2801,6 +2801,8 @@ int terminate_dlg(const str *callid, unsigned int h_entry, unsigned int h_id,
 	if (dlg_end_dlg(dlg, 0, 1) ) {
 		LM_ERR("Failed to end dialog\n");
 		ret = -1;
+	} else {
+		ret = 1;
 	}
 
 	unref_dlg(dlg, 1);
