@@ -704,12 +704,10 @@ static void term_entity(b2bl_entity_id_t *entity, int hash_index, str *key)
 			rpl_data.text = &requestTimeout;
 		}
 
-		b2bl_htable[hash_index].locked_by = process_no;
 		if(b2b_api.send_reply(&rpl_data) < 0)
 			LM_ERR("Sending reply failed - %d, [%.*s]\n",
 				rpl_data.code, entity->key.len,
 				entity->key.s);
-		b2bl_htable[hash_index].locked_by = -1;
 	} else {
 		if ( key && ( !push_new_global_context() ||
 		(ctx=b2b_api.get_context())==NULL ||
@@ -721,9 +719,7 @@ static void term_entity(b2bl_entity_id_t *entity, int hash_index, str *key)
 			memset(&req_data, 0, sizeof(b2b_req_data_t));
 			PREP_REQ_DATA(entity);
 			req_data.method =&bye;
-			b2bl_htable[hash_index].locked_by = process_no;
 			b2b_api.send_request(&req_data);
-			b2bl_htable[hash_index].locked_by = -1;
 			if (key)
 				pop_pushed_global_context();
 		}
@@ -740,7 +736,7 @@ void b2bl_clean(unsigned int ticks, void* param)
 
 	for(i = 0; i< b2bl_hsize; i++)
 	{
-		lock_get(&b2bl_htable[i].lock);
+		B2BL_LOCK_GET(i);
 		tuple = b2bl_htable[i].first;
 		while(tuple)
 		{
@@ -761,7 +757,7 @@ void b2bl_clean(unsigned int ticks, void* param)
 			}
 			tuple = tuple_next;
 		}
-		lock_release(&b2bl_htable[i].lock);
+		B2BL_LOCK_RELEASE(i);
 	}
 }
 
@@ -1205,12 +1201,12 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 	if (b2bl_get_tuple_key(&key, &hash_index, &local_index) < 0)
 		return init_mi_error(404, MI_SSTR("B2B session not found"));
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if(tuple == NULL)
 	{
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return init_mi_error(404, MI_SSTR("B2B session not found"));
 	}
 
@@ -1228,7 +1224,7 @@ static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 	}
 	b2b_mark_todel(tuple);
 
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 
 	return init_mi_result_ok();
 }
@@ -1358,7 +1354,7 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 
 	for(i = 0; i< b2bl_hsize; i++)
 	{
-		lock_get(&b2bl_htable[i].lock);
+		B2BL_LOCK_GET(i);
 		tuple = b2bl_htable[i].first;
 		while(tuple)
 		{
@@ -1449,12 +1445,12 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 			}
 			tuple = tuple->next;
 		}
-		lock_release(&b2bl_htable[i].lock);
+		B2BL_LOCK_RELEASE(i);
 	}
 
 	return resp;
 error:
-	lock_release(&b2bl_htable[i].lock);
+	B2BL_LOCK_RELEASE(i);
 	LM_ERR("Unable to create reply\n");
 	free_mi_response(resp);
 	return NULL;
@@ -1465,14 +1461,12 @@ static b2bl_tuple_t *ctx_search_tuple(struct b2b_context *ctx, int *locked)
 	b2bl_tuple_t *tuple;
 
 	*locked = 1;
-	if (b2bl_htable[ctx->hash_index].locked_by != process_no)
-		lock_get(&b2bl_htable[ctx->hash_index].lock);
+	B2BL_LOCK_GET_AUX(ctx->hash_index);
 
 	tuple = b2bl_search_tuple_safe(ctx->hash_index, ctx->local_index);
 	if (!tuple) {
 		LM_ERR("Tuple [%u, %u] not found\n", ctx->hash_index, ctx->local_index);
-		if (b2bl_htable[ctx->hash_index].locked_by != process_no)
-			lock_release(&b2bl_htable[ctx->hash_index].lock);
+		B2BL_LOCK_RELEASE_AUX(ctx->hash_index);
 		locked = 0;
 		return NULL;
 	}
@@ -1555,8 +1549,8 @@ int pv_get_b2bl_key(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	res->flags = PV_VAL_STR;
 	res->rs = *tuple->key;
 
-	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	if (locked)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 
 	return 0;
 }
@@ -1575,8 +1569,8 @@ int pv_get_scenario(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 	res->flags = PV_VAL_STR;
 	res->rs = *tuple->scenario_id;
 
-	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	if (locked)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 
 	return 0;
 }
@@ -1651,8 +1645,8 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		return pv_get_null(msg, param, res);
 	}
 
-	if (!locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_get(&b2bl_htable[tuple->hash_index].lock);
+	if (!locked)
+		B2BL_LOCK_GET_AUX(tuple->hash_index);
 
 	curr_entities[0] = tuple->bridge_entities[0];
 	curr_entities[1] = tuple->bridge_entities[1];
@@ -1784,14 +1778,12 @@ int pv_get_entity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 
 	res->flags = PV_VAL_STR;
 
-	if (b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 
 	return 0;
 
 ret_null:
-	if (b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 	return pv_get_null(msg, param, res);
 }
 
@@ -1963,17 +1955,17 @@ int pv_get_ctx(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 		return pv_get_null(msg, param, res);
 	}
 
-	if (tuple && !locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_get(&b2bl_htable[tuple->hash_index].lock);
+	if (tuple && !locked)
+		B2BL_LOCK_GET_AUX(tuple->hash_index);
 
 	if (fetch_ctx_value(*vals, &param->pvn.u.isname.name.s, &param->pvv) != 0) {
-		if (tuple && b2bl_htable[tuple->hash_index].locked_by != process_no)
-			lock_release(&b2bl_htable[tuple->hash_index].lock);
+		if (tuple)
+			B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 		return pv_get_null(msg, param, res);
 	}
 
-	if (tuple && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	if (tuple)
+			B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 
 	res->flags = PV_VAL_STR;
 	res->rs = param->pvv;
@@ -1996,8 +1988,8 @@ int pv_set_ctx(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val)
 		return -1;
 	}
 
-	if (tuple && !locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_get(&b2bl_htable[tuple->hash_index].lock);
+	if (tuple && !locked)
+		B2BL_LOCK_GET_AUX(tuple->hash_index);
 
 	if (val==NULL || val->flags&(PV_VAL_NONE|PV_VAL_NULL|PV_VAL_EMPTY)) {
 		/* delete value */
@@ -2019,14 +2011,15 @@ int pv_set_ctx(struct sip_msg* msg, pv_param_t *param, int op, pv_value_t *val)
 		}
 	}
 
-	if (tuple && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+
+	if (tuple)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 
 	return 0;
 
 error:
-	if (tuple && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	if (tuple)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 	return -1;
 }
 
@@ -2055,8 +2048,7 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 		return -1;
 	}
 
-	if (b2bl_htable[hash_index].locked_by != process_no)
-		lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET_AUX(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if(tuple == NULL)
@@ -2072,8 +2064,7 @@ int b2bl_register_cb(str* key, b2bl_cback_f cbf, void* cb_param,
 
 	ret = 0;
 error:
-	if (b2bl_htable[hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE_AUX(hash_index);
 	return ret;
 }
 
@@ -2085,8 +2076,8 @@ static str *b2bl_get_key(void)
 	b2bl_tuple_t *tuple = get_ctx_tuple(&locked);
 
 	if (!tuple) {
-		if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-			lock_release(&b2bl_htable[tuple->hash_index].lock);
+		if (locked)
+			B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 		return NULL;
 	}
 
@@ -2096,8 +2087,8 @@ static str *b2bl_get_key(void)
 	ret.len = tuple->key->len;
 	memcpy(ret.s, tuple->key->s, ret.len);
 
-	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	if (locked)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 
 	return &ret;
 }
@@ -2123,9 +2114,8 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 	} else {
 		tuple = get_ctx_tuple(&locked);
 
-		if (tuple && !locked &&
-			b2bl_htable[tuple->hash_index].locked_by != process_no)
-			lock_get(&b2bl_htable[tuple->hash_index].lock);
+		if (tuple && !locked)
+			B2BL_LOCK_GET_AUX(tuple->hash_index);
 	}
 	if (!tuple)
 		return -2;
@@ -2190,8 +2180,8 @@ static int b2bl_get_entity_info(str *key, struct sip_msg *msg, int entity, struc
 
 	rc = 0;
 end:
-	if (locked && b2bl_htable[tuple->hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[tuple->hash_index].lock);
+	if (locked)
+		B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 	return rc;
 }
 
@@ -2266,18 +2256,18 @@ int b2bl_restore_upper_info(str* b2bl_key, b2bl_cback_f cbf, void* param,
 	}
 	LM_DBG("hi= %d, li=%d\n", hash_index, local_index);
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET(hash_index);
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if(tuple == NULL)
 	{
 		LM_ERR("B2B logic record not found\n");
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return -1;
 	}
 	tuple->cb.f = cbf;
 	tuple->cb.mask = cb_mask;
 	tuple->cb.param = param;
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 
 	return 0;
 }

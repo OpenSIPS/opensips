@@ -170,8 +170,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 		return;
 	}
 
-	if (b2bl_htable[hash_index].locked_by != process_no)
-		lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET_AUX(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 
@@ -185,13 +184,11 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 			pack_context_vals(tuple, storage);
 		} else if (event_type != B2B_EVENT_DELETE) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
-			if (b2bl_htable[hash_index].locked_by != process_no)
-				lock_release(&b2bl_htable[hash_index].lock);
+			B2BL_LOCK_RELEASE_AUX(hash_index);
 			return;
 		}
 
-		if (b2bl_htable[hash_index].locked_by != process_no)
-			lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE_AUX(hash_index);
 		return;
 	}
 
@@ -202,8 +199,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 	case B2B_EVENT_UPDATE:
 		if (!tuple) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
-			if (b2bl_htable[hash_index].locked_by != process_no)
-				lock_release(&b2bl_htable[hash_index].lock);
+			B2BL_LOCK_RELEASE_AUX(hash_index);
 			return;
 		}
 		pack_tuple(tuple, storage, tuple_repl_new);
@@ -212,8 +208,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 	case B2B_EVENT_ACK:
 		if (!tuple) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
-			if (b2bl_htable[hash_index].locked_by != process_no)
-				lock_release(&b2bl_htable[hash_index].lock);
+			B2BL_LOCK_RELEASE_AUX(hash_index);
 			return;
 		}
 		pack_tuple(tuple, storage, tuple_repl_new);
@@ -230,8 +225,7 @@ void entity_event_trigger(enum b2b_entity_type etype, str *entity_key,
 		LM_ERR("Bad entity callback event type!\n");
 	}
 
-	if (b2bl_htable[hash_index].locked_by != process_no)
-		lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE_AUX(hash_index);
 }
 
 static void receive_entity_create(enum b2b_entity_type entity_type,
@@ -257,7 +251,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 		return;
 	}
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET(hash_index);
 
 	old_tuple = b2bl_search_tuple_safe(hash_index, local_index);
 
@@ -332,7 +326,7 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 	entity = b2bl_search_entity(tuple, entity_key, entity_type, &entity_head);
 	if (entity) {
 		LM_DBG("Entity [%.*s] already exists\n", entity_key->len, entity_key->s);
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return;
 	}
 
@@ -425,13 +419,13 @@ static void receive_entity_create(enum b2b_entity_type entity_type,
 			UPDATE_DBFLAG(tuple);
 	}
 
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 
 	return;
 error:
 	if (tuple && !old_tuple)
 		b2bl_delete(tuple, hash_index, 0, 0);
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 	if (entity)
 		b2bl_free_entity(entity);
 
@@ -457,7 +451,7 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 		return;
 	}
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if (!tuple) {
@@ -519,11 +513,11 @@ static void receive_entity_update(enum b2b_entity_type entity_type,
 	else
 		UPDATE_DBFLAG(tuple);
 
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 
 	return;
 error:
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 	LM_ERR("Failed to process received entity [%.*s]\n",
 		entity_key->len, entity_key->s);
 }
@@ -544,19 +538,19 @@ static void receive_entity_ack(enum b2b_entity_type entity_type,
 		return;
 	}
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if (!tuple) {
 		LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return;
 	}
 
 	bin_pop_int(storage, &tuple_repl_type);
 	if (tuple_repl_type != REPL_TUPLE_UPDATE) {
 		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return;
 	}
 
@@ -568,7 +562,7 @@ static void receive_entity_ack(enum b2b_entity_type entity_type,
 	if (unpack_context_vals(tuple, storage) < 0)
 		LM_ERR("Failed to unpack context values\n");
 
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 }
 
 static void receive_entity_delete(enum b2b_entity_type entity_type,
@@ -589,14 +583,14 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 		return;
 	}
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
 	if (!tuple) {
 		/* tuple might have already expired locally */
 		LM_DBG("Tuple [%.*s] not found, discarding entity [%.*s] delete\n",
 			b2bl_key->len, b2bl_key->s, entity_key->len, entity_key->s);
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return;
 	}
 
@@ -611,7 +605,7 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 
 		if (unpack_context_vals(tuple, storage) < 0) {
 			LM_ERR("Failed to unpack context values\n");
-			lock_release(&b2bl_htable[hash_index].lock);
+			B2BL_LOCK_RELEASE(hash_index);
 			return;
 		}
 		break;
@@ -620,7 +614,7 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 		break;
 	default:
 		LM_ERR("Bad tuple replication type: %d\n", tuple_repl_type);
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return;
 	}
 
@@ -635,7 +629,7 @@ static void receive_entity_delete(enum b2b_entity_type entity_type,
 		/* no other bridge entities remaining, delete the tuple */
 		b2bl_delete(tuple, hash_index, 1, 0);
 
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 }
 
 void entity_event_received(enum b2b_entity_type etype, str *entity_key,
@@ -655,12 +649,12 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 			return;
 		}
 
-		lock_get(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_GET(hash_index);
 
 		tuple = b2bl_search_tuple_safe(hash_index, local_index);
 		if (!tuple) {
 			LM_ERR("Tuple [%.*s] not found\n", b2bl_key->len, b2bl_key->s);
-			lock_release(&b2bl_htable[hash_index].lock);
+			B2BL_LOCK_RELEASE(hash_index);
 			return;
 		}
 
@@ -686,7 +680,7 @@ void entity_event_received(enum b2b_entity_type etype, str *entity_key,
 			LM_ERR("Bad tuple replication type: %d\n", tuple_storage_type);
 		}
 
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 		return;
 	}
 
