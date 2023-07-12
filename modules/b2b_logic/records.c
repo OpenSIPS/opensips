@@ -296,8 +296,9 @@ b2bl_tuple_t* b2bl_insert_new(struct sip_msg* msg, unsigned int hash_index,
 
 	tuple->state = B2B_INIT_BRIDGING_STATE;
 
-	if (repl_flag != TUPLE_REPL_RECV)
-		lock_get(&b2bl_htable[hash_index].lock);
+	if (repl_flag != TUPLE_REPL_RECV) {
+		B2BL_LOCK_GET(hash_index);
+	}
 
 	if(local_index>= 0) /* a local index specified */
 	{
@@ -395,7 +396,7 @@ error:
 		shm_free(tuple);
 	}
 	if (repl_flag != TUPLE_REPL_RECV)
-		lock_release(&b2bl_htable[hash_index].lock);
+		B2BL_LOCK_RELEASE(hash_index);
 	return 0;
 }
 
@@ -525,9 +526,7 @@ void b2bl_remove_single_entity(b2bl_entity_id_t *entity, b2bl_entity_id_t **head
 	unsigned int hash_index)
 {
 	unchain_ent(entity, head);
-	b2bl_htable[hash_index].locked_by = process_no;
 	b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 0, 1);
-	b2bl_htable[hash_index].locked_by = -1;
 	LM_DBG("destroying dlginfo=[%p]\n", entity->dlginfo);
 	if(entity->dlginfo)
 		shm_free(entity->dlginfo);
@@ -556,9 +555,7 @@ void b2bl_delete_entity(b2bl_entity_id_t* entity, b2bl_tuple_t* tuple,
 		LM_DBG("delete entity [%p]->[%.*s] from tuple [%.*s]\n",
 			entity, entity->key.len, entity->key.s, tuple->key->len, tuple->key->s);
 		if (b2be_del) {
-			b2bl_htable[hash_index].locked_by = process_no;
 			b2b_api.entity_delete(entity->type, &entity->key, entity->dlginfo, 1, 1);
-			b2bl_htable[hash_index].locked_by = -1;
 		}
 	}
 	else if (entity->key.len)
@@ -709,9 +706,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		if (e)
 		{
 			if (e->key.s && e->key.len && del_entities) {
-				b2bl_htable[hash_index].locked_by = process_no;
 				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0, 1);
-				b2bl_htable[hash_index].locked_by = -1;
 			}
 			if(e->dlginfo)
 				shm_free(e->dlginfo);
@@ -721,9 +716,7 @@ void b2bl_delete(b2bl_tuple_t* tuple, unsigned int hash_index,
 		if (e)
 		{
 			if (e->key.s && e->key.len && del_entities) {
-				b2bl_htable[hash_index].locked_by = process_no;
 				b2b_api.entity_delete(e->type, &e->key, e->dlginfo, 0, 1);
-				b2bl_htable[hash_index].locked_by = -1;
 			}
 			if(e->dlginfo)
 				shm_free(e->dlginfo);
@@ -1028,11 +1021,12 @@ b2bl_tuple_t *b2bl_get_tuple(str *key)
 	if (b2bl_parse_key(key, &hash_index, &local_index) < 0)
 		return NULL;
 
-	lock_get(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_GET_AUX(hash_index);
 
 	tuple = b2bl_search_tuple_safe(hash_index, local_index);
-	if (!tuple)
-		lock_release(&b2bl_htable[hash_index].lock);
+	if (!tuple) {
+		B2BL_LOCK_RELEASE_AUX(hash_index);
+	}
 
 	return tuple;
 }
