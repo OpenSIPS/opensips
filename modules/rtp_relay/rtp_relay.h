@@ -69,6 +69,7 @@ struct rtp_relay_funcs {
 
 struct rtp_relay_hooks {
 	str * (*get_sdp)(struct rtp_relay_session *sess, int type);
+	int (*get_dlg_ids)(str *callid, unsigned int *h_entry, unsigned int *h_id);
 };
 
 struct rtp_relay {
