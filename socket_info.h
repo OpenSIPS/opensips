@@ -244,6 +244,9 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				case PROTO2UINT('t','c', 'p'):
 					*proto=PROTO_HEP_TCP;
 					return 0;
+				case PROTO2UINT('t','l', 's'):
+					*proto=PROTO_HEP_TLS;
+					return 0;
 				default:
 					return -1;
 			}
@@ -430,6 +433,15 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 't';
 			*(p++) = 'c';
 			*(p++) = 'p';
+			break;
+		case PROTO_HEP_TLS:
+			*(p++) = 'h';
+			*(p++) = 'e';
+			*(p++) = 'p';
+			*(p++) = '_';
+			*(p++) = 't';
+			*(p++) = 'l';
+			*(p++) = 's';
 			break;
 		case PROTO_SMPP:
 			*(p++) = 's';
