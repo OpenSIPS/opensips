@@ -34,7 +34,7 @@ static b2bl_tuple_t *b2bl_ctx_get_tuple(str *key)
 
 static void b2bl_ctx_release_tuple(b2bl_tuple_t *tuple)
 {
-	lock_release(&b2bl_htable[tuple->hash_index].lock);
+	B2BL_LOCK_RELEASE_AUX(tuple->hash_index);
 }
 
 
