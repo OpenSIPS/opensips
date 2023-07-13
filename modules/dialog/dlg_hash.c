@@ -932,9 +932,9 @@ struct dlg_cell* get_dlg_by_did(str *did, int active_only)
 	return NULL;
 }
 
-struct dlg_cell* get_dlg_by_ids(unsigned int h_entry, unsigned int h_id, int active_only)
+struct dlg_cell* get_dlg_by_ids(unsigned int h_entry, unsigned int h_id)
 {
-	return lookup_dlg(h_entry, h_id, active_only);
+	return lookup_dlg(h_entry, h_id);
 }
 
 

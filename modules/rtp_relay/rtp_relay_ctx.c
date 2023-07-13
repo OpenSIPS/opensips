@@ -2332,7 +2332,7 @@ static mi_response_t *rtp_relay_update_async(struct rtp_async_param *p)
 
 	list_for_each_safe(it, safe, &p->contexts) {
 		tmp = list_entry(it, struct rtp_relay_tmp, list);
-		dlg = rtp_relay_dlg.get_dlg_by_ids(tmp->ctx->dlg_entry, tmp->ctx->dlg_id, 0);
+		dlg = rtp_relay_dlg.get_dlg_by_ids(tmp->ctx->dlg_entry, tmp->ctx->dlg_id);
 		if (!dlg) {
 			LM_BUG("could not find dialog!\n");
 			rtp_relay_release_tmp(tmp, 0);
