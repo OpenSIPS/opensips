@@ -1768,19 +1768,26 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 struct local_cap *dup_caps(struct local_cap *caps)
 {
-	struct local_cap *cap, *ret = NULL;
+	struct local_cap *new_cap, *ret = NULL;
 
 	for (; caps; caps = caps->next) {
-		cap = shm_malloc(sizeof *cap);
-		if (!cap) {
+		new_cap = shm_malloc(sizeof *new_cap +
+			caps->reg.name.len + CAP_SR_ID_PREFIX_LEN);
+		if (!new_cap) {
 			LM_ERR("No more shm memory\n");
 			return NULL;
 		}
-		memcpy(cap, caps, sizeof *caps);
+		memcpy(new_cap, caps, sizeof *caps);
 
-		cap->next = NULL;
+		new_cap->reg.sr_id.s = (char *)(new_cap + 1);
+		new_cap->reg.sr_id.len = caps->reg.name.len + CAP_SR_ID_PREFIX_LEN;
+		memcpy(new_cap->reg.sr_id.s, CAP_SR_ID_PREFIX, CAP_SR_ID_PREFIX_LEN);
+		memcpy(new_cap->reg.sr_id.s + CAP_SR_ID_PREFIX_LEN,
+			caps->reg.name.s, caps->reg.name.len);
 
-		add_last(cap, ret);
+		new_cap->next = NULL;
+
+		add_last(new_cap, ret);
 	}
 
 	return ret;
