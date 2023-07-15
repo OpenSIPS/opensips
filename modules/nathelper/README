@@ -656,8 +656,8 @@ Chapter 3. Contributors
    10. Jiri Kuthan (@jiriatipteldotorg) 18 10 764 47
 
    All remaining contributors: Ancuta Onofrei, Ovidiu Sas
-   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Andrei Dragus,
-   Vlad Paiu (@vladpaiu), Henning Westerholt (@henningw), Dan
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Vlad Paiu
+   (@vladpaiu), Andrei Dragus, Henning Westerholt (@henningw), Dan
    Pascu (@danpascu), Christophe Sollet (@csollet), Marcus Hunger,
    Klaus Darilion, Sergio Gutierrez, Peter Lemenkov (@lemenkov),
    Nils Ohlmeier, Emmanuel Buu, Carsten Bock, Shlomi Gutman,
@@ -686,23 +686,23 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Nick Altmann (@nikbyte)             May 2022 - May 2022
-   2.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2021
-   4.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
-   5.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
-   7.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
-   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   10. Shlomi Gutman                       Mar 2018 - Mar 2018
+   1.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
+   2.  Nick Altmann (@nikbyte)             May 2022 - May 2022
+   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Apr 2022
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2021
+   5.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
+   6.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
+   8.  Jasper Hafkenscheid (@hafkensite)   Mar 2020 - Mar 2020
+   9.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   10. Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Ionut
-   Ionita (@ionutrazvanionita), Walter Doekes (@wdoekes),
-   Christophe Sollet (@csollet), Vlad Paiu (@vladpaiu), Anca
-   Vamanu, John Riordan, Emmanuel Buu, Andrei Dragus, Sergio
-   Gutierrez, Klaus Darilion, Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Henning Westerholt
+   All remaining contributors: Shlomi Gutman, Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
+   (@wdoekes), Christophe Sollet (@csollet), Anca Vamanu, John
+   Riordan, Emmanuel Buu, Andrei Dragus, Sergio Gutierrez, Klaus
+   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Henning Westerholt
    (@henningw), Ancuta Onofrei, Marcus Hunger, Carsten Bock,
    Jeremie Le Hen, Laurent Schweizer, Bayan Towfiq, Andrei
    Pelinescu-Onciul, Elena-Ramona Modroiu, Jiri Kuthan
