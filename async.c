@@ -80,6 +80,8 @@ int register_async_fd(int fd, async_resume_fd *f, void *resume_param)
 		return -1;
 	}
 
+	memset(ctx,0,sizeof(async_ctx));
+
 	ctx->resume_f = f;
 	ctx->resume_param = resume_param;
 
@@ -294,6 +296,8 @@ int async_script_launch(struct sip_msg *msg, struct action* a,
 		LM_ERR("failed to allocate new ctx, forcing sync mode\n");
 		return -1;
 	}
+
+	memset(ctx,0,sizeof(async_launch_ctx));
 
 	async_status = ASYNC_NO_IO; /*assume defauly status "no IO done" */
 
