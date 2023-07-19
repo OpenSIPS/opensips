@@ -1587,6 +1587,9 @@ fi
 
 
 %changelog
+* Wed Jul 19 2023 Liviu Chircu <liviu@opensips.org> - 3.4.0-1
+- OpenSIPS 3.4.0 stable release: 3.4.0-1
+
 * Tue Jun 20 2023 Liviu Chircu <liviu@opensips.org> - 3.4.0-rc1-1
 - OpenSIPS 3.4 new release candidate: 3.4.0-rc1-1
 
