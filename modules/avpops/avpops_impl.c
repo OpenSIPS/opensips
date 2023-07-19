@@ -844,6 +844,9 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 
 	ctx->resume_param = param;
 	ctx->resume_f = resume_async_dbquery;
+	/* if supported in the backend */
+	if (url->dbf.async_timeout != NULL)
+		ctx->timeout_f = timeout_async_dbquery;
 
 	param->output_avps = dest;
 	param->hdl = url->hdl;
@@ -852,6 +855,16 @@ int ops_async_dbquery(struct sip_msg* msg, async_ctx *ctx,
 
 	async_status = read_fd;
 	return 1;
+}
+
+int timeout_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+{
+	query_async_param *param = (query_async_param *)_param;
+
+	param->dbf->async_timeout(param->hdl, fd, param->db_param);
+
+	/* this in an error case */
+	return -1;
 }
 
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
