@@ -87,6 +87,7 @@ static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* 
 static int remove_hf_match_f(struct sip_msg* msg, void* pattern, int is_regex);
 static int is_present_hf(struct sip_msg* msg, void* _match_hf);
 static int append_to_reply_f(struct sip_msg* msg, str* key);
+static int append_body_to_reply_f(struct sip_msg* msg, str* key);
 static int append_hf(struct sip_msg *msg, str *str1, void *str2);
 static int insert_hf(struct sip_msg *msg, str *str1, void *str2);
 static int append_urihf(struct sip_msg *msg, str *str1, str *str2);
@@ -119,6 +120,10 @@ static int mod_init(void);
 
 static const cmd_export_t cmds[]={
 	{"append_to_reply",  (cmd_function)append_to_reply_f, {
+		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ERROR_ROUTE},
+
+	{"append_body_to_reply",  (cmd_function)append_body_to_reply_f, {
 		{CMD_PARAM_STR, 0, 0}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ERROR_ROUTE},
 
@@ -536,6 +541,27 @@ static int append_to_reply_f(struct sip_msg* msg, str* key)
 	{
 		LM_ERR("unable to add lump_rl\n");
 		return -1;
+	}
+
+	return 1;
+}
+
+
+static int append_body_to_reply_f(struct sip_msg* msg, str* body)
+{
+	struct lump_rpl *l;
+
+	l = get_lump_rpl( msg, LUMP_RPL_BODY);
+	if (l) {
+		if (replace_lump_rpl(l, body->s, body->len, LUMP_RPL_BODY)!=0) {
+			LM_ERR("unable to replace existing body lump_rl\n");
+			return -1;
+		}
+	} else {
+		if (add_lump_rpl( msg, body->s, body->len, LUMP_RPL_BODY)==NULL) {
+			LM_ERR("unable to create new body lump_rl\n");
+			return -1;
+		}
 	}
 
 	return 1;
