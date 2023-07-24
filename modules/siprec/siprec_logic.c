@@ -507,7 +507,6 @@ static void tm_update_recording(struct cell *t, int type, struct tmcb_params *ps
 
 void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 {
-	str body;
 	struct src_sess *ss;
 
 	if (!is_invite(t))
@@ -518,10 +517,6 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 		srec_dlg.dlg_unref(ss->dlg, 1);
 		return;
 	}
-
-	/* check if we have a reply with body */
-	if (get_body(ps->rpl, &body) != 0 || body.len==0)
-		return;
 
 	/* engage only on successful calls */
 	SIPREC_LOCK(ss);
