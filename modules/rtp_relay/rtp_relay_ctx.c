@@ -915,7 +915,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 		ret = rtp_relay_offer(&info, sess, ctx->main, RTP_RELAY_ANSWER, NULL);
 	else
 		ret = rtp_relay_answer(&info, sess, ctx->main, RTP_RELAY_ANSWER, NULL);
-	if (ret > 0 && msg->REPLY_STATUS >= 200)
+	if (ret > 0)
 		rtp_relay_sess_success(ctx, sess, t);
 	return ret;
 }
