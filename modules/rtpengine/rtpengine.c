@@ -1231,7 +1231,7 @@ static mi_response_t *mi_teardown_call(const mi_params_t *params,
 		return init_mi_error(400, MI_SSTR("Empty callid"));
 
 	/* try to "resolve" the callid first through rtp_relay */
-	if (rtp_relay.get_dlg_ids(&callid, &h_entry, &h_id) == 0)
+	if (!rtp_relay.get_dlg_ids || rtp_relay.get_dlg_ids(&callid, &h_entry, &h_id) == 0)
 		pcallid = &callid; /* search for callid, if dialog was not found */
 	if (dlgb.terminate_dlg(pcallid, h_entry, h_id, _str("MI Termination")) < 0)
 		return init_mi_error(500, MI_SSTR("Failed to terminate dialog"));
