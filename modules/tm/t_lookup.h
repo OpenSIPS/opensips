@@ -79,6 +79,7 @@ typedef struct cell * (*tlookuporiginalt_f)(struct sip_msg*);
 typedef struct cell * (*tgett_f)(void);
 struct cell *get_t();
 
+typedef void (*tsett_f)(struct cell *);
 /* use carefully or better not at all -- current transaction is
  * primarily set by lookup functions */
 void set_t(struct cell *t);
