@@ -2778,6 +2778,10 @@ int rtp_relay_copy_delete(rtp_ctx _ctx, str *id, str *flags)
 		LM_ERR("rtp not established!\n");
 		return -1;
 	}
+	if (!rtp_sess_pending(sess)) {
+		LM_DBG("rtp session already terminated!\n");
+		return 1;
+	}
 	if (!sess->relay->funcs.copy_delete) {
 		LM_DBG("rtp does not support stop recording!\n");
 		return 1;
