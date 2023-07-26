@@ -2399,6 +2399,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 			if(dlg->uac_tran)
 			{
 				struct cell *inv_t;
+				struct cell *bk_t = tmb.t_gett();
 				LM_DBG("send cancel request\n");
 				if (tmb.t_lookup_ident( &inv_t, dlg->uac_tran->hash_index,
 				dlg->uac_tran->label) != 1) {
@@ -2408,6 +2409,7 @@ int _b2b_send_request(b2b_dlg_t* dlg, b2b_req_data_t* req_data)
 				// FIXME - tracing: how do we get to the cancel transaction?
 				ret = tmb.t_cancel_trans( inv_t, &ehdr);
 				tmb.unref_cell(inv_t);
+				tmb.t_sett(bk_t);
 				if (dlg->state > B2B_CONFIRMED)
 					method_value = METHOD_INVITE;
 			}
