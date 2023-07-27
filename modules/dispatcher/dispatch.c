@@ -937,7 +937,7 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 
 	ds_partition_t *partition;
 	for (partition = partitions; partition; partition = partition->next){
-		if (*partition->db_handle==NULL)
+		if (*partition->db_handle==NULL || !partition->persistent_state)
 			continue;
 
 		val_cmp[0].type = DB_INT;
@@ -1002,7 +1002,7 @@ void ds_flusher_routine(unsigned int ticks, void* param)
 
 
 /*load groups of destinations from DB*/
-static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
+static ds_data_t* ds_load_data(ds_partition_t *partition)
 {
 	ds_data_t *d_data;
 	int i, id, nr_rows, cnt, nr_cols = 9;
@@ -1024,7 +1024,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			&ds_dest_prio_col, &ds_dest_description_col,
 			&ds_dest_probe_mode_col, &ds_dest_state_col};
 
-	if (!use_state_col)
+	if (!partition->persistent_state)
 		nr_cols--;
 
 	if(*partition->db_handle == NULL){
@@ -1126,7 +1126,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition, int use_state_col)
 			probe_mode = VAL_INT(values+7);
 
 		/* state */
-		if (!use_state_col || VAL_NULL(values+8))
+		if (!partition->persistent_state || VAL_NULL(values+8))
 			/* active state */
 			state = 0;
 		else
@@ -1189,7 +1189,7 @@ int ds_reload_db(ds_partition_t *partition, int initial, int is_inherit_state)
 		sr_set_status( ds_srg, STR2CI(partition->name),
 			SR_STATUS_RELOADING_DATA, CHAR_INT("data re-loading"), 0);
 
-	new_data = ds_load_data(partition, ds_persistent_state);
+	new_data = ds_load_data(partition);
 	if (new_data==NULL) {
 		LM_ERR("failed to load the new data, dropping the reload\n");
 		if (initial)
