@@ -95,6 +95,8 @@ typedef struct _ds_db_head
 	str attrs_avp;
 	str script_attrs_avp;
 
+	str ping_from;
+	str ping_method;
 	str persistent_state;
 
 	struct _ds_db_head *next;
@@ -106,14 +108,17 @@ ds_db_head_t default_db_head = {
 	{NULL, -1},
 	{NULL, -1},
 
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
 
 	{NULL, -1},
 	{NULL, -1},
-	{NULL, -1},
-	{NULL, -1},
-	{NULL, -1},
-	{NULL, -1},
 	{"1", 1},
+
 	NULL
 };
 ds_db_head_t *ds_db_heads = NULL;
@@ -412,6 +417,8 @@ DEF_GETTER_FUNC(cnt_avp);
 DEF_GETTER_FUNC(sock_avp);
 DEF_GETTER_FUNC(attrs_avp);
 DEF_GETTER_FUNC(script_attrs_avp);
+DEF_GETTER_FUNC(ping_from);
+DEF_GETTER_FUNC(ping_method);
 DEF_GETTER_FUNC(persistent_state);
 
 static partition_specific_param_t partition_params[] = {
@@ -423,6 +430,8 @@ static partition_specific_param_t partition_params[] = {
 	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
 	PARTITION_SPECIFIC_PARAM (attrs_avp, ""),
 	PARTITION_SPECIFIC_PARAM (script_attrs_avp, ""),
+	PARTITION_SPECIFIC_PARAM (ping_from, ""),
+	PARTITION_SPECIFIC_PARAM (ping_method, ""),
 	PARTITION_SPECIFIC_PARAM (persistent_state, "1"),
 };
 
@@ -739,6 +748,15 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 	} else {
 		partition->script_attrs_avp_name = -1;
 		partition->script_attrs_avp_type = 0;
+	}
+
+	if (db_head->ping_from.s && db_head->ping_from.len > 0) {
+		if (pkg_str_dup(&partition->ping_from, &db_head->ping_from) < 0)
+			LM_ERR("cannot duplicate ping_from\n");
+	}
+	if (db_head->ping_method.s && db_head->ping_method.len > 0) {
+		if (pkg_str_dup(&partition->ping_method, &db_head->ping_method) < 0)
+			LM_ERR("cannot duplicate ping_method\n");
 	}
 	partition->persistent_state = ds_persistent_state;
 	if (str_strcmp(&db_head->persistent_state, const_str("0")) ||

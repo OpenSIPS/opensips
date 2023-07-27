@@ -115,6 +115,8 @@ typedef struct _ds_partition
 	str name;              /* Partition name */
 	str table_name;        /* Table name */
 	str db_url;            /* DB url */
+	str ping_from;
+	str ping_method;
 	int persistent_state;
 
 	db_con_t **db_handle;

@@ -2771,7 +2771,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 
 			/* Execute the Dialog using the "request"-Method of the
 			 * TM-Module.*/
-			if (tmb.new_auto_dlg_uac(&ds_ping_from,
+			if (tmb.new_auto_dlg_uac((partition->ping_from.len?
+							&partition->ping_from:
+							&ds_ping_from),
 			&pack->params.uri, NULL, NULL,
 			pack->sock?pack->sock:probing_sock,
 			&dlg) != 0 ) {
@@ -2787,7 +2789,9 @@ void ds_check_timer(unsigned int ticks, void* param)
 			dlg->avps = pack->avps;
 			pack->avps = NULL;
 
-			if (tmb.t_request_within(&ds_ping_method,
+			if (tmb.t_request_within((partition->ping_method.len?
+							&partition->ping_method:
+							&ds_ping_method),
 					NULL,
 					NULL,
 					dlg,
