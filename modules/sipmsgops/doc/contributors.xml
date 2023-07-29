@@ -21,9 +21,9 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">68</entry>
-		<entry align="center">38</entry>
-		<entry align="center">2118</entry>
+		<entry align="center">69</entry>
+		<entry align="center">39</entry>
+		<entry align="center">2181</entry>
 		<entry align="center">693</entry>
 	</row>
 	<row>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Feb 2012 - Jul 2023</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>)</entry>
 		<entry align="center">Feb 2012 - Jun 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Bence Szigeti</entry>
 		<entry align="center">May 2023 - May 2023</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
 		<entry align="center">Mar 2021 - Feb 2023</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Feb 2012 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
@@ -190,7 +190,7 @@
 	<title>Documentation</title>
 <section id="documentation_contributors" xreflabel="documentation_contributors">
 	<title>Contributors</title>
-	<para><emphasis role='bold'>Last edited by:</emphasis> Bence Szigeti, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Julián Moreno Patiño, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Boris Ratner, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>).</para>
+	<para><emphasis role='bold'>Last edited by:</emphasis> Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>), Bence Szigeti, Vlad Paiu (<ulink url="https://github.com/vladpaiu">@vladpaiu</ulink>), Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>), Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>), Fabian Gast (<ulink url="https://github.com/fgast">@fgast</ulink>), Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Julián Moreno Patiño, Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>), Mihai Tiganus (<ulink url="https://github.com/tallicamike">@tallicamike</ulink>), Boris Ratner, Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>).</para>
 </section>
 
 </chapter>

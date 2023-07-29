@@ -183,9 +183,10 @@ Chapter 1. Admin Guide
    Starting with version 2.1, the dispatcher module keeps its
    destination sets into different partitions. Each partition is
    described by its own "db_url", "table_name", "dst_avp",
-   "grp_avp", "cnt_avp", "sock_avp", "attr_avp" and "blacklists"
-   set of attributes. Setting any of these module parameters will
-   only alter the "default" partition's properties.
+   "grp_avp", "cnt_avp", "sock_avp", "attr_avp", "blacklists",
+   "ping_from", "ping_method" and "persistent_state" set of
+   attributes. Setting any of these module parameters will only
+   alter the "default" partition's properties.
 
    In order to create a new partition, the partition parameter can
    be used. If none of the 8 partition specific parameters are
@@ -348,6 +349,9 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
    probe the failed gateways. This method is only available, if
    compiled with the probing of failed gateways enabled.
 
+   Use the 'partition' parameter if you want to define the ping
+   method other partitions.
+
    Default value is “OPTIONS”.
 
    Example 1.8. Set the “ds_ping_method” parameter
@@ -361,6 +365,9 @@ modparam("dispatcher", "ds_ping_method", "INFO")
    request, sent to the failed gateways. This method is only
    available, if compiled with the probing of failed gateways
    enabled.
+
+   Use the 'partition' parameter if you want to define the "From:"
+   ping header of other partitions.
 
    Default value is “sip:dispatcher@localhost”.
 
@@ -583,7 +590,10 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 1.3.22. persistent_state (int)
 
    Specifies whether the state column should be loaded at startup
-   and flushed during runtime or not.
+   and flushed during runtime or not for the "default" partition.
+
+   Use the 'partition' parameter if you want to define the
+   persistent state of other partitions.
 
    Default value is “1” (enabled).
 
@@ -1499,8 +1509,8 @@ Chapter 3. Contributors
    2. Liviu Chircu (@liviuchircu) 106 68 1664 1429
    3. Daniel-Constantin Mierla (@miconda) 81 39 3372 844
    4. Andrei Datcu (@andrei-datcu) 47 15 2153 846
-   5. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
-   6. Razvan Crainea (@razvancrainea) 42 34 527 155
+   5. Razvan Crainea (@razvancrainea) 44 36 601 175
+   6. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
    8. Vlad Patrascu (@rvlad-patrascu) 19 11 378 236
    9. Vlad Paiu (@vladpaiu) 16 9 673 33
@@ -1537,10 +1547,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2023
-   2.  wangdd                              Apr 2023 - May 2023
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   4.  Razvan Crainea (@razvancrainea)     May 2011 - Oct 2022
+   1.  Razvan Crainea (@razvancrainea)     May 2011 - Jul 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - May 2023
+   3.  wangdd                              Apr 2023 - May 2023
+   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
    7.  John Burke (@john08burke)           Feb 2021 - Jan 2022
@@ -1567,7 +1577,7 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: wangdd, Razvan Crainea (@razvancrainea), Liviu
+   Last edited by: Razvan Crainea (@razvancrainea), wangdd, Liviu
    Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu),
    Bogdan-Andrei Iancu (@bogdan-iancu), John Burke (@john08burke),
    Vlad Paiu (@vladpaiu), Roman Sevko, Peter Lemenkov (@lemenkov),
