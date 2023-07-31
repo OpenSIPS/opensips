@@ -151,7 +151,7 @@ int push_new_global_context(void)
 {
 	if (ctx_stack_idx==CTX_STACK_SIZE) {
 		LM_ERR("too many stacked contexts (%d)\n",ctx_stack_idx);
-		return -1;
+		return 0;
 	}
 
 	ctx_stack[ctx_stack_idx++] = current_processing_ctx;
@@ -160,11 +160,11 @@ int push_new_global_context(void)
 	if (!current_processing_ctx) {
 		LM_ERR("oom\n");
 		current_processing_ctx = ctx_stack[--ctx_stack_idx];
-		return -1;
+		return 0;
 	}
 
 	memset(current_processing_ctx, 0, context_size(CONTEXT_GLOBAL));
-	return 0;
+	return 1;
 }
 
 int pop_pushed_global_context(void)
