@@ -279,7 +279,8 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 		if (!size && req != &smpp_current_req) {
 			/* if we no longer need this tcp_req
 			 * we can free it now */
-			pkg_free(req);
+			shm_free(req);
+			con->con_req = NULL;
 		}
 
 		con->msg_attempts = 0;
@@ -307,7 +308,7 @@ static int smpp_handle_req(struct tcp_req *req, struct tcp_connection *con)
 			/* let's duplicate this - most likely another conn will come in */
 
 			LM_DBG("We didn't manage to read a full request\n");
-			con->con_req = pkg_malloc(sizeof(struct tcp_req));
+			con->con_req = shm_malloc(sizeof(struct tcp_req));
 			if (con->con_req == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");
 				return -1;

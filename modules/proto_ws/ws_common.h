@@ -556,7 +556,7 @@ again:
 		if (req != &_ws_common_current_req) {
 			/* make sure we cleanup the request in the connection */
 			con->con_req = NULL;
-			pkg_free(req);
+			shm_free(req);
 		}
 
 	} else {
@@ -573,7 +573,7 @@ again:
 			/* let's duplicate this - most likely another conn will come in */
 
 			LM_DBG("We didn't manage to read a full request\n");
-			newreq = pkg_malloc(sizeof(struct ws_req));
+			newreq = shm_malloc(sizeof(struct ws_req));
 			if (newreq == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");
 				goto error;
