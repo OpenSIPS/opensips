@@ -354,7 +354,7 @@ static int msrp_handle_req(struct msrp_req *req,
 		if (req != &msrp_current_req) {
 			/* if we no longer need this tcp_req
 			 * we can free it now */
-			pkg_free(req);
+			shm_free(req);
 			con->con_req = NULL;
 		}
 	} else {
@@ -375,7 +375,7 @@ static int msrp_handle_req(struct msrp_req *req,
 			/* let's duplicate this - most likely another conn will come in */
 
 			LM_DBG("We didn't manage to read a full request\n");
-			con_req = pkg_malloc(sizeof(struct msrp_req));
+			con_req = shm_malloc(sizeof(struct msrp_req));
 			if (con_req == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");
 				goto error;
