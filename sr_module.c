@@ -90,9 +90,12 @@ struct sr_module* modules=0;
 #endif
 
 #define MPATH_LEN	256
-static const char *mpath;
-static char mpath_buf[MPATH_LEN + 1];
-static int  mpath_len;
+struct mpath {
+	char buf[MPATH_LEN + 1];
+	int len;
+	struct mpath *next;
+};
+static struct mpath *mpaths, *last_mpath;
 
 /* initializes statically built (compiled in) modules*/
 int register_builtin_modules(void)
@@ -369,75 +372,95 @@ static int load_static_module(char *path)
 	return -1;
 }
 
-void set_mpath(const char *new_mpath)
+void add_mpath(const char *new_mpath)
 {
+	struct mpath *nmpath;
 	int len = strlen(new_mpath);
 	if (len >= MPATH_LEN) {
 		LM_ERR("mpath %s too long!\n", new_mpath);
 		return;
 	}
-	mpath = new_mpath;
-	strcpy(mpath_buf, new_mpath);
-	mpath_len = len;
-	if (mpath_len == 0 || mpath_buf[mpath_len - 1] != '/') {
-		mpath_buf[mpath_len] = '/';
-		mpath_len++;
-		mpath_buf[mpath_len] = '\0';
+	nmpath = pkg_malloc(sizeof *nmpath);
+	if (!nmpath) {
+		LM_ERR("could not allocate space for %s mpath!\n", new_mpath);
+		return;
 	}
+	memset(nmpath, 0, sizeof *nmpath);
+	/* link it in the list */
+	if (last_mpath)
+		last_mpath->next = nmpath;
+	else
+		mpaths = nmpath;
+	last_mpath = nmpath;
+	memcpy(nmpath->buf, new_mpath, len);
+	nmpath->len = len;
+	if (nmpath->len == 0 || nmpath->buf[nmpath->len - 1] != '/') {
+		nmpath->buf[nmpath->len] = '/';
+		nmpath->len++;
+	}
+	nmpath->buf[nmpath->len] = '\0';
 }
 
 /* returns 0 on success , <0 on error */
 int load_module(char* name)
 {
-	int i_tmp;
+	int i_tmp, len;
 	struct stat statf;
+	struct mpath *mp;
 
 	/* if this is a static module, load it directly */
 	if (load_static_module(name) == 0)
 		return 0;
 
-	if(*name!='/' && mpath!=NULL
-		&& strlen(name)+mpath_len<MPATH_LEN)
-	{
-		strcpy(mpath_buf+mpath_len, name);
-		if (stat(mpath_buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
-			i_tmp = strlen(mpath_buf);
-			if(strchr(name, '/')==NULL &&
-				strncmp(mpath_buf+i_tmp-3, ".so", 3)==0)
-			{
-				if(i_tmp+strlen(name)<MPATH_LEN)
-				{
-					strcpy(mpath_buf+i_tmp-3, "/");
-					strcpy(mpath_buf+i_tmp-2, name);
-					if (stat(mpath_buf, &statf) == -1) {
-						mpath_buf[mpath_len]='\0';
-						LM_ERR("module '%s' not found in '%s'\n",
-								name, mpath_buf);
-						return -1;
-					}
-				} else {
-					LM_ERR("failed to load module - path too long\n");
-					return -1;
-				}
-			} else {
-				LM_ERR("failed to load module - not found\n");
-				return -1;
-			}
-		}
-		LM_DBG("loading module %s\n", mpath_buf);
-		if (sr_load_module(mpath_buf)!=0){
-			LM_ERR("failed to load module\n");
-			return -1;
-		}
-		mpath_buf[mpath_len]='\0';
-	} else {
+	if (*name=='/' || mpaths==NULL) {
 		LM_DBG("loading module %s\n", name);
 		if (sr_load_module(name)!=0){
 			LM_ERR("failed to load module\n");
 			return -1;
 		}
+		return 0;
 	}
-	return 0;
+	for (mp = mpaths; mp; mp = mp->next) {
+		len = strlen(name);
+		if (len + mp->len >= MPATH_LEN)
+			continue;
+		memcpy(mp->buf + mp->len, name, len);
+		mp->buf[mp->len + len] = '\0';
+		if (stat(mp->buf, &statf) == -1 || S_ISDIR(statf.st_mode)) {
+			i_tmp = strlen(mp->buf);
+			if(strchr(name, '/')==NULL &&
+				strncmp(mp->buf+i_tmp-3, ".so", 3)==0)
+			{
+				if(i_tmp+len<MPATH_LEN)
+				{
+					strcpy(mp->buf+i_tmp-3, "/");
+					strcpy(mp->buf+i_tmp-2, name);
+					if (stat(mp->buf, &statf) == -1) {
+						mp->buf[mp->len]='\0';
+						LM_DBG("module '%s' not found in '%s'\n",
+								name, mp->buf);
+						goto next;
+					}
+				} else {
+					LM_DBG("failed to load module '%s' from '%s' - path too long\n", name, mp->buf);
+					goto next;
+				}
+			} else {
+				goto next;
+			}
+		}
+		LM_DBG("trying module %s\n", mp->buf);
+		if (sr_load_module(mp->buf)!=0) {
+			LM_DBG("failed to load module '%s'\n", mp->buf);
+		} else {
+			mp->buf[mp->len]='\0';
+			return 0;
+		}
+next:
+		mp->buf[mp->len]='\0';
+	}
+	LM_ERR("failed to load module '%s' - not found\n", name);
+	return -1;
 }
 
 

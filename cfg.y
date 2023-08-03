@@ -1505,7 +1505,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		 }
 		| TOS EQUAL error { yyerror("number expected"); }
 		| MPATH EQUAL STRING {IFOR();
-				set_mpath($3); }
+				add_mpath($3); }
 		| MPATH EQUAL error  { yyerror("string value expected"); }
 		| DISABLE_DNS_FAILOVER EQUAL NUMBER { IFOR();
 										disable_dns_failover=$3;

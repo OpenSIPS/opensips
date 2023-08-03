@@ -42,7 +42,7 @@
 void init_unit_tests(void)
 {
 	if (!strcmp(testing_module, "core")) {
-		set_mpath("modules/");
+		add_mpath("modules/");
 		solve_module_dependencies(modules);
 		init_cachedb_tests();
 		//init_malloc_tests();
