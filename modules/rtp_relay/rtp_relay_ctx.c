@@ -1769,9 +1769,11 @@ static int rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_msg *ms
 			 * mark it as established */
 			rtp_relay_sess_success(ctx, sess, t, msg);
 			return 1;
-		} else {
+		} else if (!rtp_sess_success(sess)) {
 			LM_WARN("final reply without SDP - cannot complete negotiation!\n");
 			return -1;
+		} else {
+			return 1;
 		}
 	}
 	info.branch = sess->index;
