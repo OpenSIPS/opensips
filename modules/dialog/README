@@ -2489,12 +2489,12 @@ Chapter 4. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 444 282 12859 3441
-   2. Razvan Crainea (@razvancrainea) 259 195 4886 1464
+   2. Razvan Crainea (@razvancrainea) 265 198 5052 1530
    3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
    4. Vlad Patrascu (@rvlad-patrascu) 184 98 3830 3265
    5. Liviu Chircu (@liviuchircu) 164 119 2880 1230
-   6. Dan Pascu (@danpascu) 30 25 233 179
-   7. Ovidiu Sas (@ovidiusas) 29 23 487 111
+   6. Ovidiu Sas (@ovidiusas) 33 24 631 149
+   7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
    9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
    10. Henning Westerholt (@henningw) 16 10 172 187
@@ -2533,16 +2533,16 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2023
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
-   3.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2022
-   5.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
-   6.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
-   7.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   8.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
-   9.  sergei lavrov                       Dec 2020 - Dec 2020
-   10. Ovidiu Sas (@ovidiusas)             Feb 2008 - Nov 2020
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2023
+   3.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
+   4.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2022
+   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
+   7.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
+   8.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
+   9.  Maksym Sobolyev (@sobomax)          Nov 2020 - Jan 2021
+   10. sergei lavrov                       Dec 2020 - Dec 2020
 
    All remaining contributors: Zero King (@l2dy), Dan Pascu
    (@danpascu), Peter Lemenkov (@lemenkov), Ionel Cerghit
