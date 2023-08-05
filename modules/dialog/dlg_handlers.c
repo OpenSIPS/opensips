@@ -205,7 +205,7 @@ static void tmcb_remove_cseq_map(struct cell* t, int type,
 			dlg->legs[map->leg].cseq_maps = map->next;
 		shm_free(map);
 	} else {
-		LM_WARN("mapping [%u]->[%u] for leg [%d] not found!\n");
+		LM_WARN("mapping [%u]->[%u] for leg [%d] not found!\n", map->msg, map->gen, map->leg);
 	}
 	dlg_unlock_dlg(dlg);
 	unref_dlg(dlg, 1);
