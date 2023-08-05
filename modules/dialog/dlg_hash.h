@@ -81,7 +81,8 @@
 #define DLG_DIR_UPSTREAM       2
 
 struct dlg_leg_cseq_map {
-	unsigned int msg, gen;
+	struct dlg_cell *dlg;
+	unsigned int msg, gen, leg;
 	struct dlg_leg_cseq_map *next;
 };
 
