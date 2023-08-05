@@ -362,7 +362,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu) 19 5 1520 16
+   1. Vlad Paiu (@vladpaiu) 20 6 1521 16
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 4 2 6 7
 
    (1) DevScore = author_commits + author_lines_added /
