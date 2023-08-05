@@ -186,39 +186,98 @@ static inline int add_dlg_rr_param(struct sip_msg *req, struct dlg_cell *dlg)
 	return 0;
 }
 
+static void tmcb_remove_cseq_map(struct cell* t, int type,
+		struct tmcb_params *param)
+{
+	struct dlg_leg_cseq_map *prev, *it, *map = *param->param;
+	struct dlg_cell *dlg = map->dlg;
+	LM_DBG("removing [%u]->[%u] from leg [%d]\n", map->msg, map->gen, map->leg);
+	dlg_lock_dlg(dlg);
+	for (prev = NULL, it = dlg->legs[map->leg].cseq_maps; it; it = it->next) {
+		if (it == map)
+			break;
+		prev = it;
+	}
+	if (it) {
+		if (prev)
+			prev->next = map->next;
+		else
+			dlg->legs[map->leg].cseq_maps = map->next;
+		shm_free(map);
+	} else {
+		LM_WARN("mapping [%u]->[%u] for leg [%d] not found!\n");
+	}
+	dlg_unlock_dlg(dlg);
+	unref_dlg(dlg, 1);
+}
 
-static void dlg_leg_push_cseq_map(struct dlg_cell *dlg, unsigned int leg,
+static void dlg_leg_push_cseq_map(struct dlg_cell *dlg, struct cell *t, unsigned int leg,
 	struct sip_msg *msg)
 {
 	struct dlg_leg_cseq_map *map;
-	unsigned int msg_cseq;
+	unsigned int msg_cseq, gen_cseq;
+
+	if (!t || t == T_UNDEFINED) {
+		LM_ERR("unknown transaction to keep maps on\n");
+		return;
+	}
 
 	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
 		!msg->cseq->parsed){
 		LM_ERR("bad sip message or missing CSeq hdr :-/\n");
 		return;
 	}
-	if (str2int(&get_cseq(msg)->number, &msg_cseq) < 0) {
-		LM_ERR("invalid CSeq number [%.*s]\n",
+	if (str2int(&get_cseq(msg)->number, &gen_cseq) < 0) {
+		LM_ERR("invalid generated CSeq number [%.*s]\n",
 				get_cseq(msg)->number.len, get_cseq(msg)->number.s);
 		return;
 	}
+	if (!t->uas.request || !t->uas.request->cseq || !t->uas.request->cseq->parsed) {
+		LM_ERR("bad sip message or missing CSeq hdr in transaction :-/\n");
+		return;
+	}
+	if (str2int(&get_cseq(t->uas.request)->number, &msg_cseq) < 0) {
+		LM_ERR("invalid transaction CSeq number [%.*s]\n",
+				get_cseq(t->uas.request)->number.len, get_cseq(t->uas.request)->number.s);
+		return;
+	}
+	/* check if there is already a mapping for this request */
+	dlg_lock_dlg(dlg);
+	for (map = dlg->legs[leg].cseq_maps; map; map = map->next)
+		if (map->msg == msg_cseq)
+			break;
+	if (map) {
+		LM_DBG("updating cseq [%u]->[%u] to [%u]->[%u] for leg [%d]\n",
+				map->msg, map->gen, msg_cseq, gen_cseq, leg);
+		map->gen = gen_cseq;
+		dlg_unlock_dlg(dlg);
+		return;
+	}
+	dlg_unlock_dlg(dlg);
+
 	map = shm_malloc(sizeof *map);
 	if (!map) {
 		LM_ERR("oom for cseq map\n");
 		return;
 	}
 	memset(map, 0, sizeof *map);
+	map->dlg = dlg;
+	map->leg = leg;
 	map->msg = msg_cseq;
-	if (dlg->legs[leg].last_gen_cseq) {
-		map->gen = dlg->legs[leg].last_gen_cseq;
-		LM_DBG("storing cseq [%d] in slot [%d] for leg [%d] from last_gen_cseq\n", map->gen, msg_cseq, leg);
-	} else {
-		map->gen = msg_cseq;
-		LM_DBG("storing cseq [%d] in slot [%d] for leg [%d] from msg\n", map->gen, msg_cseq, leg);
+	map->gen = gen_cseq;
+	LM_DBG("storing cseq [%u]->[%u] for leg [%d]\n", map->msg, map->gen, leg);
+	if (d_tmb.register_tmcb(NULL, t, TMCB_TRANS_DELETED, tmcb_remove_cseq_map, map, NULL) < 0) {
+		LM_ERR("failed to register TMCB free func\n");
+		shm_free(map);
+		return;
 	}
+	/* update the mapping in case anything happens upstream (i.e. the
+	 * re-INVITE is authenticated */
+	dlg_lock_dlg(dlg);
+	ref_dlg_unsafe(dlg, 1);
 	map->next = dlg->legs[leg].cseq_maps;
 	dlg->legs[leg].cseq_maps = map;
+	dlg_unlock_dlg(dlg);
 }
 
 
@@ -977,7 +1036,7 @@ static void dlg_update_caller_sdp(struct cell* t, int type,
 static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 		struct tmcb_params *ps)
 {
-	struct sip_msg *req, *rpl;
+	struct sip_msg *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
 
@@ -990,7 +1049,6 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 			return;
 	}
 
-	req = ps->req;
 	rpl = ps->rpl;
 	statuscode = ps->code;
 	dlg = *(ps->param);
@@ -1006,10 +1064,6 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 		dlg->legs[DLG_CALLER_LEG].last_gen_cseq++;
 		LM_DBG("incrementing last_gen_cseq to [%d] for leg[%d]\n", dlg->legs[DLG_CALLER_LEG].last_gen_cseq, DLG_CALLER_LEG);
 	}
-	if (get_cseq(req)->method_id == METHOD_INVITE) {
-		LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], INVITE)\n", DLG_CALLER_LEG);
-		dlg_leg_push_cseq_map(dlg, DLG_CALLER_LEG, req);
-	}
 
 	if (statuscode >= 200 && statuscode < 300)
 		dlg_update_contact(dlg, rpl, DLG_CALLER_LEG);
@@ -1018,7 +1072,7 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 		struct tmcb_params *ps)
 {
-	struct sip_msg *req, *rpl;
+	struct sip_msg *rpl;
 	int statuscode;
 	struct dlg_cell *dlg;
 
@@ -1031,7 +1085,6 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 			return;
 	}
 
-	req = ps->req;
 	rpl = ps->rpl;
 	statuscode = ps->code;
 	dlg = *(ps->param);
@@ -1042,11 +1095,6 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 	}
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
-
-	if (get_cseq(req)->method_id == METHOD_INVITE) {
-		LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], INVITE)\n", callee_idx(dlg));
-		dlg_leg_push_cseq_map(dlg, callee_idx(dlg), req);
-	}
 
 	if (statuscode >= 200 && statuscode < 300)
 		dlg_update_contact(dlg, rpl, callee_idx(dlg));
@@ -1294,6 +1342,7 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 	/* we use the initial request, which already has the contact parsed/fixed */
 	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
 	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg, 1);
+	dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1324,11 +1373,13 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
+	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
 	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 1);
+	dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
+
 
 static void dlg_set_tm_dialog_ctx(struct dlg_cell *dlg, struct cell *t)
 {
@@ -1816,9 +1867,8 @@ end:
 static unsigned int dlg_leg_get_cseq(struct dlg_cell *dlg, unsigned int leg,
 		struct sip_msg *msg)
 {
-	struct dlg_leg_cseq_map *map, *tmp;
+	struct dlg_leg_cseq_map *map;
 	unsigned int msg_cseq;
-	int distance = 10;
 
 	if((!msg->cseq && (parse_headers(msg,HDR_CSEQ_F,0)<0 || !msg->cseq)) ||
 		!msg->cseq->parsed){
@@ -1833,20 +1883,8 @@ static unsigned int dlg_leg_get_cseq(struct dlg_cell *dlg, unsigned int leg,
 	for (map = dlg->legs[leg].cseq_maps; map; map = map->next) {
 		if (map->msg != msg_cseq)
 			continue;
-		msg_cseq = map->gen; /* value to be returned */
-		/* cleanup older values, since they are no longer needed */
-		for (tmp = map, map = map->next; map && distance > 0;
-				tmp = map, map = map->next, distance--);
-		if (map) {
-			tmp->next = NULL;
-			do {
-				tmp = map;
-				map = map->next;
-				shm_free(tmp);
-			} while (map);
-		}
-		LM_DBG("found cseq [%d] in map for leg [%d]\n", msg_cseq, leg);
-		return msg_cseq;
+		LM_DBG("found cseq [%u]->[%u] in map for leg [%d]\n", map->msg, map->gen, leg);
+		return map->gen;
 	}
 	LM_DBG("no cseq found in map for leg [%d]\n", leg);
 	return 0;
@@ -2245,11 +2283,6 @@ after_unlock5:
 				LM_DBG("incrementing last_gen_cseq to [%d]\n",
 					dlg->legs[dst_leg].last_gen_cseq);
 				if (req->first_line.u.request.method_value == METHOD_INVITE) {
-					/* save INVITE cseq, in case any requests follow after this
-					( pings or other in-dialog requests until the ACK comes in */
-					LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], [INVITE])\n", dst_leg);
-					dlg_leg_push_cseq_map(dlg, dst_leg, req);
-
 					/* Received RE-INVITE where we mangle the CSEQ due to existing pings sent
 					 *
 					 * Set the FL_USE_UAC_CSEQ flag so that the TM build_local knows to get the
@@ -2266,13 +2299,6 @@ after_unlock5:
 					ok = 0;
 				}
 			} else {
-				if (req->first_line.u.request.method_value == METHOD_INVITE) {
-					/* we did not generate any pings yet - still we need to store the INV cseq,
-					in case there's a race between the ACK for the INVITE and sending of new pings */
-					LM_DBG("dlg_leg_push_cseq_map(dlg, [%d], [INVITE])\n", dst_leg);
-					dlg_leg_push_cseq_map(dlg, dst_leg, req);
-				}
-
 				dlg_unlock( d_table, d_entry );
 			}
 
