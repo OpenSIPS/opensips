@@ -791,6 +791,7 @@ int do_action(struct action* a, struct sip_msg* msg)
 				if (!route_p) {
 					LM_ERR("could not expand route params!\n");
 					ret=E_OUT_OF_MEM;
+					break;
 				}
 				route_params_push_level(sroutes->request[i].name,
 						route_p, (void *)(unsigned long)len, route_param_get);
