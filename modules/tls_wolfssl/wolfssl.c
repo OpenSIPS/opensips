@@ -25,6 +25,14 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
+/* uncomment the following line to enable memory debugging in WolfSSL */
+//#define WOLFSSL_DEBUG_MEMORY
+/* if we do not have DBG_MALLOC, we do not have the memory information
+ * available, thus it makes no sense to use WOLFSSL_DEBUG_MEMORY */
+#ifndef DBG_MALLOC
+#undef WOLFSSL_DEBUG_MEMORY
+#endif
+
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
@@ -137,6 +145,7 @@ static void _wolfssl_show_ciphers(void)
 	}
 }
 
+#ifndef WOLFSSL_DEBUG_MEMORY
 static void *oss_malloc(size_t size)
 {
 	return shm_malloc(size);
@@ -151,6 +160,22 @@ static void *oss_realloc(void *ptr, size_t size)
 {
 	return shm_realloc(ptr, size);
 }
+#else
+static void *oss_malloc(size_t size, const char* func, unsigned int line)
+{
+	return shm_malloc_func(size, "wolfssl.lib", func, line);
+}
+
+static void oss_free(void *ptr, const char* func, unsigned int line)
+{
+	return shm_free_func(ptr, "wolfssl.lib", func, line);
+}
+
+static void *oss_realloc(void *ptr, size_t size, const char* func, unsigned int line)
+{
+	return shm_realloc_func(ptr, size, "wolfssl.lib", func, line);
+}
+#endif
 
 #ifdef __WOLFSSL_ON_EXIT
 static void _wolfssl_on_exit(int status, void *param)
