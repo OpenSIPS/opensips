@@ -183,9 +183,7 @@ static void print_ct_constants(void)
 		MAX_RECV_BUFFER_SIZE, MAX_LISTEN, MAX_URI_SIZE,
 		BUF_SIZE );
 	printf("poll method support: %s.\n", poll_support);
-#ifdef VERSIONTYPE
 	printf("%s revision: %s\n", VERSIONTYPE, THISREVISION);
-#endif
 }
 
 

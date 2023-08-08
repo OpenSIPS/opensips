@@ -137,13 +137,11 @@ static mi_response_t *mi_version_1(const mi_params_t *params,
 		return 0;
 	}
 
-#ifdef VERSIONTYPE
 	if (add_mi_string(resp_obj, MI_SSTR(VERSIONTYPE), MI_SSTR(THISREVISION))<0) {
 		LM_ERR("failed to add mi item\n");
 		free_mi_response(resp);
 		return 0;
 	}
-#endif
 
 	return resp;
 }
