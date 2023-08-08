@@ -171,7 +171,8 @@ int dp_my_pid(void);
 void stderr_dprint_tmp(char *format, ...);
 
 void dprint(int log_level, int facility, char *module, const char *func,
-	char *stderr_fmt, char *syslog_fmt, char *format, ...);
+	char *stderr_fmt, char *syslog_fmt, char *format, ...)
+	__attribute__ ((__format__ (__printf__, 5, 8)));
 
 int str2facility(char *s);
 
