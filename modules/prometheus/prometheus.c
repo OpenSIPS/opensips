@@ -736,6 +736,7 @@ static int prom_stats_param( modparam_t type, void* val)
 			LM_ERR("oom!\n");
 			return -1;
 		}
+		memset(s, 0, sizeof *s);
 		s->name.len = name.len;
 		s->name.s = s->name_s;
 		memcpy(s->name.s, name.s, name.len);
