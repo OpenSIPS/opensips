@@ -188,6 +188,7 @@ static inline int __ipc_send_job(int fd, int dst_proc, ipc_handler_type type,
 
 	// FIXME - we should check if the destination process really listens
 	// for read, otherwise we may end up filling in the pipe and block
+	memset(&job, 0, sizeof job);
 
 	job.snd_proc = (short)process_no;
 	job.handler_type = type;
