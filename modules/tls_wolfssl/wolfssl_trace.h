@@ -50,8 +50,8 @@ static inline void tls_append_cert_info(WOLFSSL_X509 *cert, char client,
 		add_trace_data(message, "server-issuer", &issuer);
 	}
 
-	wolfSSL_Free(subj.s);
-	wolfSSL_Free(issuer.s);
+	oss_wolfSSL_Free(subj.s);
+	oss_wolfSSL_Free(issuer.s);
 }
 
 static inline void tls_append_master_secret(WOLFSSL *ssl, struct tls_data* data)

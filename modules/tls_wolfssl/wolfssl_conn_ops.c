@@ -20,6 +20,8 @@
  *
  */
 
+#include "wolfssl_mem.h"
+
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
@@ -47,8 +49,8 @@ void tls_dump_cert_info(char* s, WOLFSSL_X509* cert)
 	issuer = wolfSSL_X509_NAME_oneline(wolfSSL_X509_get_issuer_name(cert), 0, 0);
 
 	LM_INFO("%s subject: %s, issuer: %s\n", s ? s : "", subj, issuer);
-	wolfSSL_Free(subj);
-	wolfSSL_Free(issuer);
+	oss_wolfSSL_Free(subj);
+	oss_wolfSSL_Free(issuer);
 }
 
 static void tls_dump_verification_failure(long verification_result)

@@ -25,13 +25,7 @@
 #include <unistd.h>
 #include <netinet/tcp.h>
 
-/* uncomment the following line to enable memory debugging in WolfSSL */
-//#define WOLFSSL_DEBUG_MEMORY
-/* if we do not have DBG_MALLOC, we do not have the memory information
- * available, thus it makes no sense to use WOLFSSL_DEBUG_MEMORY */
-#ifndef DBG_MALLOC
-#undef WOLFSSL_DEBUG_MEMORY
-#endif
+#include "wolfssl_mem.h"
 
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
