@@ -1034,6 +1034,9 @@ static int add_rtpengine_socks(struct rtpe_set * rtpe_list,
 		} else if (strncasecmp(pnode->rn_address, "unix:", 5) == 0) {
 			pnode->rn_umode = 0;
 			pnode->rn_address += 5;
+		} else {
+			LM_ERR("no protocol is specified for the proxy address <%s>\n", pnode->rn_address);
+			continue;
 		}
 
 		if (rtpe_list->rn_first == NULL) {
