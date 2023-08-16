@@ -103,7 +103,9 @@
 		<title><varname>rtpengine_sock</varname> (string)</title>
 		<para>
 		Definition of socket(s) used to connect to (a set) &rtp; proxy. It may
-		specify a UNIX socket or an IPv4/IPv6 UDP socket.
+		specify a UNIX socket or an IPv4/IPv6 UDP socket. If the protocol part
+		(i.e. <quote>udp:</quote>) is missing, the socket is treated as a
+		UNIX socket.
 		</para>
 		<para>
 		<emphasis>
