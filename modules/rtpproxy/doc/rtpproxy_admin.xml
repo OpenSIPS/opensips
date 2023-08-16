@@ -198,6 +198,8 @@
 		<para>
 		Definition of socket(s) used to connect to (a set) RTPProxy. It may 
 		specify a UNIX socket or an IPv4/IPv6 UDP socket.
+		If the protocol part (i.e. <quote>udp:</quote>) is missing, the socket is
+		treated as a UNIX socket.
 		</para>
 		<para>
 			The definition also supports to specify a different IP that will
