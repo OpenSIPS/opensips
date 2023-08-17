@@ -257,9 +257,9 @@ static int mod_init(void)
 
 	return 0;
 
-	err:
-		free_shared_memory();
-		return -1;
+err:
+	free_shared_memory();
+	return -1;
 }
 
 
@@ -719,6 +719,9 @@ mi_response_t *mi_pcres_match(const mi_params_t *params, struct mi_handler *asyn
 	}
 }
 
+/*! \brief It uses the groups readed from the text file to match the given string parameter against
+ * the compiled regular expression in group number group
+ */
 mi_response_t *mi_pcres_match_group(const mi_params_t *params, struct mi_handler *async_hdl)
 {
 	str string, group;
@@ -735,9 +738,9 @@ mi_response_t *mi_pcres_match_group(const mi_params_t *params, struct mi_handler
 	}
 
 	/* 
-		type casting MI Param -> int(group) function.
-		L.616 already test if group is an integer, if not, default 0 is set.
-	*/
+	 *	type casting MI Param -> int(group) function.
+	 *	L.616 already test if group is an integer, if not, default 0 is set.
+	 */
 	_group = atoi(group.s);
 
 	/* No possible negative index */
@@ -755,7 +758,7 @@ mi_response_t *mi_pcres_match_group(const mi_params_t *params, struct mi_handler
 			return init_mi_error(500, MI_SSTR("Error invalid pcre index"));
 			break;
 		case -2:
-			/* group is disabled*/
+			/* group is disabled */
 			return init_mi_error(500, MI_SSTR("Error group matching is disabled"));
 			break;
 		case -1:
