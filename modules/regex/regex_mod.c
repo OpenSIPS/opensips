@@ -697,7 +697,7 @@ mi_response_t *mi_pcres_match(const mi_params_t *params, struct mi_handler *asyn
 	}
 
 	/* handle call back function result */
-	rc = w_pcre_match(NULL, &string.s, &pcre_regex.s);
+	rc = w_pcre_match(NULL, &string, &pcre_regex);
 	LM_DBG("w_pcre_match: string<%s>, pcre_regex=<%s>, result:<%i>\n", string.s, pcre_regex.s, rc);
 	
 	switch(rc) {
@@ -749,7 +749,7 @@ mi_response_t *mi_pcres_match_group(const mi_params_t *params, struct mi_handler
 	}
 
 	/* handle call back function result */
-	rc = w_pcre_match_group(NULL, &string.s, &_group);
+	rc = w_pcre_match_group(NULL, &string, &_group);
 	LM_DBG("w_pcre_match_group: string<%s>, _group=<%i>, result:<%i>\n", string.s, _group, rc);
 
 	switch(rc) {
