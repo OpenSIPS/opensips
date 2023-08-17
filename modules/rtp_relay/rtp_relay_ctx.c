@@ -514,6 +514,7 @@ static inline void rtp_relay_push_sess_leg(struct rtp_relay_sess *sess,
 	leg->peer = sess->legs[RTP_RELAY_PEER(type)];
 	if (leg->peer)
 		sess->legs[RTP_RELAY_PEER(type)]->peer = leg;
+	leg->ref++;
 }
 
 static inline void rtp_relay_fill_sess_leg(struct rtp_relay_ctx *ctx,
@@ -1735,8 +1736,8 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx,
 		return -1;
 	} else {
 		if (!sess->legs[type]) {
-			sess->legs[type] = rtp_relay_new_leg(ctx,
-					&get_to(msg)->tag_value, sess->index);
+			rtp_relay_push_sess_leg(sess, rtp_relay_new_leg(ctx,
+					&get_to(msg)->tag_value, sess->index), type);
 			if (!sess->legs[type]) {
 				LM_ERR("could not create new leg\n");
 				return -1;
@@ -1896,8 +1897,8 @@ int rtp_relay_ctx_engage(struct sip_msg *msg,
 		sess = rtp_relay_new_sess(ctx, relay, set,
 				&get_from(msg)->tag_value, index);
 		if (!sess->legs[RTP_RELAY_CALLER])
-			sess->legs[RTP_RELAY_CALLER] = rtp_relay_new_leg(ctx,
-					&get_from(msg)->tag_value, index);
+			rtp_relay_push_sess_leg(sess, rtp_relay_new_leg(ctx,
+					&get_from(msg)->tag_value, index), RTP_RELAY_CALLER);
 	} else {
 		leg = rtp_relay_get_peer_leg_ctx(ctx, msg);
 		if (!leg) {
