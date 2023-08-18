@@ -4289,12 +4289,18 @@ static int w_hep_relay(struct sip_msg *msg)
 
 	if (uri.proto == 0 || uri.proto == PROTO_UDP) {
 		hep_proto = PROTO_HEP_UDP;
-	} else if (uri.proto == PROTO_TCP || uri.proto == PROTO_TLS) {
+	} else if (uri.proto == PROTO_TCP) {
 		if (hep_version == 1 || hep_version == 2) {
-			LM_ERR("TCP and TLS not supported for HEPv%d\n", hep_version);
+			LM_ERR("TCP not supported for HEPv%d\n", hep_version);
 			return -1;
 		}
 		hep_proto = PROTO_HEP_TCP;
+	} else if (uri.proto == PROTO_TLS) {
+		if (hep_version == 1 || hep_version == 2) {
+			LM_ERR("TLS not supported for HEPv%d\n", hep_version);
+			return -1;
+		}
+		hep_proto = PROTO_HEP_TLS;
 	} else {
 		LM_ERR("cannot send hep with proto %s\n",
 					proto2str(uri.proto, proto_buf));
