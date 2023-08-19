@@ -247,7 +247,8 @@ Chapter 1. Admin Guide
 
    Definition of socket(s) used to connect to (a set) RTPProxy. It
    may specify a UNIX socket, an IPv4/IPv6 UDP socket or an
-   IPv4/IPv6 TCP socket.
+   IPv4/IPv6 TCP socket. If the protocol part (i.e. “udp:”) is
+   missing, the socket is treated as a UNIX socket.
 
    The definition also supports to specify a different IP that
    will be advertised instead of the one returned by RTPProxy.
@@ -974,7 +975,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 253 156 6080 2851
+   1. Razvan Crainea (@razvancrainea) 254 157 6082 2851
    2. Maksym Sobolyev (@sobomax) 59 12 5054 280
    3. Liviu Chircu (@liviuchircu) 28 22 228 243
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
@@ -1011,10 +1012,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jul 2012 - May 2023
-   2.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
-   4.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2022
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Aug 2023
+   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - May 2023
+   3.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
+   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
    5.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
    6.  John Burke (@john08burke)           Apr 2021 - Apr 2021
    7.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
@@ -1035,12 +1036,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Maksym Sobolyev (@sobomax), Zero King
-   (@l2dy), Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño, Bogdan-Andrei Iancu
-   (@bogdan-iancu), Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu
-   Sas (@ovidiusas).
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Maksym Sobolyev (@sobomax), Zero King (@l2dy),
+   Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov),
+   Julián Moreno Patiño, Bogdan-Andrei Iancu (@bogdan-iancu),
+   Mikko Lehto, Ryan Bullock (@rrb3942), Ovidiu Sas (@ovidiusas).
 
    Documentation Copyrights:
 
