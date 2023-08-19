@@ -239,7 +239,9 @@ Chapter 1. Admin Guide
 1.5.1. rtpproxy_sock (string)
 
    Definition of socket(s) used to connect to (a set) RTPProxy. It
-   may specify a UNIX socket or an IPv4/IPv6 UDP socket.
+   may specify a UNIX socket or an IPv4/IPv6 UDP socket. If the
+   protocol part (i.e. “udp:”) is missing, the socket is treated
+   as a UNIX socket.
 
    The definition also supports to specify a different IP that
    will be advertised instead of the one returned by RTPProxy.
@@ -928,7 +930,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 181 121 3825 1675
+   1. Razvan Crainea (@razvancrainea) 182 122 3827 1675
    2. Maksym Sobolyev (@sobomax) 42 4 4534 5
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Liviu Chircu (@liviuchircu) 24 19 109 200
@@ -965,9 +967,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
-   2.  Liviu Chircu (@liviuchircu)         Jul 2012 - Sep 2022
-   3.  Razvan Crainea (@razvancrainea)     Mar 2011 - May 2022
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Aug 2023
+   2.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
+   3.  Liviu Chircu (@liviuchircu)         Jul 2012 - Sep 2022
    4.  John Burke                          Apr 2021 - Apr 2021
    5.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2020
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2011 - Apr 2020
@@ -990,8 +992,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Zero King (@l2dy), Vlad Patrascu
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Zero King (@l2dy), Vlad Patrascu
    (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Julián Moreno
    Patiño, Bogdan-Andrei Iancu (@bogdan-iancu), Mikko Lehto, Ryan
    Bullock (@rrb3942), Maksym Sobolyev (@sobomax), Ovidiu Sas
