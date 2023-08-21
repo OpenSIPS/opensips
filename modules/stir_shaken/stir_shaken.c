@@ -103,6 +103,7 @@ static int fixup_auth_out(void** param);
 static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 	str *cert_buf, str *pkey_buf, str *cr_url, str *orig_tn_p, str *dest_tn_p,
 	struct auth_out_param *out);
+static int w_stir_disengagement(struct sip_msg *msg, str *token);
 static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code, pv_spec_t *err_reason, str *orig_tn_p, str *dest_tn_p);
 static int w_stir_check(struct sip_msg *msg);
@@ -129,6 +130,7 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
  */
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
+static char *token;
 static char *ca_list;
 static char *ca_dir;
 static char *crl_list;
@@ -148,6 +150,7 @@ static X509_STORE *store;
 static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
+	{"token", INT_PARAM, &token},
 	{"ca_list", STR_PARAM, &ca_list},
 	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
@@ -175,6 +178,9 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_auth_out, fixup_free_pkg}, {0,0,0}},
 		REQUEST_ROUTE},
+	{"stir_shaken_disengagement", (cmd_function)w_stir_disengagement, {
+		{CMD_PARAM_STR, 0, 0},
+		{0,0,0}}, REQUEST_ROUTE},
 	{"stir_shaken_verify", (cmd_function)w_stir_verify, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, fixup_check_wrvar, 0},
@@ -494,6 +500,62 @@ static int add_date_hf(struct sip_msg *msg, time_t *date_ts)
 
 	if (!insert_new_lump_before(anchor, buf, DATE_HDR_L+len+CRLF_LEN, 0)) {
 		LM_ERR("Failed to insert lump\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/* Add P-Identity-Bypass for Incident Management Response */
+static int add_disengagement_token(struct sip_msg *msg, str *token)
+{
+
+	#define DISENGAGEMENT_HDR_S		"P-Identity-Bypass: "
+	#define DISENGAGEMENT_HDR_L		sizeof(DISENGAGEMENT_HDR_S)
+	
+	char *buf;
+	unsigned int len;
+	struct lump* anchor;
+
+	/* make sure we detect all headers */
+	if (parse_headers(msg, HDR_EOH_F, 0) == -1) {
+		LM_ERR("error while parsing message\n");
+		return -1;
+	}
+
+	/* check if token is available */
+	if (!token){
+		LM_ERR("Failed to identify disengagement token\n");
+		return -1;
+	}
+
+	/* add the anchor at the very end of the SIP headers */
+	anchor = anchor_lump(msg, msg->unparsed - msg->buf, 0);
+	if (anchor == NULL) {
+		LM_ERR("Failed to create lump anchor\n");
+		return -1;
+	}
+
+	/* calculate len (header + token + crlf) */
+	len = strlen(DISENGAGEMENT_HDR_S) + strlen(token->s) + strlen(CRLF);
+	/* alloc pkg memory */
+	buf= pkg_malloc(len);
+	if (!buf) {
+		LM_ERR("No more pkg mem\n");
+		return -1;
+	}
+
+	// push header in the buffer
+	strcpy(buf, DISENGAGEMENT_HDR_S);
+	// push token after the header
+	strcat(buf, token->s);
+	// push "\r\n" after the token
+	strcat(buf, CRLF);
+
+	/* insert buf at the end of previous headers */
+	if (insert_new_lump_after(anchor, buf, len, 0) == 0) {
+		LM_ERR("can't insert lump\n");
+		pkg_free(buf);
 		return -1;
 	}
 
@@ -1252,6 +1314,16 @@ error:
 	if (pkey)
 		EVP_PKEY_free(pkey);
 	return rc;
+}
+
+/* stir shaken disengagement token function */
+static int w_stir_disengagement(struct sip_msg *msg, str *token)
+{
+	if (add_disengagement_token(msg, token) < 0) {
+		LM_ERR("Failed to add P-Identity-Bypass header\n");
+		return 0;
+	}
+	return 1;
 }
 
 /* decode base64url without padding
