@@ -303,6 +303,7 @@ again:
 						"handle write, err, state: %d, att: %d",
 						con->state, con->msg_attempts);
 					tcpconn_release_error(con, 1,"Write error");
+					close(s); /* we always close the socket received for writing */
 					break;
 				} else if (resp==1) {
 					sh_log(con->hist, TCP_SEND2MAIN,
