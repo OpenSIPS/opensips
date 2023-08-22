@@ -674,7 +674,8 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			goto done;
 		}
 		if (0 == parse_min_expires(msg)) {
-			rec->expires = (unsigned int)(long)msg->min_expires->parsed;
+			if (msg->min_expires)
+				rec->expires = (unsigned int)(long)msg->min_expires->parsed;
 			if(send_register(cb_param->hash_index, rec, NULL)==1)
 				rec->state = REGISTERING_STATE;
 			else
