@@ -418,6 +418,12 @@ modparam("b2b_entities", "ua_default_timeout", 7200)
 					<emphasis>b</emphasis> - provide the body of the SIP request/reply
 					in the <xref linkend="event_E_UA_SESSION"/> event.
 					</para></listitem>
+					<listitem><para>
+					<emphasis>n</emphasis> - do not trigger the
+					<xref linkend="event_E_UA_SESSION"/> event (with event_type
+					<emphasis>NEW</emphasis>)  for initial INVITES
+					handled with this function.
+					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
@@ -714,7 +720,7 @@ opensips-cli -x mi ua_session_update key=B2B.436.1925389.1649338095 method=OPTIO
 				<emphasis>code </emphasis> - reply code
 			</para></listitem>
 			<listitem><para>
-				<emphasis>reason (optional)</emphasis> - reply reason string
+				<emphasis>reason</emphasis> - reply reason string
 			</para></listitem>
 			<listitem><para>
 				<emphasis>body (optional)</emphasis> - body to include in the
@@ -821,6 +827,11 @@ opensips-cli -x mi ua_session_terminate key=B2B.436.1925389.1649338095
 			<listitem><para>
 				<emphasis>event_type</emphasis> - the type of event:
 				<itemizedlist>
+					<listitem><para>
+						<emphasis>NEW</emphasis> - for initial INVITE requests,
+						handled with the <xref linkend="func_ua_session_server_init"/>
+						function.
+					</para></listitem>
 					<listitem><para>
 						<emphasis>EARLY</emphasis> - for 1xx provisional
 						responses

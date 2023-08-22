@@ -78,6 +78,7 @@ int extract_pub_key_from_cert(struct sip_msg* _msg, str* cert,
 		goto err_free;
 	}
 
+	pv_val.flags = PV_VAL_STR;
 	pv_val.rs = out_pub_key;
 	if (pv_set_value(_msg,pub_key,0,&pv_val) != 0) {
 		LM_ERR("Failed to set pub key pvar \n");

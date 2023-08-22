@@ -77,6 +77,7 @@ static int ds_ping_interval = 0;
 int ds_ping_maxfwd = -1;
 int ds_probing_mode = 0;
 int ds_persistent_state = 1;
+static int ds_persistent_state_enable = 0;
 int_list_t *ds_probing_list = NULL;
 
 /* db partiton info */
@@ -94,6 +95,10 @@ typedef struct _ds_db_head
 	str attrs_avp;
 	str script_attrs_avp;
 
+	str ping_from;
+	str ping_method;
+	str persistent_state;
+
 	struct _ds_db_head *next;
 } ds_db_head_t;
 
@@ -103,13 +108,17 @@ ds_db_head_t default_db_head = {
 	{NULL, -1},
 	{NULL, -1},
 
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
+	{NULL, -1},
 
 	{NULL, -1},
 	{NULL, -1},
-	{NULL, -1},
-	{NULL, -1},
-	{NULL, -1},
-	{NULL, -1},
+	{"1", 1},
+
 	NULL
 };
 ds_db_head_t *ds_db_heads = NULL;
@@ -408,6 +417,9 @@ DEF_GETTER_FUNC(cnt_avp);
 DEF_GETTER_FUNC(sock_avp);
 DEF_GETTER_FUNC(attrs_avp);
 DEF_GETTER_FUNC(script_attrs_avp);
+DEF_GETTER_FUNC(ping_from);
+DEF_GETTER_FUNC(ping_method);
+DEF_GETTER_FUNC(persistent_state);
 
 static partition_specific_param_t partition_params[] = {
 	{str_init("db_url"), {NULL, 0}, GETTER_FUNC(db_url)},
@@ -418,6 +430,9 @@ static partition_specific_param_t partition_params[] = {
 	PARTITION_SPECIFIC_PARAM (sock_avp, "$avp(ds_sock_failover)"),
 	PARTITION_SPECIFIC_PARAM (attrs_avp, ""),
 	PARTITION_SPECIFIC_PARAM (script_attrs_avp, ""),
+	PARTITION_SPECIFIC_PARAM (ping_from, ""),
+	PARTITION_SPECIFIC_PARAM (ping_method, ""),
+	PARTITION_SPECIFIC_PARAM (persistent_state, "1"),
 };
 
 static const unsigned int partition_param_count = sizeof (partition_params) /
@@ -735,6 +750,26 @@ static int partition_init(ds_db_head_t *db_head, ds_partition_t *partition)
 		partition->script_attrs_avp_type = 0;
 	}
 
+	if (db_head->ping_from.s && db_head->ping_from.len > 0) {
+		if (pkg_str_dup(&partition->ping_from, &db_head->ping_from) < 0)
+			LM_ERR("cannot duplicate ping_from\n");
+	}
+	if (db_head->ping_method.s && db_head->ping_method.len > 0) {
+		if (pkg_str_dup(&partition->ping_method, &db_head->ping_method) < 0)
+			LM_ERR("cannot duplicate ping_method\n");
+	}
+	partition->persistent_state = ds_persistent_state;
+	if (str_strcmp(&db_head->persistent_state, const_str("0")) ||
+			str_strcmp(&db_head->persistent_state, const_str("no")) ||
+			str_strcmp(&db_head->persistent_state, const_str("off")))
+		partition->persistent_state = 0;
+	else if (str_strcmp(&db_head->persistent_state, const_str("1")) ||
+			str_strcmp(&db_head->persistent_state, const_str("yes")) ||
+			str_strcmp(&db_head->persistent_state, const_str("on")))
+		partition->persistent_state = 1;
+
+	if (partition->persistent_state)
+		ds_persistent_state_enable = 1;
 	return 0;
 }
 
@@ -997,7 +1032,7 @@ next_part:
 	}
 
 	/* register timer to flush the state of destination back to DB */
-	if (ds_persistent_state && register_timer("ds-flusher", ds_flusher_routine,
+	if (ds_persistent_state_enable && register_timer("ds-flusher", ds_flusher_routine,
 			NULL, 30 , TIMER_FLAG_SKIP_ON_DELAY)<0) {
 		LM_ERR("failed to register timer for DB flushing!\n");
 		return -1;
@@ -1069,10 +1104,10 @@ static void destroy(void)
 	LM_DBG("destroying module ...\n");
 
 	/* flush the state of the destinations */
-	if (ds_persistent_state) {
+	if (ds_persistent_state_enable) {
 		/* open the DB conns*/
 		for (part_it = partitions; part_it; part_it = part_it->next) {
-			if (part_it->db_url.s)
+			if (part_it->db_url.s && part_it->persistent_state)
 				if (ds_connect_db(part_it) != 0) {
 					LM_ERR("failed to do DB connect\n");
 				}

@@ -349,8 +349,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 				NULL, DLG_DIR_NONE, NULL, 1, 0);
 	}
 
-	dlg->locked_by = process_no;
-
 	if ((rc = fetch_dlg_value(dlg, &shtag_dlg_val, &dlg_val_type, &tag_name, 0)) == 0) {
 		if (dlg_val_type != DLG_VAL_TYPE_STR) {
 			LM_ERR("Bad dialog value type\n");
@@ -360,8 +358,6 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	} else if (rc == -1)
 		LM_ERR("Failed to get dlg value for sharing tag %.*s\n",
 		       tag_name.s.len, tag_name.s.s);
-
-	dlg->locked_by = 0;
 
 	if (from_sync) {
 		dlg->flags |= DLG_FLAG_SYNCED;
@@ -793,12 +789,12 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 
    /* save sharing tag name as dlg val */
 	isval.s = dlg->shtag;
-	if (dlg->shtag.s && store_dlg_value_unsafe(dlg, &shtag_dlg_val, &isval,
+	if (dlg->shtag.s && store_dlg_value(dlg, &shtag_dlg_val, &isval,
 		DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("Failed to store sharing tag %.*s(%p) as dlg val\n",
 		       dlg->shtag.len, dlg->shtag.s, dlg->shtag.s);
 
-	vars = write_dialog_vars(dlg->vals);
+	vars = write_dialog_vars(dlg);
 	profiles = write_dialog_profiles(dlg->profile_links);
 
 	bin_push_str(packet, vars);

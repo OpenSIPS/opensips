@@ -84,9 +84,9 @@ Chapter 1. Admin Guide
 
    Once loaded, you will be able to define HEP listeners in your
    configuration file by adding their IP and, optionally, a
-   listening port. You can define both TCP and UDP listeners. On
-   UDP you will be able to receive HEP v1, v2 and v3 packets, on
-   TCP only HEPv3.
+   listening port. You can define both TCP, UDP, and TLS
+   listeners. On UDP you will be able to receive HEP v1, v2 and v3
+   packets, on TCP and TLS only HEPv3.
 
 ...
 #HEPv3 listener
@@ -117,13 +117,13 @@ socket= hep_udp:127.0.0.1:6061          # change the listening IP
    by ;. The parameters are given in key-value format, the
    possible keys being uri, transport and version, except
    destiantion's URI which doesn't have a key and is in host:port
-   . transport key can be TCP or UDP. TCP works only for HEP
-   version 3. Version is the hep protocol version and can be 1, 2
-   or 3.
+   . transport key can be TCP, UDP or TLS. TCP and TLS works only
+   for HEP version 3. Version is the hep protocol version and can
+   be 1, 2 or 3.
 
-   HEPv1 and HEPv2 can use only UDP. HEPv3 can use both TCP and
-   UDP having the default set to TCP. If no hep version defined,
-   the default is version 3 with TCP.
+   HEPv1 and HEPv2 can use only UDP. HEPv3 can use TCP, UDP and
+   TLS having the default set to TCP. If no hep version defined,
+   the default is version 3 with TCP and TLS.
 
    NO default value. If hep_id the module can't be used for HEP
    tracing.
@@ -167,7 +167,7 @@ modparam("proto_hep", "homer5_delim", "##")
 
 1.3.4. hep_port (integer)
 
-   The default port to be used by all TCP/UDP listeners.
+   The default port to be used by all TCP/UDP/TLS listeners.
 
    Default value is 5656.
 
@@ -351,15 +351,17 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Ionut Ionita (@ionutrazvanionita) 149 66 8047 998
-   2. Razvan Crainea (@razvancrainea) 35 26 80 484
+   2. Razvan Crainea (@razvancrainea) 36 27 83 486
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 26 19 384 170
    4. Liviu Chircu (@liviuchircu) 18 15 81 92
-   5. Vlad Patrascu (@rvlad-patrascu) 7 4 36 84
-   6. Maksym Sobolyev (@sobomax) 4 2 4 4
-   7. Nick Altmann (@nikbyte) 3 1 2 2
-   8. Dan Pascu (@danpascu) 3 1 1 1
-   9. Peter Lemenkov (@lemenkov) 3 1 1 1
-   10. Walter Doekes (@wdoekes) 3 1 1 1
+   5. Bence Szigeti 8 1 404 179
+   6. Vlad Patrascu (@rvlad-patrascu) 7 4 36 84
+   7. Maksym Sobolyev (@sobomax) 4 2 4 4
+   8. Nick Altmann (@nikbyte) 3 1 2 2
+   9. Dan Pascu (@danpascu) 3 1 1 1
+   10. Peter Lemenkov (@lemenkov) 3 1 1 1
+
+   All remaining contributors: Walter Doekes (@wdoekes).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -381,16 +383,18 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
-   3.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2021
-   5.  Walter Doekes (@wdoekes)            May 2020 - May 2020
-   6.  Razvan Crainea (@razvancrainea)     Nov 2015 - Jan 2020
-   7.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   10. Ionut Ionita (@ionutrazvanionita)   Oct 2015 - Apr 2017
+   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - Jul 2023
+   2.  Bence Szigeti                       Jul 2023 - Jul 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
+   5.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2021
+   7.  Walter Doekes (@wdoekes)            May 2020 - May 2020
+   8.  Dan Pascu (@danpascu)               May 2019 - May 2019
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -399,10 +403,10 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Liviu
-   Chircu (@liviuchircu), Razvan Crainea (@razvancrainea), Vlad
-   Patrascu (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita).
+   Last edited by: Bence Szigeti, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita).
 
    Documentation Copyrights:
 

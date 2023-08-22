@@ -523,8 +523,10 @@ static int ws_server_handshake(struct tcp_connection *con)
 		}
 
 		con->msg_attempts = 0;
-		if (req != &_ws_common_tcp_current_req)
-			pkg_free(req);
+		if (req != &_ws_common_tcp_current_req) {
+			shm_free(req);
+			con->con_req = NULL;
+		}
 
 		/* handshake now completed, destroy the handshake data */
 		WS_STATE(con) = WS_CON_HANDSHAKE_DONE;
@@ -549,7 +551,7 @@ static int ws_server_handshake(struct tcp_connection *con)
 	if (!req->complete && (req == &_ws_common_tcp_current_req)) {
 		/* let's duplicate this - most likely another conn will come in */
 
-		con->con_req = pkg_malloc(sizeof(struct tcp_req));
+		con->con_req = shm_malloc(sizeof(struct tcp_req));
 		if (con->con_req == NULL) {
 			LM_ERR("No more mem for dynamic con request buffer\n");
 			goto error;
@@ -596,7 +598,7 @@ error:
 	if (WS_STATE(con) == WS_CON_BAD_REQ)
 		ws_bad_handshake(con);
 	if (req != &_ws_common_tcp_current_req) {
-		pkg_free(req);
+		shm_free(req);
 		con->con_req = NULL;
 	}
 	return -1;

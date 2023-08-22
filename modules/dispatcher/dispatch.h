@@ -60,8 +60,6 @@
 
 #define MI_FULL_LISTING (1<<0)
 
-extern int ds_persistent_state;
-
 typedef struct _ds_dest
 {
 	str uri;        /* URI used in pinging and for matching destination at reload */
@@ -117,6 +115,9 @@ typedef struct _ds_partition
 	str name;              /* Partition name */
 	str table_name;        /* Table name */
 	str db_url;            /* DB url */
+	str ping_from;
+	str ping_method;
+	int persistent_state;
 
 	db_con_t **db_handle;
 	db_func_t dbf;

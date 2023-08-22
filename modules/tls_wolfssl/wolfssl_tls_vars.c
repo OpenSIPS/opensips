@@ -32,6 +32,8 @@
  *
  */
 
+#include "wolfssl_mem.h"
+
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
@@ -271,13 +273,13 @@ int _wolfssl_tls_var_comp(int ind, void *ssl, str *res)
 		res->s = buf;
 		res->len = text.len;
 
-		wolfSSL_Free(text.s);
+		oss_wolfSSL_Free(text.s);
 	}
 	if (!my) wolfSSL_X509_free(cert);
 
 	return 0;
  err:
-	if (text.s) wolfSSL_Free(text.s);
+	if (text.s) oss_wolfSSL_Free(text.s);
 	if (!my) wolfSSL_X509_free(cert);
 	return -1;
 }

@@ -25,8 +25,9 @@
 		Starting with version 2.1, the dispatcher module keeps its destination sets 
 		into different partitions. Each partition is described by its own
 		"db_url", "table_name", "dst_avp", "grp_avp", "cnt_avp", "sock_avp",
-		"attr_avp" and "blacklists" set of attributes.  Setting any of these
-		module parameters will only alter the "default" partition's properties.
+                "attr_avp", "blacklists", "ping_from", "ping_method" and
+                "persistent_state" set of attributes. Setting any of these
+                module parameters will only alter the "default" partition's properties.
 	</para>
 	<para>
 		In order to create a new partition, the <xref linkend="param_partition"/>
@@ -274,6 +275,10 @@ modparam("dispatcher", "setid_pvar", "$var(setid)")
 		the probing of failed gateways enabled.
 		</para>
 		<para>
+		Use the 'partition' parameter if you want to define the ping method
+		other partitions.
+		</para>
+		<para>
 		<emphasis>
 			Default value is <quote>OPTIONS</quote>.
 		</emphasis>
@@ -294,6 +299,10 @@ modparam("dispatcher", "ds_ping_method", "INFO")
 		With this Method you can define the "From:"-Line for the request,
 		sent to the failed gateways. This method is only available, if
 		compiled with the probing of failed gateways enabled.
+		</para>
+		<para>
+		Use the 'partition' parameter if you want to define the "From:"
+		ping header of other partitions.
 		</para>
 		<para>
 		<emphasis>
@@ -642,7 +651,12 @@ modparam("dispatcher", "pvar_algo_pattern", "$stat(load_%u)")
 		<title><varname>persistent_state</varname> (int)</title>
 		<para>
 		Specifies whether the <emphasis>state</emphasis> column
-		should be loaded at startup and flushed during runtime or not.
+		should be loaded at startup and flushed during runtime or not
+		for the "default" partition.
+		</para>
+		<para>
+		Use the 'partition' parameter if you want to define the persistent
+		state of other partitions.
 		</para>
 		<para>
 		<emphasis>Default value is <quote>1</quote> (enabled).

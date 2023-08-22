@@ -186,15 +186,6 @@ static int l_sipstate_notice(lua_State *L)
   return 0;
 }
 
-static int l_sipstate_setUserDebug(lua_State *L)
-{
-  int n;
-
-  n = luaL_checkinteger(L, 1);
-  lua_user_debug = n;
-  return 0;
-}
-
 static int l_sipstate_getpid(lua_State *L)
 {
   int pid;
@@ -303,7 +294,6 @@ static const struct luaL_Reg siplua_state_mylib [] =
     {"xdbg", l_sipstate_xdbg},
     {"print", l_sipstate_print},
     {"notice", l_sipstate_notice},
-    {"setUserDebug", l_sipstate_setUserDebug},
     {"getpid", l_sipstate_getpid},
     {"getmem", l_sipstate_getmem},
     {"getmeminfo", l_sipstate_getpkginfo},
@@ -318,7 +308,7 @@ static const struct luaL_Reg siplua_state_mylib [] =
 static void siplua_register_state_cclosures(lua_State *L)
 {
   lua_pushglobaltable(L);
-  luaL_openlib(L, "opensips", siplua_state_mylib, 0);
+  luaL_openlib(L, NULL, siplua_state_mylib, 0);
   lua_remove(L, -1);
 }
 

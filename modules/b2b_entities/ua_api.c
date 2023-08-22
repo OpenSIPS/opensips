@@ -153,6 +153,7 @@ static int get_all_headers(struct sip_msg *msg, str *hdrs)
 
 /* indexed with the values from enum ua_sess_event_type */
 static str event_type_str[] = {
+	str_init("NEW"),
 	str_init("EARLY"),
 	str_init("ANSWERED"),
 	str_init("REJECTED"),
@@ -464,6 +465,9 @@ static struct ua_sess_init_params *ua_parse_flags(str *s)
 			break;
 		case 'b':
 			params->flags |= UA_FL_PROVIDE_BODY;
+			break;
+		case 'n':
+			params->flags |= UA_FL_SUPPRESS_NEW;
 			break;
 		default:
 			LM_WARN("unknown option `%c'\n", s->s[st]);
@@ -801,6 +805,13 @@ int b2b_ua_server_init(struct sip_msg *msg, pv_spec_t *key_spec,
 		}
 	}
 
+	if (!(init_params->flags&UA_FL_SUPPRESS_NEW) &&
+		raise_ua_sess_event(key_ret, B2B_SERVER, UA_SESS_EV_NEW,
+		init_params->flags, msg) < 0) {
+		LM_ERR("Failed to raise E_UA_SESSION event\n");
+		goto error;
+	}
+
 	pkg_free(key_ret);
 
 	return 1;
@@ -1035,16 +1046,9 @@ mi_response_t *b2b_ua_mi_reply(const mi_params_t *params,
 		return init_mi_param_error();
 	if (get_mi_int_param(params, "code", &code) < 0)
 		return init_mi_param_error();
-
-	switch (try_get_mi_string_param(params, "reason", &reason.s, &reason.len)) {
-	case 0:
-		break;
-	case -1:
-		reason.s = NULL;
-		break;
-	default:
+	if (get_mi_string_param(params, "reason", &reason.s, &reason.len) < 0)
 		return init_mi_param_error();
-	}
+
 	switch (try_get_mi_string_param(params, "body", &body.s, &body.len)) {
 	case 0:
 		break;
@@ -1077,9 +1081,8 @@ mi_response_t *b2b_ua_mi_reply(const mi_params_t *params,
 
 	parse_method(method.s, method.s+method.len, &method_value);
 
-	if (ua_send_reply(B2B_NONE, &key, method_value, code,
-		reason.s?&reason:NULL, body.s?&body:NULL,
-		content_type.s?&content_type:NULL,
+	if (ua_send_reply(B2B_NONE, &key, method_value, code, &reason,
+		body.s?&body:NULL, content_type.s?&content_type:NULL,
 		extra_headers.s?&extra_headers:NULL) < 0) {
 		LM_ERR("Failed to send reply\n");
 		return init_mi_error(500, MI_SSTR("Failed to send reply"));

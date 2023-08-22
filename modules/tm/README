@@ -84,6 +84,7 @@ tm Module
               1.5.5. $T_ruri
               1.5.6. $bavp(name)
               1.5.7. $T_id
+              1.5.8. $T_branch_last_reply_code
 
         1.6. Exported MI Functions
 
@@ -1496,6 +1497,13 @@ _in(ip):$socket_in(port)\r\n");
    opaque hexa string, unique for each transaction. If there is no
    current transaction, NULL value is returned.
 
+1.5.8. $T_branch_last_reply_code
+
+   $T_branch_last_reply_code - returns the last reply code
+   received for a branch specified as parameter. If no parameter
+   is specified, the last reply for the current branch is
+   retrieved.
+
 1.6. Exported MI Functions
 
 1.6.1.  t_uac_dlg
@@ -1687,16 +1695,16 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1078 625 21946 16754
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1080 627 21951 16758
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
-   5. Razvan Crainea (@razvancrainea) 130 100 1964 846
+   5. Razvan Crainea (@razvancrainea) 134 103 2024 847
    6. Liviu Chircu (@liviuchircu) 108 82 1263 886
    7. Daniel-Constantin Mierla (@miconda) 43 37 322 166
    8. Vlad Patrascu (@rvlad-patrascu) 40 18 916 826
    9. Anca Vamanu 37 19 778 651
-   10. Vlad Paiu (@vladpaiu) 26 23 170 57
+   10. Vlad Paiu (@vladpaiu) 27 24 172 57
 
    All remaining contributors: Dan Pascu (@danpascu), Henning
    Westerholt (@henningw), Maksym Sobolyev (@sobomax), Ovidiu Sas
@@ -1733,16 +1741,16 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - May 2023
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   4.  Razvan Crainea (@razvancrainea)     Jul 2010 - Apr 2023
-   5.  Maksym Sobolyev (@sobomax)          Mar 2004 - Feb 2023
-   6.  MayamaTakeshi                       Oct 2022 - Oct 2022
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
-   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   9.  Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
-   10. Vlad Paiu (@vladpaiu)               Jun 2011 - May 2019
+   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Jul 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2001 - Jul 2023
+   3.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   4.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
+   6.  Maksym Sobolyev (@sobomax)          Mar 2004 - Feb 2023
+   7.  MayamaTakeshi                       Oct 2022 - Oct 2022
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2021
+   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   10. Dan Pascu (@danpascu)               Feb 2006 - Feb 2020
 
    All remaining contributors: Fabian Gast (@fgast), Aron Podrigal
    (@ar45), Alexey Vasilyev (@vasilevalex), Ionut Ionita
@@ -1766,16 +1774,16 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
-   Liviu Chircu (@liviuchircu), Fabian Gast (@fgast), Alexey
-   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Nick
-   Altmann (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu
-   (@vladpaiu), Anca Vamanu, Henning Westerholt (@henningw), Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Edson Gellert Schubert, Dan Pascu (@danpascu), Juha
-   Heinanen (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj),
-   Jiri Kuthan (@jiriatipteldotorg).
+   Last edited by: Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Liviu
+   Chircu (@liviuchircu), Fabian Gast (@fgast), Alexey Vasilyev
+   (@vasilevalex), Peter Lemenkov (@lemenkov), Nick Altmann
+   (@nikbyte), Ovidiu Sas (@ovidiusas), Vlad Paiu (@vladpaiu),
+   Anca Vamanu, Henning Westerholt (@henningw), Klaus Darilion,
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Dan Pascu (@danpascu), Juha Heinanen
+   (@juha-h), Elena-Ramona Modroiu, Jan Janak (@janakj), Jiri
+   Kuthan (@jiriatipteldotorg).
 
    Documentation Copyrights:
 

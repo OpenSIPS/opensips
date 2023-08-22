@@ -811,14 +811,28 @@ int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr)
 	LM_DBG("extra_hdrs=[%p][%d]->[%.*s]\n",
 		extra_hdrs.s, extra_hdrs.len, extra_hdrs.len, extra_hdrs.s);
 
-	result=tmb.t_request_within(
-		&register_method,	/* method */
-		&extra_hdrs,		/* extra headers*/
-		NULL,			/* body */
-		&rec->td,		/* dialog structure*/
-		reg_tm_cback,		/* callback function */
-		(void *)cb_param,	/* callback param */
-		osips_shm_free);	/* function to release the parameter */
+	if ( !push_new_global_context() ) {
+
+		LM_ERR("failed to alloc new ctx in pkg\n");
+		result = 0;
+
+	} else {
+
+		/* reset the new to-be-used CTX */
+		memset( current_processing_ctx, 0, context_size(CONTEXT_GLOBAL) );
+
+		/* send the request within the new context */
+		result=tmb.t_request_within(
+			&register_method,	/* method */
+			&extra_hdrs,		/* extra headers*/
+			NULL,			/* body */
+			&rec->td,		/* dialog structure*/
+			reg_tm_cback,		/* callback function */
+			(void *)cb_param,	/* callback param */
+			osips_shm_free);	/* function to release the parameter */
+
+		pop_pushed_global_context();
+	}
 
 	if (result < 1)
 		shm_free(cb_param);

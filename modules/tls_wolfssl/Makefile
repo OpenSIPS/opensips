@@ -11,8 +11,17 @@ MOD_DIR ?= $(shell realpath `dirname $(_makefile_path)`)/modules/tls_wolfssl
 
 include ../../Makefile.modules
 
+ifneq (,$(findstring -DWOLFSSL_DEBUG_MEMORY,$(DEFS)))
+ifeq (,$(findstring -DDBG_MALLOC,$(DEFS)))
+$(warning "Memory debugging not enabled - disabling wolfSSL memory debugging")
+DEFS := $(filter-out -DWOLFSSL_DEBUG_MEMORY,$(DEFS))
+else
+WOLFSSL_EXTRA_CFLAGS := -DWOLFSSL_DEBUG_MEMORY
+endif
+endif
+
 lib/lib/libwolfssl.a:
-	@cd ./lib/wolfssl; \
+	$(Q)cd ./lib/wolfssl; \
 	if [ ! -f "configure" ]; then \
 		./autogen.sh; \
 	fi; \
@@ -22,9 +31,11 @@ lib/lib/libwolfssl.a:
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
 		--disable-jni --disable-crl-monitor \
 		--prefix=$(MOD_DIR)/lib \
-		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA"; \
+		--exec-prefix=$(MOD_DIR)/lib \
+		C_EXTRA_FLAGS="-fPIC" \
+		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"; \
 	fi;
-	@$(MAKE) -C ./lib/wolfssl install
+	$(Q)$(MAKE) -C ./lib/wolfssl install
 
 clean:	clean-wolfssl-lib
 

@@ -29,17 +29,17 @@
 	<row>
 		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">120</entry>
-		<entry align="center">58</entry>
-		<entry align="center">5331</entry>
-		<entry align="center">1087</entry>
+		<entry align="center">126</entry>
+		<entry align="center">62</entry>
+		<entry align="center">5443</entry>
+		<entry align="center">1147</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">72</entry>
-		<entry align="center">58</entry>
-		<entry align="center">720</entry>
+		<entry align="center">73</entry>
+		<entry align="center">59</entry>
+		<entry align="center">722</entry>
 		<entry align="center">468</entry>
 	</row>
 	<row>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Stanislaw Pitucha, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), Giedrius, <ulink url="https://github.com/DMOsipov">@DMOsipov</ulink>, Stéphane Alnet (<ulink url="https://github.com/shimaore">@shimaore</ulink>), Henk Hesselink, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Giedrius, Stanislaw Pitucha, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>), <ulink url="https://github.com/DMOsipov">@DMOsipov</ulink>, Stéphane Alnet (<ulink url="https://github.com/shimaore">@shimaore</ulink>), Henk Hesselink, Ryan Bullock (<ulink url="https://github.com/rrb3942">@rrb3942</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
-		<entry align="center">May 2017 - May 2023</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">Dec 2010 - Jul 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Aug 2009 - May 2023</entry>
+		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
+		<entry align="center">May 2017 - Jun 2023</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
 		<entry>Giedrius</entry>
-		<entry align="center">Apr 2023 - Apr 2023</entry>
+		<entry align="center">Apr 2023 - May 2023</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">Dec 2010 - Mar 2023</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Aug 2009 - May 2023</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

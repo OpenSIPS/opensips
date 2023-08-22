@@ -713,7 +713,7 @@ Chapter 2. Contributors
    5. Razvan Crainea (@razvancrainea) 21 14 149 246
    6. Elena-Ramona Modroiu 18 5 1051 192
    7. Henning Westerholt (@henningw) 12 8 112 133
-   8. Vlad Paiu (@vladpaiu) 8 6 25 2
+   8. Vlad Paiu (@vladpaiu) 9 7 39 2
    9. Ionut Ionita (@ionutrazvanionita) 8 5 180 12
    10. Kobi Eshun (@ekobi) 7 1 300 146
 
@@ -745,24 +745,25 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
-   2.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   3.  John Burke (@john08burke)           Jun 2022 - Jun 2022
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
-   5.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   8.  Andrey Vorobiev                     Apr 2016 - Apr 2016
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Ionut Ionita (@ionutrazvanionita)   Nov 2015 - Feb 2016
+   1.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   4.  John Burke (@john08burke)           Jun 2022 - Jun 2022
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
+   6.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Andrey Vorobiev                     Apr 2016 - Apr 2016
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Walter
-   Doekes (@wdoekes), Vlad Paiu (@vladpaiu), Anca Vamanu, Kennard
-   White, Norman Brandinger (@NormB), Sergio Gutierrez, Kobi Eshun
-   (@ekobi), Henning Westerholt (@henningw), Olle E. Johansson,
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Elena-Ramona Modroiu, Klaus Darilion, Andreas
-   Granig, Andrei Pelinescu-Onciul, Elena-Ramona Modroiu.
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Anca Vamanu,
+   Kennard White, Norman Brandinger (@NormB), Sergio Gutierrez,
+   Kobi Eshun (@ekobi), Henning Westerholt (@henningw), Olle E.
+   Johansson, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Klaus
+   Darilion, Andreas Granig, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits

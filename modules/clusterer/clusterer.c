@@ -1107,8 +1107,13 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 			handle_remove_node(packet, cl);
 		else if (packet_type == CLUSTERER_GENERIC_MSG)
 			handle_cl_gen_msg(packet, cluster_id, source_id);
-		else if (packet_type == CLUSTERER_MI_CMD)
+		else if (packet_type == CLUSTERER_MI_CMD) {
+			/* we don't need to hold the lock while running an MI cmd, and in
+			 * case of clusterer's own cmds, it might even cause a deadlock */
+			lock_stop_read(cl_list_lock);
 			handle_cl_mi_msg(packet);
+			return;
+		}
 		else if (packet_type == CLUSTERER_SHTAG_ACTIVE)
 			handle_shtag_active(packet, cluster_id, source_id);
 		else if (packet_type == CLUSTERER_SYNC_REQ)
@@ -1765,19 +1770,26 @@ int cl_register_cap(str *cap, cl_packet_cb_f packet_cb, cl_event_cb_f event_cb,
 
 struct local_cap *dup_caps(struct local_cap *caps)
 {
-	struct local_cap *cap, *ret = NULL;
+	struct local_cap *new_cap, *ret = NULL;
 
 	for (; caps; caps = caps->next) {
-		cap = shm_malloc(sizeof *cap);
-		if (!cap) {
+		new_cap = shm_malloc(sizeof *new_cap +
+			caps->reg.name.len + CAP_SR_ID_PREFIX_LEN);
+		if (!new_cap) {
 			LM_ERR("No more shm memory\n");
 			return NULL;
 		}
-		memcpy(cap, caps, sizeof *caps);
+		memcpy(new_cap, caps, sizeof *caps);
 
-		cap->next = NULL;
+		new_cap->reg.sr_id.s = (char *)(new_cap + 1);
+		new_cap->reg.sr_id.len = caps->reg.name.len + CAP_SR_ID_PREFIX_LEN;
+		memcpy(new_cap->reg.sr_id.s, CAP_SR_ID_PREFIX, CAP_SR_ID_PREFIX_LEN);
+		memcpy(new_cap->reg.sr_id.s + CAP_SR_ID_PREFIX_LEN,
+			caps->reg.name.s, caps->reg.name.len);
 
-		add_last(cap, ret);
+		new_cap->next = NULL;
+
+		add_last(new_cap, ret);
 	}
 
 	return ret;
@@ -1795,6 +1807,9 @@ int preserve_reg_caps(cluster_info_t *new_info)
 					LM_ERR("Failed to duplicate capabilities info\n");
 					return -1;
 				}
+
+				update_shtags_sync_status_cap(cl->cluster_id,
+					new_cl->capabilities);
 			}
 
 	return 0;

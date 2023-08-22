@@ -151,6 +151,8 @@ extern int b2b_early_update;
 extern str top_hiding_scen_s;
 extern str internal_scen_s;
 
+extern int new_ent_1_ctx_idx, new_ent_2_ctx_idx;
+
 extern struct b2bl_route_ctx cur_route_ctx;
 
 extern str b2bl_mod_name;
@@ -198,6 +200,31 @@ static inline int b2b_get_request_id(str* request)
 #define get_tracer(_tuple) \
 	( (_tuple)->tracer.f ? &((_tuple)->tracer) : NULL )
 
+
+#define B2BL_LOCK_GET(hash_index) \
+	do { \
+		lock_get(&b2bl_htable[hash_index].lock); \
+		b2bl_htable[hash_index].locked_by = process_no; \
+	} while (0)
+
+#define B2BL_LOCK_RELEASE(hash_index) \
+	do { \
+		b2bl_htable[hash_index].locked_by = -1; \
+		lock_release(&b2bl_htable[hash_index].lock); \
+	} while (0)
+
+#define B2BL_LOCK_GET_AUX(hash_index) \
+	do { \
+		if (b2bl_htable[hash_index].locked_by != process_no) \
+			lock_get(&b2bl_htable[hash_index].lock); \
+	} while (0)
+
+#define B2BL_LOCK_RELEASE_AUX(hash_index) \
+	do { \
+		if (b2bl_htable[hash_index].locked_by != process_no) \
+			lock_release(&b2bl_htable[hash_index].lock); \
+	} while (0)
+
 int b2b_add_dlginfo(str* key, str* entity_key,int src, b2b_dlginfo_t* info, void *param);
 int b2b_server_notify(struct sip_msg* msg, str* key, int type,
 		str *logic_key, void* param, int flags);
@@ -206,5 +233,7 @@ int b2b_client_notify(struct sip_msg* msg, str* key, int type,
 void b2bl_db_init(void);
 
 int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact);
+
+void new_ent_ctx_destroy(void *e);
 
 #endif

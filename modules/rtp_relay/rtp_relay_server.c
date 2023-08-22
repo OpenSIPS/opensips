@@ -66,5 +66,6 @@ int rtp_relay_reg(char *name, struct rtp_relay_funcs *funcs,
 	/* fill in hooks */
 	memset(hooks, 0, sizeof *hooks);
 	hooks->get_sdp = rtp_relay_get_sdp;
+	hooks->get_dlg_ids = rtp_relay_get_dlg_ids;
 	return 0;
 }

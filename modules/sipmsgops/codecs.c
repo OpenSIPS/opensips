@@ -386,38 +386,38 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 {
 	static sdp_payload_attr_t static_payloads[] = {
 	/* as per http://www.iana.org/assignments/rtp-parameters/rtp-parameters.xml */
-	{ NULL,0,{ "0",1},{"PCMU",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 0 - PCMU/8000  */
-	{ NULL,0,{ "3",1},{ "GSM",3},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 3 -  GSM/8000  */
-	{ NULL,0,{ "4",1},{"G723",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 4 - G723/8000  */
-	{ NULL,0,{ "5",1},{"DVI4",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 5 - DVI4/8000  */
-	{ NULL,0,{ "6",1},{"DVI4",4},{"16000",5},{NULL,0},{NULL,0},{},0 },   /* 6 - DVI4/16000 */
-	{ NULL,0,{ "7",1},{ "LPC",3},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 7 -  LPC/8000  */
-	{ NULL,0,{ "8",1},{"PCMA",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 8 - PCMA/8000  */
-	{ NULL,0,{ "9",1},{"G722",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /* 9 - G722/8000  */
-	{ NULL,0,{"10",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0 },   /*10 -  L16/44100 */
-	{ NULL,0,{"11",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0 },   /*11 -  L16/44100 */
-	{ NULL,0,{"12",2},{"QCELP",5},{"8000",4},{NULL,0},{NULL,0},{},0 },   /*12 -QCELP/8000  */
-	{ NULL,0,{"13",2},{  "CN",2},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*13 -   CN/8000  */
-	{ NULL,0,{"14",2},{ "MPA",3},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*14 -  MPA/90000 */
-	{ NULL,0,{"15",2},{"G728",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*15 - G728/8000  */
-	{ NULL,0,{"16",2},{"DVI4",4},{"11025",5},{NULL,0},{NULL,0},{},0 },   /*16 - DVI4/11025 */
-	{ NULL,0,{"17",2},{"DVI4",4},{"22050",5},{NULL,0},{NULL,0},{},0 },   /*17 - DVI4/22050 */
-	{ NULL,0,{"18",2},{"G729",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*18 - G729/8000  */
-	{ NULL,0,{"25",2},{"CelB",4},{ "8000",4},{NULL,0},{NULL,0},{},0 },   /*25 - CelB/8000  */
-	{ NULL,0,{"26",2},{"JPEG",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*26 - JPEG/90000 */
-	{ NULL,0,{"28",2},{  "nv",2},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*28 -   nv/90000 */
-	{ NULL,0,{"31",2},{"H261",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*31 - H261/90000 */
-	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*32 -  MPV/90000 */
-	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*33 - MP2T/90000 */
-	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0},{},0 },   /*34 - H263/90000 */
-	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0},{},0 },   /*T38- fax        */
-	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0},{},0 }
+	{ NULL,0,{ "0",1},{"PCMU",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 0 - PCMU/8000  */
+	{ NULL,0,{ "3",1},{ "GSM",3},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 3 -  GSM/8000  */
+	{ NULL,0,{ "4",1},{"G723",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 4 - G723/8000  */
+	{ NULL,0,{ "5",1},{"DVI4",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 5 - DVI4/8000  */
+	{ NULL,0,{ "6",1},{"DVI4",4},{"16000",5},{NULL,0},{NULL,0},{},0, NULL },   /* 6 - DVI4/16000 */
+	{ NULL,0,{ "7",1},{ "LPC",3},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 7 -  LPC/8000  */
+	{ NULL,0,{ "8",1},{"PCMA",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 8 - PCMA/8000  */
+	{ NULL,0,{ "9",1},{"G722",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /* 9 - G722/8000  */
+	{ NULL,0,{"10",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0, NULL },   /*10 -  L16/44100 */
+	{ NULL,0,{"11",2},{ "L16",3},{"44100",5},{NULL,0},{NULL,0},{},0, NULL },   /*11 -  L16/44100 */
+	{ NULL,0,{"12",2},{"QCELP",5},{"8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*12 -QCELP/8000  */
+	{ NULL,0,{"13",2},{  "CN",2},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*13 -   CN/8000  */
+	{ NULL,0,{"14",2},{ "MPA",3},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*14 -  MPA/90000 */
+	{ NULL,0,{"15",2},{"G728",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*15 - G728/8000  */
+	{ NULL,0,{"16",2},{"DVI4",4},{"11025",5},{NULL,0},{NULL,0},{},0, NULL },   /*16 - DVI4/11025 */
+	{ NULL,0,{"17",2},{"DVI4",4},{"22050",5},{NULL,0},{NULL,0},{},0, NULL },   /*17 - DVI4/22050 */
+	{ NULL,0,{"18",2},{"G729",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*18 - G729/8000  */
+	{ NULL,0,{"25",2},{"CelB",4},{ "8000",4},{NULL,0},{NULL,0},{},0, NULL },   /*25 - CelB/8000  */
+	{ NULL,0,{"26",2},{"JPEG",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*26 - JPEG/90000 */
+	{ NULL,0,{"28",2},{  "nv",2},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*28 -   nv/90000 */
+	{ NULL,0,{"31",2},{"H261",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*31 - H261/90000 */
+	{ NULL,0,{"32",2},{ "MPV",3},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*32 -  MPV/90000 */
+	{ NULL,0,{"33",2},{"MP2T",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*33 - MP2T/90000 */
+	{ NULL,0,{"34",2},{"H263",4},{"90000",5},{NULL,0},{NULL,0},{},0, NULL },   /*34 - H263/90000 */
+	{ NULL,0,{"t38",3},{"t38",3},{     "",0},{NULL,0},{NULL,0},{},0, NULL },   /*T38- fax        */
+	{ NULL,0,{NULL,0},{  NULL,0},{   NULL,0},{NULL,0},{NULL,0},{},0, NULL }
 	};
 	sdp_payload_attr_t *payload;
 	char *cur, *tmp, *buff, temp;
 	struct lump * lmp;
-	str found;
-	int ret, i,match, buff_len, is_static;
+	str found,linked_found;
+	int ret, i,match, linked_match, buff_len, is_static;
 	regmatch_t pmatch;
 
 
@@ -556,6 +556,37 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 							goto end;
 						}
 					}
+
+					if (payload->linked_payload != NULL) {
+						LM_DBG("%.*s is linked with %.*s\n",payload->rtp_payload.len,payload->rtp_payload.s,
+						payload->linked_payload->rtp_payload.len,payload->linked_payload->rtp_payload.s);
+
+						/* find the full 'a=...' entry */
+						if( delete_sdp_line( msg, payload->linked_payload->rtp_enc.s, cell) < 0 )
+						{
+							LM_ERR("Unable to add delete lump for a=\n");
+							ret = -1;
+							goto end;
+						}
+
+						if( delete_sdp_line( msg, payload->linked_payload->fmtp_string.s, cell) < 0 )
+						{
+							LM_ERR("Unable to add delete lump for a=\n");
+							ret = -1;
+							goto end;
+						}
+
+						for (i=0;i<payload->linked_payload->custom_attrs_size;i++) {
+							LM_DBG("also deleting attribute [%.*s] belonging to codec to be deleted\n",
+							payload->linked_payload->custom_attrs[i].len,payload->linked_payload->custom_attrs[i].s);
+							if( delete_sdp_line( msg, payload->linked_payload->custom_attrs[i].s, cell) < 0 )
+							{
+								LM_ERR("Unable to add delete lump for a=\n");
+								ret = -1;
+								goto end;
+							}
+						}
+					}
 				}
 
 				{
@@ -580,6 +611,57 @@ static int stream_process(struct sip_msg * msg, struct sdp_stream_cell *cell,
 
 					//cur -= found.len;
 					lmp->len -= found.len;
+
+					if (op == DELETE && payload->linked_payload != NULL) {
+						linked_match = 0;
+						cur = lmp->u.value;
+						while( !linked_match && cur < lmp->u.value + lmp->len)
+						{
+							/* find the end of the number */
+							linked_found.s = cur;
+
+							while(  cur < lmp->u.value + lmp->len &&  *cur != ' ' )
+								cur++;
+
+							linked_found.len = cur - linked_found.s;
+
+							/* does it matches payload number */
+							if ( linked_found.len == payload->linked_payload->rtp_payload.len &&
+							strncmp( linked_found.s,payload->linked_payload->rtp_payload.s,linked_found.len) == 0) {
+								linked_match = 1;
+							} else {
+								/* continue on searching => skip spaces
+								   if there still are any */
+								while( cur < lmp->u.value + lmp->len && * cur == ' '  )
+									cur++;
+							}
+						}
+
+						if (linked_match) {
+							/* take the previous whitespaces as well */
+							while (linked_found.s > lmp->u.value && *(linked_found.s - 1) == ' ') {
+								linked_found.s--;
+								linked_found.len++;
+							}
+
+							/* when trimming the very last payload, avoid trailing ws */
+							if (cur == lmp->u.value + lmp->len) {
+								tmp = linked_found.s;
+								while (tmp>lmp->u.value && *(--tmp) == ' ') {
+									linked_found.s--;
+									linked_found.len++;
+								}
+							}
+
+							/* delete the string and update iterators */
+							for(tmp=linked_found.s ; tmp< lmp->u.value + lmp->len ; tmp++ )
+								*tmp  = *(tmp+linked_found.len);
+
+							//cur -= found.len;
+							lmp->len -= linked_found.len;
+						}
+					}	
+					
 				}
 
 				/* add the deleted number into a buffer to be addded later */

@@ -80,6 +80,7 @@ static const pv_export_t vars[] = {
 	{ {"siprec", sizeof("siprec")-1}, 1000,
 		pv_get_siprec, pv_set_siprec, pv_parse_siprec,
 		0, 0, 0 },
+	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
 

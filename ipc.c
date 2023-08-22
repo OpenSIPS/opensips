@@ -188,6 +188,7 @@ static inline int __ipc_send_job(int fd, int dst_proc, ipc_handler_type type,
 
 	// FIXME - we should check if the destination process really listens
 	// for read, otherwise we may end up filling in the pipe and block
+	memset(&job, 0, sizeof job);
 
 	job.snd_proc = (short)process_no;
 	job.handler_type = type;
@@ -289,12 +290,14 @@ void ipc_handle_job(int fd)
 		return;
 	}
 
-	/* we shouldn't print any logs, in case we are handling
-	 * an event_route IPC job for the E_CORE_LOG event */
-	/*
+	/* suppress the E_CORE_LOG event for the below log while handling
+	 * the event itself */
+	suppress_proc_log_event();
+
 	LM_DBG("received job type %d[%s] from process %d\n",
 		job.handler_type, ipc_handlers[job.handler_type].name, job.snd_proc);
-	*/
+
+	reset_proc_log_event();
 
 	/* custom handling for RPC type */
 	if (job.handler_type==ipc_rpc_type) {

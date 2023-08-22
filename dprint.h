@@ -136,6 +136,8 @@ extern int log_event_level_filter;
 extern int log_json_buf_size;
 extern int log_msg_buf_size;
 
+extern str log_cee_hostname;
+
 /*
  * must be called after init_multi_proc_support()
  * must be called once for each OpenSIPS process
@@ -146,9 +148,12 @@ int init_log_level(void);
 void cleanup_log_level(void);
 
 int init_log_cons_shm_table(void);
+void cleanup_log_cons_shm_table(void);
 
 int init_log_json_buf(int realloc);
 int init_log_msg_buf(int realloc);
+
+int init_log_cee_hostname(void);
 
 int init_log_event_cons();
 int set_log_event_cons_cfg_state(void);
@@ -166,7 +171,8 @@ int dp_my_pid(void);
 void stderr_dprint_tmp(char *format, ...);
 
 void dprint(int log_level, int facility, char *module, const char *func,
-	char *stderr_fmt, char *syslog_fmt, char *format, ...);
+	char *stderr_fmt, char *syslog_fmt, char *format, ...)
+	__attribute__ ((__format__ (__printf__, 5, 8)));
 
 int str2facility(char *s);
 
@@ -182,6 +188,12 @@ void set_proc_log_level(int level);
 
 /* changes the logging level to the default value for the current process */
 void reset_proc_log_level(void);
+
+/* suppress the E_CORE_LOG event for new logs (useful when handling the event
+ * itself in an event consumer) */
+void suppress_proc_log_event(void);
+
+void reset_proc_log_event(void);
 
 static inline char* dp_time(void)
 {
@@ -269,6 +281,9 @@ static inline char *dp_log_level_str(int log_level)
 		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
 		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ": "
 
+		#define stderr_dprint_tmp_err(fmt, ...) \
+				stderr_dprint_tmp(DP_ERR_PREFIX LOG_PREFIX fmt __VA_ARGS__)
+
 		#define MY_DPRINT(_log_level, _log_facility, _stderr_prefix, \
 					_syslog_prefix, _fmt, ...) \
 				dprint(_log_level, _log_facility, \
@@ -325,9 +340,49 @@ static inline char *dp_log_level_str(int log_level)
 		#define LM_GEN2( _facility, _lev, fmt, ...) \
 			do { \
 				if (is_printable(_lev)){ \
-					dprint(_lev, _facility, NULL, NULL, \
-						DP_PREFIX "%s" fmt, "%s" fmt, fmt, \
-						dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+					switch(_lev){ \
+					case L_CRIT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_CRIT_PREFIX fmt, "%s" DP_CRIT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_ALERT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ALERT_PREFIX fmt, "%s" DP_ALERT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_ERR: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ERR_PREFIX fmt, "%s" DP_ERR_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_WARN: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_WARN_PREFIX fmt, "%s" DP_WARN_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_NOTICE: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_NOTICE_PREFIX fmt, "%s" DP_NOTICE_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_INFO: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_INFO_PREFIX fmt, "%s" DP_INFO_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					case L_DBG: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					default: \
+						if (_lev > L_DBG) \
+							dprint(_lev, _facility, NULL, NULL, \
+								DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+								dp_time(), dp_my_pid(), log_prefix __VA_ARGS__) \
+						break; \
+					} \
 				} \
 			}while(0)
 
@@ -390,6 +445,10 @@ static inline char *dp_log_level_str(int log_level)
 		#define LOG_PREFIX_UTIL(_n)  LOG_PREFIX_UTIL2(_n)
 		#define LOG_PREFIX  LOG_PREFIX_UTIL(MOD_NAME) ":%s: "
 
+		#define stderr_dprint_tmp_err(_fmt, args...) \
+				stderr_dprint_tmp(DP_ERR_PREFIX LOG_PREFIX _fmt, \
+				dp_time(), dp_my_pid(), log_prefix, __DP_FUNC, ## args) \
+
 		#define MY_DPRINT(_log_level, _log_facility, _stderr_prefix, \
 					_syslog_prefix, _fmt, args...) \
 				dprint(_log_level, _log_facility, \
@@ -446,9 +505,49 @@ static inline char *dp_log_level_str(int log_level)
 		#define LM_GEN2( _facility, _lev, fmt, args...) \
 			do { \
 				if (is_printable(_lev)){ \
-					dprint(_lev, _facility, NULL, NULL, \
-						DP_PREFIX "%s" fmt, "%s" fmt, fmt, \
-						dp_time(), dp_my_pid(), log_prefix, ## args); \
+					switch(_lev){ \
+					case L_CRIT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_CRIT_PREFIX fmt, "%s" DP_CRIT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_ALERT: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ALERT_PREFIX fmt, "%s" DP_ALERT_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_ERR: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_ERR_PREFIX fmt, "%s" DP_ERR_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_WARN: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_WARN_PREFIX fmt, "%s" DP_WARN_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_NOTICE: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_NOTICE_PREFIX fmt, "%s" DP_NOTICE_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_INFO: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_INFO_PREFIX fmt, "%s" DP_INFO_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					case L_DBG: \
+						dprint(_lev, _facility, NULL, NULL, \
+							DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					default: \
+						if (_lev > L_DBG) \
+							dprint(_lev, _facility, NULL, NULL, \
+							DP_DBG_PREFIX fmt, "%s" DP_DBG_TEXT fmt, fmt, \
+							dp_time(), dp_my_pid(), log_prefix, ## args); \
+						break; \
+					} \
 				} \
 			}while(0)
 

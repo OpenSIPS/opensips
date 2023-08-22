@@ -143,6 +143,45 @@ int ensure_global_context(void)
 }
 
 
+#define CTX_STACK_SIZE  8
+static context_p ctx_stack[CTX_STACK_SIZE];
+static unsigned int ctx_stack_idx = 0;
+
+int push_new_global_context(void)
+{
+	if (ctx_stack_idx==CTX_STACK_SIZE) {
+		LM_ERR("too many stacked contexts (%d)\n",ctx_stack_idx);
+		return 0;
+	}
+
+	ctx_stack[ctx_stack_idx++] = current_processing_ctx;
+
+	current_processing_ctx = context_alloc(CONTEXT_GLOBAL);
+	if (!current_processing_ctx) {
+		LM_ERR("oom\n");
+		current_processing_ctx = ctx_stack[--ctx_stack_idx];
+		return 0;
+	}
+
+	memset(current_processing_ctx, 0, context_size(CONTEXT_GLOBAL));
+	return 1;
+}
+
+int pop_pushed_global_context(void)
+{
+	if (ctx_stack_idx==0) {
+		LM_ERR("nothing to pop form the stack\n");
+		return -1;
+	}
+
+	context_destroy(CONTEXT_GLOBAL, current_processing_ctx);
+	context_free(current_processing_ctx);
+
+	current_processing_ctx = ctx_stack[--ctx_stack_idx];
+	return 0;
+}
+
+
 void clear_global_context(void)
 {
 	if (current_processing_ctx) {

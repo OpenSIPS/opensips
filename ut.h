@@ -1564,4 +1564,9 @@ int _base32decode(unsigned char *out, unsigned char *in, int len,
 #define calc_word32_encode_len calc_base32_encode_len
 #define calc_max_word32_decode_len calc_max_base32_decode_len
 
+#ifdef howmany
+#undef howmany
+#endif
+#define howmany(x, y) (sizeof(x) / sizeof(y))
+
 #endif

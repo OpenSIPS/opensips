@@ -130,13 +130,9 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, int_str *val, int type)
 {
 	int ret;
 
-	/* lock dialog (if not already locked via a callback triggering)*/
-	if (dlg->locked_by!=process_no)
-		dlg_lock_dlg( dlg );
+	lock_start_write(dlg->vals_lock);
 	ret = store_dlg_value_unsafe(dlg,name,val,type);
-	/* unlock dialog */
-	if (dlg->locked_by!=process_no)
-		dlg_unlock_dlg( dlg );
+	lock_stop_write(dlg->vals_lock);
 
 	return ret;
 }
@@ -151,6 +147,9 @@ static int val_buf_size;
  * which will be realloc'ed as necessary in order to hold the value.
  *
  * If @val_has_buf is false, the returned @out_val.s string must not be freed!
+ *
+ * DEVELOPMENT: when editing this function, please copy/paste your diff into
+ *    fetch_dlg_value_unsafe() as well!
  *
  * @return:
  *  0 - success
@@ -174,9 +173,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 	} else
 		val = &out_val->s;
 
-	/* lock dialog (if not already locked via a callback triggering)*/
-	if (dlg->locked_by!=process_no)
-		dlg_lock_dlg( dlg );
+	lock_start_read(dlg->vals_lock);
 
 	/* iterate the list */
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
@@ -193,8 +190,7 @@ int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 						if (!val_has_buf)
 							val_buf_size = 0;
 
-						if (dlg->locked_by!=process_no)
-							dlg_unlock_dlg( dlg );
+						lock_stop_read(dlg->vals_lock);
 						LM_ERR("failed to do realloc for %d\n",dv->val.s.len);
 						return -1;
 					}
@@ -210,24 +206,77 @@ int fetch_dlg_value(struct dlg_cell *dlg, const str *name,
 				out_val->n = dv->val.n;
 			}
 
-			/* unlock dialog */
-			if (dlg->locked_by!=process_no)
-				dlg_unlock_dlg( dlg );
+			lock_stop_read(dlg->vals_lock);
 			return 0;
 		}
 	}
 
-	/* unlock dialog */
-	if (dlg->locked_by!=process_no)
-		dlg_unlock_dlg( dlg );
+	lock_stop_read(dlg->vals_lock);
+	LM_DBG("var NOT found!\n");
+
+	return -2;
+}
+
+/* NOTE: copy/paste from fetch_dlg_value(), except no locking */
+int fetch_dlg_value_unsafe(struct dlg_cell *dlg, const str *name,
+		int *type, int_str *out_val, int val_has_buf)
+{
+	struct dlg_val *dv;
+	unsigned int id;
+	str *val;
+
+	LM_DBG("looking for <%.*s>\n",name->len,name->s);
+
+	id = _get_name_id(name);
+
+	if (!val_has_buf) {
+		val = &val_buf;
+		val->len = val_buf_size;
+	} else
+		val = &out_val->s;
+
+	/* iterate the list */
+	for( dv=dlg->vals ; dv ; dv=dv->next) {
+		if (id==dv->id && name->len==dv->name.len &&
+		memcmp(name->s,dv->name.s,name->len)==0 ) {
+			*type = dv->type;
+
+			if (dv->type == DLG_VAL_TYPE_STR) {
+				LM_DBG("var found-> <%.*s>!\n",dv->val.s.len,dv->val.s.s);
+				/* found -> make a copy of the value under lock */
+				if (dv->val.s.len > val->len) {
+					val->s = (char*)pkg_realloc(val->s,dv->val.s.len);
+					if (val->s==NULL) {
+						if (!val_has_buf)
+							val_buf_size = 0;
+
+						LM_ERR("failed to do realloc for %d\n",dv->val.s.len);
+						return -1;
+					}
+
+					if (!val_has_buf)
+						val_buf_size = dv->val.s.len;
+				}
+				memcpy( val->s, dv->val.s.s, dv->val.s.len );
+				val->len = dv->val.s.len;
+				out_val->s = *val;
+			} else {
+				LM_DBG("var found-> <%d>!\n",dv->val.n);
+				out_val->n = dv->val.n;
+			}
+
+			return 0;
+		}
+	}
+
 	LM_DBG("var NOT found!\n");
 
 	return -2;
 }
 
 
-int check_dlg_value_unsafe(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
-	pv_spec_t *val)
+int check_dlg_value(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
+	pv_spec_t *val, int lock_vals)
 {
 	struct dlg_val *dv;
 	unsigned int id;
@@ -251,6 +300,9 @@ int check_dlg_value_unsafe(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 		return -1;
 	}
 
+	if (lock_vals)
+		lock_start_read(dlg->vals_lock);
+
 	/* iterate the list */
 	for( dv=dlg->vals ; dv ; dv=dv->next) {
 		if (id==dv->id && name->len==dv->name.len &&
@@ -259,13 +311,22 @@ int check_dlg_value_unsafe(struct sip_msg *msg, struct dlg_cell *dlg, str *name,
 				LM_DBG("var found with val <%.*s>!\n",dv->val.s.len,dv->val.s.s);
 				if ( pval.rs.len==dv->val.s.len &&
 				memcmp(pval.rs.s,dv->val.s.s,pval.rs.len)==0) {
+					if (lock_vals)
+						lock_stop_read(dlg->vals_lock);
 					LM_DBG("var found!\n");
 					return 0;
 				}
 				break;
+			} else {  /* DLG_VAL_TYPE_INT */
+				LM_DBG("var found with val <%d>!\n",dv->val.n);
+				if (pval.ri == dv->val.n)
+					return 0;
 			}
 		}
 	}
+
+	if (lock_vals)
+		lock_stop_read(dlg->vals_lock);
 
 	LM_DBG("var NOT found!\n");
 	return -1;

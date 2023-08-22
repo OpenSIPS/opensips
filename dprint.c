@@ -25,7 +25,6 @@
  * \brief OpenSIPS Debug console print functions
  */
 
-
 #include "dprint.h"
 #include "log_interface.h"
 #include "globals.h"
@@ -34,6 +33,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <strings.h>
+
+#if !defined(HOST_NAME_MAX)
+#define HOST_NAME_MAX 255
+#endif
 
 /* used internally by the log interface */
 typedef void (*log_print_pre_fmt_f)(log_print_f gen_print_func, int log_level,
@@ -63,6 +66,8 @@ static char *log_json_buf = NULL;
 int log_json_buf_size = 6144;
 static char *log_msg_buf = NULL;
 int log_msg_buf_size = 4096;
+
+str log_cee_hostname;
 
 static void stderr_dprint(int log_level, int facility, char *module, const char *func,
 	char *format, va_list ap);
@@ -151,6 +156,38 @@ void stderr_dprint_tmp(char *format, ...)
 	va_end(ap);
 }
 
+int init_log_cee_hostname(void)
+{
+	struct addrinfo hints, *info = NULL;
+	char hostname[HOST_NAME_MAX+1];
+	int rc;
+	str cname;
+
+	if (log_cee_hostname.s)
+		return 0;
+
+	gethostname (hostname, HOST_NAME_MAX);
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_CANONNAME;
+
+	rc = getaddrinfo(hostname, 0, &hints, &info);
+	if (!rc && info) {
+		init_str(&cname, info->ai_canonname);
+		if (pkg_str_dup(&log_cee_hostname, &cname) < 0) {
+			LM_ERR("no more pkg memory\n");
+			return -1;
+		}
+	}
+
+	if (info)
+		freeaddrinfo(info);
+
+	return 0;
+}
+
 #define append_string(_d,_s,_len) \
 	do{\
 		memcpy((_d),(_s),(_len));\
@@ -172,18 +209,22 @@ void stderr_dprint_tmp(char *format, ...)
 #define DP_JSON_LEVEL_KEY     ", \"level\": \""
 #define DP_JSON_MODULE_KEY    "\", \"module\": \""
 #define DP_JSON_FUNC_KEY      "\", \"function\": \""
-#define DP_JSON_PREFIX_QT_KEY "\", \"prefix\": \""
-#define DP_JSON_PREFIX_KEY    ", \"prefix\": \""
-#define DP_JSON_MSG_QT_KEY    "\", \"message\": \""
-#define DP_JSON_MSG_KEY       ", \"message\": \""
+#define DP_JSON_PREFIX_KEY    "\", \"prefix\": \""
+#define DP_JSON_MSG_KEY       "\", \"message\": \""
 
-#define DP_JSON_CEE_TIME_KEY  "@cee: {\"time\": \""
-#define DP_JSON_CEE_PID_KEY   "\", \"proc!id\": "
-#define DP_JSON_CEE_LEVEL_KEY ", \"pri\": \""
-#define DP_JSON_CEE_MODULE_KEY "\", \"subsys\": \""
-#define DP_JSON_CEE_FUNC_KEY      "\", \"native!function\": \""
-#define DP_JSON_CEE_MSG_QT_KEY    "\", \"msg\": \""
-#define DP_JSON_CEE_MSG_KEY       ", \"msg\": \""
+#define DP_JSON_CEE_AT_PREFIX    "@cee: "
+#define DP_JSON_CEE_TIME_KEY     "{\"time\": \""
+#define DP_JSON_CEE_PID_KEY      "\", \"proc\": {\"id\": \""
+#define DP_JSON_CEE_LEVEL_KEY    "\"}, \"pri\": \""
+#define DP_JSON_CEE_MODULE_KEY   "\", \"subsys\": \""
+#define DP_JSON_CEE_FUNC_KEY     "\", \"native\": {\"function\": \""
+#define DP_JSON_CEE_PREFIX_KEY   "\", \"log_prefix\": \""
+#define DP_JSON_CEE_PREFIX_O_KEY "\", \"native\": {\"log_prefix\": \""
+#define DP_JSON_CEE_MSG_B_KEY    "\"}, \"msg\": \""
+#define DP_JSON_CEE_MSG_KEY      "\", \"msg\": \""
+#define DP_JSON_CEE_PNAME_KEY    "\", \"pname\": \""
+#define DP_JSON_CEE_PNAME_VAL    "opensips"
+#define DP_JSON_CEE_HOST_KEY     "\", \"hostname\": \""
 
 #define DP_JSON_MSG_END       "\"}"
 
@@ -213,7 +254,7 @@ static int log_escape_json_buf(char *src, int src_len, char *dst, int dst_max_le
 	}
 
 	if (rlen>dst_max_len) {
-		stderr_dprint_tmp("error: buffer too small! needed: %d\n", rlen);
+		stderr_dprint_tmp_err("buffer too small! needed: %d\n", rlen);
 		return -1;
 	} else if (rlen == src_len) {
 		/* nothing needs to be escaped */
@@ -260,37 +301,59 @@ static int log_escape_json_buf(char *src, int src_len, char *dst, int dst_max_le
 	return j;
 }
 
-static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefix,
-	char *level, char *module, const char *func, char *format, va_list ap)
+enum log_json_format {
+	LOG_JSON_SCHEMA_BASIC,
+	LOG_JSON_SCHEMA_CEE,
+	LOG_JSON_SCHEMA_CEE_PREFIX  /* for syslog, JSON prefixed with "@cee: " */
+};
+
+static int log_print_json(str *buf, enum log_json_format json_fmt, char *time,
+	int pid, char *prefix, char *level, char *module, const char *func,
+	char *format, va_list ap)
 {
 	char *p, *tmp;
-	int len;
+	int len = 0, rlen;
 	int l;
 
-	if (is_cee) {
-		len = S_LEN(DP_JSON_CEE_TIME_KEY) + strlen(time) + S_LEN(DP_JSON_CEE_PID_KEY) +
-			INT2STR_MAX_LEN + S_LEN(DP_JSON_CEE_LEVEL_KEY) + strlen(level);
-		len += module && func ? S_LEN(DP_JSON_CEE_MODULE_KEY) + strlen(module) +
-			S_LEN(DP_JSON_CEE_FUNC_KEY) + strlen(func) : 0;
-		len += S_LEN(DP_JSON_MSG_QT_KEY) + S_LEN(DP_JSON_MSG_END) + 1;
+	if (json_fmt > LOG_JSON_SCHEMA_BASIC) {
+		rlen = S_LEN(DP_JSON_CEE_PNAME_KEY) + (log_name ? strlen(log_name) :
+			S_LEN(DP_JSON_CEE_PNAME_VAL)) + S_LEN(DP_JSON_CEE_HOST_KEY) +
+			log_cee_hostname.len + S_LEN(DP_JSON_MSG_END) + 1;
+
+		if (json_fmt == LOG_JSON_SCHEMA_CEE_PREFIX)
+			len = S_LEN(DP_JSON_CEE_AT_PREFIX);
+
+		len += S_LEN(DP_JSON_CEE_TIME_KEY) + strlen(time) +
+			S_LEN(DP_JSON_CEE_PID_KEY) + INT2STR_MAX_LEN +
+			S_LEN(DP_JSON_CEE_LEVEL_KEY) + strlen(level) +
+			(module && func ?
+			S_LEN(DP_JSON_CEE_MODULE_KEY) + strlen(module) +
+			S_LEN(DP_JSON_CEE_FUNC_KEY) + strlen(func) : 0) +
+			S_LEN(DP_JSON_CEE_PREFIX_O_KEY) + strlen(prefix) +
+			S_LEN(DP_JSON_MSG_KEY) + rlen;
 	} else {
+		rlen = S_LEN(DP_JSON_MSG_END) + 1;
+
 		len = S_LEN(DP_JSON_TIME_KEY) + strlen(time) + S_LEN(DP_JSON_PID_KEY) +
-			INT2STR_MAX_LEN + S_LEN(DP_JSON_LEVEL_KEY) + strlen(level);
-		len += module && func ? S_LEN(DP_JSON_MODULE_KEY) + strlen(module) +
-			S_LEN(DP_JSON_FUNC_KEY) + strlen(func) : 0;
-		len += S_LEN(DP_JSON_PREFIX_QT_KEY) + strlen(prefix) +
-			S_LEN(DP_JSON_MSG_QT_KEY) + S_LEN(DP_JSON_MSG_END) + 1;
+			INT2STR_MAX_LEN + S_LEN(DP_JSON_LEVEL_KEY) + strlen(level) +
+			(module && func ? S_LEN(DP_JSON_MODULE_KEY) + strlen(module) +
+			S_LEN(DP_JSON_FUNC_KEY) + strlen(func) : 0) +
+			S_LEN(DP_JSON_PREFIX_KEY) + strlen(prefix) +
+			S_LEN(DP_JSON_CEE_MSG_B_KEY) + rlen;
 	}
 
 	if (len >= buf->len) {
-		stderr_dprint_tmp("error: buffer too small! needed: %d\n", len);
+		stderr_dprint_tmp_err("buffer too small! needed: %d\n", len);
 		return -1;
 	}
 
 	len = 0;
 	p = buf->s;
 
-	if (is_cee) {
+	if (json_fmt > LOG_JSON_SCHEMA_BASIC) {
+		if (json_fmt == LOG_JSON_SCHEMA_CEE_PREFIX)
+			append_string_st(p, DP_JSON_CEE_AT_PREFIX);
+
 		append_string_st(p, DP_JSON_CEE_TIME_KEY);
 		append_string(p, time, strlen(time));
 
@@ -298,10 +361,10 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 		tmp = int2str(pid, &l);
 		append_string(p, tmp, l);
 
-		if (module && func) {
-			append_string_st(p, DP_JSON_CEE_LEVEL_KEY);
-			append_string(p, level, strlen(level));
+		append_string_st(p, DP_JSON_CEE_LEVEL_KEY);
+		append_string(p, level, strlen(level));
 
+		if (module && func) {
 			append_string_st(p, DP_JSON_CEE_MODULE_KEY);
 			append_string(p, module, strlen(module));
 
@@ -309,8 +372,16 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 			append_string(p, func, strlen(func));
 		}
 
-		if (module && func)
-			append_string_st(p, DP_JSON_CEE_MSG_QT_KEY);
+		if (strlen(prefix) != 0) {
+			if (module && func)
+				append_string_st(p, DP_JSON_CEE_PREFIX_KEY);
+			else
+				append_string_st(p, DP_JSON_CEE_PREFIX_O_KEY);
+			append_string(p, prefix, strlen(prefix)-1/*skip the ':'*/);
+		}
+
+		if ((module && func) || strlen(prefix) != 0)
+			append_string_st(p, DP_JSON_CEE_MSG_B_KEY);
 		else
 			append_string_st(p, DP_JSON_CEE_MSG_KEY);
 	} else {
@@ -321,10 +392,10 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 		tmp = int2str(pid, &l);
 		append_string(p, tmp, l);
 
-		if (module && func) {
-			append_string_st(p, DP_JSON_LEVEL_KEY);
-			append_string(p, level, strlen(level));
+		append_string_st(p, DP_JSON_LEVEL_KEY);
+		append_string(p, level, strlen(level));
 
+		if (module && func) {
 			append_string_st(p, DP_JSON_MODULE_KEY);
 			append_string(p, module, strlen(module));
 
@@ -333,40 +404,48 @@ static int log_print_json(str *buf, int is_cee, char *time, int pid, char *prefi
 		}
 
 		if (strlen(prefix) != 0) {
-			if (module && func)
-				append_string_st(p, DP_JSON_PREFIX_QT_KEY);
-			else
-				append_string_st(p, DP_JSON_PREFIX_KEY);
-			append_string(p, prefix, strlen(prefix));
+			append_string_st(p, DP_JSON_PREFIX_KEY);
+			append_string(p, prefix, strlen(prefix)-1/*skip the ':'*/);
 		}
 
-		if ((module && func) || strlen(prefix) != 0)
-			append_string_st(p, DP_JSON_MSG_QT_KEY);
-		else
-			append_string_st(p, DP_JSON_MSG_KEY);
+		append_string_st(p, DP_JSON_MSG_KEY);
 	}
 
 	l = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);
 	if (l < 0) {
-		stderr_dprint_tmp("error: vsnprintf() failed!\n");
+		stderr_dprint_tmp_err("vsnprintf() failed!\n");
 		return -1;
 	}
 	if (l >= log_msg_buf_size) {
-		stderr_dprint_tmp("warning: buffer too small, log message truncated\n");
+		stderr_dprint_tmp_err("warning: buffer too small, log message truncated\n");
 		l = log_msg_buf_size;
 	}
 
 	l = log_escape_json_buf(log_msg_buf, l, p,
-		buf->len - len - S_LEN(DP_JSON_MSG_END) - 1);
+		buf->len - len - rlen - 1);
 	if (l < 0) {
-		stderr_dprint_tmp("error: failed to escape log message!\n",l);
+		stderr_dprint_tmp_err("failed to escape log message!\n",l);
 		return -1;
 	}
 
 	p += l;
 	len += l;
 
-	append_string_st(p, DP_JSON_MSG_END);
+	if (json_fmt == LOG_JSON_SCHEMA_BASIC) {
+		append_string_st(p, DP_JSON_MSG_END);
+	} else {
+		append_string_st(p, DP_JSON_CEE_PNAME_KEY);
+		if (log_name)
+			append_string(p, log_name, strlen(log_name));
+		else
+			append_string_st(p, DP_JSON_CEE_PNAME_VAL);
+
+		append_string_st(p, DP_JSON_CEE_HOST_KEY);
+		append_string(p, log_cee_hostname.s, log_cee_hostname.len);
+
+		append_string_st(p, DP_JSON_MSG_END);
+	}
+
 	*p = '\0';
 
 	return len;
@@ -388,10 +467,11 @@ static void stderr_dprint(int log_level, int facility, char *module, const char 
 		if (module && func)
 			va_arg(ap, char *);
 
-		if ((len = log_print_json(&buf, stderr_log_format==LOG_FORMAT_JSON_CEE,
+		if ((len = log_print_json(&buf, stderr_log_format==LOG_FORMAT_JSON_CEE ?
+			LOG_JSON_SCHEMA_CEE : LOG_JSON_SCHEMA_BASIC,
 			time, pid, prefix, dp_log_level_str(log_level), module, func,
 			format, ap)) < 0) {
-			stderr_dprint_tmp("error: failed to print JSON log!\n");
+			stderr_dprint_tmp_err("failed to print JSON log!\n");
 			return;
 		}
 
@@ -444,10 +524,11 @@ static void syslog_dprint(int log_level, int facility, char *module, const char 
 		if (module && func)
 			va_arg(ap, char *);
 
-		if ((len = log_print_json(&buf, syslog_log_format==LOG_FORMAT_JSON_CEE,
+		if ((len = log_print_json(&buf, syslog_log_format==LOG_FORMAT_JSON_CEE ?
+			LOG_JSON_SCHEMA_CEE_PREFIX : LOG_JSON_SCHEMA_BASIC,
 			time, pid, prefix, dp_log_level_str(log_level), module, func,
 			format, ap)) < 0) {
-			stderr_dprint_tmp("error: failed to print JSON log!\n");
+			stderr_dprint_tmp_err("failed to print JSON log!\n");
 			return;
 		}
 
@@ -469,55 +550,56 @@ static str evi_func_str = str_init("function");
 static str evi_prefix_str = str_init("prefix");
 static str evi_msg_str = str_init("message");
 
-static void event_dprint(int log_level, int facility, char *module, const char *func,
+static void event_dprint(int level, int facility, char *module, const char *func,
 	char *format, va_list ap)
 {
 	evi_params_p list = NULL;
 	str s;
 	int n;
-	static char in_progress = 0;
+	int suppressed;
 
-	/* prevent reentry from the same process */
-	if (in_progress)
+	suppressed = pt[process_no].suppress_log_event;
+
+	if (suppressed)
 		return;
 
-	in_progress = 1;
+	pt[process_no].suppress_log_event = 1;
 
 	if (!evi_probe_event(evi_log_id)) {
-		in_progress = 0;
+		pt[process_no].suppress_log_event = suppressed;
 		return;
 	}
 
 	if (!(list = evi_get_params())) {
-		in_progress = 0;
+		pt[process_no].suppress_log_event = suppressed;
 		return;
 	}
 
 	init_str(&s, dp_time());
 	if (evi_param_add_str(list, &evi_time_str, &s)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
 	n = dp_my_pid();
 	if (evi_param_add_int(list, &evi_pid_str, &n)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
-	init_str(&s, dp_log_level_str(log_level));
+	init_str(&s, dp_log_level_str(level));
 	if (evi_param_add_str(list, &evi_level_str, &s)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
 
 	if (module && func) {
 		init_str(&s, module);
 		if (evi_param_add_str(list, &evi_module_str, &s)) {
-			stderr_dprint_tmp("error: unable to add event parameter\n");
+			LM_ERR("unable to add event parameter\n");
 			goto end_free;
 		}
 		init_str(&s, func);
 		if (evi_param_add_str(list, &evi_func_str, &s)) {
-			stderr_dprint_tmp("error: unable to add event parameter\n");
+			LM_ERR("unable to add event parameter\n");
 			goto end_free;
 		}
 	}
@@ -525,18 +607,18 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 	init_str(&s, log_prefix);
 	if (s.len) {
 		if (evi_param_add_str(list, &evi_prefix_str, &s)) {
-			stderr_dprint_tmp("error: unable to add event parameter\n");
+			LM_ERR("unable to add event parameter\n");
 			goto end_free;
 		}
 	}
 
 	s.len = vsnprintf(log_msg_buf, log_msg_buf_size, format, ap);
 	if (s.len < 0) {
-		stderr_dprint_tmp("error: vsnprintf() failed!\n");
+		LM_ERR("vsnprintf() failed!\n");
 		goto end_free;
 	}
 	if (s.len>=log_msg_buf_size) {
-		stderr_dprint_tmp("warning: log message truncated\n");
+		LM_WARN("log message truncated\n");
 		s.len = log_msg_buf_size;
 	}
 
@@ -548,21 +630,21 @@ static void event_dprint(int log_level, int facility, char *module, const char *
 
 	s.s = log_msg_buf;
 	if (evi_param_add_str(list, &evi_msg_str, &s)) {
-		stderr_dprint_tmp("error: unable to add event parameter\n");
+		LM_ERR("unable to add event parameter\n");
 		goto end_free;
 	}
 
 	if (evi_raise_event(evi_log_id, list)) {
-		stderr_dprint_tmp("error: unable to raise '%.*s' event\n",
+		LM_ERR("unable to raise '%.*s' event\n",
 			evi_log_name.len, evi_log_name.s);
 	}
 
-	in_progress = 0;
+	pt[process_no].suppress_log_event = suppressed;
 
 	return;
 end_free:
 	evi_free_params(list);
-	in_progress = 0;
+	pt[process_no].suppress_log_event = suppressed;
 }
 
 /* generic consumer that registers to the log interface */
@@ -694,6 +776,24 @@ int init_log_cons_shm_table(void)
 	log_consumers = cons;
 
 	return 0;
+}
+
+void cleanup_log_cons_shm_table(void)
+{
+	struct log_consumer_t *cons = log_consumers;
+
+	log_consumers = default_log_consumers;
+	log_consumers_no = 2;
+
+	/* even if we are reusing the static default_log_consumers table,
+	 * inherit the latest settings for the consumers */
+	log_consumers[0].level_filter = cons[0].level_filter;
+	log_consumers[0].muted = cons[0].muted;
+
+	log_consumers[1].level_filter = cons[1].level_filter;
+	log_consumers[1].muted = cons[1].muted;
+
+	shm_free(cons);
 }
 
 int init_log_event_cons(void)
@@ -864,4 +964,12 @@ void set_proc_log_level(int level)
 	__set_proc_log_level(process_no, level);
 }
 
+void suppress_proc_log_event(void)
+{
+	pt[process_no].suppress_log_event = 1;
+}
 
+void reset_proc_log_event(void)
+{
+	pt[process_no].suppress_log_event = 0;
+}

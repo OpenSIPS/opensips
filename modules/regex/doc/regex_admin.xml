@@ -359,9 +359,80 @@ if (pcre_match_group($rU, 2)) {
 			</para>
 
 <programlisting  format="linespecific">
+...
 opensips-cli -x mi regex_reload
+...
 </programlisting>
+		</section>
 
+		<section id="mi_regex_match" xreflabel="regex_match">
+			<title>
+				<function moreinfo="none">regex_match</function>
+			</title>
+
+			<para>
+				Matches the given string parameter against the regular expression pcre_regex.
+				Returns "Match" if it matches, "Not Match" otherwise.
+			</para>
+
+			<para>
+				Name: <emphasis>regex_match</emphasis>
+			</para>
+
+			<para>Parameters:</para>
+				<itemizedlist>
+					<listitem><para>string</para></listitem>
+
+					<listitem><para>pcre_regex</para></listitem>
+				</itemizedlist>
+
+			<para>
+				MI FIFO Command Format:
+			</para>
+
+<programlisting  format="linespecific">
+...
+opensips-cli -x mi regex_match string="1234" pcre_regex="^1234$"
+"Match"
+opensips-cli -x mi regex_match string="1234" pcre_regex="^1235$"
+"Not Match"
+...
+</programlisting>
+		</section>
+
+		<section id="mi_regex_match_group" xreflabel="regex_match_group">
+			<title>
+				<function moreinfo="none">regex_match_group</function>
+			</title>
+
+			<para>
+				It uses the groups readed from the text file to match the given string parameter against the compiled
+				regular expression in group number group. Returns "Match" if it matches, "Not Match" otherwise.
+			</para>
+
+			<para>
+				Name: <emphasis>regex_match_group</emphasis>
+			</para>
+
+			<para>Parameters:</para>
+				<itemizedlist>
+					<listitem><para>string</para></listitem>
+
+					<listitem><para>group</para></listitem>
+				</itemizedlist>
+
+			<para>
+				MI FIFO Command Format:
+			</para>
+
+<programlisting  format="linespecific">
+...
+opensips-cli -x mi regex_match_group string="1234" group="0"
+"Match"
+opensips-cli -x mi regex_match_group string="1234" group="1"
+"Not Match"
+...
+</programlisting>
 		</section>
 
 	</section>

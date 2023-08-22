@@ -48,7 +48,7 @@
 #ifndef fastlock_h
 #define fastlock_h
 
-#include "sched_yield.h"
+#include <sched.h>
 
 
 #define SPIN_OPTIMIZE /* if defined optimize spining on the lock:

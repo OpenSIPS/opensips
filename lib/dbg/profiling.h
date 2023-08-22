@@ -64,6 +64,16 @@ static inline int _ProfilerStart_child(const struct internal_fork_params *ifpp)
 	return 0;
 }
 
+static inline int _ProfilerStart_parent(void)
+{
+
+	if (_ProfilerStart(0, "attendant") != 0) {
+		LM_CRIT("failed to start profiling\n");
+		return -1;
+	}
+	return 0;
+}
+
 static inline void _ProfilerStop(void)
 {
 	ProfilerStop();
@@ -75,6 +85,7 @@ static inline void _ProfilerStop(void)
 #else
 static inline int _ProfilerStart(pid_t pid, const char *proc_desc) { return 0; }
 static inline int _ProfilerStart_child(const struct internal_fork_params *ifpp) { return 0; }
+static inline int _ProfilerStart_parent(void) { return 0; }
 	#define ProfilerStart(...)
 	#define ProfilerStop(...)
 	#define _ProfilerStop(...)

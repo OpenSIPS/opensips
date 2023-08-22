@@ -123,6 +123,9 @@ int db_mysql_async_raw_query(db_con_t *_h, const str *_s, void** _data);
  */
 int db_mysql_async_resume(db_con_t *_h, int fd, db_res_t **_r, void* _data);
 
+/* cleans up after a timeout on an async DB query */
+void db_mysql_async_timeout(db_con_t *_h, int fd, void *_priv);
+
 /*
  * Cleans up asynchronous query results along with other associated structures
  *

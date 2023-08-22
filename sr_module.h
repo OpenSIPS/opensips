@@ -201,7 +201,7 @@ struct module_exports{
 	                                    module agrees with the new script */
 };
 
-void set_mpath(const char *new_mpath);
+void add_mpath(const char *new_mpath);
 
 extern struct sr_module* modules; /*!< global module list*/
 

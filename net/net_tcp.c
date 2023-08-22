@@ -732,6 +732,9 @@ static void _tcpconn_rm(struct tcp_connection* c, int no_event)
 		c->async = NULL;
 	}
 
+	if (c->con_req)
+		shm_free(c->con_req);
+
 	if (protos[c->type].net.conn_clean)
 		protos[c->type].net.conn_clean(c);
 

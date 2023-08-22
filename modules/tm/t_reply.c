@@ -581,7 +581,7 @@ static inline int run_failure_handlers(struct cell *t)
 	static struct sip_msg faked_req;
 	struct sip_msg *shmem_msg;
 	struct ua_client *uac;
-	struct script_route_ref *on_failure;
+	int on_failure_idx;
 	int old_route_type;
 
 	shmem_msg = t->uas.request;
@@ -622,11 +622,11 @@ static inline int run_failure_handlers(struct cell *t)
 		/* avoid recursion -- if failure_route forwards, and does not
 		 * set next failure route, failure_route will not be reentered
 		 * on failure */
-		on_failure = t->on_negative;
+		on_failure_idx = t->on_negative->idx;
 		t_on_negative(NULL);
 		/* run a reply_route action if some was marked */
 		swap_route_type(old_route_type, FAILURE_ROUTE);
-		run_top_route(sroutes->failure[on_failure->idx], &faked_req);
+		run_top_route(sroutes->failure[on_failure_idx], &faked_req);
 		set_route_type(old_route_type);
 	}
 

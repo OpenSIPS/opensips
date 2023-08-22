@@ -151,6 +151,8 @@
 
 #include "ssl_tweaks.h"
 
+#include "main_script.h"
+
 /* global vars */
 
 #ifdef VERSION_NODATE
@@ -195,6 +197,49 @@ static void print_ct_constants(void)
 #endif
 }
 
+static int
+init_suid(void)
+{
+	/* all processes should have access to all the sockets (for sending)
+	 * so we open all first*/
+	return do_suid(user_id, group_id);
+}
+
+static int
+init_shm_mem_dbg(void)
+{
+	if (shm_memlog_size)
+		shm_mem_enable_dbg();
+	return 0;
+}
+
+static const struct main_script main_script[] = {
+	FN_HNDLR(init_reactor_size, <, 0, "internal reactor"),
+	FN_HNDLR(init_timer, <, 0, "timer"),
+	FN_HNDLR(init_shm_mem_dbg, <, 0, "shm_mem_enable_dbg"),
+	FN_HNDLR(init_ipc, <, 0, "IPC support"),
+	FN_HNDLR(init_serialization, !=, 0, "serialization"),
+	FN_HNDLR(init_mi_core, <, 0, "MI core"),
+	FN_HNDLR(evi_register_core, !=, 0, "register core events"),
+	FN_HNDLR(init_black_lists, !=, 0, "black list engine"),
+	FN_HNDLR(resolv_blacklist_init, !=, 0, "resolver's blacklist"),
+	FN_HNDLR(init_dset, !=, 0, "SIP forking logic"),
+	FN_HNDLR(init_db_support, !=, 0, "SQL database support"),
+	FN_HNDLR(init_cdb_support, !=, 0, "CacheDB support"),
+	FN_HNDLR(init_modules, !=, 0, "modules"),
+	FN_HNDLR(init_xlog, <, 0, "xlog"),
+	FN_HNDLR(register_route_timers, <, 0, "route_timers"),
+	FN_HNDLR(init_pvar_support, !=, 0, "pseudo-variable support"),
+	FN_HNDLR(init_multi_proc_support, !=, 0, "multi processes support"),
+	FN_HNDLR(init_extra_avps, !=, 0, "avps"),
+	FN_HNDLR(fix_rls, !=, 0, "routing lists"),
+	FN_HNDLR(init_log_level, !=, 0, "logging levels"),
+	FN_HNDLR(init_log_event_cons, <, 0, "log event consumer"),
+	FN_HNDLR(trans_init_all_listeners, <, 0, "all SIP listeners"),
+	FN_HNDLR(init_script_reload, <, 0, "cfg reload ctx"),
+	FN_HNDLR(init_suid, ==, -1, "do_suid"),
+	FN_HNDLR(run_post_fork_handlers, <, 0, "post-fork handlers"),
+};
 
 /**
  * Main loop, forks the children, bind to addresses,
@@ -209,7 +254,8 @@ static int main_loop(void)
 	int rc;
 	static struct internal_fork_handler profiling_handler = {
 		.desc = "_ProfilerStart_child()",
-		.on_child_init = _ProfilerStart_child,
+		.post_fork.in_child = _ProfilerStart_child,
+		.post_fork.in_parent = _ProfilerStart_parent,
 	};
 
 	chd_rank=0;
@@ -307,11 +353,6 @@ static int main_loop(void)
 		goto error;
 	}
 
-	if (_ProfilerStart(0, "attendant") != 0) {
-		LM_ERR("failed to start profiling\n");
-		goto error;
-	}
-
 	for(;;){
 			handle_sigs();
 			if (auto_scaling_enabled) {
@@ -348,7 +389,7 @@ error:
  */
 int main(int argc, char** argv)
 {
-	int c,r;
+	int c;
 	char *tmp;
 	int tmp_len;
 	int port;
@@ -522,6 +563,10 @@ int main(int argc, char** argv)
 			case 'F':
 					no_daemon_mode=1;
 					break;
+			case 'E':
+					LM_ERR("-E option deprecated since 3.4, set \"stderror_enabled=yes\" "
+					    "at the script level instead\n");
+					goto error00;
 			case 'N':
 					tcp_workers_no=strtol(optarg, &tmp, 10);
 					if ((tmp==0) ||(*tmp)){
@@ -828,138 +873,14 @@ try_again:
 	LM_NOTICE("using system memory for private process memory\n");
 #endif
 
-	/* init async reactor */
-	if (init_reactor_size()<0) {
-		LM_CRIT("failed to init internal reactor, exiting...\n");
-		goto error;
+	for (int n = 0; n < howmany(main_script, main_script[0]); n++) {
+		int result = main_script[n].hndlr();
+		pred_cmp_f pred_cmp = cmps_ops[main_script[n].pval];
+		if (pred_cmp(result, main_script[n].pred)) {
+			LM_ERR("failed to initialize %s!\n", main_script[n].desc);
+			goto error;
+		}
 	}
-
-	/* init timer */
-	if (init_timer()<0){
-		LM_CRIT("could not initialize timer, exiting...\n");
-		goto error;
-	}
-
-	if (shm_memlog_size)
-		shm_mem_enable_dbg();
-
-	/* init IPC */
-	if (init_ipc()<0){
-		LM_CRIT("could not initialize IPC support, exiting...\n");
-		goto error;
-	}
-
-	/* init serial forking engine */
-	if (init_serialization()!=0) {
-		LM_ERR("failed to initialize serialization\n");
-		goto error;
-	}
-	/* Init MI */
-	if (init_mi_core()<0) {
-		LM_ERR("failed to initialize MI core\n");
-		goto error;
-	}
-
-	/* Register core events */
-	if (evi_register_core() != 0) {
-		LM_ERR("failed register core events\n");
-		goto error;
-	}
-
-	/* init black list engine */
-	if (init_black_lists()!=0) {
-		LM_CRIT("failed to init blacklists\n");
-		goto error;
-	}
-	/* init resolver's blacklist */
-	if (resolv_blacklist_init()!=0) {
-		LM_CRIT("failed to create DNS blacklist\n");
-		goto error;
-	}
-
-	if (init_dset() != 0) {
-		LM_ERR("failed to initialize SIP forking logic!\n");
-		goto error;
-	}
-
-	/* init SQL DB support */
-	if (init_db_support() != 0) {
-		LM_ERR("failed to initialize SQL database support\n");
-		goto error;
-	}
-
-	/* init CacheDB support */
-	if (init_cdb_support() != 0) {
-		LM_ERR("failed to initialize CacheDB support\n");
-		goto error;
-	}
-
-	/* init modules */
-	if (init_modules() != 0) {
-		LM_ERR("error while initializing modules\n");
-		goto error;
-	}
-
-	/* init xlog */
-	if (init_xlog() < 0) {
-		LM_ERR("error while initializing xlog!\n");
-		goto error;
-	}
-
-	/* register route timers */
-	if(register_route_timers() < 0) {
-		LM_ERR("Failed to register timer\n");
-		goto error;
-	}
-
-	/* init pseudo-variable support */
-	if (init_pvar_support() != 0) {
-		LM_ERR("failed to init pvar support\n");
-		goto error;
-	}
-
-	/* init multi processes support */
-	if (init_multi_proc_support()!=0) {
-		LM_ERR("failed to init multi-proc support\n");
-		goto error;
-	}
-
-	/* init avps */
-	if (init_extra_avps() != 0) {
-		LM_ERR("error while initializing avps\n");
-		goto error;
-	}
-
-	/* fix routing lists */
-	if ( (r=fix_rls())!=0){
-		LM_ERR("failed to fix configuration with err code %d\n", r);
-		goto error;
-	}
-
-	if (init_log_level() != 0) {
-		LM_ERR("failed to init logging levels\n");
-		goto error;
-	}
-
-	if (init_log_event_cons() < 0) {
-		LM_ERR("Failed to initialize log event consumer\n");
-		goto error;
-	}
-
-	if (trans_init_all_listeners()<0) {
-		LM_ERR("failed to init all SIP listeners, aborting\n");
-		goto error;
-	}
-
-	if (init_script_reload()<0) {
-		LM_ERR("failed to init cfg reload ctx, aborting\n");
-		goto error;
-	}
-
-	/* all processes should have access to all the sockets (for sending)
-	 * so we open all first*/
-	if (do_suid(user_id, group_id)==-1)
-		goto error;
 
 	ret = main_loop();
 

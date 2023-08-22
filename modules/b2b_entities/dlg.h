@@ -107,6 +107,7 @@ typedef struct b2b_dlg
 	struct cell*         uac_tran;
 	struct cell*         uas_tran;
 	struct cell*         update_tran;
+	struct cell*         prack_tran;
 	struct cell*         cancel_tm_tran;
 	dlg_leg_t*           legs;
 	struct socket_info*  send_sock;
@@ -118,6 +119,7 @@ typedef struct b2b_dlg
 	struct b2b_tracer   *tracer;
 	void                *param;
 	b2b_param_free_cb    free_param;
+	str                  prack_headers;
 }b2b_dlg_t;
 
 typedef struct b2b_entry
@@ -198,7 +200,7 @@ int b2b_apply_lumps(struct sip_msg* msg);
 
 int b2b_register_cb(b2b_cb_t cb, int cb_type, str *mod_name);
 
-void b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
+int b2b_run_cb(b2b_dlg_t *dlg, unsigned int hash_index, int entity_type,
 	int cbs_type, int event_type, bin_packet_t *storage, int backend);
 
 dlg_leg_t* b2b_dup_leg(dlg_leg_t* leg, int mem_type);

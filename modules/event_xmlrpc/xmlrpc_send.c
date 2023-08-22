@@ -519,8 +519,9 @@ void xmlrpc_process(int rank)
 	xmlrpc_init_send_buf();
 	xmlrpc_send_t * xmlrpcs;
 
-	/* supppress any logs, in case we are handling the E_CORE_LOG event */
-	set_proc_log_level(L_ALERT-1);
+	/* suppress the E_CORE_LOG event for new logs while handling
+	 * the event itself */
+	suppress_proc_log_event();
 
 	/* waiting for commands */
 	for (;;) {
@@ -544,5 +545,5 @@ end:
 			shm_free(xmlrpcs);
 	}
 
-	reset_proc_log_level();
+	reset_proc_log_event();
 }

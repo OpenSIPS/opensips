@@ -1240,6 +1240,28 @@ out:
 	return -2;
 }
 
+void db_mysql_async_timeout(db_con_t *_h, int fd, void *_priv)
+{
+	struct pool_con *con = (struct pool_con *)_priv;
+
+#ifdef EXTRA_DEBUG
+	if (!db_match_async_con(fd, _h)) {
+		LM_BUG("no conn match for fd %d", fd);
+		abort();
+	}
+#endif
+
+	db_switch_to_async(_h, con);
+	mysql_free_result(CON_RESULT(_h));
+	CON_RESULT(_h) = NULL;
+
+	/* we timed out, might as well disconnect */
+	switch_state_to_disconnected(_h);
+
+	db_switch_to_sync(_h);
+	db_store_async_con(_h, con);
+}
+
 int db_mysql_async_resume(db_con_t *_h, int fd, db_res_t **_r, void *_priv)
 {
 	struct pool_con *con = (struct pool_con *)_priv;

@@ -420,12 +420,12 @@ void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 
 	end = b + l;
 	p = b;
+
+	lock_start_write(dlg->vals_lock);
 	do {
 		/* read a new pair from input string */
 		p = read_pair( p, end, &name, &isval, &type);
 		if (p==NULL) break;
-
-		if (isval.s.len==0) continue;
 
 		LM_DBG("new var found  <%.*s>\n",name.len,name.s);
 
@@ -434,6 +434,7 @@ void read_dialog_vars(char *b, int l, struct dlg_cell *dlg)
 			LM_ERR("failed to add val, skipping...\n");
 	} while(p!=end);
 
+	lock_stop_write(dlg->vals_lock);
 }
 
 
@@ -1279,7 +1280,7 @@ static inline unsigned int write_pair( char *b, str *name, str *name_suffix,
 }
 
 
-str* write_dialog_vars( struct dlg_val *vars)
+str* write_dialog_vars( struct dlg_cell *dlg)
 {
 	static str o = {NULL,0};
 	static int o_l=0;
@@ -1288,8 +1289,10 @@ str* write_dialog_vars( struct dlg_val *vars)
 	char *p;
 	int intlen;
 
+	lock_start_read(dlg->vals_lock);
+
 	/* compute the required len */
-	for ( v=vars,l=0 ; v ; v=v->next) {
+	for ( v=dlg->vals,l=0 ; v ; v=v->next) {
 		l += v->name.len + 1/*'#'*/ + 1/*type char*/ + 1;/*'#'*/
 		if (v->type == DLG_VAL_TYPE_STR) {
 			l += v->val.s.len;
@@ -1313,16 +1316,19 @@ str* write_dialog_vars( struct dlg_val *vars)
 		if (o.s) pkg_free(o.s);
 		o.s = (char*)pkg_malloc(l);
 		if (o.s==NULL) {
+			lock_stop_read(dlg->vals_lock);
 			LM_ERR("not enough pkg mem (req=%d)\n",l);
 			return NULL;
 		}
 		o_l = l;
 	}
 
+	lock_stop_read(dlg->vals_lock);
+
 	/* write the stuff into it */
 	o.len = l;
 	p = o.s;
-	for ( v=vars ; v ; v=v->next) {
+	for ( v=dlg->vals ; v ; v=v->next) {
 		p += write_pair( p, &v->name,NULL, &v->val, v->type);
 	}
 	if (o.len!=p-o.s) {
@@ -1409,12 +1415,14 @@ int persist_reinvite_pinging(struct dlg_cell *dlg)
 		return 0;
 	}
 
+	lock_start_write(dlg->vals_lock);
+
 	val.s = dlg->legs[DLG_CALLER_LEG].in_sdp;
 	if (dlg->legs[DLG_CALLER_LEG].in_sdp.len &&
 			store_dlg_value_unsafe(dlg, &caller_in_sdp,
 				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist caller UAC SDP\n");
-		return -1;
+		goto error;
 	}
 
 	val.s = dlg->legs[DLG_CALLER_LEG].out_sdp;
@@ -1422,14 +1430,14 @@ int persist_reinvite_pinging(struct dlg_cell *dlg)
 			store_dlg_value_unsafe(dlg, &caller_out_sdp,
 				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist caller advertised SDP\n");
-		return -1;
+		goto error;
 	}
 
 	val.s = dlg->legs[DLG_CALLER_LEG].adv_contact;
 	if (store_dlg_value_unsafe(dlg, &caller_adv_ct,
 	                    &val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist caller advertised Contact\n");
-		return -1;
+		goto error;
 	}
 
 	val.s = dlg->legs[dlg->legs_no[DLG_LEG_200OK]].in_sdp;
@@ -1437,7 +1445,7 @@ int persist_reinvite_pinging(struct dlg_cell *dlg)
 			store_dlg_value_unsafe(dlg, &callee_in_sdp,
 				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist callee UAC SDP\n");
-		return -1;
+		goto error;
 	}
 
 	val.s = dlg->legs[dlg->legs_no[DLG_LEG_200OK]].out_sdp;
@@ -1445,17 +1453,22 @@ int persist_reinvite_pinging(struct dlg_cell *dlg)
 			store_dlg_value_unsafe(dlg, &callee_out_sdp,
 				&val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist callee advertised SDP\n");
-		return -1;
+		goto error;
 	}
 
 	val.s = dlg->legs[dlg->legs_no[DLG_LEG_200OK]].adv_contact;
 	if (store_dlg_value_unsafe(dlg, &callee_adv_ct,
 	           &val, DLG_VAL_TYPE_STR) != 0) {
 		LM_ERR("failed to persist callee advertised Contact\n");
-		return -1;
+		goto error;
 	}
 
+	lock_stop_write(dlg->vals_lock);
 	return 0;
+
+error:
+	lock_stop_write(dlg->vals_lock);
+	return -1;
 }
 
 /* re-populate the SDPs/Contacts of caller/callee(s) from dlg val storage */
@@ -1576,7 +1589,7 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 
 	/* save sharing tag name as dlg val */
 	val.s = cell->shtag;
-	if (cell->shtag.s && store_dlg_value_unsafe(cell, &shtag_dlg_val, &val,
+	if (cell->shtag.s && store_dlg_value(cell, &shtag_dlg_val, &val,
 		DLG_VAL_TYPE_STR) < 0)
 		LM_ERR("Failed to store sharing tag %.*s(%p) as dlg val\n",
 		       cell->shtag.len, cell->shtag.s, cell->shtag.s);
@@ -1585,7 +1598,7 @@ static inline void set_final_update_cols(db_val_t *vals, struct dlg_cell *cell,
 		if (cell->vals==NULL) {
 			VAL_NULL(vals) = 1;
 		} else {
-			s = write_dialog_vars( cell->vals );
+			s = write_dialog_vars( cell );
 			if (s==NULL) {
 				VAL_NULL(vals) = 1;
 			} else {

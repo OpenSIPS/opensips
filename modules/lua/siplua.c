@@ -29,7 +29,6 @@
 #include "sipstate.h"
 
 char *luafilename = "";
-int lua_user_debug = 1;
 char *lua_allocator = "opensips";
 int lua_auto_reload = 0;
 
@@ -57,7 +56,6 @@ static const cmd_export_t cmds[] = {
  */
 static const param_export_t params[] = {
   { "luafilename", STR_PARAM, &luafilename},
-  { "lua_user_debug", INT_PARAM, &lua_user_debug},
   { "lua_allocator", STR_PARAM, &lua_allocator},
   { "lua_auto_reload", INT_PARAM, &lua_auto_reload},
   { 0, 0, 0 }

@@ -199,7 +199,7 @@ void b2b_logic_dump(int no_lock)
 	for(i = 0; i< b2bl_hsize; i++)
 	{
 		if(!no_lock)
-			lock_get(&b2bl_htable[i].lock);
+			B2BL_LOCK_GET(i);
 		tuple = b2bl_htable[i].first;
 		while(tuple)
 		{
@@ -272,7 +272,7 @@ void b2b_logic_dump(int no_lock)
 					if (!cdb_key) {
 						LM_ERR("Failed to build map key\n");
 						if(!no_lock)
-							lock_release(&b2bl_htable[i].lock);
+							B2BL_LOCK_RELEASE(i);
 						return;
 					}
 
@@ -300,7 +300,7 @@ void b2b_logic_dump(int no_lock)
 					{
 						LM_ERR("Sql insert failed\n");
 						if(!no_lock)
-							lock_release(&b2bl_htable[i].lock);
+							B2BL_LOCK_RELEASE(i);
 						return;
 					}
 				}
@@ -314,7 +314,7 @@ void b2b_logic_dump(int no_lock)
 					if (!cdb_key) {
 						LM_ERR("Failed to build map key\n");
 						if(!no_lock)
-							lock_release(&b2bl_htable[i].lock);
+							B2BL_LOCK_RELEASE(i);
 						return;
 					}
 
@@ -332,7 +332,7 @@ void b2b_logic_dump(int no_lock)
 					{
 						LM_ERR("Sql update failed\n");
 						if(!no_lock)
-							lock_release(&b2bl_htable[i].lock);
+							B2BL_LOCK_RELEASE(i);
 						return;
 					}
 				}
@@ -342,7 +342,7 @@ next:
 			tuple = tuple->next;
 		}
 		if(!no_lock)
-			lock_release(&b2bl_htable[i].lock);
+			B2BL_LOCK_RELEASE(i);
 	}
 }
 
@@ -380,7 +380,7 @@ static int b2bl_add_tuple(b2bl_tuple_t* tuple)
 		return -1;
 	}
 	shm_tuple->lifetime = tuple->lifetime;
-	lock_release(&b2bl_htable[hash_index].lock);
+	B2BL_LOCK_RELEASE(hash_index);
 	shm_tuple->state= tuple->state;
 
 	/* add entities */

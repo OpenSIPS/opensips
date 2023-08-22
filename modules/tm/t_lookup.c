@@ -320,7 +320,8 @@ static int matching_3261( struct sip_msg *p_msg, struct cell **trans,
 		p_cell; p_cell = p_cell->next_cell )
 	{
 		t_msg=p_cell->uas.request;
-		if (!t_msg) continue;  /* don't try matching UAC transactions */
+		/* don't try matching UAC transactions */
+		if (is_local(p_cell) || !t_msg) continue;
 		if (skip_method & t_msg->REQ_METHOD) continue;
 
 		/* here we do an exercise which will be removed from future code
