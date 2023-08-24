@@ -537,6 +537,7 @@ if (!stir_shaken_check_cert($var(cert))) {
 		<programlisting format="linespecific">
 ...
 if ( is_method("INVITE") &amp;&amp; !has_totag()) {
+	# equivalent to sipmsgops module: append_hf("P-Identity-Bypass: OSIP99-1234567890ABCDEF\r\n");
 	stir_shaken_disengagement("OSIP99-1234567890ABCDEF");
 }
 ...
