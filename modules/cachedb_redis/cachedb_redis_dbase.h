@@ -37,12 +37,12 @@
 #endif
 
 typedef struct cluster_nodes {
-	char *ip;							/* ip of this cluster node */
-	short port;						/* port of this cluster node */
-	unsigned short start_slot;		/* first slot for this server */
-	unsigned short end_slot;		/* last slot for this server */
+	char *ip;                       /* ip of this cluster node */
+	unsigned short port;            /* port of this cluster node */
+	unsigned short start_slot;      /* first slot for this server */
+	unsigned short end_slot;        /* last slot for this server */
 
-	redisContext *context;			/* actual connection to this node */
+	redisContext *context;          /* actual connection to this node */
 	struct tls_domain *tls_dom;
 
 	struct cluster_nodes *next;
