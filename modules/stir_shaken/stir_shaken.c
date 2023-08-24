@@ -150,7 +150,6 @@ static X509_STORE *store;
 static const param_export_t params[] = {
 	{"auth_date_freshness", INT_PARAM, &auth_date_freshness},
 	{"verify_date_freshness", INT_PARAM, &verify_date_freshness},
-	{"token", INT_PARAM, &token},
 	{"ca_list", STR_PARAM, &ca_list},
 	{"ca_dir", STR_PARAM, &ca_dir},
 	{"crl_list", STR_PARAM, &crl_list},
