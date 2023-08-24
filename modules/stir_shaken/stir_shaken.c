@@ -130,7 +130,6 @@ mi_response_t *mi_stir_shaken_crl_reload(const mi_params_t *params, struct mi_ha
  */
 static int auth_date_freshness = DEFAULT_AUTH_FRESHNESS;
 static int verify_date_freshness = DEFAULT_VERIFY_FRESHNESS;
-static char *token;
 static char *ca_list;
 static char *ca_dir;
 static char *crl_list;
