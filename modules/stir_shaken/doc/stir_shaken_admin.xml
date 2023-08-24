@@ -508,6 +508,43 @@ if (!stir_shaken_check_cert($var(cert))) {
 	    </example>
 	</section>
 
+	<section id="stir_shaken_disengagement" xreflabel="stir_shaken_disengagement()">
+	    <title>
+		<function moreinfo="none">stir_shaken_disengagement(token)</function>
+	    </title>
+	    <para>
+		This function add P-Identity-Bypass header with token value at the end of SIP headers.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+	    <itemizedlist>
+	    <listitem>
+			<para><emphasis>token (string)</emphasis> - The token provided by the authority during outage.
+			</para>
+		</listitem>
+	    </itemizedlist>
+		<para>The function returns the following values:</para>
+		<itemizedlist>
+		<listitem>
+		    <para>1: Success</para>
+		</listitem>
+		<listitem>
+		    <para>0: Failed to add P-Identity-Bypass header</para>
+		</listitem>
+	    </itemizedlist>
+	    <para>This function can be used from REQUEST_ROUTE.</para>
+	    <example>
+		<title><function>stir_shaken_disengagement()</function> usage</title>
+		<programlisting format="linespecific">
+...
+if ( is_method("INVITE") &amp;&amp; !has_totag()) {
+	# equivalent to sipmsgops module: append_hf("P-Identity-Bypass: OSIP99-1234567890ABCDEF\r\n");
+	stir_shaken_disengagement("OSIP99-1234567890ABCDEF");
+}
+...
+</programlisting>
+	    </example>
+	</section>
+
     </section>
 
     <section id="exported_pseudo_variables">
@@ -570,6 +607,69 @@ if (!stir_shaken_check_cert($var(cert))) {
 ...
 	</programlisting>
 	</example>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+		<title>Exported MI Functions</title>
+
+		<section id="mi_stir_shaken_ca_reload" xreflabel="stir_shaken_ca_reload">
+			<title>
+				<function moreinfo="none">stir_shaken_ca_reload</function>
+			</title>
+
+			<para>
+				Reload the file containing trusted CA certificates for the verifier
+				and the directory containing trusted CA certificates for the verifier.
+			</para>
+
+			<para>
+				Name: <emphasis>stir_shaken_ca_reload</emphasis>
+			</para>
+
+			<para>Parameters: <emphasis>none</emphasis></para>
+
+			<para>
+				MI FIFO Command Format:
+			</para>
+
+<programlisting  format="linespecific">
+...
+opensips-cli -x mi stir_shaken_ca_reload
+"OK"
+...
+</programlisting>
+
+		</section>
+
+		<section id="mi_stir_shaken_crl_reload" xreflabel="stir_shaken_crl_reload">
+			<title>
+				<function moreinfo="none">stir_shaken_crl_reload</function>
+			</title>
+
+			<para>
+				Reload the file containing certificate revocation lists (CRLs) for the verifier
+				and the directory containing certificate revocation lists for the verifier.
+			</para>
+
+			<para>
+				Name: <emphasis>stir_shaken_crl_reload</emphasis>
+			</para>
+
+			<para>Parameters: <emphasis>none</emphasis></para>
+
+			<para>
+				MI FIFO Command Format:
+			</para>
+
+<programlisting  format="linespecific">
+...
+opensips-cli -x mi stir_shaken_crl_reload
+"OK"
+...
+</programlisting>
+
+		</section>
+
 	</section>
 
 	</section>
