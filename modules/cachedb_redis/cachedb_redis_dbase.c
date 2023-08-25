@@ -371,6 +371,7 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 	redis_con *con, *cons = NULL;
 	csv_record *r, *it;
 	unsigned int multi_hosts;
+  char *host_w_port;
 
 	if (id == NULL) {
 		LM_ERR("null cachedb_id\n");
@@ -382,7 +383,17 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 	else
 		multi_hosts = 0;
 
-	r = parse_csv_record(_str(id->host));
+  LM_DBG("Redis host list: '%.*s' possible port '%d'\n", _str(id->host)->len, _str(id->host)->s, id->port);
+  if (multi_hosts == 0 && id->port != 0) {
+    host_w_port = pkg_malloc(sizeof(id->host) + sizeof((char *)":") + sizeof(id->port) + 1);
+    sprintf(host_w_port, "%s:%d", id->host, id->port);
+  }
+  else {
+    host_w_port = pkg_malloc(sizeof(id->host) + 1);
+    host_w_port = (char *)id->host;
+  }
+
+	r = parse_csv_record(_str(host_w_port));
 	if (!r) {
 		LM_ERR("failed to parse Redis host list: '%s'\n", id->host);
 		return NULL;
