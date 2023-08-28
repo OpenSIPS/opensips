@@ -238,7 +238,7 @@ const cmd_export_t core_cmds[]={
 	{"unuse_blacklist", (cmd_function)w_unuse_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"check_blacklist", (cmd_function)w_check_blacklist, {
+	{"check_blacklist_rule", (cmd_function)w_check_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0},
 		{CMD_PARAM_STR, fixup_blacklist_ip, fixup_blacklist_free}, /* ip */
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* port */
