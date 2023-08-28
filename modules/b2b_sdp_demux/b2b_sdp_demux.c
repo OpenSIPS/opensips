@@ -1359,6 +1359,10 @@ static int b2b_sdp_client_notify(struct sip_msg *msg, str *key, int type,
 		LM_ERR("request message %.*s not handled\n", msg->REQ_METHOD_S.len,
 				msg->REQ_METHOD_S.s);
 	} else {
+		lock_get(&client->ctx->lock);
+		if (!client->b2b_key.len && shm_str_dup(&client->b2b_key, key) < 0)
+			LM_ERR("could not copy b2b client key\n");
+		lock_release(&client->ctx->lock);
 		/* not interested in provisional replies */
 		if (msg->REPLY_STATUS < 200)
 			return 0;
@@ -1732,13 +1736,16 @@ static int b2b_sdp_demux_start(struct sip_msg *msg, str *uri,
 			LM_ERR("could not create b2b sdp demux client!\n");
 			return -1;
 		}
-		if (shm_str_dup(&client->b2b_key, b2b_key) < 0) {
+		lock_get(&ctx->lock);
+		if (!client->b2b_key.len && shm_str_dup(&client->b2b_key, b2b_key) < 0) {
 			LM_ERR("could not copy b2b client key\n");
 			/* key is not yet stored, but INVITE sent - terminate it */
+			lock_release(&ctx->lock);
 			b2b_sdp_client_terminate(client, b2b_key, 1);
 			pkg_free(b2b_key);
 			return -1;
 		}
+		lock_release(&ctx->lock);
 		pkg_free(b2b_key);
 	}
 
