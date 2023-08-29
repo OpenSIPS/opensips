@@ -136,7 +136,7 @@ modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 		<title>Set <varname>crl_list</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
+modparam("stir_shaken", "crl_list", "/stir_certs/crl_list.pem")
 ...
 </programlisting>
 	    </example>
@@ -608,6 +608,7 @@ if ( is_method("INVITE") &amp;&amp; !has_totag()) {
 	</programlisting>
 	</example>
 	</section>
+	</section>
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
 		<title>Exported MI Functions</title>
@@ -668,11 +669,8 @@ opensips-cli -x mi stir_shaken_crl_reload
 ...
 </programlisting>
 
-		</section>
-
 	</section>
 
 	</section>
 
 </chapter>
-
