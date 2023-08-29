@@ -17,8 +17,8 @@
 	<para>
 		Once loaded, you will be able to define HEP listeners in your
 		configuration file by adding their IP and, optionally, a listening port.
-		You can define both TCP and UDP listeners. On UDP you will be able to
-		receive HEP v1, v2 and v3 packets, on TCP only HEPv3.
+		You can define both TCP, UDP, and TLS listeners. On UDP you will be able to
+		receive HEP v1, v2 and v3 packets, on TCP and TLS only HEPv3.
 	<para>
 		<programlisting format="linespecific">
 ...
@@ -79,15 +79,18 @@ socket= hep_udp:127.0.0.1:6061 		# change the listening IP
 			and <emphasis role="bold">version</emphasis>, except destiantion's
 			URI which doesn't have a key and is in <emphasis role="bold">host:port
 			</emphasis>. <emphasis role="bold">transport</emphasis> key can be
-			<emphasis role="bold">TCP</emphasis> or <emphasis role="bold">UDP</emphasis>.
-			<emphasis role="bold">TCP</emphasis> works only for HEP version 3.
+			<emphasis role="bold">TCP</emphasis>, <emphasis role="bold">UDP</emphasis> or
+			<emphasis role="bold">TLS</emphasis>.
+			<emphasis role="bold">TCP</emphasis> and <emphasis role="bold">TLS</emphasis>
+			works only for HEP version 3.
 			<emphasis role="bold">Version</emphasis> is the hep protocol version
 			and can be <emphasis role="bold">1</emphasis>, <emphasis role="bold">2</emphasis>
 			or <emphasis role="bold">3</emphasis>.
 		</para>
 		<para>
-			HEPv1 and HEPv2 can use only UDP. HEPv3 can use both TCP and UDP having the
-			default set to TCP. If no hep version defined, the default is version 3 with TCP.
+			HEPv1 and HEPv2 can use only UDP. HEPv3 can use TCP, UDP and TLS having the
+			default set to TCP. If no hep version defined, the default is version 3 with
+			TCP and TLS.
 		</para>
 		<para>
 			NO default value. If <emphasis role="bold">hep_id</emphasis> the module
@@ -151,7 +154,7 @@ modparam("proto_hep", "homer5_delim", "##")
 	<section id="param_hep_port" xreflabel="hep_port">
 		<title><varname>hep_port</varname> (integer)</title>
 		<para>
-			The default port to be used by all TCP/UDP listeners.
+			The default port to be used by all TCP/UDP/TLS listeners.
 		</para>
 		<para>
 		<emphasis>

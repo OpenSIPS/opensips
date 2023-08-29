@@ -41,6 +41,7 @@
 #include "msg_translator.h"
 /* needed by tcpconn_add_alias() */
 #include "net/tcp_conn_defs.h"
+#include "net/net_tcp.h"
 
 static int fixup_forward_dest(void** param);
 static int fixup_destination(void** param);
@@ -93,6 +94,7 @@ static int w_force_tcp_alias(struct sip_msg *msg, int *port);
 static int w_set_adv_address(struct sip_msg *msg, str *adv_addr);
 static int w_set_adv_port(struct sip_msg *msg, str *adv_port);
 static int w_f_send_sock(struct sip_msg *msg, struct socket_info *si);
+static int w_f_close_tcp_sock(struct sip_msg *msg, str *host, int *port);
 static int w_serialize_branches(struct sip_msg *msg, int *clear_prev,
 					int *keep_ord);
 static int w_next_branches(struct sip_msg *msg);
@@ -225,6 +227,10 @@ const cmd_export_t core_cmds[]={
 	{"force_send_socket", (cmd_function)w_f_send_sock, {
 		{CMD_PARAM_STR, fixup_f_send_sock, 0}, {0,0,0}},
 		ALL_ROUTES},
+	{"force_close_tcp_socket", (cmd_function)w_f_close_tcp_sock, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
 	{"serialize_branches", (cmd_function)w_serialize_branches, {
 		{CMD_PARAM_INT, 0, 0},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
@@ -238,7 +244,7 @@ const cmd_export_t core_cmds[]={
 	{"unuse_blacklist", (cmd_function)w_unuse_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0}, {0,0,0}},
 		ALL_ROUTES},
-	{"check_blacklist", (cmd_function)w_check_blacklist, {
+	{"check_blacklist_rule", (cmd_function)w_check_blacklist, {
 		{CMD_PARAM_STR, fixup_blacklist, 0},
 		{CMD_PARAM_STR, fixup_blacklist_ip, fixup_blacklist_free}, /* ip */
 		{CMD_PARAM_INT|CMD_PARAM_OPT, 0, 0}, /* port */
@@ -1005,6 +1011,38 @@ static int w_f_send_sock(struct sip_msg *msg, struct socket_info *si)
 
 	return 1;
 }
+
+static int w_f_close_tcp_sock(struct sip_msg *msg, str *host, int *port)
+{
+	int fd, n, i, closed_no = 0;
+	struct hostent *he;
+	struct ip_addr ip;
+	struct tcp_connection *c;
+
+	he = resolvehost(host->s, 0);
+	if (he == 0) {
+		LM_ERR("could not resolve host\n");
+		return E_BAD_ADDRESS;
+	}
+
+	for (i = 0; he->h_addr_list[i]; ++i) {
+		hostent2ip_addr(&ip, he, i);
+		n = tcp_conn_get(0, &ip, *port, PROTO_TCP, NULL, &c, &fd, NULL);
+		if (n < 0 || c == 0) continue;
+		shutdown(fd, SHUT_RDWR);
+		c->state = S_CONN_BAD;
+		tcp_conn_release(c, 0);
+		closed_no += 1;
+	}
+
+	if (closed_no == 0) {
+		LM_WARN("TCP connection not found\n");
+		return -1;
+	}
+	LM_DBG("TCP connection force closed\n");
+	return 1;
+}
+
 
 static int w_serialize_branches(struct sip_msg *msg, int *clear_prev,
 							int *keep_ord)

@@ -30,6 +30,7 @@
 #define TM_CLUSTER_VERSION 0
 #define TM_CLUSTER_DEFAULT_PARAM "cid"
 
+extern int tm_bypass_anycast_check;
 extern int tm_repl_cluster;
 extern int tm_repl_auto_cancel;
 extern str tm_cluster_param;

@@ -469,7 +469,7 @@ static inline int tcp_handle_req(struct tcp_req *req,
 		if (req == &_tcp_common_current_req) {
 			/* let's duplicate this - most likely another conn will come in */
 
-			LM_ERR("We didn't manage to read a full request on con %p\n",con);
+			LM_WARN("We didn't manage to read a full request on con %p\n",con);
 			con->con_req = shm_malloc(sizeof(struct tcp_req));
 			if (con->con_req == NULL) {
 				LM_ERR("No more mem for dynamic con request buffer\n");

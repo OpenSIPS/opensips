@@ -62,7 +62,7 @@
 /*! \brief overall maximum shutdown time (graceful shutdown + all cleanups) */
 #define SHUTDOWN_TIMEOUT    60 /* sec */
 
-#define RT_NO 100 		/*!< routing tables number */
+#define RT_NO 400 		/*!< routing tables number */
 #define FAILURE_RT_NO RT_NO	/*!< on_failure routing tables number */
 #define ONREPLY_RT_NO RT_NO	/*!< on_reply routing tables number */
 #define BRANCH_RT_NO  RT_NO 	/*!< T-branch routing tables number */

@@ -15,6 +15,7 @@ extraction:
         - libexpat1-dev
         - libxml2-dev
         - libpq-dev
+        - libphonenumber-dev
         - zlib1g-dev
         - libperl-dev
         - libsnmp-dev
