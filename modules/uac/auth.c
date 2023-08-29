@@ -487,3 +487,32 @@ void rr_uac_auth_checker(struct sip_msg *msg, str *r_param, void *cb_param)
 		return;
 	}
 }
+
+int uac_inc_cseq(struct sip_msg *msg, int val)
+{
+	struct cell *t = uac_tmb.t_gett();
+	if (t==T_UNDEFINED || t==T_NULL_CELL)
+	{
+		LM_CRIT("no current transaction found\n");
+		return -1;
+	}
+
+	if (apply_cseq_op(msg, val) < 0) {
+		LM_WARN("Failed to increment the CSEQ header!\n");
+		return -1;
+	}
+
+	/* only register the TMCB once per transaction */
+	if (!(msg->msg_flags & FL_USE_UAC_CSEQ ||
+	t->uas.request->msg_flags & FL_USE_UAC_CSEQ)) {
+		if (uac_tmb.register_tmcb( msg, 0, TMCB_RESPONSE_FWDED,
+		apply_cseq_decrement,0,0)!=1) {
+			LM_ERR("Failed to register TMCB response fwded - continue \n");
+			return -1;
+		}
+	}
+	msg->msg_flags |= FL_USE_UAC_CSEQ;
+	t->uas.request->msg_flags |= FL_USE_UAC_CSEQ;
+
+	return 1;
+}
