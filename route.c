@@ -300,6 +300,9 @@ void unref_script_route(struct script_route_ref *ref)
 
 int update_script_route_ref(struct script_route_ref *ref)
 {
+	if (!ref)
+		return;
+
 	LM_DBG("updating %p [%.*s], idx=%d, ver/cnt %d\n",
 		ref, ref->name.len, ref->name.s, ref->idx, ref->u.version);
 
