@@ -272,6 +272,9 @@ void unref_script_route(struct script_route_ref *ref)
 {
 	struct script_route_ref *it;
 
+	if (!ref)
+		return;
+
 	//LM_DBG("xXx--- unrefing %p [%.*s] with idx %d, ver/cnt\n", ref,
 	//	ref->name.len, ref->name.s, ref->idx, ref->u.version);
 
