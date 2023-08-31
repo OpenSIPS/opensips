@@ -537,11 +537,14 @@ void srec_logic_destroy(struct src_sess *sess)
 {
 	if (!sess->b2b_key.s)
 		return;
-	shm_free(sess->b2b_key.s);
 
 	srec_b2b.entity_delete(B2B_CLIENT, &sess->b2b_key, sess->dlginfo, 1, 1);
-	if (sess->dlginfo)
+	if (sess->dlginfo) {
 		shm_free(sess->dlginfo);
+		sess->dlginfo = NULL;
+	}
+
+	shm_free(sess->b2b_key.s);
 	sess->b2b_key.s = NULL;
 }
 
