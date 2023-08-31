@@ -1,5 +1,300 @@
 =========================== Release 3.4.1 ==============================
 
+2023-08-31  Razvan Crainea  <razvan@opensips.org>
+        * [59006776c] :
+
+        Bump version to 3.4.1
+
+
+2023-08-31  Razvan Crainea  <razvan@opensips.org>
+        * [c5b281fe4] :
+
+        Update ChangeLog for 3.4.1
+
+
+2023-08-31  Razvan Crainea  <razvan@opensips.org>
+        * [48927a3c9] :
+
+        route: fix previous commit
+
+        (cherry picked from commit d86668889dcaef68b87eab0c0cb4bd61a592ce21)
+
+
+2023-08-31  Razvan Crainea  <razvan@opensips.org>
+        * [3aaf534b2] :
+
+        route: fix another crash related to f07048c
+
+        (cherry picked from commit 242598f70959f491761fcb039b76b3359b94cc18)
+
+
+2023-08-31  Razvan Crainea  <razvan@opensips.org>
+        * [461d92ce1] :
+
+        route: do not unref if route not initialized
+
+        Prevents crash when init fails and routes have not yet been initialized
+
+        (cherry picked from commit f07048c5875974d4057cd0b60ab984d1ee490858)
+
+
+2023-08-31  Liviu Chircu  <liviu@opensips.org>
+        * [670fa6d12] :
+
+        siprec: Fix invalid READ operation on freed memory
+
+        Also tidy up the cleanup phase
+
+        Thanks to Rob Moore, Daniel Bryars and Steven Ayre from Dubber for
+        reporting it and providing valuable information for troubleshooting!
+
+        (cherry picked from commit 9996f9fd13adfae5e4cbbad9de5265e43b5a75b3)
+
+
+2023-08-28  Razvan Crainea  <razvan@opensips.org>
+        * [9b7e17c92] :
+
+        dst_blacklists: append _rule check_blacklist func
+
+        This avoids collision with the userblacklist's module check_blacklist
+        function.
+
+        Many thanks to Bence Szigeti from Genesys for reporting it!
+
+        (cherry picked from commit bc239b1f8cffcb300328f390363546e1df1018b6)
+
+
+2023-08-28  Razvan Crainea  <razvan@opensips.org>
+        * [3323bf901] :
+
+        b2b_sdp_demux: fix client key concurrency case
+
+        Thanks to Suchi Sahoo from Five9 for reporting!
+
+        (cherry picked from commit 6678bae9301d007257049ce8827ba97410473a27)
+
+
+2023-08-17  Razvan Crainea  <razvan@opensips.org>
+        * [639d7f711] :
+
+        rtp_relay: fix missing ref for legs in session
+
+        This missing ref would (almost all the time) lead to possible invalid
+        memory accesses and possilbe double free.
+
+        Thanks to Rob Moore and Steven Ayre from Dubber for reporting it and
+        providing valuable information for troubleshooting
+
+        (cherry picked from commit 3aeeee43111ef78d6224e81e70f820961965bef3)
+
+
+2023-08-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [af33d64fb] :
+
+        Switch default xlog level from ERR to NOTICE
+
+        ERR is too scary for a default value :)
+
+        (cherry picked from commit c290071682fad30323aa36c0d3b64281b4edd2e5)
+
+
+2023-08-16  Razvan Crainea  <razvan@opensips.org>
+        * [9bcf7b50e] :
+
+        db_sqlite: fix possible crash when the values is relocated
+
+        When the query does not manage to count the rows in a first shot, the
+        values buffer might be reallocated, which can result in a relocation of
+        the buffer - if that's the case, we should repoint all the old values to
+        the new location, otherwise they will point to an invalid value.
+
+        Many thanks to Rob Moore and Steven Ayre from Dubber for reporting and
+        helping us testing and troubleshooting this corner case.
+
+        (cherry picked from commit 45aa9a947c6306f5723132f9c38903988be6cf8b)
+
+
+2023-08-16  Razvan Crainea  <razvan@opensips.org>
+        * [28e74a456] :
+
+        db_perlvdb: fix valdata inline
+
+        Thanks go to @varghesepaul for reporting it
+        Close #3152
+
+        (cherry picked from commit 8b2ac92794d1fe2d2e5a2cc6f1b08396a0322407)
+
+
+2023-08-16  Razvan Crainea  <razvan@opensips.org>
+        * [b529ce7ab] :
+
+        rtpproxy/rtpengine: document socket type if protocol is missing
+
+        Close #3154
+
+
+2023-08-09  Razvan Crainea  <razvan@opensips.org>
+        * [9bf02af27] :
+
+        ipc: initialize job structure before dispatching it
+
+        (cherry picked from commit 243e0e3abe5bbea5ee1384a0964e7c2af7cbe587)
+
+
+2023-08-09  Razvan Crainea  <razvan@opensips.org>
+        * [f2fa437c0] :
+
+        prometheus: properly initiate local stats val
+
+        (cherry picked from commit bc1a9ceab57e9f6a40b35cb2f0fca7e8711e5782)
+
+
+2023-08-08  Razvan Crainea  <razvan@opensips.org>
+        * [442a08c60] :
+
+        dprint: fix compile time printf checking
+
+        (cherry picked from commit 93e88f28e2ba489d2c9879e82c4d5dcefe439d0e)
+
+
+2023-08-07  Razvan Crainea  <razvan@opensips.org>
+        * [f44d7c91a] :
+
+        action/params: do not run route if params were not properly built
+
+        Thanks go to Nick Altmann for reporting it
+        Close #3141
+
+        (cherry picked from commit 3cdc8f1ebdbe49f920298ba60d409b6011ea84c6)
+
+
+2023-08-05  Razvan Crainea  <razvan@opensips.org>
+        * [402ca197a] :
+
+        dialog: fix warning without proper variables provided
+
+        (cherry picked from commit 11f613622b74b148f59b2073ff06e234372007b5)
+
+
+2023-08-05  Razvan Crainea  <razvan@opensips.org>
+        * [e2b69aa14] :
+
+        dialog: complete cseq maps implementation
+
+        Do not limit the number of maps, update existing in case the same cseq
+        is incremented multiple times (due to authentication), optimize the
+        number of maps and remove them when the transction is deleted.
+
+        Complete and close #1071
+
+        (cherry picked from commit a76af3f49ccc8bf62fbdbf29d240e652e86050c8)
+
+
+2023-08-05  Ovidiu Sas  <osas@voipembedded.com>
+        * [c3901132f] :
+
+        dialog/uac: fix in-dialog authentication
+         - closes #3041
+
+        (cherry picked from commit 155995b2bae4e4947c07c4df1cb0901da4a72a82)
+
+
+2023-08-04  Razvan Crainea  <razvan@opensips.org>
+        * [58ede2468] :
+
+        rtp_relay: suppress warning if session is established
+
+        (cherry picked from commit b417951b615a10acfed5ea69c131ab4949026365)
+
+
+2023-07-31  Razvan Crainea  <razvan@opensips.org>
+        * [c117f2e90] :
+
+        proto_*: move TCP request in shm, not pkg
+
+        This is because TCP connection might get re-balanced on different nodes
+
+        Thanks go to ConnexCS for reporting this!
+
+        (cherry picked from commit c49ba7007aad78aa56d3d2f1959dd939e87be63a)
+
+
+2023-07-31  Razvan Crainea  <razvan@opensips.org>
+        * [050db8893] :
+
+        context: return 0 if pushing context fails 1 otherwise
+
+        (cherry picked from commit 7c93e59cb07e0e9357d768f64f92aeca1280d002)
+
+
+2023-07-31  Vlad Paiu  <vladpaiu@opensips.org>
+        * [16b406755] :
+
+        Added str flag to out pvar
+
+        (cherry picked from commit f6377ca7a8246253563b464e5a1dd103bd0e2cd9)
+
+
+2023-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [46e889e02] :
+
+        b2b_entities: make sure we don't "leak" transaction when canceling it
+
+        (cherry picked from commit 0a0a0d65a8732231c41f0519dbd737072433e42b)
+
+
+2023-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [fdaddb7bf] :
+
+        tm: add set_t in API
+
+        (cherry picked from commit 5339179b011f20b002429649fc30fe95ff26e7d7)
+
+
+2023-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [e909cc848] :
+
+        rtp_relay: do not unsubscribe from terminated sessions
+
+        (cherry picked from commit 7c618fb23e90822794f13d20d92f0d60fd04ba73)
+
+
+2023-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [d07e27b24] :
+
+        rtpengine: use rtp_relay api only if loaded
+
+        Thanks go to ConnexCS for reporting this
+
+        (cherry picked from commit 73351da0212cf4d6a988b06ecec3c341bb32530c)
+
+
+2023-07-25  Razvan Crainea  <razvan@opensips.org>
+        * [e42a648ff] :
+
+        rtp_relay: mark session as successful if we have callee's SDP
+
+        (cherry picked from commit 9d77b6def960c1dffab7013eb2bab4a2837e3eaf)
+
+
+2023-07-24  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f2f87bc3e] :
+
+        [tm] avoid incoming request matching against UAC transactions
+
+        (cherry picked from commit e6c733595eeeaa74fec18a5911fc45592f45e737)
+
+
+2023-07-24  Razvan Crainea  <razvan@opensips.org>
+        * [efdf7881a] :
+
+        siprec: do not require SDP for a 200 OK
+
+        This should be OK if the SDP was completed on the 183.
+
+        (cherry picked from commit 2a0990d0886108bb09987bd69be2efd15fe4ac05)
+
+
 =========================== Release 3.4.0 ==============================
 
 2023-07-17  Vlad Paiu  <vladpaiu@opensips.org>
