@@ -1,3 +1,476 @@
+=========================== Release 3.2.14 ==============================
+
+2023-08-31  Liviu Chircu  <liviu@opensips.org>
+        * [b69d8c52c] :
+
+        siprec: Fix invalid READ operation on freed memory
+
+        Also tidy up the cleanup phase
+
+        Thanks to Rob Moore, Daniel Bryars and Steven Ayre from Dubber for
+        reporting it and providing valuable information for troubleshooting!
+
+        (cherry picked from commit 9996f9fd13adfae5e4cbbad9de5265e43b5a75b3)
+
+
+2023-08-20  OpenSIPS  <github@opensips.org>
+        * [6e9f821bf] :
+
+        Rebuild documentation
+
+
+2023-08-16  Razvan Crainea  <razvan@opensips.org>
+        * [532e4c460] :
+
+        db_sqlite: fix possible crash when the values is relocated
+
+        When the query does not manage to count the rows in a first shot, the
+        values buffer might be reallocated, which can result in a relocation of
+        the buffer - if that's the case, we should repoint all the old values to
+        the new location, otherwise they will point to an invalid value.
+
+        Many thanks to Rob Moore and Steven Ayre from Dubber for reporting and
+        helping us testing and troubleshooting this corner case.
+
+        (cherry picked from commit 45aa9a947c6306f5723132f9c38903988be6cf8b)
+
+
+2023-08-16  Razvan Crainea  <razvan@opensips.org>
+        * [2bc3a7af5] :
+
+        db_perlvdb: fix valdata inline
+
+        Thanks go to @varghesepaul for reporting it
+        Close #3152
+
+        (cherry picked from commit 8b2ac92794d1fe2d2e5a2cc6f1b08396a0322407)
+
+
+2023-08-16  Razvan Crainea  <razvan@opensips.org>
+        * [c733d4793] :
+
+        rtpproxy/rtpengine: document socket type if protocol is missing
+
+        Close #3154
+
+        (cherry picked from commit 90018c21a1a4a80afb46f83c4f31ba236b85527a)
+
+
+2023-08-12  OpenSIPS  <github@opensips.org>
+        * [d2a8d5b90] :
+
+        Rebuild documentation
+
+
+2023-08-09  Razvan Crainea  <razvan@opensips.org>
+        * [8a7d8d039] :
+
+        prometheus: properly initiate local stats val
+
+        (cherry picked from commit bc1a9ceab57e9f6a40b35cb2f0fca7e8711e5782)
+
+
+2023-08-09  Razvan Crainea  <razvan@opensips.org>
+        * [b6232fcd5] :
+
+        ipc: initialize job structure before dispatching it
+
+        (cherry picked from commit 243e0e3abe5bbea5ee1384a0964e7c2af7cbe587)
+
+
+2023-08-07  Razvan Crainea  <razvan@opensips.org>
+        * [ac068b607] :
+
+        action/params: do not run route if params were not properly built
+
+        Thanks go to Nick Altmann for reporting it
+        Close #3141
+
+        (cherry picked from commit 3cdc8f1ebdbe49f920298ba60d409b6011ea84c6)
+
+
+2023-08-05  OpenSIPS  <github@opensips.org>
+        * [14cd99987] :
+
+        Rebuild documentation
+
+
+2023-08-05  Razvan Crainea  <razvan@opensips.org>
+        * [3eda445bf] :
+
+        dialog: fix warning without proper variables provided
+
+        (cherry picked from commit 11f613622b74b148f59b2073ff06e234372007b5)
+
+
+2023-08-05  Razvan Crainea  <razvan@opensips.org>
+        * [c13ee4575] :
+
+        dialog: complete cseq maps implementation
+
+        Do not limit the number of maps, update existing in case the same cseq
+        is incremented multiple times (due to authentication), optimize the
+        number of maps and remove them when the transction is deleted.
+
+        Complete and close #1071
+
+        (cherry picked from commit a76af3f49ccc8bf62fbdbf29d240e652e86050c8)
+
+
+2023-08-05  Ovidiu Sas  <osas@voipembedded.com>
+        * [eded1a4c0] :
+
+        dialog/uac: fix in-dialog authentication
+         - closes #3041
+
+        (cherry picked from commit 155995b2bae4e4947c07c4df1cb0901da4a72a82)
+
+
+2023-08-05  Razvan Crainea  <razvan@opensips.org>
+        * [ef3990871] :
+
+        dialog: keep a mapping between INVITE&ACK
+
+        This prevents concurrency bugs that would generate an ACK with a higher
+        CSeq than the INVITE. Addresses #1071
+
+        (cherry picked from commit 80ff319d5f9f688369df689418a1d06a4945fbb4)
+
+
+2023-07-31  Razvan Crainea  <razvan@opensips.org>
+        * [02187e44f] :
+
+        context: return 0 if pushing context fails 1 otherwise
+
+        (cherry picked from commit 7c93e59cb07e0e9357d768f64f92aeca1280d002)
+
+
+2023-07-29  OpenSIPS  <github@opensips.org>
+        * [b78df872b] :
+
+        Rebuild documentation
+
+
+2023-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [36eb3627d] :
+
+        b2b_entities: make sure we don't "leak" transaction when canceling it
+
+        (cherry picked from commit 0a0a0d65a8732231c41f0519dbd737072433e42b)
+
+
+2023-07-26  Razvan Crainea  <razvan@opensips.org>
+        * [98df1b8c2] :
+
+        tm: add set_t in API
+
+        (cherry picked from commit 5339179b011f20b002429649fc30fe95ff26e7d7)
+
+
+2023-07-25  Razvan Crainea  <razvan@opensips.org>
+        * [ba34ff5a0] :
+
+        rtp_relay: mark session as successful if we have callee's SDP
+
+        (cherry picked from commit 9d77b6def960c1dffab7013eb2bab4a2837e3eaf)
+
+
+2023-07-24  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [de98f816c] :
+
+        [tm] avoid incoming request matching against UAC transactions
+
+        (cherry picked from commit e6c733595eeeaa74fec18a5911fc45592f45e737)
+
+
+2023-07-24  Razvan Crainea  <razvan@opensips.org>
+        * [f7fd5b1d8] :
+
+        siprec: do not require SDP for a 200 OK
+
+        This should be OK if the SDP was completed on the 183.
+
+        (cherry picked from commit 2a0990d0886108bb09987bd69be2efd15fe4ac05)
+
+
+2023-07-22  OpenSIPS  <github@opensips.org>
+        * [794f37921] :
+
+        Rebuild documentation
+
+
+2023-07-17  Vlad Paiu  <vladpaiu@opensips.org>
+        * [49750d3c4] :
+
+        set async ctx to 0
+
+        prevent crash in timeout_f not being set but reactor still somehow timing out fds
+
+        (cherry picked from commit cfcd9a65eb6eb41f6c8c5b69a55d0f930c383efc)
+
+
+2023-07-15  OpenSIPS  <github@opensips.org>
+        * [69512abf2] :
+
+        Rebuild documentation
+
+
+2023-07-11  Vlad Paiu  <vladpaiu@opensips.org>
+        * [6b8ec335b] :
+
+        Generate correct OPTIONS pings for NATed devices
+
+        (cherry picked from commit c4c376484cdbefa9eb8da84dfb0a011a07ddb27d)
+
+
+2023-07-08  OpenSIPS  <github@opensips.org>
+        * [a0bfbe6f7] :
+
+        Rebuild documentation
+
+
+2023-07-06  Razvan Crainea  <razvan@opensips.org>
+        * [cbfb959a1] :
+
+        tm: proper cleanup for anycast CANCEL transactions
+
+        Thanks go to Rizwan Syed and Jonathan Hulme from ConnexCS for reporting,
+        providing testing environment and support the troubleshooting and fix!
+
+        Close #3111
+
+        (cherry picked from commit 24ec4ebd901c18feba418b7c995faa9778357fc7)
+
+
+2023-07-04  Vlad Patrascu  <vladp@opensips.org>
+        * [ff1d906b5] :
+
+        clusterer: fix deadlock when receiving clusterer_reload via cluster
+
+        Running cluster_send_mi or cluster_broadcast_mi with clusterer_reload
+        as the command to dispatch would cause a deadlock on the receiving nodes.
+
+        (cherry picked from commit aa8e5ff0a020c1569880fe51a4af54cb9866cded)
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [112694525] :
+
+        Small code beautification
+
+        Related to 1d83a0c
+
+        (cherry picked from commit e455d009436b8ac5f3c879c410d0901a77769820)
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4f1c5a947] :
+
+        Merge branch 'warning_delay_timer'
+
+        (cherry picked from commit daaef52c1375d05e66318d2ae375a304d15f15f4)
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a038d3abc] :
+
+        [tracer] properly do per-request traceing in local route
+
+        As in local route we have only outbound (callee) leg, we cannot the typical incoming request tracing here. We need to "fake" it a bit to look as an outbound tracing.
+        Funny enough, this problem poped only when doing per-request/message tracing in local route; otherwise the per-transaction tracing was doing the correct job.
+
+        Credits for reporting go to @ovidiusas
+        Closes #3066
+
+        (cherry picked from commit 9eb13bf2ca6d8dae84fc84c4c2c113217d36aea5)
+
+
+2023-07-04  Vlad Patrascu  <vladp@opensips.org>
+        * [3597f5d1b] :
+
+        b2b_logic: properly reset the current tuple in all cases
+
+        The global variable used to identify the current tuple in the local_route was
+        not properly reset in all cases (when retrying a birdge action for example).
+        This could lead to a failure to identify the current tuple when acessing
+        the $b2b_logic variables, the b2b logic context etc., even when we're
+        not in the context of a local_route.
+
+        (cherry picked from commit 92772e69f36dcc70b2418374d83bf3274b13f104)
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4238e8e22] :
+
+        [ratelimit] Fix accuracy on the ratelimit timer
+
+        The computation perform by the ratelimit module is very time sensitive - any deviation of the interval between the runs of the timer handler may lead to false positive detection of CPS thresholds.
+        So, let's move the timer handler from regular timer (1s sensitivity) to utimer (100ms sensitivity) -> 10 times more accurate.
+        Still, the number of triggerings is the same, only the precision is 10 times better.
+        Credits go to @ovidiusas
+        Closes #2797
+
+        (cherry picked from commit 03788691a145bd1597ab6c5ec43544718143aad3)
+
+
+2023-07-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [39cb0a173] :
+
+        Fix advertising IPv6 IP addresses
+
+        Enclose the IPv6 advertised address when using it as string
+        Fixes #2774
+
+        (cherry picked from commit 4c16207a5be0bdb12a303e4c932b8bc3345a24f2)
+
+
+2023-07-03  Vlad Patrascu  <vladp@opensips.org>
+        * [b6b4eb0eb] :
+
+        clusterer: fix crash after MI reload
+
+        The crash was caused by accessing a dangling pointer to the capability
+        structure after it was freed.
+
+        Thanks to Suchi Sahoo from Five9 for reporting!
+
+        (cherry picked from commit cb8d63193b84909e1c238418dc3e80825ebb746e)
+
+
+2023-07-01  OpenSIPS  <github@opensips.org>
+        * [3fe0f4a55] :
+
+        Rebuild documentation
+
+
+2023-06-30  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [e5a1a69f8] :
+
+        Remove packages that are auto-installed by GitHub and create
+        a version conflict later when we install our version. This is
+        the reason the build were failing in the past few days.
+
+
+2023-06-30  Maksym Sobolyev  <sobomax@sippysoft.com>
+        * [e48eb184d] :
+
+        Move list of required packages into plain text file and GC
+        .travis.yml which "serves no purpose anymore".
+
+
+2023-06-30  Vlad Patrascu  <vladp@opensips.org>
+        * [715d3c62c] :
+
+        b2b_entities: fix crashes due to races when deleting entity
+
+        An entity might have been deleted and freed while the lock has been released
+        when running the entity storage callbacks.
+
+        Related to #3110
+
+        (cherry picked from commit 22bd8184e6c1cbd52ce3be79fbe0c52306226f37)
+
+
+2023-06-30  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [297fc767d] :
+
+        [uac_registrant] avoid code duplicate
+
+        Use common/shared functions for pushing / poping new processing context
+        A follow up on 3705209d524b7f61b193df8b56310fe9600e14b1
+
+        (cherry picked from commit 44c25dba422671497fda672762acdf4dd27b5a6e)
+
+
+2023-06-30  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b97e7e030] :
+
+        [b2b_logic] fix crash on tracing expired b2b tuples
+
+        When a tuple expires via timer, be sure to provide a processing context, otherwise the tracer (if enabled) will simply crash.
+        As part of the fix, two new helper functions were added for pushing and poping new processing contexts - these are to be reused by some prev similar fix on uac_registrant.
+        Related to #3110
+        Many thanks to @vtzan for helping with the troubleshooting and testing
+
+        (cherry picked from commit 2a3eb1e2a8e609b6b7b37074c1d1fd4dffc76f5e)
+
+
+2023-06-27  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a042588e3] :
+
+        Fix computing the size to clone for a body part
+
+        Take the optional header len into account also when cloning a body part struct.
+        This particular bug occured when using add_body_part() with extra hdr parameter in conjunction with an async() operation (or failure route)
+        Credits for reporting and helping with repoducing this go to @thuroc
+        Fixes #3067
+
+
+2023-06-27  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1c582af8f] :
+
+        [dialog] fix dropping empty string dlg vals
+
+        Upon DB recovery (after an OpenSIPS restart) do not drop emtpy string dlg vals - as we do allow creation of such vals via cfg and api and have them saved to DB, it makes all the sense to also restore them
+        This triggers some startup warnings when using in-dialog re-INVITE probing.
+        Closes #3108
+
+        (cherry picked from commit e24668131bcd828214c4fb9bccb208e9483a2a4e)
+        (cherry picked from commit dfb9b4f8a5846d55302563bacfbd988d000d8a3d)
+
+
+2023-06-24  OpenSIPS  <github@opensips.org>
+        * [113eda829] :
+
+        Rebuild documentation
+
+
+2023-06-23  Vlad Patrascu  <vladp@opensips.org>
+        * [4a5ac1c48] :
+
+        Also register a custom event from subscribe_event() fixup
+
+        This will permit raising an event from MI with an event subscribtion
+        done in startup_route without the need to define an event_route for
+        this event or using a raise() in the script.
+
+        (cherry picked from commit f69b150c8090adb86f2fcaadd56873f61cdb7097)
+
+
+2023-06-22  Vlad Patrascu  <vladp@opensips.org>
+        * [ecc6e225e] :
+
+        lua: fix duplicate logs to syslog
+
+        (cherry picked from commit 949422a938ed12c5b5a820dc4af6de1c437b3798)
+
+
+2023-06-22  Vlad Patrascu  <vladp@opensips.org>
+        * [7c84bfc8e] :
+
+        lua: don't register functions under a name
+
+        This fixes issues with running the "opensips" table functions on Lua
+        library version 5.1.
+
+        This essentially reverts commit ab964d9.
+
+        (cherry picked from commit 5e4d10cff40fed34cc419d81d5791b207cfb6a96)
+
+
+2023-06-22  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [3cd6344f6] :
+
+        Fix reload of timer routes
+
+        Use a separate, dynamic list of timer tasks that can be update by other proc than the timer itself (which has no info on the script).
+        The proc doing the reload, upon success, re-generates the list of timer tasks corresponding to the new set of timer routes.
+        NOTE: a more complex logic is needed when purging the old set of timer tasks, as they may still be under execution - we use here a pending list where we wait their completion.
+
+        (cherry picked from commit fce0eaeb241866d0c42db41160ed454be59fd7ed)
+        (cherry picked from commit 0950670879d586439448c4e62be7c065c724cde0)
+
+
 =========================== Release 3.2.13 ==============================
 
 2023-06-21  Liviu Chircu  <liviu@opensips.org>
