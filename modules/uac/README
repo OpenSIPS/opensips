@@ -26,6 +26,7 @@ UAC Module
 
               1.4.2. uac_restore_from() uac_restore_to()
               1.4.3. uac_auth()
+              1.4.4. uac_inc_cseq()
 
    2. Frequently Asked Questions
    3. Contributors
@@ -54,6 +55,7 @@ UAC Module
    1.6. uac_replace_from/uac_replace_to usage
    1.7. uac_restore_from/uac_restore_to usage
    1.8. uac_auth usage
+   1.9. uac_inc_cseq usage
 
 Chapter 1. Admin Guide
 
@@ -254,6 +256,22 @@ failure_route[check_auth] {
 }
 ...
 
+1.4.4.  uac_inc_cseq()
+
+   This function can be called to increase the CSeq of an ongoing
+   request.
+
+   It receives as the cseq parameter the value that the CSeq
+   should be incremented with.
+
+   This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
+   FAILURE_ROUTE.
+
+   Example 1.9. uac_inc_cseq usage
+...
+uac_inc_cseq(1);
+...
+
 Chapter 2. Frequently Asked Questions
 
    2.1.
@@ -308,7 +326,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 128 75 4208 1076
    2. Ovidiu Sas (@ovidiusas) 35 8 403 1351
-   3. Razvan Crainea (@razvancrainea) 31 23 494 148
+   3. Razvan Crainea (@razvancrainea) 32 24 560 148
    4. Liviu Chircu (@liviuchircu) 24 16 299 290
    5. Daniel-Constantin Mierla (@miconda) 15 11 138 88
    6. Vlad Patrascu (@rvlad-patrascu) 10 5 150 175
@@ -342,8 +360,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2023
-   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Apr 2023
+   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Aug 2023
+   2.  Ovidiu Sas (@ovidiusas)             Mar 2011 - Jun 2023
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Apr 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Mar 2023
    5.  Maksym Sobolyev (@sobomax)          Mar 2021 - Feb 2023
