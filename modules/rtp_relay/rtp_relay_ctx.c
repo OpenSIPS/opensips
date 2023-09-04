@@ -950,7 +950,12 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 						rtp_sess_disabled(sess), rtp_sess_pending(sess));
 				goto end;
 			}
-			handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess);
+			if (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess) == 1) {
+				lock_start_write(rtp_relay_contexts_lock);
+				if (list_is_valid(&ctx->list))
+					list_del(&ctx->list);
+				lock_stop_write(rtp_relay_contexts_lock);
+			}
 			break;
 		case TMCB_REQUEST_FWDED:
 			if (ctx->main && (rtp_sess_pending(ctx->main) || rtp_sess_late(ctx->main))) {
