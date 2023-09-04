@@ -1813,8 +1813,17 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 						rtp_sess_disabled(sess), rtp_sess_pending(sess));
 				goto end;
 			}
-			handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, sess, RTP_RELAY_CALLEE);
-			rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess, RTP_RELAY_CALLEE);
+			switch (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, sess, RTP_RELAY_CALLEE)) {
+				case 0:
+					rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess, RTP_RELAY_CALLEE);
+					break;
+				case 1:
+					lock_start_write(rtp_relay_contexts_lock);
+					if (list_is_valid(&ctx->list))
+						list_del(&ctx->list);
+					lock_stop_write(rtp_relay_contexts_lock);
+					break;
+			}
 			break;
 		case TMCB_REQUEST_FWDED:
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
