@@ -627,7 +627,8 @@ static inline int _is_e164(const str* _user, int require_plus)
 
 	end = _user->s + _user->len;
 	if (end - start < 2 || end - start > 15)
-		return -1;
+		if (require_plus)
+			return -1;
 
 	for (d = start; d < end; d++)
 		if (!_isdigit(*d))
