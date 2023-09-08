@@ -32,3 +32,4 @@ libjson-c-dev
 uuid-dev
 python-dev
 libmaxminddb-dev
+patch
