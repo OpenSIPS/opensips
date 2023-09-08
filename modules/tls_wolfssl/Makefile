@@ -20,12 +20,11 @@ WOLFSSL_EXTRA_CFLAGS := -DWOLFSSL_DEBUG_MEMORY
 endif
 endif
 
-lib/lib/libwolfssl.a:
-	$(Q)cd ./lib/wolfssl; \
-	if [ ! -f "configure" ]; then \
-		./autogen.sh; \
-	fi; \
-	if [ ! -f "Makefile" ]; then \
+lib/wolfssl/configure:
+	$(Q)cd ./lib/wolfssl && ./autogen.sh
+
+lib/wolfssl/Makefile: lib/wolfssl/configure
+	$(Q)cd ./lib/wolfssl && \
 		env -u DEFS -u CFLAGS -u LDFLAGS -u LIBS ./configure \
 		--enable-all --disable-fpecc -disable-aligndata --disable-examples \
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
@@ -33,8 +32,9 @@ lib/lib/libwolfssl.a:
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib \
 		C_EXTRA_FLAGS="-fPIC" \
-		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"; \
-	fi;
+		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"
+
+lib/lib/libwolfssl.a: lib/wolfssl/Makefile
 	$(Q)$(MAKE) -C ./lib/wolfssl install
 
 clean:	clean-wolfssl-lib
