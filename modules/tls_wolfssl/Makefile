@@ -11,20 +11,20 @@ MOD_DIR ?= $(shell realpath `dirname $(_makefile_path)`)/modules/tls_wolfssl
 
 include ../../Makefile.modules
 
-lib/lib/libwolfssl.a:
-	@cd ./lib/wolfssl; \
-	if [ ! -f "configure" ]; then \
-		./autogen.sh; \
-	fi; \
-	if [ ! -f "Makefile" ]; then \
+lib/wolfssl/configure:
+	$(Q)cd ./lib/wolfssl && ./autogen.sh
+
+lib/wolfssl/Makefile: lib/wolfssl/configure
+	$(Q)cd ./lib/wolfssl && \
 		env -u DEFS -u CFLAGS -u LDFLAGS -u LIBS ./configure \
 		--enable-all --disable-fpecc --disable-examples -disable-aligndata \
 		--enable-writedup --enable-tlsv10 --disable-shared --enable-static \
 		--disable-jni --disable-crl-monitor \
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA"; \
-	fi;
-	@$(MAKE) -C ./lib/wolfssl install
+
+lib/lib/libwolfssl.a: lib/wolfssl/Makefile
+	$(Q)$(MAKE) -C ./lib/wolfssl install
 
 clean:	clean-wolfssl-lib
 
