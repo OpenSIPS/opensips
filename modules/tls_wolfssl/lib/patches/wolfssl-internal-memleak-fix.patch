@@ -1,0 +1,30 @@
+diff --git a/src/internal.c b/src/internal.c
+index 930769152..8e7ccf9c4 100644
+--- a/src/internal.c
++++ b/src/internal.c
+@@ -7207,7 +7208,11 @@ void SSL_ResourceFree(WOLFSSL* ssl)
+     /* Cleanup async */
+     FreeAsyncCtx(ssl, 1);
+ #endif
+-    if (ssl->options.weOwnRng) {
++    if (ssl->options.weOwnRng || (ssl->rng
++#ifdef SINGLE_THREADED
++        && ssl->rng != ssl->ctx->rng
++#endif
++       )) {
+         wc_FreeRng(ssl->rng);
+         XFREE(ssl->rng, ssl->heap, DYNAMIC_TYPE_RNG);
+     }
+@@ -7571,7 +7576,11 @@ void FreeHandshakeResources(WOLFSSL* ssl)
+     #endif
+ #endif
+     ) {
+-        if (ssl->options.weOwnRng) {
++        if (ssl->options.weOwnRng || (ssl->rng
++#ifdef SINGLE_THREADED
++            && ssl->rng != ssl->ctx->rng
++#endif
++        )) {
+             wc_FreeRng(ssl->rng);
+             XFREE(ssl->rng, ssl->heap, DYNAMIC_TYPE_RNG);
+             ssl->rng = NULL;
