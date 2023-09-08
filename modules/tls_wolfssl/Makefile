@@ -34,8 +34,14 @@ lib/wolfssl/Makefile: lib/wolfssl/configure
 		C_EXTRA_FLAGS="-fPIC" \
 		CFLAGS="-DWOLFSSL_STATIC_RSA $(WOLFSSL_EXTRA_CFLAGS)"
 
-lib/lib/libwolfssl.a: lib/wolfssl/Makefile
+lib/lib/libwolfssl.a: lib/wolfssl/Makefile lib/wolfssl/src/internal.c
 	$(Q)$(MAKE) -C ./lib/wolfssl install
+
+lib/wolfssl/src/internal.c: lib/patches/wolfssl-internal-memleak-fix.patched
+
+lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.patch
+	 $(Q)patch -sNR --dry-run lib/wolfssl/src/internal.c $< || \
+		 $(Q)patch -N lib/wolfssl/src/internal.c $< && cp $< $@
 
 clean:	clean-wolfssl-lib
 
@@ -45,4 +51,5 @@ clean-wolfssl-lib:
 		$(MAKE) -C ./lib/wolfssl clean; \
 	fi;
 	@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
-	./lib/wolfssl/Makefile ./lib/wolfssl/configure
+	./lib/wolfssl/Makefile ./lib/wolfssl/configure \
+	lib/patches/wolfssl-internal-memleak-fix.patched
