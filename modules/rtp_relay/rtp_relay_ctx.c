@@ -900,7 +900,7 @@ static int handle_rtp_relay_ctx_leg_reply(struct rtp_relay_ctx *ctx, struct sip_
 			LM_DBG("negative reply on late branch\n");
 		}
 		rtp_relay_sess_failed(ctx, sess);
-		return 1;
+		return -2;
 	}
 	info.body = get_body_part(msg, TYPE_APPLICATION, SUBTYPE_SDP);
 	if (!info.body) {
@@ -955,7 +955,7 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 						rtp_sess_disabled(sess), rtp_sess_pending(sess));
 				goto end;
 			}
-			if (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess) == 1) {
+			if (handle_rtp_relay_ctx_leg_reply(ctx, p->rpl, t, sess) == -2) {
 				lock_start_write(rtp_relay_contexts_lock);
 				if (list_is_valid(&ctx->list))
 					list_del(&ctx->list);
