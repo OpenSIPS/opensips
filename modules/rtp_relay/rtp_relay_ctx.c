@@ -171,6 +171,11 @@ void rtp_relay_ctx_free(void *param)
 	list_for_each_safe(it, safe, &ctx->sessions)
 		rtp_relay_ctx_free_sess(list_entry(it, struct rtp_relay_sess, list));
 
+	lock_start_write(rtp_relay_contexts_lock);
+	if (list_is_valid(&ctx->list))
+		list_del(&ctx->list);
+	lock_stop_write(rtp_relay_contexts_lock);
+
 	lock_destroy(&ctx->lock);
 	shm_free(ctx);
 }
