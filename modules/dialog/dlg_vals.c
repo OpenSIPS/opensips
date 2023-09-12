@@ -370,6 +370,7 @@ int pv_get_dlg_val(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
 	if (type == DLG_VAL_TYPE_STR) {
 		res->flags = PV_VAL_STR;
 		res->rs = isval.s;
+		param->pvv = isval.s;
 	} else {
 		res->flags = PV_VAL_INT|PV_TYPE_INT;
 		res->ri = isval.n;
