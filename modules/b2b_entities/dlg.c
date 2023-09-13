@@ -1219,10 +1219,30 @@ logic_notify:
 		}
 		else
 		{
-			if (dlg->uas_tran) {
-				tmb.t_release_trans(dlg->uas_tran);
-				tmb.unref_cell(dlg->uas_tran);
-				dlg->uas_tran = NULL;
+			ret = tmb.t_check_trans(msg);
+			switch (ret) {
+				case 1: /* hop-by-hop ACK */
+					tm_tran = tmb.t_gett();
+					/* just grab the transaction and release it */
+					tmb.t_sett(T_UNDEFINED);
+					break;
+				case -2: /* end-to-end ACK */
+					tm_tran = tmb.t_get_e2eackt();
+					break;
+				default:
+					tm_tran = NULL;
+					break;
+			}
+			/* if we managed to find a coresponding hop-by-hop INVITE transaction
+			 * or it is a valid end-to-end ACK, unlink from the dialog */
+			if (tm_tran && tm_tran != T_UNDEFINED) {
+				if (dlg->uas_tran == tm_tran) {
+					tmb.t_release_trans(dlg->uas_tran);
+					tmb.unref_cell(dlg->uas_tran);
+					dlg->uas_tran = NULL;
+				}
+				if (ret == 1)
+					tmb.unref_cell(tm_tran);
 			}
 
 			ret = tmb.t_newtran(msg);
