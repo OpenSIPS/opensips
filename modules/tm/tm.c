@@ -683,7 +683,7 @@ int load_tm( struct tm_binds *tmb)
 	tmb->register_tmcb = register_tmcb;
 
 	/* relay function */
-	tmb->t_relay = (cmd_function)w_t_relay;
+	tmb->t_relay = w_t_relay;
 
 	/* reply functions */
 	tmb->t_reply = (treply_f)w_t_reply;
@@ -693,7 +693,7 @@ int load_tm( struct tm_binds *tmb)
 	/* transaction location/status functions */
 	tmb->t_newtran = w_t_newtran;
 	tmb->t_is_local = t_is_local;
-	tmb->t_check_trans = (cmd_function)t_check_trans;
+	tmb->t_check_trans = t_check_trans;
 	tmb->t_get_trans_ident = t_get_trans_ident;
 	tmb->t_lookup_ident = t_lookup_ident;
 	tmb->t_gett = get_t;
