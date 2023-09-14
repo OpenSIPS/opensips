@@ -1169,57 +1169,85 @@ logic_notify:
 					tmb.t_setkr(REQ_FWDED);
 				}
 
-				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
+				if(dlg->uac_tran && dlg->uac_tran!=T_UNDEFINED)
 				{
-					if(dlg->uas_tran->uas.request)
-					/* there is another transaction for which no reply
-					 * was sent out */
-					{
-						if (method_value != METHOD_BYE) {
-							/* send reply */
-							LM_DBG("Received another request when the previous "
-								"one was in process\n");
-							str text = str_init("Request Pending");
-							if(tmb.t_reply_with_body( tm_tran, 491,
-							&text, 0, 0, &to_tag) < 0)
-							{
-								LM_ERR("failed to send reply with tm\n");
-							}
-							LM_DBG("Sent reply [491] and unreffed the cell %p\n",
-								tm_tran);
-						} else {
-							LM_DBG("Received BYE while another request "
-								"was in process\n");
-							str text_ok = str_init("OK");
-							if(tmb.t_reply_with_body( tm_tran, 200,
-							&text_ok, 0, 0, &to_tag) < 0)
-							{
-								LM_ERR("failed to send reply with tm\n");
-							}
-							LM_DBG("Sent reply [200] and unreffed the cell %p\n",
-								tm_tran);
-							tmb.unref_cell(tm_tran);
-
-							str text_term = str_init("Request Terminated");
-							if(tmb.t_reply_with_body(dlg->uas_tran, 487,
-							&text_term, 0, 0, &to_tag) < 0)
-							{
-								LM_ERR("failed to send reply with tm\n");
-							}
-							LM_DBG("Sent reply [487] and unreffed the cell %p\n",
-								dlg->uas_tran);
-
-							tmb.unref_cell(dlg->uas_tran);
-							dlg->uas_tran = NULL;
-
-							b2b_cb_flags |= B2B_NOTIFY_FL_TERM_BYE;
-							goto run_cb;
+					/* We have an UAC ongoing transaction in the dialog
+					 * -> reject with 491 Request Pending */
+					if (method_value != METHOD_BYE) {
+						/* send reply */
+						LM_DBG("Received a request while having an ongoing "
+							"outbound/UAC one\n");
+						str text = str_init("Request Pending");
+						if(tmb.t_reply_with_body( tm_tran, 491,
+						&text, 0, 0, &to_tag) < 0)
+						{
+							LM_ERR("failed to send reply with tm\n");
 						}
+						LM_DBG("Sent reply [491] and unreffed the cell %p\n",
+							tm_tran);
+					} else {
+						LM_DBG("Received BYE while having an ongoing "
+							"outbound/UAC transaction\n");
+						str text_ok = str_init("OK");
+						if(tmb.t_reply_with_body( tm_tran, 200,
+						&text_ok, 0, 0, &to_tag) < 0)
+						{
+							LM_ERR("failed to send reply with tm\n");
+						}
+						LM_DBG("Sent reply [200] and unreffed the cell %p\n",
+							tm_tran);
+						tmb.unref_cell(tm_tran);
+
+						str text_term = str_init("Request Terminated");
+						if(tmb.t_reply_with_body(dlg->uas_tran, 487,
+						&text_term, 0, 0, &to_tag) < 0)
+						{
+							LM_ERR("failed to send reply with tm\n");
+						}
+						LM_DBG("Sent reply [487] and unreffed the cell %p\n",
+							dlg->uas_tran);
+
+						tmb.unref_cell(dlg->uas_tran);
+						dlg->uas_tran = NULL;
+
+						b2b_cb_flags |= B2B_NOTIFY_FL_TERM_BYE;
+						goto run_cb;
 					}
 					tmb.unref_cell(tm_tran); /* for t_newtran() */
 					B2BE_LOCK_RELEASE(table, hash_index);
 					return SCB_DROP_MSG;
+				} else
+				if(dlg->uas_tran && dlg->uas_tran!=T_UNDEFINED)
+				{
+					/* We have another UAS ongoing transaction on the dialog
+					 * -> reject with 500, "Overlapping Requests" */
+					#define RETRY_AFTER_HDR "Retry-After: "
+					#define RETRY_AFTER_HDR_LEN (sizeof("Retry-After: ")-1)
+					char ra_s[RETRY_AFTER_HDR_LEN + 3 + CRLF_LEN];
+					str ra = {ra_s, 0};
+					str text = str_init("Overlapping Requests");
+					LM_DBG("Received another request when the previous "
+							"one was in process\n");
+					memcpy( ra.s+ra.len, RETRY_AFTER_HDR, RETRY_AFTER_HDR_LEN);
+					ra.len += RETRY_AFTER_HDR_LEN;
+					/* the retry value is between 0 and 10 */
+					ra.len += btostr(ra.s+ra.len, (unsigned char)(rand()%10) );
+					memcpy( ra.s+ra.len, CRLF, CRLF_LEN);
+					ra.len += CRLF_LEN;
+					/* send reply */
+					if(tmb.t_reply_with_body( tm_tran, 500,
+					&text, 0, &ra, &to_tag) < 0)
+					{
+						LM_ERR("failed to send reply with tm\n");
+					}
+					LM_DBG("Sent reply [500] and unreffed the cell %p\n",
+						tm_tran);
+					tmb.unref_cell(tm_tran); /* for t_newtran() */
+					B2BE_LOCK_RELEASE(table, hash_index);
+					return SCB_DROP_MSG;
 				}
+
+				/* the new request is accepted for handling */
 				dlg->uas_tran = tm_tran;
 				LM_DBG("Saved uas_tran=[%p] for dlg[%p]\n", tm_tran, dlg);
 			}
