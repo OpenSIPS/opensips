@@ -69,6 +69,8 @@ typedef int (*treply_f)(struct sip_msg * , unsigned int , const str * );
 typedef int (*treply_wb_f)( struct cell* trans, unsigned int code, str *text,
 	str *body, str *new_header, str *to_tag);
 typedef int (*tgen_totag_f)(struct sip_msg * , str * );
+typedef int (*tcheck_trans_f)(struct sip_msg *);
+typedef int (*trelay_f)(struct sip_msg  *p_msg , void *flags, struct proxy_l *proxy);
 
 #define LOCK_REPLIES(_t) lock(&(_t)->reply_mutex )
 #define UNLOCK_REPLIES(_t) unlock(&(_t)->reply_mutex )
