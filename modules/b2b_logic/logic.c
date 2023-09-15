@@ -3401,7 +3401,7 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 		LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
 		goto error;
 	}
-	get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+	get_local_contact((ci.send_sock?ci.send_sock:ci.pref_sock), &ct_uri.user, &ci.local_contact);
 
 	/* grab all AVPs from the server side and push them into the client */
 	ci.avps = clone_avp_list( *get_avp_list() );
