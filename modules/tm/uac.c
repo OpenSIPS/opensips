@@ -231,7 +231,7 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 			/* calculate the socket corresponding to next hop */
 			new_proxy = uri2proxy(
 				req->dst_uri.s ? &(req->dst_uri) : &req->new_uri,
-				PROTO_NONE );
+				req->force_send_socket?req->force_send_socket->proto:PROTO_NONE);
 			if (new_proxy==0)
 				goto skip_update;
 			/* use the first address */
@@ -239,13 +239,20 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 				&new_proxy->host, new_proxy->addr_idx,
 				new_proxy->port ? new_proxy->port:SIP_PORT);
 			/* get the send socket */
-			new_send_sock = get_send_socket( req, &new_to_su,
-				new_proxy->proto);
-			if (new_send_sock==NULL) {
-				free_proxy( new_proxy );
-				pkg_free( new_proxy );
-				LM_ERR("no socket found for the new destination\n");
-					goto skip_update;
+			if (req->force_send_socket) {
+				new_send_sock = req->force_send_socket;
+			} else if (dialog->pref_sock &&
+			dialog->pref_sock->proto==new_proxy->proto) {
+				new_send_sock = dialog->pref_sock;
+			} else {
+				new_send_sock = get_send_socket( req, &new_to_su,
+					new_proxy->proto);
+				if (new_send_sock==NULL) {
+					free_proxy( new_proxy );
+					pkg_free( new_proxy );
+					LM_ERR("no socket found for the new destination\n");
+						goto skip_update;
+				}
 			}
 		}
 
@@ -430,7 +437,8 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	LM_DBG("next_hop=<%.*s>\n",dialog->hooks.next_hop->len,
 			dialog->hooks.next_hop->s);
 
-	/* calculate the socket corresponding to next hop */
+	/* calculate the socket corresponding to next hop ; here we take
+	 * into consideration the protocol forced by the "send_sock" */
 	proxy = uri2proxy( dialog->hooks.next_hop,
 		dialog->send_sock ? dialog->send_sock->proto : PROTO_NONE );
 	if (proxy==0)  {
@@ -449,12 +457,18 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 			dialog->send_sock = NULL;
 	}
 	if (dialog->send_sock==NULL) {
-		/* get the send socket */
-		dialog->send_sock = get_send_socket(NULL/*msg*/, &to_su, proxy->proto);
-		if (!dialog->send_sock) {
-			LM_ERR("no corresponding socket for af %d\n", to_su.s.sa_family);
-			ser_error = E_NO_SOCKET;
-			goto error3;
+		if (dialog->pref_sock && proxy->proto == dialog->pref_sock->proto) {
+			dialog->send_sock = dialog->pref_sock;
+		} else {
+			/* get the send socket */
+			dialog->send_sock = get_send_socket(NULL/*msg*/, &to_su,
+				proxy->proto);
+			if (!dialog->send_sock) {
+				LM_ERR("no corresponding socket for af %d\n",
+					to_su.s.sa_family);
+				ser_error = E_NO_SOCKET;
+				goto error3;
+			}
 		}
 	}
 	LM_DBG("sending socket is %.*s \n",
