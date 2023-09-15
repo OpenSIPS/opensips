@@ -845,6 +845,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2b_req_data_t req_data;
 	b2b_dlginfo_t dlginfo;
 	int do_unlock = 0;
+	static str method_ack = {ACK, ACK_LEN};
 
 	if (!tuple) {
 		B2BL_LOCK_GET(cur_route_ctx.hash_index);
@@ -917,6 +918,26 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		/* if a negative reply */
 		if(statuscode >= 300)
 		{
+			if ((tuple->bridge_flags & B2BL_BR_FLAG_RENEW_SDP) && statuscode == 491) {
+				/* it is very likely that the new entity is trying to send itself a re-INVITE
+				 * to lock down the codecs, therefore we no longer need this step - thus, for now,
+				 * we simply ACK the ongoing bridging entity, and arm a re-negociation attempt
+				 */
+				memset(&req_data, 0, sizeof(b2b_req_data_t));
+				req_data.et = tuple->bridge_entities[0]->type;
+				req_data.b2b_key = &tuple->bridge_entities[0]->key;
+				req_data.method = &method_ack;
+				req_data.body = &tuple->bridge_entities[1]->in_sdp;
+				req_data.dlginfo = tuple->bridge_entities[0]->dlginfo;
+				b2b_api.send_request(&req_data);
+
+				if (b2bl_push_bridge_retry(tuple) == 0) {
+					tuple->bridge_flags |= B2BL_BR_FLAG_PENDING_SDP;
+					tuple->state = B2B_BRIDGED_STATE;
+					goto done;
+				}
+				/* else, fallback to rejecting the call */
+			}
 			entity->rejected = 1;
 			ret = process_bridge_negreply(tuple, tuple->hash_index, entity, msg);
 
@@ -1172,6 +1193,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 					LM_ERR("Failed to save SDP\n");
 					goto error;
 				}
+				tuple->bridge_flags &= ~B2BL_BR_FLAG_PENDING_SDP;
 			}
 
 			/* if reINVITE and 481 or 408 reply */

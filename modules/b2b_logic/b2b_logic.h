@@ -77,7 +77,7 @@ enum b2b_tuple_state {
 #define B2BL_BR_FLAG_DONT_DELETE_BRIDGE_INITIATOR  (1<<4)
 #define B2BL_BR_FLAG_PROV_MEDIA                    (1<<5)
 #define B2BL_BR_FLAG_NO_OLD_ENT                    (1<<6)
-
+#define B2BL_BR_FLAG_PENDING_SDP                   (1<<7)
 
 /* modes to write in db */
 #define NO_DB         0
