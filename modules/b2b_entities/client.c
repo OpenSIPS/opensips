@@ -154,11 +154,9 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	}
 	dlg->state = B2B_NEW;
 	dlg->cseq[CALLER_LEG] =(ci->cseq?ci->cseq:1);
-	dlg->send_sock = ci->send_sock;
 
 	random_info.s = int2str(rand(), &random_info.len);
 
-	dlg->send_sock = ci->send_sock;
 	dlg->id = core_hash(&from_tag, random_info.s?&random_info:NULL, HASH_SIZE);
 
 	/* callid must have the special format */
@@ -223,6 +221,7 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 	td.T_flags=T_NO_AUTOACK_FLAG|T_PASS_PROVISIONAL_FLAG ;
 
 	td.send_sock = ci->send_sock;
+	td.pref_sock = ci->pref_sock;
 
 	if(ci->dst_uri.len)
 		td.obp = ci->dst_uri;
@@ -253,6 +252,8 @@ str* _client_new(client_info_t* ci,b2b_notify_t b2b_cback,
 		shm_free(b2b_key_shm);
 		return NULL;
 	}
+	/* update the dialog sock with actual socket used when sending the req */
+	dlg->send_sock = td.send_sock;
 	tmb.setlocalTholder(NULL);
 
 	LM_DBG("new client entity [%p] callid=[%.*s] tag=[%.*s] param=[%.*s]"
@@ -347,6 +348,7 @@ dlg_t* b2b_client_build_dlg(b2b_dlg_t* dlg, dlg_leg_t* leg, unsigned int maxfwd)
 	if(dlg->send_sock)
 		LM_DBG("send sock= %.*s\n", dlg->send_sock->address_str.len,
 			dlg->send_sock->address_str.s);
+	td->pref_sock = NULL; /* in-dialog req, use only the forced socket */
 
 	return td;
 error:

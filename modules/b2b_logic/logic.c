@@ -515,8 +515,8 @@ b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
 	b2bl_entity_id_t* entity;
 
 	ci->method = method_invite;
-	ci->send_sock = msg ?
-		(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
+	ci->send_sock = msg ? msg->force_send_socket : NULL;
+	ci->pref_sock = msg ? msg->rcv.bind_address : NULL;
 
 	if (adv_ct) {
 		ci->local_contact = *adv_ct;
@@ -727,8 +727,8 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	ci.extra_headers = tuple->extra_headers;
 	ci.client_headers= hdrs;
 	ci.body          = &tuple->bridge_entities[0]->in_sdp;
-	ci.send_sock     = msg ? (msg->force_send_socket?
-		msg->force_send_socket:msg->rcv.bind_address):NULL;
+	ci.send_sock     = msg ? msg->force_send_socket : NULL;
+	ci.pref_sock     = msg ? msg->rcv.bind_address : NULL;
 
 	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
 
@@ -2491,7 +2491,8 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.dst_uri       = msg->dst_uri;
 	ci.extra_headers = &extra_headers;
 	ci.body          = (body.s?&body:NULL);
-	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
+	ci.send_sock     = msg->force_send_socket;
+	ci.pref_sock     = msg->rcv.bind_address;
 
 	memset(&ct_uri, 0, sizeof(struct sip_uri));
 	if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
@@ -2938,8 +2939,8 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.extra_headers = tuple->extra_headers;
 	ci.client_headers= hdrs;
 	ci.body          = (body.s?&body:NULL);
-	ci.send_sock     = msg->force_send_socket?
-		msg->force_send_socket:msg->rcv.bind_address;
+	ci.send_sock     = msg->force_send_socket;
+	ci.pref_sock     = msg->rcv.bind_address;
 
 	/* Decrement Max-Forwards value */
 	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0) {
