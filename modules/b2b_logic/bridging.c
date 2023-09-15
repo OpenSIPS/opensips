@@ -594,6 +594,8 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			LM_ERR("Failed to send second ACK in bridging scenario\n");
 			return -1;
 		}
+		if (shm_str_sync(&bentity1->in_sdp, body) < 0)
+			LM_ERR("Failed to save SDP\n");
 
 		if (bridging_start_old_ent(tuple, bentity0, bentity1,
 			NULL, NULL) < 0) {
@@ -844,6 +846,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			/* bridging scenario should be done */
 			tuple->state = B2B_BRIDGED_STATE;
 			LM_DBG("Finished the bridging\n");
+			tuple->bridge_flags &= ~B2BL_BR_FLAG_PENDING_SDP;
 		}
 		else
 		{
@@ -2274,4 +2277,142 @@ error:
 		pkg_free(new_body.s);
 	local_ctx_tuple = NULL;
 	return -1;
+}
+
+/* RFC 3261 says we can retry anytime between 2.1s and 4s
+ * so we are trying as soon as possible, provided that our timer
+ * ticked and the 2.1s have elapsed */
+#define B2BL_BRIDGE_RETRY_TIMEOUT 2100000 /* ms */
+#define B2BL_BRIDGE_RETRY_MAX 4000000 /* ms */
+
+struct b2bl_bridge_retry_t {
+	utime_t time;
+	unsigned int hash_index, local_index;
+	struct b2bl_bridge_retry_t *next;
+} **b2bl_bridge_retry_head, **b2bl_bridge_retry_last;
+gen_lock_t *b2bl_bridge_retry_lock;
+
+int b2bl_init_bridge_retry(void)
+{
+	b2bl_bridge_retry_lock = lock_alloc();
+	if (!b2bl_bridge_retry_lock) {
+		LM_ERR("cannot allocate bridge retry lock\n");
+		return -1;
+	}
+	if (!lock_init(b2bl_bridge_retry_lock)) {
+		LM_ERR("cannot initialize bridge retry lock\n");
+		return -1;
+	}
+	b2bl_bridge_retry_head = shm_malloc(sizeof(struct b2bl_bridge_retry_t *));
+	if (!b2bl_bridge_retry_head) {
+		LM_ERR("cannot allocate bridge retry head\n");
+		return -1;
+	}
+	*b2bl_bridge_retry_head = NULL;
+	b2bl_bridge_retry_last = shm_malloc(sizeof(struct b2bl_bridge_retry_t *));
+	if (!b2bl_bridge_retry_last) {
+		LM_ERR("cannot allocate bridge retry last\n");
+		return -1;
+	}
+	*b2bl_bridge_retry_last = NULL;
+	return 0;
+}
+
+void b2bl_free_bridge_retry(void)
+{
+	struct b2bl_bridge_retry_t *it, *next;
+	for (it = *b2bl_bridge_retry_head; it; it = next) {
+		next = it->next;
+		shm_free(it);
+	}
+	lock_destroy(b2bl_bridge_retry_lock);
+	lock_dealloc(b2bl_bridge_retry_lock);
+	shm_free(b2bl_bridge_retry_head);
+	shm_free(b2bl_bridge_retry_last);
+}
+
+int b2bl_push_bridge_retry(b2bl_tuple_t *tuple)
+{
+	struct b2bl_bridge_retry_t *retry = shm_malloc(sizeof *retry);
+	if (!retry)
+		return -1;
+	memset(retry, 0, sizeof *retry);
+	retry->hash_index = tuple->hash_index;
+	retry->local_index = tuple->id;
+
+	/* always adding at the end, because we know they will be added in the
+	 * order they appear */
+	lock_get(b2bl_bridge_retry_lock);
+	retry->time = get_uticks();
+	retry->next = *b2bl_bridge_retry_head;
+	if (*b2bl_bridge_retry_last)
+		(*b2bl_bridge_retry_last)->next = retry;
+	else
+		*b2bl_bridge_retry_head = retry;
+	*b2bl_bridge_retry_last = retry;
+	lock_release(b2bl_bridge_retry_lock);
+	return 0;
+}
+
+void b2bl_timer_bridge_retry(unsigned int ticks, void* param)
+{
+	b2bl_tuple_t *tuple;
+	struct b2bl_bridge_retry_t *it, *last, *next;
+	/* we only evaluate the list under lock, and detach it */
+	lock_get(b2bl_bridge_retry_lock);
+	it = *b2bl_bridge_retry_head;
+	last = it;
+	if (it) {
+		LM_DBG("going through list %p->%p\n", it, *b2bl_bridge_retry_last);
+		for (last = it; last; last = last->next) {
+			LM_DBG("detaching %p(%u.%u) after %.2fs\n", it, it->hash_index, it->local_index,
+					((float)(get_uticks() - it->time))/1000000);
+			if (get_uticks() - last->time < B2BL_BRIDGE_RETRY_TIMEOUT) {
+				LM_DBG("stopping %p(%u.%u) after %.2fs\n", it, it->hash_index, it->local_index,
+						((float)(get_uticks() - it->time))/1000000);
+				break;
+			}
+		}
+		if (it != last) {
+			LM_DBG("detaching from %p->%p\n", it, last);
+			/* detach the list */
+			*b2bl_bridge_retry_head = last;
+			if (!last)
+				*b2bl_bridge_retry_last = NULL;
+		}
+	}
+	lock_release(b2bl_bridge_retry_lock);
+
+	while (it != last) {
+
+		B2BL_LOCK_GET(it->hash_index);
+		tuple = b2bl_search_tuple_safe(it->hash_index, it->local_index);
+		if (tuple) {
+			if (tuple->bridge_flags & B2BL_BR_FLAG_PENDING_SDP) {
+				if (get_uticks() - it->time > B2BL_BRIDGE_RETRY_MAX)
+					LM_WARN("bridge retrying for %.*s after > %ds\n",
+							tuple->key->len, tuple->key->s,
+							B2BL_BRIDGE_RETRY_MAX/1000000);
+				else
+					LM_DBG("bridge retrying for %.*s after %.2fs\n",
+							tuple->key->len, tuple->key->s,
+							((float)(get_uticks() - it->time))/1000000);
+				tuple->bridge_entities[1]->state = B2BL_ENT_CONFIRMED;
+				if (bridging_start_old_ent(tuple, tuple->bridge_entities[0],
+						tuple->bridge_entities[1], NULL, NULL) < 0)
+					LM_ERR("Failed to start bridging with old entity\n");
+				else
+					tuple->state = B2B_BRIDGING_STATE;
+			} else {
+				LM_DBG("bridge retrying for %.*s aborted after %.2fs\n",
+						tuple->key->len, tuple->key->s,
+						((float)(get_uticks() - it->time))/1000000);
+			}
+		}
+		B2BL_LOCK_RELEASE(it->hash_index);
+
+		next = it->next;
+		shm_free(it);
+		it = next;
+	}
 }

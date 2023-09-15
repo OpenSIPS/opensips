@@ -37,3 +37,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	unsigned hash_index, b2bl_entity_id_t *old_entity,
 	struct b2bl_new_entity *new_br_ent[2], str *provmedia_uri, int lifetime);
+void b2bl_timer_bridge_retry(unsigned int ticks, void* param);
+int b2bl_push_bridge_retry(b2bl_tuple_t *tuple);
+int b2bl_init_bridge_retry(void);
+void b2bl_free_bridge_retry(void);

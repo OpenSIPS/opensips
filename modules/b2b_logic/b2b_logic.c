@@ -654,11 +654,18 @@ next_hdr:
 	if(init_callid_hdr.s)
 		init_callid_hdr.len = strlen(init_callid_hdr.s);
 
+	if (b2bl_init_bridge_retry() < 0) {
+		LM_ERR("cannot initiate bridge retry!\n");
+		return -1;
+	}
+
 	register_timer("b2bl-clean", b2bl_clean, 0, b2b_clean_period,
 		TIMER_FLAG_DELAY_ON_DELAY);
 	if(b2bl_db_mode == WRITE_BACK)
 		register_timer("b2bl-dbupdate", b2bl_db_timer_update, 0,
 			b2b_update_period, TIMER_FLAG_SKIP_ON_DELAY);
+	register_timer("b2bl-bridge-retry", b2bl_timer_bridge_retry, 0, 1,
+		TIMER_FLAG_SKIP_ON_DELAY);
 
 	if (b2b_api.register_cb(entity_event_trigger,
 		B2BCB_TRIGGER_EVENT, &b2bl_mod_name) < 0) {
@@ -789,6 +796,7 @@ static void mod_destroy(void)
 		pv_elem_free_all(server_address_pve);
 
 	destroy_b2bl_htable();
+	b2bl_free_bridge_retry();
 }
 
 static int child_init(int rank)
