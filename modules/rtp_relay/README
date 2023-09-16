@@ -332,7 +332,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)   139      74      5714     1102
+   1. Razvan Crainea (@razvancrainea)   140      75      5719     1102
    2. Vlad Paiu (@vladpaiu)              2        1       5        0
 
    (1) DevScore = author_commits + author_lines_added /
