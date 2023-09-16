@@ -37,7 +37,11 @@ STIR/SHAKEN Module
         1.5. Exported Pseudo-Variables
 
               1.5.1. $identity(field)
-              1.5.2. Exported MI Functions
+
+        1.6. Exported MI Functions
+
+              1.6.1. stir_shaken_ca_reload
+              1.6.2. stir_shaken_crl_reload
 
    2. Contributors
 
@@ -163,7 +167,7 @@ modparam("stir_shaken", "ca_dir", "/stir_certs/cas")
 
    Example 1.5. Set crl_list parameter
 ...
-modparam("identity", "crl_list", "/stir_certs/crl_list.pem")
+modparam("stir_shaken", "crl_list", "/stir_certs/crl_list.pem")
 ...
 
 1.3.6. crl_dir (string)
@@ -428,9 +432,9 @@ OSIP99-1234567890ABCDEF\r\n");
 ity(attest)\n");
 ...
 
-1.5.2. Exported MI Functions
+1.6. Exported MI Functions
 
-1.5.2.1.  stir_shaken_ca_reload
+1.6.1.  stir_shaken_ca_reload
 
    Reload the file containing trusted CA certificates for the
    verifier and the directory containing trusted CA certificates
@@ -446,7 +450,7 @@ opensips-cli -x mi stir_shaken_ca_reload
 "OK"
 ...
 
-1.5.2.2.  stir_shaken_crl_reload
+1.6.2.  stir_shaken_crl_reload
 
    Reload the file containing certificate revocation lists (CRLs)
    for the verifier and the directory containing certificate
@@ -471,7 +475,7 @@ Chapter 2. Contributors
                    Name               DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu)    58      26      3129     324
    2. Liviu Chircu (@liviuchircu)        18      14      202       99
-   3. MonkeyTester                       11       6      373       4
+   3. MonkeyTester                       12       7      375       8
    4. Maksym Sobolyev (@sobomax)         5        3       21       21
    5. Razvan Crainea (@razvancrainea)    4        2       8        9
    6. kworm83                            4        2       7        2
