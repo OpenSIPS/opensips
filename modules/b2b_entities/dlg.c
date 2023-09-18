@@ -3152,7 +3152,7 @@ dummy_reply:
 			dummy_msg.first_line.u.reply.status.len = 3;
 			dummy_fl_buf[11] = ' ';
 
-			memcpy(dummy_fl_buf, "Timeout", 7);
+			memcpy(dummy_fl_buf+12, "Timeout", 7);
 			dummy_msg.first_line.u.reply.reason.s = dummy_fl_buf+12;
 			dummy_msg.first_line.u.reply.reason.len = 7;
 
