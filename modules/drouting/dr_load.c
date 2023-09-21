@@ -641,7 +641,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 			for(i=0; i < RES_ROW_N(res); i++) {
 				row = RES_ROWS(res) + i;
 				/* RULE_ID column */
-				check_val( rule_id_drr_col, ROW_VALUES(row), DB_INT, 1, 0);
+				check_val2( rule_id_drr_col, ROW_VALUES(row), DB_INT, DB_BIGINT, 1, 0);
 				int_vals[INT_VALS_RULE_ID_DRR_COL] = VAL_INT (ROW_VALUES(row));
 				/* GROUP column */
 				check_val( group_drr_col, ROW_VALUES(row)+1, DB_STRING, 1, 1);
