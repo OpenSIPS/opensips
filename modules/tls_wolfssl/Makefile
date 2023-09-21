@@ -23,22 +23,24 @@ lib/wolfssl/Makefile: lib/wolfssl/configure
 		--prefix=$(MOD_DIR)/lib \
 		--exec-prefix=$(MOD_DIR)/lib C_EXTRA_FLAGS="-fPIC" CFLAGS="-DWOLFSSL_STATIC_RSA"; \
 
-lib/lib/libwolfssl.a: lib/wolfssl/Makefile lib/wolfssl/src/internal.c
+PATCHED_FILES = lib/wolfssl/src/internal.c lib/wolfssl/src/ssl.c
+
+lib/lib/libwolfssl.a: lib/wolfssl/Makefile $(PATCHED_FILES)
 	$(Q)$(MAKE) -C ./lib/wolfssl install
 
 lib/wolfssl/src/internal.c: lib/patches/wolfssl-internal-memleak-fix.patched
 
 lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.patch
-	 $(Q)patch -sNR --dry-run lib/wolfssl/src/internal.c $< || \
-		 $(Q)patch -N lib/wolfssl/src/internal.c $< && cp $< $@
+	 $(Q)patch -sNR -p1 -d lib/wolfssl --dry-run < $< || patch -N -p1 -d lib/wolfssl  < $< && cp $< $@
 
 clean:	clean-wolfssl-lib
 
 .PHONY: clean-wolfssl-lib
 clean-wolfssl-lib:
-	@if [ -f ./lib/wolfssl/Makefile ]; then \
+	-@if [ -f ./lib/wolfssl/Makefile ]; then \
 		$(MAKE) -C ./lib/wolfssl clean; \
 	fi;
-	@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
+	-@patch -stNR -p1 -d lib/wolfssl < lib/patches/wolfssl-internal-memleak-fix.patch
+	-@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
 	./lib/wolfssl/Makefile ./lib/wolfssl/configure \
 	lib/patches/wolfssl-internal-memleak-fix.patched
