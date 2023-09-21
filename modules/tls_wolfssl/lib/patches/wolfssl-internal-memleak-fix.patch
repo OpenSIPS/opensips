@@ -1,30 +1,44 @@
+From 911c4519ef921a3e50e5a46cbe958ced8a528c3e Mon Sep 17 00:00:00 2001
+From: Eric Blankenhorn <eric@wolfssl.com>
+Date: Mon, 18 Sep 2023 16:19:22 -0500
+Subject: [PATCH] Fix writedup rng leak
+
+---
+ src/internal.c | 2 ++
+ src/ssl.c      | 7 +++++++
+ 2 files changed, 9 insertions(+)
+
 diff --git a/src/internal.c b/src/internal.c
-index 930769152..8e7ccf9c4 100644
+index 930769152..46e26a313 100644
 --- a/src/internal.c
 +++ b/src/internal.c
-@@ -7207,7 +7208,11 @@ void SSL_ResourceFree(WOLFSSL* ssl)
-     /* Cleanup async */
-     FreeAsyncCtx(ssl, 1);
- #endif
--    if (ssl->options.weOwnRng) {
-+    if (ssl->options.weOwnRng || (ssl->rng
-+#ifdef SINGLE_THREADED
-+        && ssl->rng != ssl->ctx->rng
-+#endif
-+       )) {
+@@ -7210,6 +7210,8 @@ void SSL_ResourceFree(WOLFSSL* ssl)
+     if (ssl->options.weOwnRng) {
          wc_FreeRng(ssl->rng);
          XFREE(ssl->rng, ssl->heap, DYNAMIC_TYPE_RNG);
++        ssl->rng = NULL;
++        ssl->options.weOwnRng = 0;
      }
-@@ -7571,7 +7576,11 @@ void FreeHandshakeResources(WOLFSSL* ssl)
-     #endif
- #endif
-     ) {
--        if (ssl->options.weOwnRng) {
-+        if (ssl->options.weOwnRng || (ssl->rng
-+#ifdef SINGLE_THREADED
-+            && ssl->rng != ssl->ctx->rng
-+#endif
-+        )) {
-             wc_FreeRng(ssl->rng);
-             XFREE(ssl->rng, ssl->heap, DYNAMIC_TYPE_RNG);
-             ssl->rng = NULL;
+     FreeSuites(ssl);
+     FreeHandshakeHashes(ssl);
+diff --git a/src/ssl.c b/src/ssl.c
+index 8d946f07b..01a4c7a54 100644
+--- a/src/ssl.c
++++ b/src/ssl.c
+@@ -747,6 +747,13 @@ static int DupSSL(WOLFSSL* dup, WOLFSSL* ssl)
+     ssl->dupWrite->dupCount = 2;    /* both sides have a count to start */
+     dup->dupWrite = ssl->dupWrite; /* each side uses */
+ 
++    if (dup->options.weOwnRng) {
++        wc_FreeRng(dup->rng);
++        XFREE(dup->rng, dup->heap, DYNAMIC_TYPE_RNG);
++        dup->rng = NULL;
++        dup->options.weOwnRng = 0;
++    }
++
+     /* copy write parts over to dup writer */
+     XMEMCPY(&dup->specs,   &ssl->specs,   sizeof(CipherSpecs));
+     XMEMCPY(&dup->options, &ssl->options, sizeof(Options));
+-- 
+2.42.0
+
