@@ -136,6 +136,7 @@ static char *crl_list;
 static char *crl_dir;
 
 static int e164_strict_mode;
+static int e164_verification = DEFAULT_E164_VERIFICATION;
 
 static int require_date_hdr = 1;
 
@@ -154,6 +155,7 @@ static const param_export_t params[] = {
 	{"crl_list", STR_PARAM, &crl_list},
 	{"crl_dir", STR_PARAM, &crl_dir},
 	{"e164_strict_mode", INT_PARAM, &e164_strict_mode},
+	{"e164_verification", INT_PARAM, &e164_verification},
 	{"require_date_hdr", INT_PARAM, &require_date_hdr},
 	{0, 0, 0}
 };
@@ -1118,9 +1120,15 @@ static int check_passport_phonenum(str *num, int log_lev)
 		num->len--;
 	}
 
-	if (_is_e164(num, e164_strict_mode) == -1) {
-		LM_GEN(log_lev, "number is not in E.164 format: %.*s\n", num->len, num->s);
-		return -1;
+	/* 
+	 * E.164 check
+	 * if param e164_verification is set to 1, perform control otherwise bypass
+	 */
+	if ( e164_verification == 1 ) {
+		if (_is_e164(num, e164_strict_mode) == -1) {
+			LM_GEN(log_lev, "number is not in E.164 format: %.*s\n", num->len, num->s);
+			return -1;
+		}
 	}
 
 	return 0;
