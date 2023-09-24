@@ -181,6 +181,23 @@ modparam("stir_shaken", "e164_strict_mode", 1)
 	    </example>
 	</section>
 
+	<section id="param_e164_verification" xreflabel="e164_verification">
+	    <title><varname>e164_verification</varname> (integer)</title>
+	    <para>
+		If set to a 0 value, phone numbers used as originating identity and destination identity are not longer verified.
+		This setting bypasses E.164 verification process implemented in <xref linkend="func_stir_shaken_auth"/> and <xref linkend="func_stir_shaken_verify"/> functions.
+	    </para>
+	    <para>The default value is <emphasis>1</emphasis> (enabled).</para>
+	    <example>
+		<title>Set <varname>e164_verification</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("stir_shaken", "e164_verification", 0)
+...
+</programlisting>
+	    </example>
+	</section>
+
 	<section id="param_require_date_hdr" xreflabel="require_date_hdr">
 	    <title><varname>require_date_hdr</varname> (integer)</title>
 	    <para>
