@@ -610,7 +610,8 @@ static inline void unescape_crlf(str *in_out)
 	}
 }
 
-static inline int _is_e164(const str* _user, int require_plus)
+/* @max_digits should be just 15, but there are exceptions to this rule! */
+static inline int _is_e164(const str* _user, int require_plus, int max_digits)
 {
 	char *d, *start, *end;
 
@@ -626,7 +627,7 @@ static inline int _is_e164(const str* _user, int require_plus)
 	}
 
 	end = _user->s + _user->len;
-	if (end - start < 2 || end - start > 15)
+	if (end - start < 2 || end - start > max_digits)
 		return -1;
 
 	for (d = start; d < end; d++)
@@ -635,7 +636,7 @@ static inline int _is_e164(const str* _user, int require_plus)
 
 	return 1;
 }
-#define is_e164(_user) _is_e164(_user, 1)
+#define is_e164(_user) _is_e164(_user, 1, 15)
 
 /*
  * Convert a string to lower case
