@@ -112,4 +112,16 @@ int resetbflag(struct sip_msg *msg, unsigned int b_idx, unsigned int mask);
  */
 int move_branch_to_ruri(int idx, struct sip_msg *msg);
 
+/*! \brief
+ * Swaps two branches between. Index -1 means MSG branch
+ */
+int swap_branches(struct sip_msg *msg, int src_idx, int dst_idx);
+
+
+/*! \brief
+ * Move a branch over another existing one. Index -1 means MSG branch
+ * If "keep_src", the source branch will not be deleted -> copy
+ */
+int move_branch(struct sip_msg *msg, int src_idx, int dst_idx, int keep_src);
+
 #endif /* _DSET_H */

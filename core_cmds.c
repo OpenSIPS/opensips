@@ -48,6 +48,8 @@ static int fixup_free_destination(void** param);
 static int fixup_mflag(void** param);
 static int fixup_bflag(void** param);
 static int fixup_qvalue(void** param);
+static int fixup_branch_keep(void** param);
+static int fixup_branch_index(void** param);
 static int fixup_f_send_sock(void** param);
 static int fixup_blacklist_name(void** param);
 static int fixup_blacklist(void** param);
@@ -82,6 +84,8 @@ static int w_strip(struct sip_msg *msg, int *nchars);
 static int w_strip_tail(struct sip_msg *msg, int *nchars);
 static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue);
 static int w_remove_branch(struct sip_msg *msg, int *branch);
+static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep);
+static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx);
 static int w_pv_printf(struct sip_msg *msg, pv_spec_t *var, str *fmt_str);
 static int w_revert_uri(struct sip_msg *msg);
 static int w_setdsturi(struct sip_msg *msg, str *uri);
@@ -190,6 +194,17 @@ const cmd_export_t core_cmds[]={
 		ALL_ROUTES},
 	{"remove_branch", (cmd_function)w_remove_branch, {
 		{CMD_PARAM_INT, 0, 0}, {0,0,0}},
+		ALL_ROUTES},
+	{"move_branch", (cmd_function)w_move_branch, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_branch_keep, 0},
+		{0,0,0}},
+		ALL_ROUTES},
+	{"swap_branches", (cmd_function)w_swap_branches, {
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_branch_index, 0},
+		{0,0,0}},
 		ALL_ROUTES},
 	{"pv_printf", (cmd_function)w_pv_printf, {
 		{CMD_PARAM_VAR, 0, 0},
@@ -444,6 +459,36 @@ static int fixup_qvalue(void** param)
 	}
 
 	*param = (void*)(long)q;
+	return 0;
+}
+
+static int fixup_branch_keep(void** param)
+{
+	str *s = (str*)*param;
+
+	/* default value is to discard */
+	*param = (void*)(long)0;
+	if (!s)
+		return 0;
+
+	if (str_strcasecmp(s, _str("keep")) == 0)
+		*param = (void*)(long)1;
+	return 0;
+}
+
+static int fixup_branch_index(void** param)
+{
+	int *i = (int *)*param;
+
+	/* default value is -1 */
+	if (!i || *i < 0)
+		*param = NULL; /* normalize to NULL */
+	else if (*i >= MAX_BRANCHES) {
+		LM_ERR("invalid branch index %d\n", *i);
+		return -1;
+	}
+	/* else allow the branch provisioned */
+
 	return 0;
 }
 
@@ -867,6 +912,16 @@ static int w_append_branch(struct sip_msg *msg, str *uri, int *qvalue)
 static int w_remove_branch(struct sip_msg *msg, int *branch)
 {
 	return (remove_branch(*branch)==0)?1:-1;
+}
+
+static int w_move_branch(struct sip_msg *msg, int *src_idx, int *dst_idx, int *keep)
+{
+	return (move_branch(msg, (src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1), (keep?1:0))==0)?1:-1;
+}
+
+static int w_swap_branches(struct sip_msg *msg, int *src_idx, int *dst_idx)
+{
+	return (swap_branches(msg, (src_idx?*src_idx:-1), (dst_idx?*dst_idx:-1))==0)?1:-1;
 }
 
 static int w_pv_printf(struct sip_msg *msg, pv_spec_t *var, str *fmt_str)

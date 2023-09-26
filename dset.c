@@ -657,3 +657,190 @@ int move_branch_to_ruri(int idx, struct sip_msg *msg)
 
 	return 0;
 }
+
+
+
+static inline int _branch_2_msg(struct branch *br, struct sip_msg *msg)
+{
+	str s;
+
+	s.s = br->uri;
+	s.len = br->len;
+	if (set_ruri( msg, &s))
+		return -1;
+
+	s.s = br->dst_uri;
+	s.len = br->dst_uri_len;
+	if (set_dst_uri( msg, &s))
+		return -1;
+
+	s.s = br->path;
+	s.len = br->path_len;
+	if (set_path_vector( msg, &s))
+		return -1;
+
+	msg->ruri_q = br->q;
+	msg->force_send_socket = br->force_send_socket;
+	msg->ruri_bflags = br->flags;
+
+	return 0;
+}
+
+
+static inline int _msg_2_branch(struct sip_msg *msg, struct branch *br)
+{
+	str *ruri;
+
+	/* run tests first */
+	ruri = GET_RURI(msg);
+	if (ruri->len > MAX_URI_SIZE - 1) {
+		LM_ERR("too long ruri: %.*s\n", ruri->len, ruri->s);
+		return -1;
+	}
+
+	if (msg->dst_uri.len > MAX_URI_SIZE - 1) {
+		LM_ERR("too long dst_uri: %.*s\n", msg->dst_uri.len, msg->dst_uri.s);
+		return -1;
+	}
+
+	if (msg->path_vec.len > MAX_PATH_SIZE - 1) {
+		LM_ERR("too long path: %.*s\n", msg->path_vec.len, msg->path_vec.s);
+		return -1;
+	}
+
+	/* we are all good, start copying */
+
+	memset( br, 0, sizeof(struct branch));
+	// this will make all strings NULL terminated
+
+	memcpy( br->uri, ruri->s, ruri->len);
+	br->len = ruri->len;
+
+	if (!ZSTR(msg->dst_uri)) {
+		memcpy( br->dst_uri, msg->dst_uri.s, msg->dst_uri.len);
+		br->dst_uri_len = msg->dst_uri.len;
+	}
+
+	if (!ZSTR(msg->path_vec)) {
+		memcpy( br->path, msg->path_vec.s, msg->path_vec.len);
+		br->path_len = msg->path_vec.len;
+	}
+
+	br->q = msg->ruri_q;
+	br->force_send_socket = msg->force_send_socket;
+	br->flags = msg->ruri_bflags;
+
+	return 0;
+}
+
+
+static inline int _copy_branch(struct sip_msg *msg,  struct branch *branches,
+													int src_idx, int dst_idx)
+{
+	int ret = 0;
+
+	if (dst_idx>=0) {
+		/* we copy into a branch */
+		if (src_idx>=0) {
+			/* we copy from a branch */
+			branches[dst_idx] = branches[src_idx];
+		} else {
+			/* we copy from msg */
+			ret = _msg_2_branch( msg, &branches[dst_idx]);
+		}
+	} else {
+		/* we copy into msg */
+		if (src_idx>=0) {
+			/* we copy from a branch */
+			ret = _branch_2_msg( &branches[src_idx], msg);
+		} else {
+			/* this should not happen, it is a NOP */
+		}
+	}
+
+	return ret;
+}
+
+
+int swap_branches(struct sip_msg *msg, int src_idx, int dst_idx)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+	struct branch *branches;
+	struct branch bk;
+
+	if (src_idx==dst_idx)
+		/* this is a NOP */
+		return 0;
+
+	/* no branches have been added yet */
+	if (!dsct)
+		return -1;
+
+	if ( (src_idx>0 && src_idx>=dsct->nr_branches)
+	|| (dst_idx>0 && dst_idx>=dsct->nr_branches) ) {
+		LM_ERR("overflow in src [%d] or dst [%d] indexes (having %d)\n",
+			src_idx, dst_idx, dsct->nr_branches);
+		return -1;
+	}
+
+	branches = dsct->branches;
+
+	/* backup the info from dst branch, so we can write into it */
+	if (dst_idx>=0) {
+		/* backup the dst branch */
+		bk = branches[dst_idx];
+	} else {
+		/* backup the msg branch */
+		if (_msg_2_branch( msg, &bk)<0)
+			return -1;
+	}
+
+	/* copy dst over src */
+	if (_copy_branch( msg, branches, src_idx, dst_idx)<0)
+		return -1;
+
+	/* now copy the original dst (from bk) into src */
+	if (src_idx>=0) {
+		/* copy bk into a branch */
+		branches[src_idx] = bk;
+	} else {
+		/* copy bk in msg */
+		if (_branch_2_msg( &bk, msg)<0)
+			return -1; //we may have an inconsistent msg branch :(
+	}
+
+	return 0;
+}
+
+
+int move_branch(struct sip_msg *msg, int src_idx, int dst_idx, int keep_src)
+{
+	struct dset_ctx *dsct = get_dset_ctx();
+	struct branch *branches;
+
+	if (src_idx==dst_idx)
+		/* this is a NOP */
+		return 0;
+
+	/* no branches have been added yet */
+	if (!dsct)
+		return -1;
+
+	if ( (src_idx>0 && src_idx>=dsct->nr_branches)
+	|| (dst_idx>0 && dst_idx>=dsct->nr_branches) ) {
+		LM_ERR("overflow in src [%d] or dst [%d] indexes (having %d)\n",
+			src_idx, dst_idx, dsct->nr_branches);
+		return -1;
+	}
+
+	branches = dsct->branches;
+
+	/* copy dst over src */
+	if (_copy_branch( msg, branches, src_idx, dst_idx)<0)
+		return -1;
+
+	if (!keep_src && src_idx>0)
+		remove_branch(src_idx);
+
+	return 0;
+}
