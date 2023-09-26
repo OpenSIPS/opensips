@@ -59,6 +59,7 @@ static int child_init(int rank);
 */
 static int fixup_result_avp_type(void **param);
 static int fixup_substre(void** param);
+static int fixup_free_substre(void** param);
 
 /*
 * exported functions
@@ -102,7 +103,7 @@ static cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_VAR, 0, 0},
 		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_result_avp_type, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|
 		ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"ldap_result_next", (cmd_function)w_ldap_result_next, {{0,0,0}},
@@ -111,7 +112,7 @@ static cmd_export_t cmds[] = {
 	{"ldap_result_check", (cmd_function)w_ldap_result_check, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR, 0, 0},
-		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, 0}, {0,0,0}},
+		{CMD_PARAM_STR | CMD_PARAM_OPT, fixup_substre, fixup_free_substre}, {0,0,0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|
 		BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 	{"ldap_filter_url_encode", (cmd_function)w_ldap_filter_url_encode, {
@@ -342,5 +343,11 @@ static int fixup_substre(void** param)
 	}
 
 	*param=se;
+	return 0;
+}
+
+static int fixup_free_substre(void** param)
+{
+	subst_expr_free(*param);
 	return 0;
 }
