@@ -1060,7 +1060,7 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
-	if (statuscode == 401 || statuscode ==407) {
+	if ((statuscode == 401 || statuscode == 407) && dlg->legs[DLG_CALLER_LEG].last_gen_cseq) {
 		dlg->legs[DLG_CALLER_LEG].last_gen_cseq++;
 		LM_DBG("incrementing last_gen_cseq to [%d] for leg[%d]\n", dlg->legs[DLG_CALLER_LEG].last_gen_cseq, DLG_CALLER_LEG);
 	}
@@ -1095,6 +1095,11 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 	}
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if ((statuscode == 401 || statuscode == 407) && dlg->legs[callee_idx(dlg)].last_gen_cseq) {
+		dlg->legs[callee_idx(dlg)].last_gen_cseq++;
+		LM_DBG("incrementing last_gen_cseq to [%d] for leg[%d]\n", dlg->legs[callee_idx(dlg)].last_gen_cseq, callee_idx(dlg));
+	}
 
 	if (statuscode >= 200 && statuscode < 300)
 		dlg_update_contact(dlg, rpl, callee_idx(dlg));
