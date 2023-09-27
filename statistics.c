@@ -521,7 +521,8 @@ do_register:
 					shm_free(stat);
 				}
 
-				*pvar = it;
+				if ((flags&STAT_IS_FUNC)==0)
+					*pvar = it;
 				return 0;
 			}
 		}
