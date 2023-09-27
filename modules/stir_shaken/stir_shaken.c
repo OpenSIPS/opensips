@@ -1239,7 +1239,7 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 			return -1;
 		}
 
-		if (abs(now - date_ts) > auth_date_freshness) {
+		if (labs(now - date_ts) > auth_date_freshness) {
 			LM_NOTICE("Date header timestamp diff exceeds local policy "
 			    "(diff: %lds, auth-freshness: %ds)\n", now - date_ts, auth_date_freshness);
 			return -4;
@@ -1726,6 +1726,7 @@ static int verify_signature(X509 *cert,
 	if (parsed->dec_signature.len != RAW_SIG_LEN) {
 		LM_ERR("Bad raw signature length [%d], should be [%d]\n",
 			parsed->dec_signature.len, RAW_SIG_LEN);
+		rc = 0;
 		goto error;
 	}
 
@@ -2039,7 +2040,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 			goto error;
 		}
 
-		if (abs(now - date_ts) > verify_date_freshness) {
+		if (labs(now - date_ts) > verify_date_freshness) {
 			LM_NOTICE("Date header timestamp diff exceeds local policy "
 			    "(diff: %lds, verify-freshness: %ds)\n", now - date_ts, verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
@@ -2047,7 +2048,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 			goto error;
 		}
 	} else {
-		if (abs(now - iat_ts) > verify_date_freshness) {
+		if (labs(now - iat_ts) > verify_date_freshness) {
 			LM_NOTICE("'iat' timestamp diff exceeds local policy "
 			    "(diff: %lds, verify-freshness: %ds)\n", now - iat_ts, verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
@@ -2090,14 +2091,14 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	if (require_date_hdr || date_hf) {
 		if (!check_cert_validity(&date_ts, cert)) {
 			LM_INFO("The Date header does not fall within the certificate validity\n");
-			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON " (cert validity)");
 			rc = -7;
 			goto error;
 		}
 	} else {
 		if (!check_cert_validity(&iat_ts, cert)) {
 			LM_INFO("The 'iat' value does not fall within the certificate validity\n");
-			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
+			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON " (cert validity)");
 			rc = -7;
 			goto error;
 		}
@@ -2116,7 +2117,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (date_hf && iat_ts != date_ts &&
-		(abs(now - iat_ts) > verify_date_freshness))
+		(labs(now - iat_ts) > verify_date_freshness))
 		iat_ts = date_ts;
 
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
@@ -2127,7 +2128,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 			goto error;
 		} else {
 			LM_INFO("Signature did not verify successfully\n");
-			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
+			SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON " (bad signature)");
 			rc = -9;
 			goto error;
 		}
