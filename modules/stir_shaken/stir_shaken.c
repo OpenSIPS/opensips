@@ -1059,9 +1059,9 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 			return -1;
 		}
 
-		if (now - date_ts > auth_date_freshness) {
-			LM_NOTICE("Date header value is older than local policy "
-			          "(%lds > %ds)\n", now - date_ts, auth_date_freshness);
+		if (abs(now - date_ts) > auth_date_freshness) {
+			LM_NOTICE("Date header timestamp diff exceeds local policy "
+			    "(diff: %lds, auth-freshness: %ds)\n", now - date_ts, auth_date_freshness);
 			return -4;
 		}
 	}
@@ -1849,17 +1849,17 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 			goto error;
 		}
 
-		if (now - date_ts > verify_date_freshness) {
-			LM_NOTICE("Date header value is older than local policy (%lds > %ds)\n",
-			          now - date_ts, verify_date_freshness);
+		if (abs(now - date_ts) > verify_date_freshness) {
+			LM_NOTICE("Date header timestamp diff exceeds local policy "
+			    "(diff: %lds, verify-freshness: %ds)\n", now - date_ts, verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 			rc = -6;
 			goto error;
 		}
 	} else {
-		if (now - iat_ts > verify_date_freshness) {
-			LM_NOTICE("'iat' value is older than local policy (%lds > %ds)\n",
-			          now - iat_ts, verify_date_freshness);
+		if (abs(now - iat_ts) > verify_date_freshness) {
+			LM_NOTICE("'iat' timestamp diff exceeds local policy "
+			    "(diff: %lds, verify-freshness: %ds)\n", now - iat_ts, verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 			rc = -6;
 			goto error;
@@ -1926,7 +1926,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	}
 
 	if (date_hf && iat_ts != date_ts &&
-		(now - iat_ts > verify_date_freshness))
+		(abs(now - iat_ts) > verify_date_freshness))
 		iat_ts = date_ts;
 
 	if ((rc = verify_signature(cert, parsed, iat_ts, orig_tn_p, dest_tn_p)) <= 0) {
