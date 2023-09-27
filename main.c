@@ -389,7 +389,7 @@ error:
  */
 int main(int argc, char** argv)
 {
-	int c;
+	int c, n;
 	char *tmp;
 	int tmp_len;
 	int port;
@@ -873,7 +873,7 @@ try_again:
 	LM_NOTICE("using system memory for private process memory\n");
 #endif
 
-	for (int n = 0; n < howmany(main_script, main_script[0]); n++) {
+	for (n = 0; n < howmany(main_script, main_script[0]); n++) {
 		int result = main_script[n].hndlr();
 		pred_cmp_f pred_cmp = cmps_ops[main_script[n].pval];
 		if (pred_cmp(result, main_script[n].pred)) {
