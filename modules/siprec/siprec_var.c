@@ -252,9 +252,9 @@ int pv_set_siprec(struct sip_msg* msg, pv_param_t *param,
 	}
 	if (!(val->flags & PV_VAL_STR)) {
 		tmp.s = int2str(val->ri, &tmp.len);
-		rc = pkg_str_dup(field, &tmp);
+		rc = pkg_str_sync(field, &tmp);
 	} else {
-		rc = pkg_str_dup(field, &val->rs);
+		rc = pkg_str_sync(field, &val->rs);
 	}
 
 	return rc;
