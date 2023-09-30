@@ -1356,10 +1356,10 @@ Chapter 3. Contributors
    9. Razvan Pistolea 4 1 39 66
    10. Anca Vamanu 3 1 14 14
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Petr Písař,
-   Henning Westerholt (@henningw), Konstantin Bokarius, Peter
-   Lemenkov (@lemenkov), Zero King (@l2dy), Edson Gellert
-   Schubert.
+   All remaining contributors: tcresson, Dusan Klinec (@ph4r05),
+   Petr Písař, Henning Westerholt (@henningw), Konstantin
+   Bokarius, Peter Lemenkov (@lemenkov), Zero King (@l2dy), Edson
+   Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1381,21 +1381,21 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Petr Písař                          Mar 2022 - Mar 2022
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
-   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2020
-   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Jan 2017
-   10. Dusan Klinec (@ph4r05)              Dec 2015 - Dec 2015
+   1.  tcresson                            Sep 2023 - Sep 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Petr Písař                          Mar 2022 - Mar 2022
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Mar 2020
+   7.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Oct 2014 - Jan 2017
 
-   All remaining contributors: Anca Vamanu, Razvan Pistolea,
-   Henning Westerholt (@henningw), Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
-   Christian Schlatter.
+   All remaining contributors: Dusan Klinec (@ph4r05), Anca
+   Vamanu, Razvan Pistolea, Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Christian Schlatter.
 
    (1) including any documentation-related commits, excluding
    merge commits
