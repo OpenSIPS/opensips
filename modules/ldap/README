@@ -1346,7 +1346,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Christian Schlatter 57 6 5764 237
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 25 20 146 143
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 26 21 155 145
    3. Ionut Ionita (@ionutrazvanionita) 22 5 1359 252
    4. Razvan Crainea (@razvancrainea) 17 14 62 76
    5. Daniel-Constantin Mierla (@miconda) 12 9 84 83
@@ -1380,8 +1380,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2022
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Sep 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jul 2021
    4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
    5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
