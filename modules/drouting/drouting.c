@@ -418,7 +418,7 @@ static cmd_export_t cmds[] = {
 		  {CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_FIX_NULL, fix_partition,NULL},
 		  {0 , 0, 0}
 		},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE
+		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE
 	},
 	{"dr_is_gw", (cmd_function)dr_is_gw,
 		{ {CMD_PARAM_STR, NULL, NULL},

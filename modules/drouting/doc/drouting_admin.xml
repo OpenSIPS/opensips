@@ -1692,7 +1692,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-		BRANCH_ROUTE and ONREPLY_ROUTE.
+		BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
 		</para>
 		<para>
 		If you set <varname>use_partitions</varname> parameter to 1 you must 
