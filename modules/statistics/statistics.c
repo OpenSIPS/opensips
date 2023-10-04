@@ -1002,7 +1002,17 @@ end:
 
 static struct stat_series *new_stat_series(struct stat_series_profile *profile, str *name)
 {
-	struct stat_series *ss = shm_malloc(sizeof *ss + name->len + 1 +
+	struct stat_series *ss;
+
+	/* we should first check whether there is an overlapping statistic with
+	 * this name, since we are not allowed to have that
+	 */
+	if (get_stat(name)) {
+		LM_DBG("%.*s stat already exists!\n", name->len, name->s);
+		return NULL;
+	}
+
+	ss = shm_malloc(sizeof *ss + name->len + 1 +
 			profile->slots * sizeof (*ss->slots));
 	if (!ss) {
 		LM_ERR("could not allocate new stat series!\n");
