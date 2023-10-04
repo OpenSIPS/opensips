@@ -990,25 +990,29 @@ search_dialog:
 			&to_tag, &from_tag, &callid);
 		if(dlg== NULL)
 		{
-			LM_DBG("No dialog found\n");
-			if(method_value != METHOD_ACK)
+			/* this is a requests which is 100% for the B2B engine, but
+			 * it is not matching any ongoing/active dialogs ->
+			 * -> we should reject with 481 and discard */
+			LM_DBG("No dialog found, callid= [%.*s], method=%.*s\n",
+				callid.len, callid.s,msg->first_line.u.request.method.len,
+				msg->first_line.u.request.method.s);
+			if(method_value == METHOD_ACK)
 			{
-				str ok = str_init("OK");
-
-				if(method_value == METHOD_BYE)
-					tmb.t_reply(msg, 200, &ok);
-				else
-					LM_ERR("No dialog found, callid= [%.*s], method=%.*s\n",
-						callid.len, callid.s,msg->first_line.u.request.method.len,
-						msg->first_line.u.request.method.s);
-			} else {
 				tmb.t_newtran(msg);
 				tm_tran = tmb.t_gett();
 				if (tm_tran && tm_tran!=T_UNDEFINED)
 					tmb.unref_cell(tm_tran);
+			} else
+			if(method_value == METHOD_BYE)
+			{
+				str ok = str_init("OK");
+				tmb.t_reply(msg, 200, &ok);
+			} else {
+				str ko = str_init("Call/Transaction Does Not Exist");
+				tmb.t_reply(msg, 481, &ko);
 			}
 			lock_release(&table[hash_index].lock);
-			return SCB_RUN_ALL;
+			return SCB_DROP_MSG;
 		}
 	}
 
