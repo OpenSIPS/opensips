@@ -2125,6 +2125,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		 op == OP_START_FORWARD || op == OP_STOP_FORWARD)) {
 			ng_flags.flags = bencode_list(bencbuf);
 	} else if (op == OP_SUBSCRIBE_ANSWER) {
+		ng_flags.flags = bencode_list(bencbuf);
 		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
 	}
 
