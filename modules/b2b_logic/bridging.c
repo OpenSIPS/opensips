@@ -59,7 +59,7 @@ static b2bl_entity_id_t *bridging_new_client(b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *peer_ent, b2bl_entity_id_t *new_ent,
 	str *body, struct sip_msg *msg, int set_maxfwd);
 static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
-	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body);
+	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body, str *hdrs);
 
 int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	b2bl_entity_id_t *entity, struct b2bl_new_entity *new_entity);
@@ -346,7 +346,7 @@ int process_bridge_dialog_end(b2bl_tuple_t* tuple, unsigned int hash_index,
 
 			/* renegotiate the SDP between the remainging entites */
 			if (bridging_start_old_ent(tuple, tuple->bridge_entities[0],
-				tuple->bridge_entities[1], NULL, NULL) < 0) {
+				tuple->bridge_entities[1], NULL, NULL, NULL) < 0) {
 				LM_ERR("Failed to start bridging with old entity\n");
 				return -1;
 			}
@@ -531,7 +531,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			if (tuple->bridge_entities[2]) {
 				/* connect the old entity with the prov media server */
 				if (bridging_start_old_ent(tuple, bentity0, bentity1,
-					NULL, NULL) < 0) {
+					NULL, NULL, NULL) < 0) {
 					LM_ERR("Failed to start bridging with provisional media\n");
 					return -1;
 				}
@@ -552,7 +552,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			if (tuple->bridge_entities[2]) {
 				/* connect the old entity with the prov media server */
 				if (bridging_start_old_ent(tuple, bentity0, bentity1,
-					NULL, NULL) < 0) {
+					NULL, NULL, NULL) < 0) {
 					LM_ERR("Failed to start bridging with provisional media\n");
 					return -1;
 				}
@@ -598,7 +598,7 @@ int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 			LM_ERR("Failed to save SDP\n");
 
 		if (bridging_start_old_ent(tuple, bentity0, bentity1,
-			NULL, NULL) < 0) {
+			NULL, NULL, NULL) < 0) {
 			LM_ERR("Failed to start bridging with old entity\n");
 			return -1;
 		}
@@ -1333,7 +1333,7 @@ error:
 }
 
 static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
-	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body)
+	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *body, str *hdrs)
 {
 	b2b_req_data_t req_data;
 
@@ -1346,7 +1346,7 @@ static int bridging_start_old_ent(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_ent
 		tuple->bridge_entities[2]= new_entity;
 
 		tuple->bridge_entities[1] = b2bl_create_new_entity(B2B_CLIENT, 0,
-			provmedia_uri, 0, 0, 0,0,0,0,0);
+			provmedia_uri, 0, 0, 0,0,hdrs,0,0);
 		if(tuple->bridge_entities[1] == NULL)
 		{
 			LM_ERR("Failed to create new b2b entity\n");
@@ -1449,7 +1449,7 @@ static int sdp_get_hold_body(str *body, str *new_body)
 }
 
 int bridging_start_hold(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
-	b2bl_entity_id_t *new_entity, str *provmedia_uri)
+	b2bl_entity_id_t *new_entity, str *provmedia_uri, str *hdrs)
 {
 	str hold_body;
 	int rc;
@@ -1468,7 +1468,7 @@ int bridging_start_hold(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
 			tuple->bridge_entities[2]= new_entity;
 
 			tuple->bridge_entities[1] = b2bl_create_new_entity(B2B_CLIENT, 0,
-				provmedia_uri, 0, 0, 0,0,0,0,0);
+				provmedia_uri, 0, 0, 0,0,hdrs,0,0);
 			if(tuple->bridge_entities[1] == NULL)
 			{
 				LM_ERR("Failed to create new b2b entity\n");
@@ -1479,7 +1479,7 @@ int bridging_start_hold(b2bl_tuple_t* tuple, b2bl_entity_id_t *old_entity,
 		return 0;
 	} else {
 		rc = bridging_start_old_ent(tuple, old_entity, new_entity, provmedia_uri,
-			&hold_body);
+			&hold_body, hdrs);
 
 		pkg_free(hold_body.s);
 		return rc;
@@ -1546,7 +1546,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 		if (tuple->bridge_flags & B2BL_BR_FLAG_HOLD) {
 			/* put the old entity on hold first */
 			if (bridging_start_hold(tuple, old_entity, bridge_entities[1],
-				provmedia_uri) < 0) {
+				provmedia_uri, hdrs) < 0) {
 				LM_ERR("Failed to put old entity on hold\n");
 				goto error;
 			}
@@ -1556,7 +1556,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 			if (provmedia_uri) {
 				/* connect the old entity with the prov media server */
 				if (bridging_start_old_ent(tuple, old_entity, bridge_entities[1],
-					provmedia_uri, NULL) < 0) {
+					provmedia_uri, NULL, hdrs) < 0) {
 					LM_ERR("Failed to start bridging with provisional media\n");
 					goto error;
 				}
@@ -1578,7 +1578,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 			if (provmedia_uri) {
 				/* connect the old entity with the prov media server */
 				if (bridging_start_old_ent(tuple, old_entity, bridge_entities[1],
-					provmedia_uri, NULL) < 0) {
+					provmedia_uri, NULL, hdrs) < 0) {
 					LM_ERR("Failed to start bridging with provisional media\n");
 					goto error;
 				}
@@ -2399,7 +2399,7 @@ void b2bl_timer_bridge_retry(unsigned int ticks, void* param)
 							((float)(get_uticks() - it->time))/1000000);
 				tuple->bridge_entities[1]->state = B2BL_ENT_CONFIRMED;
 				if (bridging_start_old_ent(tuple, tuple->bridge_entities[0],
-						tuple->bridge_entities[1], NULL, NULL) < 0)
+						tuple->bridge_entities[1], NULL, NULL, NULL) < 0)
 					LM_ERR("Failed to start bridging with old entity\n");
 				else
 					tuple->state = B2B_BRIDGING_STATE;
