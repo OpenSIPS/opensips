@@ -1492,7 +1492,7 @@ int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 {
 	b2bl_entity_id_t* bridge_entities[2];
 	b2bl_entity_id_t* entity = NULL;
-	str *hdrs;
+	str *hdrs = NULL;
 	int i;
 
 	memset(bridge_entities, 0, 2*sizeof(b2bl_entity_id_t*));
