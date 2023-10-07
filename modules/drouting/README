@@ -1345,7 +1345,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
    This function does not change anything in the message.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE and ONREPLY_ROUTE.
+   BRANCH_ROUTE, ONREPLY_ROUTE and LOCAL_ROUTE.
 
    If you set use_partitions parameter to 1 you must supply the
    "partition" parameter to instruct on the partition where the
@@ -1873,7 +1873,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 406 199 13728 5790
    2. Liviu Chircu (@liviuchircu) 154 90 2460 2587
-   3. Razvan Crainea (@razvancrainea) 98 51 1168 2223
+   3. Razvan Crainea (@razvancrainea) 99 52 1170 2225
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 41 20 1100 735
    6. Vlad Paiu (@vladpaiu) 23 20 244 47
@@ -1910,12 +1910,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Mar 2023
-   2.  nexbridge                           Feb 2023 - Feb 2023
-   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2022
-   4.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
-   5.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
-   6.  Razvan Crainea (@razvancrainea)     Sep 2010 - Dec 2021
+   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - Mar 2023
+   3.  nexbridge                           Feb 2023 - Feb 2023
+   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Oct 2022
+   5.  Liviu Chircu (@liviuchircu)         Nov 2012 - Oct 2022
+   6.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
    7.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    8.  Walter Doekes (@wdoekes)            May 2014 - Apr 2021
    9.  Aron Podrigal (@ar45)               Nov 2020 - Nov 2020
@@ -1936,13 +1936,13 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Nick Altmann (@nikbyte), Alexey
-   Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut
-   Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai
-   Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
-   Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Nick Altmann (@nikbyte), Alexey Vasilyev
+   (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai Tiganus
+   (@tallicamike), Andrei Datcu (@andrei-datcu), Matt Lehner, Anca
+   Vamanu, Andrei Dragus, Sergio Gutierrez.
 
    Documentation Copyrights:
 
