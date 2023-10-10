@@ -987,13 +987,14 @@ next_part:
 			return -1;
 		}
 
-		/* Register the weight-recalculation timer */
-		if (fetch_freeswitch_stats &&
-		    register_timer("ds-update-weights", ds_update_weights, NULL,
-		            fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
-			LM_ERR("failed to register timer for weight recalc!\n");
-			return -1;
-		}
+	}
+
+	/* Register the weight-recalculation timer */
+	if (fetch_freeswitch_stats &&
+	    register_timer("ds-update-weights", ds_update_weights, NULL,
+	            fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+		LM_ERR("failed to register timer for weight recalc!\n");
+		return -1;
 	}
 
 	/* register timer to flush the state of destination back to DB */
