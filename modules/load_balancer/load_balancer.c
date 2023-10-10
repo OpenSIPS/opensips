@@ -422,14 +422,6 @@ static int mod_init(void)
 			return -1;
 		}
 
-		/* Register the max load recalculation timer */
-		if (fetch_freeswitch_stats &&
-		    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
-		           fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
-			LM_ERR("failed to register timer for max load recalc!\n");
-			return -1;
-		}
-
 		if (lb_probe_replies.s) {
 			lb_probe_replies.len = strlen(lb_probe_replies.s);
 			if(parse_reply_codes( &lb_probe_replies, &probing_reply_codes,
@@ -439,6 +431,14 @@ static int mod_init(void)
 				return -1;
 			}
 		}
+	}
+
+	/* Register the max load recalculation timer */
+	if (fetch_freeswitch_stats &&
+	    register_timer("lb-update-max-load", lb_update_max_loads, NULL,
+	           fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+		LM_ERR("failed to register timer for max load recalc!\n");
+		return -1;
 	}
 
 	/* parse avps */
