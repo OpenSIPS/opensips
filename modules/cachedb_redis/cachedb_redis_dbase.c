@@ -399,9 +399,23 @@ redis_con* redis_new_connection(struct cachedb_id* id)
 
 		memset(con,0,sizeof(redis_con));
 
-		if (redis_get_hostport(&it->s, &con->host, &con->port) != 0) {
-			LM_ERR("no more pkg\n");
-			goto out_err;
+		{
+			unsigned short _, *port;
+
+			/* if the DSN has a custom port, inherit it now & bypass parser */
+			if (!(id->flags & CACHEDB_ID_MULTIPLE_HOSTS) && id->port) {
+				con->port = id->port;
+				port = &_;
+			} else {
+				port = &con->port;
+			}
+
+			if (redis_get_hostport(&it->s, &con->host, port) != 0) {
+				LM_ERR("no more pkg\n");
+				goto out_err;
+			}
+
+			LM_DBG("final hostport: %s:%u\n", con->host, con->port);
 		}
 
 		con->id = id;
