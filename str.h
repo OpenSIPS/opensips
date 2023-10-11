@@ -67,10 +67,10 @@ typedef struct __str str;
 typedef struct __str_const str_const;
 
 /* str initialization */
-#define STR_NULL (str){NULL, 0}
-#define STR_NULL_const (str_const){NULL, 0}
-#define str_init(_string)  (str){_string, sizeof(_string) - 1}
-#define str_const_init(_string)  (str_const){_string, sizeof(_string) - 1}
+#define STR_NULL ((str){NULL, 0})
+#define STR_NULL_const ((str_const){NULL, 0})
+#define str_init(_string)  ((str){_string, sizeof(_string) - 1})
+#define str_const_init(_string)  ((str_const){_string, sizeof(_string) - 1})
 
 static inline const str_const *_cs2cc(const str *_sp) {return (const str_const *)(const void *)(_sp);}
 static inline str_const *_s2c(str *_sp) {return (str_const *)(void *)(_sp);}
