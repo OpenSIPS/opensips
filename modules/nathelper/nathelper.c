@@ -116,7 +116,7 @@ static int fixup_flags_sdp(void** param);
 
 static int nat_uac_test_f(struct sip_msg* msg, void *tests);
 static int fix_nated_contact_f(struct sip_msg* msg, str *params);
-static int fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip,
+static int fix_nated_sdp_f(struct sip_msg* msg, void *flags, str *ip,
 						str *new_sdp_lines);
 static int fix_nated_register_f(struct sip_msg *, char *, char *);
 static int add_rcv_param_f(struct sip_msg* msg, int *flag);
@@ -1142,10 +1142,11 @@ static int fixup_flags_sdp(void** param)
 }
 
 static int
-fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
+fix_nated_sdp_f(struct sip_msg* msg, void *_flags, str *ip, str *new_sdp_lines)
 {
 	str body;
 	int forcenulladdr = 0;
+	unsigned int flags = (unsigned int)(unsigned long)_flags;
 	char *buf;
 	struct lump* anchor;
 	struct body_part * p;
@@ -1168,14 +1169,14 @@ fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 							 || body.len == 0)
 			continue;
 
-		if (*level & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
+		if (flags & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
 			msg->msg_flags |= FL_FORCE_ACTIVE;
 			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
 			if (anchor == NULL) {
 				LM_ERR("anchor_lump failed\n");
 				return -1;
 			}
-			if (*level & ADD_ADIRECTION) {
+			if (flags & ADD_ADIRECTION) {
 				buf = pkg_malloc((ADIRECTION_LEN + CRLF_LEN) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
@@ -1189,7 +1190,7 @@ fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 					return -1;
 				}
 			}
-			if ((*level & ADD_ANORTPPROXY) && nortpproxy_str.len) {
+			if ((flags & ADD_ANORTPPROXY) && nortpproxy_str.len) {
 				buf = pkg_malloc((nortpproxy_str.len + CRLF_LEN) * sizeof(char));
 				if (buf == NULL) {
 					LM_ERR("out of pkg memory\n");
@@ -1218,14 +1219,14 @@ fix_nated_sdp_f(struct sip_msg* msg, int* level, str *ip, str *new_sdp_lines)
 			}
 		}
 
-		if (*level & FORCE_NULL_ADDR) { forcenulladdr = 1; }
+		if (flags & FORCE_NULL_ADDR) { forcenulladdr = 1; }
 
-		if (*level & FIX_ORGIP) {
+		if (flags & FIX_ORGIP) {
 			/* Iterate all o= and replace ips in them. */
 			if (replace_sdp_ip(msg, &body, "o=", ip?ip:0, forcenulladdr)==-1)
 				return -1;
 		}
-		if (*level & FIX_MEDIP) {
+		if (flags & FIX_MEDIP) {
 			/* Iterate all c= and replace ips in them. */
 			if (replace_sdp_ip(msg, &body, "c=", ip?ip:0, forcenulladdr)==-1)
 				return -1;
