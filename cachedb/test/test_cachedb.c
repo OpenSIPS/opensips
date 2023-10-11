@@ -765,6 +765,15 @@ static void test_cachedb_url(void)
 	ok(!db->database);
 	ok(!db->extra_options);
 
+	CDB_PARSE("redis://:pwd@172.31.180.127:6380/1");
+	ok(db->flags == 0);
+	ok(!strcmp(db->username, ""));
+	ok(!strcmp(db->password, "pwd"));
+	ok(!strcmp(db->host, "172.31.180.127"));
+	ok(db->port == 6380);
+	ok(!strcmp(db->database, "1"));
+	ok(!db->extra_options);
+
 	CDB_PARSE("redis:group1://:pwd@172.31.180.127:6379/d?x=1&q=2");
 	ok(db->flags == 0);
 	ok(!strcmp(db->username, ""));
