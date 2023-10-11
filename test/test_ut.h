@@ -21,6 +21,8 @@
 #ifndef TEST_UT_H
 #define TEST_UT_H
 
+/* Test various utility functions, mainly from OpenSIPS core */
+
 void test_ut(void);
 
 #endif
