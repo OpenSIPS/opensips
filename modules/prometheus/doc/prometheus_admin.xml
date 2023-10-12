@@ -257,7 +257,7 @@ modparam("prometheus", "statistics", "active_dialogs load:")
 		<programlisting format="linespecific">
 ...
 # convert duration_gateway to stat duration with gateway as a label
-modparam("prometheus", "statistics", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/")
+modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/")
 ...
 </programlisting>
 		</example>
