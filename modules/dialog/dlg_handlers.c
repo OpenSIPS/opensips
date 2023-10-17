@@ -1351,7 +1351,8 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 	/* we use the initial request, which already has the contact parsed/fixed */
 	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
 	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg, 1);
-	dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
+	if (is_invite(t))
+		dlg_leg_push_cseq_map(dlg, t, DLG_CALLER_LEG, msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1384,7 +1385,8 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 
 	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
 	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 1);
-	dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
+	if (is_invite(t))
+		dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
