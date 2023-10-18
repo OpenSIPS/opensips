@@ -1,3 +1,555 @@
+=========================== Release 3.4.2 ==============================
+
+2023-10-17  Razvan Crainea  <razvan@opensips.org>
+        * [2c5245fb9] :
+
+        dialog: only publish cseq mappings for INVITEs
+
+        (cherry picked from commit 8a6e78ddeb720f3cdbdd69d0ad696eb25a97e729)
+
+
+2023-10-13  Razvan Crainea  <razvan@opensips.org>
+        * [b37619c43] :
+
+        b2b_entities: proper handling of overlapping BYE
+
+        Although in normal circumstances we should reply with a 500 reply code,
+        in case a BYE is received, we should process it accordingly, and as soon
+        as the overlapping transaction completes, we should terminate the other
+        leg as well.
+
+        Completes c4032f94f3993d1b62a0483eaae3ac0bd6c7c358
+
+        (cherry picked from commit 761e8800ad45eb2a674b1d167e02d2904011a414)
+
+
+2023-10-12  Razvan Crainea  <razvan@opensips.org>
+        * [eab3496f8] :
+
+        prometheus: fix labels documentation
+
+        Many thanks to Norman Brandinger (@NormB on GitHub) for spotting it.
+
+        (cherry picked from commit 5449d944e74903fea463150c99455a0e7d949c95)
+
+
+2023-10-12  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [4f6d3ae83] :
+
+        [parser] parse_min_expires() returns FALSE if hdr no found
+
+        Alternative to #3165
+
+        (cherry picked from commit b3990ad41c348c6a34e1e0e13033c54427453d79)
+
+
+2023-10-11  Liviu Chircu  <liviu@opensips.org>
+        * [472014357] :
+
+        fix_nated_sdp(): Fix crash due to mis-managed flags
+
+        Fixes #3226
+
+        (cherry picked from commit b524764aed8c6295be6f38b6923ef57d4f63043f)
+
+
+2023-10-11  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [513daba74] :
+
+        Merge pull request #3223 from purecloudlabs/hotfix/wolfssl-client-cert-verify
+
+        `tls_wolfssl`: Fix certificate verification in client mode
+
+        (cherry picked from commit a1b2c3c1ca041a3474d432c4ece8f7cdad493c08)
+
+
+2023-10-11  zhengsh  <zhengsh@ti-net.com.cn>
+        * [5a30c75c9] :
+
+        cachedb_redis_dbase: Fix the type of port with unsigned short.
+
+        (cherry picked from commit 59b076048b106a4d9c9d8246746fa229526e21e8)
+
+
+2023-10-11  Liviu Chircu  <liviu@opensips.org>
+        * [559285713] :
+
+        cachedb_redis: Fix a bug with parsing custom ports
+
+        This patch fixes an issue where custom Redis ports (i.e. not
+        6379) in simple URLs with just 1 host were always being parsed as 6379.
+        Most likely, the issue dates back to the "circular failover hosts"
+        feature (69179289).
+
+        Many thanks to Artiom Druz (@Shkiperion) for a full report + PR attempt!
+
+        Fixes #3168
+        Closes #3169
+
+        (cherry picked from commit 3532746c1f830540a61b04863df2236c1a85978c)
+
+
+2023-10-10  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f8701a271] :
+
+        [load_balancer & dispatcher] FS stats do not depend on probing
+
+        Enabling the stats collection (via timer) from FS boxes must not be conditioned by the activation of probing - there is not relation / dependency between the two.
+        Closes #3216
+        Reported by @spacetourist
+
+        (cherry picked from commit 14df28478f902826cf9e36b32a6b0da4ddbf3c06)
+
+
+2023-10-09  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [26d6d95ff] :
+
+        [async] fix async launching without report route
+
+        Handle the case where no report route is provided.
+        Closes #3188
+
+
+2023-10-09  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [09548eeb8] :
+
+        [evi] do not raise event from TCP MAIN
+
+        The TCP MAIN process does not have script capabilities, so we should NOT raise event here (as they may translate into scripting due to the event_route module). So, if we have an event to be raised from TCP MAIN (as E_CORE_TCP_DISCONNECT) we better use the newly added evi_dispatch_event() function which does IPC dispatching (into a different process) and raise for the event.
+        Closes #3212
+
+        (cherry picked from commit fd0657602734f242223e99655e49aa967ffec423)
+
+
+2023-10-09  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [46b2dc758] :
+
+        Fix persistency of the globally set log_level
+
+        The globally set log_level (via MI cmd) must impact the future forked processes (due to auto scalling).
+        Closes #3146
+
+        (cherry picked from commit 942509835adfe59ee841f16f12a876d828be269f)
+
+
+2023-10-06  Razvan Crainea  <razvan@opensips.org>
+        * [684f6df2f] :
+
+        dialog: proper update contact of callee on seq
+
+        fixes bug introduced in a76af3f
+        Close #3218
+
+        (cherry picked from commit fc144da23d806ab691c0b8479f333f599ebfd73f)
+
+
+2023-10-06  Razvan Crainea  <razvan@opensips.org>
+        * [b1654b044] :
+
+        tls_wolfssl: amend patch with Fix RNG with writedup
+
+        Amend patch with wolfSSL/wolfssl#6843
+
+        (cherry picked from commit e393d4cd20957909f34572910b28f1ec7897c2fa)
+
+
+2023-10-05  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [25cc934db] :
+
+        [b2b_entities] proper handling of B2B requests without active dialogs
+
+        If we have a requests that is 100% looking as a B2B related request, but it's not matching any active/ongoing b2b dialog, better reject with 481 and drop instead of pushing it into the script (where may be proxyed).
+
+        Closes #3205
+
+        (cherry picked from commit caa78d9676017ae93c35862de90974f407ab25e7)
+
+
+2023-10-05  Razvan Crainea  <razvan@opensips.org>
+        * [030dd3bbe] :
+
+        rtpengine: allow passing flags for subscribe answer cmds
+
+        (cherry picked from commit faafd70f4c4ccf74a9192a2e31f5864d6b1b9965)
+
+
+2023-10-04  Razvan Crainea  <razvan@opensips.org>
+        * [ab4f73c18] :
+
+        statistics: do not allow duplicate stats in different groups
+
+        The statistic's name should be unique, whether it is located in a
+        different group or not.
+
+        Completes 4640465, Fixes #3136
+
+        (cherry picked from commit e7f887d354d8d98d9fe00f2ca9edf3b8d4401cba)
+
+
+2023-10-02  Razvan Crainea  <razvan@opensips.org>
+        * [8b5d2e274] :
+
+        drouting: allow usage of goes_to_gw in LOCAL_ROUTE
+
+        (cherry picked from commit 483ee0be161fbfd374cc3e631e354b312a05baa5)
+
+
+2023-09-27  Liviu Chircu  <liviu@opensips.org>
+        * [630ce8abf] :
+
+        stir_shaken VS: Improve several return codes
+
+        * on bad client-side signature length, return
+           "438 Invalid Identity Header (bad signature)"
+           vs. "500 Internal Server Error" (??)
+
+        * on encountering expired certificates advertised by clients, return
+            "438 Invalid Identity Header (cert validity)"
+            vs. "403 Stale Date" (?!)
+
+        * fix abs() related compiler warnings introduced earlier
+
+        (cherry picked from commit e2977a4f49f1a164369c515bb7a79b5b436aeb31)
+
+
+2023-09-27  Liviu Chircu  <liviu@opensips.org>
+        * [d3ff32570] :
+
+        stir_shaken: Fix detection for invalid "future Date/iat"
+
+        This patch fixes a bug where both the Date hf and the "iat" PASSporT
+        claim could be filled in with a random timestamp value "in the future"
+        and still bypass the OpenSIPS "freshness" integrity checks.
+
+        Issue discovered during OpenSIPIt'03,
+                thanks to Pavel Bussel & Maksym Sobolyev (Sippy Software)
+
+        (cherry picked from commit 75a168a9f4315e59ba92bdcc2920639176e7f415)
+
+
+2023-09-27  Razvan Crainea  <razvan@opensips.org>
+        * [e03165121] :
+
+        [WIP] statistics: fix crash when creating a series stat
+
+        Under normal circumstances, when a statistic is updated, we first search
+        whether it exists, and if not, we add it to the statistics hash.
+        However, due to the way it is implemented, searching and adding a
+        statistic is not atomic, hence, with high concurrency, when adding a new
+        statistic, we might already find an existing one there. In this case,
+        the code tries to return that statistic in the `pvar` parameter -
+        however, that parameter might be a (r/o) function, hence a crash
+        happens. This commit fixes the crash. Close #3136
+
+        However, it returns 0, as if the statistic was properly added - the
+        problem with this approach is that from the caller's perspective, we do
+        not know whether the statistic was already there or not, to free the
+        existing structure - hence this might result into a leak. We are still
+        working on a solution for this.
+
+        (cherry picked from commit 4640465215f131592326363bd0748d9f0e79f04d)
+
+
+2023-09-27  Razvan Crainea  <razvan@opensips.org>
+        * [ca968c21a] :
+
+        siprec: fix memory leaking while setting the same field of siprec var
+
+        Credits go to Rob Moore, Daniel Bryars and Steven Ayre from Dubber, as
+        well as Liviu Chircu from the OpenSIPS team for working together to spot
+        this leak.
+
+        (cherry picked from commit 1dde47b524e4bb27e992ede2b15631eb12092537)
+
+
+2023-09-26  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [4993bf7b1] :
+
+        Merge pull request #3189 from Keyyo-Private/fix_ldap_memleak
+
+        ldap: Fix memory leak
+        (cherry picked from commit d82ddd85d97fcf0b5c3f01e686c9018b9f00e89c)
+
+
+2023-09-26  Razvan Crainea  <razvan@opensips.org>
+        * [d4aead240] :
+
+        dialog: increment last_gen_cseq only if initialized
+
+        Many thanks to Denys Pozniak (@denyspozniak on GitHub) for reporting and
+        providing troubleshooting information.
+
+        Close #3206
+
+        (cherry picked from commit 7bafee1f91327f91c0372318cf0cd8e6dc4bceaa)
+
+
+2023-09-25  Vlad Paiu  <vladpaiu@opensips.org>
+        * [a5a70106f] :
+
+        Added support for rtx RFC 4588 when deleting a codec that has RTX attached to it
+
+        (cherry picked from commit ebc3edd78e7603fd1928bcefc0c775f7f9a9dd65)
+
+
+2023-09-25  Liviu Chircu  <liviu@opensips.org>
+        * [892a6e483] :
+
+        stir_shaken: Add the `e164_max_length` parameter
+
+        This parameter allows the 15-digit number length restriction of the E.164
+        format to be bypassed.  Especially useful in scenarios where various
+        telephony number prefixes are in use, causing some numbers to exceed
+        the standard maximum length.
+
+        Credits to @Integration-IT for watching over the core issue and helping
+        work towards the current solution!
+
+        Fixes #3202
+        Fixes #3182
+        Fixes #3181
+
+
+2023-09-21  Razvan Crainea  <razvan@opensips.org>
+        * [c03bbc4f6] :
+
+        build: add patch as requirement
+
+        (cherry picked from commit 9e87934732a195e8cea262ebac42bfb626633a66)
+
+
+2023-09-21  Razvan Crainea  <razvan@opensips.org>
+        * [d0dba981d] :
+
+        tls_wolfssl: adapt patch with upstream
+
+        Grabbed from wolfSSL/wolfssl/#6785
+        As soon as the patch gets in a released version, we shall bump our
+        version as well.
+
+        (cherry picked from commit 2548f475528bb6b31b769be83091bc944ec01f06)
+
+
+2023-09-21  Razvan Crainea  <razvan@opensips.org>
+        * [cf45a666f] :
+
+        tls_wolfssl: patch wolfssl lib to fix memory leak
+
+        More information about the leak can be found on the wolfssl issue
+        tracker: wolfSSL/wolfssl#6760
+
+        (cherry picked from commit 716f1d633d19e08165917423cb141c29c0f2b2df)
+
+
+2023-09-21  Razvan Crainea  <razvan@opensips.org>
+        * [93b25949b] :
+
+        tls_wolfssl: refactor makefile to use dependencies
+
+        (cherry picked from commit 3e6a0fcb0f72a56ad066af97f0fabafe8ded2c83)
+
+
+2023-09-21  Razvan Crainea  <razvan@opensips.org>
+        * [ab2c15c7b] :
+
+        digest_auth: restore support openssl for 1.0.2
+
+        This completes commit f566fb which used a new interface of openssl, one
+        that is not available in 1.0.2.
+        Many thanks to Oleksandr Kozmenko (@11qeq11 on GitHub) for reporting it.
+        Close #3183
+
+        Also squashed all corrections to the Makefile in this commit
+
+        (cherry picked from commit 3c11d3c0f50adcc3a92dc893a11866cd6aafbe13)
+        (cherry picked from commit d92607f2d7825a9d000b14e6f3d9aa037b273b23)
+        (cherry picked from commit d1c8a475186f94e6a8aae74e0ad884663039b0ac)
+        (cherry picked from commit 8fccc49c7c8c0fb3ae4cf500fffebd00914c3db5)
+
+
+2023-09-21  Razvan Crainea  <razvan@opensips.org>
+        * [09e8705aa] :
+
+        proto_ws: enclose IPv6 Host IPs with square brackets
+
+        Many thanks to @alekseiZh on GitHub for reporting it
+        Close #3198
+
+        (cherry picked from commit 3b4beb2c4fa7be27032dbc82f0a0be03677db893)
+
+
+2023-09-18  Razvan Crainea  <razvan@opensips.org>
+        * [6a60715e9] :
+
+        b2b_entities: fix Notify buffer timeout build
+
+        Complete 312cdd4
+        Related to bug in #3195
+
+        (cherry picked from commit 9d61465fe82c1abeb3795915bfc805944abf068b)
+
+
+2023-09-15  Razvan Crainea  <razvan@opensips.org>
+        * [999fc7252] :
+
+        b2b_logic: do not abort bridging if re-INVITE is rejected with 491
+
+        If the SDP negociation gets rejected with 491, we should not abort
+        negociation, since most likely it is an indication that the remote UAS
+        is trying to lock its codecs, hence do the same thing we are trying to
+        do, but in the other direction.
+        If however, the other participant does not send itself a re-INVITE, we
+        arm a timer to re-try the bridging according to the RFC 3261, section
+        14.1:
+           If a UAC receives a 491 response to a re-INVITE, it SHOULD start a
+           timer with a value T chosen as follows:
+
+              1. If the UAC is the owner of the Call-ID of the dialog ID
+                 (meaning it generated the value), T has a randomly chosen value
+                 between 2.1 and 4 seconds in units of 10 ms.
+
+        Fix #3137
+
+        (cherry picked from commit 66493ce7ecb8be5eb29c0d365a29eb31101158bf)
+
+
+2023-09-15  Razvan Crainea  <razvan@opensips.org>
+        * [400fb34b6] :
+
+        b2b_logic: properly initialize socket for topo hiding
+
+        Fix possible crash when no socket is forced in topology hiding scenario
+
+        (cherry picked from commit 01a3568eff57f56179f3e3b82647eaf489482d11)
+
+
+2023-09-15  Liviu Chircu  <liviu@opensips.org>
+        * [e42f7c4c8] :
+
+        dialog: Fix $dlg_val memleak
+
+        Fixes #3135
+
+        (cherry picked from commit e2bfeda4e6c714dc65ab096d1664799c1f9bd5d2)
+
+
+2023-09-15  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e435d7fc4] :
+
+        [b2b_entities/logic] use the newly added pref_socket
+
+        When creating a new B2B client, avoid using the UAS side incoming socket as a forced socket. By doing that we override the proto given by the UAC RURI (and forcing to use the same proto as the UAS side - of course, unless we do not do a force send socket from script to manually indicate a new socket/proto). Shortly, th dynamic selection of the correct UAC socket is broken.
+
+        With this change, we do:
+        * if the UAS/msg side has a forced socket (from script), we will push it as forced socket to the UAC too (as before this change).
+        * if there is no forcing, the current UAS/msg incoming socket is passed as "preferred" socket to the UAC - like use it as time as it fits the RURI proto. This helps in preserving (during the whole b2b logic) the same socket when having multiple sockets serving the same protocol.
+
+        Fixes #3138
+
+        (cherry picked from commit 4244c286e19e85f10f2873e1c4f1deee2661eb50)
+
+
+2023-09-15  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [8700f6936] :
+
+        [tm] t_uac() gets a preferred socket too
+
+        The function already receives a send_socket (a forced socket) which overrides the protocol given by the destination URI. But are cases were we need a milder approach, like a preffered socket to be used if not conflicting with the protocol given by the RURI.
+        What we have now:
+        * send_socket - it is a forced socket, overrides the proto given by RURI, it will be used for sure
+        * pref_socket - a preferred socket, to be used if no send_socket is given and if there is no conflict with the proto given by RURI (in case of a conflict, the pref_socket is discarded and a new socket is looked up based on the RURI info).
+
+        First part fix for #3138
+
+        (cherry picked from commit 2824a3818bcb40a980b795aaece69545eb963397)
+
+
+2023-09-15  Razvan Crainea  <razvan@opensips.org>
+        * [c01ebd575] :
+
+        b2b_entities: prevent hop-by-hop ACK to change the status of dialog
+
+        (cherry picked from commit 4fe2fb6f5cf16dd069c803e3d4542ae8a756a1d3)
+
+
+2023-09-15  Razvan Crainea  <razvan@opensips.org>
+        * [2348a82c9] :
+
+        tm: simplify API interface for t_relay and t_check_trans
+
+        (cherry picked from commit 1bf83d61b6a9607c903bf26ac76ac50a4aca10b9)
+
+
+2023-09-14  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [e4236b578] :
+
+        [b2b_entities] Proper handling of overlaping transactions
+
+        As per RFC3261, Section 14.2 :
+
+           A UAS that receives a second INVITE before it sends the final
+           response to a first INVITE with a lower CSeq sequence number on the
+           same dialog MUST return a 500 (Server Internal Error) response to the
+           second INVITE and MUST include a Retry-After header field with a
+           randomly chosen value of between 0 and 10 seconds.
+
+           A UAS that receives an INVITE on a dialog while an INVITE it had sent
+           on that dialog is in progress MUST return a 491 (Request Pending)
+           response to the received INVITE.
+
+        Changes:
+        * 491 is now generated when receiving a request while already having an outbound one - the old code was generating 491 upon receiving a request while having another INCOMING one :-/
+        * generate the 500 reply when receiving a new request while handing another incoming one.
+
+        (cherry picked from commit c4032f94f3993d1b62a0483eaae3ac0bd6c7c358)
+
+
+2023-09-12  Razvan Crainea  <razvan@opensips.org>
+        * [193e65d6d] :
+
+        rtp_relay: remove context from the list on repicated deletes
+
+        (cherry picked from commit 1af376b71ee235ce723ccda2716ee507c575b8d8)
+
+
+2023-09-08  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [38dc08828] :
+
+        Revert ERR back to DBG log
+
+        Introduced by mistake via e0fe732e9c9d28c24ed6860fbd3531940978b8f9
+        Reported by Bence Szigeti.
+
+        (cherry picked from commit 3b04f2185c419e295a471fa14f8436cdb0f02fff)
+
+
+2023-09-04  Razvan Crainea  <razvan@opensips.org>
+        * [6aae49826] :
+
+        rtp_relay: fix invalid contexts leaked in list
+
+        When a session would have been established on a provisional reply with
+        body (i.e. 183), the rtp contexts would have been stored in the list.
+        However, if the call would not establish (with a 200 OK), there would be
+        no one removing it from the list, even though the context was released -
+        this resulted in unexpected and almost impossible to track down invalid
+        memory usage.
+        The current patch makes sure that the context is removed from the list
+        if the call does not establish.
+
+        Many thanks to Rob Moore, Daniel Bryars and Steven Ayre from Dubber for
+        pushing an enormous amount of time into troubleshooting and debugging
+        this, as well as to Liviu Chircu for guiding the troubleshooting!
+
+        (cherry picked from commit d6ef279f63aa0682bf0fb7ef1d30a6abdfb8b942)
+
+
+2023-08-31  Liviu Chircu  <liviu@opensips.org>
+        * [3abd3a265] :
+
+        Update ChangeLog for 3.4.1
+
+
 =========================== Release 3.4.1 ==============================
 
 2023-08-31  Razvan Crainea  <razvan@opensips.org>
