@@ -900,12 +900,8 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	 * events, just in the BYEs from media/agent side */
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
-		if (event != B2B_RE_INVITE_CB) {
-			cc_call_state = CC_CALL_NONE;
-			return 0;
-		} else {
-			return 1;
-		}
+		cc_call_state = CC_CALL_NONE;
+		return 0;
 	}
 
 	/* right-side leg of call sent BYE */
