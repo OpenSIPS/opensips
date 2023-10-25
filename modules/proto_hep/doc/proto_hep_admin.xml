@@ -328,6 +328,28 @@ modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_hep_tcp_conn_max_lifetime" xreflabel="hep_tcp_conn_max_lifetime">
+		<title><varname>hep_tcp_conn_max_lifetime</varname> (integer)</title>
+		<para>
+			The number of seconds after which TCP/TLS connections are reopened.
+			Setting the value to <emphasis>0</emphasis> will disable this option.
+			(This is a Genesys-specific feature. It should be implemented in
+			<emphasis>tcp_mgm</emphasis> after OpenSIPS 3.3!)
+		</para>
+		<para>
+			<emphasis>
+				Default value is 0s (disabled).
+			</emphasis>
+		</para>
+		<example>
+			<title>Set <varname>hep_tcp_conn_max_lifetime</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("proto_hep", "hep_tcp_conn_max_lifetime", 10)
+...
+			</programlisting>
+		</example>
+	</section>
 
 	</section>
 

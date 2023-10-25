@@ -87,6 +87,7 @@ static int hep_async_local_connect_timeout = 100;
 static int hep_async_local_write_timeout = 10;
 static int hep_tls_handshake_timeout = 100;
 static int hep_tls_async_handshake_connect_timeout = 10;
+static int hep_tcp_conn_max_lifetime = 0;
 
 int hep_ctx_idx = 0;
 int hep_capture_id = 1;
@@ -137,6 +138,7 @@ static const param_export_t params[] = {
 	{ "hep_id",                          STR_PARAM|USE_FUNC_PARAM, parse_hep_id     },
 	{ "homer5_on",                       INT_PARAM, &homer5_on                      },
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
+	{ "hep_tcp_conn_max_lifetime",       INT_PARAM, &hep_tcp_conn_max_lifetime      },
 	{0, 0, 0}
 };
 
@@ -380,6 +382,13 @@ static int hep_tls_send(struct socket_info* send_sock,
 	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 1);
 }
 
+static int is_connection_max_lifetime_exceeded(struct tcp_connection* c) {
+	if (hep_tcp_conn_max_lifetime == 0 || c == NULL) return 0;
+	int conn_life = time(0) - c->first_seen;
+	if (conn_life >= hep_tcp_conn_max_lifetime) return 1;
+	return 0;
+}
+
 static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls)
@@ -404,6 +413,11 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 		/* error during conn get, return with error too */
 		LM_ERR("failed to acquire connection\n");
 		return -1;
+	}
+
+	if (is_connection_max_lifetime_exceeded(c)) {
+		tcp_conn_destroy(c);
+		c = NULL;
 	}
 
 	/* was connection found ?? */
@@ -483,6 +497,7 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 			LM_ERR("connect failed\n");
 			return -1;
 		}
+		c->first_seen = time(0);
 		goto send_it;
 	}
 
