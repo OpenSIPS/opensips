@@ -786,7 +786,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	 * events, just in the BYEs from media/agent side */
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
-		return 0;
+		return 1;
 	}
 
 	/* right-side leg of call sent BYE */
