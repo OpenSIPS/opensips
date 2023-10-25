@@ -901,7 +901,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
 		cc_call_state = CC_CALL_NONE;
-		return 0;
+		return 1;
 	}
 
 	/* right-side leg of call sent BYE */
