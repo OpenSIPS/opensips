@@ -219,7 +219,9 @@ static int mod_init(void)
 
 	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, 0);
 	homer5_delim.len = strlen(homer5_delim.s);
-	hep_tls_client_domain.len = strlen(hep_tls_client_domain.s);
+	if (hep_tls_client_domain.s != NULL) {
+		hep_tls_client_domain.len = strlen(hep_tls_client_domain.s);
+	}
 
 	local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
 	local_su.sin.sin_port = 0;
