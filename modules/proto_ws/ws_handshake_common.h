@@ -844,7 +844,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = len;
 	tmp_msg.buf = tmp_msg.unparsed = msg;
-	if (parse_headers(&tmp_msg, HDR_EOH_F, 0) < 0) {
+	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0,0) < 0) {
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
 		goto error;
 	}
@@ -1122,7 +1122,7 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 	memset(&tmp_msg, 0, sizeof(struct sip_msg));
 	tmp_msg.len = len;
 	tmp_msg.buf = tmp_msg.unparsed = msg;
-	if (parse_headers(&tmp_msg, HDR_EOH_F, 0) < 0) {
+	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0, 0) < 0) {
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
 		goto error;
 	}

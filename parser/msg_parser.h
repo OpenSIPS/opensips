@@ -355,9 +355,13 @@ extern int via_cnt;
 
 int parse_msg(char* buf, unsigned int len, struct sip_msg* msg);
 
-int parse_headers(struct sip_msg* msg, hdr_flags_t flags, int next);
+#define parse_headers(msg, flags,next) 	parse_headers_aux(msg,flags,next, 1)
 
-char* get_hdr_field(char* buf, char* end, struct hdr_field* hdr);
+int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_well_known_parse);
+
+#define get_hdr_field(buf,end,hdr)	get_hdr_field_aux(buf,end,hdr,1)
+
+char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr, int sip_well_known_parse);
 
 void free_sip_msg(struct sip_msg* msg);
 
