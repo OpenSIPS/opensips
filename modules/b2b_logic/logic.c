@@ -2771,6 +2771,8 @@ str* b2bl_init_extern(struct b2b_params *init_params,
 	/* set the context values given in the b2b_trigger_scenario MI cmd */
 	tuple->vals = local_ctx_vals;
 	local_ctx_vals = NULL;
+	if (scen_params->ctx_key.len)
+		store_ctx_value(&tuple->vals, &scen_params->ctx_key, &scen_params->ctx_val);
 
 	memset(&e1, 0, sizeof e1);
 	memset(&e2, 0, sizeof e1);
