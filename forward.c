@@ -509,7 +509,11 @@ int forward_reply(struct sip_msg* msg)
 		|| (msg->via2==0) || (msg->via2->error!=PARSE_OK))
 	{
 		/* no second via => error */
-		LM_ERR("no 2nd via found in reply\n");
+		LM_ERR("no 2nd via found in [%.*s] [%.*s] reply from [%s] for callid [%.*s]\n",
+			msg->first_line.u.reply.status.len, msg->first_line.u.reply.status.s,
+			msg->cseq->body.len, msg->cseq->body.s,
+			ip_addr2a(&msg->rcv.src_ip),
+			msg->callid->body.len, msg->callid->body.s);
 		goto error;
 	}
 
