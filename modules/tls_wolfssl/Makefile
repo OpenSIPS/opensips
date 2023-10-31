@@ -41,7 +41,7 @@ lib/lib/libwolfssl.a: lib/wolfssl/Makefile $(PATCHED_FILES)
 
 lib/wolfssl/src/internal.c: lib/patches/wolfssl-internal-memleak-fix.patched
 
-lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.patch
+lib/patches/wolfssl-internal-memleak-fix.patched: lib/patches/wolfssl-internal-memleak-fix.diff
 	 $(Q)patch -sNR -p1 -d lib/wolfssl --dry-run < $< || patch -N -p1 -d lib/wolfssl  < $< && cp $< $@
 
 clean:	clean-wolfssl-lib
@@ -51,7 +51,7 @@ clean-wolfssl-lib:
 	-@if [ -f ./lib/wolfssl/Makefile ]; then \
 		$(MAKE) -C ./lib/wolfssl clean; \
 	fi;
-	-@patch -stNR -p1 -d lib/wolfssl < lib/patches/wolfssl-internal-memleak-fix.patch
+	-@patch -stNR -p1 -d lib/wolfssl < lib/patches/wolfssl-internal-memleak-fix.diff
 	-@rm -rf ./lib/bin ./lib/include ./lib/lib ./lib/share \
 	./lib/wolfssl/Makefile ./lib/wolfssl/configure \
 	lib/patches/wolfssl-internal-memleak-fix.patched
