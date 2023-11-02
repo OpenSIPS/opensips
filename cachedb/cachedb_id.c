@@ -89,7 +89,7 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 
 	enum state st;
 	unsigned int len, i, ipv6_flag=0, multi_hosts=0;
-	char* begin;
+	char* begin, *last_at;
 	char* prev_token,*start_host=NULL,*start_prev=NULL,*ptr;
 
 	prev_token = 0;
@@ -111,6 +111,8 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 
 	if (dupl_string(&id->initial_url,url->s,url->s+url->len) < 0)
 		goto err;
+
+	last_at = q_memrchr(url->s, '@', url->len);
 
 	for(i = 0; i < len; i++) {
 		switch(st) {
@@ -165,6 +167,9 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		case ST_USER_HOST:
 			switch(url->s[i]) {
 			case '@':
+				if (&url->s[i] < last_at)
+					break;
+
 				st = ST_HOST;
 				multi_hosts = 0;
 				if (dupl_string(&id->username, begin, url->s + i) < 0) goto err;
@@ -201,6 +206,9 @@ static int parse_cachedb_url(struct cachedb_id* id, const str* url)
 		case ST_PASS_PORT:
 			switch(url->s[i]) {
 			case '@':
+				if (&url->s[i] < last_at)
+					break;
+
 				st = ST_HOST;
 				id->username = prev_token;
 				if (dupl_string(&id->password, begin, url->s + i) < 0) goto err;
