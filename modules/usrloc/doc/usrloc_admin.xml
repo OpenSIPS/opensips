@@ -1821,8 +1821,9 @@ modparam("usrloc", "contact_refresh_timer", true)
 			</para></listitem>
 			<listitem><para>
 				<emphasis>latency</emphasis> - The latency of the last
-				successful ping for this contact. Until the first ping reply
-				for a given contact arrives, its pinging latency will be 0.
+				successful ping for this contact, in microseconds. Until the
+				first ping reply for a given contact arrives, its pinging
+				latency will be 0.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>shtag</emphasis> - The shared tag of the contact,
