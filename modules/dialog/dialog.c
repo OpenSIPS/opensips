@@ -1754,7 +1754,7 @@ int pv_set_dlg_timeout(struct sip_msg *msg, pv_param_t *param,
 	return 0;
 }
 
-#define DLG_CTX_JSON_BUFF_SIZE 8192
+#define DLG_CTX_JSON_BUFF_SIZE 32768
 #define DEC_AND_CHECK_LEN(_curr,_size)			\
 	 do {						\
 		_curr-=_size; 				\
