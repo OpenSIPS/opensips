@@ -3853,353 +3853,353 @@ static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *
 static
 #endif
 const pv_export_t _pv_names_table[] = {
-	{str_init("avp"), PVT_AVP, pv_get_avp, pv_set_avp,
+	{str_const_init("avp"), PVT_AVP, pv_get_avp, pv_set_avp,
 		pv_parse_avp_name, pv_parse_avp_index, 0, 0},
-	{str_init("hdr"), PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
+	{str_const_init("hdr"), PVT_HDR, pv_get_hdr, 0, pv_parse_hdr_name,
 		pv_parse_index, 0, 0},
-	{str_init("hdr_name"), PVT_HDR_NAME, pv_get_hdr_name, 0, 0,
+	{str_const_init("hdr_name"), PVT_HDR_NAME, pv_get_hdr_name, 0, 0,
 		pv_parse_index, 0, 0},
-	{str_init("hdrcnt"), PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name, 0, 0, 0},
-	{str_init("var"), PVT_SCRIPTVAR, pv_get_scriptvar,
+	{str_const_init("hdrcnt"), PVT_HDRCNT, pv_get_hdrcnt, 0, pv_parse_hdr_name, 0, 0, 0},
+	{str_const_init("var"), PVT_SCRIPTVAR, pv_get_scriptvar,
 		pv_set_scriptvar, pv_parse_scriptvar_name, 0, 0, 0},
-	{str_init("ai"), /* */
+	{str_const_init("ai"), /* */
 		PVT_PAI_URI, pv_get_pai, 0,
 		0, 0, 0, 0},
-	{str_init("au"), /* */
+	{str_const_init("au"), /* */
 		PVT_AUTH_USERNAME, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("ar"), /* auth realm */
+	{str_const_init("ar"), /* auth realm */
 		PVT_AUTH_REALM, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("adu"), /* auth digest uri */
+	{str_const_init("adu"), /* auth digest uri */
 		PVT_AUTH_DURI, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("ad"), /* */
+	{str_const_init("ad"), /* */
 		PVT_AUTH_DOMAIN, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("an"), /* */
+	{str_const_init("an"), /* */
 		PVT_AUTH_NONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 5},
-	{str_init("auth.nonce"), /* */
+	{str_const_init("auth.nonce"), /* */
 		PVT_AUTH_NONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 5},
-	{str_init("auth.resp"), /* */
+	{str_const_init("auth.resp"), /* */
 		PVT_AUTH_RESPONSE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 6},
-	{str_init("auth.cnonce"), /* */
+	{str_const_init("auth.cnonce"), /* */
 		PVT_AUTH_CNONCE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 7},
-	{str_init("auth.opaque"), /* */
+	{str_const_init("auth.opaque"), /* */
 		PVT_AUTH_OPAQUE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 8},
-	{str_init("auth.alg"), /* */
+	{str_const_init("auth.alg"), /* */
 		PVT_AUTH_ALGORITHM, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 9},
-	{str_init("auth.qop"), /* */
+	{str_const_init("auth.qop"), /* */
 		PVT_AUTH_QOP, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 10},
-	{str_init("auth.nc"), /* */
+	{str_const_init("auth.nc"), /* */
 		PVT_AUTH_NONCE_COUNT, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 11},
-	{str_init("aU"), /* */
+	{str_const_init("aU"), /* */
 		PVT_AUTH_USERNAME_WHOLE, pv_get_authattr, 0,
 		0, 0, pv_init_iname, 99},
-	{str_init("Au"), /* */
+	{str_const_init("Au"), /* */
 		PVT_ACC_USERNAME, pv_get_acc_username, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("bf"), /* */
+	{str_const_init("bf"), /* */
 		PVT_BFLAGS, pv_get_bflags, 0,
 		0, 0, 0, 0},
-	{str_init("branch"), /* */
+	{str_const_init("branch"), /* */
 		PVT_BRANCH, pv_get_branch_fields, pv_set_branch,
 		0, 0, 0, 0},
-	{str_init("branch"), /* */
+	{str_const_init("branch"), /* */
 		PVT_BRANCH, pv_get_branch_fields, pv_set_branch_fields,
 		pv_parse_branch_name, pv_parse_index, 0, 0},
-	{str_init("branch.flag"), /* */
+	{str_const_init("branch.flag"), /* */
 		PVT_BRANCH_FLAG, branch_flag_get, branch_flag_set,
 		branch_flag_parse_name, pv_parse_index, 0, 0},
-	{str_init("ci"), /* */
+	{str_const_init("ci"), /* */
 		PVT_CALLID, pv_get_callid, 0,
 		0, 0, 0, 0},
-	{str_init("cl"), /* */
+	{str_const_init("cl"), /* */
 		PVT_CONTENT_LENGTH, pv_get_content_length, 0,
 		0, 0, 0, 0},
-	{str_init("cs"), /* */
+	{str_const_init("cs"), /* */
 		PVT_CSEQ, pv_get_cseq, 0,
 		0, 0, 0, 0},
-	{str_init("ct"), /* */
+	{str_const_init("ct"), /* */
 		PVT_CONTACT, pv_get_contact_body, 0,
 		0, pv_parse_index, 0, 0},
-	{str_init("ct.fields"), /* */
+	{str_const_init("ct.fields"), /* */
 		PVT_CONTACT, pv_get_contact_body, 0,
 		pv_parse_ct_name, pv_parse_index, 0, 0},
-	{str_init("cT"), /* */
+	{str_const_init("cT"), /* */
 		PVT_CONTENT_TYPE, pv_get_content_type, 0,
 		0, pv_parse_index, 0, 0},
-	{str_init("dd"), /* */
+	{str_const_init("dd"), /* */
 		PVT_DSTURI_DOMAIN, pv_get_dsturi_attr, pv_set_dsturi_host,
 		0, 0, pv_init_iname, 1},
-	{str_init("di"), /* */
+	{str_const_init("di"), /* */
 		PVT_DIVERSION_URI, pv_get_diversion, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("dir"), /* */
+	{str_const_init("dir"), /* */
 		PVT_DIV_REASON, pv_get_diversion, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("dip"), /* */
+	{str_const_init("dip"), /* */
 		PVT_DIV_PRIVACY, pv_get_diversion, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("dp"), /* */
+	{str_const_init("dp"), /* */
 		PVT_DSTURI_PORT, pv_get_dsturi_attr, pv_set_dsturi_port,
 		0, 0, pv_init_iname, 2},
-	{str_init("dP"), /* */
+	{str_const_init("dP"), /* */
 		PVT_DSTURI_PROTOCOL, pv_get_dsturi_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("ds"), /* */
+	{str_const_init("ds"), /* */
 		PVT_DSET, pv_get_dset, 0,
 		0, 0, 0, 0},
-	{str_init("du"), /* */
+	{str_const_init("du"), /* */
 		PVT_DSTURI, pv_get_dsturi, pv_set_dsturi,
 		0, 0, 0, 0},
-	{str_init("duri"), /* */
+	{str_const_init("duri"), /* */
 		PVT_DSTURI, pv_get_dsturi, pv_set_dsturi,
 		0, 0, 0, 0},
-	{str_init("err.class"), /* */
+	{str_const_init("err.class"), /* */
 		PVT_ERR_CLASS, pv_get_errinfo_attr, 0,
 		0, 0, 0, 0},
-	{str_init("err.level"), /* */
+	{str_const_init("err.level"), /* */
 		PVT_ERR_LEVEL, pv_get_errinfo_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("err.info"), /* */
+	{str_const_init("err.info"), /* */
 		PVT_ERR_INFO, pv_get_errinfo_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("err.rcode"), /* */
+	{str_const_init("err.rcode"), /* */
 		PVT_ERR_RCODE, pv_get_errinfo_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("err.rreason"), /* */
+	{str_const_init("err.rreason"), /* */
 		PVT_ERR_RREASON, pv_get_errinfo_attr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("fd"), /* */
+	{str_const_init("fd"), /* */
 		PVT_FROM_DOMAIN, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("from.domain"), /* */
+	{str_const_init("from.domain"), /* */
 		PVT_FROM_DOMAIN, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("fn"), /* */
+	{str_const_init("fn"), /* */
 		PVT_FROM_DISPLAYNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 5},
-	{str_init("ft"), /* */
+	{str_const_init("ft"), /* */
 		PVT_FROM_TAG, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("fu"), /* */
+	{str_const_init("fu"), /* */
 		PVT_FROM, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("from"), /* */
+	{str_const_init("from"), /* */
 		PVT_FROM, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("fU"), /* */
+	{str_const_init("fU"), /* */
 		PVT_FROM_USERNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("from.user"), /* */
+	{str_const_init("from.user"), /* */
 		PVT_FROM_USERNAME, pv_get_from_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("log_level"), /* per process log level*/
+	{str_const_init("log_level"), /* per process log level*/
 		PVT_LOG_LEVEL, pv_get_log_level, pv_set_log_level,
 		0, 0, 0, 0},
-	{str_init("mb"), /* */
+	{str_const_init("mb"), /* */
 		PVT_MSG_BUF, pv_get_msg_buf, 0,
 		0, 0, 0, 0},
-	{str_init("mf"), /* */
+	{str_const_init("mf"), /* */
 		PVT_FLAGS, pv_get_flags, 0,
 		0, 0, 0, 0},
-	{str_init("msg.flag"), /* */
+	{str_const_init("msg.flag"), /* */
 		PVT_MSG_FLAG, msg_flag_get, msg_flag_set,
 		msg_flag_parse_name, 0, 0, 0},
-	{str_init("msg.is_request"), /* */
+	{str_const_init("msg.is_request"), /* */
 		PVT_MSG_FLAG, msg_is_request_get, 0,
 		0, 0, 0, 0},
-	{str_init("msg.type"), /* */
+	{str_const_init("msg.type"), /* */
 		PVT_MSG_FLAG, msg_type_get, 0,
 		0, 0, 0, 0},
-	{str_init("mi"), /* */
+	{str_const_init("mi"), /* */
 		PVT_MSGID, pv_get_msgid, 0,
 		0, 0, 0, 0},
-	{str_init("ml"), /* */
+	{str_const_init("ml"), /* */
 		PVT_MSG_LEN, pv_get_msg_len, 0,
 		0, 0, 0, 0},
-	{str_init("od"), /* */
+	{str_const_init("od"), /* */
 		PVT_OURI_DOMAIN, pv_get_ouri_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("op"), /* */
+	{str_const_init("op"), /* */
 		PVT_OURI_PORT, pv_get_ouri_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("oP"), /* */
+	{str_const_init("oP"), /* */
 		PVT_OURI_PROTOCOL, pv_get_ouri_attr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("ou"), /* */
+	{str_const_init("ou"), /* */
 		PVT_OURI, pv_get_ouri, 0,
 		0, 0, 0, 0},
-	{str_init("ouri"), /* */
+	{str_const_init("ouri"), /* */
 		PVT_OURI, pv_get_ouri, 0,
 		0, 0, 0, 0},
-	{str_init("oU"), /* */
+	{str_const_init("oU"), /* */
 		PVT_OURI_USERNAME, pv_get_ouri_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("path"), /* */
+	{str_const_init("path"), /* */
 		PVT_PATH, pv_get_path, 0,
 		0, 0, 0, 0},
-	{str_init("pd"), /* */
+	{str_const_init("pd"), /* */
 		PVT_PPI_DOMAIN, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("pn"), /* */
+	{str_const_init("pn"), /* */
 		PVT_PPI_DISPLAYNAME, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("pp"), /* */
+	{str_const_init("pp"), /* */
 		PVT_PID, pv_get_pid, 0,
 		0, 0, 0, 0},
-	{str_init("pu"), /* */
+	{str_const_init("pu"), /* */
 		PVT_PPI, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("pU"), /* */
+	{str_const_init("pU"), /* */
 		PVT_PPI_USERNAME, pv_get_ppi_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("rb"), /* */
+	{str_const_init("rb"), /* */
 		PVT_MSG_BODY, pv_get_msg_body, 0,
 		0, pv_parse_index, 0, 0},
-	{str_init("rb"), /* */
+	{str_const_init("rb"), /* */
 		PVT_MSG_BODY, pv_get_msg_body, 0,
 		pv_parse_rb_name, pv_parse_index, 0, 0},
-	{str_init("rc"), /* */
+	{str_const_init("rc"), /* */
 		PVT_RETURN_CODE, pv_get_return_code, 0,
 		0, 0, 0, 0},
-	{str_init("retcode"), /* */
+	{str_const_init("retcode"), /* */
 		PVT_RETURN_CODE, pv_get_return_code, 0,
 		0, 0, 0, 0},
-	{str_init("rd"), /* */
+	{str_const_init("rd"), /* */
 		PVT_RURI_DOMAIN, pv_get_ruri_attr, pv_set_ruri_host,
 		0, 0, pv_init_iname, 2},
-	{str_init("ruri.domain"), /* */
+	{str_const_init("ruri.domain"), /* */
 		PVT_RURI_DOMAIN, pv_get_ruri_attr, pv_set_ruri_host,
 		0, 0, pv_init_iname, 2},
-	{str_init("re"), /* */
+	{str_const_init("re"), /* */
 		PVT_RPID_URI, pv_get_rpid, 0,
 		0, 0, 0, 0},
-	{str_init("rm"), /* */
+	{str_const_init("rm"), /* */
 		PVT_METHOD, pv_get_method, 0,
 		0, 0, 0, 0},
-	{str_init("route"), /* */
+	{str_const_init("route"), /* */
 		PVT_ROUTE, pv_get_route, 0,
 		0, pv_parse_index, 0, 0},
-	{str_init("route.name"), /* */
+	{str_const_init("route.name"), /* */
 		PVT_ROUTE_NAME, pv_get_route_name, 0,
 		0, pv_parse_index, 0, 0},
-	{str_init("route.type"), /* */
+	{str_const_init("route.type"), /* */
 		PVT_ROUTE_TYPE, pv_get_route_type, 0,
 		0, pv_parse_index, 0, 0},
-	{str_init("rp"), /* */
+	{str_const_init("rp"), /* */
 		PVT_RURI_PORT, pv_get_ruri_attr, pv_set_ruri_port,
 		0, 0, pv_init_iname, 3},
-	{str_init("rP"), /* */
+	{str_const_init("rP"), /* */
 		PVT_RURI_PROTOCOL, pv_get_ruri_attr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("rr"), /* */
+	{str_const_init("rr"), /* */
 		PVT_REASON, pv_get_reason, 0,
 		0, 0, 0, 0},
-	{str_init("rs"), /* */
+	{str_const_init("rs"), /* */
 		PVT_STATUS, pv_get_status, 0,
 		0, 0, 0, 0},
-	{str_init("rt"), /* */
+	{str_const_init("rt"), /* */
 		PVT_REFER_TO, pv_get_refer_to, 0,
 		0, 0, 0, 0},
-	{str_init("ru"), /* */
+	{str_const_init("ru"), /* */
 		PVT_RURI, pv_get_ruri, pv_set_ruri,
 		0, 0, 0, 0},
-	{str_init("ruri"), /* */
+	{str_const_init("ruri"), /* */
 		PVT_RURI, pv_get_ruri, pv_set_ruri,
 		0, 0, 0, 0},
-	{str_init("ru_q"), /* */
+	{str_const_init("ru_q"), /* */
 		PVT_RU_Q, pv_get_ru_q, pv_set_ru_q,
 		0, 0, 0, 0},
-	{str_init("rU"), /* */
+	{str_const_init("rU"), /* */
 		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
 		0, 0, pv_init_iname, 1},
-	{str_init("ruri.user"), /* */
+	{str_const_init("ruri.user"), /* */
 		PVT_RURI_USERNAME, pv_get_ruri_attr, pv_set_ruri_user,
 		0, 0, pv_init_iname, 1},
-	{str_init("src_ip"), /* */
+	{str_const_init("src_ip"), /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
-	{str_init("socket_in"), /* */
+	{str_const_init("socket_in"), /* */
 		PVT_SOCKET_IN, pv_get_socket_in_fields, NULL,
 		0, 0, 0, 0},
-	{str_init("socket_in"), /* */
+	{str_const_init("socket_in"), /* */
 		PVT_SOCKET_IN, pv_get_socket_in_fields, NULL,
 		pv_parse_socket_name, 0, 0, 0},
-	{str_init("socket_out"), /* */
+	{str_const_init("socket_out"), /* */
 		PVT_SOCKET_OUT, pv_get_socket_out_fields, pv_set_force_sock,
 		0, 0, 0, 0},
-	{str_init("socket_out"), /* */
+	{str_const_init("socket_out"), /* */
 		PVT_SOCKET_OUT, pv_get_socket_out_fields, NULL,
 		pv_parse_socket_name, 0, 0, 0},
-	{str_init("si"), /* */
+	{str_const_init("si"), /* */
 		PVT_SRCIP, pv_get_srcip, 0,
 		0, 0, 0, 0},
-	{str_init("sp"), /* */
+	{str_const_init("sp"), /* */
 		PVT_SRCPORT, pv_get_srcport, 0,
 		0, 0, 0, 0},
-	{str_init("td"), /* */
+	{str_const_init("td"), /* */
 		PVT_TO_DOMAIN, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("to.domain"), /* */
+	{str_const_init("to.domain"), /* */
 		PVT_TO_DOMAIN, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 3},
-	{str_init("time"), /* */
+	{str_const_init("time"), /* */
 		PVT_TIME, pv_get_formated_time, 0,
 		pv_parse_time_name, 0, 0, 0},
-	{str_init("tn"), /* */
+	{str_const_init("tn"), /* */
 		PVT_TO_DISPLAYNAME, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 5},
-	{str_init("tt"), /* */
+	{str_const_init("tt"), /* */
 		PVT_TO_TAG, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 4},
-	{str_init("tu"), /* */
+	{str_const_init("tu"), /* */
 		PVT_TO, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("to"), /* */
+	{str_const_init("to"), /* */
 		PVT_TO, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 1},
-	{str_init("tU"), /* */
+	{str_const_init("tU"), /* */
 		PVT_TO_USERNAME, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("to.user"), /* */
+	{str_const_init("to.user"), /* */
 		PVT_TO_USERNAME, pv_get_to_attr, 0,
 		0, 0, pv_init_iname, 2},
-	{str_init("Tf"), /* */
+	{str_const_init("Tf"), /* */
 		PVT_TIMEF, pv_get_timef, 0,
 		0, 0, 0, 0},
-	{str_init("Ts"), /* */
+	{str_const_init("Ts"), /* */
 		PVT_TIMES, pv_get_times, 0,
 		0, 0, 0, 0},
-	{str_init("Tsm"), /* */
+	{str_const_init("Tsm"), /* */
 		PVT_TIMES, pv_get_timem, 0,
 		0, 0, 0, 0},
-	{str_init("TS"), /* */
+	{str_const_init("TS"), /* */
 		PVT_TIMES, pv_get_start_times, 0,
 		0, 0, 0, 0},
-	{str_init("ua"), /* */
+	{str_const_init("ua"), /* */
 		PVT_USERAGENT, pv_get_useragent, 0,
 		0, 0, 0, 0},
-	{str_init("C"), PVT_COLOR, pv_get_color, 0,
+	{str_const_init("C"), PVT_COLOR, pv_get_color, 0,
 		pv_parse_color_name, 0, 0, 0 },
-	{str_init("argv"), PVT_ARGV, pv_get_argv, 0,
+	{str_const_init("argv"), PVT_ARGV, pv_get_argv, 0,
 		pv_parse_argv_name, 0, 0, 0 },
-	{str_init("param"), PVT_ROUTE_PARAM, pv_get_param, 0,
+	{str_const_init("param"), PVT_ROUTE_PARAM, pv_get_param, 0,
 		pv_parse_param_name, 0, 0, 0 },
-	{str_init("cfg_line"), PVT_LINE_NUMBER, pv_get_line_number, 0,
+	{str_const_init("cfg_line"), PVT_LINE_NUMBER, pv_get_line_number, 0,
 		0, 0, 0, 0 },
-	{str_init("cfg_file"), PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
+	{str_const_init("cfg_file"), PVT_CFG_FILE_NAME, pv_get_cfg_file_name, 0,
 	0, 0, 0, 0 },
-	{str_init("xlog_level"), PVT_XLOG_LEVEL, pv_get_xlog_level,
+	{str_const_init("xlog_level"), PVT_XLOG_LEVEL, pv_get_xlog_level,
 		pv_set_xlog_level, 0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
@@ -5137,8 +5137,8 @@ static int pv_init_extra_list(void)
 
 static int pv_add_extra(const pv_export_t *e)
 {
-	char *p;
-	const str *in;
+	const char *p;
+	const str_const *in;
 	pv_extra_t *pvi = NULL;
 	pv_extra_t *pvj = NULL;
 	pv_extra_t *pvn = NULL;

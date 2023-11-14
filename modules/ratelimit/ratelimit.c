@@ -194,7 +194,7 @@ static const mi_export_t mi_cmds [] = {
 };
 
 static const pv_export_t mod_items[] = {
-	{ {"rl_count", sizeof("rl_count")-1}, 1010, pv_get_rl_count, 0,
+	{ str_const_init("rl_count"), 1010, pv_get_rl_count, 0,
 		 pv_parse_rl_count, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

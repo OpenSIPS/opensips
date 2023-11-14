@@ -166,7 +166,7 @@ static int bm_get_time_diff(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res);
 
 static const pv_export_t mod_items[] = {
-	{ {"BM_time_diff", sizeof("BM_time_diff")-1}, 1000, bm_get_time_diff, 0,
+	{ str_const_init("BM_time_diff"), 1000, bm_get_time_diff, 0,
 		0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

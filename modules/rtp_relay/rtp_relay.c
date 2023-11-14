@@ -119,12 +119,12 @@ static const param_export_t mod_params[] = {
 };
 
 static const pv_export_t mod_pvars[] = {
-	{ str_init("rtp_relay"), 2004, pv_get_rtp_relay_var, pv_set_rtp_relay_var,
+	{ str_const_init("rtp_relay"), 2004, pv_get_rtp_relay_var, pv_set_rtp_relay_var,
 		pv_parse_rtp_relay_var, pv_parse_rtp_relay_index, 0, 0},
-	{ str_init("rtp_relay_peer"), 2005, pv_get_rtp_relay_var,
+	{ str_const_init("rtp_relay_peer"), 2005, pv_get_rtp_relay_var,
 		pv_set_rtp_relay_var, pv_parse_rtp_relay_var,
 		pv_parse_rtp_relay_index, pv_init_rtp_relay_var, RTP_RELAY_PV_PEER},
-	{ str_init("rtp_relay_ctx"), 2006, pv_get_rtp_relay_ctx,
+	{ str_const_init("rtp_relay_ctx"), 2006, pv_get_rtp_relay_ctx,
 		pv_set_rtp_relay_ctx, pv_parse_rtp_relay_ctx,
 		NULL, NULL, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }

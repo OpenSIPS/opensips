@@ -81,7 +81,7 @@ static const param_export_t mod_params[] = {
 };
 
 static const pv_export_t mod_items[] = {
-	{{"sql_cached_value", sizeof("sql_cached_value") - 1}, 1000,
+	{str_const_init("sql_cached_value"), 1000,
 		pv_get_sql_cached_value, 0, pv_parse_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

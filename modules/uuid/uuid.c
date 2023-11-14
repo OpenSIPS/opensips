@@ -49,7 +49,7 @@ static int pv_get_uuid(struct sip_msg *msg, pv_param_t *param,
 						pv_value_t *res);
 
 static const pv_export_t mod_items[] = {
-	{{"uuid", sizeof("uuid")-1}, 1000, pv_get_uuid, 0, 0, 0, 0, 0},
+	{str_const_init("uuid"), 1000, pv_get_uuid, 0, 0, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 

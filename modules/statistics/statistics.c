@@ -178,7 +178,7 @@ static const param_export_t mod_params[]={
 
 
 static const pv_export_t mod_items[] = {
-	{ {"stat",     sizeof("stat")-1},      1100, pv_get_stat,
+	{ str_const_init("stat"),      1100, pv_get_stat,
 		pv_set_stat,    pv_parse_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

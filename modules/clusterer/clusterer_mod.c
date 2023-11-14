@@ -230,7 +230,7 @@ static const mi_export_t mi_cmds[] = {
 
 
 static const pv_export_t mod_vars[] = {
-	{ {"cluster.sh_tag", sizeof("cluster.sh_tag")-1}, 1000, var_get_sh_tag,
+	{ str_const_init("cluster.sh_tag"), 1000, var_get_sh_tag,
 		var_set_sh_tag,  var_parse_sh_tag_name , 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

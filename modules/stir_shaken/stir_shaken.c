@@ -161,7 +161,7 @@ static const param_export_t params[] = {
 };
 
 static const pv_export_t mod_items[] = {
-	{{"identity", sizeof("identity") - 1}, 1000, pv_get_identity,
+	{str_const_init("identity"), 1000, pv_get_identity,
 		0, pv_parse_identity_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
