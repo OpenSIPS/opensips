@@ -3618,6 +3618,25 @@ static int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t
 	return 0;
 }
 
+/************** Boolean consts *****************/
+
+static int pv_get_true(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	res->ri = 1;
+	res->rs = str_init("true");
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
+
+static int pv_get_false(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res)
+{
+	res->ri = 0;
+	res->rs = str_init("false");
+	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
+	return 0;
+}
+
 
 /************** MSG FLAGS function *****************/
 
@@ -3672,18 +3691,9 @@ static int msg_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res
 	}
 
 	if ( isflagset( msg, (unsigned int)param->pvn.u.isname.name.n)==1 ) {
-		res->ri = 1;
-		res->rs.s = "true";
-		res->rs.len = 4;
-	} else {
-		res->ri = 0;
-		res->rs.s = "false";
-		res->rs.len = 5;
+		return pv_get_true(msg, param, res);
 	}
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
-	return 0;
+	return pv_get_false(msg, param, res);
 }
 
 
@@ -3697,18 +3707,9 @@ static int msg_is_request_get(struct sip_msg *msg, pv_param_t *param, pv_value_t
 	}
 
 	if ( msg->first_line.type==SIP_REQUEST ) {
-		res->ri = 1;
-		res->rs.s = "true";
-		res->rs.len = 4;
-	} else {
-		res->ri = 0;
-		res->rs.s = "false";
-		res->rs.len = 5;
+		return pv_get_true(msg, param, res);
 	}
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
-	return 0;
+	return pv_get_false(msg, param, res);
 }
 
 
@@ -3835,18 +3836,9 @@ static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *
 	}
 
 	if ( isbflagset( msg, idx, param->pvn.u.isname.name.n)==1 ) {
-		res->ri = 1;
-		res->rs.s = "true";
-		res->rs.len = 4;
-	} else {
-		res->ri = 0;
-		res->rs.s = "false";
-		res->rs.len = 5;
+		return pv_get_true(msg, param, res);
 	}
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
-	return 0;
+	return pv_get_false(msg, param, res);;
 }
 
 
@@ -4207,6 +4199,10 @@ const pv_export_t _pv_names_table[] = {
 	0, 0, 0, 0 },
 	{str_init("xlog_level"), PVT_XLOG_LEVEL, pv_get_xlog_level,
 		pv_set_xlog_level, 0, 0, 0, 0 },
+	{str_init("true"), PVT_TRUE, pv_get_true, 0,
+		0, 0, 0, 0 },
+	{str_init("false"), PVT_FALSE, pv_get_false, 0,
+		0, 0, 0, 0 },
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
