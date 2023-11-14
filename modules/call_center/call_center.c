@@ -240,7 +240,7 @@ static const dep_export_t deps = {
 };
 
 static const pv_export_t mod_pvars[] = {
-	{ {"cc_state",  sizeof("cc_state")-1},     1000, pv_get_cc_state,
+	{ str_const_init("cc_state"),     1000, pv_get_cc_state,
 		0,                 0, 0, 0, 0 },
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

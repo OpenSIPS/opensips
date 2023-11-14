@@ -65,11 +65,11 @@ static const trans_export_t trans[] = {
 };
 
 static const pv_export_t mod_items[] = {
-	{{"isup_msg_type", sizeof("isup_msg_type") - 1}, 1000, pv_get_isup_msg_type,
+	{str_const_init("isup_msg_type"), 1000, pv_get_isup_msg_type,
 		0, 0, 0, 0, 0},
-	{{"isup_param", sizeof("isup_param") - 1}, 1000, pv_get_isup_param,
+	{str_const_init("isup_param"), 1000, pv_get_isup_param,
 		pv_set_isup_param, pv_parse_isup_param_name, pv_parse_isup_param_index, 0, 0},
-	{{"isup_param_str", sizeof("isup_param_str") - 1}, 1000, pv_get_isup_param_str,
+	{str_const_init("isup_param_str"), 1000, pv_get_isup_param_str,
 		0, pv_parse_isup_param_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

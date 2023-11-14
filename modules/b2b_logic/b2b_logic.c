@@ -292,13 +292,13 @@ static const param_export_t params[]=
 };
 
 static const pv_export_t mod_items[] = {
-	{{"b2b_logic.key", sizeof("b2b_logic.key") - 1}, 1000, pv_get_b2bl_key,
+	{str_const_init("b2b_logic.key"), 1000, pv_get_b2bl_key,
 		0, 0, 0, 0, 0},
-	{{"b2b_logic.scenario", sizeof("b2b_logic.scenario") - 1}, 1000,
+	{str_const_init("b2b_logic.scenario"), 1000,
 		pv_get_scenario, 0, 0, 0, 0, 0},
-	{{"b2b_logic.entity", sizeof("b2b_logic.entity") - 1}, 1000, pv_get_entity,
+	{str_const_init("b2b_logic.entity"), 1000, pv_get_entity,
 		0, pv_parse_entity_name, pv_parse_entity_index, 0, 0},
-	{{"b2b_logic.ctx", sizeof("b2b_logic.ctx") - 1}, 1000, pv_get_ctx,
+	{str_const_init("b2b_logic.ctx"), 1000, pv_get_ctx,
 		pv_set_ctx, pv_parse_ctx_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

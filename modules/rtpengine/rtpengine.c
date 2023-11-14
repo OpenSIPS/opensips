@@ -668,10 +668,10 @@ static int pv_rtpengine_index(pv_spec_p sp, const str *in)
 }
 
 static const pv_export_t mod_pvs[] = {
-	{{"rtpstat", (sizeof("rtpstat")-1)}, /* RTP-Statistics */
+	{str_const_init("rtpstat"), /* RTP-Statistics */
 		1000, pv_get_rtpstat_f, 0, pv_parse_rtpstat,
 		pv_rtpengine_index, pv_rtpengine_stats_used, 0},
-	{{"rtpquery", (sizeof("rtpquery")-1)},
+	{str_const_init("rtpquery"),
 		1000, pv_get_rtpquery_f, 0, 0, 0, pv_rtpengine_stats_used, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };

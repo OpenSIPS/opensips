@@ -129,11 +129,11 @@ static const cmd_export_t cmds[]={
 };
 
 static const pv_export_t mod_items[] = {
-	{ {"json",  sizeof("json")-1},    PVT_JSON, pv_get_json,
+	{ str_const_init("json"),    PVT_JSON, pv_get_json,
 		pv_set_json, pv_parse_json_name, pv_parse_json_index, 0, 0},
-	{ {"json_compact",  sizeof("json_compact")-1}, PVT_JSON, pv_get_json_compact,
+	{ str_const_init("json_compact"), PVT_JSON, pv_get_json_compact,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
-	{ {"json_pretty",  sizeof("json_pretty")-1}, PVT_JSON, pv_get_json_pretty,
+	{ str_const_init("json_pretty"), PVT_JSON, pv_get_json_pretty,
 		pv_set_json, pv_parse_json_name, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

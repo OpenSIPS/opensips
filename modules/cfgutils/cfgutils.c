@@ -268,13 +268,13 @@ static const mi_export_t mi_cmds[] = {
 };
 
 static const pv_export_t mod_items[] = {
-	{ {"RANDOM", sizeof("RANDOM")-1}, 1000, pv_get_random_val, 0,
+	{ str_const_init("RANDOM"), 1000, pv_get_random_val, 0,
 		0, 0, 0, 0 },
-	{ {"shv", (sizeof("shv")-1)}, 1001, pv_get_shvar,
+	{ str_const_init("shv"), 1001, pv_get_shvar,
 		pv_set_shvar, pv_parse_shvar_name, 0, 0, 0},
-	{ {"ctime", (sizeof("ctime")-1)}, 1002, pv_get_time,
+	{ str_const_init("ctime"), 1002, pv_get_time,
 		0, pv_parse_time_name, 0, 0, 0},
-	{ {"env", (sizeof("env")-1)}, 1002, pv_get_env,
+	{ str_const_init("env"), 1002, pv_get_env,
 		0, pv_parse_env_name, 0, 0, 0},
 
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }

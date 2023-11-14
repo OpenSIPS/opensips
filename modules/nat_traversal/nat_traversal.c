@@ -242,9 +242,9 @@ static const param_export_t parameters[] = {
 };
 
 static const pv_export_t pvars[] = {
-    {str_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
-    {str_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
-    {str_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
+    {str_const_init("keepalive.socket"), 1000, pv_get_keepalive_socket, NULL, pv_parse_nat_contact_name, NULL, NULL, 0},
+    {str_const_init("source_uri"), 1000, pv_get_source_uri, NULL, NULL, NULL, NULL, 0},
+    {str_const_init("nat_traversal.track_dialog"), 1000, pv_get_track_dialog, pv_set_track_dialog, NULL, NULL, NULL, 0},
     {{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };
 

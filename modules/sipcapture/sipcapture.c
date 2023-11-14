@@ -654,9 +654,9 @@ static const dep_export_t deps = {
  * pseudo-variables
  */
 static const pv_export_t mod_items[] = {
-	{{"hep_net", sizeof("hep_net")-1}, 1201, pv_get_hep_net, 0,
+	{str_const_init("hep_net"), 1201, pv_get_hep_net, 0,
 		pv_parse_hep_net_name, 0, 0, 0},
-	{{"HEPVERSION", sizeof("HEPVERSION")-1}, 1202, pv_get_hep_version, 0,
+	{str_const_init("HEPVERSION"), 1202, pv_get_hep_version, 0,
 		0, 0, 0, 0},
 	{{0, 0}, 0, 0, 0, 0, 0, 0, 0}
 };

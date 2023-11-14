@@ -75,7 +75,7 @@ static const param_export_t params[] = {
 };
 
 static const pv_export_t pvars[] = {
-	{ {"TH_callee_callid",  sizeof("TH_callee_callid")-1}, 1000,
+	{ str_const_init("TH_callee_callid"), 1000,
 		pv_topo_callee_callid,0,0, 0, 0, 0},
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };

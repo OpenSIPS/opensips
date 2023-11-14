@@ -109,7 +109,7 @@ static char *type_values[MAX_FEATURES_NO] = {NULL,
 	TYPE_VAL_FWD_CFA, TYPE_VAL_FWD_CFB, TYPE_VAL_FWD_CFNA};
 
 static const pv_export_t mod_items[] = {
-	{ {"dfks", sizeof("dfks")-1}, 1000, pv_get_dfks, pv_set_dfks,
+	{ str_const_init("dfks"), 1000, pv_get_dfks, pv_set_dfks,
 		pv_parse_dfks_name, 0, 0, 0},
 	  { {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
