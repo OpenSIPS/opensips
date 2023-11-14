@@ -3618,6 +3618,21 @@ static int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t
 	return 0;
 }
 
+/************** Boolean consts *****************/
+
+static const pv_value_t pv_true = {
+	.ri = 1,
+	.rs = str_init("true"),
+	.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT,
+};
+
+
+static const pv_value_t pv_false = {
+	.ri = 0,
+	.rs = str_init("false"),
+	.flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT,
+};
+
 
 /************** MSG FLAGS function *****************/
 
@@ -3672,17 +3687,10 @@ static int msg_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *res
 	}
 
 	if ( isflagset( msg, (unsigned int)param->pvn.u.isname.name.n)==1 ) {
-		res->ri = 1;
-		res->rs.s = "true";
-		res->rs.len = 4;
+		*res = pv_true;
 	} else {
-		res->ri = 0;
-		res->rs.s = "false";
-		res->rs.len = 5;
+		*res = pv_false;
 	}
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
 	return 0;
 }
 
@@ -3697,17 +3705,10 @@ static int msg_is_request_get(struct sip_msg *msg, pv_param_t *param, pv_value_t
 	}
 
 	if ( msg->first_line.type==SIP_REQUEST ) {
-		res->ri = 1;
-		res->rs.s = "true";
-		res->rs.len = 4;
+		*res = pv_true;
 	} else {
-		res->ri = 0;
-		res->rs.s = "false";
-		res->rs.len = 5;
+		*res = pv_false;
 	}
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
 	return 0;
 }
 
@@ -3835,17 +3836,10 @@ static int branch_flag_get(struct sip_msg *msg,  pv_param_t *param, pv_value_t *
 	}
 
 	if ( isbflagset( msg, idx, param->pvn.u.isname.name.n)==1 ) {
-		res->ri = 1;
-		res->rs.s = "true";
-		res->rs.len = 4;
+		*res = pv_true;
 	} else {
-		res->ri = 0;
-		res->rs.s = "false";
-		res->rs.len = 5;
+		*res = pv_false;
 	}
-
-	res->flags = PV_VAL_STR|PV_VAL_INT|PV_TYPE_INT;
-
 	return 0;
 }
 
