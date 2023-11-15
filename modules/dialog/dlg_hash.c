@@ -1348,7 +1348,7 @@ void next_state_dlg(struct dlg_cell *dlg, int event, int dir, int *old_state,
 
 
 /**************************** MI functions ******************************/
-static char *dlg_val_buf;
+static str dlg_val_buf;
 static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 									struct dlg_cell *dlg, int with_context)
 {
@@ -1509,11 +1509,12 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 			for( dv=dlg->vals ; dv ; dv=dv->next) {
 				if (dv->type == DLG_VAL_TYPE_STR) {
 					/* escape non-printable chars */
-					p = pkg_realloc(dlg_val_buf, 4 * dv->val.s.len + 1);
-					if (!p) {
-						LM_ERR("not enough mem to allocate: %d\n", dv->val.s.len);
+					if (!pkg_str_extend(&dlg_val_buf, 4 * dv->val.s.len + 1)) {
+						LM_ERR("not enough mem to allocate: %d\n", 4 * dv->val.s.len + 1);
 						continue;
 					}
+
+					p = dlg_val_buf.s;
 					for (i = 0, j = 0; i < dv->val.s.len; i++) {
 						if (dv->val.s.s[i] < 0x20 || dv->val.s.s[i] >= 0x7F) {
 							p[j++] = '\\';
