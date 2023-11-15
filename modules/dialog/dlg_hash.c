@@ -1496,7 +1496,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 			for( dv=dlg->vals ; dv ; dv=dv->next) {
 				if (dv->type == DLG_VAL_TYPE_STR) {
 					/* escape non-printable chars */
-					if (!pkg_str_extend(&dlg_val_buf, 4 * dv->val.s.len + 1)) {
+					if (pkg_str_extend(&dlg_val_buf, 4 * dv->val.s.len + 1) != 0) {
 						LM_ERR("not enough mem to allocate: %d\n", 4 * dv->val.s.len + 1);
 						continue;
 					}
