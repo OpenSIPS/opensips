@@ -5006,6 +5006,9 @@ int pv_elem_free_all(pv_elem_p log)
 	{
 		t = log;
 		log = log->next;
+
+		if (t->spec.trans)
+			free_transformation((trans_t *)t->spec.trans);
 		pkg_free(t);
 	}
 	return 0;
