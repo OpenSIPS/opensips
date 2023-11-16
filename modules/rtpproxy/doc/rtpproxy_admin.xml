@@ -1064,13 +1064,13 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 					the config file).
 				</para></listitem>
 				<listitem><para>
+					<emphasis>enable</emphasis> - 1 - enable, 0 - disable.
+					the config file).
+				</para></listitem>
+				<listitem><para>
 					<emphasis>setid</emphasis> (optional) - the rtpproxy set ID (used
 					for better indentification of the rtpproxy instance to be enabled,
 					for example when a rtpproxy is used in multiple sets).
-				</para></listitem>
-				<listitem><para>
-					<emphasis>enable</emphasis> - 1 - enable, 0 - disable.
-					the config file).
 				</para></listitem>
 			</itemizedlist>
 			<para>
@@ -1086,7 +1086,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 ## disable a RTPProxy by URL only
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
 ...
 			</programlisting>
 			</example>
