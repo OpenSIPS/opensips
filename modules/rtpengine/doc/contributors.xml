@@ -92,16 +92,16 @@
 	</row>
 	<row>
 		<entry>10. </entry>
-		<entry>Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>)</entry>
-		<entry align="center">5</entry>
-		<entry align="center">3</entry>
-		<entry align="center">37</entry>
-		<entry align="center">7</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">6</entry>
+		<entry align="center">4</entry>
+		<entry align="center">11</entry>
+		<entry align="center">12</entry>
 	</row>
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Zero King (<ulink url="https://github.com/l2dy">@l2dy</ulink>), Rob Gagnon (<ulink url="https://github.com/rgagnon24">@rgagnon24</ulink>), Flavio E. Goncalves, Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Oliver Severin Mulelid-Tynes (<ulink url="https://github.com/olivermt">@olivermt</ulink>).</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,18 +128,18 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Jan 2021 - Nov 2023</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Jun 2014 - Oct 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Jul 2014 - May 2023</entry>
-	</row>
-	<row>
-		<entry>3. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jan 2021 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>4. </entry>

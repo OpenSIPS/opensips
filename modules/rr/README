@@ -551,8 +551,8 @@ Chapter 4. Contributors
    10. Henning Westerholt (@henningw) 7 4 115 73
 
    All remaining contributors: Vlad Patrascu (@rvlad-patrascu),
-   Ovidiu Sas (@ovidiusas), Dan Pascu (@danpascu), Maksym Sobolyev
-   (@sobomax), Konstantin Bokarius, Saúl Ibarra Corretgé
+   Ovidiu Sas (@ovidiusas), Maksym Sobolyev (@sobomax), Dan Pascu
+   (@danpascu), Konstantin Bokarius, Saúl Ibarra Corretgé
    (@saghul), Jesus Rodrigues, Julián Moreno Patiño, Norman
    Brandinger (@NormB), Peter Lemenkov (@lemenkov), Edson Gellert
    Schubert, Elena-Ramona Modroiu.
@@ -577,7 +577,7 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2002 - Nov 2022
    3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jan 2021
    4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Sep 2019

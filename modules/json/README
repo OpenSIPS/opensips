@@ -398,13 +398,13 @@ Chapter 2. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 8 6 27 30
    5. Vlad Patrascu (@rvlad-patrascu) 8 4 195 75
    6. Vlad Paiu (@vladpaiu) 5 3 29 11
-   7. Björn Esser (@besser82) 5 2 124 44
-   8. Ovidiu Sas (@ovidiusas) 4 2 17 4
-   9. Maksym Sobolyev (@sobomax) 4 2 9 9
+   7. Maksym Sobolyev (@sobomax) 5 3 12 12
+   8. Björn Esser (@besser82) 5 2 124 44
+   9. Ovidiu Sas (@ovidiusas) 4 2 17 4
    10. Nick Altmann (@nikbyte) 3 1 47 15
 
    All remaining contributors: Anca Vamanu, Peter Lemenkov
-   (@lemenkov), Julián Moreno Patiño.
+   (@lemenkov), Bence Szigeti, Julián Moreno Patiño.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -426,19 +426,19 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   2.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jan 2021
-   3.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   7.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
-   8.  Björn Esser (@besser82)             Dec 2017 - Dec 2017
-   9.  Julián Moreno Patiño                Feb 2016 - Feb 2016
-   10. Vlad Paiu (@vladpaiu)               Jul 2014 - May 2015
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   2.  Bence Szigeti                       Nov 2023 - Nov 2023
+   3.  Liviu Chircu (@liviuchircu)         Oct 2013 - Jan 2021
+   4.  Razvan Crainea (@razvancrainea)     Feb 2012 - Sep 2019
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2010 - Apr 2019
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   8.  Nick Altmann (@nikbyte)             Jan 2018 - Jan 2018
+   9.  Björn Esser (@besser82)             Dec 2017 - Dec 2017
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Anca
-   Vamanu, Andrei Dragus.
+   All remaining contributors: Vlad Paiu (@vladpaiu), Ovidiu Sas
+   (@ovidiusas), Anca Vamanu, Andrei Dragus.
 
    (1) including any documentation-related commits, excluding
    merge commits

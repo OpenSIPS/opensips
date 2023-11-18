@@ -1160,7 +1160,8 @@ modparam("usrloc", "contact_refresh_timer", true)
 
 1.7.8.  ul_cluster_sync
 
-   This command will only take effect if the module is running
+   This command will only take effect if the target OpenSIPS
+   instance is paired with a hot backup instance, while running
    under a cluster-enabled working_mode_preset.
 
    The current node will locate a healthy donor node within the
@@ -1579,7 +1580,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 336 200 9163 3704
+   2. Liviu Chircu (@liviuchircu) 337 201 9165 3705
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 245 150 4232 3624
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308

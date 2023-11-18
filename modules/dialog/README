@@ -2549,9 +2549,9 @@ Chapter 4. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 452 285 13276 3527
    2. Razvan Crainea (@razvancrainea) 273 205 5082 1556
-   3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
+   3. Vlad Paiu (@vladpaiu) 254 145 7206 3027
    4. Vlad Patrascu (@rvlad-patrascu) 198 104 4330 3514
-   5. Liviu Chircu (@liviuchircu) 176 127 3112 1362
+   5. Liviu Chircu (@liviuchircu) 178 129 3118 1367
    6. Ovidiu Sas (@ovidiusas) 34 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
@@ -2592,15 +2592,15 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2023
-   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Sep 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2023
-   5.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
-   6.  Ryan Bullock                        May 2023 - May 2023
-   7.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
-   9.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
+   1.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2023
+   2.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
+   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2023
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Jun 2023
+   7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
+   8.  Ryan Bullock                        May 2023 - May 2023
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
    10. Nick Altmann (@nikbyte)             Oct 2013 - May 2021
 
    All remaining contributors: Walter Doekes (@wdoekes), sergei
