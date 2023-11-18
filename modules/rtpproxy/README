@@ -854,10 +854,10 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
    Parameters:
      * url - the rtp proxy url (exactly as defined in the config
        file).
+     * enable - 1 - enable, 0 - disable. the config file).
      * setid (optional) - the rtpproxy set ID (used for better
        indentification of the rtpproxy instance to be enabled, for
        example when a rtpproxy is used in multiple sets).
-     * enable - 1 - enable, 0 - disable. the config file).
 
    NOTE: if a rtpproxy is defined multiple times (in the same or
    different set), all its instances will be enables/disabled IF
@@ -868,7 +868,7 @@ xlog("RTP statistics for $ci: dropped=$(avp(stats)[4])\n");
 ## disable a RTPProxy by URL only
 $ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0
 ## disable a RTPProxy by URL and set ID (3)
-$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 3 0
+$ opensips-cli -x mi rtpproxy_enable udp:192.168.2.133:8081 0 3
 ...
 
 1.7.2. rtpproxy_show
@@ -975,7 +975,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 254 157 6082 2851
+   1. Razvan Crainea (@razvancrainea) 255 158 6087 2856
    2. Maksym Sobolyev (@sobomax) 54 8 5016 258
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 123 116
    4. Liviu Chircu (@liviuchircu) 25 20 113 203
@@ -1012,7 +1012,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Aug 2023
+   1.  Razvan Crainea (@razvancrainea)     Mar 2011 - Nov 2023
    2.  Maksym Sobolyev (@sobomax)          Mar 2011 - Mar 2023
    3.  Liviu Chircu (@liviuchircu)         Jul 2012 - Sep 2022
    4.  Peter Lemenkov (@lemenkov)          Dec 2011 - Apr 2022
