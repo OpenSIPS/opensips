@@ -196,11 +196,23 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 	if (sess->group.s) {
 		SIPREC_COPY("\r\n\t<group group_id=\"", buf);
 		SIPREC_COPY_STR(sess->group, buf);
-		SIPREC_COPY("\"/>", buf);
+		SIPREC_COPY("\">", buf);
+
+		if (sess->group_custom_extension.s) {
+			LM_DBG("group_custom_extension: %.*s\n", sess->group_custom_extension.len, sess->group_custom_extension.s);
+			LM_DBG("group_custom_extension.len: %d\n", sess->group_custom_extension.len);
+
+			// add group custom extensions
+			SIPREC_COPY("\r\n\t\t", buf);
+			SIPREC_COPY_STR(sess->group_custom_extension, buf);
+		}
+
+		SIPREC_COPY("\r\n\t</group>", buf);
 	}
+
 	SIPREC_COPY("\r\n\t<session session_id=\"", buf);
 	SIPREC_COPY_UUID(sess->uuid, buf);
-	if (!sess->group.s && !sess->dlg)
+	if (!sess->group.s && !sess->dlg && !sess->session_custom_extension.s)
 		SIPREC_COPY("\"/>\r\n", buf);
 	else {
 		SIPREC_COPY("\">", buf);
@@ -216,8 +228,16 @@ static int srs_build_xml(struct src_sess *sess, struct srec_buffer *buf)
 			SIPREC_COPY_STR(sess->group, buf);
 			SIPREC_COPY_CLOSE_TAG("group-ref", buf);
 		}
+
+		if (sess->session_custom_extension.s) {
+			// add session custom extensions
+			SIPREC_COPY("\r\n\t\t", buf);
+			SIPREC_COPY_STR(sess->session_custom_extension, buf);
+		}
+
 		SIPREC_COPY("\r\n\t</session>\r\n", buf);
 	}
+
 	for (p = 0; p < sess->participants_no; p++) {
 		if (!sess->participants[p].aor.s && !sess->participants[p].xml_val.s)
 			continue;
@@ -359,7 +379,7 @@ int srs_build_body(struct src_sess *sess, str *sdp, str *body)
 	SIPREC_COPY_STR(siprec_content_type, &buf);
 	SIPREC_COPY_STR(siprec_content_disposition, &buf);
 	SIPREC_COPY(CRLF, &buf);
-	
+
 	if (srs_build_xml(sess, &buf) < 0)
 		return -1;
 

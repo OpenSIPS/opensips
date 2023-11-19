@@ -94,6 +94,8 @@ struct src_sess {
 	struct list_head srs;
 	str group;
 	struct socket_info *socket; /* socket used towards SRS */
+	str group_custom_extension;
+	str session_custom_extension;
 
 	/* siprec */
 	siprec_uuid uuid;

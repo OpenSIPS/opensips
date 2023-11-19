@@ -83,7 +83,6 @@ static const pv_export_t vars[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
-
 /* module exports */
 struct module_exports exports = {
 	"siprec",						/* module name */
@@ -142,7 +141,6 @@ static int mod_preinit(void)
 
 	return 0;
 }
-
 
 /**
  * init module function

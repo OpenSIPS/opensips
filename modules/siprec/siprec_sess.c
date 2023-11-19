@@ -34,10 +34,13 @@ struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
 static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
-		struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid)
+		struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid,
+		str* group_custom_extension, str* session_custom_extension)
 {
 	struct src_sess *ss = shm_malloc(sizeof *ss + (m_ip ? m_ip->len : 0) +
-			(grp ? grp->len : 0) + (hdrs ? hdrs->len : 0));
+			(grp ? grp->len : 0) + (hdrs ? hdrs->len : 0) +
+			(group_custom_extension ? group_custom_extension->len : 0) +
+			(session_custom_extension ? session_custom_extension->len : 0));
 	if (!ss) {
 		LM_ERR("not enough memory for creating siprec session!\n");
 		return NULL;
@@ -55,7 +58,7 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 		ss->media.len = 0;
 	}
 
-	if (grp) {
+	if (grp && grp->len) {
 		ss->group.s = (char *)(ss + 1) + ss->media.len;
 		memcpy(ss->group.s, grp->s, grp->len);
 		ss->group.len = grp->len;
@@ -67,6 +70,21 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 		memcpy(ss->headers.s, hdrs->s, hdrs->len);
 		ss->headers.len = hdrs->len;
 	}
+
+	if (grp && grp->len && group_custom_extension && group_custom_extension->len) {
+		ss->group_custom_extension.s = (char *)(ss + 1) + ss->media.len +
+			ss->group.len + ss->headers.len;
+		memcpy(ss->group_custom_extension.s, group_custom_extension->s, group_custom_extension->len);
+		ss->group_custom_extension.len = group_custom_extension->len;
+	}
+
+	if (session_custom_extension && session_custom_extension->len) {
+		ss->session_custom_extension.s = (char *)(ss + 1) + ss->media.len +
+			ss->group.len + ss->headers.len + ss->group_custom_extension.len;
+		memcpy(ss->session_custom_extension.s, session_custom_extension->s, session_custom_extension->len);
+		ss->session_custom_extension.len = session_custom_extension->len;
+	}
+
 	memcpy(ss->uuid, uuid, sizeof(*uuid));
 	ss->participants_no = 0;
 	ss->ts = ts;
@@ -98,12 +116,16 @@ struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
 			(var && var->group.len)?&var->group:NULL,
 			(var?var->si:NULL), 0, time(NULL),
 			(var && var->headers.len)?&var->headers:NULL,
-			&uuid);
+			&uuid,
+			(var && var->group_custom_extension.len)?&var->group_custom_extension:NULL,
+			(var && var->session_custom_extension.len)?&var->session_custom_extension:NULL);
+
 	if (!sess)
 		return NULL;
 
 	/* parse the srs here */
 	end = srs->s + srs->len;
+
 	do {
 		p = end - 1;
 		while (p > srs->s && *p != ',')
@@ -116,7 +138,9 @@ struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
 		end = p;
 
 		trim(&s);
+
 		node = shm_malloc(sizeof(*node) + s.len);
+
 		if (!node) {
 			LM_ERR("cannot add srs node information!\n");
 			src_free_session(sess);
@@ -131,7 +155,6 @@ struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
 
 	return sess;
 }
-
 
 void src_free_participant(struct src_part *part)
 {
@@ -256,6 +279,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	int version;
 	time_t ts;
 	str tmp, media_ip, srs_uri, group;
+	str group_custom_extension, session_custom_extension;
 	str aor, name, xml_val, *xml;
 	siprec_uuid uuid;
 	struct socket_info *si;
@@ -302,6 +326,15 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	SIPREC_BIN_POP(str, &media_ip);
 	SIPREC_BIN_POP(str, &srs_uri);
 	SIPREC_BIN_POP(str, &group);
+
+	SIPREC_BIN_POP(str, &group_custom_extension);
+	if (group_custom_extension.s)
+		LM_DBG("group custom extension: <%.*s>\n", group_custom_extension.len, group_custom_extension.s);
+
+	SIPREC_BIN_POP(str, &session_custom_extension);
+	if (group_custom_extension.s)
+		LM_DBG("session custom extension: <%.*s>\n", session_custom_extension.len, session_custom_extension.s);
+
 	SIPREC_BIN_POP(str, &tmp);
 
 	if (tmp.len) {
@@ -321,7 +354,9 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 
 	sess = src_create_session(rtp,
 			(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
-			si, version, ts, NULL /* we do not replicate headers */, &uuid);
+			si, version, ts, NULL /* we do not replicate headers */, &uuid,
+			(group_custom_extension.len ? &group_custom_extension : NULL),
+			(session_custom_extension.len ? &session_custom_extension : NULL));
 	if (!sess) {
 		LM_ERR("cannot create a new siprec session!\n");
 		return;
@@ -482,6 +517,16 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	/* push only the first SRS - this is the one chosen */
 	SIPREC_BIN_PUSH(str, &SIPREC_SRS(ss));
 	SIPREC_BIN_PUSH(str, &ss->group);
+
+	if (ss->group_custom_extension.s && ss->group_custom_extension.len)
+		SIPREC_BIN_PUSH(str, &ss->group_custom_extension);
+	else
+		SIPREC_BIN_PUSH(str, &empty);
+	if (ss->session_custom_extension.s && ss->session_custom_extension.len)
+		SIPREC_BIN_PUSH(str, &ss->session_custom_extension);
+	else
+		SIPREC_BIN_PUSH(str, &empty);
+
 	if (ss->socket)
 		SIPREC_BIN_PUSH(str, &ss->socket->sock_str);
 	else
