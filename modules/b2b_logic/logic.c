@@ -1456,7 +1456,7 @@ done:
 	return 0;
 error:
 	if (do_unlock)
-		B2BL_LOCK_GET(cur_route_ctx.hash_index);
+		B2BL_LOCK_RELEASE(cur_route_ctx.hash_index);
 	return -1;
 }
 
