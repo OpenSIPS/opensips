@@ -2147,6 +2147,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	}
 	old_entity->peer = NULL;
 
+	tuple->bridge_entities[(entity_no?0:1)] = NULL;
 	/* remove the disconected entity from the tuple */
 	if(0 == b2bl_drop_entity(old_entity, tuple))
 	{
