@@ -595,6 +595,7 @@ static int set_partition_arguments(unsigned int type, void *val)
 			}
 		}
 
+		raw_line.len -= end_pair_pos + 1 - raw_line.s;
 		raw_line.s = end_pair_pos + 1;
 		end_pair_pos = q_memchr(raw_line.s, end_pair_delim, raw_line.len);
 		eq_pos = q_memchr(raw_line.s, eq_val_delim, raw_line.len);
