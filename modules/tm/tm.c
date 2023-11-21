@@ -1953,7 +1953,8 @@ int pv_get_tm_branch_avp(struct sip_msg *msg, pv_param_t *param,
 			val->ri = avp_value.n;
 			val->flags |= PV_VAL_INT|PV_TYPE_INT;
 		}
-	}
+	} else
+		pv_get_null(msg, param, val);
 
 	goto success;
 
