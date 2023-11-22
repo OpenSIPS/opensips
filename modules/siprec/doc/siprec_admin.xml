@@ -137,7 +137,7 @@
 		<para>
 			<emphasis>Cannot handle Recording Sessions initiated by
 				SRS</emphasis> - we do not support the scenario when an SRS
-			suddently decides to record a call in the middle of the dialog.
+			suddenly decides to record a call in the middle of the dialog.
 		</para>
 		</listitem>
 		<listitem>
@@ -318,6 +318,19 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 	...
 	</programlisting>
 			</example>
+
+			<example>
+			<title>Use <function>siprec_start_recording()</function> function with custom group and session extensions</title>
+			<programlisting format="linespecific">
+	...
+	$var(temp) = "<callcenterID> 17</callcenterID>";
+	$siprec(group_custom_extension) = $var(temp);
+	$siprec(session_custom_extension) = "<callcenterCode>dfgh3q45gsdfty5</callcenterCode>";
+
+	siprec_start_recording($var(srs));
+	...
+	</programlisting>
+			</example>
 		</section>
 		<section id="func_siprec_pause_recording" xreflabel="siprec_pause_recording()">
 			<title>
@@ -389,9 +402,9 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 			</para>
 			<itemizedlist>
 				<listitem><para>
-					<emphasis>group</emphasis> - an apaque value that will be inserted
+					<emphasis>group</emphasis> - an opaque value that will be inserted
 					in the SIPREC body and represents the name of the group that can be
-					used to clasify calls in certain profiles. If missing, no group is added.
+					used to classify calls in certain profiles. If missing, no group is added.
 				</para></listitem>
 				<listitem><para>
 					<emphasis>caller</emphasis> - an XML block containing information
@@ -419,6 +432,18 @@ modparam("siprec", "skip_failover_codes", "[34][0-9][0-9]")
 				<listitem><para>
 					<emphasis>socket</emphasis> - listening socket that the outgoing
 					request towards SRS should be used.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>group_custom_extension</emphasis> - an optional XML block
+					containing custom information to be added under the
+					<emphasis>group</emphasis> tag.
+					<emphasis>NOTE:</emphasis> if the <emphasis>group</emphasis> is absent this
+					value will be ignored and not used anywhere.
+				</para></listitem>
+				<listitem><para>
+					<emphasis>session_custom_extension</emphasis> - an optional XML block
+					containing custom information to be added under the
+					<emphasis>session</emphasis> tag.
 				</para></listitem>
 			</itemizedlist>
 		</section>
