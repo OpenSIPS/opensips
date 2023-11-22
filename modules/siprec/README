@@ -56,8 +56,11 @@ SIPREC Module
           values for participants
 
    1.5. Use siprec_start_recording() function with custom headers
-   1.6. Use siprec_pause_recording()
-   1.7. Use siprec_resume_recording()
+   1.6. Use siprec_start_recording() function with custom group
+          and session extensions
+
+   1.7. Use siprec_pause_recording()
+   1.8. Use siprec_resume_recording()
 
 Chapter 1. Admin Guide
 
@@ -148,7 +151,7 @@ Chapter 1. Admin Guide
        for us to postpone the media between the caller and callee
        to play a Recording Indicator message.
      * Cannot handle Recording Sessions initiated by SRS - we do
-       not support the scenario when an SRS suddently decides to
+       not support the scenario when an SRS suddenly decides to
        record a call in the middle of the dialog.
      * OpenSIPS cannot be “queried” for ongoing recording sessions
        - this is scheduled to be implemented in further releases.
@@ -259,6 +262,17 @@ for $ci in inbound group\n");
         siprec_start_recording($var(srs));
         ...
 
+   Example 1.6. Use siprec_start_recording() function with custom
+   group and session extensions
+        ...
+        $var(temp) = "<callcenterID> 17</callcenterID>";
+        $siprec(group_custom_extension) = $var(temp);
+        $siprec(session_custom_extension) = "<callcenterCode>dfgh3q45gsd
+fty5</callcenterCode>";
+
+        siprec_start_recording($var(srs));
+        ...
+
 1.8.2.  siprec_pause_recording()
 
    Pauses the recording for the ongoing call. Should be called
@@ -266,7 +280,7 @@ for $ci in inbound group\n");
 
    This function can be used from any route.
 
-   Example 1.6. Use siprec_pause_recording()
+   Example 1.7. Use siprec_pause_recording()
         ...
         if (has_totag() && is_method("INVITE")) {
                 if (is_audio_on_hold())
@@ -281,7 +295,7 @@ for $ci in inbound group\n");
 
    This function can be used from any route.
 
-   Example 1.7. Use siprec_resume_recording()
+   Example 1.8. Use siprec_resume_recording()
         ...
         if (has_totag() && is_method("INVITE")) {
                 if (!is_audio_on_hold())
@@ -304,9 +318,9 @@ for $ci in inbound group\n");
    Any of this setting is optional.
 
    Settings that can be provisioned:
-     * group - an apaque value that will be inserted in the SIPREC
+     * group - an opaque value that will be inserted in the SIPREC
        body and represents the name of the group that can be used
-       to clasify calls in certain profiles. If missing, no group
+       to classify calls in certain profiles. If missing, no group
        is added.
      * caller - an XML block containing information about the
        caller. If absent, the From header is used to build the
@@ -322,6 +336,12 @@ for $ci in inbound group\n");
        \r\n and must end with \r\n.
      * socket - listening socket that the outgoing request towards
        SRS should be used.
+     * group_custom_extension - an optional XML block containing
+       custom information to be added under the group tag. NOTE:
+       if the group is absent this value will be ignored and not
+       used anywhere.
+     * session_custom_extension - an optional XML block containing
+       custom information to be added under the session tag.
 
 Chapter 2. Contributors
 
