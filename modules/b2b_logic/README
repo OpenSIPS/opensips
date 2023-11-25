@@ -1240,7 +1240,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 235 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 24 13 774 226
+   2. Razvan Crainea (@razvancrainea) 25 14 775 226
    3. Nick Altmann (@nikbyte) 14 10 346 36
    4. Carsten Bock 12 5 679 23
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 11 7 143 64
@@ -1248,9 +1248,9 @@ Chapter 3. Contributors
    7. truong.hua 4 2 8 7
    8. Liviu Chircu (@liviuchircu) 4 2 3 2
    9. Aron Podrigal (@ar45) 3 1 1 1
-   10. Shanee Vanstone 3 1 1 1
+   10. Rick Barenthin 3 1 1 1
 
-   All remaining contributors: Zero King (@l2dy).
+   All remaining contributors: Shanee Vanstone, Zero King (@l2dy).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1272,18 +1272,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Oct 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Sep 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
-   5.  Shanee Vanstone                     Apr 2023 - Apr 2023
-   6.  truong.hua                          Jan 2023 - Feb 2023
-   7.  Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
-   8.  Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
-   9.  Carsten Bock                        Mar 2022 - Apr 2022
-   10. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Nov 2023
+   2.  Rick Barenthin                      Nov 2023 - Nov 2023
+   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Sep 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
+   6.  Shanee Vanstone                     Apr 2023 - Apr 2023
+   7.  truong.hua                          Jan 2023 - Feb 2023
+   8.  Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
+   9.  Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
+   10. Carsten Bock                        Mar 2022 - Apr 2022
 
-   All remaining contributors: Zero King (@l2dy).
+   All remaining contributors: Aron Podrigal (@ar45), Zero King
+   (@l2dy).
 
    (1) including any documentation-related commits, excluding
    merge commits
