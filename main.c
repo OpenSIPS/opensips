@@ -408,7 +408,7 @@ int main(int argc, char** argv)
 	/* process pkg mem size from command line */
 	opterr=0;
 
-	options="f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
+	options="A:f:cCm:M:b:l:n:N:rRvdDFEVhw:t:u:g:p:P:G:W:o:a:k:s:"
 #ifdef UNIT_TESTS
 	"T:"
 #endif
@@ -619,6 +619,10 @@ int main(int argc, char** argv)
 			case 'o':
 					if (add_arg_var(optarg) < 0)
 						LM_ERR("cannot add option %s\n", optarg);
+					break;
+			case 'A':
+					default_global_address->s = optarg;
+					default_global_address->len = strlen(optarg);
 					break;
 #ifdef UNIT_TESTS
 			case 'T':

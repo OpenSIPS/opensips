@@ -108,7 +108,8 @@ Options:\n\
                   shall receive input via stdin and it must output the\n\
                   result to stdout\n\
     -P file      Create a pid file\n\
-    -G file      Create a pgid file\n"
+    -G file      Create a pgid file\n\
+    -A address   Set the globally advertised addres\n"
 #ifdef UNIT_TESTS
 "    -T           Fork, run unit tests and exit.\n"
 #endif
