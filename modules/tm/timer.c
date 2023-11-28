@@ -117,6 +117,9 @@ static struct timer_table *timertable=0;
 static unsigned int timer_sets = 0;
 static struct timer detached_timer; /* just to have a value to compare with*/
 
+/* currently processed branch */
+extern int _tm_branch_index;
+
 #define DETACHED_LIST (&detached_timer)
 
 #define is_in_timer_list2(_tl) ( (_tl)->timer_list &&  \
@@ -247,6 +250,7 @@ static void fake_reply(struct cell *t, int branch, int code )
 	branch_bm_t cancel_bitmap = 0;
 	enum rps reply_status;
 
+	_tm_branch_index = branch;
 	if ( is_local(t) ) {
 		reply_status=local_reply( t, FAKED_REPLY, branch,
 					  code, &cancel_bitmap );
@@ -257,6 +261,7 @@ static void fake_reply(struct cell *t, int branch, int code )
 		reply_status=relay_reply( t, FAKED_REPLY, branch, code,
 			&cancel_bitmap );
 	}
+	_tm_branch_index = 0;
 	/* again, a final negative reply on a branch will never lead to a
 	 * situation to cancel other existing branches, so the
 	 * cancel_bitmap should be empty here (we use it as a dummy holder), so
