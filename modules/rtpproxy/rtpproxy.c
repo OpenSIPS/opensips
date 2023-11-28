@@ -3360,7 +3360,9 @@ static inline int rtpp_get_error(char *command)
 {
 	int ret;
 	str val;
-	if (!command || command[0] != 'E')
+	if (!command)
+		return -1;
+	if (command[0] != 'E')
 		return 0;
 	val.s = command + 1;
 	val.len = strlen(val.s) - 1 /* newline */;
@@ -4467,6 +4469,10 @@ static inline int rtpproxy_stats_f(struct sip_msg *msg,
 		/* we are done reading -> unref the data */
 		lock_stop_read( nh_lock );
 	}
+	if (!ret) {
+		LM_DBG("nothing returned by RTPProxy!\n");
+		return -1;
+	}
 	error = rtpp_get_error(ret);
 	switch (error) {
 		case 0:
@@ -4565,6 +4571,10 @@ static inline int rtpproxy_all_stats_f(struct sip_msg *msg, pv_spec_t *pavp,
 	for (chunk = 0; chunk < rtpp_stats_chunks_no; chunk++) {
 		vstat->vu[nitems] = rtpp_stats_chunks[chunk];
 		result = send_rtpp_command(node, vstat, nitems + 1);
+		if (!result) {
+			LM_DBG("no result from RTPProxy!\n");
+			goto error;
+		}
 
 		error = rtpp_get_error(result);
 		if (error) {
