@@ -1893,9 +1893,10 @@ if (is_method("ACK|CANCEL") &amp;&amp; !t_check_trans()) {
 			<para>
 			<emphasis>$T_branch_idx</emphasis> - the index (starting with 0
 			for the first branch) of the currently proccessed branch. This
-			index makes sense only in BRANCH and REPLY routes (where there is
-			a concept of per branch processing). In all the other types of 
-			routes, the value of this index will be NULL.
+			index makes sense only in BRANCH and REPLY routes (where the
+			processing is per branch) and in FAILURE route (where it points
+			to the branch with the last final reply on the transaction). In all
+			the other types of routes, the value of this index will be NULL.
 			</para>
 		</section>
 		<section id="pv_T_reply_code" xreflabel="$T_reply_code">
