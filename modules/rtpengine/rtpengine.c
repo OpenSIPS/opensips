@@ -4081,13 +4081,17 @@ static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
 
 static int rtpengine_api_copy_serialize(void *_ctx, bin_packet_t *packet)
 {
-	return bin_push_str(packet, (str *)_ctx);
+	str str_empty = str_init("");
+	if (!_ctx)
+		return bin_push_str(packet, &str_empty);
+	else
+		return bin_push_str(packet, (str *)_ctx);
 }
 
 static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 {
 	str to_tag;
-	if (bin_pop_str(packet, &to_tag) < 0)
+	if (bin_pop_str(packet, &to_tag) < 0 || to_tag.len == 0)
 		return -1;
 
 	*_ctx = rtpengine_new_subs(&to_tag);
