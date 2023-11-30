@@ -91,7 +91,7 @@ static void cgr_conn_schedule(struct cgr_conn *c)
 
 #else /* HAVE_TIMER_FD */
 #warning Your GLIB is too old, disabling cgrates async re-connect!!!
-#define cgr_conn_schedule()
+#define cgr_conn_schedule(...)
 #endif /* HAVE_TIMER_FD */
 
 void cgrc_conn_rpc(int sender, void *p)
