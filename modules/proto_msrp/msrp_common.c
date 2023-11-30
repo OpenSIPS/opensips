@@ -30,6 +30,7 @@
 #include "../../ut.h"
 #include "../../net/trans_trace.h"
 #include "../../net/tcp_common.h"
+#include "../../timer.h"
 #include "msrp_handler.h"
 #include "msrp_plain.h"
 #include "msrp_common.h"
