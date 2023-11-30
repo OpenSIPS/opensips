@@ -74,7 +74,7 @@ struct tm_binds dr_tmb;
 str dr_probe_method = str_init("OPTIONS");
 str dr_probe_from = str_init("sip:prober@localhost");
 static str dr_probe_sock_s;
-struct socket_info *dr_probe_sock = NULL;
+const struct socket_info *dr_probe_sock = NULL;
 static int* probing_reply_codes = NULL;
 static int probing_codes_no = 0;
 
@@ -851,7 +851,7 @@ static void dr_prob_handler(unsigned int ticks, void* param)
 		 * to free the whole structure here */
 		param_prob_callback_t params;
 
-		struct socket_info *sock;
+		const struct socket_info *sock;
 		str uri;
 
 		struct gw_prob_pack *next;
@@ -1584,7 +1584,7 @@ struct head_cache *get_head_cache(str *part)
 void fix_cache_sockets(struct head_cache *cache)
 {
 	struct head_cache_socket *prev, *csock, *free;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	prev = NULL;
 	csock = cache->sockets;
@@ -2549,7 +2549,7 @@ static int use_next_gw(struct sip_msg* msg,
 	str ruri;
 	int ok = 0;
 	pgw_t * dst;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	if(part==NULL) {
 		LM_ERR("Partition is mandatory for use_next_gw.\n");

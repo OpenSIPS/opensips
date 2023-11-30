@@ -156,7 +156,7 @@ static inline int no_contacts(udomain_t* _d, struct save_ctx *_sctx,
 static int set_sock_hdr(struct sip_msg *msg, ucontact_info_t *ci,
                         unsigned int reg_flags)
 {
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	struct hdr_field *hf;
 	str socks;
 	str hosts;

@@ -1970,7 +1970,7 @@ static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 	str duri;
 	str path;
 	unsigned int flags;
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	uri.s = get_branch(idx, &uri.len, &q, &duri, &path, &flags, &si);
 	if (!uri.s)
@@ -2160,7 +2160,7 @@ static int pv_parse_socket_name(pv_spec_p sp, const str *in)
 }
 
 
-static inline int get_socket_field( struct socket_info *si,
+static inline int get_socket_field( const struct socket_info *si,
 											pv_name_t *pvn, pv_value_t *res)
 {
 	if (si==NULL)
@@ -2256,7 +2256,7 @@ static int pv_get_socket_in_fields(struct sip_msg *msg, pv_param_t *param,
 static int pv_get_socket_out_fields(struct sip_msg *msg, pv_param_t *param,
 															pv_value_t *res)
 {
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	if(msg==NULL || res==NULL)
 		return -1;
@@ -3162,7 +3162,7 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 	str *s;
 	qvalue_t q;
 	unsigned int flags;
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	if (msg==NULL || param==NULL) {
 		LM_ERR("bad parameters\n");
@@ -3259,7 +3259,7 @@ static int pv_set_branch_fields(struct sip_msg* msg, pv_param_t *param,
 static int pv_set_force_sock(struct sip_msg* msg, pv_param_t *param,
 		int op, pv_value_t *val)
 {
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	if(msg==NULL || param==NULL)
 	{

@@ -166,7 +166,7 @@ int pv_parse_siprec(pv_spec_p sp, const str *in)
 int pv_get_siprec(struct sip_msg *msg,  pv_param_t *param,
 		pv_value_t *val)
 {
-	str *field = NULL;
+	const str *field = NULL;
 	struct srec_var *sv = SIPREC_GET_VAR();
 	if (!sv)
 		return pv_get_null(msg, param, val);

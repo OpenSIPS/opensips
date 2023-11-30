@@ -75,7 +75,7 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 
 
 /* Build a contact URI using the provided username and the socket's ip:port:protocol */
-static inline int get_local_contact(struct socket_info *sock, str *username, str *contact)
+static inline int get_local_contact(const struct socket_info *sock, str *username, str *contact)
 {
 	static char buf[MAX_URI_SIZE];
 	char *ptr = buf;

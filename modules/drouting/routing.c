@@ -522,7 +522,7 @@ add_dst(
 	/* probe_mode */
 	int probing,
 	/* socket */
-	struct socket_info *sock,
+	const struct socket_info *sock,
 	/* state */
 	int state,
 	osips_malloc_f mf,

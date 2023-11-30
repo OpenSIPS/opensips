@@ -80,7 +80,7 @@ int t_resume_async(int fd, void *param, int was_timeout)
 	struct cell *backup_cancelled_t;
 	struct cell *backup_e2eack_t;
 	struct usr_avp **backup_list;
-	struct socket_info* backup_si;
+	const struct socket_info* backup_si;
 	struct cell *t= ctx->t;
 	int route;
 

@@ -62,7 +62,7 @@ struct branch
 	unsigned int path_len;
 
 	int q; /* Preference of the contact among contact within the array */
-	struct socket_info* force_send_socket;
+	const struct socket_info* force_send_socket;
 	unsigned int flags;
 };
 
@@ -220,7 +220,7 @@ void set_dset_state(unsigned char enable)
  * more branches
  */
 char* get_branch(unsigned int idx, int* len, qvalue_t* q, str* dst_uri,
-		str* path, unsigned int *flags, struct socket_info** force_socket)
+		str* path, unsigned int *flags, const struct socket_info** force_socket)
 {
 	struct dset_ctx *dsct = get_dset_ctx();
 	struct branch *branches;
@@ -275,7 +275,7 @@ void clear_branches(void)
  * Add a new branch to current transaction
  */
 int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
-		qvalue_t q, unsigned int flags, struct socket_info* force_socket)
+		qvalue_t q, unsigned int flags, const struct socket_info* force_socket)
 {
 	str luri;
 	int nr_branches;
@@ -382,7 +382,7 @@ int append_branch(struct sip_msg* msg, str* uri, str* dst_uri, str* path,
  * Updates one or more fields of an already appended branch
  */
 int update_branch(unsigned int idx, str** uri, str** dst_uri, str** path,
-		qvalue_t* q, unsigned int* flags, struct socket_info** force_socket)
+		qvalue_t* q, unsigned int* flags, const struct socket_info** force_socket)
 {
 	struct dset_ctx *dsct = get_dset_ctx();
 	struct branch *branches;

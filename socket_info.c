@@ -113,14 +113,17 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-static struct socket_info* new_sock_info( struct socket_id *sid)
+static struct socket_info_full* new_sock_info( struct socket_id *sid)
 {
-	struct socket_info* si;
+	struct socket_info_full *sif;
+	struct socket_info *si;
 
-	si=(struct socket_info*) pkg_malloc(sizeof(struct socket_info));
-	if (si==0) goto error;
-	memset(si, 0, sizeof(struct socket_info));
+	sif=(struct socket_info_full*) pkg_malloc(sizeof(*sif));
+	if (sif==NULL) goto error;
+	memset(sif, 0, sizeof(*sif));
+	si = &sif->socket_info;
 	si->socket=-1;
+	si->last_real_ports = &sif->last_real_ports;
 
 	if (sid->name) {
 		si->name.len=strlen(sid->name);
@@ -192,19 +195,20 @@ static struct socket_info* new_sock_info( struct socket_id *sid)
 			}
 		}
 	}
-	return si;
+	return sif;
 error:
 	LM_ERR("pkg memory allocation error\n");
-	if (si) pkg_free(si);
+	if (sif) pkg_free(sif);
 	return 0;
 }
 
 
 
 /*  delete a socket_info struct */
-static void free_sock_info(struct socket_info* si)
+static void free_sock_info(struct socket_info_full* sif)
 {
-	if(si){
+	if(sif){
+		struct socket_info *si = &sif->socket_info;
 		if(si->name.s) pkg_free(si->name.s);
 		if(si->tag.s) pkg_free(si->tag.s);
 		if(si->sock_str.s) pkg_free(si->sock_str.s);
@@ -226,13 +230,14 @@ static void free_sock_info(struct socket_info* si)
  * WARNING: uses str2ip6 so it will overwrite any previous
  *  unsaved result of this function (static buffer)
  */
-struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
+const struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 										unsigned short proto, int check_tags)
 {
 	char* hname;
 	int h_len;
-	struct socket_info* si;
-	struct socket_info** list;
+	const struct socket_info* si = NULL;
+	struct socket_info_full* sif;
+	struct socket_info_full ** list;
 	unsigned short c_proto;
 	struct ip_addr* ip6;
 
@@ -254,7 +259,8 @@ struct socket_info* grep_sock_info_ext(str* host, unsigned short port,
 			LM_WARN("unknown proto %d\n", c_proto);
 			goto not_found; /* false */
 		}
-		for (si=*list; si; si=si->next){
+		for (sif=*list; sif; sif=sif->next){
+			si = &sif->socket_info;
 			LM_DBG("checking if host==us: %d==%d && "
 					" [%.*s] == [%.*s]\n",
 						h_len,
@@ -342,11 +348,12 @@ found:
  * WARNING: uses str2ip6 so it will overwrite any previous
  *  unsaved result of this function (static buffer)
  */
-struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
+const struct socket_info* find_si(const struct ip_addr* ip, unsigned short port,
 												unsigned short proto)
 {
-	struct socket_info* si;
-	struct socket_info** list;
+	const struct socket_info* si = NULL;
+	struct socket_info_full* sif;
+	struct socket_info_full** list;
 	unsigned short c_proto;
 
 	c_proto=proto?proto:PROTO_UDP;
@@ -358,7 +365,8 @@ struct socket_info* find_si(struct ip_addr* ip, unsigned short port,
 			LM_WARN("unknown proto %d\n", c_proto);
 			goto not_found; /* false */
 		}
-		for (si=*list; si; si=si->next){
+		for (sif=*list; sif; sif=sif->next){
+			si = &sif->socket_info;
 			if (port) {
 				if (si->port_no!=port) {
 					continue;
@@ -377,7 +385,7 @@ found:
 
 /* parses the specified `spec` and returns an associated
  * socket_info*, if it could be found */
-struct socket_info* parse_sock_info(str *addr)
+const struct socket_info* parse_sock_info(str *addr)
 {
 	int port, proto;
 	str host;
@@ -397,9 +405,9 @@ struct socket_info* parse_sock_info(str *addr)
 
 /* adds a new sock_info structure to the corresponding list
  * return  0 on success, -1 on error */
-int new_sock2list(struct socket_id *sid, struct socket_info** list)
+int new_sock2list(struct socket_id *sid, struct socket_info_full** list)
 {
-	struct socket_info* si;
+	struct socket_info_full* si;
 
 	si=new_sock_info(sid);
 	if (si==0){
@@ -418,7 +426,7 @@ error:
  * WARNING: it only works with ipv6 addresses on FreeBSD
  * return: -1 on error, 0 on success
  */
-int expand_interface(struct socket_info *si, struct socket_info** list)
+static int expand_interface(const struct socket_info *si, struct socket_info_full** list)
 {
 	int ret = -1;
 	struct ip_addr addr;
@@ -591,11 +599,12 @@ error:
 
 /* fixes a socket list => resolve addresses,
  * interface names, fills missing members, remove duplicates */
-int fix_socket_list(struct socket_info **list)
+int fix_socket_list(struct socket_info_full **list)
 {
+	struct socket_info_full* sif;
 	struct socket_info* si;
-	struct socket_info* l;
-	struct socket_info* next;
+	struct socket_info_full* l;
+	struct socket_info_full* next;
 	char* tmp;
 	int len;
 	struct hostent* he;
@@ -604,8 +613,9 @@ int fix_socket_list(struct socket_info **list)
 	/* try to change all the interface names into addresses
 	 *  --ugly hack */
 
-	for (si=*list;si;){
-		next=si->next;
+	for (sif=*list;sif;){
+		next=sif->next;
+		si = &sif->socket_info;
 		// fix the SI_IS_LO flag for sockets specified by IP/hostname as expand_interface
 		// below will only do it for sockets specified using the network interface name
 		if (STR_IMATCH(si->name, "localhost") ||
@@ -615,16 +625,17 @@ int fix_socket_list(struct socket_info **list)
 		}
 		if (expand_interface(si, list)!=-1){
 			/* success => remove current entry (shift the entire array)*/
-			sock_listrm(list, si);
-			free_sock_info(si);
+			sock_listrm(list, sif);
+			free_sock_info(sif);
 		}
-		si=next;
+		sif=next;
 	}
 	/* get ips & fill the port numbers*/
 #ifdef EXTRA_DEBUG
 	LM_DBG("listening on \n");
 #endif
-	for (si=*list;si;si=si->next){
+	for (sif=*list;sif;sif=sif->next){
+		si = &sif->socket_info;
 		/* fix the number of processes per interface */
 		if (!si->workers && is_udp_based_proto(si->proto))
 			si->workers = udp_workers_no;
@@ -823,25 +834,27 @@ int fix_socket_list(struct socket_info **list)
 #endif
 	}
 	/* removing duplicate addresses*/
-	for (si=*list;si; si=si->next){
-		for (l=si->next;l;){
+	for (sif=*list;sif; sif=sif->next){
+		for (l=sif->next;l;){
 			next=l->next;
-			if ((si->port_no==l->port_no) &&
-				(si->address.af==l->address.af) &&
-				(memcmp(si->address.u.addr, l->address.u.addr, si->address.len)
+			si = &sif->socket_info;
+			const struct socket_info *sl = &l->socket_info;
+			if ((si->port_no==sl->port_no) &&
+				(si->address.af==sl->address.af) &&
+				(memcmp(si->address.u.addr, sl->address.u.addr, si->address.len)
 					== 0)
 				){
 #ifdef EXTRA_DEBUG
 				printf("removing duplicate %s [%s] ==  %s [%s]\n",
 						si->name.s, si->address_str.s,
-						 l->name.s, l->address_str.s);
+						 sl->name.s, sl->address_str.s);
 #endif
 				/* add the name to the alias list*/
-				if ((!(l->flags& SI_IS_IP)) && (
-						(l->name.len!=si->name.len)||
-						(strncmp(l->name.s, si->name.s, si->name.len)!=0))
+				if ((!(sl->flags& SI_IS_IP)) && (
+						(sl->name.len!=si->name.len)||
+						(strncmp(sl->name.s, si->name.s, si->name.len)!=0))
 					)
-					if (add_alias(l->name.s,l->name.len,l->port_no,l->proto)<0)
+					if (add_alias(sl->name.s,sl->name.len,sl->port_no,sl->proto)<0)
 						LM_ERR(" add_alias failed\n");
 
 				/* remove l*/
@@ -854,20 +867,21 @@ int fix_socket_list(struct socket_info **list)
 
 #ifdef USE_MCAST
 	     /* Remove invalid multicast entries */
-	si=*list;
-	while(si){
+	sif=*list;
+	while(sif){
+		si = &sif->socket_info;
 		if ((si->flags & SI_IS_MCAST) &&
 		    (si->proto != PROTO_UDP)
 		   ){
 			LM_WARN("removing entry %s:%s [%s]:%s\n",
 			    get_proto_name(si->proto), si->name.s,
 			    si->address_str.s, si->port_no_str.s);
-			l = si;
-			si=si->next;
+			l = sif;
+			sif=sif->next;
 			sock_listrm(list, l);
 			free_sock_info(l);
 		} else {
-			si=si->next;
+			sif=sif->next;
 		}
 	}
 #endif /* USE_MCAST */
@@ -914,8 +928,8 @@ error:
  */
 int get_socket_list_from_proto(unsigned int **ipList, int protocol) {
 
-	struct socket_info  *si;
-	struct socket_info** list;
+	struct socket_info_full  *sif;
+	struct socket_info_full ** list;
 
 	int num_ip_octets   = 4;
 	int numberOfSockets = 0;
@@ -938,9 +952,9 @@ int get_socket_list_from_proto(unsigned int **ipList, int protocol) {
 
 	/* Find out how many sockets are in the list.  We need to know this so
 	 * we can malloc an array to assign to ipList. */
-	for(si=list?*list:0; si; si=si->next){
+	for(sif=list?*list:0; sif; sif=sif->next){
 		/* We only support IPV4 at this point. */
-		if (si->address.af == AF_INET) {
+		if (sif->socket_info.address.af == AF_INET) {
 			numberOfSockets++;
 		}
 	}
@@ -966,7 +980,8 @@ int get_socket_list_from_proto(unsigned int **ipList, int protocol) {
 	list=get_sock_info_list(protocol);
 
 	/* Extract out the IP Addresses and ports.  */
-	for(si=list?*list:0; si; si=si->next){
+	for(sif=list?*list:0; sif; sif=sif->next){
+		const struct socket_info *si = &sif->socket_info;
 
 		/* We currently only support IPV4. */
 		if (si->address.af != AF_INET) {

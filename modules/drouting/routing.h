@@ -70,8 +70,8 @@ struct head_cache_socket {
 	str host;
 	int port;
 	int proto;
-	struct socket_info *old_sock;
-	struct socket_info *new_sock;
+	const struct socket_info *old_sock;
+	const struct socket_info *new_sock;
 	struct head_cache_socket *next;
 };
 
@@ -120,7 +120,7 @@ add_dst(
 	/* probe_mode */
 	int,
 	/* socket */
-	struct socket_info*,
+	const struct socket_info*,
 	/* state */
 	int,
 	osips_malloc_f mf,

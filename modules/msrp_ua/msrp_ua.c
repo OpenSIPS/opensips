@@ -68,7 +68,7 @@ b2b_api_t b2b_api;
 str my_msrp_uri_str;
 struct msrp_url my_msrp_uri;
 
-struct socket_info *msrp_sock;
+const struct socket_info *msrp_sock;
 
 str adv_contact;
 

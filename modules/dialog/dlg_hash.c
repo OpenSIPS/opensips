@@ -393,7 +393,7 @@ int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx)
 }
 
 
-static inline int translate_contact_ipport( str *ct, struct socket_info *sock,
+static inline int translate_contact_ipport( str *ct, const struct socket_info *sock,
 																	str *dst)
 {
 	struct hdr_field ct_hdr;
@@ -401,7 +401,7 @@ static inline int translate_contact_ipport( str *ct, struct socket_info *sock,
 	contact_t *c;
 	struct sip_uri puri;
 	str hostport;
-	str *send_address_str, *send_port_str;
+	const str *send_address_str, *send_port_str;
 	char *p;
 
 	/* rely on the fact that the replicated hdr is well formated, so 
@@ -487,7 +487,7 @@ error:
    be no leg allocated, so automatically CALLER gets the first position, while
    the CALLEE legs will follow into the array in the same order they came */
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
-		str *contact, str *adv_ct, str *cseq, struct socket_info *sock,
+		str *contact, str *adv_ct, str *cseq, const struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp)
 {
 	struct dlg_leg *leg;

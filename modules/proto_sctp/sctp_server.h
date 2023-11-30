@@ -36,9 +36,9 @@
 
 int proto_sctp_init_listener(struct socket_info* si);
 
-int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
-		union sockaddr_union* to, unsigned int id);
+int proto_sctp_send(const struct socket_info *source, char *buf, unsigned len,
+		const union sockaddr_union* to, unsigned int id);
 
-int proto_sctp_read(struct socket_info *si, int* bytes_read);
+int proto_sctp_read(const struct socket_info *si, int* bytes_read);
 
 #endif

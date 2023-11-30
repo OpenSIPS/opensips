@@ -30,11 +30,11 @@ int tcp_connect_blocking_timeout(int fd, const struct sockaddr *servaddr,
                         socklen_t addrlen, int timeout_ms);
 
 
-int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
-                 enum sip_protos proto, struct tcp_conn_profile *prof, enum si_flags flags);
+int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_union* dst,
+                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags);
 
-struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-               union sockaddr_union* server, struct tcp_conn_profile *prof,
+struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
+               const union sockaddr_union* server, struct tcp_conn_profile *prof,
                int *fd, int send2main);
 
 /* Attempts do a connect to the given destination. It returns:
@@ -42,8 +42,8 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
  *   0 - connect launched as async (in progress)
  *  -1 - error
  */
-int tcp_async_connect(struct socket_info* send_sock,
-           union sockaddr_union* server, struct tcp_conn_profile *prof,
+int tcp_async_connect(const struct socket_info* send_sock,
+           const union sockaddr_union* server, struct tcp_conn_profile *prof,
            int timeout, struct tcp_connection** c, int *ret_fd, int send2main);
 
 /* Responsible for writing the TCP send chunks - called under con write lock

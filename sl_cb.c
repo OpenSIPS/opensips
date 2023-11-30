@@ -100,7 +100,7 @@ void slcb_run_ack_in(struct sip_msg *req)
 
 
 void slcb_run_req_out(struct sip_msg *req, str *buffer,
-			union sockaddr_union *dst, struct socket_info *sock, int proto)
+			const union sockaddr_union *dst, const struct socket_info *sock, int proto)
 {
 	struct sl_callback *cbp;
 

@@ -44,8 +44,8 @@ enum tcp_conn_attr {
  *   0 (success, but just the default TCP profile was returned)
  *   1 (success, a custom TCP profile from tcp_mgm DB was matched)
  */
-extern int (*tcp_con_get_profile)(union sockaddr_union *remote,
-             union sockaddr_union *local, enum sip_protos proto,
+extern int (*tcp_con_get_profile)(const union sockaddr_union *remote,
+             const union sockaddr_union *local, enum sip_protos proto,
              struct tcp_conn_profile *out_profile);
 
 /* initialize the support for customized, per-path TCP connection profiles */

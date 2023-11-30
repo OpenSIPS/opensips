@@ -47,9 +47,9 @@
 #include "net/trans.h"
 #include "socket_info.h"
 
-struct socket_info* get_send_socket(struct sip_msg* msg,
-									union sockaddr_union* su, int proto);
-struct socket_info* get_out_socket(union sockaddr_union* to, int proto);
+const struct socket_info* get_send_socket(struct sip_msg* msg,
+									const union sockaddr_union* su, int proto);
+const struct socket_info* get_out_socket(const union sockaddr_union* to, int proto);
 int check_self(str* host, unsigned short port, unsigned short proto);
 int forward_request( struct sip_msg* msg,  struct proxy_l* p);
 int update_sock_struct_from_via( union sockaddr_union* to,
@@ -81,7 +81,7 @@ int forward_reply( struct sip_msg* msg);
  * \param len - the length of the message to be sent
  * \return 0 if ok, -1 on error
  */
-static inline int msg_send( struct socket_info* send_sock, int proto,
+static inline int msg_send( const struct socket_info* send_sock, int proto,
 							union sockaddr_union* to, unsigned int id,
 							char* buf, int len, struct sip_msg* msg)
 {

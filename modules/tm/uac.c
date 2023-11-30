@@ -84,7 +84,7 @@ struct cell** last_localT;
 int uac_init(void)
 {
 	str src[3];
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	if (RAND_MAX < TM_TABLE_ENTRIES) {
 		LM_WARN("uac does not spread across the whole hash table\n");
@@ -171,7 +171,7 @@ static int run_local_route( struct cell *new_cell, char **buf, int *buf_len,
 	struct retr_buf *request;
 	struct proxy_l *new_proxy = NULL;
 	union sockaddr_union new_to_su;
-	struct socket_info *new_send_sock;
+	const struct socket_info *new_send_sock;
 	unsigned short dst_changed;
 	char *buf1=NULL, *sipmsg_buf;
 	int buf_len1, sip_msg_len;

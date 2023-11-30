@@ -170,7 +170,7 @@ error:
 }
 
 static struct head_cache_socket *get_cache_sock_info(struct head_cache *cache,
-		struct socket_info *old_sock)
+		const struct socket_info *old_sock)
 {
 	struct head_cache_socket *hsock;
 	for (hsock = cache->sockets; hsock; hsock = hsock->next)
@@ -180,7 +180,7 @@ static struct head_cache_socket *get_cache_sock_info(struct head_cache *cache,
 }
 
 
-static int add_cache_sock_info(struct head_cache *cache, struct socket_info *sock,
+static int add_cache_sock_info(struct head_cache *cache, const struct socket_info *sock,
 		str *host, int port, int proto)
 {
 	struct head_cache_socket *hsock;
@@ -303,7 +303,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 	int discarded_gw = 0, discarded_cr = 0, discarded_rl = 0;
 	int no_rows = 10;
 	int db_cols;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	str s_sock, host;
 	int proto, port;
 	char id_buf[INT2STR_MAX_LEN];

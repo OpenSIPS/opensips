@@ -44,7 +44,7 @@ extern char *stat_file;
 extern char* pid_file;
 extern char* pgid_file;
 
-extern struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
+extern const struct socket_info* bind_address; /*!< pointer to the crt. proc.  listening address */
 
 extern int auto_aliases;
 

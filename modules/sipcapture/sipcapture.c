@@ -4250,7 +4250,7 @@ static int w_hep_relay(struct sip_msg *msg)
 	struct proxy_l* proxy;
 	struct sip_uri uri;
 
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 
 	union sockaddr_union to;
 

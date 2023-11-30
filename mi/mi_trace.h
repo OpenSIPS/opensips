@@ -55,7 +55,7 @@ extern struct mi_trace_param mi_tparam;
 
 void try_load_trace_api(void);
 
-int trace_mi_message(union sockaddr_union* src, union sockaddr_union* dst,
+int trace_mi_message(const union sockaddr_union* src, const union sockaddr_union* dst,
 	struct mi_trace_param* pld_param, str* correlation_value, trace_dest trace_dst);
 
 struct mi_trace_req* build_mi_trace_request(str *cmd, mi_item_t *params,
@@ -65,7 +65,7 @@ str *build_mi_trace_reply(str *rpl_msg);
 char* generate_correlation_id(int* len);;
 int load_correlation_id(void);
 
-static inline void mi_trace_reply( union sockaddr_union* src, union sockaddr_union* dst,
+static inline void mi_trace_reply( const union sockaddr_union* src, const union sockaddr_union* dst,
 		str* message, trace_dest t_dst)
 {
 	/* trace disabled */
@@ -91,7 +91,7 @@ static inline void mi_trace_reply( union sockaddr_union* src, union sockaddr_uni
 }
 
 
-static inline void mi_trace_request( union sockaddr_union* src, union sockaddr_union* dst,
+static inline void mi_trace_request( const union sockaddr_union* src, const union sockaddr_union* dst,
 		char* command, int len, mi_item_t *params, str* backend, trace_dest t_dst )
 {
 	str comm_s = { command, len };

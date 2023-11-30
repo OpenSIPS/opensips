@@ -111,7 +111,7 @@ struct dlg_leg {
 	struct dlg_leg_cseq_map *cseq_maps; /* used when translating ACKs */
 	char reply_received;
 	char reinvite_confirmed;
-	struct socket_info *bind_addr;
+	const struct socket_info *bind_addr;
 };
 
 #define leg_is_answered(dlg_leg) ((dlg_leg)->tag.s)
@@ -409,7 +409,7 @@ struct dlg_cell* build_new_dlg(str *callid, str *from_uri,
 int dlg_clone_callee_leg(struct dlg_cell *dlg, int cloned_leg_idx);
 
 int dlg_update_leg_info(int leg_idx, struct dlg_cell *dlg, str* tag, str *rr,
-		str *contact, str *adv_ct, str *cseq, struct socket_info *sock,
+		str *contact, str *adv_ct, str *cseq, const struct socket_info *sock,
 		str *mangled_from,str *mangled_to,str *in_sdp, str *out_sdp);
 
 int dlg_update_cseq(struct dlg_cell *dlg, unsigned int leg, str *cseq,

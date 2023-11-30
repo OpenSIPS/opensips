@@ -271,7 +271,7 @@ static int fixup_media_leg_both(void **param)
 	return 0;
 }
 
-static inline client_info_t *media_get_client_info(struct socket_info *si,
+static inline client_info_t *media_get_client_info(const struct socket_info *si,
 		str *uri, str *hdrs, str *body)
 {
 	static client_info_t ci;
@@ -291,7 +291,7 @@ static inline client_info_t *media_get_client_info(struct socket_info *si,
 	return &ci;
 }
 
-static int handle_media_fork_to_uri(struct media_session_leg *msl, struct socket_info *si,
+static int handle_media_fork_to_uri(struct media_session_leg *msl, const struct socket_info *si,
 		str *uri, str *headers, int medianum)
 {
 	static client_info_t *ci;
@@ -342,7 +342,7 @@ destroy:
 
 struct media_fork_params {
 	struct media_session_leg *msl;
-	struct socket_info *si;
+	const struct socket_info *si;
 	str uri;
 	str headers;
 	int medianum;
@@ -371,7 +371,7 @@ static int media_fork_to_uri(struct sip_msg *msg,
 		str *uri, int leg, str *headers, int *medianum)
 {
 	struct dlg_cell *dlg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	struct media_session_leg *msl;
 	struct media_fork_params *mp;
 
@@ -585,7 +585,7 @@ static void media_session_tm_free(struct media_session_tm_param *p)
 	shm_free(p);
 }
 
-static int handle_media_exchange_from_uri(struct socket_info *si, struct dlg_cell *dlg,
+static int handle_media_exchange_from_uri(const struct socket_info *si, struct dlg_cell *dlg,
 		str *uri, int leg, str *body, str *headers, int nohold,
 		rtp_ctx ctx, struct media_session_tm_param *p)
 {
@@ -641,7 +641,7 @@ static int media_exchange_from_uri(struct sip_msg *msg, str *uri, int leg,
 	struct cell *t = NULL;
 	struct dlg_cell *dlg;
 	int req_leg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	struct media_session_tm_param *p = NULL;
 	rtp_ctx ctx = NULL;
 	int release = 0;
@@ -1506,7 +1506,7 @@ static mi_response_t *mi_media_fork_from_call_to_uri(const mi_params_t *params,
 	str shdrs, *hdrs;
 	str callid, leg, uri;
 	struct dlg_cell *dlg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	union sockaddr_union tmp;
 	struct media_session_leg *msl;
 	rtp_ctx ctx = NULL;
@@ -1572,7 +1572,7 @@ static mi_response_t *mi_media_exchange_from_call_to_uri(const mi_params_t *para
 	str callid, leg, uri;
 	str body, shdrs, *hdrs, *pbody;
 	struct dlg_cell *dlg;
-	struct socket_info *si;
+	const struct socket_info *si;
 	union sockaddr_union tmp;
 	rtp_ctx ctx = NULL;
 	int release = 0;

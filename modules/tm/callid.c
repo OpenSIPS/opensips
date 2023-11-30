@@ -101,7 +101,7 @@ int init_callid(void)
  */
 int child_init_callid(int rank)
 {
-	struct socket_info *si;
+	const struct socket_info *si;
 
 	/* on tcp/tls bind_address is 0 so try to get the first address we listen
 	 * on no matter the protocol */

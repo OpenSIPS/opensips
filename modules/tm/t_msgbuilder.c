@@ -454,7 +454,7 @@ char *build_dlg_ack(struct sip_msg* rpl, struct cell *Trans,
 	struct hostport hp;
 	struct rte* list;
 	str contact, ruri, *cont;
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	str next_hop;
 
 
@@ -608,7 +608,7 @@ static inline int print_cseq_num(str* _s, dlg_t* _d)
 /*
  * Create Via header
  */
-static inline int assemble_via(str* dest, struct cell* t, struct socket_info* sock, int branch, str *extra)
+static inline int assemble_via(str* dest, struct cell* t, const struct socket_info* sock, int branch, str *extra)
 {
 	static char branch_buf[MAX_BRANCH_PARAM_LEN];
 	char* via;

@@ -45,8 +45,8 @@ static int mod_init(void);
 
 static int proto_bins_init(struct proto_info *pi);
 static int proto_bins_init_listener(struct socket_info *si);
-static int proto_bins_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_bins_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
 static int bins_read_req(struct tcp_connection* con, int* bytes_read);
 static int bins_async_write(struct tcp_connection* con,int fd);
@@ -162,10 +162,10 @@ static int proto_bins_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)bins_read_req;
-	pi->net.write			= (proto_net_write_f)bins_async_write;
-	pi->net.conn_init		= proto_bins_conn_init;
-	pi->net.conn_clean		= proto_bins_conn_clean;
+	pi->net.stream.read		= bins_read_req;
+	pi->net.stream.write		= bins_async_write;
+	pi->net.stream.conn.init	= proto_bins_conn_init;
+	pi->net.stream.conn.clean	= proto_bins_conn_clean;
 	pi->net.report			= bins_report;
 
 	if (bins_async && !tcp_has_async_write()) {
@@ -175,7 +175,7 @@ static int proto_bins_init(struct proto_info *pi)
 	}
 
 	if (bins_async != 0)
-		pi->net.async_chunks= bins_async_max_postponed_chunks;
+		pi->net.stream.async_chunks= bins_async_max_postponed_chunks;
 
 	return 0;
 }
@@ -336,8 +336,8 @@ release:
 	return n;
 }
 
-static int proto_bins_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_bins_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	struct tcp_connection *c;
@@ -398,8 +398,8 @@ static int proto_bins_send(struct socket_info* send_sock,
 
 				/* mark the ID of the used connection (tracing purposes) */
 				last_outgoing_tcp_id = c->id;
-				send_sock->last_local_real_port = c->rcv.dst_port;
-				send_sock->last_remote_real_port = c->rcv.src_port;
+				send_sock->last_real_ports->local = c->rcv.dst_port;
+				send_sock->last_real_ports->remote = c->rcv.src_port;
 
 				LM_DBG("Successfully started async connection\n");
 				tcp_conn_release(c, 0);
@@ -469,8 +469,8 @@ static int proto_bins_send(struct socket_info* send_sock,
 
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
-			send_sock->last_local_real_port = c->rcv.dst_port;
-			send_sock->last_remote_real_port = c->rcv.src_port;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
 
 			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
@@ -508,8 +508,8 @@ send:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;

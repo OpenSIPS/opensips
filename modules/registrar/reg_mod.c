@@ -469,7 +469,7 @@ static void mod_destroy(void)
 
 static int add_sock_hdr(struct sip_msg* msg, str *hdr_name)
 {
-	struct socket_info* si;
+	const struct socket_info* si;
 	struct lump* anchor;
 	str hdr;
 	char *p;

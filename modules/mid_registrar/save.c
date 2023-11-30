@@ -121,13 +121,14 @@ void calc_ob_contact_expires(struct sip_msg* _m, param_t* _ep, int* _e,
 static int trim_to_single_contact(struct sip_msg *msg, str *aor, int expires)
 {
 	contact_t *c = NULL;
-	struct socket_info *send_sock;
+	const struct socket_info *send_sock;
 	struct lump *anchor = NULL;
 	char *buf;
 	int e, is_dereg = 1, len, len1;
 	struct hdr_field *ct;
 	union sockaddr_union _;
-	str extra_ct_params, esc_aor, *adv_host, *adv_port;
+	str extra_ct_params, esc_aor;
+	const str *adv_host, *adv_port;
 
 	/* get the source socket on the way to the next hop */
 	send_sock = uri2sock(msg, GET_NEXT_HOP(msg), &_, PROTO_NONE);
@@ -272,7 +273,7 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	urecord_t *r;
 	ucontact_t *uc;
 	struct sip_uri puri;
-	struct socket_info *send_sock;
+	const struct socket_info *send_sock;
 	struct lump *anchor;
 	str new_username;
 	char *lump_buf;
@@ -282,7 +283,8 @@ static int overwrite_req_contacts(struct sip_msg *req,
 	struct ct_mapping *ctmap;
 	struct list_head *_;
 	union sockaddr_union __;
-	str extra_ct_params, ctid_str, *adv_host, *adv_port;
+	str extra_ct_params, ctid_str;
+	const str *adv_host, *adv_port;
 
 	ul.lock_udomain(mri->dom, &mri->aor);
 	ul.get_urecord(mri->dom, &mri->aor, &r);
@@ -738,7 +740,7 @@ static inline unsigned int calc_buf_len(ucontact_t* c,int build_gruu,
 {
 	unsigned int len;
 	int qlen;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	len = 0;
 	while(c) {
@@ -803,7 +805,7 @@ int build_contact(ucontact_t* c,struct sip_msg *_m)
 	char *p, *cp, *tmpgr;
 	int fl, len,grlen;
 	int build_gruu = 0;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	LM_DBG("building contact ...\n");
 

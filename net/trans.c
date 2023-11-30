@@ -229,12 +229,13 @@ error:
 
 int trans_init_all_listeners(void)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	int i;
 
 	for (i = PROTO_FIRST; i < PROTO_LAST; i++)
 		if (protos[i].id != PROTO_NONE)
-			for( si=protos[i].listeners ; si ; si=si->next ) {
+			for( sif=protos[i].listeners ; sif ; sif=sif->next ) {
+				struct socket_info *si = &sif->socket_info;
 				if (protos[i].tran.init_listener(si)<0) {
 					LM_ERR("failed to init listener [%.*s], proto %s\n",
 						si->name.len, si->name.s,
@@ -255,7 +256,7 @@ int trans_init_all_listeners(void)
 
 void print_all_socket_lists(void)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	int i;
 
 
@@ -263,11 +264,13 @@ void print_all_socket_lists(void)
 		if (protos[i].id == PROTO_NONE)
 			continue;
 
-		for (si = protos[i].listeners; si; si = si->next)
+		for ( sif = protos[i].listeners; sif; sif = sif->next ) {
+			const struct socket_info *si = &sif->socket_info;
 			printf("             %s: %s [%s]:%s%s%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "",
 					si->flags & SI_FRAG ? " allow_fragments" : "",
 					is_anycast(si)? " anycast" : "");
+		}
 	}
 }

@@ -122,8 +122,8 @@ static int tls_send_tout = 100;
 static int  mod_init(void);
 static int proto_tls_init(struct proto_info *pi);
 static int proto_tls_init_listener(struct socket_info *si);
-static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
 static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 		void *extra);
@@ -343,14 +343,14 @@ static int proto_tls_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)tls_read_req;
-	pi->net.write			= (proto_net_write_f)tls_async_write;
-	pi->net.conn_init		= proto_tls_conn_init;
-	pi->net.conn_clean		= proto_tls_conn_clean;
+	pi->net.stream.read		= tls_read_req;
+	pi->net.stream.write		= tls_async_write;
+	pi->net.stream.conn.init	= proto_tls_conn_init;
+	pi->net.stream.conn.clean	= proto_tls_conn_clean;
 	if (cert_check_on_conn_reusage)
-		pi->net.conn_match		= tls_conn_extra_match;
+		pi->net.stream.conn.match	= tls_conn_extra_match;
 	else
-		pi->net.conn_match		= NULL;
+		pi->net.stream.conn.match	= NULL;
 	pi->net.report			= tls_report;
 
 	if (tls_async && !tcp_has_async_write()) {
@@ -360,7 +360,7 @@ static int proto_tls_init(struct proto_info *pi)
 	}
 
 	if (tls_async!=0)
-		pi->net.async_chunks= tls_async_max_postponed_chunks;
+		pi->net.stream.async_chunks= tls_async_max_postponed_chunks;
 
 	return 0;
 }
@@ -473,8 +473,8 @@ static void tls_report(int type, unsigned long long conn_id, int conn_flags,
 	return;
 }
 
-static int proto_tls_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_tls_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	struct tcp_connection *c;
@@ -615,8 +615,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, 0);
 	return rlen;

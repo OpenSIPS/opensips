@@ -635,8 +635,8 @@ static void ws_close(struct tcp_connection *c)
 	ws_send_close(c);
 }
 
-static struct tcp_connection* ws_sync_connect(struct socket_info* send_sock,
-		union sockaddr_union* server, struct tcp_conn_profile *prof)
+static struct tcp_connection* ws_sync_connect(const struct socket_info* send_sock,
+		const union sockaddr_union* server, struct tcp_conn_profile *prof)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -683,8 +683,8 @@ error:
 }
 
 
-static struct tcp_connection* ws_connect(struct socket_info* send_sock,
-		union sockaddr_union* to, struct tcp_conn_profile *prof, int *fd)
+static struct tcp_connection* ws_connect(const struct socket_info* send_sock,
+		const union sockaddr_union* to, struct tcp_conn_profile *prof, int *fd)
 {
 	struct tcp_connection *c;
 

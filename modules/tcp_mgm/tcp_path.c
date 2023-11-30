@@ -52,8 +52,8 @@ int tcp_path_init(void)
 }
 
 
-int tcp_mgm_get_profile(union sockaddr_union *remote,
-         union sockaddr_union *local, enum sip_protos proto,
+int tcp_mgm_get_profile(const union sockaddr_union *remote,
+         const union sockaddr_union *local, enum sip_protos proto,
          struct tcp_conn_profile *out_profile)
 {
 	struct tcp_path *path, *lim;
@@ -103,7 +103,7 @@ int tcp_mgm_get_profile(union sockaddr_union *remote,
 
 int tcp_store_path(int *int_vals, char **str_vals, struct tcp_path *path)
 {
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	str st;
 	int _proto;
 

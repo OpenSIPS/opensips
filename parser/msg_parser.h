@@ -296,7 +296,7 @@ struct sip_msg {
 	unsigned int ruri_bflags; /* per-branch flags for RURI*/
 
 	/* force sending on this socket */
-	struct socket_info* force_send_socket;
+	const struct socket_info* force_send_socket;
 
 	/* path vector to generate Route hdrs */
 	str path_vec;

@@ -65,7 +65,7 @@ void udp_destroy(void)
 /* tells how many processes the UDP layer will create */
 int udp_count_processes(unsigned int *extra)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	unsigned int n, e, i;
 
 	if (udp_disabled) {
@@ -75,7 +75,8 @@ int udp_count_processes(unsigned int *extra)
 
 	for( i=0,n=0,e=0 ; i<PROTO_LAST ; i++)
 		if (protos[i].id!=PROTO_NONE && is_udp_based_proto(i))
-			for( si=protos[i].listeners ; si; si=si->next) {
+			for( sif=protos[i].listeners ; sif; sif=sif->next) {
+				const struct socket_info *si = &sif->socket_info;
 				n+=si->workers;
 				if (si->s_profile)
 					if (si->s_profile->max_procs > si->workers)
@@ -293,7 +294,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	switch(fm->type){
 		case F_UDP_READ:
 			n = protos[((struct socket_info*)fm->data)->proto].net.
-				read( fm->data /*si*/, &read);
+				dgram.read( fm->data /*si*/, &read);
 			break;
 		case F_TIMER_JOB:
 			handle_timer_job();
@@ -455,7 +456,7 @@ static void udp_process_graceful_terminate(int sender, void *param)
 /* starts all UDP related processes */
 int udp_start_processes(int *chd_rank, int *startup_done)
 {
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	int p_id;
 	int i,p;
 	const struct internal_fork_params ifp_udp_rcv = {
@@ -471,7 +472,8 @@ int udp_start_processes(int *chd_rank, int *startup_done)
 		if ( !is_udp_based_proto(p) )
 			continue;
 
-		for(si=protos[p].listeners; si ; si=si->next ) {
+		for( sif=protos[p].listeners; sif ; sif=sif->next ) {
+			struct socket_info* si = &sif->socket_info;
 
 			if ( auto_scaling_enabled && si->s_profile &&
 			create_process_group( TYPE_UDP, si, si->s_profile,

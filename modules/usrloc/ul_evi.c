@@ -677,10 +677,11 @@ void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
 	if (!c->sock) {
 		buf->ct.sock = NULL;
 	} else {
-		buf->ct.sock = &buf->sock[0];
+		struct socket_info *sock = &buf->sock[0];
 
-		buf->ct.sock->sock_str.s = p;
-		str_cpy(&buf->ct.sock->sock_str, &c->sock->sock_str);
+		sock->sock_str.s = p;
+		str_cpy(&sock->sock_str, &c->sock->sock_str);
+		buf->ct.sock = sock;
 		p += c->sock->sock_str.len;
 	}
 

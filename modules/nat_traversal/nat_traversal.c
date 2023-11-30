@@ -113,7 +113,7 @@ typedef struct SIP_Dialog {
 
 typedef struct NAT_Contact {
     char *uri;
-    struct socket_info *socket;
+    const struct socket_info *socket;
 
     time_t registration_expire;
     time_t subscription_expire;
@@ -410,7 +410,7 @@ SIP_Subscription_expire(NAT_Contact *contact, time_t now)
 //
 
 static NAT_Contact*
-NAT_Contact_new(char *uri, struct socket_info *socket)
+NAT_Contact_new(char *uri, const struct socket_info *socket)
 {
     NAT_Contact *contact;
 
@@ -1189,7 +1189,7 @@ __dialog_destroy(struct dlg_cell *dlg, int type, struct dlg_cb_params *_params)
 //
 static void
 __sl_reply_out(struct sip_msg* request, str *buffer, int rpl_code,
-                union sockaddr_union *dst, struct socket_info *sock, int proto)
+                const union sockaddr_union *dst, const struct socket_info *sock, int proto)
 {
     struct sip_msg reply;
     time_t expire;
@@ -1545,7 +1545,7 @@ send_keepalive(NAT_Contact *contact)
     char buffer[8192], *from_uri, *ptr;
     static char from[64] = FROM_PREFIX;
     static char *from_ip = from + sizeof(FROM_PREFIX) - 1;
-    static struct socket_info *last_socket = NULL;
+    static const struct socket_info *last_socket = NULL;
     struct hostent* hostent;
     union sockaddr_union to;
     int nat_port, len, tolen;
@@ -1698,7 +1698,7 @@ restore_keepalive_state(void)
     char uri[64], socket[64];
     time_t rtime, stime, now;
     NAT_Contact *contact;
-    struct socket_info *sock;
+    const struct socket_info *sock;
     int port, proto, res;
     unsigned h;
     str host;

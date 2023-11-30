@@ -346,13 +346,13 @@ out_nospace:
 
 /* build the buffer of a SIP ping request */
 static inline char*
-build_sipping(udomain_t *d, str *curi, struct socket_info* s,str *path,
+build_sipping(udomain_t *d, str *curi, const struct socket_info* s,str *path,
 		int *len_p, ucontact_coords ct_coords, int ct_flags)
 {
 #define s_len(_s) (sizeof(_s)-1)
 	static char buf[MAX_SIPPING_SIZE];
 	char *p, proto_str[PROTO_NAME_MAX_SIZE+1];
-	str *address, *port;
+	const str *address, *port;
 	str st;
 	int len;
 

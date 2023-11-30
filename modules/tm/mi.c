@@ -118,12 +118,12 @@ static inline str_list *new_str(char *s, int len, str_list **last, int *total)
 
 
 static inline char *get_hfblock( str *uri, struct hdr_field *hf, int *l,
-											struct socket_info** send_sock)
+											const struct socket_info** send_sock)
 {
 	str_list sl, *last, *new, *i, *foo;
 	int hf_avail, frag_len, total_len;
 	char *begin, *needle, *dst, *ret, *d;
-	str *sock_name, *portname;
+	const str *sock_name, *portname;
 	union sockaddr_union to_su;
 
 	ret=0; /* pessimist: assume failure */
@@ -374,7 +374,7 @@ static mi_response_t *mi_tm_uac_dlg(const mi_params_t *params, str *nexthop,
 	static dlg_t dlg;
 	struct sip_uri pruri;
 	struct sip_uri pnexthop;
-	struct socket_info* sock;
+	const struct socket_info* sock;
 	str method;
 	str ruri;
 	str hdrs;

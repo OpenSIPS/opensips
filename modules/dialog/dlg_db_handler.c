@@ -294,9 +294,9 @@ static int select_entire_dialog_table(db_res_t ** res, int *no_rows)
 
 
 
-struct socket_info * create_socket_info(db_val_t * vals, int n){
+const struct socket_info * create_socket_info(db_val_t * vals, int n){
 
-	struct socket_info * sock;
+	const struct socket_info * sock;
 	str p;
 
 	/* socket name */
@@ -571,7 +571,7 @@ static int load_dialog_info_from_db(int dlg_hash_size)
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	int no_rows = 10;
-	struct socket_info *caller_sock,*callee_sock;
+	const struct socket_info *caller_sock,*callee_sock;
 	int found_ended_dlgs=0;
 	unsigned int hash_entry,hash_id;
 	int_str tag_name;
@@ -1874,7 +1874,7 @@ static int sync_dlg_db_mem(void)
 	int no_rows = 10;
 	unsigned int db_caller_cseq = 0, db_callee_cseq = 0;
 	unsigned int dlg_caller_cseq = 0, dlg_callee_cseq = 0;
-	struct socket_info *caller_sock,*callee_sock;
+	const struct socket_info *caller_sock,*callee_sock;
 	str callid, from_uri, to_uri, from_tag, to_tag;
 	str cseq1,cseq2,contact1,contact2,rroute1,rroute2,mangled_fu,mangled_tu;
 	unsigned int hash_entry, hash_id;

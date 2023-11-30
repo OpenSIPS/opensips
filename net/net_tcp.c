@@ -159,7 +159,7 @@ static struct scaling_profile *s_profile = NULL;
 /****************************** helper functions *****************************/
 extern void handle_sigs(void);
 
-static inline int init_sock_keepalive(int s, struct tcp_conn_profile *prof)
+static inline int init_sock_keepalive(int s, const struct tcp_conn_profile *prof)
 {
 	int ka;
 #if defined(HAVE_TCP_KEEPINTVL) || defined(HAVE_TCP_KEEPIDLE) || defined(HAVE_TCP_KEEPCNT)
@@ -223,7 +223,7 @@ static inline void set_sock_reuseport(int s)
 /*! \brief Set all socket/fd options:  disable nagle, tos lowdelay,
  * non-blocking
  * \return -1 on error */
-int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof, enum si_flags socketflags)
+int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags socketflags)
 {
 	int flags;
 	int optval;
@@ -451,7 +451,7 @@ int tcp_get_correlation_id( unsigned int id, unsigned long long *cid)
 int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 		enum sip_protos proto, void *proto_extra_id,
 		struct tcp_connection** conn, int* conn_fd,
-		struct socket_info* send_sock)
+		const struct socket_info* send_sock)
 {
 	struct tcp_connection* c;
 	struct tcp_connection* tmp;
@@ -498,8 +498,8 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 				    proto == c->type &&
 				    ip_addr_cmp(ip, &c->rcv.src_ip) &&
 				    (proto_extra_id==NULL ||
-				    protos[proto].net.conn_match==NULL ||
-				    protos[proto].net.conn_match( c, proto_extra_id)) )
+				    protos[proto].net.stream.conn.match==NULL ||
+				    protos[proto].net.stream.conn.match( c, proto_extra_id)) )
 					goto found;
 			}
 			TCPCONN_UNLOCK(part);
@@ -741,8 +741,8 @@ static void _tcpconn_rm(struct tcp_connection* c, int no_event)
 	if (c->con_req)
 		shm_free(c->con_req);
 
-	if (protos[c->type].net.conn_clean)
-		protos[c->type].net.conn_clean(c);
+	if (protos[c->type].net.stream.conn.clean)
+		protos[c->type].net.stream.conn.clean(c);
 
 	if (!no_event) tcp_disconnect_event_raise(c);
 
@@ -772,8 +772,8 @@ static void tcpconn_rm(struct tcp_connection* c)
 	TCPCONN_UNLOCK(c->id);
 	lock_destroy(&c->write_lock);
 
-	if (protos[c->type].net.conn_clean)
-		protos[c->type].net.conn_clean(c);
+	if (protos[c->type].net.stream.conn.clean)
+		protos[c->type].net.stream.conn.clean(c);
 
 	shm_free(c);
 }
@@ -864,8 +864,8 @@ static inline void tcpconn_ref(struct tcp_connection* c)
 }
 
 
-static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
-                    struct socket_info* si, struct tcp_conn_profile *prof,
+static struct tcp_connection* tcpconn_new(int sock, const union sockaddr_union* su,
+                    const struct socket_info* si, const struct tcp_conn_profile *prof,
                     int state, int flags)
 {
 	struct tcp_connection *c;
@@ -920,12 +920,12 @@ static struct tcp_connection* tcpconn_new(int sock, union sockaddr_union* su,
 	c->hist = sh_push(c, con_hist);
 #endif
 
-	if (protos[si->proto].net.async_chunks) {
+	if (protos[si->proto].net.stream.async_chunks) {
 		c->async = shm_malloc(sizeof(struct tcp_async_data) +
-				protos[si->proto].net.async_chunks *
+				protos[si->proto].net.stream.async_chunks *
 				sizeof(struct tcp_async_chunk));
 		if (c->async) {
-			c->async->allocated = protos[si->proto].net.async_chunks;
+			c->async->allocated = protos[si->proto].net.stream.async_chunks;
 			c->async->oldest = 0;
 			c->async->pending = 0;
 		} else {
@@ -951,8 +951,8 @@ error0:
  * IMPORTANT - the function assumes you want to create a new TCP conn as
  * a result of a connect operation - the conn will be set as connect !!
  * Accepted connection are triggered internally only */
-struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-		struct socket_info* si, struct tcp_conn_profile *prof,
+struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
+		const struct socket_info* si, struct tcp_conn_profile *prof,
 		int state, int send2main)
 {
 	struct tcp_connection *c;
@@ -967,8 +967,8 @@ struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
 		return NULL;
 	}
 
-	if (protos[c->type].net.conn_init &&
-			protos[c->type].net.conn_init(c) < 0) {
+	if (protos[c->type].net.stream.conn.init &&
+			protos[c->type].net.stream.conn.init(c) < 0) {
 		LM_ERR("failed to do proto %d specific init for conn %p\n",
 				c->type, c);
 		tcp_conn_destroy(c);
@@ -1072,7 +1072,7 @@ void tcp_conn_destroy(struct tcp_connection* tcpconn)
  *           io events queued), >0 on success. success/error refer only to
  *           the accept.
  */
-static inline int handle_new_connect(struct socket_info* si)
+static inline int handle_new_connect(const struct socket_info* si)
 {
 	union sockaddr_union su;
 	struct tcp_connection* tcpconn;
@@ -1545,7 +1545,7 @@ inline static int handle_io(struct fd_map* fm, int idx,int event_type)
 	pt_become_active();
 	switch(fm->type){
 		case F_TCP_LISTENER:
-			ret = handle_new_connect((struct socket_info*)fm->data);
+			ret = handle_new_connect((const struct socket_info*)fm->data);
 			break;
 		case F_TCPCONN:
 			ret = handle_tcpconn_ev((struct tcp_connection*)fm->data, idx,
@@ -1651,7 +1651,7 @@ static void tcp_main_server(void)
 {
 	static unsigned int last_sec = 0;
 	int flags;
-	struct socket_info* si;
+	struct socket_info_full* sif;
 	int n;
 
 	/* we run in a separate, dedicated process, with its own reactor
@@ -1664,7 +1664,8 @@ static void tcp_main_server(void)
 	/* add all the sockets we listens on for connections */
 	for( n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
 		if ( is_tcp_based_proto(n) )
-			for( si=protos[n].listeners ; si ; si=si->next ) {
+			for( sif=protos[n].listeners ; sif ; sif=sif->next ) {
+				struct socket_info* si = &sif->socket_info;
 				if ( (si->socket!=-1) &&
 				reactor_add_reader( si->socket, F_TCP_LISTENER,
 				RCT_PRIO_NET, si)<0 ) {
@@ -2042,7 +2043,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 {
 	int r, n, p_id;
 	int reader_fd[2]; /* for comm. with the tcp workers read  */
-	struct socket_info *si;
+	struct socket_info_full *sif;
 	const struct internal_fork_params ifp_sr_tcp = {
 		.proc_desc = "SIP receiver TCP",
 		.flags = OSS_PROC_NEEDS_SCRIPT,
@@ -2058,7 +2059,7 @@ int tcp_start_processes(int *chd_rank, int *startup_done)
 	 *  + no_listen_tcp */
 	for( r=0,n=PROTO_FIRST ; n<PROTO_LAST ; n++ )
 		if ( is_tcp_based_proto(n) )
-			for(si=protos[n].listeners; si ; si=si->next,r++ );
+			for(sif=protos[n].listeners; sif ; sif=sif->next,r++ );
 
 	/* create the socket pairs for ALL potential processes */
 	for(r=0; r<tcp_workers_max_no; r++){

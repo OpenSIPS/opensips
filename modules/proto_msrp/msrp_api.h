@@ -45,7 +45,7 @@ typedef int (*send_report_f)( void *hdl, str *status,
 
 typedef int (*fwd_request_f)( void *hdl, struct msrp_msg *req,
 		str *hdrs, int hdrs_no,
-		struct socket_info *sock, union sockaddr_union *to_su,
+		const struct socket_info *sock, union sockaddr_union *to_su,
 		void *trans_param);
 
 typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl,
@@ -53,7 +53,7 @@ typedef int (*fwd_reply_f)( void *hdl, struct msrp_msg *rpl,
 
 typedef int (*send_request_f)(void *hdl, enum msrp_method method_id,
 		str *from, struct msrp_url *to,
-		struct socket_info *sock, union sockaddr_union *to_su,
+		const struct socket_info *sock, union sockaddr_union *to_su,
 		str *mime, str *body,
 		str *hdrs, int hdrs_no, char cont_flag,
 		void *trans_param);

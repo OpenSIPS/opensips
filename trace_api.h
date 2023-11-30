@@ -66,8 +66,8 @@ typedef void * trace_dest;
  *
  * @return pointer to the tracing message
  */
-typedef trace_message (create_trace_message_f)(union sockaddr_union* from_su,
-		union sockaddr_union* to_su, int net_proto, str* payload, int pld_proto,
+typedef trace_message (create_trace_message_f)(const union sockaddr_union* from_su,
+		const union sockaddr_union* to_su, int net_proto, str* payload, int pld_proto,
 		trace_dest dest);
 
 
@@ -116,7 +116,7 @@ typedef int (add_payload_part_f)(trace_message message, char* key, str* value);
  *
  */
 typedef int (trace_send_message_f)(trace_message message,
-		trace_dest dest, struct socket_info* send_sock);
+		trace_dest dest, const struct socket_info* send_sock);
 
 /*
  * fetch a trace destination by its name

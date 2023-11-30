@@ -49,9 +49,9 @@ char *dlg_sync_in_progress;
 
 static int get_shtag_sync_status(struct dlg_cell *dlg);
 
-static struct socket_info * fetch_socket_info(str *addr)
+const static struct socket_info * fetch_socket_info(str *addr)
 {
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	if (!addr || !addr->len)
 		return NULL;
 	sock = parse_sock_info(addr);
@@ -176,7 +176,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	str sdp1, sdp2, sdp3, sdp4;
 	str sock, vars, profiles;
 	struct dlg_cell *dlg = NULL;
-	struct socket_info *caller_sock, *callee_sock;
+	const struct socket_info *caller_sock, *callee_sock;
 	struct dlg_entry *d_entry;
 	int_str tag_name;
 	unsigned int h_id;

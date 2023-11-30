@@ -34,7 +34,7 @@ struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
 static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
-		struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid,
+		const struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid,
 		str* group_custom_extension, str* session_custom_extension)
 {
 	struct src_sess *ss = shm_malloc(sizeof *ss + (m_ip ? m_ip->len : 0) +
@@ -282,7 +282,7 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 	str group_custom_extension, session_custom_extension;
 	str aor, name, xml_val, *xml;
 	siprec_uuid uuid;
-	struct socket_info *si;
+	const struct socket_info *si;
 	int p, c, label, medianum;
 	rtp_ctx rtp;
 	int p_type;

@@ -1821,7 +1821,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 	struct lump* lmp = NULL;
 	str host;
 	int port,proto;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 
 	/* parse all headers to be sure that all RR and Contact hdrs are found */
 	if (parse_headers(msg, HDR_EOH_F, 0)< 0) {

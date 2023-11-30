@@ -544,7 +544,7 @@ static inline void faked_env( struct cell *t,struct sip_msg *msg)
 {
 	static struct cell *backup_t;
 	static struct usr_avp **backup_list;
-	static struct socket_info* backup_si;
+	static const struct socket_info* backup_si;
 	static int backup_route_type;
 
 	if (msg) {

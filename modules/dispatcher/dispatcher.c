@@ -162,7 +162,7 @@ static str options_reply_codes_str= {0, 0};
 static int* options_reply_codes = NULL;
 static int options_codes_no;
 static str probing_sock_s;
-struct socket_info *probing_sock = NULL;
+const struct socket_info *probing_sock = NULL;
 
 ds_partition_t *partitions = NULL, *default_partition = NULL;
 

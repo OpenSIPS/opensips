@@ -122,7 +122,7 @@ typedef struct ucontact {
 	ucontact_flags_t flags; /*!< Usrloc-specific internal contact flags */
 	unsigned int cflags;    /*!< Custom branch flags (NAT, RTO, etc.) */
 	str user_agent;         /*!< User-Agent header field */
-	struct socket_info *sock; /*!< received socket */
+	const struct socket_info *sock; /*!< received socket */
 	time_t last_modified;   /*!< When the record was last modified */
 	unsigned int methods;   /*!< Supported methods */
 	str attr;               /*!< Additional registration info  */
@@ -162,7 +162,7 @@ typedef struct ucontact_info {
 	ucontact_flags_t flags;
 	unsigned int cflags;
 	str *user_agent;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	unsigned int methods;
 	time_t last_modified;
 	str *packed_kv_storage;

@@ -67,7 +67,7 @@ typedef struct uac_reg_map {
 	str auth_user;			/* authentication user */
 	str auth_password;		/* authentication password */
 	unsigned int expires;		/* expiration interval */
-	struct socket_info *send_sock;	/* socket */
+	const struct socket_info *send_sock;	/* socket */
 	str cluster_shtag;	/* clustering sharing tag */
 	int cluster_id;
 	unsigned int flags;	/* record flags */

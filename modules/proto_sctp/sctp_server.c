@@ -140,7 +140,7 @@ error:
 }
 
 
-int proto_sctp_read(struct socket_info *si, int* bytes_read)
+int proto_sctp_read(const struct socket_info *si, int* bytes_read)
 {
 	struct receive_info ri;
 	int len;
@@ -189,15 +189,16 @@ int proto_sctp_read(struct socket_info *si, int* bytes_read)
 
 
 /*! \brief which socket to use? main socket or new one? */
-int proto_sctp_send(struct socket_info *source, char *buf, unsigned len,
-									union sockaddr_union* to, unsigned int id)
+int proto_sctp_send(const struct socket_info *source, char *buf, unsigned len,
+									const union sockaddr_union* to, unsigned int id)
 {
 	int n;
 	int tolen;
+	union sockaddr_union _to = *to; /* XXX Linux defines sctp_sendmsg without const */
 
 	tolen=sockaddru_len(*to);
 again:
-	n=sctp_sendmsg(source->socket, buf, len, &to->s, tolen, 0, 0, 0, 0, 0);
+	n=sctp_sendmsg(source->socket, buf, len, &_to.s, tolen, 0, 0, 0, 0, 0);
 #ifdef XL_DEBUG
 	LM_INFO("send status: %d\n", n);
 #endif

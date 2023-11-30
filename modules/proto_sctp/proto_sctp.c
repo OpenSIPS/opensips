@@ -81,7 +81,7 @@ static int proto_sctp_init(struct proto_info *pi)
 	pi->tran.send			= proto_sctp_send;
 
 	pi->net.flags			= PROTO_NET_USE_UDP;
-	pi->net.read			= (proto_net_read_f)proto_sctp_read;
+	pi->net.dgram.read		= proto_sctp_read;
 
 	return 0;
 }

@@ -127,10 +127,10 @@ static inline int uri2su(str *uri, union sockaddr_union *to_su, int proto)
 /*
  * Convert a URI into socket_info
  */
-static inline struct socket_info *uri2sock(struct sip_msg* msg, str *uri,
+static inline const struct socket_info *uri2sock(struct sip_msg* msg, str *uri,
 									union sockaddr_union *to_su, int proto)
 {
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 
 	if ( (proto=uri2su(uri, to_su, proto))==-1 )
 		return 0;

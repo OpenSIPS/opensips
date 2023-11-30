@@ -512,7 +512,7 @@ int check_event_header(struct sip_msg *msg) {
 int get_ip_socket(struct sip_msg *msg, char** saddr){
 
 	char *socket;
-	struct socket_info* si;
+	const struct socket_info* si;
 
 	si = msg->rcv.bind_address;
 

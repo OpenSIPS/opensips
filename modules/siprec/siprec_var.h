@@ -27,7 +27,7 @@
 
 struct srec_var {
 	str group, caller, callee, media, headers, group_custom_extension, session_custom_extension;
-	struct socket_info *si;
+	const struct socket_info *si;
 };
 
 int init_srec_var(void);

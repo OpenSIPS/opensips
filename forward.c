@@ -90,12 +90,12 @@
  * be very likely noticeably slower, but it can deal better with
  * multihomed hosts
  */
-struct socket_info* get_out_socket(union sockaddr_union* to, int proto)
+const struct socket_info* get_out_socket(const union sockaddr_union* to, int proto)
 {
 	int temp_sock;
 	socklen_t len;
 	union sockaddr_union from;
-	struct socket_info* si;
+	const struct socket_info* si;
 	struct ip_addr ip, ip_dst;
 
 	if (proto!=PROTO_UDP) {
@@ -142,10 +142,10 @@ error:
  *
  * \note if msg!=null and msg->force_send_socket, the force_send_socket will be used
  */
-struct socket_info* get_send_socket(struct sip_msg *msg,
-										union sockaddr_union* to, int proto)
+const struct socket_info* get_send_socket(struct sip_msg *msg,
+										const union sockaddr_union* to, int proto)
 {
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 
 	/* check if send interface is not forced */
 	if (msg && msg->force_send_socket){
@@ -308,8 +308,8 @@ int forward_request( struct sip_msg* msg, struct proxy_l * p)
 {
 	union sockaddr_union to;
 	str buf;
-	struct socket_info* send_sock;
-	struct socket_info* last_sock;
+	const struct socket_info* send_sock;
+	const struct socket_info* last_sock;
 
 	buf.s=NULL;
 
@@ -473,7 +473,7 @@ int forward_reply(struct sip_msg* msg)
 	struct sr_module *mod;
 	int proto;
 	unsigned int id; /* used only by tcp*/
-	struct socket_info *send_sock;
+	const struct socket_info *send_sock;
 	char* s;
 	int len;
 

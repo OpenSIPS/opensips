@@ -57,7 +57,7 @@
 
 extern ds_partition_t *partitions;
 
-extern struct socket_info *probing_sock;
+extern const struct socket_info *probing_sock;
 extern event_id_t dispatch_evi_id;
 extern ds_partition_t *default_partition;
 
@@ -174,7 +174,7 @@ void ds_destroy_data(ds_partition_t *partition)
 }
 
 
-int add_dest2list(int id, str uri, struct socket_info *sock, str *comsock, int state,
+int add_dest2list(int id, str uri, const struct socket_info *sock, str *comsock, int state,
 			int weight, int prio, int probe_mode, str attrs, str description, ds_data_t *d_data)
 {
 	ds_dest_p dp = NULL;
@@ -1010,7 +1010,7 @@ static ds_data_t* ds_load_data(ds_partition_t *partition)
 	int weight;
 	int prio;
 	int probe_mode;
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	str uri;
 	str attrs, weight_st;
 	str description;
@@ -1597,7 +1597,7 @@ static inline int ds_get_index(int group, ds_set_p *index,
 }
 
 
-int ds_update_dst(struct sip_msg *msg, str *uri, struct socket_info *sock,
+int ds_update_dst(struct sip_msg *msg, str *uri, const struct socket_info *sock,
 																	int mode)
 {
 	uri_type utype;
@@ -2099,7 +2099,7 @@ error:
 
 int ds_next_dst(struct sip_msg *msg, int mode, ds_partition_t *partition)
 {
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	struct usr_avp *avp;
 	struct usr_avp *tmp_avp;
 	struct usr_avp *attr_avp;
@@ -2662,7 +2662,7 @@ void ds_check_timer(unsigned int ticks, void* param)
 		 * to free the whole structure here */
 		ds_options_callback_param_t params;
 
-		struct socket_info *sock;
+		const struct socket_info *sock;
 		struct usr_avp *avps;
 
 		struct gw_prob_pack *next;

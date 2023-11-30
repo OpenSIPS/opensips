@@ -498,7 +498,7 @@ static int fixup_f_send_sock(void** param)
 	str host, host_nt;
 	int proto=PROTO_NONE, port;
 	struct hostent* he;
-	struct socket_info* si;
+	const struct socket_info* si;
 	struct ip_addr ip;
 
 	if (parse_phostport(s->s, s->len, &host.s, &host.len, &port, &proto) != 0) {
@@ -526,7 +526,8 @@ static int fixup_f_send_sock(void** param)
 
 	pkg_free(host_nt.s);
 
-	*param = si;
+	const void **_param = (const void **)param;
+	*_param = si;
 	return 0;
 
 error:
@@ -1056,7 +1057,7 @@ static int w_set_adv_port(struct sip_msg *msg, str *adv_port)
 
 static int w_f_send_sock(struct sip_msg *msg, struct socket_info *si)
 {
-	msg->force_send_socket=si;
+	msg->force_send_socket=(const struct socket_info *)si;
 
 	return 1;
 }

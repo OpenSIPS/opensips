@@ -712,7 +712,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	int len, didsomething;
 	char *at; /* pointer to current location inside duri */
 
-	struct socket_info* si;
+	const struct socket_info* si;
 
 	if (route_type != REQUEST_ROUTE) {
 		LM_ERR("unsupported route type\n");

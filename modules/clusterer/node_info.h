@@ -110,7 +110,7 @@ struct cluster_info {
 	int no_nodes;                   /* number of nodes in the cluster */
 	struct node_info *node_list;
 	struct node_info *current_node; /* current node's info in this cluster */
-	struct socket_info *send_sock;
+	const struct socket_info *send_sock;
 
 	gen_lock_t *lock;
 

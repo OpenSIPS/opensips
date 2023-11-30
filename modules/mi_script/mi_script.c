@@ -307,7 +307,7 @@ error:
 }
 
 static void trace_script_su(struct sip_msg *msg,
-		union sockaddr_union **src, union sockaddr_union **dst)
+		const union sockaddr_union **src, const union sockaddr_union **dst)
 {
 	static union sockaddr_union dummy_su;
 	if (msg) {
@@ -325,7 +325,7 @@ static void trace_script_err(struct sip_msg *msg, str *method,
 		const char *error)
 {
 	str message;
-	union sockaddr_union *src, *dst;
+	const union sockaddr_union *src, *dst;
 	trace_script_su(msg, &src, &dst);
 	mi_trace_request(src, dst, method->s, method->len,
 			NULL, &backend, t_dst);
@@ -336,7 +336,7 @@ static void trace_script_err(struct sip_msg *msg, str *method,
 static void trace_script_request(struct sip_msg *msg, str *method,
 		mi_item_t *params)
 {
-	union sockaddr_union *src, *dst;
+	const union sockaddr_union *src, *dst;
 	trace_script_su(msg, &src, &dst);
 	mi_trace_request(src, dst, method->s, method->len,
 			params, &backend, t_dst);
@@ -344,7 +344,7 @@ static void trace_script_request(struct sip_msg *msg, str *method,
 
 static void trace_script_reply(struct sip_msg *msg, str *message)
 {
-	union sockaddr_union *src, *dst;
+	const union sockaddr_union *src, *dst;
 	trace_script_su(msg, &src, &dst);
 	mi_trace_reply(src, dst, message, t_dst);
 }

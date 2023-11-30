@@ -117,7 +117,7 @@ static int get_domain_db_ucontacts(udomain_t *d, void *buf, int *len,
 	static str query_str;
 	static struct sip_uri puri;
 
-	struct socket_info *sock;
+	const struct socket_info *sock;
 	struct proxy_l next_hop;
 	db_res_t *res = NULL;
 	db_row_t *row;
@@ -407,7 +407,7 @@ cdb_pack_ping_data(const str *aor, const cdb_pair_t *contact,
 	struct sip_uri puri;
 	struct list_head *_;
 	unsigned int cflags = 0;
-	struct socket_info *sock = NULL;
+	const struct socket_info *sock = NULL;
 	struct proxy_l next_hop;
 	str ct_uri, received = STR_NULL, path = STR_NULL;
 	int needed;

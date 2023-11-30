@@ -46,8 +46,8 @@
 static int mod_init(void);
 static int proto_bin_init(struct proto_info *pi);
 static int proto_bin_init_listener(struct socket_info *si);
-static int proto_bin_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_bin_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id);
 static int bin_read_req(struct tcp_connection* con, int* bytes_read);
 
@@ -116,11 +116,11 @@ static int proto_bin_init(struct proto_info *pi)
 	pi->tran.dst_attr		= tcp_conn_fcntl;
 
 	pi->net.flags			= PROTO_NET_USE_TCP;
-	pi->net.read			= (proto_net_read_f)bin_read_req;
-	pi->net.write			= (proto_net_write_f)tcp_async_write;
+	pi->net.stream.read		= bin_read_req;
+	pi->net.stream.write		= tcp_async_write;
 
 	if (bin_async != 0)
-		pi->net.async_chunks= bin_async_max_postponed_chunks;
+		pi->net.stream.async_chunks= bin_async_max_postponed_chunks;
 
 	return 0;
 }
@@ -141,8 +141,8 @@ static int proto_bin_init_listener(struct socket_info *si)
 	return tcp_init_listener(si);
 }
 
-static int proto_bin_send(struct socket_info* send_sock,
-		char* buf, unsigned int len, union sockaddr_union* to,
+static int proto_bin_send(const struct socket_info* send_sock,
+		char* buf, unsigned int len, const union sockaddr_union* to,
 		unsigned int id)
 {
 	struct tcp_connection *c;
@@ -200,8 +200,8 @@ static int proto_bin_send(struct socket_info* send_sock,
 
 				/* mark the ID of the used connection (tracing purposes) */
 				last_outgoing_tcp_id = c->id;
-				send_sock->last_local_real_port = c->rcv.dst_port;
-				send_sock->last_remote_real_port = c->rcv.src_port;
+				send_sock->last_real_ports->local = c->rcv.dst_port;
+				send_sock->last_real_ports->remote = c->rcv.src_port;
 
 				/* connect is still in progress, break the sending
 				 * flow now (the actual write will be done when 
@@ -241,8 +241,8 @@ static int proto_bin_send(struct socket_info* send_sock,
 
 			/* mark the ID of the used connection (tracing purposes) */
 			last_outgoing_tcp_id = c->id;
-			send_sock->last_local_real_port = c->rcv.dst_port;
-			send_sock->last_remote_real_port = c->rcv.src_port;
+			send_sock->last_real_ports->local = c->rcv.dst_port;
+			send_sock->last_real_ports->remote = c->rcv.src_port;
 
 			/* we successfully added our write chunk - success */
 			tcp_conn_release(c, 0);
@@ -281,8 +281,8 @@ send_it:
 
 	/* mark the ID of the used connection (tracing purposes) */
 	last_outgoing_tcp_id = c->id;
-	send_sock->last_local_real_port = c->rcv.dst_port;
-	send_sock->last_remote_real_port = c->rcv.src_port;
+	send_sock->last_real_ports->local = c->rcv.dst_port;
+	send_sock->last_real_ports->remote = c->rcv.src_port;
 
 	tcp_conn_release(c, (n<len)?1:0/*pending data in async mode?*/ );
 	return n;

@@ -501,7 +501,7 @@ static inline int after_strict(struct sip_msg* _m)
 	rr_t* rt, *prev, *del_rt;
 	char* rem_off;
 	str uri;
-	struct socket_info *si;
+	const struct socket_info *si;
 	unsigned short port, proto;
 
 	hdr = _m->route;
@@ -713,7 +713,7 @@ static inline int after_loose(struct sip_msg* _m, int preloaded)
 	int ret;
 #endif
 	str uri;
-	struct socket_info *si;
+	const struct socket_info *si;
 	int force_ss = 0;
 
 	hdr = _m->route;

@@ -154,7 +154,7 @@ static void trace_tm_in_rev(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_out(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_tm_out_rev(struct cell* t, int type, struct tmcb_params *ps);
 static void trace_msg_out(struct sip_msg* req, str  *buffer,
-		struct socket_info* send_sock, int proto, union sockaddr_union *to,
+		const struct socket_info* send_sock, int proto, const union sockaddr_union *to,
 		trace_info_p info, int leg_flag);
 static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *param);
 
@@ -163,13 +163,13 @@ static void siptrace_dlg_cancel(struct cell* t, int type, struct tmcb_params *pa
  * stateful transaction
  */
 static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *to, struct socket_info *sock, int proto);
+				const union sockaddr_union *to, const struct socket_info *sock, int proto);
 static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *dst, struct socket_info *sock, int proto);
+				const union sockaddr_union *dst, const struct socket_info *sock, int proto);
 
 #if 0
 static void trace_slack_in(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *dst, struct socket_info *sock, int proto);
+				union sockaddr_union *dst, const struct socket_info *sock, int proto);
 #endif
 
 static mi_response_t *sip_trace_mi(const mi_params_t *params,
@@ -2304,7 +2304,7 @@ static void trace_onreq_out(struct cell* t, int type, struct tmcb_params *ps,
 }
 
 static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *to, struct socket_info *sock, int proto)
+				const union sockaddr_union *to, const struct socket_info *sock, int proto)
 {
 	trace_info_p info;
 
@@ -2317,7 +2317,7 @@ static void trace_slreq_out(struct sip_msg* req, str *buffer,int rpl_code,
 }
 
 static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *dst, struct socket_info *sock, int proto)
+				const union sockaddr_union *dst, const struct socket_info *sock, int proto)
 {
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
 	static char toip_buff[IP_ADDR_MAX_STR_SIZE+12];
@@ -2408,7 +2408,7 @@ error:
 /* FIXME can't get the trace info here */
 #if 0
 static void trace_slack_in(struct sip_msg* req, str *buffer,int rpl_code,
-				union sockaddr_union *dst, struct socket_info *sock, int proto)
+				union sockaddr_union *dst, const struct socket_info *sock, int proto)
 {
 	/* FIXME How can we pass the trace info structure here ???? */
 	// sip_trace(req, NULL);
@@ -2456,7 +2456,7 @@ static int parse_from_and_callid(struct sip_msg* msg, str *from_tag) {
 }
 
 static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
-		struct socket_info* send_sock, int proto, union sockaddr_union *to,
+		const struct socket_info* send_sock, int proto, const union sockaddr_union *to,
 		trace_info_p info, int leg_flag)
 {
 	static char fromip_buff[IP_ADDR_MAX_STR_SIZE+12];
@@ -2520,8 +2520,8 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 			db_vals[4].val.str_val.s = fromip_buff;
 			db_vals[4].val.str_val.len = nbuff - fromip_buff;
 			db_vals[5].val.str_val = send_sock->address_str;
-			db_vals[6].val.int_val = send_sock->last_local_real_port?
-				send_sock->last_local_real_port:send_sock->port_no;
+			db_vals[6].val.int_val = send_sock->last_real_ports->local?
+				send_sock->last_real_ports->local:send_sock->port_no;
 		}
 	}
 
@@ -2532,8 +2532,8 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 		su2ip_addr(&to_ip, to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 			&to_ip,
-			(unsigned long)(send_sock && send_sock->last_remote_real_port?
-				send_sock->last_remote_real_port:su_getport(to)),
+			(unsigned long)(send_sock && send_sock->last_real_ports->remote?
+				send_sock->last_real_ports->remote:su_getport(to)),
 			proto);
 	}
 
@@ -2808,8 +2808,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 			db_vals[4].val.str_val.s = fromip_buff;
 			db_vals[4].val.str_val.len = nbuff - fromip_buff;
 			db_vals[5].val.str_val = dst->send_sock->address_str;
-			db_vals[6].val.int_val = dst->send_sock->last_local_real_port?
-				dst->send_sock->last_local_real_port:dst->send_sock->port_no;
+			db_vals[6].val.int_val = dst->send_sock->last_real_ports->local?
+				dst->send_sock->last_real_ports->local:dst->send_sock->port_no;
 		}
 	}
 
@@ -2821,8 +2821,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 		su2ip_addr(&to_ip, &dst->to);
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
 			&to_ip,
-			(unsigned long)(dst->send_sock && dst->send_sock->last_remote_real_port?
-				dst->send_sock->last_remote_real_port:su_getport(&dst->to)),
+			(unsigned long)(dst->send_sock && dst->send_sock->last_real_ports->remote?
+				dst->send_sock->last_real_ports->remote:su_getport(&dst->to)),
 			dst->proto);
 	}
 
@@ -3423,7 +3423,7 @@ static mi_response_t *sip_trace_mi_2(const mi_params_t *params,
 static int trace_send_duplicate(char *buf, int len, struct sip_uri *uri)
 {
 	union sockaddr_union* to;
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	struct proxy_l * p;
 	int proto;
 	int ret;

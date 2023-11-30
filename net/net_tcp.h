@@ -79,7 +79,7 @@ mi_response_t *mi_tcp_list_conns(const mi_params_t *params,
 int tcp_init_listener(struct socket_info *si);
 
 /* helper function to set all TCP related options to a socket */
-int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof, enum si_flags socketflags);
+int tcp_init_sock_opt(int s, const struct tcp_conn_profile *prof, enum si_flags socketflags);
 
 /********************** TCP conn management functions ************************/
 
@@ -87,11 +87,11 @@ int tcp_init_sock_opt(int s, struct tcp_conn_profile *prof, enum si_flags socket
 int tcp_conn_get(int unsigned id, struct ip_addr* ip, int port,
 		enum sip_protos proto, void *proto_extra_id,
 		struct tcp_connection** conn, int* conn_fd,
-		struct socket_info* send_sock);
+		const struct socket_info* send_sock);
 
 /* creates a new tcp conn around a newly connected socket */
-struct tcp_connection* tcp_conn_create(int sock, union sockaddr_union* su,
-		struct socket_info* si, struct tcp_conn_profile *prof,
+struct tcp_connection* tcp_conn_create(int sock, const union sockaddr_union* su,
+		const struct socket_info* si, struct tcp_conn_profile *prof,
 		int state, int send2main);
 
 /* sends a connected connection to the master */

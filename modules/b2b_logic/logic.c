@@ -475,7 +475,7 @@ void b2b_mark_todel( b2bl_tuple_t* tuple)
 int b2b_get_local_contact(struct sip_msg *msg, str *from_uri, str *local_contact)
 {
 	struct sip_uri ct_uri;
-	struct socket_info *send_sock = msg ?
+	const struct socket_info *send_sock = msg ?
 		(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
 
 	if (server_address.len) {

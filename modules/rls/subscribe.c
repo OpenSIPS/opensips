@@ -795,7 +795,7 @@ int send_resource_subs(char* uri, void* param)
 	str *dest_uri, *tmp_str;
 	subs_info_t *s = (subs_info_t *) ((void**)param)[0];
 	list_entry_t **rls_contact_list = (list_entry_t **) ((void**)param)[1];
-	struct socket_info *send_sock;
+	const struct socket_info *send_sock;
 	union sockaddr_union dummy_su;
 	static str contact;
 

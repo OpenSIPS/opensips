@@ -140,8 +140,8 @@ int tcp_connect_blocking(int fd, const struct sockaddr *servaddr,
 			tcp_connect_timeout);
 }
 
-int tcp_sync_connect_fd(union sockaddr_union* src, union sockaddr_union* dst,
-                 enum sip_protos proto, struct tcp_conn_profile *prof, enum si_flags flags)
+int tcp_sync_connect_fd(const union sockaddr_union* src, const union sockaddr_union* dst,
+                 enum sip_protos proto, const struct tcp_conn_profile *prof, enum si_flags flags)
 {
 	int s;
 	union sockaddr_union my_name;
@@ -181,8 +181,8 @@ error:
 	return -1;
 }
 
-struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
-               union sockaddr_union* server, struct tcp_conn_profile *prof,
+struct tcp_connection* tcp_sync_connect(const struct socket_info* send_sock,
+               const union sockaddr_union* server, struct tcp_conn_profile *prof,
                int *fd, int send2main)
 {
 	struct tcp_connection* con;
@@ -202,8 +202,8 @@ struct tcp_connection* tcp_sync_connect(struct socket_info* send_sock,
 	return con;
 }
 
-int tcp_async_connect(struct socket_info* send_sock,
-            union sockaddr_union* server, struct tcp_conn_profile *prof,
+int tcp_async_connect(const struct socket_info* send_sock,
+            const union sockaddr_union* server, struct tcp_conn_profile *prof,
             int timeout, struct tcp_connection** c, int *ret_fd, int send2main)
 {
 	int fd, n;

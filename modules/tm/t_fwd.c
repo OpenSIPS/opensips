@@ -235,7 +235,7 @@ error:
 
 /* be aware and use it *all* the time between pre_* and post_* functions! */
 static inline char *print_uac_request(struct sip_msg *i_req, unsigned int *len,
-		struct socket_info *send_sock, enum sip_protos proto )
+		const struct socket_info *send_sock, enum sip_protos proto )
 {
 	char *buf;
 	str *cid = NULL;
@@ -325,7 +325,7 @@ int add_blind_uac(void)  /*struct cell *t*/
 static inline int update_uac_dst( struct sip_msg *request,
 													struct ua_client *uac )
 {
-	struct socket_info* send_sock;
+	const struct socket_info* send_sock;
 	char *shbuf;
 	unsigned int len;
 
@@ -697,7 +697,7 @@ int t_forward_nonack( struct cell *t, struct sip_msg* p_msg ,
 	struct cell *t_invite;
 	int success_branch;
 	str dst_uri;
-	struct socket_info *bk_sock;
+	const struct socket_info *bk_sock;
 	unsigned int br_flags, bk_bflags;
 	int idx;
 	str path;
