@@ -1890,15 +1890,15 @@ Chapter 3. Contributors
    7. Andrei Datcu (@andrei-datcu) 20 12 551 134
    8. Ovidiu Sas (@ovidiusas) 15 11 132 70
    9. Ionut Ionita (@ionutrazvanionita) 15 9 370 108
-   10. Andrei Dragus 10 3 657 40
+   10. Maksym Sobolyev (@sobomax) 10 8 30 29
 
-   All remaining contributors: Maksym Sobolyev (@sobomax), Anca
-   Vamanu, Nick Altmann (@nikbyte), Jeremy Martinez
-   (@JeremyMartinez51), wangdd, nexbridge, Dusan Klinec (@ph4r05),
-   Walter Doekes (@wdoekes), MayamaTakeshi, Matt Lehner, Julián
-   Moreno Patiño, Sergio Gutierrez, Le Roy Christophe, Peter
-   Lemenkov (@lemenkov), Alexey Vasilyev (@vasilevalex),
-   Ozzyboshi, Aron Podrigal (@ar45).
+   All remaining contributors: Andrei Dragus, Anca Vamanu, Nick
+   Altmann (@nikbyte), Jeremy Martinez (@JeremyMartinez51),
+   wangdd, nexbridge, Dusan Klinec (@ph4r05), Walter Doekes
+   (@wdoekes), MayamaTakeshi, Matt Lehner, Julián Moreno Patiño,
+   Sergio Gutierrez, Le Roy Christophe, Peter Lemenkov
+   (@lemenkov), Alexey Vasilyev (@vasilevalex), Ozzyboshi, Aron
+   Podrigal (@ar45).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1920,13 +1920,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
-   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2023
-   4.  wangdd                              May 2023 - May 2023
-   5.  MayamaTakeshi                       Apr 2023 - Apr 2023
-   6.  nexbridge                           Feb 2023 - Mar 2023
-   7.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
+   2.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
+   3.  Liviu Chircu (@liviuchircu)         Nov 2012 - Jun 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2023
+   5.  wangdd                              May 2023 - May 2023
+   6.  MayamaTakeshi                       Apr 2023 - Apr 2023
+   7.  nexbridge                           Feb 2023 - Mar 2023
    8.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
    9.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
    10. Walter Doekes (@wdoekes)            May 2014 - Apr 2021

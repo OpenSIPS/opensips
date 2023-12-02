@@ -369,10 +369,10 @@ Chapter 3. Contributors
    9. Henning Westerholt (@henningw) 7 3 164 114
    10. Vlad Paiu (@vladpaiu) 5 3 11 41
 
-   All remaining contributors: Walter Doekes (@wdoekes), Stanislaw
-   Pitucha, Ovidiu Sas (@ovidiusas), Sergio Gutierrez, Maksym
-   Sobolyev (@sobomax), Konstantin Bokarius, UnixDev, John
-   Riordan, Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
+   All remaining contributors: Walter Doekes (@wdoekes), Maksym
+   Sobolyev (@sobomax), Stanislaw Pitucha, Ovidiu Sas
+   (@ovidiusas), Sergio Gutierrez, Konstantin Bokarius, UnixDev,
+   John Riordan, Julián Moreno Patiño, Peter Lemenkov (@lemenkov),
    Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
@@ -395,7 +395,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    2.  Razvan Crainea (@razvancrainea)     Feb 2012 - Jul 2020
    3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Mar 2020
    4.  Dan Pascu (@danpascu)               Aug 2008 - Jul 2019

@@ -1045,9 +1045,9 @@ Chapter 3. Contributors
    10. Walter Doekes (@wdoekes) 11 7 150 105
 
    All remaining contributors: Saúl Ibarra Corretgé (@saghul),
-   Vlad Paiu (@vladpaiu), Juha Heinanen (@juha-h), Edson Gellert
-   Schubert, Maksym Sobolyev (@sobomax), Stanislaw Pitucha, Damien
-   Sandras (@dsandras), Kobi Eshun (@ekobi), Dusan Klinec
+   Maksym Sobolyev (@sobomax), Vlad Paiu (@vladpaiu), Juha
+   Heinanen (@juha-h), Edson Gellert Schubert, Stanislaw Pitucha,
+   Damien Sandras (@dsandras), Kobi Eshun (@ekobi), Dusan Klinec
    (@ph4r05), Angel Marin, Klaus Darilion, Carlos Oliva, Sergio
    Gutierrez, Kennard White, Elena-Ramona Modroiu, Jasper
    Hafkenscheid, Vasil Kolev, Benny Prijono, James Criscuolo,
@@ -1074,7 +1074,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
    3.  Jasper Hafkenscheid                 Jul 2022 - Jul 2022
    4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021

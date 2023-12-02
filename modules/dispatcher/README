@@ -1517,9 +1517,9 @@ Chapter 3. Contributors
    10. Henning Westerholt (@henningw) 11 7 93 125
 
    All remaining contributors: Carsten Bock, Ionel Cerghit
-   (@ionel-cerghit), Elena-Ramona Modroiu, John Burke
-   (@john08burke), Klaus Darilion, Maksym Sobolyev (@sobomax),
-   Anca Vamanu, Jarrod Baumann (@jarrodb), wangdd, Walter Doekes
+   (@ionel-cerghit), Elena-Ramona Modroiu, Maksym Sobolyev
+   (@sobomax), John Burke (@john08burke), Klaus Darilion, Anca
+   Vamanu, Jarrod Baumann (@jarrodb), wangdd, Walter Doekes
    (@wdoekes), Nick Altmann (@nikbyte), Jan Janak (@janakj),
    Andrei Pelinescu-Onciul, Peter Lemenkov (@lemenkov), Stanislaw
    Pitucha, Federico Cabiddu, Konstantin Bokarius, Andreas Granig,
@@ -1547,10 +1547,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2023
-   3.  wangdd                              Apr 2023 - May 2023
-   4.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   2.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2023
+   4.  wangdd                              Apr 2023 - May 2023
    5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
    6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
    7.  John Burke (@john08burke)           Feb 2021 - Jan 2022

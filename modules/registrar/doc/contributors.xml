@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Andrei Pelinescu-Onciul, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Carsten Bock, Jeffrey Magder, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus Rodrigues, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Ruslan Bukin, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), <ulink url="https://github.com/jalung">@jalung</ulink>, Tolga Tarhan, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Henning Westerholt (<ulink url="https://github.com/henningw">@henningw</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Andrei Pelinescu-Onciul, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Juha Heinanen (<ulink url="https://github.com/juha-h">@juha-h</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Ancuta Onofrei, Elena-Ramona Modroiu, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Dan Pascu (<ulink url="https://github.com/danpascu">@danpascu</ulink>), Sergio Gutierrez, Carsten Bock, Jeffrey Magder, Kobi Eshun (<ulink url="https://github.com/ekobi">@ekobi</ulink>), Marcus Hunger, Julián Moreno Patiño, Phil D'Amore, Klaus Darilion, Irina-Maria Stanescu, Dmitry Semyonov, Konstantin Bokarius, Jesus Rodrigues, Dusan Klinec (<ulink url="https://github.com/ph4r05">@ph4r05</ulink>), Ruslan Bukin, Saúl Ibarra Corretgé (<ulink url="https://github.com/saghul">@saghul</ulink>), <ulink url="https://github.com/jalung">@jalung</ulink>, Tolga Tarhan, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Jul 2004 - Nov 2023</entry>
+	</row>
+	<row>
+		<entry>2. </entry>
 		<entry>Vlad Patrascu (<ulink url="https://github.com/rvlad-patrascu">@rvlad-patrascu</ulink>)</entry>
 		<entry align="center">May 2017 - May 2023</entry>
 	</row>
 	<row>
-		<entry>2. </entry>
+		<entry>3. </entry>
 		<entry>Liviu Chircu (<ulink url="https://github.com/liviuchircu">@liviuchircu</ulink>)</entry>
 		<entry align="center">Mar 2013 - May 2023</entry>
 	</row>
 	<row>
-		<entry>3. </entry>
+		<entry>4. </entry>
 		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
 		<entry align="center">Apr 2011 - Apr 2023</entry>
-	</row>
-	<row>
-		<entry>4. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Jul 2004 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>5. </entry>

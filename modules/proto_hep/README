@@ -356,7 +356,7 @@ Chapter 3. Contributors
    4. Liviu Chircu (@liviuchircu) 18 15 81 92
    5. Bence Szigeti 9 2 405 180
    6. Vlad Patrascu (@rvlad-patrascu) 7 4 36 84
-   7. Maksym Sobolyev (@sobomax) 4 2 4 4
+   7. Maksym Sobolyev (@sobomax) 5 3 41 41
    8. Nick Altmann (@nikbyte) 3 1 2 2
    9. Dan Pascu (@danpascu) 3 1 1 1
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -383,9 +383,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Nov 2015 - Oct 2023
-   2.  Bence Szigeti                       Jul 2023 - Aug 2023
-   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   2.  Razvan Crainea (@razvancrainea)     Nov 2015 - Oct 2023
+   3.  Bence Szigeti                       Jul 2023 - Aug 2023
    4.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
    5.  Nick Altmann (@nikbyte)             May 2021 - May 2021
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2017 - Apr 2021

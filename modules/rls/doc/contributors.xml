@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Stanislaw Pitucha, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Konstantin Bokarius, UnixDev, John Riordan, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Stanislaw Pitucha, Ovidiu Sas (<ulink url="https://github.com/ovidiusas">@ovidiusas</ulink>), Sergio Gutierrez, Konstantin Bokarius, UnixDev, John Riordan, Julián Moreno Patiño, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -129,7 +129,7 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Feb 2023 - Feb 2023</entry>
+		<entry align="center">Feb 2023 - Nov 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
