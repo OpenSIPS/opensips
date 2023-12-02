@@ -498,9 +498,12 @@ void ul_raise_contact_event(event_id_t _e, const ucontact_t *_c)
 }
 
 
-static inline void _ul_raise_ct_refresh_event(
-                const ucontact_t *_c, const str *reason, const str *req_callid)
+static inline void _ul_raise_ct_refresh_event(const struct ct_refresh_event_data *ev)
 {
+	const ucontact_t *_c = ev->ct;
+	const str *reason = &ev->reason;
+	const str *req_callid = &ev->req_callid;
+
 	if (ei_c_refresh_id == EVI_ERROR) {
 		LM_ERR("event not yet registered ("UL_EV_CT_REFRESH")\n");
 		return;
@@ -537,8 +540,7 @@ static inline void _ul_raise_ct_refresh_event(
 	}
 
 	/* the socket */
-	if (evi_param_set_str(ul_ct_pn_event.socket,
-			(_c->sock ? &_c->sock->sock_str : _str(""))) < 0) {
+	if (evi_param_set_str(ul_ct_pn_event.socket, &ev->sock_str) < 0) {
 		LM_ERR("cannot set socket parameter\n");
 		return;
 	}
@@ -593,34 +595,44 @@ static inline void _ul_raise_ct_refresh_event(
 }
 
 
+#if UL_ASYNC_CT_REFRESH
+struct refresh_event_rpc_data {
+	struct ct_refresh_event_data ev;
+	ucontact_t ct;
+	str domain;
+	str aor;
+	char _stor[0];
+};
+
 static void ul_rpc_raise_ct_refresh(int _, void *_ev)
 {
-	struct ct_refresh_event_data *ev = (struct ct_refresh_event_data *)_ev;
+	struct refresh_event_rpc_data *rev = (struct refresh_event_rpc_data*)_ev;
 
-	_ul_raise_ct_refresh_event(ev->ct, &ev->reason, &ev->req_callid);
-	shm_free(ev);
+	_ul_raise_ct_refresh_event(&rev->ev);
+	shm_free(rev);
 }
+#endif
 
 
 void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
                                const str *req_callid)
 {
 #if !UL_ASYNC_CT_REFRESH
-	_ul_raise_ct_refresh_event(c, reason, req_callid);
+	const struct ct_refresh_event_data ev = {
+		.ct = c,
+		.reason = *reason,
+		.req_callid = *req_callid,
+		.sock_str = (c->sock != NULL) ? c->sock->sock_str : (str){0},
+	};
+	_ul_raise_ct_refresh_event(&ev);
 #else
-	struct {
-		struct ct_refresh_event_data ev;
-		ucontact_t ct;
-		str domain;
-		str aor;
-		struct socket_info sock[0];
-	} *buf;
+	struct refresh_event_rpc_data *buf;
 	char *p;
 
 	/* since we cannot send a (ucontact_t *), we must dup the data */
 	buf = shm_malloc(sizeof(*buf) + c->domain->len + c->aor->len + c->c.len +
 	            c->received.len + c->path.len + c->user_agent.len +
-	            (c->sock ? (sizeof *c->sock + c->sock->sock_str.len) : 0) +
+	            (c->sock ? c->sock->sock_str.len : 0) +
 	            c->callid.len + c->attr.len + c->shtag.len + reason->len +
 	            (req_callid ? req_callid->len : 0));
 	if (buf == NULL) {
@@ -628,7 +640,7 @@ void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
 		return;
 	}
 
-	p = (c->sock) ? (char *)(&buf->sock[1]) : (char *)(&buf->sock[0]);
+	p = buf->_stor;
 
 	buf->ev.reason.s = p;
 	buf->ev.reason.len = reason->len;
@@ -675,13 +687,10 @@ void ul_raise_ct_refresh_event(const ucontact_t *c, const str *reason,
 	p += c->user_agent.len;
 
 	if (!c->sock) {
-		buf->ct.sock = NULL;
+		buf->ev.sock_str = (str){0};
 	} else {
-		struct socket_info *sock = &buf->sock[0];
-
-		sock->sock_str.s = p;
-		str_cpy(&sock->sock_str, &c->sock->sock_str);
-		buf->ct.sock = sock;
+		buf->ev.sock_str.s = p;
+		str_cpy(&buf->ev.sock_str, &c->sock->sock_str);
 		p += c->sock->sock_str.len;
 	}
 
