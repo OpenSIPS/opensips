@@ -1380,9 +1380,10 @@ if (is_method("ACK|CANCEL") && !t_check_trans()) {
 
    $T_branch_idx - the index (starting with 0 for the first
    branch) of the currently proccessed branch. This index makes
-   sense only in BRANCH and REPLY routes (where there is a concept
-   of per branch processing). In all the other types of routes,
-   the value of this index will be NULL.
+   sense only in BRANCH and REPLY routes (where the processing is
+   per branch) and in FAILURE route (where it points to the branch
+   with the last final reply on the transaction). In all the other
+   types of routes, the value of this index will be NULL.
 
 1.5.2. $T_reply_code
 
@@ -1582,7 +1583,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1073 623 21655 16675
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 1075 625 21666 16679
    2. Jiri Kuthan (@jiriatipteldotorg) 534 198 18723 11167
    3. Jan Janak (@janakj) 160 76 6462 1840
    4. Andrei Pelinescu-Onciul 145 105 2447 1210
