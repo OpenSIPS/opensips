@@ -85,12 +85,14 @@ static inline void init_str(str *dest, const char *src)
 #define ZSTR(_s)    (!(_s).s || (_s).len == 0)
 #define ZSTRP(_sp)  (!(_sp) || ZSTR(*(_sp)))
 
-static inline str *str_cpy(str *dest, const str *src)
+static inline str *_str_cpy(str *dest, const str_const *src)
 {
 	memcpy(dest->s, src->s, src->len);
 	dest->len = src->len;
 	return dest;
 }
+
+#define str_cpy(dest, src) _str_cpy(dest, str2const(src))
 
 #define STR_L(s) s, strlen(s)
 
