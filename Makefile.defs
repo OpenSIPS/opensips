@@ -147,7 +147,7 @@ YACC := $(shell echo "$${YACC}")
 
 # find compiler name & version
 ifeq ($(CC),)
- 	CC=gcc
+	CC=$(shell for x in cc clang gcc; do which $${x} >/dev/null && break; done; echo $${x})
 endif
 LD= $(CC)
 CC_LONGVER=$(shell if  $(CC) -v 2>/dev/null; then \
