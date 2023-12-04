@@ -39,7 +39,7 @@
 #define DO_ACC_LOG  (1ULL<<(0*8))
 #define DO_ACC_AAA  (1ULL<<(1*8))
 #define DO_ACC_DB   (1ULL<<(2*8))
-#define DO_ACC_EVI  (1ULL<<(4*8))
+#define DO_ACC_EVI  (1ULL<<(3*8))
 #define DO_ACC_ERR  ((unsigned long long)-1)
 
 #define DO_ACC        (1ULL<<0) /* generic accounting flag - internal only */
@@ -79,7 +79,7 @@
 
 #define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
 
-#define is_acc_flag_set(_mask, _type, _flag) ( _mask & ((_type * _flag)))
+#define is_acc_flag_set(_mask, _type, _flag) (!!( _mask & (_type * _flag)))
 
 #define is_log_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_LOG, _flag)
 #define is_log_acc_on(_mask)         is_log_flag_on(_mask, DO_ACC)
