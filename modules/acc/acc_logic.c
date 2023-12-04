@@ -72,33 +72,6 @@ static query_list_t *mc_ins_list = NULL;
 
 int is_cdr_enabled=0;
 
-#define is_acc_flag_set(_mask, _type, _flag) ( _mask & ((_type * _flag)))
-
-#define is_log_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_LOG, _flag)
-#define is_log_acc_on(_mask)         is_log_flag_on(_mask, DO_ACC)
-#define is_log_cdr_on(_mask)         is_log_flag_on(_mask, DO_ACC_CDR)
-#define is_log_mc_on(_mask)          is_log_flag_on(_mask, DO_ACC_MISSED)
-#define is_log_failed_on(_mask)      is_log_flag_on(_mask, DO_ACC_FAILED)
-
-#define is_aaa_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_AAA, _flag)
-#define is_aaa_acc_on(_mask)         is_aaa_flag_on(_mask, DO_ACC)
-#define is_aaa_cdr_on(_mask)         is_aaa_flag_on(_mask, DO_ACC_CDR)
-#define is_aaa_mc_on(_mask)          is_aaa_flag_on(_mask, DO_ACC_MISSED)
-#define is_aaa_failed_on(_mask)      is_aaa_flag_on(_mask, DO_ACC_FAILED)
-
-#define is_db_flag_on(_mask, _flag)  is_acc_flag_set(_mask, DO_ACC_DB, _flag)
-#define is_db_acc_on(_mask)          is_db_flag_on(_mask, DO_ACC)
-#define is_db_cdr_on(_mask)          is_db_flag_on(_mask, DO_ACC_CDR)
-#define is_db_mc_on(_mask)           is_db_flag_on(_mask, DO_ACC_MISSED)
-#define is_db_failed_on(_mask)       is_db_flag_on(_mask, DO_ACC_FAILED)
-
-#define is_evi_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_EVI, _flag)
-#define is_evi_acc_on(_mask)         is_evi_flag_on(_mask, DO_ACC)
-#define is_evi_cdr_on(_mask)         is_evi_flag_on(_mask, DO_ACC_CDR)
-#define is_evi_mc_on(_mask)          is_evi_flag_on(_mask, DO_ACC_MISSED)
-#define is_evi_failed_on(_mask)      is_evi_flag_on(_mask, DO_ACC_FAILED)
-
-
 #define is_acc_on(_mask) \
 	( (is_log_acc_on(_mask)) || (is_db_acc_on(_mask)) \
 	|| (is_aaa_acc_on(_mask)) || (is_evi_acc_on(_mask)) )
@@ -1254,7 +1227,7 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 		return 1;
 	}
 
-	flag_mask = *type + *type * (flags ? *flags : 0);
+	flag_mask = acc_bitmask_set(*type, flags);
 	if (is_cdr_acc_on(flag_mask)) {
 		/* setting this flag will allow us to register everything
 		 * that is needed for CDR accounting only once */
@@ -1381,22 +1354,15 @@ int w_do_acc(struct sip_msg* msg, unsigned long long *type,
 int w_drop_acc(struct sip_msg* msg, unsigned long long *types,
 			unsigned long long *flags)
 {
-	unsigned long long flag_mask, _types, _flags;
+	acc_ctx_t *acc_ctx = try_fetch_ctx();
 
-	acc_ctx_t* acc_ctx=try_fetch_ctx();
-
-	if (acc_ctx == NULL) {
+	if (!acc_ctx) {
 		LM_ERR("do_accounting() not used! This function resets flags in "
 				"do_accounting()!\n");
 		return -1;
 	}
 
-	_types = (types ? *types : DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI);
-	_flags = (flags ? *flags : ALL_ACC_FLAGS);
-
-	flag_mask = _types + _types * _flags;
-	reset_flags(acc_ctx->flags, flag_mask);
-
+	acc_ctx->flags = acc_bitmask_reset(types, flags, acc_ctx->flags);
 	return 1;
 }
 
