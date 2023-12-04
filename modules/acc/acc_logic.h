@@ -79,7 +79,7 @@
 
 #define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
 
-#define is_acc_flag_set(_mask, _type, _flag) ( _mask & ((_type * _flag)))
+#define is_acc_flag_set(_mask, _type, _flag) (!!( _mask & (_type * _flag)))
 
 #define is_log_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_LOG, _flag)
 #define is_log_acc_on(_mask)         is_log_flag_on(_mask, DO_ACC)
