@@ -160,6 +160,79 @@ static void test_acc_flags(void)
 	ok(!is_evi_mc_on(mask), "test-acc-flags-%d", t++);
 	ok(!is_evi_failed_on(mask), "test-acc-flags-%d", t++);
 
+
+	/* 7. All backends, all flags */
+	flags = DO_ACC_FLAGS;
+	mask = acc_bitmask_set(DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI, &flags);
+	ok(is_log_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_log_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_log_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_log_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(is_aaa_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_aaa_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_aaa_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_aaa_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(is_db_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_db_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_db_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_db_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(is_evi_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_evi_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_evi_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_evi_failed_on(mask), "test-acc-flags-%d", t++);
+
+
+	/* 8. resets across all backends */
+	types = DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI;
+	flags = DO_ACC_FAILED;
+	mask = acc_bitmask_reset(&types, &flags, mask);
+	ok(is_log_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_log_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_log_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_log_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(is_aaa_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_aaa_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_aaa_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_aaa_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(is_db_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_db_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_db_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_db_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(is_evi_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(is_evi_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(is_evi_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_evi_failed_on(mask), "test-acc-flags-%d", t++);
+
+
+	/* 9. ... and more resets */
+	types = DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI;
+	flags = DO_ACC_CDR|DO_ACC_MISSED;
+	mask = acc_bitmask_reset(&types, &flags, mask);
+	ok(!is_log_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_log_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_log_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_log_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(!is_aaa_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_aaa_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_aaa_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_aaa_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(!is_db_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_db_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_db_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_db_failed_on(mask), "test-acc-flags-%d", t++);
+
+	ok(!is_evi_acc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_evi_cdr_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_evi_mc_on(mask), "test-acc-flags-%d", t++);
+	ok(!is_evi_failed_on(mask), "test-acc-flags-%d", t++);
 }
 
 
