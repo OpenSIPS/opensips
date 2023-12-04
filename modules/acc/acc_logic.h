@@ -30,6 +30,8 @@
 
 #include "../../str.h"
 #include "../../context.h"
+#include "../../pvar.h"
+#include "../../evi/event_interface.h"
 #include "../tm/t_hooks.h"
 #include "../dialog/dlg_cb.h"
 
@@ -40,11 +42,12 @@
 #define DO_ACC_EVI  (1ULL<<(4*8))
 #define DO_ACC_ERR  ((unsigned long long)-1)
 
-#define DO_ACC        (1<<0) /* generic accouting flag - internal only */
-#define DO_ACC_CDR    (1<<1)
-#define DO_ACC_MISSED (1<<2)
-#define DO_ACC_FAILED (1<<3)
-#define ALL_ACC_FLAGS (DO_ACC|DO_ACC_CDR|DO_ACC_MISSED|DO_ACC_FAILED)
+#define DO_ACC        (1ULL<<0) /* generic accounting flag - internal only */
+#define DO_ACC_CDR    (1ULL<<1)
+#define DO_ACC_MISSED (1ULL<<2)
+#define DO_ACC_FAILED (1ULL<<3)
+#define DO_ACC_FLAGS  (DO_ACC_CDR|DO_ACC_MISSED|DO_ACC_FAILED)
+#define ALL_ACC_FLAGS (DO_ACC|DO_ACC_FLAGS)
 
 #define DO_ACC_PARAM_TYPE_PV    (1<<0)
 #define DO_ACC_PARAM_TYPE_VALUE (1<<1)
@@ -76,7 +79,31 @@
 
 #define ACC_MASK_REF_BYTE (((unsigned long long)(0xFF)<<(8*7))
 
+#define is_acc_flag_set(_mask, _type, _flag) ( _mask & ((_type * _flag)))
 
+#define is_log_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_LOG, _flag)
+#define is_log_acc_on(_mask)         is_log_flag_on(_mask, DO_ACC)
+#define is_log_cdr_on(_mask)         is_log_flag_on(_mask, DO_ACC_CDR)
+#define is_log_mc_on(_mask)          is_log_flag_on(_mask, DO_ACC_MISSED)
+#define is_log_failed_on(_mask)      is_log_flag_on(_mask, DO_ACC_FAILED)
+
+#define is_aaa_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_AAA, _flag)
+#define is_aaa_acc_on(_mask)         is_aaa_flag_on(_mask, DO_ACC)
+#define is_aaa_cdr_on(_mask)         is_aaa_flag_on(_mask, DO_ACC_CDR)
+#define is_aaa_mc_on(_mask)          is_aaa_flag_on(_mask, DO_ACC_MISSED)
+#define is_aaa_failed_on(_mask)      is_aaa_flag_on(_mask, DO_ACC_FAILED)
+
+#define is_db_flag_on(_mask, _flag)  is_acc_flag_set(_mask, DO_ACC_DB, _flag)
+#define is_db_acc_on(_mask)          is_db_flag_on(_mask, DO_ACC)
+#define is_db_cdr_on(_mask)          is_db_flag_on(_mask, DO_ACC_CDR)
+#define is_db_mc_on(_mask)           is_db_flag_on(_mask, DO_ACC_MISSED)
+#define is_db_failed_on(_mask)       is_db_flag_on(_mask, DO_ACC_FAILED)
+
+#define is_evi_flag_on(_mask, _flag) is_acc_flag_set(_mask, DO_ACC_EVI, _flag)
+#define is_evi_acc_on(_mask)         is_evi_flag_on(_mask, DO_ACC)
+#define is_evi_cdr_on(_mask)         is_evi_flag_on(_mask, DO_ACC_CDR)
+#define is_evi_mc_on(_mask)          is_evi_flag_on(_mask, DO_ACC_MISSED)
+#define is_evi_failed_on(_mask)      is_evi_flag_on(_mask, DO_ACC_FAILED)
 
 #define DO_ACC_PARAM_DELIMITER '|'
 
@@ -209,5 +236,35 @@ void unref_acc_ctx(void *);
 void free_global_acc_ctx(acc_ctx_t* ctx);
 void free_processing_acc_ctx(void* param);
 void free_extra_array(extra_value_t* array, int array_len);
+
+static inline unsigned long long acc_bitmask_set(
+		unsigned long long types, unsigned long long *flags)
+{
+	return types + types * (flags ? *flags : 0);
+}
+
+static inline unsigned long long acc_bitmask_reset(
+		unsigned long long *types, unsigned long long *flags,
+		unsigned long long crt_mask)
+{
+	unsigned long long rflag_mask, _types, _flags;
+
+	_types = (types ? *types : DO_ACC_LOG|DO_ACC_AAA|DO_ACC_DB|DO_ACC_EVI);
+	_flags = (flags ? *flags : ALL_ACC_FLAGS);
+
+	rflag_mask = _types * _flags;
+	crt_mask &= ~rflag_mask;
+
+	/* if there are no more flags for a backend,
+	 * drop the "backend bit" as well */
+	rflag_mask =
+		DO_ACC_LOG * !(DO_ACC_LOG*DO_ACC_FLAGS & crt_mask) |
+		DO_ACC_AAA * !(DO_ACC_AAA*DO_ACC_FLAGS & crt_mask) |
+		DO_ACC_DB  * !(DO_ACC_DB*DO_ACC_FLAGS & crt_mask)  |
+		DO_ACC_EVI * !(DO_ACC_EVI*DO_ACC_FLAGS & crt_mask);
+	crt_mask &= ~rflag_mask;
+
+	return crt_mask;
+}
 
 #endif
