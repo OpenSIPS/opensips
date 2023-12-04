@@ -3823,8 +3823,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = method;
-	ci.req_uri       = new_entity->dest_uri;
-	ci.to_uri        = to_uri;
+	ci.to_uri        = new_entity->dest_uri;
 	ci.dst_uri       = new_entity->proxy;
 	ci.from_uri      = from_uri;
 	ci.from_dname    = from_dname;
