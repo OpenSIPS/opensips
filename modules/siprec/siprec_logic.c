@@ -232,18 +232,26 @@ static int srec_b2b_req(struct sip_msg *msg, struct src_sess *ss)
 	str body = str_init("");
 	int code = 405;
 
-#if 0
-	/* handle disabled streams from SIPREC */
-	if (msg->REQ_METHOD != METHOD_INVITE)
-		return -1;
-	/* this is a re-invite - parse the SDP to see if any of them was disabled */
+	if (get_body(msg, &body) != 0 || body.len==0) {
+		if (msg->REQ_METHOD != METHOD_UPDATE)
+			goto reply;
+		code = 200;
+	} else {
+		if (srec_rtp.copy_answer(ss->rtp, &mod_name,
+				&ss->media, &body) < 0) {
+			LM_ERR("could not offer new SDP!\n");
+			code = 488;
+			goto reply;
+		}
+		if (srec_rtp.copy_offer(ss->rtp, &mod_name, &ss->media,
+				RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH, -1, &body) < 0) {
+			LM_ERR("could not refresh recording!\n");
+			goto reply;
+		}
+		code = 200;
+	}
 
-	if (get_body(msg, &body) != 0 || body.len==0)
-		goto reply;
-
-	code = 200;
 reply:
-#endif
 	srec_reply(ss, msg->REQ_METHOD, code, (body.len?&body:NULL));
 	return 0;
 }
