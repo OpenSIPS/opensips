@@ -718,7 +718,7 @@ static void term_entity(b2bl_entity_id_t *entity, int hash_index, str *key)
 	} else {
 		if ( key && ( !push_new_global_context() ||
 		(ctx=b2b_api.get_context())==NULL ||
-		pkg_str_dup(&ctx->b2bl_key, key)==0 )
+		pkg_str_dup(&ctx->b2bl_key, key)!=0 )
 		) {
 			LM_ERR("preparing ctx for request failed, entity [%.*s]\n",
 				entity->key.len, entity->key.s);
