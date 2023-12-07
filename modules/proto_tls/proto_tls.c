@@ -559,7 +559,7 @@ static int proto_tls_send(struct socket_info* send_sock,
 				/* attach the write buffer to it */
 				if (tcp_async_add_chunk(c, buf, len, 1) < 0) {
 					LM_ERR("Failed to add the initial write chunk\n");
-					len = -1; /* report an error - let the caller decide what to do */
+					rlen = -1; /* report an error - let the caller decide what to do */
 				}
 
 				LM_DBG("Successfully started async SSL connection \n");
