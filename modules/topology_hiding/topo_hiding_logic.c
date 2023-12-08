@@ -1900,6 +1900,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 				LM_ERR("failed inserting new route set\n");
 				goto err_free_route;
 			}
+			msg->msg_flags |= FL_HAS_ROUTE_LUMP;
 
 			LM_DBG("Setting route  header to <%s> \n",route);
 			LM_DBG("setting dst_uri to <%.*s> \n",head->nameaddr.uri.len,
@@ -1961,6 +1962,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 					LM_ERR("failed inserting new route set\n");
 					goto err_free_route;
 				}
+				msg->msg_flags |= FL_HAS_ROUTE_LUMP;
 			}
 
 			if (lmp == NULL) {
@@ -1993,6 +1995,7 @@ static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info)
 					pkg_free(remote_contact);
 					goto err_free_head;
 				}
+				msg->msg_flags |= FL_HAS_ROUTE_LUMP;
 			}
 		}
 	}
