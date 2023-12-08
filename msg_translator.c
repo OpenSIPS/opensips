@@ -2073,6 +2073,8 @@ static inline int insert_path_as_route(struct sip_msg* msg, str* path)
 		return -1;
 	}
 
+	msg->msg_flags |= FL_HAS_ROUTE_LUMP;
+
 	return 0;
 }
 

@@ -2719,6 +2719,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 				pkg_free(route);
 				return -1;
 			}
+			req->msg_flags |= FL_HAS_ROUTE_LUMP;
 
 			LM_DBG("Setting route  header to <%s> \n",route);
 
@@ -2812,6 +2813,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 					return -1;
 				}
 				free_rr(&head);
+				req->msg_flags |= FL_HAS_ROUTE_LUMP;
 			}
 
 			if (lmp == NULL) {
@@ -2844,6 +2846,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 					pkg_free(remote_contact);
 					return -1;
 				}
+				req->msg_flags |= FL_HAS_ROUTE_LUMP;
 			}
 		}
 	}
