@@ -181,8 +181,8 @@ char *build_local(struct cell *Trans,unsigned int branch,
 
 	/* copy'n'paste Route headers that were sent out */
 	if (is_local(Trans) || (!is_local(Trans) &&
-	( (req && req->route) || /* at least one route was received*/
-	(Trans->uac[branch].path_vec.len!=0))) ) /* path was forced */
+	/* if there was a ROUTE received or added */
+	( req && (req->route || req->msg_flags&FL_HAS_ROUTE_LUMP))) )
 	{
 		buf_hdrs = extract_parsed_hdrs(Trans->uac[branch].request.buffer.s,
 			Trans->uac[branch].request.buffer.len );
