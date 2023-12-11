@@ -954,7 +954,7 @@ static void acc_cdr_cb( struct cell* t, int type, struct tmcb_params *ps )
 	}
 
 	if (is_aaa_acc_on(ctx->flags) && acc_aaa_cdrs(dlg, ps->req, ctx) < 0) {
-		LM_ERR("Cannot create radius accounting\n");
+		LM_ERR("Cannot perform radius accounting\n");
 		return;
 	}
 
@@ -1034,9 +1034,20 @@ unsigned long long do_acc_type_parser(str* token)
 		return DO_ACC_LOG;
 	} else if (token->len == do_acc_aaa_s.len &&
 			!strncasecmp(token->s, do_acc_aaa_s.s, token->len)) {
+		if (!proto.create_aaa_message) {
+			LM_ERR("do_accounting(\"aaa\") was used"
+			        ", but no 'aaa' module is loaded!\n");
+			return DO_ACC_ERR;
+		}
+
 		return DO_ACC_AAA;
 	} else if (token->len == do_acc_db_s.len &&
 			!strncasecmp(token->s, do_acc_db_s.s, token->len)) {
+		if (!acc_dbf.init) {
+			LM_ERR("do_accounting(\"db\") was used"
+			        ", but no 'db' module is loaded!\n");
+			return DO_ACC_ERR;
+		}
 		return DO_ACC_DB;
 	}  else if (token->len == do_acc_evi_s.len &&
 			!strncasecmp(token->s, do_acc_evi_s.s, token->len)) {
