@@ -1052,6 +1052,14 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 
 	multi_handle = param->multi_list->multi_handle;
 
+	if (timed_out) {
+		char *url = NULL;
+		curl_easy_getinfo(param->handle, CURLINFO_EFFECTIVE_URL, &url);
+		LM_INFO("async %s timed out, URL: %s\n",
+		        rest_client_method_str(param->method), url);
+		goto cleanup;
+	}
+
 	retr = 0;
 	do {
 		/* When @enable_expect_100 is on, both the client body upload and the
@@ -1061,9 +1069,15 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		LM_DBG("perform result: %d, running: %d (break: %d)\n", mrc, running,
 			mrc != CURLM_CALL_MULTI_PERFORM && (mrc != CURLM_OK || !running));
 
-		if (mrc != CURLM_CALL_MULTI_PERFORM &&
-		     (mrc != CURLM_OK || !running))
+		if (mrc == CURLM_OK && running) {
+			async_status = ASYNC_CONTINUE;
+			return 1;
+
+		/* this rc has been removed since cURL 7.20.0 (Feb 2010), but it's not
+		 * yet marked as deprecated, so let's keep the do/while loop */
+		} else if (mrc != CURLM_CALL_MULTI_PERFORM) {
 			break;
+		}
 
 		usleep(_async_resume_retr_itv);
 		retr += _async_resume_retr_itv;
@@ -1106,6 +1120,7 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		return 1;
 	}
 
+cleanup:
 	curl_slist_free_all(param->header_list);
 
 	if (del_transfer(fd) != 0) {
@@ -1203,7 +1218,6 @@ enum async_ret_code resume_async_http_req(int fd, struct sip_msg *msg, void *_pa
 
 enum async_ret_code time_out_async_http_req(int fd, struct sip_msg *msg, void *_param)
 {
-	LM_INFO("transfer timed out (async statement timeout)\n");
 	return _resume_async_http_req(fd, msg, (rest_async_param *)_param, 1);
 }
 
