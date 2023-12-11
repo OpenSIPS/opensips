@@ -3447,6 +3447,7 @@ dummy_reply:
 			new_dlg->prev = dlg->prev;
 			new_dlg->add_dlginfo = dlg->add_dlginfo;
 			new_dlg->last_method = dlg->last_method;
+			new_dlg->send_sock = dlg->send_sock;
 			new_dlg->tracer = dlg->tracer;
 			new_dlg->ua_timer_list = dlg->ua_timer_list;
 			new_dlg->ua_flags = dlg->ua_flags;
