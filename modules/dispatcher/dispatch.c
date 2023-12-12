@@ -808,6 +808,12 @@ int ds_route_algo(struct sip_msg *msg, ds_set_p set,
 		fret = run_route_algo(msg, algo_route->idx, &set->dlist[i]);
 		set->dlist[i].route_algo_value = fret;
 
+		if (fret < 0) {
+			/* move to the end of the list */
+			sset[end_idx--] = &set->dlist[i];
+			continue;
+		}
+
 		/* search the proper position */
 		j = 0;
 		for (; j < cnt && sset[j]->route_algo_value <= fret; j++);

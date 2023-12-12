@@ -184,6 +184,8 @@ modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
 		The return value of the route is considered by the dispatcher module to
 		be the current weight of the dispatcher entry, and when using the 10
 		algo, the dispatcher entries are sorted in ascending weight order.
+
+		If the returned value from the algo route is negative, the current dispatcher entry will be automatically skipped from usage
 		</para>
 		<para>
 		<emphasis>
