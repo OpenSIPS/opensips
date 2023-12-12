@@ -3174,7 +3174,7 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 	pgw_list_t *dst, *cdst;
 	pgw_list_t *wl_list;
 	unsigned int prefix_len;
-	unsigned int rule_idx;
+	int rule_idx;
 	struct head_db *current_partition=NULL;
 	unsigned short wl_len;
 	str username;
@@ -3305,7 +3305,7 @@ static int do_routing(struct sip_msg* msg, struct head_db *part, int grp,
 		}
 		username = val.s;
 		/* still something to look for ? */
-		if (username.len==0) return -1;
+		if (username.len==0 && rule_idx<0) return -1;
 
 		/* original RURI to be used when building RURIs for new attempts */
 		if (search_first_avp( AVP_VAL_STR, current_partition->avpID_store_ruri,
@@ -3336,7 +3336,7 @@ search_again:
 		username.len = prefix_len -(rule_idx?0:1);
 		LM_DBG("doing internal fallback, prefix_len=%d,rule_idx=%d\n",
 				username.len, rule_idx);
-		if (username.len==0 && rule_idx==0) {
+		if (username.len==0 && rule_idx<=0) {
 			/* disable failover as nothing left */
 			flags = flags & ~DR_PARAM_RULE_FALLBACK;
 			goto error2;
@@ -3353,18 +3353,24 @@ search_again:
 	}
 
 	if (rt_info==0) {
-		LM_DBG("no matching for prefix \"%.*s\"\n",
-				username.len, username.s);
+		LM_DBG("no matching for prefix \"%.*s\" idx: %d\n",
+				username.len, username.s, rule_idx);
 		/* try prefixless rules */
-		rt_info = check_rt(&current_partition->rdata->noprefix,
-				(unsigned int)grp);
+		if (rule_idx >= 0)
+			rt_info = _check_rt(&current_partition->rdata->noprefix,
+					(unsigned int)grp, &rule_idx);
 		if (rt_info==0) {
 			LM_DBG("no prefixless matching for "
 					"grp %d\n", grp);
 			goto error2;
 		}
 		prefix_len = 0;
-		rule_idx = 0;
+
+		LM_DBG("prefixless matching successful, crt-index: %d\n", rule_idx);
+
+		/* "stop" marker for reaching the last prefixless route */
+		if (rule_idx == 0)
+			rule_idx = -1;
 	}
 
 	if ( ref_script_route_check_and_update(rt_info->route_ref) ) {
@@ -3382,7 +3388,7 @@ search_again:
 		goto no_gws;
 
 	/* do we have anything left to failover to ? */
-	if (prefix_len==0 && rule_idx==0)
+	if (prefix_len==0 && rule_idx<=0)
 		/* disable failover as nothing left */
 		flags = flags & ~DR_PARAM_RULE_FALLBACK;
 
@@ -3594,10 +3600,9 @@ no_gws:
 		if ( !(flags & DR_PARAM_INTERNAL_TRIGGERED) ) {
 			/* first time - we need to save some date, to be able to
 			 * do the rule fallback later in "next_gw" , but do it only if 
-			 * there is place for fallback (more rules or shorter prefix are 
-			 * available) */
-			if (prefix_len!=0 || rule_idx!=0) {
-				LM_DBG("saving rule_idx %d, prefix %.*s\n",rule_idx,
+			 * there is room for fallback (more rules are available) */
+			if (rule_idx>0) {
+				LM_DBG("saving rule_idx %d, prefix '%.*s'\n",rule_idx,
 						prefix_len - (rule_idx?0:1), username.s);
 				val.n = rule_idx;
 				if (add_avp( 0 , current_partition->avpID_store_index, val) ) {
