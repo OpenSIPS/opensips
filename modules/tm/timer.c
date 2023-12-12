@@ -600,8 +600,9 @@ struct timer_table *tm_init_timers( unsigned int sets )
 			init_timer_list( set, i );
 
 		/* exclusion timer */
-		if ((timertable[set].ex_lock = lock_init_rw()) == NULL) {
-			LM_CRIT("failed to init timer RW lock\n");
+		if ((timertable[set].ex_lock = lock_alloc()) == NULL ||
+		lock_init(timertable[set].ex_lock) == NULL) {
+			LM_CRIT("failed to init timer lock\n");
 			goto error0;
 		}
 
@@ -631,7 +632,7 @@ void free_timer_table(void)
 		for ( i=0 ; i<timer_sets*NR_OF_TIMER_LISTS ; i++ )
 			release_timerlist_lock( &timertable->timers[i] );
 		for ( i=0 ; i<timer_sets ; i++ )
-			lock_destroy_rw( timertable[i].ex_lock );
+			lock_destroy( timertable[i].ex_lock );
 		shm_free(timertable);
 	}
 }
@@ -1078,7 +1079,7 @@ void timer_routine(unsigned int ticks , void *set)
 	struct timer_link *tl, *tmp_tl;
 	int                id;
 
-	lock_start_write( timertable[(long)set].ex_lock );
+	lock_get( timertable[(long)set].ex_lock );
 
 	for( id=0 ; id<RT_T1_TO_1 ; id++ )
 	{
@@ -1100,7 +1101,7 @@ void timer_routine(unsigned int ticks , void *set)
 				break;
 		}
 	}
-	lock_stop_write( timertable[(long)set].ex_lock );
+	lock_release( timertable[(long)set].ex_lock );
 }
 
 
@@ -1110,7 +1111,7 @@ void utimer_routine(utime_t uticks , void *set)
 	struct timer_link *tl, *tmp_tl;
 	int                id;
 
-	lock_start_write( timertable[(long)set].ex_lock );
+	lock_get( timertable[(long)set].ex_lock );
 
 	for( id=RT_T1_TO_1 ; id<NR_OF_TIMER_LISTS ; id++ )
 	{
@@ -1128,6 +1129,6 @@ void utimer_routine(utime_t uticks , void *set)
 				break;
 		}
 	}
-	lock_stop_write( timertable[(long)set].ex_lock );
+	lock_release( timertable[(long)set].ex_lock );
 }
 
