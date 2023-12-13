@@ -471,7 +471,7 @@ int register_osips_avps(void)
 }
 
 
-int parse_avp_def(struct dm_avp_def *avps, int *avp_count, char *line, int len)
+static int parse_avp_def(struct dm_avp_def *avps, int *avp_count, char *line, int len)
 {
 	char *p = line, *avp_name;
 
@@ -563,6 +563,7 @@ int parse_attr_def(char *line, FILE *fp)
 	int i, len = buflen, attr_len = strlen("ATTRIBUTE"), name_len, avp_code;
 	char *name, *nt_name, *newp, *p = line, *end = p + len;
 	enum dict_avp_basetype avp_type;
+	enum dict_avp_enc_type enc_type = AVP_ENC_TYPE_NONE;
 
 	if (len < attr_len || strncasecmp(p, "ATTRIBUTE", attr_len))
 		return 1;
@@ -599,7 +600,14 @@ int parse_attr_def(char *line, FILE *fp)
 	if (p >= end) {
 		avp_type = AVP_TYPE_OCTETSTRING;
 	} else {
-		if ((len >= strlen("utf8string") && !strncasecmp(p, STR_L("utf8string")))
+		if ((len >= strlen("ip") && !strncasecmp(p, STR_L("ip")))) {
+			avp_type = AVP_TYPE_OCTETSTRING;
+			enc_type = AVP_ENC_TYPE_IP;
+		} else if ((len >= strlen("hex") && !strncasecmp(p, STR_L("hex")))
+		        || (len >= strlen("hexstring") && !strncasecmp(p, STR_L("hexstring")))) {
+			avp_type = AVP_TYPE_OCTETSTRING;
+			enc_type = AVP_ENC_TYPE_HEX;
+		} else if ((len >= strlen("utf8string") && !strncasecmp(p, STR_L("utf8string")))
 		        || (len >= strlen("string") && !strncasecmp(p, STR_L("string"))))
 			avp_type = AVP_TYPE_OCTETSTRING;
 		else if ((len >= strlen("unsigned64") && !strncasecmp(p, STR_L("unsigned64"))))
@@ -660,18 +668,26 @@ int parse_attr_def(char *line, FILE *fp)
 		}
 	}
 
-create_avp:;
+create_avp:
 	struct dict_object *parent, *avp_ref, **pref;
 
-	if (avp_type == AVP_TYPE_OCTETSTRING) {
+	if (enc_type != AVP_ENC_TYPE_NONE &&
+			dm_enc_add((vendor_id != -1?vendor_id:0), avp_code, enc_type) != 0) {
+		LOG_ERROR("failed to add encoding type\n");
+		return -1;
+	}
+
+	pref = NULL;
+	parent = NULL;
+	switch (avp_type) {
+	case AVP_TYPE_OCTETSTRING:
 		FD_CHECK_dict_search(DICT_TYPE, TYPE_BY_NAME, "UTF8String", &parent);
-		pref = NULL;
-	} else if (avp_type == AVP_TYPE_GROUPED) {
-		parent = NULL;
+		break;
+	case AVP_TYPE_GROUPED:
 		pref = &avp_ref;
-	} else {
-		parent = NULL;
-		pref = NULL;
+		break;
+	default:
+		break;
 	}
 
 	struct dict_avp_data data = {
@@ -700,8 +716,8 @@ create_avp:;
 		FD_CHECK_dict_new(DICT_RULE, &data, avp_ref, NULL);
 	}
 
-	LOG_DBG("registered custom AVP (%s, code %d, type %s, sub-avps: %d, vendor: %d)\n",
-			nt_name, avp_code, avp_type2str(avp_type), avp_count, vendor_id);
+	LOG_DBG("registered custom AVP (%s, code %d, type %s, enc %s, sub-avps: %d, vendor: %d)\n",
+			nt_name, avp_code, avp_type2str(avp_type), enc_type2str(enc_type), avp_count, vendor_id);
 
 	free(nt_name);
 	return 0;

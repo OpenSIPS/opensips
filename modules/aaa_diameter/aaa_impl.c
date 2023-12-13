@@ -215,6 +215,28 @@ out:
 }
 
 
+static int dict_avp_enc_ip(cJSON *, struct dict_avp_data *, int, str *);
+static cJSON *dict_avp_dec_ip(struct avp_hdr *, struct dict_avp_data *);
+static int dict_avp_enc_hex(cJSON *, struct dict_avp_data *, int, str *);
+static cJSON *dict_avp_dec_hex(struct avp_hdr *, struct dict_avp_data *);
+
+struct dict_avp_enc_f {
+	int (*enc_func)(cJSON *, struct dict_avp_data *, int, str *);
+	cJSON *(*dec_func)(struct avp_hdr *, struct dict_avp_data *);
+} dict_avp_enc[] = {
+	{ /* AVP_ENC_TYPE_IP */
+		dict_avp_enc_ip,
+		dict_avp_dec_ip,
+	},
+	{ /* AVP_ENC_TYPE_HEX */
+		dict_avp_enc_hex,
+		dict_avp_dec_hex,
+	},
+};
+
+static struct dict_avp_enc_f *dm_enc_get(int code, int vendor);
+
+
 static int dm_avps2json(void *root, cJSON *avps)
 {
 	cJSON *item = NULL;
@@ -230,6 +252,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 		cJSON *val;
 		struct dict_object *obj;
 		struct dict_avp_data dm_avp;
+		struct dict_avp_enc_f *dm_func;
 		int int_type = 1;
 		double num_val = 0;
 
@@ -252,6 +275,18 @@ static int dm_avps2json(void *root, cJSON *avps)
 		if (!item) {
 			LM_ERR("oom 2\n");
 			goto out;
+		}
+
+
+		dm_func = dm_enc_get(dm_avp.avp_code, dm_avp.avp_vendor);
+		if (dm_func && dm_func->dec_func) {
+			LM_DBG("%d. got encoded AVP %s, code: %u\n", i, dm_avp.avp_name, dm_avp.avp_code);
+			val = dm_func->dec_func(h, &dm_avp);
+			if (!val) {
+				LM_ERR("cannot decode value %d/%d\n", dm_avp.avp_code, dm_avp.avp_vendor);
+				goto out;
+			}
+			goto add;
 		}
 
 		switch (dm_avp.avp_basetype) {
@@ -326,6 +361,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 			}
 		}
 
+add:
 		cJSON_AddItemToObject(item, dm_avp.avp_name, val);
 		cJSON_AddItemToArray(avps, item);
 
@@ -1540,15 +1576,16 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
 	                   avp, val, val_length, vendor);
 }
 
-
 int dm_build_avps(struct list_head *subavps, cJSON *array)
 {
-	cJSON *_avp;
+	cJSON *_avp, *avp;
 	struct dict_avp_data dm_avp;
 	struct dict_object *obj;
 	char *name;
-	unsigned int code;
+	unsigned int code, vendor;
 	str st;
+	struct dict_avp_enc_f *func;
+	int ret;
 
 	for (_avp = array; _avp; _avp = _avp->next) {
 		if (_avp->type != cJSON_Object) {
@@ -1556,7 +1593,7 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 			return -1;
 		}
 
-		cJSON *avp = _avp->child;
+		avp = _avp->child;
 
 		// TODO: allow dict too, e.g. maybe for setting a non-zero VendorId?!
 		if (!(avp->type & (cJSON_String|cJSON_Number|cJSON_Array))) {
@@ -1573,6 +1610,7 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 			FD_CHECK(fd_dict_getval(obj, &dm_avp));
 
 			name = dm_avp.avp_name;
+			vendor = dm_avp.avp_vendor;
 		} else {
 			LM_DBG("AVP:: searching AVP by string: %s\n", avp->string);
 
@@ -1582,10 +1620,32 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 
 			name = avp->string;
 			code = dm_avp.avp_code;
+			vendor = dm_avp.avp_vendor;
 		}
 
 		aaa_map my_avp = {.name = name};
+		func = dm_enc_get(code, vendor);
 
+		if (func && func->enc_func) {
+			LM_DBG("dbg::: AVP %d (name: '%s', encoded)\n", code, name);
+			ret = func->enc_func(_avp->child, &dm_avp, vendor, &st);
+			if (ret < 0) {
+				LM_ERR("could not encode %d/%d\n", code, vendor);
+				goto error;
+			} else if (ret == 0) {
+				ret = _dm_avp_add(NULL, subavps, &my_avp, st.s, st.len, 0);
+				/* if a string, release whatever was alocated in the enc_func */
+				if (st.len >= 0)
+					pkg_free(st.s);
+				if (ret != 0) {
+					LM_ERR("failed to add encoded AVP %d, aborting request\n", code);
+					goto error;
+				}
+				/* all good - go to next AVP */
+				continue;
+			}
+			/* for ret > 0 we failover to adding the node as it was */
+		}
 		if (avp->type & cJSON_String) {
 			LM_DBG("dbg::: AVP %d (name: '%s', str-val: %s)\n", code, name, avp->valuestring);
 			if (_dm_avp_add(NULL, subavps, &my_avp, avp->valuestring,
@@ -1735,4 +1795,214 @@ int dm_destroy_message(aaa_conn *_, aaa_message *msg)
 
 	_dm_destroy_message(msg);
 	return 0;
+}
+
+#define enc_type2func(t) ((t < AVP_ENC_TYPE_NONE)?&dict_avp_enc[t]:NULL)
+
+struct dict_avp_enc_a { /* avps */
+	int code;
+	enum dict_avp_enc_type enc;
+};
+
+struct dict_avp_enc_v { /* vendors */
+	int vendor;
+	int avps_no;
+	struct dict_avp_enc_a *avps;
+};
+static int dict_avp_enc_vendors_no;
+static struct dict_avp_enc_v *dict_avp_enc_vendors;
+
+static int dict_avp_enc_v_cmp(const void * a, const void * b) {
+	int *c = (int *)a;
+	struct dict_avp_enc_v *d = (struct dict_avp_enc_v *)b;
+	return (*c - d->vendor);
+}
+static int dict_avp_enc_a_cmp(const void * a, const void * b) {
+	int *c = (int *)a;
+	struct dict_avp_enc_a *d = (struct dict_avp_enc_a *)b;
+	return (*c - d->code);
+}
+
+
+int dm_enc_add(int vendor, int code, enum dict_avp_enc_type enc)
+{
+	int i;
+	struct dict_avp_enc_v *v;
+	struct dict_avp_enc_a *a;
+
+	if (!dict_avp_enc_vendors) {
+		v = calloc(1, sizeof *v);
+		if (!v) {
+			LM_ERR("oom for initializing vendors encoding\n");
+			return -1;
+		}
+		v->vendor = vendor;
+		dict_avp_enc_vendors = v;
+		dict_avp_enc_vendors_no = 1;
+	} else {
+		/* search if there is an existing vendor */
+		v = bsearch(&vendor, dict_avp_enc_vendors, dict_avp_enc_vendors_no, sizeof *v, dict_avp_enc_v_cmp);
+		if (!v) {
+			/* resize the vendors */
+			v = realloc(dict_avp_enc_vendors, (dict_avp_enc_vendors_no + 1) * sizeof *v);
+			if (!v) {
+				LM_ERR("oom for reallocating vendors encoding\n");
+				return -1;
+			}
+			dict_avp_enc_vendors = v;
+			for (i = 0; i < dict_avp_enc_vendors_no; i++)
+				if (v[i].vendor > vendor)
+					break;
+			memmove(&v[i+1], &v[i], (dict_avp_enc_vendors_no - i) * sizeof *v);
+			v = v + i;
+			dict_avp_enc_vendors_no++;
+			v->vendor = vendor;
+			v->avps_no = 0;
+			v->avps = NULL;
+		}
+	}
+	if (!v->avps) {
+		v->avps = calloc(1, sizeof *a);
+		if (!v->avps) {
+			LM_ERR("oom for initiating avps encoding\n");
+			return -1;
+		}
+		v->avps_no = 1;
+		a = v->avps;
+	} else {
+		/* resize the avps */
+		a = realloc(v->avps, (v->avps_no + 1) * sizeof *a);
+		if (!v) {
+			LM_ERR("oom for reallocating avps encoding\n");
+			return -1;
+		}
+		v->avps = a;
+		for (i = 0; i < v->avps_no; i++)
+			if (a[i].code > code)
+				break;
+		memmove(&a[i+1], &a[i], (v->avps_no - i) * sizeof *a);
+		a = a + i;
+		v->avps_no++;
+	}
+	a->code = code;
+	a->enc = enc;
+
+	return 0;
+}
+
+static struct dict_avp_enc_f *dm_enc_get(int code, int vendor)
+{
+	struct dict_avp_enc_a *a;
+	struct dict_avp_enc_v *v;
+
+	v = bsearch(&vendor, dict_avp_enc_vendors, dict_avp_enc_vendors_no, sizeof
+			*v, dict_avp_enc_v_cmp);
+	if (!v || !v->avps_no || !v->avps)
+		return NULL;
+	a = bsearch(&code, v->avps, v->avps_no, sizeof *a, dict_avp_enc_a_cmp);
+	return a?enc_type2func(a->enc):NULL;
+}
+
+static int dict_avp_enc_ip(cJSON *obj, struct dict_avp_data *avp, int, str *ret)
+{
+	int af;
+	unsigned char buf[sizeof(struct in6_addr)];
+
+	if ((obj->type & cJSON_String) == 0)
+		return 1; /* encode it as it is */
+	/* check if we have colon -> IPv6*/
+	if (q_memchr(obj->valuestring, ':', strlen(obj->valuestring)))
+		af = AF_INET6;
+	else
+		af = AF_INET;
+	if (inet_pton(af, obj->valuestring, buf) <= 0)
+		return 1; /* not a valid format */
+	ret->len = (af == AF_INET?sizeof(struct in_addr):sizeof(struct in6_addr));
+	ret->s = pkg_malloc(ret->len);
+	if (!ret->s) {
+		LM_ERR("oom in IP\n");
+		return -1;
+	}
+	memcpy(ret->s, buf, ret->len);
+
+	return 0;
+}
+
+static cJSON *dict_avp_dec_ip(struct avp_hdr * h, struct dict_avp_data *avp)
+{
+	int af;
+	char buf[INET6_ADDRSTRLEN];
+
+	if (avp->avp_basetype != AVP_TYPE_OCTETSTRING) {
+		LM_ERR("invalid base type for IP: %d\n", avp->avp_basetype);
+		return NULL;
+	}
+
+	af = (h->avp_value->os.len == INET6_ADDRSTRLEN?AF_INET6:AF_INET);
+	if (inet_ntop(af, h->avp_value->os.data, buf, INET6_ADDRSTRLEN) == NULL) {
+		LM_ERR("cannot convert to an IP\n");
+		return NULL;
+	}
+	return cJSON_CreateString(buf);;
+}
+
+static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int, str *ret)
+{
+	int len, i;
+	char *buf, *val;
+
+	if ((obj->type & cJSON_String) == 0)
+		return 1; /* encode it as it is */
+	len = strlen(obj->valuestring);
+	buf = pkg_malloc(len/2);
+	if (!buf) {
+		LM_ERR("oom for hex encoding\n");
+		return -1;
+	}
+	val = obj->valuestring;
+	for (i = 0; i < len / 2; i++) {
+		if(val[2*i]>='0' && val[2*i]<='9')
+			buf[i] = (val[2*i]-'0') << 4;
+		else if(val[2*i]>='a' && val[2*i]<='f')
+			buf[i] = (val[2*i]-'a'+10) << 4;
+		else if(val[2*i]>='A' && val[2*i]<='F')
+			buf[i] = (val[2*i]-'A'+10) << 4;
+		else goto error;
+
+		if(val[2*i+1]>='0' && val[2*i+1]<='9')
+			buf[i] += val[2*i+1]-'0';
+		else if(val[2*i+1]>='a' && val[2*i+1]<='f')
+			buf[i] += val[2*i+1]-'a'+10;
+		else if(val[2*i+1]>='A' && val[2*i+1]<='F')
+			buf[i] += val[2*i+1]-'A'+10;
+		else goto error;
+	}
+	ret->s = buf;
+	ret->len = len/2;
+	return 0;
+error:
+	pkg_free(buf);
+	LM_ERR("invalid hex encoding\n");
+	return 1;
+}
+
+static cJSON *dict_avp_dec_hex(struct avp_hdr * h, struct dict_avp_data *avp)
+{
+	char *buf;
+	int len;
+	cJSON *obj;
+
+	if (avp->avp_basetype != AVP_TYPE_OCTETSTRING) {
+		LM_ERR("invalid base type for IP: %d\n", avp->avp_basetype);
+		return NULL;
+	}
+	buf = pkg_malloc(h->avp_value->os.len * 2);
+	if (!buf) {
+		LM_ERR("oom for hex buffer\n");
+		return NULL;
+	}
+	len = string2hex((const char *)h->avp_value->os.data, h->avp_value->os.len, buf);
+	obj = cJSON_CreateStr(buf, len);
+	pkg_free(buf);
+	return obj;
 }
