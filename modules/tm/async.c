@@ -349,10 +349,11 @@ int t_handle_async(struct sip_msg *msg, struct action* a,
 			timeout = 0;
 			LM_ERR("this async function has no support for timeouts -- "
 			       "still using an infinite timeout!\n");
-		} else if (ctx->async.timeout_f && ctx->async.timeout_s
-		        && ctx->async.timeout_s < timeout) {
-			timeout = ctx->async.timeout_s;
 		}
+
+		if (ctx->async.timeout_f && ctx->async.timeout_s
+		        && (!timeout || ctx->async.timeout_s < timeout))
+			timeout = ctx->async.timeout_s;
 
 		/* place the FD + resume function (as param) into reactor */
 		if (reactor_add_reader_with_timeout( fd, F_SCRIPT_ASYNC,
