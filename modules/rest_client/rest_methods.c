@@ -879,7 +879,7 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 	if (timed_out) {
 		char *url = NULL;
 		curl_easy_getinfo(param->handle, CURLINFO_EFFECTIVE_URL, &url);
-		LM_INFO("async %s timed out, URL: %s\n",
+		LM_ERR("async %s timed out, URL: %s\n",
 		        rest_client_method_str(param->method), url);
 		goto cleanup;
 	}
