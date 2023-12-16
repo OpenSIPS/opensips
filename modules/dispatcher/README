@@ -287,7 +287,9 @@ modparam("dispatcher", "attrs_avp", "$avp(script_attrs)")
    the route gets called ). The return value of the route is
    considered by the dispatcher module to be the current weight of
    the dispatcher entry, and when using the 10 algo, the
-   dispatcher entries are sorted in ascending weight order.
+   dispatcher entries are sorted in ascending weight order. If the
+   returned value from the algo route is negative, the current
+   dispatcher entry will be automatically skipped from usage
 
    Default value is “null” - disabled.
 
@@ -1513,7 +1515,7 @@ Chapter 3. Contributors
    6. Ionut Ionita (@ionutrazvanionita) 43 17 1145 969
    7. Ovidiu Sas (@ovidiusas) 31 17 705 434
    8. Vlad Patrascu (@rvlad-patrascu) 19 11 378 236
-   9. Vlad Paiu (@vladpaiu) 16 9 673 33
+   9. Vlad Paiu (@vladpaiu) 17 10 681 33
    10. Henning Westerholt (@henningw) 11 7 93 125
 
    All remaining contributors: Carsten Bock, Ionel Cerghit
@@ -1547,14 +1549,14 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
-   2.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2023
-   4.  wangdd                              Apr 2023 - May 2023
-   5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
-   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   7.  John Burke (@john08burke)           Feb 2021 - Jan 2022
-   8.  Vlad Paiu (@vladpaiu)               Mar 2012 - Apr 2020
+   1.  Vlad Paiu (@vladpaiu)               Mar 2012 - Dec 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
+   3.  Razvan Crainea (@razvancrainea)     May 2011 - Nov 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Oct 2023
+   5.  wangdd                              Apr 2023 - May 2023
+   6.  Liviu Chircu (@liviuchircu)         Aug 2012 - Aug 2022
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   8.  John Burke (@john08burke)           Feb 2021 - Jan 2022
    9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
    10. Roman Sevko                         Oct 2019 - Oct 2019
 
@@ -1577,17 +1579,17 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), wangdd, Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), John Burke (@john08burke),
-   Vlad Paiu (@vladpaiu), Roman Sevko, Peter Lemenkov (@lemenkov),
-   Nick Altmann (@nikbyte), Ionel Cerghit (@ionel-cerghit), Jarrod
-   Baumann (@jarrodb), Ovidiu Sas (@ovidiusas), Ionut Ionita
-   (@ionutrazvanionita), Andrei Datcu (@andrei-datcu), Walter
-   Doekes (@wdoekes), Stanislaw Pitucha, Anca Vamanu, Klaus
-   Darilion, Daniel-Constantin Mierla (@miconda), Konstantin
-   Bokarius, Carsten Bock, Edson Gellert Schubert, Elena-Ramona
-   Modroiu.
+   Last edited by: Vlad Paiu (@vladpaiu), Razvan Crainea
+   (@razvancrainea), wangdd, Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), John Burke (@john08burke), Roman Sevko, Peter
+   Lemenkov (@lemenkov), Nick Altmann (@nikbyte), Ionel Cerghit
+   (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ovidiu Sas
+   (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Andrei Datcu
+   (@andrei-datcu), Walter Doekes (@wdoekes), Stanislaw Pitucha,
+   Anca Vamanu, Klaus Darilion, Daniel-Constantin Mierla
+   (@miconda), Konstantin Bokarius, Carsten Bock, Edson Gellert
+   Schubert, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 
