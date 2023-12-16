@@ -501,7 +501,7 @@ Chapter 2. Contributors
    3. Razvan Crainea (@razvancrainea) 70 49 1642 421
    4. Daniel-Constantin Mierla (@miconda) 49 26 2215 191
    5. Liviu Chircu (@liviuchircu) 24 21 85 76
-   6. Vlad Paiu (@vladpaiu) 23 9 394 560
+   6. Vlad Paiu (@vladpaiu) 24 10 402 568
    7. Vlad Patrascu (@rvlad-patrascu) 16 7 284 333
    8. Henning Westerholt (@henningw) 11 6 146 155
    9. Andrei Datcu (@andrei-datcu) 11 5 284 135
@@ -534,9 +534,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jul 2023
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2023
-   3.  Vlad Paiu (@vladpaiu)               Jun 2011 - Sep 2022
+   1.  Vlad Paiu (@vladpaiu)               Jun 2011 - Dec 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2006 - Jul 2023
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jun 2023
    4.  Nick Altmann (@nikbyte)             Feb 2022 - Feb 2022
    5.  Walter Doekes (@wdoekes)            Apr 2019 - Apr 2021
    6.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2021
