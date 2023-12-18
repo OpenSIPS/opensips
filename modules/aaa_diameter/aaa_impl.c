@@ -1903,7 +1903,7 @@ static struct dict_avp_enc_f *dm_enc_get(int code, int vendor)
 	return a?enc_type2func(a->enc):NULL;
 }
 
-static int dict_avp_enc_ip(cJSON *obj, struct dict_avp_data *avp, int, str *ret)
+static int dict_avp_enc_ip(cJSON *obj, struct dict_avp_data *avp, int _, str *ret)
 {
 	int af;
 	unsigned char buf[sizeof(struct in6_addr)];
@@ -1946,7 +1946,7 @@ static cJSON *dict_avp_dec_ip(struct avp_hdr * h, struct dict_avp_data *avp)
 	return cJSON_CreateString(buf);;
 }
 
-static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int, str *ret)
+static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *ret)
 {
 	int len, i;
 	char *buf, *val;

@@ -668,7 +668,7 @@ int parse_attr_def(char *line, FILE *fp)
 		}
 	}
 
-create_avp:
+create_avp:;
 	struct dict_object *parent, *avp_ref, **pref;
 
 	if (enc_type != AVP_ENC_TYPE_NONE &&
