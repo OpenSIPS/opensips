@@ -447,7 +447,8 @@ int mi_print_var(sh_var_t *shv, mi_item_t *var_item, int do_locking)
 			return -1;
 		}
 
-		unlock_shvar(shv);
+		if (do_locking)
+			unlock_shvar(shv);
 	} else {
 		ival = shv->v.value.n;
 		if (do_locking)
@@ -547,7 +548,7 @@ mi_response_t *mi_shvar_get_1(const mi_params_t *params, struct mi_handler *_)
 	if (!var_obj)
 		goto error;
 
-	if (mi_print_var(shv, var_obj, 0) < 0)
+	if (mi_print_var(shv, var_obj, 1) < 0)
 		goto error;
 
 	return resp;
