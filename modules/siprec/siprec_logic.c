@@ -63,6 +63,19 @@ int src_init(void)
 		return -1;
 	}
 
+	if (srec_b2b.register_cb(src_event_received,
+			B2BCB_RECV_EVENT, &mod_name) < 0) {
+		LM_ERR("could not register SIPREC event receive callback!\n");
+		return -1;
+	}
+
+	if (srec_b2b.register_cb(src_event_trigger,
+			B2BCB_TRIGGER_EVENT, &mod_name) < 0) {
+		LM_ERR("could not register SIPREC event trigger callback!\n");
+		return -1;
+	}
+
+
 	return 0;
 }
 

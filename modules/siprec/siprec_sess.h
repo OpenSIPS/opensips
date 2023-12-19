@@ -178,5 +178,11 @@ void srec_loaded_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
 void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 		struct dlg_cb_params *params);
+void src_event_trigger(enum b2b_entity_type et, str *key,
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
+void src_event_received(enum b2b_entity_type et, str *key,
+		str *logic_key, void *param, enum b2b_event_type event_type,
+		bin_packet_t *store, int backend);
 
 #endif /* _SIPREC_SESS_H_ */
