@@ -1,3 +1,419 @@
+=========================== Release 3.2.16 ==============================
+
+2023-12-20  Razvan Crainea  <razvan@opensips.org>
+        * [821b42344] :
+
+        cJSON: provide support for adding header to functions
+
+        This avoids conflicts between overlapping libs that use different cJSON
+        implementations.
+
+        Many thanks to He Huang from Five9 for reporting and providing tests
+
+        (cherry picked from commit 3a891b9085d2efdf03ae02274452da7c24279cc6)
+
+
+2023-12-18  Liviu Chircu  <liviu@opensips.org>
+        * [32b49abc8] :
+
+        freeswitch: Avoid dangling socket structs in reactor
+
+        Should reactor_del_reader() ever fail, retry it using index "-1" in
+        order to guarantee removal of the file descriptor from the EPOLL
+        controller.
+
+        Also fix several occurences of bad 3rd parameter (IO_WATCH_READ instead
+        of IO_FD_CLOSING, which was probably the intended argument).
+
+        (cherry picked from commit 26a9e3a269f9e9b13c5de04422d4efd79ba27b54)
+
+
+2023-12-18  Liviu Chircu  <liviu@opensips.org>
+        * [d255a050a] :
+
+        cfgutils: Fix "lock" operations during MI listing
+
+        * fix missing lock check, causing too many unlocks
+        * always lock the shv during MI listing, to avoid reading garbage
+            (e.g. partial data), as a WRITE is taking place in parallel
+
+        (cherry picked from commit 0c9aa6ffff31d40db9604be616b1b27053b53235)
+
+
+2023-12-17  OpenSIPS  <github@opensips.org>
+        * [334f0f7ce] :
+
+        Rebuild documentation
+
+
+2023-12-14  Liviu Chircu  <liviu@opensips.org>
+        * [9a3c3c371] :
+
+        rest_client: Improve previous commit (async timeouts)
+
+        * fix corner-case causing module timeout to be discarded
+        * change logging level on transfer timeout from INFO -> ERR
+
+        (cherry picked from commit 1ecb32491ff891c5002f8de47373cd1cc5b70376)
+
+
+2023-12-14  Liviu Chircu  <liviu@opensips.org>
+        * [e798b13e9] :
+
+        drouting: Fix rule fallback across multiple prefixless rules ('')
+
+        Mostly affects the "do_routing() + use_next_gw()" scripting logic.
+
+        (cherry picked from commit fd5066a0459228ab388bd00fd8b1157c34b20ce0)
+        (cherry picked from commit 435aa4bab81cfd94fa77d0bae8e55dc9b76ea2e5)
+
+
+2023-12-12  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [76027dde0] :
+
+        [tm] remove unappropriated RW locks and use standard ones
+
+        In the timer list implementation, all the ops over the list are like writer, so it makes no sense to use the RW locks which overall are a bit slower than the standard simple locks
+
+        (cherry picked from commit ac364c169dfb29e79887c20e1c08af0d24673953)
+        (cherry picked from commit 35f8ea7cd093b075c75f59ef87d3395484f8cd12)
+
+
+2023-12-11  Liviu Chircu  <liviu@opensips.org>
+        * [59ec6300b] :
+
+        rest_client: Fix handling for async timeouts
+
+        This patch improves all rest_client async operations such that they
+        now correctly time out after the minimum between:
+
+        * the "rest_client.curl_timeout" modparam (seconds)
+        * the async() statement timeout, if any (seconds)
+
+        Credits to Bence Szigeti for helping diagnose and fix the issue
+
+        (cherry picked from commit 1ea1852ed79ba4b79cba39643e1274eed509081b)
+
+        async: Add support for module-injected timeouts
+
+        In some cases, the module may have its own timeout for the async
+        operation which it would prefer to force into the reactor wait loop,
+        possibly even have it combined with the async(..., X) statement timeout
+        as well, with the minimum of the two timeouts to win out.
+
+        (cherry picked from commit 03db3688a4c44577db483c1aecdaacc208490ebd)
+        (cherry picked from commit 3e6195363beacefd46afca74c730fb36b3065b48)
+
+
+2023-12-11  Liviu Chircu  <liviu@opensips.org>
+        * [427b4a7ec] :
+
+        acc: Fix possible crash if 'aaa' module not loaded
+
+        If do_accounting("aaa") is used without a backend module loaded,
+        OpenSIPS would actually start, then crash when generating an acc record.
+
+        Credits to Simon Gajski and Bogdan Iancu for reporting and diagnosing
+        the issue here.
+
+
+2023-12-09  OpenSIPS  <github@opensips.org>
+        * [34d97219e] :
+
+        Rebuild documentation
+
+
+2023-12-08  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f3d31a500] :
+
+        [tm] fix missing Route hdrs in locally generated ACK/CANCEL
+
+        Even if those requests are hop-to-hop (and they do not need Route hdrs), this is valid only for stateful SIP servers. Yes, woow, we need to take care of stateless SIP server :P.
+        As various module may add lumps with Route hdrs, let's mark this, so we will know later if we should re-parse and check for such Route hdrs (in the outbound buffer)
+        Closes #3131
+
+        (cherry picked from commit 13bd2b877ca82f0b692208e7c9d46df15aa4b35a)
+
+
+2023-12-07  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [836f65e27] :
+
+        Merge pull request #3266 from jes/jes/proto_tls-rlen
+
+        proto_tls: report error with correct variable
+
+        (cherry picked from commit 2cb54ee862f4fe93586e4383519043e4dbaa2773)
+
+
+2023-12-07  Razvan Crainea  <razvan@opensips.org>
+        * [bbca601bb] :
+
+        b2b_logic: Fix pkg_str_dup ret code check
+
+        Fix bug while checking the return of pkg_str_dup - due to the bad return
+        check, we were no longer terminating dangling entities with BYE.
+
+        Many thanks to David Escartin from Sonoc for reporting and help in
+        troubleshooting this issue!
+
+        (cherry picked from commit 5d90a34b401c48cc680d9f3343f9efce15ad6a28)
+
+
+2023-12-04  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a031d84c5] :
+
+        [b2b_logic] fix TO hdr setting in UAC entities
+
+        Keep the original idea (<=3.1) to have TO and RURI set to the same URI. Starting 3.2 this was accidentally changed, TO hdr being preserved from the UAS entity.
+        Fixes #3176
+
+        (cherry picked from commit d3e3ad118ce57dcf93947e25ed2efe0193286c71)
+
+
+2023-12-04  Liviu Chircu  <liviu@opensips.org>
+        * [e73882aba] :
+
+        acc: Code improvements
+
+        * make the is_xxx_on() macros more practical, by returning `int` instead
+        of `unsigned long long`, to avoid integer overflows during result check
+
+        * add more unit tests
+
+        (cherry picked from commit f635a63a7acfc5b55c8f06bd14693d3e710a633b)
+        (cherry picked from commit 0bc0e07d60528841aed860e67ee93b84c03e3c60)
+
+
+2023-12-04  Liviu Chircu  <liviu@opensips.org>
+        * [e77106013] :
+
+        acc: Fix drop_accounting() regression (211a63c9b2)
+
+        Commit 211a63c9 changed drop_accounting() from doing too little
+        dropping (the "backend bit" would never get reset) into doing too much
+        dropping (the "backend bit" would always be reset, despite some of the
+        flags still remaining enabled after the drop operation).
+
+        This commit fixes the code and also adds some unit tests for the
+        set/reset bitmask operations, to lock in the correct behavior.
+
+        (cherry picked from commit 0f0de89f6a050255050e913bd3295c2ae2a43fdc)
+        (cherry picked from commit 9608d8a1d567fbf7ee1f332cc0dc2805509fa386)
+
+
+2023-12-02  OpenSIPS  <github@opensips.org>
+        * [218d991b5] :
+
+        Rebuild documentation
+
+
+2023-11-28  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [f039bde74] :
+
+        [tm] fix the visibility of $T_branch_idx in failure route
+
+        The bavp's are already available in failure route and they are using the same internal variable for the branch index. So, to keep consistency, the branch index should be visible also in failure route via $T_branch_idx
+
+        (cherry picked from commit ae9e51ec131e5d2dd20fc2ac1e28835916a70c7f)
+
+
+2023-11-28  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c2d6d206c] :
+
+        [tm] fix setting _tm_branch_index in case of internal timeout
+
+        Be sure the _tm_branch_index variable is properly set for internal timeout and not only for received replies
+
+        (cherry picked from commit 43590e93f457df32dfec9dff6ef859624e13b852)
+
+
+2023-11-28  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b4972d184] :
+
+        [cfg] fix bogus constraint on ':=' operator
+
+        It is actually implemented by BAVP also (not only AVPs), but the script does not allow its usage :(.
+        Removing the check is safe as all the other variables will treat the ':=' as '=' - they do not test the operator during "set", assuming '=' all the time.
+
+        (cherry picked from commit 5bab986c7c887a438e0cb007afa617ff6a5dcb4b)
+
+
+2023-11-28  Razvan Crainea  <razvan@opensips.org>
+        * [15f4a5dc5] :
+
+        rtpproxy: handle timeouts for stats command
+
+        Fixes a crash when OpenSIPS was timing out when fetching statistics
+
+        (cherry picked from commit 2b5392d5394edf9ce346cd10363dae5a66d82fcd)
+
+
+2023-11-27  Razvan Crainea  <razvan@opensips.org>
+        * [d5e227673] :
+
+        cgrates: return 1 while setting a non-object return
+
+        Comply with documentation with functions that always return 1 if success
+
+        Reported by MonkeyTester (@Integration-IT on GitHub) for reporting this.
+        Close #3256
+
+        (cherry picked from commit 51b8a2bc87ed8cb508cf3e8c3f7c6ff75012ac04)
+
+
+2023-11-27  Razvan Crainea  <razvan@opensips.org>
+        * [c9cb2ea69] :
+
+        rtpengine: make oom error logs more verbose
+
+        (cherry picked from commit 6d38787c1ecee65899377cef3167987923889ece)
+
+
+2023-11-25  OpenSIPS  <github@opensips.org>
+        * [3f56116b8] :
+
+        Rebuild documentation
+
+
+2023-11-21  Razvan Crainea  <razvan@opensips.org>
+        * [e8781b979] :
+
+        dispatcher: fix partition parsing ending
+
+        (cherry picked from commit 2a70e611649a0fa70680bd2dee0625ca2a805b10)
+
+
+2023-11-21  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [6aea86431] :
+
+        [tm] fix NULL on out of index for bavp() vars
+
+        (cherry picked from commit 492df453de434f49131dd61fcf5fd6f4f5e8025a)
+
+
+2023-11-18  OpenSIPS  <github@opensips.org>
+        * [687507752] :
+
+        Rebuild documentation
+
+
+2023-11-16  Razvan Crainea  <razvan@opensips.org>
+        * [5fe603639] :
+
+        rtpproxy: fix rtpproxy_enable setid docs
+
+        (cherry picked from commit e8aaca713949c5c52c48c389066a820f2a4eb33b)
+
+
+2023-11-16  Liviu Chircu  <liviu@opensips.org>
+        * [68ad0e0c9] :
+
+        dialog: Fix bad test in prev commit
+
+
+2023-11-15  Liviu Chircu  <liviu@opensips.org>
+        * [2bc5084be] :
+
+        usrloc: Clarify docs for MI 'ul_cluster_sync'
+
+        (cherry picked from commit 8f328428cb218cdfaefdc3e22bac7e5dc28992af)
+
+
+2023-11-15  Liviu Chircu  <liviu@opensips.org>
+        * [7f334f494] :
+
+        dialog: Mitigate 'dlg_list' PKG fragmentation
+
+        By using pkg_str_extend() instead of pkg_realloc(), we avoid a constant
+        creation of PKG fragments (the buffer will eventually stop growing),
+        which seems to gradually fragment the private memory pool, as the MI
+        'dlg_list' is continuously polled by various monitoring software.
+
+        Related to #3235
+
+        (cherry picked from commit d2037f63986926dfd169ea7a58c6abf1a82fafcd)
+
+
+2023-11-15  Liviu Chircu  <liviu@opensips.org>
+        * [e4ec93f4f] :
+
+        Fix PKG memory leak on {s.eval} corner-case
+
+        Make sure to correctly free the transformation data structures even when
+        parsed by {s.eval} at runtime, as opposed to one-time parsing during
+        startup, which would never highlight the leak:
+
+            $var(proxy) = "$(du{nameaddr.uri}{re.subst,/scscf-int-/scscf-/})";
+            $var(proxy) = $(var(proxy){s.eval});
+
+        Fixes #3233
+
+        (cherry picked from commit be764a16fe606294339252623deeeaa374e7dae0)
+
+
+2023-11-13  Răzvan Crainea  <razvan@opensips.org>
+        * [aa40fe1a7] :
+
+        Merge pull request #3243 from purecloudlabs/hotfix/json-array-del-element
+
+        json: fix array element deletion
+        (cherry picked from commit 6ec8840f0e67520b05db0427fd05ead845ae3871)
+
+
+2023-11-04  OpenSIPS  <github@opensips.org>
+        * [642521721] :
+
+        Rebuild documentation
+
+
+2023-11-03  Liviu Chircu  <liviu@opensips.org>
+        * [5a8f6e406] :
+
+        CacheDB: Allow "@" in URL passwords
+
+        (cherry picked from commit 1df9afd3886a3bddf837927aafca7bff8763acd1)
+
+
+2023-10-31  Razvan Crainea  <razvan@opensips.org>
+        * [2a44eb45a] :
+
+        proto_hep: fix type in  hep_async_local_write_timeout param name
+
+        (cherry picked from commit 267b938422cf146f1a9de545b2acedb2780af064)
+
+
+2023-10-31  Liviu Chircu  <liviu@opensips.org>
+        * [4d21699bc] :
+
+        tls_wolfssl: Fix tarball generation
+
+        Since ".patch" files are explicitly excluded during tarball packing,
+        let's just rename the patch file to ".diff" instead so it gets included,
+        thus allowing the tarball module code to compile once again.
+
+        (cherry picked from commit 82876a79058885e14cfb6099cee68aa95f184099)
+
+
+2023-10-28  OpenSIPS  <github@opensips.org>
+        * [a1092f256] :
+
+        Rebuild documentation
+
+
+2023-10-25  Razvan Crainea  <razvan@opensips.org>
+        * [a86aae11f] :
+
+        call_center: passthrough in-dialog requests, except BYE
+
+        (cherry picked from commit c0f5b124127f6ad9ff68344f8764198dee9bf9c6)
+
+
+2023-10-21  OpenSIPS  <github@opensips.org>
+        * [6aec16b0a] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.2.15 ==============================
 
 2023-10-17  Razvan Crainea  <razvan@opensips.org>
