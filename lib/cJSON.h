@@ -30,6 +30,64 @@ extern "C"
 {
 #endif
 
+#ifdef CJSON_PREFIX
+
+/* helpers */
+#define cjson_prefix2(X, Y) X ## Y
+#define cjson_prefix(X, Y) cjson_prefix2(X, Y)
+/* structures */
+#define cJSON cjson_prefix(CJSON_PREFIX, cJSON)
+#define cJSON_Hooks cjson_prefix(CJSON_PREFIX, cJSON_Hooks)
+/* functions */
+#define cJSON_Version cjson_prefix(CJSON_PREFIX, cJSON_Version)
+#define cJSON_InitHooks cjson_prefix(CJSON_PREFIX, cJSON_InitHooks)
+#define cJSON_Parse cjson_prefix(CJSON_PREFIX, cJSON_Parse)
+#define cJSON_Print cjson_prefix(CJSON_PREFIX, cJSON_Print)
+#define cJSON_PurgeString cjson_prefix(CJSON_PREFIX, cJSON_PurgeString)
+#define cJSON_PrintUnformatted cjson_prefix(CJSON_PREFIX, cJSON_PrintUnformatted)
+#define cJSON_PrintBuffered cjson_prefix(CJSON_PREFIX, cJSON_PrintBuffered)
+#define cJSON_PrintPreallocated cjson_prefix(CJSON_PREFIX, cJSON_PrintPreallocated)
+#define cJSON_PrintFlushed cjson_prefix(CJSON_PREFIX, cJSON_PrintFlushed)
+#define cJSON_Delete cjson_prefix(CJSON_PREFIX, cJSON_Delete)
+#define cJSON_GetArraySize cjson_prefix(CJSON_PREFIX, cJSON_GetArraySize)
+#define cJSON_GetArrayItem cjson_prefix(CJSON_PREFIX, cJSON_GetArrayItem)
+#define cJSON_GetObjectItem cjson_prefix(CJSON_PREFIX, cJSON_GetObjectItem)
+#define cJSON_HasObjectItem cjson_prefix(CJSON_PREFIX, cJSON_HasObjectItem)
+#define cJSON_GetErrorPtr cjson_prefix(CJSON_PREFIX, cJSON_GetErrorPtr)
+#define cJSON_CreateNull cjson_prefix(CJSON_PREFIX, cJSON_CreateNull)
+#define cJSON_CreateTrue cjson_prefix(CJSON_PREFIX, cJSON_CreateTrue)
+#define cJSON_CreateFalse cjson_prefix(CJSON_PREFIX, cJSON_CreateFalse)
+#define cJSON_CreateBool cjson_prefix(CJSON_PREFIX, cJSON_CreateBool)
+#define cJSON_CreateNumber cjson_prefix(CJSON_PREFIX, cJSON_CreateNumber)
+#define cJSON_CreateString cjson_prefix(CJSON_PREFIX, cJSON_CreateString)
+#define cJSON_CreateStr cjson_prefix(CJSON_PREFIX, cJSON_CreateStr)
+#define cJSON_CreateRaw cjson_prefix(CJSON_PREFIX, cJSON_CreateRaw)
+#define cJSON_CreateArray cjson_prefix(CJSON_PREFIX, cJSON_CreateArray)
+#define cJSON_CreateObject cjson_prefix(CJSON_PREFIX, cJSON_CreateObject)
+#define cJSON_CreateIntArray cjson_prefix(CJSON_PREFIX, cJSON_CreateIntArray)
+#define cJSON_CreateFloatArray cjson_prefix(CJSON_PREFIX, cJSON_CreateFloatArray)
+#define cJSON_CreateDoubleArray cjson_prefix(CJSON_PREFIX, cJSON_CreateDoubleArray)
+#define cJSON_CreateStringArray cjson_prefix(CJSON_PREFIX, cJSON_CreateStringArray)
+#define cJSON_AddItemToArray cjson_prefix(CJSON_PREFIX, cJSON_AddItemToArray)
+#define _cJSON_AddItemToObject cjson_prefix(CJSON_PREFIX, _cJSON_AddItemToObject)
+#define cJSON_AddItemToObject cjson_prefix(CJSON_PREFIX, cJSON_AddItemToObject)
+#define cJSON_AddItemToObjectCS cjson_prefix(CJSON_PREFIX, cJSON_AddItemToObjectCS)
+#define cJSON_AddItemReferenceToArray cjson_prefix(CJSON_PREFIX, cJSON_AddItemReferenceToArray)
+#define cJSON_AddItemReferenceToObject cjson_prefix(CJSON_PREFIX, cJSON_AddItemReferenceToObject)
+#define cJSON_DetachItemFromArray cjson_prefix(CJSON_PREFIX, cJSON_DetachItemFromArray)
+#define cJSON_DeleteItemFromArray cjson_prefix(CJSON_PREFIX, cJSON_DeleteItemFromArray)
+#define cJSON_DetachItemFromObject cjson_prefix(CJSON_PREFIX, cJSON_DetachItemFromObject)
+#define cJSON_DeleteItemFromObject cjson_prefix(CJSON_PREFIX, cJSON_DeleteItemFromObject)
+#define cJSON_InsertItemInArray cjson_prefix(CJSON_PREFIX, cJSON_InsertItemInArray)
+#define cJSON_ReplaceItemInArray cjson_prefix(CJSON_PREFIX, cJSON_ReplaceItemInArray)
+#define cJSON_ReplaceItemInObject cjson_prefix(CJSON_PREFIX, cJSON_ReplaceItemInObject)
+#define cJSON_Duplicate cjson_prefix(CJSON_PREFIX, cJSON_Duplicate)
+#define cJSON_ParseWithOpts cjson_prefix(CJSON_PREFIX, cJSON_ParseWithOpts)
+#define cJSON_Minify cjson_prefix(CJSON_PREFIX, cJSON_Minify)
+#define cJSON_SetNumberHelper cjson_prefix(CJSON_PREFIX, cJSON_SetNumberHelper)
+#define cJSON_NumberIsInt cjson_prefix(CJSON_PREFIX, cJSON_NumberIsInt)
+#endif /* CJSON_PREFIX */
+
 /* project version */
 #define CJSON_VERSION_MAJOR 1
 #define CJSON_VERSION_MINOR 2
