@@ -1064,7 +1064,7 @@ static void dlg_update_caller_rpl_contact(struct cell* t, int type,
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
 
-	if (statuscode == 401 || statuscode ==407) {
+	if ((statuscode == 401 || statuscode == 407) && dlg->legs[DLG_CALLER_LEG].last_gen_cseq) {
 		dlg->legs[DLG_CALLER_LEG].last_gen_cseq++;
 		LM_DBG("incrementing last_gen_cseq to [%d] for leg[%d]\n", dlg->legs[DLG_CALLER_LEG].last_gen_cseq, DLG_CALLER_LEG);
 	}
@@ -1099,6 +1099,11 @@ static void dlg_update_callee_rpl_contact(struct cell* t, int type,
 	}
 
 	LM_DBG("Status Code received =  [%d]\n", statuscode);
+
+	if ((statuscode == 401 || statuscode == 407) && dlg->legs[callee_idx(dlg)].last_gen_cseq) {
+		dlg->legs[callee_idx(dlg)].last_gen_cseq++;
+		LM_DBG("incrementing last_gen_cseq to [%d] for leg[%d]\n", dlg->legs[callee_idx(dlg)].last_gen_cseq, callee_idx(dlg));
+	}
 
 	if (statuscode >= 200 && statuscode < 300)
 		dlg_update_contact(dlg, rpl, callee_idx(dlg));
@@ -1346,7 +1351,8 @@ static void dlg_caller_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 	/* we use the initial request, which already has the contact parsed/fixed */
 	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
 	dlg_update_out_sdp(dlg, DLG_CALLER_LEG, callee_idx(dlg), msg, 1);
-	dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
+	if (is_invite(t))
+		dlg_leg_push_cseq_map(dlg, t, DLG_CALLER_LEG, msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -1377,9 +1383,10 @@ static void dlg_callee_reinv_onreq_out(struct cell* t, int type, struct tmcb_par
 		return;
 	}
 
-	dlg_update_contact(dlg, ps->req, DLG_CALLER_LEG);
+	dlg_update_contact(dlg, ps->req, callee_idx(dlg));
 	dlg_update_out_sdp(dlg, callee_idx(dlg), DLG_CALLER_LEG, msg, 1);
-	dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
+	if (is_invite(t))
+		dlg_leg_push_cseq_map(dlg, t, callee_idx(dlg), msg);
 	free_sip_msg(msg);
 	pkg_free(msg);
 }
@@ -2754,6 +2761,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 				pkg_free(route);
 				return -1;
 			}
+			req->msg_flags |= FL_HAS_ROUTE_LUMP;
 
 			LM_DBG("Setting route  header to <%s> \n",route);
 
@@ -2847,6 +2855,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 					return -1;
 				}
 				free_rr(&head);
+				req->msg_flags |= FL_HAS_ROUTE_LUMP;
 			}
 
 			if (lmp == NULL) {
@@ -2879,6 +2888,7 @@ int fix_route_dialog(struct sip_msg *req,struct dlg_cell *dlg)
 					pkg_free(remote_contact);
 					return -1;
 				}
+				req->msg_flags |= FL_HAS_ROUTE_LUMP;
 			}
 		}
 	}

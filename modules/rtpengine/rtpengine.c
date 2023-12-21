@@ -2367,14 +2367,14 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 		if (!val.s) {
 			bitem = bencode_str(bencode_item_buffer(ng_flags->flags), &key);
 			if (!bitem) {
-				err = "no more memory";
+				err = "no more memory for list value";
 				goto error;
 			}
 			BCHECK(bencode_list_add(ng_flags->flags, bitem));
 		} else {
 			bitem = bencode_str(bencode_item_buffer(ng_flags->dict), &val);
 			if (!bitem) {
-				err = "no more memory";
+				err = "no more memory for dict value";
 				goto error;
 			}
 			BCHECK(bencode_dictionary_add_len(ng_flags->dict, key.s, key.len, bitem));
@@ -2391,7 +2391,7 @@ static int parse_flags(struct ng_flags_parse *ng_flags, struct sip_msg *msg,
 			BCHECK(bencode_list_add(ng_flags->direction, bitem));
 			bitem = bencode_str(bencode_item_buffer(ng_flags->direction), &outiface);
 			if (!bitem) {
-				err = "no more memory";
+				err = "no more memory for direction";
 				goto error;
 			}
 			BCHECK(bencode_list_add(ng_flags->direction, bitem));
@@ -2492,6 +2492,7 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		 op == OP_START_FORWARD || op == OP_STOP_FORWARD)) {
 			ng_flags.flags = bencode_list(bencbuf);
 	} else if (op == OP_SUBSCRIBE_ANSWER) {
+		ng_flags.flags = bencode_list(bencbuf);
 		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
 	}
 
@@ -4448,13 +4449,17 @@ static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
 
 static int rtpengine_api_copy_serialize(void *_ctx, bin_packet_t *packet)
 {
-	return bin_push_str(packet, (str *)_ctx);
+	str str_empty = str_init("");
+	if (!_ctx)
+		return bin_push_str(packet, &str_empty);
+	else
+		return bin_push_str(packet, (str *)_ctx);
 }
 
 static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 {
 	str to_tag;
-	if (bin_pop_str(packet, &to_tag) < 0)
+	if (bin_pop_str(packet, &to_tag) < 0 || to_tag.len == 0)
 		return -1;
 
 	*_ctx = rtpengine_new_subs(&to_tag);

@@ -76,6 +76,7 @@ typedef struct client_info
 	unsigned int cseq;
 	unsigned int maxfwd;
 	struct socket_info* send_sock;
+	struct socket_info* pref_sock;
 	struct usr_avp *avps;
 }client_info_t;
 

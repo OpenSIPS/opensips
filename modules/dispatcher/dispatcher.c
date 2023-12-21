@@ -609,6 +609,7 @@ static int set_partition_arguments(unsigned int type, void *val)
 			}
 		}
 
+		raw_line.len -= end_pair_pos + 1 - raw_line.s;
 		raw_line.s = end_pair_pos + 1;
 		end_pair_pos = q_memchr(raw_line.s, end_pair_delim, raw_line.len);
 		eq_pos = q_memchr(raw_line.s, eq_val_delim, raw_line.len);
@@ -987,13 +988,14 @@ next_part:
 			return -1;
 		}
 
-		/* Register the weight-recalculation timer */
-		if (fetch_freeswitch_stats &&
-		    register_timer("ds-update-weights", ds_update_weights, NULL,
-		            fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
-			LM_ERR("failed to register timer for weight recalc!\n");
-			return -1;
-		}
+	}
+
+	/* Register the weight-recalculation timer */
+	if (fetch_freeswitch_stats &&
+	    register_timer("ds-update-weights", ds_update_weights, NULL,
+	            fs_api.stats_update_interval, TIMER_FLAG_SKIP_ON_DELAY)<0) {
+		LM_ERR("failed to register timer for weight recalc!\n");
+		return -1;
 	}
 
 	/* register timer to flush the state of destination back to DB */

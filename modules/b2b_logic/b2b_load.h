@@ -57,6 +57,8 @@ typedef struct b2bl_init_params {
 	str e2_to;
 	str e1_from_dname;
 	str e2_from_dname;
+	str ctx_key;
+	str ctx_val;
 } b2bl_init_params_t;
 
 

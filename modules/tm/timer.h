@@ -83,7 +83,7 @@ typedef struct  timer
 /* transaction table */
 struct timer_table
 {
-	rw_lock_t      *ex_lock;
+	gen_lock_t      *ex_lock;
 	/* table of timer lists */
 	struct timer   timers[ NR_OF_TIMER_LISTS ];
 };

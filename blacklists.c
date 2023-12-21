@@ -1238,6 +1238,7 @@ int fixup_blacklist_net(void** param)
 	struct bl_net_flags *nf = pkg_malloc(sizeof *nf);
 	if (!nf)
 		return E_OUT_OF_MEM;
+	memset(nf, 0, sizeof *nf);
 	trim(&tmp);
 	if (tmp.s[0] == '!') {
 		nf->flags = BLR_APPLY_CONTRARY;

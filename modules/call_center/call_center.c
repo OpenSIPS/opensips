@@ -46,6 +46,7 @@ static str rt_db_url = {NULL, 0};;
 static struct cc_data *data=NULL;
 static str b2b_scenario = str_init("call center");
 static str b2b_scenario_agent = str_init("call center agent");
+static str b2b_logic_ctx_param = str_init("call_center");
 
 /* b2b logic API */
 b2bl_api_t b2b_api;
@@ -168,6 +169,7 @@ static const param_export_t mod_params[]={
 	{ "ccf_m_dissuading_column",
 							  STR_PARAM, &ccf_m_dissuading_column.s        },
 	{ "ccf_m_flow_id_column", STR_PARAM, &ccf_m_flow_id_column.s           },
+	{ "b2b_logic_ctx_param",  STR_PARAM, &b2b_logic_ctx_param.s            },
 	{ 0,0,0 }
 };
 
@@ -374,6 +376,7 @@ static int mod_init(void)
 	ccf_m_queue_column.len = strlen(ccf_m_queue_column.s);
 	ccf_m_dissuading_column.len = strlen(ccf_m_dissuading_column.s);
 	ccf_m_flow_id_column.len = strlen(ccf_m_flow_id_column.s);
+	b2b_logic_ctx_param.len = strlen(b2b_logic_ctx_param.s);
 
 	if (queue_pos_param.s)
 		queue_pos_param.len = strlen(queue_pos_param.s);
@@ -901,7 +904,7 @@ int b2bl_callback_customer(b2bl_cb_params_t *params, unsigned int event)
 	if (event!=B2B_BYE_CB) {
 		lock_set_release( data->call_locks, call->lock_idx );
 		cc_call_state = CC_CALL_NONE;
-		return 0;
+		return 1;
 	}
 
 	/* right-side leg of call sent BYE */
@@ -988,6 +991,10 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		b2b_params.e1_from_dname = call->caller_dn;
 		b2b_params.e2_type = B2B_CLIENT;
 		b2b_params.e2_to = *new_leg;
+		if (call->script_param.len) {
+			b2b_params.ctx_key = b2b_logic_ctx_param;
+			b2b_params.ctx_val = call->script_param;
+		}
 
 		id = b2b_api.init(NULL, &b2b_scenario_agent, &b2b_params, b2bl_callback_agent,
 				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL);
@@ -1014,6 +1021,10 @@ int set_call_leg( struct sip_msg *msg, struct cc_call *call, str *new_leg)
 		b2b_params.e1_type = B2B_SERVER;
 		b2b_params.e2_type = B2B_CLIENT;
 		b2b_params.e2_to = *new_leg;
+		if (call->script_param.len) {
+			b2b_params.ctx_key = b2b_logic_ctx_param;
+			b2b_params.ctx_val = call->script_param;
+		}
 
 		id = b2b_api.init(msg, &b2b_scenario, &b2b_params, b2bl_callback_customer,
 				(void*)call, B2B_DESTROY_CB|B2B_REJECT_CB|B2B_BYE_CB, NULL /* custom_hdrs */ );
