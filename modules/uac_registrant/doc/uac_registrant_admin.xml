@@ -181,6 +181,47 @@ modparam("uac_registrant", "enable_clustering", 1)
 		</example>
 	</section>
 
+	<section id="param_match_contact" xreflabel="match_contact">
+		<title><varname>match_contact</varname> (string)</title>
+		<para>
+		A list of URI parts delimited by ';'.
+		This parameter lets you select which parts of the URI from the Contact
+		header of the 200 OK reply should match the binding_URI.
+		The module compares the Contact header with the binding_URI when it
+		receives a 200 OK reply to the REGISTER request. If they match,
+		it uses the expiration time given in the reply.
+		The default behavior is to compare the entire URI.
+		</para>
+		<para>Possible URI parts for matching:</para>
+		<para>
+		<itemizedlist>
+			<listitem><para>type</para></listitem>
+			<listitem><para>user</para></listitem>
+			<listitem><para>host</para></listitem>
+			<listitem><para>port</para></listitem>
+			<listitem><para>transport</para></listitem>
+			<listitem><para>ttl</para></listitem>
+			<listitem><para>userparam</para></listitem>
+			<listitem><para>maddr</para></listitem>
+			<listitem><para>method</para></listitem>
+			<listitem><para>all</para></listitem>
+		</itemizedlist>
+		</para>
+		<para>
+		<emphasis>
+			Default value is "all".
+		</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>match_contact</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "match_contact", "type;user")
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_db_url" xreflabel="db_url">
 		<title><varname>db_url</varname> (string)</title>
 		<para>
