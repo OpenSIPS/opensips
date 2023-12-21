@@ -19,11 +19,13 @@
  */
 
 #include <freeDiameter/extension.h>
+#include <sys/eventfd.h>
 
 #include "../../ut.h"
 #include "../../lib/list.h"
 #include "../../lib/csv.h"
 #include "../../lib/hash.h"
+#include "../../ipc.h"
 
 #include "aaa_impl.h"
 #include "peer.h"
@@ -85,18 +87,34 @@ static int dm_avp_inttype[] = {
 	AAA_TYPE_FLOAT64,
 };
 
+static struct dm_cond *dm_get_cond(int type)
+{
+	struct dm_cond *cond = shm_malloc(sizeof *cond);
+	if (!cond) {
+		LM_ERR("oom\n");
+		return NULL;
+	}
+	memset(cond, 0, sizeof *cond);
+	cond->type = type;
+	if (type == DM_TYPE_EVENT) {
+		cond->sync.event.pid = process_no;
+		cond->sync.event.fd = eventfd(0, 0);
+		if (cond->sync.event.fd < 0) {
+			LM_ERR("could not create event fd\n");
+			shm_free(cond);
+			return NULL;
+		}
+	} else {
+		init_mutex_cond(&cond->sync.cond.mutex, &cond->sync.cond.cond);
+	}
+
+	return cond;
+}
 
 int dm_init_reply_cond(int proc_rank)
 {
-	my_reply_cond = shm_malloc(sizeof *my_reply_cond);
-	if (!my_reply_cond) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	memset(my_reply_cond, 0, sizeof *my_reply_cond);
-
-	init_mutex_cond(&my_reply_cond->mutex, &my_reply_cond->cond);
-	return 0;
+	my_reply_cond = dm_get_cond(DM_TYPE_COND);
+	return my_reply_cond?0:-1;
 }
 
 
@@ -153,6 +171,36 @@ out:
 	return 0;
 }
 
+static void dm_cond_event_resume(int sender, void *param)
+{
+	int ret;
+	static unsigned long r = 1;
+	struct dm_cond *cond = (struct dm_cond *)param;
+
+	/* signal the reactor that the result is available */
+	do {
+		ret = write(cond->sync.event.fd, &r, sizeof r);
+	} while (ret < 0 && (errno == EINTR || errno == EAGAIN));
+	if (ret < 0)
+		LM_ERR("could not notify resume: %s\n", strerror(errno));
+}
+
+/* assumes that the cond's mutex is taken */
+static void dm_cond_signal(struct dm_cond *cond)
+{
+	if (cond->type == DM_TYPE_EVENT) {
+		if (ipc_send_rpc(cond->sync.event.pid, dm_cond_event_resume, cond) < 0) {
+			LM_ERR("could not resume async MI command!\n");
+			shm_free(cond);
+		}
+	} else {
+		/* signal the blocked SIP worker that the auth result is available! */
+		pthread_mutex_lock(&cond->sync.cond.mutex);
+		pthread_cond_signal(&cond->sync.cond.cond);
+		pthread_mutex_unlock(&cond->sync.cond.mutex);
+	}
+}
+
 
 static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
@@ -202,11 +250,7 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	} else {
 		rpl_cond->is_error = 0;
 	}
-
-	/* signal the blocked SIP worker that the auth result is available! */
-	pthread_mutex_lock(&rpl_cond->mutex);
-	pthread_cond_signal(&rpl_cond->cond);
-	pthread_mutex_unlock(&rpl_cond->mutex);
+	dm_cond_signal(rpl_cond);
 
 out:
 	FD_CHECK(fd_msg_free(msg));
@@ -379,7 +423,6 @@ out:
 	return -1;
 }
 
-
 static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
 	cJSON *avps = NULL;
@@ -444,9 +487,7 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 	}
 	rpl_cond = *prpl_cond;
 
-	pthread_mutex_lock(&rpl_cond->mutex);
 	if (!hash_find_key(pending_replies, tid)) {
-		pthread_mutex_unlock(&rpl_cond->mutex);
 		LM_ERR("Transaction_Id %.*s already processed!\n", tid.len, tid.s);
 		goto out;
 	}
@@ -462,7 +503,6 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		rpl_cond->is_error = 1;
 		rc = fd_msg_avp_hdr(a, &h);
 		if (rc != 0) {
-			pthread_mutex_unlock(&rpl_cond->mutex);
 			goto out;
 		}
 
@@ -471,10 +511,7 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 	} else {
 		rpl_cond->is_error = 0;
 	}
-
-	/* signal the blocked SIP worker that the auth result is available! */
-	pthread_cond_signal(&rpl_cond->cond);
-	pthread_mutex_unlock(&rpl_cond->mutex);
+	dm_cond_signal(rpl_cond);
 
 out:
 	cJSON_Delete(avps);
@@ -1678,6 +1715,53 @@ error:
 	return -1;
 }
 
+int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd)
+{
+	struct dm_message *dm;
+	struct dm_cond *cond;
+
+	if (!req)
+		return -1;
+
+	cond = dm_get_cond(DM_TYPE_EVENT);
+	if (!cond) {
+		LM_ERR("out of memory for cond\n");
+		return -1;
+	}
+
+	dm = (struct dm_message *)(req->avpair);
+	*fd = cond->sync.event.fd;
+	dm->reply_cond = cond;
+
+	req->last_found = DM_MSG_SENT;
+
+	pthread_mutex_lock(msg_send_lk);
+
+	list_add_tail(&dm->list, msg_send_queue);
+	pthread_cond_signal(msg_send_cond);
+
+	pthread_mutex_unlock(msg_send_lk);
+
+	LM_DBG("message queued for async sending\n");
+
+	return 0;
+}
+
+int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps)
+{
+
+	LM_DBG("reply received, Result-Code: %d (%s)\n", cond->rc,
+			cond->is_error ? "FAILURE" : "SUCCESS");
+	LM_DBG("AVPs: %s\n", cond->rpl_avps_json);
+
+	if (rpl_avps)
+		*rpl_avps = cond->rpl_avps_json;
+
+	if (cond->is_error)
+		return -1;
+	return 1;
+}
+
 
 int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
                char **rpl_avps)
@@ -1720,30 +1804,22 @@ int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
 		wait_until.tv_sec = res.tv_sec;
 		wait_until.tv_nsec = res.tv_usec * 1000UL;
 
-		pthread_mutex_lock(&my_reply_cond->mutex);
-		rc = pthread_cond_timedwait(&my_reply_cond->cond,
-					&my_reply_cond->mutex, &wait_until);
+		pthread_mutex_lock(&my_reply_cond->sync.cond.mutex);
+		rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
+					&my_reply_cond->sync.cond.mutex, &wait_until);
 		if (rc != 0) {
 			LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
 			       "reply\n", rc, strerror(rc));
-			pthread_mutex_unlock(&my_reply_cond->mutex);
+			pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
 
 			if (rpl_avps)
 				*rpl_avps = NULL;
 			return -2;
 		}
 
-		pthread_mutex_unlock(&my_reply_cond->mutex);
+		pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
 
-		LM_DBG("reply received, Result-Code: %d (%s)\n", my_reply_cond->rc,
-				my_reply_cond->is_error ? "FAILURE" : "SUCCESS");
-		LM_DBG("AVPs: %s\n", my_reply_cond->rpl_avps_json);
-
-		if (rpl_avps)
-			*rpl_avps = my_reply_cond->rpl_avps_json;
-
-		if (my_reply_cond->is_error)
-			return -1;
+		return _dm_get_message_response(my_reply_cond, rpl_avps);
 	}
 
 	return 0;

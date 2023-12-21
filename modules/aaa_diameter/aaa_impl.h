@@ -112,9 +112,21 @@ struct dm_avp {
 	struct list_head list;
 };
 
+#define DM_TYPE_COND (1<<0)
+#define DM_TYPE_EVENT (1<<1)
+
 struct dm_cond {
-	pthread_mutex_t mutex;
-	pthread_cond_t cond;
+	int type;
+	union {
+		struct {
+			pthread_mutex_t mutex;
+			pthread_cond_t cond;
+		} cond;
+		struct {
+			int fd;
+			int pid;
+		} event;
+	} sync;
 
 	int rc; /* the Diameter Result-Code AVP value */
 	int is_error;
@@ -145,6 +157,8 @@ int dm_build_avps(struct list_head *subavps, cJSON *array);
 int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
 int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
                char **rpl_avps);
+int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd);
+int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
 void _dm_destroy_message(aaa_message *msg);
 

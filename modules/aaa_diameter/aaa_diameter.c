@@ -22,6 +22,7 @@
 
 #include "../../sr_module.h"
 #include "../../lib/list.h"
+#include "../../async.h"
 #include "../../ut.h"
 
 #include "aaa_impl.h"
@@ -37,6 +38,8 @@ char *extra_avps_file;
 
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 				str *avp_json, pv_spec_t *rpl_avps_pv);
+static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
+				int *app_id, int *cmd_code, str *avp_json, pv_spec_t *rpl_avps_pv);
 static int dm_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
@@ -55,6 +58,15 @@ static const cmd_export_t cmds[]= {
 
 	{"aaa_bind_api", (cmd_function) dm_bind_api, {{0, 0, 0}}, 0},
 	{0,0,{{0,0,0}},0}
+};
+
+static const acmd_export_t acmds[]= {
+	{"dm_send_request", (acmd_function)dm_send_request_async, {
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_INT,0,0},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}}},
+	{0,0,{{0,0,0}}}
 };
 
 static const proc_export_t procs[] = {
@@ -98,7 +110,7 @@ struct module_exports exports =
 	NULL,             /* load function */
 	&deps,            /* OpenSIPS module dependencies */
 	cmds,             /* exported functions */
-	NULL,             /* exported async functions */
+	acmds,            /* exported async functions */
 	params,           /* param exports */
 	NULL,             /* exported statistics */
 	mi_cmds,          /* exported MI functions */
@@ -285,6 +297,142 @@ error:
 	}
 
 	_dm_destroy_message(dmsg);
+	cJSON_Delete(avps);
+	return -1;
+}
+
+struct dm_async_msg {
+	pv_spec_p ret;
+	struct dm_cond *cond;
+};
+
+static struct dm_async_msg *dm_get_async_msg(pv_spec_t *rpl_avps_pv, aaa_message *dmsg)
+{
+	struct dm_async_msg *msg = pkg_malloc(sizeof *msg);
+	if (!msg)
+		return NULL;
+	memset(msg, 0, sizeof *msg);
+	msg->ret = rpl_avps_pv;
+	msg->cond = ((struct dm_message *)(dmsg->avpair))->reply_cond;
+	return msg;
+}
+
+static void dm_free_sync_msg(struct dm_async_msg *amsg)
+{
+	if (amsg->cond)
+		shm_free(amsg->cond);
+	pkg_free(amsg);
+}
+
+static int dm_send_request_async_reply(int fd,
+		struct sip_msg *msg, void *param)
+{
+	int ret;
+	unsigned long r;
+	char *rpl_avps;
+	pv_value_t val = {STR_NULL, 0, PV_VAL_NULL};
+	struct dm_async_msg *amsg = (struct dm_async_msg *)param;
+
+	do {
+		ret = read(fd, &r, sizeof r);
+	} while(ret < 0 && (errno == EINTR || errno == EAGAIN));
+	async_status = ASYNC_DONE_CLOSE_FD;
+	if (ret < 0) {
+		LM_ERR("could not resume async route!\n");
+		goto error;
+	}
+	ret = _dm_get_message_response(amsg->cond, &rpl_avps);
+	if (ret > 0 && amsg->ret && rpl_avps) {
+		val.rs.s = rpl_avps;
+		val.rs.len = strlen(rpl_avps);
+		val.flags = PV_VAL_STR;
+	}
+error:
+	if (pv_set_value(msg, amsg->ret, 0, &val) != 0)
+		LM_ERR("failed to set output rpl_avps pv to NULL\n");
+	dm_free_sync_msg(amsg);
+	return ret;
+}
+
+static int dm_send_request_async_tout(int fd,
+		struct sip_msg *msg, void *param)
+{
+	struct dm_async_msg *amsg = (struct dm_async_msg *)param;
+	pv_value_t val = {STR_NULL, 0, PV_VAL_NULL};
+
+	if (pv_set_value(msg, amsg->ret, 0, &val) != 0)
+		LM_ERR("failed to set output rpl_avps pv to NULL\n");
+
+	dm_free_sync_msg(amsg);
+	return -2;
+}
+
+static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
+				int *app_id, int *cmd_code, str *avp_json, pv_spec_t *rpl_avps_pv)
+{
+	aaa_message *dmsg = NULL;
+	struct dict_object *req;
+	cJSON *avps;
+	struct dm_async_msg *amsg;
+
+	if (fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
+	      cmd_code, &req, ENOENT) == ENOENT) {
+		LM_ERR("unrecognized Request command code: %d\n", *cmd_code);
+		LM_ERR("to fix this, you can define the Request/Answer format in the "
+		       "'extra-avps-file' config file\n");
+		return -1;
+	}
+
+	LM_DBG("found a matching dict entry for command code %d\n", *cmd_code);
+
+	if (!avp_json || !avp_json->s) {
+		LM_ERR("NULL JSON input\n");
+		return -1;
+	}
+
+	avps = cJSON_Parse(avp_json->s);
+	if (!avps) {
+		LM_ERR("failed to parse input JSON ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		return -1;
+	}
+
+	if (avps->type != cJSON_Array) {
+		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		goto error;
+	}
+
+	dmsg = _dm_create_message(NULL, AAA_CUSTOM, *app_id, *cmd_code);
+	if (!dmsg) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+
+	if (dm_build_avps(&((struct dm_message *)(dmsg->avpair))->avps,
+	                     avps->child) != 0) {
+		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		goto error;
+	}
+	if (_dm_send_message_async(NULL, dmsg, &async_status) < 0) {
+		LM_ERR("cannot send async message!\n");
+		goto error;
+	}
+
+	amsg = dm_get_async_msg(rpl_avps_pv, dmsg);
+	if (!amsg)
+		goto error;
+
+	ctx->resume_f = dm_send_request_async_reply;
+	ctx->resume_param = amsg;
+	ctx->timeout_s = dm_answer_timeout / 1000;
+	ctx->timeout_f = dm_send_request_async_tout;
+
+	cJSON_Delete(avps);
+	return 1;
+
+error:
 	cJSON_Delete(avps);
 	return -1;
 }

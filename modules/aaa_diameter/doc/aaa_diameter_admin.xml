@@ -335,4 +335,56 @@ $json(avps) := $var(rpl_avps);
 
 	</section>
 
+	<section>
+	<title>Exported Asyncronous Functions</title>
+	<section id="afunc_dm_send_request" xreflabel="dm_send_request()">
+		<title>
+		<function moreinfo="none">dm_send_request(app_id, cmd_code, avps_json, [rpl_avps_pv])</function>
+		</title>
+		<para>
+		Similar to <xref linkend="func_dm_send_request"/> but performs an asynchronous Diameter request.
+		</para>
+        <para>
+            Uses the same parameters and return codes as
+            <xref linkend="func_dm_send_request"/>.
+		</para>
+
+		<example>
+		<title><function moreinfo="none">dm_send_request</function> asynchronous usage</title>
+		<programlisting format="linespecific">
+
+# Building an sending an My-Custom-Request (92001) for the
+# My Diameter Application (42)
+$var(payload) = "[
+	{ \"Origin-Host\": \"client.diameter.test\" },
+	{ \"Origin-Realm\": \"diameter.test\" },
+	{ \"Destination-Realm\": \"diameter.test\" },
+	{ \"Sip-From-Tag\": \"dc93-4fba-91db\" },
+	{ \"Sip-To-Tag\": \"ae12-47d6-816a\" },
+	{ \"Acct-Session-Id\": \"a59c-dff0d9efd167\" },
+	{ \"Sip-Call-Duration\": 6 },
+	{ \"Sip-Call-Setuptime\": 1 },
+	{ \"Sip-Call-Created\": 1652372541 },
+	{ \"Sip-Call-MSDuration\": 5850 },
+	{ \"out_gw\": \"GW-774\" },
+	{ \"cost\": \"10.84\" },
+	{ \"Cost-Information\": [
+		{\"Unit-Value\": [{\"Value-Digits\": 1000}]},
+		{\"Currency-Code\": 35}
+		]}
+]";
+
+async(dm_send_request(42, 92001, $var(payload), $var(rpl_avps), dm_reply);
+
+route[dm_reply] {
+	xlog("rc: $retcode, AVPs: $var(rpl_avps)\n");
+	$json(avps) := $var(rpl_avps);
+}
+
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
 </chapter>
