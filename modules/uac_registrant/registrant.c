@@ -481,8 +481,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		contact = ((contact_body_t*)msg->contact->parsed)->contacts;
 		while (contact) {
 			/* Check for binding */
-			if (contact->uri.len==rec->contact_uri.len &&
-				strncmp(contact->uri.s,rec->contact_uri.s,contact->uri.len)==0){
+			if (compare_uris(&contact->uri, NULL, &rec->contact_uri, NULL) == 0){
 				if (contact->expires && contact->expires->body.len) {
 					if (str2int(&contact->expires->body, &exp)<0) {
 						LM_ERR("Unable to extract expires from [%.*s]"
