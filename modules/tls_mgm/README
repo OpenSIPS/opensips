@@ -1082,7 +1082,8 @@ route{
    Example 1.39. Script with TLS support
   # ----------- global configuration parameters ------------------------
   log_level=3
-  log_stderror=no
+  stderror_enabled=no
+  syslog_enabled=yes
 
   check_via=no
   dns=no
@@ -1142,7 +1143,7 @@ route{
 
   # initial sanity checks
   if (!mf_process_maxfwd_header("10")) {
-      send_reply("483","Too Many Hops");
+      send_reply(483,"Too Many Hops");
       exit;
   };
 
@@ -1158,13 +1159,13 @@ route{
           };
           if ($au!=$fU) {
               xlog("FROM hdr Cheating attempt in INVITE\n");
-              send_reply("403",
+              send_reply(403,
                   "That is ugly -- use From=id next time (OB)");
               exit;
           };
       }; # non-REGISTER from other domain
   } else if ( is_method("INVITE") && !is_myself("$rd") ) {
-      send_reply("403", "No relaying");
+      send_reply(403, "No relaying");
       exit;
   };
 
@@ -1216,7 +1217,7 @@ route{
       };
       if ($au!=$tU) {
           xlog("TO hdr Cheating attempt\n");
-          send_reply("403", "That is ugly -- use To=id in REGISTERs");
+          send_reply(403, "That is ugly -- use To=id in REGISTERs");
           exit;
       };
       # it is an authenticated request, update Contact database now
@@ -1229,7 +1230,7 @@ route{
   # native SIP destinations are handled using USRLOC DB
   if (!lookup("location")) {
       # handle user which was not found
-      send_reply("404", "Not Found");
+      send_reply(404, "Not Found");
       exit;
   };
 
@@ -1523,10 +1524,10 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Patrascu (@rvlad-patrascu) 177 57 4819 4881
+   1. Vlad Patrascu (@rvlad-patrascu) 178 58 4821 4882
    2. Razvan Crainea (@razvancrainea) 81 57 1415 724
    3. Eseanu Marius Cristian (@eseanucristian) 52 11 4268 321
-   4. Liviu Chircu (@liviuchircu) 25 19 170 231
+   4. Liviu Chircu (@liviuchircu) 26 20 175 236
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 24 13 291 460
    6. Dan Pascu (@danpascu) 17 13 90 176
    7. Ionut Ionita (@ionutrazvanionita) 16 9 383 169
@@ -1558,12 +1559,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Mar 2016 - Feb 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - Jan 2023
-   3.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
-   4.  Nick Altmann (@nikbyte)             May 2021 - May 2021
-   5.  Aleksei Vasilev                     Apr 2021 - Apr 2021
-   6.  Liviu Chircu (@liviuchircu)         Oct 2015 - Aug 2020
+   1.  Liviu Chircu (@liviuchircu)         Oct 2015 - May 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     Apr 2017 - May 2023
+   3.  Maksym Sobolyev (@sobomax)          Mar 2016 - Feb 2023
+   4.  Razvan Crainea (@razvancrainea)     Sep 2015 - Apr 2022
+   5.  Nick Altmann (@nikbyte)             May 2021 - May 2021
+   6.  Aleksei Vasilev                     Apr 2021 - Apr 2021
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2016 - Apr 2020
    8.  Dan Pascu (@danpascu)               Jun 2019 - Feb 2020
    9.  Fabian Gast (@fgast)                Jan 2020 - Jan 2020
@@ -1581,8 +1582,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Last edited by: Vlad Patrascu (@rvlad-patrascu), Liviu Chircu
+   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Dan Pascu (@danpascu), Callum Guy
    (@spacetourist), Peter Lemenkov (@lemenkov), Eseanu Marius
    Cristian (@eseanucristian).

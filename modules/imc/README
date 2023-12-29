@@ -322,7 +322,7 @@ Chapter 2. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 29 308 548
    3. Anca Vamanu 31 5 3014 16
    4. Razvan Crainea (@razvancrainea) 17 15 31 38
-   5. Liviu Chircu (@liviuchircu) 11 9 34 59
+   5. Liviu Chircu (@liviuchircu) 13 10 38 63
    6. Henning Westerholt (@henningw) 10 7 76 105
    7. Vlad Patrascu (@rvlad-patrascu) 9 6 75 80
    8. Elena-Ramona Modroiu 4 2 68 5
@@ -353,12 +353,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2020
-   3.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2020
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Sep 2019
+   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Walter Doekes (@wdoekes)            May 2014 - May 2014
    8.  John Riordan                        May 2009 - May 2009
    9.  Sergio Gutierrez                    Nov 2008 - Nov 2008
@@ -375,9 +375,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu),
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Anca Vamanu, Henning Westerholt (@henningw),
    Elena-Ramona Modroiu.

@@ -89,8 +89,10 @@ dialog Module
 
               1.7.9. load_dialog_ctx( dialog [, id_type])
               1.7.10. unload_dialog_ctx()
-              1.7.11. set_dlg_profile(profile,[value])
-              1.7.12. unset_dlg_profile(profile,[value])
+              1.7.11. set_dlg_profile(profile, [value],
+                      [clear_values])
+
+              1.7.12. unset_dlg_profile(profile, [value])
               1.7.13. is_in_profile(profile,[value])
               1.7.14. get_profile_size(profile,[value],size)
               1.7.15. set_dlg_flag(flag)
@@ -1487,7 +1489,7 @@ if (load_dialog_ctx("$var(callid)")) {
 
    For usage example, see the load_dialog_ctx()
 
-1.7.11.  set_dlg_profile(profile,[value])
+1.7.11.  set_dlg_profile(profile, [value], [clear_values])
 
    Inserts the current dialog into a profile. Note that if the
    profile does not support values, this will be silently
@@ -1502,6 +1504,9 @@ if (load_dialog_ctx("$var(callid)")) {
      * value (string, optional) - string value to define the
        belonging of the dialog to the profile - note that the
        profile must support values.
+     * clear_values (boolean, optional) - if set to true (1), all
+       values of the profile will be cleared before setting the
+       given value. Default: false.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
@@ -1509,10 +1514,15 @@ if (load_dialog_ctx("$var(callid)")) {
    Example 1.63. set_dlg_profile usage
 ...
 set_dlg_profile("inboundCall");
-set_dlg_profile("caller",$fu);
+
+# Set a new value (all other values are kept intact)
+set_dlg_profile("caller", $fu);
+
+# Set a new value while removing all previous values
+set_dlg_profile("caller", $fu, true);
 ...
 
-1.7.12.  unset_dlg_profile(profile,[value])
+1.7.12.  unset_dlg_profile(profile, [value])
 
    Removes the current dialog from a profile.
 
@@ -1524,6 +1534,9 @@ set_dlg_profile("caller",$fu);
      * value (string, optional) - string value to define the
        belonging of the dialog to the profile - note that the
        profile must support values.
+       NEW in 3.4: for profiles with value, by omitting this
+       parameter you can now clear all values of the given
+       profile.
 
    This function can be used from REQUEST_ROUTE, BRANCH_ROUTE,
    REPLY_ROUTE and FAILURE_ROUTE.
@@ -1531,7 +1544,10 @@ set_dlg_profile("caller",$fu);
    Example 1.64. unset_dlg_profile usage
 ...
 unset_dlg_profile("inboundCall");
-unset_dlg_profile("caller",$fu);
+unset_dlg_profile("caller", $fu);
+...
+# Remove all values in a profile
+unset_dlg_profile("caller");
 ...
 
 1.7.13.  is_in_profile(profile,[value])
@@ -2531,12 +2547,12 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 447 282 13210 3483
-   2. Razvan Crainea (@razvancrainea) 264 198 4978 1499
-   3. Vlad Paiu (@vladpaiu) 253 144 7205 3026
-   4. Vlad Patrascu (@rvlad-patrascu) 197 103 4326 3514
-   5. Liviu Chircu (@liviuchircu) 169 124 2920 1255
-   6. Ovidiu Sas (@ovidiusas) 32 25 494 120
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 453 286 13279 3527
+   2. Razvan Crainea (@razvancrainea) 273 205 5082 1556
+   3. Vlad Paiu (@vladpaiu) 254 145 7206 3027
+   4. Vlad Patrascu (@rvlad-patrascu) 198 104 4330 3514
+   5. Liviu Chircu (@liviuchircu) 175 128 2949 1291
+   6. Ovidiu Sas (@ovidiusas) 34 26 601 161
    7. Dan Pascu (@danpascu) 30 25 233 179
    8. Eseanu Marius Cristian (@eseanucristian) 18 6 722 341
    9. Daniel-Constantin Mierla (@miconda) 16 13 76 66
@@ -2545,16 +2561,16 @@ Chapter 4. Contributors
    All remaining contributors: Anca Vamanu, Walter Doekes
    (@wdoekes), Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
    (@ionel-cerghit), Andrei Dragus, Maksym Sobolyev (@sobomax),
-   John Riordan, Hugues Mitonneau, Carsten Bock, Jerome Martin,
-   Klaus Darilion, Jarrod Baumann (@jarrodb), Nick Altmann
-   (@nikbyte), Zero King (@l2dy), Michel Bensoussan, Richard
-   Revels, Elena-Ramona Modroiu, Tavis Paquette, Andrei Datcu
-   (@andrei-datcu), Jeffrey Magder, Ron Winacott, Andy Pyles,
-   Julián Moreno Patiño, Konstantin Bokarius, sergei lavrov, Alex
-   Massover, Damien Sandras (@dsandras), Alex Hermann, Dusan
-   Klinec (@ph4r05), Norman Brandinger (@NormB), Peter Lemenkov
-   (@lemenkov), UnixDev, Eliot Gable, Ryan Bullock (@rrb3942),
-   Edson Gellert Schubert.
+   John Riordan, Hugues Mitonneau, Carsten Bock, Peter Lemenkov
+   (@lemenkov), Jerome Martin, Klaus Darilion, Jarrod Baumann
+   (@jarrodb), Nick Altmann (@nikbyte), Zero King (@l2dy), Michel
+   Bensoussan, Richard Revels, Elena-Ramona Modroiu, Tavis
+   Paquette, Ryan Bullock, Andrei Datcu (@andrei-datcu), Jeffrey
+   Magder, Ron Winacott, Andy Pyles, Julián Moreno Patiño,
+   Konstantin Bokarius, sergei lavrov, Alex Massover, Damien
+   Sandras (@dsandras), Alex Hermann, Dusan Klinec (@ph4r05),
+   Norman Brandinger (@NormB), UnixDev, Eliot Gable, Ryan Bullock
+   (@rrb3942), Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -2576,19 +2592,19 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - May 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
-   3.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
-   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Jan 2023
-   5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Jan 2023
-   6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2021
-   7.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Sep 2021
-   8.  Nick Altmann (@nikbyte)             Oct 2013 - May 2021
-   9.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
-   10. sergei lavrov                       Dec 2020 - Dec 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2023
+   2.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2023
+   3.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2023
+   4.  Razvan Crainea (@razvancrainea)     Aug 2010 - Oct 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jun 2023
+   6.  Ovidiu Sas (@ovidiusas)             Feb 2008 - Jun 2023
+   7.  Ryan Bullock                        May 2023 - May 2023
+   8.  Maksym Sobolyev (@sobomax)          Nov 2020 - Feb 2023
+   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Sep 2022
+   10. Nick Altmann (@nikbyte)             Oct 2013 - May 2021
 
-   All remaining contributors: Zero King (@l2dy), Dan Pascu
-   (@danpascu), Peter Lemenkov (@lemenkov), Ionel Cerghit
+   All remaining contributors: Walter Doekes (@wdoekes), sergei
+   lavrov, Zero King (@l2dy), Dan Pascu (@danpascu), Ionel Cerghit
    (@ionel-cerghit), Jarrod Baumann (@jarrodb), Ionut Ionita
    (@ionutrazvanionita), Julián Moreno Patiño, Dusan Klinec
    (@ph4r05), Eseanu Marius Cristian (@eseanucristian), Andrei
@@ -2608,18 +2624,18 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Liviu Chircu (@liviuchircu), Razvan
-   Crainea (@razvancrainea), Vlad Paiu (@vladpaiu), Zero King
-   (@l2dy), Dan Pascu (@danpascu), Peter Lemenkov (@lemenkov),
-   Julián Moreno Patiño, Ionut Ionita (@ionutrazvanionita), Ionel
-   Cerghit (@ionel-cerghit), Walter Doekes (@wdoekes), Eseanu
-   Marius Cristian (@eseanucristian), Norman Brandinger (@NormB),
-   Anca Vamanu, Andrei Dragus, Hugues Mitonneau, Klaus Darilion,
-   Henning Westerholt (@henningw), Ovidiu Sas (@ovidiusas),
-   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
-   Gellert Schubert, Michel Bensoussan, Andy Pyles, Elena-Ramona
-   Modroiu.
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Ryan Bullock, Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Zero King (@l2dy), Dan Pascu (@danpascu), Peter
+   Lemenkov (@lemenkov), Julián Moreno Patiño, Ionut Ionita
+   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Walter
+   Doekes (@wdoekes), Eseanu Marius Cristian (@eseanucristian),
+   Norman Brandinger (@NormB), Anca Vamanu, Andrei Dragus, Hugues
+   Mitonneau, Klaus Darilion, Henning Westerholt (@henningw),
+   Ovidiu Sas (@ovidiusas), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Michel Bensoussan,
+   Andy Pyles, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

@@ -21,10 +21,10 @@
 	<row>
 		<entry>1. </entry>
 		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">165</entry>
-		<entry align="center">105</entry>
-		<entry align="center">3304</entry>
-		<entry align="center">2011</entry>
+		<entry align="center">169</entry>
+		<entry align="center">107</entry>
+		<entry align="center">3322</entry>
+		<entry align="center">2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
@@ -52,19 +52,19 @@
 	</row>
 	<row>
 		<entry>5. </entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">43</entry>
+		<entry align="center">35</entry>
+		<entry align="center">528</entry>
+		<entry align="center">155</entry>
+	</row>
+	<row>
+		<entry>6. </entry>
 		<entry>Ionut Ionita (<ulink url="https://github.com/ionutrazvanionita">@ionutrazvanionita</ulink>)</entry>
 		<entry align="center">43</entry>
 		<entry align="center">17</entry>
 		<entry align="center">1145</entry>
 		<entry align="center">969</entry>
-	</row>
-	<row>
-		<entry>6. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">42</entry>
-		<entry align="center">34</entry>
-		<entry align="center">527</entry>
-		<entry align="center">155</entry>
 	</row>
 	<row>
 		<entry>7. </entry>
@@ -101,7 +101,7 @@
 	</tbody>
 	</tgroup>
 	</table>
-<para><emphasis role='bold'>All remaining contributors</emphasis>: Carsten Bock, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Elena-Ramona Modroiu, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Klaus Darilion, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Anca Vamanu, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Stanislaw Pitucha, wangdd, Federico Cabiddu, Konstantin Bokarius, Andreas Granig, John Riordan, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Julián Moreno Patiño, Kevin McAllister, Roman Sevko, UnixDev, David Sanders, Edson Gellert Schubert.</para>
+<para><emphasis role='bold'>All remaining contributors</emphasis>: Carsten Bock, Ionel Cerghit (<ulink url="https://github.com/ionel-cerghit">@ionel-cerghit</ulink>), Elena-Ramona Modroiu, John Burke (<ulink url="https://github.com/john08burke">@john08burke</ulink>), Klaus Darilion, Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>), Anca Vamanu, Jarrod Baumann (<ulink url="https://github.com/jarrodb">@jarrodb</ulink>), wangdd, Walter Doekes (<ulink url="https://github.com/wdoekes">@wdoekes</ulink>), Nick Altmann (<ulink url="https://github.com/nikbyte">@nikbyte</ulink>), Jan Janak (<ulink url="https://github.com/janakj">@janakj</ulink>), Andrei Pelinescu-Onciul, Peter Lemenkov (<ulink url="https://github.com/lemenkov">@lemenkov</ulink>), Stanislaw Pitucha, Federico Cabiddu, Konstantin Bokarius, Andreas Granig, John Riordan, Aron Podrigal (<ulink url="https://github.com/ar45">@ar45</ulink>), Julián Moreno Patiño, Kevin McAllister, Roman Sevko, UnixDev, David Sanders, Edson Gellert Schubert.</para>
 	<para>
 	    <emphasis>(1) DevScore = author_commits + author_lines_added / (project_lines_added / project_commits) + author_lines_deleted / (project_lines_deleted / project_commits)</emphasis>
 	</para>
@@ -128,23 +128,23 @@
 	<tbody>
 	<row>
 		<entry>1. </entry>
-		<entry>wangdd</entry>
-		<entry align="center">Apr 2023 - Apr 2023</entry>
+		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
+		<entry align="center">May 2011 - Nov 2023</entry>
 	</row>
 	<row>
 		<entry>2. </entry>
-		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
-		<entry align="center">Feb 2023 - Feb 2023</entry>
+		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
+		<entry align="center">Oct 2005 - Oct 2023</entry>
 	</row>
 	<row>
 		<entry>3. </entry>
-		<entry>Bogdan-Andrei Iancu (<ulink url="https://github.com/bogdan-iancu">@bogdan-iancu</ulink>)</entry>
-		<entry align="center">Oct 2005 - Jan 2023</entry>
+		<entry>wangdd</entry>
+		<entry align="center">Apr 2023 - May 2023</entry>
 	</row>
 	<row>
 		<entry>4. </entry>
-		<entry>Razvan Crainea (<ulink url="https://github.com/razvancrainea">@razvancrainea</ulink>)</entry>
-		<entry align="center">May 2011 - Oct 2022</entry>
+		<entry>Maksym Sobolyev (<ulink url="https://github.com/sobomax">@sobomax</ulink>)</entry>
+		<entry align="center">Feb 2023 - Feb 2023</entry>
 	</row>
 	<row>
 		<entry>5. </entry>
