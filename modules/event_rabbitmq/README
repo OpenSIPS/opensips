@@ -239,8 +239,8 @@ SSAGE event\n");
 
 route{
 
-        if (!mf_process_maxfwd_header("10")) {
-                sl_send_reply("483","Too Many Hops");
+        if (!mf_process_maxfwd_header(10)) {
+                sl_send_reply(483,"Too Many Hops");
                 exit;
         }
 
@@ -259,7 +259,7 @@ route{
                                         exit;
                                 }
                         }
-                        sl_send_reply("404","Not here");
+                        sl_send_reply(404,"Not here");
                 }
                 exit;
         }
@@ -278,7 +278,7 @@ route{
                 "Attempt to route with preloaded Route's [$fu/$tu/$ru/$c
 i]");
                 if (!is_method("ACK"))
-                        sl_send_reply("403","Preload Route denied");
+                        sl_send_reply(403,"Preload Route denied");
                 exit;
         }
 
@@ -293,7 +293,7 @@ i]");
 
         if (is_method("PUBLISH"))
         {
-                sl_send_reply("503", "Service Unavailable");
+                sl_send_reply(503, "Service Unavailable");
                 exit;
         }
 
@@ -307,7 +307,7 @@ i]");
         }
 
         if ($rU==NULL) {
-                sl_send_reply("484","Address Incomplete");
+                sl_send_reply(484,"Address Incomplete");
                 exit;
         }
 
@@ -327,11 +327,11 @@ n");
                         case -1:
                         case -3:
                                 t_newtran();
-                                t_reply("404", "Not Found");
+                                t_reply(404, "Not Found");
                                 exit;
                         case -2:
-                                sl_send_reply("405", "Method Not Allowed
-");
+                                sl_send_reply(405, "Method Not Allowed")
+;
                                 exit;
                 }
         }
@@ -458,8 +458,8 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 60 38 1943 310
-   2. Vlad Patrascu (@rvlad-patrascu) 20 10 495 263
-   3. Liviu Chircu (@liviuchircu) 8 6 14 31
+   2. Vlad Patrascu (@rvlad-patrascu) 22 12 504 266
+   3. Liviu Chircu (@liviuchircu) 9 7 23 40
    4. Ovidiu Sas (@ovidiusas) 5 3 35 7
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 8 9
    6. Maksym Sobolyev (@sobomax) 5 3 7 7
@@ -491,12 +491,12 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2021
-   3.  Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jul 2020
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Nov 2018
+   1.  Vlad Patrascu (@rvlad-patrascu)     Jul 2015 - Jun 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   4.  Razvan Crainea (@razvancrainea)     Sep 2011 - May 2021
+   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Aug 2020
+   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Apr 2019
    7.  Jarrod Baumann (@jarrodb)           Apr 2015 - Mar 2016
    8.  Julián Moreno Patiño                Feb 2016 - Feb 2016
    9.  Ovidiu Sas (@ovidiusas)             Jun 2015 - Jun 2015
@@ -512,9 +512,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Liviu Chircu
-   (@liviuchircu), Ionut Ionita (@ionutrazvanionita).
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea), Vlad Patrascu (@rvlad-patrascu), Peter
+   Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita).
 
    Documentation Copyrights:
 

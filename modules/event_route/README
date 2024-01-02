@@ -178,12 +178,12 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Razvan Crainea (@razvancrainea) 39 24 992 316
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 8 106 376
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 18 9 142 400
    3. Liviu Chircu (@liviuchircu) 13 11 27 47
    4. Ionut Ionita (@ionutrazvanionita) 8 5 138 51
-   5. Ovidiu Sas (@ovidiusas) 7 2 384 9
-   6. Maksym Sobolyev (@sobomax) 5 3 18 16
-   7. Vlad Patrascu (@rvlad-patrascu) 5 3 5 2
+   5. Vlad Patrascu (@rvlad-patrascu) 7 5 14 5
+   6. Ovidiu Sas (@ovidiusas) 7 2 384 9
+   7. Maksym Sobolyev (@sobomax) 5 3 18 16
    8. Ionel Cerghit (@ionel-cerghit) 3 1 5 6
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
    10. Vlad Paiu (@vladpaiu) 2 1 1 0
@@ -210,11 +210,11 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2023
-   2.  Razvan Crainea (@razvancrainea)     Dec 2012 - Mar 2023
-   3.  Maksym Sobolyev (@sobomax)          Feb 2021 - Feb 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Nov 2021
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - Dec 2020
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jun 2023
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2014 - May 2023
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Mar 2023
+   4.  Razvan Crainea (@razvancrainea)     Dec 2012 - Mar 2023
+   5.  Maksym Sobolyev (@sobomax)          Feb 2021 - Feb 2023
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    7.  Vlad Paiu (@vladpaiu)               Jun 2016 - Jun 2016
    8.  Ionel Cerghit (@ionel-cerghit)      Jun 2015 - Jun 2015
