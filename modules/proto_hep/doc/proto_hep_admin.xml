@@ -328,6 +328,51 @@ modparam("proto_hep", "tcp_async_local_write_timeout", 100)
 </programlisting>
 		</example>
 	</section>
+	<section id="param_hep_tcp_conn_max_lifetime" xreflabel="hep_tcp_conn_max_lifetime">
+		<title><varname>hep_tcp_conn_max_lifetime</varname> (integer)</title>
+		<para>
+			The number of seconds after which TCP/TLS connections are reopened.
+			Setting the value to <emphasis>0</emphasis> will disable this option.
+			(This is a Genesys-specific feature. It should be implemented in
+			<emphasis>tcp_mgm</emphasis> after OpenSIPS 3.3!)
+		</para>
+		<para>
+			<emphasis>
+				Default value is 0s (disabled).
+			</emphasis>
+		</para>
+		<example>
+			<title>Set <varname>hep_tcp_conn_max_lifetime</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("proto_hep", "hep_tcp_conn_max_lifetime", 10)
+...
+</programlisting>
+		</example>
+	</section>
+	<section id="param_hep_tls_client_domain" xreflabel="hep_tls_client_domain">
+		<title><varname>hep_tls_client_domain</varname> (string)</title>
+		<para>
+			Client domain for TLS connections. If not set, matched by IP:PORT set
+			in the <emphasis>match_ip_address</emphasis> parameter
+			(<emphasis>tls_mgm</emphasis> module).
+		</para>
+		<para>
+			<emphasis>
+				Default value is empty.
+			</emphasis>
+		</para>
+		<example>
+			<title>Set <varname>hep_tls_client_domain</varname> parameter</title>
+			<programlisting format="linespecific">
+...
+modparam("tls_mgm", "client_domain", "client_domain_hep")
+...
+modparam("proto_hep", "hep_tls_client_domain", "client_domain_hep")
+...
+			</programlisting>
+		</example>
+	</section>
 
 	</section>
 

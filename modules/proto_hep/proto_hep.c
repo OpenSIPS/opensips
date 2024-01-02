@@ -87,6 +87,8 @@ static int hep_async_local_connect_timeout = 100;
 static int hep_async_local_write_timeout = 10;
 static int hep_tls_handshake_timeout = 100;
 static int hep_tls_async_handshake_connect_timeout = 10;
+static int hep_tcp_conn_max_lifetime = 0;
+static str hep_tls_client_domain = {NULL, 0};
 
 int hep_ctx_idx = 0;
 int hep_capture_id = 1;
@@ -137,6 +139,8 @@ static const param_export_t params[] = {
 	{ "hep_id",                          STR_PARAM|USE_FUNC_PARAM, parse_hep_id     },
 	{ "homer5_on",                       INT_PARAM, &homer5_on                      },
 	{ "homer5_delim",                    STR_PARAM, &homer5_delim.s                 },
+	{ "hep_tcp_conn_max_lifetime",       INT_PARAM, &hep_tcp_conn_max_lifetime      },
+	{ "hep_tls_client_domain" ,          STR_PARAM, &hep_tls_client_domain.s        },
 	{0, 0, 0}
 };
 
@@ -215,6 +219,9 @@ static int mod_init(void)
 
 	hep_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, 0);
 	homer5_delim.len = strlen(homer5_delim.s);
+	if (hep_tls_client_domain.s != NULL) {
+		hep_tls_client_domain.len = strlen(hep_tls_client_domain.s);
+	}
 
 	local_su.sin.sin_addr.s_addr = TRACE_INADDR_LOOPBACK;
 	local_su.sin.sin_port = 0;
@@ -380,6 +387,13 @@ static int hep_tls_send(struct socket_info* send_sock,
 	return hep_tcp_or_tls_send(send_sock, buf, len, to, id, 1);
 }
 
+static int is_connection_max_lifetime_exceeded(struct tcp_connection* c) {
+	if (hep_tcp_conn_max_lifetime == 0 || c == NULL) return 0;
+	int conn_life = time(0) - c->first_seen;
+	if (conn_life >= hep_tcp_conn_max_lifetime) return 1;
+	return 0;
+}
+
 static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 		char* buf, unsigned int len, union sockaddr_union* to,
 		unsigned int id, unsigned int is_tls)
@@ -404,6 +418,11 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 		/* error during conn get, return with error too */
 		LM_ERR("failed to acquire connection\n");
 		return -1;
+	}
+
+	if (is_connection_max_lifetime_exceeded(c)) {
+		tcp_conn_destroy(c);
+		c = NULL;
 	}
 
 	/* was connection found ?? */
@@ -483,6 +502,7 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 			LM_ERR("connect failed\n");
 			return -1;
 		}
+		c->first_seen = time(0);
 		goto send_it;
 	}
 
@@ -1195,7 +1215,11 @@ static int proto_hep_tls_conn_init(struct tcp_connection* c)
 			"domain [%s:%d]\n", ip_addr2a(&c->rcv.dst_ip), c->rcv.dst_port);
 		dom = tls_mgm_api.find_server_domain(&c->rcv.dst_ip, c->rcv.dst_port);
 	} else {
-		dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+		if (hep_tls_client_domain.len > 0) {
+			dom = tls_mgm_api.find_client_domain_name(&hep_tls_client_domain);
+		} else {
+			dom = tls_mgm_api.find_client_domain(&c->rcv.src_ip, c->rcv.src_port);
+		}
 	}
 	if (!dom) {
 		LM_ERR("no TLS %s domain found\n",

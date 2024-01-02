@@ -182,6 +182,7 @@ struct tcp_connection{
 	struct tcp_async_data *async;
 	/* protocol specific data attached to this connection */
 	void *proto_data;
+	time_t first_seen;
 };
 
 
