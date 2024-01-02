@@ -97,7 +97,7 @@ event_id_t acc_cdr_event = EVI_ERROR;
 event_id_t acc_event = EVI_ERROR;
 event_id_t acc_missed_event = EVI_ERROR;
 
-static db_func_t acc_dbf;
+db_func_t acc_dbf;
 static db_con_t* db_handle=0;
 extern int acc_log_facility;
 
@@ -850,6 +850,12 @@ int acc_aaa_request( struct sip_msg *req, struct sip_msg *rpl)
 	struct acc_extra* extra;
 	acc_ctx_t* ctx = try_fetch_ctx();
 
+	if (!proto.create_aaa_message) {
+		LM_BUG("failed to generate AAA record ('aaa' accounting was enabled"
+		        ", but no 'aaa' module is available!)");
+		return -1;
+	}
+
 	if ((send = proto.create_aaa_message(conn, AAA_ACCT)) == NULL) {
 		LM_ERR("failed to create new aaa message for acct\n");
 		return -1;
@@ -948,6 +954,12 @@ int acc_aaa_cdrs(struct dlg_cell *dlg, struct sip_msg *msg, acc_ctx_t* ctx)
 	uint32_t duration, ms_duration;
 
 	struct acc_extra* extra;
+
+	if (!proto.create_aaa_message) {
+		LM_BUG("failed to generate AAA record ('aaa' accounting was enabled"
+		        ", but no 'aaa' module is available!)");
+		return -1;
+	}
 
 	core_s.s = extra_s.s = leg_s.s = 0;
 

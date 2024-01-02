@@ -515,8 +515,8 @@ b2bl_entity_id_t *b2bl_new_client(client_info_t *ci, b2bl_tuple_t *tuple,
 	b2bl_entity_id_t* entity;
 
 	ci->method = method_invite;
-	ci->send_sock = msg ?
-		(msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address):NULL;
+	ci->send_sock = msg ? msg->force_send_socket : NULL;
+	ci->pref_sock = msg ? msg->rcv.bind_address : NULL;
 
 	if (adv_ct) {
 		ci->local_contact = *adv_ct;
@@ -727,8 +727,8 @@ int retry_init_bridge(struct sip_msg *msg, b2bl_tuple_t* tuple,
 	ci.extra_headers = tuple->extra_headers;
 	ci.client_headers= hdrs;
 	ci.body          = &tuple->bridge_entities[0]->in_sdp;
-	ci.send_sock     = msg ? (msg->force_send_socket?
-		msg->force_send_socket:msg->rcv.bind_address):NULL;
+	ci.send_sock     = msg ? msg->force_send_socket : NULL;
+	ci.pref_sock     = msg ? msg->rcv.bind_address : NULL;
 
 	ci.maxfwd = tuple->bridge_entities[0]->init_maxfwd;
 
@@ -845,6 +845,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 	b2b_req_data_t req_data;
 	b2b_dlginfo_t dlginfo;
 	int do_unlock = 0;
+	static str method_ack = {ACK, ACK_LEN};
 
 	if (!tuple) {
 		B2BL_LOCK_GET(cur_route_ctx.hash_index);
@@ -917,6 +918,26 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 		/* if a negative reply */
 		if(statuscode >= 300)
 		{
+			if ((tuple->bridge_flags & B2BL_BR_FLAG_RENEW_SDP) && statuscode == 491) {
+				/* it is very likely that the new entity is trying to send itself a re-INVITE
+				 * to lock down the codecs, therefore we no longer need this step - thus, for now,
+				 * we simply ACK the ongoing bridging entity, and arm a re-negociation attempt
+				 */
+				memset(&req_data, 0, sizeof(b2b_req_data_t));
+				req_data.et = tuple->bridge_entities[0]->type;
+				req_data.b2b_key = &tuple->bridge_entities[0]->key;
+				req_data.method = &method_ack;
+				req_data.body = &tuple->bridge_entities[1]->in_sdp;
+				req_data.dlginfo = tuple->bridge_entities[0]->dlginfo;
+				b2b_api.send_request(&req_data);
+
+				if (b2bl_push_bridge_retry(tuple) == 0) {
+					tuple->bridge_flags |= B2BL_BR_FLAG_PENDING_SDP;
+					tuple->state = B2B_BRIDGED_STATE;
+					goto done;
+				}
+				/* else, fallback to rejecting the call */
+			}
 			entity->rejected = 1;
 			ret = process_bridge_negreply(tuple, tuple->hash_index, entity, msg);
 
@@ -1172,6 +1193,7 @@ int _b2b_handle_reply(struct sip_msg *msg, b2bl_tuple_t *tuple,
 					LM_ERR("Failed to save SDP\n");
 					goto error;
 				}
+				tuple->bridge_flags &= ~B2BL_BR_FLAG_PENDING_SDP;
 			}
 
 			/* if reINVITE and 481 or 408 reply */
@@ -1434,7 +1456,7 @@ done:
 	return 0;
 error:
 	if (do_unlock)
-		B2BL_LOCK_GET(cur_route_ctx.hash_index);
+		B2BL_LOCK_RELEASE(cur_route_ctx.hash_index);
 	return -1;
 }
 
@@ -2491,14 +2513,15 @@ str* create_top_hiding_entities(struct sip_msg* msg, b2bl_cback_f cbf,
 	ci.dst_uri       = msg->dst_uri;
 	ci.extra_headers = &extra_headers;
 	ci.body          = (body.s?&body:NULL);
-	ci.send_sock     = msg->force_send_socket?msg->force_send_socket:msg->rcv.bind_address;
+	ci.send_sock     = msg->force_send_socket;
+	ci.pref_sock     = msg->rcv.bind_address;
 
 	memset(&ct_uri, 0, sizeof(struct sip_uri));
 	if (contact_user && parse_uri(ci.from_uri.s, ci.from_uri.len, &ct_uri) < 0) {
 		LM_ERR("Not a valid sip uri [%.*s]\n", ci.from_uri.len, ci.from_uri.s);
 		goto error;
 	}
-	get_local_contact(ci.send_sock, &ct_uri.user, &ci.local_contact);
+	get_local_contact((ci.send_sock?ci.send_sock:ci.pref_sock), &ct_uri.user, &ci.local_contact);
 
 	/* grab all AVPs from the server side and push them into the client */
 	ci.avps = clone_avp_list( *get_avp_list() );
@@ -2748,6 +2771,8 @@ str* b2bl_init_extern(struct b2b_params *init_params,
 	/* set the context values given in the b2b_trigger_scenario MI cmd */
 	tuple->vals = local_ctx_vals;
 	local_ctx_vals = NULL;
+	if (scen_params->ctx_key.len)
+		store_ctx_value(&tuple->vals, &scen_params->ctx_key, &scen_params->ctx_val);
 
 	memset(&e1, 0, sizeof e1);
 	memset(&e2, 0, sizeof e1);
@@ -2930,16 +2955,15 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 
 	memset(&ci, 0, sizeof(client_info_t));
 	ci.method        = method;
-	ci.req_uri       = new_entity->dest_uri;
-	ci.to_uri        = to_uri;
+	ci.to_uri        = new_entity->dest_uri;
 	ci.dst_uri       = new_entity->proxy;
 	ci.from_uri      = from_uri;
 	ci.from_dname    = from_dname;
 	ci.extra_headers = tuple->extra_headers;
 	ci.client_headers= hdrs;
 	ci.body          = (body.s?&body:NULL);
-	ci.send_sock     = msg->force_send_socket?
-		msg->force_send_socket:msg->rcv.bind_address;
+	ci.send_sock     = msg->force_send_socket;
+	ci.pref_sock     = msg->rcv.bind_address;
 
 	/* Decrement Max-Forwards value */
 	if ((maxfwd = b2b_msg_get_maxfwd(msg)) > 0) {

@@ -645,7 +645,7 @@ static str e_tcp_dst_ip = str_init("dst_ip");
 static str e_tcp_dst_port = str_init("dst_port");
 static str e_tcp_c_proto = str_init("proto");
 
-void tcp_disconnect_event_raise(struct tcp_connection* c)
+static void tcp_disconnect_event_raise(struct tcp_connection* c)
 {
 	evi_params_p list = 0;
 	str src_ip,dst_ip, proto;
@@ -702,8 +702,14 @@ void tcp_disconnect_event_raise(struct tcp_connection* c)
 		goto end;
 	}
 
-	if (evi_raise_event(EVI_TCP_DISCONNECT, list)) {
-		LM_ERR("unable to send tcp disconnect event\n");
+	if (is_tcp_main) {
+		if (evi_dispatch_event(EVI_TCP_DISCONNECT, list)) {
+			LM_ERR("unable to dispatch tcp disconnect event\n");
+		}
+	} else {
+		if (evi_raise_event(EVI_TCP_DISCONNECT, list)) {
+			LM_ERR("unable to send tcp disconnect event\n");
+		}
 	}
 	list = 0;
 

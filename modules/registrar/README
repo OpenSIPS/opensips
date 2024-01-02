@@ -1098,16 +1098,17 @@ remove_ip_port("8.8.8.8",43213,"location","sip:bob@atlanta.com");
 ...
 lookup("location");  # simple lookup
    #or
-lookup("location","m"); # lookup with method filtering
+lookup("location", "method-filtering"); # lookup with method filtering
    #or
-lookup("location","r"); #lookup with aor branch search;
-                                                #all contacts except the
- first one shall be put
-                                                #in the branches
+lookup("location", "branch"); # lookup with aor branch search;
+                                                # all contacts except th
+e first one shall be put
+                                                # in the branches
    #or
-lookup("location","u/phone/i"); # lookup with user-agent filtering
+lookup("location", "ua-filtering=/phone/i"); # lookup with user-agent fi
+ltering
    #or
-lookup("location","",$var(aor)); # simple lookup with AOR from var
+lookup("location", "", $var(aor)); # simple lookup with AOR from var
 switch ($retcode) {
     case -1:
     case -3:
@@ -1446,13 +1447,13 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 192 118 2843 3011
+   1. Liviu Chircu (@liviuchircu) 193 119 2849 3017
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 168 114 2383 2031
    3. Jan Janak (@janakj) 120 73 3465 1102
    4. Daniel-Constantin Mierla (@miconda) 23 19 160 105
    5. Razvan Crainea (@razvancrainea) 20 15 267 75
    6. Vlad Paiu (@vladpaiu) 20 12 729 96
-   7. Vlad Patrascu (@rvlad-patrascu) 18 7 232 495
+   7. Vlad Patrascu (@rvlad-patrascu) 20 9 243 497
    8. Ionut Ionita (@ionutrazvanionita) 16 4 763 248
    9. Jiri Kuthan (@jiriatipteldotorg) 15 9 538 45
    10. Andreas Granig 13 7 527 36
@@ -1489,10 +1490,10 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
-   2.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
-   3.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2023
-   4.  Liviu Chircu (@liviuchircu)         Mar 2013 - Feb 2023
+   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   2.  Liviu Chircu (@liviuchircu)         Mar 2013 - May 2023
+   3.  Razvan Crainea (@razvancrainea)     Apr 2011 - Apr 2023
+   4.  Maksym Sobolyev (@sobomax)          Jul 2004 - Feb 2023
    5.  Vlad Paiu (@vladpaiu)               Sep 2011 - Nov 2022
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Sep 2003 - Jan 2022
    7.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
@@ -1519,9 +1520,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
-   (@razvancrainea), Vlad Paiu (@vladpaiu), Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Razvan Crainea (@razvancrainea), Vlad Paiu
+   (@vladpaiu), Bogdan-Andrei Iancu (@bogdan-iancu), Peter
    Lemenkov (@lemenkov), Ionut Ionita (@ionutrazvanionita), Julián
    Moreno Patiño, Nick Altmann (@nikbyte), Ovidiu Sas
    (@ovidiusas), Irina-Maria Stanescu, Kobi Eshun (@ekobi), Sergio

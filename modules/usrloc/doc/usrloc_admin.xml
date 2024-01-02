@@ -1656,7 +1656,8 @@ modparam("usrloc", "contact_refresh_timer", true)
 		<function moreinfo="none">ul_cluster_sync</function>
 		</title>
 		<para>
-		This command will only take effect if the module is running under a
+		This command will only take effect if the target OpenSIPS instance is
+		paired with a hot backup instance, while running under a
 		cluster-enabled <xref linkend="param_working_mode_preset"/>.
 		</para>
 		<para>
@@ -1821,8 +1822,9 @@ modparam("usrloc", "contact_refresh_timer", true)
 			</para></listitem>
 			<listitem><para>
 				<emphasis>latency</emphasis> - The latency of the last
-				successful ping for this contact. Until the first ping reply
-				for a given contact arrives, its pinging latency will be 0.
+				successful ping for this contact, in microseconds. Until the
+				first ping reply for a given contact arrives, its pinging
+				latency will be 0.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>shtag</emphasis> - The shared tag of the contact,

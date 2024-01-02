@@ -435,7 +435,7 @@ static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
 			if (!peer) {
 				if (!set)
 					return NULL;
-				peer = rtp_relay_new_leg(ctx, NULL, RTP_RELAY_ALL_BRANCHES);
+				peer = rtp_relay_new_leg(ctx, &get_from(msg)->tag_value, RTP_RELAY_ALL_BRANCHES);
 				if (!peer) {
 					LM_ERR("cannot create a new leg\n");
 					return NULL;

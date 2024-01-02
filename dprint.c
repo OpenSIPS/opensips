@@ -55,6 +55,9 @@ static int log_level_holder = L_NOTICE;
 enum log_format stderr_log_format = LOG_FORMAT_PLAIN;
 enum log_format syslog_log_format = LOG_FORMAT_PLAIN;
 
+/* shared holder with the globally set log_level */
+static int *log_level_global = NULL;
+
 /* current logging level for this process */
 int *log_level = &log_level_holder;
 char *log_prefix = "";
@@ -910,9 +913,20 @@ void distroy_log_event_cons(void)
 int init_log_level(void)
 {
 	log_level = &pt[process_no].log_level;
-	*log_level = log_level_holder;
 	default_log_level = &pt[process_no].default_log_level;
-	*default_log_level = log_level_holder;
+
+	if (process_no==0) {
+		/* this is done only by the first process */
+		log_level_global = (int*)shm_malloc(sizeof(int));
+		if (log_level_global==NULL) {
+			LM_ERR("Failed to allocate shm memory for global log_level\n");
+			return -1;
+		}
+		*log_level_global = log_level_holder;
+	}
+
+	*log_level = *log_level_global;
+	*default_log_level = *log_level_global;
 
 	return 0;
 }
@@ -956,6 +970,7 @@ void set_global_log_level(int level)
 		__set_proc_default_log_level(i, level);
 		__set_proc_log_level(i, level);
 	}
+	*log_level_global = level;
 }
 
 /* set the log level of the current process */

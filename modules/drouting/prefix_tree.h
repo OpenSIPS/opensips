@@ -203,8 +203,8 @@ get_prefix(
 	ptree_t *ptree,
 	str* prefix,
 	unsigned int rgid,
-	unsigned int *rgidx,
-	unsigned int *matched_len
+	unsigned int *matched_len,
+	int *rgidx
 	);
 
 int
@@ -253,6 +253,13 @@ rt_info_t*
 check_rt(
 	ptree_node_t *ptn,
 	unsigned int rgid
+	);
+
+rt_info_t*
+_check_rt(
+	ptree_node_t *ptn,
+	unsigned int rgid,
+	int *rgidx
 	);
 
 #endif

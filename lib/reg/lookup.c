@@ -466,7 +466,7 @@ int reg_fixup_lookup_flags(void** param)
 		return -1;
 	}
 
-	lookup_flags->flags = (unsigned int)(unsigned long)(void*)*param;
+	lookup_flags->flags = (unsigned int)(unsigned long)*param;
 	*param = (void*)lookup_flags;
 
 	/* "temporary" flags */

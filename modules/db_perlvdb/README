@@ -275,7 +275,7 @@ Chapter 3. Contributors
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 26 19 257 202
    2. Bastian Friedrich 18 2 1820 18
    3. Liviu Chircu (@liviuchircu) 13 11 25 55
-   4. Razvan Crainea (@razvancrainea) 10 8 26 13
+   4. Razvan Crainea (@razvancrainea) 11 9 27 14
    5. Daniel-Constantin Mierla (@miconda) 9 7 27 25
    6. Maksym Sobolyev (@sobomax) 5 3 5 21
    7. Henning Westerholt (@henningw) 4 2 14 13
@@ -306,9 +306,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
-   3.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Aug 2015 - Aug 2023
+   2.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2020
    4.  Bogdan-Andrei Iancu (@bogdan-iancu) Jul 2007 - Apr 2019
    5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018

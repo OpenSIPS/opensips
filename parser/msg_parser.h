@@ -126,6 +126,8 @@ enum request_method {
 #define FL_BODY_NO_SDP       (1<<20) /* message does not have an SDP body */
 #define FL_IS_LOCAL          (1<<21) /* the message is a locally generated
                                       * one, not received */
+#define FL_HAS_ROUTE_LUMP    (1<<22) /* the message had Route headers added
+                                      * as lumps */
 
 /* define the # of unknown URI parameters to parse */
 #define URI_MAX_U_PARAMS 10

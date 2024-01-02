@@ -974,11 +974,11 @@ Chapter 3. Contributors
    2. Dmitry Isakbayev 42 5 4120 159
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 33 27 220 211
    4. Di-Shi Sun 18 2 1006 386
-   5. Daniel-Constantin Mierla (@miconda) 15 13 81 48
-   6. Liviu Chircu (@liviuchircu) 15 12 83 92
+   5. Liviu Chircu (@liviuchircu) 17 13 117 126
+   6. Daniel-Constantin Mierla (@miconda) 15 13 81 48
    7. Razvan Crainea (@razvancrainea) 11 9 75 54
    8. Zero King (@l2dy) 10 8 20 23
-   9. Vlad Patrascu (@rvlad-patrascu) 9 6 68 65
+   9. Vlad Patrascu (@rvlad-patrascu) 10 7 70 66
    10. Ancuta Onofrei 9 1 206 318
 
    All remaining contributors: Maksym Sobolyev (@sobomax), Dan
@@ -1008,15 +1008,15 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Sep 2020 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Apr 2020
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Dan Pascu (@danpascu)               Nov 2008 - Jul 2019
-   6.  Ralf Zerres                         May 2019 - May 2019
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
-   8.  Di-Shi Sun                          Oct 2018 - Feb 2019
-   9.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2018
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
+   3.  Maksym Sobolyev (@sobomax)          Sep 2020 - Feb 2023
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Apr 2020
+   6.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   7.  Dan Pascu (@danpascu)               Nov 2008 - Jul 2019
+   8.  Ralf Zerres                         May 2019 - May 2019
+   9.  Di-Shi Sun                          Oct 2018 - Feb 2019
    10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
    All remaining contributors: Di-Shi Sun (@di-shi), Julián Moreno

@@ -346,11 +346,11 @@ route{
     # initial sanity checks -- messages with
     # max_forwards==0, or excessively long requests
     if (!mf_process_maxfwd_header("10")) {
-        sl_send_reply("483","Too Many Hops");
+        sl_send_reply(483,"Too Many Hops");
         exit;
     };
     if ($ml >=  65535 ) {
-        sl_send_reply("513", "Message too big");
+        sl_send_reply(513, "Message too big");
         exit;
     };
 
@@ -400,7 +400,7 @@ route{
 
         # native SIP destinations are handled using our USRLOC DB
         if (!lookup("location")) {
-            sl_send_reply("404", "Not Found");
+            sl_send_reply(404, "Not Found");
             exit;
         };
     };
@@ -436,7 +436,7 @@ Chapter 3. Contributors
    2. Bogdan-Andrei Iancu (@bogdan-iancu) 41 32 310 309
    3. Henning Westerholt (@henningw) 25 15 252 410
    4. Razvan Crainea (@razvancrainea) 20 17 121 95
-   5. Liviu Chircu (@liviuchircu) 19 16 68 105
+   5. Liviu Chircu (@liviuchircu) 20 17 71 108
    6. Jan Janak (@janakj) 11 7 124 106
    7. Vlad Patrascu (@rvlad-patrascu) 8 6 94 49
    8. Ovidiu Sas (@ovidiusas) 7 5 61 8
@@ -469,9 +469,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2022
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Razvan Crainea (@razvancrainea)     Oct 2011 - Jan 2022
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Dec 2021
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Apr 2020
    6.  Ovidiu Sas (@ovidiusas)             Dec 2012 - May 2019
@@ -493,9 +493,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), Peter Lemenkov (@lemenkov), Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Sergey
+   Last edited by: Liviu Chircu (@liviuchircu), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
+   Lemenkov (@lemenkov), Vlad Patrascu (@rvlad-patrascu), Sergey
    Khripchenko (@shripchenko), Ovidiu Sas (@ovidiusas),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Henning Westerholt (@henningw).

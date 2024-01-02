@@ -58,6 +58,9 @@ enum rest_client_method {
 	REST_CLIENT_PUT,
 	REST_CLIENT_POST
 };
+#define rest_client_method_str(_m) ( \
+	(_m) == REST_CLIENT_GET ? "GET" : \
+	(_m) == REST_CLIENT_POST ? "POST" : "PUT")
 
 /* return codes for rest_client script functions */
 #define RCL_OK_LOCKED            2

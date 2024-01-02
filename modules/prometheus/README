@@ -226,8 +226,8 @@ modparam("prometheus", "statistics", "active_dialogs load:")
    Example 1.8. Set statistics parameter
 ...
 # convert duration_gateway to stat duration with gateway as a label
-modparam("prometheus", "statistics", "group: /^(.*)_(.*)$/\1:gateway=\"\
-2\"/")
+modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/
+")
 ...
 
 1.4. Exported Functions
@@ -258,7 +258,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea)    29      15      1281     152
+   1. Razvan Crainea (@razvancrainea)    31      17      1283     153
    2. Maksym Sobolyev (@sobomax)         4        2       2        3
    3. Liviu Chircu (@liviuchircu)        3        1       1        1
    4. OpenSIPS                           3        1       1        1
@@ -283,9 +283,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
-   2. Liviu Chircu (@liviuchircu)     Aug 2022 - Aug 2022
-   3. Razvan Crainea (@razvancrainea) Feb 2021 - Jan 2022
+   1. Razvan Crainea (@razvancrainea) Feb 2021 - Oct 2023
+   2. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
+   3. Liviu Chircu (@liviuchircu)     Aug 2022 - Aug 2022
    4. OpenSIPS                        Feb 2021 - Feb 2021
 
    (1) including any documentation-related commits, excluding
@@ -295,8 +295,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), OpenSIPS.
+   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
+   (@liviuchircu), OpenSIPS.
 
    Documentation Copyrights:
 

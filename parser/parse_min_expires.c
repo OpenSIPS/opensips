@@ -43,7 +43,9 @@ int parse_min_expires(struct sip_msg *msg)
 				set_err_reply(400, "bad headers");
 				return -1;
 		}
+		return 0;
 	}
-	return 0;
+	/* no hdr present */
+	return -1;
 }
 

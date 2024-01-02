@@ -261,12 +261,12 @@ route{
         # initial sanity checks
         if (!mf_process_maxfwd_header("10"))
         {
-                sl_send_reply("483","Too Many Hops");
+                sl_send_reply(483,"Too Many Hops");
                 exit;
         };
         if ($ml >=  65535 )
         {
-                sl_send_reply("513", "Message too big");
+                sl_send_reply(513, "Message too big");
                 exit;
         };
 
@@ -313,7 +313,7 @@ route{
 
                 if (!lookup("location"))
                 {
-                        sl_send_reply("404", "Not Found");
+                        sl_send_reply(404, "Not Found");
                         exit;
                 };
         };
@@ -336,7 +336,7 @@ Chapter 2. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 27 23 90 147
    2. Daniel-Constantin Mierla (@miconda) 21 16 127 137
-   3. Liviu Chircu (@liviuchircu) 12 10 35 53
+   3. Liviu Chircu (@liviuchircu) 13 11 38 56
    4. Elena-Ramona Modroiu 12 2 1063 1
    5. Razvan Crainea (@razvancrainea) 8 6 11 8
    6. Vlad Patrascu (@rvlad-patrascu) 6 4 31 35
@@ -370,8 +370,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jan 2022
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    3.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
    4.  Razvan Crainea (@razvancrainea)     Aug 2015 - Jul 2020
    5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2005 - Mar 2020
@@ -393,10 +393,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin Mierla
-   (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
+   Iancu (@bogdan-iancu), Sergio Gutierrez, Daniel-Constantin
+   Mierla (@miconda), Konstantin Bokarius, Edson Gellert Schubert,
    Elena-Ramona Modroiu, Elena-Ramona Modroiu.
 
    Documentation Copyrights:

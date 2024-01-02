@@ -457,7 +457,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Victor Ciurel (@victor-ciurel) 80 21 3760 1658
-   2. Razvan Crainea (@razvancrainea) 70 39 2044 798
+   2. Razvan Crainea (@razvancrainea) 71 40 2047 800
    3. Liviu Chircu (@liviuchircu) 9 7 49 37
    4. Vlad Paiu (@vladpaiu) 8 5 234 37
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 5 3 7 3
@@ -486,12 +486,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2. Liviu Chircu (@liviuchircu)         May 2020 - Apr 2022
-   3. Nick Altmann (@nikbyte)             May 2021 - May 2021
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
-   5. Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   6. Razvan Crainea (@razvancrainea)     Jan 2019 - Jan 2020
+   1. Razvan Crainea (@razvancrainea)     Jan 2019 - Jul 2023
+   2. Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3. Liviu Chircu (@liviuchircu)         May 2020 - Apr 2022
+   4. Nick Altmann (@nikbyte)             May 2021 - May 2021
+   5. Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2019 - Apr 2021
+   6. Zero King (@l2dy)                   Mar 2020 - Mar 2020
    7. Vlad Paiu (@vladpaiu)               May 2019 - Sep 2019
    8. Vlad Patrascu (@rvlad-patrascu)     Apr 2019 - Apr 2019
    9. Victor Ciurel (@victor-ciurel)      Sep 2017 - Jan 2019

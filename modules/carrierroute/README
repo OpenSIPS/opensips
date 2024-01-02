@@ -952,7 +952,7 @@ route {
         # choose route domain 0 of the default carrier
 
         if(!cr_route("default", "0", "$rU", "$rU", "call_id", "crc32")){
-                sl_send_reply("403", "Not allowed");
+                sl_send_reply(403, "Not allowed");
         } else {
                 # In case of failure, re-route the request
                 t_on_failure("1");
@@ -966,7 +966,7 @@ failure_route[1] {
         if (t_check_status("408|5[0-9][0-9]")) {
                 #choose route domain 1 of the default carrier
         if(!cr_route("default", "1", "$rU", "$rU", "call_id", "crc32")){
-                        t_reply("403", "Not allowed");
+                        t_reply(403, "Not allowed");
                 } else {
                         t_on_failure("2");
                         t_relay();
@@ -1226,7 +1226,7 @@ Chapter 2. Contributors
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 29 24 131 154
    5. Razvan Crainea (@razvancrainea) 23 20 109 108
    6. Vlad Patrascu (@rvlad-patrascu) 22 5 384 764
-   7. Liviu Chircu (@liviuchircu) 17 11 132 206
+   7. Liviu Chircu (@liviuchircu) 18 12 134 208
    8. Daniel-Constantin Mierla (@miconda) 9 7 34 30
    9. Maksym Sobolyev (@sobomax) 4 2 5 5
    10. Carsten Bock 3 1 64 15
@@ -1256,12 +1256,12 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   2.  ihsinme                             Feb 2022 - Feb 2022
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Apr 2019
+   1.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
+   2.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   3.  ihsinme                             Feb 2022 - Feb 2022
+   4.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jan 2021
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   6.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    7.  Bogdan-Andrei Iancu (@bogdan-iancu) Dec 2007 - Apr 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    9.  Julián Moreno Patiño                Feb 2016 - Feb 2016

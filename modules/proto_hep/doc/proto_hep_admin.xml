@@ -323,7 +323,7 @@ modparam("proto_hep", "hep_async_local_connect_timeout", 200)
 		<title>Set <varname>hep_async_local_write_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
 ...
-modparam("proto_hep", "tcp_async_local_write_timeout", 100)
+modparam("proto_hep", "hep_async_local_write_timeout", 100)
 ...
 </programlisting>
 		</example>
