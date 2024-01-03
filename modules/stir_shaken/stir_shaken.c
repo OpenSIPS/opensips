@@ -67,6 +67,7 @@
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_uri.h"
 #include "../../parser/parse_param.h"
+#include "../../parser/parse_event.h"
 #include "../../data_lump.h"
 #include "../../lib/cJSON.h"
 #include "../../context.h"
@@ -83,6 +84,188 @@
 
 #define parsed_ctx_set(_ptr) \
 	context_put_ptr(CONTEXT_GLOBAL, current_processing_ctx, parsed_ctx_idx, _ptr)
+
+/*
+ * Module event
+ */
+
+// avoid compilation warning : defined but not used
+// static str empty_str = str_init("");
+
+#define DECLARE_STIR_EVENT(_name) \
+	static evi_params_t stir_event_params_##_name; \
+	static event_id_t stir_event_##_name = EVI_ERROR; \
+	static str stir_event_name_##_name = str_init("E_STIR_" #_name);
+
+#define INIT_STIR_EVENT(_name, _param_names ...) \
+	do { \
+		if (stir_event_init(&stir_event_##_name, stir_event_name_##_name, \
+				&stir_event_params_##_name, _param_names) < 0) { \
+			LM_ERR("could not initialize E_STIR_" #_name); \
+			return -1; \
+		} \
+	} while(0)
+
+#define RAISE_STIR_EVENT(_name, _values ...) \
+	stir_event_raise(stir_event_##_name, &stir_event_params_##_name, _values)
+
+static int stir_event_init(event_id_t *event, str event_name, evi_params_p params, ...)
+{
+	const char *p;
+	va_list vl;
+	str tmp;
+
+	*event = evi_publish_event(event_name);
+	if (*event == EVI_ERROR) {
+		LM_ERR("could not register event %.*s\n", event_name.len, event_name.s);
+		return -1;
+	}
+	memset(params, 0, sizeof(*params));
+	va_start(vl, params);
+	while (1) {
+		p = va_arg(vl, const char *);
+		if (!p)
+			break;
+		init_str(&tmp, p);
+		if (!evi_param_create(params, &tmp)) {
+			LM_ERR("could not initialize %s param for event %.*s\n", p,
+					event_name.len, event_name.s);
+			va_end(vl);
+			return -1;
+		}
+	}
+	va_end(vl);
+
+	return 0;
+}
+
+static int stir_event_raise(event_id_t event, evi_params_p params, ...)
+{
+	str *p;
+	va_list vl;
+	int ret = -1;
+	evi_param_p param = params->first;
+
+	if (!evi_probe_event(event)) {
+		LM_DBG("no listener!\n");
+		return 0;
+	}
+	va_start(vl, params);
+	while (1) {
+		if (!param)
+			break;
+		p = va_arg(vl, str *);
+		if (!p)
+			break;
+		if (evi_param_set_str(param, p) < 0) {
+			LM_ERR("could not set param!\n");
+			goto end;
+		}
+		param = param->next;
+	}
+	ret = 0;
+	if (evi_raise_event(event, params) < 0)
+		LM_ERR("cannot raise event\n");
+end:
+	va_end(vl);
+
+	return ret;
+}
+
+DECLARE_STIR_EVENT(AUTH);
+DECLARE_STIR_EVENT(VERIFY);
+DECLARE_STIR_EVENT(CHECK);
+DECLARE_STIR_EVENT(CHECK_CERT);
+
+
+// Raise event based on level(message) and mode(function) to generate dyn status
+static int event_gen_event(struct sip_msg *msg, int mode, int level) {
+
+	// init the final state according to the level of the message
+	static str state;
+
+	// init some str for event
+	static str callid_hdr;
+	static str from_hdr;
+	static str to_hdr;
+
+	// status
+	switch(level){
+		case 0:
+			state = str_init(INVALID_IDENTITY_REASON);
+			break;
+		case 1:
+			state = str_init(FAILED_TO_PARSE_IDENTITY);
+			break;
+		case 2:
+			state = str_init(FAILED_TO_FIND_IDENTITY);
+			break;
+		case 3:
+			state = str_init(FAILED_TO_PARSE_PPT);
+			break;
+		case 4:
+			state = str_init(FAILED_TO_PARSE_ALG);
+			break;
+		case 5:
+			state = str_init(FAILED_TO_PARSE_PASSPORT);
+			break;
+		case 6:
+			state = str_init(BADREQ_ORIG_REASON);
+			break;
+		case 7:
+			state = str_init(BADREQ_DEST_REASON);
+			break;
+		case 8:
+			state = str_init(BADREQ_NODATE_REASON);
+			break;
+		case 9:
+			state = str_init(STALE_DATE_REASON);
+			break;
+		case 10:
+			state = str_init(USE_IDENTITY_REASON);
+			break;
+		case 11:
+			state = str_init(UNSUPPORTED_CRED_REASON);
+			break;
+		default:
+			state = str_init(IERROR_REASON);
+	}
+
+	// populate our hdr from struct to str
+	pkg_nt_str_dup(&callid_hdr, &msg->callid->body);
+	pkg_nt_str_dup(&from_hdr, &msg->from->body);
+	pkg_nt_str_dup(&to_hdr, &msg->to->body);
+
+	// debug archive to verify a content (https://www.opensips.org/Documentation/Development-Manual#toc7)
+	// LM_DBG("check msg->callid->body.s: %.*s\n", msg->callid->body.len, msg->callid->body.s);
+
+	// call the event and pass the final state
+	switch(mode){
+		case 0: // stir_shaken_auth exported func
+			RAISE_STIR_EVENT(AUTH, &callid_hdr,&from_hdr, &to_hdr, &state, NULL);
+			break;
+		case 1: // stir_shaken_verify exported func
+			RAISE_STIR_EVENT(VERIFY, &callid_hdr,&from_hdr, &to_hdr, &state, NULL);
+			break;	
+		case 2: // stir_shaken_check exported func
+			RAISE_STIR_EVENT(CHECK, &callid_hdr,&from_hdr, &to_hdr, &state, NULL);
+			break;
+		case 3: // stir_shaken_check_cert exported func
+			RAISE_STIR_EVENT(CHECK_CERT, &callid_hdr,&from_hdr, &to_hdr, &state, NULL);
+			break;
+		default:
+			LM_ERR("Failed to raise an event\n");
+			break;
+	}
+
+	// avoid memory leak
+	pkg_free(callid_hdr.s);
+	pkg_free(from_hdr.s);
+	pkg_free(to_hdr.s);
+
+	return(1);
+}
+
 
 /*
  * Module core functions
@@ -384,6 +567,12 @@ static int mod_init(void)
 		return -1;
 
 	parsed_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, parsed_ctx_free);
+
+	// EVI init
+	INIT_STIR_EVENT(AUTH, "callid", "from", "to", "state", NULL);
+	INIT_STIR_EVENT(VERIFY, "callid", "from", "to", "state", NULL);
+	INIT_STIR_EVENT(CHECK, "callid", "from", "to", "state", NULL);
+	INIT_STIR_EVENT(CHECK_CERT, "callid", "from", "to", "state", NULL);
 
 	return 0;
 }
@@ -2159,32 +2348,38 @@ static int w_stir_check(struct sip_msg *msg)
 	}
 
 	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
+		LM_ERR("No Identity header found\n");
+		event_gen_event(msg,2,2); // FAILED_TO_FIND_IDENTITY
 		return -2;
 	}
 
 	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
+			event_gen_event(msg,2,1); // FAILED_TO_PARSE_IDENTITY
 			return -1;
 		} else {
-			LM_INFO("Invalid identity header\n");
+			LM_ERR("Invalid identity header\n");
+			event_gen_event(msg,2,0); // INVALID_IDENTITY_REASON
 			return -3;
 		}
 	}
 
 	if (str_strcmp(&parsed->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
-		LM_INFO("Unsupported 'ppt' extension\n");
+		LM_ERR("Unsupported 'ppt' extension\n");
+		event_gen_event(msg,2,3); // FAILED_TO_PARSE_PPT
 		return -4;
 	}
 	if (parsed->alg_hdr_param.s &&
 		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
-		LM_INFO("Unsupported 'alg'\n");
+		LM_ERR("Unsupported 'alg'\n");
+		event_gen_event(msg,2,4); // FAILED_TO_PARSE_ALG
 		return -4;
 	}
 
 	if (check_passport_claims(parsed) < 0) {
-		LM_INFO("Required PASSporT claims are missing or have bad datatypes\n");
+		LM_ERR("Required PASSporT claims are missing or have bad datatypes\n");
+		event_gen_event(msg,2,5); // FAILED_TO_PARSE_PASSPORT
 		return -3;
 	}
 
