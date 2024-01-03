@@ -88,6 +88,11 @@
 #define INVALID_IDENTITY_REASON "Invalid Identity Header"
 #define IERROR_CODE 500
 #define IERROR_REASON "Internal Server Error"
+#define FAILED_TO_PARSE_IDENTITY "Failed to parse identity header"
+#define FAILED_TO_FIND_IDENTITY "No Identity header found"
+#define FAILED_TO_PARSE_PPT "Unsupported 'ppt' extension"
+#define FAILED_TO_PARSE_ALG "Unsupported 'alg'"
+#define FAILED_TO_PARSE_PASSPORT "Required PASSporT claims are missing or have bad datatypes"
 
 #define TN_AUTH_LIST_OID "1.3.6.1.5.5.7.1.26"
 #define TN_AUTH_LIST_LN "TNAuthorizationList"
