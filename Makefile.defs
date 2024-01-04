@@ -507,6 +507,8 @@ else
   VERSIONTYPE = $(shell [ -f "${TOP_SRCDIR}/.gitrevision" ] && echo "git")
   ifneq ($(VERSIONTYPE),)
     THISREVISION = $(shell cat ${TOP_SRCDIR}/.gitrevision)
+  else
+    VERSIONTYPE = unknown
   endif
   OLDREVISION = "$(THISREVISION)"
 endif
