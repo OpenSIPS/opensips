@@ -202,15 +202,10 @@ static void get_ssl_ctx_verify_mode(struct tls_domain *d, int *verify_mode)
 		 *   SSL_VERIFY_PEER.
 		 */
 
-		if( d->verify_cert ) {
-			*verify_mode = SSL_VERIFY_PEER;
-			if( d->require_client_cert ) {
-				LM_INFO("client verification activated. Client "
-						"certificates are mandatory.\n");
-				*verify_mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-			} else
-				LM_INFO("client verification activated. Client "
-						"certificates are NOT mandatory.\n");
+		if( d->require_client_cert ) {
+			LM_INFO("client verification activated. Client "
+					"certificates are mandatory.\n");
+			*verify_mode = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 		} else {
 			*verify_mode = SSL_VERIFY_NONE;
 			LM_INFO("client verification NOT activated. Weaker security.\n");
