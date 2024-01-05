@@ -3132,6 +3132,10 @@ event_route[E_RTPPROXY_DTMF] {
 					</para></listitem>
 				</itemizedlist>
 			</para></listitem>
+			<listitem><para>
+				<emphasis>headers</emphasis> - (optional) can be used to specify some headers for
+					the initial sequential message.
+			</para></listitem>
 		</itemizedlist>
 		<para>
 			This functions runs asynchronously and returns the status code and reason
@@ -3164,6 +3168,18 @@ event_route[E_RTPPROXY_DTMF] {
 				mode=challenge-callee \
 				body=outbound \
 				method=UPDATE
+		</programlisting>
+
+		<para>
+		MI Command used to send REFER to the callee, and add Refer-To header:
+		</para>
+		<programlisting  format="linespecific">
+			opensips-cli -x mi dlg_send_sequential \
+				callid=usR8FlGOSMfCTAIHebHCOQ.. \
+				method=REFER \
+				body=none \
+				mode=callee \
+				headers='Refer-To: sip:user@domain:50060'
 		</programlisting>
 
 		</section>
