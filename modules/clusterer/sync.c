@@ -450,7 +450,6 @@ void handle_sync_end(cluster_info_t *cluster, struct local_cap *cap,
 			bin_pkt = pkg_malloc(sizeof *bin_pkt);
 			if (!bin_pkt) {
 				LM_ERR("No more pkg mem\n");
-				lock_release(cluster->lock);
 				return;
 			}
 
