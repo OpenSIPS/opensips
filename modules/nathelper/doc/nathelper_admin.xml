@@ -767,8 +767,8 @@ fix_nated_register();
 			<function>nat_uac_test(flags)</function>
 		</title>
 		<para>
-			Tries to guess if client's request originated behind a nat.
-			The parameter determines what heuristics is used.
+			Determines whether the received SIP message originated behind a NAT,
+			using a bitmask of pre-defined checks.
 		</para>
 		<para>Meaning of the <emphasis>flags (int)</emphasis> parameter
 		is as follows:</para>
