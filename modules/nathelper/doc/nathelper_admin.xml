@@ -772,16 +772,16 @@ fix_nated_register();
 			<function>nat_uac_test(flags)</function>
 		</title>
 		<para>
-			Tries to guess if client's request originated behind a nat.
-			The parameter determines what heuristics is used.
+			Determines whether the received SIP message originated behind a NAT,
+			using one or more pre-defined checks.
 		</para>
-		<para>Meaning of the <emphasis>flags (string)</emphasis> parameter
-		is as follows:</para>
+		<para>The <emphasis>flags</emphasis> (string) parameter denotes a
+			comma-separated list of checks to be performed, as follows:</para>
 		<itemizedlist>
 			<listitem><para>
 			<emphasis>private-contact</emphasis> - (old <emphasis>1</emphasis> flag)
 			Contact header field is searched for occurrence of RFC1918 / RFC6598
-			addresses.
+			addresses
 			</para></listitem>
 			<listitem><para>
 			<emphasis>diff-ip-src-via</emphasis> - (old <emphasis>2</emphasis> flag)
@@ -812,17 +812,26 @@ fix_nated_register();
 			<listitem><para>
 			<emphasis>carrier-grade-nat</emphasis> - (old <emphasis>128</emphasis>
 			flag) also include RFC 6333 addresses in the checks for
-			<emphasis>ct</emphasis>, <emphasis>via</emphasis> and
-			<emphasis>sdp</emphasis> flags.
+			<emphasis>Contact</emphasis>, <emphasis>Via</emphasis> and
+			<emphasis>SDP</emphasis>
 			</para></listitem>
 		</itemizedlist>
 		<para>
-		A CSV of the above flags can be provided, the test returns true if any of
-		the tests identified a NAT.
+			<emphasis role='bold'>Returns true if any of the tests passed</emphasis>.
 		</para>
 		<para>
 		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE, FAILURE_ROUTE, BRANCH_ROUTE.
 		</para>
+		<example>
+		<title><function>nat_uac_test</function> usage</title>
+		<programlisting format="linespecific">
+...
+# check for private Contact or SDP media IP addresses
+if (nat_uac_test("private-contact,private-sdp"))
+	xlog("SIP message is NAT'ed (Call-ID: $ci)\n");
+...
+</programlisting>
+		</example>
 	</section>
 	</section>
 
