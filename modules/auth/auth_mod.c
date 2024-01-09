@@ -47,6 +47,7 @@
 #include "challenge.h"
 #include "rpid.h"
 #include "api.h"
+#include "qop.h"
 #include "../../parser/digest/digest_parser.h"
 #include "../../lib/digest_auth/dauth_calc.h"
 #include "../../lib/digest_auth/dauth_nonce.h"
