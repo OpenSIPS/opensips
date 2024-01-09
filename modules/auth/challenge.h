@@ -29,8 +29,6 @@
 
 #include "../../lib/digest_auth/dauth_nonce.h"
 
-int fixup_qop(void** param);
-
 /*
  * Challenge a user agent using WWW-Authenticate header field
  */
