@@ -318,6 +318,7 @@ static int msg_send_retry(bin_packet_t *packet, node_info_t *dest,
 enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	int cluster_id, int dst_node_id, int check_cap, int locked)
 {
+	DEFS_RW_LOCKING_R;
 	node_info_t *node;
 	int rc;
 	cluster_info_t *cl;
@@ -329,13 +330,13 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		return CLUSTERER_CURR_DISABLED;
 	}
 	if (!locked)
-		lock_start_read(cl_list_lock);
+		lock_start_read_r(cl_list_lock, cll_re);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
 		LM_ERR("Unknown cluster id [%d]\n", cluster_id);
 		if (!locked)
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 		return CLUSTERER_SEND_ERR;
 	}
 
@@ -343,7 +344,7 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	if (!(cl->current_node->flags & NODE_STATE_ENABLED)) {
 		lock_release(cl->current_node->lock);
 		if (!locked)
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 		return CLUSTERER_CURR_DISABLED;
 	}
 	lock_release(cl->current_node->lock);
@@ -352,14 +353,14 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 	if (!node) {
 		LM_ERR("Node id [%d] not found in cluster\n", dst_node_id);
 		if (!locked)
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 		return CLUSTERER_SEND_ERR;
 	}
 
 	lock_get(node->lock);
 	if (!(node->flags & NODE_STATE_ENABLED)) {
 		lock_release(node->lock);
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 		LM_DBG("node disabled, skip message sending\n");
 		return CLUSTERER_SEND_SUCCESS;
 	}
@@ -369,10 +370,10 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		bin_get_capability(packet, &capability);
 		rc = get_capability_status(cl, &capability);
 		if (rc == -1) {
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 			return CLUSTERER_SEND_ERR;
 		} else if (rc == CAP_DISABLED) {
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 			LM_DBG("capability disabled, skip message sending\n");
 			return CLUSTERER_SEND_SUCCESS;
 		}
@@ -386,7 +387,7 @@ enum clusterer_send_ret clusterer_send_msg(bin_packet_t *packet,
 		do_actions_node_ev(cl, &ev_actions_required, 1);
 
 	if (!locked)
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 
 	switch (rc) {
 	case  0:
@@ -404,6 +405,7 @@ static enum clusterer_send_ret
 clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
                     enum cl_node_match_op match_op, int check_cap)
 {
+	DEFS_RW_LOCKING_R;
 	node_info_t *node;
 	int rc, sent = 0, down = 1, matched_once = 0;
 	cluster_info_t *dst_cl;
@@ -414,19 +416,19 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		LM_ERR("cluster shutdown - cannot send new messages!\n");
 		return CLUSTERER_CURR_DISABLED;
 	}
-	lock_start_read(cl_list_lock);
+	lock_start_read_r(cl_list_lock, cll_re);
 
 	dst_cl = get_cluster_by_id(dst_cid);
 	if (!dst_cl) {
 		LM_ERR("Unknown cluster, id [%d]\n", dst_cid);
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 		return CLUSTERER_SEND_ERR;
 	}
 
 	lock_get(dst_cl->current_node->lock);
 	if (!(dst_cl->current_node->flags & NODE_STATE_ENABLED)) {
 		lock_release(dst_cl->current_node->lock);
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 		return CLUSTERER_CURR_DISABLED;
 	}
 	lock_release(dst_cl->current_node->lock);
@@ -435,10 +437,10 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 		bin_get_capability(packet, &capability);
 		rc = get_capability_status(dst_cl, &capability);
 		if (rc == -1) {
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 			return CLUSTERER_SEND_ERR;
 		} else if (rc == CAP_DISABLED) {
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 			LM_DBG("capability [%.*s] disabled, skip message sending\n",
 				capability.len, capability.s);
 			return CLUSTERER_SEND_SUCCESS;
@@ -471,7 +473,7 @@ clusterer_bcast_msg(bin_packet_t *packet, int dst_cid,
 	if (ev_actions_required)
 		do_actions_node_ev(dst_cl, &ev_actions_required, 1);
 
-	lock_stop_read(cl_list_lock);
+	lock_stop_read_r(cl_list_lock, cll_re);
 
 	if (!matched_once)
 		return CLUSTERER_SEND_SUCCESS;
@@ -700,12 +702,13 @@ static int ip_check(cluster_info_t *cluster, union sockaddr_union *su, str *ip_s
 int clusterer_check_addr(int cluster_id, str *ip_str,
 							enum node_addr_type check_type)
 {
+	DEFS_RW_LOCKING_R;
 	cluster_info_t *cluster;
 	int rc;
 	struct ip_addr ip;
 	union sockaddr_union su;
 
-	lock_start_read(cl_list_lock);
+	lock_start_read_r(cl_list_lock, cll_re);
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
 		LM_WARN("Unknown cluster id [%d]\n", cluster_id);
@@ -730,7 +733,7 @@ int clusterer_check_addr(int cluster_id, str *ip_str,
 		rc = 0;
 	}
 
-	lock_stop_read(cl_list_lock);
+	lock_stop_read_r(cl_list_lock, cll_re);
 	/* return 1 if addr matched, 0 for ALL other cases, unless return codes implemented */
 	return rc;
 }
@@ -980,6 +983,7 @@ static void handle_remove_node(bin_packet_t *packet, cluster_info_t *cl)
 void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att)
 {
+	DEFS_RW_LOCKING_R;
 	int source_id, dest_id, cluster_id;
 	cluster_info_t *cl;
 	node_info_t *node;
@@ -1003,7 +1007,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
 		lock_start_write(cl_list_lock);
 	else
-		lock_start_read(cl_list_lock);
+		lock_start_read_r(cl_list_lock, cll_re);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
@@ -1083,7 +1087,7 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		else if (packet_type == CLUSTERER_MI_CMD) {
 			/* we don't need to hold the lock while running an MI cmd, and in
 			 * case of clusterer's own cmds, it might even cause a deadlock */
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 			handle_cl_mi_msg(packet);
 			return;
 		}
@@ -1103,12 +1107,13 @@ exit:
 	if (!db_mode && packet_type == CLUSTERER_REMOVE_NODE)
 		lock_stop_write(cl_list_lock);
 	else
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 }
 
 void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *att)
 {
+	DEFS_RW_LOCKING_R;
 	int source_id, cl_id;
 	struct timeval now;
 	node_info_t *node = NULL;
@@ -1135,7 +1140,7 @@ void bin_rcv_cl_packets(bin_packet_t *packet, int packet_type,
 		packet_type == CLUSTERER_FULL_TOP_UPDATE))
 		lock_start_write(cl_list_lock);
 	else
-		lock_start_read(cl_list_lock);
+		lock_start_read_r(cl_list_lock, cll_re);
 
 	cl = get_cluster_by_id(cl_id);
 	if (!cl) {
@@ -1183,7 +1188,7 @@ exit:
 		packet_type == CLUSTERER_FULL_TOP_UPDATE))
 		lock_stop_write(cl_list_lock);
 	else
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 }
 
 void run_mod_packet_cb(int sender, void *param)
@@ -1229,6 +1234,7 @@ int ipc_dispatch_mod_packet(bin_packet_t *packet, struct capability_reg *cap)
 static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 									struct receive_info *ri, void *ptr)
 {
+	DEFS_RW_LOCKING_R;
 	struct capability_reg *cap;
 	struct local_cap *cl_cap;
 	unsigned short port;
@@ -1259,7 +1265,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 		return;
 	}
 
-	lock_start_read(cl_list_lock);
+	lock_start_read_r(cl_list_lock, cll_re);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
@@ -1358,7 +1364,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 			lock_release(cl->lock);
 		} else {
 			lock_release(cl->lock);
-			lock_stop_read(cl_list_lock);
+			lock_stop_read_r(cl_list_lock, cll_re);
 			packet->src_id = source_id;
 
 			if (dispatch_jobs) {
@@ -1373,7 +1379,7 @@ static void bin_rcv_mod_packets(bin_packet_t *packet, int packet_type,
 	}
 
 exit:
-	lock_stop_read(cl_list_lock);
+	lock_stop_read_r(cl_list_lock, cll_re);
 }
 
 int send_single_cap_update(cluster_info_t *cluster, struct local_cap *cap,

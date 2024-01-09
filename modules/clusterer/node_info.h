@@ -126,6 +126,7 @@ typedef struct cluster_info cluster_info_t;
 extern int current_id;
 extern int db_mode;
 extern rw_lock_t *cl_list_lock;
+extern int cll_re;
 extern cluster_info_t **cluster_list;
 
 int update_db_state(int cluster_id, int node_id, int state);

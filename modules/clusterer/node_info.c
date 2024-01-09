@@ -64,6 +64,7 @@ static db_val_t *clusterer_cluster_id_value;
 
 /* protects the cluster_list and the node_list from each cluster */
 rw_lock_t *cl_list_lock;
+int cll_re; /* re-entrant @cl_list_lock */
 
 cluster_info_t **cluster_list;
 
@@ -861,11 +862,12 @@ clusterer_node_t* get_clusterer_nodes(int cluster_id)
 
 clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 {
+	DEFS_RW_LOCKING_R;
 	clusterer_node_t *ret = NULL;
 	node_info_t *dest_node;
 	cluster_info_t *cluster;
 
-	lock_start_read(cl_list_lock);
+	lock_start_read_r(cl_list_lock, cll_re);
 
 	cluster = get_cluster_by_id(cluster_id);
 	if (!cluster) {
@@ -893,7 +895,7 @@ clusterer_node_t *api_get_next_hop(int cluster_id, int node_id)
 
 	lock_release(dest_node->lock);
 
-	lock_stop_read(cl_list_lock);
+	lock_stop_read_r(cl_list_lock, cll_re);
 
 	return ret;
 }
@@ -911,6 +913,7 @@ int cl_get_my_id(void)
 
 int cl_get_my_sip_addr(int cluster_id, str *out_addr)
 {
+	DEFS_RW_LOCKING_R;
 	cluster_info_t *cl;
 	int rc;
 
@@ -919,12 +922,12 @@ int cl_get_my_sip_addr(int cluster_id, str *out_addr)
 		memset(out_addr, 0, sizeof *out_addr);
 		return -1;
 	}
-	lock_start_read(cl_list_lock);
+	lock_start_read_r(cl_list_lock, cll_re);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
 		LM_ERR("unknown cluster id: %d\n", cluster_id);
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 		memset(out_addr, 0, sizeof *out_addr);
 		return -1;
 	}
@@ -944,24 +947,25 @@ int cl_get_my_sip_addr(int cluster_id, str *out_addr)
 	}
 
 	lock_release(cl->current_node->lock);
-	lock_stop_read(cl_list_lock);
+	lock_stop_read_r(cl_list_lock, cll_re);
 	return rc;
 }
 
 int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 {
+	DEFS_RW_LOCKING_R;
 	int i, j, tmp;
 	int sorted[MAX_NO_NODES];
 	node_info_t *node;
 	cluster_info_t *cl;
 	struct remote_cap *cap;
 
-	lock_start_read(cl_list_lock);
+	lock_start_read_r(cl_list_lock, cll_re);
 
 	cl = get_cluster_by_id(cluster_id);
 	if (!cl) {
 		LM_ERR("cluster id: %d not found!\n", cluster_id);
-		lock_stop_read(cl_list_lock);
+		lock_stop_read_r(cl_list_lock, cll_re);
 		return -1;
 	}
 
@@ -978,7 +982,7 @@ int cl_get_my_index(int cluster_id, str *capability, int *nr_nodes)
 			lock_release(node->lock);
 		}
 
-	lock_stop_read(cl_list_lock);
+	lock_stop_read_r(cl_list_lock, cll_re);
 
 	/* sort array of reachable node ids */
 	for (i = 1; i < *nr_nodes; i++) {
