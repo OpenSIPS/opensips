@@ -41,7 +41,7 @@
 
 /* First/Last supported algorithm */
 #define FIRST_ALG_SPTD (ALG_UNSPEC)
-#define LAST_ALG_SPTD  (ALG_SHA512_256SESS)
+#define LAST_ALG_SPTD  (ALG_OTHER-1)
 
 typedef union {
 	HASH_MD5 MD5;
