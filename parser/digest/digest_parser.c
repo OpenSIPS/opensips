@@ -46,6 +46,18 @@
 #define ALG_SHA256SESS_STR_LEN (sizeof(ALG_SHA256SESS_STR) - 1)
 #define ALG_SHA512_256_STR_LEN (sizeof(ALG_SHA512_256_STR) - 1)
 #define ALG_SHA512_256SESS_STR_LEN (sizeof(ALG_SHA512_256SESS_STR) - 1)
+#define ALG_AKAv1_MD5_STR_LEN (sizeof(ALG_AKAv1_MD5_STR) - 1)
+#define ALG_AKAv1_MD5SESS_STR_LEN (sizeof(ALG_AKAv1_MD5SESS_STR) - 1)
+#define ALG_AKAv1_SHA256_STR_LEN (sizeof(ALG_AKAv1_SHA256_STR) - 1)
+#define ALG_AKAv1_SHA256SESS_STR_LEN (sizeof(ALG_AKAv1_SHA256SESS_STR) - 1)
+#define ALG_AKAv1_SHA512_256_STR_LEN (sizeof(ALG_AKAv1_SHA512_256_STR) - 1)
+#define ALG_AKAv1_SHA512_256SESS_STR_LEN (sizeof(ALG_AKAv1_SHA512_256SESS_STR) - 1)
+#define ALG_AKAv2_MD5_STR_LEN (sizeof(ALG_AKAv2_MD5_STR) - 1)
+#define ALG_AKAv2_MD5SESS_STR_LEN (sizeof(ALG_AKAv2_MD5SESS_STR) - 1)
+#define ALG_AKAv2_SHA256_STR_LEN (sizeof(ALG_AKAv2_SHA256_STR) - 1)
+#define ALG_AKAv2_SHA256SESS_STR_LEN (sizeof(ALG_AKAv2_SHA256SESS_STR) - 1)
+#define ALG_AKAv2_SHA512_256_STR_LEN (sizeof(ALG_AKAv2_SHA512_256_STR) - 1)
+#define ALG_AKAv2_SHA512_256SESS_STR_LEN (sizeof(ALG_AKAv2_SHA512_256SESS_STR) - 1)
 
 /*
  * Parse quoted string in a parameter body
@@ -230,6 +242,14 @@ static inline void parse_qop(struct qp* _q)
 			return ALG_##alg; \
 		break;
 
+#define CASE_ALG2(alg1, alg2, sptr) \
+	case ALG_##alg1##_STR_LEN: \
+		if (turbo_casematch((sptr)->s, ALG_##alg1##_STR, (sptr)->len)) \
+			return ALG_##alg1; \
+		if (turbo_casematch((sptr)->s, ALG_##alg2##_STR, (sptr)->len)) \
+			return ALG_##alg2; \
+		break;
+
 /*
  * Parse algorithm parameter body
  */
@@ -243,6 +263,12 @@ alg_t parse_digest_algorithm(const str *sp)
 	CASE_ALG(SHA256SESS, sp);
 	CASE_ALG(SHA512_256, sp);
 	CASE_ALG(SHA512_256SESS, sp);
+	CASE_ALG2(AKAv1_MD5, AKAv2_MD5, sp);
+	CASE_ALG2(AKAv1_MD5SESS, AKAv2_MD5SESS, sp);
+	CASE_ALG2(AKAv1_SHA256, AKAv2_SHA256, sp);
+	CASE_ALG2(AKAv1_SHA256SESS, AKAv2_SHA256SESS, sp);
+	CASE_ALG2(AKAv1_SHA512_256, AKAv2_SHA512_256, sp);
+	CASE_ALG2(AKAv1_SHA512_256SESS, AKAv2_SHA512_256SESS, sp);
 	default:
 		break;
 	}
