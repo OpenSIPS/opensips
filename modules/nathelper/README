@@ -555,8 +555,8 @@ fix_nated_register();
 
 1.5.5.  nat_uac_test(flags)
 
-   Tries to guess if client's request originated behind a nat. The
-   parameter determines what heuristics is used.
+   Determines whether the received SIP message originated behind a
+   NAT, using a bitmask of pre-defined checks.
 
    Meaning of the flags (int) parameter is as follows:
      * 1 - Contact header field is searched for occurrence of
@@ -646,7 +646,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
    2. Maksym Sobolyev (@sobomax) 149 41 3547 4780
-   3. Liviu Chircu (@liviuchircu) 44 35 401 280
+   3. Liviu Chircu (@liviuchircu) 45 36 403 282
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 33 27 158 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
@@ -686,9 +686,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
-   2.  Nick Altmann (@nikbyte)             May 2022 - May 2022
-   3.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2021
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2024
+   2.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
+   3.  Nick Altmann (@nikbyte)             May 2022 - May 2022
    4.  Maksym Sobolyev (@sobomax)          May 2003 - Jan 2021
    5.  Razvan Crainea (@razvancrainea)     Dec 2010 - Jan 2021
    6.  Bogdan-Andrei Iancu (@bogdan-iancu) Nov 2003 - Jul 2020
@@ -715,8 +715,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Nick Altmann (@nikbyte), Jasper Hafkenscheid
-   (@hafkensite), Liviu Chircu (@liviuchircu), Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Nick Altmann
+   (@nikbyte), Jasper Hafkenscheid (@hafkensite), Vlad Patrascu
    (@rvlad-patrascu), Razvan Crainea (@razvancrainea),
    Bogdan-Andrei Iancu (@bogdan-iancu), Peter Lemenkov
    (@lemenkov), Ovidiu Sas (@ovidiusas), Ionut Ionita
