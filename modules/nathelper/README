@@ -90,7 +90,8 @@ nathelper Module
    1.21. fix_nated_sdp usage
    1.22. add_rcv_paramer usage
    1.23. fix_nated_register usage
-   1.24. nh_enable_ping usage
+   1.24. nat_uac_test usage
+   1.25. nh_enable_ping usage
 
 Chapter 1. Admin Guide
 
@@ -557,12 +558,13 @@ fix_nated_register();
 
 1.5.5.  nat_uac_test(flags)
 
-   Tries to guess if client's request originated behind a nat. The
-   parameter determines what heuristics is used.
+   Determines whether the received SIP message originated behind a
+   NAT, using one or more pre-defined checks.
 
-   Meaning of the flags (string) parameter is as follows:
+   The flags (string) parameter denotes a comma-separated list of
+   checks to be performed, as follows:
      * private-contact - (old 1 flag) Contact header field is
-       searched for occurrence of RFC1918 / RFC6598 addresses.
+       searched for occurrence of RFC1918 / RFC6598 addresses
      * diff-ip-src-via - (old 2 flag) the "received" test is used:
        address in Via is compared against source IP address of
        signaling
@@ -577,13 +579,19 @@ fix_nated_register();
      * diff-port-src-contact - (old 64 flag) Port in Contact is
        compared against source port of signaling
      * carrier-grade-nat - (old 128 flag) also include RFC 6333
-       addresses in the checks for ct, via and sdp flags.
+       addresses in the checks for Contact, Via and SDP
 
-   A CSV of the above flags can be provided, the test returns true
-   if any of the tests identified a NAT.
+   Returns true if any of the tests passed.
 
    This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
    FAILURE_ROUTE, BRANCH_ROUTE.
+
+   Example 1.24. nat_uac_test usage
+...
+# check for private Contact or SDP media IP addresses
+if (nat_uac_test("private-contact,private-sdp"))
+        xlog("SIP message is NAT'ed (Call-ID: $ci)\n");
+...
 
 1.6. Exported MI Functions
 
@@ -597,7 +605,7 @@ fix_nated_register();
        parameter value greater than 0 or disables natping if
        parameter value is 0.
 
-   Example 1.24. nh_enable_ping usage
+   Example 1.25. nh_enable_ping usage
 ...
 $ opensips-cli -x mi nh_enable_ping
 Status:: 1
@@ -651,7 +659,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Bogdan-Andrei Iancu (@bogdan-iancu) 153 121 2044 866
    2. Maksym Sobolyev (@sobomax) 153 45 3556 4790
-   3. Liviu Chircu (@liviuchircu) 46 37 420 298
+   3. Liviu Chircu (@liviuchircu) 48 38 438 307
    4. Ionut Ionita (@ionutrazvanionita) 40 15 1598 627
    5. Razvan Crainea (@razvancrainea) 33 27 158 240
    6. Daniel-Constantin Mierla (@miconda) 22 17 142 124
@@ -691,8 +699,8 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Oct 2023
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Jan 2024
+   2.  Maksym Sobolyev (@sobomax)          May 2003 - Nov 2023
    3.  Vlad Paiu (@vladpaiu)               Aug 2010 - Jul 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2023
    5.  Nick Altmann (@nikbyte)             May 2022 - May 2022
@@ -720,9 +728,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Nick Altmann
-   (@nikbyte), Jasper Hafkenscheid (@hafkensite), Liviu Chircu
-   (@liviuchircu), Razvan Crainea (@razvancrainea), Bogdan-Andrei
+   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
+   (@rvlad-patrascu), Nick Altmann (@nikbyte), Jasper Hafkenscheid
+   (@hafkensite), Razvan Crainea (@razvancrainea), Bogdan-Andrei
    Iancu (@bogdan-iancu), Peter Lemenkov (@lemenkov), Ovidiu Sas
    (@ovidiusas), Ionut Ionita (@ionutrazvanionita), Walter Doekes
    (@wdoekes), Christophe Sollet (@csollet), Vlad Paiu
