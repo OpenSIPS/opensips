@@ -802,6 +802,7 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 	struct dlg_cell *dlg;
 	struct dlg_entry *d_entry;
 	unsigned int h_entry;
+	unsigned int dst_leg_backup = *dst_leg;
 
 	h_entry = dlg_hash(callid);
 	d_entry = &(d_table->entries[h_entry]);
@@ -827,12 +828,16 @@ struct dlg_cell* get_dlg( str *callid, str *ftag, str *ttag,
 				dlg->legs[DLG_CALLER_LEG].contact.len);
 #endif
 		if (match_dialog( dlg, callid, ftag, ttag, dir, dst_leg)==1) {
-			if (dlg->state==DLG_STATE_DELETED)
+			if (dlg->state==DLG_STATE_DELETED) {
 				/* even if matched, skip the deleted dialogs as they may be
 				   a previous unsuccessful attempt of established call
 				   with the same callid and fromtag - like in auth/challenge
 				   case -bogdan */
+				/* since this dialog is not considered matched, then the
+				 * dst_leg should not be populated either */
+				*dst_leg = dst_leg_backup;
 				continue;
+			}
 			DBG_REF(dlg, 1);
 			dlg->ref++;
 			dlg_unlock( d_table, d_entry);
