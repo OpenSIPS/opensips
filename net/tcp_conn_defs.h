@@ -183,6 +183,7 @@ struct tcp_connection{
 	/* protocol specific data attached to this connection */
 	void *proto_data;
 	time_t first_seen;
+	int do_not_reuse;
 };
 
 

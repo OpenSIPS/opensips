@@ -420,10 +420,7 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 		return -1;
 	}
 
-	if (is_connection_max_lifetime_exceeded(c)) {
-		tcp_conn_destroy(c);
-		c = NULL;
-	}
+	if (is_connection_max_lifetime_exceeded(c)) c->do_not_reuse = 1;
 
 	/* was connection found ?? */
 	if (c == 0) {
@@ -503,6 +500,7 @@ static int hep_tcp_or_tls_send(struct socket_info* send_sock,
 			return -1;
 		}
 		c->first_seen = time(0);
+		c->do_not_reuse = 0;
 		goto send_it;
 	}
 
@@ -551,7 +549,11 @@ send_it:
 			hep_send_timeout, hep_async_local_write_timeout);
 	}
 
-	tcp_conn_reset_lifetime(c);
+	if (c->do_not_reuse) {
+		c->lifetime = get_ticks() - 1;
+	} else {
+		tcp_conn_reset_lifetime(c);
+	}
 
 	LM_DBG("after write: c= %p n/len=%d/%d fd=%d\n", c, n, len, fd);
 	/* LM_DBG("buf=\n%.*s\n", (int)len, buf); */
