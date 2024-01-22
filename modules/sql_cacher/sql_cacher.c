@@ -1226,7 +1226,8 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		}
 	} else {
 		if (load_entire_table(db_hdls->c_entry, db_hdls, 1) < 0) {
-			LM_DBG("Failed to reload table\n");
+			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len,
+				db_hdls->c_entry->table.s);
 			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 	}
