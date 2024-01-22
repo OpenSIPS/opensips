@@ -2020,8 +2020,6 @@ static inline int get_branch_field( int idx, pv_name_t *pvn, pv_value_t *res)
 static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		pv_value_t *res)
 {
-	str uri;
-	qvalue_t q;
 	int idx;
 	int idxf;
 	char *p;
@@ -2048,10 +2046,12 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 		p = pv_local_buf;
 		idx = 0;
 
-		while ( (uri.s=get_branch(idx, &uri.len, &q, 0, 0, 0, 0))!=NULL ) {
+		while ( idx<get_nr_branches() ) {
+
+			get_branch_field( idx, &param->pvn, res);
 
 			if ( pv_local_buf + PV_LOCAL_BUF_SIZE <=
-			p + uri.len + PV_FIELD_DELIM_LEN ) {
+			p + res->rs.len + PV_FIELD_DELIM_LEN ) {
 				LM_ERR("local buffer length exceeded\n");
 				return pv_get_null(msg, param, res);
 			}
@@ -2061,8 +2061,8 @@ static int pv_get_branch_fields(struct sip_msg *msg, pv_param_t *param,
 				p += PV_FIELD_DELIM_LEN;
 			}
 
-			memcpy(p, uri.s, uri.len);
-			p += uri.len;
+			memcpy(p, res->rs.s, res->rs.len);
+			p += res->rs.len;
 			idx++;
 		}
 

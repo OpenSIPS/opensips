@@ -1204,7 +1204,10 @@ int tr_eval_uri(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if (pit->name.len==sv.len
 						&& strncasecmp(pit->name.s, sv.s, sv.len)==0)
 				{
-					val->rs = pit->body;
+					if (ZSTR(pit->body))
+						val->rs = STR_EMPTY;
+					else
+						val->rs = pit->body;
 					goto done;
 				}
 			}
@@ -2226,7 +2229,10 @@ int tr_eval_paramlist(struct sip_msg *msg, tr_param_t *tp, int subtype,
 				if (pit->name.len==sv.len
 						&& strncasecmp(pit->name.s, sv.s, sv.len)==0)
 				{
-					val->rs = pit->body;
+					if (ZSTR(pit->body))
+						val->rs = STR_EMPTY;
+					else
+						val->rs = pit->body;
 					goto done;
 				}
 			}
