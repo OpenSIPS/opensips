@@ -2136,16 +2136,19 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 		}
 		old_entity->disconnected = 1;
 	}
-	if (old_entity->peer->peer == old_entity)
-		old_entity->peer->peer = NULL;
-	else
+	if (old_entity->peer)
 	{
-		LM_ERR("Unexpected chain: old_entity=[%p] and "
-			"old_entity->peer->peer=[%p]\n",
-			old_entity, old_entity->peer->peer);
-		goto error;
+		if (old_entity->peer->peer == old_entity)
+			old_entity->peer->peer = NULL;
+		else
+		{
+			LM_ERR("Unexpected chain: old_entity=[%p] and "
+				"old_entity->peer->peer=[%p]\n",
+				old_entity, old_entity->peer->peer);
+			goto error;
+		}
+		old_entity->peer = NULL;
 	}
-	old_entity->peer = NULL;
 
 	tuple->bridge_entities[(entity_no?0:1)] = NULL;
 	/* remove the disconected entity from the tuple */
