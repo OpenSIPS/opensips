@@ -33,6 +33,7 @@
 #include "parse_methods.h"
 #include "../mem/mem.h"
 #include "../ut.h"
+#include "../redact_pii.h"
 
 /* grammar:
 	request  =  method SP uri SP version CRLF
@@ -1276,7 +1277,7 @@ error:
 		for (t=0; t<offset; t++)
 			if (*(buffer+t)) *(prn+t)=*(buffer+t);
 			else *(prn+t)=248U;
-		LM_ERR("parsed so far: %.*s\n", offset, ZSW(prn) );
+		LM_ERR("parsed so far: %.*s\n", offset, redact_pii(prn) );
 		pkg_free( prn );
 	};
 error1:

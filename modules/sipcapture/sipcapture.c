@@ -47,6 +47,7 @@
 #include "../../action.h"
 #include "../../socket_info.h"
 #include "../../ipc.h"
+#include "../../redact_pii.h"
 
 /* BPF structure */
 #ifdef __OS_linux
