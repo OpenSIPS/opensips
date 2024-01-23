@@ -951,7 +951,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
 					lock_stop_write(db_hdls->c_entry->ref_lock);
-					return -1;
+					goto error;
 				}
 		}
 
