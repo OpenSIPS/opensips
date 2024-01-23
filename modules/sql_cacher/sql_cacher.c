@@ -857,7 +857,7 @@ static int inc_cache_rld_vers(db_handlers_t *db_hdls, int *rld_vers)
 	memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
 
 	if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, rld_vers) < 0) {
-		LM_DBG("Failed to increment reload version integer from cachedb\n");
+		LM_ERR("Failed to increment reload version integer from cachedb\n");
 		pkg_free(rld_vers_key.s);
 		return -1;
 	}
