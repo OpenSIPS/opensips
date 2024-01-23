@@ -47,6 +47,9 @@ typedef enum auth_result {
 	                    /* Means to continue doing authorization */
 } auth_result_t;
 
+#define AUTH_SKIP_CRED_CHECK	(1<<0)
+#define AUTH_SKIP_NONCE_CHECK	(1<<1)
+
 
 /*
  * Purpose of this function is to find credentials with given realm,
@@ -55,9 +58,9 @@ typedef enum auth_result {
  * ACK and CANCEL
  */
 typedef auth_result_t (*pre_auth_t)(struct sip_msg* _m, str* _realm,
-		hdr_types_t _hftype, struct hdr_field** _h);
+		hdr_types_t _hftype, struct hdr_field** _h, unsigned skip_flags);
 auth_result_t pre_auth(struct sip_msg* _m, str* _realm,
-		hdr_types_t _hftype, struct hdr_field** _h);
+		hdr_types_t _hftype, struct hdr_field** _h, unsigned skip_flags);
 
 
 /*
