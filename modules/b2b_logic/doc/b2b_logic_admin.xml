@@ -958,7 +958,7 @@ route[b2b_logic_request] {
 
 	<section id="func_b2b_bridge_request" xreflabel="b2b_bridge_request()">
 		<title>
-		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
+		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no, [adv_contact])</function>
 		</title>
 		<para>
 			This function will bridge an initial INVITE with one of the
@@ -974,6 +974,10 @@ route[b2b_logic_request] {
 			<listitem><para>
 				<emphasis>entity_no (int)</emphasis> - an integer that
 				holds the entity of the entity/participant to bridge.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>adv_contact (string, optional)</emphasis> - Contact header to
+				advertise in generated messages.
 			</para></listitem>
 		</itemizedlist>
 		<example>
