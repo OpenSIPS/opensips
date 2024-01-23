@@ -448,7 +448,7 @@ static inline int pv_authorize(struct sip_msg* msg, str *domain,
 	if (domain->len==0)
 		domain->s = 0;
 
-	ret = pre_auth(msg, domain, hftype, &h);
+	ret = pre_auth(msg, domain, hftype, &h, 0);
 
 	if (ret != DO_AUTHORIZATION)
 		return ret;
