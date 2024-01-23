@@ -942,11 +942,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	}
 
 	/* anything loaded ? if not, we can do a quick exit here */
-	if (RES_ROW_N(sql_res) == 0) {
-		lock_stop_write(db_hdls->c_entry->ref_lock);
-		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
-		return 0;
-	}
+	if (RES_ROW_N(sql_res) == 0)
+		goto done;
 
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
@@ -982,6 +979,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		}
 	} while (RES_ROW_N(sql_res) > 0);
 
+done:
 	lock_stop_write(db_hdls->c_entry->ref_lock);
 
 	db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
