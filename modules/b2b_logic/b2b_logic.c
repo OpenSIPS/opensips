@@ -60,6 +60,7 @@ static int child_init(int rank);
 static int fixup_init_flags(void** param);
 static int fixup_free_init_flags(void** param);
 static int fixup_bridge_flags(void** param);
+static int fixup_bridge_request_flags(void** param);
 static int fixup_init_id(void** param);
 static int fixup_check_avp(void** param);
 static int fixup_route(void** param);
@@ -79,7 +80,9 @@ static mi_response_t *mi_b2b_list(const mi_params_t *params,
 static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static void b2bl_clean(unsigned int ticks, void* param);
+void b2bl_term_entities_timer(unsigned int ticks, void* param);
 static void b2bl_db_timer_update(unsigned int ticks, void* param);
+static int init_entities_term_timer(void);
 
 int b2bl_script_init_request(struct sip_msg *msg, str *id, struct b2b_params *init_params,
 	void *req_routeid, void *reply_routeid);
@@ -93,7 +96,7 @@ int b2b_delete_entity(struct sip_msg *msg);
 int b2b_end_dlg_leg(struct sip_msg *msg);
 int b2b_send_reply(struct sip_msg *msg, int *code, str *reason, str *headers, str *body);
 int  b2bl_script_bridge_msg(struct sip_msg* msg, str *key, int *entity_no,
-	str *adv_contact);
+	str *adv_contact, void *flags);
 int script_trigger_scenario(struct sip_msg* msg, str *id, str * params,
 	str *ent1, pv_spec_t *ent1_hnames, pv_spec_t *ent1_hvals,
 	str *ent2, pv_spec_t *ent2_hnames, pv_spec_t *ent2_hvals);	
@@ -191,6 +194,9 @@ b2bl_tuple_t *local_ctx_tuple;
  * MI cmd, when the tuple is not created yet */
 struct b2b_ctx_val *local_ctx_vals;
 
+unsigned int ent_term_interval;
+struct b2b_term_timer *ent_term_timer;
+
 static const cmd_export_t cmds[]=
 {
 	{"b2b_init_request", (cmd_function)b2bl_script_init_request, {
@@ -257,7 +263,9 @@ static const cmd_export_t cmds[]=
 	{"b2b_bridge_request", (cmd_function)b2bl_script_bridge_msg, {
 		{CMD_PARAM_STR,0,0},
 		{CMD_PARAM_INT,0,0},
-		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_bridge_request_flags, 0},
+		{0,0,0}},
 		REQUEST_ROUTE},
 	{"b2b_logic_bind", (cmd_function)b2b_logic_bind, {{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
@@ -288,6 +296,7 @@ static const param_export_t params[]=
 	{"db_mode",         INT_PARAM,                &b2bl_db_mode              },
 	{"b2bl_th_init_timeout",INT_PARAM,            &b2bl_th_init_timeout      },
 	{"b2bl_early_update",INT_PARAM,				  &b2b_early_update          },
+	{"old_entity_term_delay",INT_PARAM,           &ent_term_interval         },
 	{0,                    0,                          0                     }
 };
 
@@ -667,6 +676,16 @@ next_hdr:
 	register_timer("b2bl-bridge-retry", b2bl_timer_bridge_retry, 0, 1,
 		TIMER_FLAG_SKIP_ON_DELAY);
 
+	if (ent_term_interval) {
+		register_timer("b2bl-term-entities", b2bl_term_entities_timer, 0, 1,
+			TIMER_FLAG_DELAY_ON_DELAY);
+
+		if (init_entities_term_timer() < 0) {
+			LM_ERR("Failed to init entities termination timer\n");
+			return -1;
+		}
+	}
+
 	if (b2b_api.register_cb(entity_event_trigger,
 		B2BCB_TRIGGER_EVENT, &b2bl_mod_name) < 0) {
 		LM_ERR("could not register entity event trigger callback!\n");
@@ -680,6 +699,29 @@ next_hdr:
 
 	new_ent_1_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, new_ent_ctx_destroy);
 	new_ent_2_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, new_ent_ctx_destroy);
+
+	return 0;
+}
+
+static int init_entities_term_timer(void)
+{
+	ent_term_timer = shm_malloc(sizeof *ent_term_timer);
+	if (!ent_term_timer) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	memset(ent_term_timer, 0, sizeof *ent_term_timer);
+
+	ent_term_timer->lock = lock_alloc();
+	if (ent_term_timer->lock==0) {
+		LM_ERR("failed to alloc lock\n");
+		return -1;
+	}
+
+	if (lock_init(ent_term_timer->lock)==0) {
+		LM_ERR("failed to init lock\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -768,6 +810,18 @@ void b2bl_clean(unsigned int ticks, void* param)
 	}
 }
 
+void destroy_entities_term_timer(void)
+{
+	if (ent_term_timer==0)
+		return;
+
+	lock_destroy(ent_term_timer->lock);
+	lock_dealloc(ent_term_timer->lock);
+
+	shm_free(ent_term_timer);
+	ent_term_timer = 0;
+}
+
 static void mod_destroy(void)
 {
 	if (b2bl_db_mode==WRITE_BACK) {
@@ -794,6 +848,9 @@ static void mod_destroy(void)
 
 	if (server_address_pve)
 		pv_elem_free_all(server_address_pve);
+
+	if (ent_term_interval)
+		destroy_entities_term_timer();
 
 	destroy_b2bl_htable();
 	b2bl_free_bridge_retry();
@@ -941,6 +998,29 @@ static int fixup_bridge_flags(void** param)
 			return -1;
 		}
 	}
+
+	return 0;
+}
+
+
+static str bridge_req_kv_flags[] =
+{
+	str_init("late_bye"),
+	STR_NULL
+};
+
+static int fixup_bridge_request_flags(void** param)
+{
+	if (fixup_named_flags(param, bridge_req_kv_flags, NULL, NULL)<0) {
+		LM_ERR("Failed to parse flags\n");
+		return -1;
+	}
+
+	/* ugly hack to move the flag on its right position (as the 
+	   fixup_named_flags() will set it with index 0 (as in the def array))
+	   WARNING: this works only because we have a single flag!!!! */
+	if (param)
+		*param = (void*)(unsigned long)B2BL_BR_FLAG_BR_MSG_LATE_BYE;
 
 	return 0;
 }
@@ -1180,20 +1260,25 @@ end:
 }
 
 int  b2bl_script_bridge_msg(struct sip_msg* msg, str *key, int *entity_no,
-	str *adv_contact)
+	str *adv_contact, void *flags_p)
 {
+	unsigned int flags = 0;
+
 	if (cur_route_ctx.flags & (B2BL_RT_REQ_CTX|B2BL_RT_RPL_CTX)) {
 		LM_ERR("The 'b2b_bridge_request' function cannot be used from the "
 			"b2b_logic dedicated routes\n");
 		return -1;
 	}
 
-	return b2bl_bridge_msg(msg, key, *entity_no, adv_contact);
+	if (flags_p)
+		flags = (unsigned int)(unsigned long)flags_p;
+
+	return b2bl_bridge_msg(msg, key, *entity_no, flags, adv_contact);
 }
 
 static int b2bl_api_bridge_msg(struct sip_msg* msg, str* key, int entity_no)
 {
-	return b2bl_bridge_msg(msg, key, entity_no, NULL);
+	return b2bl_bridge_msg(msg, key, entity_no, 0, NULL);
 }
 
 static mi_response_t *mi_b2b_terminate_call(const mi_params_t *params,
