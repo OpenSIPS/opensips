@@ -33,6 +33,7 @@ B2B_LOGIC
               1.4.17. db_table (str)
               1.4.18. b2bl_th_init_timeout (int)
               1.4.19. b2bl_early_update (int)
+              1.4.20. old_entity_term_delay (int)
 
         1.5. Exported Functions
 
@@ -58,7 +59,9 @@ B2B_LOGIC
 
               1.5.9. b2b_delete_entity()
               1.5.10. b2b_end_dlg_leg()
-              1.5.11. b2b_bridge_request(b2bl_key,entity_no)
+              1.5.11. b2b_bridge_request(b2bl_key,entity_no,
+                      [adv_contact], [flags])
+
               1.5.12. b2b_trigger_scenario(scenario, [params],
                       peer1, [extra_headers_peer1],
                       [extra_headers_contents_peer1], peer2
@@ -128,22 +131,23 @@ B2B_LOGIC
    1.18. Set db_table parameter
    1.19. Set b2bl_th_init_timeout parameter
    1.20. Set b2bl_early_update parameter
-   1.21. b2b_init_request usage
-   1.22. b2b_server_new usage
-   1.23. b2b_client_new usage
-   1.24. b2b_bridge usage
+   1.21. Set old_entity_term_delay parameter
+   1.22. b2b_init_request usage
+   1.23. b2b_server_new usage
+   1.24. b2b_client_new usage
    1.25. b2b_bridge usage
-   1.26. b2b_pass_request usage
-   1.27. b2b_handle_reply usage
-   1.28. b2b_send_reply usage
-   1.29. b2b_delete_entity usage
-   1.30. b2b_end_dlg_leg usage
-   1.31. b2b_bridge_request usage
-   1.32. b2b_trigger_scenario usage
-   1.33. $b2b_logic.key usage
-   1.34. $b2b_logic.entity usage
-   1.35. $b2b_logic.ctx usage
-   1.36. $b2b_logic.scenario usage
+   1.26. b2b_bridge usage
+   1.27. b2b_pass_request usage
+   1.28. b2b_handle_reply usage
+   1.29. b2b_send_reply usage
+   1.30. b2b_delete_entity usage
+   1.31. b2b_end_dlg_leg usage
+   1.32. b2b_bridge_request usage
+   1.33. b2b_trigger_scenario usage
+   1.34. $b2b_logic.key usage
+   1.35. $b2b_logic.entity usage
+   1.36. $b2b_logic.ctx usage
+   1.37. $b2b_logic.scenario usage
    2.1. b2bl_api_t structure
 
 Chapter 1. Admin Guide
@@ -490,6 +494,22 @@ modparam("b2b_logic", "b2bl_th_init_timeout", 60)
 modparam("b2b_logic", "b2bl_early_update", 1)
 ...
 
+1.4.20. old_entity_term_delay (int)
+
+   When the b2b_bridge_request is being used with the late_bye
+   flag, this parameter can delay the moment when the BYE is being
+   sent to the terminating entity. Thus, instead of terminating it
+   when the new entity is established, the BYE is delayed with the
+   value of this param, expressed in seconds.
+
+   Default value is “0” - send BYE on the spot
+
+   Example 1.21. Set old_entity_term_delay parameter
+...
+modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2
+ seconds
+...
+
 1.5. Exported Functions
 
 1.5.1.  b2b_init_request(id, [flags], [req_route], [reply_route],
@@ -538,7 +558,7 @@ Note
    correctly routed, but the SIP pacakge may be invalid (as
    Contact, Via, etc).
 
-   Example 1.21. b2b_init_request usage
+   Example 1.22. b2b_init_request usage
 ...
 if(is_method("INVITE") && !has_totag() && prepaid_user()) {
    ...
@@ -575,7 +595,7 @@ if(is_method("INVITE") && !has_totag() && prepaid_user()) {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.22. b2b_server_new usage
+   Example 1.23. b2b_server_new usage
 ...
 if(is_method("INVITE") && !has_totag()) {
    b2b_server_new("server1", $avp(b2b_hdrs), $avp(b2b_hdr_bodies));
@@ -612,7 +632,7 @@ if(is_method("INVITE") && !has_totag()) {
    This function can be used from REQUEST_ROUTE and the b2b_logic
    request routes.
 
-   Example 1.23. b2b_client_new usage
+   Example 1.24. b2b_client_new usage
 ...
 b2b_client_new("client1", "sip:alice@opensips.org");
 ...
@@ -656,7 +676,7 @@ b2b_client_new("client1", "sip:alice@opensips.org");
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.24. b2b_bridge usage
+   Example 1.25. b2b_bridge usage
 ...
 route[b2b_logic_request] {
    ...
@@ -677,7 +697,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic reply route.
 
-   Example 1.25. b2b_bridge usage
+   Example 1.26. b2b_bridge usage
 ...
 route[b2b_logic_reply] {
    ...
@@ -702,7 +722,7 @@ route[b2b_logic_reply] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.26. b2b_pass_request usage
+   Example 1.27. b2b_pass_request usage
 ...
 route[b2b_logic_request] {
    if ($rm != "BYE") {
@@ -723,7 +743,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic reply routes.
 
-   Example 1.27. b2b_handle_reply usage
+   Example 1.28. b2b_handle_reply usage
 ...
 route[b2b_logic_reply] {
     xlog("B2B REPLY: [$rs $rm] from entity: $b2b_logic.entity(id)\n");
@@ -744,7 +764,7 @@ route[b2b_logic_reply] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.28. b2b_send_reply usage
+   Example 1.29. b2b_send_reply usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -760,7 +780,7 @@ route[b2b_logic_request] {
 
    This function can be used from the b2b_logic request routes.
 
-   Example 1.29. b2b_delete_entity usage
+   Example 1.30. b2b_delete_entity usage
 ...
 route[b2b_logic_request] {
    if ($rm == "BYE") {
@@ -780,7 +800,7 @@ route[b2b_logic_request] {
    This function can be used from the b2b_logic request or reply
    routes.
 
-   Example 1.30. b2b_end_dlg_leg usage
+   Example 1.31. b2b_end_dlg_leg usage
 ...
 route[b2b_logic_request] {
    if ($rm == "REFER") {
@@ -790,7 +810,8 @@ route[b2b_logic_request] {
 }
 ...
 
-1.5.11.  b2b_bridge_request(b2bl_key,entity_no)
+1.5.11.  b2b_bridge_request(b2bl_key,entity_no, [adv_contact],
+[flags])
 
    This function will bridge an initial INVITE with one of the
    particapnts from an existing b2b session.
@@ -801,8 +822,15 @@ route[b2b_logic_request] {
        callid;from-tag;to-tag.
      * entity_no (int) - an integer that holds the entity of the
        entity/participant to bridge.
+     * adv_contact (string, optional) - Contact header to
+       advertise in generated messages.
+     * flags (string, optional) - Flags that can modify the
+       behavior of the function. Available flags are:
+          + late_bye - instead of terminating the replaced entity
+            on the stop, leave it pending until the new enity
+            fully establishes.
 
-   Example 1.31. b2b_bridge_request usage
+   Example 1.32. b2b_bridge_request usage
 ...
 if ($rU == "pickup") {
     # get the b2b logic key of the parked call for this user
@@ -867,7 +895,7 @@ if ($rU == "pickup") {
 
    This function can be used from REQUEST_ROUTE.
 
-   Example 1.32. b2b_trigger_scenario usage
+   Example 1.33. b2b_trigger_scenario usage
 ...
 if(is_method("REFER") && !has_totag()) {
    $avp(header) = "Replaces";
@@ -975,7 +1003,7 @@ nsips.org
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.33. $b2b_logic.key usage
+   Example 1.34. $b2b_logic.key usage
 ...
 local_route {
    ...
@@ -1019,7 +1047,7 @@ local_route {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.34. $b2b_logic.entity usage
+   Example 1.35. $b2b_logic.entity usage
 ...
 modparam("b2b_entities", "script_request_route", "b2b_request")
 ...
@@ -1048,7 +1076,7 @@ route[b2b_request] {
    Setting the variable to NULL will delete the value at the given
    key.
 
-   Example 1.35. $b2b_logic.ctx usage
+   Example 1.36. $b2b_logic.ctx usage
 ...
 modparam("b2b_entities", "script_reply_route", "b2b_reply")
 ...
@@ -1076,7 +1104,7 @@ route[b2b_reply] {
    dedicated routes defined through the b2b_entities and b2b_logic
    modules.
 
-   Example 1.36. $b2b_logic.scenario usage
+   Example 1.37. $b2b_logic.scenario usage
 ...
 route[b2b_logic_request] {
    if ($b2b_logic.scenario == "prepaid") {
@@ -1240,7 +1268,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 235 57 8167 6793
-   2. Razvan Crainea (@razvancrainea) 26 15 776 227
+   2. Razvan Crainea (@razvancrainea) 32 17 1119 294
    3. Nick Altmann (@nikbyte) 14 10 346 36
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 12 8 144 66
    5. Carsten Bock 12 5 679 23
@@ -1272,7 +1300,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Dec 2023
+   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jan 2024
    2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Dec 2023
    3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
    4.  Rick Barenthin                      Nov 2023 - Nov 2023
@@ -1293,8 +1321,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Carsten Bock,
-   Nick Altmann (@nikbyte).
+   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
+   (@rvlad-patrascu), Carsten Bock, Nick Altmann (@nikbyte).
 
    Documentation Copyrights:
 
