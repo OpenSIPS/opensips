@@ -573,7 +573,6 @@ int srs_handle_media(struct sip_msg *msg, struct src_sess *sess)
 	return 0;
 }
 
-
 static void srs_send_update_invite(struct src_sess *sess, str *body)
 {
 	struct b2b_req_data req;

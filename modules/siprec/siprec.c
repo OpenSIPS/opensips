@@ -248,7 +248,17 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 		LM_ERR("cannot add caller participant!\n");
 		goto session_cleanup;
 	}
-	/* caller info */
+
+	siprec_uuid caller_uuid;
+	siprec_build_uuid(caller_uuid);
+	int caller_label = 0;
+	int caller_medianum = 0;
+	if (srs_add_raw_sdp_stream(caller_label, caller_medianum, &caller_uuid, ss, &ss->participants[0]) < 0) {
+		LM_ERR("cannot add new media stream!\n");
+		goto session_cleanup;
+	}
+
+	/* callee info */
 	if (var && var->callee.len) {
 		xml_val = &var->callee;
 	} else {
@@ -263,6 +273,15 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 
 	if (src_add_participant(ss, aor, display, xml_val, NULL, NULL) < 0) {
 		LM_ERR("cannot add callee pariticipant!\n");
+		goto session_cleanup;
+	}
+
+	siprec_uuid callee_uuid;
+	siprec_build_uuid(callee_uuid);
+	int callee_label = 1;
+	int callee_medianum = 0;
+	if (srs_add_raw_sdp_stream(callee_label, callee_medianum, &callee_uuid, ss, &ss->participants[1]) < 0) {
+		LM_ERR("cannot add new media stream!\n");
 		goto session_cleanup;
 	}
 
