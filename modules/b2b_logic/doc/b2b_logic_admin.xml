@@ -502,6 +502,27 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 	</programlisting>
 		</example>
 	</section>	
+	<section id="param_old_entity_term_delay" xreflabel="old_entity_term_delay">
+		<title><varname>old_entity_term_delay</varname> (int)</title>
+		<para>
+			When the <emphasis>b2b_bridge_request</emphasis> is being used with the
+			<emphasis>late_bye</emphasis> flag, this parameter can delay the moment
+			when the BYE is being sent to the terminating entity. Thus, instead of
+			terminating it when the new entity is established, the BYE is delayed
+			with the value of this param, expressed in seconds.
+		</para>
+		<para>
+		<emphasis>Default value is <quote>0</quote> - send BYE on the spot</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>old_entity_term_delay</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("b2b_logic", "old_entity_term_delay", 2) # delay the BYE with 2 seconds
+...
+	</programlisting>
+		</example>
+	</section>	
 
 	</section>
 
@@ -958,7 +979,7 @@ route[b2b_logic_request] {
 
 	<section id="func_b2b_bridge_request" xreflabel="b2b_bridge_request()">
 		<title>
-		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no)</function>
+		<function moreinfo="none">b2b_bridge_request(b2bl_key,entity_no, [adv_contact], [flags])</function>
 		</title>
 		<para>
 			This function will bridge an initial INVITE with one of the
@@ -974,6 +995,20 @@ route[b2b_logic_request] {
 			<listitem><para>
 				<emphasis>entity_no (int)</emphasis> - an integer that
 				holds the entity of the entity/participant to bridge.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>adv_contact (string, optional)</emphasis> - Contact header to
+				advertise in generated messages.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>flags (string, optional)</emphasis> - Flags that can modify the
+				behavior of the function. Available flags are:
+				<itemizedlist>
+				<listitem><para>
+					<emphasis>late_bye</emphasis> - instead of terminating the replaced entity
+					on the stop, leave it pending until the new enity fully establishes.
+				</para></listitem>
+				</itemizedlist>
 			</para></listitem>
 		</itemizedlist>
 		<example>

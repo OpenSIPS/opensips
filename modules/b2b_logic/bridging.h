@@ -33,6 +33,8 @@ int process_bridge_bye(struct sip_msg* msg,  b2bl_tuple_t* tuple,
 int process_bridge_200OK(struct sip_msg* msg, str* extra_headers,
 	str* body, b2bl_tuple_t* tuple, unsigned int hash_index,
 	b2bl_entity_id_t* entity);
+int bridge_msg_term_entity(b2bl_entity_id_t *old_entity,
+	unsigned int *hash_index);
 
 int b2bl_bridge(struct sip_msg* msg, b2bl_tuple_t* tuple,
 	unsigned hash_index, b2bl_entity_id_t *old_entity,

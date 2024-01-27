@@ -78,6 +78,7 @@ enum b2b_tuple_state {
 #define B2BL_BR_FLAG_PROV_MEDIA                    (1<<5)
 #define B2BL_BR_FLAG_NO_OLD_ENT                    (1<<6)
 #define B2BL_BR_FLAG_PENDING_SDP                   (1<<7)
+#define B2BL_BR_FLAG_BR_MSG_LATE_BYE               (1<<8)
 
 /* modes to write in db */
 #define NO_DB         0
@@ -147,6 +148,9 @@ extern unsigned int b2bl_th_init_timeout;
 extern struct script_route_ref *global_req_rt_ref;
 extern struct script_route_ref *global_reply_rt_ref;
 extern int b2b_early_update;
+extern unsigned int ent_term_interval;
+
+extern struct b2b_term_timer *ent_term_timer;
 
 extern str top_hiding_scen_s;
 extern str internal_scen_s;

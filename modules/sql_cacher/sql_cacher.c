@@ -860,7 +860,7 @@ static int inc_cache_rld_vers(db_handlers_t *db_hdls, int *rld_vers)
 	memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
 
 	if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, rld_vers) < 0) {
-		LM_DBG("Failed to increment reload version integer from cachedb\n");
+		LM_ERR("Failed to increment reload version integer from cachedb\n");
 		pkg_free(rld_vers_key.s);
 		return -1;
 	}
@@ -942,11 +942,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	}
 
 	/* anything loaded ? if not, we can do a quick exit here */
-	if (RES_ROW_N(sql_res) == 0) {
-		lock_stop_write(db_hdls->c_entry->ref_lock);
-		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
-		return 0;
-	}
+	if (RES_ROW_N(sql_res) == 0)
+		goto done;
 
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
@@ -964,7 +961,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
 					lock_stop_write(db_hdls->c_entry->ref_lock);
-					return -1;
+					goto error;
 				}
 				loaded_rec++;
 			}
@@ -982,6 +979,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		}
 	} while (RES_ROW_N(sql_res) > 0);
 
+done:
 	lock_stop_write(db_hdls->c_entry->ref_lock);
 
 	db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
@@ -1226,7 +1224,8 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		}
 	} else {
 		if (load_entire_table(db_hdls->c_entry, db_hdls, 1) < 0) {
-			LM_DBG("Failed to reload table\n");
+			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len,
+				db_hdls->c_entry->table.s);
 			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 	}

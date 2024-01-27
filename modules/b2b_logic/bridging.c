@@ -1986,10 +1986,150 @@ error:
 	return -1;
 }
 
+
+int bridge_msg_term_entity(b2bl_entity_id_t *old_entity,
+													unsigned int *hash_index)
+{
+	b2b_req_data_t req_data;
+	b2b_rpl_data_t rpl_data;
+
+	LM_DBG("terminating b2bl_entity [%p]->[%.*s] type [%d]\n",
+				old_entity, old_entity->key.len, old_entity->key.s,
+				old_entity->type);
+	if(old_entity->disconnected)
+	{
+		memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+		PREP_RPL_DATA(old_entity);
+		rpl_data.method =METHOD_BYE;
+		rpl_data.code =200;
+		rpl_data.text =&ok;
+		b2b_api.send_reply(&rpl_data);
+	}
+	else
+	{
+		if(old_entity->state == B2BL_ENT_CONFIRMED)
+		{
+			memset(&req_data, 0, sizeof(b2b_req_data_t));
+			PREP_REQ_DATA(old_entity);
+			req_data.method =&method_bye;
+			req_data.no_cb = 1;
+			if (hash_index)
+				b2bl_htable[*hash_index].locked_by = process_no;
+			b2b_api.send_request(&req_data);
+			if (hash_index)
+				b2bl_htable[*hash_index].locked_by = -1;
+		}
+		else
+		{
+			memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
+			PREP_RPL_DATA(old_entity);
+			rpl_data.method = METHOD_INVITE;
+			rpl_data.code =480;
+			rpl_data.text =&notTemporarilyUnavailable;
+			b2b_api.send_reply(&rpl_data);
+		}
+		old_entity->disconnected = 1;
+	}
+
+	/* destroy the old_entity */
+	if (hash_index)
+		b2bl_htable[*hash_index].locked_by = process_no;
+	b2b_api.entity_delete(old_entity->type, &old_entity->key,
+		old_entity->dlginfo, 1, 1);
+	if (hash_index)
+		b2bl_htable[*hash_index].locked_by = -1;
+	if(old_entity->dlginfo)
+		shm_free(old_entity->dlginfo);
+	shm_free(old_entity);
+
+	return 0;
+}
+
+int insert_entity_term_tl(b2bl_entity_id_t *entity)
+{
+	struct b2b_term_t_list *tl;
+
+	tl = shm_malloc(sizeof *tl);
+	if (!tl) {
+		LM_ERR("no more shm memory\n");
+		return -1;
+	}
+	memset(tl, 0, sizeof *tl);
+
+	tl->entity = entity;
+	tl->timeout = get_ticks() + ent_term_interval;
+
+	lock_get(ent_term_timer->lock);
+
+	if (!ent_term_timer->first)
+		ent_term_timer->first = tl;
+	else
+		ent_term_timer->last->next = tl;
+
+	ent_term_timer->last = tl;
+
+	lock_release(ent_term_timer->lock);
+
+	return 0;
+}
+
+struct b2b_term_t_list *get_entities_term_tl(unsigned int now)
+{
+	struct b2b_term_t_list *ret = NULL, *tl = NULL;
+
+	lock_get(ent_term_timer->lock);
+
+	/* empty list */
+	if (!ent_term_timer->first) {
+		lock_release(ent_term_timer->lock);
+		return NULL;
+	}
+
+	if (ent_term_timer->first->timeout > now) {
+		/* no expired entities in list at all */
+		lock_release(ent_term_timer->lock);
+		return NULL;
+	}
+
+	for (tl = ent_term_timer->first; tl->next && tl->next->timeout <= now;
+		tl = tl->next) ;
+
+	ret = ent_term_timer->first;
+
+	ent_term_timer->first = tl->next;
+	if (!ent_term_timer->first)
+		ent_term_timer->last = NULL;
+
+	tl->next = NULL;
+
+	lock_release(ent_term_timer->lock);
+
+	return ret;
+}
+
+void b2bl_term_entities_timer(unsigned int ticks, void* param)
+{
+	struct b2b_term_t_list *tl, *tmp;
+
+	tl = get_entities_term_tl(ticks);
+
+	while (tl) {
+		if (bridge_msg_term_entity(tl->entity, NULL) < 0)
+			LM_ERR("Failed to terminate entity\n");
+
+		tmp = tl;
+		tl = tl->next;
+		shm_free(tmp);
+	}
+
+	return;
+}
+
 /* Bridge an initial Invite with an existing dialog */
 /* key and entity_no identity the existing call and the which entity from the call
  * to bridge (0 or 1) */
-int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
+int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no,
+											unsigned int flags, str *adv_ct)
 {
 	b2bl_tuple_t* tuple;
 	struct b2b_context *ctx;
@@ -2002,8 +2142,6 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 	str body = {0, 0}, new_body = {0, 0};
 	str to_uri={NULL,0}, from_uri, from_dname;
 	b2b_req_data_t req_data;
-	b2b_rpl_data_t rpl_data;
-	int update = 0;
 	int ret;
 	str local_contact;
 	int maxfwd;
@@ -2099,70 +2237,32 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 		goto error;
 	}
 
-	b2bl_print_tuple(tuple, L_DBG);
-
-	LM_DBG("terminating b2bl_entity [%p]->[%.*s] type [%d]\n",
-				old_entity, old_entity->key.len, old_entity->key.s,
-				old_entity->type);
-	if(old_entity->disconnected)
-	{
-		memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
-		PREP_RPL_DATA(old_entity);
-		rpl_data.method =METHOD_BYE;
-		rpl_data.code =200;
-		rpl_data.text =&ok;
-		b2b_api.send_reply(&rpl_data);
-	}
-	else
-	{
-		if(old_entity->state == B2BL_ENT_CONFIRMED)
-		{		
-			memset(&req_data, 0, sizeof(b2b_req_data_t));
-			PREP_REQ_DATA(old_entity);
-			req_data.method =&method_bye;
-			req_data.no_cb = 1;
-			b2b_api.send_request(&req_data);
-		}
-		else
-		{
-			memset(&rpl_data, 0, sizeof(b2b_rpl_data_t));
-			PREP_RPL_DATA(old_entity);
-			rpl_data.method = METHOD_INVITE;
-			rpl_data.code =480;
-			rpl_data.text =&notTemporarilyUnavailable;
-			b2b_api.send_reply(&rpl_data);
-			
-			update = 1;			
-		}
-		old_entity->disconnected = 1;
-	}
-	if (old_entity->peer->peer == old_entity)
-		old_entity->peer->peer = NULL;
-	else
-	{
-		LM_ERR("Unexpected chain: old_entity=[%p] and "
+	if (old_entity->peer->peer != old_entity)
+		LM_WARN("Unexpected chain: old_entity=[%p] and "
 			"old_entity->peer->peer=[%p]\n",
 			old_entity, old_entity->peer->peer);
-		goto error;
+
+	if (flags&B2BL_BR_FLAG_BR_MSG_LATE_BYE) {
+		tuple->bridge_flags = flags;
+		tuple->bridge_entities[2] = old_entity;
+		old_entity->peer = NULL;
+	} else {
+		b2bl_print_tuple(tuple, L_DBG);
+		tuple->bridge_entities[(entity_no?0:1)] = NULL;
+		/* remove the disconected entity from the tuple */
+		if(0 == b2bl_drop_entity(old_entity, tuple))
+		{
+			LM_ERR("Inconsistent entity [%p] on tuple [%p]\n",
+				old_entity, tuple);
+			b2bl_print_tuple(tuple, L_ERR);
+			goto error;
+		}
+
+		if (bridge_msg_term_entity(old_entity, &hash_index) < 0) {
+			LM_ERR("Failed to terminate old entity\n");
+			goto error;
+		}
 	}
-	old_entity->peer = NULL;
-
-	tuple->bridge_entities[(entity_no?0:1)] = NULL;
-	/* remove the disconected entity from the tuple */
-	if(0 == b2bl_drop_entity(old_entity, tuple))
-	{
-		LM_ERR("Inconsistent entity [%p] on tuple [%p]\n", old_entity, tuple);
-		b2bl_print_tuple(tuple, L_ERR);
-		goto error;
-	}
-
-	/* destroy the old_entity */
-	b2b_api.entity_delete(old_entity->type, &old_entity->key,
-		old_entity->dlginfo, 1, 1);
-	b2bl_free_entity(old_entity);
-	old_entity = NULL;
-
-	b2bl_print_tuple(tuple, L_DBG);
 
 	b2b_api.apply_lumps(msg);
 
@@ -2189,8 +2289,8 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 		goto error;
 	}
 
-	entity = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, 0, &from_uri,
-			0,0,0, adv_ct, msg);
+	entity = b2bl_create_new_entity(B2B_SERVER, server_id, &to_uri, 0,
+		&from_uri, 0, 0, 0, adv_ct, msg);
 	if(entity == NULL)
 	{
 		LM_ERR("Failed to create server entity\n");
@@ -2233,7 +2333,7 @@ int b2bl_bridge_msg(struct sip_msg* msg, str* key, int entity_no, str *adv_ct)
 
 	memset(&req_data, 0, sizeof(b2b_req_data_t));
 	PREP_REQ_DATA(bridging_entity);
-	if (update) {
+	if (bridging_entity->state != B2BL_ENT_CONFIRMED) {
 		req_data.method =&method_update;
 	}
 	else

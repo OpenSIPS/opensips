@@ -74,6 +74,8 @@ int post_cb_sanity_check(b2bl_tuple_t **tuple, unsigned int hash_index, unsigned
 			b2bl_entity_id_t **entity, int etype, str *ekey);
 int udh_to_uri(str user, str host, str port, str* uri);
 
+int insert_entity_term_tl(b2bl_entity_id_t *entity);
+
 static str method_invite= {INVITE, INVITE_LEN};
 static str method_bye   = {BYE, BYE_LEN};
 static str method_cancel= {CANCEL, CANCEL_LEN};
@@ -1771,6 +1773,41 @@ int b2b_logic_notify_request(int src, struct sip_msg* msg, str* key, str* body, 
 		if (flags & B2B_NOTIFY_FL_ACK_NEG) {
 			LM_DBG("ACK for a negative reply\n");
 			goto done;
+		}
+
+		if (tuple->state == B2B_BRIDGED_STATE &&
+			tuple->bridge_flags&B2BL_BR_FLAG_BR_MSG_LATE_BYE) {
+			if (ent_term_interval) {
+				if (insert_entity_term_tl(tuple->bridge_entities[2]) < 0) {
+					LM_ERR("Failed to insert entity into terminate timer list\n");
+					goto error;
+				}
+
+				/* entity is now in terminate timer list, we can safely unlink it
+				 * from the tuple */
+				if(!b2bl_drop_entity(tuple->bridge_entities[2], tuple)) {
+					LM_ERR("Inconsistent entity [%p] on tuple [%p]\n",
+						tuple->bridge_entities[2], tuple);
+					b2bl_print_tuple(tuple, L_ERR);
+				}
+			} else {
+				b2bl_print_tuple(tuple, L_DBG);
+
+				if(!b2bl_drop_entity(tuple->bridge_entities[2], tuple)) {
+					LM_ERR("Inconsistent entity [%p] on tuple [%p]\n",
+						tuple->bridge_entities[2], tuple);
+					b2bl_print_tuple(tuple, L_ERR);
+				}
+
+				if (bridge_msg_term_entity(tuple->bridge_entities[2],
+					&hash_index) < 0) {
+					LM_ERR("Failed to terminate old entity\n");
+					goto error;
+				}
+			}
+
+			tuple->bridge_entities[2] = NULL;
+			tuple->bridge_flags = 0;
 		}
 
 		break;
