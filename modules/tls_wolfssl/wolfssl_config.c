@@ -24,6 +24,7 @@
 #include <wolfssl/ssl.h>
 #include <wolfssl/error-ssl.h>
 #include <wolfssl/openssl/ec.h>
+#include "../../redact_pii.h"
 
 #include <dirent.h>
 
@@ -468,7 +469,7 @@ int _wolfssl_init_tls_dom(struct tls_domain *d, int init_flags)
 			(wolfSSL_CTX_set_max_proto_version(d->ctx,
 				ssl_versions[d->method_max - 1]) != WOLFSSL_SUCCESS)) {
 			LM_ERR("cannot enforce ssl version for tls domain '%.*s'\n",
-					d->name.len, ZSW(d->name.s));
+					d->name.len, redact_pii(d->name.s));
 			goto end;
 		}
 	}

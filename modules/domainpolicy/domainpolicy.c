@@ -37,6 +37,7 @@
 #include "../../route.h"
 #include "../../ip_addr.h"
 #include "../../socket_info.h"
+#include "../../redact_pii.h"
 
 #include "../../resolve.h"
 #include "../../regexp.h"
@@ -454,7 +455,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 
     if (rec_level > MAX_DDDS_RECURSIONS) {
     	LM_ERR("too many indirect NAPTRs. Aborting at %.*s.\n", domain->len,
-				ZSW(domain->s));
+				redact_pii(domain->s));
 		return(DP_DDDS_RET_DNSERROR);
     }
 
@@ -576,7 +577,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 	     */
 	    if (next_naptr && (next_naptr->order == naptr->order) && IS_D2PNAPTR(next_naptr)) {
 	    	LM_ERR("non-terminal NAPTR needs to be the only one "
-					"with this order %.*s.\n", domain->len, ZSW(domain->s));
+					"with this order %.*s.\n", domain->len, redact_pii(domain->s));
 
 		return(DP_DDDS_RET_DNSERROR);
 	    }
@@ -606,7 +607,7 @@ int dp_can_connect_str(str *domain, int rec_level) {
 	 */
 	if ((naptr->flags_len != 1) || (tolower(naptr->flags[0]) != 'u')) {
 	    LM_ERR("terminal NAPTR needs flag = 'u' and not '%.*s'.\n",
-					(int)naptr->flags_len, ZSW(naptr->flags));
+					(int)naptr->flags_len, redact_pii(naptr->flags));
 		/*
 		 * It's not that clear what we should do now: Ignore this records or regard it as failed.
 		 * We go with "ignore" for now.
@@ -694,7 +695,7 @@ int dp_can_connect(struct sip_msg* _msg, char* _s1, char* _s2) {
 	memcpy(domain.s, _msg->parsed_uri.host.s, domain.len);
 	domainname[domain.len] = '\0';
 
-	LM_DBG("domain is %.*s.\n", domain.len, ZSW(domain.s));
+	LM_DBG("domain is %.*s.\n", domain.len, redact_pii(domain.s));
 
 	ret = dp_can_connect_str(&domain,0);
 	LM_DBG("returning %d.\n", ret);
@@ -737,7 +738,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 			_msg->force_send_socket = si;
 		} else {
 			LM_WARN("could not find socket for"
-					"send_socket '%.*s'\n", val.s.len, ZSW(val.s.s));
+					"send_socket '%.*s'\n", val.s.len, redact_pii(val.s.s));
 		}
 	} else {
 		LM_DBG("send_socket_avp not found\n");
@@ -905,7 +906,7 @@ int dp_apply_policy(struct sip_msg* _msg, char* _s1, char* _s2) {
 	duri_str.len = at - duri_str.s;
 	LM_DBG("new DURI is '%.*s'\n",duri_str.len, ZSW(duri_str.s));
 	if (set_dst_uri(_msg, &duri_str) < 0) {
-		LM_ERR("Cannot set destination uri %.*s!\n", duri_str.len, ZSW(duri_str.s));
+		LM_ERR("Cannot set destination uri %.*s!\n", duri_str.len, redact_pii(duri_str.s));
 		return -1;
 	}
 

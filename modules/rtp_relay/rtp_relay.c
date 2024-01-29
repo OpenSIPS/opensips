@@ -241,16 +241,23 @@ struct rtp_relay_leg *rtp_relay_get_leg(struct rtp_relay_ctx *ctx,
 	if (tag && !tag->len)
 		tag = NULL;
 
+	LM_RTP_DBG("searching for tag [%.*s] idx [%d]\n", tag?tag->len:0, tag?tag->s:"", idx);
+
 	list_for_each(it, &ctx->legs) {
 		leg = list_entry(it, struct rtp_relay_leg, list);
 		if (tag) {
 			/* match by tag */
-			if (leg->tag.len && str_match(tag, &leg->tag))
-				return leg;
-		} else if (leg->index != PV_IDX_ALL && leg->index == idx)
+			if (leg->tag.len) {
+				if (str_match(tag, &leg->tag))
+					return leg;
+				continue;
+			}
+		}
+		if (leg->index != PV_IDX_ALL && leg->index == idx)
 			return leg;
 	}
 
+	LM_RTP_DBG("no leg for tag [%.*s] idx [%d]\n", tag?tag->len:0, tag?tag->s:"", idx);
 	return NULL;
 }
 
@@ -399,12 +406,10 @@ static struct rtp_relay_leg *pv_get_rtp_relay_leg(struct sip_msg *msg,
 				LM_ERR("cannot parse To header!\n");
 				return NULL;
 			}
-			if (get_to(msg)->tag_value.len) {
+			if (get_to(msg)->tag_value.len)
 				/* a sequential should always have a to_tag */
 				tag = get_to(msg)->tag_value;
-			} else {
-				idx = rtp_relay_ctx_branch();
-			}
+			idx = rtp_relay_ctx_branch();
 		} else if (route_type == LOCAL_ROUTE) {
 			/* we always force index 0 for local_route */
 			idx = rtp_relay_get_last_branch(ctx, msg);

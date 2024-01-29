@@ -2148,10 +2148,10 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info, int leg_flag)
 	}
 
 	set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-		msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip,  msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
+		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 
 	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-		&msg->rcv.dst_ip,  msg->rcv.dst_port, msg->rcv.proto);
+		msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip,  msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
 
 	db_vals[10].val.time_val = time(NULL);
 

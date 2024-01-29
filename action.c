@@ -1167,6 +1167,7 @@ error:
 
 static int for_each_handler(struct sip_msg *msg, struct action *a)
 {
+	struct sip_msg *msg_src = msg;
 	pv_spec_p iter, spec;
 	pv_param_t pvp;
 	pv_value_t val;
@@ -1189,6 +1190,13 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 		memset(&pvp, 0, sizeof pvp);
 		pvp.pvi.type = PV_IDX_INT;
 		pvp.pvn = spec->pvp.pvn;
+		if (spec->pvc && spec->pvc->contextf) {
+			msg_src = spec->pvc->contextf(msg);
+			if (!msg_src || msg_src == FAKED_REPLY) {
+				LM_BUG("Invalid pv context message: %p\n", msg_src);
+				return E_BUG;
+			}
+		}
 
 		/*
 		 * for $json iterators, better to assume script writer
@@ -1199,7 +1207,7 @@ static int for_each_handler(struct sip_msg *msg, struct action *a)
 			op = COLONEQ_T;
 
 		for (;;) {
-			if (spec->getf(msg, &pvp, &val) != 0) {
+			if (spec->getf(msg_src, &pvp, &val) != 0) {
 				LM_ERR("failed to get spec value\n");
 				return E_BUG;
 			}

@@ -512,6 +512,13 @@ int tcp_conn_get(unsigned int id, struct ip_addr* ip, int port,
 	return 0;
 
 found:
+	if (c->do_not_reuse) {
+		*conn = NULL;
+		if (conn_fd) *conn_fd = -1;
+		TCPCONN_UNLOCK(part);
+		return 0;
+	}
+
 	c->refcnt++;
 	TCPCONN_UNLOCK(part);
 	sh_log(c->hist, TCP_REF, "tcp_conn_get, (%d)", c->refcnt);

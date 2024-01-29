@@ -49,6 +49,7 @@
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
+#include "../../redact_pii.h"
 
 #include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
@@ -411,7 +412,7 @@ static void ul_rpc_data_load(int sender_id, void *_)
 	for( ptr=root ; ptr ; ptr=ptr->next) {
 		if (preload_udomain(ul_dbh, ptr->d) < 0) {
 			LM_ERR("failed to preload domain '%.*s'\n",
-				ptr->name.len, ZSW(ptr->name.s));
+				ptr->name.len, redact_pii(ptr->name.s));
 			/* continue with the other ul domains */;
 		}
 	}

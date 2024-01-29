@@ -1706,7 +1706,7 @@ static int rtp_relay_sess_success(struct rtp_relay_ctx *ctx,
 
 		if (rtp_relay_dlg_callbacks(dlg, ctx, to_tag) < 0) {
 			/* restore the state */
-			RTP_RELAY_CTX_REF(ctx);
+			RTP_RELAY_CTX_REF_UNSAFE(ctx, 1);
 			RTP_RELAY_PUT_TM_CTX(t, ctx);
 			return -1;
 		}
