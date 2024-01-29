@@ -34,11 +34,14 @@ struct dlg_binds srec_dlg;
 static str srec_dlg_name = str_init("siprecX_ctx");
 
 static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
-		const struct socket_info *si, int version, time_t ts, str *hdrs, siprec_uuid *uuid,
+		const struct socket_info *si, int version, time_t ts, str *hdrs,
+		str *from_uri, str *to_uri, siprec_uuid *uuid,
 		str* group_custom_extension, str* session_custom_extension)
 {
+	char *p;
 	struct src_sess *ss = shm_malloc(sizeof *ss + (m_ip ? m_ip->len : 0) +
 			(grp ? grp->len : 0) + (hdrs ? hdrs->len : 0) +
+			(from_uri ? from_uri->len : 0) + (to_uri ? to_uri->len : 0) +
 			(group_custom_extension ? group_custom_extension->len : 0) +
 			(session_custom_extension ? session_custom_extension->len : 0));
 	if (!ss) {
@@ -49,41 +52,59 @@ static struct src_sess *src_create_session(rtp_ctx rtp, str *m_ip, str *grp,
 	ss->socket = si;
 	ss->rtp = rtp;
 
+	p = (char *)(ss + 1);
 	if (m_ip) {
-		ss->media.s = (char *)(ss + 1);
+		ss->media.s = p;
 		memcpy(ss->media.s, m_ip->s, m_ip->len);
 		ss->media.len = m_ip->len;
+		p += m_ip->len;
 	} else {
 		ss->media.s = NULL;
 		ss->media.len = 0;
 	}
 
 	if (grp && grp->len) {
-		ss->group.s = (char *)(ss + 1) + ss->media.len;
+		ss->group.s = p;
 		memcpy(ss->group.s, grp->s, grp->len);
 		ss->group.len = grp->len;
+		p += grp->len;
 	}
 
 	if (hdrs && hdrs->len) {
-		ss->headers.s = (char *)(ss + 1) + ss->media.len +
-			ss->group.len;
+		ss->headers.s = p;
 		memcpy(ss->headers.s, hdrs->s, hdrs->len);
 		ss->headers.len = hdrs->len;
+		p += hdrs->len;
 	}
 
 	if (grp && grp->len && group_custom_extension && group_custom_extension->len) {
-		ss->group_custom_extension.s = (char *)(ss + 1) + ss->media.len +
-			ss->group.len + ss->headers.len;
+		ss->group_custom_extension.s = p;
 		memcpy(ss->group_custom_extension.s, group_custom_extension->s, group_custom_extension->len);
 		ss->group_custom_extension.len = group_custom_extension->len;
+		p += group_custom_extension->len;
 	}
 
 	if (session_custom_extension && session_custom_extension->len) {
-		ss->session_custom_extension.s = (char *)(ss + 1) + ss->media.len +
-			ss->group.len + ss->headers.len + ss->group_custom_extension.len;
+		ss->session_custom_extension.s = p;
 		memcpy(ss->session_custom_extension.s, session_custom_extension->s, session_custom_extension->len);
 		ss->session_custom_extension.len = session_custom_extension->len;
+		p += session_custom_extension->len;
 	}
+
+	if (from_uri && from_uri->len) {
+		ss->from_uri.s = p;
+		memcpy(ss->from_uri.s, from_uri->s, from_uri->len);
+		ss->from_uri.len = from_uri->len;
+		p += from_uri->len;
+	}
+
+	if (to_uri && to_uri->len) {
+		ss->to_uri.s = p;
+		memcpy(ss->to_uri.s, to_uri->s, to_uri->len);
+		ss->to_uri.len = to_uri->len;
+		p += to_uri->len;
+	}
+
 
 	memcpy(ss->uuid, uuid, sizeof(*uuid));
 	ss->participants_no = 0;
@@ -116,6 +137,8 @@ struct src_sess *src_new_session(str *srs, rtp_ctx rtp,
 			(var && var->group.len)?&var->group:NULL,
 			(var?var->si:NULL), 0, time(NULL),
 			(var && var->headers.len)?&var->headers:NULL,
+			(var && var->from_uri.len)?&var->from_uri:NULL,
+			(var && var->to_uri.len)?&var->to_uri:NULL,
 			&uuid,
 			(var && var->group_custom_extension.len)?&var->group_custom_extension:NULL,
 			(var && var->session_custom_extension.len)?&var->session_custom_extension:NULL);
@@ -341,7 +364,8 @@ static int srec_pop_sess(struct dlg_cell *dlg, bin_packet_t *packet)
 
 	sess = src_create_session(rtp,
 			(media_ip.len ? &media_ip : NULL), (group.len ? &group : NULL),
-			si, version, ts, NULL /* we do not replicate headers */, &uuid,
+			si, version, ts, NULL /* we do not replicate headers */,
+			NULL, NULL /* we already know from and to */, &uuid,
 			(group_custom_extension.len ? &group_custom_extension : NULL),
 			(session_custom_extension.len ? &session_custom_extension : NULL));
 	if (!sess) {

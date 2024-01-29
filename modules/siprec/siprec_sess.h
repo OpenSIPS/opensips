@@ -87,6 +87,8 @@ struct src_sess {
 	int streams_no;
 	str media;
 	str headers;
+	str from_uri;
+	str to_uri;
 	rtp_ctx rtp;
 	str initial_sdp;
 

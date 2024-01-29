@@ -26,7 +26,15 @@
 #include "../../socket_info.h"
 
 struct srec_var {
-	str group, caller, callee, media, headers, group_custom_extension, session_custom_extension;
+	str group;
+	str caller;
+	str callee;
+	str media;
+	str headers;
+	str from_uri;
+	str to_uri;
+	str group_custom_extension;
+	str session_custom_extension;
 	const struct socket_info *si;
 };
 

@@ -446,9 +446,15 @@ static int srs_send_invite(struct src_sess *sess)
 	ci.method.len = INVITE_LEN;
 	/* try the first srs_uri */
 	ci.req_uri = SIPREC_SRS(sess);
-	/* TODO: fix uris */
-	ci.to_uri = ci.req_uri;
-	ci.from_uri = ci.to_uri;
+
+	if (sess->from_uri.len)
+		ci.from_uri = sess->from_uri;
+	else
+		ci.from_uri = ci.req_uri;
+	if (sess->to_uri.len)
+		ci.to_uri = sess->to_uri;
+	else
+		ci.to_uri = ci.req_uri;
 	if (sess->headers.s) {
 		hdrs.s = pkg_malloc(extra_headers.len + sess->headers.len);
 		if (!hdrs.s) {

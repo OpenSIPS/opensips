@@ -31,6 +31,8 @@
 #define SIPREC_VAR_SOCKET_ID				(1 << 5)
 #define SIPREC_GROUP_CUSTOM_EXTENSION_ID	(1 << 6)
 #define SIPREC_SESSION_CUSTOM_EXTENSION_ID	(1 << 7)
+#define SIPREC_VAR_FROM_URI_ID				(1 << 8)
+#define SIPREC_VAR_TO_URI_ID				(1 << 9)
 
 struct {
 	const char *name;
@@ -45,6 +47,8 @@ struct {
 	{"socket", SIPREC_VAR_SOCKET_ID},
 	{"group_custom_extension", SIPREC_GROUP_CUSTOM_EXTENSION_ID},
 	{"session_custom_extension", SIPREC_SESSION_CUSTOM_EXTENSION_ID},
+	{"from_uri", SIPREC_VAR_FROM_URI_ID},
+	{"to_uri", SIPREC_VAR_TO_URI_ID},
 };
 
 static int srec_msg_idx;
@@ -90,6 +94,10 @@ static void free_srec_var(void *v)
 		pkg_free(sv->group_custom_extension.s);
 	if (sv->session_custom_extension.s)
 		pkg_free(sv->session_custom_extension.s);
+	if (sv->from_uri.s)
+		pkg_free(sv->from_uri.s);
+	if (sv->to_uri.s)
+		pkg_free(sv->to_uri.s);
 	pkg_free(sv);
 }
 
@@ -198,6 +206,12 @@ int pv_get_siprec(struct sip_msg *msg,  pv_param_t *param,
 		case SIPREC_SESSION_CUSTOM_EXTENSION_ID:
 			field = &sv->session_custom_extension;
 			break;
+		case SIPREC_VAR_FROM_URI_ID:
+			field = &sv->from_uri;
+			break;
+		case SIPREC_VAR_TO_URI_ID:
+			field = &sv->to_uri;
+			break;
 		default:
 			LM_BUG("unknown field!\n");
 		case SIPREC_VAR_INVAID_ID:
@@ -259,6 +273,12 @@ int pv_set_siprec(struct sip_msg* msg, pv_param_t *param,
 			break;
 		case SIPREC_SESSION_CUSTOM_EXTENSION_ID:
 			field = &sv->session_custom_extension;
+			break;
+		case SIPREC_VAR_FROM_URI_ID:
+			field = &sv->from_uri;
+			break;
+		case SIPREC_VAR_TO_URI_ID:
+			field = &sv->to_uri;
 			break;
 		default:
 			LM_BUG("unknown field %d!\n", pv_parse_siprec_get_name(msg, param));
