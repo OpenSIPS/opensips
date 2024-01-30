@@ -2324,11 +2324,12 @@ after_unlock5:
 		} else {
 
 			dlg_lock (d_table, d_entry);
+			src_leg = other_leg(dlg, dst_leg);
 
 			if (dlg->legs[dst_leg].last_gen_cseq ||
-			dlg->legs[dst_leg].cseq_maps) {
-				LM_DBG("dlg_leg_get_cseq(dlg, [%d], req)\n", dst_leg);
-				update_val = dlg_leg_get_cseq(dlg, dst_leg, req);
+			dlg->legs[src_leg].cseq_maps) {
+				LM_DBG("dlg_leg_get_cseq(dlg, [%d], req)\n", src_leg);
+				update_val = dlg_leg_get_cseq(dlg, src_leg, req);
 				if (update_val == 0) {
 					LM_DBG("dlg->legs[%d].last_gen_cseq=[%d]\n",
 						dst_leg, dlg->legs[dst_leg].last_gen_cseq);
