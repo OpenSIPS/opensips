@@ -41,7 +41,7 @@
 %global _with_wolfssl 1
 %endif
 
-%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl}
+%global EXCLUDE_MODULES %{!?_with_auth_jwt:auth_jwt} %{!?_with_cachedb_cassandra:cachedb_cassandra} %{!?_with_cachedb_couchbase:cachedb_couchbase} %{!?_with_cachedb_mongodb:cachedb_mongodb} %{!?_with_cachedb_redis:cachedb_redis} %{!?_with_db_oracle:db_oracle} %{!?_with_osp:osp} %{!?_with_sngtc:sngtc} %{!?_with_aaa_diameter:aaa_diameter} %{?_without_aaa_radius:aaa_radius} %{?_without_db_perlvdb:db_perlvdb} %{?_without_snmpstats:snmpstats} %{!?_with_wolfssl:tls_wolfssl} launch_darkly
 
 Summary:  Very fast and configurable SIP server
 Name:     opensips

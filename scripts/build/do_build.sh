@@ -7,7 +7,7 @@ set -e
 . $(dirname $0)/build.conf.sub
 
 EXCLUDE_MODULES="db_oracle osp sngtc cachedb_cassandra cachedb_couchbase \
-  cachedb_mongodb auth_jwt event_kafka aaa_diameter"
+  cachedb_mongodb auth_jwt event_kafka aaa_diameter launch_darkly"
 if [ ! -z "${EXCLUDE_MODULES_ADD}" ]
 then
   EXCLUDE_MODULES="${EXCLUDE_MODULES} ${EXCLUDE_MODULES_ADD}"
