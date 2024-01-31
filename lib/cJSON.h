@@ -30,6 +30,10 @@ extern "C"
 {
 #endif
 
+#ifndef CJSON_PREFIX
+#define CJSON_PREFIX os_
+#endif
+
 #ifdef CJSON_PREFIX
 
 /* helpers */
