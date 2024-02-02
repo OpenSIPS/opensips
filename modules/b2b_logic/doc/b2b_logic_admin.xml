@@ -510,7 +510,7 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 	<section id="func_b2b_init_request" xreflabel="b2b_init_request()">
 		<title>
 		<function moreinfo="none">b2b_init_request(id, [flags], [req_route],
-			[reply_route], [init_sdp_body], [init_sdp_ctype])</function>
+			[reply_route])</function>
 		</title>
 		<para>
 			This function initializes a new B2B session based on an initial INVITE.
