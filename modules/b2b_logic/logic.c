@@ -3712,7 +3712,7 @@ str* b2b_process_scenario_init(struct sip_msg* msg, b2bl_cback_f cbf,
 		goto error;
 	}
 
-	if (!e1 && !e2) {
+	if (!e1 || !e2) {
 		LM_ERR("Two bridge entities required!\n");
 		goto error;
 	}
