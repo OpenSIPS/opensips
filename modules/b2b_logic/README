@@ -37,8 +37,7 @@ B2B_LOGIC
         1.5. Exported Functions
 
               1.5.1. b2b_init_request(id, [flags], [req_route],
-                      [reply_route], [init_sdp_body],
-                      [init_sdp_ctype])
+                      [reply_route])
 
               1.5.2. b2b_server_new(id, [adv_contact],
                       [extra_hdrs], [extra_hdr_bodies])
@@ -494,8 +493,7 @@ modparam("b2b_logic", "b2bl_early_update", 1)
 
 1.5. Exported Functions
 
-1.5.1.  b2b_init_request(id, [flags], [req_route], [reply_route],
-[init_sdp_body], [init_sdp_ctype])
+1.5.1.  b2b_init_request(id, [flags], [req_route], [reply_route])
 
    This function initializes a new B2B session based on an initial
    INVITE. A new server entity and a new client entity must be
@@ -1246,11 +1244,11 @@ Chapter 3. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 235 57 8167 6793
    2. Razvan Crainea (@razvancrainea) 28 17 782 229
    3. Nick Altmann (@nikbyte) 14 10 346 36
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 12 8 144 66
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 13 9 145 67
    5. Carsten Bock 12 5 679 23
    6. Maksym Sobolyev (@sobomax) 5 3 26 26
-   7. truong.hua 4 2 8 7
-   8. Liviu Chircu (@liviuchircu) 4 2 3 2
+   7. Liviu Chircu (@liviuchircu) 5 3 4 3
+   8. truong.hua 4 2 8 7
    9. Aron Podrigal (@ar45) 3 1 1 1
    10. Shanee Vanstone 3 1 1 1
 
@@ -1276,13 +1274,13 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jan 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Dec 2023
-   3.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
-   4.  Shanee Vanstone                     Apr 2023 - Apr 2023
-   5.  truong.hua                          Jan 2023 - Feb 2023
-   6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   7.  Liviu Chircu (@liviuchircu)         Nov 2020 - Nov 2022
+   1.  Liviu Chircu (@liviuchircu)         Nov 2020 - Feb 2024
+   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2021 - Feb 2024
+   3.  Razvan Crainea (@razvancrainea)     Jan 2021 - Jan 2024
+   4.  Vlad Patrascu (@rvlad-patrascu)     Nov 2020 - Jul 2023
+   5.  Shanee Vanstone                     Apr 2023 - Apr 2023
+   6.  truong.hua                          Jan 2023 - Feb 2023
+   7.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
    8.  Nick Altmann (@nikbyte)             Feb 2021 - Oct 2022
    9.  Carsten Bock                        Mar 2022 - Apr 2022
    10. Aron Podrigal (@ar45)               Nov 2021 - Nov 2021
@@ -1296,8 +1294,9 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Vlad Patrascu
-   (@rvlad-patrascu), Carsten Bock, Nick Altmann (@nikbyte).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Carsten Bock, Nick Altmann (@nikbyte).
 
    Documentation Copyrights:
 
