@@ -323,11 +323,11 @@ fty5</callcenterCode>";
        to classify calls in certain profiles. If missing, no group
        is added.
      * caller - an XML block containing information about the
-       caller. If absent, the From header is used to build the
-       value.
+       caller. If absent, the From header of the initial dialog is
+       used to build the value.
      * callee - an XML block containing information about the
-       callee. If absent, the To header is used to build the
-       value.
+       callee. If absent, the To header of the initial dialog is
+       used to build the value.
      * media - the IP that RTPProxy will be streaming media from.
        If absent 127.0.0.1 will be used. NOTE: deprecated media_ip
        is an alias for this param.
@@ -336,6 +336,14 @@ fty5</callcenterCode>";
        \r\n and must end with \r\n.
      * socket - listening socket that the outgoing request towards
        SRS should be used.
+     * from_uri - the URI to appear in the From header of the
+       dialog. Default value is the request URI. Note that this
+       does not influence the caller information in the XML block,
+       which is taken from the initial dialog.
+     * to_uri - the URI to appear in the To header of the dialog.
+       Default value is the request URI. Note that this does not
+       influence the callee information in the XML block, which is
+       taken from the initial dialog.
      * group_custom_extension - an optional XML block containing
        custom information to be added under the group tag. NOTE:
        if the group is absent this value will be ignored and not
@@ -350,7 +358,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Razvan Crainea (@razvancrainea) 145 74 4933 1778
+   1. Razvan Crainea (@razvancrainea) 146 75 5022 1793
    2. Vlad Patrascu (@rvlad-patrascu) 16 11 166 149
    3. Liviu Chircu (@liviuchircu) 9 7 35 53
    4. Maksym Sobolyev (@sobomax) 6 4 12 11
@@ -378,7 +386,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                      Name                   Commit Activity
-   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Dec 2023
+   1. Razvan Crainea (@razvancrainea)     Jun 2017 - Jan 2024
    2. Maksym Sobolyev (@sobomax)          Feb 2023 - Nov 2023
    3. Seyed Mehran Siadati                Nov 2023 - Nov 2023
    4. Liviu Chircu (@liviuchircu)         Apr 2018 - Aug 2023
@@ -393,8 +401,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Seyed Mehran Siadati, Razvan Crainea
-   (@razvancrainea), Norman Brandinger (@NormB), Vlad Patrascu
+   Last edited by: Razvan Crainea (@razvancrainea), Seyed Mehran
+   Siadati, Norman Brandinger (@NormB), Vlad Patrascu
    (@rvlad-patrascu), Liviu Chircu (@liviuchircu).
 
    Documentation Copyrights:
