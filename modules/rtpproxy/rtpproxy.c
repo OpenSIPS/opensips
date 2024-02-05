@@ -5904,7 +5904,6 @@ error:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
 	rtpproxy_free_call_args(&args);
-	rtpproxy_copy_ctx_free(_ctx);
 	return ret <= 0?-1:1;
 }
 
