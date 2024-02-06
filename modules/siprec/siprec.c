@@ -180,6 +180,7 @@ static void mod_destroy(void)
 static void tm_src_unref_session(void *p)
 {
 	struct src_sess *ss = (struct src_sess *)p;
+	srec_dlg.dlg_unref(ss->dlg, 1); /* release the dialog */
 	srec_hlog(ss, SREC_UNREF, "start recording unref");
 	SIPREC_UNREF(ss);
 }
@@ -278,6 +279,7 @@ static int siprec_start_rec(struct sip_msg *msg, str *srs)
 	return 1;
 
 session_cleanup:
+	srec_dlg.dlg_unref(dlg, 1);
 	src_free_session(ss);
 	return ret;
 }

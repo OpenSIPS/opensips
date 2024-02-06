@@ -352,15 +352,9 @@ static int srec_b2b_notify(struct sip_msg *msg, str *key, int type,
 		}
 	}
 
-	if (!(ss->flags & SIPREC_DLG_CBS)) {
-		if (srec_register_callbacks(ss) < 0) {
-			LM_ERR("cannot register callback for terminating session\n");
-			goto no_recording;
-		}
-
-		/* no need to keep ref on the dialog, since we rely on it from now on */
-		srec_dlg.dlg_unref(ss->dlg, 1);
-		/* also, the b2b ref moves on the dialog - so we avoid a ref-unref */
+	if (!(ss->flags & SIPREC_DLG_CBS) && srec_register_callbacks(ss) < 0) {
+		LM_ERR("cannot register callback for terminating session\n");
+		goto no_recording;
 	}
 
 	return 0;
@@ -384,8 +378,6 @@ no_recording:
 		/* if the dialog has already been engaged, then we need to keep the
 		 * reference until the end of the dialog, where it will be cleaned up */
 		srec_dlg.dlg_ctx_put_ptr(ss->dlg, srec_dlg_idx, NULL);
-		srec_dlg.dlg_unref(ss->dlg, 1);
-		ss->dlg = NULL;
 		srec_hlog(ss, SREC_UNREF, "no recording");
 		SIPREC_UNREF(ss);
 	}
@@ -519,7 +511,7 @@ static int srs_send_invite(struct src_sess *sess)
 }
 
 /* starts the recording to the srs */
-int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
+static int src_start_recording(struct sip_msg *msg, struct src_sess *sess)
 {
 	unsigned int flags = RTP_COPY_MODE_SIPREC|RTP_COPY_LEG_BOTH;
 	union sockaddr_union tmp;
@@ -653,14 +645,11 @@ void tm_start_recording(struct cell *t, int type, struct tmcb_params *ps)
 	if (!is_invite(t))
 		return;
 	ss = (struct src_sess *)*ps->param;
-	if (ps->code >= 300) {
-		/* unref so we can release the dialog */
-		srec_dlg.dlg_unref(ss->dlg, 1);
+	if (ps->code >= 300)
 		return;
-	}
 
-	/* engage only on successful calls */
 	SIPREC_LOCK(ss);
+	/* engage only on successful calls */
 	/* if session has been started, do not start it again */
 	if (ss->flags & SIPREC_STARTED)
 		LM_DBG("Session %p (%s) already started!\n", ss, ss->uuid);
