@@ -3071,7 +3071,7 @@ int process_bridge_action(struct sip_msg* msg, b2bl_tuple_t* tuple,
 
 			entity = b2bl_create_new_entity(B2B_CLIENT, 0, &new_br_ent[i]->dest_uri,
 				new_br_ent[i]->proxy.s?&new_br_ent[i]->proxy:0,
-				new_br_ent[i]->from_dname.s?&new_br_ent[i]->from_dname:0, 0,
+				0,new_br_ent[i]->from_dname.s?&new_br_ent[i]->from_dname:0,
 				new_br_ent[i]->id.s ? &new_br_ent[i]->id : NULL, hdrs,
 				new_br_ent[i]->adv_contact.s ? &new_br_ent[i]->adv_contact : NULL, 0);
 			if(entity == NULL)
