@@ -2480,21 +2480,15 @@ static bencode_item_t *rtpe_function_call(bencode_buffer_t *bencbuf, struct sip_
 		if (ng_flags.to_tag.len)
 			to_tag_exist = 1;
 	}
+	if (!flags_exist)
+		ng_flags.flags = bencode_list(bencbuf);
 	if (op == OP_OFFER || op == OP_ANSWER) {
-		if (!flags_exist)
-			ng_flags.flags = bencode_list(bencbuf);
 		ng_flags.direction = bencode_list(bencbuf);
 		ng_flags.replace = bencode_list(bencbuf);
 		ng_flags.rtcp_mux = bencode_list(bencbuf);
 
 		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
-	} else if (!flags_exist &&
-		(op == OP_BLOCK_DTMF || op == OP_UNBLOCK_DTMF ||
-		 op == OP_BLOCK_MEDIA || op == OP_UNBLOCK_MEDIA ||
-		 op == OP_START_FORWARD || op == OP_STOP_FORWARD)) {
-			ng_flags.flags = bencode_list(bencbuf);
 	} else if (op == OP_SUBSCRIBE_ANSWER) {
-		ng_flags.flags = bencode_list(bencbuf);
 		bencode_dictionary_add_str(ng_flags.dict, "sdp", body_in);
 	}
 
