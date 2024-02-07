@@ -38,7 +38,7 @@ str mq_db_id_column = str_init("id");
  */
 int mqueue_db_init_con(void)
 {
-	LM_NOTICE("mqueue_db_url=[%.*s]\n", mqueue_db_url.len, mqueue_db_url.s);
+	LM_DBG("mqueue_db_url=[%.*s]\n", mqueue_db_url.len, mqueue_db_url.s);
 	if(mqueue_db_url.len <= 0) {
 		LM_ERR("failed to connect to the database, no db url\n");
 		return -1;
@@ -68,7 +68,7 @@ int mqueue_db_open_con(void)
 			LM_ERR("failed to connect to the database\n");
 			return -1;
 		}
-		LM_NOTICE("database connection opened successfully\n");
+		LM_DBG("database connection opened successfully\n");
 		return 0;
 	}
 	return 0;
@@ -125,7 +125,7 @@ int mqueue_db_load_queue(str *name)
 		} else {
 			if(RES_ROW_N(db_res) == 0) {
 				mq_dbf.free_result(mqueue_db_con, db_res);
-				LM_NOTICE("Nothing to be loaded in queue\n");
+				LM_DBG("Nothing to be loaded in queue\n");
 				mqueue_db_close_con();
 				return 0;
 			}
@@ -228,7 +228,7 @@ int mqueue_db_load_queue(str *name)
 					goto error;
 			}
 			cnt++;
-			LM_NOTICE("adding item[%d] key[%.*s] value[%.*s]\n", cnt, key.len,
+			LM_DBG("adding item[%d] key[%.*s] value[%.*s]\n", cnt, key.len,
 					key.s, val.len, val.s);
 			mq_item_add(name, &key, &val);
 		}
@@ -250,7 +250,7 @@ int mqueue_db_load_queue(str *name)
 		goto error;
 	}
 
-	LM_NOTICE("loaded %d values in queue\n", cnt);
+	LM_DBG("loaded %d values in queue\n", cnt);
 	mqueue_db_close_con();
 	return 0;
 error:
@@ -296,7 +296,7 @@ int mqueue_db_save_queue(str *name)
 		str *val = NULL;
 		key = get_mqk(name);
 		val = get_mqv(name);
-		LM_NOTICE("inserting mqueue[%.*s] name[%.*s] value[%.*s]\n", name->len,
+		LM_DBG("inserting mqueue[%.*s] name[%.*s] value[%.*s]\n", name->len,
 				name->s, key->len, key->s, val->len, val->s);
 		db_vals[0].type = DB_STR;
 		db_vals[0].nul = 0;
@@ -306,11 +306,11 @@ int mqueue_db_save_queue(str *name)
 		db_vals[1].nul = 0;
 		db_vals[1].val.str_val.s = val->s;
 		db_vals[1].val.str_val.len = val->len;
-		LM_NOTICE("mq_dbf.insert()\n");
+		LM_DBG("mq_dbf.insert()\n");
 		if(mq_dbf.insert(mqueue_db_con, db_cols, db_vals, ncols) < 0) {
 			LM_ERR("failed to store key [%.*s] val [%.*s]\n", key->len, key->s,
 					val->len, val->s);
-		LM_NOTICE("done mq_dbf.insert()\n");
+		LM_DBG("done mq_dbf.insert()\n");
 		}
 	}
 

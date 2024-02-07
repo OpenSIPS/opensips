@@ -158,7 +158,7 @@ static int mod_init(void)
 {
 	mq_head_t *mh = NULL;
 
-	LM_NOTICE("initializing...\n");
+	LM_DBG("initializing...\n");
 
 	init_db_url( mqueue_db_url , 1 /*can be null*/);
 
@@ -168,7 +168,7 @@ static int mod_init(void)
 		mh = _mq_head_list;
 		while(mh != NULL) {
 			if (mh->dbmode == 1 || mh->dbmode == 2) {
-				LM_NOTICE("queue=[%.*s]\n", mh->name.len, mh->name.s);
+				LM_DBG("queue=[%.*s]\n", mh->name.len, mh->name.s);
 				if(mqueue_db_load_queue(&mh->name) < 0) {
 					LM_ERR("error loading mqueue: %.*s from DB\n", mh->name.len, mh->name.s);
 					return -1;
@@ -178,13 +178,11 @@ static int mod_init(void)
 		}
 	}
 
-
 	return 0;
 }
 
 static int child_init(int rank)
 {
-	//FIXME:
 	return 0;
 }
 
@@ -247,12 +245,6 @@ int mq_param(modparam_t type, void *val)
 	if(val == NULL)
 		return -1;
 
-	//FIXME:
-	//if(!shm_initialized()) {
-	//	LM_ERR("shm not initialized - cannot define mqueue now\n");
-	//	return 0;
-	//}
-
 	mqs.s = (char *)val;
 	mqs.len = strlen(mqs.s);
 	if(mqs.s[mqs.len - 1] == ';')
@@ -289,13 +281,6 @@ int mq_param(modparam_t type, void *val)
 	}
 	LM_INFO("mqueue param: [%.*s|%d|%d|%d]\n", qname.len, qname.s, dbmode,
 			addmode, msize);
-	//if(dbmode == 1 || dbmode == 2) {
-	//	if(mqueue_db_load_queue(&qname) < 0) {
-	//		LM_ERR("error loading mqueue: %.*s from DB\n", qname.len, qname.s);
-	//		free_params(params_list);
-	//		return -1;
-	//	}
-	//}
 	mq_set_dbmode(&qname, dbmode);
 	free_params(params_list);
 	return 0;

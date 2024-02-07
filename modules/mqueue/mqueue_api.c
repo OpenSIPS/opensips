@@ -103,12 +103,6 @@ int mq_head_add(str *name, int msize, int addmode)
 	mq_pv_t *mp = NULL;
 	int len;
 
-	//FIXME:
-	//if(!shm_initialized()) {
-	//	LM_ERR("shm not initialized - cannot define mqueue now\n");
-	//	return 0;
-	//}
-
 	mh = _mq_head_list;
 	while(mh != NULL) {
 		if(name->len == mh->name.len
@@ -411,7 +405,7 @@ int pv_get_mqk(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		return -1;
 	}
 
-	LM_NOTICE("Getting key from [%.*s]\n", res->rs.len, res->rs.s);
+	LM_DBG("Getting key from [%.*s]\n", res->rs.len, res->rs.s);
 	if(mq_head_get(&res->rs) == NULL) {
 		LM_ERR("mqueue not found: %.*s\n", res->rs.len, res->rs.s);
 		return -1;
@@ -474,7 +468,7 @@ int pv_get_mqv(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		return -1;
 	}
 
-	LM_NOTICE("Getting val from [%.*s]\n", res->rs.len, res->rs.s);
+	LM_DBG("Getting val from [%.*s]\n", res->rs.len, res->rs.s);
 	if(mq_head_get(&res->rs) == NULL) {
 		LM_ERR("mqueue not found: %.*s\n", res->rs.len, res->rs.s);
 		return -1;
@@ -501,7 +495,7 @@ int pv_get_mq_size(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 		return -1;
 	}
 
-	LM_NOTICE("Getting size of [%.*s]\n", res->rs.len, res->rs.s);
+	LM_DBG("Getting size of [%.*s]\n", res->rs.len, res->rs.s);
 	mqs = _mq_get_csize(&res->rs);
 
 	if(mqs < 0) {
@@ -511,6 +505,7 @@ int pv_get_mq_size(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 
 	return pv_get_sintval(msg, param, res, mqs);
 }
+
 /**
  * Return head->csize for a given queue
  */
