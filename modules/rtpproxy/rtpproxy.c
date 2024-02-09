@@ -329,6 +329,7 @@ static int rtpproxy_api_copy_delete(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags);
 static int rtpproxy_api_copy_serialize(void *_ctx, bin_packet_t *packet);
 static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
+static void rtpproxy_api_copy_release(void **_ctx);
 
 int connect_rtpproxies(struct rtpp_set *filter);
 int update_rtpp_proxies(struct rtpp_set *filter);
@@ -1106,6 +1107,7 @@ static int mod_preinit(void)
 		.copy_delete = rtpproxy_api_copy_delete,
 		.copy_serialize = rtpproxy_api_copy_serialize,
 		.copy_deserialize = rtpproxy_api_copy_deserialize,
+		.copy_release = rtpproxy_api_copy_release,
 	};
 	if (!pv_parse_spec(&rtpproxy_relay_pvar_str, &media_pvar))
 		return -1;
@@ -5902,7 +5904,6 @@ error:
 	if (nh_lock)
 		lock_stop_read(nh_lock);
 	rtpproxy_free_call_args(&args);
-	rtpproxy_copy_ctx_free(_ctx);
 	return ret <= 0?-1:1;
 }
 
@@ -5996,4 +5997,10 @@ static int rtpproxy_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 	}
 	*_ctx = ctx;
 	return -1;
+}
+
+static void rtpproxy_api_copy_release(void **_ctx)
+{
+	rtpproxy_copy_ctx_free(*_ctx);
+	*_ctx = NULL;
 }

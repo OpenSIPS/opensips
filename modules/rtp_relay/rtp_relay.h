@@ -65,6 +65,7 @@ struct rtp_relay_funcs {
 			struct rtp_relay_server *server, void *ctx, str *flags);
 	int (*copy_serialize)(void *ctx, bin_packet_t *packet);
 	int (*copy_deserialize)(void **ctx, bin_packet_t *packet);
+	void (*copy_release)(void **ctx);
 };
 
 struct rtp_relay_hooks {
