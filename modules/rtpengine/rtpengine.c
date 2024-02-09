@@ -305,6 +305,7 @@ static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
 		struct rtp_relay_server *server, void *_ctx, str *flags);
 static int rtpengine_api_copy_serialize(void *_ctx, bin_packet_t *packet);
 static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet);
+static void rtpengine_api_copy_release(void **_ctx);
 
 static int parse_flags(struct ng_flags_parse *, struct sip_msg *, enum rtpe_operation *, const char *);
 
@@ -1487,6 +1488,7 @@ static int mod_preinit(void)
 		.copy_delete = rtpengine_api_copy_delete,
 		.copy_serialize = rtpengine_api_copy_serialize,
 		.copy_deserialize = rtpengine_api_copy_deserialize,
+		.copy_release = rtpengine_api_copy_release,
 	};
 	if (!pv_parse_spec(&rtpengine_relay_pvar_str, &media_pvar))
 		return -1;
@@ -4439,8 +4441,6 @@ static int rtpengine_api_copy_delete(struct rtp_relay_session *sess,
 	bencode_item_t *ret;
 	ret = rtpengine_api_copy_op(sess, OP_UNSUBSCRIBE,
 			server, subs, flags, 0, NULL);
-	if (subs)
-		shm_free(subs);
 	if (!ret)
 		return -1;
 	bencode_buffer_free(bencode_item_buffer(ret));
@@ -4467,6 +4467,14 @@ static int rtpengine_api_copy_deserialize(void **_ctx, bin_packet_t *packet)
 		return -1;
 	else
 		return 1;
+}
+
+static void rtpengine_api_copy_release(void **ctx)
+{
+	if (*ctx) {
+		shm_free(*ctx);
+		*ctx = NULL;
+	}
 }
 
 static inline void raise_rtpengine_status_event(struct rtpe_node *node)
