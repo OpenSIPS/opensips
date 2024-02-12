@@ -61,7 +61,7 @@ static void th_no_dlg_user_onreply(struct cell* t, int type, struct tmcb_params 
 static int topo_no_dlg_encode_contact(struct sip_msg *req,int flags);
 static int topo_no_dlg_seq_handling(struct sip_msg *msg,str *info);
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl, struct sip_msg *req,
-		int init_req, int dir);
+		int init_req, int dir, int dst_leg);
 
 /* exposed logic below */
 
@@ -1053,7 +1053,7 @@ static void topo_dlg_initial_reply (struct dlg_cell* dlg, int type,
 	if (t == T_UNDEFINED || t == NULL)
 		return;
 
-	if(dlg_th_onreply(dlg, params->msg, t->uas.request, 1, DLG_DIR_UPSTREAM) < 0)
+	if(dlg_th_onreply(dlg, params->msg, t->uas.request, 1, DLG_DIR_UPSTREAM, params->dst_leg) < 0)
 		LM_ERR("Failed to transform the reply for topology hiding\n");
 }
 
@@ -1063,7 +1063,7 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 {
 	int dir = params->direction;
 	struct sip_msg *req = params->msg;
-	int adv_leg = -1;
+	int adv_leg = -1, leg;
 
 	if (!req) {
 		LM_ERR("Called with NULL SIP message \n");
@@ -1102,12 +1102,17 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 		return;
 	}
 
-	if (dir == DLG_DIR_UPSTREAM) {
+	leg = (params->dst_leg < 0?DLG_CALLER_LEG:params->dst_leg);
+	req->force_send_socket = dlg->legs[leg].bind_addr;
+	switch (dir) {
+	case DLG_DIR_UPSTREAM:
 		if (dlg_api.is_mod_flag_set(dlg, TOPOH_KEEP_ADV_A))
-			adv_leg = DLG_CALLER_LEG;
-	} else {
+			adv_leg = leg;
+		break;
+	case DLG_DIR_DOWNSTREAM:
 		if (dlg_api.is_mod_flag_set(dlg, TOPOH_KEEP_ADV_B))
-			adv_leg = callee_idx(dlg);
+			adv_leg = leg;
+		break;
 	}
 
 	/* replace contact*/
@@ -1125,24 +1130,11 @@ static void topo_dlg_onroute (struct dlg_cell* dlg, int type,
 		dlg_api.dlg_unref(dlg,1);
 		return;
 	}
-
-	if (dir == DLG_DIR_UPSTREAM) {
-		/* destination leg is the caller - force the send socket
-		 * as the one the caller was inited from */
-		req->force_send_socket = dlg->legs[DLG_CALLER_LEG].bind_addr;
-		LM_DBG("forcing send socket for req going to caller\n");
-	} else {
-		/* destination leg is the callee - force the send socket
-		 * as the one the callee was inited from */
-		req->force_send_socket = dlg->legs[callee_idx(dlg)].bind_addr;
-		LM_DBG("forcing send socket for req going to callee\n");
-	}
 }
 
 static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
-								struct sip_msg *req, int init_req, int dir)
+								struct sip_msg *req, int init_req, int dir, int dst_leg)
 {
-	int peer_leg;
 	struct lump* lmp;
 	int size;
 	char* route;
@@ -1154,14 +1146,20 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
 		LM_ERR("Failed to parse reply\n");
 		return -1;
 	}
+	if (dst_leg < 0) {
+		if (dir == DLG_DIR_DOWNSTREAM)
+			dst_leg = callee_idx(dlg);
+		else
+			dst_leg = DLG_CALLER_LEG;
+	}
 
 	if (!init_req) {
 		if (dir == DLG_DIR_UPSTREAM) {
 			if (dlg_api.is_mod_flag_set(dlg, TOPOH_KEEP_ADV_A))
-				adv_leg = DLG_CALLER_LEG;
+				adv_leg = dst_leg;
 		} else {
 			if (dlg_api.is_mod_flag_set(dlg, TOPOH_KEEP_ADV_B))
-				adv_leg = callee_idx(dlg);
+				adv_leg = dst_leg;
 		}
 	}
 
@@ -1174,11 +1172,7 @@ static int dlg_th_onreply(struct dlg_cell *dlg, struct sip_msg *rpl,
 		}
 	}
 
-	if(dir == DLG_DIR_UPSTREAM)
-		peer_leg = DLG_CALLER_LEG;
-	else
-		peer_leg = callee_idx(dlg);
-	leg = &dlg->legs[peer_leg];
+	leg = &dlg->legs[dst_leg];
 
 	if (topo_delete_record_routes(rpl) < 0) {
 		LM_ERR("Failed to remove Record Route header \n");
@@ -1230,7 +1224,7 @@ static void th_down_onreply(struct cell* t, int type,struct tmcb_params *param)
 	if (dlg==0)
 		return;
 
-	if(dlg_th_onreply(dlg, param->rpl, param->req,0, DLG_DIR_DOWNSTREAM) < 0)
+	if(dlg_th_onreply(dlg, param->rpl, param->req,0, DLG_DIR_DOWNSTREAM, -1) < 0)
 		LM_ERR("Failed to transform the reply for topology hiding\n");
 }
 
@@ -1242,7 +1236,7 @@ static void th_up_onreply(struct cell* t, int type, struct tmcb_params *param)
 	if (dlg==0)
 		return;
 
-	if(dlg_th_onreply(dlg, param->rpl, param->req, 0, DLG_DIR_UPSTREAM) < 0)
+	if(dlg_th_onreply(dlg, param->rpl, param->req, 0, DLG_DIR_UPSTREAM, -1) < 0)
 		LM_ERR("Failed to transform the reply for topology hiding\n");
 }
 

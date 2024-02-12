@@ -346,7 +346,7 @@ int dlg_replicated_create(bin_packet_t *packet, struct dlg_cell *cell,
 	if (vars.s && vars.len != 0) {
 		read_dialog_vars(vars.s, vars.len, dlg);
 		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
-				NULL, DLG_DIR_NONE, NULL, 1, 0);
+				NULL, DLG_DIR_NONE, -1, NULL, 1, 0);
 	}
 
 	dlg->locked_by = process_no;
@@ -573,7 +573,7 @@ int dlg_replicated_update(bin_packet_t *packet)
 	if (vars.s && vars.len != 0) {
 		read_dialog_vars(vars.s, vars.len, dlg);
 		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
-				NULL, DLG_DIR_NONE, NULL, 1, 0);
+				NULL, DLG_DIR_NONE, -1, NULL, 1, 0);
 	}
 
 	dlg->flags |= DLG_FLAG_VP_CHANGED;
@@ -789,7 +789,7 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 	bin_push_str(packet, &dlg->legs[callee_leg].adv_contact);
 
 	/* give modules the chance to write values/profiles before replicating */
-	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, NULL, 1, 1);
+	run_dlg_callbacks(DLGCB_WRITE_VP, dlg, NULL, DLG_DIR_NONE, -1, NULL, 1, 1);
 
    /* save sharing tag name as dlg val */
 	isval.s = dlg->shtag;

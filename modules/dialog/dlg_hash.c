@@ -266,7 +266,7 @@ void destroy_dlg(struct dlg_cell *dlg)
 			dlg_leg_print_info( dlg, callee_idx(dlg), tag));
 	}
 
-	run_dlg_callbacks(DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, NULL, 0, 1);
+	run_dlg_callbacks(DLGCB_DESTROY , dlg, 0, DLG_DIR_NONE, -1, NULL, 0, 1);
 
 	free_dlg_dlg(dlg);
 }
@@ -1561,7 +1561,7 @@ static inline int internal_mi_print_dlg(mi_item_t *dialog_obj,
 
 		/* print external context info */
 		run_dlg_callbacks(DLGCB_MI_CONTEXT, dlg, NULL,
-			DLG_DIR_NONE, (void *)context_obj, 0, 1);
+			DLG_DIR_NONE, -1, (void *)context_obj, 0, 1);
 	}
 
 	return 0;

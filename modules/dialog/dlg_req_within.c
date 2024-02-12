@@ -259,7 +259,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 			if (push_new_processing_context( dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
 				/* dialog terminated (BYE) */
 				run_dlg_callbacks( DLGCB_TERMINATED, dlg, fake_msg,
-					DLG_DIR_NONE, NULL, 0, is_active);
+					DLG_DIR_NONE, -1, NULL, 0, is_active);
 				/* reset the processing context */
 				if (current_processing_ctx == NULL)
 					*new_ctx = NULL;
@@ -272,7 +272,7 @@ static void dual_bye_event(struct dlg_cell* dlg, struct sip_msg *req,
 			/* we should have the msg and context from upper levels */
 			/* dialog terminated (BYE) */
 			run_dlg_callbacks( DLGCB_TERMINATED, dlg, req,
-				DLG_DIR_NONE, NULL, 0, is_active);
+				DLG_DIR_NONE, -1, NULL, 0, is_active);
 		}
 
 		LM_DBG("first final reply\n");
