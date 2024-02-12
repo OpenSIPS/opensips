@@ -54,7 +54,7 @@ typedef struct _sr_identifier {
 	 * it is optional*/
 	str status_txt;
 	/* value of the status "> 0" ok; "< 0" not ok ; 0 not allowed */
-	short status;
+	enum sr_core_states status;
 	/* size of the "reports" array, pre-allocated */
 	short max_reports;
 	/* indexes of first and last used reports
@@ -695,7 +695,7 @@ static int _check_status(sr_group *srg, str *identifier, mi_item_t *id_item)
 
 /****************** SR status of the OpenSIPS core  **************/
 
-int sr_set_core_status(int status, char *txt_s, int txt_len)
+int sr_set_core_status(enum sr_core_states status, char *txt_s, int txt_len)
 {
 	return sr_set_status( srg_core, CHAR_INT_NULL /*main*/, status,
 		txt_s, txt_len, 0);
@@ -715,7 +715,7 @@ void sr_set_core_status_terminating( void )
 }
 
 
-int sr_get_core_status(void)
+enum sr_core_states sr_get_core_status(void)
 {
 	return sri_core->status;
 }

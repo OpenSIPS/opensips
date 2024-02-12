@@ -80,11 +80,11 @@ int sr_add_report_fmt(void *group,
 enum sr_core_states { STATE_NONE=-100, STATE_TERMINATING=-2,
 		STATE_INITIALIZING=-1, STATE_RUNNING=1 };
 
-int sr_set_core_status(int status, char *txt_s, int txt_len);
+int sr_set_core_status(enum sr_core_states status, char *txt_s, int txt_len);
 
 void sr_set_core_status_terminating( void );
 
-int sr_get_core_status(void);
+enum sr_core_states sr_get_core_status(void);
 
 int sr_add_core_report(char *report_s, int report_len);
 
