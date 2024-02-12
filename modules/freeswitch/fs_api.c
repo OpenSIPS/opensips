@@ -27,6 +27,7 @@
 #include "../../parser/parse_uri.h"
 #include "../../resolve.h"
 #include "../../forward.h"
+#include "../../daemonize.h"
 #include "../../ut.h"
 #include "../../lib/url.h"
 
@@ -584,7 +585,7 @@ void put_evs(fs_evs *sock)
 	 * possible, since the main process brutally murders the FS connection
 	 * manager before it gets a chance to gracefully EOF its TCP connections.
 	 */
-	if (is_main)
+	if (get_osips_state() == STATE_TERMINATING)
 		return;
 
 	lock_start_write(sockets_lock);
