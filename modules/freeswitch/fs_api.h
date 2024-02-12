@@ -86,6 +86,9 @@ struct fs_esl_reply {
 	struct list_head list;
 };
 
+#define FS_EVS_FL_CONNECTED (1<<0)
+#define FS_EVS_FL_DB        (1<<1) /* this socket is at least reff'ed by the DB */
+
 struct _fs_evs {
 	str user;
 	str pass;
@@ -98,15 +101,15 @@ struct _fs_evs {
 	fs_stats stats;
 
 	int ref;
-
-	rw_lock_t *lists_lk;         /* protects all three internal lists */
+	unsigned int flags;
 
 	unsigned long esl_reply_id;  /* positive ID/counter for each FS esl cmd */
 	struct list_head esl_replies;
 
 	struct list_head events;     /* events we're successfully subscribed to */
+	rw_lock_t *lists_lk;         /* protects the flags + above lists */
 
-	/* a socket may concurrently be part of up to three lists! */
+	/* a socket may concurrently be part of up to three global lists */
 	struct list_head list;           /* "fs_sockets" - all FS sockets */
 	struct list_head reconnect_list; /* "fs_sockets_down" - new/failed conns */
 	struct list_head esl_cmd_list;   /* "fs_sockets_esl" - pending ESL cmds */
@@ -121,6 +124,8 @@ typedef int (*evs_sub_f) (fs_evs *sock, const str *tag,
                     const str_list *events, ipc_handler_type ipc_type);
 typedef void (*evs_unsub_f) (fs_evs *sock, const str *tag,
                              const str_list *events);
+typedef void (*evs_set_flags_f) (fs_evs *sock, unsigned int flags);
+typedef void (*evs_reset_flags_f) (fs_evs *sock, unsigned int flags);
 
 typedef void (*put_evs_f) (fs_evs *sock);
 typedef void (*put_stats_evs_f) (fs_evs *sock, str *tag);
@@ -186,6 +191,12 @@ struct fs_binds {
 	evs_unsub_f evs_unsub;
 
 	/*
+	 * Set/unset flags
+	 */
+	evs_set_flags_f   evs_set_flags;
+	evs_reset_flags_f evs_reset_flags;
+
+	/*
 	 * Return a FreeSWITCH event socket. If its reference count reaches zero,
 	 * it will get destroyed, along with any subscriptions attached to it.
 	 */
@@ -236,6 +247,8 @@ static inline int is_fs_url(str *in)
 
 typedef int (*bind_fs_t)(struct fs_binds *fapi);
 int fs_bind(struct fs_binds *fapi);
+void evs_set_flags(fs_evs *sock, unsigned int flags);
+void evs_reset_flags(fs_evs *sock, unsigned int flags);
 
 static inline int load_fs_api(struct fs_binds *fapi)
 {

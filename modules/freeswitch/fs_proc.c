@@ -562,7 +562,6 @@ static void apply_socket_commands(void)
 	handle_reconnects();
 	lock_stop_write(sockets_down_lock);
 	lock_stop_write(sockets_lock);
-
 }
 
 void fs_conn_mgr_loop(int proc_no)
