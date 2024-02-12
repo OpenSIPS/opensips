@@ -200,13 +200,19 @@ static int fs_esl(struct sip_msg *msg, str *cmd, str *url,
 {
 	fs_evs *sock;
 	pv_value_t reply_val;
-	str reply;
+	str reply = STR_NULL;
 	int ret = 1;
 
 	sock = fs_api.get_evs_by_url(url);
 	if (!sock) {
 		LM_ERR("failed to get a socket for FS URL %.*s\n", url->len, url->s);
 		return -1;
+	}
+
+	if (!(sock->flags & FS_EVS_FL_CONNECTED)) {
+		LM_ERR("command failed (FS not connected: %.*s)\n", url->len, url->s);
+		ret = -1;
+		goto out;
 	}
 
 	LM_DBG("running '%.*s' on %s:%d\n", cmd->len, cmd->s,

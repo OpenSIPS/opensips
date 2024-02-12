@@ -84,6 +84,7 @@ unsigned long fs_ipc_send_esl_cmd(fs_evs *sock, const str *fs_cmd)
 {
 	fs_ipc_esl_cmd *cmd;
 	unsigned long esl_reply_id;
+	unsigned int ticks;
 
 	cmd = shm_malloc(sizeof *cmd);
 	if (!cmd) {
@@ -93,8 +94,11 @@ unsigned long fs_ipc_send_esl_cmd(fs_evs *sock, const str *fs_cmd)
 	memset(cmd, 0, sizeof *cmd);
 
 	cmd->sock = sock;
+	ticks = get_ticks();
 
 	lock_start_write(sock->lists_lk);
+	/* we're only interested in usage at script level, not the actual ESL */
+	sock->last_esl_jiffy = ticks;
 	cmd->esl_reply_id = sock->esl_reply_id++;
 	lock_stop_write(sock->lists_lk);
 

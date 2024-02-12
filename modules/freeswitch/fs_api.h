@@ -96,6 +96,8 @@ struct _fs_evs {
 	esl_port_t port;
 
 	esl_handle_t *handle;
+	unsigned int last_conn_jiffy;
+	unsigned int conn_attempts; /* consecutive */
 
 	rw_lock_t *stats_lk;
 	fs_stats stats;
@@ -105,7 +107,7 @@ struct _fs_evs {
 
 	unsigned long esl_reply_id;  /* positive ID/counter for each FS esl cmd */
 	struct list_head esl_replies;
-
+	unsigned int last_esl_jiffy;
 	struct list_head events;     /* events we're successfully subscribed to */
 	rw_lock_t *lists_lk;         /* protects the flags + above lists */
 
@@ -114,6 +116,9 @@ struct _fs_evs {
 	struct list_head reconnect_list; /* "fs_sockets_down" - new/failed conns */
 	struct list_head esl_cmd_list;   /* "fs_sockets_esl" - pending ESL cmds */
 };
+
+#define fs_evs_connected(s) ((s)->handle && (s)->handle->connected \
+		&& (s)->handle->sock != ESL_SOCK_INVALID)
 
 typedef fs_evs* (*get_evs_f) (const str *host, unsigned short port,
                               const str *user, const str *pass);

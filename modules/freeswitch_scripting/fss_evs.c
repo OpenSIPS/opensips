@@ -285,6 +285,7 @@ int del_from_fss_sockets(fs_evs *sock, const str *event_name)
 			}
 		}
 
+		LM_DBG("event not found\n");
 		return -1;
 	}
 
