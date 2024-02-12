@@ -63,6 +63,7 @@ static inline int dlg_match_mode_str_to_int(const str *in)
 
 struct _dlg_cseq{
 	struct dlg_cell *dlg;
+	int dst_leg;
 	str cseq;
 };
 

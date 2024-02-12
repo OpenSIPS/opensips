@@ -644,7 +644,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 		}
 		/* The state does not change, but the msg is mutable in this callback*/
 		run_dlg_callbacks(DLGCB_RESPONSE_FWDED, dlg, rpl,
-			DLG_DIR_UPSTREAM, (void *)leg_idx, 0, 1);
+			DLG_DIR_UPSTREAM, DLG_CALLER_LEG, (void *)leg_idx, 0, 1);
 		return;
 	}
 	if (type==TMCB_TRANS_CANCELLED) {
@@ -708,7 +708,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 	               &unref, DLG_CALLER_LEG, 1);
 
 	if (new_state==DLG_STATE_EARLY && old_state!=DLG_STATE_EARLY) {
-		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0, 1);
+		run_dlg_callbacks(DLGCB_EARLY, dlg, rpl, DLG_DIR_UPSTREAM,
+				DLG_CALLER_LEG, NULL, 0, 1);
 		if_update_stat(dlg_enable_stats, early_dlgs, 1);
 		return;
 	}
@@ -760,7 +761,7 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog confirmed */
 		run_dlg_callbacks(DLGCB_CONFIRMED, dlg, rpl, DLG_DIR_UPSTREAM,
-			NULL, 0, 1);
+				DLG_CALLER_LEG, NULL, 0, 1);
 
 		if (ref_script_route_check_and_update(dlg->rt_on_answer)) {
 			run_dlg_script_route( dlg, dlg->rt_on_answer->idx);
@@ -786,7 +787,8 @@ static void dlg_onreply(struct cell* t, int type, struct tmcb_params *param)
 
 		/* dialog setup not completed (3456XX), but there is still a bit of
 		 * room to go *back* to 2XX if we're racing against a 200 OK! */
-		run_dlg_callbacks(DLGCB_FAILED, dlg, rpl, DLG_DIR_UPSTREAM, NULL, 0, 1);
+		run_dlg_callbacks(DLGCB_FAILED, dlg, rpl, DLG_DIR_UPSTREAM,
+				DLG_CALLER_LEG, NULL, 0, 1);
 
 		/* do unref */
 		if (unref)
@@ -1127,7 +1129,7 @@ static void dlg_seq_up_onreply_mod_cseq(struct cell* t, int type,
 	if (type==TMCB_RESPONSE_FWDED &&
 			(dlg->cbs.types)&DLGCB_RESPONSE_WITHIN) {
 		run_dlg_callbacks(DLGCB_RESPONSE_WITHIN, dlg, param->rpl,
-			DLG_DIR_UPSTREAM, NULL, 0, 1);
+			DLG_DIR_UPSTREAM, ((dlg_cseq_wrapper *)*param->param)->dst_leg, NULL, 0, 1);
 		return;
 	}
 
@@ -1146,7 +1148,7 @@ static void dlg_seq_up_onreply(struct cell* t, int type,
 	if (type==TMCB_RESPONSE_FWDED &&
 			(dlg->cbs.types)&DLGCB_RESPONSE_WITHIN) {
 		run_dlg_callbacks(DLGCB_RESPONSE_WITHIN, dlg, param->rpl,
-			DLG_DIR_UPSTREAM, NULL, 0, 1);
+			DLG_DIR_UPSTREAM, DLG_CALLER_LEG, NULL, 0, 1);
 		return;
 	}
 
@@ -1171,7 +1173,7 @@ static void dlg_seq_down_onreply_mod_cseq(struct cell* t, int type,
 	if (type==TMCB_RESPONSE_FWDED &&
 		(dlg->cbs.types)&DLGCB_RESPONSE_WITHIN) {
 		run_dlg_callbacks(DLGCB_RESPONSE_WITHIN, dlg, param->rpl,
-			DLG_DIR_DOWNSTREAM, NULL, 0, 1);
+			DLG_DIR_DOWNSTREAM, ((dlg_cseq_wrapper *)*param->param)->dst_leg, NULL, 0, 1);
 		return;
 	}
 
@@ -1210,7 +1212,7 @@ static void dlg_seq_down_onreply(struct cell* t, int type,
 	if (type==TMCB_RESPONSE_FWDED &&
 		(dlg->cbs.types)&DLGCB_RESPONSE_WITHIN) {
 		run_dlg_callbacks(DLGCB_RESPONSE_WITHIN, dlg, param->rpl,
-			DLG_DIR_DOWNSTREAM, NULL, 0, 1);
+			DLG_DIR_DOWNSTREAM, callee_idx(dlg), NULL, 0, 1);
 		return;
 	}
 
@@ -2073,7 +2075,7 @@ void dlg_onroute(struct sip_msg* req, str *route_params, void *param)
 	if (new_state==DLG_STATE_DELETED && old_state==DLG_STATE_DELETED) {
 		/* a request after dialog termination */
 		/* within dialog request */
-		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0, 1);
+		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, dst_leg, NULL, 0, 1);
 
 		/* update the cseq */
 		dlg_lock (d_table,d_entry);
@@ -2194,7 +2196,7 @@ after_unlock5:
 		}
 
 		/* dialog terminated (BYE) */
-		run_dlg_callbacks(DLGCB_TERMINATED, dlg, req, dir, NULL, 0, is_active);
+		run_dlg_callbacks(DLGCB_TERMINATED, dlg, req, dir, dst_leg, NULL, 0, is_active);
 
 		/* delete the dialog from DB */
 		if (should_remove_dlg_db())
@@ -2219,7 +2221,7 @@ after_unlock5:
 		}
 
 		/* within dialog request */
-		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0, 1);
+		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, dst_leg, NULL, 0, 1);
 
 		/* update timer during sequential request? */
 		if (dlg->lifetime_dirty) {
@@ -2376,6 +2378,7 @@ after_unlock5:
 				}
 
 				wrap->dlg = dlg;
+				wrap->dst_leg = dst_leg;
 				wrap->cseq.s = (char *)(wrap + 1);
 				wrap->cseq.len = msg_cseq->len;
 				memcpy(wrap->cseq.s,msg_cseq->s,msg_cseq->len);
@@ -2410,7 +2413,7 @@ early_check:
 	if ( (event==DLG_EVENT_REQPRACK || event == DLG_EVENT_REQ ||
 			event == DLG_EVENT_REQBYE) && new_state==DLG_STATE_EARLY) {
 		/* within dialog request */
-		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, NULL, 0, 1);
+		run_dlg_callbacks(DLGCB_REQ_WITHIN, dlg, req, dir, dst_leg, NULL, 0, 1);
 
 		LM_DBG("EARLY event %d successfully processed (dst_leg=%d)\n",
 			event,dst_leg);
@@ -2588,7 +2591,7 @@ void dlg_ontimeout(struct dlg_tl *tl)
 		if (push_new_processing_context(dlg, &old_ctx, &new_ctx, &fake_msg)==0) {
 			if (do_expire_actions)
 				run_dlg_callbacks(DLGCB_EXPIRED, dlg, fake_msg,
-					DLG_DIR_NONE, NULL, 0, do_expire_actions);
+					DLG_DIR_NONE, -1, NULL, 0, do_expire_actions);
 
 			if (current_processing_ctx == NULL)
 				*new_ctx = NULL;
