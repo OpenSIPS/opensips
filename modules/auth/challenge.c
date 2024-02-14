@@ -38,6 +38,7 @@
 #include "../../mod_fix.h"
 #include "auth_mod.h"
 #include "common.h"
+#include "qop.h"
 #include "challenge.h"
 #include "../../lib/digest_auth/dauth_nonce.h"
 #include "index.h"
@@ -58,10 +59,6 @@
  */
 #define MESSAGE_401        "Unauthorized"
 
-#define QOP_AUTH	  ", qop=\"" QOP_AUTH_STR "\""
-#define QOP_AUTH_INT	  ", qop=\"" QOP_AUTHINT_STR "\""
-#define QOP_AUTH_BOTH_AAI	  ", qop=\"" QOP_AUTH_STR "," QOP_AUTHINT_STR "\""
-#define QOP_AUTH_BOTH_AIA	  ", qop=\"" QOP_AUTHINT_STR "," QOP_AUTH_STR "\""
 #define STALE_PARAM	  ", stale=true"
 #define DIGEST_REALM	  ": Digest realm=\""
 #define DIGEST_NONCE	  "\", nonce=\""
@@ -78,31 +75,12 @@ char *build_auth_hf(struct nonce_context *ncp, struct nonce_params *calc_np,
 {
 	char *hf, *p;
 	str_const alg_param;
-	str_const qop_param = STR_NULL_const;
+	str_const qop_param = get_qop_param(calc_np->qop);
 	str_const stale_param = STR_NULL_const;
 	const str_const digest_realm = str_const_init(DIGEST_REALM);
 	const str_const nonce_param = str_const_init(DIGEST_NONCE);
 	str_const opaque_param;
 
-	if (calc_np->qop) {
-		switch (calc_np->qop) {
-		case QOP_AUTH_D:
-			qop_param = str_const_init(QOP_AUTH);
-			break;
-		case QOP_AUTHINT_D:
-			qop_param = str_const_init(QOP_AUTH_INT);
-			break;
-		case QOP_AUTHINT_AUTH_D:
-			qop_param = str_const_init(QOP_AUTH_BOTH_AAI);
-			break;
-		case QOP_AUTH_AUTHINT_D:
-			qop_param = str_const_init(QOP_AUTH_BOTH_AIA);
-			break;
-		default:
-			LM_ERR("Wrong _qop value: %d\n", calc_np->qop);
-			abort();
-		}
-	}
 	if (_stale)
 		stale_param = str_const_init(STALE_PARAM);
 
