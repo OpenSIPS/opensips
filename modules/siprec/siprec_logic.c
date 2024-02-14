@@ -52,17 +52,6 @@ int src_init(void)
 	}
 #endif
 
-	skip_failover_codes.len = strlen(skip_failover_codes.s);
-	if (!skip_failover_codes.len)
-		return 0;
-
-	/* here skip_failover_codes.s is always NULL terminated! */
-	if (regcomp(&skip_codes_regex, skip_failover_codes.s, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) {
-		LM_ERR("cannot compile skip_failover_codes regex [%.*s]!\n",
-				skip_failover_codes.len, skip_failover_codes.s);
-		return -1;
-	}
-
 	if (srec_b2b.register_cb(src_event_received,
 			B2BCB_RECV_EVENT, &mod_name) < 0) {
 		LM_ERR("could not register SIPREC event receive callback!\n");
@@ -75,6 +64,16 @@ int src_init(void)
 		return -1;
 	}
 
+	skip_failover_codes.len = strlen(skip_failover_codes.s);
+	if (!skip_failover_codes.len)
+		return 0;
+
+	/* here skip_failover_codes.s is always NULL terminated! */
+	if (regcomp(&skip_codes_regex, skip_failover_codes.s, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) {
+		LM_ERR("cannot compile skip_failover_codes regex [%.*s]!\n",
+				skip_failover_codes.len, skip_failover_codes.s);
+		return -1;
+	}
 
 	return 0;
 }
