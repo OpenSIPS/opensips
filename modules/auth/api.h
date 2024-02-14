@@ -107,6 +107,12 @@ typedef str *(*build_auth_info_hf_t)(str *msg_body, str *method, dig_cred_t *cre
 	struct digest_auth_credential *auth_data);
 
 /*
+ * Helper function to send a reply
+ */
+typedef int (*send_resp_t)(struct sip_msg* _m, int _code,
+		const str* _reason, const str hdrs[], int nhdrs);
+
+/*
  * Strip the beginning of realm
  */
 void strip_realm(str *_realm);
@@ -124,6 +130,7 @@ typedef struct auth_api {
 	check_response_t check_response; /* check auth response */
 	build_auth_hf_t build_auth_hf;   /* build {WWW,Proxy}-Authenticate header field */
 	build_auth_info_hf_t build_auth_info_hf; /* build Authentication-Info header */
+	send_resp_t  send_resp;/* Helper function to send a response */
 } auth_api_t;
 
 

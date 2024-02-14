@@ -550,6 +550,7 @@ int bind_auth(auth_api_t* api)
 	api->check_response = check_response;
 	api->build_auth_hf = build_auth_hf;
 	api->build_auth_info_hf = build_auth_info_hf;
+	api->send_resp = send_resp;
 
 	get_rpid_avp( &api->rpid_avp, &api->rpid_avp_type );
 
