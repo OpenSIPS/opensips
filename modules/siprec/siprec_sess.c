@@ -631,9 +631,21 @@ void srec_dlg_write_callback(struct dlg_cell *dlg, int type,
 	}
 }
 
+void srec_dlg_read_callback(struct dlg_cell *dlg, int type,
+		struct dlg_cb_params *params)
+{
+	/* check if our variable was replicated */
+	if (params->dlg_data && !str_match((str *)params->dlg_data, &srec_dlg_name))
+		return;
+	/* do the same as loaded */
+	srec_loaded_callback(dlg, type, params);
+}
+
 static void src_event_trigger_create(struct src_sess *sess, bin_packet_t *store)
 {
-	if (srec_push_sess(sess, store) < 0)
+	if (!sess)
+		LM_DBG("siprec session not replicated yet!\n");
+	else if (srec_push_sess(sess, store) < 0)
 		LM_WARN("could not create replicated session!\n");
 }
 
@@ -659,7 +671,7 @@ static void src_event_receive_create(str *key, bin_packet_t *packet)
 	/* search for the dialog based on the key */
 	dlg = srec_dlg.get_dlg_by_callid(key, 0);
 	if (!dlg) {
-		LM_ERR("cannot find replicated dialog for callid  %.*s\n", key->len, key->s);
+		LM_DBG("cannot find replicated dialog for callid  %.*s\n", key->len, key->s);
 		return;
 	}
 

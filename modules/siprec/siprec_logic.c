@@ -213,6 +213,12 @@ int srec_register_callbacks(struct src_sess *sess)
 			srec_dlg_write_callback, sess, NULL))
 		LM_WARN("cannot register callback for session serialization! "
 			"Will not be able to end siprec session in case of a restart!\n");
+
+	if (srec_dlg.register_dlgcb(sess->dlg, DLGCB_PROCESS_VARS,
+			srec_dlg_read_callback, sess, NULL))
+		LM_WARN("cannot register callback for session de-serialization! "
+			"Will not be able to handle in-dialog for replicated sessions!\n");
+	LM_DBG("registered dialog callbacks for %p\n", sess);
 	sess->flags |= SIPREC_DLG_CBS;
 	return 0;
 }
