@@ -84,8 +84,6 @@ static int fixup_db_avp_dbparam(void** param);
 static int fixup_db_url(void ** param);
 static int fixup_avp_prefix(void **param);
 
-static int fixup_op_avp_p1(void** param);
-static int fixup_op_avp_p2(void** param);
 static int fixup_avp_subst_p1(void** param);
 static int fixup_avp_subst_p2(void** param);
 static int fixup_subst(void **param, int param_no);
@@ -113,7 +111,6 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
                                 str* query, void* dest, void* url);
 static int w_delete_avps(struct sip_msg* msg, void* param);
 static int w_shuffle_avps(struct sip_msg* msg, void* param);
-static int w_op_avps(struct sip_msg* msg, char* param, char *op);
 static int w_subst(struct sip_msg* msg, char* src, char *subst);
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
 
@@ -166,12 +163,6 @@ static const cmd_export_t cmds[] = {
 
 	{"avp_shuffle",   (cmd_function)w_shuffle_avps,  {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_shuffle_name, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"avp_op",     (cmd_function)w_op_avps, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_op_avp_p1, fixup_free_avp_subst_p1},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_op_avp_p2, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -936,105 +927,6 @@ static int fixup_free_avp_subst_p2(void** param)
 	return 0;
 }
 
-static int fixup_op_avp(void** param, int param_no)
-{
-	struct fis_param *ap;
-	struct fis_param **av = NULL;
-	char *s;
-	str cpy, *_param = (str *)*param;
-	char *p;
-
-	if (pkg_nt_str_dup(&cpy, _param) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	s = cpy.s;
-
-	ap = 0;
-
-	if (param_no==1)
-	{
-		av = (struct fis_param**)pkg_malloc(2*sizeof(struct fis_param*));
-		if(av==NULL)
-		{
-			LM_ERR("no more pkg memory\n");
-			goto err_free;
-		}
-		memset(av, 0, 2*sizeof(struct fis_param*));
-		/* avp src / avp dst */
-		if ( (p=strchr(s,'/'))!=0 )
-			*(p++)=0;
-
-		av[0] = avpops_parse_pvar(s);
-		if (av[0]==0)
-		{
-			LM_ERR("unable to get pseudo-variable in param 1\n");
-			goto err_free;
-		}
-		if (av[0]->u.sval.type!=PVT_AVP)
-		{
-			LM_ERR("bad attribute name <%s>\n", (char*)*param);
-			goto err_free;
-		}
-		if(p==0 || *p=='\0')
-		{
-			*param=(void*)av;
-			goto out;
-		}
-
-		s = p;
-		ap = avpops_parse_pvar(s);
-		if (ap==0)
-		{
-			LM_ERR("unable to get pseudo-variable in param 1 (2)\n");
-			goto err_free;
-		}
-		if (ap->u.sval.type!=PVT_AVP)
-		{
-			LM_ERR("bad attribute name/alias <%s>!\n", s);
-			goto err_free;
-		}
-		av[1] = ap;
-		*param=(void*)av;
-	} else if (param_no==2) {
-		if ( (ap=parse_op_value(s))==0 )
-		{
-			LM_ERR("failed to parse the value \n");
-			goto err_free;
-		}
-		/* only integer values or avps */
-		if ( (ap->opd&AVPOPS_VAL_STR)!=0 && (ap->opd&AVPOPS_VAL_PVAR)==0)
-		{
-			LM_ERR("operations requires integer values\n");
-			pkg_free(ap);
-			goto err_free;
-		}
-		*param=(void*)ap;
-	}
-
-out:
-	pkg_free(cpy.s);
-	return 0;
-
-err_free:
-	pkg_free(cpy.s);
-	if (av) {
-		pkg_free(av[0]);
-		pkg_free(av[1]);
-	}
-	return E_UNSPEC;
-}
-
-static int fixup_op_avp_p1(void** param)
-{
-	return fixup_op_avp(param, 1);
-}
-
-static int fixup_op_avp_p2(void** param)
-{
-	return fixup_op_avp(param, 2);
-}
-
 static int fixup_is_avp_set(void** param, int param_no)
 {
 	struct fis_param *ap = NULL;
@@ -1179,12 +1071,6 @@ static int w_delete_avps(struct sip_msg* msg, void* param)
 static int w_shuffle_avps(struct sip_msg* msg, void* param)
 {
 	return ops_shuffle_avp ( msg, (struct fis_param*)param);
-}
-
-static int w_op_avps(struct sip_msg* msg, char* param, char *op)
-{
-	return ops_op_avp ( msg, (struct fis_param**)param,
-								(struct fis_param*)op);
 }
 
 static int w_subst(struct sip_msg* msg, char* src, char *subst)
