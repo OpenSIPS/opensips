@@ -528,51 +528,6 @@ avp_db_query("DELETE FROM subscriber", , $avp(id));
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_avp_delete" xreflabel="avp_delete()">
-			<title>
-				<function moreinfo="none">avp_delete(name)
-				</function>
-			</title>
-			<para>
-			Deletes from memory the AVPs with <emphasis>name</emphasis> or,
-			if *, all AVPs.
-			</para>
-			<para>Meaning of the parameters is as follows:</para>
-			<itemizedlist>
-			<listitem>
-				<para><emphasis>name (string, no expand)</emphasis> - which AVPs will be deleted
-				from memory.
-				Parameter syntax is:
-				<itemizedlist>
-					<listitem><para><emphasis>
-					name = (matching_flags|avp_name|avp_alias)['/'flag]
-					</emphasis></para></listitem>
-					<listitem><para><emphasis>
-					matching_flags = please refer to avp_db_load() function
-					</emphasis></para></listitem>
-					<listitem><para><emphasis>
-					flag = 'g'|'G'
-					</emphasis></para></listitem>
-				</itemizedlist>
-				</para>
-			</listitem>
-			</itemizedlist>
-			<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-			</para>
-			<example>
-				<title><function>avp_delete</function> usage</title>
-				<programlisting format="linespecific">
-...
-avp_delete("$avp(email)"); # delete topmost (lastly set) value from $avp(email)
-avp_delete("$avp(678)/g"); # fully purge $avp(678)
-avp_delete("i");
-avp_delete("a3");
-...
-				</programlisting>
-			</example>
-		</section>
 		<section id="func_avp_subst" xreflabel="avp_subst()">
 			<title>
 				<function moreinfo="none">avp_subst(avps, subst)</function>

@@ -908,61 +908,6 @@ err_free:
 	return ret;
 }
 
-
-
-int ops_delete_avp(struct sip_msg* msg, struct fis_param *ap)
-{
-	struct usr_avp **avp_list;
-	struct usr_avp *avp;
-	struct usr_avp *avp_next;
-	unsigned short name_type;
-	int avp_name;
-	int n;
-
-	n = 0;
-
-	if ((ap->opd&AVPOPS_VAL_NONE)==0)
-	{
-		/* avp name is known ->search by name */
-		/* get avp name */
-		if(avpops_get_aname(msg, ap, &avp_name, &name_type)!=0)
-		{
-			LM_ERR("failed to get dst AVP name\n");
-			return -1;
-		}
-		n = destroy_avps( name_type, avp_name, ap->ops&AVPOPS_FLAG_ALL );
-	} else {
-		/* avp name is not given - we have just flags */
-		/* -> go through all list */
-		avp_list = get_avp_list();
-		avp = *avp_list;
-
-		for ( ; avp ; avp=avp_next )
-		{
-			avp_next = avp->next;
-			/* check if type match */
-			if ( !( (ap->opd&(AVPOPS_VAL_INT|AVPOPS_VAL_STR))==0 ||
-			((ap->opd&AVPOPS_VAL_INT)&&((avp->flags&AVP_NAME_STR))==0) ||
-			((ap->opd&AVPOPS_VAL_STR)&&(avp->flags&AVP_NAME_STR)) )  )
-				continue;
-			if((ap->u.sval.pvp.pvn.u.isname.type&AVP_SCRIPT_MASK)!=0
-					&& ((ap->u.sval.pvp.pvn.u.isname.type&AVP_SCRIPT_MASK)
-								&avp->flags)==0)
-				continue;
-			/* remove avp */
-			destroy_avp( avp );
-			n++;
-			if ( !(ap->ops&AVPOPS_FLAG_ALL) )
-				break;
-		}
-	}
-
-	LM_DBG("%d avps were removed\n",n);
-
-	return n?1:-1;
-}
-
-
 int ops_shuffle_avp( struct sip_msg* msg, struct fis_param* src)
 {
 	struct usr_avp *src_avp, *rnd_avp;
