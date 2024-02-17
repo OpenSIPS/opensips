@@ -90,7 +90,6 @@ static int fixup_pvname_list(void** param);
 
 static int fixup_free_pvname_list(void** param);
 static int fixup_free_avp_dbparam(void** param);
-static int fixup_avp_shuffle_name(void** param);
 
 static int w_dbload_avps(struct sip_msg* msg, void* source,
                          void* param, void *url, str *prefix);
@@ -102,7 +101,6 @@ static int w_dbquery_avps(struct sip_msg* msg, str* query,
                           void* dest, void *url);
 static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
                                 str* query, void* dest, void* url);
-static int w_shuffle_avps(struct sip_msg* msg, void* param);
 
 static const acmd_export_t acmds[] = {
 	{"avp_db_query", (acmd_function)w_async_dbquery_avps, {
@@ -143,11 +141,6 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND, fixup_pvname_list, fixup_free_pvname_list},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_id_sync, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"avp_shuffle",   (cmd_function)w_shuffle_avps,  {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_shuffle_name, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -588,43 +581,6 @@ static int fixup_db_id_async(void** param)
 	return fixup_db_id(param, 1);
 }
 
-static int fixup_avp_shuffle_name(void** param)
-{
-	struct fis_param *ap=NULL;
-	char *s;
-	str cpy;
-
-	if (pkg_nt_str_dup(&cpy, (str *)*param) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	s = cpy.s;
-
-	ap = avpops_parse_pvar(s);
-	if (ap==0)
-	{
-		LM_ERR("unable to get"
-			" pseudo-variable in param \n");
-		goto err_free;
-	}
-	if (ap->u.sval.type!=PVT_AVP)
-	{
-		LM_ERR("bad param; expected : $avp(name)\n");
-		goto err_free;
-	}
-	ap->opd|=AVPOPS_VAL_PVAR;
-	ap->type = AVPOPS_VAL_PVAR;
-
-	*param=(void*)ap;
-	pkg_free(cpy.s);
-
-	return 0;
-
-err_free:
-	pkg_free(cpy.s);
-	pkg_free(ap);
-	return E_UNSPEC;
-}
 
 static int w_dbload_avps(struct sip_msg* msg, void* source,
                          void* param, void *url, str *prefix)
@@ -677,9 +633,4 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
 		parsed_url = default_db_url;
 
 	return ops_async_dbquery(msg, ctx, query, parsed_url, (pvname_list_t *)dest);
-}
-
-static int w_shuffle_avps(struct sip_msg* msg, void* param)
-{
-	return ops_shuffle_avp ( msg, (struct fis_param*)param);
 }

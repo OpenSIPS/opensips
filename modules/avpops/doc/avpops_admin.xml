@@ -528,45 +528,6 @@ avp_db_query("DELETE FROM subscriber", , $avp(id));
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_avp_shuffle" xreflabel="avp_shuffle()">
-			<title>
-				<function moreinfo="none">avp_shuffle(name)
-				</function>
-			</title>
-			<para>
-			Randomly shuffles AVPs with <emphasis>name</emphasis>.
-			</para>
-			<para>Meaning of the parameters is as follows:</para>
-			<itemizedlist>
-			<listitem>
-				<para><emphasis>name (string, no expand)</emphasis> - name of AVP to shuffle.
-				Parameter syntax is:
-				<itemizedlist>
-					<listitem><para><emphasis>
-					name = avp_name
-					</emphasis></para></listitem>
-				</itemizedlist>
-				</para>
-			</listitem>
-			</itemizedlist>
-			<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-			</para>
-			<example>
-				<title><function>avp_shuffle</function> usage</title>
-				<programlisting format="linespecific">
-...
-$avp(foo) := "str1";
-$avp(foo)  = "str2";
-$avp(foo)  = "str3";
-xlog("Initial AVP list is: $(avp(foo)[*])\n");       # str3 str2 str1
-if(avp_shuffle("$avp(foo)"))
-    xlog("Shuffled AVP list is: $(avp(foo)[*])\n");  # str1, str3, str2 (for example)
-...
-				</programlisting>
-			</example>
-		</section>
 	</section>
 
 	<section>
