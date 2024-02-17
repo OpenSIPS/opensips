@@ -84,7 +84,6 @@ static int fixup_db_avp_dbparam(void** param);
 static int fixup_db_url(void ** param);
 static int fixup_avp_prefix(void **param);
 
-static int fixup_is_avp_set_p1(void** param);
 static int fixup_db_id_sync(void** param);
 static int fixup_db_id_async(void** param);
 static int fixup_pvname_list(void** param);
@@ -104,7 +103,6 @@ static int w_dbquery_avps(struct sip_msg* msg, str* query,
 static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
                                 str* query, void* dest, void* url);
 static int w_shuffle_avps(struct sip_msg* msg, void* param);
-static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
 
 static const acmd_export_t acmds[] = {
 	{"avp_db_query", (acmd_function)w_async_dbquery_avps, {
@@ -150,11 +148,6 @@ static const cmd_export_t cmds[] = {
 
 	{"avp_shuffle",   (cmd_function)w_shuffle_avps,  {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_shuffle_name, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"is_avp_set", (cmd_function)w_is_avp_set, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_is_avp_set_p1, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -633,89 +626,6 @@ err_free:
 	return E_UNSPEC;
 }
 
-static int fixup_is_avp_set(void** param, int param_no)
-{
-	struct fis_param *ap = NULL;
-	char *p;
-	char *s;
-	str cpy, *_param = (str *)*param;
-
-	if (pkg_nt_str_dup(&cpy, _param) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	s = cpy.s;
-
-	if (param_no==1) {
-		/* attribute name | alias / flags */
-		if ( (p=strchr(s,'/'))!=0 )
-			*(p++)=0;
-
-		ap = avpops_parse_pvar(s);
-		if (ap==0)
-		{
-			LM_ERR("unable to get pseudo-variable in param\n");
-			goto err_free;
-		}
-
-		if (ap->u.sval.type!=PVT_AVP)
-		{
-			LM_ERR("bad attribute name <%s>\n", (char*)*param);
-			goto err_free;
-		}
-		if(p==0 || *p=='\0')
-			ap->ops|=AVPOPS_FLAG_ALL;
-
-		/* flags */
-		for( ; p&&*p ; p++ )
-		{
-			switch (*p) {
-				case 'e':
-				case 'E':
-					ap->ops|=AVPOPS_FLAG_EMPTY;
-					break;
-				case 'n':
-				case 'N':
-					if(ap->ops&AVPOPS_FLAG_CASTS)
-					{
-						LM_ERR("invalid flag combination <%c> and 's|S'\n",*p);
-						return E_UNSPEC;
-					}
-					ap->ops|=AVPOPS_FLAG_CASTN;
-					break;
-				case 's':
-				case 'S':
-					if(ap->ops&AVPOPS_FLAG_CASTN)
-					{
-						LM_ERR("invalid flag combination <%c> and 'n|N'\n",*p);
-						goto err_free;
-					}
-					ap->ops|=AVPOPS_FLAG_CASTS;
-					break;
-				default:
-					LM_ERR("bad flag <%c>\n",*p);
-					goto err_free;
-			}
-		}
-
-		*param=(void*)ap;
-	}
-
-	pkg_free(cpy.s);
-	return 0;
-
-err_free:
-	pkg_free(cpy.s);
-	pkg_free(ap);
-	return E_UNSPEC;
-}
-
-static int fixup_is_avp_set_p1(void** param)
-{
-	return fixup_is_avp_set(param, 1);
-}
-
-
 static int w_dbload_avps(struct sip_msg* msg, void* source,
                          void* param, void *url, str *prefix)
 {
@@ -773,10 +683,3 @@ static int w_shuffle_avps(struct sip_msg* msg, void* param)
 {
 	return ops_shuffle_avp ( msg, (struct fis_param*)param);
 }
-
-static int w_is_avp_set(struct sip_msg* msg, char* param, char *op)
-{
-	return ops_is_avp_set(msg, (struct fis_param*)param);
-}
-
-

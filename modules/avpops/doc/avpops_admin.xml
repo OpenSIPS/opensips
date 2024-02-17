@@ -528,45 +528,6 @@ avp_db_query("DELETE FROM subscriber", , $avp(id));
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_is_avp_set" xreflabel="is_avp_set()">
-			<title>
-				<function moreinfo="none">is_avp_set(name)
-				</function>
-			</title>
-			<para>
-			Check if any AVP with <emphasis>name</emphasis> is set.
-			</para>
-			<para>Meaning of the parameters is as follows:</para>
-			<itemizedlist>
-			<listitem>
-				<para><emphasis>name (string, no expand)</emphasis> - name of AVP to look for.
-				Parameter syntax is:
-				<itemizedlist>
-					<listitem><para><emphasis>
-					name = avp_name|avp_alias [ '/' flags ])
-					</emphasis></para>
-					<para><emphasis>
-					flags = ('e'|'s'|'n') - e = empty value; s = value string;
-					n = value number (int)
-					</emphasis></para></listitem>
-				</itemizedlist>
-				</para>
-			</listitem>
-			</itemizedlist>
-			<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-			</para>
-			<example>
-				<title><function>is_avp_set</function> usage</title>
-				<programlisting format="linespecific">
-...
-if(is_avp_set("$avp(foo)"))
-    xlog("AVP with name 'foo' is set!\n");
-...
-				</programlisting>
-			</example>
-		</section>
 		<section id="func_avp_shuffle" xreflabel="avp_shuffle()">
 			<title>
 				<function moreinfo="none">avp_shuffle(name)
