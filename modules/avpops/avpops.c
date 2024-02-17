@@ -87,10 +87,6 @@ static int fixup_avp_prefix(void **param);
 static int fixup_copy_avp(void** param, int param_no);
 static int fixup_avp_copy_p1(void** param);
 static int fixup_avp_copy_p2(void** param);
-static int fixup_pushto_avp_p1(void** param);
-static int fixup_pushto_avp_p2(void** param);
-static int fixup_check_avp_p1(void** param);
-static int fixup_check_avp_p2(void** param);
 static int fixup_op_avp_p1(void** param);
 static int fixup_op_avp_p2(void** param);
 static int fixup_avp_subst_p1(void** param);
@@ -102,7 +98,6 @@ static int fixup_db_id_async(void** param);
 static int fixup_pvname_list(void** param);
 
 static int fixup_avp_del_name(void** param);
-static int fixup_free_check_avp_p2(void** param);
 static int fixup_free_avp_subst_p1(void** param);
 static int fixup_free_avp_subst_p2(void** param);
 static int fixup_free_pvname_list(void** param);
@@ -122,8 +117,6 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
 static int w_delete_avps(struct sip_msg* msg, void* param);
 static int w_copy_avps(struct sip_msg* msg, void* name1, void *name2);
 static int w_shuffle_avps(struct sip_msg* msg, void* param);
-static int w_pushto_avps(struct sip_msg* msg, void* destination, void *param);
-static int w_check_avps(struct sip_msg* msg, void* param, void *check);
 static int w_op_avps(struct sip_msg* msg, char* param, char *op);
 static int w_subst(struct sip_msg* msg, char* src, char *subst);
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
@@ -183,18 +176,6 @@ static const cmd_export_t cmds[] = {
 
 	{"avp_shuffle",   (cmd_function)w_shuffle_avps,  {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_shuffle_name, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"avp_pushto", (cmd_function)w_pushto_avps, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_pushto_avp_p1, fixup_free_pkg},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_pushto_avp_p2, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"avp_check",  (cmd_function)w_check_avps, {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_check_avp_p1, fixup_free_pkg},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_check_avp_p2, fixup_free_check_avp_p2}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -884,236 +865,6 @@ err_free:
 	return E_UNSPEC;
 }
 
-static int fixup_pushto_avp(void** param, int param_no)
-{
-	struct fis_param *ap = NULL;
-	char *s;
-	char *p;
-	str cpy;
-
-	if (pkg_nt_str_dup(&cpy, (str *)*param) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	s = cpy.s;
-
-	if (param_no==1)
-	{
-		if ( *s!='$')
-		{
-			LM_ERR("bad param 1; expected : $ru $du ...\n");
-			goto err_free;
-		}
-		/* compose the param structure */
-
-		if ( (p=strchr(s,'/'))!=0 )
-			*(p++)=0;
-		ap = avpops_parse_pvar(s);
-		if (ap==0)
-		{
-			LM_ERR("unable to get pseudo-variable in param 1\n");
-			goto err_free;
-		}
-
-		switch(ap->u.sval.type) {
-			case PVT_RURI:
-				ap->opd = AVPOPS_VAL_NONE|AVPOPS_USE_RURI;
-				if ( p && !(
-					(!strcasecmp("username",p)
-							&& (ap->opd|=AVPOPS_FLAG_USER0)) ||
-					(!strcasecmp("domain",p)
-							&& (ap->opd|=AVPOPS_FLAG_DOMAIN0)) ))
-				{
-					LM_ERR("unknown ruri flag \"%s\"!\n",p);
-					goto err_free;
-				}
-			break;
-			case PVT_DSTURI:
-				if ( p!=0 )
-				{
-					LM_ERR("unknown duri flag \"%s\"!\n",p);
-					goto err_free;
-				}
-				ap->opd = AVPOPS_VAL_NONE|AVPOPS_USE_DURI;
-			break;
-			case PVT_HDR:
-				/* what's the hdr destination ? request or reply? */
-				LM_ERR("push to header is obsolete - use append_hf() "
-						"or append_to_reply() from textops module!\n");
-				goto err_free;
-			break;
-			case PVT_BRANCH:
-				if ( p!=0 )
-				{
-					LM_ERR("unknown branch flag \"%s\"!\n",p);
-					goto err_free;
-				}
-				ap->opd = AVPOPS_VAL_NONE|AVPOPS_USE_BRANCH;
-			break;
-			default:
-				LM_ERR("unsupported destination \"%s\"; "
-						"expected $ru,$du,$br\n",s);
-				goto err_free;
-		}
-	} else if (param_no==2) {
-		/* attribute name*/
-		if ( *s!='$')
-		{
-			LM_ERR("bad param 1; expected :$pseudo-variable ...\n");
-			goto err_free;
-		}
-		/* compose the param structure */
-
-		if ( (p=strchr(s,'/'))!=0 )
-			*(p++)=0;
-		ap = avpops_parse_pvar(s);
-		if (ap==0)
-		{
-			LM_ERR("unable to get pseudo-variable in param 2\n");
-			goto err_free;
-		}
-		if (ap->u.sval.type==PVT_NULL)
-		{
-			LM_ERR("bad param 2; expected : $pseudo-variable ...\n");
-			goto err_free;
-		}
-		ap->opd |= AVPOPS_VAL_PVAR;
-
-		/* flags */
-		for( ; p&&*p ; p++ )
-		{
-			switch (*p) {
-				case 'g':
-				case 'G':
-					ap->ops|=AVPOPS_FLAG_ALL;
-					break;
-				default:
-					LM_ERR("bad flag <%c>\n",*p);
-					goto err_free;
-			}
-		}
-	}
-
-	*param=(void*)ap;
-	pkg_free(cpy.s);
-	return 0;
-
-err_free:
-	pkg_free(cpy.s);
-	pkg_free(ap);
-	return E_UNSPEC;
-}
-
-static int fixup_pushto_avp_p1(void** param)
-{
-	return fixup_pushto_avp(param, 1);
-}
-
-static int fixup_pushto_avp_p2(void** param)
-{
-	return fixup_pushto_avp(param, 2);
-}
-
-static int fixup_check_avp(void** param, int param_no)
-{
-	struct fis_param *ap = NULL;
-	regex_t* re = NULL;
-	char *s;
-	str cpy;
-
-	if (pkg_nt_str_dup(&cpy, (str *)*param) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	s = cpy.s;
-
-	if (param_no==1)
-	{
-		ap = avpops_parse_pvar(s);
-		if (ap==0)
-		{
-			LM_ERR(" unable to get pseudo-variable in P1\n");
-			goto err_free;
-		}
-		/* attr name is mandatory */
-		if (ap->u.sval.type==PVT_NULL)
-		{
-			LM_ERR("null pseudo-variable in P1\n");
-			goto err_free;
-		}
-	} else if (param_no==2) {
-		if ( (ap=parse_check_value(s))==0 )
-		{
-			LM_ERR(" failed to parse checked value \n");
-			goto err_free;
-		}
-		/* if REGEXP op -> compile the expression */
-		if (ap->ops&AVPOPS_OP_RE)
-		{
-			if ( (ap->opd&AVPOPS_VAL_STR)==0 )
-			{
-				LM_ERR(" regexp operation requires string value\n");
-				goto err_free;
-			}
-			re = pkg_malloc(sizeof(regex_t));
-			if (re==0)
-			{
-				LM_ERR(" no more pkg mem\n");
-				goto err_free;
-			}
-			LM_DBG("compiling regexp <%.*s>\n", ap->u.s.len, ap->u.s.s);
-			if (regcomp(re, ap->u.s.s,
-						REG_EXTENDED|REG_ICASE|REG_NEWLINE))
-			{
-				pkg_free(re);
-				LM_ERR("bad re <%.*s>\n", ap->u.s.len, ap->u.s.s);
-				goto err_free;
-			}
-			/* free the string and link the regexp */
-			// pkg_free(ap->sval.p.s);
-			ap->u.s.s = (char*)re;
-		} else if (ap->ops&AVPOPS_OP_FM) {
-			if ( !( ap->opd&AVPOPS_VAL_PVAR ||
-			(!(ap->opd&AVPOPS_VAL_PVAR) && ap->opd&AVPOPS_VAL_STR) ) )
-			{
-				LM_ERR(" fast_match operation requires string value or "
-						"avp name/alias (%d/%d)\n",	ap->opd, ap->ops);
-				goto err_free;
-			}
-		}
-	}
-
-	*param=(void*)ap;
-	pkg_free(cpy.s);
-	return 0;
-
-err_free:
-	pkg_free(cpy.s);
-	pkg_free(ap);
-	pkg_free(re);
-	return E_UNSPEC;
-}
-
-static int fixup_check_avp_p1(void** param)
-{
-	return fixup_check_avp(param, 1);
-}
-
-static int fixup_check_avp_p2(void** param)
-{
-	return fixup_check_avp(param, 2);
-}
-
-static int fixup_free_check_avp_p2(void** param)
-{
-	struct fis_param *ap = (struct fis_param *)*param;
-
-	if (ap->ops & AVPOPS_OP_RE)
-		pkg_free(ap->u.s.s);
-
-	pkg_free(ap);
-	return 0;
-}
 
 static int fixup_subst(void **param, int param_no)
 {
@@ -1529,18 +1280,6 @@ static int w_copy_avps(struct sip_msg* msg, void* name1, void *name2)
 static int w_shuffle_avps(struct sip_msg* msg, void* param)
 {
 	return ops_shuffle_avp ( msg, (struct fis_param*)param);
-}
-
-static int w_pushto_avps(struct sip_msg* msg, void* destination, void *param)
-{
-	return ops_pushto_avp ( msg, (struct fis_param*)destination,
-								(struct fis_param*)param);
-}
-
-static int w_check_avps(struct sip_msg* msg, void* param, void *check)
-{
-	return ops_check_avp ( msg, (struct fis_param*)param,
-								(struct fis_param*)check);
 }
 
 static int w_op_avps(struct sip_msg* msg, char* param, char *op)
