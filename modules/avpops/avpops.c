@@ -109,7 +109,6 @@ static int fixup_free_pvname_list(void** param);
 static int fixup_free_avp_dbparam(void** param);
 static int fixup_avp_shuffle_name(void** param);
 
-static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
 static int w_dbload_avps(struct sip_msg* msg, void* source,
                          void* param, void *url, str *prefix);
 static int w_dbdelete_avps(struct sip_msg* msg, void* source,
@@ -141,9 +140,6 @@ static const acmd_export_t acmds[] = {
  * Exported functions
  */
 static const cmd_export_t cmds[] = {
-	{"avp_print", (cmd_function)w_print_avps, {{0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
 	{"avp_db_load", (cmd_function)w_dbload_avps, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_db_avp_source, fixup_free_pkg},
@@ -1563,8 +1559,4 @@ static int w_is_avp_set(struct sip_msg* msg, char* param, char *op)
 	return ops_is_avp_set(msg, (struct fis_param*)param);
 }
 
-static int w_print_avps(struct sip_msg* msg, char* foo, char *bar)
-{
-	return ops_print_avp();
-}
 

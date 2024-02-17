@@ -1021,28 +1021,6 @@ if(avp_shuffle("$avp(foo)"))
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_avp_print" xreflabel="avp_print()">
-			<title>
-				<function moreinfo="none">avp_print()
-				</function>
-			</title>
-			<para>
-			Prints the list with all the AVPs from memory. This is only a
-			helper/debug function.
-			</para>
-			<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-			</para>
-			<example>
-				<title><function>avp_print</function> usage</title>
-				<programlisting format="linespecific">
-...
-avp_print();
-...
-				</programlisting>
-			</example>
-		</section>
 	</section>
 
 	<section>

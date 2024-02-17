@@ -1498,39 +1498,6 @@ error:
 }
 
 
-int ops_print_avp(void)
-{
-	struct usr_avp **avp_list;
-	struct usr_avp *avp;
-	int_str         val;
-	str            *name;
-
-	/* go through all list */
-	avp_list = get_avp_list();
-	avp = *avp_list;
-
-	LM_INFO("----------- All AVPs in this context --------\n");
-	LM_INFO("  (SIP txn, script event, timer route, etc.)\n");
-	for ( ; avp ; avp=avp->next)
-	{
-		LM_INFO("p=%p, flags=0x%04X\n",avp, avp->flags);
-		name = get_avp_name(avp);
-		LM_INFO("    name=<%.*s>\n",name->len,name->s);
-		LM_INFO("    id=<%d>\n",avp->id);
-		get_avp_val( avp, &val);
-		if (avp->flags&AVP_VAL_STR)
-		{
-			LM_INFO("    val_str=<%.*s / %d>\n",val.s.len,val.s.s,
-					val.s.len);
-		} else {
-			LM_INFO("    val_int=<%d>\n",val.n);
-		}
-	}
-	LM_INFO("---------------- END ALL AVPs ---------------\n");
-
-	return 1;
-}
-
 int ops_subst(struct sip_msg* msg, struct fis_param** src,
 		struct subst_expr* se)
 {
