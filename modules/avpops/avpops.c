@@ -84,9 +84,6 @@ static int fixup_db_avp_dbparam(void** param);
 static int fixup_db_url(void ** param);
 static int fixup_avp_prefix(void **param);
 
-static int fixup_copy_avp(void** param, int param_no);
-static int fixup_avp_copy_p1(void** param);
-static int fixup_avp_copy_p2(void** param);
 static int fixup_op_avp_p1(void** param);
 static int fixup_op_avp_p2(void** param);
 static int fixup_avp_subst_p1(void** param);
@@ -115,7 +112,6 @@ static int w_dbquery_avps(struct sip_msg* msg, str* query,
 static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
                                 str* query, void* dest, void* url);
 static int w_delete_avps(struct sip_msg* msg, void* param);
-static int w_copy_avps(struct sip_msg* msg, void* name1, void *name2);
 static int w_shuffle_avps(struct sip_msg* msg, void* param);
 static int w_op_avps(struct sip_msg* msg, char* param, char *op);
 static int w_subst(struct sip_msg* msg, char* src, char *subst);
@@ -165,12 +161,6 @@ static const cmd_export_t cmds[] = {
 
 	{"avp_delete", (cmd_function)w_delete_avps, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_del_name, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"avp_copy",   (cmd_function)w_copy_avps,  {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_copy_p1, fixup_free_pkg},
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_copy_p2, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -742,91 +732,6 @@ err_free:
 	return E_UNSPEC;
 }
 
-static int fixup_avp_copy_p1(void** param)
-{
-	return fixup_copy_avp(param, 1);
-}
-
-static int fixup_avp_copy_p2(void** param)
-{
-	return fixup_copy_avp(param, 2);
-}
-
-static int fixup_copy_avp(void** param, int param_no)
-{
-	struct fis_param *ap;
-	char *s;
-	char *p;
-	str cpy;
-
-	if (pkg_nt_str_dup(&cpy, (str *)*param) < 0) {
-		LM_ERR("oom\n");
-		return -1;
-	}
-	s = cpy.s;
-
-	ap = 0;
-	p = 0;
-
-	if (param_no==2)
-	{
-		/* avp / flags */
-		if ( (p=strchr(s,'/'))!=0 )
-			*(p++)=0;
-	}
-
-	ap = avpops_parse_pvar(s);
-	if (ap==0)
-	{
-		LM_ERR("unable to get pseudo-variable in P%d\n", param_no);
-		goto err_free;
-	}
-
-	/* attr name is mandatory */
-	if (ap->u.sval.type!=PVT_AVP)
-	{
-		LM_ERR("you must specify only AVP as parameter\n");
-		goto err_free;
-	}
-
-	if (param_no==2)
-	{
-		/* flags */
-		for( ; p&&*p ; p++ )
-		{
-			switch (*p) {
-				case 'g':
-				case 'G':
-					ap->ops|=AVPOPS_FLAG_ALL;
-					break;
-				case 'd':
-				case 'D':
-					ap->ops|=AVPOPS_FLAG_DELETE;
-					break;
-				case 'n':
-				case 'N':
-					ap->ops|=AVPOPS_FLAG_CASTN;
-					break;
-				case 's':
-				case 'S':
-					ap->ops|=AVPOPS_FLAG_CASTS;
-					break;
-				default:
-					LM_ERR("bad flag <%c>\n",*p);
-					goto err_free;
-			}
-		}
-	}
-
-	*param=(void*)ap;
-	pkg_free(cpy.s);
-	return 0;
-
-err_free:
-	pkg_free(cpy.s);
-	return E_UNSPEC;
-}
-
 static int fixup_avp_shuffle_name(void** param)
 {
 	struct fis_param *ap=NULL;
@@ -1269,12 +1174,6 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
 static int w_delete_avps(struct sip_msg* msg, void* param)
 {
 	return ops_delete_avp ( msg, (struct fis_param*)param);
-}
-
-static int w_copy_avps(struct sip_msg* msg, void* name1, void *name2)
-{
-	return ops_copy_avp ( msg, (struct fis_param*)name1,
-								(struct fis_param*)name2);
 }
 
 static int w_shuffle_avps(struct sip_msg* msg, void* param)

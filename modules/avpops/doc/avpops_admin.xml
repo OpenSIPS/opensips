@@ -573,56 +573,6 @@ avp_delete("a3");
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_avp_copy" xreflabel="avp_copy()">
-			<title>
-				<function moreinfo="none">avp_copy(from_avp, to_avp)
-				</function>
-			</title>
-			<para>
-			Copy / move an avp under a new name.
-			</para>
-			<para>Meaning of the parameters is as follows:</para>
-			<itemizedlist>
-			<listitem>
-				<para><emphasis>from_avp (string, no expand)</emphasis> - which AVP(s) should be
-				copied/moved.
-				Parameter syntax is:
-				<itemizedlist>
-					<listitem><para><emphasis>
-					from_avp = ( avp_name | avp_alias )
-					</emphasis></para></listitem>
-				</itemizedlist>
-				</para>
-			</listitem>
-			<listitem>
-				<para><emphasis>to_avp (string, no expand)</emphasis> - the new name of the
-				copied/moved AVP(s).
-				Parameter syntax is:
-				<itemizedlist>
-					<listitem><para><emphasis>
-					to_avp = ( avp_name | avp_alias ) ['/'flags]
-					</emphasis></para></listitem>
-					<listitem><para><emphasis>
-					flags = 'g' | 'G' | 'd' | 'D' | 'n' | 'N' | 's' | 'S'
-					</emphasis></para></listitem>
-				</itemizedlist>
-				</para>
-			</listitem>
-			</itemizedlist>
-			<para>
-			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-			</para>
-			<example>
-				<title><function>avp_copy</function> usage</title>
-				<programlisting format="linespecific">
-...
-avp_copy("$avp(foo)", "$avp(bar)/g");
-avp_copy("$avp(old)", "$avp(new)/gd"); # also deletes $avp(old)
-...
-				</programlisting>
-			</example>
-		</section>
 		<section id="func_avp_subst" xreflabel="avp_subst()">
 			<title>
 				<function moreinfo="none">avp_subst(avps, subst)</function>
