@@ -126,7 +126,7 @@ static int w_get_timestamp(struct sip_msg *msg, pv_spec_t *sec_avp,
 static int w_script_trace(struct sip_msg *msg, int *log_level,
 					pv_elem_t *fmt_string, void *info_str);
 static int w_is_myself(struct sip_msg *msg, str *host, int *port);
-static int w_print_avp(struct sip_msg* msg, char* foo, char *bar)
+static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
 
 #ifndef FUZZ_BUILD
 static
@@ -1429,7 +1429,7 @@ static int w_is_myself(struct sip_msg *msg, str *host, int *port)
 		return -1;
 }
 
-static int w_print_avp(struct sip_msg* msg, char* foo, char *bar)
+static int w_print_avps(struct sip_msg* msg, char* foo, char *bar)
 {
 	struct usr_avp **avp_list;
 	struct usr_avp *avp;
