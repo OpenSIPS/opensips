@@ -84,16 +84,11 @@ static int fixup_db_avp_dbparam(void** param);
 static int fixup_db_url(void ** param);
 static int fixup_avp_prefix(void **param);
 
-static int fixup_avp_subst_p1(void** param);
-static int fixup_avp_subst_p2(void** param);
-static int fixup_subst(void **param, int param_no);
 static int fixup_is_avp_set_p1(void** param);
 static int fixup_db_id_sync(void** param);
 static int fixup_db_id_async(void** param);
 static int fixup_pvname_list(void** param);
 
-static int fixup_free_avp_subst_p1(void** param);
-static int fixup_free_avp_subst_p2(void** param);
 static int fixup_free_pvname_list(void** param);
 static int fixup_free_avp_dbparam(void** param);
 static int fixup_avp_shuffle_name(void** param);
@@ -109,7 +104,6 @@ static int w_dbquery_avps(struct sip_msg* msg, str* query,
 static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
                                 str* query, void* dest, void* url);
 static int w_shuffle_avps(struct sip_msg* msg, void* param);
-static int w_subst(struct sip_msg* msg, char* src, char *subst);
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *foo);
 
 static const acmd_export_t acmds[] = {
@@ -156,12 +150,6 @@ static const cmd_export_t cmds[] = {
 
 	{"avp_shuffle",   (cmd_function)w_shuffle_avps,  {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_shuffle_name, fixup_free_pkg}, {0, 0, 0}},
-		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
-		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
-
-	{"avp_subst",  (cmd_function)w_subst,   {
-		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND, fixup_avp_subst_p1, fixup_free_avp_subst_p1},
-		{CMD_PARAM_STR, fixup_avp_subst_p2, fixup_free_avp_subst_p2}, {0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|ONREPLY_ROUTE|LOCAL_ROUTE|
 		STARTUP_ROUTE|TIMER_ROUTE|EVENT_ROUTE},
 
@@ -645,172 +633,6 @@ err_free:
 	return E_UNSPEC;
 }
 
-
-static int fixup_subst(void **param, int param_no)
-{
-	struct subst_expr* se = NULL;
-	struct fis_param *ap = NULL;
-	struct fis_param **av = NULL;
-	str cpy = STR_NULL, *_param = (str *)*param;
-	char *s;
-	char *p;
-
-	if (param_no==1) {
-		if (pkg_nt_str_dup(&cpy, _param) < 0) {
-			LM_ERR("oom\n");
-			return -1;
-		}
-		s = cpy.s;
-
-		ap = 0;
-		p = 0;
-		av = (struct fis_param**)pkg_malloc(2*sizeof(struct fis_param*));
-		if(av==NULL)
-		{
-			LM_ERR("no more pkg memory\n");
-			goto err_free;
-		}
-		memset(av, 0, 2*sizeof(struct fis_param*));
-
-		/* avp src / avp dst /flags */
-		if ( (p=strchr(s,'/'))!=0 )
-			*(p++)=0;
-		ap = avpops_parse_pvar(s);
-		if (ap==0)
-		{
-			LM_ERR("unable to get pseudo-variable in param 2 [%s]\n", s);
-			goto err_free;
-		}
-		if (ap->u.sval.type!=PVT_AVP)
-		{
-			LM_ERR("bad attribute name <%.*s>\n", _param->len, _param->s);
-			pkg_free(ap);
-			goto err_free;
-		}
-		/* attr name is mandatory */
-		if (ap->opd&AVPOPS_VAL_NONE)
-		{
-			LM_ERR("you must specify a name for the AVP\n");
-			pkg_free(ap);
-			goto err_free;
-		}
-		av[0] = ap;
-		if(p==0 || *p=='\0')
-		{
-			*param=(void*)av;
-			goto out;
-		}
-
-		/* dst || flags */
-		s = p;
-		if(*s==PV_MARKER)
-		{
-			if ( (p=strchr(s,'/'))!=0 )
-				*(p++)=0;
-			if(p==0 || (p!=0 && p-s>1))
-			{
-				ap = avpops_parse_pvar(s);
-				if (ap==0)
-				{
-					LM_ERR("unable to get pseudo-variable in param 2 [%s]\n",s);
-					goto err_free;
-				}
-
-				if (ap->u.sval.type!=PVT_AVP)
-				{
-					LM_ERR("bad attribute name <%s>!\n", s);
-					pkg_free(ap);
-					goto err_free;
-				}
-				/* attr name is mandatory */
-				if (ap->opd&AVPOPS_VAL_NONE)
-				{
-					LM_ERR("you must specify a name for the AVP!\n");
-					pkg_free(ap);
-					goto err_free;
-				}
-				av[1] = ap;
-			}
-			if(p==0 || *p=='\0')
-			{
-				*param=(void*)av;
-				goto out;
-			}
-		}
-
-		/* flags */
-		for( ; p&&*p ; p++ )
-		{
-			switch (*p) {
-				case 'g':
-				case 'G':
-					av[0]->ops|=AVPOPS_FLAG_ALL;
-					break;
-				case 'd':
-				case 'D':
-					av[0]->ops|=AVPOPS_FLAG_DELETE;
-					break;
-				default:
-					LM_ERR("bad flag <%c>\n",*p);
-					goto err_free;
-			}
-		}
-		*param=(void*)av;
-	} else if (param_no==2) {
-		LM_DBG("%s fixing %.*s\n", exports.name, _param->len, _param->s);
-		se=subst_parser(_param);
-		if (se==0){
-			LM_ERR("%s: bad subst re: %.*s\n",exports.name, _param->len, _param->s);
-			return E_BAD_RE;
-		}
-
-		/* replace it with the compiled subst. re */
-		*param = se;
-	}
-
-out:
-	pkg_free(cpy.s);
-	return 0;
-
-err_free:
-	if (av) {
-		pkg_free(av[0]);
-		pkg_free(av[1]);
-	}
-	pkg_free(cpy.s);
-	return E_UNSPEC;
-}
-
-static int fixup_avp_subst_p1(void** param)
-{
-	return fixup_subst(param, 1);
-}
-
-static int fixup_avp_subst_p2(void** param)
-{
-	return fixup_subst(param, 2);
-}
-
-static int fixup_free_avp_subst_p1(void** param)
-{
-	struct fis_param **av = (struct fis_param **)*param;
-
-	if (av) {
-		pkg_free(av[0]);
-		pkg_free(av[1]);
-	}
-
-	return 0;
-}
-
-static int fixup_free_avp_subst_p2(void** param)
-{
-	if (*param)
-		subst_expr_free((struct subst_expr *)*param);
-
-	return 0;
-}
-
 static int fixup_is_avp_set(void** param, int param_no)
 {
 	struct fis_param *ap = NULL;
@@ -950,11 +772,6 @@ static int w_async_dbquery_avps(struct sip_msg* msg, async_ctx *ctx,
 static int w_shuffle_avps(struct sip_msg* msg, void* param)
 {
 	return ops_shuffle_avp ( msg, (struct fis_param*)param);
-}
-
-static int w_subst(struct sip_msg* msg, char* src, char *subst)
-{
-	return ops_subst(msg, (struct fis_param**)src, (struct subst_expr*)subst);
 }
 
 static int w_is_avp_set(struct sip_msg* msg, char* param, char *op)
