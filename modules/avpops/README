@@ -32,15 +32,6 @@ AVPops Module
               1.5.2. avp_db_store(source, name, [db_id])
               1.5.3. avp_db_delete(source, name, [db_id])
               1.5.4. avp_db_query(query, [res_col_avps], [db_id])
-              1.5.5. avp_delete(name)
-              1.5.6. avp_pushto(destination, name)
-              1.5.7. avp_check(name, op_value)
-              1.5.8. avp_copy(from_avp, to_avp)
-              1.5.9. avp_subst(avps, subst)
-              1.5.10. avp_op(name, op_value)
-              1.5.11. is_avp_set(name)
-              1.5.12. avp_shuffle(name)
-              1.5.13. avp_print()
 
         1.6. Exported Asynchronous Functions
 
@@ -79,16 +70,7 @@ AVPops Module
    1.13. avp_db_store usage
    1.14. avp_db_delete usage
    1.15. avp_db_query usage
-   1.16. avp_delete usage
-   1.17. avp_pushto usage
-   1.18. avp_check usage
-   1.19. avp_copy usage
-   1.20. avp_subst usage
-   1.21. avp_op usage
-   1.22. is_avp_set usage
-   1.23. avp_shuffle usage
-   1.24. avp_print usage
-   1.25. async avp_db_query usage
+   1.16. async avp_db_query usage
 
 Chapter 1. Admin Guide
 
@@ -409,259 +391,6 @@ $avp(id) = 2;
 avp_db_query("DELETE FROM subscriber", , $avp(id));
 ...
 
-1.5.5.  avp_delete(name)
-
-   Deletes from memory the AVPs with name or, if *, all AVPs.
-
-   Meaning of the parameters is as follows:
-     * name (string, no expand) - which AVPs will be deleted from
-       memory. Parameter syntax is:
-          + name = (matching_flags|avp_name|avp_alias)['/'flag]
-          + matching_flags = please refer to avp_db_load()
-            function
-          + flag = 'g'|'G'
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.16. avp_delete usage
-...
-avp_delete("$avp(email)"); # delete topmost (lastly set) value from $avp
-(email)
-avp_delete("$avp(678)/g"); # fully purge $avp(678)
-avp_delete("i");
-avp_delete("a3");
-...
-
-1.5.6.  avp_pushto(destination, name)
-
-   Pushes the value of AVP(s) into the SIP message.
-
-   Meaning of the parameters is as follows:
-     * destination (string, no expand) - as what will be the AVP
-       value pushed into SIP message. Parameter syntax:
-          + destination = '$ru' ['/'('username'|'domain')] | '$du'
-            | '$br'
-          + $ru '['/'('username'|'domain')] - write the AVP in the
-            request URI or in username/domain part of it
-          + $du - write the AVP in 'dst_uri' field
-          + $br - write the AVP directly as a new branch (does not
-            affect RURI)
-     * name (string, no expand) - which AVP(s)/pseudo-variable
-       should be pushed into the SIP message. Parameter syntax is:
-          + name = ( avp_name | avp_alias | pvar_name )['/'flags]
-          + flags = 'g' - effective only with AVPs
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.17. avp_pushto usage
-...
-avp_pushto("$ru/domain", "$fd");
-avp_pushto("$ru", "$avp(678)");
-avp_pushto("$ru/domain", "$avp(backup_domains)/g");
-avp_pushto("$du", "$avp(679)");
-avp_pushto("$br", "$avp(680)");
-...
-
-1.5.7.  avp_check(name, op_value)
-
-   Checks the value of the AVP(s) against an operator and value.
-
-   Meaning of the parameters is as follows:
-     * name (string, no expand) - which AVP(s) should be checked.
-       Parameter syntax is:
-          + name = ( pseudo-variable )
-     * op_value (string, no expand) - define the operator, the
-       value and flags for checking. Parameter syntax is:
-          + op_value = operator '/' value ['/'flags]
-          + operator = 'eq' | 'ne' | 'lt' | 'le' | 'gt' | 'ge' |
-            're' | 'fm' | 'and' | 'or' | 'xor'
-          + value = pseudo-variable | fix_value
-          + fix_value = 'i:'integer | 's:'string | string
-          + flags = 'g' | 'G' | 'i' | 'I'
-       Operator meaning:
-          + eq - equal
-          + ne - not equal
-          + lt - less than
-          + le - less or equal
-          + gt - greater than
-          + ge - greater or equal
-          + re - regexp (regular exression match)
-          + fm - fast match (see: man fnmatch)
-          + and - bitwise 'and'
-          + or - bitwise 'or'
-          + xor - bitwise 'xor'
-       Integer values can be given in hexadecimal using notation:
-       'i:0xhex_number' (e.g.,: 'i:0xabcd');
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.18. avp_check usage
-...
-avp_check("$avp(678)", "lt/345/g");
-avp_check("$fd", "eq/$td/I");
-avp_check("$avp(foo)", "gt/$avp($bar)/g");
-avp_check("$avp(foo)", "re/sip:.*@bar.net/g");
-avp_check("$avp(foo)", "fm/$avp(fm_avp)/g");
-...
-
-1.5.8.  avp_copy(from_avp, to_avp)
-
-   Copy / move an avp under a new name.
-
-   Meaning of the parameters is as follows:
-     * from_avp (string, no expand) - which AVP(s) should be
-       copied/moved. Parameter syntax is:
-          + from_avp = ( avp_name | avp_alias )
-     * to_avp (string, no expand) - the new name of the
-       copied/moved AVP(s). Parameter syntax is:
-          + to_avp = ( avp_name | avp_alias ) ['/'flags]
-          + flags = 'g' | 'G' | 'd' | 'D' | 'n' | 'N' | 's' | 'S'
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.19. avp_copy usage
-...
-avp_copy("$avp(foo)", "$avp(bar)/g");
-avp_copy("$avp(old)", "$avp(new)/gd"); # also deletes $avp(old)
-...
-
-1.5.9.  avp_subst(avps, subst)
-
-   Perl/sed-like subst applied to AVPs having string value.
-
-   Meaning of the parameters is as follows:
-     * avps (string, no expand) - source AVP, destination AVP and
-       flags. Parameter syntax is:
-          + avps = src_avp [ '/' dst_avp [ '/' flags ] ]
-          + src_avp = ( avp_name | avp_alias )
-          + dst_avp = ( avp_name | avp_alias ) - if dst_avp is
-            missing then the value of src_avp will be replaced
-          + flags = ( d | D | g | G ) -- (d, D - delete source
-            avp; g, G - apply to all avps matching src_avp name)
-     * subst (string) - perl/sed-like reqular expression.
-       Parameter syntax is:
-          + subst = "/regexp/replacement/flags"
-          + regexp - regular expression
-          + replacement - replacement string, can include
-            pseudo-variables and \1, ..., \9 for matching tokens,
-            \0 for whole matching text
-          + flags = 'g' | 'G' | 'i' | 'i' (g, G - replace all
-            matching tokens; i, I - match ignore case)
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.20. avp_subst usage
-...
-# if avp 678 has a string value in e-mail format, replace the
-# domain part with the value of domain part from R-URI
-avp_subst("$avp(678)", "/(.*)@(.*)/\1@$rd/");
-
-# if any avp 678 has a string value in e-mail format, replace the
-# domain part with the value of domain part from R-URI
-# and place the result in avp 679
-avp_subst("$avp(678)/$avp(679)/g", "/(.*)@(.*)/\1@$rd/");
-...
-
-   IMPORTANT NOTE: if the replacement string includes src_avp or
-   dst_avp you will get something that you may not expect. In case
-   you have many src_avp and you make the substitution to be
-   applied to all of them, after the first src_avp is processed,
-   it will be added in avp list and next processing will use it.
-
-1.5.10.  avp_op(name, op_value)
-
-   Different integer operations with avps.
-
-   Meaning of the parameters is as follows:
-     * name (string, no expand) - 'source_avp/destination_avp' -
-       which AVP(s) should be processed and where to store the
-       result. If 'destination_avp' is missing, same name as
-       'source_avp' is used to store the result.
-       Parameter syntax is:
-          + name = ( source_avp[/destination_avp] )
-            source_avp = ( avp_name | avp_alias )
-            destination_avp = ( avp_name | avp_alias )
-     * op_value (string, no expand) - define the operation, the
-       value and flags. Parameter syntax is:
-          + op_value = operator '/' value ['/'flags]
-          + operator = 'add' | 'sub' | 'mul' | 'div' | 'mod' |
-            'and' | 'or' | 'xor' | 'not'
-          + value = pseudo-variable | fix_value
-          + fix_value = 'i:'integer
-          + flags = 'g' | 'G' | 'd' | 'D'
-       Integer values can be given in hexadecimal using notation
-       'i:0xhex_number' (e.g.,: 'i:0xabcd');
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.21. avp_op usage
-...
-avp_op("$avp(678)", "add/345/g");
-avp_op("$avp(number)", "sub/$avp(number2)/d");
-...
-
-1.5.11.  is_avp_set(name)
-
-   Check if any AVP with name is set.
-
-   Meaning of the parameters is as follows:
-     * name (string, no expand) - name of AVP to look for.
-       Parameter syntax is:
-          + name = avp_name|avp_alias [ '/' flags ])
-            flags = ('e'|'s'|'n') - e = empty value; s = value
-            string; n = value number (int)
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.22. is_avp_set usage
-...
-if(is_avp_set("$avp(foo)"))
-    xlog("AVP with name 'foo' is set!\n");
-...
-
-1.5.12.  avp_shuffle(name)
-
-   Randomly shuffles AVPs with name.
-
-   Meaning of the parameters is as follows:
-     * name (string, no expand) - name of AVP to shuffle.
-       Parameter syntax is:
-          + name = avp_name
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.23. avp_shuffle usage
-...
-$avp(foo) := "str1";
-$avp(foo)  = "str2";
-$avp(foo)  = "str3";
-xlog("Initial AVP list is: $(avp(foo)[*])\n");       # str3 str2 str1
-if(avp_shuffle("$avp(foo)"))
-    xlog("Shuffled AVP list is: $(avp(foo)[*])\n");  # str1, str3, str2
-(for example)
-...
-
-1.5.13.  avp_print()
-
-   Prints the list with all the AVPs from memory. This is only a
-   helper/debug function.
-
-   This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
-   BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
-
-   Example 1.24. avp_print usage
-...
-avp_print();
-...
-
 1.6. Exported Asynchronous Functions
 
 1.6.1.  avp_db_query(query, [dest], [db_id])
@@ -675,7 +404,7 @@ avp_print();
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.25. async avp_db_query usage
+   Example 1.16. async avp_db_query usage
 ...
 {
 ...
@@ -706,8 +435,8 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Daniel-Constantin Mierla (@miconda) 104 44 2927 2158
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 67 49 690 716
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 115 57 690 3160
+   2. Daniel-Constantin Mierla (@miconda) 104 44 2927 2158
    3. Liviu Chircu (@liviuchircu) 53 27 1112 944
    4. Elena-Ramona Modroiu 51 11 4040 390
    5. Razvan Crainea (@razvancrainea) 21 14 149 246
@@ -745,11 +474,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
-   3.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   4.  John Burke (@john08burke)           Jun 2022 - Jun 2022
-   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Feb 2024
+   2.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   5.  John Burke (@john08burke)           Jun 2022 - Jun 2022
    6.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
    7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
    8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
@@ -772,10 +501,10 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), John Burke
-   (@john08burke), Liviu Chircu (@liviuchircu), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Bogdan-Andrei
-   Iancu (@bogdan-iancu), Vlad Paiu (@vladpaiu), Anca Vamanu,
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), John Burke (@john08burke), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Anca Vamanu,
    Norman Brandinger (@NormB), Kobi Eshun (@ekobi), Henning
    Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
    Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
