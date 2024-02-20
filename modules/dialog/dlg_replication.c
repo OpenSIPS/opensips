@@ -814,6 +814,25 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
 
 /*  Binary Packet sending functions   */
 
+#define DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error) \
+	do { \
+		int rc; \
+		rc = clusterer_api.send_all(&packet, dialog_repl_cluster); \
+		switch (rc) { \
+		case CLUSTERER_CURR_DISABLED: \
+			LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster); \
+			goto error; \
+		case CLUSTERER_DEST_DOWN: \
+			LM_INFO("All destinations in cluster: %d are down or probing\n", \
+				dialog_repl_cluster); \
+			goto error; \
+		case CLUSTERER_SEND_ERR: \
+			LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster); \
+			goto error; \
+		} \
+	} while(0)
+
+
 
 /**
  * replicates a locally created dialog to all the destinations
@@ -821,7 +840,6 @@ void bin_push_dlg(bin_packet_t *packet, struct dlg_cell *dlg)
  */
 void replicate_dialog_created(struct dlg_cell *dlg)
 {
-	int rc;
 	bin_packet_t packet;
 
 	dlg_lock_dlg(dlg);
@@ -852,19 +870,7 @@ void replicate_dialog_created(struct dlg_cell *dlg)
 
 	dlg_unlock_dlg(dlg);
 
-	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
-	switch (rc) {
-	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
-		goto error;
-	case CLUSTERER_DEST_DOWN:
-		LM_INFO("All destinations in cluster: %d are down or probing\n",
-			dialog_repl_cluster);
-		goto error;
-	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
-		goto error;
-	}
+	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error);
 
 	if_update_stat(dlg_enable_stats,create_sent,1);
 	bin_free_packet(&packet);
@@ -887,9 +893,7 @@ no_send:
  */
 void replicate_dialog_updated(struct dlg_cell *dlg)
 {
-	int rc;
 	bin_packet_t packet;
-
 
 	dlg_lock_dlg(dlg);
 	if (dlg->state < DLG_STATE_CONFIRMED_NA) {
@@ -916,19 +920,7 @@ void replicate_dialog_updated(struct dlg_cell *dlg)
 
 	dlg_unlock_dlg(dlg);
 
-	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
-	switch (rc) {
-	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
-		goto error;
-	case CLUSTERER_DEST_DOWN:
-		LM_ERR("All destinations in cluster: %d are down or probing\n",
-			dialog_repl_cluster);
-		goto error;
-	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
-		goto error;
-	}
+	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error);
 
 	if_update_stat(dlg_enable_stats,update_sent,1);
 	bin_free_packet(&packet);
@@ -951,7 +943,6 @@ end:
  */
 void replicate_dialog_deleted(struct dlg_cell *dlg)
 {
-	int rc;
 	bin_packet_t packet;
 
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_DELETED, BIN_VERSION, 1024) != 0)
@@ -962,19 +953,7 @@ void replicate_dialog_deleted(struct dlg_cell *dlg)
 	bin_push_str(&packet, &dlg->legs[callee_idx(dlg)].tag);
 	bin_push_int(&packet, dlg->h_id);
 
-	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
-	switch (rc) {
-	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
-		goto error_free;
-	case CLUSTERER_DEST_DOWN:
-		LM_ERR("All destinations in cluster: %d are down or probing\n",
-			dialog_repl_cluster);
-		goto error_free;
-	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
-		goto error_free;
-	}
+	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error_free);
 
 	if_update_stat(dlg_enable_stats, delete_sent, 1);
 	bin_free_packet(&packet);
@@ -991,7 +970,6 @@ error:
  */
 void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg)
 {
-	int rc;
 	bin_packet_t packet;
 
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_CSEQ,
@@ -1006,19 +984,7 @@ void replicate_dialog_cseq_updated(struct dlg_cell *dlg, int leg)
 
 	bin_push_int(&packet, dlg->legs[leg].last_gen_cseq);
 
-	rc = clusterer_api.send_all(&packet, dialog_repl_cluster);
-	switch (rc) {
-	case CLUSTERER_CURR_DISABLED:
-		LM_INFO("Current node is disabled in cluster: %d\n", dialog_repl_cluster);
-		goto error_free;
-	case CLUSTERER_DEST_DOWN:
-		LM_ERR("All destinations in cluster: %d are down or probing\n",
-			dialog_repl_cluster);
-		goto error_free;
-	case CLUSTERER_SEND_ERR:
-		LM_ERR("Error sending in cluster: %d\n", dialog_repl_cluster);
-		goto error_free;
-	}
+	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error_free);
 
 	bin_free_packet(&packet);
 	return;
@@ -1027,6 +993,8 @@ error_free:
 error:
 	LM_ERR("Failed to replicate dialog cseq update\n");
 }
+
+#undef DLG_CLUSTER_SEND
 
 void receive_dlg_repl(bin_packet_t *pkt)
 {
