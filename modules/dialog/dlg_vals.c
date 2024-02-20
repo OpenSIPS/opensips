@@ -23,6 +23,7 @@
 #include "../../pt.h"
 #include "dlg_vals.h"
 #include "dlg_hash.h"
+#include "dlg_replication.h"
 
 
 
@@ -133,6 +134,9 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, int_str *val, int type)
 	lock_start_write(dlg->vals_lock);
 	ret = store_dlg_value_unsafe(dlg,name,val,type);
 	lock_stop_write(dlg->vals_lock);
+
+	if (ret == 0 && dlg->state >= DLG_STATE_CONFIRMED)
+		replicate_dialog_value(dlg, name, val, type);
 
 	return ret;
 }

@@ -241,6 +241,10 @@ typedef int (*register_dlgcb_f)(struct dlg_cell* dlg, int cb_types,
  * Registration:  per-dialog, "dlg" must be given
  * Trigger count: 0 - N times per dialog (e.g. for every update and create
  *                replicated packet received on the network)
+ * Params:
+ *   - (str *)params->dlg_data will hold the name of the variable that is being
+ *     replicated, if it was replicated after the dialog was confirmed, or
+ *     NULL if the variables were replicated in bulk
  */
 #define DLGCB_PROCESS_VARS (1<<14)
 

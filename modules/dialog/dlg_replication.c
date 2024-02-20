@@ -730,6 +730,53 @@ malformed:
 	LM_ERR("malformed cseq update packet for %.*s\n", call_id.len, call_id.s);
 	return -1;
 }
+
+int dlg_replicated_value(bin_packet_t *packet)
+{
+	str call_id, name;
+	struct dlg_cell *dlg;
+	unsigned int h_id;
+	int h_entry, type;
+	struct dlg_entry *d_entry;
+	int_str val;
+
+	DLG_BIN_POP(str, packet, call_id, malformed);
+	DLG_BIN_POP(int, packet, h_id, malformed);
+	DLG_BIN_POP(str, packet, name, malformed);
+	DLG_BIN_POP(int, packet, type, malformed);
+	if (type == DLG_VAL_TYPE_STR)
+		DLG_BIN_POP(str, packet, val.s, malformed);
+	else
+		DLG_BIN_POP(int, packet, val.n, malformed);
+
+	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
+	h_entry = dlg_hash(&call_id);
+	d_entry = &(d_table->entries[h_entry]);
+
+	dlg_lock(d_table, d_entry);
+
+	dlg = lookup_dlg_unsafe(h_entry, h_id);
+	if (!dlg) {
+		LM_DBG("unable to find dialog %.*s [%u:%d]\n",
+				call_id.len, call_id.s, h_id, h_entry);
+		dlg_unlock(d_table, d_entry);
+		return -1;
+	}
+	lock_start_write(dlg->vals_lock);
+	if (store_dlg_value_unsafe(dlg, &name, &val, type) < 0)
+		LM_ERR("cannot store dlg value\n");
+	else
+		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
+				NULL, DLG_DIR_NONE, -1, &name, 1, 0);
+	lock_stop_write(dlg->vals_lock);
+
+	dlg_unlock(d_table, d_entry);
+
+	return 0;
+malformed:
+	LM_ERR("malformed cseq update packet for %.*s\n", call_id.len, call_id.s);
+	return -1;
+}
 #undef DLG_BIN_POP
 
 
@@ -994,6 +1041,33 @@ error:
 	LM_ERR("Failed to replicate dialog cseq update\n");
 }
 
+void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int type)
+{
+	bin_packet_t packet;
+
+	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_VALUE,
+			BIN_VERSION, 512) != 0)
+		goto error;
+
+	bin_push_str(&packet, &dlg->callid);
+	bin_push_int(&packet, dlg->h_id);
+	bin_push_str(&packet, name);
+	bin_push_int(&packet, type);
+	if (type == DLG_VAL_TYPE_STR)
+		bin_push_str(&packet, &val->s);
+	else
+		bin_push_int(&packet, val->n);
+
+	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error_free);
+
+	bin_free_packet(&packet);
+	return;
+error_free:
+	bin_free_packet(&packet);
+error:
+	LM_ERR("Failed to replicate dialog values\n");
+}
+
 #undef DLG_CLUSTER_SEND
 
 void receive_dlg_repl(bin_packet_t *pkt)
@@ -1029,6 +1103,11 @@ void receive_dlg_repl(bin_packet_t *pkt)
 			ensure_bin_version(pkt, BIN_VERSION);
 
 		rc = dlg_replicated_cseq_updated(pkt);
+		break;
+	case REPLICATION_DLG_VALUE:
+		ensure_bin_version(pkt, BIN_VERSION);
+
+		rc = dlg_replicated_value(pkt);
 		break;
 	case SYNC_PACKET_TYPE:
 		if (ver != DLG_BIN_V3)
