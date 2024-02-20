@@ -641,7 +641,7 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
         <programlisting format="linespecific">
 
 ...
-if (is_avp_set($avp(805))) {
+if ($avp(805) != NULL) {
     # the diverter AVP is set, use it as billing party
     $avp(billing_party_domain) = $(avp(805){uri.domain});
 } else {

@@ -655,7 +655,7 @@ if (!h350_result_call_preferences("callee_pref_") &amp;&amp; ($retcode == -1))
 # Example for forward-unconditionally (CFU)
 #
 
-if (is_avp_set("$avp(callee_pref_u)"))
+if ($avp(callee_pref_u) != NULL)
 {
     # replace R-URI with CFU URI, g will fetch all CFU URIs 
     # --> request can fork
@@ -799,7 +799,7 @@ if (!h350_result_service_level("caller_sl_") &amp;&amp; ($retcode == -1))
 # make routing decision based on service level AVPs
 #
 
-if (is_avp_set("$avp(caller_sl_international)"))
+if ($avp(caller_sl_international) != NULL)
 {
     t_relay();
 } 

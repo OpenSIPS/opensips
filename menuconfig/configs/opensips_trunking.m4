@@ -251,7 +251,7 @@ route{
 	}
 
 	ifelse(DO_CALL_LIMITATION,`yes',`
-	if (is_avp_set("$avp(trunk_attrs)") && $avp(trunk_attrs)=~"^[0-9]+$") {
+	if ($avp(trunk_attrs) != NULL && $avp(trunk_attrs)=~"^[0-9]+$") {
 		get_profile_size("trunkCalls","$si",$var(size));
 		if ( $(var(size){s.int}) >= $(avp(trunk_attrs){s.int}) ) {
 			send_reply(486,"Busy Here");
