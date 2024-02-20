@@ -535,7 +535,7 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 
 	if (flag == RTP_RELAY_FLAGS_DISABLED) {
 		/* disabled is treated differently */
-		if (val->flags & PV_VAL_NULL)
+		if (!val || (val->flags & PV_VAL_NULL))
 			disabled = 0;
 		else if (pvv_is_int(val))
 			disabled = val->ri;
@@ -546,7 +546,7 @@ static int pv_set_rtp_relay_var(struct sip_msg *msg, pv_param_t *param,
 		rtp_leg_set_disabled(leg, disabled);
 		goto end;
 	}
-	if (!(val->flags & PV_VAL_NULL)) {
+	if (val && !(val->flags & PV_VAL_NULL)) {
 		if (pvv_is_int(val))
 			s.s = int2str(val->ri, &s.len);
 		else
@@ -705,7 +705,7 @@ static int pv_set_rtp_relay_ctx(struct sip_msg *msg, pv_param_t *param,
 			break;
 	}
 	if (sync) {
-		if (!(val->flags & PV_VAL_NULL)) {
+		if (val && !(val->flags & PV_VAL_NULL)) {
 			if (pvv_is_int(val))
 				s.s = int2str(val->ri, &s.len);
 			else
