@@ -53,6 +53,8 @@
 	__FD_CHECK_GT((__call__), (__retok__), out)
 #define FD_CHECK_GT(__call__) _FD_CHECK_GT((__call__), 0)
 
+/* Note: if you get a EEXIST (-17) error code while adding an AVP, the error
+   signifies a data conflict, since duplicate additions are allowed (rc: 0) */
 #define FD_CHECK_dict_new(type, data, parent, ref) \
 	FD_CHECK(fd_dict_new(fd_g_config->cnf_dict, (type), \
 				(data), (parent), (ref)))
