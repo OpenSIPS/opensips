@@ -657,15 +657,13 @@ if (!h350_result_call_preferences("callee_pref_") &amp;&amp; ($retcode == -1))
 
 if ($avp(callee_pref_u) != NULL)
 {
-    # replace R-URI with CFU URI, g will fetch all CFU URIs 
+    # push CFU URI into R-URI and additional branches
     # --> request can fork
-    if (avp_pushto("$ru", "$avp(callee_pref_u)/g"))
-    {
-            avp_delete("$avp(callee_pref_u)");
-    } else
-    {
-            sl_send_reply(500, "Internal server error");
-            exit;
+    $ru = $avp(callee_pref_u);
+    $avp(callee_pref_u) = NULL;
+    while ($avp(callee_pref_u)!=NULL) {
+        $branch = $avp(callee_pref_u);
+        $avp(callee_pref_u) = NULL;
     }
     sl_send_reply(181, "Call is being forwarded");
     t_relay();
