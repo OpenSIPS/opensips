@@ -733,12 +733,12 @@ static int dm_register_digest_avps(void)
 		FD_CHECK_dict_new(DICT_AVP, &data, UTF8String_type, NULL);
 	}
 
-	/* Digest-Qop */
+	/* Digest-QoP */
 	{
 		struct dict_avp_data data = {
 				110,				/* Code */
 				0, 					/* Vendor */
-				"Digest-Qop", 		/* Name */
+				"Digest-QoP", 		/* Name */
 				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
 				AVP_FLAG_MANDATORY,		 	/* Fixed flag values */
 				AVP_TYPE_OCTETSTRING 		/* base type of data */
@@ -928,7 +928,7 @@ int dm_init_sip_application(void)
 			that identifies a SIP server.
 		*/
 		struct dict_avp_data data = {
-				369,				/* Code */
+				371,				/* Code */
 				0, 					/* Vendor */
 				"SIP-Server-URI", 	/* Name */
 				AVP_FLAG_VENDOR | AVP_FLAG_MANDATORY, 	/* Fixed flags */
@@ -1103,7 +1103,7 @@ int dm_init_sip_application(void)
 					    [ Digest-Algorithm ]
 					    [ Digest-CNonce ]
 					    [ Digest-Opaque ]
-					    [ Digest-Qop ]
+					    [ Digest-QoP ]
 					    [ Digest-Nonce-Count ]
 					    [ Digest-Method]
 					    [ Digest-Entity-Body-Hash ]
@@ -1128,7 +1128,7 @@ int dm_init_sip_application(void)
 			{ "Digest-Algorithm",	RULE_OPTIONAL, -1, 1 },
 			{ "Digest-CNonce",		RULE_OPTIONAL, -1, 1 },
 			{ "Digest-Opaque",		RULE_OPTIONAL, -1, 1 },
-			{ "Digest-Qop",			RULE_OPTIONAL, -1, 1 },
+			{ "Digest-QoP",			RULE_OPTIONAL, -1, 1 },
 			{ "Digest-Nonce-Count",	RULE_OPTIONAL, -1, 1 },
 			{ "Digest-Method",		RULE_OPTIONAL, -1, 1 },
 			{ "Digest-Entity-Body-Hash",	RULE_OPTIONAL, -1, 1 },
