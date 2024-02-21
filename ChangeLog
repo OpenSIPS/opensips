@@ -1,3 +1,340 @@
+=========================== Release 3.4.4 ==============================
+
+2024-02-21  Liviu Chircu  <liviu@opensips.org>
+        * [47776bc00] :
+
+        rest_client: Improve cURL compatibility when using async()
+
+        This patch aims to fix a regression in 1ecb32491f, breaking the
+        "SUCCESS" async download test case.  Mitigation as follows:
+
+        * improved detection for the "Request Sent" state, before putting the
+            download on async hold.  It seems that whenever both the
+            CURLINFO_CONNECT_TIME_T and CURLINFO_REQUEST_SIZE become available,
+            the file descriptor can be safely polled on, awaiting the reply.
+            Note: there is no official cURL library mechanism to detect this
+            state.
+
+        * make the async() statement timeout accessible to modules.  This fixes
+        a bug where a GET on a dead HTTP server would time out after
+        `curl_timeout` seconds, instead of `async()` seconds (lower).
+
+        Fixes #3286
+
+        (cherry picked from commit 7e85fddb6e463cbdfb43015c3384ef5dbb5e5896)
+
+
+2024-02-21  Razvan Crainea  <razvan@opensips.org>
+        * [a4b6b21ae] :
+
+        rtp_relay: handle NULL resetting the rtp_relay_ctx value
+
+        Thanks go to Rob Moore from Dubber for reporting this!
+
+
+2024-02-18  OpenSIPS  <github@opensips.org>
+        * [f299b68c8] :
+
+        Rebuild documentation
+
+
+2024-02-13  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [0f46cdd76] :
+
+        Merge pull request #3262 from jes/jes/topology-hiding-fix
+
+        topology_hiding: fix encoded Contact length calculation
+
+        (cherry picked from commit da20b2259fd3f96a7530bfd72753a8338e3c4212)
+
+
+2024-02-12  Liviu Chircu  <liviu@opensips.org>
+        * [45d8d21e0] :
+
+        freeswitch: Avoid failed "unref" operations during mod init
+
+        This fixes a bug where if a FreeSWITCH socket were defined in both
+        modparam and DB, it would get a +2 ref instead of +1, thus after a DB
+        removal + reload operation it would remain in a dangling state.
+
+        Many thanks to Five9 (https://www.five9.com) for reporting this issue!
+
+        (cherry picked from commit 6e6c60bd60329e1b0202e7e57cee5f71e2210f34)
+
+
+2024-02-11  OpenSIPS  <github@opensips.org>
+        * [736cd72b4] :
+
+        Rebuild documentation
+
+
+2024-02-09  Razvan Crainea  <razvan@opensips.org>
+        * [9846f9979] :
+
+        siprec: avoid double unref for failed transaction
+
+        Many thanks to Voxtronic for reporting this!
+
+        (cherry picked from commit 28ea0565cabdbd703ddaab9351628aad43e03775)
+
+
+2024-02-09  Razvan Crainea  <razvan@opensips.org>
+        * [202a9c705] :
+
+        rtp_relay: clear established when sess is deleted
+
+        This avoids crashes when ctx->established pointer remains dangling
+
+        Many thanks to Voxtronic for spotting this issue!
+
+        (cherry picked from commit 9600ae72d74ed3d7c7a3bf9655dc4e578ea5d3af)
+
+
+2024-02-04  OpenSIPS  <github@opensips.org>
+        * [7edd32586] :
+
+        Rebuild documentation
+
+
+2024-02-02  Razvan Crainea  <razvan@opensips.org>
+        * [4b7f12172] :
+
+        dialog: get ACK cseq from src leg, rather than dst
+
+        (cherry picked from commit b8bbf1440481c6a2744b6223adfca4608c88c5ea)
+
+
+2024-02-02  Liviu Chircu  <liviu@opensips.org>
+        * [80acd74af] :
+
+        b2b_logic: Fix a logical bug which could cause crashes
+
+        ... in b2b_init_request().  Completes c84fe372c.
+
+        Neither @e1 or @e2 can be NULL after the "if" guard, otherwise there is
+        a good chance of a crash shortly afterwards.
+
+        (cherry picked from commit dec380907283b962fa2f1296b0fec1cd730708ea)
+
+
+2024-02-02  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [42a6d3277] :
+
+        [b2b_logic] fix bogus documented prototype for b2b_init_request
+
+        (cherry picked from commit e5f0b5a2cff12e0cbce32d37eb116d489d2fdfc4)
+
+
+2024-01-29  Liviu Chircu  <liviu@opensips.org>
+        * [2ac87e6e1] :
+
+        RADIUS/Diameter: Fix AVP type for Sip-From-Tag, Sip-To-Tag
+
+        This patch fixes a copy/paste error in commit a2c6c62ba1.
+
+        (cherry picked from commit f8205d1f2d0ea831f1af171e9426dcb928dd3780)
+
+
+2024-01-28  OpenSIPS  <github@opensips.org>
+        * [73b88429b] :
+
+        Rebuild documentation
+
+
+2024-01-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [c97e87d38] :
+
+        [sql_cacher] fix proper update on status/report upon quick exit
+
+        Be sure the SR info is properly updated (on the reload result) even when doing a quick return upon no records loaded
+
+        (cherry picked from commit 32539ef8b31f6aefff424219ebf90b4fede86058)
+
+
+2024-01-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [8cca345ff] :
+
+        Merge pull request #3289 from purecloudlabs/hotfix/sql-cacher_load_entire_table_memory_leak
+
+        sql_cacher: fix SQL result leak when insert_in_cachedb fails
+
+        (cherry picked from commit 3bef4afe600054a52252ca5513ebce50daac2c3a)
+
+
+2024-01-23  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1c8e55f05] :
+
+        [sql_cacher] promote DBG to ERR to report failures
+
+        Similar to 4ddb507f19bb48654a1dd1f279d4092b301d17f2
+
+        (cherry picked from commit d3cc59ba6fe52e243acf2f9177583048f068e477)
+
+
+2024-01-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [0b88c8cf0] :
+
+        Merge pull request #3288 from purecloudlabs/hotfix/sql_cacher_mi_reload_error_loglevel
+
+        sql_cacher: MI/timer initiated table reload error logged on different log level
+
+        (cherry picked from commit 4ddb507f19bb48654a1dd1f279d4092b301d17f2)
+
+
+2024-01-23  Razvan Crainea  <razvan@opensips.org>
+        * [9bda21e73] :
+
+        b2b_logic: document adv_contact param for b2b_bridge_request
+
+        Complete 726fca1523
+
+        (cherry picked from commit ce9fccc7f7347568cb16621a02c6480eb8a89542)
+
+
+2024-01-21  OpenSIPS  <github@opensips.org>
+        * [6a8761078] :
+
+        Rebuild documentation
+
+
+2024-01-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [b9c291f7b] :
+
+        [presence_dfks] fix XML namespace URL
+
+        (cherry picked from commit 012587e22fa9e7e3b47f66f1afe85e63fab43b44)
+
+
+2024-01-17  Liviu Chircu  <liviu@opensips.org>
+        * [00130dd54] :
+
+        for-each statement: Fix iteration when <reply> context is used
+
+        Make sure to interpret the variable's context, if any, e.g.:
+
+            for ($var(ct) in $(<reply>ct[*]))
+                xlog("300 Redirect Contact: $var(ct)\n");
+
+        (cherry picked from commit 1d6d2e4b5b91990199b8351b473b8d159e362fba)
+
+
+2024-01-16  Razvan Crainea  <razvan@opensips.org>
+        * [9f5a598a7] :
+
+        rtp_relay: match reply leg by index, if tag not present
+
+        (cherry picked from commit 133c971e8ecb002f79d4113a2c8754b7d39a58a7)
+
+
+2024-01-16  Razvan Crainea  <razvan@opensips.org>
+        * [2101c75b6] :
+
+        dialog: do not populate dst_leg on unmatched dlg
+
+        Avoid chaning the dst_leg on unmatched dialogs, as this might lead to
+        inconsistent states. A common pattern is to match a dialog in state 5,
+        which would set a dst_leg, but then "invalidate" the dialog due to the
+        bad state - proceeding to a next dialog would not set the dst_leg (as it
+        was set by the previous match), leading to an invalid access in the
+        second dialog.
+
+        Credits go to NFON for reporting and providing valuable troubleshooting
+        information
+
+        (cherry picked from commit 224a3236cbeaeb06a897cb3beab8c3a0c3d5903f)
+
+
+2024-01-16  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [98781cde4] :
+
+        Fix printing all values of branch(subfield)
+
+        The [*] range was printing all the time the URI subfield of the branches, instead of the requested one.
+
+        (cherry picked from commit 1a11c03a3822cf710ae8af5b5da358d0003d61d5)
+
+
+2024-01-14  OpenSIPS  <github@opensips.org>
+        * [a9bc81085] :
+
+        Rebuild documentation
+
+
+2024-01-11  Liviu Chircu  <liviu@opensips.org>
+        * [072abebe9] :
+
+        tracer: Fix mixing between "src_ip" and "dst_ip"
+
+        Completes a13e03420c
+
+        Credits to James Seer for reporting this issue!
+
+        (cherry picked from commit fd894705feacc95f1eae1af2d6554ce2b10bf5ad)
+
+
+2024-01-11  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [49692174c] :
+
+        [presence_dfks] updated link to DFKS specs
+
+        (cherry picked from commit f3657e4860e38f7f18f26481f21de245afea9da1)
+
+
+2024-01-09  Liviu Chircu  <liviu@opensips.org>
+        * [041a7b5bc] :
+
+        transformations: Fix edge-cases with {param.value} and {uri.param}
+
+        For inputs containing only the parameter part, these transformations
+        would return a bogus {NULL, 0} value (flagged as PV_VAL_STR), which
+        cannot be used in assignments or conditional checks:
+
+        Credits to Bogdan-Andrei Iancu for finding this issue!
+
+        (cherry picked from commit b7c4f2a3bb3307b3c505f7017934a52bef8762fd)
+
+
+2024-01-08  Liviu Chircu  <liviu@opensips.org>
+        * [6e71d9293] :
+
+        nathelper: Improve nat_uac_test() docs
+
+        The function involves neither trying nor guessing, it's quite precise.
+
+        (cherry picked from commit 0fb0094b2e4be6638bce51872f1b4aa6d5438c2d)
+
+
+2024-01-07  OpenSIPS  <github@opensips.org>
+        * [5e50fd871] :
+
+        Rebuild documentation
+
+
+2024-01-04  Peter Lemenkov  <lemenkov@gmail.com>
+        * [b61381fd7] :
+
+        Ensure VERSIONTYPE is always defined
+
+        Signed-off-by: Peter Lemenkov <lemenkov@gmail.com>
+        (cherry picked from commit 22ef73ed10cc08995211763293a6b87ee88a2666)
+
+
+2024-01-04  Razvan Crainea  <razvan@opensips.org>
+        * [9f69bc033] :
+
+        rtp_relay: fix broken ref taken with lock
+
+        This caused a deadlock when DLG registers were not able to be setup.
+
+        (cherry picked from commit aae8b39b5779f37f41c828687d6e54667ddc13e4)
+
+
+2023-12-29  OpenSIPS  <github@opensips.org>
+        * [f3c3f1132] :
+
+        Rebuild documentation
+
+
 =========================== Release 3.4.3 ==============================
 
 2023-12-20  Razvan Crainea  <razvan@opensips.org>
