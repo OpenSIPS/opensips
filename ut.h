@@ -273,7 +273,7 @@ static inline char* int2bstr(uint64_t l, char *s, int* len)
 #define INT2STR_BUF_NO    7
 extern unsigned int int2str_buf_index;
 extern char int2str_buf[INT2STR_BUF_NO][INT2STR_MAX_LEN];
-static inline unsigned int getstrbufindex() {
+static inline unsigned int getstrbufindex(void) {
 	return ((int2str_buf_index++) % INT2STR_BUF_NO);
 }
 
