@@ -399,7 +399,7 @@ static inline int get_easy_status(CURL *handle, CURLM *multi, CURLcode *code)
 	return -1;
 }
 
-static int init_transfer(CURL *handle, char *url)
+static int init_transfer(CURL *handle, char *url, unsigned long timeout_s)
 {
 	CURLcode rc;
 
@@ -414,8 +414,10 @@ static int init_transfer(CURL *handle, char *url)
 		tls_dom = NULL;
 	}
 
-	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT, connection_timeout);
-	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT, curl_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_CONNECTTIMEOUT,
+			timeout_s && timeout_s < connection_timeout ? timeout_s : connection_timeout);
+	w_curl_easy_setopt(handle, CURLOPT_TIMEOUT,
+			timeout_s && timeout_s < curl_timeout ? timeout_s : curl_timeout);
 
 	w_curl_easy_setopt(handle, CURLOPT_VERBOSE, 1);
 	w_curl_easy_setopt(handle, CURLOPT_STDERR, stdout);
@@ -702,7 +704,7 @@ int rest_sync_transfer(enum rest_client_method method, struct sip_msg *msg,
 	str st = STR_NULL, res_body = STR_NULL, tbody, ttype;
 
 	curl_easy_reset(sync_handle);
-	if (init_transfer(sync_handle, url) != 0) {
+	if (init_transfer(sync_handle, url, 0) != 0) {
 		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
@@ -802,7 +804,7 @@ cleanup:
  * @url:		HTTP URL to be queried
  * @req_body:	Body of the request (NULL if not needed)
  * @req_ctype:	Value for the "Content-Type: " header of the request (same as ^)
- * @async_parm: output param, will contain async handles
+ * @async_parm: in/out param, will contain async handles
  * @body:	    reply body; gradually reallocated as data arrives
  * @ctype:	    will eventually hold the last "Content-Type" header of the reply
  * @out_fd:     the fd to poll on, or a negative error code
@@ -819,7 +821,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	CURLMcode mrc;
 	fd_set rset, wset, eset;
 	int max_fd, fd, http_rc, ret = RCL_INTERNAL_ERR;
-	long busy_wait, timeout;
+	long busy_wait, timeout, connect_timeout;
 	long retry_time;
 	OSS_CURLM *multi_list;
 	CURLM *multi_handle;
@@ -835,7 +837,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		goto cleanup;
 	}
 
-	if (init_transfer(handle, url) != 0) {
+	if (init_transfer(handle, url, async_parm->timeout_s) != 0) {
 		LM_ERR("failed to init transfer to %s\n", url);
 		goto cleanup;
 	}
@@ -889,18 +891,27 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 	multi_handle = multi_list->multi_handle;
 	curl_multi_add_handle(multi_handle, handle);
 
-	timeout = connection_timeout_ms;
+	connect_timeout = (async_parm->timeout_s*1000) < connection_timeout_ms ?
+			(async_parm->timeout_s*1000) : connection_timeout_ms;
+	timeout = connect_timeout;
 	busy_wait = connect_poll_interval;
 
 	/* obtain a read fd in "connection_timeout" seconds at worst */
-	for (timeout = connection_timeout_ms; timeout > 0; timeout -= busy_wait) {
+	for (timeout = connect_timeout; timeout > 0; timeout -= busy_wait) {
+		curl_off_t connect = -1;
+		long req_sz = -1;
+
 		mrc = curl_multi_perform(multi_handle, &running_handles);
 		if (mrc != CURLM_OK && mrc != CURLM_CALL_MULTI_PERFORM) {
 			LM_ERR("curl_multi_perform: %s\n", curl_multi_strerror(mrc));
 			goto error;
 		}
 
-		LM_DBG("perform code: %d, handles: %d\n", mrc, running_handles);
+		curl_easy_getinfo(handle, CURLINFO_CONNECT_TIME_T, &connect);
+		curl_easy_getinfo(handle, CURLINFO_REQUEST_SIZE, &req_sz);
+
+		LM_DBG("perform code: %d, handles: %d, connect: %ldµs, reqsz: %ldB\n",
+		        mrc, running_handles, connect, req_sz);
 
 		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
@@ -923,8 +934,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 			case CURLE_OPERATION_TIMEDOUT:
 				if (http_rc == 0) {
-					LM_ERR("connect timeout on %s (%lds)\n", url,
-							connection_timeout);
+					LM_ERR("connect timeout on %s (%ldms)\n", url,
+							connect_timeout);
 					ret = RCL_CONNECT_TIMEOUT;
 					goto error;
 				}
@@ -962,9 +973,8 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		if (max_fd != -1) {
 			for (fd = 0; fd <= max_fd; fd++) {
 				if (FD_ISSET(fd, &rset)) {
-
 					LM_DBG("ongoing transfer on fd %d\n", fd);
-					if (is_new_transfer(fd)) {
+					if (connect > 0 && req_sz > 0 && is_new_transfer(fd)) {
 						LM_DBG(">>> add fd %d to ongoing transfers\n", fd);
 						add_transfer(fd);
 						goto success;
@@ -981,7 +991,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 		LM_DBG("libcurl TCP connect: we should wait up to %ldms "
 		       "(timeout=%ldms, poll=%ldms)!\n", retry_time,
-		       connection_timeout_ms, connect_poll_interval);
+		       connect_timeout, connect_poll_interval);
 
 		/*
 			from curl_multi_timeout() docs:
@@ -1055,8 +1065,8 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 	if (timed_out) {
 		char *url = NULL;
 		curl_easy_getinfo(param->handle, CURLINFO_EFFECTIVE_URL, &url);
-		LM_ERR("async %s timed out, URL: %s\n",
-		        rest_client_method_str(param->method), url);
+		LM_ERR("async %s timed out, URL: %s (timeout: %lds)\n",
+		        rest_client_method_str(param->method), url, param->timeout_s);
 		goto cleanup;
 	}
 
@@ -1069,10 +1079,12 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		LM_DBG("perform result: %d, running: %d (break: %d)\n", mrc, running,
 			mrc != CURLM_CALL_MULTI_PERFORM && (mrc != CURLM_OK || !running));
 
-		if (mrc == CURLM_OK && running) {
+		if (mrc == CURLM_OK) {
+			if (!running)
+				break;
+
 			async_status = ASYNC_CONTINUE;
 			return 1;
-
 		/* this rc has been removed since cURL 7.20.0 (Feb 2010), but it's not
 		 * yet marked as deprecated, so let's keep the do/while loop */
 		} else if (mrc != CURLM_CALL_MULTI_PERFORM) {
