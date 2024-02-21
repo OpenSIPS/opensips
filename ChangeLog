@@ -1,3 +1,137 @@
+=========================== Release 3.3.10 ==============================
+
+2024-02-21  Liviu Chircu  <liviu@opensips.org>
+        * [d3cd9371e] :
+
+        rest_client: Partial revert of 1ecb32491f
+
+        This addresses a regression in 1ecb324, where the "SUCCESS" test case
+        does not work anymore - the async cURL request simply times out.
+
+        Document the behavior of async timeouts with rest_client on 3.3 branch.
+
+        Related to #3286
+
+
+2024-02-21  Razvan Crainea  <razvan@opensips.org>
+        * [a29956d22] :
+
+        rtp_relay: handle NULL resetting the rtp_relay_ctx value
+
+        Thanks go to Rob Moore from Dubber for reporting this!
+
+
+2024-02-12  Liviu Chircu  <liviu@opensips.org>
+        * [fab230743] :
+
+        freeswitch: Avoid failed "unref" operations during mod init
+
+        This fixes a bug where if a FreeSWITCH socket were defined in both
+        modparam and DB, it would get a +2 ref instead of +1, thus after a DB
+        removal + reload operation it would remain in a dangling state.
+
+        Many thanks to Five9 (https://www.five9.com) for reporting this issue!
+
+        (cherry picked from commit 6e6c60bd60329e1b0202e7e57cee5f71e2210f34)
+
+
+2024-02-09  Razvan Crainea  <razvan@opensips.org>
+        * [3e1d9ed3f] :
+
+        siprec: avoid double unref for failed transaction
+
+        Many thanks to Voxtronic for reporting this!
+
+        (cherry picked from commit 28ea0565cabdbd703ddaab9351628aad43e03775)
+
+
+2024-02-09  Razvan Crainea  <razvan@opensips.org>
+        * [b7c7a9afc] :
+
+        rtp_relay: clear established when sess is deleted
+
+        This avoids crashes when ctx->established pointer remains dangling
+
+        Many thanks to Voxtronic for spotting this issue!
+
+        (cherry picked from commit 9600ae72d74ed3d7c7a3bf9655dc4e578ea5d3af)
+
+
+2024-02-06  Vlad Paiu  <vladpaiu@opensips.org>
+        * [22a151d8d] :
+
+        Fix typo in creating new entity after bridge ( 1st comes from URI and then dname in the params list )
+
+
+2024-02-02  Razvan Crainea  <razvan@opensips.org>
+        * [dc4c5bb6f] :
+
+        dialog: get ACK cseq from src leg, rather than dst
+
+        (cherry picked from commit b8bbf1440481c6a2744b6223adfca4608c88c5ea)
+
+
+2024-02-02  Liviu Chircu  <liviu@opensips.org>
+        * [a92677ec3] :
+
+        b2b_logic: Fix a logical bug which could cause crashes
+
+        ... in b2b_init_request().  Completes c84fe372c.
+
+        Neither @e1 or @e2 can be NULL after the "if" guard, otherwise there is
+        a good chance of a crash shortly afterwards.
+
+        (cherry picked from commit dec380907283b962fa2f1296b0fec1cd730708ea)
+
+
+2024-01-23  Razvan Crainea  <razvan@opensips.org>
+        * [b4090e3c3] :
+
+        b2b_logic: document adv_contact param for b2b_bridge_request
+
+        Complete 726fca1523
+
+        (cherry picked from commit ce9fccc7f7347568cb16621a02c6480eb8a89542)
+
+
+2024-01-15  Razvan Crainea  <razvan@opensips.org>
+        * [117885436] :
+
+        dialog: do not populate dst_leg on unmatched dlg
+
+        Avoid chaning the dst_leg on unmatched dialogs, as this might lead to
+        inconsistent states. A common pattern is to match a dialog in state 5,
+        which would set a dst_leg, but then "invalidate" the dialog due to the
+        bad state - proceeding to a next dialog would not set the dst_leg (as it
+        was set by the previous match), leading to an invalid access in the
+        second dialog.
+
+        Credits go to NFON for reporting and providing valuable troubleshooting
+        information
+
+        (cherry picked from commit 224a3236cbeaeb06a897cb3beab8c3a0c3d5903f)
+
+
+2024-01-11  Liviu Chircu  <liviu@opensips.org>
+        * [67cb1ba85] :
+
+        tracer: Fix mixing between "src_ip" and "dst_ip"
+
+        Completes a13e03420c
+
+        Credits to James Seer for reporting this issue!
+
+        (cherry picked from commit fd894705feacc95f1eae1af2d6554ce2b10bf5ad)
+
+
+2024-01-11  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [60f471a77] :
+
+        [presence_dfks] updated link to DFKS specs
+
+        (cherry picked from commit f3657e4860e38f7f18f26481f21de245afea9da1)
+
+
 =========================== Release 3.3.9 ==============================
 
 2023-12-20  Razvan Crainea  <razvan@opensips.org>
