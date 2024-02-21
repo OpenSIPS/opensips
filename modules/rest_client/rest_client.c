@@ -601,6 +601,9 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	}
 	memset(param, '\0', sizeof *param);
 
+	param->timeout_s = (ctx->timeout_s && ctx->timeout_s < curl_timeout) ?
+			ctx->timeout_s : curl_timeout;
+
 	rc = start_async_http_req(msg, method, url, body, ctype,
 			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd);
 
@@ -659,8 +662,8 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	}
 
 	ctx->resume_f = resume_async_http_req;
-	ctx->timeout_s = curl_timeout;
 	ctx->timeout_f = time_out_async_http_req;
+	ctx->timeout_s = param->timeout_s;
 
 	param->method = method;
 	param->body_pv = (pv_spec_p)body_pv;

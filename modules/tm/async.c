@@ -259,6 +259,7 @@ int t_handle_async(struct sip_msg *msg, struct action* a , int resume_route,
 	}
 
 	memset(ctx,0,sizeof(async_tm_ctx));
+	ctx->async.timeout_s = timeout;
 
 	async_status = ASYNC_NO_IO; /*assume default status "no IO done" */
 	return_code = ((acmd_export_t*)(a->elem[0].u.data))->function(msg,
