@@ -723,6 +723,8 @@ static db_handlers_t *db_init_test_conn(cache_entry_t *c_entry)
 	unsigned int i;
 	int rc;
 
+	c_entry->rec_count = 0;
+
 	new_db_hdls = pkg_malloc(sizeof(db_handlers_t));
 	if (!new_db_hdls) {
 		LM_ERR("No more pkg memory for db handlers\n");
@@ -860,7 +862,7 @@ static int inc_cache_rld_vers(db_handlers_t *db_hdls, int *rld_vers)
 	memcpy(rld_vers_key.s + db_hdls->c_entry->id.len, "_sql_cacher_reload_vers", 23);
 
 	if (db_hdls->cdbf.add(db_hdls->cdbcon, &rld_vers_key, 1, 0, rld_vers) < 0) {
-		LM_DBG("Failed to increment reload version integer from cachedb\n");
+		LM_ERR("Failed to increment reload version integer from cachedb\n");
 		pkg_free(rld_vers_key.s);
 		return -1;
 	}
@@ -942,11 +944,8 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 	}
 
 	/* anything loaded ? if not, we can do a quick exit here */
-	if (RES_ROW_N(sql_res) == 0) {
-		lock_stop_write(db_hdls->c_entry->ref_lock);
-		db_hdls->db_funcs.free_result(db_hdls->db_con, sql_res);
-		return 0;
-	}
+	if (RES_ROW_N(sql_res) == 0)
+		goto done;
 
 	row = RES_ROWS(sql_res);
 	values = ROW_VALUES(row);
@@ -964,7 +963,7 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 				if (insert_in_cachedb(c_entry, db_hdls, values ,values + 1,
 					reload_vers, ROW_N(row) - 1) < 0) {
 					lock_stop_write(db_hdls->c_entry->ref_lock);
-					return -1;
+					goto error;
 				}
 				loaded_rec++;
 			}
@@ -981,6 +980,10 @@ static int load_entire_table(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			break;
 		}
 	} while (RES_ROW_N(sql_res) > 0);
+
+done:
+	LM_INFO("SQL cache loaded. ID: %.*s, rows: %d -> %d\n", db_hdls->c_entry->id.len, db_hdls->c_entry->id.s, db_hdls->c_entry->rec_count, loaded_rec);
+	db_hdls->c_entry->rec_count = loaded_rec;
 
 	lock_stop_write(db_hdls->c_entry->ref_lock);
 
@@ -1133,29 +1136,28 @@ void reload_timer(unsigned int ticks, void *param)
 		if (db_hdls->c_entry->on_demand)
 			continue;
 
+		LM_INFO("Timed SQL cache reload initiated. ID: %.*s\n", db_hdls->c_entry->id.len, db_hdls->c_entry->id.s);
 		if (load_entire_table(db_hdls->c_entry, db_hdls, 1) < 0)
 			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len,
 				db_hdls->c_entry->table.s);
+		LM_INFO("Timed SQL cache reload finished.  ID: %.*s\n", db_hdls->c_entry->id.len, db_hdls->c_entry->id.s);
 	}
 }
 
-static mi_item_t *mi_reload(const mi_params_t *params, str *key)
+static mi_item_t *mi_reload(const mi_params_t *params, str *key, str *entry_id)
 {
 	db_handlers_t *db_hdls;
 	db_val_t *values;
 	db_res_t *sql_res = NULL;
 	struct queried_key *it = NULL;
-	str entry_id, src_key;
+	str src_key;
 	int rld_vers, rc;
 
-	if (get_mi_string_param(params, "id", &entry_id.s, &entry_id.len) < 0)
-		return init_mi_param_error();
-
 	for (db_hdls = db_hdls_list; db_hdls; db_hdls = db_hdls->next)
-		if (!str_strcmp(&db_hdls->c_entry->id, &entry_id))
+		if (!str_strcmp(&db_hdls->c_entry->id, entry_id))
 			break;
 	if (!db_hdls) {
-		LM_ERR("Entry %.*s not found\n", entry_id.len, entry_id.s);
+		LM_ERR("Entry %.*s not found\n", entry_id->len, entry_id->s);
 		return init_mi_error(500, MI_SSTR("ERROR Cache entry not found"));
 	}
 
@@ -1226,7 +1228,8 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 		}
 	} else {
 		if (load_entire_table(db_hdls->c_entry, db_hdls, 1) < 0) {
-			LM_DBG("Failed to reload table\n");
+			LM_ERR("Failed to reload table %.*s\n", db_hdls->c_entry->table.len,
+				db_hdls->c_entry->table.s);
 			return init_mi_error(500, MI_SSTR("ERROR Reloading SQL database"));
 		}
 	}
@@ -1237,18 +1240,40 @@ static mi_item_t *mi_reload(const mi_params_t *params, str *key)
 static mi_response_t *mi_reload_1(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	return mi_reload(params, NULL);
+	str entry_id;
+	mi_item_t *res = NULL;
+
+	if (get_mi_string_param(params, "id", &entry_id.s, &entry_id.len) < 0)
+		return init_mi_param_error();
+
+	LM_INFO("MI SQL cache reload initiated. ID: %.*s\n", entry_id.len, entry_id.s);
+
+	res = mi_reload(params, NULL, &entry_id);
+
+	LM_INFO("MI SQL cache reload finished.  ID: %.*s\n", entry_id.len, entry_id.s);
+
+	return res;
 }
 
 static mi_response_t *mi_reload_2(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
-	str key;
+	str key, entry_id;
+	mi_item_t *res = NULL;
 
 	if (get_mi_string_param(params, "key", &key.s, &key.len) < 0)
 		return init_mi_param_error();
 
-	return mi_reload(params, &key);
+	if (get_mi_string_param(params, "id", &entry_id.s, &entry_id.len) < 0)
+		return init_mi_param_error();
+
+	LM_INFO("MI SQL cache reload initiated. ID: %.*s, key: %.*s\n", entry_id.len, entry_id.s, key.len, key.s);
+
+	res = mi_reload(params, &key, &entry_id);
+
+	LM_INFO("MI SQL cache reload finished.  ID: %.*s, key: %.*s\n", entry_id.len, entry_id.s, key.len, key.s);
+
+	return res;
 }
 
 static int init_rld_vers_key(cache_entry_t *c_entry, db_handlers_t *db_hdls)
@@ -1290,14 +1315,16 @@ static void cache_init_load(int sender, void *param)
 		}
 
 		/* cache the entire table in full caching mode */
-		if (!db_hdls->c_entry->on_demand &&
-			load_entire_table(db_hdls->c_entry, db_hdls, 0) < 0) {
-			LM_ERR("Failed to cache the entire table: %s\n", db_hdls->c_entry->table.s);
-			continue;
-		} else
+		if (!db_hdls->c_entry->on_demand) {
+			LM_INFO("First SQL cache reload initiated. ID: %.*s\n", db_hdls->c_entry->id.len, db_hdls->c_entry->id.s);
+			if (load_entire_table(db_hdls->c_entry, db_hdls, 0) < 0) {
+				LM_ERR("Failed to cache the entire table: %s\n", db_hdls->c_entry->table.s);
+			}
+			LM_INFO("First SQL cache reload finished.  ID: %.*s\n", db_hdls->c_entry->id.len, db_hdls->c_entry->id.s);
+		} else {
 			LM_DBG("Cached table: %.*s\n", db_hdls->c_entry->table.len,
 				db_hdls->c_entry->table.s);
-
+		}
 	}
 }
 

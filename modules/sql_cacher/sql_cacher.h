@@ -87,6 +87,7 @@ typedef struct _cache_entry {
 	long long column_types;
 	rw_lock_t *ref_lock;
 	struct _cache_entry *next;
+	int rec_count;
 } cache_entry_t;
 
 typedef struct _db_handlers {
