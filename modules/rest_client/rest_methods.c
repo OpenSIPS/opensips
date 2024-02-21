@@ -735,7 +735,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 		curl_easy_getinfo(handle, CURLINFO_REQUEST_SIZE, &req_sz);
 
 		LM_DBG("perform code: %d, handles: %d, connect: %ldµs, reqsz: %ldB\n",
-		        mrc, running_handles, connect, req_sz);
+		        mrc, running_handles, (long)connect, req_sz);
 
 		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
