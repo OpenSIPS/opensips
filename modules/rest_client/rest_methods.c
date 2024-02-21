@@ -893,15 +893,9 @@ static enum async_ret_code _resume_async_http_req(int fd, struct sip_msg *msg,
 		LM_DBG("perform result: %d, running: %d (break: %d)\n", mrc, running,
 			mrc != CURLM_CALL_MULTI_PERFORM && (mrc != CURLM_OK || !running));
 
-		if (mrc == CURLM_OK && running) {
-			async_status = ASYNC_CONTINUE;
-			return 1;
-
-		/* this rc has been removed since cURL 7.20.0 (Feb 2010), but it's not
-		 * yet marked as deprecated, so let's keep the do/while loop */
-		} else if (mrc != CURLM_CALL_MULTI_PERFORM) {
-			break;
-		}
+		if (mrc != CURLM_CALL_MULTI_PERFORM &&
+		     (mrc != CURLM_OK || !running))
+		         break;
 
 		usleep(_async_resume_retr_itv);
 		retr += _async_resume_retr_itv;

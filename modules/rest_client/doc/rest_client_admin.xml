@@ -581,6 +581,15 @@ if (!rest_get("https://example.com"))
 
 	<section>
 	<title>Exported Asynchronous Functions</title>
+	<para>
+		<emphasis role='bold'>Note regarding async timeouts on 3.3</emphasis>:
+			There is a known issue with timeouts for rest_client async function
+			calls on 3.3 stable, where either of the <emphasis>async()</emphasis>
+			statement timeout or the <xref linkend="param_curl_timeout"/> values
+			may be taken into consideration while disregarding the other setting,
+			depending on the usage scenario.  To mitigate such issues, simply
+			set both timeouts to the <emphasis>same value</emphasis>.
+	</para>
 	<section id="afunc_rest_get" xreflabel="rest_get()">
 		<title>
 		<function moreinfo="none">rest_get(url, body_pv[, [ctype_pv][, [retcode_pv]]])
