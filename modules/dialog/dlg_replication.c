@@ -48,6 +48,11 @@ str shtag_dlg_val = str_init("dlgX_shtag");
 char *dlg_sync_in_progress;
 
 static int get_shtag_sync_status(struct dlg_cell *dlg);
+/*
+ * indicates whether the dialog is in the process of receiving a replicated
+ * dialog (update) - used to avoid cross-replicating the same value
+ */
+static int dlg_event_is_replicated = 0;
 
 const static struct socket_info * fetch_socket_info(str *addr)
 {
@@ -744,10 +749,16 @@ int dlg_replicated_value(bin_packet_t *packet)
 	DLG_BIN_POP(int, packet, h_id, malformed);
 	DLG_BIN_POP(str, packet, name, malformed);
 	DLG_BIN_POP(int, packet, type, malformed);
-	if (type == DLG_VAL_TYPE_STR)
-		DLG_BIN_POP(str, packet, val.s, malformed);
-	else
-		DLG_BIN_POP(int, packet, val.n, malformed);
+	switch (type) {
+		case DLG_VAL_TYPE_STR:
+			DLG_BIN_POP(str, packet, val.s, malformed);
+			break;
+		case DLG_VAL_TYPE_INT:
+			DLG_BIN_POP(int, packet, val.n, malformed);
+			break;
+		default:
+			break;
+	}
 
 	LM_DBG("Updating cseq for dialog with callid: %.*s\n", call_id.len, call_id.s);
 	h_entry = dlg_hash(&call_id);
@@ -1045,6 +1056,9 @@ void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int t
 {
 	bin_packet_t packet;
 
+	if (dlg_event_is_replicated)
+		return;
+
 	if (bin_init(&packet, &dlg_repl_cap, REPLICATION_DLG_VALUE,
 			BIN_VERSION, 512) != 0)
 		goto error;
@@ -1053,10 +1067,18 @@ void replicate_dialog_value(struct dlg_cell *dlg, str *name, int_str *val, int t
 	bin_push_int(&packet, dlg->h_id);
 	bin_push_str(&packet, name);
 	bin_push_int(&packet, type);
-	if (type == DLG_VAL_TYPE_STR)
-		bin_push_str(&packet, &val->s);
-	else
-		bin_push_int(&packet, val->n);
+	if (!val)
+		type = DLG_VAL_TYPE_NONE;
+	switch (type) {
+		case DLG_VAL_TYPE_STR:
+			bin_push_str(&packet, &val->s);
+			break;
+		case DLG_VAL_TYPE_INT:
+			bin_push_int(&packet, val->n);
+			break;
+		default:
+			break;
+	}
 
 	DLG_CLUSTER_SEND(packet, dialog_repl_cluster, error_free);
 
@@ -1081,6 +1103,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if (ver != DLG_BIN_V3)
 			ensure_bin_version(pkt, BIN_VERSION);
 
+		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_create(pkt, NULL, NULL, NULL, 0, 0, 0);
 		if_update_stat(dlg_enable_stats, create_recv, 1);
 		break;
@@ -1088,6 +1111,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if (ver != DLG_BIN_V3)
 			ensure_bin_version(pkt, BIN_VERSION);
 
+		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_update(pkt);
 		if_update_stat(dlg_enable_stats, update_recv, 1);
 		break;
@@ -1095,6 +1119,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if (ver != DLG_BIN_V3)
 			ensure_bin_version(pkt, BIN_VERSION);
 
+		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_delete(pkt);
 		if_update_stat(dlg_enable_stats, delete_recv, 1);
 		break;
@@ -1102,20 +1127,24 @@ void receive_dlg_repl(bin_packet_t *pkt)
 		if (ver != DLG_BIN_V3)
 			ensure_bin_version(pkt, BIN_VERSION);
 
+		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_cseq_updated(pkt);
 		break;
 	case REPLICATION_DLG_VALUE:
 		ensure_bin_version(pkt, BIN_VERSION);
 
+		dlg_event_is_replicated = 1;
 		rc = dlg_replicated_value(pkt);
 		break;
 	case SYNC_PACKET_TYPE:
 		if (ver != DLG_BIN_V3)
 			ensure_bin_version(pkt, BIN_VERSION);
 
+		dlg_event_is_replicated = 1;
 		while (clusterer_api.sync_chunk_iter(pkt))
 			if (dlg_replicated_create(pkt, NULL, NULL, NULL, 0, 0, 1) < 0) {
 				LM_ERR("Failed to process sync packet\n");
+				dlg_event_is_replicated = 0;
 				return;
 			}
 		break;
@@ -1128,6 +1157,7 @@ void receive_dlg_repl(bin_packet_t *pkt)
 
 	if (rc != 0)
 		LM_ERR("Failed to process a binary packet!\n");
+	dlg_event_is_replicated = 0;
 }
 
 static int receive_sync_request(int node_id)
