@@ -615,6 +615,9 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 	if (no_concurrent_connects && (lrc=rcl_acquire_url(url, &host)) < RCL_OK)
 		return lrc;
 
+	param->timeout_s = (ctx->timeout_s && ctx->timeout_s < curl_timeout) ?
+			ctx->timeout_s : curl_timeout;
+
 	rc = start_async_http_req(msg, method, url, body, ctype,
 			param, &param->body, ctype_pv ? &param->ctype : NULL, &read_fd);
 
@@ -678,8 +681,8 @@ int async_rest_method(enum rest_client_method method, struct sip_msg *msg,
 		rcl_release_url(host, rc == RCL_OK);
 
 	ctx->resume_f = resume_async_http_req;
-	ctx->timeout_s = curl_timeout;
 	ctx->timeout_f = time_out_async_http_req;
+	ctx->timeout_s = param->timeout_s;
 
 	param->method = method;
 	param->body_pv = (pv_spec_p)body_pv;

@@ -58,8 +58,11 @@ typedef struct _async_ctx {
 	void *resume_param;
 	/* the function to be called upon a timeout event while waiting to read */
 	void *timeout_f;
-	/* the maximum allowed time for the async op to complete, hinted by the
-	 *   more complex async implementation (seconds).  Default: 0 (no limit) */
+
+	/* Optional time limit (seconds) for the async op to complete:
+	 *  - on input: the core async() timeout or 0, presented to the module
+	 *  - on output: an updated timeout, if any, as processed by the module
+	 *  Default: 0 (no timeout) */
 	unsigned int timeout_s;
 } async_ctx;
 
