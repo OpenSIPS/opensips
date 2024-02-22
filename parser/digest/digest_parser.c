@@ -194,6 +194,7 @@ static inline int parse_digest_param(str* _s, dig_cred_t* _c)
 	case PAR_QOP:       ptr = &_c->qop.qop_str;     break;
 	case PAR_NC:        ptr = &_c->nc;              break;
 	case PAR_ALGORITHM: ptr = &_c->alg.alg_str;     break;
+	case PAR_AUTS:      ptr = &_c->auts;            break;
 	case PAR_OTHER:     ptr = &dummy;               break;
 	default:            ptr = &dummy;               break;
 	}

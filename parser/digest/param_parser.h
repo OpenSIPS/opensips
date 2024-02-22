@@ -41,6 +41,7 @@ typedef enum dig_par {
 	PAR_QOP,       /* qop parameter */
 	PAR_NC,        /* nonce-count parameter */
 	PAR_ALGORITHM, /* algorithm parameter */
+	PAR_AUTS,      /* auts parameter */
 	PAR_OTHER      /* unknown parameter */
 } dig_par_t;
 
