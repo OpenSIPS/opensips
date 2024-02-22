@@ -30,6 +30,7 @@
 #include <grp.h>
 #include "ut.h"
 
+unsigned int int2str_buf_index = 0;
 char int2str_buf[INT2STR_BUF_NO][INT2STR_MAX_LEN];
 
 int tcp_timeout_con_get = 0;
