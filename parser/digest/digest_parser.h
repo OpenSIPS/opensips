@@ -160,6 +160,7 @@ typedef struct dig_cred {
 	str opaque;                 /* Opaque data string */
 	struct qp qop;              /* Quality Of Protection */
 	str nc;                     /* Nonce count parameter */
+	str auts;                   /* Auts parameter */
 } dig_cred_t;
 
 
