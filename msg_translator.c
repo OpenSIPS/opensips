@@ -2168,6 +2168,7 @@ char * build_req_buf_from_sip_req( struct sip_msg* msg,
 			}
 			memcpy(extra_params.s, via_params->s, via_params->len);
 			memcpy(extra_params.s + via_params->len, id_buf, id_len);
+			pkg_free(id_buf);
 		} else {
 			extra_params.s=id_buf;
 			extra_params.len=id_len;
