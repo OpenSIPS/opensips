@@ -41,7 +41,7 @@
  *     0        avp_core          avp has a string name
  *     1        avp_core          avp has a string value
  *     2        core              contact avp qvalue change
- *     7        avpops module     avp was loaded from DB
+ *     7        dbops module      avp was loaded from DB
  *
  */
 
