@@ -83,7 +83,7 @@ modparam("mi_fifo", "fifo_mode", 0666)
 loadmodule "db_mysql.so"
 
 #### AVPOPS module
-loadmodule "avpops.so"
+loadmodule "dbops.so"
 
 #### ACCounting module
 loadmodule "acc.so"
