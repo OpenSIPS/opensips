@@ -59,6 +59,7 @@ Dynamic Routing Module
               1.3.36. extra_prefix_chars (str)
               1.3.37. extra_id_chars (str)
               1.3.38. rule_tables_query (str)
+              1.3.39. generate_data_md5 (int)
 
         1.4. Exported Functions
 
@@ -168,22 +169,23 @@ Dynamic Routing Module
    1.36. Set extra_prefix_chars parameter
    1.37. Set extra_id_chars parameter
    1.38. Set the rule_tables_query parameter
-   1.39. do_routing usage
-   1.40. route_to_carrier usage
-   1.41. route_to_gw usage
-   1.42. use_next_gw usage
-   1.43. goes_to_gw usage
-   1.44. is_from_gw usage
-   1.45. dr_is_gw usage
-   1.46. dr_disable() usage
-   1.47. dr_match usage
-   1.48. dr_gw_status usage when use_partitions is set to 0
-   1.49. dr_gw_status usage when use_partitionsis set to 1
-   1.50. dr_carrier_status usage when use_partitions is 0
-   1.51. dr_carrier_status usage when use_partitions is 1
-   1.52. dr_reload_status usage when use_partitions is 0
-   1.53. dr_reload_status usage when use_partitions is 1
-   1.54. dr_enable_probing usage
+   1.39. Set the generate_data_md5 parameter
+   1.40. do_routing usage
+   1.41. route_to_carrier usage
+   1.42. route_to_gw usage
+   1.43. use_next_gw usage
+   1.44. goes_to_gw usage
+   1.45. is_from_gw usage
+   1.46. dr_is_gw usage
+   1.47. dr_disable() usage
+   1.48. dr_match usage
+   1.49. dr_gw_status usage when use_partitions is set to 0
+   1.50. dr_gw_status usage when use_partitionsis set to 1
+   1.51. dr_carrier_status usage when use_partitions is 0
+   1.52. dr_carrier_status usage when use_partitions is 1
+   1.53. dr_reload_status usage when use_partitions is 0
+   1.54. dr_reload_status usage when use_partitions is 1
+   1.55. dr_enable_probing usage
 
 Chapter 1. Admin Guide
 
@@ -1072,6 +1074,17 @@ modparam("drouting", "rule_tables_query", "
                 SELECT 'dr_rules_a' UNION SELECT 'dr_rules_b'")
 ...
 
+1.3.39. generate_data_md5 (int)
+
+   If enabled, it will generate MD5 hashes for drouting data,
+   attach that to the reload_status MI command output and to the
+   reload generated status reports
+
+   Example 1.39. Set the generate_data_md5 parameter
+...
+modparam("drouting", "generate_data_md5", 1)
+...
+
 1.4. Exported Functions
 
 1.4.1.  do_routing([groupID], [flags], [gw_whitelist],
@@ -1126,7 +1139,7 @@ modparam("drouting", "rule_tables_query", "
        specifing the name of one partition, you can use the "*"
        wildcard sign to force routing over all partitions.
 
-   Example 1.39. do_routing usage
+   Example 1.40. do_routing usage
 ...
 # all groups, sort on order, use_partitions is 0
 do_routing();
@@ -1182,7 +1195,7 @@ do_routing(2, "F", , , $var(gw_attributes));
        "use_partition" module parameter is turned on. Wildcard
        sign is not accepted by the function.
 
-   Example 1.40. route_to_carrier usage
+   Example 1.41. route_to_carrier usage
 ...
 # use_partitions is not set
 if ( route_to_carrier("my_top_carrier, def_carrier", , $var(carrier_att)
@@ -1237,7 +1250,7 @@ if ( route_to_carrier($var(carrierId), , , $var(my_partition)) ) {
        "use_partition" module parameter is turned on. Wildcard
        sign is not accepted by the function.
 
-   Example 1.41. route_to_gw usage
+   Example 1.42. route_to_gw usage
 ...
 # use_partitions is not set
 if ( route_to_gw("gw_europe") ) {
@@ -1303,7 +1316,7 @@ if ( route_to_gw("gw1,gw2,gw3", $var(gw_attrs), , "my_partition") ) {
        "use_partition" module parameter is turned on. Wildcard
        sign is not accepted by the function.
 
-   Example 1.42. use_next_gw usage
+   Example 1.43. use_next_gw usage
 ...
 # use_partitions is not set
 if (use_next_gw()) {
@@ -1380,7 +1393,7 @@ if (use_next_gw( , ,$var(carrier_attrs), "my_partition")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.43. goes_to_gw usage
+   Example 1.44. goes_to_gw usage
 ...
 # use_partitions is not set
 if (goes_to_gw( 1, , $var(gw_attrs))) {
@@ -1440,7 +1453,7 @@ if (goes_to_gw(1, , $var(gw_attrs), , "my_partition")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.44. is_from_gw usage
+   Example 1.45. is_from_gw usage
 # use_partitions is not set
 # match the source IP (only) against all gateways
 if (is_from_gw(-1, "n")) {
@@ -1499,7 +1512,7 @@ if (is_from_gw(, "c", , , "outbound")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.45. dr_is_gw usage
+   Example 1.46. dr_is_gw usage
 # match the SIP URI host within $var(uac) against all gateways
 if (dr_is_gw( $var(uac), , "n")) {
         ...
@@ -1533,7 +1546,7 @@ if (dr_is_gw( $avp(uac), , "n", , , "partition")) {
        "use_partition" module parameter is turned on. Wildcard
        sign is accepted by this function.
 
-   Example 1.46. dr_disable() usage
+   Example 1.47. dr_disable() usage
 ...
 if (t_check_status("(408)|(5[0-9][0-9])")) {
         dr_disable();
@@ -1575,7 +1588,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
        to be used. This parameter is to be defined ONLY if the
        "use_partition" module parameter is turned on.
 
-   Example 1.47. dr_match usage
+   Example 1.48. dr_match usage
 ...
 if ( dr_match( 1, "L" , $fU, ,"dids") )
         xlog("Full From Username $fU found in group 1 partition DIDS\n")
@@ -1635,7 +1648,7 @@ if ( dr_match( 1, , $var(did) ) )
             GW (0 - disable, 1 - enable). Only makes sense if
             gw_id is provided.
 
-   Example 1.48. dr_gw_status usage when use_partitions is set to
+   Example 1.49. dr_gw_status usage when use_partitions is set to
    0
 $ opensips-cli -x mi dr_gw_status gw_id=2
 State:: Active
@@ -1645,7 +1658,7 @@ Enabled:: Disabled MI
 $ opensips-cli -x mi dr_gw_status gw_id=3
 Enabled:: Inactive
 
-   Example 1.49. dr_gw_status usage when use_partitionsis set to 1
+   Example 1.50. dr_gw_status usage when use_partitionsis set to 1
 $ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw
 State:: Active
 $ opensips-cli -x mi dr_gw_status partition_name=part_1 gw_id=my_gw stat
@@ -1680,14 +1693,14 @@ enabled:: inactive
             carrier (0 - disable, 1 - enable). Only makes sense if
             carrier_id is provided.
 
-   Example 1.50. dr_carrier_status usage when use_partitions is 0
+   Example 1.51. dr_carrier_status usage when use_partitions is 0
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: no
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1 status=1
 $ opensips-cli -x mi dr_carrier_status carrier_id=CR1
 Enabled:: yes
 
-   Example 1.51. dr_carrier_status usage when use_partitions is 1
+   Example 1.52. dr_carrier_status usage when use_partitions is 1
 $ opensips-cli -x mi dr_carrier_status partition_name=my_partition carri
 er_id=CR1
 Enabled:: no
@@ -1709,11 +1722,11 @@ Enabled:: yes
             every partition. Otherwise, the function will list the
             time of the last reload for the given partition.
 
-   Example 1.52. dr_reload_status usage when use_partitions is 0
+   Example 1.53. dr_reload_status usage when use_partitions is 0
 $ opensips-cli -x mi dr_reload_status
 Date:: Tue Aug 12 12:26:00 2014
 
-   Example 1.53. dr_reload_status usage when use_partitions is 1
+   Example 1.54. dr_reload_status usage when use_partitions is 1
 $ opensips-cli -x mi dr_reload_status
 Partition:: part_test Date=Tue Aug 12 12:24:13 2014
 Partition:: part_2 Date=Tue Aug 12 12:24:13 2014
@@ -1749,7 +1762,7 @@ Partition:: part_test Date=Tue Aug 12 12:24:13 2014
    Parameters:
      * status (optional) - 1 - enable, 0 - disable gateway probing
 
-   Example 1.54. dr_enable_probing usage
+   Example 1.55. dr_enable_probing usage
 $ opensips-cli -x mi dr_enable_probing
 Status:: 1
 $ opensips-cli -x mi dr_enable_probing 0

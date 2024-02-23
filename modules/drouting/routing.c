@@ -230,10 +230,46 @@ error:
 	return -1;
 }
 
+void hash_dst(pgw_t *pgw,MD5_CTX *hash_ctx) 
+{
+	if (hash_ctx == NULL)
+		return;
+
+	MD5Update(hash_ctx, pgw->id.s, pgw->id.len);
+	MD5Update(hash_ctx, (char *)&pgw->type, sizeof(pgw->type));
+	MD5Update(hash_ctx, pgw->ip_str.s, pgw->ip_str.len);
+	if (pgw->pri.s && pgw->pri.len)
+		MD5Update(hash_ctx, pgw->pri.s, pgw->pri.len);
+	MD5Update(hash_ctx, (char *)&pgw->strip, sizeof(pgw->strip));
+	if (pgw->attrs.s && pgw->attrs.len)
+		MD5Update(hash_ctx, pgw->attrs.s, pgw->attrs.len);
+}
+
+void hash_carrier(pcr_t *pcr,MD5_CTX *hash_ctx) 
+{
+	int i;
+
+	if (hash_ctx == NULL)
+		return;
+
+	MD5Update(hash_ctx, pcr->id.s, pcr->id.len);
+	MD5Update(hash_ctx, (char *)pcr->sort_alg, sizeof(pcr->sort_alg));
+	for (i=0;i<pcr->pgwa_len;i++) {
+		if (pcr->pgwl[i].is_carrier == 1)
+			hash_carrier(pcr->pgwl[i].dst.carrier,hash_ctx);
+		else
+			hash_dst(pcr->pgwl[i].dst.gw,hash_ctx);
+
+		MD5Update(hash_ctx, (char *)&pcr->pgwl[i].weight, sizeof(pcr->pgwl[i].weight));
+	}
+
+	if (pcr->attrs.s && pcr->attrs.len)
+		MD5Update(hash_ctx, pcr->attrs.s, pcr->attrs.len);
+}
 
 int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 										int state, rt_data_t *rd,
-										osips_malloc_f mf, osips_free_f ff)
+										osips_malloc_f mf, osips_free_f ff, MD5_CTX *hash_ctx)
 {
 	pcr_t *cr;
 	unsigned int i;
@@ -293,6 +329,7 @@ int add_carrier(char *id, int flags, char *sort_alg, char *gwlist, char *attrs,
 	key.len = strlen(id);
 	map_put(rd->carriers_tree, key, cr);
 
+	hash_carrier(cr,hash_ctx);
 
 	return 0;
 error:
@@ -526,7 +563,8 @@ add_dst(
 	/* state */
 	int state,
 	osips_malloc_f mf,
-	osips_free_f ff
+	osips_free_f ff,
+	MD5_CTX* hash_ctx
 	)
 {
 	static unsigned id_counter = 0;
@@ -698,6 +736,8 @@ done:
 		LM_ERR("Duplicate gateway!\n");
 		return -1;
 	}
+
+	hash_dst(pgw,hash_ctx);
 
 	return 0;
 

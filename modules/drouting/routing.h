@@ -26,6 +26,8 @@
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
 #include "../../map.h"
+#include "../../md5global.h"
+#include "../../md5.h"
 
 #include "prefix_tree.h"
 
@@ -98,7 +100,8 @@ add_carrier(
 	int state,
 	rt_data_t *rd,
 	osips_malloc_f mf,
-	osips_free_f ff
+	osips_free_f ff,
+	MD5_CTX *hash_ctx
 	);
 
 /* add a PSTN gw in the list */
@@ -124,7 +127,8 @@ add_dst(
 	/* state */
 	int,
 	osips_malloc_f mf,
-	osips_free_f ff
+	osips_free_f ff,
+	MD5_CTX *hash_ctx
 	);
 
 /* build a routing info list element */
@@ -164,4 +168,7 @@ del_pgw_list(
 
 void
 free_rt_data(rt_data_t*, osips_free_f);
+
+void hash_carrier(pcr_t *pcr,MD5_CTX *hash_ctx); 
+void hash_dst(pgw_t *pgw,MD5_CTX *hash_ctx); 
 #endif
