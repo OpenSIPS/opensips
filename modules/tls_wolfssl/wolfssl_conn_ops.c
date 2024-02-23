@@ -438,7 +438,12 @@ again:
 #endif
 				{
 					err_len=sizeof(err);
-					getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+					if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len) != 0) {
+						LM_WARN("getsockopt error: fd=%d [server=%s:%d]: (%d) %s\n", fd,
+								ip_addr2a(&con->rcv.src_ip), con->rcv.src_port,
+								errno, strerror(errno));
+						goto failure;
+					}
 					if ((err==0) && (poll_err==0))
 						continue; /* retry ssl connect */
 					if (err!=EINPROGRESS && err!=EALREADY){
