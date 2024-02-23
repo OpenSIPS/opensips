@@ -14,7 +14,7 @@ f none lib/opensips/modules/alias_db.so 0755 bin bin
 f none lib/opensips/modules/auth.so 0755 bin bin
 f none lib/opensips/modules/auth_db.so 0755 bin bin
 f none lib/opensips/modules/auth_diameter.so 0755 bin bin
-f none lib/opensips/modules/avpops.so 0755 bin bin
+f none lib/opensips/modules/dbops.so 0755 bin bin
 f none lib/opensips/modules/dbtext.so 0755 bin bin
 f none lib/opensips/modules/dialog.so 0755 bin bin
 f none lib/opensips/modules/dispatcher.so 0755 bin bin
@@ -65,7 +65,7 @@ f none doc/opensips/README.alias_db 0644 bin bin
 f none doc/opensips/README.auth 0644 bin bin
 f none doc/opensips/README.auth_db 0644 bin bin
 f none doc/opensips/README.auth_diameter 0644 bin bin
-f none doc/opensips/README.avpops 0644 bin bin
+f none doc/opensips/README.dbops 0644 bin bin
 f none doc/opensips/README.dbtext  0644 bin bin
 f none doc/opensips/README.dialog  0644 bin bin
 f none doc/opensips/README.dispatcher  0644 bin bin

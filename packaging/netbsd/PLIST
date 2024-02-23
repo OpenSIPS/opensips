@@ -5,7 +5,7 @@ lib/opensips/modules/alias_db.so
 lib/opensips/modules/auth.so
 lib/opensips/modules/auth_aaa.so
 lib/opensips/modules/auth_db.so
-lib/opensips/modules/avpops.so
+lib/opensips/modules/dbops.so
 lib/opensips/modules/benchmark.so
 lib/opensips/modules/call_control.so
 lib/opensips/modules/cfgutils.so
@@ -68,7 +68,7 @@ share/doc/opensips/README.alias_db
 share/doc/opensips/README.auth
 share/doc/opensips/README.auth_aaa
 share/doc/opensips/README.auth_db
-share/doc/opensips/README.avpops
+share/doc/opensips/README.dbops
 share/doc/opensips/README.benchmark
 share/doc/opensips/README.call_control
 share/doc/opensips/README.cfgutils

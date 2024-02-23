@@ -74,7 +74,7 @@ f none /opt/opensips/lib64/opensips/modules/alias_db.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/auth.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/auth_db.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/auth_diameter.so 0755 root root
-f none /opt/opensips/lib64/opensips/modules/avpops.so 0755 root root
+f none /opt/opensips/lib64/opensips/modules/dbops.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/benchmark.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/call_control.so 0755 root root
 f none /opt/opensips/lib64/opensips/modules/cfgutils.so 0755 root root
@@ -152,7 +152,7 @@ f none /opt/opensips/README.alias_db 0644 root root
 f none /opt/opensips/README.auth 0644 root root
 f none /opt/opensips/README.auth_db 0644 root root
 f none /opt/opensips/README.auth_diameter 0644 root root
-f none /opt/opensips/README.avpops 0644 root root
+f none /opt/opensips/README.dbops 0644 root root
 f none /opt/opensips/README.benchmark 0644 root root
 f none /opt/opensips/README.call_control 0644 root root
 f none /opt/opensips/README.cfgutils 0644 root root
