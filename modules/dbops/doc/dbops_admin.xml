@@ -1,0 +1,541 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+
+	<section id="overview" xreflabel="Overview">
+		<title>Overview</title>
+		<para>
+		DBops (DB-operations) modules implements a set of script
+		functions which allow DB manipulation (loading/storing/removing) 
+		of user AVPs (preferences).
+		</para>
+	</section>
+	<section id="dependencies" xreflabel="Dependencies">
+		<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The following modules must be loaded before this module:
+			<itemizedlist>
+			<listitem>
+			<para>
+				<emphasis>a database module</emphasis>
+			</para>
+			</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+				The following libraries or applications must be installed
+				before running &osips; with this module loaded:
+				<itemizedlist>
+				<listitem>
+				<para>
+					<emphasis>None</emphasis>
+				</para>
+				</listitem>
+				</itemizedlist>
+			</para>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+		<section id="param_db_url" xreflabel="db_url">
+			<title><varname>db_url</varname> (string)</title>
+			<para>
+			DB URL for database connection. As the module allows the usage
+			of multiple DBs (DB URLs), the actual DB URL may be preceded by
+			an reference number. This reference number is to be passed to
+			AVPOPS function that what to explicitly use this DB connection.
+			If no reference number is given, 0 is assumed - this is the default
+			DB URL.
+			</para>
+			<para>
+				<emphasis>
+					This parameter is optional, it's default value being NULL.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>db_url</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+# default URL
+modparam("dbops","db_url","mysql://user:passwd@host/database")
+# an additional DB URL
+modparam("dbops","db_url","1 postgres://user:passwd@host2/opensips")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_usr_table" xreflabel="usr_table">
+			<title><varname>usr_table</varname> (string)</title>
+			<para>
+			DB table to be used for user preferences (AVPs)
+			</para>
+			<para>
+				<emphasis>
+					This parameter is optional, it's default value being
+					<quote>usr_preferences</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>usr_table</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","usr_table","avptable")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_use_domain" xreflabel="use_domain">
+			<title><varname>use_domain</varname> (integer)</title>
+			<para>
+				If the domain part of the a SIP URI should be used for
+				identifying an AVP in DB operations.
+			</para>
+			<para>
+				<emphasis>Default value is 0 (no).
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>use_domain</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","use_domain",1)
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_uuid_column" xreflabel="uuid_column">
+			<title><varname>uuid_column</varname> (string)</title>
+			<para>
+				Name of column containing the uuid (unique user id).
+			</para>
+			<para>
+				<emphasis>Default value is <quote>uuid</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>uuid_column</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","uuid_column","uuid")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_username_column" xreflabel="username_column">
+			<title><varname>username_column</varname> (string)</title>
+			<para>
+				Name of column containing the username.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>username</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>username_column</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","username_column","username")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_domain_column" xreflabel="domain_column">
+			<title><varname>domain_column</varname> (string)</title>
+			<para>
+				Name of column containing the domain name.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>domain</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>domain_column</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","domain_column","domain")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_attribute_column" xreflabel="attribute_column">
+			<title><varname>attribute_column</varname> (string)</title>
+			<para>
+				Name of column containing the attribute name (AVP name).
+			</para>
+			<para>
+				<emphasis>Default value is <quote>attribute</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>attribute_column</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","attribute_column","attribute")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_value_column" xreflabel="value_column">
+			<title><varname>value_column</varname> (string)</title>
+			<para>
+				Name of column containing the AVP value.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>value</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>value_column</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","value_column","value")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_type_column" xreflabel="type_column">
+			<title><varname>type_column</varname> (string)</title>
+			<para>
+				Name of column containing the AVP type.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>type</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>type_column</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","type_column","type")
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="param_db_scheme" xreflabel="db_scheme">
+			<title><varname>db_scheme</varname> (string)</title>
+			<para>
+				Definition of a DB scheme to be used for accessing
+				a non-standard User Preference -like table.
+			</para>
+			<para>
+			Definition of a DB scheme. Scheme syntax is:
+			<itemizedlist>
+				<listitem><para><emphasis>
+				db_scheme = name':'element[';'element]*
+				</emphasis></para></listitem>
+				<listitem><para><emphasis>element</emphasis> =
+					<itemizedlist>
+						<listitem><para>'uuid_col='string
+						</para></listitem>
+						<listitem><para>'username_col='string
+						</para></listitem>
+						<listitem><para>'domain_col='string
+						</para></listitem>
+						<listitem><para>'value_col='string
+						</para></listitem>
+						<listitem><para>'value_type='('integer'|'string')
+						</para></listitem>
+						<listitem><para>'table='string
+						</para></listitem>
+					</itemizedlist>
+				</para></listitem>
+			</itemizedlist>
+			</para>
+			<para>
+				<emphasis>Default value is <quote>NULL</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>db_scheme</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","db_scheme",
+"scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
+...
+				</programlisting>
+			</example>
+		</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+		<title>Exported Functions</title>
+		<section id="func_db_avp_load" xreflabel="db_avp_load()">
+			<title>
+				<function moreinfo="none">db_avp_load(source, name, [db_id], [prefix]])
+				</function>
+			</title>
+			<para>
+			Loads from DB into memory the AVPs corresponding to the given
+			<emphasis>source</emphasis>. If given, it sets the script flags
+			for loaded AVPs. It returns true if it loaded some values
+			in AVPs, false otherwise (db error, no avp loaded ...).
+			</para>
+			<para>
+			AVPs may be preceded by an optional <emphasis>prefix</emphasis>, in
+			order to avoid some conflicts.
+			</para>
+			<para>Meaning of the parameters is as follows:</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>source (string, no expand)</emphasis> - what info is used for
+				identifying the AVPs. Parameter syntax:
+				<itemizedlist>
+					<listitem><para><emphasis>
+					source = (pvar|str_value)
+					['/'('username'|'domain'|'uri'|'uuid')])
+					</emphasis></para></listitem>
+					<listitem><para><emphasis>
+					pvar = any pseudo variable defined in &osips;. If
+					the pvar is $ru (request uri), $fu (from uri), $tu (to uri)
+					or $ou (original uri), then the implicit flag is 'uri'.
+					Otherwise, the implicit flag is 'uuid'.
+					</emphasis></para></listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>name (string, no expand)</emphasis> - which AVPs will be loaded
+				from DB into memory. Parameter syntax is:
+				<itemizedlist>
+					<listitem><para><emphasis>
+					name = avp_spec['/'(table_name|'$'db_scheme)]
+					</emphasis></para></listitem>
+					<listitem><para><emphasis>
+					avp_spec = matching_flags|$avp(avp_name)|$avp(avp_alias)
+					</emphasis></para></listitem>
+					<listitem><para><emphasis>
+					matching_flags = 'a' | 'A' | 'i' | 'I' | 's' | 'S'
+					[script_flags]
+					</emphasis></para><para>'a' or 'A' means matching any of
+					AVP name types ('i' and 's'), the rest have the
+					meaning descriped in 'AVP naming format' chapter.</para>
+					</listitem>
+				</itemizedlist>
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>prefix (string, optional)</emphasis> - static string which will
+					precede the names of the AVPs populated by this function.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+
+			<example>
+				<title><function>db_avp_load</function> usage</title>
+				<programlisting format="linespecific">
+...
+db_avp_load("$fu", "$avp(678)");
+db_avp_load("$ru/domain", "i/domain_preferences");
+db_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
+db_avp_load("$ru", "$avp(123)/$some_scheme");
+
+# use DB URL id 3
+db_avp_load("$ru", "$avp(1)", 3);
+
+# precede all loaded AVPs by the "caller_" prefix
+db_avp_load("$ru", "$avp(100)", , "caller_");
+xlog("Loaded: $avp(caller_100)\n");
+
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="func_db_avp_store" xreflabel="db_avp_store()">
+			<title>
+				<function moreinfo="none">db_avp_store(source, name, [db_id])</function>
+			</title>
+			<para>
+			Stores to DB the AVPs corresponding to the given
+			<emphasis>source</emphasis>.
+			</para>
+			<para>The meaning and usage of the parameters are identical as for
+			<emphasis>db_avp_load(source, name)</emphasis>
+			function. Please refer to its description.
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+
+			<example>
+				<title><function>db_avp_store</function> usage</title>
+				<programlisting format="linespecific">
+...
+db_avp_store("$tu", "$avp(678)");
+db_avp_store("$ru/username", "$avp(email)");
+# use DB URL id 3
+db_avp_store("$ru", "$avp(1)", 3);
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="func_db_avp_delete" xreflabel="db_avp_delete()">
+			<title>
+				<function moreinfo="none">db_avp_delete(source, name, [db_id])</function>
+			</title>
+			<para>
+			Deletes from DB the AVPs corresponding to the given
+			<emphasis>source</emphasis>.
+			</para>
+			<para>The meaning and usage of the parameters are identical as for
+			<emphasis>db_avp_load(source, name)</emphasis>
+			function. Please refer to its description.
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>db_avp_delete</function> usage</title>
+				<programlisting format="linespecific">
+...
+db_avp_delete("$tu", "$avp(678)");
+db_avp_delete("$ru/username", "$avp(email)");
+db_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
+# use DB URL id 3
+db_avp_delete("$ru", "$avp(1)", 3);
+...
+				</programlisting>
+			</example>
+		</section>
+		<section id="func_db_query" xreflabel="db_query()">
+			<title>
+				<function moreinfo="none">db_query(query, [res_col_avps], [db_id])</function>
+			</title>
+			<para>
+			Make a database query and store the result in AVPs.
+			</para>
+			<para>
+			The meaning and usage of the parameters:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>query (string)</emphasis> - must be a valid SQL
+				query. The parameter can contain pseudo-variables.</para>
+				<para>You must escape any pseudo-variables manually to prevent
+				SQL injection attacks. You can use the existing transformations
+				<emphasis>escape.common</emphasis> and
+				<emphasis>unescape.common</emphasis>
+				to escape and unescape the content of any pseudo-variable.
+				Failing to escape the variables used in the query makes you
+				vulnerable to SQL injection, e.g. make it possible for an
+				outside attacker to alter your database content.
+				The function returns true if the query was successful, -2 in case
+				the query returned an empty result set, and -1 for all other types
+				of errors
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>res_col_avps (string, optional, no expand)</emphasis> - a list with AVP names where
+				to store the result. The format is
+				<quote>$avp(name1);$avp(name2);...</quote>. If this parameter
+				is omitted, the result is stored in
+				<quote>$avp(1);$avp(2);...</quote>. If the result consists of
+				multiple rows, then multiple AVPs with corresponding names will
+				be added. The value type of the AVP (string or integer) will
+				be derived from the type of the columns. If the value in the
+				database is <emphasis>NULL</emphasis>, the returned avp will
+				be a string with the <emphasis>&lt;null&gt;</emphasis> value.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>db_id (int, optional)</emphasis> - reference to a defined
+				DB URL (a numerical id) - see the <quote>db_url</quote>
+				module parameter. It can be either a constant, or a
+				string/int variable.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>db_query</function> usage</title>
+				<programlisting format="linespecific">
+...
+db_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
+	"$avp(pass);$avp(hash)");
+db_query("DELETE FROM subscriber");
+db_query("DELETE FROM subscriber", , 2);
+
+$avp(id) = 2;
+db_query("DELETE FROM subscriber", , $avp(id));
+...
+				</programlisting>
+			</example>
+		</section>
+	</section>
+
+	<section>
+	<title>Exported Asynchronous Functions</title>
+		<section id="afunc_db_query" xreflabel="db_query()">
+			<title>
+				<function moreinfo="none">db_query(query, [dest], [db_id])</function>
+			</title>
+			<para>
+			This function takes the same parameters and behaves identically
+			to <xref linkend="func_db_query"/>, but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
+			</para>
+			<para>
+			This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
+			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
+			</para>
+			<example>
+				<title><function>async db_query</function> usage</title>
+				<programlisting format="linespecific">
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	db_query(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Results: \n$(avp(tb_name)[*])\n
+-------------------\n$(avp(tb_ver)[*])\n
+-------------------\n$(avp(retcode)[*])\n");
+}
+...
+				</programlisting>
+			</example>
+		</section>
+
+	</section>
+
+</chapter>
+
