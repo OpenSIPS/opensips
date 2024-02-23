@@ -12,7 +12,7 @@
     <version>3</version>
     <type db="mysql">&MYSQL_TABLE_TYPE;</type>
     <description>
-        <db:para>This table us used by the avpops module to implement Attribute Value Pairs (AVP's). More information about the avpops module can be found at: &OPENSIPS_MOD_DOC;avpops.html
+        <db:para>This table us used by the DBops module to implement Attribute Value Pairs (AVP's). More information about the DBops module can be found at: &OPENSIPS_MOD_DOC;dbops.html
         </db:para>
     </description>
 
