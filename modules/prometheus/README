@@ -21,6 +21,8 @@ Prometheus Module
               1.3.6. group_mode(int)
               1.3.7. statistics(string)
               1.3.8. labels(string)
+              1.3.9. script_route(string)
+              1.3.10. script_route_avp_result(string)
 
         1.4. Exported Functions
         1.5. Examples
@@ -51,7 +53,9 @@ Prometheus Module
    1.6. Set group_mode parameter
    1.7. Set statistics parameter
    1.8. Set statistics parameter
-   1.9. Prometheus Scrape Config
+   1.9. Set script_route parameter
+   1.10. Set script_route parameter
+   1.11. Prometheus Scrape Config
 
 Chapter 1. Admin Guide
 
@@ -230,6 +234,65 @@ modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/
 ")
 ...
 
+1.3.9. script_route(string)
+
+   Specifies the route name to be used to for adding custom
+   prometheus information.
+
+   The default value is "" - no custom route called.
+
+   Example 1.9. Set script_route parameter
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+
+1.3.10. script_route_avp_result(string)
+
+   Specifies the AVP spec name to be used to for returning custom
+   prometheus information.
+
+   The AVP is expected to contain a JSON format, containing an
+   array of arrays of custom statistics to export to prometheus.
+   See section for the format itself.
+
+   The default value is "" - no custom route called.
+
+   Example 1.10. Set script_route parameter
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+modparam("prometheus", "script_route_avp_result", "$avp(prometheus_out_j
+son)")
+...
+route[my_custom_prometheus_route] {
+        # the OUT JSON needs to contain an array of objects containing a
+ header and a values field
+        # the header field to contain the custom prometheus stats header
+        # the values field is an array itself, of name/value objects
+        # used for individual stats publishing
+        $avp(prometheus_out_json) = "
+[   {
+        "header": "# TYPE opensips_cps gauge",
+        "values": [
+            {
+                "name": "opensips_total_cps",
+                "value": 3
+            }
+        ]
+    },
+    {
+        "header": "# TYPE opensips_disabled_rtpengine gauge",
+        "values": [
+            {
+                "name": "opensips_disabled_rtpengine",
+                "value": 0
+            }
+        ]
+    },
+]";
+
+}
+...
+
 1.4. Exported Functions
 
    No function exported to be used from configuration file.
@@ -242,7 +305,7 @@ modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/
    config, indicating the IP and port you've configured the httpd
    module to listen on (default: 0.0.0.0:8888).
 
-   Example 1.9. Prometheus Scrape Config
+   Example 1.11. Prometheus Scrape Config
 
 scrape_configs:
   - job_name: opensips
@@ -300,4 +363,4 @@ Chapter 3. Documentation
 
    Documentation Copyrights:
 
-   Copyright Â© 2021 www.opensips-solutions.com
+   Copyright © 2021 www.opensips-solutions.com
