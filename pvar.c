@@ -3618,6 +3618,71 @@ static int pv_get_xlog_level(struct sip_msg *msg,  pv_param_t *param, pv_value_t
 	return 0;
 }
 
+static int pv_get_sip2json(struct sip_msg *msg, pv_param_t *param,
+		pv_value_t *res)
+{
+	cJSON *ret, *aux, *aux2, *arr;
+	struct hdr_field* it;
+	char hdr_name_buf[255];
+	str json_ret;
+
+	if(msg==NULL)
+		return -1;
+
+	if(parse_headers(msg, HDR_EOH_F, 0) < 0)
+		return pv_get_null(msg, param, res);
+
+	ret = cJSON_CreateObject();
+
+	/* first line */
+	aux = cJSON_CreateStr(msg->buf,msg->first_line.len); 
+	if (!aux) {
+		return pv_get_null(msg, param, res);
+	}
+	cJSON_AddItemToObject(ret,"first_line",aux);
+
+	/* headers */
+	aux = cJSON_CreateObject();
+	for (it=msg->headers;it;it=it->next) {
+		memcpy(hdr_name_buf,it->name.s,it->name.len);
+		hdr_name_buf[it->name.len] = 0;
+
+		arr = cJSON_GetObjectItem(aux, hdr_name_buf);
+		if (!arr) {
+			arr = cJSON_CreateArray();
+			cJSON_AddItemToObject(aux,hdr_name_buf,arr);
+		}
+
+		aux2 =  cJSON_CreateStr(it->body.s,it->body.len);
+		if (!aux2) {
+			return pv_get_null(msg, param, res);
+		}
+
+		cJSON_AddItemToArray(arr,aux2);
+	}
+	cJSON_AddItemToObject(ret,"headers",aux);
+
+	/* body */
+	if (msg->body) {
+		aux = cJSON_CreateStr(msg->body->body.s,msg->body->body.len); 
+		if (!aux) {
+			return pv_get_null(msg, param, res);
+		}
+		cJSON_AddItemToObject(ret,"body",aux);
+	}
+
+	json_ret.s = cJSON_Print(ret);
+	if (!json_ret.s) {
+		return pv_get_null(msg, param, res);
+	}
+	cJSON_Minify(json_ret.s);
+	json_ret.len = strlen(json_ret.s);
+
+	cJSON_Delete(ret);
+	return pv_get_strval(msg, param, res, &json_ret);
+}
+
+
 /************** Boolean consts *****************/
 
 static const pv_value_t pv_true = {
@@ -4201,6 +4266,9 @@ const pv_export_t _pv_names_table[] = {
 	0, 0, 0, 0 },
 	{str_const_init("xlog_level"), PVT_XLOG_LEVEL, pv_get_xlog_level,
 		pv_set_xlog_level, 0, 0, 0, 0 },
+	{{"sip2json", (sizeof("sip2json")-1)}, /* */
+		PVT_SIP2JSON, pv_get_sip2json, 0,
+		0, 0, 0, 0},
 	{{0,0}, 0, 0, 0, 0, 0, 0, 0}
 };
 
