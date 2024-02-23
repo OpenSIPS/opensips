@@ -113,7 +113,12 @@ again:
 #endif
 		{
 			err_len=sizeof(err);
-			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+			if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len) != 0) {
+				get_su_info( servaddr, ip, port);
+				LM_WARN("getsockopt error: fd=%d [server=%s:%d]: (%d) %s\n", fd,
+						ip, port, errno, strerror(errno));
+				goto error;
+			}
 			if ((err==0) && (poll_err==0)) goto end;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info( servaddr, ip, port);
@@ -316,7 +321,12 @@ again:
 #endif
 		{
 			err_len=sizeof(err);
-			getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len);
+			if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &err_len) != 0) {
+				get_su_info(&server->s, ip, port);
+				LM_WARN("getsockopt error: fd=%d [server=%s:%d]: (%d) %s\n", fd,
+						ip, port, errno, strerror(errno));
+				goto error;
+			}
 			if ((err==0) && (poll_err==0)) goto local_connect;
 			if (err!=EINPROGRESS && err!=EALREADY){
 				get_su_info(&server->s, ip, port);
