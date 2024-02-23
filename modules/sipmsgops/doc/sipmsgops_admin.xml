@@ -295,6 +295,39 @@ if (is_present_hf("From")) log(1, "From HF Present");
 		</example>
 	</section>
 
+	<section id="func_get_header_value" xreflabel="get_header_value()">
+		<title>
+		<function moreinfo="none">get_header_value(header_name,header_val)</function>
+		</title>
+		<para>
+		Fetches the topmost value of the header with header_name
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>header_name (string)</emphasis> - Header field name (long or compact form).
+			</para>
+			<para><emphasis>header_val (pvar)</emphasis> - PVAR which will hold the header value, in case of success.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE, ONREPLY_ROUTE,
+		FAILURE_ROUTE, BRANCH_ROUTE and LOCAL_ROUTE.
+		</para>
+		<example>
+		<title><function>get_header_value</function> usage</title>
+		<programlisting format="linespecific">
+...
+$var(custom_header_name)="MyHeader";
+if (get_header_value("$var(custom_header_name)",$var(header_val)) {
+	xlog("Header $var(custom_header_name) is present in the SIP message with value $var(header_val) \n");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="func_append_time" xreflabel="append_time()">
 		<title>
 		<function moreinfo="none">append_time()</function>

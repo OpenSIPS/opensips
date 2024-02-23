@@ -86,6 +86,7 @@ static int remove_hf_glob(struct sip_msg* msg, str* pattern);
 static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* names, pv_spec_t *vals);
 static int remove_hf_match_f(struct sip_msg* msg, void* pattern, int is_regex);
 static int is_present_hf(struct sip_msg* msg, void* _match_hf);
+static int get_header_value(struct sip_msg* msg, void* _match_hf,pv_spec_t* hf_val);
 static int append_to_reply_f(struct sip_msg* msg, str* key);
 static int append_body_to_reply_f(struct sip_msg* msg, str* key);
 static int append_hf(struct sip_msg *msg, str *str1, void *str2);
@@ -159,7 +160,10 @@ static const cmd_export_t cmds[]={
 	{"is_present_hf",    (cmd_function)is_present_hf, {
 		{CMD_PARAM_STR, fixup_parse_hname, fixup_free_pkg}, {0, 0, 0}},
 		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
-
+	{"get_header_value",    (cmd_function)get_header_value, {
+		{CMD_PARAM_STR, fixup_parse_hname, fixup_free_pkg}, 
+		{CMD_PARAM_VAR, 0, 0}, {0, 0, 0}},
+		REQUEST_ROUTE|ONREPLY_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE},
 	{"append_time",      (cmd_function)append_time_f, {{0, 0, 0}},
 		REQUEST_ROUTE|FAILURE_ROUTE|BRANCH_ROUTE|LOCAL_ROUTE },
 
@@ -2071,4 +2075,58 @@ static int get_glob_headers_values(struct sip_msg* msg, str* pattern,pv_spec_t* 
 		cnt++;
 	}
 	return cnt==0 ? -1 : 1;
+}
+
+static int get_header_value(struct sip_msg* msg, void* _match_hf,pv_spec_t* hf_val)
+{
+	int_str_t *match_hf = (int_str_t *)_match_hf;
+	struct hdr_field *hf;
+	pv_value_t pval;
+
+	memset(&pval, '\0', sizeof pval);
+
+	if (!match_hf->is_str) {
+		pval.flags = PV_VAL_INT;
+		pval.ri = match_hf->i;
+	} else {
+		pval.flags = PV_VAL_STR;
+		pval.rs = match_hf->s;
+	}
+
+	/* we need to be sure we have seen all HFs */
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("cannot parse message!\n");
+		return -1;
+	}
+
+	if (pval.flags & PV_VAL_INT) {
+		for (hf=msg->headers; hf; hf=hf->next)
+			if (pval.ri == hf->type) {
+				pval.rs.len = hf->body.len;
+				pval.rs.s = hf->body.s;
+				pval.flags = PV_VAL_STR;
+				if (pv_set_value(msg, hf_val, 0, &pval) != 0) {
+					LM_ERR("cannot populate parameter\n");
+					return -1;
+				}
+				return 1;
+			}
+	} else {
+		for (hf=msg->headers; hf; hf=hf->next) {
+			if (hf->name.len == pval.rs.len &&
+			strncasecmp(hf->name.s, pval.rs.s, hf->name.len) == 0) {
+				pval.rs.len = hf->body.len;
+				pval.rs.s = hf->body.s;
+				pval.flags = PV_VAL_STR;
+				if (pv_set_value(msg, hf_val, 0, &pval) != 0) {
+					LM_ERR("cannot populate parameter\n");
+					return -1;
+				}
+				return 1;
+			}
+		}
+	}
+
+	LM_DBG("header '%.*s'(%d) not found\n", pval.rs.len, pval.rs.s, pval.ri);
+	return -1;
 }
