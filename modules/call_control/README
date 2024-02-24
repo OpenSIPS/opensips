@@ -449,7 +449,7 @@ modparam("call_control", "stop", "call-id=$ci to=$tu from=$fu
    Example 1.13. Using the call_control function
 
 ...
-if (is_avp_set($avp(805))) {
+if ($avp(805) != NULL) {
     # the diverter AVP is set, use it as billing party
     $avp(billing_party_domain) = $(avp(805){uri.domain});
 } else {
@@ -509,7 +509,7 @@ Chapter 2. Contributors
    1. Dan Pascu (@danpascu) 27 10 1621 177
    2. Liviu Chircu (@liviuchircu) 15 12 56 65
    3. Saúl Ibarra Corretgé (@saghul) 15 9 320 124
-   4. Razvan Crainea (@razvancrainea) 11 9 57 33
+   4. Razvan Crainea (@razvancrainea) 12 10 58 34
    5. Bogdan-Andrei Iancu (@bogdan-iancu) 11 9 18 48
    6. Irina-Maria Stanescu 6 2 356 17
    7. Vlad Patrascu (@rvlad-patrascu) 5 3 11 9
@@ -540,11 +540,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - May 2020
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Razvan Crainea (@razvancrainea)     Jul 2010 - Sep 2019
+   1.  Razvan Crainea (@razvancrainea)     Jul 2010 - Feb 2024
+   2.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
+   3.  Alexey Vasilyev (@vasilevalex)      Mar 2022 - Mar 2022
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2009 - May 2020
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
    6.  Dan Pascu (@danpascu)               Dec 2008 - Aug 2019
    7.  Liviu Chircu (@liviuchircu)         Jan 2013 - May 2019
    8.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
@@ -561,12 +561,12 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Alexey Vasilyev (@vasilevalex), Zero King
-   (@l2dy), Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Dan Pascu (@danpascu), Peter Lemenkov
-   (@lemenkov), Bogdan-Andrei Iancu (@bogdan-iancu), Saúl Ibarra
-   Corretgé (@saghul), Razvan Crainea (@razvancrainea),
-   Irina-Maria Stanescu.
+   Last edited by: Razvan Crainea (@razvancrainea), Alexey
+   Vasilyev (@vasilevalex), Zero King (@l2dy), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Dan Pascu
+   (@danpascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Saúl Ibarra Corretgé (@saghul), Irina-Maria
+   Stanescu.
 
    Documentation Copyrights:
 
