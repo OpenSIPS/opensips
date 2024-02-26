@@ -194,5 +194,6 @@ void init_dig_cred(dig_cred_t* _c);
  */
 int parse_digest_cred(str* _s, dig_cred_t* _c);
 alg_t parse_digest_algorithm(const str *);
+const str *print_digest_algorithm(alg_t alg);
 
 #endif /* DIGEST_PARSER_H */
