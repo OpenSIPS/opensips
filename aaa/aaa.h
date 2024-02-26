@@ -52,7 +52,8 @@
 #define AAA_AUTH 4
 #define AAA_ACCT 5
 #define AAA_RECV 6
-#define AAA_CUSTOM 7
+#define AAA_CUSTOM_REQ 7
+#define AAA_CUSTOM_RPL 8
 
 #define AAA_GET_FROM_START 8
 #define AAA_GET_FROM_CURRENT 9

@@ -25,9 +25,11 @@
 #include "../../lib/list.h"
 #include "../../lib/csv.h"
 #include "../../lib/hash.h"
+#include "../../evi/evi_modules.h"
 #include "../../ipc.h"
 
 #include "aaa_impl.h"
+#include "aaa_evi.h"
 #include "peer.h"
 #include "app_opensips/avps.h"
 
@@ -86,6 +88,7 @@ static int dm_avp_inttype[] = {
 	AAA_TYPE_FLOAT32,
 	AAA_TYPE_FLOAT64,
 };
+
 
 static struct dm_cond *dm_get_cond(int type)
 {
@@ -324,7 +327,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 
 		dm_func = dm_enc_get(dm_avp.avp_code, dm_avp.avp_vendor);
 		if (dm_func && dm_func->dec_func) {
-			LM_DBG("%d. got encoded AVP %s, code: %u\n", i, dm_avp.avp_name, dm_avp.avp_code);
+			LM_DBG("%2d. got encoded AVP %s, code: %u\n", i, dm_avp.avp_name, dm_avp.avp_code);
 			val = dm_func->dec_func(h, &dm_avp);
 			if (!val) {
 				LM_ERR("cannot decode value %d/%d\n", dm_avp.avp_code, dm_avp.avp_vendor);
@@ -335,7 +338,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 
 		switch (dm_avp.avp_basetype) {
 		case AVP_TYPE_GROUPED:
-			LM_DBG("%d. got grouped AVP %s, code: %u\n", i, dm_avp.avp_name, dm_avp.avp_code);
+			LM_DBG("%2d. got grouped AVP %s (%u)\n", i, dm_avp.avp_name, dm_avp.avp_code);
 			int_type = 0;
 
 			val = cJSON_CreateArray();
@@ -354,7 +357,7 @@ static int dm_avps2json(void *root, cJSON *avps)
 			break;
 
 		case AVP_TYPE_OCTETSTRING:
-			LM_DBG("%d. got string AVP %u, len: %d, value: %.*s\n", i, h->avp_code, (int)h->avp_value->os.len, (int)h->avp_value->os.len, h->avp_value->os.data);
+			LM_DBG("%2d. got string  AVP %s (%u), len: %d, value: %.*s\n", i, dm_avp.avp_name, h->avp_code, (int)h->avp_value->os.len, (int)h->avp_value->os.len, h->avp_value->os.data);
 			int_type = 0;
 
 			val = cJSON_CreateStr((const char *)h->avp_value->os.data, (int)h->avp_value->os.len);
@@ -365,32 +368,32 @@ static int dm_avps2json(void *root, cJSON *avps)
 			break;
 
 		case AVP_TYPE_INTEGER32:
-			LM_DBG("%d. got int32 AVP %u, value: %d\n", i, h->avp_code, h->avp_value->i32);
+			LM_DBG("%2d. got int32   AVP %s (%u), value: %d\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->i32);
 			num_val = (double)h->avp_value->i32;
 			break;
 
 		case AVP_TYPE_INTEGER64:
-			LM_DBG("%d. got int64 AVP %u, value: %ld\n", i, h->avp_code, h->avp_value->i64);
+			LM_DBG("%2d. got int64   AVP %s (%u), value: %ld\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->i64);
 			num_val = (double)h->avp_value->i64;
 			break;
 
 		case AVP_TYPE_UNSIGNED32:
-			LM_DBG("%d. got uint32 AVP %u, value: %u\n", i, h->avp_code, h->avp_value->u32);
+			LM_DBG("%2d. got uint32  AVP %s (%u), value: %u\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->u32);
 			num_val = (double)h->avp_value->u32;
 			break;
 
 		case AVP_TYPE_UNSIGNED64:
-			LM_DBG("%d. got uint64 AVP %u, value: %lu\n", i, h->avp_code, h->avp_value->u64);
+			LM_DBG("%2d. got uint64  AVP %s (%u), value: %lu\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->u64);
 			num_val = (double)h->avp_value->u64;
 			break;
 
 		case AVP_TYPE_FLOAT32:
-			LM_DBG("%d. got float32 AVP %u, value: %f\n", i, h->avp_code, h->avp_value->f32);
+			LM_DBG("%2d. got float32 AVP %s (%u), value: %f\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->f32);
 			num_val = (double)h->avp_value->f32;
 			break;
 
 		case AVP_TYPE_FLOAT64:
-			LM_DBG("%d. got float64 AVP %u, value: %lf\n", i, h->avp_code, h->avp_value->f64);
+			LM_DBG("%2d. got float64 AVP %s (%u), value: %lf\n", i, dm_avp.avp_name, h->avp_code, h->avp_value->f64);
 			num_val = h->avp_value->f64;
 			break;
 		}
@@ -423,7 +426,71 @@ out:
 	return -1;
 }
 
-static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+
+static int dm_receive_req(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+{
+	cJSON *avps = NULL, *it;
+	struct msg *msg = *_msg;
+	struct msg_hdr *hdr = NULL;
+	str tid = STR_NULL, avp_arr = STR_NULL;
+
+	FD_CHECK(fd_msg_hdr(msg, &hdr));
+	LM_DBG("received Diameter request (appl: %u, cmd: %u)\n", hdr->msg_appl, hdr->msg_code);
+
+	cJSON_InitHooks(&shm_mem_hooks);
+	avps = cJSON_CreateArray();
+	if (!avps) {
+		LM_ERR("oom 1\n");
+		goto error;
+	}
+
+	if (dm_avps2json(msg, avps) != 0) {
+		LM_ERR("failed to pack request AVPs as JSON string\n");
+		goto error;
+	}
+
+	/* search for any "transaction identifier" in the request */
+	for (it = avps->child; it; it = it->next) {
+		if (it->type != cJSON_Object || !it->child || it->child->next || it->child->type != cJSON_String)
+			continue;
+
+		if (sess) {
+			if (!strcmp(it->child->string, "Session-Id")) {
+				LM_DBG("found Session-id: %s\n", it->child->valuestring);
+				init_str(&tid, it->child->valuestring);
+				break;
+			}
+		} else if (!strcmp(it->child->string, "Transaction-Id")) {
+			LM_DBG("found Transaction-id: %s\n", it->child->valuestring);
+			init_str(&tid, it->child->valuestring);
+			break;
+		}
+	}
+
+	init_str(&avp_arr, cJSON_PrintUnformatted(avps));
+
+	if (dm_dispatch_event_req(msg, &tid, hdr->msg_appl, hdr->msg_code, &avp_arr))
+		LM_ERR("failed to dispatch DM Request (tid: %.*s, %d/%d)\n", tid.len,
+		        tid.s, hdr->msg_appl, hdr->msg_code);
+
+	/* for now, keep the message in order to be able to generate the reply */
+	goto out;
+
+error:
+	FD_CHECK(fd_msg_free(msg));
+out:
+	cJSON_PurgeString(avp_arr.s);
+	cJSON_Delete(avps);
+	cJSON_InitHooks(NULL);
+
+	*_msg = NULL;
+	*act = DISP_ACT_CONT;
+	return 0;
+}
+
+
+/* Both Diameter requests and replies arrive here */
+static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
 	cJSON *avps = NULL;
 	struct msg_hdr *hdr = NULL;
@@ -436,10 +503,11 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 
 	FD_CHECK(fd_msg_hdr(msg, &hdr));
 
-	if (hdr->msg_flags & CMD_FLAG_REQUEST) {
-		LM_INFO("received a request?! discarding...\n");
-		goto out;
-	}
+	if (hdr->msg_flags & CMD_FLAG_REQUEST)
+		return dm_receive_req(_msg, avp, sess, data, act);
+
+	LM_DBG("received Diameter answer (appl: %u, cmd: %u)\n",
+	        hdr->msg_appl, hdr->msg_code);
 
 	cJSON_InitHooks(&shm_mem_hooks);
 	avps = cJSON_CreateArray();
@@ -455,12 +523,12 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 
 	rc = fd_msg_search_avp(msg, dm_dict.Session_Id, &a);
 	if (rc != 0) {
-		LM_DBG("Missing Session-Id AVP in Diameter Answer %d/%d, looking for Transaction-Id\n",
-		       hdr->msg_appl, hdr->msg_code);
+		LM_DBG("Missing Session-Id AVP in Diameter Answer %d/%d (rc: %d), "
+		        "looking for Transaction-Id\n", hdr->msg_appl, hdr->msg_code, rc);
 		rc = fd_msg_search_avp(msg, dm_dict.Transaction_Id, &a);
 		if (rc != 0) {
-			LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d\n",
-				   hdr->msg_appl, hdr->msg_code);
+			LM_WARN("Missing Transaction-Id AVP in Diameter Answer %d/%d (rc: %d)\n",
+				   hdr->msg_appl, hdr->msg_code, rc);
 			goto out;
 		}
 
@@ -468,15 +536,15 @@ static int dm_custom_cmd_reply(struct msg **_msg, struct avp * avp, struct sessi
 		tid.s = (char *)h->avp_value->os.data;
 		tid.len = (int)h->avp_value->os.len;
 
-		LM_DBG("%d/%d reply %d, Transaction-Id: %.*s\n", hdr->msg_appl,
-			   hdr->msg_code, rc, tid.len, tid.s);
+		LM_DBG("%d/%d reply, Transaction-Id: %.*s\n", hdr->msg_appl,
+			   hdr->msg_code, tid.len, tid.s);
 	} else {
 		FD_CHECK_GT(fd_msg_avp_hdr(a, &h));
 		tid.s = (char *)h->avp_value->os.data;
 		tid.len = (int)h->avp_value->os.len;
 
-		LM_DBG("%d/%d reply %d, Session-Id: %.*s\n", hdr->msg_appl,
-			   hdr->msg_code, rc, tid.len, tid.s);
+		LM_DBG("%d/%d reply, Session-Id: %.*s\n", hdr->msg_appl,
+			   hdr->msg_code, tid.len, tid.s);
 	}
 
 	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
@@ -572,7 +640,7 @@ int dm_register_callbacks(void)
 				&app_defs[i].id, &data.app);
 
 			/* Register the dispatch callback */
-			FD_CHECK(fd_disp_register(dm_custom_cmd_reply,
+			FD_CHECK(fd_disp_register(dm_receive_msg,
 					DISP_HOW_APPID, &data, NULL, NULL));
 
 			if (app_defs[i].vendor != (unsigned int)-1) {
@@ -1490,7 +1558,7 @@ int dm_find(aaa_conn *_, aaa_map *map, int op)
 
 
 aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
-        unsigned int app_id, unsigned int cmd_code)
+        unsigned int app_id, unsigned int cmd_code, void *fd_msg)
 {
 	aaa_message *m;
 	struct dm_message *dm;
@@ -1500,6 +1568,7 @@ aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
 		LM_ERR("oom\n");
 		return NULL;
 	}
+	memset(m, 0, sizeof *m);
 
 	dm = shm_malloc(sizeof *dm);
 	if (!dm) {
@@ -1507,16 +1576,16 @@ aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
 		LM_ERR("oom\n");
 		return NULL;
 	}
+	memset(dm, 0, sizeof *dm);
 
-	memset(m, 0, sizeof *m);
 	m->type = msg_type;
 	m->avpair = (void *)dm;
 
-	memset(dm, 0, sizeof *dm);
 	INIT_LIST_HEAD(&dm->avps);
 	dm->am = m;
 	dm->app_id = app_id;
 	dm->cmd_code = cmd_code;
+	dm->fd_req = fd_msg;
 
 	return m;
 }
@@ -1524,7 +1593,7 @@ aaa_message *_dm_create_message(aaa_conn *_, int msg_type,
 
 aaa_message *dm_create_message(aaa_conn *_, int msg_type)
 {
-	return _dm_create_message(_, msg_type, 0, 0);
+	return _dm_create_message(_, msg_type, 0, 0, NULL);
 }
 
 
@@ -1613,7 +1682,7 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
 	                   avp, val, val_length, vendor);
 }
 
-int dm_build_avps(struct list_head *subavps, cJSON *array)
+int dm_build_avps(struct list_head *out_avps, cJSON *array)
 {
 	cJSON *_avp, *avp;
 	struct dict_avp_data dm_avp;
@@ -1670,7 +1739,7 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 				LM_ERR("could not encode %d/%d\n", code, vendor);
 				goto error;
 			} else if (ret == 0) {
-				ret = _dm_avp_add(NULL, subavps, &my_avp, st.s, st.len, 0);
+				ret = _dm_avp_add(NULL, out_avps, &my_avp, st.s, st.len, 0);
 				/* if a string, release whatever was alocated in the enc_func */
 				if (st.len >= 0)
 					pkg_free(st.s);
@@ -1685,21 +1754,21 @@ int dm_build_avps(struct list_head *subavps, cJSON *array)
 		}
 		if (avp->type & cJSON_String) {
 			LM_DBG("dbg::: AVP %d (name: '%s', str-val: %s)\n", code, name, avp->valuestring);
-			if (_dm_avp_add(NULL, subavps, &my_avp, avp->valuestring,
+			if (_dm_avp_add(NULL, out_avps, &my_avp, avp->valuestring,
 			        strlen(avp->valuestring), 0) != 0) {
 				LM_ERR("failed to add AVP %d, aborting request\n", code);
 				goto error;
 			}
 		} else if (avp->type & cJSON_Number) {
 			LM_DBG("dbg::: AVP %d (name: '%s', int-val: %d)\n", code, name, avp->valueint);
-			if (_dm_avp_add(NULL, subavps, &my_avp, &avp->valuedouble,
+			if (_dm_avp_add(NULL, out_avps, &my_avp, &avp->valuedouble,
 							dm_avp_inttype[dm_avp.avp_basetype], 0) != 0) {
 				LM_ERR("failed to add AVP %d, aborting request\n", code);
 				goto error;
 			}
 		} else if (avp->type & cJSON_Array) {
 			LM_DBG("dbg::: AVP %d (name: '%s', grouped)\n", code, name);
-			if (_dm_avp_add(NULL, subavps, &my_avp, avp->child, AAA_TYPE_GROUPED, 0) != 0) {
+			if (_dm_avp_add(NULL, out_avps, &my_avp, avp->child, AAA_TYPE_GROUPED, 0) != 0) {
 				LM_ERR("failed to add grouped AVP %d, aborting request\n", code);
 				goto error;
 			}
@@ -1763,72 +1832,76 @@ int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps)
 }
 
 
-int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
+int _dm_send_message(aaa_conn *_, aaa_message *msg, aaa_message **reply,
                char **rpl_avps)
 {
 	struct dm_message *dm;
+	int await_reply = 0;
 
-	if (!req || !my_reply_cond)
+	if (!msg || !my_reply_cond)
 		return -1;
 
-	dm = (struct dm_message *)(req->avpair);
+	dm = (struct dm_message *)(msg->avpair);
 	dm->reply_cond = my_reply_cond;
 
 	/* never provide the reply, just grab the result code, if any */
 	if (reply)
 		*reply = NULL;
 
-	req->last_found = DM_MSG_SENT;
+	msg->last_found = DM_MSG_SENT;
+	if (msg->type == AAA_AUTH || msg->type == AAA_CUSTOM_REQ)
+		await_reply = 1;
 
 	pthread_mutex_lock(msg_send_lk);
 
 	list_add_tail(&dm->list, msg_send_queue);
 	pthread_cond_signal(msg_send_cond);
 
+	pthread_mutex_lock(&my_reply_cond->sync.cond.mutex);
 	pthread_mutex_unlock(msg_send_lk);
 
-	LM_DBG("message queued for sending\n");
+	LM_DBG("message queued for sending, await_reply: %d\n", await_reply);
 
-	if (req->type == AAA_AUTH || req->type == AAA_CUSTOM) {
-		struct timespec wait_until;
-		struct timeval now, wait_time, res;
-		int rc;
-
-		gettimeofday(&now, NULL);
-		wait_time.tv_sec = dm_answer_timeout / 1000;
-		wait_time.tv_usec = dm_answer_timeout % 1000 * 1000UL;
-		LM_DBG("awaiting auth reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
-
-		timeradd(&now, &wait_time, &res);
-
-		wait_until.tv_sec = res.tv_sec;
-		wait_until.tv_nsec = res.tv_usec * 1000UL;
-
-		pthread_mutex_lock(&my_reply_cond->sync.cond.mutex);
-		rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
-					&my_reply_cond->sync.cond.mutex, &wait_until);
-		if (rc != 0) {
-			LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
-			       "reply\n", rc, strerror(rc));
-			pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
-
-			if (rpl_avps)
-				*rpl_avps = NULL;
-			return -2;
-		}
-
+	if (!await_reply) {
 		pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
-
-		return _dm_get_message_response(my_reply_cond, rpl_avps);
+		return 1;
 	}
 
-	return 0;
+	struct timespec wait_until;
+	struct timeval now, wait_time, res;
+	int rc;
+
+	gettimeofday(&now, NULL);
+	wait_time.tv_sec = dm_answer_timeout / 1000;
+	wait_time.tv_usec = dm_answer_timeout % 1000 * 1000UL;
+	LM_DBG("awaiting reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
+
+	timeradd(&now, &wait_time, &res);
+
+	wait_until.tv_sec = res.tv_sec;
+	wait_until.tv_nsec = res.tv_usec * 1000UL;
+
+	rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
+				&my_reply_cond->sync.cond.mutex, &wait_until);
+	if (rc != 0) {
+		LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
+		       "reply\n", rc, strerror(rc));
+		pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
+
+		if (rpl_avps)
+			*rpl_avps = NULL;
+		return -2;
+	}
+
+	pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
+
+	return _dm_get_message_response(my_reply_cond, rpl_avps);
 }
 
 
-int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply)
+int dm_send_message(aaa_conn *_, aaa_message *msg, aaa_message **reply)
 {
-	return _dm_send_message(_, req, reply, NULL);
+	return _dm_send_message(_, msg, reply, NULL);
 }
 
 
@@ -1851,12 +1924,15 @@ static void dm_free_avps(struct list_head *avps)
 
 void _dm_destroy_message(aaa_message *msg)
 {
+	struct dm_message *dm;
+
 	if (!msg)
 		return;
 
-	dm_free_avps(&((struct dm_message *)(msg->avpair))->avps);
+	dm = (struct dm_message *)msg->avpair;
+	dm_free_avps(&dm->avps);
+	shm_free(dm);
 
-	shm_free(msg->avpair);
 	shm_free(msg);
 }
 
