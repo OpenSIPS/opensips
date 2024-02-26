@@ -473,6 +473,7 @@ static int dm_custom_req(struct dm_message *msg)
 		LM_ERR("failed to pack AVPs\n");
 		return -1;
 	}
+
 	/* check if we already have a Session-Id in the message - if so, use it! */
 	rc = fd_msg_search_avp(dmsg, dm_dict.Session_Id, &avp);
 	if (rc != 0) {
@@ -504,6 +505,40 @@ static int dm_custom_req(struct dm_message *msg)
 }
 
 
+static int dm_custom_rpl(struct dm_message *dm)
+{
+	struct msg *ans = (struct msg *)dm->fd_req;
+	int rc;
+
+	rc = fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &ans, 0);
+	if (rc != 0) {
+		LM_ERR("failed to create answer message, error: %d\n", rc);
+		goto error;
+	}
+
+	/* App id */
+	{
+		struct msg_hdr *h;
+		FD_CHECK(fd_msg_hdr(ans, &h));
+		h->msg_appl = dm->app_id;
+	}
+
+	/* include all AVPs passed from script level */
+	if (dm_pack_avps(ans, &dm->avps) != 0) {
+		LM_ERR("failed to pack AVPs\n");
+		return -1;
+	}
+
+	FD_CHECK(fd_msg_send(&ans, NULL, NULL));
+	FD_CHECK(fd_msg_free(ans));
+	return 0;
+
+error:
+	fd_msg_free(ans);
+	return -1;
+}
+
+
 static inline int diameter_send_msg(struct dm_message *msg)
 {
 	aaa_message *am = msg->am;
@@ -513,8 +548,10 @@ static inline int diameter_send_msg(struct dm_message *msg)
 		return dm_auth(msg);
 	case AAA_ACCT:
 		return dm_acct(msg);
-	case AAA_CUSTOM:
+	case AAA_CUSTOM_REQ:
 		return dm_custom_req(msg);
+	case AAA_CUSTOM_RPL:
+		return dm_custom_rpl(msg);
 	default:
 		LM_ERR("unsupported AAA message type (%d), skipping\n", am->type);
 	}
@@ -569,6 +606,8 @@ void diameter_peer_loop(int _)
 {
 	struct dm_message *msg;
 
+	LM_INFO("freeDiameter dedicated process starting...\n");
+
 	if (freeDiameter_init() != 0) {
 		LM_ERR("failed to init freeDiameter library\n");
 		return;
@@ -581,6 +620,11 @@ void diameter_peer_loop(int _)
 
 	__FD_CHECK(dm_register_callbacks(), 0, );
 	__FD_CHECK(fd_core_start(), 0, );
+
+	if (dm_init_reply_cond(-2) != 0) {
+		LM_ERR("failed to init cond\n");
+		return;
+	}
 
 	pthread_mutex_lock(msg_send_lk);
 
