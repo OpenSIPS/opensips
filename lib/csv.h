@@ -56,4 +56,9 @@ csv_record *__parse_csv_record(const str *in, enum csv_flags parse_flags,
 /* Easily free your CSV records, regardless of any flags set during parsing */
 void free_csv_record(csv_record *record);
 
+str *__print_csv_record(csv_record *record, enum csv_flags print_flags,
+						unsigned char sep);
+#define _print_csv_record(in, flags) __print_csv_record(in, flags, ',')
+#define print_csv_record(in) _print_csv_record(in, 0)
+
 #endif /* __LIB_CSV__ */
