@@ -339,6 +339,44 @@ modparam("cachedb_local", "enable_restart_persistency", yes)
 opensips-cli -x mi cache_remove_chunk "keyprefix*" collection
 		</programlisting>
 		</section>
+
+		<section id="mi_cache_fetch_chunk" xreflabel="cache_fetch_chunk">
+		<title>
+			<function moreinfo="none">cache_fetch_chunk</function>
+		</title>
+		<para>
+		Fetches all local cache entries that match the provided glob param.
+		</para>
+
+		<para>Parameters :</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>glob</emphasis> - keys that match glob will be returned
+			</para></listitem>
+			<listitem><para>
+				<emphasis>collection(optional)</emphasis> - collection from which the keys shall
+					be retrieved; if no collection set, the default collection will be used;
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		MI FIFO Command Format:
+		</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi cache_fetch_chunk "keyprefix*" collection
+{
+    "keys": [
+        {
+            "name": "keyprefix_1",
+            "value": "key 1 data here"
+        },
+        {
+            "name": "keyprefix_2",
+            "value": "key 2 data here"
+        }
+    ]
+}
+		</programlisting>
+		</section>
 	</section>
 
 </chapter>
