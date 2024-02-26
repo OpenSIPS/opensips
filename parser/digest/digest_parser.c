@@ -276,6 +276,51 @@ alg_t parse_digest_algorithm(const str *sp)
 	return ALG_OTHER;
 }
 
+const str *print_digest_algorithm(alg_t alg)
+{
+	switch (alg) {
+	case ALG_MD5:
+		return _str(ALG_MD5_STR);
+	case ALG_MD5SESS:
+		return _str(ALG_MD5SESS_STR);
+	case ALG_SHA256:
+		return _str(ALG_SHA256_STR);
+	case ALG_SHA256SESS:
+		return _str(ALG_SHA256SESS_STR);
+	case ALG_SHA512_256:
+		return _str(ALG_SHA512_256_STR);
+	case ALG_SHA512_256SESS:
+		return _str(ALG_SHA512_256SESS_STR);
+	case ALG_AKAv1_MD5:
+		return _str(ALG_AKAv1_MD5_STR);
+	case ALG_AKAv1_MD5SESS:
+		return _str(ALG_AKAv1_MD5SESS_STR);
+	case ALG_AKAv1_SHA256:
+		return _str(ALG_AKAv1_SHA256_STR);
+	case ALG_AKAv1_SHA256SESS:
+		return _str(ALG_AKAv1_SHA256SESS_STR);
+	case ALG_AKAv1_SHA512_256:
+		return _str(ALG_AKAv1_SHA512_256_STR);
+	case ALG_AKAv1_SHA512_256SESS:
+		return _str(ALG_AKAv1_SHA512_256SESS_STR);
+	case ALG_AKAv2_MD5:
+		return _str(ALG_AKAv2_MD5_STR);
+	case ALG_AKAv2_MD5SESS:
+		return _str(ALG_AKAv2_MD5SESS_STR);
+	case ALG_AKAv2_SHA256:
+		return _str(ALG_AKAv2_SHA256_STR);
+	case ALG_AKAv2_SHA256SESS:
+		return _str(ALG_AKAv2_SHA256SESS_STR);
+	case ALG_AKAv2_SHA512_256:
+		return _str(ALG_AKAv2_SHA512_256_STR);
+	case ALG_AKAv2_SHA512_256SESS:
+		return _str(ALG_AKAv2_SHA512_256SESS_STR);
+	default:
+	case ALG_OTHER:
+	case ALG_UNSPEC:
+		return _str("Unknown");
+	}
+}
 
 /*
  * Parse username for user and domain parts
