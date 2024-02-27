@@ -2196,8 +2196,8 @@ static cJSON *dict_avp_dec_ip(struct avp_hdr * h, struct dict_avp_data *avp)
 
 static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *ret)
 {
-	int len, i;
-	char *buf, *val;
+	int len;
+	char *buf;
 
 	if ((obj->type & cJSON_String) == 0)
 		return 1; /* encode it as it is */
@@ -2207,24 +2207,9 @@ static int dict_avp_enc_hex(cJSON *obj, struct dict_avp_data *avp, int _, str *r
 		LM_ERR("oom for hex encoding\n");
 		return -1;
 	}
-	val = obj->valuestring;
-	for (i = 0; i < len / 2; i++) {
-		if(val[2*i]>='0' && val[2*i]<='9')
-			buf[i] = (val[2*i]-'0') << 4;
-		else if(val[2*i]>='a' && val[2*i]<='f')
-			buf[i] = (val[2*i]-'a'+10) << 4;
-		else if(val[2*i]>='A' && val[2*i]<='F')
-			buf[i] = (val[2*i]-'A'+10) << 4;
-		else goto error;
-
-		if(val[2*i+1]>='0' && val[2*i+1]<='9')
-			buf[i] += val[2*i+1]-'0';
-		else if(val[2*i+1]>='a' && val[2*i+1]<='f')
-			buf[i] += val[2*i+1]-'a'+10;
-		else if(val[2*i+1]>='A' && val[2*i+1]<='F')
-			buf[i] += val[2*i+1]-'A'+10;
-		else goto error;
-	}
+	len = hex2string(obj->valuestring, len, buf);
+	if (len < 0)
+		goto error;
 	ret->s = buf;
 	ret->len = len/2;
 	return 0;
