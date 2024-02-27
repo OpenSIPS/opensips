@@ -150,8 +150,8 @@ int dbops_db_bind(void)
 	 *
 	 * so just dig through the whole script tree
 	 */
-	if (is_script_func_used("avp_db_query", 1) ||
-	    is_script_func_used("avp_db_query", 2)) {
+	if (is_script_func_used("db_query", 1) ||
+	    is_script_func_used("db_query", 2)) {
 		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_RAW_QUERY)) {
 			LM_ERR("driver for DB URL [default] does not support "
 				   "raw queries!\n");
@@ -159,8 +159,8 @@ int dbops_db_bind(void)
 		}
 	}
 
-	if (is_script_async_func_used("avp_db_query", 1) ||
-	    is_script_async_func_used("avp_db_query", 2)) {
+	if (is_script_async_func_used("db_query", 1) ||
+	    is_script_async_func_used("db_query", 2)) {
 		if (!DB_CAPABILITY(default_db_url->dbf, DB_CAP_ASYNC_RAW_QUERY))
 			LM_WARN("async() calls for DB URL [default] will work "
 			        "in normal mode due to driver limitations\n");
