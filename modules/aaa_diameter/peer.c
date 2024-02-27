@@ -62,6 +62,9 @@ int dm_init_peer(void)
 	msg_send_cond = &wrap->cond;
 
 	init_mutex_cond(msg_send_lk, msg_send_cond);
+
+	INIT_LIST_HEAD(&dm_unreplied_req);
+	lock_init(&dm_unreplied_req_lk);
 	return 0;
 }
 
@@ -509,6 +512,12 @@ static int dm_custom_rpl(struct dm_message *dm)
 {
 	struct msg *ans = (struct msg *)dm->fd_req;
 	int rc;
+
+	if (dm_remove_unreplied_req(ans) != 0) {
+		LM_ERR("unable to build answer, request is no longer available "
+		        "(timeout: %d s)\n", dm_unreplied_req_timeout);
+		return -1;
+	}
 
 	rc = fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &ans, 0);
 	if (rc != 0) {

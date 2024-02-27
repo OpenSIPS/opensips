@@ -40,6 +40,20 @@ struct local_rules_definition {
 	int max;
 };
 
+struct fd_msg_list {
+	struct msg *req;
+	unsigned int timeout_jf;
+	struct list_head list;
+};
+
+/* for now, the purpose of this list is only to avoid dangling Diameter
+ * requests (server-side), in case the opensips.cfg has no event_route
+ * to consume them */
+struct list_head dm_unreplied_req;
+gen_lock_t dm_unreplied_req_lk;
+unsigned int dm_unreplied_req_timeout = 120; /* sec */
+
+
 struct _dm_dict dm_dict;
 
 /* Workaround until we find a way of looking up a single enum val in fD */
@@ -137,6 +151,70 @@ int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond)
 	pthread_condattr_destroy(&cattr);
 
 	return 0;
+}
+
+
+static inline void dm_update_unreplied_req(struct msg *req)
+{
+	struct list_head *it, *aux;
+	struct fd_msg_list *rit, *ml;
+	unsigned int now = get_ticks();
+
+	lock_get(&dm_unreplied_req_lk);
+
+	list_for_each_safe (it, aux, &dm_unreplied_req) {
+		rit = list_entry(it, struct fd_msg_list, list);
+
+		if (rit->timeout_jf <= now) {
+			LM_DBG("Diameter request timeout (unhandled), cleaning up\n");
+			list_del(&rit->list);
+			fd_msg_free(rit->req);
+			pkg_free(rit);
+		} else {
+			break;
+		}
+	}
+
+	lock_release(&dm_unreplied_req_lk);
+
+	ml = pkg_malloc(sizeof *ml);
+	if (!ml) {
+		LM_ERR("oom\n");
+		return;
+	}
+	memset(ml, 0, sizeof *ml);
+
+	ml->req = req;
+	ml->timeout_jf = get_ticks() + dm_unreplied_req_timeout;
+
+	lock_get(&dm_unreplied_req_lk);
+	list_add_tail(&ml->list, &dm_unreplied_req);
+	lock_release(&dm_unreplied_req_lk);
+}
+
+
+int dm_remove_unreplied_req(struct msg *req)
+{
+	struct list_head *it, *aux;
+	struct fd_msg_list *rit;
+
+	lock_get(&dm_unreplied_req_lk);
+
+	list_for_each_safe (it, aux, &dm_unreplied_req) {
+		rit = list_entry(it, struct fd_msg_list, list);
+
+		if (rit->req == req) {
+			list_del(&rit->list);
+			lock_release(&dm_unreplied_req_lk);
+			LM_DBG("matched unreplied req, removing from list\n");
+			pkg_free(rit);
+			return 0;
+		}
+	}
+
+	lock_release(&dm_unreplied_req_lk);
+	LM_DBG("failed to match unreplied req (already cleaned up?!)\n");
+	return -1;
 }
 
 
@@ -469,11 +547,13 @@ static int dm_receive_req(struct msg **_msg, struct avp * avp, struct session * 
 
 	init_str(&avp_arr, cJSON_PrintUnformatted(avps));
 
+	/* keep the request for a while in order to be able to generate the answer */
+	dm_update_unreplied_req(msg);
+
 	if (dm_dispatch_event_req(msg, &tid, hdr->msg_appl, hdr->msg_code, &avp_arr))
 		LM_ERR("failed to dispatch DM Request (tid: %.*s, %d/%d)\n", tid.len,
 		        tid.s, hdr->msg_appl, hdr->msg_code);
 
-	/* for now, keep the message in order to be able to generate the reply */
 	goto out;
 
 error:

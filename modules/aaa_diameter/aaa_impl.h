@@ -137,10 +137,14 @@ struct dm_cond {
 };
 int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond);
 
+extern struct list_head dm_unreplied_req;
+extern gen_lock_t dm_unreplied_req_lk;
+extern unsigned int dm_unreplied_req_timeout;
 extern char *dm_conf_filename;
 extern char *extra_avps_file;
 extern struct _dm_dict dm_dict;
 extern int dm_answer_timeout;
+int dm_remove_unreplied_req(struct msg *req);
 
 int freeDiameter_init(void);
 
