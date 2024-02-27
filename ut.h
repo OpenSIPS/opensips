@@ -303,6 +303,7 @@ static inline char* sint2str(long l, int* len)
 	return p;
 }
 
+#define DOUBLE2STR_MAX_LEN  INT2STR_MAX_LEN
 static inline char* double2str(double d, int* len)
 {
 	unsigned int buf;

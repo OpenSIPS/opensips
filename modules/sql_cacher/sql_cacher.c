@@ -557,6 +557,9 @@ static unsigned int get_cdb_val_size(cache_entry_t *c_entry, db_val_t *values, i
 			case DB_BLOB:
 				len += VAL_BLOB(values + i).len;
 				break;
+			case DB_DOUBLE:
+				len += DOUBLE2STR_MAX_LEN;
+				break;
 			default: continue;
 		}
 	}
@@ -636,8 +639,6 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 				break;
 			case DB_DOUBLE:
 				str_val.s = double2str(VAL_DOUBLE(values + i), &str_val.len);
-				cdb_val.len += str_val.len;
-				cdb_val.s = pkg_realloc(cdb_val.s, cdb_val.len);
 				break;
 			default: continue;
 		}
