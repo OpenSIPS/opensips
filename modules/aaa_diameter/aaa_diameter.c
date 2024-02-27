@@ -41,7 +41,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 				str *avp_json, pv_spec_t *rpl_avps_pv);
 static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 				int *app_id, int *cmd_code, str *avp_json, pv_spec_t *rpl_avps_pv);
-static int dm_send_reply(struct sip_msg *msg, str *avp_json);
+static int dm_send_answer(struct sip_msg *msg, str *avp_json);
 static int dm_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
@@ -58,7 +58,7 @@ static const cmd_export_t cmds[]= {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 
-	{"dm_send_reply", (cmd_function)dm_send_reply, {
+	{"dm_send_answer", (cmd_function)dm_send_answer, {
 		{CMD_PARAM_STR,0,0}, {0,0,0}},
 		EVENT_ROUTE},
 
@@ -313,7 +313,7 @@ error:
 }
 
 
-static int dm_send_reply(struct sip_msg *msg, str *avp_json)
+static int dm_send_answer(struct sip_msg *msg, str *avp_json)
 {
 	aaa_message *dmsg = NULL;
 	cJSON *avps;

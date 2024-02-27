@@ -200,7 +200,7 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 			</para></listitem>
 			<listitem><para>
 				<emphasis>avps_json</emphasis> (string) - A JSON Array containing
-				the AVPs to include in the message payload.
+				the AVPs to include in the message.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>rpl_avps_pv</emphasis> (var, optional) - output variable which will
@@ -333,6 +333,80 @@ $json(avps) := $var(rpl_avps);
 		</example>
 	</section>
 
+	<section id="func_dm_send_answer" xreflabel="dm_send_answer()">
+		<title>
+		<function moreinfo="none">dm_send_answer(avps_json)</function>
+		</title>
+		<para>
+		Send back a Diameter answer message to the interconnected peer in a
+		<emphasis>non-blocking</emphasis> fashion, in response to its request.
+		</para>
+		<para>
+		The following fields will be automatically copied over from the Diameter
+		request when building the answer message:
+			<itemizedlist>
+				<listitem><para>Application ID</para></listitem>
+				<listitem><para>Command Code</para></listitem>
+				<listitem><para>Session-Id AVP, if any</para></listitem>
+				<listitem><para>Transaction-Id AVP, if any (only applies when
+					Session-Id is not present)</para></listitem>
+			</itemizedlist>
+		</para>
+		<para><emphasis>Parameters</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>avps_json</emphasis> (string) - A JSON Array containing
+				the AVPs to include in the answer message (example below).
+			</para></listitem>
+		</itemizedlist>
+
+		<para><emphasis>Return Codes</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis role='bold'>1</emphasis> - Success
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>-1</emphasis> - Internal Error
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can only be used from an <emphasis>EVENT_ROUTE</emphasis>.
+		</para>
+		<example>
+		<title><function moreinfo="none">dm_send_answer()</function> usage</title>
+		<programlisting format="linespecific">
+
+event_route [E_DM_REQUEST] {
+  xlog("Req: $param(sess_id) / $param(app_id) / $param(cmd_code)\n");
+  xlog("AVPs: $param(avps_json)\n");
+
+  $json(avps) := $param(avps_json);
+
+  /* ... process the data (AVPs) ... */
+
+  /* ... and reply back with more AVPs! */
+  $var(ans_avps) = "[
+          { \"Vendor-Specific-Application-Id\": [{
+                  \"Vendor-Id\": 0
+                  }] },
+
+          { \"Result-Code\": 2001 },
+          { \"Auth-Session-State\": 0 },
+          { \"Origin-Host\": \"opensips.diameter.test\" },
+          { \"Origin-Realm\": \"diameter.test\" }
+  ]";
+
+  if (!dm_send_answer($var(ans_avps)))
+    xlog("ERROR - failed to send Diameter answer\n");
+}
+
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
@@ -383,6 +457,42 @@ route[dm_reply] {
 
 </programlisting>
 		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event-dm-request" xreflabel="E_DM_REQUEST">
+		<title>
+		<function moreinfo="none">E_DM_REQUEST</function>
+		</title>
+		<para>
+		This event is raised whenever the <emphasis>aaa_diameter</emphasis>
+		module is loaded and OpenSIPS receives a Diameter request on the configured
+		Diameter listening interface.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>app_id (integer)</emphasis> - the Diameter Application Identifier
+			</para></listitem>
+			<listitem><para>
+					<emphasis>cmd_code (integer)</emphasis> - the Diameter Command Code
+			</para></listitem>
+			<listitem><para>
+					<emphasis>sess_id (string)</emphasis> - the value of either the
+					<emphasis>Session-Id</emphasis> AVP, <emphasis>Transaction-Id</emphasis> AVP
+						or a <emphasis>NULL</emphasis> value if neither of these
+						transaction-identifying AVPs is present in the Diameter request.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>avps_json (string)</emphasis> - a JSON Array containing the
+					AVPs of the request.  Use the <ulink url='json'>json</ulink> module's
+					<emphasis role='bold'>$json</emphasis> variable
+					to easily parse and work with it.
+			</para></listitem>
+		</itemizedlist>
 	</section>
 
 	</section>
