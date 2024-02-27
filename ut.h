@@ -472,6 +472,33 @@ inline static int string2hex(
 	return orig_len * 2;
 }
 
+inline static int hex2string(
+	/* input */ const char *str, int len,
+	/* output */ char *hex )
+{
+	int i;
+	for (i = 0; i < len / 2; i++) {
+		if(str[2*i]>='0' && str[2*i]<='9')
+			hex[i] = (str[2*i]-'0') << 4;
+		else if(str[2*i]>='a' && str[2*i]<='f')
+			hex[i] = (str[2*i]-'a'+10) << 4;
+		else if(str[2*i]>='A' && str[2*i]<='F')
+			hex[i] = (str[2*i]-'A'+10) << 4;
+		else goto error;
+
+		if(str[2*i+1]>='0' && str[2*i+1]<='9')
+			hex[i] += str[2*i+1]-'0';
+		else if(str[2*i+1]>='a' && str[2*i+1]<='f')
+			hex[i] += str[2*i+1]-'a'+10;
+		else if(str[2*i+1]>='A' && str[2*i+1]<='F')
+			hex[i] += str[2*i+1]-'A'+10;
+		else goto error;
+	}
+	return i;
+error:
+	return -1;
+}
+
 /* portable sleep in microseconds (no interrupt handling now) */
 
 inline static void sleep_us( unsigned int nusecs )
