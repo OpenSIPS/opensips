@@ -7,7 +7,8 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module provides a Diameter implementation for the core AAA API interface.
+		This module provides an RFC 6733 Diameter peer implementation, being
+		able to act as either <emphasis role='bold'>Diameter client</emphasis> or <emphasis role='bold'>server</emphasis>, or <emphasis role='bold'>both</emphasis>.
 	</para>
 
 	<para>
@@ -24,7 +25,49 @@
 		</listitem>
 
 	</itemizedlist>
+	</section>
 
+	<section id="diameter_client" xreflabel="Diameter Client">
+	<title>Diameter Client</title>
+	<para>
+		The module implements the core AAA OpenSIPS interface, thus offering
+		an alternative client implementation to the
+		<ulink url='aaa_radius'>aaa_radius</ulink> module which can be useful,
+		for example, when performing billing and accounting for the live SIP calls.
+	</para>
+	<para>
+		In addition to the RADIUS client's auth and accounting features, the
+		Diameter client includes support for sending <emphasis>arbitrary</emphasis>
+		Diameter requests, further opening up the scope of applications which
+		can be achieved through OpenSIPS scripting.  Such Diameter requests can
+		be sent using the <xref linkend="func_dm_send_request"/> function.
+	</para>
+	</section>
+
+	<section id="diameter_server" xreflabel="Diameter Server">
+	<title>Diameter Server</title>
+	<para>
+		Starting with OpenSIPS <emphasis role='bold'>3.5</emphasis>, the Diameter
+		module includes <emphasis>server-side</emphasis> support as well.
+	</para>
+	<para>
+		First, the <ulink url='event_route'>event_route</ulink> module must be loaded in
+		order to be able to process <xref linkend="event_dm_request"/> events in
+		the OpenSIPS configuration file.  These events will contain all necessary
+		information on the incoming Diameter request.
+	</para>
+	<para>
+		Finally, once the request information is processed and the answer AVPs
+		are prepared, script writers should use the <xref linkend="func_dm_send_answer"/>
+		function in order to reply with a Diameter answer message.
+	</para>
+	<para>
+		<emphasis>Recommendation:</emphasis> When possible, always load the
+		<emphasis role='bold'>dict_sip.fdx</emphasis> freeDiameter extension module
+		inside your <emphasis>freeDiameter.conf</emphasis> configuration file,
+		as it contains hundreds of well-known AVP definitions which may be good
+		to have when inter-operating with other Diameter peer implementations.
+	</para>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -463,7 +506,7 @@ route[dm_reply] {
 
 	<section id="exported_events" xreflabel="Exported Events">
 	<title>Exported Events</title>
-	<section id="event-dm-request" xreflabel="E_DM_REQUEST">
+	<section id="event_dm_request" xreflabel="E_DM_REQUEST">
 		<title>
 		<function moreinfo="none">E_DM_REQUEST</function>
 		</title>
