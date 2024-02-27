@@ -30,28 +30,40 @@ const struct digest_auth_calc* get_digest_calc(alg_t algorithm)
 	switch (algorithm) {
 	case ALG_UNSPEC:
 	case ALG_MD5:
+	case ALG_AKAv1_MD5:
+	case ALG_AKAv2_MD5:
 		digest_calc = &md5_digest_calc;
 		break;
 
 	case ALG_MD5SESS:
+	case ALG_AKAv1_MD5SESS:
+	case ALG_AKAv2_MD5SESS:
 		digest_calc = &md5sess_digest_calc;
 		break;
 
 #if defined(SHA_256_ENABLE)
 	case ALG_SHA256:
+	case ALG_AKAv1_SHA256:
+	case ALG_AKAv2_SHA256:
 		digest_calc = &sha256_digest_calc;
 		break;
 
 	case ALG_SHA256SESS:
+	case ALG_AKAv1_SHA256SESS:
+	case ALG_AKAv2_SHA256SESS:
 		digest_calc = &sha256sess_digest_calc;
 		break;
 #endif
 #if defined(SHA_512_256_ENABLE)
 	case ALG_SHA512_256:
+	case ALG_AKAv1_SHA512_256:
+	case ALG_AKAv2_SHA512_256:
 		digest_calc = &sha512t256_digest_calc;
 		break;
 
 	case ALG_SHA512_256SESS:
+	case ALG_AKAv1_SHA512_256SESS:
+	case ALG_AKAv2_SHA512_256SESS:
 		digest_calc = &sha512t256sess_digest_calc;
 		break;
 #endif
