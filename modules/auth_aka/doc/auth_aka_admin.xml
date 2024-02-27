@@ -1,0 +1,733 @@
+<!-- Auth_aka Module User's Guide -->
+
+<chapter>
+	
+	<title>&adminguide;</title>
+	
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module contains functions that are used to perform digest
+		authentication using the AKA (Authentication and Key Agreement)
+		security protocol. This mechanism is being used in IMS networks to
+		provide mutual authentication between the UE (device) and the 3G/4G/5G
+		network.
+	</para>
+	<para>
+		The AKA protocol establishes a set of security keys, called
+		authentication vectors (or AVs), and uses them to generate the digest
+		challenge, as well as for computing the digest result and authenticating
+		the UE. AVs are exchanged over a separate communication channel.
+	</para>
+	<para>
+		Although the AKA protocol also requires to use the AVs to establish a
+		secure channel between the UE and the network (by means of IPSec
+		tunnels), this module does not handle that part - it just performs the
+		authentication of the user and passes along the cyphering and
+		integrity keys in the Authorization header, according to
+		the <emphasis>ETSI TS 129 229</emphasis> specifications. These are later
+		on picked up by other components (such as P-CSCFs) to establish the
+		secure channel.
+    </para>
+	</section>
+	<section>
+	<title>Authentication Vectors</title>
+	<para>
+		Authentication Vectors (or AVs) consist of a set of five parameter
+		(RAND, AUTN, XRES, CK, IK) that are being used for mutual
+		authentication. As these need to be exchanged between the device (UE)
+		and network through a different channel (i.e. Diameter Cx interface in
+		LTE networks), the module does not provide any means to fetch the AV
+		information. It does, however, provide a generic interface (called AV
+		Manage Interface) to store AVs (that are being fetched by other
+		modules/channels), manage them and use them in the digest
+		authentication algorithm.
+	</para>
+	<para>
+		Basic AV operations that the module performs:
+		<itemizedlist>
+		<listitem>
+			<para>Ask for a new AV to be fetched for a specific user identity</para>
+		</listitem>
+		<listitem>
+			<para>Manage an AV lifetime, including reuses</para>
+		</listitem>
+		<listitem>
+			<para>Mark an AV as being used in a digest challeng</para>
+		</listitem>
+		<listitem>
+			<para>Invalidate or discard an AV (due to various reasons)</para>
+		</listitem>
+		</itemizedlist>
+	</para>
+	<para>
+		A module that implements the AV Manage Interface (called AV Manager)
+		should be able to fetch all five parameters of an AV, and push them in
+		the AV Storage.
+	</para>
+	</section>
+	<section>
+	<title>Supported algorithms</title>
+	<para>
+		The current implementation only supports the AKAv1 algorithms, with
+		the associated hashing functions (such as MD5, SHA-256). In the
+		challenge message, we send, one can advertise other algorithms as well,
+		but the response cannot be handled by this module, and an appropriate
+		error will be returned.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+		<section>
+			<title>&osips; Modules</title>
+			<para>
+			The module depends on the following modules (in the other words 
+			the listed modules must be loaded before this module):
+			<itemizedlist>
+				<listitem>
+				<para><emphasis>auth</emphasis> -- Authentication framework</para>
+				</listitem>
+				<listitem>
+					<para>
+						<emphasis>AV manage module</emphasis>
+						-- at least one module that fetches AVs and pushes
+						them in the AV storage
+					</para>
+				</listitem>
+			</itemizedlist>
+			</para>
+		</section>
+		<section>
+			<title>External Libraries or Applications</title>
+			<para>
+			This module does not depend on any external library.
+			</para>
+		</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+	<title>Exported Parameters</title>
+	<section id="param_default_av_mgm" xreflabel="default_av_mgm">
+		<title><varname>default_av_mgm</varname> (string)</title>
+		<para>
+			The default AV Manager used in case the functions do not provide them explicitly.
+		</para>
+		<example>
+		<title><varname>default_av_mgm</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("auth_aka", "default_av_mgm", "diameter") # fetch AVs through the Cx interface
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_default_qop" xreflabel="default_qop">
+		<title><varname>default_qop</varname> (string)</title>
+		<para>
+			The default qop parameter used during challenge, if the functions
+			do not provide them explicitly.
+		</para>
+		<para>
+			Default value is <emphasis>auth</emphasis>.
+		</para>
+		<example>
+		<title><varname>default_qop</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("auth_aka", "default_qop", "auth,auth-int")
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_default_algorithm" xreflabel="default_algorithm">
+		<title><varname>default_algorithm</varname> (string)</title>
+		<para>
+			The default algorithm to be advertise during challenge, if the
+			functions do not provide them explicitly.
+			<emphasis>Note</emphasis>
+			that at least one of the algorithms provided should be an AKA
+			one, otherwise it makes no sense to use this module.
+		</para>
+		<para>
+			Default value is <emphasis>AKAv1-MD5</emphasis>.
+		</para>
+		<para>
+			<emphasis>WARNING:</emphasis> only AKAv1* algorithms are currently supported.
+		</para>
+		<example>
+		<title><varname>default_algorithm</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("auth_aka", "default_algorithm", "AKAv2-MD5")
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_hash_size" xreflabel="hash_size">
+		<title><varname>hash_size</varname> (integer)</title>
+		<para>
+			The size of the hash that stores the AVs for each user.
+			Must be a power of 2 number.
+		</para>
+		<para>
+			Default value is <emphasis>4096</emphasis>.
+		</para>
+		<example>
+		<title><varname>hash_size</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("auth_aka", "hash_size", 1024)
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_sync_timeout" xreflabel="sync_timeout">
+		<title><varname>sync_timeout</varname> (string)</title>
+		<para>
+			The amount of milliseconds a synchronous call should
+			wait for getting an authentication vector.
+		</para>
+		<para>
+			Must be a positive value. A value of
+			<emphasis>0</emphasis> indicates to wait indefinitely.
+		</para>
+		<para>
+			Default value is <emphasis>100</emphasis> ms.
+		</para>
+		<example>
+		<title><varname>sync_timeout</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("auth_aka", "sync_timeout", 200)
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_async_timeout" xreflabel="async_timeout">
+		<title><varname>async_timeout</varname> (string)</title>
+		<para>
+			The amount of milliseconds an asynchronous call should
+			wait for getting an authentication vector.
+		</para>
+		<para>
+			Must be a positive value, greater than 0.
+		</para>
+		<para>
+			<emphasis>NOTE:</emphasis> the current timeout mechanism only
+			has seconds granularity, therefore you should configure this
+			parameter as a multiple of 1000.
+		</para>
+		<para>
+			Default value is <emphasis>1000</emphasis> ms.
+		</para>
+		<example>
+		<title><varname>async_timeout</varname> parameter usage</title>
+		<programlisting format="linespecific">
+		
+modparam("auth_aka", "async_timeout", 2000)
+		</programlisting>
+		</example>
+	</section>
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_aka_www_authorize" xreflabel="aka_www_authorize()">
+		<title><function moreinfo="none">aka_www_authorize([realm]])</function></title>
+		<para>
+		The function verifies credentials according to
+		<ulink url="http://www.ietf.org/rfc/rfc3310.txt">RFC3310</ulink>, by using
+		an authentication vector priorly allocated by an
+		<function moreinfo="none">aka_www_challenge()</function> call, using
+		the <emphasis>av_mgm</emphasis> manager. If the credentials are
+		verified successfully the function will succeed, otherwise it will fail with
+		an appropriate error code, as follows:
+		</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>-6 (sync request)</emphasis> - the <emphasis>auts</emphasis>
+			parameter was was present, thus a sync was requested;
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-5 (generic error)</emphasis> - some generic error
+			occurred and no reply was sent out;
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-4 (no credentials)</emphasis> - credentials were not
+			found in request;
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-3 (unknown nonce)</emphasis> - authentication vector
+			with the corresponding nonce was not found;
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-2 (invalid password)</emphasis> - password does not
+			match the authentication vector;
+			</para></listitem>
+			<listitem><para>
+			<emphasis>-1 (invalid username)</emphasis> - no username found
+			in the Authorize header;
+			</para></listitem>
+		</itemizedlist>
+		<para>
+			In case the function succeeds, the <emphasis>WWW-Authenticate</emphasis>
+			header is being added to the reply, containing the challenge information,
+			as well as the <emphasis>Integrity-Key</emphasis> and the
+			<emphasis>Confidentiality-Key</emphasis> values associated to the
+			AV being used.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>realm (string)</emphasis> - Realm is a opaque string that
+			the user agent should present to the user so he can decide what 
+			username and password to use.  This is usually
+			one of the domains the proxy is responsible for.
+			If an empty string <quote></quote> is used then the server will 
+			generate realm from host part of From header field URI.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		If the credentials are verified successfully then the function will
+		succeed and mark the credentials as authorized (marked credentials
+		can be later used by some other functions).
+		</para>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_www_authorize</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+if (!aka_www_authorize("diameter", "siphub.com"))
+	aka_www_challenge("diameter", "siphub.com", "auth");
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_aka_proxy_authorize" xreflabel="aka_proxy_authorize()">
+		<title><function moreinfo="none">aka_proxy_authorize([realm]])</function></title>
+		<para>
+		The function behaves the same as <xref linkend="func_aka_www_authorize"/>,
+		but it authenticates the user from a proxy perspective. It receives the same
+		parameters, with the same meaning, and returns the same values.
+		</para>
+
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_proxy_authorize</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+if (!aka_proxy_authorize("siphub.com"))
+	aka_proxy_challenge("diameter", "siphub.com", "auth");
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_aka_www_challenge" xreflabel="aka_www_challenge()">
+		<title><function moreinfo="none">aka_www_challenge([av_mgm[, realm[ ,qop[, alg]]]])</function></title>
+		<para>
+		The function challenges a user agent. It fetches an authentication
+		vector for each algorigthm used through the
+		<emphasis>av_mgm</emphasis> Manager and generate one or more
+		WWW-Authenticate header fields containing digest challenges. It will
+		put the header field(s) into a response generated from the request the
+		server is processing and will send the reply. Upon reception of such a
+		reply the user agent should compute credentials using the used
+		authentication vector annd retry the request.
+		For more information regarding digest authentication 
+		see RFC2617, RFC3261, RFC3310 and RFC8760.
+		</para>
+		<para id="aka_www_challenge_params" xreflabel="aka_www_challenge() parameters meaning">
+			Meaning of the parameters is as follows:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>av_mgm</emphasis> (string, optional) - the AV Manager
+			to be used for this challenge, in case an AV is not already available
+			for the challenged user identity. In case it is missing the value of the
+			<xref linkend="param_default_av_mgm"/> is being used.
+			</para>
+			<para><emphasis>realm</emphasis> (string) - Realm is an opaque string that
+			the user agent should present to the user so it can decide what
+			username and password to use. Usually this is domain of the host
+			the server is running on. If missing, the value of the
+			<emphasis>From domain</emphasis> is being used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>qop</emphasis> (string, optional) - Value of this
+			parameter can be either <quote>auth</quote>, <quote>auth-int</quote>
+			or both (separated by <emphasis>,</emphasis>). When this parameter is
+			set the server will put a qop parameter in the challenge. It
+			is recommended to use the qop parameter, however there are still some
+			user agents that cannot handle qop properly so we made this optional.
+			On the other hand there are still some user agents that cannot handle
+			request without a qop parameter too. If missing, the value of the
+			<xref linkend="param_default_qop"/> is being used.
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>algorithms</emphasis> (string, optional) - Value of this
+			parameter is a comma-separated list of digest algorithms to be offered for
+			the UAC to use for authentication. Possible values are:</para>
+			<itemizedlist>
+				<listitem><quote>AKAv1-MD5</quote></listitem>
+				<listitem><quote>AKAv1-MD5-sess</quote></listitem>
+				<listitem><quote>AKAv1-SHA-256</quote></listitem>
+				<listitem><quote>AKAv1-SHA-256-sess</quote></listitem>
+				<listitem><quote>AKAv1-SHA-512-256</quote></listitem>
+				<listitem><quote>AKAv1-SHA-512-256-sess</quote></listitem>
+				<listitem><quote>AKAv2-MD5</quote></listitem>
+				<listitem><quote>AKAv2-MD5-sess</quote></listitem>
+				<listitem><quote>AKAv2-SHA-256</quote></listitem>
+				<listitem><quote>AKAv2-SHA-256-sess</quote></listitem>
+				<listitem><quote>AKAv2-SHA-512-256</quote></listitem>
+				<listitem><quote>AKAv2-SHA-512-256-sess</quote></listitem>
+			</itemizedlist>
+			<para>When the value is empty or not set, the only offered digest
+			the value of the <xref linkend="param_default_algorithm"/> is being used.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+			Possible return codes:
+		</para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis>-1</emphasis> - generic parsing error, generated
+			when there is not enoough data to build the challange
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-2</emphasis> - no AV vector could not be fetched
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-3</emphasis> - authentication headers could not
+			be built
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>-5</emphasis> - a reply could not be sent
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis>positive</emphasis> - the number of successful
+			chalanges being sent in the reply; this value can be lower than
+			the number of algorithms being requested in case there was a
+			timeout waiting for some AVs.
+			</para>
+		</listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+
+		<example>
+		<title>aka_www_challenge usage</title>
+		<programlisting format="linespecific">
+...
+if (!aka_www_authorize("siphub.com")) {
+	aka_www_challenge(,"siphub.com", "auth-int", "AKAv1-MD5");
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_aka_proxy_challenge" xreflabel="aka_proxy_challenge()">
+		<title><function moreinfo="none">aka_proxy_challenge([realm]])</function></title>
+		<para>
+		The function behaves the same as <xref linkend="func_aka_www_challenge"/>,
+		but it challenges the user from a proxy perspective. It receives the same
+		parameters, with the same meaning, the only difference being that in case of
+		the <emphasis>realm</emphasis> is missing, then it is taken from the
+		the <emphasis>To domain</emphasis>, rather than from
+		<emphasis>From domain</emphasis>. The header added is
+		<emphasis>Proxy-Authenticate</emphasis>, rather than
+		<emphasis>WWW-Authenticate</emphasis> The rest of the parameters, behavior,
+		as well as return values are the same.
+		</para>
+
+		<para>
+		This function can be used from REQUEST_ROUTE.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_proxy_challenge</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+if (!aka_proxy_authorize("siphub.com"))
+	aka_proxy_challenge(,"siphub.com", "auth");
+...
+
+</programlisting>
+		</example>
+	</section>
+
+	<section id="func_aka_av_add" xreflabel="aka_av_add()">
+		<title><function moreinfo="none">aka_av_add(public_identity, private_identity, authenticate, authorize, confidentiality_key, integrity_key[, algorithms])</function></title>
+		<para>
+			Adds an authentication vector for the user identitied by 
+			<emphasis>public_identity</emphasis> and
+			<emphasis>private_identity</emphasis>.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>public_identity</emphasis> (string) - the public identity
+			(IMPU) of the user to add authentication vector for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>private_identity</emphasis> (string) - the private identity
+			(IMPI) of the user to add authentication vector for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>authenticate</emphasis> (string) - the concatenation of the
+			authentication challenge RAND and the token AUTN, encoded in hexa format.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>authorize</emphasis> (string) - the authorization string
+			(XRES) used for authorizing the user, encoded in hexa format.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>confidentiality_key</emphasis> (string) - the Confidentiality-Key
+			used in the AKA IPSec process, encoded in hexa format.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>integrity_key</emphasis> (string) - the Integrity-Key
+			used in the AKA IPSec process, encoded in hexa format.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>algorithms</emphasis> (string, optional) - AKA algorithms
+			this AV should be used for. If missing, the AV can be used for any AKA
+			algorithm.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_av_add</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+aka_av_add("sip:test@siphub.com", "test@siphub.com",
+			"KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=", /* authenticate */
+			"00000262c0000014000028af2d6398cbe26eea69", /* authorize */
+			"db7f8c4a58e17083974bba3b936d34c4", /* ck */
+			"6151667b9ef815c1dcb87473685f062a"  /* ik */);
+...
+</programlisting>
+		</example>
+
+	</section>
+
+	<section id="func_aka_av_drop" xreflabel="aka_av_drop()">
+		<title><function moreinfo="none">aka_av_drop(public_identity, private_identity, authenticate)</function></title>
+		<para>
+			Drops the authentication vector corresponding to the 
+			<emphasis>authenticate/nonce</emphasis> value
+			for an user identitied by 
+			<emphasis>public_identity</emphasis> and
+			<emphasis>private_identity</emphasis>.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>public_identity</emphasis> (string) - the public identity
+			(IMPU) of the user to drop authentication vector for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>private_identity</emphasis> (string) - the private identity
+			(IMPI) of the user to drop authentication vector for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>authenticate</emphasis> (string) - the authenticate/nonce
+			that identifies the authentication vector to be dropped.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_av_drop</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+aka_av_drop("sip:test@siphub.com", "test@siphub.com",
+			"KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=");
+...
+</programlisting>
+		</example>
+
+	</section>
+	<section id="func_aka_av_drop_all" xreflabel="aka_av_drop_all()">
+		<title><function moreinfo="none">aka_av_drop_all(public_identity, private_identity[, count])</function></title>
+		<para>
+			Drops all authentication vectors for an user identitied by 
+			<emphasis>public_identity</emphasis> and
+			<emphasis>private_identity</emphasis>. This function is useful
+			when a synchronization must be done.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>public_identity</emphasis> (string) - the public identity
+			(IMPU) of the user to drop authentication vectors for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>private_identity</emphasis> (string) - the private identity
+			(IMPI) of the user to drop authentication vectors for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>count</emphasis> (variable, optional) - a variable to return the number
+			of authentication vectors dropped.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_av_drop_all</function> usage</title>
+		<programlisting format="linespecific">
+		
+...
+aka_av_drop_all("sip:test@siphub.com", "test@siphub.com", $var(count));
+...
+</programlisting>
+		</example>
+
+		</section>
+	</section>
+
+	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
+	<title>Exported MI Functions</title>
+		<section id="mi_aka_av_add" xreflabel="aka_av_add">
+			<title><function moreinfo="none">aka_av_add</function></title>
+			<para>
+				Adds an Authentication Vector through the MI interface.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+				<emphasis>public_identity</emphasis> (string) - the public identity
+				(IMPU) of the user to add authentication vector for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>private_identity</emphasis> (string) - the private identity
+				(IMPI) of the user to add authentication vector for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>authenticate</emphasis> (string) - the concatenation of the
+				authentication challenge RAND and the token AUTN, encoded in hexa format.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>authorize</emphasis> (string) - the authorization string
+				(XRES) used for authorizing the user, encoded in hexa format.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>confidentiality_key</emphasis> (string) - the Confidentiality-Key
+				used in the AKA IPSec process, encoded in hexa format.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>integrity_key</emphasis> (string) - the Integrity-Key
+				used in the AKA IPSec process, encoded in hexa format.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>algorithms</emphasis> (string, optional) - AKA algorithms
+				this AV should be used for. If missing, the AV can be used for any AKA
+				algorithm.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">aka_av_add</function> usage</title>
+			<programlisting format="linespecific">
+...
+## adds an AKA AV
+$ opensips-cli -x mi aka_av_add \
+				sip:test@siphub.com
+				test@siphub.com
+				KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=
+				00000262c0000014000028af2d6398cbe26eea69
+				db7f8c4a58e17083974bba3b936d34c4
+				6151667b9ef815c1dcb87473685f062a
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_aka_av_drop" xreflabel="aka_av_drop">
+			<title><function moreinfo="none">aka_av_drop</function></title>
+			<para>
+				Invalidates an Authentication Vector of an user identified
+				by its authenticate value.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+				<emphasis>public_identity</emphasis> (string) - the public identity
+				(IMPU) of the user to add authentication vector for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>private_identity</emphasis> (string) - the private identity
+				(IMPI) of the user to add authentication vector for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>authenticate</emphasis> (string) - the authenticate/nonce
+				to indentify the authentication vector.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">aka_av_drop</function> usage</title>
+			<programlisting format="linespecific">
+...
+## adds an AKA AV
+$ opensips-cli -x mi aka_av_drop \
+				sip:test@siphub.com
+				test@siphub.com
+				KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_aka_av_drop_all" xreflabel="aka_av_drop_all">
+			<title><function moreinfo="none">aka_av_drop_all</function></title>
+			<para>
+                Invalidates all Authentication Vectors of an user through the
+                MI interface.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+				<emphasis>public_identity</emphasis> (string) - the public identity
+				(IMPU) of the user to drop authentication vectors for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>private_identity</emphasis> (string) - the private identity
+				(IMPI) of the user to drop authentication vectors for.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">aka_av_drop_all</function> usage</title>
+			<programlisting format="linespecific">
+...
+## adds an AKA AV
+$ opensips-cli -x mi aka_av_drop_all \
+				sip:test@siphub.com
+				test@siphub.com
+...
+			</programlisting>
+			</example>
+		</section>
+	</section>
+</chapter>
+
