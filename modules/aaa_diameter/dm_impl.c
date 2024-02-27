@@ -28,9 +28,9 @@
 #include "../../evi/evi_modules.h"
 #include "../../ipc.h"
 
-#include "aaa_impl.h"
-#include "aaa_evi.h"
-#include "peer.h"
+#include "dm_impl.h"
+#include "dm_evi.h"
+#include "dm_peer.h"
 #include "app_opensips/avps.h"
 
 struct local_rules_definition {
@@ -505,14 +505,14 @@ out:
 }
 
 
-static int dm_receive_req(struct msg **_msg, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
+static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * sess, void * data, enum disp_action * act)
 {
 	cJSON *avps = NULL, *it;
-	struct msg *msg = *_msg;
+	struct msg *req = *_req;
 	struct msg_hdr *hdr = NULL;
 	str tid = STR_NULL, avp_arr = STR_NULL;
 
-	FD_CHECK(fd_msg_hdr(msg, &hdr));
+	FD_CHECK(fd_msg_hdr(req, &hdr));
 	LM_DBG("received Diameter request (appl: %u, cmd: %u)\n", hdr->msg_appl, hdr->msg_code);
 
 	cJSON_InitHooks(&shm_mem_hooks);
@@ -522,7 +522,7 @@ static int dm_receive_req(struct msg **_msg, struct avp * avp, struct session * 
 		goto error;
 	}
 
-	if (dm_avps2json(msg, avps) != 0) {
+	if (dm_avps2json(req, avps) != 0) {
 		LM_ERR("failed to pack request AVPs as JSON string\n");
 		goto error;
 	}
@@ -548,22 +548,22 @@ static int dm_receive_req(struct msg **_msg, struct avp * avp, struct session * 
 	init_str(&avp_arr, cJSON_PrintUnformatted(avps));
 
 	/* keep the request for a while in order to be able to generate the answer */
-	dm_update_unreplied_req(msg);
+	dm_update_unreplied_req(req);
 
-	if (dm_dispatch_event_req(msg, &tid, hdr->msg_appl, hdr->msg_code, &avp_arr))
+	if (dm_dispatch_event_req(req, &tid, hdr->msg_appl, hdr->msg_code, &avp_arr))
 		LM_ERR("failed to dispatch DM Request (tid: %.*s, %d/%d)\n", tid.len,
 		        tid.s, hdr->msg_appl, hdr->msg_code);
 
 	goto out;
 
 error:
-	FD_CHECK(fd_msg_free(msg));
+	FD_CHECK(fd_msg_free(req));
 out:
 	cJSON_PurgeString(avp_arr.s);
 	cJSON_Delete(avps);
 	cJSON_InitHooks(NULL);
 
-	*_msg = NULL;
+	*_req = NULL;
 	*act = DISP_ACT_CONT;
 	return 0;
 }
@@ -1899,8 +1899,8 @@ int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd)
 int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps)
 {
 
-	LM_DBG("reply received, Result-Code: %d (%s)\n", cond->rc,
-			cond->is_error ? "FAILURE" : "SUCCESS");
+	LM_DBG("reply received, Result-Code: %d, is_error: %d\n", cond->rc,
+			cond->is_error);
 	LM_DBG("AVPs: %s\n", cond->rpl_avps_json);
 
 	if (rpl_avps)

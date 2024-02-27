@@ -25,8 +25,8 @@
 #include "../../locking.h"
 #include "../../lib/list.h"
 
-#include "aaa_impl.h"
-#include "peer.h"
+#include "dm_impl.h"
+#include "dm_peer.h"
 #include "app_opensips/avps.h"
 
 #define EVENT_RECORD        1
@@ -40,6 +40,7 @@ pthread_mutex_t *msg_send_lk;
 
 extern str dm_realm;
 extern str dm_peer_identity;
+
 
 int dm_init_peer(void)
 {
@@ -548,7 +549,7 @@ error:
 }
 
 
-static inline int diameter_send_msg(struct dm_message *msg)
+static inline int dm_peer_send_msg(struct dm_message *msg)
 {
 	aaa_message *am = msg->am;
 
@@ -611,7 +612,7 @@ static int dm_prepare_globals(void)
 }
 
 
-void diameter_peer_loop(int _)
+void dm_peer_loop(int _)
 {
 	struct dm_message *msg;
 
@@ -650,7 +651,7 @@ void diameter_peer_loop(int _)
 		msg = list_entry(msg_send_queue->next, struct dm_message, list);
 		list_del(&msg->list);
 
-		if (diameter_send_msg(msg) != 0)
+		if (dm_peer_send_msg(msg) != 0)
 			LM_ERR("failed to send message\n");
 		else
 			LM_DBG("successfully sent\n");

@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
-#include "aaa_evi.h"
+#include "dm_evi.h"
 
 #include "../../dprint.h"
 #include "../../ut.h"
@@ -123,6 +123,11 @@ out_oom:
 }
 
 
+/**
+ * The purpose of this dispatched job is for the logic to be ran by a
+ * process other than the Diameter peer, since PROC_MODULE workers have NULL
+ * @sroutes, causing a crash when attempting to raise a script event
+ */
 void dm_raise_event_request(int sender, void *dm_req)
 {
 	char buf[sizeof(long)*2 + 1], *p = buf;
@@ -134,7 +139,6 @@ void dm_raise_event_request(int sender, void *dm_req)
 	LM_DBG("received Diameter request via IPC, tid: %.*s\n",
 	        job->sessid.len, job->sessid.s);
 
-	/* raise the event to script (dispatch) */
 	if (evi_param_set_str(dmev_req_param_sessid, &job->sessid) < 0) {
 		LM_ERR("failed to set 'sess_id'\n");
 		goto out;

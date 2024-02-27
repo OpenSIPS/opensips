@@ -26,6 +26,6 @@ extern pthread_cond_t *msg_send_cond;
 extern pthread_mutex_t *msg_send_lk;
 
 int dm_init_peer(void);
-void diameter_peer_loop(int _);
+void dm_peer_loop(int _);
 
 #endif

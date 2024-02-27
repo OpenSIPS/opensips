@@ -25,9 +25,9 @@
 #include "../../async.h"
 #include "../../ut.h"
 
-#include "aaa_impl.h"
-#include "aaa_evi.h"
-#include "peer.h"
+#include "dm_impl.h"
+#include "dm_evi.h"
+#include "dm_peer.h"
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -76,7 +76,7 @@ static const acmd_export_t acmds[]= {
 };
 
 static const proc_export_t procs[] = {
-	{ "diameter-peer", NULL, NULL, diameter_peer_loop, 1, 0 },
+	{ "diameter-peer", NULL, NULL, dm_peer_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
@@ -323,6 +323,11 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json)
 	int appid, cmdcode, rc;
 	unsigned long fd_req;
 
+	if (route_type != EVENT_ROUTE) {
+		LM_ERR("can only run 'dm_send_answer()' inside an EVENT_ROUTE\n");
+		return -1;
+	}
+
 	if (ZSTRP(avp_json)) {
 		LM_ERR("unable to build reply (NULL 'avps_json' input)\n");
 		return -1;
@@ -346,15 +351,6 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json)
 	memset(&evp, 0, sizeof evp);
 	evp.pvn.type = PV_NAME_INTSTR;
 	evp.pvn.u.isname.type = AVP_NAME_STR;
-
-	evp.pvn.u.isname.name.s = dmev_req_pname_sessid;
-	route_params_run(msg, &evp, &res);
-	if (ZSTR(res.rs) || !pvv_is_str(&res)) {
-		LM_ERR("failed to fetch unique session ID\n");
-		sessid = STR_NULL;
-	} else {
-		sessid = res.rs;
-	}
 
 	evp.pvn.u.isname.name.s = dmev_req_pname_appid;
 	route_params_run(msg, &evp, &res);
@@ -398,6 +394,15 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json)
 
 	rc = _dm_send_message(NULL, dmsg, NULL, NULL);
 	if (rc < 0) {
+		evp.pvn.u.isname.name.s = dmev_req_pname_sessid;
+		route_params_run(msg, &evp, &res);
+		if (ZSTR(res.rs) || !pvv_is_str(&res)) {
+			LM_DBG("failed to fetch the unique session ID\n");
+			sessid = STR_NULL;
+		} else {
+			sessid = res.rs;
+		}
+
 		LM_ERR("failed to send Diameter reply (sess: %.*s, app: %d, cmd: %d)\n",
 		        sessid.len, sessid.s, appid, cmdcode);
 		cJSON_Delete(avps);
