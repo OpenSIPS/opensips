@@ -106,8 +106,32 @@ int dr_set_gw_sock_filter_mode(char *mode)
 	return -1;
 }
 
+void hash_rule(char* grplst, str* prefix, rt_info_t* rule, MD5_CTX* hash_ctx)
+{
+	int i;
+
+	if (hash_ctx == NULL)
+		return;
+
+	MD5Update(hash_ctx, grplst, strlen(grplst));
+	if (prefix->s && prefix->len)
+		MD5Update(hash_ctx, prefix->s, prefix->len);
+
+	MD5Update(hash_ctx, (char *)&rule->priority, sizeof(rule->priority));
+	if (rule->attrs.s && rule->attrs.len)
+		MD5Update(hash_ctx, rule->attrs.s, rule->attrs.len);
+	MD5Update(hash_ctx, (char *)rule->sort_alg, sizeof(rule->sort_alg));
+
+	for (i=0;i<rule->pgwa_len;i++) {
+		if (rule->pgwl[i].is_carrier == 1)
+			hash_carrier(rule->pgwl[i].dst.carrier,hash_ctx);
+		else
+			hash_dst(rule->pgwl[i].dst.gw,hash_ctx);
+	}
+}
+
 static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
-		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f)
+		rt_info_t *rule, osips_malloc_f malloc_f, osips_free_f free_f,MD5_CTX* hash_ctx)
 {
 	long int t;
 	char *tmp;
@@ -163,6 +187,8 @@ static int add_rule(rt_data_t *rdata, char *grplst, str *prefix,
 				grplst);
 		goto error;
 	}
+
+	hash_rule(grplst,prefix,rule,hash_ctx);
 
 	return 0;
 error:
@@ -283,7 +309,7 @@ void dr_update_head_cache(struct head_db *head)
 extern struct custom_rule_table *custom_rule_tables;
 
 rt_data_t* dr_load_routing_info(struct head_db *part,
-                  int persistent_state, str *rules_tables, int rules_tables_no)
+                  int persistent_state, str *rules_tables, int rules_tables_no,MD5_CTX* hash_ctx)
 {
 	int    int_vals[5];
 	char * str_vals[7];
@@ -453,7 +479,8 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 						sock,
 						int_vals[INT_VALS_STATE_DRD_COL],
 						part->malloc,
-						part->free )<0 ) {
+						part->free,
+				   		hash_ctx )<0 ) {
 				LM_ERR("failed to add destination <%s>(%s) -> skipping\n",
 						str_vals[STR_VALS_GWID_DRD_COL],
 						str_vals[STR_VALS_ID_DRD_COL]);
@@ -575,7 +602,8 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 							str_vals[STR_VALS_ATTRS_DRC_COL],
 							int_vals[INT_VALS_STATE_DRC_COL], rdata,
 							part->malloc,
-							part->free) != 0 ) {
+							part->free,
+							hash_ctx) != 0 ) {
 					LM_ERR("failed to add carrier db_id <%s> -> skipping\n",
 							str_vals[STR_VALS_ID_DRC_COL]);
 					discarded_cr++;
@@ -724,7 +752,7 @@ rt_data_t* dr_load_routing_info(struct head_db *part,
 				}
 				/* add the rule */
 				if (add_rule(rdata, str_vals[STR_VALS_GROUP_DRR_COL], &tmp, ri,
-						part->malloc, part->free)!=0) {
+						part->malloc, part->free,hash_ctx)!=0) {
 					LM_ERR("failed to add rule id %d -> skipping\n",
 							int_vals[INT_VALS_RULE_ID_DRR_COL]);
 					free_rt_info(ri, part->free);

@@ -1412,6 +1412,21 @@ modparam("drouting", "rule_tables_query", "
 		</example>
 	</section>
 
+	<section id="param_generate_data_checksum" xreflabel="generate_data_checksum">
+		<title><varname>generate_data_checksum</varname> (int)</title>
+		<para>
+			If enabled, it will generate a checksum ( MD5 ) for drouting loaded data, attach that to the reload_status MI command output and to the reload generated status reports
+		</para>
+		<example>
+		<title>Set the <varname>generate_data_checksum</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("drouting", "generate_data_checksum", 1)
+...
+		</programlisting>
+		</example>
+	</section>
+
 </section>
 
 <section id="exported_functions" xreflabel="exported_functions">

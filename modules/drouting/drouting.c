@@ -64,6 +64,9 @@
 #define MI_LAST_UPDATE_S "Date"
 #define MI_LAST_UPDATE_LEN (strlen(MI_LAST_UPDATE_S))
 
+#define MI_HASH_S "Hash"
+#define MI_HASH_LEN (strlen(MI_HASH_S))
+
 #define MI_DEFAULT_PROBING_STATE	1
 #define MI_PROBING_DISABLED_S "Gateways probing disabled from script"
 
@@ -87,6 +90,9 @@ struct custom_rule_table *custom_rule_tables;
 
 /* reload controll parametere */
 static int no_concurrent_reload = 0;
+
+/* generate drouting data md5 & attach that to reload status & status reports */
+static int generate_data_md5 = 0;
 
 /*** DB relatede stuff ***/
 /* parameters  */
@@ -505,7 +511,8 @@ static const param_export_t params[] = {
 	{"enable_restart_persistency",INT_PARAM, &dr_rpm_enable   },
 	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
 	{"extra_id_chars",     STR_PARAM, &extra_id_chars.s       },
-	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s  },
+	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s    },
+	{"generate_data_checksum", INT_PARAM, &generate_data_md5       },
 	{0, 0, 0}
 };
 
@@ -1094,6 +1101,31 @@ static void dr_state_flusher(struct head_db* hd)
 	return;
 }
 
+static void bin_hash_to_hex(HASH _b, HASHHEX _h)
+{
+	unsigned short i;
+	unsigned char j;
+
+	for (i = 0; i < HASHLEN; i++) {
+		j = (_b[i] >> 4) & 0xf;
+		if (j <= 9) {
+			_h[i * 2] = (j + '0');
+		} else {
+			_h[i * 2] = (j + 'a' - 10);
+		}
+
+		j = _b[i] & 0xf;
+
+		if (j <= 9) {
+			_h[i * 2 + 1] = (j + '0');
+		} else {
+			_h[i * 2 + 1] = (j + 'a' - 10);
+		}
+	};
+
+	_h[HASHHEXLEN] = '\0';
+}
+
 /* Flushes to DB the state of carriers and gateways (if modified)
  * Locking is done to protect the data consistency */
 static void dr_state_timer(unsigned int ticks, void* param)
@@ -1146,6 +1178,9 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	time_t rawtime;
 	struct dr_prepare_part_params pp;
 	int ret = -1;
+	MD5_CTX Md5Ctx, *ctxp=NULL;
+	HASH bin_md5;
+	char hash_report_data[64];
 
 	void **dest;
 	map_iterator_t it;
@@ -1187,7 +1222,13 @@ static inline int dr_reload_data_head(struct head_db *hd,
 			CHAR_INT("data re-loading"), 0);
 
 	if (!uses_rule_table_query(hd, &rule_table_query)) {
-		new_data = dr_load_routing_info(hd, dr_persistent_state, &hd->drr_table, 1);
+
+		if (generate_data_md5) { 
+			MD5Init(&Md5Ctx);
+			ctxp = &Md5Ctx;
+		}
+
+		new_data = dr_load_routing_info(hd, dr_persistent_state, &hd->drr_table, 1, ctxp);
 		if (!new_data) {
 			LM_CRIT("failed to load routing info\n");
 			goto error;
@@ -1240,8 +1281,13 @@ static inline int dr_reload_data_head(struct head_db *hd,
 
 		dr_dbf->free_result(db_hdl, res);
 
+		if (generate_data_md5) { 
+			MD5Init(&Md5Ctx);
+			ctxp = &Md5Ctx;
+		}
+
 		new_data = dr_load_routing_info(hd, dr_persistent_state, rules_tables,
-		                                rules_no);
+		                                rules_no,ctxp);
 		if (!new_data) {
 			LM_CRIT("failed to load routing info\n");
 			goto error;
@@ -1264,6 +1310,11 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	/* update cache head */
 	if (hd->cache)
 		hd->cache->rdata = new_data;
+
+	if (generate_data_md5) {
+		MD5Final(bin_md5, &Md5Ctx);
+		bin_hash_to_hex(bin_md5,hd->md5);
+	}
 
 	lock_stop_write( (hd->ref_lock) );
 
@@ -1312,8 +1363,14 @@ static inline int dr_reload_data_head(struct head_db *hd,
 	populate_dr_bls(hd->rdata->pgw_tree);
 
 success:
-	sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
-		CHAR_INT("data available"), 0);
+	if (generate_data_md5) {
+		sprintf(hash_report_data,"data available %s",hd->md5);
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+			hash_report_data,strlen(hash_report_data), 0);
+	} else {
+		sr_set_status( dr_srg, STR2CI(hd->partition), SR_STATUS_READY,
+			CHAR_INT("data available"), 0);
+	}
 	if (no_concurrent_reload)
 		hd->ongoing_reload = 0;
 	return 0;
@@ -5330,6 +5387,9 @@ static int mi_dr_print_rld_status(mi_item_t *part_item, struct head_db * partiti
 
 	if (add_mi_string(part_item, MI_SSTR(MI_LAST_UPDATE_S),
 		ch_time, strlen(ch_time)-1) < 0)
+		goto error;
+
+	if (generate_data_md5 && add_mi_string(part_item,MI_SSTR(MI_HASH_S),partition->md5,strlen(partition->md5)) < 0)
 		goto error;
 
 	lock_stop_read(partition->ref_lock);
