@@ -152,28 +152,38 @@ int db_postgres_connect(struct pg_con* ptr)
 
 	/* If use_tls is specified and tls_domain=[dom] was found in the parameter list */
 	/* configure the SSL connection parameters */
-	if (use_tls && tls_domain_name.len) {
-		/* the connection should use TLS */
-		if (!ptr->tls_dom) {
-			ptr->tls_dom = tls_api.find_client_domain_name(&tls_domain_name);
+	if (use_tls) {
+		if (tls_domain_name.len) {
+		/* the connection must use TLS */
 			if (!ptr->tls_dom) {
-				LM_ERR("TLS domain: %.*s not found\n", tls_domain_name.len, tls_domain_name.s);
-				return -1;
+				ptr->tls_dom = tls_api.find_client_domain_name(&tls_domain_name);
+				if (!ptr->tls_dom) {
+					LM_ERR("TLS domain: %.*s not found\n", tls_domain_name.len, tls_domain_name.s);
+					return -1;
+				}
 			}
+
+			LM_DBG("SSL key file: %.*s\n", ptr->tls_dom->pkey.len, ptr->tls_dom->pkey.s);
+			LM_DBG("SSL cert file: %.*s\n", ptr->tls_dom->cert.len, ptr->tls_dom->cert.s);
+			LM_DBG("SSL ca file: %.*s\n", ptr->tls_dom->ca.len, ptr->tls_dom->ca.s);
+			LM_DBG("SSL verify_cert: %d\n", ptr->tls_dom->verify_cert);
+
+			if (ptr->tls_dom->verify_cert == 1) {
+				PSQL_PARAM("sslmode", "verify-ca");
+			} else {
+				PSQL_PARAM("sslmode", "require");
+			}
+
+			PSQL_PARAM("sslkey", ptr->tls_dom->pkey.s);
+			PSQL_PARAM("sslcert", ptr->tls_dom->cert.s);
+			PSQL_PARAM("sslrootcert", ptr->tls_dom->ca.s);
+		} else {
+			/* try SSL if available, fallback to non-SSL */
+			PSQL_PARAM("sslmode", "prefer");
 		}
-
-		LM_DBG("SSL key file: %.*s\n", ptr->tls_dom->pkey.len, ptr->tls_dom->pkey.s);
-		LM_DBG("SSL cert file: %.*s\n", ptr->tls_dom->cert.len, ptr->tls_dom->cert.s);
-		LM_DBG("SSL ca file: %.*s\n", ptr->tls_dom->ca.len, ptr->tls_dom->ca.s);
-		LM_DBG("SSL verify_cert: %d\n", ptr->tls_dom->verify_cert);
-
-		if (ptr->tls_dom->verify_cert == 1) {
-			PSQL_PARAM("sslmode", "verify-ca");
-		}
-
-		PSQL_PARAM("sslkey", ptr->tls_dom->pkey.s);
-		PSQL_PARAM("sslcert", ptr->tls_dom->cert.s);
-		PSQL_PARAM("sslrootcert", ptr->tls_dom->ca.s);
+	} else {
+		/* do not try SSL at all*/
+		PSQL_PARAM("sslmode", "disable");
 	}
 
 	/* force the default timeout */
