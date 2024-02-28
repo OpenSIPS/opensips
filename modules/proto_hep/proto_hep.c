@@ -1053,11 +1053,11 @@ static int hep_udp_read_req(const struct socket_info* si, int* bytes_read)
 	 * needed */
 	set_global_context(ctx);
 	ret = run_hep_cbs();
+	set_global_context(NULL);
 	if (ret < 0) {
 		LM_ERR("failed to run hep callbacks\n");
 		return -1;
 	}
-	set_global_context(NULL);
 
 	if (hep_ctx->h.version == 3) {
 		/* HEPv3 */
