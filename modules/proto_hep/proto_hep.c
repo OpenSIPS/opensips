@@ -886,11 +886,11 @@ static int hep_udp_read_req(struct socket_info *si, int* bytes_read)
 	 * needed */
 	current_processing_ctx = ctx;
 	ret=run_hep_cbs();
+	current_processing_ctx = NULL;
 	if (ret < 0) {
 		LM_ERR("failed to run hep callbacks\n");
 		return -1;
 	}
-	current_processing_ctx = NULL;
 
 	if (hep_ctx->h.version == 3) {
 		/* HEPv3 */
