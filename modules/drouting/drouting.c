@@ -512,7 +512,7 @@ static const param_export_t params[] = {
 	{"extra_prefix_chars", STR_PARAM, &extra_prefix_chars     },
 	{"extra_id_chars",     STR_PARAM, &extra_id_chars.s       },
 	{"gw_socket_filter_mode", STR_PARAM, &gw_sock_filter_s    },
-	{"generate_data_md5", INT_PARAM, &generate_data_md5       },
+	{"generate_data_checksum", INT_PARAM, &generate_data_md5       },
 	{0, 0, 0}
 };
 
