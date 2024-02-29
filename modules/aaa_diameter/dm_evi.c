@@ -63,7 +63,7 @@ int dm_init_evi(void)
 	}
 
 	/* First publish the events */
-	dmev_req_id = evi_publish_event(str_init("E_DM_REQUEST"));
+	dmev_req_id = evi_publish_event(str_init(DMEV_REQ_NAME));
 	if (dmev_req_id == EVI_ERROR) {
 		LM_ERR("cannot register 'request' event\n");
 		return -1;
@@ -169,7 +169,7 @@ void dm_raise_event_request(int sender, void *dm_req)
 	}
 
 	if (evi_raise_event(dmev_req_id, dmev_req_params) < 0)
-		LM_ERR("failed to raise 'E_DM_REQUEST' event\n");
+		LM_ERR("failed to raise '"DMEV_REQ_NAME"' event\n");
 
 out:
 	shm_free(job->sessid.s);

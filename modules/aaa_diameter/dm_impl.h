@@ -144,6 +144,7 @@ extern char *dm_conf_filename;
 extern char *extra_avps_file;
 extern struct _dm_dict dm_dict;
 extern int dm_answer_timeout;
+extern int dm_server_autoreply_error;
 int dm_remove_unreplied_req(struct msg *req);
 
 int freeDiameter_init(void);

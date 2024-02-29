@@ -49,6 +49,7 @@ str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
 static str dm_aaa_url = {NULL, 0};
 int dm_answer_timeout = 2000; /* ms */
+int dm_server_autoreply_error; /* ensures we always reply with *something* */
 
 static const cmd_export_t cmds[]= {
 	{"dm_send_request", (cmd_function)dm_send_request, {
@@ -198,6 +199,19 @@ static int dm_check_config(void)
 	if (dm_peer_identity.len == 0) {
 		LM_ERR("the 'peer_identity' modparam cannot be empty\n");
 		return -1;
+	}
+
+	LM_INFO("Diameter server support enabled\n");
+
+	if (get_script_route_ID_by_name_str(
+	        &str_init(DMEV_REQ_NAME), sroutes->event, EVENT_RT_NO) < 0) {
+		LM_NOTICE("Diameter server event "DMEV_REQ_NAME" not used in opensips script"
+		        ", auto-replying error code 3001 to any Diameter request\n");
+		dm_server_autoreply_error = 1;
+	} else if (!is_script_func_used("dm_send_answer", -1)) {
+		LM_NOTICE("Diameter 'dm_send_answer()' function not used in opensips script"
+		        ", auto-replying error code 3001 to any Diameter request\n");
+		dm_server_autoreply_error = 1;
 	}
 
 	return 0;

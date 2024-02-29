@@ -548,11 +548,26 @@ static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * 
 	init_str(&avp_arr, cJSON_PrintUnformatted(avps));
 
 	/* keep the request for a while in order to be able to generate the answer */
-	dm_update_unreplied_req(req);
+	if (!dm_server_autoreply_error)
+		dm_update_unreplied_req(req);
 
 	if (dm_dispatch_event_req(req, &tid, hdr->msg_appl, hdr->msg_code, &avp_arr))
 		LM_ERR("failed to dispatch DM Request (tid: %.*s, %d/%d)\n", tid.len,
 		        tid.s, hdr->msg_appl, hdr->msg_code);
+
+	if (dm_server_autoreply_error) {
+		struct dm_message dm;
+
+		memset(&dm, 0, sizeof dm);
+
+		dm.fd_req = req;
+		dm.app_id = hdr->msg_appl;
+		dm.cmd_code = hdr->msg_code;
+
+		if (dm_send_custom_rpl(&dm, 1) != 0)
+			LM_ERR("failed to auto-reply with error, tid: %.*s, %d/%d\n", tid.len,
+			        tid.s, hdr->msg_appl, hdr->msg_code);
+	}
 
 	goto out;
 

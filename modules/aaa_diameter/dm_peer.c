@@ -102,7 +102,7 @@ static inline int dm_add_session(struct msg *msg, struct dict_object *model)
 }
 
 
-static int dm_auth(struct dm_message *msg)
+static int dm_send_auth(struct dm_message *msg)
 {
 	struct msg *dmsg;
 	struct dm_avp *dm_avp;
@@ -246,7 +246,7 @@ static int dm_auth(struct dm_message *msg)
 }
 
 
-static int dm_acct(struct dm_message *msg)
+static int dm_send_acct(struct dm_message *msg)
 {
 	struct msg *dmsg;
 	struct avp *avp;
@@ -450,7 +450,7 @@ static int dm_pack_avps(void *root, struct list_head *subavps)
 }
 
 
-static int dm_custom_req(struct dm_message *msg)
+static int dm_send_custom_req(struct dm_message *msg)
 {
 	str tid_str;
 	struct msg *dmsg;
@@ -509,22 +509,29 @@ static int dm_custom_req(struct dm_message *msg)
 }
 
 
-static int dm_custom_rpl(struct dm_message *dm)
+int dm_send_custom_rpl(struct dm_message *dm, int is_error)
 {
 	struct msg *ans = (struct msg *)dm->fd_req;
-	int rc;
+	int rc, flags = 0;
 
-	if (dm_remove_unreplied_req(ans) != 0) {
+	if (!dm_server_autoreply_error && dm_remove_unreplied_req(ans) != 0) {
 		LM_ERR("unable to build answer, request is no longer available "
 		        "(timeout: %d s)\n", dm_unreplied_req_timeout);
 		return -1;
 	}
 
-	rc = fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &ans, 0);
+	if (is_error)
+		flags |= MSGFL_ANSW_ERROR;
+
+	rc = fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &ans, flags);
 	if (rc != 0) {
 		LM_ERR("failed to create answer message, error: %d\n", rc);
 		goto error;
 	}
+
+	if (is_error)
+		FD_CHECK(fd_msg_rescode_set(ans, "DIAMETER_COMMAND_UNSUPPORTED",
+		            "Command Not Implemented", NULL, 1));
 
 	/* App id */
 	{
@@ -534,7 +541,7 @@ static int dm_custom_rpl(struct dm_message *dm)
 	}
 
 	/* include all AVPs passed from script level */
-	if (dm_pack_avps(ans, &dm->avps) != 0) {
+	if (!dm_server_autoreply_error && dm_pack_avps(ans, &dm->avps) != 0) {
 		LM_ERR("failed to pack AVPs\n");
 		return -1;
 	}
@@ -555,13 +562,13 @@ static inline int dm_peer_send_msg(struct dm_message *msg)
 
 	switch (am->type) {
 	case AAA_AUTH:
-		return dm_auth(msg);
+		return dm_send_auth(msg);
 	case AAA_ACCT:
-		return dm_acct(msg);
+		return dm_send_acct(msg);
 	case AAA_CUSTOM_REQ:
-		return dm_custom_req(msg);
+		return dm_send_custom_req(msg);
 	case AAA_CUSTOM_RPL:
-		return dm_custom_rpl(msg);
+		return dm_send_custom_rpl(msg, 0);
 	default:
 		LM_ERR("unsupported AAA message type (%d), skipping\n", am->type);
 	}

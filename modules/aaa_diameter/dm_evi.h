@@ -33,6 +33,7 @@ typedef struct _dm_ipc_event_req {
 	str avps_json;
 } dm_ipc_event_req;
 
+#define DMEV_REQ_NAME "E_DM_REQUEST"
 extern str dmev_req_pname_sessid;
 extern str dmev_req_pname_appid;
 extern str dmev_req_pname_cmdcode;

@@ -27,5 +27,6 @@ extern pthread_mutex_t *msg_send_lk;
 
 int dm_init_peer(void);
 void dm_peer_loop(int _);
+int dm_send_custom_rpl(struct dm_message *dm, int is_error);
 
 #endif
