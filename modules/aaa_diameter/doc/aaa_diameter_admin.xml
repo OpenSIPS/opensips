@@ -536,6 +536,14 @@ route[dm_reply] {
 					to easily parse and work with it.
 			</para></listitem>
 		</itemizedlist>
+
+		<para>
+		Note that this event is currently designed to be mainly consumed by an <emphasis>event_route</emphasis>,
+		since that is the only way to gain access to the <xref linkend="func_dm_send_answer"/>
+		function in order to build custom answer messages.  On the other hand,
+		if the application does not mind the answer being always a 3001 (DIAMETER_COMMAND_UNSUPPORTED) error,
+		this event can be successfully consumed through any other EVI-compatible delivery channel ☺️
+		</para>
 	</section>
 
 	</section>
