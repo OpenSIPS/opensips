@@ -206,6 +206,9 @@ modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf;extra-avp
 		function call with no received reply will time out and return a
 		<emphasis role='bold'>-2</emphasis> code.
 		</para>
+		<para>
+			Default value is <emphasis>2000</emphasis> ms.
+		</para>
 		<example>
 		<title>Setting the <varname>answer_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
