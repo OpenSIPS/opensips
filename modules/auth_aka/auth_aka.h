@@ -96,6 +96,10 @@ int aka_av_drop_all_user(struct aka_user *user);
 
 void aka_push_async(struct aka_user *user, struct  list_head *subs);
 void aka_pop_async(struct aka_user *user, struct  list_head *subs);
+void aka_pop_unsafe_async(struct aka_user *user, struct  list_head *subs);
 void aka_signal_async(struct aka_user *user, struct  list_head *subs);
+void aka_check_expire_async(unsigned int ticks, struct list_head *subs);
+
+void aka_async_expire(unsigned int ticks, void* param);
 
 #endif /* AUTH_AKA_H */

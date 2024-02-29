@@ -538,16 +538,44 @@ void aka_av_set_new(struct aka_user *user, struct aka_av *av)
 	cond_unlock(&user->cond);
 }
 
-void aka_push_async(struct aka_user *user, struct  list_head *subs)
+void aka_push_async(struct aka_user *user, struct list_head *subs)
 {
 	cond_lock(&user->cond);
 	list_add_tail(subs, &user->async);
 	cond_unlock(&user->cond);
 }
 
-void aka_pop_async(struct aka_user *user, struct  list_head *subs)
+void aka_pop_unsafe_async(struct aka_user *user, struct list_head *subs)
+{
+	list_del(subs);
+}
+
+void aka_pop_async(struct aka_user *user, struct list_head *subs)
 {
 	cond_lock(&user->cond);
-	list_del(subs);
+	aka_pop_unsafe_async(user, subs);
 	cond_unlock(&user->cond);
+}
+
+static int aka_async_hash_iterator(void *param, str key, void *value)
+{
+	struct list_head *it, *safe, *uit;
+	unsigned int ticks = *(unsigned int*)param;
+	struct aka_user *user;
+	struct aka_user_pub *pub = (struct aka_user_pub *)value;
+
+	list_for_each(uit, &pub->privates) {
+		user = list_entry(uit, struct aka_user, list);
+		cond_lock(&user->cond);
+		list_for_each_safe(it, safe, &user->async) {
+			aka_check_expire_async(ticks, it);
+		}
+		cond_unlock(&user->cond);
+	}
+	return 0;
+}
+
+void aka_async_expire(unsigned int ticks, void* param)
+{
+	hash_for_each_locked(aka_users, aka_async_hash_iterator, &ticks);
 }
