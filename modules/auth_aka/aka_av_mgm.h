@@ -29,11 +29,17 @@
 
 #define AKA_AV_MGM_PREFIX "load_aka_av_"
 
-struct aka_av_async_ctx {
-};
-
 struct aka_av_binds {
-	int (*fetch)(str *realm, str *impu, str *impi, int alg, str *resync, int no, struct aka_av_async_ctx *ctx);
+	/*
+	 * realm - the Realm of the authentication vector
+	 * impu - Public identity of the user
+	 * impi - Private identity of the user
+	 * resync - Resync/auts token, or NULL if not a resync request
+	 * algmask - Masks of algorithms to request
+	 * no - number of AVs for each algorithm
+	 * async - indicates whether the request is asynchronous or not
+	 */
+	int (*fetch)(str *realm, str *impu, str *impi, str *resync, int algmask, int no, int async);
 };
 
 struct aka_av_mgm {

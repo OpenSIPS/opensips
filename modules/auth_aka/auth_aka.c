@@ -766,7 +766,7 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	/* if we need more, fetch them remotely */
 	if (new_count != count) {
 		if (mgm->binds.fetch(&realm, &user->public->impu, &user->impi,
-				algmask, (auts.len?&auts:NULL), count - new_count, NULL) != 0) {
+				(auts.len?&auts:NULL), algmask, 1, 0) != 0) {
 			LM_INFO("Could not fetch %d authentication vector(s)!\n", count);
 			ret = -2;
 			goto release;
@@ -1063,7 +1063,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 
 	/* now that we finished preparing, go fetch the vectors */
 	if (mgm->binds.fetch(&realm, &user->public->impu, &user->impi,
-			algmask, (sync.len?&sync:NULL), count - c, NULL) != 0) {
+			 (sync.len?&sync:NULL), algmask, 1, 1) != 0) {
 		LM_INFO("Could not fetch %d authentication vector(s)!\n", count);
 		ret = -2;
 		goto error;
