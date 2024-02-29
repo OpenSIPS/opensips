@@ -243,6 +243,7 @@ static int mod_init(void)
 		LM_ERR("invalid async_timeout value %d\n", aka_async_timeout);
 		return -1;
 	}
+	aka_async_timeout /= 1000; /* XXX: add support for milliseconds */
 
 	if (aka_init_mgm(aka_hash_size) < 0) {
 		LM_ERR("cannot initialize aka management hash\n");
@@ -260,6 +261,13 @@ static int mod_init(void)
 		LM_ERR("cannot bind to auth module\n");
 		return -4;
 	}
+
+	if (register_timer("AKA timeout", aka_async_expire, NULL, 1,
+			TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
+		LM_ERR("failed to register timer, halting...");
+		return -1;
+	}
+
 
 	return 0;
 }
@@ -919,6 +927,7 @@ struct aka_async_param {
 	struct aka_av **avs;
 	int avs_count, avs_fetched;
 	int process_no;
+	unsigned int ticks;
 	struct list_head list;
 	async_ctx *async;
 	char buf[0];
@@ -1073,13 +1082,14 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	param->avs_fetched = c;
 	param->async = ctx;
 	param->process_no = process_no;
+	param->ticks = get_ticks();
 
 	async_status = ASYNC_NO_FD;
 
 	ctx->resume_f = aka_challenge_async_resume;
 	ctx->resume_param = param;
 	ctx->timeout_f = aka_challenge_async_resume_tout;
-	ctx->timeout_s = aka_async_timeout/1000;
+	ctx->timeout_s = aka_async_timeout;
 
 	aka_push_async(user, &param->list);
 	return 1;
@@ -1100,17 +1110,37 @@ static void aka_challenge_resume(int fd, void *_param)
 {
 	struct aka_async_param *param = (struct aka_async_param *)_param;
 	async_script_resume_f(ASYNC_FD_NONE, param->async, 0);
-	
+}
+
+static void aka_challenge_resume_tout(int fd, void *_param)
+{
+	struct aka_async_param *param = (struct aka_async_param *)_param;
+	async_script_resume_f(ASYNC_FD_NONE, param->async, 1);
+}
+
+static void aka_signal_async_resume(struct aka_async_param *param, ipc_rpc_f *func)
+{
+	param->ref++;
+	if (ipc_send_rpc(param->process_no, func, param) < 0) {
+		LM_ERR("could not resume aka challenge\n");
+		aka_async_param_release(param);
+	}
 }
 
 void aka_signal_async(struct aka_user *user, struct  list_head *subs)
 {
 	struct aka_async_param *param = list_entry(subs, struct aka_async_param, list);
-	param->ref++;
-	if (ipc_send_rpc(param->process_no, aka_challenge_resume, param) < 0) {
-		LM_ERR("could not resume aka challenge\n");
-		aka_async_param_release(param);
-	}
+	aka_signal_async_resume(param, aka_challenge_resume);
+}
+
+void aka_check_expire_async(unsigned int ticks, struct list_head *subs)
+{
+	struct aka_async_param *param = list_entry(subs, struct aka_async_param, list);
+	if (param->ticks + aka_async_timeout > ticks)
+		return;
+	/* this subscription expired - should drop it */
+	aka_pop_unsafe_async(param->user, subs);
+	aka_signal_async_resume(param, aka_challenge_resume_tout);
 }
 
 static int aka_www_challenge(struct sip_msg *msg, struct aka_av_mgm *mgm,
