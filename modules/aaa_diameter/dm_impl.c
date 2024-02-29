@@ -563,8 +563,9 @@ static int dm_receive_req(struct msg **_req, struct avp * avp, struct session * 
 		dm.fd_req = req;
 		dm.app_id = hdr->msg_appl;
 		dm.cmd_code = hdr->msg_code;
+		dm.error_bit = 1;
 
-		if (dm_send_custom_rpl(&dm, 1) != 0)
+		if (dm_send_custom_rpl(&dm) != 0)
 			LM_ERR("failed to auto-reply with error, tid: %.*s, %d/%d\n", tid.len,
 			        tid.s, hdr->msg_appl, hdr->msg_code);
 	}

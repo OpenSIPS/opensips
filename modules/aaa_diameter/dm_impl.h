@@ -89,9 +89,10 @@ struct _dm_dict {
 struct dm_message {
 	aaa_message *am; /* back-reference, useful during cleanup */
 
+	void *fd_req;
 	unsigned int app_id;   /* these two are used when sending */
 	unsigned int cmd_code; /* custom Diameter requests */
-	void *fd_req;
+	int error_bit;
 
 	str sip_method;
 	struct dm_cond *reply_cond; /* the cond to signal on reply arrival */

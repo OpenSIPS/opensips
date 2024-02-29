@@ -509,7 +509,7 @@ static int dm_send_custom_req(struct dm_message *msg)
 }
 
 
-int dm_send_custom_rpl(struct dm_message *dm, int is_error)
+int dm_send_custom_rpl(struct dm_message *dm)
 {
 	struct msg *ans = (struct msg *)dm->fd_req;
 	int rc, flags = 0;
@@ -520,7 +520,7 @@ int dm_send_custom_rpl(struct dm_message *dm, int is_error)
 		return -1;
 	}
 
-	if (is_error)
+	if (dm->error_bit)
 		flags |= MSGFL_ANSW_ERROR;
 
 	rc = fd_msg_new_answer_from_req(fd_g_config->cnf_dict, &ans, flags);
@@ -529,7 +529,7 @@ int dm_send_custom_rpl(struct dm_message *dm, int is_error)
 		goto error;
 	}
 
-	if (is_error)
+	if (dm_server_autoreply_error)
 		FD_CHECK(fd_msg_rescode_set(ans, "DIAMETER_COMMAND_UNSUPPORTED",
 		            "Command Not Implemented", NULL, 1));
 
@@ -568,7 +568,7 @@ static inline int dm_peer_send_msg(struct dm_message *msg)
 	case AAA_CUSTOM_REQ:
 		return dm_send_custom_req(msg);
 	case AAA_CUSTOM_RPL:
-		return dm_send_custom_rpl(msg, 0);
+		return dm_send_custom_rpl(msg);
 	default:
 		LM_ERR("unsupported AAA message type (%d), skipping\n", am->type);
 	}

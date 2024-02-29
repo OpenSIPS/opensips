@@ -378,7 +378,7 @@ $json(avps) := $var(rpl_avps);
 
 	<section id="func_dm_send_answer" xreflabel="dm_send_answer()">
 		<title>
-		<function moreinfo="none">dm_send_answer(avps_json)</function>
+		<function moreinfo="none">dm_send_answer(avps_json, [is_error])</function>
 		</title>
 		<para>
 		Send back a Diameter answer message to the interconnected peer in a
@@ -400,6 +400,11 @@ $json(avps) := $var(rpl_avps);
 			<listitem><para>
 				<emphasis>avps_json</emphasis> (string) - A JSON Array containing
 				the AVPs to include in the answer message (example below).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>is_error</emphasis> (boolean, default: <emphasis>false</emphasis>)
+				- Set to <emphasis>true</emphasis>
+				in order to set the 'E' (error) bit in the answer message.
 			</para></listitem>
 		</itemizedlist>
 

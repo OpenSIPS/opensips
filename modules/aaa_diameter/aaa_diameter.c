@@ -41,7 +41,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 				str *avp_json, pv_spec_t *rpl_avps_pv);
 static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 				int *app_id, int *cmd_code, str *avp_json, pv_spec_t *rpl_avps_pv);
-static int dm_send_answer(struct sip_msg *msg, str *avp_json);
+static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error);
 static int dm_bind_api(aaa_prot *api);
 
 int fd_log_level = FD_LOG_NOTICE;
@@ -60,7 +60,8 @@ static const cmd_export_t cmds[]= {
 		ALL_ROUTES},
 
 	{"dm_send_answer", (cmd_function)dm_send_answer, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		EVENT_ROUTE},
 
 	{"aaa_bind_api", (cmd_function) dm_bind_api, {{0, 0, 0}}, 0},
@@ -327,9 +328,10 @@ error:
 }
 
 
-static int dm_send_answer(struct sip_msg *msg, str *avp_json)
+static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
 {
 	aaa_message *dmsg = NULL;
+	struct dm_message *dm;
 	cJSON *avps;
 	pv_param_t evp;
 	pv_value_t res;
@@ -398,9 +400,12 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json)
 		LM_ERR("oom\n");
 		goto error;
 	}
+	dm = (struct dm_message *)dmsg->avpair;
 
-	if (dm_build_avps(&((struct dm_message *)(dmsg->avpair))->avps,
-	                     avps->child) != 0) {
+	if (is_error && *is_error)
+		dm->error_bit = 1;
+
+	if (dm_build_avps(&dm->avps, avps->child) != 0) {
 		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
 		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
 		goto error;
