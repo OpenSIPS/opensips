@@ -372,7 +372,7 @@ db_res_t *db_avp_load(struct db_url *url, str *uuid, str *username,str *domain,
 
 void db_close_query(struct db_url *url, db_res_t *res )
 {
-	LM_DBG("close avp query\n");
+	LM_DBG("close db query\n");
 	url->dbf.free_result( url->hdl, res);
 }
 
@@ -420,7 +420,7 @@ int db_avp_delete(struct db_url *url, str *uuid, str *username, str *domain,
 
 
 int db_query(struct db_url *url, struct sip_msg *msg, str *query,
-														pvname_list_t* dest)
+											pvname_list_t* dest,  int one_row)
 {
 	db_res_t* db_res = NULL;
 
@@ -447,15 +447,105 @@ int db_query(struct db_url *url, struct sip_msg *msg, str *query,
 		return 1;
 	}
 
-	if (db_query_print_results(msg, db_res, dest) != 0) {
-		LM_ERR("failed to print results\n");
-		db_close_query( url, db_res );
-		return -1;
+	if (one_row) {
+		if (db_query_print_one_result(msg, db_res, dest) != 0) {
+			LM_ERR("failed to print ONE result\n");
+			db_close_query( url, db_res );
+			return -1;
+		}
+	} else {
+		if (db_query_print_results(msg, db_res, dest) != 0) {
+			LM_ERR("failed to print results\n");
+			db_close_query( url, db_res );
+			return -1;
+		}
 	}
 
 	db_close_query( url, db_res );
 	return 0;
 }
+
+
+int db_query_print_one_result(struct sip_msg *msg, const db_res_t *db_res,
+								pvname_list_t *dest)
+{
+	pvname_list_t* crt = dest;
+	pv_value_t val;
+	int j;
+
+	for(j = 0; j < RES_COL_N(db_res); j++) {
+
+		if (crt==NULL) {
+			LM_ERR("too few output vars to store the result, need %d,"
+				"having %d\n", RES_COL_N(db_res), j);
+			return -1;
+		}
+
+		if(RES_ROWS(db_res)[0].values[j].nul) {
+			if (pv_set_value( msg, &crt->sname, 0, NULL)!=0) {
+				LM_ERR("unable to add variable for column %d\n",j);
+				return -1;
+			}
+		} else {
+			memset( &val, 0, sizeof(pv_value_t));
+			switch(RES_ROWS(db_res)[0].values[j].type) {
+				case DB_STRING:
+					val.flags = PV_VAL_STR;
+					val.rs.s =
+						(char*)RES_ROWS(db_res)[0].values[j].val.string_val;
+					val.rs.len = strlen(val.rs.s);
+					break;
+				case DB_STR:
+					val.flags = PV_VAL_STR;
+					val.rs =
+						RES_ROWS(db_res)[0].values[j].val.str_val;
+				break;
+				case DB_BLOB:
+					val.flags = PV_VAL_STR;
+					val.rs =
+						RES_ROWS(db_res)[0].values[j].val.blob_val;
+				break;
+				case DB_INT:
+					val.flags = PV_VAL_INT|PV_TYPE_INT;
+					val.ri =
+						(int)RES_ROWS(db_res)[0].values[j].val.int_val;
+				break;
+				case DB_DATETIME:
+					val.flags = PV_VAL_INT|PV_TYPE_INT;
+					val.ri =
+						(int)RES_ROWS(db_res)[0].values[j].val.time_val;
+				break;
+				case DB_BITMAP:
+					val.flags = PV_VAL_INT|PV_TYPE_INT;
+					val.ri =
+						(int)RES_ROWS(db_res)[0].values[j].val.bitmap_val;
+				break;
+				case DB_BIGINT:
+					val.flags = PV_VAL_INT|PV_TYPE_INT;
+					val.ri =
+						(int)RES_ROWS(db_res)[0].values[j].val.bigint_val;
+				break;
+				case DB_DOUBLE:
+					val.flags = PV_VAL_INT|PV_TYPE_INT;
+					val.rs.s = double2str(
+						RES_ROWS(db_res)[0].values[j].val.double_val,
+						&val.rs.len);
+				break;
+				default:
+					LM_WARN("Unknown type %d\n",
+						RES_ROWS(db_res)[0].values[j].type);
+			}
+			if (pv_set_value( msg, &crt->sname, 0, &val)!=0) {
+				LM_ERR("unable to add variable for column %d\n",j);
+				return -1;
+			}
+		}
+		crt = crt->next;
+	}
+
+	return 0;
+}
+
 
 int db_query_print_results(struct sip_msg *msg, const db_res_t *db_res,
 								pvname_list_t *dest)

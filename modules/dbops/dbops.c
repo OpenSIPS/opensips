@@ -76,29 +76,42 @@ static int fixup_avp_prefix(void **param);
 static int fixup_db_id_sync(void** param);
 static int fixup_db_id_async(void** param);
 static int fixup_pvname_list(void** param);
+static int fixup_avpname_list(void** param);
 
 static int fixup_free_pvname_list(void** param);
 static int fixup_free_avp_dbparam(void** param);
 
 static int w_db_avp_load(struct sip_msg* msg, void* source,
-                         void* param, void *url, str *prefix);
+		void* param, void *url, str *prefix);
 static int w_db_avp_delete(struct sip_msg* msg, void* source,
-                           void* param, void *url);
+		void* param, void *url);
 static int w_db_avp_store(struct sip_msg* msg, void* source,
-                          void* param, void *url);
+		void* param, void *url);
 static int w_db_query(struct sip_msg* msg, str* query,
-                          void* dest, void *url);
+		void* dest, void *url);
+static int w_db_query_one(struct sip_msg* msg, str* query,
+		void* dest, void *url);
 static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
-                                str* query, void* dest, void* url);
+		str* query, void* dest, void* url);
+static int w_async_db_query_one(struct sip_msg* msg, async_ctx *ctx,
+		str* query, void* dest, void* url);
 
 static const acmd_export_t acmds[] = {
 	{"db_query", (acmd_function)w_async_db_query, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
+			fixup_avpname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_async, fixup_free_pkg},
+		{0, 0, 0}}},
+	{"db_query_one", (acmd_function)w_async_db_query_one, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_pvname_list, fixup_free_pvname_list},
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
 			fixup_db_id_async, fixup_free_pkg},
 		{0, 0, 0}}},
+
 	{0, 0, {{0, 0, 0}}}
 };
 
@@ -136,6 +149,15 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 
 	{"db_query", (cmd_function)w_db_query, {
+		{CMD_PARAM_STR, 0, 0},
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
+			fixup_avpname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_query_one", (cmd_function)w_db_query_one, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_pvname_list, fixup_free_pvname_list},
@@ -458,7 +480,7 @@ static int fixup_free_avp_dbparam(void** param)
 	return 0;
 }
 
-static int fixup_pvname_list(void** param)
+static int fixup_avpname_list(void** param)
 {
 	pvname_list_t *anlist = NULL;
 	str s = *(str *)*param;
@@ -471,9 +493,39 @@ static int fixup_pvname_list(void** param)
 	anlist = parse_pvname_list(&s, PVT_AVP);
 	if(anlist==NULL)
 	{
-		LM_ERR("bad format in [%.*s]\n", s.len, s.s);
+		LM_ERR("bad list of AVPs in [%.*s]\n", s.len, s.s);
 		return E_UNSPEC;
 	}
+	*param = (void*)anlist;
+	return 0;
+}
+
+static int fixup_pvname_list(void** param)
+{
+	pvname_list_t *anlist = NULL, *it;
+	str s = *(str *)*param;
+
+	if(s.s==NULL || s.s[0]==0) {
+		*param = NULL;
+		return 0;
+	}
+
+	anlist = parse_pvname_list(&s, 0/*type*/);
+	if(anlist==NULL)
+	{
+		LM_ERR("bad list of vars in [%.*s]\n", s.len, s.s);
+		return E_UNSPEC;
+	}
+
+	/* check if all vars are writeble */
+	for( it=anlist ; it ; it=it->next ) {
+		if (!pv_is_w( (&it->sname) )) {
+			LM_ERR("non-writeable var (type %d) found in [%.*s]\n",
+				it->sname.type, s.len, s.s);
+			return E_CFG;
+		}
+	}
+
 	*param = (void*)anlist;
 	return 0;
 }
@@ -567,11 +619,26 @@ static int w_db_query(struct sip_msg* msg, str* query,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_query(msg, query, parsed_url, (pvname_list_t*)dest);
+	return ops_db_query(msg, query, parsed_url, (pvname_list_t*)dest, 0);
 }
 
+
+static int w_db_query_one(struct sip_msg* msg, str* query,
+														void* dest, void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_query(msg, query, parsed_url, (pvname_list_t*)dest, 1);
+}
+
+
 static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
-                                str* query, void* dest, void* url)
+											str* query, void* dest, void* url)
 {
 	struct db_url *parsed_url;
 
@@ -581,5 +648,19 @@ static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 		parsed_url = default_db_url;
 
 	return ops_async_db_query(msg, ctx, query, parsed_url,
-		(pvname_list_t *)dest);
+		(pvname_list_t *)dest, 0);
+}
+
+static int w_async_db_query_one(struct sip_msg* msg, async_ctx *ctx,
+											str* query, void* dest, void* url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_async_db_query(msg, ctx, query, parsed_url,
+		(pvname_list_t *)dest, 1);
 }

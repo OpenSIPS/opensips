@@ -82,7 +82,7 @@ typedef struct _query_async_param
 	db_con_t      *hdl;
 	db_func_t     *dbf;
 	void		  *db_param;
-
+	int one_row;
 } query_async_param;
 
 void init_store_avps(str **db_columns);
@@ -97,10 +97,10 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 		struct db_param *dbp,  struct db_url *url, int use_domain);
 
 int ops_db_query(struct sip_msg* msg, str* query,
-		struct db_url *url, pvname_list_t* dest);
+		struct db_url *url, pvname_list_t* dest, int one_row);
 
 int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
-		str *query, struct db_url *url, pvname_list_t *dest);
+		str *query, struct db_url *url, pvname_list_t *dest, int one_row);
 
 int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
 int timeout_async_dbquery(int fd, struct sip_msg *msg, void *_param);

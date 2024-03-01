@@ -754,7 +754,7 @@ error:
 
 /* @return : non-zero */
 int ops_db_query(struct sip_msg* msg, str* query, struct db_url *url,
-														pvname_list_t* dest)
+											pvname_list_t* dest, int one_row)
 {
 	int ret;
 
@@ -765,7 +765,7 @@ int ops_db_query(struct sip_msg* msg, str* query, struct db_url *url,
 	}
 
 	LM_DBG("query [%.*s]\n", query->len, query->s);
-	ret = db_query(url, msg, query, dest);
+	ret = db_query(url, msg, query, dest, one_row);
 
 	/* Empty return set */
 	if(ret==1)
@@ -780,7 +780,7 @@ int ops_db_query(struct sip_msg* msg, str* query, struct db_url *url,
 }
 
 int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
-		str *query, struct db_url *url, pvname_list_t *dest)
+		str *query, struct db_url *url, pvname_list_t *dest, int one_row)
 {
 	int rc, read_fd;
 	query_async_param *param;
@@ -798,7 +798,7 @@ int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 	/* No async capabilities - just run it in blocking mode */
 	if (!DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
 	{
-		rc = db_query(url, msg, query, dest);
+		rc = db_query(url, msg, query, dest, one_row);
 		LM_DBG("sync query \"%.*s\" returned: %d\n", query->len, query->s, rc);
 
 		ctx->resume_param = NULL;
@@ -835,6 +835,7 @@ int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 	param->hdl = url->hdl;
 	param->dbf = &url->dbf;
 	param->db_param = _priv;
+	param->one_row = one_row;
 
 	async_status = read_fd;
 	return 1;
@@ -873,10 +874,18 @@ int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 		goto err_free;
 	}
 
-	if (db_query_print_results(msg, res, param->output_avps) != 0) {
-		LM_ERR("failed to print results\n");
-		ret = -1;
-		goto err_free;
+	if (param->one_row) {
+		if (db_query_print_one_result(msg, res, param->output_avps) != 0) {
+			LM_ERR("failed to print ONE result\n");
+			ret = -1;
+			goto err_free;
+		}
+	} else {
+		if (db_query_print_results(msg, res, param->output_avps) != 0) {
+			LM_ERR("failed to print results\n");
+			ret = -1;
+			goto err_free;
+		}
 	}
 
 	async_status = ASYNC_DONE;

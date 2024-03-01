@@ -489,7 +489,62 @@ db_query("DELETE FROM subscriber", , $avp(id));
 				</programlisting>
 			</example>
 		</section>
+
+		<section id="func_db_query_one" xreflabel="db_query_one()">
+			<title>
+				<function moreinfo="none">db_query_one(query, [res_col_vars], [db_id])</function>
+			</title>
+			<para>
+			Similar to <xref linkend="func_db_query"/>, it makes a generic raw
+			database query and returns the results, but with the following
+			differences:
+			</para>
+			<itemizedlist>
+			<listitem>
+				<para><emphasis>returns only one row</emphasis> - even if
+				the query results in a multi row result, only the first row
+				will be returned to script.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>return variables are not limited to AVPs</emphasis> -
+				the variables for returning the query result may any kind
+				of variable, of course, as time as it is writeable. NOTE that
+				the number of return vairable MUST match (as number) the number
+				of returned columns. If less variables are provided, the query
+				will fail.
+				</para>
+			</listitem>
+			<listitem>
+				<para><emphasis>NULL is returned</emphasis> - any a DB NULL
+				value resulting from the query will be pushed as NULL indicator
+				(and NOT as <emphasis>&lt;null&gt;</emphasis> string) to the
+				script variables.
+				</para>
+			</listitem>
+			</itemizedlist>
+			<para>
+			This function can be used from any type of route.
+			</para>
+			<example>
+				<title><function>db_query_one</function> usage</title>
+				<programlisting format="linespecific">
+...
+db_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'",
+	"$var(pass);$var(hash)");
+# $var(pass) or $var(hash) may be NULL if the corresponding columns
+# are not populated
+...
+db_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and attribute='cfna'",
+	"$var(cf_uri);$var(type)");
+# the above query will return only one row, even if there are multiple `cfna`
+# attributes for the user
+...
+				</programlisting>
+			</example>
+		</section>
 	</section>
+
 
 	<section>
 	<title>Exported Asynchronous Functions</title>
@@ -535,7 +590,47 @@ route [my_resume_route]
 			</example>
 		</section>
 
+		<section id="afunc_db_query_one" xreflabel="db_query_one()">
+			<title>
+				<function moreinfo="none">db_query_one(query, [dest], [db_id])</function>
+			</title>
+			<para>
+			This function takes the same parameters and behaves identically
+			to <xref linkend="func_db_query_one"/>, but asynchronously
+			(after launching the query, the current SIP worker pauses the
+			execution of the current SIP message until the result is available
+			and attempts to process more SIP traffic).
+			</para>
+			<para>
+			This function can be used from any route.
+			</para>
+			<example>
+				<title><function>async db_query_one</function> usage</title>
+				<programlisting format="linespecific">
+...
+{
+...
+/* Example of a slow MySQL query - it should take around 5 seconds */
+async(
+	db_query_one(
+		"SELECT table_name, table_version, SLEEP(0.1) from version",
+		"$var(tb_name); $var(tb_ver); $var(retcode)"),
+	my_resume_route);
+/* script execution is halted right after the async() call */
+}
+
+/* We will be called when data is ready - meanwhile, the worker is free */
+route [my_resume_route]
+{
+	xlog("Result: $var(tb_name) | $var(tb_ver) | $(var(retcode)\n");
+}
+...
+				</programlisting>
+			</example>
+		</section>
+
 	</section>
+
 
 </chapter>
 

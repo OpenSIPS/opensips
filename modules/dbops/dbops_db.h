@@ -77,13 +77,16 @@ int db_avp_delete( struct db_url *url, str *uuid, str *username, str *domain,
 		char *attr, const str *table);
 
 int db_query(struct db_url *url, struct sip_msg* msg, str *query,
-		pvname_list_t* dest);
+		pvname_list_t* dest, int one_row);
 
 int add_avp_db_scheme( modparam_t type, void* val);
 
 struct db_scheme *get_avp_db_scheme( str *name );
 
+int db_query_print_one_result(struct sip_msg *msg, const db_res_t *db_res,
+		pvname_list_t *dest);
+
 int db_query_print_results(struct sip_msg *msg, const db_res_t *db_res,
-								pvname_list_t *dest);
+		pvname_list_t *dest);
 
 #endif
