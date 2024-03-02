@@ -368,12 +368,12 @@ Chapter 2. Contributors
    1. Vlad Patrascu (@rvlad-patrascu) 93 44 3640 1114
    2. Liviu Chircu (@liviuchircu) 22 18 166 115
    3. Razvan Crainea (@razvancrainea) 15 13 25 14
-   4. Bogdan-Andrei Iancu (@bogdan-iancu) 9 7 120 27
+   4. Bogdan-Andrei Iancu (@bogdan-iancu) 11 8 123 29
    5. Maksym Sobolyev (@sobomax) 7 5 8 9
-   6. Bence Szigeti 4 2 3 2
-   7. Ionel Cerghit (@ionel-cerghit) 4 1 50 92
-   8. Dan Pascu (@danpascu) 3 1 1 1
-   9. Ovidiu Sas (@ovidiusas) 3 1 1 1
+   6. Ovidiu Sas (@ovidiusas) 4 2 14 7
+   7. Bence Szigeti 4 2 3 2
+   8. Ionel Cerghit (@ionel-cerghit) 4 1 50 92
+   9. Dan Pascu (@danpascu) 3 1 1 1
    10. Peter Lemenkov (@lemenkov) 3 1 1 1
 
    All remaining contributors: Walter Doekes (@wdoekes), Gang
@@ -399,18 +399,18 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Jan 2024
-   2.  Bence Szigeti                       Jan 2024 - Jan 2024
-   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Jul 2022
-   5.  Gang Zhuo                           Nov 2021 - Nov 2021
-   6.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
-   7.  Razvan Crainea (@razvancrainea)     Feb 2016 - Jan 2021
-   8.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2019
-   9.  Dan Pascu (@danpascu)               May 2019 - May 2019
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) May 2017 - Feb 2024
+   2.  Ovidiu Sas (@ovidiusas)             Mar 2017 - Feb 2024
+   3.  Bence Szigeti                       Jan 2024 - Jan 2024
+   4.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Aug 2015 - Jul 2022
+   6.  Gang Zhuo                           Nov 2021 - Nov 2021
+   7.  Walter Doekes (@wdoekes)            Apr 2021 - Apr 2021
+   8.  Razvan Crainea (@razvancrainea)     Feb 2016 - Jan 2021
+   9.  Liviu Chircu (@liviuchircu)         Mar 2016 - Sep 2019
+   10. Dan Pascu (@danpascu)               May 2019 - May 2019
 
-   All remaining contributors: Ovidiu Sas (@ovidiusas), Ionel
+   All remaining contributors: Peter Lemenkov (@lemenkov), Ionel
    Cerghit (@ionel-cerghit).
 
    (1) including any documentation-related commits, excluding

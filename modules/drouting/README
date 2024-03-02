@@ -59,7 +59,7 @@ Dynamic Routing Module
               1.3.36. extra_prefix_chars (str)
               1.3.37. extra_id_chars (str)
               1.3.38. rule_tables_query (str)
-              1.3.39. generate_data_md5 (int)
+              1.3.39. generate_data_checksum (int)
 
         1.4. Exported Functions
 
@@ -169,7 +169,7 @@ Dynamic Routing Module
    1.36. Set extra_prefix_chars parameter
    1.37. Set extra_id_chars parameter
    1.38. Set the rule_tables_query parameter
-   1.39. Set the generate_data_md5 parameter
+   1.39. Set the generate_data_checksum parameter
    1.40. do_routing usage
    1.41. route_to_carrier usage
    1.42. route_to_gw usage
@@ -1074,15 +1074,15 @@ modparam("drouting", "rule_tables_query", "
                 SELECT 'dr_rules_a' UNION SELECT 'dr_rules_b'")
 ...
 
-1.3.39. generate_data_md5 (int)
+1.3.39. generate_data_checksum (int)
 
-   If enabled, it will generate MD5 hashes for drouting data,
-   attach that to the reload_status MI command output and to the
-   reload generated status reports
+   If enabled, it will generate a checksum ( MD5 ) for drouting
+   loaded data, attach that to the reload_status MI command output
+   and to the reload generated status reports
 
-   Example 1.39. Set the generate_data_md5 parameter
+   Example 1.39. Set the generate_data_checksum parameter
 ...
-modparam("drouting", "generate_data_md5", 1)
+modparam("drouting", "generate_data_checksum", 1)
 ...
 
 1.4. Exported Functions
@@ -1899,7 +1899,7 @@ Chapter 3. Contributors
    3. Razvan Crainea (@razvancrainea) 100 53 1171 2226
    4. Mihai Tiganus (@tallicamike) 71 20 4301 910
    5. Vlad Patrascu (@rvlad-patrascu) 41 20 1100 735
-   6. Vlad Paiu (@vladpaiu) 23 20 244 47
+   6. Vlad Paiu (@vladpaiu) 28 22 421 65
    7. Andrei Datcu (@andrei-datcu) 20 12 551 134
    8. Ovidiu Sas (@ovidiusas) 15 11 132 70
    9. Ionut Ionita (@ionutrazvanionita) 15 9 370 108
@@ -1933,20 +1933,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Nov 2012 - Dec 2023
-   2.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
-   3.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
-   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2023
-   5.  wangdd                              May 2023 - May 2023
-   6.  MayamaTakeshi                       Apr 2023 - Apr 2023
-   7.  nexbridge                           Feb 2023 - Mar 2023
-   8.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
-   9.  Nick Altmann (@nikbyte)             Mar 2013 - May 2021
-   10. Walter Doekes (@wdoekes)            May 2014 - Apr 2021
+   1.  Vlad Paiu (@vladpaiu)               Aug 2011 - Feb 2024
+   2.  Liviu Chircu (@liviuchircu)         Nov 2012 - Dec 2023
+   3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Nov 2023
+   4.  Razvan Crainea (@razvancrainea)     Sep 2010 - Oct 2023
+   5.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2008 - May 2023
+   6.  wangdd                              May 2023 - May 2023
+   7.  MayamaTakeshi                       Apr 2023 - Apr 2023
+   8.  nexbridge                           Feb 2023 - Mar 2023
+   9.  Vlad Patrascu (@rvlad-patrascu)     Mar 2017 - Jul 2022
+   10. Nick Altmann (@nikbyte)             Mar 2013 - May 2021
 
-   All remaining contributors: Aron Podrigal (@ar45), Vlad Paiu
-   (@vladpaiu), Alexey Vasilyev (@vasilevalex), Peter Lemenkov
-   (@lemenkov), Ovidiu Sas (@ovidiusas), Jeremy Martinez
+   All remaining contributors: Walter Doekes (@wdoekes), Aron
+   Podrigal (@ar45), Alexey Vasilyev (@vasilevalex), Peter
+   Lemenkov (@lemenkov), Ovidiu Sas (@ovidiusas), Jeremy Martinez
    (@JeremyMartinez51), Le Roy Christophe, Ionut Ionita
    (@ionutrazvanionita), Ozzyboshi, Julián Moreno Patiño, Dusan
    Klinec (@ph4r05), Mihai Tiganus (@tallicamike), Andrei Datcu
@@ -1960,13 +1960,14 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), wangdd, Liviu
-   Chircu (@liviuchircu), Vlad Patrascu (@rvlad-patrascu),
-   Bogdan-Andrei Iancu (@bogdan-iancu), Nick Altmann (@nikbyte),
-   Alexey Vasilyev (@vasilevalex), Peter Lemenkov (@lemenkov),
-   Ionut Ionita (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Mihai
-   Tiganus (@tallicamike), Andrei Datcu (@andrei-datcu), Matt
-   Lehner, Anca Vamanu, Andrei Dragus, Sergio Gutierrez.
+   Last edited by: Vlad Paiu (@vladpaiu), Razvan Crainea
+   (@razvancrainea), wangdd, Liviu Chircu (@liviuchircu), Vlad
+   Patrascu (@rvlad-patrascu), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Nick Altmann (@nikbyte), Alexey Vasilyev
+   (@vasilevalex), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Mihai Tiganus (@tallicamike), Andrei
+   Datcu (@andrei-datcu), Matt Lehner, Anca Vamanu, Andrei Dragus,
+   Sergio Gutierrez.
 
    Documentation Copyrights:
 

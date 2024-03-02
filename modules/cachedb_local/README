@@ -335,7 +335,7 @@ Chapter 3. Contributors
    Table 3.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Vlad Paiu (@vladpaiu) 32 10 1155 693
+   1. Vlad Paiu (@vladpaiu) 34 11 1335 693
    2. Vlad Patrascu (@rvlad-patrascu) 25 16 509 226
    3. Liviu Chircu (@liviuchircu) 22 16 127 191
    4. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 46 50
@@ -370,20 +370,19 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Oct 2022
-   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
-   4.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   6.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
-   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
-   8.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
-   9.  Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Vlad Paiu (@vladpaiu)               Oct 2011 - Feb 2024
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Feb 2023
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jan 2017 - Oct 2022
+   4.  Liviu Chircu (@liviuchircu)         Mar 2014 - Aug 2022
+   5.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   6.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
+   7.  Razvan Crainea (@razvancrainea)     Aug 2015 - Sep 2019
+   8.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2009 - Apr 2019
+   9.  Fabian Gast (@fgast)                Dec 2018 - Dec 2018
+   10. Ionut Ionita (@ionutrazvanionita)   Jan 2017 - Jan 2017
 
-   All remaining contributors: Dusan Klinec (@ph4r05), Ryan
-   Bullock (@rrb3942), Vlad Paiu (@vladpaiu), Andrei Dragus, Anca
-   Vamanu.
+   All remaining contributors: Julián Moreno Patiño, Dusan Klinec
+   (@ph4r05), Ryan Bullock (@rrb3942), Andrei Dragus, Anca Vamanu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -392,11 +391,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Vlad Patrascu
-   (@rvlad-patrascu), Zero King (@l2dy), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Fabian Gast (@fgast), Peter Lemenkov
-   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
-   (@vladpaiu), Andrei Dragus, Anca Vamanu.
+   Last edited by: Vlad Paiu (@vladpaiu), Liviu Chircu
+   (@liviuchircu), Vlad Patrascu (@rvlad-patrascu), Zero King
+   (@l2dy), Bogdan-Andrei Iancu (@bogdan-iancu), Fabian Gast
+   (@fgast), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Andrei Dragus, Anca Vamanu.
 
    Documentation Copyrights:
 
