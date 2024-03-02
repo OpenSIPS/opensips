@@ -151,6 +151,8 @@ xtra-avps-file:dictionary.opensips")
    Time, in milliseconds, after which a dm_send_request() function
    call with no received reply will time out and return a -2 code.
 
+   Default value is 2000 ms.
+
    Example 1.6. Setting the answer_timeout parameter
 
 modparam("aaa_diameter", "answer_timeout", 5000)
@@ -287,7 +289,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
                    Name               DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu)        89      24      5918     955
+   1. Liviu Chircu (@liviuchircu)        91      26      5928     960
    2. Razvan Crainea (@razvancrainea)    11       8      233       35
    3. Maksym Sobolyev (@sobomax)         3        1       5        5
 
@@ -311,8 +313,8 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                    Name                 Commit Activity
-   1. Razvan Crainea (@razvancrainea) May 2023 - May 2023
-   2. Liviu Chircu (@liviuchircu)     May 2021 - Apr 2023
+   1. Liviu Chircu (@liviuchircu)     May 2021 - Feb 2024
+   2. Razvan Crainea (@razvancrainea) May 2023 - May 2023
    3. Maksym Sobolyev (@sobomax)      Feb 2023 - Feb 2023
 
    (1) including any documentation-related commits, excluding
@@ -322,8 +324,8 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Razvan Crainea (@razvancrainea), Liviu Chircu
-   (@liviuchircu).
+   Last edited by: Liviu Chircu (@liviuchircu), Razvan Crainea
+   (@razvancrainea).
 
    Documentation Copyrights:
 
