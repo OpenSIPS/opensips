@@ -292,6 +292,7 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	int rc;
 	str callid;
 	struct dm_cond **prpl_cond, *rpl_cond;
+	unsigned int hentry;
 
 	FD_CHECK(fd_msg_hdr(msg, &hdr));
 
@@ -311,8 +312,12 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 
 	LM_DBG("MAA reply %d, Acct-Session-Id: %.*s\n", rc, callid.len, callid.s);
 
-	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, callid);
+	hentry = hash_entry(pending_replies, callid);
+	hash_lock(pending_replies, hentry);
+
+	prpl_cond = (struct dm_cond **)hash_find(pending_replies, hentry, callid);
 	if (!prpl_cond) {
+		hash_unlock(pending_replies, hentry);
 		LM_ERR("failed to match Call-ID %.*s to a pending request\n",
 		       callid.len, callid.s);
 		goto out;
@@ -321,6 +326,7 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	rpl_cond->rc = rc;
 
 	hash_remove_key(pending_replies, callid);
+	hash_unlock(pending_replies, hentry);
 
 	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
 	if (a) {
@@ -596,6 +602,7 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 	int rc;
 	str tid;
 	struct dm_cond **prpl_cond, *rpl_cond;
+	unsigned int hentry;
 
 	FD_CHECK(fd_msg_hdr(msg, &hdr));
 
@@ -643,24 +650,23 @@ static int dm_receive_msg(struct msg **_msg, struct avp * avp, struct session * 
 			   hdr->msg_code, tid.len, tid.s);
 	}
 
-	prpl_cond = (struct dm_cond **)hash_find_key(pending_replies, tid);
+	hentry = hash_entry(pending_replies, tid);
+	hash_lock(pending_replies, hentry);
+	prpl_cond = (struct dm_cond **)hash_find(pending_replies, hentry, tid);
 	if (!prpl_cond) {
+		hash_unlock(pending_replies, hentry);
 		LM_ERR("failed to match Transaction_Id %.*s to a pending request\n",
 		       tid.len, tid.s);
 		goto out;
 	}
 	rpl_cond = *prpl_cond;
 
-	if (!hash_find_key(pending_replies, tid)) {
-		LM_ERR("Transaction_Id %.*s already processed!\n", tid.len, tid.s);
-		goto out;
-	}
-
 	if (rpl_cond->rpl_avps_json)
 		shm_free(rpl_cond->rpl_avps_json);
 	rpl_cond->rpl_avps_json = cJSON_PrintUnformatted(avps);
 
 	hash_remove_key(pending_replies, tid);
+	hash_unlock(pending_replies, hentry);
 
 	fd_msg_search_avp(msg, dm_dict.Error_Message, &a);
 	if (a) {
