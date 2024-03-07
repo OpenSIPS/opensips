@@ -24,6 +24,7 @@
 #define __KV_STORE_H__
 
 #include "../../map.h"
+#include "../../pvar.h"
 
 int_str_t *kv_get(map_t _store, const str* _key);
 int_str_t *kv_put(map_t _store, const str* _key, const int_str_t* _val);
@@ -45,5 +46,9 @@ void store_free_buffer(str *serialized);
 map_t store_deserialize(const str *input);
 
 void store_destroy(map_t _store);
+
+int w_add_key(struct sip_msg* _m, void* _d, str* aor, str* key, str* value);
+int w_get_key(struct sip_msg* _m, void* _d, str* aor, str* key, pv_spec_t* destination);
+int w_delete_key(struct sip_msg* _m, void* _d, str* aor, str* key);
 
 #endif /* __KV_STORE_H__ */
