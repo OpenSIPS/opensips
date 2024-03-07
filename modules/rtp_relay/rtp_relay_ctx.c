@@ -2582,7 +2582,7 @@ mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
 	if (rtp_relay_ctx_pending(ctx)) {
 		RTP_RELAY_CTX_UNLOCK(ctx);
 		lock_stop_read(rtp_relay_contexts_lock);
-		goto error;
+		return 0;
 	}
 
 	ctmp = rtp_relay_new_tmp(ctx, set, node);
