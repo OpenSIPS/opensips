@@ -321,6 +321,7 @@ extern int cfg_parse_only_routes;
 %token MAX_WHILE_LOOPS
 %token UDP_WORKERS
 %token CHECK_VIA
+%token REPLY_TO_VIA
 %token SHM_HASH_SPLIT_PERCENTAGE
 %token SHM_SECONDARY_HASH_SIZE
 %token MEM_WARMING_ENABLED
@@ -1072,6 +1073,8 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 		}
 		| CHECK_VIA EQUAL NUMBER { check_via=$3; }
 		| CHECK_VIA EQUAL error { yyerror("boolean value expected"); }
+                | REPLY_TO_VIA EQUAL NUMBER { reply_to_via=$3; }
+                | REPLY_TO_VIA EQUAL error { yyerror("boolean value expected"); }
 		| SHM_HASH_SPLIT_PERCENTAGE EQUAL NUMBER { IFOR();
 			#ifdef HP_MALLOC
 			shm_hash_split_percentage=$3;
