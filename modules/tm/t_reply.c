@@ -68,6 +68,7 @@
 #include "../../dprint.h"
 #include "../../config.h"
 #include "../../parser/parser_f.h"
+#include "../../parser/msg_parser.h"
 #include "../../ut.h"
 #include "../../timer.h"
 #include "../../error.h"
@@ -119,7 +120,7 @@ static struct script_route_ref *goto_on_reply = NULL;
 /* currently processed branch */
 extern int _tm_branch_index;
 
-
+static struct sip_msg dummy_msg;
 
 /* returns the picked branch */
 int t_get_picked_branch(void)
@@ -439,6 +440,21 @@ static int _reply_light( struct cell *trans, char* buf, unsigned int len,
 
 	if(trans->uas.request && trans->uas.request->flags&tcp_no_new_conn_rplflag)
 		tcp_no_new_conn = 1;
+
+	if(ref_script_route_is_valid(tm_local_reply)) {
+		LM_DBG("Found Local-Reply Route...\n");
+		LM_DBG("Message:\n-----------------\n%.*s\n--------------------\n", len, buf);
+		memset(&dummy_msg, 0, sizeof(struct sip_msg));
+		dummy_msg.buf = buf;
+		dummy_msg.len = len;
+
+		if (parse_msg(buf, len, &dummy_msg) == 0) {
+			LM_DBG("Parsed Message, executing Local-Reply Route with Message...\n");
+			run_top_route(sroutes->onreply[tm_local_reply->idx], &dummy_msg);
+		}
+		free_sip_msg(&dummy_msg);
+	}
+
 
 	if ( SEND_PR_BUFFER( rb, buf, len )==0 ) {
 		LM_DBG("reply sent out. buf=%p: %.9s..., "

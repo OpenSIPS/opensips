@@ -76,7 +76,7 @@ int pass_provisional_replies = 0;
 
 /* T holder for the last local transaction */
 struct cell** last_localT;
-
+static struct sip_msg dummy_msg;
 
 /*
  * Initialize UAC
@@ -551,6 +551,19 @@ int t_uac(str* method, str* headers, str* body, dlg_t* dialog,
 	if (request->buffer.s==NULL) {
 		request->buffer.s = buf;
 		request->buffer.len = buf_len;
+	}
+
+	if (ref_script_route_is_valid(tm_local_request)) {
+		LM_DBG("Found Local-Request Route...\n");
+		memset(&dummy_msg, 0, sizeof(struct sip_msg));
+		dummy_msg.buf = request->buffer.s;
+		dummy_msg.len = request->buffer.len;
+
+		if (parse_msg(request->buffer.s, request->buffer.len, &dummy_msg) == 0) {
+			LM_DBG("Parsed Message, executing Local-Reply Route with Message...\n");
+			run_top_route(sroutes->request[tm_local_request->idx], &dummy_msg);
+		}
+		free_sip_msg(&dummy_msg);
 	}
 
 	/* for DNS based failover, copy the DNS proxy into transaction
