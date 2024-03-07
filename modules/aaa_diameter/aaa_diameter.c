@@ -479,6 +479,10 @@ static int dm_send_request_async_reply(int fd,
 		goto error;
 	}
 	ret = _dm_get_message_response(amsg->cond, &rpl_avps);
+	if (ret == 0)
+		ret = 1;
+	else
+		LM_ERR("Diameter request failed\n");
 	if (ret > 0 && amsg->ret && rpl_avps) {
 		val.rs.s = rpl_avps;
 		val.rs.len = strlen(rpl_avps);
