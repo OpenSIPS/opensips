@@ -49,6 +49,7 @@
 #include "../../globals.h"   /* is_main */
 #include "../../ut.h"        /* str_init */
 #include "../../ipc.h"
+#include "../../pvar.h"
 
 #include "ul_mod.h"
 #include "dlist.h"           /* register_udomain */
@@ -61,6 +62,7 @@
 #include "ul_mi.h"
 #include "ul_callback.h"
 #include "usrloc.h"
+#include "kv_store.h"
 
 #define CONTACTID_COL  "contact_id"
 #define USER_COL       "username"
@@ -90,6 +92,9 @@ int ul_init_globals(void);
 int ul_check_config(void);
 int ul_check_db(void);
 int ul_deprec_shp(modparam_t _, void *modparam);
+
+/*! \brief Fixup functions */
+static int domain_fixup(void** param);
 
 //static int add_replication_dest(modparam_t type, void *val);
 
@@ -187,6 +192,26 @@ int latency_event_min_us;
  */
 static const cmd_export_t cmds[] = {
 	{"ul_bind_usrloc", (cmd_function)bind_usrloc, {{0,0,0}},0},
+        {"ul_add_key", (cmd_function)w_add_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
+        {"ul_get_key", (cmd_function)w_get_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_VAR, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
+       {"ul_del_key", (cmd_function)w_delete_key, {
+                {CMD_PARAM_STR|CMD_PARAM_STATIC, domain_fixup, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {CMD_PARAM_STR, 0, 0},
+                {0,0,0}},
+                ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -932,4 +957,26 @@ int ul_check_db(void)
 	}
 
 	return 0;
+}
+
+/*! \brief
+ * Convert char* parameter to udomain_t* pointer
+ */
+static int domain_fixup(void** param)
+{
+        udomain_t* d;
+        str d_nt;
+
+        if (pkg_nt_str_dup(&d_nt, (str*)*param) < 0)
+                return E_OUT_OF_MEM;
+
+        if (register_udomain(d_nt.s, &d) < 0) {
+                LM_ERR("failed to register domain\n");
+                return E_UNSPEC;
+        }
+
+        pkg_free(d_nt.s);
+
+        *param = (void*)d;
+        return 0;
 }
