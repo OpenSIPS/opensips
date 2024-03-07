@@ -1930,7 +1930,7 @@ int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps)
 
 	if (cond->is_error)
 		return -1;
-	return 1;
+	return 0;
 }
 
 
