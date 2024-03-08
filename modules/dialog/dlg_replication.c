@@ -741,7 +741,7 @@ int dlg_replicated_value(bin_packet_t *packet)
 	str call_id, name;
 	struct dlg_cell *dlg;
 	unsigned int h_id;
-	int h_entry, type;
+	int h_entry, type, ret;
 	struct dlg_entry *d_entry;
 	int_str val;
 
@@ -774,12 +774,13 @@ int dlg_replicated_value(bin_packet_t *packet)
 		return -1;
 	}
 	lock_start_write(dlg->vals_lock);
-	if (store_dlg_value_unsafe(dlg, &name, &val, type) < 0)
+	ret = store_dlg_value_unsafe(dlg, &name, &val, type);
+	lock_stop_write(dlg->vals_lock);
+	if (ret < 0)
 		LM_ERR("cannot store dlg value\n");
 	else
 		run_dlg_callbacks(DLGCB_PROCESS_VARS, dlg,
 				NULL, DLG_DIR_NONE, -1, &name, 1, 0);
-	lock_stop_write(dlg->vals_lock);
 
 	dlg_unlock(d_table, d_entry);
 
