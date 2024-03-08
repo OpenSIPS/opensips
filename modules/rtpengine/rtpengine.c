@@ -1503,12 +1503,13 @@ mod_init(void)
 	pv_spec_t avp_spec;
 	unsigned short avp_flags;
 	str s;
+	int count = count_child_processes();
 
 	rtpe_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, rtpe_ctx_free);
 
 	rtpe_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
 	list_version = (unsigned int*)shm_malloc(sizeof(unsigned int));
-	child_versions=(unsigned int*)shm_malloc((1/*non-SIP at head*/ + udp_workers_no + tcp_workers_no) * sizeof(unsigned int));
+	child_versions=(unsigned int*)shm_malloc(count * sizeof(unsigned int));
 	child_versions_no = (unsigned int*)shm_malloc(sizeof(unsigned int));
 	rtpe_versions = (struct rtpe_version_head **)shm_malloc(sizeof(struct rtpe_version_head *));
 
@@ -1519,7 +1520,7 @@ mod_init(void)
 
 	*rtpe_no = 0;
 	*list_version = 0;
-	*child_versions_no = 1/*non-SIP at head*/ + udp_workers_no + tcp_workers_no;
+	*child_versions_no = count;
 	*rtpe_versions = 0;
 	my_version = 0;
 
@@ -1853,7 +1854,10 @@ static int update_rtpengines(int force_test)
 		my_version = crt_version->version;
 	}
 
-	child_versions[myrank] = my_version;
+	if (myrank < *child_versions_no)
+		child_versions[myrank] = my_version;
+	else
+		LM_BUG("rank overflow %d vs %d\n", myrank, *child_versions_no);
 
 	/*
 		close all sockets if any versions required
