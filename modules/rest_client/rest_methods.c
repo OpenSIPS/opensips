@@ -898,7 +898,7 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 
 	/* obtain a read fd in "connection_timeout" seconds at worst */
 	for (timeout = connect_timeout; timeout > 0; timeout -= busy_wait) {
-		curl_off_t connect = -1;
+		double connect = -1;
 		long req_sz = -1;
 
 		mrc = curl_multi_perform(multi_handle, &running_handles);
@@ -907,11 +907,11 @@ int start_async_http_req(struct sip_msg *msg, enum rest_client_method method,
 			goto error;
 		}
 
-		curl_easy_getinfo(handle, CURLINFO_CONNECT_TIME_T, &connect);
+		curl_easy_getinfo(handle, CURLINFO_CONNECT_TIME, &connect);
 		curl_easy_getinfo(handle, CURLINFO_REQUEST_SIZE, &req_sz);
 
-		LM_DBG("perform code: %d, handles: %d, connect: %ldµs, reqsz: %ldB\n",
-		        mrc, running_handles, (long)connect, req_sz);
+		LM_DBG("perform code: %d, handles: %d, connect: %.3lfs, reqsz: %ldB\n",
+		        mrc, running_handles, connect, req_sz);
 
 		/* transfer completed!  But how well? */
 		if (running_handles == 0) {
