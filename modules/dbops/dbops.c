@@ -96,6 +96,20 @@ static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 static int w_async_db_query_one(struct sip_msg* msg, async_ctx *ctx,
 		str* query, void* dest, void* url);
 
+static int w_db_select(struct sip_msg* msg, str* cols, str *table,
+		str *filter, str *order, void* dest, void *url);
+static int w_db_select_one(struct sip_msg* msg, str* cols, str *table,
+		str *filter, str *order, void* dest, void *url);
+static int w_db_update(struct sip_msg* msg, str* cols, str *table,
+		str *filter, void *url);
+static int w_db_insert(struct sip_msg* msg, str* cols, str *table,
+		void *url);
+static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
+		void *url);
+static int w_db_replace(struct sip_msg* msg, str* cols, str *table,
+		void *url);
+
+
 static const acmd_export_t acmds[] = {
 	{"db_query", (acmd_function)w_async_db_query, {
 		{CMD_PARAM_STR, 0, 0},
@@ -161,6 +175,63 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_pvname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_select", (cmd_function)w_db_select, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* columns */
+		{CMD_PARAM_STR, 0, 0}, /* table */
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* filter */
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* order */
+		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
+			fixup_avpname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_selec_onet", (cmd_function)w_db_select_one, {
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* columns */
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* table */
+		{CMD_PARAM_STR, 0, 0}, /* filter */
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* order */
+		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
+			fixup_pvname_list, fixup_free_pvname_list},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_update", (cmd_function)w_db_update, {
+		{CMD_PARAM_STR, 0, 0}, /* columns */
+		{CMD_PARAM_STR, 0, 0}, /* table */
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* filter */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_insert", (cmd_function)w_db_insert, {
+		{CMD_PARAM_STR, 0, 0}, /* columns */
+		{CMD_PARAM_STR, 0, 0}, /* table */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_delete", (cmd_function)w_db_delete, {
+		{CMD_PARAM_STR, 0, 0}, /* table */
+		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* filter */
+		{CMD_PARAM_INT|CMD_PARAM_OPT,
+			fixup_db_id_sync, fixup_free_pkg},
+		{0, 0, 0}},
+		ALL_ROUTES},
+
+	{"db_replace", (cmd_function)w_db_replace, {
+		{CMD_PARAM_STR, 0, 0}, /* columns */
+		{CMD_PARAM_STR, 0, 0}, /* table */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
 			fixup_db_id_sync, fixup_free_pkg},
 		{0, 0, 0}},
@@ -634,6 +705,92 @@ static int w_db_query_one(struct sip_msg* msg, str* query,
 		parsed_url = default_db_url;
 
 	return ops_db_query(msg, query, parsed_url, (pvname_list_t*)dest, 1);
+}
+
+
+static int w_db_select(struct sip_msg* msg, str* cols, str *table,
+		str *filter, str *order, void* dest, void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_api_select(parsed_url, msg, cols, table, filter, order, 
+		(pvname_list_t*)dest, 0);
+}
+
+
+static int w_db_select_one(struct sip_msg* msg, str* cols, str *table,
+		str *filter, str *order, void* dest, void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_api_select(parsed_url, msg, cols, table, filter, order, 
+		(pvname_list_t*)dest, 1);
+}
+
+
+static int w_db_update(struct sip_msg* msg, str* cols, str *table,
+		str *filter, void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_api_update(parsed_url, msg, cols, table, filter);
+}
+
+
+static int w_db_insert(struct sip_msg* msg, str* cols, str *table,
+		void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_api_insert(parsed_url, msg, cols, table);
+}
+
+
+static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
+		void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_api_delete(parsed_url, msg, table, filter);
+}
+
+
+static int w_db_replace(struct sip_msg* msg, str* cols, str *table,
+		void *url)
+{
+	struct db_url *parsed_url;
+
+	if (url)
+		parsed_url = ((struct db_url_container *)url)->u.url;
+	else
+		parsed_url = default_db_url;
+
+	return ops_db_api_replace(parsed_url, msg, cols, table);
 }
 
 

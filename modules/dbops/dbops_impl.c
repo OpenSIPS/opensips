@@ -779,6 +779,188 @@ int ops_db_query(struct sip_msg* msg, str* query, struct db_url *url,
 	return 1;
 }
 
+
+static inline int _parse_json_col_and_filter( str *cols, str *filter,
+												cJSON **Jcols, cJSON**Jfilter)
+{
+	char *j, *p, *cols_nt, *filter_nt;
+
+	if (cols==NULL && filter==NULL) {
+		*Jcols = NULL;
+		*Jfilter = NULL;
+		return 0;
+	}
+
+	/* make cols and filter NULL terminated and parse them as JSON objs */
+	j = (char*)pkg_malloc( (cols?cols->len+1:0) + (filter?filter->len+1:0) );
+	if (j==NULL) {
+		LM_ERR("failed to alloc and null-terminate JSON params\n");
+		return -1;
+	}
+
+	/* parse jsons */
+	p = j;
+	if (cols) {
+		cols_nt = p;
+		memcpy( p, cols->s, cols->len);
+		p += cols->len;
+		*(p++) = 0;
+		/* parse as json */
+		*Jcols = cJSON_Parse( cols_nt );
+		if (!*Jcols) {
+			LM_ERR("failed to parse input cols JSON <%.*s>\n",
+				128, cols_nt);
+			goto err1;
+		}
+	} else
+		*Jcols = NULL;
+
+	if (filter) {
+		filter_nt = p;
+		memcpy( p, filter->s, filter->len);
+		p += filter->len;
+		*(p++) = 0;
+		*Jfilter = cJSON_Parse( filter_nt );
+		if (!*Jfilter) {
+			LM_ERR("failed to parse input filter JSON <%.*s>\n",
+				128, filter_nt);
+			goto err2;
+		}
+	} else
+		*Jfilter = NULL;
+
+	pkg_free(j);
+	return 0;
+err2:
+	if (*Jcols) cJSON_Delete(*Jcols);
+	*Jcols = NULL;
+err1:
+	*Jfilter = NULL;
+	return -1;
+}
+
+
+int ops_db_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
+		str *table, str *filter, str * order, pvname_list_t* dest, int one_col)
+{
+	cJSON *Jcols, *Jfilter;
+	int ret;
+
+	ret = _parse_json_col_and_filter( cols, filter, &Jcols, &Jfilter);
+	if (ret<0) {
+		LM_ERR("failed to JSON parse cols and filter\n");
+	} else {
+		ret = db_api_select( url, msg, Jcols, table, Jfilter,
+			order, dest, one_col);
+		if (ret<0) {
+			LM_ERR("failed to perform DB select query\n");
+		} else {
+			ret =1;
+		}
+	}
+
+	if (Jcols) cJSON_Delete(Jcols);
+	if (Jfilter) cJSON_Delete(Jfilter);
+	return ret;
+}
+
+
+int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
+		str *table, str *filter)
+{
+	cJSON *Jcols, *Jfilter;
+	int ret;
+
+	ret = _parse_json_col_and_filter( cols, filter, &Jcols, &Jfilter);
+	if (ret<0) {
+		LM_ERR("failed to JSON parse cols and filter\n");
+	} else {
+		ret = db_api_update( url, msg, Jcols, table, Jfilter);
+		if (ret<0) {
+			LM_ERR("failed to perform DB update query\n");
+		} else {
+			ret =1;
+		}
+	}
+
+	if (Jcols) cJSON_Delete(Jcols);
+	if (Jfilter) cJSON_Delete(Jfilter);
+	return ret;
+}
+
+
+int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *cols,
+		str *table)
+{
+	cJSON *Jcols, *Jfilter;
+	int ret;
+
+	ret = _parse_json_col_and_filter( cols, NULL, &Jcols, &Jfilter);
+	if (ret<0) {
+		LM_ERR("failed to JSON parse cols and filter\n");
+	} else {
+		ret = db_api_insert( url, msg, Jcols, table);
+		if (ret<0) {
+			LM_ERR("failed to perform DB insert query\n");
+		} else {
+			ret =1;
+		}
+	}
+
+	if (Jcols) cJSON_Delete(Jcols);
+	if (Jfilter) cJSON_Delete(Jfilter);
+	return ret;
+}
+
+
+int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
+		str *table, str *filter)
+{
+	cJSON *Jcols, *Jfilter;
+	int ret;
+
+	ret = _parse_json_col_and_filter( NULL, filter, &Jcols, &Jfilter);
+	if (ret<0) {
+		LM_ERR("failed to JSON parse cols and filter\n");
+	} else {
+		ret = db_api_delete( url, msg, table, Jfilter);
+		if (ret<0) {
+			LM_ERR("failed to perform DB insert query\n");
+		} else {
+			ret =1;
+		}
+	}
+
+	if (Jcols) cJSON_Delete(Jcols);
+	if (Jfilter) cJSON_Delete(Jfilter);
+	return ret;
+}
+
+
+int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *cols,
+		str *table)
+{
+	cJSON *Jcols, *Jfilter;
+	int ret;
+
+	ret = _parse_json_col_and_filter( cols, NULL, &Jcols, &Jfilter);
+	if (ret<0) {
+		LM_ERR("failed to JSON parse cols and filter\n");
+	} else {
+		ret = db_api_replace( url, msg, Jcols, table);
+		if (ret<0) {
+			LM_ERR("failed to perform DB replace query\n");
+		} else {
+			ret =1;
+		}
+	}
+
+	if (Jcols) cJSON_Delete(Jcols);
+	if (Jfilter) cJSON_Delete(Jfilter);
+	return ret;
+}
+
+
 int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 		str *query, struct db_url *url, pvname_list_t *dest, int one_row)
 {
