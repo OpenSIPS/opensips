@@ -533,7 +533,7 @@ db_select('["password","ha1"]', 'subscriber',
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_query_one</function> usage</title>
+				<title><function>db_select_one</function> usage</title>
 				<programlisting format="linespecific">
 ...
 db_select_one('["value","type"]', 'usr_preferences',
@@ -611,7 +611,7 @@ db_update( '[{"password":"my_secret"}]', 'subscriber',
 
 		<section id="func_db_insert" xreflabel="db_insert()">
 			<title>
-				<function moreinfo="none">db_insert(columns,table,[db_id])
+				<function moreinfo="none">db_insert(table,columns,[db_id])
 				</function>
 			</title>
 			<para>
@@ -627,15 +627,15 @@ db_update( '[{"password":"my_secret"}]', 'subscriber',
 			</para>
 			<itemizedlist>
 			<listitem>
+				<para><emphasis>table (string, mandatory)</emphasis> - the 
+				name of the table to be queried.
+				</para>
+			</listitem>
+			<listitem>
 				<para><emphasis>columns (string,mandatory)</emphasis> - JSON
 				formated string holding an array of (column,value) pairs to 
 				be inserted.
 				Ex: <quote>[{"col1":"val1"},{"col2":"val1"}]</quote>.
-				</para>
-			</listitem>
-			<listitem>
-				<para><emphasis>table (string, mandatory)</emphasis> - the 
-				name of the table to be queried.
 				</para>
 			</listitem>
 			<listitem>
@@ -653,7 +653,7 @@ db_update( '[{"password":"my_secret"}]', 'subscriber',
 				<title><function>db_insert</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_insert( '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]','cc_agents');
+db_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]' );
 ...
 				</programlisting>
 			</example>
@@ -705,7 +705,7 @@ db_insert( '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_loc
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_update</function> usage</title>
+				<title><function>db_delete</function> usage</title>
 				<programlisting format="linespecific">
 ...
 db_delete( 'subscriber', '[{"username", "$tu"}]');
@@ -716,7 +716,7 @@ db_delete( 'subscriber', '[{"username", "$tu"}]');
 
 		<section id="func_db_replace" xreflabel="db_replace()">
 			<title>
-				<function moreinfo="none">db_insert(columns,table,[db_id])
+				<function moreinfo="none">db_replace(table,columns,[db_id])
 				</function>
 			</title>
 			<para>

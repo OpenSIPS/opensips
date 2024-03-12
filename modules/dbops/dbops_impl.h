@@ -105,14 +105,14 @@ int ops_db_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter);
 
-int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *cols,
-		str *table);
+int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
+		str *cols);
 
 int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
 		str *table, str *filter);
 
-int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *cols,
-		str *table);
+int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
+		str *cols);
 
 int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 		str *query, struct db_url *url, pvname_list_t *dest, int one_row);

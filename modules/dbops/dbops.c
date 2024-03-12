@@ -102,11 +102,11 @@ static int w_db_select_one(struct sip_msg* msg, str* cols, str *table,
 		str *filter, str *order, void* dest, void *url);
 static int w_db_update(struct sip_msg* msg, str* cols, str *table,
 		str *filter, void *url);
-static int w_db_insert(struct sip_msg* msg, str* cols, str *table,
+static int w_db_insert(struct sip_msg* msg, str* table, str *cols,
 		void *url);
 static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
 		void *url);
-static int w_db_replace(struct sip_msg* msg, str* cols, str *table,
+static int w_db_replace(struct sip_msg* msg, str* table, str *cols,
 		void *url);
 
 
@@ -192,7 +192,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_selec_onet", (cmd_function)w_db_select_one, {
+	{"db_selec_one", (cmd_function)w_db_select_one, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* columns */
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* table */
 		{CMD_PARAM_STR, 0, 0}, /* filter */
@@ -214,8 +214,8 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 
 	{"db_insert", (cmd_function)w_db_insert, {
-		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_STR, 0, 0}, /* table */
+		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
 			fixup_db_id_sync, fixup_free_pkg},
 		{0, 0, 0}},
@@ -230,8 +230,8 @@ static const cmd_export_t cmds[] = {
 		ALL_ROUTES},
 
 	{"db_replace", (cmd_function)w_db_replace, {
-		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_STR, 0, 0}, /* table */
+		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
 			fixup_db_id_sync, fixup_free_pkg},
 		{0, 0, 0}},
@@ -752,7 +752,7 @@ static int w_db_update(struct sip_msg* msg, str* cols, str *table,
 }
 
 
-static int w_db_insert(struct sip_msg* msg, str* cols, str *table,
+static int w_db_insert(struct sip_msg* msg, str* table, str *cols,
 		void *url)
 {
 	struct db_url *parsed_url;
@@ -762,7 +762,7 @@ static int w_db_insert(struct sip_msg* msg, str* cols, str *table,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_insert(parsed_url, msg, cols, table);
+	return ops_db_api_insert(parsed_url, msg, table, cols);
 }
 
 
@@ -780,7 +780,7 @@ static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
 }
 
 
-static int w_db_replace(struct sip_msg* msg, str* cols, str *table,
+static int w_db_replace(struct sip_msg* msg, str* table, str *cols,
 		void *url)
 {
 	struct db_url *parsed_url;
@@ -790,7 +790,7 @@ static int w_db_replace(struct sip_msg* msg, str* cols, str *table,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_replace(parsed_url, msg, cols, table);
+	return ops_db_api_replace(parsed_url, msg, table, cols);
 }
 
 
