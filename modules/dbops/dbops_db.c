@@ -541,12 +541,12 @@ static inline int _json_to_filters(cJSON *Jfilter,
 	/* iterate the filters to check and validate */
 	for( filter=Jfilter->child,nk=0 ; filter ; filter=filter->next,nk++ ) {
 		if (filter->type!=cJSON_Object) {
-			LM_ERR("bad JSON format, 'cols' elements must be strings\n");
+			LM_ERR("bad JSON format, 'cols' elements must be objects\n");
 			goto error;
 		}
 		if (filter->child->string==NULL) {
-			LM_ERR("invalid filter node type %d , name %s\n",
-				filter->child->type, filter->child->string);
+			LM_ERR("invalid filter node %d type %d , without name\n",
+				nk, filter->child->type);
 			goto error;
 		}
 	}
