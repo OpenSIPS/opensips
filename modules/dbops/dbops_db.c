@@ -506,8 +506,8 @@ static inline int _json_to_cols(cJSON *Jcols, db_key_t** _c)
 
 	/* iterate again to fill in the cols */
 	for( col=Jcols->child,i=0 ; col ; col=col->next,i++ ) {
-		str_cols[i].s = col->valuestring;
-		str_cols[i].len = strlen(col->valuestring);
+		cols[i]->s = col->valuestring;
+		cols[i]->len = strlen(col->valuestring);
 	}
 
 	*_c = cols;
