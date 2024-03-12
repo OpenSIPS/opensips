@@ -314,16 +314,6 @@ modparam("dbops","db_scheme",
 					<listitem><para><emphasis>
 					name = avp_spec['/'(table_name|'$'db_scheme)]
 					</emphasis></para></listitem>
-					<listitem><para><emphasis>
-					avp_spec = matching_flags|$avp(avp_name)|$avp(avp_alias)
-					</emphasis></para></listitem>
-					<listitem><para><emphasis>
-					matching_flags = 'a' | 'A' | 'i' | 'I' | 's' | 'S'
-					[script_flags]
-					</emphasis></para><para>'a' or 'A' means matching any of
-					AVP name types ('i' and 's'), the rest have the
-					meaning descriped in 'AVP naming format' chapter.</para>
-					</listitem>
 				</itemizedlist>
 				</para>
 			</listitem>
