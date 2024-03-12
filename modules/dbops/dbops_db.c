@@ -466,6 +466,389 @@ int db_query(struct db_url *url, struct sip_msg *msg, str *query,
 }
 
 
+static inline int _json_to_cols(cJSON *Jcols, db_key_t** _c)
+{
+	static db_key_t *cols;
+	static unsigned int cols_size = 0;
+	cJSON *col;
+	str *str_cols;
+	int nc, i;
+
+	if (Jcols->type != cJSON_Array) {
+		LM_ERR("bad JSON format, 'cols' must be an array\n");
+		goto error;
+	}
+
+	/* iterate the columns to check and validate */
+	for( col=Jcols->child,nc=0 ; col ; col=col->next,nc++ ) {
+		if (col->type!=cJSON_String) {
+			LM_ERR("bad JSON format, 'cols' elements must be strings\n");
+			goto error;
+		}
+	}
+
+	/* resize the array of cols if we need more */
+	if (nc>cols_size) {
+		/* need a larger set of cols/keys */
+		cols = (db_key_t*)pkg_realloc( cols, nc*(sizeof(db_key_t)+sizeof(str)) );
+		if (cols==NULL) {
+			cols_size = 0;
+			LM_ERR("failed to allocate the needed %d keys/cols\n",nc);
+			goto error;
+		}
+		str_cols = (str*)( cols+nc );
+		/* link db_keys to strs */
+		for ( i=0 ; i<nc ; i++)
+			cols[i] = &str_cols[i];
+
+		cols_size = nc;
+	}
+
+	/* iterate again to fill in the cols */
+	for( col=Jcols->child,i=0 ; col ; col=col->next,i++ ) {
+		str_cols[i].s = col->valuestring;
+		str_cols[i].len = strlen(col->valuestring);
+	}
+
+	*_c = cols;
+
+	return nc;
+error:
+	*_c = NULL;
+	return -1;
+}
+
+
+static inline int _json_to_filters(cJSON *Jfilter,
+					db_key_t** _k, db_op_t** _o, db_val_t** _v, int only_equal)
+{
+	static db_key_t *keys;
+	static db_op_t  *ops;
+	static db_val_t *vals;
+	static unsigned int keys_size = 0;
+	cJSON *filter, *node;
+	str *str_keys;
+	int nk, i;
+
+	if (Jfilter->type != cJSON_Array) {
+		LM_ERR("bad JSON format, 'filter' must be an array\n");
+		goto error;
+	}
+
+	/* iterate the filters to check and validate */
+	for( filter=Jfilter->child,nk=0 ; filter ; filter=filter->next,nk++ ) {
+		if (filter->type!=cJSON_Object) {
+			LM_ERR("bad JSON format, 'cols' elements must be strings\n");
+			goto error;
+		}
+		if (filter->child->string==NULL) {
+			LM_ERR("invalid filter node type %d , name %s\n",
+				filter->child->type, filter->child->string);
+			goto error;
+		}
+	}
+
+	/* resize the array of cols if we need more */
+	if (nk>keys_size) {
+		/* need a larger set of keys */
+		keys = (db_key_t*)pkg_realloc( keys,
+			nk*(sizeof(db_key_t)+sizeof(str)+sizeof(db_op_t)+sizeof(db_val_t))
+		);
+		if (keys==NULL) {
+			keys_size = 0;
+			LM_ERR("failed to allocate the needed %d keys/cols\n",nk);
+			goto error;
+		}
+		str_keys = (str*)( keys+nk );
+		ops  = (db_op_t*)(str_keys+nk);
+		vals = (db_val_t*)(ops+nk);
+		/* link db_keys to strs */
+		for ( i=0 ; i<nk ; i++)
+			keys[i] = &str_keys[i];
+
+		keys_size = nk;
+	}
+
+	/* iterate again to fill in the cols */
+	for( filter=Jfilter->child,i=0 ; filter ; filter=filter->next,i++ ) {
+		/* name of the key/col */
+		node = filter->child;
+		keys[i]->s = node->string;
+		keys[i]->len = strlen(node->string);
+		/* operator */
+		if (node->type==cJSON_Object) {
+			node = node->child;
+			ops[i] = node->string;
+			if (only_equal && memcmp(ops[i],OP_EQ,sizeof(OP_EQ)+1)) {
+				LM_ERR("only equal allowed between keys and values at "
+					"pos %d\n",i);
+				goto error;
+			}
+		} else {
+			ops[i] = OP_EQ;
+		}
+		/* value */
+		switch (node->type) {
+			case cJSON_NULL:
+				vals[i].type = 0;
+				vals[i].nul = 1;
+				vals[i].free = 0;
+				vals[i].val.bigint_val = 0;
+				break;
+			case cJSON_String:
+				vals[i].type = DB_STRING;
+				vals[i].nul = 0;
+				vals[i].free = 0;
+				vals[i].val.string_val = node->valuestring;
+				break;
+			case cJSON_Number:
+				vals[i].type = DB_INT;
+				vals[i].nul = 0;
+				vals[i].free = 0;
+				vals[i].val.int_val = node->valueint;
+				break;
+			default:
+				LM_ERR("unsupported value node %d\n",node->type);
+				goto error;
+		}
+	}
+
+	*_k = keys;
+	*_o = ops;
+	*_v = vals;
+
+	return nk;
+error:
+	*_k = NULL;
+	*_o = NULL;
+	*_v = NULL;
+	return -1;
+}
+
+
+int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+	str *table, cJSON *Jfilter, str * order, pvname_list_t* dest, int one_row)
+{
+	db_res_t* db_res = NULL;
+	db_key_t *cols, *keys;
+	db_op_t *ops;
+	db_val_t *vals;
+	int nk, nc;
+
+	/* convert JSON to COLs */
+	if (Jcols) {
+		nc = _json_to_cols( Jcols, &cols);
+		if (nc<0) {
+			LM_ERR("failed to extract cols from JSON\n");
+			return -1;
+		}
+	} else {
+		cols = NULL;
+		nc = 0;
+	}
+
+	/* convert JSON to keys */
+	if (Jfilter) {
+		nk = _json_to_filters( Jfilter, &keys, &ops, &vals, 0);
+		if (nk<0) {
+			LM_ERR("failed to extract filter from JSON\n");
+			return -1;
+		}
+	} else {
+		keys = NULL;
+		ops = NULL;
+		vals = NULL;
+		nk = 0;
+	}
+
+	/* set table */
+	if (set_table( url, table ,"API select")!=0)
+		return -1;
+
+	/* do the DB query */
+	if ( url->dbf.query( url->hdl, keys, ops, vals, cols, nk, nc,
+	order, &db_res) < 0 ) {
+		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
+			? url->hdl->table : 0;
+		LM_ERR("select API query failed: db%d (%.*s)\n",
+		  url->idx, t?t->len:0, t?t->s:"");
+		return -1;
+	}
+
+	if(db_res==NULL || RES_ROW_N(db_res)<=0 || RES_COL_N(db_res)<=0) {
+		LM_DBG("no result after query\n");
+		db_close_query( url, db_res );
+		return 1;
+	}
+
+	if (one_row) {
+		if (db_query_print_one_result(msg, db_res, dest) != 0) {
+			LM_ERR("failed to print ONE result\n");
+			db_close_query( url, db_res );
+			return -1;
+		}
+	} else {
+		if (db_query_print_results(msg, db_res, dest) != 0) {
+			LM_ERR("failed to print results\n");
+			db_close_query( url, db_res );
+			return -1;
+		}
+	}
+
+	db_close_query( url, db_res );
+	return 0;
+}
+
+
+int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+													str *table, cJSON *Jfilter)
+{
+	db_key_t *ukeys, *keys;
+	db_op_t *uops, *ops;
+	db_val_t *uvals, *vals;
+	int nk, unk;
+
+	/* convert JSON to COLs */
+	unk = _json_to_filters( Jcols, &ukeys, &uops, &uvals, 1);
+	if (unk<0) {
+		LM_ERR("failed to extract cols from JSON\n");
+		return -1;
+	}
+
+	/* convert JSON to keys */
+	if (Jfilter) {
+		nk = _json_to_filters( Jfilter, &keys, &ops, &vals, 0);
+		if (nk<0) {
+			LM_ERR("failed to extract filter from JSON\n");
+			return -1;
+		}
+	} else {
+		keys = NULL;
+		ops = NULL;
+		vals = NULL;
+		nk = 0;
+	}
+
+	/* set table */
+	if (set_table( url, table ,"API update")!=0)
+		return -1;
+
+	/* do the DB query */
+	if (url->dbf.update( url->hdl, keys, ops, vals, ukeys, uvals, nk, unk)<0){
+		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
+			? url->hdl->table : 0;
+		LM_ERR("update API query failed: db%d (%.*s)\n",
+		  url->idx, t?t->len:0, t?t->s:"");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int db_api_insert(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+																	str *table)
+{
+	db_key_t *ukeys;
+	db_op_t *uops;
+	db_val_t *uvals;
+	int unk;
+
+	/* convert JSON to COLs */
+	unk = _json_to_filters( Jcols, &ukeys, &uops, &uvals, 1);
+	if (unk<0) {
+		LM_ERR("failed to extract cols from JSON\n");
+		return -1;
+	}
+
+	/* set table */
+	if (set_table( url, table ,"API insert")!=0)
+		return -1;
+
+	/* do the DB query */
+	if (url->dbf.insert( url->hdl, ukeys, uvals, unk)<0){
+		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
+			? url->hdl->table : 0;
+		LM_ERR("update API query failed: db%d (%.*s)\n",
+		  url->idx, t?t->len:0, t?t->s:"");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int db_api_delete(struct db_url *url, struct sip_msg* msg,
+													str *table, cJSON *Jfilter)
+{
+	db_key_t *keys;
+	db_op_t *ops;
+	db_val_t *vals;
+	int nk;
+
+	/* convert JSON to keys */
+	if (Jfilter) {
+		nk = _json_to_filters( Jfilter, &keys, &ops, &vals, 0);
+		if (nk<0) {
+			LM_ERR("failed to extract filter from JSON\n");
+			return -1;
+		}
+	} else {
+		keys = NULL;
+		ops = NULL;
+		vals = NULL;
+		nk = 0;
+	}
+
+	/* set table */
+	if (set_table( url, table ,"API delete")!=0)
+		return -1;
+
+	/* do the DB query */
+	if (url->dbf.delete( url->hdl, keys, ops, vals, nk)<0){
+		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
+			? url->hdl->table : 0;
+		LM_ERR("update API query failed: db%d (%.*s)\n",
+		  url->idx, t?t->len:0, t?t->s:"");
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int db_api_replace(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+																	str *table)
+{
+	db_key_t *ukeys;
+	db_op_t *uops;
+	db_val_t *uvals;
+	int unk;
+
+	/* convert JSON to COLs */
+	unk = _json_to_filters( Jcols, &ukeys, &uops, &uvals, 1);
+	if (unk<0) {
+		LM_ERR("failed to extract cols from JSON\n");
+		return -1;
+	}
+
+	/* set table */
+	if (set_table( url, table ,"API replace")!=0)
+		return -1;
+
+	/* do the DB query */
+	if (url->dbf.replace( url->hdl, ukeys, uvals, unk)<0){
+		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
+			? url->hdl->table : 0;
+		LM_ERR("update API query failed: db%d (%.*s)\n",
+		  url->idx, t?t->len:0, t?t->s:"");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int db_query_print_one_result(struct sip_msg *msg, const db_res_t *db_res,
 								pvname_list_t *dest)
 {

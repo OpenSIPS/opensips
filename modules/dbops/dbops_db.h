@@ -25,6 +25,7 @@
 #ifndef _DB_OPS_DB_H_
 #define _DB_OPS_DB_H_
 
+#include "../../lib/cJSON.h"
 #include "../../db/db.h"
 #include "../../parser/msg_parser.h"
 #include "../../str.h"
@@ -88,5 +89,21 @@ int db_query_print_one_result(struct sip_msg *msg, const db_res_t *db_res,
 
 int db_query_print_results(struct sip_msg *msg, const db_res_t *db_res,
 		pvname_list_t *dest);
+
+int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+		str *table, cJSON *Jfilter, str * order,
+		pvname_list_t* dest, int one_row);
+
+int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+		str *table, cJSON *Jfilter);
+
+int db_api_insert(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+		str *table);
+
+int db_api_delete(struct db_url *url, struct sip_msg* msg,
+		str *table, cJSON *Jfilter);
+
+int db_api_replace(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+		str *table);
 
 #endif
