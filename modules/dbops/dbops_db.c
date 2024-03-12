@@ -582,7 +582,7 @@ static inline int _json_to_filters(cJSON *Jfilter,
 		if (node->type==cJSON_Object) {
 			node = node->child;
 			ops[i] = node->string;
-			if (only_equal && memcmp(ops[i],OP_EQ,sizeof(OP_EQ)+1)) {
+			if (only_equal && memcmp(ops[i],OP_EQ,sizeof(OP_EQ))) {
 				LM_ERR("only equal allowed between keys and values at "
 					"pos %d\n",i);
 				goto error;
