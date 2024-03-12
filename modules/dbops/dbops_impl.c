@@ -889,8 +889,8 @@ int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 }
 
 
-int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *cols,
-		str *table)
+int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
+		str *cols)
 {
 	cJSON *Jcols, *Jfilter;
 	int ret;
@@ -899,7 +899,7 @@ int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *cols,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_insert( url, msg, Jcols, table);
+		ret = db_api_insert( url, msg, table, Jcols);
 		if (ret<0) {
 			LM_ERR("failed to perform DB insert query\n");
 		} else {
@@ -937,8 +937,8 @@ int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
 }
 
 
-int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *cols,
-		str *table)
+int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
+		str *cols)
 {
 	cJSON *Jcols, *Jfilter;
 	int ret;
@@ -947,7 +947,7 @@ int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *cols,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_replace( url, msg, Jcols, table);
+		ret = db_api_replace( url, msg, table, Jcols);
 		if (ret<0) {
 			LM_ERR("failed to perform DB replace query\n");
 		} else {

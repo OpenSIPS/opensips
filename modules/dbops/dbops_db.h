@@ -97,13 +97,13 @@ int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 		str *table, cJSON *Jfilter);
 
-int db_api_insert(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
-		str *table);
+int db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
+		cJSON *Jcols);
 
 int db_api_delete(struct db_url *url, struct sip_msg* msg,
 		str *table, cJSON *Jfilter);
 
-int db_api_replace(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
-		str *table);
+int db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
+		cJSON *Jcols);
 
 #endif
