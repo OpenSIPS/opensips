@@ -255,6 +255,7 @@ static const param_export_t params[] = {
 	{"username_column",   STR_PARAM, &username_col.s  },
 	{"domain_column",     STR_PARAM, &domain_col.s    },
 	{"db_scheme",         STR_PARAM|USE_FUNC_PARAM, (void*)add_avp_db_scheme },
+	{"ps_id_max_buf_len", INT_PARAM, &query_id_max_len},
 	{0, 0, 0}
 };
 

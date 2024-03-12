@@ -30,6 +30,7 @@
 #include "../../db/db_insertq.h"
 #include "../../dprint.h"
 #include "../../route.h"
+#include "../../map.h"
 #include "dbops_parse.h"
 #include "dbops_db.h"
 
@@ -44,6 +45,8 @@ static db_val_t   vals_cmp[3]; /* statement as in "select" and "delete" */
 static struct db_scheme  *db_scheme_list=0;
 
 struct db_url *default_db_url = NULL;
+
+int query_id_max_len = 1024;
 
 /* array of db urls */
 static struct db_url *db_urls = NULL;  /* array of database urls */
@@ -625,15 +628,77 @@ error:
 	return -1;
 }
 
+static str _query_id = {NULL,0};
+static inline str* _query_id_start( str *table)
+{
+	if (_query_id.s==NULL) {
+		if ( !query_id_max_len ||
+		(_query_id.s=pkg_malloc(query_id_max_len ))==NULL )
+			return NULL;
+	}
+	_query_id.len = 0;
+
+	memcpy( _query_id.s + _query_id.len, table->s, table->len);
+	_query_id.len += table->len;
+	*(_query_id.s + _query_id.len++) = '^';
+
+	return &_query_id;
+}
+
+static inline str* _query_id_add_cols( db_key_t *_c, int _nc)
+{
+	int i;
+
+	for ( i=0 ; i<_nc ; i++) {
+		if (query_id_max_len-_query_id.len < _c[i]->len+2 /* both |^ */) {
+			_query_id.len = 0; // reset
+			return NULL;
+		}
+		memcpy( _query_id.s + _query_id.len, _c[i]->s, _c[i]->len);
+		_query_id.len += _c[i]->len;
+		*(_query_id.s + _query_id.len++) = '|';
+	}
+	*(_query_id.s + _query_id.len++) = '^';
+
+	return &_query_id;
+}
+
+static inline str* _query_id_add_filter(db_key_t* _k, db_op_t* _o, int _nk)
+{
+	int i,l;
+
+	for ( i=0 ; i<_nk ; i++) {
+		l = strlen( _o[i] );
+		if (query_id_max_len-_query_id.len < _k[i]->len+l+3 /* all %|^ */) {
+			_query_id.len = 0; // reset
+			return NULL;
+		}
+		memcpy( _query_id.s + _query_id.len, _k[i]->s, _k[i]->len);
+		_query_id.len += _k[i]->len;
+		*(_query_id.s + _query_id.len++) = '%';
+
+		memcpy( _query_id.s + _query_id.len, _o[i], l);
+		_query_id.len += l;
+		*(_query_id.s + _query_id.len++) = '|';
+	}
+	*(_query_id.s + _query_id.len++) = '^';
+
+	return &_query_id;
+}
+
+
 
 int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	str *table, cJSON *Jfilter, str * order, pvname_list_t* dest, int one_row)
 {
+	static map_t ps_map = NULL;
 	db_res_t* db_res = NULL;
 	db_key_t *cols, *keys;
 	db_op_t *ops;
 	db_val_t *vals;
 	int nk, nc;
+	str *id;
+	db_ps_t *my_ps;
 
 	/* convert JSON to COLs */
 	if (Jcols) {
@@ -664,6 +729,20 @@ int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	/* set table */
 	if (set_table( url, table ,"API select")!=0)
 		return -1;
+
+	if ( _query_id_start(table)==NULL ||
+	(cols && (id=_query_id_add_cols(cols,nc))==NULL) ||
+	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
+		LM_ERR("failed to build PS id\n");
+	} else {
+		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
+		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
+			if ( (my_ps=map_get( ps_map, *id ))!=NULL) {
+				LM_DBG("using PS %p\n",*my_ps);
+				CON_SET_CURR_PS( url->hdl, my_ps);
+			}
+		}
+	}
 
 	/* do the DB query */
 	if ( url->dbf.query( url->hdl, keys, ops, vals, cols, nk, nc,
@@ -703,10 +782,13 @@ int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 													str *table, cJSON *Jfilter)
 {
+	static map_t ps_map = NULL;
 	db_key_t *ukeys, *keys;
 	db_op_t *uops, *ops;
 	db_val_t *uvals, *vals;
 	int nk, unk;
+	str *id;
+	db_ps_t *my_ps;
 
 	/* convert JSON to COLs */
 	unk = _json_to_filters( Jcols, &ukeys, &uops, &uvals, 1);
@@ -733,6 +815,20 @@ int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	if (set_table( url, table ,"API update")!=0)
 		return -1;
 
+	if ( _query_id_start(table)==NULL ||
+	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ||
+	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
+		LM_ERR("failed to build PS id\n");
+	} else {
+		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
+		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
+			if ( (my_ps=map_get( ps_map, *id ))!=NULL) {
+				LM_DBG("using PS %p\n",*my_ps);
+				CON_SET_CURR_PS( url->hdl, my_ps);
+			}
+		}
+	}
+
 	/* do the DB query */
 	if (url->dbf.update( url->hdl, keys, ops, vals, ukeys, uvals, nk, unk)<0){
 		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
@@ -749,10 +845,13 @@ int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 int db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 																cJSON *Jcols)
 {
+	static map_t ps_map = NULL;
 	db_key_t *ukeys;
 	db_op_t *uops;
 	db_val_t *uvals;
 	int unk;
+	str *id;
+	db_ps_t *my_ps;
 
 	/* convert JSON to COLs */
 	unk = _json_to_filters( Jcols, &ukeys, &uops, &uvals, 1);
@@ -764,6 +863,20 @@ int db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 	/* set table */
 	if (set_table( url, table ,"API insert")!=0)
 		return -1;
+
+	/* set the PS to be used */
+	if ( _query_id_start(table)==NULL ||
+	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ) {
+		LM_ERR("failed to build PS id\n");
+	} else {
+		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
+		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
+			if ( (my_ps=map_get( ps_map, *id ))!=NULL) {
+				LM_DBG("using PS %p\n",*my_ps);
+				CON_SET_CURR_PS( url->hdl, my_ps);
+			}
+		}
+	}
 
 	/* do the DB query */
 	if (url->dbf.insert( url->hdl, ukeys, uvals, unk)<0){
@@ -781,10 +894,13 @@ int db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 int db_api_delete(struct db_url *url, struct sip_msg* msg,
 													str *table, cJSON *Jfilter)
 {
+	static map_t ps_map = NULL;
 	db_key_t *keys;
 	db_op_t *ops;
 	db_val_t *vals;
 	int nk;
+	str *id;
+	db_ps_t *my_ps;
 
 	/* convert JSON to keys */
 	if (Jfilter) {
@@ -804,6 +920,20 @@ int db_api_delete(struct db_url *url, struct sip_msg* msg,
 	if (set_table( url, table ,"API delete")!=0)
 		return -1;
 
+	/* set the PS to be used */
+	if ( _query_id_start(table)==NULL ||
+	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
+		LM_ERR("failed to build PS id\n");
+	} else {
+		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
+		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
+			if ( (my_ps=map_get( ps_map, *id ))!=NULL) {
+				LM_DBG("using PS %p\n",*my_ps);
+				CON_SET_CURR_PS( url->hdl, my_ps);
+			}
+		}
+	}
+
 	/* do the DB query */
 	if (url->dbf.delete( url->hdl, keys, ops, vals, nk)<0){
 		const str *t = url->hdl&&url->hdl->table&&url->hdl->table->s
@@ -820,10 +950,13 @@ int db_api_delete(struct db_url *url, struct sip_msg* msg,
 int db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 																cJSON *Jcols)
 {
+	static map_t ps_map = NULL;
 	db_key_t *ukeys;
 	db_op_t *uops;
 	db_val_t *uvals;
 	int unk;
+	str *id;
+	db_ps_t *my_ps;
 
 	/* convert JSON to COLs */
 	unk = _json_to_filters( Jcols, &ukeys, &uops, &uvals, 1);
@@ -835,6 +968,20 @@ int db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 	/* set table */
 	if (set_table( url, table ,"API replace")!=0)
 		return -1;
+
+	/* set the PS to be used */
+	if ( _query_id_start(table)==NULL ||
+	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ) {
+		LM_ERR("failed to build PS id\n");
+	} else {
+		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
+		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
+			if ( (my_ps=map_get( ps_map, *id ))!=NULL) {
+				LM_DBG("using PS %p\n",*my_ps);
+				CON_SET_CURR_PS( url->hdl, my_ps);
+			}
+		}
+	}
 
 	/* do the DB query */
 	if (url->dbf.replace( url->hdl, ukeys, uvals, unk)<0){

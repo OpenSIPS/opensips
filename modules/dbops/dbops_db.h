@@ -34,6 +34,8 @@
 
 extern struct db_url *default_db_url;
 
+extern int query_id_max_len;
+
 struct db_url
 {
 	str url;

@@ -94,6 +94,53 @@ modparam("dbops","usr_table","avptable")
 				</programlisting>
 			</example>
 		</section>
+
+		<section id="param_db_scheme" xreflabel="db_scheme">
+			<title><varname>db_scheme</varname> (string)</title>
+			<para>
+				Definition of a DB scheme to be used for accessing
+				a non-standard User Preference -like table.
+			</para>
+			<para>
+			Definition of a DB scheme. Scheme syntax is:
+			<itemizedlist>
+				<listitem><para><emphasis>
+				db_scheme = name':'element[';'element]*
+				</emphasis></para></listitem>
+				<listitem><para><emphasis>element</emphasis> =
+					<itemizedlist>
+						<listitem><para>'uuid_col='string
+						</para></listitem>
+						<listitem><para>'username_col='string
+						</para></listitem>
+						<listitem><para>'domain_col='string
+						</para></listitem>
+						<listitem><para>'value_col='string
+						</para></listitem>
+						<listitem><para>'value_type='('integer'|'string')
+						</para></listitem>
+						<listitem><para>'table='string
+						</para></listitem>
+					</itemizedlist>
+				</para></listitem>
+			</itemizedlist>
+			</para>
+			<para>
+				<emphasis>Default value is <quote>NULL</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>db_scheme</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","db_scheme",
+"scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
+...
+				</programlisting>
+			</example>
+		</section>
+
 		<section id="param_use_domain" xreflabel="use_domain">
 			<title><varname>use_domain</varname> (integer)</title>
 			<para>
@@ -114,6 +161,34 @@ modparam("dbops","use_domain",1)
 				</programlisting>
 			</example>
 		</section>
+
+		<section id="param_ps_id_max_buf_len" xreflabel="ps_id_max_buf_len">
+			<title><varname>ps_id_max_buf_len</varname> (integer)</title>
+			<para>
+			The maximum size of the buffer used to build the query IDs which
+			are used for managing the Prepare Statements when comes to the
+			"db_select|update|insert|replace|delete()" functions
+			</para>
+			<para>
+			If the size is exceeded (when trying to build the PS query ID),
+			the PS support will be dropped for the query. If set to 0, the PS
+			support will be completly disabled.
+			</para>
+			<para>
+			<emphasis>Default value is 1024.
+			</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>ps_id_max_buf_len</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+modparam("dbops","ps_id_max_buf_len", 2048)
+...
+				</programlisting>
+			</example>
+		</section>
+
 		<section id="param_uuid_column" xreflabel="uuid_column">
 			<title><varname>uuid_column</varname> (string)</title>
 			<para>
@@ -225,51 +300,7 @@ modparam("dbops","type_column","type")
 				</programlisting>
 			</example>
 		</section>
-		<section id="param_db_scheme" xreflabel="db_scheme">
-			<title><varname>db_scheme</varname> (string)</title>
-			<para>
-				Definition of a DB scheme to be used for accessing
-				a non-standard User Preference -like table.
-			</para>
-			<para>
-			Definition of a DB scheme. Scheme syntax is:
-			<itemizedlist>
-				<listitem><para><emphasis>
-				db_scheme = name':'element[';'element]*
-				</emphasis></para></listitem>
-				<listitem><para><emphasis>element</emphasis> =
-					<itemizedlist>
-						<listitem><para>'uuid_col='string
-						</para></listitem>
-						<listitem><para>'username_col='string
-						</para></listitem>
-						<listitem><para>'domain_col='string
-						</para></listitem>
-						<listitem><para>'value_col='string
-						</para></listitem>
-						<listitem><para>'value_type='('integer'|'string')
-						</para></listitem>
-						<listitem><para>'table='string
-						</para></listitem>
-					</itemizedlist>
-				</para></listitem>
-			</itemizedlist>
-			</para>
-			<para>
-				<emphasis>Default value is <quote>NULL</quote>.
-				</emphasis>
-			</para>
-			<example>
-				<title>Set <varname>db_scheme</varname> parameter
-				</title>
-				<programlisting format="linespecific">
-...
-modparam("dbops","db_scheme",
-"scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
-...
-				</programlisting>
-			</example>
-		</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">
