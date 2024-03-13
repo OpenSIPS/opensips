@@ -694,7 +694,7 @@ e1:
 #undef CSL
 
 static int aka_send_resp(struct sip_msg *_msg, str *realm, struct aka_user *user,
-		struct aka_av **avs, int count, qop_type_t qop, int algmask,
+		struct aka_av **avs, int count, qop_type_t qop,
 		int _code, const str_const *_challenge_msg)
 {
 	int ret = -1;
@@ -726,6 +726,35 @@ reply:
 	return ret;
 }
 
+static inline int aka_avs_get_new_wait(struct aka_user *user, int *algmask,
+		struct aka_av **avs, int count)
+{
+	int c;
+	for (c = 0; c < count; c++) {
+		avs[c] = aka_av_get_new_wait(user, *algmask, aka_sync_timeout);
+		if (!avs[c])
+			break;
+		*algmask &= ~ALG2ALGFLG(avs[c]->alg);
+	}
+	LM_DBG("got %d AVs out of %d\n", c, count);
+	return c;
+}
+
+
+static inline int aka_avs_get_new(struct aka_user *user, int *algmask,
+		struct aka_av **avs, int count)
+{
+	int c;
+	for (c = 0; c < count; c++) {
+		avs[c] = aka_av_get_new(user, *algmask);
+		if (!avs[c])
+			break;
+		*algmask &= ~ALG2ALGFLG(avs[c]->alg);
+	}
+	LM_DBG("got %d AVs out of %d\n", c, count);
+	return c;
+}
+
 static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_realm,
 		qop_type_t qop, int algmask, int _code, const str_const *_challenge_msg)
 {
@@ -755,13 +784,7 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	}
 	count += sync_count;
 	/* try to fetch as many local AVs as possible */
-	new_count = 0;
-	for (new_count = 0; new_count < count; new_count++) {
-		avs[new_count] = aka_av_get_new(user, algmask);
-		if (!avs[new_count])
-			break;
-		algmask &= ~(avs[new_count]->alg);
-	}
+	new_count = aka_avs_get_new(user, &algmask, avs, count);
 
 	/* if we need more, fetch them remotely */
 	if (new_count != count) {
@@ -771,19 +794,14 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 			ret = -2;
 			goto release;
 		}
-		for (; new_count < count; new_count++) {
-			avs[new_count] = aka_av_get_new_wait(user, algmask, aka_sync_timeout);
-			if (!avs[new_count])
-				break;
-			algmask &= ~(avs[new_count]->alg);
-		}
+		new_count += aka_avs_get_new_wait(user, &algmask, avs + new_count, count - new_count);
 		if (new_count < count)
 			LM_WARN("Could not get get %d (out of %d) authentication vectors!\n",
 					count - new_count, count);
 	}
 
 	ret = aka_send_resp(_msg, &realm, user, avs, new_count, qop,
-			algmask, _code, _challenge_msg);
+			_code, _challenge_msg);
 
 release:
 	aka_user_release(user);
@@ -954,13 +972,9 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 	struct aka_async_param *param = _param;
 
 	/* check to see how many events we got */
-	for (;param->avs_fetched < param->avs_count; param->avs_fetched++) {
-		param->avs[param->avs_fetched] = aka_av_get_new(param->user, param->algmask);
-		if (!param->avs[param->avs_fetched])
-			break;
-		param->algmask &= ~(param->avs[param->avs_fetched]->alg);
-	}
-	left = param->avs_fetched - param->avs_count;
+	param->avs_fetched += aka_avs_get_new(param->user, &param->algmask,
+			param->avs + param->avs_fetched, param->avs_count - param->avs_fetched);
+	left = param->avs_count - param->avs_fetched;
 	/* check to see if we still have AVS to wait for */
 	if (!timeout && param->avs_fetched != param->avs_count) {
 		async_status = ASYNC_CONTINUE;
@@ -978,7 +992,7 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 		if (param->avs_fetched) {
 			/* now send whatever we have fetched so far */
 			aka_send_resp(msg, &param->realm, param->user, param->avs, param->avs_fetched,
-					param->qop, param->algmask, param->code, _cs2cc(&param->challenge_msg));
+					param->qop, param->code, _cs2cc(&param->challenge_msg));
 		} else if (auth_api.send_resp(msg, 504, NULL, NULL, 0) < 0) {
 			LM_ERR("could not send timeout back\n");
 		}
@@ -1028,11 +1042,8 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	count += sync_count;
 	/* try to sort them out synchronously */
 	if (count == 1) {
-		av = aka_av_get_new(user, algmask);
-		if (av) {
-			avs = &av;
+		if (aka_avs_get_new(user, &algmask, &av, 1) == 1)
 			goto synchronous;
-		}
 	}
 	/* unfortunately we might need to do it asynchronously */
 	param = shm_malloc(sizeof *param + realm.len + _challenge_msg->len +
@@ -1051,12 +1062,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	avs = param->avs;
 	/* do not prepare the param yet, as we might still have AVs available */
 
-	for (c = 0; c < count; c++) {
-		avs[c] = aka_av_get_new(user, algmask);
-		if (!avs[c])
-			break;
-		algmask &= ~(avs[c]->alg);
-	}
+	c = aka_avs_get_new(user, &algmask, avs, count);
 	if (c == count)
 		goto synchronous;
 	LM_DBG("we still need %d out of %d AVs\n", count - c, count);
@@ -1097,7 +1103,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 synchronous:
 	async_status = ASYNC_NO_IO;
 	ret = aka_send_resp(_msg, &realm, user, avs, count, qop,
-			algmask, _code, _challenge_msg);
+			_code, _challenge_msg);
 error:
 	if (param)
 		shm_free(param);

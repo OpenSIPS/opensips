@@ -247,8 +247,10 @@ static struct aka_av *aka_av_get_state(struct aka_user *user, int algmask, enum 
 	list_for_each(it, &user->avs) {
 		av = list_entry(it, struct aka_av, list);
 		/* check if AV algorithm is suitable */
-		if (algmask >= -1 && av->algmask >= 0 && !(algmask & av->algmask))
+		if (algmask >= -1 && av->algmask >= 0 && !(algmask & av->algmask)) {
+			av = NULL;
 			continue;
+		}
 		if (av->state == state)
 			break;
 		av = NULL;
@@ -290,6 +292,24 @@ struct aka_av *aka_av_get_nonce(struct aka_user *user, int algmask, str *nonce)
 	return av;
 }
 
+static inline int aka_av_first_bit_mask(int algmask)
+{
+	int c;
+	for (c = 0; c < sizeof(algmask) * 8; c++)
+		if (algmask & (1<<c))
+			return c;
+	return 0;
+}
+
+static void aka_av_mark_using(struct aka_av *av, int algmask)
+{
+	av->state = AKA_AV_USING;
+	/*
+	 * an algorithm can only be used for one algorithm, so we mark
+	 * it as being used only for the first algorithm in the mask
+	 */
+	av->alg = aka_av_first_bit_mask(algmask);
+}
 
 struct aka_av *aka_av_get_new_wait(struct aka_user *user, int algmask, long milliseconds)
 {
@@ -330,27 +350,10 @@ struct aka_av *aka_av_get_new_wait(struct aka_user *user, int algmask, long mill
 	} else {
 		av->state = AKA_AV_USING;
 	}
+	if (av)
+		aka_av_mark_using(av, algmask);
 	cond_unlock(&user->cond);
 	return av;
-}
-
-static inline int aka_av_first_bit_mask(int algmask)
-{
-	int c;
-	for (c = 0; c < sizeof(algmask) * 8; c++)
-		if (algmask & (1<<c))
-			return (1<<c);
-	return 0;
-}
-
-static void aka_av_mark_using(struct aka_av *av, int algmask)
-{
-	av->state = AKA_AV_USING;
-	/*
-	 * an algorithm can only be used for one algorithm, so we mark
-	 * it as being used only for the first algorithm in the mask
-	 */
-	av->alg = aka_av_first_bit_mask(algmask);
 }
 
 struct aka_av *aka_av_get_new(struct aka_user *user, int algmask)
