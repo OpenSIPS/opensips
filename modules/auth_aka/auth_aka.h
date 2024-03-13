@@ -71,6 +71,14 @@ struct aka_user {
 	char buf[0];
 };
 
+struct aka_av_mgm {
+	str name;
+	struct aka_av_binds binds;
+	struct list_head list;
+	char buf[0];
+};
+
+
 
 int aka_init_mgm(int hash_size);
 

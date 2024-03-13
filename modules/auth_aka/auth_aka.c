@@ -76,6 +76,7 @@ static mi_response_t *mi_aka_av_drop(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_aka_av_drop_all(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+int load_aka_av_api_bind(aka_av_api *api);
 
 static int mod_init(void);         /* Module initialization function */
 
@@ -141,6 +142,8 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_var, 0}, /* count */
 		{0,0,0}},
 		ALL_ROUTES},
+	{"aka_av_api_bind", (cmd_function)load_aka_av_api_bind, {
+		{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -1286,4 +1289,12 @@ static mi_response_t *mi_aka_av_drop_all(const mi_params_t *params,
 			&private_identity.s, &private_identity.len) < 0)
 		return init_mi_param_error();
 	return init_mi_result_number(aka_av_drop_all(&public_identity, &private_identity));
+}
+
+int load_aka_av_api_bind(aka_av_api *api)
+{
+	api->add = aka_av_add;
+	api->drop = aka_av_drop;
+	api->drop_all = aka_av_drop_all;
+	return 1;
 }
