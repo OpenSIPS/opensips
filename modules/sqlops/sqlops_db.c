@@ -629,7 +629,7 @@ error:
 }
 
 static str _query_id = {NULL,0};
-static inline str* _query_id_start( str *table)
+static inline str* _query_id_start( str *table, str *order)
 {
 	if (_query_id.s==NULL) {
 		if ( !query_id_max_len ||
@@ -640,6 +640,13 @@ static inline str* _query_id_start( str *table)
 
 	memcpy( _query_id.s + _query_id.len, table->s, table->len);
 	_query_id.len += table->len;
+
+	if (order) {
+		*(_query_id.s + _query_id.len++) = '|';
+		memcpy( _query_id.s + _query_id.len, order->s, order->len);
+		_query_id.len += order->len;
+	}
+
 	*(_query_id.s + _query_id.len++) = '^';
 
 	return &_query_id;
@@ -652,6 +659,9 @@ static inline str* _query_id_add_cols( db_key_t *_c, int _nc)
 	for ( i=0 ; i<_nc ; i++) {
 		if (query_id_max_len-_query_id.len < _c[i]->len+2 /* both |^ */) {
 			_query_id.len = 0; // reset
+			LM_WARN("buffer too short (%d) for building the query ID for "
+				"prepare statement - consider increasing its value "
+				"via 'ps_id_max_buf_len' modparam\n", query_id_max_len);
 			return NULL;
 		}
 		memcpy( _query_id.s + _query_id.len, _c[i]->s, _c[i]->len);
@@ -671,6 +681,9 @@ static inline str* _query_id_add_filter(db_key_t* _k, db_op_t* _o, int _nk)
 		l = strlen( _o[i] );
 		if (query_id_max_len-_query_id.len < _k[i]->len+l+3 /* all %|^ */) {
 			_query_id.len = 0; // reset
+			LM_WARN("buffer too short (%d) for building the query ID for "
+				"prepare statement - consider increasing its value "
+				"via 'ps_id_max_buf_len' modparam\n", query_id_max_len);
 			return NULL;
 		}
 		memcpy( _query_id.s + _query_id.len, _k[i]->s, _k[i]->len);
@@ -730,7 +743,7 @@ int sql_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	if (set_table( url, table ,"API select")!=0)
 		return -1;
 
-	if ( _query_id_start(table)==NULL ||
+	if ( _query_id_start(table,order)==NULL ||
 	(cols && (id=_query_id_add_cols(cols,nc))==NULL) ||
 	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
 		LM_ERR("failed to build PS id\n");
@@ -815,7 +828,7 @@ int sql_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	if (set_table( url, table ,"API update")!=0)
 		return -1;
 
-	if ( _query_id_start(table)==NULL ||
+	if ( _query_id_start(table,NULL)==NULL ||
 	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ||
 	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
 		LM_ERR("failed to build PS id\n");
@@ -865,7 +878,7 @@ int sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 		return -1;
 
 	/* set the PS to be used */
-	if ( _query_id_start(table)==NULL ||
+	if ( _query_id_start(table,NULL)==NULL ||
 	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ) {
 		LM_ERR("failed to build PS id\n");
 	} else {
@@ -921,7 +934,7 @@ int sql_api_delete(struct db_url *url, struct sip_msg* msg,
 		return -1;
 
 	/* set the PS to be used */
-	if ( _query_id_start(table)==NULL ||
+	if ( _query_id_start(table,NULL)==NULL ||
 	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
 		LM_ERR("failed to build PS id\n");
 	} else {
@@ -970,7 +983,7 @@ int sql_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 		return -1;
 
 	/* set the PS to be used */
-	if ( _query_id_start(table)==NULL ||
+	if ( _query_id_start(table,NULL)==NULL ||
 	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ) {
 		LM_ERR("failed to build PS id\n");
 	} else {
