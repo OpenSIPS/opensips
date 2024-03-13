@@ -73,11 +73,20 @@ typedef int (*aka_av_drop_f)(str *pub_id, str *priv_id, str *nonce);
  */
 typedef int (*aka_av_drop_all_f)(str *pub_id, str *priv_id);
 
+/*
+ * Indicates that the fetching of an AV has failed
+ *  - pub_id - Public Identity of the user
+ *  - priv_id - Private identity of the user
+ *  - count - The number of AV that failed
+ */
+typedef int (*aka_av_fail_f)(str *pub_id, str *priv_id, int count);
+
 
 typedef struct aka_av_api {
 	aka_av_add_f add;
 	aka_av_drop_f drop;
 	aka_av_drop_all_f drop_all;
+	aka_av_fail_f fail;
 } aka_av_api;
 
 typedef int (*aka_av_api_bind_f)(aka_av_api *api);

@@ -311,21 +311,30 @@ static void aka_av_mark_using(struct aka_av *av, int algmask)
 	av->alg = aka_av_first_bit_mask(algmask);
 }
 
-struct aka_av *aka_av_get_new_wait(struct aka_user *user, int algmask, long milliseconds)
+int aka_av_get_new_wait(struct aka_user *user, int algmask,
+		long milliseconds, struct aka_av **av)
 {
-	struct aka_av *av;
+	int ret = -1;
 	struct timespec spec, end, begin;
 
 	cond_lock(&user->cond);
-	av = aka_av_get_state(user, algmask, AKA_AV_NEW);
-	if (!av) {
+	if (user->error_count) {
+		user->error_count--;
+		goto end;
+	}
+	*av = aka_av_get_state(user, algmask, AKA_AV_NEW);
+	if (*av == NULL) {
 		switch (milliseconds) {
 			case 0: /* just peaking */
 				break;
 			case -1: /* blocking pop */
 				do {
+					if (user->error_count) {
+						user->error_count--;
+						goto end;
+					}
 					cond_wait(&user->cond);
-				} while ((av = aka_av_get_state(user, algmask, AKA_AV_NEW)) == NULL);
+				} while ((*av = aka_av_get_state(user, algmask, AKA_AV_NEW)) == NULL);
 				break;
 			default:
 				do {
@@ -335,7 +344,11 @@ struct aka_av *aka_av_get_new_wait(struct aka_user *user, int algmask, long mill
 					spec.tv_nsec += (milliseconds % 1000) * 1000000;
 					errno = 0;
 					cond_timedwait(&user->cond, &spec);
-					av = aka_av_get_state(user, algmask, AKA_AV_NEW); /* one last time */
+					if (user->error_count) {
+						user->error_count--;
+						goto end;
+					}
+					*av = aka_av_get_state(user, algmask, AKA_AV_NEW); /* one last time */
 					if (cond_has_timedout(&user->cond))
 						break;
 					if (!av) {
@@ -344,28 +357,39 @@ struct aka_av *aka_av_get_new_wait(struct aka_user *user, int algmask, long mill
 						milliseconds -= (end.tv_sec - begin.tv_sec) * 1000 +
 							(end.tv_nsec - begin.tv_nsec) / 1000000;
 					}
-				} while (av == NULL && milliseconds > 0);
+				} while (*av == NULL && milliseconds > 0);
 				break;
 		}
-	} else {
-		av->state = AKA_AV_USING;
 	}
-	if (av)
-		aka_av_mark_using(av, algmask);
+	if (*av) {
+		aka_av_mark_using(*av, algmask);
+		ret = 1;
+	} else {
+		ret = 0;
+	}
+end:
 	cond_unlock(&user->cond);
-	return av;
+	return ret;
 }
 
-struct aka_av *aka_av_get_new(struct aka_user *user, int algmask)
+int aka_av_get_new(struct aka_user *user, int algmask, struct aka_av **av)
 {
-	struct aka_av *av;
-
+	int ret;
 	cond_lock(&user->cond);
-	av = aka_av_get_state(user, algmask, AKA_AV_NEW);
-	if (av)
-		aka_av_mark_using(av, algmask);
+	if (!user->error_count) {
+		ret = 0;
+		*av = aka_av_get_state(user, algmask, AKA_AV_NEW);
+		if (*av) {
+			aka_av_mark_using(*av, algmask);
+			ret = 1;
+		}
+	} else {
+		/* account for one error */
+		ret = -1;
+		user->error_count--;
+	}
 	cond_unlock(&user->cond);
-	return av;
+	return ret;
 }
 
 static inline int aka_check_algmask(int algmask, int flags,
@@ -533,6 +557,24 @@ int aka_av_drop(str *pub_id, str *priv_id, str *nonce)
 	return (av?1:0);
 }
 
+int aka_av_fail(str *pub_id, str *priv_id, int count)
+{
+	struct aka_user *user = aka_user_find(pub_id, priv_id);
+
+	if (!user) {
+		LM_DBG("cannot find user %.*s/%.*s\n",
+				pub_id->len, pub_id->s, priv_id->len, priv_id->s);
+		return -1;
+	}
+	cond_lock(&user->cond);
+	user->error_count += count;
+	if (!list_empty(&user->async))
+		aka_signal_async(user, user->async.next);
+	cond_signal(&user->cond);
+	cond_unlock(&user->cond);
+	aka_user_release(user);
+	return 0;
+}
 
 void aka_av_set_new(struct aka_user *user, struct aka_av *av)
 {

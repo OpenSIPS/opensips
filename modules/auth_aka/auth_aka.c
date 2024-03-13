@@ -70,11 +70,15 @@ static int script_aka_av_drop(struct sip_msg *msg, str *pub_id, str *priv_id,
 		str *authenticate);
 static int script_aka_av_drop_all(struct sip_msg *msg, str *pub_id, str *priv_id,
 		pv_spec_t *count);
+static int script_aka_av_fail(struct sip_msg *msg, str *pub_id, str *priv_id,
+		int *count);
 static mi_response_t *mi_aka_av_add(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_aka_av_drop(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_aka_av_drop_all(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+static mi_response_t *mi_aka_av_fail(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 int load_aka_av_api_bind(aka_av_api *api);
 
@@ -142,6 +146,12 @@ static const cmd_export_t cmds[] = {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT, fixup_check_var, 0}, /* count */
 		{0,0,0}},
 		ALL_ROUTES},
+	{"aka_av_fail", (cmd_function)script_aka_av_fail, {
+		{CMD_PARAM_STR, NULL, 0}, /* public_identity */
+		{CMD_PARAM_STR, NULL, 0}, /* private_identity */
+		{CMD_PARAM_INT|CMD_PARAM_OPT, NULL, 0}, /* count */
+		{0,0,0}},
+		ALL_ROUTES},
 	{"aka_av_api_bind", (cmd_function)load_aka_av_api_bind, {
 		{0,0,0}}, 0},
 	{0,0,{{0,0,0}},0}
@@ -183,11 +193,19 @@ static const mi_export_t mi_cmds[] = {
 		{mi_aka_av_add, {"public_identity", "private_identity", "authenticate",
 							"authorize", "confidentiality-key", "integrity-key",
 							"algorithms", 0}},
+		{EMPTY_MI_RECIPE}}},
+	{ "aka_av_drop", 0, 0, 0, {
 		{mi_aka_av_drop, {"public_identity", "private_identity",
 							 "authenticate", 0}},
+		{EMPTY_MI_RECIPE}}},
+	{ "aka_av_drop_all", 0, 0, 0, {
 		{mi_aka_av_drop_all, {"public_identity", "private_identity", 0}},
-		{EMPTY_MI_RECIPE}}
-	},
+		{EMPTY_MI_RECIPE}}},
+	{ "aka_av_fail", 0, 0, 0, {
+		{mi_aka_av_fail, {"public_identity", "private_identity", 0}},
+		{mi_aka_av_fail, {"public_identity", "private_identity",
+							 "count", 0}},
+		{EMPTY_MI_RECIPE}}},
 	{EMPTY_MI_EXPORT}
 };
 
@@ -729,32 +747,48 @@ reply:
 	return ret;
 }
 
-static inline int aka_avs_get_new_wait(struct aka_user *user, int *algmask,
+static inline int aka_avs_new_wait(struct aka_user *user, int *algmask,
 		struct aka_av **avs, int count)
 {
-	int c;
-	for (c = 0; c < count; c++) {
-		avs[c] = aka_av_get_new_wait(user, *algmask, aka_sync_timeout);
-		if (!avs[c])
-			break;
-		*algmask &= ~ALG2ALGFLG(avs[c]->alg);
+	int c, err = 0;
+	for (c = 0; c < count - err;) {
+		switch (aka_av_get_new_wait(user, *algmask, aka_sync_timeout, &avs[c])) {
+			case -1: /* error */
+			case  0: /* no AV found within the expected time */
+				err++;
+				break;
+			case  1: /* a proper AV was found */
+				*algmask &= ~ALG2ALGFLG(avs[c]->alg);
+				c++;
+				break;
+		}
 	}
-	LM_DBG("got %d AVs out of %d\n", c, count);
+	LM_DBG("got %d AVs out of %d (%d errors)\n", c, count, err);
 	return c;
 }
 
 
 static inline int aka_avs_get_new(struct aka_user *user, int *algmask,
-		struct aka_av **avs, int count)
+		struct aka_av **avs, int count, int *err_count)
 {
 	int c;
-	for (c = 0; c < count; c++) {
-		avs[c] = aka_av_get_new(user, *algmask);
-		if (!avs[c])
-			break;
-		*algmask &= ~ALG2ALGFLG(avs[c]->alg);
+	*err_count = 0;
+	for (c = 0; c < count - *err_count;) {
+		switch (aka_av_get_new(user, *algmask, &avs[c])) {
+			case -1: /* error */
+				c--;
+				(*err_count)++;
+				break;
+			case  0: /* no AV found within the expected time */
+				goto end;
+			case  1: /* a proper AV was found */
+				*algmask &= ~ALG2ALGFLG(avs[c]->alg);
+				c++;
+				break;
+		}
 	}
-	LM_DBG("got %d AVs out of %d\n", c, count);
+end:
+	LM_DBG("got %d AVs out of %d (%d error)\n", c, count, *err_count);
 	return c;
 }
 
@@ -768,7 +802,7 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	struct aka_user *user;
 	struct aka_av *av, **avs;
 	int count = aka_count_avs(algmask), new_count;
-	int sync_count;
+	int sync_count, err_count;
 
 	realm = (_realm?*_realm:str_init(""));
 	if (count > 1) {
@@ -787,17 +821,17 @@ static int aka_challenge(struct sip_msg *_msg, struct aka_av_mgm *mgm, str *_rea
 	}
 	count += sync_count;
 	/* try to fetch as many local AVs as possible */
-	new_count = aka_avs_get_new(user, &algmask, avs, count);
+	new_count = aka_avs_get_new(user, &algmask, avs, count, &err_count);
 
 	/* if we need more, fetch them remotely */
-	if (new_count != count) {
+	if (new_count + err_count != count) {
 		if (mgm->binds.fetch(&realm, &user->public->impu, &user->impi,
 				(auts.len?&auts:NULL), algmask, 1, 0) != 0) {
 			LM_INFO("Could not fetch %d authentication vector(s)!\n", count);
 			ret = -2;
 			goto release;
 		}
-		new_count += aka_avs_get_new_wait(user, &algmask, avs + new_count, count - new_count);
+		new_count += aka_avs_new_wait(user, &algmask, avs + new_count, count - new_count - err_count);
 		if (new_count < count)
 			LM_WARN("Could not get get %d (out of %d) authentication vectors!\n",
 					count - new_count, count);
@@ -946,7 +980,7 @@ struct aka_async_param {
 	str challenge_msg;
 	struct aka_user *user;
 	struct aka_av **avs;
-	int avs_count, avs_fetched;
+	int avs_count, avs_fetched, avs_error;
 	int process_no;
 	unsigned int ticks;
 	struct list_head list;
@@ -971,31 +1005,35 @@ static int aka_async_param_release(struct aka_async_param *param)
 
 static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, int timeout)
 {
-	int left;
+	int left, err_count;
 	struct aka_async_param *param = _param;
 
 	/* check to see how many events we got */
 	param->avs_fetched += aka_avs_get_new(param->user, &param->algmask,
-			param->avs + param->avs_fetched, param->avs_count - param->avs_fetched);
-	left = param->avs_count - param->avs_fetched;
+			param->avs + param->avs_fetched, param->avs_count - param->avs_fetched, &err_count);
+	param->avs_error += err_count;
+	left = param->avs_count - param->avs_fetched - param->avs_error;
 	/* check to see if we still have AVS to wait for */
-	if (!timeout && param->avs_fetched != param->avs_count) {
+	if (!timeout && (param->avs_fetched + param->avs_error) != param->avs_count) {
 		async_status = ASYNC_CONTINUE;
 		LM_DBG("waiting for more %d AVs to a total of %d\n", left, param->avs_count);
 		return 1;
 	}
 	if (timeout && left)
-		LM_ERR("timeout waiting for AVs - got %d out of %d so far\n",
-				param->avs_fetched, param->avs_count);
+		LM_ERR("timeout waiting for AVs - got %d out of %d so far (%d error)\n",
+				param->avs_fetched, param->avs_count, param->avs_error);
 	else
-		LM_DBG("fetched all %d out of %d AVs\n",
-				param->avs_fetched, param->avs_count);
+		LM_DBG("fetched all %d out of %d AVs (%d error)\n",
+				param->avs_fetched, param->avs_count, param->avs_error);
 	async_status = ASYNC_DONE_NO_IO;
 	if (!param->replied) {
 		if (param->avs_fetched) {
 			/* now send whatever we have fetched so far */
 			aka_send_resp(msg, &param->realm, param->user, param->avs, param->avs_fetched,
 					param->qop, param->code, _cs2cc(&param->challenge_msg));
+		} else if (param->avs_error) {
+			if (auth_api.send_resp(msg, 500, NULL, NULL, 0) < 0)
+				LM_ERR("could not send error back\n");
 		} else if (auth_api.send_resp(msg, 504, NULL, NULL, 0) < 0) {
 			LM_ERR("could not send timeout back\n");
 		}
@@ -1034,7 +1072,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	struct aka_async_param *param = NULL;
 	int ret = AUTH_ERROR, c;
 	char *p;
-	int sync_count;
+	int sync_count, err_count;
 
 	realm = (_realm?*_realm:str_init(""));
 
@@ -1045,8 +1083,10 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	count += sync_count;
 	/* try to sort them out synchronously */
 	if (count == 1) {
-		if (aka_avs_get_new(user, &algmask, &av, 1) == 1)
+		if (aka_avs_get_new(user, &algmask, &av, 1, &err_count) == 1)
 			goto synchronous;
+		if (err_count)
+			goto error;
 	}
 	/* unfortunately we might need to do it asynchronously */
 	param = shm_malloc(sizeof *param + realm.len + _challenge_msg->len +
@@ -1065,8 +1105,8 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	avs = param->avs;
 	/* do not prepare the param yet, as we might still have AVs available */
 
-	c = aka_avs_get_new(user, &algmask, avs, count);
-	if (c == count)
+	c = aka_avs_get_new(user, &algmask, avs, count, &err_count);
+	if (c + err_count == count)
 		goto synchronous;
 	LM_DBG("we still need %d out of %d AVs\n", count - c, count);
 
@@ -1217,6 +1257,12 @@ static int script_aka_av_drop_all(struct sip_msg *msg, str *pub_id, str *priv_id
 	return 1;
 }
 
+static int script_aka_av_fail(struct sip_msg *msg, str *pub_id, str *priv_id,
+		int *count)
+{
+	return aka_av_fail(pub_id, priv_id, (count?*count:1));
+}
+
 static mi_response_t *mi_aka_av_add(const mi_params_t *params,
 								struct mi_handler *async_hdl)
 {
@@ -1291,10 +1337,37 @@ static mi_response_t *mi_aka_av_drop_all(const mi_params_t *params,
 	return init_mi_result_number(aka_av_drop_all(&public_identity, &private_identity));
 }
 
+static mi_response_t *mi_aka_av_fail(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	int count;
+	str public_identity, private_identity;
+
+	if (get_mi_string_param(params, "public_identity",
+			&public_identity.s, &public_identity.len) < 0)
+		return init_mi_param_error();
+	if (get_mi_string_param(params, "private_identity",
+			&private_identity.s, &private_identity.len) < 0)
+		return init_mi_param_error();
+	switch (try_get_mi_int_param(params, "count", &count)) {
+		case -2:
+			return init_mi_param_error();
+		case -1:
+			count = 1;
+			break;
+		case 0:
+			break;
+	}
+	if (aka_av_fail(&public_identity, &private_identity, count) < 0)
+		return init_mi_error(404, MI_SSTR("User not found"));
+	return init_mi_result_ok();
+}
+
 int load_aka_av_api_bind(aka_av_api *api)
 {
 	api->add = aka_av_add;
 	api->drop = aka_av_drop;
 	api->drop_all = aka_av_drop_all;
+	api->fail = aka_av_fail;
 	return 1;
 }

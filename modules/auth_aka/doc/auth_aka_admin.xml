@@ -605,6 +605,47 @@ aka_av_drop_all("sip:test@siphub.com", "test@siphub.com", $var(count));
 		</example>
 
 		</section>
+	<section id="func_aka_av_fail" xreflabel="aka_av_fail()">
+		<title><function moreinfo="none">aka_av_fail(public_identity, private_identity[, count])</function></title>
+		<para>
+			Marks the engine that an authentication vector query for a user has
+			failed, unlocking the processing of the message.
+		</para>
+		<para>
+			<emphasis>Note:</emphasis> this function is useful when you
+			know that fetching a new authentication vector is not possible
+			(due to various reasons) - calling it will resume the message
+			procesing, using only the available AVs fetched so far.
+		</para>
+		<para>Meaning of the parameters is as follows:</para>
+		<itemizedlist>
+			<listitem><para>
+			<emphasis>public_identity</emphasis> (string) - the public identity
+			(IMPU) of the user to drop authentication vectors for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>private_identity</emphasis> (string) - the private identity
+			(IMPI) of the user to drop authentication vectors for.
+			</para></listitem>
+			<listitem><para>
+			<emphasis>count</emphasis> (integer, optional) - the number of
+			authentication vectors that failed. If missing,
+			<emphasis>1</emphasis> is considered.
+			</para></listitem>
+		</itemizedlist>
+		<para>
+		This function can be used from any route.
+		</para>
+		<example>
+		<title><function moreinfo="none">aka_av_fail</function> usage</title>
+		<programlisting format="linespecific">
+...
+aka_av_fail("sip:test@siphub.com", "test@siphub.com", 3);
+...
+</programlisting>
+		</example>
+
+		</section>
 	</section>
 
 	<section id="exported_mi_functions" xreflabel="Exported MI Functions">
@@ -724,6 +765,47 @@ $ opensips-cli -x mi aka_av_drop \
 $ opensips-cli -x mi aka_av_drop_all \
 				sip:test@siphub.com
 				test@siphub.com
+...
+			</programlisting>
+			</example>
+		</section>
+		<section id="mi_aka_av_fail" xreflabel="aka_av_fail">
+			<title><function moreinfo="none">aka_av_fail</function></title>
+			<para>
+				Indicates the fact that the fetching of an authentication
+				vector has failed, unlocking the processing of the message.
+			</para>
+			<para>
+				<emphasis>Note:</emphasis> this function is useful when you
+				know that fetching a new authentication vector is not possible
+				(due to various reasons) - calling it will resume the message
+				procesing, using only the available AVs fetched so far.
+			</para>
+			<para>Parameters:</para>
+			<itemizedlist>
+				<listitem><para>
+				<emphasis>public_identity</emphasis> (string) - the public identity
+				(IMPU) of the user to add authentication vector for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>private_identity</emphasis> (string) - the private identity
+				(IMPI) of the user to add authentication vector for.
+				</para></listitem>
+				<listitem><para>
+				<emphasis>count</emphasis> (integer, optional) - the number of
+				authentication vectors failures.
+				</para></listitem>
+			</itemizedlist>
+			<example>
+			<title>
+				<function moreinfo="none">aka_av_drop</function> usage</title>
+			<programlisting format="linespecific">
+...
+## adds an AKA AV
+$ opensips-cli -x mi aka_av_drop \
+				sip:test@siphub.com
+				test@siphub.com
+				KFQ/MpR3cE3V9PxucEQS5KED8uUNYIAALFyk59sIJI4=
 ...
 			</programlisting>
 			</example>
