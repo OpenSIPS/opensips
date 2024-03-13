@@ -54,7 +54,7 @@ struct aka_av_mgm *aka_get_mgm(str *name)
 	return 0;
 }
 
-typedef int (*load_aka_av_mgm_f)(struct aka_av_mgm *mgm);
+typedef int (*load_aka_av_mgm_f)(struct aka_av_binds *binds);
 
 struct aka_av_mgm *aka_load_mgm(str *name)
 {
@@ -89,7 +89,7 @@ struct aka_av_mgm *aka_load_mgm(str *name)
 	mgm->name.s = mgm->buf;
 	memcpy(mgm->name.s, name->s, name->len);
 	mgm->name.len = name->len;
-	if (load_aka_av_mgm(mgm) < 0) {
+	if (load_aka_av_mgm(&mgm->binds) < 0) {
 		LM_ERR("could not load %.*s AV bindings\n",
 				name->len, name->s);
 		pkg_free(mgm);
