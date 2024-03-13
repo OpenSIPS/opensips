@@ -617,6 +617,8 @@ mod_renames=(
   [event_stream]=event_jsonrpc
   [b2b_logic]=b2b_logic:1605638778
   [b2b_logic_xml]=b2b_logic::1605638778
+  [sqlops]=dbops
+  [dbops]=avpops
 )
 
 mk_git_handle() {
