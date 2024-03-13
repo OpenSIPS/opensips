@@ -236,7 +236,7 @@ Copyright: 2009, Voice System
   2001-2004, FhG FOKUS
 License: GPL-2+
 
-Files: modules/dbops/*
+Files: modules/sqlops/*
 Copyright: 2004-2009, Voice Sistem SRL
 License: GPL-2+
 
