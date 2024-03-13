@@ -149,7 +149,7 @@
 				</para>
 				<para>
 				You might notice that there is no particular function for setting pseudo variables; you may use
-				the exported functions from the dbops module, though.
+				the exported functions from the sqlops module, though.
 				</para>
 			</section>
 		</section>

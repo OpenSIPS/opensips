@@ -28,7 +28,7 @@ PLIST_FILES=	sbin/opensips
 
 PLIST_DIRS=	lib/opensips/modules lib/opensips
 
-MODULES=	acc alias_db auth auth_db auth_diameter dbops benchmark \
+MODULES=	acc alias_db auth auth_db auth_diameter sqlops benchmark \
 		cfgutils dbtext dialog dispatcher diversion domain \
 		domainpolicy enum exec flatstore gflags group imc \
 		mangler maxfwd mediaproxy mi_datagram mi_fifo msilo nathelper \
