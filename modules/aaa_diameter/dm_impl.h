@@ -22,6 +22,7 @@
 #define AAA_DIAMETER_IMPL
 
 #include "../../aaa/aaa.h"
+#include "diameter_api.h"
 
 #define __FD_CHECK(__call__, __retok__, __retval__) \
 	do { \
@@ -116,8 +117,9 @@ struct dm_avp {
 	struct list_head list;
 };
 
-#define DM_TYPE_COND (1<<0)
+#define DM_TYPE_COND  (1<<0)
 #define DM_TYPE_EVENT (1<<1)
+#define DM_TYPE_CB    (1<<2)
 
 struct dm_cond {
 	int type;
@@ -130,11 +132,10 @@ struct dm_cond {
 			int fd;
 			int pid;
 		} event;
+		diameter_reply_cb *cb;
 	} sync;
 
-	int rc; /* the Diameter Result-Code AVP value */
-	int is_error;
-	char *rpl_avps_json; /* JSON with all reply AVPs and their values */
+	diameter_reply rpl;
 };
 int init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond);
 
@@ -164,10 +165,10 @@ int dm_avp_add(aaa_conn *_, aaa_message *msg, aaa_map *avp, void *val,
                int val_length, int vendor);
 int dm_build_avps(struct list_head *subavps, cJSON *array);
 int dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **__);
-int _dm_send_message(aaa_conn *_, aaa_message *req, aaa_message **reply,
-               char **rpl_avps);
+int _dm_send_message(aaa_conn *_, aaa_message *req, struct dm_cond **reply_cond);
 int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd);
 int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps);
+void _dm_release_message_response(struct dm_cond *cond, char *rpl_avps);
 int dm_destroy_message(aaa_conn *con, aaa_message *msg);
 void _dm_destroy_message(aaa_message *msg);
 
