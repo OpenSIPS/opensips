@@ -310,9 +310,9 @@ static int fixup_aka_qop(void** param)
 				LM_ERR("could not parse default_qop param [%s]\n", aka_default_qop_s.s);
 				return -2;
 			}
-			aka_default_qop = (qop_type_t)(long)(param);
+			aka_default_qop = (qop_type_t)(long)(*param);
 		} else {
-			*param = (void *)(long)(param);
+			*param = (void *)(long)aka_default_qop;
 		}
 		return 0;
 	} else {
