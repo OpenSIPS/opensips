@@ -31,7 +31,7 @@
 #include "../../re.h"
 #include "../../parser/msg_parser.h"
 
-#include "dbops_db.h"
+#include "sqlops_db.h"
 
 
 
@@ -40,20 +40,20 @@
 #define AVP_IS_IN_DB    (1<<7)
 
 /* DB flags */
-#define AVPOPS_DB_NAME_INT   (1<<1)
-#define AVPOPS_DB_VAL_INT    (1<<0)
+#define SQLOPS_DB_NAME_INT   (1<<1)
+#define SQLOPS_DB_VAL_INT    (1<<0)
 
 /* operand flags */
-#define AVPOPS_VAL_NONE      (1<<0)
-#define AVPOPS_VAL_INT       (1<<1)
-#define AVPOPS_VAL_STR       (1<<2)
-#define AVPOPS_VAL_PVAR      (1<<3)
+#define SQLOPS_VAL_NONE      (1<<0)
+#define SQLOPS_VAL_INT       (1<<1)
+#define SQLOPS_VAL_STR       (1<<2)
+#define SQLOPS_VAL_PVAR      (1<<3)
 
 /* flags for operation flags    24..31 */
-#define AVPOPS_FLAG_USER0    (1<<24)
-#define AVPOPS_FLAG_DOMAIN0  (1<<25)
-#define AVPOPS_FLAG_URI0     (1<<26)
-#define AVPOPS_FLAG_UUID0    (1<<27)
+#define SQLOPS_FLAG_USER0    (1<<24)
+#define SQLOPS_FLAG_DOMAIN0  (1<<25)
+#define SQLOPS_FLAG_URI0     (1<<26)
+#define SQLOPS_FLAG_UUID0    (1<<27)
 
 /* container structer for Flag+Int_Spec_value parameter */
 struct fis_param
@@ -87,38 +87,38 @@ typedef struct _query_async_param
 
 void init_store_avps(str **db_columns);
 
-int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
+int ops_sql_avp_load (struct sip_msg* msg, struct fis_param *sp,
 		struct db_param *dbp,  struct db_url *url, int use_domain, str *prefix);
 
-int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
+int ops_sql_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 		struct db_param *dbp,  struct db_url *url, int use_domain);
 
-int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
+int ops_sql_avp_store(struct sip_msg* msg, struct fis_param *sp,
 		struct db_param *dbp,  struct db_url *url, int use_domain);
 
-int ops_db_query(struct sip_msg* msg, str* query,
+int ops_sql_query(struct sip_msg* msg, str* query,
 		struct db_url *url, pvname_list_t* dest, int one_row);
 
-int ops_db_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
+int ops_sql_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter, str *order, pvname_list_t* dest, int one_row);
 
-int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
+int ops_sql_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter);
 
-int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
+int ops_sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 		str *cols);
 
-int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
+int ops_sql_api_delete(struct db_url *url, struct sip_msg* msg,
 		str *table, str *filter);
 
-int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
+int ops_sql_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 		str *cols);
 
-int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
+int ops_async_sql_query(struct sip_msg* msg, async_ctx *ctx,
 		str *query, struct db_url *url, pvname_list_t *dest, int one_row);
 
-int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param);
-int timeout_async_dbquery(int fd, struct sip_msg *msg, void *_param);
+int resume_async_sqlquery(int fd, struct sip_msg *msg, void *_param);
+int timeout_async_sqlquery(int fd, struct sip_msg *msg, void *_param);
 
 #endif
 

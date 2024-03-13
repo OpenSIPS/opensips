@@ -29,7 +29,7 @@
 #include "../../dprint.h"
 #include "../../usr_avp.h"
 #include "../../mem/mem.h"
-#include "dbops_parse.h"
+#include "sqlops_parse.h"
 
 
 #define SCHEME_UUID_COL          "uuid_col"
@@ -78,7 +78,7 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 			case 's': case 'S':
 			case 'i': case 'I':
 			case '*': case 'a': case 'A':
-				dbp->a.opd = AVPOPS_VAL_NONE;
+				dbp->a.opd = SQLOPS_VAL_NONE;
 			break;
 			default:
 				LM_ERR("bad param - expected : *, s or i AVP flag\n");
@@ -97,7 +97,7 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 			}
 		}
 		dbp->a.u.sval.pvp.pvn.u.isname.type |= (flags<<8)&0xff00;
-		dbp->a.type = AVPOPS_VAL_NONE;
+		dbp->a.type = SQLOPS_VAL_NONE;
 	} else {
 		s0.s = s; s0.len = strlen(s0.s);
 		p = pv_parse_spec(&s0, &dbp->a.u.sval);
@@ -106,14 +106,14 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 			LM_ERR("bad param - expected : $avp(name) or int/str value\n");
 			return E_UNSPEC;
 		}
-		dbp->a.type = AVPOPS_VAL_PVAR;
+		dbp->a.type = SQLOPS_VAL_PVAR;
 	}
 
 	/* optimize and keep the attribute name as str also to
 	 * speed up db querie builds */
-	if (dbp->a.type == AVPOPS_VAL_PVAR)
+	if (dbp->a.type == SQLOPS_VAL_PVAR)
 	{
-		dbp->a.opd = AVPOPS_VAL_PVAR;
+		dbp->a.opd = SQLOPS_VAL_PVAR;
 		if(pv_has_iname(&dbp->a.u.sval))
 		{
 			s1 = get_avp_name_id(dbp->a.u.sval.pvp.pvn.u.isname.name.n);
@@ -131,7 +131,7 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 			memcpy(dbp->sa.s, s1->s, s1->len);
 			dbp->sa.len = s1->len;
 			dbp->sa.s[dbp->sa.len] = 0;
-			dbp->a.opd = AVPOPS_VAL_PVAR|AVPOPS_VAL_STR;
+			dbp->a.opd = SQLOPS_VAL_PVAR|SQLOPS_VAL_STR;
 		}
 	}
 
@@ -150,7 +150,7 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 				LM_ERR("function doesn't support DB schemes\n");
 				goto error;
 			}
-			if (dbp->a.opd&AVPOPS_VAL_NONE)
+			if (dbp->a.opd&SQLOPS_VAL_NONE)
 			{
 				LM_ERR("inconsistent usage of "
 					"DB scheme without complet specification of AVP name\n");
@@ -179,7 +179,7 @@ int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme)
 				goto error;
 			}
 			/* update scheme flags with AVP name type*/
-			dbp->scheme->db_flags|=dbp->a.opd&AVPOPS_VAL_STR?AVP_NAME_STR:0;
+			dbp->scheme->db_flags|=dbp->a.opd&SQLOPS_VAL_STR?AVP_NAME_STR:0;
 		} else {
 			/* duplicate table str into the db_param struct */
 			pkg_str_dup( &dbp->table, &tmp);

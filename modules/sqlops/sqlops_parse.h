@@ -21,13 +21,13 @@
  */
 
 
-#ifndef _DBOPS_PARSE_H_
-#define _DBOPS_PARSE_H_
+#ifndef _SQLOPS_PARSE_H_
+#define _SQLOPS_PARSE_H_
 
 #include "../../str.h"
 #include "../../usr_avp.h"
-#include "dbops_impl.h"
-#include "dbops_db.h"
+#include "sqlops_impl.h"
+#include "sqlops_db.h"
 
 
 int parse_avp_db(char *s, struct db_param *dbp, int allow_scheme);

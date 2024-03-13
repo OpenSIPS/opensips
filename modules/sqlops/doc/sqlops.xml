@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
 
-<!ENTITY admin SYSTEM "dbops_admin.xml">
+<!ENTITY admin SYSTEM "sqlops_admin.xml">
 <!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
 <!ENTITY contrib SYSTEM "contributors.xml">
 
@@ -15,7 +15,7 @@
 
 <book>
 	<bookinfo>
-	<title>DBops Module</title>
+	<title>SQLops Module</title>
 	<productname class="trade">&osipsname;</productname>
 	</bookinfo>
 	<toc></toc>

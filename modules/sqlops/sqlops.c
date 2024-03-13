@@ -35,9 +35,9 @@
 #include "../../error.h"
 #include "../../ut.h"
 #include "../../mod_fix.h"
-#include "dbops_parse.h"
-#include "dbops_impl.h"
-#include "dbops_db.h"
+#include "sqlops_parse.h"
+#include "sqlops_impl.h"
+#include "sqlops_db.h"
 
 typedef enum {GPARAM=0, URL} db_id_type;
 
@@ -64,12 +64,12 @@ static str domain_col      = str_init("domain");
 static str* db_columns[6] = {&uuid_col, &attribute_col, &value_col,
                              &type_col, &username_col, &domain_col};
 
-static int dbops_init(void);
-static int dbops_child_init(int rank);
+static int sqlops_init(void);
+static int sqlops_child_init(int rank);
 
-static int fixup_db_avp_source(void** param);
-static int fixup_db_avp_dbparam_scheme(void** param);
-static int fixup_db_avp_dbparam(void** param);
+static int fixup_sql_avp_source(void** param);
+static int fixup_sql_avp_dbparam_scheme(void** param);
+static int fixup_sql_avp_dbparam(void** param);
 static int fixup_db_url(void ** param);
 static int fixup_avp_prefix(void **param);
 
@@ -81,44 +81,44 @@ static int fixup_avpname_list(void** param);
 static int fixup_free_pvname_list(void** param);
 static int fixup_free_avp_dbparam(void** param);
 
-static int w_db_avp_load(struct sip_msg* msg, void* source,
+static int w_sql_avp_load(struct sip_msg* msg, void* source,
 		void* param, void *url, str *prefix);
-static int w_db_avp_delete(struct sip_msg* msg, void* source,
+static int w_sql_avp_delete(struct sip_msg* msg, void* source,
 		void* param, void *url);
-static int w_db_avp_store(struct sip_msg* msg, void* source,
+static int w_sql_avp_store(struct sip_msg* msg, void* source,
 		void* param, void *url);
-static int w_db_query(struct sip_msg* msg, str* query,
+static int w_sql_query(struct sip_msg* msg, str* query,
 		void* dest, void *url);
-static int w_db_query_one(struct sip_msg* msg, str* query,
+static int w_sql_query_one(struct sip_msg* msg, str* query,
 		void* dest, void *url);
-static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
+static int w_async_sql_query(struct sip_msg* msg, async_ctx *ctx,
 		str* query, void* dest, void* url);
-static int w_async_db_query_one(struct sip_msg* msg, async_ctx *ctx,
+static int w_async_sql_query_one(struct sip_msg* msg, async_ctx *ctx,
 		str* query, void* dest, void* url);
 
-static int w_db_select(struct sip_msg* msg, str* cols, str *table,
+static int w_sql_select(struct sip_msg* msg, str* cols, str *table,
 		str *filter, str *order, void* dest, void *url);
-static int w_db_select_one(struct sip_msg* msg, str* cols, str *table,
+static int w_sql_select_one(struct sip_msg* msg, str* cols, str *table,
 		str *filter, str *order, void* dest, void *url);
-static int w_db_update(struct sip_msg* msg, str* cols, str *table,
+static int w_sql_update(struct sip_msg* msg, str* cols, str *table,
 		str *filter, void *url);
-static int w_db_insert(struct sip_msg* msg, str* table, str *cols,
+static int w_sql_insert(struct sip_msg* msg, str* table, str *cols,
 		void *url);
-static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
+static int w_sql_delete(struct sip_msg* msg, str *table, str *filter,
 		void *url);
-static int w_db_replace(struct sip_msg* msg, str* table, str *cols,
+static int w_sql_replace(struct sip_msg* msg, str* table, str *cols,
 		void *url);
 
 
 static const acmd_export_t acmds[] = {
-	{"db_query", (acmd_function)w_async_db_query, {
+	{"sql_query", (acmd_function)w_async_sql_query, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_avpname_list, fixup_free_pvname_list},
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
 			fixup_db_id_async, fixup_free_pkg},
 		{0, 0, 0}}},
-	{"db_query_one", (acmd_function)w_async_db_query_one, {
+	{"sql_query_one", (acmd_function)w_async_sql_query_one, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_pvname_list, fixup_free_pvname_list},
@@ -134,35 +134,35 @@ static const acmd_export_t acmds[] = {
  */
 static const cmd_export_t cmds[] = {
 
-	{"db_avp_load", (cmd_function)w_db_avp_load, {
+	{"sql_avp_load", (cmd_function)w_sql_avp_load, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_db_avp_source, fixup_free_pkg},
+			fixup_sql_avp_source, fixup_free_pkg},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_db_avp_dbparam_scheme, fixup_free_avp_dbparam},
+			fixup_sql_avp_dbparam_scheme, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT, fixup_avp_prefix, fixup_free_pkg},
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_avp_delete", (cmd_function)w_db_avp_delete, {
+	{"sql_avp_delete", (cmd_function)w_sql_avp_delete, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_db_avp_source, fixup_free_pkg},
+			fixup_sql_avp_source, fixup_free_pkg},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_db_avp_dbparam, fixup_free_avp_dbparam},
+			fixup_sql_avp_dbparam, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_avp_store", (cmd_function)w_db_avp_store, {
+	{"sql_avp_store", (cmd_function)w_sql_avp_store, {
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_db_avp_source, fixup_free_pkg},
+			fixup_sql_avp_source, fixup_free_pkg},
 		{CMD_PARAM_STR|CMD_PARAM_NO_EXPAND,
-			fixup_db_avp_dbparam, fixup_free_avp_dbparam},
+			fixup_sql_avp_dbparam, fixup_free_avp_dbparam},
 		{CMD_PARAM_INT|CMD_PARAM_OPT, fixup_db_url, 0},
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_query", (cmd_function)w_db_query, {
+	{"sql_query", (cmd_function)w_sql_query, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_avpname_list, fixup_free_pvname_list},
@@ -171,7 +171,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_query_one", (cmd_function)w_db_query_one, {
+	{"sql_query_one", (cmd_function)w_sql_query_one, {
 		{CMD_PARAM_STR, 0, 0},
 		{CMD_PARAM_STR|CMD_PARAM_OPT|CMD_PARAM_NO_EXPAND,
 			fixup_pvname_list, fixup_free_pvname_list},
@@ -180,7 +180,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_select", (cmd_function)w_db_select, {
+	{"sql_select", (cmd_function)w_sql_select, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* columns */
 		{CMD_PARAM_STR, 0, 0}, /* table */
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* filter */
@@ -192,7 +192,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_selec_one", (cmd_function)w_db_select_one, {
+	{"sql_selec_one", (cmd_function)w_sql_select_one, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* columns */
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* table */
 		{CMD_PARAM_STR, 0, 0}, /* filter */
@@ -204,7 +204,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_update", (cmd_function)w_db_update, {
+	{"sql_update", (cmd_function)w_sql_update, {
 		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_STR, 0, 0}, /* table */
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* filter */
@@ -213,7 +213,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_insert", (cmd_function)w_db_insert, {
+	{"sql_insert", (cmd_function)w_sql_insert, {
 		{CMD_PARAM_STR, 0, 0}, /* table */
 		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
@@ -221,7 +221,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_delete", (cmd_function)w_db_delete, {
+	{"sql_delete", (cmd_function)w_sql_delete, {
 		{CMD_PARAM_STR, 0, 0}, /* table */
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* filter */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
@@ -229,7 +229,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"db_replace", (cmd_function)w_db_replace, {
+	{"sql_replace", (cmd_function)w_sql_replace, {
 		{CMD_PARAM_STR, 0, 0}, /* table */
 		{CMD_PARAM_STR, 0, 0}, /* columns */
 		{CMD_PARAM_INT|CMD_PARAM_OPT,
@@ -270,7 +270,7 @@ static const dep_export_t deps = {
 };
 
 struct module_exports exports = {
-	"dbops",
+	"sqlops",
 	MOD_TYPE_DEFAULT,/* class of this module */
 	MODULE_VERSION,  /* module version */
 	DEFAULT_DLFLAGS, /* dlopen flags */
@@ -285,18 +285,18 @@ struct module_exports exports = {
 	0,			/* exported transformations */
 	0,          /* extra processes */
 	0,          /* Module pre-initialization function */
-	dbops_init,/* Module initialization function */
+	sqlops_init,/* Module initialization function */
 	(response_function) 0,
 	(destroy_function) 0,
-	(child_init_function) dbops_child_init, /* per-child init function */
+	(child_init_function) sqlops_child_init, /* per-child init function */
 	NULL        /* reload confirm function */
 };
 
 
 
-static int dbops_init(void)
+static int sqlops_init(void)
 {
-	LM_INFO("initializing...\n");
+	LM_DBG("initializing...\n");
 
 	db_table.len = strlen(db_table.s);
 	uuid_col.len = strlen(uuid_col.s);
@@ -326,7 +326,7 @@ static int dbops_init(void)
 	}
 
 	/* bind to the DB module */
-	if (dbops_db_bind()<0)
+	if (sqlops_db_bind()<0)
 		goto error;
 
 	init_store_avps(db_columns);
@@ -337,10 +337,10 @@ error:
 }
 
 
-static int dbops_child_init(int rank)
+static int sqlops_child_init(int rank)
 {
 	/* init DB connection */
-	return dbops_db_init(&db_table, db_columns);
+	return sqlops_db_init(&db_table, db_columns);
 }
 
 
@@ -397,7 +397,7 @@ static int fixup_avp_prefix(void **param)
 
 	name = get_avp_name_id(dbp_fixup->a.u.sval.pvp.pvn.u.isname.name.n);
 
-	if (name && dbp_fixup->a.type == AVPOPS_VAL_PVAR) {
+	if (name && dbp_fixup->a.type == SQLOPS_VAL_PVAR) {
 
 		p = pkg_malloc(name->len + prefix->len + 7);
 		if (!p) {
@@ -420,7 +420,7 @@ static int fixup_avp_prefix(void **param)
 	return 0;
 }
 
-static int fixup_db_avp(void** param, int param_no, int allow_scheme)
+static int fixup_sql_avp(void** param, int param_no, int allow_scheme)
 {
 	struct fis_param *sp = NULL;
 	struct db_param  *dbp;
@@ -456,13 +456,13 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 			*(p++) = 0;
 			/* check for extra flags/params */
 			if (!strcasecmp("domain",p)) {
-				flags|=AVPOPS_FLAG_DOMAIN0;
+				flags|=SQLOPS_FLAG_DOMAIN0;
 			} else if (!strcasecmp("username",p)) {
-				flags|=AVPOPS_FLAG_USER0;
+				flags|=SQLOPS_FLAG_USER0;
 			} else if (!strcasecmp("uri",p)) {
-				flags|=AVPOPS_FLAG_URI0;
+				flags|=SQLOPS_FLAG_URI0;
 			} else if (!strcasecmp("uuid",p)) {
-				flags|=AVPOPS_FLAG_UUID0;
+				flags|=SQLOPS_FLAG_UUID0;
 			} else {
 				LM_ERR("unknown flag "
 					"<%s>\n",p);
@@ -472,7 +472,7 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 		if (*s.s!='$')
 		{
 			/* is a constant string -> use it as uuid*/
-			sp->opd = ((flags==0)?AVPOPS_FLAG_UUID0:flags)|AVPOPS_VAL_STR;
+			sp->opd = ((flags==0)?SQLOPS_FLAG_UUID0:flags)|SQLOPS_VAL_STR;
 			sp->u.s.s = (char*)pkg_malloc(s.len + 1);
 			if (sp->u.s.s==0) {
 				LM_ERR("no more pkg mem!!\n");
@@ -493,9 +493,9 @@ static int fixup_db_avp(void** param, int param_no, int allow_scheme)
 			if(sp->u.sval.type==PVT_RURI || sp->u.sval.type==PVT_FROM
 					|| sp->u.sval.type==PVT_TO || sp->u.sval.type==PVT_OURI)
 			{
-				sp->opd = ((flags==0)?AVPOPS_FLAG_URI0:flags)|AVPOPS_VAL_PVAR;
+				sp->opd = ((flags==0)?SQLOPS_FLAG_URI0:flags)|SQLOPS_VAL_PVAR;
 			} else {
-				sp->opd = ((flags==0)?AVPOPS_FLAG_UUID0:flags)|AVPOPS_VAL_PVAR;
+				sp->opd = ((flags==0)?SQLOPS_FLAG_UUID0:flags)|SQLOPS_VAL_PVAR;
 			}
 		}
 		*param=(void*)sp;
@@ -528,19 +528,19 @@ err_free:
 	return E_UNSPEC;
 }
 
-static int fixup_db_avp_source(void** param)
+static int fixup_sql_avp_source(void** param)
 {
-	return fixup_db_avp(param, 1, 0);
+	return fixup_sql_avp(param, 1, 0);
 }
 
-static int fixup_db_avp_dbparam_scheme(void** param)
+static int fixup_sql_avp_dbparam_scheme(void** param)
 {
-	return fixup_db_avp(param, 2, 1);
+	return fixup_sql_avp(param, 2, 1);
 }
 
-static int fixup_db_avp_dbparam(void** param)
+static int fixup_sql_avp_dbparam(void** param)
 {
-	return fixup_db_avp(param, 2, 0);
+	return fixup_sql_avp(param, 2, 0);
 }
 
 static int fixup_free_avp_dbparam(void** param)
@@ -654,34 +654,34 @@ static int fixup_db_id_async(void** param)
 }
 
 
-static int w_db_avp_load(struct sip_msg* msg, void* source,
+static int w_sql_avp_load(struct sip_msg* msg, void* source,
                          void* param, void *url, str *prefix)
 {
-	return ops_db_avp_load ( msg, (struct fis_param*)source,
+	return ops_sql_avp_load ( msg, (struct fis_param*)source,
 		(struct db_param*)param,
 		url?(struct db_url*)url:default_db_url, use_domain, prefix);
 }
 
-static int w_db_avp_delete(struct sip_msg* msg, void* source,
+static int w_sql_avp_delete(struct sip_msg* msg, void* source,
                            void* param, void *url)
 {
-	return ops_db_avp_delete ( msg, (struct fis_param*)source,
+	return ops_sql_avp_delete ( msg, (struct fis_param*)source,
 		(struct db_param*)param,
 		url?(struct db_url*)url:default_db_url,
 		use_domain);
 }
 
-static int w_db_avp_store(struct sip_msg* msg, void* source,
+static int w_sql_avp_store(struct sip_msg* msg, void* source,
                           void* param, void *url)
 {
-	return ops_db_avp_store ( msg, (struct fis_param*)source,
+	return ops_sql_avp_store ( msg, (struct fis_param*)source,
 		(struct db_param*)param,
 		url?(struct db_url*)url:default_db_url,
 		use_domain);
 }
 
 
-static int w_db_query(struct sip_msg* msg, str* query,
+static int w_sql_query(struct sip_msg* msg, str* query,
                           void* dest, void *url)
 {
 	struct db_url *parsed_url;
@@ -691,11 +691,11 @@ static int w_db_query(struct sip_msg* msg, str* query,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_query(msg, query, parsed_url, (pvname_list_t*)dest, 0);
+	return ops_sql_query(msg, query, parsed_url, (pvname_list_t*)dest, 0);
 }
 
 
-static int w_db_query_one(struct sip_msg* msg, str* query,
+static int w_sql_query_one(struct sip_msg* msg, str* query,
 														void* dest, void *url)
 {
 	struct db_url *parsed_url;
@@ -705,11 +705,11 @@ static int w_db_query_one(struct sip_msg* msg, str* query,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_query(msg, query, parsed_url, (pvname_list_t*)dest, 1);
+	return ops_sql_query(msg, query, parsed_url, (pvname_list_t*)dest, 1);
 }
 
 
-static int w_db_select(struct sip_msg* msg, str* cols, str *table,
+static int w_sql_select(struct sip_msg* msg, str* cols, str *table,
 		str *filter, str *order, void* dest, void *url)
 {
 	struct db_url *parsed_url;
@@ -719,12 +719,12 @@ static int w_db_select(struct sip_msg* msg, str* cols, str *table,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_select(parsed_url, msg, cols, table, filter, order, 
+	return ops_sql_api_select(parsed_url, msg, cols, table, filter, order, 
 		(pvname_list_t*)dest, 0);
 }
 
 
-static int w_db_select_one(struct sip_msg* msg, str* cols, str *table,
+static int w_sql_select_one(struct sip_msg* msg, str* cols, str *table,
 		str *filter, str *order, void* dest, void *url)
 {
 	struct db_url *parsed_url;
@@ -734,12 +734,12 @@ static int w_db_select_one(struct sip_msg* msg, str* cols, str *table,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_select(parsed_url, msg, cols, table, filter, order, 
+	return ops_sql_api_select(parsed_url, msg, cols, table, filter, order, 
 		(pvname_list_t*)dest, 1);
 }
 
 
-static int w_db_update(struct sip_msg* msg, str* cols, str *table,
+static int w_sql_update(struct sip_msg* msg, str* cols, str *table,
 		str *filter, void *url)
 {
 	struct db_url *parsed_url;
@@ -749,11 +749,11 @@ static int w_db_update(struct sip_msg* msg, str* cols, str *table,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_update(parsed_url, msg, cols, table, filter);
+	return ops_sql_api_update(parsed_url, msg, cols, table, filter);
 }
 
 
-static int w_db_insert(struct sip_msg* msg, str* table, str *cols,
+static int w_sql_insert(struct sip_msg* msg, str* table, str *cols,
 		void *url)
 {
 	struct db_url *parsed_url;
@@ -763,11 +763,11 @@ static int w_db_insert(struct sip_msg* msg, str* table, str *cols,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_insert(parsed_url, msg, table, cols);
+	return ops_sql_api_insert(parsed_url, msg, table, cols);
 }
 
 
-static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
+static int w_sql_delete(struct sip_msg* msg, str *table, str *filter,
 		void *url)
 {
 	struct db_url *parsed_url;
@@ -777,11 +777,11 @@ static int w_db_delete(struct sip_msg* msg, str *table, str *filter,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_delete(parsed_url, msg, table, filter);
+	return ops_sql_api_delete(parsed_url, msg, table, filter);
 }
 
 
-static int w_db_replace(struct sip_msg* msg, str* table, str *cols,
+static int w_sql_replace(struct sip_msg* msg, str* table, str *cols,
 		void *url)
 {
 	struct db_url *parsed_url;
@@ -791,11 +791,11 @@ static int w_db_replace(struct sip_msg* msg, str* table, str *cols,
 	else
 		parsed_url = default_db_url;
 
-	return ops_db_api_replace(parsed_url, msg, table, cols);
+	return ops_sql_api_replace(parsed_url, msg, table, cols);
 }
 
 
-static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
+static int w_async_sql_query(struct sip_msg* msg, async_ctx *ctx,
 											str* query, void* dest, void* url)
 {
 	struct db_url *parsed_url;
@@ -805,11 +805,11 @@ static int w_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 	else
 		parsed_url = default_db_url;
 
-	return ops_async_db_query(msg, ctx, query, parsed_url,
+	return ops_async_sql_query(msg, ctx, query, parsed_url,
 		(pvname_list_t *)dest, 0);
 }
 
-static int w_async_db_query_one(struct sip_msg* msg, async_ctx *ctx,
+static int w_async_sql_query_one(struct sip_msg* msg, async_ctx *ctx,
 											str* query, void* dest, void* url)
 {
 	struct db_url *parsed_url;
@@ -819,6 +819,6 @@ static int w_async_db_query_one(struct sip_msg* msg, async_ctx *ctx,
 	else
 		parsed_url = default_db_url;
 
-	return ops_async_db_query(msg, ctx, query, parsed_url,
+	return ops_async_sql_query(msg, ctx, query, parsed_url,
 		(pvname_list_t *)dest, 1);
 }
