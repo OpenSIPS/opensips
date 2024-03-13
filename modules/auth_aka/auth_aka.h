@@ -63,6 +63,7 @@ struct aka_user {
 	enum aka_user_state state;
 	unsigned int ref;
 	str impi;
+	int error_count;
 	struct aka_user_pub *public;
 	struct list_head avs;
 	struct list_head list;
@@ -92,13 +93,15 @@ void aka_user_release(struct aka_user *user);
 
 /* gets an AV for a specific user */
 void aka_av_set_new(struct aka_user *user, struct aka_av *av);
-struct aka_av *aka_av_get_new(struct aka_user *user, int algmask);
-struct aka_av *aka_av_get_new_wait(struct aka_user *user, int algmask, long milliseconds);
+int aka_av_get_new(struct aka_user *user, int algmask, struct aka_av **av);
+int aka_av_get_new_wait(struct aka_user *user, int algmask,
+		long milliseconds, struct aka_av **av);
 struct aka_av *aka_av_get_nonce(struct aka_user *user, int algmask, str *nonce);
 
 int aka_av_add(str *pub_id, str *priv_id, int algmask, str *authenticate,
 		str *authorize, str *ck, str *ik);
 int aka_av_drop(str *pub_id, str *priv_id, str *nonce);
+int aka_av_fail(str *pub_id, str *priv_id, int no);
 int aka_av_drop_all(str *pub_id, str *priv_id);
 int aka_av_drop_all_user(struct aka_user *user);
 
