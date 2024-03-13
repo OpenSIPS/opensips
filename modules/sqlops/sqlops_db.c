@@ -743,10 +743,11 @@ int sql_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	if (set_table( url, table ,"API select")!=0)
 		return -1;
 
-	if ( _query_id_start(table,order)==NULL ||
+	if ( !DB_CAPABILITY(url->dbf, DB_CAP_PREPARED_STMT) ||
+	_query_id_start(table,order)==NULL ||
 	(cols && (id=_query_id_add_cols(cols,nc))==NULL) ||
 	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
-		LM_ERR("failed to build PS id\n");
+		LM_DBG("not using PS\n");
 	} else {
 		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
 		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
@@ -828,10 +829,11 @@ int sql_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	if (set_table( url, table ,"API update")!=0)
 		return -1;
 
-	if ( _query_id_start(table,NULL)==NULL ||
+	if ( !DB_CAPABILITY(url->dbf, DB_CAP_PREPARED_STMT) ||
+	_query_id_start(table,NULL)==NULL ||
 	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ||
 	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
-		LM_ERR("failed to build PS id\n");
+		LM_DBG("not using PS\n");
 	} else {
 		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
 		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
@@ -878,9 +880,10 @@ int sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 		return -1;
 
 	/* set the PS to be used */
-	if ( _query_id_start(table,NULL)==NULL ||
+	if ( !DB_CAPABILITY(url->dbf, DB_CAP_PREPARED_STMT) ||
+	_query_id_start(table,NULL)==NULL ||
 	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ) {
-		LM_ERR("failed to build PS id\n");
+		LM_DBG("not using PS\n");
 	} else {
 		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
 		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
@@ -934,9 +937,10 @@ int sql_api_delete(struct db_url *url, struct sip_msg* msg,
 		return -1;
 
 	/* set the PS to be used */
-	if ( _query_id_start(table,NULL)==NULL ||
+	if ( !DB_CAPABILITY(url->dbf, DB_CAP_PREPARED_STMT) ||
+	_query_id_start(table,NULL)==NULL ||
 	(keys && (id=_query_id_add_filter(keys,ops,nk))==NULL) ) {
-		LM_ERR("failed to build PS id\n");
+		LM_DBG("not using PS\n");
 	} else {
 		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
 		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
@@ -983,9 +987,10 @@ int sql_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 		return -1;
 
 	/* set the PS to be used */
-	if ( _query_id_start(table,NULL)==NULL ||
+	if ( !DB_CAPABILITY(url->dbf, DB_CAP_PREPARED_STMT) ||
+	_query_id_start(table,NULL)==NULL ||
 	(id=_query_id_add_filter(ukeys,uops,unk))==NULL ) {
-		LM_ERR("failed to build PS id\n");
+		LM_DBG("not using PS\n");
 	} else {
 		LM_DBG("PS id is <%.*s>\n",id->len,id->s);
 		if (ps_map!=NULL || (ps_map=map_create(0))!=NULL) {
