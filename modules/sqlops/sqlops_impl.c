@@ -37,11 +37,11 @@
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_uri.h"
 #include "../../mem/mem.h"
-#include "dbops_impl.h"
-#include "dbops_db.h"
+#include "sqlops_impl.h"
+#include "sqlops_db.h"
 
 
-#define dbops_str2int_str(a, b) \
+#define sqlops_str2int_str(a, b) \
 	do { \
 		if(a.s==0) \
 			b.n = a.len; \
@@ -82,8 +82,8 @@ void init_store_avps(str **db_columns)
 	store_vals[5].nul  = 0;
 }
 
-#define AVPOPS_ATTR_LEN	64
-static char dbops_attr_buf[AVPOPS_ATTR_LEN];
+#define SQLOPS_ATTR_LEN	64
+static char sqlops_attr_buf[SQLOPS_ATTR_LEN];
 
 /* value 0 - attr value
  * value 1 - attr name
@@ -122,8 +122,8 @@ static int dbrow2avp(struct db_row *row, struct db_param *dbp, int attr,
 
 		/* check the content of flag field */
 		uint = (unsigned int)row->values[2].val.int_val;
-		db_flags = ((uint&AVPOPS_DB_NAME_INT)?0:AVP_NAME_STR) |
-			((uint&AVPOPS_DB_VAL_INT)?0:AVP_VAL_STR);
+		db_flags = ((uint&SQLOPS_DB_NAME_INT)?0:AVP_NAME_STR) |
+			((uint&SQLOPS_DB_VAL_INT)?0:AVP_VAL_STR);
 	} else {
 		/* check the validity of value column */
 		if (row->values[0].nul || (row->values[0].type!=DB_STRING &&
@@ -136,7 +136,7 @@ static int dbrow2avp(struct db_row *row, struct db_param *dbp, int attr,
 	}
 
 	/* is the avp name already known? */
-	if ( (flags&AVPOPS_VAL_NONE)==0 )
+	if ( (flags&SQLOPS_VAL_NONE)==0 )
 	{
 		/* use the name  */
 		avp_attr = attr;
@@ -153,16 +153,16 @@ static int dbrow2avp(struct db_row *row, struct db_param *dbp, int attr,
 
 		if (prefix)
 		{
-			if (atmp.len + prefix->len > AVPOPS_ATTR_LEN)
+			if (atmp.len + prefix->len > SQLOPS_ATTR_LEN)
 			{
 				LM_ERR("name too long [%d/%.*s...]\n",
 								prefix->len + atmp.len, 16, prefix->s);
 				return -1;
 			}
 
-			memcpy(dbops_attr_buf, prefix->s, prefix->len);
-			memcpy(dbops_attr_buf + prefix->len, atmp.s, atmp.len);
-			atmp.s = dbops_attr_buf;
+			memcpy(sqlops_attr_buf, prefix->s, prefix->len);
+			memcpy(sqlops_attr_buf + prefix->len, atmp.s, atmp.len);
+			atmp.s = sqlops_attr_buf;
 			atmp.len += prefix->len;
 		}
 
@@ -225,7 +225,7 @@ static inline void int_str2db_val( int_str is_val, str *val, int is_s)
 }
 
 
-int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
+int ops_sql_avp_load (struct sip_msg* msg, struct fis_param *sp,
 		struct db_param *dbp, struct db_url *url, int use_domain, str *prefix)
 {
 	struct sip_uri   uri;
@@ -238,13 +238,13 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 	pv_value_t xvalue;
 
 	s0 = s1 = s2 = NULL;
-	if (!((sp->opd&AVPOPS_VAL_PVAR)||(sp->opd&AVPOPS_VAL_STR))) {
+	if (!((sp->opd&SQLOPS_VAL_PVAR)||(sp->opd&SQLOPS_VAL_STR))) {
 		LM_CRIT("invalid flag combination (%d/%d)\n", sp->opd, sp->ops);
 		goto error;
 	}
 
 	/* get uuid from avp */
-	if (sp->opd&AVPOPS_VAL_PVAR)
+	if (sp->opd&SQLOPS_VAL_PVAR)
 	{
 		if(pv_get_spec_value(msg, &(sp->u.sval), &xvalue)!=0)
 		{
@@ -262,7 +262,7 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 		uuid.len = sp->u.s.len;
 	}
 
-	if(sp->opd&AVPOPS_FLAG_UUID0)
+	if(sp->opd&SQLOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
 	} else {
@@ -273,7 +273,7 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
+		if((sp->opd&SQLOPS_FLAG_URI0)||(sp->opd&SQLOPS_FLAG_USER0))
 		{
 			/* check that uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
@@ -286,7 +286,7 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 				s1 = &uri.user;
 			}
                 }
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
+		if((sp->opd&SQLOPS_FLAG_URI0)||(sp->opd&SQLOPS_FLAG_DOMAIN0))
 		{
 			/* check that uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
@@ -302,7 +302,7 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	/* is dynamic avp name ? */
-	if(dbp->a.type==AVPOPS_VAL_PVAR)
+	if(dbp->a.type==SQLOPS_VAL_PVAR)
 	{
 		if(pv_has_dname(&(dbp->a.u.sval)))
 		{
@@ -318,13 +318,13 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 			}
 			if(xvalue.flags&PV_VAL_STR)
 			{
-				if(xvalue.rs.len>=AVPOPS_ATTR_LEN)
+				if(xvalue.rs.len>=SQLOPS_ATTR_LEN)
 				{
 					LM_ERR("name too long [%d/%.*s...]\n",
 						xvalue.rs.len, 16, xvalue.rs.s);
 					goto error;
 				}
-				dbp->sa.s = dbops_attr_buf;
+				dbp->sa.s = sqlops_attr_buf;
 				memcpy(dbp->sa.s, xvalue.rs.s, xvalue.rs.len);
 				dbp->sa.len = xvalue.rs.len;
 				dbp->sa.s[dbp->sa.len] = '\0';
@@ -336,8 +336,8 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	/* do DB query */
-	res = db_avp_load( url, s0, s1,
-			((use_domain)||(sp->opd&AVPOPS_FLAG_DOMAIN0))?s2:0,
+	res = sql_avp_load( url, s0, s1,
+			((use_domain)||(sp->opd&SQLOPS_FLAG_DOMAIN0))?s2:0,
 			dbp->sa.s, &dbp->table, dbp->scheme);
 
 	/* res query ?  */
@@ -351,7 +351,7 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 
 	/* validate row */
 	avp_name = -1;
-	if(dbp->a.type==AVPOPS_VAL_PVAR)
+	if(dbp->a.type==SQLOPS_VAL_PVAR)
 	{
 		if(pv_has_dname(&dbp->a.u.sval))
 		{
@@ -362,17 +362,17 @@ int ops_db_avp_load (struct sip_msg* msg, struct fis_param *sp,
 
 				if (prefix)
 				{
-					if (xvalue.rs.len + prefix->len > AVPOPS_ATTR_LEN)
+					if (xvalue.rs.len + prefix->len > SQLOPS_ATTR_LEN)
 					{
 						LM_ERR("name too long [%d/%.*s...]\n",
 							prefix->len + xvalue.rs.len, 16, prefix->s);
 						goto error;
 					}
 
-					memcpy(dbops_attr_buf, prefix->s, prefix->len);
-					memcpy(dbops_attr_buf + prefix->len, xvalue.rs.s,
+					memcpy(sqlops_attr_buf, prefix->s, prefix->len);
+					memcpy(sqlops_attr_buf + prefix->len, xvalue.rs.s,
 																xvalue.rs.len);
-					xvalue.rs.s = dbops_attr_buf;
+					xvalue.rs.s = sqlops_attr_buf;
 					xvalue.rs.len = prefix->len + xvalue.rs.len;
 				}
 
@@ -406,7 +406,7 @@ error:
 }
 
 
-int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
+int ops_sql_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 		struct db_param *dbp, struct db_url *url, int use_domain)
 {
 	struct sip_uri  uri;
@@ -416,13 +416,13 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 	str *s0, *s1, *s2;
 
 	s0 = s1 = s2 = NULL;
-	if (!((sp->opd&AVPOPS_VAL_PVAR)||(sp->opd&AVPOPS_VAL_STR))) {
+	if (!((sp->opd&SQLOPS_VAL_PVAR)||(sp->opd&SQLOPS_VAL_STR))) {
 		LM_CRIT("invalid flag combination (%d/%d)\n", sp->opd, sp->ops);
 		goto error;
 	}
 
 	/* get uuid from avp */
-	if (sp->opd&AVPOPS_VAL_PVAR)
+	if (sp->opd&SQLOPS_VAL_PVAR)
 	{
 		if(pv_get_spec_value(msg, &(sp->u.sval), &xvalue)!=0)
 		{
@@ -440,7 +440,7 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 		uuid.len = sp->u.s.len;
 	}
 
-	if(sp->opd&AVPOPS_FLAG_UUID0)
+	if(sp->opd&SQLOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
 	} else {
@@ -451,7 +451,7 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
+		if((sp->opd&SQLOPS_FLAG_URI0)||(sp->opd&SQLOPS_FLAG_USER0))
 		{
 			/* check that uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
@@ -464,7 +464,7 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 				s1 = &uri.user;
 			}
 		}
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
+		if((sp->opd&SQLOPS_FLAG_URI0)||(sp->opd&SQLOPS_FLAG_DOMAIN0))
 		{
 			/* check tah uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
@@ -480,7 +480,7 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	/* is dynamic avp name ? */
-	if(dbp->a.type==AVPOPS_VAL_PVAR)
+	if(dbp->a.type==SQLOPS_VAL_PVAR)
 	{
 		if(pv_has_dname(&dbp->a.u.sval))
 		{
@@ -496,13 +496,13 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 			}
 			if(xvalue.flags&PV_VAL_STR)
 			{
-				if(xvalue.rs.len>=AVPOPS_ATTR_LEN)
+				if(xvalue.rs.len>=SQLOPS_ATTR_LEN)
 				{
 					LM_ERR("name too long [%d/%.*s...]\n",
 						xvalue.rs.len, 16, xvalue.rs.s);
 					goto error;
 				}
-				dbp->sa.s = dbops_attr_buf;
+				dbp->sa.s = sqlops_attr_buf;
 				memcpy(dbp->sa.s, xvalue.rs.s, xvalue.rs.len);
 				dbp->sa.len = xvalue.rs.len;
 				dbp->sa.s[dbp->sa.len] = '\0';
@@ -514,8 +514,8 @@ int ops_db_avp_delete(struct sip_msg* msg, struct fis_param *sp,
 	}
 
 	/* do DB delete */
-	res = db_avp_delete( url, s0, s1,
-			(use_domain||(sp->opd&AVPOPS_FLAG_DOMAIN0))?s2:0,
+	res = sql_avp_delete( url, s0, s1,
+			(use_domain||(sp->opd&SQLOPS_FLAG_DOMAIN0))?s2:0,
 			dbp->sa.s, &dbp->table);
 
 	/* res ?  */
@@ -531,7 +531,7 @@ error:
 }
 
 
-int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
+int ops_sql_avp_store(struct sip_msg* msg, struct fis_param *sp,
 					struct db_param *dbp, struct db_url *url, int use_domain)
 {
 	struct sip_uri   uri;
@@ -547,7 +547,7 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 	str *sn;
 
 	s0 = s1 = s2 = NULL;
-	if (!((sp->opd&AVPOPS_VAL_PVAR)||(sp->opd&AVPOPS_VAL_STR))) {
+	if (!((sp->opd&SQLOPS_VAL_PVAR)||(sp->opd&SQLOPS_VAL_STR))) {
 		LM_CRIT("invalid flag combination (%d/%d)\n", sp->opd, sp->ops);
 		goto error;
 	}
@@ -555,7 +555,7 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 	keys_nr = 6; /* uuid, avp name, avp val, avp type, user, domain */
 
 	/* get uuid from avp */
-	if (sp->opd&AVPOPS_VAL_PVAR)
+	if (sp->opd&SQLOPS_VAL_PVAR)
 	{
 		if(pv_get_spec_value(msg, &(sp->u.sval), &xvalue)!=0)
 		{
@@ -573,7 +573,7 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 		uuid.len = sp->u.s.len;
 	}
 
-	if(sp->opd&AVPOPS_FLAG_UUID0)
+	if(sp->opd&SQLOPS_FLAG_UUID0)
 	{
 		s0 = &uuid;
 	} else {
@@ -584,7 +584,7 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 			goto error;
 		}
 
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_USER0))
+		if((sp->opd&SQLOPS_FLAG_URI0)||(sp->opd&SQLOPS_FLAG_USER0))
 		{
 			/* check tha uri contains user part */
 			if(!uri.user.s|| !uri.user.len)
@@ -597,7 +597,7 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 				s1 = &uri.user;
 			}
 		}
-		if((sp->opd&AVPOPS_FLAG_URI0)||(sp->opd&AVPOPS_FLAG_DOMAIN0))
+		if((sp->opd&SQLOPS_FLAG_URI0)||(sp->opd&SQLOPS_FLAG_DOMAIN0))
 		{
 			/* check that uri contains host part */
 			if(!uri.host.len|| !uri.host.s)
@@ -615,12 +615,12 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 	/* set values for keys  */
 	store_vals[0].val.str_val = (s0)?*s0:empty;
 	store_vals[4].val.str_val = (s1)?*s1:empty;
-	if (use_domain || sp->opd&AVPOPS_FLAG_DOMAIN0)
+	if (use_domain || sp->opd&SQLOPS_FLAG_DOMAIN0)
 		store_vals[5].val.str_val = (s2)?*s2:empty;
 	avp_name = -1;
 
 	/* is dynamic avp name ? */
-	if(dbp->a.type==AVPOPS_VAL_PVAR)
+	if(dbp->a.type==SQLOPS_VAL_PVAR)
 	{
 		if(pv_has_dname(&dbp->a.u.sval))
 		{
@@ -643,13 +643,13 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 			}
 			if(xvalue.flags&PV_VAL_STR)
 			{
-				if(xvalue.rs.len>=AVPOPS_ATTR_LEN)
+				if(xvalue.rs.len>=SQLOPS_ATTR_LEN)
 				{
 					LM_ERR("name too long [%d/%.*s...]\n",
 						xvalue.rs.len, 16, xvalue.rs.s);
 					goto error;
 				}
-				dbp->sa.s = dbops_attr_buf;
+				dbp->sa.s = sqlops_attr_buf;
 				memcpy(dbp->sa.s, xvalue.rs.s, xvalue.rs.len);
 				dbp->sa.len = xvalue.rs.len;
 				dbp->sa.s[dbp->sa.len] = '\0';
@@ -675,7 +675,7 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 	/* set uuid/(username and domain) fields */
 
 	n =0 ;
-	if ((dbp->a.opd&AVPOPS_VAL_NONE)==0)
+	if ((dbp->a.opd&SQLOPS_VAL_NONE)==0)
 	{
 		/* if avp wasn't found yet */
 		if (avp_name < 0) {
@@ -696,13 +696,13 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 				continue;
 			/* set type */
 			store_vals[3].val.int_val =
-				(avp->flags&AVP_NAME_STR?0:AVPOPS_DB_NAME_INT)|
-				(avp->flags&AVP_VAL_STR?0:AVPOPS_DB_VAL_INT);
+				(avp->flags&AVP_NAME_STR?0:SQLOPS_DB_NAME_INT)|
+				(avp->flags&AVP_VAL_STR?0:SQLOPS_DB_VAL_INT);
 			/* set value */
 			int_str2db_val( i_s, &store_vals[2].val.str_val,
 				avp->flags&AVP_VAL_STR);
 			/* save avp */
-			if (db_avp_store( url, store_keys, store_vals,
+			if (sql_avp_store( url, store_keys, store_vals,
 					keys_nr, &dbp->table)==0 )
 			{
 				avp->flags |= AVP_IS_IN_DB;
@@ -727,14 +727,14 @@ int ops_db_avp_store(struct sip_msg* msg, struct fis_param *sp,
 				i_s.s = *sn;
 			int_str2db_val( i_s, &store_vals[1].val.str_val, AVP_NAME_STR);
 			store_vals[3].val.int_val =
-				(avp->flags&AVP_NAME_STR?0:AVPOPS_DB_NAME_INT)|
-				(avp->flags&AVP_VAL_STR?0:AVPOPS_DB_VAL_INT);
+				(avp->flags&AVP_NAME_STR?0:SQLOPS_DB_NAME_INT)|
+				(avp->flags&AVP_VAL_STR?0:SQLOPS_DB_VAL_INT);
 			/* set avp value */
 			get_avp_val( avp, &i_s);
 			int_str2db_val( i_s, &store_vals[2].val.str_val,
 				avp->flags&AVP_VAL_STR);
 			/* save avp */
-			if (db_avp_store( url, store_keys, store_vals,
+			if (sql_avp_store( url, store_keys, store_vals,
 			keys_nr, &dbp->table)==0)
 			{
 				avp->flags |= AVP_IS_IN_DB;
@@ -753,7 +753,7 @@ error:
 
 
 /* @return : non-zero */
-int ops_db_query(struct sip_msg* msg, str* query, struct db_url *url,
+int ops_sql_query(struct sip_msg* msg, str* query, struct db_url *url,
 											pvname_list_t* dest, int one_row)
 {
 	int ret;
@@ -765,7 +765,7 @@ int ops_db_query(struct sip_msg* msg, str* query, struct db_url *url,
 	}
 
 	LM_DBG("query [%.*s]\n", query->len, query->s);
-	ret = db_query(url, msg, query, dest, one_row);
+	ret = sql_query(url, msg, query, dest, one_row);
 
 	/* Empty return set */
 	if(ret==1)
@@ -840,7 +840,7 @@ err1:
 }
 
 
-int ops_db_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
+int ops_sql_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter, str * order, pvname_list_t* dest, int one_col)
 {
 	cJSON *Jcols, *Jfilter;
@@ -850,7 +850,7 @@ int ops_db_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_select( url, msg, Jcols, table, Jfilter,
+		ret = sql_api_select( url, msg, Jcols, table, Jfilter,
 			order, dest, one_col);
 		if (ret<0) {
 			LM_ERR("failed to perform DB select query\n");
@@ -865,7 +865,7 @@ int ops_db_api_select(struct db_url *url, struct sip_msg* msg, str *cols,
 }
 
 
-int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
+int ops_sql_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 		str *table, str *filter)
 {
 	cJSON *Jcols, *Jfilter;
@@ -875,7 +875,7 @@ int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_update( url, msg, Jcols, table, Jfilter);
+		ret = sql_api_update( url, msg, Jcols, table, Jfilter);
 		if (ret<0) {
 			LM_ERR("failed to perform DB update query\n");
 		} else {
@@ -889,7 +889,7 @@ int ops_db_api_update(struct db_url *url, struct sip_msg* msg, str *cols,
 }
 
 
-int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
+int ops_sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 		str *cols)
 {
 	cJSON *Jcols, *Jfilter;
@@ -899,7 +899,7 @@ int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_insert( url, msg, table, Jcols);
+		ret = sql_api_insert( url, msg, table, Jcols);
 		if (ret<0) {
 			LM_ERR("failed to perform DB insert query\n");
 		} else {
@@ -913,7 +913,7 @@ int ops_db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 }
 
 
-int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
+int ops_sql_api_delete(struct db_url *url, struct sip_msg* msg,
 		str *table, str *filter)
 {
 	cJSON *Jcols, *Jfilter;
@@ -923,7 +923,7 @@ int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_delete( url, msg, table, Jfilter);
+		ret = sql_api_delete( url, msg, table, Jfilter);
 		if (ret<0) {
 			LM_ERR("failed to perform DB insert query\n");
 		} else {
@@ -937,7 +937,7 @@ int ops_db_api_delete(struct db_url *url, struct sip_msg* msg,
 }
 
 
-int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
+int ops_sql_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 		str *cols)
 {
 	cJSON *Jcols, *Jfilter;
@@ -947,7 +947,7 @@ int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 	if (ret<0) {
 		LM_ERR("failed to JSON parse cols and filter\n");
 	} else {
-		ret = db_api_replace( url, msg, table, Jcols);
+		ret = sql_api_replace( url, msg, table, Jcols);
 		if (ret<0) {
 			LM_ERR("failed to perform DB replace query\n");
 		} else {
@@ -961,7 +961,7 @@ int ops_db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 }
 
 
-int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
+int ops_async_sql_query(struct sip_msg* msg, async_ctx *ctx,
 		str *query, struct db_url *url, pvname_list_t *dest, int one_row)
 {
 	int rc, read_fd;
@@ -980,7 +980,7 @@ int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 	/* No async capabilities - just run it in blocking mode */
 	if (!DB_CAPABILITY(url->dbf, DB_CAP_ASYNC_RAW_QUERY))
 	{
-		rc = db_query(url, msg, query, dest, one_row);
+		rc = sql_query(url, msg, query, dest, one_row);
 		LM_DBG("sync query \"%.*s\" returned: %d\n", query->len, query->s, rc);
 
 		ctx->resume_param = NULL;
@@ -1008,10 +1008,10 @@ int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 	memset(param, '\0', sizeof *param);
 
 	ctx->resume_param = param;
-	ctx->resume_f = resume_async_dbquery;
+	ctx->resume_f = resume_async_sqlquery;
 	/* if supported in the backend */
 	if (url->dbf.async_timeout != NULL)
-		ctx->timeout_f = timeout_async_dbquery;
+		ctx->timeout_f = timeout_async_sqlquery;
 
 	param->output_avps = dest;
 	param->hdl = url->hdl;
@@ -1023,7 +1023,7 @@ int ops_async_db_query(struct sip_msg* msg, async_ctx *ctx,
 	return 1;
 }
 
-int timeout_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+int timeout_async_sqlquery(int fd, struct sip_msg *msg, void *_param)
 {
 	query_async_param *param = (query_async_param *)_param;
 
@@ -1033,7 +1033,7 @@ int timeout_async_dbquery(int fd, struct sip_msg *msg, void *_param)
 	return -1;
 }
 
-int resume_async_dbquery(int fd, struct sip_msg *msg, void *_param)
+int resume_async_sqlquery(int fd, struct sip_msg *msg, void *_param)
 {
 	db_res_t *res = NULL;
 	query_async_param *param = (query_async_param *)_param;

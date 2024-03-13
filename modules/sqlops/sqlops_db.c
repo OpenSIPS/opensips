@@ -31,8 +31,8 @@
 #include "../../dprint.h"
 #include "../../route.h"
 #include "../../map.h"
-#include "dbops_parse.h"
-#include "dbops_db.h"
+#include "sqlops_parse.h"
+#include "sqlops_db.h"
 
 
 static str       def_table;    /* default DB table */
@@ -127,7 +127,7 @@ int add_db_url(modparam_t type, void *val)
 
 
 
-int dbops_db_bind(void)
+int sqlops_db_bind(void)
 {
 	unsigned int i;
 
@@ -141,7 +141,7 @@ int dbops_db_bind(void)
 
 		if (!DB_CAPABILITY(db_urls[i].dbf, DB_CAP_ALL)) {
 			LM_CRIT("database modules (%.*s) does not "
-				"provide all functions needed by dbops module\n",
+				"provide all functions needed by sqlops module\n",
 				db_urls[i].url.len,db_urls[i].url.s);
 			return -1;
 		}
@@ -149,7 +149,7 @@ int dbops_db_bind(void)
 
 	/*
 	 * we cannot catch the default DB url usage at fixup time
-	 * as we do with the other bunch of extra dbops DB URLs
+	 * as we do with the other bunch of extra sqlops DB URLs
 	 *
 	 * so just dig through the whole script tree
 	 */
@@ -173,7 +173,7 @@ int dbops_db_bind(void)
 }
 
 
-int dbops_db_init(const str* db_table, str** db_cols)
+int sqlops_db_init(const str* db_table, str** db_cols)
 {
 	int i;
 
@@ -336,7 +336,7 @@ static inline int prepare_selection( str *uuid, str *username, str *domain,
 }
 
 
-db_res_t *db_avp_load(struct db_url *url, str *uuid, str *username,str *domain,
+db_res_t *sql_avp_load(struct db_url *url, str *uuid, str *username,str *domain,
 					char *attr, const str *table, struct db_scheme *scheme)
 {
 	static db_key_t   keys_ret[3];
@@ -380,7 +380,7 @@ void db_close_query(struct db_url *url, db_res_t *res )
 }
 
 
-int db_avp_store(struct db_url *url, db_key_t *keys, db_val_t *vals,
+int sql_avp_store(struct db_url *url, db_key_t *keys, db_val_t *vals,
 													int n, const str *table)
 {
 	int r;
@@ -402,7 +402,7 @@ int db_avp_store(struct db_url *url, db_key_t *keys, db_val_t *vals,
 
 
 
-int db_avp_delete(struct db_url *url, str *uuid, str *username, str *domain,
+int sql_avp_delete(struct db_url *url, str *uuid, str *username, str *domain,
 												char *attr, const str *table)
 {
 	unsigned int  nr_keys_cmp;
@@ -422,7 +422,7 @@ int db_avp_delete(struct db_url *url, str *uuid, str *username, str *domain,
 }
 
 
-int db_query(struct db_url *url, struct sip_msg *msg, str *query,
+int sql_query(struct db_url *url, struct sip_msg *msg, str *query,
 											pvname_list_t* dest,  int one_row)
 {
 	db_res_t* db_res = NULL;
@@ -688,7 +688,7 @@ static inline str* _query_id_add_filter(db_key_t* _k, db_op_t* _o, int _nk)
 
 
 
-int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+int sql_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 	str *table, cJSON *Jfilter, str * order, pvname_list_t* dest, int one_row)
 {
 	static map_t ps_map = NULL;
@@ -779,7 +779,7 @@ int db_api_select(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 }
 
 
-int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
+int sql_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 													str *table, cJSON *Jfilter)
 {
 	static map_t ps_map = NULL;
@@ -842,7 +842,7 @@ int db_api_update(struct db_url *url, struct sip_msg* msg, cJSON *Jcols,
 }
 
 
-int db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
+int sql_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 																cJSON *Jcols)
 {
 	static map_t ps_map = NULL;
@@ -891,7 +891,7 @@ int db_api_insert(struct db_url *url, struct sip_msg* msg, str *table,
 }
 
 
-int db_api_delete(struct db_url *url, struct sip_msg* msg,
+int sql_api_delete(struct db_url *url, struct sip_msg* msg,
 													str *table, cJSON *Jfilter)
 {
 	static map_t ps_map = NULL;
@@ -947,7 +947,7 @@ int db_api_delete(struct db_url *url, struct sip_msg* msg,
 }
 
 
-int db_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
+int sql_api_replace(struct db_url *url, struct sip_msg* msg, str *table,
 																cJSON *Jcols)
 {
 	static map_t ps_map = NULL;

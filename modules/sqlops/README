@@ -1,4 +1,4 @@
-DBops Module
+SQLops Module
      __________________________________________________________
 
    Table of Contents
@@ -27,29 +27,31 @@ DBops Module
 
         1.4. Exported Functions
 
-              1.4.1. db_query(query, [res_col_avps], [db_id])
-              1.4.2. db_query_one(query, [res_col_vars], [db_id])
+              1.4.1. sql_query(query, [res_col_avps], [db_id])
+              1.4.2. sql_query_one(query, [res_col_vars], [db_id])
+
               1.4.3.
-                      db_select([columns],table,[filter],[order],[re
-                      s_col_avps], [db_id])
+                      sql_select([columns],table,[filter],[order],[r
+                      es_col_avps], [db_id])
 
               1.4.4.
-                      db_select_one([columns],table,[filter],[order]
-                      ,[res_col_vars], [db_id])
+                      sql_select_one([columns],table,[filter],[order
+                      ],[res_col_vars], [db_id])
 
-              1.4.5. db_update(columns,table,[filter],[db_id])
-              1.4.6. db_insert(table,columns,[db_id])
-              1.4.7. db_delete(table,[filter],[db_id])
-              1.4.8. db_replace(table,columns,[db_id])
-              1.4.9. db_avp_load(source, name, [db_id], [prefix]])
+              1.4.5. sql_update(columns,table,[filter],[db_id])
+              1.4.6. sql_insert(table,columns,[db_id])
+              1.4.7. sql_delete(table,[filter],[db_id])
+              1.4.8. sql_replace(table,columns,[db_id])
+              1.4.9. sql_avp_load(source, name, [db_id],
+                      [prefix]])
 
-              1.4.10. db_avp_store(source, name, [db_id])
-              1.4.11. db_avp_delete(source, name, [db_id])
+              1.4.10. sql_avp_store(source, name, [db_id])
+              1.4.11. sql_avp_delete(source, name, [db_id])
 
         1.5. Exported Asynchronous Functions
 
-              1.5.1. db_query(query, [dest], [db_id])
-              1.5.2. db_query_one(query, [dest], [db_id])
+              1.5.1. sql_query(query, [dest], [db_id])
+              1.5.2. sql_query_one(query, [dest], [db_id])
 
    2. Contributors
 
@@ -80,24 +82,24 @@ DBops Module
    1.9. Set attribute_column parameter
    1.10. Set value_column parameter
    1.11. Set type_column parameter
-   1.12. db_query usage
-   1.13. db_query_one usage
-   1.14. db_select usage
-   1.15. db_select_one usage
-   1.16. db_update usage
-   1.17. db_insert usage
-   1.18. db_delete usage
-   1.19. db_avp_load usage
-   1.20. db_avp_store usage
-   1.21. db_avp_delete usage
-   1.22. async db_query usage
-   1.23. async db_query_one usage
+   1.12. sql_query usage
+   1.13. sql_query_one usage
+   1.14. sql_select usage
+   1.15. sql_select_one usage
+   1.16. sql_update usage
+   1.17. sql_insert usage
+   1.18. sql_delete usage
+   1.19. sql_avp_load usage
+   1.20. sql_avp_store usage
+   1.21. sql_avp_delete usage
+   1.22. async sql_query usage
+   1.23. async sql_query_one usage
 
 Chapter 1. Admin Guide
 
 1.1. Overview
 
-   DBops (DB-operations) modules implements a set of script
+   SQLops (SQL-operations) modules implements a set of script
    functions for generic SQL standard queries (raw or structure
    queries). It also provides a dedicated set of functions for DB
    manipulation (loading/storing/removing) of user AVPs
@@ -132,9 +134,9 @@ Chapter 1. Admin Guide
    Example 1.1. Set db_url parameter
 ...
 # default URL
-modparam("dbops","db_url","mysql://user:passwd@host/database")
+modparam("sqlops","db_url","mysql://user:passwd@host/database")
 # an additional DB URL
-modparam("dbops","db_url","1 postgres://user:passwd@host2/opensips")
+modparam("sqlops","db_url","1 postgres://user:passwd@host2/opensips")
 ...
 
 1.3.2. usr_table (string)
@@ -146,7 +148,7 @@ modparam("dbops","db_url","1 postgres://user:passwd@host2/opensips")
 
    Example 1.2. Set usr_table parameter
 ...
-modparam("dbops","usr_table","avptable")
+modparam("sqlops","usr_table","avptable")
 ...
 
 1.3.3. db_scheme (string)
@@ -168,7 +170,7 @@ modparam("dbops","usr_table","avptable")
 
    Example 1.3. Set db_scheme parameter
 ...
-modparam("dbops","db_scheme",
+modparam("sqlops","db_scheme",
 "scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
 ...
 
@@ -181,14 +183,14 @@ modparam("dbops","db_scheme",
 
    Example 1.4. Set use_domain parameter
 ...
-modparam("dbops","use_domain",1)
+modparam("sqlops","use_domain",1)
 ...
 
 1.3.5. ps_id_max_buf_len (integer)
 
    The maximum size of the buffer used to build the query IDs
    which are used for managing the Prepare Statements when comes
-   to the "db_select|update|insert|replace|delete()" functions
+   to the "sql_select|update|insert|replace|delete()" functions
 
    If the size is exceeded (when trying to build the PS query ID),
    the PS support will be dropped for the query. If set to 0, the
@@ -198,7 +200,7 @@ modparam("dbops","use_domain",1)
 
    Example 1.5. Set ps_id_max_buf_len parameter
 ...
-modparam("dbops","ps_id_max_buf_len", 2048)
+modparam("sqlops","ps_id_max_buf_len", 2048)
 ...
 
 1.3.6. uuid_column (string)
@@ -209,7 +211,7 @@ modparam("dbops","ps_id_max_buf_len", 2048)
 
    Example 1.6. Set uuid_column parameter
 ...
-modparam("dbops","uuid_column","uuid")
+modparam("sqlops","uuid_column","uuid")
 ...
 
 1.3.7. username_column (string)
@@ -220,7 +222,7 @@ modparam("dbops","uuid_column","uuid")
 
    Example 1.7. Set username_column parameter
 ...
-modparam("dbops","username_column","username")
+modparam("sqlops","username_column","username")
 ...
 
 1.3.8. domain_column (string)
@@ -231,7 +233,7 @@ modparam("dbops","username_column","username")
 
    Example 1.8. Set domain_column parameter
 ...
-modparam("dbops","domain_column","domain")
+modparam("sqlops","domain_column","domain")
 ...
 
 1.3.9. attribute_column (string)
@@ -242,7 +244,7 @@ modparam("dbops","domain_column","domain")
 
    Example 1.9. Set attribute_column parameter
 ...
-modparam("dbops","attribute_column","attribute")
+modparam("sqlops","attribute_column","attribute")
 ...
 
 1.3.10. value_column (string)
@@ -253,7 +255,7 @@ modparam("dbops","attribute_column","attribute")
 
    Example 1.10. Set value_column parameter
 ...
-modparam("dbops","value_column","value")
+modparam("sqlops","value_column","value")
 ...
 
 1.3.11. type_column (string)
@@ -264,12 +266,12 @@ modparam("dbops","value_column","value")
 
    Example 1.11. Set type_column parameter
 ...
-modparam("dbops","type_column","type")
+modparam("sqlops","type_column","type")
 ...
 
 1.4. Exported Functions
 
-1.4.1.  db_query(query, [res_col_avps], [db_id])
+1.4.1.  sql_query(query, [res_col_avps], [db_id])
 
    Make a database query and store the result in AVPs.
 
@@ -302,20 +304,20 @@ modparam("dbops","type_column","type")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.12. db_query usage
+   Example 1.12. sql_query usage
 ...
-db_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
+sql_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
         "$avp(pass);$avp(hash)");
-db_query("DELETE FROM subscriber");
-db_query("DELETE FROM subscriber", , 2);
+sql_query("DELETE FROM subscriber");
+sql_query("DELETE FROM subscriber", , 2);
 
 $avp(id) = 2;
-db_query("DELETE FROM subscriber", , $avp(id));
+sql_query("DELETE FROM subscriber", , $avp(id));
 ...
 
-1.4.2.  db_query_one(query, [res_col_vars], [db_id])
+1.4.2.  sql_query_one(query, [res_col_vars], [db_id])
 
-   Similar to db_query(), it makes a generic raw database query
+   Similar to sql_query(), it makes a generic raw database query
    and returns the results, but with the following differences:
      * returns only one row - even if the query results in a multi
        row result, only the first row will be returned to script.
@@ -331,23 +333,23 @@ db_query("DELETE FROM subscriber", , $avp(id));
 
    This function can be used from any type of route.
 
-   Example 1.13. db_query_one usage
+   Example 1.13. sql_query_one usage
 ...
-db_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'"
-,
+sql_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'
+",
         "$var(pass);$var(hash)");
 # $var(pass) or $var(hash) may be NULL if the corresponding columns
 # are not populated
 ...
-db_query_one("SELECT value, type FROM usr_preferences WHERE username='$f
-U' and attribute='cfna'",
+sql_query_one("SELECT value, type FROM usr_preferences WHERE username='$
+fU' and attribute='cfna'",
         "$var(cf_uri);$var(type)");
 # the above query will return only one row, even if there are multiple `
 cfna`
 # attributes for the user
 ...
 
-1.4.3.  db_select([columns],table,[filter],[order],[res_col_avps],
+1.4.3.  sql_select([columns],table,[filter],[order],[res_col_avps],
 [db_id])
 
    Function to perform a structured (not raw) SQL SELECT
@@ -404,19 +406,19 @@ Warning
 
    This function can be used from any type of route.
 
-   Example 1.14. db_select usage
+   Example 1.14. sql_select usage
 ...
-db_select('["password","ha1"]', 'subscriber',
+sql_select('["password","ha1"]', 'subscriber',
         '[ {"username", "$tu"}, {"domain",{"!=",null}}]', ,
         '$avp(pass);$avp(hash)');
 ...
 
 1.4.4.
-db_select_one([columns],table,[filter],[order],[res_col_vars],
+sql_select_one([columns],table,[filter],[order],[res_col_vars],
 [db_id])
 
-   Similar to db_select(), it makes a SELECT SQL query and returns
-   the results, but with the following differences:
+   Similar to sql_select(), it makes a SELECT SQL query and
+   returns the results, but with the following differences:
      * returns only one row - even if the query results in a multi
        row result, only the first row will be returned to script.
      * return variables are not limited to AVPs - the variables
@@ -431,9 +433,9 @@ db_select_one([columns],table,[filter],[order],[res_col_vars],
 
    This function can be used from any type of route.
 
-   Example 1.15. db_select_one usage
+   Example 1.15. sql_select_one usage
 ...
-db_select_one('["value","type"]', 'usr_preferences',
+sql_select_one('["value","type"]', 'usr_preferences',
         '[ {"username", "$tu"}, {"attribute","cfna"}]', ,
         '$var(cf_uri);$var(type)');
 # the above query will return only one row, even if there are multiple `
@@ -441,11 +443,11 @@ cfna`
 # attributes for the user
 ...
 
-1.4.5.  db_update(columns,table,[filter],[db_id])
+1.4.5.  sql_update(columns,table,[filter],[db_id])
 
    Function to perform a structured (not raw) SQL UPDATE
    operation. IMPORTANT: please see all the general notes from the
-   db_select() function.
+   sql_select() function.
 
    The function returns true if the query was successful.
 
@@ -469,17 +471,17 @@ cfna`
 
    This function can be used from any type of route.
 
-   Example 1.16. db_update usage
+   Example 1.16. sql_update usage
 ...
-db_update( '[{"password":"my_secret"}]', 'subscriber',
+sql_update( '[{"password":"my_secret"}]', 'subscriber',
         '[{"username", "$tu"}]');
 ...
 
-1.4.6.  db_insert(table,columns,[db_id])
+1.4.6.  sql_insert(table,columns,[db_id])
 
    Function to perform a structured (not raw) SQL INSERT
    operation. IMPORTANT: please see all the general notes from the
-   db_select() function.
+   sql_select() function.
 
    The function returns true if the query was successful.
 
@@ -495,18 +497,18 @@ db_update( '[{"password":"my_secret"}]', 'subscriber',
 
    This function can be used from any type of route.
 
-   Example 1.17. db_insert usage
+   Example 1.17. sql_insert usage
 ...
-db_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"locat
-ion":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessio
-ns":2}]' );
+sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"loca
+tion":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessi
+ons":2}]' );
 ...
 
-1.4.7.  db_delete(table,[filter],[db_id])
+1.4.7.  sql_delete(table,[filter],[db_id])
 
    Function to perform a structured (not raw) SQL DELETE
    operation. IMPORTANT: please see all the general notes from the
-   db_select() function.
+   sql_select() function.
 
    The function returns true if the query was successful.
 
@@ -527,20 +529,20 @@ ns":2}]' );
 
    This function can be used from any type of route.
 
-   Example 1.18. db_delete usage
+   Example 1.18. sql_delete usage
 ...
-db_delete( 'subscriber', '[{"username", "$tu"}]');
+sql_delete( 'subscriber', '[{"username", "$tu"}]');
 ...
 
-1.4.8.  db_replace(table,columns,[db_id])
+1.4.8.  sql_replace(table,columns,[db_id])
 
-   Function very similar to db_insert() function, but performing
+   Function very similar to sql_insert() function, but performing
    an SQL REPLACE operation instead. Note that not all SQL backend
    in OpenSIPS may support a REPLACE operation.
 
    The function returns true if the query was successful.
 
-1.4.9.  db_avp_load(source, name, [db_id], [prefix]])
+1.4.9.  sql_avp_load(source, name, [db_id], [prefix]])
 
    Loads from DB into memory the AVPs corresponding to the given
    source. If given, it sets the script flags for loaded AVPs. It
@@ -570,67 +572,67 @@ db_delete( 'subscriber', '[{"username", "$tu"}]');
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.19. db_avp_load usage
+   Example 1.19. sql_avp_load usage
 ...
-db_avp_load("$fu", "$avp(678)");
-db_avp_load("$ru/domain", "i/domain_preferences");
-db_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
-db_avp_load("$ru", "$avp(123)/$some_scheme");
+sql_avp_load("$fu", "$avp(678)");
+sql_avp_load("$ru/domain", "i/domain_preferences");
+sql_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
+sql_avp_load("$ru", "$avp(123)/$some_scheme");
 
 # use DB URL id 3
-db_avp_load("$ru", "$avp(1)", 3);
+sql_avp_load("$ru", "$avp(1)", 3);
 
 # precede all loaded AVPs by the "caller_" prefix
-db_avp_load("$ru", "$avp(100)", , "caller_");
+sql_avp_load("$ru", "$avp(100)", , "caller_");
 xlog("Loaded: $avp(caller_100)\n");
 
 ...
 
-1.4.10.  db_avp_store(source, name, [db_id])
+1.4.10.  sql_avp_store(source, name, [db_id])
 
    Stores to DB the AVPs corresponding to the given source.
 
    The meaning and usage of the parameters are identical as for
-   db_avp_load(source, name) function. Please refer to its
+   sql_avp_load(source, name) function. Please refer to its
    description.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.20. db_avp_store usage
+   Example 1.20. sql_avp_store usage
 ...
-db_avp_store("$tu", "$avp(678)");
-db_avp_store("$ru/username", "$avp(email)");
+sql_avp_store("$tu", "$avp(678)");
+sql_avp_store("$ru/username", "$avp(email)");
 # use DB URL id 3
-db_avp_store("$ru", "$avp(1)", 3);
+sql_avp_store("$ru", "$avp(1)", 3);
 ...
 
-1.4.11.  db_avp_delete(source, name, [db_id])
+1.4.11.  sql_avp_delete(source, name, [db_id])
 
    Deletes from DB the AVPs corresponding to the given source.
 
    The meaning and usage of the parameters are identical as for
-   db_avp_load(source, name) function. Please refer to its
+   sql_avp_load(source, name) function. Please refer to its
    description.
 
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.21. db_avp_delete usage
+   Example 1.21. sql_avp_delete usage
 ...
-db_avp_delete("$tu", "$avp(678)");
-db_avp_delete("$ru/username", "$avp(email)");
-db_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
+sql_avp_delete("$tu", "$avp(678)");
+sql_avp_delete("$ru/username", "$avp(email)");
+sql_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
 # use DB URL id 3
-db_avp_delete("$ru", "$avp(1)", 3);
+sql_avp_delete("$ru", "$avp(1)", 3);
 ...
 
 1.5. Exported Asynchronous Functions
 
-1.5.1.  db_query(query, [dest], [db_id])
+1.5.1.  sql_query(query, [dest], [db_id])
 
    This function takes the same parameters and behaves identically
-   to db_query(), but asynchronously (after launching the query,
+   to sql_query(), but asynchronously (after launching the query,
    the current SIP worker pauses the execution of the current SIP
    message until the result is available and attempts to process
    more SIP traffic).
@@ -638,13 +640,13 @@ db_avp_delete("$ru", "$avp(1)", 3);
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.22. async db_query usage
+   Example 1.22. async sql_query usage
 ...
 {
 ...
 /* Example of a slow MySQL query - it should take around 5 seconds */
 async(
-        db_query(
+        sql_query(
                 "SELECT table_name, table_version, SLEEP(0.1) from versi
 on",
                 "$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
@@ -662,23 +664,23 @@ route [my_resume_route]
 }
 ...
 
-1.5.2.  db_query_one(query, [dest], [db_id])
+1.5.2.  sql_query_one(query, [dest], [db_id])
 
    This function takes the same parameters and behaves identically
-   to db_query_one(), but asynchronously (after launching the
+   to sql_query_one(), but asynchronously (after launching the
    query, the current SIP worker pauses the execution of the
    current SIP message until the result is available and attempts
    to process more SIP traffic).
 
    This function can be used from any route.
 
-   Example 1.23. async db_query_one usage
+   Example 1.23. async sql_query_one usage
 ...
 {
 ...
 /* Example of a slow MySQL query - it should take around 5 seconds */
 async(
-        db_query_one(
+        sql_query_one(
                 "SELECT table_name, table_version, SLEEP(0.1) from versi
 on",
                 "$var(tb_name); $var(tb_ver); $var(retcode)"),

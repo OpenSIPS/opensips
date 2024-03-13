@@ -8,7 +8,7 @@
 	<section id="overview" xreflabel="Overview">
 		<title>Overview</title>
 		<para>
-		DBops (DB-operations) modules implements a set of script
+		SQLops (SQL-operations) modules implements a set of script
 		functions for generic SQL standard queries (raw or structure queries).
 		It also provides a dedicated set of functions for DB manipulation
 		(loading/storing/removing) of user AVPs (preferences).
@@ -67,9 +67,9 @@
 				<programlisting format="linespecific">
 ...
 # default URL
-modparam("dbops","db_url","mysql://user:passwd@host/database")
+modparam("sqlops","db_url","mysql://user:passwd@host/database")
 # an additional DB URL
-modparam("dbops","db_url","1 postgres://user:passwd@host2/opensips")
+modparam("sqlops","db_url","1 postgres://user:passwd@host2/opensips")
 ...
 				</programlisting>
 			</example>
@@ -89,7 +89,7 @@ modparam("dbops","db_url","1 postgres://user:passwd@host2/opensips")
 				<title>Set <varname>usr_table</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","usr_table","avptable")
+modparam("sqlops","usr_table","avptable")
 ...
 				</programlisting>
 			</example>
@@ -134,7 +134,7 @@ modparam("dbops","usr_table","avptable")
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","db_scheme",
+modparam("sqlops","db_scheme",
 "scheme1:table=subscriber;uuid_col=uuid;value_col=first_name")
 ...
 				</programlisting>
@@ -156,7 +156,7 @@ modparam("dbops","db_scheme",
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","use_domain",1)
+modparam("sqlops","use_domain",1)
 ...
 				</programlisting>
 			</example>
@@ -167,7 +167,7 @@ modparam("dbops","use_domain",1)
 			<para>
 			The maximum size of the buffer used to build the query IDs which
 			are used for managing the Prepare Statements when comes to the
-			"db_select|update|insert|replace|delete()" functions
+			"sql_select|update|insert|replace|delete()" functions
 			</para>
 			<para>
 			If the size is exceeded (when trying to build the PS query ID),
@@ -183,7 +183,7 @@ modparam("dbops","use_domain",1)
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","ps_id_max_buf_len", 2048)
+modparam("sqlops","ps_id_max_buf_len", 2048)
 ...
 				</programlisting>
 			</example>
@@ -202,7 +202,7 @@ modparam("dbops","ps_id_max_buf_len", 2048)
 				<title>Set <varname>uuid_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","uuid_column","uuid")
+modparam("sqlops","uuid_column","uuid")
 ...
 				</programlisting>
 			</example>
@@ -220,7 +220,7 @@ modparam("dbops","uuid_column","uuid")
 				<title>Set <varname>username_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","username_column","username")
+modparam("sqlops","username_column","username")
 ...
 				</programlisting>
 			</example>
@@ -238,7 +238,7 @@ modparam("dbops","username_column","username")
 				<title>Set <varname>domain_column</varname> parameter</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","domain_column","domain")
+modparam("sqlops","domain_column","domain")
 ...
 				</programlisting>
 			</example>
@@ -257,7 +257,7 @@ modparam("dbops","domain_column","domain")
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","attribute_column","attribute")
+modparam("sqlops","attribute_column","attribute")
 ...
 				</programlisting>
 			</example>
@@ -276,7 +276,7 @@ modparam("dbops","attribute_column","attribute")
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","value_column","value")
+modparam("sqlops","value_column","value")
 ...
 				</programlisting>
 			</example>
@@ -295,7 +295,7 @@ modparam("dbops","value_column","value")
 				</title>
 				<programlisting format="linespecific">
 ...
-modparam("dbops","type_column","type")
+modparam("sqlops","type_column","type")
 ...
 				</programlisting>
 			</example>
@@ -306,9 +306,9 @@ modparam("dbops","type_column","type")
 	<section id="exported_functions" xreflabel="exported_functions">
 		<title>Exported Functions</title>
 
-		<section id="func_db_query" xreflabel="db_query()">
+		<section id="func_sql_query" xreflabel="sql_query()">
 			<title>
-				<function moreinfo="none">db_query(query, [res_col_avps], [db_id])</function>
+				<function moreinfo="none">sql_query(query, [res_col_avps], [db_id])</function>
 			</title>
 			<para>
 			Make a database query and store the result in AVPs.
@@ -359,27 +359,27 @@ modparam("dbops","type_column","type")
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 			</para>
 			<example>
-				<title><function>db_query</function> usage</title>
+				<title><function>sql_query</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
+sql_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
 	"$avp(pass);$avp(hash)");
-db_query("DELETE FROM subscriber");
-db_query("DELETE FROM subscriber", , 2);
+sql_query("DELETE FROM subscriber");
+sql_query("DELETE FROM subscriber", , 2);
 
 $avp(id) = 2;
-db_query("DELETE FROM subscriber", , $avp(id));
+sql_query("DELETE FROM subscriber", , $avp(id));
 ...
 				</programlisting>
 			</example>
 		</section>
 
-		<section id="func_db_query_one" xreflabel="db_query_one()">
+		<section id="func_sql_query_one" xreflabel="sql_query_one()">
 			<title>
-				<function moreinfo="none">db_query_one(query, [res_col_vars], [db_id])</function>
+				<function moreinfo="none">sql_query_one(query, [res_col_vars], [db_id])</function>
 			</title>
 			<para>
-			Similar to <xref linkend="func_db_query"/>, it makes a generic raw
+			Similar to <xref linkend="func_sql_query"/>, it makes a generic raw
 			database query and returns the results, but with the following
 			differences:
 			</para>
@@ -411,15 +411,15 @@ db_query("DELETE FROM subscriber", , $avp(id));
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_query_one</function> usage</title>
+				<title><function>sql_query_one</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'",
+sql_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'",
 	"$var(pass);$var(hash)");
 # $var(pass) or $var(hash) may be NULL if the corresponding columns
 # are not populated
 ...
-db_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and attribute='cfna'",
+sql_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and attribute='cfna'",
 	"$var(cf_uri);$var(type)");
 # the above query will return only one row, even if there are multiple `cfna`
 # attributes for the user
@@ -428,9 +428,9 @@ db_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and a
 			</example>
 		</section>
 
-		<section id="func_db_select" xreflabel="db_select()">
+		<section id="func_sql_select" xreflabel="sql_select()">
 			<title>
-				<function moreinfo="none">db_select([columns],table,[filter],[order],[res_col_avps], [db_id])
+				<function moreinfo="none">sql_select([columns],table,[filter],[order],[res_col_avps], [db_id])
 				</function>
 			</title>
 			<para>
@@ -516,10 +516,10 @@ db_query_one("SELECT value, type FROM usr_preferences WHERE username='$fU' and a
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_select</function> usage</title>
+				<title><function>sql_select</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_select('["password","ha1"]', 'subscriber',
+sql_select('["password","ha1"]', 'subscriber',
 	'[ {"username", "$tu"}, {"domain",{"!=",null}}]', ,
 	'$avp(pass);$avp(hash)');
 ...
@@ -527,12 +527,12 @@ db_select('["password","ha1"]', 'subscriber',
 			</example>
 		</section>
 
-		<section id="func_db_select_one" xreflabel="db_select_one()">
+		<section id="func_sql_select_one" xreflabel="sql_select_one()">
 			<title>
-				<function moreinfo="none">db_select_one([columns],table,[filter],[order],[res_col_vars], [db_id])</function>
+				<function moreinfo="none">sql_select_one([columns],table,[filter],[order],[res_col_vars], [db_id])</function>
 			</title>
 			<para>
-			Similar to <xref linkend="func_db_select"/>, it makes a SELECT SQL
+			Similar to <xref linkend="func_sql_select"/>, it makes a SELECT SQL
 			query and returns the results, but with the following
 			differences:
 			</para>
@@ -564,10 +564,10 @@ db_select('["password","ha1"]', 'subscriber',
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_select_one</function> usage</title>
+				<title><function>sql_select_one</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_select_one('["value","type"]', 'usr_preferences',
+sql_select_one('["value","type"]', 'usr_preferences',
 	'[ {"username", "$tu"}, {"attribute","cfna"}]', ,
 	'$var(cf_uri);$var(type)');
 # the above query will return only one row, even if there are multiple `cfna`
@@ -577,15 +577,15 @@ db_select_one('["value","type"]', 'usr_preferences',
 			</example>
 		</section>
 
-		<section id="func_db_update" xreflabel="db_update()">
+		<section id="func_sql_update" xreflabel="sql_update()">
 			<title>
-				<function moreinfo="none">db_update(columns,table,[filter],[db_id])
+				<function moreinfo="none">sql_update(columns,table,[filter],[db_id])
 				</function>
 			</title>
 			<para>
 			Function to perform a structured (not raw) SQL UPDATE operation.
 			IMPORTANT: please see all the general notes from the 
-			<xref linkend="func_db_select"/> function.
+			<xref linkend="func_sql_select"/> function.
 			</para>
 			<para>
 			The function returns true if the query was successful.
@@ -630,25 +630,25 @@ db_select_one('["value","type"]', 'usr_preferences',
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_update</function> usage</title>
+				<title><function>sql_update</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_update( '[{"password":"my_secret"}]', 'subscriber',
+sql_update( '[{"password":"my_secret"}]', 'subscriber',
 	'[{"username", "$tu"}]');
 ...
 				</programlisting>
 			</example>
 		</section>
 
-		<section id="func_db_insert" xreflabel="db_insert()">
+		<section id="func_sql_insert" xreflabel="sql_insert()">
 			<title>
-				<function moreinfo="none">db_insert(table,columns,[db_id])
+				<function moreinfo="none">sql_insert(table,columns,[db_id])
 				</function>
 			</title>
 			<para>
 			Function to perform a structured (not raw) SQL INSERT operation.
 			IMPORTANT: please see all the general notes from the 
-			<xref linkend="func_db_select"/> function.
+			<xref linkend="func_sql_select"/> function.
 			</para>
 			<para>
 			The function returns true if the query was successful.
@@ -681,24 +681,24 @@ db_update( '[{"password":"my_secret"}]', 'subscriber',
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_insert</function> usage</title>
+				<title><function>sql_insert</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]' );
+sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessions":2}]' );
 ...
 				</programlisting>
 			</example>
 		</section>
 
-		<section id="func_db_delete" xreflabel="db_delete()">
+		<section id="func_sql_delete" xreflabel="sql_delete()">
 			<title>
-				<function moreinfo="none">db_delete(table,[filter],[db_id])
+				<function moreinfo="none">sql_delete(table,[filter],[db_id])
 				</function>
 			</title>
 			<para>
 			Function to perform a structured (not raw) SQL DELETE operation.
 			IMPORTANT: please see all the general notes from the 
-			<xref linkend="func_db_select"/> function.
+			<xref linkend="func_sql_select"/> function.
 			</para>
 			<para>
 			The function returns true if the query was successful.
@@ -736,22 +736,22 @@ db_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"location":nul
 			This function can be used from any type of route.
 			</para>
 			<example>
-				<title><function>db_delete</function> usage</title>
+				<title><function>sql_delete</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_delete( 'subscriber', '[{"username", "$tu"}]');
+sql_delete( 'subscriber', '[{"username", "$tu"}]');
 ...
 				</programlisting>
 			</example>
 		</section>
 
-		<section id="func_db_replace" xreflabel="db_replace()">
+		<section id="func_sql_replace" xreflabel="sql_replace()">
 			<title>
-				<function moreinfo="none">db_replace(table,columns,[db_id])
+				<function moreinfo="none">sql_replace(table,columns,[db_id])
 				</function>
 			</title>
 			<para>
-			Function very similar to <xref linkend="func_db_insert"/> function,
+			Function very similar to <xref linkend="func_sql_insert"/> function,
 			but performing an SQL REPLACE operation instead. Note that not all
 			SQL backend in OpenSIPS may support a REPLACE operation.
 			</para>
@@ -760,9 +760,9 @@ db_delete( 'subscriber', '[{"username", "$tu"}]');
 			</para>
 		</section>
 
-		<section id="func_db_avp_load" xreflabel="db_avp_load()">
+		<section id="func_sql_avp_load" xreflabel="sql_avp_load()">
 			<title>
-				<function moreinfo="none">db_avp_load(source, name, [db_id], [prefix]])
+				<function moreinfo="none">sql_avp_load(source, name, [db_id], [prefix]])
 				</function>
 			</title>
 			<para>
@@ -822,35 +822,35 @@ db_delete( 'subscriber', '[{"username", "$tu"}]');
 			</para>
 
 			<example>
-				<title><function>db_avp_load</function> usage</title>
+				<title><function>sql_avp_load</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_avp_load("$fu", "$avp(678)");
-db_avp_load("$ru/domain", "i/domain_preferences");
-db_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
-db_avp_load("$ru", "$avp(123)/$some_scheme");
+sql_avp_load("$fu", "$avp(678)");
+sql_avp_load("$ru/domain", "i/domain_preferences");
+sql_avp_load("$avp(uuid)", "$avp(404fwd)/fwd_table");
+sql_avp_load("$ru", "$avp(123)/$some_scheme");
 
 # use DB URL id 3
-db_avp_load("$ru", "$avp(1)", 3);
+sql_avp_load("$ru", "$avp(1)", 3);
 
 # precede all loaded AVPs by the "caller_" prefix
-db_avp_load("$ru", "$avp(100)", , "caller_");
+sql_avp_load("$ru", "$avp(100)", , "caller_");
 xlog("Loaded: $avp(caller_100)\n");
 
 ...
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_db_avp_store" xreflabel="db_avp_store()">
+		<section id="func_sql_avp_store" xreflabel="sql_avp_store()">
 			<title>
-				<function moreinfo="none">db_avp_store(source, name, [db_id])</function>
+				<function moreinfo="none">sql_avp_store(source, name, [db_id])</function>
 			</title>
 			<para>
 			Stores to DB the AVPs corresponding to the given
 			<emphasis>source</emphasis>.
 			</para>
 			<para>The meaning and usage of the parameters are identical as for
-			<emphasis>db_avp_load(source, name)</emphasis>
+			<emphasis>sql_avp_load(source, name)</emphasis>
 			function. Please refer to its description.
 			</para>
 			<para>
@@ -859,27 +859,27 @@ xlog("Loaded: $avp(caller_100)\n");
 			</para>
 
 			<example>
-				<title><function>db_avp_store</function> usage</title>
+				<title><function>sql_avp_store</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_avp_store("$tu", "$avp(678)");
-db_avp_store("$ru/username", "$avp(email)");
+sql_avp_store("$tu", "$avp(678)");
+sql_avp_store("$ru/username", "$avp(email)");
 # use DB URL id 3
-db_avp_store("$ru", "$avp(1)", 3);
+sql_avp_store("$ru", "$avp(1)", 3);
 ...
 				</programlisting>
 			</example>
 		</section>
-		<section id="func_db_avp_delete" xreflabel="db_avp_delete()">
+		<section id="func_sql_avp_delete" xreflabel="sql_avp_delete()">
 			<title>
-				<function moreinfo="none">db_avp_delete(source, name, [db_id])</function>
+				<function moreinfo="none">sql_avp_delete(source, name, [db_id])</function>
 			</title>
 			<para>
 			Deletes from DB the AVPs corresponding to the given
 			<emphasis>source</emphasis>.
 			</para>
 			<para>The meaning and usage of the parameters are identical as for
-			<emphasis>db_avp_load(source, name)</emphasis>
+			<emphasis>sql_avp_load(source, name)</emphasis>
 			function. Please refer to its description.
 			</para>
 			<para>
@@ -887,14 +887,14 @@ db_avp_store("$ru", "$avp(1)", 3);
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 			</para>
 			<example>
-				<title><function>db_avp_delete</function> usage</title>
+				<title><function>sql_avp_delete</function> usage</title>
 				<programlisting format="linespecific">
 ...
-db_avp_delete("$tu", "$avp(678)");
-db_avp_delete("$ru/username", "$avp(email)");
-db_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
+sql_avp_delete("$tu", "$avp(678)");
+sql_avp_delete("$ru/username", "$avp(email)");
+sql_avp_delete("$avp(uuid)", "$avp(404fwd)/fwd_table");
 # use DB URL id 3
-db_avp_delete("$ru", "$avp(1)", 3);
+sql_avp_delete("$ru", "$avp(1)", 3);
 ...
 				</programlisting>
 			</example>
@@ -905,13 +905,13 @@ db_avp_delete("$ru", "$avp(1)", 3);
 
 	<section>
 	<title>Exported Asynchronous Functions</title>
-		<section id="afunc_db_query" xreflabel="db_query()">
+		<section id="afunc_sql_query" xreflabel="sql_query()">
 			<title>
-				<function moreinfo="none">db_query(query, [dest], [db_id])</function>
+				<function moreinfo="none">sql_query(query, [dest], [db_id])</function>
 			</title>
 			<para>
 			This function takes the same parameters and behaves identically
-			to <xref linkend="func_db_query"/>, but asynchronously
+			to <xref linkend="func_sql_query"/>, but asynchronously
 			(after launching the query, the current SIP worker pauses the
 			execution of the current SIP message until the result is available
 			and attempts to process more SIP traffic).
@@ -921,14 +921,14 @@ db_avp_delete("$ru", "$avp(1)", 3);
 			BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 			</para>
 			<example>
-				<title><function>async db_query</function> usage</title>
+				<title><function>async sql_query</function> usage</title>
 				<programlisting format="linespecific">
 ...
 {
 ...
 /* Example of a slow MySQL query - it should take around 5 seconds */
 async(
-	db_query(
+	sql_query(
 		"SELECT table_name, table_version, SLEEP(0.1) from version",
 		"$avp(tb_name); $avp(tb_ver); $avp(retcode)"),
 	my_resume_route);
@@ -947,13 +947,13 @@ route [my_resume_route]
 			</example>
 		</section>
 
-		<section id="afunc_db_query_one" xreflabel="db_query_one()">
+		<section id="afunc_sql_query_one" xreflabel="sql_query_one()">
 			<title>
-				<function moreinfo="none">db_query_one(query, [dest], [db_id])</function>
+				<function moreinfo="none">sql_query_one(query, [dest], [db_id])</function>
 			</title>
 			<para>
 			This function takes the same parameters and behaves identically
-			to <xref linkend="func_db_query_one"/>, but asynchronously
+			to <xref linkend="func_sql_query_one"/>, but asynchronously
 			(after launching the query, the current SIP worker pauses the
 			execution of the current SIP message until the result is available
 			and attempts to process more SIP traffic).
@@ -962,14 +962,14 @@ route [my_resume_route]
 			This function can be used from any route.
 			</para>
 			<example>
-				<title><function>async db_query_one</function> usage</title>
+				<title><function>async sql_query_one</function> usage</title>
 				<programlisting format="linespecific">
 ...
 {
 ...
 /* Example of a slow MySQL query - it should take around 5 seconds */
 async(
-	db_query_one(
+	sql_query_one(
 		"SELECT table_name, table_version, SLEEP(0.1) from version",
 		"$var(tb_name); $var(tb_ver); $var(retcode)"),
 	my_resume_route);
