@@ -988,10 +988,14 @@ struct aka_async_param {
 	char buf[0];
 };
 
-static int aka_async_param_release(struct aka_async_param *param)
+static inline void aka_async_param_remove(struct aka_async_param *param)
 {
 	if (list_is_valid(&param->list))
 		aka_pop_async(param->user, &param->list);
+}
+
+static int aka_async_param_unref(struct aka_async_param *param)
+{
 	param->ref--;
 	if (param->ref == 0) {
 		/* the last user should also delete */
@@ -1015,9 +1019,9 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 	left = param->avs_count - param->avs_fetched - param->avs_error;
 	/* check to see if we still have AVS to wait for */
 	if (!timeout && (param->avs_fetched + param->avs_error) != param->avs_count) {
-		async_status = ASYNC_CONTINUE;
-		LM_DBG("waiting for more %d AVs to a total of %d\n", left, param->avs_count);
-		return 1;
+		LM_DBG("waiting for more %d AVs to a total of %d (%d errors)\n",
+				left, param->avs_count, param->avs_error);
+		goto end;
 	}
 	if (timeout && left)
 		LM_ERR("timeout waiting for AVs - got %d out of %d so far (%d error)\n",
@@ -1039,7 +1043,10 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 		}
 		param->replied = 1;
 	}
-	if (!aka_async_param_release(param)) {
+	aka_async_param_remove(param);
+	aka_async_param_unref(param); /* finish everything */
+end:
+	if (!aka_async_param_unref(param)) {
 		/* we still have some possible signals in the queue, so let's wait for
 		 * everyone before releasing the context */
 		async_status = ASYNC_CONTINUE;
@@ -1123,6 +1130,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	param->realm.len = realm.len;
 	memcpy(param->challenge_msg.s, _challenge_msg->s, _challenge_msg->len);
 	param->challenge_msg.len = _challenge_msg->len;
+	param->ref = 1;
 	param->qop = qop;
 	param->algmask = algmask;
 	param->code = _code;
@@ -1172,7 +1180,8 @@ static void aka_signal_async_resume(struct aka_async_param *param, ipc_rpc_f *fu
 	param->ref++;
 	if (ipc_send_rpc(param->process_no, func, param) < 0) {
 		LM_ERR("could not resume aka challenge\n");
-		aka_async_param_release(param);
+		aka_async_param_remove(param);
+		aka_async_param_unref(param);
 	}
 }
 
