@@ -96,6 +96,8 @@ static intptr_t aka_algs_mask = ALGFLG_UNSPEC;
 static int aka_hash_size = 4096;
 static int aka_sync_timeout = 100; /* ms */
 static int aka_async_timeout = 1000; /* ms */
+static int aka_unused_timeout = 60; /* s */
+static int aka_pending_timeout = 30; /* s */
 
 /*
  * Exported functions
@@ -262,6 +264,14 @@ static int mod_init(void)
 	}
 	if (aka_async_timeout < 0) {
 		LM_ERR("invalid async_timeout value %d\n", aka_async_timeout);
+		return -1;
+	}
+	if (aka_unused_timeout < 0) {
+		LM_ERR("invalid unused_timeout value %d\n", aka_unused_timeout);
+		return -1;
+	}
+	if (aka_pending_timeout < 0) {
+		LM_ERR("invalid pending_timeout value %d\n", aka_pending_timeout);
 		return -1;
 	}
 	aka_async_timeout /= 1000; /* XXX: add support for milliseconds */
@@ -1200,6 +1210,32 @@ void aka_check_expire_async(unsigned int ticks, struct list_head *subs)
 	aka_pop_unsafe_async(param->user, subs);
 	aka_signal_async_resume(param, aka_challenge_resume_tout);
 }
+
+void aka_check_expire_av(unsigned int ticks, struct aka_av *av)
+{
+	int timeout;
+	switch (av->state) {
+		case AKA_AV_NEW:
+			timeout = aka_unused_timeout;
+			break;
+		case AKA_AV_INVALID: /* for invalid, drop it asap */
+			timeout = 0;
+			av->ts = ticks;
+			break;
+		case AKA_AV_USING:
+		case AKA_AV_USED:
+			timeout = aka_pending_timeout;
+			break;
+		default:
+			return;
+	}
+	if (av->ts + timeout > ticks)
+		return;
+	LM_DBG("removing av %p in state %d after %ds now %ds\n",
+			av, av->state, timeout, ticks);
+	aka_av_free(av);
+}
+
 
 static int aka_www_challenge(struct sip_msg *msg, struct aka_av_mgm *mgm,
 		str *realm, qop_type_t qop, intptr_t algmask)

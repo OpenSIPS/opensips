@@ -179,7 +179,7 @@ modparam("auth_aka", "hash_size", 1024)
 		</example>
 	</section>
 	<section id="param_sync_timeout" xreflabel="sync_timeout">
-		<title><varname>sync_timeout</varname> (string)</title>
+		<title><varname>sync_timeout</varname> (integer)</title>
 		<para>
 			The amount of milliseconds a synchronous call should
 			wait for getting an authentication vector.
@@ -200,7 +200,7 @@ modparam("auth_aka", "sync_timeout", 200)
 		</example>
 	</section>
 	<section id="param_async_timeout" xreflabel="async_timeout">
-		<title><varname>async_timeout</varname> (string)</title>
+		<title><varname>async_timeout</varname> (integer)</title>
 		<para>
 			The amount of milliseconds an asynchronous call should
 			wait for getting an authentication vector.
@@ -219,8 +219,51 @@ modparam("auth_aka", "sync_timeout", 200)
 		<example>
 		<title><varname>async_timeout</varname> parameter usage</title>
 		<programlisting format="linespecific">
-		
+
 modparam("auth_aka", "async_timeout", 2000)
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_unused_timeout" xreflabel="unused_timeout">
+		<title><varname>unused_timeout</varname> (integer)</title>
+		<para>
+			The amount of seconds an authentication vector that has
+			not been used can stay in memory. Once this timeout is
+			reached, the authentication vector is removed.
+		</para>
+		<para>
+			Must be a positive value, greater than 0.
+		</para>
+		<para>
+			Default value is <emphasis>60</emphasis> s.
+		</para>
+		<example>
+		<title><varname>unused_timeout</varname> parameter usage</title>
+		<programlisting format="linespecific">
+
+modparam("auth_aka", "unused_timeout", 120)
+		</programlisting>
+		</example>
+	</section>
+	<section id="param_pending_timeout" xreflabel="pending_timeout">
+		<title><varname>unused_timeout</varname> (integer)</title>
+		<para>
+			The amount of seconds an authentication vector that is being
+			used in the authentication process shall stay in memory.
+			Once this timeout is reached, the authentication vector is
+			removed, and the authentication using it will fail.
+		</para>
+		<para>
+			Must be a positive value, greater than 0.
+		</para>
+		<para>
+			Default value is <emphasis>30</emphasis> s.
+		</para>
+		<example>
+		<title><varname>pending_timeout</varname> parameter usage</title>
+		<programlisting format="linespecific">
+
+modparam("auth_aka", "pending_timeout", 10)
 		</programlisting>
 		</example>
 	</section>
