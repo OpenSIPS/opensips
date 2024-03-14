@@ -461,12 +461,11 @@ end:
 	return av;
 }
 
-#if 0
-static void aka_av_free(struct aka_av *av)
+void aka_av_free(struct aka_av *av)
 {
+	list_del(&av->list);
 	shm_free(av);
 }
-#endif
 
 static void aka_av_insert(struct aka_user *user, struct aka_av *av)
 {
@@ -614,6 +613,9 @@ static int aka_async_hash_iterator(void *param, str key, void *value)
 		cond_lock(&user->cond);
 		list_for_each_safe(it, safe, &user->async) {
 			aka_check_expire_async(ticks, it);
+		}
+		list_for_each_safe(it, safe, &user->avs) {
+			aka_check_expire_av(ticks, list_entry(it, struct aka_av, list));
 		}
 		cond_unlock(&user->cond);
 	}

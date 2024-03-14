@@ -49,6 +49,7 @@ struct aka_av {
 	str ik;
 	alg_t alg;    /* algorithm that this AV is being challenged for */
 	int algmask;  /* algorithms this AV is suitable for */
+	time_t ts;
 	struct list_head list;
 	char buf[0];
 };
@@ -110,6 +111,8 @@ void aka_pop_async(struct aka_user *user, struct  list_head *subs);
 void aka_pop_unsafe_async(struct aka_user *user, struct  list_head *subs);
 void aka_signal_async(struct aka_user *user, struct  list_head *subs);
 void aka_check_expire_async(unsigned int ticks, struct list_head *subs);
+void aka_check_expire_av(unsigned int ticks, struct aka_av *av);
+void aka_av_free(struct aka_av *av);
 
 void aka_async_expire(unsigned int ticks, void* param);
 
