@@ -105,7 +105,7 @@ static int dm_avp_inttype[] = {
 	AAA_TYPE_FLOAT64,
 };
 
-static struct dm_cond *dm_get_cond(int type, diameter_reply_cb *cb)
+static struct dm_cond *dm_get_cond(int type, diameter_reply_cb *cb, void *param)
 {
 	struct dm_cond *cond = shm_malloc(sizeof *cond);
 	if (!cond) {
@@ -130,7 +130,8 @@ static struct dm_cond *dm_get_cond(int type, diameter_reply_cb *cb)
 	case DM_TYPE_CB:
 		if (!cb)
 			LM_WARN("no callback specified\n");
-		cond->sync.cb = cb;
+		cond->sync.cb.f = cb;
+		cond->sync.cb.p = param;
 		break;
 	}
 
@@ -139,7 +140,7 @@ static struct dm_cond *dm_get_cond(int type, diameter_reply_cb *cb)
 
 int dm_init_reply_cond(int proc_rank)
 {
-	my_reply_cond = dm_get_cond(DM_TYPE_COND, NULL);
+	my_reply_cond = dm_get_cond(DM_TYPE_COND, NULL, NULL);
 	return my_reply_cond?0:-1;
 }
 
@@ -292,9 +293,8 @@ static void dm_cond_signal(struct dm_cond *cond)
 		pthread_mutex_unlock(&cond->sync.cond.mutex);
 		break;
 	case DM_TYPE_CB:
-		LM_INFO("callback %p\n", cond->sync.cb);
-		if (cond->sync.cb)
-			cond->sync.cb(NULL, &cond->rpl);
+		if (cond->sync.cb.f)
+			cond->sync.cb.f(NULL, &cond->rpl, cond->sync.cb.p);
 		shm_free(cond);
 		break;
 	}
@@ -1934,7 +1934,7 @@ int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd)
 	if (!req)
 		return -1;
 
-	cond = dm_get_cond(DM_TYPE_EVENT, NULL);
+	cond = dm_get_cond(DM_TYPE_EVENT, NULL, NULL);
 	if (!cond) {
 		LM_ERR("out of memory for cond\n");
 		return -1;
@@ -1948,14 +1948,14 @@ int _dm_send_message_async(aaa_conn *_, aaa_message *req, int *fd)
 	return 0;
 }
 
-int _dm_send_message_callback(aaa_conn *_, aaa_message *req, diameter_reply_cb *cb)
+int _dm_send_message_callback(aaa_conn *_, aaa_message *req, diameter_reply_cb *cb, void *param)
 {
 	struct dm_cond *cond;
 
 	if (!req)
 		return -1;
 
-	cond = dm_get_cond(DM_TYPE_CB, cb);
+	cond = dm_get_cond(DM_TYPE_CB, cb, param);
 	if (!cond) {
 		LM_ERR("out of memory for cond\n");
 		return -1;
@@ -2091,7 +2091,8 @@ end:
 	return rc;
 }
 
-int dm_api_send_req_async(diameter_conn *conn, int app_id, int cmd_code, cJSON *req, diameter_reply_cb *reply_cb)
+int dm_api_send_req_async(diameter_conn *conn, int app_id, int cmd_code, cJSON *req,
+		diameter_reply_cb *reply_cb, void *reply_param)
 {
 	aaa_message *dmsg = NULL;
 
@@ -2118,7 +2119,7 @@ int dm_api_send_req_async(diameter_conn *conn, int app_id, int cmd_code, cJSON *
 		return -1;
 	}
 
-	if (_dm_send_message_callback(NULL, dmsg, reply_cb) != 0) {
+	if (_dm_send_message_callback(NULL, dmsg, reply_cb, reply_param) != 0) {
 		LM_ERR("could not send Diameter callback message\n");
 		return -1;
 	}

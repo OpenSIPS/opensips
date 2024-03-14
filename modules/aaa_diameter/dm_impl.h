@@ -132,7 +132,10 @@ struct dm_cond {
 			int fd;
 			int pid;
 		} event;
-		diameter_reply_cb *cb;
+		struct {
+			diameter_reply_cb *f;
+			void *p;
+		} cb;
 	} sync;
 
 	diameter_reply rpl;
