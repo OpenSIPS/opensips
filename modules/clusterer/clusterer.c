@@ -56,6 +56,7 @@ extern int node_timeout;
 extern int ping_timeout;
 extern int seed_fb_interval;
 extern int sync_timeout;
+extern int clusterer_enable_rerouting;
 
 int dispatch_jobs = 1;
 
@@ -1076,6 +1077,10 @@ void bin_rcv_cl_extra_packets(bin_packet_t *packet, int packet_type,
 		lock_release(node->lock);
 
 	if (dest_id != current_id) {
+		if (clusterer_enable_rerouting == 0) {
+			LM_WARN("Received message for destination id [%d] but rerouting disabled\n", dest_id);
+			goto exit;
+		}
 		/* route the message */
 		bin_push_int(packet, cluster_id);
 		bin_push_int(packet, source_id);
