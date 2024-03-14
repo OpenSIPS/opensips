@@ -51,7 +51,7 @@
 
 /* module functions */
 static int mod_init();
-static int destroy(void);
+static void destroy(void);
 
 static mi_response_t *mi_list_root_path(const mi_params_t *params,
 						struct mi_handler *async_hdl);
@@ -187,7 +187,7 @@ static int mod_init(void)
 }
 
 
-int destroy(void)
+static void destroy(void)
 {
 	struct httpd_cb *cb = httpd_cb_list;
 
@@ -198,7 +198,6 @@ int destroy(void)
 		shm_free(cb);
 		cb = httpd_cb_list;
 	}
-	return 0;
 }
 
 
