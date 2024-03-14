@@ -60,7 +60,7 @@
 
 static int mi_mod_init(void);
 static int mi_child_init(int rank);
-static int mi_destroy(void);
+static void mi_destroy(void);
 static int pre_datagram_process(void);
 static int post_datagram_process(void);
 static void datagram_process(int rank);
@@ -345,7 +345,7 @@ static int post_datagram_process(void)
 }
 
 
-static int mi_destroy(void)
+static void mi_destroy(void)
 {
 	int n;
 	struct stat filestat;
@@ -357,16 +357,11 @@ static int mi_destroy(void)
 			if (unlink(mi_socket)<0){
 				LM_ERR("cannot delete the socket (%s): %s\n",
 						mi_socket, strerror(errno));
-				goto error;
+				return;
 			}
 		} else if (n<0 && errno!=ENOENT) {
 			LM_ERR("socket stat failed: %s\n",	strerror(errno));
-			goto error;
+			return;
 		}
 	}
-
-	return 0;
-error:
-	return -1;
-
 }
