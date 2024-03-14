@@ -215,7 +215,7 @@ static void aka_user_try_free(struct aka_user *user)
 {
 	struct aka_user_pub *pub = user->public;
 	cond_lock(&user->cond);
-	if (!list_empty(&user->avs) || !list_empty(&user->async)) {
+	if (user->ref != 0 || !list_empty(&user->avs) || !list_empty(&user->async)) {
 		cond_unlock(&user->cond);
 		return;
 	}
@@ -233,8 +233,7 @@ void aka_user_release(struct aka_user *user)
 	hentry = hash_entry(aka_users, user->public->impu);
 	hash_lock(aka_users, hentry);
 	user->ref--;
-	if (user->ref == 0)
-		aka_user_try_free(user);
+	aka_user_try_free(user);
 	hash_unlock(aka_users, hentry);
 }
 
@@ -603,12 +602,12 @@ void aka_pop_async(struct aka_user *user, struct list_head *subs)
 
 static int aka_async_hash_iterator(void *param, str key, void *value)
 {
-	struct list_head *it, *safe, *uit;
+	struct list_head *it, *safe, *uit, *usafe;
 	unsigned int ticks = *(unsigned int*)param;
 	struct aka_user *user;
 	struct aka_user_pub *pub = (struct aka_user_pub *)value;
 
-	list_for_each(uit, &pub->privates) {
+	list_for_each_safe(uit, usafe, &pub->privates) {
 		user = list_entry(uit, struct aka_user, list);
 		cond_lock(&user->cond);
 		list_for_each_safe(it, safe, &user->async) {
@@ -618,6 +617,7 @@ static int aka_async_hash_iterator(void *param, str key, void *value)
 			aka_check_expire_av(ticks, list_entry(it, struct aka_av, list));
 		}
 		cond_unlock(&user->cond);
+		aka_user_try_free(user);
 	}
 	return 0;
 }
