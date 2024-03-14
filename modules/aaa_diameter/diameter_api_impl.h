@@ -26,8 +26,8 @@
 int dm_api_find_cmd(diameter_conn *conn, int cmd_code);
 int dm_api_send_req(diameter_conn *conn, int app_id, int cmd_code, cJSON *req,
 		diameter_reply *reply);
-int dm_api_send_req_async(diameter_conn *conn, int app_id, int cmd_code, cJSON *req,
-		diameter_reply_cb *reply);
+int dm_api_send_req_async(diameter_conn *conn, int app_id, int cmd_code,
+		cJSON *req, diameter_reply_cb *reply, void *reply_param);
 cJSON *dm_api_get_reply(diameter_reply *rpl);
 int dm_api_get_reply_status(diameter_reply *rpl);
 void dm_api_free_reply(diameter_reply *rpl);
