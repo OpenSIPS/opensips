@@ -703,7 +703,24 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 33 3 3495 18
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 245 73 6018 7507
+   2. Daniel-Constantin Mierla (@miconda) 104 44 2927 2158
+   3. Liviu Chircu (@liviuchircu) 53 27 1112 944
+   4. Elena-Ramona Modroiu 51 11 4040 390
+   5. Razvan Crainea (@razvancrainea) 21 14 149 246
+   6. Elena-Ramona Modroiu 18 5 1051 192
+   7. Henning Westerholt (@henningw) 12 8 112 133
+   8. Vlad Paiu (@vladpaiu) 9 7 39 2
+   9. Ionut Ionita (@ionutrazvanionita) 8 5 180 12
+   10. Kobi Eshun (@ekobi) 7 1 300 146
+
+   All remaining contributors: Andrei Pelinescu-Onciul, Anca
+   Vamanu, Maksym Sobolyev (@sobomax), Norman Brandinger (@NormB),
+   Vlad Patrascu (@rvlad-patrascu), Klaus Darilion, John Burke
+   (@john08burke), Andrey Vorobiev, Olle E. Johansson, Kennard
+   White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes
+   (@wdoekes), Andreas Granig, Peter Lemenkov (@lemenkov), Sergio
+   Gutierrez, Edson Gellert Schubert, Ovidiu Sas (@ovidiusas).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -724,8 +741,26 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                     Name                   Commit Activity
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) Feb 2024 - Mar 2024
+                      Name                   Commit Activity
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
+   2.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   5.  John Burke (@john08burke)           Jun 2022 - Jun 2022
+   6.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
+   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   9.  Andrey Vorobiev                     Apr 2016 - Apr 2016
+   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+
+   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
+   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Anca Vamanu,
+   Kennard White, Norman Brandinger (@NormB), Sergio Gutierrez,
+   Kobi Eshun (@ekobi), Henning Westerholt (@henningw), Olle E.
+   Johansson, Daniel-Constantin Mierla (@miconda), Konstantin
+   Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Klaus
+   Darilion, Andreas Granig, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -734,7 +769,15 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu).
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), John Burke (@john08burke), Liviu
+   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
+   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Anca Vamanu,
+   Norman Brandinger (@NormB), Kobi Eshun (@ekobi), Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
+   Modroiu, Klaus Darilion, Andrei Pelinescu-Onciul, Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 
