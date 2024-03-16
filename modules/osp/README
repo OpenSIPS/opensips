@@ -160,7 +160,7 @@ Chapter 1. Admin Guide
    The OSP module depends on the following modules which must be
    loaded before the OSP module.
      * auth -- Authentication Framework module
-     * dbops -- DB operation module
+     * sqlops -- SQL operation module
      * maxfwd -- Max-Forward processor module
      * mi_fifo -- FIFO support for Management Interface
      * options -- OPTIONS server replier module
@@ -972,7 +972,7 @@ Chapter 3. Contributors
      Name DevScore Commits Lines ++ Lines --
    1. Di-Shi Sun (@di-shi) 274 101 10368 5372
    2. Dmitry Isakbayev 42 5 4120 159
-   3. Bogdan-Andrei Iancu (@bogdan-iancu) 35 29 222 214
+   3. Bogdan-Andrei Iancu (@bogdan-iancu) 36 30 223 215
    4. Di-Shi Sun 18 2 1006 386
    5. Liviu Chircu (@liviuchircu) 17 13 117 126
    6. Daniel-Constantin Mierla (@miconda) 15 13 81 48
@@ -1008,7 +1008,7 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Feb 2024
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2006 - Mar 2024
    2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2024
    3.  Liviu Chircu (@liviuchircu)         Mar 2014 - May 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
