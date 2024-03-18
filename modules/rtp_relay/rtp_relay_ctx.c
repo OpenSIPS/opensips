@@ -1819,7 +1819,7 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 			/* first check if there's anything setup on this branch */
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
 			if (sess) {
-				if (!rtp_sess_pending(sess)) {
+				if (!rtp_sess_pending(sess) && !rtp_sess_late(sess)) {
 					LM_DBG("no pending session on branch %d\n",
 							rtp_relay_ctx_branch());
 					goto end;
