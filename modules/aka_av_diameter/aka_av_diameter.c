@@ -77,7 +77,7 @@ static const cmd_export_t cmds[] = {
 static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "auth_aka", DEP_ABORT },
-		{ MOD_TYPE_DEFAULT, "aaa_diameter", DEP_ABORT },
+		{ MOD_TYPE_AAA, "aaa_diameter", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
 	},
 	{ /* modparam dependencies */
