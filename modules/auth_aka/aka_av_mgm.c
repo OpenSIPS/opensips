@@ -308,6 +308,7 @@ static void aka_av_mark_using(struct aka_av *av, int algmask)
 	 * it as being used only for the first algorithm in the mask
 	 */
 	av->alg = aka_av_first_bit_mask(algmask);
+	av->ts = get_ticks();
 }
 
 int aka_av_get_new_wait(struct aka_user *user, int algmask,
@@ -495,7 +496,9 @@ int aka_av_add(str *pub_id, str *priv_id, int algmask,
 		aka_signal_async(user, user->async.next);
 	cond_signal(&user->cond);
 	cond_unlock(&user->cond);
+	av->ts = av->new_ts = get_ticks();
 	ret = 1;
+	LM_DBG("adding av %p\n", av);
 end:
 	aka_user_release(user);
 	return ret;
@@ -578,6 +581,7 @@ void aka_av_set_new(struct aka_user *user, struct aka_av *av)
 {
 	cond_lock(&user->cond);
 	av->state = AKA_AV_NEW;
+	av->ts = av->new_ts; /* restore the new timestamp */
 	cond_unlock(&user->cond);
 }
 
