@@ -424,7 +424,7 @@ static int aka_av_diameter_print_alg(cJSON *alg_arr, alg_t alg)
 {
 	const str *algs = print_digest_algorithm(alg);
 	char *p;
-	int ret;
+	int ret = -1;
 
 	if (!algs)
 		return -1;
