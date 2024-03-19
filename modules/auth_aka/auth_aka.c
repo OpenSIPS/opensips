@@ -1100,6 +1100,7 @@ static int aka_challenge_async(struct sip_msg *_msg, async_ctx *ctx,
 	count += sync_count;
 	/* try to sort them out synchronously */
 	if (count == 1) {
+		avs = &av;
 		if (aka_avs_get_new(user, &algmask, &av, 1, &err_count) == 1)
 			goto synchronous;
 		if (err_count)
