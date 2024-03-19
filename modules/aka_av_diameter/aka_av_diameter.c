@@ -483,9 +483,8 @@ static int aka_av_dm_reply(diameter_conn *conn, diameter_reply *reply, void *par
 	struct aka_av_param *p = (struct aka_av_param *)param;
 	if (dm_api.get_reply_status(reply)) {
 		ret = aka_av_diameter_handle_reply(dm_api.get_reply(reply), &p->impu, &p->impi);
-		if (ret != p->count)
-			ret = 0;
-		aka_api.fail(&p->impu, &p->impi, p->count - ret);
+		if (ret < p->count)
+			aka_api.fail(&p->impu, &p->impi, p->count - ret);
 	} else {
 		aka_api.fail(&p->impu, &p->impi, p->count); /* mark all as failed */
 	}
