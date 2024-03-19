@@ -1913,11 +1913,11 @@ error:
 	return -1;
 }
 
-static void dm_push_queue(aaa_message *req, struct dm_cond *cond)
+static void dm_push_queue(aaa_message *msg, struct dm_cond *cond)
 {
-	struct dm_message *dm = (struct dm_message *)(req->avpair);
+	struct dm_message *dm = (struct dm_message *)(msg->avpair);
 	dm->reply_cond = cond;
-	req->last_found = DM_MSG_SENT;
+	msg->last_found = DM_MSG_SENT;
 
 	pthread_mutex_lock(msg_send_lk);
 
@@ -2003,45 +2003,52 @@ int _dm_get_message_response(struct dm_cond *cond, char **rpl_avps)
 	return rc;
 }
 
-int _dm_send_message(aaa_conn *_, aaa_message *req, struct dm_cond **reply_cond)
+int _dm_send_message(aaa_conn *_, aaa_message *msg, struct dm_cond **reply_cond)
 {
-	if (!req || !my_reply_cond)
+	struct timespec wait_until;
+	struct timeval now, wait_time, res;
+	int rc, await_reply = 0;
+
+	if (!msg || !my_reply_cond)
 		return -1;
 
-	dm_push_queue(req, my_reply_cond);
+	if (msg->type == AAA_AUTH || msg->type == AAA_CUSTOM_REQ)
+		await_reply = 1;
 
-	LM_DBG("message queued for sending\n");
+	LM_DBG("queue message for sending, type %d\n", msg->type);
 
-	if (req->type == AAA_AUTH || req->type == AAA_CUSTOM_REQ) {
-		struct timespec wait_until;
-		struct timeval now, wait_time, res;
-		int rc;
+	pthread_mutex_lock(&my_reply_cond->sync.cond.mutex);
+	dm_push_queue(msg, my_reply_cond);
+	/* WARNING: @msg *cannot* be read anymore here! (dangling pointer) */
 
-		gettimeofday(&now, NULL);
-		wait_time.tv_sec = dm_answer_timeout / 1000;
-		wait_time.tv_usec = dm_answer_timeout % 1000 * 1000UL;
-		LM_DBG("awaiting auth reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
-
-		timeradd(&now, &wait_time, &res);
-
-		wait_until.tv_sec = res.tv_sec;
-		wait_until.tv_nsec = res.tv_usec * 1000UL;
-
-		pthread_mutex_lock(&my_reply_cond->sync.cond.mutex);
-		rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
-					&my_reply_cond->sync.cond.mutex, &wait_until);
-		if (rc != 0) {
-			LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
-			       "reply\n", rc, strerror(rc));
-			pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
-
-			return -2;
-		}
-		if (reply_cond)
-			*reply_cond = my_reply_cond;
-
-		return 1;
+	if (!await_reply) {
+		pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
+		return 0;
 	}
+
+	gettimeofday(&now, NULL);
+	wait_time.tv_sec = dm_answer_timeout / 1000;
+	wait_time.tv_usec = dm_answer_timeout % 1000 * 1000UL;
+	LM_DBG("awaiting auth reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
+
+	timeradd(&now, &wait_time, &res);
+
+	wait_until.tv_sec = res.tv_sec;
+	wait_until.tv_nsec = res.tv_usec * 1000UL;
+
+	rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
+				&my_reply_cond->sync.cond.mutex, &wait_until);
+	if (rc != 0) {
+		LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
+		       "reply\n", rc, strerror(rc));
+		pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
+
+		return -2;
+	}
+
+	if (reply_cond)
+		*reply_cond = my_reply_cond;
+
 	return 0;
 }
 
