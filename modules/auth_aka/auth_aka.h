@@ -49,7 +49,7 @@ struct aka_av {
 	str ik;
 	alg_t alg;    /* algorithm that this AV is being challenged for */
 	int algmask;  /* algorithms this AV is suitable for */
-	time_t ts;
+	time_t ts, new_ts;
 	struct list_head list;
 	char buf[0];
 };
