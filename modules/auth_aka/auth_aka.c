@@ -1022,6 +1022,12 @@ static int aka_challenge_async_resume_handle(struct sip_msg *msg, void *_param, 
 	int left, err_count;
 	struct aka_async_param *param = _param;
 
+	/* if this handling has already been completed, drop it */
+	if (param->avs_fetched + param->avs_error >= param->avs_count) {
+		left = 0;
+		goto end;
+	}
+
 	/* check to see how many events we got */
 	param->avs_fetched += aka_avs_get_new(param->user, &param->algmask,
 			param->avs + param->avs_fetched, param->avs_count - param->avs_fetched, &err_count);
