@@ -392,19 +392,6 @@ int aka_av_get_new(struct aka_user *user, int algmask, struct aka_av **av)
 	return ret;
 }
 
-static inline int aka_check_algmask(int algmask, int flags,
-		int len, int check_len, const char *debug)
-{
-	if (algmask & flags) {
-		if (len != check_len) {
-			LM_WARN("invalid authorize length %d, expected %d for MD5 hashing\n",
-					len, check_len);
-			algmask &= ~(flags);
-		}
-	}
-	return algmask;
-}
-
 static struct aka_av *aka_av_new(int algmask, str *authenticate, str *authorize, str *ck, str *ik)
 {
 	char *p;
