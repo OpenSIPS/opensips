@@ -498,6 +498,23 @@ inline static struct hdr_field *get_header_by_name( struct sip_msg *msg,
 }
 
 
+#define get_next_header_by_static_name(_hdr, _name) \
+		get_next_header_by_name(_hdr, _name, sizeof(_name)-1)
+inline static struct hdr_field *get_next_header_by_name(
+						struct hdr_field *first, char *s, unsigned int len)
+{
+	struct hdr_field *hdr;
+
+	for( hdr=first->next ; hdr ; hdr=hdr->next ) {
+		if(len==hdr->name.len && strncasecmp(hdr->name.s,s,len)==0)
+			return hdr;
+	}
+	return NULL;
+}
+
+
+
+
 /*
  * Make a private copy of the string and assign it to new_uri (new RURI)
  */
