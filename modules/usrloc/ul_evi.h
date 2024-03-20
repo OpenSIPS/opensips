@@ -52,9 +52,10 @@
 #define UL_EV_PARAM_CT_RCLID  "req_callid"
 
 struct ct_refresh_event_data {
-	ucontact_t *ct;
+	const ucontact_t *ct;
 	str reason;
 	str req_callid;
+	str sock_str;
 };
 
 /* AoR event IDs */
