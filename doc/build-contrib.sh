@@ -174,6 +174,7 @@ github_handles=(
   ["Sergey Khripchenko"]="shripchenko"
   ["Stefan Pologov"]="sisoftrg"
   ["Stéphane Alnet"]="shimaore"
+  ["Seyed Mehran Siadati"]="siadatism"
   ["Victor Ciurel <victor.ciurel@gmail.com>"]="victor-ciurel"
   ["Vlad Paiu"]="vladpaiu"
   ["Vlad Patrascu"]="rvlad-patrascu"
