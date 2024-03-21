@@ -24,7 +24,13 @@
  */
 
 #include "../../ut.h"
+#include "../../lib/list.h"
+#include "../../lib/cJSON.h"
+
 #include "server.h"
+#include "h2_evi.h"
+
+extern unsigned int max_headers_size;
 
 #ifdef __sgi
 #  define errx(exitcode, format, args...)                                      \
@@ -88,14 +94,20 @@ struct app_context;
 typedef struct app_context app_context;
 
 typedef struct http2_stream_data {
-  struct http2_stream_data *prev, *next;
-  char *request_path;
   int32_t stream_id;
+
+  char *method;
+  char *path;
+  cJSON *hdrs;
+  unsigned hdrs_len;
+  str data;
   int fd;
+
+  struct list_head list;
 } http2_stream_data;
 
 typedef struct http2_session_data {
-  struct http2_stream_data root;
+  struct list_head root;
   struct bufferevent *bev;
   app_context *app_ctx;
   nghttp2_session *session;
@@ -179,30 +191,34 @@ static SSL *create_ssl(SSL_CTX *ssl_ctx) {
 
 static void add_stream(http2_session_data *session_data,
                        http2_stream_data *stream_data) {
-  stream_data->next = session_data->root.next;
-  session_data->root.next = stream_data;
-  stream_data->prev = &session_data->root;
-  if (stream_data->next) {
-    stream_data->next->prev = stream_data;
-  }
+  list_add(&stream_data->list, &session_data->root);
 }
 
 static void remove_stream(http2_session_data *session_data,
                           http2_stream_data *stream_data) {
   (void)session_data;
-
-  stream_data->prev->next = stream_data->next;
-  if (stream_data->next) {
-    stream_data->next->prev = stream_data->prev;
-  }
+  list_del(&stream_data->list);
 }
 
 static http2_stream_data *
 create_http2_stream_data(http2_session_data *session_data, int32_t stream_id) {
   http2_stream_data *stream_data;
-  stream_data = malloc(sizeof(http2_stream_data));
-  memset(stream_data, 0, sizeof(http2_stream_data));
+
+  stream_data = pkg_malloc(sizeof *stream_data);
+  if (!stream_data) {
+    LM_ERR("oom\n");
+    return NULL;
+  }
+
+  memset(stream_data, 0, sizeof *stream_data);
   stream_data->stream_id = stream_id;
+  stream_data->hdrs = cJSON_CreateObject();
+  if (!stream_data->hdrs) {
+	pkg_free(stream_data);
+	LM_ERR("oom\n");
+	return NULL;
+  }
+
   stream_data->fd = -1;
 
   add_stream(session_data, stream_data);
@@ -213,8 +229,11 @@ static void delete_http2_stream_data(http2_stream_data *stream_data) {
   if (stream_data->fd != -1) {
     close(stream_data->fd);
   }
-  free(stream_data->request_path);
-  free(stream_data);
+
+  free(stream_data->path);
+  cJSON_Delete(stream_data->hdrs);
+  pkg_free(stream_data->data.s);
+  pkg_free(stream_data);
 }
 
 static http2_session_data *create_http2_session_data(app_context *app_ctx,
@@ -228,8 +247,10 @@ static http2_session_data *create_http2_session_data(app_context *app_ctx,
   int val = 1;
 
   ssl = create_ssl(app_ctx->ssl_ctx);
-  session_data = malloc(sizeof(http2_session_data));
-  memset(session_data, 0, sizeof(http2_session_data));
+  session_data = malloc(sizeof *session_data);
+  memset(session_data, 0, sizeof *session_data);
+  INIT_LIST_HEAD(&session_data->root);
+
   session_data->app_ctx = app_ctx;
   setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (char *)&val, sizeof(val));
   session_data->bev = bufferevent_openssl_socket_new(
@@ -250,17 +271,22 @@ static http2_session_data *create_http2_session_data(app_context *app_ctx,
 static void delete_http2_session_data(http2_session_data *session_data) {
   http2_stream_data *stream_data;
   SSL *ssl = bufferevent_openssl_get_ssl(session_data->bev);
+  struct list_head *it, *aux;
+
   fprintf(stderr, "%s disconnected\n", session_data->client_addr);
   if (ssl) {
     SSL_shutdown(ssl);
   }
   bufferevent_free(session_data->bev);
   nghttp2_session_del(session_data->session);
-  for (stream_data = session_data->root.next; stream_data;) {
-    http2_stream_data *next = stream_data->next;
+
+  list_for_each_safe (it, aux, &session_data->root) {
+    stream_data = list_entry(it, http2_stream_data, list);
+
+	list_del(&stream_data->list);
     delete_http2_stream_data(stream_data);
-    stream_data = next;
   }
+
   free(session_data->client_addr);
   free(session_data);
 }
@@ -451,58 +477,6 @@ static int error_reply(nghttp2_session *session,
   return 0;
 }
 
-/* nghttp2_on_header_callback: Called when nghttp2 library emits
-   single header name/value pair. */
-static int on_header_callback(nghttp2_session *session,
-                              const nghttp2_frame *frame, const uint8_t *name,
-                              size_t namelen, const uint8_t *value,
-                              size_t valuelen, uint8_t flags, void *user_data) {
-  http2_stream_data *stream_data;
-  const char PATH[] = ":path";
-  (void)flags;
-  (void)user_data;
-
-  LM_INFO("yay, header(%d)!!! %.*s == %.*s\n", frame->hd.type, (int)namelen, name, (int)valuelen, value);
-
-  switch (frame->hd.type) {
-  case NGHTTP2_HEADERS:
-    if (frame->headers.cat != NGHTTP2_HCAT_REQUEST) {
-      break;
-    }
-	LM_INFO("A\n");
-    stream_data =
-        nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
-    if (!stream_data || stream_data->request_path) {
-      break;
-    }
-	LM_INFO("B\n");
-    if (namelen == sizeof(PATH) - 1 && memcmp(PATH, name, namelen) == 0) {
-      size_t j;
-      for (j = 0; j < valuelen && value[j] != '?'; ++j)
-        ;
-      stream_data->request_path = percent_decode(value, j);
-    }
-
-    break;
-  }
-  return 0;
-}
-
-static int on_begin_headers_callback(nghttp2_session *session,
-                                     const nghttp2_frame *frame,
-                                     void *user_data) {
-  http2_session_data *session_data = (http2_session_data *)user_data;
-  http2_stream_data *stream_data;
-
-  if (frame->hd.type != NGHTTP2_HEADERS ||
-      frame->headers.cat != NGHTTP2_HCAT_REQUEST) {
-    return 0;
-  }
-  stream_data = create_http2_stream_data(session_data, frame->hd.stream_id);
-  nghttp2_session_set_stream_user_data(session, frame->hd.stream_id,
-                                       stream_data);
-  return 0;
-}
 
 /* Minimum check for directory traversal. Returns nonzero if it is
    safe. */
@@ -518,23 +492,31 @@ static int on_request_recv(nghttp2_session *session,
                            http2_stream_data *stream_data) {
   int fd;
   nghttp2_nv hdrs[] = {MAKE_NV(":status", "200")};
-  char *rel_path;
+  char *rel_path, *H;
 
-  if (!stream_data->request_path) {
+  if (!stream_data->path) {
     if (error_reply(session, stream_data) != 0) {
       return NGHTTP2_ERR_CALLBACK_FAILURE;
     }
     return 0;
   }
-  LM_INFO("%s GET %s\n", session_data->client_addr,
-          stream_data->request_path);
-  if (!check_path(stream_data->request_path)) {
+  LM_INFO("%s GET %s (stream_id: %d)\n", session_data->client_addr,
+          stream_data->path, stream_data->stream_id);
+  LM_INFO("body: %.*s %d\n", stream_data->data.len, stream_data->data.s, stream_data->data.len);
+
+  if (!check_path(stream_data->path)) {
     if (error_reply(session, stream_data) != 0) {
       return NGHTTP2_ERR_CALLBACK_FAILURE;
     }
     return 0;
   }
-  for (rel_path = stream_data->request_path; *rel_path == '/'; ++rel_path)
+  LM_INFO("A\n");
+
+  H = cJSON_PrintUnformatted(stream_data->hdrs);
+  h2_raise_event_request(stream_data->method, stream_data->path, H, &stream_data->data, NULL);
+  cJSON_PurgeString(H);
+
+  for (rel_path = stream_data->path; *rel_path == '/'; ++rel_path)
     ;
   fd = open(rel_path, O_RDONLY);
   if (fd == -1) {
@@ -545,6 +527,8 @@ static int on_request_recv(nghttp2_session *session,
   }
   stream_data->fd = fd;
 
+  LM_INFO("body: %.*s\n", stream_data->data.len, stream_data->data.s);
+
   if (send_response(session, stream_data->stream_id, hdrs, ARRLEN(hdrs), fd) !=
       0) {
     close(fd);
@@ -553,6 +537,7 @@ static int on_request_recv(nghttp2_session *session,
   return 0;
 }
 
+
 static int on_frame_recv_callback(nghttp2_session *session,
                                   const nghttp2_frame *frame, void *user_data) {
   http2_session_data *session_data = (http2_session_data *)user_data;
@@ -560,10 +545,12 @@ static int on_frame_recv_callback(nghttp2_session *session,
   switch (frame->hd.type) {
   case NGHTTP2_DATA:
   case NGHTTP2_HEADERS:
+	LM_DBG("h2 header [%d], %p %ld\n", frame->hd.type, frame->headers.nva, frame->headers.nvlen);
     /* Check that the client request has finished */
     if (frame->hd.flags & NGHTTP2_FLAG_END_STREAM) {
       stream_data =
           nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+		LM_DBG("END STREAM, data: %p\n", stream_data);
       /* For DATA and HEADERS frame, this callback may be called after
          on_stream_close_callback. Check that stream still alive. */
       if (!stream_data) {
@@ -575,6 +562,133 @@ static int on_frame_recv_callback(nghttp2_session *session,
   default:
     break;
   }
+  return 0;
+}
+
+
+int on_data_chunk_recv_callback(nghttp2_session *session, uint8_t flags,
+        int32_t stream_id, const uint8_t *data, size_t len, void *user_data)
+{
+	http2_stream_data *stream_data;
+	str *body;
+	int prevsz;
+
+	stream_data =
+		nghttp2_session_get_stream_user_data(session, stream_id);
+
+	body = &stream_data->data;
+	prevsz = body->len;
+
+	if (pkg_str_extend(body, body->len + len) != 0) {
+		LM_ERR("out of PKG memory\n");
+		return -1;
+	}
+
+	memcpy(body->s+prevsz, data, len);
+	LM_DBG("stored %zu bytes\n", len);
+
+	return 0;
+}
+
+
+/* nghttp2_on_header_callback: Called when nghttp2 library emits
+   single header name/value pair. */
+static int on_header_callback(nghttp2_session *session,
+                              const nghttp2_frame *frame, const uint8_t *name,
+                              size_t namelen, const uint8_t *_value,
+                              size_t valuelen, uint8_t flags, void *user_data) {
+  http2_stream_data *stream_data;
+  const char PATH[] = ":path", METHOD[] = ":method";
+  char *value = (char *)_value;
+  (void)flags;
+  (void)user_data;
+
+  if (frame->hd.type != NGHTTP2_HEADERS
+        || frame->headers.cat != NGHTTP2_HCAT_REQUEST)
+	  return 0;
+
+  stream_data =
+      nghttp2_session_get_stream_user_data(session, frame->hd.stream_id);
+  if (!stream_data) {
+	LM_ERR("failed to fetch data for stream %d\n", frame->hd.stream_id);
+	return 0;
+  }
+
+  LM_DBG("received hdr(%d) on stream %d: '%.*s' = '%.*s' (%p)\n", frame->hd.type,
+      stream_data->stream_id, (int)namelen, name, (int)valuelen, value, stream_data);
+
+  if (stream_data->path)
+    goto store_hdr;
+
+  if (namelen == sizeof(PATH) - 1 && memcmp(PATH, name, namelen) == 0) {
+    size_t j;
+    for (j = 0; j < valuelen && _value[j] != '?'; ++j)
+      ;
+    stream_data->path = percent_decode(_value, j);
+
+    LM_DBG("detected ':path' header, decoded value: '%s'\n", stream_data->path);
+
+	value = stream_data->path;
+	valuelen = strlen(value);
+  }
+
+store_hdr:
+  if (stream_data->hdrs_len + namelen + valuelen > max_headers_size) {
+	LM_ERR("max_headers_size exceeded (%d), skipping header: %s\n",
+			max_headers_size, name);
+	return 0;
+  }
+
+  {
+	cJSON *val = cJSON_CreateStr(value, valuelen);
+	str key = {(char *)name, namelen};
+
+	if (!val) {
+		LM_ERR("oom\n");
+		return 0;
+	}
+
+	_cJSON_AddItemToObject(stream_data->hdrs, &key, val);
+	if (!val->string) {
+		LM_ERR("oom\n");
+		cJSON_Delete(val);
+		return 0;
+	}
+
+	stream_data->hdrs_len += namelen + valuelen;
+
+    if (!stream_data->method && namelen == sizeof(METHOD) - 1
+			&& memcmp(METHOD, name, namelen) == 0)
+		stream_data->method = val->valuestring;
+  }
+
+  return 0;
+}
+
+static int on_begin_headers_callback(nghttp2_session *session,
+                                     const nghttp2_frame *frame,
+                                     void *user_data) {
+  http2_session_data *session_data = (http2_session_data *)user_data;
+  http2_stream_data *stream_data;
+
+  if (frame->hd.type != NGHTTP2_HEADERS ||
+      frame->headers.cat != NGHTTP2_HCAT_REQUEST) {
+    return 0;
+  }
+
+  stream_data = create_http2_stream_data(session_data, frame->hd.stream_id);
+  if (!stream_data) {
+	LM_ERR("failed to allocate stream data\n");
+	return -1;
+  }
+
+  LM_DBG("------------ BEGIN HEADERS (data: %p, stream_id: %d) ----------\n", stream_data, frame->hd.stream_id);
+  if (nghttp2_session_set_stream_user_data(session, frame->hd.stream_id,
+                                       stream_data) < 0) {
+	LM_ERR("failed to set user data\n");
+	return -1;
+  }
+
   return 0;
 }
 
@@ -606,7 +720,7 @@ static void initialize_nghttp2_session(http2_session_data *session_data) {
   nghttp2_session_callbacks_set_on_header_callback(callbacks,
                                                    on_header_callback);
   nghttp2_session_callbacks_set_on_data_chunk_recv_callback(callbacks,
-                                                   data_chunk_recv_callback);
+                                                   on_data_chunk_recv_callback);
   nghttp2_session_callbacks_set_on_begin_headers_callback(
       callbacks, on_begin_headers_callback);
 

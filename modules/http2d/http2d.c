@@ -29,6 +29,7 @@
 #include "../../mem/mem.h"
 
 #include "server.h"
+#include "h2_evi.h"
 
 /* module functions */
 static int mod_init();
@@ -38,10 +39,11 @@ unsigned int h2_port = 9111;
 char *h2_ip;
 str h2_tls_cert = STR_NULL;
 str h2_tls_key = STR_NULL;
+unsigned int max_headers_size = 8192; /* B */
 
 
 static const proc_export_t procs[] = {
-	{"HTTP2D",  0,  0, http2_server, 1, PROC_FLAG_INITCHILD },
+	{"HTTP2D",  0,  0, http2_server, 1, PROC_FLAG_INITCHILD|PROC_FLAG_NEEDS_SCRIPT },
 	{NULL, 0, 0, NULL, 0, 0}
 };
 
@@ -51,6 +53,7 @@ static const param_export_t params[] = {
 	{"ip",            STR_PARAM, &h2_ip},
 	{"tls_cert_file", STR_PARAM, &h2_tls_cert.s},
 	{"tls_key_file", STR_PARAM,  &h2_tls_key.s},
+	{"max_headers_size", INT_PARAM,  &max_headers_size},
 	{NULL, 0, NULL}
 };
 
@@ -101,6 +104,11 @@ static int mod_init(void)
 
 	h2_tls_cert.len = strlen(h2_tls_cert.s);
 	h2_tls_key.len = strlen(h2_tls_key.s);
+
+	if (h2_init_evi() != 0) {
+		LM_ERR("failed to init EVI structures\n");
+		return -1;
+	}
 
 	return 0;
 }
