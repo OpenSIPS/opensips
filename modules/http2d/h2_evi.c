@@ -30,12 +30,7 @@ static evi_params_p h2ev_req_params;
 static evi_param_p h2ev_req_param_method;
 static evi_param_p h2ev_req_param_path;
 static evi_param_p h2ev_req_param_headers;
-static evi_param_p h2ev_req_param_body;
-
-str h2ev_req_pname_method = str_init("method");
-str h2ev_req_pname_path = str_init("path");
-str h2ev_req_pname_headers = str_init("headers");
-str h2ev_req_pname_body = str_init("body");
+static evi_param_p h2ev_req_param_data;
 
 
 int h2_init_evi(void)
@@ -61,12 +56,12 @@ int h2_init_evi(void)
 	}
 	*h2_response = NULL;
 
-	h2ev_req_param_method = evi_param_create(h2ev_req_params, &h2ev_req_pname_method);
-	h2ev_req_param_path = evi_param_create(h2ev_req_params, &h2ev_req_pname_path);
-	h2ev_req_param_headers = evi_param_create(h2ev_req_params, &h2ev_req_pname_headers);
-	h2ev_req_param_body = evi_param_create(h2ev_req_params, &h2ev_req_pname_body);
+	h2ev_req_param_method = evi_param_create(h2ev_req_params, &str_init("method"));
+	h2ev_req_param_path = evi_param_create(h2ev_req_params, &str_init("path"));
+	h2ev_req_param_headers = evi_param_create(h2ev_req_params, &str_init("headers"));
+	h2ev_req_param_data = evi_param_create(h2ev_req_params, &str_init("data"));
 	if (!h2ev_req_param_method || !h2ev_req_param_path
-	        || !h2ev_req_param_headers || !h2ev_req_param_body) {
+	        || !h2ev_req_param_headers || !h2ev_req_param_data) {
 		LM_ERR("failed to create EVI params\n");
 		return -1;
 	}
@@ -103,7 +98,7 @@ void h2_raise_event_request(const char *method, const char *path,
 		return;
 	}
 
-	if (evi_param_set_str(h2ev_req_param_body, body) < 0) {
+	if (evi_param_set_str(h2ev_req_param_data, body) < 0) {
 		LM_ERR("failed to set 'body'\n");
 		return;
 	}
