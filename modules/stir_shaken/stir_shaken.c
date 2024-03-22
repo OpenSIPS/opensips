@@ -1866,8 +1866,10 @@ static int get_parsed_identity(struct sip_msg *msg,
 
 	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
 		LM_INFO("No Identity header found\n");
-		return -1;
+		return -2;
 	}
+
+	rc = -2;
 
 	do {
 
@@ -1879,34 +1881,29 @@ static int get_parsed_identity(struct sip_msg *msg,
 		memset(*parsed, 0, sizeof **parsed);
 
 		rc = parse_identity_hf(&identity_hdr->body, *parsed);
-		if (rc < 0) {
-			pkg_free(*parsed);
-			*parsed = NULL;
-		} else {
-			/* check the pss type to be "shaken" */
-			if (str_strcmp(&(*parsed)->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
-				LM_INFO("Unsupported 'ppt' extension\n");
-				parsed_ctx_free(*parsed);
-				*parsed = NULL;
-				rc = -4; // invalid format
-			}
+		if (rc >= 0) {
+			if (str_strcmp(&(*parsed)->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL)) == 0)
+				break;
+			LM_INFO("Unsupported '%.*s' extension\n",
+				(*parsed)->ppt_hdr_param.len, (*parsed)->ppt_hdr_param.s);
+			rc = -2; /* consider we did not find a proper Identity header */
+		}
+		pkg_free(*parsed);
+		*parsed = NULL;
+		/* let's check other Identity hdr, if present */
+		identity_hdr = get_next_header_by_static_name ( identity_hdr,
+			"Identity");
+		if (identity_hdr==NULL) {
+			LM_INFO("No valid Identity header found\n");
+			return rc;
 		}
 
-		if (*parsed==NULL) {
-			/* let's check other Identity hdr, if present */
-			identity_hdr = get_next_header_by_static_name ( identity_hdr,
-				"Identity");
-			if (identity_hdr==NULL) {
-				LM_INFO("No valid Identity header found\n");
-				return rc;
-			}
-		}
+	}while(rc < 0);
 
-	}while(*parsed==NULL);
+	if (rc >= 0)
+		parsed_ctx_set(*parsed);
 
-	parsed_ctx_set(*parsed);
-
-	return 0;
+	return rc;
 }
 
 static int set_err_resp_vars(struct sip_msg *msg, pv_spec_t *err_code_var,
