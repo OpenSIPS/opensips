@@ -454,7 +454,7 @@ static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
 	}
 
 	cJSON_Delete(avps);
-	return 0;
+	return 1;
 
 error:
 	_dm_destroy_message(dmsg);

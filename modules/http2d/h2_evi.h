@@ -24,10 +24,9 @@
 #include "../../str.h"
 
 #define H2EV_REQ_NAME "E_HTTP2_REQUEST"
-extern str h2ev_req_pname_msg;
 
 int h2_init_evi(void);
 void h2_raise_event_request(const char *method, const char *path,
-		const char *headers_json, const str *body, void *msg);
+		const char *headers_json, const str *body);
 
 #endif /* __H2_EVI__ */
