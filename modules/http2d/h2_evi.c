@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,USA
  */
 
+#include "server.h"
 #include "h2_evi.h"
 
 #include "../../dprint.h"
@@ -30,13 +31,11 @@ static evi_param_p h2ev_req_param_method;
 static evi_param_p h2ev_req_param_path;
 static evi_param_p h2ev_req_param_headers;
 static evi_param_p h2ev_req_param_body;
-static evi_param_p h2ev_req_param_msg;
 
 str h2ev_req_pname_method = str_init("method");
 str h2ev_req_pname_path = str_init("path");
 str h2ev_req_pname_headers = str_init("headers");
 str h2ev_req_pname_body = str_init("body");
-str h2ev_req_pname_msg = str_init("_h2msg_");
 
 
 int h2_init_evi(void)
@@ -55,14 +54,19 @@ int h2_init_evi(void)
 	}
 	memset(h2ev_req_params, 0, sizeof *h2ev_req_params);
 
+	h2_response = shm_malloc(sizeof *h2_response);
+	if (!h2_response) {
+		LM_ERR("oom SHM\n");
+		return -1;
+	}
+	*h2_response = NULL;
+
 	h2ev_req_param_method = evi_param_create(h2ev_req_params, &h2ev_req_pname_method);
 	h2ev_req_param_path = evi_param_create(h2ev_req_params, &h2ev_req_pname_path);
 	h2ev_req_param_headers = evi_param_create(h2ev_req_params, &h2ev_req_pname_headers);
 	h2ev_req_param_body = evi_param_create(h2ev_req_params, &h2ev_req_pname_body);
-	h2ev_req_param_msg = evi_param_create(h2ev_req_params, &h2ev_req_pname_msg);
 	if (!h2ev_req_param_method || !h2ev_req_param_path
-	        || !h2ev_req_param_headers || !h2ev_req_param_body
-	        || !h2ev_req_param_msg) {
+	        || !h2ev_req_param_headers || !h2ev_req_param_body) {
 		LM_ERR("failed to create EVI params\n");
 		return -1;
 	}
@@ -77,10 +81,8 @@ int h2_init_evi(void)
  * @sroutes, causing a crash when attempting to raise a script event
  */
 void h2_raise_event_request(const char *method, const char *path,
-		const char *headers_json, const str *body, void *msg)
+		const char *headers_json, const str *body)
 {
-	char buf[sizeof(long)*2 + 1], *p = buf;
-	int sz = sizeof(buf);
 	str st;
 
 	init_str(&st, method);
@@ -103,15 +105,6 @@ void h2_raise_event_request(const char *method, const char *path,
 
 	if (evi_param_set_str(h2ev_req_param_body, body) < 0) {
 		LM_ERR("failed to set 'body'\n");
-		return;
-	}
-
-	int64_2reverse_hex(&p, &sz, (unsigned long)msg);
-	*p = '\0';
-	init_str(&st, buf);
-
-	if (evi_param_set_str(h2ev_req_param_msg, &st) < 0) {
-		LM_ERR("failed to set '_h2msg_'\n");
 		return;
 	}
 

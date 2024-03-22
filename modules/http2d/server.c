@@ -78,7 +78,6 @@ extern unsigned int max_headers_size;
 #include <event2/listener.h>
 
 #define NGHTTP2_NO_SSIZE_T
-#include <nghttp2/nghttp2.h>
 
 #define OUTPUT_WOULDBLOCK_THRESHOLD (1 << 16)
 
@@ -421,14 +420,16 @@ static nghttp2_ssize file_read_callback(nghttp2_session *session,
   return (nghttp2_ssize)r;
 }
 
-static int send_response(nghttp2_session *session, int32_t stream_id,
+static int send_response_fd(nghttp2_session *session, int32_t stream_id,
                          nghttp2_nv *nva, size_t nvlen, int fd) {
   int rv;
   nghttp2_data_provider2 data_prd;
+
   data_prd.source.fd = fd;
   data_prd.read_callback = file_read_callback;
 
-  rv = nghttp2_submit_response2(session, stream_id, nva, nvlen, &data_prd);
+  rv = nghttp2_submit_response2(session, stream_id, nva, nvlen,
+			fd > 0 ? &data_prd : NULL);
   if (rv != 0) {
     warnx("Fatal error: %s", nghttp2_strerror(rv));
     return -1;
@@ -436,15 +437,27 @@ static int send_response(nghttp2_session *session, int32_t stream_id,
   return 0;
 }
 
-static const char ERROR_HTML[] = "<html><head><title>404</title></head>"
-                                 "<body><h1>404 Not Found</h1></body></html>";
+static int send_response_empty(nghttp2_session *session, int32_t stream_id,
+                         nghttp2_nv *nva, size_t nvlen) {
+	int rv;
+
+	rv = nghttp2_submit_response2(session, stream_id, nva, nvlen, NULL);
+	if (rv != 0) {
+		warnx("Fatal error: %s", nghttp2_strerror(rv));
+		return -1;
+	}
+	return 0;
+}
+
+static const char ERROR_HTML[] = "<html><head><title>500</title></head>"
+                                 "<body><h1>500 Internal Server Error</h1></body></html>";
 
 static int error_reply(nghttp2_session *session,
                        http2_stream_data *stream_data) {
   int rv;
   ssize_t writelen;
   int pipefd[2];
-  nghttp2_nv hdrs[] = {MAKE_NV(":status", "404")};
+  nghttp2_nv hdrs[] = {MAKE_NV(":status", "500")};
 
   rv = pipe(pipefd);
   if (rv != 0) {
@@ -469,11 +482,22 @@ static int error_reply(nghttp2_session *session,
 
   stream_data->fd = pipefd[0];
 
-  if (send_response(session, stream_data->stream_id, hdrs, ARRLEN(hdrs),
+  if (send_response_fd(session, stream_data->stream_id, hdrs, ARRLEN(hdrs),
                     pipefd[0]) != 0) {
     close(pipefd[0]);
     return -1;
   }
+  return 0;
+}
+
+
+static int timeout_reply(nghttp2_session *session,
+                       http2_stream_data *stream_data) {
+  nghttp2_nv hdrs[] = {MAKE_NV(":status", "408")};
+
+  if (send_response_empty(session, stream_data->stream_id, hdrs, ARRLEN(hdrs)) != 0)
+    return -1;
+
   return 0;
 }
 
@@ -487,54 +511,120 @@ static int check_path(const char *path) {
          !ends_with(path, "/..") && !ends_with(path, "/.");
 }
 
+
+static int h2_fdpack(str *data)
+{
+  int rv;
+  ssize_t writelen;
+  int pipefd[2];
+
+  if (!data->s || data->len == 0)
+	  return 0;
+
+  rv = pipe(pipefd);
+  if (rv != 0) {
+	LM_ERR("failed to create pipe %d (%s)\n", errno, strerror(errno));
+	return -1;
+  }
+
+  writelen = write(pipefd[1], data->s, data->len);
+  close(pipefd[1]);
+
+  if (writelen != data->len) {
+    close(pipefd[0]);
+    return -1;
+  }
+
+  return pipefd[0];
+}
+
+
 static int on_request_recv(nghttp2_session *session,
                            http2_session_data *session_data,
                            http2_stream_data *stream_data) {
-  int fd;
-  nghttp2_nv hdrs[] = {MAKE_NV(":status", "200")};
-  char *rel_path, *H;
+	int rc;
+	struct timespec wait_until;
+	struct timeval now, wait_time, res;
+	char *H;
 
-  if (!stream_data->path) {
-    if (error_reply(session, stream_data) != 0) {
-      return NGHTTP2_ERR_CALLBACK_FAILURE;
-    }
-    return 0;
-  }
-  LM_INFO("%s GET %s (stream_id: %d)\n", session_data->client_addr,
-          stream_data->path, stream_data->stream_id);
-  LM_INFO("body: %.*s %d\n", stream_data->data.len, stream_data->data.s, stream_data->data.len);
+	if (!stream_data->path) {
+		if (error_reply(session, stream_data) != 0) {
+			return NGHTTP2_ERR_CALLBACK_FAILURE;
+		}
+		return 0;
+	}
 
-  if (!check_path(stream_data->path)) {
-    if (error_reply(session, stream_data) != 0) {
-      return NGHTTP2_ERR_CALLBACK_FAILURE;
-    }
-    return 0;
-  }
-  LM_INFO("A\n");
+	LM_INFO("%s GET %s (stream_id: %d)\n", session_data->client_addr,
+	        stream_data->path, stream_data->stream_id);
+	LM_INFO("body: %.*s %d\n", stream_data->data.len, stream_data->data.s, stream_data->data.len);
 
-  H = cJSON_PrintUnformatted(stream_data->hdrs);
-  h2_raise_event_request(stream_data->method, stream_data->path, H, &stream_data->data, NULL);
-  cJSON_PurgeString(H);
+	if (!check_path(stream_data->path)) {
+		if (error_reply(session, stream_data) != 0) {
+			return NGHTTP2_ERR_CALLBACK_FAILURE;
+		}
+		return 0;
+	}
+	LM_INFO("A\n");
 
-  for (rel_path = stream_data->path; *rel_path == '/'; ++rel_path)
-    ;
-  fd = open(rel_path, O_RDONLY);
-  if (fd == -1) {
-    if (error_reply(session, stream_data) != 0) {
-      return NGHTTP2_ERR_CALLBACK_FAILURE;
-    }
-    return 0;
-  }
-  stream_data->fd = fd;
+	pthread_mutex_lock(&ng_h2_response->mutex);
 
-  LM_INFO("body: %.*s\n", stream_data->data.len, stream_data->data.s);
+	H = cJSON_PrintUnformatted(stream_data->hdrs);
+	h2_raise_event_request(stream_data->method, stream_data->path,
+	                         H, &stream_data->data);
+	cJSON_PurgeString(H);
 
-  if (send_response(session, stream_data->stream_id, hdrs, ARRLEN(hdrs), fd) !=
-      0) {
-    close(fd);
-    return NGHTTP2_ERR_CALLBACK_FAILURE;
-  }
-  return 0;
+	gettimeofday(&now, NULL);
+	wait_time.tv_sec = h2_response_timeout / 1000;
+	wait_time.tv_usec = h2_response_timeout % 1000 * 1000UL;
+	LM_DBG("awaiting HTTP2 reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
+
+	timeradd(&now, &wait_time, &res);
+
+	wait_until.tv_sec = res.tv_sec;
+	wait_until.tv_nsec = res.tv_usec * 1000UL;
+
+	rc = pthread_cond_timedwait(&ng_h2_response->cond,
+			&ng_h2_response->mutex, &wait_until);
+	if (rc != 0) {
+		pthread_mutex_unlock(&ng_h2_response->mutex);
+
+		LM_ERR("timeout (errno: %d '%s') while awaiting "
+				"HTTP2 reply from opensips.cfg\n", rc, strerror(rc));
+		if (timeout_reply(session, stream_data) != 0)
+			return NGHTTP2_ERR_CALLBACK_FAILURE;
+
+		return 0;
+	}
+
+	pthread_mutex_unlock(&ng_h2_response->mutex);
+
+	/* we failed to build a reply in the SIP worker, so reply with a 500 */
+	if (ng_h2_response->code <= 0) {
+		if (error_reply(session, stream_data) != 0)
+			return NGHTTP2_ERR_CALLBACK_FAILURE;
+		return 0;
+	}
+
+	LM_DBG("rpl code: %d\n", ng_h2_response->code);
+	LM_DBG("rpl # headers: %d\n", ng_h2_response->hdrs_len);
+	LM_DBG("body: %.*s\n", stream_data->data.len, stream_data->data.s);
+	LM_DBG("rpl body: %.*s\n", ng_h2_response->body.len, ng_h2_response->body.s);
+
+	int fd = h2_fdpack(&ng_h2_response->body);
+	if (fd < 0) {
+		LM_ERR("failed to pack data\n");
+		if (error_reply(session, stream_data) != 0)
+			return NGHTTP2_ERR_CALLBACK_FAILURE;
+		return 0;
+	}
+
+	if (send_response_fd(session, stream_data->stream_id,
+				ng_h2_response->hdrs, ng_h2_response->hdrs_len, fd) != 0) {
+		close(fd);
+		return NGHTTP2_ERR_CALLBACK_FAILURE;
+	}
+
+	return 0;
 }
 
 
@@ -704,6 +794,7 @@ static int on_stream_close_callback(nghttp2_session *session, int32_t stream_id,
   }
   remove_stream(session_data, stream_data);
   delete_http2_stream_data(stream_data);
+  h2_response_clean();
   return 0;
 }
 
@@ -886,14 +977,63 @@ static void run(const char *service, const char *key_file,
 
   LM_DBG("event loop start\n");
   event_base_loop(evbase, 0);
+  LM_DBG("event loop end\n");
 
   event_base_free(evbase);
   SSL_CTX_free(ssl_ctx);
 }
 
+static void init_mutex_cond(pthread_mutex_t *mutex, pthread_cond_t *cond)
+{
+	pthread_mutexattr_t mattr;
+	pthread_mutexattr_init(&mattr);
+	pthread_mutexattr_setpshared(&mattr, PTHREAD_PROCESS_SHARED);
+	pthread_mutexattr_setrobust(&mattr, PTHREAD_MUTEX_ROBUST);
+	pthread_mutex_init(mutex, &mattr);
+	pthread_mutexattr_destroy(&mattr);
+
+	pthread_condattr_t cattr;
+	pthread_condattr_init(&cattr);
+	pthread_condattr_setpshared(&cattr, PTHREAD_PROCESS_SHARED);
+	pthread_cond_init(cond, &cattr);
+	pthread_condattr_destroy(&cattr);
+}
+
+void h2_response_clean(void)
+{
+	int i;
+
+	if (ng_h2_response->hdrs) {
+		for (i = 0; i < ng_h2_response->hdrs_len; i++) {
+			shm_free(ng_h2_response->hdrs[i].name);
+			shm_free(ng_h2_response->hdrs[i].value);
+		}
+
+		shm_free(ng_h2_response->hdrs);
+		ng_h2_response->hdrs = NULL;
+		ng_h2_response->hdrs_len = 0;
+	}
+
+	if (ng_h2_response->body.s) {
+		shm_free(ng_h2_response->body.s);
+		memset(&ng_h2_response->body, 0, sizeof ng_h2_response->body);
+	}
+
+	ng_h2_response->code = 0;
+}
+
 void http2_server(int rank)
 {
 	struct sigaction act;
+
+	ng_h2_response = shm_malloc(sizeof *ng_h2_response);
+	if (!ng_h2_response) {
+		LM_ERR("oom SHM\n");
+		return;
+	}
+	memset(ng_h2_response, 0, sizeof *ng_h2_response);
+	init_mutex_cond(&ng_h2_response->mutex, &ng_h2_response->cond);
+	*h2_response = ng_h2_response;
 
 	memset(&act, 0, sizeof act);
 	act.sa_handler = SIG_IGN;

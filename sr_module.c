@@ -868,7 +868,6 @@ int start_module_procs(void)
 				flags = OSS_PROC_IS_EXTRA;
 				if (m->exports->procs[n].flags&PROC_FLAG_NEEDS_SCRIPT)
 					flags |= OSS_PROC_NEEDS_SCRIPT;
-				else
 				if ( (m->exports->procs[n].flags&PROC_FLAG_HAS_IPC)==0)
 					flags |= OSS_PROC_NO_IPC;
 				struct internal_fork_params ifp = {

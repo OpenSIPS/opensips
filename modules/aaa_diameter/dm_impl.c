@@ -2028,7 +2028,7 @@ int _dm_send_message(aaa_conn *_, aaa_message *msg, struct dm_cond **reply_cond)
 	gettimeofday(&now, NULL);
 	wait_time.tv_sec = dm_answer_timeout / 1000;
 	wait_time.tv_usec = dm_answer_timeout % 1000 * 1000UL;
-	LM_DBG("awaiting auth reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
+	LM_DBG("awaiting reply (%ld s, %ld us)...\n", wait_time.tv_sec, wait_time.tv_usec);
 
 	timeradd(&now, &wait_time, &res);
 
