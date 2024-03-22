@@ -35,7 +35,7 @@
 static int mod_init();
 static void mod_destroy(void);
 
-unsigned int h2_port = 9111;
+unsigned int h2_port = 443;
 char *h2_ip;
 str h2_tls_cert = STR_NULL;
 str h2_tls_key = STR_NULL;
@@ -65,11 +65,12 @@ static const proc_export_t procs[] = {
 
 /* Module parameters */
 static const param_export_t params[] = {
-	{"port",          INT_PARAM, &h2_port},
 	{"ip",            STR_PARAM, &h2_ip},
-	{"tls_cert_file", STR_PARAM, &h2_tls_cert.s},
-	{"tls_key_file", STR_PARAM,  &h2_tls_key.s},
+	{"port",          INT_PARAM, &h2_port},
+	{"tls_cert_path", STR_PARAM, &h2_tls_cert.s},
+	{"tls_key_path", STR_PARAM,  &h2_tls_key.s},
 	{"max_headers_size", INT_PARAM,  &max_headers_size},
+	{"response_timeout", INT_PARAM,  &h2_response_timeout},
 	{NULL, 0, NULL}
 };
 

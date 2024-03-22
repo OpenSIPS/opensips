@@ -1,0 +1,299 @@
+<!-- Module User's Guide -->
+
+<chapter>
+
+	<title>&adminguide;</title>
+
+	<section id="overview" xreflabel="Overview">
+	<title>Overview</title>
+	<para>
+		This module provides an RFC 7540/9113 HTTP/2 server implementation with "h2" ALPN support,
+		based on the <emphasis role='bold'>nghttp2</emphasis> library (<ulink url="https://nghttp2.org/"/>).
+	</para>
+
+	<para>
+		HTTP/2, introduced in 2015, is a binary protocol with added transactional layers (SESSION, FRAME),
+		which allow identifying and managing multiple, concurrent transfers over the same TCP/TLS connection.
+		Thus, the revised protocol primarily aims to reduce resource usage for both clients and servers, by
+		reducing the amount of TCP and/or TLS handshakes performed when loading a given web page.
+	</para>
+
+	<para>
+		The OpenSIPS <emphasis role='bold'>http2d</emphasis> server includes support for both "h2" (TLS secured)
+		and "h2c" (cleartext) HTTP/2 connections.  The requests arrive at
+		<emphasis>opensips.cfg</emphasis> level using the <xref linkend="event_http2_request"/> event,
+		where script writers may process the data and respond accordingly.
+	</para>
+	</section>
+
+	<section id="dependencies" xreflabel="Dependencies">
+	<title>Dependencies</title>
+	<section>
+		<title>&osips; Modules</title>
+		<para>
+		None.
+		</para>
+	</section>
+
+	<section>
+		<title>External Libraries or Applications</title>
+		<para>
+		The HTTP/2 server is provided by the <emphasis role='bold'>nghttp2</emphasis> library,
+		which runs on top of the <emphasis role='bold'>libevent</emphasis> server framework.
+		</para>
+		<para>
+		Overall, the following libraries must be installed before running
+		&osips; with this module loaded:
+		</para>
+		<itemizedlist>
+			<listitem>
+			<para><emphasis>libnghttp2</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>libevent</emphasis>, <emphasis>libevent_openssl</emphasis>
+			</para>
+			</listitem>
+			<listitem>
+			<para><emphasis>libssl</emphasis>, <emphasis>libcrypto</emphasis>
+			</para>
+			</listitem>
+		</itemizedlist>
+	</section>
+	</section>
+
+	<section id="exported_parameters" xreflabel="Exported Parameters">
+		<title>Exported Parameters</title>
+		<section id="param_ip" xreflabel="ip">
+		<title><varname>ip (string)</varname></title>
+		<para>
+		The listening IPv4 address.
+		</para>
+		<para>
+			Default value is <emphasis>"127.0.0.1"</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <varname>ip</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("http2d", "ip", "127.0.0.2")
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_port" xreflabel="port">
+		<title><varname>port (integer)</varname></title>
+		<para>
+			The listening port.
+		</para>
+		<para>
+			Default value is <emphasis>443</emphasis>.
+		</para>
+		<example>
+		<title>Setting the <varname>port</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("http2d", "port", 5000)
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_tls_cert_path" xreflabel="tls_cert_path">
+		<title><varname>tls_cert_path (string)</varname></title>
+		<para>
+		File path to the TLS certificate, in PEM format.
+		</para>
+		<para>
+			Default value is <emphasis>NULL</emphasis> (not set).
+		</para>
+		<example>
+		<title>Setting the <varname>tls_cert_path</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("http2d", "tls_cert_path", "/etc/pki/http2/cert.pem")
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_tls_cert_key" xreflabel="tls_cert_key">
+		<title><varname>tls_cert_key (string)</varname></title>
+		<para>
+		File path to the TLS private key, in PEM format.
+		</para>
+		<para>
+			Default value is <emphasis>NULL</emphasis> (not set).
+		</para>
+		<example>
+		<title>Setting the <varname>tls_cert_key</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("http2d", "tls_cert_key", "/etc/pki/http2/private/key.pem")
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_max_headers_size" xreflabel="max_headers_size">
+		<title><varname>max_headers_size (integer)</varname></title>
+		<para>
+		The maximum amount of bytes allowed for all header field names and values
+		combined in a single HTTP/2 request processed by the server.  Once this
+		threshold is reached, extra headers will no longer be provided at script
+		level and will be reported as errors instead.
+		</para>
+		<para>
+			Default value is <emphasis>8192</emphasis> bytes.
+		</para>
+		<example>
+		<title>Setting the <varname>max_headers_size</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("http2d", "max_headers_size", 16384)
+
+</programlisting>
+		</example>
+		</section>
+
+		<section id="param_response_timeout" xreflabel="response_timeout">
+		<title><varname>response_timeout (integer)</varname></title>
+		<para>
+		The maximum amount of time, in milliseconds, that the library will
+		allow the opensips.cfg processing to take for a given HTTP/2 request.
+		</para>
+		<para>
+		Once this timeout is reached, the module will auto-generate a
+		408 (request timeout) reply.
+		</para>
+		<para>
+			Default value is <emphasis>2000</emphasis> ms.
+		</para>
+		<example>
+		<title>Setting the <varname>response_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+
+modparam("http2d", "response_timeout", 5000)
+
+</programlisting>
+		</example>
+		</section>
+
+	</section>
+
+	<section id="exported_functions" xreflabel="exported_functions">
+	<title>Exported Functions</title>
+	<section id="func_http2_send_response" xreflabel="http2_send_response()">
+		<title>
+		<function moreinfo="none">http2_send_response(code, [headers_json], [data])</function>
+		</title>
+		<para>
+		Sends a response for the HTTP/2 request being processed.  The <emphasis>":status"</emphasis>
+		header field will be automatically included by the module as 1st header, so it must not be
+		included in the <emphasis>headers_json</emphasis> array.
+		</para>
+		<para><emphasis>Parameters</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>code</emphasis> (integer) - The HTTP/2 reply code
+			</para></listitem>
+			<listitem><para>
+				<emphasis>headers_json</emphasis> (string, default: <emphasis>NULL</emphasis>)
+				- Optional JSON Array containing {"header": "value"} elements, denoting HTTP/2
+				headers and their values to be included in the response message.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>data</emphasis> (string, default: <emphasis>NULL</emphasis>)
+				- Optional DATA payload to include in the response message.
+			</para></listitem>
+		</itemizedlist>
+
+		<para><emphasis>Return Codes</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis role='bold'>1</emphasis> - Success
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>-1</emphasis> - Internal Error
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can only be used from an <emphasis>EVENT_ROUTE</emphasis>.
+		</para>
+		<example>
+		<title><function moreinfo="none">http2_send_response()</function> usage</title>
+		<programlisting format="linespecific">
+
+event_route [E_HTTP2_REQUEST] {
+  xlog(":: Method:  $param(method)\n");
+  xlog(":: Path:    $param(path)\n");
+  xlog(":: Headers: $param(headers)\n");
+  xlog(":: Data:    $param(data)\n");
+
+  $json(hdrs) := $param(headers);
+  xlog("content-type: $json(hdrs/content-type)\n");
+
+  $var(rpl_headers) = "[
+	{ \"content-type\": "application/json" },
+	{ \"server\": "OpenSIPS 3.5" },
+	{ \"x-current-time\": "1711457142" },
+	{ \"x-call-cost\": "0.355" }
+  ]";
+
+  $var(data) = "{\"status\": \"success\"}";
+
+  if (!http2_send_response(200, $var(rpl_headers), $var(data)))
+    xlog("ERROR - failed to send HTTP/2 response\n");
+}
+
+</programlisting>
+		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_http2_request" xreflabel="E_HTTP2_REQUEST">
+		<title>
+		<function moreinfo="none">E_HTTP2_REQUEST</function>
+		</title>
+		<para>
+		This event is raised whenever the <emphasis>http2d</emphasis>
+		module is loaded and OpenSIPS receives an HTTP/2 request on the configured
+		listening interface(s).
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>method (string)</emphasis> - value of the ":method" HTTP/2 header
+			</para></listitem>
+			<listitem><para>
+					<emphasis>path (string)</emphasis> - value of the ":path" HTTP/2 header
+			</para></listitem>
+			<listitem><para>
+					<emphasis>headers (string)</emphasis> - JSON Array with all headers of the request,
+						including pseudo-headers
+			</para></listitem>
+			<listitem><para>
+					<emphasis>data (string, default: NULL)</emphasis> - If the request included a payload,
+						this parameter will hold its contents
+			</para></listitem>
+		</itemizedlist>
+
+		<para>
+		Note that this event is currently designed to be mainly consumed by an <emphasis>event_route</emphasis>,
+		since that is the only way to gain access to the <xref linkend="func_http2_send_response"/>
+		function in order to build custom response messages.  On the other hand,
+		if the application does not mind the answer being always a 200 with no payload,
+		this event can be successfully consumed through any other EVI-compatible delivery channel ☺️
+		</para>
+	</section>
+
+	</section>
+
+</chapter>
