@@ -344,7 +344,6 @@ static int dm_auth_reply(struct msg **_msg, struct avp * avp, struct session * s
 	rpl_cond->rpl.rc = rc;
 
 	hash_remove_key(pending_replies, callid);
-	LM_INFO("XXX: removing %.*s\n", callid.len, callid.s);
 	hash_unlock(pending_replies, hentry);
 
 	FD_CHECK(fd_msg_search_avp(msg, dm_dict.Error_Message, &a));
