@@ -58,7 +58,7 @@
 		<type>unsigned int</type>
 		<size>11</size>
 		<default>0</default>
-		<description>Probing mode (0-none, 1-if disabled, 2-all the time)</description>
+		<description>Probing mode (0-none, 1-if disabled, 2-all the time, 12-completly disabled)</description>
 	</column>
 
 	<column id="attrs">

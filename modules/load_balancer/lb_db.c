@@ -178,6 +178,9 @@ int lb_db_load_data( struct lb_data *data)
 			pmode = VAL_INT(ROW_VALUES(row)+4);
 			if (pmode==0) {
 				flags |= LB_DST_PING_DSBL_FLAG;
+			} else if (pmode==LB_DST_STAT_MASK) {
+				/* DST is disabled from the db if the PROBING is 12 */
+				flags |= LB_DST_STAT_MASK;
 			} else if (pmode>=2) {
 				flags |= LB_DST_PING_PERM_FLAG;
 			}
