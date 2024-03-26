@@ -33,16 +33,6 @@
 
 extern unsigned int max_headers_size;
 
-#ifdef __sgi
-#  define errx(exitcode, format, args...)                                      \
-    {                                                                          \
-      warnx(format, ##args);                                                   \
-      exit(exitcode);                                                          \
-    }
-#  define warn(format, args...) warnx(format ": %s", ##args, strerror(errno))
-#  define warnx(format, args...) fprintf(stderr, format "\n", ##args)
-#endif
-
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif /* HAVE_CONFIG_H */
@@ -63,9 +53,6 @@ extern unsigned int max_headers_size;
 #  include <netinet/in.h>
 #endif /* HAVE_NETINET_IN_H */
 #include <netinet/tcp.h>
-#ifndef __sgi
-#  include <err.h>
-#endif
 #include <string.h>
 #include <errno.h>
 
@@ -140,8 +127,9 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 
 	ssl_ctx = SSL_CTX_new(TLS_server_method());
 	if (!ssl_ctx) {
-		errx(1, "Could not create SSL/TLS context: %s",
+		LM_ERR("Could not create SSL/TLS context: %s",
 		     ERR_error_string(ERR_get_error(), NULL));
+		return NULL;
 	}
 	SSL_CTX_set_options(ssl_ctx,
 	                  SSL_OP_ALL | SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 |
@@ -149,16 +137,18 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 	                      SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 	if (SSL_CTX_set1_curves_list(ssl_ctx, "P-256") != 1) {
-		errx(1, "SSL_CTX_set1_curves_list failed: %s",
+		LM_ERR("SSL_CTX_set1_curves_list failed: %s",
 		      ERR_error_string(ERR_get_error(), NULL));
+		return NULL;
 	}
 #else  /* !(OPENSSL_VERSION_NUMBER >= 0x30000000L) */
 	{
 		EC_KEY *ecdh;
 		ecdh = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
 		if (!ecdh) {
-			errx(1, "EC_KEY_new_by_curv_name failed: %s",
+			LM_ERR("EC_KEY_new_by_curv_name failed: %s",
 			     ERR_error_string(ERR_get_error(), NULL));
+			return NULL;
 		}
 		SSL_CTX_set_tmp_ecdh(ssl_ctx, ecdh);
 		EC_KEY_free(ecdh);
@@ -166,10 +156,12 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file) {
 #endif /* !(OPENSSL_VERSION_NUMBER >= 0x30000000L) */
 
 	if (SSL_CTX_use_PrivateKey_file(ssl_ctx, key_file, SSL_FILETYPE_PEM) != 1) {
-		errx(1, "Could not read private key file %s", key_file);
+		LM_ERR("Could not read private key file %s", key_file);
+		return NULL;
 	}
 	if (SSL_CTX_use_certificate_chain_file(ssl_ctx, cert_file) != 1) {
-		errx(1, "Could not read certificate file %s", cert_file);
+		LM_ERR("Could not read certificate file %s", cert_file);
+		return NULL;
 	}
 
 	SSL_CTX_set_alpn_select_cb(ssl_ctx, alpn_select_proto_cb, NULL);
@@ -182,8 +174,9 @@ static SSL *create_ssl(SSL_CTX *ssl_ctx) {
 	SSL *ssl;
 	ssl = SSL_new(ssl_ctx);
 	if (!ssl) {
-		errx(1, "Could not create SSL/TLS session object: %s",
+		LM_ERR("Could not create SSL/TLS session object: %s",
 		     ERR_error_string(ERR_get_error(), NULL));
+		return NULL;
 	}
 	return ssl;
 }
@@ -294,7 +287,7 @@ static int session_send(http2_session_data *session_data) {
 	int rv;
 	rv = nghttp2_session_send(session_data->session);
 	if (rv != 0) {
-		warnx("Fatal error: %s", nghttp2_strerror(rv));
+		LM_WARN("Fatal error: %s", nghttp2_strerror(rv));
 		return -1;
 	}
 	return 0;
@@ -312,11 +305,11 @@ static int session_recv(http2_session_data *session_data) {
 
 	readlen = nghttp2_session_mem_recv2(session_data->session, data, datalen);
 	if (readlen < 0) {
-		warnx("Fatal error: %s", nghttp2_strerror((int)readlen));
+		LM_WARN("Fatal error: %s", nghttp2_strerror((int)readlen));
 		return -1;
 	}
 	if (evbuffer_drain(input, (size_t)readlen) != 0) {
-		warnx("Fatal error: evbuffer_drain failed");
+		LM_WARN("Fatal error: evbuffer_drain failed");
 		return -1;
 	}
 	if (session_send(session_data) != 0)
@@ -428,7 +421,7 @@ static int send_response_fd(nghttp2_session *session, int32_t stream_id,
 	rv = nghttp2_submit_response2(session, stream_id, nva, nvlen,
 			fd > 0 ? &data_prd : NULL);
 	if (rv != 0) {
-		warnx("Fatal error: %s", nghttp2_strerror(rv));
+		LM_WARN("Fatal error: %s", nghttp2_strerror(rv));
 		return -1;
 	}
 
@@ -441,7 +434,7 @@ static int send_response_empty(nghttp2_session *session, int32_t stream_id,
 
 	rv = nghttp2_submit_response2(session, stream_id, nva, nvlen, NULL);
 	if (rv != 0) {
-		warnx("Fatal error: %s", nghttp2_strerror(rv));
+		LM_WARN("Fatal error: %s", nghttp2_strerror(rv));
 		return -1;
 	}
 	return 0;
@@ -459,12 +452,12 @@ static int error_reply(nghttp2_session *session,
 
 	rv = pipe(pipefd);
 	if (rv != 0) {
-		warn("Could not create pipe");
+		LM_WARN("Could not create pipe");
 		rv = nghttp2_submit_rst_stream(session, NGHTTP2_FLAG_NONE,
 		                               stream_data->stream_id,
 		                               NGHTTP2_INTERNAL_ERROR);
 		if (rv != 0) {
-			warnx("Fatal error: %s", nghttp2_strerror(rv));
+			LM_WARN("Fatal error: %s", nghttp2_strerror(rv));
 			return -1;
 		}
 
@@ -833,7 +826,7 @@ static int send_server_connection_header(http2_session_data *session_data) {
 	rv = nghttp2_submit_settings(session_data->session, NGHTTP2_FLAG_NONE, iv,
 	                             ARRLEN(iv));
 	if (rv != 0) {
-		warnx("Fatal error: %s", nghttp2_strerror(rv));
+		LM_WARN("Fatal error: %s", nghttp2_strerror(rv));
 		return -1;
 	}
 	return 0;
@@ -944,8 +937,10 @@ static void start_listen(struct event_base *evbase, const char *service,
 #endif /* AI_ADDRCONFIG */
 
 	rv = getaddrinfo(h2_ip, service, &hints, &res);
-	if (rv != 0)
-		errx(1, "Could not resolve server address");
+	if (rv != 0) {
+		LM_ERR("Could not resolve server address");
+		return;
+	}
 
 	for (rp = res; rp; rp = rp->ai_next) {
 		struct evconnlistener *listener;
@@ -959,7 +954,7 @@ static void start_listen(struct event_base *evbase, const char *service,
 		}
 	}
 
-	errx(1, "Could not start listener");
+	LM_ERR("Could not start listener");
 }
 
 static void initialize_app_context(app_context *app_ctx, SSL_CTX *ssl_ctx,
