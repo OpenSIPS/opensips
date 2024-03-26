@@ -81,7 +81,7 @@ int a_to_i (char *s,int len)
 
 int send_error_reply(struct sip_msg* msg, int reply_code, str reply_str)
 {
-	if(reply_code== BAD_EVENT_CODE)
+	if(reply_code== BAD_EVENT_CODE && EvList != NULL)
 	{
 		str hdr_append;
 		char buffer[256];

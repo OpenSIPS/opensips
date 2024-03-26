@@ -53,18 +53,28 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 		LM_ERR("no more memory\n");
 		return -1;
 	}
-	strcpy(out->s,"sip:");
+
+	if (domain.len != 0)
+		strcpy(out->s,"sip:");
+	else
+		strcpy(out->s,"tel:");
+
 	out->len = 4;
 	if( user.len != 0)
 	{
 		memcpy(out->s+out->len, user.s, user.len);
 		out->len += user.len;
-		out->s[out->len++] = '@';
+		if (domain.len != 0)
+			out->s[out->len++] = '@';
 	}
 
-	memcpy(out->s + out->len, domain.s, domain.len);
-	out->len += domain.len;
+	if (domain.len != 0) {
+		memcpy(out->s + out->len, domain.s, domain.len);
+		out->len += domain.len;
+	}
+	
 	out->s[out->len] = '\0';
+
 
 	return 0;
 }
