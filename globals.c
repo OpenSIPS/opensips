@@ -91,6 +91,8 @@ char *log_name = 0;
 int config_check = 0;
 /* check if reply first via host==us */
 int check_via =  0;
+/* Reply to address indicated in Via */
+int reply_to_via = 0;
 /* debugging level for memory stats */
 int memlog = L_DBG + 11;
 int memdump = L_DBG + 10;

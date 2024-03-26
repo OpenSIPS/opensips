@@ -861,6 +861,59 @@ modparam("tm", "cluster_auto_cancel", no)
 		</example>
 	</section>
 
+	<section id="param_local_request_route" xreflabel="local_request_route">
+		<title><varname>local_request_route</varname> (string)</title>
+		<para>
+		This parameter points to a route, which is executed whenever TM creates
+		a new request (e.g., through the B2B modules or through MI).
+		</para>
+		<para>
+		The route is executed with the generated message by TM, incorporating all
+		modifications.
+		</para>
+		<example>
+		<title>Set the <varname>local_request_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Execute the route "local_request_route" upon sending a request
+modparam("tm", "local_request_route", "tm_local_request")
+
+route[tm_local_request] {
+	if (is_method("INVITE") && $rb(application/sdp) && !has_totag()) {
+		$avp(sdp_request) := $rb(application/sdp);
+	}
+}
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_local_reply_route" xreflabel="local_reply_route">
+		<title><varname>local_reply_route</varname> (string)</title>
+		<para>
+		This parameter points to a reply-route, which is executed whenever TM creates
+		a reply (e.g., through the B2B modules or through MI).
+		</para>
+
+		<example>
+		<title>Set the <varname>local_reply_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+# Execute the route "tm_local_reply" upon sending a request
+modparam("tm", "local_reply_route", "tm_local_reply")
+
+onreply_route[tm_local_reply] {
+	if (is_method("BYE")) {
+		$var(rc) = rest_get("http://localhost/qos/delete",
+					$var(recv_body), $var(recv_ct), $var(rcode));
+	}
+}
+
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 
