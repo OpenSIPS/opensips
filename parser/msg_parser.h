@@ -276,6 +276,9 @@ struct sip_msg {
 	struct hdr_field* min_expires;
 	struct hdr_field* feature_caps;
 	struct hdr_field* replaces;
+	struct hdr_field* security_client;
+	struct hdr_field* security_server;
+	struct hdr_field* security_verify;
 
 	struct sip_msg_body *body;
 

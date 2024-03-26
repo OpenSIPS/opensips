@@ -322,6 +322,9 @@ char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr,int sip_well
 		case HDR_SUCCESS_REPORT_T:
 		case HDR_STATUS_T:
 		case HDR_USE_PATH_T:
+		case HDR_SECURITY_CLIENT_T:
+		case HDR_SECURITY_SERVER_T:
+		case HDR_SECURITY_VERIFY_T:
 		case HDR_OTHER_T:
 			/* just skip over it */
 			hdr->body.s=tmp;
@@ -611,6 +614,18 @@ int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_
 				link_sibling_hdr(replaces, hf);
 				msg->parsed_flag |= HDR_REPLACES_F;
 				break;
+			case HDR_SECURITY_CLIENT_T:
+				link_sibling_hdr(security_client, hf);
+				msg->parsed_flag |= HDR_SECURITY_CLIENT_F;
+				break;
+			case HDR_SECURITY_SERVER_T:
+				link_sibling_hdr(security_server, hf);
+				msg->parsed_flag |= HDR_SECURITY_SERVER_F;
+				break;
+			case HDR_SECURITY_VERIFY_T:
+				link_sibling_hdr(security_verify, hf);
+				msg->parsed_flag |= HDR_SECURITY_VERIFY_F;
+				break;
 			default:
 				LM_CRIT("unknown header type %d\n",	hf->type);
 				goto error;
@@ -772,6 +787,9 @@ int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg)
 			case HDR_SUCCESS_REPORT_T:
 			case HDR_STATUS_T:
 			case HDR_USE_PATH_T:
+			case HDR_SECURITY_CLIENT_T:
+			case HDR_SECURITY_SERVER_T:
+			case HDR_SECURITY_VERIFY_T:
 
 			case HDR_OTHER_T:
 			case HDR_ERROR_T:

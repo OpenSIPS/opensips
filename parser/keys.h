@@ -198,4 +198,16 @@
 
 #define _use__ 0x2d657375   /* "use-" for "use-path" */
 
+#define _secu_ 0x75636573   /* "secu" for "security" */
+#define _rity_ 0x79746972   /* "rity"  */
+#define __cli_ 0x696c632d   /* "-cli" for "-client" */
+#define _ent2_ 0x20746e65   /* "ent " */
+#define _ent1_ 0x3a746e65   /* "ent:" */
+#define __ser_ 0x7265732d   /* "-ser" for "-server" */
+#define _ver2_ 0x20726576   /* "ver " */
+#define _ver1_ 0x3a726576   /* "ver:" */
+#define __ver_ 0x7265762d   /* "-ver" for "-verify" */
+#define _ify2_ 0x20796669   /* "ify " */
+#define _ify1_ 0x3a796669   /* "ify:" */
+
 #endif /* KEYS_H */

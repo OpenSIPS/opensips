@@ -51,6 +51,7 @@
 #include "parse_call_info.h"
 #include "parse_authenticate.h"
 #include "parse_fcaps.h"
+#include "parse_security.h"
 
 
 /*
@@ -222,6 +223,12 @@ void clean_hdr_field(struct hdr_field* hf)
 
 		case HDR_FEATURE_CAPS_T:
 			free_fcaps((struct fcaps_body **)&hf->parsed);
+			break;
+
+		case HDR_SECURITY_CLIENT_T:
+		case HDR_SECURITY_SERVER_T:
+		case HDR_SECURITY_VERIFY_T:
+			free_sec_agree((sec_agree_body_t **)&hf->parsed);
 			break;
 
 		case HDR_TO_PATH_T:

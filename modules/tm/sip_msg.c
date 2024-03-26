@@ -492,6 +492,9 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 			case HDR_WWW_AUTHENTICATE_T:
 			case HDR_PROXY_AUTHENTICATE_T:
 			case HDR_FEATURE_CAPS_T:
+			case HDR_SECURITY_CLIENT_T:
+			case HDR_SECURITY_SERVER_T:
+			case HDR_SECURITY_VERIFY_T:
 				/* we ignore them for now even if they have something parsed*/
 				break;
 
@@ -934,6 +937,18 @@ struct sip_msg*  sip_msg_cloner( struct sip_msg *org_msg, int *sip_msg_len,
 				if (HOOK_NOT_SET(proxy_authenticate)) {
 					new_msg->proxy_authenticate = new_hdr;
 				}
+				break;
+			case HDR_SECURITY_CLIENT_T:
+				if (HOOK_NOT_SET(security_client))
+					new_msg->security_client = new_hdr;
+				break;
+			case HDR_SECURITY_SERVER_T:
+				if (HOOK_NOT_SET(security_server))
+					new_msg->security_server = new_hdr;
+				break;
+			case HDR_SECURITY_VERIFY_T:
+				if (HOOK_NOT_SET(security_verify))
+					new_msg->security_verify = new_hdr;
 				break;
 			default:
 				/* ignore the rest*/
