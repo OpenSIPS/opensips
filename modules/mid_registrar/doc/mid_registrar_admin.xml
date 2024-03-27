@@ -859,8 +859,8 @@ modparam("mid_registrar", "gruu_secret", "my_secret")
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags</emphasis> (string, optional) - string of
-			the following flags:
+			<emphasis>flags</emphasis> (string, optional) - string composed of
+				one or more of the following flags, comma-separated:
 			</para>
 			<itemizedlist>
 				&save_common_flags;
