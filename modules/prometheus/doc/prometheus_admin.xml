@@ -262,6 +262,75 @@ modparam("prometheus", "labels", "group: /^(.*)_(.*)$/\1:gateway=\"\2\"/")
 </programlisting>
 		</example>
 	</section>
+
+	<section id="param_script_route" xreflabel="script_route">
+		<title><varname>script_route</varname>(string)</title>
+		<para>
+		Specifies the route name to be used to for adding custom prometheus information. 
+		</para>
+		<para>
+		<emphasis>The default value is "" - no custom route called.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>script_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+...
+</programlisting>
+		</example>
+	</section>
+
+	<section id="param_script_route_avp_result" xreflabel="script_route_avp_result">
+		<title><varname>script_route_avp_result</varname>(string)</title>
+		<para>
+		Specifies the AVP spec name to be used to for returning custom prometheus information. 
+		</para>
+		<para>
+		The AVP is expected to contain a JSON format, containing an array of arrays of custom statistics to export to prometheus. See section for the format itself. 
+		</para>
+		<para>
+		<emphasis>The default value is "" - no custom route called.</emphasis>
+		</para>
+		<example>
+		<title>Set <varname>script_route</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("prometheus", "script_route", "my_custom_prometheus_route")
+modparam("prometheus", "script_route_avp_result", "$avp(prometheus_out_json)")
+...
+route[my_custom_prometheus_route] {
+	# the OUT JSON needs to contain an array of objects containing a header and a values field
+	# the header field to contain the custom prometheus stats header
+	# the values field is an array itself, of name/value objects 
+	# used for individual stats publishing
+	$avp(prometheus_out_json) = "
+[   {
+        "header": "# TYPE opensips_cps gauge",
+        "values": [
+            {
+                "name": "opensips_total_cps",
+                "value": 3
+            }
+        ]
+    },
+    {
+        "header": "# TYPE opensips_disabled_rtpengine gauge",
+        "values": [
+            {
+                "name": "opensips_disabled_rtpengine",
+                "value": 0
+            }
+        ]
+    },
+]";
+
+}
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

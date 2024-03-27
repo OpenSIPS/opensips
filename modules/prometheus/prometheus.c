@@ -55,6 +55,11 @@ str prom_grp_prefix = str_init("");
 str prom_delimiter = str_init("_");
 str prom_grp_label = str_init("group");
 httpd_api_t prom_httpd_api;
+str prometheus_script_route = {NULL, 0};
+int prometheus_route_id = -1;
+char* prometheus_avp_param = NULL;
+unsigned short prometheus_avp_type = 0;
+int prometheus_avp_name = -1;
 
 static int prom_stats_param( modparam_t type, void* val);
 static int prom_labels_param( modparam_t type, void* val);
@@ -69,6 +74,8 @@ static const param_export_t mi_params[] = {
 	{"group_mode",  INT_PARAM, &prom_grp_mode},
 	{"statistics",  STR_PARAM|USE_FUNC_PARAM, &prom_stats_param},
 	{"labels",      STR_PARAM|USE_FUNC_PARAM, &prom_labels_param},
+	{"script_route", STR_PARAM, &prometheus_script_route}, 
+	{"script_route_avp_result", STR_PARAM, &prometheus_avp_param}, 
 	{0,0,0}
 };
 
@@ -131,12 +138,44 @@ static int mod_init(void)
 {
 	struct list_head *it;
 	struct prom_stat *s;
+	str avp_s;
+	pv_spec_t avp_spec;
 
 	prom_http_root.len = strlen(prom_http_root.s);
 	prom_prefix.len = strlen(prom_prefix.s);
 	prom_delimiter.len = strlen(prom_delimiter.s);
 	prom_grp_prefix.len = strlen(prom_grp_prefix.s);
 	prom_grp_label.len = strlen(prom_grp_label.s);
+
+	if (prometheus_script_route.s) {
+		prometheus_script_route.len = strlen(prometheus_script_route.s);
+
+		prometheus_route_id = get_script_route_ID_by_name( 
+			prometheus_script_route.s,sroutes->request, RT_NO);
+		if ( prometheus_route_id < 0 ) {
+			LM_ERR("Prometheus route <%s> not defined!\n", prometheus_script_route.s);
+			return -1;
+		}
+
+		if (prometheus_avp_param && *prometheus_avp_param) {
+			avp_s.s = prometheus_avp_param;
+			avp_s.len = strlen(avp_s.s);
+			if (pv_parse_spec(&avp_s, &avp_spec)==0
+					|| avp_spec.type!=PVT_AVP) {
+				LM_ERR("malformed or non AVP %s AVP definition\n", prometheus_avp_param);
+				return -1;
+			}
+
+			if(pv_get_avp_name(0, &avp_spec.pvp, &prometheus_avp_name, &prometheus_avp_type)!=0)
+			{
+				LM_ERR("[%s]- invalid AVP definition\n", prometheus_avp_param);
+				return -1;
+			}
+		} else {
+			LM_ERR("Prometheus route <%s> defined but no AVP result set!\n", prometheus_script_route.s);
+			return -1;
+		}
+	}	
 
 	if (prom_grp_mode < PROM_GROUP_MODE_NONE || prom_grp_mode >= PROM_GROUP_MODE_INVALID) {
 		LM_ERR("invalid group mode %d\n", prom_grp_mode);
@@ -597,6 +636,135 @@ static inline int prom_push_stat(stat_var *stat, str *page, int max_len,
 		} \
 	} while(0)
 
+int process_extra_prometheus_entry(cJSON *obj,str *page, int max_len)
+{
+	cJSON *header,*values,*value, *name, *counter;
+	str val, cval;
+	int c;
+
+	if (!obj)
+		return -1;
+
+	if (obj->type != cJSON_Object) {
+		LM_ERR("Expecting a JSON object in the array but got %d \n",obj->type);
+		return -1;
+	}
+
+	header = cJSON_GetObjectItem(obj, "header");
+	values = cJSON_GetObjectItem(obj, "values");
+
+	if (!header || header->type != cJSON_String) {
+		LM_ERR("Invalid header provided \n");
+		return -1;
+	}
+
+	if (!values || values->type != cJSON_Array) {
+		LM_ERR("Invalid values provided \n");
+		return -1;
+	}
+
+	val.s = header->valuestring;
+	val.len = strlen(val.s);
+
+	if (!val.len) {
+		LM_ERR("No header content provided \n");
+		return -1;
+	}
+
+	if (page->len + val.len + 1 >= max_len) {
+		LM_ERR("No more HTTP buffer space, have %d, need extra %d into max %d\n",page->len,val.len + 1,max_len);
+		return -1;
+	}
+
+	memcpy(page->s + page->len,val.s,val.len);
+	page->len += val.len;	
+
+	memcpy(page->s + page->len, "\n", 1);
+	page->len += 1;
+
+	value = values->child;
+	while (value) {
+		if (value->type != cJSON_Object) {
+			LM_ERR("Expected value object and found type %d\n",value->type);
+			goto next_value;
+		}
+
+		name = cJSON_GetObjectItem(value, "name");
+		if (!name || name->type != cJSON_String) {
+			LM_ERR("Stat name not found \n");
+			goto next_value;
+		}
+
+		counter = cJSON_GetObjectItem(value, "value");
+		if (!counter || counter->type != cJSON_Number) {
+			LM_ERR("Stat name not found \n");
+			goto next_value;
+		}
+
+		val.s = name->valuestring; 
+		val.len = strlen(val.s);
+
+		c = counter->valueint;
+		cval.s = int2str(c,&cval.len);
+
+		if (page->len + val.len + cval.len + 2 /* blank & \n */ >= max_len) {
+			LM_ERR("No more HTTP buffer space, have %d, need extra %d into max %d\n",page->len,val.len + cval.len + 2,max_len);
+			return -1;
+		}
+
+		memcpy(page->s + page->len,val.s,val.len);
+		page->len += val.len;	
+
+		memcpy(page->s + page->len, " ", 1);
+		page->len += 1;
+
+		memcpy(page->s + page->len,cval.s,cval.len);
+		page->len += cval.len;	
+
+		memcpy(page->s + page->len, "\n", 1);
+		page->len += 1;
+next_value:
+		value = value->next;
+	}
+
+	return 0;
+}
+
+int process_extra_prometheus(char *extra, int len,str *page, int max_len)
+{
+	cJSON *j_obj=NULL,*arr;
+
+	if (!extra || len <= 0) {
+		return -1;
+	}
+
+	j_obj = cJSON_Parse(extra);
+	if (j_obj == NULL) {
+		LM_ERR("Failed to parse JSON obj \n");
+		return -1;
+	}
+
+	if (j_obj->type != cJSON_Array) {
+		LM_ERR("Main JSON object expecting an array \n");
+		goto error;
+	}
+
+	arr = j_obj->child;
+	while (arr) {
+		if (process_extra_prometheus_entry(arr,page,max_len) < 0) {
+			LM_ERR("Failed to process JSON entry \n");
+			goto error;
+		}
+
+		arr=arr->next;
+	}
+error:
+	cJSON_Delete(j_obj);
+
+	return 0;
+}
+
+
 int prom_answer_to_connection (void *cls, void *connection,
 	const char *url, const char *method,
 	const char *version, const char *upload_data,
@@ -612,6 +780,8 @@ int prom_answer_to_connection (void *cls, void *connection,
 	module_stats *mod;
 	stat_var *stat;
 	int skip_type;
+	struct sip_msg *route_msg = NULL;
+	int_str val;
 
 	LM_DBG("START *** cls=%p, connection=%p, url=%s, method=%s, "
 			"version=%s, upload_data[%d]=%p, *con_cls=%p\n",
@@ -682,6 +852,39 @@ end:
 			}
 		}
 	}
+
+	if (prometheus_route_id != -1) {
+		/* get a dummy msg for our route */	
+		route_msg = get_dummy_sip_msg();
+		if (!route_msg) {
+			LM_ERR("Failed to get dummy msg for prometheus route \n");
+			goto final;
+		}
+
+		/* set request route type */
+		set_route_type( REQUEST_ROUTE );
+
+		/* run given hep route */
+		run_top_route( sroutes->request[prometheus_route_id], route_msg);
+
+		memset(&val, 0, sizeof(int_str));
+		if (prometheus_avp_name>=0 && 
+		search_first_avp(prometheus_avp_type, prometheus_avp_name, &val, 0) &&
+	       	val.s.len > 0) {
+			if (process_extra_prometheus(val.s.s,val.s.len,page,buffer->len) < 0) {
+				LM_ERR("Failed to add custom prometheus stats \n");
+			}
+		}
+
+
+		/* free possible loaded avps */
+		reset_avps();
+
+		release_dummy_sip_msg(route_msg);
+	}
+
+final:
+
 	if (page->len + 1 >= buffer->len) {
 		LM_ERR("out of memory for stats\n");
 		prom_groups_free(&groups, &label_groups);
