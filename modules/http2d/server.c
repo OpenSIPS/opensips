@@ -264,7 +264,7 @@ static void delete_http2_session_data(http2_session_data *session_data) {
 	SSL *ssl = bufferevent_openssl_get_ssl(session_data->bev);
 	struct list_head *it, *aux;
 
-	fprintf(stderr, "%s disconnected\n", session_data->client_addr);
+	LM_INFO("%s disconnected\n", session_data->client_addr);
 	if (ssl)
 		SSL_shutdown(ssl);
 	bufferevent_free(session_data->bev);
@@ -538,6 +538,8 @@ static int on_request_recv(nghttp2_session *session,
 	int rc;
 	struct timespec wait_until;
 	struct timeval now, wait_time, res;
+	struct timespec begin;
+	unsigned long long diff_ns;
 	char *H;
 
 	if (!stream_data->path) {
@@ -549,7 +551,10 @@ static int on_request_recv(nghttp2_session *session,
 
 	LM_INFO("%s GET %s (stream_id: %d)\n", session_data->client_addr,
 	        stream_data->path, stream_data->stream_id);
-	LM_INFO("body: %.*s %d\n", stream_data->data.len, stream_data->data.s, stream_data->data.len);
+	if (stream_data->data.len)
+		LM_INFO("body: (%d) %.*s\n", stream_data->data.len, stream_data->data.len, stream_data->data.s);
+	else
+		LM_INFO("body: (none)\n");
 
 	if (!check_path(stream_data->path)) {
 		if (error_reply(session, stream_data) != 0) {
@@ -557,7 +562,6 @@ static int on_request_recv(nghttp2_session *session,
 		}
 		return 0;
 	}
-	LM_INFO("A\n");
 
 	pthread_mutex_lock(&ng_h2_response->mutex);
 
@@ -576,8 +580,11 @@ static int on_request_recv(nghttp2_session *session,
 	wait_until.tv_sec = res.tv_sec;
 	wait_until.tv_nsec = res.tv_usec * 1000UL;
 
+	clock_gettime(CLOCK_REALTIME, &begin);
 	rc = pthread_cond_timedwait(&ng_h2_response->cond,
 			&ng_h2_response->mutex, &wait_until);
+	diff_ns = get_clock_diff(&begin);
+	LM_DBG("waited %lld ns in total\n", diff_ns);
 	if (rc != 0) {
 		pthread_mutex_unlock(&ng_h2_response->mutex);
 
@@ -600,7 +607,6 @@ static int on_request_recv(nghttp2_session *session,
 
 	LM_DBG("rpl code: %d\n", ng_h2_response->code);
 	LM_DBG("rpl # headers: %d\n", ng_h2_response->hdrs_len);
-	LM_DBG("body: %.*s\n", stream_data->data.len, stream_data->data.s);
 	LM_DBG("rpl body: %.*s\n", ng_h2_response->body.len, ng_h2_response->body.s);
 
 	int fd = h2_fdpack(&ng_h2_response->body);
@@ -877,14 +883,14 @@ static void eventcb(struct bufferevent *bev, short events, void *ptr) {
 		SSL *ssl;
 		(void)bev;
 
-		fprintf(stderr, "%s connected\n", session_data->client_addr);
+		LM_INFO("%s connected\n", session_data->client_addr);
 
 		ssl = bufferevent_openssl_get_ssl(session_data->bev);
 
 		SSL_get0_alpn_selected(ssl, &alpn, &alpnlen);
 
 		if (alpn == NULL || alpnlen != 2 || memcmp("h2", alpn, 2) != 0) {
-			fprintf(stderr, "%s h2 is not negotiated\n", session_data->client_addr);
+			LM_ERR("%s h2 is not negotiated\n", session_data->client_addr);
 			delete_http2_session_data(session_data);
 			return;
 		}
@@ -901,11 +907,11 @@ static void eventcb(struct bufferevent *bev, short events, void *ptr) {
 	}
 
 	if (events & BEV_EVENT_EOF)
-		fprintf(stderr, "%s EOF\n", session_data->client_addr);
+		LM_INFO("%s EOF\n", session_data->client_addr);
 	else if (events & BEV_EVENT_ERROR)
-		fprintf(stderr, "%s network error\n", session_data->client_addr);
+		LM_INFO("%s network error\n", session_data->client_addr);
 	else if (events & BEV_EVENT_TIMEOUT)
-		fprintf(stderr, "%s timeout\n", session_data->client_addr);
+		LM_INFO("%s timeout\n", session_data->client_addr);
 
 	delete_http2_session_data(session_data);
 }
