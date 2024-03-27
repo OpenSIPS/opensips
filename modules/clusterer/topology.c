@@ -29,6 +29,7 @@
 extern int ping_interval;
 extern int node_timeout;
 extern int ping_timeout;
+extern int clusterer_enable_rerouting;
 
 #define PING_REPLY_INTERVAL(_node) \
 	((_node)->last_pong.tv_sec*1000000 + (_node)->last_pong.tv_usec \
@@ -313,12 +314,16 @@ node_info_t *get_next_hop_2(node_info_t *dest)
 {
 	node_info_t *n, *next_hop;
 	struct node_search_info *queue_front;
-    struct node_search_info *root, *curr;
-    struct neighbour *neigh;
+	struct node_search_info *root, *curr;
+	struct neighbour *neigh;
 
-    lock_get(dest->cluster->lock);
+	if (clusterer_enable_rerouting == 0) {
+		return NULL;
+	}
 
-    /* run BFS */
+	lock_get(dest->cluster->lock);
+
+	/* run BFS */
 	if (dest->cluster->top_version != dest->sp_top_version) {
 		lock_get(dest->lock);
 		dest->next_hop = NULL;
@@ -397,6 +402,10 @@ node_info_t *get_next_hop_2(node_info_t *dest)
 int get_next_hop(node_info_t *dest)
 {
 	node_info_t *nhop;
+
+	if (clusterer_enable_rerouting == 0) {
+		return 0;
+	}
 
 	lock_get(dest->lock);
 
@@ -909,7 +918,9 @@ int set_link_w_neigh(clusterer_link_state new_ls, node_info_t *neigh)
 			check_node_events(neigh, CLUSTER_NODE_UP);
 			lock_get(neigh->lock);
 		}
-		neigh->next_hop = neigh;
+		if (clusterer_enable_rerouting) {
+			neigh->next_hop = neigh;
+		}
 
 	}
 

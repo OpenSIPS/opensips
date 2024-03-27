@@ -644,6 +644,29 @@ modparam("clusterer", "enable_stats", 0)
 			</example>
 		</section>
 
+		<section id="param_enable_rerouting" xreflabel="enable_rerouting">
+			<title><varname>enable_rerouting</varname> (integer)</title>
+			<para>
+				If packets should be rerouted via another node if a direct route
+				to destination is unavailible. Disabling may improve stability in
+				two-node topologies.
+				Set it to zero to disable or to non-zero to enable it.
+			</para>
+			<para>
+				<emphasis>
+					Default value is <quote>1 (enabled)</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>enable_rerouting</varname> parameter</title>
+				<programlisting format="linespecific">
+...
+modparam("clusterer", "enable_rerouting", 0)
+...
+				</programlisting>
+			</example>
+		</section>
+
         </section>
 
         <section id="exported_functions" xreflabel="exported_functions">
