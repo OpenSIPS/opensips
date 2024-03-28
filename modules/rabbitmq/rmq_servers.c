@@ -341,6 +341,11 @@ int rmq_reconnect(struct rmq_server *srv)
 			LM_ERR("cannot open AMQP socket\n");
 			goto clean_rmq_conn;
 		}
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+		if (rpc_timeout_tv.tv_sec > 0 &&
+				amqp_set_rpc_timeout(srv->conn, &rpc_timeout_tv) < 0)
+			LM_ERR("setting RPC timeout - going blocking\n");
+#endif
 
 #else
 		socket = amqp_open_socket_noblock(srv->uri.host, srv->uri.port,
