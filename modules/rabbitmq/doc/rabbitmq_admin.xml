@@ -193,6 +193,27 @@ modparam("rabbitmq", "use_tls", 1)
 		</example>
 	</section>
 
+	<section id="param_connect_timeout" xreflabel="connect_timeout">
+		<title><varname>connect_timeout</varname> (integer)</title>
+		<para>
+		The maximally allowed duration (in milliseconds) for the establishment
+		of a TCP connection with a RabbitMQ server.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <quote>500</quote> (milliseconds).
+		</emphasis>
+		</para>
+		<example>
+		<title>Setting the <varname>connect_timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+
+aram("rabbitmq", "connect_timeout", 1000)
+
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 	
 
