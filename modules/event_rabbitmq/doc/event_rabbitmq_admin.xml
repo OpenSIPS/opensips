@@ -206,6 +206,33 @@ modparam("event_rabbitmq", "use_tls", 1)
 		</example>
 	</section>
 
+	<section id="param_timeout" xreflabel="timeout">
+		<title><varname>timeout</varname> (integer)</title>
+		<para>
+		Indicates the timeout (in milliseconds) of any command (i.e. publish)
+		sent to the RabbitMQ server.
+		</para>
+		<para>
+		<emphasis>NOTE</emphasis> that this parameter is available only starting with
+		RabbitMQ library version <emphasis>0.9.0</emphasis>; setting it when using an
+		earlier version will have no effect, and the publish command will run in
+		blocking mode.
+		</para>
+		<para>
+		<emphasis>
+			Default value is <emphasis role='bold'>0</emphasis> (no timeout - blocking mode)
+		</emphasis>
+		</para>
+		<example>
+		<title>Set the <varname>timeout</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("event_rabbitmq", "timeout", 1000) # timeout after 1s
+...
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section id="exported_functions" xreflabel="exported_functions">

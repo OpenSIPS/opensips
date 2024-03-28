@@ -45,7 +45,11 @@ static void destroy(void);
  */
 static unsigned int heartbeat = 0;
 static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
+static int rmq_timeout = 0;
 struct timeval conn_timeout_tv;
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+struct timeval rpc_timeout_tv;
+#endif
 int use_tls;
 
 struct tls_mgm_binds tls_api;
@@ -70,6 +74,7 @@ static const proc_export_t procs[] = {
 static const param_export_t mod_params[] = {
 	{"heartbeat",					INT_PARAM, &heartbeat},
 	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
+	{"timeout", INT_PARAM, &rmq_timeout},
 	{"use_tls", INT_PARAM, &use_tls},
 	{0,0,0}
 };
@@ -159,6 +164,18 @@ static int mod_init(void)
 
 	conn_timeout_tv.tv_sec = rmq_connect_timeout/1000;
 	conn_timeout_tv.tv_usec = (rmq_connect_timeout%1000)*1000;
+
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+	if (rmq_timeout < 0) {
+		LM_WARN("invalid value for 'timeout' %d; fallback to blocking mode\n", rmq_timeout);
+		rmq_timeout = 0;
+	}
+	rpc_timeout_tv.tv_sec = rmq_timeout/1000;
+	rpc_timeout_tv.tv_usec = (rmq_timeout%1000)*1000;
+#else
+	if (rmq_timeout != 0)
+		LM_WARN("setting the timeout without support for it; fallback to blocking mode\n");
+#endif
 
 	if (use_tls) {
 		#ifndef AMQP_VERSION_v04

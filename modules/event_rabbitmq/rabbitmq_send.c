@@ -357,6 +357,11 @@ static int rmq_reconnect(evi_reply_sock *sock)
 			LM_ERR("cannot open AMQP socket: %d\n", socket);
 			goto destroy_rmqp;
 		}
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+		if (rpc_timeout_tv.tv_sec > 0 &&
+				amqp_set_rpc_timeout(rmqp->conn, &rpc_timeout_tv) < 0)
+			LM_ERR("setting RPC timeout - going blocking\n");
+#endif
 #else
 		socket = amqp_open_socket_noblock(sock->address.s, sock->port,
 			&conn_timeout_tv);
