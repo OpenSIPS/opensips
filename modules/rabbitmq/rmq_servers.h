@@ -108,5 +108,8 @@ extern int use_tls;
 extern struct openssl_binds openssl_api;
 extern struct tls_mgm_binds tls_api;
 extern struct timeval conn_timeout_tv;
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+extern struct timeval rpc_timeout_tv;
+#endif
 
 #endif /* _RMQ_SERVERS_H_ */
