@@ -44,6 +44,9 @@ static int rmq_publish(struct sip_msg *msg, struct rmq_server *srv, str *srkey,
 int use_tls;
 struct openssl_binds openssl_api;
 struct tls_mgm_binds tls_api;
+static int rmq_connect_timeout = RMQ_DEFAULT_CONNECT_TIMEOUT;
+
+struct timeval conn_timeout_tv;
 
 #if AMQP_VERSION < AMQP_VERSION_CODE(0, 10, 0, 0)
 gen_lock_t *ssl_lock;
@@ -53,6 +56,7 @@ static const param_export_t params[]={
 	{ "server_id",			STR_PARAM|USE_FUNC_PARAM,
 		(void *)rmq_server_add},
 	{"use_tls", INT_PARAM, &use_tls},
+	{"connect_timeout", INT_PARAM, &rmq_connect_timeout},
 	{0,0,0}
 };
 
@@ -157,6 +161,9 @@ static int mod_init(void)
 
 		amqp_set_initialize_ssl_library(0);
 	}
+
+	conn_timeout_tv.tv_sec = rmq_connect_timeout/1000;
+	conn_timeout_tv.tv_usec = (rmq_connect_timeout%1000)*1000;
 
 	return 0;
 }
