@@ -308,6 +308,10 @@ int add_lb_dsturi( struct lb_data *data, int id, int group, char *uri,
 			fs_url = r->fs_url;
 			dst->rmap[i].max_load = initial_fs_load;
 			dst->rmap[i].fs_enabled = 1;
+
+			dst->rmap[i].current_sessions = 0;
+			dst->rmap[i].max_sessions = 0;
+			dst->rmap[i].cpu_idle = 100;
 		} else {
 			dst->rmap[i].max_load = r->val;
 		}
@@ -424,6 +428,12 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 		if( flags & LB_FLAGS_RELATIVE ) {
 			if( dst->rmap[l].max_load )
 				av = 100 - (100 * lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id) / dst->rmap[l].max_load);
+		} else if( flags & LB_FLAGS_PERCENT_WITH_CPU ) {
+			/* generate score based on the percentage of channels occupied, reduced by CPU idle factor */
+			if( dst->rmap[l].max_sessions ) {
+				av = ( 100 - ( 100 * ( dst->rmap[l].current_sessions + dst->rmap[l].sessions_since_last_heartbeat ) / dst->rmap[l].max_sessions ) ) * dst->rmap[l].cpu_idle;
+				LM_DBG("destination %d <%s> availability score %d (sessions=%d since_last_hb=%d max_sess=%d cpu_idle=%.2f)", dst->id, dst->uri, av, dst->rmap[l].current_sessions, dst->rmap[l].sessions_since_last_heartbeat, dst->rmap[l].max_sessions, dst->rmap[l].cpu_idle);
+            }
 		} else {
 			av = dst->rmap[l].max_load - lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
 		}
@@ -490,7 +500,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	struct lb_resource *it_r;
 	int load, it_l;
 	int i, j, cond, cnt_aval_dst;
-
+	unsigned int k, l;
 
 	/* init control vars state */
 	res_cur = NULL;
@@ -756,8 +766,7 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 	cnt_aval_dst = 0;
 	for( it_d=data->dsts,i=0,j=0 ; it_d ; it_d=it_d->next ) {
 		if( it_d->group == group ) {
-			if( (dst_bitmap_cur[i] & (1 << j)) &&
-			((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
+			if( (dst_bitmap_cur[i] & (1 << j)) && ((it_d->flags & LB_DST_STAT_DSBL_FLAG) == 0) ) {
 				/* valid destination (group & resources & status) */
 				cnt_aval_dst++;
 				if( get_dst_load(res_cur, res_cur_n, it_d, flags, &it_l) ) {
@@ -818,10 +827,28 @@ int lb_route(struct sip_msg *req, int group, struct lb_res_str_list *rl,
 
 
 	if( dst != NULL ) {
+
 		LM_DBG("%s call of LB - winning destination %d <%.*s> selected "
 			"for LB set with free=%d\n",
 			(reuse ? "sequential" : "initial"),
 			dst->id, dst->uri.len, dst->uri.s, load );
+
+		if ( flags & LB_FLAGS_PERCENT_WITH_CPU ) {
+
+			// find all resources used by this call, increment on each
+			for( k=0 ; k<res_cur_n ; k++ ) {
+				for (l=0 ; l<dst->rmap_no ; l++ ) {
+					if( res_cur[k] == dst->rmap[l].resource ) {
+						dst->rmap[l].sessions_since_last_heartbeat++;
+
+						LM_DBG("incrementing sess since last HB for winning destination %d <%.*s> (sessions_since_last_heartbeat=%d)\n",
+							dst->id, dst->uri.len, dst->uri.s, dst->rmap[l].sessions_since_last_heartbeat );
+
+						break; // exit the loop
+					}
+				}
+			}
+		}
 
 		/* add to the profiles */
 		for( i=0 ; i<res_cur_n ; i++ ) {
