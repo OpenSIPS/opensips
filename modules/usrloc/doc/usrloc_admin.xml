@@ -1015,7 +1015,7 @@ modparam("usrloc", "cluster_mode", "federation-cachedb")
 				cluster-based restart persistency. Following a restart,
 				an OpenSIPS cluster node will search for a healthy "donor" node
 				from which to mirror the entire user location dataset via
-				direct cluster sync (TCP-based, binary-encoded data transfer). 
+				direct cluster sync (TCP-based, binary-encoded data transfer).
 				Depending on the clustering mode and cluster topology, this will
 				require the configuration of one or multiple "seed" nodes in the cluster.
 				Choosing this value will make the
@@ -1478,26 +1478,32 @@ modparam("usrloc", "contact_refresh_timer", true)
 
 	<section id="func_ul_add_key" xreflabel="ul_add_key(domain, aor, key_name[, key_value])">
 		<title>
-		<function moreinfo="none">ul_add_key(domain, aor, key_name[, key_value])</function>
+		<function moreinfo="none">ul_add_key(domain, aor, key_name, [key_value])</function>
 		</title>
 		<para>
 		Append a Key/Value to the Key-Value-Store of a Usrloc-Record.
 		</para>
 		<para>
 		Returns false, if no record is found is usrloc.
-		</para>		
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>domain (string)</emphasis> - Domain of the
 			        AOR, e.g. "location"
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>aor (string)</emphasis> - Address-of-Record,
 			        save the key for a specific (registered) user.
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>key (string)</emphasis> - The name of the
 			        key to be stored.
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>value (string, optional)</emphasis>
 			        - The value to be stored. Not providing the value or
 			        by providing an empty value, will delete the entry.
@@ -1526,19 +1532,25 @@ ul_add_key("location", "$tU@$td", "service_route", "$hdr(Service-Route)");
 		</para>
 		<para>
 		Returns false, if no record is found is usrloc or no according key is found.
-		</para>	
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>domain (string)</emphasis> - Domain of the
 			        AOR, e.g. "location"
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>aor (string)</emphasis> - Address-of-Record,
 			        save the key for a specific (registered) user.
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>key (string)</emphasis> - The name of the
 			        key to be retrieved.
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>destination (variable)</emphasis>
 			        - A variable, where to store the retrieved key.
 			</para>
@@ -1568,16 +1580,20 @@ if (ul_get_key("location", "$tU@$td", "service_route", "$avp(service_route)")) {
 		</para>
 		<para>
 		Returns false, if no record is found is usrloc.
-		</para>	
+		</para>
 		<para>Meaning of the parameters is as follows:</para>
 		<itemizedlist>
 		<listitem>
 			<para><emphasis>domain (string)</emphasis> - Domain of the
 			        AOR, e.g. "location"
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>aor (string)</emphasis> - Address-of-Record,
 			        save the key for a specific (registered) user.
 			</para>
+		</listitem>
+		<listitem>
 			<para><emphasis>key (string)</emphasis> - The name of the
 			        key to be deleted.
 			</para>
@@ -1902,7 +1918,7 @@ ul_del_key("location", "$tU@$td", "service_route");
 				registration message.(empty string if not present)
 			</para></listitem>
 			<listitem><para>
-				<emphasis>qval</emphasis> - The Q value (priority) of the 
+				<emphasis>qval</emphasis> - The Q value (priority) of the
 				contact (as integer value from 0 to 10).
 			</para></listitem>
 			<listitem><para>
