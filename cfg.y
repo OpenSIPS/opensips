@@ -147,10 +147,18 @@ action_elem_t elems[MAX_ACTION_ELEMS];
 static action_elem_t route_elems[MAX_ACTION_ELEMS];
 action_elem_t *a_tmp;
 
+struct port_range {
+	int min;
+	int max;
+	struct port_range *next;
+} *pr_tmp;
+
 static inline void warn(char* s);
 static struct socket_id* mk_listen_id(char*, enum sip_protos, int);
+static struct socket_id* mk_listen_id_range(char*, enum sip_protos, struct port_range *);
 static struct socket_id* set_listen_id_adv(struct socket_id *, char *, int);
 static struct multi_str *new_string(char *s);
+static struct port_range* mk_port_range(int, int);
 static int parse_ipnet(char *in, int len, struct net **ipnet);
 
 extern int line;
@@ -240,6 +248,7 @@ extern int cfg_parse_only_routes;
 	struct listen_param* listen_param;
 	struct _pv_spec *specval;
 	struct multi_str* multistr;
+	struct port_range* portrange;
 }
 
 /* terminals */
@@ -472,7 +481,7 @@ extern int cfg_parse_only_routes;
 %type <sockid> id_lst
 %type <sockid> alias_def
 %type <sockid> listen_id_def
-%type <sockid> phostport panyhostport
+%type <sockid> phostport phostportrange
 %type <intval> proto port any_proto
 %type <strval> host_sep
 %type <intval> equalop compop matchop strop intop
@@ -484,6 +493,7 @@ extern int cfg_parse_only_routes;
 %type <intval> blst_flag blst_flags
 %type <strval> folded_string
 %type <multistr> multi_string
+%type <portrange> portrange
 
 /*
  * known shift/reduce conflicts (the default action, shift, is correct):
@@ -598,6 +608,37 @@ port:	  NUMBER	{ $$=$1; }
 		| ANY		{ $$=0; }
 ;
 
+portrange: portrange COMMA NUMBER MINUS NUMBER { IFOR();
+				if ($3 > $5) {
+					yyerrorf("invalid port range (%d > %d)\n", $3, $5);
+					YYABORT;
+				}
+				pr_tmp = mk_port_range($3, $5);
+				if (!pr_tmp) {
+					yyerror("cannot allocate new portrange\n");
+					YYABORT;
+				}
+				pr_tmp->next = $1;
+				$$ = pr_tmp;
+			}
+		 | portrange COMMA NUMBER { IFOR();
+				pr_tmp = mk_port_range($3, $3);
+				if (!pr_tmp) {
+					yyerror("cannot allocate new portrange\n");
+					YYABORT;
+				}
+				pr_tmp->next = $1;
+				$$ = pr_tmp;
+			}
+		 | NUMBER MINUS NUMBER { IFOR();
+				if ($1 > $3) {
+					yyerrorf("invalid port range (%d > %d)\n", $1, $3);
+					YYABORT;
+				}
+				$$=mk_port_range($1, $3);
+			}
+		 | NUMBER { IFOR(); $$=mk_port_range($1, $1); }
+;
 snumber:	NUMBER	{ $$=$1; }
 		| PLUS NUMBER	{ $$=$2; }
 		| MINUS NUMBER	{ $$=-$2; }
@@ -619,10 +660,24 @@ phostport: proto COLON listen_id	{ IFOR();
 			}
 			;
 
-panyhostport: proto COLON MULT				{ IFOR();
+		 ;
+
+phostportrange: proto COLON MULT				{ IFOR();
 				$$=mk_listen_id(0, $1, 0); }
-			| proto COLON MULT COLON port	{ IFOR();
-				$$=mk_listen_id(0, $1, $5); }
+			| proto COLON MULT COLON portrange	{ IFOR();
+				$$=mk_listen_id_range(0, $1, $5); }
+			| proto COLON listen_id COLON portrange	{ IFOR();
+				$$=mk_listen_id_range($3, $1, $5); }
+			| proto COLON MULT COLON error	{ IFOR();
+				$$=0;
+				yyerror("invalid port range");
+				YYABORT;
+			}
+			| proto COLON listen_id COLON error	{ IFOR();
+				$$=0;
+				yyerror("invalid port range");
+				YYABORT;
+			}
 			;
 
 alias_def:	listen_id						{ IFOR();
@@ -644,8 +699,8 @@ id_lst:		alias_def		{ IFOR();  $$=$1 ; }
 
 listen_id_def:	listen_id					{ IFOR();
 					$$=mk_listen_id($1, PROTO_NONE, 0); }
-			 |	listen_id COLON port		{ IFOR();
-			 		$$=mk_listen_id($1, PROTO_NONE, $3); }
+			 |	listen_id COLON portrange	{ IFOR();
+					$$=mk_listen_id_range($1, PROTO_NONE, $3); }
 			 |	listen_id COLON error {
 					$$=0;
 					yyerror(" port number expected");
@@ -679,14 +734,8 @@ socket_def_params:	socket_def_param
 				 |	socket_def_param socket_def_params
 				 ;
 
-socket_def:	panyhostport			{ $$=$1; }
-			| phostport				{ $$=$1; }
-			| panyhostport { IFOR();
-					memset(&p_tmp, 0, sizeof(p_tmp));
-				} socket_def_params	{ IFOR();
-					$$=$1; fill_socket_id(&p_tmp, $$);
-				}
-			| phostport { IFOR();
+socket_def:	phostportrange	{ $$=$1; }
+			| phostportrange { IFOR();
 					memset(&p_tmp, 0, sizeof(p_tmp));
 				} socket_def_params	{ IFOR();
 					$$=$1; fill_socket_id(&p_tmp, $$);
@@ -1351,10 +1400,12 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 							*xlog_level = $3; }
 		| XLOG_LEVEL EQUAL error { yyerror("number expected"); }
 		| SOCKET EQUAL socket_def { IFOR();
-							if (add_listening_socket($3)!=0){
-								LM_CRIT("cfg. parser: failed"
-										" to add listening socket\n");
-								break;
+							for (lst_tmp = $3; lst_tmp; lst_tmp = lst_tmp->next) {
+								if (add_listening_socket(lst_tmp)!=0){
+									LM_CRIT("cfg. parser: failed"
+											" to add listening socket\n");
+									break;
+								}
 							}
 						}
 		| SOCKET EQUAL  error { yyerror("ip address or hostname "
@@ -1362,10 +1413,12 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 						" config keywords)"); }
 		| LISTEN EQUAL socket_def { IFOR();
 							warn("'listen' is deprecated, use 'socket' instead");
-							if (add_listening_socket($3)!=0){
-								LM_CRIT("cfg. parser: failed"
-										" to add listen address\n");
-								break;
+							for (lst_tmp = $3; lst_tmp; lst_tmp = lst_tmp->next) {
+								if (add_listening_socket(lst_tmp)!=0){
+									LM_CRIT("cfg. parser: failed"
+											" to add listen address\n");
+									break;
+								}
 							}
 						}
 		| LISTEN EQUAL  error { yyerror("ip address or hostname "
@@ -2602,14 +2655,55 @@ static struct socket_id* mk_listen_id(char* host, enum sip_protos proto,
 	return l;
 }
 
+static struct socket_id* mk_listen_id_range(char* host, enum sip_protos proto, struct port_range *pr)
+{
+	int port;
+	struct socket_id *sid, *first_sid = NULL;
+	if (!pr)
+		return mk_listen_id(host, proto, 0);
+	while (pr) {
+		for (port = pr->max; port >= pr->min; port--) {
+			sid = mk_listen_id(host, proto, port);
+			if (!sid)
+				return first_sid;
+			sid->next = first_sid;
+			first_sid = sid;
+		}
+		pr = pr->next;
+	}
+	return first_sid;
+}
+
 static void fill_socket_id(struct listen_param *param, struct socket_id *s)
 {
-	s->flags |= param->flags;
-	s->workers = param->workers;
-	s->auto_scaling_profile = param->auto_scaling_profile;
-	if (param->socket)
-		set_listen_id_adv(s, param->socket->name, param->socket->port);
-	s->tag = param->tag;
+	int warn;
+	struct socket_id *socket;
+	while (s) {
+		s->flags |= param->flags;
+		s->workers = param->workers;
+		s->auto_scaling_profile = param->auto_scaling_profile;
+		s->tag = param->tag;
+		if (param->socket) {
+			socket = param->socket;
+			param->socket = param->socket->next;
+			set_listen_id_adv(s, socket->name, socket->port);
+			pkg_free(socket);
+		} else if (!warn) {
+			LM_WARN("inconsistent port range with advertised ports - skipping advertised\n");
+			warn = 1;
+		}
+		s = s->next;
+	}
+	/* free remaining sockets, if any */
+	while (param->socket) {
+		if (!warn) {
+			LM_WARN("inconsistent port range with advertised ports - too many adverised\n");
+			warn = 1;
+		}
+		socket = param->socket->next;
+		param->socket = param->socket->next;
+		pkg_free(socket);
+	}
 }
 
 static struct multi_str *new_string(char *s)
@@ -2622,6 +2716,20 @@ static struct multi_str *new_string(char *s)
 		ms->next = NULL;
 	}
 	return ms;
+}
+
+static struct port_range* mk_port_range(int min, int max)
+{
+	struct port_range *pr = pkg_malloc(sizeof *pr);
+	if (pr) {
+		memset(pr, 0, sizeof *pr);
+		pr->min = min;
+		pr->max = max;
+		pr->next = NULL;
+	} else {
+		LM_CRIT("cfg. parser: out of memory.\n");
+	}
+	return pr;
 }
 
 static struct socket_id* set_listen_id_adv(struct socket_id* sock,
