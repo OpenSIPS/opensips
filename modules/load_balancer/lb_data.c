@@ -432,7 +432,7 @@ static int get_dst_load(struct lb_resource **res, unsigned int res_no,
 			/* generate score based on the percentage of channels occupied, reduced by CPU idle factor */
 			if( dst->rmap[l].max_sessions ) {
 				av = ( 100 - ( 100 * ( dst->rmap[l].current_sessions + dst->rmap[l].sessions_since_last_heartbeat ) / dst->rmap[l].max_sessions ) ) * dst->rmap[l].cpu_idle;
-				LM_DBG("destination %d <%s> availability score %d (sessions=%d since_last_hb=%d max_sess=%d cpu_idle=%.2f)", dst->id, dst->uri, av, dst->rmap[l].current_sessions, dst->rmap[l].sessions_since_last_heartbeat, dst->rmap[l].max_sessions, dst->rmap[l].cpu_idle);
+				LM_DBG("destination %d <%.*s> availability score %d (sessions=%d since_last_hb=%d max_sess=%d cpu_idle=%.2f)", dst->id, dst->uri.len, dst->uri.s, av, dst->rmap[l].current_sessions, dst->rmap[l].sessions_since_last_heartbeat, dst->rmap[l].max_sessions, dst->rmap[l].cpu_idle);
             }
 		} else {
 			av = dst->rmap[l].max_load - lb_dlg_binds.get_profile_size(res[k]->profile, &dst->profile_id);
