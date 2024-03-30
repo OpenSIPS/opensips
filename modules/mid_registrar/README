@@ -1031,7 +1031,8 @@ ownership_tag]]]])
      * domain (static string) - logical domain within the
        registrar. If a database is used, then this must be name of
        the usrloc table which stores the contacts
-     * flags (string, optional) - string of the following flags:
+     * flags (string, optional) - string composed of one or more
+       of the following flags, comma-separated:
           + 'memory-only' - (old m flag) save the contacts only in
             memory cache without no DB operation;
           + 'no-reply' - (old r flag) do not generate a SIP reply
@@ -1179,7 +1180,8 @@ if (is_method("REGISTER")) {
      * domain (static string) - logical domain within the
        registrar. If a database is used, then this must be name of
        the usrloc table which stores the contacts
-     * flags (string, optional)
+     * flags (string, optional) - string composed of one or more
+       of the following flags, comma-separated:
           + 'no-branches' - (old b flag) this flag controls how
             the mid_registrar_lookup() function processes multiple
             contacts. If there are multiple contacts for the given
@@ -1353,7 +1355,7 @@ Chapter 2. Contributors
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Liviu Chircu (@liviuchircu) 500 200 16307 10208
+   1. Liviu Chircu (@liviuchircu) 501 201 16309 10210
    2. Vlad Patrascu (@rvlad-patrascu) 14 7 127 248
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 10 7 103 111
    4. Razvan Crainea (@razvancrainea) 9 7 23 18
@@ -1384,7 +1386,7 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Liviu Chircu (@liviuchircu)         Jul 2016 - Nov 2023
+   1.  Liviu Chircu (@liviuchircu)         Jul 2016 - Mar 2024
    2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - May 2023
    3.  Maksym Sobolyev (@sobomax)          Oct 2020 - Feb 2023
    4.  Razvan Crainea (@razvancrainea)     Mar 2017 - Jan 2023
