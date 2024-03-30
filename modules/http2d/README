@@ -1,0 +1,289 @@
+HTTP2D MODULE
+     __________________________________________________________
+
+   Table of Contents
+
+   1. Admin Guide
+
+        1.1. Overview
+        1.2. Dependencies
+
+              1.2.1. OpenSIPS Modules
+              1.2.2. External Libraries or Applications
+
+        1.3. Exported Parameters
+
+              1.3.1. ip (string)
+              1.3.2. port (integer)
+              1.3.3. tls_cert_path (string)
+              1.3.4. tls_cert_key (string)
+              1.3.5. max_headers_size (integer)
+              1.3.6. response_timeout (integer)
+
+        1.4. Exported Functions
+
+              1.4.1. http2_send_response(code, [headers_json],
+                      [data])
+
+        1.5. Exported Events
+
+              1.5.1. E_HTTP2_REQUEST
+
+   2. Contributors
+
+        2.1. By Commit Statistics
+        2.2. By Commit Activity
+
+   3. Documentation
+
+        3.1. Contributors
+
+   List of Tables
+
+   2.1. Top contributors by DevScore^(1), authored commits^(2) and
+          lines added/removed^(3)
+
+   2.2. Most recently active contributors^(1) to this module
+
+   List of Examples
+
+   1.1. Setting the ip parameter
+   1.2. Setting the port parameter
+   1.3. Setting the tls_cert_path parameter
+   1.4. Setting the tls_cert_key parameter
+   1.5. Setting the max_headers_size parameter
+   1.6. Setting the response_timeout parameter
+   1.7. http2_send_response() usage
+
+Chapter 1. Admin Guide
+
+1.1. Overview
+
+   This module provides an RFC 7540/9113 HTTP/2 server
+   implementation with "h2" ALPN support, based on the nghttp2
+   library (https://nghttp2.org/).
+
+   HTTP/2, introduced in 2015, is a binary protocol with added
+   transactional layers (SESSION, FRAME), which allow identifying
+   and managing multiple, concurrent transfers over the same
+   TCP/TLS connection. Thus, the revised protocol primarily aims
+   to reduce resource usage for both clients and servers, by
+   reducing the amount of TCP and/or TLS handshakes performed when
+   loading a given web page.
+
+   The OpenSIPS http2d server includes support for both "h2" (TLS
+   secured) and "h2c" (cleartext) HTTP/2 connections. The requests
+   arrive at opensips.cfg level using the E_HTTP2_REQUEST event,
+   where script writers may process the data and respond
+   accordingly.
+
+1.2. Dependencies
+
+1.2.1. OpenSIPS Modules
+
+   None.
+
+1.2.2. External Libraries or Applications
+
+   The HTTP/2 server is provided by the nghttp2 library, which
+   runs on top of the libevent server framework.
+
+   Overall, the following libraries must be installed before
+   running OpenSIPS with this module loaded:
+     * libnghttp2
+     * libevent, libevent_openssl
+     * libssl, libcrypto
+
+1.3. Exported Parameters
+
+1.3.1. ip (string)
+
+   The listening IPv4 address.
+
+   Default value is "127.0.0.1".
+
+   Example 1.1. Setting the ip parameter
+
+modparam("http2d", "ip", "127.0.0.2")
+
+
+1.3.2. port (integer)
+
+   The listening port.
+
+   Default value is 443.
+
+   Example 1.2. Setting the port parameter
+
+modparam("http2d", "port", 5000)
+
+
+1.3.3. tls_cert_path (string)
+
+   File path to the TLS certificate, in PEM format.
+
+   Default value is NULL (not set).
+
+   Example 1.3. Setting the tls_cert_path parameter
+
+modparam("http2d", "tls_cert_path", "/etc/pki/http2/cert.pem")
+
+
+1.3.4. tls_cert_key (string)
+
+   File path to the TLS private key, in PEM format.
+
+   Default value is NULL (not set).
+
+   Example 1.4. Setting the tls_cert_key parameter
+
+modparam("http2d", "tls_cert_key", "/etc/pki/http2/private/key.pem")
+
+
+1.3.5. max_headers_size (integer)
+
+   The maximum amount of bytes allowed for all header field names
+   and values combined in a single HTTP/2 request processed by the
+   server. Once this threshold is reached, extra headers will no
+   longer be provided at script level and will be reported as
+   errors instead.
+
+   Default value is 8192 bytes.
+
+   Example 1.5. Setting the max_headers_size parameter
+
+modparam("http2d", "max_headers_size", 16384)
+
+
+1.3.6. response_timeout (integer)
+
+   The maximum amount of time, in milliseconds, that the library
+   will allow the opensips.cfg processing to take for a given
+   HTTP/2 request.
+
+   Once this timeout is reached, the module will auto-generate a
+   408 (request timeout) reply.
+
+   Default value is 2000 ms.
+
+   Example 1.6. Setting the response_timeout parameter
+
+modparam("http2d", "response_timeout", 5000)
+
+
+1.4. Exported Functions
+
+1.4.1.  http2_send_response(code, [headers_json], [data])
+
+   Sends a response for the HTTP/2 request being processed. The
+   ":status" header field will be automatically included by the
+   module as 1st header, so it must not be included in the
+   headers_json array.
+
+   Parameters
+     * code (integer) - The HTTP/2 reply code
+     * headers_json (string, default: NULL) - Optional JSON Array
+       containing {"header": "value"} elements, denoting HTTP/2
+       headers and their values to be included in the response
+       message.
+     * data (string, default: NULL) - Optional DATA payload to
+       include in the response message.
+
+   Return Codes
+     * 1 - Success
+     * -1 - Internal Error
+
+   This function can only be used from an EVENT_ROUTE.
+
+   Example 1.7. http2_send_response() usage
+
+event_route [E_HTTP2_REQUEST] {
+  xlog(":: Method:  $param(method)\n");
+  xlog(":: Path:    $param(path)\n");
+  xlog(":: Headers: $param(headers)\n");
+  xlog(":: Data:    $param(data)\n");
+
+  $json(hdrs) := $param(headers);
+  xlog("content-type: $json(hdrs/content-type)\n");
+
+  $var(rpl_headers) = "[
+        { \"content-type\": "application/json" },
+        { \"server\": "OpenSIPS 3.5" },
+        { \"x-current-time\": "1711457142" },
+        { \"x-call-cost\": "0.355" }
+  ]";
+
+  $var(data) = "{\"status\": \"success\"}";
+
+  if (!http2_send_response(200, $var(rpl_headers), $var(data)))
+    xlog("ERROR - failed to send HTTP/2 response\n");
+}
+
+
+1.5. Exported Events
+
+1.5.1.  E_HTTP2_REQUEST
+
+   This event is raised whenever the http2d module is loaded and
+   OpenSIPS receives an HTTP/2 request on the configured listening
+   interface(s).
+
+   Parameters:
+     * method (string) - value of the ":method" HTTP/2 header
+     * path (string) - value of the ":path" HTTP/2 header
+     * headers (string) - JSON Array with all headers of the
+       request, including pseudo-headers
+     * data (string, default: NULL) - If the request included a
+       payload, this parameter will hold its contents
+
+   Note that this event is currently designed to be mainly
+   consumed by an event_route, since that is the only way to gain
+   access to the http2_send_response() function in order to build
+   custom response messages. On the other hand, if the application
+   does not mind the answer being always a 200 with no payload,
+   this event can be successfully consumed through any other
+   EVI-compatible delivery channel ☺️
+
+Chapter 2. Contributors
+
+2.1. By Commit Statistics
+
+   Table 2.1. Top contributors by DevScore^(1), authored
+   commits^(2) and lines added/removed^(3)
+                 Name             DevScore Commits Lines ++ Lines --
+   1. Liviu Chircu (@liviuchircu)    28       7      2073     203
+
+   (1) DevScore = author_commits + author_lines_added /
+   (project_lines_added / project_commits) + author_lines_deleted
+   / (project_lines_deleted / project_commits)
+
+   (2) including any documentation-related commits, excluding
+   merge commits. Regarding imported patches/code, we do our best
+   to count the work on behalf of the proper owner, as per the
+   "fix_authors" and "mod_renames" arrays in
+   opensips/doc/build-contrib.sh. If you identify any
+   patches/commits which do not get properly attributed to you,
+   please submit a pull request which extends "fix_authors" and/or
+   "mod_renames".
+
+   (3) ignoring whitespace edits, renamed files and auto-generated
+   files
+
+2.2. By Commit Activity
+
+   Table 2.2. Most recently active contributors^(1) to this module
+                 Name               Commit Activity
+   1. Liviu Chircu (@liviuchircu) Mar 2024 - Mar 2024
+
+   (1) including any documentation-related commits, excluding
+   merge commits
+
+Chapter 3. Documentation
+
+3.1. Contributors
+
+   Last edited by: Liviu Chircu (@liviuchircu).
+
+   Documentation Copyrights:
+
+   Copyright © 2024 www.opensips-solutions.com

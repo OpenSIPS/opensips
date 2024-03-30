@@ -39,6 +39,7 @@ CLUSTERER Module
               1.4.23. flags_col
               1.4.24. description_col
               1.4.25. enable_stats (integer)
+              1.4.26. enable_rerouting (integer)
 
         1.5. Exported Functions
 
@@ -149,16 +150,17 @@ CLUSTERER Module
    1.23. Set flags_col parameter
    1.24. Set description_col parameter
    1.25. Set enable_stats parameter
-   1.26. cluster_send_req() usage
-   1.27. cluster_send_rpl() usage
-   1.28. cluster_broadcast_req() usage
-   1.29. cluster_check_addr() usage
-   1.30. clusterer_list usage
-   1.31. clusterer_list_topology usage
-   1.32. clusterer_list_cap usage
-   1.33. Example database content - clusterer table
-   1.34. Node A configuration
-   1.35. Node B configuration
+   1.26. Set enable_rerouting parameter
+   1.27. cluster_send_req() usage
+   1.28. cluster_send_rpl() usage
+   1.29. cluster_broadcast_req() usage
+   1.30. cluster_check_addr() usage
+   1.31. clusterer_list usage
+   1.32. clusterer_list_topology usage
+   1.33. clusterer_list_cap usage
+   1.34. Example database content - clusterer table
+   1.35. Node A configuration
+   1.36. Node B configuration
 
 Chapter 1. Admin Guide
 
@@ -600,6 +602,20 @@ modparam("clusterer", "description_col", "description")
 modparam("clusterer", "enable_stats", 0)
 ...
 
+1.4.26. enable_rerouting (integer)
+
+   If packets should be rerouted via another node if a direct
+   route to destination is unavailible. Disabling may improve
+   stability in two-node topologies. Set it to zero to disable or
+   to non-zero to enable it.
+
+   Default value is “1 (enabled)”.
+
+   Example 1.26. Set enable_rerouting parameter
+...
+modparam("clusterer", "enable_rerouting", 0)
+...
+
 1.5. Exported Functions
 
 1.5.1.  cluster_send_req(cluster_id, dst_id, msg, [tag])
@@ -632,7 +648,7 @@ modparam("clusterer", "enable_stats", 0)
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.26. cluster_send_req() usage
+   Example 1.27. cluster_send_req() usage
 ...
 # send a request
 cluster_send_req(1, 1, "Check USER: $fU", $var(req_tag));
@@ -676,7 +692,7 @@ route[rpl_resume] {
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.27. cluster_send_rpl() usage
+   Example 1.28. cluster_send_rpl() usage
 ...
 event_route[E_CLUSTERER_REQ_RECEIVED] {
   cluster_send_rpl($param(cluster_id), $param(src_id), $var(my_reply), $
@@ -704,7 +720,7 @@ param(tag));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.28. cluster_broadcast_req() usage
+   Example 1.29. cluster_broadcast_req() usage
 ...
 cluster_broadcast_req($var(cl_id), $var(share_data));
 ...
@@ -726,7 +742,7 @@ cluster_broadcast_req($var(cl_id), $var(share_data));
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    ONREPLY_ROUTE, BRANCH_ROUTE, LOCAL_ROUTE and EVENT_ROUTE.
 
-   Example 1.29. cluster_check_addr() usage
+   Example 1.30. cluster_check_addr() usage
 ...
 if (cluster_check_addr(1, $si)) {
         ...
@@ -757,7 +773,7 @@ if (cluster_check_addr(1, $si)) {
 
    Parameters:none
 
-   Example 1.30. clusterer_list usage
+   Example 1.31. clusterer_list usage
 $ opensips-cli -x mi clusterer_list
 {
     "Clusters": [
@@ -791,7 +807,7 @@ $ opensips-cli -x mi clusterer_list
 
    Parameters:none
 
-   Example 1.31. clusterer_list_topology usage
+   Example 1.32. clusterer_list_topology usage
 $ opensips-cli -x mi clusterer_list_topology
 {
     "Clusters": [
@@ -908,7 +924,7 @@ opensips-cli -x mi cluster_broadcast_mi 1 dr_reload partition_5
 
    Parameters:none
 
-   Example 1.32. clusterer_list_cap usage
+   Example 1.33. clusterer_list_cap usage
 $ opensips-cli -x mi clusterer_list_cap
 {
     "Clusters": [
@@ -1178,7 +1194,7 @@ oadcast from 2"
 
    We insert in the the clusterer table the following:
 
-   Example 1.33. Example database content - clusterer table
+   Example 1.34. Example database content - clusterer table
 +----+------------+---------+----------------------+-------+------------
 -----+----------+----------+-------+-------------+
 | id | cluster_id | node_id | url                  | state | no_ping_ret
@@ -1221,7 +1237,7 @@ ries | priority | sip_addr | flags | description |
    configure the two instances of OpenSIPS. First, we configure
    Node A:
 
-   Example 1.34. Node A configuration
+   Example 1.35. Node A configuration
 ...
 socket= bin:192.168.0.5:5566 # bin listener for Node A
 
@@ -1237,7 +1253,7 @@ modparam("ratelimit", "pipe_replication_cluster", 1)
 
    Similarly, the configuration for Node B is as follows:
 
-   Example 1.35. Node B configuration
+   Example 1.36. Node B configuration
 ...
 socket= bin:192.168.0.6:5566 # bin listener for Node B
 
@@ -1444,7 +1460,7 @@ Chapter 3. Contributors
    10. Gohar Ahmed (@goharahmed) 3 1 6 5
 
    All remaining contributors: kworm83, Peter Lemenkov
-   (@lemenkov).
+   (@lemenkov), Shanee Vanstone.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -1466,19 +1482,20 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   2.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Apr 2023
-   4.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
-   5.  Razvan Crainea (@razvancrainea)     Nov 2015 - Aug 2022
-   6.  Jasper Hafkenscheid                 May 2022 - Jul 2022
-   7.  kworm83                             Feb 2021 - Feb 2021
-   8.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
-   9.  Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
-   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
+   1.  Shanee Vanstone                     Mar 2024 - Mar 2024
+   2.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   3.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Jul 2023
+   4.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2016 - Apr 2023
+   5.  Liviu Chircu (@liviuchircu)         Mar 2016 - Oct 2022
+   6.  Razvan Crainea (@razvancrainea)     Nov 2015 - Aug 2022
+   7.  Jasper Hafkenscheid                 May 2022 - Jul 2022
+   8.  kworm83                             Feb 2021 - Feb 2021
+   9.  Fabian Gast (@fgast)                Nov 2018 - Jul 2020
+   10. Gohar Ahmed (@goharahmed)           Mar 2019 - Mar 2019
 
-   All remaining contributors: Ionel Cerghit (@ionel-cerghit),
-   Eseanu Marius Cristian (@eseanucristian).
+   All remaining contributors: Peter Lemenkov (@lemenkov), Ionel
+   Cerghit (@ionel-cerghit), Eseanu Marius Cristian
+   (@eseanucristian).
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1487,11 +1504,11 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Vlad
-   Patrascu (@rvlad-patrascu), Jasper Hafkenscheid, Liviu Chircu
-   (@liviuchircu), Fabian Gast (@fgast), Razvan Crainea
-   (@razvancrainea), Peter Lemenkov (@lemenkov), Eseanu Marius
-   Cristian (@eseanucristian).
+   Last edited by: Shanee Vanstone, Bogdan-Andrei Iancu
+   (@bogdan-iancu), Vlad Patrascu (@rvlad-patrascu), Jasper
+   Hafkenscheid, Liviu Chircu (@liviuchircu), Fabian Gast
+   (@fgast), Razvan Crainea (@razvancrainea), Peter Lemenkov
+   (@lemenkov), Eseanu Marius Cristian (@eseanucristian).
 
    Documentation Copyrights:
 
