@@ -807,7 +807,6 @@ static void lb_update_max_loads(unsigned int ticks, void *param)
 				            dst->rmap[ri].resource->profile, &dst->profile_id);
 				old = dst->rmap[ri].max_load;
 
-				// if ( flags & LB_FLAGS_PERCENT_WITH_CPU ) { todo flags not avavilable here
 				/*
 				 * In LB_FLAGS_PERCENT_WITH_CPU mode we capture the raw values and use these in each LB calculation. This
 				 * means we do not use profile counting in the load calculation. This is suitable for
