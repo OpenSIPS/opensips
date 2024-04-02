@@ -91,23 +91,26 @@
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>Dialog</emphasis> - Dialog module
-			</para>
-			<para>
-				<emphasis>freeswitch</emphasis>. - only if 
-				"fetch_freeswitch_stats" is enabled.
+				<emphasis>dialog</emphasis> - Dialog module
 			</para>
 			</listitem>
 			<listitem>
 			<para>
-				<emphasis>dialog</emphasis> - TM module (only if probing is
+				<emphasis>freeswitch</emphasis> - only if
+				"fetch_freeswitch_stats" is enabled
+				(required for integrated estimation mode)
+			</para>
+			</listitem>
+			<listitem>
+			<para>
+				<emphasis>tm</emphasis> - TM module (only if probing is
 				enabled)
 			</para>
 			</listitem>
 			<listitem>
 			<para>
 				<emphasis>clusterer</emphasis> - only if "cluster_id"
-				option is enabled.
+				option is enabled
 			</para>
 			</listitem>
 			<listitem>
@@ -332,12 +335,7 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
 		using statistics pushed by the FreeSWITCH box.
 		</para>
 		<para>
-		The max value of a resource is updated every <emphasis>event_heartbeat_interval</emphasis>
-		seconds (see the "freeswitch" OpenSIPS module for more details
-		regarding this setting), as the stats arrive from FreeSWITCH.
-	</para>
-	<para>
-		Given the following format for FreeSWITCH heartbeat messages:
+		FreeSWITCH heartbeat messages provide the following statistics:
 		<programlisting format="linespecific">
 {
   ...
@@ -349,15 +347,82 @@ modparam("load_balancer", "lb_define_blacklist", "blist2= 2,10,6")
   ...
 }
 </programlisting>
-		, the load balancer uses the following formula in order to periodically
-		update its "max_load" values for each FreeSWITCH box (FreeSWITCH data
-		is highlighted in bold):
+		</para>
+		<para>
+			The current/maximum sessions and CPU idle data for each instance
+			are updated as the stats arrive from FreeSWITCH every
+			event_heartbeat_interval seconds (see the "freeswitch" OpenSIPS
+			module for more details regarding this setting).
+		</para>
+		<para>
+			These are used according to the operational mode used in the
+			load balancing function calls.
+		</para>
+		<para>
+			<emphasis role='bold'>
+			Relative mode
+			</emphasis>
+		</para>
+		<para>
+			The max load score for each instance is updated every
+			fetch_freeswitch_stats seconds. In relative mode, the load balancer
+			uses the following formula in order to periodically update its
+			"max_load" values for each FreeSWITCH box (FreeSWITCH data is
+			highlighted in bold):
 		</para>
 		<para>
 			<emphasis>max_load = (<emphasis role='bold'>Idle-CPU</emphasis> / 100)
 				* (<emphasis role='bold'>Max-Sessions</emphasis> -
 				(<emphasis role='bold'>Session-Count</emphasis> -
 				current_load))</emphasis>
+		</para>
+
+		<para>
+			<emphasis role='bold'>
+				Integrated estimation mode
+			</emphasis>
+		</para>
+		<para>
+			This mode is intended to be used in high throughput environments where
+			not all inbound and outbound sessions are tracked on the local
+			OpenSIPs instance. The heartbeat data is used as the primary source of
+			truth for server load.
+		</para>
+		<para>
+			In addition to the data collected in the most recent heartbeat the module
+			will count sessions allocated to each instance and use this data in
+			each subsequent calculation to track sessions and distribute the load.
+			Each fetch_freeswitch_stats interval the sessions since last heartbeat counters
+			are reset as up to data load data has been provided. It is advisable to set
+			event_heartbeat_interval and fetch_freeswitch_stats low to improve session
+			data synchronisation.
+		</para>
+		<para>
+			In integrated estimation mode, the load balancer uses the collects the session
+			data for each FreeSWITCH box every fetch_freeswitch_stats seconds. Rather than
+			maintaining a max load score this mode performs the following calculation at
+			the time a call is selecting a destination (FreeSWITCH data is highlighted in bold):
+		</para>
+		<para>
+			<emphasis>load_score = (100 - (100 * <emphasis role='bold'>Session-Count</emphasis>
+				+ sessions_since_last_heartbeat / <emphasis role='bold'>Max-Sessions</emphasis>))
+				* (<emphasis role='bold'>Idle-CPU</emphasis>/100)</emphasis>
+		</para>
+		<para>
+			<programlisting format="linespecific">
+<emphasis role='bold'>Warning - heartbeat processing is asynchronous to this module</emphasis>
+
+Heartbeat data is collected in the freeswitch module upon arrival
+from each FreeSWITCH instance as controlled by both the minimum interval setting
+on the instance and the event_heartbeat_interval module setting. This module
+will refresh its internal calculations at intervals defined by
+fetch_freeswitch_stats.
+
+When using integrated estimation mode the sessions
+since last heartbeat counter will be reset every fetch_freeswitch_stats
+seconds. Keeping these values low and the same is advised for more accurate
+load estimations according to your throughput requirements.
+</programlisting>
 		</para>
 		<para>
 		<emphasis>
@@ -405,7 +470,7 @@ modparam("load_balancer", "initial_freeswitch_load", 200)
 		of the destinations and for controlling the pinging to destinations.
 		</para>
 		<para>
-		If clustering enbled, the module will automatically share changes
+		If clustering enabled, the module will automatically share changes
 		over the status of the destinations with the other 
 		OpenSIPS instances that are part of a cluster. Whenever such a status 
 		changes (following an MI command, a probing result, a script command),
@@ -510,7 +575,7 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 			</para>
 			<itemizedlist>
 			<listitem>
-				<para><emphasis>n</emphasis> - Negative availability  - use
+				<para><emphasis>n</emphasis> - Negative availability - use
 				destinations with negative availability (exceeded capacity);
 				do not ignore resources with negative availability, and thus 
 				able to select for load balancing destinations with exceeded 
@@ -520,12 +585,25 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 				</para>
 			</listitem>
 			<listitem>
+				<para><emphasis>i</emphasis> - Integrated estimation -
+					intended for use in deployments
+					where many separate SIP proxies are feeding calls into
+					a pool of FreeSWITCH servers. Load calculations are
+					performed using the most recent heartbeat data and a
+					counter of all sessions allocated since the last heartbeat.
+					Profile counting is unused in the calculation. The reported
+					CPU load value is used to reduce session load on systems
+					with high CPU utilisation. Mutually exclusive with flag "r".
+				</para>
+			</listitem>
+			<listitem>
 				<para><emphasis>r</emphasis> - Relative value - the relative
 				available load (how many percentages are free) is used in
 				computing the load of each pear/resource; Without this flag,
 				the Absolute value is assumed - the effective
 				available load ( maximum_load - current_load) is used in
-				computing the load of each pear/resource.
+				computing the load of each pear/resource. Mutually exclusive
+				with flag "i".
 				</para>
 			</listitem>
 			<listitem>
@@ -574,6 +652,11 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 			(requested resources do not exist)
 			</para>
 		</listitem>
+		<listitem>
+			<para><emphasis>-5 (false)</emphasis> - mutually exclusive flags
+			"i" and "r" were both set
+			</para>
+		</listitem>
 		</itemizedlist>
 		<para>
 		This function can be used from REQUEST_ROUTE, BRANCH_ROUTE and
@@ -583,7 +666,7 @@ modparam("load_balancer", "cluster_sharing_tag", "vip")
 		<title><function>lb_start</function> usage</title>
 		<programlisting format="linespecific">
 ...
-if (lb_start(1,"trascoding;conference")) {
+if (lb_start(1,"transcoding;conference")) {
 	# dst URI points to the new destination
 	xlog("sending call to $du\n");
 	t_relay();
@@ -630,8 +713,8 @@ if (lb_start(1,"trascoding;conference")) {
 		</listitem>
 		<listitem>
 			<para><emphasis>-2 (false)</emphasis> - no capacity available 
-			(detinations are up and available, but they do not have any 
-			availabe channels)</para>
+			(destinations are up and available, but they do not have any
+			available channels)</para>
 		</listitem>
 		<listitem>
 			<para><emphasis>-3 (false)</emphasis> - no more destinations 
@@ -695,7 +778,7 @@ if (t_check_status("(408)|(5[0-9][0-9])")) {
 		<para>
 		Function to stop and flush a current LB session. To be used in 
 		failure route, if you want to stop the current LB session (not to try
-		any other destinations from this session) and to start a completly new
+		any other destinations from this session) and to start a completely new
 		one.
 		</para>
 		<para>
@@ -882,7 +965,7 @@ if (lb_is_destination($si,$sp) ) {
 		<title><function>lb_count_call</function> usage</title>
 		<programlisting format="linespecific">
 ...
-# count as load also the calls orgininated by lb destinations
+# count as load also the calls originated by lb destinations
 if (lb_is_destination($si,$sp) ) {
 	# inbound call from destination
 	lb_count_call($si,$sp,-1,"conference");
@@ -911,7 +994,7 @@ if (lb_is_destination($si,$sp) ) {
 		<section id="mi_lb_reload" xreflabel="lb_reload">
 		<title><function moreinfo="none">lb_reload</function></title>
 		<para>
-		Trigers the reload of the load balancing data from the DB.
+		Triggers the reload of the load balancing data from the DB.
 		</para>
 		<para>
 		MI FIFO Command Format:
