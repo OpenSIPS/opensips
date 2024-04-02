@@ -557,19 +557,19 @@ static int w_lb_start(struct sip_msg *req, int *grp_no,
 			switch( *f ) {
 				case 'r':
 					if( flags & LB_FLAGS_PERCENT_WITH_CPU ) {
-						LM_ERR("flags c & r are mutually exclusive (r)\n");
+						LM_ERR("flags i & r are mutually exclusive (r)\n");
 						return -5;
 					}
 					flags |= LB_FLAGS_RELATIVE;
 					LM_DBG("using relative versus absolute estimation\n");
 					break;
-				case 'c':
+				case 'i':
 					if( flags & LB_FLAGS_RELATIVE ) {
-						LM_ERR("flags c & r are mutually exclusive (c)\n");
+						LM_ERR("flags i & r are mutually exclusive (i)\n");
 						return -5;
 					}
 					flags |= LB_FLAGS_PERCENT_WITH_CPU;
-					LM_DBG("using percentage of max sessions with CPU factor estimation \n");
+					LM_DBG("using integrated estimation (percentage of max sessions with CPU factor estimation) \n");
 					break;
 				case 'n':
 					flags |= LB_FLAGS_NEGATIVE;
