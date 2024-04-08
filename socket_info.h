@@ -62,6 +62,7 @@ struct socket_info {
 	unsigned short adv_port;    /* optimization for grep_sock_info() */
 	unsigned short workers;
 	struct scaling_profile *s_profile;
+	void *extra_data;
 
 	/* these are IP-level local/remote ports used during the last write op via
 	 * this sock (or a connection belonging to this sock). These values are 
@@ -210,6 +211,7 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 	/* must support 2-char arrays for ws
 	 * must support 3-char arrays for udp, tcp, tls, wss
 	 * must support 4-char arrays for sctp
+	 * must support 5-char arrays for ipsec
 	 * must support 7-char arrays for hep_tcp and hep_udp */
 	*proto=PROTO_NONE;
 	if ((len < 2 || len > 5) && len != 7) return -1;
@@ -239,6 +241,11 @@ inline static int parse_proto(unsigned char* s, long len, int* proto)
 				*proto=PROTO_BINS; return 0;
 			}
 			break;
+		case PROTO2UINT('i', 'p', 's'):
+			if(len==5 && (s[3]|0x20)=='e' && (s[4]|0x20)=='c') {
+				*proto=PROTO_IPSEC; return 0;
+			}
+			return -1;
 
 		case PROTO2UINT('h', 'e', 'p'):
 			if (len != 7 || s[3] != '_') return -1;
@@ -411,6 +418,13 @@ static inline char* proto2str(int proto, char *p)
 			*(p++) = 'w';
 			*(p++) = 's';
 			*(p++) = 's';
+			break;
+		case PROTO_IPSEC:
+			*(p++) = 'i';
+			*(p++) = 'p';
+			*(p++) = 's';
+			*(p++) = 'e';
+			*(p++) = 'c';
 			break;
 		case PROTO_BIN:
 			*(p++) = 'b';

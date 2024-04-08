@@ -65,4 +65,6 @@ struct tcp_async_chunk *tcp_async_get_chunk(struct tcp_connection *con);
 
 void tcp_async_update_write(struct tcp_connection *con, int len);
 
+int tcp_read(struct tcp_connection *c,struct tcp_req *r);
+
 #endif /* _NET_TCP_COMMON_H_ */
