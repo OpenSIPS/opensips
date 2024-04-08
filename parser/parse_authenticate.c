@@ -76,6 +76,8 @@
 #define DOMAIN_STATE     5
 #define OPAQUE_STATE     6
 #define ALGORITHM_STATE  7
+#define IK_STATE         8
+#define CK_STATE         9
 
 #define TRB_SCASEMATCH(cp, S) (turbo_casematch(cp, (S), (sizeof(S) - 1)))
 #define TRB_STRCASEMATCH(sarg, S) (turbo_strcasematch(sarg, (S), (sizeof(S) - 1)))
@@ -211,13 +213,29 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 					{
 						state = QOP_STATE;
 						STR_ADVANCE_BY(&body, 3);
+					} else if ((n|0xffff) == 0x696bffff) { /*ik*/
+						state = IK_STATE;
+						STR_ADVANCE_BY(&body, 2);
+					} else if ((n|0xffff) == 0x636bffff) { /*ck*/
+						state = CK_STATE;
+						STR_ADVANCE_BY(&body, 2);
 					}
 			}
-		} else if (body.len > 3) {
-			if (TRB_SCASEMATCH(body.s, "qop"))
+		} else if (body.len > 2) {
+			if (body.len > 3) {
+				if (TRB_SCASEMATCH(body.s, "qop"))
+				{
+					STR_ADVANCE_BY(&body, 3);
+					state = QOP_STATE;
+				}
+			} else if (TRB_SCASEMATCH(body.s, "ik"))
 			{
-				STR_ADVANCE_BY(&body, 3);
-				state = QOP_STATE;
+				STR_ADVANCE_BY(&body, 2);
+				state = IK_STATE;
+			} else if (TRB_SCASEMATCH(body.s, "ck"))
+			{
+				STR_ADVANCE_BY(&body, 2);
+				state = CK_STATE;
 			}
 		}
 
@@ -288,6 +306,12 @@ int parse_authenticate_body( str body, struct authenticate_body *auth)
 				break;
 			case OPAQUE_STATE:
 				auth->opaque = val;
+				break;
+			case IK_STATE:
+				auth->ik = val;
+				break;
+			case CK_STATE:
+				auth->ck = val;
 				break;
 			case ALGORITHM_STATE:
 				auth->algorithm = parse_digest_algorithm(&val);
