@@ -202,14 +202,15 @@ void free_ucontact_coords(ucontact_coords coords);
 int is_my_ucontact(ucontact_t *c);
 
 /*! \brief
- * ancient time used for marking the contacts forced to expired
+ * Non-zero but still ancient time which forces a contact to expire
  */
 #define UL_EXPIRED_TIME 10
+#define FORCE_EXPIRED_CONTACT(c)  ((c)->expires == UL_EXPIRED_TIME)
 
 /*
- * Valid contact is a contact that either didn't expire yet or is permanent
+ * A contact is valid when it is neither expired nor permanent
  */
-#define VALID_CONTACT(c, t)   ((c->expires>t) || (c->expires==0))
+#define VALID_CONTACT(c, t)   ((c)->expires>(t) || (c)->expires==0)
 
 
 /*! \brief
