@@ -266,6 +266,8 @@ void print_all_socket_lists(void)
 
 		for ( sif = protos[i].listeners; sif; sif = sif->next ) {
 			const struct socket_info *si = &sif->socket_info;
+			if (si->flags & SI_INTERNAL)
+				continue;
 			printf("             %s: %s [%s]:%s%s%s%s\n", protos[i].name,
 					si->name.s, si->address_str.s, si->port_no_str.s,
 					si->flags & SI_IS_MCAST ? " mcast" : "",

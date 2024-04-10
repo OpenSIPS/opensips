@@ -89,7 +89,7 @@ union sockaddr_union{
 
 
 enum si_flags { SI_NONE=0, SI_IS_IP=1, SI_IS_LO=2, SI_IS_MCAST=4,
-	SI_IS_ANYCAST=8, SI_FRAG=16, SI_REUSEPORT=32 };
+	SI_IS_ANYCAST=8, SI_FRAG=16, SI_REUSEPORT=32, SI_INTERNAL=64 };
 
 struct receive_info {
 	struct ip_addr src_ip;
