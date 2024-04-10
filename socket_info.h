@@ -611,4 +611,8 @@ static inline char* socket2str(const struct socket_info *sock, char *s, int *len
 int probe_max_sock_buff( int sock, int buff_choice, int buff_max,
 		int buff_increment);
 
+struct socket_id *socket_info2id(struct socket_info *si);
+struct socket_info_full* new_sock_info( struct socket_id *sid);
+void push_sock2list(struct socket_info_full *si);
+
 #endif

@@ -113,7 +113,7 @@
 
 
 /* another helper function, it just creates a socket_info struct */
-static struct socket_info_full* new_sock_info( struct socket_id *sid)
+struct socket_info_full* new_sock_info( struct socket_id *sid)
 {
 	struct socket_info_full *sif;
 	struct socket_info *si;
@@ -418,6 +418,11 @@ int new_sock2list(struct socket_id *sid, struct socket_info_full** list)
 	return 0;
 error:
 	return -1;
+}
+
+void push_sock2list(struct socket_info_full *si)
+{
+	sock_listadd(&protos[si->socket_info.proto].listeners, si);
 }
 
 
@@ -1357,4 +1362,21 @@ int probe_max_sock_buff(int sock,int buff_choice,int buff_max,int buff_increment
 	LM_DBG("using %s buffer of %d kb\n",info, (foptval/1024));
 
 	return 0;
+}
+
+struct socket_id *socket_info2id(struct socket_info *si)
+{
+	static struct socket_id sid;
+
+	memset(&sid, 0, sizeof sid);
+	sid.name = si->name.s;
+	sid.adv_name = si->adv_sock_str.s;
+	sid.tag = si->tag.s;
+	if (si->s_profile)
+		sid.auto_scaling_profile = si->s_profile->name;
+	sid.adv_port = si->adv_port;
+	sid.proto = si->proto;
+	sid.port = si->port_no;
+	sid.workers = si->workers;
+	return &sid;
 }
