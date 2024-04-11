@@ -2516,12 +2516,8 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
 					msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip, msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
 		} else {
-			char *nbuff = proto2str(send_sock->proto,fromip_buff);
-			db_vals[4].val.str_val.s = fromip_buff;
-			db_vals[4].val.str_val.len = nbuff - fromip_buff;
-			db_vals[5].val.str_val = send_sock->adv_sock_str.len?send_sock->adv_name_str:send_sock->address_str;
-			db_vals[6].val.int_val = send_sock->last_real_ports->local?
-				send_sock->last_real_ports->local:send_sock->port_no;
+			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+					send_sock->adv_sock_str.len?(struct ip_addr *)&send_sock->adv_address:(struct ip_addr *)&send_sock->address, send_sock->last_real_ports->local?send_sock->last_real_ports->local:send_sock->port_no, send_sock->proto);
 		}
 	}
 
