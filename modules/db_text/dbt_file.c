@@ -89,7 +89,8 @@ int dbt_check_mtime(const str *tbn, const str *dbn, time_t *mt)
 dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 {
 	FILE *fin=NULL;
-	char path[512], buf[4096];
+	char path[512];
+	char *buf;
 	int c, crow, ccol, bp, sign, max_auto;
 	dbt_val_t dtval;
 	dbt_table_p dtp = NULL;
@@ -124,6 +125,12 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 	fin = fopen(path, "rt");
 	if(!fin)
 		return NULL;
+
+	buf = pkg_malloc(buffer_size);
+	if(!buf) {
+		LM_ERR("error allocating read buffer, %i\n", buffer_size);
+		goto done;
+	}
 
 	dtp = dbt_table_new(tbn, dbn, path);
 	if(!dtp)
@@ -167,10 +174,10 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 				{
 					if(c==EOF)
 						goto clean;
-					if (bp==4096) {
+					if (bp==buffer_size) {
 						LM_ERR("Buffer overflow for file [%s] row=[%d] col=[%d] c=[%c]."
-							" Required buffer size greater then 4096!\n",
-							path, crow+1, ccol+1, c);
+							" Required buffer size greater then %i!\n",
+							path, crow+1, ccol+1, c, buffer_size);
 						goto clean;
 					}
 					buf[bp++] = c;
@@ -469,10 +476,10 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 											goto clean;
 									}
 								}
-								if (bp==4096) {
+								if (bp==buffer_size) {
 									LM_ERR("Buffer overflow for file [%s] row=[%d] col=[%d] c=[%c]."
-										" Required buffer size greater then 4096!\n",
-										path, crow+1, ccol+1, c);
+										" Required buffer size greater then %i!\n",
+										path, crow+1, ccol+1, c, buffer_size);
 									goto clean;
 								}
 								buf[bp++] = c;
@@ -510,6 +517,8 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 done:
 	if(fin)
 		fclose(fin);
+	if(buf)
+		pkg_free(buf);
 	return dtp;
 clean:
 	/// ????? FILL IT IN - incomplete row/column
@@ -519,6 +528,8 @@ clean:
 	LM_ERR("error at row=%d col=%d c=%c\n", crow+1, ccol+1, c);
 	if(dtp)
 		dbt_table_free(dtp);
+	if(buf)
+		pkg_free(buf);
 	return NULL;
 }
 
