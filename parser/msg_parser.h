@@ -89,7 +89,6 @@ enum request_method {
 
 #define FL_FORCE_RPORT       (1<<0)  /* force rport (top via) */
 #define FL_REPLY_TO_VIA      (1<<1)  /* force replying to VIA ip:port */
-#define FL_FORCE_ACTIVE      (1<<1)  /* force active SDP (deprecated) */
 #define FL_FORCE_LOCAL_RPORT (1<<2)  /* force local rport (local via) */
 #define FL_SDP_IP_AFS        (1<<3)  /* SDP IP rewritten */
 #define FL_SDP_PORT_AFS      (1<<4)  /* SDP port rewritten */
