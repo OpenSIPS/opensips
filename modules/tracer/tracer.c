@@ -2800,12 +2800,8 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
 					msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip, msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
 		} else {
-			char *nbuff = proto2str(dst->send_sock->proto,fromip_buff);
-			db_vals[4].val.str_val.s = fromip_buff;
-			db_vals[4].val.str_val.len = nbuff - fromip_buff;
-			db_vals[5].val.str_val = dst->send_sock->adv_sock_str.len?dst->send_sock->adv_name_str:dst->send_sock->address_str;
-			db_vals[6].val.int_val = dst->send_sock->last_real_ports->local?
-				dst->send_sock->last_real_ports->local:dst->send_sock->port_no;
+			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+					dst->send_sock->adv_sock_str.len?(struct ip_addr *)&dst->send_sock->adv_address:(struct ip_addr *)&dst->send_sock->address, dst->send_sock->last_real_ports->local?dst->send_sock->last_real_ports->local:dst->send_sock->port_no, dst->send_sock->proto);
 		}
 	}
 
