@@ -63,6 +63,15 @@ usrloc Module
               1.5.41. contact_refresh_timer (boolean)
 
         1.6. Exported Functions
+
+              1.6.1. ul_add_key(domain, aor, key_name,
+                      [key_value])
+
+              1.6.2. ul_get_key(domain, aor, key_name,
+                      destination)
+
+              1.6.3. ul_del_key(domain, aor, key_name)
+
         1.7. Exported MI Functions
 
               1.7.1. ul_rm
@@ -188,6 +197,9 @@ usrloc Module
    1.39. Set pinging_mode parameter
    1.40. Set mi_dump_kv_store parameter
    1.41. Set contact_refresh_timer parameter
+   1.42. ul_add_key usage
+   1.43. ul_get_key usage
+   1.44. ul_del_key usage
 
 Chapter 1. Admin Guide
 
@@ -1075,7 +1087,74 @@ modparam("usrloc", "contact_refresh_timer", true)
 
 1.6. Exported Functions
 
-   There are no exported functions that could be used in scripts.
+1.6.1.  ul_add_key(domain, aor, key_name, [key_value])
+
+   Append a Key/Value to the Key-Value-Store of a Usrloc-Record.
+
+   Returns false, if no record is found is usrloc.
+
+   Meaning of the parameters is as follows:
+     * domain (string) - Domain of the AOR, e.g. "location"
+     * aor (string) - Address-of-Record, save the key for a
+       specific (registered) user.
+     * key (string) - The name of the key to be stored.
+     * value (string, optional) - The value to be stored. Not
+       providing the value or by providing an empty value, will
+       delete the entry.
+
+   This function can be used in ANY route.
+
+   Example 1.42. ul_add_key usage
+...
+ul_add_key("location", "$tU@$td", "service_route", "$hdr(Service-Route)"
+);
+...
+
+1.6.2.  ul_get_key(domain, aor, key_name, destination)
+
+   Retrieve a Key/Value from the Key-Value-Store of a
+   Usrloc-Record.
+
+   Returns false, if no record is found is usrloc or no according
+   key is found.
+
+   Meaning of the parameters is as follows:
+     * domain (string) - Domain of the AOR, e.g. "location"
+     * aor (string) - Address-of-Record, save the key for a
+       specific (registered) user.
+     * key (string) - The name of the key to be retrieved.
+     * destination (variable) - A variable, where to store the
+       retrieved key.
+
+   This function can be used in ANY route.
+
+   Example 1.43. ul_get_key usage
+...
+if (ul_get_key("location", "$tU@$td", "service_route", "$avp(service_rou
+te)")) {
+        append_to_reply("Service-Route: $avp(service_route)\r\n");
+}
+...
+
+1.6.3.  ul_del_key(domain, aor, key_name)
+
+   Deletes a Key/Value from the Key-Value-Store of a
+   Usrloc-Record.
+
+   Returns false, if no record is found is usrloc.
+
+   Meaning of the parameters is as follows:
+     * domain (string) - Domain of the AOR, e.g. "location"
+     * aor (string) - Address-of-Record, save the key for a
+       specific (registered) user.
+     * key (string) - The name of the key to be deleted.
+
+   This function can be used in ANY route.
+
+   Example 1.44. ul_del_key usage
+...
+ul_del_key("location", "$tU@$td", "service_route");
+...
 
 1.7. Exported MI Functions
 
@@ -1580,7 +1659,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Jan Janak (@janakj) 410 117 15689 10095
-   2. Liviu Chircu (@liviuchircu) 337 201 9165 3705
+   2. Liviu Chircu (@liviuchircu) 339 203 9211 3731
    3. Bogdan-Andrei Iancu (@bogdan-iancu) 245 150 4232 3624
    4. Vlad Patrascu (@rvlad-patrascu) 43 25 794 661
    5. Daniel-Constantin Mierla (@miconda) 40 29 544 308
@@ -1595,8 +1674,8 @@ Chapter 3. Contributors
    Marius Cristian (@eseanucristian), Ovidiu Sas (@ovidiusas),
    Ionel Cerghit (@ionel-cerghit), Andrei Dragus, Anca Vamanu,
    Alessio Garzi (@Ozzyboshi), Zero King (@l2dy), Dusan Klinec
-   (@ph4r05), Andrei Datcu (@andrei-datcu), Juha Heinanen
-   (@juha-h), Marcus Hunger, Jamey Hicks, Peter Lemenkov
+   (@ph4r05), Andrei Datcu (@andrei-datcu), Carsten Bock, Juha
+   Heinanen (@juha-h), Marcus Hunger, Jamey Hicks, Peter Lemenkov
    (@lemenkov), Andreas Granig, Shlomi Gutman, @jalung, Jeffrey
    Magder, Phil D'Amore, Norman Brandinger (@NormB), David
    Sanders, Konstantin Bokarius, Klaus Darilion, Iouri Kharon,
@@ -1624,31 +1703,31 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Apr 2003 - Nov 2023
-   2.  Liviu Chircu (@liviuchircu)         Jan 2013 - Nov 2023
-   3.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   4.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
-   5.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jan 2023
-   6.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Feb 2022
-   7.  Walter Doekes (@wdoekes)            Apr 2019 - May 2021
-   8.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
-   9.  Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
-   10. Alexey Vasilyev (@vasilevalex)      Dec 2019 - Dec 2019
+   1.  Liviu Chircu (@liviuchircu)         Jan 2013 - Mar 2024
+   2.  Carsten Bock                        Mar 2024 - Mar 2024
+   3.  Maksym Sobolyev (@sobomax)          Apr 2003 - Nov 2023
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   5.  Vlad Patrascu (@rvlad-patrascu)     Jul 2016 - Mar 2023
+   6.  Razvan Crainea (@razvancrainea)     Jul 2011 - Jan 2023
+   7.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2002 - Feb 2022
+   8.  Walter Doekes (@wdoekes)            Apr 2019 - May 2021
+   9.  Zero King (@l2dy)                   Mar 2020 - Mar 2020
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Feb 2020
 
-   All remaining contributors: Aron Podrigal (@ar45), Alessio
-   Garzi (@Ozzyboshi), Dan Pascu (@danpascu), Shlomi Gutman,
-   @jalung, Ionut Ionita (@ionutrazvanionita), Ionel Cerghit
-   (@ionel-cerghit), Ovidiu Sas (@ovidiusas), Dusan Klinec
-   (@ph4r05), Eseanu Marius Cristian (@eseanucristian), David
-   Sanders, Andrei Datcu (@andrei-datcu), Stephane Alnet, Andrei
-   Dragus, Phil D'Amore, UnixDev, Daniel-Constantin Mierla
-   (@miconda), Henning Westerholt (@henningw), Iouri Kharon,
-   Konstantin Bokarius, Edson Gellert Schubert, Anca Vamanu,
-   Matthew M. Boedicker, Marcus Hunger, Elena-Ramona Modroiu,
-   Jeffrey Magder, Norman Brandinger (@NormB), Andreas Granig,
-   Juha Heinanen (@juha-h), Klaus Darilion, Jan Janak (@janakj),
-   Andrei Pelinescu-Onciul, Jiri Kuthan (@jiriatipteldotorg),
-   Jamey Hicks, Nils Ohlmeier.
+   All remaining contributors: Alexey Vasilyev (@vasilevalex),
+   Aron Podrigal (@ar45), Alessio Garzi (@Ozzyboshi), Dan Pascu
+   (@danpascu), Shlomi Gutman, @jalung, Ionut Ionita
+   (@ionutrazvanionita), Ionel Cerghit (@ionel-cerghit), Ovidiu
+   Sas (@ovidiusas), Dusan Klinec (@ph4r05), Eseanu Marius
+   Cristian (@eseanucristian), David Sanders, Andrei Datcu
+   (@andrei-datcu), Stephane Alnet, Andrei Dragus, Phil D'Amore,
+   UnixDev, Daniel-Constantin Mierla (@miconda), Henning
+   Westerholt (@henningw), Iouri Kharon, Konstantin Bokarius,
+   Edson Gellert Schubert, Anca Vamanu, Matthew M. Boedicker,
+   Marcus Hunger, Elena-Ramona Modroiu, Jeffrey Magder, Norman
+   Brandinger (@NormB), Andreas Granig, Juha Heinanen (@juha-h),
+   Klaus Darilion, Jan Janak (@janakj), Andrei Pelinescu-Onciul,
+   Jiri Kuthan (@jiriatipteldotorg), Jamey Hicks, Nils Ohlmeier.
 
    (1) including any documentation-related commits, excluding
    merge commits
@@ -1657,8 +1736,8 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Liviu Chircu (@liviuchircu), Zero King (@l2dy),
-   Alexey Vasilyev (@vasilevalex), Vlad Patrascu
+   Last edited by: Liviu Chircu (@liviuchircu), Carsten Bock, Zero
+   King (@l2dy), Alexey Vasilyev (@vasilevalex), Vlad Patrascu
    (@rvlad-patrascu), Peter Lemenkov (@lemenkov), Bogdan-Andrei
    Iancu (@bogdan-iancu), Razvan Crainea (@razvancrainea), Ionut
    Ionita (@ionutrazvanionita), Eseanu Marius Cristian
