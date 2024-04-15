@@ -99,23 +99,23 @@ struct aka_av_mgm *aka_load_mgm(str *name)
 	return mgm;
 }
 
-static struct aka_user_pub *aka_user_pub_new(str *public_id)
+static struct aka_user_impi *aka_user_impi_new(str *private_id)
 {
-	struct aka_user_pub *pub = shm_malloc(sizeof *pub + public_id->len);
-	if (!pub) {
+	struct aka_user_impi *impi = shm_malloc(sizeof *impi + private_id->len);
+	if (!impi) {
 		LM_ERR("oom for user public identity!\n");
 		return NULL;
 	}
-	pub->impu.s = pub->buf;
-	pub->impu.len = public_id->len;
-	memcpy(pub->impu.s, public_id->s, public_id->len);
-	INIT_LIST_HEAD(&pub->privates);
-	return pub;
+	impi->impi.s = impi->buf;
+	impi->impi.len = private_id->len;
+	memcpy(impi->impi.s, private_id->s, private_id->len);
+	INIT_LIST_HEAD(&impi->impus);
+	return impi;
 }
 
-static struct aka_user *aka_user_new(struct aka_user_pub *pub, str *private_id)
+static struct aka_user *aka_user_new(struct aka_user_impi *impi, str *public_id)
 {
-	struct aka_user *user = shm_malloc(sizeof *user + private_id->len);
+	struct aka_user *user = shm_malloc(sizeof *user + public_id->len);
 	if (!user) {
 		LM_ERR("oom for user public identity!\n");
 		return NULL;
@@ -126,34 +126,34 @@ static struct aka_user *aka_user_new(struct aka_user_pub *pub, str *private_id)
 		shm_free(user);
 		return NULL;
 	}
-	user->public = pub;
-	user->impi.s = user->buf;
-	user->impi.len = private_id->len;
-	memcpy(user->impi.s, private_id->s, private_id->len);
+	user->impi = impi;
+	user->impu.s = user->buf;
+	user->impu.len = public_id->len;
+	memcpy(user->impu.s, public_id->s, public_id->len);
 	INIT_LIST_HEAD(&user->list);
 	INIT_LIST_HEAD(&user->avs);
 	INIT_LIST_HEAD(&user->async);
-	list_add(&user->list, &pub->privates);
+	list_add(&user->list, &impi->impus);
 	return user;
 }
 
-static void aka_user_pub_release(struct aka_user_pub *pub)
+static void aka_user_impi_release(struct aka_user_impi *impi)
 {
-	if (!list_empty(&pub->privates))
+	if (!list_empty(&impi->impus))
 		return;
 	/* no more privates pointing to us - remove and release */
-	hash_remove_key(aka_users, pub->impu);
-	shm_free(pub);
+	hash_remove_key(aka_users, impi->impi);
+	shm_free(impi);
 }
 
-static struct aka_user *aka_user_pub_find(struct aka_user_pub *pub, str *private_id)
+static struct aka_user *aka_user_impi_find(struct aka_user_impi *impi, str *public_id)
 {
 	struct aka_user *user;
 	struct list_head *it;
 
-	list_for_each(it, &pub->privates) {
+	list_for_each(it, &impi->impus) {
 		user = list_entry(it, struct aka_user, list);
-		if (str_match(private_id, &user->impi))
+		if (str_match(public_id, &user->impu))
 			return user;
 	}
 	return NULL;
@@ -162,13 +162,13 @@ static struct aka_user *aka_user_pub_find(struct aka_user_pub *pub, str *private
 struct aka_user *aka_user_find(str *public_id, str *private_id)
 {
 	struct aka_user *user = NULL;
-	struct aka_user_pub **pub;
-	unsigned int hentry = hash_entry(aka_users, *public_id);
+	struct aka_user_impi **impi;
+	unsigned int hentry = hash_entry(aka_users, *private_id);
 
 	hash_lock(aka_users, hentry);
-	pub = (struct aka_user_pub **)hash_find(aka_users, hentry, *public_id);
-	if (pub && *pub) {
-		user = aka_user_pub_find(*pub, private_id);
+	impi = (struct aka_user_impi **)hash_find(aka_users, hentry, *private_id);
+	if (impi && *impi) {
+		user = aka_user_impi_find(*impi, public_id);
 		if (user)
 			user->ref++;
 	}
@@ -179,29 +179,29 @@ struct aka_user *aka_user_find(str *public_id, str *private_id)
 struct aka_user *aka_user_get(str *public_id, str *private_id)
 {
 	unsigned int hentry;
-	struct aka_user_pub **pub;
+	struct aka_user_impi **impi;
 	struct aka_user *user = NULL;
 
-	hentry = hash_entry(aka_users, *public_id);
+	hentry = hash_entry(aka_users, *private_id);
 	hash_lock(aka_users, hentry);
-	pub = (struct aka_user_pub **)hash_get(aka_users, hentry, *public_id);
-	if (!pub)
+	impi = (struct aka_user_impi **)hash_get(aka_users, hentry, *private_id);
+	if (!impi)
 		goto end;
-	if (*pub) {
-		user = aka_user_pub_find(*pub, private_id);
+	if (*impi) {
+		user = aka_user_impi_find(*impi, public_id);
 		if (user)
 			goto ref;
 	} else {
-		*pub = aka_user_pub_new(public_id);
-		if (*pub == NULL) {
-			LM_ERR("cannot create user public identity!\n");
+		*impi = aka_user_impi_new(private_id);
+		if (*impi == NULL) {
+			LM_ERR("cannot create user private identity!\n");
 			goto end;
 		}
 	}
-	user = aka_user_new(*pub, private_id);
+	user = aka_user_new(*impi, public_id);
 	if (!user) {
-		LM_ERR("cannot create user public identity!\n");
-		aka_user_pub_release(*pub);
+		LM_ERR("cannot create user privte identity!\n");
+		aka_user_impi_release(*impi);
 		goto end;
 	}
 ref:
@@ -213,7 +213,7 @@ end:
 
 static void aka_user_try_free(struct aka_user *user)
 {
-	struct aka_user_pub *pub = user->public;
+	struct aka_user_impi *impi = user->impi;
 	cond_lock(&user->cond);
 	if (user->ref != 0 || !list_empty(&user->avs) || !list_empty(&user->async)) {
 		cond_unlock(&user->cond);
@@ -224,13 +224,13 @@ static void aka_user_try_free(struct aka_user *user)
 	cond_destroy(&user->cond);
 	shm_free(user);
 	/* release pub if not used anymore */
-	aka_user_pub_release(pub);
+	aka_user_impi_release(impi);
 }
 
 void aka_user_release(struct aka_user *user)
 {
 	unsigned int hentry;
-	hentry = hash_entry(aka_users, user->public->impu);
+	hentry = hash_entry(aka_users, user->impi->impi);
 	hash_lock(aka_users, hentry);
 	user->ref--;
 	aka_user_try_free(user);
@@ -596,9 +596,9 @@ static int aka_async_hash_iterator(void *param, str key, void *value)
 	struct list_head *it, *safe, *uit, *usafe;
 	unsigned int ticks = *(unsigned int*)param;
 	struct aka_user *user;
-	struct aka_user_pub *pub = (struct aka_user_pub *)value;
+	struct aka_user_impi *impi = (struct aka_user_impi *)value;
 
-	list_for_each_safe(uit, usafe, &pub->privates) {
+	list_for_each_safe(uit, usafe, &impi->impus) {
 		user = list_entry(uit, struct aka_user, list);
 		cond_lock(&user->cond);
 		list_for_each_safe(it, safe, &user->async) {

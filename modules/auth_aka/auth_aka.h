@@ -54,18 +54,18 @@ struct aka_av {
 	char buf[0];
 };
 
-struct aka_user_pub {
-	str impu;
-	struct list_head privates;
+struct aka_user_impi {
+	str impi;
+	struct list_head impus;
 	char buf[0];
 };
 
 struct aka_user {
 	enum aka_user_state state;
 	unsigned int ref;
-	str impi;
+	str impu;
 	int error_count;
-	struct aka_user_pub *public;
+	struct aka_user_impi *impi;
 	struct list_head avs;
 	struct list_head list;
 	struct list_head async;
@@ -87,7 +87,7 @@ int aka_init_mgm(int hash_size);
 struct aka_av_mgm *aka_get_mgm(str *name);
 struct aka_av_mgm *aka_load_mgm(str *name);
 
-/* returns a user structure identified by user IMPU and IMPI */
+/* returns a user structure identified by user IMPI and IMPU */
 struct aka_user *aka_user_get(str *public_id, str *private_id);
 struct aka_user *aka_user_find(str *public_id, str *private_id);
 void aka_user_release(struct aka_user *user);
