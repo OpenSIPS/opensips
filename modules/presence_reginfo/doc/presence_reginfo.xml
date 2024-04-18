@@ -2,8 +2,13 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
 "http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 
+<!ENTITY admin SYSTEM "presence_reginfo_admin.xml">
+<!ENTITY faq SYSTEM "../../../doc/module_faq.xml">
+<!ENTITY contrib SYSTEM "contributors.xml">
+
+
 <!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
+<!ENTITY % docentities SYSTEM "../../../doc/entities.xml">
 %docentities;
 
 ]>
@@ -24,16 +29,17 @@
 			<email>carsten@ng-voice.com</email>
 		</editor>
 	</authorgroup>
-	<copyright>
-	    <year>2011, 2023</year>
-	    <holder>Carsten Bock, carsten@ng-voice.com, http://www.ng-voice.com</holder>
-	</copyright>
   </bookinfo>
     <toc></toc>
-    
-    <xi:include href="presence_reginfo_admin.xml"/>
-    
-    
+
+    &admin;
+    &faq;
+	&contrib;
+
+	&docCopyrights;
+	<para>&copyright; 2011-2023 Carsten Bock, carsten@ng-voice.com, http://www.ng-voice.com</para>
+
+
 </book>
 
 

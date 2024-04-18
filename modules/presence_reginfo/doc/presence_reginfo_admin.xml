@@ -1,12 +1,3 @@
-<?xml version="1.0" encoding='ISO-8859-1'?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-
-<!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
-%docentities;
-
-]>
 <!-- Module User's Guide -->
 
 <chapter>
@@ -43,7 +34,7 @@
 	<section>
 	  <title>Dependencies</title>
 	  <section>
-		<title>&kamailio; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
