@@ -22,6 +22,7 @@ jobs:
       BUILD_OS: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
         os: [ubuntu-20.04]
