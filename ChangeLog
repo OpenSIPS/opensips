@@ -1,3 +1,150 @@
+=========================== Release 3.2.18 ==============================
+
+2024-04-13  OpenSIPS  <github@opensips.org>
+        * [4cc2fce7c] :
+
+        Rebuild documentation
+
+
+2024-04-09  Liviu Chircu  <liviu@opensips.org>
+        * [0100dd725] :
+
+        usrloc: Avoid firing DELETE and EXPIRE for same ct
+
+        This patch fixes a usrloc callbacks API issue where both the
+        UL_CONTACT_DELETE and UL_CONTACT_EXPIRE events would often be fired for
+        the same contact, when the "write-back" SQL mode is in use.
+
+        The following modules should notice improved behavior:
+            mid_registrar, pua_bla, pua_usrloc, snmpstats
+
+        (cherry picked from commit 1a50d66475310b8d1c73fd383b2a64733f24ea2f)
+
+
+2024-03-30  OpenSIPS  <github@opensips.org>
+        * [756a5f497] :
+
+        Rebuild documentation
+
+
+2024-03-29  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [1791be24f] :
+
+        [drouting] fixed weight based selection
+
+        if the last element has weight 1, it will never be selected.
+        This was instroduced with 48c051fc16f4d83bf176d1eefe1df642882b6b88.
+        The fix is to actually follow the initial PR approach, which was correct. My attempt to improve the original PR actually broke stuff there :(
+
+        (cherry picked from commit cdd84307a4b4cc08209111e96adef0df8b6ae3ea)
+
+
+2024-03-23  OpenSIPS  <github@opensips.org>
+        * [3dd628dd9] :
+
+        Rebuild documentation
+
+
+2024-03-19  Bogdan-Andrei Iancu  <bogdan@opensips.org>
+        * [a185c90b1] :
+
+        [db] fix wrong size for mangled_from/to_uri columns in dialog table
+
+        They are URIs, so let's use the URI len, not USER len :)
+
+        (cherry picked from commit 18e7d8dbb56289e83531f51983f63e58f152ef3f)
+
+
+2024-03-18  Razvan Crainea  <razvan@opensips.org>
+        * [366999780] :
+
+        rtp_relay: do not check for pending when late
+
+        Many thanks to Voxtronic for spotting this issue!
+
+
+2024-03-09  OpenSIPS  <github@opensips.org>
+        * [0aced6b5d] :
+
+        Rebuild documentation
+
+
+2024-03-08  Liviu Chircu  <liviu@opensips.org>
+        * [3f7749af7] :
+
+        rest_client: Fix RHEL 7.9 build regression in commit 7e85fddb6
+
+        RHEL 7.9 is using libcurl 7.29 (from 11 years ago), so the
+        CURLINFO_CONNECT_TIME_T easyinfo option is not available.  So let's use
+        the CURLINFO_CONNECT_TIME info instead, which returns the exact same
+        data (i.e. the `data->progress.t_connect` handle info), but divided as
+        (double)seconds instead of being returned as (long)useconds.
+
+        Credits to Răzvan Crainea for reporting this issue!
+
+        (cherry picked from commit 975f5d13e9444dcb4ebab8f0dec50637ca3809da)
+
+
+2024-03-02  OpenSIPS  <github@opensips.org>
+        * [b3e9b0373] :
+
+        Rebuild documentation
+
+
+2024-02-28  Razvan Crainea  <razvan@opensips.org>
+        * [dcfa9d39b] :
+
+        proto_hep: clear context in case of error
+
+        Thanks go to Jonathan Hulme from ConnexCS for reporting and providing
+        valuable troubleshooting information
+
+        (cherry picked from commit ff2923cc4bfb9b6e6a497becbd97f2407cbdc6f8)
+
+
+2024-02-26  Liviu Chircu  <liviu@opensips.org>
+        * [c31a5914e] :
+
+        aaa_diameter: Fix some AVP typos; Add a few notices
+
+        (cherry picked from commit 4da5b7317fcccbcd48725d8fbde8aeaa47f3b69f)
+
+
+2024-02-24  OpenSIPS  <github@opensips.org>
+        * [9ba93f403] :
+
+        Rebuild documentation
+
+
+2024-02-23  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [139cc6e92] :
+
+        Merge pull request #3306 from jes/getsockopt-warnings
+
+        Getsockopt warnings
+
+        (cherry picked from commit be64db1383fc2d66cfb1d343474562d7b132c478)
+
+
+2024-02-22  Razvan Crainea  <razvan@opensips.org>
+        * [bd79fd396] :
+
+        msg_translator: avoid mem leak when via params are present
+
+        Many thanks to Nick Altmann for spotting the issue and fixing it!
+
+        (cherry picked from commit d0f238ca8bd47e75b3867b3194962421dbf523c0)
+
+
+2024-02-22  Bogdan Andrei IANCU  <bogdan@opensips.org>
+        * [d2e2a69d1] :
+
+        Merge pull request #3308 from ovidiusas/master
+
+        core: consistent usage of int2str_buf
+        (cherry picked from commit 358afd07328c10434a2575cee8ce977d42e7656c)
+
+
 =========================== Release 3.2.17 ==============================
 
 2024-02-21  Liviu Chircu  <liviu@opensips.org>
