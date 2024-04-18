@@ -42,7 +42,7 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 {
 	int size;
 
-	if(out==0)
+	if(out==0 || (user.len+domain.len==0))
 		return -1;
 
 	size = user.len + domain.len+7;
@@ -54,25 +54,23 @@ static inline int uandd_to_uri(str user,  str domain, str *out)
 		return -1;
 	}
 
-	if (domain.len != 0)
-		strcpy(out->s,"sip:");
-	else
-		strcpy(out->s,"tel:");
-
-	out->len = 4;
-	if( user.len != 0)
-	{
-		memcpy(out->s+out->len, user.s, user.len);
-		out->len += user.len;
-		if (domain.len != 0)
-			out->s[out->len++] = '@';
-	}
-
 	if (domain.len != 0) {
+		strcpy(out->s,"sip:");
+		out->len = 4;
+		if( user.len != 0) {
+			memcpy(out->s+out->len, user.s, user.len);
+			out->len += user.len;
+			out->s[out->len++] = '@';
+		}
 		memcpy(out->s + out->len, domain.s, domain.len);
 		out->len += domain.len;
+	} else {
+		strcpy(out->s,"tel:");
+		out->len = 4;
+		memcpy(out->s+out->len, user.s, user.len);
+		out->len += user.len;
 	}
-	
+
 	out->s[out->len] = '\0';
 
 
