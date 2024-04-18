@@ -44,7 +44,7 @@
 #define EVENT_LINE_SEIZE     9
 #define EVENT_AS_FEATURE     10
 #define EVENT_REFER          11
-#define EVENT_REG			 12
+#define EVENT_REG            12
 
 typedef struct event {
 	str text;       /* Original string representation */
