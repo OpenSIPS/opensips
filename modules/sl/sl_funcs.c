@@ -154,14 +154,7 @@ int sl_send_reply_helper(struct sip_msg *msg ,int code, const str *text)
 	if ( msg->REQ_METHOD==METHOD_ACK)
 		return 1;
 
-	if (reply_to_via) {
-		if (update_sock_struct_from_via(&to, msg, msg->via1 )==-1)
-		{
-			LM_ERR("cannot lookup reply dst: %.*s\n",
-					msg->via1->host.len, msg->via1->host.s);
-			goto error;
-		}
-	} else update_sock_struct_from_ip( &to, msg );
+	update_sock_struct_from_ip( &to, msg );
 
 	/* if that is a redirection message, dump current message set to it */
 	if (code>=300 && code<400) {
