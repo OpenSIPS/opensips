@@ -240,7 +240,6 @@ DNS_SERVERS_NO  dns_servers_no
 DNS_USE_SEARCH  dns_use_search_list
 MAXBUFFER maxbuffer
 CHECK_VIA	check_via
-REPLY_TO_VIA    reply_to_via
 SHM_HASH_SPLIT_PERCENTAGE "shm_hash_split_percentage"
 SHM_SECONDARY_HASH_SIZE "shm_secondary_hash_size"
 MEM_WARMING_ENABLED "mem_warming"|"mem_warming_enabled"
@@ -472,7 +471,6 @@ SPACE		[ ]
 								return MAX_WHILE_LOOPS; }
 <INITIAL>{MAXBUFFER}	{ count(); yylval.strval=yytext; return MAXBUFFER; }
 <INITIAL>{CHECK_VIA}	{ count(); yylval.strval=yytext; return CHECK_VIA; }
-<INITIAL>{REPLY_TO_VIA} { count(); yylval.strval=yytext; return REPLY_TO_VIA; }
 <INITIAL>{SHM_HASH_SPLIT_PERCENTAGE}	{ count(); yylval.strval=yytext; return SHM_HASH_SPLIT_PERCENTAGE; }
 <INITIAL>{SHM_SECONDARY_HASH_SIZE}	{ count(); yylval.strval=yytext; return SHM_SECONDARY_HASH_SIZE; }
 <INITIAL>{MEM_WARMING_ENABLED}	{ count(); yylval.strval=yytext; return MEM_WARMING_ENABLED; }
