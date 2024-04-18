@@ -1,3 +1,10 @@
+opensips (3.2.18-1) stable; urgency=low
+
+  * Minor Public Release.
+
+ -- Liviu Chircu <liviu@opensips.org>  Thu, 18 Apr 2024 14:16:32 +0300
+
+
 opensips (3.2.17-1) stable; urgency=low
 
   * Minor Public Release.
