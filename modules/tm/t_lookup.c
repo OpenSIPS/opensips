@@ -942,20 +942,7 @@ int init_rb( struct retr_buf *rb, struct sip_msg *msg)
 {
 	int proto;
 
-	if (!reply_to_via) {
-		update_sock_struct_from_ip( &rb->dst.to, msg );
-		proto=msg->rcv.proto;
-	} else {
-		/*init retrans buffer*/
-		if (update_sock_struct_from_via( &(rb->dst.to), msg, msg->via1 )==-1) {
-			LM_ERR("cannot lookup reply dst: %.*s\n",
-					msg->via1->host.len, msg->via1->host.s );
-			ser_error=E_BAD_VIA;
-			return 0;
-		}
-		proto=msg->via1->proto;		
-	}	
-	
+	update_sock_struct_from_ip( &rb->dst.to, msg );
 	proto=msg->rcv.proto;
 	rb->dst.proto=proto;
 	rb->dst.proto_reserved1=msg->rcv.proto_reserved1;
