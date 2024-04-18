@@ -1,12 +1,3 @@
-<?xml version="1.0" encoding='ISO-8859-1'?>
-<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
-
-<!-- Include general documentation entities -->
-<!ENTITY % docentities SYSTEM "../../../../doc/docbook/entities.xml">
-%docentities;
-
-]>
 <!-- Module User's Guide -->
 
 <chapter>
@@ -58,7 +49,7 @@
 	<section>
 	  <title>Dependencies</title>
 	  <section>
-		<title>&kamailio; Modules</title>
+		<title>&osips; Modules</title>
 		<para>
 		The following modules must be loaded before this module:
 			<itemizedlist>
@@ -189,7 +180,7 @@ modparam("pua_reginfo", "ul_domain", "location")
 modparam("pua_reginfo", "ul_identities_key", "identities")
 ...
 onreply_route[register_reply] {
-	if (t_check_status("200") && $hdr(P-Associated-URI)) {
+	if (t_check_status("200") &amp;&amp; $hdr(P-Associated-URI)) {
         ul_add_key("location", "$tU@$td", "identities", "$hdr(P-Associated-URI)");
         reginfo_update("$tU@$td");
 	}
@@ -314,7 +305,7 @@ modparam("pua_reginfo", "ul_domain", "location")
 modparam("pua_reginfo", "ul_identities_key", "identities")
 ...
 onreply_route[register_reply] {
-	if (t_check_status("200") && $hdr(P-Associated-URI)) {
+	if (t_check_status("200") &amp;&amp; $hdr(P-Associated-URI)) {
         ul_add_key("location", "$tU@$td", "identities", "$hdr(P-Associated-URI)");
         reginfo_update("$tU@$td");
 	}
