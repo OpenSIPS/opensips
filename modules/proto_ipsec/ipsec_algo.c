@@ -99,12 +99,6 @@ static struct ipsec_algorithm_desc ipsec_auth_algorithms[] = {
 		NULL,
 		IPSEC_ALGO_NULL_KEY_SIZE,
 	},
-	{
-		NULL,
-		NULL,
-		NULL,
-		IPSEC_ALGO_NULL_KEY_SIZE
-	}
 };
 
 
@@ -112,7 +106,7 @@ static struct ipsec_algorithm_desc ipsec_enc_algorithms[] = {
 	{
 		"des-ede3-cbc",
 		"des3_ede",
-		"des-ede3-cbc encyrption algorithm should not be used",
+		"des-ede3-cbc encryption algorithm should not be used",
 		IPSEC_ALGO_DES3_KEY_SIZE,
 	},
 	{
@@ -133,32 +127,30 @@ static struct ipsec_algorithm_desc ipsec_enc_algorithms[] = {
 		NULL,
 		IPSEC_ALGO_NULL_KEY_SIZE,
 	},
-	{
-		NULL,
-		NULL,
-		NULL,
-		IPSEC_ALGO_NULL_KEY_SIZE
-	}
 };
 
 struct ipsec_algorithm_desc *ipsec_parse_algorithm(str *name, enum ipsec_algo_type type)
 {
 	struct ipsec_algorithm_desc *desc;
+	int size, i;
 	if (!name || !name->len)
 		return NULL;
 	switch (type) {
 		case IPSEC_ALGO_TYPE_AUTH:
 			desc = ipsec_auth_algorithms;
+			size = (sizeof ipsec_auth_algorithms) / sizeof *desc;
 			break;
 		case IPSEC_ALGO_TYPE_ENC:
 			desc = ipsec_enc_algorithms;
+			size = (sizeof ipsec_enc_algorithms) / sizeof *desc;
 			break;
+		default:
+			/* unknown */
+			return NULL;
 	}
-	while (desc && desc->name) {
-		if (str_casematch(name, _str(desc->name)))
-			return desc;
-		desc++;
-	}
+	for (i = 0; i < size; i++)
+		if (str_casematch(name, _str(desc[i].name)))
+			return desc + i;
 	return NULL;
 }
 

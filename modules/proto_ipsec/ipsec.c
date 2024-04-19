@@ -20,11 +20,18 @@
  */
 
 #include "ipsec.h"
+#include "ipsec_user.h"
 #include "ipsec_algo.h"
 #include "../../dprint.h"
 #include "../../context.h"
 
-struct ipsec_socket *ipsec_new(void)
+/*
+ * Socket - IPSec Netlink/MNL socket
+ */
+
+void ipsec_ctx_timer(unsigned int ticks, void* param);
+
+struct ipsec_socket *ipsec_sock_new(void)
 {
 	struct mnl_socket *sock = mnl_socket_open(NETLINK_XFRM);
 	if (!sock) {
@@ -39,11 +46,18 @@ struct ipsec_socket *ipsec_new(void)
 	return sock;
 }
 
-void ipsec_close(struct mnl_socket *sock)
+void ipsec_sock_close(struct mnl_socket *sock)
 {
 	if (sock)
 		mnl_socket_close(sock);
 }
+
+/*
+ * SPI management
+ */
+
+struct list_head *ipsec_tmp_contexts;
+gen_lock_t *ipsec_tmp_contexts_lock;
 
 struct ipsec_spi {
 	unsigned int spi;
@@ -61,12 +75,21 @@ unsigned int ipsec_min_spi = IPSEC_DEFAULT_MIN_SPI;
 unsigned int ipsec_max_spi = IPSEC_DEFAULT_MAX_SPI;
 
 static int ipsec_ctx_idx = -1;
-static void ipsec_ctx_release(struct ipsec_ctx *ctx);
 
 int ipsec_init_spi(void)
 {
 	unsigned int tmp, spi, r;
 	unsigned int *ipsec_spi_shuffle;
+
+	if ((int)ipsec_min_spi < 0) {
+		LM_ERR("negative min_spi(%d) not allowed\n", (int)ipsec_min_spi);
+		return -1;
+	}
+
+	if ((int)ipsec_max_spi < 0) {
+		LM_ERR("negative max_spi(%d) not allowed\n", (int)ipsec_max_spi);
+		return -1;
+	}
 
 	if (ipsec_min_spi > ipsec_max_spi) {
 		LM_WARN("min_spi(%u) > max_spi(%u), swapping them\n",
@@ -183,6 +206,19 @@ static void ipsec_spi_release(struct ipsec_spi *spi)
 	lock_release(ipsec_spi_lock);
 }
 
+int ipsec_spi_match(struct ipsec_spi *spi, unsigned int ispi)
+{
+	return spi->spi == ispi;
+}
+
+/*
+ * Hash map
+ */
+
+/*
+ * Init - intiializing IPSec structures
+ */
+
 int ipsec_init(void)
 {
 	if (ipsec_init_spi() < 0)
@@ -191,14 +227,41 @@ int ipsec_init(void)
 	ipsec_seq = rand();
 	ipsec_ctx_idx = context_register_ptr(CONTEXT_GLOBAL, (context_destroy_f)ipsec_ctx_release);
 
+	ipsec_tmp_contexts = shm_malloc(sizeof *ipsec_tmp_contexts);
+	if (!ipsec_tmp_contexts) {
+		LM_ERR("oom for temporary contexts\n");
+		return -1;
+	}
+	INIT_LIST_HEAD(ipsec_tmp_contexts);
+	ipsec_tmp_contexts_lock = lock_alloc();
+	if (!ipsec_tmp_contexts_lock || !lock_init(ipsec_tmp_contexts_lock)) {
+		LM_ERR("could not allocate tmp lock\n");
+		return -1;
+	}
+
+	if (register_timer("IPSec timer", ipsec_ctx_timer, NULL, 1,
+			TIMER_FLAG_SKIP_ON_DELAY)<0 ) {
+		LM_ERR("failed to register timer, halting...");
+		return -1;
+	}
+
 	return 0;
 }
 
 void ipsec_destroy(void)
 {
-	lock_destroy(ipsec_sip_lock);
+	if (ipsec_tmp_contexts_lock)
+		lock_destroy(ipsec_tmp_contexts_lock);
+	if (ipsec_tmp_contexts)
+		shm_free(ipsec_tmp_contexts);
+	if (ipsec_spi_lock)
+		lock_destroy(ipsec_spi_lock);
 	shm_free(ipsec_spi_map);
 }
+
+/*
+ * SA - an unidirectional IPSec tunnel
+ */
 
 void ipsec_fill_selector(struct xfrm_selector *sel,
 		struct ip_addr *src_ip, unsigned short src_port,
@@ -219,7 +282,7 @@ void ipsec_fill_selector(struct xfrm_selector *sel,
 							   we allow any protocol in the selector */
 }
 
-void ipsec_rm_flow(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
+void ipsec_sa_rm(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 		enum ipsec_dir dir, int client)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
@@ -283,7 +346,7 @@ struct xfrm_algo_osips {
 	char buf[IPSEC_ALGO_MAX_KEY_SIZE];
 };
 
-int ipsec_add_flow(struct mnl_socket *sock, struct ipsec_ctx *ctx,
+int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		str *ck, str *ik, enum ipsec_dir dir, int client)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
@@ -291,6 +354,7 @@ int ipsec_add_flow(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	struct xfrm_usersa_info *sa_info;
 	struct xfrm_userpolicy_info *policy_info;
 	struct xfrm_algo_osips ia, ie;
+	struct xfrm_user_tmpl tmpl;
 	unsigned short dst_port;
 	unsigned short src_port;
 	unsigned int spi;
@@ -345,7 +409,7 @@ int ipsec_add_flow(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		}
 	}
 
-	strncpy(ia.algo.alg_name, ctx->alg->xfrm_name, sizeof ia.algo.alg_name);
+	strncpy(ia.algo.alg_name, ctx->alg->xfrm_name, sizeof ia.algo.alg_name - 1);
 	ia.algo.alg_key_len = ctx->alg->key_len;
 	if ( ctx->alg->key_len != 0 && hex2string(ik->s, ik->len, ia.buf) < 0) {
 		LM_ERR("could not hexa decode integrity key [%.*s]\n", ik->len, ik->s);
@@ -358,7 +422,7 @@ int ipsec_add_flow(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 		LM_WARN("%s\n", ctx->ealg->deprecated);
 		ctx->ealg->deprecated = NULL;
 	}
-	strncpy(ie.algo.alg_name, ctx->ealg->xfrm_name, sizeof ie.algo.alg_name);
+	strncpy(ie.algo.alg_name, ctx->ealg->xfrm_name, sizeof ie.algo.alg_name - 1);
 	ie.algo.alg_key_len = ctx->ealg->key_len;
 	if (ctx->ealg->key_len != 0 && hex2string(ck->s, ck->len, ie.buf) < 0) {
 		LM_ERR("could not hexa decode confidentialitty key [%.*s]\n", ck->len, ck->s);
@@ -442,6 +506,23 @@ int ipsec_add_flow(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	policy_info->flags = 0; /* XFRM_POLICY_LOCALOK|XFRM_POLICY_ICMP */
 	policy_info->share = XFRM_SHARE_ANY;
 
+	/* template */
+	memset(&tmpl, 0, sizeof tmpl);
+	tmpl.id.spi = htonl(spi);
+	tmpl.id.proto = IPPROTO_ESP;
+	memcpy(&tmpl.id.daddr, &dst->ip.u, dst->ip.len);
+	tmpl.family = dst->ip.af;
+	memcpy(&tmpl.saddr, &src->ip.u, src->ip.len);
+	tmpl.reqid = htonl(spi);
+	tmpl.mode = XFRM_MODE_TRANSPORT;
+	tmpl.share = XFRM_SHARE_ANY;
+	tmpl.optional = 0;
+	tmpl.aalgos = 0xffffffff;
+	tmpl.ealgos = 0xffffffff;
+	tmpl.calgos = 0xffffffff;
+
+	mnl_attr_put(nlh, XFRMA_TMPL, sizeof(struct xfrm_user_tmpl), &tmpl);
+
 	if (mnl_socket_sendto(sock, nlh, nlh->nlmsg_len) < 0) {
 		LM_ERR("communicating with kernel for SA policy: %s\n", strerror(errno));
 		goto policy_error;
@@ -451,28 +532,35 @@ int ipsec_add_flow(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 			ip_addr2a(&src->ip), src_port, ip_addr2a(&dst->ip), dst_port, spi);
 	return 0;
 policy_error:
-	ipsec_rm_flow(sock, ctx, dir, client);
+	ipsec_sa_rm(sock, ctx, dir, client);
 error:
 	LM_ERR("failed to create %s:%hu -> %s:%hu SA (SPI %u)\n",
 			ip_addr2a(&src->ip), src_port, ip_addr2a(&dst->ip), dst_port, spi);
 	return -1;
 }
 
+/*
+ * CTX - structure that describes an IPSec tunnel
+ */
+
 #define IPSEC_GET_CTX() ((struct ipsec_ctx *)context_get_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, ipsec_ctx_idx))
 #define IPSEC_PUT_CTX(_p) context_put_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, ipsec_ctx_idx, (_p))
 
+
 static void ipsec_ctx_free(struct ipsec_ctx *ctx)
 {
-	struct ipsec_socket *sock = ipsec_new();
+	struct ipsec_socket *sock = ipsec_sock_new();
 	if (sock) {
-		ipsec_rm_flow(sock, ctx, IPSEC_POLICY_IN, 0);
-		ipsec_rm_flow(sock, ctx, IPSEC_POLICY_OUT, 0);
-		ipsec_rm_flow(sock, ctx, IPSEC_POLICY_IN, 1);
-		ipsec_rm_flow(sock, ctx, IPSEC_POLICY_OUT, 1);
-		ipsec_close(sock);
+		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 0);
+		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 0);
+		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 1);
+		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 1);
+		ipsec_sock_close(sock);
 	}
+	if (ctx->user)
+		ipsec_ctx_release_user(ctx);
 	ipsec_spi_release(ctx->spi_s);
 	ipsec_spi_release(ctx->spi_c);
 	lock_destroy(&ctx->lock);
@@ -530,7 +618,8 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 		LM_ERR("could not init IPSec ctx lock\n");
 		goto error;
 	}
-	ctx->ref = 1;
+	INIT_LIST_HEAD(&ctx->list);
+	ctx->ref = 0;
 	ctx->server = ss;
 	ctx->client = sc;
 	ctx->alg = alg;
@@ -563,7 +652,7 @@ struct ipsec_ctx *ipsec_ctx_get(void)
 	return IPSEC_GET_CTX();
 }
 
-static void ipsec_ctx_release(struct ipsec_ctx *ctx)
+void ipsec_ctx_release(struct ipsec_ctx *ctx)
 {
 	int free = 0;
 
@@ -572,6 +661,7 @@ static void ipsec_ctx_release(struct ipsec_ctx *ctx)
 
 	lock_get(&ctx->lock);
 	if (ctx->ref > 0) {
+		LM_DBG("REF: ctx=%p ref=%d -1 = %d\n", ctx, ctx->ref, ctx->ref - 1);
 		free = (--(ctx->ref) == 0);
 	} else {
 		LM_BUG("invalid ref %d for ctx %p\n", ctx->ref, ctx);
@@ -579,4 +669,128 @@ static void ipsec_ctx_release(struct ipsec_ctx *ctx)
 	lock_release(&ctx->lock);
 	if (free)
 		ipsec_ctx_free(ctx);
+}
+
+struct ipsec_ctx_tmp {
+	struct ipsec_ctx *ctx;
+	time_t expire;
+	struct list_head list;
+};
+
+void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx)
+{
+	struct ipsec_ctx_tmp *tmp = shm_malloc(sizeof *tmp);
+	if (!tmp) {
+		LM_ERR("could not push ctx in ue - dropping it!\n");
+		return;
+	}
+	memset(tmp, 0, sizeof *tmp);
+	INIT_LIST_HEAD(&tmp->list);
+	tmp->expire = get_ticks() + ipsec_tmp_timeout;
+	tmp->ctx = ctx;
+
+	/* add to the user */
+	lock_get(&user->lock);
+	ctx->user = user;
+	user->ref++;
+	list_add_tail(&ctx->list, &user->sas);
+	lock_release(&user->lock);
+
+	/* ref the context, and mark its state as temporarily */
+	lock_get(&ctx->lock);
+	IPSEC_CTX_REF_COUNT_UNSAFE(ctx, 2); /* first in user, second in tmp list */
+	ctx->state = IPSEC_STATE_TMP;
+	lock_release(&ctx->lock);
+
+	/* add to temporarily list */
+	lock_get(ipsec_tmp_contexts_lock);
+	list_add_tail(&tmp->list, ipsec_tmp_contexts);
+	lock_release(ipsec_tmp_contexts_lock);
+}
+
+void ipsec_ctx_release_user(struct ipsec_ctx *ctx)
+{
+	int release;
+	struct ipsec_user *user = ctx->user;
+	lock_get(&user->lock);
+	if (list_is_valid(&ctx->list)) {
+		list_del(&ctx->list);
+		release = 1;
+	}
+	lock_release(&user->lock);
+	if (release)
+		ipsec_release_user(user);
+}
+
+void ipsec_ctx_timer(unsigned int ticks, void* param)
+{
+	struct list_head *it, *safe, *prev = NULL;
+	struct list_head new;
+	struct ipsec_ctx_tmp *tmp;
+
+	INIT_LIST_HEAD(&new);
+
+	lock_get(ipsec_tmp_contexts_lock);
+	list_for_each_safe(it, safe, ipsec_tmp_contexts) {
+		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
+		if (ticks < tmp->expire)
+			break; /* finished */
+		prev = it;
+		IPSEC_CTX_UNREF(tmp->ctx);
+	}
+	/* unlink from the shared list */
+	if (prev)
+		list_cut_position(&new, ipsec_tmp_contexts, prev);
+	lock_release(ipsec_tmp_contexts_lock);
+
+	list_for_each_safe(it, safe, &new) {
+		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
+		lock_get(&tmp->ctx->lock);
+		if (tmp->ctx->state == IPSEC_STATE_TMP) {
+			tmp->ctx->state = IPSEC_STATE_INVALID;
+			LM_DBG("IPSec ctx %p expired\n", tmp->ctx);
+			lock_release(&tmp->ctx->lock);
+		}
+		list_del(&tmp->list);
+		IPSEC_CTX_UNREF(tmp->ctx);
+		shm_free(tmp);
+	}
+}
+
+void ipsec_ctx_remove_tmp(struct ipsec_ctx *ctx)
+{
+	struct list_head *it, *safe;
+	struct ipsec_ctx_tmp *tmp;
+
+	lock_get(ipsec_tmp_contexts_lock);
+	list_for_each_safe(it, safe, ipsec_tmp_contexts) {
+		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
+		if (tmp->ctx != ctx)
+			continue;
+		list_del(&tmp->list);
+		shm_free(tmp);
+	}
+	lock_release(ipsec_tmp_contexts_lock);
+}
+
+void ipsec_ctx_extend_tmp(struct ipsec_ctx *ctx)
+{
+	struct list_head *it, *safe;
+	struct ipsec_ctx_tmp *tmp;
+
+	lock_get(ipsec_tmp_contexts_lock);
+	list_for_each_safe(it, safe, ipsec_tmp_contexts) {
+		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
+		if (tmp->ctx == ctx)
+			break;
+		tmp = NULL;
+	}
+	if (tmp) {
+		list_del(&tmp->list);
+		tmp->expire = get_ticks() + ipsec_tmp_timeout;
+		list_add_tail(&tmp->list, ipsec_tmp_contexts); /* move to the end */
+	} else {
+		LM_BUG("temporary ctx %p not found!\n", ctx);
+	}
+	lock_release(ipsec_tmp_contexts_lock);
 }

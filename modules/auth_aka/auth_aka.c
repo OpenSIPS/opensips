@@ -40,8 +40,8 @@
 #include "../auth/common.h"
 #include "../auth/challenge.h"
 
-#include "../../parser/digest/digest.h"
-#include "../../parser/digest/digest_parser.h"
+#include "../../lib/aka.h"
+
 #include "../../parser/parse_from.h"
 #include "../../parser/parse_to.h"
 #include "../../parser/parse_uri.h"
@@ -402,85 +402,6 @@ static int fixup_check_var(void** param)
 	}
 
 	return 0;
-}
-
-static struct to_body *aka_get_identity_body(struct sip_msg *msg, hdr_types_t hftype)
-{
-	switch (hftype) {
-	case HDR_AUTHORIZATION_T:
-		if (!msg->to && ((parse_headers(msg, HDR_TO_F, 0)==-1) || (!msg->to))) {
-			LM_ERR("failed to parse TO headers\n");
-			return NULL;
-		}
-		/* force parsing */
-		if (!parse_to_uri(msg)) {
-			LM_ERR("failed to parse TO URI\n");
-			return NULL;
-		}
-		return get_to(msg);
-
-	case HDR_PROXYAUTH_T:
-		if (parse_from_header(msg) < 0) {
-			LM_ERR("failed to parse From headers\n");
-			return NULL;
-		}
-		/* force parsing */
-		if (!parse_from_uri(msg)) {
-			LM_ERR("failed to parse From URI\n");
-			return NULL;
-		}
-		return get_from(msg);
-
-	default:
-		LM_ERR("Unhandld header type %d\n", hftype);
-		return NULL;
-	}
-}
-
-static inline void aka_strip_uri_params(struct to_body *body, str *res)
-{
-	char *p;
-	*res = body->uri;
-	/* limit the result to the end of the host/port, to skip parameters */
-	if (body->parsed_uri.port.len)
-		p = body->parsed_uri.port.s + body->parsed_uri.port.len;
-	else
-		p = body->parsed_uri.host.s + body->parsed_uri.host.len;
-	res->len = p - res->s;
-}
-
-static str *aka_get_public_identity(struct sip_msg *msg, hdr_types_t hftype)
-{
-	static str res;
-	struct to_body *body = aka_get_identity_body(msg, hftype);
-	if (!body)
-		return NULL;
-	aka_strip_uri_params(body, &res);
-	return &res;
-}
-
-static str *aka_get_private_identity(struct sip_msg *msg, auth_body_t *auth, hdr_types_t hftype)
-{
-	int len;
-	static str res;
-	struct to_body *body;
-
-	if (auth)
-		return &auth->digest.username.whole;
-
-	body = aka_get_identity_body(msg, hftype);
-	if (!body)
-		return NULL;
-
-	aka_strip_uri_params(body, &res);
-
-	if (body->parsed_uri.type != ERROR_URI_T) {
-		len = uri_typestrlen(body->parsed_uri.type);
-		res.s += len + 1;
-		res.len -= len + 1;
-	}
-
-	return &res;
 }
 
 /* according to ETSI TS 129 229 V17.2.0 (2022-07), the buffer is 30 bytes long */

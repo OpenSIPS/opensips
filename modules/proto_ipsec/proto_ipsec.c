@@ -36,9 +36,12 @@
 #include "../../net/tcp_common.h"
 #include "../../parser/parse_authenticate.h"
 #include "../../data_lump.h"
+#include "../../parser/digest/digest.h"
+#include "../../lib/aka.h"
 #include "../tm/tm_load.h"
 #include "ipsec_algo.h"
 #include "ipsec.h"
+#include "ipsec_user.h"
 
 
 static int ipsec_default_client_port = 0;
@@ -46,12 +49,14 @@ static int ipsec_default_server_port = 0;
 static str ipsec_allowed_algorithms;
 static struct tm_binds tm_ipsec;
 
-static int ipsec_port = 5062;
+static int ipsec_port = IPSEC_DEFAULT_PORT;
 static int mod_init(void);
 static void mod_destroy(void);
 static int proto_ipsec_init(struct proto_info *pi);
 static int proto_ipsec_init_listener(struct socket_info *si);
 static int ipsec_pre_script_handler( struct sip_msg *msg, void *param);
+
+int ipsec_tmp_timeout = IPSEC_DEFAULT_TMP_TOUT;
 
 static int ipsec_aka_auth_match_f(const struct authenticate_body *auth,
     const struct match_auth_hf_desc *md);
@@ -75,6 +80,8 @@ static const param_export_t params[] = {
 	{ "port",							INT_PARAM, &ipsec_port },
 	{ "min_spi",						INT_PARAM, &ipsec_min_spi },
 	{ "max_spi",						INT_PARAM, &ipsec_max_spi },
+	/* TODO: this should be reg-await-auth timer */
+	{ "temporary_timeout",				INT_PARAM, &ipsec_tmp_timeout },
 	{ "default_client_port",			INT_PARAM, &ipsec_default_client_port },
 	{ "default_server_port",			INT_PARAM, &ipsec_default_server_port },
 	{ "allowed_algorithms",				STR_PARAM, &ipsec_allowed_algorithms },
@@ -189,7 +196,11 @@ static int ipsec_sockets_init(void)
 static int mod_init(void)
 {
 	LM_INFO("initializing IPSec protocols\n");
-	/* we must have at least two listeners/ports for each IP */
+	if (ipsec_tmp_timeout <= 0) {
+		LM_ERR("invalid temporary timeout value %d - positive value required\n",
+				ipsec_tmp_timeout);
+		return -1;
+	}
 
 	if (ipsec_sockets_init() < 0)
 		return -1;
@@ -207,6 +218,11 @@ static int mod_init(void)
 		LM_ERR("could not initiate IPSec engine\n");
 		return -1;
 	}
+
+	if (ipsec_map_init() < 0) {
+		LM_ERR("could not initiate IPSec map\n");
+		return -1;
+	}
 	if (register_script_cb(ipsec_pre_script_handler,
 			REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, NULL) != 0) {
 			LM_ERR("failed to register script callbacks\n");
@@ -219,6 +235,7 @@ static int mod_init(void)
 static void mod_destroy(void)
 {
 	ipsec_destroy();
+	ipsec_map_destroy();
 }
 
 struct socket_info_pair {
@@ -364,7 +381,7 @@ static int ipsec_add_security_server(struct sip_msg *msg, struct ipsec_ctx *ctx)
 	struct lump* anchor;
 	char *h, *p;
 	str tmp;
-	str hdr1 = str_init("Security-Server: ipsec-3gpp;q=0.1;prot=esp;mod=trans;spi-s=");
+	str hdr1 = str_init("Supported: sec-agree\r\nSecurity-Server: ipsec-3gpp;q=0.1;prot=esp;mod=trans;spi-s=");
 	str hdr2 = str_init(";spi-c=");
 	str hdr3 = str_init(";port-s=");
 	str hdr4 = str_init(";port-c=");
@@ -428,6 +445,36 @@ static int ipsec_add_security_server(struct sip_msg *msg, struct ipsec_ctx *ctx)
 	return 0;
 }
 
+static auth_body_t *ipsec_get_auth(struct sip_msg *msg)
+{
+	struct hdr_field *ptr, *prev = NULL;
+	auth_body_t *auth;
+	dig_cred_t *d;
+
+	if (parse_headers(msg, HDR_AUTHORIZATION_F, 0) == -1) {
+		LM_ERR("could not find Authorization header!\n");
+		return NULL;
+	}
+
+	do {
+		ptr = (prev?msg->last_header:msg->authorization);
+		prev = ptr;
+		if (parse_credentials(ptr) == 0) {
+			auth = ptr->parsed;
+			d = &auth->digest;
+			if (ALG_IS_AKAv1(d->alg.alg_parsed)) {
+				auth->authorized = ptr;
+				return auth;
+			}
+		} else {
+			LM_ERR("could not parse Authorization header!\n");
+		}
+	} while (parse_headers(msg, HDR_AUTHORIZATION_F, 1) != -1 &&
+		msg->last_header != prev && msg->last_header->type == HDR_AUTHORIZATION_F);
+	return NULL;
+}
+
+
 static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 {
 	struct cell *t;
@@ -438,6 +485,15 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	sec_agree_body_t *sa;
 	struct ipsec_socket *sock;
 	struct ipsec_ctx *ctx;
+	struct ipsec_user *user;
+	auth_body_t *a = NULL;
+	str *impu, *impi;
+	int ret = -1;
+
+	if (msg->first_line.type != SIP_REPLY || msg->REPLY_STATUS != 401) {
+		LM_ERR("can only be called on 401 Reply\n");
+		return -1;
+	}
 
 	if (_port_ps)
 		port_ps = *_port_ps;
@@ -469,12 +525,6 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 		LM_ERR("could not find any valid AKA WWW-Authenticate header\n");
 		return -3;
 	}
-	/* remove ik and ck parameters from the authenticate header
-	 * Note:  this also ensures that they exist! */
-	if (ipsec_aka_auth_remove(msg, auth) < 0) {
-		LM_ERR("could not remove AKA parameters\n");
-		return -3;
-	}
 
 	/* this is a reply - search for the request */
 	t = tm_ipsec.t_gett();
@@ -487,56 +537,91 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 		LM_ERR("could not find a REGISTER request for this transaction\n");
 		return -1;
 	}
+
+	a = ipsec_get_auth(req);
+	if (!auth) {
+		LM_DBG("could not find any auth header!\n");
+		return -1;
+	}
+	impu = aka_get_public_identity(msg, HDR_AUTHORIZATION_T);
+	if (!impu) {
+		LM_DBG("could not get public identity!\n");
+		return -1;
+	}
+	impi = aka_get_private_identity(msg, a, HDR_AUTHORIZATION_T);
+	if (!impi) {
+		LM_DBG("could not get private identity!\n");
+		return -1;
+	}
+
+	user = ipsec_get_user(&req->rcv.src_ip, impi, impu);
+	if (!user) {
+		LM_ERR("could not get a new IPSec user\n");
+		return -1;
+	}
+
+	/* fetch the identity of the user */
+	/* remove ik and ck parameters from the authenticate header
+	 * Note:  this also ensures that they exist! */
+	if (ipsec_aka_auth_remove(msg, auth) < 0) {
+		LM_ERR("could not remove AKA parameters\n");
+		ret = -3;
+		goto release_user;
+	}
 	/* TODO: double check for sec-agree in Required/Supported */
 
 	/* locate the received IP */
+	ret = -2;
 	ss = find_ipsec_socket_info(&req->rcv.dst_ip, port_ps, port_pc);
 	if (!ss) {
 		LM_INFO("could not find a server listener on %s:%d!\n",
 				ip_addr2a(&req->rcv.dst_ip), port_ps);
-		return -2;
+		goto release_user;
 	}
 	sc = find_ipsec_socket_info(&req->rcv.dst_ip, port_pc, ss->port_no);
 	if (!sc) {
 		LM_INFO("could not find a client listener on %s:%d!\n",
 				ip_addr2a(&req->rcv.dst_ip), port_pc);
-		return -2;
+		goto release_user;
 	}
 
 	sa = ipsec_get_security_client(req);
 	if (!sa) {
 		LM_ERR("could not find a matching Secrity-Client header\n");
-		return -4;
+		ret = -2;
+		goto release_user;
 	}
 
+	ret = -5;
 	ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc);
 	if (!ctx) {
 		LM_ERR("could not allocate new IPSec ctx\n");
-		return -5;
+		goto release_user;
 	}
+	IPSEC_CTX_REF(ctx);
 	ipsec_ctx_push(ctx);
 
-	sock = ipsec_new();
+	sock = ipsec_sock_new();
 	if (!sock) {
 		LM_ERR("could not create IPSec socket\n");
-		return -5;
+		goto release_user;
 	}
 	/*
 	 * Flows according to 3GPP TS 33.203
 	 */
-	if (ipsec_add_flow(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_IN, 0) < 0) {
+	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_IN, 0) < 0) {
 		LM_ERR("could not add UE(uc)->P(ps) SA\n");
 		goto close;
 	}
-	if (ipsec_add_flow(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_OUT, 0) < 0) {
+	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_OUT, 0) < 0) {
 		LM_ERR("could not add P(ps)->UE(uc) SA\n");
 		goto release_sa1;
 	}
-	if (ipsec_add_flow(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_IN, 1) < 0) {
+	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_IN, 1) < 0) {
 		LM_ERR("could not add UE(us)->P(pc) SA\n");
 		goto release_sa2;
 	}
-	if (ipsec_add_flow(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_OUT, 1) < 0) {
+	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_OUT, 1) < 0) {
 		LM_ERR("could not add P(pc)->UE(us) SA\n");
 		goto release_sa3;
 	}
@@ -546,22 +631,53 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 		LM_ERR("could not add Security-Server header\n");
 		goto release_sa4;
 	}
-	/* TODO: add to hash instead of raw reffing */
-	ctx->ref++;
-	ipsec_close(sock);
+	/* add the context as temporarily */
+	ipsec_ctx_push_user(user, ctx);
+	ipsec_sock_close(sock);
+
+	/* TODO:
+After receiving SM7 from the UE, the P-CSCF shall check whether the integrity and encryption algorithms list, SPI_P
+and Port_P received in SM7 is identical with the corresponding parameters sent in SM6. It further checks whether
+SPI_U and Port_U received in SM7 are identical with those received in SM1. If these checks are not successful the
+registration procedure is aborted. The P-CSCF shall include in SM8 information to the S-CSCF that the received
+message from the UE was integrity protected as indicated in clause 6.1.5. The P-CSCF shall add this information to all
+subsequent REGISTER messages received from the UE that have successfully passed the integrity check in the
+P-CSCF.
+
+
+In this case, SM7 fails integrity check by IPsec at the P-CSCF if the IKIM derived from RAND at UE is wrong. The SIP
+application at the P-CSCF never receives SM7. It shall delete the temporarily stored SA parameters associated with this
+registration after a time-out. 
+
+In case IKIM was derived correctly, but the response was wrong the authentication of the user fails at the S-CSCF due to
+an incorrect response. The S-CSCF shall send a 4xx Auth_Failure message to the UE, via the P-CSCF, which may pass
+through an already established SA. Afterwards, both, the UE and the P-CSCF shall delete the new SAs. 
+
+The P-CSCF sets the expiry time of the
+new SAs such that they either equals the latest lifetime of the old SAs or it will expire shortly after the
+registration timer in the message, depending which gives the SAs the longer life.
+
+S7.4.2
+If there are old SAs, but SM1 belonging to the same registration procedure was received unprotected, the
+P-CSCF considers error cases happened, and assumes UE does not have those old SAs for use. In this case
+the P-CSCF shall remove the old SAs.
+	 */
+	ipsec_release_user(user);
 
 	return 1;
 release_sa4:
-	ipsec_rm_flow(sock, ctx, IPSEC_POLICY_OUT, 1);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 1);
 release_sa3:
-	ipsec_rm_flow(sock, ctx, IPSEC_POLICY_IN, 1);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 1);
 release_sa2:
-	ipsec_rm_flow(sock, ctx, IPSEC_POLICY_OUT, 0);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 0);
 release_sa1:
-	ipsec_rm_flow(sock, ctx, IPSEC_POLICY_IN, 0);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 0);
 close:
-	ipsec_close(sock);
-	return -5;
+	ipsec_sock_close(sock);
+release_user:
+	ipsec_release_user(user);
+	return ret;
 }
 
 str pv_ipsec_ctx_type[] = {
@@ -708,9 +824,222 @@ static struct socket_info *ipsec_get_socket_info(const struct socket_info *bind_
 	return NULL;
 }
 
+static void ipsec_handle_register_rpl(struct cell* t, int type, struct tmcb_params *param)
+{
+	struct ipsec_ctx *ctx = *param->param;
+	if (param->rpl == FAKED_REPLY || param->code >= 300) {
+		LM_DBG("REGISTER not authenticated (code=%d)!\n", param->code);
+		return;
+	}
+	/* TODO: extract expire and extend lifetime */
+	lock_get(&ctx->lock);
+	ctx->state = IPSEC_STATE_OK;
+	lock_release(&ctx->lock);
+}
+
+static void ipsec_handle_register_req(struct cell* t, int type, struct tmcb_params *param)
+{
+	struct ipsec_ctx *ctx = *param->param;
+	if (tm_ipsec.register_tmcb(param->req, t, TMCB_RESPONSE_OUT, ipsec_handle_register_rpl,
+			ctx, (release_tmcb_param*)ipsec_ctx_release) <= 0) {
+		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
+		ipsec_ctx_release(ctx);
+	}
+}
+
+
+static int ipsec_handle_register(struct sip_msg *msg, struct socket_info *si)
+{
+	struct ip_addr *ip;
+	struct via_body *via;
+	struct ipsec_ctx *ctx;
+	struct ipsec_user *user;
+	struct sec_agree_body *sa;
+	auth_body_t *auth = NULL;
+	int is_secure = 1, extend_tmp = 0;
+	struct lump* anchor;
+	str integrity_protected = str_init(",integrity-protected=");
+	char *is_protected;
+	str *impu, *impi;
+
+	if (parse_headers(msg, HDR_VIA1_F|HDR_VIA2_F, 0) < 0 || !msg->via1) {
+		LM_ERR("could not parse VIA headers!\n");
+		goto drop;
+	}
+	if (msg->via2) {
+		LM_ERR("message has a second via!\n");
+		goto drop;
+	}
+	via = msg->via1;
+	ip = str2ip(&via->host);
+	if (!ip) {
+		ip = str2ip6(&via->host);
+		if (!ip)
+			LM_WARN("TODO: resolve host %.*s\n", via->host.len, via->host.s);
+	}
+	auth = ipsec_get_auth(msg);
+	if (!auth) {
+		LM_DBG("could not find any auth header!\n");
+		return SCB_RUN_ALL;
+	}
+	impu = aka_get_public_identity(msg, HDR_AUTHORIZATION_T);
+	if (!impu) {
+		LM_DBG("could not get public identity!\n");
+		return SCB_RUN_ALL;
+	}
+	impi = aka_get_private_identity(msg, auth, HDR_AUTHORIZATION_T);
+	if (!impi) {
+		LM_DBG("could not get private identity!\n");
+		return SCB_RUN_ALL;
+	}
+
+	user = ipsec_find_user(&msg->rcv.src_ip, impi, impu);
+	if (!user) {
+		LM_WARN("received unprotected message from %s:%hu on IPSec listener %s:%s:%hu!\n",
+			ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port,
+			(msg->rcv.bind_address->proto==PROTO_UDP?"UDP":"TCP"),
+			ip_addr2a(&msg->rcv.dst_ip), msg->rcv.dst_port);
+		return SCB_RUN_ALL;
+	}
+
+	if (ip && !ip_addr_cmp(&user->ip, ip)) {
+		LM_ERR("Via host %.*s is different than User's %s\n",
+				via->host.len, via->host.s, ip_addr2a(&user->ip));
+		goto drop_user;
+	}
+
+	ctx = ipsec_get_ctx_user(user, &msg->rcv);
+	if (!ctx) {
+		LM_ERR("could not find any IPSec context!\n");
+		goto drop_user;
+	}
+	lock_get(&ctx->lock);
+	switch (ctx->state) {
+	case IPSEC_STATE_TMP:
+		/* we've got a temporary associationt, check the
+		 * Security-Client/Verify */
+		if (parse_headers(msg, HDR_SECURITY_CLIENT_F|HDR_SECURITY_VERIFY_F, 0) < 0) {
+			LM_ERR("could not parse security headers!\n");
+			goto drop_release;
+		}
+		if (!msg->security_client) {
+			LM_ERR("no Security-Client header for temporary association!\n");
+			goto drop_release;
+		}
+		if (!msg->security_verify) {
+			LM_ERR("no Security-Verify header for temporary association!\n");
+			goto drop_release;
+		}
+		if (parse_sec_agree(msg->security_verify) < 0) {
+			LM_ERR("could not parse Security-Verify header for temporary association!\n");
+			goto drop_release;
+		}
+		sa = msg->security_verify->parsed;
+		if (!sa || sa->invalid) {
+			LM_ERR("invalid Security-Verify header for temporary association!\n");
+			goto drop_release;
+		}
+		if (sa->mechanism != SEC_AGREE_MECHANISM_IPSEC_3GPP) {
+			LM_ERR("invalid Security-Verify mechanism for temporary association!\n");
+			goto drop_release;
+		}
+		if (!ipsec_spi_match(ctx->spi_c, sa->ts3gpp.spi_c)) {
+			LM_ERR("invalid Security-Verify spi_c for temporary association!\n");
+			goto drop_release;
+		}
+		if (!ipsec_spi_match(ctx->spi_s, sa->ts3gpp.spi_s)) {
+			LM_ERR("invalid Security-Verify spi_s for temporary association!\n");
+			goto drop_release;
+		}
+		if (!str_match(_str(ctx->alg->name), &sa->ts3gpp.alg_str)) {
+			LM_ERR("invalid Security-Verify alg for temporary association!\n");
+			goto drop_release;
+		}
+		if (!str_match(_str(ctx->ealg->name), &sa->ts3gpp.ealg_str)) {
+			LM_ERR("invalid Security-Verify ealg for temporary association!\n");
+			goto drop_release;
+		}
+
+		/* TODO: check Security-Client */
+
+		/* remove Security-Client and Security-Verify */
+		if (del_lump(msg, msg->security_client->name.s - msg->buf,
+				msg->security_client->len, HDR_SECURITY_CLIENT_T) == 0)
+			LM_ERR("could not delete Security-Client header\n");
+		if (del_lump(msg, msg->security_verify->name.s - msg->buf,
+				msg->security_verify->len, HDR_SECURITY_VERIFY_T) == 0)
+			LM_ERR("could not delete Security-Verify header\n");
+
+		/* all good - mark the context as stable */
+		extend_tmp = 1;
+
+		is_secure = 0;
+
+		break;
+	case IPSEC_STATE_OK:
+		break;
+	case IPSEC_STATE_INVALID:
+		LM_WARN("received message on an expired association!\n");
+		goto drop_release;
+	case IPSEC_STATE_NEW:
+		LM_WARN("received message on new/un-initialized association!\n");
+		goto drop_release;
+	}
+	/* pushing in global context */
+	IPSEC_CTX_REF_UNSAFE(ctx);
+	ipsec_ctx_push(ctx);
+	lock_release(&ctx->lock);
+
+	if (extend_tmp)
+		ipsec_ctx_extend_tmp(ctx);
+
+	/* we need to add the integrity-protected - search for Authorization header */
+	if (!is_secure) {
+		if (auth->digest.response.s && auth->digest.response.len)
+			is_secure = 1;
+	}
+	is_protected = pkg_malloc(integrity_protected.len + (is_secure?3:2));
+	if (!is_protected) {
+		LM_ERR("oom for integrity-protected parameter\n");
+		return SCB_RUN_ALL;
+	}
+	memcpy(is_protected, integrity_protected.s, integrity_protected.len);
+	if (is_protected) {
+		memcpy(is_protected + integrity_protected.len, "yes", 3);
+		integrity_protected.len += 3;
+	} else {
+		memcpy(is_protected + integrity_protected.len, "no", 2);
+		integrity_protected.len += 2;
+	}
+	anchor = anchor_lump(msg, auth->authorized->body.s +
+			auth->authorized->body.len - msg->buf, 0);
+	if (!anchor || insert_new_lump_before(anchor, is_protected, integrity_protected.len, 0) == 0) {
+		LM_ERR("could not add an anchor for integrity-protected parameter\n");
+		pkg_free(is_protected);
+	}
+
+	IPSEC_CTX_REF(ctx);
+	/* all good now - register for transaction creation */
+	if (tm_ipsec.register_tmcb(0, 0, TMCB_REQUEST_IN, ipsec_handle_register_req,
+			ctx, 0 /* (release_tmcb_param*)ipsec_ctx_release - we are not releasing now */) <= 0) {
+		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
+		IPSEC_CTX_UNREF(ctx);
+	}
+	return SCB_RUN_ALL;
+drop_release:
+	lock_release(&ctx->lock);
+	IPSEC_CTX_UNREF(ctx);
+drop_user:
+	ipsec_release_user(user);
+drop:
+	return SCB_DROP_MSG;
+}
+
 static int ipsec_pre_script_handler(struct sip_msg *msg, void *param)
 {
+	int ret = SCB_RUN_ALL;
 	struct socket_info *si;
+
 	if (!msg || msg == FAKED_REPLY || !(si = ipsec_get_socket_info(msg->rcv.bind_address)))
 		return SCB_RUN_ALL;
 	LM_DBG("message received over IPSec %s tunnel %s:%hu -> %s:%hu\n",
@@ -718,6 +1047,71 @@ static int ipsec_pre_script_handler(struct sip_msg *msg, void *param)
 			ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port,
 			ip_addr2a(&msg->rcv.dst_ip), msg->rcv.dst_port);
 
+	/* parse cseq header */
+	if (parse_headers(msg, HDR_CSEQ_F, 0) < 0) {
+		LM_ERR("cannot parse cseq header\n");
+		return -1;
+	}
+
+	if (!msg->cseq || !msg->cseq->body.s) {
+		LM_ERR("cseq header empty\n");
+		return -1;
+	}
+
+	if (msg->first_line.type == SIP_REQUEST) {
+		if (get_cseq(msg)->method_id == METHOD_REGISTER)
+			ret = ipsec_handle_register(msg, si);
+	}
+
+	/*
+	if (get_cseq(msg)->method_id != METHOD_REGISTER) {
+		LM_ERR("REGISTER required to create ipsec tunnel)\n");
+		return -1;
+	}
+	if (!ipsec_get_ue(&msg->rcv.src_ip))
+		LM_ERR("could not create ue\n");
+	*/
+	/*
+	 * TS 133.203 7.2
+2. The SIP application at the P-CSCF shall check upon receipt of a protected REGISTER message that the source
+IP address in the packet headers coincide with the UE’s IP address inserted in the Via header of the protected
+REGISTER message. If the Via header does not explicitly contain the UE's IP address, but rather a symbolic
+name then the P-CSCF shall first resolve the symbolic name by suitable means to obtain an IP address.
+3. The SIP application at the P-CSCF shall check upon receipt of an initial REGISTER message or a re-REGISTER
+message that the pair (UE_IP_address, UE_protected_client_port), where the UE_IP_address is the source IP
+address in the packet header and the protected client port is sent as part of the security mode set-up procedure
+(cf. clause 7.2), has not yet been associated with entries in the "SA_table". Furthermore, the P-CSCF shall check
+that, for any one IMPI, no more than six SAs per direction are stored at any one time. If these checks are
+unsuccessful the registration is aborted and a suitable error message is sent to the UE.
+NOTE 13: According to clause 7.4 on SA handling, at most six SAs per direction per registered contact may exist at
+a P-CSCF for one IMPI at any one time.
+4. For each incoming protected message the SIP application at the P-CSCF shall verify that the correct inbound SA
+according to clause 7.4 on SA handling has been used. The SA is identified by the triple (UE_IP_address,
+UE_protected_port, P-CSCF_protected_port) in the "SA_table". The SIP application at the P-CSCF shall further
+ensure that the user associated with the SA, which was used to protect the incoming message from the UE, is
+identical to the user who is associated at SIP level with the message sent by the P-CSCF towards the network.
+NOTE 14: Not all SIP messages necessarily contain public or private identities, e.g. subsequent messages in a
+dialogue. Other information, e.g. a dialogue identifier, may be used to associate the message with a user
+at SIP level. 
+ETSI
+3GPP TS 33.203 version 17.1.0 Release 17 31 ETSI TS 133 203 V17.1.0 (2022-05)
+5. For each unidirectional SA which has been established and has not expired, the SIP application at the UE stores
+at least the following data: (UE_protected_port, P-CSCF_protected_port, SPI, lifetime) in an "SA_table". The
+pair (UE_protected_port, P-CSCF_protected_port) equals either (port_uc, port_ps) or (port_us, port_pc).
+NOTE 15: The SPI is only required to initiate and delete SAs in the UE. The SPI is not exchanged between IPsec
+and the SIP layer for incoming or outgoing SIP messages.
+6. When establishing a new pair of SAs (cf. clause 6.3) the SIP application at the UE shall ensure that the selected
+numbers for the protected ports do not correspond to an entry in the "SA_table".
+NOTE 16: Regarding the selection of the number of the protected port at the UE it is generally recommended that
+the UE randomly selects the number of the protected port from a sufficiently large set of numbers not yet
+allocated at the UE. This is to thwart a limited form of a Denial of Service attack. UMTS PS access link
+security also helps to thwart this attack.
+7. For each incoming protected message the SIP application at the UE shall verify that the correct inbound SA
+according to clause 7.4 on SA handling has been used. The SA is identified by the pair (UE_protected_port,
+P-CSCF_protected_port) in the "SA table".
+NOTE 17: If the integrity check of a received packet fails then IPsec will automatically discard the packet. 
+	 */
+
 	/* TODO: handle message */
-	return SCB_RUN_ALL;
+	return ret;
 }
