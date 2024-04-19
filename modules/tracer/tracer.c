@@ -2525,7 +2525,7 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 					TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 		} else {
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					send_sock->adv_sock_str.len?(struct ip_addr *)&send_sock->adv_address:(struct ip_addr *)&send_sock->address, send_sock->last_real_ports->local?send_sock->last_real_ports->local:send_sock->port_no, send_sock->proto);
+					send_sock->adv_sock_str.len?(struct ip_addr *)&send_sock->adv_address:(struct ip_addr *)&send_sock->address, send_sock->last_local_real_port?send_sock->last_local_real_port:send_sock->port_no, send_sock->proto);
 		}
 	}
 
@@ -2809,7 +2809,7 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 				TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 		} else {
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					dst->send_sock->adv_sock_str.len?(struct ip_addr *)&dst->send_sock->adv_address:(struct ip_addr *)&dst->send_sock->address, dst->send_sock->last_real_ports->local?dst->send_sock->last_real_ports->local:dst->send_sock->port_no, dst->send_sock->proto);
+					dst->send_sock->adv_sock_str.len?(struct ip_addr *)&dst->send_sock->adv_address:(struct ip_addr *)&dst->send_sock->address, dst->send_sock->last_local_real_port?dst->send_sock->last_local_real_port:dst->send_sock->port_no, dst->send_sock->proto);
 		}
 	}
 
