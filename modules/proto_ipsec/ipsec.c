@@ -288,6 +288,7 @@ void ipsec_sa_rm(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	struct nlmsghdr *nlh;
 	struct xfrm_usersa_id *sa_id;
+	struct xfrm_userpolicy_id *policy_id;
 	xfrm_address_t saddr;
 	struct ipsec_endpoint *src, *dst;
 	unsigned short src_port, dst_port;
@@ -310,6 +311,7 @@ void ipsec_sa_rm(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 		spi = dst->spi_c;
 	}
 
+	/* remove sa */
 	memset(buf, 0, sizeof buf);
 	nlh = mnl_nlmsg_put_header(buf);
 	if (!nlh) {
@@ -332,6 +334,34 @@ void ipsec_sa_rm(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 	memcpy(&saddr, &src->ip.u, src->ip.len);
 
 	mnl_attr_put(nlh, XFRMA_SRCADDR, sizeof saddr, &saddr);
+
+	if (mnl_socket_sendto(sock, nlh, nlh->nlmsg_len) < 0)
+		LM_ERR("communicating with kernel for removing SA: %s\n", strerror(errno));
+
+	/* remove policy */
+	memset(buf, 0, sizeof buf);
+	nlh = mnl_nlmsg_put_header(buf);
+	if (!nlh) {
+		LM_ERR("could not store policy header\n");
+		goto error;
+	}
+	nlh->nlmsg_flags = NLM_F_REQUEST;
+	nlh->nlmsg_type = XFRM_MSG_DELPOLICY;
+	nlh->nlmsg_seq = ++ipsec_seq;
+
+	policy_id = mnl_nlmsg_put_extra_header(nlh, sizeof (struct xfrm_userpolicy_id));
+	if (!policy_id) {
+		LM_ERR("could not get policy_id\n");
+		goto error;
+	}
+	policy_id->dir = dir;
+	policy_id->index = 0;
+	ipsec_fill_selector(&policy_id->sel, &src->ip, src_port, &dst->ip, dst_port);
+
+	if (mnl_socket_sendto(sock, nlh, nlh->nlmsg_len) < 0) {
+		LM_ERR("communicating with kernel for removing policy: %s\n", strerror(errno));
+		goto error;
+	}
 
 	LM_DBG("removed %s:%hu -> %s:%hu SA (SPI %u)\n",
 			ip_addr2a(&src->ip), src_port, ip_addr2a(&dst->ip), dst_port, spi);
@@ -472,7 +502,7 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 			sizeof(struct xfrm_algo) + ie.algo.alg_key_len, &ie);
 
 	if (mnl_socket_sendto(sock, nlh, nlh->nlmsg_len) < 0) {
-		LM_ERR("communicating with kernel for SA: %s\n", strerror(errno));
+		LM_ERR("communicating with kernel for new SA: %s\n", strerror(errno));
 		goto error;
 	}
 
