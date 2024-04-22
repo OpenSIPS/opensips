@@ -682,6 +682,23 @@ struct ipsec_ctx *ipsec_ctx_get(void)
 	return IPSEC_GET_CTX();
 }
 
+int ipsec_ctx_release_unsafe(struct ipsec_ctx *ctx)
+{
+	int free = 0;
+
+	if (!ctx)
+		return 0;
+
+	if (ctx->ref > 0) {
+		LM_DBG("REF: ctx=%p ref=%d -1 = %d\n", ctx, ctx->ref, ctx->ref - 1);
+		free = (--(ctx->ref) == 0);
+	} else {
+		LM_BUG("invalid ref %d for ctx %p\n", ctx->ref, ctx);
+	}
+	return free;
+}
+
+
 void ipsec_ctx_release(struct ipsec_ctx *ctx)
 {
 	int free = 0;
@@ -690,12 +707,7 @@ void ipsec_ctx_release(struct ipsec_ctx *ctx)
 		return;
 
 	lock_get(&ctx->lock);
-	if (ctx->ref > 0) {
-		LM_DBG("REF: ctx=%p ref=%d -1 = %d\n", ctx, ctx->ref, ctx->ref - 1);
-		free = (--(ctx->ref) == 0);
-	} else {
-		LM_BUG("invalid ref %d for ctx %p\n", ctx->ref, ctx);
-	}
+	free = ipsec_ctx_release_unsafe(ctx);
 	lock_release(&ctx->lock);
 	if (free)
 		ipsec_ctx_free(ctx);
@@ -738,6 +750,20 @@ void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx)
 	lock_release(ipsec_tmp_contexts_lock);
 }
 
+void ipsec_ctx_release_tmp_user(struct ipsec_user *user)
+{
+	struct list_head *it, *safe;
+	struct ipsec_ctx *ctx;
+
+	lock_get(&user->lock);
+	list_for_each_safe(it, safe, &user->sas) {
+		ctx = list_entry(it, struct ipsec_ctx, list);
+		if (ctx->state == IPSEC_STATE_TMP)
+			ipsec_ctx_remove_tmp(ctx);
+	}
+	lock_release(&user->lock);
+}
+
 void ipsec_ctx_release_user(struct ipsec_ctx *ctx)
 {
 	int release;
@@ -757,6 +783,8 @@ void ipsec_ctx_timer(unsigned int ticks, void* param)
 	struct list_head *it, *safe, *prev = NULL;
 	struct list_head new;
 	struct ipsec_ctx_tmp *tmp;
+	struct ipsec_ctx *ctx;
+	int free;
 
 	INIT_LIST_HEAD(&new);
 
@@ -779,11 +807,14 @@ void ipsec_ctx_timer(unsigned int ticks, void* param)
 		if (tmp->ctx->state == IPSEC_STATE_TMP) {
 			tmp->ctx->state = IPSEC_STATE_INVALID;
 			LM_DBG("IPSec ctx %p expired\n", tmp->ctx);
-			lock_release(&tmp->ctx->lock);
 		}
 		list_del(&tmp->list);
-		IPSEC_CTX_UNREF(tmp->ctx);
+		ctx = tmp->ctx;
+		free = IPSEC_CTX_UNREF_UNSAFE(tmp->ctx);
+		lock_release(&tmp->ctx->lock);
 		shm_free(tmp);
+		if (free)
+			ipsec_ctx_free(ctx);
 	}
 }
 
@@ -791,14 +822,28 @@ void ipsec_ctx_remove_tmp(struct ipsec_ctx *ctx)
 {
 	struct list_head *it, *safe;
 	struct ipsec_ctx_tmp *tmp;
+	int free = 0;
 
 	lock_get(ipsec_tmp_contexts_lock);
+	lock_get(&ctx->lock);
+	if (ctx->state != IPSEC_STATE_TMP) {
+		lock_release(&ctx->lock);
+		goto end;
+	}
 	list_for_each_safe(it, safe, ipsec_tmp_contexts) {
 		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
 		if (tmp->ctx != ctx)
 			continue;
 		list_del(&tmp->list);
+		free = IPSEC_CTX_UNREF_UNSAFE(tmp->ctx);
 		shm_free(tmp);
+		break;
+	}
+end:
+	lock_release(&ctx->lock);
+	if (free) {
+		LM_BUG("removing an already deleted temporary context\n");
+		ipsec_ctx_free(ctx);
 	}
 	lock_release(ipsec_tmp_contexts_lock);
 }
@@ -809,6 +854,9 @@ void ipsec_ctx_extend_tmp(struct ipsec_ctx *ctx)
 	struct ipsec_ctx_tmp *tmp;
 
 	lock_get(ipsec_tmp_contexts_lock);
+	lock_get(&ctx->lock);
+	if (ctx->state != IPSEC_STATE_TMP)
+		goto end;
 	list_for_each_safe(it, safe, ipsec_tmp_contexts) {
 		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
 		if (tmp->ctx == ctx)
@@ -822,5 +870,7 @@ void ipsec_ctx_extend_tmp(struct ipsec_ctx *ctx)
 	} else {
 		LM_BUG("temporary ctx %p not found!\n", ctx);
 	}
+end:
+	lock_release(&ctx->lock);
 	lock_release(ipsec_tmp_contexts_lock);
 }

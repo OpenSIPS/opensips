@@ -85,6 +85,7 @@ struct ipsec_ctx {
 #define IPSEC_CTX_REF(_ctx) IPSEC_CTX_REF_COUNT(_ctx, 1);
 #define IPSEC_CTX_REF_UNSAFE(_ctx) IPSEC_CTX_REF_COUNT_UNSAFE(_ctx, 1);
 #define IPSEC_CTX_UNREF(_ctx) ipsec_ctx_release(_ctx)
+#define IPSEC_CTX_UNREF_UNSAFE(_ctx) ipsec_ctx_release_unsafe(_ctx)
 
 #define IPSEC_USER_SELECTOR 1387164160
 #define IPSEC_POLICY_PRIORITY 1024
@@ -115,8 +116,10 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 void ipsec_ctx_push(struct ipsec_ctx *ctx);
 struct ipsec_ctx *ipsec_ctx_get(void);
 void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx);
+void ipsec_ctx_release_tmp_user(struct ipsec_user *user);
 void ipsec_ctx_release_user(struct ipsec_ctx *ctx);
 void ipsec_ctx_release(struct ipsec_ctx *ctx);
+int ipsec_ctx_release_unsafe(struct ipsec_ctx *ctx);
 void ipsec_ctx_remove_tmp(struct ipsec_ctx *ctx);
 void ipsec_ctx_extend_tmp(struct ipsec_ctx *ctx);
 

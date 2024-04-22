@@ -43,11 +43,15 @@
 #include "ipsec.h"
 #include "ipsec_user.h"
 
+#define IPSEC_CTX_TM_GET(t) ((struct ipsec_ctx *) tm_ipsec.t_ctx_get_ptr(t, ipsec_ctx_tm_idx))
+#define IPSEC_CTX_TM_PUT(t, ctx) tm_ipsec.t_ctx_put_ptr(t, ipsec_ctx_tm_idx, ctx)
+
 
 static int ipsec_default_client_port = 0;
 static int ipsec_default_server_port = 0;
 static str ipsec_allowed_algorithms;
 static struct tm_binds tm_ipsec;
+static int ipsec_ctx_tm_idx = -1;
 
 static int ipsec_port = IPSEC_DEFAULT_PORT;
 static int mod_init(void);
@@ -140,14 +144,17 @@ struct module_exports exports = {
 	0           /* reload confirm function */
 };
 
-static struct socket_info *find_ipsec_socket_info(struct ip_addr *ip, unsigned int port, unsigned int no_port)
+static struct socket_info *find_ipsec_socket_info(struct ip_addr *ip, unsigned int port,
+		unsigned int no_port1, unsigned int no_port2)
 {
 	struct socket_info_full *it;
 	for (it = protos[PROTO_IPSEC].listeners; it; it = it->next) {
-		LM_DBG("searching port %d vs %d (no %d)\n", port, it->socket_info.port_no, no_port);
+		LM_DBG("searching port %d vs %d (no %d, %d)\n", port, it->socket_info.port_no, no_port1, no_port2);
 		if (port && it->socket_info.port_no != port)
 			continue;
-		if (no_port && it->socket_info.port_no == no_port)
+		if (no_port1 && it->socket_info.port_no == no_port1)
+			continue;
+		if (no_port2 && it->socket_info.port_no == no_port2)
 			continue;
 		if (ip && !ip_addr_cmp(ip, &it->socket_info.address))
 			continue;
@@ -166,12 +173,12 @@ static int ipsec_sockets_init(void)
 			LM_ERR("cannot use the same default ports (%d) for both client and server\n",
 					ipsec_default_client_port);
 		}
-		if (!find_ipsec_socket_info(NULL, ipsec_default_client_port, 0))
+		if (!find_ipsec_socket_info(NULL, ipsec_default_client_port, 0, 0))
 			LM_ERR("cannot find any socket listening on default client port %d\n",
 					ipsec_default_client_port);
 	}
 	if (ipsec_default_server_port &&
-			!find_ipsec_socket_info(NULL, ipsec_default_server_port, 0))
+			!find_ipsec_socket_info(NULL, ipsec_default_server_port, 0, 0))
 		LM_WARN("cannot find any socket listening on default server port %d\n",
 				ipsec_default_server_port);
 
@@ -207,6 +214,12 @@ static int mod_init(void)
 
 	if (load_tm_api(&tm_ipsec)!=0) {
 		LM_ERR("can't load TM API\n");
+		return -1;
+	}
+
+	ipsec_ctx_tm_idx = tm_ipsec.t_ctx_register_ptr((context_destroy_f)ipsec_ctx_release);
+	if (!ipsec_ctx_tm_idx) {
+		LM_ERR("could not get transaction index!\n");
 		return -1;
 	}
 
@@ -474,12 +487,28 @@ static auth_body_t *ipsec_get_auth(struct sip_msg *msg)
 	return NULL;
 }
 
+/* check if it was received on one of our listening interfaces */
+static struct socket_info *ipsec_get_socket_info(const struct socket_info *bind_address)
+{
+	struct socket_info_full *si;
+	struct socket_info_pair *pair;
+	if (!bind_address)
+		return NULL;
+	for (si = protos[PROTO_IPSEC].listeners; si; si = si->next) {
+		pair = si->socket_info.extra_data;
+		if (pair->udp == bind_address || pair->tcp == bind_address)
+			return &si->socket_info;
+	}
+	return NULL;
+}
+
+
 
 static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 {
 	struct cell *t;
 	int port_ps, port_pc;
-	struct socket_info *ss, *sc;
+	struct socket_info *ss, *sc, *si;
 	struct sip_msg *req;
 	struct authenticate_body *auth = NULL;
 	sec_agree_body_t *sa;
@@ -489,6 +518,7 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	auth_body_t *a = NULL;
 	str *impu, *impi;
 	int ret = -1;
+	unsigned short prev_port_pc = 0;
 
 	if (msg->first_line.type != SIP_REPLY || msg->REPLY_STATUS != 401) {
 		LM_ERR("can only be called on 401 Reply\n");
@@ -570,15 +600,33 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	}
 	/* TODO: double check for sec-agree in Required/Supported */
 
+	/* check if the request was secured */
+	si = ipsec_get_socket_info(req->rcv.bind_address);
+	if (si) {
+		/*
+		 * the request came secure, this means that there is an already
+		 * existing SA/ctx for this USER - try to locate it
+		 */
+		ctx = IPSEC_CTX_TM_GET(t);
+		if (ctx)
+			prev_port_pc = ctx->me.port_c;
+		else
+			prev_port_pc = 0;
+	} else {
+		prev_port_pc = 0;
+		/* message was received unprotected - remove all temporary SAs */
+		ipsec_ctx_release_tmp_user(user);
+	}
+
 	/* locate the received IP */
 	ret = -2;
-	ss = find_ipsec_socket_info(&req->rcv.dst_ip, port_ps, port_pc);
+	ss = find_ipsec_socket_info(&req->rcv.dst_ip, port_ps, port_pc, prev_port_pc);
 	if (!ss) {
-		LM_INFO("could not find a server listener on %s:%d!\n",
+			LM_INFO("could not find a server listener on %s:%d!\n",
 				ip_addr2a(&req->rcv.dst_ip), port_ps);
 		goto release_user;
 	}
-	sc = find_ipsec_socket_info(&req->rcv.dst_ip, port_pc, ss->port_no);
+	sc = find_ipsec_socket_info(&req->rcv.dst_ip, port_pc, ss->port_no, prev_port_pc);
 	if (!sc) {
 		LM_INFO("could not find a client listener on %s:%d!\n",
 				ip_addr2a(&req->rcv.dst_ip), port_pc);
@@ -635,33 +683,6 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	ipsec_ctx_push_user(user, ctx);
 	ipsec_sock_close(sock);
 
-	/* TODO:
-After receiving SM7 from the UE, the P-CSCF shall check whether the integrity and encryption algorithms list, SPI_P
-and Port_P received in SM7 is identical with the corresponding parameters sent in SM6. It further checks whether
-SPI_U and Port_U received in SM7 are identical with those received in SM1. If these checks are not successful the
-registration procedure is aborted. The P-CSCF shall include in SM8 information to the S-CSCF that the received
-message from the UE was integrity protected as indicated in clause 6.1.5. The P-CSCF shall add this information to all
-subsequent REGISTER messages received from the UE that have successfully passed the integrity check in the
-P-CSCF.
-
-
-In this case, SM7 fails integrity check by IPsec at the P-CSCF if the IKIM derived from RAND at UE is wrong. The SIP
-application at the P-CSCF never receives SM7. It shall delete the temporarily stored SA parameters associated with this
-registration after a time-out. 
-
-In case IKIM was derived correctly, but the response was wrong the authentication of the user fails at the S-CSCF due to
-an incorrect response. The S-CSCF shall send a 4xx Auth_Failure message to the UE, via the P-CSCF, which may pass
-through an already established SA. Afterwards, both, the UE and the P-CSCF shall delete the new SAs. 
-
-The P-CSCF sets the expiry time of the
-new SAs such that they either equals the latest lifetime of the old SAs or it will expire shortly after the
-registration timer in the message, depending which gives the SAs the longer life.
-
-S7.4.2
-If there are old SAs, but SM1 belonging to the same registration procedure was received unprotected, the
-P-CSCF considers error cases happened, and assumes UE does not have those old SAs for use. In this case
-the P-CSCF shall remove the old SAs.
-	 */
 	ipsec_release_user(user);
 
 	return 1;
@@ -809,42 +830,32 @@ static int pv_get_ipsec_ctx_ue(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_ipsec_ctx(msg, param, res, 1);
 }
 
-/* check if it was received on one of our listening interfaces */
-static struct socket_info *ipsec_get_socket_info(const struct socket_info *bind_address)
-{
-	struct socket_info_full *si;
-	struct socket_info_pair *pair;
-	if (!bind_address)
-		return NULL;
-	for (si = protos[PROTO_IPSEC].listeners; si; si = si->next) {
-		pair = si->socket_info.extra_data;
-		if (pair->udp == bind_address || pair->tcp == bind_address)
-			return &si->socket_info;
-	}
-	return NULL;
-}
-
 static void ipsec_handle_register_rpl(struct cell* t, int type, struct tmcb_params *param)
 {
-	struct ipsec_ctx *ctx = *param->param;
+	struct ipsec_ctx *ctx = IPSEC_CTX_TM_GET(t);
+	int remove = 0;
+
 	if (param->rpl == FAKED_REPLY || param->code >= 300) {
 		LM_DBG("REGISTER not authenticated (code=%d)!\n", param->code);
 		return;
 	}
 	/* TODO: extract expire and extend lifetime */
 	lock_get(&ctx->lock);
+	remove = (ctx->state == IPSEC_STATE_TMP);
 	ctx->state = IPSEC_STATE_OK;
 	lock_release(&ctx->lock);
+	if (remove)
+		ipsec_ctx_remove_tmp(ctx);
 }
 
 static void ipsec_handle_register_req(struct cell* t, int type, struct tmcb_params *param)
 {
 	struct ipsec_ctx *ctx = *param->param;
-	if (tm_ipsec.register_tmcb(param->req, t, TMCB_RESPONSE_OUT, ipsec_handle_register_rpl,
-			ctx, (release_tmcb_param*)ipsec_ctx_release) <= 0) {
+
+	IPSEC_CTX_REF(ctx);
+	IPSEC_CTX_TM_PUT(t, ctx);
+	if (tm_ipsec.register_tmcb(param->req, t, TMCB_RESPONSE_OUT, ipsec_handle_register_rpl, NULL, NULL) <= 0)
 		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
-		ipsec_ctx_release(ctx);
-	}
 }
 
 
@@ -916,8 +927,7 @@ static int ipsec_handle_register(struct sip_msg *msg, struct socket_info *si)
 	lock_get(&ctx->lock);
 	switch (ctx->state) {
 	case IPSEC_STATE_TMP:
-		/* we've got a temporary associationt, check the
-		 * Security-Client/Verify */
+		/* we've got a temporary association, check the Security-Client/Verify */
 		if (parse_headers(msg, HDR_SECURITY_CLIENT_F|HDR_SECURITY_VERIFY_F, 0) < 0) {
 			LM_ERR("could not parse security headers!\n");
 			goto drop_release;
@@ -985,6 +995,18 @@ static int ipsec_handle_register(struct sip_msg *msg, struct socket_info *si)
 		LM_WARN("received message on new/un-initialized association!\n");
 		goto drop_release;
 	}
+	/*
+	 * TS 133.203 7.2 TODO: check if there are 6 SAs
+3. The SIP application at the P-CSCF shall check upon receipt of an initial REGISTER message or a re-REGISTER
+message that the pair (UE_IP_address, UE_protected_client_port), where the UE_IP_address is the source IP
+address in the packet header and the protected client port is sent as part of the security mode set-up procedure
+(cf. clause 7.2), has not yet been associated with entries in the "SA_table". Furthermore, the P-CSCF shall check
+that, for any one IMPI, no more than six SAs per direction are stored at any one time. If these checks are
+unsuccessful the registration is aborted and a suitable error message is sent to the UE.
+NOTE 13: According to clause 7.4 on SA handling, at most six SAs per direction per registered contact may exist at
+a P-CSCF for one IMPI at any one time.
+*/
+
 	/* pushing in global context */
 	IPSEC_CTX_REF_UNSAFE(ctx);
 	ipsec_ctx_push(ctx);
@@ -1021,7 +1043,7 @@ static int ipsec_handle_register(struct sip_msg *msg, struct socket_info *si)
 	IPSEC_CTX_REF(ctx);
 	/* all good now - register for transaction creation */
 	if (tm_ipsec.register_tmcb(0, 0, TMCB_REQUEST_IN, ipsec_handle_register_req,
-			ctx, 0 /* (release_tmcb_param*)ipsec_ctx_release - we are not releasing now */) <= 0) {
+			ctx, (release_tmcb_param*)ipsec_ctx_release) <= 0) {
 		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
 		IPSEC_CTX_UNREF(ctx);
 	}
@@ -1063,55 +1085,5 @@ static int ipsec_pre_script_handler(struct sip_msg *msg, void *param)
 			ret = ipsec_handle_register(msg, si);
 	}
 
-	/*
-	if (get_cseq(msg)->method_id != METHOD_REGISTER) {
-		LM_ERR("REGISTER required to create ipsec tunnel)\n");
-		return -1;
-	}
-	if (!ipsec_get_ue(&msg->rcv.src_ip))
-		LM_ERR("could not create ue\n");
-	*/
-	/*
-	 * TS 133.203 7.2
-2. The SIP application at the P-CSCF shall check upon receipt of a protected REGISTER message that the source
-IP address in the packet headers coincide with the UE’s IP address inserted in the Via header of the protected
-REGISTER message. If the Via header does not explicitly contain the UE's IP address, but rather a symbolic
-name then the P-CSCF shall first resolve the symbolic name by suitable means to obtain an IP address.
-3. The SIP application at the P-CSCF shall check upon receipt of an initial REGISTER message or a re-REGISTER
-message that the pair (UE_IP_address, UE_protected_client_port), where the UE_IP_address is the source IP
-address in the packet header and the protected client port is sent as part of the security mode set-up procedure
-(cf. clause 7.2), has not yet been associated with entries in the "SA_table". Furthermore, the P-CSCF shall check
-that, for any one IMPI, no more than six SAs per direction are stored at any one time. If these checks are
-unsuccessful the registration is aborted and a suitable error message is sent to the UE.
-NOTE 13: According to clause 7.4 on SA handling, at most six SAs per direction per registered contact may exist at
-a P-CSCF for one IMPI at any one time.
-4. For each incoming protected message the SIP application at the P-CSCF shall verify that the correct inbound SA
-according to clause 7.4 on SA handling has been used. The SA is identified by the triple (UE_IP_address,
-UE_protected_port, P-CSCF_protected_port) in the "SA_table". The SIP application at the P-CSCF shall further
-ensure that the user associated with the SA, which was used to protect the incoming message from the UE, is
-identical to the user who is associated at SIP level with the message sent by the P-CSCF towards the network.
-NOTE 14: Not all SIP messages necessarily contain public or private identities, e.g. subsequent messages in a
-dialogue. Other information, e.g. a dialogue identifier, may be used to associate the message with a user
-at SIP level. 
-ETSI
-3GPP TS 33.203 version 17.1.0 Release 17 31 ETSI TS 133 203 V17.1.0 (2022-05)
-5. For each unidirectional SA which has been established and has not expired, the SIP application at the UE stores
-at least the following data: (UE_protected_port, P-CSCF_protected_port, SPI, lifetime) in an "SA_table". The
-pair (UE_protected_port, P-CSCF_protected_port) equals either (port_uc, port_ps) or (port_us, port_pc).
-NOTE 15: The SPI is only required to initiate and delete SAs in the UE. The SPI is not exchanged between IPsec
-and the SIP layer for incoming or outgoing SIP messages.
-6. When establishing a new pair of SAs (cf. clause 6.3) the SIP application at the UE shall ensure that the selected
-numbers for the protected ports do not correspond to an entry in the "SA_table".
-NOTE 16: Regarding the selection of the number of the protected port at the UE it is generally recommended that
-the UE randomly selects the number of the protected port from a sufficiently large set of numbers not yet
-allocated at the UE. This is to thwart a limited form of a Denial of Service attack. UMTS PS access link
-security also helps to thwart this attack.
-7. For each incoming protected message the SIP application at the UE shall verify that the correct inbound SA
-according to clause 7.4 on SA handling has been used. The SA is identified by the pair (UE_protected_port,
-P-CSCF_protected_port) in the "SA table".
-NOTE 17: If the integrity check of a received packet fails then IPsec will automatically discard the packet. 
-	 */
-
-	/* TODO: handle message */
 	return ret;
 }
