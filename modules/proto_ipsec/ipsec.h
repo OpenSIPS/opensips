@@ -57,6 +57,7 @@ struct ipsec_endpoint {
 
 struct ipsec_ctx {
 	/* read-only values */
+	str ck, ik;
 	struct ipsec_spi *spi_s, *spi_c;
 	struct socket_info *server, *client;
 	struct ipsec_algorithm_desc *alg, *ealg;
@@ -106,13 +107,13 @@ void ipsec_destroy(void);
 struct ipsec_socket *ipsec_sock_new(void);
 void ipsec_sock_close(struct ipsec_socket *sock);
 int ipsec_sa_add(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
-		str *ck, str *ik, enum ipsec_dir dir, int client);
+		enum ipsec_dir dir, int client);
 void ipsec_sa_rm(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 		enum ipsec_dir dir, int client);
 
 /* ctx */
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
-		struct socket_info *ss, struct socket_info *sc);
+		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik);
 void ipsec_ctx_push(struct ipsec_ctx *ctx);
 struct ipsec_ctx *ipsec_ctx_get(void);
 void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx);

@@ -377,7 +377,7 @@ struct xfrm_algo_osips {
 };
 
 int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
-		str *ck, str *ik, enum ipsec_dir dir, int client)
+		enum ipsec_dir dir, int client)
 {
 	char buf[MNL_SOCKET_BUFFER_SIZE];
 	struct nlmsghdr *nlh;
@@ -416,14 +416,14 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	 *
 	 * "Hmac-sha-1-96" and "aes-cbc" are not recommended.
 	 */
-	if (ik->len && ik->len != (IPSEC_ALGO_KEY_SIZE / 8) * 2) {
+	if (ctx->ik.len && ctx->ik.len != (IPSEC_ALGO_KEY_SIZE / 8) * 2) {
 		LM_ERR("invalid authentication key size %d, expected %d\n",
-			  ik->len, ((IPSEC_ALGO_KEY_SIZE / 8) * 2));
+			  ctx->ik.len, ((IPSEC_ALGO_KEY_SIZE / 8) * 2));
 		goto error;
 	}
-	if (ck->len && ck->len != (IPSEC_ALGO_KEY_SIZE / 8) * 2) {
+	if (ctx->ck.len && ctx->ck.len != (IPSEC_ALGO_KEY_SIZE / 8) * 2) {
 		LM_ERR("invalid encryption key size %d, expected %d\n",
-			  ck->len, ((IPSEC_ALGO_KEY_SIZE / 8) * 2));
+			  ctx->ck.len, ((IPSEC_ALGO_KEY_SIZE / 8) * 2));
 		goto error;
 	}
 	memset(&ia, 0, sizeof ia);
@@ -441,8 +441,8 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 
 	strncpy(ia.algo.alg_name, ctx->alg->xfrm_name, sizeof ia.algo.alg_name - 1);
 	ia.algo.alg_key_len = ctx->alg->key_len;
-	if ( ctx->alg->key_len != 0 && hex2string(ik->s, ik->len, ia.buf) < 0) {
-		LM_ERR("could not hexa decode integrity key [%.*s]\n", ik->len, ik->s);
+	if (ctx->alg->key_len != 0 && hex2string(ctx->ik.s, ctx->ik.len, ia.buf) < 0) {
+		LM_ERR("could not hexa decode integrity key [%.*s]\n", ctx->ik.len, ctx->ik.s);
 		goto error;
 	}
 
@@ -454,8 +454,8 @@ int ipsec_sa_add(struct mnl_socket *sock, struct ipsec_ctx *ctx,
 	}
 	strncpy(ie.algo.alg_name, ctx->ealg->xfrm_name, sizeof ie.algo.alg_name - 1);
 	ie.algo.alg_key_len = ctx->ealg->key_len;
-	if (ctx->ealg->key_len != 0 && hex2string(ck->s, ck->len, ie.buf) < 0) {
-		LM_ERR("could not hexa decode confidentialitty key [%.*s]\n", ck->len, ck->s);
+	if (ctx->ealg->key_len != 0 && hex2string(ctx->ck.s, ctx->ck.len, ie.buf) < 0) {
+		LM_ERR("could not hexa decode confidentialitty key [%.*s]\n", ctx->ck.len, ctx->ck.s);
 		goto error;
 	}
 
@@ -598,7 +598,7 @@ static void ipsec_ctx_free(struct ipsec_ctx *ctx)
 }
 
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
-		struct socket_info *ss, struct socket_info *sc)
+		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik)
 {
 	struct ipsec_spi *spi_s, *spi_c;
 	struct ipsec_ctx *ctx;
@@ -636,7 +636,7 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 		ipsec_spi_release(spi_c);
 		return NULL;
 	}
-	ctx = shm_malloc(sizeof *ctx);
+	ctx = shm_malloc(sizeof(*ctx) + ck->len + ik->len);
 	if (!ctx) {
 		LM_ERR("oom for a new IPSec ctx\n");
 		return NULL;
@@ -665,6 +665,12 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 	ctx->ue.spi_c = sa->ts3gpp.spi_c;
 	ctx->ue.port_s = sa->ts3gpp.port_s;
 	ctx->ue.port_c = sa->ts3gpp.port_c;
+	ctx->ck.s = (char *)(ctx + 1);
+	memcpy(ctx->ck.s, ck->s, ck->len);
+	ctx->ck.len = ck->len;
+	ctx->ik.s = ctx->ck.s + ctx->ck.len;
+	memcpy(ctx->ik.s, ik->s, ik->len);
+	ctx->ik.len = ik->len;
 	return ctx;
 error:
 	ipsec_ctx_free(ctx);

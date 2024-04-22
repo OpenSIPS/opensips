@@ -641,7 +641,7 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	}
 
 	ret = -5;
-	ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc);
+	ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc, &auth->ck, &auth->ik);
 	if (!ctx) {
 		LM_ERR("could not allocate new IPSec ctx\n");
 		goto release_user;
@@ -657,19 +657,19 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	/*
 	 * Flows according to 3GPP TS 33.203
 	 */
-	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_IN, 0) < 0) {
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_IN, 0) < 0) {
 		LM_ERR("could not add UE(uc)->P(ps) SA\n");
 		goto close;
 	}
-	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_OUT, 0) < 0) {
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_OUT, 0) < 0) {
 		LM_ERR("could not add P(ps)->UE(uc) SA\n");
 		goto release_sa1;
 	}
-	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_IN, 1) < 0) {
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_IN, 1) < 0) {
 		LM_ERR("could not add UE(us)->P(pc) SA\n");
 		goto release_sa2;
 	}
-	if (ipsec_sa_add(sock, ctx, &auth->ck, &auth->ik, IPSEC_POLICY_OUT, 1) < 0) {
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_OUT, 1) < 0) {
 		LM_ERR("could not add P(pc)->UE(us) SA\n");
 		goto release_sa3;
 	}
