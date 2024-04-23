@@ -61,14 +61,13 @@ gen_lock_t *ipsec_tmp_contexts_lock;
 
 struct ipsec_spi {
 	unsigned int spi;
-	struct ipsec_spi *free;
+	struct list_head free;
 };
 
 static unsigned int ipsec_seq;
 static unsigned int ipsec_spi_no;
 static struct ipsec_spi *ipsec_spi_map;
-static struct ipsec_spi **ipsec_spi_free;
-static struct ipsec_spi **ipsec_spi_free_last;
+static struct list_head *ipsec_spi_free;
 static gen_lock_t *ipsec_spi_lock;
 
 unsigned int ipsec_min_spi = IPSEC_DEFAULT_MIN_SPI;
@@ -109,11 +108,11 @@ int ipsec_init_spi(void)
 	}
 
 	ipsec_spi_free = shm_malloc(sizeof *ipsec_spi_free);
-	ipsec_spi_free_last = shm_malloc(sizeof *ipsec_spi_free_last);
-	if (!ipsec_spi_free || !ipsec_spi_free_last) {
-		LM_ERR("oom for IPSec SPI pointers\n");
+	if (!ipsec_spi_free) {
+		LM_ERR("oom for IPSec SPI free map\n");
 		return -1;
 	}
+	INIT_LIST_HEAD(ipsec_spi_free);
 	/* spi is in [ipsec_min_spi, ipsec_max_spi] intervall */;
 	ipsec_spi_no = ipsec_max_spi - ipsec_min_spi + 1;
 	ipsec_spi_map = shm_malloc(ipsec_spi_no * sizeof (*ipsec_spi_map));
@@ -123,8 +122,10 @@ int ipsec_init_spi(void)
 	}
 	memset(ipsec_spi_map, 0, ipsec_spi_no * sizeof (*ipsec_spi_map));
 	/* initialize them in order */
-	for (spi = 0; spi < ipsec_spi_no; spi++)
+	for (spi = 0; spi < ipsec_spi_no; spi++) {
+		INIT_LIST_HEAD(&ipsec_spi_map[spi].free);
 		ipsec_spi_map[spi].spi = spi + ipsec_min_spi;
+	}
 
 	/* now we create a new array with them suffled */
 	ipsec_spi_shuffle = pkg_malloc(ipsec_spi_no * sizeof (*ipsec_spi_shuffle));
@@ -143,72 +144,80 @@ int ipsec_init_spi(void)
 	}
 
 	/* now add them in the free array in the (reversed) order they were shuffled */
-	for (spi = 0; spi < ipsec_spi_no; spi++) {
-		ipsec_spi_map[ipsec_spi_shuffle[spi]].free = *ipsec_spi_free;
-		*ipsec_spi_free = &ipsec_spi_map[ipsec_spi_shuffle[spi]];
-	}
+	for (spi = 0; spi < ipsec_spi_no; spi++)
+		list_add(&ipsec_spi_map[ipsec_spi_shuffle[spi]].free, ipsec_spi_free);
 
 	/* the first element in the shuffle is the last one added in the free list */
-	*ipsec_spi_free_last = &ipsec_spi_map[ipsec_spi_shuffle[0]];
 	pkg_free(ipsec_spi_shuffle);
 
 	return 0;
 }
 
-static struct ipsec_spi *ipsec_alloc_spi(unsigned int reserved_spi1,
-		unsigned int reserved_spi2)
+static void ipsec_allocate_spi(struct ipsec_spi *spi)
 {
-	struct ipsec_spi *it = NULL, *prev = NULL;
-
-	lock_get(ipsec_spi_lock);
-	for (it = *ipsec_spi_free; it; it = it->free) {
-		if (it->spi != reserved_spi1 && it->spi != reserved_spi2)
-			break;
-		prev = it;
-	}
-	if (it) {
-		/* unlink from free */
-		if (!prev) {
-			*ipsec_spi_free = it->free;
-			if (*ipsec_spi_free == NULL) /* no more free elements! */
-				*ipsec_spi_free_last = NULL;
-			else
-				it->free = NULL;
-		} else {
-			prev->free = it->free;
-			if (!prev->free)
-				*ipsec_spi_free_last = prev;
-			else
-				it->free = NULL; /* mark it as free now */
-		}
-		LM_DBG("allocated SPI %u\n", it->spi);
-	} else {
-		LM_CRIT("no more SPI available\n");
-	}
-	lock_release(ipsec_spi_lock);
-	return it;
+	list_del(&spi->free);
+	LM_DBG("allocated SPI %u\n", spi->spi);
 }
 
-static void ipsec_spi_release(struct ipsec_spi *spi)
+static struct ipsec_spi *ipsec_alloc_known_spi(unsigned int uspi)
 {
-	lock_get(ipsec_spi_lock);
-	if (!spi->free) {
-		/* add it to the end of list */
-		if (*ipsec_spi_free_last != NULL)
-			(*ipsec_spi_free_last)->free = spi;
-		else
-			*ipsec_spi_free = spi;
-		*ipsec_spi_free_last = spi;
-		LM_DBG("released SPI %u\n", spi->spi);
-	} else {
-		LM_BUG("releasing already released SPI %u\n", spi->spi);
+	struct ipsec_spi *spi;
+	if (uspi < ipsec_min_spi || uspi > ipsec_max_spi + 1) {
+		LM_ERR("SPI %u out of range [%u, %u]\n", uspi, ipsec_min_spi, ipsec_max_spi);
+		return NULL;
 	}
+	lock_get(ipsec_spi_lock);
+
+	spi = &ipsec_spi_map[uspi - ipsec_min_spi];
+	if (!list_is_valid(&spi->free)) {
+		LM_ERR("SPI %u is not free\n", uspi);
+		spi = NULL;
+	} else {
+		ipsec_allocate_spi(spi);
+	}
+
 	lock_release(ipsec_spi_lock);
+	return spi;
 }
 
 int ipsec_spi_match(struct ipsec_spi *spi, unsigned int ispi)
 {
 	return spi->spi == ispi;
+}
+
+static struct ipsec_spi *ipsec_alloc_spi(unsigned int reserved_spi1,
+		unsigned int reserved_spi2)
+{
+	struct ipsec_spi *spi = NULL;
+	struct list_head *it;
+
+	lock_get(ipsec_spi_lock);
+	list_for_each(it, ipsec_spi_free) {
+		spi = list_entry(it, struct ipsec_spi, free);
+		if (!ipsec_spi_match(spi, reserved_spi1) && !ipsec_spi_match(spi, reserved_spi2))
+			break;
+		spi = NULL;
+	}
+	if (spi) {
+		/* unlink from free */
+		ipsec_allocate_spi(spi);
+	} else {
+		LM_CRIT("no more SPI available\n");
+	}
+	lock_release(ipsec_spi_lock);
+	return spi;
+}
+
+static void ipsec_spi_release(struct ipsec_spi *spi)
+{
+	lock_get(ipsec_spi_lock);
+	if (!list_is_valid(&spi->free)) {
+		list_add_tail(&spi->free, ipsec_spi_free);
+		LM_DBG("released SPI %u\n", spi->spi);
+	} else {
+		LM_BUG("releasing already released SPI %u\n", spi->spi);
+	}
+	lock_release(ipsec_spi_lock);
 }
 
 /*
@@ -598,7 +607,8 @@ static void ipsec_ctx_free(struct ipsec_ctx *ctx)
 }
 
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
-		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik)
+		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik,
+		unsigned int spi_pc, unsigned int spi_ps)
 {
 	struct ipsec_spi *spi_s, *spi_c;
 	struct ipsec_ctx *ctx;
@@ -625,12 +635,18 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 	}
 
 	/* allocate SPIs */
-	spi_c = ipsec_alloc_spi(sa->ts3gpp.spi_c, sa->ts3gpp.spi_s);
+	if (!spi_pc)
+		spi_c = ipsec_alloc_spi(sa->ts3gpp.spi_c, sa->ts3gpp.spi_s);
+	else
+		spi_c = ipsec_alloc_known_spi(spi_pc);
 	if (!spi_c) {
 		LM_ERR("could not allocate new spi-c\n");
 		return NULL;
 	}
-	spi_s = ipsec_alloc_spi(sa->ts3gpp.spi_c, sa->ts3gpp.spi_s);
+	if (!spi_ps)
+		spi_s = ipsec_alloc_spi(sa->ts3gpp.spi_c, sa->ts3gpp.spi_s);
+	else
+		spi_s = ipsec_alloc_known_spi(spi_ps);
 	if (!spi_s) {
 		LM_ERR("could not allocate new spi-s\n");
 		ipsec_spi_release(spi_c);
