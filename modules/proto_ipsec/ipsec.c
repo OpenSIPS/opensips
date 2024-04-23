@@ -587,15 +587,48 @@ error:
 #define IPSEC_PUT_CTX(_p) context_put_ptr(CONTEXT_GLOBAL, \
 		current_processing_ctx, ipsec_ctx_idx, (_p))
 
+void ipsec_sa_rm_all(struct ipsec_socket *sock, struct ipsec_ctx *ctx)
+{
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 0);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 0);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 1);
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 1);
+}
+
+int ipsec_sa_add_all(struct ipsec_socket *sock, struct ipsec_ctx *ctx)
+{
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_IN, 0) < 0) {
+		LM_ERR("could not add UE(uc)->P(ps) SA\n");
+		return -5;
+	}
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_OUT, 0) < 0) {
+		LM_ERR("could not add P(ps)->UE(uc) SA\n");
+		goto release_sa1;
+	}
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_IN, 1) < 0) {
+		LM_ERR("could not add UE(us)->P(pc) SA\n");
+		goto release_sa2;
+	}
+	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_OUT, 1) < 0) {
+		LM_ERR("could not add P(pc)->UE(us) SA\n");
+		goto release_sa3;
+	}
+	return 0;
+
+release_sa3:
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 1);
+release_sa2:
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 0);
+release_sa1:
+	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 0);
+	return -5;
+}
 
 static void ipsec_ctx_free(struct ipsec_ctx *ctx)
 {
 	struct ipsec_socket *sock = ipsec_sock_new();
 	if (sock) {
-		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 0);
-		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 0);
-		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 1);
-		ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 1);
+		ipsec_sa_rm_all(sock, ctx);
 		ipsec_sock_close(sock);
 	}
 	if (ctx->user)
@@ -665,7 +698,7 @@ struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
 		goto error;
 	}
 	INIT_LIST_HEAD(&ctx->list);
-	ctx->ref = 0;
+	ctx->ref = 1;
 	ctx->server = ss;
 	ctx->client = sc;
 	ctx->alg = alg;
@@ -702,6 +735,21 @@ void ipsec_ctx_push(struct ipsec_ctx *ctx)
 struct ipsec_ctx *ipsec_ctx_get(void)
 {
 	return IPSEC_GET_CTX();
+}
+
+struct ipsec_ctx *ipsec_ctx_find(struct ipsec_user *user, unsigned short port)
+{
+	struct list_head *it;
+	struct ipsec_ctx *ctx = NULL;
+	lock_get(&user->lock);
+	list_for_each(it, &user->sas) {
+		ctx = list_entry(it, struct ipsec_ctx, list);
+		if (ctx->ue.port_c == port)
+			break;
+		ctx = NULL;
+	}
+	lock_release(&user->lock);
+	return ctx;
 }
 
 int ipsec_ctx_release_unsafe(struct ipsec_ctx *ctx)
@@ -741,7 +789,7 @@ struct ipsec_ctx_tmp {
 	struct list_head list;
 };
 
-void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx)
+void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx, enum ipsec_state state)
 {
 	struct ipsec_ctx_tmp *tmp = shm_malloc(sizeof *tmp);
 	if (!tmp) {
@@ -762,14 +810,16 @@ void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx)
 
 	/* ref the context, and mark its state as temporarily */
 	lock_get(&ctx->lock);
-	IPSEC_CTX_REF_COUNT_UNSAFE(ctx, 2); /* first in user, second in tmp list */
-	ctx->state = IPSEC_STATE_TMP;
+	IPSEC_CTX_REF_COUNT_UNSAFE(ctx, (state == IPSEC_STATE_TMP?2:1)); /* first in user, second in tmp list */
+	ctx->state = state;
 	lock_release(&ctx->lock);
 
 	/* add to temporarily list */
-	lock_get(ipsec_tmp_contexts_lock);
-	list_add_tail(&tmp->list, ipsec_tmp_contexts);
-	lock_release(ipsec_tmp_contexts_lock);
+	if (state == IPSEC_STATE_TMP) {
+		lock_get(ipsec_tmp_contexts_lock);
+		list_add_tail(&tmp->list, ipsec_tmp_contexts);
+		lock_release(ipsec_tmp_contexts_lock);
+	}
 }
 
 void ipsec_ctx_release_tmp_user(struct ipsec_user *user)
@@ -817,6 +867,7 @@ void ipsec_ctx_timer(unsigned int ticks, void* param)
 			break; /* finished */
 		prev = it;
 		IPSEC_CTX_UNREF(tmp->ctx);
+		LM_DBG("IPSec ctx %p removing\n", tmp->ctx);
 	}
 	/* unlink from the shared list */
 	if (prev)
@@ -848,10 +899,6 @@ void ipsec_ctx_remove_tmp(struct ipsec_ctx *ctx)
 
 	lock_get(ipsec_tmp_contexts_lock);
 	lock_get(&ctx->lock);
-	if (ctx->state != IPSEC_STATE_TMP) {
-		lock_release(&ctx->lock);
-		goto end;
-	}
 	list_for_each_safe(it, safe, ipsec_tmp_contexts) {
 		tmp = list_entry(it, struct ipsec_ctx_tmp, list);
 		if (tmp->ctx != ctx)
@@ -861,7 +908,6 @@ void ipsec_ctx_remove_tmp(struct ipsec_ctx *ctx)
 		shm_free(tmp);
 		break;
 	}
-end:
 	lock_release(&ctx->lock);
 	if (free) {
 		LM_BUG("removing an already deleted temporary context\n");

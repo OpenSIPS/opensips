@@ -110,13 +110,18 @@ int ipsec_sa_add(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 		enum ipsec_dir dir, int client);
 void ipsec_sa_rm(struct ipsec_socket *sock, struct ipsec_ctx *ctx,
 		enum ipsec_dir dir, int client);
+int ipsec_sa_add_all(struct ipsec_socket *sock, struct ipsec_ctx *ctx);
+void ipsec_sa_rm_all(struct ipsec_socket *sock, struct ipsec_ctx *ctx);
 
 /* ctx */
 struct ipsec_ctx *ipsec_ctx_new(sec_agree_body_t *sa, struct ip_addr *ip,
-		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik);
+		struct socket_info *ss, struct socket_info *sc, str *ck, str *ik,
+		unsigned int spi_pc, unsigned int spi_ps);
+struct ipsec_ctx *ipsec_ctx_find(struct ipsec_user *user, unsigned short port);
 void ipsec_ctx_push(struct ipsec_ctx *ctx);
 struct ipsec_ctx *ipsec_ctx_get(void);
-void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx);
+void ipsec_ctx_push_user(struct ipsec_user *user, struct ipsec_ctx *ctx, enum ipsec_state state);
+void ipsec_ctx_push_tmp_user(struct ipsec_user *user, struct ipsec_ctx *ctx);
 void ipsec_ctx_release_tmp_user(struct ipsec_user *user);
 void ipsec_ctx_release_user(struct ipsec_ctx *ctx);
 void ipsec_ctx_release(struct ipsec_ctx *ctx);

@@ -39,6 +39,7 @@
 #include "../../parser/digest/digest.h"
 #include "../../lib/aka.h"
 #include "../tm/tm_load.h"
+#include "../usrloc/usrloc.h"
 #include "ipsec_algo.h"
 #include "ipsec.h"
 #include "ipsec_user.h"
@@ -51,6 +52,7 @@ static int ipsec_default_client_port = 0;
 static int ipsec_default_server_port = 0;
 static str ipsec_allowed_algorithms;
 static struct tm_binds tm_ipsec;
+static usrloc_api_t ul_ipsec;
 static int ipsec_ctx_tm_idx = -1;
 
 static int ipsec_port = IPSEC_DEFAULT_PORT;
@@ -59,6 +61,7 @@ static void mod_destroy(void);
 static int proto_ipsec_init(struct proto_info *pi);
 static int proto_ipsec_init_listener(struct socket_info *si);
 static int ipsec_pre_script_handler( struct sip_msg *msg, void *param);
+static void ipsec_usrloc_handler(void *binding, ul_cb_type type, ul_cb_extra *_);
 
 int ipsec_tmp_timeout = IPSEC_DEFAULT_TMP_TOUT;
 
@@ -110,6 +113,7 @@ static const pv_export_t pvars[] = {
 static const dep_export_t deps = {
 	{ /* OpenSIPS module dependencies */
 		{ MOD_TYPE_DEFAULT, "tm", DEP_ABORT },
+		{ MOD_TYPE_DEFAULT, "usrloc", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "proto_udp", DEP_ABORT },
 		{ MOD_TYPE_DEFAULT, "proto_tcp", DEP_ABORT },
 		{ MOD_TYPE_NULL, NULL, 0 },
@@ -200,6 +204,22 @@ static int ipsec_sockets_init(void)
 	return 0;
 }
 
+static void ipsec_handle_register_req(struct cell* t, int type, struct tmcb_params *param)
+{
+	struct ipsec_ctx *ctx = ipsec_ctx_get();
+
+	if (!ctx) {
+		LM_DBG("no IPSec context\n");
+		return;
+	}
+
+	IPSEC_CTX_REF(ctx);
+	IPSEC_CTX_TM_PUT(t, ctx);
+	LM_DBG("saved IPSec context %p in t=%p\n", ctx, t);
+}
+
+
+
 static int mod_init(void)
 {
 	LM_INFO("initializing IPSec protocols\n");
@@ -223,6 +243,17 @@ static int mod_init(void)
 		return -1;
 	}
 
+	if (load_ul_api(&ul_ipsec) != 0) {
+		LM_ERR("can't load usrloc API\n");
+		return -1;
+	}
+
+	if (ul_ipsec.register_ulcb(UL_CONTACT_INSERT|UL_CONTACT_UPDATE|
+			UL_CONTACT_DELETE|UL_CONTACT_EXPIRE, ipsec_usrloc_handler) < 0) {
+		LM_ERR("can not register callback for usrloc\n");
+		return -1;
+	}
+
 	if (ipsec_add_allowed_algorithms(&ipsec_allowed_algorithms) < 0) {
 		LM_ERR("could not parse preferred_algorithms_pairs\n");
 		return -1;
@@ -240,6 +271,12 @@ static int mod_init(void)
 			REQ_TYPE_CB|RPL_TYPE_CB|PRE_SCRIPT_CB, NULL) != 0) {
 			LM_ERR("failed to register script callbacks\n");
 			return -1;
+	}
+
+	/* all good now - register for transaction creation */
+	if (tm_ipsec.register_tmcb(0, 0, TMCB_REQUEST_IN, ipsec_handle_register_req,
+			NULL, 0) <= 0) {
+		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
 	}
 
 	return 0;
@@ -641,12 +678,11 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	}
 
 	ret = -5;
-	ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc, &auth->ck, &auth->ik);
+	ctx = ipsec_ctx_new(sa, &req->rcv.src_ip, ss, sc, &auth->ck, &auth->ik, 0, 0);
 	if (!ctx) {
 		LM_ERR("could not allocate new IPSec ctx\n");
 		goto release_user;
 	}
-	IPSEC_CTX_REF(ctx);
 	ipsec_ctx_push(ctx);
 
 	sock = ipsec_sock_new();
@@ -657,43 +693,22 @@ static int w_ipsec_create(struct sip_msg *msg, int *_port_ps, int *_port_pc)
 	/*
 	 * Flows according to 3GPP TS 33.203
 	 */
-	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_IN, 0) < 0) {
-		LM_ERR("could not add UE(uc)->P(ps) SA\n");
+	if (ipsec_sa_add_all(sock, ctx) < 0)
 		goto close;
-	}
-	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_OUT, 0) < 0) {
-		LM_ERR("could not add P(ps)->UE(uc) SA\n");
-		goto release_sa1;
-	}
-	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_IN, 1) < 0) {
-		LM_ERR("could not add UE(us)->P(pc) SA\n");
-		goto release_sa2;
-	}
-	if (ipsec_sa_add(sock, ctx, IPSEC_POLICY_OUT, 1) < 0) {
-		LM_ERR("could not add P(pc)->UE(us) SA\n");
-		goto release_sa3;
-	}
 
 	/* all good now - add Security-Server */
 	if (ipsec_add_security_server(msg, ctx) < 0) {
 		LM_ERR("could not add Security-Server header\n");
-		goto release_sa4;
+		ipsec_sa_rm_all(sock, ctx);
+		goto close;
 	}
 	/* add the context as temporarily */
-	ipsec_ctx_push_user(user, ctx);
+	ipsec_ctx_push_user(user, ctx, IPSEC_STATE_TMP);
 	ipsec_sock_close(sock);
 
 	ipsec_release_user(user);
 
 	return 1;
-release_sa4:
-	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 1);
-release_sa3:
-	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 1);
-release_sa2:
-	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_OUT, 0);
-release_sa1:
-	ipsec_sa_rm(sock, ctx, IPSEC_POLICY_IN, 0);
 close:
 	ipsec_sock_close(sock);
 release_user:
@@ -830,35 +845,6 @@ static int pv_get_ipsec_ctx_ue(struct sip_msg *msg, pv_param_t *param,
 	return pv_get_ipsec_ctx(msg, param, res, 1);
 }
 
-static void ipsec_handle_register_rpl(struct cell* t, int type, struct tmcb_params *param)
-{
-	struct ipsec_ctx *ctx = IPSEC_CTX_TM_GET(t);
-	int remove = 0;
-
-	if (param->rpl == FAKED_REPLY || param->code >= 300) {
-		LM_DBG("REGISTER not authenticated (code=%d)!\n", param->code);
-		return;
-	}
-	/* TODO: extract expire and extend lifetime */
-	lock_get(&ctx->lock);
-	remove = (ctx->state == IPSEC_STATE_TMP);
-	ctx->state = IPSEC_STATE_OK;
-	lock_release(&ctx->lock);
-	if (remove)
-		ipsec_ctx_remove_tmp(ctx);
-}
-
-static void ipsec_handle_register_req(struct cell* t, int type, struct tmcb_params *param)
-{
-	struct ipsec_ctx *ctx = *param->param;
-
-	IPSEC_CTX_REF(ctx);
-	IPSEC_CTX_TM_PUT(t, ctx);
-	if (tm_ipsec.register_tmcb(param->req, t, TMCB_RESPONSE_OUT, ipsec_handle_register_rpl, NULL, NULL) <= 0)
-		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
-}
-
-
 static int ipsec_handle_register(struct sip_msg *msg, struct socket_info *si)
 {
 	struct ip_addr *ip;
@@ -906,10 +892,11 @@ static int ipsec_handle_register(struct sip_msg *msg, struct socket_info *si)
 
 	user = ipsec_find_user(&msg->rcv.src_ip, impi, impu);
 	if (!user) {
-		LM_WARN("received unprotected message from %s:%hu on IPSec listener %s:%s:%hu!\n",
+		LM_WARN("received unprotected message from %s:%hu on IPSec listener %s:%s:%hu (%.*s/%.*s)!\n",
 			ip_addr2a(&msg->rcv.src_ip), msg->rcv.src_port,
 			(msg->rcv.bind_address->proto==PROTO_UDP?"UDP":"TCP"),
-			ip_addr2a(&msg->rcv.dst_ip), msg->rcv.dst_port);
+			ip_addr2a(&msg->rcv.dst_ip), msg->rcv.dst_port,
+			impi->len, impi->s, impu->len, impu->s);
 		return SCB_RUN_ALL;
 	}
 
@@ -1040,13 +1027,6 @@ a P-CSCF for one IMPI at any one time.
 		pkg_free(is_protected);
 	}
 
-	IPSEC_CTX_REF(ctx);
-	/* all good now - register for transaction creation */
-	if (tm_ipsec.register_tmcb(0, 0, TMCB_REQUEST_IN, ipsec_handle_register_req,
-			ctx, (release_tmcb_param*)ipsec_ctx_release) <= 0) {
-		LM_ERR("cannot register TMCB_REQUEST_IN callback\n");
-		IPSEC_CTX_UNREF(ctx);
-	}
 	return SCB_RUN_ALL;
 drop_release:
 	lock_release(&ctx->lock);
@@ -1086,4 +1066,285 @@ static int ipsec_pre_script_handler(struct sip_msg *msg, void *param)
 	}
 
 	return ret;
+}
+
+static str ipsec_usrloc_ck = str_init("ipsec.ck");
+static str ipsec_usrloc_ik = str_init("ipsec.ik");
+static str ipsec_usrloc_alg = str_init("ipsec.alg");
+static str ipsec_usrloc_ealg = str_init("ipsec.ealg");
+static str ipsec_usrloc_impi = str_init("ipsec.impi");
+static str ipsec_usrloc_impu = str_init("ipsec.impu");
+static str ipsec_usrloc_spi_pc = str_init("ipsec.spi_pc");
+static str ipsec_usrloc_spi_ps = str_init("ipsec.spi_ps");
+static str ipsec_usrloc_spi_uc = str_init("ipsec.spi_uc");
+static str ipsec_usrloc_spi_us = str_init("ipsec.spi_us");
+static str ipsec_usrloc_port_pc = str_init("ipsec.port_pc");
+static str ipsec_usrloc_port_uc = str_init("ipsec.port_uc");
+static str ipsec_usrloc_port_us = str_init("ipsec.port_us");
+
+#define UL_GET_S_RET(_c, _s, _d, _e) \
+	({ \
+		int_str_t *ret = ul_ipsec.get_ucontact_key(_c, &(_s)); \
+		if (!ret || !ret->is_str) { \
+			LM_ERR("%s%s!\n", _d, (ret?"has invalid type":"not found")); \
+			_e; \
+		} \
+		(ret->s); \
+	})
+#define UL_GET_S(_c, _s, _d) UL_GET_S_RET(_c, _s, _d, return)
+
+#define UL_GET_I_RET(_c, _s, _d, _e) \
+	({ \
+		int_str_t *ret = ul_ipsec.get_ucontact_key(_c, &(_s)); \
+		if (!ret || ret->is_str) { \
+			LM_ERR("%s%s!\n", _d, (ret?"has invalid type":"not found")); \
+			_e; \
+		} \
+		(ret->i); \
+	})
+#define UL_GET_I(_c, _s, _d) UL_GET_I_RET(_c, _s, _d, return)
+
+#define INT_STR_S(_s) ({\
+		static int_str_t _is; \
+		_is.s = *(_s); \
+		_is.is_str = 1; \
+		(&_is); \
+	})
+
+#define INT_STR_I(_i) ({\
+		static int_str_t _is; \
+		_is.i = (_i); \
+		_is.is_str = 0; \
+		(&_is); \
+	})
+
+static struct ipsec_user *ipsec_usrloc_get_user(ucontact_t *contact)
+{
+	str impi, impu;
+	str *uris;
+	struct ip_addr *ip;
+	struct sip_uri uri;
+
+	if (contact->received.s)
+		uris = &contact->received;
+	else
+		uris = &contact->c;
+
+	if (parse_uri(uris->s, uris->len, &uri) < 0) {
+		LM_ERR("could not parse contact uri %.*s\n", uris->len, uris->s);
+		return NULL;
+	}
+
+	ip = str2ip(&uri.host);
+	if (!ip) {
+		ip = str2ip6(&uri.host);
+		if (!ip) {
+			LM_WARN("TODO: resolve host %.*s\n", uri.host.len, uri.host.s);
+			return NULL;
+		}
+	}
+	impi = UL_GET_S_RET(contact, ipsec_usrloc_impi, "IMPI", return NULL);
+	impu = UL_GET_S_RET(contact, ipsec_usrloc_impu, "IMPU", return NULL);
+	return ipsec_get_user(ip, &impi, &impu);
+}
+
+static void ipsec_usrloc_restore(ucontact_t *contact)
+{
+	str ck, ik;
+	int spi_pc, spi_ps, port_pc;
+	sec_agree_body_t sa;
+	struct socket_info *sc, *ss;
+	struct ipsec_user *user;
+	struct ipsec_socket *sock;
+	struct ipsec_ctx *ctx;
+	LM_DBG("restoring IPSec context for %.*s (%.*s)\n",
+			contact->aor->len, contact->aor->s,
+			contact->c.len, contact->c.s);
+
+	/* simulate a sec_agree_body */
+	memset(&sa, 0, sizeof sa);
+	sa.mechanism = SEC_AGREE_MECHANISM_IPSEC_3GPP;
+	sa.mechanism_str = str_init("ipsec-3gpp");
+	sa.ts3gpp.pref = 1000;
+	sa.ts3gpp.pref_str = str_init("1000");
+	ck = UL_GET_S(contact, ipsec_usrloc_ck, "CK");
+	ik = UL_GET_S(contact, ipsec_usrloc_ik, "IK");
+	sa.ts3gpp.alg_str = UL_GET_S(contact, ipsec_usrloc_alg, "ALG");
+	sa.ts3gpp.prot_str = str_init("esp");
+	sa.ts3gpp.mod_str = str_init("trans");
+	sa.ts3gpp.ealg_str = UL_GET_S(contact, ipsec_usrloc_ealg, "EALG");
+	spi_pc = UL_GET_I(contact, ipsec_usrloc_spi_pc, "SPI-PC");
+	spi_ps = UL_GET_I(contact, ipsec_usrloc_spi_ps, "SPI-PS");
+	sa.ts3gpp.spi_c = UL_GET_I(contact, ipsec_usrloc_spi_uc, "SPI-UC");
+	sa.ts3gpp.spi_s = UL_GET_I(contact, ipsec_usrloc_spi_us, "SPI-US");
+	port_pc = UL_GET_I(contact, ipsec_usrloc_port_pc, "port_pc");
+	sa.ts3gpp.port_c = UL_GET_I(contact, ipsec_usrloc_port_uc, "port_uc");
+	sa.ts3gpp.port_s = UL_GET_I(contact, ipsec_usrloc_port_us, "port_us");
+
+	ss = (struct socket_info *)contact->sock;
+	sc = find_ipsec_socket_info(&ss->address, port_pc, 0, 0);
+	if (!sc) {
+		LM_INFO("could not find a client listener on %.*s:%d!\n",
+				ss->name.len, ss->name.s, port_pc);
+		return;
+	}
+
+	user = ipsec_usrloc_get_user(contact);
+	if (!user) {
+		LM_ERR("could not get new user\n");
+		return;
+	}
+
+	ctx = ipsec_ctx_new(&sa, &user->ip, ss, sc, &ck, &ik, spi_ps, spi_pc);
+	if (!ctx) {
+		LM_ERR("could not allocate new IPSec ctx\n");
+		goto release_user;
+	}
+
+	sock = ipsec_sock_new();
+	if (!sock) {
+		LM_ERR("could not create IPSec socket\n");
+		goto release_ctx;
+	}
+	/*
+	 * Flows according to 3GPP TS 33.203
+	 */
+	if (ipsec_sa_add_all(sock, ctx) < 0)
+		goto close;
+
+	/* add the context as temporarily */
+	ipsec_ctx_push_user(user, ctx, IPSEC_STATE_OK);
+	ipsec_sock_close(sock);
+
+	ipsec_release_user(user);
+	return;
+close:
+	ipsec_sock_close(sock);
+release_ctx:
+	ipsec_ctx_release(ctx);
+release_user:
+	ipsec_release_user(user);
+}
+
+static void ipsec_usrloc_insert(ucontact_t *contact)
+{
+	struct cell *t;
+	struct ipsec_ctx *ctx;
+	int remove_tmp = 0;
+
+	/* if we have a transaction, we need to have a context as well */
+	t = tm_ipsec.t_gett();
+	if (!t || t == T_UNDEFINED) {
+		/* this is an insert after a load */
+		ipsec_usrloc_restore(contact);
+		return;
+	}
+	ctx = IPSEC_CTX_TM_GET(t);
+	LM_DBG("searched IPSec context %p in t=%p\n", ctx, t);
+	if (!ctx) {
+		LM_DBG("no IPSec context for %.*s (%.*s)\n",
+				contact->aor->len, contact->aor->s,
+				contact->c.len, contact->c.s);
+		return;
+	}
+	LM_DBG("saving IPSec context for %.*s (%.*s)\n",
+			contact->aor->len, contact->aor->s,
+			contact->c.len, contact->c.s);
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_ck, INT_STR_S(&ctx->ck));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_ik, INT_STR_S(&ctx->ik));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_impi, INT_STR_S(&ctx->user->impi));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_impu, INT_STR_S(&ctx->user->impu));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_alg, INT_STR_S(_str(ctx->alg->name)));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_ealg, INT_STR_S(_str(ctx->ealg->name)));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_spi_pc, INT_STR_I(ctx->me.spi_c));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_spi_ps, INT_STR_I(ctx->me.spi_s));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_spi_uc, INT_STR_I(ctx->ue.spi_c));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_spi_us, INT_STR_I(ctx->ue.spi_s));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_pc, INT_STR_I(ctx->me.port_c));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_uc, INT_STR_I(ctx->ue.port_c));
+	ul_ipsec.put_ucontact_key(contact, &ipsec_usrloc_port_us, INT_STR_I(ctx->ue.port_s));
+	
+	/* all good mark the SA as OK */
+	lock_get(&ctx->lock);
+	remove_tmp = (ctx->state == IPSEC_STATE_TMP);
+	ctx->state = IPSEC_STATE_OK;
+	lock_release(&ctx->lock);
+	if (remove_tmp)
+		ipsec_ctx_remove_tmp(ctx);
+}
+
+static void ipsec_usrloc_update(ucontact_t *contact,
+		str *prev_host, unsigned short prev_port)
+{
+	struct ipsec_user *user;
+	struct ipsec_ctx *ctx;
+
+	LM_DBG("updating IPSec context for %.*s (%.*s)\n",
+			contact->aor->len, contact->aor->s,
+			contact->c.len, contact->c.s);
+	user = ipsec_usrloc_get_user(contact);
+	if (!user) {
+		LM_ERR("could not find an IPSec user for this contact!\n");
+		return;
+	}
+	ctx = ipsec_ctx_find(user, prev_port);
+	if (ctx)
+		ipsec_ctx_release(ctx);
+	else
+		LM_ERR("could not find SA on port %hu\n", prev_port);
+	ipsec_release_user(user);
+	/* now overwrite the information with the new SA */
+	ipsec_usrloc_insert(contact);
+}
+
+static void ipsec_usrloc_delete(ucontact_t *contact)
+{
+	struct ipsec_user *user;
+	struct ipsec_ctx *ctx;
+	unsigned short port_uc;
+
+	LM_DBG("removing IPSec context for %.*s (%.*s)\n",
+			contact->aor->len, contact->aor->s,
+			contact->c.len, contact->c.s);
+	user = ipsec_usrloc_get_user(contact);
+	if (!user) {
+		LM_ERR("could not find an IPSec user for this contact!\n");
+		return;
+	}
+	port_uc = UL_GET_I(contact, ipsec_usrloc_port_uc, "port_uc");
+	ctx = ipsec_ctx_find(user, port_uc);
+	if (ctx)
+		ipsec_ctx_release(ctx);
+	else
+		LM_ERR("could not find SA on port %hu\n", port_uc);
+	ipsec_release_user(user);
+}
+#undef INT_STR_I
+#undef INT_STR_S
+#undef UL_GET_S
+#undef UL_GET_I
+#undef UL_GET_S_RET
+#undef UL_GET_I_RET
+
+void ipsec_usrloc_handler(void *binding, ul_cb_type type, ul_cb_extra *extra)
+{
+	ucontact_t *contact = (ucontact_t*)binding;
+	switch (type) {
+		case UL_CONTACT_INSERT:
+			ipsec_usrloc_insert(contact);
+			break;
+		case UL_CONTACT_UPDATE:
+			if (extra)
+				ipsec_usrloc_update(contact, &extra->contact_update.prev_name,
+						extra->contact_update.prev_port);
+			else
+				ipsec_usrloc_update(contact, NULL, 0);
+			break;
+		case UL_CONTACT_DELETE:
+		case UL_CONTACT_EXPIRE:
+			ipsec_usrloc_delete(contact);
+			break;
+		default:
+			break;
+	}
 }
