@@ -846,7 +846,7 @@ static int ws_parse_req_handshake(struct tcp_connection *c, char *msg, int len)
 	tmp_msg.buf = tmp_msg.unparsed = msg;
 	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0,0) < 0) {
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
-		goto error;
+		goto ws_error;
 	}
 	/* verify headers according to RFC6455 */
 	for (hf = tmp_msg.headers; hf; hf = hf->next) {
@@ -1124,7 +1124,7 @@ static int ws_parse_rpl_handshake(struct tcp_connection *c, char *msg, int len)
 	tmp_msg.buf = tmp_msg.unparsed = msg;
 	if (parse_headers_aux(&tmp_msg, HDR_EOH_F, 0, 0) < 0) {
 		LM_ERR("cannot parse headers\n%.*s\n", len, msg);
-		goto error;
+		goto ws_error;
 	}
 	/* verify headers according to RFC6455 */
 	for (hf = tmp_msg.headers; hf; hf = hf->next) {
