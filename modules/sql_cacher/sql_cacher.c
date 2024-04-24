@@ -656,6 +656,9 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		memcpy(cdb_val.s + strs_offset, str_val.s, str_val.len);
 		strs_offset += str_val.len;
 	}
+	/* adjust the useful size to how much was actually written;
+	 * The initial value could be over-estimated by get_cdb_val_size() */
+	cdb_val.len = strs_offset;
 
 	/* make sure the key is string */
 	val_type = VAL_TYPE(key);
