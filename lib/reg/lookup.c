@@ -73,7 +73,7 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d,
 
 	if (lookup_flags) {
 		flags = lookup_flags->flags;
-		if (lookup_flags->ua_re_is_set)
+		if (flags & REG_LOOKUP_UAFILTER_FLAG)
 			ua_re = &lookup_flags->ua_re;
 		max_latency = lookup_flags->max_latency;
 	}
@@ -208,8 +208,6 @@ done:
 		ul.unlock_udomain(d, &aor);
 	}
 out_cleanup:
-	if (flags & REG_LOOKUP_UAFILTER_FLAG)
-		regfree(ua_re);
 	return ret;
 }
 
@@ -430,8 +428,6 @@ int reg_fixup_lookup_flags(void** param)
 			return -1;
 		}
 		*(p + re_len) = '/';
-
-		lookup_flags->ua_re_is_set = 1;
 	}
 
 	/* max-ping-latency */
@@ -451,8 +447,13 @@ int reg_fixup_lookup_flags(void** param)
 
 int reg_fixup_free_lookup_flags(void** param)
 {
-	if (*param)
-		pkg_free(*param);
+	struct lookup_flags *lookup_flags = (struct lookup_flags *)*param;
+
+	if (lookup_flags) {
+		if (lookup_flags->flags & REG_LOOKUP_UAFILTER_FLAG)
+			regfree(&lookup_flags->ua_re);
+		pkg_free(lookup_flags);
+	}
 	return 0;
 }
 

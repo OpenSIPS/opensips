@@ -48,7 +48,6 @@ typedef enum _lookup_rc {
 struct lookup_flags {
 	unsigned int flags;
 	regex_t ua_re;
-	char ua_re_is_set;
 	int max_latency;
 };
 
