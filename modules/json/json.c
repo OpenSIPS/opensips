@@ -46,6 +46,7 @@
 #include "../rr/api.h"
 #include "../../lib/json/opensips_json_c_helper.h"
 
+int json_disable_escape_forward_slash = 0;
 
 enum
 {
@@ -138,6 +139,12 @@ static const pv_export_t mod_items[] = {
 	{ {0, 0}, 0, 0, 0, 0, 0, 0, 0 }
 };
 
+static const param_export_t params[] = {
+	{"disable_escape_forward_slash", INT_PARAM, &json_disable_escape_forward_slash},
+	{0, 0, 0}
+};
+
+
 struct module_exports exports= {
 	"json",        /* module's name */
 	MOD_TYPE_DEFAULT,/* class of this module */
@@ -147,7 +154,7 @@ struct module_exports exports= {
 	NULL,            /* OpenSIPS module dependencies */
 	cmds,            /* exported functions */
 	0,               /* exported async functions */
-	0,      /* param exports */
+	params,      /* param exports */
 	0,       /* exported statistics */
 	0,         /* exported MI functions */
 	mod_items,       /* exported pseudo-variables */
@@ -348,7 +355,11 @@ error:
 
 int pv_get_json(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
 {
-	return pv_get_json_ext(msg, pvp, val, JSON_C_TO_STRING_SPACED);
+  int flags = JSON_C_TO_STRING_SPACED;
+  if (json_disable_escape_forward_slash)
+    flags |= JSON_C_TO_STRING_NOSLASHESCAPE;
+
+  return pv_get_json_ext(msg, pvp, val, flags);
 }
 
 int pv_get_json_compact(struct sip_msg* msg,  pv_param_t* pvp, pv_value_t* val)
