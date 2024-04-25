@@ -663,6 +663,8 @@ phostport: proto COLON listen_id	{ IFOR();
 
 phostportrange: proto COLON MULT				{ IFOR();
 				$$=mk_listen_id(0, $1, 0); }
+			| proto COLON listen_id	{ IFOR();
+				$$=mk_listen_id_range($3, $1, 0); }
 			| proto COLON MULT COLON portrange	{ IFOR();
 				$$=mk_listen_id_range(0, $1, $5); }
 			| proto COLON listen_id COLON portrange	{ IFOR();
