@@ -67,10 +67,10 @@ int sca_set_called_line(struct sip_msg *msg, str *line);
 /* module exported commands */
 static cmd_export_t cmds[] ={
 	{"sca_set_calling_line", (cmd_function)sca_set_calling_line, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{"sca_set_called_line",  (cmd_function)sca_set_called_line, {
-		{CMD_PARAM_STR,0,0}, {0,0,0}},
+		{CMD_PARAM_STR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		REQUEST_ROUTE},
 	{0,0,{{0,0,0}},0}
 };
