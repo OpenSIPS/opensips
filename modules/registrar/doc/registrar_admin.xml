@@ -571,7 +571,7 @@ save("location", , , "vip");
 
 	<section id="func_remove" xreflabel="remove()">
 		<title>
-		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop][, [sip_instance]]]])</function>
+		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop][, [sip_instance], [bflags]]]])</function>
 		</title>
 		<para>
 		Explicitly remove contacts behind a given address-of-record.
@@ -609,6 +609,12 @@ save("location", , , "vip");
 			<para>
 				<emphasis>sip_instance (string, optional)</emphasis> - a
 				"+sip.instance" value to be used for filtering purposes.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>blfags (string, optional)</emphasis> - a
+				Branch flags to be used for filtering purposes.
 			</para>
 		</listitem>
 		</itemizedlist>
