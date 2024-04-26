@@ -601,7 +601,7 @@ int handle_subscribe(struct sip_msg* msg, int* force_active_param, str* tag)
 	reply_code= 500;
 	reply_str= pu_500_rpl;
 
-	if (tag) {
+	if (is_presence_cluster_enabled() && tag) {
 		subs.sh_tag = *tag;
 		if (c_api.shtag_get( &subs.sh_tag, pres_cluster_id)<0) {
 			LM_ERR("failed to lookup the <%.*s> sharing tag\n",
