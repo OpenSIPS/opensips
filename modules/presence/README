@@ -19,24 +19,25 @@ Presence Module
               1.4.3. cluster_id (int)
               1.4.4. cluster_federation_mode (str)
               1.4.5. cluster_pres_events (str)
-              1.4.6. expires_offset (int)
-              1.4.7. max_expires_subscribe (int)
-              1.4.8. max_expires_publish (int)
-              1.4.9. contact_user (str)
-              1.4.10. enable_sphere_check (int)
-              1.4.11. waiting_subs_daysno (int)
-              1.4.12. mix_dialog_presence (int)
-              1.4.13. bla_presentity_spec (str)
-              1.4.14. bla_fix_remote_target (int)
-              1.4.15. notify_offline_body (int)
-              1.4.16. end_sub_on_timeout (int)
-              1.4.17. clean_period (int)
-              1.4.18. db_update_period (int)
-              1.4.19. presentity_table(str)
-              1.4.20. active_watchers_table(str)
-              1.4.21. watchers_table(str)
-              1.4.22. subs_htable_size (int)
-              1.4.23. pres_htable_size (int)
+              1.4.6. cluster_be_active_shtag (str)
+              1.4.7. expires_offset (int)
+              1.4.8. max_expires_subscribe (int)
+              1.4.9. max_expires_publish (int)
+              1.4.10. contact_user (str)
+              1.4.11. enable_sphere_check (int)
+              1.4.12. waiting_subs_daysno (int)
+              1.4.13. mix_dialog_presence (int)
+              1.4.14. bla_presentity_spec (str)
+              1.4.15. bla_fix_remote_target (int)
+              1.4.16. notify_offline_body (int)
+              1.4.17. end_sub_on_timeout (int)
+              1.4.18. clean_period (int)
+              1.4.19. db_update_period (int)
+              1.4.20. presentity_table(str)
+              1.4.21. active_watchers_table(str)
+              1.4.22. watchers_table(str)
+              1.4.23. subs_htable_size (int)
+              1.4.24. pres_htable_size (int)
 
         1.5. Exported Functions
 
@@ -101,26 +102,27 @@ Presence Module
    1.3. Set cluster_id parameter
    1.4. Set cluster_federation_mode parameter
    1.5. Set cluster_pres_events parameter
-   1.6. Set expires_offset parameter
-   1.7. Set max_expires_subscribe parameter
-   1.8. Set max_expires_publish parameter
-   1.9. Set contact_user parameter
-   1.10. Set enable_sphere_check parameter
-   1.11. Set waiting_subs_daysno parameter
-   1.12. Set mix_dialog_presence parameter
-   1.13. Set bla_presentity_spec parameter
-   1.14. Set bla_fix_remote_target parameter
-   1.15. Set notify_offline_body parameter
-   1.16. Set end_sub_on_timeout parameter
-   1.17. Set clean_period parameter
-   1.18. Set db_update_period parameter
-   1.19. Set presentity_table parameter
-   1.20. Set active_watchers_table parameter
-   1.21. Set watchers_table parameter
-   1.22. Set subs_htable_size parameter
-   1.23. Set pres_htable_size parameter
-   1.24. handle_publish usage
-   1.25. handle_subscribe usage
+   1.6. Set cluster_be_active_shtag parameter
+   1.7. Set expires_offset parameter
+   1.8. Set max_expires_subscribe parameter
+   1.9. Set max_expires_publish parameter
+   1.10. Set contact_user parameter
+   1.11. Set enable_sphere_check parameter
+   1.12. Set waiting_subs_daysno parameter
+   1.13. Set mix_dialog_presence parameter
+   1.14. Set bla_presentity_spec parameter
+   1.15. Set bla_fix_remote_target parameter
+   1.16. Set notify_offline_body parameter
+   1.17. Set end_sub_on_timeout parameter
+   1.18. Set clean_period parameter
+   1.19. Set db_update_period parameter
+   1.20. Set presentity_table parameter
+   1.21. Set active_watchers_table parameter
+   1.22. Set watchers_table parameter
+   1.23. Set subs_htable_size parameter
+   1.24. Set pres_htable_size parameter
+   1.25. handle_publish usage
+   1.26. handle_subscribe usage
    2.1. presence_api_t structure
 
 Chapter 1. Admin Guide
@@ -283,41 +285,67 @@ modparam("presence", "cluster_pres_events" ,"presence, dialog;sla, messa
 ge-summary")
 ...
 
-1.4.6. expires_offset (int)
+1.4.6. cluster_be_active_shtag (str)
+
+   The name of a cluster sharing tag to be used to indicate when
+   this node (as part of the cluster) should be active or not. If
+   the sharing tag is off (or as backup), the node will become
+   inactive from clustering perspective, meaning not sending and
+   not accepting any presence related cluster traffic.
+
+   This ability of a node to become inactive may be used when
+   creating a federated cluster where 2 nodes are acting as a
+   local active-backup setup (for local High Availability
+   purposes).
+
+   This parameter has meaning only in clustering mode. If not
+   defined, the node will be active all the time.
+
+   For more on presence clustering see the Section 1.2, “Presence
+   clustering” chapter.
+
+   Default value is “empty” (not tag define).
+
+   Example 1.6. Set cluster_be_active_shtag parameter
+...
+modparam("presence", "cluster_be_active_shtag" ,"local_ha")
+...
+
+1.4.7. expires_offset (int)
 
    The extra time to store a subscription/publication.
 
    Default value is “0”.
 
-   Example 1.6. Set expires_offset parameter
+   Example 1.7. Set expires_offset parameter
 ...
 modparam("presence", "expires_offset", 10)
 ...
 
-1.4.7. max_expires_subscribe (int)
+1.4.8. max_expires_subscribe (int)
 
    The the maximum admissible expires value for SUBSCRIBE
    messages.
 
    Default value is “3600”.
 
-   Example 1.7. Set max_expires_subscribe parameter
+   Example 1.8. Set max_expires_subscribe parameter
 ...
 modparam("presence", "max_expires_subscribe", 3600)
 ...
 
-1.4.8. max_expires_publish (int)
+1.4.9. max_expires_publish (int)
 
    The the maximum admissible expires value for PUBLISH messages.
 
    Default value is “3600”.
 
-   Example 1.8. Set max_expires_publish parameter
+   Example 1.9. Set max_expires_publish parameter
 ...
 modparam("presence", "max_expires_publish", 3600)
 ...
 
-1.4.9. contact_user (str)
+1.4.10. contact_user (str)
 
    This is the username that will be used in the Contact header
    for the 200 OK replies to SUBSCRIBE and in the following
@@ -331,12 +359,12 @@ modparam("presence", "max_expires_publish", 3600)
 
    Default value is “presence”.
 
-   Example 1.9. Set contact_user parameter
+   Example 1.10. Set contact_user parameter
 ...
 modparam("presence", "contact_user", "presence")
 ...
 
-1.4.10. enable_sphere_check (int)
+1.4.11. enable_sphere_check (int)
 
    This parameter is a flag that should be set if permission rules
    include sphere checking. The sphere information is expected to
@@ -347,12 +375,12 @@ modparam("presence", "contact_user", "presence")
 
    Default value is “0 ”.
 
-   Example 1.10. Set enable_sphere_check parameter
+   Example 1.11. Set enable_sphere_check parameter
 ...
 modparam("presence", "enable_sphere_check", 1)
 ...
 
-1.4.11. waiting_subs_daysno (int)
+1.4.12. waiting_subs_daysno (int)
 
    The number of days to keep the record of a subscription in
    server database if the subscription is in pending or waiting
@@ -362,12 +390,12 @@ modparam("presence", "enable_sphere_check", 1)
 
    Default value is “3” days. Maximum accepted value is 30 days.
 
-   Example 1.11. Set waiting_subs_daysno parameter
+   Example 1.12. Set waiting_subs_daysno parameter
 ...
 modparam("presence", "waiting_subs_daysno", 2)
 ...
 
-1.4.12. mix_dialog_presence (int)
+1.4.13. mix_dialog_presence (int)
 
    This module parameter enables a very nice feature in the
    presence server - generating presence information from dialogs
@@ -379,12 +407,12 @@ modparam("presence", "waiting_subs_daysno", 2)
 
    Default value is “0”.
 
-   Example 1.12. Set mix_dialog_presence parameter
+   Example 1.13. Set mix_dialog_presence parameter
 ...
 modparam("presence", "mix_dialog_presence", 1)
 ...
 
-1.4.13. bla_presentity_spec (str)
+1.4.14. bla_presentity_spec (str)
 
    By default the presentity uri for BLA subscribes
    (event=dialog;sla) is computed from contact username + from
@@ -398,12 +426,12 @@ modparam("presence", "mix_dialog_presence", 1)
 
    Default value is “NULL”.
 
-   Example 1.13. Set bla_presentity_spec parameter
+   Example 1.14. Set bla_presentity_spec parameter
 ...
 modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
 ...
 
-1.4.14. bla_fix_remote_target (int)
+1.4.15. bla_fix_remote_target (int)
 
    Polycom has a bug in the bla implementation. It inserts the
    remote IP contact in the Notify body and when a phone picks up
@@ -418,12 +446,12 @@ modparam("presence", "bla_presentity_spec", "$var(bla_pres)")
 
    Default value is “1”.
 
-   Example 1.14. Set bla_fix_remote_target parameter
+   Example 1.15. Set bla_fix_remote_target parameter
 ...
 modparam("presence", "bla_fix_remote_target", 0)
 ...
 
-1.4.15. notify_offline_body (int)
+1.4.16. notify_offline_body (int)
 
    If this parameter is set, when no published info is found for a
    user, the presence server will generate a dummy body with
@@ -432,12 +460,12 @@ modparam("presence", "bla_fix_remote_target", 0)
 
    Default value is “0”.
 
-   Example 1.15. Set notify_offline_body parameter
+   Example 1.16. Set notify_offline_body parameter
 ...
 modparam("presence", "notify_offline_body", 1)
 ...
 
-1.4.16. end_sub_on_timeout (int)
+1.4.17. end_sub_on_timeout (int)
 
    If a presence subscription should be automatically terminated
    (destroyed) when receiving a SIP timeout (408) for a sent
@@ -445,24 +473,24 @@ modparam("presence", "notify_offline_body", 1)
 
    Default value is “1” (enabled).
 
-   Example 1.16. Set end_sub_on_timeout parameter
+   Example 1.17. Set end_sub_on_timeout parameter
 ...
 modparam("presence", "end_sub_on_timeout", 0)
 ...
 
-1.4.17. clean_period (int)
+1.4.18. clean_period (int)
 
    The period at which to clean the expired subscription dialogs.
 
    Default value is “100”. A zero or negative value disables this
    activity.
 
-   Example 1.17. Set clean_period parameter
+   Example 1.18. Set clean_period parameter
 ...
 modparam("presence", "clean_period", 100)
 ...
 
-1.4.18. db_update_period (int)
+1.4.19. db_update_period (int)
 
    The period at which to synchronize cached subscriber info with
    the database.
@@ -470,46 +498,46 @@ modparam("presence", "clean_period", 100)
    Default value is “100”. A zero or negative value disables
    synchronization.
 
-   Example 1.18. Set db_update_period parameter
+   Example 1.19. Set db_update_period parameter
 ...
 modparam("presence", "db_update_period", 100)
 ...
 
-1.4.19. presentity_table(str)
+1.4.20. presentity_table(str)
 
    The name of the db table where Publish information are stored.
 
    Default value is “presentity”.
 
-   Example 1.19. Set presentity_table parameter
+   Example 1.20. Set presentity_table parameter
 ...
 modparam("presence", "presentity_table", "presentity")
 ...
 
-1.4.20. active_watchers_table(str)
+1.4.21. active_watchers_table(str)
 
    The name of the db table where active subscription information
    are stored.
 
    Default value is “active_watchers”.
 
-   Example 1.20. Set active_watchers_table parameter
+   Example 1.21. Set active_watchers_table parameter
 ...
 modparam("presence", "active_watchers_table", "active_watchers")
 ...
 
-1.4.21. watchers_table(str)
+1.4.22. watchers_table(str)
 
    The name of the db table where subscription states are stored.
 
    Default value is “watchers”.
 
-   Example 1.21. Set watchers_table parameter
+   Example 1.22. Set watchers_table parameter
 ...
 modparam("presence", "watchers_table", "watchers")
 ...
 
-1.4.22. subs_htable_size (int)
+1.4.23. subs_htable_size (int)
 
    The size of the hash table to store subscription dialogs. This
    parameter will be used as the power of 2 when computing table
@@ -517,12 +545,12 @@ modparam("presence", "watchers_table", "watchers")
 
    Default value is “9 (512)”.
 
-   Example 1.22. Set subs_htable_size parameter
+   Example 1.23. Set subs_htable_size parameter
 ...
 modparam("presence", "subs_htable_size", 11)
 ...
 
-1.4.23. pres_htable_size (int)
+1.4.24. pres_htable_size (int)
 
    The size of the hash table to store publish records. This
    parameter will be used as the power of 2 when computing table
@@ -530,7 +558,7 @@ modparam("presence", "subs_htable_size", 11)
 
    Default value is “9 (512)”.
 
-   Example 1.23. Set pres_htable_size parameter
+   Example 1.24. Set pres_htable_size parameter
 ...
 modparam("presence", "pres_htable_size", 11)
 ...
@@ -561,7 +589,7 @@ modparam("presence", "pres_htable_size", 11)
 
    The module sends an appropriate stateless reply in all cases.
 
-   Example 1.24. handle_publish usage
+   Example 1.25. handle_publish usage
 ...
         if(is_method("PUBLISH"))
         {
@@ -614,7 +642,7 @@ modparam("presence", "pres_htable_size", 11)
 
    The module sends an appropriate stateless reply in all cases.
 
-   Example 1.25. handle_subscribe usage
+   Example 1.26. handle_subscribe usage
 ...
 if($rm=="SUBSCRIBE")
     handle_subscribe();
@@ -1033,7 +1061,7 @@ Chapter 3. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Anca Vamanu 651 247 24146 12623
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 148 92 3103 1826
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 152 94 3224 1843
    3. Razvan Crainea (@razvancrainea) 35 28 423 163
    4. Vlad Patrascu (@rvlad-patrascu) 32 18 630 477
    5. Liviu Chircu (@liviuchircu) 30 20 256 375
@@ -1073,9 +1101,9 @@ Chapter 3. Contributors
 
    Table 3.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
-   2.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Jul 2021
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Oct 2006 - Apr 2024
+   2.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2022
+   3.  Liviu Chircu (@liviuchircu)         Mar 2014 - Dec 2021
    4.  Razvan Crainea (@razvancrainea)     Sep 2011 - Jun 2021
    5.  Walter Doekes (@wdoekes)            Apr 2010 - Apr 2021
    6.  Maksym Sobolyev (@sobomax)          Jan 2021 - Jan 2021
@@ -1101,15 +1129,15 @@ Chapter 4. Documentation
 
 4.1. Contributors
 
-   Last edited by: Ovidiu Sas (@ovidiusas), Vlad Patrascu
-   (@rvlad-patrascu), Walter Doekes (@wdoekes), Dan Pascu
-   (@danpascu), Liviu Chircu (@liviuchircu), Bogdan-Andrei Iancu
-   (@bogdan-iancu), Razvan Crainea (@razvancrainea), Peter
-   Lemenkov (@lemenkov), Saúl Ibarra Corretgé (@saghul), Anca
-   Vamanu, Kennard White, Angel Marin, Kobi Eshun (@ekobi), Klaus
-   Darilion, Henning Westerholt (@henningw), Daniel-Constantin
-   Mierla (@miconda), Edson Gellert Schubert, Juha Heinanen
-   (@juha-h), Elena-Ramona Modroiu.
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Ovidiu Sas
+   (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Walter Doekes
+   (@wdoekes), Dan Pascu (@danpascu), Liviu Chircu (@liviuchircu),
+   Razvan Crainea (@razvancrainea), Peter Lemenkov (@lemenkov),
+   Saúl Ibarra Corretgé (@saghul), Anca Vamanu, Kennard White,
+   Angel Marin, Kobi Eshun (@ekobi), Klaus Darilion, Henning
+   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
+   Edson Gellert Schubert, Juha Heinanen (@juha-h), Elena-Ramona
+   Modroiu.
 
    Documentation Copyrights:
 
