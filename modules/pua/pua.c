@@ -874,16 +874,17 @@ error:
 static void db_update(unsigned int ticks,void *param)
 {
 	ua_pres_t* p= NULL;
-	db_key_t q_cols[19];
-	db_val_t q_vals[19];
+	db_key_t q_cols[20];
+	db_val_t q_vals[20];
 	db_key_t db_cols[5];
 	db_val_t db_vals[5];
 	db_op_t  db_ops[1] ;
 	int n_query_cols= 0, n_query_update= 0;
 	int n_update_cols= 0;
 	int i;
-	int puri_col,touri_col,pid_col,expires_col,flag_col,etag_col,tuple_col,event_col;
-	int watcher_col,callid_col,totag_col,fromtag_col,record_route_col,cseq_col;
+	int puri_col,touri_col,pid_col,expires_col,flag_col,etag_col,tuple_col;
+	int event_col, watcher_col, callid_col, totag_col, fromtag_col;
+	int record_route_col, cseq_col, shtag_col;
 	int no_lock= 0, contact_col, desired_expires_col, extra_headers_col;
 	int remote_contact_col, version_col;
 
@@ -979,6 +980,11 @@ static void db_update(unsigned int ticks,void *param)
 	q_cols[touri_col= n_query_cols] = &str_to_uri_col;
 	q_vals[touri_col].type = DB_STR;
 	q_vals[touri_col].nul = 0;
+	n_query_cols++;
+
+	q_cols[shtag_col= n_query_cols] = &str_sh_tag_col;
+	q_vals[shtag_col].type = DB_STR;
+	q_vals[shtag_col].nul = 0;
 	n_query_cols++;
 
 	/* must keep this the last  column to be inserted */
@@ -1121,6 +1127,10 @@ static void db_update(unsigned int ticks,void *param)
 					q_vals[record_route_col].val.str_val = p->record_route;
 					q_vals[contact_col].val.str_val = p->contact;
 					q_vals[remote_contact_col].val.str_val = p->remote_contact;
+					if (is_pua_cluster_enabled() && p->sh_tag.len)
+						q_vals[shtag_col].val.str_val = p->sh_tag;
+					else
+						q_vals[shtag_col].nul = 1;
 					q_vals[extra_headers_col].val.str_val = p->extra_headers;
 
 					if(pua_dbf.insert(pua_db, q_cols, q_vals, n_query_cols)< 0)
