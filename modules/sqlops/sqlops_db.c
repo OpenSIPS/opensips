@@ -48,6 +48,8 @@ struct db_url *default_db_url = NULL;
 
 int query_id_max_len = 1024;
 
+int sqlops_bigint2str = 0;
+
 /* array of db urls */
 static struct db_url *db_urls = NULL;  /* array of database urls */
 static unsigned int no_db_urls = 0;
@@ -1069,9 +1071,16 @@ int db_query_print_one_result(struct sip_msg *msg, const db_res_t *db_res,
 						(int)RES_ROWS(db_res)[0].values[j].val.bitmap_val;
 				break;
 				case DB_BIGINT:
-					val.flags = PV_VAL_INT|PV_TYPE_INT;
-					val.ri =
-						(int)RES_ROWS(db_res)[0].values[j].val.bigint_val;
+					if (sqlops_bigint2str) {
+						val.flags = PV_VAL_STR;
+						val.rs.s = bigint2str(
+							RES_ROWS(db_res)[0].values[j].val.bigint_val,
+							&val.rs.len);
+					} else {
+						val.flags = PV_VAL_INT|PV_TYPE_INT;
+						val.ri =
+							(int)RES_ROWS(db_res)[0].values[j].val.bigint_val;
+					}
 				break;
 				case DB_DOUBLE:
 					val.flags = PV_VAL_INT|PV_TYPE_INT;
@@ -1176,8 +1185,15 @@ int db_query_print_results(struct sip_msg *msg, const db_res_t *db_res,
 						(int)RES_ROWS(db_res)[i].values[j].val.bitmap_val;
 				break;
 				case DB_BIGINT:
-					avp_val.n =
-						(int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
+					if (sqlops_bigint2str) {
+						avp_type |= AVP_VAL_STR;
+						avp_val.s.s = bigint2str(
+							RES_ROWS(db_res)[i].values[j].val.bigint_val,
+							&avp_val.s.len);
+					} else {
+						avp_val.n =
+							(int)RES_ROWS(db_res)[i].values[j].val.bigint_val;
+					}
 				break;
 				case DB_DOUBLE:
 					avp_type |= AVP_VAL_STR;

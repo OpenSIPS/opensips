@@ -189,6 +189,31 @@ modparam("sqlops","ps_id_max_buf_len", 2048)
 			</example>
 		</section>
 
+		<section id="bigint_to_str" xreflabel="bigint_to_str">
+			<title><varname>bigint_to_str</varname> (int)</title>
+			<para>
+				Controls bigint conversion.
+				By default bigint values are returned as int.
+				If the value stored in bigint is out of the int range,
+				by enabling bigint to string conversion,
+				the bigint value will be returned as string.
+			</para>
+			<para>
+				<emphasis>Default value is <quote>0</quote>.
+				</emphasis>
+			</para>
+			<example>
+				<title>Set <varname>bigint_to_str</varname> parameter
+				</title>
+				<programlisting format="linespecific">
+...
+# Return bigint as string
+modparam("sqlops","bigint_to_str",1)
+...
+				</programlisting>
+			</example>
+		</section>
+
 		<section id="param_uuid_column" xreflabel="uuid_column">
 			<title><varname>uuid_column</varname> (string)</title>
 			<para>
