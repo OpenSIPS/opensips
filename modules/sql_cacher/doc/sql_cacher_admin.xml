@@ -1,7 +1,7 @@
 <!-- SQL Cacher Module User's Guide -->
 
 <chapter>
-    
+
     <title>&adminguide;</title>
 
     <section id="overview" xreflabel="Overview">
@@ -133,7 +133,7 @@
 		<example>
 		<title><varname>cache_table</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "cache_table",
 "id=caching_name
 db_url=mysql://root:opensips@localhost/opensips_2_2
@@ -142,7 +142,7 @@ table=table_name
 key=column_name_0
 columns=column_name_1 column_name_2 column_name_3
 on_demand=0")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -160,9 +160,9 @@ on_demand=0")
 		<example>
 		<title><varname>spec_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "spec_delimiter", "\n")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -180,9 +180,9 @@ modparam("sql_cacher", "spec_delimiter", "\n")
 		<example>
 		<title><varname>pvar_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "pvar_delimiter", " ")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -200,9 +200,9 @@ modparam("sql_cacher", "pvar_delimiter", " ")
 		<example>
 		<title><varname>columns_delimiter</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "columns_delimiter", ",")
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -212,7 +212,7 @@ modparam("sql_cacher", "columns_delimiter", ",")
 		<para>
 		The number of rows to be fetched into &osips; private memory in one chunk from
 		the SQL database driver. When querying large tables, adjust this parameter
-		accordingly to avoid the filling of &osips; private memory. 
+		accordingly to avoid the filling of &osips; private memory.
 		</para>
 		<para>
 		The default value is <quote>100</quote>.
@@ -220,9 +220,9 @@ modparam("sql_cacher", "columns_delimiter", ",")
 		<example>
 		<title><varname>sql_fetch_nr_rows</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -240,9 +240,9 @@ modparam("sql_cacher", "sql_fetch_nr_rows", 1000)
 		<example>
 		<title><varname>full_caching_expire</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "full_caching_expire", 3600)
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -259,9 +259,9 @@ modparam("sql_cacher", "full_caching_expire", 3600)
 		<example>
 		<title><varname>reload_interval</varname> parameter usage</title>
 		<programlisting format="linespecific">
-   
+
 modparam("sql_cacher", "reload_interval", 5)
-   
+
 </programlisting>
 	    </example>
 	</section>
@@ -348,7 +348,7 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
 	This section provides an usage example for the caching of an SQL table.
 	</para>
 	<para>
-	Suppose one in interested in caching the columns: <quote>host_name</quote>, 
+	Suppose one in interested in caching the columns: <quote>host_name</quote>,
 	<quote>reply_code</quote>, <quote>flags</quote> and <quote>next_domain</quote>
 	 from the <quote>carrierfailureroute</quote> table of the &osips; database.
 	</para>
@@ -368,7 +368,7 @@ $avp(a) = $sql_cached_value(caching_name:column_name_1:key1);
 		</programlisting>
 	</example>
 	<para>
-		In the first place, the details of the caching must be provided by setting 
+		In the first place, the details of the caching must be provided by setting
 		the module parameter <quote>cache_table</quote> in the &osips; configuration script.
 	</para>
 	<example>
@@ -414,7 +414,7 @@ xlog("host name is: $sql_cached_value(carrier_fr_caching:host_name:2)");
 	<section id="sr_id_cache_entry_id" xreflabel="cache_entry_id">
 	<title><varname>[cache_entry_id]</varname></title>
 	<para>
-	The status of these identifiers reflects the readiness/status of the 
+	The status of these identifiers reflects the readiness/status of the
 	cached data (if available or not when being loaded from DB):
 	</para>
 	<itemizedlist>
