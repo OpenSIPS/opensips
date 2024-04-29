@@ -256,6 +256,7 @@ static const param_export_t params[] = {
 	{"domain_column",     STR_PARAM, &domain_col.s    },
 	{"db_scheme",         STR_PARAM|USE_FUNC_PARAM, (void*)add_avp_db_scheme },
 	{"ps_id_max_buf_len", INT_PARAM, &query_id_max_len},
+	{"bigint_to_str",     INT_PARAM, &sqlops_bigint2str},
 	{0, 0, 0}
 };
 
