@@ -265,6 +265,29 @@ modparam("sql_cacher", "reload_interval", 5)
 </programlisting>
 	    </example>
 	</section>
+
+	<section id="bigint_to_str" xreflabel="bigint_to_str">
+		<title><varname>bigint_to_str</varname> (integer)</title>
+		<para>
+		Controls bigint conversion.
+		By default bigint values are returned as int.
+		If the value stored in bigint is out of the int range,
+		by enabling bigint to string conversion,
+		the bigint value will be returned as string.
+		</para>
+		<para>
+		The default value is <quote>0</quote>.
+		</para>
+		<example>
+		<title><varname>bigint_to_str</varname> parameter usage</title>
+		<programlisting format="linespecific">
+
+modparam("sql_cacher", "bigint_to_str", 1)
+
+</programlisting>
+	    </example>
+	</section>
+
 </section>
 
 <section id="exported_functions" xreflabel="exported_functions">
