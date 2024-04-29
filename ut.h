@@ -316,6 +316,17 @@ static inline char* double2str(double d, int* len)
 	return int2str_buf[buf];
 }
 
+#define BIGINT2STR_MAX_LEN  INT2STR_MAX_LEN
+static inline char* bigint2str(long long l, int* len)
+{
+	unsigned int buf;
+
+	buf = getstrbufindex();
+	*len = snprintf(int2str_buf[buf], INT2STR_MAX_LEN - 1, "%lld", l);
+	int2str_buf[buf][*len] = '\0';
+
+	return int2str_buf[buf];
+}
 
 /* faster memchr version */
 static inline char* q_memchr(char* p, int c, unsigned int size)
