@@ -192,7 +192,7 @@ static const cmd_export_t cmds[] = {
 		{0, 0, 0}},
 		ALL_ROUTES},
 
-	{"sql_selec_one", (cmd_function)w_sql_select_one, {
+	{"sql_select_one", (cmd_function)w_sql_select_one, {
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* columns */
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, /* table */
 		{CMD_PARAM_STR, 0, 0}, /* filter */
