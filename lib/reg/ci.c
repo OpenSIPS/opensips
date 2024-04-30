@@ -214,8 +214,8 @@ void print_ci(ucontact_info_t *ci)
 	LM_DBG(" ----- UCI DUMP (%p) ------\n", ci);
 	LM_DBG("received: %.*s, path: %.*s\n", ci->received.len, ci->received.s,
 	       ci->path ? ci->path->len : 0, ci->path ? ci->path->s : NULL);
-	LM_DBG("expires: %lld, expires_in: %ld, expires_out: %ld\n", (long long)ci->expires,
-	       ci->expires_in, ci->expires_out);
+	LM_DBG("expires: %lld, expires_in: %lld, expires_out: %lld\n", (long long)ci->expires,
+	       (long long)ci->expires_in, (long long)ci->expires_out);
 	LM_DBG("q: %d, instance: %.*s, callid: %.*s\n", ci->q, ci->instance.len,
 	       ci->instance.s, ci->callid ? ci->callid->len : 0,
 	       ci->callid ? ci->callid->s : NULL);
