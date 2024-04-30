@@ -266,7 +266,7 @@ modparam("sql_cacher", "reload_interval", 5)
 	    </example>
 	</section>
 
-	<section id="bigint_to_str" xreflabel="bigint_to_str">
+	<section id="param_bigint_to_str" xreflabel="bigint_to_str">
 		<title><varname>bigint_to_str</varname> (integer)</title>
 		<para>
 		Controls bigint conversion.
@@ -276,7 +276,7 @@ modparam("sql_cacher", "reload_interval", 5)
 		the bigint value will be returned as string.
 		</para>
 		<para>
-		The default value is <quote>0</quote>.
+		The default value is <quote>0</quote> (disabled).
 		</para>
 		<example>
 		<title><varname>bigint_to_str</varname> parameter usage</title>
