@@ -22,7 +22,6 @@ jobs:
       BUILD_OS: ${{ matrix.os }}
 
     strategy:
-      fail-fast: false
       matrix:
         compiler: ['gcc-i386-cross', 'clang-i386-cross', 'gcc-mips64-cross', 'gcc-arm32-cross', 'gcc-arm64-cross',  'gcc-arm32-qemu-cross', 'gcc-arm64-qemu-cross', 'clang-arm32-qemu-cross', 'clang-arm64-qemu-cross']
         os: [ubuntu-22.04]
