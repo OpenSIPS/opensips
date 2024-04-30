@@ -5,9 +5,9 @@ libsqlite3-dev
 libsctp-dev
 libradcli-dev
 libhiredis-dev
-libodbc1
+libodbc2
 odbcinst
-odbcinst1debian2
+libodbcinst2
 unixodbc
 unixodbc-dev
 libconfuse-dev
