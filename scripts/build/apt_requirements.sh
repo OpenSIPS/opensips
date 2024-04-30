@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# handle package transitions across Ubuntu 20.04 and specific Ubuntu 22.04 arch packaging (e.g. i386)
+libodbc_pkg=$(apt-cache --names-only search odbc | awk '{print $1}' | grep -oE "^(libodbc2|libodbcinst2|libodbc1|odbcinst1debian2)$")
+[ -z "$libodbc_pkg" ] && libodbc_pkg=$(echo -e "libodbc2\nlibodbcinst2")
+
 cat <<EOF
 flex
 bison
@@ -8,9 +12,8 @@ libsqlite3-dev
 libsctp-dev
 libradcli-dev
 libhiredis-dev
-$(if [ "$BUILD_OS" != "ubuntu-20.04" ] && [[ ! "$COMPILER" =~ cross ]]; then echo libodbc2; else echo libodbc1; fi)
 odbcinst
-$(if [ "$BUILD_OS" != "ubuntu-20.04" ] && [[ ! "$COMPILER" =~ cross ]]; then echo libodbcinst2; else echo odbcinst1debian2; fi)
+$libodbc_pkg
 unixodbc
 unixodbc-dev
 libconfuse-dev
