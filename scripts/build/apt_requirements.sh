@@ -8,9 +8,9 @@ libsqlite3-dev
 libsctp-dev
 libradcli-dev
 libhiredis-dev
-$(if [ "$BUILD_OS" != "ubuntu-20.04" ]; then echo libodbc2; else echo libodbc1; fi)
+$(if [ "$BUILD_OS" != "ubuntu-20.04" ] && [[ ! "$COMPILER" =~ cross ]]; then echo libodbc2; else echo libodbc1; fi)
 odbcinst
-$(if [ "$BUILD_OS" != "ubuntu-20.04" ]; then echo libodbcinst2; else echo odbcinst1debian2; fi)
+$(if [ "$BUILD_OS" != "ubuntu-20.04" ] && [[ ! "$COMPILER" =~ cross ]]; then echo libodbcinst2; else echo odbcinst1debian2; fi)
 unixodbc
 unixodbc-dev
 libconfuse-dev
