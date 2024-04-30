@@ -28,7 +28,7 @@ ${SUDO} apt-get update -y
 ${SUDO} apt-get -y remove libmemcached11 libpq5
 ${SUDO} apt-get -y autoremove
 
-PKGS="$PKGS $(. "scripts/build/apt_requirements_postupdate.sh")"
+PKGS="$PKGS $(. "$(dirname $0)/apt_requirements_postupdate.sh")"
 ${SUDO} apt-get -y --allow-downgrades install ${PKGS}
 
 if [ ! -z "${POST_INSTALL_CMD}" ]
