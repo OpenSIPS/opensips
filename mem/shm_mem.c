@@ -557,22 +557,22 @@ int shm_mem_init_mallocs(void* mempool, unsigned long pool_size)
 #endif
 
 #ifdef STATISTICS
-	if (event_shm_threshold) {
-		event_shm_last=shm_malloc_unsafe(sizeof(long));
-		if (event_shm_last==0){
-			LM_CRIT("could not allocate shm last event indicator\n");
-			shm_mem_destroy();
-			return -1;
-		}
-		*event_shm_last=0;
-		event_shm_pending=shm_malloc_unsafe(sizeof(int));
-		if (event_shm_pending==0){
-			LM_CRIT("could not allocate shm pending flags\n");
-			shm_mem_destroy();
-			return -1;
-		}
-		*event_shm_pending=0;
+	{
+		struct {
+			long last;
+			int pending;
+		} *ev_holders;
 
+		ev_holders = shm_malloc_unsafe(sizeof *ev_holders);
+		if (!ev_holders) {
+			LM_CRIT("could not allocate SHM event holders\n");
+			shm_mem_destroy();
+			return -1;
+		}
+		memset(ev_holders, 0, sizeof *ev_holders);
+
+		event_shm_last = &ev_holders->last;
+		event_shm_pending = &ev_holders->pending;
 	}
 #endif /* STATISTICS */
 
