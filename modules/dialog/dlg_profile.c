@@ -200,7 +200,7 @@ int add_profile_definitions( char* profiles, unsigned int has_value)
 
 		/* check the name format */
 		for(i=0;i<name.len;i++) {
-			if ( !isalnum(name.s[i]) ) {
+			if ( !isalnum(name.s[i]) && name.s[i]!='_'  && name.s[i]!='-' ) {
 				LM_ERR("bad profile name <%.*s>, char %c - use only "
 						"alphanumerical characters\n", name.len,name.s,name.s[i]);
 				return -1;
