@@ -699,7 +699,8 @@ static int get_accurate_time(struct sip_msg* msg,
 
 		val.flags = PV_VAL_STR;
 		val.rs.s = sec_usec_buf;
-		val.rs.len = sprintf(sec_usec_buf, "%ld.%06ld", tv.tv_sec, tv.tv_usec);
+		val.rs.len = sprintf(sec_usec_buf, "%lld.%06lld",
+						(long long)tv.tv_sec, (long long)tv.tv_usec);
 		if (pv_set_value(msg, pv_sec_usec, 0, &val) != 0) {
 			LM_ERR("failed to set 'pv_sec_usec'\n");
 			return -1;

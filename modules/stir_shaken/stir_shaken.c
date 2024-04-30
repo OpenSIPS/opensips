@@ -1063,7 +1063,8 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 
 		if (labs(now - date_ts) > auth_date_freshness) {
 			LM_NOTICE("Date header timestamp diff exceeds local policy "
-			    "(diff: %lds, auth-freshness: %ds)\n", now - date_ts, auth_date_freshness);
+			    "(diff: %llds, auth-freshness: %ds)\n",
+			    (long long)(now - date_ts), auth_date_freshness);
 			return -4;
 		}
 	}
@@ -1854,7 +1855,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 		if (labs(now - date_ts) > verify_date_freshness) {
 			LM_NOTICE("Date header timestamp diff exceeds local policy "
-			    "(diff: %lds, verify-freshness: %ds)\n", now - date_ts, verify_date_freshness);
+			    "(diff: %llds, verify-freshness: %ds)\n",
+			    (long long)(now - date_ts), verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 			rc = -6;
 			goto error;
@@ -1862,7 +1864,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	} else {
 		if (labs(now - iat_ts) > verify_date_freshness) {
 			LM_NOTICE("'iat' timestamp diff exceeds local policy "
-			    "(diff: %lds, verify-freshness: %ds)\n", now - iat_ts, verify_date_freshness);
+			    "(diff: %llds, verify-freshness: %ds)\n",
+			    (long long)(now - iat_ts), verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 			rc = -6;
 			goto error;

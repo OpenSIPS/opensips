@@ -421,13 +421,13 @@ static char payload_buf[MAX_PAYLOAD];
 
 
 
-#define VALUES_STR "(%ld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
+#define VALUES_STR "(%lld,%lld,'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s','%.*s'," \
 					"'%.*s','%.*s','%.*s','%.*s','%.*s','%.*s',%d,'%.*s',%d," \
 					"'%.*s',%d,'%.*s',%d,%d,%d,'%.*s',%d,'%.*s','%.*s','%.*s'," \
 					"'%.*s', '%.*s', '%.*s', '%.*s', '%.*s', '%.*s')"
 
-#define RTCP_VALUES_STR "(%ld, %lld, '%.*s', '%.*s', %d, '%.*s', %d," \
+#define RTCP_VALUES_STR "(%lld, %lld, '%.*s', '%.*s', %d, '%.*s', %d," \
 						"%d, %d, %d, '%.*s', '%.*s')"
 
 int  max_async_queries=5;
@@ -2791,7 +2791,7 @@ static inline int append_sc_values(char* buf, int max_len, db_val_t* db_vals)
 	int len;
 
 	len = snprintf(buf, max_len, VALUES_STR,
-			VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
+			(long long)VAL_TIME(db_vals+1), VAL_BIGINT(db_vals+2),
 			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
 			VAL_STR(db_vals+4).len, VAL_STR(db_vals+4).s,
 			VAL_STR(db_vals+5).len, VAL_STR(db_vals+5).s,
@@ -4490,7 +4490,7 @@ static inline int append_rc_values(char* buf, int max_len, db_val_t* db_vals)
 	int len;
 
 	len = snprintf(buf, max_len, RTCP_VALUES_STR,
-			VAL_TIME(db_vals+0), VAL_BIGINT(db_vals+1),
+			(long long)VAL_TIME(db_vals+0), VAL_BIGINT(db_vals+1),
 			VAL_STR(db_vals+2).len, VAL_STR(db_vals+2).s,
 			VAL_STR(db_vals+3).len, VAL_STR(db_vals+3).s,
 			VAL_INT(db_vals+4),
