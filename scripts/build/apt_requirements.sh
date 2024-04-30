@@ -1,3 +1,6 @@
+#!/bin/sh
+
+cat <<EOF
 flex
 bison
 make
@@ -5,9 +8,9 @@ libsqlite3-dev
 libsctp-dev
 libradcli-dev
 libhiredis-dev
-libodbc1
+$(if [ "$BUILD_OS" != "ubuntu-20.04" ]; then echo libodbc2; else echo libodbc1; fi)
 odbcinst
-odbcinst1debian2
+$(if [ "$BUILD_OS" != "ubuntu-20.04" ]; then echo libodbcinst2; else echo odbcinst1debian2; fi)
 unixodbc
 unixodbc-dev
 libconfuse-dev
@@ -33,3 +36,4 @@ uuid-dev
 python-dev
 libmaxminddb-dev
 patch
+EOF
