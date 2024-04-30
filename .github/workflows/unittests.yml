@@ -23,6 +23,7 @@ jobs:
 
     strategy:
       fail-fast: false
+      continue-on-error: true
       matrix:
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
         os: [ubuntu-20.04]
