@@ -17,13 +17,13 @@ jobs:
   build:
     # The type of runner that the job will run on
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       COMPILER: ${{ matrix.compiler }}
       BUILD_OS: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
-      continue-on-error: true
       matrix:
         os: [ubuntu-20.04]
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
