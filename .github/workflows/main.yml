@@ -60,6 +60,10 @@ jobs:
       - name: Build
         run: sh -x scripts/build/do_build.sh
 
+  notify:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - name: Notify slack fail
         if: failure() && github.repository == 'OpenSIPS/opensips'
         env:
