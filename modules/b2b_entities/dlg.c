@@ -357,8 +357,8 @@ str* b2b_generate_key(unsigned int hash_index, unsigned int local_index)
 	str* b2b_key;
 	int len;
 
-	len = sprintf(buf, "%s.%d.%d.%ld.%d", b2b_key_prefix.s, hash_index, local_index,
-		startup_time+get_ticks(), rand());
+	len = sprintf(buf, "%s.%d.%d.%lld.%d", b2b_key_prefix.s, hash_index, local_index,
+		(long long)(startup_time+get_ticks()), rand());
 
 	b2b_key = (str*)pkg_malloc(sizeof(str)+ len);
 	if(b2b_key== NULL)
