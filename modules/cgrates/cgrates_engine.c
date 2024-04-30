@@ -166,8 +166,8 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 	time_t now = time(NULL);
 
 	if (e->disable_time && e->disable_time + cgre_retry_tout > now) {
-		LM_DBG("engine=%p down now=%lu until=%lu\n", e, now,
-				e->disable_time + cgre_retry_tout);
+		LM_DBG("engine=%p down now=%lld until=%lld\n", e, (long long)now,
+				(long long)(e->disable_time + cgre_retry_tout));
 		return NULL;
 	}
 
@@ -191,8 +191,9 @@ struct cgr_conn *cgr_get_default_conn(struct cgr_engine *e)
 			return e->default_con;
 		}
 	} else {
-		LM_DBG("conn=%p state=%x now=%lu until=%lu\n", e->default_con,
-				e->default_con->state, now, e->default_con->disable_time + cgre_retry_tout);
+		LM_DBG("conn=%p state=%x now=%lld until=%lld\n", e->default_con,
+				e->default_con->state, (long long)now,
+				(long long)(e->default_con->disable_time + cgre_retry_tout));
 	}
 	return NULL;
 }
