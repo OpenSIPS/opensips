@@ -61,6 +61,7 @@
 #define DEFAULT_FULL_CACHING_EXPIRE 86400 /* 24h */
 #define DEFAULT_RELOAD_INTERVAL 60
 #define DEFAULT_FETCH_NR_ROWS 100
+#define DEFAULT_BIGINT2STR 0
 #define TEST_QUERY_STR "sql_cacher_test_query_key"
 #define TEST_QUERY_INT 555666555
 #define CDB_TEST_KEY_STR "sql_cacher_cdb_test_key"
