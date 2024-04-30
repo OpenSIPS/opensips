@@ -4,7 +4,7 @@ set -e
 
 . $(dirname $0)/dockerize.sub
 
-PKGS="`cat "$(dirname $0)/apt_requirements.txt"`"
+PKGS=$(. "$(dirname $0)/apt_requirements.sh")
 
 . $(dirname $0)/build.conf.sub
 
