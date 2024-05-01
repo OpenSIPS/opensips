@@ -544,7 +544,7 @@ skip_coords:
 
 	*len -= needed;
 	if (pack_coords) {
-		memcpy(cp, &coords, sizeof(ucontact_coords));
+		memcpy(cp, coords, sizeof(ucontact_coords));
 		cp += sizeof(ucontact_coords);
 	}
 
