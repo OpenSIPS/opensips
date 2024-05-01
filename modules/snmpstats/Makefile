@@ -22,7 +22,7 @@ else
 endif 
 
 ifeq ($(CC_NAME), clang)
-	DEFS := $(filter-out -flto%,$(DEFS)) -Wno-ignored-optimization-argument
+	DEFS := $(filter-out -flto%,$(DEFS)) -Wno-ignored-optimization-argument -Qunused-arguments
 endif
 
 CFLAGS+=
