@@ -88,7 +88,7 @@ static int mod_init(void);         /* Module initialization function */
  * Module parameter variables
  */
 static str aka_default_av_mgm_s;
-static str aka_default_qop_s = str_init("auth");
+static str aka_default_qop_s = str_init("auth-int");
 static str aka_default_alg_s = str_init("AKAv1-MD5");
 static qop_type_t aka_default_qop = -1; /* XXX: use an invalid value */
 static intptr_t aka_default_alg = ALGFLG_UNSPEC;
