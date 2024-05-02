@@ -54,19 +54,31 @@ extern void fs_api_set_proc_no(void);
 extern void evs_free(fs_evs *sock);
 extern struct fs_event *get_event(fs_evs *sock, const str *name);
 
-static void destroy_fs_evs(fs_evs *sock, int idx)
+static void destroy_fs_evs(fs_evs *sock, int idx, int reactor_fd)
 {
 	esl_status_t rc;
+	int fd;
 
-	LM_DBG("destroying sock %s:%d\n", sock->host.s, sock->port);
+	if (sock->invalid) {
+		LM_BUG("attempting to destroy dangling socket (fd: %d, idx: %d)\n",
+		       reactor_fd, idx);
+		return;
+	}
 
-	if (idx > 0 && reactor_del_reader(sock->handle->sock, idx, IO_FD_CLOSING) != 0) {
-		LM_ERR("failed to delete sock %d, idx %d\n", sock->handle->sock, idx);
+	if (reactor_fd >= 0 && reactor_fd != sock->handle->sock)
+		LM_BUG("different reactor/esl-handle fds: %d/%d\n",
+		       reactor_fd, sock->handle->sock);
+
+	fd = (reactor_fd >= 0 ? reactor_fd : sock->handle->sock);
+	LM_DBG("destroying sock %s:%d (fd: %d)\n", sock->host.s, sock->port, fd);
+
+	if (idx >= 0 && reactor_del_reader(fd, idx, IO_FD_CLOSING) != 0) {
+		LM_ERR("failed to delete sock %d, idx %d\n", fd, idx);
 		idx = -1;
 	}
 
-	if (idx < 0 && reactor_del_reader(sock->handle->sock, -1, IO_FD_CLOSING) != 0)
-		LM_DBG("failed to delete sock %d, idx -1\n", sock->handle->sock);
+	if (idx < 0 && reactor_del_reader(fd, -1, IO_FD_CLOSING) != 0)
+		LM_DBG("failed to delete sock %d, idx -1\n", fd);
 
 	rc = esl_disconnect(sock->handle);
 	if (rc != ESL_SUCCESS)
@@ -208,7 +220,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			/* ignore the event: nobody's using this socket anymore, close it */
 			lock_start_write(sockets_lock);
 			if (sock->ref == 0) {
-				destroy_fs_evs(sock, idx);
+				destroy_fs_evs(sock, idx, fm->fd);
 				lock_stop_write(sockets_lock);
 				return 0;
 			}
@@ -474,7 +486,7 @@ void handle_reconnects(void)
 		if (sock->handle) {
 			if (sock->handle->connected && sock->handle->sock != ESL_SOCK_INVALID) {
 				if (!SHOULD_KEEP_EVS(sock)) {
-					destroy_fs_evs(sock, -1);
+					destroy_fs_evs(sock, -1, -1);
 					continue;
 				}
 
