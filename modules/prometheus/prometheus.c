@@ -56,7 +56,7 @@ str prom_delimiter = str_init("_");
 str prom_grp_label = str_init("group");
 httpd_api_t prom_httpd_api;
 str prometheus_script_route = {NULL, 0};
-int prometheus_route_id = -1;
+struct script_route_ref *prometheus_route_ref = NULL;
 char* prometheus_avp_param = NULL;
 unsigned short prometheus_avp_type = 0;
 int prometheus_avp_name = -1;
@@ -150,9 +150,9 @@ static int mod_init(void)
 	if (prometheus_script_route.s) {
 		prometheus_script_route.len = strlen(prometheus_script_route.s);
 
-		prometheus_route_id = get_script_route_ID_by_name( 
-			prometheus_script_route.s,sroutes->request, RT_NO);
-		if ( prometheus_route_id < 0 ) {
+		prometheus_route_ref = ref_script_route_by_name(prometheus_script_route.s,
+					sroutes->request, RT_NO , REQUEST_ROUTE, 0);
+		if ( !ref_script_route_is_valid(prometheus_route_ref) ) {
 			LM_ERR("Prometheus route <%s> not defined!\n", prometheus_script_route.s);
 			return -1;
 		}
@@ -853,7 +853,7 @@ end:
 		}
 	}
 
-	if (prometheus_route_id != -1) {
+	if (ref_script_route_is_valid(prometheus_route_ref)) {
 		/* get a dummy msg for our route */	
 		route_msg = get_dummy_sip_msg();
 		if (!route_msg) {
@@ -865,7 +865,7 @@ end:
 		set_route_type( REQUEST_ROUTE );
 
 		/* run given hep route */
-		run_top_route( sroutes->request[prometheus_route_id], route_msg);
+		run_top_route( sroutes->request[prometheus_route_ref->idx], route_msg);
 
 		memset(&val, 0, sizeof(int_str));
 		if (prometheus_avp_name>=0 && 
