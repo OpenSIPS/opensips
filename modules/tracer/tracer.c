@@ -1345,7 +1345,7 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 	int reverte_dir = 0;
 
 	/* should not trace dummy messages */
-	if (is_dummy_sip_msg(params->msg))
+	if (is_dummy_sip_msg(params->msg) == 0)
 		return;
 
 	if (dlgb.get_direction()==DLG_DIR_UPSTREAM)
