@@ -160,7 +160,7 @@ struct ipsec_allowed_algo {
 	struct ipsec_allowed_algo *next;
 };
 
-struct ipsec_allowed_algo *ipsec_allowed_algos, *ipsec_allowed_algos_last;
+struct ipsec_allowed_algo *ipsec_allowed_algos;
 
 /* Types is 1 for integrity, 2 for encryption, 0 for both */
 int ipsec_add_allowed_algorithms(str *algs)
@@ -171,10 +171,14 @@ int ipsec_add_allowed_algorithms(str *algs)
 	char *p;
 	str alg;
 	struct ipsec_allowed_algo *pair;
+	static struct ipsec_allowed_algo *ipsec_allowed_algos_last;
 	struct ipsec_algorithm_desc *auth, *enc;
 
-	if (!algs || !algs->len)
+	if (!algs || !algs->s)
 		return 0;
+	algs->len = strlen(algs->s);
+	LM_DBG("parse allowed_algorithms: %.*s\n", algs->len, algs->s);
+
 	csv = parse_csv_record(algs);
 	if (!csv) {
 		LM_ERR("could not parse algorithms\n");
@@ -238,6 +242,12 @@ int ipsec_add_allowed_algorithms(str *algs)
 	}
 	ret = 0;
 end:
+	LM_DBG("full list of allowed supported algorithms:\n");
+	for (pair = ipsec_allowed_algos; pair; pair = pair->next) {
+		LM_DBG(" - auth=%s enc=%s\n",
+				(pair->auth->name?pair->auth->name:"ANY"),
+				(pair->enc->name?pair->enc->name:"ANY"));
+	}
 	free_csv_record(csv);
 	return ret;
 }
@@ -259,6 +269,7 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
 	}
 	/* TODO: order by priority */
 	if (!ipsec_allowed_algos) {
+		LM_DBG("no allowed algorithms specified - using the first supported one!\n");
 		/* if we have no prefference, choose the first one supported */
 		for (h = msg->security_client; h; h = h->sibling) {
 			/* duplicate the header, to avoid writing the parsed structure into
@@ -304,7 +315,11 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
 		}
 	} else {
 		/* choose according to our preference */
+		LM_DBG("try to match against allowed supported algorithms:\n");
 		for (algs = ipsec_allowed_algos; algs; algs = algs->next) {
+			LM_DBG(" - attempt auth=%s enc=%s\n",
+					(algs->auth->name?algs->auth->name:"ANY"),
+					(algs->enc->name?algs->enc->name:"ANY"));
 			for (h = msg->security_client; h; h = h->sibling) {
 				/* iterate through all headers and check if we have a match */
 				sas = parse_sec_agree_body(&h->body);
@@ -322,6 +337,7 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
 								sa->ts3gpp.alg_str.len, sa->ts3gpp.alg_str.s);
 						continue;
 					}
+					LM_DBG("   + hdr auth=%s\n", auth->name);
 					if (algs->auth && algs->auth != auth)
 						continue;
 					if (!sa->ts3gpp.ealg_str.len)
@@ -333,6 +349,7 @@ sec_agree_body_t *ipsec_get_security_client(struct sip_msg *msg)
 								sa->ts3gpp.ealg_str.len, sa->ts3gpp.ealg_str.s);
 						continue;
 					}
+					LM_DBG("   + hdr end=%s\n", enc->name);
 					if (algs->enc && algs->enc != enc)
 						continue;
 					goto found;

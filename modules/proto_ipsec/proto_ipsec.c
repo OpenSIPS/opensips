@@ -91,7 +91,7 @@ static const param_export_t params[] = {
 	{ "temporary_timeout",				INT_PARAM, &ipsec_tmp_timeout },
 	{ "default_client_port",			INT_PARAM, &ipsec_default_client_port },
 	{ "default_server_port",			INT_PARAM, &ipsec_default_server_port },
-	{ "allowed_algorithms",				STR_PARAM, &ipsec_allowed_algorithms },
+	{ "allowed_algorithms",				STR_PARAM, &ipsec_allowed_algorithms.s },
 	{ "disable_deprecated_algorithms",	INT_PARAM, &ipsec_disable_deprecated_algorithms },
 	{0, 0, 0}
 };
