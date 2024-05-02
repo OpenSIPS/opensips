@@ -153,6 +153,8 @@ void evs_free(fs_evs *sock)
 	lock_destroy_rw(sock->lists_lk);
 
 	memset(sock, 0, sizeof *sock);
+
+	sock->invalid = 1; /* safety check against dangling fds in reactor */
 	shm_free(sock);
 }
 

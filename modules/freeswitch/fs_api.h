@@ -98,6 +98,7 @@ struct _fs_evs {
 	fs_stats stats;
 
 	int ref;
+	int invalid;
 
 	rw_lock_t *lists_lk;         /* protects all three internal lists */
 
