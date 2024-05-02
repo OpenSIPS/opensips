@@ -945,7 +945,7 @@ assign_stm: LOGLEVEL EQUAL snumber { IFOR();
 			set_log_consumer_level_filter(&s_tmp, $3);
 			}
 		| SYSLOG_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
-		| LOG_EVENT_LEVEL_FILTER EQUAL NUMBER { IFOR();
+		| LOG_EVENT_LEVEL_FILTER EQUAL snumber { IFOR();
 							log_event_level_filter = $3; }
 		| LOG_EVENT_LEVEL_FILTER EQUAL error { yyerror("number expected"); }
 		| STDERROR_FORMAT EQUAL STRING { IFOR();
