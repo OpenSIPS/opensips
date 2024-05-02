@@ -66,6 +66,7 @@ struct fs_event_subscription {
 	str tag;
 	ipc_handler_type ipc_type;
 	int ref;
+	int invalid;
 
 	struct list_head list;
 };
@@ -103,6 +104,7 @@ struct _fs_evs {
 	fs_stats stats;
 
 	int ref;
+	int invalid;
 	unsigned int flags;
 
 	unsigned long esl_reply_id;  /* positive ID/counter for each FS esl cmd */

@@ -77,11 +77,9 @@ static inline int fs_reactor_del_reader(int fd, int idx)
 {
 	int rc;
 
-	if (idx > 0 && (rc = reactor_del_reader(fd, idx, IO_FD_CLOSING)) != 0) {
+	if (idx >= 0 && (rc = reactor_del_reader(fd, idx, IO_FD_CLOSING)) != 0) {
 		LM_ERR("failed to delete sock %d, idx %d\n", fd, idx);
 		idx = -1;
-	} else {
-		return 0;
 	}
 
 	if (idx < 0 && (rc = reactor_del_reader(fd, -1, IO_FD_CLOSING)) != 0)
@@ -90,13 +88,25 @@ static inline int fs_reactor_del_reader(int fd, int idx)
 	return rc;
 }
 
-static void destroy_fs_evs(fs_evs *sock, int idx)
+static void destroy_fs_evs(fs_evs *sock, int idx, int reactor_fd)
 {
 	esl_status_t rc;
+	int fd;
 
-	LM_DBG("destroying sock %s:%d\n", sock->host.s, sock->port);
+	if (sock->invalid) {
+		LM_BUG("attempting to destroy dangling socket (fd: %d, idx: %d)\n",
+		       reactor_fd, idx);
+		return;
+	}
 
-	fs_reactor_del_reader(sock->handle->sock, idx);
+	if (reactor_fd >= 0 && reactor_fd != sock->handle->sock)
+		LM_BUG("different reactor/esl-handle fds: %d/%d\n",
+		       reactor_fd, sock->handle->sock);
+
+	fd = (reactor_fd >= 0 ? reactor_fd : sock->handle->sock);
+	LM_DBG("destroying sock %s:%d (fd: %d)\n", sock->host.s, sock->port, fd);
+
+	fs_reactor_del_reader(fd, idx);
 
 	rc = esl_disconnect(sock->handle);
 	if (rc != ESL_SUCCESS)
@@ -241,7 +251,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 			lock_start_write(sockets_lock);
 			if (sock->ref == 0) {
 				/* ignore the event, the socket is unused */
-				destroy_fs_evs(sock, idx);
+				destroy_fs_evs(sock, idx, fm->fd);
 				lock_stop_write(sockets_lock);
 				return 0;
 			}
@@ -254,7 +264,7 @@ inline static int handle_io(struct fd_map *fm, int idx, int event_type)
 				LM_ERR("read error %d on FS sock %.*s:%d. Reconnecting...\n",
 				       rc, sock->host.len, sock->host.s, sock->port);
 
-				fs_reactor_del_reader(sock->handle->sock, idx);
+				fs_reactor_del_reader(fm->fd, idx);
 
 				rc = esl_disconnect(sock->handle);
 				if (rc != ESL_SUCCESS) {
@@ -517,7 +527,7 @@ void handle_reconnects(void)
 		if (sock->handle) {
 			if (fs_evs_connected(sock)) {
 				if (!SHOULD_KEEP_EVS(sock)) {
-					destroy_fs_evs(sock, -1);
+					destroy_fs_evs(sock, -1, -1);
 					continue;
 				}
 
