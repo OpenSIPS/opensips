@@ -18,12 +18,13 @@ SQLops Module
               1.3.3. db_scheme (string)
               1.3.4. use_domain (integer)
               1.3.5. ps_id_max_buf_len (integer)
-              1.3.6. uuid_column (string)
-              1.3.7. username_column (string)
-              1.3.8. domain_column (string)
-              1.3.9. attribute_column (string)
-              1.3.10. value_column (string)
-              1.3.11. type_column (string)
+              1.3.6. bigint_to_str (int)
+              1.3.7. uuid_column (string)
+              1.3.8. username_column (string)
+              1.3.9. domain_column (string)
+              1.3.10. attribute_column (string)
+              1.3.11. value_column (string)
+              1.3.12. type_column (string)
 
         1.4. Exported Functions
 
@@ -76,24 +77,25 @@ SQLops Module
    1.3. Set db_scheme parameter
    1.4. Set use_domain parameter
    1.5. Set ps_id_max_buf_len parameter
-   1.6. Set uuid_column parameter
-   1.7. Set username_column parameter
-   1.8. Set domain_column parameter
-   1.9. Set attribute_column parameter
-   1.10. Set value_column parameter
-   1.11. Set type_column parameter
-   1.12. sql_query usage
-   1.13. sql_query_one usage
-   1.14. sql_select usage
-   1.15. sql_select_one usage
-   1.16. sql_update usage
-   1.17. sql_insert usage
-   1.18. sql_delete usage
-   1.19. sql_avp_load usage
-   1.20. sql_avp_store usage
-   1.21. sql_avp_delete usage
-   1.22. async sql_query usage
-   1.23. async sql_query_one usage
+   1.6. Set bigint_to_str parameter
+   1.7. Set uuid_column parameter
+   1.8. Set username_column parameter
+   1.9. Set domain_column parameter
+   1.10. Set attribute_column parameter
+   1.11. Set value_column parameter
+   1.12. Set type_column parameter
+   1.13. sql_query usage
+   1.14. sql_query_one usage
+   1.15. sql_select usage
+   1.16. sql_select_one usage
+   1.17. sql_update usage
+   1.18. sql_insert usage
+   1.19. sql_delete usage
+   1.20. sql_avp_load usage
+   1.21. sql_avp_store usage
+   1.22. sql_avp_delete usage
+   1.23. async sql_query usage
+   1.24. async sql_query_one usage
 
 Chapter 1. Admin Guide
 
@@ -203,68 +205,83 @@ modparam("sqlops","use_domain",1)
 modparam("sqlops","ps_id_max_buf_len", 2048)
 ...
 
-1.3.6. uuid_column (string)
+1.3.6. bigint_to_str (int)
+
+   Controls bigint conversion. By default bigint values are
+   returned as int. If the value stored in bigint is out of the
+   int range, by enabling bigint to string conversion, the bigint
+   value will be returned as string.
+
+   Default value is “0”.
+
+   Example 1.6. Set bigint_to_str parameter
+...
+# Return bigint as string
+modparam("sqlops","bigint_to_str",1)
+...
+
+1.3.7. uuid_column (string)
 
    Name of column containing the uuid (unique user id).
 
    Default value is “uuid”.
 
-   Example 1.6. Set uuid_column parameter
+   Example 1.7. Set uuid_column parameter
 ...
 modparam("sqlops","uuid_column","uuid")
 ...
 
-1.3.7. username_column (string)
+1.3.8. username_column (string)
 
    Name of column containing the username.
 
    Default value is “username”.
 
-   Example 1.7. Set username_column parameter
+   Example 1.8. Set username_column parameter
 ...
 modparam("sqlops","username_column","username")
 ...
 
-1.3.8. domain_column (string)
+1.3.9. domain_column (string)
 
    Name of column containing the domain name.
 
    Default value is “domain”.
 
-   Example 1.8. Set domain_column parameter
+   Example 1.9. Set domain_column parameter
 ...
 modparam("sqlops","domain_column","domain")
 ...
 
-1.3.9. attribute_column (string)
+1.3.10. attribute_column (string)
 
    Name of column containing the attribute name (AVP name).
 
    Default value is “attribute”.
 
-   Example 1.9. Set attribute_column parameter
+   Example 1.10. Set attribute_column parameter
 ...
 modparam("sqlops","attribute_column","attribute")
 ...
 
-1.3.10. value_column (string)
+1.3.11. value_column (string)
 
    Name of column containing the AVP value.
 
    Default value is “value”.
 
-   Example 1.10. Set value_column parameter
+   Example 1.11. Set value_column parameter
 ...
 modparam("sqlops","value_column","value")
 ...
 
-1.3.11. type_column (string)
+1.3.12. type_column (string)
 
    Name of column containing the AVP type.
 
    Default value is “type”.
 
-   Example 1.11. Set type_column parameter
+   Example 1.12. Set type_column parameter
 ...
 modparam("sqlops","type_column","type")
 ...
@@ -304,7 +321,7 @@ modparam("sqlops","type_column","type")
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.12. sql_query usage
+   Example 1.13. sql_query usage
 ...
 sql_query("SELECT password, ha1 FROM subscriber WHERE username='$tu'",
         "$avp(pass);$avp(hash)");
@@ -333,7 +350,7 @@ sql_query("DELETE FROM subscriber", , $avp(id));
 
    This function can be used from any type of route.
 
-   Example 1.13. sql_query_one usage
+   Example 1.14. sql_query_one usage
 ...
 sql_query_one("SELECT password, ha1 FROM subscriber WHERE username='$tU'
 ",
@@ -406,7 +423,7 @@ Warning
 
    This function can be used from any type of route.
 
-   Example 1.14. sql_select usage
+   Example 1.15. sql_select usage
 ...
 sql_select('["password","ha1"]', 'subscriber',
         '[ {"username", "$tu"}, {"domain",{"!=",null}}]', ,
@@ -433,7 +450,7 @@ sql_select_one([columns],table,[filter],[order],[res_col_vars],
 
    This function can be used from any type of route.
 
-   Example 1.15. sql_select_one usage
+   Example 1.16. sql_select_one usage
 ...
 sql_select_one('["value","type"]', 'usr_preferences',
         '[ {"username", "$tu"}, {"attribute","cfna"}]', ,
@@ -471,7 +488,7 @@ cfna`
 
    This function can be used from any type of route.
 
-   Example 1.16. sql_update usage
+   Example 1.17. sql_update usage
 ...
 sql_update( '[{"password":"my_secret"}]', 'subscriber',
         '[{"username", "$tu"}]');
@@ -497,7 +514,7 @@ sql_update( '[{"password":"my_secret"}]', 'subscriber',
 
    This function can be used from any type of route.
 
-   Example 1.17. sql_insert usage
+   Example 1.18. sql_insert usage
 ...
 sql_insert( 'cc_agents', '[{"agentid":"agentX"},{"skills":"info"},{"loca
 tion":null},{"msrp_location":"sip:agentX@opensips.com"},{"msrp_max_sessi
@@ -529,7 +546,7 @@ ons":2}]' );
 
    This function can be used from any type of route.
 
-   Example 1.18. sql_delete usage
+   Example 1.19. sql_delete usage
 ...
 sql_delete( 'subscriber', '[{"username", "$tu"}]');
 ...
@@ -572,7 +589,7 @@ sql_delete( 'subscriber', '[{"username", "$tu"}]');
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.19. sql_avp_load usage
+   Example 1.20. sql_avp_load usage
 ...
 sql_avp_load("$fu", "$avp(678)");
 sql_avp_load("$ru/domain", "i/domain_preferences");
@@ -599,7 +616,7 @@ xlog("Loaded: $avp(caller_100)\n");
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.20. sql_avp_store usage
+   Example 1.21. sql_avp_store usage
 ...
 sql_avp_store("$tu", "$avp(678)");
 sql_avp_store("$ru/username", "$avp(email)");
@@ -618,7 +635,7 @@ sql_avp_store("$ru", "$avp(1)", 3);
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.21. sql_avp_delete usage
+   Example 1.22. sql_avp_delete usage
 ...
 sql_avp_delete("$tu", "$avp(678)");
 sql_avp_delete("$ru/username", "$avp(email)");
@@ -640,7 +657,7 @@ sql_avp_delete("$ru", "$avp(1)", 3);
    This function can be used from REQUEST_ROUTE, FAILURE_ROUTE,
    BRANCH_ROUTE, LOCAL_ROUTE and ONREPLY_ROUTE.
 
-   Example 1.22. async sql_query usage
+   Example 1.23. async sql_query usage
 ...
 {
 ...
@@ -674,7 +691,7 @@ route [my_resume_route]
 
    This function can be used from any route.
 
-   Example 1.23. async sql_query_one usage
+   Example 1.24. async sql_query_one usage
 ...
 {
 ...
@@ -715,12 +732,12 @@ Chapter 2. Contributors
    10. Kobi Eshun (@ekobi) 7 1 300 146
 
    All remaining contributors: Andrei Pelinescu-Onciul, Anca
-   Vamanu, Maksym Sobolyev (@sobomax), Norman Brandinger (@NormB),
-   Vlad Patrascu (@rvlad-patrascu), Klaus Darilion, John Burke
-   (@john08burke), Andrey Vorobiev, Olle E. Johansson, Kennard
-   White, Julián Moreno Patiño, Konstantin Bokarius, Walter Doekes
-   (@wdoekes), Andreas Granig, Peter Lemenkov (@lemenkov), Sergio
-   Gutierrez, Edson Gellert Schubert, Ovidiu Sas (@ovidiusas).
+   Vamanu, Norman Brandinger (@NormB), Maksym Sobolyev (@sobomax),
+   Ovidiu Sas (@ovidiusas), Vlad Patrascu (@rvlad-patrascu), Klaus
+   Darilion, John Burke (@john08burke), Andrey Vorobiev, Olle E.
+   Johansson, Kennard White, Julián Moreno Patiño, Konstantin
+   Bokarius, Walter Doekes (@wdoekes), Andreas Granig, Peter
+   Lemenkov (@lemenkov), Sergio Gutierrez, Edson Gellert Schubert.
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -742,21 +759,21 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
-   2.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
-   3.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
-   4.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
-   5.  John Burke (@john08burke)           Jun 2022 - Jun 2022
-   6.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
-   7.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
-   8.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
-   9.  Andrey Vorobiev                     Apr 2016 - Apr 2016
-   10. Julián Moreno Patiño                Feb 2016 - Feb 2016
+   1.  Norman Brandinger (@NormB)          Aug 2006 - Apr 2024
+   2.  Ovidiu Sas (@ovidiusas)             Jul 2015 - Apr 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jun 2005 - Mar 2024
+   4.  Vlad Paiu (@vladpaiu)               Jun 2011 - Jul 2023
+   5.  Razvan Crainea (@razvancrainea)     Jun 2011 - Mar 2023
+   6.  Maksym Sobolyev (@sobomax)          Oct 2022 - Feb 2023
+   7.  John Burke (@john08burke)           Jun 2022 - Jun 2022
+   8.  Liviu Chircu (@liviuchircu)         Mar 2013 - Mar 2020
+   9.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Jul 2019
+   10. Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
 
-   All remaining contributors: Ionut Ionita (@ionutrazvanionita),
-   Ovidiu Sas (@ovidiusas), Walter Doekes (@wdoekes), Anca Vamanu,
-   Kennard White, Norman Brandinger (@NormB), Sergio Gutierrez,
-   Kobi Eshun (@ekobi), Henning Westerholt (@henningw), Olle E.
+   All remaining contributors: Andrey Vorobiev, Julián Moreno
+   Patiño, Ionut Ionita (@ionutrazvanionita), Walter Doekes
+   (@wdoekes), Anca Vamanu, Kennard White, Sergio Gutierrez, Kobi
+   Eshun (@ekobi), Henning Westerholt (@henningw), Olle E.
    Johansson, Daniel-Constantin Mierla (@miconda), Konstantin
    Bokarius, Edson Gellert Schubert, Elena-Ramona Modroiu, Klaus
    Darilion, Andreas Granig, Andrei Pelinescu-Onciul, Elena-Ramona
@@ -769,15 +786,15 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
-   Crainea (@razvancrainea), John Burke (@john08burke), Liviu
-   Chircu (@liviuchircu), Peter Lemenkov (@lemenkov), Ionut Ionita
-   (@ionutrazvanionita), Vlad Paiu (@vladpaiu), Anca Vamanu,
-   Norman Brandinger (@NormB), Kobi Eshun (@ekobi), Henning
-   Westerholt (@henningw), Daniel-Constantin Mierla (@miconda),
-   Konstantin Bokarius, Edson Gellert Schubert, Elena-Ramona
-   Modroiu, Klaus Darilion, Andrei Pelinescu-Onciul, Elena-Ramona
-   Modroiu.
+   Last edited by: Ovidiu Sas (@ovidiusas), Bogdan-Andrei Iancu
+   (@bogdan-iancu), Razvan Crainea (@razvancrainea), John Burke
+   (@john08burke), Liviu Chircu (@liviuchircu), Peter Lemenkov
+   (@lemenkov), Ionut Ionita (@ionutrazvanionita), Vlad Paiu
+   (@vladpaiu), Anca Vamanu, Norman Brandinger (@NormB), Kobi
+   Eshun (@ekobi), Henning Westerholt (@henningw),
+   Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
+   Gellert Schubert, Elena-Ramona Modroiu, Klaus Darilion, Andrei
+   Pelinescu-Onciul, Elena-Ramona Modroiu.
 
    Documentation Copyrights:
 

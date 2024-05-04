@@ -909,9 +909,10 @@ modparam("dialog", "flags_column", "flags_c_name")
 
 1.6.37. profiles_with_value (string)
 
-   List of names (alphanumerical) for profiles with values. Flags
-   /b or /s allow sharing profiles between OpenSIPS instances
-   using the clusterer module or a CacheDB backend, respectively.
+   List of names (alphanumerical/-/_) for profiles with values.
+   Flags /b or /s allow sharing profiles between OpenSIPS
+   instances using the clusterer module or a CacheDB backend,
+   respectively.
 
    Default value is “empty”.
 
@@ -923,7 +924,7 @@ annels/s; codecUsed/b;")
 
 1.6.38. profiles_no_value (string)
 
-   List of names (alphanumerical) for profiles without values.
+   List of names (alphanumerical/-/_) for profiles without values.
    Flags /b or /s allow sharing profiles between OpenSIPS
    instances using the clusterer module or a CacheDB backend,
    respectively.
@@ -2559,7 +2560,7 @@ Chapter 4. Contributors
    Table 4.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
-   1. Bogdan-Andrei Iancu (@bogdan-iancu) 453 286 13279 3527
+   1. Bogdan-Andrei Iancu (@bogdan-iancu) 454 287 13282 3530
    2. Razvan Crainea (@razvancrainea) 285 213 5285 1659
    3. Vlad Paiu (@vladpaiu) 254 145 7206 3027
    4. Vlad Patrascu (@rvlad-patrascu) 198 104 4330 3514
@@ -2604,9 +2605,9 @@ Chapter 4. Contributors
 
    Table 4.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2024
-   2.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Dec 2023
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Apr 2006 - Apr 2024
+   2.  Razvan Crainea (@razvancrainea)     Aug 2010 - Mar 2024
+   3.  Stefan-Cristian Mititelu            Jan 2024 - Jan 2024
    4.  Maksym Sobolyev (@sobomax)          Nov 2020 - Nov 2023
    5.  Liviu Chircu (@liviuchircu)         Aug 2012 - Nov 2023
    6.  Vlad Paiu (@vladpaiu)               Oct 2010 - Nov 2023
@@ -2637,8 +2638,8 @@ Chapter 5. Documentation
 
 5.1. Contributors
 
-   Last edited by: Stefan-Cristian Mititelu, Liviu Chircu
-   (@liviuchircu), Bogdan-Andrei Iancu (@bogdan-iancu), Ryan
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu),
+   Stefan-Cristian Mititelu, Liviu Chircu (@liviuchircu), Ryan
    Bullock, Vlad Patrascu (@rvlad-patrascu), Razvan Crainea
    (@razvancrainea), Vlad Paiu (@vladpaiu), Zero King (@l2dy), Dan
    Pascu (@danpascu), Peter Lemenkov (@lemenkov), Julián Moreno

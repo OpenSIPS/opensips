@@ -491,7 +491,7 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Vlad Patrascu (@rvlad-patrascu) 58 26 3129 324
-   2. Liviu Chircu (@liviuchircu) 22 17 246 120
+   2. Liviu Chircu (@liviuchircu) 24 18 252 123
    3. MonkeyTester 12 7 375 8
    4. Maksym Sobolyev (@sobomax) 6 4 22 22
    5. Razvan Crainea (@razvancrainea) 5 3 21 25
@@ -523,11 +523,11 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2024
-   2.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Mar 2024
-   3.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
-   4.  tcresson                            Oct 2023 - Oct 2023
-   5.  Liviu Chircu (@liviuchircu)         Nov 2019 - Sep 2023
+   1.  Liviu Chircu (@liviuchircu)         Nov 2019 - Apr 2024
+   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   5.  tcresson                            Oct 2023 - Oct 2023
    6.  MonkeyTester                        Aug 2023 - Aug 2023
    7.  Kevin                               Feb 2022 - Feb 2022
    8.  kworm83                             Jan 2022 - Jan 2022
