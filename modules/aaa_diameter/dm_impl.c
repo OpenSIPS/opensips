@@ -2037,11 +2037,10 @@ int _dm_send_message(aaa_conn *_, aaa_message *msg, struct dm_cond **reply_cond)
 
 	rc = pthread_cond_timedwait(&my_reply_cond->sync.cond.cond,
 				&my_reply_cond->sync.cond.mutex, &wait_until);
+	pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
 	if (rc != 0) {
 		LM_ERR("timeout (errno: %d '%s') while awaiting Diameter "
 		       "reply\n", rc, strerror(rc));
-		pthread_mutex_unlock(&my_reply_cond->sync.cond.mutex);
-
 		return -2;
 	}
 
