@@ -155,6 +155,29 @@ modparam("uac_registrant", "timer_interval", 120)
 		</example>
 	</section>
 
+	<section id="param_failure_retry_interval" xreflabel="failure_retry_interval">
+		<title><varname>failure_retry_interval</varname> (integer)</title>
+		<para>
+		Defines a custom interval to retry the registration upon error/failure.
+		Normally, after any kind of failure (timeout, credentials, internal 
+		error), the registration is re-taken after "expires" seconds. The 
+		parameter here, if set, overrides that value.
+		</para>
+		<para>
+		<emphasis>
+			Default value is 0 (not set).
+		</emphasis>
+                </para>
+		<example>
+		<title>Set <varname>failure_retry_interval</varname> parameter</title>
+		<programlisting format="linespecific">
+...
+modparam("uac_registrant", "failure_retry_interval", 3600)
+...
+</programlisting>
+		</example>
+	</section>
+
 	<section id="param_enable_clustering" xreflabel="enable_clustering">
 		<title><varname>enable_clustering</varname> (integer)</title>
 		<para>
