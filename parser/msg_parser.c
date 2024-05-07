@@ -44,6 +44,7 @@
 #include "../ut.h"
 #include "../error.h"
 #include "../dprint.h"
+#include "../data_lump.h"
 #include "../data_lump_rpl.h"
 #include "../mem/mem.h"
 #include "../error.h"
@@ -1398,3 +1399,15 @@ done:
 }
 
 
+int delete_headers(struct sip_msg *msg, struct hdr_field *hdr)
+{
+	for (; hdr; hdr = hdr->sibling) {
+		if (!del_lump(msg, hdr->name.s - msg->buf, hdr->len, hdr->type)) {
+			LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
+			       hdr->name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}
