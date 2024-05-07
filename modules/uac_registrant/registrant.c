@@ -98,6 +98,8 @@ static mi_response_t *mi_reg_enable(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reg_disable(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_force_register(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
@@ -178,6 +180,10 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ "reg_disable", 0, 0, 0, {
 		{mi_reg_disable, {"aor", "contact", "registrar", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "reg_force_register", 0, 0, 0, {
+		{mi_reg_force_register, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -1494,3 +1500,48 @@ static mi_response_t *mi_reg_disable(const mi_params_t *params,
 
 	return init_mi_result_ok();
 }
+
+
+int run_mi_reg_force_register(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	record_coords_t *coords = (record_coords_t *)data;
+
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
+		if (rec->flags&REG_ENABLED) {
+			rec->registration_timeout = 0;
+		}
+
+		return 1;
+	} else
+		return 0;  /* continue search */
+}
+
+static mi_response_t *mi_reg_force_register(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	record_coords_t coords;
+	int rc;
+	unsigned int hash_code;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	hash_code = core_hash(&coords.aor, NULL, reg_hsize);
+	coords.extra = (void*)(unsigned long)hash_code;
+
+	lock_get(&reg_htable[hash_code].lock);
+	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
+					&run_mi_reg_disable, &coords, NULL);
+	lock_release(&reg_htable[hash_code].lock);
+
+	if (rc < 0)
+		return NULL;
+	else if (rc == 0)
+		return init_mi_error(404, MI_SSTR("No such registrant"));
+
+	return init_mi_result_ok();
+}
+

@@ -543,15 +543,17 @@ modparam("uac_registrant", "state_column", "status")
 				only a specific record will be listed.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>contact</emphasis> (optional) - Contact URI. If provided,
+				<emphasis>contact</emphasis> (optional) - Contact URI. If 
+				provided,
 				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
-				parameters are also required and only a specific record will be listed.
+				parameters are also required and only a specific record will
+				be listed.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>registrar</emphasis> (optional) - URI pointing to the remote
-				registrar. If provided, <emphasis>aor</emphasis> and
-				<emphasis>contact</emphasis> parameters are also required and only a
-				specific record will be listed.
+				<emphasis>registrar</emphasis> (optional) - URI pointing to the
+				remote registrar. If provided, <emphasis>aor</emphasis> and
+				<emphasis>contact</emphasis> parameters are also required and
+				only a specific record will be listed.
 			</para></listitem>
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
@@ -574,15 +576,17 @@ opensips-cli -x mi reg_list sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip
 				only a specific record will be reloaded.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>contact</emphasis> (optional) - Contact URI. If provided,
+				<emphasis>contact</emphasis> (optional) - Contact URI. If 
+				provided,
 				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
-				parameters are also required and only a specific record will be reloaded.
+				parameters are also required and only a specific record will
+				be reloaded.
 			</para></listitem>
 			<listitem><para>
-				<emphasis>registrar</emphasis> (optional) - URI pointing to the remote
-				registrar. If provided, <emphasis>aor</emphasis> and
-				<emphasis>contact</emphasis> parameters are also required and only a
-				specific record will be reloaded.
+				<emphasis>registrar</emphasis> (optional) - URI pointing to the
+				remote registrar. If provided, <emphasis>aor</emphasis> and
+				<emphasis>contact</emphasis> parameters are also required and
+				only a specific record will be reloaded.
 			</para></listitem>
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
@@ -629,18 +633,19 @@ opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 s
 				<emphasis>aor</emphasis> - URI defining the address
 				of record. If provided, <emphasis>contact</emphasis> and
 				<emphasis>registrar</emphasis> parameters are also required and
-				only a specific record will be reloaded.
+				only a specific record will be disabled.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>contact</emphasis> - Contact URI. If provided,
 				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
-				parameters are also required and only a specific record will be reloaded.
+				parameters are also required and only a specific record will
+				be disabled.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>registrar</emphasis> - URI pointing to the remote
 				registrar. If provided, <emphasis>aor</emphasis> and
-				<emphasis>contact</emphasis> parameters are also required and only a
-				specific record will be reloaded.
+				<emphasis>contact</emphasis> parameters are also required and
+				only a specific record will be disabled.
 			</para></listitem>
 		</itemizedlist>
 		<para>MI FIFO Command Format:</para>
@@ -648,6 +653,40 @@ opensips-cli -x mi reg_enable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 s
 opensips-cli -x mi reg_disable sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
 		</programlisting>
 	</section>
+
+	<section id="mi_reg_force_register" xreflabel="reg_force_register">
+	<title><function moreinfo="none">reg_force_register</function></title>
+		<para>Forces the re-registration (or registation) of a specific 
+		registrant (depending on its state). Note that the registrant must be
+		enabled.</para>
+		<para>Name: <emphasis>reg_force_register</emphasis></para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>aor</emphasis> - URI defining the address
+				of record. If provided, <emphasis>contact</emphasis> and
+				<emphasis>registrar</emphasis> parameters are also required and
+				only a specific record will be forced to re-register.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>contact</emphasis> - Contact URI. If provided,
+				<emphasis>aor</emphasis> and <emphasis>registrar</emphasis>
+				parameters are also required and only a specific record will be
+				forced to re-register.
+			</para></listitem>
+			<listitem><para>
+				<emphasis>registrar</emphasis> - URI pointing to the remote
+				registrar. If provided, <emphasis>aor</emphasis> and
+				<emphasis>contact</emphasis> parameters are also required and
+				only a specific record will be forced to re-register.
+			</para></listitem>
+		</itemizedlist>
+		<para>MI FIFO Command Format:</para>
+		<programlisting  format="linespecific">
+opensips-cli -x mi reg_force_register sip:alice@opensips.org  sip:alice@127.0.0.1:5060 sip:opensips.org
+		</programlisting>
+	</section>
+
 	</section>
 </chapter>
 
