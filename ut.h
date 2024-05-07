@@ -1178,7 +1178,8 @@ static inline int str_casematch_nt(const str *a, const char *b)
  */
 static inline char* str_strstr(const str *stra, const str *strb)
 {
-	char *a, *ai, *b, *bi, *end1, *end2;
+	int i;
+	int len;
 
 	if (stra==NULL || strb==NULL || stra->s==NULL || strb->s==NULL
 			|| stra->len<=0 || strb->len<=0) {
@@ -1191,19 +1192,25 @@ static inline char* str_strstr(const str *stra, const str *strb)
 	if (strb->len > stra->len)
 		return NULL;
 
-	a = stra->s;
-	b = strb->s;
-	end1 = a + stra->len - strb->len + 1;
-	end2 = b + strb->len;
+	len=0;
+	while (stra->len-len >= strb->len){
+		if (stra->s[len] != strb->s[0]) {
+			len++;
+			continue;
+		}
 
-	for (; a < end1; a++) {
-		ai = a;
-		bi = b;
-		while ((*ai++ == *bi) && ++bi < end2) ;
+		for (i=1; i<strb->len; i++)
+			if (stra->s[len+i]!=strb->s[i]) {
+				len++;
+				break;
+			}
 
-		if (bi == end2)
-			return a;
+		if (i != strb->len)
+			continue;
+
+		return stra->s+len;
 	}
+
 
 	return NULL;
 }
