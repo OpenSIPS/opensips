@@ -1527,6 +1527,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 	ucontact_t* c;
 	urecord_t *r = NULL;
 	contact_t *_c;
+	str esc_aor;
 	unsigned int cseq;
 	int e_out = -1, vct = 0, was_valid;
 	int e_max = 0;
@@ -1548,8 +1549,14 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 
 	LM_DBG("saving + restoring all contact URIs ... \n");
 
-	/* in MID_REG_THROTTLE_AOR mode, any reply will only contain 1 contact */
-	_c = get_first_contact(rpl);
+	if (mid_reg_escape_aor(&mri->aor, &esc_aor) < 0) {
+		rerrno = R_INTERNAL;
+		LM_ERR("failed to escape AoR string: '%.*s'\n", mri->aor.len, mri->aor.s);
+		return -1;
+	}
+
+	/* in MID_REG_THROTTLE_AOR mode, replies should contain only 1 contact */
+	_c = get_first_contact_matching(rpl, &esc_aor);
 	if (_c)
 		calc_contact_expires(rpl, _c->expires, &e_out, 0);
 
@@ -1585,17 +1592,13 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		}
 	}
 
-	if (_c) {
-		/**
-		 * we now replace the single reply Contact hf with all Contact hfs
-		 * present in the initial request
-		 */
-		if (del_lump(rpl, rpl->contact->name.s - rpl->buf,
-		                  rpl->contact->len, HDR_CONTACT_T) == NULL) {
-			LM_ERR("failed to delete contact '%.*s'\n", rpl->contact->name.len,
-			       rpl->contact->name.s);
-			goto out_clear_err;
-		}
+	/**
+	 * replace the single reply Contact hf with all Contact hfs
+	 * present in the initial request (perform a global delete, to be sure)
+	 */
+	if (delete_headers(rpl, rpl->contact) != 0) {
+		LM_ERR("failed to delete all contact hfs\n");
+		goto out_clear_err;
 	}
 
 #ifdef EXTRA_DEBUG

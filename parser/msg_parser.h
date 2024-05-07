@@ -365,6 +365,9 @@ int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_
 
 char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr, int sip_well_known_parse);
 
+/* add DEL lumps for all headers matching the given @hdr */
+int delete_headers(struct sip_msg *msg, struct hdr_field *hdr);
+
 void free_sip_msg(struct sip_msg* msg);
 
 int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg);
