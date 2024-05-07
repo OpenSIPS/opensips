@@ -122,4 +122,37 @@ void test_ut(void)
 		ok(str_match(&kvf_values[4], &str_init("ZZZZZZZZZ")), "test-fixup-flags-3.5");
 		ok(str_match(&kvf_values[5], &STR_NULL), "test-fixup-flags-3.6");
 	}
+
+	/* str_strstr() tests */
+	{
+		struct {
+			str a;
+			str b;
+			int ok_offset;
+		} tests[] = {
+			{str_init(""), str_init(""), -1},
+			{str_init(""), str_init("x"), -1},
+			{str_init("x"), str_init(""), -1},
+			{str_init("x"), str_init("x"), 0},
+			{str_init("xy"), str_init("x"), 0},
+			{str_init("yx"), str_init("x"), 1},
+			{str_init("yxy"), str_init("x"), 1},
+			{str_init("foo"), str_init("bar"), -1},
+			{str_init("foobar"), str_init("bar"), 3},
+			{str_init("foobarx"), str_init("bar"), 3},
+			{str_init("fbarx"), str_init("bar"), 1},
+			{str_init("barx"), str_init("bar"), 0},
+			{str_init("bar"), str_init("bar"), 0},
+			{str_init("foo"), str_init("foobar"), -1},
+		};
+		int i;
+
+		for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
+			char *p = str_strstr(&tests[i].a, &tests[i].b);
+			if (tests[i].ok_offset < 0)
+				ok(!p, "test-str_strstr-%d", i);
+			else
+				ok(p == (tests[i].a.s + tests[i].ok_offset), "test-str_strstr-%d", i);
+		}
+	}
 }
