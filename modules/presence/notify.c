@@ -1877,7 +1877,7 @@ int publ_notify(presentity_t* p, str pres_uri, str* body, str* offline_etag,
 	while(s)
 	{
 		s->auth_rules_doc= rules_doc;
-		LM_INFO("notify\n");
+		LM_DBG("notify\n");
 		if(notify(s, NULL, notify_body?notify_body:body,
 			0, p->extra_hdrs?p->extra_hdrs:&notify_extra_hdrs, from_publish)< 0 )
 		{
@@ -1951,7 +1951,7 @@ int query_db_notify(str* pres_uri, pres_ev_t* event, subs_t* watcher_subs)
 
 	while(s)
 	{
-		LM_INFO("notify\n");
+		LM_DBG("notify\n");
 		if(notify(s, watcher_subs, notify_body, 0, NULL, 0)< 0 )
 		{
 			LM_ERR("Could not send notify for [event]=%.*s\n",
@@ -2158,7 +2158,7 @@ jump_over_body:
 		goto error;
 	}
 
-	LM_INFO("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
+	LM_DBG("NOTIFY %.*s via %.*s on behalf of %.*s for event %.*s, to_tag=%.*s, cseq=%d\n",
 		td->rem_uri.len, td->rem_uri.s, td->hooks.next_hop->len, td->hooks.next_hop->s,
 		td->loc_uri.len, td->loc_uri.s, subs->event->name.len, subs->event->name.s,
 		td->id.loc_tag.len, td->id.loc_tag.s, td->loc_seq.value);
