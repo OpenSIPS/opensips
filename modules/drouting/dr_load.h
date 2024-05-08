@@ -33,6 +33,6 @@ int dr_set_gw_sock_filter_mode(char *mode);
 void dr_update_head_cache(struct head_db *head);
 
 rt_data_t* dr_load_routing_info(struct head_db *current_partition,
-		int persistent_state, str *rules_tables, int rules_no);
+		int persistent_state, str *rules_tables, int rules_no, MD5_CTX *hash_ctx);
 
 #endif

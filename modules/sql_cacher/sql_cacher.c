@@ -57,6 +57,7 @@ static str columns_delimiter = str_init(DEFAULT_COLUMNS_DELIM);
 static int fetch_nr_rows = DEFAULT_FETCH_NR_ROWS;
 static int full_caching_expire = DEFAULT_FULL_CACHING_EXPIRE;
 static int reload_interval = DEFAULT_RELOAD_INTERVAL;
+static int sql_cacher_bigint2str = DEFAULT_BIGINT2STR;
 
 static cache_entry_t **entry_list;
 static struct queried_key **queries_in_progress;
@@ -77,6 +78,7 @@ static const param_export_t mod_params[] = {
 	{"full_caching_expire", INT_PARAM, &full_caching_expire},
 	{"reload_interval", INT_PARAM, &reload_interval},
 	{"cache_table", STR_PARAM|USE_FUNC_PARAM, (void *)&parse_cache_entry},
+	{"bigint_to_str", INT_PARAM, &sql_cacher_bigint2str},
 	{0,0,0}
 };
 
@@ -479,14 +481,22 @@ static int get_column_types(cache_entry_t *c_entry, db_val_t *values, int nr_col
 		val_type = VAL_TYPE(values + i);
 		switch (val_type) {
 			case DB_INT:
-			case DB_BIGINT:
-			case DB_DOUBLE:
 				c_entry->nr_ints++;
 				c_entry->column_types &= ~(1LL << i);
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					c_entry->nr_strs++;
+					c_entry->column_types |= (1LL << i);
+				} else {
+					c_entry->nr_ints++;
+					c_entry->column_types &= ~(1LL << i);
+				}
 				break;
 			case DB_STRING:
 			case DB_STR:
 			case DB_BLOB:
+			case DB_DOUBLE:
 				c_entry->nr_strs++;
 				c_entry->column_types |= (1LL << i);
 				break;
@@ -515,14 +525,22 @@ static int build_column_types(cache_entry_t *c_entry, db_key_t *names, db_type_t
 		val_type = types[i];
 		switch (val_type) {
 			case DB_INT:
-			case DB_BIGINT:
-			case DB_DOUBLE:
 				c_entry->nr_ints++;
 				c_entry->column_types &= ~(1LL << i);
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					c_entry->nr_strs++;
+					c_entry->column_types |= (1LL << i);
+				} else {
+					c_entry->nr_ints++;
+					c_entry->column_types &= ~(1LL << i);
+				}
 				break;
 			case DB_STRING:
 			case DB_STR:
 			case DB_BLOB:
+			case DB_DOUBLE:
 				c_entry->nr_strs++;
 				c_entry->column_types |= (1LL << i);
 				break;
@@ -557,6 +575,16 @@ static unsigned int get_cdb_val_size(cache_entry_t *c_entry, db_val_t *values, i
 			case DB_BLOB:
 				len += VAL_BLOB(values + i).len;
 				break;
+			case DB_DOUBLE:
+				len += DOUBLE2STR_MAX_LEN;
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					len += BIGINT2STR_MAX_LEN;
+					break;
+				} else {
+					continue;
+				}
 			default: continue;
 		}
 	}
@@ -602,11 +630,12 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 				int_val = VAL_INT(values + i);
 				break;
 			case DB_BIGINT:
-				int_val = (int)VAL_BIGINT(values + i);
-				break;
-			case DB_DOUBLE:
-				int_val = (int)VAL_DOUBLE(values + i);
-				break;
+				if (!sql_cacher_bigint2str) {
+					int_val = (int)VAL_BIGINT(values + i);
+					break;
+				} else {
+					continue;
+				}
 			default: continue;
 		}
 		if (VAL_NULL(values + i))
@@ -637,6 +666,16 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 			case DB_BLOB:
 				str_val = VAL_BLOB(values + i);
 				break;
+			case DB_DOUBLE:
+				str_val.s = double2str(VAL_DOUBLE(values + i), &str_val.len);
+				break;
+			case DB_BIGINT:
+				if (sql_cacher_bigint2str) {
+					str_val.s = bigint2str(VAL_BIGINT(values + i), &str_val.len);
+					break;
+				} else {
+					continue;
+				}
 			default: continue;
 		}
 		if (VAL_NULL(values + i))
@@ -653,6 +692,9 @@ static int insert_in_cachedb(cache_entry_t *c_entry, db_handlers_t *db_hdls,
 		memcpy(cdb_val.s + strs_offset, str_val.s, str_val.len);
 		strs_offset += str_val.len;
 	}
+	/* adjust the useful size to how much was actually written;
+	 * The initial value could be over-estimated by get_cdb_val_size() */
+	cdb_val.len = strs_offset;
 
 	/* make sure the key is string */
 	val_type = VAL_TYPE(key);
@@ -1749,10 +1791,24 @@ static int on_demand_load(pv_name_fix_t *pv_name, str *str_res, int *int_res,
 			*int_res = VAL_INT(values + pv_name->col_nr);
 			break;
 		case DB_BIGINT:
-			*int_res = (int)VAL_BIGINT(values + pv_name->col_nr);
+			if (sql_cacher_bigint2str) {
+				st.s = bigint2str(VAL_BIGINT(values + pv_name->col_nr), &st.len);
+				if (pkg_str_dup(str_res, &st) != 0) {
+					LM_ERR("oom\n");
+					rc = -1;
+					goto out_free_res;
+				}
+			} else {
+				*int_res = (int)VAL_BIGINT(values + pv_name->col_nr);
+			}
 			break;
 		case DB_DOUBLE:
-			*int_res = (int)VAL_DOUBLE(values + pv_name->col_nr);
+			st.s = double2str(VAL_DOUBLE(values + pv_name->col_nr), &st.len);
+			if (pkg_str_dup(str_res, &st) != 0) {
+				LM_ERR("oom\n");
+				rc = -1;
+				goto out_free_res;
+			}
 			break;
 		default:
 			LM_ERR("Unsupported type for SQL column\n");

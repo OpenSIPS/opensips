@@ -172,6 +172,12 @@
         goto other
 
 
+#define auts_CASE         \
+		*_type = PAR_AUTS;\
+        p += 4;           \
+		goto end;         \
+
+
 #define FIRST_QUATERNIONS       \
         case _user_: user_CASE; \
         case _real_: real_CASE; \
@@ -179,7 +185,8 @@
         case _resp_: resp_CASE; \
         case _cnon_: cnon_CASE; \
         case _opaq_: opaq_CASE; \
-        case _algo_: algo_CASE;
+        case _algo_: algo_CASE; \
+        case _auts_: auts_CASE;
 
 
 

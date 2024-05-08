@@ -73,7 +73,7 @@ lookup_rc lookup(struct sip_msg *req, udomain_t *d,
 
 	if (lookup_flags) {
 		flags = lookup_flags->flags;
-		if (lookup_flags->ua_re_is_set)
+		if (flags & REG_LOOKUP_UAFILTER_FLAG)
 			ua_re = &lookup_flags->ua_re;
 		max_latency = lookup_flags->max_latency;
 	}
@@ -208,8 +208,6 @@ done:
 		ul.unlock_udomain(d, &aor);
 	}
 out_cleanup:
-	if (flags & REG_LOOKUP_UAFILTER_FLAG)
-		regfree(ua_re);
 	return ret;
 }
 
@@ -342,84 +340,6 @@ skip_remaining:
 }
 
 
-int parse_lookup_flags(const str *input, unsigned int *flags, regex_t *ua_re,
-                       int *regexp_flags, int *max_latency)
-{
-	char *ua = NULL, *re_end = NULL;
-	int i, re_len = 0;
-
-	*flags = 0;
-	if (ZSTRP(input))
-		return 0;
-
-	for (i = 0; i < input->len; i++) {
-		switch (input->s[i]) {
-		case 'm': *flags |= REG_LOOKUP_METHODFILTER_FLAG; break;
-		case 'b': *flags |= REG_LOOKUP_NOBRANCH_FLAG; break;
-		case 'g': *flags |= REG_LOOKUP_GLOBAL_FLAG; break;
-		case 'r': *flags |= REG_BRANCH_AOR_LOOKUP_FLAG; break;
-		case 'B': *flags |= REG_LOOKUP_NO_RURI_FLAG; break;
-		case 'u':
-			if (input->s[i+1] != '/') {
-				LM_ERR("no regexp start after 'u' flag\n");
-				break;
-			}
-			i++;
-			re_end = q_memchr(input->s + i + 1, '/', input->len - i - 1);
-			if (!re_end) {
-				LM_ERR("no regexp end after 'u' flag\n");
-				break;
-			}
-			i++;
-			re_len = re_end - input->s - i;
-			if (re_len == 0) {
-				LM_ERR("empty regexp\n");
-				break;
-			}
-			ua = input->s + i;
-			*flags |= REG_LOOKUP_UAFILTER_FLAG;
-			LM_DBG("found regexp /%.*s/", re_len, ua);
-
-			i += re_len;
-			break;
-
-		case 'i': *regexp_flags |= REG_ICASE; break;
-		case 'e': *regexp_flags |= REG_EXTENDED; break;
-		case 'y':
-			*max_latency = 0;
-			while (i<input->len-1 && isdigit(input->s[i+1])) {
-				*max_latency = *max_latency*10 + input->s[i+1] - '0';
-				i++;
-			}
-
-			if (*max_latency)
-				*flags |= REG_LOOKUP_MAX_LATENCY_FLAG;
-			else
-				*flags &= ~REG_LOOKUP_MAX_LATENCY_FLAG;
-			break;
-
-		case 'Y': *flags |= REG_LOOKUP_LATENCY_SORT_FLAG; break;
-
-		default:
-			LM_WARN("unsupported flag %c \n", input->s[i]);
-		}
-	}
-
-	LM_DBG("final flags: %d\n", *flags);
-
-	if (*flags & REG_LOOKUP_UAFILTER_FLAG) {
-		ua[re_len] = '\0';
-		if (regcomp(ua_re, ua, *regexp_flags) != 0) {
-			LM_ERR("bad regexp '%s'\n", ua);
-			ua[re_len] = '/';
-			return -1;
-		}
-		ua[re_len] = '/';
-	}
-
-	return 0;
-}
-
 #define REG_LOOKUP_TMP_REG_ICASE    (1<<6)
 #define REG_LOOKUP_TMP_REG_EXTENDED (1<<7)
 
@@ -508,8 +428,6 @@ int reg_fixup_lookup_flags(void** param)
 			return -1;
 		}
 		*(p + re_len) = '/';
-
-		lookup_flags->ua_re_is_set = 1;
 	}
 
 	/* max-ping-latency */
@@ -529,8 +447,13 @@ int reg_fixup_lookup_flags(void** param)
 
 int reg_fixup_free_lookup_flags(void** param)
 {
-	if (*param)
-		pkg_free(*param);
+	struct lookup_flags *lookup_flags = (struct lookup_flags *)*param;
+
+	if (lookup_flags) {
+		if (lookup_flags->flags & REG_LOOKUP_UAFILTER_FLAG)
+			regfree(&lookup_flags->ua_re);
+		pkg_free(lookup_flags);
+	}
 	return 0;
 }
 

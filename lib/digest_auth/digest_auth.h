@@ -41,7 +41,7 @@
 
 /* First/Last supported algorithm */
 #define FIRST_ALG_SPTD (ALG_UNSPEC)
-#define LAST_ALG_SPTD  (ALG_SHA512_256SESS)
+#define LAST_ALG_SPTD  (ALG_OTHER-1)
 
 typedef union {
 	HASH_MD5 MD5;
@@ -83,9 +83,9 @@ struct dauth_algorithm_match {
 #define DAUTH_AHFM_MSKSUP(_am) (&MATCH_AUTH_HF(dauth_algorithm_check, \
     &DAUTH_ALGMATCH_MSK(_am)))
 
-int digest_algorithm_available(alg_t);
-int dauth_algorithm_check(const struct authenticate_body *,
-    const struct match_auth_hf_desc *);
+int digest_algorithm_available(alg_t alg);
+int dauth_algorithm_check(const struct authenticate_body * body,
+    const struct match_auth_hf_desc * desc);
 int dauth_fixup_algorithms(void** param);
 
 #endif

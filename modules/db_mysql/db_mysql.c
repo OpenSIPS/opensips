@@ -179,7 +179,7 @@ int db_mysql_bind_api(const str* mod, db_func_t *dbb)
 	dbb->async_free_result = db_mysql_async_free_result;
 	dbb->async_timeout     = db_mysql_async_timeout;
 
-	dbb->cap |= DB_CAP_MULTIPLE_INSERT;
+	dbb->cap |= DB_CAP_MULTIPLE_INSERT|DB_CAP_PREPARED_STMT;
 	return 0;
 }
 

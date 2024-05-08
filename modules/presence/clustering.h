@@ -53,7 +53,8 @@ extern str clustering_events;
 /* the clusterer api / functions */
 extern struct clusterer_binds c_api;
 
-int init_pres_clustering(void);
+int init_pres_clustering(char *federation_mode_str,
+		char* cluster_mute_shtag_str);
 
 int is_event_clustered( int event_parsed );
 

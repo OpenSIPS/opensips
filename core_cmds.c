@@ -39,6 +39,7 @@
 #include "status_report.h"
 #include "cachedb/cachedb.h"
 #include "msg_translator.h"
+#include "mod_fix.h"
 /* needed by tcpconn_add_alias() */
 #include "net/tcp_conn_defs.h"
 
@@ -64,6 +65,7 @@ static int fixup_format_string(void** param);
 static int fixup_nt_string(void** param);
 static int fixup_nt_str(void** param);
 static int fixup_nt_str_free(void** param);
+static int fixup_via_hdl(void** param);
 
 static int w_forward(struct sip_msg *msg, struct proxy_l *dest);
 static int w_send(struct sip_msg *msg, struct proxy_l *dest, str *headers);
@@ -127,6 +129,7 @@ static int w_script_trace(struct sip_msg *msg, int *log_level,
 					pv_elem_t *fmt_string, void *info_str);
 static int w_is_myself(struct sip_msg *msg, str *host, int *port);
 static int w_print_avps(struct sip_msg* msg, char* foo, char *bar);
+static int w_set_via_handling(struct sip_msg* msg, int* flags);
 
 #ifndef FUZZ_BUILD
 static
@@ -361,6 +364,9 @@ const cmd_export_t core_cmds[]={
 		{CMD_PARAM_STR|CMD_PARAM_OPT, 0, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{"avp_print", (cmd_function)w_print_avps, {{0, 0, 0}},
+		ALL_ROUTES},
+	{"set_via_handling", (cmd_function)w_set_via_handling, {
+		{CMD_PARAM_STR, fixup_via_hdl, 0}, {0,0,0}},
 		ALL_ROUTES},
 	{0,0,{{0,0,0}},0}
 };
@@ -1462,4 +1468,39 @@ static int w_print_avps(struct sip_msg* msg, char* foo, char *bar)
 	return 1;
 }
 
+
+static str via_hdl_flag_names[] = {
+	str_init("force-rport"),
+	str_init("add-local-rport"),
+	str_init("reply-to-via"),
+	str_init("force-tcp-alias"),
+	STR_NULL
+};
+enum via_hdl_flags {
+	VIA_HDL_FORCE_RPORT,
+	VIA_HDL_ADD_LOCAL_RPORT,
+	VIA_HDL_REPLY_TO_VIA,
+	VIA_HDL_FORCE_TCP_ALIAS,
+};
+static int fixup_via_hdl(void** param)
+{
+	return fixup_named_flags(param, via_hdl_flag_names, NULL, NULL);
+}
+
+static int w_set_via_handling(struct sip_msg* msg, int* flags)
+{
+	if (*flags & VIA_HDL_FORCE_RPORT)
+		msg->msg_flags |= FL_FORCE_RPORT;
+
+	if (*flags & VIA_HDL_ADD_LOCAL_RPORT)
+		msg->msg_flags|=FL_FORCE_LOCAL_RPORT;
+
+	if (*flags & VIA_HDL_REPLY_TO_VIA)
+		msg->msg_flags |= FL_REPLY_TO_VIA;
+
+	if (*flags & VIA_HDL_FORCE_TCP_ALIAS)
+		w_force_tcp_alias( msg, 0);
+
+	return 1;
+}
 

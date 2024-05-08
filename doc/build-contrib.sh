@@ -242,7 +242,7 @@ fix_authors=(
   ["13e9a5cbe14050e622a3ef65cd34b72260a74f01"]="Kennard White"
   ["26599d25cbc140373a5c24759dce688235e57589"]="Anatoly Pidruchny"
 
-  # avpops
+  # sqlops
   ["37eba4b6d38f379a227040397c569f0d0fe99c9c"]="Kennard White"
   ["d129377f64f13e85ea0baf6d215092b4b4776f6e"]="Norman Brandinger"
   ["b9247c08af07662c6e712179dc57bcc5f16794aa"]="Kobi Eshun"
@@ -617,6 +617,8 @@ mod_renames=(
   [event_stream]=event_jsonrpc
   [b2b_logic]=b2b_logic:1605638778
   [b2b_logic_xml]=b2b_logic::1605638778
+  [sqlops]=dbops
+  [dbops]=avpops
 )
 
 mk_git_handle() {

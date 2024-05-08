@@ -26,6 +26,7 @@
 
 #include "../../lib/cJSON.h"
 #include "../../lib/osips_malloc.h"
+#include "urecord.h"
 
 int_str_t *kv_get(map_t _store, const str* _key)
 {
@@ -237,4 +238,99 @@ void store_destroy(map_t _store)
 {
 	if (_store)
 		map_destroy(_store, destroy_kv_store_val);
+}
+
+
+int w_add_key(struct sip_msg* _m, void* _d, str* aor, str* key, str* value)
+{
+	urecord_t *r;
+	udomain_t *domain = (udomain_t*)_d;
+	int_str_t insert_value;
+
+	lock_udomain(domain, aor);
+	get_urecord(domain, aor, &r);
+	if (r) {
+		if (value->len > 0) {
+			insert_value.is_str = 1;
+			insert_value.s = *value;
+			if (!kv_put(r->kv_storage, key, &insert_value)) {
+				unlock_udomain(domain, aor);
+				LM_ERR("failed to store KV\n");
+				return -1;
+			}
+		} else {
+			kv_del(r->kv_storage, key);
+		}
+	} else {
+		unlock_udomain(domain, aor);
+		LM_WARN("No record found - not inserting key into KV store - user not registered?\n");
+		return -1;
+	}
+
+	unlock_udomain(domain, aor);
+	return 1;
+}
+
+int w_get_key(struct sip_msg* _m, void* _d, str* aor, str* key, pv_spec_t* destination)
+{
+	urecord_t *r;
+	udomain_t *domain = (udomain_t*)_d;
+	int_str_t * key_value;
+	pv_value_t out_val;
+
+	lock_udomain(domain, aor);
+	get_urecord(domain, aor, &r);
+
+	if (r) {
+		key_value = kv_get(r->kv_storage, key);
+		if (key_value) {
+			if (key_value->is_str) {
+				out_val.flags = PV_VAL_STR;
+				out_val.rs = key_value->s;
+				if (pv_set_value(_m, destination, 0, &out_val) != 0) {
+					unlock_udomain(domain, aor);
+					LM_ERR("failed to write to destination variable\n");
+					return -1;
+				}
+			} else {
+				out_val.flags = PV_VAL_INT;
+				out_val.ri = key_value->i;
+				if (pv_set_value(_m, destination, 0, &out_val) != 0) {
+					unlock_udomain(domain, aor);
+					LM_ERR("failed to write to destination variable\n");
+					return -1;
+				}
+			}
+		} else {
+			unlock_udomain(domain, aor);
+			LM_WARN("Key not found in record - unable to retrieve value from KV store\n");
+			return -1;
+		}
+	} else {
+		unlock_udomain(domain, aor);
+		LM_WARN("No record found - unable to retrieve value from KV store - user not registered?\n");
+		return -1;
+	}
+
+	unlock_udomain(domain, aor);
+	return 1;
+}
+
+int w_delete_key(struct sip_msg* _m, void* _d, str* aor, str* key)
+{
+	urecord_t *r;
+	udomain_t *domain = (udomain_t*)_d;
+
+	lock_udomain(domain, aor);
+	get_urecord(domain, aor, &r);
+	if (r) {
+		kv_del(r->kv_storage, key);
+	} else {
+		unlock_udomain(domain, aor);
+		LM_WARN("No record found - not deleting value from  KV store - user not registered?\n");
+		return -1;
+	}
+
+	unlock_udomain(domain, aor);
+	return 1;
 }

@@ -1046,7 +1046,7 @@ modparam("dialog", "flags_column", "flags_c_name")
 	<section id="param_profiles_with_value" xreflabel="profiles_with_value">
 		<title><varname>profiles_with_value</varname> (string)</title>
 		<para>
-			List of names (alphanumerical) for profiles with values. Flags
+			List of names (alphanumerical/-/_) for profiles with values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.
@@ -1069,7 +1069,7 @@ modparam("dialog", "profiles_with_value", "callerCC; gatewayCC; clientChannels/s
 	<section id="param_profiles_no_value" xreflabel="profiles_no_value">
 		<title><varname>profiles_no_value</varname> (string)</title>
 		<para>
-			List of names (alphanumerical) for profiles without values. Flags
+			List of names (alphanumerical/-/_) for profiles without values. Flags
 			<emphasis>/b</emphasis> or <emphasis>/s</emphasis> allow sharing
 			profiles between &osips; instances using the clusterer module or a
 			CacheDB backend, respectively.

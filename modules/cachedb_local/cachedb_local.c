@@ -73,6 +73,12 @@ static int remove_chunk_f(struct sip_msg* msg, str* collection, str* glob);
 mi_response_t *mi_cache_remove_chunk_1(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
+
+								struct mi_handler *async_hdl);
+
+mi_response_t *mi_cache_fetch_chunk_1(const mi_params_t *params,
+								struct mi_handler *async_hdl);
+mi_response_t *mi_cache_fetch_chunk_2(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 void localcache_clean(unsigned int ticks,void *param);
 static int parse_collections(unsigned int type, void *val);
@@ -101,6 +107,11 @@ static const mi_export_t mi_cmds[] = {
 	{ "cache_remove_chunk", 0, 0, 0, {
 		{mi_cache_remove_chunk_1, {"glob", 0}},
 		{mi_cache_remove_chunk_2, {"glob", "collection", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "cache_fetch_chunk", 0, 0, 0, {
+		{mi_cache_fetch_chunk_1, {"glob", 0}},
+		{mi_cache_fetch_chunk_2, {"glob", "collection", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -268,6 +279,137 @@ mi_response_t *mi_cache_remove_chunk_2(const mi_params_t *params,
 		return init_mi_param_error();
 
 	return mi_cache_remove_chunk(params, &col);
+}
+
+mi_response_t *mi_cache_fetch_chunk(const mi_params_t *params, str *collection)
+{
+	str glob;
+	mi_response_t *resp;
+	mi_item_t *resp_obj, *keys_arr, *key_obj;
+	lcache_col_t* col;
+	lcache_t* cache_htable;
+	lcache_entry_t* me1;
+	struct timeval start;
+	int i;
+
+	if (get_mi_string_param(params, "glob", &glob.s, &glob.len) < 0)
+		return init_mi_param_error();
+
+	if ( !collection ) {
+		/* use default collection; default collection is always first in list */
+		col = lcache_collection;
+	} else {
+		for ( col=lcache_collection; col; col=col->next ) {
+			if ( !str_strcmp( &col->col_name, collection) )
+				break;
+		}
+
+		if ( !col ) {
+			LM_ERR("collection <%.*s> not defined!\n", collection->len, collection->s);
+			return init_mi_param_error();
+		}
+	}
+
+	cache_htable = col->col_htable->htable;
+
+	if (glob.len+1 > pat_buff_size) {
+		pat_buff = pkg_realloc(pat_buff,glob.len+1);
+		if (pat_buff == NULL) {
+			LM_ERR("No more pkg mem\n");
+			pat_buff_size = 0;
+			return init_mi_error( 400, MI_SSTR("Internal Error"));
+		}
+
+		pat_buff_size = glob.len +1;
+	}
+
+	memcpy(pat_buff,glob.s,glob.len);
+	pat_buff[glob.len] = 0;
+
+	resp = init_mi_result_object(&resp_obj);
+	if (resp==NULL) {
+		LM_ERR("Failed to init reply object \n");
+		return init_mi_error( 400, MI_SSTR("Internal Error"));
+	}
+
+	if((keys_arr = add_mi_array(resp_obj, MI_SSTR("keys"))) < 0) {
+		LM_ERR("Failed to init client rates reply object \n");
+		return init_mi_error( 400, MI_SSTR("Internal Error"));
+	}
+
+	LM_DBG("trying to fetch entire chunk with pattern [%s]\n",pat_buff);
+	start_expire_timer(start,local_exec_threshold);
+
+	for(i = 0; i< col->size; i++) {
+		lock_get(&cache_htable[i].lock);
+		me1 = cache_htable[i].entries;
+
+		while(me1) {
+			if (me1->attr.len + 1 > key_buff_size) {
+				key_buff = pkg_realloc(key_buff,me1->attr.len+1);
+				if (key_buff == NULL) {
+					LM_ERR("No more pkg mem\n");
+					key_buff_size = 0;
+					goto err_release;
+				}
+				key_buff_size = me1->attr.len + 1;
+			}
+
+			memcpy(key_buff,me1->attr.s,me1->attr.len);
+			key_buff[me1->attr.len] = 0;
+
+			if(fnmatch(pat_buff,key_buff,0) == 0) {
+				LM_DBG("[%.*s] matches glob [%.*s] - returning %d\n",
+						me1->attr.len, me1->attr.s,pat_buff_size,pat_buff,i);
+				if ((key_obj = add_mi_object(keys_arr, MI_SSTR("key"))) < 0) {
+					LM_ERR("Failed to add object \n");
+					goto err_release;
+				}
+				if (add_mi_string(key_obj,MI_SSTR("name"),me1->attr.s,me1->attr.len) < 0) {
+					LM_ERR("Failed to add key name \n");
+					goto err_release;
+				}
+				if (add_mi_string(key_obj,MI_SSTR("value"),me1->value.s,me1->value.len) < 0) {
+					LM_ERR("Failed to add key value \n");
+					goto err_release;
+				}
+			}
+
+			me1 = me1->next;
+		}
+
+		lock_release(&cache_htable[i].lock);
+	}
+
+	_stop_expire_timer(start,local_exec_threshold,
+		"cachedb_local fetch_chunk",glob.s,glob.len,0,
+		cdb_slow_queries, cdb_total_queries);
+
+
+	return resp;
+err_release:
+	lock_release(&cache_htable[i].lock);
+	_stop_expire_timer(start,local_exec_threshold,
+		"cachedb_local fetch_chunk",glob.s,glob.len,0,
+		cdb_slow_queries, cdb_total_queries);
+	return init_mi_error( 400, MI_SSTR("Internal Error"));
+}
+
+mi_response_t *mi_cache_fetch_chunk_1(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	return mi_cache_fetch_chunk(params, NULL);
+}
+
+mi_response_t *mi_cache_fetch_chunk_2(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	str col;
+
+	if (get_mi_string_param(params, "collection", &col.s, &col.len) < 0)
+		return init_mi_param_error();
+
+	return mi_cache_fetch_chunk(params, &col);
 }
 
 lcache_con* lcache_new_connection(struct cachedb_id* id)

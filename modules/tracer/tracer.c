@@ -1344,6 +1344,10 @@ static void trace_transaction_dlgcb(struct dlg_cell* dlg, int type,
 	trace_info_p info = (trace_info_p)*params->param;
 	int reverte_dir = 0;
 
+	/* should not trace dummy messages */
+	if (is_dummy_sip_msg(params->msg) == 0)
+		return;
+
 	if (dlgb.get_direction()==DLG_DIR_UPSTREAM)
 		reverte_dir = 1;
 
@@ -2096,6 +2100,14 @@ do { \
 		_col_port.val.int_val = trace_local_port; \
 	} while (0)
 
+#define TRACE_GET_DST_IP(_msg) \
+	(((_msg)->rcv.bind_address && (_msg)->rcv.bind_address->adv_sock_str.len)? \
+	 (struct ip_addr *)&(_msg)->rcv.bind_address->adv_address:&(_msg)->rcv.dst_ip)
+#define TRACE_GET_DST_PORT(_msg) \
+	(((_msg)->rcv.bind_address && (_msg)->rcv.bind_address->adv_sock_str.len)? \
+	 (_msg)->rcv.bind_address->adv_port:(_msg)->rcv.dst_port)
+
+
 
 
 static int sip_trace(struct sip_msg *msg, trace_info_p info, int leg_flag)
@@ -2151,7 +2163,7 @@ static int sip_trace(struct sip_msg *msg, trace_info_p info, int leg_flag)
 		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 
 	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-		msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip,  msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
+		TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 
 	db_vals[10].val.time_val = time(NULL);
 
@@ -2238,7 +2250,7 @@ static int sip_trace_instance(struct sip_msg* msg,
 		&msg->rcv.src_ip, msg->rcv.src_port, msg->rcv.proto);
 
 	set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-		msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip,  msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
+		TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 
 	db_vals[10].val.time_val = time(NULL);
 
@@ -2367,7 +2379,7 @@ static void trace_slreply_out(struct sip_msg* req, str *buffer,int rpl_code,
 		set_columns_to_trace_local_ip( db_vals[4], db_vals[5], db_vals[6]);
 	} else {
 		set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-		req->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&req->rcv.bind_address->adv_address:&req->rcv.dst_ip, req->rcv.bind_address->adv_sock_str.len?req->rcv.bind_address->adv_port:req->rcv.dst_port, req->rcv.proto);
+			TRACE_GET_DST_IP(req), TRACE_GET_DST_PORT(req), req->rcv.proto);
 	}
 
 	char * str_code = int2str(rpl_code, &len);
@@ -2514,14 +2526,10 @@ static void trace_msg_out(struct sip_msg* msg, str  *sbuf,
 		if(send_sock==0 || send_sock->sock_str.s==0)
 		{
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip, msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
+					TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 		} else {
-			char *nbuff = proto2str(send_sock->proto,fromip_buff);
-			db_vals[4].val.str_val.s = fromip_buff;
-			db_vals[4].val.str_val.len = nbuff - fromip_buff;
-			db_vals[5].val.str_val = send_sock->adv_sock_str.len?send_sock->adv_name_str:send_sock->address_str;
-			db_vals[6].val.int_val = send_sock->last_real_ports->local?
-				send_sock->last_real_ports->local:send_sock->port_no;
+			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+					send_sock->adv_sock_str.len?(struct ip_addr *)&send_sock->adv_address:(struct ip_addr *)&send_sock->address, send_sock->last_real_ports->local?send_sock->last_real_ports->local:send_sock->port_no, send_sock->proto);
 		}
 	}
 
@@ -2644,7 +2652,7 @@ static void trace_onreply_in(struct cell* t, int type, struct tmcb_params *ps,
 	}
 	else {
 		set_sock_columns( db_vals[7], db_vals[8], db_vals[9], toip_buff,
-			msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip, msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
+			TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 	}
 
 	db_vals[10].val.time_val = time(NULL);
@@ -2802,14 +2810,10 @@ static void trace_onreply_out(struct cell* t, int type, struct tmcb_params *ps,
 		if(dst==NULL || dst->send_sock==0 || dst->send_sock->sock_str.s==0)
 		{
 			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
-					msg->rcv.bind_address->adv_sock_str.len?(struct ip_addr *)&msg->rcv.bind_address->adv_address:&msg->rcv.dst_ip, msg->rcv.bind_address->adv_sock_str.len?msg->rcv.bind_address->adv_port:msg->rcv.dst_port, msg->rcv.proto);
+				TRACE_GET_DST_IP(msg), TRACE_GET_DST_PORT(msg), msg->rcv.proto);
 		} else {
-			char *nbuff = proto2str(dst->send_sock->proto,fromip_buff);
-			db_vals[4].val.str_val.s = fromip_buff;
-			db_vals[4].val.str_val.len = nbuff - fromip_buff;
-			db_vals[5].val.str_val = dst->send_sock->adv_sock_str.len?dst->send_sock->adv_name_str:dst->send_sock->address_str;
-			db_vals[6].val.int_val = dst->send_sock->last_real_ports->local?
-				dst->send_sock->last_real_ports->local:dst->send_sock->port_no;
+			set_sock_columns( db_vals[4], db_vals[5], db_vals[6], fromip_buff,
+					dst->send_sock->adv_sock_str.len?(struct ip_addr *)&dst->send_sock->adv_address:(struct ip_addr *)&dst->send_sock->address, dst->send_sock->last_real_ports->local?dst->send_sock->last_real_ports->local:dst->send_sock->port_no, dst->send_sock->proto);
 		}
 	}
 

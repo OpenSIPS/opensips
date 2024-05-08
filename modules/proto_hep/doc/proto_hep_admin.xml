@@ -40,7 +40,8 @@ socket= hep_udp:127.0.0.1:6061 		# change the listening IP
 			<itemizedlist>
 			<listitem>
 			<para>
-				<emphasis>None</emphasis>.
+				<emphasis>tls_mgm</emphasis> - optional, only if a TLS based
+				HEP listener is defined in the script.
 			</para>
 			</listitem>
 			</itemizedlist>

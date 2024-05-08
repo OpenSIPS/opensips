@@ -50,10 +50,13 @@ static mi_response_t *mi_dbt_reload_1(const mi_params_t *params,
 static mi_response_t *mi_dbt_reload_2(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 
+#define DEFAULT_DB_TEXT_READ_BUFFER_SIZE 4096
+
 /*
  * Module parameter variables
  */
 int db_mode = 0;  /* Database usage mode: 0 = cache, 1 = no cache */
+int buffer_size = DEFAULT_DB_TEXT_READ_BUFFER_SIZE;
 
 int dbt_bind_api(const str* mod, db_func_t *dbb);
 
@@ -70,6 +73,7 @@ static const cmd_export_t cmds[] = {
  */
 static const param_export_t params[] = {
 	{"db_mode", INT_PARAM, &db_mode},
+	{"buffer_size", INT_PARAM, &buffer_size},
 	{0, 0, 0}
 };
 

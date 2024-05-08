@@ -489,17 +489,19 @@ Chapter 2. Contributors
 
    Table 2.1. Top contributors by DevScore^(1), authored
    commits^(2) and lines added/removed^(3)
-                   Name               DevScore Commits Lines ++ Lines --
-  1.  Vlad Patrascu (@rvlad-patrascu)    58      26      3129     324
-  2.  Liviu Chircu (@liviuchircu)        22      17      246      120
-  3.  MonkeyTester                       12       7      375       8
-  4.  Maksym Sobolyev (@sobomax)         6        4       22       22
-  5.  Razvan Crainea (@razvancrainea)    4        2       8        9
-  6.  kworm83                            4        2       7        2
-  7.  tcresson                           3        1       4        18
-  8.  Kevin                              3        1       2        2
-  9.  John Burke (@john08burke)          2        1       4        0
-  10. Andriy Pylypenko (@bambyster)      2        1       1        0
+     Name DevScore Commits Lines ++ Lines --
+   1. Vlad Patrascu (@rvlad-patrascu) 58 26 3129 324
+   2. Liviu Chircu (@liviuchircu) 24 18 252 123
+   3. MonkeyTester 12 7 375 8
+   4. Maksym Sobolyev (@sobomax) 6 4 22 22
+   5. Razvan Crainea (@razvancrainea) 5 3 21 25
+   6. kworm83 4 2 7 2
+   7. Bogdan-Andrei Iancu (@bogdan-iancu) 3 1 47 56
+   8. tcresson 3 1 4 18
+   9. Kevin 3 1 2 2
+   10. John Burke (@john08burke) 2 1 4 0
+
+   All remaining contributors: Andriy Pylypenko (@bambyster).
 
    (1) DevScore = author_commits + author_lines_added /
    (project_lines_added / project_commits) + author_lines_deleted
@@ -520,17 +522,19 @@ Chapter 2. Contributors
 2.2. By Commit Activity
 
    Table 2.2. Most recently active contributors^(1) to this module
-                    Name                 Commit Activity
-   1.  Maksym Sobolyev (@sobomax)      Jan 2021 - Nov 2023
-   2.  tcresson                        Oct 2023 - Oct 2023
-   3.  Liviu Chircu (@liviuchircu)     Nov 2019 - Sep 2023
-   4.  MonkeyTester                    Aug 2023 - Aug 2023
-   5.  Kevin                           Feb 2022 - Feb 2022
-   6.  kworm83                         Jan 2022 - Jan 2022
-   7.  Vlad Patrascu (@rvlad-patrascu) Oct 2019 - Aug 2021
-   8.  Razvan Crainea (@razvancrainea) Jan 2021 - Jul 2021
-   9.  John Burke (@john08burke)       Apr 2021 - Apr 2021
-   10. Andriy Pylypenko (@bambyster)   Aug 2020 - Aug 2020
+                      Name                   Commit Activity
+   1.  Liviu Chircu (@liviuchircu)         Nov 2019 - Apr 2024
+   2.  Razvan Crainea (@razvancrainea)     Jan 2021 - Mar 2024
+   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Mar 2024 - Mar 2024
+   4.  Maksym Sobolyev (@sobomax)          Jan 2021 - Nov 2023
+   5.  tcresson                            Oct 2023 - Oct 2023
+   6.  MonkeyTester                        Aug 2023 - Aug 2023
+   7.  Kevin                               Feb 2022 - Feb 2022
+   8.  kworm83                             Jan 2022 - Jan 2022
+   9.  Vlad Patrascu (@rvlad-patrascu)     Oct 2019 - Aug 2021
+   10. John Burke (@john08burke)           Apr 2021 - Apr 2021
+
+   All remaining contributors: Andriy Pylypenko (@bambyster).
 
    (1) including any documentation-related commits, excluding
    merge commits

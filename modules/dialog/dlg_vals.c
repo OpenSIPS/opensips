@@ -135,7 +135,7 @@ int store_dlg_value(struct dlg_cell *dlg, str *name, int_str *val, int type)
 	ret = store_dlg_value_unsafe(dlg,name,val,type);
 	lock_stop_write(dlg->vals_lock);
 
-	if (ret == 0 && dlg->state >= DLG_STATE_CONFIRMED)
+	if (ret == 0 && dlg->state >= DLG_STATE_CONFIRMED && dialog_repl_cluster)
 		replicate_dialog_value(dlg, name, val, type);
 
 	return ret;

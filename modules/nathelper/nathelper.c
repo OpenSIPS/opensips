@@ -1170,7 +1170,6 @@ fix_nated_sdp_f(struct sip_msg* msg, void *_flags, str *ip, str *new_sdp_lines)
 			continue;
 
 		if (flags & (ADD_ADIRECTION | ADD_ANORTPPROXY)) {
-			msg->msg_flags |= FL_FORCE_ACTIVE;
 			anchor = anchor_lump(msg, body.s + body.len - msg->buf, 0);
 			if (anchor == NULL) {
 				LM_ERR("anchor_lump failed\n");

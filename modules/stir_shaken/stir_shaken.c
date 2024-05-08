@@ -1241,7 +1241,8 @@ static int w_stir_auth(struct sip_msg *msg, str *attest, str *origid,
 
 		if (labs(now - date_ts) > auth_date_freshness) {
 			LM_NOTICE("Date header timestamp diff exceeds local policy "
-			    "(diff: %lds, auth-freshness: %ds)\n", now - date_ts, auth_date_freshness);
+			    "(diff: %llds, auth-freshness: %ds)\n",
+			    (long long)(now - date_ts), auth_date_freshness);
 			return -4;
 		}
 	}
@@ -1842,17 +1843,36 @@ error:
 	return rc;
 }
 
-static int get_parsed_identity(struct hdr_field *identity_hdr,
+static int get_parsed_identity(struct sip_msg *msg,
 	struct parsed_identity **parsed)
 {
-	int rc = 0;
+	struct hdr_field *identity_hdr;
+	int rc;
 
 	*parsed = parsed_ctx_get();
-	if (*parsed == NULL) {
-		if (!current_processing_ctx) {
-			LM_ERR("no processing ctx found!\n");
-			return -1;
-		}
+	if (*parsed)
+		/* we are lucky, the parsing was already done */
+		return 0;
+
+	if (!current_processing_ctx) {
+		LM_ERR("no processing ctx found!\n");
+		return -1;
+	}
+
+	/* look for the Identity hdr */
+	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
+		LM_ERR("Failed to parse headers\n");
+		return -1;
+	}
+
+	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
+		LM_INFO("No Identity header found\n");
+		return -2;
+	}
+
+	rc = -2;
+
+	do {
 
 		*parsed = pkg_malloc(sizeof **parsed);
 		if (*parsed == NULL) {
@@ -1862,11 +1882,27 @@ static int get_parsed_identity(struct hdr_field *identity_hdr,
 		memset(*parsed, 0, sizeof **parsed);
 
 		rc = parse_identity_hf(&identity_hdr->body, *parsed);
-		if (rc == 0)
-			parsed_ctx_set(*parsed);
-		else
-			pkg_free(*parsed);
-	}
+		if (rc >= 0) {
+			if (str_strcmp(&(*parsed)->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL)) == 0)
+				break;
+			LM_INFO("Unsupported '%.*s' extension\n",
+				(*parsed)->ppt_hdr_param.len, (*parsed)->ppt_hdr_param.s);
+			rc = -2; /* consider we did not find a proper Identity header */
+		}
+		pkg_free(*parsed);
+		*parsed = NULL;
+		/* let's check other Identity hdr, if present */
+		identity_hdr = get_next_header_by_static_name ( identity_hdr,
+			"Identity");
+		if (identity_hdr==NULL) {
+			LM_INFO("No valid Identity header found\n");
+			return rc;
+		}
+
+	}while(rc < 0);
+
+	if (rc >= 0)
+		parsed_ctx_set(*parsed);
 
 	return rc;
 }
@@ -1903,7 +1939,6 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	pv_spec_t *err_code_var, pv_spec_t *err_reason_var,
 	str *orig_tn_p, str *dest_tn_p)
 {
-	struct hdr_field *identity_hdr;
 	str orig_tn, dest_tn, pport_orig_tn, pport_dest_tn;
 	time_t now, date_ts, iat_ts;
 	struct hdr_field *date_hf = NULL;
@@ -1912,19 +1947,6 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	struct parsed_identity *parsed;
 	int rc, err_code, orig_log_lev = L_ERR, dest_log_lev = L_ERR;
 	char *err_reason;
-
-	/* looking for 'Identity' and 'Date' */
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("Failed to parse headers\n");
-		SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
-		return -1;
-	}
-
-	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_NOTICE("No Identity header found\n");
-		SET_VERIFY_ERR_VARS(USE_IDENTITY_CODE, USE_IDENTITY_REASON);
-		return -2;
-	}
 
 	if (!orig_tn_p) {
 		err_code = BADREQ_CODE;
@@ -1979,7 +2001,7 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		return -3;
 	}
 
-	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
 			SET_VERIFY_ERR_VARS(IERROR_CODE, IERROR_REASON);
@@ -1991,13 +2013,6 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 		return rc;
 	}
 
-	if (str_strcmp(&parsed->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
-		LM_NOTICE("Unsupported 'ppt' extension: %.*s\n",
-		          parsed->ppt_hdr_param.len, parsed->ppt_hdr_param.s);
-		SET_VERIFY_ERR_VARS(INVALID_IDENTITY_CODE, INVALID_IDENTITY_REASON);
-		rc = -5;
-		goto error;
-	}
 	if (parsed->alg_hdr_param.s &&
 		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
 		LM_NOTICE("Unsupported 'alg': %.*s\n",
@@ -2042,7 +2057,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 
 		if (labs(now - date_ts) > verify_date_freshness) {
 			LM_NOTICE("Date header timestamp diff exceeds local policy "
-			    "(diff: %lds, verify-freshness: %ds)\n", now - date_ts, verify_date_freshness);
+			    "(diff: %llds, verify-freshness: %ds)\n",
+			    (long long)(now - date_ts), verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 			rc = -6;
 			goto error;
@@ -2050,7 +2066,8 @@ static int w_stir_verify(struct sip_msg *msg, str *cert_buf,
 	} else {
 		if (labs(now - iat_ts) > verify_date_freshness) {
 			LM_NOTICE("'iat' timestamp diff exceeds local policy "
-			    "(diff: %lds, verify-freshness: %ds)\n", now - iat_ts, verify_date_freshness);
+			    "(diff: %llds, verify-freshness: %ds)\n",
+			    (long long)(now - iat_ts), verify_date_freshness);
 			SET_VERIFY_ERR_VARS(STALE_DATE_CODE, STALE_DATE_REASON);
 			rc = -6;
 			goto error;
@@ -2149,21 +2166,10 @@ error:
 
 static int w_stir_check(struct sip_msg *msg)
 {
-	struct hdr_field *identity_hdr;
 	struct parsed_identity *parsed;
 	int rc;
 
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("Failed to parse headers\n");
-		return -1;
-	}
-
-	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
-		return -2;
-	}
-
-	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1) {
 			LM_ERR("Failed to parse identity header\n");
 			return -1;
@@ -2173,10 +2179,6 @@ static int w_stir_check(struct sip_msg *msg)
 		}
 	}
 
-	if (str_strcmp(&parsed->ppt_hdr_param, const_str(PPORT_HDR_PPT_VAL))) {
-		LM_INFO("Unsupported 'ppt' extension\n");
-		return -4;
-	}
 	if (parsed->alg_hdr_param.s &&
 		str_strcmp(&parsed->alg_hdr_param, const_str(PPORT_HDR_ALG_VAL))) {
 		LM_INFO("Unsupported 'alg'\n");
@@ -2251,21 +2253,10 @@ int pv_parse_identity_name(pv_spec_p sp, const str *in)
 
 int pv_get_identity(struct sip_msg *msg, pv_param_t *param, pv_value_t *res)
 {
-	struct hdr_field *identity_hdr;
 	struct parsed_identity *parsed;
 	int rc;
 
-	if (parse_headers(msg, HDR_EOH_F, 0) < 0) {
-		LM_ERR("Failed to parse headers\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	if (!(identity_hdr = get_header_by_static_name(msg, "Identity"))) {
-		LM_INFO("No Identity header found\n");
-		return pv_get_null(msg, param, res);
-	}
-
-	if ((rc = get_parsed_identity(identity_hdr, &parsed)) < 0) {
+	if ((rc = get_parsed_identity( msg, &parsed)) < 0) {
 		if (rc == -1)
 			LM_ERR("Failed to parse identity header\n");
 		else

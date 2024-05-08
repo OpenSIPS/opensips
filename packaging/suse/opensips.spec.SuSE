@@ -231,7 +231,7 @@ sbin/insserv etc/init.d/
 %doc %{_docdir}/opensips/README.auth_aaa
 %doc %{_docdir}/opensips/README.auth_db
 %doc %{_docdir}/opensips/README.auth_diameter
-%doc %{_docdir}/opensips/README.avpops
+%doc %{_docdir}/opensips/README.sqlops
 %doc %{_docdir}/opensips/README.benchmark
 %doc %{_docdir}/opensips/README.call_control
 %doc %{_docdir}/opensips/README.cfgutils
@@ -296,7 +296,7 @@ sbin/insserv etc/init.d/
 %{_libdir}/opensips/modules/auth_aaa.so
 %{_libdir}/opensips/modules/auth_db.so
 %{_libdir}/opensips/modules/auth_diameter.so
-%{_libdir}/opensips/modules/avpops.so
+%{_libdir}/opensips/modules/sqlops.so
 %{_libdir}/opensips/modules/benchmark.so
 %{_libdir}/opensips/modules/call_control.so
 %{_libdir}/opensips/modules/cfgutils.so

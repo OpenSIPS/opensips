@@ -44,6 +44,7 @@
 #include "../ut.h"
 #include "../error.h"
 #include "../dprint.h"
+#include "../data_lump.h"
 #include "../data_lump_rpl.h"
 #include "../mem/mem.h"
 #include "../error.h"
@@ -377,20 +378,12 @@ error:
 int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_well_known_parse)
 {
 	struct hdr_field *hf;
-	struct hdr_field *itr;
 	char* tmp;
 	char* rest;
 	char* end;
 	hdr_flags_t orig_flag;
 
-#define link_sibling_hdr(_hook, _hdr) \
-	do{ \
-		if (msg->_hook==0) msg->_hook=_hdr;\
-			else {\
-				for(itr=msg->_hook;itr->sibling;itr=itr->sibling);\
-				itr->sibling = _hdr;\
-			}\
-	}while(0)
+#define link_sibling_hdr(_hook, _hdr) _add_last(_hdr, msg->_hook, sibling)
 
 	end=msg->buf+msg->len;
 	tmp=msg->unparsed;
@@ -656,15 +649,10 @@ int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg)
 	int hdrs_no, i;
 	struct hdr_field *hdrs;
 	struct hdr_field *hdr;
-	struct hdr_field *itr;
 
 #define link_sibling_hdr_case(_hook, _hdr_type) \
 	case _hdr_type: \
-		if (to_msg->_hook==0) to_msg->_hook=&hdrs[i];\
-		else {\
-			for(itr=to_msg->_hook;itr->sibling;itr=itr->sibling);\
-			itr->sibling = &hdrs[i];\
-		}\
+		_add_last(&hdrs[i], to_msg->_hook, sibling);\
 		break
 #define link_hdr_case(_hook, _hdr_type) \
 	case _hdr_type: \
@@ -1508,3 +1496,15 @@ done:
 }
 
 
+int delete_headers(struct sip_msg *msg, struct hdr_field *hdr)
+{
+	for (; hdr; hdr = hdr->sibling) {
+		if (!del_lump(msg, hdr->name.s - msg->buf, hdr->len, hdr->type)) {
+			LM_ERR("failed to delete contact '%.*s'\n", hdr->name.len,
+			       hdr->name.s);
+			return -1;
+		}
+	}
+
+	return 0;
+}

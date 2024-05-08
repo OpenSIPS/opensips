@@ -1819,7 +1819,7 @@ static void rtp_relay_ctx_initial_cb(struct cell* t, int type, struct tmcb_param
 			/* first check if there's anything setup on this branch */
 			sess = rtp_relay_get_sess(ctx, rtp_relay_ctx_branch());
 			if (sess) {
-				if (!rtp_sess_pending(sess)) {
+				if (!rtp_sess_pending(sess) && !rtp_sess_late(sess)) {
 					LM_DBG("no pending session on branch %d\n",
 							rtp_relay_ctx_branch());
 					goto end;
@@ -2582,7 +2582,7 @@ mi_response_t *mi_rtp_relay_update_callid(const mi_params_t *params,
 	if (rtp_relay_ctx_pending(ctx)) {
 		RTP_RELAY_CTX_UNLOCK(ctx);
 		lock_stop_read(rtp_relay_contexts_lock);
-		goto error;
+		return 0;
 	}
 
 	ctmp = rtp_relay_new_tmp(ctx, set, node);

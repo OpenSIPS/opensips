@@ -51,6 +51,9 @@ void rmq_free_param(rmq_params_t *rmqp);
 void rmq_destroy(evi_reply_sock *sock);
 
 extern struct timeval conn_timeout_tv;
+#if defined AMQP_VERSION && AMQP_VERSION >= 0x00090000
+extern struct timeval rpc_timeout_tv;
+#endif
 extern str rmq_static_holder;
 
 #endif

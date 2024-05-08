@@ -98,6 +98,8 @@ static mi_response_t *mi_reg_enable(const mi_params_t *params,
 								struct mi_handler *async_hdl);
 static mi_response_t *mi_reg_disable(const mi_params_t *params,
 								struct mi_handler *async_hdl);
+static mi_response_t *mi_reg_force_register(const mi_params_t *params,
+								struct mi_handler *async_hdl);
 
 int send_register(unsigned int hash_index, reg_record_t *rec, str *auth_hdr);
 int send_unregister(unsigned int hash_index, reg_record_t *rec, str *auth_hdr,
@@ -110,6 +112,7 @@ uac_auth_api_t uac_auth_api;
 
 unsigned int default_expires = 3600;
 unsigned int timer_interval = 100;
+unsigned int failure_retry_interval = 0;
 
 reg_table_t reg_htable = NULL;
 unsigned int reg_hsize = 1;
@@ -139,6 +142,7 @@ static const param_export_t params[]= {
 	{"hash_size",		INT_PARAM,			&reg_hsize},
 	{"default_expires",	INT_PARAM,			&default_expires},
 	{"timer_interval",	INT_PARAM,			&timer_interval},
+	{"failure_retry_interval", INT_PARAM,			&failure_retry_interval},
 	{"enable_clustering",	INT_PARAM,			&enable_clustering},
 	{"db_url",		STR_PARAM,			&db_url.s},
 	{"table_name",		STR_PARAM,			&reg_table_name.s},
@@ -176,6 +180,10 @@ static const mi_export_t mi_cmds[] = {
 	},
 	{ "reg_disable", 0, 0, 0, {
 		{mi_reg_disable, {"aor", "contact", "registrar", 0}},
+		{EMPTY_MI_RECIPE}}
+	},
+	{ "reg_force_register", 0, 0, 0, {
+		{mi_reg_force_register, {"aor", "contact", "registrar", 0}},
 		{EMPTY_MI_RECIPE}}
 	},
 	{EMPTY_MI_EXPORT}
@@ -430,7 +438,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 						rec->last_register_sent = now;
 						rec->state = REGISTERING_STATE;
 					} else {
-						rec->registration_timeout = now + rec->expires - timer_interval;
+						rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 						rec->state = INTERNAL_ERROR_STATE;
 					}
 				}
@@ -540,7 +548,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 					rec->last_register_sent = now;
 					rec->state = REGISTERING_STATE;
 				} else {
-					rec->registration_timeout = now + rec->expires - timer_interval;
+					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 					rec->state = INTERNAL_ERROR_STATE;
 				}
 			} else {
@@ -571,7 +579,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			rec->auth_password.s==NULL || rec->auth_password.len==0) {
 			LM_ERR("Credentials not provisioned\n");
 			rec->state = WRONG_CREDENTIALS_STATE;
-			rec->registration_timeout = 0;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		}
@@ -606,7 +614,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 			LM_WARN("Wrong credentials for [%.*s]\n",
 				rec->td.rem_uri.len, rec->td.rem_uri.s);
 			rec->state = WRONG_CREDENTIALS_STATE;
-			rec->registration_timeout = 0;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 			/* action successfully completed on current list element */
 			return 1; /* exit list traversal */
 		default:
@@ -680,13 +688,13 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 				rec->state = INTERNAL_ERROR_STATE;
 		} else {
 			rec->state = REGISTRAR_ERROR_STATE;
-			rec->registration_timeout = now + rec->expires - timer_interval;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 		}
 		break;
 
 	case 408: /* Interval Too Brief */
 		rec->state = REGISTER_TIMEOUT_STATE;
-		rec->registration_timeout = now + rec->expires - timer_interval;
+		rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 		break;
 
 	default:
@@ -696,7 +704,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 		} else {
 			/* we got an error from the server */
 			rec->state = REGISTRAR_ERROR_STATE;
-			rec->registration_timeout = now + rec->expires - timer_interval;
+			rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 
 		}
 	}
@@ -705,7 +713,7 @@ int run_reg_tm_cback(void *e_data, void *data, void *r_data)
 	return 1; /* exit list traversal */
 done:
 	rec->state = INTERNAL_ERROR_STATE;
-	rec->registration_timeout = now + rec->expires;
+	rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 	return -1; /* exit list traversal */
 }
 
@@ -935,13 +943,18 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 	case INTERNAL_ERROR_STATE:
 	case REGISTRAR_ERROR_STATE:
 		reg_print_record(rec);
+		/* don't retry failed registrations too soon */
+		if (now < rec->registration_timeout) {
+			LM_DBG("won't retry registration for another %lld secs\n", (long long)(rec->registration_timeout - now));
+			break;
+		}
 		if (rec->flags&REG_ENABLED) {
 			new_call_id_ftag_4_record(rec, s_now);
 			if(send_register(i, rec, NULL)==1) {
 				rec->last_register_sent = now;
 				rec->state = REGISTERING_STATE;
 			} else {
-				rec->registration_timeout = now + rec->expires - timer_interval;
+				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 				rec->state = INTERNAL_ERROR_STATE;
 			}
 		} else {
@@ -963,7 +976,7 @@ int run_timer_check(void *e_data, void *data, void *r_data)
 				rec->last_register_sent = now;
 				rec->state = REGISTERING_STATE;
 			} else {
-				rec->registration_timeout = now + rec->expires - timer_interval;
+				rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 				rec->state = INTERNAL_ERROR_STATE;
 			}
 		}
@@ -1394,7 +1407,7 @@ int run_mi_reg_enable(void *e_data, void *data, void *r_data)
 					rec->last_register_sent = now;
 					rec->state = REGISTERING_STATE;
 				} else {
-					rec->registration_timeout = now + rec->expires - timer_interval;
+					rec->registration_timeout = now + (failure_retry_interval?failure_retry_interval:rec->expires) - timer_interval;
 					rec->state = INTERNAL_ERROR_STATE;
 				}
 			}
@@ -1487,3 +1500,48 @@ static mi_response_t *mi_reg_disable(const mi_params_t *params,
 
 	return init_mi_result_ok();
 }
+
+
+int run_mi_reg_force_register(void *e_data, void *data, void *r_data)
+{
+	reg_record_t *rec = (reg_record_t*)e_data;
+	record_coords_t *coords = (record_coords_t *)data;
+
+	if (!str_strcmp(&coords->contact, &rec->contact_uri) &&
+		!str_strcmp(&coords->registrar, &rec->td.rem_target)) {
+		if (rec->flags&REG_ENABLED) {
+			rec->registration_timeout = 0;
+		}
+
+		return 1;
+	} else
+		return 0;  /* continue search */
+}
+
+static mi_response_t *mi_reg_force_register(const mi_params_t *params,
+								struct mi_handler *async_hdl)
+{
+	mi_response_t *resp;
+	record_coords_t coords;
+	int rc;
+	unsigned int hash_code;
+
+	if ((resp = mi_get_coords(params, &coords)))
+		return resp;
+
+	hash_code = core_hash(&coords.aor, NULL, reg_hsize);
+	coords.extra = (void*)(unsigned long)hash_code;
+
+	lock_get(&reg_htable[hash_code].lock);
+	rc = slinkedl_traverse(reg_htable[hash_code].p_list,
+					&run_mi_reg_disable, &coords, NULL);
+	lock_release(&reg_htable[hash_code].lock);
+
+	if (rc < 0)
+		return NULL;
+	else if (rc == 0)
+		return init_mi_error(404, MI_SSTR("No such registrant"));
+
+	return init_mi_result_ok();
+}
+

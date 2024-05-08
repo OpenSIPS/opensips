@@ -17,11 +17,13 @@ jobs:
   build_multiarch:
     # The type of runner that the job will run on
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       COMPILER: ${{ matrix.compiler }}
       BUILD_OS: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         compiler: ['gcc-i386-cross', 'clang-i386-cross', 'gcc-mips64-cross', 'gcc-arm32-cross', 'gcc-arm64-cross',  'gcc-arm32-qemu-cross', 'gcc-arm64-qemu-cross', 'clang-arm32-qemu-cross', 'clang-arm64-qemu-cross']
         os: [ubuntu-22.04]
@@ -61,6 +63,10 @@ jobs:
         if: endsWith(matrix.compiler, '-qemu-cross')
         run: scripts/build/print_ccache_stats.sh
 
+  notify:
+    runs-on: ubuntu-latest
+    needs: build_multiarch
+    steps:
       - name: Notify slack fail
         if: failure() && github.repository == 'OpenSIPS/opensips'
         env:

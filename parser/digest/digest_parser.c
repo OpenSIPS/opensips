@@ -46,6 +46,18 @@
 #define ALG_SHA256SESS_STR_LEN (sizeof(ALG_SHA256SESS_STR) - 1)
 #define ALG_SHA512_256_STR_LEN (sizeof(ALG_SHA512_256_STR) - 1)
 #define ALG_SHA512_256SESS_STR_LEN (sizeof(ALG_SHA512_256SESS_STR) - 1)
+#define ALG_AKAv1_MD5_STR_LEN (sizeof(ALG_AKAv1_MD5_STR) - 1)
+#define ALG_AKAv1_MD5SESS_STR_LEN (sizeof(ALG_AKAv1_MD5SESS_STR) - 1)
+#define ALG_AKAv1_SHA256_STR_LEN (sizeof(ALG_AKAv1_SHA256_STR) - 1)
+#define ALG_AKAv1_SHA256SESS_STR_LEN (sizeof(ALG_AKAv1_SHA256SESS_STR) - 1)
+#define ALG_AKAv1_SHA512_256_STR_LEN (sizeof(ALG_AKAv1_SHA512_256_STR) - 1)
+#define ALG_AKAv1_SHA512_256SESS_STR_LEN (sizeof(ALG_AKAv1_SHA512_256SESS_STR) - 1)
+#define ALG_AKAv2_MD5_STR_LEN (sizeof(ALG_AKAv2_MD5_STR) - 1)
+#define ALG_AKAv2_MD5SESS_STR_LEN (sizeof(ALG_AKAv2_MD5SESS_STR) - 1)
+#define ALG_AKAv2_SHA256_STR_LEN (sizeof(ALG_AKAv2_SHA256_STR) - 1)
+#define ALG_AKAv2_SHA256SESS_STR_LEN (sizeof(ALG_AKAv2_SHA256SESS_STR) - 1)
+#define ALG_AKAv2_SHA512_256_STR_LEN (sizeof(ALG_AKAv2_SHA512_256_STR) - 1)
+#define ALG_AKAv2_SHA512_256SESS_STR_LEN (sizeof(ALG_AKAv2_SHA512_256SESS_STR) - 1)
 
 /*
  * Parse quoted string in a parameter body
@@ -182,6 +194,7 @@ static inline int parse_digest_param(str* _s, dig_cred_t* _c)
 	case PAR_QOP:       ptr = &_c->qop.qop_str;     break;
 	case PAR_NC:        ptr = &_c->nc;              break;
 	case PAR_ALGORITHM: ptr = &_c->alg.alg_str;     break;
+	case PAR_AUTS:      ptr = &_c->auts;            break;
 	case PAR_OTHER:     ptr = &dummy;               break;
 	default:            ptr = &dummy;               break;
 	}
@@ -230,6 +243,14 @@ static inline void parse_qop(struct qp* _q)
 			return ALG_##alg; \
 		break;
 
+#define CASE_ALG2(alg1, alg2, sptr) \
+	case ALG_##alg1##_STR_LEN: \
+		if (turbo_casematch((sptr)->s, ALG_##alg1##_STR, (sptr)->len)) \
+			return ALG_##alg1; \
+		if (turbo_casematch((sptr)->s, ALG_##alg2##_STR, (sptr)->len)) \
+			return ALG_##alg2; \
+		break;
+
 /*
  * Parse algorithm parameter body
  */
@@ -243,12 +264,63 @@ alg_t parse_digest_algorithm(const str *sp)
 	CASE_ALG(SHA256SESS, sp);
 	CASE_ALG(SHA512_256, sp);
 	CASE_ALG(SHA512_256SESS, sp);
+	CASE_ALG2(AKAv1_MD5, AKAv2_MD5, sp);
+	CASE_ALG2(AKAv1_MD5SESS, AKAv2_MD5SESS, sp);
+	CASE_ALG2(AKAv1_SHA256, AKAv2_SHA256, sp);
+	CASE_ALG2(AKAv1_SHA256SESS, AKAv2_SHA256SESS, sp);
+	CASE_ALG2(AKAv1_SHA512_256, AKAv2_SHA512_256, sp);
+	CASE_ALG2(AKAv1_SHA512_256SESS, AKAv2_SHA512_256SESS, sp);
 	default:
 		break;
 	}
 	return ALG_OTHER;
 }
 
+const str *print_digest_algorithm(alg_t alg)
+{
+	switch (alg) {
+	case ALG_MD5:
+		return _str(ALG_MD5_STR);
+	case ALG_MD5SESS:
+		return _str(ALG_MD5SESS_STR);
+	case ALG_SHA256:
+		return _str(ALG_SHA256_STR);
+	case ALG_SHA256SESS:
+		return _str(ALG_SHA256SESS_STR);
+	case ALG_SHA512_256:
+		return _str(ALG_SHA512_256_STR);
+	case ALG_SHA512_256SESS:
+		return _str(ALG_SHA512_256SESS_STR);
+	case ALG_AKAv1_MD5:
+		return _str(ALG_AKAv1_MD5_STR);
+	case ALG_AKAv1_MD5SESS:
+		return _str(ALG_AKAv1_MD5SESS_STR);
+	case ALG_AKAv1_SHA256:
+		return _str(ALG_AKAv1_SHA256_STR);
+	case ALG_AKAv1_SHA256SESS:
+		return _str(ALG_AKAv1_SHA256SESS_STR);
+	case ALG_AKAv1_SHA512_256:
+		return _str(ALG_AKAv1_SHA512_256_STR);
+	case ALG_AKAv1_SHA512_256SESS:
+		return _str(ALG_AKAv1_SHA512_256SESS_STR);
+	case ALG_AKAv2_MD5:
+		return _str(ALG_AKAv2_MD5_STR);
+	case ALG_AKAv2_MD5SESS:
+		return _str(ALG_AKAv2_MD5SESS_STR);
+	case ALG_AKAv2_SHA256:
+		return _str(ALG_AKAv2_SHA256_STR);
+	case ALG_AKAv2_SHA256SESS:
+		return _str(ALG_AKAv2_SHA256SESS_STR);
+	case ALG_AKAv2_SHA512_256:
+		return _str(ALG_AKAv2_SHA512_256_STR);
+	case ALG_AKAv2_SHA512_256SESS:
+		return _str(ALG_AKAv2_SHA512_256SESS_STR);
+	default:
+	case ALG_OTHER:
+	case ALG_UNSPEC:
+		return _str("Unknown");
+	}
+}
 
 /*
  * Parse username for user and domain parts

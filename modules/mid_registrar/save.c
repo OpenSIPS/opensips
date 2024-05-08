@@ -1396,7 +1396,7 @@ update_usrloc:
 				ci->pre_replicate_info = &ct_data;
 			}
 
-			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
+			LM_DBG("INSERTING contact with expires %lld\n", (long long)ci->expires);
 
 			if (ul.insert_ucontact(r, &ctmap->req_ct_uri, ci,
 				    &mri->cmatch, 0, &c) < 0) {
@@ -1527,6 +1527,7 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 	ucontact_t* c;
 	urecord_t *r = NULL;
 	contact_t *_c;
+	str esc_aor;
 	unsigned int cseq;
 	int e_out = -1, vct = 0, was_valid;
 	int e_max = 0;
@@ -1548,8 +1549,14 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 
 	LM_DBG("saving + restoring all contact URIs ... \n");
 
-	/* in MID_REG_THROTTLE_AOR mode, any reply will only contain 1 contact */
-	_c = get_first_contact(rpl);
+	if (mid_reg_escape_aor(&mri->aor, &esc_aor) < 0) {
+		rerrno = R_INTERNAL;
+		LM_ERR("failed to escape AoR string: '%.*s'\n", mri->aor.len, mri->aor.s);
+		return -1;
+	}
+
+	/* in MID_REG_THROTTLE_AOR mode, replies should contain only 1 contact */
+	_c = get_first_contact_matching(rpl, &esc_aor);
 	if (_c)
 		calc_contact_expires(rpl, _c->expires, &e_out, 0);
 
@@ -1585,17 +1592,13 @@ static inline int save_restore_req_contacts(struct sip_msg *req,
 		}
 	}
 
-	if (_c) {
-		/**
-		 * we now replace the single reply Contact hf with all Contact hfs
-		 * present in the initial request
-		 */
-		if (del_lump(rpl, rpl->contact->name.s - rpl->buf,
-		                  rpl->contact->len, HDR_CONTACT_T) == NULL) {
-			LM_ERR("failed to delete contact '%.*s'\n", rpl->contact->name.len,
-			       rpl->contact->name.s);
-			goto out_clear_err;
-		}
+	/**
+	 * replace the single reply Contact hf with all Contact hfs
+	 * present in the initial request (perform a global delete, to be sure)
+	 */
+	if (delete_headers(rpl, rpl->contact) != 0) {
+		LM_ERR("failed to delete all contact hfs\n");
+		goto out_clear_err;
 	}
 
 #ifdef EXTRA_DEBUG
@@ -1662,7 +1665,7 @@ update_usrloc:
 				ci->pre_replicate_info = &ct_data;
 			}
 
-			LM_DBG("INSERTING contact with expires %lu\n", ci->expires);
+			LM_DBG("INSERTING contact with expires %lld\n", (long long)ci->expires);
 
 			if (ul.insert_ucontact( r, &ctmap->req_ct_uri, ci, &mri->cmatch,
 				    0, &c) < 0) {
@@ -2220,8 +2223,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 		} else if (ret == -2) { /* duplicate or lower cseq */
 			continue;
 		} else if (ret == 0) { /* found */
-			LM_DBG("found >> %d --- [ %ld, %ld ]\n", e,
-				c->expires_in, c->expires_out);
+			LM_DBG("found >> %d --- [ %lld, %lld ]\n", e,
+				(long long)c->expires_in, (long long)c->expires_out);
 
 			valuep = ul.get_ucontact_key(c, &ul_key_last_reg_ts);
 			if (!valuep) {
@@ -2238,8 +2241,8 @@ static int process_contacts_by_ct(struct sip_msg *msg, urecord_t *urec,
 			expires_out = valuep->i;
 
 			if (get_act_time() - last_reg_ts >= expires_out - e) {
-				LM_DBG("forwarding REGISTER (%ld - %d >= %d - %d)\n",
-				       get_act_time(), last_reg_ts, expires_out, e);
+				LM_DBG("forwarding REGISTER (%lld - %u >= %d - %d)\n",
+				       (long long)get_act_time(), last_reg_ts, expires_out, e);
 				/* FIXME: should update "last_reg_out_ts" for all cts? */
 				return 1;
 			} else {
@@ -2420,8 +2423,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 
 			deregisters_only = 0;
 
-			LM_DBG("found >> [ %ld, %ld ], e=%d, e_out=%d\n",
-			       c->expires_in, c->expires_out, e, e_out);
+			LM_DBG("found >> [ %lld, %lld ], e=%d, e_out=%d\n",
+			       (long long)c->expires_in, (long long)c->expires_out, e, e_out);
 
 			if (!VALID_CONTACT(c, get_act_time()))
 				vct++;
@@ -2511,8 +2514,8 @@ static int process_contacts_by_aor(struct sip_msg *req, urecord_t *urec,
 	if (!deregisters_only) {
 		max_diff = calc_max_ct_diff(urec);
 
-		LM_DBG("max diff: %d, absorb until=%d, current time=%ld\n",
-		       max_diff, last_reg_ts + max_diff, get_act_time());
+		LM_DBG("max diff: %d, absorb until=%d, current time=%lld\n",
+		       max_diff, last_reg_ts + max_diff, (long long)get_act_time());
 		if (max_diff < 0 || last_reg_ts + max_diff <= get_act_time())
 			return 1;
 	} else if (ctno >= 2 && !urec->contacts) {

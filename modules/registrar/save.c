@@ -911,11 +911,12 @@ done:
  * @contact_gp:      contact URI to be deleted
  * @next_hop_gp:     IP/domain in front of contacts to be deleted
  * @sip_instance_gp: delete contacts with given "+sip_instance"
+ * @bflag:           delete contacts which the specific branch flag mask
  *
  * @return:      1 on success, negative on failure
  */
 int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
-            str *match_next_hop, str *match_sin)
+            str *match_next_hop, str *match_sin, int* bflag)
 {
 	struct hostent delete_nh_he, *he;
 	urecord_t *record;
@@ -939,7 +940,7 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 	}
 
 	/* without any additional filtering, delete the whole urecord entry */
-	if (!match_ct && !match_next_hop && !match_sin) {
+	if (!match_ct && !match_next_hop && !match_sin && (!bflag ||!*bflag)) {
 		if (ul.delete_urecord((udomain_t *)udomain, &aor_user, record, 0) != 0) {
 			LM_ERR("failed to delete urecord for aor '%.*s'\n",
 			        aor_user.len, aor_user.s);
@@ -1015,6 +1016,11 @@ int _remove(struct sip_msg *msg, void *udomain, str *aor_uri, str *match_ct,
 
 		if (match_sin) {
 			if (str_strcmp(match_sin, &contact->instance))
+				continue;
+		}
+
+		if (bflag && *bflag) {
+			if ((contact->cflags & *(bflag)) == 0)
 				continue;
 		}
 

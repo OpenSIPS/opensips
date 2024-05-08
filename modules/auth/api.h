@@ -47,6 +47,9 @@ typedef enum auth_result {
 	                    /* Means to continue doing authorization */
 } auth_result_t;
 
+#define AUTH_SKIP_CRED_CHECK	(1<<0)
+#define AUTH_SKIP_NONCE_CHECK	(1<<1)
+
 
 /*
  * Purpose of this function is to find credentials with given realm,
@@ -55,9 +58,9 @@ typedef enum auth_result {
  * ACK and CANCEL
  */
 typedef auth_result_t (*pre_auth_t)(struct sip_msg* _m, str* _realm,
-		hdr_types_t _hftype, struct hdr_field** _h);
+		hdr_types_t _hftype, struct hdr_field** _h, unsigned skip_flags);
 auth_result_t pre_auth(struct sip_msg* _m, str* _realm,
-		hdr_types_t _hftype, struct hdr_field** _h);
+		hdr_types_t _hftype, struct hdr_field** _h, unsigned skip_flags);
 
 
 /*
@@ -104,6 +107,12 @@ typedef str *(*build_auth_info_hf_t)(str *msg_body, str *method, dig_cred_t *cre
 	struct digest_auth_credential *auth_data);
 
 /*
+ * Helper function to send a reply
+ */
+typedef int (*send_resp_t)(struct sip_msg* _m, int _code,
+		const str* _reason, const str hdrs[], int nhdrs);
+
+/*
  * Strip the beginning of realm
  */
 void strip_realm(str *_realm);
@@ -121,6 +130,7 @@ typedef struct auth_api {
 	check_response_t check_response; /* check auth response */
 	build_auth_hf_t build_auth_hf;   /* build {WWW,Proxy}-Authenticate header field */
 	build_auth_info_hf_t build_auth_info_hf; /* build Authentication-Info header */
+	send_resp_t  send_resp;/* Helper function to send a response */
 } auth_api_t;
 
 

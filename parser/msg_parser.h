@@ -88,7 +88,7 @@ enum request_method {
 };
 
 #define FL_FORCE_RPORT       (1<<0)  /* force rport (top via) */
-#define FL_FORCE_ACTIVE      (1<<1)  /* force active SDP */
+#define FL_REPLY_TO_VIA      (1<<1)  /* force replying to VIA ip:port */
 #define FL_FORCE_LOCAL_RPORT (1<<2)  /* force local rport (local via) */
 #define FL_SDP_IP_AFS        (1<<3)  /* SDP IP rewritten */
 #define FL_SDP_PORT_AFS      (1<<4)  /* SDP port rewritten */
@@ -365,6 +365,9 @@ int parse_headers_aux(struct sip_msg* msg, hdr_flags_t flags, int next, int sip_
 
 char* get_hdr_field_aux(char* buf, char* end, struct hdr_field* hdr, int sip_well_known_parse);
 
+/* add DEL lumps for all headers matching the given @hdr */
+int delete_headers(struct sip_msg *msg, struct hdr_field *hdr);
+
 void free_sip_msg(struct sip_msg* msg);
 
 int clone_headers(struct sip_msg *from_msg, struct sip_msg *to_msg);
@@ -496,6 +499,23 @@ inline static struct hdr_field *get_header_by_name( struct sip_msg *msg,
 	}
 	return NULL;
 }
+
+
+#define get_next_header_by_static_name(_hdr, _name) \
+		get_next_header_by_name(_hdr, _name, sizeof(_name)-1)
+inline static struct hdr_field *get_next_header_by_name(
+						struct hdr_field *first, char *s, unsigned int len)
+{
+	struct hdr_field *hdr;
+
+	for( hdr=first->next ; hdr ; hdr=hdr->next ) {
+		if(len==hdr->name.len && strncasecmp(hdr->name.s,s,len)==0)
+			return hdr;
+	}
+	return NULL;
+}
+
+
 
 
 /*

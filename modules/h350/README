@@ -523,17 +523,15 @@ if (!h350_result_call_preferences("callee_pref_") && ($retcode == -1))
 # Example for forward-unconditionally (CFU)
 #
 
-if (is_avp_set("$avp(callee_pref_u)"))
+if ($avp(callee_pref_u) != NULL)
 {
-    # replace R-URI with CFU URI, g will fetch all CFU URIs
+    # push CFU URI into R-URI and additional branches
     # --> request can fork
-    if (avp_pushto("$ru", "$avp(callee_pref_u)/g"))
-    {
-            avp_delete("$avp(callee_pref_u)");
-    } else
-    {
-            sl_send_reply(500, "Internal server error");
-            exit;
+    $ru = $avp(callee_pref_u);
+    $avp(callee_pref_u) = NULL;
+    while ($avp(callee_pref_u)!=NULL) {
+        $branch = $avp(callee_pref_u);
+        $avp(callee_pref_u) = NULL;
     }
     sl_send_reply(181, "Call is being forwarded");
     t_relay();
@@ -618,7 +616,7 @@ if (!h350_result_service_level("caller_sl_") && ($retcode == -1))
 # make routing decision based on service level AVPs
 #
 
-if (is_avp_set("$avp(caller_sl_international)"))
+if ($avp(caller_sl_international) != NULL)
 {
     t_relay();
 }
@@ -652,11 +650,11 @@ Chapter 2. Contributors
    commits^(2) and lines added/removed^(3)
      Name DevScore Commits Lines ++ Lines --
    1. Christian Schlatter 21 3 1993 1
-   2. Bogdan-Andrei Iancu (@bogdan-iancu) 15 13 52 50
+   2. Bogdan-Andrei Iancu (@bogdan-iancu) 16 14 58 58
    3. Daniel-Constantin Mierla (@miconda) 12 9 79 83
    4. Liviu Chircu (@liviuchircu) 10 8 25 37
-   5. Vlad Patrascu (@rvlad-patrascu) 9 3 80 247
-   6. Razvan Crainea (@razvancrainea) 8 6 51 59
+   5. Razvan Crainea (@razvancrainea) 9 7 53 61
+   6. Vlad Patrascu (@rvlad-patrascu) 9 3 80 247
    7. Maksym Sobolyev (@sobomax) 4 2 3 4
    8. Konstantin Bokarius 3 1 1 4
    9. Peter Lemenkov (@lemenkov) 3 1 1 1
@@ -682,9 +680,9 @@ Chapter 2. Contributors
 
    Table 2.2. Most recently active contributors^(1) to this module
                       Name                   Commit Activity
-   1.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
-   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Jul 2020
-   3.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Mar 2020
+   1.  Bogdan-Andrei Iancu (@bogdan-iancu) Jan 2008 - Feb 2024
+   2.  Razvan Crainea (@razvancrainea)     Jun 2011 - Feb 2024
+   3.  Maksym Sobolyev (@sobomax)          Feb 2023 - Feb 2023
    4.  Vlad Patrascu (@rvlad-patrascu)     May 2017 - Apr 2019
    5.  Peter Lemenkov (@lemenkov)          Jun 2018 - Jun 2018
    6.  Liviu Chircu (@liviuchircu)         Mar 2014 - Jun 2018
@@ -700,9 +698,9 @@ Chapter 3. Documentation
 
 3.1. Contributors
 
-   Last edited by: Vlad Patrascu (@rvlad-patrascu), Peter Lemenkov
-   (@lemenkov), Liviu Chircu (@liviuchircu), Razvan Crainea
-   (@razvancrainea), Bogdan-Andrei Iancu (@bogdan-iancu),
+   Last edited by: Bogdan-Andrei Iancu (@bogdan-iancu), Razvan
+   Crainea (@razvancrainea), Vlad Patrascu (@rvlad-patrascu),
+   Peter Lemenkov (@lemenkov), Liviu Chircu (@liviuchircu),
    Daniel-Constantin Mierla (@miconda), Konstantin Bokarius, Edson
    Gellert Schubert, Christian Schlatter.
 

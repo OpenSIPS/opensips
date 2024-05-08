@@ -7,7 +7,8 @@
 	<section id="overview" xreflabel="Overview">
 	<title>Overview</title>
 	<para>
-		This module provides a Diameter implementation for the core AAA API interface.
+		This module provides an RFC 6733 Diameter peer implementation, being
+		able to act as either <emphasis role='bold'>Diameter client</emphasis> or <emphasis role='bold'>server</emphasis>, or <emphasis role='bold'>both</emphasis>.
 	</para>
 
 	<para>
@@ -24,7 +25,49 @@
 		</listitem>
 
 	</itemizedlist>
+	</section>
 
+	<section id="diameter_client" xreflabel="Diameter Client">
+	<title>Diameter Client</title>
+	<para>
+		The module implements the core AAA OpenSIPS interface, thus offering
+		an alternative client implementation to the
+		<ulink url='aaa_radius'>aaa_radius</ulink> module which can be useful,
+		for example, when performing billing and accounting for the live SIP calls.
+	</para>
+	<para>
+		In addition to the RADIUS client's auth and accounting features, the
+		Diameter client includes support for sending <emphasis>arbitrary</emphasis>
+		Diameter requests, further opening up the scope of applications which
+		can be achieved through OpenSIPS scripting.  Such Diameter requests can
+		be sent using the <xref linkend="func_dm_send_request"/> function.
+	</para>
+	</section>
+
+	<section id="diameter_server" xreflabel="Diameter Server">
+	<title>Diameter Server</title>
+	<para>
+		Starting with OpenSIPS <emphasis role='bold'>3.5</emphasis>, the Diameter
+		module includes <emphasis>server-side</emphasis> support as well.
+	</para>
+	<para>
+		First, the <ulink url='event_route'>event_route</ulink> module must be loaded in
+		order to be able to process <xref linkend="event_dm_request"/> events in
+		the OpenSIPS configuration file.  These events will contain all necessary
+		information on the incoming Diameter request.
+	</para>
+	<para>
+		Finally, once the request information is processed and the answer AVPs
+		are prepared, script writers should use the <xref linkend="func_dm_send_answer"/>
+		function in order to reply with a Diameter answer message.
+	</para>
+	<para>
+		<emphasis>Recommendation:</emphasis> When possible, always load the
+		<emphasis role='bold'>dict_sip.fdx</emphasis> freeDiameter extension module
+		inside your <emphasis>freeDiameter.conf</emphasis> configuration file,
+		as it contains hundreds of well-known AVP definitions which may be good
+		to have when inter-operating with other Diameter peer implementations.
+	</para>
 	</section>
 
 	<section id="dependencies" xreflabel="Dependencies">
@@ -163,6 +206,9 @@ modparam("aaa_diameter", "aaa_url", "diameter:freeDiameter-client.conf;extra-avp
 		function call with no received reply will time out and return a
 		<emphasis role='bold'>-2</emphasis> code.
 		</para>
+		<para>
+			Default value is <emphasis>2000</emphasis> ms.
+		</para>
 		<example>
 		<title>Setting the <varname>answer_timeout</varname> parameter</title>
 		<programlisting format="linespecific">
@@ -200,7 +246,7 @@ modparam("aaa_diameter", "answer_timeout", 5000)
 			</para></listitem>
 			<listitem><para>
 				<emphasis>avps_json</emphasis> (string) - A JSON Array containing
-				the AVPs to include in the message payload.
+				the AVPs to include in the message.
 			</para></listitem>
 			<listitem><para>
 				<emphasis>rpl_avps_pv</emphasis> (var, optional) - output variable which will
@@ -333,6 +379,85 @@ $json(avps) := $var(rpl_avps);
 		</example>
 	</section>
 
+	<section id="func_dm_send_answer" xreflabel="dm_send_answer()">
+		<title>
+		<function moreinfo="none">dm_send_answer(avps_json, [is_error])</function>
+		</title>
+		<para>
+		Send back a Diameter answer message to the interconnected peer in a
+		<emphasis>non-blocking</emphasis> fashion, in response to its request.
+		</para>
+		<para>
+		The following fields will be automatically copied over from the Diameter
+		request when building the answer message:
+			<itemizedlist>
+				<listitem><para>Application ID</para></listitem>
+				<listitem><para>Command Code</para></listitem>
+				<listitem><para>Session-Id AVP, if any</para></listitem>
+				<listitem><para>Transaction-Id AVP, if any (only applies when
+					Session-Id is not present)</para></listitem>
+			</itemizedlist>
+		</para>
+		<para><emphasis>Parameters</emphasis></para>
+		<itemizedlist>
+			<listitem><para>
+				<emphasis>avps_json</emphasis> (string) - A JSON Array containing
+				the AVPs to include in the answer message (example below).
+			</para></listitem>
+			<listitem><para>
+				<emphasis>is_error</emphasis> (boolean, default: <emphasis>false</emphasis>)
+				- Set to <emphasis>true</emphasis>
+				in order to set the 'E' (error) bit in the answer message.
+			</para></listitem>
+		</itemizedlist>
+
+		<para><emphasis>Return Codes</emphasis></para>
+		<itemizedlist>
+		<listitem>
+			<para><emphasis role='bold'>1</emphasis> - Success
+			</para>
+		</listitem>
+		<listitem>
+			<para><emphasis role='bold'>-1</emphasis> - Internal Error
+			</para>
+		</listitem>
+		</itemizedlist>
+
+		<para>
+			This function can only be used from an <emphasis>EVENT_ROUTE</emphasis>.
+		</para>
+		<example>
+		<title><function moreinfo="none">dm_send_answer()</function> usage</title>
+		<programlisting format="linespecific">
+
+event_route [E_DM_REQUEST] {
+  xlog("Req: $param(sess_id) / $param(app_id) / $param(cmd_code)\n");
+  xlog("AVPs: $param(avps_json)\n");
+
+  $json(avps) := $param(avps_json);
+
+  /* ... process the data (AVPs) ... */
+
+  /* ... and reply back with more AVPs! */
+  $var(ans_avps) = "[
+          { \"Vendor-Specific-Application-Id\": [{
+                  \"Vendor-Id\": 0
+                  }] },
+
+          { \"Result-Code\": 2001 },
+          { \"Auth-Session-State\": 0 },
+          { \"Origin-Host\": \"opensips.diameter.test\" },
+          { \"Origin-Realm\": \"diameter.test\" }
+  ]";
+
+  if (!dm_send_answer($var(ans_avps)))
+    xlog("ERROR - failed to send Diameter answer\n");
+}
+
+</programlisting>
+		</example>
+	</section>
+
 	</section>
 
 	<section>
@@ -383,6 +508,50 @@ route[dm_reply] {
 
 </programlisting>
 		</example>
+	</section>
+
+	</section>
+
+	<section id="exported_events" xreflabel="Exported Events">
+	<title>Exported Events</title>
+	<section id="event_dm_request" xreflabel="E_DM_REQUEST">
+		<title>
+		<function moreinfo="none">E_DM_REQUEST</function>
+		</title>
+		<para>
+		This event is raised whenever the <emphasis>aaa_diameter</emphasis>
+		module is loaded and OpenSIPS receives a Diameter request on the configured
+		Diameter listening interface.
+		</para>
+		<para>Parameters:</para>
+		<itemizedlist>
+			<listitem><para>
+					<emphasis>app_id (integer)</emphasis> - the Diameter Application Identifier
+			</para></listitem>
+			<listitem><para>
+					<emphasis>cmd_code (integer)</emphasis> - the Diameter Command Code
+			</para></listitem>
+			<listitem><para>
+					<emphasis>sess_id (string)</emphasis> - the value of either the
+					<emphasis>Session-Id</emphasis> AVP, <emphasis>Transaction-Id</emphasis> AVP
+						or a <emphasis>NULL</emphasis> value if neither of these
+						transaction-identifying AVPs is present in the Diameter request.
+			</para></listitem>
+			<listitem><para>
+					<emphasis>avps_json (string)</emphasis> - a JSON Array containing the
+					AVPs of the request.  Use the <ulink url='json'>json</ulink> module's
+					<emphasis role='bold'>$json</emphasis> variable
+					to easily parse and work with it.
+			</para></listitem>
+		</itemizedlist>
+
+		<para>
+		Note that this event is currently designed to be mainly consumed by an <emphasis>event_route</emphasis>,
+		since that is the only way to gain access to the <xref linkend="func_dm_send_answer"/>
+		function in order to build custom answer messages.  On the other hand,
+		if the application does not mind the answer being always a 3001 (DIAMETER_COMMAND_UNSUPPORTED) error,
+		this event can be successfully consumed through any other EVI-compatible delivery channel ☺️
+		</para>
 	</section>
 
 	</section>

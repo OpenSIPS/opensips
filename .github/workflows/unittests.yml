@@ -17,11 +17,13 @@ jobs:
   build_and_test:
     # The type of runner that the job will run on
     runs-on: ${{ matrix.os }}
+    continue-on-error: true
     env:
       COMPILER: ${{ matrix.compiler }}
       BUILD_OS: ${{ matrix.os }}
 
     strategy:
+      fail-fast: false
       matrix:
         compiler: ['gcc', 'clang', 'gcc-9', 'gcc-10', 'clang-9', 'clang-10']
         os: [ubuntu-20.04]
@@ -100,6 +102,17 @@ jobs:
           MAKE_TGT: 'test'
         run: script -e unit_tests.log -c 'sh -x scripts/build/do_build.sh DEFS_EXTRA_OPTS="-DUNIT_TESTS -fPIE -fPIC"'
 
+      - name: Collect test logs
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit_tests-logs_${{ matrix.os }}_${{ matrix.compiler }}
+          path: |
+            unit_tests.log
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: build_and_test
+    steps:
       - name: Notify slack fail
         if: failure() && github.repository == 'OpenSIPS/opensips'
         env:
@@ -110,9 +123,3 @@ jobs:
           status: FAILED
           color: danger
 
-      - name: Collect test logs
-        uses: actions/upload-artifact@v3
-        with:
-          name: unit_tests-logs_${{ matrix.os }}_${{ matrix.compiler }}
-          path: |
-            unit_tests.log

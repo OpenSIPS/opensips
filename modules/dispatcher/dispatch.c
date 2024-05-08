@@ -2803,8 +2803,15 @@ void ds_check_timer(unsigned int ticks, void* param)
 					dlg,
 					ds_options_callback,
 					(void*)pack,
-					osips_shm_free) < 0) {
-				LM_ERR("unable to execute dialog\n");
+					osips_shm_free) < 0)
+			{
+				LM_ERR("failed to send probe for <%.*s>, set %d, setting "
+					"it to probing\n",
+					pack->params.uri.len, pack->params.uri.s,
+					pack->params.set_id);
+				ds_set_state( pack->params.set_id, &pack->params.uri,
+					DS_PROBING_DST, 1, pack->params.partition, 1, 0,
+					MI_SSTR("failed to send probe"));
 				shm_free(pack);
 			}
 			tmb.free_dlg(dlg);

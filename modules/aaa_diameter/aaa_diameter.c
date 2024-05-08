@@ -25,8 +25,10 @@
 #include "../../async.h"
 #include "../../ut.h"
 
-#include "aaa_impl.h"
-#include "peer.h"
+#include "dm_impl.h"
+#include "dm_evi.h"
+#include "dm_peer.h"
+#include "diameter_api_impl.h"
 
 static int mod_init(void);
 static int child_init(int rank);
@@ -40,13 +42,16 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 				str *avp_json, pv_spec_t *rpl_avps_pv);
 static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 				int *app_id, int *cmd_code, str *avp_json, pv_spec_t *rpl_avps_pv);
-static int dm_bind_api(aaa_prot *api);
+static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error);
+static int dm_aaa_bind_api(aaa_prot *api);
+static int dm_bind_api(diameter_api *api);
 
 int fd_log_level = FD_LOG_NOTICE;
 str dm_realm = str_init("diameter.test");
 str dm_peer_identity = str_init("server"); /* a.k.a. server.diameter.test */
 static str dm_aaa_url = {NULL, 0};
 int dm_answer_timeout = 2000; /* ms */
+int dm_server_autoreply_error; /* ensures we always reply with *something* */
 
 static const cmd_export_t cmds[]= {
 	{"dm_send_request", (cmd_function)dm_send_request, {
@@ -56,7 +61,13 @@ static const cmd_export_t cmds[]= {
 		{CMD_PARAM_VAR|CMD_PARAM_OPT,0,0}, {0,0,0}},
 		ALL_ROUTES},
 
-	{"aaa_bind_api", (cmd_function) dm_bind_api, {{0, 0, 0}}, 0},
+	{"dm_send_answer", (cmd_function)dm_send_answer, {
+		{CMD_PARAM_STR,0,0},
+		{CMD_PARAM_INT|CMD_PARAM_OPT,0,0}, {0,0,0}},
+		EVENT_ROUTE},
+
+	{"aaa_bind_api", (cmd_function) dm_aaa_bind_api, {{0, 0, 0}}, 0},
+	{"diameter_bind_api", (cmd_function) dm_bind_api, {{0, 0, 0}}, 0},
 	{0,0,{{0,0,0}},0}
 };
 
@@ -70,7 +81,7 @@ static const acmd_export_t acmds[]= {
 };
 
 static const proc_export_t procs[] = {
-	{ "diameter-peer", NULL, NULL, diameter_peer_loop, 1, 0 },
+	{ "diameter-peer", NULL, NULL, dm_peer_loop, 1, 0 },
 	{ 0, 0, 0, 0, 0, 0 },
 };
 
@@ -143,6 +154,11 @@ int mod_init(void)
 		return -1;
 	}
 
+	if (dm_init_evi() != 0) {
+		LM_ERR("failed to init the Diameter event\n");
+		return -1;
+	}
+
 	if (dm_init_peer() != 0) {
 		LM_ERR("failed to init the local Diameter peer\n");
 		return -1;
@@ -189,6 +205,19 @@ static int dm_check_config(void)
 		return -1;
 	}
 
+	LM_INFO("Diameter server support enabled\n");
+
+	if (get_script_route_ID_by_name_str(
+	        &str_init(DMEV_REQ_NAME), sroutes->event, EVENT_RT_NO) < 0) {
+		LM_NOTICE("Diameter server event "DMEV_REQ_NAME" not used in opensips script"
+		        ", auto-replying error code 3001 to any Diameter request\n");
+		dm_server_autoreply_error = 1;
+	} else if (!is_script_func_used("dm_send_answer", -1)) {
+		LM_NOTICE("Diameter 'dm_send_answer()' function not used in opensips script"
+		        ", auto-replying error code 3001 to any Diameter request\n");
+		dm_server_autoreply_error = 1;
+	}
+
 	return 0;
 }
 
@@ -203,7 +232,7 @@ static void mod_destroy(void)
 }
 
 
-static int dm_bind_api(aaa_prot *api)
+static int dm_aaa_bind_api(aaa_prot *api)
 {
 	if (!api)
 		return -1;
@@ -221,6 +250,25 @@ static int dm_bind_api(aaa_prot *api)
 	return 0;
 }
 
+static int dm_bind_api(diameter_api *api)
+{
+	if (!api)
+		return -1;
+
+	memset(api, 0, sizeof *api);
+
+	api->init = dm_init_prot;
+	api->find_cmd = dm_api_find_cmd;
+	api->send_request = dm_api_send_req;
+	api->send_request_async = dm_api_send_req_async;
+	api->get_reply = dm_api_get_reply;
+	api->get_reply_status = dm_api_get_reply_status;
+	api->free_reply = dm_api_free_reply;
+
+	return 0;
+}
+
+
 
 static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 				str *avp_json, pv_spec_t *rpl_avps_pv)
@@ -229,11 +277,12 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	struct dict_object *req;
 	cJSON *avps;
 	int rc;
-	char *rpl_avps;
+	struct dm_cond *rpl = NULL;
+	char *rpl_avps = NULL;
 
-	if (fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND, CMD_BY_CODE_R,
-	      cmd_code, &req, ENOENT) == ENOENT) {
-		LM_ERR("unrecognized Request command code: %d\n", *cmd_code);
+	if ((rc = fd_dict_search(fd_g_config->cnf_dict, DICT_COMMAND,CMD_BY_CODE_R,
+	      cmd_code, &req, ENOENT)) != 0) {
+		LM_ERR("unrecognized Request command code: %d (errno: %d)\n", *cmd_code, rc);
 		LM_ERR("to fix this, you can define the Request/Answer format in the "
 		       "'extra-avps-file' config file\n");
 		return -1;
@@ -259,7 +308,7 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 		goto error;
 	}
 
-	dmsg = _dm_create_message(NULL, AAA_CUSTOM, *app_id, *cmd_code);
+	dmsg = _dm_create_message(NULL, AAA_CUSTOM_REQ, *app_id, *cmd_code, NULL);
 	if (!dmsg) {
 		LM_ERR("oom\n");
 		goto error;
@@ -269,24 +318,27 @@ static int dm_send_request(struct sip_msg *msg, int *app_id, int *cmd_code,
 	                     avps->child) != 0) {
 		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
 		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		_dm_destroy_message(dmsg);
 		goto error;
 	}
+	cJSON_Delete(avps);
 
-	rc = _dm_send_message(NULL, dmsg, NULL, &rpl_avps);
+	if (_dm_send_message(NULL, dmsg, &rpl) != 0)
+		goto error;
+	rc = _dm_get_message_response(rpl, (rpl_avps_pv?&rpl_avps:NULL));
 
-	if (rpl_avps_pv && rpl_avps) {
+	if (rpl_avps_pv) {
 		pv_value_t val = {(str){rpl_avps, strlen(rpl_avps)}, 0, PV_VAL_STR};
 		if (pv_set_value(msg, rpl_avps_pv, 0, &val) != 0)
 			LM_ERR("failed to set output rpl_avps pv to: %s\n", rpl_avps);
+		_dm_release_message_response(rpl, rpl_avps);
 	}
 
 	if (rc != 0) {
-		LM_ERR("Diameter request failed\n");
-		cJSON_Delete(avps);
+		LM_ERR("Diameter request failed (rc: %d)\n", rc);
 		return rc;
 	}
 
-	cJSON_Delete(avps);
 	return 1;
 
 error:
@@ -296,10 +348,120 @@ error:
 			LM_ERR("failed to set output rpl_avps pv to NULL\n");
 	}
 
+	cJSON_Delete(avps);
+	return -1;
+}
+
+
+static int dm_send_answer(struct sip_msg *msg, str *avp_json, int *is_error)
+{
+	aaa_message *dmsg = NULL;
+	struct dm_message *dm;
+	cJSON *avps;
+	pv_param_t evp;
+	pv_value_t res;
+	str sessid;
+	int appid, cmdcode, rc;
+	unsigned long fd_req;
+
+	if (route_type != EVENT_ROUTE) {
+		LM_ERR("can only run 'dm_send_answer()' inside an EVENT_ROUTE\n");
+		return -1;
+	}
+
+	if (ZSTRP(avp_json)) {
+		LM_ERR("unable to build reply (NULL 'avps_json' input)\n");
+		return -1;
+	}
+
+	avps = cJSON_Parse(avp_json->s);
+	if (!avps) {
+		LM_ERR("failed to parse input JSON ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		return -1;
+	}
+
+	if (avps->type != cJSON_Array) {
+		LM_ERR("bad JSON type: must be Array ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		goto error;
+	}
+
+	/* Here, we know 100% that we're inside an event_route, so we can pull the
+	 * Diameter request info (Session-ID, App, Code) using the "params" API */
+	memset(&evp, 0, sizeof evp);
+	evp.pvn.type = PV_NAME_INTSTR;
+	evp.pvn.u.isname.type = AVP_NAME_STR;
+
+	evp.pvn.u.isname.name.s = dmev_req_pname_appid;
+	route_params_run(msg, &evp, &res);
+	if (!pvv_is_int(&res)) {
+		LM_ERR("failed to fetch Application ID\n");
+		appid = 0;
+	} else {
+		appid = res.ri;
+	}
+
+	evp.pvn.u.isname.name.s = dmev_req_pname_cmdcode;
+	route_params_run(msg, &evp, &res);
+	if (!pvv_is_int(&res)) {
+		LM_ERR("failed to fetch Command Code\n");
+		cmdcode = 0;
+	} else {
+		cmdcode = res.ri;
+	}
+
+	evp.pvn.u.isname.name.s = dmev_req_pname_fdmsg;
+	route_params_run(msg, &evp, &res);
+	if (!pvv_is_str(&res)) {
+		LM_ERR("failed to fetch FD Message\n");
+		goto error;
+	} else {
+		reverse_hex2int64(res.rs.s, res.rs.len, 1, &fd_req);
+	}
+
+	dmsg = _dm_create_message(NULL, AAA_CUSTOM_RPL, appid, cmdcode, (void *)fd_req);
+	if (!dmsg) {
+		LM_ERR("oom\n");
+		goto error;
+	}
+	dm = (struct dm_message *)dmsg->avpair;
+
+	if (is_error && *is_error)
+		dm->error_bit = 1;
+
+	if (dm_build_avps(&dm->avps, avps->child) != 0) {
+		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
+		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		goto error;
+	}
+
+	rc = _dm_send_message(NULL, dmsg, NULL);
+	if (rc < 0) {
+		evp.pvn.u.isname.name.s = dmev_req_pname_sessid;
+		route_params_run(msg, &evp, &res);
+		if (ZSTR(res.rs) || !pvv_is_str(&res)) {
+			LM_DBG("failed to fetch the unique session ID\n");
+			sessid = STR_NULL;
+		} else {
+			sessid = res.rs;
+		}
+
+		LM_ERR("failed to send Diameter reply (sess: %.*s, app: %d, cmd: %d)\n",
+		        sessid.len, sessid.s, appid, cmdcode);
+		cJSON_Delete(avps);
+		return rc;
+	}
+
+	cJSON_Delete(avps);
+	return 1;
+
+error:
 	_dm_destroy_message(dmsg);
 	cJSON_Delete(avps);
 	return -1;
 }
+
 
 struct dm_async_msg {
 	pv_spec_p ret;
@@ -329,7 +491,7 @@ static int dm_send_request_async_reply(int fd,
 {
 	int ret;
 	unsigned long r;
-	char *rpl_avps;
+	char *rpl_avps = NULL;
 	pv_value_t val = {STR_NULL, 0, PV_VAL_NULL};
 	struct dm_async_msg *amsg = (struct dm_async_msg *)param;
 
@@ -341,15 +503,21 @@ static int dm_send_request_async_reply(int fd,
 		LM_ERR("could not resume async route!\n");
 		goto error;
 	}
-	ret = _dm_get_message_response(amsg->cond, &rpl_avps);
-	if (ret > 0 && amsg->ret && rpl_avps) {
+	ret = _dm_get_message_response(amsg->cond, (amsg->ret?&rpl_avps:NULL));
+	if (ret == 0)
+		ret = 1;
+	else
+		LM_ERR("Diameter request failed\n");
+	if (ret > 0 && rpl_avps) {
 		val.rs.s = rpl_avps;
 		val.rs.len = strlen(rpl_avps);
 		val.flags = PV_VAL_STR;
 	}
 error:
-	if (pv_set_value(msg, amsg->ret, 0, &val) != 0)
+	if (amsg->ret && pv_set_value(msg, amsg->ret, 0, &val) != 0)
 		LM_ERR("failed to set output rpl_avps pv to NULL\n");
+	if (rpl_avps)
+		_dm_release_message_response(amsg->cond, rpl_avps);
 	dm_free_sync_msg(amsg);
 	return ret;
 }
@@ -403,7 +571,7 @@ static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 		goto error;
 	}
 
-	dmsg = _dm_create_message(NULL, AAA_CUSTOM, *app_id, *cmd_code);
+	dmsg = _dm_create_message(NULL, AAA_CUSTOM_REQ, *app_id, *cmd_code, NULL);
 	if (!dmsg) {
 		LM_ERR("oom\n");
 		goto error;
@@ -413,6 +581,7 @@ static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 	                     avps->child) != 0) {
 		LM_ERR("failed to unpack JSON ('%.*s' ..., total: %d)\n",
 		       avp_json->len > 512 ? 512 : avp_json->len, avp_json->s, avp_json->len);
+		_dm_destroy_message(dmsg);
 		goto error;
 	}
 	if (_dm_send_message_async(NULL, dmsg, &async_status) < 0) {
@@ -423,13 +592,13 @@ static int dm_send_request_async(struct sip_msg *msg, async_ctx *ctx,
 	amsg = dm_get_async_msg(rpl_avps_pv, dmsg);
 	if (!amsg)
 		goto error;
+	cJSON_Delete(avps);
 
 	ctx->resume_f = dm_send_request_async_reply;
 	ctx->resume_param = amsg;
 	ctx->timeout_s = dm_answer_timeout / 1000;
 	ctx->timeout_f = dm_send_request_async_tout;
 
-	cJSON_Delete(avps);
 	return 1;
 
 error:

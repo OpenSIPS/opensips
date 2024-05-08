@@ -45,7 +45,7 @@
 
 static int mi_mod_init(void);
 static void fifo_process(int rank);
-static int mi_destroy(void);
+static void mi_destroy(void);
 
 /* FIFO server vars */
 /* FIFO name */
@@ -228,7 +228,7 @@ static void fifo_process(int rank)
 }
 
 
-static int mi_destroy(void)
+static void mi_destroy(void)
 {
 	int n;
 	struct stat filestat;
@@ -240,15 +240,11 @@ static int mi_destroy(void)
 		if (unlink(mi_fifo)<0){
 			LM_ERR("cannot delete the fifo (%s): %s\n",
 				mi_fifo, strerror(errno));
-			goto error;
+			return;
 		}
 	} else if (n<0 && errno!=ENOENT) {
 		LM_ERR("FIFO stat failed: %s\n", strerror(errno));
-		goto error;
+		return;
 	}
-
-	return 0;
-error:
-	return -1;
 }
 

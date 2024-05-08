@@ -481,8 +481,8 @@ modparam("registrar", "disable_gruu", 0)
 		</listitem>
 		<listitem>
 			<para>
-			<emphasis>flags (string, optional)</emphasis> - string of
-			the following flags:
+			<emphasis>flags (string, optional)</emphasis> - string composed of
+				one or more of the following flags, comma-separated:
 			</para>
 			<itemizedlist>
 				&save_common_flags;
@@ -571,7 +571,7 @@ save("location", , , "vip");
 
 	<section id="func_remove" xreflabel="remove()">
 		<title>
-		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop][, [sip_instance]]]])</function>
+		<function moreinfo="none">remove(domain, AOR[, [contact][, [next_hop][, [sip_instance], [bflag]]]])</function>
 		</title>
 		<para>
 		Explicitly remove contacts behind a given address-of-record.
@@ -609,6 +609,12 @@ save("location", , , "vip");
 			<para>
 				<emphasis>sip_instance (string, optional)</emphasis> - a
 				"+sip.instance" value to be used for filtering purposes.
+			</para>
+		</listitem>
+		<listitem>
+			<para>
+				<emphasis>blfag (string, optional)</emphasis> - a
+				Branch Flag to be used for filtering purposes.
 			</para>
 		</listitem>
 		</itemizedlist>
